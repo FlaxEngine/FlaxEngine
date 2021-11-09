@@ -4,7 +4,6 @@
 
 #include "Engine/Scripting/ScriptingObject.h"
 
-// Don't include Scripting.h but just FindObject method
 extern FLAXENGINE_API ScriptingObject* FindObject(const Guid& id, MClass* type);
 
 /// <summary>
@@ -12,10 +11,6 @@ extern FLAXENGINE_API ScriptingObject* FindObject(const Guid& id, MClass* type);
 /// </summary>
 class FLAXENGINE_API SoftObjectReferenceBase
 {
-public:
-
-    typedef Delegate<> EventType;
-
 protected:
 
     ScriptingObject* _object = nullptr;
@@ -26,7 +21,7 @@ public:
     /// <summary>
     /// Action fired when reference gets changed.
     /// </summary>
-    EventType Changed;
+    Delegate<> Changed;
 
 public:
 
@@ -35,15 +30,6 @@ public:
     /// </summary>
     SoftObjectReferenceBase()
     {
-    }
-
-    /// <summary>
-    /// Initializes a new instance of the <see cref="SoftObjectReferenceBase"/> class.
-    /// </summary>
-    /// <param name="obj">The object to link.</param>
-    SoftObjectReferenceBase(ScriptingObject* obj)
-    {
-        OnSet(obj);
     }
 
     /// <summary>
@@ -60,31 +46,43 @@ public:
     /// <summary>
     /// Gets the object ID.
     /// </summary>
-    /// <returns>The object ID or Guid::Empty if nothing assigned.</returns>
     Guid GetID() const
     {
-        return _object ? _object->GetID() : _id;
+        return _id;
     }
 
 protected:
 
-    /// <summary>
-    /// Sets the object.
-    /// </summary>
-    /// <param name="object">The object.</param>
     void OnSet(ScriptingObject* object)
     {
-        auto e = _object;
-        if (e != object)
-        {
-            if (e)
-                e->Deleted.Unbind<SoftObjectReferenceBase, &SoftObjectReferenceBase::OnDeleted>(this);
-            _object = e = object;
-            _id = e ? e->GetID() : Guid::Empty;
-            if (e)
-                e->Deleted.Bind<SoftObjectReferenceBase, &SoftObjectReferenceBase::OnDeleted>(this);
-            Changed();
-        }
+        if (_object == object)
+            return;
+        if (_object)
+            _object->Deleted.Unbind<SoftObjectReferenceBase, &SoftObjectReferenceBase::OnDeleted>(this);
+        _object = object;
+        _id = object ? object->GetID() : Guid::Empty;
+        if (object)
+            object->Deleted.Bind<SoftObjectReferenceBase, &SoftObjectReferenceBase::OnDeleted>(this);
+        Changed();
+    }
+
+    void OnSet(const Guid& id)
+    {
+        if (_id == id)
+            return;
+        if (_object)
+            _object->Deleted.Unbind<SoftObjectReferenceBase, &SoftObjectReferenceBase::OnDeleted>(this);
+        _object = nullptr;
+        _id = id;
+        Changed();
+    }
+
+    void OnResolve(MClass* type)
+    {
+        ASSERT(!_object);
+        _object = FindObject(_id, type);
+        if (_object)
+            _object->Deleted.Bind<SoftObjectReferenceBase, &SoftObjectReferenceBase::OnDeleted>(this);
     }
 
     void OnDeleted(ScriptingObject* obj)
@@ -92,6 +90,7 @@ protected:
         ASSERT(_object == obj);
         _object->Deleted.Unbind<SoftObjectReferenceBase, &SoftObjectReferenceBase::OnDeleted>(this);
         _object = nullptr;
+        _id = Guid::Empty;
         Changed();
     }
 };
@@ -120,8 +119,8 @@ public:
     /// </summary>
     /// <param name="obj">The object to link.</param>
     SoftObjectReference(T* obj)
-        : SoftObjectReferenceBase(obj)
     {
+        OnSet((ScriptingObject*)obj);
     }
 
     /// <summary>
@@ -129,8 +128,18 @@ public:
     /// </summary>
     /// <param name="other">The other property.</param>
     SoftObjectReference(const SoftObjectReference& other)
-        : SoftObjectReferenceBase(other.Get())
     {
+        OnSet(other.GetID());
+    }
+
+    /// <summary>
+    /// Initializes a new instance of the <see cref="SoftObjectReference"/> class.
+    /// </summary>
+    /// <param name="other">The other property.</param>
+    SoftObjectReference(SoftObjectReference&& other)
+    {
+        OnSet(other.GetID());
+        other.OnSet(nullptr);
     }
 
     /// <summary>
@@ -142,133 +151,64 @@ public:
 
 public:
 
-    /// <summary>
-    /// Compares the property value with the given object.
-    /// </summary>
-    /// <param name="other">The other.</param>
-    /// <returns>True if property object equals the given value.</returns>
     FORCE_INLINE bool operator==(T* other)
     {
         return Get() == other;
     }
-
-    /// <summary>
-    /// Compares the property value with the other property value.
-    /// </summary>
-    /// <param name="other">The other property.</param>
-    /// <returns>True if properties are equal.</returns>
     FORCE_INLINE bool operator==(const SoftObjectReference& other)
     {
-        return _id == other._id;
+        return GetID() == other.GetID();
     }
-
-    /// <summary>
-    /// Compares the property value with the given object.
-    /// </summary>
-    /// <param name="other">The other.</param>
-    /// <returns>True if property object not equals the given value.</returns>
     FORCE_INLINE bool operator!=(T* other)
     {
         return Get() != other;
     }
-
-    /// <summary>
-    /// Compares the property value with the other property value.
-    /// </summary>
-    /// <param name="other">The other property.</param>
-    /// <returns>True if properties are not equal.</returns>
     FORCE_INLINE bool operator!=(const SoftObjectReference& other)
     {
-        return _id != other._id;
+        return GetID() != other.GetID();
     }
-
-    /// <summary>
-    /// Sets the property to the given property value.
-    /// </summary>
-    /// <param name="other">The other property.</param>
-    /// <returns>The reference to this property.</returns>
     SoftObjectReference& operator=(const SoftObjectReference& other)
     {
         if (this != &other)
-            OnSet(other.Get());
+            OnSet(other.GetID());
         return *this;
     }
-
-    /// <summary>
-    /// Sets the property to the given value.
-    /// </summary>
-    /// <param name="other">The object.</param>
-    /// <returns>The reference to this property.</returns>
+    SoftObjectReference& operator=(SoftObjectReference&& other)
+    {
+        if (this != &other)
+        {
+            OnSet(other.GetID());
+            other.OnSet(nullptr);
+        }
+        return *this;
+    }
     FORCE_INLINE SoftObjectReference& operator=(const T& other)
     {
         OnSet(&other);
         return *this;
     }
-
-    /// <summary>
-    /// Sets the property to the given value.
-    /// </summary>
-    /// <param name="other">The object.</param>
-    /// <returns>The reference to this property.</returns>
     FORCE_INLINE SoftObjectReference& operator=(T* other)
     {
         OnSet(other);
         return *this;
     }
-
-    /// <summary>
-    /// Sets the property to the object of the given ID.
-    /// </summary>
-    /// <param name="id">The object ID.</param>
-    /// <returns>The reference to this property.</returns>
     FORCE_INLINE SoftObjectReference& operator=(const Guid& id)
     {
         Set(id);
         return *this;
     }
-
-    /// <summary>
-    /// Implicit conversion to the object.
-    /// </summary>
-    /// <returns>The object reference.</returns>
     FORCE_INLINE operator T*() const
     {
         return (T*)Get();
     }
-
-    /// <summary>
-    /// Implicit conversion to boolean value.
-    /// </summary>
-    /// <returns>True if object has been assigned, otherwise false</returns>
     FORCE_INLINE operator bool() const
     {
-        return _object != nullptr || _id.IsValid();
+        return Get() != nullptr;
     }
-
-    /// <summary>
-    /// Object accessor.
-    /// </summary>
-    /// <returns>The object reference.</returns>
     FORCE_INLINE T* operator->() const
     {
         return (T*)Get();
     }
-
-    /// <summary>
-    /// Gets the object pointer.
-    /// </summary>
-    /// <returns>The object reference.</returns>
-    T* Get() const
-    {
-        if (!_object)
-            const_cast<SoftObjectReference*>(this)->OnSet(FindObject(_id, T::GetStaticClass()));
-        return (T*)_object;
-    }
-
-    /// <summary>
-    /// Gets the object as a given type (static cast).
-    /// </summary>
-    /// <returns>Asset</returns>
     template<typename U>
     FORCE_INLINE U* As() const
     {
@@ -276,11 +216,20 @@ public:
     }
 
 public:
+    
+    /// <summary>
+    /// Gets the object (or null if unassigned).
+    /// </summary>
+    T* Get() const
+    {
+        if (!_object)
+            const_cast<SoftObjectReference*>(this)->OnResolve(T::GetStaticClass());
+        return (T*)_object;
+    }
 
     /// <summary>
     /// Gets managed instance object (or null if no object linked).
     /// </summary>
-    /// <returns>The managed object instance.</returns>
     MObject* GetManagedInstance() const
     {
         auto object = Get();
@@ -290,7 +239,6 @@ public:
     /// <summary>
     /// Determines whether object is assigned and managed instance of the object is alive.
     /// </summary>
-    /// <returns>True if managed object has been created and exists, otherwise false.</returns>
     bool HasManagedInstance() const
     {
         auto object = Get();
@@ -300,7 +248,6 @@ public:
     /// <summary>
     /// Gets the managed instance object or creates it if missing or null if not assigned.
     /// </summary>
-    /// <returns>The Mono managed object.</returns>
     MObject* GetOrCreateManagedInstance() const
     {
         auto object = Get();
@@ -311,10 +258,9 @@ public:
     /// Sets the object.
     /// </summary>
     /// <param name="id">The object ID. Uses Scripting to find the registered object of the given ID.</param>
-    void Set(const Guid& id)
+    FORCE_INLINE void Set(const Guid& id)
     {
-        _id = id;
-        _object = nullptr;
+        OnSet(id);
     }
 
     /// <summary>
