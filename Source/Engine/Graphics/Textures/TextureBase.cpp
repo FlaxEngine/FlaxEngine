@@ -11,6 +11,7 @@
 #include "Engine/Debug/Exceptions/InvalidOperationException.h"
 #include "Engine/Profiler/ProfilerCPU.h"
 #include "Engine/Content/Factories/BinaryAssetFactory.h"
+#include "Engine/Threading/Threading.h"
 
 TextureMipData::TextureMipData()
     : RowPitch(0)
@@ -151,11 +152,13 @@ BytesContainer TextureBase::GetMipData(int32 mipIndex, int32& rowPitch, int32& s
 
 bool TextureBase::GetTextureData(TextureData& result, bool copyData)
 {
+    PROFILE_CPU_NAMED("Texture.GetTextureData");
     if (!IsVirtual() && WaitForLoaded())
     {
         LOG(Error, "Asset load failed.");
         return true;
     }
+    auto dataLock = LockData();
 
     // Setup description
     result.Width = _texture.TotalWidth();
@@ -202,7 +205,7 @@ bool TextureBase::Init(InitData* initData)
     // Validate state
     if (!IsVirtual())
     {
-        Log::InvalidOperationException();
+        LOG(Error, "Texture must be virtual.");
         return true;
     }
     if (initData->Format == PixelFormat::Unknown ||
@@ -214,6 +217,7 @@ bool TextureBase::Init(InitData* initData)
         Log::ArgumentOutOfRangeException();
         return true;
     }
+    ScopeLock lock(Locker);
 
     // Release texture
     _texture.UnloadTexture();
@@ -243,6 +247,7 @@ bool TextureBase::Init(InitData* initData)
 
 bool TextureBase::Init(void* ptr)
 {
+    PROFILE_CPU_NAMED("Texture.Init");
     struct InternalInitData
     {
         PixelFormat Format;
@@ -250,6 +255,7 @@ bool TextureBase::Init(void* ptr)
         int32 Height;
         int32 ArraySize;
         int32 MipLevels;
+        int32 GenerateMips;
         int32 DataRowPitch[14];
         int32 DataSlicePitch[14];
         byte* Data[14];
@@ -261,14 +267,21 @@ bool TextureBase::Init(void* ptr)
     initData->Width = initDataObj->Width;
     initData->Height = initDataObj->Height;
     initData->ArraySize = initDataObj->ArraySize;
-    initData->Mips.Resize(initDataObj->MipLevels);
+    initData->Mips.Resize(initDataObj->GenerateMips ? MipLevelsCount(initDataObj->Width, initDataObj->Height) : initDataObj->MipLevels);
 
+    // Copy source mips data
     for (int32 mipIndex = 0; mipIndex < initDataObj->MipLevels; mipIndex++)
     {
         auto& mip = initData->Mips[mipIndex];
         mip.RowPitch = initDataObj->DataRowPitch[mipIndex];
         mip.SlicePitch = initDataObj->DataSlicePitch[mipIndex];
         mip.Data.Copy(initDataObj->Data[mipIndex], mip.SlicePitch * initData->ArraySize);
+    }
+
+    // Generate mips
+    for (int32 mipIndex = initDataObj->MipLevels; mipIndex < initData->Mips.Count(); mipIndex++)
+    {
+        initData->GenerateMip(mipIndex, initDataObj->GenerateMips & 2);
     }
 
     return Init(initData);
@@ -462,7 +475,7 @@ bool TextureBase::InitData::GenerateMip(int32 mipIndex, bool linear)
             break;
         }
         default:
-            LOG(Error, "Unsupported texture data format {0} for mip map generation.", (int32)Format);
+            LOG(Error, "Unsupported texture data format {0}.", (int32)Format);
             return true;
         }
     }

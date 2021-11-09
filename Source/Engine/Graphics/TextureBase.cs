@@ -48,6 +48,16 @@ namespace FlaxEngine
             public int ArraySize;
 
             /// <summary>
+            /// If checked, the engine will generate automatic-mips based on the latest provided mip.
+            /// </summary>
+            public bool GenerateMips;
+
+            /// <summary>
+            /// If checked, the generated mips will use linear filter, otherwise it will use point filter. Linear filter is supported only for formats compatible with Color32.
+            /// </summary>
+            public bool GenerateMipsLinear;
+
+            /// <summary>
             /// The mips levels data.
             /// </summary>
             public MipData[] Mips;
@@ -108,7 +118,7 @@ namespace FlaxEngine
             }
 
             // Convert data to internal storage (don't allocate memory but pin the managed arrays)
-            InternalInitData t = new InternalInitData
+            var t = new InternalInitData
             {
                 Format = initData.Format,
                 Width = initData.Width,
@@ -116,6 +126,12 @@ namespace FlaxEngine
                 ArraySize = initData.ArraySize,
                 MipLevels = initData.Mips.Length,
             };
+            if (initData.GenerateMips)
+            {
+                t.GenerateMips = 1;
+                if (initData.GenerateMipsLinear)
+                    t.GenerateMips |= 2;
+            }
             var emptyArray = Utils.GetEmptyArray<byte>();
             fixed (byte* data13 = (initData.Mips.Length > 13 ? initData.Mips[13].Data : emptyArray))
             fixed (byte* data12 = (initData.Mips.Length > 12 ? initData.Mips[12].Data : emptyArray))
@@ -173,6 +189,7 @@ namespace FlaxEngine
             public int Height;
             public int ArraySize;
             public int MipLevels;
+            public int GenerateMips;
 
             public int Data00RowPitch;
             public int Data01RowPitch;

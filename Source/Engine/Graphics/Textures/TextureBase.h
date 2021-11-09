@@ -43,7 +43,7 @@ DECLARE_ASSET_HEADER(TextureBase);
         /// <param name="mipIndex">Index of the mip.</param>
         /// <param name="linear">True if use linear filer, otherwise point filtering.</param>
         /// <returns>True if failed, otherwise false.</returns>
-        bool GenerateMip(int32 mipIndex, bool linear);
+        bool GenerateMip(int32 mipIndex, bool linear = false);
     };
 
 protected:
