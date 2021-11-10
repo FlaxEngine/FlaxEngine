@@ -371,7 +371,7 @@ namespace Flax.Build.Platforms
                 WindowsPlatformSDK.v10_0_17763_0,
                 WindowsPlatformSDK.v10_0_18362_0,
                 WindowsPlatformSDK.v10_0_19041_0,
-                WindowsPlatformSDK.v10_0_20348_0,
+                //WindowsPlatformSDK.v10_0_20348_0, // Breaks on Flax Editor build
                 //WindowsPlatformSDK.v10_0_22000_0, // Breaks on Flax Editor build
             };
             foreach (var sdk10 in sdk10Roots)
