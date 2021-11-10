@@ -10,7 +10,7 @@
 /// <summary>
 /// Microsoft Visual Studio version types
 /// </summary>
-DECLARE_ENUM_7(VisualStudioVersion, VS2008, VS2010, VS2012, VS2013, VS2015, VS2017, VS2019);
+DECLARE_ENUM_8(VisualStudioVersion, VS2008, VS2010, VS2012, VS2013, VS2015, VS2017, VS2019, VS2022);
 
 /// <summary>
 /// Implementation of code editor utility that is using Microsoft Visual Studio.
@@ -38,18 +38,15 @@ public:
 public:
 
     /// <summary>
-    /// Gets version of Visual Studio
+    /// Gets version of Visual Studio.
     /// </summary>
-    /// <returns>VS version</returns>
     FORCE_INLINE VisualStudioVersion GetVersion() const
     {
         return _version;
     }
 
-public:
-
     /// <summary>
-    /// Try to find installed Visual Studio instances. Adds them to the result list.
+    /// Tries to find installed Visual Studio instances and dds them to the result list.
     /// </summary>
     /// <param name="output">The output editors.</param>
     static void FindEditors(Array<CodeEditor*>* output);

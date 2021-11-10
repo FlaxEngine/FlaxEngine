@@ -51,6 +51,9 @@ namespace FlaxEditor.Modules.SourceCodeEditing
             case CodeEditorTypes.VS2019:
                 Name = "Visual Studio 2019";
                 break;
+            case CodeEditorTypes.VS2022:
+                Name = "Visual Studio 2022";
+                break;
             case CodeEditorTypes.VSCode:
                 Name = "Visual Studio Code";
                 break;
@@ -106,6 +109,7 @@ namespace FlaxEditor.Modules.SourceCodeEditing
             case CodeEditorTypes.VS2015:
             case CodeEditorTypes.VS2017:
             case CodeEditorTypes.VS2019:
+            case CodeEditorTypes.VS2022:
                 // TODO: finish dynamic files adding to the project
                 //Editor.Instance.ProgressReporting.GenerateScriptsProjectFiles.RunAsync();
                 break;
