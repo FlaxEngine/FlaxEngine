@@ -2018,7 +2018,7 @@ bool LinuxPlatform::Init()
     // Get user name string
     char buffer[UNIX_APP_BUFF_SIZE];
     getlogin_r(buffer, UNIX_APP_BUFF_SIZE);
-    OnPlatformUserAdd(New<User>(String(buffer));
+    OnPlatformUserAdd(New<User>(String(buffer)));
 
     UnixGetMacAddress(MacAddress);
 
