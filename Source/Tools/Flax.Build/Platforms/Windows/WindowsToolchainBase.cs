@@ -88,7 +88,11 @@ namespace Flax.Build.Platforms
             // Pick the newest installed Visual Studio version if using the default toolset
             if (toolsetVer == WindowsPlatformToolset.Default)
             {
-                if (VisualStudioInstance.HasIDE(VisualStudioVersion.VisualStudio2019))
+                if (VisualStudioInstance.HasIDE(VisualStudioVersion.VisualStudio2022))
+                {
+                    toolsetVer = WindowsPlatformToolset.v143;
+                }
+                else if (VisualStudioInstance.HasIDE(VisualStudioVersion.VisualStudio2019))
                 {
                     toolsetVer = WindowsPlatformToolset.v142;
                 }
@@ -194,6 +198,7 @@ namespace Flax.Build.Platforms
             }
             case WindowsPlatformToolset.v141:
             case WindowsPlatformToolset.v142:
+            case WindowsPlatformToolset.v143:
             {
                 switch (Architecture)
                 {
@@ -274,6 +279,8 @@ namespace Flax.Build.Platforms
             case WindowsPlatformSDK.v10_0_17763_0:
             case WindowsPlatformSDK.v10_0_18362_0:
             case WindowsPlatformSDK.v10_0_19041_0:
+            case WindowsPlatformSDK.v10_0_20348_0:
+            case WindowsPlatformSDK.v10_0_22000_0:
             {
                 var sdkVersionName = WindowsPlatformBase.GetSDKVersion(SDK).ToString();
                 string includeRootDir = Path.Combine(windowsSdkDir, "include", sdkVersionName);
@@ -367,6 +374,7 @@ namespace Flax.Build.Platforms
             var vcToolChainDir = toolsets[Toolset];
             switch (Toolset)
             {
+            case WindowsPlatformToolset.v143:
             case WindowsPlatformToolset.v142:
             case WindowsPlatformToolset.v141:
                 return Path.Combine(vcToolChainDir, "lib", "x86", "store", "references");

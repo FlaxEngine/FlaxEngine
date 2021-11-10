@@ -42,6 +42,11 @@ namespace Flax.Build.Platforms
         /// Visual Studio 2019
         /// </summary>
         v142 = 142,
+
+        /// <summary>
+        /// Visual Studio 2022
+        /// </summary>
+        v143 = 143,
     }
 
     /// <summary>
@@ -103,6 +108,16 @@ namespace Flax.Build.Platforms
         /// Windows 10 SDK (10.0.19041.0)
         /// </summary>
         v10_0_19041_0,
+
+        /// <summary>
+        /// Windows 10 SDK (10.0.20348.0) 21H1
+        /// </summary>
+        v10_0_20348_0,
+
+        /// <summary>
+        /// Windows 11 SDK (10.0.22000.0)
+        /// </summary>
+        v10_0_22000_0,
     }
 
     /// <summary>
@@ -124,7 +139,7 @@ namespace Flax.Build.Platforms
 
         /// <inheritdoc />
         public override bool HasSharedLibrarySupport => true;
-    
+
         /// <inheritdoc />
         public override bool HasExecutableFileReferenceSupport => true;
 
@@ -231,6 +246,8 @@ namespace Flax.Build.Platforms
                         _toolsets[WindowsPlatformToolset.v141] = toolset;
                     else if (version.Major == 14 && version.Minor / 10 == 2)
                         _toolsets[WindowsPlatformToolset.v142] = toolset;
+                    else if (version.Major == 14 && version.Minor / 10 == 3)
+                        _toolsets[WindowsPlatformToolset.v143] = toolset;
                 }
             }
         }
@@ -250,7 +267,7 @@ namespace Flax.Build.Platforms
                 return _toolsets;
 
             var vsInstances = VisualStudioInstance.GetInstances();
-    
+
             // Visual Studio 2015 - single instance
             var vs2015 = vsInstances.FirstOrDefault(x => x.Version == VisualStudioVersion.VisualStudio2015);
             if (vs2015 != null)
@@ -266,23 +283,18 @@ namespace Flax.Build.Platforms
                 }
             }
 
-            // Visual Studio 2017 - multiple instances
-            foreach (var vs2017 in vsInstances.Where(x => x.Version == VisualStudioVersion.VisualStudio2017))
+            // Visual Studio 2017-2022 - multiple instances
+            foreach (var vs in vsInstances.Where(x =>
+                                                 x.Version == VisualStudioVersion.VisualStudio2017 ||
+                                                 x.Version == VisualStudioVersion.VisualStudio2019 ||
+                                                 x.Version == VisualStudioVersion.VisualStudio2022
+                                                ))
             {
-                FindMsvcToolsets(Path.Combine(vs2017.Path, "VC", "Tools", "MSVC"));
-            }
-
-            // Visual Studio 2019 - multiple instances
-            foreach (var vs2019 in vsInstances.Where(x => x.Version == VisualStudioVersion.VisualStudio2019))
-            {
-                FindMsvcToolsets(Path.Combine(vs2019.Path, "VC", "Tools", "MSVC"));
+                FindMsvcToolsets(Path.Combine(vs.Path, "VC", "Tools", "MSVC"));
             }
 
             foreach (var e in _toolsets)
-            {
                 Log.Verbose(string.Format("Found Windows toolset {0} at {1}", e.Key, e.Value));
-            }
-
             return _toolsets;
         }
 
@@ -305,6 +317,8 @@ namespace Flax.Build.Platforms
             case WindowsPlatformSDK.v10_0_17763_0: return new Version(10, 0, 17763, 0);
             case WindowsPlatformSDK.v10_0_18362_0: return new Version(10, 0, 18362, 0);
             case WindowsPlatformSDK.v10_0_19041_0: return new Version(10, 0, 19041, 0);
+            case WindowsPlatformSDK.v10_0_20348_0: return new Version(10, 0, 20348, 0);
+            case WindowsPlatformSDK.v10_0_22000_0: return new Version(10, 0, 22000, 0);
             default: throw new ArgumentOutOfRangeException(nameof(sdk), sdk, null);
             }
         }
@@ -346,6 +360,20 @@ namespace Flax.Build.Platforms
                     sdk10Roots.Add(rootDir);
                 }
             }
+            var win10Sdks = new[]
+            {
+                WindowsPlatformSDK.v10_0_10240_0,
+                WindowsPlatformSDK.v10_0_10586_0,
+                WindowsPlatformSDK.v10_0_14393_0,
+                WindowsPlatformSDK.v10_0_15063_0,
+                WindowsPlatformSDK.v10_0_16299_0,
+                WindowsPlatformSDK.v10_0_17134_0,
+                WindowsPlatformSDK.v10_0_17763_0,
+                WindowsPlatformSDK.v10_0_18362_0,
+                WindowsPlatformSDK.v10_0_19041_0,
+                WindowsPlatformSDK.v10_0_20348_0,
+                WindowsPlatformSDK.v10_0_22000_0,
+            };
             foreach (var sdk10 in sdk10Roots)
             {
                 var includeRootDir = Path.Combine(sdk10, "Include");
@@ -355,25 +383,17 @@ namespace Flax.Build.Platforms
                     {
                         if (Version.TryParse(Path.GetFileName(includeDir), out var version) && File.Exists(Path.Combine(includeDir, "um", "windows.h")))
                         {
-                            if (version == GetSDKVersion(WindowsPlatformSDK.v10_0_10240_0))
-                                _sdks.Add(WindowsPlatformSDK.v10_0_10240_0, sdk10);
-                            else if (version == GetSDKVersion(WindowsPlatformSDK.v10_0_10586_0))
-                                _sdks.Add(WindowsPlatformSDK.v10_0_10586_0, sdk10);
-                            else if (version == GetSDKVersion(WindowsPlatformSDK.v10_0_14393_0))
-                                _sdks.Add(WindowsPlatformSDK.v10_0_14393_0, sdk10);
-                            else if (version == GetSDKVersion(WindowsPlatformSDK.v10_0_15063_0))
-                                _sdks.Add(WindowsPlatformSDK.v10_0_15063_0, sdk10);
-                            else if (version == GetSDKVersion(WindowsPlatformSDK.v10_0_16299_0))
-                                _sdks.Add(WindowsPlatformSDK.v10_0_16299_0, sdk10);
-                            else if (version == GetSDKVersion(WindowsPlatformSDK.v10_0_17134_0))
-                                _sdks.Add(WindowsPlatformSDK.v10_0_17134_0, sdk10);
-                            else if (version == GetSDKVersion(WindowsPlatformSDK.v10_0_17763_0))
-                                _sdks.Add(WindowsPlatformSDK.v10_0_17763_0, sdk10);
-                            else if (version == GetSDKVersion(WindowsPlatformSDK.v10_0_18362_0))
-                                _sdks.Add(WindowsPlatformSDK.v10_0_18362_0, sdk10);
-                            else if (version == GetSDKVersion(WindowsPlatformSDK.v10_0_19041_0))
-                                _sdks.Add(WindowsPlatformSDK.v10_0_19041_0, sdk10);
-                            else
+                            bool unknown = true;
+                            foreach (var win10Sdk in win10Sdks)
+                            {
+                                if (version == GetSDKVersion(win10Sdk))
+                                {
+                                    _sdks.Add(win10Sdk, sdk10);
+                                    unknown = false;
+                                    break;
+                                }
+                            }
+                            if (unknown)
                                 Log.Warning(string.Format("Unknown Windows 10 SDK version {0} at {1}", version, sdk10));
                         }
                     }
@@ -410,9 +430,9 @@ namespace Flax.Build.Platforms
 
                 throw new Exception(string.Format("No 32-bit compiler toolchain found in {0}", compilerPath));
             }
-
             case WindowsPlatformToolset.v141:
             case WindowsPlatformToolset.v142:
+            case WindowsPlatformToolset.v143:
             {
                 /*
                 string crossCompilerPath = Path.Combine(vcToolChainDir, "bin", "HostX64", "x86", "cl.exe");
@@ -431,7 +451,6 @@ namespace Flax.Build.Platforms
                 //throw new Exception(string.Format("No 32-bit compiler toolchain found in {0} or {1}", crossCompilerPath, nativeCompilerPath));
                 throw new Exception(string.Format("No 32-bit compiler toolchain found in {0}", nativeCompilerPath));
             }
-
             default: throw new ArgumentOutOfRangeException(nameof(toolset), toolset, null);
             }
         }
@@ -464,9 +483,9 @@ namespace Flax.Build.Platforms
 
                 throw new Exception(string.Format("No 64-bit compiler toolchain found in {0} or {1}", nativeCompilerPath, crossCompilerPath));
             }
-
             case WindowsPlatformToolset.v141:
             case WindowsPlatformToolset.v142:
+            case WindowsPlatformToolset.v143:
             {
                 string nativeCompilerPath = Path.Combine(vcToolChainDir, "bin", "HostX64", "x64", "cl.exe");
                 if (File.Exists(nativeCompilerPath))
@@ -482,7 +501,6 @@ namespace Flax.Build.Platforms
 
                 throw new Exception(string.Format("No 64-bit compiler toolchain found in {0} or {1}", nativeCompilerPath, crossCompilerPath));
             }
-
             default: throw new ArgumentOutOfRangeException(nameof(toolset), toolset, null);
             }
         }

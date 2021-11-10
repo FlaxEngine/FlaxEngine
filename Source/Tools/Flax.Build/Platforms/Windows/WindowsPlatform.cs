@@ -35,9 +35,11 @@ namespace Flax.Build.Platforms
             }
 
             // Need v140+ toolset
-            if (!GetToolsets().ContainsKey(WindowsPlatformToolset.v140) &&
-                !GetToolsets().ContainsKey(WindowsPlatformToolset.v141) &&
-                !GetToolsets().ContainsKey(WindowsPlatformToolset.v142))
+            var toolsets = GetToolsets();
+            if (!toolsets.ContainsKey(WindowsPlatformToolset.v140) &&
+                !toolsets.ContainsKey(WindowsPlatformToolset.v141) &&
+                !toolsets.ContainsKey(WindowsPlatformToolset.v142) &&
+                !toolsets.ContainsKey(WindowsPlatformToolset.v143))
             {
                 Log.Warning("Missing MSVC toolset v140 or later (VS 2015 or later C++ build tools). Cannot build for Windows platform.");
                 _hasRequiredSDKsInstalled = false;

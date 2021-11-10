@@ -30,7 +30,8 @@ namespace Flax.Build.Platforms
             // v141 toolset or newer required
             var toolsets = GetToolsets();
             if (!toolsets.ContainsKey(WindowsPlatformToolset.v141) &&
-                !toolsets.ContainsKey(WindowsPlatformToolset.v142))
+                !toolsets.ContainsKey(WindowsPlatformToolset.v142) &&
+                !toolsets.ContainsKey(WindowsPlatformToolset.v143))
                 _hasRequiredSDKsInstalled = false;
         }
     }

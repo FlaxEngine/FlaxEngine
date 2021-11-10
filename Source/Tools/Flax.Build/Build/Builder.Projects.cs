@@ -158,6 +158,8 @@ namespace Flax.Build
                 // Pick the project format
                 List<ProjectFormat> projectFormats = new List<ProjectFormat>();
 
+                if (Configuration.ProjectFormatVS2022)
+                    projectFormats.Add(ProjectFormat.VisualStudio2022);
                 if (Configuration.ProjectFormatVS2019)
                     projectFormats.Add(ProjectFormat.VisualStudio2019);
                 if (Configuration.ProjectFormatVS2017)
