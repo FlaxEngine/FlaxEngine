@@ -2016,6 +2016,7 @@ bool LinuxPlatform::Init()
     ASSERT(UnixCpu.CacheLineSize && Math::IsPowerOfTwo(UnixCpu.CacheLineSize));
 
     // Get user name string
+    char buffer[UNIX_APP_BUFF_SIZE];
     getlogin_r(buffer, UNIX_APP_BUFF_SIZE);
     OnPlatformUserAdd(New<User>(String(buffer));
 
@@ -2042,8 +2043,6 @@ bool LinuxPlatform::Init()
         // D - cpuid
         DeviceId.D = (uint32)UnixCpu.ClockSpeed * UnixCpu.LogicalProcessorCount * UnixCpu.ProcessorCoreCount * UnixCpu.CacheLineSize;
     }
-
-    char buffer[UNIX_APP_BUFF_SIZE];
 
     // Get user locale string
     setlocale(LC_ALL, "");
