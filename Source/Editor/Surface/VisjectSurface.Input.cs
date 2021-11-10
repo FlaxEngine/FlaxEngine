@@ -144,6 +144,38 @@ namespace FlaxEditor.Surface
             }
         }
 
+        private void OnGetNodesToMove()
+        {
+            if (_movingNodes == null)
+                _movingNodes = new HashSet<SurfaceNode>();
+            else
+                _movingNodes.Clear();
+            if (CanEdit)
+            {
+                _isMovingSelection = true;
+                for (int i = 0; i < _rootControl.Children.Count; i++)
+                {
+                    if (_rootControl.Children[i] is SurfaceNode node && node.IsSelected && (node.Archetype.Flags & NodeFlags.NoMove) != NodeFlags.NoMove)
+                    {
+                        _movingNodes.Add(node);
+
+                        // Move nodes inside the comment
+                        if (node is SurfaceComment comment)
+                        {
+                            var commentBounds = comment.Bounds;
+                            for (int j = 0; j < _rootControl.Children.Count; j++)
+                            {
+                                if (_rootControl.Children[j] is SurfaceNode childNode && commentBounds.Contains(childNode.Bounds))
+                                {
+                                    _movingNodes.Add(childNode);
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
         /// <inheritdoc />
         public override void OnMouseEnter(Vector2 location)
         {
@@ -381,34 +413,7 @@ namespace FlaxEditor.Surface
                     StartMouseCapture();
                     _movingSelectionViewPos = _rootControl.Location;
                     _movingNodesDelta = Vector2.Zero;
-                    if (_movingNodes == null)
-                        _movingNodes = new HashSet<SurfaceNode>();
-                    else
-                        _movingNodes.Clear();
-                    if (CanEdit)
-                    {
-                        _isMovingSelection = true;
-                        for (int i = 0; i < _rootControl.Children.Count; i++)
-                        {
-                            if (_rootControl.Children[i] is SurfaceNode node && node.IsSelected && (node.Archetype.Flags & NodeFlags.NoMove) != NodeFlags.NoMove)
-                            {
-                                _movingNodes.Add(node);
-
-                                // Move nodes inside the comment
-                                if (node is SurfaceComment comment)
-                                {
-                                    var commentBounds = comment.Bounds;
-                                    for (int j = 0; j < _rootControl.Children.Count; j++)
-                                    {
-                                        if (_rootControl.Children[j] is SurfaceNode childNode && commentBounds.Contains(childNode.Bounds))
-                                        {
-                                            _movingNodes.Add(childNode);
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
+                    OnGetNodesToMove();
                     Focus();
                     return true;
                 }
@@ -528,6 +533,17 @@ namespace FlaxEditor.Surface
             return true;
         }
 
+        private void MoveSelectedNodes(Vector2 delta)
+        {
+            // TODO: undo
+            delta /= _targetScale;
+            OnGetNodesToMove();
+            foreach (var node in _movingNodes)
+                node.Location += delta;
+            _isMovingSelection = false;
+            MarkAsEdited(false);
+        }
+
         /// <inheritdoc />
         public override bool OnKeyDown(KeyboardKeys key)
         {
@@ -539,20 +555,19 @@ namespace FlaxEditor.Surface
 
             if (HasNodesSelection)
             {
-                if (key == KeyboardKeys.Backspace)
+                var keyMoveRange = 50;
+                switch (key)
                 {
+                case KeyboardKeys.Backspace:
                     if (InputText.Length > 0)
                         InputText = InputText.Substring(0, InputText.Length - 1);
                     return true;
-                }
-                if (key == KeyboardKeys.Escape)
-                {
+                case KeyboardKeys.Escape:
                     ClearSelection();
                     return true;
-                }
-                if (key == KeyboardKeys.Return)
+                case KeyboardKeys.Return:
                 {
-                    Box selectedBox = GetSelectedBox(SelectedNodes);
+                    Box selectedBox = GetSelectedBox(SelectedNodes, false);
                     Box toSelect = selectedBox?.ParentNode.GetNextBox(selectedBox);
                     if (toSelect != null)
                     {
@@ -561,24 +576,77 @@ namespace FlaxEditor.Surface
                     }
                     return true;
                 }
-                if (key == KeyboardKeys.ArrowUp || key == KeyboardKeys.ArrowDown)
+                case KeyboardKeys.ArrowUp:
+                case KeyboardKeys.ArrowDown:
                 {
+                    // Selected box navigation
                     Box selectedBox = GetSelectedBox(SelectedNodes);
-                    if (selectedBox == null)
-                        return true;
-
-                    Box toSelect = (key == KeyboardKeys.ArrowUp) ? selectedBox?.ParentNode.GetPreviousBox(selectedBox) : selectedBox?.ParentNode.GetNextBox(selectedBox);
-
-                    if (toSelect != null && toSelect.IsOutput == selectedBox.IsOutput)
+                    if (selectedBox != null)
                     {
-                        Select(toSelect.ParentNode);
-                        toSelect.ParentNode.SelectBox(toSelect);
+                        Box toSelect = (key == KeyboardKeys.ArrowUp) ? selectedBox?.ParentNode.GetPreviousBox(selectedBox) : selectedBox?.ParentNode.GetNextBox(selectedBox);
+                        if (toSelect != null && toSelect.IsOutput == selectedBox.IsOutput)
+                        {
+                            Select(toSelect.ParentNode);
+                            toSelect.ParentNode.SelectBox(toSelect);
+                        }
                     }
+                    else if (!IsMovingSelection && CanEdit)
+                    {
+                        // Move selected nodes
+                        var delta = new Vector2(0, key == KeyboardKeys.ArrowUp ? -keyMoveRange : keyMoveRange);
+                        MoveSelectedNodes(delta);
+                    }
+                    return true;
                 }
-
-                if (key == KeyboardKeys.Tab)
+                case KeyboardKeys.ArrowRight:
+                case KeyboardKeys.ArrowLeft:
                 {
+                    // Selected box navigation
                     Box selectedBox = GetSelectedBox(SelectedNodes);
+                    if (selectedBox != null)
+                    {
+                        Box toSelect = null;
+                        if ((key == KeyboardKeys.ArrowRight && selectedBox.IsOutput) || (key == KeyboardKeys.ArrowLeft && !selectedBox.IsOutput))
+                        {
+                            if (_selectedConnectionIndex < 0 || _selectedConnectionIndex >= selectedBox.Connections.Count)
+                            {
+                                _selectedConnectionIndex = 0;
+                            }
+                            toSelect = selectedBox.Connections[_selectedConnectionIndex];
+                        }
+                        else
+                        {
+                            // Use the node with the closest Y-level
+                            // Since there are cases like 3 nodes on one side and only 1 node on the other side
+                            var elements = selectedBox.ParentNode.Elements;
+                            float minDistance = float.PositiveInfinity;
+                            for (int i = 0; i < elements.Count; i++)
+                            {
+                                if (elements[i] is Box box && box.IsOutput != selectedBox.IsOutput && Mathf.Abs(box.Y - selectedBox.Y) < minDistance)
+                                {
+                                    toSelect = box;
+                                    minDistance = Mathf.Abs(box.Y - selectedBox.Y);
+                                }
+                            }
+                        }
+
+                        if (toSelect != null)
+                        {
+                            Select(toSelect.ParentNode);
+                            toSelect.ParentNode.SelectBox(toSelect);
+                        }
+                    }
+                    else if (!IsMovingSelection && CanEdit)
+                    {
+                        // Move selected nodes
+                        var delta = new Vector2(key == KeyboardKeys.ArrowLeft ? -keyMoveRange : keyMoveRange, 0);
+                        MoveSelectedNodes(delta);
+                    }
+                    return true;
+                }
+                case KeyboardKeys.Tab:
+                {
+                    Box selectedBox = GetSelectedBox(SelectedNodes, false);
                     if (selectedBox == null)
                         return true;
 
@@ -594,47 +662,8 @@ namespace FlaxEditor.Surface
                     {
                         _selectedConnectionIndex = (_selectedConnectionIndex + 1) % connectionCount;
                     }
-                }
-
-                if (key == KeyboardKeys.ArrowRight || key == KeyboardKeys.ArrowLeft)
-                {
-                    Box selectedBox = GetSelectedBox(SelectedNodes);
-                    if (selectedBox == null)
-                        return true;
-
-                    Box toSelect = null;
-
-                    if ((key == KeyboardKeys.ArrowRight && selectedBox.IsOutput) || (key == KeyboardKeys.ArrowLeft && !selectedBox.IsOutput))
-                    {
-                        if (_selectedConnectionIndex < 0 || _selectedConnectionIndex >= selectedBox.Connections.Count)
-                        {
-                            _selectedConnectionIndex = 0;
-                        }
-                        toSelect = selectedBox.Connections[_selectedConnectionIndex];
-                    }
-                    else
-                    {
-                        // Use the node with the closest Y-level
-                        // Since there are cases like 3 nodes on one side and only 1 node on the other side
-
-                        var elements = selectedBox.ParentNode.Elements;
-                        float minDistance = float.PositiveInfinity;
-                        for (int i = 0; i < elements.Count; i++)
-                        {
-                            if (elements[i] is Box box && box.IsOutput != selectedBox.IsOutput && Mathf.Abs(box.Y - selectedBox.Y) < minDistance)
-                            {
-                                toSelect = box;
-                                minDistance = Mathf.Abs(box.Y - selectedBox.Y);
-                            }
-                        }
-                    }
-
-                    if (toSelect != null)
-                    {
-                        Select(toSelect.ParentNode);
-                        toSelect.ParentNode.SelectBox(toSelect);
-                    }
                     return true;
+                }
                 }
             }
 
@@ -688,7 +717,7 @@ namespace FlaxEditor.Surface
                 return;
 
             // Single Box Editing
-            Box selectedBox = GetSelectedBox(selection);
+            Box selectedBox = GetSelectedBox(selection, false);
 
             if (selectedBox == null)
                 return;
@@ -739,7 +768,7 @@ namespace FlaxEditor.Surface
             }
         }
 
-        private Box GetSelectedBox(List<SurfaceNode> selection)
+        private Box GetSelectedBox(List<SurfaceNode> selection, bool onlyIfSelected = true)
         {
             if (selection.Count != 1)
                 return null; // TODO: Handle multiple selected nodes
@@ -764,7 +793,7 @@ namespace FlaxEditor.Surface
             }
 
             // Or get the first output box when a node with only output boxes is selected
-            if (selectedBox == null)
+            if (selectedBox == null && !onlyIfSelected)
             {
                 for (int i = 0; i < selectedNode.Elements.Count; i++)
                 {
