@@ -543,11 +543,7 @@ bool ProcessMesh(OpenFbxImporterData& data, const ofbx::Mesh* aMesh, MeshData& m
     // Tangents
     if ((data.Options.CalculateTangents || !tangents) && mesh.UVs.HasItems())
     {
-        if (mesh.GenerateTangents(data.Options.SmoothingTangentsAngle))
-        {
-            errorMsg = TEXT("Failed to generate tangents.");
-            return true;
-        }
+        // Generated after full mesh data conversion
     }
     else if (tangents)
     {
@@ -779,6 +775,15 @@ bool ProcessMesh(OpenFbxImporterData& data, const ofbx::Mesh* aMesh, MeshData& m
         }
     }
 
+    if ((data.Options.CalculateTangents || !tangents) && mesh.UVs.HasItems())
+    {
+        if (mesh.GenerateTangents(data.Options.SmoothingTangentsAngle))
+        {
+            errorMsg = TEXT("Failed to generate tangents.");
+            return true;
+        }
+    }
+
     if (data.Options.OptimizeMeshes)
     {
         mesh.ImproveCacheLocality();
@@ -918,7 +923,7 @@ void ExtractKeyframePosition(const ofbx::Object* bone, ofbx::Vec3& trans, const 
 
 void ExtractKeyframeRotation(const ofbx::Object* bone, ofbx::Vec3& trans, const Frame& localFrame, Quaternion& keyframe)
 {
-    const Matrix frameTrans = ToMatrix(bone->evalLocal(localFrame.Translation, trans, {1.0, 1.0, 1.0 }));
+    const Matrix frameTrans = ToMatrix(bone->evalLocal(localFrame.Translation, trans, { 1.0, 1.0, 1.0 }));
     Quaternion::RotationMatrix(frameTrans, keyframe);
 }
 

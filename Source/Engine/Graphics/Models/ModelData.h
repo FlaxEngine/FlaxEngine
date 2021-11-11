@@ -57,6 +57,13 @@ public:
     Array<Vector3> Tangents;
 
     /// <summary>
+    /// Bitangents vectors signs (used for bitangent reconstruction). Can be +1 or -1.
+    /// bitangent = cross(normal, tangent) * sign
+    /// sign = dot(cross(bitangent, normal), tangent)
+    /// </summary>
+    Array<float> BitangentSigns;
+
+    /// <summary>
     /// Mesh index buffer
     /// </summary>
     Array<uint32> Indices;
