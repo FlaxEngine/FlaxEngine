@@ -169,8 +169,8 @@ namespace FlaxEngine.GUI
         [NoSerialize, HideInEditor]
         public float Width
         {
-            get => _bounds.Width;
-            set => Bounds = new Rectangle(_bounds.Location, value, _bounds.Height);
+            get => _bounds.Size.X;
+            set => Bounds = new Rectangle(_bounds.Location, value, _bounds.Size.Y);
         }
 
         /// <summary>
@@ -179,8 +179,8 @@ namespace FlaxEngine.GUI
         [NoSerialize, HideInEditor]
         public float Height
         {
-            get => _bounds.Height;
-            set => Bounds = new Rectangle(_bounds.Location, _bounds.Width, value);
+            get => _bounds.Size.Y;
+            set => Bounds = new Rectangle(_bounds.Location, _bounds.Size.X, value);
         }
 
         /// <summary>

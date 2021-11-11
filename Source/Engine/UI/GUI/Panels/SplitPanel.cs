@@ -169,9 +169,6 @@ namespace FlaxEngine.GUI
         /// <inheritdoc />
         public override bool OnMouseDown(Vector2 location, MouseButton button)
         {
-            if (base.OnMouseDown(location, button))
-                return true;
-
             if (button == MouseButton.Left && _splitterRect.Contains(location))
             {
                 // Start moving splitter
@@ -179,21 +176,20 @@ namespace FlaxEngine.GUI
                 Focus();
                 return false;
             }
-            return false;
+
+            return base.OnMouseDown(location, button);
         }
 
         /// <inheritdoc />
         public override bool OnMouseUp(Vector2 location, MouseButton button)
         {
-            if (base.OnMouseUp(location, button))
-                return true;
-
             if (_splitterClicked)
             {
                 EndTracking();
                 return true;
             }
-            return false;
+
+            return base.OnMouseUp(location, button);
         }
 
         /// <inheritdoc />

@@ -244,7 +244,7 @@ namespace FlaxEditor.Surface.Archetypes
                 Title = "Mad",
                 Description = "Performs value multiplication and addition at once",
                 Flags = NodeFlags.AllGraphs,
-                Size = new Vector2(110, 60),
+                Size = new Vector2(160, 60),
                 ConnectionsHints = ConnectionsHint.Numeric,
                 IndependentBoxes = new[]
                 {
