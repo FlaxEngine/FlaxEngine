@@ -15,9 +15,9 @@ namespace FlaxEditor.Viewport.Previews
     /// <seealso cref="AssetPreview" />
     public class ModelPreview : AssetPreview
     {
-        private ContextMenuButton _showBoundsButton, _showCurrentLODButton, _showNormalsButton, _showTangentsButton, _showFloorButton;
+        private ContextMenuButton _showBoundsButton, _showCurrentLODButton, _showNormalsButton, _showTangentsButton, _showBitangentsButton, _showFloorButton;
         private StaticModel _previewModel, _floorModel;
-        private bool _showBounds, _showCurrentLOD, _showNormals, _showTangents, _showFloor;
+        private bool _showBounds, _showCurrentLOD, _showNormals, _showTangents, _showBitangents, _showFloor;
         private MeshDataCache _meshDatas;
 
         /// <summary>
@@ -111,6 +111,29 @@ namespace FlaxEditor.Viewport.Previews
         }
 
         /// <summary>
+        /// Gets or sets a value indicating whether show model geometry bitangent vectors (aka binormals) debug view.
+        /// </summary>
+        public bool ShowBitangents
+        {
+            get => _showBitangents;
+            set
+            {
+                if (_showBitangents == value)
+                    return;
+                _showBitangents = value;
+                if (value)
+                {
+                    ShowDebugDraw = true;
+                    if (_meshDatas == null)
+                        _meshDatas = new MeshDataCache();
+                    _meshDatas.RequestMeshData(_previewModel.Model);
+                }
+                if (_showBitangentsButton != null)
+                    _showBitangentsButton.Checked = value;
+            }
+        }
+
+        /// <summary>
         /// Gets or sets a value indicating whether show floor model.
         /// </summary>
         public bool ShowFloor
@@ -158,14 +181,10 @@ namespace FlaxEditor.Viewport.Previews
 
             if (useWidgets)
             {
-                // Show Bounds
                 _showBoundsButton = ViewWidgetShowMenu.AddButton("Bounds", () => ShowBounds = !ShowBounds);
-
-                // Show Normals
                 _showNormalsButton = ViewWidgetShowMenu.AddButton("Normals", () => ShowNormals = !ShowNormals);
-
-                // Show Tangents
                 _showTangentsButton = ViewWidgetShowMenu.AddButton("Tangents", () => ShowTangents = !ShowTangents);
+                _showBitangentsButton = ViewWidgetShowMenu.AddButton("Bitangents", () => ShowBitangents = !ShowBitangents);
 
                 // Show Floor
                 _showFloorButton = ViewWidgetShowMenu.AddButton("Floor", button => ShowFloor = !ShowFloor);
@@ -237,7 +256,7 @@ namespace FlaxEditor.Viewport.Previews
                     for (int i = 0; i < meshData.VertexBuffer.Length; i++)
                     {
                         ref var v = ref meshData.VertexBuffer[i];
-                        DebugDraw.DrawLine(v.Position, v.Position + v.Normal * 4.0f, Color.Green);
+                        DebugDraw.DrawLine(v.Position, v.Position + v.Normal * 4.0f, Color.Blue);
                     }
                 }
             }
@@ -254,7 +273,24 @@ namespace FlaxEditor.Viewport.Previews
                     for (int i = 0; i < meshData.VertexBuffer.Length; i++)
                     {
                         ref var v = ref meshData.VertexBuffer[i];
-                        DebugDraw.DrawLine(v.Position, v.Position + v.Tangent * 4.0f, Color.Blue);
+                        DebugDraw.DrawLine(v.Position, v.Position + v.Tangent * 4.0f, Color.Red);
+                    }
+                }
+            }
+
+            // Draw bitangents
+            if (_showBitangents && _meshDatas.RequestMeshData(Model))
+            {
+                var meshDatas = _meshDatas.MeshDatas;
+                var lodIndex = ComputeLODIndex(Model);
+                var lod = meshDatas[lodIndex];
+                for (int meshIndex = 0; meshIndex < lod.Length; meshIndex++)
+                {
+                    var meshData = lod[meshIndex];
+                    for (int i = 0; i < meshData.VertexBuffer.Length; i++)
+                    {
+                        ref var v = ref meshData.VertexBuffer[i];
+                        DebugDraw.DrawLine(v.Position, v.Position + v.Bitangent * 4.0f, Color.Green);
                     }
                 }
             }
@@ -352,6 +388,7 @@ namespace FlaxEditor.Viewport.Previews
             _showCurrentLODButton = null;
             _showNormalsButton = null;
             _showTangentsButton = null;
+            _showBitangentsButton = null;
             _showFloorButton = null;
             _meshDatas?.Dispose();
             _meshDatas = null;
