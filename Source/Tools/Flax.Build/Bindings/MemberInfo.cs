@@ -13,6 +13,7 @@ namespace Flax.Build.Bindings
         public string[] Comment;
         public bool IsStatic;
         public bool IsDeprecated;
+        public bool IsHidden;
         public AccessLevel Access;
         public string Attributes;
 
@@ -27,6 +28,7 @@ namespace Flax.Build.Bindings
             BindingsGenerator.Write(writer, Comment);
             writer.Write(IsStatic);
             writer.Write(IsDeprecated);
+            writer.Write(IsHidden);
             writer.Write((byte)Access);
             BindingsGenerator.Write(writer, Attributes);
         }
@@ -37,6 +39,7 @@ namespace Flax.Build.Bindings
             Comment = BindingsGenerator.Read(reader, Comment);
             IsStatic = reader.ReadBoolean();
             IsDeprecated = reader.ReadBoolean();
+            IsHidden = reader.ReadBoolean();
             Access = (AccessLevel)reader.ReadByte();
             Attributes = BindingsGenerator.Read(reader, Attributes);
         }

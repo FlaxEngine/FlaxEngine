@@ -73,7 +73,7 @@ namespace Flax.Build.Bindings
 
             foreach (var fieldInfo in Fields)
             {
-                if (fieldInfo.Access == AccessLevel.Private)
+                if (fieldInfo.IsHidden)
                     continue;
 
                 fieldInfo.Getter = new FunctionInfo

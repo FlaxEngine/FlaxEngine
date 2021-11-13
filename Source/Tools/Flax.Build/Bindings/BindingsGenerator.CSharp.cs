@@ -626,6 +626,8 @@ namespace Flax.Build.Bindings
             // Events
             foreach (var eventInfo in classInfo.Events)
             {
+                if (eventInfo.IsHidden)
+                    continue;
                 if (!useUnmanaged)
                     throw new NotImplementedException("TODO: support events inside non-static and non-scripting API class types.");
                 var paramsCount = eventInfo.Type.GenericArgs?.Count ?? 0;
@@ -764,7 +766,7 @@ namespace Flax.Build.Bindings
             // Fields
             foreach (var fieldInfo in classInfo.Fields)
             {
-                if (fieldInfo.Getter == null)
+                if (fieldInfo.Getter == null || fieldInfo.IsHidden)
                     continue;
                 contents.AppendLine();
 
@@ -820,6 +822,8 @@ namespace Flax.Build.Bindings
             // Properties
             foreach (var propertyInfo in classInfo.Properties)
             {
+                if (propertyInfo.IsHidden)
+                    continue;
                 if (!useUnmanaged)
                     throw new NotImplementedException("TODO: support properties inside non-static and non-scripting API class types.");
 
@@ -878,6 +882,8 @@ namespace Flax.Build.Bindings
             // Functions
             foreach (var functionInfo in classInfo.Functions)
             {
+                if (functionInfo.IsHidden)
+                    continue;
                 if (!useUnmanaged)
                     throw new Exception($"Not supported function {functionInfo.Name} inside non-static and non-scripting class type {classInfo.Name}.");
 

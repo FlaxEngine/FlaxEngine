@@ -760,6 +760,9 @@ namespace Flax.Build.Bindings
                 case "noproxy":
                     desc.NoProxy = true;
                     break;
+                case "hidden":
+                    desc.IsHidden = true;
+                    break;
                 default:
                     Log.Warning($"Unknown or not supported tag parameter {tag} used on function {desc.Name}");
                     break;
@@ -793,6 +796,7 @@ namespace Flax.Build.Bindings
                     Name = propertyName,
                     Comment = functionInfo.Comment,
                     IsStatic = functionInfo.IsStatic,
+                    IsHidden = functionInfo.IsHidden,
                     Access = functionInfo.Access,
                     Attributes = functionInfo.Attributes,
                     Type = propertyType,
@@ -817,6 +821,7 @@ namespace Flax.Build.Bindings
             else
                 propertyInfo.Setter = functionInfo;
             propertyInfo.IsDeprecated |= functionInfo.IsDeprecated;
+            propertyInfo.IsHidden |= functionInfo.IsHidden;
 
             if (propertyInfo.Getter != null && propertyInfo.Setter != null)
             {
@@ -1185,6 +1190,9 @@ namespace Flax.Build.Bindings
                 case "readonly":
                     desc.IsReadOnly = true;
                     break;
+                case "hidden":
+                    desc.IsHidden = true;
+                    break;
                 case "noarray":
                     desc.NoArray = true;
                     break;
@@ -1246,6 +1254,9 @@ namespace Flax.Build.Bindings
                     break;
                 case "name":
                     desc.Name = tag.Value;
+                    break;
+                case "hidden":
+                    desc.IsHidden = true;
                     break;
                 default:
                     Log.Warning($"Unknown or not supported tag parameter {tag} used on event {desc.Name} at line {context.Tokenizer.CurrentLine}");

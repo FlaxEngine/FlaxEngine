@@ -1446,7 +1446,7 @@ namespace Flax.Build.Bindings
             // Events
             foreach (var eventInfo in classInfo.Events)
             {
-                if (!useScripting)
+                if (!useScripting || eventInfo.IsHidden)
                     continue;
                 var paramsCount = eventInfo.Type.GenericArgs?.Count ?? 0;
                 CppIncludeFiles.Add("Engine/Profiler/ProfilerCPU.h");
@@ -1575,7 +1575,7 @@ namespace Flax.Build.Bindings
             // Fields
             foreach (var fieldInfo in classInfo.Fields)
             {
-                if (!useScripting || !useCSharp)
+                if (!useScripting || !useCSharp || fieldInfo.IsHidden)
                     continue;
                 if (fieldInfo.Getter != null)
                     GenerateCppWrapperFunction(buildData, contents, classInfo, fieldInfo.Getter, "{0}");
@@ -1592,7 +1592,7 @@ namespace Flax.Build.Bindings
             // Properties
             foreach (var propertyInfo in classInfo.Properties)
             {
-                if (!useScripting || !useCSharp)
+                if (!useScripting || !useCSharp || propertyInfo.IsHidden)
                     continue;
                 if (propertyInfo.Getter != null)
                     GenerateCppWrapperFunction(buildData, contents, classInfo, propertyInfo.Getter);
@@ -1603,7 +1603,7 @@ namespace Flax.Build.Bindings
             // Functions
             foreach (var functionInfo in classInfo.Functions)
             {
-                if (!useCSharp)
+                if (!useCSharp || functionInfo.IsHidden)
                     continue;
                 if (!useScripting)
                     throw new Exception($"Not supported function {functionInfo.Name} inside non-static and non-scripting class type {classInfo.Name}.");
@@ -1646,10 +1646,14 @@ namespace Flax.Build.Bindings
             {
                 foreach (var eventInfo in classInfo.Events)
                 {
+                    if (eventInfo.IsHidden)
+                        continue;
                     contents.AppendLine($"        ADD_INTERNAL_CALL(\"{classTypeNameManagedInternalCall}::Internal_{eventInfo.Name}_Bind\", &{eventInfo.Name}_ManagedBind);");
                 }
                 foreach (var fieldInfo in classInfo.Fields)
                 {
+                    if (fieldInfo.IsHidden)
+                        continue;
                     if (fieldInfo.Getter != null)
                         contents.AppendLine($"        ADD_INTERNAL_CALL(\"{classTypeNameManagedInternalCall}::Internal_{fieldInfo.Getter.UniqueName}\", &{fieldInfo.Getter.UniqueName});");
                     if (fieldInfo.Setter != null)
@@ -1657,6 +1661,8 @@ namespace Flax.Build.Bindings
                 }
                 foreach (var propertyInfo in classInfo.Properties)
                 {
+                    if (propertyInfo.IsHidden)
+                        continue;
                     if (propertyInfo.Getter != null)
                         contents.AppendLine($"        ADD_INTERNAL_CALL(\"{classTypeNameManagedInternalCall}::Internal_{propertyInfo.Getter.UniqueName}\", &{propertyInfo.Getter.UniqueName});");
                     if (propertyInfo.Setter != null)
@@ -1664,6 +1670,8 @@ namespace Flax.Build.Bindings
                 }
                 foreach (var functionInfo in classInfo.Functions)
                 {
+                    if (functionInfo.IsHidden)
+                        continue;
                     contents.AppendLine($"        ADD_INTERNAL_CALL(\"{classTypeNameManagedInternalCall}::Internal_{functionInfo.UniqueName}\", &{functionInfo.UniqueName});");
                 }
                 if (hasInterface)
