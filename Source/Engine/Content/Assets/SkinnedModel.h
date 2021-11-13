@@ -121,7 +121,7 @@ public:
     /// <summary>
     /// Finds the node with the given name.
     /// </summary>
-    /// <param name="name">Thr name of the node.</param>
+    /// <param name="name">The name of the node.</param>
     /// <returns>The index of the node or -1 if not found.</returns>
     API_FUNCTION() FORCE_INLINE int32 FindNode(const StringView& name)
     {
@@ -131,7 +131,7 @@ public:
     /// <summary>
     /// Finds the bone with the given name.
     /// </summary>
-    /// <param name="name">Thr name of the node used by the bone.</param>
+    /// <param name="name">The name of the node used by the bone.</param>
     /// <returns>The index of the bone or -1 if not found.</returns>
     API_FUNCTION() FORCE_INLINE int32 FindBone(const StringView& name)
     {

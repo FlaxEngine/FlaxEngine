@@ -32,7 +32,7 @@ public:
     /// Extracts IES profile data to R16 format (float).
     /// </summary>
     /// <param name="output">The result data container.</param>
-    /// <returns>Thr multiplier as the texture is normalized.</returns>
+    /// <returns>The multiplier as the texture is normalized.</returns>
     float ExtractInR16(Array<byte>& output);
 
 public:

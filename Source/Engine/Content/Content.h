@@ -340,14 +340,14 @@ public:
     }
 
     /// <summary>
-    /// Creates temporary and virtual asset of thr given type.
+    /// Creates temporary and virtual asset of the given type.
     /// </summary>
     /// <param name="type">The asset type klass.</param>
     /// <returns>Created asset or null if failed.</returns>
     API_FUNCTION() static Asset* CreateVirtualAsset(API_PARAM(Attributes="TypeReference(typeof(Asset))") MClass* type);
 
     /// <summary>
-    /// Creates temporary and virtual asset of thr given type.
+    /// Creates temporary and virtual asset of the given type.
     /// </summary>
     /// <param name="type">The asset type.</param>
     /// <returns>Created asset or null if failed.</returns>
