@@ -115,10 +115,12 @@ public:
     /// <summary>
     /// Requests the streaming update for this resource during next streaming manager update.
     /// </summary>
-    void RequestStreamingUpdate()
-    {
-        Streaming.LastUpdate = 0;
-    }
+    void RequestStreamingUpdate();
+    
+    /// <summary>
+    /// Stops the streaming (eg. on streaming fail).
+    /// </summary>
+    void CancelStreaming();
 
 protected:
 

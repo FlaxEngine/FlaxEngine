@@ -345,8 +345,12 @@ protected:
         if (texture == nullptr)
             return Result::MissingResources;
 
-        // Ensure that texture has been allocated before this task
-        ASSERT(texture->IsAllocated());
+        // Ensure that texture has been allocated before this task and has proper format
+        if (!texture->IsAllocated() || texture->Format() != _streamingTexture->GetHeader()->Format)
+        {
+            LOG(Error, "Cannot stream texture {0} (streaming format: {1})", texture->ToString(), (int32)_streamingTexture->GetHeader()->Format);
+            return Result::Failed;
+        }
 
         // Get asset data
         BytesContainer data;
@@ -384,6 +388,16 @@ protected:
 
         // Base
         GPUUploadTextureMipTask::OnEnd();
+    }
+    void OnFail() override
+    {
+        if (_streamingTexture)
+        {
+            // Stop streaming on fail
+            _streamingTexture->CancelStreaming();
+        }
+
+        GPUUploadTextureMipTask::OnFail();
     }
 };
 

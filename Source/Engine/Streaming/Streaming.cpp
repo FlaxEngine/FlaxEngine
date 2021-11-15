@@ -79,6 +79,17 @@ StreamableResource::~StreamableResource()
     StopStreaming();
 }
 
+void StreamableResource::RequestStreamingUpdate()
+{
+    Streaming.LastUpdate = 0;
+}
+
+void StreamableResource::CancelStreaming()
+{
+    Streaming.TargetResidency = 0;
+    Streaming.LastUpdate = DateTime::MaxValue().Ticks;
+}
+
 void StreamableResource::StartStreaming(bool isDynamic)
 {
     _isDynamic = isDynamic;
@@ -158,8 +169,7 @@ void UpdateResource(StreamableResource* resource, DateTime now, double currentTi
             else if (resource->GetAllocatedResidency() < targetResidency)
             {
                 // Allocation failed (eg. texture format is not supported or run out of memory)
-                resource->Streaming.TargetResidency = 0;
-                resource->Streaming.LastUpdate = DateTime::MaxValue().Ticks;
+                resource->CancelStreaming();
                 return;
             }
         }
