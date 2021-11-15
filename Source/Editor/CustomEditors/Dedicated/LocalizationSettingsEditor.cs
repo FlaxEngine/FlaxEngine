@@ -75,7 +75,7 @@ namespace FlaxEditor.CustomEditors.Dedicated
                         _theMostTranslatedCulture = culture;
                         _theMostTranslatedCultureCount = count;
                     }
-                    prop.Label(string.Format("Progress: {0}% ({1}/{2})", (int)(((float)validCount / allKeys.Count * 100.0f)), validCount, allKeys.Count));
+                    prop.Label(string.Format("Progress: {0}% ({1}/{2})", allKeys.Count > 0 ? (int)(((float)validCount / allKeys.Count * 100.0f)) : 0, validCount, allKeys.Count));
                     prop.Label("Tables:");
                     foreach (var table in e)
                     {
@@ -111,7 +111,7 @@ namespace FlaxEditor.CustomEditors.Dedicated
                         }
                         Profiler.BeginEvent("LocalizationSettingsEditor.AddLocale");
                         Editor.Log($"Adding culture '{displayName}' to localization settings");
-                        var newTables = settings.LocalizedStringTables.ToList();
+                        var newTables = settings.LocalizedStringTables?.ToList() ?? new List<LocalizedStringTable>();
                         if (_theMostTranslatedCulture != null)
                         {
                             // Duplicate localization for culture with the highest amount of keys
