@@ -98,7 +98,14 @@ PixelFormat AndroidPlatformTools::GetTextureFormat(CookingData& data, TextureBas
         }
     }
 
-    return format;
+    switch (format)
+    {
+        // Not all Android devices support R11G11B10 textures (eg. M6 Note)
+    case PixelFormat::R11G11B10_Float:
+        return PixelFormat::R16G16B16A16_UNorm;
+    default:
+        return format;
+    }
 }
 
 void AndroidPlatformTools::OnBuildStarted(CookingData& data)

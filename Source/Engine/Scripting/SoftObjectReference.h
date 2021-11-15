@@ -194,7 +194,7 @@ public:
     }
     FORCE_INLINE SoftObjectReference& operator=(const Guid& id)
     {
-        Set(id);
+        OnSet(id);
         return *this;
     }
     FORCE_INLINE operator T*() const

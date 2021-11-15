@@ -238,6 +238,11 @@ bool GPUTextureVulkan::OnInit()
     if (useDSV)
         format = PixelFormatExtensions::FindDepthStencilFormat(format);
     _desc.Format = _device->GetClosestSupportedPixelFormat(format, _desc.Flags, optimalTiling);
+    if (_desc.Format == PixelFormat::Unknown)
+    {
+        LOG(Error, "Unsupported texture format {0}.", (int32)format);
+        return true;
+    }
 
     // Setup texture description
     VkImageCreateInfo imageInfo;
