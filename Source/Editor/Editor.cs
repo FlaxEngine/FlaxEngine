@@ -585,6 +585,7 @@ namespace FlaxEditor
             Windows.SaveCurrentLayout();
             Scene.SaveScenes();
             SaveContent();
+            UI.AddStatusMessage("Saved!");
         }
 
         /// <summary>

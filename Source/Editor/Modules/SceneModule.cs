@@ -238,6 +238,7 @@ namespace FlaxEditor.Modules
                     node.IsEdited = false;
             }
             Level.SaveAllScenesAsync();
+            Editor.UI.AddStatusMessage("Saved!");
         }
 
         /// <summary>
