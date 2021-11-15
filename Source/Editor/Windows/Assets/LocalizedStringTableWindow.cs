@@ -133,6 +133,8 @@ namespace FlaxEditor.Windows.Assets
             _toolstrip.AddSeparator();
             _undoButton = (ToolStripButton)_toolstrip.AddButton(Editor.Icons.Undo64, _undo.PerformUndo).LinkTooltip("Undo (Ctrl+Z)");
             _redoButton = (ToolStripButton)_toolstrip.AddButton(Editor.Icons.Redo64, _undo.PerformRedo).LinkTooltip("Redo (Ctrl+Y)");
+            _toolstrip.AddSeparator();
+            _toolstrip.AddButton(Editor.Icons.Up64, OnExport).LinkTooltip("Export localization table entries for translation to .pot file");
 
             // Panel
             var panel = new Panel(ScrollBars.Vertical)
@@ -156,6 +158,13 @@ namespace FlaxEditor.Windows.Assets
         {
             MarkAsEdited();
             UpdateToolstrip();
+        }
+
+        private void OnExport()
+        {
+            var tableEntries = new Dictionary<LocalizedStringTable, Dictionary<string, string[]>>();
+            tableEntries[Asset] = _proxy.Entries;
+            CustomEditors.Dedicated.LocalizationSettingsEditor.Export(tableEntries);
         }
 
         /// <inheritdoc />

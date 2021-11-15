@@ -165,60 +165,7 @@ namespace FlaxEditor.CustomEditors.Dedicated
                 var exportLocalization = group.Button("Export...").Button;
                 exportLocalization.TooltipText = "Exports the localization strings into .pot file for translation";
                 exportLocalization.Height = 16.0f;
-                exportLocalization.Clicked += delegate
-                {
-                    if (FileSystem.ShowSaveFileDialog(null, null, "*.pot", false, "Export localization for translation to .pot file", out var filenames))
-                        return;
-                    Profiler.BeginEvent("LocalizationSettingsEditor.Export");
-                    if (!filenames[0].EndsWith(".pot"))
-                        filenames[0] += ".pot";
-                    var nplurals = 1;
-                    foreach (var e in tableEntries)
-                    {
-                        foreach (var value in e.Value.Values)
-                        {
-                            if (value != null && value.Length > nplurals)
-                                nplurals = value.Length;
-                        }
-                    }
-                    using (var writer = new StreamWriter(filenames[0], false, Encoding.UTF8))
-                    {
-                        writer.WriteLine("msgid \"\"");
-                        writer.WriteLine("msgstr \"\"");
-                        writer.WriteLine("\"Language: English\\n\"");
-                        writer.WriteLine("\"MIME-Version: 1.0\\n\"");
-                        writer.WriteLine("\"Content-Type: text/plain; charset=UTF-8\\n\"");
-                        writer.WriteLine("\"Content-Transfer-Encoding: 8bit\\n\"");
-                        writer.WriteLine($"\"Plural-Forms: nplurals={nplurals}; plural=(n != 1);\\n\"");
-                        writer.WriteLine("\"X-Generator: FlaxEngine\\n\"");
-                        var written = new HashSet<string>();
-                        foreach (var e in tableEntries)
-                        {
-                            foreach (var pair in e.Value)
-                            {
-                                if (written.Contains(pair.Key))
-                                    continue;
-                                written.Add(pair.Key);
-
-                                writer.WriteLine("");
-                                writer.WriteLine($"msgid \"{pair.Key}\"");
-                                if (pair.Value == null || pair.Value.Length < 2)
-                                {
-                                    writer.WriteLine("msgstr \"\"");
-                                }
-                                else
-                                {
-                                    writer.WriteLine("msgid_plural \"\"");
-                                    for (int i = 0; i < pair.Value.Length; i++)
-                                        writer.WriteLine($"msgstr[{i}] \"\"");
-                                }
-                            }
-                            if (written.Count == allKeys.Count)
-                                break;
-                        }
-                    }
-                    Profiler.EndEvent();
-                };
+                exportLocalization.Clicked += () => Export(tableEntries, allKeys);
 
                 // Find localized strings in code button
                 var findStringsCode = group.Button("Find localized strings in code").Button;
@@ -281,6 +228,62 @@ namespace FlaxEditor.CustomEditors.Dedicated
                 base.Initialize(group);
             }
 
+            Profiler.EndEvent();
+        }
+
+        internal static void Export(Dictionary<LocalizedStringTable, Dictionary<string, string[]>> tableEntries, HashSet<string> allKeys = null)
+        {
+            if (FileSystem.ShowSaveFileDialog(null, null, "*.pot", false, "Export localization for translation to .pot file", out var filenames))
+                return;
+            Profiler.BeginEvent("LocalizationSettingsEditor.Export");
+            var filename = filenames[0];
+            if (!filename.EndsWith(".pot"))
+                filename += ".pot";
+            var nplurals = 1;
+            foreach (var e in tableEntries)
+            {
+                foreach (var value in e.Value.Values)
+                {
+                    if (value != null && value.Length > nplurals)
+                        nplurals = value.Length;
+                }
+            }
+            using (var writer = new StreamWriter(filename, false, Encoding.UTF8))
+            {
+                writer.WriteLine("msgid \"\"");
+                writer.WriteLine("msgstr \"\"");
+                writer.WriteLine("\"Language: English\\n\"");
+                writer.WriteLine("\"MIME-Version: 1.0\\n\"");
+                writer.WriteLine("\"Content-Type: text/plain; charset=UTF-8\\n\"");
+                writer.WriteLine("\"Content-Transfer-Encoding: 8bit\\n\"");
+                writer.WriteLine($"\"Plural-Forms: nplurals={nplurals}; plural=(n != 1);\\n\"");
+                writer.WriteLine("\"X-Generator: FlaxEngine\\n\"");
+                var written = new HashSet<string>();
+                foreach (var e in tableEntries)
+                {
+                    foreach (var pair in e.Value)
+                    {
+                        if (written.Contains(pair.Key))
+                            continue;
+                        written.Add(pair.Key);
+
+                        writer.WriteLine("");
+                        writer.WriteLine($"msgid \"{pair.Key}\"");
+                        if (pair.Value == null || pair.Value.Length < 2)
+                        {
+                            writer.WriteLine("msgstr \"\"");
+                        }
+                        else
+                        {
+                            writer.WriteLine("msgid_plural \"\"");
+                            for (int i = 0; i < pair.Value.Length; i++)
+                                writer.WriteLine($"msgstr[{i}] \"\"");
+                        }
+                    }
+                    if (allKeys != null && written.Count == allKeys.Count)
+                        break;
+                }
+            }
             Profiler.EndEvent();
         }
 
