@@ -60,6 +60,12 @@ bool LocalizedStringTable::Save(const StringView& path)
         writer.JKEY("Locale");
         writer.String(Locale);
 
+        if (FallbackTable.GetID().IsValid())
+        {
+            writer.JKEY("FallbackTable");
+            writer.Guid(FallbackTable.GetID());
+        }
+
         writer.JKEY("Entries");
         writer.StartObject();
         for (auto& e : Entries)
@@ -102,6 +108,9 @@ Asset::LoadResult LocalizedStringTable::loadAsset()
         return result;
 
     JsonTools::GetString(Locale, *Data, "Locale");
+    Guid fallbackTable = Guid::Empty;
+    JsonTools::GetGuid(fallbackTable, *Data, "FallbackTable");
+    FallbackTable = fallbackTable;
     const auto entriesMember = SERIALIZE_FIND_MEMBER((*Data), "Entries");
     if (entriesMember != Data->MemberEnd() && entriesMember->value.IsObject())
     {
@@ -134,5 +143,6 @@ void LocalizedStringTable::unload(bool isReloading)
     JsonAssetBase::unload(isReloading);
 
     Locale.Clear();
+    FallbackTable = nullptr;
     Entries.Clear();
 }

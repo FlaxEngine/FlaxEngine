@@ -113,6 +113,10 @@ namespace FlaxEditor.Windows.Assets
             [CustomEditor(typeof(FlaxEditor.CustomEditors.Editors.CultureInfoEditor))]
             public string Locale;
 
+            [EditorOrder(5), EditorDisplay("General"), Tooltip("The fallback language table to use for missing keys. Eg. table for 'en-GB' can point to 'en' as a fallback to prevent problem of missing localized strings.")]
+            [AssetReference(true)]
+            public LocalizedStringTable FallbackTable;
+
             [EditorOrder(10), EditorDisplay("Entries", EditorDisplayAttribute.InlineStyle), Tooltip("The string table. Maps the message id into the localized text. For plural messages the list contains separate items for value numbers.")]
             [Collection(Spacing = 10, OverrideEditorTypeName = "FlaxEditor.Windows.Assets.LocalizedStringTableWindow+EntryEditor")]
             public Dictionary<string, string[]> Entries;
@@ -174,6 +178,7 @@ namespace FlaxEditor.Windows.Assets
                 return;
 
             _asset.Locale = _proxy.Locale;
+            _asset.FallbackTable = _proxy.FallbackTable;
             _asset.Entries = _proxy.Entries;
             if (_asset.Save(_item.Path))
             {
@@ -200,6 +205,7 @@ namespace FlaxEditor.Windows.Assets
             _proxy = new Proxy
             {
                 Locale = _asset.Locale,
+                FallbackTable = _asset.FallbackTable,
                 Entries = _asset.Entries,
             };
             _presenter.Select(_proxy);

@@ -258,20 +258,35 @@ void Localization::SetCurrentLanguageCulture(const CultureInfo& value)
 
 String Localization::GetString(const String& id, const String& fallback)
 {
-    String result;
+    const String* result = nullptr;
     for (auto& e : Instance.LocalizedStringTables)
     {
         const auto table = e.Get();
         const auto messages = table ? table->Entries.TryGet(id) : nullptr;
         if (messages && messages->Count() != 0)
         {
-            result = messages->At(0);
+            result = &messages->At(0);
             break;
         }
     }
-    if (result.IsEmpty())
-        result = fallback;
-    return result;
+    if (!result)
+    {
+        // Try using fallback tables
+        for (auto& e : Instance.LocalizedStringTables)
+        {
+            const auto table = e.Get();
+            const auto fallbackTable = table ? table->FallbackTable.Get() : nullptr;
+            const auto messages = fallbackTable ? fallbackTable->Entries.TryGet(id) : nullptr;
+            if (messages && messages->Count() != 0)
+            {
+                result = &messages->At(0);
+                break;
+            }
+        }
+    }
+    if (!result)
+        result = &fallback;
+    return *result;
 }
 
 String Localization::GetPluralString(const String& id, int32 n, const String& fallback)
@@ -287,6 +302,21 @@ String Localization::GetPluralString(const String& id, int32 n, const String& fa
         {
             result = &messages->At(n);
             break;
+        }
+    }
+    if (!result)
+    {
+        // Try using fallback tables
+        for (auto& e : Instance.LocalizedStringTables)
+        {
+            const auto table = e.Get();
+            const auto fallbackTable = table ? table->FallbackTable.Get() : nullptr;
+            const auto messages = fallbackTable ? fallbackTable->Entries.TryGet(id) : nullptr;
+            if (messages && messages->Count() > n)
+            {
+                result = &messages->At(n);
+                break;
+            }
         }
     }
     if (!result)

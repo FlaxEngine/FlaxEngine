@@ -5,6 +5,7 @@
 #include "Engine/Content/JsonAsset.h"
 #include "Engine/Core/Collections/Array.h"
 #include "Engine/Core/Collections/Dictionary.h"
+#include "Engine/Scripting/SoftObjectReference.h"
 
 /// <summary>
 /// Contains localized strings table for a given culture.
@@ -14,10 +15,16 @@ API_CLASS(NoSpawn) class FLAXENGINE_API LocalizedStringTable : public JsonAssetB
 {
 DECLARE_ASSET_HEADER(LocalizedStringTable);
 public:
+
     /// <summary>
     /// The locale of the localized string table (eg. pl-PL).
     /// </summary>
     API_FIELD() String Locale;
+
+    /// <summary>
+    /// The fallback language table to use for missing keys. Eg. table for 'en-GB' can point to 'en' as a fallback to prevent problem of missing localized strings.
+    /// </summary>
+    API_FIELD() SoftObjectReference<LocalizedStringTable> FallbackTable;
 
     /// <summary>
     /// The string table. Maps the message id into the localized text. For plural messages the list contains separate items for value numbers.
@@ -25,6 +32,7 @@ public:
     API_FIELD() Dictionary<String, Array<String>> Entries;
 
 public:
+
     /// <summary>
     /// Adds the localized string to the table.
     /// </summary>
