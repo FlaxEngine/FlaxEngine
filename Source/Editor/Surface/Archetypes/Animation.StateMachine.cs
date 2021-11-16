@@ -476,6 +476,7 @@ namespace FlaxEditor.Surface.Archetypes
                 var state = (StateMachineState)other;
 
                 FirstState = state;
+                Surface?.OnNodesConnected(this, other);
             }
         }
 
@@ -1383,6 +1384,7 @@ namespace FlaxEditor.Surface.Archetypes
                 var action = new AddRemoveTransitionAction(this, state);
                 Surface?.Undo.AddAction(action);
                 action.Do();
+                Surface?.OnNodesConnected(this, other);
             }
         }
 

@@ -110,6 +110,10 @@ namespace FlaxEditor.Surface.Elements
                                 Connections.Add(targetBox);
                                 targetBox.Connections.Add(this);
                             }
+                            else
+                            {
+                                Surface?.OnNodesDisconnected(this, targetBox);
+                            }
 
                             targetBox.OnConnectionsChanged();
                         }
@@ -316,6 +320,7 @@ namespace FlaxEditor.Surface.Elements
                     targetBox.Connections.Remove(this);
                     toUpdate.Add(targetBox);
                     targetBox.OnConnectionsChanged();
+                    Surface?.OnNodesDisconnected(this, targetBox);
                 }
                 Connections.Clear();
                 OnConnectionsChanged();
@@ -367,6 +372,7 @@ namespace FlaxEditor.Surface.Elements
             box.ConnectionTick();
             OnConnectionsChanged();
             box.OnConnectionsChanged();
+            Surface?.OnNodesDisconnected(this, box);
         }
 
         /// <summary>
@@ -393,6 +399,7 @@ namespace FlaxEditor.Surface.Elements
             box.ConnectionTick();
             OnConnectionsChanged();
             box.OnConnectionsChanged();
+            Surface?.OnNodesConnected(this, box);
         }
 
         /// <summary>
@@ -572,7 +579,7 @@ namespace FlaxEditor.Surface.Elements
                     if (!IsOutput && HasSingleConnection)
                     {
                         var connectedBox = Connections[0];
-                        if (Surface.Undo != null)
+                        if (Surface.Undo != null && Surface.Undo.Enabled)
                         {
                             var action = new ConnectBoxesAction((InputBox)this, (OutputBox)connectedBox, false);
                             BreakConnection(connectedBox);
@@ -766,16 +773,11 @@ namespace FlaxEditor.Surface.Elements
         {
             var start = this;
             var end = (Box)other;
-
-            // Check if boxes are connected
-            bool areConnected = start.AreConnected(end);
+            var areConnected = start.AreConnected(end);
 
             // Check if boxes are different or (one of them is disabled and both are disconnected)
             if (end.IsOutput == start.IsOutput || !((end.Enabled && start.Enabled) || areConnected))
-            {
-                // Back
                 return;
-            }
 
             // Cache Input and Output box (since connection may be made in a different way)
             InputBox iB;
@@ -795,7 +797,7 @@ namespace FlaxEditor.Surface.Elements
             if (areConnected)
             {
                 // Break link
-                if (Surface.Undo != null)
+                if (Surface.Undo != null && Surface.Undo.Enabled)
                 {
                     var action = new ConnectBoxesAction(iB, oB, false);
                     start.BreakConnection(end);
@@ -807,6 +809,7 @@ namespace FlaxEditor.Surface.Elements
                     start.BreakConnection(end);
                 }
                 Surface.MarkAsEdited();
+                Surface?.OnNodesDisconnected(this, other);
                 return;
             }
 
@@ -830,7 +833,7 @@ namespace FlaxEditor.Surface.Elements
             else
             {
                 // Connect directly
-                if (Surface.Undo != null)
+                if (Surface.Undo != null && Surface.Undo.Enabled)
                 {
                     var action = new ConnectBoxesAction(iB, oB, true);
                     iB.CreateConnection(oB);

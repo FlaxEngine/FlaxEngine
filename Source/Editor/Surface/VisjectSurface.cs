@@ -321,6 +321,16 @@ namespace FlaxEditor.Surface
         public event Action<SurfaceNode> NodeBreakpointEdited;
 
         /// <summary>
+        /// Occurs when two nodes gets connected (via UI).
+        /// </summary>
+        public event Action<IConnectionInstigator, IConnectionInstigator> NodesConnected;
+
+        /// <summary>
+        /// Occurs when two nodes gets disconnected (via UI).
+        /// </summary>
+        public event Action<IConnectionInstigator, IConnectionInstigator> NodesDisconnected;
+
+        /// <summary>
         /// Initializes a new instance of the <see cref="VisjectSurface"/> class.
         /// </summary>
         /// <param name="owner">The owner.</param>
@@ -932,6 +942,23 @@ namespace FlaxEditor.Surface
         public virtual void OnNodeDeleted(SurfaceNode node)
         {
             NodeDeleted?.Invoke(node);
+        }
+
+        /// <summary>
+        /// Called when two nodes gets connected (via UI).
+        /// </summary>
+        public virtual void OnNodesConnected(IConnectionInstigator a, IConnectionInstigator b)
+        {
+            NodesConnected?.Invoke(a, b);
+            MarkAsEdited();
+        }
+
+        /// <summary>
+        /// Called when two nodes gets disconnected (via UI).
+        /// </summary>
+        public virtual void OnNodesDisconnected(IConnectionInstigator a, IConnectionInstigator b)
+        {
+            NodesDisconnected?.Invoke(a, b);
         }
 
         /// <inheritdoc />
