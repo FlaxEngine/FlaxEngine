@@ -359,6 +359,7 @@ namespace FlaxEditor.Windows.Assets
 
             // Properties editor
             _propertiesEditor = new CustomEditorPresenter(_undo);
+            _propertiesEditor.Features = FeatureFlags.None;
             _propertiesEditor.Panel.Parent = _split.Panel2;
             _propertiesEditor.Modified += OnPropertyEdited;
             _properties = new PropertiesProxy();

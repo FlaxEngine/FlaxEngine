@@ -34,7 +34,7 @@ namespace FlaxEditor.Windows
             Presenter = new CustomEditorPresenter(editor.Undo, null, this);
             Presenter.Panel.Parent = this;
             Presenter.GetUndoObjects += GetUndoObjects;
-            Presenter.CacheExpandedGroups = true;
+            Presenter.Features |= FeatureFlags.CacheExpandedGroups;
 
             Editor.SceneEditing.SelectionChanged += OnSelectionChanged;
         }

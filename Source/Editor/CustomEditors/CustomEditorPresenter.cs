@@ -10,6 +10,33 @@ using FlaxEngine.GUI;
 namespace FlaxEditor.CustomEditors
 {
     /// <summary>
+    /// The per-feature flags for custom editors system.
+    /// </summary>
+    [HideInEditor, Flags]
+    public enum FeatureFlags
+    {
+        /// <summary>
+        /// Nothing.
+        /// </summary>
+        None = 0,
+
+        /// <summary>
+        /// Enables caching the expanded groups in this presenter. Used to preserve the expanded groups using project cache.
+        /// </summary>
+        CacheExpandedGroups = 1 << 0,
+
+        /// <summary>
+        /// Enables using prefab-related features of the properties editor (eg. revert to prefab option).
+        /// </summary>
+        UsePrefab = 1 << 1,
+        
+        /// <summary>
+        /// Enables using default-value-related features of the properties editor (eg. revert to default option).
+        /// </summary>
+        UseDefault = 1 << 2,
+    }
+
+    /// <summary>
     /// Main class for Custom Editors used to present selected objects properties and allow to modify them.
     /// </summary>
     /// <seealso cref="FlaxEditor.CustomEditors.LayoutElementsContainer" />
@@ -205,9 +232,9 @@ namespace FlaxEditor.CustomEditors
         public bool BuildOnUpdate => _buildOnUpdate;
 
         /// <summary>
-        /// True if cache the expanded groups in this presenter, otherwise will disable this feature. Used to preserve the expanded groups using project cache.
+        /// The features to use for properties editor.
         /// </summary>
-        public bool CacheExpandedGroups;
+        public FeatureFlags Features = FeatureFlags.UsePrefab | FeatureFlags.UseDefault;
 
         /// <summary>
         /// Occurs when before creating layout for the selected objects editor UI. Can be used to inject custom UI to the layout.

@@ -613,7 +613,7 @@ namespace FlaxEditor.CustomEditors.Dedicated
                 // Create group
                 var title = CustomEditorsUtil.GetPropertyNameUI(scriptType.Name);
                 var group = layout.Group(title, editor);
-                if (Presenter.CacheExpandedGroups)
+                if ((Presenter.Features & FeatureFlags.CacheExpandedGroups) != 0)
                 {
                     if (Editor.Instance.ProjectCache.IsCollapsedGroup(title))
                         group.Panel.Close(false);

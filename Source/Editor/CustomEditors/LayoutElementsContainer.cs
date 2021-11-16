@@ -85,7 +85,7 @@ namespace FlaxEditor.CustomEditors
             {
                 element.Panel.Close(false);
             }
-            else if (this is CustomEditorPresenter presenter && presenter.CacheExpandedGroups)
+            else if (this is CustomEditorPresenter presenter && (presenter.Features & FeatureFlags.CacheExpandedGroups) != 0)
             {
                 if (Editor.Instance.ProjectCache.IsCollapsedGroup(title))
                     element.Panel.Close(false);
