@@ -189,6 +189,7 @@ public:
     Variant(const Variant& other);
     Variant(Variant&& other) noexcept;
 
+    explicit Variant(decltype(nullptr));
     Variant(bool v);
     Variant(int16 v);
     Variant(uint16 v);
@@ -299,6 +300,8 @@ public:
     const Int4& AsInt4() const;
     const Color& AsColor() const;
     const Quaternion& AsQuaternion() const;
+    Array<Variant, HeapAllocation>& AsArray();
+    const Array<Variant, HeapAllocation>& AsArray() const;
 
 public:
 

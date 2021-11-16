@@ -151,6 +151,7 @@ VariantType MUtils::UnboxVariantType(MonoType* monoType)
     const auto& stdTypes = *StdTypesContainer::Instance();
     const auto klass = mono_type_get_class(monoType);
 
+    // TODO: optimize this with switch(monoType->type) maybe?
     if (klass == mono_get_void_class() || monoType->type == MONO_TYPE_VOID)
         return VariantType(VariantType::Void);
     if (klass == mono_get_boolean_class() || monoType->type == MONO_TYPE_BOOLEAN)
@@ -232,7 +233,12 @@ VariantType MUtils::UnboxVariantType(MonoType* monoType)
     }
     if (klass == mono_array_class_get(mono_get_byte_class(), 1))
         return VariantType(VariantType::Blob);
-    // TODO: support any array unboxing
+    if (monoType->type == MONO_TYPE_SZARRAY || monoType->type == MONO_TYPE_ARRAY)
+    {
+        MString fullname;
+        GetClassFullname(klass, fullname);
+        return VariantType(VariantType::Array, fullname);
+    }
     // TODO: support any dictionary unboxing
     // TODO: support any structure unboxing
 
@@ -350,7 +356,32 @@ Variant MUtils::UnboxVariant(MonoObject* value)
         v.SetBlob(mono_array_addr((MonoArray*)value, byte, 0), (int32)mono_array_length((MonoArray*)value));
         return v;
     }
-    // TODO: support any array unboxing
+    MonoType* monoType = mono_class_get_type(klass);
+    if (monoType->type == MONO_TYPE_SZARRAY || monoType->type == MONO_TYPE_ARRAY)
+    {
+        MString fullname;
+        GetClassFullname(klass, fullname);
+        Variant v;
+        v.SetType(MoveTemp(VariantType(VariantType::Array, fullname)));
+        auto& array = v.AsArray();
+        array.Resize((int32)mono_array_length((MonoArray*)value));
+        if (mono_class_is_valuetype(monoType->data.array->eklass))
+        {
+            const ScriptingTypeHandle typeHandle = Scripting::FindScriptingType(StringAnsiView(*fullname, fullname.Length() - 2));
+            if (typeHandle)
+            {
+                // TODO: Unboxing value-type Variant array
+                MISSING_CODE("Unboxing value-type Variant array");
+            }
+            LOG(Error, "Invalid type to unbox {0}", v.Type);
+        }
+        else
+        {
+            for (int32 i = 0; i < array.Count(); i++)
+                array[i] = UnboxVariant(mono_array_get((MonoArray*)value, MonoObject*, i));
+        }
+        return v;
+    }
     // TODO: support any dictionary unboxing
 
     return Variant(value);
@@ -418,24 +449,36 @@ MonoObject* MUtils::BoxVariant(const Variant& value)
         return value.AsAsset ? value.AsAsset->GetOrCreateManagedInstance() : nullptr;
     case VariantType::Array:
     {
-        const auto* array = reinterpret_cast<const Array<Variant, HeapAllocation>*>(value.AsData);
+        MonoArray* managed = nullptr;
+        const auto& array = value.AsArray();
         if (value.Type.TypeName)
         {
-            const ScriptingTypeHandle typeHandle = Scripting::FindScriptingType(StringAnsiView(value.Type.TypeName));
+            const ScriptingTypeHandle typeHandle = Scripting::FindScriptingType(StringAnsiView(value.Type.TypeName, StringUtils::Length(value.Type.TypeName) - 2));
             if (typeHandle)
             {
-                // TODO: Boxing typed Variant array
-                MISSING_CODE("Boxing typed Variant array");
+                const ScriptingType& type = typeHandle.GetType();
+                if (type.Type == ScriptingTypes::Script || type.Type == ScriptingTypes::Class || (type.ManagedClass && !mono_class_is_valuetype(type.ManagedClass->GetNative())))
+                {
+                    managed = mono_array_new(mono_domain_get(), type.ManagedClass->GetNative(), array.Count());
+                    for (int32 i = 0; i < array.Count(); i++)
+                        mono_array_setref(managed, i, BoxVariant(array[i]));
+                }
+                else
+                {
+                    // TODO: Boxing value-type Variant array
+                    MISSING_CODE("Boxing value-type Variant array");
+                }
             }
-            LOG(Error, "Invalid type to box {0}", value.Type);
-            return nullptr;
+            else
+                LOG(Error, "Invalid type to box {0}", value.Type);
         }
-        MonoObject* managed = mono_object_new(mono_domain_get(), mono_array_class_get(mono_get_object_class(), 1));
-        for (int32 i = 0; i < array->Count(); i++)
+        else
         {
-            mono_array_setref((MonoArray*)managed, i, BoxVariant(array->At(i)));
+            managed = mono_array_new(mono_domain_get(), mono_get_object_class(), array.Count());
+            for (int32 i = 0; i < array.Count(); i++)
+                mono_array_setref(managed, i, BoxVariant(array[i]));
         }
-        return managed;
+        return (MonoObject*)managed;
     }
         // TODO: VariantType::Dictionary
     case VariantType::Structure:
@@ -658,7 +701,8 @@ MonoClass* MUtils::GetClass(const Variant& value)
     case VariantType::Matrix:
         return stdTypes.MatrixClass->GetNative();
     case VariantType::Array:
-        return mono_array_class_get(mono_get_object_class(), 1);
+    case VariantType::Dictionary:
+        return GetClass(value.Type);
     case VariantType::Object:
         return value.AsObject ? value.AsObject->GetClass()->GetNative() : nullptr;
     case VariantType::Asset:

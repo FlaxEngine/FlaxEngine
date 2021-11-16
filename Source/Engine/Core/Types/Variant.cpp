@@ -229,6 +229,8 @@ const char* VariantType::GetTypeName() const
         return "FlaxEngine.Matrix";
     case Typename:
         return "System.Type";
+    case Array:
+        return "System.Object[]";
     default:
         return "";
     }
@@ -373,7 +375,7 @@ static_assert(sizeof(Variant::AsData) >= sizeof(Array<Variant, HeapAllocation>),
 
 const Variant Variant::Zero(0.0f);
 const Variant Variant::One(1.0f);
-const Variant Variant::Null(static_cast<void*>(nullptr));
+const Variant Variant::Null(nullptr);
 const Variant Variant::False(false);
 const Variant Variant::True(true);
 
@@ -438,6 +440,11 @@ Variant::Variant(Variant&& other) noexcept
         Platform::MemoryCopy(AsData, other.AsData, sizeof(AsData));
         break;
     }
+}
+
+Variant::Variant(decltype(nullptr))
+    : Type(VariantType::Null)
+{
 }
 
 Variant::Variant(bool v)
@@ -1997,6 +2004,16 @@ const Quaternion& Variant::AsQuaternion() const
     return *(const Quaternion*)AsData;
 }
 
+Array<Variant>& Variant::AsArray()
+{
+    return *reinterpret_cast<Array<Variant, HeapAllocation>*>(AsData);
+}
+
+const Array<Variant>& Variant::AsArray() const
+{
+    return *reinterpret_cast<const Array<Variant, HeapAllocation>*>(AsData);
+}
+
 void Variant::SetType(const VariantType& type)
 {
     if (Type == type)
@@ -2192,6 +2209,13 @@ void Variant::SetType(VariantType&& type)
 void Variant::SetString(const StringView& str)
 {
     SetType(VariantType(VariantType::String));
+    if (str.Length() <= 0)
+    {
+        Allocator::Free(AsBlob.Data);
+        AsBlob.Data = nullptr;
+        AsBlob.Length = 0;
+        return;
+    }
     const int32 length = str.Length() * sizeof(Char) + 2;
     if (AsBlob.Length != length)
     {
@@ -2206,6 +2230,13 @@ void Variant::SetString(const StringView& str)
 void Variant::SetString(const StringAnsiView& str)
 {
     SetType(VariantType(VariantType::String));
+    if (str.Length() <= 0)
+    {
+        Allocator::Free(AsBlob.Data);
+        AsBlob.Data = nullptr;
+        AsBlob.Length = 0;
+        return;
+    }
     const int32 length = str.Length() * sizeof(Char) + 2;
     if (AsBlob.Length != length)
     {
@@ -2220,6 +2251,13 @@ void Variant::SetString(const StringAnsiView& str)
 void Variant::SetTypename(const StringView& typeName)
 {
     SetType(VariantType(VariantType::Typename));
+    if (typeName.Length() <= 0)
+    {
+        Allocator::Free(AsBlob.Data);
+        AsBlob.Data = nullptr;
+        AsBlob.Length = 0;
+        return;
+    }
     const int32 length = typeName.Length() + 1;
     if (AsBlob.Length != length)
     {
@@ -2234,6 +2272,13 @@ void Variant::SetTypename(const StringView& typeName)
 void Variant::SetTypename(const StringAnsiView& typeName)
 {
     SetType(VariantType(VariantType::Typename));
+    if (typeName.Length() <= 0)
+    {
+        Allocator::Free(AsBlob.Data);
+        AsBlob.Data = nullptr;
+        AsBlob.Length = 0;
+        return;
+    }
     const int32 length = typeName.Length() + 1;
     if (AsBlob.Length != length)
     {
