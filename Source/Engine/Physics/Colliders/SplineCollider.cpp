@@ -45,7 +45,7 @@ void SplineCollider::ExtractGeometry(Array<Vector3>& vertexBuffer, Array<int32>&
 void SplineCollider::OnCollisionDataChanged()
 {
     // This should not be called during physics simulation, if it happened use write lock on physx scene
-    ASSERT(!Physics::IsDuringSimulation());
+    ASSERT(!GetScene() || !Physics::IsDuringSimulation());
 
     if (CollisionData)
     {

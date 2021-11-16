@@ -20,7 +20,7 @@ MeshCollider::MeshCollider(const SpawnParams& params)
 void MeshCollider::OnCollisionDataChanged()
 {
     // This should not be called during physics simulation, if it happened use write lock on physx scene
-    ASSERT(!Physics::IsDuringSimulation());
+    ASSERT(!GetScene() || !Physics::IsDuringSimulation());
 
     if (CollisionData)
     {
