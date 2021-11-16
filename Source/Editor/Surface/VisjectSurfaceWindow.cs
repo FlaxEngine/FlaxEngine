@@ -338,6 +338,11 @@ namespace FlaxEditor.Surface
             //new LimitAttribute(float.MinValue, float.MaxValue, 0.1f),
         };
 
+        /// <summary>
+        /// True if show only public properties, otherwise will display all properties.
+        /// </summary>
+        protected bool ShowOnlyPublic = true;
+
         /// <inheritdoc />
         public override DisplayStyle Style => DisplayStyle.InlineIntoParent;
 
@@ -367,7 +372,7 @@ namespace FlaxEditor.Surface
             for (int i = 0; i < parameters.Count; i++)
             {
                 var p = parameters[i];
-                if (!p.IsPublic)
+                if (!p.IsPublic && ShowOnlyPublic)
                     continue;
 
                 var pIndex = i;
@@ -421,6 +426,8 @@ namespace FlaxEditor.Surface
                     Tag = pIndex,
                     Drag = OnDragParameter
                 };
+                if (!p.IsPublic)
+                    propertyLabel.TextColor = propertyLabel.TextColor.RGBMultiplied(0.7f);
                 var tooltip = (TooltipAttribute)attributes.FirstOrDefault(x => x is TooltipAttribute);
                 propertyLabel.MouseLeftDoubleClick += (label, location) => StartParameterRenaming(pIndex, label);
                 propertyLabel.SetupContextMenu += OnPropertyLabelSetupContextMenu;
@@ -491,6 +498,7 @@ namespace FlaxEditor.Surface
             menu.AddButton("Rename", () => StartParameterRenaming(index, label));
             menu.AddButton("Edit attributes...", () => EditAttributesParameter(index, label));
             menu.AddButton("Delete", () => DeleteParameter(index));
+            OnParamContextMenu(index, menu);
         }
 
         private void StartParameterRenaming(int index, Control label)
@@ -555,6 +563,15 @@ namespace FlaxEditor.Surface
             };
             window.VisjectSurface.Undo.AddAction(action);
             action.Do();
+        }
+
+        /// <summary>
+        /// Called to display additional context options for a parameter.
+        /// </summary>
+        /// <param name="index">The zero-based parameter index.</param>
+        /// <param name="menu">The context menu.</param>
+        protected virtual void OnParamContextMenu(int index, FlaxEditor.GUI.ContextMenu.ContextMenu menu)
+        {
         }
     }
 

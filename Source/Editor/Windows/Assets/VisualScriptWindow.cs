@@ -38,6 +38,63 @@ namespace FlaxEditor.Windows.Assets
             public bool Enabled;
         }
 
+        private sealed class EditParamAccessAction : IUndoAction
+        {
+            public IVisjectSurfaceWindow Window;
+            public int Index;
+            public bool Before;
+            public bool After;
+
+            public string ActionString => "Edit parameter access";
+
+            public void Do()
+            {
+                Set(After);
+            }
+
+            public void Undo()
+            {
+                Set(Before);
+            }
+
+            private void Set(bool value)
+            {
+                var param = Window.VisjectSurface.Parameters[Index];
+                param.IsPublic = value;
+                Window.VisjectSurface.OnParamEdited(param);
+            }
+
+            public void Dispose()
+            {
+                Window = null;
+            }
+        }
+
+        private sealed class VisualParametersEditor : ParametersEditor
+        {
+            public VisualParametersEditor()
+            {
+                ShowOnlyPublic = false;
+            }
+
+            protected override void OnParamContextMenu(int index, ContextMenu menu)
+            {
+                var window = (VisualScriptWindow)Values[0];
+                var param = window.Surface.Parameters[index];
+
+                // Parameter access level editing
+                var cmAccess = menu.AddChildMenu("Access");
+                {
+                    var b = cmAccess.ContextMenu.AddButton("Public", () => window.SetParamAccess(index, true));
+                    b.Checked = param.IsPublic;
+                    b.Enabled = window._canEdit;
+                    b = cmAccess.ContextMenu.AddButton("Private", () => window.SetParamAccess(index, false));
+                    b.Checked = !param.IsPublic;
+                    b.Enabled = window._canEdit;
+                }
+            }
+        }
+
         private sealed class PropertiesProxy
         {
             [EditorOrder(0), EditorDisplay("Options"), CustomEditor(typeof(OptionsEditor)), NoSerialize]
@@ -58,7 +115,7 @@ namespace FlaxEditor.Windows.Assets
             [EditorOrder(900), CustomEditor(typeof(FunctionsEditor)), NoSerialize]
             public VisualScriptWindow Window1;
 
-            [EditorOrder(1000), EditorDisplay("Parameters"), CustomEditor(typeof(ParametersEditor)), NoSerialize]
+            [EditorOrder(1000), EditorDisplay("Parameters"), CustomEditor(typeof(VisualParametersEditor)), NoSerialize]
             public VisualScriptWindow Window;
 
             [HideInEditor]
@@ -989,6 +1046,22 @@ namespace FlaxEditor.Windows.Assets
                     child.Enabled = canEdit;
             }
             UpdateToolstrip();
+        }
+
+        private void SetParamAccess(int index, bool isPublic)
+        {
+            var param = Surface.Parameters[index];
+            if (param.IsPublic == isPublic)
+                return;
+            var action = new EditParamAccessAction
+            {
+                Window = this,
+                Index = index,
+                Before = param.IsPublic,
+                After = isPublic,
+            };
+            _undo.AddAction(action);
+            action.Do();
         }
 
         /// <inheritdoc />
