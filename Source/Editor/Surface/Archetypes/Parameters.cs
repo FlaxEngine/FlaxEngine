@@ -292,6 +292,12 @@ namespace FlaxEditor.Surface.Archetypes
             }
 
             /// <inheritdoc />
+            public void OnParamEdited(SurfaceParameter param)
+            {
+                UpdateLayout();
+            }
+
+            /// <inheritdoc />
             public void OnParamDeleted(SurfaceParameter param)
             {
                 // Deselect if that parameter is selected
@@ -569,6 +575,12 @@ namespace FlaxEditor.Surface.Archetypes
             public void OnParamRenamed(SurfaceParameter param)
             {
                 UpdateCombo();
+                UpdateUI();
+            }
+
+            /// <inheritdoc />
+            public void OnParamEdited(SurfaceParameter param)
+            {
                 UpdateUI();
             }
 

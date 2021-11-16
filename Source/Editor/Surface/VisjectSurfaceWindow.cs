@@ -235,6 +235,7 @@ namespace FlaxEditor.Surface
         {
             var param = Window.VisjectSurface.Parameters[Index];
             param.Meta.SetAttributes(value);
+            Window.VisjectSurface.OnParamEdited(param);
             Window.VisjectSurface.MarkAsEdited();
             Window.OnParamEditAttributesUndo();
         }

@@ -58,6 +58,17 @@ namespace FlaxEditor.Surface
         }
 
         /// <inheritdoc />
+        public void OnParamEdited(SurfaceParameter param)
+        {
+            for (int i = 0; i < Nodes.Count; i++)
+            {
+                if (Nodes[i] is IParametersDependantNode node)
+                    node.OnParamEdited(param);
+            }
+            MarkAsEdited();
+        }
+
+        /// <inheritdoc />
         public void OnParamDeleted(SurfaceParameter param)
         {
             for (int i = 0; i < Nodes.Count; i++)
