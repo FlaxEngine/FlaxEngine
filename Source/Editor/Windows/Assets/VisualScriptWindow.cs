@@ -70,6 +70,83 @@ namespace FlaxEditor.Windows.Assets
             }
         }
 
+        private sealed class EditParamTypeAction : IUndoAction
+        {
+            private struct BrokenConnection
+            {
+                public uint ANode;
+                public int ABox;
+                public uint BNode;
+                public int BBox;
+            }
+
+            private List<BrokenConnection> _connectionsToRestore = new List<BrokenConnection>();
+            private List<BrokenConnection> _connectionsToRestorePrev = new List<BrokenConnection>();
+
+            public IVisjectSurfaceWindow Window;
+            public int Index;
+            public ScriptType BeforeType;
+            public object BeforeValue;
+            public ScriptType AfterType;
+            public object AfterValue;
+
+            public string ActionString => "Edit parameter type";
+
+            public void Do()
+            {
+                Set(AfterType, AfterValue);
+            }
+
+            public void Undo()
+            {
+                Set(BeforeType, BeforeValue);
+            }
+
+            private void Set(ScriptType type, object value)
+            {
+                _connectionsToRestore.Clear();
+                Window.VisjectSurface.NodesDisconnected += OnNodesDisconnected;
+                var param = Window.VisjectSurface.Parameters[Index];
+                param.Type = type;
+                param.Value = value;
+                Window.VisjectSurface.OnParamEdited(param);
+                Window.VisjectSurface.NodesDisconnected -= OnNodesDisconnected;
+
+                // Restore connections broken previously
+                foreach (var connection in _connectionsToRestorePrev)
+                {
+                    var aNode = Window.VisjectSurface.FindNode(connection.ANode);
+                    var bNode = Window.VisjectSurface.FindNode(connection.BNode);
+                    var aBox = aNode?.GetBox(connection.ABox) ?? null;
+                    var bBox = bNode?.GetBox(connection.BBox) ?? null;
+                    if (aBox != null && bBox != null)
+                        aBox.CreateConnection(bBox);
+                }
+                _connectionsToRestorePrev.Clear();
+                _connectionsToRestorePrev.AddRange(_connectionsToRestore);
+            }
+
+            private void OnNodesDisconnected(IConnectionInstigator a, IConnectionInstigator b)
+            {
+                // Capture any auto-disconnected boxes after parameter type change to restore them back on undo
+                if (a is Surface.Elements.Box aBox && b is Surface.Elements.Box bBox)
+                {
+                    _connectionsToRestore.Add(new BrokenConnection
+                    {
+                        ANode = aBox.ParentNode.ID, ABox = aBox.ID,
+                        BNode = bBox.ParentNode.ID, BBox = bBox.ID,
+                    });
+                }
+            }
+
+            public void Dispose()
+            {
+                _connectionsToRestore = null;
+                _connectionsToRestorePrev = null;
+                Window = null;
+            }
+        }
+
         private sealed class VisualParametersEditor : ParametersEditor
         {
             public VisualParametersEditor()
@@ -88,9 +165,55 @@ namespace FlaxEditor.Windows.Assets
                     var b = cmAccess.ContextMenu.AddButton("Public", () => window.SetParamAccess(index, true));
                     b.Checked = param.IsPublic;
                     b.Enabled = window._canEdit;
+                    b.TooltipText = "Sets the parameter access level to Public. It will be accessible and visible everywhere.";
                     b = cmAccess.ContextMenu.AddButton("Private", () => window.SetParamAccess(index, false));
                     b.Checked = !param.IsPublic;
                     b.Enabled = window._canEdit;
+                    b.TooltipText = "Sets the parameter access level to Private. It will be accessible only within this script and won't be visible outside (eg. in script properties panel).";
+                }
+
+                // Parameter type editing
+                var cmType = menu.AddChildMenu("Type");
+                {
+                    var b = cmType.ContextMenu.AddButton(window.Surface.GetTypeName(param.Type) + "...", () => 
+                    {
+                        // Show context menu with list of parameter types to use
+                        var cm = new ItemsListContextMenu(180);
+                        var newParameterTypes = window.NewParameterTypes;
+                        foreach (var newParameterType in newParameterTypes)
+                        {
+                            var item = new TypeSearchPopup.TypeItemView(newParameterType);
+                            if (newParameterType.Type != null)
+                                item.Name = window.VisjectSurface.GetTypeName(newParameterType);
+                            cm.AddItem(item);
+                        }
+                        cm.ItemClicked += (ItemsListContextMenu.Item item) => window.SetParamType(index, (ScriptType)item.Tag);
+                        cm.SortChildren();
+                        cm.Show(window, window.PointFromScreen(Input.MouseScreenPosition));
+                    });
+                    b.Enabled = window._canEdit;
+                    b.TooltipText = "Opens the type picker window to change the parameter type.";
+                    cmType.ContextMenu.AddSeparator();
+
+                    ScriptType singleValueType, arrayType;
+                    if (param.Type.IsArray)
+                    {
+                        singleValueType = new ScriptType(param.Type.GetElementType());
+                        arrayType = param.Type;
+                    }
+                    else
+                    {
+                        singleValueType = param.Type;
+                        arrayType = param.Type.MakeArrayType();
+                    }
+                    b = cmType.ContextMenu.AddButton("Value", () => window.SetParamType(index, singleValueType));
+                    b.Checked = param.Type == singleValueType;
+                    b.Enabled = window._canEdit;
+                    b.TooltipText = "Changes parameter type to a single value.";
+                    b = cmType.ContextMenu.AddButton("Array", () => window.SetParamType(index, arrayType));
+                    b.Checked = param.Type == arrayType;
+                    b.Enabled = window._canEdit;
+                    b.TooltipText = "Changes parameter type to an array.";
                 }
             }
         }
@@ -1059,6 +1182,24 @@ namespace FlaxEditor.Windows.Assets
                 Index = index,
                 Before = param.IsPublic,
                 After = isPublic,
+            };
+            _undo.AddAction(action);
+            action.Do();
+        }
+
+        private void SetParamType(int index, ScriptType type)
+        {
+            var param = Surface.Parameters[index];
+            if (param.Type == type)
+                return;
+            var action = new EditParamTypeAction
+            {
+                Window = this,
+                Index = index,
+                BeforeType = param.Type,
+                BeforeValue = param.Value,
+                AfterType = type,
+                AfterValue = TypeUtils.GetDefaultValue(type),
             };
             _undo.AddAction(action);
             action.Do();

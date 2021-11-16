@@ -1107,6 +1107,17 @@ namespace FlaxEditor.Scripting
         }
 
         /// <summary>
+        /// Returns a type object that represents an array of the current type.
+        /// </summary>
+        /// <returns>A type object representing a one-dimensional array of the current type.</returns>
+        public ScriptType MakeArrayType()
+        {
+            if (_managed != null)
+                return new ScriptType(_managed.MakeArrayType());
+            throw new NotImplementedException("TODO: Script.Type.MakeArrayType for custom types");
+        }
+
+        /// <summary>
         /// Searches for the specified members of the specified member type, using the specified binding constraints.
         /// </summary>
         /// <param name="name">The string containing the name of the members to get.</param>
