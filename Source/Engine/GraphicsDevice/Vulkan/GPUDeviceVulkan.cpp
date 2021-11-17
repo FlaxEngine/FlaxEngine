@@ -1307,8 +1307,6 @@ PixelFormat GPUDeviceVulkan::GetClosestSupportedPixelFormat(PixelFormat format, 
 
     if (!IsVkFormatSupported(RenderToolsVulkan::ToVulkanFormat(format), wantedFeatureFlags, optimalTiling))
     {
-        auto remap = format;
-
         // Special case for depth-stencil formats
         if (flags & GPUTextureFlags::DepthStencil)
         {
@@ -1331,6 +1329,7 @@ PixelFormat GPUDeviceVulkan::GetClosestSupportedPixelFormat(PixelFormat format, 
         else
         {
             // Perform remapping to bigger format that might be supported (more likely)
+            auto remap = format;
             switch (format)
             {
             case PixelFormat::R11G11B10_Float:
@@ -1352,15 +1351,14 @@ PixelFormat GPUDeviceVulkan::GetClosestSupportedPixelFormat(PixelFormat format, 
                 remap = PixelFormat::R32G32B32A32_Float;
                 break;
             }
-        }
-
 #if !BUILD_RELEASE
-        if (format != remap)
-        {
-            LOG(Warning, "Unsupported Vulkan format {0}. Remapping to {1}", (int32)format, (int32)remap);
-            format = GetClosestSupportedPixelFormat(remap, flags, optimalTiling);
-        }
+            if (format != remap)
+            {
+                LOG(Warning, "Unsupported Vulkan format {0}. Remapping to {1}", (int32)format, (int32)remap);
+                format = GetClosestSupportedPixelFormat(remap, flags, optimalTiling);
+            }
 #endif
+        }
     }
 
     return format;
