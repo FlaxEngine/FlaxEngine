@@ -156,6 +156,8 @@ namespace FlaxEditor.Surface
                 type = TypeUtils.GetType(typeName.Substring(0, typeName.Length - 1));
                 GetConnectionColor(type, hint, out color);
             }
+            else if (type.IsArray)
+                GetConnectionColor(new ScriptType(type.GetElementType()), hint, out color);
             else if (type.Type == typeof(void))
                 color = Colors.Impulse;
             else if (type.Type == typeof(bool))

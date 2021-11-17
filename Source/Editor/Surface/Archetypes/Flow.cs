@@ -308,6 +308,28 @@ namespace FlaxEditor.Surface.Archetypes
                     NodeElementArchetype.Factory.Output(0, string.Empty, typeof(void), 2, true),
                 }
             },
+            new NodeArchetype
+            {
+                TypeID = 7,
+                Title = "Array For Each",
+                AlternativeTitles = new[] { "foreach" },
+                Description = "Iterates over the array items.",
+                Flags = NodeFlags.VisualScriptGraph,
+                Size = new Vector2(160, 80),
+                ConnectionsHints = ConnectionsHint.Array,
+                IndependentBoxes = new int[] { 1 },
+                DependentBoxes = new int[] { 4, },
+                DependentBoxFilter = Collections.GetArrayItemType,
+                Elements = new[]
+                {
+                    NodeElementArchetype.Factory.Input(0, string.Empty, false, typeof(void), 0),
+                    NodeElementArchetype.Factory.Input(1, "Array", false, null, 1),
+                    NodeElementArchetype.Factory.Input(2, "Break", false, typeof(void), 2),
+                    NodeElementArchetype.Factory.Output(0, "Loop", typeof(void), 3, true),
+                    NodeElementArchetype.Factory.Output(1, "Item", typeof(object), 4),
+                    NodeElementArchetype.Factory.Output(2, "Done", typeof(void), 5, true),
+                }
+            },
         };
     }
 }

@@ -53,6 +53,11 @@ namespace FlaxEditor.Surface
         Enum = 16,
 
         /// <summary>
+        /// Allow any array types connections.
+        /// </summary>
+        Array = 32,
+
+        /// <summary>
         /// Allow any scalar or vector numeric value types connections (bool, int, float, vector2, color..).
         /// </summary>
         Numeric = Scalar | Vector,
@@ -60,7 +65,7 @@ namespace FlaxEditor.Surface
         /// <summary>
         /// All flags.
         /// </summary>
-        All = Scalar | Vector | Enum | Anything | Value,
+        All = Scalar | Vector | Enum | Anything | Value | Array,
     }
 
     /// <summary>
@@ -151,6 +156,11 @@ namespace FlaxEditor.Surface
         /// Array with dependent boxes IDs.
         /// </summary>
         public int[] DependentBoxes;
+
+        /// <summary>
+        /// Custom function to convert type for dependant box (optional).
+        /// </summary>
+        public Func<Elements.Box, ScriptType, ScriptType> DependentBoxFilter;
 
         /// <summary>
         /// Array with default elements descriptions.

@@ -1113,6 +1113,76 @@ void VisualScriptExecutor::ProcessGroupFlow(Box* boxBase, Node* node, Value& val
         }
         break;
     }
+        // Array For Each
+    case 7:
+    {
+        const auto scope = ThreadStacks.Get().Stack->Scope;
+        int32 iteratorIndex = 0;
+        for (; iteratorIndex < scope->ReturnedValues.Count(); iteratorIndex++)
+        {
+            const auto& e = scope->ReturnedValues[iteratorIndex];
+            if (e.NodeId == node->ID && e.BoxId == 0)
+                break;
+        }
+        int32 arrayIndex = 0;
+        for (; iteratorIndex < scope->ReturnedValues.Count(); arrayIndex++)
+        {
+            const auto& e = scope->ReturnedValues[arrayIndex];
+            if (e.NodeId == node->ID && e.BoxId == 1)
+                break;
+        }
+        switch (boxBase->ID)
+        {
+            // Loop
+        case 0:
+        {
+            if (iteratorIndex == scope->ReturnedValues.Count())
+            {
+                if (arrayIndex == scope->ReturnedValues.Count())
+                    arrayIndex++;
+                scope->ReturnedValues.AddOne();
+            }
+            if (arrayIndex == scope->ReturnedValues.Count())
+                scope->ReturnedValues.AddOne();
+            auto& iteratorValue = scope->ReturnedValues[iteratorIndex];
+            iteratorValue.NodeId = node->ID;
+            iteratorValue.BoxId = 0;
+            iteratorValue.Value = 0;
+            auto& arrayValue = scope->ReturnedValues[arrayIndex];
+            arrayValue.NodeId = node->ID;
+            arrayValue.BoxId = 1;
+            arrayValue.Value = tryGetValue(node->GetBox(1), Value::Null);
+            if (arrayValue.Value.Type.Type != VariantType::Array)
+            {
+                OnError(node, boxBase, String::Format(TEXT("Input value {0} is not an array."), arrayValue.Value));
+                return;
+            }
+            const int32 count = arrayValue.Value.AsArray().Count();
+            for (; iteratorValue.Value.AsInt < count; iteratorValue.Value.AsInt++)
+            {
+                boxBase = node->GetBox(3);
+                if (boxBase->HasConnection())
+                    eatBox(node, boxBase->FirstConnection());
+            }
+            boxBase = node->GetBox(5);
+            if (boxBase->HasConnection())
+                eatBox(node, boxBase->FirstConnection());
+            break;
+        }
+            // Break
+        case 2:
+            // Reset loop iterator
+            if (iteratorIndex != scope->ReturnedValues.Count())
+                scope->ReturnedValues[iteratorIndex].Value.AsInt = MAX_int32 - 1;
+            break;
+            // Item
+        case 4:
+            if (iteratorIndex != scope->ReturnedValues.Count() && arrayIndex != scope->ReturnedValues.Count())
+                value = scope->ReturnedValues[arrayIndex].Value.AsArray()[(int32)scope->ReturnedValues[iteratorIndex].Value];
+            break;
+        }
+        break;
+    }
     }
 }
 

@@ -226,7 +226,7 @@ public:
 
 protected:
 
-    ProcessBoxHandler _perGroupProcessCall[18];
+    ProcessBoxHandler _perGroupProcessCall[19];
 
 public:
 
@@ -256,6 +256,7 @@ public:
     void ProcessGroupBitwise(Box* box, Node* node, Value& value);
     void ProcessGroupComparisons(Box* box, Node* node, Value& value);
     void ProcessGroupParticles(Box* box, Node* node, Value& value);
+    void ProcessGroupCollections(Box* box, Node* node, Value& value);
 
 protected:
 

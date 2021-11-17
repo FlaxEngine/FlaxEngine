@@ -476,7 +476,7 @@ namespace FlaxEditor.Surface
                 var b = GetBox(Archetype.DependentBoxes[i]);
                 if (b != null)
                 {
-                    b.CurrentType = type;
+                    b.CurrentType = Archetype.DependentBoxFilter != null ? Archetype.DependentBoxFilter(b, type) : type;
                 }
             }
 

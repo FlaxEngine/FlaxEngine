@@ -200,6 +200,8 @@ namespace FlaxEditor.Surface.Elements
                 return "Vector";
             if ((hint & ConnectionsHint.Scalar) == ConnectionsHint.Scalar)
                 return "Scalar";
+            if ((hint & ConnectionsHint.Array) == ConnectionsHint.Array)
+                return "Array";
             return null;
         }
 
@@ -232,6 +234,11 @@ namespace FlaxEditor.Surface.Elements
                     return true;
                 }
                 if ((connectionsHints & ConnectionsHint.Enum) == ConnectionsHint.Enum && type.IsEnum)
+                {
+                    // Can
+                    return true;
+                }
+                if ((connectionsHints & ConnectionsHint.Array) == ConnectionsHint.Array && type.IsArray)
                 {
                     // Can
                     return true;
