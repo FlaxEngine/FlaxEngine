@@ -151,99 +151,102 @@ VariantType MUtils::UnboxVariantType(MonoType* monoType)
     const auto& stdTypes = *StdTypesContainer::Instance();
     const auto klass = mono_type_get_class(monoType);
 
-    // TODO: optimize this with switch(monoType->type) maybe?
-    if (klass == mono_get_void_class() || monoType->type == MONO_TYPE_VOID)
+    // Fast type detection for in-built types
+    switch (monoType->type)
+    {
+    case MONO_TYPE_VOID:
         return VariantType(VariantType::Void);
-    if (klass == mono_get_boolean_class() || monoType->type == MONO_TYPE_BOOLEAN)
+    case MONO_TYPE_BOOLEAN:
         return VariantType(VariantType::Bool);
-    if (klass == mono_get_byte_class() || monoType->type == MONO_TYPE_U1)
+    case MONO_TYPE_I1:
         return VariantType(VariantType::Int16);
-    if (klass == mono_get_sbyte_class() || monoType->type == MONO_TYPE_I1)
+    case MONO_TYPE_U1:
         return VariantType(VariantType::Int16);
-    if (klass == mono_get_int16_class() || monoType->type == MONO_TYPE_I2)
+    case MONO_TYPE_I2:
         return VariantType(VariantType::Int16);
-    if (klass == mono_get_uint16_class() || monoType->type == MONO_TYPE_U2)
+    case MONO_TYPE_U2:
         return VariantType(VariantType::Uint16);
-    if (klass == mono_get_int32_class() || monoType->type == MONO_TYPE_I4)
+    case MONO_TYPE_I4:
+    case MONO_TYPE_CHAR:
         return VariantType(VariantType::Int);
-    if (klass == mono_get_uint32_class() || monoType->type == MONO_TYPE_U4)
+    case MONO_TYPE_U4:
         return VariantType(VariantType::Uint);
-    if (klass == mono_get_int64_class() || monoType->type == MONO_TYPE_I8)
+    case MONO_TYPE_I8:
         return VariantType(VariantType::Int64);
-    if (klass == mono_get_uint64_class() || monoType->type == MONO_TYPE_U8)
+    case MONO_TYPE_U8:
         return VariantType(VariantType::Uint64);
-    if (klass == mono_get_char_class() || monoType->type == MONO_TYPE_CHAR)
-        return VariantType(VariantType::Int);
-    if (klass == mono_get_single_class() || monoType->type == MONO_TYPE_R4)
+    case MONO_TYPE_R4:
         return VariantType(VariantType::Float);
-    if (klass == mono_get_double_class() || monoType->type == MONO_TYPE_R8)
+    case MONO_TYPE_R8:
         return VariantType(VariantType::Double);
-    if (klass == mono_get_string_class() || monoType->type == MONO_TYPE_STRING)
+    case MONO_TYPE_STRING:
         return VariantType(VariantType::String);
-    if (klass == mono_get_intptr_class() || klass == mono_get_uintptr_class() || monoType->type == MONO_TYPE_PTR)
+    case MONO_TYPE_PTR:
         return VariantType(VariantType::Pointer);
-    if (monoType->type == MONO_TYPE_OBJECT)
+    case MONO_TYPE_VALUETYPE:
+        if (klass == stdTypes.GuidClass->GetNative())
+            return VariantType(VariantType::Guid);
+        if (klass == stdTypes.TypeClass->GetNative())
+            return VariantType(VariantType::Typename);
+        if (klass == stdTypes.Vector2Class->GetNative())
+            return VariantType(VariantType::Vector2);
+        if (klass == stdTypes.Vector3Class->GetNative())
+            return VariantType(VariantType::Vector3);
+        if (klass == stdTypes.Vector4Class->GetNative())
+            return VariantType(VariantType::Vector4);
+        if (klass == stdTypes.ColorClass->GetNative())
+            return VariantType(VariantType::Color);
+        if (klass == stdTypes.BoundingBoxClass->GetNative())
+            return VariantType(VariantType::BoundingBox);
+        if (klass == stdTypes.QuaternionClass->GetNative())
+            return VariantType(VariantType::Quaternion);
+        if (klass == stdTypes.TransformClass->GetNative())
+            return VariantType(VariantType::Transform);
+        if (klass == stdTypes.BoundingSphereClass->GetNative())
+            return VariantType(VariantType::BoundingSphere);
+        if (klass == stdTypes.RectangleClass->GetNative())
+            return VariantType(VariantType::Rectangle);
+        if (klass == stdTypes.MatrixClass->GetNative())
+            return VariantType(VariantType::Matrix);
+        break;
+    case MONO_TYPE_OBJECT:
         return VariantType(VariantType::ManagedObject);
-    if (klass == stdTypes.GuidClass->GetNative())
-        return VariantType(VariantType::Guid);
-    if (klass == stdTypes.TypeClass->GetNative())
-        return VariantType(VariantType::Typename);
-    if (klass == stdTypes.Vector2Class->GetNative())
-        return VariantType(VariantType::Vector2);
-    if (klass == stdTypes.Vector3Class->GetNative())
-        return VariantType(VariantType::Vector3);
-    if (klass == stdTypes.Vector4Class->GetNative())
-        return VariantType(VariantType::Vector4);
-    if (klass == stdTypes.ColorClass->GetNative())
-        return VariantType(VariantType::Color);
-    if (klass == stdTypes.BoundingBoxClass->GetNative())
-        return VariantType(VariantType::BoundingBox);
-    if (klass == stdTypes.QuaternionClass->GetNative())
-        return VariantType(VariantType::Quaternion);
-    if (klass == stdTypes.TransformClass->GetNative())
-        return VariantType(VariantType::Transform);
-    if (klass == stdTypes.BoundingSphereClass->GetNative())
-        return VariantType(VariantType::BoundingSphere);
-    if (klass == stdTypes.RectangleClass->GetNative())
-        return VariantType(VariantType::Rectangle);
-    if (klass == stdTypes.MatrixClass->GetNative())
-        return VariantType(VariantType::Matrix);
-    CHECK_RETURN(klass, VariantType(VariantType::Null));
+    case MONO_TYPE_SZARRAY:
+        if (klass == mono_array_class_get(mono_get_byte_class(), 1))
+            return VariantType(VariantType::Blob);
+        break;
+    }
+
+    // Get actual typename for full type info
+    if (!klass)
+        return VariantType(VariantType::Null);
+    MString fullname;
+    GetClassFullname(klass, fullname);
+    switch (monoType->type)
+    {
+    case MONO_TYPE_SZARRAY:
+    case MONO_TYPE_ARRAY:
+        return VariantType(VariantType::Array, fullname);
+    case MONO_TYPE_ENUM:
+        return VariantType(VariantType::Enum, fullname);
+    case MONO_TYPE_VALUETYPE:
+        return VariantType(VariantType::Structure, fullname);
+    }
     if (mono_class_is_subclass_of(klass, Asset::GetStaticClass()->GetNative(), false) != 0)
     {
         if (klass == Asset::GetStaticClass()->GetNative())
             return VariantType(VariantType::Asset);
-        StringAnsi fullname;
-        GetClassFullname(klass, fullname);
         return VariantType(VariantType::Asset, fullname);
     }
     if (mono_class_is_subclass_of(klass, ScriptingObject::GetStaticClass()->GetNative(), false) != 0)
     {
         if (klass == ScriptingObject::GetStaticClass()->GetNative())
             return VariantType(VariantType::Object);
-        StringAnsi fullname;
-        GetClassFullname(klass, fullname);
         return VariantType(VariantType::Object, fullname);
     }
-    if (mono_class_is_enum(klass))
-    {
-        MString fullname;
-        GetClassFullname(klass, fullname);
-        return VariantType(VariantType::Enum, fullname);
-    }
-    if (klass == mono_array_class_get(mono_get_byte_class(), 1))
-        return VariantType(VariantType::Blob);
-    if (monoType->type == MONO_TYPE_SZARRAY || monoType->type == MONO_TYPE_ARRAY)
-    {
-        MString fullname;
-        GetClassFullname(klass, fullname);
-        return VariantType(VariantType::Array, fullname);
-    }
     // TODO: support any dictionary unboxing
-    // TODO: support any structure unboxing
 
-    // TODO: unbox other types as generic ManagedObject type
-    LOG(Error, "Invalid managed type to unbox {0}", String(GetClassFullname(klass)));
+    LOG(Error, "Invalid managed type to unbox {0}", String(fullname));
     return VariantType();
 }
 
@@ -329,6 +332,7 @@ Variant MUtils::UnboxVariant(MonoObject* value)
         GetClassFullname(klass, fullname);
         Variant v;
         v.Type = MoveTemp(VariantType(VariantType::Enum, fullname));
+        // TODO: what about 64-bit enum? use enum size with memcpy
         v.AsUint64 = *static_cast<uint32*>(mono_object_unbox(value));
         return v;
     }
@@ -365,18 +369,97 @@ Variant MUtils::UnboxVariant(MonoObject* value)
         v.SetType(MoveTemp(VariantType(VariantType::Array, fullname)));
         auto& array = v.AsArray();
         array.Resize((int32)mono_array_length((MonoArray*)value));
-        if (mono_class_is_valuetype(monoType->data.array->eklass))
+        const StringAnsiView elementTypename(*fullname, fullname.Length() - 2);
+        MonoClass* elementClass = monoType->data.array->eklass;
+        uint32_t elementAlign;
+        const int32 elementSize = mono_class_value_size(elementClass, &elementAlign);
+        if (mono_class_is_enum(elementClass))
         {
-            const ScriptingTypeHandle typeHandle = Scripting::FindScriptingType(StringAnsiView(*fullname, fullname.Length() - 2));
-            if (typeHandle)
+            // Array of Enums
+            for (int32 i = 0; i < array.Count(); i++)
             {
-                // TODO: Unboxing value-type Variant array
-                MISSING_CODE("Unboxing value-type Variant array");
+                array[i].SetType(VariantType(VariantType::Enum, elementTypename));
+                Platform::MemoryCopy(&array[i].AsUint64, mono_array_addr_with_size((MonoArray*)value, elementSize, i), elementSize);
             }
-            LOG(Error, "Invalid type to unbox {0}", v.Type);
+        }
+        else if (mono_class_is_valuetype(elementClass))
+        {
+            // Array of Structures
+            VariantType elementType = UnboxVariantType(mono_class_get_type(elementClass));
+            switch (elementType.Type)
+            {
+            case VariantType::Bool:
+            case VariantType::Int:
+            case VariantType::Uint:
+            case VariantType::Int64:
+            case VariantType::Uint64:
+            case VariantType::Float:
+            case VariantType::Double:
+            case VariantType::Vector2:
+            case VariantType::Vector3:
+            case VariantType::Vector4:
+            case VariantType::Color:
+            case VariantType::Guid:
+            case VariantType::BoundingSphere:
+            case VariantType::Quaternion:
+            case VariantType::Rectangle:
+            case VariantType::Int2:
+            case VariantType::Int3:
+            case VariantType::Int4:
+            case VariantType::Int16:
+            case VariantType::Uint16:
+                // Optimized unboxing of raw data type
+                for (int32 i = 0; i < array.Count(); i++)
+                {
+                    auto& a = array[i];
+                    a.SetType(elementType);
+                    Platform::MemoryCopy(&a.AsData, mono_array_addr_with_size((MonoArray*)value, elementSize, i), elementSize);
+                }
+                break;
+            case VariantType::BoundingBox:
+            case VariantType::Transform:
+            case VariantType::Ray:
+            case VariantType::Matrix:
+                // Optimized unboxing of raw data type
+                for (int32 i = 0; i < array.Count(); i++)
+                {
+                    auto& a = array[i];
+                    a.SetType(elementType);
+                    Platform::MemoryCopy(a.AsBlob.Data, mono_array_addr_with_size((MonoArray*)value, elementSize, i), elementSize);
+                }
+                break;
+            case VariantType::Structure:
+            {
+                const ScriptingTypeHandle typeHandle = Scripting::FindScriptingType(elementType.TypeName);
+                if (typeHandle)
+                {
+                    // Unbox array of structures
+                    const ScriptingType& type = typeHandle.GetType();
+                    ASSERT(type.Type == ScriptingTypes::Structure);
+                    // TODO: optimize this for large arrays to prevent multiple AllocStructure calls in Variant::SetType by using computed struct type
+                    for (int32 i = 0; i < array.Count(); i++)
+                    {
+                        auto& a = array[i];
+                        a.SetType(elementType);
+                        void* managed = mono_array_addr_with_size((MonoArray*)value, elementSize, i);
+                        // TODO: optimize structures unboxing to not require MonoObject* but raw managed value data to prevent additional boxing here
+                        MonoObject* boxed = mono_object_new(mono_domain_get(), elementClass);
+                        Platform::MemoryCopy(mono_object_unbox(boxed), managed, elementSize);
+                        type.Struct.Unbox(a.AsBlob.Data, boxed);
+                    }
+                    break;
+                }
+                LOG(Error, "Invalid type to unbox {0}", v.Type);
+                break;
+            }
+            default:
+                LOG(Error, "Invalid type to unbox {0}", v.Type);
+                break;
+            }
         }
         else
         {
+            // Array of Objects
             for (int32 i = 0; i < array.Count(); i++)
                 array[i] = UnboxVariant(mono_array_get((MonoArray*)value, MonoObject*, i));
         }
@@ -449,31 +532,102 @@ MonoObject* MUtils::BoxVariant(const Variant& value)
         return value.AsAsset ? value.AsAsset->GetOrCreateManagedInstance() : nullptr;
     case VariantType::Array:
     {
-        MonoArray* managed = nullptr;
+        MonoArray* managed;
         const auto& array = value.AsArray();
         if (value.Type.TypeName)
         {
-            const ScriptingTypeHandle typeHandle = Scripting::FindScriptingType(StringAnsiView(value.Type.TypeName, StringUtils::Length(value.Type.TypeName) - 2));
-            if (typeHandle)
+            const StringAnsiView elementTypename(value.Type.TypeName, StringUtils::Length(value.Type.TypeName) - 2);
+            const ScriptingTypeHandle typeHandle = Scripting::FindScriptingType(elementTypename);
+            MonoClass* elementClass;
+            if (typeHandle && typeHandle.GetType().ManagedClass)
+                elementClass = typeHandle.GetType().ManagedClass->GetNative();
+            else
+                elementClass = Scripting::FindClassNative(elementTypename);
+            if (!elementClass)
             {
-                const ScriptingType& type = typeHandle.GetType();
-                if (type.Type == ScriptingTypes::Script || type.Type == ScriptingTypes::Class || (type.ManagedClass && !mono_class_is_valuetype(type.ManagedClass->GetNative())))
+                LOG(Error, "Invalid type to box {0}", value.Type);
+                return nullptr;
+            }
+            uint32_t elementAlign;
+            const int32 elementSize = mono_class_value_size(elementClass, &elementAlign);
+            managed = mono_array_new(mono_domain_get(), elementClass, array.Count());
+            if (mono_class_is_enum(elementClass))
+            {
+                // Array of Enums
+                for (int32 i = 0; i < array.Count(); i++)
                 {
-                    managed = mono_array_new(mono_domain_get(), type.ManagedClass->GetNative(), array.Count());
-                    for (int32 i = 0; i < array.Count(); i++)
-                        mono_array_setref(managed, i, BoxVariant(array[i]));
+                    auto data = (uint64)array[i];
+                    Platform::MemoryCopy(mono_array_addr_with_size(managed, elementSize, i), &data, elementSize);
                 }
-                else
+            }
+            else if (mono_class_is_valuetype(elementClass))
+            {
+                // Array of Structures
+                VariantType elementType = UnboxVariantType(mono_class_get_type(elementClass));
+                switch (elementType.Type)
                 {
-                    // TODO: Boxing value-type Variant array
-                    MISSING_CODE("Boxing value-type Variant array");
+                case VariantType::Bool:
+                case VariantType::Int:
+                case VariantType::Uint:
+                case VariantType::Int64:
+                case VariantType::Uint64:
+                case VariantType::Float:
+                case VariantType::Double:
+                case VariantType::Vector2:
+                case VariantType::Vector3:
+                case VariantType::Vector4:
+                case VariantType::Color:
+                case VariantType::Guid:
+                case VariantType::BoundingSphere:
+                case VariantType::Quaternion:
+                case VariantType::Rectangle:
+                case VariantType::Int2:
+                case VariantType::Int3:
+                case VariantType::Int4:
+                case VariantType::Int16:
+                case VariantType::Uint16:
+                    // Optimized boxing of raw data type
+                    for (int32 i = 0; i < array.Count(); i++)
+                        Platform::MemoryCopy(mono_array_addr_with_size(managed, elementSize, i), &array[i].AsData, elementSize);
+                    break;
+                case VariantType::BoundingBox:
+                case VariantType::Transform:
+                case VariantType::Ray:
+                case VariantType::Matrix:
+                    // Optimized boxing of raw data type
+                    for (int32 i = 0; i < array.Count(); i++)
+                        Platform::MemoryCopy(mono_array_addr_with_size(managed, elementSize, i), array[i].AsBlob.Data, elementSize);
+                    break;
+                case VariantType::Structure:
+                    if (typeHandle)
+                    {
+                        const ScriptingType& type = typeHandle.GetType();
+                        ASSERT(type.Type == ScriptingTypes::Structure);
+                        for (int32 i = 0; i < array.Count(); i++)
+                        {
+                            // TODO: optimize structures boxing to not return MonoObject* but use raw managed object to prevent additional boxing here
+                            MonoObject* boxed = type.Struct.Box(array[i].AsBlob.Data);
+                            Platform::MemoryCopy(mono_array_addr_with_size(managed, elementSize, i), mono_object_unbox(boxed), elementSize);
+                        }
+                        break;
+                    }
+                    LOG(Error, "Invalid type to box {0}", value.Type);
+                    break;
+                default:
+                    LOG(Error, "Invalid type to box {0}", value.Type);
+                    break;
                 }
             }
             else
-                LOG(Error, "Invalid type to box {0}", value.Type);
+            {
+                // Array of Objects
+                for (int32 i = 0; i < array.Count(); i++)
+                    mono_array_setref(managed, i, BoxVariant(array[i]));
+            }
         }
         else
         {
+            // object[]
             managed = mono_array_new(mono_domain_get(), mono_get_object_class(), array.Count());
             for (int32 i = 0; i < array.Count(); i++)
                 mono_array_setref(managed, i, BoxVariant(array[i]));
@@ -503,7 +657,7 @@ MonoObject* MUtils::BoxVariant(const Variant& value)
         return nullptr;
     }
     case VariantType::ManagedObject:
-        return (MonoObject*)value;
+        return value.AsUint ? mono_gchandle_get_target(value.AsUint) : nullptr;
     case VariantType::Typename:
     {
         const auto klass = Scripting::FindClassNative((StringAnsiView)value);
@@ -635,6 +789,13 @@ MonoClass* MUtils::GetClass(const VariantType& value)
     case VariantType::Matrix:
         return stdTypes.MatrixClass->GetNative();
     case VariantType::Array:
+        if (value.TypeName)
+        {
+            const StringAnsiView elementTypename(value.TypeName, StringUtils::Length(value.TypeName) - 2);
+            mclass = Scripting::FindClass(elementTypename);
+            if (mclass)
+                return mono_array_class_get(mclass->GetNative(), 1);
+        }
         return mono_array_class_get(mono_get_object_class(), 1);
     case VariantType::ManagedObject:
         return mono_get_object_class();
@@ -791,8 +952,6 @@ void* MUtils::VariantToManagedArgPtr(Variant& value, const MType& type, bool& fa
         return &value.AsDouble;
     case MONO_TYPE_STRING:
         return MUtils::ToString((StringView)value);
-        // TODO: MONO_TYPE_PTR
-        // TODO: MONO_TYPE_BYREF
     case MONO_TYPE_VALUETYPE:
     {
         MonoClass* klass = type.GetNative()->data.klass;
@@ -873,19 +1032,18 @@ void* MUtils::VariantToManagedArgPtr(Variant& value, const MType& type, bool& fa
             object = nullptr;
         return object;
     }
-        // TODO: MONO_TYPE_VAR
-        // TODO: MONO_TYPE_ARRAY
-        // TODO: MONO_TYPE_GENERICINST
-        // TODO: MONO_TYPE_TYPEDBYREF
     case MONO_TYPE_OBJECT:
         return BoxVariant(value);
     case MONO_TYPE_SZARRAY:
-        if (value.Type == VariantType::Array)
-        {
-            // TODO: box Variant array into C# Array
-        }
-        return nullptr;
-        // TODO: MONO_TYPE_ENUM
+    case MONO_TYPE_ARRAY:
+    {
+        if (value.Type.Type != VariantType::Array)
+            return nullptr;
+        MonoObject* object = BoxVariant(value);
+        if (object && !mono_class_is_subclass_of(mono_object_get_class(object), mono_array_class_get(type.GetNative()->data.klass, 1), false))
+            object = nullptr;
+        return object;
+    }
     default:
         break;
     }
