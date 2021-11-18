@@ -2,6 +2,7 @@
 
 using System;
 using System.IO;
+using System.Linq;
 using Flax.Build.NativeCpp;
 
 namespace Flax.Build.Platforms
@@ -19,7 +20,7 @@ namespace Flax.Build.Platforms
         /// <param name="platform">The platform.</param>
         /// <param name="architecture">The architecture.</param>
         protected GDKToolchain(GDKPlatform platform, TargetArchitecture architecture)
-        : base(platform, architecture, WindowsPlatformToolset.Latest, WindowsPlatformSDK.v10_0_19041_0)
+        : base(platform, architecture, WindowsPlatformBase.GetToolsets().Keys.Where(x => x <= WindowsPlatformToolset.v142).Max(), WindowsPlatformSDK.v10_0_19041_0)
         {
             // Setup system paths
             SystemIncludePaths.Add(Path.Combine(GDK.Instance.RootPath, "GRDK\\GameKit\\Include"));
