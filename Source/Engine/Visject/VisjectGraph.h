@@ -262,6 +262,19 @@ protected:
 
     virtual Value eatBox(Node* caller, Box* box) = 0;
     virtual Graph* GetCurrentGraph() const = 0;
-    Value tryGetValue(Box* box, int32 defaultValueBoxIndex, const Value& defaultValue);
-    Value tryGetValue(Box* box, const Value& defaultValue);
+
+    FORCE_INLINE Value tryGetValue(Box* box, int32 defaultValueBoxIndex, const Value& defaultValue)
+    {
+        const auto parentNode = box->GetParent<Node>();
+        if (box->HasConnection())
+            return eatBox(parentNode, box->FirstConnection());
+        if (parentNode->Values.Count() > defaultValueBoxIndex)
+            return Value(parentNode->Values[defaultValueBoxIndex]);
+        return defaultValue;
+    }
+
+    FORCE_INLINE Value tryGetValue(Box* box, const Value& defaultValue)
+    {
+        return box && box->HasConnection() ? eatBox(box->GetParent<Node>(), box->FirstConnection()) : defaultValue;
+    }
 };

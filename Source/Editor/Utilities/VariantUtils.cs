@@ -288,7 +288,7 @@ namespace FlaxEditor.Utilities
             case VariantType.Matrix: return new ScriptType(typeof(Matrix));
             case VariantType.Array: return new ScriptType(typeof(object[]));
             case VariantType.Dictionary: return new ScriptType(typeof(Dictionary<object, object>));
-            case VariantType.ManagedObject: return new ScriptType(typeof(object));
+            case VariantType.ManagedObject: return ScriptType.Object;
             case VariantType.Blob: return new ScriptType(typeof(byte[]));
             default: throw new ArgumentOutOfRangeException($"Unknown Variant Type {variantType} without typename.");
             }
@@ -540,6 +540,15 @@ namespace FlaxEditor.Utilities
             case VariantType.ManagedObject:
                 stream.Write(int.MaxValue);
                 stream.WriteStrAnsi(type.FullName, 77);
+                break;
+            case VariantType.Array:
+                if (type != typeof(object[]))
+                {
+                    stream.Write(int.MaxValue);
+                    stream.WriteStrAnsi(type.FullName, 77);
+                }
+                else
+                    stream.Write(0);
                 break;
             default:
                 stream.Write(0);

@@ -64,7 +64,7 @@ namespace FlaxEditor.Scripting
                 Utilities.Utils.InitDefaultValues(value);
                 return value;
             }
-            if (new ScriptType(typeof(object)).IsAssignableFrom(type))
+            if (ScriptType.Object.IsAssignableFrom(type))
                 return null;
             if (type.CanCreateInstance)
             {

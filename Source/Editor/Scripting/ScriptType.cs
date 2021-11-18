@@ -699,6 +699,11 @@ namespace FlaxEditor.Scripting
         public static readonly ScriptType Void = new ScriptType(typeof(void));
 
         /// <summary>
+        /// A <see cref="ScriptType" /> that is System.Object.
+        /// </summary>
+        public static readonly ScriptType Object = new ScriptType(typeof(object));
+
+        /// <summary>
         /// Gets the type of the script as <see cref="System.Type"/>.
         /// </summary>
         public Type Type => _managed;

@@ -1323,18 +1323,3 @@ void VisjectExecutor::ProcessGroupCollections(Box* box, Node* node, Value& value
         }
     }
 }
-
-VisjectExecutor::Value VisjectExecutor::tryGetValue(Box* box, int32 defaultValueBoxIndex, const Value& defaultValue)
-{
-    const auto parentNode = box->GetParent<Node>();
-    if (box->HasConnection())
-        return eatBox(parentNode, box->FirstConnection());
-    if (parentNode->Values.Count() > defaultValueBoxIndex)
-        return Value(parentNode->Values[defaultValueBoxIndex]);
-    return defaultValue;
-}
-
-VisjectExecutor::Value VisjectExecutor::tryGetValue(Box* box, const Value& defaultValue)
-{
-    return box && box->HasConnection() ? eatBox(box->GetParent<Node>(), box->FirstConnection()) : defaultValue;
-}

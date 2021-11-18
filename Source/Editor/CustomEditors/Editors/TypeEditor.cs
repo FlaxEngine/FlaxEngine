@@ -119,7 +119,7 @@ namespace FlaxEditor.CustomEditors.Editors
         public TypePickerControl()
         : base(0, 0, 50, 16)
         {
-            _type = new ScriptType(typeof(object));
+            _type = ScriptType.Object;
         }
 
         private bool IsValid(ScriptType obj)
@@ -400,9 +400,9 @@ namespace FlaxEditor.CustomEditors.Editors
             {
                 _element.CustomControl.ValueChanged += () => SetValue(_element.CustomControl.Value.Type);
 
-                if (_element.CustomControl.Type == new ScriptType(typeof(object)))
+                if (_element.CustomControl.Type == ScriptType.Object)
                 {
-                    _element.CustomControl.Type = Values.Type.Type != typeof(object) || Values[0] == null ? new ScriptType(typeof(object)) : TypeUtils.GetObjectType(Values[0]);
+                    _element.CustomControl.Type = Values.Type.Type != typeof(object) || Values[0] == null ? ScriptType.Object : TypeUtils.GetObjectType(Values[0]);
                 }
             }
         }

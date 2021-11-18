@@ -47,7 +47,7 @@ namespace FlaxEditor.CustomEditors.Editors
             {
                 if (_type == value)
                     return;
-                if (value == ScriptType.Null || (value.Type != typeof(Object) && !value.IsSubclassOf(new ScriptType(typeof(Object)))))
+                if (value == ScriptType.Null || (value.Type != typeof(Object) && !value.IsSubclassOf(ScriptType.Object)))
                     throw new ArgumentException(string.Format("Invalid type for FlaxObjectRefEditor. Input type: {0}", value != ScriptType.Null ? value.TypeName : "null"));
 
                 _type = value;
@@ -132,7 +132,7 @@ namespace FlaxEditor.CustomEditors.Editors
         public FlaxObjectRefPickerControl()
         : base(0, 0, 50, 16)
         {
-            _type = new ScriptType(typeof(Object));
+            _type = ScriptType.Object;
         }
 
         private bool IsValid(Object obj)

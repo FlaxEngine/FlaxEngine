@@ -855,7 +855,7 @@ namespace FlaxEditor.Surface.Archetypes
             {
                 _picker = new TypePickerControl
                 {
-                    Type = new ScriptType(typeof(object)),
+                    Type = ScriptType.Object,
                     Bounds = new Rectangle(FlaxEditor.Surface.Constants.NodeMarginX, FlaxEditor.Surface.Constants.NodeMarginY + FlaxEditor.Surface.Constants.NodeHeaderSize, 140, 16),
                     Parent = this,
                 };
@@ -1515,7 +1515,7 @@ namespace FlaxEditor.Surface.Archetypes
             {
                 TypeID = 26,
                 Title = "Cast Value",
-                Create = (id, context, arch, groupArch) => new CastNode(id, context, arch, groupArch, new ScriptType(typeof(object))),
+                Create = (id, context, arch, groupArch) => new CastNode(id, context, arch, groupArch, ScriptType.Object),
                 Description = "Tries to cast the object to a given type. Returns null if fails.",
                 Flags = NodeFlags.VisualScriptGraph,
                 Size = new Vector2(200, 60),

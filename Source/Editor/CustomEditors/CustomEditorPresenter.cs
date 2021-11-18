@@ -143,7 +143,7 @@ namespace FlaxEditor.CustomEditors
                     }
                     else
                     {
-                        var type = new ScriptType(typeof(object));
+                        var type = ScriptType.Object;
                         if (selection.HasDifferentTypes == false)
                             type = TypeUtils.GetObjectType(selection[0]);
                         Editor = CustomEditorsUtil.CreateEditor(type, false);

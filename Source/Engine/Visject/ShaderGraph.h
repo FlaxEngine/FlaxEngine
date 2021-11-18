@@ -48,7 +48,7 @@ public:
 
 public:
 
-    ShaderGraphBox* FirstConnection() const
+    FORCE_INLINE ShaderGraphBox* FirstConnection() const
     {
         return (ShaderGraphBox*)Connections[0];
     }

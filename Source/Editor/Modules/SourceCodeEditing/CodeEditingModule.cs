@@ -8,7 +8,6 @@ using FlaxEditor.Options;
 using FlaxEditor.Scripting;
 using FlaxEngine;
 using FlaxEngine.GUI;
-using Object = System.Object;
 
 namespace FlaxEditor.Modules.SourceCodeEditing
 {
@@ -21,7 +20,7 @@ namespace FlaxEditor.Modules.SourceCodeEditing
         private sealed class CachedVisualScriptPropertyTypesCollection : CachedTypesCollection
         {
             public CachedVisualScriptPropertyTypesCollection(int capacity, Func<Assembly, bool> checkAssembly)
-            : base(capacity, new ScriptType(typeof(Object)), CheckFunc, checkAssembly)
+            : base(capacity, ScriptType.Object, CheckFunc, checkAssembly)
             {
             }
 

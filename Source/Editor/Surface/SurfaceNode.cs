@@ -317,7 +317,7 @@ namespace FlaxEditor.Surface
         public Box AddBox(bool isOut, int id, int yLevel, string text, ScriptType type, bool single, int valueIndex = -1)
         {
             if (type == ScriptType.Null)
-                type = new ScriptType(typeof(object));
+                type = ScriptType.Object;
 
             // Try to reuse box
             var box = GetBox(id);

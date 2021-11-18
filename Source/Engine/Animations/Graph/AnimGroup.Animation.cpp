@@ -587,13 +587,7 @@ void AnimGraphExecutor::ProcessGroupAnimation(Box* boxBase, Node* nodeBase, Valu
     {
         // Animation Output
     case 1:
-    {
-        if (box->HasConnection())
-            value = eatBox(nodeBase, box->FirstConnection());
-        else
-            value = Value::Null;
-        break;
-    }
+        value = tryGetValue(box, Value::Null);
         // Animation
     case 2:
     {
@@ -1637,7 +1631,7 @@ void AnimGraphExecutor::ProcessGroupAnimation(Box* boxBase, Node* nodeBase, Valu
 
         // Evaluate the function output
         context.GraphStack.Push((Graph*)data.Graph);
-        value = functionOutputBox && functionOutputBox->HasConnection() ? eatBox(nodeBase, functionOutputBox->FirstConnection()) : Value::Zero;
+        value = tryGetValue(functionOutputBox, Value::Zero);
         context.GraphStack.Pop();
         break;
     }
