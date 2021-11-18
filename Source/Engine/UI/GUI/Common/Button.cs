@@ -145,6 +145,16 @@ namespace FlaxEngine.GUI
         }
 
         /// <summary>
+        /// Initializes a new instance of the <see cref="Button"/> class.
+        /// </summary>
+        /// <param name="location">Position</param>
+        /// <param name="size">Size</param>
+        public Button(Vector2 location, Vector2 size)
+        : this(location.X, location.Y, size.X, size.Y)
+        {
+        }
+
+        /// <summary>
         /// Called when mouse clicks the button.
         /// </summary>
         protected virtual void OnClick()
@@ -219,7 +229,7 @@ namespace FlaxEngine.GUI
             Render2D.DrawRectangle(clientRect, borderColor);
 
             // Draw text
-            Render2D.DrawText(_font.GetFont(), TextMaterial, _text, clientRect, textColor, TextAlignment.Center, TextAlignment.Center);
+            Render2D.DrawText(_font?.GetFont(), TextMaterial, _text, clientRect, textColor, TextAlignment.Center, TextAlignment.Center);
         }
 
         /// <inheritdoc />

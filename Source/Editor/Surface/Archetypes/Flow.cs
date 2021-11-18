@@ -323,7 +323,7 @@ namespace FlaxEditor.Surface.Archetypes
                 Elements = new[]
                 {
                     NodeElementArchetype.Factory.Input(0, string.Empty, false, typeof(void), 0),
-                    NodeElementArchetype.Factory.Input(1, "Array", false, null, 1),
+                    NodeElementArchetype.Factory.Input(1, "Array", true, null, 1),
                     NodeElementArchetype.Factory.Input(2, "Break", false, typeof(void), 2),
                     NodeElementArchetype.Factory.Output(0, "Loop", typeof(void), 3, true),
                     NodeElementArchetype.Factory.Output(1, "Item", typeof(object), 4),

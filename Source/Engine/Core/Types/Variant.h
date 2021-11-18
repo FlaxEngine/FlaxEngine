@@ -93,6 +93,7 @@ public:
     explicit VariantType(Types type, const StringView& typeName);
     explicit VariantType(Types type, const StringAnsiView& typeName);
     explicit VariantType(Types type, struct _MonoClass* klass);
+    explicit VariantType(const StringAnsiView& typeName);
     VariantType(const VariantType& other);
     VariantType(VariantType&& other) noexcept;
 
@@ -119,6 +120,7 @@ public:
     void SetTypeName(const StringView& typeName);
     void SetTypeName(const StringAnsiView& typeName);
     const char* GetTypeName() const;
+    VariantType GetElementType() const;
     ::String ToString() const;
 };
 

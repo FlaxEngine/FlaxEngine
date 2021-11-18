@@ -32,7 +32,54 @@
 #include <ThirdParty/mono-2.0/mono/metadata/object.h>
 #endif
 
+namespace
+{
+    const char* InBuiltTypesTypeNames[37] =
+    {
+        // @formatter:off
+        "",// Null
+        "System.Void",// Void
+        "System.Boolean",// Bool
+        "System.Int32",// Int
+        "System.UInt32",// Uint
+        "System.Int64",// Int64
+        "System.UInt64",// Uint64
+        "System.Single",// Float
+        "System.Double",// Double
+        "System.IntPtr",// Pointer
+        "System.String",// String
+        "System.Object",// Object
+        "",// Structure
+        "FlaxEngine.Asset",// Asset
+        "System.Byte[]",// Blob
+        "",// Enum
+        "FlaxEngine.Vector2",// Vector2
+        "FlaxEngine.Vector3",// Vector3
+        "FlaxEngine.Vector4",// Vector4
+        "FlaxEngine.Color",// Color
+        "System.Guid",// Guid
+        "FlaxEngine.BoundingBox",// BoundingBox
+        "FlaxEngine.BoundingSphere",// BoundingSphere
+        "FlaxEngine.Quaternion",// Quaternion
+        "FlaxEngine.Transform",// Transform
+        "FlaxEngine.Rectangle",// Rectangle
+        "FlaxEngine.Ray",// Ray
+        "FlaxEngine.Matrix",// Matrix
+        "System.Object[]",// Array
+        "Dictionary<System.Object,System.Object>",// Dictionary
+        "System.Object",// ManagedObject
+        "System.Type",// Typename
+        "FlaxEngine.Int2"// Int2
+        "FlaxEngine.Int3"// Int3
+        "FlaxEngine.Int4"// Int4
+        "System.Int16",// Int16
+        "System.UInt16",// Uint16
+        // @formatter:on
+    };
+}
+
 static_assert(sizeof(VariantType) <= 16, "Invalid VariantType size!");
+static_assert((int32)VariantType::Types::MAX == ARRAY_COUNT(InBuiltTypesTypeNames), "Invalid amount of in-built types infos!");
 
 VariantType::VariantType(Types type, const StringView& typeName)
 {
@@ -54,9 +101,9 @@ VariantType::VariantType(Types type, const StringAnsiView& typeName)
     int32 length = typeName.Length();
     if (length)
     {
-        length++;
-        TypeName = static_cast<char*>(Allocator::Allocate(length));
+        TypeName = static_cast<char*>(Allocator::Allocate(length + 1));
         Platform::MemoryCopy(TypeName, typeName.Get(), length);
+        TypeName[length] = 0;
     }
 }
 
@@ -69,23 +116,77 @@ VariantType::VariantType(Types type, _MonoClass* klass)
     {
         MString typeName;
         MUtils::GetClassFullname(klass, typeName);
-        int32 length = typeName.Length() + 1;
-        TypeName = static_cast<char*>(Allocator::Allocate(length));
+        const int32 length = typeName.Length();
+        TypeName = static_cast<char*>(Allocator::Allocate(length + 1));
         Platform::MemoryCopy(TypeName, typeName.Get(), length);
+        TypeName[length] = 0;
     }
 #endif
+}
+
+VariantType::VariantType(const StringAnsiView& typeName)
+{
+    // Check case for array
+    if (typeName.EndsWith(StringAnsiView("[]"), StringSearchCase::CaseSensitive))
+    {
+        new(this) VariantType(Array, StringAnsiView(typeName.Get(), typeName.Length() - 2));
+        return;
+    }
+
+    // Try using in-built type
+    for (uint32 i = 0; i < ARRAY_COUNT(InBuiltTypesTypeNames); i++)
+    {
+        if (typeName == InBuiltTypesTypeNames[i])
+        {
+            new(this) VariantType((Types)i);
+            return;
+        }
+    }
+
+    // Try using scripting type
+    const ScriptingTypeHandle typeHandle = Scripting::FindScriptingType(typeName);
+    if (typeHandle)
+    {
+        const ScriptingType& type = typeHandle.GetType();
+        switch (type.Type)
+        {
+        case ScriptingTypes::Script:
+        case ScriptingTypes::Class:
+        case ScriptingTypes::Interface:
+            new(this) VariantType(Object, typeName);
+            return;
+        case ScriptingTypes::Structure:
+            new(this) VariantType(Structure, typeName);
+            return;
+        case ScriptingTypes::Enum:
+            new(this) VariantType(Enum, typeName);
+            return;
+        }
+    }
+
+    // Try using managed class
+#if USE_MONO
+    if (const auto mclass = Scripting::FindClass(typeName))
+    {
+        new(this) VariantType(ManagedObject, typeName);
+        return;
+    }
+#endif
+
+    new(this) VariantType();
+    LOG(Warning, "Missing scripting type \'{0}\'", ::String(typeName));
 }
 
 VariantType::VariantType(const VariantType& other)
 {
     Type = other.Type;
     TypeName = nullptr;
-    int32 length = StringUtils::Length(other.TypeName);
+    const int32 length = StringUtils::Length(other.TypeName);
     if (length)
     {
-        length++;
-        TypeName = static_cast<char*>(Allocator::Allocate(length));
+        TypeName = static_cast<char*>(Allocator::Allocate(length + 1));
         Platform::MemoryCopy(TypeName, other.TypeName, length);
+        TypeName[length] = 0;
     }
 }
 
@@ -119,12 +220,12 @@ VariantType& VariantType::operator=(const VariantType& other)
     Type = other.Type;
     Allocator::Free(TypeName);
     TypeName = nullptr;
-    int32 length = StringUtils::Length(other.TypeName);
+    const int32 length = StringUtils::Length(other.TypeName);
     if (length)
     {
-        length++;
-        TypeName = static_cast<char*>(Allocator::Allocate(length));
+        TypeName = static_cast<char*>(Allocator::Allocate(length + 1));
         Platform::MemoryCopy(TypeName, other.TypeName, length);
+        TypeName[length] = 0;
     }
     return *this;
 }
@@ -173,67 +274,21 @@ const char* VariantType::GetTypeName() const
 {
     if (TypeName)
         return TypeName;
-    switch (Type)
+    return InBuiltTypesTypeNames[Type];
+}
+
+VariantType VariantType::GetElementType() const
+{
+    if (Type == Array)
     {
-    case Void:
-        return "System.Void";
-    case Bool:
-        return "System.Boolean";
-    case Int16:
-        return "System.Int16";
-    case Uint16:
-        return "System.UInt16";
-    case Int:
-        return "System.Int32";
-    case Uint:
-        return "System.UInt32";
-    case Int64:
-        return "System.Int64";
-    case Uint64:
-        return "System.UInt64";
-    case Float:
-        return "System.Single";
-    case Double:
-        return "System.Double";
-    case Pointer:
-        return "System.IntPtr";
-    case String:
-        return "System.String";
-    case Object:
-        return "System.Object";
-    case Asset:
-        return "FlaxEngine.Asset";
-    case Vector2:
-        return "FlaxEngine.Vector2";
-    case Vector3:
-        return "FlaxEngine.Vector3";
-    case Vector4:
-        return "FlaxEngine.Vector4";
-    case Color:
-        return "FlaxEngine.Color";
-    case Guid:
-        return "System.Guid";
-    case BoundingBox:
-        return "FlaxEngine.BoundingBox";
-    case BoundingSphere:
-        return "FlaxEngine.BoundingSphere";
-    case Quaternion:
-        return "FlaxEngine.Quaternion";
-    case Transform:
-        return "FlaxEngine.Transform";
-    case Rectangle:
-        return "FlaxEngine.Rectangle";
-    case Ray:
-        return "FlaxEngine.Ray";
-    case Matrix:
-        return "FlaxEngine.Matrix";
-    case Typename:
-        return "System.Type";
-    case Array:
-        return "System.Object[]";
-    default:
-        return "";
+        if (TypeName)
+        {
+            const StringAnsiView elementTypename(TypeName, StringUtils::Length(TypeName) - 2);
+            return VariantType(elementTypename);
+        }
+        return VariantType(Object);
     }
+    return VariantType();
 }
 
 ::String VariantType::ToString() const
@@ -3219,7 +3274,7 @@ void Variant::AllocStructure()
     {
         if (typeName.Length() != 0)
         {
-            LOG(Warning, "Missing scripting type \'{0}\'", String(typeName.Get()));
+            LOG(Warning, "Missing scripting type \'{0}\'", String(typeName));
         }
         AsBlob.Data = nullptr;
         AsBlob.Length = 0;

@@ -117,6 +117,22 @@ void VisjectExecutor::ProcessGroupConstants(Box* box, Node* node, Value& value)
     case 11:
         value = node->Values[0];
         break;
+        // Array
+    case 13:
+        value = node->Values[0];
+        if (value.Type.Type == VariantType::Array)
+        {
+            auto& array = value.AsArray();
+            const int32 count = Math::Min(array.Count(), node->Boxes.Count() - 1);
+            const VariantType elementType = value.Type.GetElementType();
+            for (int32 i = 0; i < count; i++)
+            {
+                auto b = &node->Boxes[i + 1];
+                if (b && b->HasConnection())
+                    array[i] = eatBox(node, b->FirstConnection()).Cast(elementType);
+            }
+        }
+        break;
     default:
         break;
     }
