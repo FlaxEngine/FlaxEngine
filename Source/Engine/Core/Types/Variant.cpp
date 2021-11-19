@@ -502,6 +502,16 @@ Variant::Variant(decltype(nullptr))
 {
 }
 
+Variant::Variant(const VariantType& type)
+    : Type(type)
+{
+}
+
+Variant::Variant(VariantType&& type)
+    : Type(MoveTemp(type))
+{
+}
+
 Variant::Variant(bool v)
     : Type(VariantType::Bool)
 {

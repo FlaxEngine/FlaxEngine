@@ -159,11 +159,9 @@ VariantType MUtils::UnboxVariantType(MonoType* monoType)
     case MONO_TYPE_BOOLEAN:
         return VariantType(VariantType::Bool);
     case MONO_TYPE_I1:
-        return VariantType(VariantType::Int16);
-    case MONO_TYPE_U1:
-        return VariantType(VariantType::Int16);
     case MONO_TYPE_I2:
         return VariantType(VariantType::Int16);
+    case MONO_TYPE_U1:
     case MONO_TYPE_U2:
         return VariantType(VariantType::Uint16);
     case MONO_TYPE_I4:
@@ -186,8 +184,6 @@ VariantType MUtils::UnboxVariantType(MonoType* monoType)
     case MONO_TYPE_VALUETYPE:
         if (klass == stdTypes.GuidClass->GetNative())
             return VariantType(VariantType::Guid);
-        if (klass == stdTypes.TypeClass->GetNative())
-            return VariantType(VariantType::Typename);
         if (klass == stdTypes.Vector2Class->GetNative())
             return VariantType(VariantType::Vector2);
         if (klass == stdTypes.Vector3Class->GetNative())
@@ -232,6 +228,8 @@ VariantType MUtils::UnboxVariantType(MonoType* monoType)
     case MONO_TYPE_VALUETYPE:
         return VariantType(VariantType::Structure, fullname);
     }
+    if (klass == stdTypes.TypeClass->GetNative())
+        return VariantType(VariantType::Typename);
     if (mono_class_is_subclass_of(klass, Asset::GetStaticClass()->GetNative(), false) != 0)
     {
         if (klass == Asset::GetStaticClass()->GetNative())
@@ -268,101 +266,77 @@ Variant MUtils::UnboxVariant(MonoObject* value)
 {
     if (value == nullptr)
         return Variant::Null;
-
     const auto& stdTypes = *StdTypesContainer::Instance();
     const auto klass = mono_object_get_class(value);
+    void* unboxed = (byte*)value + sizeof(MonoObject);
+    const MonoType* monoType = mono_class_get_type(klass);
 
-    if (klass == mono_get_boolean_class())
-        return *static_cast<bool*>(mono_object_unbox(value));
-    if (klass == mono_get_byte_class())
-        return (int16)*static_cast<byte*>(mono_object_unbox(value));
-    if (klass == mono_get_sbyte_class())
-        return (int16)*static_cast<int8*>(mono_object_unbox(value));
-    if (klass == mono_get_int16_class())
-        return *static_cast<int16*>(mono_object_unbox(value));
-    if (klass == mono_get_uint16_class())
-        return *static_cast<uint16*>(mono_object_unbox(value));
-    if (klass == mono_get_int32_class())
-        return *static_cast<int32*>(mono_object_unbox(value));
-    if (klass == mono_get_uint32_class())
-        return *static_cast<uint32*>(mono_object_unbox(value));
-    if (klass == mono_get_int64_class())
-        return *static_cast<int64*>(mono_object_unbox(value));
-    if (klass == mono_get_uint64_class())
-        return *static_cast<uint64*>(mono_object_unbox(value));
-    if (klass == mono_get_char_class())
-        return *static_cast<Char*>(mono_object_unbox(value));
-    if (klass == mono_get_single_class())
-        return *static_cast<float*>(mono_object_unbox(value));
-    if (klass == mono_get_double_class())
-        return *static_cast<double*>(mono_object_unbox(value));
-    if (klass == stdTypes.GuidClass->GetNative())
-        return Variant(*static_cast<Guid*>(mono_object_unbox(value)));
-    if (klass == stdTypes.Vector2Class->GetNative())
-        return *static_cast<Vector2*>(mono_object_unbox(value));
-    if (klass == stdTypes.Vector3Class->GetNative())
-        return *static_cast<Vector3*>(mono_object_unbox(value));
-    if (klass == stdTypes.Vector4Class->GetNative())
-        return *static_cast<Vector4*>(mono_object_unbox(value));
-    if (klass == stdTypes.ColorClass->GetNative())
-        return *static_cast<Color*>(mono_object_unbox(value));
-    if (klass == mono_get_string_class())
+    // Fast type detection for in-built types
+    switch (monoType->type)
+    {
+    case MONO_TYPE_VOID:
+        return Variant(VariantType(VariantType::Void));
+    case MONO_TYPE_BOOLEAN:
+        return *static_cast<bool*>(unboxed);
+    case MONO_TYPE_I1:
+        return *static_cast<int8*>(unboxed);
+    case MONO_TYPE_U1:
+        return *static_cast<uint8*>(unboxed);
+    case MONO_TYPE_I2:
+        return *static_cast<int16*>(unboxed);
+    case MONO_TYPE_U2:
+        return *static_cast<uint16*>(unboxed);
+    case MONO_TYPE_CHAR:
+        return *static_cast<Char*>(unboxed);
+    case MONO_TYPE_I4:
+        return *static_cast<int32*>(unboxed);
+    case MONO_TYPE_U4:
+        return *static_cast<uint32*>(unboxed);
+    case MONO_TYPE_I8:
+        return *static_cast<int64*>(unboxed);
+    case MONO_TYPE_U8:
+        return *static_cast<uint64*>(unboxed);
+    case MONO_TYPE_R4:
+        return *static_cast<float*>(unboxed);
+    case MONO_TYPE_R8:
+        return *static_cast<double*>(unboxed);
+    case MONO_TYPE_STRING:
         return Variant(MUtils::ToString((MonoString*)value));
-    if (klass == stdTypes.BoundingBoxClass->GetNative())
-        return Variant(*static_cast<BoundingBox*>(mono_object_unbox(value)));
-    if (klass == stdTypes.QuaternionClass->GetNative())
-        return *static_cast<Quaternion*>(mono_object_unbox(value));
-    if (klass == stdTypes.TransformClass->GetNative())
-        return Variant(*static_cast<Transform*>(mono_object_unbox(value)));
-    if (klass == stdTypes.BoundingSphereClass->GetNative())
-        return *static_cast<BoundingSphere*>(mono_object_unbox(value));
-    if (klass == stdTypes.RectangleClass->GetNative())
-        return *static_cast<Rectangle*>(mono_object_unbox(value));
-    if (klass == mono_get_intptr_class() || klass == mono_get_uintptr_class())
-        return *static_cast<void**>(mono_object_unbox(value));
-    if (klass == stdTypes.MatrixClass->GetNative())
-        return Variant(*reinterpret_cast<Matrix*>(mono_object_unbox(value)));
-    if (mono_class_is_subclass_of(klass, Asset::GetStaticClass()->GetNative(), false) != 0)
-        return static_cast<Asset*>(ScriptingObject::ToNative(value));
-    if (mono_class_is_subclass_of(klass, ScriptingObject::GetStaticClass()->GetNative(), false) != 0)
-        return ScriptingObject::ToNative(value);
-    if (mono_class_is_enum(klass))
+    case MONO_TYPE_PTR:
+        return *static_cast<void**>(unboxed);
+    case MONO_TYPE_VALUETYPE:
+        if (klass == stdTypes.GuidClass->GetNative())
+            return Variant(*static_cast<Guid*>(unboxed));
+        if (klass == stdTypes.Vector2Class->GetNative())
+            return *static_cast<Vector2*>(unboxed);
+        if (klass == stdTypes.Vector3Class->GetNative())
+            return *static_cast<Vector3*>(unboxed);
+        if (klass == stdTypes.Vector4Class->GetNative())
+            return *static_cast<Vector4*>(unboxed);
+        if (klass == stdTypes.ColorClass->GetNative())
+            return *static_cast<Color*>(unboxed);
+        if (klass == stdTypes.BoundingBoxClass->GetNative())
+            return Variant(*static_cast<BoundingBox*>(unboxed));
+        if (klass == stdTypes.QuaternionClass->GetNative())
+            return *static_cast<Quaternion*>(unboxed);
+        if (klass == stdTypes.TransformClass->GetNative())
+            return Variant(*static_cast<Transform*>(unboxed));
+        if (klass == stdTypes.BoundingSphereClass->GetNative())
+            return *static_cast<BoundingSphere*>(unboxed);
+        if (klass == stdTypes.RectangleClass->GetNative())
+            return *static_cast<Rectangle*>(unboxed);
+        if (klass == stdTypes.MatrixClass->GetNative())
+            return Variant(*reinterpret_cast<Matrix*>(unboxed));
+        break;
+    case MONO_TYPE_SZARRAY:
+    case MONO_TYPE_ARRAY:
     {
-        MString fullname;
-        GetClassFullname(klass, fullname);
-        Variant v;
-        v.Type = MoveTemp(VariantType(VariantType::Enum, fullname));
-        // TODO: what about 64-bit enum? use enum size with memcpy
-        v.AsUint64 = *static_cast<uint32*>(mono_object_unbox(value));
-        return v;
-    }
-    if (mono_class_is_valuetype(klass))
-    {
-        MString fullname;
-        GetClassFullname(klass, fullname);
-        const ScriptingTypeHandle typeHandle = Scripting::FindScriptingType(fullname);
-        if (typeHandle)
+        if (klass == mono_array_class_get(mono_get_byte_class(), 1))
         {
-            const ScriptingType& type = typeHandle.GetType();
             Variant v;
-            v.Type = MoveTemp(VariantType(VariantType::Structure, fullname));
-            v.AsBlob.Data = Allocator::Allocate(type.Size);
-            v.AsBlob.Length = type.Size;
-            type.Struct.Ctor(v.AsBlob.Data);
-            type.Struct.Unbox(v.AsBlob.Data, value);
+            v.SetBlob(mono_array_addr((MonoArray*)value, byte, 0), (int32)mono_array_length((MonoArray*)value));
             return v;
         }
-        return Variant(value);
-    }
-    if (klass == mono_array_class_get(mono_get_byte_class(), 1))
-    {
-        Variant v;
-        v.SetBlob(mono_array_addr((MonoArray*)value, byte, 0), (int32)mono_array_length((MonoArray*)value));
-        return v;
-    }
-    MonoType* monoType = mono_class_get_type(klass);
-    if (monoType->type == MONO_TYPE_SZARRAY || monoType->type == MONO_TYPE_ARRAY)
-    {
         MString fullname;
         GetClassFullname(klass, fullname);
         Variant v;
@@ -370,7 +344,7 @@ Variant MUtils::UnboxVariant(MonoObject* value)
         auto& array = v.AsArray();
         array.Resize((int32)mono_array_length((MonoArray*)value));
         const StringAnsiView elementTypename(*fullname, fullname.Length() - 2);
-        MonoClass* elementClass = monoType->data.array->eklass;
+        MonoClass* elementClass = mono_class_get_element_class(klass);
         uint32_t elementAlign;
         const int32 elementSize = mono_class_value_size(elementClass, &elementAlign);
         if (mono_class_is_enum(elementClass))
@@ -464,6 +438,40 @@ Variant MUtils::UnboxVariant(MonoObject* value)
                 array[i] = UnboxVariant(mono_array_get((MonoArray*)value, MonoObject*, i));
         }
         return v;
+    }
+    }
+
+    if (mono_class_is_subclass_of(klass, Asset::GetStaticClass()->GetNative(), false) != 0)
+        return static_cast<Asset*>(ScriptingObject::ToNative(value));
+    if (mono_class_is_subclass_of(klass, ScriptingObject::GetStaticClass()->GetNative(), false) != 0)
+        return ScriptingObject::ToNative(value);
+    if (mono_class_is_enum(klass))
+    {
+        MString fullname;
+        GetClassFullname(klass, fullname);
+        Variant v;
+        v.Type = MoveTemp(VariantType(VariantType::Enum, fullname));
+        // TODO: what about 64-bit enum? use enum size with memcpy
+        v.AsUint64 = *static_cast<uint32*>(mono_object_unbox(value));
+        return v;
+    }
+    if (mono_class_is_valuetype(klass))
+    {
+        MString fullname;
+        GetClassFullname(klass, fullname);
+        const ScriptingTypeHandle typeHandle = Scripting::FindScriptingType(fullname);
+        if (typeHandle)
+        {
+            const ScriptingType& type = typeHandle.GetType();
+            Variant v;
+            v.Type = MoveTemp(VariantType(VariantType::Structure, fullname));
+            v.AsBlob.Data = Allocator::Allocate(type.Size);
+            v.AsBlob.Length = type.Size;
+            type.Struct.Ctor(v.AsBlob.Data);
+            type.Struct.Unbox(v.AsBlob.Data, value);
+            return v;
+        }
+        return Variant(value);
     }
     // TODO: support any dictionary unboxing
 
