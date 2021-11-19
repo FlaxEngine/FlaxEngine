@@ -1164,7 +1164,7 @@ void VisualScriptExecutor::ProcessGroupFlow(Box* boxBase, Node* node, Value& val
                 if (boxBase->HasConnection())
                     eatBox(node, boxBase->FirstConnection());
             }
-            boxBase = node->GetBox(5);
+            boxBase = node->GetBox(6);
             if (boxBase->HasConnection())
                 eatBox(node, boxBase->FirstConnection());
             break;
@@ -1179,6 +1179,11 @@ void VisualScriptExecutor::ProcessGroupFlow(Box* boxBase, Node* node, Value& val
         case 4:
             if (iteratorIndex != scope->ReturnedValues.Count() && arrayIndex != scope->ReturnedValues.Count())
                 value = scope->ReturnedValues[arrayIndex].Value.AsArray()[(int32)scope->ReturnedValues[iteratorIndex].Value];
+            break;
+            // Index
+        case 5:
+            if (iteratorIndex != scope->ReturnedValues.Count())
+                value = (int32)scope->ReturnedValues[iteratorIndex].Value;
             break;
         }
         break;

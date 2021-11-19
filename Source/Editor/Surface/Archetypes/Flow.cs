@@ -327,7 +327,8 @@ namespace FlaxEditor.Surface.Archetypes
                     NodeElementArchetype.Factory.Input(2, "Break", false, typeof(void), 2),
                     NodeElementArchetype.Factory.Output(0, "Loop", typeof(void), 3, true),
                     NodeElementArchetype.Factory.Output(1, "Item", typeof(object), 4),
-                    NodeElementArchetype.Factory.Output(2, "Done", typeof(void), 5, true),
+                    NodeElementArchetype.Factory.Output(2, "Index", typeof(int), 5),
+                    NodeElementArchetype.Factory.Output(3, "Done", typeof(void), 6, true),
                 }
             },
         };
