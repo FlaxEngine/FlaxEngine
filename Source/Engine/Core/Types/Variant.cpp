@@ -2433,7 +2433,21 @@ String Variant::ToString() const
     case VariantType::Int:
         return StringUtils::ToString(AsInt);
     case VariantType::Uint:
+        return StringUtils::ToString(AsUint);
     case VariantType::Enum:
+        if (Type.TypeName)
+        {
+            const ScriptingTypeHandle typeHandle = Scripting::FindScriptingType(StringAnsiView(Type.TypeName));
+            if (typeHandle && typeHandle.GetType().Type == ScriptingTypes::Enum)
+            {
+                const auto items = typeHandle.GetType().Enum.Items;
+                for (int32 i = 0; items[i].Name; i++)
+                {
+                    if (items[i].Value == AsUint)
+                        return String(items[i].Name);
+                }
+            }
+        }
         return StringUtils::ToString(AsUint);
     case VariantType::Int64:
         return StringUtils::ToString(AsInt64);
