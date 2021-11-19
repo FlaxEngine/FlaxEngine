@@ -50,7 +50,7 @@ namespace FlaxEditor.Surface.Archetypes
                 Size = new Vector2(150, 40),
                 ConnectionsHints = ConnectionsHint.Array,
                 IndependentBoxes = new int[] { 0 },
-                DependentBoxes = new int[] {  },
+                DependentBoxes = new int[] { 1 },
                 DependentBoxFilter = GetArrayItemType,
                 Elements = new[]
                 {
@@ -66,7 +66,7 @@ namespace FlaxEditor.Surface.Archetypes
                 Description = "Returns the zero-based index of the item found in the array or -1 if nothing found.",
                 AlternativeTitles = new[] { "IndexOf", "Find" },
                 Flags = NodeFlags.VisualScriptGraph | NodeFlags.AnimGraph,
-                Size = new Vector2(150, 40),
+                Size = new Vector2(170, 40),
                 ConnectionsHints = ConnectionsHint.Array,
                 IndependentBoxes = new int[] { 0 },
                 DependentBoxes = new int[] { 1, 2 },
@@ -85,7 +85,7 @@ namespace FlaxEditor.Surface.Archetypes
                 Description = "Returns the zero-based index of the item found in the array or -1 if nothing found (searches from back to front).",
                 AlternativeTitles = new[] { "LastIndexOf", "FindLast" },
                 Flags = NodeFlags.VisualScriptGraph | NodeFlags.AnimGraph,
-                Size = new Vector2(150, 40),
+                Size = new Vector2(170, 40),
                 ConnectionsHints = ConnectionsHint.Array,
                 IndependentBoxes = new int[] { 0 },
                 DependentBoxes = new int[] { 1, 2 },

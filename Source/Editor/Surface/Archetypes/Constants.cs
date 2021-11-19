@@ -78,6 +78,7 @@ namespace FlaxEditor.Surface.Archetypes
             private TypePickerControl _typePicker;
             private Button _addButton;
             private Button _removeButton;
+            private bool _isUpdatingUI;
 
             public ArrayNode(uint id, VisjectSurfaceContext context, NodeArchetype nodeArch, GroupArchetype groupArch)
             : base(id, context, nodeArch, groupArch)
@@ -86,9 +87,9 @@ namespace FlaxEditor.Surface.Archetypes
 
             public override void OnValuesChanged()
             {
-                base.OnValuesChanged();
-
                 UpdateUI();
+
+                base.OnValuesChanged();
             }
 
             public override void OnLoaded()
@@ -122,7 +123,13 @@ namespace FlaxEditor.Surface.Archetypes
 
             private void Set(int length)
             {
-                SetValue(0, Array.CreateInstance(TypeUtils.GetType(_typePicker.Value), length));
+                if (_isUpdatingUI)
+                    return;
+                var prev = (Array)Values[0];
+                var next = Array.CreateInstance(TypeUtils.GetType(_typePicker.Value), length);
+                if (prev.GetType() == next.GetType())
+                    Array.Copy(prev, next, Mathf.Min(prev.Length, next.Length));
+                SetValue(0, next);
             }
             
             public override void OnSurfaceCanEditChanged(bool canEdit)
@@ -146,11 +153,15 @@ namespace FlaxEditor.Surface.Archetypes
 
             private void UpdateUI()
             {
+                if (_isUpdatingUI)
+                    return;
                 var array = (Array)Values[0];
                 var arrayType = array.GetType();
                 var elementType = new ScriptType(arrayType.GetElementType());
+                _isUpdatingUI = true;
                 _typePicker.Value = elementType;
                 _output.CurrentType = new ScriptType(arrayType);
+                _isUpdatingUI = false;
 
                 var count = array.Length;
                 var countMin = 0;

@@ -928,8 +928,7 @@ namespace FlaxEditor.Surface.Elements
         /// </summary>
         public void UpdateDefaultValue()
         {
-            var currentType = CurrentType.Type;
-            if (_defaultValueEditor != null && currentType != null)
+            if (_defaultValueEditor != null && _currentType.Type != null)
             {
                 _editor.UpdateDefaultValue(this, _defaultValueEditor);
             }
@@ -986,7 +985,7 @@ namespace FlaxEditor.Surface.Elements
         {
             base.OnCurrentTypeChanged();
 
-            if (_defaultValueEditor != null && !_editor.IsValid(this, _defaultValueEditor))
+            if (_defaultValueEditor != null && !(_editor.IsValid(this, _defaultValueEditor) && _editor.CanUse(this, ref _currentType)))
             {
                 _defaultValueEditor.Dispose();
                 _defaultValueEditor = null;
@@ -1055,6 +1054,19 @@ namespace FlaxEditor.Surface.Elements
             }
 
             return base.OnMouseUp(location, button);
+        }
+        
+        /// <inheritdoc />
+        public override void OnDestroy()
+        {
+            if (_defaultValueEditor != null)
+            {
+                _defaultValueEditor.Dispose();
+                _defaultValueEditor = null;
+                _editor = null;
+            }
+
+            base.OnDestroy();
         }
 
         private bool GetClipboardValue(out object result, bool deserialize)
@@ -1159,9 +1171,17 @@ namespace FlaxEditor.Surface.Elements
                 {
                     var bounds = new Rectangle(X + Width + 8 + Style.Current.FontSmall.MeasureText(Text).X, Y, 90, Height);
                     _editor = DefaultValueEditors[i];
-                    _defaultValueEditor = _editor.Create(this, ref bounds);
-                    if (_attributes != null)
-                        _editor.UpdateAttributes(this, _attributes, _defaultValueEditor);
+                    try
+                    {
+                        _defaultValueEditor = _editor.Create(this, ref bounds);
+                        if (_attributes != null)
+                            _editor.UpdateAttributes(this, _attributes, _defaultValueEditor);
+                    }
+                    catch (Exception ex)
+                    {
+                        Editor.LogWarning(ex);
+                        _editor = null;
+                    }
                     break;
                 }
             }
