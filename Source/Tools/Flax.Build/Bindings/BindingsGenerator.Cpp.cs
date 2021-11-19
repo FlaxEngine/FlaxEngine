@@ -1979,6 +1979,8 @@ namespace Flax.Build.Bindings
             contents.Append($"StringAnsiView(\"{enumTypeNameManaged}\", {enumTypeNameManaged.Length}), ");
             contents.Append($"sizeof({enumTypeNameNative}), ");
             contents.Append($"{enumTypeNameInternal}Internal::Items);").AppendLine();
+
+            contents.AppendLine($"template<> {moduleInfo.Name.ToUpperInvariant()}_API ScriptingTypeHandle StaticType<{enumTypeNameNative}>() {{ return {enumTypeNameInternal}_TypeInitializer; }}");
         }
 
         private static void GenerateCppInterface(BuildData buildData, StringBuilder contents, ModuleInfo moduleInfo, InterfaceInfo interfaceInfo)

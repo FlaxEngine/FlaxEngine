@@ -87,6 +87,9 @@ inline uint32 GetHash(const ScriptingTypeHandle& key)
     return (uint32)(uintptr)key.Module ^ key.TypeIndex;
 }
 
+// C++ templated type accessor for scripting types.
+template<typename Type> ScriptingTypeHandle StaticType();
+
 /// <summary>
 /// The scripting types.
 /// </summary>
