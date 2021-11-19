@@ -192,6 +192,8 @@ public:
     Variant(Variant&& other) noexcept;
 
     explicit Variant(decltype(nullptr));
+    explicit Variant(const VariantType& type);
+    explicit Variant(VariantType&& type);
     Variant(bool v);
     Variant(int16 v);
     Variant(uint16 v);

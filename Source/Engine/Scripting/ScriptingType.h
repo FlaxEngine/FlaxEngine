@@ -116,6 +116,7 @@ struct FLAXENGINE_API ScriptingType
     typedef void (*GetField)(void* ptr, const String& name, Variant& value);
     typedef void (*SetField)(void* ptr, const String& name, const Variant& value);
     typedef void* (*GetInterfaceWrapper)(ScriptingObject* obj);
+    typedef struct { uint64 Value; const char* Name; } EnumItem;
 
     struct InterfaceImplementation
     {
@@ -248,6 +249,12 @@ struct FLAXENGINE_API ScriptingType
 
         struct
         {
+            // Enum items table (the last item name is null)
+            EnumItem* Items;
+        } Enum;
+
+        struct
+        {
             // Class constructor method pointer
             Ctor Ctor;
 
@@ -268,6 +275,7 @@ struct FLAXENGINE_API ScriptingType
     ScriptingType(const StringAnsiView& fullname, BinaryModule* module, int32 size, InitRuntimeHandler initRuntime = DefaultInitRuntime, SpawnHandler spawn = DefaultSpawn, ScriptingTypeInitializer* baseType = nullptr, SetupScriptVTableHandler setupScriptVTable = nullptr, SetupScriptObjectVTableHandler setupScriptObjectVTable = nullptr, const InterfaceImplementation* interfaces = nullptr);
     ScriptingType(const StringAnsiView& fullname, BinaryModule* module, int32 size, InitRuntimeHandler initRuntime, Ctor ctor, Dtor dtor, ScriptingTypeInitializer* baseType, const InterfaceImplementation* interfaces = nullptr);
     ScriptingType(const StringAnsiView& fullname, BinaryModule* module, int32 size, InitRuntimeHandler initRuntime, Ctor ctor, Dtor dtor, Copy copy, Box box, Unbox unbox, GetField getField, SetField setField, ScriptingTypeInitializer* baseType, const InterfaceImplementation* interfaces = nullptr);
+    ScriptingType(const StringAnsiView& fullname, BinaryModule* module, int32 size, EnumItem* items);
     ScriptingType(const StringAnsiView& fullname, BinaryModule* module, InitRuntimeHandler initRuntime, SetupScriptVTableHandler setupScriptVTable, SetupScriptObjectVTableHandler setupScriptObjectVTable, GetInterfaceWrapper getInterfaceWrapper);
     ScriptingType(const ScriptingType& other);
     ScriptingType(ScriptingType&& other);
@@ -275,25 +283,17 @@ struct FLAXENGINE_API ScriptingType
     ScriptingType& operator=(const ScriptingType& other) = delete;
     ~ScriptingType();
 
-    static void DefaultInitRuntime()
-    {
-    }
-
-    static ScriptingObject* DefaultSpawn(const ScriptingObjectSpawnParams& params)
-    {
-        return nullptr;
-    }
+    static void DefaultInitRuntime();
+    static ScriptingObject* DefaultSpawn(const ScriptingObjectSpawnParams& params);
 
     /// <summary>
     /// Gets the handle to this type.
     /// </summary>
-    /// <returns>This type handle.</returns>
     ScriptingTypeHandle GetHandle() const;
 
     /// <summary>
     /// Gets the handle to the base type of this type.
     /// </summary>
-    /// <returns>The base type handle (might be empty).</returns>
     ScriptingTypeHandle GetBaseType() const
     {
         return BaseTypePtr ? *BaseTypePtr : BaseTypeHandle;
@@ -323,6 +323,7 @@ struct FLAXENGINE_API ScriptingTypeInitializer : ScriptingTypeHandle
     ScriptingTypeInitializer(BinaryModule* module, const StringAnsiView& fullname, int32 size, ScriptingType::InitRuntimeHandler initRuntime = ScriptingType::DefaultInitRuntime, ScriptingType::SpawnHandler spawn = ScriptingType::DefaultSpawn, ScriptingTypeInitializer* baseType = nullptr, ScriptingType::SetupScriptVTableHandler setupScriptVTable = nullptr, ScriptingType::SetupScriptObjectVTableHandler setupScriptObjectVTable = nullptr, const ScriptingType::InterfaceImplementation* interfaces = nullptr);
     ScriptingTypeInitializer(BinaryModule* module, const StringAnsiView& fullname, int32 size, ScriptingType::InitRuntimeHandler initRuntime, ScriptingType::Ctor ctor, ScriptingType::Dtor dtor, ScriptingTypeInitializer* baseType = nullptr, const ScriptingType::InterfaceImplementation* interfaces = nullptr);
     ScriptingTypeInitializer(BinaryModule* module, const StringAnsiView& fullname, int32 size, ScriptingType::InitRuntimeHandler initRuntime, ScriptingType::Ctor ctor, ScriptingType::Dtor dtor, ScriptingType::Copy copy, ScriptingType::Box box, ScriptingType::Unbox unbox, ScriptingType::GetField getField, ScriptingType::SetField setField, ScriptingTypeInitializer* baseType = nullptr, const ScriptingType::InterfaceImplementation* interfaces = nullptr);
+    ScriptingTypeInitializer(BinaryModule* module, const StringAnsiView& fullname, int32 size, ScriptingType::EnumItem* items);
     ScriptingTypeInitializer(BinaryModule* module, const StringAnsiView& fullname, ScriptingType::InitRuntimeHandler initRuntime, ScriptingType::SetupScriptVTableHandler setupScriptVTable, ScriptingType::SetupScriptObjectVTableHandler setupScriptObjectVTable, ScriptingType::GetInterfaceWrapper getInterfaceWrapper);
 };
 

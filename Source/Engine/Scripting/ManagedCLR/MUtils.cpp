@@ -571,7 +571,7 @@ MonoObject* MUtils::BoxVariant(const Variant& value)
             else if (mono_class_is_valuetype(elementClass))
             {
                 // Array of Structures
-                VariantType elementType = UnboxVariantType(mono_class_get_type(elementClass));
+                const VariantType elementType = UnboxVariantType(mono_class_get_type(elementClass));
                 switch (elementType.Type)
                 {
                 case VariantType::Bool:

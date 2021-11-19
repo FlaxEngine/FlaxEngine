@@ -1952,6 +1952,35 @@ namespace Flax.Build.Bindings
             }
         }
 
+        private static void GenerateCppEnum(BuildData buildData, StringBuilder contents, ModuleInfo moduleInfo, EnumInfo enumInfo)
+        {
+            var enumTypeNameNative = enumInfo.FullNameNative;
+            var enumTypeNameManaged = enumInfo.FullNameManaged;
+            var enumTypeNameInternal = enumInfo.NativeName;
+            if (enumInfo.Parent != null && !(enumInfo.Parent is FileInfo))
+                enumTypeNameInternal = enumInfo.Parent.FullNameNative + '_' + enumTypeNameInternal;
+            
+            contents.AppendLine();
+            contents.AppendFormat("class {0}Internal", enumTypeNameInternal).AppendLine();
+            contents.Append('{').AppendLine();
+            contents.AppendLine("public:");
+            contents.AppendLine("    static ScriptingType::EnumItem Items[];");
+            contents.Append('}').Append(';').AppendLine();
+            contents.AppendLine();
+
+            // Items
+            contents.AppendFormat("ScriptingType::EnumItem {0}Internal::Items[] = {{", enumTypeNameInternal).AppendLine();
+            foreach (var entry in enumInfo.Entries)
+                contents.AppendFormat("    {{ (uint64){0}::{1}, \"{1}\" }},", enumTypeNameNative, entry.Name).AppendLine();
+            contents.AppendLine("    { 0, nullptr }");
+            contents.AppendLine("};").AppendLine();
+
+            contents.Append($"ScriptingTypeInitializer {enumTypeNameInternal}_TypeInitializer((BinaryModule*)GetBinaryModule{moduleInfo.Name}(), ");
+            contents.Append($"StringAnsiView(\"{enumTypeNameManaged}\", {enumTypeNameManaged.Length}), ");
+            contents.Append($"sizeof({enumTypeNameNative}), ");
+            contents.Append($"{enumTypeNameInternal}Internal::Items);").AppendLine();
+        }
+
         private static void GenerateCppInterface(BuildData buildData, StringBuilder contents, ModuleInfo moduleInfo, InterfaceInfo interfaceInfo)
         {
             var interfaceTypeNameNative = interfaceInfo.FullNameNative;
@@ -2072,6 +2101,8 @@ namespace Flax.Build.Bindings
                     GenerateCppClass(buildData, contents, moduleInfo, classInfo);
                 else if (type is StructureInfo structureInfo)
                     GenerateCppStruct(buildData, contents, moduleInfo, structureInfo);
+                else if (type is EnumInfo enumInfo)
+                    GenerateCppEnum(buildData, contents, moduleInfo, enumInfo);
                 else if (type is InterfaceInfo interfaceInfo)
                     GenerateCppInterface(buildData, contents, moduleInfo, interfaceInfo);
                 else if (type is InjectCppCodeInfo injectCppCodeInfo)
