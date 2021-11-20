@@ -530,7 +530,7 @@ public:
             for (int32 i = 0; i < oldSize; i++)
             {
                 if (oldData[i].IsOccupied())
-                    Add(oldData[i].Key, oldData[i].Value);
+                    Add(oldData[i].Key, MoveTemp(oldData[i].Value));
             }
         }
         if (oldElementsCount != 0)
