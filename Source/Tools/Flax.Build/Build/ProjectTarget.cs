@@ -64,7 +64,6 @@ namespace Flax.Build
             var depsRoot = options.DepsFolder;
             options.CompileEnv.IncludePaths.Add(Path.Combine(Globals.EngineRoot, @"Source\ThirdParty\mono-2.0")); // TODO: let mono module expose it
             options.CompileEnv.IncludePaths.Add(Path.Combine(Globals.EngineRoot, @"Source\ThirdParty"));
-            options.CompileEnv.IncludePaths.Add(Path.Combine(Project.ProjectFolderPath, "Source"));
             options.LinkEnv.LibraryPaths.Add(depsRoot);
 
             // Ensure to propagate no-C# scripting define to the whole codebase
@@ -73,10 +72,10 @@ namespace Flax.Build
                 options.CompileEnv.PreprocessorDefinitions.Add("COMPILE_WITHOUT_CSHARP");
             }
 
-            // Add include paths for referenced projects sources
-            foreach (var reference in Project.References)
+            // Add include paths for this and all referenced projects sources
+            foreach (var project in Project.GetAllProjects())
             {
-                options.CompileEnv.IncludePaths.Add(Path.Combine(reference.Project.ProjectFolderPath, "Source"));
+                options.CompileEnv.IncludePaths.Add(Path.Combine(project.ProjectFolderPath, "Source"));
             }
         }
     }
