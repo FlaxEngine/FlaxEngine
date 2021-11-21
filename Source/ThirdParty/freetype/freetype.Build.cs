@@ -1,6 +1,5 @@
 // Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
 
-using System;
 using System.IO;
 using Flax.Build;
 using Flax.Build.NativeCpp;

@@ -27,6 +27,7 @@ namespace Flax.Deps.Dependencies
                         TargetPlatform.XboxOne,
                         TargetPlatform.XboxScarlett,
                         TargetPlatform.PS4,
+                        TargetPlatform.PS5,
                         TargetPlatform.Switch,
                     };
                 default: return new TargetPlatform[0];
@@ -81,6 +82,7 @@ namespace Flax.Deps.Dependencies
                 case TargetPlatform.UWP:
                 case TargetPlatform.XboxOne:
                 case TargetPlatform.PS4:
+                case TargetPlatform.PS5:
                 case TargetPlatform.XboxScarlett:
                 case TargetPlatform.Switch:
                 {

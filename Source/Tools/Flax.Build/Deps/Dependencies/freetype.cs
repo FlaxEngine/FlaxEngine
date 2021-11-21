@@ -170,6 +170,7 @@ namespace Flax.Deps.Dependencies
                     Utilities.DirectoryCopy(
                                             Path.Combine(GetBinariesFolder(options, platform), "Data", "freetype"),
                                             Path.Combine(root, "builds", "PS5"), false, true);
+                    Utilities.ReplaceInFile(Path.Combine(root, "include\\freetype\\config\\ftstdlib.h"), "#define ft_getenv  getenv", "char* ft_getenv(const char* n);");
 
                     // Build for PS5
                     var solutionPath = Path.Combine(root, "builds", "PS5", "freetype.sln");

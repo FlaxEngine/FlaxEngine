@@ -16,6 +16,9 @@
 #if defined(PLATFORM_PS4)
 #include "./FlaxPlatforms/PS4/Shaders/PS4Common.hlsl"
 #endif
+#if defined(PLATFORM_PS5)
+#include "./FlaxPlatforms/PS5/Shaders/PS5Common.hlsl"
+#endif
 
 // Feature levels
 #define FEATURE_LEVEL_ES2 0
@@ -202,14 +205,14 @@ float Luminance(float3 color)
 }
 
 // Samples the unwrapped 3D texture (eg. volume texture of size 16x16x16 would be unwrapped to 256x16)
-half4 SampleUnwrappedTexture3D(Texture2D tex, SamplerState s, float3 uvw, float size)
+float4 SampleUnwrappedTexture3D(Texture2D tex, SamplerState s, float3 uvw, float size)
 {
 	float intW = floor(uvw.z * size - 0.5);
 	half fracW = uvw.z * size - 0.5 - intW;
 	float u = (uvw.x + intW) / size;
 	float v = uvw.y;
-	half4 rg0 = tex.Sample(s, float2(u, v));
-	half4 rg1 = tex.Sample(s, float2(u + 1.0f / size, v));
+	float4 rg0 = tex.Sample(s, float2(u, v));
+	float4 rg1 = tex.Sample(s, float2(u + 1.0f / size, v));
 	return lerp(rg0, rg1, fracW);
 }
 

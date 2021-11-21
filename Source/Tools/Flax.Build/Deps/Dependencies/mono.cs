@@ -31,7 +31,6 @@ namespace Flax.Deps.Dependencies
                         TargetPlatform.Windows,
                         TargetPlatform.UWP,
                         TargetPlatform.XboxOne,
-                        TargetPlatform.PS4,
                         TargetPlatform.XboxScarlett,
                         TargetPlatform.Switch,
                     };
@@ -571,11 +570,6 @@ namespace Flax.Deps.Dependencies
                     Utilities.DirectoryCopy(Path.Combine(srcMonoLibs, "xbuild-frameworks", ".NETFramework", "v4.5"), Path.Combine(dstMonoEditorLibs, "xbuild-frameworks", ".NETFramework", "v4.5"), true, true);
                     Utilities.FilesDelete(dstMonoLibs, "*.pdb", true);
                     Utilities.FilesDelete(dstMonoEditorLibs, "*.pdb", true);
-                    break;
-                }
-                case TargetPlatform.PS4:
-                {
-                    // TODO: implement automatic extraction of the package from mono-ps4-binaries
                     break;
                 }
                 case TargetPlatform.XboxOne:
