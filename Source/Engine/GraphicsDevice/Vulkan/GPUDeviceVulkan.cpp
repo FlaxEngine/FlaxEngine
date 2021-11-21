@@ -1136,6 +1136,12 @@ GPUDevice* GPUDeviceVulkan::Create()
     // Enumerate all GPU devices and pick one
     uint32 gpuCount = 0;
     VALIDATE_VULKAN_RESULT(vkEnumeratePhysicalDevices(Instance, &gpuCount, nullptr));
+    if (gpuCount <= 0)
+    {
+        LOG(Warning, "No valid GPU found for Vulkan.");
+        Platform::Fatal(TEXT("Vulkan failed to create instance\n\nDo you have a Vulkan-compatible GPU?"));
+        return nullptr;
+    }
     ASSERT(gpuCount >= 1);
     Array<VkPhysicalDevice, InlinedAllocation<4>> gpus;
     gpus.Resize(gpuCount);
