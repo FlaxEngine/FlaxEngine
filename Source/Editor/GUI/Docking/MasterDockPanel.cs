@@ -132,7 +132,7 @@ namespace FlaxEditor.GUI.Docking
         public override DockState TryGetDockState(out float splitterValue)
         {
             splitterValue = 0.5f;
-            return DockState.Unknown;
+            return DockState.DockFill;
         }
     }
 }
