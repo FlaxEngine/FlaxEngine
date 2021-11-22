@@ -953,8 +953,9 @@ bool TerrainPatch::SetupHeightMap(int32 heightMapLength, const float* heightMap,
         chunk._yHeight = chunkHeights[chunkIndex];
         chunk.UpdateTransform();
     }
-    _terrain->UpdateBounds();
     UpdateCollision();
+    _terrain->UpdateBounds();
+    _terrain->UpdateLayerBits();
 
 #if TERRAIN_UPDATING
     // Invalidate cache
