@@ -436,6 +436,8 @@ void Terrain::Setup(int32 lodCount, int32 chunkSize)
 
 void Terrain::AddPatches(const Int2& numberOfPatches)
 {
+    if (_chunkSize == 0)
+        Setup();
     _patches.ClearDelete();
     _patches.EnsureCapacity(numberOfPatches.X * numberOfPatches.Y);
 
@@ -473,6 +475,8 @@ void Terrain::AddPatch(const Int2& patchCoord)
         LOG(Warning, "Cannot add patch at {0}x{1}. The patch at the given location already exists.", patchCoord.X, patchCoord.Y);
         return;
     }
+    if (_chunkSize == 0)
+        Setup();
 
     patch = ::New<TerrainPatch>();
     patch->Init(this, patchCoord.X, patchCoord.Y);
