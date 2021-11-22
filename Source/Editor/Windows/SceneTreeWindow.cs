@@ -3,9 +3,12 @@
 using System;
 using System.Collections.Generic;
 using FlaxEditor.Gizmo;
+using FlaxEditor.Content;
 using FlaxEditor.GUI.Tree;
+using FlaxEditor.GUI.Drag;
 using FlaxEditor.SceneGraph;
 using FlaxEditor.SceneGraph.GUI;
+using FlaxEditor.Scripting;
 using FlaxEditor.States;
 using FlaxEngine;
 using FlaxEngine.GUI;
@@ -129,6 +132,10 @@ namespace FlaxEditor.Windows
         private Tree _tree;
         private bool _isUpdatingSelection;
         private bool _isMouseDown;
+
+        private DragAssets _dragAssets;
+        private DragActorType _dragActorType;
+        private DragHandlers _dragHandlers;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="SceneTreeWindow"/> class.
@@ -319,6 +326,24 @@ namespace FlaxEditor.Windows
 
             _isUpdatingSelection = false;
         }
+        
+        private static bool ValidateDragActor(ActorNode actorNode)
+        {
+            // Reject dragging actors not linked to scene (eg. from prefab)
+            if (actorNode.ParentScene == null)
+                return false;
+            return true;
+        }
+
+        private bool ValidateDragAsset(AssetItem assetItem)
+        {
+            return assetItem.OnEditorDrag(this);
+        }
+
+        private static bool ValidateDragActorType(ScriptType actorType)
+        {
+            return true;
+        }
 
         /// <inheritdoc />
         public override void Draw()
@@ -397,8 +422,98 @@ namespace FlaxEditor.Windows
         }
 
         /// <inheritdoc />
+        public override DragDropEffect OnDragEnter(ref Vector2 location, DragData data)
+        {
+            var result = base.OnDragEnter(ref location, data);
+            if (result == DragDropEffect.None && Editor.StateMachine.CurrentState.CanEditScene)
+            {
+                if (_dragHandlers == null)
+                    _dragHandlers = new DragHandlers();
+                if (_dragAssets == null)
+                {
+                    _dragAssets = new DragAssets(ValidateDragAsset);
+                    _dragHandlers.Add(_dragAssets);
+                }
+                if (_dragAssets.OnDragEnter(data))
+                    return _dragAssets.Effect;
+                if (_dragActorType == null)
+                {
+                    _dragActorType = new DragActorType(ValidateDragActorType);
+                    _dragHandlers.Add(_dragActorType);
+                }
+                if (_dragActorType.OnDragEnter(data))
+                    return _dragActorType.Effect;
+            }
+            return result;
+        }
+
+        /// <inheritdoc />
+        public override DragDropEffect OnDragMove(ref Vector2 location, DragData data)
+        {
+            var result = base.OnDragMove(ref location, data);
+            if (result == DragDropEffect.None && Editor.StateMachine.CurrentState.CanEditScene)
+            {
+                result = _dragHandlers.Effect;
+            }
+            return result;
+        }
+
+        /// <inheritdoc />
+        public override void OnDragLeave()
+        {
+            base.OnDragLeave();
+
+            _dragHandlers?.OnDragLeave();
+        }
+
+        /// <inheritdoc />
+        public override DragDropEffect OnDragDrop(ref Vector2 location, DragData data)
+        {
+            var result = base.OnDragDrop(ref location, data);
+            if (result == DragDropEffect.None)
+            {
+                // Drag assets
+                if (_dragAssets != null && _dragAssets.HasValidDrag)
+                {
+                    for (int i = 0; i < _dragAssets.Objects.Count; i++)
+                    {
+                        var item = _dragAssets.Objects[i];
+                        var actor = item.OnEditorDrop(this);
+                        actor.Name = item.ShortName;
+                        Level.SpawnActor(actor);
+                    }
+                    result = DragDropEffect.Move;
+                }
+                // Drag actor type
+                else if (_dragActorType != null && _dragActorType.HasValidDrag)
+                {
+                    for (int i = 0; i < _dragActorType.Objects.Count; i++)
+                    {
+                        var item = _dragActorType.Objects[i];
+                        var actor = item.CreateInstance() as Actor;
+                        if (actor == null)
+                        {
+                            Editor.LogWarning("Failed to spawn actor of type " + item.TypeName);
+                            continue;
+                        }
+                        actor.Name = item.Name;
+                        Level.SpawnActor(actor);
+                    }
+                    result = DragDropEffect.Move;
+                }
+
+                _dragHandlers.OnDragDrop(null);
+            }
+            return result;
+        }
+
+        /// <inheritdoc />
         public override void OnDestroy()
         {
+            _dragAssets = null;
+            _dragActorType = null;
+            _dragHandlers?.Clear();
+            _dragHandlers = null;
             _tree = null;
             _searchBox = null;
 
