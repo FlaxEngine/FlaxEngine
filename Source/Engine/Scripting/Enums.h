@@ -5,12 +5,14 @@
 #include "ScriptingType.h"
 #include "Engine/Core/Types/String.h"
 
-// Utilities for using enums types (declared in scripting with API_ENUM).
-template<class EnumType>
+/// <summary>
+/// Utilities for using enums types (declared in scripting with API_ENUM).
+/// </summary>
 class ScriptingEnum
 {
 public:
     // Gets the list with enum items (the last item Name is null)
+    template<class EnumType>
     static const ScriptingType::EnumItem* GetItems()
     {
         const ScriptingTypeHandle typeHandle = StaticType<EnumType>();
@@ -24,9 +26,10 @@ public:
     }
 
     // Gets the name of the enum value or null if invalid
+    template<class EnumType>
     static const char* GetName(EnumType value)
     {
-        if (const auto items = GetItems())
+        if (const auto items = GetItems<EnumType>())
         {
             for (int32 i = 0; items[i].Name; i++)
             {
@@ -38,15 +41,17 @@ public:
     }
 
     // Gets the name of the enum value or empty string if invalid
+    template<class EnumType>
     static String ToString(EnumType value)
     {
-        return String(GetName(value));
+        return String(GetName<EnumType>(value));
     }
 
     // Gets the value of the enum based on the name.
+    template<class EnumType>
     static EnumType FromString(const StringAnsiView& name)
     {
-        if (const auto items = GetItems())
+        if (const auto items = GetItems<EnumType>())
         {
             for (int32 i = 0; items[i].Name; i++)
             {
@@ -58,8 +63,9 @@ public:
     }
 
     // Gets the value of the enum based on the name.
+    template<class EnumType>
     static EnumType FromString(const StringView& name)
     {
-        return FromString(StringAnsi(name));
+        return FromString<EnumType>(StringAnsi(name));
     }
 };
