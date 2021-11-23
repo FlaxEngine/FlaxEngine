@@ -586,8 +586,7 @@ namespace FlaxEngine
         /// <param name="maxSpeed">The maximum speed.</param>
         /// <param name="deltaTime">The delta time (in seconds) since last update.</param>
         /// <returns>The smoothed value.</returns>
-        public static float SmoothDamp(float current, float target, ref float currentVelocity, float smoothTime, [DefaultValue("float.PositiveInfinity")]
-                                       float maxSpeed, [DefaultValue("Time.DeltaTime")] float deltaTime)
+        public static float SmoothDamp(float current, float target, ref float currentVelocity, float smoothTime, [DefaultValue("float.PositiveInfinity")] float maxSpeed, [DefaultValue("Time.DeltaTime")] float deltaTime)
         {
             smoothTime = Max(0.0001f, smoothTime);
             float a = 2f / smoothTime;
@@ -646,8 +645,7 @@ namespace FlaxEngine
         /// <param name="maxSpeed">The maximum speed.</param>
         /// <param name="deltaTime">The delta time (in seconds) since last update.</param>
         /// <returns>The smoothed value.</returns>
-        public static float SmoothDampAngle(float current, float target, ref float currentVelocity, float smoothTime, [DefaultValue("float.PositiveInfinity")]
-                                            float maxSpeed, [DefaultValue("Time.DeltaTime")] float deltaTime)
+        public static float SmoothDampAngle(float current, float target, ref float currentVelocity, float smoothTime, [DefaultValue("float.PositiveInfinity")] float maxSpeed, [DefaultValue("Time.DeltaTime")] float deltaTime)
         {
             target = current + DeltaAngle(current, target);
             return SmoothDamp(current, target, ref currentVelocity, smoothTime, maxSpeed, deltaTime);
@@ -905,26 +903,16 @@ namespace FlaxEngine
         }
 
         /// <summary>
-        /// Checks if a and b are almost equals, taking into account the magnitude of floating point numbers (unlike
-        /// <see cref="WithinEpsilon" /> method). See Remarks.
-        /// See remarks.
+        /// Checks if a and b are almost equals, taking into account the magnitude of floating point numbers (unlike <see cref="WithinEpsilon" /> method).
         /// </summary>
         /// <param name="a">The left value to compare.</param>
         /// <param name="b">The right value to compare.</param>
         /// <returns><c>true</c> if a almost equal to b, <c>false</c> otherwise</returns>
-        /// <remarks>
-        /// The code is using the technique described by Bruce Dawson in
-        /// <a href="http://randomascii.wordpress.com/2012/02/25/comparing-floating-point-numbers-2012-edition/">
-        ///   Comparing
-        ///   Floating point numbers 2012 edition
-        /// </a>
-        /// .
-        /// </remarks>
+        /// <remarks>The code is using the technique described by Bruce Dawson in <a href="http://randomascii.wordpress.com/2012/02/25/comparing-floating-point-numbers-2012-edition/">Comparing Floating point numbers 2012 edition</a>.</remarks>
         public static unsafe bool NearEqual(float a, float b)
         {
-            // Check if the numbers are really close -- needed
-            // when comparing numbers near zero.
-            if (IsZero(a - b))
+            // Check if the numbers are really close -- needed when comparing numbers near zero.
+            if (Math.Abs(a - b) < Epsilon)
                 return true;
 
             // Original from Bruce Dawson: http://randomascii.wordpress.com/2012/02/25/comparing-floating-point-numbers-2012-edition/
@@ -973,7 +961,7 @@ namespace FlaxEngine
         /// <returns><c>true</c> if the specified value is close to one (1.0f); otherwise, <c>false</c>.</returns>
         public static bool IsOne(float a)
         {
-            return IsZero(a - 1.0f);
+            return Math.Abs(a - 1.0f) < Epsilon;
         }
 
         /// <summary>
