@@ -588,6 +588,7 @@ void AnimGraphExecutor::ProcessGroupAnimation(Box* boxBase, Node* nodeBase, Valu
         // Animation Output
     case 1:
         value = tryGetValue(box, Value::Null);
+        break;
         // Animation
     case 2:
     {

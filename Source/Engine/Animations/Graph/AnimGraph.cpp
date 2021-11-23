@@ -258,17 +258,22 @@ void AnimGraphExecutor::Update(AnimGraphInstanceData& data, float dt)
     }
 
     // Update the animation graph and gather skeleton nodes transformations in nodes local space
-    AnimGraphImpulse* animResult;
+    AnimGraphImpulse* animResult = nullptr;
     {
         ANIM_GRAPH_PROFILE_EVENT("Evaluate");
 
-        auto result = eatBox((Node*)_graph._rootNode, &_graph._rootNode->Boxes[0]);
-        if (result.Type.Type != VariantType::Pointer)
+        const Variant result = eatBox((Node*)_graph._rootNode, &_graph._rootNode->Boxes[0]);
+        switch (result.Type.Type)
         {
-            result = VariantType::Null;
-            LOG(Warning, "Invalid animation update result");
+        case VariantType::Pointer:
+            animResult = (AnimGraphImpulse*)result.AsPointer;
+            break;
+        case ValueType::Null:
+            break;
+        default:
+            LOG(Warning, "Invalid animation update result type {0}", result.Type.ToString());
+            break;
         }
-        animResult = (AnimGraphImpulse*)result.AsPointer;
         if (animResult == nullptr)
             animResult = GetEmptyNodes();
     }
