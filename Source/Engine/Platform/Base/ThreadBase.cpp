@@ -4,6 +4,7 @@
 #include "Engine/Threading/IRunnable.h"
 #include "Engine/Threading/ThreadRegistry.h"
 #include "Engine/Core/Log.h"
+#include "Engine/Scripting/ManagedCLR/MCore.h"
 #if TRACY_ENABLE
 #include "Engine/Core/Math/Math.h"
 #include <ThirdParty/tracy/Tracy.h>
@@ -108,6 +109,8 @@ int32 ThreadBase::Run()
     _isRunning = false;
     ThreadExiting(thread, exitCode);
     ThreadRegistry::Remove(thread);
+    MCore::ExitThread(); // TODO: use mono_thread_detach instead of ext and unlink mono runtime from thread in ThreadExiting delegate
+    // mono terminates the native thread..
 
     return exitCode;
 }

@@ -63,7 +63,7 @@ MDomain* MCore::CreateDomain(const MString& domainName)
         if (MDomains[i]->GetName() == domainName)
             return MDomains[i];
     }
-    
+
     auto domain = New<MDomain>(domainName);
 #if USE_MONO
     const auto monoDomain = mono_domain_create_appdomain((char*)domainName.Get(), nullptr);
@@ -229,11 +229,6 @@ void OnGCEvent(MonoProfiler* profiler, MonoProfilerGCEvent event, uint32_t gener
 }
 
 #endif
-
-void OnThreadExiting(Thread* thread, int32 exitCode)
-{
-    MCore::ExitThread();
-}
 
 void OnLogCallback(const char* logDomain, const char* logLevel, const char* message, mono_bool fatal, void* userData)
 {
@@ -518,7 +513,7 @@ bool MCore::LoadEngine()
     }
 #endif
 
-// Init Mono
+    // Init Mono
 #if PLATFORM_ANDROID
     const char* monoVersion = "mobile";
 #else
@@ -543,9 +538,6 @@ bool MCore::LoadEngine()
     mono_domain_set_config(monoRootDomain, configDir.Get(), configFilename.Get());
     mono_thread_set_main(mono_thread_current());
 
-    // Register for threads ending to cleanup after managed runtime usage
-    Thread::ThreadExiting.Bind<OnThreadExiting>();
-
     // Info
     char* buildInfo = mono_get_runtime_build_info();
     LOG(Info, "Mono version: {0}", String(buildInfo));
@@ -564,8 +556,6 @@ long MonoHackSehExceptionHandler(class EXCEPTION_POINTERS* ep)
 
 void MCore::UnloadEngine()
 {
-    Thread::ThreadExiting.Unbind<OnThreadExiting>();
-
     // Only root domain should be alive at this point
     for (auto domain : MDomains)
     {
@@ -640,6 +630,7 @@ void MCore::ExitThread()
     if (!IsInMainThread() && mono_domain_get())
     {
         LOG(Info, "Thread 0x{0:x} exits the managed runtime", Platform::GetCurrentThreadID());
+        // TODO: use mono_thread_detach but modify mono to call mono_thread_info_detach there so the thread goes into STATE_DETACHED
         mono_thread_exit();
     }
 #endif
