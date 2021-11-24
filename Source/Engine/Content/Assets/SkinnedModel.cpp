@@ -118,8 +118,6 @@ SkinnedModel::SkinnedModel(const SpawnParams& params, const AssetInfo* info)
 
 SkinnedModel::~SkinnedModel()
 {
-    // Ensure to be fully disposed
-    ASSERT(IsInitialized() == false);
     ASSERT(_streamingTask == nullptr);
 }
 

@@ -125,8 +125,6 @@ Model::Model(const SpawnParams& params, const AssetInfo* info)
 
 Model::~Model()
 {
-    // Ensure to be fully disposed
-    ASSERT(IsInitialized() == false);
     ASSERT(_streamingTask == nullptr);
 }
 
