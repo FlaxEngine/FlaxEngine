@@ -189,6 +189,19 @@ namespace FlaxEditor.Content.Import
                 return true;
             }
 
+            public override bool OnKeyDown(KeyboardKeys key)
+            {
+                if (base.OnKeyDown(key))
+                    return true;
+                switch (key)
+                {
+                case KeyboardKeys.F2:
+                    StartRenaming();
+                    return true;
+                }
+                return false;
+            }
+
             /// <summary>
             /// Shows the rename popup for the item.
             /// </summary>
