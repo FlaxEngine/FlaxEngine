@@ -341,7 +341,7 @@ namespace FlaxEditor.Windows.Assets
                             editor.FloatValue.MinValue = -1;
                             editor.FloatValue.MaxValue = 1;
                             editor.FloatValue.SlideSpeed = 0.01f;
-                            editor.FloatValue.ValueChanged += () => { proxy.Window._preview.PreviewActor.SetBlendShapeWeight(blendShape, editor.FloatValue.Value); };
+                            editor.FloatValue.ValueChanged += () => { proxy.Window._preview.SetBlendShapeWeight(blendShape, editor.FloatValue.Value); };
                         }
                     }
                 }

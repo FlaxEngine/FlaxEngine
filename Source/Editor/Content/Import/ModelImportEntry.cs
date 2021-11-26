@@ -292,9 +292,9 @@ namespace FlaxEditor.Content.Import
         public bool SplitObjects { get; set; } = false;
 
         /// <summary>
-        /// The zero-based index for the mesh/animation clip to import. If the source file has more than one mesh/animation it can be used to pick a desire object.
+        /// The zero-based index for the mesh/animation clip to import. If the source file has more than one mesh/animation it can be used to pick a desire object. Default -1 imports all objects.
         /// </summary>
-        [EditorOrder(2010), DefaultValue(-1), EditorDisplay("Splitting"), Tooltip("The zero-based index for the mesh/animation clip to import. If the source file has more than one mesh/animation it can be used to pick a desire object.")]
+        [EditorOrder(2010), DefaultValue(-1), EditorDisplay("Splitting"), Tooltip("The zero-based index for the mesh/animation clip to import. If the source file has more than one mesh/animation it can be used to pick a desire object. Default -1 imports all objects.")]
         public int ObjectIndex { get; set; } = -1;
 
         [StructLayout(LayoutKind.Sequential)]
