@@ -511,6 +511,18 @@ void MeshData::TransformBuffer(const Matrix& matrix)
         Vector3::TransformNormal(Tangents[i], inverseTransposeMatrix, Tangents[i]);
         Tangents[i].Normalize();
     }
+
+    // Transform blend shapes
+    for (auto& blendShape : BlendShapes)
+    {
+        for (int32 i = 0; i < blendShape.Vertices.Count(); i++)
+        {
+            auto& v = blendShape.Vertices[i];
+            Vector3::Transform(v.PositionDelta, matrix, v.PositionDelta);
+            Vector3::TransformNormal(v.NormalDelta, inverseTransposeMatrix, v.NormalDelta);
+            v.NormalDelta.Normalize();
+        }
+    }
 }
 
 void MeshData::Merge(MeshData& other)
