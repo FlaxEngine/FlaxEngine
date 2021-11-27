@@ -983,9 +983,7 @@ namespace FlaxEngine
         /// <param name="value">The value.</param>
         /// <param name="min">The minimum.</param>
         /// <param name="max">The maximum.</param>
-        /// <returns>
-        ///   <c>true</c> if the specified value is in a given range; otherwise, <c>false</c>.
-        /// </returns>
+        /// <returns><c>true</c> if the specified value is in a given range; otherwise, <c>false</c>.</returns>
         public static bool IsInRange(float value, float min, float max)
         {
             return value >= min && value <= max;
@@ -997,9 +995,7 @@ namespace FlaxEngine
         /// <param name="value">The value.</param>
         /// <param name="min">The minimum.</param>
         /// <param name="max">The maximum.</param>
-        /// <returns>
-        ///   <c>true</c> if the specified value is NOT in a given range; otherwise, <c>false</c>.
-        /// </returns>
+        /// <returns><c>true</c> if the specified value is NOT in a given range; otherwise, <c>false</c>.</returns>
         public static bool IsNotInRange(float value, float min, float max)
         {
             return value < min || value > max;
@@ -1011,9 +1007,7 @@ namespace FlaxEngine
         /// <param name="value">The value.</param>
         /// <param name="min">The minimum.</param>
         /// <param name="max">The maximum.</param>
-        /// <returns>
-        ///   <c>true</c> if the specified value is in a given range; otherwise, <c>false</c>.
-        /// </returns>
+        /// <returns><c>true</c> if the specified value is in a given range; otherwise, <c>false</c>.</returns>
         public static bool IsInRange(int value, int min, int max)
         {
             return value >= min && value <= max;
@@ -1025,9 +1019,7 @@ namespace FlaxEngine
         /// <param name="value">The value.</param>
         /// <param name="min">The minimum.</param>
         /// <param name="max">The maximum.</param>
-        /// <returns>
-        ///   <c>true</c> if the specified value is NOT in a given range; otherwise, <c>false</c>.
-        /// </returns>
+        /// <returns><c>true</c> if the specified value is NOT in a given range; otherwise, <c>false</c>.</returns>
         public static bool IsNotInRange(int value, int min, int max)
         {
             return value < min || value > max;

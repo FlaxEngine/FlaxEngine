@@ -157,7 +157,6 @@ namespace FlaxEngine.GUI
         /// <summary>
         /// Initializes a new instance of the <see cref="Panel"/> class.
         /// </summary>
-        /// <inheritdoc />
         public Panel()
         : this(ScrollBars.None)
         {

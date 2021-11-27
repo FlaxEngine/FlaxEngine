@@ -183,22 +183,15 @@ namespace FlaxEngine
         /// <summary>
         /// Initializes a new instance of the <see cref="Vector4" /> struct.
         /// </summary>
-        /// <param name="values">
-        /// The values to assign to the X, Y, Z, and W components of the vector. This must be an array with
-        /// four elements.
-        /// </param>
+        /// <param name="values">The values to assign to the X, Y, Z, and W components of the vector. This must be an array with four elements.</param>
         /// <exception cref="ArgumentNullException">Thrown when <paramref name="values" /> is <c>null</c>.</exception>
-        /// <exception cref="ArgumentOutOfRangeException">
-        /// Thrown when <paramref name="values" /> contains more or less than four
-        /// elements.
-        /// </exception>
+        /// <exception cref="ArgumentOutOfRangeException">Thrown when <paramref name="values" /> contains more or less than four elements.</exception>
         public Vector4(float[] values)
         {
             if (values == null)
                 throw new ArgumentNullException(nameof(values));
             if (values.Length != 4)
                 throw new ArgumentOutOfRangeException(nameof(values), "There must be four and only four input values for Vector4.");
-
             X = values[0];
             Y = values[1];
             Z = values[2];
@@ -254,15 +247,9 @@ namespace FlaxEngine
         /// Gets or sets the component at the specified index.
         /// </summary>
         /// <value>The value of the X, Y, Z, or W component, depending on the index.</value>
-        /// <param name="index">
-        /// The index of the component to access. Use 0 for the X component, 1 for the Y component, 2 for the Z
-        /// component, and 3 for the W component.
-        /// </param>
+        /// <param name="index">The index of the component to access. Use 0 for the X component, 1 for the Y component, 2 for the Z component, and 3 for the W component.</param>
         /// <returns>The value of the component at the specified index.</returns>
-        /// <exception cref="System.ArgumentOutOfRangeException">
-        /// Thrown when the <paramref name="index" /> is out of the range [0,
-        /// 3].
-        /// </exception>
+        /// <exception cref="System.ArgumentOutOfRangeException">Thrown when the <paramref name="index" /> is out of the range [0,3].</exception>
         public float this[int index]
         {
             get
@@ -274,7 +261,6 @@ namespace FlaxEngine
                 case 2: return Z;
                 case 3: return W;
                 }
-
                 throw new ArgumentOutOfRangeException(nameof(index), "Indices for Vector4 run from 0 to 3, inclusive.");
             }
 
@@ -303,20 +289,14 @@ namespace FlaxEngine
         /// Calculates the length of the vector.
         /// </summary>
         /// <returns>The length of the vector.</returns>
-        /// <remarks>
-        /// <see cref="Vector4.LengthSquared" /> may be preferred when only the relative length is needed
-        /// and speed is of the essence.
-        /// </remarks>
+        /// <remarks><see cref="Vector4.LengthSquared" /> may be preferred when only the relative length is needed and speed is of the essence.</remarks>
         public float Length => (float)Math.Sqrt(X * X + Y * Y + Z * Z + W * W);
 
         /// <summary>
         /// Calculates the squared length of the vector.
         /// </summary>
         /// <returns>The squared length of the vector.</returns>
-        /// <remarks>
-        /// This method may be preferred to <see cref="Vector4.Length" /> when only a relative length is needed
-        /// and speed is of the essence.
-        /// </remarks>
+        /// <remarks>This method may be preferred to <see cref="Vector4.Length" /> when only a relative length is needed and speed is of the essence.</remarks>
         public float LengthSquared => X * X + Y * Y + Z * Z + W * W;
 
         /// <summary>
@@ -569,20 +549,13 @@ namespace FlaxEngine
         }
 
         /// <summary>
-        /// Returns a <see cref="Vector4" /> containing the 4D Cartesian coordinates of a point specified in Barycentric
-        /// coordinates relative to a 4D triangle.
+        /// Returns a <see cref="Vector4" /> containing the 4D Cartesian coordinates of a point specified in Barycentric coordinates relative to a 4D triangle.
         /// </summary>
         /// <param name="value1">A <see cref="Vector4" /> containing the 4D Cartesian coordinates of vertex 1 of the triangle.</param>
         /// <param name="value2">A <see cref="Vector4" /> containing the 4D Cartesian coordinates of vertex 2 of the triangle.</param>
         /// <param name="value3">A <see cref="Vector4" /> containing the 4D Cartesian coordinates of vertex 3 of the triangle.</param>
-        /// <param name="amount1">
-        /// Barycentric coordinate b2, which expresses the weighting factor toward vertex 2 (specified in
-        /// <paramref name="value2" />).
-        /// </param>
-        /// <param name="amount2">
-        /// Barycentric coordinate b3, which expresses the weighting factor toward vertex 3 (specified in
-        /// <paramref name="value3" />).
-        /// </param>
+        /// <param name="amount1">Barycentric coordinate b2, which expresses the weighting factor toward vertex 2 (specified in <paramref name="value2" />).</param>
+        /// <param name="amount2">Barycentric coordinate b3, which expresses the weighting factor toward vertex 3 (specified in <paramref name="value3" />).</param>
         /// <param name="result">When the method completes, contains the 4D Cartesian coordinates of the specified point.</param>
         public static void Barycentric(ref Vector4 value1, ref Vector4 value2, ref Vector4 value3, float amount1, float amount2, out Vector4 result)
         {
@@ -593,20 +566,13 @@ namespace FlaxEngine
         }
 
         /// <summary>
-        /// Returns a <see cref="Vector4" /> containing the 4D Cartesian coordinates of a point specified in Barycentric
-        /// coordinates relative to a 4D triangle.
+        /// Returns a <see cref="Vector4" /> containing the 4D Cartesian coordinates of a point specified in Barycentric coordinates relative to a 4D triangle.
         /// </summary>
         /// <param name="value1">A <see cref="Vector4" /> containing the 4D Cartesian coordinates of vertex 1 of the triangle.</param>
         /// <param name="value2">A <see cref="Vector4" /> containing the 4D Cartesian coordinates of vertex 2 of the triangle.</param>
         /// <param name="value3">A <see cref="Vector4" /> containing the 4D Cartesian coordinates of vertex 3 of the triangle.</param>
-        /// <param name="amount1">
-        /// Barycentric coordinate b2, which expresses the weighting factor toward vertex 2 (specified in
-        /// <paramref name="value2" />).
-        /// </param>
-        /// <param name="amount2">
-        /// Barycentric coordinate b3, which expresses the weighting factor toward vertex 3 (specified in
-        /// <paramref name="value3" />).
-        /// </param>
+        /// <param name="amount1">Barycentric coordinate b2, which expresses the weighting factor toward vertex 2 (specified in <paramref name="value2" />).</param>
+        /// <param name="amount2">Barycentric coordinate b3, which expresses the weighting factor toward vertex 3 (specified in <paramref name="value3" />).</param>
         /// <returns>A new <see cref="Vector4" /> containing the 4D Cartesian coordinates of the specified point.</returns>
         public static Vector4 Barycentric(Vector4 value1, Vector4 value2, Vector4 value3, float amount1, float amount2)
         {
@@ -661,18 +627,13 @@ namespace FlaxEngine
         /// <param name="value1">The first vector.</param>
         /// <param name="value2">The second vector.</param>
         /// <param name="result">When the method completes, contains the distance between the two vectors.</param>
-        /// <remarks>
-        /// <see cref="Vector4.DistanceSquared(ref Vector4, ref Vector4, out float)" /> may be preferred when only the relative
-        /// distance is needed
-        /// and speed is of the essence.
-        /// </remarks>
+        /// <remarks><see cref="Vector4.DistanceSquared(ref Vector4, ref Vector4, out float)" /> may be preferred when only the relative distance is needed and speed is of the essence.</remarks>
         public static void Distance(ref Vector4 value1, ref Vector4 value2, out float result)
         {
             float x = value1.X - value2.X;
             float y = value1.Y - value2.Y;
             float z = value1.Z - value2.Z;
             float w = value1.W - value2.W;
-
             result = (float)Math.Sqrt(x * x + y * y + z * z + w * w);
         }
 
@@ -682,17 +643,13 @@ namespace FlaxEngine
         /// <param name="value1">The first vector.</param>
         /// <param name="value2">The second vector.</param>
         /// <returns>The distance between the two vectors.</returns>
-        /// <remarks>
-        /// <see cref="Vector4.DistanceSquared(Vector4, Vector4)" /> may be preferred when only the relative distance is needed
-        /// and speed is of the essence.
-        /// </remarks>
+        /// <remarks><see cref="Vector4.DistanceSquared(Vector4, Vector4)" /> may be preferred when only the relative distance is needed and speed is of the essence.</remarks>
         public static float Distance(Vector4 value1, Vector4 value2)
         {
             float x = value1.X - value2.X;
             float y = value1.Y - value2.Y;
             float z = value1.Z - value2.Z;
             float w = value1.W - value2.W;
-
             return (float)Math.Sqrt(x * x + y * y + z * z + w * w);
         }
 
@@ -716,7 +673,6 @@ namespace FlaxEngine
             float y = value1.Y - value2.Y;
             float z = value1.Z - value2.Z;
             float w = value1.W - value2.W;
-
             result = x * x + y * y + z * z + w * w;
         }
 
@@ -740,7 +696,6 @@ namespace FlaxEngine
             float y = value1.Y - value2.Y;
             float z = value1.Z - value2.Z;
             float w = value1.W - value2.W;
-
             return x * x + y * y + z * z + w * w;
         }
 
@@ -877,10 +832,7 @@ namespace FlaxEngine
         /// <param name="end">End vector.</param>
         /// <param name="amount">Value between 0 and 1 indicating the weight of <paramref name="end" />.</param>
         /// <param name="result">When the method completes, contains the linear interpolation of the two vectors.</param>
-        /// <remarks>
-        /// Passing <paramref name="amount" /> a value of 0 will cause <paramref name="start" /> to be returned; a value of 1
-        /// will cause <paramref name="end" /> to be returned.
-        /// </remarks>
+        /// <remarks>Passing <paramref name="amount" /> a value of 0 will cause <paramref name="start" /> to be returned; a value of 1 will cause <paramref name="end" /> to be returned.</remarks>
         public static void Lerp(ref Vector4 start, ref Vector4 end, float amount, out Vector4 result)
         {
             result.X = Mathf.Lerp(start.X, end.X, amount);
@@ -896,10 +848,7 @@ namespace FlaxEngine
         /// <param name="end">End vector.</param>
         /// <param name="amount">Value between 0 and 1 indicating the weight of <paramref name="end" />.</param>
         /// <returns>The linear interpolation of the two vectors.</returns>
-        /// <remarks>
-        /// Passing <paramref name="amount" /> a value of 0 will cause <paramref name="start" /> to be returned; a value of 1
-        /// will cause <paramref name="end" /> to be returned.
-        /// </remarks>
+        /// <remarks>Passing <paramref name="amount" /> a value of 0 will cause <paramref name="start" /> to be returned; a value of 1 will cause <paramref name="end" /> to be returned.</remarks>
         public static Vector4 Lerp(Vector4 start, Vector4 end, float amount)
         {
             Lerp(ref start, ref end, amount, out Vector4 result);
@@ -1011,10 +960,7 @@ namespace FlaxEngine
         /// </summary>
         /// <param name="left">The first source vector.</param>
         /// <param name="right">The second source vector.</param>
-        /// <param name="result">
-        /// When the method completes, contains an new vector composed of the largest components of the source
-        /// vectors.
-        /// </param>
+        /// <param name="result">When the method completes, contains an new vector composed of the largest components of the source vectors.</param>
         public static void Max(ref Vector4 left, ref Vector4 right, out Vector4 result)
         {
             result.X = left.X > right.X ? left.X : right.X;
@@ -1040,10 +986,7 @@ namespace FlaxEngine
         /// </summary>
         /// <param name="left">The first source vector.</param>
         /// <param name="right">The second source vector.</param>
-        /// <param name="result">
-        /// When the method completes, contains an new vector composed of the smallest components of the
-        /// source vectors.
-        /// </param>
+        /// <param name="result">When the method completes, contains an new vector composed of the smallest components of the source vectors.</param>
         public static void Min(ref Vector4 left, ref Vector4 right, out Vector4 result)
         {
             result.X = left.X < right.X ? left.X : right.X;
@@ -1092,14 +1035,8 @@ namespace FlaxEngine
         ///   least stable.
         /// </para>
         /// </remarks>
-        /// <exception cref="ArgumentNullException">
-        /// Thrown when <paramref name="source" /> or <paramref name="destination" /> is
-        /// <c>null</c>.
-        /// </exception>
-        /// <exception cref="ArgumentOutOfRangeException">
-        /// Thrown when <paramref name="destination" /> is shorter in length than
-        /// <paramref name="source" />.
-        /// </exception>
+        /// <exception cref="ArgumentNullException">Thrown when <paramref name="source" /> or <paramref name="destination" /> is <c>null</c>.</exception>
+        /// <exception cref="ArgumentOutOfRangeException">Thrown when <paramref name="destination" /> is shorter in length than <paramref name="source" />.</exception>
         public static void Orthogonalize(Vector4[] destination, params Vector4[] source)
         {
             //Uses the modified Gram-Schmidt process.
@@ -1111,10 +1048,8 @@ namespace FlaxEngine
 
             if (source == null)
                 throw new ArgumentNullException(nameof(source));
-
             if (destination == null)
                 throw new ArgumentNullException(nameof(destination));
-
             if (destination.Length < source.Length)
                 throw new ArgumentOutOfRangeException(nameof(destination), "The destination array must be of same length or larger length than the source array.");
 
@@ -1147,14 +1082,8 @@ namespace FlaxEngine
         ///   least stable.
         /// </para>
         /// </remarks>
-        /// <exception cref="ArgumentNullException">
-        /// Thrown when <paramref name="source" /> or <paramref name="destination" /> is
-        /// <c>null</c>.
-        /// </exception>
-        /// <exception cref="ArgumentOutOfRangeException">
-        /// Thrown when <paramref name="destination" /> is shorter in length than
-        /// <paramref name="source" />.
-        /// </exception>
+        /// <exception cref="ArgumentNullException">Thrown when <paramref name="source" /> or <paramref name="destination" /> is <c>null</c>.</exception>
+        /// <exception cref="ArgumentOutOfRangeException">Thrown when <paramref name="destination" /> is shorter in length than <paramref name="source" />.</exception>
         public static void Orthonormalize(Vector4[] destination, params Vector4[] source)
         {
             //Uses the modified Gram-Schmidt process.
@@ -1168,10 +1097,8 @@ namespace FlaxEngine
 
             if (source == null)
                 throw new ArgumentNullException(nameof(source));
-
             if (destination == null)
                 throw new ArgumentNullException(nameof(destination));
-
             if (destination.Length < source.Length)
                 throw new ArgumentOutOfRangeException(nameof(destination), "The destination array must be of same length or larger length than the source array.");
 
@@ -1232,26 +1159,15 @@ namespace FlaxEngine
         /// </summary>
         /// <param name="source">The array of vectors to transform.</param>
         /// <param name="rotation">The <see cref="Quaternion" /> rotation to apply.</param>
-        /// <param name="destination">
-        /// The array for which the transformed vectors are stored.
-        /// This array may be the same array as <paramref name="source" />.
-        /// </param>
-        /// <exception cref="ArgumentNullException">
-        /// Thrown when <paramref name="source" /> or <paramref name="destination" /> is
-        /// <c>null</c>.
-        /// </exception>
-        /// <exception cref="ArgumentOutOfRangeException">
-        /// Thrown when <paramref name="destination" /> is shorter in length than
-        /// <paramref name="source" />.
-        /// </exception>
+        /// <param name="destination">The array for which the transformed vectors are stored. This array may be the same array as <paramref name="source" />.</param>
+        /// <exception cref="ArgumentNullException">Thrown when <paramref name="source" /> or <paramref name="destination" /> is <c>null</c>.</exception>
+        /// <exception cref="ArgumentOutOfRangeException">Thrown when <paramref name="destination" /> is shorter in length than <paramref name="source" />.</exception>
         public static void Transform(Vector4[] source, ref Quaternion rotation, Vector4[] destination)
         {
             if (source == null)
                 throw new ArgumentNullException(nameof(source));
-
             if (destination == null)
                 throw new ArgumentNullException(nameof(destination));
-
             if (destination.Length < source.Length)
                 throw new ArgumentOutOfRangeException(nameof(destination), "The destination array must be of same length or larger length than the source array.");
 
@@ -1318,26 +1234,15 @@ namespace FlaxEngine
         /// </summary>
         /// <param name="source">The array of vectors to transform.</param>
         /// <param name="transform">The transformation <see cref="Matrix" />.</param>
-        /// <param name="destination">
-        /// The array for which the transformed vectors are stored.
-        /// This array may be the same array as <paramref name="source" />.
-        /// </param>
-        /// <exception cref="ArgumentNullException">
-        /// Thrown when <paramref name="source" /> or <paramref name="destination" /> is
-        /// <c>null</c>.
-        /// </exception>
-        /// <exception cref="ArgumentOutOfRangeException">
-        /// Thrown when <paramref name="destination" /> is shorter in length than
-        /// <paramref name="source" />.
-        /// </exception>
+        /// <param name="destination">The array for which the transformed vectors are stored. This array may be the same array as <paramref name="source" />.</param>
+        /// <exception cref="ArgumentNullException">Thrown when <paramref name="source" /> or <paramref name="destination" /> is <c>null</c>.</exception>
+        /// <exception cref="ArgumentOutOfRangeException">Thrown when <paramref name="destination" /> is shorter in length than <paramref name="source" />.</exception>
         public static void Transform(Vector4[] source, ref Matrix transform, Vector4[] destination)
         {
             if (source == null)
                 throw new ArgumentNullException(nameof(source));
-
             if (destination == null)
                 throw new ArgumentNullException(nameof(destination));
-
             if (destination.Length < source.Length)
                 throw new ArgumentOutOfRangeException(nameof(destination), "The destination array must be of same length or larger length than the source array.");
 
@@ -1536,10 +1441,7 @@ namespace FlaxEngine
         /// </summary>
         /// <param name="left">The first value to compare.</param>
         /// <param name="right">The second value to compare.</param>
-        /// <returns>
-        /// <c>true</c> if <paramref name="left" /> has the same value as <paramref name="right" />; otherwise,
-        /// <c>false</c>.
-        /// </returns>
+        /// <returns><c>true</c> if <paramref name="left" /> has the same value as <paramref name="right" />; otherwise, <c>false</c>.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool operator ==(Vector4 left, Vector4 right)
         {
@@ -1551,10 +1453,7 @@ namespace FlaxEngine
         /// </summary>
         /// <param name="left">The first value to compare.</param>
         /// <param name="right">The second value to compare.</param>
-        /// <returns>
-        /// <c>true</c> if <paramref name="left" /> has a different value than <paramref name="right" />; otherwise,
-        /// <c>false</c>.
-        /// </returns>
+        /// <returns><c>true</c> if <paramref name="left" /> has a different value than <paramref name="right" />; otherwise, <c>false</c>.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool operator !=(Vector4 left, Vector4 right)
         {
@@ -1584,9 +1483,7 @@ namespace FlaxEngine
         /// <summary>
         /// Returns a <see cref="System.String" /> that represents this instance.
         /// </summary>
-        /// <returns>
-        /// A <see cref="System.String" /> that represents this instance.
-        /// </returns>
+        /// <returns>A <see cref="System.String" /> that represents this instance.</returns>
         public override string ToString()
         {
             return string.Format(CultureInfo.CurrentCulture, _formatString, X, Y, Z, W);
@@ -1596,25 +1493,19 @@ namespace FlaxEngine
         /// Returns a <see cref="System.String" /> that represents this instance.
         /// </summary>
         /// <param name="format">The format.</param>
-        /// <returns>
-        /// A <see cref="System.String" /> that represents this instance.
-        /// </returns>
+        /// <returns>A <see cref="System.String" /> that represents this instance.</returns>
         public string ToString(string format)
         {
             if (format == null)
                 return ToString();
-
-            return string.Format(CultureInfo.CurrentCulture, _formatString, X.ToString(format, CultureInfo.CurrentCulture),
-                                 Y.ToString(format, CultureInfo.CurrentCulture), Z.ToString(format, CultureInfo.CurrentCulture), W.ToString(format, CultureInfo.CurrentCulture));
+            return string.Format(CultureInfo.CurrentCulture, _formatString, X.ToString(format, CultureInfo.CurrentCulture), Y.ToString(format, CultureInfo.CurrentCulture), Z.ToString(format, CultureInfo.CurrentCulture), W.ToString(format, CultureInfo.CurrentCulture));
         }
 
         /// <summary>
         /// Returns a <see cref="System.String" /> that represents this instance.
         /// </summary>
         /// <param name="formatProvider">The format provider.</param>
-        /// <returns>
-        /// A <see cref="System.String" /> that represents this instance.
-        /// </returns>
+        /// <returns>A <see cref="System.String" /> that represents this instance.</returns>
         public string ToString(IFormatProvider formatProvider)
         {
             return string.Format(formatProvider, _formatString, X, Y, Z, W);
@@ -1625,24 +1516,17 @@ namespace FlaxEngine
         /// </summary>
         /// <param name="format">The format.</param>
         /// <param name="formatProvider">The format provider.</param>
-        /// <returns>
-        /// A <see cref="System.String" /> that represents this instance.
-        /// </returns>
+        /// <returns>A <see cref="System.String" /> that represents this instance.</returns>
         public string ToString(string format, IFormatProvider formatProvider)
         {
             if (format == null)
                 return ToString(formatProvider);
-
-            return string.Format(formatProvider, "X:{0} Y:{1} Z:{2} W:{3}", X.ToString(format, formatProvider),
-                                 Y.ToString(format, formatProvider), Z.ToString(format, formatProvider), W.ToString(format, formatProvider));
+            return string.Format(formatProvider, "X:{0} Y:{1} Z:{2} W:{3}", X.ToString(format, formatProvider), Y.ToString(format, formatProvider), Z.ToString(format, formatProvider), W.ToString(format, formatProvider));
         }
 
         /// <summary>
         /// Returns a hash code for this instance.
         /// </summary>
-        /// <returns>
-        /// A hash code for this instance, suitable for use in hashing algorithms and data structures like a hash table.
-        /// </returns>
         public override int GetHashCode()
         {
             unchecked
@@ -1659,24 +1543,17 @@ namespace FlaxEngine
         /// Determines whether the specified <see cref="Vector4" /> is equal to this instance.
         /// </summary>
         /// <param name="other">The <see cref="Vector4" /> to compare with this instance.</param>
-        /// <returns>
-        /// <c>true</c> if the specified <see cref="Vector4" /> is equal to this instance; otherwise, <c>false</c>.
-        /// </returns>
+        /// <returns><c>true</c> if the specified <see cref="Vector4" /> is equal to this instance; otherwise, <c>false</c>.</returns>
         public bool Equals(ref Vector4 other)
         {
-            return Mathf.NearEqual(other.X, X) &&
-                   Mathf.NearEqual(other.Y, Y) &&
-                   Mathf.NearEqual(other.Z, Z) &&
-                   Mathf.NearEqual(other.W, W);
+            return Mathf.NearEqual(other.X, X) && Mathf.NearEqual(other.Y, Y) && Mathf.NearEqual(other.Z, Z) && Mathf.NearEqual(other.W, W);
         }
 
         /// <summary>
         /// Determines whether the specified <see cref="Vector4" /> is equal to this instance.
         /// </summary>
         /// <param name="other">The <see cref="Vector4" /> to compare with this instance.</param>
-        /// <returns>
-        /// <c>true</c> if the specified <see cref="Vector4" /> is equal to this instance; otherwise, <c>false</c>.
-        /// </returns>
+        /// <returns><c>true</c> if the specified <see cref="Vector4" /> is equal to this instance; otherwise, <c>false</c>.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool Equals(Vector4 other)
         {
@@ -1687,9 +1564,7 @@ namespace FlaxEngine
         /// Determines whether the specified <see cref="System.Object" /> is equal to this instance.
         /// </summary>
         /// <param name="value">The <see cref="System.Object" /> to compare with this instance.</param>
-        /// <returns>
-        /// <c>true</c> if the specified <see cref="System.Object" /> is equal to this instance; otherwise, <c>false</c>.
-        /// </returns>
+        /// <returns><c>true</c> if the specified <see cref="System.Object" /> is equal to this instance; otherwise, <c>false</c>.</returns>
         public override bool Equals(object value)
         {
             if (!(value is Vector4 other))
