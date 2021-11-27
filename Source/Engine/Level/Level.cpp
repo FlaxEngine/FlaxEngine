@@ -887,7 +887,7 @@ bool Level::loadScene(rapidjson_flax::Value& data, int32 engineBuild, Scene** ou
         LOG(Error, "Cannot load scene without game modules loaded.");
 #if USE_EDITOR
         if (!CommandLine::Options.Headless.IsTrue())
-            MessageBox::Show(TEXT("Cannot load scene without game script modules. Please fix the compilation issues."), TEXT("Missing game modules"), MessageBoxButtons::OK, MessageBoxIcon::Error);
+            MessageBox::Show(TEXT("Cannot load scene without game script modules. Please fix the compilation issues. See logs for more info."), TEXT("Missing game modules"), MessageBoxButtons::OK, MessageBoxIcon::Error);
 #endif
         return true;
     }
