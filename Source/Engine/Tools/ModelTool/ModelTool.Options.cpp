@@ -54,7 +54,6 @@ void ModelTool::Options::Serialize(SerializeStream& stream, const void* otherObj
     SERIALIZE(OptimizeKeyframes);
     SERIALIZE(EnableRootMotion);
     SERIALIZE(RootNodeName);
-    SERIALIZE(AnimationIndex);
     SERIALIZE(GenerateLODs);
     SERIALIZE(BaseLOD);
     SERIALIZE(LODCount);
@@ -62,6 +61,8 @@ void ModelTool::Options::Serialize(SerializeStream& stream, const void* otherObj
     SERIALIZE(ImportMaterials);
     SERIALIZE(ImportTextures);
     SERIALIZE(RestoreMaterialsOnReimport);
+    SERIALIZE(SplitObjects);
+    SERIALIZE(ObjectIndex);
 }
 
 void ModelTool::Options::Deserialize(DeserializeStream& stream, ISerializeModifier* modifier)
@@ -90,7 +91,6 @@ void ModelTool::Options::Deserialize(DeserializeStream& stream, ISerializeModifi
     DESERIALIZE(OptimizeKeyframes);
     DESERIALIZE(EnableRootMotion);
     DESERIALIZE(RootNodeName);
-    DESERIALIZE(AnimationIndex);
     DESERIALIZE(GenerateLODs);
     DESERIALIZE(BaseLOD);
     DESERIALIZE(LODCount);
@@ -98,6 +98,14 @@ void ModelTool::Options::Deserialize(DeserializeStream& stream, ISerializeModifi
     DESERIALIZE(ImportMaterials);
     DESERIALIZE(ImportTextures);
     DESERIALIZE(RestoreMaterialsOnReimport);
+    DESERIALIZE(SplitObjects);
+    DESERIALIZE(ObjectIndex);
+
+    // [Deprecated on 23.11.2021, expires on 21.11.2023]
+    int32 AnimationIndex = -1;
+    DESERIALIZE(AnimationIndex);
+    if (AnimationIndex != -1)
+        ObjectIndex = AnimationIndex;
 }
 
 #endif

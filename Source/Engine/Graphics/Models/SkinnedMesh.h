@@ -19,8 +19,8 @@ API_CLASS(NoSpawn) class FLAXENGINE_API SkinnedMesh : public MeshBase
 DECLARE_SCRIPTING_TYPE_WITH_CONSTRUCTOR_IMPL(SkinnedMesh, MeshBase);
 protected:
 
-    GPUBuffer* _vertexBuffer;
-    GPUBuffer* _indexBuffer;
+    GPUBuffer* _vertexBuffer = nullptr;
+    GPUBuffer* _indexBuffer = nullptr;
     mutable Array<byte> _cachedIndexBuffer;
     mutable Array<byte> _cachedVertexBuffer;
     mutable int32 _cachedIndexBufferCount;

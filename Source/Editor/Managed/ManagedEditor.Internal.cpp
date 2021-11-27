@@ -183,7 +183,6 @@ struct InternalModelOptions
     byte OptimizeKeyframes;
     byte EnableRootMotion;
     MonoString* RootNodeName;
-    int32 AnimationIndex;
 
     // Level Of Detail
     byte GenerateLODs;
@@ -195,6 +194,10 @@ struct InternalModelOptions
     byte ImportMaterials;
     byte ImportTextures;
     byte RestoreMaterialsOnReimport;
+
+    // Splitting
+    byte SplitObjects;
+    int32 ObjectIndex;
 
     static void Convert(InternalModelOptions* from, ImportModelFile::Options* to)
     {
@@ -223,7 +226,6 @@ struct InternalModelOptions
         to->OptimizeKeyframes = from->OptimizeKeyframes;
         to->EnableRootMotion = from->EnableRootMotion;
         to->RootNodeName = MUtils::ToString(from->RootNodeName);
-        to->AnimationIndex = from->AnimationIndex;
         to->GenerateLODs = from->GenerateLODs;
         to->BaseLOD = from->BaseLOD;
         to->LODCount = from->LODCount;
@@ -231,6 +233,8 @@ struct InternalModelOptions
         to->ImportMaterials = from->ImportMaterials;
         to->ImportTextures = from->ImportTextures;
         to->RestoreMaterialsOnReimport = from->RestoreMaterialsOnReimport;
+        to->SplitObjects = from->SplitObjects;
+        to->ObjectIndex = from->ObjectIndex;
     }
 
     static void Convert(ImportModelFile::Options* from, InternalModelOptions* to)
@@ -260,7 +264,6 @@ struct InternalModelOptions
         to->OptimizeKeyframes = from->OptimizeKeyframes;
         to->EnableRootMotion = from->EnableRootMotion;
         to->RootNodeName = MUtils::ToString(from->RootNodeName);
-        to->AnimationIndex = from->AnimationIndex;
         to->GenerateLODs = from->GenerateLODs;
         to->BaseLOD = from->BaseLOD;
         to->LODCount = from->LODCount;
@@ -268,6 +271,8 @@ struct InternalModelOptions
         to->ImportMaterials = from->ImportMaterials;
         to->ImportTextures = from->ImportTextures;
         to->RestoreMaterialsOnReimport = from->RestoreMaterialsOnReimport;
+        to->SplitObjects = from->SplitObjects;
+        to->ObjectIndex = from->ObjectIndex;
     }
 };
 

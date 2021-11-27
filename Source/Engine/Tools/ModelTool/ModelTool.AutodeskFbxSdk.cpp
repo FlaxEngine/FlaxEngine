@@ -821,7 +821,7 @@ void BakeTransforms(FbxScene* scene)
     scene->GetRootNode()->ConvertPivotAnimationRecursive(nullptr, FbxNode::eDestinationPivot, frameRate, false);
 }
 
-bool ModelTool::ImportDataAutodeskFbxSdk(const char* path, ImportedModelData& data, const Options& options, String& errorMsg)
+bool ModelTool::ImportDataAutodeskFbxSdk(const char* path, ImportedModelData& data, Options& options, String& errorMsg)
 {
     ScopeLock lock(FbxSdkManager::Locker);
 

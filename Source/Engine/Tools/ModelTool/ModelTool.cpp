@@ -26,7 +26,7 @@ void RemoveNamespace(String& name)
         name = name.Substring(namespaceStart + 1);
 }
 
-bool ModelTool::ImportData(const String& path, ImportedModelData& data, Options options, String& errorMsg)
+bool ModelTool::ImportData(const String& path, ImportedModelData& data, Options& options, String& errorMsg)
 {
     // Validate options
     options.Scale = Math::Clamp(options.Scale, 0.0001f, 100000.0f);
@@ -313,7 +313,7 @@ void MeshOptDeallocate(void* ptr)
     Allocator::Free(ptr);
 }
 
-bool ModelTool::ImportModel(const String& path, ModelData& meshData, Options options, String& errorMsg, const String& autoImportOutput)
+bool ModelTool::ImportModel(const String& path, ModelData& meshData, Options& options, String& errorMsg, const String& autoImportOutput)
 {
     LOG(Info, "Importing model from \'{0}\'", path);
     const auto startTime = DateTime::NowUTC();

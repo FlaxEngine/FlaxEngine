@@ -244,12 +244,6 @@ namespace FlaxEditor.Content.Import
         public string RootNodeName { get; set; }
 
         /// <summary>
-        /// The zero-based index for the animation clip to import. If the source file has more than one animation it can be used to pick a desire clip.
-        /// </summary>
-        [EditorOrder(1080), DefaultValue(-1), EditorDisplay("Animation"), Tooltip("The zero-based index for the animation clip to import. If the source file has more than one animation it can be used to pick a desire clip.")]
-        public int AnimationIndex { get; set; } = -1;
-
-        /// <summary>
         /// If checked, the importer will generate a sequence of LODs based on the base LOD index.
         /// </summary>
         [EditorOrder(1100), DefaultValue(false), EditorDisplay("Level Of Detail", "Generate LODs"), Tooltip("If checked, the importer will generate a sequence of LODs based on the base LOD index.")]
@@ -290,6 +284,18 @@ namespace FlaxEditor.Content.Import
         /// </summary>
         [EditorOrder(420), DefaultValue(true), EditorDisplay("Materials", "Restore Materials On Reimport"), Tooltip("If checked, the importer will try to restore the assigned materials to the model slots.")]
         public bool RestoreMaterialsOnReimport { get; set; } = true;
+        
+        /// <summary>
+        /// If checked, the imported mesh/animations are splitted into separate assets. Used if ObjectIndex is set to -1.
+        /// </summary>
+        [EditorOrder(2000), DefaultValue(false), EditorDisplay("Splitting"), Tooltip("If checked, the imported mesh/animations are splitted into separate assets. Used if ObjectIndex is set to -1.")]
+        public bool SplitObjects { get; set; } = false;
+
+        /// <summary>
+        /// The zero-based index for the mesh/animation clip to import. If the source file has more than one mesh/animation it can be used to pick a desire object. Default -1 imports all objects.
+        /// </summary>
+        [EditorOrder(2010), DefaultValue(-1), EditorDisplay("Splitting"), Tooltip("The zero-based index for the mesh/animation clip to import. If the source file has more than one mesh/animation it can be used to pick a desire object. Default -1 imports all objects.")]
+        public int ObjectIndex { get; set; } = -1;
 
         [StructLayout(LayoutKind.Sequential)]
         internal struct InternalOptions
@@ -325,7 +331,6 @@ namespace FlaxEditor.Content.Import
             public byte OptimizeKeyframes;
             public byte EnableRootMotion;
             public string RootNodeName;
-            public int AnimationIndex;
 
             // Level Of Detail
             public byte GenerateLODs;
@@ -337,6 +342,10 @@ namespace FlaxEditor.Content.Import
             public byte ImportMaterials;
             public byte ImportTextures;
             public byte RestoreMaterialsOnReimport;
+
+            // Splitting
+            public byte SplitObjects;
+            public int ObjectIndex;
         }
 
         internal void ToInternal(out InternalOptions options)
@@ -368,7 +377,6 @@ namespace FlaxEditor.Content.Import
                 OptimizeKeyframes = (byte)(OptimizeKeyframes ? 1 : 0),
                 EnableRootMotion = (byte)(EnableRootMotion ? 1 : 0),
                 RootNodeName = RootNodeName,
-                AnimationIndex = AnimationIndex,
                 GenerateLODs = (byte)(GenerateLODs ? 1 : 0),
                 BaseLOD = BaseLOD,
                 LODCount = LODCount,
@@ -376,6 +384,8 @@ namespace FlaxEditor.Content.Import
                 ImportMaterials = (byte)(ImportMaterials ? 1 : 0),
                 ImportTextures = (byte)(ImportTextures ? 1 : 0),
                 RestoreMaterialsOnReimport = (byte)(RestoreMaterialsOnReimport ? 1 : 0),
+                SplitObjects = (byte)(SplitObjects ? 1 : 0),
+                ObjectIndex = ObjectIndex,
             };
         }
 
@@ -405,7 +415,6 @@ namespace FlaxEditor.Content.Import
             OptimizeKeyframes = options.OptimizeKeyframes != 0;
             EnableRootMotion = options.EnableRootMotion != 0;
             RootNodeName = options.RootNodeName;
-            AnimationIndex = options.AnimationIndex;
             GenerateLODs = options.GenerateLODs != 0;
             BaseLOD = options.BaseLOD;
             LODCount = options.LODCount;
@@ -413,6 +422,8 @@ namespace FlaxEditor.Content.Import
             ImportMaterials = options.ImportMaterials != 0;
             ImportTextures = options.ImportTextures != 0;
             RestoreMaterialsOnReimport = options.RestoreMaterialsOnReimport != 0;
+            SplitObjects = options.SplitObjects != 0;
+            ObjectIndex = options.ObjectIndex;
         }
 
         /// <summary>

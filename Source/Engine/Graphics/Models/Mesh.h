@@ -24,8 +24,8 @@ DECLARE_SCRIPTING_TYPE_WITH_CONSTRUCTOR_IMPL(Mesh, MeshBase);
 protected:
 
     bool _hasLightmapUVs;
-    GPUBuffer* _vertexBuffers[3];
-    GPUBuffer* _indexBuffer;
+    GPUBuffer* _vertexBuffers[3] = {};
+    GPUBuffer* _indexBuffer = nullptr;
 #if USE_PRECISE_MESH_INTERSECTS
     CollisionProxy _collisionProxy;
 #endif

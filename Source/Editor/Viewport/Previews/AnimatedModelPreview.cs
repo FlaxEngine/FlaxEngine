@@ -20,7 +20,7 @@ namespace FlaxEditor.Viewport.Previews
         private AnimatedModel _previewModel;
         private StaticModel _floorModel;
         private ContextMenuButton _showCurrentLODButton;
-        private bool _playAnimation;
+        private bool _playAnimation, _playAnimationOnce;
         private float _playSpeed = 1.0f;
 
         /// <summary>
@@ -234,6 +234,17 @@ namespace FlaxEditor.Viewport.Previews
             _previewModel.UpdateAnimation();
         }
 
+        /// <summary>
+        /// Sets the weight of the blend shape and updates the preview model (if not animated right now).
+        /// </summary>
+        /// <param name="name">The blend shape name.</param>
+        /// <param name="value">The normalized weight of the blend shape (in range -1:1).</param>
+        public void SetBlendShapeWeight(string name, float value)
+        {
+            _previewModel.SetBlendShapeWeight(name, value);
+            _playAnimationOnce = true;
+        }
+
         private void OnBegin(RenderTask task, GPUContext context)
         {
             if (!ScaleToFit)
@@ -380,8 +391,9 @@ namespace FlaxEditor.Viewport.Previews
             base.Update(deltaTime);
 
             // Manually update animation
-            if (PlayAnimation)
+            if (PlayAnimation || _playAnimationOnce)
             {
+                _playAnimationOnce = false;
                 _previewModel.UpdateAnimation();
             }
             else
