@@ -177,15 +177,15 @@ namespace FlaxEngine.GUI
         /// <inheritdoc />
         protected override void SetViewOffset(ref Vector2 value)
         {
-            bool wasLocked = IsLayoutLocked;
-            IsLayoutLocked = true;
+            bool wasLocked = _isLayoutLocked;
+            _isLayoutLocked = true;
 
             if (HScrollBar != null)
                 HScrollBar.Value = -value.X;
             if (VScrollBar != null)
                 VScrollBar.Value = -value.Y;
 
-            IsLayoutLocked = wasLocked;
+            _isLayoutLocked = wasLocked;
             base.SetViewOffset(ref value);
         }
 
@@ -239,15 +239,15 @@ namespace FlaxEngine.GUI
         /// <param name="fastScroll">True of scroll to the item quickly without smoothing.</param>
         public void ScrollViewTo(Rectangle bounds, bool fastScroll = false)
         {
-            bool wasLocked = IsLayoutLocked;
-            IsLayoutLocked = true;
+            bool wasLocked = _isLayoutLocked;
+            _isLayoutLocked = true;
 
             if (HScrollBar != null && HScrollBar.Enabled)
                 HScrollBar.ScrollViewTo(bounds.Left, bounds.Right, fastScroll);
             if (VScrollBar != null && VScrollBar.Enabled)
                 VScrollBar.ScrollViewTo(bounds.Top, bounds.Bottom, fastScroll);
 
-            IsLayoutLocked = wasLocked;
+            _isLayoutLocked = wasLocked;
             PerformLayout();
         }
 
@@ -406,14 +406,14 @@ namespace FlaxEngine.GUI
                 return;
             _layoutUpdateLock++;
 
-            if (!IsLayoutLocked)
+            if (!_isLayoutLocked)
             {
                 _layoutChanged = false;
             }
 
             base.PerformLayout(force);
 
-            if (!IsLayoutLocked && _layoutChanged)
+            if (!_isLayoutLocked && _layoutChanged)
             {
                 _layoutChanged = false;
                 PerformLayout(true);

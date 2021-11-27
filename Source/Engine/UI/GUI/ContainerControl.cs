@@ -24,11 +24,20 @@ namespace FlaxEngine.GUI
         protected bool _containsFocus;
 
         /// <summary>
+        /// The layout locking flag.
+        /// </summary>
+        [NoSerialize]
+        protected bool _isLayoutLocked;
+
+        private bool _clipChildren = true;
+        private bool _cullChildren = true;
+
+        /// <summary>
         /// Initializes a new instance of the <see cref="ContainerControl"/> class.
         /// </summary>
         public ContainerControl()
         {
-            IsLayoutLocked = true;
+            _isLayoutLocked = true;
         }
 
         /// <summary>
@@ -37,7 +46,7 @@ namespace FlaxEngine.GUI
         public ContainerControl(float x, float y, float width, float height)
         : base(x, y, width, height)
         {
-            IsLayoutLocked = true;
+            _isLayoutLocked = true;
         }
 
         /// <summary>
@@ -46,14 +55,14 @@ namespace FlaxEngine.GUI
         public ContainerControl(Vector2 location, Vector2 size)
         : base(location, size)
         {
-            IsLayoutLocked = true;
+            _isLayoutLocked = true;
         }
 
         /// <inheritdoc />
         public ContainerControl(Rectangle bounds)
         : base(bounds)
         {
-            IsLayoutLocked = true;
+            _isLayoutLocked = true;
         }
 
         /// <summary>
@@ -80,30 +89,39 @@ namespace FlaxEngine.GUI
         /// True if automatic updates for control layout are locked (useful when creating a lot of GUI control to prevent lags).
         /// </summary>
         [HideInEditor, NoSerialize]
-        public bool IsLayoutLocked { get; set; }
+        public bool IsLayoutLocked
+        {
+            get => _isLayoutLocked;
+            set => _isLayoutLocked = value;
+        }
 
         /// <summary>
         /// Gets or sets a value indicating whether apply clipping mask on children during rendering.
         /// </summary>
         [EditorOrder(530), Tooltip("If checked, control will apply clipping mask on children during rendering.")]
-        public bool ClipChildren { get; set; } = true;
+        public bool ClipChildren
+        {
+            get => _clipChildren;
+            set => _clipChildren = value;
+        }
 
         /// <summary>
         /// Gets or sets a value indicating whether perform view culling on children during rendering.
         /// </summary>
         [EditorOrder(540), Tooltip("If checked, control will perform view culling on children during rendering.")]
-        public bool CullChildren { get; set; } = true;
+        public bool CullChildren
+        {
+            get => _cullChildren;
+            set => _cullChildren = value;
+        }
 
         /// <summary>
         /// Locks all child controls layout and itself.
         /// </summary>
         [NoAnimate]
-        public virtual void LockChildrenRecursive()
+        public void LockChildrenRecursive()
         {
-            // Itself
-            IsLayoutLocked = true;
-
-            // Every child container control
+            _isLayoutLocked = true;
             for (int i = 0; i < _children.Count; i++)
             {
                 if (_children[i] is ContainerControl child)
@@ -115,12 +133,9 @@ namespace FlaxEngine.GUI
         /// Unlocks all the child controls layout and itself.
         /// </summary>
         [NoAnimate]
-        public virtual void UnlockChildrenRecursive()
+        public void UnlockChildrenRecursive()
         {
-            // Itself
-            IsLayoutLocked = false;
-
-            // Every child container control
+            _isLayoutLocked = false;
             for (int i = 0; i < _children.Count; i++)
             {
                 if (_children[i] is ContainerControl child)
@@ -134,8 +149,8 @@ namespace FlaxEngine.GUI
         [NoAnimate]
         public virtual void RemoveChildren()
         {
-            bool wasLayoutLocked = IsLayoutLocked;
-            IsLayoutLocked = true;
+            bool wasLayoutLocked = _isLayoutLocked;
+            _isLayoutLocked = true;
 
             // Delete children
             while (_children.Count > 0)
@@ -143,7 +158,7 @@ namespace FlaxEngine.GUI
                 _children[0].Parent = null;
             }
 
-            IsLayoutLocked = wasLayoutLocked;
+            _isLayoutLocked = wasLayoutLocked;
             PerformLayout();
         }
 
@@ -152,8 +167,8 @@ namespace FlaxEngine.GUI
         /// </summary>
         public virtual void DisposeChildren()
         {
-            bool wasLayoutLocked = IsLayoutLocked;
-            IsLayoutLocked = true;
+            bool wasLayoutLocked = _isLayoutLocked;
+            _isLayoutLocked = true;
 
             // Delete children
             while (_children.Count > 0)
@@ -161,7 +176,7 @@ namespace FlaxEngine.GUI
                 _children[0].Dispose();
             }
 
-            IsLayoutLocked = wasLayoutLocked;
+            _isLayoutLocked = wasLayoutLocked;
             PerformLayout();
         }
 
@@ -253,7 +268,6 @@ namespace FlaxEngine.GUI
                 return;
             _children.RemoveAt(oldIndex);
 
-            // Check if index is invalid
             if (newIndex < 0 || newIndex >= _children.Count)
             {
                 // Append at the end
@@ -279,8 +293,6 @@ namespace FlaxEngine.GUI
             for (int i = _children.Count - 1; i >= 0; i--)
             {
                 var child = _children[i];
-
-                // Check collision
                 if (IntersectsChildContent(child, point, out var childLocation))
                 {
                     result = i;
@@ -499,10 +511,7 @@ namespace FlaxEngine.GUI
             // Check if state has been changed
             if (result != _containsFocus)
             {
-                // Cache flag
                 _containsFocus = result;
-
-                // Fire event
                 if (result)
                 {
                     OnStartContainsFocus();
@@ -564,24 +573,6 @@ namespace FlaxEngine.GUI
         }
 
         /// <inheritdoc />
-        public override bool IsMouseOver
-        {
-            get
-            {
-                if (base.IsMouseOver)
-                    return true;
-
-                for (int i = 0; i < _children.Count && _children.Count > 0; i++)
-                {
-                    if (_children[i].IsMouseOver)
-                        return true;
-                }
-
-                return false;
-            }
-        }
-
-        /// <inheritdoc />
         public override bool IsTouchOver
         {
             get
@@ -619,7 +610,7 @@ namespace FlaxEngine.GUI
         {
             DrawSelf();
 
-            if (ClipChildren)
+            if (_clipChildren)
             {
                 GetDesireClientArea(out var clientArea);
                 Render2D.PushClip(ref clientArea);
@@ -646,7 +637,7 @@ namespace FlaxEngine.GUI
         protected virtual void DrawChildren()
         {
             // Draw all visible child controls
-            if (CullChildren)
+            if (_cullChildren)
             {
                 Render2D.PeekClip(out var globalClipping);
                 Render2D.PeekTransform(out var globalTransform);
@@ -684,10 +675,10 @@ namespace FlaxEngine.GUI
         /// <inheritdoc />
         public override void PerformLayout(bool force = false)
         {
-            if (IsLayoutLocked && !force)
+            if (_isLayoutLocked && !force)
                 return;
 
-            bool wasLocked = IsLayoutLocked;
+            bool wasLocked = _isLayoutLocked;
             if (!wasLocked)
                 LockChildrenRecursive();
 
@@ -711,7 +702,6 @@ namespace FlaxEngine.GUI
                 var child = _children[i];
                 if (child.Visible && child.Enabled)
                 {
-                    // Fire event
                     if (IntersectsChildContent(child, location, out var childLocation))
                     {
                         // Enter
@@ -732,7 +722,6 @@ namespace FlaxEngine.GUI
                 var child = _children[i];
                 if (child.Visible && child.Enabled)
                 {
-                    // Fire events
                     if (IntersectsChildContent(child, location, out var childLocation))
                     {
                         if (child.IsMouseOver)
@@ -1035,7 +1024,6 @@ namespace FlaxEngine.GUI
                 var child = _children[i];
                 if (child.Visible && child.Enabled)
                 {
-                    // Fire event
                     if (IntersectsChildContent(child, location, out var childLocation))
                     {
                         // Enter
@@ -1061,7 +1049,6 @@ namespace FlaxEngine.GUI
                 var child = _children[i];
                 if (child.Visible && child.Enabled)
                 {
-                    // Fire events
                     if (IntersectsChildContent(child, location, out var childLocation))
                     {
                         if (child.IsDragOver)
@@ -1120,7 +1107,6 @@ namespace FlaxEngine.GUI
                 var child = _children[i];
                 if (child.Visible && child.Enabled)
                 {
-                    // Fire event
                     if (IntersectsChildContent(child, location, out var childLocation))
                     {
                         // Enter
@@ -1138,10 +1124,9 @@ namespace FlaxEngine.GUI
         protected override void OnSizeChanged()
         {
             // Lock updates to prevent additional layout calculations
-            bool wasLayoutLocked = IsLayoutLocked;
-            IsLayoutLocked = true;
+            bool wasLayoutLocked = _isLayoutLocked;
+            _isLayoutLocked = true;
 
-            // Base
             base.OnSizeChanged();
 
             // Fire event
@@ -1151,7 +1136,7 @@ namespace FlaxEngine.GUI
             }
 
             // Restore state
-            IsLayoutLocked = wasLayoutLocked;
+            _isLayoutLocked = wasLayoutLocked;
 
             // Arrange child controls
             PerformLayout();

@@ -1680,7 +1680,7 @@ namespace FlaxEngine
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool Equals(Vector4 other)
         {
-            return Equals(ref other);
+            return Mathf.NearEqual(other.X, X) && Mathf.NearEqual(other.Y, Y) && Mathf.NearEqual(other.Z, Z) && Mathf.NearEqual(other.W, W);
         }
 
         /// <summary>
@@ -1692,11 +1692,9 @@ namespace FlaxEngine
         /// </returns>
         public override bool Equals(object value)
         {
-            if (!(value is Vector4))
+            if (!(value is Vector4 other))
                 return false;
-
-            var strongValue = (Vector4)value;
-            return Equals(ref strongValue);
+            return Mathf.NearEqual(other.X, X) && Mathf.NearEqual(other.Y, Y) && Mathf.NearEqual(other.Z, Z) && Mathf.NearEqual(other.W, W);
         }
     }
 }

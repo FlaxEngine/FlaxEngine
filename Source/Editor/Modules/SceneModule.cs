@@ -486,7 +486,6 @@ namespace FlaxEditor.Modules
             var node = SceneGraphFactory.BuildActorNode(actor);
             if (node != null)
             {
-                node.TreeNode.UnlockChildrenRecursive();
                 node.ParentNode = parentNode;
             }
         }
@@ -544,13 +543,8 @@ namespace FlaxEditor.Modules
                 return;
 
             // Get the new parent node (may be missing)
-            if (parentNode != null)
-            {
-                // Change parent
-                node.TreeNode.UnlockChildrenRecursive();
-                node.ParentNode = parentNode;
-            }
-            else
+            node.ParentNode = parentNode;
+            if (parentNode == null)
             {
                 // Check if actor is selected in editor
                 if (Editor.SceneEditing.Selection.Contains(node))

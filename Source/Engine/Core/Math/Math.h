@@ -489,7 +489,7 @@ namespace Math
     static bool NearEqual(float a, float b)
     {
         // Check if the numbers are really close - needed when comparing numbers near zero
-        if (Abs(a) < ZeroTolerance)
+        if (Abs(a - b) < ZeroTolerance)
             return true;
 
         // Original from Bruce Dawson: http://randomascii.wordpress.com/2012/02/25/comparing-floating-point-numbers-2012-edition/

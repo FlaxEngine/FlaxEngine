@@ -889,17 +889,14 @@ namespace FlaxEditor.GUI.Tree
         /// <inheritdoc />
         public override void OnChildResized(Control control)
         {
+            // Optimize if child is tree node that is not visible
+            if (!_opened && control is TreeNode)
+                return;
+
             PerformLayout();
             ParentTree.UpdateSize();
+
             base.OnChildResized(control);
-        }
-
-        /// <inheritdoc />
-        public override void OnParentResized()
-        {
-            base.OnParentResized();
-
-            Width = Parent.Width;
         }
 
         /// <inheritdoc />
@@ -1018,56 +1015,82 @@ namespace FlaxEditor.GUI.Tree
         /// <inheritdoc />
         public override void PerformLayout(bool force = false)
         {
-            // Check if update is locked
-            if (IsLayoutLocked && !force)
+            if (_isLayoutLocked && !force)
                 return;
 
-            // Update the nodes nesting level before the actual positioning
-            float xOffset = _xOffset + ChildrenIndent;
-            for (int i = 0; i < _children.Count; i++)
+            bool wasLocked = _isLayoutLocked;
+            if (!wasLocked)
+                LockChildrenRecursive();
+
+            // Optimize layout logic if node is collapsed
+            if (_opened || _animationProgress < 1.0f)
             {
-                if (_children[i] is TreeNode node && node.Visible)
-                    node._xOffset = xOffset;
+                PerformLayoutBeforeChildren();
+                for (int i = 0; i < _children.Count; i++)
+                    _children[i].PerformLayout(true);
+                PerformLayoutAfterChildren();
+            }
+            else
+            {
+                // TODO: perform layout for any non-TreeNode controls
+                _cachedHeight = _headerHeight;
+                _cachedTextColor = CacheTextColor();
+                Size = new Vector2(Parent?.Width ?? Width, _headerHeight);
             }
 
-            base.PerformLayout(force);
+            if (!wasLocked)
+                UnlockChildrenRecursive();
+        }
+
+        /// <inheritdoc />
+        protected override void PerformLayoutBeforeChildren()
+        {
+            if (_opened)
+            {
+                // Update the nodes nesting level before the actual positioning
+                float xOffset = _xOffset + ChildrenIndent;
+                for (int i = 0; i < _children.Count; i++)
+                {
+                    if (_children[i] is TreeNode node)
+                        node._xOffset = xOffset;
+                }
+            }
+
+            base.PerformLayoutBeforeChildren();
         }
 
         /// <inheritdoc />
         protected override void PerformLayoutAfterChildren()
         {
-            _cachedTextColor = CacheTextColor();
-
-            // Prepare
             float y = _headerHeight;
             float height = _headerHeight;
             float xOffset = _xOffset + ChildrenIndent;
-            y -= _cachedHeight * (_opened ? 1.0f - _animationProgress : _animationProgress);
 
-            // Arrange children
-            for (int i = 0; i < _children.Count; i++)
+            // Skip full layout if it's fully collapsed
+            if (_opened || _animationProgress < 1.0f)
             {
-                if (_children[i] is TreeNode node && node.Visible)
+                y -= _cachedHeight * (_opened ? 1.0f - _animationProgress : _animationProgress);
+
+                // Arrange children
+                for (int i = 0; i < _children.Count; i++)
                 {
-                    node._xOffset = xOffset;
-                    node.Location = new Vector2(0, y);
-                    float nodeHeight = node.Height + DefaultNodeOffsetY;
-                    y += nodeHeight;
-                    height += nodeHeight;
+                    if (_children[i] is TreeNode node && node.Visible)
+                    {
+                        node._xOffset = xOffset;
+                        node.Location = new Vector2(0, y);
+                        float nodeHeight = node.Height + DefaultNodeOffsetY;
+                        y += nodeHeight;
+                        height += nodeHeight;
+                    }
                 }
             }
 
-            // Cache calculated height
+            // Cache data
             _cachedHeight = height;
+            _cachedTextColor = CacheTextColor();
 
-            // Force to be closed
-            if (_animationProgress >= 1.0f && !_opened)
-            {
-                y = _headerHeight;
-            }
-
-            // Set height
-            Height = Mathf.Max(_headerHeight, y);
+            // Set bounds
+            Size = new Vector2(Parent?.Width ?? Width, Mathf.Max(_headerHeight, y));
         }
 
         /// <inheritdoc />

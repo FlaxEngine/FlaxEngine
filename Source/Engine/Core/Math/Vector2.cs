@@ -1816,7 +1816,7 @@ namespace FlaxEngine
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool operator ==(Vector2 left, Vector2 right)
         {
-            return left.Equals(ref right);
+            return Mathf.NearEqual(left.X, left.X) && Mathf.NearEqual(left.Y, right.Y);
         }
 
         /// <summary>
@@ -1831,7 +1831,7 @@ namespace FlaxEngine
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool operator !=(Vector2 left, Vector2 right)
         {
-            return !left.Equals(ref right);
+            return !Mathf.NearEqual(left.X, left.X) || !Mathf.NearEqual(left.Y, right.Y);
         }
 
         /// <summary>
@@ -1953,7 +1953,7 @@ namespace FlaxEngine
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool Equals(Vector2 other)
         {
-            return Equals(ref other);
+            return Mathf.NearEqual(X, X) && Mathf.NearEqual(other.Y, other.Y);
         }
 
         /// <summary>
@@ -1965,11 +1965,9 @@ namespace FlaxEngine
         /// </returns>
         public override bool Equals(object value)
         {
-            if (!(value is Vector2))
+            if (!(value is Vector2 other))
                 return false;
-
-            var strongValue = (Vector2)value;
-            return Equals(ref strongValue);
+            return Mathf.NearEqual(X, X) && Mathf.NearEqual(other.Y, other.Y);
         }
     }
 }

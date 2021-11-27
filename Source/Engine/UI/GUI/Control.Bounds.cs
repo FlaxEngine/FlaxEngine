@@ -150,7 +150,13 @@ namespace FlaxEngine.GUI
         public Vector2 Location
         {
             get => _bounds.Location;
-            set => Bounds = new Rectangle(value, _bounds.Size);
+            set
+            {
+                if (_bounds.Location.Equals(ref value))
+                    return;
+                var bounds = new Rectangle(value, _bounds.Size);
+                SetBounds(ref bounds);
+            }
         }
 
         /// <summary>
@@ -170,7 +176,13 @@ namespace FlaxEngine.GUI
         public float Width
         {
             get => _bounds.Size.X;
-            set => Bounds = new Rectangle(_bounds.Location, value, _bounds.Size.Y);
+            set
+            {
+                if (Mathf.NearEqual(_bounds.Size.X, value))
+                    return;
+                var bounds = new Rectangle(_bounds.Location, value, _bounds.Size.Y);
+                SetBounds(ref bounds);
+            }
         }
 
         /// <summary>
@@ -180,7 +192,13 @@ namespace FlaxEngine.GUI
         public float Height
         {
             get => _bounds.Size.Y;
-            set => Bounds = new Rectangle(_bounds.Location, _bounds.Size.X, value);
+            set
+            {
+                if (Mathf.NearEqual(_bounds.Size.Y, value))
+                    return;
+                var bounds = new Rectangle(_bounds.Location, _bounds.Size.X, value);
+                SetBounds(ref bounds);
+            }
         }
 
         /// <summary>
@@ -190,7 +208,13 @@ namespace FlaxEngine.GUI
         public Vector2 Size
         {
             get => _bounds.Size;
-            set => Bounds = new Rectangle(_bounds.Location, value);
+            set
+            {
+                if (_bounds.Size.Equals(ref value))
+                    return;
+                var bounds = new Rectangle(_bounds.Location, value);
+                SetBounds(ref bounds);
+            }
         }
 
         /// <summary>
@@ -425,12 +449,12 @@ namespace FlaxEngine.GUI
             UpdateTransform();
 
             // Handle location/size changes
-            if (_bounds.Location != prevBounds.Location)
+            if (!_bounds.Location.Equals(ref prevBounds.Location))
             {
                 OnLocationChanged();
             }
 
-            if (_bounds.Size != prevBounds.Size)
+            if (!_bounds.Size.Equals(ref prevBounds.Size))
             {
                 OnSizeChanged();
             }
