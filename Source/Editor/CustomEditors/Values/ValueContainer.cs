@@ -263,6 +263,19 @@ namespace FlaxEditor.CustomEditors
                 {
                     _defaultValue = defaultValueAttribute.Value;
                     _hasDefaultValue = true;
+
+                    if (_defaultValue != null && _defaultValue.GetType() != Type.Type)
+                    {
+                        // Workaround for DefaultValueAttribute that doesn't support certain value types storage
+                        if (Type.Type == typeof(sbyte))
+                            _defaultValue = Convert.ToSByte(_defaultValue);
+                        else if (Type.Type == typeof(ushort))
+                            _defaultValue = Convert.ToUInt16(_defaultValue);
+                        else if (Type.Type == typeof(uint))
+                            _defaultValue = Convert.ToUInt32(_defaultValue);
+                        else if (Type.Type == typeof(ulong))
+                            _defaultValue = Convert.ToUInt64(_defaultValue);
+                    }
                 }
             }
             if (instanceValues._hasReferenceValue)
