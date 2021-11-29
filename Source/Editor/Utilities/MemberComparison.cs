@@ -64,20 +64,31 @@ namespace FlaxEditor.Utilities
             var finalMember = MemberPath.GetLastMember(ref instance);
 
             var type = finalMember.Type;
-            if (value != null && type != ScriptType.Null)
+            if (value != null && type != ScriptType.Null && type != value.GetType())
             {
+                // Convert value to ensure it matches the member type (eg. undo that uses json serializer might return different value type for some cases)
                 if (type.IsEnum)
-                {
                     value = Convert.ChangeType(value, Enum.GetUnderlyingType(type.Type));
-                }
-                else if (value is long && type.Type == typeof(int))
-                {
-                    value = (int)(long)value;
-                }
-                else if (value is double && type.Type == typeof(float))
-                {
-                    value = (float)(double)value;
-                }
+                else if (type.Type == typeof(byte))
+                    value = Convert.ToByte(value);
+                else if (type.Type == typeof(sbyte))
+                    value = Convert.ToSByte(value);
+                else if (type.Type == typeof(short))
+                    value = Convert.ToInt16(value);
+                else if (type.Type == typeof(int))
+                    value = Convert.ToInt32(value);
+                else if (type.Type == typeof(long))
+                    value = Convert.ToInt64(value);
+                else if (type.Type == typeof(int))
+                    value = Convert.ToUInt16(value);
+                else if (type.Type == typeof(uint))
+                    value = Convert.ToUInt32(value);
+                else if (type.Type == typeof(ulong))
+                    value = Convert.ToUInt64(value);
+                else if (type.Type == typeof(float))
+                    value = Convert.ToSingle(value);
+                else if (type.Type == typeof(double))
+                    value = Convert.ToDouble(value);
             }
 
             finalMember.SetValue(instance, value);
