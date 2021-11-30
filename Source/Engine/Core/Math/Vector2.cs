@@ -1796,7 +1796,7 @@ namespace FlaxEngine
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool Equals(Vector2 other)
         {
-            return Mathf.NearEqual(X, X) && Mathf.NearEqual(other.Y, other.Y);
+            return Mathf.NearEqual(other.X, X) && Mathf.NearEqual(other.Y, Y);
         }
 
         /// <summary>
@@ -1808,7 +1808,7 @@ namespace FlaxEngine
         {
             if (!(value is Vector2 other))
                 return false;
-            return Mathf.NearEqual(X, X) && Mathf.NearEqual(other.Y, other.Y);
+            return Mathf.NearEqual(other.X, X) && Mathf.NearEqual(other.Y, Y);
         }
     }
 }

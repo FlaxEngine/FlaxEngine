@@ -893,7 +893,7 @@ namespace FlaxEditor.Surface
         {
             if (_isDuringValuesEditing || !Surface.CanEdit)
                 return;
-            if (Equals(value, Values[index]))
+            if (FlaxEngine.Json.JsonSerializer.ValueEquals(value, Values[index]))
                 return;
             if (value is byte[] && Values[index] is byte[] && Utils.ArraysEqual((byte[])value, (byte[])Values[index]))
                 return;
