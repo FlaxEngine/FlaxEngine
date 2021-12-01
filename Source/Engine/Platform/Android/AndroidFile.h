@@ -2,7 +2,7 @@
 
 #pragma once
 
-#if PLATFORM_UNIX
+#if PLATFORM_ANDROID
 
 #include "Engine/Platform/Unix/UnixFile.h"
 

@@ -10,6 +10,9 @@
 /// <summary>
 /// Template for unordered dictionary with mapped key with value pairs.
 /// </summary>
+/// <typeparam name="KeyType">The type of the keys in the dictionary.</typeparam>
+/// <typeparam name="ValueType">The type of the values in the dictionary.</typeparam>
+/// <typeparam name="AllocationType">The type of memory allocator.</typeparam>
 template<typename KeyType, typename ValueType, typename AllocationType = HeapAllocation>
 API_CLASS(InBuild) class Dictionary
 {

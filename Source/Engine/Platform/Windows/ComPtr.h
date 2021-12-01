@@ -2,6 +2,8 @@
 
 #pragma once
 
+#if PLATFORM_WINDOWS
+
 #include "Engine/Core/Templates.h"
 #include "../Win32/IncludeWindowsHeaders.h"
 
@@ -332,3 +334,5 @@ bool operator<(const ComPtr<T>& a, const ComPtr<U>& b)
     static_assert(__is_base_of(T, U) || __is_base_of(U, T), "'T' and 'U' pointers must be comparable");
     return a.Get() < b.Get();
 }
+
+#endif

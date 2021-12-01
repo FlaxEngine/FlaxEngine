@@ -10,6 +10,8 @@
 /// <summary>
 /// Template for dynamic array with variable capacity.
 /// </summary>
+/// <typeparam name="T">The type of elements in the array.</typeparam>
+/// <typeparam name="AllocationType">The type of memory allocator.</typeparam>
 template<typename T, typename AllocationType = HeapAllocation>
 API_CLASS(InBuild) class Array
 {

@@ -5,9 +5,9 @@
 #include "../Types/BaseTypes.h"
 #include "Engine/Platform/Platform.h"
 
-/// <summanry>
+/// <summary>
 /// Small buffer for samples used to calculate min/max/avg values.
-/// </summanry>
+/// </summary>
 template<typename T, int32 Size>
 class SamplesBuffer
 {

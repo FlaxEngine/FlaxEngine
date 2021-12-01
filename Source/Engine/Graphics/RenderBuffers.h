@@ -60,12 +60,10 @@ public:
     GPUTexture* LocalShadowedLightScattering = nullptr;
     uint64 LastFrameVolumetricFog = 0;
 
-    struct VolumetricFogData
+    struct
     {
         float MaxDistance;
-    };
-
-    VolumetricFogData VolumetricFogData;
+    } VolumetricFogData;
 
     // Helper buffer with half-resolution depth buffer shared by effects (eg. SSR, Motion Blur). Valid only during frame rendering and on request (see RequestHalfResDepth).
     // Should be released if not used for a few frames.

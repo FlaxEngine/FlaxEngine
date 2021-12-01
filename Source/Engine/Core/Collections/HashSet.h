@@ -11,6 +11,7 @@
 /// <summary>
 /// Template for unordered set of values (without duplicates with O(1) lookup access).
 /// </summary>
+/// <typeparam name="T">The type of elements in the set.</typeparam>
 template<typename T>
 API_CLASS(InBuild) class HashSet
 {

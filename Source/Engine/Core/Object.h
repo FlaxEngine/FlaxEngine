@@ -51,6 +51,7 @@ public:
 /// <summary>
 /// Interface for removable Engine objects.
 /// </summary>
+/// <seealso cref="Object" />
 class FLAXENGINE_API RemovableObject : public Object
 {
 public:

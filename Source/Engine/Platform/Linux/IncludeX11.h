@@ -2,6 +2,8 @@
 
 #pragma once
 
+#if PLATFORM_LINUX
+
 // Hide warning from old headers
 #define register
 
@@ -38,3 +40,5 @@ namespace X11
 #undef Status
 #undef True
 #undef False
+
+#endif

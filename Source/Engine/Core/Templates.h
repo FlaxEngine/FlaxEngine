@@ -4,6 +4,8 @@
 
 #include "Engine/Core/Types/BaseTypes.h"
 
+#ifndef DOXYGEN
+
 // @formatter:off
 
 ////////////////////////////////////////////////////////////////////////////////////
@@ -435,3 +437,5 @@ template<> struct TIsBitwiseConstructible<uint64, int64> { enum { Value = true }
 template<> struct TIsBitwiseConstructible<int64, uint64> { enum { Value = true }; };
 
 // @formatter:on
+
+#endif
