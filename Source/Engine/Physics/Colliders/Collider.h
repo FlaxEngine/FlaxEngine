@@ -232,4 +232,6 @@ protected:
     void OnParentChanged() override;
     void OnTransformChanged() override;
     void OnLayerChanged() override;
+
+    void OnPhysicsSceneChanged(PhysicsScene* previous) override;
 };

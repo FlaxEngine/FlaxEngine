@@ -14,6 +14,7 @@ struct RenderView;
 struct RenderContext;
 class GPUContext;
 class MemoryWriteStream;
+class PhysicsScene;
 class SceneRendering;
 class SceneRenderTask;
 
@@ -47,6 +48,7 @@ protected:
     BoundingSphere _sphere;
     BoundingBox _box;
     String _name;
+    PhysicsScene* _physicsScene;
 
 private:
 
@@ -958,6 +960,20 @@ public:
     /// </summary>
     /// <returns>The scene rendering interface.</returns>
     SceneRendering* GetSceneRendering() const;
+
+public:
+    /// <summary>
+    /// Set the physics world the controller is part of.
+    /// </summary>
+    API_PROPERTY(Attributes="HideInEditor") void SetPhysicsScene(PhysicsScene* scene);
+
+    /// <summary>
+    /// Get the physics world the controller is part of.
+    /// </summary>
+    API_PROPERTY(Attributes="HideInEditor") PhysicsScene* GetPhysicsScene();
+
+protected:
+    virtual void OnPhysicsSceneChanged(PhysicsScene* previous) {};
 
 private:
 

@@ -572,4 +572,5 @@ protected:
     void EndPlay() override;
     void OnActiveInTreeChanged() override;
     void OnTransformChanged() override;
+    void OnPhysicsSceneChanged(PhysicsScene* previous) override;
 };

@@ -1,6 +1,8 @@
 // Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
 
 #include "CollisionData.h"
+#include "PhysicsScene.h"
+
 #include "Engine/Core/Log.h"
 #include "Engine/Content/Content.h"
 #include "Engine/Content/Assets/Model.h"
@@ -384,12 +386,16 @@ void CollisionData::unload(bool isReloading)
 {
     if (_convexMesh)
     {
-        Physics::RemoveObject(_convexMesh);
+        for (auto scene : Physics::Scenes) 
+            scene->RemoveObject(_convexMesh);
+
         _convexMesh = nullptr;
     }
     if (_triangleMesh)
     {
-        Physics::RemoveObject(_triangleMesh);
+        for (auto scene : Physics::Scenes) 
+            scene->RemoveObject(_triangleMesh);
+
         _triangleMesh = nullptr;
     }
     _options = CollisionDataOptions();

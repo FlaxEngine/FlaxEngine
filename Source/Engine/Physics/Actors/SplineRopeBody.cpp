@@ -4,6 +4,7 @@
 #include "Engine/Level/Actors/Spline.h"
 #include "Engine/Level/Scene/Scene.h"
 #include "Engine/Physics/Physics.h"
+#include "Engine/Physics/PhysicsScene.h"
 #include "Engine/Engine/Time.h"
 #include "Engine/Profiler/ProfilerCPU.h"
 #include "Engine/Serialization/Serialization.h"
@@ -20,7 +21,7 @@ void SplineRopeBody::Tick()
     PROFILE_CPU();
 
     // Cache data
-    const Vector3 gravity = Physics::GetGravity() * GravityScale;
+    const Vector3 gravity = GetPhysicsScene()->GetGravity() * GravityScale;
     auto& keyframes = _spline->Curve.GetKeyframes();
     const Transform splineTransform = _spline->GetTransform();
     const int32 keyframesCount = keyframes.Count();

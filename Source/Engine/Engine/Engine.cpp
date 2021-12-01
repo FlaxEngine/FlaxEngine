@@ -197,7 +197,7 @@ int32 Engine::Main(const Char* cmdLine)
         }
 
         // Collect physics simulation results (does nothing if Simulate hasn't been called in the previous loop step)
-        Physics::CollectResults();
+        Physics::CollectResultsAll();
     }
 
     // Call on exit event
@@ -242,7 +242,7 @@ void Engine::OnFixedUpdate()
 {
     PROFILE_CPU_NAMED("Fixed Update");
 
-    Physics::FlushRequests();
+    Physics::FlushRequestsAll();
 
     // Call event
     FixedUpdate();
@@ -250,10 +250,10 @@ void Engine::OnFixedUpdate()
     // Update services
     EngineService::OnFixedUpdate();
 
-    if (!Time::GetGamePaused() && Physics::AutoSimulation)
+    if (!Time::GetGamePaused())
     {
         const float dt = Time::Physics.DeltaTime.GetTotalSeconds();
-        Physics::Simulate(dt);
+        Physics::SimulateAll(dt);
 
         // After this point we should not modify physic objects state (rendering operations is mostly readonly)
         // That's because auto-simulation mode is performing rendering during physics simulation
@@ -429,7 +429,7 @@ void Engine::OnExit()
     EngineImpl::IsReady = false;
 
     // Collect physics simulation results because we cannot exit with physics running
-    Physics::CollectResults();
+    Physics::CollectResultsAll();
 
     // Before
     Application::BeforeExit();

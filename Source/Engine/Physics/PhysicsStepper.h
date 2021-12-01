@@ -3,7 +3,6 @@
 #pragma once
 
 #include "Types.h"
-#include "Engine/Core/Core.h"
 #include <ThirdParty/PhysX/task/PxTask.h>
 #include <ThirdParty/PhysX/foundation/PxSimpleTypes.h>
 #include <ThirdParty/PhysX/foundation/PsSync.h>

@@ -10,6 +10,7 @@
 #include "Engine/Physics/PhysicsSettings.h"
 #include "Engine/Physics/Physics.h"
 #include "Engine/Physics/PhysicalMaterial.h"
+#include "Engine/Physics/PhysicsScene.h"
 #include "Engine/Physics/Actors/RigidBody.h"
 #include <ThirdParty/PhysX/geometry/PxGeometryQuery.h>
 #include <ThirdParty/PhysX/PxShape.h>
@@ -17,7 +18,6 @@
 #include <ThirdParty/PhysX/PxFiltering.h>
 #include <ThirdParty/PhysX/PxRigidDynamic.h>
 #include <ThirdParty/PhysX/PxRigidStatic.h>
-#include <ThirdParty/PhysX/PxScene.h>
 
 Collider::Collider(const SpawnParams& params)
     : PhysicsColliderActor(params)
@@ -301,7 +301,7 @@ void Collider::UpdateGeometry()
             actor->detachShape(*_shape);
 
         // Release shape
-        Physics::RemoveCollider(this);
+        GetPhysicsScene()->RemoveCollider(this);
         _shape->release();
         _shape = nullptr;
 
@@ -346,14 +346,14 @@ void Collider::CreateStaticActor()
     _shape->setLocalPose(PxTransform(C2P(_center)));
     _staticActor->attachShape(*_shape);
 
-    Physics::AddActor(_staticActor);
+    GetPhysicsScene()->AddActor(_staticActor);
 }
 
 void Collider::RemoveStaticActor()
 {
     ASSERT(_staticActor != nullptr);
 
-    Physics::RemoveActor(_staticActor);
+    GetPhysicsScene()->RemoveActor(_staticActor);
     _staticActor = nullptr;
 }
 
@@ -447,7 +447,7 @@ void Collider::EndPlay()
         }
 
         // Release shape
-        Physics::RemoveCollider(this);
+        GetPhysicsScene()->RemoveCollider(this);
         _shape->release();
         _shape = nullptr;
     }
@@ -536,4 +536,15 @@ void Collider::OnLayerChanged()
 
     if (_shape)
         UpdateLayerBits();
+}
+
+void Collider::OnPhysicsSceneChanged(PhysicsScene* previous)
+{
+    PhysicsColliderActor::OnPhysicsSceneChanged(previous);
+
+    if (_staticActor != nullptr)
+    {
+        previous->UnlinkActor(_staticActor);
+        GetPhysicsScene()->AddActor(_staticActor);
+    }
 }

@@ -22,6 +22,7 @@
 #include "Engine/Profiler/ProfilerCPU.h"
 #include "Engine/Scripting/Script.h"
 #include "Engine/Engine/Time.h"
+#include "Engine/Physics/Physics.h"
 #include "Engine/Scripting/ManagedCLR/MAssembly.h"
 #include "Engine/Scripting/ManagedCLR/MClass.h"
 #include "Engine/Scripting/ManagedCLR/MDomain.h"
@@ -164,6 +165,8 @@ bool LevelImpl::spawnActor(Actor* actor, Actor* parent)
         }
         if (parent == nullptr)
             parent = Level::Scenes[0];
+
+        actor->SetPhysicsScene(parent->GetPhysicsScene());
         actor->SetParent(parent, true, true);
     }
 
@@ -776,6 +779,8 @@ bool LevelImpl::unloadScene(Scene* scene)
     // Force flush deleted objects so we actually delete unloaded scene objects (prevent from reloading their managed objects, etc.)
     ObjectsRemovalService::Flush();
 
+    Physics::EndPlay();
+
     return false;
 }
 
@@ -1025,6 +1030,8 @@ bool Level::loadScene(rapidjson_flax::Value& data, int32 engineBuild, Scene** ou
     // Link scene and call init
     {
         PROFILE_CPU_NAMED("BeginPlay");
+
+        Physics::BeginPlay();
 
         ScopeLock lock(ScenesLock);
         Scenes.Add(scene);

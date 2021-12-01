@@ -181,7 +181,7 @@ void Joint::OnJointBreak()
 void Joint::Delete()
 {
     // Remove the joint
-    Physics::RemoveJoint(this);
+    Physics::RemoveJointAll(this);
     _joint->userData = nullptr;
     _joint->release();
     _joint = nullptr;
