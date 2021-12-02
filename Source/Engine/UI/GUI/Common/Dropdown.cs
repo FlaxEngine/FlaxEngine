@@ -18,57 +18,53 @@ namespace FlaxEngine.GUI
         [HideInEditor]
         protected class DropdownRoot : Panel
         {
-            private bool _isMouseDown;
-
-            /// <summary>
-            /// Occurs when item gets clicked. Argument is item index.
-            /// </summary>
-            public Action<int> ItemClicked;
-
             /// <summary>
             /// Occurs when popup lost focus.
             /// </summary>
             public Action LostFocus;
-
-            /// <summary>
-            /// The items container control.
-            /// </summary>
-            public ContainerControl ItemsContainer;
-
-            /// <inheritdoc />
-            public override bool OnMouseDown(Vector2 location, MouseButton button)
-            {
-                _isMouseDown = true;
-                var result = base.OnMouseDown(location, button);
-                _isMouseDown = false;
-
-                if (!result)
-                    return false;
-
-                var itemIndex = ItemsContainer?.GetChildIndexAt(location) ?? -1;
-                if (itemIndex != -1)
-                    ItemClicked(itemIndex);
-
-                return true;
-            }
 
             /// <inheritdoc />
             public override void OnLostFocus()
             {
                 base.OnLostFocus();
 
-                if (!_isMouseDown)
-                {
-                    LostFocus?.Invoke();
-                }
+                LostFocus?.Invoke();
             }
 
             /// <inheritdoc />
             public override void OnDestroy()
             {
-                ItemClicked = null;
                 LostFocus = null;
-                ItemsContainer = null;
+
+                base.OnDestroy();
+            }
+        }
+
+        [HideInEditor]
+        private class DropdownLabel : Label
+        {
+            public int Index;
+            public Action<int> ItemClicked;
+
+            public override bool OnMouseDown(Vector2 location, MouseButton button)
+            {
+                if (base.OnMouseDown(location, button))
+                    return true;
+                ItemClicked?.Invoke(Index);
+                return true;
+            }
+
+            public override bool OnTouchDown(Vector2 location, int pointerId)
+            {
+                if (base.OnTouchDown(location, pointerId))
+                    return true;
+                ItemClicked?.Invoke(Index);
+                return true;
+            }
+
+            public override void OnDestroy()
+            {
+                ItemClicked = null;
 
                 base.OnDestroy();
             }
@@ -357,7 +353,7 @@ namespace FlaxEngine.GUI
                     Parent = container,
                 };
 
-                var label = new Label
+                var label = new DropdownLabel
                 {
                     X = itemsMargin,
                     Size = new Vector2(itemsWidth - itemsMargin, itemsHeight),
@@ -367,6 +363,12 @@ namespace FlaxEngine.GUI
                     HorizontalAlignment = TextAlignment.Near,
                     Text = _items[i],
                     Parent = item,
+                    Index = i,
+                };
+                label.ItemClicked += index =>
+                {
+                    OnItemClicked(index);
+                    DestroyPopup();
                 };
                 height += itemsHeight;
                 if (i != 0)
@@ -386,7 +388,6 @@ namespace FlaxEngine.GUI
             }
 
             popup.Size = new Vector2(itemsWidth, height);
-            popup.ItemsContainer = container;
 
             return popup;
         }
@@ -430,17 +431,8 @@ namespace FlaxEngine.GUI
             // Setup popup
             DestroyPopup();
             _popup = CreatePopup();
-
-            // Update layout
             _popup.UnlockChildrenRecursive();
             _popup.PerformLayout();
-
-            // Bind events
-            _popup.ItemClicked += index =>
-            {
-                OnItemClicked(index);
-                DestroyPopup();
-            };
             _popup.LostFocus += DestroyPopup;
 
             // Show dropdown popup
