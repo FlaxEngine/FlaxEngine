@@ -65,7 +65,7 @@ public class Editor : EditorModule
         AddPlatformTools(options, platformToolsRoot, platformToolsRootExternal, "Linux", "PLATFORM_TOOLS_LINUX");
 
         // Visual Studio integration
-        if (options.Platform.Target == TargetPlatform.Windows)
+        if (options.Platform.Target == TargetPlatform.Windows && Flax.Build.Platform.BuildTargetPlatform == TargetPlatform.Windows)
         {
             var path = Registry.GetValue("HKEY_CLASSES_ROOT\\TypeLib\\{80CC9F66-E7D8-4DDD-85B6-D9E6CD0E93E2}\\8.0\\0\\win32", null, null) as string;
             if (path != null && File.Exists(path))
