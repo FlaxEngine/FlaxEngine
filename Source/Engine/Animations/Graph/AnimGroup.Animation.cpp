@@ -1437,10 +1437,21 @@ void AnimGraphExecutor::ProcessGroupAnimation(Box* boxBase, Node* nodeBase, Valu
             while (stateData.Transitions[transitionIndex] != AnimGraphNode::StateData::InvalidTransitionIndex
                 && transitionIndex < ANIM_GRAPH_MAX_STATE_TRANSITIONS)
             {
-                const auto idx = stateData.Transitions[transitionIndex];
-                ASSERT(idx >= 0 && idx < data.Graph->StateTransitions.Count());
+                const uint16 idx = stateData.Transitions[transitionIndex];
+                ASSERT(idx < data.Graph->StateTransitions.Count());
                 auto& transition = data.Graph->StateTransitions[idx];
-                const bool useDefaultRule = static_cast<int32>(transition.Flags & AnimGraphStateTransition::FlagTypes::UseDefaultRule) != 0;
+                const bool useDefaultRule = (transition.Flags & AnimGraphStateTransition::FlagTypes::UseDefaultRule) != 0;
+                if (transition.RuleGraph && !useDefaultRule)
+                {
+                    // Execute transition rule
+                    auto rootNode = transition.RuleGraph->GetRootNode();
+                    ASSERT(rootNode);
+                    if (!(bool)eatBox((Node*)rootNode, &rootNode->Boxes[0]))
+                    {
+                        transitionIndex++;
+                        continue;
+                    }
+                }
 
                 // Evaluate source state transition data (position, length, etc.)
                 const Value sourceStatePtr = SampleState(bucket.CurrentState);
@@ -1470,13 +1481,7 @@ void AnimGraphExecutor::ProcessGroupAnimation(Box* boxBase, Node* nodeBase, Valu
                     canEnter = transitionData.Position >= endPos;
                 }
                 else if (transition.RuleGraph)
-                {
-                    ASSERT(transition.RuleGraph->GetRootNode());
-
-                    // Execute transition rule
-                    auto rootNode = transition.RuleGraph->GetRootNode();
-                    canEnter = (bool)eatBox((Node*)rootNode, &rootNode->Boxes[0]);
-                }
+                    canEnter = true;
                 if (canEnter)
                 {
                     // Start transition
@@ -1487,7 +1492,7 @@ void AnimGraphExecutor::ProcessGroupAnimation(Box* boxBase, Node* nodeBase, Valu
 
                 // Skip after Solo transition
                 // TODO: don't load transitions after first enabled Solo transition and remove this check here
-                if (static_cast<int32>(transition.Flags & AnimGraphStateTransition::FlagTypes::Solo) != 0)
+                if ((transition.Flags & AnimGraphStateTransition::FlagTypes::Solo) != 0)
                     break;
 
                 transitionIndex++;
