@@ -1545,22 +1545,12 @@ void AnimGraphExecutor::ProcessGroupAnimation(Box* boxBase, Node* nodeBase, Valu
     }
         // State Output
     case 21:
-    {
-        if (box->HasConnection())
-            value = eatBox(nodeBase, box->FirstConnection());
-        else
-            value = Value::Null;
+        value = box->HasConnection() ? eatBox(nodeBase, box->FirstConnection()) : Value::Null;
         break;
-    }
         // Rule Output
     case 22:
-    {
-        if (box->HasConnection())
-            value = eatBox(nodeBase, box->FirstConnection());
-        else
-            value = Value::False;
+        value = box->HasConnection() ? eatBox(nodeBase, box->FirstConnection()) : Value::Null;
         break;
-    }
         // Transition Source State Anim
     case 23:
     {
@@ -1637,7 +1627,7 @@ void AnimGraphExecutor::ProcessGroupAnimation(Box* boxBase, Node* nodeBase, Valu
 
         // Evaluate the function output
         context.GraphStack.Push((Graph*)data.Graph);
-        value = tryGetValue(functionOutputBox, Value::Zero);
+        value = functionOutputBox && functionOutputBox->HasConnection() ? eatBox(nodeBase, functionOutputBox->FirstConnection()) : Value::Zero;
         context.GraphStack.Pop();
         break;
     }
@@ -1926,17 +1916,13 @@ void AnimGraphExecutor::ProcessGroupFunction(Box* boxBase, Node* node, Value& va
 
         // Peek the input box to use
         int32 inputIndex = -1;
+        const auto name = (StringView)node->Values[1];
         for (int32 i = 0; i < function->Inputs.Count(); i++)
         {
             auto& input = function->Inputs[i];
-
-            // Pick the any nested graph that uses this input
-            AnimSubGraph* subGraph = data.Graph;
-            for (auto& graphIndex : input.GraphIndices)
-                subGraph = subGraph->SubGraphs[graphIndex];
-            if (node->ID == subGraph->Nodes[input.NodeIndex].ID)
+            if (input.Name == name)
             {
-                inputIndex = i;
+                inputIndex = input.InputIndex;
                 break;
             }
         }

@@ -271,7 +271,7 @@ void AnimGraphExecutor::Update(AnimGraphInstanceData& data, float dt)
         case ValueType::Null:
             break;
         default:
-            LOG(Warning, "Invalid animation update result type {0}", result.Type.ToString());
+            //LOG(Warning, "Invalid animation update result type {0}", result.Type.ToString());
             break;
         }
         if (animResult == nullptr)
