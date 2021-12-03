@@ -297,6 +297,7 @@ public:
     explicit operator Rectangle() const;
 
     const Vector2& AsVector2() const;
+    Vector3& AsVector3();
     const Vector3& AsVector3() const;
     const Vector4& AsVector4() const;
     const Int2& AsInt2() const;

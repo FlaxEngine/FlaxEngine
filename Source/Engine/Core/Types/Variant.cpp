@@ -1268,6 +1268,12 @@ Variant::operator int8() const
         return (int8)AsDouble;
     case VariantType::Pointer:
         return (int8)(intptr)AsPointer;
+    case VariantType::Vector2:
+        return (int8)AsVector2().X;
+    case VariantType::Vector3:
+        return (int8)AsVector3().X;
+    case VariantType::Vector4:
+        return (int8)AsVector4().X;
     default:
         return 0;
     }
@@ -1298,6 +1304,12 @@ Variant::operator int16() const
         return (int16)AsDouble;
     case VariantType::Pointer:
         return (int16)(intptr)AsPointer;
+    case VariantType::Vector2:
+        return (int16)AsVector2().X;
+    case VariantType::Vector3:
+        return (int16)AsVector3().X;
+    case VariantType::Vector4:
+        return (int16)AsVector4().X;
     default:
         return 0;
     }
@@ -1328,6 +1340,12 @@ Variant::operator int32() const
         return (int32)AsDouble;
     case VariantType::Pointer:
         return (int32)(intptr)AsPointer;
+    case VariantType::Vector2:
+        return (int32)AsVector2().X;
+    case VariantType::Vector3:
+        return (int32)AsVector3().X;
+    case VariantType::Vector4:
+        return (int32)AsVector4().X;
     default:
         return 0;
     }
@@ -1358,6 +1376,12 @@ Variant::operator int64() const
         return (int64)AsDouble;
     case VariantType::Pointer:
         return (int64)AsPointer;
+    case VariantType::Vector2:
+        return (int64)AsVector2().X;
+    case VariantType::Vector3:
+        return (int64)AsVector3().X;
+    case VariantType::Vector4:
+        return (int64)AsVector4().X;
     default:
         return 0;
     }
@@ -1388,6 +1412,12 @@ Variant::operator uint8() const
         return (uint8)AsDouble;
     case VariantType::Pointer:
         return (uint8)(uintptr)AsPointer;
+    case VariantType::Vector2:
+        return (uint8)AsVector2().X;
+    case VariantType::Vector3:
+        return (uint8)AsVector3().X;
+    case VariantType::Vector4:
+        return (uint8)AsVector4().X;
     default:
         return 0;
     }
@@ -1418,6 +1448,12 @@ Variant::operator uint16() const
         return (uint16)AsDouble;
     case VariantType::Pointer:
         return (uint16)(uintptr)AsPointer;
+    case VariantType::Vector2:
+        return (uint16)AsVector2().X;
+    case VariantType::Vector3:
+        return (uint16)AsVector3().X;
+    case VariantType::Vector4:
+        return (uint16)AsVector4().X;
     default:
         return 0;
     }
@@ -1448,6 +1484,12 @@ Variant::operator uint32() const
         return (uint32)AsDouble;
     case VariantType::Pointer:
         return (uint32)(uintptr)AsPointer;
+    case VariantType::Vector2:
+        return (uint32)AsVector2().X;
+    case VariantType::Vector3:
+        return (uint32)AsVector3().X;
+    case VariantType::Vector4:
+        return (uint32)AsVector4().X;
     default:
         return 0;
     }
@@ -1478,6 +1520,12 @@ Variant::operator uint64() const
         return (uint64)AsDouble;
     case VariantType::Pointer:
         return (uint64)AsPointer;
+    case VariantType::Vector2:
+        return (uint64)AsVector2().X;
+    case VariantType::Vector3:
+        return (uint64)AsVector3().X;
+    case VariantType::Vector4:
+        return (uint64)AsVector4().X;
     default:
         return 0;
     }
@@ -1506,6 +1554,12 @@ Variant::operator float() const
         return AsFloat;
     case VariantType::Double:
         return (float)AsDouble;
+    case VariantType::Vector2:
+        return AsVector2().X;
+    case VariantType::Vector3:
+        return AsVector3().X;
+    case VariantType::Vector4:
+        return AsVector4().X;
     default:
         return 0;
     }
@@ -1534,6 +1588,12 @@ Variant::operator double() const
         return (double)AsFloat;
     case VariantType::Double:
         return AsDouble;
+    case VariantType::Vector2:
+        return (double)AsVector2().X;
+    case VariantType::Vector3:
+        return (double)AsVector3().X;
+    case VariantType::Vector4:
+        return (double)AsVector4().X;
     default:
         return 0;
     }
@@ -2032,6 +2092,11 @@ Variant::operator Rectangle() const
 const Vector2& Variant::AsVector2() const
 {
     return *(const Vector2*)AsData;
+}
+
+Vector3& Variant::AsVector3()
+{
+    return *(Vector3*)AsData;
 }
 
 const Vector3& Variant::AsVector3() const
