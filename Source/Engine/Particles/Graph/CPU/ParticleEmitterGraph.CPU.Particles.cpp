@@ -346,6 +346,12 @@ void ParticleEmitterGraphCPUExecutor::ProcessGroupParticles(Box* box, Node* node
             value = Vector2(size.Z, size.W);
         break;
     }
+        // Particle Position (world space)
+    case 212:
+        value = GET_PARTICLE_ATTRIBUTE(0, Vector3);
+        if (context.Emitter->SimulationSpace == ParticlesSimulationSpace::Local)
+            value.AsVector3() = context.Effect->GetTransform().LocalToWorld(value.AsVector3());
+        break;
         // Particle Emitter Function
     case 300:
     {
