@@ -224,6 +224,14 @@ TEST_CASE("String Compare works") {
             // Case differences
             CHECK(String("a").Compare(String(TEXT("A")), StringSearchCase::CaseSensitive) > 0);
             CHECK(String("A").Compare(String(TEXT("a")), StringSearchCase::CaseSensitive) < 0);
+
+            // Operators
+            CHECK(String(TEXT("")) == String(TEXT("")));
+            CHECK(String(TEXT("xx")) != String(TEXT("")));
+            CHECK(!(String(TEXT("abcx")) == String(TEXT("xxx"))));
+            CHECK(String(TEXT("abcx")) != String(TEXT("xxx")));
+            CHECK(String(TEXT("xxx")) == String(TEXT("xxx")));
+            CHECK(!(String(TEXT("xxx")) != String(TEXT("xxx"))));
         }
 
         SECTION("ignore case") {
@@ -291,6 +299,14 @@ TEST_CASE("String Compare works") {
             // Case differences
             CHECK(StringView(TEXT("a")).Compare(StringView(TEXT("A")), StringSearchCase::CaseSensitive) > 0);
             CHECK(StringView(TEXT("A")).Compare(StringView(TEXT("a")), StringSearchCase::CaseSensitive) < 0);
+
+            // Operators
+            CHECK(StringView(TEXT("")) == StringView(TEXT("")));
+            CHECK(StringView(TEXT("xx")) != StringView(TEXT("")));
+            CHECK(!(StringView(TEXT("abcx")) == StringView(TEXT("xxx"))));
+            CHECK(StringView(TEXT("abcx")) != StringView(TEXT("xxx")));
+            CHECK(StringView(TEXT("xxx")) == StringView(TEXT("xxx")));
+            CHECK(!(StringView(TEXT("xxx")) != StringView(TEXT("xxx"))));
         }
 
         SECTION("ignore case") {

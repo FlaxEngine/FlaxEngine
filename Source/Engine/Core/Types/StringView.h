@@ -277,7 +277,7 @@ public:
     /// <returns>True if this string is lexicographically equivalent to the other, otherwise false.</returns>
     FORCE_INLINE bool operator==(const StringView& other) const
     {
-        return this->Compare(other) == 0;
+        return _length == other._length && (_length == 0 || StringUtils::Compare(_data, other._data, _length) == 0);
     }
 
     /// <summary>
@@ -287,7 +287,7 @@ public:
     /// <returns>True if this string is lexicographically is not equivalent to the other, otherwise false.</returns>
     FORCE_INLINE bool operator!=(const StringView& other) const
     {
-        return this->Compare(other) != 0;
+        return !(*this == other);
     }
 
     /// <summary>
@@ -297,7 +297,7 @@ public:
     /// <returns>True if this string is lexicographically equivalent to the other, otherwise false.</returns>
     FORCE_INLINE bool operator==(const Char* other) const
     {
-        return this->Compare(StringView(other)) == 0;
+        return *this == StringView(other);
     }
 
     /// <summary>
@@ -307,7 +307,7 @@ public:
     /// <returns>True if this string is lexicographically is not equivalent to the other, otherwise false.</returns>
     FORCE_INLINE bool operator!=(const Char* other) const
     {
-        return this->Compare(StringView(other)) != 0;
+        return !(*this == StringView(other));
     }
 
     /// <summary>
@@ -466,7 +466,7 @@ public:
     /// <returns>True if this string is lexicographically equivalent to the other, otherwise false.</returns>
     FORCE_INLINE bool operator==(const StringAnsiView& other) const
     {
-        return this->Compare(other) == 0;
+        return _length == other._length && (_length == 0 || StringUtils::Compare(_data, other._data, _length) == 0);
     }
 
     /// <summary>
@@ -476,7 +476,7 @@ public:
     /// <returns>True if this string is lexicographically is not equivalent to the other, otherwise false.</returns>
     FORCE_INLINE bool operator!=(const StringAnsiView& other) const
     {
-        return this->Compare(other) != 0;
+        return !(*this == other);
     }
 
     /// <summary>
@@ -486,7 +486,7 @@ public:
     /// <returns>True if this string is lexicographically equivalent to the other, otherwise false.</returns>
     FORCE_INLINE bool operator==(const char* other) const
     {
-        return this->Compare(StringAnsiView(other)) == 0;
+        return *this == StringAnsiView(other);
     }
 
     /// <summary>
@@ -496,7 +496,7 @@ public:
     /// <returns>True if this string is lexicographically is not equivalent to the other, otherwise false.</returns>
     FORCE_INLINE bool operator!=(const char* other) const
     {
-        return this->Compare(StringAnsiView(other)) != 0;
+        return !(*this == StringAnsiView(other));
     }
 
     /// <summary>
