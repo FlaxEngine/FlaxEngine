@@ -360,13 +360,21 @@ namespace FlaxEditor.Surface
         /// <inheritdoc />
         protected override void OnShowPrimaryMenu(VisjectCM activeCM, Vector2 location, Box startBox)
         {
-            Profiler.BeginEvent("Setup Anim Graph Context Menu");
-            NodesCache.Get(activeCM);
-            Profiler.EndEvent();
+            // Check if show additional nodes in the current surface context
+            if (activeCM != _cmStateMachineMenu)
+            {
+                Profiler.BeginEvent("Setup Anim Graph Context Menu");
+                NodesCache.Get(activeCM);
+                Profiler.EndEvent();
 
-            base.OnShowPrimaryMenu(activeCM, location, startBox);
+                base.OnShowPrimaryMenu(activeCM, location, startBox);
 
-            activeCM.VisibleChanged += OnActiveContextMenuVisibleChanged;
+                activeCM.VisibleChanged += OnActiveContextMenuVisibleChanged;
+            }
+            else
+            {
+                base.OnShowPrimaryMenu(activeCM, location, startBox);
+            }
         }
 
         private void OnActiveContextMenuVisibleChanged(Control activeCM)
