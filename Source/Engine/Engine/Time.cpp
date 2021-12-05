@@ -189,11 +189,11 @@ double Time::GetNextTick()
     const double nextDraw = Time::Draw.NextBegin;
 
     double nextTick = MAX_double;
-    if (UpdateFPS > 0 && nextUpdate < nextTick)
+    if (UpdateFPS > ZeroTolerance && nextUpdate < nextTick)
         nextTick = nextUpdate;
-    if (PhysicsFPS > 0 && nextPhysics < nextTick)
+    if (PhysicsFPS > ZeroTolerance && nextPhysics < nextTick)
         nextTick = nextPhysics;
-    if (DrawFPS > 0 && nextDraw < nextTick)
+    if (DrawFPS > ZeroTolerance && nextDraw < nextTick)
         nextTick = nextDraw;
 
     if (nextTick == MAX_double)
