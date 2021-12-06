@@ -144,6 +144,47 @@ namespace Flax.Build.Bindings
             if (apiType != null && apiType.IsStruct)
                 return null;
 
+            // Special case for array initializers
+            if (value.StartsWith("{") && value.EndsWith("}") && !attribute)
+            {
+                if (valueType == null)
+                    throw new Exception("Unknown type for value initializer of default value " + value);
+                TypeInfo itemType;
+                if (valueType.Type == "Array")
+                    itemType = valueType.GenericArgs[0];
+                else if (valueType.IsArray)
+                {
+                    itemType = (TypeInfo)value.Clone();
+                    itemType.IsArray = false;
+                }
+                else
+                    throw new Exception("Cannot use array initializer as default value for type " + valueType);
+                var sb = new StringBuilder();
+                var items = new List<string>();
+                var braces = 0;
+                for (int i = 1; i < value.Length - 1; i++)
+                {
+                    var c = value[i];
+                    if (c == ',' && braces == 0)
+                    {
+                        items.Add(sb.ToString());
+                        sb.Clear();
+                        continue;
+                    }
+                    else if (c == '(')
+                        braces++;
+                    else if (c == ')')
+                        braces--;
+                    sb.Append(c);
+                }
+                items.Add(sb.ToString());
+                sb.Clear();
+                sb.Append("new ").Append(GenerateCSharpNativeToManaged(buildData, valueType, caller)).Append('{');
+                for(int i = 0; i < items.Count; i++)
+                    sb.Append(GenerateCSharpDefaultValueNativeToManaged(buildData, items[i], caller, itemType, attribute)).Append(',');
+                sb.Append('}');
+                return sb.ToString();
+            }
             // Special case for value constructors
             if (value.Contains('(') && value.Contains(')'))
                 return "new " + value;
