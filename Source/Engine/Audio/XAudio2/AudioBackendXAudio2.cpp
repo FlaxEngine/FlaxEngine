@@ -816,8 +816,8 @@ void AudioBackendXAudio2::Base_Update()
             // TODO: implement proper matrix setup to convert input channels into output mastering voice
             // hardcoded case for mono audio -> stereo speakers
             Platform::MemoryClear(dsp.pMatrixCoefficients, sizeof(XAudio2::MatrixCoefficients));
-            dsp.pMatrixCoefficients[0] = 0.5f;
-            dsp.pMatrixCoefficients[1] = 0.5f;
+            dsp.pMatrixCoefficients[0] = 1.0f;
+            dsp.pMatrixCoefficients[1] = 1.0f;
         }
 
         const float frequencyRatio = dopplerFactor * source.Pitch * dsp.DopplerFactor;
