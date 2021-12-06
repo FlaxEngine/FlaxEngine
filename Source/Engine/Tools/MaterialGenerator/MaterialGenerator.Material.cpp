@@ -329,7 +329,7 @@ void MaterialGenerator::ProcessGroupMaterial(Box* box, Node* node, Value& value)
 
         // Evaluate the function output
         _graphStack.Push(graph);
-        value = tryGetValue(functionOutputBox, Value::Zero);
+        value = functionOutputBox && functionOutputBox->HasConnection() ? eatBox(node, functionOutputBox->FirstConnection()) : Value::Zero;
         _graphStack.Pop();
         break;
     }
