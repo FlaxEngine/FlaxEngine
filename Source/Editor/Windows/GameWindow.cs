@@ -261,7 +261,7 @@ namespace FlaxEditor.Windows
             InputActions.Add(options => options.StepFrame, Editor.Simulation.RequestPlayOneFrame);
         }
 
-        private void OnPostRender(GPUContext context, RenderContext renderContext)
+        private void OnPostRender(GPUContext context, ref RenderContext renderContext)
         {
             // Debug Draw shapes
             if (_showDebugDraw)

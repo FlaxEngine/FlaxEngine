@@ -37,10 +37,8 @@ namespace FlaxEngine
         /// <param name="projection">The projection.</param>
         public void SetUp(ref Matrix view, ref Matrix projection)
         {
-            Position = view.TranslationVector;
             Projection = projection;
             NonJitteredProjection = projection;
-            TemporalAAJitter = Vector4.Zero;
             View = view;
 
             UpdateCachedData();

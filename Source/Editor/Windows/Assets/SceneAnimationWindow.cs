@@ -520,7 +520,7 @@ namespace FlaxEditor.Windows.Assets
                 }
             }
 
-            private void OnPostRender(GPUContext context, RenderContext renderContext)
+            private void OnPostRender(GPUContext context, ref RenderContext renderContext)
             {
                 var task = _gameWindow.Viewport.Task;
                 var taskFrame = task.FrameCount;

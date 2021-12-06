@@ -428,7 +428,7 @@ namespace FlaxEditor.Viewport
             }
         }
 
-        private void OnCollectDrawCalls(RenderContext renderContext)
+        private void OnCollectDrawCalls(ref RenderContext renderContext)
         {
             if (_previewStaticModel)
             {
@@ -471,7 +471,7 @@ namespace FlaxEditor.Viewport
             }
         }
 
-        private void OnPostRender(GPUContext context, RenderContext renderContext)
+        private void OnPostRender(GPUContext context, ref RenderContext renderContext)
         {
             bool renderPostFx = true;
             switch (renderContext.View.Mode)

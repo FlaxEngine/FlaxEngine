@@ -185,6 +185,7 @@ namespace Flax.Build.Bindings
                 sb.Append('}');
                 return sb.ToString();
             }
+
             // Special case for value constructors
             if (value.Contains('(') && value.Contains(')'))
                 return "new " + value;
@@ -680,7 +681,7 @@ namespace Flax.Build.Bindings
                 {
                     var paramType = eventInfo.Type.GenericArgs[i];
                     var result = GenerateCSharpNativeToManaged(buildData, paramType, classInfo);
-                    if ((paramType.IsRef && !paramType.IsConst && paramType.IsPod(buildData, classInfo)) || result[result.Length - 1] == '*')
+                    if ((paramType.IsRef && !paramType.IsConst) || result[result.Length - 1] == '*')
                         useCustomDelegateSignature = true;
                     CppParamsWrappersCache[i] = result;
                 }
@@ -695,7 +696,7 @@ namespace Flax.Build.Bindings
                         var paramType = eventInfo.Type.GenericArgs[i];
                         if (i != 0)
                             contents.Append(", ");
-                        if (paramType.IsRef && !paramType.IsConst && paramType.IsPod(buildData, classInfo))
+                        if (paramType.IsRef && !paramType.IsConst)
                             contents.Append("ref ");
                         contents.Append(CppParamsWrappersCache[i]).Append(" arg").Append(i);
                     }
@@ -774,9 +775,9 @@ namespace Flax.Build.Bindings
                     var paramType = eventInfo.Type.GenericArgs[i];
                     if (i != 0)
                         contents.Append(", ");
+                    if (paramType.IsRef && !paramType.IsConst)
+                        contents.Append("ref ");
                     contents.Append(CppParamsWrappersCache[i]);
-                    if (paramType.IsRef && !paramType.IsConst && paramType.IsPod(buildData, classInfo))
-                        contents.Append("*");
                     contents.Append(" arg").Append(i);
                 }
                 contents.Append(')').AppendLine();
@@ -788,8 +789,8 @@ namespace Flax.Build.Bindings
                     var paramType = eventInfo.Type.GenericArgs[i];
                     if (i != 0)
                         contents.Append(", ");
-                    if (paramType.IsRef && !paramType.IsConst && paramType.IsPod(buildData, classInfo))
-                        contents.Append("ref *");
+                    if (paramType.IsRef && !paramType.IsConst)
+                        contents.Append("ref ");
                     contents.Append("arg").Append(i);
                 }
                 contents.Append(");").AppendLine();

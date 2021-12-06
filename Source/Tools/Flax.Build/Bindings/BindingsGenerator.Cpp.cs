@@ -695,6 +695,14 @@ namespace Flax.Build.Bindings
                         return "MConverter<" + apiType.Name + ">::Unbox({0})";
                     }
 
+                    // Scripting Object
+                    if (functionInfo == null && apiType.IsScriptingObject)
+                    {
+                        // Inside bindings function the managed runtime passes raw unamanged pointer
+                        type = "MonoObject*";
+                        return "(" + typeInfo.Type + "*)ScriptingObject::ToNative({0})";
+                    }
+
                     // Nested type (namespace prefix is required)
                     if (!(apiType.Parent is FileInfo))
                     {
@@ -1494,6 +1502,28 @@ namespace Flax.Build.Bindings
                     contents.Append("        mono_runtime_invoke(mmethod->GetNative(), instance, params, &exception);").AppendLine();
                     contents.Append("        if (exception)").AppendLine();
                     contents.Append("            DebugLog::LogException(exception);").AppendLine();
+                    for (var i = 0; i < paramsCount; i++)
+                    {
+                        var paramType = eventInfo.Type.GenericArgs[i];
+                        if (paramType.IsRef && !paramType.IsConst)
+                        {
+                            // Convert value back from managed to native (could be modified there)
+                            paramType.IsRef = false;
+                            var managedToNative = GenerateCppWrapperManagedToNative(buildData, paramType, classInfo, out var managedType, null, out var _);
+                            var passAsParamPtr = managedType.EndsWith("*");
+                            var paramValue = $"({managedType}{(passAsParamPtr ? "" : "*")})params[{i}]";
+                            if (!string.IsNullOrEmpty(managedToNative))
+                            {
+                                if (!passAsParamPtr)
+                                    paramValue = '*' + paramValue;
+                                paramValue = string.Format(managedToNative, paramValue);
+                            }
+                            else if (!passAsParamPtr)
+                                paramValue = '*' + paramValue;
+                            contents.Append($"        arg{i} = {paramValue};").AppendLine();
+                            paramType.IsRef = true;
+                        }
+                    }
                     contents.Append("    }").AppendLine().AppendLine();
 
                     // C# event wrapper binding method (binds/unbinds C# wrapper to C++ delegate)
