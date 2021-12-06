@@ -122,10 +122,10 @@ namespace Flax.Build.Bindings
                 }
                 sb.Append('>');
             }
-            if (IsRef)
-                sb.Append('&');
             if (IsPtr)
                 sb.Append('*');
+            if (IsRef)
+                sb.Append('&');
             return sb.ToString();
         }
 
@@ -146,10 +146,10 @@ namespace Flax.Build.Bindings
                 }
                 sb.Append('>');
             }
-            if (IsRef)
-                sb.Append('&');
             if (IsPtr)
                 sb.Append('*');
+            if (IsRef)
+                sb.Append('&');
             return sb.ToString();
         }
 
