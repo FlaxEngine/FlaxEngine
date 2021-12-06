@@ -168,11 +168,10 @@ namespace FlaxEditor.Windows.Assets
             }
             if (!_previewSource)
             {
-                _previewSource = new AudioSource
-                {
-                    Parent = _previewScene,
-                    Clip = _asset,
-                };
+                // HACK: AudioClip must be assigned before Parent, needed for XAudio2 backend
+                _previewSource = new AudioSource();
+                _previewSource.Clip = _asset;
+                _previewSource.Parent = _previewScene;
             }
             if (_previewSource.State == AudioSource.States.Playing)
                 _previewSource.Stop();
