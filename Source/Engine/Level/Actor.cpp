@@ -32,6 +32,37 @@
 #define CHECK_EXECUTE_IN_EDITOR
 #endif
 
+namespace
+{
+    Actor* GetChildByPrefabObjectId(Actor* a, const Guid& prefabObjectId)
+    {
+        Actor* result = nullptr;
+        for (int32 i = 0; i < a->Children.Count(); i++)
+        {
+            if (a->Children[i]->GetPrefabObjectID() == prefabObjectId)
+            {
+                result = a->Children[i];
+                break;
+            }
+        }
+        return result;
+    }
+
+    Script* GetScriptByPrefabObjectId(Actor* a, const Guid& prefabObjectId)
+    {
+        Script* result = nullptr;
+        for (int32 i = 0; i < a->Scripts.Count(); i++)
+        {
+            if (a->Scripts[i]->GetPrefabObjectID() == prefabObjectId)
+            {
+                result = a->Scripts[i];
+                break;
+            }
+        }
+        return result;
+    }
+}
+
 Actor::Actor(const SpawnParams& params)
     : SceneObject(params)
     , _isActive(true)
@@ -382,20 +413,6 @@ Array<Actor*> Actor::GetChildren(const MClass* type) const
     for (auto child : Children)
         if (child->GetClass()->IsSubClassOf(type))
             result.Add(child);
-    return result;
-}
-
-Actor* Actor::GetChildByPrefabObjectId(const Guid& prefabObjectId) const
-{
-    Actor* result = nullptr;
-    for (int32 i = 0; i < Children.Count(); i++)
-    {
-        if (Children[i]->GetPrefabObjectID() == prefabObjectId)
-        {
-            result = Children[i];
-            break;
-        }
-    }
     return result;
 }
 
@@ -919,7 +936,7 @@ void Actor::Serialize(SerializeStream& stream, const void* otherObj)
         for (int32 i = 0; i < other->Children.Count(); i++)
         {
             const Guid prefabObjectId = other->Children[i]->GetPrefabObjectID();
-            if (GetChildByPrefabObjectId(prefabObjectId) == nullptr)
+            if (GetChildByPrefabObjectId(this, prefabObjectId) == nullptr)
             {
                 if (!hasRemovedObjects)
                 {
@@ -934,7 +951,7 @@ void Actor::Serialize(SerializeStream& stream, const void* otherObj)
         for (int32 i = 0; i < other->Scripts.Count(); i++)
         {
             const Guid prefabObjectId = other->Scripts[i]->GetPrefabObjectID();
-            if (GetScriptByPrefabObjectId(prefabObjectId) == nullptr)
+            if (GetScriptByPrefabObjectId(this, prefabObjectId) == nullptr)
             {
                 if (!hasRemovedObjects)
                 {
@@ -1287,20 +1304,6 @@ Script* Actor::GetScriptByID(const Guid& id) const
     for (int32 i = 0; i < Scripts.Count(); i++)
     {
         if (Scripts[i]->GetID() == id)
-        {
-            result = Scripts[i];
-            break;
-        }
-    }
-    return result;
-}
-
-Script* Actor::GetScriptByPrefabObjectId(const Guid& prefabObjectId) const
-{
-    Script* result = nullptr;
-    for (int32 i = 0; i < Scripts.Count(); i++)
-    {
-        if (Scripts[i]->GetPrefabObjectID() == prefabObjectId)
         {
             result = Scripts[i];
             break;

@@ -240,13 +240,6 @@ public:
         return result;
     }
 
-    /// <summary>
-    /// Gets the child actor by its prefab object identifier.
-    /// </summary>
-    /// <param name="prefabObjectId">The prefab object identifier.</param>
-    /// <returns>The actor or null.</returns>
-    Actor* GetChildByPrefabObjectId(const Guid& prefabObjectId) const;
-
 public:
 
     /// <summary>
@@ -691,13 +684,6 @@ public:
     /// <param name="id">The script identifier.</param>
     /// <returns>The script or null.</returns>
     Script* GetScriptByID(const Guid& id) const;
-
-    /// <summary>
-    /// Gets the script by its prefab object identifier.
-    /// </summary>
-    /// <param name="prefabObjectId">The prefab object identifier.</param>
-    /// <returns>The script or null.</returns>
-    Script* GetScriptByPrefabObjectId(const Guid& prefabObjectId) const;
 
     /// <summary>
     /// Gets a value indicating whether this actor is a prefab instance root object.
