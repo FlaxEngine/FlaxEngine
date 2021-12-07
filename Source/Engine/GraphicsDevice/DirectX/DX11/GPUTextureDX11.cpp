@@ -288,7 +288,6 @@ void GPUTextureDX11::initHandles()
                 // (ViewDimension must be D3D11_SRV_DIMENSION_TEXTURECUBE) [ STATE_CREATION ERROR #126: CREATESHADERRESOURCEVIEW_INVALIDDESC]
                 if (isCubeMap && _device->GetRendererType() != RendererType::DirectX10)
                 {
-                    RendererType aa = _device->GetRendererType();
                     /*if (isCubeMap)
                     {
                         srDesc.ViewDimension = D3D11_SRV_DIMENSION_TEXTURECUBEARRAY;

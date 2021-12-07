@@ -104,7 +104,7 @@ void SpotLight::UpdateBounds()
     // Cache cone angles
     _cosOuterCone = Math::Cos(_outerConeAngle * DegreesToRadians);
     _cosInnerCone = Math::Cos(_innerConeAngle * DegreesToRadians);
-    _invCosConeDifference = 1.0f / (_cosInnerCone - _cosOuterCone);
+    _invCosConeDifference = 1.0f / Math::Max(_cosInnerCone - _cosOuterCone, 0.0001f);
 
     // Cache bounds
     // Note: we use the law of cosines to find the distance to the furthest edge of the spotlight cone from a position that is halfway down the spotlight direction

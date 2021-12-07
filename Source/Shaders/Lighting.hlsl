@@ -122,7 +122,7 @@ float4 GetLighting(float3 viewPos, LightData lightData, GBufferSample gBuffer, f
 	// Calculate attenuation
 	if (isRadial)
 	{
-		GetRadialLightAttenuation(lightData, isSpotLight, gBuffer.WorldPos, N, 1, lightData.Direction, L, NoL, distanceAttenuation, lightRadiusMask, spotAttenuation);
+		GetRadialLightAttenuation(lightData, isSpotLight, gBuffer.WorldPos, N, 1, L, NoL, distanceAttenuation, lightRadiusMask, spotAttenuation);
 	}
 	float attenuation = distanceAttenuation * lightRadiusMask * spotAttenuation;
 
@@ -141,7 +141,7 @@ float4 GetLighting(float3 viewPos, LightData lightData, GBufferSample gBuffer, f
 		// Calculate direct lighting
 		LightingData lighting = SurfaceShading(gBuffer, energy, L, V, N);
 #if NO_SPECULAR
-		lighting.Specular = 0;
+		lighting.Specular = float3(0, 0, 0);
 #endif
 
 		// Calculate final light color
