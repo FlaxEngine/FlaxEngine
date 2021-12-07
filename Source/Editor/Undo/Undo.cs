@@ -61,41 +61,26 @@ namespace FlaxEditor
         /// <summary>
         /// Gets or sets a value indicating whether this <see cref="Undo"/> is enabled.
         /// </summary>
-        /// <value>
-        ///   <c>true</c> if enabled; otherwise, <c>false</c>.
-        /// </value>
         public virtual bool Enabled { get; set; } = true;
 
         /// <summary>
         /// Gets a value indicating whether can do undo on last performed action.
         /// </summary>
-        /// <value>
-        ///   <c>true</c> if can perform undo; otherwise, <c>false</c>.
-        /// </value>
         public bool CanUndo => UndoOperationsStack.HistoryCount > 0;
 
         /// <summary>
         /// Gets a value indicating whether can do redo on last undone action.
         /// </summary>
-        /// <value>
-        ///   <c>true</c> if can perform redo; otherwise, <c>false</c>.
-        /// </value>
         public bool CanRedo => UndoOperationsStack.ReverseCount > 0;
 
         /// <summary>
         /// Gets the first name of the undo action.
         /// </summary>
-        /// <value>
-        /// The first name of the undo action.
-        /// </value>
         public string FirstUndoName => UndoOperationsStack.PeekHistory().ActionString;
 
         /// <summary>
         /// Gets the first name of the redo action.
         /// </summary>
-        /// <value>
-        /// The first name of the redo action.
-        /// </value>
         public string FirstRedoName => UndoOperationsStack.PeekReverse().ActionString;
 
         /// <summary>

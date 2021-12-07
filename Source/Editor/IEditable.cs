@@ -1,4 +1,4 @@
-﻿// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
 
 using System;
 
@@ -17,9 +17,6 @@ namespace FlaxEditor
         /// <summary>
         /// Gets a value indicating whether this object is edited (dirty state).
         /// </summary>
-        /// <value>
-        ///   <c>true</c> if this object instance is edited; otherwise, <c>false</c>.
-        /// </value>
         bool IsEdited { get; }
 
         /// <summary>

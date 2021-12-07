@@ -69,9 +69,7 @@ namespace FlaxEditor.Modules
         /// <param name="item">The item.</param>
         /// <param name="shortName">The new short name.</param>
         /// <param name="hint">The hint text if name is invalid.</param>
-        /// <returns>
-        ///   <c>true</c> if name is valid; otherwise, <c>false</c>.
-        /// </returns>
+        /// <returns><c>true</c> if name is valid; otherwise, <c>false</c>.</returns>
         public bool IsValidAssetName(ContentItem item, string shortName, out string hint)
         {
             // Check if name is the same except has some chars in upper case and some in lower case

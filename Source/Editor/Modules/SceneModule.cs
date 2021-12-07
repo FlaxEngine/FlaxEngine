@@ -101,9 +101,7 @@ namespace FlaxEditor.Modules
         /// Determines whether the specified scene is edited.
         /// </summary>
         /// <param name="scene">The scene.</param>
-        /// <returns>
-        ///   <c>true</c> if the specified scene is edited; otherwise, <c>false</c>.
-        /// </returns>
+        /// <returns><c>true</c> if the specified scene is edited; otherwise, <c>false</c>.</returns>
         public bool IsEdited(Scene scene)
         {
             var node = GetActorNode(scene) as SceneNode;
@@ -113,9 +111,7 @@ namespace FlaxEditor.Modules
         /// <summary>
         /// Determines whether any scene is edited.
         /// </summary>
-        /// <returns>
-        ///   <c>true</c> if any scene is edited; otherwise, <c>false</c>.
-        /// </returns>
+        /// <returns><c>true</c> if any scene is edited; otherwise, <c>false</c>.</returns>
         public bool IsEdited()
         {
             foreach (var scene in Root.ChildNodes)
@@ -129,9 +125,7 @@ namespace FlaxEditor.Modules
         /// <summary>
         /// Determines whether every scene is edited.
         /// </summary>
-        /// <returns>
-        ///   <c>true</c> if every scene is edited; otherwise, <c>false</c>.
-        /// </returns>
+        /// <returns><c>true</c> if every scene is edited; otherwise, <c>false</c>.</returns>
         public bool IsEverySceneEdited()
         {
             foreach (var scene in Root.ChildNodes)

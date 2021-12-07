@@ -140,9 +140,7 @@ namespace FlaxEngine
         /// Determines whether the specified path is relative or is absolute.
         /// </summary>
         /// <param name="path">The input path.</param>
-        /// <returns>
-        ///   <c>true</c> if the specified path is relative; otherwise, <c>false</c> if is relative.
-        /// </returns>
+        /// <returns><c>true</c> if the specified path is relative; otherwise, <c>false</c> if is relative.</returns>
         public static bool IsRelative(string path)
         {
             bool isRooted = (path.Length >= 2 && char.IsLetterOrDigit(path[0]) && path[1] == ':') ||
