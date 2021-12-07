@@ -735,11 +735,9 @@ bool ProcessMesh(ImportedModelData& result, OpenFbxImporterData& data, const ofb
                 blendShapeData.Vertices[i].VertexIndex = i;
 
             auto shapeVertices = shape->getVertices();
-            auto rootConvertRotation = data.RootConvertRotation;
             for (int32 i = 0; i < blendShapeData.Vertices.Count(); i++)
             {
                 auto delta = ToVector3(shapeVertices[i]) - mesh.Positions[i];
-                delta = rootConvertRotation * delta;
                 blendShapeData.Vertices[i].PositionDelta = delta;
             }
 
