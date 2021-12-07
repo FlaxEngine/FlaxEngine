@@ -85,8 +85,9 @@ namespace FlaxEditor.GUI.Timeline
                                 var options = new TrackCreateOptions
                                 {
                                     Archetype = TrackArchetypes[j],
-                                    Mute = mute,
                                 };
+                                if (mute)
+                                    options.Flags |= TrackFlags.Mute;
                                 track = TrackArchetypes[j].Create(options);
                                 break;
                             }
@@ -119,10 +120,8 @@ namespace FlaxEditor.GUI.Timeline
                     for (int i = 0; i < tracksCount; i++)
                     {
                         var type = stream.ReadByte();
-                        var flag = stream.ReadByte();
+                        var flag = (TrackFlags)stream.ReadByte();
                         Track track = null;
-                        var mute = (flag & 1) == 1;
-                        var loop = (flag & 2) == 2;
                         for (int j = 0; j < TrackArchetypes.Count; j++)
                         {
                             if (TrackArchetypes[j].TypeId == type)
@@ -130,8 +129,7 @@ namespace FlaxEditor.GUI.Timeline
                                 var options = new TrackCreateOptions
                                 {
                                     Archetype = TrackArchetypes[j],
-                                    Mute = mute,
-                                    Loop = loop,
+                                    Flags = flag,
                                 };
                                 track = TrackArchetypes[j].Create(options);
                                 break;
@@ -209,12 +207,7 @@ namespace FlaxEditor.GUI.Timeline
                     var track = Tracks[i];
 
                     stream.Write((byte)track.Archetype.TypeId);
-                    byte flag = 0;
-                    if (track.Mute)
-                        flag |= 1;
-                    if (track.Loop)
-                        flag |= 2;
-                    stream.Write(flag);
+                    stream.Write((byte)track.Flags);
                     stream.Write(_tracks.IndexOf(track.ParentTrack));
                     stream.Write(track.SubTracks.Count);
                     Utilities.Utils.WriteStr(stream, track.Name, -13);

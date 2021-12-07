@@ -101,21 +101,6 @@ namespace FlaxEditor.GUI.Timeline.Tracks
             }
         }
 
-        /// <summary>
-        /// Gets or sets the nested animation looping mode.
-        /// </summary>
-        public bool TrackLoop
-        {
-            get => Loop;
-            set
-            {
-                if (Loop == value)
-                    return;
-                Loop = value;
-                Timeline?.MarkAsEdited();
-            }
-        }
-
         /// <inheritdoc />
         public NestedSceneAnimationTrack(ref TrackCreateOptions options)
         : base(ref options)

@@ -30,7 +30,6 @@ namespace FlaxEditor.GUI.Timeline.Tracks
                     return;
                 Track.Loop = value;
                 Preview.DrawMode = value ? AudioClipPreview.DrawModes.Looped : AudioClipPreview.DrawModes.Single;
-                Timeline?.MarkAsEdited();
             }
         }
 

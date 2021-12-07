@@ -41,6 +41,7 @@ namespace FlaxEditor.GUI.Timeline
 
         private Timeline _timeline;
         private int _trackIndexCached = -1;
+        private TrackFlags _flags;
         private Track _parentTrack;
         internal float _xOffset;
         private Margin _margin = new Margin(2.0f);
@@ -162,14 +163,38 @@ namespace FlaxEditor.GUI.Timeline
         public Color Color = Color.White;
 
         /// <summary>
-        /// The mute flag. Muted tracks are disabled.
+        /// The track flags.
         /// </summary>
-        public bool Mute;
+        public TrackFlags Flags
+        {
+            get => _flags;
+            set
+            {
+                if (_flags == value)
+                    return;
+                _flags = value;
+                _muteCheckbox.Checked = (Flags & TrackFlags.Mute) == 0;
+                Timeline?.MarkAsEdited();
+            }
+        }
 
         /// <summary>
-        /// The loop flag. Looped tracks are doing a playback of its data in a loop.
+        /// Controls <see cref="TrackFlags.Mute"/> flag.
         /// </summary>
-        public bool Loop;
+        public bool Mute
+        {
+            get => (Flags & TrackFlags.Mute) != 0;
+            set => Flags = value ? (Flags | TrackFlags.Mute) : (Flags & ~TrackFlags.Mute);
+        }
+
+        /// <summary>
+        /// Controls <see cref="TrackFlags.Loop"/> flag.
+        /// </summary>
+        public bool Loop
+        {
+            get => (Flags & TrackFlags.Loop) != 0;
+            set => Flags = value ? (Flags | TrackFlags.Loop) : (Flags & ~TrackFlags.Loop);
+        }
 
         /// <summary>
         /// The minimum amount of media items for this track.
@@ -245,8 +270,7 @@ namespace FlaxEditor.GUI.Timeline
             Archetype = options.Archetype;
             Name = options.Archetype.Name;
             Icon = options.Archetype.Icon;
-            Mute = options.Mute;
-            Loop = options.Loop;
+            _flags = options.Flags;
 
             // Mute checkbox
             const float buttonSize = 14;
@@ -254,7 +278,7 @@ namespace FlaxEditor.GUI.Timeline
             {
                 TooltipText = "Mute track",
                 AutoFocus = true,
-                Checked = !Mute,
+                Checked = (Flags & TrackFlags.Mute) == 0,
                 AnchorPreset = AnchorPresets.MiddleRight,
                 Offsets = new Margin(-buttonSize - 2, buttonSize, buttonSize * -0.5f, buttonSize),
                 IsScrollable = false,
@@ -263,19 +287,12 @@ namespace FlaxEditor.GUI.Timeline
             _muteCheckbox.StateChanged += OnMuteButtonStateChanged;
         }
 
-        internal void SetMute(bool mute)
-        {
-            Mute = mute;
-            _muteCheckbox.Checked = !mute;
-        }
-
         private void OnMuteButtonStateChanged(CheckBox checkBox)
         {
             if (Mute == !checkBox.Checked)
                 return;
             using (new TrackUndoBlock(this))
                 Mute = !checkBox.Checked;
-            Timeline.MarkAsEdited();
         }
 
         /// <summary>

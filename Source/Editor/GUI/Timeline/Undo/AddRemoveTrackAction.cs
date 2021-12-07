@@ -24,8 +24,7 @@ namespace FlaxEditor.GUI.Timeline.Undo
             _options = new TrackCreateOptions
             {
                 Archetype = track.Archetype,
-                Loop = track.Loop,
-                Mute = track.Mute,
+                Flags = track.Flags,
             };
             _color = track.Color;
             _name = track.Name;

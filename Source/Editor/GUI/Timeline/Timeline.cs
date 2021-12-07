@@ -1240,7 +1240,6 @@ namespace FlaxEditor.GUI.Timeline
             var options = new TrackCreateOptions
             {
                 Archetype = archetype,
-                Mute = false,
             };
             return archetype.Create(options);
         }
@@ -1577,8 +1576,7 @@ namespace FlaxEditor.GUI.Timeline
                     var options = new TrackCreateOptions
                     {
                         Archetype = track.Archetype,
-                        Loop = track.Loop,
-                        Mute = track.Mute,
+                        Flags = track.Flags,
                     };
                     var clone = options.Archetype.Create(options);
                     clone.Name = track.CanRename ? GetValidTrackName(track.Name) : track.Name;
