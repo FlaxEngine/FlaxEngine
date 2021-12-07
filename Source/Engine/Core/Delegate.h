@@ -89,6 +89,20 @@ public:
         _lambda = nullptr;
     }
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="Function"/> class.
+    /// </summary>
+    template<typename T>
+    Function(const T& lambda)
+    {
+        _lambda = (Lambda*)Allocator::Allocate(sizeof(Lambda) + sizeof(T));
+        _lambda->Refs = 1;
+        _lambda->Dtor = [](void* callee) -> void { static_cast<T*>(callee)->~T(); };
+        _function = [](void* callee, Params ... params) -> ReturnType { return (*static_cast<T*>(callee))(Forward<Params>(params)...); };
+        _callee = (byte*)_lambda + sizeof(Lambda);
+        new(_callee) T(lambda);
+    }
+
     Function(const Function& other)
         : _callee(other._callee)
         , _function(other._function)
