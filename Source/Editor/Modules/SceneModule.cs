@@ -412,11 +412,8 @@ namespace FlaxEditor.Modules
             // Add to the tree
             var rootNode = Root.TreeNode;
             rootNode.IsLayoutLocked = true;
-            //
             sceneNode.ParentNode = Root;
             rootNode.SortChildren();
-            //
-            treeNode.UnlockChildrenRecursive();
             rootNode.IsLayoutLocked = false;
             rootNode.Parent.PerformLayout();
 

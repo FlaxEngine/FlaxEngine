@@ -350,7 +350,7 @@ namespace FlaxEditor.Modules
                             {
                                 // Perform layout
                                 var windowGUI = window.GUI;
-                                windowGUI.UnlockChildrenRecursive();
+                                windowGUI.IsLayoutLocked = false;
                                 windowGUI.PerformLayout();
 
                                 // Show
@@ -378,6 +378,10 @@ namespace FlaxEditor.Modules
                 Editor.LogWarning("Failed to load windows layout.");
                 Editor.LogWarning(ex);
                 return false;
+            }
+            finally
+            {
+                masterPanel.PerformLayout();
             }
 
             return true;

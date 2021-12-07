@@ -803,7 +803,7 @@ namespace FlaxEditor.Windows
             NavigationClearHistory();
 
             // Update UI layout
-            UnlockChildrenRecursive();
+            _isLayoutLocked = false;
             PerformLayout();
 
             // Load last viewed folder

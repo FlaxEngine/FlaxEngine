@@ -333,30 +333,6 @@ namespace FlaxEditor.GUI.Tree
             }
         }
 
-        /// <summary>
-        /// Updates the tree size.
-        /// </summary>
-        public void UpdateSize()
-        {
-            if (!_autoSize)
-                return;
-
-            // Use max of parent clint area width and root node width
-            float width = 0;
-            if (HasParent)
-                width = Parent.GetClientArea().Width;
-            var rightBottom = Vector2.Zero;
-            for (int i = 0; i < _children.Count; i++)
-            {
-                if (_children[i] is TreeNode node && node.Visible)
-                {
-                    width = Mathf.Max(width, node.MinimumWidth);
-                    rightBottom = Vector2.Max(rightBottom, node.BottomRight);
-                }
-            }
-            Size = new Vector2(width + _margin.Width, rightBottom.Y + _margin.Bottom);
-        }
-
         /// <inheritdoc />
         public override void Update(float deltaTime)
         {
@@ -522,24 +498,42 @@ namespace FlaxEditor.GUI.Tree
         }
 
         /// <inheritdoc />
-        public override void OnChildResized(Control control)
-        {
-            UpdateSize();
-
-            base.OnChildResized(control);
-        }
-
-        /// <inheritdoc />
         public override void OnParentResized()
         {
-            UpdateSize();
+            PerformLayout();
 
             base.OnParentResized();
         }
 
         /// <inheritdoc />
+        protected override void PerformLayoutBeforeChildren()
+        {
+            if (_autoSize)
+            {
+                // Use max of parent clint area width and root node width
+                var parent = Parent;
+                var width = parent != null ? Mathf.Max(parent.GetClientArea().Width, 0) : 0.0f;
+                for (int i = 0; i < _children.Count; i++)
+                {
+                    if (_children[i] is TreeNode node && node.Visible)
+                        width = Mathf.Max(width, node.MinimumWidth);
+                }
+                for (int i = 0; i < _children.Count; i++)
+                {
+                    if (_children[i] is TreeNode node && node.Visible)
+                        node.Width = width;
+                }
+                Width = width + _margin.Width;
+            }
+
+            base.PerformLayoutBeforeChildren();
+        }
+
+        /// <inheritdoc />
         protected override void PerformLayoutAfterChildren()
         {
+            base.PerformLayoutAfterChildren();
+
             // Arrange children
             float y = _margin.Top;
             for (int i = 0; i < _children.Count; i++)
@@ -551,7 +545,17 @@ namespace FlaxEditor.GUI.Tree
                 }
             }
 
-            UpdateSize();
+            if (_autoSize)
+            {
+                // Update height based on the nodes
+                var bottom = 0.0f;
+                for (int i = 0; i < _children.Count; i++)
+                {
+                    if (_children[i] is TreeNode node && node.Visible)
+                        bottom = Mathf.Max(bottom, node.Bottom);
+                }
+                Height = bottom + _margin.Bottom;
+            }
         }
     }
 }

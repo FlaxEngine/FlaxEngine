@@ -325,23 +325,18 @@ namespace FlaxEditor.GUI.Tree
             ExpandAllParents(noAnimation);
 
             // Change state
+            if (_opened && _animationProgress >= 1.0f)
+                return;
             bool prevState = _opened;
             _opened = true;
-            if (prevState != _opened)
-                _animationProgress = 1.0f - _animationProgress;
-
             if (noAnimation)
-            {
-                // Speed up an animation
                 _animationProgress = 1.0f;
-            }
+            else if (prevState != _opened)
+                _animationProgress = 1.0f - _animationProgress;
 
             // Update
             OnExpandedChanged();
-            if (HasParent)
-                Parent.PerformLayout();
-            else
-                PerformLayout();
+            OnExpandAnimationChanged();
         }
 
         /// <summary>
@@ -351,23 +346,18 @@ namespace FlaxEditor.GUI.Tree
         public void Collapse(bool noAnimation = false)
         {
             // Change state
+            if (!_opened && _animationProgress >= 1.0f)
+                return;
             bool prevState = _opened;
             _opened = false;
-            if (prevState != _opened)
-                _animationProgress = 1.0f - _animationProgress;
-
             if (noAnimation)
-            {
-                // Speed up an animation
                 _animationProgress = 1.0f;
-            }
+            else if (prevState != _opened)
+                _animationProgress = 1.0f - _animationProgress;
 
             // Update
             OnExpandedChanged();
-            if (HasParent)
-                Parent.PerformLayout();
-            else
-                PerformLayout();
+            OnExpandAnimationChanged();
         }
 
         /// <summary>
@@ -433,7 +423,7 @@ namespace FlaxEditor.GUI.Tree
             if (_animationProgress < 1.0f)
             {
                 _animationProgress = 1.0f;
-                PerformLayout();
+                OnExpandAnimationChanged();
             }
         }
 
@@ -522,6 +512,19 @@ namespace FlaxEditor.GUI.Tree
         }
 
         /// <summary>
+        /// Called when expand/collapse animation progress changes.
+        /// </summary>
+        protected virtual void OnExpandAnimationChanged()
+        {
+            if (ParentTree != null)
+                ParentTree.PerformLayout();
+            else if (Parent != null)
+                Parent.PerformLayout();
+            else
+                PerformLayout();
+        }
+
+        /// <summary>
         /// Tests the header hit.
         /// </summary>
         /// <param name="location">The location.</param>
@@ -595,7 +598,7 @@ namespace FlaxEditor.GUI.Tree
                 }
 
                 // Arrange controls
-                PerformLayout();
+                OnExpandAnimationChanged();
             }
 
             // Check for long press
@@ -894,7 +897,6 @@ namespace FlaxEditor.GUI.Tree
                 return;
 
             PerformLayout();
-            ParentTree.UpdateSize();
 
             base.OnChildResized(control);
         }
@@ -1022,9 +1024,14 @@ namespace FlaxEditor.GUI.Tree
             if (!wasLocked)
                 LockChildrenRecursive();
 
+            // Auto-size tree nodes to match the parent size
+            var parent = Parent;
+            var width = parent is TreeNode ? parent.Width : Width;
+
             // Optimize layout logic if node is collapsed
             if (_opened || _animationProgress < 1.0f)
             {
+                Width = width;
                 PerformLayoutBeforeChildren();
                 for (int i = 0; i < _children.Count; i++)
                     _children[i].PerformLayout(true);
@@ -1035,7 +1042,7 @@ namespace FlaxEditor.GUI.Tree
                 // TODO: perform layout for any non-TreeNode controls
                 _cachedHeight = _headerHeight;
                 _cachedTextColor = CacheTextColor();
-                Size = new Vector2(Parent?.Width ?? Width, _headerHeight);
+                Size = new Vector2(width, _headerHeight);
             }
 
             if (!wasLocked)
@@ -1070,8 +1077,6 @@ namespace FlaxEditor.GUI.Tree
             if (_opened || _animationProgress < 1.0f)
             {
                 y -= _cachedHeight * (_opened ? 1.0f - _animationProgress : _animationProgress);
-
-                // Arrange children
                 for (int i = 0; i < _children.Count; i++)
                 {
                     if (_children[i] is TreeNode node && node.Visible)
@@ -1085,21 +1090,15 @@ namespace FlaxEditor.GUI.Tree
                 }
             }
 
-            // Cache data
             _cachedHeight = height;
             _cachedTextColor = CacheTextColor();
-
-            // Set bounds
-            Size = new Vector2(Parent?.Width ?? Width, Mathf.Max(_headerHeight, y));
+            Height = Mathf.Max(_headerHeight, y);
         }
 
         /// <inheritdoc />
         protected override void OnParentChangedInternal()
         {
-            // Clear cached tree
             _tree = null;
-            if (Parent != null)
-                Width = Parent.Width;
 
             base.OnParentChangedInternal();
         }
