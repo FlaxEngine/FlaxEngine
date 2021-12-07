@@ -227,9 +227,11 @@ void AudioSource::Cleanup()
     _savedTime = GetTime();
     Stop();
 
-    AudioBackend::Source::Cleanup(this);
-
-    SourceIDs.Clear();
+    if (SourceIDs.HasItems())
+    {
+        AudioBackend::Source::Cleanup(this);
+        SourceIDs.Clear();
+    }
 }
 
 void AudioSource::OnClipChanged()
@@ -239,13 +241,10 @@ void AudioSource::OnClipChanged()
 
 void AudioSource::OnClipLoaded()
 {
-    if (SourceIDs.IsEmpty())
-        return;
-
     AudioBackend::Source::ClipLoaded(this);
 
     // Start playing if source was waiting for the clip to load
-    if (_state == States::Playing && !_isActuallyPlayingSth)
+    if (SourceIDs.HasItems() && _state == States::Playing && !_isActuallyPlayingSth)
     {
         if (Clip->IsStreamable())
         {

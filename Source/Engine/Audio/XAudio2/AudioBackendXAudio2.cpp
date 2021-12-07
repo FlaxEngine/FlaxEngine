@@ -230,6 +230,8 @@ namespace XAudio2
 
     Source* GetSource(const AudioSource* source)
     {
+        if (source->SourceIDs.Count() == 0)
+            return nullptr;
         const AUDIO_SOURCE_ID_TYPE sourceId = source->SourceIDs[0];
         // 0 is invalid ID so shift them
         return &Sources[sourceId - 1];
@@ -531,7 +533,7 @@ void AudioBackendXAudio2::Source_Cleanup(AudioSource* source)
 void AudioBackendXAudio2::Source_Play(AudioSource* source)
 {
     auto aSource = XAudio2::GetSource(source);
-    if (aSource && aSource->Voice)
+    if (aSource && aSource->Voice && !aSource->IsPlaying)
     {
         // Play
         aSource->Voice->Start();
@@ -542,7 +544,7 @@ void AudioBackendXAudio2::Source_Play(AudioSource* source)
 void AudioBackendXAudio2::Source_Pause(AudioSource* source)
 {
     auto aSource = XAudio2::GetSource(source);
-    if (aSource && aSource->Voice)
+    if (aSource && aSource->Voice && aSource->IsPlaying)
     {
         // Pause
         aSource->Voice->Stop();
