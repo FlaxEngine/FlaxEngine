@@ -1,9 +1,16 @@
 // Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
 
 #include "Math.h"
+#include "Mathd.h"
 #include "Vector3.h"
 
 void Math::SinCos(float angle, float& sine, float& cosine)
+{
+    sine = Math::Sin(angle);
+    cosine = Math::Cos(angle);
+}
+
+void Math::SinCos(double angle, double& sine, double& cosine)
 {
     sine = Math::Sin(angle);
     cosine = Math::Cos(angle);
