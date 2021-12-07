@@ -20,6 +20,7 @@ namespace FlaxEditor.SceneGraph
         protected RootNode()
         : base(null, Guid.NewGuid())
         {
+            _treeNode.AutoFocus = false;
         }
 
         /// <summary>
@@ -29,6 +30,7 @@ namespace FlaxEditor.SceneGraph
         protected RootNode(Guid id)
         : base(null, id)
         {
+            _treeNode.AutoFocus = false;
         }
 
         /// <summary>

@@ -339,12 +339,10 @@ namespace FlaxEditor.GUI.Tree
             var node = SelectedNode;
 
             // Check if has focus and if any node is focused and it isn't a root
-            if (ContainsFocus && node != null && !node.IsRoot)
+            if (ContainsFocus && node != null && node.AutoFocus)
             {
                 var window = Root;
-
-                // Check if can perform update
-                if (_keyUpdateTime >= KeyUpdateTimeout)
+                if (_keyUpdateTime >= KeyUpdateTimeout && window is WindowRootControl windowRoot && windowRoot.Window.IsFocused)
                 {
                     bool keyUpArrow = window.GetKeyDown(KeyboardKeys.ArrowUp);
                     bool keyDownArrow = window.GetKeyDown(KeyboardKeys.ArrowDown);
@@ -358,38 +356,29 @@ namespace FlaxEditor.GUI.Tree
                         Assert.AreNotEqual(-1, myIndex);
 
                         // Up
+                        TreeNode toSelect = null;
                         if (keyUpArrow)
                         {
-                            TreeNode toSelect = null;
                             if (myIndex == 0)
                             {
-                                // Select parent (if it exists and it isn't a root)
-                                if (parentNode != null && !parentNode.IsRoot)
-                                    toSelect = parentNode;
+                                // Select parent
+                                toSelect = parentNode;
                             }
                             else
                             {
                                 // Select previous parent child
                                 toSelect = nodeParent.GetChild(myIndex - 1) as TreeNode;
 
-                                // Check if is valid and expanded and has any children
+                                // Select last child if is valid and expanded and has any children
                                 if (toSelect != null && toSelect.IsExpanded && toSelect.HasAnyVisibleChild)
                                 {
-                                    // Select last child
                                     toSelect = toSelect.GetChild(toSelect.ChildrenCount - 1) as TreeNode;
                                 }
-                            }
-                            if (toSelect != null)
-                            {
-                                // Select
-                                Select(toSelect);
-                                toSelect.Focus();
                             }
                         }
                         // Down
                         else
                         {
-                            TreeNode toSelect = null;
                             if (node.IsExpanded && node.HasAnyVisibleChild)
                             {
                                 // Select the first child
@@ -398,13 +387,14 @@ namespace FlaxEditor.GUI.Tree
                             else if (myIndex == nodeParent.ChildrenCount - 1)
                             {
                                 // Select next node after parent
-                                if (parentNode != null)
+                                while (parentNode != null && toSelect == null)
                                 {
                                     int parentIndex = parentNode.IndexInParent;
                                     if (parentIndex != -1 && parentIndex < parentNode.Parent.ChildrenCount - 1)
                                     {
                                         toSelect = parentNode.Parent.GetChild(parentIndex + 1) as TreeNode;
                                     }
+                                    parentNode = parentNode.Parent as TreeNode;
                                 }
                             }
                             else
@@ -412,12 +402,12 @@ namespace FlaxEditor.GUI.Tree
                                 // Select next parent child
                                 toSelect = nodeParent.GetChild(myIndex + 1) as TreeNode;
                             }
-                            if (toSelect != null)
-                            {
-                                // Select
-                                Select(toSelect);
-                                toSelect.Focus();
-                            }
+                        }
+                        if (toSelect != null && toSelect.AutoFocus)
+                        {
+                            // Select
+                            Select(toSelect);
+                            toSelect.Focus();
                         }
 
                         // Reset time
@@ -452,7 +442,7 @@ namespace FlaxEditor.GUI.Tree
                     if (node.IsCollapsed)
                     {
                         // Select parent if has and is not a root
-                        if (node.HasParent && node.Parent is TreeNode nodeParentNode && !nodeParentNode.IsRoot)
+                        if (node.HasParent && node.Parent is TreeNode nodeParentNode && nodeParentNode.AutoFocus)
                         {
                             Select(nodeParentNode);
                             nodeParentNode.Focus();
