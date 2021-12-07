@@ -95,12 +95,8 @@ public:
     template<typename T>
     Function(const T& lambda)
     {
-        _lambda = (Lambda*)Allocator::Allocate(sizeof(Lambda) + sizeof(T));
-        _lambda->Refs = 1;
-        _lambda->Dtor = [](void* callee) -> void { static_cast<T*>(callee)->~T(); };
-        _function = [](void* callee, Params ... params) -> ReturnType { return (*static_cast<T*>(callee))(Forward<Params>(params)...); };
-        _callee = (byte*)_lambda + sizeof(Lambda);
-        new(_callee) T(lambda);
+        _lambda = nullptr;
+        Bind<T>(lambda);
     }
 
     Function(const Function& other)
