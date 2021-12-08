@@ -229,7 +229,7 @@ float4 PS_InjectLight(Quad_GS2PS input) : SV_Target0
 		float distanceBias = max(cellRadius * InverseSquaredLightDistanceBiasScale, 1);
 
 		// Calculate the light attenuation
-		GetRadialLightAttenuation(LocalLight, isSpotLight, positionWS, float3(0, 0, 1), distanceBias * distanceBias, toLight, L, NoL, distanceAttenuation, lightRadiusMask, spotAttenuation);
+		GetRadialLightAttenuation(LocalLight, isSpotLight, positionWS, float3(0, 0, 1), distanceBias * distanceBias, L, NoL, distanceAttenuation, lightRadiusMask, spotAttenuation);
 		float combinedAttenuation = distanceAttenuation * lightRadiusMask * spotAttenuation;
 
 		// Peek the shadow
