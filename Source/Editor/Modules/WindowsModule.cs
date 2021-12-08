@@ -737,7 +737,6 @@ namespace FlaxEditor.Modules
             _windowsLayoutPath = StringUtils.CombinePaths(Globals.ProjectCacheFolder, "WindowsLayout.xml");
 
             // Create main window
-            var dpiScale = Platform.DpiScale;
             var settings = CreateWindowSettings.Default;
             settings.Title = "Flax Editor";
             settings.Size = Platform.DesktopSize;

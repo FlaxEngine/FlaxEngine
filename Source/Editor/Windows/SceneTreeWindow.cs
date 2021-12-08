@@ -327,14 +327,6 @@ namespace FlaxEditor.Windows
             _isUpdatingSelection = false;
         }
         
-        private static bool ValidateDragActor(ActorNode actorNode)
-        {
-            // Reject dragging actors not linked to scene (eg. from prefab)
-            if (actorNode.ParentScene == null)
-                return false;
-            return true;
-        }
-
         private bool ValidateDragAsset(AssetItem assetItem)
         {
             return assetItem.OnEditorDrag(this);
