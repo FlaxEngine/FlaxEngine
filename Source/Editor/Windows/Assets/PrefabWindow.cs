@@ -94,12 +94,16 @@ namespace FlaxEditor.Windows.Assets
             _undo.ActionDone += OnUndoEvent;
 
             // Split Panel 1
-            _split1 = new SplitPanel(Orientation.Horizontal, ScrollBars.Both, ScrollBars.None)
+            _split1 = new SplitPanel(Orientation.Horizontal, ScrollBars.None, ScrollBars.None)
             {
                 AnchorPreset = AnchorPresets.StretchAll,
                 Offsets = new Margin(0, 0, _toolstrip.Bottom, 0),
                 SplitterValue = 0.2f,
                 Parent = this
+            };
+            var sceneTreePanel = new SceneTreePanel(this)
+            {
+                Parent = _split1.Panel1,
             };
 
             // Split Panel 2
@@ -117,7 +121,7 @@ namespace FlaxEditor.Windows.Assets
                 AnchorPreset = AnchorPresets.HorizontalStretchTop,
                 IsScrollable = true,
                 Offsets = new Margin(0, 0, 0, 18 + 6),
-                Parent = _split1.Panel1,
+                Parent = sceneTreePanel,
             };
             _searchBox = new TextBox
             {
@@ -138,7 +142,7 @@ namespace FlaxEditor.Windows.Assets
             _tree.AddChild(Graph.Root.TreeNode);
             _tree.SelectedChanged += OnTreeSelectedChanged;
             _tree.RightClick += OnTreeRightClick;
-            _tree.Parent = _split1.Panel1;
+            _tree.Parent = sceneTreePanel;
 
             // Prefab viewport
             _viewport = new PrefabWindowViewport(this)
@@ -447,7 +451,7 @@ namespace FlaxEditor.Windows.Assets
         {
             _split1.SplitterValue = 0.2f;
             _split2.SplitterValue = 0.6f;
-            LiveReload = true;
+            LiveReload = false;
         }
 
         /// <inheritdoc />
