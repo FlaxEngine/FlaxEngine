@@ -235,8 +235,9 @@ namespace FlaxEditor.Content.GUI
         /// </summary>
         /// <param name="items">The items to show.</param>
         /// <param name="sortType">The sort method for items.</param>
-        /// <param name="additive">If set to <c>true</c> items will be added to the current selection. Otherwise selection will be cleared before.</param>
-        public void ShowItems(List<ContentItem> items, SortType sortType, bool additive = false)
+        /// <param name="additive">If set to <c>true</c> items will be added to the current list. Otherwise items list will be cleared before.</param>
+        /// <param name="keepSelection">If set to <c>true</c> selected items list will be preserved. Otherwise selection will be cleared before.</param>
+        public void ShowItems(List<ContentItem> items, SortType sortType, bool additive = false, bool keepSelection = false)
         {
             if (items == null)
                 throw new ArgumentNullException();
@@ -253,6 +254,7 @@ namespace FlaxEditor.Content.GUI
             // Lock layout
             var wasLayoutLocked = IsLayoutLocked;
             IsLayoutLocked = true;
+            var selection = !additive && keepSelection ? _selection.ToArray() : null;
 
             // Deselect items if need to
             if (!additive)
@@ -264,6 +266,11 @@ namespace FlaxEditor.Content.GUI
             {
                 items[i].Parent = this;
                 items[i].AddReference(this);
+            }
+            if (selection != null)
+            {
+                _selection.Clear();
+                _selection.AddRange(selection);
             }
 
             // Sort items depending on sortMethod parameter

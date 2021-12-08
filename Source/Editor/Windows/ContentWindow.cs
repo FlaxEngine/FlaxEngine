@@ -739,12 +739,12 @@ namespace FlaxEditor.Windows
                         items.Add(node.Folder);
                     }
                 }
-                _view.ShowItems(items, _sortType);
+                _view.ShowItems(items, _sortType, false, true);
             }
             else
             {
                 // Show folder contents
-                _view.ShowItems(target.Folder.Children, _sortType);
+                _view.ShowItems(target.Folder.Children, _sortType, false, true);
             }
         }
 
