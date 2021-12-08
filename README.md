@@ -42,15 +42,7 @@ Flax Visual Studio extension provides better programming workflow, C# scripts de
 * Compile Flax project (hit F7 or CTRL+Shift+B)
 * Run Flax (hit F5 key)
 
----
-
-**Note**
-
-If building on Windows to support Vulkan rendering, first install the Vulkan SDK then  set an environment variable to provide the path to the SDK prior to running GenerateProjectFiles.bat:
-
-    set VULKAN_SDK=C:\VulkanSDK\version\
-
----
+> When building on Windows to support Vulkan rendering, first install the Vulkan SDK then set an environment variable to provide the path to the SDK prior to running GenerateProjectFiles.bat: `set VULKAN_SDK=C:\VulkanSDK\version\`
 
 ## Linux
 
@@ -97,4 +89,4 @@ If building on Windows to support Vulkan rendering, first install the Vulkan SDK
 
 Using Flax source code is strictly governed by the Flax Engine End User License Agreement. If you don't agree to those terms, as amended from time to time, you are not permitted to access or use Flax Engine.
 
-We welcome any contributions to Flax Engine development through pull requests on GitHub. Most of our active development is in the master branch, so we prefer to take pull requests there (particularly for new features). We try to make sure that all new code adheres to the Flax coding standards. All contributions are governed by the terms of the EULA.
+We welcome any contributions to Flax Engine development through pull requests on GitHub. Most of our active development is in the master branch, so we prefer to take pull requests there (particularly for new features). We try to make sure that all new code adheres to the Flax coding standards. All contributions are governed by the terms of the [EULA](https://flaxengine.com/licensing/).
