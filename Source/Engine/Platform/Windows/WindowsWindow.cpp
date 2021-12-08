@@ -99,7 +99,7 @@ WindowsWindow::WindowsWindow(const CreateWindowSettings& settings)
     else
     {
         // Create window style flags
-        style |= WS_CLIPCHILDREN | WS_CLIPSIBLINGS;
+        style |= WS_CLIPCHILDREN | WS_CLIPSIBLINGS | WS_CAPTION;
 #if WINDOWS_USE_NEW_BORDER_LESS
         if (settings.IsRegularWindow)
             style |= WS_BORDER | WS_CAPTION | WS_DLGFRAME | WS_SYSMENU | WS_THICKFRAME | WS_GROUP;
@@ -124,6 +124,12 @@ WindowsWindow::WindowsWindow(const CreateWindowSettings& settings)
         nullptr,
         (HINSTANCE)Platform::Instance,
         nullptr);
+    if (_handle == nullptr)
+    {
+        LOG_WIN32_LAST_ERROR;
+        Platform::Fatal(TEXT("Cannot create window."));
+        return;
+    }
 
     // Query DPI
     _dpi = Platform::GetDpi();
@@ -140,18 +146,11 @@ WindowsWindow::WindowsWindow(const CreateWindowSettings& settings)
     }
     _dpiScale = (float)_dpi / (float)DefaultDPI;
 
-    // Validate result
-    if (!HasHWND())
-    {
-        LOG_WIN32_LAST_ERROR;
-        Platform::Fatal(TEXT("Cannot create window."));
-    }
-
 #if WINDOWS_USE_NEWER_BORDER_LESS
     // Enable shadow
     if (_settings.IsRegularWindow && !_settings.HasBorder && IsCompositionEnabled())
     {
-        static const int margin[4] = { 1, 1, 1, 1 };
+        const int margin[4] = { 1, 1, 1, 1 };
         ::DwmExtendFrameIntoClientArea(_handle, margin);
     }
 #endif
@@ -213,6 +212,11 @@ void WindowsWindow::Show()
         {
             SetWindowPos(_handle, nullptr, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER | SWP_NOACTIVATE | SWP_FRAMECHANGED);
         }
+#elif WINDOWS_USE_NEWER_BORDER_LESS
+        if (!_settings.HasBorder)
+        {
+            SetWindowPos(_handle, nullptr, 0, 0, 0, 0, SWP_FRAMECHANGED | SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE | SWP_NOZORDER);
+        }
 #endif
 
         // Base
@@ -236,12 +240,16 @@ void WindowsWindow::Hide()
 
 void WindowsWindow::Minimize()
 {
+    if (!_settings.AllowMinimize)
+        return;
     ASSERT(HasHWND());
     ShowWindow(_handle, SW_MINIMIZE);
 }
 
 void WindowsWindow::Maximize()
 {
+    if (!_settings.AllowMaximize)
+        return;
     ASSERT(HasHWND());
     _isDuringMaximize = true;
     ShowWindow(_handle, SW_MAXIMIZE);
@@ -761,7 +769,6 @@ LRESULT WindowsWindow::WndProc(UINT msg, WPARAM wParam, LPARAM lParam)
             UpdateCursor();
             return true;
         }
-
         break;
     }
     case WM_MOUSEMOVE:
@@ -847,7 +854,7 @@ LRESULT WindowsWindow::WndProc(UINT msg, WPARAM wParam, LPARAM lParam)
             }
         }
 #elif WINDOWS_USE_NEWER_BORDER_LESS
-        if (wParam == TRUE && !_settings.HasBorder && _settings.IsRegularWindow)
+        if (wParam == TRUE && !_settings.HasBorder) // && _settings.IsRegularWindow)
         {
             // In maximized mode fill the whole work area of the monitor (excludes task bar)
             if (::IsWindowMaximized(_handle))
@@ -864,7 +871,7 @@ LRESULT WindowsWindow::WndProc(UINT msg, WPARAM wParam, LPARAM lParam)
                     }
                 }
             }
-            SetWindowPos(_handle, nullptr, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER | SWP_NOACTIVATE | SWP_FRAMECHANGED);
+            //SetWindowPos(_handle, nullptr, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER | SWP_NOACTIVATE | SWP_FRAMECHANGED);
             return 0;
         }
 #endif
@@ -904,22 +911,20 @@ LRESULT WindowsWindow::WndProc(UINT msg, WPARAM wParam, LPARAM lParam)
     case WM_NCACTIVATE:
     {
         // Skip for border-less windows
-        if (!_settings.HasBorder)
+        if (!_settings.HasBorder && !IsCompositionEnabled())
             return 1;
         break;
     }
+#if 0
     case WM_NCPAINT:
-    {
         // Skip for border-less windows
         if (!_settings.HasBorder)
             return 1;
         break;
-    }
+#endif
     case WM_ERASEBKGND:
-    {
         // Skip the window background erasing
         return 1;
-    }
     case WM_GETMINMAXINFO:
     {
         const auto minMax = reinterpret_cast<MINMAXINFO*>(lParam);
@@ -963,7 +968,6 @@ LRESULT WindowsWindow::WndProc(UINT msg, WPARAM wParam, LPARAM lParam)
         return 0;
     }
     case WM_SYSCOMMAND:
-    {
         // Prevent moving/sizing in full screen mode
         if (IsFullscreen())
         {
@@ -976,17 +980,9 @@ LRESULT WindowsWindow::WndProc(UINT msg, WPARAM wParam, LPARAM lParam)
                 return 0;
             }
         }
-
         break;
-    }
     case WM_CREATE:
-    {
         return 0;
-    }
-    case WM_MOVE:
-    {
-        break;
-    }
     case WM_SIZE:
     {
         if (SIZE_MINIMIZED == wParam)
@@ -1044,13 +1040,7 @@ LRESULT WindowsWindow::WndProc(UINT msg, WPARAM wParam, LPARAM lParam)
         _dpi = HIWORD(wParam);
         _dpiScale = (float)_dpi / (float)DefaultDPI;
         RECT* windowRect = (RECT*)lParam;
-        SetWindowPos(_handle,
-                     nullptr,
-                     windowRect->left,
-                     windowRect->top,
-                     windowRect->right - windowRect->left,
-                     windowRect->bottom - windowRect->top,
-                     SWP_NOZORDER | SWP_NOACTIVATE);
+        SetWindowPos(_handle, nullptr, windowRect->left, windowRect->top, windowRect->right - windowRect->left, windowRect->bottom - windowRect->top, SWP_NOZORDER | SWP_NOACTIVATE);
         // TODO: Recalculate fonts
         return 0;
     }
@@ -1060,12 +1050,10 @@ LRESULT WindowsWindow::WndProc(UINT msg, WPARAM wParam, LPARAM lParam)
         break;
     }
     case WM_EXITSIZEMOVE:
-    {
         _isResizing = false;
         CheckForWindowResize();
         UpdateRegion();
         break;
-    }
     case WM_SETFOCUS:
         OnGotFocus();
         break;
@@ -1090,15 +1078,13 @@ LRESULT WindowsWindow::WndProc(UINT msg, WPARAM wParam, LPARAM lParam)
         // A menu is active and the user presses a key that does not correspond to any mnemonic or accelerator key so just ignore and don't beep
         return MAKELRESULT(0, MNC_CLOSE);
     case WM_SYSKEYDOWN:
-    {
         if (wParam == VK_F4)
         {
             LOG(Info, "Alt+F4 pressed");
             Close(ClosingReason::User);
             return 0;
         }
-    }
-    break;
+        break;
     case WM_POWERBROADCAST:
         switch (wParam)
         {
@@ -1110,7 +1096,6 @@ LRESULT WindowsWindow::WndProc(UINT msg, WPARAM wParam, LPARAM lParam)
             return true;
         }
         break;
-
     case WM_CLOSE:
         Close(ClosingReason::User);
         return 0;

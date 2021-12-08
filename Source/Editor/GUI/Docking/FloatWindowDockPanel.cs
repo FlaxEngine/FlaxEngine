@@ -89,7 +89,7 @@ namespace FlaxEditor.GUI.Docking
             settings.IsRegularWindow = true;
             settings.HasSizingFrame = true;
             settings.ShowAfterFirstPaint = false;
-            settings.ShowInTaskbar = false;
+            settings.ShowInTaskbar = true;
             settings.StartPosition = startPosition;
 
             // Create window
