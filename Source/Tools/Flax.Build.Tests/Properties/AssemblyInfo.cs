@@ -8,7 +8,7 @@ using System.Runtime.InteropServices;
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("Wojciech Figat")]
 [assembly: AssemblyProduct("Flax.Build.Tests")]
-[assembly: AssemblyCopyright("Copyright © 2012-2020 Wojciech Figat")]
+[assembly: AssemblyCopyright("Copyright © 2012-2021 Wojciech Figat")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
 [assembly: ComVisible(false)]

@@ -1,6 +1,6 @@
 @echo off
 
-rem Copyright (c) 2012-2020 Wojciech Figat. All rights reserved.
+rem Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
 
 if not exist "Development\Scripts\Windows\GetMSBuildPath.bat" goto Error_InvalidLocation
 
