@@ -35,7 +35,11 @@ namespace
         const bool success = ::DwmIsCompositionEnabled(&result) == S_OK;
         return result && success;
     }
+}
+#endif
 
+namespace
+{
     bool IsWindowMaximized(HWND window)
     {
         WINDOWPLACEMENT placement;
@@ -44,7 +48,6 @@ namespace
         return placement.showCmd == SW_MAXIMIZE;
     }
 }
-#endif
 
 WindowsWindow::WindowsWindow(const CreateWindowSettings& settings)
     : WindowBase(settings)
@@ -99,13 +102,14 @@ WindowsWindow::WindowsWindow(const CreateWindowSettings& settings)
     else
     {
         // Create window style flags
-        style |= WS_CLIPCHILDREN | WS_CLIPSIBLINGS | WS_CAPTION;
+        style |= WS_CLIPCHILDREN | WS_CLIPSIBLINGS;
 #if WINDOWS_USE_NEW_BORDER_LESS
         if (settings.IsRegularWindow)
             style |= WS_BORDER | WS_CAPTION | WS_DLGFRAME | WS_SYSMENU | WS_THICKFRAME | WS_GROUP;
 #elif WINDOWS_USE_NEWER_BORDER_LESS
         if (settings.IsRegularWindow)
             style |= WS_THICKFRAME | WS_SYSMENU;
+        style |= WS_CAPTION;
 #endif
         exStyle |= WS_EX_WINDOWEDGE;
     }
@@ -857,7 +861,7 @@ LRESULT WindowsWindow::WndProc(UINT msg, WPARAM wParam, LPARAM lParam)
         if (wParam == TRUE && !_settings.HasBorder) // && _settings.IsRegularWindow)
         {
             // In maximized mode fill the whole work area of the monitor (excludes task bar)
-            if (::IsWindowMaximized(_handle))
+            if (IsWindowMaximized(_handle))
             {
                 HMONITOR monitor = ::MonitorFromWindow(_handle, MONITOR_DEFAULTTONULL);
                 if (monitor)
@@ -908,6 +912,7 @@ LRESULT WindowsWindow::WndProc(UINT msg, WPARAM wParam, LPARAM lParam)
             Maximize();
         return 0;
     }
+#if WINDOWS_USE_NEWER_BORDER_LESS
     case WM_NCACTIVATE:
     {
         // Skip for border-less windows
@@ -915,6 +920,7 @@ LRESULT WindowsWindow::WndProc(UINT msg, WPARAM wParam, LPARAM lParam)
             return 1;
         break;
     }
+#endif
 #if 0
     case WM_NCPAINT:
         // Skip for border-less windows
