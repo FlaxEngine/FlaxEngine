@@ -201,6 +201,21 @@ namespace FlaxEditor.SceneGraph.GUI
             base.Update(deltaTime);
         }
 
+
+        /// <inheritdoc />
+        protected override bool ShowTooltip => true;
+
+        /// <inheritdoc />
+        public override bool OnShowTooltip(out string text, out Vector2 location, out Rectangle area)
+        {
+            // Evaluate tooltip text once it's actually needed
+            var actor = _actorNode.Actor;
+            if (string.IsNullOrEmpty(TooltipText) && actor)
+                TooltipText = Surface.SurfaceUtils.GetVisualScriptTypeDescription(TypeUtils.GetObjectType(actor));
+
+            return base.OnShowTooltip(out text, out location, out area);
+        }
+
         /// <inheritdoc />
         protected override Color CacheTextColor()
         {

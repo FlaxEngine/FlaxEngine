@@ -47,7 +47,8 @@ namespace FlaxEditor.CustomEditors.Dedicated
         public override void Initialize(LayoutElementsContainer layout)
         {
             // Check for prefab link
-            if (Values.IsSingleObject && Values[0] is Actor actor && actor.HasPrefabLink)
+            var actor = Values.Count == 1 ? Values[0] as Actor : null;
+            if (actor != null && actor.HasPrefabLink)
             {
                 // TODO: consider editing more than one instance of the same prefab asset at once
 
@@ -91,6 +92,8 @@ namespace FlaxEditor.CustomEditors.Dedicated
             {
                 if (layout.Children[i] is GroupElement group && group.Panel.HeaderText == "General")
                 {
+                    if (actor != null)
+                        group.Panel.TooltipText = Surface.SurfaceUtils.GetVisualScriptTypeDescription(TypeUtils.GetObjectType(actor));
                     const float settingsButtonSize = 14;
                     var settingsButton = new Image
                     {
