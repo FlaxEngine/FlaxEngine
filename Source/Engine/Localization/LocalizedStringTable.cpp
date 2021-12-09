@@ -33,6 +33,28 @@ void LocalizedStringTable::AddPluralString(const StringView& id, const StringVie
     values[n] = value;
 }
 
+String LocalizedStringTable::GetString(const String& id) const
+{
+    StringView result;
+    const auto messages = Entries.TryGet(id);
+    if (messages && messages->Count() != 0)
+        result = messages->At(0);
+    if (result.IsEmpty() && FallbackTable)
+        result = FallbackTable->GetString(id);
+    return result;
+}
+
+String LocalizedStringTable::GetPluralString(const String& id, int32 n) const
+{
+    StringView result;
+    const auto messages = Entries.TryGet(id);
+    if (messages && messages->Count() > n)
+        result = messages->At(n);
+    if (result.IsEmpty() && FallbackTable)
+        result = FallbackTable->GetPluralString(id, n);
+    return String::Format(result.GetNonTerminatedText(), n);
+}
+
 #if USE_EDITOR
 
 bool LocalizedStringTable::Save(const StringView& path)
