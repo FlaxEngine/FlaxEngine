@@ -222,6 +222,7 @@ namespace FlaxEditor.Viewport.Previews
             {
                 _guiMaterialControl = new Image
                 {
+                    Offsets = Margin.Zero,
                     AnchorPreset = AnchorPresets.StretchAll,
                     KeepAspectRatio = false,
                     Brush = new MaterialBrush(),
