@@ -146,7 +146,7 @@ int32 Engine::Main(const Char* cmdLine)
     while (!ShouldExit())
     {
         // Reduce CPU usage by introducing idle time if the engine is running very fast and has enough time to spend
-        if ((useSleep && Time::UpdateFPS > 0) || !Platform::GetHasFocus())
+        if ((useSleep && Time::UpdateFPS > ZeroTolerance) || !Platform::GetHasFocus())
         {
             double nextTick = Time::GetNextTick();
             double timeToTick = nextTick - Platform::GetTimeSeconds();
