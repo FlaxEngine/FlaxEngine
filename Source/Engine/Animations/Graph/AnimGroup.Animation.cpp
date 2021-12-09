@@ -1065,6 +1065,7 @@ void AnimGraphExecutor::ProcessGroupAnimation(Box* boxBase, Node* nodeBase, Valu
     case 13:
     {
         ASSERT(box->ID == 0);
+        value = Value::Null;
 
         // Note data layout:
         // [0]: Vector4 Range (minX, maxX, minY, maxY)
@@ -1087,7 +1088,6 @@ void AnimGraphExecutor::ProcessGroupAnimation(Box* boxBase, Node* nodeBase, Valu
         if (data.TrianglesP0[0] == ANIM_GRAPH_MULTI_BLEND_MAX_ANIMS)
         {
             // Nothing to sample
-            value = Value::Null;
             break;
         }
 
@@ -1107,7 +1107,6 @@ void AnimGraphExecutor::ProcessGroupAnimation(Box* boxBase, Node* nodeBase, Valu
         if (data.Length <= ZeroTolerance)
         {
             // Nothing to sample
-            value = Value::Null;
             break;
         }
 
@@ -1122,7 +1121,6 @@ void AnimGraphExecutor::ProcessGroupAnimation(Box* boxBase, Node* nodeBase, Valu
         ANIM_GRAPH_PROFILE_EVENT("Multi Blend 2D");
 
         // Find 3 animations to blend (triangle)
-        value = Value::Null;
         Vector2 p(x, y);
         bool hasBest = false;
         Vector2 bestPoint;
@@ -1230,7 +1228,7 @@ void AnimGraphExecutor::ProcessGroupAnimation(Box* boxBase, Node* nodeBase, Valu
         }
 
         // Check if use the closes sample
-        if (value.AsPointer == nullptr && hasBest)
+        if ((void*)value == nullptr && hasBest)
         {
             const auto aAnim = node->Assets[bestAnims[0]].As<Animation>();
             const auto aData = node->Values[4 + bestAnims[0] * 2].AsVector4();

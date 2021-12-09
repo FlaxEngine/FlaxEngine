@@ -204,6 +204,18 @@ bool AnimGraphBase::onNodeLoaded(Node* n)
             // Triangulate
             Array<Delaunay2D::Triangle, FixedAllocation<ANIM_GRAPH_MULTI_BLEND_2D_MAX_TRIS>> triangles;
             Delaunay2D::Triangulate(vertices, triangles);
+            if (triangles.Count() == 0)
+            {
+                switch (vertices.Count())
+                {
+                case 1:
+                    triangles.Add(Delaunay2D::Triangle(0, 0, 0));
+                    break;
+                case 2:
+                    triangles.Add(Delaunay2D::Triangle(0, 1, 0));
+                    break;
+                }
+            }
 
             // Store triangles vertices indices (map the back to the anim node slots)
             for (int32 i = 0; i < triangles.Count(); i++)
