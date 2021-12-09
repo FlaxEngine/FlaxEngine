@@ -244,7 +244,7 @@ namespace FlaxEditor.GUI.Dialogs
             if (_isMouseDownSlider1)
             {
                 var hsv = _color.ToHSV();
-                hsv.Z = 1.001f - Mathf.Saturate((location.Y - _slider1Rect.Y) / _slider1Rect.Height);
+                hsv.Z = 1.0f - Mathf.Saturate((location.Y - _slider1Rect.Y) / _slider1Rect.Height);
 
                 Color = Color.FromHSV(hsv);
             }
