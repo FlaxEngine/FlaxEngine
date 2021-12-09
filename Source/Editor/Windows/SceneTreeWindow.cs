@@ -443,7 +443,7 @@ namespace FlaxEditor.Windows
         public override DragDropEffect OnDragMove(ref Vector2 location, DragData data)
         {
             var result = base.OnDragMove(ref location, data);
-            if (result == DragDropEffect.None && Editor.StateMachine.CurrentState.CanEditScene)
+            if (result == DragDropEffect.None && Editor.StateMachine.CurrentState.CanEditScene && _dragHandlers != null)
             {
                 result = _dragHandlers.Effect;
             }
