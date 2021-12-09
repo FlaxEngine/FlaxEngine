@@ -13,9 +13,8 @@
 /// <seealso cref="JsonAssetBase" />
 API_CLASS(NoSpawn) class FLAXENGINE_API LocalizedStringTable : public JsonAssetBase
 {
-DECLARE_ASSET_HEADER(LocalizedStringTable);
+    DECLARE_ASSET_HEADER(LocalizedStringTable);
 public:
-
     /// <summary>
     /// The locale of the localized string table (eg. pl-PL).
     /// </summary>
@@ -32,7 +31,6 @@ public:
     API_FIELD() Dictionary<String, Array<String>> Entries;
 
 public:
-
     /// <summary>
     /// Adds the localized string to the table.
     /// </summary>
@@ -47,6 +45,21 @@ public:
     /// <param name="value">The localized text.</param>
     /// <param name="n">The plural value (0, 1, 2..).</param>
     API_FUNCTION() void AddPluralString(const StringView& id, const StringView& value, int32 n);
+
+    /// <summary>
+    /// Gets the localized string by using string id lookup. Uses fallback table if text is not included in this table.
+    /// </summary>
+    /// <param name="id">The message identifier.</param>
+    /// <returns>The localized text.</returns>
+    API_FUNCTION() String GetString(const String& id) const;
+
+    /// <summary>
+    /// Gets the localized plural string by using string id lookup. Uses fallback table if text is not included in this table.
+    /// </summary>
+    /// <param name="id">The message identifier.</param>
+    /// <param name="n">The value count for plural message selection.</param>
+    /// <returns>The localized text.</returns>
+    API_FUNCTION() String GetPluralString(const String& id, int32 n) const;
 
 #if USE_EDITOR
 

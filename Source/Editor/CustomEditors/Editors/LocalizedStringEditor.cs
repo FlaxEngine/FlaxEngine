@@ -176,7 +176,6 @@ namespace FlaxEditor.CustomEditors.Editors
                         allKeys.Add(e.Key);
                 }
             }
-            _valueElement.TextBox.SetTextAsUser(null);
             string newKey = null;
             if (string.IsNullOrEmpty(_idElement.Text))
             {
@@ -216,17 +215,19 @@ namespace FlaxEditor.CustomEditors.Editors
             var newValue = _valueElement.Text;
             Editor.Log(newKey + (newValue != null ? " = " + newValue : string.Empty));
             var locales = settings.LocalizedStringTables.GroupBy(x => x.Locale);
+            var defaultLocale = settings.LocalizedStringTables[0].Locale;
             foreach (var locale in locales)
             {
                 var table = locale.First();
                 var entries = table.Entries;
-                if (table.Locale == "en")
+                if (table.Locale == defaultLocale)
                     entries[newKey] = new[] { newValue };
                 else
                     entries[newKey] = new[] { string.Empty };
                 table.Entries = entries;
                 table.Save();
             }
+            _valueElement.TextBox.SetTextAsUser(null);
             _idElement.TextBox.SetTextAsUser(newKey);
             Profiler.EndEvent();
         }
