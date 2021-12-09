@@ -58,7 +58,7 @@ struct JobData
 template<>
 struct TIsPODType<JobData>
 {
-    enum { Value = true };
+    enum { Value = false };
 };
 
 class JobSystemThread : public IRunnable
