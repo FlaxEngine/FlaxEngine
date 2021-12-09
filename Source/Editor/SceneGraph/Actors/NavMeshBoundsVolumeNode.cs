@@ -12,6 +12,9 @@ namespace FlaxEditor.SceneGraph.Actors
     public sealed class NavMeshBoundsVolumeNode : BoxVolumeNode
     {
         /// <inheritdoc />
+        public override bool AffectsNavigation => true;
+
+        /// <inheritdoc />
         public NavMeshBoundsVolumeNode(Actor actor)
         : base(actor)
         {

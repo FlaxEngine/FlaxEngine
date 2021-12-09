@@ -216,35 +216,6 @@ namespace FlaxEditor.Modules
             }
         }
 
-        private void OnDirty(List<SceneGraphNode> objects)
-        {
-            var options = Editor.Options.Options;
-            var isPlayMode = Editor.StateMachine.IsPlayMode;
-
-            // Auto CSG mesh rebuild
-            if (!isPlayMode && options.General.AutoRebuildCSG)
-            {
-                foreach (var obj in objects)
-                {
-                    if (obj is ActorNode node && node.Actor is BoxBrush)
-                        node.Actor.Scene.BuildCSG(options.General.AutoRebuildCSGTimeoutMs);
-                }
-            }
-
-            // Auto NavMesh rebuild
-            if (!isPlayMode && options.General.AutoRebuildNavMesh)
-            {
-                foreach (var obj in objects)
-                {
-                    if (obj is ActorNode node && node.Actor && node.Actor.Scene && node.AffectsNavigationWithChildren)
-                    {
-                        var bounds = node.Actor.BoxWithChildren;
-                        Navigation.BuildNavMesh(node.Actor.Scene, bounds, options.General.AutoRebuildNavMeshTimeoutMs);
-                    }
-                }
-            }
-        }
-
         private static bool SelectActorsUsingAsset(Guid assetId, ref Guid id, Dictionary<Guid, bool> scannedAssets)
         {
             // Check for asset match or try to use cache
@@ -477,8 +448,6 @@ namespace FlaxEditor.Modules
             Undo.AddAction(action);
 
             SelectionDeleteEnd?.Invoke();
-
-            OnDirty(objects);
 
             if (isSceneTreeFocus)
                 Editor.Windows.SceneWin.Focus();
