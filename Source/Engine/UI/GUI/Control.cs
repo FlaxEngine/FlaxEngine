@@ -593,7 +593,7 @@ namespace FlaxEngine.GUI
             _isMouseOver = true;
 
             // Update tooltip
-            if (ShowTooltip)
+            if (ShowTooltip && OnTestTooltipOverControl(ref location))
             {
                 Tooltip.OnMouseEnterControl(this);
                 SetUpdate(ref _tooltipUpdate, OnUpdateTooltip);
@@ -608,10 +608,18 @@ namespace FlaxEngine.GUI
         public virtual void OnMouseMove(Vector2 location)
         {
             // Update tooltip
-            if (_tooltipUpdate == null && ShowTooltip)
+            if (ShowTooltip && OnTestTooltipOverControl(ref location))
             {
-                Tooltip.OnMouseEnterControl(this);
-                SetUpdate(ref _tooltipUpdate, OnUpdateTooltip);
+                if (_tooltipUpdate == null)
+                {
+                    Tooltip.OnMouseEnterControl(this);
+                    SetUpdate(ref _tooltipUpdate, OnUpdateTooltip);
+                }
+            }
+            else if (_tooltipUpdate != null)
+            {
+                SetUpdate(ref _tooltipUpdate, null);
+                Tooltip.OnMouseLeaveControl(this);
             }
         }
 

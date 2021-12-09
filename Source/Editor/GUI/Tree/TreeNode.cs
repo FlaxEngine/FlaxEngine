@@ -148,7 +148,6 @@ namespace FlaxEditor.GUI.Tree
                     else if (Parent is Tree tree)
                         _tree = tree;
                 }
-
                 return _tree;
             }
         }
@@ -613,12 +612,6 @@ namespace FlaxEditor.GUI.Tree
             {
                 base.Update(deltaTime);
             }
-            else
-            {
-                // Manually update tooltip
-                if (TooltipText != null && IsMouseOver)
-                    Tooltip.OnMouseOverControl(this, deltaTime);
-            }
         }
 
         /// <inheritdoc />
@@ -1004,6 +997,21 @@ namespace FlaxEditor.GUI.Tree
             _dragOverMode = DragItemPositioning.None;
 
             base.OnDragLeave();
+        }
+
+        /// <inheritdoc />
+        public override bool OnTestTooltipOverControl(ref Vector2 location)
+        {
+            return TestHeaderHit(ref location) && ShowTooltip;
+        }
+
+        /// <inheritdoc />
+        public override bool OnShowTooltip(out string text, out Vector2 location, out Rectangle area)
+        {
+            text = TooltipText;
+            location = _headerRect.Size * new Vector2(0.5f, 1.0f);
+            area = new Rectangle(Vector2.Zero, _headerRect.Size);
+            return ShowTooltip;
         }
 
         /// <inheritdoc />
