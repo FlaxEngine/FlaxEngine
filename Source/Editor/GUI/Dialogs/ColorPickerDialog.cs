@@ -53,9 +53,6 @@ namespace FlaxEditor.GUI.Dialogs
         /// <summary>
         /// Gets the selected color.
         /// </summary>
-        /// <value>
-        /// The color.
-        /// </value>
         public Color SelectedColor
         {
             get => _value;

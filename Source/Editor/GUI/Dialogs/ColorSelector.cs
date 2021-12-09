@@ -58,7 +58,7 @@ namespace FlaxEditor.GUI.Dialogs
         /// Initializes a new instance of the <see cref="ColorSelector"/> class.
         /// </summary>
         /// <param name="wheelSize">Size of the wheel.</param>
-        public ColorSelector(float wheelSize = 64)
+        public ColorSelector(float wheelSize)
         : base(0, 0, wheelSize, wheelSize)
         {
             _colorWheelSprite = Editor.Instance.Icons.ColorWheel128;

@@ -33,9 +33,6 @@ namespace FlaxEditor.CustomEditors.Editors
         /// <summary>
         /// Gets or sets the allowed type (given type and all sub classes). Must be <see cref="System.Type"/> type of any subclass.
         /// </summary>
-        /// <value>
-        /// The allowed type.
-        /// </value>
         public ScriptType Type
         {
             get => _type;
@@ -57,9 +54,6 @@ namespace FlaxEditor.CustomEditors.Editors
         /// <summary>
         /// Gets or sets the selected types value.
         /// </summary>
-        /// <value>
-        /// The value.
-        /// </value>
         public ScriptType Value
         {
             get => _value;

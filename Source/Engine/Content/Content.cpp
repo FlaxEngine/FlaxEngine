@@ -211,12 +211,8 @@ bool FindAssets(const ProjectInfo* project, HashSet<const ProjectInfo*>& project
 
 bool Content::GetAssetInfo(const Guid& id, AssetInfo& info)
 {
-    // Validate ID
     if (!id.IsValid())
-    {
-        LOG(Warning, "Invalid asset ID.");
         return false;
-    }
 
 #if ENABLE_ASSETS_DISCOVERY
 

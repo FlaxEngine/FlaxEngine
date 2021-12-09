@@ -430,6 +430,8 @@ namespace FlaxEditor.Surface
 
         internal static string GetVisualScriptTypeDescription(ScriptType type)
         {
+            if (type == ScriptType.Null)
+                return "null";
             var sb = new StringBuilder();
             if (type.IsStatic)
                 sb.Append("static ");
