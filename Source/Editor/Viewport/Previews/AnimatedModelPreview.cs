@@ -321,7 +321,7 @@ namespace FlaxEditor.Viewport.Previews
             // Draw skeleton nodes
             if (_showNodes)
             {
-                _previewModel.GetCurrentPose(out var pose);
+                _previewModel.GetCurrentPose(out var pose, true);
                 var nodes = _previewModel.SkinnedModel?.Nodes;
                 if (pose != null && pose.Length != 0 && nodes != null)
                 {
