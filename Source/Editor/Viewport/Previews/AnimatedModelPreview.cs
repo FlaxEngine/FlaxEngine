@@ -24,6 +24,11 @@ namespace FlaxEditor.Viewport.Previews
         private float _playSpeed = 1.0f;
 
         /// <summary>
+        /// Snaps the preview actor to the world origin.
+        /// </summary>
+        protected bool _snapToOrigin = true;
+
+        /// <summary>
         /// Gets or sets the skinned model asset to preview.
         /// </summary>
         public SkinnedModel SkinnedModel
@@ -249,8 +254,11 @@ namespace FlaxEditor.Viewport.Previews
         {
             if (!ScaleToFit)
             {
-                _previewModel.Scale = Vector3.One;
-                _previewModel.Position = Vector3.Zero;
+                if (_snapToOrigin)
+                {
+                    _previewModel.Scale = Vector3.One;
+                    _previewModel.Position = Vector3.Zero;
+                }
                 return;
             }
 
