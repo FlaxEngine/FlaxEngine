@@ -103,19 +103,6 @@ namespace FlaxEditor.Surface.ContextMenu
         }
 
         /// <inheritdoc />
-        public override void OnMouseLeave()
-        {
-            base.OnMouseLeave();
-
-            var root = RootWindow;
-            if (!_finder.Hand && root != null)
-            {
-                root.Cursor = CursorType.Default;
-                _finder.SelectedItem = null;
-            }
-        }
-
-        /// <inheritdoc />
         public override void OnDestroy()
         {
             Item = null;
