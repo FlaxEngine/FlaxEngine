@@ -39,7 +39,7 @@ namespace FlaxEditor.Content
         }
 
         /// <inheritdoc />
-        protected override void UpdateTooltipText()
+        public override void UpdateTooltipText()
         {
             var sb = new StringBuilder();
             OnBuildTooltipText(sb);

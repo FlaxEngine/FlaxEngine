@@ -366,7 +366,7 @@ namespace FlaxEditor.Content
         /// <summary>
         /// Updates the tooltip text text.
         /// </summary>
-        protected virtual void UpdateTooltipText()
+        public virtual void UpdateTooltipText()
         {
             TooltipText = "Path: " + Path;
         }

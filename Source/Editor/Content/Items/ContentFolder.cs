@@ -135,7 +135,7 @@ namespace FlaxEditor.Content
         }
 
         /// <inheritdoc />
-        protected override void UpdateTooltipText()
+        public override void UpdateTooltipText()
         {
             TooltipText = Path;
         }
