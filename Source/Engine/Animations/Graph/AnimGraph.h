@@ -57,6 +57,13 @@ struct RootMotionData
         Rotation = other.Orientation;
     }
 
+    RootMotionData& operator=(const Transform& other)
+    {
+        Translation = other.Translation;
+        Rotation = other.Orientation;
+        return *this;
+    }
+
     RootMotionData& operator+=(const RootMotionData& b);
     RootMotionData& operator+=(const Transform& b);
     RootMotionData& operator-=(const Transform& b);
@@ -851,7 +858,7 @@ private:
     void ProcessGroupFunction(Box* boxBase, Node* node, Value& value);
 
     int32 GetRootNodeIndex(Animation* anim);
-    void UpdateRootMotion(const Animation::NodeToChannel* mapping, Animation* anim, float pos, float prevPos, Transform& rootNode, RootMotionData& rootMotion);
+    void ExtractRootMotion(const Animation::NodeToChannel* mapping, int32 rootNodeIndex, Animation* anim, float pos, float prevPos, Transform& rootNode, RootMotionData& rootMotion);
     Variant SampleAnimation(AnimGraphNode* node, bool loop, float length, float startTimePos, float prevTimePos, float& newTimePos, Animation* anim, float speed);
     Variant SampleAnimationsWithBlend(AnimGraphNode* node, bool loop, float length, float startTimePos, float prevTimePos, float& newTimePos, Animation* animA, Animation* animB, float speedA, float speedB, float alpha);
     Variant SampleAnimationsWithBlend(AnimGraphNode* node, bool loop, float length, float startTimePos, float prevTimePos, float& newTimePos, Animation* animA, Animation* animB, Animation* animC, float speedA, float speedB, float speedC, float alphaA, float alphaB, float alphaC);
