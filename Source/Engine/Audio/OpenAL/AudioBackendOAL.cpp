@@ -414,6 +414,8 @@ void AudioBackendOAL::Source_ClipLoaded(AudioSource* source)
 {
     auto& contexts = ALC::GetContexts();
     const int32 numContexts = contexts.Count();
+    if (source->SourceIDs.Count() < numContexts)
+        return;
     const auto clip = source->Clip.Get();
     const bool is3D = source->Is3D();
     const bool isStreamable = clip->IsStreamable();
