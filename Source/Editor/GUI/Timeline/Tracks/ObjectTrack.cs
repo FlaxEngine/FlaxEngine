@@ -80,7 +80,7 @@ namespace FlaxEditor.GUI.Timeline.Tracks
 
             var obj = Object;
             var hasObject = obj != null;
-            TitleTintColor = hasObject ? Color.White : Color.Red;
+            TitleTintColor = hasObject ? (Flags.HasFlag(TrackFlags.PrefabObject) ? Style.Current.ProgressNormal : Color.White) : Color.Red;
             if (hasObject != _hasObject)
                 OnObjectExistenceChanged(obj);
             _hasObject = hasObject;

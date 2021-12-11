@@ -26,6 +26,11 @@ namespace FlaxEditor.GUI.Timeline
         /// The loop flag. Looped tracks are doing a playback of its data in a loop.
         /// </summary>
         Loop = 2,
+
+        /// <summary>
+        /// The prefab object reference flag for tracks used to animate objects in prefabs (for reusable instanced animations).
+        /// </summary>
+        PrefabObject = 4,
     }
 
     /// <summary>

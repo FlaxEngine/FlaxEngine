@@ -1124,6 +1124,7 @@ void SceneAnimationPlayer::Serialize(SerializeStream& stream, const void* otherO
     SERIALIZE(RandomStartTime);
     SERIALIZE(RestoreStateOnStop);
     SERIALIZE(UpdateMode);
+    SERIALIZE(UsePrefabObjects);
 }
 
 void SceneAnimationPlayer::Deserialize(DeserializeStream& stream, ISerializeModifier* modifier)
@@ -1140,6 +1141,30 @@ void SceneAnimationPlayer::Deserialize(DeserializeStream& stream, ISerializeModi
     DESERIALIZE(RandomStartTime);
     DESERIALIZE(RestoreStateOnStop);
     DESERIALIZE(UpdateMode);
+    DESERIALIZE(UsePrefabObjects);
+
+    if (UsePrefabObjects && Animation && !Animation->WaitForLoaded())
+    {
+        // When loading from prefab automatically map objects from prefab instance into animation tracks with object references
+        for (auto& track : Animation->Tracks)
+        {
+            if (track.Disabled || !(track.Flag & SceneAnimation::Track::Flags::PrefabObject))
+                continue;
+            switch (track.Type)
+            {
+            case SceneAnimation::Track::Types::Actor:
+            case SceneAnimation::Track::Types::Script:
+            case SceneAnimation::Track::Types::CameraCut:
+            {
+                const auto trackData = track.GetData<SceneAnimation::ObjectTrack::Data>();
+                Guid id;
+                if (modifier->IdsMapping.TryGet(trackData->ID, id))
+                    _objectsMapping[trackData->ID] = id;
+                break;
+            }
+            }
+        }
+    }
 }
 
 void SceneAnimationPlayer::Collect(RenderContext& renderContext)

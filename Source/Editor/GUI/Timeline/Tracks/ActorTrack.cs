@@ -62,8 +62,57 @@ namespace FlaxEditor.GUI.Timeline.Tracks
         /// </summary>
         public Actor Actor
         {
-            get => FlaxEngine.Object.TryFind<Actor>(ref ActorID);
-            set => ActorID = value?.ID ?? Guid.Empty;
+            get
+            {
+                if (Flags.HasFlag(TrackFlags.PrefabObject))
+                {
+                    // TODO: reuse cached actor to improve perf
+                    foreach (var window in Editor.Instance.Windows.Windows)
+                    {
+                        if (window is Windows.Assets.PrefabWindow prefabWindow && prefabWindow.Graph.MainActor)
+                        {
+                            var actor = FindActorWithPrefabObjectID(prefabWindow.Graph.MainActor, ref ActorID);
+                            if (actor != null)
+                                return actor;
+                        }
+                    }
+                    return null;
+                }
+                return FlaxEngine.Object.TryFind<Actor>(ref ActorID);
+            }
+            set
+            {
+                if (value != null)
+                {
+                    if (value.HasPrefabLink && value.Scene == null)
+                    {
+                        // Track with prefab object reference assigned in Editor
+                        ActorID = value.PrefabObjectID;
+                        Flags |= TrackFlags.PrefabObject;
+                    }
+                    else
+                    {
+                        ActorID = value.ID;
+                    }
+                }
+                else
+                {
+                    ActorID = Guid.Empty;
+                }
+            }
+        }
+
+        private static Actor FindActorWithPrefabObjectID(Actor a, ref Guid id)
+        {
+            if (a.PrefabObjectID == id)
+                return a;
+            for (int i = 0; i < a.ChildrenCount; i++)
+            {
+                var e = FindActorWithPrefabObjectID(a.GetChild(i), ref id);
+                if (e != null)
+                    return e;
+            }
+            return null;
         }
 
         /// <summary>

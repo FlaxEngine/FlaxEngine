@@ -128,6 +128,12 @@ public:
     API_FIELD(Attributes="EditorDisplay(\"Scene Animation\"), EditorOrder(80), DefaultValue(UpdateModes.EveryUpdate)")
     UpdateModes UpdateMode = UpdateModes::EveryUpdate;
 
+    /// <summary>
+    /// Determines whether the scene animation should automatically map prefab objects from scene animation into prefab instances. Useful for reusable animations to automatically link prefab objects.
+    /// </summary>
+    API_FIELD(Attributes="EditorDisplay(\"Scene Animation\"), EditorOrder(100)")
+    bool UsePrefabObjects = false;
+
 public:
 
     /// <summary>

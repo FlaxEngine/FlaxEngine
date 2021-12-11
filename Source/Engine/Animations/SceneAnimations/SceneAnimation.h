@@ -49,6 +49,7 @@ public:
             None = 0,
             Mute = 1,
             Loop = 2,
+            PrefabObject = 4,
         };
 
         /// <summary>
@@ -473,3 +474,5 @@ protected:
     void unload(bool isReloading) override;
     AssetChunksFlag getChunksToPreload() const override;
 };
+
+DECLARE_ENUM_OPERATORS(SceneAnimation::Track::Flags);
