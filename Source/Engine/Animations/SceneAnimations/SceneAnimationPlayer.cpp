@@ -765,10 +765,12 @@ void SceneAnimationPlayer::Tick(SceneAnimation* anim, float time, float dt, int3
                 const auto trackData = track.GetData<SceneAnimation::ActorTrack::Data>();
                 Guid id = trackData->ID;
                 _objectsMapping.TryGet(id, id);
-                state.Object = Scripting::FindObject<Actor>(id);
+                state.Object = Scripting::TryFindObject<Actor>(id);
                 if (!state.Object)
                 {
-                    LOG(Warning, "Failed to find {3} of ID={0} for track '{1}' in scene animation '{2}'", id, track.Name, anim->ToString(), TEXT("actor"));
+                    if (state.Warn)
+                        LOG(Warning, "Failed to find {3} of ID={0} for track '{1}' in scene animation '{2}'", id, track.Name, anim->ToString(), TEXT("actor"));
+                    state.Warn = false;
                     break;
                 }
             }
@@ -795,10 +797,12 @@ void SceneAnimationPlayer::Tick(SceneAnimation* anim, float time, float dt, int3
                 // Find script
                 Guid id = trackData->ID;
                 _objectsMapping.TryGet(id, id);
-                state.Object = Scripting::FindObject<Script>(id);
+                state.Object = Scripting::TryFindObject<Script>(id);
                 if (!state.Object)
                 {
-                    LOG(Warning, "Failed to find {3} of ID={0} for track '{1}' in scene animation '{2}'", id, track.Name, anim->ToString(), TEXT("script"));
+                    if (state.Warn)
+                        LOG(Warning, "Failed to find {3} of ID={0} for track '{1}' in scene animation '{2}'", id, track.Name, anim->ToString(), TEXT("script"));
+                    state.Warn = false;
                     break;
                 }
 
@@ -1047,10 +1051,12 @@ void SceneAnimationPlayer::Tick(SceneAnimation* anim, float time, float dt, int3
                 // Find actor
                 Guid id = trackData->ID;
                 _objectsMapping.TryGet(id, id);
-                state.Object = Scripting::FindObject<Camera>(id);
+                state.Object = Scripting::TryFindObject<Camera>(id);
                 if (!state.Object)
                 {
-                    LOG(Warning, "Failed to find {3} of ID={0} for track '{1}' in scene animation '{2}'", id, track.Name, anim->ToString(), TEXT("actor"));
+                    if (state.Warn)
+                        LOG(Warning, "Failed to find {3} of ID={0} for track '{1}' in scene animation '{2}'", id, track.Name, anim->ToString(), TEXT("camera"));
+                    state.Warn = false;
                     break;
                 }
             }

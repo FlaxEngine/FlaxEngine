@@ -48,6 +48,7 @@ private:
         MField* Field = nullptr;
         void* Method = nullptr;
         int32 RestoreStateIndex = -1;
+        bool Warn = true;
 
         TrackInstance()
         {
