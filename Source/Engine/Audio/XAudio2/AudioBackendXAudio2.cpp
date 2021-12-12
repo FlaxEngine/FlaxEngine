@@ -817,7 +817,14 @@ void AudioBackendXAudio2::Base_Update()
             dsp.DopplerFactor = 1.0f;
             Platform::MemoryClear(dsp.pMatrixCoefficients, sizeof(XAudio2::MatrixCoefficients));
             dsp.pMatrixCoefficients[0] = 1.0f;
-            dsp.pMatrixCoefficients[3] = 1.0f;
+            if (source.Format.nChannels == 1)
+            {
+                dsp.pMatrixCoefficients[1] = 1.0f;
+            }
+            else
+            {
+                dsp.pMatrixCoefficients[3] = 1.0f;
+            }
         }
 
         const float frequencyRatio = dopplerFactor * source.Pitch * dsp.DopplerFactor;
