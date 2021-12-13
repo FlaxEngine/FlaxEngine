@@ -495,21 +495,27 @@ void MeshData::TransformBuffer(const Matrix& matrix)
     Matrix::Transpose(inverseTransposeMatrix, inverseTransposeMatrix);
 
     // Transform positions
+    const auto pp = Positions.Get();
     for (int32 i = 0; i < Positions.Count(); i++)
     {
-        Vector3::Transform(Positions[i], matrix, Positions[i]);
+        auto& p = pp[i];
+        Vector3::Transform(p, matrix, p);
     }
 
     // Transform normals and tangents
+    const auto nn = Normals.Get();
     for (int32 i = 0; i < Normals.Count(); i++)
     {
-        Vector3::TransformNormal(Normals[i], inverseTransposeMatrix, Normals[i]);
-        Normals[i].Normalize();
+        auto& n = nn[i];
+        Vector3::TransformNormal(n, inverseTransposeMatrix, n);
+        n.Normalize();
     }
+    const auto tt = Tangents.Get();
     for (int32 i = 0; i < Tangents.Count(); i++)
     {
-        Vector3::TransformNormal(Tangents[i], inverseTransposeMatrix, Tangents[i]);
-        Tangents[i].Normalize();
+        auto& t = tt[i];
+        Vector3::TransformNormal(t, inverseTransposeMatrix, t);
+        t.Normalize();
     }
 
     // Transform blend shapes
