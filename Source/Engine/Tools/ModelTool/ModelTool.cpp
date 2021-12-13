@@ -827,16 +827,18 @@ bool ModelTool::ImportModel(const String& path, ModelData& meshData, Options& op
         {
             // Transform the root node using the import transformation
             auto& root = data.Skeleton.RootNode();
+            Transform meshTransform = root.LocalTransform.WorldToLocal(importTransform).LocalToWorld(root.LocalTransform);
             root.LocalTransform = importTransform.LocalToWorld(root.LocalTransform);
 
             // Apply import transform on meshes
-            Matrix importTransformMatrix;
-            importTransform.GetWorld(importTransformMatrix);
+            Matrix meshTransformMatrix;
+            meshTransform.GetWorld(meshTransformMatrix);
             for (int32 lodIndex = 0; lodIndex < data.LODs.Count(); lodIndex++)
             {
-                for (int32 meshIndex = 0; meshIndex < data.LODs[lodIndex].Meshes.Count(); meshIndex++)
+                auto& lod = data.LODs[lodIndex];
+                for (int32 meshIndex = 0; meshIndex < lod.Meshes.Count(); meshIndex++)
                 {
-                    data.LODs[lodIndex].Meshes[meshIndex]->TransformBuffer(importTransformMatrix);
+                    lod.Meshes[meshIndex]->TransformBuffer(meshTransformMatrix);
                 }
             }
 
