@@ -60,7 +60,10 @@ namespace FlaxEditor.CustomEditors.Dedicated
         public override void Refresh()
         {
             if (_isValid != IsValid)
+            {
                 RebuildLayout();
+                return;
+            }
 
             base.Refresh();
         }

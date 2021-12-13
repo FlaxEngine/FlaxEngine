@@ -331,17 +331,12 @@ namespace FlaxEditor.CustomEditors
         {
             if (LinkedLabel != null)
             {
-                // Prefab value diff
-                if (Values.HasReferenceValue)
-                {
-                    var style = FlaxEngine.GUI.Style.Current;
-                    LinkedLabel.HighlightStripColor = CanRevertReferenceValue ? style.BackgroundSelected * 0.8f : Color.Transparent;
-                }
-                // Default value diff
-                else if (Values.HasDefaultValue)
-                {
-                    LinkedLabel.HighlightStripColor = CanRevertDefaultValue ? Color.Yellow * 0.8f : Color.Transparent;
-                }
+                var color = Color.Transparent;
+                if (Values.HasReferenceValue && CanRevertReferenceValue)
+                    color = FlaxEngine.GUI.Style.Current.BackgroundSelected;
+                else if (Values.HasDefaultValue && CanRevertDefaultValue)
+                    color = Color.Yellow * 0.8f;
+                LinkedLabel.HighlightStripColor = color;
             }
         }
 
