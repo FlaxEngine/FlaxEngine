@@ -974,7 +974,7 @@ bool Prefab::ApplyAllInternal(Actor* targetActor, bool linkTargetActorObjectToPr
         {
             // When changing prefab root the target actor is a new root so try to find it in the objects
             int32 targetActorIdx = oldObjectsIds.Find(targetActor->GetPrefabObjectID());
-            if (targetActorIdx > 0 && dynamic_cast<Actor*>(sceneObjects.Value->At(targetActorIdx)))
+            if (targetActorIdx > 0 && targetActorIdx < sceneObjects.Value->Count() && dynamic_cast<Actor*>(sceneObjects.Value->At(targetActorIdx)))
             {
                 root = dynamic_cast<Actor*>(sceneObjects.Value->At(targetActorIdx));
             }
