@@ -47,19 +47,16 @@ struct LightingData
 void GetRadialLightAttenuation(
 	LightData lightData,
 	bool isSpotLight,
-	float3 worldPosition,
 	float3 N,
+	float distanceSqr,
 	float distanceBiasSqr,
-	inout float3 L, 
+	float3 toLight,
+	float3 L, 
 	inout float NoL, 
 	inout float distanceAttenuation, 
 	inout float lightRadiusMask, 
 	inout float spotAttenuation)
 {
-	float3 toLight = lightData.Position - worldPosition;
-	float distanceSqr = dot(toLight, toLight);
-	L = toLight * rsqrt(distanceSqr);
-
 	if (lightData.InverseSquared)
 	{
 		BRANCH
@@ -78,7 +75,6 @@ void GetRadialLightAttenuation(
 			distanceAttenuation = rcp(distanceSqr + distanceBiasSqr);
 			NoL = saturate(dot(N, L));
 		}
-
 		lightRadiusMask = Square(saturate(1 - Square(distanceSqr * Square(lightData.RadiusInv))));
 	}
 	else
