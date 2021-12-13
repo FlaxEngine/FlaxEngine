@@ -718,7 +718,7 @@ bool ModelTool::ImportModel(const String& path, ModelData& meshData, Options& op
                     // Remove blend shape vertices with empty deltas
                     for (int32 i = blendShape.Vertices.Count() - 1; i >= 0; i--)
                     {
-                        auto& v = blendShape.Vertices[i];
+                        auto& v = blendShape.Vertices.Get()[i];
                         if (v.PositionDelta.IsZero() && v.NormalDelta.IsZero())
                         {
                             blendShape.Vertices.RemoveAt(i);
@@ -739,7 +739,7 @@ bool ModelTool::ImportModel(const String& path, ModelData& meshData, Options& op
         int32 rootIndex = -1;
         for (int32 i = 0; i < data.Skeleton.Nodes.Count(); i++)
         {
-            const auto idx = data.Skeleton.Nodes[i].ParentIndex;
+            const auto idx = data.Skeleton.Nodes.Get()[i].ParentIndex;
             if (idx == -1 && rootIndex == -1)
             {
                 // Found root
@@ -767,7 +767,7 @@ bool ModelTool::ImportModel(const String& path, ModelData& meshData, Options& op
             Swap(data.Skeleton.Nodes[rootIndex], data.Skeleton.Nodes[prevRootIndex]);
             for (int32 i = 0; i < data.Skeleton.Nodes.Count(); i++)
             {
-                auto& node = data.Skeleton.Nodes[i];
+                auto& node = data.Skeleton.Nodes.Get()[i];
                 if (node.ParentIndex == prevRootIndex)
                     node.ParentIndex = rootIndex;
                 else if (node.ParentIndex == rootIndex)
@@ -775,7 +775,7 @@ bool ModelTool::ImportModel(const String& path, ModelData& meshData, Options& op
             }
             for (int32 i = 0; i < data.Skeleton.Bones.Count(); i++)
             {
-                auto& bone = data.Skeleton.Bones[i];
+                auto& bone = data.Skeleton.Bones.Get()[i];
                 if (bone.NodeIndex == prevRootIndex)
                     bone.NodeIndex = rootIndex;
                 else if (bone.NodeIndex == rootIndex)
@@ -845,7 +845,7 @@ bool ModelTool::ImportModel(const String& path, ModelData& meshData, Options& op
             // Apply import transform on root bones
             for (int32 i = 0; i < data.Skeleton.Bones.Count(); i++)
             {
-                auto& bone = data.Skeleton.Bones[i];
+                auto& bone = data.Skeleton.Bones.Get()[i];
                 if (bone.ParentIndex == -1)
                 {
                     bone.LocalTransform = importTransform.LocalToWorld(bone.LocalTransform);
@@ -921,8 +921,6 @@ bool ModelTool::ImportModel(const String& path, ModelData& meshData, Options& op
 		}
 		reorder_nodes_and_test_it_out!
 #endif
-
-        // TODO: remove nodes that don't have bone attached and all child nodes don' have any bones
     }
     else if (options.Type == ModelType::Animation)
     {

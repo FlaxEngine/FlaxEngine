@@ -491,7 +491,7 @@ bool ProcessMesh(ImportedModelData& result, OpenFbxImporterData& data, const ofb
     mesh.Positions.Resize(vertexCount, false);
     for (int i = 0; i < vertexCount; i++)
     {
-        mesh.Positions[i] = ToVector3(vertices[i + firstVertexOffset]);
+        mesh.Positions.Get()[i] = ToVector3(vertices[i + firstVertexOffset]);
     }
 
     // Indices (dummy index buffer)
@@ -503,7 +503,7 @@ bool ProcessMesh(ImportedModelData& result, OpenFbxImporterData& data, const ofb
     mesh.Indices.Resize(vertexCount, false);
     for (int i = 0; i < vertexCount; i++)
     {
-        mesh.Indices[i] = i;
+        mesh.Indices.Get()[i] = i;
     }
 
     // Texture coordinates
@@ -512,7 +512,7 @@ bool ProcessMesh(ImportedModelData& result, OpenFbxImporterData& data, const ofb
         mesh.UVs.Resize(vertexCount, false);
         for (int i = 0; i < vertexCount; i++)
         {
-            mesh.UVs[i] = ToVector2(uvs[i + firstVertexOffset]);
+            mesh.UVs.Get()[i] = ToVector2(uvs[i + firstVertexOffset]);
         }
         if (data.ConvertRH)
         {
@@ -537,14 +537,14 @@ bool ProcessMesh(ImportedModelData& result, OpenFbxImporterData& data, const ofb
         mesh.Normals.Resize(vertexCount, false);
         for (int i = 0; i < vertexCount; i++)
         {
-            mesh.Normals[i] = ToVector3(normals[i + firstVertexOffset]);
+            mesh.Normals.Get()[i] = ToVector3(normals[i + firstVertexOffset]);
         }
         if (data.ConvertRH)
         {
             // Mirror normals along the Z axis
             for (int32 i = 0; i < vertexCount; i++)
             {
-                mesh.Normals[i].Z *= -1.0f;
+                mesh.Normals.Get()[i].Z *= -1.0f;
             }
         }
     }
@@ -559,14 +559,14 @@ bool ProcessMesh(ImportedModelData& result, OpenFbxImporterData& data, const ofb
         mesh.Tangents.Resize(vertexCount, false);
         for (int i = 0; i < vertexCount; i++)
         {
-            mesh.Tangents[i] = ToVector3(tangents[i + firstVertexOffset]);
+            mesh.Tangents.Get()[i] = ToVector3(tangents[i + firstVertexOffset]);
         }
         if (data.ConvertRH)
         {
             // Mirror tangents along the Z axis
             for (int32 i = 0; i < vertexCount; i++)
             {
-                mesh.Tangents[i].Z *= -1.0f;
+                mesh.Tangents.Get()[i].Z *= -1.0f;
             }
         }
     }
@@ -614,7 +614,7 @@ bool ProcessMesh(ImportedModelData& result, OpenFbxImporterData& data, const ofb
             mesh.LightmapUVs.Resize(vertexCount, false);
             for (int i = 0; i < vertexCount; i++)
             {
-                mesh.LightmapUVs[i] = ToVector2(lightmapUVs[i + firstVertexOffset]);
+                mesh.LightmapUVs.Get()[i] = ToVector2(lightmapUVs[i + firstVertexOffset]);
             }
             if (data.ConvertRH)
             {
@@ -636,7 +636,7 @@ bool ProcessMesh(ImportedModelData& result, OpenFbxImporterData& data, const ofb
         mesh.Colors.Resize(vertexCount, false);
         for (int i = 0; i < vertexCount; i++)
         {
-            mesh.Colors[i] = ToColor(colors[i + firstVertexOffset]);
+            mesh.Colors.Get()[i] = ToColor(colors[i + firstVertexOffset]);
         }
     }
 
@@ -732,13 +732,13 @@ bool ProcessMesh(ImportedModelData& result, OpenFbxImporterData& data, const ofb
 
             blendShapeData.Vertices.Resize(shape->getVertexCount());
             for (int32 i = 0; i < blendShapeData.Vertices.Count(); i++)
-                blendShapeData.Vertices[i].VertexIndex = i;
+                blendShapeData.Vertices.Get()[i].VertexIndex = i;
 
             auto shapeVertices = shape->getVertices();
             for (int32 i = 0; i < blendShapeData.Vertices.Count(); i++)
             {
-                auto delta = ToVector3(shapeVertices[i]) - mesh.Positions[i];
-                blendShapeData.Vertices[i].PositionDelta = delta;
+                auto delta = ToVector3(shapeVertices[i]) - mesh.Positions.Get()[i];
+                blendShapeData.Vertices.Get()[i].PositionDelta = delta;
             }
 
             auto shapeNormals = shape->getNormals();
@@ -749,7 +749,7 @@ bool ProcessMesh(ImportedModelData& result, OpenFbxImporterData& data, const ofb
                 if (length > ZeroTolerance)
                     delta /= length;*/
                 auto delta = Vector3::Zero; // TODO: blend shape normals deltas fix when importing from fbx
-                blendShapeData.Vertices[i].NormalDelta = delta;
+                blendShapeData.Vertices.Get()[i].NormalDelta = delta;
             }
         }
     }
