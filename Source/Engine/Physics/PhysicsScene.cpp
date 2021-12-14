@@ -92,12 +92,43 @@ static PxQueryHitType::Enum WheelRaycastPreFilter(PxFilterData filterData0, PxFi
 
 #endif
 
+class PhysicsScenePhysX
+{
+    friend PhysicsScene;
+
+private:
+    PxScene* Scene;
+    PxCpuDispatcher* CpuDispatcher;
+    PxControllerManager* ControllerManager;
+    PxSimulationFilterShader PhysXDefaultFilterShader = PxDefaultSimulationFilterShader;
+
+    Array<PxActor*> NewActors;
+    Array<PxActor*> DeadActors;
+    Array<PxMaterial*> DeadMaterials;
+    Array<PhysicsColliderActor*> DeadColliders;
+    Array<Joint*> DeadJoints;
+    Array<ActionData> Actions;
+    Array<PxBase*> DeadObjects;
+
+#if WITH_VEHICLE
+    Array<PxVehicleWheels*> WheelVehiclesCache;
+    Array<PxRaycastQueryResult> WheelQueryResults;
+    Array<PxRaycastHit> WheelHitResults;
+    Array<PxWheelQueryResult> WheelVehiclesResultsPerWheel;
+    Array<PxVehicleWheelQueryResult> WheelVehiclesResultsPerVehicle;
+    PxBatchQuery* WheelRaycastBatchQuery = nullptr;
+    PxVehicleDrivableSurfaceToTireFrictionPairs* WheelTireFrictions = nullptr;
+    Array<WheeledVehicle*> WheelVehicles;
+#endif
+};
+
 PhysicsScene::PhysicsScene(const String& name, const PhysicsSettings& settings)
     : PersistentScriptingObject(SpawnParams(Guid::New(), TypeInitializer))
 {
 #define CHECK_INIT(value, msg) if(!value) { LOG(Error, msg); return; }
     
     mName = name;
+    mPhysxImpl = new PhysicsScenePhysX();
 
     // Create scene description
     PxSceneDesc sceneDesc(CPhysX->getTolerancesScale());
@@ -112,18 +143,18 @@ PhysicsScene::PhysicsScene(const String& name, const PhysicsSettings& settings)
     sceneDesc.bounceThresholdVelocity = settings.BounceThresholdVelocity;
     if (sceneDesc.cpuDispatcher == nullptr)
     {
-        mCpuDispatcher = PxDefaultCpuDispatcherCreate(Math::Clamp<uint32>(Platform::GetCPUInfo().ProcessorCoreCount - 1, 1, 4));
-        CHECK_INIT(mCpuDispatcher, "PxDefaultCpuDispatcherCreate failed!");
-        sceneDesc.cpuDispatcher = mCpuDispatcher;
+        mPhysxImpl->CpuDispatcher = PxDefaultCpuDispatcherCreate(Math::Clamp<uint32>(Platform::GetCPUInfo().ProcessorCoreCount - 1, 1, 4));
+        CHECK_INIT(mPhysxImpl->CpuDispatcher, "PxDefaultCpuDispatcherCreate failed!");
+        sceneDesc.cpuDispatcher = mPhysxImpl->CpuDispatcher;
     }
     if (sceneDesc.filterShader == nullptr)
     {
-        sceneDesc.filterShader = mPhysXDefaultFilterShader;
+        sceneDesc.filterShader = mPhysxImpl->PhysXDefaultFilterShader;
     }
 
     // Create scene
-    mScene = CPhysX->createScene(sceneDesc);
-    CHECK_INIT(mScene, "createScene failed!");
+    mPhysxImpl->Scene = CPhysX->createScene(sceneDesc);
+    CHECK_INIT(mPhysxImpl->Scene, "createScene failed!");
 #if WITH_PVD
     auto pvdClient = PhysicsScene->getScenePvdClient();
     if (pvdClient)
@@ -137,27 +168,29 @@ PhysicsScene::PhysicsScene(const String& name, const PhysicsSettings& settings)
 #endif
 
     // Init characters controller
-    mControllerManager = PxCreateControllerManager(*mScene);
+    mPhysxImpl->ControllerManager = PxCreateControllerManager(*mPhysxImpl->Scene);
 }
 
 PhysicsScene::~PhysicsScene()
 {
 #if WITH_VEHICLE
-    RELEASE_PHYSX(mWheelRaycastBatchQuery);
-    RELEASE_PHYSX(mWheelTireFrictions);
-    mWheelQueryResults.Resize(0);
-    mWheelHitResults.Resize(0);
-    mWheelVehiclesResultsPerWheel.Resize(0);
-    mWheelVehiclesResultsPerVehicle.Resize(0);
+    RELEASE_PHYSX(mPhysxImpl->WheelRaycastBatchQuery);
+    RELEASE_PHYSX(mPhysxImpl->WheelTireFrictions);
+    mPhysxImpl->WheelQueryResults.Resize(0);
+    mPhysxImpl->WheelHitResults.Resize(0);
+    mPhysxImpl->WheelVehiclesResultsPerWheel.Resize(0);
+    mPhysxImpl->WheelVehiclesResultsPerVehicle.Resize(0);
 #endif
     
-    RELEASE_PHYSX(mControllerManager);
-    SAFE_DELETE(mCpuDispatcher);
+    RELEASE_PHYSX(mPhysxImpl->ControllerManager);
+    SAFE_DELETE(mPhysxImpl->CpuDispatcher);
     SAFE_DELETE(mStepper);
     Allocator::Free(mScratchMemory);
 
     mScratchMemory = nullptr;
-    mScene->release();
+    mPhysxImpl->Scene->release();
+
+    SAFE_DELETE(mPhysxImpl);
 }
 
 String PhysicsScene::GetName() const
@@ -167,7 +200,7 @@ String PhysicsScene::GetName() const
 
 PxScene* PhysicsScene::GetScene()
 {
-    return mScene;
+    return mPhysxImpl->Scene;
 }
 
 bool PhysicsScene::GetAutoSimulation()
@@ -182,37 +215,37 @@ void PhysicsScene::SetAutoSimulation(bool value)
 
 void PhysicsScene::SetGravity(const Vector3& value)
 {
-    if(mScene)
+    if(mPhysxImpl->Scene)
     {
-        mScene->setGravity(C2P(value));
+        mPhysxImpl->Scene->setGravity(C2P(value));
     }
 }
 
 Vector3 PhysicsScene::GetGravity()
 {
-    return mScene ? P2C(mScene->getGravity()) : Vector3::Zero;
+    return mPhysxImpl->Scene ? P2C(mPhysxImpl->Scene->getGravity()) : Vector3::Zero;
 }
 
 bool PhysicsScene::GetEnableCCD()
 {
-    return mScene ? (mScene->getFlags() & PxSceneFlag::eENABLE_CCD) == PxSceneFlag::eENABLE_CCD : !PhysicsSettings::Get()->DisableCCD;
+    return mPhysxImpl->Scene ? (mPhysxImpl->Scene->getFlags() & PxSceneFlag::eENABLE_CCD) == PxSceneFlag::eENABLE_CCD : !PhysicsSettings::Get()->DisableCCD;
 }
 
 void PhysicsScene::SetEnableCCD(const bool value)
 {
-    if (mScene)
-        mScene->setFlag(PxSceneFlag::eENABLE_CCD, value);
+    if (mPhysxImpl->Scene)
+        mPhysxImpl->Scene->setFlag(PxSceneFlag::eENABLE_CCD, value);
 }
 
 float PhysicsScene::GetBounceThresholdVelocity()
 {
-    return mScene ? mScene->getBounceThresholdVelocity() : PhysicsSettings::Get()->BounceThresholdVelocity;
+    return mPhysxImpl->Scene ? mPhysxImpl->Scene->getBounceThresholdVelocity() : PhysicsSettings::Get()->BounceThresholdVelocity;
 }
 
 void PhysicsScene::SetBounceThresholdVelocity(const float value)
 {
-    if (mScene)
-        mScene->setBounceThresholdVelocity(value);
+    if (mPhysxImpl->Scene)
+        mPhysxImpl->Scene->setBounceThresholdVelocity(value);
 }
 
 void PhysicsScene::Simulate(float dt)
@@ -249,7 +282,7 @@ void PhysicsScene::Simulate(float dt)
 
     // Start simulation (may not be fired due to too small delta time)
     mIsDuringSimulation = true;
-    if (mStepper->advance(mScene, dt, mScratchMemory, SCRATCH_BLOCK_SIZE) == false)
+    if (mStepper->advance(mPhysxImpl->Scene, dt, mScratchMemory, SCRATCH_BLOCK_SIZE) == false)
         return;
     mEventsCallback.Clear();
     mLastDeltaTime = dt;
@@ -274,25 +307,25 @@ void PhysicsScene::CollectResults()
         PROFILE_CPU_NAMED("Physics.Fetch");
 
         // Gather results (with waiting for the end)
-        mStepper->wait(mScene);
+        mStepper->wait(mPhysxImpl->Scene);
     }
 
 #if WITH_VEHICLE
-    if (mWheelVehicles.HasItems())
+    if (mPhysxImpl->WheelVehicles.HasItems())
     {
         PROFILE_CPU_NAMED("Physics.Vehicles");
 
         // Update vehicles steering
-        mWheelVehiclesCache.Clear();
-        mWheelVehiclesCache.EnsureCapacity(mWheelVehicles.Count());
+        mPhysxImpl->WheelVehiclesCache.Clear();
+        mPhysxImpl->WheelVehiclesCache.EnsureCapacity(mPhysxImpl->WheelVehicles.Count());
         int32 wheelsCount = 0;
-        for (auto wheelVehicle : mWheelVehicles)
+        for (auto wheelVehicle : mPhysxImpl->WheelVehicles)
         {
             if (!wheelVehicle->IsActiveInHierarchy())
                 continue;
             auto drive = (PxVehicleWheels*)wheelVehicle->_drive;
             ASSERT(drive);
-            mWheelVehiclesCache.Add(drive);
+            mPhysxImpl->WheelVehiclesCache.Add(drive);
             wheelsCount += drive->mWheelsSimData.getNbWheels();
 
             float throttle = wheelVehicle->_throttle;
@@ -461,64 +494,64 @@ void PhysicsScene::CollectResults()
         }
 
         // Update batches queries cache
-        if (wheelsCount > mWheelQueryResults.Count())
+        if (wheelsCount > mPhysxImpl->WheelQueryResults.Count())
         {
-            if (mWheelRaycastBatchQuery)
-                mWheelRaycastBatchQuery->release();
-            mWheelQueryResults.Resize(wheelsCount, false);
-            mWheelHitResults.Resize(wheelsCount, false);
+            if (mPhysxImpl->WheelRaycastBatchQuery)
+                mPhysxImpl->WheelRaycastBatchQuery->release();
+            mPhysxImpl->WheelQueryResults.Resize(wheelsCount, false);
+            mPhysxImpl->WheelHitResults.Resize(wheelsCount, false);
             PxBatchQueryDesc desc(wheelsCount, 0, 0);
-            desc.queryMemory.userRaycastResultBuffer = mWheelQueryResults.Get();
-            desc.queryMemory.userRaycastTouchBuffer = mWheelHitResults.Get();
+            desc.queryMemory.userRaycastResultBuffer = mPhysxImpl->WheelQueryResults.Get();
+            desc.queryMemory.userRaycastTouchBuffer = mPhysxImpl->WheelHitResults.Get();
             desc.queryMemory.raycastTouchBufferSize = wheelsCount;
             desc.preFilterShader = WheelRaycastPreFilter;
-            mWheelRaycastBatchQuery = mScene->createBatchQuery(desc);
+            mPhysxImpl->WheelRaycastBatchQuery = mPhysxImpl->Scene->createBatchQuery(desc);
         }
 
         // TODO: expose vehicle tires configuration
-        if (!mWheelTireFrictions)
+        if (!mPhysxImpl->WheelTireFrictions)
         {
             PxVehicleDrivableSurfaceType surfaceTypes[1];
             surfaceTypes[0].mType = 0;
             const PxMaterial* surfaceMaterials[1];
             surfaceMaterials[0] = Physics::GetDefaultMaterial();
-            mWheelTireFrictions = PxVehicleDrivableSurfaceToTireFrictionPairs::allocate(1, 1);
-            mWheelTireFrictions->setup(1, 1, surfaceMaterials, surfaceTypes);
-            mWheelTireFrictions->setTypePairFriction(0, 0, 5.0f);
+            mPhysxImpl->WheelTireFrictions = PxVehicleDrivableSurfaceToTireFrictionPairs::allocate(1, 1);
+            mPhysxImpl->WheelTireFrictions->setup(1, 1, surfaceMaterials, surfaceTypes);
+            mPhysxImpl->WheelTireFrictions->setTypePairFriction(0, 0, 5.0f);
         }
 
         // Setup cache for wheel states
-        mWheelVehiclesResultsPerVehicle.Resize(mWheelVehiclesCache.Count(), false);
-        mWheelVehiclesResultsPerWheel.Resize(wheelsCount, false);
+        mPhysxImpl->WheelVehiclesResultsPerVehicle.Resize(mPhysxImpl->WheelVehiclesCache.Count(), false);
+        mPhysxImpl->WheelVehiclesResultsPerWheel.Resize(wheelsCount, false);
         wheelsCount = 0;
-        for (int32 i = 0, ii = 0; i < mWheelVehicles.Count(); i++)
+        for (int32 i = 0, ii = 0; i < mPhysxImpl->WheelVehicles.Count(); i++)
         {
-            auto wheelVehicle = mWheelVehicles[i];
+            auto wheelVehicle = mPhysxImpl->WheelVehicles[i];
             if (!wheelVehicle->IsActiveInHierarchy())
                 continue;
-            auto drive = (PxVehicleWheels*)mWheelVehicles[ii]->_drive;
-            auto& perVehicle = mWheelVehiclesResultsPerVehicle[ii];
+            auto drive = (PxVehicleWheels*)mPhysxImpl->WheelVehicles[ii]->_drive;
+            auto& perVehicle = mPhysxImpl->WheelVehiclesResultsPerVehicle[ii];
             ii++;
             perVehicle.nbWheelQueryResults = drive->mWheelsSimData.getNbWheels();
-            perVehicle.wheelQueryResults = mWheelVehiclesResultsPerWheel.Get() + wheelsCount;
+            perVehicle.wheelQueryResults = mPhysxImpl->WheelVehiclesResultsPerWheel.Get() + wheelsCount;
             wheelsCount += perVehicle.nbWheelQueryResults;
         }
 
         // Update vehicles
-        if (mWheelVehiclesCache.Count() != 0)
+        if (mPhysxImpl->WheelVehiclesCache.Count() != 0)
         {
-            PxVehicleSuspensionRaycasts(mWheelRaycastBatchQuery, mWheelVehiclesCache.Count(), mWheelVehiclesCache.Get(), mWheelQueryResults.Count(), mWheelQueryResults.Get());
-            PxVehicleUpdates(mLastDeltaTime, mScene->getGravity(), *mWheelTireFrictions, mWheelVehiclesCache.Count(), mWheelVehiclesCache.Get(), mWheelVehiclesResultsPerVehicle.Get());
+            PxVehicleSuspensionRaycasts(mPhysxImpl->WheelRaycastBatchQuery, mPhysxImpl->WheelVehiclesCache.Count(), mPhysxImpl->WheelVehiclesCache.Get(), mPhysxImpl->WheelQueryResults.Count(), mPhysxImpl->WheelQueryResults.Get());
+            PxVehicleUpdates(mLastDeltaTime, mPhysxImpl->Scene->getGravity(), *mPhysxImpl->WheelTireFrictions, mPhysxImpl->WheelVehiclesCache.Count(), mPhysxImpl->WheelVehiclesCache.Get(), mPhysxImpl->WheelVehiclesResultsPerVehicle.Get());
         }
 
         // Synchronize state
-        for (int32 i = 0, ii = 0; i < mWheelVehicles.Count(); i++)
+        for (int32 i = 0, ii = 0; i < mPhysxImpl->WheelVehicles.Count(); i++)
         {
-            auto wheelVehicle = mWheelVehicles[i];
+            auto wheelVehicle = mPhysxImpl->WheelVehicles[i];
             if (!wheelVehicle->IsActiveInHierarchy())
                 continue;
-            auto drive = mWheelVehiclesCache[ii];
-            auto& perVehicle = mWheelVehiclesResultsPerVehicle[ii];
+            auto drive = mPhysxImpl->WheelVehiclesCache[ii];
+            auto& perVehicle = mPhysxImpl->WheelVehiclesResultsPerVehicle[ii];
             ii++;
 #if PHYSX_VEHICLE_DEBUG_TELEMETRY
             LOG(Info, "Vehicle[{}] Gear={}, RPM={}", ii, wheelVehicle->GetCurrentGear(), (int32)wheelVehicle->GetEngineRotationSpeed());
@@ -567,7 +600,7 @@ void PhysicsScene::CollectResults()
 
         // Gather change info
         PxU32 activeActorsCount;
-        PxActor** activeActors = mScene->getActiveActors(activeActorsCount);
+        PxActor** activeActors = mPhysxImpl->Scene->getActiveActors(activeActorsCount);
         if (activeActorsCount > 0)
         {
             // Update changed transformations
@@ -606,15 +639,15 @@ void PhysicsScene::FlushRequests()
 
     // Note: this does not handle case when actor is removed and added to the scene at the same time
 
-    if (mNewActors.HasItems())
+    if (mPhysxImpl->NewActors.HasItems())
     {
-        GetScene()->addActors(mNewActors.Get(), mNewActors.Count());
-        mNewActors.Clear();
+        GetScene()->addActors(mPhysxImpl->NewActors.Get(), mPhysxImpl->NewActors.Count());
+        mPhysxImpl->NewActors.Clear();
     }
 
-    for (int32 i = 0; i < mActions.Count(); i++)
+    for (int32 i = 0; i < mPhysxImpl->Actions.Count(); i++)
     {
-        const auto action = mActions[i];
+        const auto action = mPhysxImpl->Actions[i];
         switch (action.Type)
         {
         case ActionType::Sleep:
@@ -622,52 +655,52 @@ void PhysicsScene::FlushRequests()
             break;
         }
     }
-    mActions.Clear();
+    mPhysxImpl->Actions.Clear();
 
-    if (mDeadActors.HasItems())
+    if (mPhysxImpl->DeadActors.HasItems())
     {
-        GetScene()->removeActors(mDeadActors.Get(), mDeadActors.Count(), true);
-        for (int32 i = 0; i < mDeadActors.Count(); i++)
+        GetScene()->removeActors(mPhysxImpl->DeadActors.Get(), mPhysxImpl->DeadActors.Count(), true);
+        for (int32 i = 0; i < mPhysxImpl->DeadActors.Count(); i++)
         {
-            mDeadActors[i]->release();
+            mPhysxImpl->DeadActors[i]->release();
         }
-        mDeadActors.Clear();
+        mPhysxImpl->DeadActors.Clear();
     }
 
-    if (mDeadColliders.HasItems())
+    if (mPhysxImpl->DeadColliders.HasItems())
     {
-        for (int32 i = 0; i < mDeadColliders.Count(); i++)
+        for (int32 i = 0; i < mPhysxImpl->DeadColliders.Count(); i++)
         {
-            mEventsCallback.OnColliderRemoved(mDeadColliders[i]);
+            mEventsCallback.OnColliderRemoved(mPhysxImpl->DeadColliders[i]);
         }
-        mDeadColliders.Clear();
+        mPhysxImpl->DeadColliders.Clear();
     }
 
-    if (mDeadJoints.HasItems())
+    if (mPhysxImpl->DeadJoints.HasItems())
     {
-        for (int32 i = 0; i < mDeadJoints.Count(); i++)
+        for (int32 i = 0; i < mPhysxImpl->DeadJoints.Count(); i++)
         {
-            mEventsCallback.OnJointRemoved(mDeadJoints[i]);
+            mEventsCallback.OnJointRemoved(mPhysxImpl->DeadJoints[i]);
         }
-        mDeadJoints.Clear();
+        mPhysxImpl->DeadJoints.Clear();
     }
 
-    for (int32 i = 0; i < mDeadMaterials.Count(); i++)
+    for (int32 i = 0; i < mPhysxImpl->DeadMaterials.Count(); i++)
     {
-        auto material = mDeadMaterials[i];
+        auto material = mPhysxImpl->DeadMaterials[i];
 
         // Unlink ref to flax object
         material->userData = nullptr;
 
         material->release();
     }
-    mDeadMaterials.Clear();
+    mPhysxImpl->DeadMaterials.Clear();
 
-    for (int32 i = 0; i < mDeadObjects.Count(); i++)
+    for (int32 i = 0; i < mPhysxImpl->DeadObjects.Count(); i++)
     {
-        mDeadObjects[i]->release();
+        mPhysxImpl->DeadObjects[i]->release();
     }
-    mDeadObjects.Clear();
+    mPhysxImpl->DeadObjects.Clear();
 
     mFlushLocker.Unlock();
 }
@@ -677,7 +710,7 @@ void PhysicsScene::RemoveMaterial(PxMaterial* material)
     ASSERT(material);
 
     mFlushLocker.Lock();
-    mDeadMaterials.Add(material);
+    mPhysxImpl->DeadMaterials.Add(material);
     mFlushLocker.Unlock();
 }
 
@@ -686,7 +719,7 @@ void PhysicsScene::RemoveObject(PxBase* obj)
     ASSERT(obj);
 
     mFlushLocker.Lock();
-    mDeadObjects.Add(obj);
+    mPhysxImpl->DeadObjects.Add(obj);
     mFlushLocker.Unlock();
 }
 
@@ -701,7 +734,7 @@ void PhysicsScene::AddActor(PxActor* actor)
     }
     else
     {
-        mNewActors.Add(actor);
+        mPhysxImpl->NewActors.Add(actor);
     }
     mFlushLocker.Unlock();
 }
@@ -719,9 +752,9 @@ void PhysicsScene::AddActor(PxRigidDynamic* actor, bool putToSleep)
     }
     else
     {
-        mNewActors.Add(actor);
+        mPhysxImpl->NewActors.Add(actor);
         if (putToSleep)
-            mActions.Add({ ActionType::Sleep, actor });
+            mPhysxImpl->Actions.Add({ ActionType::Sleep, actor });
     }
     mFlushLocker.Unlock();
 }
@@ -742,7 +775,7 @@ void PhysicsScene::RemoveActor(PxActor* actor)
     actor->userData = nullptr;
 
     mFlushLocker.Lock();
-    mDeadActors.Add(actor);
+    mPhysxImpl->DeadActors.Add(actor);
     mFlushLocker.Unlock();
 }
 
@@ -751,7 +784,7 @@ void PhysicsScene::RemoveCollider(PhysicsColliderActor* collider)
     ASSERT(collider);
 
     mFlushLocker.Lock();
-    mDeadColliders.Add(collider);
+    mPhysxImpl->DeadColliders.Add(collider);
     mFlushLocker.Unlock();
 }
 
@@ -760,11 +793,23 @@ void PhysicsScene::RemoveJoint(Joint* joint)
     ASSERT(joint);
 
     mFlushLocker.Lock();
-    mDeadJoints.Add(joint);
+    mPhysxImpl->DeadJoints.Add(joint);
     mFlushLocker.Unlock();
 }
 
 PxControllerManager* PhysicsScene::GetControllerManager()
 {
-    return mControllerManager;
+    return mPhysxImpl->ControllerManager;
 }
+
+#if WITH_VEHICLE
+void PhysicsScene::AddWheeledVehicle(WheeledVehicle* vehicle)
+{
+    mPhysxImpl->WheelVehicles.Add(vehicle);
+}
+
+void PhysicsScene::RemoveWheeledVehicle(WheeledVehicle* vehicle)
+{
+    mPhysxImpl->WheelVehicles.Remove(vehicle);
+}
+#endif

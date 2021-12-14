@@ -3,23 +3,20 @@
 #include "Engine/Physics/SimulationEventCallback.h"
 #include "Engine/Scripting/ScriptingObject.h"
 #include "Engine/Scripting/ScriptingType.h"
-#include "Engine/Core/Collections/Array.h"
 #include "Engine/Core/Math/Vector3.h"
 #include "Engine/Core/Math/Quaternion.h"
 #include "Types.h"
-#include <ThirdParty/PhysX/PxPhysicsAPI.h>
 
 #if WITH_VEHICLE
-#include "vehicle/PxVehicleUpdate.h"
-#include "vehicle/PxVehicleWheels.h"
-
 class WheeledVehicle;
 #endif
+
 
 struct ActionData;
 class FixedStepper;
 class PhysicsSettings;
 class PhysicsColliderActor;
+class PhysicsScenePhysX;
 class Joint;
 class Collider;
 class CollisionData;
@@ -523,11 +520,6 @@ public:
 private:
     String mName;
     bool mAutoSimulation = true;
-
-    PxScene* mScene;
-    PxCpuDispatcher* mCpuDispatcher;
-    PxControllerManager* mControllerManager;
-    PxSimulationFilterShader mPhysXDefaultFilterShader = PxDefaultSimulationFilterShader;
     SimulationEventCallback mEventsCallback;
 
     void* mScratchMemory = nullptr;
@@ -535,25 +527,7 @@ private:
     float mLastDeltaTime = 0.0f;
     bool mIsDuringSimulation = false;
 
-
     CriticalSection mFlushLocker;
-    Array<PxActor*> mNewActors;
-    Array<PxActor*> mDeadActors;
-    Array<PxMaterial*> mDeadMaterials;
-    Array<PhysicsColliderActor*> mDeadColliders;
-    Array<Joint*> mDeadJoints;
-    Array<ActionData> mActions;
-    Array<PxBase*> mDeadObjects;
 
-#if WITH_VEHICLE
-    Array<PxVehicleWheels*> mWheelVehiclesCache;
-    Array<PxRaycastQueryResult> mWheelQueryResults;
-    Array<PxRaycastHit> mWheelHitResults;
-    Array<PxWheelQueryResult> mWheelVehiclesResultsPerWheel;
-    Array<PxVehicleWheelQueryResult> mWheelVehiclesResultsPerVehicle;
-    PxBatchQuery* mWheelRaycastBatchQuery = nullptr;
-    PxVehicleDrivableSurfaceToTireFrictionPairs* mWheelTireFrictions = nullptr;
-    
-    Array<WheeledVehicle*> mWheelVehicles;
-#endif
+    PhysicsScenePhysX* mPhysxImpl;
 };

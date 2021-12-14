@@ -268,7 +268,6 @@ bool PhysicsService::Init()
 {
 #define CHECK_INIT(value, msg) if(!value) { LOG(Error, msg); return true; }
 
-    auto cpuInfo = Platform::GetCPUInfo();
     auto& settings = *PhysicsSettings::Get();
 
     // Send info
@@ -324,7 +323,7 @@ bool PhysicsService::Init()
     }
 #endif
 
-    Physics::DefaultScene = new PhysicsScene(String("Default"), settings, cpuInfo);
+    Physics::DefaultScene = new PhysicsScene(String("Default"), settings);
     Physics::Scenes.Add(Physics::DefaultScene);
 
     // Create default resources
@@ -515,10 +514,9 @@ PhysicsScene* Physics::FindOrCreateScene(String name)
 
     if (scene == nullptr)
     {
-        auto cpuInfo = Platform::GetCPUInfo();
         auto& settings = *PhysicsSettings::Get();
 
-        scene = new PhysicsScene(name, settings, cpuInfo);
+        scene = new PhysicsScene(name, settings);
         Scenes.Add(scene);
     }
 

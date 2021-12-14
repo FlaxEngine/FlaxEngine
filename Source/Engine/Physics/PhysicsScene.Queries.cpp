@@ -643,15 +643,3 @@ bool PhysicsScene::OverlapConvex(const Vector3& center, const CollisionData* con
 
     return true;
 }
-
-#if WITH_VEHICLE
-void PhysicsScene::AddWheeledVehicle(WheeledVehicle* vehicle)
-{
-    mWheelVehicles.Add(vehicle);
-}
-
-void PhysicsScene::RemoveWheeledVehicle(WheeledVehicle* vehicle)
-{
-    mWheelVehicles.Remove(vehicle);
-}
-#endif
