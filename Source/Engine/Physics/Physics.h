@@ -589,7 +589,7 @@ public:
     /// Marks that joint has been removed (all collision events should be cleared to prevent leaks of using removed object).
     /// </summary>
     /// <param name="joint">The joint.</param>
-    static void RemoveJointAll(Joint* joint);
+    static void RemoveJoint(Joint* joint);
 
 public:
     static void BeginPlay();

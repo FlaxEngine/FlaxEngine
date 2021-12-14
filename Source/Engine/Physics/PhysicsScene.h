@@ -1,7 +1,6 @@
 #pragma once
 
-#include "SimulationEventCallback.h"
-
+#include "Engine/Physics/SimulationEventCallback.h"
 #include "Engine/Scripting/ScriptingObject.h"
 #include "Engine/Scripting/ScriptingType.h"
 #include "Engine/Core/Collections/Array.h"
@@ -32,7 +31,7 @@ API_CLASS(NoSpawn) class FLAXENGINE_API PhysicsScene : public PersistentScriptin
 {
     DECLARE_SCRIPTING_TYPE_NO_SPAWN(PhysicsScene);
 
-    explicit PhysicsScene(String name, PhysicsSettings settings, CPUInfo cpuInfo);
+    explicit PhysicsScene(const String& name, const PhysicsSettings& settings);
     ~PhysicsScene();
 
     /// <summary>

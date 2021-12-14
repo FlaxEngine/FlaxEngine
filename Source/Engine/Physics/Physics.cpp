@@ -503,7 +503,7 @@ void Physics::FlushRequestsAll()
         scene->FlushRequests();
 }
 
-void Physics::RemoveJointAll(Joint* joint)
+void Physics::RemoveJoint(Joint* joint)
 {
     for (auto scene : Scenes) 
         scene->RemoveJoint(joint);

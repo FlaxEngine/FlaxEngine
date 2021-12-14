@@ -1820,11 +1820,13 @@ void Actor::SetPhysicsScene(PhysicsScene* scene)
     _physicsScene = scene;
 
     if (previous != _physicsScene)
+    {
         OnPhysicsSceneChanged(previous);
 
-    // cascade
-    for (auto child : Children)
-        child->SetPhysicsScene(scene);
+        // cascade
+        for (auto child : Children)
+            child->SetPhysicsScene(scene);
+    }
 }
 
 PhysicsScene* Actor::GetPhysicsScene()

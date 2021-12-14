@@ -92,7 +92,7 @@ static PxQueryHitType::Enum WheelRaycastPreFilter(PxFilterData filterData0, PxFi
 
 #endif
 
-PhysicsScene::PhysicsScene(String name, PhysicsSettings settings, CPUInfo cpuInfo)
+PhysicsScene::PhysicsScene(const String& name, const PhysicsSettings& settings)
     : PersistentScriptingObject(SpawnParams(Guid::New(), TypeInitializer))
 {
 #define CHECK_INIT(value, msg) if(!value) { LOG(Error, msg); return; }
@@ -112,7 +112,7 @@ PhysicsScene::PhysicsScene(String name, PhysicsSettings settings, CPUInfo cpuInf
     sceneDesc.bounceThresholdVelocity = settings.BounceThresholdVelocity;
     if (sceneDesc.cpuDispatcher == nullptr)
     {
-        mCpuDispatcher = PxDefaultCpuDispatcherCreate(Math::Clamp<uint32>(cpuInfo.ProcessorCoreCount - 1, 1, 4));
+        mCpuDispatcher = PxDefaultCpuDispatcherCreate(Math::Clamp<uint32>(Platform::GetCPUInfo().ProcessorCoreCount - 1, 1, 4));
         CHECK_INIT(mCpuDispatcher, "PxDefaultCpuDispatcherCreate failed!");
         sceneDesc.cpuDispatcher = mCpuDispatcher;
     }

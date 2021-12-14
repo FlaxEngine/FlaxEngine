@@ -2,7 +2,6 @@
 
 #include "RigidBody.h"
 #include "PxMaterial.h"
-#include <iterator>
 
 #include "Engine/Core/Log.h"
 #include "Engine/Physics/Utilities.h"

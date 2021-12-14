@@ -1,14 +1,13 @@
 // Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
 
-#include "CollisionData.h"
-#include "PhysicsScene.h"
-
 #include "Engine/Core/Log.h"
 #include "Engine/Content/Content.h"
 #include "Engine/Content/Assets/Model.h"
 #include "Engine/Content/Factories/BinaryAssetFactory.h"
 #include "Engine/Physics/Physics.h"
+#include "Engine/Physics/PhysicsScene.h"
 #include "Engine/Physics/Utilities.h"
+#include "Engine/Physics/CollisionData.h"
 #include "Engine/Physics/CollisionCooking.h"
 #include "Engine/Threading/Threading.h"
 #include <ThirdParty/PhysX/extensions/PxDefaultStreams.h>
