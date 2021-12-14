@@ -1218,6 +1218,14 @@ namespace FlaxEditor.Viewport
 
                     // Get input movement
                     Vector3 moveDelta = Vector3.Zero;
+                    Vector2 mouseDelta = Vector2.Zero;
+                    if (FlaxEngine.Input.GamepadsCount > 0)
+                    {
+                        // Gamepads handling
+                        moveDelta += new Vector3(GetGamepadAxis(GamepadAxis.LeftStickX), 0, GetGamepadAxis(GamepadAxis.LeftStickY));
+                        mouseDelta += new Vector2(GetGamepadAxis(GamepadAxis.RightStickX), -GetGamepadAxis(GamepadAxis.RightStickY));
+                        _input.IsRotating |= !mouseDelta.IsZero;
+                    }
                     if (win.GetKey(KeyboardKeys.ArrowRight))
                     {
                         moveDelta += Vector3.Right;
@@ -1239,7 +1247,6 @@ namespace FlaxEditor.Viewport
 
                     // Update
                     moveDelta *= dt * (60.0f * 4.0f);
-                    Vector2 mouseDelta = Vector2.Zero;
                     UpdateView(dt, ref moveDelta, ref mouseDelta, out _);
                 }
             }
@@ -1495,6 +1502,13 @@ namespace FlaxEditor.Viewport
                              : SpriteHandle.Invalid;
                 }
             }
+        }
+
+        private float GetGamepadAxis(GamepadAxis axis)
+        {
+            var value = FlaxEngine.Input.GetGamepadAxis(InputGamepadIndex.All, axis);
+            var deadZone = 0.2f;
+            return value >= deadZone || value <= -deadZone ? value : 0.0f;
         }
     }
 }
