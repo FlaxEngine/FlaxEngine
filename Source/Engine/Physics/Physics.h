@@ -116,12 +116,12 @@ public:
     /// <summary>
     /// Finds an existing <see cref="PhysicsScene"/> or creates it if it does not exist.
     /// </summary>
-    API_FUNCTION() static PhysicsScene* FindOrCreateScene(String name);
+    API_FUNCTION() static PhysicsScene* FindOrCreateScene(const String& name);
 
     /// <summary>
     ///Finds an existing scene.
     /// </summary>
-    API_FUNCTION() static PhysicsScene* FindScene(String name);
+    API_FUNCTION() static PhysicsScene* FindScene(const String& name);
 
 public:
     /// <summary>

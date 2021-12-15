@@ -11,7 +11,6 @@
 class WheeledVehicle;
 #endif
 
-
 struct ActionData;
 class FixedStepper;
 class PhysicsSettings;

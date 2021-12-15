@@ -323,7 +323,7 @@ bool PhysicsService::Init()
     }
 #endif
 
-    Physics::DefaultScene = new PhysicsScene(String("Default"), settings);
+    Physics::DefaultScene = Physics::FindOrCreateScene(TEXT("Default"));
     Physics::Scenes.Add(Physics::DefaultScene);
 
     // Create default resources
@@ -508,7 +508,7 @@ void Physics::RemoveJoint(Joint* joint)
         scene->RemoveJoint(joint);
 }
 
-PhysicsScene* Physics::FindOrCreateScene(String name)
+PhysicsScene* Physics::FindOrCreateScene(const String& name)
 {
     auto scene = FindScene(name);
 
@@ -516,14 +516,14 @@ PhysicsScene* Physics::FindOrCreateScene(String name)
     {
         auto& settings = *PhysicsSettings::Get();
 
-        scene = new PhysicsScene(name, settings);
+        scene = New<PhysicsScene>(name, settings);
         Scenes.Add(scene);
     }
 
     return scene;
 }
 
-PhysicsScene* Physics::FindScene(String name)
+PhysicsScene* Physics::FindScene(const String& name)
 {
     for (auto scene : Scenes)
     {

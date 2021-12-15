@@ -128,7 +128,7 @@ PhysicsScene::PhysicsScene(const String& name, const PhysicsSettings& settings)
 #define CHECK_INIT(value, msg) if(!value) { LOG(Error, msg); return; }
     
     mName = name;
-    mPhysxImpl = new PhysicsScenePhysX();
+    mPhysxImpl = New<PhysicsScenePhysX>();
 
     // Create scene description
     PxSceneDesc sceneDesc(CPhysX->getTolerancesScale());

@@ -15,7 +15,6 @@
 #include <ThirdParty/PhysX/PxPhysics.h>
 #include <ThirdParty/PhysX/extensions/PxDefaultStreams.h>
 #endif
-
 #include <ThirdParty/PhysX/geometry/PxTriangleMesh.h>
 
 SplineCollider::SplineCollider(const SpawnParams& params)
