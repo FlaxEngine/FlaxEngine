@@ -1,6 +1,5 @@
 #pragma once
 
-#include "Engine/Physics/SimulationEventCallback.h"
 #include "Engine/Scripting/ScriptingObject.h"
 #include "Engine/Scripting/ScriptingType.h"
 #include "Engine/Core/Math/Vector3.h"
@@ -12,6 +11,7 @@ class WheeledVehicle;
 #endif
 
 struct ActionData;
+struct RayCastHit;
 class FixedStepper;
 class PhysicsSettings;
 class PhysicsColliderActor;
@@ -519,14 +519,10 @@ public:
 private:
     String mName;
     bool mAutoSimulation = true;
-    SimulationEventCallback mEventsCallback;
-
     void* mScratchMemory = nullptr;
     FixedStepper* mStepper = nullptr;
     float mLastDeltaTime = 0.0f;
     bool mIsDuringSimulation = false;
-
-    CriticalSection mFlushLocker;
 
     PhysicsScenePhysX* mPhysxImpl;
 };

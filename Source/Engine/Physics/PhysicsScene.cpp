@@ -2,6 +2,7 @@
 #include "PhysicsScene.h"
 #include "PhysicsSettings.h"
 #include "PhysicsStepper.h"
+#include "SimulationEventCallback.h"
 #include "Utilities.h"
 
 #include "Actors/IPhysicsActor.h"
@@ -101,6 +102,8 @@ private:
     PxCpuDispatcher* CpuDispatcher;
     PxControllerManager* ControllerManager;
     PxSimulationFilterShader PhysXDefaultFilterShader = PxDefaultSimulationFilterShader;
+    SimulationEventCallback EventsCallback;
+    CriticalSection FlushLocker;
 
     Array<PxActor*> NewActors;
     Array<PxActor*> DeadActors;
@@ -138,7 +141,7 @@ PhysicsScene::PhysicsScene(const String& name, const PhysicsSettings& settings)
         sceneDesc.flags |= PxSceneFlag::eENABLE_CCD;
     if (settings.EnableAdaptiveForce)
         sceneDesc.flags |= PxSceneFlag::eADAPTIVE_FORCE;
-    sceneDesc.simulationEventCallback = &mEventsCallback;
+    sceneDesc.simulationEventCallback = &mPhysxImpl->EventsCallback;
     sceneDesc.filterShader = FilterShader;
     sceneDesc.bounceThresholdVelocity = settings.BounceThresholdVelocity;
     if (sceneDesc.cpuDispatcher == nullptr)
@@ -284,7 +287,7 @@ void PhysicsScene::Simulate(float dt)
     mIsDuringSimulation = true;
     if (mStepper->advance(mPhysxImpl->Scene, dt, mScratchMemory, SCRATCH_BLOCK_SIZE) == false)
         return;
-    mEventsCallback.Clear();
+    mPhysxImpl->EventsCallback.Clear();
     mLastDeltaTime = dt;
 
     // TODO: move this call after rendering done
@@ -618,10 +621,10 @@ void PhysicsScene::CollectResults()
     {
         PROFILE_CPU_NAMED("Physics.SendEvents");
 
-        mEventsCallback.CollectResults();
-        mEventsCallback.SendTriggerEvents();
-        mEventsCallback.SendCollisionEvents();
-        mEventsCallback.SendJointEvents();
+        mPhysxImpl->EventsCallback.CollectResults();
+        mPhysxImpl->EventsCallback.SendTriggerEvents();
+        mPhysxImpl->EventsCallback.SendCollisionEvents();
+        mPhysxImpl->EventsCallback.SendJointEvents();
     }
 
     // End
@@ -635,7 +638,7 @@ void PhysicsScene::FlushRequests()
 
     PROFILE_CPU();
 
-    mFlushLocker.Lock();
+    mPhysxImpl->FlushLocker.Lock();
 
     // Note: this does not handle case when actor is removed and added to the scene at the same time
 
@@ -671,7 +674,7 @@ void PhysicsScene::FlushRequests()
     {
         for (int32 i = 0; i < mPhysxImpl->DeadColliders.Count(); i++)
         {
-            mEventsCallback.OnColliderRemoved(mPhysxImpl->DeadColliders[i]);
+            mPhysxImpl->EventsCallback.OnColliderRemoved(mPhysxImpl->DeadColliders[i]);
         }
         mPhysxImpl->DeadColliders.Clear();
     }
@@ -680,7 +683,7 @@ void PhysicsScene::FlushRequests()
     {
         for (int32 i = 0; i < mPhysxImpl->DeadJoints.Count(); i++)
         {
-            mEventsCallback.OnJointRemoved(mPhysxImpl->DeadJoints[i]);
+            mPhysxImpl->EventsCallback.OnJointRemoved(mPhysxImpl->DeadJoints[i]);
         }
         mPhysxImpl->DeadJoints.Clear();
     }
@@ -702,32 +705,32 @@ void PhysicsScene::FlushRequests()
     }
     mPhysxImpl->DeadObjects.Clear();
 
-    mFlushLocker.Unlock();
+    mPhysxImpl->FlushLocker.Unlock();
 }
 
 void PhysicsScene::RemoveMaterial(PxMaterial* material)
 {
     ASSERT(material);
 
-    mFlushLocker.Lock();
+    mPhysxImpl->FlushLocker.Lock();
     mPhysxImpl->DeadMaterials.Add(material);
-    mFlushLocker.Unlock();
+    mPhysxImpl->FlushLocker.Unlock();
 }
 
 void PhysicsScene::RemoveObject(PxBase* obj)
 {
     ASSERT(obj);
 
-    mFlushLocker.Lock();
+    mPhysxImpl->FlushLocker.Lock();
     mPhysxImpl->DeadObjects.Add(obj);
-    mFlushLocker.Unlock();
+    mPhysxImpl->FlushLocker.Unlock();
 }
 
 void PhysicsScene::AddActor(PxActor* actor)
 {
     ASSERT(actor);
 
-    mFlushLocker.Lock();
+    mPhysxImpl->FlushLocker.Lock();
     if (IsInMainThread())
     {
         GetScene()->addActor(*actor);
@@ -736,14 +739,14 @@ void PhysicsScene::AddActor(PxActor* actor)
     {
         mPhysxImpl->NewActors.Add(actor);
     }
-    mFlushLocker.Unlock();
+    mPhysxImpl->FlushLocker.Unlock();
 }
 
 void PhysicsScene::AddActor(PxRigidDynamic* actor, bool putToSleep)
 {
     ASSERT(actor);
 
-    mFlushLocker.Lock();
+    mPhysxImpl->FlushLocker.Lock();
     if (IsInMainThread())
     {
         GetScene()->addActor(*actor);
@@ -756,7 +759,7 @@ void PhysicsScene::AddActor(PxRigidDynamic* actor, bool putToSleep)
         if (putToSleep)
             mPhysxImpl->Actions.Add({ ActionType::Sleep, actor });
     }
-    mFlushLocker.Unlock();
+    mPhysxImpl->FlushLocker.Unlock();
 }
 
 void PhysicsScene::UnlinkActor(PxActor* actor)
@@ -774,27 +777,27 @@ void PhysicsScene::RemoveActor(PxActor* actor)
     // Unlink ref to flax object
     actor->userData = nullptr;
 
-    mFlushLocker.Lock();
+    mPhysxImpl->FlushLocker.Lock();
     mPhysxImpl->DeadActors.Add(actor);
-    mFlushLocker.Unlock();
+    mPhysxImpl->FlushLocker.Unlock();
 }
 
 void PhysicsScene::RemoveCollider(PhysicsColliderActor* collider)
 {
     ASSERT(collider);
 
-    mFlushLocker.Lock();
+    mPhysxImpl->FlushLocker.Lock();
     mPhysxImpl->DeadColliders.Add(collider);
-    mFlushLocker.Unlock();
+    mPhysxImpl->FlushLocker.Unlock();
 }
 
 void PhysicsScene::RemoveJoint(Joint* joint)
 {
     ASSERT(joint);
 
-    mFlushLocker.Lock();
+    mPhysxImpl->FlushLocker.Lock();
     mPhysxImpl->DeadJoints.Add(joint);
-    mFlushLocker.Unlock();
+    mPhysxImpl->FlushLocker.Unlock();
 }
 
 PxControllerManager* PhysicsScene::GetControllerManager()
