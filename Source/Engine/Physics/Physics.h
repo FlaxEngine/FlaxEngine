@@ -2,7 +2,6 @@
 
 #pragma once
 
-#include "Engine/Core/Collections/Array.h"
 #include "Engine/Core/Math/Vector2.h"
 #include "Engine/Core/Math/Vector3.h"
 #include "Engine/Core/Math/Quaternion.h"
@@ -111,7 +110,7 @@ public:
     /// List with all physics scenes (readonly).
     /// </summary>
     API_FIELD(ReadOnly)
-    static Array<PhysicsScene*> Scenes;
+    static Array<PhysicsScene*, HeapAllocation> Scenes;
 
     /// <summary>
     /// Finds an existing <see cref="PhysicsScene"/> or creates it if it does not exist.
@@ -590,8 +589,4 @@ public:
     /// </summary>
     /// <param name="joint">The joint.</param>
     static void RemoveJoint(Joint* joint);
-
-public:
-    static void BeginPlay();
-    static void EndPlay();
 };

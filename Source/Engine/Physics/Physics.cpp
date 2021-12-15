@@ -324,7 +324,6 @@ bool PhysicsService::Init()
 #endif
 
     Physics::DefaultScene = Physics::FindOrCreateScene(TEXT("Default"));
-    Physics::Scenes.Add(Physics::DefaultScene);
 
     // Create default resources
     DefaultMaterial = CPhysX->createMaterial(0.7f, 0.7f, 0.3f);
@@ -532,15 +531,4 @@ PhysicsScene* Physics::FindScene(const String& name)
     } 
 
     return nullptr;
-}
-
-void Physics::BeginPlay()
-{
-    reset();
-}
-
-
-void Physics::EndPlay()
-{
-    reset();
 }
