@@ -73,7 +73,7 @@ namespace Flax.Build.Platforms
         /// <param name="architecture">The target architecture.</param>
         /// <param name="toolchainRoots">The root folder for the toolchains installation.</param>
         /// <param name="systemCompiler">The system compiler to use. Null if use toolset root.</param>
-        /// <param name="toolchainSubDir">The custom toolchain folder location in <paramref name="toolchainRoots"/> directory. If nul the architecture name will be sued.</param>
+        /// <param name="toolchainSubDir">The custom toolchain folder location in <paramref name="toolchainRoots"/> directory. If nul the architecture name will be used.</param>
         protected UnixToolchain(UnixPlatform platform, TargetArchitecture architecture, string toolchainRoots, string systemCompiler, string toolchainSubDir = null)
         : base(platform, architecture)
         {

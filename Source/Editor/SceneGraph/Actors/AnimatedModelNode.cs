@@ -175,7 +175,7 @@ namespace FlaxEditor.SceneGraph.Actors
                 bonesBounds[boneIndex] = boneBounds;
             }
 
-            // In case of problematic skeleton find the first bone to be sued as a root
+            // In case of problematic skeleton find the first bone to be used as a root
             int forcedRootBoneIndex = -1, firstParentBoneIndex = -1;
             for (int boneIndex = 0; boneIndex < bones.Length; ++boneIndex)
             {
