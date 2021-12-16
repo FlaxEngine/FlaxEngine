@@ -250,6 +250,19 @@ public:
 };
 
 /// <summary>
+/// The animation graph slot-based animation.
+/// </summary>
+struct FLAXENGINE_API AnimGraphSlot
+{
+    String Name;
+    AssetReference<Animation> Animation;
+    float Speed = 1.0f;
+    float BlendInTime = 0.0f;
+    float BlendOutTime = 0.0f;
+    bool Pause = false;
+};
+
+/// <summary>
 /// The animation graph instance data storage. Required to update the animation graph.
 /// </summary>
 class FLAXENGINE_API AnimGraphInstanceData
@@ -293,6 +306,14 @@ public:
         float TransitionPosition;
     };
 
+    struct SlotBucket
+    {
+        int32 Index;
+        float TimePosition;
+        float BlendInPosition;
+        float BlendOutPosition;
+    };
+
     /// <summary>
     /// The single data storage bucket for the instanced animation graph node. Used to store the node state (playback position, state, transition data).
     /// </summary>
@@ -304,6 +325,7 @@ public:
             MultiBlendBucket MultiBlend;
             BlendPoseBucket BlendPose;
             StateMachineBucket StateMachine;
+            SlotBucket Slot;
         };
     };
 
@@ -358,6 +380,11 @@ public:
     /// The custom event called after local pose evaluation.
     /// </summary>
     Delegate<AnimGraphImpulse*> LocalPoseOverride;
+
+    /// <summary>
+    /// The slots animations.
+    /// </summary>
+    Array<AnimGraphSlot> Slots;
 
 public:
 

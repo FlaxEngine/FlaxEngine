@@ -1817,6 +1817,80 @@ void AnimGraphExecutor::ProcessGroupAnimation(Box* boxBase, Node* nodeBase, Valu
         value = nodes;
         break;
     }
+    // Animation Slot
+    case 32:
+    {
+        auto& slots = context.Data->Slots;
+        if (slots.Count() == 0)
+        {
+            value = tryGetValue(node->GetBox(1), Value::Null);
+            return;
+        }
+        const StringView slotName(node->Values[0]);
+        auto& bucket = context.Data->State[node->BucketIndex].Slot;
+        if (bucket.Index != -1 && (slots.Count() <= bucket.Index || slots[bucket.Index].Animation == nullptr))
+        {
+            // Current slot animation ended
+            bucket.Index = -1;
+        }
+        if (bucket.Index == -1)
+        {
+            // Pick the animation to play
+            for (int32 i = 0; i < slots.Count(); i++)
+            {
+                auto& slot = slots[i];
+                if (slot.Animation && slot.Name == slotName)
+                {
+                    // Start playing animation
+                    bucket.Index = i;
+                    bucket.TimePosition = 0.0f;
+                    bucket.BlendInPosition = 0.0f;
+                    bucket.BlendOutPosition = 0.0f;
+                    break;
+                }
+            }
+            if (bucket.Index == -1 || !slots[bucket.Index].Animation->IsLoaded())
+            {
+                value = tryGetValue(node->GetBox(1), Value::Null);
+                return;
+            }
+        }
+
+        // Play the animation
+        auto& slot = slots[bucket.Index];
+        Animation* anim = slot.Animation;
+        ASSERT(slot.Animation && slot.Animation->IsLoaded());
+        const float deltaTime = slot.Pause ? 0.0f : context.DeltaTime * slot.Speed;
+        const float length = anim->GetLength();
+        float newTimePos = bucket.TimePosition + deltaTime;
+        if (newTimePos >= length)
+        {
+            // End playing animation
+            value = tryGetValue(node->GetBox(1), Value::Null);
+            bucket.Index = -1;
+            slot.Animation = nullptr;
+            return;
+        }
+        value = SampleAnimation(node, false, length, 0.0f, bucket.TimePosition, newTimePos, anim, slot.Speed);
+        bucket.TimePosition = newTimePos;
+        if (slot.BlendOutTime > 0.0f && length - slot.BlendOutTime < bucket.TimePosition)
+        {
+            // Blend out
+            auto input = tryGetValue(node->GetBox(1), Value::Null);
+            bucket.BlendOutPosition += deltaTime;
+            const float alpha = Math::Saturate(bucket.BlendOutPosition / slot.BlendOutTime);
+            value = Blend(node, value, input, alpha, AlphaBlendMode::HermiteCubic);
+        }
+        else if (slot.BlendInTime > 0.0f && bucket.BlendInPosition < slot.BlendInTime)
+        {
+            // Blend in
+            auto input = tryGetValue(node->GetBox(1), Value::Null);
+            bucket.BlendInPosition += deltaTime;
+            const float alpha = Math::Saturate(bucket.BlendInPosition / slot.BlendInTime);
+            value = Blend(node, input, value, alpha, AlphaBlendMode::HermiteCubic);
+        }
+        break;
+    }
     default:
         break;
     }

@@ -90,6 +90,7 @@ void AnimGraphInstanceData::Clear()
     Parameters.Resize(0);
     State.Resize(0);
     NodesPose.Resize(0);
+    Slots.Resize(0);
 }
 
 void AnimGraphInstanceData::ClearState()
@@ -101,6 +102,7 @@ void AnimGraphInstanceData::ClearState()
     RootMotion = RootMotionData::Identity;
     State.Resize(0);
     NodesPose.Resize(0);
+    Slots.Clear();
 }
 
 void AnimGraphInstanceData::Invalidate()

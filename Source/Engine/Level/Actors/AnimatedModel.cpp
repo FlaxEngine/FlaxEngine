@@ -324,6 +324,89 @@ void AnimatedModel::ClearBlendShapeWeights()
     _blendShapes.Clear();
 }
 
+void AnimatedModel::PlaySlotAnimation(const StringView& slotName, Animation* anim, float speed, float blendInTime, float blendOutTime)
+{
+    CHECK(anim);
+    for (auto& slot : GraphInstance.Slots)
+    {
+        if (slot.Animation == anim && slot.Name == slotName)
+        {
+            slot.Pause = false;
+            slot.BlendInTime = blendInTime;
+            return;
+        }
+    }
+    int32 index = 0;
+    for (; index < GraphInstance.Slots.Count(); index++)
+    {
+        if (GraphInstance.Slots[index].Animation == nullptr)
+            break;
+    }
+    if (index == GraphInstance.Slots.Count())
+        GraphInstance.Slots.AddOne();
+    auto& slot = GraphInstance.Slots[index];
+    slot.Name = slotName;
+    slot.Animation = anim;
+    slot.Speed = speed;
+    slot.BlendInTime = blendInTime;
+    slot.BlendOutTime = blendOutTime;
+}
+
+void AnimatedModel::StopSlotAnimation()
+{
+    GraphInstance.Slots.Clear();
+}
+
+void AnimatedModel::StopSlotAnimation(const StringView& slotName, Animation* anim)
+{
+    for (auto& slot : GraphInstance.Slots)
+    {
+        if (slot.Animation == anim && slot.Name == slotName)
+        {
+            slot.Animation = nullptr;
+            break;
+        }
+    }
+}
+
+void AnimatedModel::PauseSlotAnimation()
+{
+    for (auto& slot : GraphInstance.Slots)
+        slot.Pause = true;
+}
+
+void AnimatedModel::PauseSlotAnimation(const StringView& slotName, Animation* anim)
+{
+    for (auto& slot : GraphInstance.Slots)
+    {
+        if (slot.Animation == anim && slot.Name == slotName)
+        {
+            slot.Pause = true;
+            break;
+        }
+    }
+}
+
+bool AnimatedModel::IsPlayingSlotAnimation()
+{
+    for (auto& slot : GraphInstance.Slots)
+    {
+        if (slot.Animation && !slot.Pause)
+            return true;
+    }
+    return false;
+}
+
+bool AnimatedModel::IsPlayingSlotAnimation(const StringView& slotName, Animation* anim)
+{
+    for (auto& slot : GraphInstance.Slots)
+    {
+        if (slot.Animation == anim && slot.Name == slotName && !slot.Pause)
+            return true;
+    }
+    return false;
+}
+
 void AnimatedModel::ApplyRootMotion(const RootMotionData& rootMotionDelta)
 {
     // Skip if no motion

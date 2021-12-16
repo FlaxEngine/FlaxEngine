@@ -953,6 +953,25 @@ namespace FlaxEditor.Surface.Archetypes
                     NodeElementArchetype.Factory.Text(0, Surface.Constants.LayoutOffsetY * 6, "Node:"),
                 }
             },
+            new NodeArchetype
+            {
+                TypeID = 32,
+                Title = "Animation Slot",
+                Description = "Plays the animation from code with blending (eg. hit reaction).",
+                Flags = NodeFlags.AnimGraph,
+                Size = new Vector2(200, 40),
+                DefaultValues = new object[]
+                {
+                    "Default",
+                },
+                Elements = new[]
+                {
+                    NodeElementArchetype.Factory.Output(0, string.Empty, typeof(void), 0),
+                    NodeElementArchetype.Factory.Input(0, string.Empty, true, typeof(void), 1),
+                    NodeElementArchetype.Factory.Text(0, Surface.Constants.LayoutOffsetY, "Slot:"),
+                    NodeElementArchetype.Factory.TextBox(30, Surface.Constants.LayoutOffsetY, 140, TextBox.DefaultHeight, 0, false),
+                }
+            },
         };
     }
 }

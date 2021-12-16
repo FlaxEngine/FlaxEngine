@@ -303,6 +303,54 @@ public:
     /// </summary>
     API_FUNCTION() void ClearBlendShapeWeights();
 
+public:
+
+    /// <summary>
+    /// Plays the animation on the slot in Anim Graph.
+    /// </summary>
+    /// <param name="slotName">The name of the slot.</param>
+    /// <param name="anim">The animation to play.</param>
+    /// <param name="speed">The playback speed.</param>
+    /// <param name="blendInTime">The animation blending in time (in seconds). Cam be used to smooth the slot animation playback with the input pose when starting the animation.</param>
+    /// <param name="blendOutTime">The animation blending out time (in seconds). Cam be used to smooth the slot animation playback with the input pose when ending animation.</param>
+    API_FUNCTION() void PlaySlotAnimation(const StringView& slotName, Animation* anim, float speed = 1.0f, float blendInTime = 0.2f, float blendOutTime = 0.2f);
+
+    /// <summary>
+    /// Stops all the animations playback on the all slots in Anim Graph.
+    /// </summary>
+    API_FUNCTION() void StopSlotAnimation();
+
+    /// <summary>
+    /// Stops the animation playback on the slot in Anim Graph.
+    /// </summary>
+    /// <param name="slotName">The name of the slot.</param>
+    /// <param name="anim">The animation to stop.</param>
+    API_FUNCTION() void StopSlotAnimation(const StringView& slotName, Animation* anim);
+
+    /// <summary>
+    /// Pauses all the animations playback on the all slots in Anim Graph.
+    /// </summary>
+    API_FUNCTION() void PauseSlotAnimation();
+
+    /// <summary>
+    /// Pauses the animation playback on the slot in Anim Graph.
+    /// </summary>
+    /// <param name="slotName">The name of the slot.</param>
+    /// <param name="anim">The animation to pause.</param>
+    API_FUNCTION() void PauseSlotAnimation(const StringView& slotName, Animation* anim);
+
+    /// <summary>
+    /// Checks if the any animation playback is active on the any slot in Anim Graph (not paused).
+    /// </summary>
+    API_FUNCTION() bool IsPlayingSlotAnimation();
+
+    /// <summary>
+    /// Checks if the animation playback is active on the slot in Anim Graph (not paused).
+    /// </summary>
+    /// <param name="slotName">The name of the slot.</param>
+    /// <param name="anim">The animation to check.</param>
+    API_FUNCTION() bool IsPlayingSlotAnimation(const StringView& slotName, Animation* anim);
+
 private:
 
     void ApplyRootMotion(const RootMotionData& rootMotionDelta);
