@@ -241,7 +241,7 @@ public:
     // [ManagedScriptingObject]
     String ToString() const override;
     void OnDeleteObject() override;
-    void CreateManaged() override;
+    bool CreateManaged() override;
     void DestroyManaged() override;
     void OnManagedInstanceDeleted() override;
     void OnScriptingDispose() override;

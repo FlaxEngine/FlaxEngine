@@ -175,13 +175,16 @@ void Asset::OnDeleteObject()
 #endif
 }
 
-void Asset::CreateManaged()
+bool Asset::CreateManaged()
 {
     // Base
-    ManagedScriptingObject::CreateManaged();
+    if (ManagedScriptingObject::CreateManaged())
+        return true;
 
     // Managed objects holds a reference to this asset until it will be removed by GC
     AddReference();
+
+    return false;
 }
 
 void Asset::DestroyManaged()

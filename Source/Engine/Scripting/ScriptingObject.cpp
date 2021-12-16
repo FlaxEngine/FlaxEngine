@@ -59,7 +59,8 @@ ScriptingObject::~ScriptingObject()
 MObject* ScriptingObject::GetManagedInstance() const
 {
 #if USE_MONO
-    return _gcHandle ? mono_gchandle_get_target(_gcHandle) : nullptr;
+    const int32 handle = Platform::AtomicRead((int32*)&_gcHandle);
+    return handle ? mono_gchandle_get_target(handle) : nullptr;
 #else
     return nullptr;
 #endif
@@ -226,10 +227,6 @@ void ScriptingObject::OnScriptingDispose()
 
 MonoObject* ScriptingObject::CreateManagedInternal()
 {
-#if BUILD_DEBUG
-    ASSERT(!HasManagedInstance());
-#endif
-
     // Get class
     MClass* monoClass = GetClass();
     if (monoClass == nullptr)
@@ -302,7 +299,6 @@ void ScriptingObject::DestroyManaged()
 void ScriptingObject::RegisterObject()
 {
     ASSERT(!IsRegistered());
-
     Flags |= ObjectFlags::IsRegistered;
     Scripting::RegisterObject(this);
 }
@@ -310,7 +306,6 @@ void ScriptingObject::RegisterObject()
 void ScriptingObject::UnregisterObject()
 {
     ASSERT(IsRegistered());
-
     Flags &= ~ObjectFlags::IsRegistered;
     Scripting::UnregisterObject(this);
 }
@@ -378,24 +373,39 @@ ManagedScriptingObject::ManagedScriptingObject(const SpawnParams& params)
 {
 }
 
-void ManagedScriptingObject::CreateManaged()
+bool ManagedScriptingObject::CreateManaged()
 {
 #if USE_MONO
     MonoObject* managedInstance = CreateManagedInternal();
-    if (managedInstance)
-    {
-        // Cache the GC handle to the object (used to track the target object because it can be moved in a memory)
-        _gcHandle = mono_gchandle_new_weakref(managedInstance, false);
+    if (!managedInstance)
+        return true;
 
-        // Ensure to be registered
-        if (!IsRegistered())
-            RegisterObject();
+    // Cache the GC handle to the object (used to track the target object because it can be moved in a memory)
+    auto handle = mono_gchandle_new_weakref(managedInstance, false);
+    auto oldHandle = Platform::InterlockedCompareExchange((int32*)&_gcHandle, *(int32*)&handle, 0);
+    if (*(uint32*)&oldHandle != 0)
+    {
+        // Other thread already created the object before
+        if (const auto monoClass = GetClass())
+        {
+            // Reset managed to unmanaged pointer
+            const MField* monoUnmanagedPtrField = monoClass->GetField(ScriptingObject_unmanagedPtr);
+            if (monoUnmanagedPtrField)
+            {
+                void* param = nullptr;
+                monoUnmanagedPtrField->SetValue(managedInstance, &param);
+            }
+        }
+        mono_gchandle_free(handle);
+        return true;
     }
-#else
+#endif
+
     // Ensure to be registered
     if (!IsRegistered())
         RegisterObject();
-#endif
+
+    return false;
 }
 
 PersistentScriptingObject::PersistentScriptingObject(const SpawnParams& params)
@@ -432,30 +442,44 @@ void PersistentScriptingObject::OnScriptingDispose()
     // Don't delete C++ object
 }
 
-void PersistentScriptingObject::CreateManaged()
+bool PersistentScriptingObject::CreateManaged()
 {
 #if USE_MONO
     MonoObject* managedInstance = CreateManagedInternal();
-    if (managedInstance)
-    {
-        // Prevent form object GC destruction and moving
-        _gcHandle = mono_gchandle_new(managedInstance, false);
+    if (!managedInstance)
+        return true;
 
-        // Ensure to be registered
-        if (!IsRegistered())
-            RegisterObject();
+    // Prevent form object GC destruction
+    auto handle = mono_gchandle_new(managedInstance, false);
+    auto oldHandle = Platform::InterlockedCompareExchange((int32*)&_gcHandle, *(int32*)&handle, 0);
+    if (*(uint32*)&oldHandle != 0)
+    {
+        // Other thread already created the object before
+        if (const auto monoClass = GetClass())
+        {
+            // Reset managed to unmanaged pointer
+            const MField* monoUnmanagedPtrField = monoClass->GetField(ScriptingObject_unmanagedPtr);
+            if (monoUnmanagedPtrField)
+            {
+                void* param = nullptr;
+                monoUnmanagedPtrField->SetValue(managedInstance, &param);
+            }
+        }
+        mono_gchandle_free(handle);
+        return true;
     }
-#else
+#endif
+
     // Ensure to be registered
     if (!IsRegistered())
         RegisterObject();
-#endif
+
+    return false;
 }
 
 class ScriptingObjectInternal
 {
 public:
-    
 #if !COMPILE_WITHOUT_CSHARP
 
     static MonoObject* Create1(MonoReflectionType* type)

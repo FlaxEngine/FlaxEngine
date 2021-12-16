@@ -182,7 +182,7 @@ public:
     virtual void OnManagedInstanceDeleted();
     virtual void OnScriptingDispose();
 
-    virtual void CreateManaged() = 0;
+    virtual bool CreateManaged() = 0;
     virtual void DestroyManaged();
 
 public:
@@ -239,7 +239,7 @@ public:
 public:
 
     // [ScriptingObject]
-    void CreateManaged() override;
+    bool CreateManaged() override;
 };
 
 /// <summary>
@@ -266,5 +266,5 @@ public:
     // [ManagedScriptingObject]
     void OnManagedInstanceDeleted() override;
     void OnScriptingDispose() override;
-    void CreateManaged() override;
+    bool CreateManaged() override;
 };
