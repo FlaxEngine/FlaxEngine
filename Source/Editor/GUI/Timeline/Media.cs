@@ -35,13 +35,23 @@ namespace FlaxEditor.GUI.Timeline
             public TMedia Media;
 
             /// <summary>
-            /// Gets or sets the start frame of the media event.
+            /// Gets or sets the start frame of the media event (in frames).
             /// </summary>
-            [EditorDisplay("General"), EditorOrder(-10010), Tooltip("Start frame of the media event.")]
+            [EditorDisplay("General"), EditorOrder(-10010), VisibleIf(nameof(UseFrames)), Tooltip("Start frame of the media event (in frames).")]
             public int StartFrame
             {
                 get => Media.StartFrame;
                 set => Media.StartFrame = value;
+            }
+
+            /// <summary>
+            /// Gets or sets the start frame of the media event (in seconds).
+            /// </summary>
+            [EditorDisplay("General"), EditorOrder(-10010), VisibleIf(nameof(UseFrames), true), Tooltip("Start frame of the media event (in seconds).")]
+            public float Start
+            {
+                get => Media.Start;
+                set => Media.Start = value;
             }
 
             /// <summary>
@@ -146,13 +156,17 @@ namespace FlaxEditor.GUI.Timeline
         public event Action DurationFramesChanged;
 
         /// <summary>
-        /// Gets the media start time in seconds.
+        /// Get or sets the media start time in seconds.
         /// </summary>
         /// <seealso cref="StartFrame"/>
-        public float Start => _startFrame / _timeline.FramesPerSecond;
+        public float Start
+        {
+            get => _startFrame / _timeline.FramesPerSecond;
+            set => StartFrame = (int)(value * _timeline.FramesPerSecond);
+        }
 
         /// <summary>
-        /// Get the media duration in seconds.
+        /// Get or sets the media duration in seconds.
         /// </summary>
         /// <seealso cref="DurationFrames"/>
         public float Duration
