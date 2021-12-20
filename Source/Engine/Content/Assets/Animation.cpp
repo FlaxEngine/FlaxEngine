@@ -120,7 +120,7 @@ void Animation::LoadTimeline(BytesContainer& result) const
     MemoryWriteStream stream(4096);
 
     // Version
-    stream.WriteInt32(3);
+    stream.WriteInt32(4);
 
     // Meta
     float fps = (float)Data.FramesPerSecond;
@@ -230,108 +230,111 @@ bool Animation::SaveTimeline(BytesContainer& data)
         LOG(Error, "Asset loading failed. Cannot save it.");
         return true;
     }
-
     ScopeLock lock(Locker);
-
     MemoryReadStream stream(data.Get(), data.Length());
 
     // Version
     int32 version;
     stream.ReadInt32(&version);
-    if (version != 3)
+    switch (version)
     {
-        LOG(Error, "Unknown timeline data version {0}.", version);
-        return true;
-    }
-
-    // Meta
-    float fps;
-    stream.ReadFloat(&fps);
-    Data.FramesPerSecond = static_cast<double>(fps);
-    int32 duration;
-    stream.ReadInt32(&duration);
-    Data.Duration = static_cast<double>(duration);
-    int32 tracksCount;
-    stream.ReadInt32(&tracksCount);
-
-    // Tracks
-    Data.Channels.Clear();
-    Dictionary<int32, int32> animationChannelTrackIndexToChannelIndex;
-    animationChannelTrackIndexToChannelIndex.EnsureCapacity(tracksCount * 3);
-    for (int32 trackIndex = 0; trackIndex < tracksCount; trackIndex++)
+    case 3: // [Deprecated on 03.09.2021 expires on 03.09.2023]
+    case 4:
     {
-        const byte trackType = stream.ReadByte();
-        const byte trackFlags = stream.ReadByte();
-        int32 parentIndex, childrenCount;
-        stream.ReadInt32(&parentIndex);
-        stream.ReadInt32(&childrenCount);
-        String name;
-        stream.ReadString(&name, -13);
-        Color32 color;
-        stream.Read(&color);
-        switch (trackType)
+        // Meta
+        float fps;
+        stream.ReadFloat(&fps);
+        Data.FramesPerSecond = static_cast<double>(fps);
+        int32 duration;
+        stream.ReadInt32(&duration);
+        Data.Duration = static_cast<double>(duration);
+        int32 tracksCount;
+        stream.ReadInt32(&tracksCount);
+
+        // Tracks
+        Data.Channels.Clear();
+        Dictionary<int32, int32> animationChannelTrackIndexToChannelIndex;
+        animationChannelTrackIndexToChannelIndex.EnsureCapacity(tracksCount * 3);
+        for (int32 trackIndex = 0; trackIndex < tracksCount; trackIndex++)
         {
-        case 17:
-        {
-            // Animation Channel track
-            const int32 channelIndex = Data.Channels.Count();
-            animationChannelTrackIndexToChannelIndex[trackIndex] = channelIndex;
-            auto& channel = Data.Channels.AddOne();
-            channel.NodeName = name;
-            break;
-        }
-        case 18:
-        {
-            // Animation Channel Data track
-            const byte type = stream.ReadByte();
-            int32 keyframesCount;
-            stream.ReadInt32(&keyframesCount);
-            int32 channelIndex;
-            if (!animationChannelTrackIndexToChannelIndex.TryGet(parentIndex, channelIndex))
+            const byte trackType = stream.ReadByte();
+            const byte trackFlags = stream.ReadByte();
+            int32 parentIndex, childrenCount;
+            stream.ReadInt32(&parentIndex);
+            stream.ReadInt32(&childrenCount);
+            String name;
+            stream.ReadString(&name, -13);
+            Color32 color;
+            stream.Read(&color);
+            switch (trackType)
             {
-                LOG(Error, "Invalid animation channel data track parent linkage.");
+            case 17:
+            {
+                // Animation Channel track
+                const int32 channelIndex = Data.Channels.Count();
+                animationChannelTrackIndexToChannelIndex[trackIndex] = channelIndex;
+                auto& channel = Data.Channels.AddOne();
+                channel.NodeName = name;
+                break;
+            }
+            case 18:
+            {
+                // Animation Channel Data track
+                const byte type = stream.ReadByte();
+                int32 keyframesCount;
+                stream.ReadInt32(&keyframesCount);
+                int32 channelIndex;
+                if (!animationChannelTrackIndexToChannelIndex.TryGet(parentIndex, channelIndex))
+                {
+                    LOG(Error, "Invalid animation channel data track parent linkage.");
+                    return true;
+                }
+                auto& channel = Data.Channels[channelIndex];
+                switch (type)
+                {
+                case 0:
+                    channel.Position.Resize(keyframesCount);
+                    for (int32 i = 0; i < keyframesCount; i++)
+                    {
+                        LinearCurveKeyframe<Vector3>& k = channel.Position.GetKeyframes()[i];
+                        stream.ReadFloat(&k.Time);
+                        k.Time *= fps;
+                        stream.Read(&k.Value);
+                    }
+                    break;
+                case 1:
+                    channel.Rotation.Resize(keyframesCount);
+                    for (int32 i = 0; i < keyframesCount; i++)
+                    {
+                        LinearCurveKeyframe<Quaternion>& k = channel.Rotation.GetKeyframes()[i];
+                        stream.ReadFloat(&k.Time);
+                        k.Time *= fps;
+                        stream.Read(&k.Value);
+                    }
+                    break;
+                case 2:
+                    channel.Scale.Resize(keyframesCount);
+                    for (int32 i = 0; i < keyframesCount; i++)
+                    {
+                        LinearCurveKeyframe<Vector3>& k = channel.Scale.GetKeyframes()[i];
+                        stream.ReadFloat(&k.Time);
+                        k.Time *= fps;
+                        stream.Read(&k.Value);
+                    }
+                    break;
+                }
+                break;
+            }
+            default:
+                LOG(Error, "Unsupported track type {0} for animation.", trackType);
                 return true;
             }
-            auto& channel = Data.Channels[channelIndex];
-            switch (type)
-            {
-            case 0:
-                channel.Position.Resize(keyframesCount);
-                for (int32 i = 0; i < keyframesCount; i++)
-                {
-                    LinearCurveKeyframe<Vector3>& k = channel.Position.GetKeyframes()[i];
-                    stream.ReadFloat(&k.Time);
-                    k.Time *= fps;
-                    stream.Read(&k.Value);
-                }
-                break;
-            case 1:
-                channel.Rotation.Resize(keyframesCount);
-                for (int32 i = 0; i < keyframesCount; i++)
-                {
-                    LinearCurveKeyframe<Quaternion>& k = channel.Rotation.GetKeyframes()[i];
-                    stream.ReadFloat(&k.Time);
-                    k.Time *= fps;
-                    stream.Read(&k.Value);
-                }
-                break;
-            case 2:
-                channel.Scale.Resize(keyframesCount);
-                for (int32 i = 0; i < keyframesCount; i++)
-                {
-                    LinearCurveKeyframe<Vector3>& k = channel.Scale.GetKeyframes()[i];
-                    stream.ReadFloat(&k.Time);
-                    k.Time *= fps;
-                    stream.Read(&k.Value);
-                }
-                break;
-            }
-            break;
         }
-        default:
-            LOG(Error, "Unsupported track type {0} for animation.", trackType);
-            return true;
-        }
+        break;
+    }
+    default:
+        LOG(Warning, "Unknown timeline version {0}.", version);
+        return true;
     }
     if (stream.GetLength() != stream.GetPosition())
     {
