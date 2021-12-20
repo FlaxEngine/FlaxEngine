@@ -1,12 +1,12 @@
 // Copyright (c) 2012-2020 Flax Engine. All rights reserved.
 
+#define USE_STD
+
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using Flax.Build;
-using Ionic.Zip;
-using Ionic.Zlib;
 
 namespace Flax.Deploy
 {
@@ -140,15 +140,17 @@ namespace Flax.Deploy
                 {
                     editorPackageZipPath = Path.Combine(Deployer.PackageOutputPath, "Editor.zip");
                     Utilities.FileDelete(editorPackageZipPath);
-                    using (ZipFile zip = new ZipFile())
+#if USE_STD
+                    System.IO.Compression.ZipFile.CreateFromDirectory(OutputPath, editorPackageZipPath, System.IO.Compression.CompressionLevel.Optimal, false);
+#else
+                    using (var zip = new Ionic.Zip.ZipFile())
                     {
                         zip.AddDirectory(OutputPath);
-
-                        zip.CompressionLevel = CompressionLevel.BestCompression;
+                        zip.CompressionLevel = Ionic.Zlib.CompressionLevel.BestCompression;
                         zip.Comment = string.Format("Flax Editor {0}.{1}.{2}\nDate: {3}", Deployer.VersionMajor, Deployer.VersionMinor, Deployer.VersionBuild, DateTime.UtcNow);
-
                         zip.Save(editorPackageZipPath);
                     }
+#endif
                 }
                 Log.Info("Compressed editor package size: " + Utilities.GetFileSize(editorPackageZipPath));
 
@@ -157,15 +159,17 @@ namespace Flax.Deploy
                     Log.Info("Compressing editor debug symbols files...");
                     editorPackageZipPath = Path.Combine(Deployer.PackageOutputPath, "EditorDebugSymbols.zip");
                     Utilities.FileDelete(editorPackageZipPath);
-                    using (ZipFile zip = new ZipFile())
+#if USE_STD
+                    System.IO.Compression.ZipFile.CreateFromDirectory(Path.Combine(Deployer.PackageOutputPath, "EditorDebugSymbols"), editorPackageZipPath, System.IO.Compression.CompressionLevel.Optimal, false);
+#else
+                    using (var zip = new Ionic.Zip.ZipFile())
                     {
                         zip.AddDirectory(Path.Combine(Deployer.PackageOutputPath, "EditorDebugSymbols"));
-
-                        zip.CompressionLevel = CompressionLevel.BestCompression;
+                        zip.CompressionLevel = Ionic.Zlib.CompressionLevel.BestCompression;
                         zip.Comment = string.Format("Flax Editor {0}.{1}.{2}\nDate: {3}", Deployer.VersionMajor, Deployer.VersionMinor, Deployer.VersionBuild, DateTime.UtcNow);
-
                         zip.Save(editorPackageZipPath);
                     }
+#endif
                     Log.Info("Compressed editor debug symbols package size: " + Utilities.GetFileSize(editorPackageZipPath));
                 }
 
