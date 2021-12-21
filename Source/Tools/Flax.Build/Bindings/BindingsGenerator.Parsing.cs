@@ -324,6 +324,11 @@ namespace Flax.Build.Bindings
                 // Read parameter type and name
                 currentParam.Type = ParseType(ref context);
                 currentParam.Name = context.Tokenizer.ExpectToken(TokenType.Identifier).Value;
+                if (currentParam.IsOut && (currentParam.Type.IsPtr || currentParam.Type.IsRef) && currentParam.Type.Type.EndsWith("*"))
+                {
+                    // Pointer to value passed as output pointer
+                    currentParam.Type.Type = currentParam.Type.Type.Remove(currentParam.Type.Type.Length - 1);
+                }
 
                 // Read what's next
                 token = context.Tokenizer.NextToken();

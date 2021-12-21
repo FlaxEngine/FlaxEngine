@@ -47,6 +47,7 @@ namespace Flax.Build.Bindings
             { "VariantType", "System.Type" },
 
             // Mono types
+            { "MObject", "object" },
             { "MonoObject", "object" },
             { "MonoReflectionType", "System.Type" },
             { "MonoType", "IntPtr" },
