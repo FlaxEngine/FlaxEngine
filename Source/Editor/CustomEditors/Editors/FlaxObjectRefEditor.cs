@@ -191,7 +191,7 @@ namespace FlaxEditor.CustomEditors.Editors
             var button2Rect = new Rectangle(button1Rect.Right + 2, 1, 14, 14);
 
             // Draw frame
-            Render2D.DrawRectangle(frameRect, isEnabled && IsMouseOver ? style.BorderHighlighted : style.BorderNormal);
+            Render2D.DrawRectangle(frameRect, isEnabled && (IsMouseOver || IsNavFocused) ? style.BorderHighlighted : style.BorderNormal);
 
             // Check if has item selected
             if (isSelected)
@@ -329,6 +329,16 @@ namespace FlaxEditor.CustomEditors.Editors
             }
 
             return base.OnMouseDoubleClick(location, button);
+        }
+
+        /// <inheritdoc />
+        public override void OnSubmit()
+        {
+            base.OnSubmit();
+
+            // Picker dropdown menu
+            if (_supportsPickDropDown)
+                ShowDropDownMenu();
         }
 
         private void DoDrag()

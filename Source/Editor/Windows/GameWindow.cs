@@ -324,11 +324,14 @@ namespace FlaxEditor.Windows
         protected override bool CanOpenContentFinder => false;
 
         /// <inheritdoc />
+        protected override bool CanUseNavigation => false;
+
+        /// <inheritdoc />
         public override void OnPlayBegin()
         {
             _gameStartTime = Time.UnscaledGameTime;
         }
-        
+
         /// <inheritdoc />
         public override void OnPlayEnd()
         {
@@ -531,6 +534,22 @@ namespace FlaxEditor.Windows
 
             // Restore cursor visibility (could be hidden by the game)
             Screen.CursorVisible = true;
+        }
+
+        /// <inheritdoc />
+        public override Control OnNavigate(NavDirection direction, Vector2 location, Control caller, System.Collections.Generic.List<Control> visited)
+        {
+            // Block leaking UI navigation focus outside the game window
+            if (IsFocused && caller != this)
+            {
+                // Pick the first UI control if game UI is not focused yet
+                foreach (var child in _guiRoot.Children)
+                {
+                    if (child.Visible)
+                        return child.OnNavigate(direction, Vector2.Zero, this, visited);
+                }
+            }
+            return null;
         }
 
         /// <inheritdoc />

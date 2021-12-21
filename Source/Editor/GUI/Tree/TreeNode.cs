@@ -1104,6 +1104,15 @@ namespace FlaxEditor.GUI.Tree
         }
 
         /// <inheritdoc />
+        protected override bool CanNavigateChild(Control child)
+        {
+            // Closed tree node skips navigation for hidden children
+            if (IsCollapsed && child is TreeNode)
+                return false;
+            return base.CanNavigateChild(child);
+        }
+
+        /// <inheritdoc />
         protected override void OnParentChangedInternal()
         {
             _tree = null;

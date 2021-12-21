@@ -34,7 +34,6 @@ namespace FlaxEditor.GUI.Dialogs
         private Color _value;
         private bool _disableEvents;
         private bool _useDynamicEditing;
-        private bool _isClosing;
         private ColorValueBox.ColorPickerEvent _onChanged;
         private ColorValueBox.ColorPickerClosedEvent _onClosed;
 
@@ -139,7 +138,7 @@ namespace FlaxEditor.GUI.Dialogs
             _cBlue.ValueChanged += OnRGBAChanged;
 
             // Alpha
-            _cAlpha = new FloatValueBox(0, _cRed.X, _cBlue.Bottom + ChannelsMargin, _cRed.Width, 0, float.MaxValue, 0.001f) 
+            _cAlpha = new FloatValueBox(0, _cRed.X, _cBlue.Bottom + ChannelsMargin, _cRed.Width, 0, float.MaxValue, 0.001f)
             {
                 Parent = this
             };
@@ -183,7 +182,7 @@ namespace FlaxEditor.GUI.Dialogs
                 Text = "Cancel",
                 Parent = this
             };
-            _cCancel.Clicked += OnCancelClicked;
+            _cCancel.Clicked += OnCancel;
 
             // OK
             _cOK = new Button(_cCancel.Left - ButtonsWidth - PickerMargin, _cCancel.Y, ButtonsWidth)
@@ -191,40 +190,10 @@ namespace FlaxEditor.GUI.Dialogs
                 Text = "Ok",
                 Parent = this
             };
-            _cOK.Clicked += OnOkClicked;
+            _cOK.Clicked += OnSubmit;
 
             // Set initial color
             SelectedColor = initialValue;
-        }
-
-        private void OnOkClicked()
-        {
-            if (_isClosing)
-                return;
-            _isClosing = true;
-
-            // Send color event if modified
-            if (_value != _initialValue)
-            {
-                _onChanged?.Invoke(_value, false);
-            }
-
-            Close(DialogResult.OK);
-        }
-
-        private void OnCancelClicked()
-        {
-            if (_isClosing)
-                return;
-            _isClosing = true;
-
-            // Restore color if modified
-            if (_useDynamicEditing && _initialValue != _value)
-            {
-                _onChanged?.Invoke(_initialValue, false);
-            }
-
-            Close(DialogResult.Cancel);
         }
 
         private void OnRGBAChanged()
@@ -300,9 +269,41 @@ namespace FlaxEditor.GUI.Dialogs
         protected override void OnShow()
         {
             // Auto cancel on lost focus
-            ((WindowRootControl)Root).Window.LostFocus += OnCancelClicked;
+            ((WindowRootControl)Root).Window.LostFocus += OnCancel;
 
             base.OnShow();
+        }
+
+        /// <inheritdoc />
+        public override void OnSubmit()
+        {
+            if (_disableEvents)
+                return;
+            _disableEvents = true;
+
+            // Send color event if modified
+            if (_value != _initialValue)
+            {
+                _onChanged?.Invoke(_value, false);
+            }
+
+            base.OnSubmit();
+        }
+
+        /// <inheritdoc />
+        public override void OnCancel()
+        {
+            if (_disableEvents)
+                return;
+            _disableEvents = true;
+
+            // Restore color if modified
+            if (_useDynamicEditing && _initialValue != _value)
+            {
+                _onChanged?.Invoke(_initialValue, false);
+            }
+
+            base.OnCancel();
         }
 
         /// <inheritdoc />
@@ -316,7 +317,7 @@ namespace FlaxEditor.GUI.Dialogs
         /// <inheritdoc />
         public void ClosePicker()
         {
-            OnCancelClicked();
+            OnCancel();
         }
     }
 }

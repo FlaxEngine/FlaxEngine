@@ -325,7 +325,7 @@ namespace FlaxEditor.Modules
                 });
             }
         }
-        
+
         /// <inheritdoc />
         public override void OnUpdate()
         {

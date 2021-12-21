@@ -221,6 +221,14 @@ namespace FlaxEditor.GUI.Dialogs
         }
 
         /// <summary>
+        /// Called to cancel action and close the dialog.
+        /// </summary>
+        public virtual void OnCancel()
+        {
+            Close(DialogResult.Cancel);
+        }
+
+        /// <summary>
         /// Closes dialog with the specified result.
         /// </summary>
         /// <param name="result">The result.</param>
@@ -243,6 +251,7 @@ namespace FlaxEditor.GUI.Dialogs
         /// </summary>
         protected virtual void OnShow()
         {
+            Focus();
         }
 
         /// <summary>
@@ -253,6 +262,38 @@ namespace FlaxEditor.GUI.Dialogs
         protected virtual bool CanCloseWindow(ClosingReason reason)
         {
             return true;
+        }
+
+        /// <inheritdoc />
+        public override void OnSubmit()
+        {
+            base.OnSubmit();
+
+            Close(DialogResult.OK);
+        }
+
+        /// <inheritdoc />
+        public override bool OnKeyDown(KeyboardKeys key)
+        {
+            if (base.OnKeyDown(key))
+                return true;
+
+            switch (key)
+            {
+            case KeyboardKeys.Return:
+                if (Root?.FocusedControl != null)
+                    Root.SubmitFocused();
+                else
+                    OnSubmit();
+                return true;
+            case KeyboardKeys.Escape:
+                OnCancel();
+                return true;
+            case KeyboardKeys.Tab:
+                Root?.Navigate(NavDirection.Next);
+                return true;
+            }
+            return false;
         }
     }
 }

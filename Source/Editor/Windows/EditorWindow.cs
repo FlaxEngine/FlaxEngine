@@ -25,6 +25,11 @@ namespace FlaxEditor.Windows
         protected virtual bool CanOpenContentFinder => true;
 
         /// <summary>
+        /// Gets a value indicating whether this window can use UI navigation (tab/enter).
+        /// </summary>
+        protected virtual bool CanUseNavigation => true;
+
+        /// <summary>
         /// Initializes a new instance of the <see cref="EditorWindow"/> class.
         /// </summary>
         /// <param name="editor">The editor.</param>
@@ -183,6 +188,32 @@ namespace FlaxEditor.Windows
         }
 
         #endregion
+
+        /// <inheritdoc />
+        public override bool OnKeyDown(KeyboardKeys key)
+        {
+            if (base.OnKeyDown(key))
+                return true;
+
+            switch (key)
+            {
+            case KeyboardKeys.Return:
+                if (CanUseNavigation && Root?.FocusedControl != null)
+                {
+                    Root.SubmitFocused();
+                    return true;
+                }
+                break;
+            case KeyboardKeys.Tab:
+                if (CanUseNavigation && Root != null)
+                {
+                    Root.Navigate(NavDirection.Next);
+                    return true;
+                }
+                break;
+            }
+            return false;
+        }
 
         /// <inheritdoc />
         public override void OnDestroy()

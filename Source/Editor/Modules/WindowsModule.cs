@@ -527,7 +527,7 @@ namespace FlaxEditor.Modules
                     Text = "OK",
                     Parent = this,
                 };
-                okButton.Clicked += OnOk;
+                okButton.Clicked += OnSubmit;
 
                 var cancelButton = new Button(okButton.Left - 54, okButton.Y, 50)
                 {
@@ -539,7 +539,8 @@ namespace FlaxEditor.Modules
                 _dialogSize = okButton.BottomRight + new Vector2(8);
             }
 
-            private void OnOk()
+            /// <inheritdoc />
+            public override void OnSubmit()
             {
                 var name = _textbox.Text;
                 if (name.Length == 0)
@@ -553,31 +554,10 @@ namespace FlaxEditor.Modules
                     return;
                 }
 
-                Close(DialogResult.OK);
+                base.OnSubmit();
 
                 var path = StringUtils.CombinePaths(Globals.ProjectCacheFolder, "Layout_" + name + ".xml");
                 Editor.Instance.Windows.SaveLayout(path);
-            }
-
-            private void OnCancel()
-            {
-                Close(DialogResult.Cancel);
-            }
-
-            /// <inheritdoc />
-            public override bool OnKeyDown(KeyboardKeys key)
-            {
-                switch (key)
-                {
-                case KeyboardKeys.Escape:
-                    OnCancel();
-                    return true;
-                case KeyboardKeys.Return:
-                    OnOk();
-                    return true;
-                }
-
-                return base.OnKeyDown(key);
             }
         }
 

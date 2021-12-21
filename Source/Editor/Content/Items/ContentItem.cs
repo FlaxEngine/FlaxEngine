@@ -613,6 +613,15 @@ namespace FlaxEditor.Content
         }
 
         /// <inheritdoc />
+        public override void NavigationFocus()
+        {
+            base.NavigationFocus();
+
+            if (IsFocused)
+                (Parent as ContentView)?.Select(this);
+        }
+
+        /// <inheritdoc />
         public override void Draw()
         {
             // Cache data
@@ -736,6 +745,15 @@ namespace FlaxEditor.Content
             }
 
             base.OnMouseLeave();
+        }
+
+        /// <inheritdoc />
+        public override void OnSubmit()
+        {
+            // Open
+            (Parent as ContentView).OnItemDoubleClick(this);
+
+            base.OnSubmit();
         }
 
         /// <inheritdoc />

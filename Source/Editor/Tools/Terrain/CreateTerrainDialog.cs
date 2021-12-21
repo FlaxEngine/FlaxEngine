@@ -117,7 +117,7 @@ namespace FlaxEditor.Tools.Terrain
                 Offsets = new Margin(-ButtonsWidth - ButtonsMargin, ButtonsWidth, -ButtonsHeight - ButtonsMargin, ButtonsHeight),
                 Parent = this
             };
-            importButton.Clicked += OnCreate;
+            importButton.Clicked += OnSubmit;
             var cancelButton = new Button
             {
                 Text = "Cancel",
@@ -201,12 +201,22 @@ namespace FlaxEditor.Tools.Terrain
             _isDone = true;
         }
 
-        private void OnCancel()
+        /// <inheritdoc />
+        public override void OnSubmit()
         {
             if (_isWorking)
                 return;
 
-            Close(DialogResult.Cancel);
+            base.OnSubmit();
+        }
+
+        /// <inheritdoc />
+        public override void OnCancel()
+        {
+            if (_isWorking)
+                return;
+
+            base.OnCancel();
         }
 
         /// <inheritdoc />
