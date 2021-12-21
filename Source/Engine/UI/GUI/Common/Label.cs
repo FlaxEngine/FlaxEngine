@@ -210,7 +210,7 @@ namespace FlaxEngine.GUI
             if (ClipText)
                 Render2D.PushClip(new Rectangle(Vector2.Zero, Size));
 
-            var color = IsMouseOver ? TextColorHighlighted : TextColor;
+            var color = IsMouseOver || IsNavFocused ? TextColorHighlighted : TextColor;
 
             if (!EnabledInHierarchy)
                 color *= 0.6f;

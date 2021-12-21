@@ -73,6 +73,7 @@ namespace FlaxEngine.GUI
         /// <param name="slotPadding">The slot padding.</param>
         public GridPanel(float slotPadding)
         {
+            AutoFocus = false;
             SlotPadding = new Margin(slotPadding);
             _cellsH = new[]
             {

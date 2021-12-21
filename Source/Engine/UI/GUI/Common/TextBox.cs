@@ -152,7 +152,7 @@ namespace FlaxEngine.GUI
 
             // Background
             Color backColor = BackgroundColor;
-            if (IsMouseOver)
+            if (IsMouseOver || IsNavFocused)
                 backColor = BackgroundSelectedColor;
             Render2D.FillRectangle(rect, backColor);
             Render2D.DrawRectangle(rect, IsFocused ? BorderSelectedColor : BorderColor);

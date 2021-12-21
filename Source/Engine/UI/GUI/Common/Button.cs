@@ -155,7 +155,7 @@ namespace FlaxEngine.GUI
         }
 
         /// <summary>
-        /// Called when mouse clicks the button.
+        /// Called when mouse or touch clicks the button.
         /// </summary>
         protected virtual void OnClick()
         {
@@ -164,7 +164,7 @@ namespace FlaxEngine.GUI
         }
 
         /// <summary>
-        /// Called when buttons starts to be pressed by the used (via mouse or touch).
+        /// Called when button starts to be pressed by the used (via mouse or touch).
         /// </summary>
         protected virtual void OnPressBegin()
         {
@@ -174,7 +174,7 @@ namespace FlaxEngine.GUI
         }
 
         /// <summary>
-        /// Called when buttons ends to be pressed by the used (via mouse or touch).
+        /// Called when button ends to be pressed by the used (via mouse or touch).
         /// </summary>
         protected virtual void OnPressEnd()
         {
@@ -215,7 +215,7 @@ namespace FlaxEngine.GUI
                 backgroundColor = BackgroundColorSelected;
                 borderColor = BorderColorSelected;
             }
-            else if (IsMouseOver)
+            else if (IsMouseOver || IsNavFocused)
             {
                 backgroundColor = BackgroundColorHighlighted;
                 borderColor = BorderColorHighlighted;
@@ -321,6 +321,14 @@ namespace FlaxEngine.GUI
             }
 
             base.OnLostFocus();
+        }
+
+        /// <inheritdoc />
+        public override void OnSubmit()
+        {
+            OnClick();
+
+            base.OnSubmit();
         }
     }
 }

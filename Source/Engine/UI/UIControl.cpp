@@ -73,6 +73,10 @@ void UIControl::Serialize(SerializeStream& stream, const void* otherObj)
     Actor::Serialize(stream, otherObj);
 
     SERIALIZE_GET_OTHER_OBJ(UIControl);
+    SERIALIZE_MEMBER(NavTargetUp, _navTargetUp);
+    SERIALIZE_MEMBER(NavTargetDown, _navTargetDown);
+    SERIALIZE_MEMBER(NavTargetLeft, _navTargetLeft);
+    SERIALIZE_MEMBER(NavTargetRight, _navTargetRight);
 
 #if !COMPILE_WITHOUT_CSHARP
     void* params[2];
@@ -123,6 +127,11 @@ void UIControl::Deserialize(DeserializeStream& stream, ISerializeModifier* modif
 {
     // Base
     Actor::Deserialize(stream, modifier);
+
+    DESERIALIZE_MEMBER(NavTargetUp, _navTargetUp);
+    DESERIALIZE_MEMBER(NavTargetDown, _navTargetDown);
+    DESERIALIZE_MEMBER(NavTargetLeft, _navTargetLeft);
+    DESERIALIZE_MEMBER(NavTargetRight, _navTargetRight);
 
 #if !COMPILE_WITHOUT_CSHARP
     MonoReflectionType* typeObj = nullptr;
@@ -212,3 +221,23 @@ void UIControl::OnActiveInTreeChanged()
     // Base
     Actor::OnActiveInTreeChanged();
 }
+
+#if !COMPILE_WITHOUT_CSHARP
+
+void UIControl::GetNavTargets(UIControl*& up, UIControl*& down, UIControl*& left, UIControl*& right) const
+{
+    up = _navTargetUp;
+    down = _navTargetDown;
+    left = _navTargetLeft;
+    right = _navTargetRight;
+}
+
+void UIControl::SetNavTargets(UIControl* up, UIControl* down, UIControl* left, UIControl* right)
+{
+    _navTargetUp = up;
+    _navTargetDown = down;
+    _navTargetLeft = left;
+    _navTargetRight = right;
+}
+
+#endif

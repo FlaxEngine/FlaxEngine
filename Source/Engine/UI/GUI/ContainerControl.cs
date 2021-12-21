@@ -491,6 +491,153 @@ namespace FlaxEngine.GUI
             return child.IntersectsContent(ref location, out childSpaceLocation);
         }
 
+        #region Navigation
+
+        /// <inheritdoc />
+        public override Control OnNavigate(NavDirection direction, Vector2 location, Control caller, List<Control> visited)
+        {
+            // Try to focus itself first (only if navigation focus can enter this container)
+            if (AutoFocus && !ContainsFocus)
+                return this;
+
+            // Try to focus children
+            if (_children.Count != 0 && !visited.Contains(this))
+            {
+                visited.Add(this);
+
+                // Perform automatic navigation based on the layout
+                var result = NavigationRaycast(direction, location, visited);
+                if (result == null && direction == NavDirection.Next)
+                {
+                    // Try wrap the navigation over the layout based on the direction
+                    var visitedWrap = new List<Control>(visited);
+                    result = NavigationWrap(direction, location, visitedWrap);
+                }
+                if (result != null)
+                {
+                    result = result.OnNavigate(direction, result.PointFromParent(location), this, visited);
+                    if (result != null)
+                        return result;
+                }
+            }
+
+            // Try to focus itself
+            if (AutoFocus && !IsFocused || caller == this)
+                return this;
+
+            // Route navigation to parent
+            var parent = Parent;
+            if (AutoFocus && Visible)
+            {
+                // Focusable container controls use own nav origin instead of the provided one
+                location = GetNavOrigin(direction);
+            }
+            return parent?.OnNavigate(direction, PointToParent(location), caller, visited);
+        }
+
+        /// <summary>
+        /// Checks if this container control can more with focus navigation into the given child control.
+        /// </summary>
+        /// <param name="child">The child.</param>
+        /// <returns>True if can navigate to it, otherwise false.</returns>
+        protected virtual bool CanNavigateChild(Control child)
+        {
+            return !child.IsFocused && child.Enabled && child.Visible && CanGetAutoFocus(child);
+        }
+
+        /// <summary>
+        /// Wraps the navigation over the layout.
+        /// </summary>
+        /// <param name="direction">The navigation direction.</param>
+        /// <param name="location">The navigation start location (in the control-space).</param>
+        /// <param name="visited">The list with visited controls. Used to skip recursive navigation calls when doing traversal across the UI hierarchy.</param>
+        /// <returns>The target navigation control or null if didn't performed any navigation.</returns>
+        protected virtual Control NavigationWrap(NavDirection direction, Vector2 location, List<Control> visited)
+        {
+            // This searches form a child that calls this navigation event (see Control.OnNavigate) to determinate the layout wrapping size based on that child size
+            var currentChild = RootWindow?.FocusedControl;
+            visited.Add(this);
+            if (currentChild != null)
+            {
+                var layoutSize = currentChild.Size;
+                var predictedLocation = Vector2.Minimum;
+                switch (direction)
+                {
+                case NavDirection.Next:
+                    predictedLocation = new Vector2(0, location.Y + layoutSize.Y);
+                    break;
+                }
+                if (new Rectangle(Vector2.Zero, Size).Contains(ref predictedLocation))
+                {
+                    var result = NavigationRaycast(direction, predictedLocation, visited);
+                    if (result != null)
+                        return result;
+                }
+            }
+            return Parent?.NavigationWrap(direction, PointToParent(ref location), visited);
+        }
+
+        private static bool CanGetAutoFocus(Control c)
+        {
+            if (c.AutoFocus)
+                return true;
+            if (c is ContainerControl cc)
+            {
+                for (int i = 0; i < cc.Children.Count; i++)
+                {
+                    if (cc.CanNavigateChild(cc.Children[i]))
+                        return true;
+                }
+            }
+            return false;
+        }
+
+        private Control NavigationRaycast(NavDirection direction, Vector2 location, List<Control> visited)
+        {
+            Vector2 uiDir1 = Vector2.Zero, uiDir2 = Vector2.Zero;
+            switch (direction)
+            {
+            case NavDirection.Up:
+                uiDir1 = uiDir2 = new Vector2(0, -1);
+                break;
+            case NavDirection.Down:
+                uiDir1 = uiDir2 = new Vector2(0, 1);
+                break;
+            case NavDirection.Left:
+                uiDir1 = uiDir2 = new Vector2(-1, 0);
+                break;
+            case NavDirection.Right:
+                uiDir1 = uiDir2 = new Vector2(1, 0);
+                break;
+            case NavDirection.Next:
+                uiDir1 = new Vector2(1, 0);
+                uiDir2 = new Vector2(0, 1);
+                break;
+            }
+            Control result = null;
+            var minDistance = float.MaxValue;
+            for (var i = 0; i < _children.Count; i++)
+            {
+                var child = _children[i];
+                if (!CanNavigateChild(child) || visited.Contains(child))
+                    continue;
+                var childNavLocation = child.Center;
+                var childBounds = child.Bounds;
+                var childNavDirection = Vector2.Normalize(childNavLocation - location);
+                var childNavCoherence1 = Vector2.Dot(ref uiDir1, ref childNavDirection);
+                var childNavCoherence2 = Vector2.Dot(ref uiDir2, ref childNavDirection);
+                var distance = Rectangle.Distance(childBounds, location);
+                if (childNavCoherence1 > Mathf.Epsilon && childNavCoherence2 > Mathf.Epsilon && distance < minDistance)
+                {
+                    minDistance = distance;
+                    result = child;
+                }
+            }
+            return result;
+        }
+
+        #endregion
+
         /// <summary>
         /// Update contain focus state and all it's children
         /// </summary>
@@ -501,10 +648,10 @@ namespace FlaxEngine.GUI
 
             for (int i = 0; i < _children.Count; i++)
             {
-                if (_children[i] is ContainerControl child)
+                var control = _children[i];
+                if (control is ContainerControl child)
                     child.UpdateContainsFocus();
-
-                if (_children[i].ContainsFocus)
+                if (control.ContainsFocus)
                     result = true;
             }
 

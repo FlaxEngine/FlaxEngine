@@ -560,5 +560,14 @@ namespace FlaxEngine.GUI
         {
             Arrange();
         }
+
+        /// <inheritdoc />
+        protected override bool CanNavigateChild(Control child)
+        {
+            // Closed panel skips navigation for hidden children
+            if (IsClosed && child.IsScrollable)
+                return false;
+            return base.CanNavigateChild(child);
+        }
     }
 }

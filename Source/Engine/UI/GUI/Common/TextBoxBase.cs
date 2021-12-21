@@ -431,7 +431,6 @@ namespace FlaxEngine.GUI
             _isMultiline = isMultiline;
             _maxLength = 2147483646;
             _selectionStart = _selectionEnd = -1;
-            AutoFocus = false;
 
             var style = Style.Current;
             CaretColor = style.Foreground;
@@ -1016,6 +1015,28 @@ namespace FlaxEngine.GUI
         }
 
         /// <inheritdoc />
+        public override void NavigationFocus()
+        {
+            base.NavigationFocus();
+
+            if (IsNavFocused)
+                SelectAll();
+        }
+
+        /// <inheritdoc />
+        public override void OnSubmit()
+        {
+            OnEditEnd();
+            if (IsNavFocused)
+            {
+                OnEditBegin();
+                SelectAll();
+            }
+
+            base.OnSubmit();
+        }
+
+        /// <inheritdoc />
         public override void OnMouseMove(Vector2 location)
         {
             base.OnMouseMove(location);
@@ -1215,7 +1236,8 @@ namespace FlaxEngine.GUI
                 SetSelection(-1);
                 _text = _onStartEditValue;
 
-                Defocus();
+                if (!IsNavFocused)
+                    Defocus();
                 OnTextChanged();
 
                 return true;
@@ -1226,7 +1248,7 @@ namespace FlaxEngine.GUI
                     // Insert new line
                     Insert('\n');
                 }
-                else
+                else if (!IsNavFocused)
                 {
                     // End editing
                     Defocus();

@@ -181,6 +181,106 @@ namespace FlaxEngine
             }
         }
 
+        #region Navigation
+
+        /// <summary>
+        /// The explicitly specified target navigation control for <see cref="NavDirection.Up"/> direction.
+        /// </summary>
+        [Tooltip("The explicitly specified target navigation control for Up direction. Leave empty to use automatic navigation.")]
+        [EditorDisplay("Navigation"), EditorOrder(1010), VisibleIf(nameof(HasControl))]
+        public UIControl NavTargetUp
+        {
+            get
+            {
+                Internal_GetNavTargets(__unmanagedPtr, out UIControl up, out _, out _, out _);
+                return up;
+            }
+            set
+            {
+                Internal_GetNavTargets(__unmanagedPtr, out UIControl up, out UIControl down, out UIControl left, out UIControl right);
+                if (up == value)
+                    return;
+                up = value;
+                Internal_SetNavTargets(__unmanagedPtr, GetUnmanagedPtr(up), GetUnmanagedPtr(down), GetUnmanagedPtr(left), GetUnmanagedPtr(right));
+                if (_control != null)
+                    _control.NavTargetUp = value?.Control;
+            }
+        }
+
+        /// <summary>
+        /// The explicitly specified target navigation control for <see cref="NavDirection.Down"/> direction.
+        /// </summary>
+        [Tooltip("The explicitly specified target navigation control for Down direction. Leave empty to use automatic navigation.")]
+        [EditorDisplay("Navigation"), EditorOrder(1020), VisibleIf(nameof(HasControl))]
+        public UIControl NavTargetDown
+        {
+            get
+            {
+                Internal_GetNavTargets(__unmanagedPtr, out _, out UIControl down, out _, out _);
+                return down;
+            }
+            set
+            {
+                Internal_GetNavTargets(__unmanagedPtr, out UIControl up, out UIControl down, out UIControl left, out UIControl right);
+                if (down == value)
+                    return;
+                down = value;
+                Internal_SetNavTargets(__unmanagedPtr, GetUnmanagedPtr(up), GetUnmanagedPtr(down), GetUnmanagedPtr(left), GetUnmanagedPtr(right));
+                if (_control != null)
+                    _control.NavTargetDown = value?.Control;
+            }
+        }
+
+        /// <summary>
+        /// The explicitly specified target navigation control for <see cref="NavDirection.Left"/> direction.
+        /// </summary>
+        [Tooltip("The explicitly specified target navigation control for Left direction. Leave empty to use automatic navigation.")]
+        [EditorDisplay("Navigation"), EditorOrder(1030), VisibleIf(nameof(HasControl))]
+        public UIControl NavTargetLeft
+        {
+            get
+            {
+                Internal_GetNavTargets(__unmanagedPtr, out _, out _, out UIControl left, out _);
+                return left;
+            }
+            set
+            {
+                Internal_GetNavTargets(__unmanagedPtr, out UIControl up, out UIControl down, out UIControl left, out UIControl right);
+                if (left == value)
+                    return;
+                left = value;
+                Internal_SetNavTargets(__unmanagedPtr, GetUnmanagedPtr(up), GetUnmanagedPtr(down), GetUnmanagedPtr(left), GetUnmanagedPtr(right));
+                if (_control != null)
+                    _control.NavTargetLeft = value?.Control;
+            }
+        }
+
+        /// <summary>
+        /// The explicitly specified target navigation control for <see cref="NavDirection.Right"/> direction.
+        /// </summary>
+        [Tooltip("The explicitly specified target navigation control for Right direction. Leave empty to use automatic navigation.")]
+        [EditorDisplay("Navigation"), EditorOrder(1040), VisibleIf(nameof(HasControl))]
+        public UIControl NavTargetRight
+        {
+            get
+            {
+                Internal_GetNavTargets(__unmanagedPtr, out _, out _, out _, out UIControl right);
+                return right;
+            }
+            set
+            {
+                Internal_GetNavTargets(__unmanagedPtr, out UIControl up, out UIControl down, out UIControl left, out UIControl right);
+                if (right == value)
+                    return;
+                right = value;
+                Internal_SetNavTargets(__unmanagedPtr, GetUnmanagedPtr(up), GetUnmanagedPtr(down), GetUnmanagedPtr(left), GetUnmanagedPtr(right));
+                if (_control != null)
+                    _control.NavTargetRight = value?.Control;
+            }
+        }
+
+        #endregion
+
         private void OnControlLocationChanged(Control control)
         {
             _blockEvents = true;
@@ -353,6 +453,11 @@ namespace FlaxEngine
             {
                 _control.Parent = GetParent();
                 _control.IndexInParent = OrderInParent;
+                Internal_GetNavTargets(__unmanagedPtr, out UIControl up, out UIControl down, out UIControl left, out UIControl right);
+                _control.NavTargetUp = up?.Control;
+                _control.NavTargetDown = down?.Control;
+                _control.NavTargetLeft = left?.Control;
+                _control.NavTargetRight = right?.Control;
             }
         }
 

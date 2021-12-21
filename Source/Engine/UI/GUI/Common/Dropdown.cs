@@ -24,11 +24,57 @@ namespace FlaxEngine.GUI
             public Action LostFocus;
 
             /// <inheritdoc />
-            public override void OnLostFocus()
+            public override void OnEndContainsFocus()
             {
-                base.OnLostFocus();
+                base.OnEndContainsFocus();
 
-                LostFocus?.Invoke();
+                // Call event after this 'focus contains flag' propagation ends to prevent focus issues
+                if (LostFocus != null)
+                    Scripting.RunOnUpdate(LostFocus);
+            }
+
+            private static DropdownLabel FindItem(Control control)
+            {
+                if (control is DropdownLabel item)
+                    return item;
+                if (control is ContainerControl containerControl)
+                {
+                    foreach (var child in containerControl.Children)
+                    {
+                        item = FindItem(child);
+                        if (item != null)
+                            return item;
+                    }
+                }
+                return null;
+            }
+
+            /// <inheritdoc />
+            public override Control OnNavigate(NavDirection direction, Vector2 location, Control caller, List<Control> visited)
+            {
+                if (IsFocused)
+                {
+                    // Dropdown root is focused
+                    if (direction == NavDirection.Down)
+                    {
+                        // Pick the first item
+                        return FindItem(this);
+                    }
+
+                    // Close popup
+                    Defocus();
+                    return null;
+                }
+
+                return base.OnNavigate(direction, location, caller, visited);
+            }
+
+            /// <inheritdoc />
+            public override void OnSubmit()
+            {
+                Defocus();
+
+                base.OnSubmit();
             }
 
             /// <inheritdoc />
@@ -43,14 +89,13 @@ namespace FlaxEngine.GUI
         [HideInEditor]
         private class DropdownLabel : Label
         {
-            public int Index;
-            public Action<int> ItemClicked;
+            public Action<Label> ItemClicked;
 
             public override bool OnMouseDown(Vector2 location, MouseButton button)
             {
                 if (base.OnMouseDown(location, button))
                     return true;
-                ItemClicked?.Invoke(Index);
+                ItemClicked?.Invoke(this);
                 return true;
             }
 
@@ -58,8 +103,16 @@ namespace FlaxEngine.GUI
             {
                 if (base.OnTouchDown(location, pointerId))
                     return true;
-                ItemClicked?.Invoke(Index);
+                ItemClicked?.Invoke(this);
                 return true;
+            }
+
+            /// <inheritdoc />
+            public override void OnSubmit()
+            {
+                ItemClicked?.Invoke(this);
+
+                base.OnSubmit();
             }
 
             public override void OnDestroy()
@@ -81,6 +134,7 @@ namespace FlaxEngine.GUI
         protected DropdownRoot _popup;
 
         private bool _touchDown;
+        private bool _hadNavFocus;
 
         /// <summary>
         /// The selected index of the item (-1 for no selection).
@@ -229,8 +283,6 @@ namespace FlaxEngine.GUI
         public Dropdown()
         : base(0, 0, 120, 18.0f)
         {
-            AutoFocus = false;
-
             var style = Style.Current;
             Font = new FontReference(style.FontMedium);
             TextColor = style.Foreground;
@@ -346,8 +398,9 @@ namespace FlaxEngine.GUI
 
             for (int i = 0; i < _items.Count; i++)
             {
-                var item = new Spacer
+                var item = new ContainerControl
                 {
+                    AutoFocus = false,
                     Height = itemsHeight,
                     Width = itemsWidth,
                     Parent = container,
@@ -355,6 +408,7 @@ namespace FlaxEngine.GUI
 
                 var label = new DropdownLabel
                 {
+                    AutoFocus = true,
                     X = itemsMargin,
                     Size = new Vector2(itemsWidth - itemsMargin, itemsHeight),
                     Font = Font,
@@ -363,11 +417,11 @@ namespace FlaxEngine.GUI
                     HorizontalAlignment = TextAlignment.Near,
                     Text = _items[i],
                     Parent = item,
-                    Index = i,
+                    Tag = i,
                 };
-                label.ItemClicked += index =>
+                label.ItemClicked += c =>
                 {
-                    OnItemClicked(index);
+                    OnItemClicked((int)c.Tag);
                     DestroyPopup();
                 };
                 height += itemsHeight;
@@ -416,6 +470,10 @@ namespace FlaxEngine.GUI
                 OnPopupHide();
                 _popup.Dispose();
                 _popup = null;
+                if (_hadNavFocus)
+                    NavigationFocus();
+                else
+                    Focus();
             }
         }
 
@@ -430,6 +488,7 @@ namespace FlaxEngine.GUI
 
             // Setup popup
             DestroyPopup();
+            _hadNavFocus = IsNavFocused;
             _popup = CreatePopup();
             _popup.UnlockChildrenRecursive();
             _popup.PerformLayout();
@@ -488,7 +547,7 @@ namespace FlaxEngine.GUI
                 borderColor = BorderColorSelected;
                 arrowColor = ArrowColorSelected;
             }
-            else if (IsMouseOver)
+            else if (IsMouseOver || IsNavFocused)
             {
                 backgroundColor = BackgroundColorHighlighted;
                 borderColor = BorderColorHighlighted;
@@ -589,6 +648,14 @@ namespace FlaxEngine.GUI
             _touchDown = false;
 
             base.OnTouchLeave(pointerId);
+        }
+
+        /// <inheritdoc />
+        public override void OnSubmit()
+        {
+            ShowPopup();
+
+            base.OnSubmit();
         }
     }
 }

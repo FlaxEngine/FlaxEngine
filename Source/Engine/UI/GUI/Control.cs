@@ -51,7 +51,7 @@ namespace FlaxEngine.GUI
 
         private ContainerControl _parent;
         private RootControl _root;
-        private bool _isDisposing, _isFocused;
+        private bool _isDisposing, _isFocused, _isNavFocused;
 
         // State
 
@@ -456,9 +456,9 @@ namespace FlaxEngine.GUI
         #region Focus
 
         /// <summary>
-        /// Gets a value indicating whether the control can receive automatic focus on user events (eg. mouse down).
+        /// If checked, the control can receive automatic focus (eg. on user click or UI navigation).
         /// </summary>
-        [HideInEditor, NoSerialize]
+        [EditorOrder(512), Tooltip("If checked, the control can receive automatic focus (eg. on user click or UI navigation).")]
         public bool AutoFocus
         {
             get => _autoFocus;
@@ -473,7 +473,12 @@ namespace FlaxEngine.GUI
         /// <summary>
         /// Gets a value indicating whether the control has input focus
         /// </summary>
-        public virtual bool IsFocused => _isFocused;
+        public bool IsFocused => _isFocused;
+
+        /// <summary>
+        /// Gets a value indicating whether the control has UI navigation focus.
+        /// </summary>
+        public bool IsNavFocused => _isNavFocused;
 
         /// <summary>
         /// Sets input focus to the control
@@ -505,6 +510,7 @@ namespace FlaxEngine.GUI
         {
             // Cache flag
             _isFocused = true;
+            _isNavFocused = false;
         }
 
         /// <summary>
@@ -515,6 +521,7 @@ namespace FlaxEngine.GUI
         {
             // Clear flag
             _isFocused = false;
+            _isNavFocused = false;
         }
 
         /// <summary>
@@ -570,6 +577,118 @@ namespace FlaxEngine.GUI
         /// </summary>
         [NoAnimate]
         public virtual void OnEndMouseCapture()
+        {
+        }
+
+        #endregion
+
+        #region Navigation
+
+        /// <summary>
+        /// The explicitly specified target navigation control for <see cref="NavDirection.Up"/> direction.
+        /// </summary>
+        [HideInEditor, NoSerialize]
+        public Control NavTargetUp;
+
+        /// <summary>
+        /// The explicitly specified target navigation control for <see cref="NavDirection.Down"/> direction.
+        /// </summary>
+        [HideInEditor, NoSerialize]
+        public Control NavTargetDown;
+
+        /// <summary>
+        /// The explicitly specified target navigation control for <see cref="NavDirection.Left"/> direction.
+        /// </summary>
+        [HideInEditor, NoSerialize]
+        public Control NavTargetLeft;
+
+        /// <summary>
+        /// The explicitly specified target navigation control for <see cref="NavDirection.Right"/> direction.
+        /// </summary>
+        [HideInEditor, NoSerialize]
+        public Control NavTargetRight;
+
+        /// <summary>
+        /// Gets the next navigation control to focus for the given direction. Returns null for automated direction resolving.
+        /// </summary>
+        /// <param name="direction">The navigation direction.</param>
+        /// <returns>The target navigation control or null to use automatic navigation.</returns>
+        [NoAnimate]
+        public virtual Control GetNavTarget(NavDirection direction)
+        {
+            switch (direction)
+            {
+            case NavDirection.Up: return NavTargetUp;
+            case NavDirection.Down: return NavTargetDown;
+            case NavDirection.Left: return NavTargetLeft;
+            case NavDirection.Right: return NavTargetRight;
+            default: return null;
+            }
+        }
+
+        /// <summary>
+        /// Gets the navigation origin location for this control. It's the starting anchor point for searching navigable controls in the nearby area. By default the origin points are located on the control bounds edges.
+        /// </summary>
+        /// <param name="direction">The navigation direction.</param>
+        /// <returns>The navigation origin for the automatic navigation.</returns>
+        [NoAnimate]
+        public virtual Vector2 GetNavOrigin(NavDirection direction)
+        {
+            var size = Size;
+            switch (direction)
+            {
+            case NavDirection.Up: return new Vector2(size.X * 0.5f, 0);
+            case NavDirection.Down: return new Vector2(size.X * 0.5f, size.Y);
+            case NavDirection.Left: return new Vector2(0, size.Y * 0.5f);
+            case NavDirection.Right: return new Vector2(size.X, size.Y * 0.5f);
+            case NavDirection.Next: return Vector2.Zero;
+            default: return size * 0.5f;
+            }
+        }
+
+        /// <summary>
+        /// Performs the UI navigation for this control.
+        /// </summary>
+        /// <param name="direction">The navigation direction.</param>
+        /// <param name="location">The navigation start location (in the control-space).</param>
+        /// <param name="caller">The control that calls the event.</param>
+        /// <param name="visited">The list with visited controls. Used to skip recursive navigation calls when doing traversal across the UI hierarchy.</param>
+        /// <returns>The target navigation control or null if didn't performed any navigation.</returns>
+        public virtual Control OnNavigate(NavDirection direction, Vector2 location, Control caller, List<Control> visited)
+        {
+            if (caller == _parent && AutoFocus && Visible)
+                return this;
+            return _parent?.OnNavigate(direction, PointToParent(GetNavOrigin(direction)), caller, visited);
+        }
+
+        /// <summary>
+        /// Focuses the control by the UI navigation system. Called during navigating around UI with gamepad/keyboard navigation. Focuses the control and sets the <see cref="IsNavFocused"/> flag.
+        /// </summary>
+        public virtual void NavigationFocus()
+        {
+            Focus();
+            if (IsFocused)
+            {
+                _isNavFocused = true;
+
+                // Ensure to be in a view
+                var parent = Parent;
+                while (parent != null)
+                {
+                    if (parent is Panel panel && ((panel.VScrollBar != null && panel.VScrollBar.Enabled) || (panel.HScrollBar != null && panel.HScrollBar.Enabled)))
+                    {
+                        panel.ScrollViewTo(this);
+                        break;
+                    }
+                    parent = parent.Parent;
+                }
+            }
+        }
+
+        /// <summary>
+        /// Generic user interaction event for a control used by UI navigation (eg. user submits on the currently focused control).
+        /// </summary>
+        public virtual void OnSubmit()
         {
         }
 

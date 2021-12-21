@@ -32,9 +32,9 @@ namespace FlaxEngine.GUI
     public class CheckBox : Control
     {
         /// <summary>
-        /// The mouse is down.
+        /// True if checked is being pressed (by mouse or touch).
         /// </summary>
-        protected bool _mouseDown;
+        protected bool _isPressed;
 
         /// <summary>
         /// The current state.
@@ -186,6 +186,32 @@ namespace FlaxEngine.GUI
             _box = new Rectangle(0, (Height - _boxSize) * 0.5f, _boxSize, _boxSize);
         }
 
+        /// <summary>
+        /// Called when mouse or touch clicks the checkbox.
+        /// </summary>
+        protected virtual void OnClick()
+        {
+            Toggle();
+        }
+
+        /// <summary>
+        /// Called when checkbox starts to be pressed by the used (via mouse or touch).
+        /// </summary>
+        protected virtual void OnPressBegin()
+        {
+            _isPressed = true;
+            if (AutoFocus)
+                Focus();
+        }
+
+        /// <summary>
+        /// Called when checkbox ends to be pressed by the used (via mouse or touch).
+        /// </summary>
+        protected virtual void OnPressEnd()
+        {
+            _isPressed = false;
+        }
+
         /// <inheritdoc />
         public override void Draw()
         {
@@ -197,7 +223,7 @@ namespace FlaxEngine.GUI
             Color borderColor = BorderColor;
             if (!enabled)
                 borderColor *= 0.5f;
-            else if (_mouseDown || _mouseOverBox)
+            else if (_isPressed || _mouseOverBox || IsNavFocused)
                 borderColor = BorderColorHighlighted;
             Render2D.DrawRectangle(_box.MakeExpanded(-2.0f), borderColor);
 
@@ -226,11 +252,9 @@ namespace FlaxEngine.GUI
         /// <inheritdoc />
         public override bool OnMouseDown(Vector2 location, MouseButton button)
         {
-            if (button == MouseButton.Left)
+            if (button == MouseButton.Left && !_isPressed)
             {
-                // Set flag
-                _mouseDown = true;
-                Focus();
+                OnPressBegin();
                 return true;
             }
 
@@ -240,16 +264,12 @@ namespace FlaxEngine.GUI
         /// <inheritdoc />
         public override bool OnMouseUp(Vector2 location, MouseButton button)
         {
-            if (button == MouseButton.Left && _mouseDown)
+            if (button == MouseButton.Left && _isPressed)
             {
-                // Clear flag
-                _mouseDown = false;
-
-                // Check if mouse is still over the box
-                if (_mouseOverBox)
+                OnPressEnd();
+                if (_box.Contains(ref location))
                 {
-                    Toggle();
-                    Focus();
+                    OnClick();
                     return true;
                 }
             }
@@ -260,11 +280,57 @@ namespace FlaxEngine.GUI
         /// <inheritdoc />
         public override void OnMouseLeave()
         {
-            base.OnMouseLeave();
-
-            // Clear flags
+            if (_isPressed)
+                OnPressEnd();
             _mouseOverBox = false;
-            _mouseDown = false;
+
+            base.OnMouseLeave();
+        }
+
+        /// <inheritdoc />
+        public override bool OnTouchDown(Vector2 location, int pointerId)
+        {
+            if (!_isPressed)
+            {
+                OnPressBegin();
+                return true;
+            }
+
+            return base.OnTouchDown(location, pointerId);
+        }
+
+        /// <inheritdoc />
+        public override bool OnTouchUp(Vector2 location, int pointerId)
+        {
+            if (_isPressed)
+            {
+                OnPressEnd();
+                if (_box.Contains(ref location))
+                {
+                    OnClick();
+                    return true;
+                }
+            }
+
+            return base.OnTouchUp(location, pointerId);
+        }
+
+        /// <inheritdoc />
+        public override void OnTouchLeave()
+        {
+            if (_isPressed)
+                OnPressEnd();
+
+            base.OnTouchLeave();
+        }
+
+        /// <inheritdoc />
+        public override void OnLostFocus()
+        {
+            if (_isPressed)
+                OnPressEnd();
+
+            base.OnLostFocus();
         }
 
         /// <inheritdoc />
@@ -273,6 +339,14 @@ namespace FlaxEngine.GUI
             base.OnSizeChanged();
 
             CacheBox();
+        }
+
+        /// <inheritdoc />
+        public override void OnSubmit()
+        {
+            OnClick();
+
+            base.OnSubmit();
         }
     }
 }

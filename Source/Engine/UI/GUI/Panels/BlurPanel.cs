@@ -19,6 +19,7 @@ namespace FlaxEngine.GUI
         /// </summary>
         public BlurPanel()
         {
+            AutoFocus = false;
         }
 
         /// <inheritdoc />

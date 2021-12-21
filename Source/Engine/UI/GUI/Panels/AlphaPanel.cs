@@ -19,6 +19,14 @@ namespace FlaxEngine.GUI
         [EditorOrder(10), Tooltip("Whether or not we should ignore previous alphas.")]
         public bool IgnoreStack;
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="AlphaPanel"/> class.
+        /// </summary>
+        public AlphaPanel()
+        {
+            AutoFocus = false;
+        }
+
         /// <inheritdoc/>
         public override void Draw()
         {
