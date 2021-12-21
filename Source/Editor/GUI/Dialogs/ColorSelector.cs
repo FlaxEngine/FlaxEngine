@@ -47,6 +47,21 @@ namespace FlaxEditor.GUI.Dialogs
         }
 
         /// <summary>
+        /// Gets a value indicating whether user is using a wheel.
+        /// </summary>
+        public bool IsSliding => _isMouseDownWheel;
+
+        /// <summary>
+        /// Occurs when sliding starts.
+        /// </summary>
+        public event Action SlidingStart;
+
+        /// <summary>
+        /// Occurs when sliding ends.
+        /// </summary>
+        public event Action SlidingEnd;
+
+        /// <summary>
         /// Initializes a new instance of the <see cref="ColorSelector"/> class.
         /// </summary>
         public ColorSelector()
@@ -134,6 +149,15 @@ namespace FlaxEditor.GUI.Dialogs
             }
         }
 
+        private void EndSliding()
+        {
+            if (_isMouseDownWheel)
+            {
+                _isMouseDownWheel = false;
+                SlidingEnd?.Invoke();
+            }
+        }
+
         /// <inheritdoc />
         public override void Draw()
         {
@@ -155,8 +179,7 @@ namespace FlaxEditor.GUI.Dialogs
         /// <inheritdoc />
         public override void OnLostFocus()
         {
-            // Clear flags
-            _isMouseDownWheel = false;
+            EndSliding();
 
             base.OnLostFocus();
         }
@@ -174,8 +197,12 @@ namespace FlaxEditor.GUI.Dialogs
         {
             if (button == MouseButton.Left && _wheelRect.Contains(location))
             {
-                _isMouseDownWheel = true;
-                StartMouseCapture();
+                if (!_isMouseDownWheel)
+                {
+                    _isMouseDownWheel = true;
+                    StartMouseCapture();
+                    SlidingStart?.Invoke();
+                }
                 UpdateMouse(ref location);
             }
 
@@ -188,8 +215,8 @@ namespace FlaxEditor.GUI.Dialogs
         {
             if (button == MouseButton.Left && _isMouseDownWheel)
             {
-                _isMouseDownWheel = false;
                 EndMouseCapture();
+                EndSliding();
                 return true;
             }
 
@@ -199,8 +226,7 @@ namespace FlaxEditor.GUI.Dialogs
         /// <inheritdoc />
         public override void OnEndMouseCapture()
         {
-            // Clear flags
-            _isMouseDownWheel = false;
+            EndSliding();
         }
 
         /// <inheritdoc />

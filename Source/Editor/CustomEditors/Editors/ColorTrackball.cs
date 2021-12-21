@@ -44,6 +44,7 @@ namespace FlaxEditor.CustomEditors.Editors
             // Trackball
             _trackball = masterPanel.Custom<ColorSelector>();
             _trackball.CustomControl.ColorChanged += OnColorWheelChanged;
+            _trackball.CustomControl.SlidingEnd += ClearToken;
 
             // Scale editor
             {
@@ -73,6 +74,7 @@ namespace FlaxEditor.CustomEditors.Editors
             var element = layout.FloatValue();
             element.SetLimits(limit);
             element.FloatValue.ValueChanged += OnValueChanged;
+            element.FloatValue.SlidingEnd += ClearToken;
             var back = FlaxEngine.GUI.Style.Current.TextBoxBackground;
             var grayOutFactor = 0.6f;
             element.FloatValue.BorderColor = Color.Lerp(borderColor, back, grayOutFactor);
@@ -85,7 +87,10 @@ namespace FlaxEditor.CustomEditors.Editors
             if (IsSetBlocked)
                 return;
 
-            SetValue(new Vector4(color.R, color.G, color.B, _wElement.FloatValue.Value));
+            var isSliding = _trackball.CustomControl.IsSliding;
+            var token = isSliding ? this : null;
+            var value = new Vector4(color.R, color.G, color.B, _wElement.FloatValue.Value);
+            SetValue(value, token);
         }
 
         private void OnValueChanged()
@@ -93,11 +98,10 @@ namespace FlaxEditor.CustomEditors.Editors
             if (IsSetBlocked)
                 return;
 
-            SetValue(new Vector4(
-                         _xElement.FloatValue.Value,
-                         _yElement.FloatValue.Value,
-                         _zElement.FloatValue.Value,
-                         _wElement.FloatValue.Value));
+            var isSliding = _xElement.IsSliding || _yElement.IsSliding || _zElement.IsSliding || _wElement.IsSliding;
+            var token = isSliding ? this : null;
+            var value = new Vector4(_xElement.FloatValue.Value, _yElement.FloatValue.Value, _zElement.FloatValue.Value, _wElement.FloatValue.Value);
+            SetValue(value, token);
         }
 
         /// <inheritdoc />
