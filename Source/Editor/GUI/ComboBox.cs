@@ -548,6 +548,7 @@ namespace FlaxEditor.GUI
             {
                 _mouseDown = true;
                 Focus();
+                return true;
             }
 
             return base.OnMouseDown(location, button);
