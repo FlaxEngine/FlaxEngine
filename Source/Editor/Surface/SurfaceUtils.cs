@@ -437,12 +437,7 @@ namespace FlaxEditor.Surface
                 sb.Append("static ");
             else if (type.IsAbstract)
                 sb.Append("abstract ");
-            sb.Append(type.TypeName);
-
-            var attributes = type.GetAttributes(false);
-            var tooltipAttribute = (TooltipAttribute)attributes.FirstOrDefault(x => x is TooltipAttribute);
-            if (tooltipAttribute != null)
-                sb.Append("\n").Append(tooltipAttribute.Text);
+            sb.Append(Editor.Instance.CodeDocs.GetTooltip(type));
             return sb.ToString();
         }
 
@@ -502,10 +497,9 @@ namespace FlaxEditor.Surface
             }
 
             // Tooltip
-            var attributes = member.GetAttributes();
-            var tooltipAttribute = (TooltipAttribute)attributes.FirstOrDefault(x => x is TooltipAttribute);
-            if (tooltipAttribute != null)
-                sb.Append("\n").Append(tooltipAttribute.Text);
+            var tooltip = Editor.Instance.CodeDocs.GetTooltip(member);
+            if (!string.IsNullOrEmpty(tooltip))
+                sb.Append("\n").Append(tooltip);
 
             return sb.ToString();
         }

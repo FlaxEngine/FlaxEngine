@@ -447,10 +447,7 @@ namespace FlaxEditor.Windows.Assets
                             continue;
 
                         var cmButton = cm.AddButton($"{name} (in {member.DeclaringType.Name})");
-                        var attributes = member.GetAttributes(true);
-                        var tooltipAttribute = (TooltipAttribute)attributes.FirstOrDefault(x => x is TooltipAttribute);
-                        if (tooltipAttribute != null)
-                            cmButton.TooltipText = tooltipAttribute.Text;
+                        cmButton.TooltipText = Editor.Instance.CodeDocs.GetTooltip(member);
                         cmButton.Clicked += () =>
                         {
                             var surface = ((VisualScriptWindow)Values[0]).Surface;

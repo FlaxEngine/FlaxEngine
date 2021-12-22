@@ -142,9 +142,14 @@ namespace FlaxEditor
         public readonly ContentFindingModule ContentFinding;
 
         /// <summary>
-        /// The content editing
+        /// The scripts editing
         /// </summary>
         public readonly CodeEditingModule CodeEditing;
+
+        /// <summary>
+        /// The scripts documentation
+        /// </summary>
+        public readonly CodeDocsModule CodeDocs;
 
         /// <summary>
         /// The editor state machine.
@@ -237,6 +242,7 @@ namespace FlaxEditor
             RegisterModule(ContentDatabase = new ContentDatabaseModule(this));
             RegisterModule(ContentImporting = new ContentImportingModule(this));
             RegisterModule(CodeEditing = new CodeEditingModule(this));
+            RegisterModule(CodeDocs = new CodeDocsModule(this));
             RegisterModule(ProgressReporting = new ProgressReportingModule(this));
             RegisterModule(ContentFinding = new ContentFindingModule(this));
 

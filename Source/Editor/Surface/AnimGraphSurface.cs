@@ -164,11 +164,7 @@ namespace FlaxEditor.Surface
                         node.DefaultValues[0] = Activator.CreateInstance(scriptType.Type);
                         node.Flags &= ~NodeFlags.NoSpawnViaGUI;
                         node.Title = scriptTypeName;
-                        node.Description = scriptTypeTypeName;
-                        var attributes = scriptType.GetAttributes(false);
-                        var tooltipAttribute = (TooltipAttribute)attributes.FirstOrDefault(x => x is TooltipAttribute);
-                        if (tooltipAttribute != null)
-                            node.Description += "\n" + tooltipAttribute.Text;
+                        node.Description = Editor.Instance.CodeDocs.GetTooltip(scriptType);
 
                         // Create group archetype
                         var groupKey = new KeyValuePair<string, ushort>(scriptTypeName, 2);
@@ -211,17 +207,14 @@ namespace FlaxEditor.Surface
                             _cache.Add(groupKey, group);
                         }
 
-                        var attributes = scriptType.GetAttributes(false);
-                        var tooltipAttribute = (TooltipAttribute)attributes.FirstOrDefault(x => x is TooltipAttribute);
+                        var tooltip = Editor.Instance.CodeDocs.GetTooltip(scriptType);
 
                         // Create Pack node archetype
                         var node = (NodeArchetype)Archetypes.Packing.Nodes[6].Clone();
                         node.DefaultValues[0] = scriptTypeTypeName;
                         node.Flags &= ~NodeFlags.NoSpawnViaGUI;
                         node.Title = "Pack " + scriptTypeName;
-                        node.Description = scriptTypeTypeName;
-                        if (tooltipAttribute != null)
-                            node.Description += "\n" + tooltipAttribute.Text;
+                        node.Description = tooltip;
                         ((IList<NodeArchetype>)group.Archetypes).Add(node);
 
                         // Create Unpack node archetype
@@ -229,9 +222,7 @@ namespace FlaxEditor.Surface
                         node.DefaultValues[0] = scriptTypeTypeName;
                         node.Flags &= ~NodeFlags.NoSpawnViaGUI;
                         node.Title = "Unpack " + scriptTypeName;
-                        node.Description = scriptTypeTypeName;
-                        if (tooltipAttribute != null)
-                            node.Description += "\n" + tooltipAttribute.Text;
+                        node.Description = tooltip;
                         ((IList<NodeArchetype>)group.Archetypes).Add(node);
                     }
                 }

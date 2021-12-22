@@ -537,10 +537,7 @@ namespace FlaxEditor.Surface.Archetypes
                 if (methodInfo)
                 {
                     // Update tooltip
-                    var attributes = methodInfo.GetAttributes(true);
-                    var tooltipAttribute = (TooltipAttribute)attributes.FirstOrDefault(x => x is TooltipAttribute);
-                    if (tooltipAttribute != null)
-                        TooltipText = tooltipAttribute.Text;
+                    TooltipText = Editor.Instance.CodeDocs.GetTooltip(methodInfo);
 
                     // Generate signature from the method info
                     MakeBox(0, string.Empty, typeof(void), true);

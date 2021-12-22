@@ -625,11 +625,7 @@ namespace FlaxEditor.CustomEditors.Dedicated
                     group.Panel.Open(false);
 
                 // Customize
-                var typeAttributes = scriptType.GetAttributes(false);
-                group.Panel.TooltipText = scriptType.TypeName;
-                var tooltip = (TooltipAttribute)typeAttributes.FirstOrDefault(x => x is TooltipAttribute);
-                if (tooltip != null)
-                    group.Panel.TooltipText += '\n' + tooltip.Text;
+                group.Panel.TooltipText = Editor.Instance.CodeDocs.GetTooltip(scriptType);
                 if (script.HasPrefabLink)
                     group.Panel.HeaderTextColor = FlaxEngine.GUI.Style.Current.ProgressNormal;
 
