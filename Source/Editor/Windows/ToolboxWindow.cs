@@ -78,6 +78,26 @@ namespace FlaxEditor.Windows
             }
         }
 
+        private sealed class ScriptTypeItem : Item
+        {
+            private ScriptType _type;
+
+            public ScriptTypeItem(string text, ScriptType type, DragData dragData = null)
+            : base(text, dragData)
+            {
+                _type = type;
+            }
+
+            protected override bool ShowTooltip => true;
+
+            public override bool OnShowTooltip(out string text, out Vector2 location, out Rectangle area)
+            {
+                if (TooltipText == null)
+                    TooltipText = Editor.Instance.CodeDocs.GetTooltip(_type);
+                return base.OnShowTooltip(out text, out location, out area);
+            }
+        }
+
         private TextBox _searchBox;
         private ContainerControl _groupSearch;
 
@@ -204,7 +224,6 @@ namespace FlaxEditor.Windows
                     continue;
 
                 var item = _groupSearch.AddChild(CreateActorItem(CustomEditors.CustomEditorsUtil.GetPropertyNameUI(text), actorType));
-                item.TooltipText = Surface.SurfaceUtils.GetVisualScriptTypeDescription(actorType);
 
                 var highlights = new List<Rectangle>(ranges.Length);
                 var style = Style.Current;
@@ -237,10 +256,7 @@ namespace FlaxEditor.Windows
 
         private Item CreateActorItem(string name, ScriptType type)
         {
-            return new Item(name, GUI.Drag.DragActorType.GetDragData(type))
-            {
-                TooltipText = Editor.Instance.CodeDocs.GetTooltip(type)
-            };
+            return new ScriptTypeItem(name, type, GUI.Drag.DragActorType.GetDragData(type));
         }
 
         private ContainerControl CreateGroupWithList(Tabs parentTabs, string title, float topOffset = 0)
