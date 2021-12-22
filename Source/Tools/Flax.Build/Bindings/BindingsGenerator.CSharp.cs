@@ -1,5 +1,7 @@
 // (c) 2012-2021 Wojciech Figat. All rights reserved.
 
+//#define AUTO_DOC_TOOLTIPS
+
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -172,7 +174,7 @@ namespace Flax.Build.Bindings
                         sb.Clear();
                         continue;
                     }
-                    else if (c == '(')
+                    if (c == '(')
                         braces++;
                     else if (c == ')')
                         braces--;
@@ -181,7 +183,7 @@ namespace Flax.Build.Bindings
                 items.Add(sb.ToString());
                 sb.Clear();
                 sb.Append("new ").Append(GenerateCSharpNativeToManaged(buildData, valueType, caller)).Append('{');
-                for(int i = 0; i < items.Count; i++)
+                for (int i = 0; i < items.Count; i++)
                     sb.Append(GenerateCSharpDefaultValueNativeToManaged(buildData, items[i], caller, itemType, attribute)).Append(',');
                 sb.Append('}');
                 return sb.ToString();
@@ -531,13 +533,17 @@ namespace Flax.Build.Bindings
 
         private static void GenerateCSharpAttributes(BuildData buildData, StringBuilder contents, string indent, ApiTypeInfo apiTypeInfo, string attributes = null, string[] comment = null, bool canUseTooltip = false, bool useUnmanaged = false, string defaultValue = null, bool isDeprecated = false, TypeInfo defaultValueType = null)
         {
+#if AUTO_DOC_TOOLTIPS
             var writeTooltip = true;
+#endif
             var writeDefaultValue = true;
             if (!string.IsNullOrEmpty(attributes))
             {
                 // Write attributes
                 contents.Append(indent).Append('[').Append(attributes).Append(']').AppendLine();
+#if AUTO_DOC_TOOLTIPS
                 writeTooltip = !attributes.Contains("Tooltip(") && !attributes.Contains("HideInEditor");
+#endif
                 writeDefaultValue = !attributes.Contains("DefaultValue(");
             }
 
@@ -552,6 +558,7 @@ namespace Flax.Build.Bindings
                 contents.Append(indent).AppendLine("[Obsolete]");
             }
 
+#if AUTO_DOC_TOOLTIPS
             if (canUseTooltip &&
                 writeTooltip &&
                 buildData.Configuration != TargetConfiguration.Release &&
@@ -580,6 +587,7 @@ namespace Flax.Build.Bindings
                     contents.Append(indent).Append("[Tooltip(@\"").Append(tooltip).Append("\")]").AppendLine();
                 }
             }
+#endif
             if (writeDefaultValue)
             {
                 // Write default value attribute
