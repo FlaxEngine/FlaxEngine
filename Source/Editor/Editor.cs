@@ -84,97 +84,97 @@ namespace FlaxEditor
         /// <summary>
         /// The windows module.
         /// </summary>
-        public readonly WindowsModule Windows;
+        public WindowsModule Windows;
 
         /// <summary>
         /// The UI module.
         /// </summary>
-        public readonly UIModule UI;
+        public UIModule UI;
 
         /// <summary>
         /// The thumbnails module.
         /// </summary>
-        public readonly ThumbnailsModule Thumbnails;
+        public ThumbnailsModule Thumbnails;
 
         /// <summary>
         /// The simulation module.
         /// </summary>
-        public readonly SimulationModule Simulation;
+        public SimulationModule Simulation;
 
         /// <summary>
         /// The scene module.
         /// </summary>
-        public readonly SceneModule Scene;
+        public SceneModule Scene;
 
         /// <summary>
         /// The prefabs module.
         /// </summary>
-        public readonly PrefabsModule Prefabs;
+        public PrefabsModule Prefabs;
 
         /// <summary>
         /// The scene editing module.
         /// </summary>
-        public readonly SceneEditingModule SceneEditing;
+        public SceneEditingModule SceneEditing;
 
         /// <summary>
         /// The progress reporting module.
         /// </summary>
-        public readonly ProgressReportingModule ProgressReporting;
+        public ProgressReportingModule ProgressReporting;
 
         /// <summary>
         /// The content editing module.
         /// </summary>
-        public readonly ContentEditingModule ContentEditing;
+        public ContentEditingModule ContentEditing;
 
         /// <summary>
         /// The content database module.
         /// </summary>
-        public readonly ContentDatabaseModule ContentDatabase;
+        public ContentDatabaseModule ContentDatabase;
 
         /// <summary>
         /// The content importing module.
         /// </summary>
-        public readonly ContentImportingModule ContentImporting;
+        public ContentImportingModule ContentImporting;
 
         /// <summary>
         /// The content finder module.
         /// </summary>
-        public readonly ContentFindingModule ContentFinding;
+        public ContentFindingModule ContentFinding;
 
         /// <summary>
         /// The scripts editing
         /// </summary>
-        public readonly CodeEditingModule CodeEditing;
+        public CodeEditingModule CodeEditing;
 
         /// <summary>
         /// The scripts documentation
         /// </summary>
-        public readonly CodeDocsModule CodeDocs;
+        public CodeDocsModule CodeDocs;
 
         /// <summary>
         /// The editor state machine.
         /// </summary>
-        public readonly EditorStateMachine StateMachine;
+        public EditorStateMachine StateMachine;
 
         /// <summary>
         /// The editor options manager.
         /// </summary>
-        public readonly OptionsModule Options;
+        public OptionsModule Options;
 
         /// <summary>
         /// The editor per-project cache manager.
         /// </summary>
-        public readonly ProjectCacheModule ProjectCache;
+        public ProjectCacheModule ProjectCache;
 
         /// <summary>
         /// The undo/redo
         /// </summary>
-        public readonly EditorUndo Undo;
+        public EditorUndo Undo;
 
         /// <summary>
         /// The icons container.
         /// </summary>
-        public readonly EditorIcons Icons;
+        public EditorIcons Icons;
 
         /// <summary>
         /// Gets the main transform gizmo used by the <see cref="SceneEditorWindow"/>.
@@ -209,26 +209,36 @@ namespace FlaxEditor
         /// <summary>
         /// The game project info.
         /// </summary>
-        public readonly ProjectInfo GameProject;
+        public ProjectInfo GameProject;
 
         /// <summary>
         /// The engine project info.
         /// </summary>
-        public readonly ProjectInfo EngineProject;
+        public ProjectInfo EngineProject;
 
         internal Editor()
         {
             Instance = this;
+        }
 
+        internal void Init(bool isHeadless, bool skipCompile, bool newProject, Guid startupScene)
+        {
             Log("Setting up C# Editor...");
+            _isHeadlessMode = isHeadless;
+            _startupSceneCmdLine = startupScene;
 
+            Profiler.BeginEvent("Projects");
             EngineProject = ProjectInfo.Load(StringUtils.CombinePaths(Globals.StartupFolder, "Flax.flaxproj"));
             GameProject = ProjectInfo.Load(Internal_GetProjectPath());
+            Profiler.EndEvent();
 
+            Profiler.BeginEvent("Icons");
             Icons = new EditorIcons();
             Icons.LoadIcons();
+            Profiler.EndEvent();
 
             // Create common editor modules
+            Profiler.BeginEvent("Modules");
             RegisterModule(Options = new OptionsModule(this));
             RegisterModule(ProjectCache = new ProjectCacheModule(this));
             RegisterModule(Scene = new SceneModule(this));
@@ -245,46 +255,15 @@ namespace FlaxEditor
             RegisterModule(CodeDocs = new CodeDocsModule(this));
             RegisterModule(ProgressReporting = new ProgressReportingModule(this));
             RegisterModule(ContentFinding = new ContentFindingModule(this));
+            Profiler.EndEvent();
 
             StateMachine = new EditorStateMachine(this);
             Undo = new EditorUndo(this);
-
             UIControl.FallbackParentGetDelegate += OnUIControlFallbackParentGet;
-        }
 
-        private ContainerControl OnUIControlFallbackParentGet(UIControl control)
-        {
-            // Check if prefab root control is this UIControl
-            var loadingPreview = Viewport.Previews.PrefabPreview.LoadingPreview;
-            if (loadingPreview != null)
-            {
-                // Link it to the prefab preview to see it in the editor
-                loadingPreview.customControlLinked = control;
-                return loadingPreview;
-            }
-            return null;
-        }
-
-        internal void RegisterModule(EditorModule module)
-        {
-            Log("Register Editor module " + module);
-
-            _modules.Add(module);
-            if (_isAfterInit)
-                _modules.Sort((a, b) => a.InitOrder - b.InitOrder);
-            if (_areModulesInited)
-                module.OnInit();
-            if (_areModulesAfterInitEnd)
-                module.OnEndInit();
-        }
-
-        internal void Init(bool isHeadless, bool skipCompile, bool newProject, Guid startupScene)
-        {
             if (newProject)
                 InitProject();
             EnsureState<LoadingState>();
-            _isHeadlessMode = isHeadless;
-            _startupSceneCmdLine = startupScene;
             Log("Editor init");
             if (isHeadless)
                 Log("Running in headless mode");
@@ -331,6 +310,32 @@ namespace FlaxEditor
 
             // Start Editor initialization ending phrase (will wait for scripts compilation result)
             StateMachine.LoadingState.StartInitEnding(skipCompile);
+        }
+
+        private ContainerControl OnUIControlFallbackParentGet(UIControl control)
+        {
+            // Check if prefab root control is this UIControl
+            var loadingPreview = Viewport.Previews.PrefabPreview.LoadingPreview;
+            if (loadingPreview != null)
+            {
+                // Link it to the prefab preview to see it in the editor
+                loadingPreview.customControlLinked = control;
+                return loadingPreview;
+            }
+            return null;
+        }
+
+        internal void RegisterModule(EditorModule module)
+        {
+            Log("Register Editor module " + module);
+
+            _modules.Add(module);
+            if (_isAfterInit)
+                _modules.Sort((a, b) => a.InitOrder - b.InitOrder);
+            if (_areModulesInited)
+                module.OnInit();
+            if (_areModulesAfterInitEnd)
+                module.OnEndInit();
         }
 
         internal void EndInit()

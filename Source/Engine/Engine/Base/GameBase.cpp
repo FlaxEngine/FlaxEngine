@@ -106,6 +106,8 @@ int32 GameBase::LoadProduct()
 
 bool GameBase::Init()
 {
+    PROFILE_CPU();
+
     // Preload splash screen texture
     if (GameBaseImpl::HeaderFlags & GameHeaderFlags::ShowSplashScreen)
     {

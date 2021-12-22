@@ -149,6 +149,7 @@ namespace FlaxEditor
                     return _projectsCache[i];
             }
 
+            Profiler.BeginEvent(path);
             try
             {
                 // Load
@@ -204,6 +205,10 @@ namespace FlaxEditor
                 // Failed to load project
                 Editor.LogError("Failed to load project \"" + path + "\".");
                 throw;
+            }
+            finally
+            {
+                Profiler.EndEvent();
             }
         }
 

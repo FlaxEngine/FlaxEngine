@@ -625,6 +625,7 @@ bool Editor::Init()
         exit(failed ? 1 : 0);
         return true;
     }
+    PROFILE_CPU();
 
     // If during last lightmaps baking engine crashed we could try to restore the progress
     ShadowsOfMordor::Builder::Instance()->CheckIfRestoreState();
@@ -633,10 +634,13 @@ bool Editor::Init()
     Managed = New<ManagedEditor>();
 
     // Show splash screen
-    if (EditorImpl::Splash == nullptr)
-        EditorImpl::Splash = New<SplashScreen>();
-    EditorImpl::Splash->SetTitle(Project->Name);
-    EditorImpl::Splash->Show();
+    {
+        PROFILE_CPU_NAMED("Splash");
+        if (EditorImpl::Splash == nullptr)
+            EditorImpl::Splash = New<SplashScreen>();
+        EditorImpl::Splash->SetTitle(Project->Name);
+        EditorImpl::Splash->Show();
+    }
 
     // Initialize managed editor
     Managed->Init();
