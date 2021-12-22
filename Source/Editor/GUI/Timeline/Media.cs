@@ -444,6 +444,20 @@ namespace FlaxEditor.GUI.Timeline
         }
 
         /// <inheritdoc />
+        public override bool OnMouseDoubleClick(Vector2 location, MouseButton button)
+        {
+            if (base.OnMouseDoubleClick(location, button))
+                return true;
+
+            if (PropertiesEditObject != null)
+            {
+                Timeline.ShowEditPopup(PropertiesEditObject, PointToParent(Timeline, location), Track);
+                return true;
+            }
+            return false;
+        }
+
+        /// <inheritdoc />
         public override void OnEndMouseCapture()
         {
             if (_isMoving)
