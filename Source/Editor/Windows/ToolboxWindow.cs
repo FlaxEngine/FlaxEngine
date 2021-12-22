@@ -232,12 +232,15 @@ namespace FlaxEditor.Windows
 
         private Item CreateActorItem(string name, Type type)
         {
-            return new Item(name, GUI.Drag.DragActorType.GetDragData(type));
+            return CreateActorItem(name, new ScriptType(type));
         }
 
         private Item CreateActorItem(string name, ScriptType type)
         {
-            return new Item(name, GUI.Drag.DragActorType.GetDragData(type));
+            return new Item(name, GUI.Drag.DragActorType.GetDragData(type))
+            {
+                TooltipText = Editor.Instance.CodeDocs.GetTooltip(type)
+            };
         }
 
         private ContainerControl CreateGroupWithList(Tabs parentTabs, string title, float topOffset = 0)
