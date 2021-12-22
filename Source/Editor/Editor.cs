@@ -296,7 +296,10 @@ namespace FlaxEditor
             // Initialize modules (from front to back)
             for (int i = 0; i < _modules.Count; i++)
             {
-                _modules[i].OnInit();
+                var module = _modules[i];
+                Profiler.BeginEvent(module.GetType().Name);
+                module.OnInit();
+                Profiler.EndEvent();
             }
             _areModulesInited = true;
 
@@ -343,7 +346,10 @@ namespace FlaxEditor
             {
                 try
                 {
-                    _modules[i].OnEndInit();
+                    var module = _modules[i];
+                    Profiler.BeginEvent(module.GetType().Name);
+                    module.OnEndInit();
+                    Profiler.EndEvent();
                 }
                 catch (Exception ex)
                 {
@@ -547,7 +553,10 @@ namespace FlaxEditor
             // Release modules (from back to front)
             for (int i = _modules.Count - 1; i >= 0; i--)
             {
-                _modules[i].OnExit();
+                var module = _modules[i];
+                Profiler.BeginEvent(module.GetType().Name);
+                module.OnExit();
+                Profiler.EndEvent();
             }
 
             // Cleanup
