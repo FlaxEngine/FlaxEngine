@@ -81,6 +81,9 @@ public class Graphics : EngineModule
         case TargetPlatform.Switch:
             options.PrivateDependencies.Add("GraphicsDeviceVulkan");
             break;
+        case TargetPlatform.Mac:
+            options.PrivateDependencies.Add("GraphicsDeviceNull"); // TODO: Graphics support on Mac
+            break;
         default: throw new InvalidPlatformException(options.Platform.Target);
         }
 

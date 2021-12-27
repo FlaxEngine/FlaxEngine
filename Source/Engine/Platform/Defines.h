@@ -53,6 +53,11 @@ API_ENUM() enum class PlatformType
     /// Running on PlayStation 5.
     /// </summary>
     PS5 = 9,
+
+    /// <summary>
+    /// Running on Mac.
+    /// </summary>
+    Mac = 10,
 };
 
 /// <summary>
@@ -120,9 +125,6 @@ API_ENUM() enum class ArchitectureType
 #if !defined(PLATFORM_MAC)
 #define PLATFORM_MAC 0
 #endif
-#if !defined(PLATFORM_OSX)
-#define PLATFORM_OSX 0
-#endif
 #if !defined(PLATFORM_IOS)
 #define PLATFORM_IOS 0
 #endif
@@ -148,6 +150,8 @@ API_ENUM() enum class ArchitectureType
 #include "Android/AndroidDefines.h"
 #elif PLATFORM_SWITCH
 #include "Platforms/Switch/Engine/Platform/SwitchDefines.h"
+#elif PLATFORM_MAC
+#include "Mac/MacDefines.h"
 #else
 #error Missing Defines implementation!
 #endif
@@ -189,7 +193,7 @@ API_ENUM() enum class ArchitectureType
 #define PLATFORM_WINDOWS_FAMILY (PLATFORM_WINDOWS || PLATFORM_UWP || PLATFORM_XBOX_ONE || PLATFORM_XBOX_SCARLETT)
 #define PLATFORM_MICROSOFT_FAMILY (PLATFORM_WINDOWS_FAMILY)
 #define PLATFORM_UNIX_FAMILY (PLATFORM_LINUX || PLATFORM_ANDROID || PLATFORM_PS4 || PLATFORM_PS5)
-#define PLATFORM_APPLE_FAMILY (PLATFORM_IOS || PLATFORM_OSX)
+#define PLATFORM_APPLE_FAMILY (PLATFORM_MAC || PLATFORM_IOS)
 
 // SIMD defines
 #if defined(__i386__) || defined(_M_IX86) || defined(__x86_64__) || defined(_M_X64) || defined(__SSE2__)

@@ -61,8 +61,16 @@ public class Editor : EditorModule
             AddPlatformTools(options, platformToolsRoot, platformToolsRootExternal, "XboxScarlett", "PLATFORM_TOOLS_XBOX_SCARLETT", "PLATFORM_TOOLS_GDK");
             AddPlatformTools(options, platformToolsRoot, platformToolsRootExternal, "Android", "PLATFORM_TOOLS_ANDROID");
             AddPlatformTools(options, platformToolsRoot, platformToolsRootExternal, "Switch", "PLATFORM_TOOLS_SWITCH");
+            AddPlatformTools(options, platformToolsRoot, platformToolsRootExternal, "Linux", "PLATFORM_TOOLS_LINUX");
         }
-        AddPlatformTools(options, platformToolsRoot, platformToolsRootExternal, "Linux", "PLATFORM_TOOLS_LINUX");
+        else if (options.Platform.Target == TargetPlatform.Linux)
+        {
+            AddPlatformTools(options, platformToolsRoot, platformToolsRootExternal, "Linux", "PLATFORM_TOOLS_LINUX");
+        }
+        else if (options.Platform.Target == TargetPlatform.Mac)
+        {
+            AddPlatformTools(options, platformToolsRoot, platformToolsRootExternal, "Mac", "PLATFORM_TOOLS_MAC");
+        }
 
         // Visual Studio integration
         if (options.Platform.Target == TargetPlatform.Windows && Flax.Build.Platform.BuildTargetPlatform == TargetPlatform.Windows)

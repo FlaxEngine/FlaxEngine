@@ -769,6 +769,7 @@ void ShaderGenerator::ProcessGroupTools(Box* box, Node* node, Value& value)
         PLATFORM_CASE(8, "PLATFORM_ANDROID");
         PLATFORM_CASE(9, "PLATFORM_SWITCH");
         PLATFORM_CASE(10, "PLATFORM_PS5");
+        PLATFORM_CASE(11, "PLATFORM_MAC");
 #undef PLATFORM_CASE
         break;
     }

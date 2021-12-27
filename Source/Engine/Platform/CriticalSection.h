@@ -2,21 +2,9 @@
 
 #pragma once
 
-#if PLATFORM_WINDOWS
+#if PLATFORM_WINDOWS || PLATFORM_UWP || PLATFORM_XBOX_ONE || PLATFORM_XBOX_SCARLETT
 #include "Win32/Win32CriticalSection.h"
-#elif PLATFORM_UWP
-#include "Win32/Win32CriticalSection.h"
-#elif PLATFORM_LINUX
-#include "Unix/UnixCriticalSection.h"
-#elif PLATFORM_PS4
-#include "Unix/UnixCriticalSection.h"
-#elif PLATFORM_PS5
-#include "Unix/UnixCriticalSection.h"
-#elif PLATFORM_XBOX_ONE
-#include "Win32/Win32CriticalSection.h"
-#elif PLATFORM_XBOX_SCARLETT
-#include "Win32/Win32CriticalSection.h"
-#elif PLATFORM_ANDROID
+#elif PLATFORM_LINUX || PLATFORM_ANDROID || PLATFORM_PS4 || PLATFORM_PS5
 #include "Unix/UnixCriticalSection.h"
 #elif PLATFORM_SWITCH
 #include "Platforms/Switch/Engine/Platform/SwitchCriticalSection.h"

@@ -20,6 +20,8 @@
 #include "Platforms/Switch/Engine/Platform/SwitchWindow.h"
 #elif PLATFORM_PS5
 #include "Platforms/PS5/Engine/Platform/PS5Window.h"
+#elif PLATFORM_MAC
+#include "Mac/MacWindow.h"
 #else
 #error Missing Window implementation!
 #endif

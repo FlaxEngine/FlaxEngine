@@ -35,6 +35,7 @@ public class TextureTool : EngineModule
         case TargetPlatform.PS5:
         case TargetPlatform.Android:
         case TargetPlatform.Switch:
+        case TargetPlatform.Mac:
             useStb = true;
             break;
         default: throw new InvalidPlatformException(options.Platform.Target);

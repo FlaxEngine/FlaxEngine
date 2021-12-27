@@ -147,8 +147,8 @@ class Win32Thread;
 typedef Win32Thread Thread;
 class GDKWindow;
 typedef GDKWindow Window;
-class NetworkBase;
-typedef NetworkBase Network;
+class Win32Network;
+typedef Win32Network Network;
 class GDKUser;
 typedef GDKUser User;
 
@@ -172,8 +172,8 @@ class Win32Thread;
 typedef Win32Thread Thread;
 class GDKWindow;
 typedef GDKWindow Window;
-class NetworkBase;
-typedef NetworkBase Network;
+class Win32Network;
+typedef Win32Network Network;
 class GDKUser;
 typedef GDKUser User;
 
@@ -224,6 +224,31 @@ class SwitchWindow;
 typedef SwitchWindow Window;
 class SwitchNetwork;
 typedef SwitchNetwork Network;
+class UserBase;
+typedef UserBase User;
+
+#elif PLATFORM_MAC
+
+class ClipboardBase;
+typedef ClipboardBase Clipboard;
+class MacCriticalSection;
+typedef MacCriticalSection CriticalSection;
+class MacConditionVariable;
+typedef MacConditionVariable ConditionVariable;
+class MacFileSystem;
+typedef MacFileSystem FileSystem;
+class FileSystemWatcherBase;
+typedef FileSystemWatcherBase FileSystemWatcher;
+class MacFile;
+typedef MacFile File;
+class MacPlatform;
+typedef MacPlatform Platform;
+class MacThread;
+typedef MacThread Thread;
+class MacWindow;
+typedef MacWindow Window;
+class MacNetwork;
+typedef MacNetwork Network;
 class UserBase;
 typedef UserBase User;
 

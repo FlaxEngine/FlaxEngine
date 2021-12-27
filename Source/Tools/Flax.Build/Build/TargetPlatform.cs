@@ -51,6 +51,11 @@ namespace Flax.Build
         /// Running on PlayStation 5.
         /// </summary>
         PS5 = 9,
+
+        /// <summary>
+        /// Running on Mac.
+        /// </summary>
+        Mac = 10,
     }
 
     /// <summary>

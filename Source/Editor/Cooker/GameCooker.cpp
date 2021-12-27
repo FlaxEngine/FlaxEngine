@@ -58,6 +58,10 @@
 #if PLATFORM_TOOLS_SWITCH
 #include "Platforms/Switch/Editor/PlatformTools/SwitchPlatformTools.h"
 #endif
+#if PLATFORM_TOOLS_MAC
+#include "Platform/Mac/MacPlatformTools.h"
+#include "Engine/Platform/Mac/MacPlatformSettings.h"
+#endif
 
 namespace GameCookerImpl
 {
@@ -129,6 +133,8 @@ const Char* ToString(const BuildPlatform platform)
         return TEXT("Switch");
     case BuildPlatform::PS5:
         return TEXT("PlayStation 5");
+    case BuildPlatform::MacOSx64:
+        return TEXT("Mac x64");
     default:
         return TEXT("?");
     }
@@ -324,6 +330,11 @@ PlatformTools* GameCooker::GetTools(BuildPlatform platform)
 #if PLATFORM_TOOLS_PS5
         case BuildPlatform::PS5:
             result = New<PS5PlatformTools>();
+            break;
+#endif
+#if PLATFORM_TOOLS_MAC
+        case BuildPlatform::MacOSx64:
+            result = New<MacPlatformTools>(ArchitectureType::x64);
             break;
 #endif
         }

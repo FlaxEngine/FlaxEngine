@@ -139,6 +139,7 @@ namespace Flax.Build.Projects
                 }
             }
             case ProjectFormat.VisualStudioCode: return new VisualStudioCodeProjectGenerator();
+            case ProjectFormat.XCode: return new XCodeProjectGenerator();
             case ProjectFormat.Custom:
                 if (CustomProjectTypes.TryGetValue(Configuration.ProjectFormatCustom, out var factory))
                     return factory(type);

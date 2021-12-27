@@ -34,6 +34,7 @@ namespace Flax.Build
                     case PlatformID.Win32Windows:
                     case PlatformID.WinCE: return TargetPlatform.Windows;
                     case PlatformID.Unix: return TargetPlatform.Linux;
+                    case PlatformID.MacOSX: return TargetPlatform.Mac;
                     default: throw new NotImplementedException(string.Format("Unsupported build platform {0}.", platformId));
                     }
                 }
@@ -242,6 +243,7 @@ namespace Flax.Build
             case TargetPlatform.PS5: return targetArchitecture == TargetArchitecture.x64;
             case TargetPlatform.Android: return targetArchitecture == TargetArchitecture.ARM64;
             case TargetPlatform.Switch: return targetArchitecture == TargetArchitecture.ARM64;
+            case TargetPlatform.Mac: return targetArchitecture == TargetArchitecture.x64;
             default: return false;
             }
         }

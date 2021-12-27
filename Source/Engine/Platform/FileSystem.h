@@ -20,6 +20,8 @@
 #include "Android/AndroidFileSystem.h"
 #elif PLATFORM_SWITCH
 #include "Platforms/Switch/Engine/Platform/SwitchFileSystem.h"
+#elif PLATFORM_MAC
+#include "Mac/MacFileSystem.h"
 #else
 #error Missing File System implementation!
 #endif

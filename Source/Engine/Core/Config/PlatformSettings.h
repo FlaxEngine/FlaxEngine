@@ -32,3 +32,6 @@
 #if PLATFORM_PS5
 #include "Platforms/PS5/Engine/Platform/PS5PlatformSettings.h"
 #endif
+#if PLATFORM_MAC
+#include "Engine/Platform/Mac/MacPlatformSettings.h"
+#endif

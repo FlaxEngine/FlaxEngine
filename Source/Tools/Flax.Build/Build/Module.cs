@@ -97,6 +97,7 @@ namespace Flax.Build
             case TargetPlatform.XboxScarlett: return "PLATFORM_XBOX_SCARLETT";
             case TargetPlatform.Android: return "PLATFORM_ANDROID";
             case TargetPlatform.Switch: return "PLATFORM_SWITCH";
+            case TargetPlatform.Mac: return "PLATFORM_MAC";
             default: throw new InvalidPlatformException(platform);
             }
         }

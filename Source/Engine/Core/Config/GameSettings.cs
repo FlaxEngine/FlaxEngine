@@ -177,6 +177,14 @@ namespace FlaxEditor.Content.Settings
         public JsonAsset PS5Platform;
 #endif
 
+#if FLAX_EDITOR || PLATFORM_MAC
+        /// <summary>
+        /// Reference to <see cref="MacPlatformSettings"/> asset. Used to apply configuration on Mac platform.
+        /// </summary>
+        [EditorOrder(2090), EditorDisplay("Platform Settings", "Mac"), AssetReference(typeof(MacPlatformSettings), true), Tooltip("Reference to Mac Platform Settings asset")]
+        public JsonAsset MacPlatform;
+#endif
+
         /// <summary>
         /// Gets the absolute path to the game settings asset file.
         /// </summary>
@@ -295,6 +303,10 @@ namespace FlaxEditor.Content.Settings
             if (type.FullName == PS5PlatformSettingsTypename)
                 return LoadAsset(gameSettings.PS5Platform, PS5PlatformSettingsTypename) as T;
 #endif
+#if FLAX_EDITOR || PLATFORM_MAC
+            if (type == typeof(MacPlatformSettings))
+                return LoadAsset<MacPlatformSettings>(gameSettings.MacPlatform) as T;
+#endif
 
             if (gameSettings.CustomSettings != null)
             {
@@ -391,6 +403,8 @@ namespace FlaxEditor.Content.Settings
                 return SaveAsset(gameSettings, ref gameSettings.PS5Platform, obj);
             if (type == typeof(AudioSettings))
                 return SaveAsset(gameSettings, ref gameSettings.Audio, obj);
+            if (type == typeof(MacPlatformSettings))
+                return SaveAsset(gameSettings, ref gameSettings.MacPlatform, obj);
 
             return true;
         }

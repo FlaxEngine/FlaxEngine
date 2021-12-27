@@ -42,6 +42,7 @@ namespace FlaxEditor.Content.Create
             SwitchPlatformSettings,
             [EditorDisplay(null, "PS5 Platform Settings")]
             PS5PlatformSettings,
+            MacPlatformSettings,
         }
 
         private static readonly Type[] _types =
@@ -66,6 +67,7 @@ namespace FlaxEditor.Content.Create
             typeof(AndroidPlatformSettings),
             TypeUtils.GetManagedType(GameSettings.SwitchPlatformSettingsTypename),
             TypeUtils.GetManagedType(GameSettings.PS5PlatformSettingsTypename),
+            typeof(MacPlatformSettings),
         };
 
         internal class Options
@@ -235,6 +237,11 @@ namespace FlaxEditor.Content.Create
                     if (instance.PS5Platform != null)
                         return false;
                     instance.PS5Platform = asset;
+                    break;
+                case SettingsTypes.MacPlatformSettings:
+                    if (instance.MacPlatform != null)
+                        return false;
+                    instance.MacPlatform = asset;
                     break;
                 }
                 return true;

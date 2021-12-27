@@ -99,6 +99,12 @@ API_ENUM() enum class BuildPlatform
     /// </summary>
     API_ENUM(Attributes="EditorDisplay(null, \"PlayStation 5\")")
     PS5 = 11,
+
+    /// <summary>
+    /// MacOS (x86-64 Intel)
+    /// </summary>
+    API_ENUM(Attributes="EditorDisplay(null, \"Mac x64\")")
+    MacOSx64 = 12,
 };
 
 extern FLAXENGINE_API const Char* ToString(const BuildPlatform platform);

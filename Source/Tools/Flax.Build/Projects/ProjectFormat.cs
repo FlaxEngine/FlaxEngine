@@ -41,5 +41,10 @@ namespace Flax.Build.Projects
         /// Visual Studio Code.
         /// </summary>
         VisualStudioCode,
+
+        /// <summary>
+        /// XCode.
+        /// </summary>
+        XCode,
     }
 }

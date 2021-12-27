@@ -36,6 +36,7 @@ namespace Flax.Build
             TargetPlatform.XboxScarlett,
             TargetPlatform.Android,
             TargetPlatform.Switch,
+            TargetPlatform.Mac,
         };
 
         /// <summary>

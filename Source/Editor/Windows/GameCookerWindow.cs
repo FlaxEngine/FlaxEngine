@@ -45,6 +45,7 @@ namespace FlaxEditor.Windows
                 { PlatformType.Android, new Android() },
                 { PlatformType.Switch, new Switch() },
                 { PlatformType.PS5, new PS5() },
+                { PlatformType.Mac, new Mac() },
             };
 
             public BuildTabProxy(GameCookerWindow win, PlatformSelector platformSelector)
@@ -61,6 +62,7 @@ namespace FlaxEditor.Windows
                 PerPlatformOptions[PlatformType.Android].Init("Output/Android", "Android");
                 PerPlatformOptions[PlatformType.Switch].Init("Output/Switch", "Switch");
                 PerPlatformOptions[PlatformType.PS5].Init("Output/PS5", "PS5");
+                PerPlatformOptions[PlatformType.Mac].Init("Output/Mac", "Mac");
             }
 
             abstract class Platform
@@ -102,7 +104,15 @@ namespace FlaxEditor.Windows
 
                     // Check if can build on that platform
 #if PLATFORM_WINDOWS
-                    IsSupported = true;
+                    switch (BuildPlatform)
+                    {
+                    case BuildPlatform.MacOSx64:
+                        IsSupported = false;
+                        break;
+                    default:
+                        IsSupported = true;
+                        break;
+                    }
 #elif PLATFORM_LINUX
                     switch (BuildPlatform)
                     {
@@ -202,6 +212,11 @@ namespace FlaxEditor.Windows
                 protected override BuildPlatform BuildPlatform => BuildPlatform.PS5;
             }
 
+            class Mac : Platform
+            {
+                protected override BuildPlatform BuildPlatform => BuildPlatform.MacOSx64;
+            }
+
             class Editor : CustomEditor
             {
                 private PlatformType _platform;
@@ -248,6 +263,9 @@ namespace FlaxEditor.Windows
                             break;
                         case PlatformType.PS5:
                             name = "PlayStation 5";
+                            break;
+                        case PlatformType.Mac:
+                            name = "Mac";
                             break;
                         default:
                             name = CustomEditorsUtil.GetPropertyNameUI(_platform.ToString());

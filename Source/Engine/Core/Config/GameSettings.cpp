@@ -65,6 +65,8 @@ IMPLEMENT_SETTINGS_GETTER(XboxScarlettPlatformSettings, XboxScarlettPlatform);
 IMPLEMENT_SETTINGS_GETTER(AndroidPlatformSettings, AndroidPlatform);
 #elif PLATFORM_SWITCH
 IMPLEMENT_SETTINGS_GETTER(SwitchPlatformSettings, SwitchPlatform);
+#elif PLATFORM_MAC
+IMPLEMENT_SETTINGS_GETTER(MacPlatformSettings, MacPlatform);
 #else
 #error Unknown platform
 #endif
@@ -226,6 +228,7 @@ void GameSettings::Deserialize(DeserializeStream& stream, ISerializeModifier* mo
     DESERIALIZE(AndroidPlatform);
     DESERIALIZE(SwitchPlatform);
     DESERIALIZE(PS5Platform);
+    DESERIALIZE(MacPlatform);
 }
 
 void LayersAndTagsSettings::Deserialize(DeserializeStream& stream, ISerializeModifier* modifier)

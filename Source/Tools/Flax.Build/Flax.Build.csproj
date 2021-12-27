@@ -139,6 +139,7 @@
     <Compile Include="Platforms\Linux\*.cs" />
     <Compile Include="..\..\Platforms\PS4\Flax.Build\*.cs" />
     <Compile Include="..\..\Platforms\PS5\Flax.Build\*.cs" />
+    <Compile Include="Platforms\Mac\*.cs" />
     <Compile Include="Platforms\Unix\*.cs" />
     <Compile Include="Platforms\UWP\*.cs" />
     <Compile Include="Platforms\Windows\*.cs" />
@@ -160,6 +161,7 @@
     <Compile Include="Projects\VisualStudio\VisualStudioProject.cs" />
     <Compile Include="Projects\VisualStudio\VisualStudioProjectGenerator.cs" />
     <Compile Include="Projects\VisualStudio\VisualStudioVersion.cs" />
+    <Compile Include="Projects\XCode.cs" />
     <Compile Include="Utilities\StringWriterWithEncoding.cs" />
     <Compile Include="Utilities\Tokenizer.cs" />
     <Compile Include="Utilities\TwoWayEnumerator.cs" />
