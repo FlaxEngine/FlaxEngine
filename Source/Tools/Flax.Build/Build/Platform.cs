@@ -3,6 +3,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Diagnostics;
 using Flax.Build.NativeCpp;
 
 namespace Flax.Build
@@ -33,7 +34,24 @@ namespace Flax.Build
                     case PlatformID.Win32S:
                     case PlatformID.Win32Windows:
                     case PlatformID.WinCE: return TargetPlatform.Windows;
-                    case PlatformID.Unix: return TargetPlatform.Linux;
+                    case PlatformID.Unix:
+                    {
+                        var p = new Process
+                        {
+                            StartInfo = new ProcessStartInfo
+                            {
+                                UseShellExecute = false,
+                                RedirectStandardOutput = true,
+                                FileName = "uname",
+                                Arguments = "-s",
+                            }
+                        };
+                        p.Start();
+                        string uname = p.StandardOutput.ReadToEnd().Trim();
+                        if (uname == "Darwin")
+                            return TargetPlatform.Mac;
+                        return TargetPlatform.Linux;
+                    }
                     case PlatformID.MacOSX: return TargetPlatform.Mac;
                     default: throw new NotImplementedException(string.Format("Unsupported build platform {0}.", platformId));
                     }
