@@ -19,6 +19,7 @@ Source/*.csproj
 *.tlog
 *.lastbuilddate
 *.opendb
+*.DS_Store
 
 # NUNIT
 *.VisualState.xml
