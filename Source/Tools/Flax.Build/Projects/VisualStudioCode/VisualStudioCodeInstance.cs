@@ -1,5 +1,6 @@
 // Copyright (c) 2012-2020 Flax Engine. All rights reserved.
 
+using System;
 using System.IO;
 using Flax.Build.Platforms;
 
@@ -64,6 +65,28 @@ namespace Flax.Build.Projects.VisualStudioCode
                         {
                             Path = path,
                         };
+                    }
+                    break;
+                }
+                case TargetPlatform.Mac:
+                {
+                    var userFolder = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
+                    var paths = new string[]
+                    {
+                        "/Applications/Visual Studio Code.app",
+                        userFolder + "/Visual Studio Code.app",
+                        userFolder + "/Downloads/Visual Studio Code.app",
+                    };
+                    foreach (var path in paths)
+                    {
+                        if (Directory.Exists(path))
+                        {
+                            _instance = new VisualStudioCodeInstance
+                            {
+                                Path = path,
+                            };
+                            break;
+                        }
                     }
                     break;
                 }

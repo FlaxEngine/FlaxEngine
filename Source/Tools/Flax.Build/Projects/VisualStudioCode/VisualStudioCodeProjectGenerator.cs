@@ -240,6 +240,35 @@ namespace Flax.Build.Projects.VisualStudioCode
                                         json.EndObject();
                                         break;
                                     }
+                                    case TargetPlatform.Mac:
+                                    {
+                                        VisualStudioCodeInstance.GetInstance();
+                                        json.AddField("command", "mono"); // TODO: use bundled mono
+                                        json.BeginArray("args");
+                                        {
+                                            json.AddUnnamedField(buildToolPath);
+                                            json.AddUnnamedField("--build");
+                                            json.AddUnnamedField("--log");
+                                            json.AddUnnamedField("--mutex");
+                                            json.AddUnnamedField(string.Format("--workspace=\\\"{0}\\\"", buildToolWorkspace));
+                                            json.AddUnnamedField(string.Format("--arch={0}", configuration.Architecture));
+                                            json.AddUnnamedField(string.Format("--configuration={0}", configuration.ConfigurationName));
+                                            json.AddUnnamedField(string.Format("--platform={0}", configuration.PlatformName));
+                                            json.AddUnnamedField(string.Format("--buildTargets={0}", target.Name));
+                                            if (!string.IsNullOrEmpty(Configuration.Compiler))
+                                                json.AddUnnamedField(string.Format("--compiler={0}", Configuration.Compiler));
+                                        }
+                                        json.EndArray();
+
+                                        json.AddField("type", "shell");
+
+                                        json.BeginObject("options");
+                                        {
+                                            json.AddField("cwd", buildToolWorkspace);
+                                        }
+                                        json.EndObject();
+                                        break;
+                                    }
                                     default: throw new Exception("Visual Code project generator does not support current platform.");
                                     }
 

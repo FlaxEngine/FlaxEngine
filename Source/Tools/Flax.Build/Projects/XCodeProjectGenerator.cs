@@ -72,10 +72,17 @@ namespace Flax.Build.Projects
                 contents.AppendLine("\tobjects = {");
 
                 contents.AppendLine("");
+                var sourceGroupId = "04FD634B277A16FE000EA5CA";
+                contents.AppendLine("/* Begin PBXFileReference section */");
+                contents.AppendLine("\t\t" + sourceGroupId + " /* Source */ = {isa = PBXFileReference; lastKnownFileType = folder; path = Source; sourceTree = \"<group>\"; };");
+                contents.AppendLine("/* End PBXFileReference section */");
+
+                contents.AppendLine("");
                 contents.AppendLine("/* Begin PBXGroup section */");
                 contents.AppendLine("\t\t" + groupId + " = {");
                 contents.AppendLine("\t\t\tisa = PBXGroup;");
                 contents.AppendLine("\t\t\tchildren = (");
+                contents.AppendLine("\t\t\t\t" + sourceGroupId + ",");
                 contents.AppendLine("\t\t\t);");
                 contents.AppendLine("\t\t\tsourceTree = \"<group>\";");
                 contents.AppendLine("\t\t};");
