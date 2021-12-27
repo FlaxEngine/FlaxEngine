@@ -1,5 +1,8 @@
 // Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
 
+using System;
+using System.IO;
+using System.Diagnostics;
 using Flax.Build.Projects;
 
 namespace Flax.Build.Platforms
@@ -48,7 +51,31 @@ namespace Flax.Build.Platforms
             if (Platform.BuildTargetPlatform != TargetPlatform.Mac)
                 return;
 
-            throw new System.NotImplementedException("TODO: detect MacSDK installation");
+            try
+            {
+                // Check if XCode is installed
+                Process p = new Process
+                {
+                    StartInfo =
+                    {
+                        FileName = "xcode-select",
+                        Arguments = "--print-path",
+                        UseShellExecute = false,
+                        CreateNoWindow = true,
+                        RedirectStandardOutput = true,
+                    }
+                };
+                p.Start();
+                string xcodePath = p.StandardOutput.ReadToEnd().Trim();
+                if (string.IsNullOrEmpty(xcodePath) || !Directory.Exists(xcodePath))
+                    throw new Exception(xcodePath);
+                Log.Verbose(string.Format("Found XCode at {0}", xcodePath));
+                HasRequiredSDKsInstalled = true;
+            }
+            catch
+            {
+                Log.Warning("Missing XCode. Cannot build for Mac platform.");
+            }
         }
 
         /// <inheritdoc />

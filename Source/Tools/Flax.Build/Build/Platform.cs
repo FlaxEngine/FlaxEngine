@@ -36,9 +36,9 @@ namespace Flax.Build
                     case PlatformID.WinCE: return TargetPlatform.Windows;
                     case PlatformID.Unix:
                     {
-                        var p = new Process
+                        Process p = new Process
                         {
-                            StartInfo = new ProcessStartInfo
+                            StartInfo =
                             {
                                 UseShellExecute = false,
                                 RedirectStandardOutput = true,

@@ -71,6 +71,7 @@ public class mono : DepsModule
             break;
         }
         case TargetPlatform.Linux:
+        case TargetPlatform.Mac:
             options.PublicDefinitions.Add("USE_MONO_DYNAMIC_LIB");
             options.DependencyFiles.Add(Path.Combine(depsRoot, "libmonosgen-2.0.so"));
             options.Libraries.Add(Path.Combine(depsRoot, "libmonosgen-2.0.so"));

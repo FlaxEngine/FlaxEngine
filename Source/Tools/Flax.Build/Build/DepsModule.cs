@@ -33,6 +33,7 @@ namespace Flax.Build
             case TargetPlatform.PS5:
             case TargetPlatform.Android:
             case TargetPlatform.Switch:
+            case TargetPlatform.Mac:
                 options.OutputFiles.Add(Path.Combine(path, string.Format("lib{0}.a", name)));
                 break;
             default: throw new InvalidPlatformException(options.Platform.Target);

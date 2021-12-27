@@ -37,7 +37,7 @@ namespace Flax.Build.Platforms
         public LinuxPlatform()
         {
             // Try to use system compiler
-            if (Environment.OSVersion.Platform == PlatformID.Unix)
+            if (Platform.BuildTargetPlatform == TargetPlatform.Linux)
             {
                 // Pick the newest compiler (overriden by specified in command line)
                 if (Which(Compiler) != null)
@@ -62,7 +62,7 @@ namespace Flax.Build.Platforms
                 Log.Verbose($"Using native Linux toolchain (compiler {Compiler})");
                 HasRequiredSDKsInstalled = true;
             }
-            else
+            else if (Platform.BuildTargetPlatform != TargetPlatform.Mac)
             {
                 // Check if Linux toolchain is installed
                 string toolchainName = "v13_clang-7.0.1-centos7";
