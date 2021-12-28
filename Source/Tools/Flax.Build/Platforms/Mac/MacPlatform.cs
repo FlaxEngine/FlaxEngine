@@ -44,32 +44,24 @@ namespace Flax.Build.Platforms
         public override ProjectFormat DefaultProjectFormat => ProjectFormat.XCode;
 
         /// <summary>
+        /// XCode Devloper path returned by xcode-select.
+        /// </summary>
+        public string XCodePath;
+
+        /// <summary>
         /// Initializes a new instance of the <see cref="Flax.Build.Platforms.MacPlatform"/> class.
         /// </summary>
         public MacPlatform()
         {
             if (Platform.BuildTargetPlatform != TargetPlatform.Mac)
                 return;
-
             try
             {
                 // Check if XCode is installed
-                Process p = new Process
-                {
-                    StartInfo =
-                    {
-                        FileName = "xcode-select",
-                        Arguments = "--print-path",
-                        UseShellExecute = false,
-                        CreateNoWindow = true,
-                        RedirectStandardOutput = true,
-                    }
-                };
-                p.Start();
-                string xcodePath = p.StandardOutput.ReadToEnd().Trim();
-                if (string.IsNullOrEmpty(xcodePath) || !Directory.Exists(xcodePath))
-                    throw new Exception(xcodePath);
-                Log.Verbose(string.Format("Found XCode at {0}", xcodePath));
+                XCodePath = Utilities.ReadProcessOutput("xcode-select", "--print-path");
+                if (string.IsNullOrEmpty(XCodePath) || !Directory.Exists(XCodePath))
+                    throw new Exception(XCodePath);
+                Log.Verbose(string.Format("Found XCode at {0}", XCodePath));
                 HasRequiredSDKsInstalled = true;
             }
             catch

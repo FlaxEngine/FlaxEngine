@@ -36,20 +36,26 @@ namespace Flax.Build
                     case PlatformID.WinCE: return TargetPlatform.Windows;
                     case PlatformID.Unix:
                     {
-                        Process p = new Process
+                        try
                         {
-                            StartInfo =
+                            Process p = new Process
                             {
-                                UseShellExecute = false,
-                                RedirectStandardOutput = true,
-                                FileName = "uname",
-                                Arguments = "-s",
-                            }
-                        };
-                        p.Start();
-                        string uname = p.StandardOutput.ReadToEnd().Trim();
-                        if (uname == "Darwin")
-                            return TargetPlatform.Mac;
+                                StartInfo =
+                                {
+                                    UseShellExecute = false,
+                                    RedirectStandardOutput = true,
+                                    FileName = "uname",
+                                    Arguments = "-s",
+                                }
+                            };
+                            p.Start();
+                            string uname = p.StandardOutput.ReadToEnd().Trim();
+                            if (uname == "Darwin")
+                                return TargetPlatform.Mac;
+                        }
+                        catch (Exception)
+                        {
+                        }
                         return TargetPlatform.Linux;
                     }
                     case PlatformID.MacOSX: return TargetPlatform.Mac;

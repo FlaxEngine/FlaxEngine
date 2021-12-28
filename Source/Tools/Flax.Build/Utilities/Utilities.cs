@@ -427,6 +427,29 @@ namespace Flax.Build
         }
 
         /// <summary>
+        /// Runs the process and reds its standard output as a string.
+        /// </summary>
+        /// <param name="filename">The executable file path.</param>
+        /// <param name="args">The custom arguments.</param>
+        /// <returns>Returned process output.</returns>
+        public static string ReadProcessOutput(string filename, string args = null)
+        {
+            Process p = new Process
+            {
+                StartInfo =
+                {
+                    FileName = filename,
+                    Arguments = args,
+                    UseShellExecute = false,
+                    CreateNoWindow = true,
+                    RedirectStandardOutput = true,
+                }
+            };
+            p.Start();
+            return p.StandardOutput.ReadToEnd().Trim();
+        }
+
+        /// <summary>
         /// Constructs a relative path from the given base directory.
         /// </summary>
         /// <param name="path">The source path to convert from absolute into a relative format.</param>

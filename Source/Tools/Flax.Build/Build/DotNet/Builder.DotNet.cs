@@ -70,6 +70,12 @@ namespace Flax.Build
                         monoPath = Path.Combine(monoRoot, "bin", "mono");
                         cscPath = Path.Combine(monoRoot, "lib", "mono", "4.5", "csc.exe");
                         break;
+                    case TargetPlatform.Mac:
+                        // TODO: use bundled mono for Mac with csc
+                        monoRoot = Path.Combine(Globals.EngineRoot, "Source", "Platforms", "Editor", "Linux", "Mono");
+                        monoPath = null;
+                        cscPath = "csc";
+                        break;
                     default: throw new InvalidPlatformException(buildPlatform);
                     }
                     var referenceAssemblies = Path.Combine(monoRoot, "lib", "mono", "4.5-api");

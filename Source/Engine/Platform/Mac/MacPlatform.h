@@ -9,11 +9,11 @@
 /// <summary>
 /// The Mac platform implementation and application management utilities.
 /// </summary>
-class FLAXENGINE_API MacPlatform : public UnixPlatform
+class FLAXENGINE_API MacPlatform : public PlatformBase
 {
 public:
 
-    // [UnixPlatform]
+    // [PlatformBase]
     FORCE_INLINE static void MemoryBarrier()
     {
         __sync_synchronize();
@@ -66,11 +66,14 @@ public:
     {
         __builtin_prefetch(static_cast<char const*>(ptr));
     }
+    static void* Allocate(uint64 size, uint64 alignment);
+    static void Free(void* ptr);
     static bool Is64BitPlatform();
     static CPUInfo GetCPUInfo();
     static int32 GetCacheLineSize();
     static MemoryStats GetMemoryStats();
     static ProcessMemoryStats GetProcessMemoryStats();
+    static uint64 GetCurrentProcessId();
     static uint64 GetCurrentThreadID();
     static void SetThreadPriority(ThreadPriority priority);
     static void SetThreadAffinityMask(uint64 affinityMask);

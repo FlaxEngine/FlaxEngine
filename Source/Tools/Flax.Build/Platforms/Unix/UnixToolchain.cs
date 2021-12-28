@@ -111,15 +111,32 @@ namespace Flax.Build.Platforms
             }
 
             // Determinate compiler version
-            if (!File.Exists(ClangPath))
-                throw new Exception(string.Format("Missing Clang ({0})", ClangPath));
+            ClangVersion = GetClangVersion(ClangPath);
+
+            // Check version
+            if (ClangVersion.Major < 6)
+                throw new Exception(string.Format("Unsupported Clang version {0}. Minimum supported is 6.", ClangVersion));
+        }
+
+        public static string GetLibName(string path)
+        {
+            var libName = Path.GetFileNameWithoutExtension(path);
+            if (libName.StartsWith("lib"))
+                libName = libName.Substring(3);
+            return libName;
+        }
+
+        public static Version GetClangVersion(string path)
+        {
+            if (!File.Exists(path))
+                throw new Exception(string.Format("Missing Clang ({0})", path));
             using (var process = new Process())
             {
                 process.StartInfo.UseShellExecute = false;
                 process.StartInfo.CreateNoWindow = true;
                 process.StartInfo.RedirectStandardOutput = true;
                 process.StartInfo.RedirectStandardError = true;
-                process.StartInfo.FileName = ClangPath;
+                process.StartInfo.FileName = path;
                 process.StartInfo.Arguments = "--version";
 
                 process.Start();
@@ -142,26 +159,11 @@ namespace Flax.Build.Platforms
                             minor = Convert.ToInt32(parts[1]);
                         if (parts.Length >= 3)
                             patch = Convert.ToInt32(parts[2]);
-                        ClangVersion = new Version(major, minor, patch);
+                        return new Version(major, minor, patch);
                     }
                 }
-                else
-                {
-                    throw new Exception(string.Format("Failed to get Clang version ({0})", ClangPath));
-                }
+                throw new Exception(string.Format("Failed to get Clang version ({0})", path));
             }
-
-            // Check version
-            if (ClangVersion.Major < 6)
-                throw new Exception(string.Format("Unsupported Clang version {0}. Minimum supported is 6.", ClangVersion));
-        }
-
-        private static string GetLibName(string path)
-        {
-            var libName = Path.GetFileNameWithoutExtension(path);
-            if (libName.StartsWith("lib"))
-                libName = libName.Substring(3);
-            return libName;
         }
 
         /// <summary>

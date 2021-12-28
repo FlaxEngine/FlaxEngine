@@ -29,6 +29,9 @@
 #include "Engine/Input/Input.h"
 #include "Engine/Input/Mouse.h"
 #include "Engine/Input/Keyboard.h"
+#include <unistd.h>
+#include <cstdint>
+#include <stdlib.h>
 
 CPUInfo MacCpu;
 Guid DeviceId;
@@ -70,6 +73,53 @@ public:
     }
 };
 
+typedef uint16_t offset_t;
+#define align_mem_up(num, align) (((num) + ((align) - 1)) & ~((align) - 1))
+
+void* MacPlatform::Allocate(uint64 size, uint64 alignment)
+{
+    void* ptr = nullptr;
+
+    // Alignment always has to be power of two
+    ASSERT_LOW_LAYER((alignment & (alignment - 1)) == 0);
+
+    if (alignment && size)
+    {
+        uint32_t pad = sizeof(offset_t) + (alignment - 1);
+        void* p = malloc(size + pad);
+        if (p)
+        {
+            // Add the offset size to malloc's pointer
+            ptr = (void*)align_mem_up(((uintptr_t)p + sizeof(offset_t)), alignment);
+
+            // Calculate the offset and store it behind aligned pointer
+            *((offset_t*)ptr - 1) = (offset_t)((uintptr_t)ptr - (uintptr_t)p);
+        }
+#if COMPILE_WITH_PROFILER
+        OnMemoryAlloc(ptr, size);
+#endif
+    }
+    return ptr;
+}
+
+void MacPlatform::Free(void* ptr)
+{
+    if (ptr)
+    {
+#if COMPILE_WITH_PROFILER
+        OnMemoryFree(ptr);
+#endif
+        // Walk backwards from the passed-in pointer to get the pointer offset
+        offset_t offset = *((offset_t*)ptr - 1);
+
+        // Get original pointer
+        void* p = (void*)((uint8_t*)ptr - offset);
+
+        // Free memory
+        free(p);
+    }
+}
+
 bool MacPlatform::Is64BitPlatform()
 {
     return PLATFORM_64BITS;
@@ -95,6 +145,11 @@ ProcessMemoryStats MacPlatform::GetProcessMemoryStats()
 {
     MISSING_CODE("MacPlatform::GetProcessMemoryStats");
     return ProcessMemoryStats(); // TODO: platform stats on Mac
+}
+
+uint64 UnixPlatform::GetCurrentProcessId()
+{
+    return getpid();
 }
 
 uint64 MacPlatform::GetCurrentThreadID()
