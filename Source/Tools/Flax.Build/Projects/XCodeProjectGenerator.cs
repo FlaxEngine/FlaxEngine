@@ -49,11 +49,18 @@ namespace Flax.Build.Projects
         /// <inheritdoc />
         public override void GenerateSolution(Solution solution)
         {
+            // Prepare
             // TOOD: use random IDs for project and configurations
             var groupId = "04FD6344277A0F15000EA5CA";
             var projectId = "04FD6345277A0F15000EA5CA";
+            var targetId = "04FD633E277A01BD000EA5CA";
             var projectName = solution.Name;
+            var targetName = projectName;
             var projectWorkspacePath = Path.Combine(solution.Path, projectName + ".xcworkspace");
+            var buildToolWorkspace = Environment.CurrentDirectory;
+            var buildToolPath = Utilities.MakePathRelativeTo(typeof(Builder).Assembly.Location, solution.WorkspaceRootPath);
+            var buildToolCallerPath = Path.Combine(Globals.EngineRoot, "Development/Scripts/Mac/XCodeBuild.sh");
+            var rules = Builder.GenerateRulesAssembly();
 
             // Generate folders
             Directory.CreateDirectory(solution.Path);
@@ -89,12 +96,35 @@ namespace Flax.Build.Projects
                 contents.AppendLine("/* End PBXGroup section */");
 
                 contents.AppendLine("");
+                contents.AppendLine("/* Begin PBXLegacyTarget section */");
+                contents.AppendLine("\t\t" + targetId + " /* " + targetName + " */ = {");
+                contents.AppendLine("\t\t\tisa = PBXLegacyTarget;");
+                contents.AppendLine("\t\t\tbuildArgumentsString = \"$(ACTION) --build --log --mutex --arch=$(BUILD_ARCH) --configuration=$(BUILD_CONFIGURATION) --platform=$(BUILD_PLATFORM) --buildTargets=$(BUILD_TARGET)\";");
+                contents.AppendLine("\t\t\tbuildConfigurationList = 04FD6341277A01BD000EA5CA /* Build configuration list for PBXLegacyTarget \"" + projectName + "\" */;");
+                contents.AppendLine("\t\t\tbuildPhases = (");
+                contents.AppendLine("\t\t\t);");
+                contents.AppendLine("\t\t\tbuildToolPath = \"" + buildToolCallerPath + "\";");
+                contents.AppendLine("\t\t\tbuildWorkingDirectory = \"" + buildToolWorkspace + "\";");
+                contents.AppendLine("\t\t\tdependencies = (");
+                contents.AppendLine("\t\t\t);");
+                contents.AppendLine("\t\t\tname = \"" + targetName + "\";");
+                contents.AppendLine("\t\t\tpassBuildSettingsInEnvironment = 1;");
+                contents.AppendLine("\t\t\tproductName = \"" + targetName + "\";");
+                contents.AppendLine("\t\t};");
+                contents.AppendLine("/* End PBXLegacyTarget section */");
+
+                contents.AppendLine("");
                 contents.AppendLine("/* Begin PBXProject section */");
                 contents.AppendLine("\t\t" + projectId + " /* Project object */ = {");
                 contents.AppendLine("\t\t\tisa = PBXProject;");
                 contents.AppendLine("\t\t\tattributes = {");
                 contents.AppendLine("\t\t\t\tBuildIndependentTargetsInParallel = 1;");
                 contents.AppendLine("\t\t\t\tLastUpgradeCheck = 1320;");
+				contents.AppendLine("\t\t\t\tTargetAttributes = {");
+                contents.AppendLine("\t\t\t\t\t" + targetId + " = {");
+                contents.AppendLine("\t\t\t\t\t\tCreatedOnToolsVersion = 13.2.1;");
+                contents.AppendLine("\t\t\t\t\t};");
+                contents.AppendLine("\t\t\t\t};");
                 contents.AppendLine("\t\t\t};");
                 contents.AppendLine("\t\t\tbuildConfigurationList = 04FD6348277A0F15000EA5CA /* Build configuration list for PBXProject \"" + projectName + "\" */;");
                 contents.AppendLine("\t\t\tcompatibilityVersion = \"Xcode 13.0\";");
@@ -108,24 +138,41 @@ namespace Flax.Build.Projects
                 contents.AppendLine("\t\t\tprojectDirPath = \"\";");
                 contents.AppendLine("\t\t\tprojectRoot = \"\";");
                 contents.AppendLine("\t\t\ttargets = (");
+                contents.AppendLine("\t\t\t\t" + targetId + " /* " + targetName + " */,");
                 contents.AppendLine("\t\t\t);");
                 contents.AppendLine("\t\t};");
                 contents.AppendLine("/* End PBXProject section */");
 
                 contents.AppendLine("");
                 contents.AppendLine("/* Begin XCBuildConfiguration section */");
-                contents.AppendLine("\t\t04FD6349277A0F15000EA5CA /* Debug */ = {");
-                contents.AppendLine("\t\t\tisa = XCBuildConfiguration;");
-                contents.AppendLine("\t\t\tbuildSettings = {");
-                contents.AppendLine("\t\t\t};");
-                contents.AppendLine("\t\t\tname = Debug;");
-                contents.AppendLine("\t\t};");
-                contents.AppendLine("\t\t04FD634A277A0F15000EA5CA /* Release */ = {");
-                contents.AppendLine("\t\t\tisa = XCBuildConfiguration;");
-                contents.AppendLine("\t\t\tbuildSettings = {");
-                contents.AppendLine("\t\t\t};");
-                contents.AppendLine("\t\t\tname = Release;");
-                contents.AppendLine("\t\t};");
+                var configurations = new Dictionary<string, string>();
+                var defaultConfiguration = string.Empty;
+                foreach (var project in solution.Projects)
+                {
+                    if (project.Type == TargetType.NativeCpp)
+                    {
+                        foreach (var configuration in project.Configurations)
+                        {
+                            var target = configuration.Target;
+                            var name = project.Name + '.' + configuration.Name.Replace('|', '.');
+                            var id = GetRandomGuid();
+                            configurations.Add(id, name);
+                            if (project == solution.MainProject && configuration.Configuration == TargetConfiguration.Development)
+                                defaultConfiguration = name;
+
+                            contents.AppendLine("\t\t" + id + " /* " + name + " */ = {");
+                            contents.AppendLine("\t\t\tisa = XCBuildConfiguration;");
+                            contents.AppendLine("\t\t\tbuildSettings = {");
+                            contents.AppendLine("\t\t\t\tBUILD_ARCH = \"" + configuration.ArchitectureName + "\";");
+                            contents.AppendLine("\t\t\t\tBUILD_CONFIGURATION = \"" + configuration.ConfigurationName + "\";");
+                            contents.AppendLine("\t\t\t\tBUILD_PLATFORM = \"" + configuration.PlatformName + "\";");
+                            contents.AppendLine("\t\t\t\tBUILD_TARGET = \"" + configuration.Target + "\";");
+                            contents.AppendLine("\t\t\t};");
+                            contents.AppendLine("\t\t\tname = " + name + ";");
+                            contents.AppendLine("\t\t};");
+                        }
+                    }
+                }
                 contents.AppendLine("/* End XCBuildConfiguration section */");
 
                 contents.AppendLine("");
@@ -133,11 +180,20 @@ namespace Flax.Build.Projects
                 contents.AppendLine("\t\t04FD6348277A0F15000EA5CA /* Build configuration list for PBXProject \"" + projectName + "\" */ = {");
                 contents.AppendLine("\t\t\tisa = XCConfigurationList;");
                 contents.AppendLine("\t\t\tbuildConfigurations = (");
-                contents.AppendLine("\t\t\t\t04FD6349277A0F15000EA5CA /* Debug */,");
-                contents.AppendLine("\t\t\t\t04FD634A277A0F15000EA5CA /* Release */,");
+                foreach (var e in configurations)
+                    contents.AppendLine("\t\t\t\t" + e.Key + " /* " + e.Value + " */,");
                 contents.AppendLine("\t\t\t);");
                 contents.AppendLine("\t\t\tdefaultConfigurationIsVisible = 0;");
-                contents.AppendLine("\t\t\tdefaultConfigurationName = Release;");
+                contents.AppendLine("\t\t\tdefaultConfigurationName = " + defaultConfiguration + ";");
+                contents.AppendLine("\t\t};");
+                contents.AppendLine("\t\t04FD6341277A01BD000EA5CA /* Build configuration list for PBXLegacyTarget \"" + targetName + "\" */ = {");
+                contents.AppendLine("\t\t\tisa = XCConfigurationList;");
+                contents.AppendLine("\t\t\tbuildConfigurations = (");
+                foreach (var e in configurations)
+                    contents.AppendLine("\t\t\t\t" + e.Key + " /* " + e.Value + " */,");
+                contents.AppendLine("\t\t\t);");
+                contents.AppendLine("\t\t\tdefaultConfigurationIsVisible = 0;");
+                contents.AppendLine("\t\t\tdefaultConfigurationName = " + defaultConfiguration + ";");
                 contents.AppendLine("\t\t};");
                 contents.AppendLine("/* End XCConfigurationList section */");
 
