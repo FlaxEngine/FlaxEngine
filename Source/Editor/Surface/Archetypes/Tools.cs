@@ -1342,11 +1342,11 @@ namespace FlaxEditor.Surface.Archetypes
             },
             new NodeArchetype
             {
-                TypeID = 18,
+                TypeID = 17,
                 Title = "Platform Switch",
                 Description = "Gets the input value based on the runtime-platform type",
                 Flags = NodeFlags.AllGraphs,
-                Size = new Vector2(220, 200),
+                Size = new Vector2(220, 220),
                 ConnectionsHints = ConnectionsHint.Value,
                 IndependentBoxes = new[] { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11 },
                 DependentBoxes = new[] { 0 },
