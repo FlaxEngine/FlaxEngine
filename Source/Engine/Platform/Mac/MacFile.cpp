@@ -73,7 +73,6 @@ MacFile* MacFile::Open(const StringView& path, FileMode mode, FileAccess access,
     auto handle = open(pathANSI.Get(), flags, omode);
     if (handle == -1)
     {
-        LOG_Mac_LAST_ERROR;
         return nullptr;
     }
 
@@ -91,7 +90,6 @@ bool MacFile::Read(void* buffer, uint32 bytesToRead, uint32* bytesRead)
     }
     if (bytesRead)
         *bytesRead = 0;
-    LOG_Mac_LAST_ERROR;
     return true;
 }
 
@@ -106,7 +104,6 @@ bool MacFile::Write(const void* buffer, uint32 bytesToWrite, uint32* bytesWritte
     }
     if (bytesWritten)
         *bytesWritten = 0;
-    LOG_Mac_LAST_ERROR;
     return true;
 }
 

@@ -3,6 +3,7 @@
 #if PLATFORM_MAC
 
 #include "../Window.h"
+#include "Engine/Graphics/RenderTask.h"
 
 MacWindow::MacWindow(const CreateWindowSettings& settings)
     : WindowBase(settings)
@@ -89,15 +90,6 @@ bool MacWindow::IsForegroundWindow() const
 
 void MacWindow::SetIsFullscreen(bool isFullscreen)
 {
-}
-
-void MacWindow::GetScreenInfo(int32& x, int32& y, int32& width, int32& height) const
-{
-    // TODO: proper screen info
-    x = 0;
-    y = 0;
-    width = (int32)_clientSize.X;
-    height = (int32)_clientSize.Y;
 }
 
 #endif

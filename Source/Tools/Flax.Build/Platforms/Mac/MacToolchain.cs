@@ -14,6 +14,8 @@ namespace Flax.Build.Platforms
     /// <seealso cref="Toolchain" />
     public sealed class MacToolchain : Toolchain
     {
+        private string MinMacOSXVer = "10.14";
+        
         public string ToolchainPath;
         public string SdkPath;
         public string ClangPath;
@@ -118,11 +120,15 @@ namespace Flax.Build.Platforms
                 commonArgs.Add("c++");
                 commonArgs.Add("-std=c++14");
                 commonArgs.Add("-stdlib=libc++");
+                commonArgs.Add("-mmacosx-version-min=" + MinMacOSXVer);
 
                 commonArgs.Add("-Wdelete-non-virtual-dtor");
                 commonArgs.Add("-fno-math-errno");
                 commonArgs.Add("-fasm-blocks");
                 commonArgs.Add("-fdiagnostics-format=msvc");
+
+                commonArgs.Add("-Wno-absolute-value");
+                commonArgs.Add("-Wno-nullability-completeness");
 
                 // Hide all symbols by default
                 commonArgs.Add("-fvisibility-inlines-hidden");
@@ -218,14 +224,12 @@ namespace Flax.Build.Platforms
         {
             var linkEnvironment = options.LinkEnv;
             var task = graph.Add<LinkTask>();
-            Console.WriteLine("Linking " + outputFilePath + " as " + linkEnvironment.Output);
-            foreach (var f in linkEnvironment.InputFiles)
-                Console.WriteLine(f);
 
             // Setup arguments
             var args = new List<string>();
             {
                 args.Add(string.Format("-o \"{0}\"", outputFilePath));
+                args.Add("-mmacosx-version-min=" + MinMacOSXVer);
 
                 if (!options.LinkEnv.DebugInformation)
                     args.Add("-Wl,--strip-debug");
@@ -233,7 +237,9 @@ namespace Flax.Build.Platforms
                 switch (linkEnvironment.Output)
                 {
                 case LinkerOutput.Executable:
+                    break;
                 case LinkerOutput.SharedLibrary:
+                    args.Add("-dynamiclib");
                     break;
                 case LinkerOutput.StaticLibrary:
                 case LinkerOutput.ImportLibrary:

@@ -15,7 +15,6 @@ class MacConditionVariable;
 class FLAXENGINE_API MacCriticalSection
 {
     friend MacConditionVariable;
-
 private:
 
     pthread_mutex_t _mutex;

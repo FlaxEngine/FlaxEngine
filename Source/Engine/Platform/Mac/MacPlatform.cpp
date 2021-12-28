@@ -32,17 +32,21 @@
 #include <unistd.h>
 #include <cstdint>
 #include <stdlib.h>
+#include <sys/time.h>
+#include <mach/mach_time.h>
 
 CPUInfo MacCpu;
 Guid DeviceId;
 String UserLocale, ComputerName;
 byte MacAddress[6];
+double SecondsPerCycle;
 
 DialogResult MessageBox::Show(Window* parent, const StringView& text, const StringView& caption, MessageBoxButtons buttons, MessageBoxIcon icon)
 {
     if (CommandLine::Options.Headless)
         return DialogResult::None;
-	todo;
+    // TODO: impl message box on Mac
+    return DialogResult::None;
 }
 
 class MacKeyboard : public Keyboard
@@ -147,7 +151,7 @@ ProcessMemoryStats MacPlatform::GetProcessMemoryStats()
     return ProcessMemoryStats(); // TODO: platform stats on Mac
 }
 
-uint64 UnixPlatform::GetCurrentProcessId()
+uint64 MacPlatform::GetCurrentProcessId()
 {
     return getpid();
 }
@@ -176,20 +180,17 @@ void MacPlatform::Sleep(int32 milliseconds)
 
 double MacPlatform::GetTimeSeconds()
 {
-    MISSING_CODE("MacPlatform::GetTimeSeconds");
-    return 0.0; // TODO: clock on Mac
+    return SecondsPerCycle * mach_absolute_time();
 }
 
 uint64 MacPlatform::GetTimeCycles()
 {
-    MISSING_CODE("MacPlatform::GetTimeCycles");
-    return 0; // TODO: clock on Mac
+    return mach_absolute_time();
 }
 
 uint64 MacPlatform::GetClockFrequency()
 {
-    MISSING_CODE("MacPlatform::GetClockFrequency");
-    return 0; // TODO: clock on Mac
+    return (uint64)(1.0 / SecondsPerCycle);
 }
 
 void MacPlatform::GetSystemTime(int32& year, int32& month, int32& dayOfWeek, int32& day, int32& hour, int32& minute, int32& second, int32& millisecond)
@@ -238,7 +239,14 @@ bool MacPlatform::Init()
 {
     if (PlatformBase::Init())
         return true;
-    
+
+    // Init timing
+    {
+        mach_timebase_info_data_t info;
+        mach_timebase_info(&info);
+        SecondsPerCycle = 1e-9 * (double)info.numer / (double)info.denom;
+    }
+
     // TODO: get MacCpu
 
     // TODO: get MacAddress
@@ -250,8 +258,8 @@ bool MacPlatform::Init()
     // TODO: get UserLocale
     // TODO: get ComputerName
 
-    Input::Mouse = Impl::Mouse = New<MacMouse>();
-    Input::Keyboard = Impl::Keyboard = New<MacKeyboard>();
+    Input::Mouse = New<MacMouse>();
+    Input::Keyboard = New<MacKeyboard>();
 
     return false;
 }
@@ -275,7 +283,8 @@ void MacPlatform::Exit()
 
 int32 MacPlatform::GetDpi()
 {
-    return todo;
+    // TODO: Screen DPI on Mac
+    return 96;
 }
 
 String MacPlatform::GetUserLocaleName()

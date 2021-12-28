@@ -8,6 +8,8 @@
 #include "Unix/UnixCriticalSection.h"
 #elif PLATFORM_SWITCH
 #include "Platforms/Switch/Engine/Platform/SwitchCriticalSection.h"
+#elif PLATFORM_MAC
+#include "Mac/MacCriticalSection.h"
 #else
 #error Missing Critical Section implementation!
 #endif

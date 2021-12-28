@@ -8,6 +8,8 @@
 #include "Unix/UnixConditionVariable.h"
 #elif PLATFORM_SWITCH
 #include "Platforms/Switch/Engine/Platform/SwitchConditionVariable.h"
+#elif PLATFORM_MAC
+#include "Mac/MacConditionVariable.h"
 #else
 #error Missing Condition Variable implementation!
 #endif

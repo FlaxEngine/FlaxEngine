@@ -11,6 +11,10 @@
 /// </summary>
 class MacThread : public ThreadBase
 {
+protected:
+
+    pthread_t _thread;
+
 public:
 
     MacThread(IRunnable* runnable, const String& name, ThreadPriority priority);
@@ -22,10 +26,12 @@ public:
 
 protected:
 
+    static void* ThreadProc(void* pThis);
+
     // [ThreadBase]
-    void ClearHandleInternal();
-    void SetPriorityInternal(ThreadPriority priority);
-    void KillInternal(bool waitForJoin);
+    void ClearHandleInternal() override;
+    void SetPriorityInternal(ThreadPriority priority) override;
+    void KillInternal(bool waitForJoin) override;
 };
 
 #endif
