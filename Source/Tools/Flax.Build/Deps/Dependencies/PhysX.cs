@@ -41,6 +41,11 @@ namespace Flax.Deps.Dependencies
                     {
                         TargetPlatform.Linux,
                     };
+                case TargetPlatform.Mac:
+                    return new[]
+                    {
+                        TargetPlatform.Mac,
+                    };
                 default: return new TargetPlatform[0];
                 }
             }
@@ -104,6 +109,7 @@ namespace Flax.Deps.Dependencies
             string buildPlatform;
             bool suppressBitsPostfix = false;
             string binariesPrefix = string.Empty;
+            var envVars = new Dictionary<string, string>();
             switch (architecture)
             {
             case TargetArchitecture.x86:
@@ -180,11 +186,15 @@ namespace Flax.Deps.Dependencies
                 suppressBitsPostfix = true;
                 binariesPrefix = "lib";
                 break;
+            case TargetPlatform.Mac:
+                binariesSubDir = "mac.x86_64";
+                binariesPrefix = "lib";
+                envVars.Add("MACOSX_DEPLOYMENT_TARGET", Configuration.MacOSXMinVer);
+                break;
             default: throw new InvalidPlatformException(targetPlatform);
             }
 
             // Setup build environment variables for PhysX build system
-            var envVars = new Dictionary<string, string>();
             switch (BuildPlatform)
             {
             case TargetPlatform.Windows:
@@ -197,11 +207,11 @@ namespace Flax.Deps.Dependencies
                 break;
             }
             case TargetPlatform.Linux:
-            {
                 envVars.Add("CC", "clang-7");
                 envVars.Add("CC_FOR_BUILD", "clang-7");
                 break;
-            }
+            case TargetPlatform.Mac:
+                break;
             default: throw new InvalidPlatformException(BuildPlatform);
             }
             if (AndroidNdk.Instance.IsValid)
@@ -276,6 +286,9 @@ namespace Flax.Deps.Dependencies
             case TargetPlatform.Linux:
                 Utilities.Run("make", null, null, Path.Combine(projectGenDir, "compiler", "linux-" + configuration), Utilities.RunOptions.None);
                 break;
+            case TargetPlatform.Mac:
+                Utilities.Run("xcodebuild", "-project PhysXSDK.xcodeproj -alltargets -configuration " + configuration, null, Path.Combine(projectGenDir, "compiler", preset), Utilities.RunOptions.None);
+                break;
             default: throw new InvalidPlatformException(BuildPlatform);
             }
 
@@ -291,6 +304,16 @@ namespace Flax.Deps.Dependencies
                 var filenamePdb = Path.ChangeExtension(filename, "pdb");
                 if (File.Exists(Path.Combine(srcBinaries, filenamePdb)))
                     Utilities.FileCopy(Path.Combine(srcBinaries, filenamePdb), Path.Combine(dstBinaries, filenamePdb));
+
+                // Strip debug symbols to reduce binaries size
+                switch (targetPlatform)
+                {
+                case TargetPlatform.Linux:
+                case TargetPlatform.Mac:
+                case TargetPlatform.Android:
+                    Utilities.Run("strip", "\"" + filename + "\"", null, dstBinaries, Utilities.RunOptions.None);
+                    break;
+                }
             }
             srcBinaries = Path.Combine(root, "physx", "compiler", preset, "sdk_source_bin", configuration);
             var additionalPhysXLibs = new[]
@@ -318,13 +341,16 @@ namespace Flax.Deps.Dependencies
             root = options.IntermediateFolder;
             projectGenDir = Path.Combine(root, "physx");
             solutionFilesRoot = Path.Combine(root, "physx", "compiler");
-            if (BuildPlatform == TargetPlatform.Windows)
+            switch (BuildPlatform)
             {
+            case TargetPlatform.Windows:
                 projectGenPath = Path.Combine(projectGenDir, "generate_projects.bat");
-            }
-            else if (BuildPlatform == TargetPlatform.Linux)
-            {
+                break;
+            case TargetPlatform.Linux:
+            case TargetPlatform.Mac:
                 projectGenPath = Path.Combine(projectGenDir, "generate_projects.sh");
+                break;
+            default: throw new InvalidPlatformException(BuildPlatform);
             }
 
             // Get the source
@@ -380,6 +406,11 @@ namespace Flax.Deps.Dependencies
                 {
                     Utilities.DirectoryCopy(Path.Combine(options.PlatformsFolder, "Switch", "Data", "PhysX"), root, true, true);
                     Build(options, "switch64", platform, TargetArchitecture.ARM64);
+                    break;
+                }
+                case TargetPlatform.Mac:
+                {
+                    Build(options, "mac64", platform, TargetArchitecture.x64);
                     break;
                 }
                 }

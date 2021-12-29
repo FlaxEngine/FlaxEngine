@@ -239,7 +239,6 @@ namespace Flax.Deps
             case TargetPlatform.Linux:
             case TargetPlatform.PS4:
             case TargetPlatform.PS5:
-            case TargetPlatform.Mac:
             {
                 cmdLine = "CMakeLists.txt";
                 break;
@@ -255,6 +254,11 @@ namespace Flax.Deps
                 var abi = AndroidToolchain.GetAbiName(architecture);
                 var hostName = AndroidSdk.GetHostName();
                 cmdLine = string.Format("-DCMAKE_TOOLCHAIN_FILE=\"{0}/build/cmake/android.toolchain.cmake\" -DANDROID_NDK=\"{0}\" -DANDROID_STL=c++_shared -DANDROID_ABI={1} -DANDROID_PLATFORM=android-{2} -G \"MinGW Makefiles\" -DCMAKE_MAKE_PROGRAM=\"{0}/prebuilt/{3}/bin/make.exe\"", ndk, abi, Configuration.AndroidPlatformApi, hostName);
+                break;
+            }
+            case TargetPlatform.Mac:
+            {
+                cmdLine = string.Format("CMakeLists.txt -DCMAKE_OSX_DEPLOYMENT_TARGET=\"{0}\"", Configuration.MacOSXMinVer);
                 break;
             }
             default: throw new InvalidPlatformException(platform);

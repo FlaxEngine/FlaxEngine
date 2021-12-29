@@ -319,7 +319,10 @@ namespace Flax.Build
         /// <returns>The exit code of the program.</returns>
         public static int Run(string app, string commandLine = null, string input = null, string workspace = null, RunOptions options = RunOptions.Default, Dictionary<string, string> envVars = null)
         {
-            // Check if the application exists, including the PATH directories.
+            if (string.IsNullOrEmpty(app))
+                throw new ArgumentNullException(nameof(app), "Missing app to run.");
+
+            // Check if the application exists, including the PATH directories
             if (options.HasFlag(RunOptions.AppMustExist) && !File.Exists(app))
             {
                 bool existsInPath = false;

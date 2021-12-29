@@ -38,6 +38,11 @@ namespace Flax.Deps.Dependencies
                     {
                         TargetPlatform.Linux,
                     };
+                case TargetPlatform.Mac:
+                    return new[]
+                    {
+                        TargetPlatform.Mac,
+                    };
                 default: return new TargetPlatform[0];
                 }
             }
@@ -191,7 +196,7 @@ namespace Flax.Deps.Dependencies
 
                     // Build for Android
                     SetupDirectory(buildDir, true);
-                    RunCmake(buildDir, TargetPlatform.Android, TargetArchitecture.ARM64, ".. -DCMAKE_BUILD_TYPE=Release");
+                    RunCmake(buildDir, platform, TargetArchitecture.ARM64, ".. -DCMAKE_BUILD_TYPE=Release");
                     Utilities.Run("cmake", "--build .", null, buildDir, Utilities.RunOptions.None);
                     var depsFolder = GetThirdPartyFolder(options, platform, TargetArchitecture.ARM64);
                     Utilities.FileCopy(Path.Combine(buildDir, libraryFileName), Path.Combine(depsFolder, libraryFileName));
@@ -208,6 +213,18 @@ namespace Flax.Deps.Dependencies
                     RunCmake(buildDir, platform, TargetArchitecture.ARM64, ".. -DCMAKE_BUILD_TYPE=Release");
                     Utilities.Run("cmake", "--build .", null, buildDir, Utilities.RunOptions.None);
                     var depsFolder = GetThirdPartyFolder(options, platform, TargetArchitecture.ARM64);
+                    Utilities.FileCopy(Path.Combine(buildDir, libraryFileName), Path.Combine(depsFolder, libraryFileName));
+                    break;
+                }
+                case TargetPlatform.Mac:
+                {
+                    var buildDir = Path.Combine(root, "build");
+
+                    // Build for Mac
+                    SetupDirectory(buildDir, true);
+                    RunCmake(buildDir, platform, TargetArchitecture.x64, ".. -DCMAKE_BUILD_TYPE=Release");
+                    Utilities.Run("cmake", "--build .", null, buildDir, Utilities.RunOptions.None);
+                    var depsFolder = GetThirdPartyFolder(options, platform, TargetArchitecture.x64);
                     Utilities.FileCopy(Path.Combine(buildDir, libraryFileName), Path.Combine(depsFolder, libraryFileName));
                     break;
                 }

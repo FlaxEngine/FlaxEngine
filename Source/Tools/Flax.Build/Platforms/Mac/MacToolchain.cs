@@ -6,6 +6,18 @@ using System.Collections.Generic;
 using Flax.Build.Graph;
 using Flax.Build.NativeCpp;
 
+namespace Flax.Build
+{
+    partial class Configuration
+    {
+        /// <summary>
+        /// Specifies the minimum Mac OSX version to use (eg. 10.14).
+        /// </summary>
+        [CommandLine("macOSXMinVer", "<version>", "Specifies the minimum Mac OSX version to use (eg. 10.14).")]
+        public static string MacOSXMinVer = "10.14";
+    }
+}
+
 namespace Flax.Build.Platforms
 {
     /// <summary>
@@ -14,8 +26,6 @@ namespace Flax.Build.Platforms
     /// <seealso cref="UnixToolchain" />
     public sealed class MacToolchain : UnixToolchain
     {
-        private string MinMacOSXVer = "10.14";
-        
         public string ToolchainPath;
         public string SdkPath;
         public string LinkerPath;
@@ -95,6 +105,14 @@ namespace Flax.Build.Platforms
             base.SetupEnvironment(options);
 
             options.CompileEnv.PreprocessorDefinitions.Add("PLATFORM_MAC");
+
+            options.LinkEnv.InputLibraries.Add("z");
+            options.LinkEnv.InputLibraries.Add("bz2");
+
+            options.LinkEnv.InputLibraries.Add("CoreFoundation.framework");
+            options.LinkEnv.InputLibraries.Add("CoreGraphics.framework");
+            options.LinkEnv.InputLibraries.Add("SystemConfiguration.framework");
+            options.LinkEnv.InputLibraries.Add("IOKit.framework");
         }
 
         /// <inheritdoc />
@@ -113,15 +131,26 @@ namespace Flax.Build.Platforms
                 commonArgs.Add("c++");
                 commonArgs.Add("-std=c++14");
                 commonArgs.Add("-stdlib=libc++");
-                commonArgs.Add("-mmacosx-version-min=" + MinMacOSXVer);
+                AddArgsCommon(options, commonArgs);
+
+                switch (Architecture)
+                {
+                case TargetArchitecture.x64:
+                    commonArgs.Add("-msse2");
+                    break;
+                }
 
                 commonArgs.Add("-Wdelete-non-virtual-dtor");
                 commonArgs.Add("-fno-math-errno");
                 commonArgs.Add("-fasm-blocks");
+                commonArgs.Add("-fpascal-strings");
                 commonArgs.Add("-fdiagnostics-format=msvc");
 
                 commonArgs.Add("-Wno-absolute-value");
                 commonArgs.Add("-Wno-nullability-completeness");
+                commonArgs.Add("-Wno-undef-prefix");
+                commonArgs.Add("-Wno-expansion-to-defined");
+                commonArgs.Add("-Wno-non-virtual-dtor");
 
                 // Hide all symbols by default
                 commonArgs.Add("-fvisibility-inlines-hidden");
@@ -222,7 +251,7 @@ namespace Flax.Build.Platforms
             var args = new List<string>();
             {
                 args.Add(string.Format("-o \"{0}\"", outputFilePath));
-                args.Add("-mmacosx-version-min=" + MinMacOSXVer);
+                AddArgsCommon(options, args);
 
                 if (!options.LinkEnv.DebugInformation)
                     args.Add("-Wl,--strip-debug");
@@ -230,12 +259,15 @@ namespace Flax.Build.Platforms
                 switch (linkEnvironment.Output)
                 {
                 case LinkerOutput.Executable:
+                    args.Add("-dead_strip");
                     break;
                 case LinkerOutput.SharedLibrary:
                     args.Add("-dynamiclib");
+                    args.Add("-dead_strip");
                     break;
                 case LinkerOutput.StaticLibrary:
                 case LinkerOutput.ImportLibrary:
+                    args.Add("-static");
                     break;
                 default: throw new ArgumentOutOfRangeException();
                 }
@@ -247,7 +279,11 @@ namespace Flax.Build.Platforms
             {
                 var dir = Path.GetDirectoryName(library);
                 var ext = Path.GetExtension(library);
-                if (string.IsNullOrEmpty(dir))
+                if (ext == ".framework")
+                {
+                    args.Add(string.Format("-framework {0}", library.Substring(0, library.Length - ext.Length)));
+                }
+                else if (string.IsNullOrEmpty(dir))
                 {
                     args.Add(string.Format("\"-l{0}\"", library));
                 }
@@ -260,12 +296,13 @@ namespace Flax.Build.Platforms
                     // Link against dynamic library
                     task.PrerequisiteFiles.Add(library);
                     libraryPaths.Add(dir);
-                    args.Add(string.Format("\"-l{0}\"", UnixToolchain.GetLibName(library)));
+                    //args.Add(string.Format("\"-l{0}\"", GetLibName(library)));
+                    args.Add(string.Format("\"{0}\"", library));
                 }
                 else
                 {
                     task.PrerequisiteFiles.Add(library);
-                    args.Add(string.Format("\"{0}\"", UnixToolchain.GetLibName(library)));
+                    args.Add(string.Format("\"{0}\"", GetLibName(library)));
                 }
             }
             foreach (var library in options.Libraries)
@@ -285,12 +322,13 @@ namespace Flax.Build.Platforms
                     // Link against dynamic library
                     task.PrerequisiteFiles.Add(library);
                     libraryPaths.Add(dir);
-                    args.Add(string.Format("\"-l{0}\"", UnixToolchain.GetLibName(library)));
+                    //args.Add(string.Format("\"-l{0}\"", GetLibName(library)));
+                    args.Add(string.Format("\"{0}\"", library));
                 }
                 else
                 {
                     task.PrerequisiteFiles.Add(library);
-                    args.Add(string.Format("\"{0}\"", UnixToolchain.GetLibName(library)));
+                    args.Add(string.Format("\"{0}\"", GetLibName(library)));
                 }
             }
 
@@ -336,6 +374,36 @@ namespace Flax.Build.Platforms
             task.InfoMessage = "Linking " + outputFilePath;
             task.Cost = task.PrerequisiteFiles.Count;
             task.ProducedFiles.Add(outputFilePath);
+
+            if (!options.LinkEnv.DebugInformation)
+            {
+                // Strip debug symbols
+                var stripTask = graph.Add<Task>();
+                stripTask.ProducedFiles.Add(outputFilePath);
+                stripTask.WorkingDirectory = options.WorkingDirectory;
+                stripTask.CommandPath = "strip";
+                stripTask.CommandArguments = string.Format("\"{0}\" -S", outputFilePath);
+                stripTask.InfoMessage = "Striping " + outputFilePath;
+                stripTask.Cost = 1;
+                stripTask.DisableCache = true;
+                stripTask.DependentTasks = new HashSet<Task>();
+                stripTask.DependentTasks.Add(task);
+            }
+        }
+
+        private void AddArgsCommon(BuildOptions options, List<string> args)
+        {
+            args.Add("-mmacosx-version-min=" + Configuration.MacOSXMinVer);
+            args.Add("-isysroot \"" + SdkPath + "\"");
+            switch (Architecture)
+            {
+            case TargetArchitecture.x64:
+                args.Add("-arch x86_64");
+                break;
+            case TargetArchitecture.ARM64:
+                args.Add("-arch arm64");
+                break;
+            }
         }
     }
 }

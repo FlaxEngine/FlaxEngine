@@ -29,6 +29,7 @@ namespace Flax.Deps.Dependencies
                         TargetPlatform.PS4,
                         TargetPlatform.PS5,
                         TargetPlatform.Switch,
+                        TargetPlatform.Mac,
                     };
                 default: return new TargetPlatform[0];
                 }
@@ -62,6 +63,7 @@ namespace Flax.Deps.Dependencies
                 {
                 case TargetPlatform.Windows:
                 case TargetPlatform.Linux:
+                case TargetPlatform.Mac:
                 {
                     foreach (var file in outputFileNames)
                     {

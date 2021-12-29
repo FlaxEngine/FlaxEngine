@@ -502,8 +502,30 @@ DateTime MacFileSystem::GetFileLastEditTime(const StringView& path)
 
 void MacFileSystem::GetSpecialFolderPath(const SpecialFolder type, String& result)
 {
-    MISSING_CODE("MacFileSystem::GetSpecialFolderPath");
-    return; // TODO: filesystem on Mac
+    String home;
+    Platform::GetEnvironmentVariable(TEXT("HOME"), home);
+    switch (type)
+    {
+    case SpecialFolder::Desktop:
+        result = home / TEXT("/Desktop");
+        break;
+    case SpecialFolder::Documents:
+        result = home / TEXT("/Documents");
+        break;
+    case SpecialFolder::Pictures:
+        result = home / TEXT("/Pictures");
+        break;
+    case SpecialFolder::AppData:
+    case SpecialFolder::LocalAppData:
+        result = home / TEXT("/Library/Caches");
+        break;
+    case SpecialFolder::ProgramData:
+        result = home / TEXT("/Library/Application Support");
+        break;
+    case SpecialFolder::Temporary:
+        Platform::GetEnvironmentVariable(TEXT("TMPDIR"), result);
+        break;
+    }
 }
 
 #endif

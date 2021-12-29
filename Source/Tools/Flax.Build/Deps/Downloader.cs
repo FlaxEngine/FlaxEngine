@@ -61,6 +61,8 @@ namespace Flax.Deps
         public static FileInfo DownloadFileFromUrlToPath(string url, string path)
         {
             Log.Verbose(string.Format("Downloading {0} to {1}", url, path));
+            if (File.Exists(path))
+                File.Delete(path);
 
             if (url.StartsWith(GoogleDriveDomain) || url.StartsWith(GoogleDriveDomain2))
                 return DownloadGoogleDriveFileFromUrlToPath(url, path);

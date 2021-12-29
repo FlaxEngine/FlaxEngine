@@ -304,7 +304,7 @@ namespace Flax.Build.Projects.VisualStudioCode
                                     var target = configuration.Target;
 
                                     var outputType = project.OutputType ?? target.OutputType;
-                                    var outputTargetFilePath = target.GetOutputFilePath(configuration.TargetBuildOptions, project.OutputType);
+                                    var outputTargetFilePath = target.GetOutputFilePath(configuration.TargetBuildOptions, TargetOutputType.Executable);
 
                                     json.BeginObject();
                                     {
@@ -374,6 +374,31 @@ namespace Flax.Build.Projects.VisualStudioCode
                                                     json.EndObject();
                                                 }
                                                 json.EndArray();
+                                                json.BeginArray("args");
+                                                {
+                                                    json.AddUnnamedField("--std");
+                                                    if (outputType != TargetOutputType.Executable && configuration.Name.StartsWith("Editor."))
+                                                    {
+                                                        json.AddUnnamedField("--project");
+                                                        json.AddUnnamedField(buildToolWorkspace);
+                                                        json.AddUnnamedField("--skipCompile");
+                                                    }
+                                                }
+                                                json.EndArray();
+                                            }
+                                            break;
+                                        case TargetPlatform.Mac:
+                                            if (configuration.Platform == TargetPlatform.Mac && (outputType != TargetOutputType.Executable || project.Name == "Flax") && configuration.Name.StartsWith("Editor."))
+                                            {
+                                                json.AddField("program", Path.Combine(Globals.EngineRoot, "Binaries", "Editor", "Mac", configuration.ConfigurationName, "FlaxEditor"));
+                                            }
+                                            else
+                                            {
+                                                json.AddField("program", outputTargetFilePath);
+                                            }
+                                            if (configuration.Platform == TargetPlatform.Mac)
+                                            {
+                                                json.AddField("MIMode", "lldb");
                                                 json.BeginArray("args");
                                                 {
                                                     json.AddUnnamedField("--std");

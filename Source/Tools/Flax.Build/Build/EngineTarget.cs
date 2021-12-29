@@ -47,7 +47,7 @@ namespace Flax.Build
         public override string GetOutputFilePath(BuildOptions options, TargetOutputType? outputType)
         {
             // If building engine executable for platform doesn't support referencing it when linking game shared libraries
-            if (UseSymbolsExports && (outputType ?? OutputType) == TargetOutputType.Executable && !options.Platform.HasExecutableFileReferenceSupport)
+            if (outputType == null && UseSymbolsExports && OutputType == TargetOutputType.Executable && !options.Platform.HasExecutableFileReferenceSupport)
             {
                 // Build into shared library
                 outputType = TargetOutputType.Library;
