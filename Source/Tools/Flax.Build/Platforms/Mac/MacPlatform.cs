@@ -10,8 +10,8 @@ namespace Flax.Build.Platforms
     /// <summary>
     /// The build platform for all Mac systems.
     /// </summary>
-    /// <seealso cref="Platform" />
-    public sealed class MacPlatform : Platform
+    /// <seealso cref="UnixPlatform" />
+    public sealed class MacPlatform : UnixPlatform
     {
         /// <inheritdoc />
         public override TargetPlatform Target => TargetPlatform.Mac;
@@ -23,22 +23,13 @@ namespace Flax.Build.Platforms
         public override bool HasSharedLibrarySupport => true;
 
         /// <inheritdoc />
-        public override string ExecutableFileExtension => string.Empty;
-
-        /// <inheritdoc />
         public override string SharedLibraryFileExtension => ".dylib";
-
-        /// <inheritdoc />
-        public override string StaticLibraryFileExtension => ".a";
 
         /// <inheritdoc />
         public override string ProgramDatabaseFileExtension => ".dSYM";
 
         /// <inheritdoc />
         public override string SharedLibraryFilePrefix => string.Empty;
-
-        /// <inheritdoc />
-        public override string StaticLibraryFilePrefix => "lib";
 
         /// <inheritdoc />
         public override ProjectFormat DefaultProjectFormat => ProjectFormat.XCode;
@@ -74,6 +65,16 @@ namespace Flax.Build.Platforms
         protected override Toolchain CreateToolchain(TargetArchitecture architecture)
         {
             return new MacToolchain(this, architecture);
+        }
+
+        /// <inheritdoc />
+        public override bool CanBuildPlatform(TargetPlatform platform)
+        {
+            switch (platform)
+            {
+            case TargetPlatform.Mac: return HasRequiredSDKsInstalled;
+            default: return false;
+            }
         }
     }
 }

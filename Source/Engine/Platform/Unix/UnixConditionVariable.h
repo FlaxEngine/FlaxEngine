@@ -17,8 +17,6 @@ private:
 
     pthread_cond_t _cond;
 
-private:
-
     UnixConditionVariable(const UnixConditionVariable&);
     UnixConditionVariable& operator=(const UnixConditionVariable&);
 
@@ -61,13 +59,11 @@ public:
     {
         struct timeval tv;
         struct timespec ts;
-
         gettimeofday(&tv, NULL);
         ts.tv_sec = time(NULL) + timeout / 1000;
         ts.tv_nsec = tv.tv_usec * 1000 + 1000 * 1000 * (timeout % 1000);
         ts.tv_sec += ts.tv_nsec / (1000 * 1000 * 1000);
         ts.tv_nsec %= (1000 * 1000 * 1000);
-
         return pthread_cond_timedwait(&_cond, lock._mutexPtr, &ts) == 0;
     }
 

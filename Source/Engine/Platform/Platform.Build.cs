@@ -78,6 +78,7 @@ public class Platform : EngineModule
             options.SourcePaths.Add(Path.Combine(Globals.EngineRoot, "Source", "Platforms", "Switch", "Engine", "Platform"));
             break;
         case TargetPlatform.Mac:
+            options.SourcePaths.Add(Path.Combine(FolderPath, "Unix"));
             options.SourcePaths.Add(Path.Combine(FolderPath, "Mac"));
             break;
         default: throw new InvalidPlatformException(options.Platform.Target);

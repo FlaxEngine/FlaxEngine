@@ -11,14 +11,13 @@ namespace Flax.Build.Platforms
     /// <summary>
     /// The build toolchain for all Mac systems.
     /// </summary>
-    /// <seealso cref="Toolchain" />
-    public sealed class MacToolchain : Toolchain
+    /// <seealso cref="UnixToolchain" />
+    public sealed class MacToolchain : UnixToolchain
     {
         private string MinMacOSXVer = "10.14";
         
         public string ToolchainPath;
         public string SdkPath;
-        public string ClangPath;
         public string LinkerPath;
         public string ArchiverPath;
 
@@ -47,7 +46,7 @@ namespace Flax.Build.Platforms
             ClangPath = Path.Combine(ToolchainPath, "usr/bin/clang++");
             LinkerPath = Path.Combine(ToolchainPath, "usr/bin/clang++");
             ArchiverPath = Path.Combine(ToolchainPath, "usr/bin/libtool");
-            var clangVersion = UnixToolchain.GetClangVersion(ClangPath);
+            ClangVersion = GetClangVersion(ClangPath);
             SdkPath = Path.Combine(SdkPath, "SDKs");
             var sdks = Directory.GetDirectories(SdkPath);
             var sdkPrefix = "MacOSX";
@@ -75,18 +74,12 @@ namespace Flax.Build.Platforms
             SdkPath = bestSdk;
 
             // Setup system paths
-            SystemIncludePaths.Add(Path.Combine(ToolchainPath, "usr/include"));
-            SystemIncludePaths.Add(Path.Combine(ToolchainPath, "usr/include/c++/v1"));
-            SystemIncludePaths.Add(Path.Combine(ToolchainPath, "usr/lib/clang", clangVersion.ToString(3), "include"));
-            SystemIncludePaths.Add(Path.Combine(SdkPath, "usr/include"));
+            //SystemIncludePaths.Add(Path.Combine(ToolchainPath, "usr/include"));
+            //SystemIncludePaths.Add(Path.Combine(ToolchainPath, "usr/include/c++/v1"));
+            //SystemIncludePaths.Add(Path.Combine(ToolchainPath, "usr/lib/clang", ClangVersion.ToString(3), "include"));
+            //SystemIncludePaths.Add(Path.Combine(SdkPath, "usr/include"));
             SystemLibraryPaths.Add(Path.Combine(SdkPath, "usr/lib"));
         }
-
-        /// <inheritdoc />
-        public override string DllExport => "__attribute__((__visibility__(\\\"default\\\")))";
-
-        /// <inheritdoc />
-        public override string DllImport => "";
 
         /// <inheritdoc />
         public override void LogInfo()

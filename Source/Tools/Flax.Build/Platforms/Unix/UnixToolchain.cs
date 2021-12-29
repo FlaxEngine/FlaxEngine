@@ -71,13 +71,15 @@ namespace Flax.Build.Platforms
         /// </summary>
         /// <param name="platform">The platform.</param>
         /// <param name="architecture">The target architecture.</param>
-        /// <param name="toolchainRoots">The root folder for the toolchains installation.</param>
+        /// <param name="toolchainRoots">The root folder for the toolchains installation. If null, then platform must specify tools paths manually.</param>
         /// <param name="systemCompiler">The system compiler to use. Null if use toolset root.</param>
         /// <param name="toolchainSubDir">The custom toolchain folder location in <paramref name="toolchainRoots"/> directory. If nul the architecture name will be used.</param>
-        protected UnixToolchain(UnixPlatform platform, TargetArchitecture architecture, string toolchainRoots, string systemCompiler, string toolchainSubDir = null)
+        protected UnixToolchain(UnixPlatform platform, TargetArchitecture architecture, string toolchainRoots = null, string systemCompiler = null, string toolchainSubDir = null)
         : base(platform, architecture)
         {
             ArchitectureName = GetToolchainName(platform.Target, architecture);
+            if (toolchainRoots == null)
+                return;
 
             // Build paths
             if (systemCompiler != null)
@@ -196,6 +198,12 @@ namespace Flax.Build.Platforms
                 case TargetArchitecture.x64: return "x86_64-linux-android";
                 case TargetArchitecture.ARM: return "armv7a-linux-androideabi";
                 case TargetArchitecture.ARM64: return "aarch64-linux-android";
+                default: throw new InvalidArchitectureException(architecture);
+                }
+            case TargetPlatform.Mac:
+                switch (architecture)
+                {
+                case TargetArchitecture.x64: return "x86_64-apple-macos" + Configuration.MacOSXMinVer;
                 default: throw new InvalidArchitectureException(architecture);
                 }
             default: throw new InvalidPlatformException(platform);

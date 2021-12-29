@@ -15,7 +15,6 @@ class UnixConditionVariable;
 class FLAXENGINE_API UnixCriticalSection
 {
     friend UnixConditionVariable;
-
 private:
 
     pthread_mutex_t _mutex;
@@ -23,8 +22,6 @@ private:
 #if BUILD_DEBUG
     pthread_t _owningThreadId;
 #endif
-
-private:
 
     UnixCriticalSection(const UnixCriticalSection&);
     UnixCriticalSection& operator=(const UnixCriticalSection&);

@@ -4,12 +4,10 @@
 
 #if PLATFORM_WINDOWS || PLATFORM_UWP || PLATFORM_XBOX_ONE || PLATFORM_XBOX_SCARLETT
 #include "Win32/Win32CriticalSection.h"
-#elif PLATFORM_LINUX || PLATFORM_ANDROID || PLATFORM_PS4 || PLATFORM_PS5
+#elif PLATFORM_LINUX || PLATFORM_ANDROID || PLATFORM_PS4 || PLATFORM_PS5 || PLATFORM_MAC
 #include "Unix/UnixCriticalSection.h"
 #elif PLATFORM_SWITCH
 #include "Platforms/Switch/Engine/Platform/SwitchCriticalSection.h"
-#elif PLATFORM_MAC
-#include "Mac/MacCriticalSection.h"
 #else
 #error Missing Critical Section implementation!
 #endif

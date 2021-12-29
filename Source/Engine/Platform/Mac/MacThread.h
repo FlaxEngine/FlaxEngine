@@ -4,34 +4,72 @@
 
 #if PLATFORM_MAC
 
-#include "../Base/ThreadBase.h"
+#include "../Unix/UnixThread.h"
+#include <signal.h>
 
 /// <summary>
 /// Thread object for Mac platform.
 /// </summary>
-class MacThread : public ThreadBase
+class MacThread : public UnixThread
 {
-protected:
-
-    pthread_t _thread;
-
 public:
 
-    MacThread(IRunnable* runnable, const String& name, ThreadPriority priority);
-    ~MacThread();
-    static MacThread* Create(IRunnable* runnable, const String& name, ThreadPriority priority = ThreadPriority::Normal, uint32 stackSize = 0);
+    /// <summary>
+    /// Initializes a new instance of the <see cref="MacThread"/> class.
+    /// </summary>
+    /// <param name="runnable">The runnable.</param>
+    /// <param name="name">The thread name.</param>
+    /// <param name="priority">The thread priority.</param>
+    MacThread(IRunnable* runnable, const String& name, ThreadPriority priority)
+        : UnixThread(runnable, name, priority)
+    {
+    }
+    
+public:
 
-    // [ThreadBase]
-    void Join() override;
+    /// <summary>
+    /// Factory method to create a thread with the specified stack size and thread priority
+    /// </summary>
+    /// <param name="runnable">The runnable object to execute</param>
+    /// <param name="name">Name of the thread</param>
+    /// <param name="priority">Tells the thread whether it needs to adjust its priority or not. Defaults to normal priority</param>
+    /// <param name="stackSize">The size of the stack to create. 0 means use the current thread's stack size</param>
+    /// <returns>Pointer to the new thread or null if cannot create it</returns>
+    static MacThread* Create(IRunnable* runnable, const String& name, ThreadPriority priority = ThreadPriority::Normal, uint32 stackSize = 0)
+    {
+        return (MacThread*)Setup(New<MacThread>(runnable, name, priority), stackSize);
+    }
 
 protected:
 
-    static void* ThreadProc(void* pThis);
-
-    // [ThreadBase]
-    void ClearHandleInternal() override;
-    void SetPriorityInternal(ThreadPriority priority) override;
-    void KillInternal(bool waitForJoin) override;
+    // [UnixThread]
+    int32 GetThreadPriority(ThreadPriority priority) override
+    {
+        switch (priority)
+        {
+        case ThreadPriority::Highest:
+            return 45;
+        case ThreadPriority::AboveNormal:
+            return 37;
+        case ThreadPriority::Normal:
+            return 31;
+        case ThreadPriority::BelowNormal:
+            return 25;
+        case ThreadPriority::Lowest:
+            return 20;
+        }
+        return 31;
+    }
+    int32 Start(pthread_attr_t& attr) override
+    {
+        return pthread_create(&_thread, &attr, ThreadProc, this);
+    }
+    void KillInternal(bool waitForJoin) override
+    {
+        if (waitForJoin)
+            pthread_join(_thread, nullptr);
+        pthread_kill(_thread, SIGKILL);
+    }
 };
 
 #endif
