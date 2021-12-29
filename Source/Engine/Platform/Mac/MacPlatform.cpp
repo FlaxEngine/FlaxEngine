@@ -41,6 +41,7 @@
 #include <CoreGraphics/CoreGraphics.h>
 #include <SystemConfiguration/SystemConfiguration.h>
 #include <IOKit/IOKitLib.h>
+#include <dlfcn.h>
 #if CRASH_LOG_ENABLE
 #include <execinfo.h>
 #endif
@@ -63,12 +64,45 @@ String ToString(CFStringRef str)
     return result;
 }
 
+CFStringRef ToString(const String& str)
+{
+    return CFStringCreateWithBytes(nullptr, (const UInt8*)str.Get(), str.Length() * sizeof(Char), kCFStringEncodingUTF16LE, false);
+}
+
 DialogResult MessageBox::Show(Window* parent, const StringView& text, const StringView& caption, MessageBoxButtons buttons, MessageBoxIcon icon)
 {
     if (CommandLine::Options.Headless)
         return DialogResult::None;
-    // TODO: impl message box on Mac
-    return DialogResult::None;
+    CFStringRef textRef = ToString(text);
+    CFStringRef captionRef = ToString(caption);
+    CFOptionFlags flags = 0;
+    switch (buttons)
+    {
+    case MessageBoxButtons::AbortRetryIgnore:
+    case MessageBoxButtons::OKCancel:
+    case MessageBoxButtons::RetryCancel:
+    case MessageBoxButtons::YesNo:
+    case MessageBoxButtons::YesNoCancel:
+        flags |= kCFUserNotificationCancelResponse;
+        break;
+    }
+    switch (icon)
+    {
+    case MessageBoxIcon::Information:
+        flags |= kCFUserNotificationNoteAlertLevel;
+        break;
+    case MessageBoxIcon::Error:
+    case MessageBoxIcon::Stop:
+        flags |= kCFUserNotificationStopAlertLevel;
+        break;
+    case MessageBoxIcon::Warning:
+        flags |= kCFUserNotificationCautionAlertLevel;
+        break;
+    }
+    SInt32 result = CFUserNotificationDisplayNotice(0, flags, nullptr, nullptr, nullptr, captionRef, textRef, nullptr);
+    CFRelease(captionRef);
+    CFRelease(textRef);
+    return DialogResult::OK;
 }
 
 class MacKeyboard : public Keyboard
@@ -166,8 +200,7 @@ void MacPlatform::SetThreadAffinityMask(uint64 affinityMask)
 
 void MacPlatform::Sleep(int32 milliseconds)
 {
-    MISSING_CODE("MacPlatform::Sleep");
-    return; // TODO: clock on Mac
+    usleep(milliseconds * 1000);
 }
 
 double MacPlatform::GetTimeSeconds()
@@ -401,14 +434,18 @@ void MacPlatform::OpenUrl(const StringView& url)
 
 Vector2 MacPlatform::GetMousePosition()
 {
-    MISSING_CODE("MacPlatform::GetMousePosition");
-    return Vector2(0, 0); // TODO: mouse on Mac
+    CGEventRef event = CGEventCreate(nullptr);
+    CGPoint cursor = CGEventGetLocation(event);
+    CFRelease(event);
+    return Vector2((float)cursor.x, (float)cursor.y);
 }
 
 void MacPlatform::SetMousePosition(const Vector2& pos)
 {
-    MISSING_CODE("MacPlatform::SetMousePosition");
-    // TODO: mouse on Mac
+    CGPoint cursor;
+    cursor.x = (CGFloat)pos.X;
+    cursor.y = (CGFloat)pos.Y;
+    CGWarpMouseCursorPosition(cursor);
 }
 
 Vector2 MacPlatform::GetDesktopSize()
@@ -504,20 +541,23 @@ bool MacPlatform::SetEnvironmentVariable(const String& name, const String& value
 
 void* MacPlatform::LoadLibrary(const Char* filename)
 {
-    MISSING_CODE("MacPlatform::LoadLibrary");
-    return nullptr; // TODO: dynamic libs on Mac
+    const StringAsANSI<> filenameANSI(filename);
+    void* result = dlopen(filenameANSI.Get(), RTLD_LAZY | RTLD_LOCAL);
+    if (!result)
+    {
+        LOG(Error, "Failed to load {0} because {1}", filename, String(dlerror()));
+    }
+    return result;
 }
 
 void MacPlatform::FreeLibrary(void* handle)
 {
-    MISSING_CODE("MacPlatform::FreeLibrary");
-    return; // TODO: dynamic libs on Mac
+	dlclose(handle);
 }
 
 void* MacPlatform::GetProcAddress(void* handle, const char* symbol)
 {
-    MISSING_CODE("MacPlatform::GetProcAddress");
-    return nullptr; // TODO: dynamic libs on Mac
+    return dlsym(handle, symbol);
 }
 
 Array<MacPlatform::StackFrame> MacPlatform::GetStackFrames(int32 skipCount, int32 maxDepth, void* context)
