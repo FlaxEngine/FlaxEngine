@@ -106,13 +106,14 @@ namespace Flax.Build.Platforms
 
             options.CompileEnv.PreprocessorDefinitions.Add("PLATFORM_MAC");
 
+            // TODO: move this to the specific module configs (eg. Platform.Build.cs)
             options.LinkEnv.InputLibraries.Add("z");
             options.LinkEnv.InputLibraries.Add("bz2");
-
             options.LinkEnv.InputLibraries.Add("CoreFoundation.framework");
             options.LinkEnv.InputLibraries.Add("CoreGraphics.framework");
             options.LinkEnv.InputLibraries.Add("SystemConfiguration.framework");
             options.LinkEnv.InputLibraries.Add("IOKit.framework");
+            options.LinkEnv.InputLibraries.Add("Cocoa.framework");
         }
 
         /// <inheritdoc />
@@ -128,7 +129,7 @@ namespace Flax.Build.Platforms
                 commonArgs.Add("-fmessage-length=0");
                 commonArgs.Add("-pipe");
                 commonArgs.Add("-x");
-                commonArgs.Add("c++");
+                commonArgs.Add("objective-c++");
                 commonArgs.Add("-std=c++14");
                 commonArgs.Add("-stdlib=libc++");
                 AddArgsCommon(options, commonArgs);
