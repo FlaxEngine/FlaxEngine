@@ -71,7 +71,6 @@ public class mono : DepsModule
             break;
         }
         case TargetPlatform.Linux:
-        case TargetPlatform.Mac:
             options.PublicDefinitions.Add("USE_MONO_DYNAMIC_LIB");
             options.DependencyFiles.Add(Path.Combine(depsRoot, "libmonosgen-2.0.so"));
             options.Libraries.Add(Path.Combine(depsRoot, "libmonosgen-2.0.so"));
@@ -90,6 +89,11 @@ public class mono : DepsModule
             break;
         case TargetPlatform.Switch:
             options.OutputFiles.Add(Path.Combine(depsRoot, "libmonosgen-2.0.a"));
+            break;
+        case TargetPlatform.Mac:
+            options.PublicDefinitions.Add("USE_MONO_DYNAMIC_LIB");
+            options.DependencyFiles.Add(Path.Combine(depsRoot, "libmonosgen-2.0.dylib"));
+            options.Libraries.Add(Path.Combine(depsRoot, "libmonosgen-2.0.dylib"));
             break;
         default: throw new InvalidPlatformException(options.Platform.Target);
         }

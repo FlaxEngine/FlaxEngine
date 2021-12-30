@@ -63,7 +63,6 @@ MacWindow::MacWindow(const CreateWindowSettings& settings)
     window.title = (__bridge NSString*)MacUtils::ToString(settings.Title);
     [window setWindow:this];
     [window setReleasedWhenClosed:NO];
-    [window setBackgroundColor:[NSColor blueColor]];
     [window setMinSize:NSMakeSize(settings.MinimumSize.X, settings.MinimumSize.Y)];
     [window setMaxSize:NSMakeSize(settings.MaximumSize.X, settings.MaximumSize.Y)];
     [window setOpaque:!settings.SupportsTransparency];
@@ -169,8 +168,8 @@ bool MacWindow::IsForegroundWindow() const
 
 void MacWindow::BringToFront(bool force)
 {
-    NSWindow* window = (NSWindow*)_window;
-    [window activateIgnoringOtherApps:force];
+    Focus();
+    [NSApp activateIgnoringOtherApps: NO];
 }
 
 void MacWindow::SetIsFullscreen(bool isFullscreen)

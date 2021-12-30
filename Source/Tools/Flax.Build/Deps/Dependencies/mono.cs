@@ -40,6 +40,11 @@ namespace Flax.Deps.Dependencies
                         TargetPlatform.Linux,
                         TargetPlatform.Android,
                     };
+                case TargetPlatform.Mac:
+                    return new[]
+                    {
+                        TargetPlatform.Mac,
+                    };
                 default: return new TargetPlatform[0];
                 }
             }
@@ -705,6 +710,26 @@ namespace Flax.Deps.Dependencies
                     var type = Type.GetType("Flax.Build.Platforms.Switch.mono");
                     var method = type.GetMethod("Build");
                     method.Invoke(null, new object[] { root, options });
+                    break;
+                }
+                case TargetPlatform.Mac:
+                {
+                    var monoOptions = new[]
+                    {
+                        "--with-xen-opt=no",
+                        "--without-ikvm-native",
+                        "--disable-boehm",
+                        "--disable-nls",
+                        "--disable-iconv",
+                        //"--disable-mcs-build",
+                        "--with-mcs-docs=no",
+                        "--with-tls=pthread",
+                        //"--enable-static",
+                        "--enable-maintainer-mode",
+                    };
+                    var buildDir = Path.Combine(root, "build-mac");
+
+                    // Build mono
                     break;
                 }
                 }

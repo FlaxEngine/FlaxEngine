@@ -234,8 +234,6 @@ namespace Flax.Build
         {
             if (options.Platform.Target == TargetPlatform.PS5)
                 return false; // TODO: mono for ps5
-            if (options.Platform.Target == TargetPlatform.Mac)
-                return false; // TODO: mono for Mac
             return UseCSharp || options.Target.IsEditor;
         }
     }
