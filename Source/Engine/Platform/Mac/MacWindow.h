@@ -15,6 +15,7 @@ class MacWindow : public WindowBase
 private:
 
     Vector2 _clientSize;
+    void* _window;
 
 public:
 
@@ -32,7 +33,11 @@ public:
     void Restore() override;
     bool IsClosed() const override;
     bool IsForegroundWindow() const override;
+    void BringToFront(bool force) override;
     void SetIsFullscreen(bool isFullscreen) override;
+    void SetOpacity(float opacity) override;
+    void Focus() override;
+    void SetTitle(const StringView& title) override;
 };
 
 #endif

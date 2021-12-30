@@ -4,6 +4,7 @@
 
 #include "MacPlatform.h"
 #include "MacWindow.h"
+#include "MacUtils.h"
 #include "Engine/Core/Log.h"
 #include "Engine/Core/Types/Guid.h"
 #include "Engine/Core/Types/String.h"
@@ -41,6 +42,7 @@
 #include <CoreGraphics/CoreGraphics.h>
 #include <SystemConfiguration/SystemConfiguration.h>
 #include <IOKit/IOKitLib.h>
+#include <Cocoa/Cocoa.h>
 #include <dlfcn.h>
 #if CRASH_LOG_ENABLE
 #include <execinfo.h>
@@ -50,8 +52,9 @@ CPUInfo MacCpu;
 Guid DeviceId;
 String UserLocale, ComputerName;
 double SecondsPerCycle;
+NSAutoreleasePool* AutoreleasePool = nullptr;
 
-String ToString(CFStringRef str)
+String MacUtils::ToString(CFStringRef str)
 {
     String result;
     const int32 length = CFStringGetLength(str);
@@ -64,17 +67,42 @@ String ToString(CFStringRef str)
     return result;
 }
 
-CFStringRef ToString(const String& str)
+CFStringRef MacUtils::ToString(const String& str)
 {
     return CFStringCreateWithBytes(nullptr, (const UInt8*)str.Get(), str.Length() * sizeof(Char), kCFStringEncodingUTF16LE, false);
+}
+
+Vector2 MacUtils::PosToCoca(const Vector2& pos)
+{
+    // MacOS uses y-coordinate starting at the bottom of the screen
+    Vector2 result = pos;
+    result.Y *= -1;
+    result += GetScreensOrigin();
+    return result;
+}
+
+Vector2 MacUtils::GetScreensOrigin()
+{
+    Vector2 result = Vector2::Zero;
+    NSArray* screenArray = [NSScreen screens];
+    for (NSUInteger i = 0; i < [screenArray count]; i++)
+    {
+        NSRect rect = [[screenArray objectAtIndex:i] frame];
+        Vector2 pos(rect.origin.x, rect.origin.y + rect.size.height);
+        if (pos.X < result.X)
+            result.X = pos.X;
+        if (pos.Y > result.Y)
+            result.Y = pos.Y;
+    }
+    return result;
 }
 
 DialogResult MessageBox::Show(Window* parent, const StringView& text, const StringView& caption, MessageBoxButtons buttons, MessageBoxIcon icon)
 {
     if (CommandLine::Options.Headless)
         return DialogResult::None;
-    CFStringRef textRef = ToString(text);
-    CFStringRef captionRef = ToString(caption);
+    CFStringRef textRef = MacUtils::ToString(text);
+    CFStringRef captionRef = MacUtils::ToString(caption);
     CFOptionFlags flags = 0;
     switch (buttons)
     {
@@ -309,7 +337,7 @@ bool MacPlatform::Init()
         io_registry_entry_t ioRegistryRoot = IORegistryEntryFromPath(kIOMasterPortDefault, "IOService:/");
         CFStringRef deviceUuid = (CFStringRef)IORegistryEntryCreateCFProperty(ioRegistryRoot, CFSTR(kIOPlatformUUIDKey), kCFAllocatorDefault, 0);
         IOObjectRelease(ioRegistryRoot);
-        String uuidStr = ToString(deviceUuid);
+        String uuidStr = MacUtils::ToString(deviceUuid);
         Guid::Parse(uuidStr, DeviceId);
         CFRelease(deviceUuid);
     }
@@ -319,8 +347,8 @@ bool MacPlatform::Init()
         CFLocaleRef locale = CFLocaleCopyCurrent();
         CFStringRef localeLang = (CFStringRef)CFLocaleGetValue(locale, kCFLocaleLanguageCode);
         CFStringRef localeCountry = (CFStringRef)CFLocaleGetValue(locale, kCFLocaleCountryCode);
-        UserLocale = ToString(localeLang);
-        String localeCountryStr = ToString(localeCountry);
+        UserLocale = MacUtils::ToString(localeLang);
+        String localeCountryStr = MacUtils::ToString(localeCountry);
         if (localeCountryStr.HasChars())
             UserLocale += TEXT("-") + localeCountryStr;
         CFRelease(locale);
@@ -331,7 +359,7 @@ bool MacPlatform::Init()
     // Get computer name
     {
         CFStringRef computerName = SCDynamicStoreCopyComputerName(nullptr, nullptr);
-        ComputerName = ToString(computerName);
+        ComputerName = MacUtils::ToString(computerName);
         CFRelease(computerName);
     }
 
@@ -341,6 +369,13 @@ bool MacPlatform::Init()
         GetEnvironmentVariable(TEXT("USER"), username);
         OnPlatformUserAdd(New<User>(username));
     }
+
+    // Init application
+    [NSApplication sharedApplication];
+    [NSApp setActivationPolicy:NSApplicationActivationPolicyRegular];
+    NSMenu* mainMenu = [[[NSMenu alloc] initWithTitle:@""] autorelease];
+    [NSApp setMainMenu:mainMenu];
+    AutoreleasePool = [[NSAutoreleasePool alloc] init];
 
     Input::Mouse = New<MacMouse>();
     Input::Keyboard = New<MacKeyboard>();
@@ -365,10 +400,22 @@ void MacPlatform::LogInfo()
 
 void MacPlatform::BeforeRun()
 {
+    [NSApp finishLaunching];
 }
 
 void MacPlatform::Tick()
 {
+    // Process system events
+    while (true)
+    {
+        NSEvent* event = [NSApp nextEventMatchingMask:NSEventMaskAny untilDate:[NSDate distantPast] inMode:NSDefaultRunLoopMode dequeue:YES];
+        if (event == nil)
+            break;
+        [NSApp sendEvent:event];
+    }
+
+    [AutoreleasePool drain];
+    AutoreleasePool = [[NSAutoreleasePool alloc] init];
 }
 
 void MacPlatform::BeforeExit()

@@ -3,31 +3,94 @@
 #if PLATFORM_MAC
 
 #include "../Window.h"
+#include "MacUtils.h"
 #include "Engine/Graphics/RenderTask.h"
+#include <Cocoa/Cocoa.h>
+
+@interface MacWindowImpl : NSWindow <NSWindowDelegate>
+{
+    MacWindow* Window;
+}
+
+- (void)setWindow:(MacWindow*)window;
+
+@end
+
+@implementation MacWindowImpl
+
+- (void)windowWillClose:(NSNotification*)notification
+{
+    [self setDelegate: nil];
+    Window->Close(ClosingReason::User);
+}
+
+- (void)setWindow:(MacWindow*)window
+{
+    Window = window;
+}
+
+@end
 
 MacWindow::MacWindow(const CreateWindowSettings& settings)
     : WindowBase(settings)
 {
-    int32 x = Math::TruncToInt(settings.Position.X);
-    int32 y = Math::TruncToInt(settings.Position.Y);
-    int32 clientWidth = Math::TruncToInt(settings.Size.X);
-    int32 clientHeight = Math::TruncToInt(settings.Size.Y);
-    int32 windowWidth = clientWidth;
-    int32 windowHeight = clientHeight;
-    _clientSize = Vector2((float)clientWidth, (float)clientHeight);
+    _clientSize = Vector2(settings.Size.X, settings.Size.Y);
+    Vector2 pos = MacUtils::PosToCoca(settings.Position);
+    NSRect frame = NSMakeRect(pos.X, pos.Y - settings.Size.Y, settings.Size.X, settings.Size.Y);
+    NSUInteger styleMask = NSWindowStyleMaskClosable;
+    if (settings.IsRegularWindow)
+    {
+        styleMask |= NSWindowStyleMaskTitled | NSWindowStyleMaskFullSizeContentView;
+        if (settings.AllowMinimize)
+            styleMask |= NSWindowStyleMaskMiniaturizable;
+        if (settings.HasSizingFrame || settings.AllowMaximize)
+            styleMask |= NSWindowStyleMaskResizable;
+    }
+    else
+    {
+        styleMask |= NSWindowStyleMaskBorderless;
+    }
+    if (settings.HasBorder)
+    {
+        styleMask |= NSWindowStyleMaskTitled;
+        styleMask &= ~NSWindowStyleMaskFullSizeContentView;
+    }
 
-    // TODO: setup window
+    MacWindowImpl* window = [[MacWindowImpl alloc] initWithContentRect:frame
+        styleMask:(styleMask)
+        backing:NSBackingStoreBuffered
+        defer:NO];
+    window.title = (__bridge NSString*)MacUtils::ToString(settings.Title);
+    [window setWindow:this];
+    [window setReleasedWhenClosed:NO];
+    [window setBackgroundColor:[NSColor blueColor]];
+    [window setMinSize:NSMakeSize(settings.MinimumSize.X, settings.MinimumSize.Y)];
+    [window setMaxSize:NSMakeSize(settings.MaximumSize.X, settings.MaximumSize.Y)];
+    [window setOpaque:!settings.SupportsTransparency];
+    [window setDelegate:window];
+    _window = window;
+
+    // TODO: impl Parent for MacWindow
+    // TODO: impl StartPosition for MacWindow
+    // TODO: impl Fullscreen for MacWindow
+    // TODO: impl ShowInTaskbar for MacWindow
+    // TODO: impl ActivateWhenFirstShown for MacWindow
+    // TODO: impl AllowInput for MacWindow
+    // TODO: impl AllowDragAndDrop for MacWindow
+    // TODO: impl IsTopmost for MacWindow
 }
 
 MacWindow::~MacWindow()
 {
-    // TODO: close window
+    NSWindow* window = (NSWindow*)_window;
+    [window close];
+    [window release];
+    _window = nullptr;
 }
 
 void* MacWindow::GetNativePtr() const
 {
-    // TODO: return window handle
-    return nullptr;
+    return _window;
 }
 
 void MacWindow::Show()
@@ -43,7 +106,10 @@ void MacWindow::Show()
         }
 
         // Show
-        // TODO: show window
+        NSWindow* window = (NSWindow*)_window;
+        [window makeKeyAndOrderFront:window];
+        if (_settings.ActivateWhenFirstShown)
+            [NSApp activateIgnoringOtherApps:YES];
         _focused = true;
 
         // Base
@@ -56,7 +122,8 @@ void MacWindow::Hide()
     if (_visible)
     {
         // Hide
-        // TODO: hide window
+        NSWindow* window = (NSWindow*)_window;
+        [window orderOut:nil];
 
         // Base
         WindowBase::Hide();
@@ -65,22 +132,34 @@ void MacWindow::Hide()
 
 void MacWindow::Minimize()
 {
-    // TODO: Minimize
+    if (!_settings.AllowMinimize)
+        return;
+    NSWindow* window = (NSWindow*)_window;
+    if (!window.miniaturized)
+        [window miniaturize:nil];
 }
 
 void MacWindow::Maximize()
 {
-    // TODO: Maximize
+    if (!_settings.AllowMaximize)
+        return;
+    NSWindow* window = (NSWindow*)_window;
+    if (!window.zoomed)
+        [window zoom:nil];
 }
 
 void MacWindow::Restore()
 {
-    // TODO: Restore
+    NSWindow* window = (NSWindow*)_window;
+    if (window.miniaturized)
+        [window deminiaturize:nil];
+    else if (window.zoomed)
+        [window zoom:nil];
 }
 
 bool MacWindow::IsClosed() const
 {
-    return false;
+    return _window != nullptr;
 }
 
 bool MacWindow::IsForegroundWindow() const
@@ -88,8 +167,34 @@ bool MacWindow::IsForegroundWindow() const
     return Platform::GetHasFocus();
 }
 
+void MacWindow::BringToFront(bool force)
+{
+    NSWindow* window = (NSWindow*)_window;
+    [window activateIgnoringOtherApps:force];
+}
+
 void MacWindow::SetIsFullscreen(bool isFullscreen)
 {
+    // TODO: fullscreen mode on Mac
+}
+
+void MacWindow::SetOpacity(float opacity)
+{
+    NSWindow* window = (NSWindow*)_window;
+    [window setAlphaValue:opacity];
+}
+
+void MacWindow::Focus()
+{
+    NSWindow* window = (NSWindow*)_window;
+    [window makeKeyAndOrderFront:window];
+}
+
+void MacWindow::SetTitle(const StringView& title)
+{
+    _title = title;
+    NSWindow* window = (NSWindow*)_window;
+    [window setTitle:(__bridge NSString*)MacUtils::ToString(_title)];
 }
 
 #endif
