@@ -53,6 +53,8 @@ public class ShadersCompilation : EngineModule
         case TargetPlatform.Linux:
             options.PrivateDependencies.Add("ShaderCompilerVulkan");
             break;
+        case TargetPlatform.Mac:
+            break;
         default: throw new InvalidPlatformException(options.Platform.Target);
         }
 

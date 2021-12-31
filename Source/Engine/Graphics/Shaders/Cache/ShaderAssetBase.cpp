@@ -270,6 +270,8 @@ bool ShaderAssetBase::LoadShaderCache(ShaderCacheResult& result)
         platformDefine.Name = "PLATFORM_WINDOWS";
 #elif PLATFORM_LINUX
         platformDefine.Name = "PLATFORM_LINUX";
+#elif PLATFORM_MAC
+        platformDefine.Name = "PLATFORM_MAC";
 #else
 #error "Unknown platform."
 #endif

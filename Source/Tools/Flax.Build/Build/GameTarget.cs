@@ -42,6 +42,7 @@ namespace Flax.Build
             {
                 TargetPlatform.Windows,
                 TargetPlatform.Linux,
+                TargetPlatform.Mac,
             };
             Architectures = new[]
             {

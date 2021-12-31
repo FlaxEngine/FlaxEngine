@@ -35,6 +35,7 @@ public class assimp : DepsModule
             options.DelayLoadLibraries.Add("assimp-vc140-md.dll");
             break;
         case TargetPlatform.Linux:
+        case TargetPlatform.Mac:
             options.OutputFiles.Add(Path.Combine(depsRoot, "libassimp.a"));
             options.OutputFiles.Add(Path.Combine(depsRoot, "libIrrXML.a"));
             break;

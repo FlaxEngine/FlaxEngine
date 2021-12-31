@@ -1,6 +1,7 @@
 // Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
 
 #include "GameCooker.h"
+#include "PlatformTools.h"
 #include "FlaxEngine.Gen.h"
 #include "Engine/Scripting/MainThreadManagedInvokeAction.h"
 #include "Engine/Scripting/ManagedCLR/MTypes.h"

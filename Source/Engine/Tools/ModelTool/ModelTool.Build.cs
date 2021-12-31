@@ -56,6 +56,7 @@ public class ModelTool : EngineModule
             options.PrivateDependencies.Add("UVAtlas");
             break;
         case TargetPlatform.Linux:
+        case TargetPlatform.Mac:
             break;
         default: throw new InvalidPlatformException(options.Platform.Target);
         }

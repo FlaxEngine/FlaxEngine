@@ -364,6 +364,8 @@ void ScriptsBuilder::GetBinariesConfiguration(const Char*& target, const Char*& 
     platform = TEXT("Windows");
 #elif PLATFORM_LINUX
     platform = TEXT("Linux");
+#elif PLATFORM_MAC
+    platform = TEXT("Mac");
 #else
 #error "Unknown platform"
 #endif

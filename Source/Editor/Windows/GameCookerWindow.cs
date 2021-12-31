@@ -123,6 +123,16 @@ namespace FlaxEditor.Windows
                         IsSupported = false;
                         break;
                     }
+#elif PLATFORM_MAC
+                    switch (BuildPlatform)
+                    {
+                    case BuildPlatform.MacOSx64:
+                        IsSupported = true;
+                        break;
+                    default:
+                        IsSupported = false;
+                        break;
+                    }
 #else
 #error "Unknown platform."
 #endif
