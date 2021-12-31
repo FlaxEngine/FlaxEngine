@@ -25,6 +25,7 @@ public class FlaxTestsTarget : EngineTarget
         {
             TargetPlatform.Windows,
             TargetPlatform.Linux,
+            TargetPlatform.Mac,
         };
         Architectures = new[]
         {
