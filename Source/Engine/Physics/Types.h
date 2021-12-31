@@ -39,6 +39,7 @@ namespace physx
     class PxController;
     class PxCapsuleController;
     class PxQueryFilterCallback;
+    class PxControllerFilterCallback;
     class PxHeightField;
     struct PxFilterData;
     struct PxRaycastHit;

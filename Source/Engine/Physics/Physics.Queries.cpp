@@ -6,6 +6,8 @@
 #include "Actors/PhysicsColliderActor.h"
 #include <ThirdParty/PhysX/PxScene.h>
 #include <ThirdParty/PhysX/PxQueryFiltering.h>
+#include <ThirdParty/PhysX/PxRigidDynamic.h>
+#include <ThirdParty/PhysX/characterkinematic/PxController.h>
 
 // Temporary result buffer size
 #define HIT_BUFFER_SIZE	128
@@ -217,6 +219,52 @@ public:
     }
 };
 
+class CharacterControllerFilter : public PxControllerFilterCallback
+{
+private:
+
+    PxShape* getShape(const PxController& controller)
+    {
+        PxRigidDynamic* actor = controller.getActor();
+
+        // Early out if no actor or no shapes
+        if (!actor || actor->getNbShapes() < 1)
+            return nullptr;
+
+        // Get first shape only.
+        PxShape* shape = nullptr;
+        actor->getShapes(&shape, 1);
+
+        return shape;
+    }
+
+public:
+
+    bool filter(const PxController& a, const PxController& b) override
+    {
+        // Early out to avoid crashing
+        PxShape* shapeA = getShape(a);
+        if (!shapeA)
+            return false;
+
+        PxShape* shapeB = getShape(b);
+        if (!shapeB)
+            return false;
+
+        // Let triggers through
+        if (PxFilterObjectIsTrigger(shapeB->getFlags()))
+            return false;
+
+        // Trigger the contact callback for pairs (A,B) where the filtermask of A contains the ID of B and vice versa
+        const PxFilterData shapeFilterA = shapeA->getQueryFilterData();
+        const PxFilterData shapeFilterB = shapeB->getQueryFilterData();
+        if (shapeFilterA.word0 & shapeFilterB.word1)
+            return true;
+
+        return false;
+    }
+};
+
 PxQueryFilterCallback* Physics::GetQueryFilterCallback()
 {
     static QueryFilter Filter;
@@ -226,6 +274,12 @@ PxQueryFilterCallback* Physics::GetQueryFilterCallback()
 PxQueryFilterCallback* Physics::GetCharacterQueryFilterCallback()
 {
     static CharacterQueryFilter Filter;
+    return &Filter;
+}
+
+PxControllerFilterCallback* Physics::GetCharacterControllerFilterCallback()
+{
+    static CharacterControllerFilter Filter;
     return &Filter;
 }
 
