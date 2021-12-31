@@ -544,7 +544,7 @@ String MacPlatform::GetExecutableFilePath()
     uint32 size = PATH_MAX;
     String result;
     if (_NSGetExecutablePath(buf, &size) == 0)
-        result.SetUTF8(buf, size);
+        result.SetUTF8(buf, StringUtils::Length(buf));
     return result;
 }
 

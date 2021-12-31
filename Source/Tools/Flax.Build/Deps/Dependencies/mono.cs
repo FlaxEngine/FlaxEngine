@@ -461,6 +461,13 @@ namespace Flax.Deps.Dependencies
             Utilities.WriteFileIfChanged(mCorePath, contents);
         }
 
+        private void DeployDylib(string srcPath, string dstFolder)
+        {
+            var dstPath = Path.Combine(dstFolder, Path.GetFileName(srcPath));
+            Utilities.FileCopy(srcPath, dstPath);
+            MacPlatform.FixInstallNameId(dstPath);
+        }
+
         /// <inheritdoc />
         public override void Build(BuildOptions options)
         {
@@ -568,6 +575,8 @@ namespace Flax.Deps.Dependencies
                     var dstMonoEditorLibs = Path.Combine(options.PlatformsFolder, "Editor", platform.ToString(), "Mono", "lib", "mono");
                     Utilities.DirectoryCopy(Path.Combine(srcMonoLibs, "4.5"), Path.Combine(dstMonoLibs, "4.5"), false, true, "*.dll");
                     Utilities.DirectoryCopy(Path.Combine(srcMonoLibs, "4.5"), Path.Combine(dstMonoEditorLibs, "4.5"), false, true, "*.dll");
+                    Utilities.DirectoryCopy(Path.Combine(srcMonoLibs, "gac"), Path.Combine(dstMonoLibs, "gac"), true, true, "*.dll");
+                    Utilities.DirectoryCopy(Path.Combine(srcMonoLibs, "gac"), Path.Combine(dstMonoEditorLibs, "gac"), true, true, "*.dll");
                     Utilities.FileCopy(Path.Combine(srcMonoLibs, "4.5", "csc.exe"), Path.Combine(dstMonoEditorLibs, "4.5", "csc.exe"), true);
                     Utilities.DirectoryCopy(Path.Combine(srcMonoLibs, "4.5", "Facades"), Path.Combine(dstMonoEditorLibs, "4.5", "Facades"), false, true, "*.dll");
                     Utilities.DirectoryCopy(Path.Combine(srcMonoLibs, "4.5-api"), Path.Combine(dstMonoEditorLibs, "4.5-api"), false, true, "*.dll");
@@ -730,6 +739,44 @@ namespace Flax.Deps.Dependencies
                     var buildDir = Path.Combine(root, "build-mac");
 
                     // Build mono
+                    //SetupDirectory(buildDir, true);
+                    var archName = "x86_64-apple-darwin18";
+                    Utilities.Run(Path.Combine(root, "autogen.sh"), string.Format("--host={0} --prefix={1} {2}", archName, buildDir, string.Join(" ", monoOptions)), null, root);
+                    Utilities.Run("make", null, null, root, Utilities.RunOptions.None);
+                    Utilities.Run("make", "install", null, root, Utilities.RunOptions.None);
+
+                    // Deploy binaries
+                    var depsFolder = GetThirdPartyFolder(options, platform, TargetArchitecture.x64);
+                    Directory.CreateDirectory(depsFolder);
+                    DeployDylib(Path.Combine(buildDir, "lib", "libmonosgen-2.0.1.dylib"), depsFolder);
+                    var gameLibOutput = Path.Combine(options.PlatformsFolder, "Mac", "Binaries", "Mono", "lib");
+                    Directory.CreateDirectory(gameLibOutput);
+                    DeployDylib(Path.Combine(buildDir, "lib", "libMonoPosixHelper.dylib"), gameLibOutput);
+                    DeployDylib(Path.Combine(buildDir, "lib", "libmono-btls-shared.dylib"), gameLibOutput);
+                    DeployDylib(Path.Combine(buildDir, "lib", "libmono-native.dylib"), gameLibOutput);
+                    var editorLibOutput = Path.Combine(options.PlatformsFolder, "Editor", "Mac", "Mono", "lib");
+                    Directory.CreateDirectory(editorLibOutput);
+                    DeployDylib(Path.Combine(buildDir, "lib", "libMonoPosixHelper.dylib"), editorLibOutput);
+                    DeployDylib(Path.Combine(buildDir, "lib", "libmono-btls-shared.dylib"), editorLibOutput);
+                    DeployDylib(Path.Combine(buildDir, "lib", "libmono-native.dylib"), editorLibOutput);
+                    var editoBinOutput = Path.Combine(options.PlatformsFolder, "Editor", "Mac", "Mono", "bin");
+                    Directory.CreateDirectory(editoBinOutput);
+                    Utilities.FileCopy(Path.Combine(buildDir, "bin", "mono-sgen"), Path.Combine(editoBinOutput, "mono"));
+                    Utilities.Run("strip", "mono", null, editoBinOutput, Utilities.RunOptions.None);
+                    var srcMonoLibs = Path.Combine(buildDir, "lib", "mono");
+                    var dstMonoLibs = Path.Combine(options.PlatformsFolder, platform.ToString(), "Binaries", "Mono", "lib", "mono");
+                    var dstMonoEditorLibs = Path.Combine(options.PlatformsFolder, "Editor", platform.ToString(), "Mono", "lib", "mono");
+                    Utilities.DirectoryCopy(Path.Combine(srcMonoLibs, "4.5"), Path.Combine(dstMonoLibs, "4.5"), false, true, "*.dll");
+                    Utilities.DirectoryCopy(Path.Combine(srcMonoLibs, "4.5"), Path.Combine(dstMonoEditorLibs, "4.5"), false, true, "*.dll");
+                    Utilities.DirectoryCopy(Path.Combine(srcMonoLibs, "gac"), Path.Combine(dstMonoLibs, "gac"), true, true, "*.dll");
+                    Utilities.DirectoryCopy(Path.Combine(srcMonoLibs, "gac"), Path.Combine(dstMonoEditorLibs, "gac"), true, true, "*.dll");
+                    Utilities.FileCopy(Path.Combine(srcMonoLibs, "4.5", "csc.exe"), Path.Combine(dstMonoEditorLibs, "4.5", "csc.exe"), true);
+                    Utilities.DirectoryCopy(Path.Combine(srcMonoLibs, "4.5", "Facades"), Path.Combine(dstMonoEditorLibs, "4.5", "Facades"), false, true, "*.dll");
+                    Utilities.DirectoryCopy(Path.Combine(srcMonoLibs, "4.5-api"), Path.Combine(dstMonoEditorLibs, "4.5-api"), false, true, "*.dll");
+                    Utilities.DirectoryCopy(Path.Combine(srcMonoLibs, "xbuild", "14.0"), Path.Combine(dstMonoEditorLibs, "xbuild", "14.0"), true, true);
+                    Utilities.DirectoryCopy(Path.Combine(srcMonoLibs, "xbuild-frameworks", ".NETFramework", "v4.5"), Path.Combine(dstMonoEditorLibs, "xbuild-frameworks", ".NETFramework", "v4.5"), true, true);
+                    Utilities.FilesDelete(dstMonoLibs, "*.pdb", true);
+                    Utilities.FilesDelete(dstMonoEditorLibs, "*.pdb", true);
                     break;
                 }
                 }

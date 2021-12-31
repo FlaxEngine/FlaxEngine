@@ -50,6 +50,7 @@ namespace Flax.Deploy
             switch (Platform.BuildPlatform.Target)
             {
             case TargetPlatform.Linux:
+            case TargetPlatform.Mac:
             {
                 // Use msbuild from Mono
                 toolPath = UnixPlatform.Which("msbuild");
@@ -111,6 +112,7 @@ namespace Flax.Deploy
             switch (Platform.BuildPlatform.Target)
             {
             case TargetPlatform.Linux:
+            case TargetPlatform.Mac:
             {
                 // Use csc from Mono
                 toolPath = UnixPlatform.Which("csc");

@@ -92,8 +92,8 @@ public class mono : DepsModule
             break;
         case TargetPlatform.Mac:
             options.PublicDefinitions.Add("USE_MONO_DYNAMIC_LIB");
-            options.DependencyFiles.Add(Path.Combine(depsRoot, "libmonosgen-2.0.dylib"));
-            options.Libraries.Add(Path.Combine(depsRoot, "libmonosgen-2.0.dylib"));
+            options.DependencyFiles.Add(Path.Combine(depsRoot, "libmonosgen-2.0.1.dylib"));
+            options.Libraries.Add(Path.Combine(depsRoot, "libmonosgen-2.0.1.dylib"));
             break;
         default: throw new InvalidPlatformException(options.Platform.Target);
         }
