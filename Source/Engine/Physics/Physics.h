@@ -113,6 +113,11 @@ DECLARE_SCRIPTING_TYPE_NO_SPAWN(Physics);
     static PxQueryFilterCallback* GetCharacterQueryFilterCallback();
 
     /// <summary>
+    /// Gets the default controller filter callback used for the character controller collisions detection.
+    /// </summary>
+    static PxControllerFilterCallback* GetCharacterControllerFilterCallback();
+
+    /// <summary>
     /// Gets the default physical material.
     /// </summary>
     static PxMaterial* GetDefaultMaterial();
