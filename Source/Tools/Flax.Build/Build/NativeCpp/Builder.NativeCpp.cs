@@ -396,7 +396,7 @@ namespace Flax.Build
                     {
                         var project = GetModuleProject(module, buildData);
                         var binaryModuleSourcePath = Path.Combine(project.ProjectFolderPath, "Source", module.BinaryModuleName + ".Gen.cpp");
-                        if (!cppFiles.Contains(binaryModuleSourcePath))
+                        if (!cppFiles.Contains(binaryModuleSourcePath) && File.Exists(binaryModuleSourcePath))
                             cppFiles.Add(binaryModuleSourcePath);
                     }
                 }
