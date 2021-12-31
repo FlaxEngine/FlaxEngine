@@ -247,6 +247,7 @@ namespace Flax.Build.Platforms
         {
             var linkEnvironment = options.LinkEnv;
             var task = graph.Add<LinkTask>();
+            var isArchive = linkEnvironment.Output == LinkerOutput.StaticLibrary || linkEnvironment.Output == LinkerOutput.ImportLibrary;
 
             // Setup arguments
             var args = new List<string>();
@@ -257,20 +258,16 @@ namespace Flax.Build.Platforms
                 if (!options.LinkEnv.DebugInformation)
                     args.Add("-Wl,--strip-debug");
 
-                switch (linkEnvironment.Output)
+                if (isArchive)
                 {
-                case LinkerOutput.Executable:
-                    args.Add("-dead_strip");
-                    break;
-                case LinkerOutput.SharedLibrary:
-                    args.Add("-dynamiclib");
-                    args.Add("-dead_strip");
-                    break;
-                case LinkerOutput.StaticLibrary:
-                case LinkerOutput.ImportLibrary:
                     args.Add("-static");
-                    break;
-                default: throw new ArgumentOutOfRangeException();
+                }
+                else
+                {
+                    args.Add("-dead_strip");
+                    args.Add("-rpath @executable_path/");
+                    if (linkEnvironment.Output == LinkerOutput.SharedLibrary)
+                        args.Add("-dynamiclib");
                 }
             }
 
@@ -297,7 +294,6 @@ namespace Flax.Build.Platforms
                     // Link against dynamic library
                     task.PrerequisiteFiles.Add(library);
                     libraryPaths.Add(dir);
-                    //args.Add(string.Format("\"-l{0}\"", GetLibName(library)));
                     args.Add(string.Format("\"{0}\"", library));
                 }
                 else
@@ -323,7 +319,6 @@ namespace Flax.Build.Platforms
                     // Link against dynamic library
                     task.PrerequisiteFiles.Add(library);
                     libraryPaths.Add(dir);
-                    //args.Add(string.Format("\"-l{0}\"", GetLibName(library)));
                     args.Add(string.Format("\"{0}\"", library));
                 }
                 else
@@ -359,18 +354,7 @@ namespace Flax.Build.Platforms
 
             // Link
             task.WorkingDirectory = options.WorkingDirectory;
-            switch (linkEnvironment.Output)
-            {
-            case LinkerOutput.Executable:
-            case LinkerOutput.SharedLibrary:
-                task.CommandPath = LinkerPath;
-                break;
-            case LinkerOutput.StaticLibrary:
-            case LinkerOutput.ImportLibrary:
-                task.CommandPath = ArchiverPath;
-                break;
-            default: throw new ArgumentOutOfRangeException();
-            }
+            task.CommandPath = isArchive ? ArchiverPath : LinkerPath;
             task.CommandArguments = useResponseFile ? string.Format("@\"{0}\"", responseFile) : string.Join(" ", args);
             task.InfoMessage = "Linking " + outputFilePath;
             task.Cost = task.PrerequisiteFiles.Count;
