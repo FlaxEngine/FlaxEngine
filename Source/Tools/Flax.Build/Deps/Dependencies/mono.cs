@@ -723,6 +723,13 @@ namespace Flax.Deps.Dependencies
                 }
                 case TargetPlatform.Mac:
                 {
+                    var compilerFlags = string.Format("-mmacosx-version-min={0}", Configuration.MacOSXMinVer);
+                    var envVars = new Dictionary<string, string>
+                    {
+                        { "CFLAGS", compilerFlags },
+                        { "CXXFLAGS", compilerFlags },
+                        { "CPPFLAGS", compilerFlags },
+                    };
                     var monoOptions = new[]
                     {
                         "--with-xen-opt=no",
@@ -739,11 +746,11 @@ namespace Flax.Deps.Dependencies
                     var buildDir = Path.Combine(root, "build-mac");
 
                     // Build mono
-                    //SetupDirectory(buildDir, true);
+                    SetupDirectory(buildDir, true);
                     var archName = "x86_64-apple-darwin18";
-                    Utilities.Run(Path.Combine(root, "autogen.sh"), string.Format("--host={0} --prefix={1} {2}", archName, buildDir, string.Join(" ", monoOptions)), null, root);
-                    Utilities.Run("make", null, null, root, Utilities.RunOptions.None);
-                    Utilities.Run("make", "install", null, root, Utilities.RunOptions.None);
+                    Utilities.Run(Path.Combine(root, "autogen.sh"), string.Format("--host={0} --prefix={1} {2}", archName, buildDir, string.Join(" ", monoOptions)), null, root, Utilities.RunOptions.None, envVars);
+                    Utilities.Run("make", null, null, root, Utilities.RunOptions.None, envVars);
+                    Utilities.Run("make", "install", null, root, Utilities.RunOptions.None, envVars);
 
                     // Deploy binaries
                     var depsFolder = GetThirdPartyFolder(options, platform, TargetArchitecture.x64);
