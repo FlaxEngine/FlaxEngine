@@ -8,6 +8,7 @@
 struct CommonValue;
 struct Variant;
 struct VariantType;
+class ISerializable;
 
 /// <summary>
 /// Base class for all data read streams
@@ -203,6 +204,13 @@ public:
         if (size > 0)
             ReadBytes(data->Get(), size * sizeof(T));
     }
+
+    /// <summary>
+    /// Deserializes object from Json by reading it as a raw data (ver+length+bytes).
+    /// </summary>
+    /// <remarks>Reads version number, data length and actual data bytes from the stream.</remarks>
+    /// <param name="obj">The object to deserialize.</param>
+    void ReadJson(ISerializable* obj);
 
 public:
 

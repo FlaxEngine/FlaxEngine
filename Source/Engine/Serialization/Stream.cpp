@@ -3,11 +3,16 @@
 #include "ReadStream.h"
 #include "WriteStream.h"
 #include "JsonWriters.h"
+#include "JsonSerializer.h"
+#include "MemoryReadStream.h"
 #include "Engine/Core/Types/CommonValue.h"
 #include "Engine/Core/Types/Variant.h"
 #include "Engine/Core/Collections/Dictionary.h"
 #include "Engine/Content/Asset.h"
+#include "Engine/Core/Cache.h"
 #include "Engine/Debug/DebugLog.h"
+#include "Engine/Debug/Exceptions/JsonParseException.h"
+#include "Engine/Profiler/ProfilerCPU.h"
 #include "Engine/Scripting/ManagedSerialization.h"
 #include "Engine/Scripting/Scripting.h"
 #include "Engine/Scripting/ScriptingObject.h"
@@ -489,6 +494,29 @@ void ReadStream::ReadVariant(Variant* data)
     }
 }
 
+void ReadStream::ReadJson(ISerializable* obj)
+{
+    int32 engineBuild, size;
+    ReadInt32(&engineBuild);
+    ReadInt32(&size);
+    if (obj)
+    {
+        if (const auto memoryStream = dynamic_cast<MemoryReadStream*>(this))
+        {
+            JsonSerializer::LoadFromBytes(obj, Span<byte>((byte*)memoryStream->Read(size), size), engineBuild);
+        }
+        else
+        {
+            void* data = Allocator::Allocate(size);
+            ReadBytes(data, size);
+            JsonSerializer::LoadFromBytes(obj, Span<byte>((byte*)data, size), engineBuild);
+            Allocator::Free(data);
+        }
+    }
+    else
+        SetPosition(GetPosition() + size);
+}
+
 void WriteStream::WriteText(const StringView& text)
 {
     for (int32 i = 0; i < text.Length(); i++)
@@ -733,4 +761,58 @@ void WriteStream::WriteVariant(const Variant& data)
     default:
     CRASH;
     }
+}
+
+void WriteStream::WriteJson(ISerializable* obj, const void* otherObj)
+{
+    WriteInt32(FLAXENGINE_VERSION_BUILD);
+    if (obj)
+    {
+        rapidjson_flax::StringBuffer buffer;
+        CompactJsonWriter writer(buffer);
+        writer.StartObject();
+        obj->Serialize(writer, otherObj);
+        writer.EndObject();
+
+        WriteInt32((int32)buffer.GetSize());
+        WriteBytes((byte*)buffer.GetString(), (int32)buffer.GetSize());
+    }
+    else
+        WriteInt32(0);
+}
+
+Array<byte> JsonSerializer::SaveToBytes(ISerializable* obj)
+{
+    Array<byte> result;
+    if (obj)
+    {
+        rapidjson_flax::StringBuffer buffer;
+        CompactJsonWriter writer(buffer);
+        writer.StartObject();
+        obj->Serialize(writer, nullptr);
+        writer.EndObject();
+        result.Set((byte*)buffer.GetString(), (int32)buffer.GetSize());
+    }
+    return result;
+}
+
+void JsonSerializer::LoadFromBytes(ISerializable* obj, const Span<byte>& data, int32 engineBuild)
+{
+    if (!obj || data.Length() == 0)
+        return;
+
+    ISerializable::SerializeDocument document;
+    {
+        PROFILE_CPU_NAMED("Json.Parse");
+        document.Parse((const char*)data.Get(), data.Length());
+    }
+    if (document.HasParseError())
+    {
+        Log::JsonParseException(document.GetParseError(), document.GetErrorOffset());
+        return;
+    }
+
+    auto modifier = Cache::ISerializeModifier.Get();
+    modifier->EngineBuild = engineBuild;
+    obj->Deserialize(document, modifier.Value);
 }

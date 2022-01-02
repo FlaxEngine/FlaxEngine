@@ -8,6 +8,7 @@
 struct CommonValue;
 struct Variant;
 struct VariantType;
+class ISerializable;
 
 /// <summary>
 /// Base class for all data write streams
@@ -239,6 +240,14 @@ public:
         if (size > 0)
             WriteBytes(data.Get(), size * sizeof(T));
     }
+
+    /// <summary>
+    /// Serializes object to Json and writes it as a raw data (ver+length+bytes).
+    /// </summary>
+    /// <remarks>Writes version number, data length and actual data bytes to the stream.</remarks>
+    /// <param name="obj">The object to serialize.</param>
+    /// <param name="otherObj">The instance of the object to compare with and serialize only the modified properties. If null, then serialize all properties.</param>
+    void WriteJson(ISerializable* obj, const void* otherObj = nullptr);
 
 public:
 
