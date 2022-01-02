@@ -14,7 +14,7 @@
 #include "ManagedCLR/MClass.h"
 #include "ManagedCLR/MUtils.h"
 #include "ManagedCLR/MField.h"
-#if PLATFORM_LINUX
+#if PLATFORM_LINUX || USE_MONO
 #include "ManagedCLR/MCore.h"
 #endif
 #include "FlaxEngine.Gen.h"
@@ -235,8 +235,16 @@ MonoObject* ScriptingObject::CreateManagedInternal()
         return nullptr;
     }
 
+    // Ensure to have managed domain attached (this can be called from custom native thread, eg. content loader)
+    auto domain = mono_domain_get();
+    if (!domain)
+    {
+        MCore::AttachThread();
+        domain = mono_domain_get();
+    }
+
     // Allocate managed instance
-    MonoObject* managedInstance = mono_object_new(mono_domain_get(), monoClass->GetNative());
+    MonoObject* managedInstance = mono_object_new(domain, monoClass->GetNative());
     if (managedInstance == nullptr)
     {
         LOG(Warning, "Failed to create new instance of the object of type {0}", String(monoClass->GetFullName()));
