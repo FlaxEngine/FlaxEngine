@@ -18,22 +18,11 @@ class FLAXENGINE_API WriteStream : public Stream
 public:
 
     /// <summary>
-    /// Virtual destructor
-    /// </summary>
-    virtual ~WriteStream()
-    {
-    }
-
-public:
-
-    /// <summary>
     /// Writes bytes to the stream
     /// </summary>
     /// <param name="data">Data to write</param>
     /// <param name="bytes">Amount of bytes to write</param>
     virtual void WriteBytes(const void* data, uint32 bytes) = 0;
-
-public:
 
     template<typename T>
     FORCE_INLINE void Write(const T* data)

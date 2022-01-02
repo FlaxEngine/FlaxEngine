@@ -18,22 +18,11 @@ class FLAXENGINE_API ReadStream : public Stream
 public:
 
     /// <summary>
-    /// Virtual destructor
-    /// </summary>
-    virtual ~ReadStream()
-    {
-    }
-
-public:
-
-    /// <summary>
     /// Reads bytes from the stream
     /// </summary>
     /// <param name="data">Data to read</param>
     /// <param name="bytes">Amount of bytes to read</param>
     virtual void ReadBytes(void* data, uint32 bytes) = 0;
-
-public:
 
     template<typename T>
     FORCE_INLINE void Read(T* data)
