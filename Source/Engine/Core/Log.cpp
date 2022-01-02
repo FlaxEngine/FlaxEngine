@@ -11,6 +11,9 @@
 #include "Engine/Serialization/FileWriteStream.h"
 #include "Engine/Serialization/MemoryWriteStream.h"
 #include "Engine/Debug/Exceptions/Exceptions.h"
+#if USE_EDITOR
+#include "Engine/Core/Collections/Array.h"
+#endif
 #include <iostream>
 
 #define LOG_ENABLE_FILE (!PLATFORM_SWITCH)

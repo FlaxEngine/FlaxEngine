@@ -2,6 +2,7 @@
 
 #pragma once
 
+#include "Engine/Core/Core.h"
 #include "Engine/Core/Types/BaseTypes.h"
 
 #define FILESTREAM_BUFFER_SIZE 4096

@@ -2,8 +2,8 @@
 
 #pragma once
 
-#include "Engine/Core/Collections/Array.h"
 #include "Stream.h"
+#include "Engine/Core/Templates.h"
 
 struct CommonValue;
 struct Variant;
@@ -193,9 +193,10 @@ public:
     /// Read data array
     /// </summary>
     /// <param name="data">Array to read</param>
-    template<typename T>
-    void ReadArray(Array<T>* data)
+    template<typename T, typename AllocationType = HeapAllocation>
+    void ReadArray(Array<T, AllocationType>* data)
     {
+        static_assert(TIsPODType<T>::Value, "Only POD types are valid for ReadArray.");
         int32 size;
         ReadInt32(&size);
         data->Resize(size, false);

@@ -519,7 +519,7 @@ void WriteStream::WriteStringAnsi(const StringAnsiView& data)
     Write(data.Get(), length);
 }
 
-void WriteStream::WriteStringAnsi(const StringAnsiView& data, int16 lock)
+void WriteStream::WriteStringAnsi(const StringAnsiView& data, int8 lock)
 {
     const int32 length = data.Length();
     ASSERT(length < STREAM_MAX_STRING_LENGTH);

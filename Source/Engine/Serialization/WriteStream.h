@@ -2,9 +2,8 @@
 
 #pragma once
 
-#include "Engine/Core/Collections/Array.h"
-#include "Engine/Core/Formatting.h"
 #include "Stream.h"
+#include "Engine/Core/Templates.h"
 
 struct CommonValue;
 struct Variant;
@@ -211,7 +210,7 @@ public:
     // Writes Ansi String to the stream
     // @param data Data to write
     // @param lock Characters pass in the stream
-    void WriteStringAnsi(const StringAnsiView& data, int16 lock);
+    void WriteStringAnsi(const StringAnsiView& data, int8 lock);
 
 public:
 
@@ -231,8 +230,8 @@ public:
     /// Write data array
     /// </summary>
     /// <param name="data">Array to write</param>
-    template<typename T>
-    void WriteArray(const Array<T>& data)
+    template<typename T, typename AllocationType = HeapAllocation>
+    void WriteArray(const Array<T, AllocationType>& data)
     {
         static_assert(TIsPODType<T>::Value, "Only POD types are valid for WriteArray.");
         const int32 size = data.Count();
