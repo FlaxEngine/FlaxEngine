@@ -570,6 +570,8 @@ namespace Flax.Deps.Dependencies
                     var editoBinOutput = Path.Combine(options.PlatformsFolder, "Editor", "Linux", "Mono", "bin");
                     Utilities.FileCopy(Path.Combine(buildDir, "bin", "mono-sgen"), Path.Combine(editoBinOutput, "mono"));
                     Utilities.Run("strip", "mono", null, editoBinOutput, Utilities.RunOptions.None);
+                    Utilities.DirectoryCopy(Path.Combine(buildDir, "etc"), Path.Combine(options.PlatformsFolder, platform.ToString(), "Binaries", "Mono", "etc"), true, true);
+                    Utilities.DirectoryCopy(Path.Combine(buildDir, "etc"), Path.Combine(options.PlatformsFolder, "Editor", platform.ToString(), "Binaries", "Mono", "etc"), true, true);
                     var srcMonoLibs = Path.Combine(buildDir, "lib", "mono");
                     var dstMonoLibs = Path.Combine(options.PlatformsFolder, platform.ToString(), "Binaries", "Mono", "lib", "mono");
                     var dstMonoEditorLibs = Path.Combine(options.PlatformsFolder, "Editor", platform.ToString(), "Mono", "lib", "mono");
@@ -770,6 +772,8 @@ namespace Flax.Deps.Dependencies
                     Directory.CreateDirectory(editoBinOutput);
                     Utilities.FileCopy(Path.Combine(buildDir, "bin", "mono-sgen"), Path.Combine(editoBinOutput, "mono"));
                     Utilities.Run("strip", "mono", null, editoBinOutput, Utilities.RunOptions.None);
+                    Utilities.DirectoryCopy(Path.Combine(buildDir, "etc"), Path.Combine(options.PlatformsFolder, platform.ToString(), "Binaries", "Mono", "etc"), true, true);
+                    Utilities.DirectoryCopy(Path.Combine(buildDir, "etc"), Path.Combine(options.PlatformsFolder, "Editor", platform.ToString(), "Binaries", "Mono", "etc"), true, true);
                     var srcMonoLibs = Path.Combine(buildDir, "lib", "mono");
                     var dstMonoLibs = Path.Combine(options.PlatformsFolder, platform.ToString(), "Binaries", "Mono", "lib", "mono");
                     var dstMonoEditorLibs = Path.Combine(options.PlatformsFolder, "Editor", platform.ToString(), "Mono", "lib", "mono");

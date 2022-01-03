@@ -223,7 +223,7 @@ bool ScriptsBuilder::RunBuildTool(const StringView& args, const StringView& work
 
     // Prepare build options
     StringBuilder cmdLine(args.Length() + buildToolPath.Length() + 200);
-#if PLATFORM_LINUX
+#if PLATFORM_LINUX || PLATFORM_MAC
     const String monoPath = Globals::MonoPath / TEXT("bin/mono");
     if (!FileSystem::FileExists(monoPath))
     {

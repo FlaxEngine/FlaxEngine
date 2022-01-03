@@ -586,6 +586,67 @@ bool MacPlatform::SetEnvironmentVariable(const String& name, const String& value
     return setenv(StringAsANSI<>(*name).Get(), StringAsANSI<>(*value).Get(), true) != 0;
 }
 
+int32 MacProcess(const StringView& cmdLine, const StringView& workingDir, const Dictionary<String, String>& environment, bool waitForEnd, bool logOutput)
+{
+    LOG(Info, "Command: {0}", cmdLine);
+    if (workingDir.Length() != 0)
+        LOG(Info, "Working directory: {0}", workingDir);
+
+    StringAsANSI<> cmdLineAnsi(*cmdLine, cmdLine.Length());
+    FILE* pipe = popen(cmdLineAnsi.Get(), "r");
+    if (!pipe)
+    {
+		LOG(Warning, "Failed to start process, errno={}", errno);
+        return -1;
+    }
+
+    // TODO: workingDir
+    // TODO: environment
+
+	int32 returnCode = 0;
+    if (waitForEnd)
+    {
+        int stat_loc;
+        if (logOutput)
+        {
+            char lineBuffer[1024];
+            while (fgets(lineBuffer, sizeof(lineBuffer), pipe) != NULL)
+            {
+                char *p = lineBuffer + strlen(lineBuffer) - 1;
+                if (*p == '\n') *p=0;
+                Log::Logger::Write(LogType::Info, String(lineBuffer));
+            }
+        }
+        else
+        {
+            while (!feof(pipe))
+            {
+                sleep(1);
+            }
+        }
+    }
+
+	return returnCode;
+}
+
+int32 MacPlatform::StartProcess(const StringView& filename, const StringView& args, const StringView& workingDir, bool hiddenWindow, bool waitForEnd)
+{
+	// hiddenWindow has hardly any meaning on UNIX/Linux/OSX as the program that is called decides whether it has a GUI or not
+	String cmdLine(filename);
+	if (args.HasChars()) cmdLine = cmdLine + TEXT(" ") + args;
+	return MacProcess(cmdLine, workingDir, Dictionary<String, String>(), waitForEnd, false);
+}
+
+int32 MacPlatform::RunProcess(const StringView& cmdLine, const StringView& workingDir, bool hiddenWindow)
+{
+    return MacProcess(cmdLine, workingDir, Dictionary<String, String>(), true, true);
+}
+
+int32 MacPlatform::RunProcess(const StringView& cmdLine, const StringView& workingDir, const Dictionary<String, String>& environment, bool hiddenWindow)
+{
+	return MacProcess(cmdLine, workingDir, environment, true, true);
+}
+
 void* MacPlatform::LoadLibrary(const Char* filename)
 {
     const StringAsANSI<> filenameANSI(filename);

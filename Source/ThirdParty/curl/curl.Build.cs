@@ -38,8 +38,11 @@ public class curl : DepsModule
             options.OutputFiles.Add("crypt32.lib");
             break;
         case TargetPlatform.Linux:
+            options.OutputFiles.Add(Path.Combine(depsRoot, "libcurl.a"));
+            break;
         case TargetPlatform.Mac:
             options.OutputFiles.Add(Path.Combine(depsRoot, "libcurl.a"));
+            options.OutputFiles.Add("Security.framework");
             break;
         default: throw new InvalidPlatformException(options.Platform.Target);
         }

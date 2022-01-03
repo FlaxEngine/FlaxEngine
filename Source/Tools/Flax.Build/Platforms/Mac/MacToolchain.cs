@@ -306,7 +306,11 @@ namespace Flax.Build.Platforms
             {
                 var dir = Path.GetDirectoryName(library);
                 var ext = Path.GetExtension(library);
-                if (string.IsNullOrEmpty(dir))
+                if (ext == ".framework")
+                {
+                    args.Add(string.Format("-framework {0}", library.Substring(0, library.Length - ext.Length)));
+                }
+                else if (string.IsNullOrEmpty(dir))
                 {
                     args.Add(string.Format("\"-l{0}\"", library));
                 }
@@ -332,7 +336,15 @@ namespace Flax.Build.Platforms
             task.PrerequisiteFiles.AddRange(linkEnvironment.InputFiles);
             foreach (var file in linkEnvironment.InputFiles)
             {
-                args.Add(string.Format("\"{0}\"", file.Replace('\\', '/')));
+                var ext = Path.GetExtension(file);
+                if (ext == ".framework")
+                {
+                    args.Add(string.Format("-framework {0}", file.Substring(0, file.Length - ext.Length)));
+                }
+                else
+                {
+                    args.Add(string.Format("\"{0}\"", file.Replace('\\', '/')));
+                }
             }
 
             // Additional lib paths

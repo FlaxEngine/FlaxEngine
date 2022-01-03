@@ -14,9 +14,7 @@
 #include "ManagedCLR/MClass.h"
 #include "ManagedCLR/MUtils.h"
 #include "ManagedCLR/MField.h"
-#if PLATFORM_LINUX
 #include "ManagedCLR/MCore.h"
-#endif
 #include "FlaxEngine.Gen.h"
 #if USE_MONO
 #include <ThirdParty/mono-2.0/mono/metadata/object.h>
@@ -324,7 +322,7 @@ bool ScriptingObject::CanCast(MClass* from, MClass* to)
         return true;
     CHECK_RETURN(from && to, false);
 
-#if PLATFORM_LINUX
+#if PLATFORM_LINUX || PLATFORM_MAC
     // Cannot enter GC unsafe region if the thread is not attached
     MCore::AttachThread();
 #endif

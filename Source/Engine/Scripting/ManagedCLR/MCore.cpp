@@ -492,6 +492,9 @@ bool MCore::LoadEngine()
     ThisLibHandle = dlopen(nullptr, RTLD_LAZY);
 	mono_dl_fallback_register(OnMonoLinuxDlOpen, OnMonoLinuxDlSym, nullptr, nullptr);
 #endif
+#elif PLATFORM_MAC
+    // Adjust GC threads suspending mode on Mac
+    Platform::SetEnvironmentVariable(TEXT("MONO_THREADS_SUSPEND"), TEXT("preemptive"));
 #endif
     const char* configPath = nullptr;
 #if PLATFORM_SWITCH

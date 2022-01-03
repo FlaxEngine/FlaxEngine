@@ -31,6 +31,11 @@ namespace Flax.Deps.Dependencies
                     {
                         TargetPlatform.Linux,
                     };
+                case TargetPlatform.Mac:
+                    return new[]
+                    {
+                        TargetPlatform.Mac,
+                    };
                 default: return new TargetPlatform[0];
                 }
             }
@@ -54,10 +59,12 @@ namespace Flax.Deps.Dependencies
             };
 
             // Get the source
-            Downloader.DownloadFileFromUrlToPath("https://curl.haxx.se/download/curl-7.64.1.zip", packagePath);
+            if (!File.Exists(packagePath))
+                Downloader.DownloadFileFromUrlToPath("https://curl.haxx.se/download/curl-7.64.1.zip", packagePath);
             using (ZipArchive archive = ZipFile.Open(packagePath, ZipArchiveMode.Read))
             {
-                archive.ExtractToDirectory(root);
+                if (!Directory.Exists(root))
+                    archive.ExtractToDirectory(root);
                 root = Path.Combine(root, archive.Entries.First().FullName);
             }
 
@@ -78,7 +85,7 @@ namespace Flax.Deps.Dependencies
                     {
                         // Build for Win64
                         Deploy.VCEnvironment.BuildSolution(vsSolutionPath, configuration, "x64");
-                        var depsFolder = GetThirdPartyFolder(options, TargetPlatform.Windows, TargetArchitecture.x64);
+                        var depsFolder = GetThirdPartyFolder(options, platform, TargetArchitecture.x64);
                         foreach (var filename in binariesToCopyWin)
                             Utilities.FileCopy(Path.Combine(root, "build", "Win64", vcVersion, configuration, filename), Path.Combine(depsFolder, Path.GetFileName(filename)));
                     }
@@ -89,7 +96,7 @@ namespace Flax.Deps.Dependencies
                     // Build for Linux
                     var settings = new []
                     {
-                        "-without-librtmp",
+                        "--without-librtmp",
                         "--without-ssl",
                         "--with-gnutls",
                         "--disable-ipv6",
@@ -102,7 +109,7 @@ namespace Flax.Deps.Dependencies
                     var envVars = new Dictionary<string, string>
                     {
                         { "CC", "clang-7" },
-                        { "CC_FOR_BUILD", "clang-7" }
+                        { "CC_FOR_BUILD", "clang-7" },
                     };
                     var buildDir = Path.Combine(root, "build");
                     SetupDirectory(buildDir, true);
@@ -110,7 +117,45 @@ namespace Flax.Deps.Dependencies
                     Utilities.Run(Path.Combine(root, "configure"), string.Join(" ", settings) + " --prefix=\"" + buildDir + "\"", null, root, Utilities.RunOptions.None, envVars);
                     Utilities.Run("make", null, null, root, Utilities.RunOptions.None);
                     Utilities.Run("make", "install", null, root, Utilities.RunOptions.None);
-                    var depsFolder = GetThirdPartyFolder(options, TargetPlatform.Linux, TargetArchitecture.x64);
+                    var depsFolder = GetThirdPartyFolder(options, platform, TargetArchitecture.x64);
+                    var filename = "libcurl.a";
+                    Utilities.FileCopy(Path.Combine(buildDir, "lib", filename), Path.Combine(depsFolder, filename));
+                    break;
+                }
+                case TargetPlatform.Mac:
+                {
+                    // Build for Mac
+                    var settings = new []
+                    {
+                        "--with-secure-transport",
+                        "--without-librtmp",
+                        "--disable-ipv6",
+                        "--disable-manual",
+                        "--disable-verbose",
+                        "--disable-shared",
+                        "--enable-static",
+                        "-disable-ldap --disable-sspi --disable-ftp --disable-file --disable-dict --disable-telnet --disable-tftp --disable-rtsp --disable-pop3 --disable-imap --disable-smtp --disable-gopher --disable-smb",
+                    };
+                    var arch = "x86_64";
+                    var archName = arch + "-apple-darwin18";
+                    var compilerFlags = string.Format("-mmacosx-version-min={0} -arch {1}", Configuration.MacOSXMinVer, arch);
+                    var envVars = new Dictionary<string, string>
+                    {
+                        { "CFLAGS", compilerFlags },
+                        { "CXXFLAGS", compilerFlags },
+                        { "CPPFLAGS", compilerFlags },
+                        { "ARCH", arch },
+                        { "SDK", "macosx" },
+                        { "DEPLOYMENT_TARGET", Configuration.MacOSXMinVer },
+                    };
+                    var buildDir = Path.Combine(root, "build");
+                    SetupDirectory(buildDir, true);
+                    Utilities.Run("chmod", "+x configure", null, root, Utilities.RunOptions.None);
+                    Utilities.Run("chmod", "+x install-sh", null, root, Utilities.RunOptions.None);
+                    Utilities.Run(Path.Combine(root, "configure"), string.Join(" ", settings) + " --host=" + archName + " --prefix=\"" + buildDir + "\"", null, root, Utilities.RunOptions.None, envVars);
+                    Utilities.Run("make", null, null, root, Utilities.RunOptions.None);
+                    Utilities.Run("make", "install", null, root, Utilities.RunOptions.None);
+                    var depsFolder = GetThirdPartyFolder(options, platform, TargetArchitecture.x64);
                     var filename = "libcurl.a";
                     Utilities.FileCopy(Path.Combine(buildDir, "lib", filename), Path.Combine(depsFolder, filename));
                     break;
