@@ -82,6 +82,17 @@ MClass* ScriptingObject::GetClass() const
     return _type ? _type.GetType().ManagedClass : nullptr;
 }
 
+ScriptingObject* ScriptingObject::NewObject(const ScriptingTypeHandle& typeHandle)
+{
+    if (!typeHandle)
+        return nullptr;
+    auto& type = typeHandle.GetType();
+    if (type.Type != ScriptingTypes::Script)
+        return nullptr;
+    const ScriptingObjectSpawnParams params(Guid::New(), typeHandle);
+    return type.Script.Spawn(params);
+}
+
 ScriptingObject* ScriptingObject::FromInterface(void* interfaceObj, const ScriptingTypeHandle& interfaceType)
 {
     if (!interfaceObj || !interfaceType)

@@ -108,6 +108,13 @@ public:
 
 public:
 
+    static ScriptingObject* NewObject(const ScriptingTypeHandle& typeHandle);
+    template<typename T>
+    static T* NewObject()
+    {
+        return (T*)NewObject(T::TypeInitializer);
+    }
+
     // Tries to cast native interface object to scripting object instance. Returns null if fails.
     static ScriptingObject* FromInterface(void* interfaceObj, const ScriptingTypeHandle& interfaceType);
     static void* ToInterface(ScriptingObject* obj, const ScriptingTypeHandle& interfaceType);
