@@ -91,7 +91,7 @@ namespace FlaxEditor.GUI.Timeline
             /// <param name="media">The media.</param>
             protected ProxyBase(TTrack track, TMedia media)
             {
-                Track = track ?? throw new ArgumentNullException(nameof(track));
+                Track = track;
                 Media = media ?? throw new ArgumentNullException(nameof(media));
             }
         }
@@ -341,7 +341,7 @@ namespace FlaxEditor.GUI.Timeline
             var style = Style.Current;
             var bounds = new Rectangle(Vector2.Zero, Size);
 
-            var fillColor = style.Background * 1.5f;
+            var fillColor = BackgroundColor.A > 0.0f ? BackgroundColor : style.Background * 1.5f;
             Render2D.FillRectangle(bounds, fillColor);
 
             var isMovingWholeMedia = _isMoving && !_startMoveRightEdge && !_startMoveLeftEdge;

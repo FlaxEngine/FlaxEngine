@@ -605,9 +605,9 @@ public:
     ScriptingObjectReference<Actor> ParentActor;
 
     SpawnActorAction(Actor* actor, Actor* parent)
+        : TargetActor(actor)
+        , ParentActor(parent)
     {
-        TargetActor = actor;
-        ParentActor = parent;
     }
 
     bool Do() const override
@@ -623,8 +623,8 @@ public:
     ScriptingObjectReference<Actor> TargetActor;
 
     DeleteActorAction(Actor* actor)
+        : TargetActor(actor)
     {
-        TargetActor = actor;
     }
 
     bool Do() const override

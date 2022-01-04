@@ -14,7 +14,13 @@ namespace AnimationUtils
     template<class T>
     FORCE_INLINE static T GetZero()
     {
-        return 0.0f;
+        return T();
+    }
+
+    template<>
+    FORCE_INLINE int32 GetZero<int32>()
+    {
+        return 0;
     }
 
     template<>

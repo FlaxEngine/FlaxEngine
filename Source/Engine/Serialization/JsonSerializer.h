@@ -26,5 +26,16 @@ API_CLASS(Static, Namespace="FlaxEngine.Json") class FLAXENGINE_API JsonSerializ
     /// <param name="obj">The object to deserialize (can be null).</param>
     /// <param name="data">The source data to read from.</param>
     /// <param name="engineBuild">The engine build number of the saved data. Used to resolve old object formats when loading deprecated data.</param>
+    FORCE_INLINE static void LoadFromBytes(ISerializable* obj, const Array<byte>& data, int32 engineBuild)
+    {
+        LoadFromBytes(obj, Span<byte>(data.Get(), data.Count()), engineBuild);
+    }
+
+    /// <summary>
+    /// Performs object Json deserialization from the raw bytes.
+    /// </summary>
+    /// <param name="obj">The object to deserialize (can be null).</param>
+    /// <param name="data">The source data to read from.</param>
+    /// <param name="engineBuild">The engine build number of the saved data. Used to resolve old object formats when loading deprecated data.</param>
     API_FUNCTION() static void LoadFromBytes(ISerializable* obj, const Span<byte>& data, int32 engineBuild);
 };

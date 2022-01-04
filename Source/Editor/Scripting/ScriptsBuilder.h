@@ -4,7 +4,6 @@
 
 #include "Engine/Core/Delegate.h"
 #include "Engine/Core/Types/String.h"
-#include "Engine/Core/Collections/Array.h"
 #include "Engine/Scripting/ScriptingType.h"
 
 /// <summary>

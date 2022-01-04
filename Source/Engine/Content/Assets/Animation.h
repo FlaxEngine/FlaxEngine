@@ -18,7 +18,7 @@ DECLARE_BINARY_ASSET_HEADER(Animation, 1);
     /// <summary>
     /// Contains basic information about the animation asset contents.
     /// </summary>
-    API_STRUCT() struct InfoData
+    API_STRUCT() struct FLAXENGINE_API InfoData
     {
     DECLARE_SCRIPTING_TYPE_NO_SPAWN(InfoData);
 

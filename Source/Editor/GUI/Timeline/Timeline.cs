@@ -1898,16 +1898,16 @@ namespace FlaxEditor.GUI.Timeline
                 media.OnTimelineShowContextMenu(menu, controlUnderMouse);
                 if (media.PropertiesEditObject != null)
                 {
-                    menu.AddButton("Edit media", () => ShowEditPopup(media.PropertiesEditObject, ref location, media.Track));
+                    menu.AddButton("Edit media", () => ShowEditPopup(media.PropertiesEditObject, location, media.Track));
                 }
             }
             if (PropertiesEditObject != null)
             {
-                menu.AddButton("Edit timeline", () => ShowEditPopup(PropertiesEditObject, ref location, this));
+                menu.AddButton("Edit timeline", () => ShowEditPopup(PropertiesEditObject, location, this));
             }
             if (_tracks.Count > 1)
             {
-                menu.AddButton("Sort tracks", SortTracks).TooltipText = "Sorts sub tracks alphabetically";
+                menu.AddButton("Sort tracks", SortTracks).TooltipText = "Sorts tracks alphabetically";
             }
             menu.AddSeparator();
             menu.AddButton("Reset zoom", () => Zoom = 1.0f);
@@ -2089,7 +2089,7 @@ namespace FlaxEditor.GUI.Timeline
         /// <param name="obj">The object.</param>
         /// <param name="location">The show location (in timeline space).</param>
         /// <param name="undoContext">The undo context object.</param>
-        protected virtual void ShowEditPopup(object obj, ref Vector2 location, object undoContext = null)
+        public virtual void ShowEditPopup(object obj, Vector2 location, object undoContext = null)
         {
             var popup = new PropertiesEditPopup(this, obj, undoContext);
             popup.Show(this, location);

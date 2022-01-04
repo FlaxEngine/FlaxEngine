@@ -5,7 +5,7 @@ using System;
 namespace FlaxEngine
 {
     /// <summary>
-    /// Specifies a options for an type reference picker in the editor. Allows to customize view or provide custom value assign policy (eg/ restrict types to inherit from a given type).
+    /// Specifies a options for an type reference picker in the editor. Allows to customize view or provide custom value assign policy (eg. restrict types to inherit from a given type).
     /// </summary>
     /// <seealso cref="System.Attribute" />
     [AttributeUsage(AttributeTargets.Field | AttributeTargets.Property | AttributeTargets.Parameter)]
