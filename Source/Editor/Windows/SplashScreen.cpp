@@ -29,7 +29,10 @@ const Char* SplashScreenQuotes[] =
     TEXT("Removing 'C:\\Windows\\'"),
 #elif PLATFORM_LINUX
     TEXT("Time to switch to Windows?"),
-    TEXT("Installing Windows 10..."),
+    TEXT("Installing Windows 10"),
+#elif PLATFORM_MAC
+    TEXT("Hacking your iPhone"),
+    TEXT("Why does macbook heat up?\nBecause it doesn't have windows"),
 #endif
     TEXT("Kappa!"),
     TEXT("How you doin'?"),
