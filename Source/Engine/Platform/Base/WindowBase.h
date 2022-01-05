@@ -679,6 +679,14 @@ public:
     }
 
     /// <summary>
+    /// Gets the value indicating whenever mouse input is tracked by this window.
+    /// </summary>
+    API_PROPERTY() bool IsMouseTracking() const
+    {
+        return _isTrackingMouse;
+    }
+
+    /// <summary>
     /// Ends the mouse tracking.
     /// </summary>
     API_FUNCTION() virtual void EndTrackingMouse()
