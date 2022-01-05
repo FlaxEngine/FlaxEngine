@@ -10,4 +10,6 @@
 #include "Android/AndroidVulkanPlatform.h"
 #elif PLATFORM_SWITCH
 #include "Platforms/Switch/Engine/GraphicsDevice/Vulkan/SwitchVulkanPlatform.h"
+#elif PLATFORM_MAC
+#include "Mac/MacVulkanPlatform.h"
 #endif

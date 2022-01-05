@@ -14,7 +14,7 @@
 const Char* ShaderProfileCacheDirNames[] =
 {
     // @formatter:off
-    TEXT("EARTH_IS_NOT_FLAT_XD"), // Unknown
+    TEXT(""), // Unknown
     TEXT("DX_SM4"), // DirectX_SM4
     TEXT("DX_SM5"), // DirectX_SM5
     TEXT("GLSL_410"), // GLSL_410

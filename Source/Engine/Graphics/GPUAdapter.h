@@ -9,6 +9,7 @@
 #define GPU_VENDOR_ID_INTEL 0x8086
 #define GPU_VENDOR_ID_NVIDIA 0x10DE
 #define GPU_VENDOR_ID_MICROSOFT 0x1414
+#define GPU_VENDOR_ID_APPLE 0x106B
 
 /// <summary>
 /// Interface for GPU device adapter.

@@ -114,6 +114,7 @@ namespace Flax.Build.Platforms
             options.LinkEnv.InputLibraries.Add("SystemConfiguration.framework");
             options.LinkEnv.InputLibraries.Add("IOKit.framework");
             options.LinkEnv.InputLibraries.Add("Cocoa.framework");
+            options.LinkEnv.InputLibraries.Add("QuartzCore.framework");
         }
 
         /// <inheritdoc />

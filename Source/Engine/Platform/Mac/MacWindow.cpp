@@ -6,6 +6,7 @@
 #include "MacUtils.h"
 #include "Engine/Graphics/RenderTask.h"
 #include <Cocoa/Cocoa.h>
+#include <QuartzCore/CAMetalLayer.h>
 
 @interface MacWindowImpl : NSWindow <NSWindowDelegate>
 {
@@ -27,6 +28,29 @@
 - (void)setWindow:(MacWindow*)window
 {
     Window = window;
+}
+
+@end
+
+@interface MacViewImpl : NSView
+{
+}
+
+- (CALayer*)makeBackingLayer;
+- (BOOL)wantsUpdateLayer;
+
+@end
+
+@implementation MacViewImpl
+
+- (CALayer*)makeBackingLayer
+{
+    return [[CAMetalLayer class] layer];
+}
+
+- (BOOL)wantsUpdateLayer
+{
+    return YES;
 }
 
 @end
@@ -60,12 +84,16 @@ MacWindow::MacWindow(const CreateWindowSettings& settings)
         styleMask:(styleMask)
         backing:NSBackingStoreBuffered
         defer:NO];
+    MacViewImpl* view = [[MacViewImpl alloc] init];
+    view.wantsLayer = YES;
     window.title = (__bridge NSString*)MacUtils::ToString(settings.Title);
     [window setWindow:this];
     [window setReleasedWhenClosed:NO];
     [window setMinSize:NSMakeSize(settings.MinimumSize.X, settings.MinimumSize.Y)];
     [window setMaxSize:NSMakeSize(settings.MaximumSize.X, settings.MaximumSize.Y)];
     [window setOpaque:!settings.SupportsTransparency];
+    [window setContentView:view];
+    [window setAcceptsMouseMovedEvents:YES];
     [window setDelegate:window];
     _window = window;
 

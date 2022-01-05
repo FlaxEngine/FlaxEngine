@@ -39,6 +39,7 @@ public class glslang : DepsModule
             options.OutputFiles.Add(Path.Combine(depsRoot, "SPIRV.lib"));
             break;
         case TargetPlatform.Linux:
+        case TargetPlatform.Mac:
             options.OutputFiles.Add(Path.Combine(depsRoot, "libGenericCodeGen.a"));
             options.OutputFiles.Add(Path.Combine(depsRoot, "libglslang.a"));
             options.OutputFiles.Add(Path.Combine(depsRoot, "libHLSL.a"));

@@ -54,6 +54,7 @@ public class ShadersCompilation : EngineModule
             options.PrivateDependencies.Add("ShaderCompilerVulkan");
             break;
         case TargetPlatform.Mac:
+            options.PrivateDependencies.Add("ShaderCompilerVulkan");
             break;
         default: throw new InvalidPlatformException(options.Platform.Target);
         }

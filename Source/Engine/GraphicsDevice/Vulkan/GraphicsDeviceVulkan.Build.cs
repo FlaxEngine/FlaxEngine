@@ -25,6 +25,7 @@ public sealed class VulkanSdk : Sdk
             {
                 TargetPlatform.Windows,
                 TargetPlatform.Linux,
+                TargetPlatform.Mac,
             };
         }
     }
@@ -34,10 +35,26 @@ public sealed class VulkanSdk : Sdk
     /// </summary>
     public VulkanSdk()
     {
-        if (!Platforms.Contains(Flax.Build.Platform.BuildTargetPlatform))
+        var platform = Flax.Build.Platform.BuildTargetPlatform;
+        if (!Platforms.Contains(platform))
             return;
 
         var vulkanSdk = Environment.GetEnvironmentVariable("VULKAN_SDK");
+        if (vulkanSdk == null && platform == TargetPlatform.Mac)
+        {
+            // Try to guess install location for the current user
+            var path = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "VulkanSDK");
+            if (Directory.Exists(path))
+            {
+                var subDirs = Directory.GetDirectories(path);
+                if (subDirs.Length != 0)
+                {
+                    path = Path.Combine(subDirs[0], "macOS");
+                    if (Directory.Exists(path))
+                        vulkanSdk = path;
+                }
+            }
+        }
         if (vulkanSdk != null)
         {
             if (Directory.Exists(vulkanSdk))
@@ -110,13 +127,14 @@ public class GraphicsDeviceVulkan : GraphicsDeviceBaseModule
 
         options.PrivateDependencies.Add("VulkanMemoryAllocator");
 
-        if (options.Platform.Target == TargetPlatform.Switch)
+        switch (options.Platform.Target)
         {
+        case TargetPlatform.Switch:
             options.SourcePaths.Add(Path.Combine(Globals.EngineRoot, "Source", "Platforms", "Switch", "Engine", "GraphicsDevice", "Vulkan"));
-        }
-        else
-        {
+            break;
+        default:
             options.PrivateDependencies.Add("volk");
+            break;
         }
     }
 }

@@ -35,6 +35,7 @@ public class spirv_tools : DepsModule
             options.OutputFiles.Add(Path.Combine(depsRoot, "SPIRV-Tools-opt.lib"));
             break;
         case TargetPlatform.Linux:
+        case TargetPlatform.Mac:
             options.OutputFiles.Add(Path.Combine(depsRoot, "libSPIRV-Tools.a"));
             options.OutputFiles.Add(Path.Combine(depsRoot, "libSPIRV-Tools-opt.a"));
             break;
