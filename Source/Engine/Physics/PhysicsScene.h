@@ -166,6 +166,11 @@ public:
     PxQueryFilterCallback* GetCharacterQueryFilterCallback();
 
     /// <summary>
+    /// Gets the default controller filter callback used for the character controller collisions detection.
+    /// </summary>
+    static PxControllerFilterCallback* GetCharacterControllerFilterCallback();
+
+    /// <summary>
     /// Performs a raycast against objects in the scene.
     /// </summary>
     /// <param name="origin">The origin of the ray.</param>

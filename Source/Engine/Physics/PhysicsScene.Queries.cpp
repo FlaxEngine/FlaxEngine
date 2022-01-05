@@ -218,6 +218,52 @@ public:
     }
 };
 
+class CharacterControllerFilter : public PxControllerFilterCallback
+{
+private:
+
+    PxShape* getShape(const PxController& controller)
+    {
+        PxRigidDynamic* actor = controller.getActor();
+
+        // Early out if no actor or no shapes
+        if (!actor || actor->getNbShapes() < 1)
+            return nullptr;
+
+        // Get first shape only.
+        PxShape* shape = nullptr;
+        actor->getShapes(&shape, 1);
+
+        return shape;
+    }
+
+public:
+
+    bool filter(const PxController& a, const PxController& b) override
+    {
+        // Early out to avoid crashing
+        PxShape* shapeA = getShape(a);
+        if (!shapeA)
+            return false;
+
+        PxShape* shapeB = getShape(b);
+        if (!shapeB)
+            return false;
+
+        // Let triggers through
+        if (PxFilterObjectIsTrigger(shapeB->getFlags()))
+            return false;
+
+        // Trigger the contact callback for pairs (A,B) where the filtermask of A contains the ID of B and vice versa
+        const PxFilterData shapeFilterA = shapeA->getQueryFilterData();
+        const PxFilterData shapeFilterB = shapeB->getQueryFilterData();
+        if (shapeFilterA.word0 & shapeFilterB.word1)
+            return true;
+
+        return false;
+    }
+};
+
 PxQueryFilterCallback* PhysicsScene::GetQueryFilterCallback()
 {
     static QueryFilter Filter;
@@ -227,6 +273,12 @@ PxQueryFilterCallback* PhysicsScene::GetQueryFilterCallback()
 PxQueryFilterCallback* PhysicsScene::GetCharacterQueryFilterCallback()
 {
     static CharacterQueryFilter Filter;
+    return &Filter;
+}
+
+PxControllerFilterCallback* PhysicsScene::GetCharacterControllerFilterCallback()
+{
+    static CharacterControllerFilter Filter;
     return &Filter;
 }
 

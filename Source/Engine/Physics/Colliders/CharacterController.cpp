@@ -173,7 +173,7 @@ CharacterController::CollisionFlags CharacterController::Move(const Vector3& dis
         filters.mFilterData = (PxFilterData*)&_filterData;
         filters.mFilterCallback = GetPhysicsScene()->GetCharacterQueryFilterCallback();
         filters.mFilterFlags = PxQueryFlag::eDYNAMIC | PxQueryFlag::eSTATIC | PxQueryFlag::ePREFILTER;
-        filters.mCCTFilterCallback = Physics::GetCharacterControllerFilterCallback();
+        filters.mCCTFilterCallback = GetPhysicsScene()->GetCharacterControllerFilterCallback();
 
         result = (CollisionFlags)(byte)_controller->move(C2P(displacement), _minMoveDistance, deltaTime, filters);
         _lastFlags = result;
