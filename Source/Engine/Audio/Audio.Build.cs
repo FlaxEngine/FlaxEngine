@@ -54,8 +54,8 @@ public class Audio : EngineModule
             options.SourcePaths.Add(Path.Combine(Globals.EngineRoot, "Source", "Platforms", "PS5", "Engine", "Audio"));
             options.CompileEnv.PreprocessorDefinitions.Add("AUDIO_API_PS5");
             break;
-        case TargetPlatform.Mac: 
-            useNone = true; // TODO: Audio support on Mac
+        case TargetPlatform.Mac:
+            useOpenAL = true;
             break;
         default: throw new InvalidPlatformException(options.Platform.Target);
         }
@@ -84,6 +84,12 @@ public class Audio : EngineModule
             case TargetPlatform.Android:
                 options.OutputFiles.Add(Path.Combine(depsRoot, "libopenal.a"));
                 options.Libraries.Add("OpenSLES");
+                break;
+            case TargetPlatform.Mac:
+                options.OutputFiles.Add(Path.Combine(depsRoot, "libopenal.a"));
+                options.Libraries.Add("CoreAudio.framework");
+                options.Libraries.Add("AudioUnit.framework");
+                options.Libraries.Add("AudioToolbox.framework");
                 break;
             default: throw new InvalidPlatformException(options.Platform.Target);
             }
