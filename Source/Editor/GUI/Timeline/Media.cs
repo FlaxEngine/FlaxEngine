@@ -215,7 +215,7 @@ namespace FlaxEditor.GUI.Timeline
         /// <summary>
         /// Gets a value indicating whether this media can be resized (duration changed).
         /// </summary>
-        public bool CanResize;
+        public bool CanResize = true;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="Media"/> class.
@@ -347,8 +347,9 @@ namespace FlaxEditor.GUI.Timeline
             var isMovingWholeMedia = _isMoving && !_startMoveRightEdge && !_startMoveLeftEdge;
             var borderHighlightColor = style.BorderHighlighted;
             var moveColor = style.ProgressNormal;
+            var selectedColor = style.BackgroundSelected;
             var moveThickness = 2.0f;
-            var borderColor = isMovingWholeMedia ? moveColor : (IsMouseOver ? borderHighlightColor : style.BorderNormal);
+            var borderColor = isMovingWholeMedia ? moveColor : (Timeline.SelectedMedia.Contains(this) ? selectedColor : (IsMouseOver ? borderHighlightColor : style.BorderNormal));
             Render2D.DrawRectangle(bounds, borderColor, isMovingWholeMedia ? moveThickness : 1.0f);
             if (_startMoveLeftEdge)
             {
@@ -384,9 +385,25 @@ namespace FlaxEditor.GUI.Timeline
                 _startMoveDuration = DurationFrames;
                 _startMoveLeftEdge = MoveLeftEdgeRect.Contains(ref location) && CanResize;
                 _startMoveRightEdge = MoveRightEdgeRect.Contains(ref location) && CanResize;
-
                 StartMouseCapture(true);
+                if (_startMoveLeftEdge || _startMoveRightEdge)
+                    return true;
 
+                if (Root.GetKey(KeyboardKeys.Control))
+                {
+                    // Add/Remove selection
+                    if (_timeline.SelectedMedia.Contains(this))
+                        _timeline.Deselect(this);
+                    else
+                        _timeline.Select(this, true);
+                }
+                else
+                {
+                    // Select (additive for the move)
+                    _timeline.Select(this, true);
+                }
+
+                _timeline.OnKeyframesMove(null, this, location, true, false);
                 return true;
             }
 
@@ -417,7 +434,8 @@ namespace FlaxEditor.GUI.Timeline
                 }
                 else
                 {
-                    StartFrame = _startMoveStartFrame + moveDelta;
+                    // Move with global timeline selection
+                    _timeline.OnKeyframesMove(null, this, location, false, false);
                 }
 
                 if (StartFrame != startFrame || DurationFrames != durationFrames)
@@ -436,6 +454,15 @@ namespace FlaxEditor.GUI.Timeline
         {
             if (button == MouseButton.Left && _isMoving)
             {
+                if (!_startMoveLeftEdge && !_startMoveRightEdge && !Root.GetKey(KeyboardKeys.Control))
+                {
+                    var moveLocationDelta = Root.MousePosition - _startMoveLocation;
+                    if (moveLocationDelta.Length < 4.0f)
+                    {
+                        // No move so just select itself
+                        _timeline.Select(this);
+                    }
+                }
                 EndMoving();
                 return true;
             }
@@ -501,18 +528,26 @@ namespace FlaxEditor.GUI.Timeline
             _startMoveLeftEdge = false;
             _startMoveRightEdge = false;
 
-            // Re-assign the media start/duration inside the undo recording block
-            if (_startMoveStartFrame != _startFrame || _startMoveDuration != _durationFrames)
+            if (_startMoveLeftEdge || _startMoveRightEdge)
             {
-                var endMoveStartFrame = _startFrame;
-                var endMoveDuration = _durationFrames;
-                _startFrame = _startMoveStartFrame;
-                _durationFrames = _startMoveDuration;
-                using (new TrackUndoBlock(_tack))
+                // Re-assign the media start/duration inside the undo recording block
+                if (_startMoveStartFrame != _startFrame || _startMoveDuration != _durationFrames)
                 {
-                    _startFrame = endMoveStartFrame;
-                    _durationFrames = endMoveDuration;
+                    var endMoveStartFrame = _startFrame;
+                    var endMoveDuration = _durationFrames;
+                    _startFrame = _startMoveStartFrame;
+                    _durationFrames = _startMoveDuration;
+                    using (new TrackUndoBlock(_tack))
+                    {
+                        _startFrame = endMoveStartFrame;
+                        _durationFrames = endMoveDuration;
+                    }
                 }
+            }
+            else
+            {
+                // Global timeline selection moving end
+                _timeline.OnKeyframesMove(null, this, _mouseLocation, false, true);
             }
 
             EndMouseCapture();

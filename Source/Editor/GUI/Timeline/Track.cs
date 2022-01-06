@@ -1051,7 +1051,7 @@ namespace FlaxEditor.GUI.Timeline
                 if (CanRename)
                     menu.AddButton("Rename", "F2", StartRenaming);
                 if (CanCopyPaste)
-                    menu.AddButton("Duplicate", "Ctrl+D", () => Timeline.DuplicateSelection());
+                    menu.AddButton("Duplicate", "Ctrl+D", () => Timeline.DuplicateSelectedTracks());
                 menu.AddButton("Delete", "Del", Delete);
                 if (CanExpand)
                 {
@@ -1292,12 +1292,12 @@ namespace FlaxEditor.GUI.Timeline
                         StartRenaming();
                     return true;
                 case KeyboardKeys.Delete:
-                    _timeline.DeleteSelection();
+                    _timeline.DeleteSelectedTracks();
                     return true;
                 case KeyboardKeys.D:
                     if (Root.GetKey(KeyboardKeys.Control) && CanCopyPaste)
                     {
-                        _timeline.DuplicateSelection();
+                        _timeline.DuplicateSelectedTracks();
                         return true;
                     }
                     break;
