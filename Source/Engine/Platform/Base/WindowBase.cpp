@@ -87,7 +87,7 @@
 #endif
 
 WindowBase::WindowBase(const CreateWindowSettings& settings)
-    : PersistentScriptingObject(SpawnParams(Guid::New(), TypeInitializer))
+    : ScriptingObject(SpawnParams(Guid::New(), TypeInitializer))
     , _visible(false)
     , _minimized(false)
     , _maximized(false)
@@ -190,7 +190,7 @@ void WindowBase::OnDeleteObject()
     SAFE_DELETE(_swapChain);
 
     // Base
-    PersistentScriptingObject::OnDeleteObject();
+    ScriptingObject::OnDeleteObject();
 }
 
 bool WindowBase::GetRenderingEnabled() const

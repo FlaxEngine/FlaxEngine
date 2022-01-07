@@ -55,7 +55,7 @@ typedef Dictionary<Guid, Actor*, HeapAllocation> ActorsLookup;
 /// <summary>
 /// Base class for objects that are parts of the scene (actors and scripts).
 /// </summary>
-API_CLASS(Abstract, NoSpawn) class FLAXENGINE_API SceneObject : public PersistentScriptingObject, public ISerializable
+API_CLASS(Abstract, NoSpawn) class FLAXENGINE_API SceneObject : public ScriptingObject, public ISerializable
 {
 DECLARE_SCRIPTING_TYPE_NO_SPAWN(SceneObject);
     friend PrefabInstanceData;
@@ -64,7 +64,7 @@ DECLARE_SCRIPTING_TYPE_NO_SPAWN(SceneObject);
     friend ScriptsFactory;
     friend SceneTicking;
 public:
-    typedef PersistentScriptingObject Base;
+    typedef ScriptingObject Base;
 
     // Scene Object lifetime flow:
     // - Create

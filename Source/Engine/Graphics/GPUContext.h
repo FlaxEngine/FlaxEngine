@@ -113,7 +113,7 @@ DECLARE_SCRIPTING_TYPE_NO_SPAWN(GPUDrawIndexedIndirectArgs);
 /// <summary>
 /// Interface for GPU device context that can record and send graphics commands to the GPU in a sequence.
 /// </summary>
-API_CLASS(Sealed, NoSpawn) class FLAXENGINE_API GPUContext : public PersistentScriptingObject
+API_CLASS(Sealed, NoSpawn) class FLAXENGINE_API GPUContext : public ScriptingObject
 {
 DECLARE_SCRIPTING_TYPE_NO_SPAWN(GPUContext);
 private:

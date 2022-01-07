@@ -82,7 +82,7 @@ void RenderTask::DrawAll()
 }
 
 RenderTask::RenderTask(const SpawnParams& params)
-    : PersistentScriptingObject(params)
+    : ScriptingObject(params)
 {
     // Register
     TasksLocker.Lock();

@@ -24,7 +24,7 @@ class Actor;
 /// <summary>
 /// Allows to perform custom rendering using graphics pipeline.
 /// </summary>
-API_CLASS() class FLAXENGINE_API RenderTask : public PersistentScriptingObject
+API_CLASS() class FLAXENGINE_API RenderTask : public ScriptingObject
 {
 DECLARE_SCRIPTING_TYPE(RenderTask);
 

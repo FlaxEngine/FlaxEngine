@@ -112,7 +112,7 @@ UserBase::UserBase(const String& name)
 }
 
 UserBase::UserBase(const SpawnParams& params, const String& name)
-    : PersistentScriptingObject(params)
+    : ScriptingObject(params)
     , _name(name)
 {
 }

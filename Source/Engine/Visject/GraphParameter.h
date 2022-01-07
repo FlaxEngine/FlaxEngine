@@ -39,9 +39,9 @@ API_ENUM() enum class ChannelMask
 /// <summary>
 /// Represents a parameter in the Graph.
 /// </summary>
-API_CLASS() class FLAXENGINE_API GraphParameter : public PersistentScriptingObject
+API_CLASS() class FLAXENGINE_API GraphParameter : public ScriptingObject
 {
-DECLARE_SCRIPTING_TYPE_WITH_CONSTRUCTOR_IMPL(GraphParameter, PersistentScriptingObject);
+DECLARE_SCRIPTING_TYPE_WITH_CONSTRUCTOR_IMPL(GraphParameter, ScriptingObject);
 public:
 
     /// <summary>

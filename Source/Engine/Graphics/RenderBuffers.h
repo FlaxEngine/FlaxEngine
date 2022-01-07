@@ -19,7 +19,7 @@
 /// <summary>
 /// The scene rendering buffers container.
 /// </summary>
-API_CLASS() class FLAXENGINE_API RenderBuffers : public PersistentScriptingObject
+API_CLASS() class FLAXENGINE_API RenderBuffers : public ScriptingObject
 {
 DECLARE_SCRIPTING_TYPE(RenderBuffers);
 protected:

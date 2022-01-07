@@ -10,9 +10,9 @@ class MemoryReadStream;
 /// <summary>
 /// Represents single Level Of Detail for the model. Contains a collection of the meshes.
 /// </summary>
-API_CLASS(NoSpawn) class FLAXENGINE_API ModelLOD : public PersistentScriptingObject
+API_CLASS(NoSpawn) class FLAXENGINE_API ModelLOD : public ScriptingObject
 {
-DECLARE_SCRIPTING_TYPE_WITH_CONSTRUCTOR_IMPL(ModelLOD, PersistentScriptingObject);
+DECLARE_SCRIPTING_TYPE_WITH_CONSTRUCTOR_IMPL(ModelLOD, ScriptingObject);
     friend Model;
     friend Mesh;
 private:

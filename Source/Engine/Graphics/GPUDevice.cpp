@@ -173,12 +173,12 @@ GPUPipelineState::Description GPUPipelineState::Description::DefaultFullscreenTr
 };
 
 GPUResource::GPUResource()
-    : PersistentScriptingObject(SpawnParams(Guid::New(), GPUResource::TypeInitializer))
+    : ScriptingObject(SpawnParams(Guid::New(), GPUResource::TypeInitializer))
 {
 }
 
 GPUResource::GPUResource(const SpawnParams& params)
-    : PersistentScriptingObject(params)
+    : ScriptingObject(params)
 {
 }
 
@@ -241,7 +241,7 @@ void GPUResource::OnDeleteObject()
 {
     ReleaseGPU();
 
-    PersistentScriptingObject::OnDeleteObject();
+    ScriptingObject::OnDeleteObject();
 }
 
 double GPUResourceView::DummyLastRenderTime = -1;
@@ -262,7 +262,7 @@ struct GPUDevice::PrivateData
 GPUDevice* GPUDevice::Instance = nullptr;
 
 GPUDevice::GPUDevice(RendererType type, ShaderProfile profile)
-    : PersistentScriptingObject(SpawnParams(Guid::New(), TypeInitializer))
+    : ScriptingObject(SpawnParams(Guid::New(), TypeInitializer))
     , _state(DeviceState::Missing)
     , _isRendering(false)
     , _wasVSyncUsed(false)

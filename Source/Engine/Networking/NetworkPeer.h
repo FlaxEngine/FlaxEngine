@@ -11,7 +11,7 @@
 /// <summary>
 /// Low-level network peer class. Provides server-client communication functions, message processing and sending.
 /// </summary>
-API_CLASS(sealed, NoSpawn, Namespace = "FlaxEngine.Networking") class FLAXENGINE_API NetworkPeer final : public PersistentScriptingObject
+API_CLASS(sealed, NoSpawn, Namespace = "FlaxEngine.Networking") class FLAXENGINE_API NetworkPeer final : public ScriptingObject
 {
 DECLARE_SCRIPTING_TYPE_NO_SPAWN(NetworkPeer);
     friend class NetworkManager;
@@ -30,7 +30,7 @@ public:
     /// Initializes a new instance of the <see cref="NetworkPeer"/> class.
     /// </summary>
     NetworkPeer()
-        : PersistentScriptingObject(SpawnParams(Guid::New(), TypeInitializer))
+        : ScriptingObject(SpawnParams(Guid::New(), TypeInitializer))
     {
     }
 

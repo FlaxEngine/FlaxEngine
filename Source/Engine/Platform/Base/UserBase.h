@@ -10,7 +10,7 @@ API_INJECT_CPP_CODE("#include \"Engine/Platform/User.h\"");
 /// <summary>
 /// Native platform user object.
 /// </summary>
-API_CLASS(NoSpawn, NoConstructor, Sealed, Name="User") class FLAXENGINE_API UserBase : public PersistentScriptingObject
+API_CLASS(NoSpawn, NoConstructor, Sealed, Name="User") class FLAXENGINE_API UserBase : public ScriptingObject
 {
 DECLARE_SCRIPTING_TYPE_NO_SPAWN(UserBase);
 protected:

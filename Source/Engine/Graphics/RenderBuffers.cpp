@@ -8,7 +8,7 @@
 #include "Engine/Engine/Engine.h"
 
 RenderBuffers::RenderBuffers(const SpawnParams& params)
-    : PersistentScriptingObject(params)
+    : ScriptingObject(params)
 {
 #define CREATE_TEXTURE(name) name = GPUDevice::Instance->CreateTexture(TEXT(#name)); _resources.Add(name)
     CREATE_TEXTURE(DepthBuffer);

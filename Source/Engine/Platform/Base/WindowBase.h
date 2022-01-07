@@ -269,7 +269,7 @@ API_INJECT_CPP_CODE("#include \"Engine/Platform/Window.h\"");
 /// Native platform window object.
 /// </summary>
 API_CLASS(NoSpawn, NoConstructor, Sealed, Name="Window")
-class FLAXENGINE_API WindowBase : public PersistentScriptingObject
+class FLAXENGINE_API WindowBase : public ScriptingObject
 {
 DECLARE_SCRIPTING_TYPE_NO_SPAWN(WindowBase);
     friend GPUSwapChain;
@@ -941,7 +941,7 @@ private:
 
 public:
 
-    // [PersistentScriptingObject]
+    // [ScriptingObject]
     String ToString() const override;
     void OnDeleteObject() override;
 };

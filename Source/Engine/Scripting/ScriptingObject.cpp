@@ -40,20 +40,32 @@ ScriptingObject::ScriptingObject(const SpawnParams& params)
 
 ScriptingObject::~ScriptingObject()
 {
-    // Ensure that GC handle is empty
-    ASSERT(_gcHandle == 0);
-
-    // Ensure that object has been already unregistered
-    if (IsRegistered())
-        UnregisterObject();
-
     Deleted(this);
+
+    // Get rid of managed object
+    ScriptingObject::DestroyManaged();
+    ASSERT(_gcHandle == 0);
 
     // Handle custom scripting objects removing
     if (Flags & ObjectFlags::IsCustomScriptingType)
     {
         _type.Module->OnObjectDeleted(this);
     }
+
+    // Ensure that object has been already unregistered
+    if (IsRegistered())
+        UnregisterObject();
+}
+
+ScriptingObject* ScriptingObject::NewObject(const ScriptingTypeHandle& typeHandle)
+{
+    if (!typeHandle)
+        return nullptr;
+    auto& type = typeHandle.GetType();
+    if (type.Type != ScriptingTypes::Script)
+        return nullptr;
+    const ScriptingObjectSpawnParams params(Guid::New(), typeHandle);
+    return type.Script.Spawn(params);
 }
 
 MObject* ScriptingObject::GetManagedInstance() const
@@ -80,17 +92,6 @@ MObject* ScriptingObject::GetOrCreateManagedInstance() const
 MClass* ScriptingObject::GetClass() const
 {
     return _type ? _type.GetType().ManagedClass : nullptr;
-}
-
-ScriptingObject* ScriptingObject::NewObject(const ScriptingTypeHandle& typeHandle)
-{
-    if (!typeHandle)
-        return nullptr;
-    auto& type = typeHandle.GetType();
-    if (type.Type != ScriptingTypes::Script)
-        return nullptr;
-    const ScriptingObjectSpawnParams params(Guid::New(), typeHandle);
-    return type.Script.Spawn(params);
 }
 
 ScriptingObject* ScriptingObject::FromInterface(void* interfaceObj, const ScriptingTypeHandle& interfaceType)
@@ -220,18 +221,49 @@ void ScriptingObject::OnManagedInstanceDeleted()
     // Unregister object
     if (IsRegistered())
         UnregisterObject();
-
-    // Self destruct
-    DeleteObject();
 }
 
 void ScriptingObject::OnScriptingDispose()
 {
     // Delete C# object
+    if (IsRegistered())
+        UnregisterObject();
     DestroyManaged();
+}
 
-    // Delete C++ object
-    DeleteObject();
+bool ScriptingObject::CreateManaged()
+{
+#if USE_MONO
+    MonoObject* managedInstance = CreateManagedInternal();
+    if (!managedInstance)
+        return true;
+
+    // Prevent form object GC destruction
+    auto handle = mono_gchandle_new(managedInstance, false);
+    auto oldHandle = Platform::InterlockedCompareExchange((int32*)&_gcHandle, *(int32*)&handle, 0);
+    if (*(uint32*)&oldHandle != 0)
+    {
+        // Other thread already created the object before
+        if (const auto monoClass = GetClass())
+        {
+            // Reset managed to unmanaged pointer
+            const MField* monoUnmanagedPtrField = monoClass->GetField(ScriptingObject_unmanagedPtr);
+            if (monoUnmanagedPtrField)
+            {
+                void* param = nullptr;
+                monoUnmanagedPtrField->SetValue(managedInstance, &param);
+            }
+        }
+        mono_gchandle_free(handle);
+        return true;
+    }
+#endif
+
+    // Ensure to be registered
+    if (!IsRegistered())
+        RegisterObject();
+
+    return false;
 }
 
 #if USE_MONO
@@ -379,7 +411,7 @@ void ScriptingObject::OnDeleteObject()
         UnregisterObject();
 
     // Base
-    RemovableObject::OnDeleteObject();
+    Object::OnDeleteObject();
 }
 
 String ScriptingObject::ToString() const
@@ -390,6 +422,24 @@ String ScriptingObject::ToString() const
 ManagedScriptingObject::ManagedScriptingObject(const SpawnParams& params)
     : ScriptingObject(params)
 {
+}
+
+void ManagedScriptingObject::OnManagedInstanceDeleted()
+{
+    // Base
+    ScriptingObject::OnManagedInstanceDeleted();
+
+    // Self destruct
+    DeleteObject();
+}
+
+void ManagedScriptingObject::OnScriptingDispose()
+{
+    // Base
+    ScriptingObject::OnScriptingDispose();
+
+    // Self destruct
+    DeleteObject();
 }
 
 bool ManagedScriptingObject::CreateManaged()
@@ -430,70 +480,6 @@ bool ManagedScriptingObject::CreateManaged()
 PersistentScriptingObject::PersistentScriptingObject(const SpawnParams& params)
     : ScriptingObject(params)
 {
-}
-
-PersistentScriptingObject::~PersistentScriptingObject()
-{
-    PersistentScriptingObject::DestroyManaged();
-}
-
-void PersistentScriptingObject::OnManagedInstanceDeleted()
-{
-    // Cleanup
-    if (_gcHandle)
-    {
-#if USE_MONO
-        mono_gchandle_free(_gcHandle);
-#endif
-        _gcHandle = 0;
-    }
-
-    // But do not delete itself
-}
-
-void PersistentScriptingObject::OnScriptingDispose()
-{
-    // Delete C# object
-    if (IsRegistered())
-        UnregisterObject();
-    DestroyManaged();
-
-    // Don't delete C++ object
-}
-
-bool PersistentScriptingObject::CreateManaged()
-{
-#if USE_MONO
-    MonoObject* managedInstance = CreateManagedInternal();
-    if (!managedInstance)
-        return true;
-
-    // Prevent form object GC destruction
-    auto handle = mono_gchandle_new(managedInstance, false);
-    auto oldHandle = Platform::InterlockedCompareExchange((int32*)&_gcHandle, *(int32*)&handle, 0);
-    if (*(uint32*)&oldHandle != 0)
-    {
-        // Other thread already created the object before
-        if (const auto monoClass = GetClass())
-        {
-            // Reset managed to unmanaged pointer
-            const MField* monoUnmanagedPtrField = monoClass->GetField(ScriptingObject_unmanagedPtr);
-            if (monoUnmanagedPtrField)
-            {
-                void* param = nullptr;
-                monoUnmanagedPtrField->SetValue(managedInstance, &param);
-            }
-        }
-        mono_gchandle_free(handle);
-        return true;
-    }
-#endif
-
-    // Ensure to be registered
-    if (!IsRegistered())
-        RegisterObject();
-
-    return false;
 }
 
 class ScriptingObjectInternal
@@ -767,7 +753,7 @@ public:
 
     static ScriptingObject* Spawn(const ScriptingObjectSpawnParams& params)
     {
-        return New<PersistentScriptingObject>(params);
+        return New<ScriptingObject>(params);
     }
 };
 

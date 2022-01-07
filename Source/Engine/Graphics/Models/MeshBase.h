@@ -14,7 +14,7 @@ class ModelBase;
 /// <summary>
 /// Base class for model resources meshes.
 /// </summary>
-API_CLASS(Abstract, NoSpawn) class FLAXENGINE_API MeshBase : public PersistentScriptingObject
+API_CLASS(Abstract, NoSpawn) class FLAXENGINE_API MeshBase : public ScriptingObject
 {
 DECLARE_SCRIPTING_TYPE_MINIMAL(MeshBase);
 protected:
@@ -30,7 +30,7 @@ protected:
     bool _use16BitIndexBuffer;
 
     explicit MeshBase(const SpawnParams& params)
-        : PersistentScriptingObject(params)
+        : ScriptingObject(params)
     {
     }
 
