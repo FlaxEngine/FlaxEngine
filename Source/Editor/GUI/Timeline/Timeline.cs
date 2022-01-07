@@ -1901,6 +1901,9 @@ namespace FlaxEditor.GUI.Timeline
             if (!ContainsFocus)
                 Focus();
 
+            var timelinePos = MediaPanel.PointFromParent(this, location);
+            var time = (timelinePos.X - StartOffset) / (UnitsPerSecond * Zoom);
+
             var controlUnderMouse = GetChildAtRecursive(location);
             var mediaUnderMouse = controlUnderMouse;
             while (mediaUnderMouse != null && !(mediaUnderMouse is Media))
@@ -1911,10 +1914,21 @@ namespace FlaxEditor.GUI.Timeline
             var menu = new ContextMenu.ContextMenu();
             if (mediaUnderMouse is Media media)
             {
-                media.OnTimelineShowContextMenu(menu, controlUnderMouse);
+                media.OnTimelineContextMenu(menu, time, controlUnderMouse);
                 if (media.PropertiesEditObject != null)
                 {
                     menu.AddButton("Edit media", () => ShowEditPopup(media.PropertiesEditObject, location, media.Track));
+                }
+            }
+            else
+            {
+                foreach (var track in _tracks)
+                {
+                    if (Mathf.IsInRange(timelinePos.Y, track.Top, track.Bottom))
+                    {
+                        track.OnTimelineContextMenu(menu, time);
+                        break;
+                    }
                 }
             }
             if (PropertiesEditObject != null)

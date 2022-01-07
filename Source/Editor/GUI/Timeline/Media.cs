@@ -229,8 +229,9 @@ namespace FlaxEditor.GUI.Timeline
         /// Called when showing timeline context menu to the user. Can be used to add custom buttons.
         /// </summary>
         /// <param name="menu">The menu.</param>
+        /// <param name="time">The time (in seconds) at which context menu is shown (user clicked on a timeline).</param>
         /// <param name="controlUnderMouse">The found control under the mouse cursor.</param>
-        public virtual void OnTimelineShowContextMenu(ContextMenu.ContextMenu menu, Control controlUnderMouse)
+        public virtual void OnTimelineContextMenu(ContextMenu.ContextMenu menu, float time, Control controlUnderMouse)
         {
             if (CanDelete && Track.Media.Count > Track.MinMediaCount)
                 menu.AddButton("Delete media", Delete);

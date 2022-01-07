@@ -1029,6 +1029,15 @@ namespace FlaxEditor.GUI.Timeline
         }
 
         /// <summary>
+        /// Called when showing timeline context menu to the user. Can be used to add custom buttons.
+        /// </summary>
+        /// <param name="menu">The menu.</param>
+        /// <param name="time">The time (in seconds) at which context menu is shown (user clicked on a timeline).</param>
+        public virtual void OnTimelineContextMenu(ContextMenu.ContextMenu menu, float time)
+        {
+        }
+
+        /// <summary>
         /// Called when context menu is being prepared to show. Can be used to add custom options.
         /// </summary>
         /// <param name="menu">The menu.</param>
