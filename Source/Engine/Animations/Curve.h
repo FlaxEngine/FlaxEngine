@@ -770,6 +770,12 @@ public:
 };
 
 /// <summary>
+/// An animation spline represented by a set of keyframes, each representing a value point. 
+/// </summary>
+template<typename T>
+using StepCurve = Curve<T, StepCurveKeyframe<T>>;
+
+/// <summary>
 /// An animation spline represented by a set of keyframes, each representing an endpoint of a linear curve. 
 /// </summary>
 template<typename T>

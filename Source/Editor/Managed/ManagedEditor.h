@@ -145,6 +145,5 @@ private:
 public:
 
     // [PersistentScriptingObject]
-    String ToString() const override;
     void DestroyManaged() override;
 };

@@ -525,11 +525,11 @@ namespace FlaxEditor.GUI.Timeline
         private void EndMoving()
         {
             _isMoving = false;
-            _startMoveLeftEdge = false;
-            _startMoveRightEdge = false;
-
             if (_startMoveLeftEdge || _startMoveRightEdge)
             {
+                _startMoveLeftEdge = false;
+                _startMoveRightEdge = false;
+
                 // Re-assign the media start/duration inside the undo recording block
                 if (_startMoveStartFrame != _startFrame || _startMoveDuration != _durationFrames)
                 {

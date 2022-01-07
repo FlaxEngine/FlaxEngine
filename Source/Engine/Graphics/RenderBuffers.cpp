@@ -183,8 +183,3 @@ void RenderBuffers::Release()
     UPDATE_LAZY_KEEP_RT(LuminanceMap);
 #undef UPDATE_LAZY_KEEP_RT
 }
-
-String RenderBuffers::ToString() const
-{
-    return TEXT("RenderBuffers");
-}

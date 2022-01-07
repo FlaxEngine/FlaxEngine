@@ -476,11 +476,6 @@ void ManagedEditor::OnEditorAssemblyLoaded(MAssembly* assembly)
     CreateManaged();
 }
 
-String ManagedEditor::ToString() const
-{
-    return TEXT("ManagedEditor");
-}
-
 void ManagedEditor::DestroyManaged()
 {
     // Ensure to cleanup managed stuff

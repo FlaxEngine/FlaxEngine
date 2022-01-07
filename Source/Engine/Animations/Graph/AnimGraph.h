@@ -384,7 +384,7 @@ public:
     /// <summary>
     /// The slots animations.
     /// </summary>
-    Array<AnimGraphSlot> Slots;
+    Array<AnimGraphSlot, InlinedAllocation<4>> Slots;
 
 public:
 

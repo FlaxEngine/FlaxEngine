@@ -175,9 +175,4 @@ public:
     /// Release the buffers data.
     /// </summary>
     API_FUNCTION() void Release();
-
-public:
-
-    // [PersistentScriptingObject]
-    String ToString() const override;
 };
