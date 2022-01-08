@@ -215,6 +215,8 @@ public:
     /// </summary>
     API_EVENT() static Delegate<Scene*, const Guid&> SceneUnloaded;
 
+#if USE_EDITOR
+
     /// <summary>
     /// Fired when scene starts reloading scripts.
     /// </summary>
@@ -229,6 +231,14 @@ public:
     /// Fired when scene ends reloading scripts.
     /// </summary>
     API_EVENT() static Action ScriptsReloadEnd;
+
+    /// <summary>
+    /// Adds object to preserve during scripts reload. Called during ScriptsReloadStart event to serialize and destroy the object that should be restored when scripts reload ends.
+    /// </summary>
+    /// <param name="obj">Reference to the object to preserve during the scripting reload.</param>
+    static void ScriptsReloadRegisterObject(ScriptingObject*& obj);
+
+#endif
 
 public:
 
