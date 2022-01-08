@@ -1560,6 +1560,7 @@ namespace FlaxEditor.GUI.Timeline
                 track.AddMedia(media);
             }
             MarkAsEdited();
+            Select(media);
         }
 
         /// <summary>
@@ -1922,6 +1923,7 @@ namespace FlaxEditor.GUI.Timeline
             }
             else
             {
+                OnKeyframesDeselect(null);
                 foreach (var track in _tracks)
                 {
                     if (Mathf.IsInRange(timelinePos.Y, track.Top, track.Bottom))

@@ -400,8 +400,9 @@ namespace FlaxEditor.GUI.Timeline
                 }
                 else
                 {
-                    // Select (additive for the move)
-                    _timeline.Select(this, true);
+                    // Select
+                    if (!_timeline.SelectedMedia.Contains(this))
+                        _timeline.Select(this);
                 }
 
                 _timeline.OnKeyframesMove(null, this, location, true, false);
