@@ -502,6 +502,24 @@ void Animation::OnSkinnedModelUnloaded(Asset* obj)
     MappingCache.Remove(i);
 }
 
+void Animation::OnScriptingDispose()
+{
+    // Dispose any events to prevent crashes (scripting is released before content)
+    for (auto& e : Events)
+    {
+        for (auto& k : e.Second.GetKeyframes())
+        {
+            if (k.Value.Instance)
+            {
+                Delete(k.Value.Instance);
+                k.Value.Instance = nullptr;
+            }
+        }
+    }
+
+    BinaryAsset::OnScriptingDispose();
+}
+
 Asset::LoadResult Animation::load()
 {
     // Get stream with animations data

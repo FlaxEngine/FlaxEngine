@@ -163,6 +163,11 @@ private:
 
     void OnSkinnedModelUnloaded(Asset* obj);
 
+public:
+
+    // [BinaryAsset]
+    void OnScriptingDispose() override;
+
 protected:
 
     // [BinaryAsset]
