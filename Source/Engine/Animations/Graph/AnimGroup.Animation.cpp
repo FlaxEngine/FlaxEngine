@@ -5,7 +5,9 @@
 #include "Engine/Content/Assets/SkeletonMask.h"
 #include "Engine/Content/Assets/AnimationGraphFunction.h"
 #include "Engine/Animations/AlphaBlend.h"
+#include "Engine/Animations/AnimEvent.h"
 #include "Engine/Animations/InverseKinematics.h"
+#include "Engine/Level/Actors/AnimatedModel.h"
 
 namespace
 {
@@ -146,6 +148,7 @@ Variant AnimGraphExecutor::SampleAnimation(AnimGraphNode* node, bool loop, float
     if (anim == nullptr || !anim->IsLoaded())
         return Value::Null;
     PROFILE_CPU_ASSET(anim);
+    const float oldTimePos = prevTimePos;
 
     // Calculate actual time position within the animation node (defined by length and loop mode)
     const float pos = GetAnimPos(newTimePos, startTimePos, loop, length);
@@ -178,6 +181,81 @@ Variant AnimGraphExecutor::SampleAnimation(AnimGraphNode* node, bool loop, float
     {
         const int32 rootNodeIndex = GetRootNodeIndex(anim);
         ExtractRootMotion(mapping, rootNodeIndex, anim, animPos, animPrevPos, nodes->Nodes[rootNodeIndex], nodes->RootMotion);
+    }
+
+    // Collect events
+    if (anim->Events.Count() != 0)
+    {
+        ANIM_GRAPH_PROFILE_EVENT("Events");
+        auto& context = Context.Get();
+        float eventTimeMin = animPrevPos;
+        float eventTimeMax = animPos;
+        if (loop)
+        {
+            // Check if animation looped
+            const float posNotLooped = startTimePos + oldTimePos;
+            if (posNotLooped < 0.0f || posNotLooped > length)
+            {
+                if (context.DeltaTime * speed < 0)
+                {
+                    // Playback backwards
+                    Swap(eventTimeMin, eventTimeMax);
+                }
+            }
+        }
+        const float eventTime = animPos / static_cast<float>(anim->Data.FramesPerSecond);
+        const float eventDeltaTime = (animPos - animPrevPos) / static_cast<float>(anim->Data.FramesPerSecond);
+        for (const auto& track : anim->Events)
+        {
+            for (const auto& k : track.Second.GetKeyframes())
+            {
+                if (!k.Value.Instance)
+                    continue;
+                const float duration = k.Value.Duration > 1 ? k.Value.Duration : 0.0f;
+                if (k.Time <= eventTimeMax && eventTimeMin <= k.Time + duration)
+                {
+                    int32 stateIndex = -1;
+                    if (duration > 1)
+                    {
+                        // Begin for continuous event
+                        for (stateIndex = 0; stateIndex < context.Data->Events.Count(); stateIndex++)
+                        {
+                            const auto& e = context.Data->Events[stateIndex];
+                            if (e.Instance == k.Value.Instance && e.Node == node)
+                                break;
+                        }
+                        if (stateIndex == context.Data->Events.Count())
+                        {
+                            auto& e = context.Data->Events.AddOne();
+                            e.Instance = k.Value.Instance;
+                            e.Anim = anim;
+                            e.Node = node;
+                            ASSERT(k.Value.Instance->Is<AnimContinuousEvent>());
+                            ((AnimContinuousEvent*)k.Value.Instance)->OnBegin((AnimatedModel*)context.Data->Object, anim, eventTime, eventDeltaTime);
+                        }
+                    }
+
+                    // Event
+                    k.Value.Instance->OnEvent((AnimatedModel*)context.Data->Object, anim, eventTime, eventDeltaTime);
+                    if (stateIndex != -1)
+                        context.Data->Events[stateIndex].Hit = true;
+                }
+                else if (duration > 1)
+                {
+                    // End for continuous event
+                    for (int32 i = 0; i < context.Data->Events.Count(); i++)
+                    {
+                        const auto& e = context.Data->Events[i];
+                        if (e.Instance == k.Value.Instance && e.Node == node)
+                        {
+                            ((AnimContinuousEvent*)k.Value.Instance)->OnEnd((AnimatedModel*)context.Data->Object, anim, eventTime, eventDeltaTime);
+                            context.Data->Events.RemoveAt(i);
+                            break;
+                        }
+                    }
+                }
+            }
+        }
     }
 
     return nodes;

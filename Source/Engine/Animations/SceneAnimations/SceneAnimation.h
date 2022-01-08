@@ -42,6 +42,7 @@ public:
             CameraCut = 16,
             //AnimationChannel = 17,
             //AnimationChannelData = 18,
+            //AnimationEvent = 19,
         };
 
         enum class Flags
