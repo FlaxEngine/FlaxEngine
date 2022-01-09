@@ -154,24 +154,6 @@ public:
         WriteBytes((const void*)text, sizeof(Char) * length);
     }
 
-    template<typename... Args>
-    void WriteTextFormatted(const char* format, const Args& ... args)
-    {
-        fmt_flax::allocator_ansi allocator;
-        fmt_flax::memory_buffer_ansi buffer(allocator);
-        fmt_flax::format(buffer, format, args...);
-        WriteText(buffer.data(), (int32)buffer.size());
-    }
-
-    template<typename... Args>
-    void WriteTextFormatted(const Char* format, const Args& ... args)
-    {
-        fmt_flax::allocator allocator;
-        fmt_flax::memory_buffer buffer(allocator);
-        fmt_flax::format(buffer, format, args...);
-        WriteText(buffer.data(), (int32)buffer.size());
-    }
-
     // Write UTF BOM character sequence
     void WriteBOM()
     {

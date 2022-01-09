@@ -143,9 +143,11 @@ Delegate<Scene*, const Guid&> Level::SceneLoaded;
 Delegate<Scene*, const Guid&> Level::SceneLoadError;
 Delegate<Scene*, const Guid&> Level::SceneUnloading;
 Delegate<Scene*, const Guid&> Level::SceneUnloaded;
+#if USE_EDITOR
 Action Level::ScriptsReloadStart;
 Action Level::ScriptsReload;
 Action Level::ScriptsReloadEnd;
+#endif
 Array<String> Level::Tags;
 String Level::Layers[32];
 

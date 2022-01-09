@@ -6,6 +6,7 @@
 #include "Engine/Core/Delegate.h"
 #include "Engine/Core/Types/String.h"
 #include "Engine/Core/Types/DateTime.h"
+#include "Engine/Core/Collections/Array.h"
 #include "Engine/Platform/CriticalSection.h"
 #include "Engine/Serialization/FileReadStream.h"
 #include "Engine/Threading/ThreadLocal.h"
