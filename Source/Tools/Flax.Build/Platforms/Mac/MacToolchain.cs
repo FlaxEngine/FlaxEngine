@@ -40,7 +40,7 @@ namespace Flax.Build.Platforms
         : base(platform, architecture)
         {
             // Setup tools paths
-            if (platform.XCodePath.Contains("/Xcode.app"))
+            if (platform.XCodePath.Contains("/Xcode"))
             {
                 // XCode App
                 ToolchainPath = Path.Combine(platform.XCodePath, "Toolchains/XcodeDefault.xctoolchain");

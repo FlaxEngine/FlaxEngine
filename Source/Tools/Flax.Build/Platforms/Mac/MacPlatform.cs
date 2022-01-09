@@ -2,7 +2,6 @@
 
 using System;
 using System.IO;
-using System.Diagnostics;
 using Flax.Build.Projects;
 
 namespace Flax.Build.Platforms
@@ -35,7 +34,7 @@ namespace Flax.Build.Platforms
         public override ProjectFormat DefaultProjectFormat => ProjectFormat.XCode;
 
         /// <summary>
-        /// XCode Devloper path returned by xcode-select.
+        /// XCode Developer path returned by xcode-select.
         /// </summary>
         public string XCodePath;
 
