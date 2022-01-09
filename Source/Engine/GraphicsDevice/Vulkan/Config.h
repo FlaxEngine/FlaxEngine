@@ -15,7 +15,9 @@
 #endif
 
 // Amount of back buffers to use
+#ifndef VULKAN_BACK_BUFFERS_COUNT
 #define VULKAN_BACK_BUFFERS_COUNT 2
+#endif
 #define VULKAN_BACK_BUFFERS_COUNT_MAX 16
 
 /// <summary>

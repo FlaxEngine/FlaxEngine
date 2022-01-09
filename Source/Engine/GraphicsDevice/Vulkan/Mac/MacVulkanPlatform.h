@@ -6,6 +6,8 @@
 
 #if GRAPHICS_API_VULKAN && PLATFORM_MAC
 
+#define VULKAN_BACK_BUFFERS_COUNT 3
+
 /// <summary>
 /// The implementation for the Vulkan API support for Mac platform.
 /// </summary>
