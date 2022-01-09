@@ -624,7 +624,9 @@ void VisualScriptExecutor::ProcessGroupFunction(Box* boxBase, Node* node, Value&
         {
             // Evaluate method parameter value from the current scope
             auto& scope = ThreadStacks.Get().Stack->Scope;
-            value = scope->Parameters[boxBase->ID - 1];
+            int32 index = boxBase->ID - 1;
+            if (index < scope->Parameters.Length())
+                value = scope->Parameters.Get()[index];
         }
         break;
     }

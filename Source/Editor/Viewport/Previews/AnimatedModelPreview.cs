@@ -163,6 +163,7 @@ namespace FlaxEditor.Viewport.Previews
         : base(useWidgets)
         {
             Task.Begin += OnBegin;
+            ScriptsBuilder.ScriptsReloadBegin += OnScriptsReloadBegin;
 
             // Setup preview scene
             _previewModel = new AnimatedModel
@@ -273,6 +274,12 @@ namespace FlaxEditor.Viewport.Previews
                 _previewModel.Scale = new Vector3(scale);
                 _previewModel.Position = box.Center * (-0.5f * scale) + new Vector3(0, -10, 0);
             }
+        }
+
+        private void OnScriptsReloadBegin()
+        {
+            // Prevent any crashes due to dangling references to anim events
+            _previewModel.ResetAnimation();
         }
 
         private int ComputeLODIndex(SkinnedModel model)
@@ -428,6 +435,7 @@ namespace FlaxEditor.Viewport.Previews
         /// <inheritdoc />
         public override void OnDestroy()
         {
+            ScriptsBuilder.ScriptsReloadBegin -= OnScriptsReloadBegin;
             Object.Destroy(ref _floorModel);
             Object.Destroy(ref _previewModel);
             NodesMask = null;

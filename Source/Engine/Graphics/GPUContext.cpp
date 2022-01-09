@@ -6,7 +6,7 @@
 #include "Textures/GPUTexture.h"
 
 GPUContext::GPUContext(GPUDevice* device)
-    : PersistentScriptingObject(ScriptingObjectSpawnParams(Guid::New(), TypeInitializer))
+    : ScriptingObject(ScriptingObjectSpawnParams(Guid::New(), TypeInitializer))
     , _device(device)
 {
 }

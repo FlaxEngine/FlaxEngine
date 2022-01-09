@@ -369,7 +369,7 @@ bool DrawCallsList::IsEmpty() const
 }
 
 RenderList::RenderList(const SpawnParams& params)
-    : PersistentScriptingObject(params)
+    : ScriptingObject(params)
     , DirectionalLights(4)
     , PointLights(32)
     , SpotLights(32)

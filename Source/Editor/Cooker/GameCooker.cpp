@@ -171,7 +171,7 @@ CookingData::Statistics::Statistics()
 }
 
 CookingData::CookingData(const SpawnParams& params)
-    : PersistentScriptingObject(params)
+    : ScriptingObject(params)
 {
 }
 

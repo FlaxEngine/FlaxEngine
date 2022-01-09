@@ -11,7 +11,7 @@
 /// <summary>
 /// Base class for all input device objects.
 /// </summary>
-API_CLASS(Abstract, NoSpawn) class FLAXENGINE_API InputDevice : public PersistentScriptingObject
+API_CLASS(Abstract, NoSpawn) class FLAXENGINE_API InputDevice : public ScriptingObject
 {
 DECLARE_SCRIPTING_TYPE_NO_SPAWN(InputDevice);
 public:
@@ -86,7 +86,7 @@ protected:
     EventQueue _queue;
 
     explicit InputDevice(const SpawnParams& params, const StringView& name)
-        : PersistentScriptingObject(params)
+        : ScriptingObject(params)
         , _name(name)
     {
     }

@@ -16,8 +16,8 @@ namespace ObjectsRemovalServiceImpl
     CriticalSection NewItemsLocker;
     DateTime LastUpdate;
     float LastUpdateGameTime;
-    Dictionary<RemovableObject*, float> Pool(8192);
-    Dictionary<RemovableObject*, float> NewItemsPool(2048);
+    Dictionary<Object*, float> Pool(8192);
+    Dictionary<Object*, float> NewItemsPool(2048);
 }
 
 using namespace ObjectsRemovalServiceImpl;
@@ -38,7 +38,7 @@ public:
 
 ObjectsRemovalServiceService ObjectsRemovalServiceServiceInstance;
 
-bool ObjectsRemovalService::IsInPool(RemovableObject* obj)
+bool ObjectsRemovalService::IsInPool(Object* obj)
 {
     if (!IsReady)
         return false;
@@ -67,7 +67,7 @@ bool ObjectsRemovalService::HasNewItemsForFlush()
     return result;
 }
 
-void ObjectsRemovalService::Dereference(RemovableObject* obj)
+void ObjectsRemovalService::Dereference(Object* obj)
 {
     if (!IsReady)
         return;
@@ -81,7 +81,7 @@ void ObjectsRemovalService::Dereference(RemovableObject* obj)
     PoolLocker.Unlock();
 }
 
-void ObjectsRemovalService::Add(RemovableObject* obj, float timeToLive, bool useGameTime)
+void ObjectsRemovalService::Add(Object* obj, float timeToLive, bool useGameTime)
 {
     ScopeLock lock(NewItemsLocker);
 
@@ -212,4 +212,25 @@ void ObjectsRemovalServiceService::Dispose()
     }
 
     IsReady = false;
+}
+
+Object::~Object()
+{
+#if BUILD_DEBUG
+    // Prevent removing object that is still reverenced by the removal service
+    ASSERT(!ObjectsRemovalService::IsInPool(this));
+#endif
+}
+
+void Object::DeleteObjectNow()
+{
+    ObjectsRemovalService::Dereference(this);
+
+    OnDeleteObject();
+}
+
+void Object::DeleteObject(float timeToLive, bool useGameTime)
+{
+    // Add to deferred remove (or just update timeout but don't remove object here)
+    ObjectsRemovalService::Add(this, timeToLive, useGameTime);
 }

@@ -10,7 +10,7 @@ class TaskGraph;
 /// <summary>
 /// System that can generate work into Task Graph for asynchronous execution.
 /// </summary>
-API_CLASS(Abstract) class FLAXENGINE_API TaskGraphSystem : public PersistentScriptingObject
+API_CLASS(Abstract) class FLAXENGINE_API TaskGraphSystem : public ScriptingObject
 {
 DECLARE_SCRIPTING_TYPE(TaskGraphSystem);
     friend TaskGraph;
@@ -52,7 +52,7 @@ public:
 /// <summary>
 /// Graph-based asynchronous tasks scheduler for high-performance computing and processing.
 /// </summary>
-API_CLASS() class FLAXENGINE_API TaskGraph : public PersistentScriptingObject
+API_CLASS() class FLAXENGINE_API TaskGraph : public ScriptingObject
 {
 DECLARE_SCRIPTING_TYPE(TaskGraph);
 private:

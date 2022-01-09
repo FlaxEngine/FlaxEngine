@@ -134,7 +134,7 @@ private:
 
 public:
 
-    // [PersistentScriptingObject]
+    // [ScriptingObject]
     String ToString() const override;
     void OnDeleteObject() override;
 

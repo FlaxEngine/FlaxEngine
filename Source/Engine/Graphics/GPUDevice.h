@@ -29,7 +29,7 @@ class MaterialBase;
 /// <summary>
 /// Graphics device object for rendering on GPU.
 /// </summary>
-API_CLASS(Sealed, NoSpawn) class FLAXENGINE_API GPUDevice : public PersistentScriptingObject
+API_CLASS(Sealed, NoSpawn) class FLAXENGINE_API GPUDevice : public ScriptingObject
 {
 DECLARE_SCRIPTING_TYPE_NO_SPAWN(GPUDevice);
 public:

@@ -8,7 +8,7 @@
 #include "Engine/Engine/Engine.h"
 
 RenderBuffers::RenderBuffers(const SpawnParams& params)
-    : PersistentScriptingObject(params)
+    : ScriptingObject(params)
 {
 #define CREATE_TEXTURE(name) name = GPUDevice::Instance->CreateTexture(TEXT(#name)); _resources.Add(name)
     CREATE_TEXTURE(DepthBuffer);
@@ -182,9 +182,4 @@ void RenderBuffers::Release()
     UPDATE_LAZY_KEEP_RT(HalfResDepth);
     UPDATE_LAZY_KEEP_RT(LuminanceMap);
 #undef UPDATE_LAZY_KEEP_RT
-}
-
-String RenderBuffers::ToString() const
-{
-    return TEXT("RenderBuffers");
 }

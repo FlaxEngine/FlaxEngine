@@ -337,6 +337,8 @@ public:
     void ReserveSpace(int32 length)
     {
         ASSERT(length >= 0);
+        if (length == _length)
+            return;
         Platform::Free(_data);
         if (length != 0)
         {

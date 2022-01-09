@@ -720,9 +720,9 @@ bool ProcessMesh(ImportedModelData& result, OpenFbxImporterData& data, const ofb
                 continue;
             const ofbx::Shape* shape = channel->getShape(targetShapeCount - 1);
 
-            if (shape->getVertexCount() != vertexCount)
+            if (shape->getVertexCount() != aGeometry->getVertexCount())
             {
-                LOG(Error, "Blend shape '{0}' in mesh '{1}' has different amount of vertices ({2}) than mesh ({3})", String(shape->name), mesh.Name, shape->getVertexCount(), vertexCount);
+                LOG(Error, "Blend shape '{0}' in mesh '{1}' has different amount of vertices ({2}) than mesh ({3})", String(shape->name), mesh.Name, shape->getVertexCount(), aGeometry->getVertexCount());
                 continue;
             }
 
@@ -730,21 +730,21 @@ bool ProcessMesh(ImportedModelData& result, OpenFbxImporterData& data, const ofb
             blendShapeData.Name = shape->name;
             blendShapeData.Weight = channel->getShapeCount() > 1 ? (float)(channel->getDeformPercent() / 100.0) : 1.0f;
 
-            blendShapeData.Vertices.Resize(shape->getVertexCount());
+            blendShapeData.Vertices.Resize(vertexCount);
             for (int32 i = 0; i < blendShapeData.Vertices.Count(); i++)
                 blendShapeData.Vertices.Get()[i].VertexIndex = i;
 
             auto shapeVertices = shape->getVertices();
             for (int32 i = 0; i < blendShapeData.Vertices.Count(); i++)
             {
-                auto delta = ToVector3(shapeVertices[i]) - mesh.Positions.Get()[i];
+                auto delta = ToVector3(shapeVertices[i + firstVertexOffset]) - mesh.Positions.Get()[i];
                 blendShapeData.Vertices.Get()[i].PositionDelta = delta;
             }
 
             auto shapeNormals = shape->getNormals();
             for (int32 i = 0; i < blendShapeData.Vertices.Count(); i++)
             {
-                /*auto delta = ToVector3(shapeNormals[i]) - mesh.Normals[i];
+                /*auto delta = ToVector3(shapeNormals[i + firstVertexOffset]) - mesh.Normals[i];
                 auto length = delta.Length();
                 if (length > ZeroTolerance)
                     delta /= length;*/

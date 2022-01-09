@@ -51,7 +51,7 @@ void SendPacketToPeer(ENetPeer* peer, const NetworkChannelType channelType, cons
 }
 
 ENetDriver::ENetDriver(const SpawnParams& params)
-    : PersistentScriptingObject(params)
+    : ScriptingObject(params)
 {
 }
 

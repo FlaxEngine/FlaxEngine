@@ -14,13 +14,13 @@
 /// <summary>
 /// Interface for GPU device adapter.
 /// </summary>
-API_CLASS(NoSpawn, Attributes="HideInEditor") class FLAXENGINE_API GPUAdapter : public PersistentScriptingObject
+API_CLASS(NoSpawn, Attributes="HideInEditor") class FLAXENGINE_API GPUAdapter : public ScriptingObject
 {
 DECLARE_SCRIPTING_TYPE_NO_SPAWN(GPUDevice);
 public:
 
     GPUAdapter()
-        : PersistentScriptingObject(SpawnParams(Guid::New(), TypeInitializer))
+        : ScriptingObject(SpawnParams(Guid::New(), TypeInitializer))
     {
     }
 

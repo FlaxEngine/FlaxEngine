@@ -219,6 +219,10 @@ namespace FlaxEditor.GUI.Timeline
         private bool _isRightMouseButtonDown;
         private Vector2 _rightMouseButtonDownPos;
         private Vector2 _rightMouseButtonMovePos;
+        private Vector2 _mediaMoveStartPos;
+        private int[] _mediaMoveStartFrames;
+        private List<Track> _mediaMoveStartTracks;
+        private byte[][] _mediaMoveStartData;
         private float _zoom = 1.0f;
         private bool _isMovingPositionHandle;
         private bool _canPlayPause = true, _canStop = true;
@@ -1375,7 +1379,7 @@ namespace FlaxEditor.GUI.Timeline
             if (!addToSelection)
             {
                 SelectedTracks.Clear();
-                SelectedMedia.Clear();
+                OnKeyframesDeselect(null);
             }
             SelectedMedia.Add(media);
             OnSelectionChanged();
@@ -1425,47 +1429,40 @@ namespace FlaxEditor.GUI.Timeline
         }
 
         /// <summary>
-        /// Deletes the selected tracks/media events.
+        /// Deletes the selected tracks.
         /// </summary>
         /// <param name="withUndo">True if use undo/redo action for track removing.</param>
-        public void DeleteSelection(bool withUndo = true)
+        public void DeleteSelectedTracks(bool withUndo = true)
         {
-            if (SelectedMedia.Count > 0)
+            if (SelectedTracks.Count == 0)
+                return;
+            var tracks = new List<Track>(SelectedTracks.Count);
+            for (int i = 0; i < SelectedTracks.Count; i++)
             {
-                throw new NotImplementedException("TODO: removing selected media events");
+                GetTracks(SelectedTracks[i], tracks);
             }
-
-            if (SelectedTracks.Count > 0)
+            SelectedTracks.Clear();
+            if (withUndo && Undo != null && Undo.Enabled)
             {
-                // Delete selected tracks
-                var tracks = new List<Track>(SelectedTracks.Count);
-                for (int i = 0; i < SelectedTracks.Count; i++)
+                if (tracks.Count == 1)
                 {
-                    GetTracks(SelectedTracks[i], tracks);
+                    Undo.AddAction(new AddRemoveTrackAction(this, tracks[0], false));
                 }
-                SelectedTracks.Clear();
-                if (withUndo && Undo != null && Undo.Enabled)
+                else
                 {
-                    if (tracks.Count == 1)
-                    {
-                        Undo.AddAction(new AddRemoveTrackAction(this, tracks[0], false));
-                    }
-                    else
-                    {
-                        var actions = new List<IUndoAction>();
-                        for (int i = tracks.Count - 1; i >= 0; i--)
-                            actions.Add(new AddRemoveTrackAction(this, tracks[i], false));
-                        Undo.AddAction(new MultiUndoAction(actions, "Remove tracks"));
-                    }
+                    var actions = new List<IUndoAction>();
+                    for (int i = tracks.Count - 1; i >= 0; i--)
+                        actions.Add(new AddRemoveTrackAction(this, tracks[i], false));
+                    Undo.AddAction(new MultiUndoAction(actions, "Remove tracks"));
                 }
-                for (int i = tracks.Count - 1; i >= 0; i--)
-                {
-                    tracks[i].ParentTrack = null;
-                    OnDeleteTrack(tracks[i]);
-                }
-                OnTracksChanged();
-                MarkAsEdited();
             }
+            for (int i = tracks.Count - 1; i >= 0; i--)
+            {
+                tracks[i].ParentTrack = null;
+                OnDeleteTrack(tracks[i]);
+            }
+            OnTracksChanged();
+            MarkAsEdited();
         }
 
         /// <summary>
@@ -1540,6 +1537,33 @@ namespace FlaxEditor.GUI.Timeline
         }
 
         /// <summary>
+        /// Adds the media.
+        /// </summary>
+        /// <param name="track">The track to add media to.</param>
+        /// <param name="media">The media to add.</param>
+        /// <param name="withUndo">True if use undo/redo action for media adding.</param>
+        public void AddMedia(Track track, Media media, bool withUndo = true)
+        {
+            if (track == null || media == null)
+                throw new ArgumentNullException();
+            if (media.Track != null)
+                throw new InvalidOperationException();
+            if (withUndo && Undo != null && Undo.Enabled)
+            {
+                var before = EditTrackAction.CaptureData(track);
+                track.AddMedia(media);
+                var after = EditTrackAction.CaptureData(track);
+                Undo.AddAction(new EditTrackAction(this, track, before, after));
+            }
+            else
+            {
+                track.AddMedia(media);
+            }
+            MarkAsEdited();
+            Select(media);
+        }
+
+        /// <summary>
         /// Called to delete media.
         /// </summary>
         /// <param name="media">The media.</param>
@@ -1551,89 +1575,82 @@ namespace FlaxEditor.GUI.Timeline
         }
 
         /// <summary>
-        /// Duplicates the selected tracks/media events.
+        /// Duplicates the selected tracks.
         /// </summary>
         /// <param name="withUndo">True if use undo/redo action for track duplication.</param>
-        public void DuplicateSelection(bool withUndo = true)
+        public void DuplicateSelectedTracks(bool withUndo = true)
         {
-            if (SelectedMedia.Count > 0)
+            if (SelectedTracks.Count == 0)
+                return;
+            var tracks = new List<Track>(SelectedTracks.Count);
+            for (int i = 0; i < SelectedTracks.Count; i++)
             {
-                throw new NotImplementedException("TODO: duplicating selected media events");
+                GetTracks(SelectedTracks[i], tracks);
             }
-
-            if (SelectedTracks.Count > 0)
+            var clones = new Track[tracks.Count];
+            for (int i = 0; i < tracks.Count; i++)
             {
-                // Duplicate selected tracks
-                var tracks = new List<Track>(SelectedTracks.Count);
-                for (int i = 0; i < SelectedTracks.Count; i++)
+                var track = tracks[i];
+                var options = new TrackCreateOptions
                 {
-                    GetTracks(SelectedTracks[i], tracks);
+                    Archetype = track.Archetype,
+                    Flags = track.Flags,
+                };
+                var clone = options.Archetype.Create(options);
+                clone.Name = track.CanRename ? GetValidTrackName(track.Name) : track.Name;
+                clone.Color = track.Color;
+                clone.IsExpanded = track.IsExpanded;
+                byte[] data;
+                using (var memory = new MemoryStream(512))
+                using (var stream = new BinaryWriter(memory))
+                {
+                    // TODO: reuse memory stream to improve tracks duplication performance
+                    options.Archetype.Save(track, stream);
+                    data = memory.ToArray();
                 }
-                var clones = new Track[tracks.Count];
-                for (int i = 0; i < tracks.Count; i++)
+                using (var memory = new MemoryStream(data))
+                using (var stream = new BinaryReader(memory))
                 {
-                    var track = tracks[i];
-                    var options = new TrackCreateOptions
+                    track.Archetype.Load(Timeline.FormatVersion, clone, stream);
+                }
+                var trackParent = track.ParentTrack;
+                var trackIndex = track.TrackIndex + 1;
+                if (trackParent != null && tracks.Contains(trackParent))
+                {
+                    for (int j = 0; j < i; j++)
                     {
-                        Archetype = track.Archetype,
-                        Flags = track.Flags,
-                    };
-                    var clone = options.Archetype.Create(options);
-                    clone.Name = track.CanRename ? GetValidTrackName(track.Name) : track.Name;
-                    clone.Color = track.Color;
-                    clone.IsExpanded = track.IsExpanded;
-                    byte[] data;
-                    using (var memory = new MemoryStream(512))
-                    using (var stream = new BinaryWriter(memory))
-                    {
-                        // TODO: reuse memory stream to improve tracks duplication performance
-                        options.Archetype.Save(track, stream);
-                        data = memory.ToArray();
-                    }
-                    using (var memory = new MemoryStream(data))
-                    using (var stream = new BinaryReader(memory))
-                    {
-                        track.Archetype.Load(Timeline.FormatVersion, clone, stream);
-                    }
-                    var trackParent = track.ParentTrack;
-                    var trackIndex = track.TrackIndex + 1;
-                    if (trackParent != null && tracks.Contains(trackParent))
-                    {
-                        for (int j = 0; j < i; j++)
+                        if (tracks[j] == trackParent)
                         {
-                            if (tracks[j] == trackParent)
-                            {
-                                trackParent = clones[j];
-                                break;
-                            }
+                            trackParent = clones[j];
+                            break;
                         }
-                        trackIndex--;
                     }
-                    clone.ParentTrack = trackParent;
-                    clone.TrackIndex = trackIndex;
-                    track.OnDuplicated(clone);
-                    AddTrack(clone, false);
-                    clones[i] = clone;
+                    trackIndex--;
                 }
-                OnTracksOrderChanged();
-                if (withUndo && Undo != null && Undo.Enabled)
-                {
-                    if (clones.Length == 1)
-                    {
-                        Undo.AddAction(new AddRemoveTrackAction(this, clones[0], true));
-                    }
-                    else
-                    {
-                        var actions = new List<IUndoAction>();
-                        for (int i = 0; i < clones.Length; i++)
-                            actions.Add(new AddRemoveTrackAction(this, clones[i], true));
-                        Undo.AddAction(new MultiUndoAction(actions, "Remove tracks"));
-                    }
-                }
-                OnTracksChanged();
-                MarkAsEdited();
-                SelectedTracks[0].Focus();
+                clone.ParentTrack = trackParent;
+                clone.TrackIndex = trackIndex;
+                track.OnDuplicated(clone);
+                AddTrack(clone, false);
+                clones[i] = clone;
             }
+            OnTracksOrderChanged();
+            if (withUndo && Undo != null && Undo.Enabled)
+            {
+                if (clones.Length == 1)
+                {
+                    Undo.AddAction(new AddRemoveTrackAction(this, clones[0], true));
+                }
+                else
+                {
+                    var actions = new List<IUndoAction>();
+                    for (int i = 0; i < clones.Length; i++)
+                        actions.Add(new AddRemoveTrackAction(this, clones[i], true));
+                    Undo.AddAction(new MultiUndoAction(actions, "Remove tracks"));
+                }
+            }
+            OnTracksChanged();
+            MarkAsEdited();
+            SelectedTracks[0].Focus();
         }
 
         /// <summary>
@@ -1885,6 +1902,9 @@ namespace FlaxEditor.GUI.Timeline
             if (!ContainsFocus)
                 Focus();
 
+            var timelinePos = MediaPanel.PointFromParent(this, location);
+            var time = (timelinePos.X - StartOffset) / (UnitsPerSecond * Zoom);
+
             var controlUnderMouse = GetChildAtRecursive(location);
             var mediaUnderMouse = controlUnderMouse;
             while (mediaUnderMouse != null && !(mediaUnderMouse is Media))
@@ -1895,19 +1915,31 @@ namespace FlaxEditor.GUI.Timeline
             var menu = new ContextMenu.ContextMenu();
             if (mediaUnderMouse is Media media)
             {
-                media.OnTimelineShowContextMenu(menu, controlUnderMouse);
+                media.OnTimelineContextMenu(menu, time, controlUnderMouse);
                 if (media.PropertiesEditObject != null)
                 {
-                    menu.AddButton("Edit media", () => ShowEditPopup(media.PropertiesEditObject, ref location, media.Track));
+                    menu.AddButton("Edit media", () => ShowEditPopup(media.PropertiesEditObject, location, media.Track));
+                }
+            }
+            else
+            {
+                OnKeyframesDeselect(null);
+                foreach (var track in _tracks)
+                {
+                    if (Mathf.IsInRange(timelinePos.Y, track.Top, track.Bottom))
+                    {
+                        track.OnTimelineContextMenu(menu, time);
+                        break;
+                    }
                 }
             }
             if (PropertiesEditObject != null)
             {
-                menu.AddButton("Edit timeline", () => ShowEditPopup(PropertiesEditObject, ref location, this));
+                menu.AddButton("Edit timeline", () => ShowEditPopup(PropertiesEditObject, location, this));
             }
             if (_tracks.Count > 1)
             {
-                menu.AddButton("Sort tracks", SortTracks).TooltipText = "Sorts sub tracks alphabetically";
+                menu.AddButton("Sort tracks", SortTracks).TooltipText = "Sorts tracks alphabetically";
             }
             menu.AddSeparator();
             menu.AddButton("Reset zoom", () => Zoom = 1.0f);
@@ -2067,6 +2099,9 @@ namespace FlaxEditor.GUI.Timeline
             case KeyboardKeys.S:
                 Split(CurrentFrame);
                 return true;
+            case KeyboardKeys.Delete:
+                OnKeyframesDelete(null);
+                return true;
             }
 
             return false;
@@ -2089,7 +2124,7 @@ namespace FlaxEditor.GUI.Timeline
         /// <param name="obj">The object.</param>
         /// <param name="location">The show location (in timeline space).</param>
         /// <param name="undoContext">The undo context object.</param>
-        protected virtual void ShowEditPopup(object obj, ref Vector2 location, object undoContext = null)
+        public virtual void ShowEditPopup(object obj, Vector2 location, object undoContext = null)
         {
             var popup = new PropertiesEditPopup(this, obj, undoContext);
             popup.Show(this, location);
@@ -2145,6 +2180,11 @@ namespace FlaxEditor.GUI.Timeline
                 if (_tracks[i] is IKeyframesEditorContext trackContext)
                     trackContext.OnKeyframesDeselect(editor);
             }
+            if (SelectedMedia.Count != 0)
+            {
+                SelectedMedia.Clear();
+                OnSelectionChanged();
+            }
         }
 
         /// <inheritdoc />
@@ -2152,17 +2192,38 @@ namespace FlaxEditor.GUI.Timeline
         {
             var globalControl = _backgroundArea;
             var globalRect = Rectangle.FromPoints(control.PointToParent(globalControl, selection.UpperLeft), control.PointToParent(globalControl, selection.BottomRight));
+            var mediaControl = MediaPanel;
+            var mediaRect = Rectangle.FromPoints(mediaControl.PointFromParent(globalRect.UpperLeft), mediaControl.PointFromParent(globalRect.BottomRight));
+            var selectionChanged = false;
+            if (SelectedMedia.Count != 0)
+            {
+                SelectedMedia.Clear();
+                selectionChanged = true;
+            }
             for (int i = 0; i < _tracks.Count; i++)
             {
                 if (_tracks[i] is IKeyframesEditorContext trackContext)
                     trackContext.OnKeyframesSelection(editor, globalControl, globalRect);
+
+                foreach (var media in _tracks[i].Media)
+                {
+                    if (media.Bounds.Intersects(ref mediaRect))
+                    {
+                        SelectedMedia.Add(media);
+                        selectionChanged = true;
+                    }
+                }
+            }
+            if (selectionChanged)
+            {
+                OnSelectionChanged();
             }
         }
 
         /// <inheritdoc />
         public int OnKeyframesSelectionCount()
         {
-            int result = 0;
+            int result = SelectedMedia.Count;
             for (int i = 0; i < _tracks.Count; i++)
             {
                 if (_tracks[i] is IKeyframesEditorContext trackContext)
@@ -2179,6 +2240,45 @@ namespace FlaxEditor.GUI.Timeline
                 if (_tracks[i] is IKeyframesEditorContext trackContext)
                     trackContext.OnKeyframesDelete(editor);
             }
+
+            // Delete selected media events
+            if (SelectedMedia.Count != 0)
+            {
+                if (Undo != null && Undo.Enabled)
+                {
+                    // Undo per-track
+                    if (_mediaMoveStartTracks == null)
+                        _mediaMoveStartTracks = new List<Track>();
+                    else
+                        _mediaMoveStartTracks.Clear();
+                    for (var i = 0; i < SelectedMedia.Count; i++)
+                    {
+                        var media = SelectedMedia[i];
+                        if (!_mediaMoveStartTracks.Contains(media.Track))
+                            _mediaMoveStartTracks.Add(media.Track);
+                    }
+                    _mediaMoveStartData = new byte[_mediaMoveStartTracks.Count][];
+                    for (int i = 0; i < _mediaMoveStartData.Length; i++)
+                        _mediaMoveStartData[i] = EditTrackAction.CaptureData(_mediaMoveStartTracks[i]);
+                }
+
+                foreach (var media in SelectedMedia.ToArray())
+                    OnDeleteMedia(media);
+
+                if (Undo != null && Undo.Enabled)
+                {
+                    for (int i = 0; i < _mediaMoveStartData.Length; i++)
+                    {
+                        var track = _mediaMoveStartTracks[i];
+                        var before = _mediaMoveStartData[i];
+                        var after = EditTrackAction.CaptureData(track);
+                        if (!Utils.ArraysEqual(before, after))
+                            AddBatchedUndoAction(new EditTrackAction(this, track, before, after));
+                    }
+                }
+
+                MarkAsEdited();
+            }
         }
 
         /// <inheritdoc />
@@ -2189,6 +2289,60 @@ namespace FlaxEditor.GUI.Timeline
             {
                 if (_tracks[i] is IKeyframesEditorContext trackContext)
                     trackContext.OnKeyframesMove(editor, _backgroundArea, location, start, end);
+            }
+            if (SelectedMedia.Count != 0)
+            {
+                location = MediaPanel.PointFromParent(location);
+                if (start)
+                {
+                    // Start moving selected media events
+                    _mediaMoveStartPos = location;
+                    _mediaMoveStartFrames = new int[SelectedMedia.Count];
+                    if (_mediaMoveStartTracks == null)
+                        _mediaMoveStartTracks = new List<Track>();
+                    else
+                        _mediaMoveStartTracks.Clear();
+                    for (var i = 0; i < SelectedMedia.Count; i++)
+                    {
+                        var media = SelectedMedia[i];
+                        _mediaMoveStartFrames[i] = media.StartFrame;
+                        if (!_mediaMoveStartTracks.Contains(media.Track))
+                            _mediaMoveStartTracks.Add(media.Track);
+                    }
+                    if (Undo != null && Undo.Enabled)
+                    {
+                        // Undo per-track
+                        _mediaMoveStartData = new byte[_mediaMoveStartTracks.Count][];
+                        for (int i = 0; i < _mediaMoveStartData.Length; i++)
+                            _mediaMoveStartData[i] = EditTrackAction.CaptureData(_mediaMoveStartTracks[i]);
+                    }
+                }
+                else if (end)
+                {
+                    // End moving selected media events
+                    if (_mediaMoveStartData != null)
+                    {
+                        for (int i = 0; i < _mediaMoveStartData.Length; i++)
+                        {
+                            var track = _mediaMoveStartTracks[i];
+                            var before = _mediaMoveStartData[i];
+                            var after = EditTrackAction.CaptureData(track);
+                            if (!Utils.ArraysEqual(before, after))
+                                AddBatchedUndoAction(new EditTrackAction(this, track, before, after));
+                        }
+                    }
+                    MarkAsEdited();
+                    _mediaMoveStartTracks.Clear();
+                    _mediaMoveStartFrames = null;
+                }
+                else
+                {
+                    // Move selected media events
+                    var moveLocationDelta = location - _mediaMoveStartPos;
+                    var moveDelta = (int)(moveLocationDelta.X / (UnitsPerSecond * Zoom) * FramesPerSecond);
+                    for (var i = 0; i < SelectedMedia.Count; i++)
+                        SelectedMedia[i].StartFrame = _mediaMoveStartFrames[i] + moveDelta;
+                }
             }
         }
 

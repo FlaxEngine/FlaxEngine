@@ -16,6 +16,7 @@
 #define ANIM_GRAPH_MULTI_BLEND_2D_MAX_TRIS 32
 #define ANIM_GRAPH_MAX_STATE_TRANSITIONS 64
 #define ANIM_GRAPH_MAX_CALL_STACK 100
+#define ANIM_GRAPH_MAX_EVENTS 64
 
 class AnimGraph;
 class AnimSubGraph;
@@ -267,6 +268,7 @@ struct FLAXENGINE_API AnimGraphSlot
 /// </summary>
 class FLAXENGINE_API AnimGraphInstanceData
 {
+    friend AnimGraphExecutor;
 public:
 
     // ---- Quick documentation ----
@@ -384,7 +386,7 @@ public:
     /// <summary>
     /// The slots animations.
     /// </summary>
-    Array<AnimGraphSlot> Slots;
+    Array<AnimGraphSlot, InlinedAllocation<4>> Slots;
 
 public:
 
@@ -402,6 +404,18 @@ public:
     /// Invalidates the update timer.
     /// </summary>
     void Invalidate();
+
+private:
+
+    struct Event
+    {
+        AnimEvent* Instance;
+        Animation* Anim;
+        AnimGraphNode* Node;
+        bool Hit;
+    };
+
+    Array<Event, InlinedAllocation<8>> Events;
 };
 
 /// <summary>

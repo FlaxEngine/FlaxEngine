@@ -167,9 +167,9 @@ struct SerializedMaterialParam
 /// <summary>
 /// Material variable object. Allows to modify material parameter value at runtime.
 /// </summary>
-API_CLASS(NoSpawn) class FLAXENGINE_API MaterialParameter : public PersistentScriptingObject
+API_CLASS(NoSpawn) class FLAXENGINE_API MaterialParameter : public ScriptingObject
 {
-DECLARE_SCRIPTING_TYPE_WITH_CONSTRUCTOR_IMPL(MaterialParameter, PersistentScriptingObject);
+DECLARE_SCRIPTING_TYPE_WITH_CONSTRUCTOR_IMPL(MaterialParameter, ScriptingObject);
     friend MaterialParams;
     friend MaterialInstance;
 private:

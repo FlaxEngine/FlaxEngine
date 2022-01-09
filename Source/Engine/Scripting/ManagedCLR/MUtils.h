@@ -197,7 +197,7 @@ struct MConverter<T*, typename TEnableIf<TIsBaseOf<class ScriptingObject, T>::Va
 
 // Converter for Scripting Objects (collection of values).
 template<typename T>
-struct MConverter<T, typename TEnableIf<TIsBaseOf<class PersistentScriptingObject, T>::Value>::Type>
+struct MConverter<T, typename TEnableIf<TIsBaseOf<class ScriptingObject, T>::Value>::Type>
 {
     MonoObject* Box(const T& data, MonoClass* klass)
     {

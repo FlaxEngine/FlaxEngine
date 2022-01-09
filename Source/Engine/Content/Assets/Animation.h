@@ -7,6 +7,7 @@
 #include "Engine/Animations/AnimationData.h"
 
 class SkinnedModel;
+class AnimEvent;
 
 /// <summary>
 /// Asset that contains an animation spline represented by a set of keyframes, each representing an endpoint of a linear curve.
@@ -18,7 +19,7 @@ DECLARE_BINARY_ASSET_HEADER(Animation, 1);
     /// <summary>
     /// Contains basic information about the animation asset contents.
     /// </summary>
-    API_STRUCT() struct InfoData
+    API_STRUCT() struct FLAXENGINE_API InfoData
     {
     DECLARE_SCRIPTING_TYPE_NO_SPAWN(InfoData);
 
@@ -48,12 +49,36 @@ DECLARE_BINARY_ASSET_HEADER(Animation, 1);
         API_FIELD() int32 MemoryUsage;
     };
 
+    /// <summary>
+    /// Contains <see cref="AnimEvent"/> instance.
+    /// </summary>
+    struct FLAXENGINE_API AnimEventData
+    {
+        float Duration = 0.0f;
+        AnimEvent* Instance = nullptr;
+#if USE_EDITOR
+        StringAnsi TypeName;
+#endif
+    };
+
+private:
+    
+#if USE_EDITOR
+    bool _registeredForScriptingReload = false;
+    void OnScriptsReloadStart();
+#endif
+
 public:
 
     /// <summary>
     /// The animation data.
     /// </summary>
     AnimationData Data;
+
+    /// <summary>
+    /// The animation events (keyframes per named track).
+    /// </summary>
+    Array<Pair<String, StepCurve<AnimEventData>>> Events;
 
     /// <summary>
     /// Contains the mapping for every skeleton node to the animation data channels.
@@ -137,6 +162,11 @@ public:
 private:
 
     void OnSkinnedModelUnloaded(Asset* obj);
+
+public:
+
+    // [BinaryAsset]
+    void OnScriptingDispose() override;
 
 protected:
 

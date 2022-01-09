@@ -52,7 +52,7 @@ namespace FlaxEditor.GUI.Timeline
         /// </summary>
         /// <param name="undo">The undo/redo to use for the history actions recording. Optional, can be null to disable undo support.</param>
         public AnimationTimeline(FlaxEditor.Undo undo)
-        : base(PlaybackButtons.Play | PlaybackButtons.Stop, undo, false, false)
+        : base(PlaybackButtons.Play | PlaybackButtons.Stop, undo, false, true)
         {
             PlaybackState = PlaybackStates.Seeking;
             ShowPreviewValues = false;
@@ -61,6 +61,7 @@ namespace FlaxEditor.GUI.Timeline
             // Setup track types
             TrackArchetypes.Add(AnimationChannelTrack.GetArchetype());
             TrackArchetypes.Add(AnimationChannelDataTrack.GetArchetype());
+            TrackArchetypes.Add(AnimationEventTrack.GetArchetype());
         }
 
         /// <summary>

@@ -18,7 +18,7 @@ DECLARE_ENUM_EX_6(TaskState, int64, 0, Created, Failed, Canceled, Queued, Runnin
 /// <summary>
 /// Represents an asynchronous operation.
 /// </summary>
-class FLAXENGINE_API Task : public RemovableObject, public NonCopyable
+class FLAXENGINE_API Task : public Object, public NonCopyable
 {
     //
     // Tasks execution and states flow:

@@ -7,7 +7,7 @@
 #include "Foliage.h"
 
 FoliageType::FoliageType()
-    : PersistentScriptingObject(SpawnParams(Guid::New(), TypeInitializer))
+    : ScriptingObject(SpawnParams(Guid::New(), TypeInitializer))
     , Foliage(nullptr)
     , Index(-1)
 {

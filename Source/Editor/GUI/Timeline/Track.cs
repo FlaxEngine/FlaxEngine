@@ -1029,6 +1029,15 @@ namespace FlaxEditor.GUI.Timeline
         }
 
         /// <summary>
+        /// Called when showing timeline context menu to the user. Can be used to add custom buttons.
+        /// </summary>
+        /// <param name="menu">The menu.</param>
+        /// <param name="time">The time (in seconds) at which context menu is shown (user clicked on a timeline).</param>
+        public virtual void OnTimelineContextMenu(ContextMenu.ContextMenu menu, float time)
+        {
+        }
+
+        /// <summary>
         /// Called when context menu is being prepared to show. Can be used to add custom options.
         /// </summary>
         /// <param name="menu">The menu.</param>
@@ -1051,7 +1060,7 @@ namespace FlaxEditor.GUI.Timeline
                 if (CanRename)
                     menu.AddButton("Rename", "F2", StartRenaming);
                 if (CanCopyPaste)
-                    menu.AddButton("Duplicate", "Ctrl+D", () => Timeline.DuplicateSelection());
+                    menu.AddButton("Duplicate", "Ctrl+D", () => Timeline.DuplicateSelectedTracks());
                 menu.AddButton("Delete", "Del", Delete);
                 if (CanExpand)
                 {
@@ -1292,12 +1301,12 @@ namespace FlaxEditor.GUI.Timeline
                         StartRenaming();
                     return true;
                 case KeyboardKeys.Delete:
-                    _timeline.DeleteSelection();
+                    _timeline.DeleteSelectedTracks();
                     return true;
                 case KeyboardKeys.D:
                     if (Root.GetKey(KeyboardKeys.Control) && CanCopyPaste)
                     {
-                        _timeline.DuplicateSelection();
+                        _timeline.DuplicateSelectedTracks();
                         return true;
                     }
                     break;

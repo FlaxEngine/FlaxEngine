@@ -2,6 +2,7 @@
 
 #include "AnimGraph.h"
 #include "Engine/Animations/Animations.h"
+#include "Engine/Animations/AnimEvent.h"
 #include "Engine/Content/Assets/SkinnedModel.h"
 #include "Engine/Graphics/Models/SkeletonData.h"
 #include "Engine/Scripting/Scripting.h"
@@ -91,6 +92,9 @@ void AnimGraphInstanceData::Clear()
     State.Resize(0);
     NodesPose.Resize(0);
     Slots.Resize(0);
+    for (const auto& e : Events)
+        ((AnimContinuousEvent*)e.Instance)->OnEnd((AnimatedModel*)Object, e.Anim, 0.0f, 0.0f);
+    Events.Resize(0);
 }
 
 void AnimGraphInstanceData::ClearState()
@@ -103,6 +107,9 @@ void AnimGraphInstanceData::ClearState()
     State.Resize(0);
     NodesPose.Resize(0);
     Slots.Clear();
+    for (const auto& e : Events)
+        ((AnimContinuousEvent*)e.Instance)->OnEnd((AnimatedModel*)Object, e.Anim, 0.0f, 0.0f);
+    Events.Clear();
 }
 
 void AnimGraphInstanceData::Invalidate()
@@ -246,6 +253,8 @@ void AnimGraphExecutor::Update(AnimGraphInstanceData& data, float dt)
             // Initialize buckets
             ResetBuckets(context, &_graph);
         }
+        for (auto& e : data.Events)
+            e.Hit = false;
 
         // Init empty nodes data
         context.EmptyNodes.RootMotion = RootMotionData::Identity;
@@ -278,6 +287,19 @@ void AnimGraphExecutor::Update(AnimGraphInstanceData& data, float dt)
         }
         if (animResult == nullptr)
             animResult = GetEmptyNodes();
+    }
+    if (data.Events.Count() != 0)
+    {
+        ANIM_GRAPH_PROFILE_EVENT("Events");
+        for (int32 i = data.Events.Count() - 1; i >= 0; i--)
+        {
+            const auto& e = data.Events[i];
+            if (!e.Hit)
+            {
+                ((AnimContinuousEvent*)e.Instance)->OnEnd((AnimatedModel*)context.Data->Object, e.Anim, 0.0f, 0.0f);
+                data.Events.RemoveAt(i);
+            }
+        }
     }
 
     // Allow for external override of the local pose (eg. by the ragdoll)

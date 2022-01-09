@@ -14,7 +14,7 @@ namespace
 }
 
 TaskGraphSystem::TaskGraphSystem(const SpawnParams& params)
-    : PersistentScriptingObject(params)
+    : ScriptingObject(params)
 {
 }
 
@@ -36,7 +36,7 @@ void TaskGraphSystem::PostExecute(TaskGraph* graph)
 }
 
 TaskGraph::TaskGraph(const SpawnParams& params)
-    : PersistentScriptingObject(params)
+    : ScriptingObject(params)
 {
 }
 

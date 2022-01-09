@@ -36,6 +36,7 @@
 #include "Editor/Editor.h"
 #include "Engine/Platform/MessageBox.h"
 #include "Engine/Engine/CommandLine.h"
+#include "Engine/Serialization/JsonSerializer.h"
 #endif
 
 bool LayersMask::HasLayer(const StringView& layerName) const
@@ -74,11 +75,25 @@ public:
     }
 };
 
+#if USE_EDITOR
+
+struct ScriptsReloadObject
+{
+    StringAnsi TypeName;
+    ScriptingObject** Object;
+    Array<byte> Data;
+};
+
+#endif
+
 namespace LevelImpl
 {
     Array<SceneAction*> _sceneActions;
     CriticalSection _sceneActionsLocker;
     DateTime _lastSceneLoadTime(0);
+#if USE_EDITOR
+    Array<ScriptsReloadObject> ScriptsReloadObjects;
+#endif
 
     void CallSceneEvent(SceneEventType eventType, Scene* scene, Guid sceneId);
 
@@ -128,9 +143,11 @@ Delegate<Scene*, const Guid&> Level::SceneLoaded;
 Delegate<Scene*, const Guid&> Level::SceneLoadError;
 Delegate<Scene*, const Guid&> Level::SceneUnloading;
 Delegate<Scene*, const Guid&> Level::SceneUnloaded;
+#if USE_EDITOR
 Action Level::ScriptsReloadStart;
 Action Level::ScriptsReload;
 Action Level::ScriptsReloadEnd;
+#endif
 Array<String> Level::Tags;
 String Level::Layers[32];
 
@@ -559,6 +576,24 @@ public:
         Level::ScriptsReload();
         Scripting::Reload();
 
+        // Restore objects
+        for (auto& e : ScriptsReloadObjects)
+        {
+            const ScriptingTypeHandle typeHandle = Scripting::FindScriptingType(e.TypeName);
+            *e.Object = ScriptingObject::NewObject(typeHandle);
+            if (!*e.Object)
+            {
+                LOG(Warning, "Failed to restore hot-reloaded object of type {0}.", String(e.TypeName));
+                continue;
+            }
+            auto* serializable = ScriptingObject::ToInterface<ISerializable>(*e.Object);
+            if (serializable && e.Data.HasItems())
+            {
+                JsonSerializer::LoadFromBytes(serializable, e.Data, FLAXENGINE_VERSION_BUILD);
+            }
+        }
+        ScriptsReloadObjects.Clear();
+
         // Restore scenes (from memory)
         for (int32 i = 0; i < scenesCount; i++)
         {
@@ -595,6 +630,20 @@ public:
     }
 };
 
+void Level::ScriptsReloadRegisterObject(ScriptingObject*& obj)
+{
+    if (!obj)
+        return;
+    auto& e = ScriptsReloadObjects.AddOne();
+    e.Object = &obj;
+    e.TypeName = obj->GetType().Fullname;
+    if (auto* serializable = ScriptingObject::ToInterface<ISerializable>(obj))
+        e.Data = JsonSerializer::SaveToBytes(serializable);
+    ScriptingObject* o = obj;
+    obj = nullptr;
+    o->DeleteObjectNow();
+}
+
 #endif
 
 class SpawnActorAction : public SceneAction
@@ -605,9 +654,9 @@ public:
     ScriptingObjectReference<Actor> ParentActor;
 
     SpawnActorAction(Actor* actor, Actor* parent)
+        : TargetActor(actor)
+        , ParentActor(parent)
     {
-        TargetActor = actor;
-        ParentActor = parent;
     }
 
     bool Do() const override
@@ -623,8 +672,8 @@ public:
     ScriptingObjectReference<Actor> TargetActor;
 
     DeleteActorAction(Actor* actor)
+        : TargetActor(actor)
     {
-        TargetActor = actor;
     }
 
     bool Do() const override

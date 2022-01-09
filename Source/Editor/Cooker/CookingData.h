@@ -137,7 +137,7 @@ extern FLAXENGINE_API const Char* ToString(const BuildConfiguration configuratio
 /// <summary>
 /// Game cooking temporary data.
 /// </summary>
-API_CLASS(Sealed, Namespace="FlaxEditor") class FLAXENGINE_API CookingData : public PersistentScriptingObject
+API_CLASS(Sealed, Namespace="FlaxEditor") class FLAXENGINE_API CookingData : public ScriptingObject
 {
 DECLARE_SCRIPTING_TYPE(CookingData);
 public:

@@ -140,7 +140,7 @@ void OnVisualScriptingDebugFlow()
 void OnLogMessage(LogType type, const StringView& msg);
 
 ManagedEditor::ManagedEditor()
-    : PersistentScriptingObject(SpawnParams(ObjectID, ManagedEditor::TypeInitializer))
+    : ScriptingObject(SpawnParams(ObjectID, ManagedEditor::TypeInitializer))
 {
     // Link events
     auto editor = ((NativeBinaryModule*)GetBinaryModuleFlaxEngine())->Assembly;
@@ -476,11 +476,6 @@ void ManagedEditor::OnEditorAssemblyLoaded(MAssembly* assembly)
     CreateManaged();
 }
 
-String ManagedEditor::ToString() const
-{
-    return TEXT("ManagedEditor");
-}
-
 void ManagedEditor::DestroyManaged()
 {
     // Ensure to cleanup managed stuff
@@ -499,5 +494,5 @@ void ManagedEditor::DestroyManaged()
     Internal_OnVisualScriptingDebugFlow = nullptr;
 
     // Base
-    PersistentScriptingObject::DestroyManaged();
+    ScriptingObject::DestroyManaged();
 }

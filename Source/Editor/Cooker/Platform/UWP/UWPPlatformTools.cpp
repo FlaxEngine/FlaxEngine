@@ -179,12 +179,12 @@ bool UWPPlatformTools::OnDeployBinaries(CookingData& data)
         if (file)
         {
             auto now = DateTime::Now();
-            file->WriteTextFormatted(
+            file->WriteText(StringAnsi::Format(
                 fileTemplate.Get()
                 , gameSettings->ProductName.ToStringAnsi()
                 , gameSettings->CompanyName.ToStringAnsi()
                 , now.GetYear()
-            );
+            ));
             hasError = file->HasError();
             Delete(file);
         }
@@ -210,10 +210,10 @@ bool UWPPlatformTools::OnDeployBinaries(CookingData& data)
         bool hasError = true;
         if (file)
         {
-            file->WriteTextFormatted(
+            file->WriteText(StringAnsi::Format(
                 fileTemplate.Get()
                 , defaultNamespace.ToStringAnsi() // {0} Default Namespace
-            );
+            ));
             hasError = file->HasError();
             Delete(file);
         }
@@ -264,11 +264,11 @@ bool UWPPlatformTools::OnDeployBinaries(CookingData& data)
         bool hasError = true;
         if (file)
         {
-            file->WriteTextFormatted(
+            file->WriteText(StringAnsi::Format(
                 fileTemplate.Get()
                 , autoRotationPreferences.Get()
                 , preferredLaunchWindowingMode.Get()
-            );
+            ));
             hasError = file->HasError();
             Delete(file);
         }
@@ -296,12 +296,12 @@ bool UWPPlatformTools::OnDeployBinaries(CookingData& data)
         bool hasError = true;
         if (file)
         {
-            file->WriteTextFormatted(
+            file->WriteText(StringAnsi::Format(
                 fileTemplate.Get()
                 , projectName.ToStringAnsi() // {0} Project Name
                 , mode // {1} Platform Mode
                 , projectGuid.ToStringAnsi() // {2} Project ID
-            );
+            ));
             hasError = file->HasError();
             Delete(file);
         }
@@ -344,14 +344,14 @@ bool UWPPlatformTools::OnDeployBinaries(CookingData& data)
         bool hasError = true;
         if (file)
         {
-            file->WriteTextFormatted(
+            file->WriteText(StringAnsi::Format(
                 fileTemplate.Get()
                 , projectName.ToStringAnsi() // {0} Project Name
                 , mode // {1} Platform Mode
                 , projectGuid.Get() // {2} Project ID
                 , filesInclude.ToString().ToStringAnsi() // {3} Files to include
                 , defaultNamespace.ToStringAnsi() // {4} Default Namespace
-            );
+            ));
             hasError = file->HasError();
             Delete(file);
         }
@@ -394,13 +394,13 @@ bool UWPPlatformTools::OnDeployBinaries(CookingData& data)
         bool hasError = true;
         if (file)
         {
-            file->WriteTextFormatted(
+            file->WriteText(StringAnsi::Format(
                 fileTemplate.Get()
                 , projectName.ToStringAnsi() // {0} Display Name
                 , gameSettings->CompanyName.ToStringAnsi() // {1} Company Name
                 , productId.ToStringAnsi() // {2} Product ID
                 , defaultNamespace.ToStringAnsi() // {3} Default Namespace
-            );
+            ));
             hasError = file->HasError();
             Delete(file);
         }

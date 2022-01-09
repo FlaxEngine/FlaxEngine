@@ -102,6 +102,16 @@ namespace FlaxEditor.CustomEditors
         /// </summary>
         protected virtual void OnModified()
         {
+            var parent = ParentEditor;
+            while (parent != null)
+            {
+                if (parent is SyncPointEditor syncPointEditor)
+                {
+                    syncPointEditor.OnModified();
+                    break;
+                }
+                parent = parent.ParentEditor;
+            }
         }
 
         /// <inheritdoc />

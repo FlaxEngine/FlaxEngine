@@ -15,10 +15,7 @@ using Newtonsoft.Json.Serialization;
 
 namespace FlaxEngine.Json
 {
-    /// <summary>
-    /// Objects serialization tool (json format).
-    /// </summary>
-    public static class JsonSerializer
+    partial class JsonSerializer
     {
         internal class SerializerCache
         {

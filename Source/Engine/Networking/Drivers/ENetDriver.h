@@ -13,7 +13,7 @@
 /// <summary>
 /// Low-level network transport interface implementation based on ENet library.
 /// </summary>
-API_CLASS(Namespace="FlaxEngine.Networking", Sealed) class FLAXENGINE_API ENetDriver : public PersistentScriptingObject, public INetworkDriver
+API_CLASS(Namespace="FlaxEngine.Networking", Sealed) class FLAXENGINE_API ENetDriver : public ScriptingObject, public INetworkDriver
 {
 DECLARE_SCRIPTING_TYPE(ENetDriver);
 public:

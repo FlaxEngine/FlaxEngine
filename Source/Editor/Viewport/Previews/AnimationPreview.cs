@@ -44,7 +44,7 @@ namespace FlaxEditor.Viewport.Previews
             // Playback Speed
             {
                 var playbackSpeed = ViewWidgetButtonMenu.AddButton("Playback Speed");
-                var playbackSpeedValue = new FloatValueBox(-1, 90, 2, 70.0f, 0.0f, 10000.0f, 0.001f)
+                var playbackSpeedValue = new FloatValueBox(-1, 90, 2, 70.0f, -10000.0f, 10000.0f, 0.001f)
                 {
                     Parent = playbackSpeed
                 };

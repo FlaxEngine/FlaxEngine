@@ -16,7 +16,7 @@ public:
     /// </summary>
     /// <param name="obj">The object.</param>
     /// <returns>True if object has been registered in the pool for the removing, otherwise false.</returns>
-    static bool IsInPool(RemovableObject* obj);
+    static bool IsInPool(Object* obj);
 
     /// <summary>
     /// Determines whether any object has been registered to be removed from pool (requests are flushed on Flush call).
@@ -28,7 +28,7 @@ public:
     /// Removes the specified object from the dead pool (clears the reference to it).
     /// </summary>
     /// <param name="obj">The object.</param>
-    static void Dereference(RemovableObject* obj);
+    static void Dereference(Object* obj);
 
     /// <summary>
     /// Adds the specified object to the dead pool.
@@ -36,7 +36,7 @@ public:
     /// <param name="obj">The object.</param>
     /// <param name="timeToLive">The time to live (in seconds).</param>
     /// <param name="useGameTime">True if unscaled game time for the object life timeout, otherwise false to use absolute time.</param>
-    static void Add(RemovableObject* obj, float timeToLive = 1.0f, bool useGameTime = false);
+    static void Add(Object* obj, float timeToLive = 1.0f, bool useGameTime = false);
 
     /// <summary>
     /// Flushes the objects pool removing objects marked to remove now (with negative or zero time to live).

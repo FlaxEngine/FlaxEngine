@@ -15,7 +15,7 @@
 /// <summary>
 /// The base class for all GPU resources.
 /// </summary>
-API_CLASS(Abstract, NoSpawn) class FLAXENGINE_API GPUResource : public PersistentScriptingObject
+API_CLASS(Abstract, NoSpawn) class FLAXENGINE_API GPUResource : public ScriptingObject
 {
 DECLARE_SCRIPTING_TYPE_NO_SPAWN(GPUResource);
 public:
@@ -108,7 +108,7 @@ protected:
 
 public:
 
-    // [PersistentScriptingObject]
+    // [ScriptingObject]
     String ToString() const override;
     void OnDeleteObject() override;
 };
@@ -186,14 +186,14 @@ public:
 /// <summary>
 /// Interface for GPU resources views. Shared base class for texture and buffer views.
 /// </summary>
-API_CLASS(Abstract, NoSpawn, Attributes="HideInEditor") class FLAXENGINE_API GPUResourceView : public PersistentScriptingObject
+API_CLASS(Abstract, NoSpawn, Attributes="HideInEditor") class FLAXENGINE_API GPUResourceView : public ScriptingObject
 {
 DECLARE_SCRIPTING_TYPE_NO_SPAWN(GPUResourceView);
 protected:
     static double DummyLastRenderTime;
 
     explicit GPUResourceView(const SpawnParams& params)
-        : PersistentScriptingObject(params)
+        : ScriptingObject(params)
         , LastRenderTime(&DummyLastRenderTime)
     {
     }

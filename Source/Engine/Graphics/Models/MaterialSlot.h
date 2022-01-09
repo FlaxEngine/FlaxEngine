@@ -10,9 +10,9 @@
 /// <summary>
 /// The material slot descriptor that specifies how to render geometry using it.
 /// </summary>
-API_CLASS(NoSpawn) class FLAXENGINE_API MaterialSlot : public PersistentScriptingObject
+API_CLASS(NoSpawn) class FLAXENGINE_API MaterialSlot : public ScriptingObject
 {
-DECLARE_SCRIPTING_TYPE_WITH_CONSTRUCTOR_IMPL(MaterialSlot, PersistentScriptingObject);
+DECLARE_SCRIPTING_TYPE_WITH_CONSTRUCTOR_IMPL(MaterialSlot, ScriptingObject);
 
     /// <summary>
     /// The material to use for rendering.

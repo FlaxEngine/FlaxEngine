@@ -16,8 +16,8 @@ namespace FlaxEditor.GUI.Timeline.GUI
         private readonly Timeline _timeline;
         private float[] _tickSteps;
         private float[] _tickStrengths;
-        private bool _leftMouseDown;
-        private Vector2 _leftMouseDownPos = Vector2.Minimum;
+        private bool _isSelecting;
+        private Vector2 _selectingStartPos = Vector2.Minimum;
         private Vector2 _mousePos = Vector2.Minimum;
 
         /// <summary>
@@ -33,7 +33,7 @@ namespace FlaxEditor.GUI.Timeline.GUI
 
         private void UpdateSelectionRectangle()
         {
-            var selectionRect = Rectangle.FromPoints(_leftMouseDownPos, _mousePos);
+            var selectionRect = Rectangle.FromPoints(_selectingStartPos, _mousePos);
             _timeline.OnKeyframesSelection(null, this, selectionRect);
         }
 
@@ -41,20 +41,17 @@ namespace FlaxEditor.GUI.Timeline.GUI
         public override bool OnMouseDown(Vector2 location, MouseButton button)
         {
             if (base.OnMouseDown(location, button))
-            {
-                _leftMouseDown = false;
                 return true;
-            }
 
             _mousePos = location;
             if (button == MouseButton.Left)
             {
                 // Start selecting
-                _leftMouseDown = true;
-                _leftMouseDownPos = location;
-                StartMouseCapture();
+                _isSelecting = true;
+                _selectingStartPos = location;
                 _timeline.OnKeyframesDeselect(null);
                 Focus();
+                StartMouseCapture();
                 return true;
             }
 
@@ -65,19 +62,16 @@ namespace FlaxEditor.GUI.Timeline.GUI
         public override bool OnMouseUp(Vector2 location, MouseButton button)
         {
             _mousePos = location;
-
-            if (_leftMouseDown && button == MouseButton.Left)
+            if (_isSelecting && button == MouseButton.Left)
             {
                 // End selecting
-                _leftMouseDown = false;
+                _isSelecting = false;
                 EndMouseCapture();
+                return true;
             }
 
             if (base.OnMouseUp(location, button))
-            {
-                _leftMouseDown = false;
                 return true;
-            }
 
             return true;
         }
@@ -88,7 +82,7 @@ namespace FlaxEditor.GUI.Timeline.GUI
             _mousePos = location;
 
             // Selecting
-            if (_leftMouseDown)
+            if (_isSelecting)
             {
                 UpdateSelectionRectangle();
                 return;
@@ -100,9 +94,22 @@ namespace FlaxEditor.GUI.Timeline.GUI
         /// <inheritdoc />
         public override void OnLostFocus()
         {
-            _leftMouseDown = false;
+            if (_isSelecting)
+            {
+                _isSelecting = false;
+                EndMouseCapture();
+            }
 
             base.OnLostFocus();
+        }
+
+        /// <inheritdoc />
+        public override void OnEndMouseCapture()
+        {
+            _isSelecting = false;
+            EndMouseCapture();
+
+            base.OnEndMouseCapture();
         }
 
         /// <inheritdoc />
@@ -217,9 +224,9 @@ namespace FlaxEditor.GUI.Timeline.GUI
             }
 
             // Draw selection rectangle
-            if (_leftMouseDown)
+            if (_isSelecting)
             {
-                var selectionRect = Rectangle.FromPoints(_leftMouseDownPos, _mousePos);
+                var selectionRect = Rectangle.FromPoints(_selectingStartPos, _mousePos);
                 Render2D.FillRectangle(selectionRect, Color.Orange * 0.4f);
                 Render2D.DrawRectangle(selectionRect, Color.Orange);
             }

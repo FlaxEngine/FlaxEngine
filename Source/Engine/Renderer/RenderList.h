@@ -322,7 +322,7 @@ struct DrawCallsList
 /// <summary>
 /// Rendering cache container object for the draw calls collecting, sorting and executing.
 /// </summary>
-API_CLASS(Sealed) class FLAXENGINE_API RenderList : public PersistentScriptingObject
+API_CLASS(Sealed) class FLAXENGINE_API RenderList : public ScriptingObject
 {
 DECLARE_SCRIPTING_TYPE(RenderList);
 

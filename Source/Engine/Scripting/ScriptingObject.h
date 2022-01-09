@@ -8,9 +8,9 @@
 #include "ManagedCLR/MTypes.h"
 
 /// <summary>
-/// Represents object from unmanaged memory that can use accessed via C# scripting.
+/// Represents object from unmanaged memory that can use accessed via scripting.
 /// </summary>
-API_CLASS(InBuild) class FLAXENGINE_API ScriptingObject : public RemovableObject
+API_CLASS(InBuild) class FLAXENGINE_API ScriptingObject : public Object
 {
     friend class Scripting;
     friend class BinaryModule;
@@ -40,14 +40,23 @@ public:
 
 public:
 
-    /// <summary>
-    /// Spawns a new objects of the given type.
-    /// </summary>
+    // Spawns a new objects of the given type.
+    static ScriptingObject* NewObject(const ScriptingTypeHandle& typeHandle);
     template<typename T>
-    static T* Spawn()
+    static T* NewObject()
     {
-        const SpawnParams params(Guid::New(), T::TypeInitializer);
-        return T::New(params);
+        return (T*)NewObject(T::TypeInitializer);
+    }
+    template<typename T>
+    static T* NewObject(const ScriptingTypeHandle& typeHandle)
+    {
+        auto obj = NewObject(typeHandle);
+        if (obj && !obj->Is<T>())
+        {
+            Delete(obj);
+            obj = nullptr;
+        }
+        return (T*)obj;
     }
 
 public:
@@ -182,7 +191,7 @@ public:
     virtual void OnManagedInstanceDeleted();
     virtual void OnScriptingDispose();
 
-    virtual bool CreateManaged() = 0;
+    virtual bool CreateManaged();
     virtual void DestroyManaged();
 
 public:
@@ -216,7 +225,7 @@ protected:
 
 public:
 
-    // [RemovableObject]
+    // [Object]
     void OnDeleteObject() override;
     String ToString() const override;
 };
@@ -239,32 +248,17 @@ public:
 public:
 
     // [ScriptingObject]
+    void OnManagedInstanceDeleted() override;
+    void OnScriptingDispose() override;
     bool CreateManaged() override;
 };
 
 /// <summary>
-/// Managed object that uses pinned GC handle to prevent collecting and moving. 
-/// Used by the objects that lifetime is controlled by the C++ side.
+/// Use ScriptingObject instead.
+/// [Deprecated on 5.01.2022, expires on 5.01.2024]
 /// </summary>
 API_CLASS(InBuild) class FLAXENGINE_API PersistentScriptingObject : public ScriptingObject
 {
 public:
-
-    /// <summary>
-    /// Initializes a new instance of the <see cref="PersistentScriptingObject"/> class.
-    /// </summary>
-    /// <param name="params">The object initialization parameters.</param>
-    explicit PersistentScriptingObject(const SpawnParams& params);
-
-    /// <summary>
-    /// Finalizes an instance of the <see cref="PersistentScriptingObject"/> class.
-    /// </summary>
-    ~PersistentScriptingObject();
-
-public:
-
-    // [ManagedScriptingObject]
-    void OnManagedInstanceDeleted() override;
-    void OnScriptingDispose() override;
-    bool CreateManaged() override;
+    PersistentScriptingObject(const SpawnParams& params);
 };
