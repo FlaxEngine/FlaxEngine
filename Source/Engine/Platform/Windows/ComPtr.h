@@ -2,7 +2,7 @@
 
 #pragma once
 
-#if PLATFORM_WINDOWS
+#if PLATFORM_WIN32
 
 #include "Engine/Core/Templates.h"
 #include "../Win32/IncludeWindowsHeaders.h"
