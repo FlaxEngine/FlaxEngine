@@ -165,6 +165,7 @@ public:
     // Writes text to the stream
     // @param data Text to write
     void WriteText(const StringView& text);
+    void WriteText(const StringAnsiView& text);
 
     // Writes String to the stream
     // @param data Data to write

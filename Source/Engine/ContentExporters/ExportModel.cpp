@@ -34,7 +34,7 @@ ExportAssetResult AssetExporters::ExportModel(ExportAssetContext& context)
     DeleteMe<FileWriteStream> outputDeleteMe(output);
 
     const auto name = StringUtils::GetFileNameWithoutExtension(asset->GetPath()).ToStringAnsi();
-    output->WriteTextFormatted("# Exported model {0}\n", name.Get());
+    output->WriteText(StringAnsi::Format("# Exported model {0}\n", name.Get()));
 
     // Extract all meshes
     const auto& lod = asset->LODs[lodIndex];
@@ -63,12 +63,12 @@ ExportAssetResult AssetExporters::ExportModel(ExportAssetContext& context)
         }
         auto ib = stream.Read<byte>(indicesCount * ibStride);
 
-        output->WriteTextFormatted("# Mesh {0}\n", meshIndex);
+        output->WriteText(StringAnsi::Format("# Mesh {0}\n", meshIndex));
 
         for (uint32 i = 0; i < vertices; i++)
         {
             auto v = vb0[i].Position;
-            output->WriteTextFormatted("v {0} {1} {2}\n", v.X, v.Y, v.Z);
+            output->WriteText(StringAnsi::Format("v {0} {1} {2}\n", v.X, v.Y, v.Z));
         }
 
         output->WriteChar('\n');
@@ -76,7 +76,7 @@ ExportAssetResult AssetExporters::ExportModel(ExportAssetContext& context)
         for (uint32 i = 0; i < vertices; i++)
         {
             auto v = vb1[i].TexCoord;
-            output->WriteTextFormatted("vt {0} {1}\n", Float16Compressor::Decompress(v.X), Float16Compressor::Decompress(v.Y));
+            output->WriteText(StringAnsi::Format("vt {0} {1}\n", Float16Compressor::Decompress(v.X), Float16Compressor::Decompress(v.Y)));
         }
 
         output->WriteChar('\n');
@@ -84,7 +84,7 @@ ExportAssetResult AssetExporters::ExportModel(ExportAssetContext& context)
         for (uint32 i = 0; i < vertices; i++)
         {
             auto v = vb1[i].Normal.ToVector3() * 2.0f - 1.0f;
-            output->WriteTextFormatted("vn {0} {1} {2}\n", v.X, v.Y, v.Z);
+            output->WriteText(StringAnsi::Format("vn {0} {1} {2}\n", v.X, v.Y, v.Z));
         }
 
         output->WriteChar('\n');
@@ -97,7 +97,7 @@ ExportAssetResult AssetExporters::ExportModel(ExportAssetContext& context)
                 auto i0 = vertexStart + *t++;
                 auto i1 = vertexStart + *t++;
                 auto i2 = vertexStart + *t++;
-                output->WriteTextFormatted("f {0}/{0}/{0} {1}/{1}/{1} {2}/{2}/{2}\n", i0, i1, i2);
+                output->WriteText(StringAnsi::Format("f {0}/{0}/{0} {1}/{1}/{1} {2}/{2}/{2}\n", i0, i1, i2));
             }
         }
         else
@@ -108,7 +108,7 @@ ExportAssetResult AssetExporters::ExportModel(ExportAssetContext& context)
                 auto i0 = vertexStart + *t++;
                 auto i1 = vertexStart + *t++;
                 auto i2 = vertexStart + *t++;
-                output->WriteTextFormatted("f {0}/{0}/{0} {1}/{1}/{1} {2}/{2}/{2}\n", i0, i1, i2);
+                output->WriteText(StringAnsi::Format("f {0}/{0}/{0} {1}/{1}/{1} {2}/{2}/{2}\n", i0, i1, i2));
             }
         }
 
@@ -146,7 +146,7 @@ ExportAssetResult AssetExporters::ExportSkinnedModel(ExportAssetContext& context
     DeleteMe<FileWriteStream> outputDeleteMe(output);
 
     const auto name = StringUtils::GetFileNameWithoutExtension(asset->GetPath()).ToStringAnsi();
-    output->WriteTextFormatted("# Exported model {0}\n", name.Get());
+    output->WriteText(StringAnsi::Format("# Exported model {0}\n", name.Get()));
 
     // Extract all meshes
     const auto& lod = asset->LODs[lodIndex];
@@ -168,12 +168,12 @@ ExportAssetResult AssetExporters::ExportSkinnedModel(ExportAssetContext& context
         auto vb0 = stream.Read<VB0SkinnedElementType>(vertices);
         auto ib = stream.Read<byte>(indicesCount * ibStride);
 
-        output->WriteTextFormatted("# Mesh {0}\n", meshIndex);
+        output->WriteText(StringAnsi::Format("# Mesh {0}\n", meshIndex));
 
         for (uint32 i = 0; i < vertices; i++)
         {
             auto v = vb0[i].Position;
-            output->WriteTextFormatted("v {0} {1} {2}\n", v.X, v.Y, v.Z);
+            output->WriteText(StringAnsi::Format("v {0} {1} {2}\n", v.X, v.Y, v.Z));
         }
 
         output->WriteChar('\n');
@@ -181,7 +181,7 @@ ExportAssetResult AssetExporters::ExportSkinnedModel(ExportAssetContext& context
         for (uint32 i = 0; i < vertices; i++)
         {
             auto v = vb0[i].TexCoord;
-            output->WriteTextFormatted("vt {0} {1}\n", Float16Compressor::Decompress(v.X), Float16Compressor::Decompress(v.Y));
+            output->WriteText(StringAnsi::Format("vt {0} {1}\n", Float16Compressor::Decompress(v.X), Float16Compressor::Decompress(v.Y)));
         }
 
         output->WriteChar('\n');
@@ -189,7 +189,7 @@ ExportAssetResult AssetExporters::ExportSkinnedModel(ExportAssetContext& context
         for (uint32 i = 0; i < vertices; i++)
         {
             auto v = vb0[i].Normal.ToVector3() * 2.0f - 1.0f;
-            output->WriteTextFormatted("vn {0} {1} {2}\n", v.X, v.Y, v.Z);
+            output->WriteText(StringAnsi::Format("vn {0} {1} {2}\n", v.X, v.Y, v.Z));
         }
 
         output->WriteChar('\n');
@@ -202,7 +202,7 @@ ExportAssetResult AssetExporters::ExportSkinnedModel(ExportAssetContext& context
                 auto i0 = vertexStart + *t++;
                 auto i1 = vertexStart + *t++;
                 auto i2 = vertexStart + *t++;
-                output->WriteTextFormatted("f {0}/{0}/{0} {1}/{1}/{1} {2}/{2}/{2}\n", i0, i1, i2);
+                output->WriteText(StringAnsi::Format("f {0}/{0}/{0} {1}/{1}/{1} {2}/{2}/{2}\n", i0, i1, i2));
             }
         }
         else
@@ -213,7 +213,7 @@ ExportAssetResult AssetExporters::ExportSkinnedModel(ExportAssetContext& context
                 auto i0 = vertexStart + *t++;
                 auto i1 = vertexStart + *t++;
                 auto i2 = vertexStart + *t++;
-                output->WriteTextFormatted("f {0}/{0}/{0} {1}/{1}/{1} {2}/{2}/{2}\n", i0, i1, i2);
+                output->WriteText(StringAnsi::Format("f {0}/{0}/{0} {1}/{1}/{1} {2}/{2}/{2}\n", i0, i1, i2));
             }
         }
 

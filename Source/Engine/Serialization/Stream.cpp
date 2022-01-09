@@ -523,6 +523,12 @@ void WriteStream::WriteText(const StringView& text)
         WriteChar(text[i]);
 }
 
+void WriteStream::WriteText(const StringAnsiView& text)
+{
+    for (int32 i = 0; i < text.Length(); i++)
+        WriteChar(text[i]);
+}
+
 void WriteStream::WriteString(const StringView& data)
 {
     const int32 length = data.Length();
