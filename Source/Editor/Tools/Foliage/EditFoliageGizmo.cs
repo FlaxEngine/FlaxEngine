@@ -86,6 +86,13 @@ namespace FlaxEditor.Tools.Foliage
         {
             bounds = BoundingBox.Empty;
             navigationDirty = false;
+            var foliage = GizmoMode.SelectedFoliage;
+            var instanceIndex = GizmoMode.SelectedInstanceIndex;
+            if (foliage && instanceIndex >= 0 && instanceIndex < foliage.InstancesCount)
+            {
+                var instance = foliage.GetInstance(instanceIndex);
+                BoundingBox.FromSphere(ref instance.Bounds, out bounds);
+            }
         }
 
         /// <inheritdoc />

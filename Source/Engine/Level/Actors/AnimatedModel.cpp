@@ -745,6 +745,13 @@ void AnimatedModel::OnDebugDrawSelected()
     ModelInstanceActor::OnDebugDrawSelected();
 }
 
+BoundingBox AnimatedModel::GetEditorBox() const
+{
+    if (SkinnedModel)
+        SkinnedModel->WaitForLoaded(100);
+    return BoundingBox::MakeScaled(_box, 1.0f / BoundsScale);
+}
+
 #endif
 
 bool AnimatedModel::IntersectsItself(const Ray& ray, float& distance, Vector3& normal)

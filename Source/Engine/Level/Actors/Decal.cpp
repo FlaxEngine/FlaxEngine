@@ -58,6 +58,12 @@ void Decal::OnDebugDrawSelected()
     Actor::OnDebugDrawSelected();
 }
 
+BoundingBox Decal::GetEditorBox() const
+{
+    const Vector3 size(10.0f);
+    return BoundingBox(_transform.Translation - size, _transform.Translation + size);
+}
+
 #endif
 
 void Decal::OnLayerChanged()

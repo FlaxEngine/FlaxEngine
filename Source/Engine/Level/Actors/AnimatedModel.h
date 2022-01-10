@@ -378,6 +378,7 @@ public:
     void DrawGeneric(RenderContext& renderContext) override;
 #if USE_EDITOR
     void OnDebugDrawSelected() override;
+    BoundingBox GetEditorBox() const override;
 #endif
     bool IntersectsItself(const Ray& ray, float& distance, Vector3& normal) override;
     void Serialize(SerializeStream& stream, const void* otherObj) override;

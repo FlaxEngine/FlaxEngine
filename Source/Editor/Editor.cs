@@ -918,23 +918,6 @@ namespace FlaxEditor
         }
 
         /// <summary>
-        /// Gets the actor bounding box (including child actors).
-        /// </summary>
-        /// <param name="actor">The actor.</param>
-        /// <param name="box">The bounding box.</param>
-        public static void GetActorEditorBox(Actor actor, out BoundingBox box)
-        {
-            if (actor)
-            {
-                Internal_GetEditorBoxWithChildren(FlaxEngine.Object.GetUnmanagedPtr(actor), out box);
-            }
-            else
-            {
-                box = BoundingBox.Zero;
-            }
-        }
-
-        /// <summary>
         /// Closes editor splash screen popup window.
         /// </summary>
         public static void CloseSplashScreen()

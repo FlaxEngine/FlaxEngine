@@ -702,10 +702,9 @@ namespace FlaxEditor.Viewport
 
         private Vector3 PostProcessSpawnedActorLocation(Actor actor, ref Vector3 hitLocation)
         {
-            Editor.GetActorEditorBox(actor, out BoundingBox box);
-
             // Place the object
-            var location = hitLocation - (box.Size.Length * 0.5f) * ViewDirection;
+            //var location = hitLocation - (box.Size.Length * 0.5f) * ViewDirection;
+            var location = hitLocation;
 
             // Apply grid snapping if enabled
             if (UseSnapping || TransformGizmo.TranslationSnapEnable)

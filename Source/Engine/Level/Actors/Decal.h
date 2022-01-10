@@ -77,6 +77,7 @@ public:
     // [Actor]
 #if USE_EDITOR
     void OnDebugDrawSelected() override;
+    BoundingBox GetEditorBox() const override;
 #endif
     void OnLayerChanged() override;
     void Draw(RenderContext& renderContext) override;

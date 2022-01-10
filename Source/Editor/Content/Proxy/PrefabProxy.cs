@@ -164,7 +164,7 @@ namespace FlaxEditor.Content
 
                 // Auto fit actor to camera
                 float targetSize = 30.0f;
-                Editor.GetActorEditorBox(_preview.Instance, out var bounds);
+                var bounds = _preview.Instance.EditorBoxChildren;
                 float maxSize = Mathf.Max(0.001f, bounds.Size.MaxValue);
                 _preview.Instance.Scale = new Vector3(targetSize / maxSize);
                 _preview.Instance.Position = Vector3.Zero;
