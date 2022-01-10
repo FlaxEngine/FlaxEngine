@@ -133,7 +133,7 @@ namespace Flax.Deploy
                     // Use system tool (preserves executable file attributes and link files)
                     editorPackageZipPath = Path.Combine(Deployer.PackageOutputPath, "FlaxEditorLinux.zip");
                     Utilities.FileDelete(editorPackageZipPath);
-                    Utilities.Run("zip", "Editor.zip -r .", null, OutputPath, Utilities.RunOptions.None);
+                    Utilities.Run("zip", "Editor.zip -r .", null, OutputPath, Utilities.RunOptions.ThrowExceptionOnError);
                     File.Move(Path.Combine(OutputPath, "Editor.zip"), editorPackageZipPath);
                 }
                 else

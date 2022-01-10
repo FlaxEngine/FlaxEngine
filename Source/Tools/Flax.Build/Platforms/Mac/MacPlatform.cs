@@ -78,7 +78,7 @@ namespace Flax.Build.Platforms
 
         public static void FixInstallNameId(string dylibPath)
         {
-            Utilities.Run("install_name_tool", string.Format(" -id \"@rpath/{0}\" \"{1}\"", Path.GetFileName(dylibPath), dylibPath), null, null, Utilities.RunOptions.None);
+            Utilities.Run("install_name_tool", string.Format(" -id \"@rpath/{0}\" \"{1}\"", Path.GetFileName(dylibPath), dylibPath), null, null, Utilities.RunOptions.ThrowExceptionOnError);
         }
     }
 }

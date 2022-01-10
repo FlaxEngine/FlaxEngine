@@ -286,6 +286,11 @@ namespace Flax.Build
             NoLoggingOfRunDuration = 1 << 5,
 
             /// <summary>
+            /// Throws exception when app returns non-zero return code.
+            /// </summary>
+            ThrowExceptionOnError = 1 << 6,
+
+            /// <summary>
             /// The default options.
             /// </summary>
             Default = AppMustExist,
@@ -423,6 +428,11 @@ namespace Flax.Build
                 if (!options.HasFlag(RunOptions.NoLoggingOfRunCommand) || options.HasFlag(RunOptions.NoLoggingOfRunDuration))
                 {
                     Log.Info(string.Format("Took {0}s to run {1}, ExitCode={2}", stopwatch.Elapsed.TotalSeconds, Path.GetFileName(app), result));
+                }
+                if (result != 0 && options.HasFlag(RunOptions.ThrowExceptionOnError))
+                {
+                    var format = options.HasFlag(RunOptions.NoLoggingOfRunCommand) ? "App failed with exit code {2}." : "{0} {1} failed with exit code {2}";
+                    throw new Exception(string.Format(format, app, commandLine, result));
                 }
             }
 

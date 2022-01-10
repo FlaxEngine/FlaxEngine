@@ -273,7 +273,7 @@ namespace Flax.Deploy
             var sdk = sdks[sdkKeys.Last()];
             var signtool = Path.Combine(sdk, "bin", "x64", "signtool.exe");
             var cmdLine = string.Format("sign /debug /f \"{0}\" /p \"{1}\" /tr http://timestamp.comodoca.com /td sha256 /fd sha256 \"{2}\"", certificatePath, certificatePass, file);
-            Utilities.Run(signtool, cmdLine);
+            Utilities.Run(signtool, cmdLine, null, null, Utilities.RunOptions.Default | Utilities.RunOptions.ThrowExceptionOnError);
         }
     }
 }
