@@ -256,9 +256,6 @@ namespace Flax.Build.Platforms
                 args.Add(string.Format("-o \"{0}\"", outputFilePath));
                 AddArgsCommon(options, args);
 
-                if (!options.LinkEnv.DebugInformation)
-                    args.Add("-Wl,--strip-debug");
-
                 if (isArchive)
                 {
                     args.Add("-static");
