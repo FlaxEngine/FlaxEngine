@@ -47,6 +47,7 @@ Flax Visual Studio extension provides better programming workflow, C# scripts de
 ## Linux
 
 * Install Visual Studio Code
+* Install Mono ([https://www.mono-project.com/download/stable](https://www.mono-project.com/download/stable))
 * Install Vulkan SDK ([https://vulkan.lunarg.com/](https://vulkan.lunarg.com/))
 * Install Git with LFS
 * Install requried packages: `sudo apt-get install libx11-dev libxcursor-dev libxinerama-dev nuget autoconf libogg-dev automake build-essential gettext cmake python libtool libtool-bin libpulse-dev libasound2-dev libjack-dev portaudio19-dev`
@@ -59,6 +60,7 @@ Flax Visual Studio extension provides better programming workflow, C# scripts de
 ## Mac
 
 * Install XCode
+* Install Mono ([https://www.mono-project.com/download/stable](https://www.mono-project.com/download/stable))
 * Install Vulkan SDK ([https://vulkan.lunarg.com/](https://vulkan.lunarg.com/))
 * Clone repo (with LFS)
 * Run `GenerateProjectFiles.command`
