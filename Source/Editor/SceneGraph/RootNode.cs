@@ -120,6 +120,16 @@ namespace FlaxEditor.SceneGraph
             return RayCast(ref data, out distance, out normal);
         }
 
+        internal static Quaternion RaycastNormalRotation(ref Vector3 normal)
+        {
+            Quaternion rotation;
+            if (normal == Vector3.Down)
+                rotation = Quaternion.RotationZ(Mathf.Pi);
+            else
+                rotation = Quaternion.LookRotation(Vector3.Cross(Vector3.Cross(normal, Vector3.Forward), normal), normal);
+            return rotation;
+        }
+
         /// <inheritdoc />
         public override bool RayCastSelf(ref RayCastData ray, out float distance, out Vector3 normal)
         {
