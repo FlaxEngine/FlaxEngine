@@ -38,6 +38,8 @@ namespace FlaxEditor.Modules.SourceCodeEditing
         private void UpdateCurrentEditor()
         {
             var codeEditing = Editor.Instance.CodeEditing;
+            var vsCode = codeEditing.GetInBuildEditor(CodeEditorTypes.VSCode);
+            var rider = codeEditing.GetInBuildEditor(CodeEditorTypes.Rider);
 
 #if PLATFORM_WINDOW
             // Favor the newest Visual Studio
@@ -52,7 +54,6 @@ namespace FlaxEditor.Modules.SourceCodeEditing
             }
 #elif PLATFORM_LINUX
             // Favor the VS Code
-            var vsCode = codeEditing.GetInBuildEditor(CodeEditorTypes.VSCode);
             if (vsCode != null)
             {
                 _currentEditor = vsCode;
@@ -60,8 +61,13 @@ namespace FlaxEditor.Modules.SourceCodeEditing
             }
 #endif
 
-            // Fallback default editor (always valid)
-            _currentEditor = codeEditing.GetInBuildEditor(CodeEditorTypes.SystemDefault);
+            // Code editor fallback sequence
+            if (vsCode != null)
+                _currentEditor = vsCode;
+            else if (rider != null)
+                _currentEditor = rider;
+            else
+                _currentEditor = codeEditing.GetInBuildEditor(CodeEditorTypes.SystemDefault);
         }
 
         /// <inheritdoc />
