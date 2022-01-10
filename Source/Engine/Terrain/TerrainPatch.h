@@ -411,6 +411,7 @@ private:
     /// <returns>True if failed, otherwise false.</returns>
     bool UpdateCollision();
 
+    void OnPhysicsSceneChanged(PhysicsScene* previous);
 public:
 
     // [ISerializable]

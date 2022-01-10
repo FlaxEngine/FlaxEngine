@@ -458,6 +458,7 @@ protected:
     void OnDisable() override;
     void OnTransformChanged() override;
     void OnActiveInTreeChanged() override;
+    void OnPhysicsSceneChanged(PhysicsScene* previous) override;
     void BeginPlay(SceneBeginData* data) override;
     void EndPlay() override;
 };

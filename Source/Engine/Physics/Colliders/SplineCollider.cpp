@@ -8,6 +8,7 @@
 #include "Engine/Serialization/Serialization.h"
 #include "Engine/Physics/Utilities.h"
 #include "Engine/Physics/Physics.h"
+#include "Engine/Physics/PhysicsScene.h"
 #include "Engine/Profiler/ProfilerCPU.h"
 #if COMPILE_WITH_PHYSICS_COOKING
 #include "Engine/Physics/CollisionCooking.h"
@@ -45,7 +46,7 @@ void SplineCollider::ExtractGeometry(Array<Vector3>& vertexBuffer, Array<int32>&
 void SplineCollider::OnCollisionDataChanged()
 {
     // This should not be called during physics simulation, if it happened use write lock on physx scene
-    ASSERT(!GetScene() || !Physics::IsDuringSimulation());
+    ASSERT(!GetScene() || !GetPhysicsScene()->IsDuringSimulation());
 
     if (CollisionData)
     {
@@ -172,7 +173,7 @@ void SplineCollider::EndPlay()
     // Cleanup
     if (_triangleMesh)
     {
-        Physics::RemoveObject(_triangleMesh);
+        GetPhysicsScene()->RemoveObject(_triangleMesh);
         _triangleMesh = nullptr;
     }
 }
@@ -306,7 +307,7 @@ void SplineCollider::GetGeometry(PxGeometryHolder& geometry)
         // Create triangle mesh
         if (_triangleMesh)
         {
-            Physics::RemoveObject(_triangleMesh);
+            GetPhysicsScene()->RemoveObject(_triangleMesh);
             _triangleMesh = nullptr;
         }
         PxDefaultMemoryInputData input(collisionData.Get(), collisionData.Length());

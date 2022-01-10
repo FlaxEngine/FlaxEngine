@@ -181,6 +181,8 @@ bool LevelImpl::spawnActor(Actor* actor, Actor* parent)
         }
         if (parent == nullptr)
             parent = Level::Scenes[0];
+
+        actor->SetPhysicsScene(parent->GetPhysicsScene());
         actor->SetParent(parent, true, true);
     }
 

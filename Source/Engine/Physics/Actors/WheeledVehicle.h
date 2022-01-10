@@ -6,7 +6,7 @@
 #include "Engine/Physics/Colliders/Collider.h"
 #include "Engine/Scripting/ScriptingObjectReference.h"
 
-class Physics;
+class PhysicsScene;
 
 /// <summary>
 /// Representation of the car vehicle that uses wheels. Built on top of the RigidBody with collider representing its chassis shape and wheels.
@@ -14,7 +14,7 @@ class Physics;
 /// <seealso cref="RigidBody" />
 API_CLASS() class FLAXENGINE_API WheeledVehicle : public RigidBody
 {
-    friend Physics;
+    friend PhysicsScene;
 DECLARE_SCENE_OBJECT(WheeledVehicle);
 public:
 
@@ -489,6 +489,7 @@ public:
     void OnColliderChanged(Collider* c) override;
 
 protected:
+    void OnPhysicsSceneChanged(PhysicsScene* previous) override;
 
     // [Vehicle]
     void BeginPlay(SceneBeginData* data) override;

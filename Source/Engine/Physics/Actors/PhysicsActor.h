@@ -6,6 +6,8 @@
 #include "Engine/Physics/Types.h"
 #include "IPhysicsActor.h"
 
+class PhysicsScene;
+
 /// <summary>
 /// A base class for all physical actors.
 /// </summary>

@@ -237,4 +237,5 @@ protected:
     void OnDisable() override;
     void OnParentChanged() override;
     void OnTransformChanged() override;
+    void OnPhysicsSceneChanged(PhysicsScene* previous) override;
 };
