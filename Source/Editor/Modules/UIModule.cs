@@ -32,6 +32,7 @@ namespace FlaxEditor.Modules
         private Label _progressLabel;
         private ProgressBar _progressBar;
         private List<KeyValuePair<string, DateTime>> _statusMessages;
+        private ContentStats _contentStats;
 
         private ContextMenuButton _menuFileSaveScenes;
         private ContextMenuButton _menuFileCloseScenes;
@@ -250,6 +251,7 @@ namespace FlaxEditor.Modules
         {
             if (StatusBar == null)
                 return;
+            var contentStats = FlaxEngine.Content.Stats;
 
             Color color;
             if (Editor.StateMachine.IsPlayMode)
@@ -262,11 +264,14 @@ namespace FlaxEditor.Modules
                 text = _statusMessages[0].Key;
             else if (Editor.StateMachine.CurrentState.Status != null)
                 text = Editor.StateMachine.CurrentState.Status;
+            else if (contentStats.LoadingAssetsCount != 0)
+                text = string.Format("Loading {0}/{1}", contentStats.LoadingAssetsCount, contentStats.AssetsCount);
             else
                 text = "Ready";
 
             StatusBar.Text = text;
             StatusBar.StatusColor = color;
+            _contentStats = contentStats;
         }
 
         /// <summary>
@@ -332,6 +337,10 @@ namespace FlaxEditor.Modules
             if (_statusMessages != null && _statusMessages.Count > 0 && _statusMessages[0].Value - DateTime.Now < TimeSpan.Zero)
             {
                 _statusMessages.RemoveAt(0);
+                UpdateStatusBar();
+            }
+            else if (FlaxEngine.Content.Stats.LoadingAssetsCount != _contentStats.LoadingAssetsCount)
+            {
                 UpdateStatusBar();
             }
         }

@@ -368,16 +368,17 @@ ContentStats Content::GetStats()
     ContentStats stats;
     AssetsLocker.Lock();
     stats.AssetsCount = Assets.Count();
-    for (auto& e : Assets)
+    int32 loadFailedCount = 0;
+    for (const auto& e : Assets)
     {
         if (e.Value->IsLoaded())
             stats.LoadedAssetsCount++;
         else if (e.Value->LastLoadFailed())
-            stats.LoadingAssetsCount++;
+            loadFailedCount++;
         if (e.Value->IsVirtual())
             stats.VirtualAssetsCount++;
     }
-    stats.LoadingAssetsCount = stats.AssetsCount - stats.LoadingAssetsCount - stats.LoadedAssetsCount;
+    stats.LoadingAssetsCount = stats.AssetsCount - loadFailedCount - stats.LoadedAssetsCount;
     AssetsLocker.Unlock();
     return stats;
 }
