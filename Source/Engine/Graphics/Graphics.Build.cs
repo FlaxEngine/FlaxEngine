@@ -33,7 +33,6 @@ public abstract class GraphicsDeviceBaseModule : EngineModule
 public class Graphics : EngineModule
 {
     private static bool _logMissingVulkanSDK;
-    private static bool _logMissingWindowsSDK;
 
     /// <inheritdoc />
     public override void Setup(BuildOptions options)
