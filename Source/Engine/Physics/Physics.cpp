@@ -1,35 +1,25 @@
 // Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
 
 #include "Physics.h"
+#include "PhysicsScene.h"
 #include "PhysicalMaterial.h"
+
 #include "Engine/Core/Log.h"
-#include "Engine/Threading/Threading.h"
 #include "Engine/Platform/CPUInfo.h"
 #include "PhysicsSettings.h"
 #include "Utilities.h"
 #include "PhysicsStepper.h"
-#include "SimulationEventCallback.h"
-#if WITH_VEHICLE
-#include "Actors/WheeledVehicle.h"
-#endif
+
 #include "Engine/Level/Level.h"
-#include "Actors/PhysicsActor.h"
 #include "Engine/Profiler/ProfilerCPU.h"
 #include "Engine/Core/Memory/Memory.h"
 #include "Engine/Engine/EngineService.h"
 #include "Engine/Serialization/Serialization.h"
 #include "Engine/Engine/Time.h"
 #include <ThirdParty/PhysX/PxPhysicsAPI.h>
-#include <ThirdParty/PhysX/PxActor.h>
-#if WITH_VEHICLE
-#include <ThirdParty/PhysX/vehicle/PxVehicleUpdate.h>
-#endif
 #if WITH_PVD
 #include <ThirdParty/PhysX/pvd/PxPvd.h>
 #endif
-
-// Temporary memory size used by the PhysX during the simulation. Must be multiply of 4kB and 16bit aligned.
-#define SCRATCH_BLOCK_SIZE (1024 * 128)
 
 #define PHYSX_VEHICLE_DEBUG_TELEMETRY 0
 
@@ -73,57 +63,6 @@ public:
     }
 };
 
-PxFilterFlags FilterShader(
-    PxFilterObjectAttributes attributes0, PxFilterData filterData0,
-    PxFilterObjectAttributes attributes1, PxFilterData filterData1,
-    PxPairFlags& pairFlags, const void* constantBlock, PxU32 constantBlockSize)
-{
-    // Let triggers through
-    if (PxFilterObjectIsTrigger(attributes0) || PxFilterObjectIsTrigger(attributes1))
-    {
-        pairFlags |= PxPairFlag::eNOTIFY_TOUCH_FOUND;
-        pairFlags |= PxPairFlag::eNOTIFY_TOUCH_LOST;
-        pairFlags |= PxPairFlag::eDETECT_DISCRETE_CONTACT;
-        return PxFilterFlag::eDEFAULT;
-    }
-
-    // Send events for the kinematic actors but don't solve the contact
-    if (PxFilterObjectIsKinematic(attributes0) && PxFilterObjectIsKinematic(attributes1))
-    {
-        pairFlags |= PxPairFlag::eNOTIFY_TOUCH_FOUND;
-        pairFlags |= PxPairFlag::eNOTIFY_TOUCH_PERSISTS;
-        pairFlags |= PxPairFlag::eNOTIFY_TOUCH_LOST;
-        pairFlags |= PxPairFlag::eDETECT_DISCRETE_CONTACT;
-        return PxFilterFlag::eSUPPRESS;
-    }
-
-    // Trigger the contact callback for pairs (A,B) where the filtermask of A contains the ID of B and vice versa
-    if ((filterData0.word0 & filterData1.word1) && (filterData1.word0 & filterData0.word1))
-    {
-        pairFlags |= PxPairFlag::eSOLVE_CONTACT;
-        pairFlags |= PxPairFlag::eDETECT_DISCRETE_CONTACT;
-        pairFlags |= PxPairFlag::eNOTIFY_TOUCH_FOUND;
-        pairFlags |= PxPairFlag::eNOTIFY_TOUCH_PERSISTS;
-        pairFlags |= PxPairFlag::ePOST_SOLVER_VELOCITY;
-        pairFlags |= PxPairFlag::eNOTIFY_CONTACT_POINTS;
-        return PxFilterFlag::eDEFAULT;
-    }
-
-    // Ignore pair (no collisions nor events)
-    return PxFilterFlag::eKILL;
-}
-
-enum class ActionType
-{
-    Sleep,
-};
-
-struct ActionData
-{
-    ActionType Type;
-    PxActor* Actor;
-};
-
 PxPhysics* CPhysX = nullptr;
 #if WITH_PVD
 PxPvd* CPVD = nullptr;
@@ -133,48 +72,27 @@ namespace
 {
     PhysXAllocator PhysXAllocatorCallback;
     PhysXError PhysXErrorCallback;
-    PxSimulationFilterShader PhysXDefaultFilterShader = PxDefaultSimulationFilterShader;
     PxTolerancesScale ToleranceScale;
-    SimulationEventCallback EventsCallback;
-    void* ScratchMemory = nullptr;
-    FixedStepper* Stepper = nullptr;
-    CriticalSection FlushLocker;
-    Array<PxActor*> NewActors;
-    Array<ActionData> Actions;
-    Array<PxActor*> DeadActors;
-    Array<PxMaterial*> DeadMaterials;
-    Array<PxBase*> _deadObjects;
-    Array<PhysicsColliderActor*> DeadColliders;
-    Array<Joint*> DeadJoints;
     bool _queriesHitTriggers = true;
-    bool _isDuringSimulation = false;
     PhysicsCombineMode _frictionCombineMode = PhysicsCombineMode::Average;
     PhysicsCombineMode _restitutionCombineMode = PhysicsCombineMode::Average;
     PxFoundation* _foundation = nullptr;
 #if COMPILE_WITH_PHYSICS_COOKING
     PxCooking* Cooking = nullptr;
 #endif
-    PxScene* PhysicsScene = nullptr;
     PxMaterial* DefaultMaterial = nullptr;
-    PxControllerManager* ControllerManager = nullptr;
-    PxCpuDispatcher* CpuDispatcher = nullptr;
-    float LastDeltaTime = 0.0f;
 #if WITH_VEHICLE
     bool VehicleSDKInitialized = false;
-    Array<PxVehicleWheels*> WheelVehiclesCache;
-    Array<PxRaycastQueryResult> WheelQueryResults;
-    Array<PxRaycastHit> WheelHitResults;
-    Array<PxWheelQueryResult> WheelVehiclesResultsPerWheel;
-    Array<PxVehicleWheelQueryResult> WheelVehiclesResultsPerVehicle;
-    PxBatchQuery* WheelRaycastBatchQuery = nullptr;
-    PxVehicleDrivableSurfaceToTireFrictionPairs* WheelTireFrictions = nullptr;
 #endif
+
+    void reset()
+    {
+        Physics::Scenes.Resize(1);
+    }
 }
 
-#if WITH_VEHICLE
-Array<WheeledVehicle*> WheelVehicles;
-#endif
-bool Physics::AutoSimulation = true;
+PhysicsScene* Physics::DefaultScene = nullptr;
+Array<PhysicsScene*> Physics::Scenes;
 uint32 Physics::LayerMasks[32];
 
 class PhysicsService : public EngineService
@@ -231,23 +149,6 @@ void InitVehicleSDK()
         PxVehicleSetBasisVectors(PxVec3(0, 1, 0), PxVec3(1, 0, 0));
         PxVehicleSetUpdateMode(PxVehicleUpdateMode::eVELOCITY_CHANGE);
     }
-}
-
-static PxQueryHitType::Enum WheelRaycastPreFilter(PxFilterData filterData0, PxFilterData filterData1, const void* constantBlock, PxU32 constantBlockSize, PxHitFlags& queryFlags)
-{
-    // Hardcoded id for vehicle shapes masking
-    if (filterData0.word3 == filterData1.word3)
-    {
-        return PxQueryHitType::eNONE;
-    }
-
-    // Collide for pairs (A,B) where the filtermask of A contains the ID of B and vice versa
-    if ((filterData0.word0 & filterData1.word1) && (filterData1.word0 & filterData0.word1))
-    {
-        return PxQueryHitType::eBLOCK;
-    }
-
-    return PxQueryHitType::eNONE;
 }
 
 #endif
@@ -325,7 +226,8 @@ PhysicalMaterial::~PhysicalMaterial()
 {
     if (_material)
     {
-        Physics::RemoveMaterial(_material);
+        for (auto scene : Physics::Scenes) 
+            scene->RemoveMaterial(_material);
     }
 }
 
@@ -366,7 +268,6 @@ bool PhysicsService::Init()
 {
 #define CHECK_INIT(value, msg) if(!value) { LOG(Error, msg); return true; }
 
-    auto cpuInfo = Platform::GetCPUInfo();
     auto& settings = *PhysicsSettings::Get();
 
     // Send info
@@ -422,45 +323,7 @@ bool PhysicsService::Init()
     }
 #endif
 
-    // Create scene description
-    PxSceneDesc sceneDesc(CPhysX->getTolerancesScale());
-    sceneDesc.gravity = C2P(settings.DefaultGravity);
-    sceneDesc.flags |= PxSceneFlag::eENABLE_ACTIVE_ACTORS;
-    if (!settings.DisableCCD)
-        sceneDesc.flags |= PxSceneFlag::eENABLE_CCD;
-    if (settings.EnableAdaptiveForce)
-        sceneDesc.flags |= PxSceneFlag::eADAPTIVE_FORCE;
-    sceneDesc.simulationEventCallback = &EventsCallback;
-    sceneDesc.filterShader = FilterShader;
-    sceneDesc.bounceThresholdVelocity = settings.BounceThresholdVelocity;
-    if (sceneDesc.cpuDispatcher == nullptr)
-    {
-        CpuDispatcher = PxDefaultCpuDispatcherCreate(Math::Clamp<uint32>(cpuInfo.ProcessorCoreCount - 1, 1, 4));
-        CHECK_INIT(CpuDispatcher, "PxDefaultCpuDispatcherCreate failed!");
-        sceneDesc.cpuDispatcher = CpuDispatcher;
-    }
-    if (sceneDesc.filterShader == nullptr)
-    {
-        sceneDesc.filterShader = PhysXDefaultFilterShader;
-    }
-
-    // Create scene
-    PhysicsScene = CPhysX->createScene(sceneDesc);
-    CHECK_INIT(PhysicsScene, "createScene failed!");
-#if WITH_PVD
-    auto pvdClient = PhysicsScene->getScenePvdClient();
-    if (pvdClient)
-    {
-        pvdClient->setScenePvdFlags(PxPvdSceneFlag::eTRANSMIT_CONSTRAINTS | PxPvdSceneFlag::eTRANSMIT_SCENEQUERIES | PxPvdSceneFlag::eTRANSMIT_CONTACTS);
-    }
-    else
-    {
-        LOG(Info, "Missing PVD client scene.");
-    }
-#endif
-
-    // Init characters controller
-    ControllerManager = PxCreateControllerManager(*PhysicsScene);
+    Physics::DefaultScene = Physics::FindOrCreateScene(TEXT("Default"));
 
     // Create default resources
     DefaultMaterial = CPhysX->createMaterial(0.7f, 0.7f, 0.3f);
@@ -472,15 +335,21 @@ bool PhysicsService::Init()
 
 void PhysicsService::LateUpdate()
 {
-    Physics::FlushRequests();
+    for (auto scene : Physics::Scenes)
+        scene->FlushRequests();
 }
 
 void PhysicsService::Dispose()
 {
     // Ensure to finish (wait for simulation end)
-    Physics::CollectResults();
-    if (CPhysX)
-        Physics::FlushRequests();
+
+    for (auto scene : Physics::Scenes)
+    {
+        scene->CollectResults();
+
+        if (CPhysX)
+            scene->FlushRequests();
+    }
 
 #if WITH_VEHICLE
     if (VehicleSDKInitialized)
@@ -488,21 +357,13 @@ void PhysicsService::Dispose()
         VehicleSDKInitialized = false;
         PxCloseVehicleSDK();
     }
-    RELEASE_PHYSX(WheelRaycastBatchQuery);
-    RELEASE_PHYSX(WheelTireFrictions);
-    WheelQueryResults.Resize(0);
-    WheelHitResults.Resize(0);
-    WheelVehiclesResultsPerWheel.Resize(0);
-    WheelVehiclesResultsPerVehicle.Resize(0);
 #endif
 
     // Cleanup
     RELEASE_PHYSX(DefaultMaterial);
-    SAFE_DELETE(Stepper);
-    Allocator::Free(ScratchMemory);
-    ScratchMemory = nullptr;
-    RELEASE_PHYSX(ControllerManager);
-    SAFE_DELETE(CpuDispatcher);
+
+    Physics::Scenes.Resize(0);
+    Physics::DefaultScene = nullptr;
 
     // Remove all scenes still registered
     const int32 numScenes = CPhysX ? CPhysX->getNbScenes() : 0;
@@ -548,16 +409,6 @@ PxCooking* Physics::GetCooking()
     return Cooking;
 }
 
-PxScene* Physics::GetScene()
-{
-    return PhysicsScene;
-}
-
-PxControllerManager* Physics::GetControllerManager()
-{
-    return ControllerManager;
-}
-
 PxTolerancesScale* Physics::GetTolerancesScale()
 {
     return &ToleranceScale;
@@ -565,415 +416,70 @@ PxTolerancesScale* Physics::GetTolerancesScale()
 
 Vector3 Physics::GetGravity()
 {
-    return PhysicsScene ? P2C(PhysicsScene->getGravity()) : Vector3::Zero;
+    return DefaultScene ? DefaultScene->GetGravity() : Vector3::Zero;
 }
 
 void Physics::SetGravity(const Vector3& value)
 {
-    if (PhysicsScene)
-        PhysicsScene->setGravity(C2P(value));
+    if (DefaultScene)
+        DefaultScene->SetGravity(value);
 }
 
 bool Physics::GetEnableCCD()
 {
-    return PhysicsScene ? (PhysicsScene->getFlags() & PxSceneFlag::eENABLE_CCD) == PxSceneFlag::eENABLE_CCD : !PhysicsSettings::Get()->DisableCCD;
+    return DefaultScene ? DefaultScene->GetEnableCCD() : !PhysicsSettings::Get()->DisableCCD;
 }
 
 void Physics::SetEnableCCD(const bool value)
 {
-    if (PhysicsScene)
-        PhysicsScene->setFlag(PxSceneFlag::eENABLE_CCD, value);
+    if (DefaultScene)
+        DefaultScene->SetEnableCCD(value);
 }
 
 float Physics::GetBounceThresholdVelocity()
 {
-    return PhysicsScene ? PhysicsScene->getBounceThresholdVelocity() : PhysicsSettings::Get()->BounceThresholdVelocity;
+    return DefaultScene ? DefaultScene->GetBounceThresholdVelocity() : PhysicsSettings::Get()->BounceThresholdVelocity;
 }
 
 void Physics::SetBounceThresholdVelocity(const float value)
 {
-    if (PhysicsScene)
-        PhysicsScene->setBounceThresholdVelocity(value);
+    if (DefaultScene)
+        DefaultScene->SetBounceThresholdVelocity(value);
 }
 
 void Physics::Simulate(float dt)
 {
-    ASSERT(IsInMainThread() && !_isDuringSimulation);
-    ASSERT(CPhysX);
-    const auto& settings = *PhysicsSettings::Get();
+    if (DefaultScene)
+        DefaultScene->Simulate(dt);
+}
 
-    // Flush the old/new objects and the other requests before the simulation
-    FlushRequests();
-
-    // Clamp delta
-    dt = Math::Clamp(dt, 0.0f, settings.MaxDeltaTime);
-
-    // Prepare util objects
-    if (ScratchMemory == nullptr)
+void Physics::SimulateAll(float dt)
+{
+    for (auto scene : Scenes)
     {
-        ScratchMemory = Allocator::Allocate(SCRATCH_BLOCK_SIZE, 16);
+        if (scene->GetAutoSimulation())
+            scene->Simulate(dt);
     }
-    if (Stepper == nullptr)
-    {
-        Stepper = New<FixedStepper>();
-    }
-    if (settings.EnableSubstepping)
-    {
-        // Use substeps
-        Stepper->Setup(settings.SubstepDeltaTime, settings.MaxSubsteps);
-    }
-    else
-    {
-        // Use single step
-        Stepper->Setup(dt);
-    }
-
-    // Start simulation (may not be fired due to too small delta time)
-    _isDuringSimulation = true;
-    if (Stepper->advance(PhysicsScene, dt, ScratchMemory, SCRATCH_BLOCK_SIZE) == false)
-        return;
-    EventsCallback.Clear();
-    LastDeltaTime = dt;
-
-    // TODO: move this call after rendering done
-    Stepper->renderDone();
 }
 
 void Physics::CollectResults()
 {
-    if (!_isDuringSimulation)
-        return;
-    ASSERT(IsInMainThread());
-    ASSERT(CPhysX && Stepper);
+    if (DefaultScene)
+        DefaultScene->CollectResults();
+}
 
-    {
-        PROFILE_CPU_NAMED("Physics.Fetch");
-
-        // Gather results (with waiting for the end)
-        Stepper->wait(PhysicsScene);
-    }
-
-#if WITH_VEHICLE
-    if (WheelVehicles.HasItems())
-    {
-        PROFILE_CPU_NAMED("Physics.Vehicles");
-
-        // Update vehicles steering
-        WheelVehiclesCache.Clear();
-        WheelVehiclesCache.EnsureCapacity(WheelVehicles.Count());
-        int32 wheelsCount = 0;
-        for (auto wheelVehicle : WheelVehicles)
-        {
-            if (!wheelVehicle->IsActiveInHierarchy())
-                continue;
-            auto drive = (PxVehicleWheels*)wheelVehicle->_drive;
-            ASSERT(drive);
-            WheelVehiclesCache.Add(drive);
-            wheelsCount += drive->mWheelsSimData.getNbWheels();
-
-            float throttle = wheelVehicle->_throttle;
-            float brake = wheelVehicle->_brake;
-            if (wheelVehicle->UseReverseAsBrake)
-            {
-                const float invalidDirectionThreshold = 80.0f;
-                const float breakThreshold = 8.0f;
-                const float forwardSpeed = wheelVehicle->GetForwardSpeed();
-
-                // Automatic gear change when changing driving direction
-                if (Math::Abs(forwardSpeed) < invalidDirectionThreshold)
-                {
-                    if (throttle < -ZeroTolerance && wheelVehicle->GetCurrentGear() >= 0 && wheelVehicle->GetTargetGear() >= 0)
-                    {
-                        wheelVehicle->SetCurrentGear(-1);
-                    }
-                    else if (throttle > ZeroTolerance && wheelVehicle->GetCurrentGear() <= 0 && wheelVehicle->GetTargetGear() <= 0)
-                    {
-                        wheelVehicle->SetCurrentGear(1);
-                    }
-                }
-
-                // Automatic break when changing driving direction
-                if (throttle > 0.0f)
-                {
-                    if (forwardSpeed < -invalidDirectionThreshold)
-                    {
-                        brake = 1.0f;
-                    }
-                }
-                else if (throttle < 0.0f)
-                {
-                    if (forwardSpeed > invalidDirectionThreshold)
-                    {
-                        brake = 1.0f;
-                    }
-                }
-                else
-                {
-                    if (forwardSpeed < breakThreshold && forwardSpeed > -breakThreshold)
-                    {
-                        brake = 1.0f;
-                    }
-                }
-
-                // Block throttle if user is changing driving direction
-                if ((throttle > 0.0f && wheelVehicle->GetTargetGear() < 0) || (throttle < 0.0f && wheelVehicle->GetTargetGear() > 0))
-                {
-                    throttle = 0.0f;
-                }
-
-                throttle = Math::Abs(throttle);
-            }
-            else
-            {
-                throttle = Math::Max(throttle, 0.0f);
-            }
-            // @formatter:off
-            // Reference: PhysX SDK docs
-            // TODO: expose input control smoothing data
-            static constexpr PxVehiclePadSmoothingData padSmoothing =
-            {
-	            {
-		            6.0f,  // rise rate eANALOG_INPUT_ACCEL
-		            6.0f,  // rise rate eANALOG_INPUT_BRAKE
-		            12.0f, // rise rate eANALOG_INPUT_HANDBRAKE
-		            2.5f,  // rise rate eANALOG_INPUT_STEER_LEFT
-		            2.5f,  // rise rate eANALOG_INPUT_STEER_RIGHT
-	            },
-	            {
-		            10.0f, // fall rate eANALOG_INPUT_ACCEL
-		            10.0f, // fall rate eANALOG_INPUT_BRAKE
-		            12.0f, // fall rate eANALOG_INPUT_HANDBRAKE
-		            5.0f,  // fall rate eANALOG_INPUT_STEER_LEFT
-		            5.0f,  // fall rate eANALOG_INPUT_STEER_RIGHT
-	            }
-            };
-            PxVehicleKeySmoothingData keySmoothing =
-            {
-                {
-                    3.0f,  // rise rate eANALOG_INPUT_ACCEL
-                    3.0f,  // rise rate eANALOG_INPUT_BRAKE
-                    10.0f, // rise rate eANALOG_INPUT_HANDBRAKE
-                    2.5f,  // rise rate eANALOG_INPUT_STEER_LEFT
-                    2.5f,  // rise rate eANALOG_INPUT_STEER_RIGHT
-                },
-                {
-                    5.0f,  // fall rate eANALOG_INPUT__ACCEL
-                    5.0f,  // fall rate eANALOG_INPUT__BRAKE
-                    10.0f, // fall rate eANALOG_INPUT__HANDBRAKE
-                    5.0f,  // fall rate eANALOG_INPUT_STEER_LEFT
-                    5.0f   // fall rate eANALOG_INPUT_STEER_RIGHT
-                }
-            };
-            // Reference: PhysX SDK docs
-            // TODO: expose steer vs forward curve into per-vehicle (up to 8 points, values clamped into 0/1 range)
-            static constexpr PxF32 steerVsForwardSpeedData[] =
-            {
-	            0.0f,		1.0f,
-	            20.0f,		0.9f,
-	            65.0f,		0.8f,
-	            120.0f,		0.7f,
-	            PX_MAX_F32, PX_MAX_F32,
-	            PX_MAX_F32, PX_MAX_F32,
-	            PX_MAX_F32, PX_MAX_F32,
-	            PX_MAX_F32, PX_MAX_F32,
-            };
-            const PxFixedSizeLookupTable<8> steerVsForwardSpeed(steerVsForwardSpeedData, 4);
-            // @formatter:on
-            if (wheelVehicle->UseAnalogSteering)
-            {
-                switch (wheelVehicle->_driveTypeCurrent)
-                {
-                case WheeledVehicle::DriveTypes::Drive4W:
-                {
-                    PxVehicleDrive4WRawInputData rawInputData;
-                    rawInputData.setAnalogAccel(throttle);
-                    rawInputData.setAnalogBrake(brake);
-                    rawInputData.setAnalogSteer(wheelVehicle->_steering);
-                    rawInputData.setAnalogHandbrake(wheelVehicle->_handBrake);
-                    PxVehicleDrive4WSmoothAnalogRawInputsAndSetAnalogInputs(padSmoothing, steerVsForwardSpeed, rawInputData, LastDeltaTime, false, *(PxVehicleDrive4W*)drive);
-                    break;
-                }
-                case WheeledVehicle::DriveTypes::DriveNW:
-                {
-                    PxVehicleDriveNWRawInputData rawInputData;
-                    rawInputData.setAnalogAccel(throttle);
-                    rawInputData.setAnalogBrake(brake);
-                    rawInputData.setAnalogSteer(wheelVehicle->_steering);
-                    rawInputData.setAnalogHandbrake(wheelVehicle->_handBrake);
-                    PxVehicleDriveNWSmoothAnalogRawInputsAndSetAnalogInputs(padSmoothing, steerVsForwardSpeed, rawInputData, LastDeltaTime, false, *(PxVehicleDriveNW*)drive);
-                    break;
-                }
-                }
-            }
-            else
-            {
-                const float deadZone = 0.1f;
-                switch (wheelVehicle->_driveTypeCurrent)
-                {
-                case WheeledVehicle::DriveTypes::Drive4W:
-                {
-                    PxVehicleDrive4WRawInputData rawInputData;
-                    rawInputData.setDigitalAccel(throttle > deadZone);
-                    rawInputData.setDigitalBrake(brake > deadZone);
-                    rawInputData.setDigitalSteerLeft(wheelVehicle->_steering < -deadZone);
-                    rawInputData.setDigitalSteerRight(wheelVehicle->_steering > deadZone);
-                    rawInputData.setDigitalHandbrake(wheelVehicle->_handBrake > deadZone);
-                    PxVehicleDrive4WSmoothDigitalRawInputsAndSetAnalogInputs(keySmoothing, steerVsForwardSpeed, rawInputData, LastDeltaTime, false, *(PxVehicleDrive4W*)drive);
-                    break;
-                }
-                case WheeledVehicle::DriveTypes::DriveNW:
-                {
-                    PxVehicleDriveNWRawInputData rawInputData;
-                    rawInputData.setDigitalAccel(throttle > deadZone);
-                    rawInputData.setDigitalBrake(brake > deadZone);
-                    rawInputData.setDigitalSteerLeft(wheelVehicle->_steering < -deadZone);
-                    rawInputData.setDigitalSteerRight(wheelVehicle->_steering > deadZone);
-                    rawInputData.setDigitalHandbrake(wheelVehicle->_handBrake > deadZone);
-                    PxVehicleDriveNWSmoothDigitalRawInputsAndSetAnalogInputs(keySmoothing, steerVsForwardSpeed, rawInputData, LastDeltaTime, false, *(PxVehicleDriveNW*)drive);
-                    break;
-                }
-                }
-            }
-        }
-
-        // Update batches queries cache
-        if (wheelsCount > WheelQueryResults.Count())
-        {
-            if (WheelRaycastBatchQuery)
-                WheelRaycastBatchQuery->release();
-            WheelQueryResults.Resize(wheelsCount, false);
-            WheelHitResults.Resize(wheelsCount, false);
-            PxBatchQueryDesc desc(wheelsCount, 0, 0);
-            desc.queryMemory.userRaycastResultBuffer = WheelQueryResults.Get();
-            desc.queryMemory.userRaycastTouchBuffer = WheelHitResults.Get();
-            desc.queryMemory.raycastTouchBufferSize = wheelsCount;
-            desc.preFilterShader = WheelRaycastPreFilter;
-            WheelRaycastBatchQuery = PhysicsScene->createBatchQuery(desc);
-        }
-
-        // TODO: expose vehicle tires configuration
-        if (!WheelTireFrictions)
-        {
-            PxVehicleDrivableSurfaceType surfaceTypes[1];
-            surfaceTypes[0].mType = 0;
-            const PxMaterial* surfaceMaterials[1];
-            surfaceMaterials[0] = DefaultMaterial;
-            WheelTireFrictions = PxVehicleDrivableSurfaceToTireFrictionPairs::allocate(1, 1);
-            WheelTireFrictions->setup(1, 1, surfaceMaterials, surfaceTypes);
-            WheelTireFrictions->setTypePairFriction(0, 0, 5.0f);
-        }
-
-        // Setup cache for wheel states
-        WheelVehiclesResultsPerVehicle.Resize(WheelVehiclesCache.Count(), false);
-        WheelVehiclesResultsPerWheel.Resize(wheelsCount, false);
-        wheelsCount = 0;
-        for (int32 i = 0, ii = 0; i < WheelVehicles.Count(); i++)
-        {
-            auto wheelVehicle = WheelVehicles[i];
-            if (!wheelVehicle->IsActiveInHierarchy())
-                continue;
-            auto drive = (PxVehicleWheels*)WheelVehicles[ii]->_drive;
-            auto& perVehicle = WheelVehiclesResultsPerVehicle[ii];
-            ii++;
-            perVehicle.nbWheelQueryResults = drive->mWheelsSimData.getNbWheels();
-            perVehicle.wheelQueryResults = WheelVehiclesResultsPerWheel.Get() + wheelsCount;
-            wheelsCount += perVehicle.nbWheelQueryResults;
-        }
-
-        // Update vehicles
-        if (WheelVehiclesCache.Count() != 0)
-        {
-            PxVehicleSuspensionRaycasts(WheelRaycastBatchQuery, WheelVehiclesCache.Count(), WheelVehiclesCache.Get(), WheelQueryResults.Count(), WheelQueryResults.Get());
-            PxVehicleUpdates(LastDeltaTime, PhysicsScene->getGravity(), *WheelTireFrictions, WheelVehiclesCache.Count(), WheelVehiclesCache.Get(), WheelVehiclesResultsPerVehicle.Get());
-        }
-
-        // Synchronize state
-        for (int32 i = 0, ii = 0; i < WheelVehicles.Count(); i++)
-        {
-            auto wheelVehicle = WheelVehicles[i];
-            if (!wheelVehicle->IsActiveInHierarchy())
-                continue;
-            auto drive = WheelVehiclesCache[ii];
-            auto& perVehicle = WheelVehiclesResultsPerVehicle[ii];
-            ii++;
-#if PHYSX_VEHICLE_DEBUG_TELEMETRY
-            LOG(Info, "Vehicle[{}] Gear={}, RPM={}", ii, wheelVehicle->GetCurrentGear(), (int32)wheelVehicle->GetEngineRotationSpeed());
-#endif
-
-            // Update wheels
-            for (int32 j = 0; j < wheelVehicle->_wheelsData.Count(); j++)
-            {
-                auto& wheelData = wheelVehicle->_wheelsData[j];
-                auto& perWheel = perVehicle.wheelQueryResults[j];
-#if PHYSX_VEHICLE_DEBUG_TELEMETRY
-                LOG(Info, "Vehicle[{}] Wheel[{}] longitudinalSlip={}, lateralSlip={}, suspSpringForce={}", ii, j, Utilities::RoundTo2DecimalPlaces(perWheel.longitudinalSlip), Utilities::RoundTo2DecimalPlaces(perWheel.lateralSlip), (int32)perWheel.suspSpringForce);
-#endif
-
-                auto& state = wheelData.State;
-                state.IsInAir = perWheel.isInAir;
-                state.TireContactCollider = perWheel.tireContactShape ? static_cast<PhysicsColliderActor*>(perWheel.tireContactShape->userData) : nullptr;
-                state.TireContactPoint = P2C(perWheel.tireContactPoint);
-                state.TireContactNormal = P2C(perWheel.tireContactNormal);
-                state.TireFriction = perWheel.tireFriction;
-                state.SteerAngle = RadiansToDegrees * perWheel.steerAngle;
-                state.RotationAngle = -RadiansToDegrees * drive->mWheelsDynData.getWheelRotationAngle(j);
-                state.SuspensionOffset = perWheel.suspJounce;
-#if USE_EDITOR
-                state.SuspensionTraceStart = P2C(perWheel.suspLineStart);
-                state.SuspensionTraceEnd = P2C(perWheel.suspLineStart + perWheel.suspLineDir * perWheel.suspLineLength);
-#endif
-
-                if (!wheelData.Collider)
-                    continue;
-                auto shape = wheelData.Collider->GetPxShape();
-
-                // Update wheel collider transformation
-                auto localPose = shape->getLocalPose();
-                Transform t = wheelData.Collider->GetLocalTransform();
-                t.Orientation = Quaternion::Euler(0, state.SteerAngle, state.RotationAngle) * wheelData.LocalOrientation;
-                t.Translation = P2C(localPose.p) / wheelVehicle->GetScale() - t.Orientation * wheelData.Collider->GetCenter();
-                wheelData.Collider->SetLocalTransform(t);
-            }
-        }
-    }
-#endif
-
-    {
-        PROFILE_CPU_NAMED("Physics.FlushActiveTransforms");
-
-        // Gather change info
-        PxU32 activeActorsCount;
-        PxActor** activeActors = PhysicsScene->getActiveActors(activeActorsCount);
-        if (activeActorsCount > 0)
-        {
-            // Update changed transformations
-            // TODO: use jobs system if amount if huge
-            for (uint32 i = 0; i < activeActorsCount; i++)
-            {
-                const auto pxActor = (PxRigidActor*)*activeActors++;
-                auto actor = dynamic_cast<IPhysicsActor*>((Actor*)pxActor->userData);
-                ASSERT(actor);
-                actor->OnActiveTransformChanged(pxActor->getGlobalPose());
-            }
-        }
-    }
-
-    {
-        PROFILE_CPU_NAMED("Physics.SendEvents");
-
-        EventsCallback.CollectResults();
-        EventsCallback.SendTriggerEvents();
-        EventsCallback.SendCollisionEvents();
-        EventsCallback.SendJointEvents();
-    }
-
-    // End
-    _isDuringSimulation = false;
+void Physics::CollectResultsAll()
+{
+    for (auto scene : Scenes)
+        scene->CollectResults();
 }
 
 bool Physics::IsDuringSimulation()
 {
-    return _isDuringSimulation;
+    if (DefaultScene)
+        return DefaultScene->IsDuringSimulation();
+
+    return false;
 }
 
 PxMaterial* Physics::GetDefaultMaterial()
@@ -981,163 +487,48 @@ PxMaterial* Physics::GetDefaultMaterial()
     return DefaultMaterial;
 }
 
-void Physics::FlushRequests()
+bool Physics::GetAutoSimulation()
 {
-    ASSERT(!IsDuringSimulation());
-    ASSERT(CPhysX);
+    if (DefaultScene)
+        return DefaultScene->GetAutoSimulation();
 
-    PROFILE_CPU();
-
-    FlushLocker.Lock();
-
-    // Note: this does not handle case when actor is removed and added to the scene at the same time
-
-    if (NewActors.HasItems())
-    {
-        GetScene()->addActors(NewActors.Get(), NewActors.Count());
-        NewActors.Clear();
-    }
-
-    for (int32 i = 0; i < Actions.Count(); i++)
-    {
-        const auto action = Actions[i];
-        switch (action.Type)
-        {
-        case ActionType::Sleep:
-            static_cast<PxRigidDynamic*>(action.Actor)->putToSleep();
-            break;
-        }
-    }
-    Actions.Clear();
-
-    if (DeadActors.HasItems())
-    {
-        GetScene()->removeActors(DeadActors.Get(), DeadActors.Count(), true);
-        for (int32 i = 0; i < DeadActors.Count(); i++)
-        {
-            DeadActors[i]->release();
-        }
-        DeadActors.Clear();
-    }
-
-    if (DeadColliders.HasItems())
-    {
-        for (int32 i = 0; i < DeadColliders.Count(); i++)
-        {
-            EventsCallback.OnColliderRemoved(DeadColliders[i]);
-        }
-        DeadColliders.Clear();
-    }
-
-    if (DeadJoints.HasItems())
-    {
-        for (int32 i = 0; i < DeadJoints.Count(); i++)
-        {
-            EventsCallback.OnJointRemoved(DeadJoints[i]);
-        }
-        DeadJoints.Clear();
-    }
-
-    for (int32 i = 0; i < DeadMaterials.Count(); i++)
-    {
-        auto material = DeadMaterials[i];
-
-        // Unlink ref to flax object
-        material->userData = nullptr;
-
-        material->release();
-    }
-    DeadMaterials.Clear();
-
-    for (int32 i = 0; i < _deadObjects.Count(); i++)
-    {
-        _deadObjects[i]->release();
-    }
-    _deadObjects.Clear();
-
-    FlushLocker.Unlock();
+    return false;
 }
 
-void Physics::RemoveMaterial(PxMaterial* material)
+void Physics::FlushRequestsAll()
 {
-    ASSERT(material);
-
-    FlushLocker.Lock();
-    DeadMaterials.Add(material);
-    FlushLocker.Unlock();
-}
-
-void Physics::RemoveObject(PxBase* obj)
-{
-    ASSERT(obj);
-
-    FlushLocker.Lock();
-    _deadObjects.Add(obj);
-    FlushLocker.Unlock();
-}
-
-void Physics::AddActor(PxActor* actor)
-{
-    ASSERT(actor);
-
-    FlushLocker.Lock();
-    if (IsInMainThread())
-    {
-        GetScene()->addActor(*actor);
-    }
-    else
-    {
-        NewActors.Add(actor);
-    }
-    FlushLocker.Unlock();
-}
-
-void Physics::AddActor(PxRigidDynamic* actor, bool putToSleep)
-{
-    ASSERT(actor);
-
-    FlushLocker.Lock();
-    if (IsInMainThread())
-    {
-        GetScene()->addActor(*actor);
-        if (putToSleep)
-            actor->putToSleep();
-    }
-    else
-    {
-        NewActors.Add(actor);
-        if (putToSleep)
-            Actions.Add({ ActionType::Sleep, actor });
-    }
-    FlushLocker.Unlock();
-}
-
-void Physics::RemoveActor(PxActor* actor)
-{
-    ASSERT(actor);
-
-    // Unlink ref to flax object
-    actor->userData = nullptr;
-
-    FlushLocker.Lock();
-    DeadActors.Add(actor);
-    FlushLocker.Unlock();
-}
-
-void Physics::RemoveCollider(PhysicsColliderActor* collider)
-{
-    ASSERT(collider);
-
-    FlushLocker.Lock();
-    DeadColliders.Add(collider);
-    FlushLocker.Unlock();
+    for (auto scene : Scenes) 
+        scene->FlushRequests();
 }
 
 void Physics::RemoveJoint(Joint* joint)
 {
-    ASSERT(joint);
+    for (auto scene : Scenes) 
+        scene->RemoveJoint(joint);
+}
 
-    FlushLocker.Lock();
-    DeadJoints.Add(joint);
-    FlushLocker.Unlock();
+PhysicsScene* Physics::FindOrCreateScene(const String& name)
+{
+    auto scene = FindScene(name);
+
+    if (scene == nullptr)
+    {
+        auto& settings = *PhysicsSettings::Get();
+
+        scene = New<PhysicsScene>(name, settings);
+        Scenes.Add(scene);
+    }
+
+    return scene;
+}
+
+PhysicsScene* Physics::FindScene(const String& name)
+{
+    for (auto scene : Scenes)
+    {
+        if (scene->GetName() == name)
+            return scene;
+    } 
+
+    return nullptr;
 }

@@ -17,6 +17,7 @@
 #include "Engine/Debug/Exceptions/JsonParseException.h"
 #include "Engine/Graphics/RenderTask.h"
 #include "Engine/Graphics/RenderView.h"
+#include "Engine/Physics/Physics.h"
 #include "Engine/Profiler/ProfilerCPU.h"
 #include "Engine/Scripting/Scripting.h"
 #include "Engine/Serialization/ISerializeModifier.h"
@@ -77,6 +78,7 @@ Actor::Actor(const SpawnParams& params)
     , _transform(Transform::Identity)
     , _sphere(BoundingSphere::Empty)
     , _box(BoundingBox::Zero)
+    , _physicsScene(nullptr)
     , HideFlags(HideFlags::None)
 {
 }
@@ -1808,4 +1810,29 @@ void Actor::FromJson(const StringAnsiView& json)
     Deserialize(document, &*modifier);
     Scripting::ObjectsLookupIdMapping.Set(nullptr);
     OnTransformChanged();
+}
+
+void Actor::SetPhysicsScene(PhysicsScene* scene)
+{
+    ASSERT(scene);
+
+    auto previous = GetPhysicsScene();
+    _physicsScene = scene;
+
+    if (previous != _physicsScene)
+    {
+        OnPhysicsSceneChanged(previous);
+
+        // cascade
+        for (auto child : Children)
+            child->SetPhysicsScene(scene);
+    }
+}
+
+PhysicsScene* Actor::GetPhysicsScene()
+{
+    if (_physicsScene == nullptr)
+        _physicsScene = Physics::DefaultScene;
+
+     return _physicsScene;
 }

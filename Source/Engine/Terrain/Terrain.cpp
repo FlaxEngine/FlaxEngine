@@ -830,6 +830,14 @@ void Terrain::OnActiveInTreeChanged()
     }
 }
 
+void Terrain::OnPhysicsSceneChanged(PhysicsScene* previous)
+{
+    PhysicsColliderActor::OnPhysicsSceneChanged(previous);
+
+    for (auto patch : _patches)
+        patch->OnPhysicsSceneChanged(previous);
+}
+
 void Terrain::BeginPlay(SceneBeginData* data)
 {
     CacheNeighbors();

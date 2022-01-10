@@ -7,6 +7,7 @@
 #include "Engine/Profiler/ProfilerCPU.h"
 #include "Engine/Physics/Utilities.h"
 #include "Engine/Physics/Physics.h"
+#include "Engine/Physics/PhysicsScene.h"
 #include "Engine/Physics/PhysicalMaterial.h"
 #include "Engine/Level/Scene/Scene.h"
 #include "Engine/Graphics/Async/GPUTask.h"
@@ -1957,7 +1958,7 @@ bool TerrainPatch::UpdateCollision()
         _collisionVertices.Resize(0);
 
         // Recreate height field
-        Physics::RemoveObject(_physicsHeightField);
+        _terrain->GetPhysicsScene()->RemoveObject(_physicsHeightField);
         _physicsHeightField = nullptr;
         if (CreateHeightField())
         {
@@ -2129,7 +2130,7 @@ void TerrainPatch::UpdatePostManualDeserialization()
         _collisionVertices.Resize(0);
 
         // Recreate height field
-        Physics::RemoveObject(_physicsHeightField);
+        _terrain->GetPhysicsScene()->RemoveObject(_physicsHeightField);
         _physicsHeightField = nullptr;
         if (CreateHeightField())
         {
@@ -2190,8 +2191,6 @@ void TerrainPatch::CreateCollision()
     _physicsActor->setActorFlag(PxActorFlag::eVISUALIZATION, true);
 #endif
     _physicsActor->attachShape(*_physicsShape);
-
-    Physics::AddActor(_physicsActor);
 }
 
 bool TerrainPatch::CreateHeightField()
@@ -2243,10 +2242,11 @@ void TerrainPatch::DestroyCollision()
     ScopeLock lock(_collisionLocker);
     ASSERT(HasCollision());
 
-    Physics::RemoveCollider(_terrain);
-    Physics::RemoveActor(_physicsActor);
-    Physics::RemoveObject(_physicsShape);
-    Physics::RemoveObject(_physicsHeightField);
+    _terrain->GetPhysicsScene()->RemoveCollider(_terrain);
+    _terrain->GetPhysicsScene()->RemoveActor(_physicsActor);
+    _terrain->GetPhysicsScene()->RemoveObject(_physicsShape);
+    _terrain->GetPhysicsScene()->RemoveObject(_physicsHeightField);
+
     _physicsActor = nullptr;
     _physicsShape = nullptr;
     _physicsHeightField = nullptr;
@@ -2608,4 +2608,10 @@ void TerrainPatch::Deserialize(DeserializeStream& stream, ISerializeModifier* mo
             Chunks[i].Deserialize(chunksData[i], modifier);
         }
     }
+}
+
+void TerrainPatch::OnPhysicsSceneChanged(PhysicsScene* previous)
+{
+    previous->UnlinkActor(_physicsActor);
+    _terrain->GetPhysicsScene()->AddActor(_physicsActor);
 }

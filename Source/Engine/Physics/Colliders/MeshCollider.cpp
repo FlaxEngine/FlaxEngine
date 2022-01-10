@@ -6,6 +6,7 @@
 #include "Engine/Serialization/Serialization.h"
 #include "Engine/Physics/Utilities.h"
 #include "Engine/Physics/Physics.h"
+#include "Engine/Physics/PhysicsScene.h"
 #if USE_EDITOR || !BUILD_RELEASE
 #include "Engine/Debug/DebugLog.h"
 #endif
@@ -20,7 +21,7 @@ MeshCollider::MeshCollider(const SpawnParams& params)
 void MeshCollider::OnCollisionDataChanged()
 {
     // This should not be called during physics simulation, if it happened use write lock on physx scene
-    ASSERT(!GetScene() || !Physics::IsDuringSimulation());
+    ASSERT(!GetScene() || !GetPhysicsScene()->IsDuringSimulation());
 
     if (CollisionData)
     {

@@ -3,696 +3,140 @@
 #include "Physics.h"
 #include "Utilities.h"
 #include "CollisionData.h"
+#include "PhysicsScene.h"
 #include "Actors/PhysicsColliderActor.h"
-#include <ThirdParty/PhysX/PxScene.h>
-#include <ThirdParty/PhysX/PxQueryFiltering.h>
-#include <ThirdParty/PhysX/PxRigidDynamic.h>
-#include <ThirdParty/PhysX/characterkinematic/PxController.h>
-
-// Temporary result buffer size
-#define HIT_BUFFER_SIZE	128
-
-template<typename HitType>
-class DynamicHitBuffer : public PxHitCallback<HitType>
-{
-private:
-
-    uint32 _count;
-    HitType _buffer[HIT_BUFFER_SIZE];
-
-public:
-
-    DynamicHitBuffer()
-        : PxHitCallback<HitType>(_buffer, HIT_BUFFER_SIZE)
-        , _count(0)
-    {
-    }
-
-public:
-
-    // Computes the number of any hits in this result, blocking or touching.
-    PX_INLINE PxU32 getNbAnyHits() const
-    {
-        return getNbTouches();
-    }
-
-    // Convenience iterator used to access any hits in this result, blocking or touching.
-    PX_INLINE const HitType& getAnyHit(const PxU32 index) const
-    {
-        PX_ASSERT(index < getNbTouches() + PxU32(this->hasBlock));
-        return index < getNbTouches() ? getTouches()[index] : this->block;
-    }
-
-    PX_INLINE PxU32 getNbTouches() const
-    {
-        return _count;
-    }
-
-    PX_INLINE const HitType* getTouches() const
-    {
-        return _buffer;
-    }
-
-    PX_INLINE const HitType& getTouch(const PxU32 index) const
-    {
-        PX_ASSERT(index < getNbTouches());
-        return _buffer[index];
-    }
-
-    PX_INLINE PxU32 getMaxNbTouches() const
-    {
-        return HIT_BUFFER_SIZE;
-    }
-
-protected:
-
-    PxAgain processTouches(const HitType* buffer, PxU32 nbHits) override
-    {
-        nbHits = Math::Min(nbHits, HIT_BUFFER_SIZE - _count);
-        for (PxU32 i = 0; i < nbHits; i++)
-        {
-            _buffer[_count + i] = buffer[i];
-        }
-        _count += nbHits;
-        return true;
-    }
-
-    void finalizeQuery() override
-    {
-        if (this->hasBlock)
-        {
-            // Blocking hits go to hits
-            processTouches(&this->block, 1);
-        }
-    }
-};
-
-#define SCENE_QUERY_SETUP(blockSingle) if (GetScene() == nullptr) return false; \
-		const PxHitFlags hitFlags = PxHitFlag::ePOSITION | PxHitFlag::eNORMAL | PxHitFlag::eUV; \
-		PxQueryFilterData filterData = PxQueryFilterData(); \
-		filterData.flags |=  PxQueryFlag::ePREFILTER; \
-		filterData.data.word0 = layerMask; \
-		filterData.data.word1 = blockSingle ? 1 : 0; \
-		filterData.data.word2 = hitTriggers ? 1 : 0
-
-#define SCENE_QUERY_SETUP_SWEEP_1() SCENE_QUERY_SETUP(true); \
-		PxSweepBufferN<1> buffer
-
-#define SCENE_QUERY_SETUP_SWEEP() SCENE_QUERY_SETUP(false); \
-		DynamicHitBuffer<PxSweepHit> buffer
-
-#define SCENE_QUERY_SETUP_OVERLAP_1() SCENE_QUERY_SETUP(false); \
-		PxOverlapBufferN<1> buffer
-
-#define SCENE_QUERY_SETUP_OVERLAP() SCENE_QUERY_SETUP(false); \
-		DynamicHitBuffer<PxOverlapHit> buffer
-
-#define SCENE_QUERY_COLLECT_SINGLE() const auto& hit = buffer.getAnyHit(0); \
-		hitInfo.Gather(hit)
-
-#define SCENE_QUERY_COLLECT_ALL() results.Clear(); \
-		results.Resize(buffer.getNbAnyHits(), false); \
-		for (int32 i = 0; i < results.Count(); i++) \
-		{ \
-			const auto& hit = buffer.getAnyHit(i); \
-			results[i].Gather(hit); \
-		}
-
-#define SCENE_QUERY_COLLECT_OVERLAP() results.Clear();  \
-		results.Resize(buffer.getNbTouches(), false); \
-		for (int32 i = 0; i < results.Count(); i++) \
-		{ \
-			auto& hitInfo = results[i]; \
-			const auto& hit = buffer.getTouch(i); \
-			hitInfo = hit.shape ? static_cast<::PhysicsColliderActor*>(hit.shape->userData) : nullptr; \
-		}
-
-#define SCENE_QUERY_COLLECT_OVERLAP_COLLIDER() results.Clear();  \
-		results.Resize(buffer.getNbTouches(), false); \
-		for (int32 i = 0; i < results.Count(); i++) \
-		{ \
-			auto& hitInfo = results[i]; \
-			const auto& hit = buffer.getTouch(i); \
-			hitInfo = hit.shape ? static_cast<::Collider*>(hit.shape->userData) : nullptr; \
-		}
-
-void RayCastHit::Gather(const PxRaycastHit& hit)
-{
-    Point = P2C(hit.position);
-    Normal = P2C(hit.normal);
-    Distance = hit.distance;
-    Collider = hit.shape ? static_cast<PhysicsColliderActor*>(hit.shape->userData) : nullptr;
-    FaceIndex = hit.faceIndex;
-    UV.X = hit.u;
-    UV.Y = hit.v;
-}
-
-void RayCastHit::Gather(const PxSweepHit& hit)
-{
-    Point = P2C(hit.position);
-    Normal = P2C(hit.normal);
-    Distance = hit.distance;
-    Collider = hit.shape ? static_cast<PhysicsColliderActor*>(hit.shape->userData) : nullptr;
-    FaceIndex = hit.faceIndex;
-    UV = Vector2::Zero;
-}
-
-class QueryFilter : public PxQueryFilterCallback
-{
-public:
-
-    PxQueryHitType::Enum preFilter(const PxFilterData& filterData, const PxShape* shape, const PxRigidActor* actor, PxHitFlags& queryFlags) override
-    {
-        // Early out to avoid crashing
-        if (!shape)
-            return PxQueryHitType::eNONE;
-
-        // Check mask
-        const PxFilterData shapeFilter = shape->getQueryFilterData();
-        if ((filterData.word0 & shapeFilter.word0) == 0)
-        {
-            return PxQueryHitType::eNONE;
-        }
-
-        // Check if skip triggers
-        const bool hitTriggers = filterData.word2 != 0;
-        if (!hitTriggers && shape->getFlags() & PxShapeFlag::eTRIGGER_SHAPE)
-            return PxQueryHitType::eNONE;
-
-        const bool blockSingle = filterData.word1 != 0;
-        return blockSingle ? PxQueryHitType::eBLOCK : PxQueryHitType::eTOUCH;
-    }
-
-    PxQueryHitType::Enum postFilter(const PxFilterData& filterData, const PxQueryHit& hit) override
-    {
-        // Not used
-        return PxQueryHitType::eNONE;
-    }
-};
-
-class CharacterQueryFilter : public PxQueryFilterCallback
-{
-public:
-
-    PxQueryHitType::Enum preFilter(const PxFilterData& filterData, const PxShape* shape, const PxRigidActor* actor, PxHitFlags& queryFlags) override
-    {
-        // Early out to avoid crashing
-        if (!shape)
-            return PxQueryHitType::eNONE;
-
-        // Let triggers through
-        if (PxFilterObjectIsTrigger(shape->getFlags()))
-            return PxQueryHitType::eNONE;
-
-        // Trigger the contact callback for pairs (A,B) where the filtermask of A contains the ID of B and vice versa
-        const PxFilterData shapeFilter = shape->getQueryFilterData();
-        if (filterData.word0 & shapeFilter.word1)
-            return PxQueryHitType::eBLOCK;
-
-        return PxQueryHitType::eNONE;
-    }
-
-    PxQueryHitType::Enum postFilter(const PxFilterData& filterData, const PxQueryHit& hit) override
-    {
-        // Not used
-        return PxQueryHitType::eNONE;
-    }
-};
-
-class CharacterControllerFilter : public PxControllerFilterCallback
-{
-private:
-
-    PxShape* getShape(const PxController& controller)
-    {
-        PxRigidDynamic* actor = controller.getActor();
-
-        // Early out if no actor or no shapes
-        if (!actor || actor->getNbShapes() < 1)
-            return nullptr;
-
-        // Get first shape only.
-        PxShape* shape = nullptr;
-        actor->getShapes(&shape, 1);
-
-        return shape;
-    }
-
-public:
-
-    bool filter(const PxController& a, const PxController& b) override
-    {
-        // Early out to avoid crashing
-        PxShape* shapeA = getShape(a);
-        if (!shapeA)
-            return false;
-
-        PxShape* shapeB = getShape(b);
-        if (!shapeB)
-            return false;
-
-        // Let triggers through
-        if (PxFilterObjectIsTrigger(shapeB->getFlags()))
-            return false;
-
-        // Trigger the contact callback for pairs (A,B) where the filtermask of A contains the ID of B and vice versa
-        const PxFilterData shapeFilterA = shapeA->getQueryFilterData();
-        const PxFilterData shapeFilterB = shapeB->getQueryFilterData();
-        if (shapeFilterA.word0 & shapeFilterB.word1)
-            return true;
-
-        return false;
-    }
-};
-
-PxQueryFilterCallback* Physics::GetQueryFilterCallback()
-{
-    static QueryFilter Filter;
-    return &Filter;
-}
-
-PxQueryFilterCallback* Physics::GetCharacterQueryFilterCallback()
-{
-    static CharacterQueryFilter Filter;
-    return &Filter;
-}
-
-PxControllerFilterCallback* Physics::GetCharacterControllerFilterCallback()
-{
-    static CharacterControllerFilter Filter;
-    return &Filter;
-}
 
 bool Physics::RayCast(const Vector3& origin, const Vector3& direction, const float maxDistance, uint32 layerMask, bool hitTriggers)
 {
-    // Prepare data
-    SCENE_QUERY_SETUP(true);
-    PxRaycastBuffer buffer;
-
-    // Perform raycast test
-    return GetScene()->raycast(C2P(origin), C2P(direction), maxDistance, buffer, hitFlags, filterData, GetQueryFilterCallback());
+    return DefaultScene->RayCast(origin, direction, maxDistance, layerMask, hitTriggers);
 }
 
 bool Physics::RayCast(const Vector3& origin, const Vector3& direction, RayCastHit& hitInfo, const float maxDistance, uint32 layerMask, bool hitTriggers)
 {
-    // Prepare data
-    SCENE_QUERY_SETUP(true);
-    PxRaycastBuffer buffer;
-
-    // Perform raycast test
-    if (!GetScene()->raycast(C2P(origin), C2P(direction), maxDistance, buffer, hitFlags, filterData, GetQueryFilterCallback()))
-        return false;
-
-    // Collect results
-    SCENE_QUERY_COLLECT_SINGLE();
-
-    return true;
+    return DefaultScene->RayCast(origin, direction, hitInfo, maxDistance, layerMask, hitTriggers);
 }
 
 bool Physics::RayCastAll(const Vector3& origin, const Vector3& direction, Array<RayCastHit>& results, const float maxDistance, uint32 layerMask, bool hitTriggers)
 {
-    // Prepare data
-    SCENE_QUERY_SETUP(false);
-    DynamicHitBuffer<PxRaycastHit> buffer;
-
-    // Perform raycast test
-    if (!GetScene()->raycast(C2P(origin), C2P(direction), maxDistance, buffer, hitFlags, filterData, GetQueryFilterCallback()))
-        return false;
-
-    // Collect results
-    SCENE_QUERY_COLLECT_ALL();
-
-    return true;
+    return DefaultScene->RayCastAll(origin, direction, results, maxDistance, layerMask, hitTriggers);
 }
 
 bool Physics::BoxCast(const Vector3& center, const Vector3& halfExtents, const Vector3& direction, const Quaternion& rotation, const float maxDistance, uint32 layerMask, bool hitTriggers)
 {
-    // Prepare data
-    SCENE_QUERY_SETUP_SWEEP_1();
-    const PxTransform pose(C2P(center), C2P(rotation));
-    const PxBoxGeometry geometry(C2P(halfExtents));
-
-    // Perform sweep test
-    return GetScene()->sweep(geometry, pose, C2P(direction), maxDistance, buffer, hitFlags, filterData, GetQueryFilterCallback());
+    return DefaultScene->BoxCast(center, halfExtents, direction, rotation, maxDistance, layerMask, hitTriggers);
 }
 
 bool Physics::BoxCast(const Vector3& center, const Vector3& halfExtents, const Vector3& direction, RayCastHit& hitInfo, const Quaternion& rotation, const float maxDistance, uint32 layerMask, bool hitTriggers)
 {
-    // Prepare data
-    SCENE_QUERY_SETUP_SWEEP_1();
-    const PxTransform pose(C2P(center), C2P(rotation));
-    const PxBoxGeometry geometry(C2P(halfExtents));
-
-    // Perform sweep test
-    if (!GetScene()->sweep(geometry, pose, C2P(direction), maxDistance, buffer, hitFlags, filterData, GetQueryFilterCallback()))
-        return false;
-
-    // Collect results
-    SCENE_QUERY_COLLECT_SINGLE();
-
-    return true;
+    return DefaultScene->BoxCast(center, halfExtents, direction, hitInfo, rotation, maxDistance, layerMask, hitTriggers);
 }
 
 bool Physics::BoxCastAll(const Vector3& center, const Vector3& halfExtents, const Vector3& direction, Array<RayCastHit>& results, const Quaternion& rotation, const float maxDistance, uint32 layerMask, bool hitTriggers)
 {
-    // Prepare data
-    SCENE_QUERY_SETUP_SWEEP();
-    const PxTransform pose(C2P(center), C2P(rotation));
-    const PxBoxGeometry geometry(C2P(halfExtents));
-
-    // Perform sweep test
-    if (!GetScene()->sweep(geometry, pose, C2P(direction), maxDistance, buffer, hitFlags, filterData, GetQueryFilterCallback()))
-        return false;
-
-    // Collect results
-    SCENE_QUERY_COLLECT_ALL();
-
-    return true;
+    return DefaultScene->BoxCastAll(center, halfExtents, direction, results, rotation, maxDistance, layerMask, hitTriggers);
 }
 
 bool Physics::SphereCast(const Vector3& center, const float radius, const Vector3& direction, const float maxDistance, uint32 layerMask, bool hitTriggers)
 {
-    // Prepare data
-    SCENE_QUERY_SETUP_SWEEP_1();
-    const PxTransform pose(C2P(center));
-    const PxSphereGeometry geometry(radius);
-
-    // Perform sweep test
-    return GetScene()->sweep(geometry, pose, C2P(direction), maxDistance, buffer, hitFlags, filterData, GetQueryFilterCallback());
+    return DefaultScene->SphereCast(center, radius, direction, maxDistance, layerMask, hitTriggers);
 }
 
 bool Physics::SphereCast(const Vector3& center, const float radius, const Vector3& direction, RayCastHit& hitInfo, const float maxDistance, uint32 layerMask, bool hitTriggers)
 {
-    // Prepare data
-    SCENE_QUERY_SETUP_SWEEP_1();
-    const PxTransform pose(C2P(center));
-    const PxSphereGeometry geometry(radius);
-
-    // Perform sweep test
-    if (!GetScene()->sweep(geometry, pose, C2P(direction), maxDistance, buffer, hitFlags, filterData, GetQueryFilterCallback()))
-        return false;
-
-    // Collect results
-    SCENE_QUERY_COLLECT_SINGLE();
-
-    return true;
+    return DefaultScene->SphereCast(center, radius, direction, hitInfo, maxDistance, layerMask, hitTriggers);
 }
 
 bool Physics::SphereCastAll(const Vector3& center, const float radius, const Vector3& direction, Array<RayCastHit>& results, const float maxDistance, uint32 layerMask, bool hitTriggers)
 {
-    // Prepare data
-    SCENE_QUERY_SETUP_SWEEP();
-    const PxTransform pose(C2P(center));
-    const PxSphereGeometry geometry(radius);
-
-    // Perform sweep test
-    if (!GetScene()->sweep(geometry, pose, C2P(direction), maxDistance, buffer, hitFlags, filterData, GetQueryFilterCallback()))
-        return false;
-
-    // Collect results
-    SCENE_QUERY_COLLECT_ALL();
-
-    return true;
+    return DefaultScene->SphereCastAll(center, radius, direction, results, maxDistance, layerMask, hitTriggers);
 }
 
 bool Physics::CapsuleCast(const Vector3& center, const float radius, const float height, const Vector3& direction, const Quaternion& rotation, const float maxDistance, uint32 layerMask, bool hitTriggers)
 {
-    // Prepare data
-    SCENE_QUERY_SETUP_SWEEP_1();
-    const PxTransform pose(C2P(center), C2P(rotation));
-    const PxCapsuleGeometry geometry(radius, height * 0.5f);
-
-    // Perform sweep test
-    return GetScene()->sweep(geometry, pose, C2P(direction), maxDistance, buffer, hitFlags, filterData, GetQueryFilterCallback());
+    return DefaultScene->CapsuleCast(center, radius, height, direction, rotation, maxDistance, layerMask, hitTriggers);
 }
 
 bool Physics::CapsuleCast(const Vector3& center, const float radius, const float height, const Vector3& direction, RayCastHit& hitInfo, const Quaternion& rotation, const float maxDistance, uint32 layerMask, bool hitTriggers)
 {
-    // Prepare data
-    SCENE_QUERY_SETUP_SWEEP_1();
-    const PxTransform pose(C2P(center), C2P(rotation));
-    const PxCapsuleGeometry geometry(radius, height * 0.5f);
-
-    // Perform sweep test
-    if (!GetScene()->sweep(geometry, pose, C2P(direction), maxDistance, buffer, hitFlags, filterData, GetQueryFilterCallback()))
-        return false;
-
-    // Collect results
-    SCENE_QUERY_COLLECT_SINGLE();
-
-    return true;
+    return DefaultScene->CapsuleCast(center, radius, height, direction, hitInfo, rotation, maxDistance, layerMask, hitTriggers);
 }
 
 bool Physics::CapsuleCastAll(const Vector3& center, const float radius, const float height, const Vector3& direction, Array<RayCastHit>& results, const Quaternion& rotation, const float maxDistance, uint32 layerMask, bool hitTriggers)
 {
-    // Prepare data
-    SCENE_QUERY_SETUP_SWEEP();
-    const PxTransform pose(C2P(center), C2P(rotation));
-    const PxCapsuleGeometry geometry(radius, height * 0.5f);
-
-    // Perform sweep test
-    if (!GetScene()->sweep(geometry, pose, C2P(direction), maxDistance, buffer, hitFlags, filterData, GetQueryFilterCallback()))
-        return false;
-
-    // Collect results
-    SCENE_QUERY_COLLECT_ALL();
-
-    return true;
+    return DefaultScene->CapsuleCastAll(center, radius, height, direction, results, rotation, maxDistance, layerMask, hitTriggers);
 }
 
 bool Physics::ConvexCast(const Vector3& center, const CollisionData* convexMesh, const Vector3& scale, const Vector3& direction, const Quaternion& rotation, const float maxDistance, uint32 layerMask, bool hitTriggers)
 {
-    CHECK_RETURN(convexMesh && convexMesh->GetOptions().Type == CollisionDataType::ConvexMesh, false)
-
-    // Prepare data
-    SCENE_QUERY_SETUP_SWEEP_1();
-    const PxTransform pose(C2P(center), C2P(rotation));
-    const PxConvexMeshGeometry geometry(convexMesh->GetConvex(), PxMeshScale(C2P(scale)));
-
-    // Perform sweep test
-    return GetScene()->sweep(geometry, pose, C2P(direction), maxDistance, buffer, hitFlags, filterData, GetQueryFilterCallback());
+    return DefaultScene->ConvexCast(center, convexMesh, scale, direction, rotation, maxDistance, layerMask, hitTriggers);
 }
 
 bool Physics::ConvexCast(const Vector3& center, const CollisionData* convexMesh, const Vector3& scale, const Vector3& direction, RayCastHit& hitInfo, const Quaternion& rotation, const float maxDistance, uint32 layerMask, bool hitTriggers)
 {
-    CHECK_RETURN(convexMesh && convexMesh->GetOptions().Type == CollisionDataType::ConvexMesh, false)
-
-    // Prepare data
-    SCENE_QUERY_SETUP_SWEEP_1();
-    const PxTransform pose(C2P(center), C2P(rotation));
-    const PxConvexMeshGeometry geometry(convexMesh->GetConvex(), PxMeshScale(C2P(scale)));
-
-    // Perform sweep test
-    if (!GetScene()->sweep(geometry, pose, C2P(direction), maxDistance, buffer, hitFlags, filterData, GetQueryFilterCallback()))
-        return false;
-
-    // Collect results
-    SCENE_QUERY_COLLECT_SINGLE();
-
-    return true;
+    return DefaultScene->ConvexCast(center, convexMesh, scale, direction, hitInfo, rotation, maxDistance, layerMask, hitTriggers);
 }
 
 bool Physics::ConvexCastAll(const Vector3& center, const CollisionData* convexMesh, const Vector3& scale, const Vector3& direction, Array<RayCastHit>& results, const Quaternion& rotation, const float maxDistance, uint32 layerMask, bool hitTriggers)
 {
-    CHECK_RETURN(convexMesh && convexMesh->GetOptions().Type == CollisionDataType::ConvexMesh, false)
-
-    // Prepare data
-    SCENE_QUERY_SETUP_SWEEP();
-    const PxTransform pose(C2P(center), C2P(rotation));
-    const PxConvexMeshGeometry geometry(convexMesh->GetConvex(), PxMeshScale(C2P(scale)));
-
-    // Perform sweep test
-    if (!GetScene()->sweep(geometry, pose, C2P(direction), maxDistance, buffer, hitFlags, filterData, GetQueryFilterCallback()))
-        return false;
-
-    // Collect results
-    SCENE_QUERY_COLLECT_ALL();
-
-    return true;
+    return DefaultScene->ConvexCastAll(center, convexMesh, scale, direction, results, rotation, maxDistance, layerMask, hitTriggers);
 }
 
 bool Physics::CheckBox(const Vector3& center, const Vector3& halfExtents, const Quaternion& rotation, uint32 layerMask, bool hitTriggers)
 {
-    // Prepare data
-    SCENE_QUERY_SETUP_OVERLAP_1();
-    const PxTransform pose(C2P(center), C2P(rotation));
-    const PxBoxGeometry geometry(C2P(halfExtents));
-
-    // Perform overlap test
-    return GetScene()->overlap(geometry, pose, buffer, filterData, GetQueryFilterCallback());
+    return DefaultScene->CheckBox(center, halfExtents, rotation, layerMask, hitTriggers);
 }
 
 bool Physics::CheckSphere(const Vector3& center, const float radius, uint32 layerMask, bool hitTriggers)
 {
-    // Prepare data
-    SCENE_QUERY_SETUP_OVERLAP_1();
-    const PxTransform pose(C2P(center));
-    const PxSphereGeometry geometry(radius);
-
-    // Perform overlap test
-    return GetScene()->overlap(geometry, pose, buffer, filterData, GetQueryFilterCallback());
+    return DefaultScene->CheckSphere(center, radius, layerMask, hitTriggers);
 }
 
 bool Physics::CheckCapsule(const Vector3& center, const float radius, const float height, const Quaternion& rotation, uint32 layerMask, bool hitTriggers)
 {
-    // Prepare data
-    SCENE_QUERY_SETUP_OVERLAP_1();
-    const PxTransform pose(C2P(center), C2P(rotation));
-    const PxCapsuleGeometry geometry(radius, height * 0.5f);
-
-    // Perform overlap test
-    return GetScene()->overlap(geometry, pose, buffer, filterData, GetQueryFilterCallback());
+    return DefaultScene->CheckCapsule(center, radius, height, rotation, layerMask, hitTriggers);
 }
 
 bool Physics::CheckConvex(const Vector3& center, const CollisionData* convexMesh, const Vector3& scale, const Quaternion& rotation, uint32 layerMask, bool hitTriggers)
 {
-    CHECK_RETURN(convexMesh && convexMesh->GetOptions().Type == CollisionDataType::ConvexMesh, false)
-
-    // Prepare data
-    SCENE_QUERY_SETUP_OVERLAP_1();
-    const PxTransform pose(C2P(center), C2P(rotation));
-    const PxConvexMeshGeometry geometry(convexMesh->GetConvex(), PxMeshScale(C2P(scale)));
-
-    // Perform overlap test
-    return GetScene()->overlap(geometry, pose, buffer, filterData, GetQueryFilterCallback());
+    return DefaultScene->CheckConvex(center, convexMesh, scale, rotation, layerMask, hitTriggers);
 }
 
 bool Physics::OverlapBox(const Vector3& center, const Vector3& halfExtents, Array<Collider*>& results, const Quaternion& rotation, uint32 layerMask, bool hitTriggers)
 {
-    // Prepare data
-    SCENE_QUERY_SETUP_OVERLAP();
-    const PxTransform pose(C2P(center), C2P(rotation));
-    const PxBoxGeometry geometry(C2P(halfExtents));
-
-    // Perform overlap test
-    if (!GetScene()->overlap(geometry, pose, buffer, filterData, GetQueryFilterCallback()))
-        return false;
-
-    // Collect results
-    SCENE_QUERY_COLLECT_OVERLAP_COLLIDER();
-
-    return true;
+    return DefaultScene->OverlapBox(center, halfExtents, results, rotation, layerMask, hitTriggers);
 }
 
 bool Physics::OverlapSphere(const Vector3& center, const float radius, Array<Collider*>& results, uint32 layerMask, bool hitTriggers)
 {
-    // Prepare data
-    SCENE_QUERY_SETUP_OVERLAP();
-    const PxTransform pose(C2P(center));
-    const PxSphereGeometry geometry(radius);
-
-    // Perform overlap test
-    if (!GetScene()->overlap(geometry, pose, buffer, filterData, GetQueryFilterCallback()))
-        return false;
-
-    // Collect results
-    SCENE_QUERY_COLLECT_OVERLAP_COLLIDER();
-
-    return true;
+    return DefaultScene->OverlapSphere(center, radius, results, layerMask, hitTriggers);
 }
 
 bool Physics::OverlapCapsule(const Vector3& center, const float radius, const float height, Array<Collider*>& results, const Quaternion& rotation, uint32 layerMask, bool hitTriggers)
 {
-    // Prepare data
-    SCENE_QUERY_SETUP_OVERLAP();
-    const PxTransform pose(C2P(center), C2P(rotation));
-    const PxCapsuleGeometry geometry(radius, height * 0.5f);
-
-    // Perform overlap test
-    if (!GetScene()->overlap(geometry, pose, buffer, filterData, GetQueryFilterCallback()))
-        return false;
-
-    // Collect results
-    SCENE_QUERY_COLLECT_OVERLAP_COLLIDER();
-
-    return true;
+    return DefaultScene->OverlapCapsule(center, radius, height, results, rotation, layerMask, hitTriggers);
 }
 
 bool Physics::OverlapConvex(const Vector3& center, const CollisionData* convexMesh, const Vector3& scale, Array<Collider*>& results, const Quaternion& rotation, uint32 layerMask, bool hitTriggers)
 {
-    CHECK_RETURN(convexMesh && convexMesh->GetOptions().Type == CollisionDataType::ConvexMesh, false)
-
-    // Prepare data
-    SCENE_QUERY_SETUP_OVERLAP();
-    const PxTransform pose(C2P(center), C2P(rotation));
-    const PxConvexMeshGeometry geometry(convexMesh->GetConvex(), PxMeshScale(C2P(scale)));
-
-    // Perform overlap test
-    if (!GetScene()->overlap(geometry, pose, buffer, filterData, GetQueryFilterCallback()))
-        return false;
-
-    // Collect results
-    SCENE_QUERY_COLLECT_OVERLAP_COLLIDER();
-
-    return true;
+    return DefaultScene->OverlapConvex(center, convexMesh, scale, results, rotation, layerMask, hitTriggers);
 }
 
 bool Physics::OverlapBox(const Vector3& center, const Vector3& halfExtents, Array<PhysicsColliderActor*>& results, const Quaternion& rotation, uint32 layerMask, bool hitTriggers)
 {
-    // Prepare data
-    SCENE_QUERY_SETUP_OVERLAP();
-    const PxTransform pose(C2P(center), C2P(rotation));
-    const PxBoxGeometry geometry(C2P(halfExtents));
-
-    // Perform overlap test
-    if (!GetScene()->overlap(geometry, pose, buffer, filterData, GetQueryFilterCallback()))
-        return false;
-
-    // Collect results
-    SCENE_QUERY_COLLECT_OVERLAP();
-
-    return true;
+    return DefaultScene->OverlapBox(center, halfExtents, results, rotation, layerMask, hitTriggers);
 }
 
 bool Physics::OverlapSphere(const Vector3& center, const float radius, Array<PhysicsColliderActor*>& results, uint32 layerMask, bool hitTriggers)
 {
-    // Prepare data
-    SCENE_QUERY_SETUP_OVERLAP();
-    const PxTransform pose(C2P(center));
-    const PxSphereGeometry geometry(radius);
-
-    // Perform overlap test
-    if (!GetScene()->overlap(geometry, pose, buffer, filterData, GetQueryFilterCallback()))
-        return false;
-
-    // Collect results
-    SCENE_QUERY_COLLECT_OVERLAP();
-
-    return true;
+    return DefaultScene->OverlapSphere(center, radius, results, layerMask, hitTriggers);
 }
 
 bool Physics::OverlapCapsule(const Vector3& center, const float radius, const float height, Array<PhysicsColliderActor*>& results, const Quaternion& rotation, uint32 layerMask, bool hitTriggers)
 {
-    // Prepare data
-    SCENE_QUERY_SETUP_OVERLAP();
-    const PxTransform pose(C2P(center), C2P(rotation));
-    const PxCapsuleGeometry geometry(radius, height * 0.5f);
-
-    // Perform overlap test
-    if (!GetScene()->overlap(geometry, pose, buffer, filterData, GetQueryFilterCallback()))
-        return false;
-
-    // Collect results
-    SCENE_QUERY_COLLECT_OVERLAP();
-
-    return true;
+    return DefaultScene->OverlapCapsule(center, radius, height, results, rotation, layerMask, hitTriggers);
 }
 
 bool Physics::OverlapConvex(const Vector3& center, const CollisionData* convexMesh, const Vector3& scale, Array<PhysicsColliderActor*>& results, const Quaternion& rotation, uint32 layerMask, bool hitTriggers)
 {
-    CHECK_RETURN(convexMesh && convexMesh->GetOptions().Type == CollisionDataType::ConvexMesh, false)
-
-    // Prepare data
-    SCENE_QUERY_SETUP_OVERLAP();
-    const PxTransform pose(C2P(center), C2P(rotation));
-    const PxConvexMeshGeometry geometry(convexMesh->GetConvex(), PxMeshScale(C2P(scale)));
-
-    // Perform overlap test
-    if (!GetScene()->overlap(geometry, pose, buffer, filterData, GetQueryFilterCallback()))
-        return false;
-
-    // Collect results
-    SCENE_QUERY_COLLECT_OVERLAP();
-
-    return true;
+    return DefaultScene->OverlapConvex(center, convexMesh, scale, results, rotation, layerMask, hitTriggers);
 }

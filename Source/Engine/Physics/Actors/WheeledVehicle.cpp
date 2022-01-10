@@ -5,6 +5,7 @@
 #include "Engine/Physics/Physics.h"
 #include "Engine/Physics/Utilities.h"
 #include "Engine/Level/Scene/Scene.h"
+#include "Engine/Physics/PhysicsScene.h"
 #include "Engine/Serialization/Serialization.h"
 #if USE_EDITOR
 #include "Engine/Level/Scene/SceneRendering.h"
@@ -21,7 +22,6 @@
 
 #if WITH_VEHICLE
 extern void InitVehicleSDK();
-extern Array<WheeledVehicle*> WheelVehicles;
 #endif
 
 namespace
@@ -237,7 +237,7 @@ void WheeledVehicle::Setup()
     // Release previous
     if (drive)
     {
-        WheelVehicles.Remove(this);
+        GetPhysicsScene()->RemoveWheeledVehicle(this);
         FreeDrive(_driveTypeCurrent, drive);
         drive = nullptr;
     }
@@ -501,7 +501,7 @@ void WheeledVehicle::Setup()
     CRASH;
     }
 
-    WheelVehicles.Add(this);
+    GetPhysicsScene()->AddWheeledVehicle(this);
     wheelsSimData->free();
     _actor->setSolverIterationCounts(12, 4);
 
@@ -621,6 +621,14 @@ void WheeledVehicle::OnColliderChanged(Collider* c)
     Setup();
 }
 
+void WheeledVehicle::OnPhysicsSceneChanged(PhysicsScene* previous)
+{
+    RigidBody::OnPhysicsSceneChanged(previous);
+
+    previous->RemoveWheeledVehicle(this);
+    GetPhysicsScene()->AddWheeledVehicle(this);
+}
+
 void WheeledVehicle::BeginPlay(SceneBeginData* data)
 {
     RigidBody::BeginPlay(data);
@@ -645,7 +653,7 @@ void WheeledVehicle::EndPlay()
     if (drive)
     {
         // Parkway Drive
-        WheelVehicles.Remove(this);
+        GetPhysicsScene()->RemoveWheeledVehicle(this);
         FreeDrive(_driveTypeCurrent, drive);
         drive = nullptr;
     }

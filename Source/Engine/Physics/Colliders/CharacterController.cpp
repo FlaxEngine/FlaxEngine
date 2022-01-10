@@ -7,9 +7,9 @@
 #include "Engine/Serialization/Serialization.h"
 #include "Engine/Engine/Time.h"
 #include "Engine/Physics/PhysicalMaterial.h"
+#include "Engine/Physics/PhysicsScene.h"
 #include <ThirdParty/PhysX/PxRigidActor.h>
 #include <ThirdParty/PhysX/PxRigidDynamic.h>
-#include <ThirdParty/PhysX/PxPhysics.h>
 #include <ThirdParty/PhysX/characterkinematic/PxController.h>
 #include <ThirdParty/PhysX/characterkinematic/PxControllerManager.h>
 #include <ThirdParty/PhysX/characterkinematic//PxCapsuleController.h>
@@ -156,7 +156,7 @@ CharacterController::CollisionFlags CharacterController::SimpleMove(const Vector
 {
     const float deltaTime = Time::GetCurrentSafe()->DeltaTime.GetTotalSeconds();
     Vector3 displacement = speed;
-    displacement += Physics::GetGravity() * deltaTime;
+    displacement += GetPhysicsScene()->GetGravity() * deltaTime;
     displacement *= deltaTime;
 
     return Move(displacement);
@@ -171,9 +171,9 @@ CharacterController::CollisionFlags CharacterController::Move(const Vector3& dis
         const float deltaTime = Time::GetCurrentSafe()->DeltaTime.GetTotalSeconds();
         PxControllerFilters filters;
         filters.mFilterData = (PxFilterData*)&_filterData;
-        filters.mFilterCallback = Physics::GetCharacterQueryFilterCallback();
+        filters.mFilterCallback = GetPhysicsScene()->GetCharacterQueryFilterCallback();
         filters.mFilterFlags = PxQueryFlag::eDYNAMIC | PxQueryFlag::eSTATIC | PxQueryFlag::ePREFILTER;
-        filters.mCCTFilterCallback = Physics::GetCharacterControllerFilterCallback();
+        filters.mCCTFilterCallback = GetPhysicsScene()->GetCharacterControllerFilterCallback();
 
         result = (CollisionFlags)(byte)_controller->move(C2P(displacement), _minMoveDistance, deltaTime, filters);
         _lastFlags = result;
@@ -243,7 +243,7 @@ void CharacterController::CreateController()
     desc.stepOffset = Math::Min(_stepOffset, desc.height + desc.radius * 2.0f - minSize);
 
     // Create controller
-    _controller = (PxCapsuleController*)Physics::GetControllerManager()->createController(desc);
+    _controller = (PxCapsuleController*)GetPhysicsScene()->GetControllerManager()->createController(desc);
     ASSERT(_controller);
     _controller->setUpDirection(C2P(_upDirection));
     const auto actor = _controller->getActor();
@@ -431,6 +431,14 @@ void CharacterController::OnTransformChanged()
         _box = BoundingBox(_transform.Translation);
         BoundingSphere::FromBox(_box, _sphere);
     }
+}
+
+void CharacterController::OnPhysicsSceneChanged(PhysicsScene* previous)
+{
+    Collider::OnPhysicsSceneChanged(previous);
+
+    DeleteController();
+    CreateController();
 }
 
 void CharacterController::Serialize(SerializeStream& stream, const void* otherObj)

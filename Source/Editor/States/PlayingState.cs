@@ -156,7 +156,7 @@ namespace FlaxEditor.States
         private void SetupEditorEnvOptions()
         {
             Time.TimeScale = 1.0f;
-            Physics.AutoSimulation = true;
+            Physics.DefaultScene.AutoSimulation = true;
             Screen.CursorVisible = true;
             Screen.CursorLock = CursorLockMode.None;
         }

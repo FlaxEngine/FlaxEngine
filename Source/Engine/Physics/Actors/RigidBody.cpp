@@ -2,10 +2,13 @@
 
 #include "RigidBody.h"
 #include "PxMaterial.h"
+
+#include "Engine/Core/Log.h"
 #include "Engine/Physics/Utilities.h"
 #include "Engine/Physics/Colliders/Collider.h"
 #include "Engine/Physics/Physics.h"
 #include "Engine/Physics/PhysicalMaterial.h"
+#include "Engine/Physics/PhysicsScene.h"
 #include "Engine/Serialization/Serialization.h"
 #include <ThirdParty/PhysX/extensions/PxRigidBodyExt.h>
 #include <ThirdParty/PhysX/PxRigidActor.h>
@@ -476,7 +479,7 @@ void RigidBody::CreateActor()
 
     // Register actor
     const bool putToSleep = !_startAwake && GetEnableSimulation() && !GetIsKinematic() && IsActiveInHierarchy();
-    Physics::AddActor(_actor, putToSleep);
+    GetPhysicsScene()->AddActor(_actor, putToSleep);
 
     // Update cached data
     UpdateBounds();
@@ -580,7 +583,7 @@ void RigidBody::EndPlay()
     if (_actor)
     {
         // Remove actor
-        Physics::RemoveActor(_actor);
+        GetPhysicsScene()->RemoveActor(_actor);
         _actor = nullptr;
     }
 }
@@ -626,4 +629,16 @@ void RigidBody::OnTransformChanged()
         // Base
         PhysicsActor::OnTransformChanged();
     }
+}
+
+void RigidBody::OnPhysicsSceneChanged(PhysicsScene* previous)
+{
+    ASSERT(previous);
+
+    PhysicsActor::OnPhysicsSceneChanged(previous);
+
+    previous->UnlinkActor(_actor);
+
+    const bool putToSleep = !_startAwake && GetEnableSimulation() && !GetIsKinematic() && IsActiveInHierarchy();
+    GetPhysicsScene()->AddActor(_actor, putToSleep);
 }
