@@ -484,10 +484,6 @@ namespace Flax.Deps.Dependencies
             if (string.IsNullOrEmpty(localRepoPath))
                 CloneGitRepo(root, "https://github.com/FlaxEngine/mono.git", null, "--recursive");
 
-            // Pick a proper branch
-            GitCheckout(root, "flax-master-5-20");
-            GitResetLocalChanges(root);
-
             // Get the default preprocessor defines for Mono on Windows-based platforms
             {
                 var monoProps = new XmlDocument();
@@ -498,6 +494,18 @@ namespace Flax.Deps.Dependencies
 
             foreach (var platform in options.Platforms)
             {
+                // Pick a proper branch
+                var monoBranch = "flax-master-5-20";
+                switch (platform)
+                {
+                case TargetPlatform.Switch:
+                case TargetPlatform.Mac:
+                    monoBranch = "flax-master-6-4";
+                    break;
+                }
+                GitCheckout(root, monoBranch);
+                GitResetLocalChanges(root);
+
                 switch (platform)
                 {
                 case TargetPlatform.Windows:
