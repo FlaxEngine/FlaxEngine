@@ -69,7 +69,7 @@ namespace FlaxEditor.Surface.Archetypes
                 Size = new Vector2(170, 40),
                 ConnectionsHints = ConnectionsHint.Array,
                 IndependentBoxes = new int[] { 0 },
-                DependentBoxes = new int[] { 1, 2 },
+                DependentBoxes = new int[] { 1 },
                 DependentBoxFilter = GetArrayItemType,
                 Elements = new[]
                 {
@@ -88,7 +88,7 @@ namespace FlaxEditor.Surface.Archetypes
                 Size = new Vector2(170, 40),
                 ConnectionsHints = ConnectionsHint.Array,
                 IndependentBoxes = new int[] { 0 },
-                DependentBoxes = new int[] { 1, 2 },
+                DependentBoxes = new int[] { 1 },
                 DependentBoxFilter = GetArrayItemType,
                 Elements = new[]
                 {
