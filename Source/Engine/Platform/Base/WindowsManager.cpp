@@ -63,7 +63,7 @@ void WindowsManagerService::Update()
     WindowsManager::WindowsLocker.Lock();
     for (auto& win : WindowsManager::Windows)
     {
-        if (win->IsVisible())
+        if (win && win->IsVisible())
             win->OnUpdate(deltaTime);
     }
     WindowsManager::WindowsLocker.Unlock();

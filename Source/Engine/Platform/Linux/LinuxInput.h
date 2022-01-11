@@ -1,12 +1,9 @@
+// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+
 #if PLATFORM_LINUX
 
-#include <string>
-#include "/usr/include/linux/input-event-codes.h"
-#include "/usr/include/linux/input.h"
 #include "Engine/Input/Input.h"
 #include "Engine/Input/Gamepad.h"
-
-using namespace std;
 
 #define LINUXINPUT_MAX_GAMEPADS 8
 #define LINUXINPUT_MAX_GAMEPAD_EVENTS_PER_FRAME 32
@@ -14,25 +11,23 @@ using namespace std;
 
 class LinuxGamepad : public Gamepad
 {
-    struct State {
-        bool Buttons[32];
-        float Axis[32];
-    };
-    public:
-    LinuxGamepad(u_int32_t uid[], string name);
-    ~LinuxGamepad();
+public:
     int fd;
-    string dev;
-    State _state;
+    StringAnsi dev;
+
+    LinuxGamepad(uint32 uid[], const String& name);
+    ~LinuxGamepad();
     bool UpdateState();
 };
 
 class LinuxInput
 {
-    public:
+public:
     static void UpdateState();
     static void DetectGamePads();
+#if BUILD_DEBUG
     static void DumpDevices();
+#endif
     static void Init();
 };
 
