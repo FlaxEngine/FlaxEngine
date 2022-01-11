@@ -2524,6 +2524,7 @@ void LinuxPlatform::Tick()
                             for (auto& e : dropData.Files)
                             {
                                 e.Replace(TEXT("file://"), TEXT(""));
+                                e.Replace(TEXT("%20"), TEXT(" "));
                                 e = e.TrimTrailing();
                             }
                             xDndResult = DragDropEffect::None;
