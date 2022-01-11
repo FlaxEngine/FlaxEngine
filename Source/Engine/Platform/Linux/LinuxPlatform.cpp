@@ -215,7 +215,6 @@ static int X11_MessageBoxInit(MessageBoxData* data)
 		LINUX_DIALOG_PRINT("Couldn't load font %s", MessageBoxFont);
 		data->font_set = X11::XCreateFontSet(data->display, "fixed", &missing, &num_missing, NULL);
 		if (missing != nullptr) X11::XFreeStringList(missing);
-		//return 1;
 	}
 
 	return 0;
@@ -1790,11 +1789,6 @@ ProcessMemoryStats LinuxPlatform::GetProcessMemoryStats()
     result.UsedVirtualMemory = result.UsedPhysicalMemory;
 
     return result;
-}
-
-uint64 LinuxPlatform::GetCurrentThreadID()
-{
-    return static_cast<uint64>(pthread_self());
 }
 
 void LinuxPlatform::SetThreadPriority(ThreadPriority priority)

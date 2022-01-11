@@ -709,11 +709,6 @@ ProcessMemoryStats AndroidPlatform::GetProcessMemoryStats()
     return result;
 }
 
-uint64 AndroidPlatform::GetCurrentThreadID()
-{
-    return static_cast<uint64>(pthread_self());
-}
-
 void AndroidPlatform::SetThreadPriority(ThreadPriority priority)
 {
     // TODO: impl this
