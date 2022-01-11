@@ -1370,6 +1370,39 @@ PixelFormat GPUDeviceVulkan::GetClosestSupportedPixelFormat(PixelFormat format, 
     return format;
 }
 
+void GetPipelineCachePath(String& path)
+{
+#if USE_EDITOR
+    path = Globals::ProjectCacheFolder / TEXT("VulkanPipeline.cache");
+#else
+    path = Globals::ProductLocalFolder / TEXT("VulkanPipeline.cache");
+#endif
+}
+
+bool GPUDeviceVulkan::SavePipelineCache()
+{
+    if (PipelineCache == VK_NULL_HANDLE || !vkGetPipelineCacheData)
+        return false;
+
+    // Query data size
+    size_t dataSize = 0;
+    VkResult result = vkGetPipelineCacheData(Device, PipelineCache, &dataSize, nullptr);
+    LOG_VULKAN_RESULT_WITH_RETURN(result);
+    if (dataSize <= 0)
+        return false;
+
+    // Query data
+    Array<byte> data;
+    data.Resize((int32)dataSize);
+    result = vkGetPipelineCacheData(Device, PipelineCache, &dataSize, data.Get());
+    LOG_VULKAN_RESULT_WITH_RETURN(result);
+
+    // Save data
+    String path;
+    GetPipelineCachePath(path);
+    return File::WriteAllBytes(path, data);
+}
+
 #if VK_EXT_validation_cache
 
 void GetValidationCachePath(String& path)
@@ -1381,54 +1414,8 @@ void GetValidationCachePath(String& path)
 #endif
 }
 
-void GPUDeviceVulkan::LoadValidationCache()
-{
-    Array<uint8> data;
-
-    String path;
-    GetValidationCachePath(path);
-
-    if (FileSystem::FileExists(path))
-    {
-        LOG(Info, "Trying to load Vulkan validation cache file {0}", path);
-        File::ReadAllBytes(path, data);
-
-        if (data.HasItems())
-        {
-            int32* dataPtr = (int32*)data.Get();
-            if (*dataPtr > 0)
-            {
-                dataPtr++;
-                const int32 version = *dataPtr++;
-                if (version == VK_PIPELINE_CACHE_HEADER_VERSION_ONE)
-                {
-                    dataPtr += VK_UUID_SIZE / sizeof(int32);
-                }
-                else
-                {
-                    LOG(Warning, "Bad validation cache file, version: {0}, expected: {1}", version, VK_PIPELINE_CACHE_HEADER_VERSION_ONE);
-                    data.Clear();
-                }
-            }
-            else
-            {
-                LOG(Warning, "Bad validation cache file, header size: {0}", *dataPtr);
-                data.Clear();
-            }
-        }
-    }
-
-    VkValidationCacheCreateInfoEXT validationCreateInfo;
-    RenderToolsVulkan::ZeroStruct(validationCreateInfo, VK_STRUCTURE_TYPE_VALIDATION_CACHE_CREATE_INFO_EXT);
-    validationCreateInfo.initialDataSize = data.Count();
-    validationCreateInfo.pInitialData = data.Count() > 0 ? data.Get() : nullptr;
-    const VkResult result = vkCreateValidationCacheEXT(Device, &validationCreateInfo, nullptr, &ValidationCache);
-    LOG_VULKAN_RESULT(result);
-}
-
 bool GPUDeviceVulkan::SaveValidationCache()
 {
-    // Skip if missing
     if (ValidationCache == VK_NULL_HANDLE || !vkGetValidationCacheDataEXT)
         return false;
 
@@ -1849,11 +1836,63 @@ bool GPUDeviceVulkan::Init()
     UniformBufferUploader = New<UniformBufferUploaderVulkan>(this);
     DescriptorPoolsManager = New<DescriptorPoolsManagerVulkan>(this);
     MainContext = New<GPUContextVulkan>(this, GraphicsQueue);
-    // TODO: create and load PipelineCache
+    if (vkCreatePipelineCache)
+    {
+        Array<uint8> data;
+        String path;
+        GetPipelineCachePath(path);
+        if (FileSystem::FileExists(path))
+        {
+            LOG(Info, "Trying to load Vulkan pipeline cache file {0}", path);
+            File::ReadAllBytes(path, data);
+        }
+        VkPipelineCacheCreateInfo pipelineCacheCreateInfo;
+        RenderToolsVulkan::ZeroStruct(pipelineCacheCreateInfo, VK_STRUCTURE_TYPE_PIPELINE_CACHE_CREATE_INFO);
+        pipelineCacheCreateInfo.initialDataSize = data.Count();
+        pipelineCacheCreateInfo.pInitialData = data.Count() > 0 ? data.Get() : nullptr;
+        const VkResult result = vkCreatePipelineCache(Device, &pipelineCacheCreateInfo, nullptr, &PipelineCache);
+        LOG_VULKAN_RESULT(result);
+    }
 #if VK_EXT_validation_cache
     if (OptionalDeviceExtensions.HasEXTValidationCache && vkCreateValidationCacheEXT && vkDestroyValidationCacheEXT)
     {
-        LoadValidationCache();
+        Array<uint8> data;
+        String path;
+        GetValidationCachePath(path);
+        if (FileSystem::FileExists(path))
+        {
+            LOG(Info, "Trying to load Vulkan validation cache file {0}", path);
+            File::ReadAllBytes(path, data);
+            if (data.HasItems())
+            {
+                int32* dataPtr = (int32*)data.Get();
+                if (*dataPtr > 0)
+                {
+                    dataPtr++;
+                    const int32 version = *dataPtr++;
+                    if (version == VK_PIPELINE_CACHE_HEADER_VERSION_ONE)
+                    {
+                        dataPtr += VK_UUID_SIZE / sizeof(int32);
+                    }
+                    else
+                    {
+                        LOG(Warning, "Bad validation cache file, version: {0}, expected: {1}", version, VK_PIPELINE_CACHE_HEADER_VERSION_ONE);
+                        data.Clear();
+                    }
+                }
+                else
+                {
+                    LOG(Warning, "Bad validation cache file, header size: {0}", *dataPtr);
+                    data.Clear();
+                }
+            }
+        }
+        VkValidationCacheCreateInfoEXT validationCreateInfo;
+        RenderToolsVulkan::ZeroStruct(validationCreateInfo, VK_STRUCTURE_TYPE_VALIDATION_CACHE_CREATE_INFO_EXT);
+        validationCreateInfo.initialDataSize = data.Count();
+        validationCreateInfo.pInitialData = data.Count() > 0 ? data.Get() : nullptr;
+        const VkResult result = vkCreateValidationCacheEXT(Device, &validationCreateInfo, nullptr, &ValidationCache);
+        LOG_VULKAN_RESULT(result);
     }
 #endif
 
@@ -1911,6 +1950,8 @@ void GPUDeviceVulkan::Dispose()
     Allocator = VK_NULL_HANDLE;
     if (PipelineCache != VK_NULL_HANDLE)
     {
+        if (SavePipelineCache())
+            LOG(Warning, "Failed to save Vulkan pipeline cache");
         vkDestroyPipelineCache(Device, PipelineCache, nullptr);
         PipelineCache = VK_NULL_HANDLE;
     }
@@ -1918,9 +1959,7 @@ void GPUDeviceVulkan::Dispose()
     if (ValidationCache != VK_NULL_HANDLE)
     {
         if (SaveValidationCache())
-        {
             LOG(Warning, "Failed to save Vulkan validation cache");
-        }
         vkDestroyValidationCacheEXT(Device, ValidationCache, nullptr);
         ValidationCache = VK_NULL_HANDLE;
     }
