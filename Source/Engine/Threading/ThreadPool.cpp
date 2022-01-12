@@ -24,6 +24,7 @@ namespace ThreadPoolImpl
     Array<Thread*> Threads;
     ConcurrentTaskQueue<ThreadPoolTask> Jobs; // Hello Steve!
     ConditionVariable JobsSignal;
+    CriticalSection JobsMutex;
 }
 
 void ThreadPoolTask::Enqueue()
@@ -104,7 +105,6 @@ int32 ThreadPool::ThreadProc()
     ThreadPoolTask* task;
 
     // Work until end
-    CriticalSection mutex;
     while (Platform::AtomicRead(&ThreadPoolImpl::ExitFlag) == 0)
     {
         // Try to get a job
@@ -114,9 +114,9 @@ int32 ThreadPool::ThreadProc()
         }
         else
         {
-            mutex.Lock();
-            ThreadPoolImpl::JobsSignal.Wait(mutex);
-            mutex.Unlock();
+            ThreadPoolImpl::JobsMutex.Lock();
+            ThreadPoolImpl::JobsSignal.Wait(ThreadPoolImpl::JobsMutex);
+            ThreadPoolImpl::JobsMutex.Unlock();
         }
     }
 
