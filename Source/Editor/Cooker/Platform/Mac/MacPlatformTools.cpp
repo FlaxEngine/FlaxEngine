@@ -9,6 +9,8 @@
 #include "Editor/Utilities/EditorUtilities.h"
 #include "Engine/Content/Content.h"
 #include "Engine/Content/JsonAsset.h"
+#include "Editor/Editor.h"
+#include "Editor/ProjectInfo.h"
 
 IMPLEMENT_SETTINGS_GETTER(MacPlatformSettings, MacPlatform);
 
@@ -37,55 +39,58 @@ ArchitectureType MacPlatformTools::GetArchitecture() const
     return _arch;
 }
 
-bool MacPlatformTools::OnDeployBinaries(CookingData& data)
+void MacPlatformTools::OnBuildStarted(CookingData& data)
+{
+    // Adjust the cooking output folders for packaging app
+    const auto gameSettings = GameSettings::Get();
+    String productName = gameSettings->ProductName;
+    productName.Replace(TEXT(" "), TEXT(""));
+    productName.Replace(TEXT("."), TEXT(""));
+    productName.Replace(TEXT("-"), TEXT(""));
+    String contents = productName + TEXT(".app/Contents/");
+    data.DataOutputPath /= contents;
+    data.NativeCodeOutputPath /= contents;
+    data.ManagedCodeOutputPath /= contents;
+
+    PlatformTools::OnBuildStarted(data);
+}
+
+bool MacPlatformTools::OnPostProcess(CookingData& data)
 {
     const auto gameSettings = GameSettings::Get();
     const auto platformSettings = MacPlatformSettings::Get();
-    const auto outputPath = data.DataOutputPath;
+    const auto platformDataPath = data.GetPlatformBinariesRoot();
+    const auto projectVersion = Editor::Project->Version.ToString();
 
-    // Copy binaries
+    // Setup package name (eg. com.company.project)
+    String appIdentifier = platformSettings->AppIdentifier;
     {
-        if (!FileSystem::DirectoryExists(outputPath))
-            FileSystem::CreateDirectory(outputPath);
-        const auto binPath = data.GetGameBinariesPath();
-
-        // Gather files to deploy
-        Array<String> files;
-        files.Add(binPath / TEXT("FlaxGame"));
-        FileSystem::DirectoryGetFiles(files, binPath, TEXT("*.a"), DirectorySearchOption::TopDirectoryOnly);
-
-        // Copy data
-        for (int32 i = 0; i < files.Count(); i++)
+        String productName = gameSettings->ProductName;
+        productName.Replace(TEXT(" "), TEXT(""));
+        productName.Replace(TEXT("."), TEXT(""));
+        productName.Replace(TEXT("-"), TEXT(""));
+        String companyName = gameSettings->CompanyName;
+        companyName.Replace(TEXT(" "), TEXT(""));
+        companyName.Replace(TEXT("."), TEXT(""));
+        companyName.Replace(TEXT("-"), TEXT(""));
+        appIdentifier.Replace(TEXT("${PROJECT_NAME}"), *productName, StringSearchCase::IgnoreCase);
+        appIdentifier.Replace(TEXT("${COMPANY_NAME}"), *companyName, StringSearchCase::IgnoreCase);
+        appIdentifier = appIdentifier.ToLower();
+        for (int32 i = 0; i < appIdentifier.Length(); i++)
         {
-            if (FileSystem::CopyFile(outputPath / StringUtils::GetFileName(files[i]), files[i]))
+            const auto c = appIdentifier[i];
+            if (c != '_' && c != '.' && !StringUtils::IsAlnum(c))
             {
-                data.Error(TEXT("Failed to setup output directory."));
+                LOG(Error, "Apple app identifier \'{0}\' contains invalid character. Only letters, numbers, dots and underscore characters are allowed.", appIdentifier);
                 return true;
             }
         }
+        if (appIdentifier.IsEmpty())
+        {
+            LOG(Error, "Apple app identifier is empty.", appIdentifier);
+            return true;
+        }
     }
-
-    // Apply game executable file name
-#if !BUILD_DEBUG
-	const String outputExePath = outputPath / TEXT("FlaxGame");
-	const String gameExePath = outputPath / gameSettings->ProductName;
-	if (FileSystem::FileExists(outputExePath) && gameExePath.Compare(outputExePath, StringSearchCase::IgnoreCase) != 0)
-	{
-		if (FileSystem::MoveFile(gameExePath, outputExePath, true))
-		{
-			data.Error(TEXT("Failed to rename output executable file."));
-			return true;
-		}
-	}
-#else
-    // Don't change application name on a DEBUG build (for build game debugging)
-    const String gameExePath = outputPath / TEXT("FlaxGame");
-#endif
-
-    // Ensure the output binary can be executed
-#if PLATFORM_MAC
-    system(*StringAnsi(String::Format(TEXT("chmod +x \"{0}\""), gameExePath)));
-#endif
 
     return false;
 }
