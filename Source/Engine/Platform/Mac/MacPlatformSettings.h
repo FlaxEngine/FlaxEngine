@@ -6,6 +6,9 @@
 
 #include "Engine/Core/Config/PlatformSettingsBase.h"
 #include "Engine/Core/Types/String.h"
+#include "Engine/Scripting/SoftObjectReference.h"
+
+class Texture;
 
 /// <summary>
 /// Mac platform settings.
@@ -20,6 +23,12 @@ API_CLASS(sealed, Namespace="FlaxEditor.Content.Settings") class FLAXENGINE_API 
     API_FIELD(Attributes="EditorOrder(0), EditorDisplay(\"General\")")
     String AppIdentifier = TEXT("com.${COMPANY_NAME}.${PROJECT_NAME}");
 
+    /// <summary>
+    /// Custom icon texture to use for the application (overrides the default one).
+    /// </summary>
+    API_FIELD(Attributes="EditorOrder(1000), EditorDisplay(\"Other\")")
+    SoftObjectReference<Texture> OverrideIcon;
+
 public:
     /// <summary>
     /// Gets the instance of the settings asset (default value if missing). Object returned by this method is always loaded with valid data to use.
@@ -30,6 +39,7 @@ public:
     void Deserialize(DeserializeStream& stream, ISerializeModifier* modifier) final override
     {
         DESERIALIZE(AppIdentifier);
+        DESERIALIZE(OverrideIcon);
     }
 };
 

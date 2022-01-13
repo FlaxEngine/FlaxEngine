@@ -1084,7 +1084,11 @@ GPUDevice* GPUDeviceVulkan::Create()
     if (result == VK_ERROR_INCOMPATIBLE_DRIVER)
     {
         // Missing driver
-        Platform::Fatal(TEXT("Cannot find a compatible Vulkan driver.\nPlease look at the Getting Started guide for additional information."));
+#if PLATFORM_APPLE_FAMILY
+        Platform::Fatal(TEXT("Cannot find a compatible Metal driver."));
+#else
+        Platform::Fatal(TEXT("Cannot find a compatible Vulkan driver."));
+#endif
         return nullptr;
     }
     if (result == VK_ERROR_EXTENSION_NOT_PRESENT)

@@ -535,7 +535,13 @@ Rectangle MacPlatform::GetVirtualDesktopBounds()
 
 String MacPlatform::GetMainDirectory()
 {
-    return StringUtils::GetDirectoryName(GetExecutableFilePath());
+    String path = StringUtils::GetDirectoryName(GetExecutableFilePath());
+    if (path.EndsWith(TEXT("/Contents/MacOS")))
+    {
+        // If running from executable in a package, go up to the Contents
+        path = StringUtils::GetDirectoryName(path);
+    }
+    return path;
 }
 
 String MacPlatform::GetExecutableFilePath()
@@ -589,18 +595,26 @@ bool MacPlatform::SetEnvironmentVariable(const String& name, const String& value
 int32 MacProcess(const StringView& cmdLine, const StringView& workingDir, const Dictionary<String, String>& environment, bool waitForEnd, bool logOutput)
 {
     LOG(Info, "Command: {0}", cmdLine);
+    String cwd;
     if (workingDir.Length() != 0)
+    {
         LOG(Info, "Working directory: {0}", workingDir);
+        cwd = Platform::GetWorkingDirectory();
+        Platform::SetWorkingDirectory(workingDir);
+    }
 
     StringAsANSI<> cmdLineAnsi(*cmdLine, cmdLine.Length());
     FILE* pipe = popen(cmdLineAnsi.Get(), "r");
+    if (cwd.Length() != 0)
+    {
+        Platform::SetWorkingDirectory(cwd);
+    }
     if (!pipe)
     {
 		LOG(Warning, "Failed to start process, errno={}", errno);
         return -1;
     }
 
-    // TODO: workingDir
     // TODO: environment
 
 	int32 returnCode = 0;
