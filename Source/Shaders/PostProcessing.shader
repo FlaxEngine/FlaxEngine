@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 // Film Grain post-process shader v1.1	
 // Martins Upitis (martinsh) devlog-martinsh.blogspot.com
