@@ -38,6 +38,10 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
+    <Reference Include="Flax.Build">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\..\..\Binaries\Tools\Flax.Build.exe</HintPath>
+    </Reference>
     <Reference Include="nunit.framework, Version=3.12.0.0, Culture=neutral, PublicKeyToken=2638cd05610744eb, processorArchitecture=MSIL">
       <HintPath>..\..\..\packages\NUnit.3.12.0\lib\net45\nunit.framework.dll</HintPath>
     </Reference>
@@ -46,12 +50,6 @@
   <ItemGroup>
     <Compile Include="TestCommandLine.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-  </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\Flax.Build\Flax.Build.csproj">
-      <Project>{c99aaf92-d4ad-4847-9ee0-b11e68e93e1e}</Project>
-      <Name>Flax.Build</Name>
-    </ProjectReference>
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />

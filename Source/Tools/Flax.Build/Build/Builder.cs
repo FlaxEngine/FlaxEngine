@@ -228,6 +228,11 @@ namespace Flax.Build
 
             var rules = GenerateRulesAssembly();
             var project = Globals.Project;
+            if (project == null)
+            {
+                Log.Warning("Missing project");
+                return true;
+            }
 
             using (new ProfileEventScope("BuildTargets"))
             {
