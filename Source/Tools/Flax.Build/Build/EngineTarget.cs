@@ -47,7 +47,7 @@ namespace Flax.Build
         public override string GetOutputFilePath(BuildOptions options, TargetOutputType? outputType)
         {
             // If building engine executable for platform doesn't support referencing it when linking game shared libraries
-            if (outputType == null && UseSymbolsExports && OutputType == TargetOutputType.Executable && !options.Platform.HasExecutableFileReferenceSupport)
+            if (outputType == null && UseSeparateMainExecutable(options))
             {
                 // Build into shared library
                 outputType = TargetOutputType.Library;
@@ -62,7 +62,7 @@ namespace Flax.Build
             base.SetupTargetEnvironment(options);
 
             // If building engine executable for platform doesn't support referencing it when linking game shared libraries
-            if (UseSymbolsExports && OutputType == TargetOutputType.Executable && !options.Platform.HasExecutableFileReferenceSupport)
+            if (UseSeparateMainExecutable(options))
             {
                 // Build into shared library
                 options.LinkEnv.Output = LinkerOutput.SharedLibrary;
@@ -73,7 +73,7 @@ namespace Flax.Build
         public override void PreBuild(TaskGraph graph, BuildOptions buildOptions)
         {
             // If building engine executable for platform doesn't support referencing it when linking game shared libraries
-            if (UseSymbolsExports && OutputType == TargetOutputType.Executable && !buildOptions.Platform.HasExecutableFileReferenceSupport)
+            if (UseSeparateMainExecutable(buildOptions))
             {
                 // Don't link Main module into shared library
                 Modules.Remove("Main");
@@ -88,7 +88,7 @@ namespace Flax.Build
             base.PostBuild(graph, buildOptions);
 
             // If building engine executable for platform doesn't support referencing it when linking game shared libraries
-            if (UseSymbolsExports && OutputType == TargetOutputType.Executable && !buildOptions.Platform.HasExecutableFileReferenceSupport)
+            if (UseSeparateMainExecutable(buildOptions))
             {
                 // Build additional executable with Main module only that uses shared library
                 using (new ProfileEventScope("BuildExecutable"))
@@ -116,6 +116,11 @@ namespace Flax.Build
                 task.CommandPath = "ln";
                 task.CommandArguments = "-s -f libmonosgen-2.0.so libmonosgen-2.0.so.1.0.0";
             }
+        }
+
+        private bool UseSeparateMainExecutable(BuildOptions buildOptions)
+        {
+            return UseSymbolsExports && OutputType == TargetOutputType.Executable && !buildOptions.Platform.HasExecutableFileReferenceSupport && !Configuration.BuildBindingsOnly;
         }
 
         private void BuildMainExecutable(TaskGraph graph, BuildOptions buildOptions)
