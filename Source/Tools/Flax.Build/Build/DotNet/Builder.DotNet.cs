@@ -21,6 +21,7 @@ namespace Flax.Build
                 task.WorkingDirectory = Globals.Root;
                 task.InfoMessage = "Building " + Path.GetFileName(target.CustomExternalProjectFilePath);
                 task.Cost = 100;
+                task.DisableCache = true;
                 task.CommandPath = VCEnvironment.MSBuildPath;
                 task.CommandArguments = string.Format("\"{0}\" /m /t:Build /p:Configuration=\"{1}\" /p:Platform=\"{2}\" {3} /nologo", target.CustomExternalProjectFilePath, configuration.ToString(), "AnyCPU", VCEnvironment.Verbosity);
                 return;
