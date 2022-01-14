@@ -23,6 +23,8 @@ public class FlaxBuildTestsTarget : Target
         Platforms = new[]
         {
             TargetPlatform.Windows,
+            TargetPlatform.Linux,
+            TargetPlatform.Mac,
         };
         Configurations = new[]
         {

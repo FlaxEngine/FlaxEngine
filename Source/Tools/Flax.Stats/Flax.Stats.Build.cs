@@ -23,6 +23,8 @@ public class FlaxStatsTarget : Target
         Platforms = new[]
         {
             TargetPlatform.Windows,
+            TargetPlatform.Linux,
+            TargetPlatform.Mac,
         };
         Configurations = new[]
         {
