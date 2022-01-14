@@ -24,6 +24,7 @@ jobs:
       run: |
         ./GenerateProjectFiles.sh -vs2019
         ./Development/Scripts/Linux/CallBuildTool.sh -build -log -arch=x64 -platform=Linux -configuration=Debug -buildtargets=FlaxEditor -BuildBindingsOnly -verbose
+        cat Source/FlaxEngine.csproj
         ./Development/Scripts/Linux/CallBuildTool.sh -build -log -arch=x64 -platform=Linux -configuration=Debug -buildtargets="FlaxEngine.Tests" -verbose
         ./Development/Scripts/Linux/CallBuildTool.sh -build -log -arch=x64 -platform=Linux -configuration=Debug -buildtargets="Flax.Build.Tests"
     - name: Test
