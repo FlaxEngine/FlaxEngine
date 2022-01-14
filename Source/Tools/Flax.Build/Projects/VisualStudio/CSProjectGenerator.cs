@@ -34,6 +34,15 @@ namespace Flax.Build.Projects.VisualStudio
             var projectFileToolVersion = ProjectFileToolVersion;
             var projectDirectory = Path.GetDirectoryName(project.Path);
             var defaultTarget = project.Targets[0];
+            foreach (var target in project.Targets)
+            {
+                // Pick the Editor-related target
+                if (target.IsEditor)
+                {
+                    defaultTarget = target;
+                    break;
+                }
+            }
             var defaultConfiguration = TargetConfiguration.Debug;
             var defaultArchitecture = TargetArchitecture.AnyCPU;
             var projectTypes = ProjectTypeGuids.ToOption(ProjectTypeGuids.WindowsCSharp);
@@ -93,7 +102,7 @@ namespace Flax.Build.Projects.VisualStudio
                         defines += ";";
                     defines += string.Join(";", configuration.TargetBuildOptions.ScriptingAPI.Defines);
                 }
-                Log.Info("csprojgen: default_configuration=" + configuration.Name + ", default_platform=" + configuration.PlatformName + ", defines: " + defines + ", for: " + Path.GetFileName(project.Path));
+                Log.Warning("csprojgen: defaultTarget=" + defaultTarget + ", default_configuration=" + configuration.Name + ", default_platform=" + configuration.PlatformName + ", defines: " + defines + ", for: " + Path.GetFileName(project.Path));
                 var outputPath = Utilities.MakePathRelativeTo(project.CSharp.OutputPath ?? configuration.TargetBuildOptions.OutputFolder, projectDirectory);
                 var intermediateOutputPath = Utilities.MakePathRelativeTo(project.CSharp.IntermediateOutputPath ?? Path.Combine(configuration.TargetBuildOptions.IntermediateFolder, "CSharp"), projectDirectory);
 
