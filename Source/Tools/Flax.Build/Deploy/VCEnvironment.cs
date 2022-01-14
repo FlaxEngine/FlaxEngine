@@ -184,6 +184,8 @@ namespace Flax.Deploy
             return false;
         }
 
+        internal static string Verbosity => Configuration.Verbose ? " " : "/verbosity:minimal ";
+
         /// <summary>
         /// Runs msbuild.exe with the specified arguments.
         /// </summary>
@@ -203,7 +205,7 @@ namespace Flax.Deploy
                 throw new Exception(string.Format("Project {0} does not exist!", project));
             }
 
-            string cmdLine = string.Format("\"{0}\" /m /t:Build /p:Configuration=\"{1}\" /p:Platform=\"{2}\" /verbosity:minimal /nologo", project, buildConfig, buildPlatform);
+            string cmdLine = string.Format("\"{0}\" /m /t:Build /p:Configuration=\"{1}\" /p:Platform=\"{2}\" {3} /nologo", project, buildConfig, buildPlatform, Verbosity);
             int result = Utilities.Run(msBuild, cmdLine);
             if (result != 0)
             {
@@ -230,7 +232,7 @@ namespace Flax.Deploy
                 throw new Exception(string.Format("Unable to build solution {0}. Solution file not found.", solutionFile));
             }
 
-            string cmdLine = string.Format("\"{0}\" /m /t:Build /p:Configuration=\"{1}\" /p:Platform=\"{2}\" /verbosity:minimal /nologo", solutionFile, buildConfig, buildPlatform);
+            string cmdLine = string.Format("\"{0}\" /m /t:Build /p:Configuration=\"{1}\" /p:Platform=\"{2}\" {3} /nologo", solutionFile, buildConfig, buildPlatform, Verbosity);
             int result = Utilities.Run(msBuild, cmdLine);
             if (result != 0)
             {
@@ -255,7 +257,7 @@ namespace Flax.Deploy
                 throw new Exception(string.Format("Unable to clean solution {0}. Solution file not found.", solutionFile));
             }
 
-            string cmdLine = string.Format("\"{0}\" /t:Clean /verbosity:minimal /nologo", solutionFile);
+            string cmdLine = string.Format("\"{0}\" /t:Clean {1} /nologo", solutionFile, Verbosity);
             Utilities.Run(msBuild, cmdLine);
         }
 
