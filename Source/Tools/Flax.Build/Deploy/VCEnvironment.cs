@@ -184,7 +184,7 @@ namespace Flax.Deploy
             return false;
         }
 
-        internal static string Verbosity => Configuration.Verbose ? " " : "/verbosity:minimal ";
+        internal static string Verbosity => Configuration.Verbose ? "" : "/verbosity:minimal";
 
         /// <summary>
         /// Runs msbuild.exe with the specified arguments.

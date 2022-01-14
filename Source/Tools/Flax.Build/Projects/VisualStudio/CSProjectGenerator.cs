@@ -208,7 +208,7 @@ namespace Flax.Build.Projects.VisualStudio
                     else
                         fileType = "None";
 
-                    csProjectFileContent.AppendLine(string.Format("    <{0} Visible=\"false\" Include =\"{1}\" />", fileType, file));
+                    csProjectFileContent.AppendLine(string.Format("    <{0} Visible=\"false\" Include=\"{1}\" />", fileType, file));
                 }
             }
 
