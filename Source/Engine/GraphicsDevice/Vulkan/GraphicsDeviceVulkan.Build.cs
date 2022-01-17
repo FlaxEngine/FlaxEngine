@@ -40,7 +40,7 @@ public sealed class VulkanSdk : Sdk
             return;
 
         var vulkanSdk = Environment.GetEnvironmentVariable("VULKAN_SDK");
-        if (vulkanSdk == null && platform == TargetPlatform.Mac)
+        if (platform == TargetPlatform.Mac && (vulkanSdk == null || !Directory.Exists(vulkanSdk)))
         {
             // Try to guess install location for the current user
             var path = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "VulkanSDK");

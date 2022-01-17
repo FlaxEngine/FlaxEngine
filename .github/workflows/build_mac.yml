@@ -2,7 +2,7 @@ name: Build macOS
 on: [push, pull_request]
 
 env:
-  VULKAN_SDK: $HOME/VulkanSDK
+  VULKAN_SDK: /Users/runner/VulkanSDK
 
 jobs:
 
