@@ -133,7 +133,7 @@ int32 Engine::Main(const Char* cmdLine)
     Platform::BeforeRun();
     EngineImpl::InitMainWindow();
     Application::BeforeRun();
-#if !USE_EDITOR && (PLATFORM_WINDOWS || PLATFORM_LINUX)
+#if !USE_EDITOR && (PLATFORM_WINDOWS || PLATFORM_LINUX || PLATFORM_MAC)
     EngineImpl::RunInBackground = PlatformSettings::Get()->RunInBackground;
 #endif
     Log::Logger::WriteFloor();

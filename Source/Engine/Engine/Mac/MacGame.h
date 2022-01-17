@@ -12,6 +12,10 @@
 /// <seealso cref="Game" />
 class MacGame : public GameBase
 {
+public:
+
+    // [GameBase]
+    static void InitMainWindowSettings(CreateWindowSettings& settings);
 };
 
 typedef MacGame Game;
