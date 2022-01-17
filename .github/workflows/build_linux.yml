@@ -1,11 +1,6 @@
 name: Build Linux
 on: [push, pull_request]
 
-env:
-  VULKAN_SDK_VER: 1.2.198.1
-  VULKAN_SDK_ROOT: /home/runner/work/VulkanSDK
-  VULKAN_SDK: /home/runner/work/VulkanSDK/1.2.198.1/x86_64
-
 jobs:
 
   # Editor
@@ -22,11 +17,7 @@ jobs:
         sudo apt-get update
         sudo apt-get install libx11-dev libxcursor-dev libxinerama-dev build-essential gettext libtool libtool-bin libpulse-dev libasound2-dev libjack-dev portaudio19-dev
     - name: Setup Vulkan
-      run: |
-        wget "https://sdk.lunarg.com/sdk/download/$VULKAN_SDK_VER/linux/vulkan-sdk.tar.gz" --no-verbose -O vulkan-sdk.tar.gz
-        mkdir $VULKAN_SDK_ROOT
-        tar -xf vulkan-sdk.tar.gz -C $VULKAN_SDK_ROOT
-        echo Vulkan SDK installed!
+      uses: ./.github/actions/vulkan
     - name: Checkout LFS
       run: |
         git lfs version
@@ -46,11 +37,7 @@ jobs:
       run: |
         sudo apt-get install libx11-dev libxcursor-dev libxinerama-dev
     - name: Setup Vulkan
-      run: |
-        wget "https://sdk.lunarg.com/sdk/download/$VULKAN_SDK_VER/linux/vulkan-sdk.tar.gz" --no-verbose -O vulkan-sdk.tar.gz
-        mkdir $VULKAN_SDK_ROOT
-        tar -xf vulkan-sdk.tar.gz -C $VULKAN_SDK_ROOT
-        echo Vulkan SDK installed!
+      uses: ./.github/actions/vulkan
     - name: Checkout LFS
       run: |
         git lfs version

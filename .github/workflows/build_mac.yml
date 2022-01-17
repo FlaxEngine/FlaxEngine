@@ -1,10 +1,6 @@
 name: Build macOS
 on: [push, pull_request]
 
-env:
-  VULKAN_SDK_ROOT: /Users/runner/VulkanSDK
-  VULKAN_SDK: /Users/runner/VulkanSDK/macOS
-
 jobs:
 
   # Editor
@@ -12,14 +8,10 @@ jobs:
     name: Editor (Mac, Development x64)
     runs-on: "macos-latest"
     steps:
-    - name: Setup Vulkan
-      run: |
-        curl -LO "https://sdk.lunarg.com/sdk/download/latest/mac/vulkan-sdk.dmg"
-        hdiutil attach vulkan-sdk.dmg -mountpoint /Volumes/vulkan-sdk
-        sudo "/Volumes/vulkan-sdk/InstallVulkan.app/Contents/MacOS/InstallVulkan" --root "$VULKAN_SDK_ROOT" --accept-licenses --default-answer --confirm-command install
-        echo Vulkan SDK installed!
     - name: Checkout repo
       uses: actions/checkout@v2
+    - name: Setup Vulkan
+      uses: ./.github/actions/vulkan
     - name: Checkout LFS
       run: |
         git lfs version
@@ -33,14 +25,10 @@ jobs:
     name: Game (Mac, Release x64)
     runs-on: "macos-latest"
     steps:
-    - name: Setup Vulkan
-      run: |
-        curl -LO "https://sdk.lunarg.com/sdk/download/latest/mac/vulkan-sdk.dmg"
-        hdiutil attach vulkan-sdk.dmg -mountpoint /Volumes/vulkan-sdk
-        sudo "/Volumes/vulkan-sdk/InstallVulkan.app/Contents/MacOS/InstallVulkan" --root "$VULKAN_SDK_ROOT" --accept-licenses --default-answer --confirm-command install
-        echo Vulkan SDK installed!
     - name: Checkout repo
       uses: actions/checkout@v2
+    - name: Setup Vulkan
+      uses: ./.github/actions/vulkan
     - name: Checkout LFS
       run: |
         git lfs version
