@@ -21,9 +21,10 @@ jobs:
         sudo apt-get install libx11-dev libxcursor-dev libxinerama-dev build-essential gettext libtool libtool-bin libpulse-dev libasound2-dev libjack-dev portaudio19-dev
     - name: Setup Vulkan
       run: |
-        wget "https://sdk.lunarg.com/sdk/download/$VULKAN_SDK_VER/linux/vulkan-sdk.tar.gz" -O vulkan-sdk.tar.gz
+        wget "https://sdk.lunarg.com/sdk/download/$VULKAN_SDK_VER/linux/vulkan-sdk.tar.gz" --no-verbose -O vulkan-sdk.tar.gz
         tar -xf vulkan-sdk.tar.gz
         export VULKAN_SDK=`pwd`/$VULKAN_SDK_VER/x86_64
+        echo "::set-env name=VULKAN_SDK::$VULKAN_SDK"
         echo Vulkan SDK installed!
     - name: Checkout LFS
       run: |
@@ -45,9 +46,10 @@ jobs:
         sudo apt-get install libx11-dev libxcursor-dev libxinerama-dev
     - name: Setup Vulkan
       run: |
-        wget "https://sdk.lunarg.com/sdk/download/$VULKAN_SDK_VER/linux/vulkan-sdk.tar.gz" -O vulkan-sdk.tar.gz
+        wget "https://sdk.lunarg.com/sdk/download/$VULKAN_SDK_VER/linux/vulkan-sdk.tar.gz" --no-verbose -O vulkan-sdk.tar.gz
         tar -xf vulkan-sdk.tar.gz
         export VULKAN_SDK=`pwd`/$VULKAN_SDK_VER/x86_64
+        echo "::set-env name=VULKAN_SDK::$VULKAN_SDK"
         echo Vulkan SDK installed!
     - name: Checkout LFS
       run: |
