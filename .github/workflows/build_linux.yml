@@ -3,6 +3,8 @@ on: [push, pull_request]
 
 env:
   VULKAN_SDK_VER: 1.2.198.1
+  VULKAN_SDK_ROOT: /home/runner/work/VulkanSDK
+  VULKAN_SDK: /home/runner/work/VulkanSDK/$VULKAN_SDK_VER/x86_64
 
 jobs:
 
@@ -22,9 +24,8 @@ jobs:
     - name: Setup Vulkan
       run: |
         wget "https://sdk.lunarg.com/sdk/download/$VULKAN_SDK_VER/linux/vulkan-sdk.tar.gz" --no-verbose -O vulkan-sdk.tar.gz
-        tar -xf vulkan-sdk.tar.gz
-        export VULKAN_SDK=`pwd`/$VULKAN_SDK_VER/x86_64
-        echo "::set-env name=VULKAN_SDK::$VULKAN_SDK"
+        mkdir $VULKAN_SDK_ROOT
+        tar -xf vulkan-sdk.tar.gz -C $VULKAN_SDK_ROOT
         echo Vulkan SDK installed!
     - name: Checkout LFS
       run: |
@@ -47,9 +48,8 @@ jobs:
     - name: Setup Vulkan
       run: |
         wget "https://sdk.lunarg.com/sdk/download/$VULKAN_SDK_VER/linux/vulkan-sdk.tar.gz" --no-verbose -O vulkan-sdk.tar.gz
-        tar -xf vulkan-sdk.tar.gz
-        export VULKAN_SDK=`pwd`/$VULKAN_SDK_VER/x86_64
-        echo "::set-env name=VULKAN_SDK::$VULKAN_SDK"
+        mkdir $VULKAN_SDK_ROOT
+        tar -xf vulkan-sdk.tar.gz -C $VULKAN_SDK_ROOT
         echo Vulkan SDK installed!
     - name: Checkout LFS
       run: |
