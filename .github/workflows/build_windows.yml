@@ -11,21 +11,21 @@ jobs:
     name: Editor (Windows, Development x64)
     runs-on: "windows-latest"
     steps:
+    - name: Setup Vulkan
+      run: |
+        $ver = (Invoke-WebRequest -Uri "https://vulkan.lunarg.com/sdk/latest.json" | ConvertFrom-Json).windows
+        echo "Vulkan SDK version $ver"
+        $ProgressPreference = 'SilentlyContinue'
+        Invoke-WebRequest -Uri "https://sdk.lunarg.com/sdk/download/$ver/windows/VulkanSDK-$ver-Installer.exe" -OutFile VulkanSDK.exe
+        echo "Vulkan SDK downloaded"
+        .\VulkanSDK.exe --root C:\VulkanSDK  --accept-licenses --default-answer --confirm-command install
+        echo "Vulkan SDK installed!"
     - name: Checkout repo
       uses: actions/checkout@v2
     - name: Checkout LFS
       run: |
         git lfs version
         git lfs pull
-    - name: Setup Vulkan
-      run: |
-        $ver = (Invoke-WebRequest -Uri "https://vulkan.lunarg.com/sdk/latest.json" | ConvertFrom-Json).windows
-        echo Vulkan SDK version $ver
-        $ProgressPreference = 'SilentlyContinue'
-        Invoke-WebRequest -Uri "https://sdk.lunarg.com/sdk/download/$ver/windows/VulkanSDK-$ver-Installer.exe" -OutFile VulkanSDK.exe
-        echo Vulkan SDK downloaded
-        .\VulkanSDK.exe --root C:\VulkanSDK  --accept-licenses --default-answer --confirm-command install
-        echo Vulkan SDK installed!
     - name: Build
       run: |
         .\Development\Scripts\Windows\CallBuildTool.bat -build -log -arch=x64 -platform=Windows -configuration=Development -buildtargets=FlaxEditor
@@ -35,21 +35,21 @@ jobs:
     name: Game (Windows, Release x64)
     runs-on: "windows-latest"
     steps:
+    - name: Setup Vulkan
+      run: |
+        $ver = (Invoke-WebRequest -Uri "https://vulkan.lunarg.com/sdk/latest.json" | ConvertFrom-Json).windows
+        echo "Vulkan SDK version $ver"
+        $ProgressPreference = 'SilentlyContinue'
+        Invoke-WebRequest -Uri "https://sdk.lunarg.com/sdk/download/$ver/windows/VulkanSDK-$ver-Installer.exe" -OutFile VulkanSDK.exe
+        echo "Vulkan SDK downloaded"
+        .\VulkanSDK.exe --root C:\VulkanSDK  --accept-licenses --default-answer --confirm-command install
+        echo "Vulkan SDK installed!"
     - name: Checkout repo
       uses: actions/checkout@v2
     - name: Checkout LFS
       run: |
         git lfs version
         git lfs pull
-    - name: Setup Vulkan
-      run: |
-        $ver = (Invoke-WebRequest -Uri "https://vulkan.lunarg.com/sdk/latest.json" | ConvertFrom-Json).windows
-        echo Vulkan SDK version $ver
-        $ProgressPreference = 'SilentlyContinue'
-        Invoke-WebRequest -Uri "https://sdk.lunarg.com/sdk/download/$ver/windows/VulkanSDK-$ver-Installer.exe" -OutFile VulkanSDK.exe
-        echo Vulkan SDK downloaded
-        .\VulkanSDK.exe --root C:\VulkanSDK  --accept-licenses --default-answer --confirm-command install
-        echo Vulkan SDK installed!
     - name: Build
       run: |
         .\Development\Scripts\Windows\CallBuildTool.bat -build -log -arch=x64 -platform=Windows -configuration=Release -buildtargets=FlaxGame

@@ -8,12 +8,6 @@ jobs:
     name: Editor (Linux, Development x64)
     runs-on: "ubuntu-20.04"
     steps:
-    - name: Checkout repo
-      uses: actions/checkout@v2
-    - name: Checkout LFS
-      run: |
-        git lfs version
-        git lfs pull
     - name: Install dependencies
       run: |
         sudo rm -f /etc/apt/sources.list.d/*
@@ -24,9 +18,16 @@ jobs:
       run: |
         wget -qO - http://packages.lunarg.com/lunarg-signing-key-pub.asc | sudo apt-key add -
         sudo wget -qO /etc/apt/sources.list.d/lunarg-vulkan-focal.list http://packages.lunarg.com/vulkan/lunarg-vulkan-focal.list
-        sudo apt-get install vulkan-sdk
+        sudo apt update
+        sudo apt install vulkan-sdk
         apt list vulkan-sdk
         echo Vulkan SDK installed!
+    - name: Checkout repo
+      uses: actions/checkout@v2
+    - name: Checkout LFS
+      run: |
+        git lfs version
+        git lfs pull
     - name: Build
       run: |
         ./Development/Scripts/Linux/CallBuildTool.sh -build -log -arch=x64 -platform=Linux -configuration=Development -buildtargets=FlaxEditor
@@ -43,7 +44,8 @@ jobs:
       run: |
         wget -qO - http://packages.lunarg.com/lunarg-signing-key-pub.asc | sudo apt-key add -
         sudo wget -qO /etc/apt/sources.list.d/lunarg-vulkan-focal.list http://packages.lunarg.com/vulkan/lunarg-vulkan-focal.list
-        sudo apt-get install vulkan-sdk
+        sudo apt update
+        sudo apt install vulkan-sdk
         apt list vulkan-sdk
         echo Vulkan SDK installed!
     - name: Checkout repo
