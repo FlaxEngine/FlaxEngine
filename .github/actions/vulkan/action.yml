@@ -1,4 +1,4 @@
-name: Setup Vulkan SDK
+name: Install Vulkan SDK
 description: Downloads and installs Vulkan SDK.
 inputs:
   vulkan-version:
@@ -8,7 +8,7 @@ inputs:
 runs:
   using: "composite"
   steps:
-    - name: Setup Vulkan SDK
+    - name: Install Vulkan SDK
       shell: bash
       run: |
         export VULKAN_SDK_VER=${{ inputs.vulkan-version }}
@@ -20,19 +20,20 @@ runs:
             wget "https://sdk.lunarg.com/sdk/download/$VULKAN_SDK_VER/linux/vulkan-sdk.tar.gz" --no-verbose -O vulkan-sdk.tar.gz
             mkdir $VULKAN_SDK_ROOT
             tar -xf vulkan-sdk.tar.gz -C $VULKAN_SDK_ROOT
-            echo VULKAN_SDK=$VULKAN_SDK_ROOT/$VULKAN_SDK_VER/x86_64 >> $GITHUB_ENV
+            export VULKAN_SDK=$VULKAN_SDK_ROOT/$VULKAN_SDK_VER/x86_64
             ;;
           Darwin)
             export VULKAN_SDK_ROOT=`pwd`/../VulkanSDK
             curl -LO "https://sdk.lunarg.com/sdk/download/$VULKAN_SDK_VER/mac/vulkan-sdk.dmg"
             hdiutil attach vulkan-sdk.dmg -mountpoint /Volumes/vulkan-sdk
             sudo "/Volumes/vulkan-sdk/InstallVulkan.app/Contents/MacOS/InstallVulkan" --root $VULKAN_SDK_ROOT --accept-licenses --default-answer --confirm-command install
-            echo VULKAN_SDK=$VULKAN_SDK_ROOT/macOS >> $GITHUB_ENV
+            export VULKAN_SDK=$VULKAN_SDK_ROOT/macOS
             ;;
           *) # Windows
             curl -L "https://sdk.lunarg.com/sdk/download/$VULKAN_SDK_VER/windows/VulkanSDK-$VULKAN_SDK_VER-Installer.exe" -o vulkan-sdk.exe
-            .\vulkan-sdk.exe --root C:\VulkanSDK  --accept-licenses --default-answer --confirm-command install
-            echo VULKAN_SDK=C:\VulkanSDK >> $GITHUB_ENV
+            vulkan-sdk.exe --root C:\VulkanSDK  --accept-licenses --default-answer --confirm-command install
+            export VULKAN_SDK=C:\VulkanSDK
             ;;
         esac
-        echo Vulkan SDK installed to ${env:VULKAN_SDK}!
+        echo VULKAN_SDK=$VULKAN_SDK >> $GITHUB_ENV
+        echo "Vulkan SDK installed to $VULKAN_SDK"
