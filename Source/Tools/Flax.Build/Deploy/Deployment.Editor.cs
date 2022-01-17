@@ -59,17 +59,19 @@ namespace Flax.Deploy
                 DeployFolder(RootPath, OutputPath, "Content");
 
                 // Deploy Mono runtime data files
-                if (Platform.BuildPlatform.Target == TargetPlatform.Windows)
+                switch (Platform.BuildTargetPlatform)
                 {
+                case TargetPlatform.Windows:
                     DeployFolder(RootPath, OutputPath, "Source/Platforms/Editor/Windows/Mono");
-                }
-                else if (Platform.BuildPlatform.Target == TargetPlatform.Linux)
-                {
+                    break;
+                case TargetPlatform.Linux:
                     DeployFolder(RootPath, OutputPath, "Source/Platforms/Editor/Linux/Mono");
-                }
-                else
-                {
-                    throw new NotImplementedException();
+                    break;
+                case TargetPlatform.Mac:
+                    DeployFolder(RootPath, OutputPath, "Source/Platforms/Editor/Mac/Mono");
+                    break;
+                default:
+                    throw new InvalidPlatformException(Platform.BuildTargetPlatform);
                 }
 
                 // Deploy DotNet deps
@@ -128,7 +130,7 @@ namespace Flax.Deploy
                 Log.Info(string.Empty);
                 Log.Info("Compressing editor files...");
                 string editorPackageZipPath;
-                if (Platform.BuildPlatform.Target == TargetPlatform.Linux)
+                if (Platform.BuildTargetPlatform == TargetPlatform.Linux)
                 {
                     // Use system tool (preserves executable file attributes and link files)
                     editorPackageZipPath = Path.Combine(Deployer.PackageOutputPath, "FlaxEditorLinux.zip");
@@ -154,7 +156,7 @@ namespace Flax.Deploy
                 }
                 Log.Info("Compressed editor package size: " + Utilities.GetFileSize(editorPackageZipPath));
 
-                if (Platform.BuildPlatform.Target == TargetPlatform.Windows)
+                if (Platform.BuildTargetPlatform == TargetPlatform.Windows)
                 {
                     Log.Info("Compressing editor debug symbols files...");
                     editorPackageZipPath = Path.Combine(Deployer.PackageOutputPath, "EditorDebugSymbols.zip");
@@ -180,7 +182,7 @@ namespace Flax.Deploy
 
             private static void DeployEditorBinaries(TargetConfiguration configuration)
             {
-                if (Platform.BuildPlatform.Target == TargetPlatform.Windows)
+                if (Platform.BuildTargetPlatform == TargetPlatform.Windows)
                 {
                     var binariesSubDir = "Binaries/Editor/Win64/" + configuration;
                     var src = Path.Combine(RootPath, binariesSubDir);
@@ -218,7 +220,7 @@ namespace Flax.Deploy
                         DeployFile(src, dst, "FlaxEditor.pdb");
                     }
                 }
-                else if (Platform.BuildPlatform.Target == TargetPlatform.Linux)
+                else if (Platform.BuildTargetPlatform == TargetPlatform.Linux)
                 {
                     var binariesSubDir = "Binaries/Editor/Linux/" + configuration;
                     var src = Path.Combine(RootPath, binariesSubDir);
@@ -241,6 +243,29 @@ namespace Flax.Deploy
                     Utilities.Run("strip", "libmonosgen-2.0.so", null, dst, Utilities.RunOptions.None);
                     Utilities.Run("ln", "-s libmonosgen-2.0.so libmonosgen-2.0.so.1", null, dst, Utilities.RunOptions.None);
                     Utilities.Run("ln", "-s libmonosgen-2.0.so libmonosgen-2.0.so.1.0.0", null, dst, Utilities.RunOptions.None);
+                }
+                else if (Platform.BuildTargetPlatform == TargetPlatform.Mac)
+                {
+                    var binariesSubDir = "Binaries/Editor/Mac/" + configuration;
+                    var src = Path.Combine(RootPath, binariesSubDir);
+                    var dst = Path.Combine(OutputPath, binariesSubDir);
+                    Directory.CreateDirectory(dst);
+
+                    // Deploy binaries
+                    DeployFile(src, dst, "FlaxEditor");
+                    DeployFile(src, dst, "FlaxEditor.Build.json");
+                    DeployFile(src, dst, "FlaxEngine.CSharp.pdb");
+                    DeployFile(src, dst, "FlaxEngine.CSharp.xml");
+                    DeployFile(src, dst, "Newtonsoft.Json.pdb");
+                    DeployFile(src, dst, "MoltenVK_icd.json");
+                    DeployFiles(src, dst, "*.dll");
+                    DeployFiles(src, dst, "*.dylib");
+
+                    // Optimize package size
+                    Utilities.Run("strip", "FlaxEditor", null, dst, Utilities.RunOptions.None);
+                    Utilities.Run("strip", "FlaxEditor.dylib", null, dst, Utilities.RunOptions.None);
+                    Utilities.Run("strip", "libmonosgen-2.0.1.dylib", null, dst, Utilities.RunOptions.None);
+                    Utilities.Run("strip", "libMoltenVK.dylib", null, dst, Utilities.RunOptions.None);
                 }
                 else
                 {
