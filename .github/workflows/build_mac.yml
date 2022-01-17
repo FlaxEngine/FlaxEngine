@@ -1,6 +1,9 @@
 name: Build macOS
 on: [push, pull_request]
 
+env:
+  VULKAN_SDK: $HOME/VulkanSDK
+
 jobs:
 
   # Editor
@@ -14,6 +17,13 @@ jobs:
       run: |
         git lfs version
         git lfs pull
+    - name: Setup Vulkan
+      run: |
+        curl -LO "https://sdk.lunarg.com/sdk/download/latest/mac/vulkan-sdk.dmg"
+        hdiutil attach vulkan-sdk.dmg -mountpoint /Volumes/vulkan-sdk
+        sudo "/Volumes/vulkan-sdk/InstallVulkan.app/Contents/MacOS/InstallVulkan" --root "$HOME/VulkanSDK" --accept-licenses --default-answer --confirm-command install
+        hdiutil detach "vulkansdk-macos-$VULKAN_SDK_VERSION.dmg"
+        echo Vulkan SDK installed!
     - name: Build
       run: |
         ./Development/Scripts/Mac/CallBuildTool.sh -build -log -arch=x64 -platform=Mac -configuration=Development -buildtargets=FlaxEditor
@@ -29,6 +39,13 @@ jobs:
       run: |
         git lfs version
         git lfs pull
+    - name: Setup Vulkan
+      run: |
+        curl -LO "https://sdk.lunarg.com/sdk/download/latest/mac/vulkan-sdk.dmg"
+        hdiutil attach vulkan-sdk.dmg -mountpoint /Volumes/vulkan-sdk
+        sudo "/Volumes/vulkan-sdk/InstallVulkan.app/Contents/MacOS/InstallVulkan" --root "$HOME/VulkanSDK" --accept-licenses --default-answer --confirm-command install
+        hdiutil detach "vulkansdk-macos-$VULKAN_SDK_VERSION.dmg"
+        echo Vulkan SDK installed!
     - name: Build
       run: |
         ./Development/Scripts/Mac/CallBuildTool.sh -build -log -arch=x64 -platform=Mac -configuration=Release -buildtargets=FlaxGame

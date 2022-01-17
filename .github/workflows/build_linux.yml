@@ -20,6 +20,13 @@ jobs:
         sudo cp -f .github/workflows/build_linux_sources.list /etc/apt/sources.list
         sudo apt-get update
         sudo apt-get install libx11-dev libxcursor-dev libxinerama-dev build-essential gettext libtool libtool-bin libpulse-dev libasound2-dev libjack-dev portaudio19-dev
+    - name: Setup Vulkan
+      run: |
+        wget -qO - http://packages.lunarg.com/lunarg-signing-key-pub.asc | sudo apt-key add -
+        sudo wget -qO /etc/apt/sources.list.d/lunarg-vulkan-focal.list http://packages.lunarg.com/vulkan/lunarg-vulkan-focal.list
+        sudo apt-get install vulkan-sdk
+        apt list vulkan-sdk
+        echo Vulkan SDK installed!
     - name: Build
       run: |
         ./Development/Scripts/Linux/CallBuildTool.sh -build -log -arch=x64 -platform=Linux -configuration=Development -buildtargets=FlaxEditor
@@ -32,6 +39,13 @@ jobs:
     - name: Install dependencies
       run: |
         sudo apt-get install libx11-dev libxcursor-dev libxinerama-dev
+    - name: Setup Vulkan
+      run: |
+        wget -qO - http://packages.lunarg.com/lunarg-signing-key-pub.asc | sudo apt-key add -
+        sudo wget -qO /etc/apt/sources.list.d/lunarg-vulkan-focal.list http://packages.lunarg.com/vulkan/lunarg-vulkan-focal.list
+        sudo apt-get install vulkan-sdk
+        apt list vulkan-sdk
+        echo Vulkan SDK installed!
     - name: Checkout repo
       uses: actions/checkout@v2
     - name: Checkout LFS
