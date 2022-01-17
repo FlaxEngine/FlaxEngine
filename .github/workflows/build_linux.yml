@@ -4,7 +4,7 @@ on: [push, pull_request]
 env:
   VULKAN_SDK_VER: 1.2.198.1
   VULKAN_SDK_ROOT: /home/runner/work/VulkanSDK
-  VULKAN_SDK: /home/runner/work/VulkanSDK/$VULKAN_SDK_VER/x86_64
+  VULKAN_SDK: /home/runner/work/VulkanSDK/1.2.198.1/x86_64
 
 jobs:
 
