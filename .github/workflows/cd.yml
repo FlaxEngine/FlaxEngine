@@ -106,3 +106,45 @@ jobs:
       with:
         name: Linux-Game
         path: Output/Linux.zip
+
+  # Mac
+  package-mac-editor:
+    name: Editor (Mac)
+    runs-on: "macos-latest"
+    steps:
+    - name: Checkout repo
+      uses: actions/checkout@v2
+    - name: Checkout LFS
+      run: |
+        git lfs version
+        git lfs pull
+    - name: Setup Vulkan
+      uses: ./.github/actions/vulkan
+    - name: Build
+      run: |
+        ./PackageEditor.command -arch=x64 -platform=Mac -deployOutput=Output
+    - name: Upload
+      uses: actions/upload-artifact@v2
+      with:
+        name: Mac-Editor
+        path: Output/FlaxEditorMac.zip
+  package-mac-game:
+    name: Game (Mac)
+    runs-on: "macos-latest"
+    steps:
+    - name: Checkout repo
+      uses: actions/checkout@v2
+    - name: Checkout LFS
+      run: |
+        git lfs version
+        git lfs pull
+    - name: Setup Vulkan
+      uses: ./.github/actions/vulkan
+    - name: Build
+      run: |
+        ./PackagePlatforms.command -arch=x64 -platform=Mac -deployOutput=Output
+    - name: Upload
+      uses: actions/upload-artifact@v2
+      with:
+        name: Mac-Game
+        path: Output/Mac.zip
