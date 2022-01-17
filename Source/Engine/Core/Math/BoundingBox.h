@@ -127,8 +127,9 @@ public:
     {
         Vector3 center;
         GetCenter(center);
-        Minimum = center - value;
-        Maximum = center + value;
+        const Vector3 sizeHalf = value * 0.5f;
+        Minimum = center - sizeHalf;
+        Maximum = center + sizeHalf;
     }
 
     /// <summary>
