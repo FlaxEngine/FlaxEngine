@@ -31,8 +31,7 @@ runs:
             ;;
           *) # Windows
             curl -L -o vulkan-sdk.exe https://sdk.lunarg.com/sdk/download/$VULKAN_SDK_VER/windows/VulkanSDK-$VULKAN_SDK_VER-Installer.exe
-            dir
-            vulkan-sdk.exe --root C:\VulkanSDK  --accept-licenses --default-answer --confirm-command install
+            ./vulkan-sdk.exe --root C:\VulkanSDK  --accept-licenses --default-answer --confirm-command install
             set VULKAN_SDK=C:\VulkanSDK
             ;;
         esac
