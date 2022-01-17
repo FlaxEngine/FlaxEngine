@@ -30,9 +30,10 @@ runs:
             export VULKAN_SDK=$VULKAN_SDK_ROOT/macOS
             ;;
           *) # Windows
-            curl -o vulkan-sdk.exe -L "https://sdk.lunarg.com/sdk/download/$VULKAN_SDK_VER/windows/VulkanSDK-$VULKAN_SDK_VER-Installer.exe"
+            curl -L -o vulkan-sdk.exe https://sdk.lunarg.com/sdk/download/$VULKAN_SDK_VER/windows/VulkanSDK-$VULKAN_SDK_VER-Installer.exe
+            dir
             vulkan-sdk.exe --root C:\VulkanSDK  --accept-licenses --default-answer --confirm-command install
-            export VULKAN_SDK=C:\VulkanSDK
+            set VULKAN_SDK=C:\VulkanSDK
             ;;
         esac
         echo VULKAN_SDK=$VULKAN_SDK >> $GITHUB_ENV
