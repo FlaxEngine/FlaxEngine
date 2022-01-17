@@ -138,6 +138,14 @@ namespace Flax.Deploy
                     Utilities.Run("zip", "Editor.zip -r .", null, OutputPath, Utilities.RunOptions.ThrowExceptionOnError);
                     File.Move(Path.Combine(OutputPath, "Editor.zip"), editorPackageZipPath);
                 }
+                else if (Platform.BuildTargetPlatform == TargetPlatform.Mac)
+                {
+                    // Use system tool (preserves executable file attributes and link files)
+                    editorPackageZipPath = Path.Combine(Deployer.PackageOutputPath, "FlaxEditorMac.zip");
+                    Utilities.FileDelete(editorPackageZipPath);
+                    Utilities.Run("zip", "Editor.zip -r .", null, OutputPath, Utilities.RunOptions.ThrowExceptionOnError);
+                    File.Move(Path.Combine(OutputPath, "Editor.zip"), editorPackageZipPath);
+                }
                 else
                 {
                     editorPackageZipPath = Path.Combine(Deployer.PackageOutputPath, "Editor.zip");
