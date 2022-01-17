@@ -88,7 +88,6 @@ static TextureData const* stbDecompress(const TextureData& textureData, TextureD
     case PixelFormat::BC1_UNorm:
     case PixelFormat::BC1_UNorm_sRGB:
     {
-        ASSERT_LOW_LAYER(blocksData->Data.Length() == blocksWidth * blocksHeight * 8);
         for (int32 yBlock = 0; yBlock < blocksHeight; yBlock++)
         {
             for (int32 xBlock = 0; xBlock < blocksWidth; xBlock++)
@@ -109,7 +108,6 @@ static TextureData const* stbDecompress(const TextureData& textureData, TextureD
     case PixelFormat::BC2_UNorm:
     case PixelFormat::BC2_UNorm_sRGB:
     {
-        ASSERT_LOW_LAYER(blocksData->Data.Length() == blocksWidth * blocksHeight * 16);
         for (int32 yBlock = 0; yBlock < blocksHeight; yBlock++)
         {
             for (int32 xBlock = 0; xBlock < blocksWidth; xBlock++)
@@ -130,7 +128,6 @@ static TextureData const* stbDecompress(const TextureData& textureData, TextureD
     case PixelFormat::BC3_UNorm:
     case PixelFormat::BC3_UNorm_sRGB:
     {
-        ASSERT_LOW_LAYER(blocksData->Data.Length() == blocksWidth * blocksHeight * 16);
         for (int32 yBlock = 0; yBlock < blocksHeight; yBlock++)
         {
             for (int32 xBlock = 0; xBlock < blocksWidth; xBlock++)
