@@ -11,5 +11,6 @@ public:
     static String ToString(CFStringRef str);
     static CFStringRef ToString(const StringView& str);
     static Vector2 PosToCoca(const Vector2& pos);
+    static Vector2 CocaToPos(const Vector2& pos);
     static Vector2 GetScreensOrigin();
 };

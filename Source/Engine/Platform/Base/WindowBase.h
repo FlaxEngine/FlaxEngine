@@ -521,6 +521,7 @@ public:
     /// <param name="position">The client area position.</param>
     API_PROPERTY() virtual void SetClientPosition(const Vector2& position)
     {
+        SetClientBounds(Rectangle(position, GetClientSize()));
     }
 
     /// <summary>

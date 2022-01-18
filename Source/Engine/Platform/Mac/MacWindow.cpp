@@ -430,7 +430,7 @@ MacWindow::MacWindow(const CreateWindowSettings& settings)
     NSUInteger styleMask = NSWindowStyleMaskClosable;
     if (settings.IsRegularWindow)
     {
-        styleMask |= NSWindowStyleMaskTitled | NSWindowStyleMaskFullSizeContentView;
+        styleMask |= NSWindowStyleMaskTitled;
         if (settings.AllowMinimize)
             styleMask |= NSWindowStyleMaskMiniaturizable;
         if (settings.HasSizingFrame || settings.AllowMaximize)
@@ -468,7 +468,6 @@ MacWindow::MacWindow(const CreateWindowSettings& settings)
     // TODO: impl StartPosition for MacWindow
     // TODO: impl Fullscreen for MacWindow
     // TODO: impl ShowInTaskbar for MacWindow
-    // TODO: impl ActivateWhenFirstShown for MacWindow
     // TODO: impl AllowInput for MacWindow
     // TODO: impl AllowDragAndDrop for MacWindow
     // TODO: impl IsTopmost for MacWindow
@@ -558,6 +557,8 @@ void MacWindow::Minimize()
     if (!_settings.AllowMinimize)
         return;
     NSWindow* window = (NSWindow*)_window;
+    if (!window)
+        return;
     if (!window.miniaturized)
         [window miniaturize:nil];
 }
@@ -601,15 +602,90 @@ void MacWindow::SetIsFullscreen(bool isFullscreen)
     // TODO: fullscreen mode on Mac
 }
 
+void MacWindow::SetClientBounds(const Rectangle& clientArea)
+{
+    NSWindow* window = (NSWindow*)_window;
+    if (!window)
+        return;
+    NSRect oldRect = [window frame];
+    NSRect newRect = NSMakeRect(0, 0, clientArea.Size.X, clientArea.Size.Y);
+    newRect = [window frameRectForContentRect:newRect];
+
+    //newRect.origin.x = oldRect.origin.x;
+    //newRect.origin.y = NSMaxY(oldRect) - newRect.size.height;
+
+    Vector2 pos = MacUtils::PosToCoca(clientArea.Location);
+    NSRect frameStart = [window frameRectForContentRect:NSMakeRect(0, 0, 0, 0)];
+    newRect.origin.x = pos.X;
+    newRect.origin.y = pos.Y - newRect.size.height + frameStart.size.height;
+
+    [window setFrame:newRect display:YES];
+}
+
+void MacWindow::SetPosition(const Vector2& position)
+{
+    NSWindow* window = (NSWindow*)_window;
+    if (!window)
+        return;
+    Vector2 pos = MacUtils::PosToCoca(position);
+    NSRect rect = [window frame];
+    [window setFrameOrigin:NSMakePoint(pos.X, pos.Y - rect.size.height)];
+}
+
+Vector2 MacWindow::GetPosition() const
+{
+    NSWindow* window = (NSWindow*)_window;
+    if (!window)
+        return Vector2::Zero;
+    NSRect rect = [window frame];
+    return MacUtils::CocaToPos(Vector2(rect.origin.x, rect.origin.y + rect.size.height));
+}
+
+Vector2 MacWindow::GetSize() const
+{
+    NSWindow* window = (NSWindow*)_window;
+    if (!window)
+        return Vector2::Zero;
+    NSRect rect = [window frame];
+    return Vector2(rect.size.width, rect.size.height);
+}
+
+Vector2 MacWindow::GetClientSize() const
+{
+	return _clientSize;
+}
+
+Vector2 MacWindow::ScreenToClient(const Vector2& screenPos) const
+{
+    NSWindow* window = (NSWindow*)_window;
+    if (!window)
+        return screenPos;
+    NSRect frameStart = [window frameRectForContentRect:NSMakeRect(0, 0, 0, 0)];
+    return screenPos - GetPosition() - Vector2(0, frameStart.size.height);
+}
+
+Vector2 MacWindow::ClientToScreen(const Vector2& clientPos) const
+{
+    NSWindow* window = (NSWindow*)_window;
+    if (!window)
+        return clientPos;
+    NSRect frameStart = [window frameRectForContentRect:NSMakeRect(0, 0, 0, 0)];
+    return GetPosition() + Vector2(0, frameStart.size.height) + clientPos;
+}
+
 void MacWindow::SetOpacity(float opacity)
 {
     NSWindow* window = (NSWindow*)_window;
+    if (!window)
+        return;
     [window setAlphaValue:opacity];
 }
 
 void MacWindow::Focus()
 {
     NSWindow* window = (NSWindow*)_window;
+    if (!window)
+        return;
     [window makeKeyAndOrderFront:window];
 }
 
@@ -617,6 +693,8 @@ void MacWindow::SetTitle(const StringView& title)
 {
     _title = title;
     NSWindow* window = (NSWindow*)_window;
+    if (!window)
+        return;
     [window setTitle:(__bridge NSString*)MacUtils::ToString(_title)];
 }
 

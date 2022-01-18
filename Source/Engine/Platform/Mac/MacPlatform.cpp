@@ -81,6 +81,15 @@ Vector2 MacUtils::PosToCoca(const Vector2& pos)
     return result;
 }
 
+Vector2 MacUtils::CocaToPos(const Vector2& pos)
+{
+    // MacOS uses y-coordinate starting at the bottom of the screen
+    Vector2 result = pos;
+    result -= GetScreensOrigin();
+    result.Y *= -1;
+    return result;
+}
+
 Vector2 MacUtils::GetScreensOrigin()
 {
     Vector2 result = Vector2::Zero;
