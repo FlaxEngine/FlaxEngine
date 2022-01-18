@@ -9,7 +9,7 @@ class FLAXENGINE_API MacUtils
 {
 public:
     static String ToString(CFStringRef str);
-    static CFStringRef ToString(const String& str);
+    static CFStringRef ToString(const StringView& str);
     static Vector2 PosToCoca(const Vector2& pos);
     static Vector2 GetScreensOrigin();
 };

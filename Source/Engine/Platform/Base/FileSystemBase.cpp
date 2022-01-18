@@ -20,7 +20,7 @@ bool FileSystemBase::ShowSaveFileDialog(Window* parentWindow, const StringView& 
     return true;
 }
 
-bool FileSystemBase::ShowBrowseFolderDialog(Window* parentWindow, const StringView& initialDirectory, const StringView& title, StringView& path)
+bool FileSystemBase::ShowBrowseFolderDialog(Window* parentWindow, const StringView& initialDirectory, const StringView& title, String& path)
 {
     // No supported
     return true;

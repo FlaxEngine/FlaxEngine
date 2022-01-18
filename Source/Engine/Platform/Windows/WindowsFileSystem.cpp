@@ -290,7 +290,7 @@ bool WindowsFileSystem::ShowSaveFileDialog(Window* parentWindow, const StringVie
     return result;
 }
 
-bool WindowsFileSystem::ShowBrowseFolderDialog(Window* parentWindow, const StringView& initialDirectory, const StringView& title, StringView& path)
+bool WindowsFileSystem::ShowBrowseFolderDialog(Window* parentWindow, const StringView& initialDirectory, const StringView& title, String& path)
 {
     bool result = true;
 

@@ -14,6 +14,10 @@ class FLAXENGINE_API MacFileSystem : public FileSystemBase
 public:
 
     // [FileSystemBase]
+    static bool ShowOpenFileDialog(Window* parentWindow, const StringView& initialDirectory, const StringView& filter, bool multiSelect, const StringView& title, Array<String, HeapAllocation>& filenames);
+    static bool ShowSaveFileDialog(Window* parentWindow, const StringView& initialDirectory, const StringView& filter, bool multiSelect, const StringView& title, Array<String, HeapAllocation>& filenames);
+    static bool ShowBrowseFolderDialog(Window* parentWindow, const StringView& initialDirectory, const StringView& title, String& path);
+    static bool ShowFileExplorer(const StringView& path);
     static bool CreateDirectory(const StringView& path);
     static bool DeleteDirectory(const String& path, bool deleteContents = true);
     static bool DirectoryExists(const StringView& path);

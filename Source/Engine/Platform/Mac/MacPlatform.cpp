@@ -67,9 +67,9 @@ String MacUtils::ToString(CFStringRef str)
     return result;
 }
 
-CFStringRef MacUtils::ToString(const String& str)
+CFStringRef MacUtils::ToString(const StringView& str)
 {
-    return CFStringCreateWithBytes(nullptr, (const UInt8*)str.Get(), str.Length() * sizeof(Char), kCFStringEncodingUTF16LE, false);
+    return CFStringCreateWithBytes(nullptr, (const UInt8*)str.GetNonTerminatedText(), str.Length() * sizeof(Char), kCFStringEncodingUTF16LE, false);
 }
 
 Vector2 MacUtils::PosToCoca(const Vector2& pos)
