@@ -10,6 +10,7 @@
 #include "Engine/Input/Keyboard.h"
 #include "Engine/Graphics/RenderTask.h"
 #include <Cocoa/Cocoa.h>
+#include <AppKit/AppKit.h>
 #include <QuartzCore/CAMetalLayer.h>
 
 KeyboardKeys GetKey(NSEvent* event)
@@ -308,12 +309,13 @@ Vector2 GetMousePosition(MacWindow* window, NSEvent* event)
 - (void)mouseEntered:(NSEvent*)event
 {
     IsMouseOver = true;
+    Window->SetIsMouseOver(true);
 }
 
 - (void)mouseExited:(NSEvent*)event
 {
     IsMouseOver = false;
-	Input::Mouse->OnMouseLeave(Window);
+    Window->SetIsMouseOver(false);
 }
 
 - (void)mouseDown:(NSEvent*)event
@@ -483,6 +485,25 @@ void MacWindow::CheckForResize(float width, float height)
 	}
 }
 
+void MacWindow::SetIsMouseOver(bool value)
+{
+    if (_isMouseOver == value)
+        return;
+    _isMouseOver = value;
+    if (value)
+    {
+        // Refresh cursor typet
+        SetCursor(_cursor);
+        
+    }
+    else
+    {
+	    Input::Mouse->OnMouseLeave(this);
+        if (_cursor == CursorType::Hidden)
+            [NSCursor unhide];
+    }
+}
+
 void* MacWindow::GetNativePtr() const
 {
     return _window;
@@ -590,6 +611,50 @@ void MacWindow::SetTitle(const StringView& title)
     _title = title;
     NSWindow* window = (NSWindow*)_window;
     [window setTitle:(__bridge NSString*)MacUtils::ToString(_title)];
+}
+
+void MacWindow::SetCursor(CursorType type)
+{
+	WindowBase::SetCursor(type);
+    if (!_isMouseOver)
+        return;
+    NSCursor* cursor = nullptr;
+    switch (type)
+    {
+    case CursorType::Cross:
+        cursor = [NSCursor crosshairCursor];
+        break;
+    case CursorType::Hand:
+        cursor = [NSCursor pointingHandCursor];
+        break;
+    case CursorType::IBeam:
+        cursor = [NSCursor IBeamCursor];
+        break;
+    case CursorType::No:
+        cursor = [NSCursor operationNotAllowedCursor];
+        break;
+    case CursorType::SizeAll:
+    case CursorType::SizeNESW:
+    case CursorType::SizeNWSE:
+        cursor = [NSCursor resizeUpDownCursor];
+        break;
+    case CursorType::SizeNS:
+        cursor = [NSCursor resizeUpDownCursor];
+        break;
+    case CursorType::SizeWE:
+        cursor = [NSCursor resizeLeftRightCursor];
+        break;
+    case CursorType::Hidden:
+        [NSCursor hide];
+        return;
+    default:
+        cursor = [NSCursor arrowCursor];
+        break;
+    }
+    if (cursor)
+    {
+        [cursor set];
+    }
 }
 
 #endif

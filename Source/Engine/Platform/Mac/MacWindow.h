@@ -16,6 +16,7 @@ private:
 
     Vector2 _clientSize;
     void* _window;
+    bool _isMouseOver = false;
 
 public:
 
@@ -23,6 +24,7 @@ public:
 	~MacWindow();
 
     void CheckForResize(float width, float height);
+    void SetIsMouseOver(bool value);
 
 public:
 
@@ -40,6 +42,7 @@ public:
     void SetOpacity(float opacity) override;
     void Focus() override;
     void SetTitle(const StringView& title) override;
+	void SetCursor(CursorType type) override;
 };
 
 #endif
