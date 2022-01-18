@@ -22,6 +22,8 @@ public:
 	MacWindow(const CreateWindowSettings& settings);
 	~MacWindow();
 
+    void CheckForResize(float width, float height);
+
 public:
 
 	// [Window]

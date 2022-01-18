@@ -181,6 +181,13 @@ Vector2 GetMousePosition(MacWindow* window, NSEvent* event)
     Window->Close(ClosingReason::User);
 }
 
+- (void)windowDidResize:(NSNotification*)notification
+{
+    NSView* view = [self contentView];
+    NSRect contextRect = [view frame];
+    Window->CheckForResize((float)contextRect.size.width, (float)contextRect.size.height);
+}
+
 - (void)setWindow:(MacWindow*)window
 {
     Window = window;
@@ -464,6 +471,16 @@ MacWindow::~MacWindow()
     [window close];
     [window release];
     _window = nullptr;
+}
+
+void MacWindow::CheckForResize(float width, float height)
+{
+    const Vector2 clientSize(width, height);
+	if (clientSize != _clientSize)
+	{
+        _clientSize = clientSize;
+		OnResize(width, height);
+	}
 }
 
 void* MacWindow::GetNativePtr() const
