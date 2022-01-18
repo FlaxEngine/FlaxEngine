@@ -265,6 +265,13 @@ Vector2 GetMousePosition(MacWindow* window, NSEvent* event)
 	    Input::Keyboard->OnKeyDown(key);
 
 	// Send a text input event
+    switch (key)
+    {
+        // Ignore text from special keys
+    case KeyboardKeys::Delete:
+    case KeyboardKeys::Backspace:
+        return;
+    }
     NSString* text = [event characters];
     int32 length = [text length];
     if (length > 0)
