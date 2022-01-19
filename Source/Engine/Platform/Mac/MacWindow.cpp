@@ -158,11 +158,22 @@ KeyboardKeys GetKey(NSEvent* event)
     }
 }
 
+Vector2 GetWindowTitleSize(const MacWindow* window)
+{
+    Vector2 size = Vector2::Zero;
+    if (window->GetSettings().HasBorder)
+    {
+        NSRect frameStart = [(NSWindow*)window->GetNativePtr() frameRectForContentRect:NSMakeRect(0, 0, 0, 0)];
+        size.Y = frameStart.size.height;
+    }
+    return size;
+}
+
 Vector2 GetMousePosition(MacWindow* window, NSEvent* event)
 {
     NSRect frame = [(NSWindow*)window->GetNativePtr() frame];
     NSPoint point = [event locationInWindow];
-    return Vector2(point.x, frame.size.height - point.y);
+    return Vector2(point.x, frame.size.height - point.y) - GetWindowTitleSize(window);
 }
 
 @interface MacWindowImpl : NSWindow <NSWindowDelegate>
@@ -615,9 +626,9 @@ void MacWindow::SetClientBounds(const Rectangle& clientArea)
     //newRect.origin.y = NSMaxY(oldRect) - newRect.size.height;
 
     Vector2 pos = MacUtils::PosToCoca(clientArea.Location);
-    NSRect frameStart = [window frameRectForContentRect:NSMakeRect(0, 0, 0, 0)];
-    newRect.origin.x = pos.X;
-    newRect.origin.y = pos.Y - newRect.size.height + frameStart.size.height;
+    Vector2 titleSize = GetWindowTitleSize(this);
+    newRect.origin.x = pos.X + titleSize.X;
+    newRect.origin.y = pos.Y - newRect.size.height + titleSize.Y;
 
     [window setFrame:newRect display:YES];
 }
@@ -660,8 +671,8 @@ Vector2 MacWindow::ScreenToClient(const Vector2& screenPos) const
     NSWindow* window = (NSWindow*)_window;
     if (!window)
         return screenPos;
-    NSRect frameStart = [window frameRectForContentRect:NSMakeRect(0, 0, 0, 0)];
-    return screenPos - GetPosition() - Vector2(0, frameStart.size.height);
+    Vector2 titleSize = GetWindowTitleSize(this);
+    return screenPos - GetPosition() - titleSize;
 }
 
 Vector2 MacWindow::ClientToScreen(const Vector2& clientPos) const
@@ -669,8 +680,8 @@ Vector2 MacWindow::ClientToScreen(const Vector2& clientPos) const
     NSWindow* window = (NSWindow*)_window;
     if (!window)
         return clientPos;
-    NSRect frameStart = [window frameRectForContentRect:NSMakeRect(0, 0, 0, 0)];
-    return GetPosition() + Vector2(0, frameStart.size.height) + clientPos;
+    Vector2 titleSize = GetWindowTitleSize(this);
+    return GetPosition() + titleSize + clientPos;
 }
 
 void MacWindow::SetOpacity(float opacity)

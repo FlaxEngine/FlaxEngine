@@ -2286,12 +2286,12 @@ void LinuxPlatform::Tick()
                         xDndResult = DragDropEffect::None;
                         if (window->_dragOver)
                         {
-                            window->OnDragEnter(&dropData, xDndPos, xDndResult);
+                            window->OnDragOver(&dropData, xDndPos, xDndResult);
                         }
                         else
                         {
                             window->_dragOver = true;
-                            window->OnDragOver(&dropData, xDndPos, xDndResult);
+                            window->OnDragEnter(&dropData, xDndPos, xDndResult);
                         }
                     }
                 }

@@ -725,14 +725,13 @@ namespace FlaxEditor.Modules
 
 #if PLATFORM_WINDOWS
             if (!Editor.Instance.Options.Options.Interface.UseNativeWindowSystem)
-#endif
             {
                 settings.HasBorder = false;
-#if PLATFORM_WINDOWS
+
                 // Skip OS sizing frame and implement it using LeftButtonHit
                 settings.HasSizingFrame = false;
-#endif
             }
+#endif
 
             MainWindow = Platform.CreateWindow(ref settings);
 
