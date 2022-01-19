@@ -56,6 +56,8 @@ NSAutoreleasePool* AutoreleasePool = nullptr;
 
 String MacUtils::ToString(CFStringRef str)
 {
+    if (!str)
+        return String::Empty;
     String result;
     const int32 length = CFStringGetLength(str);
     if (length > 0)

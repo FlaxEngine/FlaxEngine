@@ -4,6 +4,7 @@
 
 #include "../Window.h"
 #include "MacUtils.h"
+#include "Engine/Platform/IGuiData.h"
 #include "Engine/Core/Log.h"
 #include "Engine/Input/Input.h"
 #include "Engine/Input/Mouse.h"
@@ -174,6 +175,73 @@ Vector2 GetMousePosition(MacWindow* window, NSEvent* event)
     NSRect frame = [(NSWindow*)window->GetNativePtr() frame];
     NSPoint point = [event locationInWindow];
     return Vector2(point.x, frame.size.height - point.y) - GetWindowTitleSize(window);
+}
+
+class MacDropData : public IGuiData
+{
+public:
+    Type CurrentType;
+    String AsText;
+    Array<String> AsFiles;
+
+    Type GetType() const override
+    {
+        return CurrentType;
+    }
+    String GetAsText() const override
+    {
+        return AsText;
+    }
+    void GetAsFiles(Array<String>* files) const override
+    {
+        files->Add(AsFiles);
+    }
+};
+
+void GetDragDropData(const MacWindow* window, id<NSDraggingInfo> sender, Vector2& mousePos, MacDropData& dropData)
+{
+    NSRect frame = [(NSWindow*)window->GetNativePtr() frame];
+    NSPoint point = [sender draggingLocation];
+    Vector2 titleSize = GetWindowTitleSize(window);
+    mousePos = Vector2(point.x, frame.size.height - point.y) - titleSize;
+    NSPasteboard* pasteboard = [sender draggingPasteboard];
+    if ([[pasteboard types] containsObject:NSPasteboardTypeString])
+    {
+        dropData.CurrentType = IGuiData::Type::Text;
+        dropData.AsText = MacUtils::ToString((CFStringRef)[pasteboard stringForType:NSPasteboardTypeString]);
+    }
+    else
+    {
+        dropData.CurrentType = IGuiData::Type::Files;
+        NSArray* files = [pasteboard readObjectsForClasses:@[[NSURL class]] options:nil];
+        for (int32 i = 0; i < [files count]; i++)
+        {
+            NSString* url = [[files objectAtIndex:i] path];
+            NSString* file = [NSURL URLWithString:url].path;
+            dropData.AsFiles.Add(MacUtils::ToString((CFStringRef)file));
+        }
+    }
+}
+
+NSDragOperation GetDragDropOperation(DragDropEffect dragDropEffect)
+{
+    NSDragOperation result = NSDragOperationCopy;
+    switch (dragDropEffect)
+    {
+    case DragDropEffect::None:
+        //result = NSDragOperationNone;
+        break;
+    case DragDropEffect::Copy:
+        result = NSDragOperationCopy;
+        break;
+    case DragDropEffect::Move:
+        result = NSDragOperationMove;
+        break;
+    case DragDropEffect::Link:
+        result = NSDragOperationLink;
+        break;
+    }
+    return result;
 }
 
 @interface MacWindowImpl : NSWindow <NSWindowDelegate>
@@ -430,6 +498,46 @@ Vector2 GetMousePosition(MacWindow* window, NSEvent* event)
     Input::Mouse->OnMouseUp(Window->ClientToScreen(mousePos), mouseButton, Window);
 }
 
+- (NSDragOperation)draggingEntered:(id<NSDraggingInfo>)sender
+{
+    Vector2 mousePos;
+    MacDropData dropData;
+    GetDragDropData(Window, sender, mousePos, dropData);
+    DragDropEffect dragDropEffect = DragDropEffect::None;
+    Window->OnDragEnter(&dropData, mousePos, dragDropEffect);
+    return GetDragDropOperation(dragDropEffect);
+}
+
+- (BOOL)wantsPeriodicDraggingUpdates:(id<NSDraggingInfo>)sender
+{
+    return YES;
+}
+
+- (NSDragOperation)draggingUpdated:(id<NSDraggingInfo>)sender
+{
+    Vector2 mousePos;
+    MacDropData dropData;
+    GetDragDropData(Window, sender, mousePos, dropData);
+    DragDropEffect dragDropEffect = DragDropEffect::None;
+    Window->OnDragOver(&dropData, mousePos, dragDropEffect);
+    return GetDragDropOperation(dragDropEffect);
+}
+
+- (BOOL)performDragOperation:(id<NSDraggingInfo>)sender
+{
+    Vector2 mousePos;
+    MacDropData dropData;
+    GetDragDropData(Window, sender, mousePos, dropData);
+    DragDropEffect dragDropEffect = DragDropEffect::None;
+    Window->OnDragDrop(&dropData, mousePos, dragDropEffect);
+    return NO;
+}
+
+- (void)draggingExited:(id<NSDraggingInfo>)sender
+{
+    Window->OnDragLeave();
+}
+
 @end
 
 MacWindow::MacWindow(const CreateWindowSettings& settings)
@@ -474,13 +582,16 @@ MacWindow::MacWindow(const CreateWindowSettings& settings)
     [window setAcceptsMouseMovedEvents:YES];
     [window setDelegate:window];
     _window = window;
+    if (settings.AllowDragAndDrop)
+    {
+        [view registerForDraggedTypes:@[NSPasteboardTypeFileURL, NSPasteboardTypeString]];
+    }
 
     // TODO: impl Parent for MacWindow
     // TODO: impl StartPosition for MacWindow
     // TODO: impl Fullscreen for MacWindow
     // TODO: impl ShowInTaskbar for MacWindow
     // TODO: impl AllowInput for MacWindow
-    // TODO: impl AllowDragAndDrop for MacWindow
     // TODO: impl IsTopmost for MacWindow
 }
 
@@ -684,6 +795,14 @@ Vector2 MacWindow::ClientToScreen(const Vector2& clientPos) const
     return GetPosition() + titleSize + clientPos;
 }
 
+void MacWindow::FlashWindow()
+{
+    NSWindow* window = (NSWindow*)_window;
+    if (!window)
+        return;
+    [NSApp requestUserAttention:NSInformationalRequest];
+}
+
 void MacWindow::SetOpacity(float opacity)
 {
     NSWindow* window = (NSWindow*)_window;
@@ -707,6 +826,12 @@ void MacWindow::SetTitle(const StringView& title)
     if (!window)
         return;
     [window setTitle:(__bridge NSString*)MacUtils::ToString(_title)];
+}
+
+DragDropEffect MacWindow::DoDragDrop(const StringView& data)
+{
+    // TODO: implement using beginDraggingSession and NSDraggingSource
+    return DragDropEffect::None;
 }
 
 void MacWindow::SetCursor(CursorType type)

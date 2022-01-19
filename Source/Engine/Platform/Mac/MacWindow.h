@@ -45,10 +45,12 @@ public:
 	Vector2 GetClientSize() const override;
 	Vector2 ScreenToClient(const Vector2& screenPos) const override;
 	Vector2 ClientToScreen(const Vector2& clientPos) const override;
+    void FlashWindow() override;
     void SetIsFullscreen(bool isFullscreen) override;
     void SetOpacity(float opacity) override;
     void Focus() override;
     void SetTitle(const StringView& title) override;
+	DragDropEffect DoDragDrop(const StringView& data) override;
 	void SetCursor(CursorType type) override;
 };
 
