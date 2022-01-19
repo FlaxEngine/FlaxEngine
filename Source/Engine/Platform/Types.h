@@ -229,8 +229,8 @@ typedef UserBase User;
 
 #elif PLATFORM_MAC
 
-class ClipboardBase;
-typedef ClipboardBase Clipboard;
+class MacClipboard;
+typedef MacClipboard Clipboard;
 class UnixCriticalSection;
 typedef UnixCriticalSection CriticalSection;
 class UnixConditionVariable;

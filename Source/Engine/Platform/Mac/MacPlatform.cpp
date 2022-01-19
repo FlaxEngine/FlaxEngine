@@ -106,6 +106,48 @@ Vector2 MacUtils::GetScreensOrigin()
     return result;
 }
 
+void MacClipboard::Clear()
+{
+    NSPasteboard* pasteboard = [NSPasteboard generalPasteboard];
+    [pasteboard clearContents];
+}
+
+void MacClipboard::SetText(const StringView& text)
+{
+    NSPasteboard* pasteboard = [NSPasteboard generalPasteboard];
+    [pasteboard clearContents];
+    [pasteboard writeObjects:[NSArray arrayWithObject:(NSString*)MacUtils::ToString(text)]];
+}
+
+void MacClipboard::SetRawData(const Span<byte>& data)
+{
+}
+
+void MacClipboard::SetFiles(const Array<String>& files)
+{
+}
+
+String MacClipboard::GetText()
+{
+    NSPasteboard* pasteboard = [NSPasteboard generalPasteboard];
+    NSArray* classes = [NSArray arrayWithObject:[NSString class]];
+    NSDictionary* options = [NSDictionary dictionary];
+    if (![pasteboard canReadObjectForClasses:classes options:options])
+        return String::Empty;
+    NSArray* objects = [pasteboard readObjectsForClasses:classes options:options];
+    return MacUtils::ToString((CFStringRef)[objects objectAtIndex:0]);
+}
+
+Array<byte> MacClipboard::GetRawData()
+{
+    return Array<byte>();
+}
+
+Array<String> MacClipboard::GetFiles()
+{
+    return Array<String>();
+}
+
 DialogResult MessageBox::Show(Window* parent, const StringView& text, const StringView& caption, MessageBoxButtons buttons, MessageBoxIcon icon)
 {
     if (CommandLine::Options.Headless)
