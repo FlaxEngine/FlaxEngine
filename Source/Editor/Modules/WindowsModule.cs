@@ -731,6 +731,8 @@ namespace FlaxEditor.Modules
                 // Skip OS sizing frame and implement it using LeftButtonHit
                 settings.HasSizingFrame = false;
             }
+#elif PLATFORM_LINUX
+            settings.HasBorder = false;
 #endif
 
             MainWindow = Platform.CreateWindow(ref settings);
