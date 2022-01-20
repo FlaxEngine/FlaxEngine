@@ -303,19 +303,19 @@ public:
 public:
 
     /// <summary>
-    /// Gets the twist angle of the joint.
+    /// Gets the twist angle of the joint (in the range (-2*Pi, 2*Pi]).
     /// </summary>
     API_PROPERTY() float GetCurrentTwist() const;
 
     /// <summary>
     /// Gets the current swing angle of the joint from the Y axis.
     /// </summary>
-    API_PROPERTY() float GetCurrentSwingYAngle() const;
+    API_PROPERTY() float GetCurrentSwingY() const;
 
     /// <summary>
     /// Gets the current swing angle of the joint from the Z axis.
     /// </summary>
-    API_PROPERTY() float GetCurrentSwingZAngle() const;
+    API_PROPERTY() float GetCurrentSwingZ() const;
 
 public:
 
@@ -329,5 +329,5 @@ public:
 protected:
 
     // [Joint]
-    PxJoint* CreateJoint(JointData& data) override;
+    void* CreateJoint(const PhysicsJointDesc& desc) override;
 };

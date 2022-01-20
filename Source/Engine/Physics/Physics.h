@@ -2,125 +2,35 @@
 
 #pragma once
 
-#include "Engine/Core/Math/Vector2.h"
-#include "Engine/Core/Math/Vector3.h"
 #include "Engine/Core/Math/Quaternion.h"
-#include "Engine/Scripting/ScriptingType.h"
 #include "Types.h"
-
-class PhysicsColliderActor;
-class PhysicsScene;
-class Joint;
-class Collider;
-class CollisionData;
-
-/// <summary>
-/// Raycast hit result data.
-/// </summary>
-API_STRUCT() struct RayCastHit
-{
-DECLARE_SCRIPTING_TYPE_NO_SPAWN(RayCastHit);
-
-    /// <summary>
-    /// The collider that was hit.
-    /// </summary>
-    API_FIELD() PhysicsColliderActor* Collider = nullptr;
-
-    /// <summary>
-    /// The normal of the surface the ray hit.
-    /// </summary>
-    API_FIELD() Vector3 Normal;
-
-    /// <summary>
-    /// The distance from the ray's origin to the hit location.
-    /// </summary>
-    API_FIELD() float Distance;
-
-    /// <summary>
-    /// The point in the world space where ray hit the collider.
-    /// </summary>
-    API_FIELD() Vector3 Point;
-
-    /// <summary>
-    /// The index of the face that was hit. Valid only for convex mesh (polygon index), triangle mesh (triangle index) and height field (triangle index).
-    /// </summary>
-    /// <seealso cref="CollisionData.GetModelTriangle" />
-    API_FIELD() uint32 FaceIndex;
-
-    /// <summary>
-    /// The barycentric coordinates of hit triangle. Valid only for triangle mesh and height field.
-    /// </summary>
-    API_FIELD() Vector2 UV;
-
-public:
-
-    /// <summary>
-    /// Gathers the data from the specified hit (PhysX).
-    /// </summary>
-    /// <param name="hit">The hit.</param>
-    void Gather(const PxRaycastHit& hit);
-
-    /// <summary>
-    /// Gathers the data from the specified hit (PhysX).
-    /// </summary>
-    /// <param name="hit">The hit.</param>
-    void Gather(const PxSweepHit& hit);
-};
 
 /// <summary>
 /// Physics simulation system.
 /// </summary>
 API_CLASS(Static) class FLAXENGINE_API Physics
 {
-DECLARE_SCRIPTING_TYPE_NO_SPAWN(Physics);
+    DECLARE_SCRIPTING_TYPE_NO_SPAWN(Physics);
 
-    /// <summary>
-    /// Gets the master physics object.
-    /// </summary>
-    static PxPhysics* GetPhysics();
-
-#if COMPILE_WITH_PHYSICS_COOKING
-
-    /// <summary>
-    /// Gets physics cooking object
-    /// </summary>
-    static PxCooking* GetCooking();
-
-#endif
-
-    /// <summary>
-    /// Gets the physics tolerances scale.
-    /// </summary>
-    static PxTolerancesScale* GetTolerancesScale();
-
-    /// <summary>
-    /// Gets the default physical material.
-    /// </summary>
-    static PxMaterial* GetDefaultMaterial();
-
-public:
-    
     /// <summary>
     /// The default physics scene.
     /// </summary>
-    API_FIELD(ReadOnly)
-    static PhysicsScene* DefaultScene;
+    API_FIELD(ReadOnly) static PhysicsScene* DefaultScene;
 
     /// <summary>
     /// List with all physics scenes (readonly).
     /// </summary>
-    API_FIELD(ReadOnly)
-    static Array<PhysicsScene*, HeapAllocation> Scenes;
+    API_FIELD(ReadOnly) static Array<PhysicsScene*, HeapAllocation> Scenes;
 
     /// <summary>
     /// Finds an existing <see cref="PhysicsScene"/> or creates it if it does not exist.
     /// </summary>
-    API_FUNCTION() static PhysicsScene* FindOrCreateScene(const String& name);
+    API_FUNCTION() static PhysicsScene* FindOrCreateScene(const StringView& name);
 
     /// <summary>
-    ///Finds an existing scene.
+    /// Finds an existing scene.
     /// </summary>
-    API_FUNCTION() static PhysicsScene* FindScene(const String& name);
+    API_FUNCTION() static PhysicsScene* FindScene(const StringView& name);
 
 public:
     /// <summary>
@@ -162,9 +72,29 @@ public:
     /// The collision layers masks. Used to define layer-based collision detection.
     /// </summary>
     static uint32 LayerMasks[32];
+public:
+    /// <summary>
+    /// Called during main engine loop to start physic simulation. Use CollectResults after.
+    /// </summary>
+    /// <param name="dt">The delta time (in seconds).</param>
+    API_FUNCTION() static void Simulate(float dt);
+
+    /// <summary>
+    /// Called during main engine loop to collect physic simulation results and apply them as well as fire collision events.
+    /// </summary>
+    API_FUNCTION() static void CollectResults();
+
+    /// <summary>
+    /// Checks if physical simulation is running.
+    /// </summary>
+    API_PROPERTY() static bool IsDuringSimulation();
+
+    /// <summary>
+    /// Flushes any latent physics actions (eg. object destroy, actor add/remove to the scene, etc.).
+    /// </summary>
+    API_FUNCTION() static void FlushRequests();
 
 public:
-
     /// <summary>
     /// Performs a raycast against objects in the scene.
     /// </summary>
@@ -509,84 +439,4 @@ public:
     /// <param name="hitTriggers">If set to <c>true</c> triggers will be hit, otherwise will skip them.</param>
     /// <returns>True if convex mesh overlaps any matching object, otherwise false.</returns>
     API_FUNCTION() static bool OverlapConvex(const Vector3& center, const CollisionData* convexMesh, const Vector3& scale, API_PARAM(Out) Array<PhysicsColliderActor*, HeapAllocation>& results, const Quaternion& rotation = Quaternion::Identity, uint32 layerMask = MAX_uint32, bool hitTriggers = true);
-
-public:
-
-    /// <summary>
-    /// Called during main engine loop to start physic simulation. Use CollectResults after.
-    /// </summary>
-    /// <param name="dt">The delta time (in seconds).</param>
-    API_FUNCTION() static void Simulate(float dt);
-
-    /// <summary>
-    /// Called during main engine loop to start physic simulation on all registered scenes.
-    /// </summary>
-    /// <param name="dt">The delta time (in seconds).</param>
-    static void SimulateAll(float dt);
-
-    /// <summary>
-    /// Called during main engine loop to collect physic simulation results and apply them as well as fire collision events.
-    /// </summary>
-    API_FUNCTION() static void CollectResults();
-
-    /// <summary>
-    /// Called during main engine loop to collect physic simulation results on all registered scenes and apply them as well as fire collision events.
-    /// </summary>
-    static void CollectResultsAll();
-
-    /// <summary>
-    /// Checks if physical simulation is running
-    /// </summary>
-    /// <returns>True if simulation is active, otherwise false</returns>
-    API_PROPERTY() static bool IsDuringSimulation();
-
-public:
-
-    /// <summary>
-    /// Flushes the async requests to add/remove actors, remove materials, etc..
-    /// </summary>
-    static void FlushRequestsAll();
-
-    /// <summary>
-    /// Removes the material (using safe async request).
-    /// </summary>
-    /// <param name="material">The material.</param>
-    static void RemoveMaterial(PxMaterial* material);
-
-    /// <summary>
-    /// Removes the physX object via calling release() on it (using safe async request).
-    /// </summary>
-    /// <param name="obj">The obj.</param>
-    static void RemoveObject(PxBase* obj);
-
-    /// <summary>
-    /// Adds the actor (using safe async request).
-    /// </summary>
-    /// <param name="actor">The actor.</param>
-    static void AddActor(PxActor* actor);
-
-    /// <summary>
-    /// Adds the actor (using safe async request).
-    /// </summary>
-    /// <param name="actor">The actor.</param>
-    /// <param name="putToSleep">If set to <c>true</c> will put actor to sleep after spawning.</param>
-    static void AddActor(PxRigidDynamic* actor, bool putToSleep = false);
-
-    /// <summary>
-    /// Removes the actor (using safe async request).
-    /// </summary>
-    /// <param name="actor">The actor.</param>
-    static void RemoveActor(PxActor* actor);
-
-    /// <summary>
-    /// Marks that collider has been removed (all collision events should be cleared to prevent leaks of using removed object).
-    /// </summary>
-    /// <param name="collider">The collider.</param>
-    static void RemoveCollider(PhysicsColliderActor* collider);
-
-    /// <summary>
-    /// Marks that joint has been removed (all collision events should be cleared to prevent leaks of using removed object).
-    /// </summary>
-    /// <param name="joint">The joint.</param>
-    static void RemoveJoint(Joint* joint);
 };

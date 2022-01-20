@@ -2,9 +2,7 @@
 
 #include "SliderJoint.h"
 #include "Engine/Serialization/Serialization.h"
-#include "Engine/Physics/Utilities.h"
-#include "Engine/Physics/Physics.h"
-#include <ThirdParty/PhysX/extensions/PxPrismaticJoint.h>
+#include "Engine/Physics/PhysicsBackend.h"
 
 SliderJoint::SliderJoint(const SpawnParams& params)
     : Joint(params)
@@ -18,43 +16,28 @@ void SliderJoint::SetFlags(const SliderJointFlag value)
 {
     if (_flags == value)
         return;
-
     _flags = value;
-
     if (_joint)
-    {
-        auto joint = static_cast<PxPrismaticJoint*>(_joint);
-        joint->setPrismaticJointFlag(PxPrismaticJointFlag::eLIMIT_ENABLED, (_flags & SliderJointFlag::Limit) != 0);
-    }
+        PhysicsBackend::SetSliderJointFlags(_joint, value);
 }
 
 void SliderJoint::SetLimit(const LimitLinearRange& value)
 {
     if (_limit == value)
         return;
-
     _limit = value;
-
     if (_joint)
-    {
-        auto joint = static_cast<PxPrismaticJoint*>(_joint);
-        PxJointLinearLimitPair limit(*Physics::GetTolerancesScale(), value.Lower, value.Upper, value.ContactDist);
-        limit.stiffness = value.Spring.Stiffness;
-        limit.damping = value.Spring.Damping;
-        limit.restitution = value.Restitution;
-        ASSERT_LOW_LAYER(limit.isValid());
-        joint->setLimit(limit);
-    }
+        PhysicsBackend::SetSliderJointLimit(_joint, value);
 }
 
 float SliderJoint::GetCurrentPosition() const
 {
-    return _joint ? static_cast<PxPrismaticJoint*>(_joint)->getPosition() : 0.0f;
+    return _joint ? PhysicsBackend::GetSliderJointPosition(_joint) : 0.0f;
 }
 
 float SliderJoint::GetCurrentVelocity() const
 {
-    return _joint ? static_cast<PxPrismaticJoint*>(_joint)->getVelocity() : 0.0f;
+    return _joint ? PhysicsBackend::GetSliderJointVelocity(_joint) : 0.0f;
 }
 
 #if USE_EDITOR
@@ -111,21 +94,10 @@ void SliderJoint::Deserialize(DeserializeStream& stream, ISerializeModifier* mod
     DESERIALIZE_MEMBER(UpperLimit, _limit.Upper);
 }
 
-PxJoint* SliderJoint::CreateJoint(JointData& data)
+void* SliderJoint::CreateJoint(const PhysicsJointDesc& desc)
 {
-    const PxTransform trans0(C2P(data.Pos0), C2P(data.Rot0));
-    const PxTransform trans1(C2P(data.Pos1), C2P(data.Rot1));
-    auto joint = PxPrismaticJointCreate(*data.Physics, data.Actor0, trans0, data.Actor1, trans1);
-
-    int32 flags = 0;
-    if (_flags & SliderJointFlag::Limit)
-        flags |= PxPrismaticJointFlag::eLIMIT_ENABLED;
-    joint->setPrismaticJointFlags(static_cast<PxPrismaticJointFlag::Enum>(flags));
-    PxJointLinearLimitPair limit(*Physics::GetTolerancesScale(), _limit.Lower, _limit.Upper, _limit.ContactDist);
-    limit.stiffness = _limit.Spring.Stiffness;
-    limit.damping = _limit.Spring.Damping;
-    limit.restitution = _limit.Restitution;
-    joint->setLimit(limit);
-
+    void* joint = PhysicsBackend::CreateSliderJoint(desc);
+    PhysicsBackend::SetSliderJointFlags(joint, _flags);
+    PhysicsBackend::SetSliderJointLimit(joint, _limit);
     return joint;
 }

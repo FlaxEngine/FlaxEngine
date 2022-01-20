@@ -4,7 +4,6 @@
 #include "Engine/Core/Math/Matrix.h"
 #include "Engine/Core/Math/Ray.h"
 #include "Engine/Serialization/Serialization.h"
-#include "Engine/Physics/Utilities.h"
 #include "Engine/Physics/Physics.h"
 #include "Engine/Physics/PhysicsScene.h"
 #if USE_EDITOR || !BUILD_RELEASE
@@ -147,7 +146,7 @@ void MeshCollider::UpdateBounds()
     BoundingSphere::FromBox(_box, _sphere);
 }
 
-void MeshCollider::GetGeometry(PxGeometryHolder& geometry)
+void MeshCollider::GetGeometry(CollisionShape& collision)
 {
     // Prepare scale
     Vector3 scale = _cachedScale;
@@ -160,25 +159,9 @@ void MeshCollider::GetGeometry(PxGeometryHolder& geometry)
     if (CollisionData && CollisionData->IsLoaded())
         type = CollisionData->GetOptions().Type;
     if (type == CollisionDataType::ConvexMesh)
-    {
-        // Convex mesh
-        PxConvexMeshGeometry convexMesh;
-        convexMesh.scale.scale = C2P(scale);
-        convexMesh.convexMesh = CollisionData->GetConvex();
-        geometry.storeAny(convexMesh);
-    }
+        collision.SetConvexMesh(CollisionData->GetConvex(), scale.Raw);
     else if (type == CollisionDataType::TriangleMesh)
-    {
-        // Triangle mesh
-        PxTriangleMeshGeometry triangleMesh;
-        triangleMesh.scale.scale = C2P(scale);
-        triangleMesh.triangleMesh = CollisionData->GetTriangle();
-        geometry.storeAny(triangleMesh);
-    }
+        collision.SetTriangleMesh(CollisionData->GetTriangle(), scale.Raw);
     else
-    {
-        // Dummy geometry
-        const PxSphereGeometry sphere(minSize);
-        geometry.storeAny(sphere);
-    }
+        collision.SetSphere(minSize);
 }

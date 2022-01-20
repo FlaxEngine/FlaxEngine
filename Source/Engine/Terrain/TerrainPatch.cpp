@@ -5,11 +5,12 @@
 #include "Engine/Serialization/Serialization.h"
 #include "Engine/Core/Math/Color32.h"
 #include "Engine/Profiler/ProfilerCPU.h"
-#include "Engine/Physics/Utilities.h"
 #include "Engine/Physics/Physics.h"
 #include "Engine/Physics/PhysicsScene.h"
-#include "Engine/Physics/PhysicalMaterial.h"
+#include "Engine/Physics/PhysicsBackend.h"
+#include "Engine/Physics/CollisionCooking.h"
 #include "Engine/Level/Scene/Scene.h"
+#include "Engine/Level/Level.h"
 #include "Engine/Graphics/Async/GPUTask.h"
 #include "Engine/Threading/Threading.h"
 #if TERRAIN_EDITING
@@ -19,6 +20,7 @@
 #include "Engine/Graphics/RenderView.h"
 #include "Engine/Graphics/Textures/GPUTexture.h"
 #include "Engine/Graphics/Textures/TextureData.h"
+#include "Engine/Serialization/MemoryWriteStream.h"
 #if USE_EDITOR
 #include "Editor/Editor.h"
 #include "Engine/ContentImporters/AssetsImportingManager.h"
@@ -27,21 +29,10 @@
 #if USE_EDITOR
 #include "Engine/Debug/DebugDraw.h"
 #endif
-#include "Engine/Physics/CollisionCooking.h"
 #include "Engine/Content/Content.h"
 #include "Engine/Content/Assets/RawDataAsset.h"
-#include "Engine/Level/Level.h"
-#include <extensions/PxDefaultStreams.h>
-#include <extensions/PxShapeExt.h>
-#include <foundation/PxTransform.h>
-#include <geometry/PxHeightField.h>
-#include <geometry/PxHeightFieldDesc.h>
-#include <geometry/PxHeightFieldSample.h>
-#include <cooking/PxCooking.h>
-#include <PxRigidStatic.h>
-#include <PxPhysics.h>
 
-#define TERRAIN_PATCH_COLLISION_QUANTIZATION ((PxReal)0x7fff)
+#define TERRAIN_PATCH_COLLISION_QUANTIZATION ((float)0x7fff)
 
 struct TerrainCollisionDataHeader
 {
@@ -128,8 +119,7 @@ void TerrainPatch::UpdateTransform()
     if (_physicsActor)
     {
         const Transform& terrainTransform = _terrain->_transform;
-        const PxTransform trans(C2P(terrainTransform.LocalToWorld(_offset)), C2P(terrainTransform.Orientation));
-        _physicsActor->setGlobalPose(trans);
+        PhysicsBackend::SetRigidActorPose(_physicsActor, terrainTransform.LocalToWorld(_offset), terrainTransform.Orientation);
     }
 
     // Update chunks cache
@@ -565,10 +555,10 @@ bool CookCollision(const TerrainDataUpdateInfo& info, TextureBase::InitData* ini
     const int32 heightFieldChunkSize = ((info.ChunkSize + 1) >> collisionLOD) - 1;
     const int32 heightFieldSize = heightFieldChunkSize * TerrainPatch::CHUNKS_COUNT_EDGE + 1;
     const int32 heightFieldLength = heightFieldSize * heightFieldSize;
-    GET_TERRAIN_SCRATCH_BUFFER(heightFieldData, heightFieldLength, PxHeightFieldSample);
-    PxHeightFieldSample sample;
-    Platform::MemoryClear(&sample, sizeof(PxHeightFieldSample));
-    Platform::MemoryClear(heightFieldData, sizeof(PxHeightFieldSample) * heightFieldLength);
+    GET_TERRAIN_SCRATCH_BUFFER(heightFieldData, heightFieldLength, PhysicsBackend::HeightFieldSample);
+    PhysicsBackend::HeightFieldSample sample;
+    Platform::MemoryClear(&sample, sizeof(PhysicsBackend::HeightFieldSample));
+    Platform::MemoryClear(heightFieldData, sizeof(PhysicsBackend::HeightFieldSample) * heightFieldLength);
 
     // Setup terrain collision information
     auto& mip = initData->Mips[collisionLOD];
@@ -598,47 +588,38 @@ bool CookCollision(const TerrainDataUpdateInfo& info, TextureBase::InitData* ini
                     const int32 heightmapZ = chunkStartZ + z;
                     const int32 dstIndex = (heightmapX * heightFieldSize) + heightmapZ;
 
-                    sample.height = PxI16(TERRAIN_PATCH_COLLISION_QUANTIZATION * normalizedHeight);
-                    sample.materialIndex0 = sample.materialIndex1 = isHole ? PxHeightFieldMaterial::eHOLE : 0;
+                    sample.Height = int16(TERRAIN_PATCH_COLLISION_QUANTIZATION * normalizedHeight);
+                    sample.MaterialIndex0 = sample.MaterialIndex1 = isHole ? (uint8)PhysicsBackend::HeightFieldMaterial::Hole : 0;
 
                     heightFieldData[dstIndex] = sample;
                 }
             }
         }
     }
-    PxHeightFieldDesc heightFieldDesc;
-    heightFieldDesc.format = PxHeightFieldFormat::eS16_TM;
-    heightFieldDesc.flags = PxHeightFieldFlag::eNO_BOUNDARY_EDGES;
-    heightFieldDesc.nbColumns = heightFieldSize;
-    heightFieldDesc.nbRows = heightFieldSize;
-    heightFieldDesc.samples.data = heightFieldData;
-    heightFieldDesc.samples.stride = sizeof(PxHeightFieldSample);
 
     // Cook height field
-    PxDefaultMemoryOutputStream outputStream;
-    if (CollisionCooking::CookHeightField(heightFieldDesc, outputStream))
+    MemoryWriteStream outputStream;
+    if (CollisionCooking::CookHeightField(heightFieldSize, heightFieldSize, heightFieldData, outputStream))
     {
         return true;
     }
 
     // Write results
-    collisionData->Resize(sizeof(TerrainCollisionDataHeader) + outputStream.getSize(), false);
+    collisionData->Resize(sizeof(TerrainCollisionDataHeader) + outputStream.GetPosition(), false);
     const auto header = (TerrainCollisionDataHeader*)collisionData->Get();
     header->LOD = collisionLOD;
     header->ScaleXZ = (float)info.HeightmapSize / heightFieldSize;
-    Platform::MemoryCopy(collisionData->Get() + sizeof(TerrainCollisionDataHeader), outputStream.getData(), outputStream.getSize());
+    Platform::MemoryCopy(collisionData->Get() + sizeof(TerrainCollisionDataHeader), outputStream.GetHandle(), outputStream.GetPosition());
 
     return false;
 
 #else
-
-	LOG(Warning, "Collision cooking is disabled.");
-	return true;
-
+    LOG(Warning, "Collision cooking is disabled.");
+    return true;
 #endif
 }
 
-bool ModifyCollision(const TerrainDataUpdateInfo& info, TextureBase::InitData* initData, int32 collisionLod, const Int2& modifiedOffset, const Int2& modifiedSize, PxHeightField* heightField)
+bool ModifyCollision(const TerrainDataUpdateInfo& info, TextureBase::InitData* initData, int32 collisionLod, const Int2& modifiedOffset, const Int2& modifiedSize, void* heightField)
 {
     PROFILE_CPU_NAMED("Terrain.ModifyCollision");
 
@@ -658,10 +639,10 @@ bool ModifyCollision(const TerrainDataUpdateInfo& info, TextureBase::InitData* i
 
     // Allocate data
     const int32 heightFieldDataLength = samplesSize.X * samplesSize.Y;
-    GET_TERRAIN_SCRATCH_BUFFER(heightFieldData, info.HeightmapLength, PxHeightFieldSample);
-    PxHeightFieldSample sample;
-    Platform::MemoryClear(&sample, sizeof(PxHeightFieldSample));
-    Platform::MemoryClear(heightFieldData, sizeof(PxHeightFieldSample) * heightFieldDataLength);
+    GET_TERRAIN_SCRATCH_BUFFER(heightFieldData, info.HeightmapLength, PhysicsBackend::HeightFieldSample);
+    PhysicsBackend::HeightFieldSample sample;
+    Platform::MemoryClear(&sample, sizeof(PhysicsBackend::HeightFieldSample));
+    Platform::MemoryClear(heightFieldData, sizeof(PhysicsBackend::HeightFieldSample) * heightFieldDataLength);
 
     // Setup terrain collision information
     auto& mip = initData->Mips[collisionLOD];
@@ -711,24 +692,17 @@ bool ModifyCollision(const TerrainDataUpdateInfo& info, TextureBase::InitData* i
 
                     const int32 dstIndex = (heightmapLocalX * samplesSize.Y) + heightmapLocalZ;
 
-                    sample.height = PxI16(TERRAIN_PATCH_COLLISION_QUANTIZATION * normalizedHeight);
-                    sample.materialIndex0 = sample.materialIndex1 = isHole ? PxHeightFieldMaterial::eHOLE : 0;
+                    sample.Height = int16(TERRAIN_PATCH_COLLISION_QUANTIZATION * normalizedHeight);
+                    sample.MaterialIndex0 = sample.MaterialIndex1 = isHole ? (uint8)PhysicsBackend::HeightFieldMaterial::Hole : 0;
 
                     heightFieldData[dstIndex] = sample;
                 }
             }
         }
     }
-    PxHeightFieldDesc heightFieldDesc;
-    heightFieldDesc.format = PxHeightFieldFormat::eS16_TM;
-    heightFieldDesc.flags = PxHeightFieldFlag::eNO_BOUNDARY_EDGES;
-    heightFieldDesc.nbColumns = samplesSize.Y;
-    heightFieldDesc.nbRows = samplesSize.X;
-    heightFieldDesc.samples.data = heightFieldData;
-    heightFieldDesc.samples.stride = sizeof(PxHeightFieldSample);
 
     // Update height field range
-    if (!heightField->modifySamples(samplesOffset.Y, samplesOffset.X, heightFieldDesc, true))
+    if (PhysicsBackend::ModifyHeightField(heightField, samplesOffset.Y, samplesOffset.X, samplesSize.Y, samplesSize.X, heightFieldData))
     {
         LOG(Warning, "Height Field collision modification failed.");
         return true;
@@ -1958,7 +1932,7 @@ bool TerrainPatch::UpdateCollision()
         _collisionVertices.Resize(0);
 
         // Recreate height field
-        _terrain->GetPhysicsScene()->RemoveObject(_physicsHeightField);
+        PhysicsBackend::DestroyObject(_physicsHeightField);
         _physicsHeightField = nullptr;
         if (CreateHeightField())
         {
@@ -1981,42 +1955,26 @@ bool TerrainPatch::RayCast(const Vector3& origin, const Vector3& direction, floa
 {
     if (_physicsShape == nullptr)
         return false;
-
-    // Prepare data
-    PxTransform trans = _physicsActor->getGlobalPose();
-    trans.p = trans.transform(_physicsShape->getLocalPose().p);
-    const PxHitFlags hitFlags = (PxHitFlags)0;
-
-    // Perform raycast test
-    PxRaycastHit hit;
-    if (PxGeometryQuery::raycast(C2P(origin), C2P(direction), _physicsShape->getGeometry().any(), trans, maxDistance, hitFlags, 1, &hit) != 0)
-    {
-        resultHitDistance = hit.distance;
-        return true;
-    }
-
-    return false;
+    Vector3 shapePos;
+    Quaternion shapeRot;
+    PhysicsBackend::GetShapePose(_physicsShape, shapePos, shapeRot);
+    return PhysicsBackend::RayCastShape(_physicsShape, shapePos, shapeRot, origin, direction, resultHitDistance, maxDistance);
 }
 
 bool TerrainPatch::RayCast(const Vector3& origin, const Vector3& direction, float& resultHitDistance, Vector3& resultHitNormal, float maxDistance) const
 {
     if (_physicsShape == nullptr)
         return false;
-
-    // Prepare data
-    PxTransform trans = _physicsActor->getGlobalPose();
-    trans.p = trans.transform(_physicsShape->getLocalPose().p);
-    const PxHitFlags hitFlags = PxHitFlag::eNORMAL;
-
-    // Perform raycast test
-    PxRaycastHit hit;
-    if (PxGeometryQuery::raycast(C2P(origin), C2P(direction), _physicsShape->getGeometry().any(), trans, maxDistance, hitFlags, 1, &hit) != 0)
+    Vector3 shapePos;
+    Quaternion shapeRot;
+    PhysicsBackend::GetShapePose(_physicsShape, shapePos, shapeRot);
+    RayCastHit hit;
+    if (PhysicsBackend::RayCastShape(_physicsShape, shapePos, shapeRot, origin, direction, hit, maxDistance))
     {
-        resultHitDistance = hit.distance;
-        resultHitNormal = P2C(hit.normal);
+        resultHitDistance = hit.Distance;
+        resultHitNormal = hit.Normal;
         return true;
     }
-
     return false;
 }
 
@@ -2024,19 +1982,17 @@ bool TerrainPatch::RayCast(const Vector3& origin, const Vector3& direction, floa
 {
     if (_physicsShape == nullptr)
         return false;
-
-    // Prepare data
-    PxTransform trans = _physicsActor->getGlobalPose();
-    trans.p = trans.transform(_physicsShape->getLocalPose().p);
-    const PxHitFlags hitFlags = (PxHitFlags)0;
+    Vector3 shapePos;
+    Quaternion shapeRot;
+    PhysicsBackend::GetShapePose(_physicsShape, shapePos, shapeRot);
 
     // Perform raycast test
-    PxRaycastHit hit;
-    if (PxGeometryQuery::raycast(C2P(origin), C2P(direction), _physicsShape->getGeometry().any(), trans, maxDistance, hitFlags, 1, &hit) != 0)
+    float hitDistance;
+    if (PhysicsBackend::RayCastShape(_physicsShape, shapePos, shapeRot, origin, direction, hitDistance, maxDistance))
     {
         // Find hit chunk
         resultChunk = nullptr;
-        const auto hitPoint = origin + direction * hit.distance;
+        const auto hitPoint = origin + direction * hitDistance;
         for (int32 chunkIndex = 0; chunkIndex < CHUNKS_COUNT; chunkIndex++)
         {
             const auto box = Chunks[chunkIndex]._bounds;
@@ -2052,7 +2008,7 @@ bool TerrainPatch::RayCast(const Vector3& origin, const Vector3& direction, floa
         if (resultChunk == nullptr)
             return false;
 
-        resultHitDistance = hit.distance;
+        resultHitDistance = hitDistance;
         return true;
     }
 
@@ -2063,44 +2019,28 @@ bool TerrainPatch::RayCast(const Vector3& origin, const Vector3& direction, RayC
 {
     if (_physicsShape == nullptr)
         return false;
-
-    // Prepare data
-    PxTransform trans = _physicsActor->getGlobalPose();
-    trans.p = trans.transform(_physicsShape->getLocalPose().p);
-    const PxHitFlags hitFlags = PxHitFlag::ePOSITION | PxHitFlag::eNORMAL | PxHitFlag::eUV;
-    PxRaycastHit hit;
-
-    // Perform raycast test
-    if (PxGeometryQuery::raycast(C2P(origin), C2P(direction), _physicsShape->getGeometry().any(), trans, maxDistance, hitFlags, 1, &hit) == 0)
-        return false;
-
-    // Gather results
-    hitInfo.Gather(hit);
-    return true;
+    Vector3 shapePos;
+    Quaternion shapeRot;
+    PhysicsBackend::GetShapePose(_physicsShape, shapePos, shapeRot);
+    return PhysicsBackend::RayCastShape(_physicsShape, shapePos, shapeRot, origin, direction, hitInfo, maxDistance);
 }
 
-void TerrainPatch::ClosestPoint(const Vector3& position, Vector3* result) const
+void TerrainPatch::ClosestPoint(const Vector3& position, Vector3& result) const
 {
     if (_physicsShape == nullptr)
+    {
+        result = Vector3::Maximum;
         return;
-
-    // Prepare data
-    PxTransform trans = _physicsActor->getGlobalPose();
-    trans.p = trans.transform(_physicsShape->getLocalPose().p);
-    PxVec3 closestPoint;
-
-    // Compute distance between a point and a geometry object
-    const float distanceSqr = PxGeometryQuery::pointDistance(C2P(position), _physicsShape->getGeometry().any(), trans, &closestPoint);
+    }
+    Vector3 shapePos;
+    Quaternion shapeRot;
+    PhysicsBackend::GetShapePose(_physicsShape, shapePos, shapeRot);
+    Vector3 closestPoint;
+    const float distanceSqr = PhysicsBackend::ComputeShapeSqrDistanceToPoint(_physicsShape, shapePos, shapeRot, position, &closestPoint);
     if (distanceSqr > 0.0f)
-    {
-        // Use calculated point
-        *result = P2C(closestPoint);
-    }
+        result = closestPoint;
     else
-    {
-        // Fallback to the input location
-        *result = position;
-    }
+        result = position;
 }
 
 #if USE_EDITOR
@@ -2130,7 +2070,7 @@ void TerrainPatch::UpdatePostManualDeserialization()
         _collisionVertices.Resize(0);
 
         // Recreate height field
-        _terrain->GetPhysicsScene()->RemoveObject(_physicsHeightField);
+        PhysicsBackend::DestroyObject(_physicsHeightField);
         _physicsHeightField = nullptr;
         if (CreateHeightField())
         {
@@ -2152,45 +2092,27 @@ void TerrainPatch::UpdatePostManualDeserialization()
 void TerrainPatch::CreateCollision()
 {
     ASSERT(!HasCollision());
-
     if (CreateHeightField())
         return;
     ASSERT(_physicsHeightField);
 
     // Create geometry
     const Transform terrainTransform = _terrain->_transform;
-    PxHeightFieldGeometry geometry;
-    geometry.heightField = _physicsHeightField;
-    geometry.rowScale = Math::Max(Math::Abs(terrainTransform.Scale.X) * _collisionScaleXZ, PX_MIN_HEIGHTFIELD_XZ_SCALE);
-    geometry.heightScale = Math::Max(Math::Abs(terrainTransform.Scale.Y) * _yHeight / TERRAIN_PATCH_COLLISION_QUANTIZATION, PX_MIN_HEIGHTFIELD_Y_SCALE);
-    geometry.columnScale = Math::Max(Math::Abs(terrainTransform.Scale.Z) * _collisionScaleXZ, PX_MIN_HEIGHTFIELD_XZ_SCALE);
-
-    // Prepare
-    const PxShapeFlags shapeFlags = GetShapeFlags(false, _terrain->IsActiveInHierarchy());
-    PxMaterial* material = Physics::GetDefaultMaterial();
-    if (_terrain->PhysicalMaterial)
-    {
-        if (!_terrain->PhysicalMaterial->WaitForLoaded())
-        {
-            material = ((::PhysicalMaterial*)_terrain->PhysicalMaterial->Instance)->GetPhysXMaterial();
-        }
-    }
+    CollisionShape shape;
+    const float rowScale = Math::Abs(terrainTransform.Scale.X) * _collisionScaleXZ;
+    const float heightScale = Math::Abs(terrainTransform.Scale.Y) * _yHeight / TERRAIN_PATCH_COLLISION_QUANTIZATION;
+    const float columnScale = Math::Abs(terrainTransform.Scale.Z) * _collisionScaleXZ;
+    shape.SetHeightField(_physicsHeightField, heightScale, rowScale, columnScale);
 
     // Create shape
-    _physicsShape = CPhysX->createShape(geometry, *material, true, shapeFlags);
-    ASSERT(_physicsShape);
-    _physicsShape->userData = _terrain;
-    _physicsShape->setLocalPose(PxTransform(0, _yOffset * terrainTransform.Scale.Y, 0));
+    _physicsShape = PhysicsBackend::CreateShape(_terrain, shape, _terrain->PhysicalMaterial.Get(), _terrain->IsActiveInHierarchy(), false);
+    PhysicsBackend::SetShapeLocalPose(_physicsShape, Vector3(0, _yOffset * terrainTransform.Scale.Y, 0), Quaternion::Identity);
 
     // Create static actor
-    const PxTransform trans(C2P(terrainTransform.LocalToWorld(_offset)), C2P(terrainTransform.Orientation));
-    _physicsActor = CPhysX->createRigidStatic(trans);
-    ASSERT(_physicsActor);
-    _physicsActor->userData = _terrain;
-#if WITH_PVD
-    _physicsActor->setActorFlag(PxActorFlag::eVISUALIZATION, true);
-#endif
-    _physicsActor->attachShape(*_physicsShape);
+    _physicsActor = PhysicsBackend::CreateRigidStaticActor(nullptr, terrainTransform.LocalToWorld(_offset), terrainTransform.Orientation);
+    PhysicsBackend::AttachShape(_physicsShape, _physicsActor);
+    void* scene = _terrain->GetPhysicsScene()->GetPhysicsScene();
+    PhysicsBackend::AddSceneActor(scene, _physicsActor);
 }
 
 bool TerrainPatch::CreateHeightField()
@@ -2208,9 +2130,7 @@ bool TerrainPatch::CreateHeightField()
 
     const auto collisionHeader = (TerrainCollisionDataHeader*)_heightfield->Data.Get();
     _collisionScaleXZ = collisionHeader->ScaleXZ * TERRAIN_UNITS_PER_VERTEX;
-
-    PxDefaultMemoryInputData heightFieldData(_heightfield->Data.Get() + sizeof(TerrainCollisionDataHeader), _heightfield->Data.Count() - sizeof(TerrainCollisionDataHeader));
-    _physicsHeightField = CPhysX->createHeightField(heightFieldData);
+    _physicsHeightField = PhysicsBackend::CreateHeightField(_heightfield->Data.Get() + sizeof(TerrainCollisionDataHeader), _heightfield->Data.Count() - sizeof(TerrainCollisionDataHeader));
     if (_physicsHeightField == nullptr)
     {
         LOG(Error, "Failed to create terrain collision height field.");
@@ -2226,15 +2146,15 @@ void TerrainPatch::UpdateCollisionScale() const
 
     // Create geometry
     const Transform terrainTransform = _terrain->_transform;
-    PxHeightFieldGeometry geometry;
-    geometry.heightField = _physicsHeightField;
-    geometry.rowScale = Math::Max(Math::Abs(terrainTransform.Scale.X) * _collisionScaleXZ, PX_MIN_HEIGHTFIELD_XZ_SCALE);
-    geometry.heightScale = Math::Max(Math::Abs(terrainTransform.Scale.Y) * _yHeight / TERRAIN_PATCH_COLLISION_QUANTIZATION, PX_MIN_HEIGHTFIELD_Y_SCALE);
-    geometry.columnScale = Math::Max(Math::Abs(terrainTransform.Scale.Z) * _collisionScaleXZ, PX_MIN_HEIGHTFIELD_XZ_SCALE);
+    CollisionShape geometry;
+    const float rowScale = Math::Abs(terrainTransform.Scale.X) * _collisionScaleXZ;
+    const float heightScale = Math::Abs(terrainTransform.Scale.Y) * _yHeight / TERRAIN_PATCH_COLLISION_QUANTIZATION;
+    const float columnScale = Math::Abs(terrainTransform.Scale.Z) * _collisionScaleXZ;
+    geometry.SetHeightField(_physicsHeightField, heightScale, rowScale, columnScale);
 
     // Update shape
-    _physicsShape->setGeometry(geometry);
-    _physicsShape->setLocalPose(PxTransform(0, _yOffset * terrainTransform.Scale.Y, 0));
+    PhysicsBackend::SetShapeGeometry(_physicsShape, geometry);
+    PhysicsBackend::SetShapeLocalPose(_physicsShape, Vector3(0, _yOffset * terrainTransform.Scale.Y, 0), Quaternion::Identity);
 }
 
 void TerrainPatch::DestroyCollision()
@@ -2242,10 +2162,12 @@ void TerrainPatch::DestroyCollision()
     ScopeLock lock(_collisionLocker);
     ASSERT(HasCollision());
 
-    _terrain->GetPhysicsScene()->RemoveCollider(_terrain);
-    _terrain->GetPhysicsScene()->RemoveActor(_physicsActor);
-    _terrain->GetPhysicsScene()->RemoveObject(_physicsShape);
-    _terrain->GetPhysicsScene()->RemoveObject(_physicsHeightField);
+    void* scene = _terrain->GetPhysicsScene()->GetPhysicsScene();
+    PhysicsBackend::RemoveCollider(_terrain);
+    PhysicsBackend::RemoveSceneActor(scene, _physicsActor);
+    PhysicsBackend::DestroyActor(_physicsActor);
+    PhysicsBackend::DestroyShape(_physicsShape);
+    PhysicsBackend::DestroyObject(_physicsHeightField);
 
     _physicsActor = nullptr;
     _physicsShape = nullptr;
@@ -2265,17 +2187,17 @@ void TerrainPatch::CacheDebugLines()
 {
     ASSERT(_debugLines.IsEmpty() && _physicsHeightField);
 
-    const uint32 rows = _physicsHeightField->getNbRows();
-    const uint32 cols = _physicsHeightField->getNbColumns();
+    int32 rows, cols;
+    PhysicsBackend::GetHeightFieldSize(_physicsHeightField, rows, cols);
 
     _debugLines.Resize((rows - 1) * (cols - 1) * 6 + (cols + rows - 2) * 2);
     Vector3* data = _debugLines.Get();
 
-#define GET_VERTEX(x, y) const Vector3 v##x##y((float)(row + (x)), _physicsHeightField->getHeight((PxReal)(row + (x)), (PxReal)(col + (y))) / TERRAIN_PATCH_COLLISION_QUANTIZATION, (float)(col + (y)))
+#define GET_VERTEX(x, y) const Vector3 v##x##y((float)(row + (x)), PhysicsBackend::GetHeightFieldHeight(_physicsHeightField, (float)(row + (x)), (float)(col + (y))) / TERRAIN_PATCH_COLLISION_QUANTIZATION, (float)(col + (y)))
 
-    for (uint32 row = 0; row < rows - 1; row++)
+    for (int32 row = 0; row < rows - 1; row++)
     {
-        for (uint32 col = 0; col < cols - 1; col++)
+        for (int32 col = 0; col < cols - 1; col++)
         {
             GET_VERTEX(0, 0);
             GET_VERTEX(0, 1);
@@ -2293,9 +2215,9 @@ void TerrainPatch::CacheDebugLines()
         }
     }
 
-    for (uint32 row = 0; row < rows - 1; row++)
+    for (int32 row = 0; row < rows - 1; row++)
     {
-        const uint32 col = cols - 1;
+        const int32 col = cols - 1;
         GET_VERTEX(0, 0);
         GET_VERTEX(1, 0);
 
@@ -2303,9 +2225,9 @@ void TerrainPatch::CacheDebugLines()
         *data++ = v10;
     }
 
-    for (uint32 col = 0; col < cols - 1; col++)
+    for (int32 col = 0; col < cols - 1; col++)
     {
-        const uint32 row = rows - 1;
+        const int32 row = rows - 1;
         GET_VERTEX(0, 0);
         GET_VERTEX(0, 1);
 
@@ -2352,22 +2274,22 @@ const Array<Vector3>& TerrainPatch::GetCollisionTriangles()
     if (!_physicsShape || _collisionTriangles.HasItems())
         return _collisionTriangles;
 
-    const uint32 rows = _physicsHeightField->getNbRows();
-    const uint32 cols = _physicsHeightField->getNbColumns();
+    int32 rows, cols;
+    PhysicsBackend::GetHeightFieldSize(_physicsHeightField, rows, cols);
 
     _collisionTriangles.Resize((rows - 1) * (cols - 1) * 6);
     Vector3* data = _collisionTriangles.Get();
 
-#define GET_VERTEX(x, y) Vector3 v##x##y((float)(row + (x)), _physicsHeightField->getHeight((PxReal)(row + (x)), (PxReal)(col + (y))) / TERRAIN_PATCH_COLLISION_QUANTIZATION, (float)(col + (y))); Vector3::Transform(v##x##y, world, v##x##y)
+#define GET_VERTEX(x, y) Vector3 v##x##y((float)(row + (x)), PhysicsBackend::GetHeightFieldHeight(_physicsHeightField, (float)(row + (x)), (float)(col + (y))) / TERRAIN_PATCH_COLLISION_QUANTIZATION, (float)(col + (y))); Vector3::Transform(v##x##y, world, v##x##y)
 
     const float size = _terrain->_chunkSize * TERRAIN_UNITS_PER_VERTEX * CHUNKS_COUNT_EDGE;
     const Transform terrainTransform = _terrain->_transform;
     Transform localTransform(Vector3(_x * size, _yOffset, _z * size), Quaternion::Identity, Vector3(_collisionScaleXZ, _yHeight, _collisionScaleXZ));
     const Matrix world = localTransform.GetWorld() * terrainTransform.GetWorld();
 
-    for (uint32 row = 0; row < rows - 1; row++)
+    for (int32 row = 0; row < rows - 1; row++)
     {
-        for (uint32 col = 0; col < cols - 1; col++)
+        for (int32 col = 0; col < cols - 1; col++)
         {
             GET_VERTEX(0, 0);
             GET_VERTEX(0, 1);
@@ -2394,9 +2316,8 @@ void TerrainPatch::GetCollisionTriangles(const BoundingSphere& bounds, Array<Vec
     result.Clear();
 
     // Skip if no intersection with patch
-    if (!CollisionsHelper::BoxIntersectsSphere(GetBounds(), bounds))
+    if (!CollisionsHelper::BoxIntersectsSphere(GetBounds(), bounds) || !_physicsHeightField)
         return;
-    CHECK(_physicsHeightField);
 
     // Prepare
     const auto& triangles = GetCollisionTriangles();
@@ -2424,8 +2345,8 @@ void TerrainPatch::GetCollisionTriangles(const BoundingSphere& bounds, Array<Vec
     }
 
     // Normalize bounds and map to actual triangles buffer
-    const int32 rows = _physicsHeightField->getNbRows();
-    const int32 cols = _physicsHeightField->getNbColumns();
+    int32 rows, cols;
+    PhysicsBackend::GetHeightFieldSize(_physicsHeightField, rows, cols);
     int32 startRow = Math::FloorToInt(min.X / size * rows);
     int32 startCol = Math::FloorToInt(min.Z / size * cols);
     int32 endRow = Math::CeilToInt(max.X / size * rows);
@@ -2495,8 +2416,8 @@ void TerrainPatch::ExtractCollisionGeometry(Array<Vector3>& vertexBuffer, Array<
     if (!_physicsShape)
         return;
 
-    const uint32 rows = _physicsHeightField->getNbRows();
-    const uint32 cols = _physicsHeightField->getNbColumns();
+    int32 rows, cols;
+    PhysicsBackend::GetHeightFieldSize(_physicsHeightField, rows, cols);
 
     // Cache pre-transformed collision heightfield vertices locations
     if (_collisionVertices.IsEmpty())
@@ -2513,11 +2434,11 @@ void TerrainPatch::ExtractCollisionGeometry(Array<Vector3>& vertexBuffer, Array<
             const int32 vertexCount = rows * cols;
             _collisionVertices.Resize(vertexCount);
             Vector3* vb = _collisionVertices.Get();
-            for (uint32 row = 0; row < rows; row++)
+            for (int32 row = 0; row < rows; row++)
             {
-                for (uint32 col = 0; col < cols; col++)
+                for (int32 col = 0; col < cols; col++)
                 {
-                    Vector3 v((float)row, _physicsHeightField->getHeight((PxReal)row, (PxReal)col) / TERRAIN_PATCH_COLLISION_QUANTIZATION, (float)col);
+                    Vector3 v((float)row, PhysicsBackend::GetHeightFieldHeight(_physicsHeightField, (float)row, (float)col) / TERRAIN_PATCH_COLLISION_QUANTIZATION, (float)col);
                     Vector3::Transform(v, world, v);
                     *vb++ = v;
                 }
@@ -2532,9 +2453,9 @@ void TerrainPatch::ExtractCollisionGeometry(Array<Vector3>& vertexBuffer, Array<
     const int32 indexCount = (rows - 1) * (cols - 1) * 6;
     indexBuffer.Resize(indexCount);
     int32* ib = indexBuffer.Get();
-    for (uint32 row = 0; row < rows - 1; row++)
+    for (int32 row = 0; row < rows - 1; row++)
     {
-        for (uint32 col = 0; col < cols - 1; col++)
+        for (int32 col = 0; col < cols - 1; col++)
         {
 #define GET_INDEX(x, y) *ib++ = (col + (y)) + (row + (x)) * cols
 
@@ -2612,6 +2533,7 @@ void TerrainPatch::Deserialize(DeserializeStream& stream, ISerializeModifier* mo
 
 void TerrainPatch::OnPhysicsSceneChanged(PhysicsScene* previous)
 {
-    previous->UnlinkActor(_physicsActor);
-    _terrain->GetPhysicsScene()->AddActor(_physicsActor);
+    PhysicsBackend::RemoveSceneActor(previous->GetPhysicsScene(), _physicsActor);
+    void* scene = _terrain->GetPhysicsScene()->GetPhysicsScene();
+    PhysicsBackend::AddSceneActor(scene, _physicsActor);
 }

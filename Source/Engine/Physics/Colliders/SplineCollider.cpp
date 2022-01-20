@@ -6,16 +6,13 @@
 #include "Engine/Core/Math/Ray.h"
 #include "Engine/Level/Actors/Spline.h"
 #include "Engine/Serialization/Serialization.h"
-#include "Engine/Physics/Utilities.h"
 #include "Engine/Physics/Physics.h"
+#include "Engine/Physics/PhysicsBackend.h"
 #include "Engine/Physics/PhysicsScene.h"
 #include "Engine/Profiler/ProfilerCPU.h"
 #if COMPILE_WITH_PHYSICS_COOKING
 #include "Engine/Physics/CollisionCooking.h"
-#include <ThirdParty/PhysX/PxPhysics.h>
-#include <ThirdParty/PhysX/extensions/PxDefaultStreams.h>
 #endif
-#include <ThirdParty/PhysX/geometry/PxTriangleMesh.h>
 
 SplineCollider::SplineCollider(const SpawnParams& params)
     : Collider(params)
@@ -173,7 +170,7 @@ void SplineCollider::EndPlay()
     // Cleanup
     if (_triangleMesh)
     {
-        GetPhysicsScene()->RemoveObject(_triangleMesh);
+        PhysicsBackend::DestroyObject(_triangleMesh);
         _triangleMesh = nullptr;
     }
 }
@@ -183,18 +180,17 @@ void SplineCollider::UpdateBounds()
     // Unused as bounds are updated during collision building
 }
 
-void SplineCollider::GetGeometry(PxGeometryHolder& geometry)
+void SplineCollider::GetGeometry(CollisionShape& collision)
 {
     // Reset bounds
     _box = BoundingBox(_transform.Translation);
     BoundingSphere::FromBox(_box, _sphere);
+    const float minSize = 0.001f;
+    collision.SetSphere(minSize);
 
     // Skip if sth is missing
     if (!_spline || !IsActiveInHierarchy() || _spline->GetSplinePointsCount() < 2 || !CollisionData || !CollisionData->IsLoaded())
-    {
-        geometry.storeAny(PxSphereGeometry(0.001f));
         return;
-    }
     PROFILE_CPU();
 
     // Extract collision geometry
@@ -203,10 +199,7 @@ void SplineCollider::GetGeometry(PxGeometryHolder& geometry)
     Array<int32> collisionIndices;
     CollisionData->ExtractGeometry(collisionVertices, collisionIndices);
     if (collisionIndices.IsEmpty())
-    {
-        geometry.storeAny(PxSphereGeometry(0.001f));
         return;
-    }
 
     // Apply local mesh transformation
     if (!_preTransform.IsIdentity())
@@ -288,7 +281,6 @@ void SplineCollider::GetGeometry(PxGeometryHolder& geometry)
     // Prepare scale
     Vector3 scale = _cachedScale;
     scale.Absolute();
-    const float minSize = 0.001f;
     scale = Vector3::Max(scale, minSize);
 
     // TODO: add support for cooking collision for static splines in editor and reusing it in game
@@ -307,16 +299,15 @@ void SplineCollider::GetGeometry(PxGeometryHolder& geometry)
         // Create triangle mesh
         if (_triangleMesh)
         {
-            GetPhysicsScene()->RemoveObject(_triangleMesh);
+            PhysicsBackend::DestroyObject(_triangleMesh);
             _triangleMesh = nullptr;
         }
-        PxDefaultMemoryInputData input(collisionData.Get(), collisionData.Length());
         // TODO: try using getVerticesForModification for dynamic triangle mesh vertices updating when changing curve in the editor
-        _triangleMesh = Physics::GetPhysics()->createTriangleMesh(input);
+        BoundingBox localBounds;
+        _triangleMesh = PhysicsBackend::CreateTriangleMesh(collisionData.Get(), collisionData.Length(), localBounds);
         if (!_triangleMesh)
         {
             LOG(Error, "Failed to create triangle mesh from collision data of {0}.", ToString());
-            geometry.storeAny(PxSphereGeometry(0.001f));
             return;
         }
 
@@ -325,17 +316,13 @@ void SplineCollider::GetGeometry(PxGeometryHolder& geometry)
             _vertexBuffer[i] = colliderTransform.LocalToWorld(_vertexBuffer[i]);
 
         // Update bounds
-        _box = P2C(_triangleMesh->getLocalBounds());
         Matrix splineWorld;
         colliderTransform.GetWorld(splineWorld);
-        BoundingBox::Transform(_box, splineWorld, _box);
+        BoundingBox::Transform(localBounds, splineWorld, _box);
         BoundingSphere::FromBox(_box, _sphere);
 
         // Setup geometry
-        PxTriangleMeshGeometry triangleMesh;
-        triangleMesh.scale.scale = C2P(scale);
-        triangleMesh.triangleMesh = _triangleMesh;
-        geometry.storeAny(triangleMesh);
+        collision.SetTriangleMesh(_triangleMesh, scale.Raw);
 
         // TODO: find a way of releasing _vertexBuffer and _indexBuffer for static colliders (note: ExtractGeometry usage for navmesh generation at runtime)
 
@@ -344,5 +331,4 @@ void SplineCollider::GetGeometry(PxGeometryHolder& geometry)
 #endif
 
     LOG(Error, "Cannot build collision data for {0} due to runtime collision cooking diabled.", ToString());
-    geometry.storeAny(PxSphereGeometry(0.001f));
 }

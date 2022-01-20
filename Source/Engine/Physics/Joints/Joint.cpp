@@ -3,14 +3,13 @@
 #include "Joint.h"
 #include "Engine/Serialization/Serialization.h"
 #include "Engine/Core/Log.h"
-#include "Engine/Physics/Utilities.h"
 #include "Engine/Physics/Physics.h"
+#include "Engine/Physics/PhysicsBackend.h"
+#include "Engine/Physics/PhysicsScene.h"
 #include "Engine/Physics/Actors/IPhysicsActor.h"
 #if USE_EDITOR
 #include "Engine/Level/Scene/SceneRendering.h"
 #endif
-#include "Engine/Scripting/Script.h"
-#include <ThirdParty/PhysX/extensions/PxJoint.h>
 
 Joint::Joint(const SpawnParams& params)
     : Actor(params)
@@ -27,36 +26,27 @@ void Joint::SetBreakForce(float value)
 {
     if (Math::NearEqual(value, _breakForce))
         return;
-
     _breakForce = value;
     if (_joint)
-    {
-        _joint->setBreakForce(_breakForce, _breakTorque);
-    }
+        PhysicsBackend::SetJointBreakForce(_joint, _breakForce, _breakTorque);
 }
 
 void Joint::SetBreakTorque(float value)
 {
     if (Math::NearEqual(value, _breakTorque))
         return;
-
     _breakTorque = value;
     if (_joint)
-    {
-        _joint->setBreakForce(_breakForce, _breakTorque);
-    }
+        PhysicsBackend::SetJointBreakForce(_joint, _breakForce, _breakTorque);
 }
 
 void Joint::SetEnableCollision(bool value)
 {
     if (value == GetEnableCollision())
         return;
-
     _enableCollision = value;
     if (_joint)
-    {
-        _joint->setConstraintFlag(PxConstraintFlag::eCOLLISION_ENABLED, value);
-    }
+        PhysicsBackend::SetJointFlags(_joint, _enableCollision ? PhysicsBackend::JointFlags::Collision : PhysicsBackend::JointFlags::None);
 }
 
 bool Joint::GetEnableAutoAnchor() const
@@ -73,24 +63,23 @@ void Joint::SetTargetAnchor(const Vector3& value)
 {
     if (Vector3::NearEqual(value, _targetAnchor))
         return;
-
     _targetAnchor = value;
     if (_joint && !_enableAutoAnchor)
-    {
-        _joint->setLocalPose(PxJointActorIndex::eACTOR1, PxTransform(C2P(_targetAnchor), C2P(_targetAnchorRotation)));
-    }
+        PhysicsBackend::SetJointActorPose(_joint, _targetAnchor, _targetAnchorRotation, 1);
 }
 
 void Joint::SetTargetAnchorRotation(const Quaternion& value)
 {
     if (Quaternion::NearEqual(value, _targetAnchorRotation))
         return;
-
     _targetAnchorRotation = value;
     if (_joint && !_enableAutoAnchor)
-    {
-        _joint->setLocalPose(PxJointActorIndex::eACTOR1, PxTransform(C2P(_targetAnchor), C2P(_targetAnchorRotation)));
-    }
+        PhysicsBackend::SetJointActorPose(_joint, _targetAnchor, _targetAnchorRotation, 1);
+}
+
+void* Joint::GetPhysicsImpl() const
+{
+    return _joint;
 }
 
 void Joint::SetJointLocation(const Vector3& location)
@@ -128,14 +117,9 @@ void Joint::SetJointOrientation(const Quaternion& orientation)
 
 void Joint::GetCurrentForce(Vector3& linear, Vector3& angular) const
 {
-    if (_joint && _joint->getConstraint())
-    {
-        _joint->getConstraint()->getForce(*(PxVec3*)&linear, *(PxVec3*)&angular);
-    }
-    else
-    {
-        linear = angular = Vector3::Zero;
-    }
+    linear = angular = Vector3::Zero;
+    if (_joint)
+        PhysicsBackend::GetJointForce(_joint, linear, angular);
 }
 
 void Joint::Create()
@@ -151,26 +135,25 @@ void Joint::Create()
     }
 
     // Create joint object
-    JointData data;
-    data.Physics = Physics::GetPhysics();
-    data.Actor0 = parent->GetRigidActor();
-    data.Actor1 = target ? target->GetRigidActor() : nullptr;
-    data.Pos0 = _localTransform.Translation;
-    data.Rot0 = _localTransform.Orientation;
-    data.Pos1 = _targetAnchor;
-    data.Rot1 = _targetAnchorRotation;
+    PhysicsJointDesc desc;
+    desc.Joint = this;
+    desc.Actor0 = parent->GetPhysicsActor();
+    desc.Actor1 = target ? target->GetPhysicsActor() : nullptr;
+    desc.Pos0 = _localTransform.Translation;
+    desc.Rot0 = _localTransform.Orientation;
+    desc.Pos1 = _targetAnchor;
+    desc.Rot1 = _targetAnchorRotation;
     if (_enableAutoAnchor && target)
     {
         // Place target anchor at the joint location
-        data.Pos1 = Target->GetTransform().WorldToLocal(GetPosition());
-        data.Rot1 = WorldToLocal(Target->GetOrientation(), GetOrientation());
+        desc.Pos1 = Target->GetTransform().WorldToLocal(GetPosition());
+        desc.Rot1 = WorldToLocal(Target->GetOrientation(), GetOrientation());
     }
-    _joint = CreateJoint(data);
-    _joint->userData = this;
+    _joint = CreateJoint(desc);
 
     // Setup joint properties
-    _joint->setBreakForce(_breakForce, _breakTorque);
-    _joint->setConstraintFlag(PxConstraintFlag::eCOLLISION_ENABLED, _enableCollision);
+    PhysicsBackend::SetJointBreakForce(_joint, _breakForce, _breakTorque);
+    PhysicsBackend::SetJointFlags(_joint, _enableCollision ? PhysicsBackend::JointFlags::Collision : PhysicsBackend::JointFlags::None);
 }
 
 void Joint::OnJointBreak()
@@ -180,10 +163,8 @@ void Joint::OnJointBreak()
 
 void Joint::Delete()
 {
-    // Remove the joint
-    Physics::RemoveJoint(this);
-    _joint->userData = nullptr;
-    _joint->release();
+    PhysicsBackend::RemoveJoint(this);
+    PhysicsBackend::DestroyJoint(_joint);
     _joint = nullptr;
 }
 
@@ -192,8 +173,7 @@ void Joint::SetActors()
     auto parent = dynamic_cast<IPhysicsActor*>(GetParent());
     auto target = dynamic_cast<IPhysicsActor*>(Target.Get());
     ASSERT(parent != nullptr);
-
-    _joint->setActors(parent ? parent->GetRigidActor() : nullptr, target ? target->GetRigidActor() : nullptr);
+    PhysicsBackend::SetJointActors(_joint, parent->GetPhysicsActor(), target ? target->GetPhysicsActor() : nullptr);
 }
 
 void Joint::OnTargetChanged()
@@ -347,7 +327,7 @@ void Joint::OnActiveInTreeChanged()
         else
             Delete();
     }
-        // Joint object may not be created if actor is disabled on play mode begin (late init feature)
+    // Joint object may not be created if actor is disabled on play mode begin (late init feature)
     else if (IsDuringPlay())
     {
         Create();
@@ -393,9 +373,6 @@ void Joint::OnTransformChanged()
 
     _box = BoundingBox(_transform.Translation);
     _sphere = BoundingSphere(_transform.Translation, 0.0f);
-
     if (_joint)
-    {
-        _joint->setLocalPose(PxJointActorIndex::eACTOR0, PxTransform(C2P(_localTransform.Translation), C2P(_localTransform.Orientation)));
-    }
+        PhysicsBackend::SetJointActorPose(_joint, _localTransform.Translation, _localTransform.Orientation, 0);
 }

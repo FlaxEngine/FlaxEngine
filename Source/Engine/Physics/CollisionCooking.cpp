@@ -8,96 +8,6 @@
 #include "Engine/Graphics/Models/MeshBase.h"
 #include "Engine/Threading/Threading.h"
 #include "Engine/Core/Log.h"
-#include "Physics.h"
-#include <ThirdParty/PhysX/cooking/PxCooking.h>
-#include <ThirdParty/PhysX/extensions/PxDefaultStreams.h>
-
-#define CONVEX_VERTEX_MIN 8
-#define CONVEX_VERTEX_MAX 255
-#define ENSURE_CAN_COOK \
-    auto cooking = Physics::GetCooking(); \
-    if (cooking == nullptr) \
-	{ \
-		LOG(Warning, "Physics collisions cooking is disabled at runtime. Enable Physics Settings option SupportCookingAtRuntime to use collision generation at runtime."); \
-		return true; \
-	}
-
-bool CollisionCooking::CookConvexMesh(CookingInput& input, BytesContainer& output)
-{
-    ENSURE_CAN_COOK;
-    if (input.VertexCount == 0)
-        LOG(Warning, "Empty mesh data for collision cooking.");
-
-    // Init options
-    PxConvexMeshDesc desc;
-    desc.points.count = input.VertexCount;
-    desc.points.stride = sizeof(Vector3);
-    desc.points.data = input.VertexData;
-    desc.flags = PxConvexFlag::eCOMPUTE_CONVEX;
-    if (input.ConvexVertexLimit == 0)
-        desc.vertexLimit = CONVEX_VERTEX_MAX;
-    else
-        desc.vertexLimit = (PxU16)Math::Clamp(input.ConvexVertexLimit, CONVEX_VERTEX_MIN, CONVEX_VERTEX_MAX);
-    if (input.ConvexFlags & ConvexMeshGenerationFlags::SkipValidation)
-        desc.flags |= PxConvexFlag::Enum::eDISABLE_MESH_VALIDATION;
-    if (input.ConvexFlags & ConvexMeshGenerationFlags::UsePlaneShifting)
-        desc.flags |= PxConvexFlag::Enum::ePLANE_SHIFTING;
-    if (input.ConvexFlags & ConvexMeshGenerationFlags::UseFastInteriaComputation)
-        desc.flags |= PxConvexFlag::Enum::eFAST_INERTIA_COMPUTATION;
-    if (input.ConvexFlags & ConvexMeshGenerationFlags::ShiftVertices)
-        desc.flags |= PxConvexFlag::Enum::eSHIFT_VERTICES;
-    PxCookingParams cookingParams = cooking->getParams();
-    cookingParams.suppressTriangleMeshRemapTable = input.ConvexFlags & ConvexMeshGenerationFlags::SuppressFaceRemapTable;
-    cooking->setParams(cookingParams);
-
-    // Perform cooking
-    PxDefaultMemoryOutputStream outputStream;
-    PxConvexMeshCookingResult::Enum result;
-    if (!cooking->cookConvexMesh(desc, outputStream, &result))
-    {
-        LOG(Warning, "Convex Mesh cooking failed. Error code: {0}, Input vertices count: {1}", result, input.VertexCount);
-        return true;
-    }
-
-    // Copy result
-    output.Copy(outputStream.getData(), outputStream.getSize());
-
-    return false;
-}
-
-bool CollisionCooking::CookTriangleMesh(CookingInput& input, BytesContainer& output)
-{
-    ENSURE_CAN_COOK;
-    if (input.VertexCount == 0 || input.IndexCount == 0)
-        LOG(Warning, "Empty mesh data for collision cooking.");
-
-    // Init options
-    PxTriangleMeshDesc desc;
-    desc.points.count = input.VertexCount;
-    desc.points.stride = sizeof(Vector3);
-    desc.points.data = input.VertexData;
-    desc.triangles.count = input.IndexCount / 3;
-    desc.triangles.stride = 3 * (input.Is16bitIndexData ? sizeof(uint16) : sizeof(uint32));
-    desc.triangles.data = input.IndexData;
-    desc.flags = input.Is16bitIndexData ? PxMeshFlag::e16_BIT_INDICES : (PxMeshFlag::Enum)0;
-    PxCookingParams cookingParams = cooking->getParams();
-    cookingParams.suppressTriangleMeshRemapTable = input.ConvexFlags & ConvexMeshGenerationFlags::SuppressFaceRemapTable;
-    cooking->setParams(cookingParams);
-
-    // Perform cooking
-    PxDefaultMemoryOutputStream outputStream;
-    PxTriangleMeshCookingResult::Enum result;
-    if (!cooking->cookTriangleMesh(desc, outputStream, &result))
-    {
-        LOG(Warning, "Triangle Mesh cooking failed. Error code: {0}, Input vertices count: {1}, indices count: {2}", result, input.VertexCount, input.IndexCount);
-        return true;
-    }
-
-    // Copy result
-    output.Copy(outputStream.getData(), outputStream.getSize());
-
-    return false;
-}
 
 bool CollisionCooking::CookCollision(const Argument& arg, CollisionData::SerializedOptions& outputOptions, BytesContainer& outputData)
 {
@@ -367,19 +277,6 @@ bool CollisionCooking::CookCollision(const Argument& arg, CollisionData::Seriali
     outputOptions.ConvexFlags = arg.ConvexFlags;
     outputOptions.ConvexVertexLimit = arg.ConvexVertexLimit;
     outputOptions.MaterialSlotsMask = arg.MaterialSlotsMask;
-
-    return false;
-}
-
-bool CollisionCooking::CookHeightField(const physx::PxHeightFieldDesc& desc, physx::PxOutputStream& stream)
-{
-    ENSURE_CAN_COOK;
-
-    if (!Physics::GetCooking()->cookHeightField(desc, stream))
-    {
-        LOG(Warning, "Height Field collision cooking failed.");
-        return true;
-    }
 
     return false;
 }

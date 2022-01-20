@@ -2,8 +2,6 @@
 
 #include "CapsuleCollider.h"
 #include "Engine/Serialization/Serialization.h"
-#include "Engine/Physics/Utilities.h"
-#include <ThirdParty/PhysX/PxShape.h>
 
 CapsuleCollider::CapsuleCollider(const SpawnParams& params)
     : Collider(params)
@@ -106,12 +104,11 @@ void CapsuleCollider::UpdateBounds()
     BoundingSphere::FromBox(_box, _sphere);
 }
 
-void CapsuleCollider::GetGeometry(PxGeometryHolder& geometry)
+void CapsuleCollider::GetGeometry(CollisionShape& collision)
 {
     const float scaling = _cachedScale.GetAbsolute().MaxValue();
     const float minSize = 0.001f;
     const float radius = Math::Max(Math::Abs(_radius) * scaling, minSize);
     const float height = Math::Max(Math::Abs(_height) * scaling, minSize);
-    const PxCapsuleGeometry capsule(radius, height * 0.5f);
-    geometry.storeAny(capsule);
+    collision.SetCapsule(radius, height * 0.5f);
 }

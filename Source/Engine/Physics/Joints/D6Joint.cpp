@@ -3,9 +3,7 @@
 #include "D6Joint.h"
 #include "Engine/Serialization/JsonTools.h"
 #include "Engine/Serialization/Serialization.h"
-#include "Engine/Physics/Utilities.h"
-#include "Engine/Physics/Physics.h"
-#include <ThirdParty/PhysX/extensions/PxD6Joint.h>
+#include "Engine/Physics/PhysicsBackend.h"
 
 D6Joint::D6Joint(const SpawnParams& params)
     : Joint(params)
@@ -19,185 +17,118 @@ void D6Joint::SetMotion(const D6JointAxis axis, const D6JointMotion value)
 {
     if (value == GetMotion(axis))
         return;
-
     _motion[static_cast<int32>(axis)] = value;
-
     if (_joint)
-    {
-        auto joint = static_cast<PxD6Joint*>(_joint);
-        joint->setMotion(static_cast<PxD6Axis::Enum>(axis), static_cast<PxD6Motion::Enum>(value));
-    }
+        PhysicsBackend::SetD6JointMotion(_joint, axis, value);
 }
 
 void D6Joint::SetDrive(const D6JointDriveType index, const D6JointDrive& value)
 {
     if (value == GetDrive(index))
         return;
-
     _drive[static_cast<int32>(index)] = value;
-
     if (_joint)
-    {
-        auto joint = static_cast<PxD6Joint*>(_joint);
-        PxD6JointDrive drive;
-        if (value.Acceleration)
-            drive.flags = PxD6JointDriveFlag::eACCELERATION;
-        drive.stiffness = value.Stiffness;
-        drive.damping = value.Damping;
-        drive.forceLimit = value.ForceLimit;
-        ASSERT_LOW_LAYER(drive.isValid());
-        joint->setDrive(static_cast<PxD6Drive::Enum>(index), drive);
-    }
+        PhysicsBackend::SetD6JointDrive(_joint, index, value);
 }
 
 void D6Joint::SetLimitLinear(const LimitLinear& value)
 {
     if (value == _limitLinear)
         return;
-
     _limitLinear = value;
-
     if (_joint)
-    {
-        auto joint = static_cast<PxD6Joint*>(_joint);
-        PxJointLinearLimit limit(*Physics::GetTolerancesScale(), Math::Max(value.Extent, ZeroTolerance), value.ContactDist);
-        limit.stiffness = value.Spring.Stiffness;
-        limit.damping = value.Spring.Damping;
-        limit.restitution = value.Restitution;
-        ASSERT_LOW_LAYER(limit.isValid());
-        joint->setLinearLimit(limit);
-    }
+        PhysicsBackend::SetD6JointLimitLinear(_joint, value);
 }
 
 void D6Joint::SetLimitTwist(const LimitAngularRange& value)
 {
     if (value == _limitTwist)
         return;
-
     _limitTwist = value;
-
     if (_joint)
-    {
-        auto joint = static_cast<PxD6Joint*>(_joint);
-        PxJointAngularLimitPair limit(value.Lower * DegreesToRadians, Math::Max(value.Upper, value.Lower) * DegreesToRadians, value.ContactDist);
-        limit.stiffness = value.Spring.Stiffness;
-        limit.damping = value.Spring.Damping;
-        limit.restitution = value.Restitution;
-        ASSERT_LOW_LAYER(limit.isValid());
-        joint->setTwistLimit(limit);
-    }
+        PhysicsBackend::SetD6JointLimitTwist(_joint, value);
 }
 
 void D6Joint::SetLimitSwing(const LimitConeRange& value)
 {
     if (value == _limitSwing)
         return;
-
     _limitSwing = value;
-
     if (_joint)
-    {
-        auto joint = static_cast<PxD6Joint*>(_joint);
-        PxJointLimitCone limit(Math::Clamp(value.YLimitAngle * DegreesToRadians, ZeroTolerance, PI - ZeroTolerance), Math::Clamp(value.ZLimitAngle * DegreesToRadians, ZeroTolerance, PI - ZeroTolerance), value.ContactDist);
-        limit.stiffness = value.Spring.Stiffness;
-        limit.damping = value.Spring.Damping;
-        limit.restitution = value.Restitution;
-        ASSERT_LOW_LAYER(limit.isValid());
-        joint->setSwingLimit(limit);
-    }
+        PhysicsBackend::SetD6JointLimitSwing(_joint, value);
 }
 
 Vector3 D6Joint::GetDrivePosition() const
 {
-    return _joint ? P2C(static_cast<PxD6Joint*>(_joint)->getDrivePosition().p) : Vector3::Zero;
+    return _joint ? PhysicsBackend::GetD6JointDrivePosition(_joint) : Vector3::Zero;
 }
 
 void D6Joint::SetDrivePosition(const Vector3& value)
 {
     if (_joint)
-    {
-        auto joint = static_cast<PxD6Joint*>(_joint);
-        PxTransform t = joint->getDrivePosition();
-        t.p = C2P(value);
-        joint->setDrivePosition(t);
-    }
+        PhysicsBackend::SetD6JointDrivePosition(_joint, value);
 }
 
 Quaternion D6Joint::GetDriveRotation() const
 {
-    return _joint ? P2C(static_cast<PxD6Joint*>(_joint)->getDrivePosition().q) : Quaternion::Identity;
+    return _joint ? PhysicsBackend::GetD6JointDriveRotation(_joint) : Quaternion::Identity;
 }
 
 void D6Joint::SetDriveRotation(const Quaternion& value)
 {
     if (_joint)
-    {
-        auto joint = static_cast<PxD6Joint*>(_joint);
-        PxTransform t = joint->getDrivePosition();
-        t.q = C2P(value);
-        joint->setDrivePosition(t);
-    }
+        PhysicsBackend::SetD6JointDriveRotation(_joint, value);
 }
 
 Vector3 D6Joint::GetDriveLinearVelocity() const
 {
+    Vector3 linear = Vector3::Zero, angular;
     if (_joint)
-    {
-        PxVec3 linear, angular;
-        static_cast<PxD6Joint*>(_joint)->getDriveVelocity(linear, angular);
-        return P2C(linear);
-    }
-    return Vector3::Zero;
+        PhysicsBackend::GetD6JointDriveVelocity(_joint, linear, angular);
+    return linear;
 }
 
 void D6Joint::SetDriveLinearVelocity(const Vector3& value)
 {
     if (_joint)
     {
-        PxVec3 linear, angular;
-        auto joint = static_cast<PxD6Joint*>(_joint);
-        joint->getDriveVelocity(linear, angular);
-        linear = C2P(value);
-        joint->setDriveVelocity(linear, angular);
+        Vector3 linear, angular;
+        PhysicsBackend::GetD6JointDriveVelocity(_joint, linear, angular);
+        PhysicsBackend::SetD6JointDriveVelocity(_joint, value, angular);
     }
 }
 
 Vector3 D6Joint::GetDriveAngularVelocity() const
 {
+    Vector3 linear, angular = Vector3::Zero;
     if (_joint)
-    {
-        PxVec3 linear, angular;
-        static_cast<PxD6Joint*>(_joint)->getDriveVelocity(linear, angular);
-        return P2C(angular);
-    }
-    return Vector3::Zero;
+        PhysicsBackend::GetD6JointDriveVelocity(_joint, linear, angular);
+    return angular;
 }
 
 void D6Joint::SetDriveAngularVelocity(const Vector3& value)
 {
     if (_joint)
     {
-        PxVec3 linear, angular;
-        auto joint = static_cast<PxD6Joint*>(_joint);
-        joint->getDriveVelocity(linear, angular);
-        angular = C2P(value);
-        joint->setDriveVelocity(linear, angular);
+        Vector3 linear, angular;
+        PhysicsBackend::GetD6JointDriveVelocity(_joint, linear, angular);
+        PhysicsBackend::SetD6JointDriveVelocity(_joint, linear, value);
     }
 }
 
 float D6Joint::GetCurrentTwist() const
 {
-    return _joint ? static_cast<PxD6Joint*>(_joint)->getTwistAngle() : 0.0f;
+    return _joint ? PhysicsBackend::GetD6JointTwist(_joint) : 0.0f;
 }
 
-float D6Joint::GetCurrentSwingYAngle() const
+float D6Joint::GetCurrentSwingY() const
 {
-    return _joint ? static_cast<PxD6Joint*>(_joint)->getSwingYAngle() : 0.0f;
+    return _joint ? PhysicsBackend::GetD6JointSwingY(_joint) : 0.0f;
 }
 
-float D6Joint::GetCurrentSwingZAngle() const
+float D6Joint::GetCurrentSwingZ() const
 {
-    return _joint ? static_cast<PxD6Joint*>(_joint)->getSwingZAngle() : 0.0f;
+    return _joint ? PhysicsBackend::GetD6JointSwingZ(_joint) : 0.0f;
 }
 
 #if USE_EDITOR
@@ -412,59 +343,15 @@ void D6Joint::Deserialize(DeserializeStream& stream, ISerializeModifier* modifie
     JsonTools::GetFloat(_limitSwing.Spring.Damping, stream, "LimitSwing.Damping");
 }
 
-PxJoint* D6Joint::CreateJoint(JointData& data)
+void* D6Joint::CreateJoint(const PhysicsJointDesc& desc)
 {
-    const PxTransform trans0(C2P(data.Pos0), C2P(data.Rot0));
-    const PxTransform trans1(C2P(data.Pos1), C2P(data.Rot1));
-    auto joint = PxD6JointCreate(*data.Physics, data.Actor0, trans0, data.Actor1, trans1);
-
+    void* joint = PhysicsBackend::CreateD6Joint(desc);
     for (int32 i = 0; i < static_cast<int32>(D6JointAxis::MAX); i++)
-    {
-        joint->setMotion(static_cast<PxD6Axis::Enum>(i), static_cast<PxD6Motion::Enum>(_motion[i]));
-    }
-
+        PhysicsBackend::SetD6JointMotion(joint, (D6JointAxis)i, _motion[i]);
     for (int32 i = 0; i < static_cast<int32>(D6JointAxis::MAX); i++)
-    {
-        const auto& value = _drive[i];
-        PxD6JointDrive drive;
-        if (value.Acceleration)
-            drive.flags = PxD6JointDriveFlag::eACCELERATION;
-        drive.stiffness = value.Stiffness;
-        drive.damping = value.Damping;
-        drive.forceLimit = value.ForceLimit;
-        ASSERT_LOW_LAYER(drive.isValid());
-        joint->setDrive(static_cast<PxD6Drive::Enum>(i), drive);
-    }
-
-    {
-        const auto& value = _limitLinear;
-        PxJointLinearLimit limit(*Physics::GetTolerancesScale(), Math::Max(value.Extent, ZeroTolerance), value.ContactDist);
-        limit.stiffness = value.Spring.Stiffness;
-        limit.damping = value.Spring.Damping;
-        limit.restitution = value.Restitution;
-        ASSERT_LOW_LAYER(limit.isValid());
-        joint->setDistanceLimit(limit);
-    }
-
-    {
-        const auto& value = _limitTwist;
-        PxJointAngularLimitPair limit(value.Lower * DegreesToRadians, Math::Max(value.Upper, value.Lower) * DegreesToRadians, value.ContactDist);
-        limit.stiffness = value.Spring.Stiffness;
-        limit.damping = value.Spring.Damping;
-        limit.restitution = value.Restitution;
-        ASSERT_LOW_LAYER(limit.isValid());
-        joint->setTwistLimit(limit);
-    }
-
-    {
-        const auto& value = _limitSwing;
-        PxJointLimitCone limit(Math::Clamp(value.YLimitAngle * DegreesToRadians, ZeroTolerance, PI - ZeroTolerance), Math::Clamp(value.ZLimitAngle * DegreesToRadians, ZeroTolerance, PI - ZeroTolerance), value.ContactDist);
-        limit.stiffness = value.Spring.Stiffness;
-        limit.damping = value.Spring.Damping;
-        limit.restitution = value.Restitution;
-        ASSERT_LOW_LAYER(limit.isValid());
-        joint->setSwingLimit(limit);
-    }
-
+        PhysicsBackend::SetD6JointDrive(joint, (D6JointDriveType)i, _drive[i]);
+    PhysicsBackend::SetD6JointLimitLinear(joint, _limitLinear);
+    PhysicsBackend::SetD6JointLimitTwist(joint, _limitTwist);
+    PhysicsBackend::SetD6JointLimitSwing(joint, _limitSwing);
     return joint;
 }

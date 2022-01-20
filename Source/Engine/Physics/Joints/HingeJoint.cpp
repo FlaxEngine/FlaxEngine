@@ -2,8 +2,7 @@
 
 #include "HingeJoint.h"
 #include "Engine/Serialization/Serialization.h"
-#include "Engine/Physics/Utilities.h"
-#include <ThirdParty/PhysX/extensions/PxRevoluteJoint.h>
+#include "Engine/Physics/PhysicsBackend.h"
 
 HingeJoint::HingeJoint(const SpawnParams& params)
     : Joint(params)
@@ -17,61 +16,37 @@ void HingeJoint::SetFlags(const HingeJointFlag value)
 {
     if (_flags == value)
         return;
-
     _flags = value;
-
     if (_joint)
-    {
-        auto joint = static_cast<PxRevoluteJoint*>(_joint);
-        joint->setRevoluteJointFlag(PxRevoluteJointFlag::eLIMIT_ENABLED, (_flags & HingeJointFlag::Limit) != 0);
-        joint->setRevoluteJointFlag(PxRevoluteJointFlag::eDRIVE_ENABLED, (_flags & HingeJointFlag::Drive) != 0);
-    }
+        PhysicsBackend::SetHingeJointFlags(_joint, value, _drive.FreeSpin);
 }
 
 void HingeJoint::SetLimit(const LimitAngularRange& value)
 {
     if (_limit == value)
         return;
-
     _limit = value;
-
     if (_joint)
-    {
-        auto joint = static_cast<PxRevoluteJoint*>(_joint);
-        PxJointAngularLimitPair limit(value.Lower * DegreesToRadians, Math::Max(value.Upper, value.Lower) * DegreesToRadians, value.ContactDist);
-        limit.stiffness = value.Spring.Stiffness;
-        limit.damping = value.Spring.Damping;
-        limit.restitution = value.Restitution;
-        ASSERT_LOW_LAYER(limit.isValid());
-        joint->setLimit(limit);
-    }
+        PhysicsBackend::SetHingeJointLimit(_joint, value);
 }
 
 void HingeJoint::SetDrive(const HingeJointDrive& value)
 {
     if (_drive == value)
         return;
-
     _drive = value;
-
     if (_joint)
-    {
-        auto joint = static_cast<PxRevoluteJoint*>(_joint);
-        joint->setDriveVelocity(Math::Max(value.Velocity, 0.0f));
-        joint->setDriveForceLimit(Math::Max(value.ForceLimit, 0.0f));
-        joint->setDriveGearRatio(Math::Max(value.GearRatio, 0.0f));
-        joint->setRevoluteJointFlag(PxRevoluteJointFlag::eDRIVE_FREESPIN, value.FreeSpin);
-    }
+        PhysicsBackend::SetHingeJointDrive(_joint, value);
 }
 
 float HingeJoint::GetCurrentAngle() const
 {
-    return _joint ? static_cast<PxRevoluteJoint*>(_joint)->getAngle() : 0.0f;
+    return _joint ? PhysicsBackend::GetHingeJointAngle(_joint) : 0.0f;
 }
 
 float HingeJoint::GetCurrentVelocity() const
 {
-    return _joint ? static_cast<PxRevoluteJoint*>(_joint)->getVelocity() : 0.0f;
+    return _joint ? PhysicsBackend::GetHingeJointVelocity(_joint) : 0.0f;
 }
 
 #if USE_EDITOR
@@ -146,29 +121,11 @@ void HingeJoint::Deserialize(DeserializeStream& stream, ISerializeModifier* modi
     DESERIALIZE_MEMBER(FreeSpin, _drive.FreeSpin);
 }
 
-PxJoint* HingeJoint::CreateJoint(JointData& data)
+void* HingeJoint::CreateJoint(const PhysicsJointDesc& desc)
 {
-    const PxTransform trans0(C2P(data.Pos0), C2P(data.Rot0));
-    const PxTransform trans1(C2P(data.Pos1), C2P(data.Rot1));
-    auto joint = PxRevoluteJointCreate(*data.Physics, data.Actor0, trans0, data.Actor1, trans1);
-
-    int32 flags = 0;
-    if (_flags & HingeJointFlag::Limit)
-        flags |= PxRevoluteJointFlag::eLIMIT_ENABLED;
-    if (_flags & HingeJointFlag::Drive)
-        flags |= PxRevoluteJointFlag::eDRIVE_ENABLED;
-    if (_drive.FreeSpin)
-        flags |= PxRevoluteJointFlag::eDRIVE_FREESPIN;
-    joint->setRevoluteJointFlags(static_cast<PxRevoluteJointFlag::Enum>(flags));
-    joint->setDriveVelocity(_drive.Velocity);
-    joint->setDriveForceLimit(_drive.ForceLimit);
-    joint->setDriveGearRatio(_drive.GearRatio);
-    PxJointAngularLimitPair limit(_limit.Lower * DegreesToRadians, Math::Max(_limit.Upper, _limit.Lower) * DegreesToRadians, _limit.ContactDist);
-    limit.stiffness = _limit.Spring.Stiffness;
-    limit.damping = _limit.Spring.Damping;
-    limit.restitution = _limit.Restitution;
-    ASSERT_LOW_LAYER(limit.isValid());
-    joint->setLimit(limit);
-
+    void* joint = PhysicsBackend::CreateHingeJoint(desc);
+    PhysicsBackend::SetHingeJointFlags(joint, _flags, _drive.FreeSpin);
+    PhysicsBackend::SetHingeJointLimit(joint, _limit);
+    PhysicsBackend::SetHingeJointDrive(joint, _drive);
     return joint;
 }

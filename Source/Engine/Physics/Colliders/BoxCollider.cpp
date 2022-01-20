@@ -2,8 +2,7 @@
 
 #include "BoxCollider.h"
 #include "Engine/Serialization/Serialization.h"
-#include "Engine/Physics/Utilities.h"
-#include <ThirdParty/PhysX/PxShape.h>
+#include "Engine/Physics/PhysicsBackend.h"
 
 BoxCollider::BoxCollider(const SpawnParams& params)
     : Collider(params)
@@ -134,11 +133,11 @@ void BoxCollider::UpdateBounds()
     BoundingSphere::FromBox(_box, _sphere);
 }
 
-void BoxCollider::GetGeometry(PxGeometryHolder& geometry)
+void BoxCollider::GetGeometry(CollisionShape& collision)
 {
     Vector3 size = _size * _cachedScale;
     size.Absolute();
     const float minSize = 0.001f;
-    const PxBoxGeometry box(Math::Max(size.X * 0.5f, minSize), Math::Max(size.Y * 0.5f, minSize), Math::Max(size.Z * 0.5f, minSize));
-    geometry.storeAny(box);
+    size = Vector3::Max(size * 0.5f, Vector3(minSize));
+    collision.SetBox(size.Raw);
 }

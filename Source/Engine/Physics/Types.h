@@ -4,54 +4,15 @@
 
 #include "Engine/Core/Enums.h"
 #include "Engine/Core/Config.h"
+#include "Engine/Core/Math/Vector2.h"
+#include "Engine/Core/Math/Vector3.h"
+#include "Engine/Scripting/ScriptingType.h"
 
-namespace physx
-{
-    class PxScene;
-    class PxConvexMesh;
-    class PxTriangleMesh;
-    class PxCooking;
-    class PxPhysics;
-    class PxVec3;
-    class PxVec4;
-    class PxTransform;
-    class PxJoint;
-    class PxMat44;
-    class PxCpuDispatcher;
-    class PxGpuDispatcher;
-    class PxSimulationEventCallback;
-    struct PxActiveTransform;
-    class PxActor;
-    class PxRigidActor;
-    class PxRigidDynamic;
-    class PxRigidStatic;
-    class PxFoundation;
-    class PxShape;
-    class PxGeometry;
-    class PxGeometryHolder;
-    class PxProfileZoneManager;
-    class PxMaterial;
-    class PxPvd;
-    class PxBase;
-    class PxTolerancesScale;
-    class PxBaseTask;
-    class PxControllerManager;
-    class PxController;
-    class PxCapsuleController;
-    class PxQueryFilterCallback;
-    class PxControllerFilterCallback;
-    class PxHeightField;
-    struct PxFilterData;
-    struct PxRaycastHit;
-    struct PxSweepHit;
-}
-
-using namespace physx;
-
-#define RELEASE_PHYSX(x) if(x) { (x)->release(); x = nullptr; }
-
-// Global pointer to PhysX SDK object
-extern PxPhysics* CPhysX;
+class PhysicsColliderActor;
+class PhysicsScene;
+class Joint;
+class Collider;
+class CollisionData;
 
 /// <summary>
 /// Enumeration that determines the way in which two material properties will be combined to yield a friction or restitution coefficient for a collision.
@@ -167,3 +128,147 @@ API_ENUM(Attributes="Flags") enum class RigidbodyConstraints
 };
 
 DECLARE_ENUM_OPERATORS(RigidbodyConstraints);
+
+/// <summary>
+/// Raycast hit result data.
+/// </summary>
+API_STRUCT() struct RayCastHit
+{
+    DECLARE_SCRIPTING_TYPE_NO_SPAWN(RayCastHit);
+
+    /// <summary>
+    /// The collider that was hit.
+    /// </summary>
+    API_FIELD() PhysicsColliderActor* Collider = nullptr;
+
+    /// <summary>
+    /// The normal of the surface the ray hit.
+    /// </summary>
+    API_FIELD() Vector3 Normal;
+
+    /// <summary>
+    /// The distance from the ray's origin to the hit location.
+    /// </summary>
+    API_FIELD() float Distance;
+
+    /// <summary>
+    /// The point in the world space where ray hit the collider.
+    /// </summary>
+    API_FIELD() Vector3 Point;
+
+    /// <summary>
+    /// The index of the face that was hit. Valid only for convex mesh (polygon index), triangle mesh (triangle index) and height field (triangle index).
+    /// </summary>
+    /// <seealso cref="CollisionData.GetModelTriangle" />
+    API_FIELD() uint32 FaceIndex;
+
+    /// <summary>
+    /// The barycentric coordinates of hit triangle. Valid only for triangle mesh and height field.
+    /// </summary>
+    API_FIELD() Vector2 UV;
+};
+
+/// <summary>
+/// Physics collision shape variant for different shapes such as box, sphere, capsule.
+/// </summary>
+struct FLAXENGINE_API CollisionShape
+{
+    enum class Types : uint8
+    {
+        Sphere,
+        Box,
+        Capsule,
+        ConvexMesh,
+        TriangleMesh,
+        HeightField,
+    };
+
+    Types Type;
+
+    union
+    {
+        struct
+        {
+            float Radius;
+        } Sphere;
+
+        struct
+        {
+            float HalfExtents[3];
+        } Box;
+
+        struct
+        {
+            float Radius;
+            float HalfHeight;
+        } Capsule;
+
+        struct
+        {
+            void* ConvexMesh;
+            float Scale[3];
+        } ConvexMesh;
+
+        struct
+        {
+            void* TriangleMesh;
+            float Scale[3];
+        } TriangleMesh;
+
+        struct
+        {
+            void* HeightField;
+            float HeightScale;
+            float RowScale;
+            float ColumnScale;
+        } HeightField;
+    };
+
+    void SetSphere(float radius)
+    {
+        Type = Types::Sphere;
+        Sphere.Radius = radius;
+    }
+
+    void SetBox(float halfExtents[3])
+    {
+        Type = Types::Box;
+        Box.HalfExtents[0] = halfExtents[0];
+        Box.HalfExtents[1] = halfExtents[1];
+        Box.HalfExtents[2] = halfExtents[2];
+    }
+
+    void SetCapsule(float radius, float halfHeight)
+    {
+        Type = Types::Capsule;
+        Capsule.Radius = radius;
+        Capsule.HalfHeight = halfHeight;
+    }
+
+    void SetConvexMesh(void* contextMesh, float scale[3])
+    {
+        Type = Types::ConvexMesh;
+        ConvexMesh.ConvexMesh = contextMesh;
+        ConvexMesh.Scale[0] = scale[0];
+        ConvexMesh.Scale[1] = scale[1];
+        ConvexMesh.Scale[2] = scale[2];
+    }
+
+    void SetTriangleMesh(void* triangleMesh, float scale[3])
+    {
+        Type = Types::TriangleMesh;
+        TriangleMesh.TriangleMesh = triangleMesh;
+        TriangleMesh.Scale[0] = scale[0];
+        TriangleMesh.Scale[1] = scale[1];
+        TriangleMesh.Scale[2] = scale[2];
+    }
+
+    void SetHeightField(void* heightField, float heightScale, float rowScale, float columnScale)
+    {
+        Type = Types::HeightField;
+        HeightField.HeightField = heightField;
+        HeightField.HeightScale = heightScale;
+        HeightField.RowScale = rowScale;
+        HeightField.ColumnScale = columnScale;
+    }
+};

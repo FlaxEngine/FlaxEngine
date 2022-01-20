@@ -10,12 +10,6 @@ class ModelBase;
 class ModelData;
 class MeshBase;
 
-namespace physx
-{
-    class PxConvexMesh;
-    class PxTriangleMesh;
-}
-
 /// <summary>
 /// A <see cref="CollisionData"/> storage data type.
 /// </summary>
@@ -165,8 +159,8 @@ public:
 private:
 
     CollisionDataOptions _options;
-    physx::PxConvexMesh* _convexMesh;
-    physx::PxTriangleMesh* _triangleMesh;
+    void* _convexMesh;
+    void* _triangleMesh;
 
 public:
 
@@ -181,7 +175,7 @@ public:
     /// <summary>
     /// Gets the convex mesh object (valid only if asset is loaded and has cooked convex data).
     /// </summary>
-    FORCE_INLINE physx::PxConvexMesh* GetConvex() const
+    FORCE_INLINE void* GetConvex() const
     {
         return _convexMesh;
     }
@@ -189,7 +183,7 @@ public:
     /// <summary>
     /// Gets the triangle mesh object (valid only if asset is loaded and has cooked triangle data).
     /// </summary>
-    FORCE_INLINE physx::PxTriangleMesh* GetTriangle() const
+    FORCE_INLINE void* GetTriangle() const
     {
         return _triangleMesh;
     }

@@ -1,10 +1,12 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 #pragma once
 
+#if COMPILE_WITH_PHYSX
+
 #include "Types.h"
-#include "Collisions.h"
-#include "Colliders/Collider.h"
+#include "Engine/Physics/Collisions.h"
+#include "Engine/Physics/Colliders/Collider.h"
 #include "Engine/Core/Types/Pair.h"
 #include "Engine/Core/Collections/Dictionary.h"
 #include <ThirdParty/PhysX/PxSimulationEventCallback.h>
@@ -12,7 +14,6 @@
 /// <summary>
 /// Default implementation of the PxSimulationEventCallback to send physics events to the other engine services.
 /// </summary>
-/// <seealso cref="PxSimulationEventCallback" />
 class SimulationEventCallback : public PxSimulationEventCallback
 {
 public:
@@ -106,3 +107,5 @@ public:
     void onTrigger(PxTriggerPair* pairs, PxU32 count) override;
     void onAdvance(const PxRigidBody* const* bodyBuffer, const PxTransform* poseBuffer, const PxU32 count) override;
 };
+
+#endif

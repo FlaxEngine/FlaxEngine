@@ -5,6 +5,7 @@
 #if COMPILE_WITH_ASSETS_IMPORTER
 
 #include "AssetsImportingManager.h"
+#include "Engine/Physics/CollisionData.h"
 
 CreateAssetResult CreateCollisionData::Create(CreateAssetContext& context)
 {

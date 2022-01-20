@@ -970,10 +970,10 @@ public:
     /// <summary>
     /// Get the physics world the controller is part of.
     /// </summary>
-    API_PROPERTY(Attributes="HideInEditor") PhysicsScene* GetPhysicsScene();
+    API_PROPERTY(Attributes="HideInEditor") PhysicsScene* GetPhysicsScene() const;
 
 protected:
-    virtual void OnPhysicsSceneChanged(PhysicsScene* previous) {};
+    virtual void OnPhysicsSceneChanged(PhysicsScene* previous) {}
 
 private:
 

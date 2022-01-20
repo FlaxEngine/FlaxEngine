@@ -8,12 +8,10 @@
 #include "Engine/Physics/CollisionData.h"
 #include "Engine/Graphics/Models/ModelData.h"
 #include "Engine/Content/Assets/ModelBase.h"
+#include "Engine/Physics/PhysicsBackend.h"
 
-namespace physx
-{
-    class PxHeightFieldDesc;
-    class PxOutputStream;
-}
+#define CONVEX_VERTEX_MIN 8
+#define CONVEX_VERTEX_MAX 255
 
 /// <summary>
 /// Physical collision data cooking tools. Allows to bake heightfield, convex and triangle mesh colliders data.
@@ -21,7 +19,6 @@ namespace physx
 class CollisionCooking
 {
 public:
-
     struct CookingInput
     {
         int32 VertexCount = 0;
@@ -66,6 +63,16 @@ public:
     static bool CookTriangleMesh(CookingInput& input, BytesContainer& output);
 
     /// <summary>
+    /// Cooks a heightfield. The results are written to the stream. To create a heightfield object there is an option to precompute some of calculations done while loading the heightfield data.
+    /// </summary>
+    /// <param name="cols">The heightfield columns count.</param>
+    /// <param name="rows">The heightfield rows count.</param>
+    /// <param name="data">The heightfield data.</param>
+    /// <param name="stream">The user stream to output the cooked data.</param>
+    /// <returns>True if failed, otherwise false.</returns>
+    static bool CookHeightField(int32 cols, int32 rows, const PhysicsBackend::HeightFieldSample* data, WriteStream& stream);
+
+    /// <summary>
     /// Cooks the collision from the model and prepares the data for the <see cref="CollisionData"/> format.
     /// </summary>
     /// <param name="arg">The input argument descriptor.</param>
@@ -73,14 +80,6 @@ public:
     /// <param name="outputData">The output data container.</param>
     /// <returns>True if failed, otherwise false.</returns>
     static bool CookCollision(const Argument& arg, CollisionData::SerializedOptions& outputOptions, BytesContainer& outputData);
-
-    /// <summary>
-    /// Cooks a heightfield. The results are written to the stream. To create a heightfield object there is an option to precompute some of calculations done while loading the heightfield data.
-    /// </summary>
-    /// <param name="desc">The heightfield descriptor to read the HF from.</param>
-    /// <param name="stream">The user stream to output the cooked data.</param>
-    /// <returns>True if failed, otherwise false.</returns>
-    static bool CookHeightField(const physx::PxHeightFieldDesc& desc, physx::PxOutputStream& stream);
 };
 
 #endif

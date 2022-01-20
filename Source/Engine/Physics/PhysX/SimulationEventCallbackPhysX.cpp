@@ -1,10 +1,11 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
-#include "SimulationEventCallback.h"
-#include "Utilities.h"
-#include "Colliders/Collider.h"
-#include "Joints/Joint.h"
-#include "Actors/RigidBody.h"
+#if COMPILE_WITH_PHYSX
+
+#include "SimulationEventCallbackPhysX.h"
+#include "Engine/Physics/Colliders/Collider.h"
+#include "Engine/Physics/Joints/Joint.h"
+#include "Engine/Physics/Actors/RigidBody.h"
 #include <ThirdParty/PhysX/extensions/PxJoint.h>
 #include <ThirdParty/PhysX/PxShape.h>
 
@@ -136,7 +137,6 @@ void SimulationEventCallback::onConstraintBreak(PxConstraintInfo* constraints, P
     for (uint32 i = 0; i < count; i++)
     {
         PxJoint* joint = reinterpret_cast<PxJoint*>(constraints[i].externalReference);
-
         if (joint->userData)
             BrokenJoints.Add(static_cast<Joint*>(joint->userData));
     }
@@ -177,6 +177,7 @@ void SimulationEventCallback::onContact(const PxContactPairHeader& pairHeader, c
 
         c.ThisActor = static_cast<PhysicsColliderActor*>(pair.shapes[0]->userData);
         c.OtherActor = static_cast<PhysicsColliderActor*>(pair.shapes[1]->userData);
+        ASSERT_LOW_LAYER(c.ThisActor && c.OtherActor);
 
         while (i.hasNextPatch())
         {
@@ -219,6 +220,7 @@ void SimulationEventCallback::onContact(const PxContactPairHeader& pairHeader, c
             const PxContactPair& pair = pairs[i.contactPairIndex];
             c.ThisActor = static_cast<PhysicsColliderActor*>(pair.shapes[0]->userData);
             c.OtherActor = static_cast<PhysicsColliderActor*>(pair.shapes[1]->userData);
+            ASSERT_LOW_LAYER(c.ThisActor && c.OtherActor);
             Collision& collision = Collisions[CollidersPair(c.ThisActor, c.OtherActor)];
 
             collision.ThisVelocity = P2C(linearVelocityActor0);
@@ -239,6 +241,7 @@ void SimulationEventCallback::onTrigger(PxTriggerPair* pairs, PxU32 count)
 
         auto trigger = static_cast<PhysicsColliderActor*>(pair.triggerShape->userData);
         auto otherCollider = static_cast<PhysicsColliderActor*>(pair.otherShape->userData);
+        ASSERT_LOW_LAYER(trigger && otherCollider);
         CollidersPair collidersPair(trigger, otherCollider);
 
         if (pair.status & PxPairFlag::eNOTIFY_TOUCH_LOST)
@@ -256,3 +259,5 @@ void SimulationEventCallback::onAdvance(const PxRigidBody* const* bodyBuffer, co
 {
     // Not used
 }
+
+#endif

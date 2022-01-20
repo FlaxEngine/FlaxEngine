@@ -6,6 +6,7 @@
 #include "Engine/Physics/Collisions.h"
 
 class PhysicsColliderActor;
+class Collider;
 
 /// <summary>
 /// Physics simulation driven object.
@@ -16,7 +17,7 @@ API_CLASS() class FLAXENGINE_API RigidBody : public PhysicsActor
 DECLARE_SCENE_OBJECT(RigidBody);
 protected:
 
-    PxRigidDynamic* _actor;
+    void* _actor;
     Vector3 _cachedScale;
 
     float _mass;
@@ -387,15 +388,6 @@ public:
     API_FUNCTION() void UpdateMass();
 
     /// <summary>
-    /// Gets the native PhysX rigid actor object.
-    /// </summary>
-    /// <returns>The PhysX dynamic rigid actor.</returns>
-    FORCE_INLINE PxRigidDynamic* GetPhysXRigidActor() const
-    {
-        return _actor;
-    }
-
-    /// <summary>
     /// Applies a force (or impulse) defined in the world space to the rigidbody at its center of mass.
     /// </summary>
     /// <remarks>
@@ -548,11 +540,6 @@ public:
 protected:
 
     /// <summary>
-    /// Creates the physics actor.
-    /// </summary>
-    void CreateActor();
-
-    /// <summary>
     /// Updates the rigidbody scale dependent properties like mass (may be modified when actor transformation changes).
     /// </summary>
     void UpdateScale();
@@ -562,8 +549,7 @@ public:
     // [PhysicsActor]
     void Serialize(SerializeStream& stream, const void* otherObj) override;
     void Deserialize(DeserializeStream& stream, ISerializeModifier* modifier) override;
-    PxActor* GetPhysXActor() override;
-    PxRigidActor* GetRigidActor() override;
+    void* GetPhysicsActor() const override;
 
 protected:
 

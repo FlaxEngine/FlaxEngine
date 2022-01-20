@@ -2,8 +2,6 @@
 
 #include "SphereCollider.h"
 #include "Engine/Serialization/Serialization.h"
-#include "Engine/Physics/Utilities.h"
-#include <PxShape.h>
 
 SphereCollider::SphereCollider(const SpawnParams& params)
     : Collider(params)
@@ -78,11 +76,10 @@ void SphereCollider::UpdateBounds()
     _sphere.GetBoundingBox(_box);
 }
 
-void SphereCollider::GetGeometry(PxGeometryHolder& geometry)
+void SphereCollider::GetGeometry(CollisionShape& collision)
 {
     const float scaling = _cachedScale.GetAbsolute().MaxValue();
     const float radius = Math::Abs(_radius) * scaling;
     const float minSize = 0.001f;
-    const PxSphereGeometry sphere(Math::Max(radius, minSize));
-    geometry.storeAny(sphere);
+    collision.SetSphere(Math::Max(radius, minSize));
 }

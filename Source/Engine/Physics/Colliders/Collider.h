@@ -22,8 +22,8 @@ protected:
 
     Vector3 _center;
     bool _isTrigger;
-    PxShape* _shape;
-    PxRigidStatic* _staticActor;
+    void* _shape;
+    void* _staticActor;
     Vector3 _cachedScale;
     float _contactOffset;
     Vector3 _cachedLocalPosePos;
@@ -32,9 +32,9 @@ protected:
 public:
 
     /// <summary>
-    /// Gets the collider shape PhysX object.
+    /// Gets the native physics backend object.
     /// </summary>
-    PxShape* GetPxShape() const;
+    void* GetPhysicsShape() const;
 
     /// <summary>
     /// Gets the 'IsTrigger' flag.
@@ -121,9 +121,9 @@ public:
     /// <summary>
     /// Gets a point on the collider that is closest to a given location. Can be used to find a hit location or position to apply explosion force or any other special effects.
     /// </summary>
-    /// <param name="position">The position to find the closest point to it.</param>
+    /// <param name="point">The position to find the closest point to it.</param>
     /// <param name="result">The result point on the collider that is closest to the specified location.</param>
-    API_FUNCTION() void ClosestPoint(const Vector3& position, API_PARAM(Out) Vector3& result) const;
+    API_FUNCTION() void ClosestPoint(const Vector3& point, API_PARAM(Out) Vector3& result) const;
 
     /// <summary>
     /// Checks if a point is inside the collider.
@@ -171,7 +171,7 @@ protected:
     /// <summary>
     /// Updates the shape actor collisions/queries layer mask bits.
     /// </summary>
-    virtual void UpdateLayerBits();
+    void UpdateLayerBits();
 
     /// <summary>
     /// Updates the bounding box of the shape.
@@ -181,8 +181,8 @@ protected:
     /// <summary>
     /// Gets the collider shape geometry.
     /// </summary>
-    /// <param name="geometry">The output geometry.</param>
-    virtual void GetGeometry(PxGeometryHolder& geometry) = 0;
+    /// <param name="collision">The output collision shape.</param>
+    virtual void GetGeometry(CollisionShape& collision) = 0;
 
     /// <summary>
     /// Creates the collider shape.

@@ -48,6 +48,8 @@ public class PhysX : DepsModule
         if (useVehicle)
             options.PublicDefinitions.Add("WITH_VEHICLE");
 
+        options.PublicDefinitions.Add("COMPILE_WITH_PHYSX");
+
         string archPostFix = string.Empty;
         switch (options.Platform.Target)
         {

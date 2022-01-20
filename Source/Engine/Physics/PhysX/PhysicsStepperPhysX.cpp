@@ -1,7 +1,9 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
-#include "PhysicsStepper.h"
-#include "Physics.h"
+#if COMPILE_WITH_PHYSX
+
+#include "PhysicsStepperPhysX.h"
+#include "Engine/Physics/Physics.h"
 #include "Engine/Profiler/ProfilerCPU.h"
 #include <ThirdParty/PhysX/foundation/PxMath.h>
 #include <ThirdParty/PhysX/PxSceneLock.h>
@@ -138,3 +140,5 @@ void FixedStepper::substepStrategy(const PxReal stepSize, PxU32& substepCount, P
 
     mAccumulator -= PxReal(substepCount) * substepSize;
 }
+
+#endif

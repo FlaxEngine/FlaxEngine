@@ -6,8 +6,6 @@
 #include "Engine/Physics/Types.h"
 #include "IPhysicsActor.h"
 
-class PhysicsScene;
-
 /// <summary>
 /// A base class for all physical actors.
 /// </summary>
@@ -23,12 +21,6 @@ protected:
 public:
 
     /// <summary>
-    /// Gets the native PhysX actor object.
-    /// </summary>
-    /// <returns>The PhysX actor.</returns>
-    virtual PxActor* GetPhysXActor() = 0;
-
-    /// <summary>
     /// Updates the bounding box.
     /// </summary>
     void UpdateBounds();
@@ -39,7 +31,7 @@ public:
     bool IntersectsItself(const Ray& ray, float& distance, Vector3& normal) override;
 
     // [IPhysicsActor]
-    void OnActiveTransformChanged(const PxTransform& transform) override;
+    void OnActiveTransformChanged() override;
 
 protected:
 

@@ -1,33 +1,36 @@
+// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+
 #pragma once
 
-#include "Engine/Scripting/ScriptingObject.h"
-#include "Engine/Scripting/ScriptingType.h"
 #include "Engine/Core/Math/Vector3.h"
 #include "Engine/Core/Math/Quaternion.h"
+#include "Engine/Scripting/ScriptingObject.h"
 #include "Types.h"
 
+struct ActionData;
+struct RayCastHit;
+class PhysicsSettings;
+class PhysicsColliderActor;
+class Joint;
+class Collider;
+class CollisionData;
 #if WITH_VEHICLE
 class WheeledVehicle;
 #endif
 
-struct ActionData;
-struct RayCastHit;
-class FixedStepper;
-class PhysicsSettings;
-class PhysicsColliderActor;
-class PhysicsScenePhysX;
-class Joint;
-class Collider;
-class CollisionData;
-
 /// <summary>
-/// Isolated physics scene.
+/// Physical simulation scene.
 /// </summary>
-API_CLASS(NoSpawn) class FLAXENGINE_API PhysicsScene : public PersistentScriptingObject
+API_CLASS() class FLAXENGINE_API PhysicsScene : public ScriptingObject
 {
-    DECLARE_SCRIPTING_TYPE_NO_SPAWN(PhysicsScene);
+    DECLARE_SCRIPTING_TYPE(PhysicsScene);
+private:
+    String _name;
+    bool _autoSimulation = true;
+    bool _isDuringSimulation = false;
+    void* _scene = nullptr;
 
-    explicit PhysicsScene(const String& name, const PhysicsSettings& settings);
+public:
     ~PhysicsScene();
 
     /// <summary>
@@ -35,29 +38,33 @@ API_CLASS(NoSpawn) class FLAXENGINE_API PhysicsScene : public PersistentScriptin
     /// </summary>
     API_PROPERTY() String GetName() const;
 
-public:
-    String ToString() const override
+    /// <summary>
+    /// Gets the native physics system scene object.
+    /// </summary>
+    FORCE_INLINE void* GetPhysicsScene() const
     {
-        return GetName();
+        return _scene;
     }
 
-    PxScene* GetScene();
+    /// <summary>
+    /// Gets the automatic simulation feature that perform physics simulation after on fixed update by auto, otherwise user should do it.
+    /// </summary>
+    API_PROPERTY() bool GetAutoSimulation() const;
 
     /// <summary>
-    /// The automatic simulation feature. True if perform physics simulation after on fixed update by auto, otherwise user should do it.
+    /// Sets the automatic simulation feature that perform physics simulation after on fixed update by auto, otherwise user should do it.
     /// </summary>
-    API_PROPERTY() bool GetAutoSimulation();
     API_PROPERTY() void SetAutoSimulation(bool value);
-
-    /// <summary>
-    /// Sets the current gravity force.
-    /// </summary>
-    API_PROPERTY() void SetGravity(const Vector3& value);
 
     /// <summary>
     /// Gets the current gravity force.
     /// </summary>
     API_PROPERTY() Vector3 GetGravity();
+
+    /// <summary>
+    /// Sets the current gravity force.
+    /// </summary>
+    API_PROPERTY() void SetGravity(const Vector3& value);
 
     /// <summary>
     /// Gets the CCD feature enable flag.
@@ -67,7 +74,7 @@ public:
     /// <summary>
     /// Sets the CCD feature enable flag.
     /// </summary>
-    API_PROPERTY() void SetEnableCCD(const bool value);
+    API_PROPERTY() void SetEnableCCD(bool value);
 
     /// <summary>
     /// Gets the minimum relative velocity required for an object to bounce.
@@ -77,7 +84,16 @@ public:
     /// <summary>
     /// Sets the minimum relative velocity required for an object to bounce.
     /// </summary>
-    API_PROPERTY() void SetBounceThresholdVelocity(const float value);
+    API_PROPERTY() void SetBounceThresholdVelocity(float value);
+
+public:
+    /// <summary>
+    /// Initializes the scene.
+    /// </summary>
+    /// <param name="name">The name.</param>
+    /// <param name="settings">The physics settings.</param>
+    /// <returns>True if failed, otherwise false.</returns>
+    bool Init(const StringView& name, const PhysicsSettings& settings);
 
     /// <summary>
     /// Called during main engine loop to start physic simulation. Use CollectResults after.
@@ -86,90 +102,16 @@ public:
     API_FUNCTION() void Simulate(float dt);
 
     /// <summary>
-    /// Checks if physical simulation is running
+    /// Checks if physical simulation is running.
     /// </summary>
-    /// <returns>True if simulation is active, otherwise false</returns>
-    API_PROPERTY() bool IsDuringSimulation();
+    API_PROPERTY() bool IsDuringSimulation() const;
 
     /// <summary>
     /// Called to collect physic simulation results and apply them as well as fire collision events.
     /// </summary>
     API_FUNCTION() void CollectResults();
 
-    /// <summary>
-    /// Flushes the async requests to add/remove actors, remove materials, etc..
-    /// </summary>
-    void FlushRequests();
-
-    /// <summary>
-    /// Removes the material (using safe async request).
-    /// </summary>
-    /// <param name="material">The material.</param>
-    void RemoveMaterial(PxMaterial* material);
-
-    /// <summary>
-    /// Removes the physX object via calling release() on it (using safe async request).
-    /// </summary>
-    /// <param name="obj">The obj.</param>
-    void RemoveObject(PxBase* obj);
-
-    /// <summary>
-    /// Adds the actor (using safe async request).
-    /// </summary>
-    /// <param name="actor">The actor.</param>
-    void AddActor(PxActor* actor);
-
-    /// <summary>
-    /// Adds the actor (using safe async request).
-    /// </summary>
-    /// <param name="actor">The actor.</param>
-    /// <param name="putToSleep">If set to <c>true</c> will put actor to sleep after spawning.</param>
-    void AddActor(PxRigidDynamic* actor, bool putToSleep = false);
-
-    /// <summary>
-    /// Removes the actor (using safe async request).
-    /// </summary>
-    /// <param name="actor">The actor.</param>
-    void RemoveActor(PxActor* actor);
-
-    /// <summary>
-    /// Removes the actor from the underlying physics scene without destroying it.
-    /// </summary>
-    void UnlinkActor(PxActor* actor);
-
-    /// <summary>
-    /// Marks that collider has been removed (all collision events should be cleared to prevent leaks of using removed object).
-    /// </summary>
-    /// <param name="collider">The collider.</param>
-    void RemoveCollider(PhysicsColliderActor* collider);
-
-    /// <summary>
-    /// Marks that joint has been removed (all collision events should be cleared to prevent leaks of using removed object).
-    /// </summary>
-    /// <param name="joint">The joint.</param>
-    void RemoveJoint(Joint* joint);
-
-    /// <summary>
-    /// Gets PhysX characters controller manager object
-    /// </summary>
-    PxControllerManager* GetControllerManager();
-
 public:
-    /// <summary>
-    /// Gets the default query filter callback used for the scene queries.
-    /// </summary>
-    PxQueryFilterCallback* GetQueryFilterCallback();
-
-    /// <summary>
-    /// Gets the default query filter callback used for the character controller collisions detection.
-    /// </summary>
-    PxQueryFilterCallback* GetCharacterQueryFilterCallback();
-
-    /// <summary>
-    /// Gets the default controller filter callback used for the character controller collisions detection.
-    /// </summary>
-    static PxControllerFilterCallback* GetCharacterControllerFilterCallback();
-
     /// <summary>
     /// Performs a raycast against objects in the scene.
     /// </summary>
@@ -514,20 +456,4 @@ public:
     /// <param name="hitTriggers">If set to <c>true</c> triggers will be hit, otherwise will skip them.</param>
     /// <returns>True if convex mesh overlaps any matching object, otherwise false.</returns>
     API_FUNCTION() bool OverlapConvex(const Vector3& center, const CollisionData* convexMesh, const Vector3& scale, API_PARAM(Out) Array<PhysicsColliderActor*, HeapAllocation>& results, const Quaternion& rotation = Quaternion::Identity, uint32 layerMask = MAX_uint32, bool hitTriggers = true);
-
-public:
-#if WITH_VEHICLE
-    void AddWheeledVehicle(WheeledVehicle* vehicle);
-    void RemoveWheeledVehicle(WheeledVehicle* vehicle);
-#endif
-
-private:
-    String mName;
-    bool mAutoSimulation = true;
-    void* mScratchMemory = nullptr;
-    FixedStepper* mStepper = nullptr;
-    float mLastDeltaTime = 0.0f;
-    bool mIsDuringSimulation = false;
-
-    PhysicsScenePhysX* mPhysxImpl;
 };

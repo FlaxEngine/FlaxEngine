@@ -1,6 +1,8 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 #pragma once
+
+#if COMPILE_WITH_PHYSX
 
 #include "Types.h"
 #include <ThirdParty/PhysX/task/PxTask.h>
@@ -215,3 +217,5 @@ public:
         mMaxSubSteps = maxSteps;
     }
 };
+
+#endif

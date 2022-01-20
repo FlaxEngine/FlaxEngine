@@ -2,8 +2,7 @@
 
 #include "SphericalJoint.h"
 #include "Engine/Serialization/Serialization.h"
-#include "Engine/Physics/Utilities.h"
-#include <ThirdParty/PhysX/extensions/PxSphericalJoint.h>
+#include "Engine/Physics/PhysicsBackend.h"
 
 SphericalJoint::SphericalJoint(const SpawnParams& params)
     : Joint(params)
@@ -15,33 +14,18 @@ void SphericalJoint::SetFlags(const SphericalJointFlag value)
 {
     if (_flags == value)
         return;
-
     _flags = value;
-
     if (_joint)
-    {
-        auto joint = static_cast<PxSphericalJoint*>(_joint);
-        joint->setSphericalJointFlag(PxSphericalJointFlag::eLIMIT_ENABLED, (_flags & SphericalJointFlag::Limit) != 0);
-    }
+        PhysicsBackend::SetSphericalJointFlags(_joint, value);
 }
 
 void SphericalJoint::SetLimit(const LimitConeRange& value)
 {
     if (_limit == value)
         return;
-
     _limit = value;
-
     if (_joint)
-    {
-        auto joint = static_cast<PxSphericalJoint*>(_joint);
-        PxJointLimitCone limit(Math::Clamp(value.YLimitAngle * DegreesToRadians, ZeroTolerance, PI - ZeroTolerance), Math::Clamp(value.ZLimitAngle * DegreesToRadians, ZeroTolerance, PI - ZeroTolerance), value.ContactDist);
-        limit.stiffness = value.Spring.Stiffness;
-        limit.damping = value.Spring.Damping;
-        limit.restitution = value.Restitution;
-        ASSERT_LOW_LAYER(limit.isValid());
-        joint->setLimitCone(limit);
-    }
+        PhysicsBackend::SetSphericalJointLimit(_joint, value);
 }
 
 #if USE_EDITOR
@@ -101,21 +85,10 @@ void SphericalJoint::Deserialize(DeserializeStream& stream, ISerializeModifier* 
     DESERIALIZE_MEMBER(ZLimitAngle, _limit.ZLimitAngle);
 }
 
-PxJoint* SphericalJoint::CreateJoint(JointData& data)
+void* SphericalJoint::CreateJoint(const PhysicsJointDesc& desc)
 {
-    const PxTransform trans0(C2P(data.Pos0), C2P(data.Rot0));
-    const PxTransform trans1(C2P(data.Pos1), C2P(data.Rot1));
-    auto joint = PxSphericalJointCreate(*data.Physics, data.Actor0, trans0, data.Actor1, trans1);
-
-    int32 flags = 0;
-    if (_flags & SphericalJointFlag::Limit)
-        flags |= PxSphericalJointFlag::eLIMIT_ENABLED;
-    joint->setSphericalJointFlags(static_cast<PxSphericalJointFlag::Enum>(flags));
-    PxJointLimitCone limit(Math::Clamp(_limit.YLimitAngle * DegreesToRadians, ZeroTolerance, PI - ZeroTolerance), Math::Clamp(_limit.ZLimitAngle * DegreesToRadians, ZeroTolerance, PI - ZeroTolerance), _limit.ContactDist);
-    limit.stiffness = _limit.Spring.Stiffness;
-    limit.damping = _limit.Spring.Damping;
-    limit.restitution = _limit.Restitution;
-    joint->setLimitCone(limit);
-
+    void* joint = PhysicsBackend::CreateSphericalJoint(desc);
+    PhysicsBackend::SetSphericalJointFlags(joint, _flags);
+    PhysicsBackend::SetSphericalJointLimit(joint, _limit);
     return joint;
 }

@@ -1814,9 +1814,9 @@ void Actor::FromJson(const StringAnsiView& json)
 
 void Actor::SetPhysicsScene(PhysicsScene* scene)
 {
-    ASSERT(scene);
+    CHECK(scene);
 
-    auto previous = GetPhysicsScene();
+    const auto previous = GetPhysicsScene();
     _physicsScene = scene;
 
     if (previous != _physicsScene)
@@ -1829,10 +1829,7 @@ void Actor::SetPhysicsScene(PhysicsScene* scene)
     }
 }
 
-PhysicsScene* Actor::GetPhysicsScene()
+PhysicsScene* Actor::GetPhysicsScene() const
 {
-    if (_physicsScene == nullptr)
-        _physicsScene = Physics::DefaultScene;
-
-     return _physicsScene;
+    return _physicsScene ? _physicsScene : Physics::DefaultScene;
 }

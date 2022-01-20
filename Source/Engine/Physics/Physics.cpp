@@ -2,94 +2,14 @@
 
 #include "Physics.h"
 #include "PhysicsScene.h"
+#include "PhysicsBackend.h"
 #include "PhysicalMaterial.h"
-
-#include "Engine/Core/Log.h"
-#include "Engine/Platform/CPUInfo.h"
 #include "PhysicsSettings.h"
-#include "Utilities.h"
-#include "PhysicsStepper.h"
-
-#include "Engine/Level/Level.h"
-#include "Engine/Profiler/ProfilerCPU.h"
-#include "Engine/Core/Memory/Memory.h"
-#include "Engine/Engine/EngineService.h"
-#include "Engine/Serialization/Serialization.h"
 #include "Engine/Engine/Time.h"
-#include <ThirdParty/PhysX/PxPhysicsAPI.h>
-#if WITH_PVD
-#include <ThirdParty/PhysX/pvd/PxPvd.h>
-#endif
-
-#define PHYSX_VEHICLE_DEBUG_TELEMETRY 0
-
-#if PHYSX_VEHICLE_DEBUG_TELEMETRY
-#include "Engine/Core/Utilities.h"
-#endif
-
-class PhysXAllocator : public PxAllocatorCallback
-{
-public:
-
-    void* allocate(size_t size, const char* typeName, const char* filename, int line) override
-    {
-        return Allocator::Allocate(size, 16);
-    }
-
-    void deallocate(void* ptr) override
-    {
-        Allocator::Free(ptr);
-    }
-};
-
-class PhysXError : public PxErrorCallback
-{
-public:
-
-    PhysXError()
-    {
-    }
-
-    ~PhysXError()
-    {
-    }
-
-public:
-
-    // [PxErrorCallback]
-    void reportError(PxErrorCode::Enum code, const char* message, const char* file, int line) override
-    {
-        LOG(Error, "PhysX Error! Code: {0}.\n{1}\nSource: {2} : {3}.", static_cast<int32>(code), String(message), String(file), line);
-    }
-};
-
-PxPhysics* CPhysX = nullptr;
-#if WITH_PVD
-PxPvd* CPVD = nullptr;
-#endif
-
-namespace
-{
-    PhysXAllocator PhysXAllocatorCallback;
-    PhysXError PhysXErrorCallback;
-    PxTolerancesScale ToleranceScale;
-    bool _queriesHitTriggers = true;
-    PhysicsCombineMode _frictionCombineMode = PhysicsCombineMode::Average;
-    PhysicsCombineMode _restitutionCombineMode = PhysicsCombineMode::Average;
-    PxFoundation* _foundation = nullptr;
-#if COMPILE_WITH_PHYSICS_COOKING
-    PxCooking* Cooking = nullptr;
-#endif
-    PxMaterial* DefaultMaterial = nullptr;
-#if WITH_VEHICLE
-    bool VehicleSDKInitialized = false;
-#endif
-
-    void reset()
-    {
-        Physics::Scenes.Resize(1);
-    }
-}
+#include "Engine/Engine/EngineService.h"
+#include "Engine/Profiler/ProfilerCPU.h"
+#include "Engine/Serialization/Serialization.h"
+#include "Engine/Threading/Threading.h"
 
 PhysicsScene* Physics::DefaultScene = nullptr;
 Array<PhysicsScene*> Physics::Scenes;
@@ -98,7 +18,6 @@ uint32 Physics::LayerMasks[32];
 class PhysicsService : public EngineService
 {
 public:
-
     PhysicsService()
         : EngineService(TEXT("Physics"), 0)
     {
@@ -113,74 +32,14 @@ public:
 
 PhysicsService PhysicsServiceInstance;
 
-PxShapeFlags GetShapeFlags(bool isTrigger, bool isEnabled)
-{
-#if WITH_PVD
-    PxShapeFlags flags = PxShapeFlag::eVISUALIZATION;
-#else
-    PxShapeFlags flags = static_cast<PxShapeFlags>(0);
-#endif
-
-    if (isEnabled)
-    {
-        if (isTrigger)
-        {
-            flags |= PxShapeFlag::eTRIGGER_SHAPE;
-            if (_queriesHitTriggers)
-                flags |= PxShapeFlag::eSCENE_QUERY_SHAPE;
-        }
-        else
-        {
-            flags = PxShapeFlag::eSIMULATION_SHAPE | PxShapeFlag::eSCENE_QUERY_SHAPE;
-        }
-    }
-
-    return flags;
-}
-
-#if WITH_VEHICLE
-
-void InitVehicleSDK()
-{
-    if (!VehicleSDKInitialized)
-    {
-        VehicleSDKInitialized = true;
-        PxInitVehicleSDK(*CPhysX);
-        PxVehicleSetBasisVectors(PxVec3(0, 1, 0), PxVec3(1, 0, 0));
-        PxVehicleSetUpdateMode(PxVehicleUpdateMode::eVELOCITY_CHANGE);
-    }
-}
-
-#endif
-
 void PhysicsSettings::Apply()
 {
     Time::_physicsMaxDeltaTime = MaxDeltaTime;
-    _queriesHitTriggers = QueriesHitTriggers;
-    _frictionCombineMode = FrictionCombineMode;
-    _restitutionCombineMode = RestitutionCombineMode;
     Platform::MemoryCopy(Physics::LayerMasks, LayerMasks, sizeof(LayerMasks));
     Physics::SetGravity(DefaultGravity);
     Physics::SetBounceThresholdVelocity(BounceThresholdVelocity);
     Physics::SetEnableCCD(!DisableCCD);
-
-    // TODO: setting eADAPTIVE_FORCE requires PxScene setup (physx docs: This flag is not mutable, and must be set in PxSceneDesc at scene creation.)
-    // TODO: update all shapes filter data
-    // TODO: update all shapes flags
-
-    /*
-    {
-        get all actors and then:
-        
-        const PxU32 numShapes = actor->getNbShapes();
-        PxShape** shapes = (PxShape**)SAMPLE_ALLOC(sizeof(PxShape*)*numShapes);
-        actor->getShapes(shapes, numShapes);
-        for (PxU32 i = 0; i < numShapes; i++)
-        {
-            ..
-        }
-        SAMPLE_FREE(shapes);
-    }*/
+    PhysicsBackend::ApplySettings(*this);
 }
 
 PhysicsSettings::PhysicsSettings()
@@ -225,193 +84,77 @@ PhysicalMaterial::PhysicalMaterial()
 PhysicalMaterial::~PhysicalMaterial()
 {
     if (_material)
-    {
-        for (auto scene : Physics::Scenes) 
-            scene->RemoveMaterial(_material);
-    }
-}
-
-PxMaterial* PhysicalMaterial::GetPhysXMaterial()
-{
-    if (_material == nullptr && CPhysX)
-    {
-        _material = CPhysX->createMaterial(Friction, Friction, Restitution);
-        _material->userData = this;
-
-        const PhysicsCombineMode useFrictionCombineMode = OverrideFrictionCombineMode ? FrictionCombineMode : _frictionCombineMode;
-        _material->setFrictionCombineMode(static_cast<PxCombineMode::Enum>(useFrictionCombineMode));
-
-        const PhysicsCombineMode useRestitutionCombineMode = OverrideRestitutionCombineMode ? RestitutionCombineMode : _restitutionCombineMode;
-        _material->setRestitutionCombineMode(static_cast<PxCombineMode::Enum>(useRestitutionCombineMode));
-    }
-
-    return _material;
-}
-
-void PhysicalMaterial::UpdatePhysXMaterial()
-{
-    if (_material != nullptr)
-    {
-        _material->setStaticFriction(Friction);
-        _material->setDynamicFriction(Friction);
-
-        const PhysicsCombineMode useFrictionCombineMode = OverrideFrictionCombineMode ? FrictionCombineMode : _frictionCombineMode;
-        _material->setFrictionCombineMode(static_cast<PxCombineMode::Enum>(useFrictionCombineMode));
-
-        _material->setRestitution(Restitution);
-        const PhysicsCombineMode useRestitutionCombineMode = OverrideRestitutionCombineMode ? RestitutionCombineMode : _restitutionCombineMode;
-        _material->setRestitutionCombineMode(static_cast<PxCombineMode::Enum>(useRestitutionCombineMode));
-    }
+        PhysicsBackend::DestroyObject(_material);
 }
 
 bool PhysicsService::Init()
 {
-#define CHECK_INIT(value, msg) if(!value) { LOG(Error, msg); return true; }
+    // Initialize backend
+    if (PhysicsBackend::Init())
+        return true;
 
-    auto& settings = *PhysicsSettings::Get();
-
-    // Send info
-    LOG(Info, "Setup NVIDIA PhysX {0}.{1}.{2}", PX_PHYSICS_VERSION_MAJOR, PX_PHYSICS_VERSION_MINOR, PX_PHYSICS_VERSION_BUGFIX);
-
-    // Init PhysX foundation object
-    _foundation = PxCreateFoundation(PX_PHYSICS_VERSION, PhysXAllocatorCallback, PhysXErrorCallback);
-    CHECK_INIT(_foundation, "PxCreateFoundation failed!");
-
-    // Config
-    ToleranceScale.length = 100;
-    ToleranceScale.speed = 981;
-
-    PxPvd* pvd = nullptr;
-#if WITH_PVD
-    {
-        // Init PVD
-        pvd = PxCreatePvd(*_foundation);
-        PxPvdTransport* transport = PxDefaultPvdSocketTransportCreate("127.0.0.1", 5425, 100);
-        //PxPvdTransport* transport = PxDefaultPvdFileTransportCreate("D:\\physx_sample.pxd2");
-        if (transport)
-        {
-            const bool isConnected = pvd->connect(*transport, PxPvdInstrumentationFlag::eALL);
-            if (isConnected)
-            {
-                LOG(Info, "Connected to PhysX Visual Debugger (PVD)");
-            }
-        }
-        CPVD = pvd;
-    }
-
-#endif
-
-    // Init PhysX
-    CPhysX = PxCreatePhysics(PX_PHYSICS_VERSION, *_foundation, ToleranceScale, false, pvd);
-    CHECK_INIT(CPhysX, "PxCreatePhysics failed!");
-
-    // Init extensions
-    const bool extensionsInit = PxInitExtensions(*CPhysX, pvd);
-    CHECK_INIT(extensionsInit, "PxInitExtensions failed!");
-
-    // Init collision cooking
-#if COMPILE_WITH_PHYSICS_COOKING
-#if !USE_EDITOR
-    if (settings.SupportCookingAtRuntime)
-#endif
-    {
-        PxCookingParams cookingParams(ToleranceScale);
-        cookingParams.meshWeldTolerance = 0.1f; // Weld to 1mm precision
-        cookingParams.meshPreprocessParams = PxMeshPreprocessingFlags(PxMeshPreprocessingFlag::eWELD_VERTICES);
-        Cooking = PxCreateCooking(PX_PHYSICS_VERSION, *_foundation, cookingParams);
-        CHECK_INIT(Cooking, "PxCreateCooking failed!");
-    }
-#endif
-
+    // Create default scene
     Physics::DefaultScene = Physics::FindOrCreateScene(TEXT("Default"));
-
-    // Create default resources
-    DefaultMaterial = CPhysX->createMaterial(0.7f, 0.7f, 0.3f);
-
-    return false;
-
-#undef CHECK_INIT
+    return Physics::DefaultScene == nullptr;
 }
 
 void PhysicsService::LateUpdate()
 {
-    for (auto scene : Physics::Scenes)
-        scene->FlushRequests();
+    Physics::FlushRequests();
 }
 
 void PhysicsService::Dispose()
 {
     // Ensure to finish (wait for simulation end)
-
-    for (auto scene : Physics::Scenes)
+    for (PhysicsScene* scene : Physics::Scenes)
     {
         scene->CollectResults();
-
-        if (CPhysX)
-            scene->FlushRequests();
     }
 
-#if WITH_VEHICLE
-    if (VehicleSDKInitialized)
+    // Dispose scenes
+    for (PhysicsScene* scene : Physics::Scenes)
     {
-        VehicleSDKInitialized = false;
-        PxCloseVehicleSDK();
+        Delete(scene);
     }
-#endif
-
-    // Cleanup
-    RELEASE_PHYSX(DefaultMaterial);
-
     Physics::Scenes.Resize(0);
     Physics::DefaultScene = nullptr;
 
-    // Remove all scenes still registered
-    const int32 numScenes = CPhysX ? CPhysX->getNbScenes() : 0;
-    if (numScenes)
-    {
-        Array<PxScene*> PScenes;
-        PScenes.Resize(numScenes);
-        PScenes.SetAll(nullptr);
-        CPhysX->getScenes(PScenes.Get(), sizeof(PxScene*) * numScenes);
+    // Dispose backend
+    PhysicsBackend::Shutdown();
+}
 
-        for (int32 i = 0; i < numScenes; i++)
+PhysicsScene* Physics::FindOrCreateScene(const StringView& name)
+{
+    auto scene = FindScene(name);
+    if (scene == nullptr)
+    {
+        const auto& settings = *PhysicsSettings::Get();
+        scene = New<PhysicsScene>();
+        if (scene->Init(name, settings))
         {
-            if (PScenes[i])
-            {
-                PScenes[i]->release();
-            }
+            Delete(scene);
+            scene = nullptr;
         }
+        else
+            Scenes.Add(scene);
+        return scene;
     }
+    return scene;
+}
 
-#if COMPILE_WITH_PHYSICS_COOKING
-    RELEASE_PHYSX(Cooking);
-#endif
-
-    if (CPhysX)
+PhysicsScene* Physics::FindScene(const StringView& name)
+{
+    for (PhysicsScene* scene : Scenes)
     {
-        PxCloseExtensions();
+        if (scene->GetName() == name)
+            return scene;
     }
-
-    RELEASE_PHYSX(CPhysX);
-#if WITH_PVD
-    RELEASE_PHYSX(CPVD);
-#endif
-    RELEASE_PHYSX(_foundation);
+    return nullptr;
 }
 
-PxPhysics* Physics::GetPhysics()
+bool Physics::GetAutoSimulation()
 {
-    return CPhysX;
-}
-
-PxCooking* Physics::GetCooking()
-{
-    return Cooking;
-}
-
-PxTolerancesScale* Physics::GetTolerancesScale()
-{
-    return &ToleranceScale;
+    return !DefaultScene || DefaultScene->GetAutoSimulation();
 }
 
 Vector3 Physics::GetGravity()
@@ -449,13 +192,7 @@ void Physics::SetBounceThresholdVelocity(const float value)
 
 void Physics::Simulate(float dt)
 {
-    if (DefaultScene)
-        DefaultScene->Simulate(dt);
-}
-
-void Physics::SimulateAll(float dt)
-{
-    for (auto scene : Scenes)
+    for (PhysicsScene* scene : Scenes)
     {
         if (scene->GetAutoSimulation())
             scene->Simulate(dt);
@@ -468,67 +205,373 @@ void Physics::CollectResults()
         DefaultScene->CollectResults();
 }
 
-void Physics::CollectResultsAll()
-{
-    for (auto scene : Scenes)
-        scene->CollectResults();
-}
-
 bool Physics::IsDuringSimulation()
 {
-    if (DefaultScene)
-        return DefaultScene->IsDuringSimulation();
-
-    return false;
+    return DefaultScene && DefaultScene->IsDuringSimulation();
 }
 
-PxMaterial* Physics::GetDefaultMaterial()
+void Physics::FlushRequests()
 {
-    return DefaultMaterial;
+    PROFILE_CPU_NAMED("Physics.FlushRequests");
+    for (PhysicsScene* scene : Scenes)
+        PhysicsBackend::FlushRequests(scene->GetPhysicsScene());
+    PhysicsBackend::FlushRequests();
 }
 
-bool Physics::GetAutoSimulation()
+bool Physics::RayCast(const Vector3& origin, const Vector3& direction, const float maxDistance, uint32 layerMask, bool hitTriggers)
 {
-    if (DefaultScene)
-        return DefaultScene->GetAutoSimulation();
-
-    return false;
+    return DefaultScene->RayCast(origin, direction, maxDistance, layerMask, hitTriggers);
 }
 
-void Physics::FlushRequestsAll()
+bool Physics::RayCast(const Vector3& origin, const Vector3& direction, RayCastHit& hitInfo, const float maxDistance, uint32 layerMask, bool hitTriggers)
 {
-    for (auto scene : Scenes) 
-        scene->FlushRequests();
+    return DefaultScene->RayCast(origin, direction, hitInfo, maxDistance, layerMask, hitTriggers);
 }
 
-void Physics::RemoveJoint(Joint* joint)
+bool Physics::RayCastAll(const Vector3& origin, const Vector3& direction, Array<RayCastHit>& results, const float maxDistance, uint32 layerMask, bool hitTriggers)
 {
-    for (auto scene : Scenes) 
-        scene->RemoveJoint(joint);
+    return DefaultScene->RayCastAll(origin, direction, results, maxDistance, layerMask, hitTriggers);
 }
 
-PhysicsScene* Physics::FindOrCreateScene(const String& name)
+bool Physics::BoxCast(const Vector3& center, const Vector3& halfExtents, const Vector3& direction, const Quaternion& rotation, const float maxDistance, uint32 layerMask, bool hitTriggers)
 {
-    auto scene = FindScene(name);
+    return DefaultScene->BoxCast(center, halfExtents, direction, rotation, maxDistance, layerMask, hitTriggers);
+}
 
-    if (scene == nullptr)
+bool Physics::BoxCast(const Vector3& center, const Vector3& halfExtents, const Vector3& direction, RayCastHit& hitInfo, const Quaternion& rotation, const float maxDistance, uint32 layerMask, bool hitTriggers)
+{
+    return DefaultScene->BoxCast(center, halfExtents, direction, hitInfo, rotation, maxDistance, layerMask, hitTriggers);
+}
+
+bool Physics::BoxCastAll(const Vector3& center, const Vector3& halfExtents, const Vector3& direction, Array<RayCastHit>& results, const Quaternion& rotation, const float maxDistance, uint32 layerMask, bool hitTriggers)
+{
+    return DefaultScene->BoxCastAll(center, halfExtents, direction, results, rotation, maxDistance, layerMask, hitTriggers);
+}
+
+bool Physics::SphereCast(const Vector3& center, const float radius, const Vector3& direction, const float maxDistance, uint32 layerMask, bool hitTriggers)
+{
+    return DefaultScene->SphereCast(center, radius, direction, maxDistance, layerMask, hitTriggers);
+}
+
+bool Physics::SphereCast(const Vector3& center, const float radius, const Vector3& direction, RayCastHit& hitInfo, const float maxDistance, uint32 layerMask, bool hitTriggers)
+{
+    return DefaultScene->SphereCast(center, radius, direction, hitInfo, maxDistance, layerMask, hitTriggers);
+}
+
+bool Physics::SphereCastAll(const Vector3& center, const float radius, const Vector3& direction, Array<RayCastHit>& results, const float maxDistance, uint32 layerMask, bool hitTriggers)
+{
+    return DefaultScene->SphereCastAll(center, radius, direction, results, maxDistance, layerMask, hitTriggers);
+}
+
+bool Physics::CapsuleCast(const Vector3& center, const float radius, const float height, const Vector3& direction, const Quaternion& rotation, const float maxDistance, uint32 layerMask, bool hitTriggers)
+{
+    return DefaultScene->CapsuleCast(center, radius, height, direction, rotation, maxDistance, layerMask, hitTriggers);
+}
+
+bool Physics::CapsuleCast(const Vector3& center, const float radius, const float height, const Vector3& direction, RayCastHit& hitInfo, const Quaternion& rotation, const float maxDistance, uint32 layerMask, bool hitTriggers)
+{
+    return DefaultScene->CapsuleCast(center, radius, height, direction, hitInfo, rotation, maxDistance, layerMask, hitTriggers);
+}
+
+bool Physics::CapsuleCastAll(const Vector3& center, const float radius, const float height, const Vector3& direction, Array<RayCastHit>& results, const Quaternion& rotation, const float maxDistance, uint32 layerMask, bool hitTriggers)
+{
+    return DefaultScene->CapsuleCastAll(center, radius, height, direction, results, rotation, maxDistance, layerMask, hitTriggers);
+}
+
+bool Physics::ConvexCast(const Vector3& center, const CollisionData* convexMesh, const Vector3& scale, const Vector3& direction, const Quaternion& rotation, const float maxDistance, uint32 layerMask, bool hitTriggers)
+{
+    return DefaultScene->ConvexCast(center, convexMesh, scale, direction, rotation, maxDistance, layerMask, hitTriggers);
+}
+
+bool Physics::ConvexCast(const Vector3& center, const CollisionData* convexMesh, const Vector3& scale, const Vector3& direction, RayCastHit& hitInfo, const Quaternion& rotation, const float maxDistance, uint32 layerMask, bool hitTriggers)
+{
+    return DefaultScene->ConvexCast(center, convexMesh, scale, direction, hitInfo, rotation, maxDistance, layerMask, hitTriggers);
+}
+
+bool Physics::ConvexCastAll(const Vector3& center, const CollisionData* convexMesh, const Vector3& scale, const Vector3& direction, Array<RayCastHit>& results, const Quaternion& rotation, const float maxDistance, uint32 layerMask, bool hitTriggers)
+{
+    return DefaultScene->ConvexCastAll(center, convexMesh, scale, direction, results, rotation, maxDistance, layerMask, hitTriggers);
+}
+
+bool Physics::CheckBox(const Vector3& center, const Vector3& halfExtents, const Quaternion& rotation, uint32 layerMask, bool hitTriggers)
+{
+    return DefaultScene->CheckBox(center, halfExtents, rotation, layerMask, hitTriggers);
+}
+
+bool Physics::CheckSphere(const Vector3& center, const float radius, uint32 layerMask, bool hitTriggers)
+{
+    return DefaultScene->CheckSphere(center, radius, layerMask, hitTriggers);
+}
+
+bool Physics::CheckCapsule(const Vector3& center, const float radius, const float height, const Quaternion& rotation, uint32 layerMask, bool hitTriggers)
+{
+    return DefaultScene->CheckCapsule(center, radius, height, rotation, layerMask, hitTriggers);
+}
+
+bool Physics::CheckConvex(const Vector3& center, const CollisionData* convexMesh, const Vector3& scale, const Quaternion& rotation, uint32 layerMask, bool hitTriggers)
+{
+    return DefaultScene->CheckConvex(center, convexMesh, scale, rotation, layerMask, hitTriggers);
+}
+
+bool Physics::OverlapBox(const Vector3& center, const Vector3& halfExtents, Array<Collider*>& results, const Quaternion& rotation, uint32 layerMask, bool hitTriggers)
+{
+    return DefaultScene->OverlapBox(center, halfExtents, results, rotation, layerMask, hitTriggers);
+}
+
+bool Physics::OverlapSphere(const Vector3& center, const float radius, Array<Collider*>& results, uint32 layerMask, bool hitTriggers)
+{
+    return DefaultScene->OverlapSphere(center, radius, results, layerMask, hitTriggers);
+}
+
+bool Physics::OverlapCapsule(const Vector3& center, const float radius, const float height, Array<Collider*>& results, const Quaternion& rotation, uint32 layerMask, bool hitTriggers)
+{
+    return DefaultScene->OverlapCapsule(center, radius, height, results, rotation, layerMask, hitTriggers);
+}
+
+bool Physics::OverlapConvex(const Vector3& center, const CollisionData* convexMesh, const Vector3& scale, Array<Collider*>& results, const Quaternion& rotation, uint32 layerMask, bool hitTriggers)
+{
+    return DefaultScene->OverlapConvex(center, convexMesh, scale, results, rotation, layerMask, hitTriggers);
+}
+
+bool Physics::OverlapBox(const Vector3& center, const Vector3& halfExtents, Array<PhysicsColliderActor*>& results, const Quaternion& rotation, uint32 layerMask, bool hitTriggers)
+{
+    return DefaultScene->OverlapBox(center, halfExtents, results, rotation, layerMask, hitTriggers);
+}
+
+bool Physics::OverlapSphere(const Vector3& center, const float radius, Array<PhysicsColliderActor*>& results, uint32 layerMask, bool hitTriggers)
+{
+    return DefaultScene->OverlapSphere(center, radius, results, layerMask, hitTriggers);
+}
+
+bool Physics::OverlapCapsule(const Vector3& center, const float radius, const float height, Array<PhysicsColliderActor*>& results, const Quaternion& rotation, uint32 layerMask, bool hitTriggers)
+{
+    return DefaultScene->OverlapCapsule(center, radius, height, results, rotation, layerMask, hitTriggers);
+}
+
+bool Physics::OverlapConvex(const Vector3& center, const CollisionData* convexMesh, const Vector3& scale, Array<PhysicsColliderActor*>& results, const Quaternion& rotation, uint32 layerMask, bool hitTriggers)
+{
+    return DefaultScene->OverlapConvex(center, convexMesh, scale, results, rotation, layerMask, hitTriggers);
+}
+
+PhysicsScene::PhysicsScene(const SpawnParams& params)
+    : ScriptingObject(params)
+{
+}
+
+PhysicsScene::~PhysicsScene()
+{
+    if (_scene)
+        PhysicsBackend::DestroyScene(_scene);
+}
+
+String PhysicsScene::GetName() const
+{
+    return _name;
+}
+
+bool PhysicsScene::GetAutoSimulation() const
+{
+    return _autoSimulation;
+}
+
+void PhysicsScene::SetAutoSimulation(bool value)
+{
+    _autoSimulation = value;
+}
+
+void PhysicsScene::SetGravity(const Vector3& value)
+{
+    PhysicsBackend::SetSceneGravity(_scene, value);
+}
+
+Vector3 PhysicsScene::GetGravity()
+{
+    return PhysicsBackend::GetSceneGravity(_scene);
+}
+
+bool PhysicsScene::GetEnableCCD()
+{
+    return PhysicsBackend::GetSceneEnableCCD(_scene);
+}
+
+void PhysicsScene::SetEnableCCD(bool value)
+{
+    PhysicsBackend::SetSceneEnableCCD(_scene, value);
+}
+
+float PhysicsScene::GetBounceThresholdVelocity()
+{
+    return PhysicsBackend::GetSceneBounceThresholdVelocity(_scene);
+}
+
+void PhysicsScene::SetBounceThresholdVelocity(float value)
+{
+    PhysicsBackend::SetSceneBounceThresholdVelocity(_scene, value);
+}
+
+bool PhysicsScene::Init(const StringView& name, const PhysicsSettings& settings)
+{
+    if (_scene)
     {
-        auto& settings = *PhysicsSettings::Get();
-
-        scene = New<PhysicsScene>(name, settings);
-        Scenes.Add(scene);
+        PhysicsBackend::DestroyScene(_scene);
     }
-
-    return scene;
+    _name = name;
+    _scene = PhysicsBackend::CreateScene(settings);
+    return _scene == nullptr;
 }
 
-PhysicsScene* Physics::FindScene(const String& name)
+void PhysicsScene::Simulate(float dt)
 {
-    for (auto scene : Scenes)
-    {
-        if (scene->GetName() == name)
-            return scene;
-    } 
+    ASSERT(IsInMainThread() && !_isDuringSimulation);
+    _isDuringSimulation = true;
+    PhysicsBackend::StartSimulateScene(_scene, dt);
+}
 
-    return nullptr;
+bool PhysicsScene::IsDuringSimulation() const
+{
+    return _isDuringSimulation;
+}
+
+void PhysicsScene::CollectResults()
+{
+    if (!_isDuringSimulation)
+        return;
+    ASSERT(IsInMainThread());
+    PhysicsBackend::EndSimulateScene(_scene);
+    _isDuringSimulation = false;
+}
+
+bool PhysicsScene::RayCast(const Vector3& origin, const Vector3& direction, const float maxDistance, uint32 layerMask, bool hitTriggers)
+{
+    return PhysicsBackend::RayCast(_scene, origin, direction, maxDistance, layerMask, hitTriggers);
+}
+
+bool PhysicsScene::RayCast(const Vector3& origin, const Vector3& direction, RayCastHit& hitInfo, const float maxDistance, uint32 layerMask, bool hitTriggers)
+{
+    return PhysicsBackend::RayCast(_scene, origin, direction, hitInfo, maxDistance, layerMask, hitTriggers);
+}
+
+bool PhysicsScene::RayCastAll(const Vector3& origin, const Vector3& direction, Array<RayCastHit>& results, const float maxDistance, uint32 layerMask, bool hitTriggers)
+{
+    return PhysicsBackend::RayCastAll(_scene, origin, direction, results, maxDistance, layerMask, hitTriggers);
+}
+
+bool PhysicsScene::BoxCast(const Vector3& center, const Vector3& halfExtents, const Vector3& direction, const Quaternion& rotation, const float maxDistance, uint32 layerMask, bool hitTriggers)
+{
+    return PhysicsBackend::BoxCast(_scene, center, halfExtents, direction, rotation, maxDistance, layerMask, hitTriggers);
+}
+
+bool PhysicsScene::BoxCast(const Vector3& center, const Vector3& halfExtents, const Vector3& direction, RayCastHit& hitInfo, const Quaternion& rotation, const float maxDistance, uint32 layerMask, bool hitTriggers)
+{
+    return PhysicsBackend::BoxCast(_scene, center, halfExtents, direction, hitInfo, rotation, maxDistance, layerMask, hitTriggers);
+}
+
+bool PhysicsScene::BoxCastAll(const Vector3& center, const Vector3& halfExtents, const Vector3& direction, Array<RayCastHit>& results, const Quaternion& rotation, const float maxDistance, uint32 layerMask, bool hitTriggers)
+{
+    return PhysicsBackend::BoxCastAll(_scene, center, halfExtents, direction, results, rotation, maxDistance, layerMask, hitTriggers);
+}
+
+bool PhysicsScene::SphereCast(const Vector3& center, const float radius, const Vector3& direction, const float maxDistance, uint32 layerMask, bool hitTriggers)
+{
+    return PhysicsBackend::SphereCast(_scene, center, radius, direction, maxDistance, layerMask, hitTriggers);
+}
+
+bool PhysicsScene::SphereCast(const Vector3& center, const float radius, const Vector3& direction, RayCastHit& hitInfo, const float maxDistance, uint32 layerMask, bool hitTriggers)
+{
+    return PhysicsBackend::SphereCast(_scene, center, radius, direction, hitInfo, maxDistance, layerMask, hitTriggers);
+}
+
+bool PhysicsScene::SphereCastAll(const Vector3& center, const float radius, const Vector3& direction, Array<RayCastHit>& results, const float maxDistance, uint32 layerMask, bool hitTriggers)
+{
+    return PhysicsBackend::SphereCastAll(_scene, center, radius, direction, results, maxDistance, layerMask, hitTriggers);
+}
+
+bool PhysicsScene::CapsuleCast(const Vector3& center, const float radius, const float height, const Vector3& direction, const Quaternion& rotation, const float maxDistance, uint32 layerMask, bool hitTriggers)
+{
+    return PhysicsBackend::CapsuleCast(_scene, center, radius, height, direction, rotation, maxDistance, layerMask, hitTriggers);
+}
+
+bool PhysicsScene::CapsuleCast(const Vector3& center, const float radius, const float height, const Vector3& direction, RayCastHit& hitInfo, const Quaternion& rotation, const float maxDistance, uint32 layerMask, bool hitTriggers)
+{
+    return PhysicsBackend::CapsuleCast(_scene, center, radius, height, direction, hitInfo, rotation, maxDistance, layerMask, hitTriggers);
+}
+
+bool PhysicsScene::CapsuleCastAll(const Vector3& center, const float radius, const float height, const Vector3& direction, Array<RayCastHit>& results, const Quaternion& rotation, const float maxDistance, uint32 layerMask, bool hitTriggers)
+{
+    return PhysicsBackend::CapsuleCastAll(_scene, center, radius, height, direction, results, rotation, maxDistance, layerMask, hitTriggers);
+}
+
+bool PhysicsScene::ConvexCast(const Vector3& center, const CollisionData* convexMesh, const Vector3& scale, const Vector3& direction, const Quaternion& rotation, const float maxDistance, uint32 layerMask, bool hitTriggers)
+{
+    return PhysicsBackend::ConvexCast(_scene, center, convexMesh, scale, direction, rotation, maxDistance, layerMask, hitTriggers);
+}
+
+bool PhysicsScene::ConvexCast(const Vector3& center, const CollisionData* convexMesh, const Vector3& scale, const Vector3& direction, RayCastHit& hitInfo, const Quaternion& rotation, const float maxDistance, uint32 layerMask, bool hitTriggers)
+{
+    return PhysicsBackend::ConvexCast(_scene, center, convexMesh, scale, direction, hitInfo, rotation, maxDistance, layerMask, hitTriggers);
+}
+
+bool PhysicsScene::ConvexCastAll(const Vector3& center, const CollisionData* convexMesh, const Vector3& scale, const Vector3& direction, Array<RayCastHit>& results, const Quaternion& rotation, const float maxDistance, uint32 layerMask, bool hitTriggers)
+{
+    return PhysicsBackend::ConvexCastAll(_scene, center, convexMesh, scale, direction, results, rotation, maxDistance, layerMask, hitTriggers);
+}
+
+bool PhysicsScene::CheckBox(const Vector3& center, const Vector3& halfExtents, const Quaternion& rotation, uint32 layerMask, bool hitTriggers)
+{
+    return PhysicsBackend::CheckBox(_scene, center, halfExtents, rotation, layerMask, hitTriggers);
+}
+
+bool PhysicsScene::CheckSphere(const Vector3& center, const float radius, uint32 layerMask, bool hitTriggers)
+{
+    return PhysicsBackend::CheckSphere(_scene, center, radius, layerMask, hitTriggers);
+}
+
+bool PhysicsScene::CheckCapsule(const Vector3& center, const float radius, const float height, const Quaternion& rotation, uint32 layerMask, bool hitTriggers)
+{
+    return PhysicsBackend::CheckCapsule(_scene, center, radius, height, rotation, layerMask, hitTriggers);
+}
+
+bool PhysicsScene::CheckConvex(const Vector3& center, const CollisionData* convexMesh, const Vector3& scale, const Quaternion& rotation, uint32 layerMask, bool hitTriggers)
+{
+    return PhysicsBackend::CheckConvex(_scene, center, convexMesh, scale, rotation, layerMask, hitTriggers);
+}
+
+bool PhysicsScene::OverlapBox(const Vector3& center, const Vector3& halfExtents, Array<Collider*>& results, const Quaternion& rotation, uint32 layerMask, bool hitTriggers)
+{
+    return PhysicsBackend::OverlapBox(_scene, center, halfExtents, results, rotation, layerMask, hitTriggers);
+}
+
+bool PhysicsScene::OverlapSphere(const Vector3& center, const float radius, Array<Collider*>& results, uint32 layerMask, bool hitTriggers)
+{
+    return PhysicsBackend::OverlapSphere(_scene, center, radius, results, layerMask, hitTriggers);
+}
+
+bool PhysicsScene::OverlapCapsule(const Vector3& center, const float radius, const float height, Array<Collider*>& results, const Quaternion& rotation, uint32 layerMask, bool hitTriggers)
+{
+    return PhysicsBackend::OverlapCapsule(_scene, center, radius, height, results, rotation, layerMask, hitTriggers);
+}
+
+bool PhysicsScene::OverlapConvex(const Vector3& center, const CollisionData* convexMesh, const Vector3& scale, Array<Collider*>& results, const Quaternion& rotation, uint32 layerMask, bool hitTriggers)
+{
+    return PhysicsBackend::OverlapConvex(_scene, center, convexMesh, scale, results, rotation, layerMask, hitTriggers);
+}
+
+bool PhysicsScene::OverlapBox(const Vector3& center, const Vector3& halfExtents, Array<PhysicsColliderActor*>& results, const Quaternion& rotation, uint32 layerMask, bool hitTriggers)
+{
+    return PhysicsBackend::OverlapBox(_scene, center, halfExtents, results, rotation, layerMask, hitTriggers);
+}
+
+bool PhysicsScene::OverlapSphere(const Vector3& center, const float radius, Array<PhysicsColliderActor*>& results, uint32 layerMask, bool hitTriggers)
+{
+    return PhysicsBackend::OverlapSphere(_scene, center, radius, results, layerMask, hitTriggers);
+}
+
+bool PhysicsScene::OverlapCapsule(const Vector3& center, const float radius, const float height, Array<PhysicsColliderActor*>& results, const Quaternion& rotation, uint32 layerMask, bool hitTriggers)
+{
+    return PhysicsBackend::OverlapCapsule(_scene, center, radius, height, results, rotation, layerMask, hitTriggers);
+}
+
+bool PhysicsScene::OverlapConvex(const Vector3& center, const CollisionData* convexMesh, const Vector3& scale, Array<PhysicsColliderActor*>& results, const Quaternion& rotation, uint32 layerMask, bool hitTriggers)
+{
+    return PhysicsBackend::OverlapConvex(_scene, center, convexMesh, scale, results, rotation, layerMask, hitTriggers);
 }

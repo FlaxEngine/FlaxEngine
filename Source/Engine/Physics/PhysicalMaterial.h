@@ -14,7 +14,7 @@ API_AUTO_SERIALIZATION();
 DECLARE_SCRIPTING_TYPE_MINIMAL(PhysicalMaterial);
 private:
 
-    PxMaterial* _material;
+    void* _material;
 
 public:
 
@@ -78,10 +78,10 @@ public:
     /// Gets the PhysX material.
     /// </summary>
     /// <returns>The native material object.</returns>
-    PxMaterial* GetPhysXMaterial();
+    void* GetPhysicsMaterial();
 
     /// <summary>
-    /// Updates the PhysX material (after any property change).
+    /// Updates the physics material (after any property change).
     /// </summary>
-    void UpdatePhysXMaterial();
+    void UpdatePhysicsMaterial();
 };

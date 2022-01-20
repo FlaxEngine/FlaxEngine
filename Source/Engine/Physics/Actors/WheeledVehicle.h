@@ -6,17 +6,14 @@
 #include "Engine/Physics/Colliders/Collider.h"
 #include "Engine/Scripting/ScriptingObjectReference.h"
 
-class PhysicsScene;
-
 /// <summary>
 /// Representation of the car vehicle that uses wheels. Built on top of the RigidBody with collider representing its chassis shape and wheels.
 /// </summary>
 /// <seealso cref="RigidBody" />
 API_CLASS() class FLAXENGINE_API WheeledVehicle : public RigidBody
 {
-    friend PhysicsScene;
+    friend class PhysicsBackend;
 DECLARE_SCENE_OBJECT(WheeledVehicle);
-public:
 
     /// <summary>
     /// Vehicle driving mode types.
@@ -319,7 +316,7 @@ private:
         WheelState State;
     };
 
-    void* _drive = nullptr;
+    void* _vehicle = nullptr;
     DriveTypes _driveType = DriveTypes::Drive4W, _driveTypeCurrent;
     Array<WheelData, FixedAllocation<20>> _wheelsData;
     float _throttle = 0.0f, _steering = 0.0f, _brake = 0.0f, _handBrake = 0.0f;

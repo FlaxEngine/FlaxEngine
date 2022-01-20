@@ -54,5 +54,5 @@ protected:
     void DrawPhysicsDebug(RenderView& view) override;
 #endif
     void UpdateBounds() override;
-    void GetGeometry(PxGeometryHolder& geometry) override;
+    void GetGeometry(CollisionShape& collision) override;
 };

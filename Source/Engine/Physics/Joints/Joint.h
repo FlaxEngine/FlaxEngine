@@ -21,7 +21,7 @@ API_CLASS(Abstract) class FLAXENGINE_API Joint : public Actor
 DECLARE_SCENE_OBJECT_ABSTRACT(Joint);
 protected:
 
-    PxJoint* _joint;
+    void* _joint;
     float _breakForce;
     float _breakTorque;
     Vector3 _targetAnchor;
@@ -133,12 +133,9 @@ public:
 public:
 
     /// <summary>
-    /// Gets the native PhysX joint object.
+    /// Gets the native physics backend object.
     /// </summary>
-    FORCE_INLINE PxJoint* GetPhysXJoint() const
-    {
-        return _joint;
-    }
+    void* GetPhysicsImpl() const;
 
     /// <summary>
     /// Sets the location of the joint by automatically computing local position and target anchor to place a joint at the given location (world-space).
@@ -178,20 +175,9 @@ public:
 
 protected:
 
-    struct JointData
-    {
-        PxPhysics* Physics;
-        PxRigidActor* Actor0;
-        PxRigidActor* Actor1;
-        Quaternion Rot0;
-        Quaternion Rot1;
-        Vector3 Pos0;
-        Vector3 Pos1;
-    };
-
     Vector3 GetTargetPosition() const;
     Quaternion GetTargetOrientation() const;
-    virtual PxJoint* CreateJoint(JointData& data) = 0;
+    virtual void* CreateJoint(const struct PhysicsJointDesc& desc) = 0;
 #if USE_EDITOR
     virtual void DrawPhysicsDebug(RenderView& view);
 #endif
