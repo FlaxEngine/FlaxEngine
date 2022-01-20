@@ -851,7 +851,7 @@ void PhysicsBackend::DestroyScene(void* scene)
     Allocator::Free(scenePhysX->ScratchMemory);
     scenePhysX->Scene->release();
 
-    Delete(scene);
+    Delete(scenePhysX);
 }
 
 void PhysicsBackend::StartSimulateScene(void* scene, float dt)
