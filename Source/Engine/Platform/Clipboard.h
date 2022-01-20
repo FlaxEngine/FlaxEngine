@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -6,6 +6,8 @@
 #include "Windows/WindowsClipboard.h"
 #elif PLATFORM_LINUX
 #include "Linux/LinuxClipboard.h"
+#elif PLATFORM_MAC
+#include "Mac/MacClipboard.h"
 #else
 #include "Base/ClipboardBase.h"
 #endif

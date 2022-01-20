@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 using System;
 using System.ComponentModel;
@@ -141,9 +141,6 @@ namespace FlaxEditor.Tools.Terrain
 
         private void OnCreate()
         {
-            if (_isWorking)
-                return;
-
             var scene = Level.GetScene(0);
             if (scene == null)
                 throw new InvalidOperationException("No scene found to add terrain to it!");
@@ -207,7 +204,7 @@ namespace FlaxEditor.Tools.Terrain
             if (_isWorking)
                 return;
 
-            base.OnSubmit();
+            OnCreate();
         }
 
         /// <inheritdoc />
@@ -256,7 +253,7 @@ namespace FlaxEditor.Tools.Terrain
                 OnCancel();
                 return true;
             case KeyboardKeys.Return:
-                OnCreate();
+                OnSubmit();
                 return true;
             }
 

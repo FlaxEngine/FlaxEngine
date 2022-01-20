@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 #if PLATFORM_ANDROID
 
@@ -707,11 +707,6 @@ ProcessMemoryStats AndroidPlatform::GetProcessMemoryStats()
     result.UsedPhysicalMemory = usage.ru_maxrss;
     result.UsedVirtualMemory = result.UsedPhysicalMemory;
     return result;
-}
-
-uint64 AndroidPlatform::GetCurrentThreadID()
-{
-    return static_cast<uint64>(pthread_self());
 }
 
 void AndroidPlatform::SetThreadPriority(ThreadPriority priority)

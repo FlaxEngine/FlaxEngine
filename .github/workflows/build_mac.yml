@@ -10,6 +10,8 @@ jobs:
     steps:
     - name: Checkout repo
       uses: actions/checkout@v2
+    - name: Setup Vulkan
+      uses: ./.github/actions/vulkan
     - name: Checkout LFS
       run: |
         git lfs version
@@ -25,6 +27,8 @@ jobs:
     steps:
     - name: Checkout repo
       uses: actions/checkout@v2
+    - name: Setup Vulkan
+      uses: ./.github/actions/vulkan
     - name: Checkout LFS
       run: |
         git lfs version

@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 #if PLATFORM_MAC
 
@@ -56,6 +56,8 @@ NSAutoreleasePool* AutoreleasePool = nullptr;
 
 String MacUtils::ToString(CFStringRef str)
 {
+    if (!str)
+        return String::Empty;
     String result;
     const int32 length = CFStringGetLength(str);
     if (length > 0)
@@ -67,9 +69,9 @@ String MacUtils::ToString(CFStringRef str)
     return result;
 }
 
-CFStringRef MacUtils::ToString(const String& str)
+CFStringRef MacUtils::ToString(const StringView& str)
 {
-    return CFStringCreateWithBytes(nullptr, (const UInt8*)str.Get(), str.Length() * sizeof(Char), kCFStringEncodingUTF16LE, false);
+    return CFStringCreateWithBytes(nullptr, (const UInt8*)str.GetNonTerminatedText(), str.Length() * sizeof(Char), kCFStringEncodingUTF16LE, false);
 }
 
 Vector2 MacUtils::PosToCoca(const Vector2& pos)
@@ -78,6 +80,15 @@ Vector2 MacUtils::PosToCoca(const Vector2& pos)
     Vector2 result = pos;
     result.Y *= -1;
     result += GetScreensOrigin();
+    return result;
+}
+
+Vector2 MacUtils::CocaToPos(const Vector2& pos)
+{
+    // MacOS uses y-coordinate starting at the bottom of the screen
+    Vector2 result = pos;
+    result -= GetScreensOrigin();
+    result.Y *= -1;
     return result;
 }
 
@@ -95,6 +106,48 @@ Vector2 MacUtils::GetScreensOrigin()
             result.Y = pos.Y;
     }
     return result;
+}
+
+void MacClipboard::Clear()
+{
+    NSPasteboard* pasteboard = [NSPasteboard generalPasteboard];
+    [pasteboard clearContents];
+}
+
+void MacClipboard::SetText(const StringView& text)
+{
+    NSPasteboard* pasteboard = [NSPasteboard generalPasteboard];
+    [pasteboard clearContents];
+    [pasteboard writeObjects:[NSArray arrayWithObject:(NSString*)MacUtils::ToString(text)]];
+}
+
+void MacClipboard::SetRawData(const Span<byte>& data)
+{
+}
+
+void MacClipboard::SetFiles(const Array<String>& files)
+{
+}
+
+String MacClipboard::GetText()
+{
+    NSPasteboard* pasteboard = [NSPasteboard generalPasteboard];
+    NSArray* classes = [NSArray arrayWithObject:[NSString class]];
+    NSDictionary* options = [NSDictionary dictionary];
+    if (![pasteboard canReadObjectForClasses:classes options:options])
+        return String::Empty;
+    NSArray* objects = [pasteboard readObjectsForClasses:classes options:options];
+    return MacUtils::ToString((CFStringRef)[objects objectAtIndex:0]);
+}
+
+Array<byte> MacClipboard::GetRawData()
+{
+    return Array<byte>();
+}
+
+Array<String> MacClipboard::GetFiles()
+{
+    return Array<String>();
 }
 
 DialogResult MessageBox::Show(Window* parent, const StringView& text, const StringView& caption, MessageBoxButtons buttons, MessageBoxIcon icon)
@@ -535,7 +588,13 @@ Rectangle MacPlatform::GetVirtualDesktopBounds()
 
 String MacPlatform::GetMainDirectory()
 {
-    return StringUtils::GetDirectoryName(GetExecutableFilePath());
+    String path = StringUtils::GetDirectoryName(GetExecutableFilePath());
+    if (path.EndsWith(TEXT("/Contents/MacOS")))
+    {
+        // If running from executable in a package, go up to the Contents
+        path = StringUtils::GetDirectoryName(path);
+    }
+    return path;
 }
 
 String MacPlatform::GetExecutableFilePath()
@@ -589,18 +648,26 @@ bool MacPlatform::SetEnvironmentVariable(const String& name, const String& value
 int32 MacProcess(const StringView& cmdLine, const StringView& workingDir, const Dictionary<String, String>& environment, bool waitForEnd, bool logOutput)
 {
     LOG(Info, "Command: {0}", cmdLine);
+    String cwd;
     if (workingDir.Length() != 0)
+    {
         LOG(Info, "Working directory: {0}", workingDir);
+        cwd = Platform::GetWorkingDirectory();
+        Platform::SetWorkingDirectory(workingDir);
+    }
 
     StringAsANSI<> cmdLineAnsi(*cmdLine, cmdLine.Length());
     FILE* pipe = popen(cmdLineAnsi.Get(), "r");
+    if (cwd.Length() != 0)
+    {
+        Platform::SetWorkingDirectory(cwd);
+    }
     if (!pipe)
     {
 		LOG(Warning, "Failed to start process, errno={}", errno);
         return -1;
     }
 
-    // TODO: workingDir
     // TODO: environment
 
 	int32 returnCode = 0;

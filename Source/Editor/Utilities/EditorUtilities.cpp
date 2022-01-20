@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 #include "EditorUtilities.h"
 #include "Engine/Engine/Globals.h"
@@ -537,8 +537,6 @@ bool EditorUtilities::GetTexture(const Guid& textureId, TextureData& textureData
     AssetReference<Texture> texture = Content::LoadAsync<Texture>(textureId);
     if (texture)
     {
-        // Note: this could load texture asset data but using Texture API is easier
-
         if (texture->WaitForLoaded())
         {
             LOG(Warning, "Waiting for the texture to be loaded failed.");
@@ -546,7 +544,6 @@ bool EditorUtilities::GetTexture(const Guid& textureId, TextureData& textureData
         else
         {
             // TODO: disable streaming for a texture or set max quality override
-
             int32 waits = 1000;
             const auto targetResidency = texture->StreamingTexture()->GetMaxResidency();
             ASSERT(targetResidency > 0);
@@ -555,18 +552,17 @@ bool EditorUtilities::GetTexture(const Guid& textureId, TextureData& textureData
                 Platform::Sleep(10);
             }
 
-            ASSERT(texture->IsLoaded());
-            if (texture->GetTexture()->DownloadData(textureData))
-            {
-                LOG(Warning, "Loading texture data failed.");
-            }
-            else
-            {
+            // Get texture data from GPU
+            if (!texture->GetTexture()->DownloadData(textureData))
                 return false;
-            }
+            
+            // Get texture data from asset
+            if (!texture->GetTextureData(textureData))
+                return false;
+
+            LOG(Warning, "Loading texture data failed.");
         }
     }
-
     return true;
 }
 

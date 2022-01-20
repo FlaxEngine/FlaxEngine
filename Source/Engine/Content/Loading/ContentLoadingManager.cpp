@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 #include "ContentLoadingManager.h"
 #include "ContentLoadTask.h"
@@ -23,6 +23,7 @@ namespace ContentLoadingManagerImpl
     Array<LoadingThread*> Threads;
     ConcurrentTaskQueue<ContentLoadTask> Tasks;
     ConditionVariable TasksSignal;
+    CriticalSection TasksMutex;
 };
 
 using namespace ContentLoadingManagerImpl;
@@ -121,7 +122,6 @@ int32 LoadingThread::Run()
 #endif
 
     ContentLoadTask* task;
-    CriticalSection mutex;
     ThisThread = this;
 
     while (HasExitFlagClear())
@@ -132,9 +132,9 @@ int32 LoadingThread::Run()
         }
         else
         {
-            mutex.Lock();
-            TasksSignal.Wait(mutex);
-            mutex.Unlock();
+            TasksMutex.Lock();
+            TasksSignal.Wait(TasksMutex);
+            TasksMutex.Unlock();
         }
     }
 

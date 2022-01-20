@@ -1,9 +1,10 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 #if PLATFORM_LINUX
 
 #include "LinuxPlatform.h"
 #include "LinuxWindow.h"
+#include "LinuxInput.h"
 #include "Engine/Core/Log.h"
 #include "Engine/Core/Types/Guid.h"
 #include "Engine/Core/Types/String.h"
@@ -213,7 +214,8 @@ static int X11_MessageBoxInit(MessageBoxData* data)
 	if (data->font_set == nullptr)
 	{
 		LINUX_DIALOG_PRINT("Couldn't load font %s", MessageBoxFont);
-		return 1;
+		data->font_set = X11::XCreateFontSet(data->display, "fixed", &missing, &num_missing, NULL);
+		if (missing != nullptr) X11::XFreeStringList(missing);
 	}
 
 	return 0;
@@ -1790,11 +1792,6 @@ ProcessMemoryStats LinuxPlatform::GetProcessMemoryStats()
     return result;
 }
 
-uint64 LinuxPlatform::GetCurrentThreadID()
-{
-    return static_cast<uint64>(pthread_self());
-}
-
 void LinuxPlatform::SetThreadPriority(ThreadPriority priority)
 {
     // TODO: impl this
@@ -2207,6 +2204,7 @@ bool LinuxPlatform::Init()
 
     Input::Mouse = Impl::Mouse = New<LinuxMouse>();
     Input::Keyboard = Impl::Keyboard = New<LinuxKeyboard>();
+	LinuxInput::Init();
 
     return false;
 }
@@ -2218,6 +2216,8 @@ void LinuxPlatform::BeforeRun()
 void LinuxPlatform::Tick()
 {
 	UnixPlatform::Tick();
+
+	LinuxInput::UpdateState();
 
     if (!xDisplay)
         return;
@@ -2286,12 +2286,12 @@ void LinuxPlatform::Tick()
                         xDndResult = DragDropEffect::None;
                         if (window->_dragOver)
                         {
-                            window->OnDragEnter(&dropData, xDndPos, xDndResult);
+                            window->OnDragOver(&dropData, xDndPos, xDndResult);
                         }
                         else
                         {
                             window->_dragOver = true;
-                            window->OnDragOver(&dropData, xDndPos, xDndResult);
+                            window->OnDragEnter(&dropData, xDndPos, xDndResult);
                         }
                     }
                 }
@@ -2528,6 +2528,7 @@ void LinuxPlatform::Tick()
                             for (auto& e : dropData.Files)
                             {
                                 e.Replace(TEXT("file://"), TEXT(""));
+                                e.Replace(TEXT("%20"), TEXT(" "));
                                 e = e.TrimTrailing();
                             }
                             xDndResult = DragDropEffect::None;

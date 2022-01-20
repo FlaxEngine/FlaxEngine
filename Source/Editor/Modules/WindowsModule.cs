@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 using System;
 using System.Collections.Generic;
@@ -725,14 +725,15 @@ namespace FlaxEditor.Modules
 
 #if PLATFORM_WINDOWS
             if (!Editor.Instance.Options.Options.Interface.UseNativeWindowSystem)
-#endif
             {
                 settings.HasBorder = false;
-#if PLATFORM_WINDOWS
+
                 // Skip OS sizing frame and implement it using LeftButtonHit
                 settings.HasSizingFrame = false;
-#endif
             }
+#elif PLATFORM_LINUX
+            settings.HasBorder = false;
+#endif
 
             MainWindow = Platform.CreateWindow(ref settings);
 

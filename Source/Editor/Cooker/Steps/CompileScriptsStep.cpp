@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 #include "CompileScriptsStep.h"
 #include "Editor/Scripting/ScriptsBuilder.h"
@@ -13,6 +13,9 @@
 #include "Editor/Editor.h"
 #include "Editor/ProjectInfo.h"
 #include "Engine/Engine/Globals.h"
+#if PLATFORM_MAC
+#include <sys/stat.h>
+#endif
 
 bool CompileScriptsStep::DeployBinaries(CookingData& data, const String& path, const String& projectFolderPath)
 {
@@ -122,11 +125,22 @@ bool CompileScriptsStep::DeployBinaries(CookingData& data, const String& path, c
     {
         const String& dstPath = data.Tools->IsNativeCodeFile(data, file) ? data.NativeCodeOutputPath : data.ManagedCodeOutputPath;
         const String dst = dstPath / StringUtils::GetFileName(file);
-        if (dst != file && FileSystem::CopyFile(dst, file))
+        if (dst == file)
+            continue;
+        if (FileSystem::CopyFile(dst, file))
         {
             data.Error(TEXT("Failed to copy file from {0} to {1}."), file, dst);
             return true;
         }
+
+#if PLATFORM_MAC
+        // Ensure to keep valid file permissions for executable files
+        const StringAsANSI<> fileANSI(*file, file.Length());
+        const StringAsANSI<> dstANSI(*dst, dst.Length());
+        struct stat st;
+        stat(fileANSI.Get(), &st);
+        chmod(dstANSI.Get(), st.st_mode);
+#endif
     }
 
     return false;
@@ -209,6 +223,7 @@ bool CompileScriptsStep::Perform(CookingData& data)
     _extensionsToSkip.Add(TEXT(".lib"));
     _extensionsToSkip.Add(TEXT(".a"));
     _extensionsToSkip.Add(TEXT(".Build.json"));
+    _extensionsToSkip.Add(TEXT(".DS_Store"));
     if (data.Configuration == BuildConfiguration::Release)
     {
         _extensionsToSkip.Add(TEXT(".xml"));

@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -76,7 +76,7 @@ DECLARE_SCRIPTING_TYPE_MINIMAL(FileSystemBase);
     /// <param name="title">The dialog title.</param>
     /// <param name="path">The output path.</param>
     /// <returns>True if failed, otherwise false.</returns>
-    API_FUNCTION() static bool ShowBrowseFolderDialog(Window* parentWindow, const StringView& initialDirectory, const StringView& title, API_PARAM(Out) StringView& path);
+    API_FUNCTION() static bool ShowBrowseFolderDialog(Window* parentWindow, const StringView& initialDirectory, const StringView& title, API_PARAM(Out) String& path);
 
     /// <summary>
     /// Opens a standard file explorer application and navigates to the given directory.

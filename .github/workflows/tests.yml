@@ -1,0 +1,34 @@
+name: Tests
+on: [push, pull_request]
+
+jobs:
+
+  # Tests
+  tests-linux:
+    name: Tests (Linux)
+    runs-on: "ubuntu-20.04"
+    steps:
+    - name: Checkout repo
+      uses: actions/checkout@v2
+    - name: Checkout LFS
+      run: |
+        git lfs version
+        git lfs pull
+    - name: Install dependencies
+      run: |
+        sudo rm -f /etc/apt/sources.list.d/*
+        sudo cp -f .github/workflows/build_linux_sources.list /etc/apt/sources.list
+        sudo apt-get update
+        sudo apt-get install libx11-dev libxcursor-dev libxinerama-dev build-essential gettext libtool libtool-bin libpulse-dev libasound2-dev libjack-dev portaudio19-dev
+    - name: Build
+      run: |
+        ./GenerateProjectFiles.sh -vs2019
+        ./Development/Scripts/Linux/CallBuildTool.sh -build -log -arch=x64 -platform=Linux -configuration=Development -buildtargets=FlaxTestsTarget
+        ./Development/Scripts/Linux/CallBuildTool.sh -build -log -arch=x64 -platform=Linux -configuration=Debug -buildtargets=FlaxEditor -BuildBindingsOnly
+        ./Development/Scripts/Linux/CallBuildTool.sh -build -log -arch=x64 -platform=Linux -configuration=Debug -buildtargets="FlaxEngine.Tests"
+        ./Development/Scripts/Linux/CallBuildTool.sh -build -log -arch=x64 -platform=Linux -configuration=Debug -buildtargets="Flax.Build.Tests"
+    - name: Test
+      run: |
+        Binaries/Tests/Linux/x64/Development/FlaxTests
+        mono Source/Platforms/DotNet/NUnit/nunit3-console.exe Binaries/Tools/FlaxEngine.Tests.dll --framework=mono-4.0
+        mono Source/Platforms/DotNet/NUnit/nunit3-console.exe Binaries/Tools/Flax.Build.Tests.dll --framework=mono-4.0

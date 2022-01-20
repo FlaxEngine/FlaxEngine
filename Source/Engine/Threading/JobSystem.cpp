@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 #include "JobSystem.h"
 #include "IRunnable.h"
@@ -92,7 +92,9 @@ namespace
     volatile int64 DoneLabel = 0;
     volatile int64 NextLabel = 0;
     ConditionVariable JobsSignal;
+    CriticalSection JobsMutex;
     ConditionVariable WaitSignal;
+    CriticalSection WaitMutex;
 #if JOB_SYSTEM_USE_MUTEX
     CriticalSection JobsLocker;
     RingBuffer<JobData, InlinedAllocation<256>> Jobs;
@@ -149,7 +151,6 @@ int32 JobSystemThread::Run()
     Platform::SetThreadAffinityMask(1ull << Index);
 
     JobData data;
-    CriticalSection mutex;
     bool attachMonoThread = true;
 #if !JOB_SYSTEM_USE_MUTEX
     moodycamel::ConsumerToken consumerToken(Jobs);
@@ -201,9 +202,9 @@ int32 JobSystemThread::Run()
         else
         {
             // Wait for signal
-            mutex.Lock();
-            JobsSignal.Wait(mutex);
-            mutex.Unlock();
+            JobsMutex.Lock();
+            JobsSignal.Wait(JobsMutex);
+            JobsMutex.Unlock();
         }
     }
     return 0;
@@ -272,12 +273,11 @@ void JobSystem::Wait(int64 label)
         return;
 
     // Wait on signal until input label is not yet done
-    CriticalSection mutex;
     do
     {
-        mutex.Lock();
-        WaitSignal.Wait(mutex, 1);
-        mutex.Unlock();
+        WaitMutex.Lock();
+        WaitSignal.Wait(WaitMutex, 1);
+        WaitMutex.Unlock();
     } while (label > Platform::AtomicRead(&DoneLabel) && Platform::AtomicRead(&ExitFlag) == 0);
 
 #if JOB_SYSTEM_USE_STATS

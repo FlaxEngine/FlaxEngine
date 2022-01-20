@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 using System;
 using System.Collections.Generic;
@@ -616,9 +616,7 @@ namespace Flax.Build
 
             // Warn if target has no valid modules
             if (target.Modules.Count == 0)
-            {
                 Log.Warning(string.Format("Target {0} has no modules to build", target.Name));
-            }
 
             // Pick a project
             var project = Globals.Project;
@@ -951,10 +949,7 @@ namespace Flax.Build
 
             // Warn if target has no valid modules
             if (target.Modules.Count == 0)
-            {
                 Log.Warning(string.Format("Target {0} has no modules to build", target.Name));
-            }
-
             // Pick a project
             var project = Globals.Project;
             if (target is ProjectTarget projectTarget)

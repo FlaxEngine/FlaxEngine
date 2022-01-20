@@ -1,15 +1,17 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 #if PLATFORM_MAC
 
 #include "../Window.h"
 #include "MacUtils.h"
+#include "Engine/Platform/IGuiData.h"
 #include "Engine/Core/Log.h"
 #include "Engine/Input/Input.h"
 #include "Engine/Input/Mouse.h"
 #include "Engine/Input/Keyboard.h"
 #include "Engine/Graphics/RenderTask.h"
 #include <Cocoa/Cocoa.h>
+#include <AppKit/AppKit.h>
 #include <QuartzCore/CAMetalLayer.h>
 
 KeyboardKeys GetKey(NSEvent* event)
@@ -157,11 +159,89 @@ KeyboardKeys GetKey(NSEvent* event)
     }
 }
 
+Vector2 GetWindowTitleSize(const MacWindow* window)
+{
+    Vector2 size = Vector2::Zero;
+    if (window->GetSettings().HasBorder)
+    {
+        NSRect frameStart = [(NSWindow*)window->GetNativePtr() frameRectForContentRect:NSMakeRect(0, 0, 0, 0)];
+        size.Y = frameStart.size.height;
+    }
+    return size;
+}
+
 Vector2 GetMousePosition(MacWindow* window, NSEvent* event)
 {
     NSRect frame = [(NSWindow*)window->GetNativePtr() frame];
     NSPoint point = [event locationInWindow];
-    return Vector2(point.x, frame.size.height - point.y);
+    return Vector2(point.x, frame.size.height - point.y) - GetWindowTitleSize(window);
+}
+
+class MacDropData : public IGuiData
+{
+public:
+    Type CurrentType;
+    String AsText;
+    Array<String> AsFiles;
+
+    Type GetType() const override
+    {
+        return CurrentType;
+    }
+    String GetAsText() const override
+    {
+        return AsText;
+    }
+    void GetAsFiles(Array<String>* files) const override
+    {
+        files->Add(AsFiles);
+    }
+};
+
+void GetDragDropData(const MacWindow* window, id<NSDraggingInfo> sender, Vector2& mousePos, MacDropData& dropData)
+{
+    NSRect frame = [(NSWindow*)window->GetNativePtr() frame];
+    NSPoint point = [sender draggingLocation];
+    Vector2 titleSize = GetWindowTitleSize(window);
+    mousePos = Vector2(point.x, frame.size.height - point.y) - titleSize;
+    NSPasteboard* pasteboard = [sender draggingPasteboard];
+    if ([[pasteboard types] containsObject:NSPasteboardTypeString])
+    {
+        dropData.CurrentType = IGuiData::Type::Text;
+        dropData.AsText = MacUtils::ToString((CFStringRef)[pasteboard stringForType:NSPasteboardTypeString]);
+    }
+    else
+    {
+        dropData.CurrentType = IGuiData::Type::Files;
+        NSArray* files = [pasteboard readObjectsForClasses:@[[NSURL class]] options:nil];
+        for (int32 i = 0; i < [files count]; i++)
+        {
+            NSString* url = [[files objectAtIndex:i] path];
+            NSString* file = [NSURL URLWithString:url].path;
+            dropData.AsFiles.Add(MacUtils::ToString((CFStringRef)file));
+        }
+    }
+}
+
+NSDragOperation GetDragDropOperation(DragDropEffect dragDropEffect)
+{
+    NSDragOperation result = NSDragOperationCopy;
+    switch (dragDropEffect)
+    {
+    case DragDropEffect::None:
+        //result = NSDragOperationNone;
+        break;
+    case DragDropEffect::Copy:
+        result = NSDragOperationCopy;
+        break;
+    case DragDropEffect::Move:
+        result = NSDragOperationMove;
+        break;
+    case DragDropEffect::Link:
+        result = NSDragOperationLink;
+        break;
+    }
+    return result;
 }
 
 @interface MacWindowImpl : NSWindow <NSWindowDelegate>
@@ -179,6 +259,13 @@ Vector2 GetMousePosition(MacWindow* window, NSEvent* event)
 {
     [self setDelegate: nil];
     Window->Close(ClosingReason::User);
+}
+
+- (void)windowDidResize:(NSNotification*)notification
+{
+    NSView* view = [self contentView];
+    NSRect contextRect = [view frame];
+    Window->CheckForResize((float)contextRect.size.width, (float)contextRect.size.height);
 }
 
 - (void)setWindow:(MacWindow*)window
@@ -257,6 +344,13 @@ Vector2 GetMousePosition(MacWindow* window, NSEvent* event)
 	    Input::Keyboard->OnKeyDown(key);
 
 	// Send a text input event
+    switch (key)
+    {
+        // Ignore text from special keys
+    case KeyboardKeys::Delete:
+    case KeyboardKeys::Backspace:
+        return;
+    }
     NSString* text = [event characters];
     int32 length = [text length];
     if (length > 0)
@@ -301,12 +395,13 @@ Vector2 GetMousePosition(MacWindow* window, NSEvent* event)
 - (void)mouseEntered:(NSEvent*)event
 {
     IsMouseOver = true;
+    Window->SetIsMouseOver(true);
 }
 
 - (void)mouseExited:(NSEvent*)event
 {
     IsMouseOver = false;
-	Input::Mouse->OnMouseLeave(Window);
+    Window->SetIsMouseOver(false);
 }
 
 - (void)mouseDown:(NSEvent*)event
@@ -403,6 +498,46 @@ Vector2 GetMousePosition(MacWindow* window, NSEvent* event)
     Input::Mouse->OnMouseUp(Window->ClientToScreen(mousePos), mouseButton, Window);
 }
 
+- (NSDragOperation)draggingEntered:(id<NSDraggingInfo>)sender
+{
+    Vector2 mousePos;
+    MacDropData dropData;
+    GetDragDropData(Window, sender, mousePos, dropData);
+    DragDropEffect dragDropEffect = DragDropEffect::None;
+    Window->OnDragEnter(&dropData, mousePos, dragDropEffect);
+    return GetDragDropOperation(dragDropEffect);
+}
+
+- (BOOL)wantsPeriodicDraggingUpdates:(id<NSDraggingInfo>)sender
+{
+    return YES;
+}
+
+- (NSDragOperation)draggingUpdated:(id<NSDraggingInfo>)sender
+{
+    Vector2 mousePos;
+    MacDropData dropData;
+    GetDragDropData(Window, sender, mousePos, dropData);
+    DragDropEffect dragDropEffect = DragDropEffect::None;
+    Window->OnDragOver(&dropData, mousePos, dragDropEffect);
+    return GetDragDropOperation(dragDropEffect);
+}
+
+- (BOOL)performDragOperation:(id<NSDraggingInfo>)sender
+{
+    Vector2 mousePos;
+    MacDropData dropData;
+    GetDragDropData(Window, sender, mousePos, dropData);
+    DragDropEffect dragDropEffect = DragDropEffect::None;
+    Window->OnDragDrop(&dropData, mousePos, dragDropEffect);
+    return NO;
+}
+
+- (void)draggingExited:(id<NSDraggingInfo>)sender
+{
+    Window->OnDragLeave();
+}
+
 @end
 
 MacWindow::MacWindow(const CreateWindowSettings& settings)
@@ -414,7 +549,7 @@ MacWindow::MacWindow(const CreateWindowSettings& settings)
     NSUInteger styleMask = NSWindowStyleMaskClosable;
     if (settings.IsRegularWindow)
     {
-        styleMask |= NSWindowStyleMaskTitled | NSWindowStyleMaskFullSizeContentView;
+        styleMask |= NSWindowStyleMaskTitled;
         if (settings.AllowMinimize)
             styleMask |= NSWindowStyleMaskMiniaturizable;
         if (settings.HasSizingFrame || settings.AllowMaximize)
@@ -447,14 +582,16 @@ MacWindow::MacWindow(const CreateWindowSettings& settings)
     [window setAcceptsMouseMovedEvents:YES];
     [window setDelegate:window];
     _window = window;
+    if (settings.AllowDragAndDrop)
+    {
+        [view registerForDraggedTypes:@[NSPasteboardTypeFileURL, NSPasteboardTypeString]];
+    }
 
     // TODO: impl Parent for MacWindow
     // TODO: impl StartPosition for MacWindow
     // TODO: impl Fullscreen for MacWindow
     // TODO: impl ShowInTaskbar for MacWindow
-    // TODO: impl ActivateWhenFirstShown for MacWindow
     // TODO: impl AllowInput for MacWindow
-    // TODO: impl AllowDragAndDrop for MacWindow
     // TODO: impl IsTopmost for MacWindow
 }
 
@@ -464,6 +601,35 @@ MacWindow::~MacWindow()
     [window close];
     [window release];
     _window = nullptr;
+}
+
+void MacWindow::CheckForResize(float width, float height)
+{
+    const Vector2 clientSize(width, height);
+	if (clientSize != _clientSize)
+	{
+        _clientSize = clientSize;
+		OnResize(width, height);
+	}
+}
+
+void MacWindow::SetIsMouseOver(bool value)
+{
+    if (_isMouseOver == value)
+        return;
+    _isMouseOver = value;
+    if (value)
+    {
+        // Refresh cursor typet
+        SetCursor(_cursor);
+        
+    }
+    else
+    {
+	    Input::Mouse->OnMouseLeave(this);
+        if (_cursor == CursorType::Hidden)
+            [NSCursor unhide];
+    }
 }
 
 void* MacWindow::GetNativePtr() const
@@ -513,6 +679,8 @@ void MacWindow::Minimize()
     if (!_settings.AllowMinimize)
         return;
     NSWindow* window = (NSWindow*)_window;
+    if (!window)
+        return;
     if (!window.miniaturized)
         [window miniaturize:nil];
 }
@@ -556,15 +724,98 @@ void MacWindow::SetIsFullscreen(bool isFullscreen)
     // TODO: fullscreen mode on Mac
 }
 
+void MacWindow::SetClientBounds(const Rectangle& clientArea)
+{
+    NSWindow* window = (NSWindow*)_window;
+    if (!window)
+        return;
+    NSRect oldRect = [window frame];
+    NSRect newRect = NSMakeRect(0, 0, clientArea.Size.X, clientArea.Size.Y);
+    newRect = [window frameRectForContentRect:newRect];
+
+    //newRect.origin.x = oldRect.origin.x;
+    //newRect.origin.y = NSMaxY(oldRect) - newRect.size.height;
+
+    Vector2 pos = MacUtils::PosToCoca(clientArea.Location);
+    Vector2 titleSize = GetWindowTitleSize(this);
+    newRect.origin.x = pos.X + titleSize.X;
+    newRect.origin.y = pos.Y - newRect.size.height + titleSize.Y;
+
+    [window setFrame:newRect display:YES];
+}
+
+void MacWindow::SetPosition(const Vector2& position)
+{
+    NSWindow* window = (NSWindow*)_window;
+    if (!window)
+        return;
+    Vector2 pos = MacUtils::PosToCoca(position);
+    NSRect rect = [window frame];
+    [window setFrameOrigin:NSMakePoint(pos.X, pos.Y - rect.size.height)];
+}
+
+Vector2 MacWindow::GetPosition() const
+{
+    NSWindow* window = (NSWindow*)_window;
+    if (!window)
+        return Vector2::Zero;
+    NSRect rect = [window frame];
+    return MacUtils::CocaToPos(Vector2(rect.origin.x, rect.origin.y + rect.size.height));
+}
+
+Vector2 MacWindow::GetSize() const
+{
+    NSWindow* window = (NSWindow*)_window;
+    if (!window)
+        return Vector2::Zero;
+    NSRect rect = [window frame];
+    return Vector2(rect.size.width, rect.size.height);
+}
+
+Vector2 MacWindow::GetClientSize() const
+{
+	return _clientSize;
+}
+
+Vector2 MacWindow::ScreenToClient(const Vector2& screenPos) const
+{
+    NSWindow* window = (NSWindow*)_window;
+    if (!window)
+        return screenPos;
+    Vector2 titleSize = GetWindowTitleSize(this);
+    return screenPos - GetPosition() - titleSize;
+}
+
+Vector2 MacWindow::ClientToScreen(const Vector2& clientPos) const
+{
+    NSWindow* window = (NSWindow*)_window;
+    if (!window)
+        return clientPos;
+    Vector2 titleSize = GetWindowTitleSize(this);
+    return GetPosition() + titleSize + clientPos;
+}
+
+void MacWindow::FlashWindow()
+{
+    NSWindow* window = (NSWindow*)_window;
+    if (!window)
+        return;
+    [NSApp requestUserAttention:NSInformationalRequest];
+}
+
 void MacWindow::SetOpacity(float opacity)
 {
     NSWindow* window = (NSWindow*)_window;
+    if (!window)
+        return;
     [window setAlphaValue:opacity];
 }
 
 void MacWindow::Focus()
 {
     NSWindow* window = (NSWindow*)_window;
+    if (!window)
+        return;
     [window makeKeyAndOrderFront:window];
 }
 
@@ -572,7 +823,59 @@ void MacWindow::SetTitle(const StringView& title)
 {
     _title = title;
     NSWindow* window = (NSWindow*)_window;
+    if (!window)
+        return;
     [window setTitle:(__bridge NSString*)MacUtils::ToString(_title)];
+}
+
+DragDropEffect MacWindow::DoDragDrop(const StringView& data)
+{
+    // TODO: implement using beginDraggingSession and NSDraggingSource
+    return DragDropEffect::None;
+}
+
+void MacWindow::SetCursor(CursorType type)
+{
+	WindowBase::SetCursor(type);
+    if (!_isMouseOver)
+        return;
+    NSCursor* cursor = nullptr;
+    switch (type)
+    {
+    case CursorType::Cross:
+        cursor = [NSCursor crosshairCursor];
+        break;
+    case CursorType::Hand:
+        cursor = [NSCursor pointingHandCursor];
+        break;
+    case CursorType::IBeam:
+        cursor = [NSCursor IBeamCursor];
+        break;
+    case CursorType::No:
+        cursor = [NSCursor operationNotAllowedCursor];
+        break;
+    case CursorType::SizeAll:
+    case CursorType::SizeNESW:
+    case CursorType::SizeNWSE:
+        cursor = [NSCursor resizeUpDownCursor];
+        break;
+    case CursorType::SizeNS:
+        cursor = [NSCursor resizeUpDownCursor];
+        break;
+    case CursorType::SizeWE:
+        cursor = [NSCursor resizeLeftRightCursor];
+        break;
+    case CursorType::Hidden:
+        [NSCursor hide];
+        return;
+    default:
+        cursor = [NSCursor arrowCursor];
+        break;
+    }
+    if (cursor)
+    {
+        [cursor set];
+    }
 }
 
 #endif

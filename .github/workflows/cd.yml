@@ -17,6 +17,8 @@ jobs:
       run: |
         git lfs version
         git lfs pull
+    - name: Setup Vulkan
+      uses: ./.github/actions/vulkan
     - name: Build
       run: |
         .\PackageEditor.bat -arch=x64 -platform=Windows -deployOutput=Output
@@ -40,6 +42,8 @@ jobs:
       run: |
         git lfs version
         git lfs pull
+    - name: Setup Vulkan
+      uses: ./.github/actions/vulkan
     - name: Build
       run: |
         .\PackagePlatforms.bat -arch=x64 -platform=Windows -deployOutput=Output
@@ -66,6 +70,8 @@ jobs:
         sudo cp -f .github/workflows/build_linux_sources.list /etc/apt/sources.list
         sudo apt-get update
         sudo apt-get install libx11-dev libxcursor-dev libxinerama-dev build-essential gettext libtool libtool-bin libpulse-dev libasound2-dev libjack-dev portaudio19-dev
+    - name: Setup Vulkan
+      uses: ./.github/actions/vulkan
     - name: Build
       run: |
         ./PackageEditor.sh -arch=x64 -platform=Linux -deployOutput=Output
@@ -90,6 +96,8 @@ jobs:
         sudo cp -f .github/workflows/build_linux_sources.list /etc/apt/sources.list
         sudo apt-get update
         sudo apt-get install libx11-dev libxcursor-dev libxinerama-dev build-essential gettext libtool libtool-bin libpulse-dev libasound2-dev libjack-dev portaudio19-dev
+    - name: Setup Vulkan
+      uses: ./.github/actions/vulkan
     - name: Build
       run: |
         ./PackagePlatforms.sh -arch=x64 -platform=Linux -deployOutput=Output
@@ -98,3 +106,45 @@ jobs:
       with:
         name: Linux-Game
         path: Output/Linux.zip
+
+  # Mac
+  package-mac-editor:
+    name: Editor (Mac)
+    runs-on: "macos-latest"
+    steps:
+    - name: Checkout repo
+      uses: actions/checkout@v2
+    - name: Checkout LFS
+      run: |
+        git lfs version
+        git lfs pull
+    - name: Setup Vulkan
+      uses: ./.github/actions/vulkan
+    - name: Build
+      run: |
+        ./PackageEditor.command -arch=x64 -platform=Mac -deployOutput=Output
+    - name: Upload
+      uses: actions/upload-artifact@v2
+      with:
+        name: Mac-Editor
+        path: Output/FlaxEditorMac.zip
+  package-mac-game:
+    name: Game (Mac)
+    runs-on: "macos-latest"
+    steps:
+    - name: Checkout repo
+      uses: actions/checkout@v2
+    - name: Checkout LFS
+      run: |
+        git lfs version
+        git lfs pull
+    - name: Setup Vulkan
+      uses: ./.github/actions/vulkan
+    - name: Build
+      run: |
+        ./PackagePlatforms.command -arch=x64 -platform=Mac -deployOutput=Output
+    - name: Upload
+      uses: actions/upload-artifact@v2
+      with:
+        name: Mac-Game
+        path: Output/Mac.zip

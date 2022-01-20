@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 using System;
 using System.Collections.Generic;
@@ -228,6 +228,11 @@ namespace Flax.Build
 
             var rules = GenerateRulesAssembly();
             var project = Globals.Project;
+            if (project == null)
+            {
+                Log.Warning("Missing project");
+                return true;
+            }
 
             using (new ProfileEventScope("BuildTargets"))
             {

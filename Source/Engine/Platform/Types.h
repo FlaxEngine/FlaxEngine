@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -229,8 +229,8 @@ typedef UserBase User;
 
 #elif PLATFORM_MAC
 
-class ClipboardBase;
-typedef ClipboardBase Clipboard;
+class MacClipboard;
+typedef MacClipboard Clipboard;
 class UnixCriticalSection;
 typedef UnixCriticalSection CriticalSection;
 class UnixConditionVariable;

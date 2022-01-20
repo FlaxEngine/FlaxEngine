@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 #include "Engine/Platform/FileSystem.h"
 #include "Engine/Platform/File.h"
@@ -20,7 +20,7 @@ bool FileSystemBase::ShowSaveFileDialog(Window* parentWindow, const StringView& 
     return true;
 }
 
-bool FileSystemBase::ShowBrowseFolderDialog(Window* parentWindow, const StringView& initialDirectory, const StringView& title, StringView& path)
+bool FileSystemBase::ShowBrowseFolderDialog(Window* parentWindow, const StringView& initialDirectory, const StringView& title, String& path)
 {
     // No supported
     return true;

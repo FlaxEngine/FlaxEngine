@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 #if PLATFORM_WINDOWS
 
@@ -290,7 +290,7 @@ bool WindowsFileSystem::ShowSaveFileDialog(Window* parentWindow, const StringVie
     return result;
 }
 
-bool WindowsFileSystem::ShowBrowseFolderDialog(Window* parentWindow, const StringView& initialDirectory, const StringView& title, StringView& path)
+bool WindowsFileSystem::ShowBrowseFolderDialog(Window* parentWindow, const StringView& initialDirectory, const StringView& title, String& path)
 {
     bool result = true;
 

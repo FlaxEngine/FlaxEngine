@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 #include "../WindowsManager.h"
 #include "Engine/Engine/Time.h"
@@ -63,7 +63,7 @@ void WindowsManagerService::Update()
     WindowsManager::WindowsLocker.Lock();
     for (auto& win : WindowsManager::Windows)
     {
-        if (win->IsVisible())
+        if (win && win->IsVisible())
             win->OnUpdate(deltaTime);
     }
     WindowsManager::WindowsLocker.Unlock();

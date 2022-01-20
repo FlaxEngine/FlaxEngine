@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -16,11 +16,15 @@ private:
 
     Vector2 _clientSize;
     void* _window;
+    bool _isMouseOver = false;
 
 public:
 
 	MacWindow(const CreateWindowSettings& settings);
 	~MacWindow();
+
+    void CheckForResize(float width, float height);
+    void SetIsMouseOver(bool value);
 
 public:
 
@@ -34,10 +38,20 @@ public:
     bool IsClosed() const override;
     bool IsForegroundWindow() const override;
     void BringToFront(bool force) override;
+	void SetClientBounds(const Rectangle& clientArea) override;
+	void SetPosition(const Vector2& position) override;
+	Vector2 GetPosition() const override;
+	Vector2 GetSize() const override;
+	Vector2 GetClientSize() const override;
+	Vector2 ScreenToClient(const Vector2& screenPos) const override;
+	Vector2 ClientToScreen(const Vector2& clientPos) const override;
+    void FlashWindow() override;
     void SetIsFullscreen(bool isFullscreen) override;
     void SetOpacity(float opacity) override;
     void Focus() override;
     void SetTitle(const StringView& title) override;
+	DragDropEffect DoDragDrop(const StringView& data) override;
+	void SetCursor(CursorType type) override;
 };
 
 #endif

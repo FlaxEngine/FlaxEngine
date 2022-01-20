@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -521,6 +521,7 @@ public:
     /// <param name="position">The client area position.</param>
     API_PROPERTY() virtual void SetClientPosition(const Vector2& position)
     {
+        SetClientBounds(Rectangle(position, GetClientSize()));
     }
 
     /// <summary>

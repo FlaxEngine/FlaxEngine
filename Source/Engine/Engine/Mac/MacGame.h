@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -12,6 +12,10 @@
 /// <seealso cref="Game" />
 class MacGame : public GameBase
 {
+public:
+
+    // [GameBase]
+    static void InitMainWindowSettings(CreateWindowSettings& settings);
 };
 
 typedef MacGame Game;
