@@ -1989,7 +1989,7 @@ namespace Flax.Build.Bindings
             var enumTypeNameInternal = enumInfo.NativeName;
             if (enumInfo.Parent != null && !(enumInfo.Parent is FileInfo))
                 enumTypeNameInternal = enumInfo.Parent.FullNameNative + '_' + enumTypeNameInternal;
-            
+
             contents.AppendLine();
             contents.AppendFormat("class {0}Internal", enumTypeNameInternal).AppendLine();
             contents.Append('{').AppendLine();
@@ -2489,12 +2489,11 @@ namespace Flax.Build.Bindings
                             }
 
                             var wrapper = CppParamsWrappersCache[i];
-                            header.AppendFormat("        MONO_OBJECT_SETREF(obj, {0}, ", fieldInfo.Name);
-                            if (string.IsNullOrEmpty(wrapper))
-                                header.Append("data." + fieldInfo.Name);
+                            var value = string.IsNullOrEmpty(wrapper) ? "data." + fieldInfo.Name : string.Format(wrapper, "data." + fieldInfo.Name);
+                            if (fieldInfo.Type.IsPod(buildData, apiType))
+                                header.AppendFormat("        obj->{0} = {1};", fieldInfo.Name, value).AppendLine();
                             else
-                                header.AppendFormat(wrapper, "data." + fieldInfo.Name);
-                            header.Append(')').Append(';').AppendLine();
+                                header.AppendFormat("        MONO_OBJECT_SETREF(obj, {0}, {1});", fieldInfo.Name, value).AppendLine();
                         }
                         header.Append("        return (MonoObject*)obj;").AppendLine();
                         header.Append("    }").AppendLine();
