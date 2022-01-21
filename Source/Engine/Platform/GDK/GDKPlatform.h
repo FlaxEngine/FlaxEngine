@@ -44,6 +44,8 @@ public:
 
     static bool IsRunningOnDevKit();
 
+    static User* FindUser(const struct XUserLocalId& id);
+
 public:
 
     // [Win32Platform]

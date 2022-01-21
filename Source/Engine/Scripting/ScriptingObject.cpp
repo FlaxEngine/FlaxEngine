@@ -414,7 +414,7 @@ void ScriptingObject::OnDeleteObject()
 
 String ScriptingObject::ToString() const
 {
-    return _type ? String(_type.GetType().ManagedClass->GetFullName()) : String::Empty;
+    return _type ? String(_type.GetType().Fullname) : String::Empty;
 }
 
 ManagedScriptingObject::ManagedScriptingObject(const SpawnParams& params)

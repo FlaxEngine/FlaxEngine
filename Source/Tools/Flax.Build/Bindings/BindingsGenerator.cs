@@ -394,9 +394,26 @@ namespace Flax.Build.Bindings
                             }
 
                             // Filter condition
-                            condition = condition.Replace("1|1", "1");
-                            condition = condition.Replace("1|0", "1");
-                            condition = condition.Replace("0|1", "1");
+                            bool modified;
+                            do
+                            {
+                                modified = false;
+                                if (condition.Contains("1|1"))
+                                {
+                                    condition = condition.Replace("1|1", "1");
+                                    modified = true;
+                                }
+                                if (condition.Contains("1|0"))
+                                {
+                                    condition = condition.Replace("1|0", "1");
+                                    modified = true;
+                                }
+                                if (condition.Contains("0|1"))
+                                {
+                                    condition = condition.Replace("0|1", "1");
+                                    modified = true;
+                                }
+                            } while (modified);
 
                             // Skip chunk of code of condition fails
                             if (condition != "1")

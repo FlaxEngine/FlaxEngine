@@ -43,20 +43,6 @@ namespace
     XTaskQueueRegistrationToken UserDeviceAssociationChangedCallbackToken;
 }
 
-User* FindUser(const XUserLocalId& id)
-{
-    User* result = nullptr;
-    for (auto& user : Platform::Users)
-    {
-        if (user->LocalId.value == id.value)
-        {
-            result = user;
-            break;
-        }
-    }
-    return result;
-}
-
 LRESULT CALLBACK WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
     switch (msg)
@@ -98,7 +84,7 @@ void CALLBACK UserChangeEventCallback(_In_opt_ void* context, _In_ XUserLocalId 
 {
     LOG(Info, "User event (userLocalId: {0}, event: {1})", userLocalId.value, (int32)event);
 
-    auto user = FindUser(userLocalId);
+    auto user = Platform::FindUser(userLocalId);
     switch (event)
     {
     case XUserChangeEvent::SignedInAgain:
@@ -131,13 +117,13 @@ void CALLBACK UserDeviceAssociationChangedCallback(_In_opt_ void* context,_In_ c
 {
     LOG(Info, "User device association event (deviceId: {0}, oldUser: {1}, newUser: {2})", ToString(change->deviceId), change->oldUser.value, change->newUser.value);
 
-    User* oldGameUser = FindUser(change->oldUser);
+    User* oldGameUser = Platform::FindUser(change->oldUser);
     if (oldGameUser)
     {
         oldGameUser->AssociatedDevices.Remove(change->deviceId);
     }
 
-    User* newGameUser = FindUser(change->newUser);
+    User* newGameUser = Platform::FindUser(change->newUser);
     if (newGameUser)
     {
         newGameUser->AssociatedDevices.Add(change->deviceId);
@@ -184,7 +170,7 @@ void CALLBACK AddUserComplete(_In_ XAsyncBlock* ab)
         XUserLocalId localId;
         XUserGetLocalId(userHandle, &localId);
 
-        if (FindUser(localId) == nullptr)
+        if (Platform::FindUser(localId) == nullptr)
         {
             // Login
             auto user = New<User>(userHandle, userLocalId, String::Empty);
@@ -326,6 +312,20 @@ bool GDKPlatform::IsRunningOnDevKit()
     return deviceType == XSystemDeviceType::XboxOneXDevkit || deviceType == XSystemDeviceType::XboxScarlettDevkit;
 }
 
+User* GDKPlatform::FindUser(const XUserLocalId& id)
+{
+    User* result = nullptr;
+    for (auto& user : Platform::Users)
+    {
+        if (user->LocalId.value == id.value)
+        {
+            result = user;
+            break;
+        }
+    }
+    return result;
+}
+
 bool GDKPlatform::Init()
 {
     if (Win32Platform::Init())
@@ -425,10 +425,12 @@ void GDKPlatform::Exit()
         XTaskQueueCloseHandle(TaskQueue);
     }
 
-    UnregisterAppStateChangeNotification(Plm);
-
-    CloseHandle(PlmSuspendComplete);
-    CloseHandle(PlmSignalResume);
+    if (Plm)
+        UnregisterAppStateChangeNotification(Plm);
+    if (PlmSuspendComplete)
+        CloseHandle(PlmSuspendComplete);
+    if (PlmSignalResume)
+        CloseHandle(PlmSignalResume);
 
     UnregisterClassW(ApplicationWindowClass, nullptr);
 

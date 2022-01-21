@@ -52,11 +52,11 @@ GraphicsService GraphicsServiceInstance;
 
 void Graphics::DisposeDevice()
 {
-    // Clean any danging pointer to last task (might stay if engine is disposing after crash)
-    GPUDevice::Instance->CurrentTask = nullptr;
-
     if (GPUDevice::Instance)
     {
+        // Clean any danging pointer to last task (might stay if engine is disposing after crash)
+        GPUDevice::Instance->CurrentTask = nullptr;
+
         GPUDevice::Instance->Dispose();
         LOG_FLUSH();
         Delete(GPUDevice::Instance);
