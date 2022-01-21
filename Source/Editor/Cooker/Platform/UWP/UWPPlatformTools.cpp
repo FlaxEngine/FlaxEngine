@@ -14,7 +14,7 @@
 #include "Engine/Content/Content.h"
 #include "Engine/Content/JsonAsset.h"
 
-IMPLEMENT_SETTINGS_GETTER(UWPPlatformSettings, UWPPlatform);
+IMPLEMENT_ENGINE_SETTINGS_GETTER(UWPPlatformSettings, UWPPlatform);
 
 const Char* UWPPlatformTools::GetDisplayName() const
 {

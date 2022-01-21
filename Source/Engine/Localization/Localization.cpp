@@ -73,7 +73,7 @@ namespace
     LocalizationService Instance;
 }
 
-IMPLEMENT_SETTINGS_GETTER(LocalizationSettings, Localization);
+IMPLEMENT_ENGINE_SETTINGS_GETTER(LocalizationSettings, Localization);
 
 void LocalizationSettings::Apply()
 {

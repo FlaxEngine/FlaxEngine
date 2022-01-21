@@ -201,7 +201,7 @@ NavigationSettings::NavigationSettings()
     areaWalkable.Cost = 1;
 }
 
-IMPLEMENT_SETTINGS_GETTER(NavigationSettings, Navigation);
+IMPLEMENT_ENGINE_SETTINGS_GETTER(NavigationSettings, Navigation);
 
 void NavigationSettings::Apply()
 {

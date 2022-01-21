@@ -16,7 +16,7 @@
 #include "Engine/Content/Content.h"
 #include "Engine/Content/JsonAsset.h"
 
-IMPLEMENT_SETTINGS_GETTER(AndroidPlatformSettings, AndroidPlatform);
+IMPLEMENT_ENGINE_SETTINGS_GETTER(AndroidPlatformSettings, AndroidPlatform);
 
 namespace
 {
