@@ -82,6 +82,11 @@ public:
         String(buf.Get());
     }
 
+    void String(const StringAnsi& value)
+    {
+        String(value.Get(), static_cast<unsigned>(value.Length()));
+    }
+
     FORCE_INLINE void RawValue(const StringAnsi& str)
     {
         RawValue(str.Get(), static_cast<int32>(str.Length()));

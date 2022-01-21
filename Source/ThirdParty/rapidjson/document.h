@@ -1661,6 +1661,18 @@ public:
         }
         return result;
     }
+    StringAnsi GetTextAnsi() const
+    {
+        StringAnsi result;
+        if (IsString())
+        {
+            if (data_.f.flags & kInlineStrFlag)
+                result.Set(data_.ss.str, data_.ss.GetLength());
+            else
+                result.Set(GetStringPointer(), data_.s.length);
+        }
+        return result;
+    }
 
     //! Get the length of string.
     /*! Since rapidjson permits "\\u0000" in the json string, strlen(v.GetString()) may not equal to v.GetStringLength().
