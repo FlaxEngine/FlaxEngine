@@ -5,6 +5,8 @@
 #include "AndroidPlatformTools.h"
 #include "Editor/Editor.h"
 #include "Editor/ProjectInfo.h"
+#include "Editor/Cooker/GameCooker.h"
+#include "Editor/Utilities/EditorUtilities.h"
 #include "Engine/Platform/File.h"
 #include "Engine/Platform/FileSystem.h"
 #include "Engine/Platform/Android/AndroidPlatformSettings.h"
@@ -12,7 +14,6 @@
 #include "Engine/Graphics/Textures/TextureData.h"
 #include "Engine/Core/Config/GameSettings.h"
 #include "Engine/Core/Config/BuildSettings.h"
-#include "Editor/Utilities/EditorUtilities.h"
 #include "Engine/Content/Content.h"
 #include "Engine/Content/JsonAsset.h"
 
@@ -276,6 +277,7 @@ bool AndroidPlatformTools::OnPostProcess(CookingData& data)
     {
         return false;
     }
+    GameCooker::PackageFiles();
 
     // Validate environment variables
     Dictionary<String, String> envVars;

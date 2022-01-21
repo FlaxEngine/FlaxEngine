@@ -106,6 +106,9 @@ using namespace GameCookerImpl;
 
 Delegate<GameCooker::EventType> GameCooker::OnEvent;
 Delegate<const String&, float> GameCooker::OnProgress;
+Action GameCooker::DeployFiles;
+Action GameCooker::PostProcessFiles;
+Action GameCooker::PackageFiles;
 Delegate<HashSet<Guid>&> GameCooker::OnCollectAssets;
 
 const Char* ToString(const BuildPlatform platform)

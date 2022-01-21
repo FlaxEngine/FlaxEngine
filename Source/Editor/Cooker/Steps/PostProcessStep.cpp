@@ -5,5 +5,6 @@
 
 bool PostProcessStep::Perform(CookingData& data)
 {
+    GameCooker::PostProcessFiles();
     return data.Tools->OnPostProcess(data);
 }

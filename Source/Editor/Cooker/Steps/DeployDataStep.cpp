@@ -46,6 +46,7 @@ bool DeployDataStep::Perform(CookingData& data)
     // Deploy engine data for the target platform
     if (data.Tools->OnDeployBinaries(data))
         return true;
+    GameCooker::DeployFiles();
 
     // Register engine in-build assets
     data.AddRootEngineAsset(TEXT("Shaders/AtmospherePreCompute"));

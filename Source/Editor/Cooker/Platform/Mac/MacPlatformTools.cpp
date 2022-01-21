@@ -215,11 +215,12 @@ bool MacPlatformTools::OnPostProcess(CookingData& data)
     // TODO: sign binaries
 
     // TODO: expose event to inject custom post-processing before app packaging (eg. third-party plugins)
-
+    
     // Package application
     const auto buildSettings = BuildSettings::Get();
     if (buildSettings->SkipPackaging)
         return false;
+    GameCooker::PackageFiles();
     LOG(Info, "Building app package...");
     const String dmgPath = data.OriginalOutputPath / appName + TEXT(".dmg");
     const String dmgCommand = String::Format(TEXT("hdiutil create {0}.dmg -volname {0} -fs HFS+ -srcfolder {0}.app"), appName);
