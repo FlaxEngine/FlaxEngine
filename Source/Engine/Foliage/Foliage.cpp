@@ -521,7 +521,6 @@ void Foliage::OnFoliageTypeModelLoaded(int32 index)
                 }
                 BoundingSphere meshBounds;
                 BoundingSphere::FromPoints(corners, 8, meshBounds);
-                ASSERT(meshBounds.Radius > ZeroTolerance);
                 BoundingSphere::Merge(instance.Bounds, meshBounds, instance.Bounds);
             }
 
