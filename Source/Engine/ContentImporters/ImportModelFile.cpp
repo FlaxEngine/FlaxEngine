@@ -241,7 +241,7 @@ CreateAssetResult ImportModelFile::ImportModel(CreateAssetContext& context, Mode
 CreateAssetResult ImportModelFile::ImportSkinnedModel(CreateAssetContext& context, ModelData& modelData)
 {
     // Base
-    IMPORT_SETUP(SkinnedModel, 4);
+    IMPORT_SETUP(SkinnedModel, SkinnedModel::SerializedVersion);
 
     // Save skinned model header
     MemoryWriteStream stream(4096);
