@@ -8,13 +8,14 @@
 #include "Engine/Platform/Mac/MacPlatformSettings.h"
 #include "Engine/Core/Config/GameSettings.h"
 #include "Engine/Core/Config/BuildSettings.h"
-#include "Editor/Utilities/EditorUtilities.h"
 #include "Engine/Graphics/Textures/TextureData.h"
 #include "Engine/Content/Content.h"
 #include "Engine/Content/JsonAsset.h"
 #include "Engine/Engine/Globals.h"
 #include "Editor/Editor.h"
 #include "Editor/ProjectInfo.h"
+#include "Editor/Cooker/GameCooker.h"
+#include "Editor/Utilities/EditorUtilities.h"
 #include <ThirdParty/pugixml/pugixml.hpp>
 using namespace pugi;
 
