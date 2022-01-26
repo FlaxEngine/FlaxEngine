@@ -585,7 +585,7 @@ void ParticleEmitterGPUGenerator::ProcessGroupFunction(Box* box, Node* node, Val
             break;
         }
         Box* functionCallBox = functionCallNode->TryGetBox(inputIndex);
-        if (functionCallBox->HasConnection())
+        if (functionCallBox && functionCallBox->HasConnection())
         {
             // Use provided input value from the function call
             _graphStack.Pop();
