@@ -229,6 +229,7 @@ public:
     Variant(Array<Variant, HeapAllocation>&& v);
     Variant(const Array<Variant, HeapAllocation>& v);
     explicit Variant(const Dictionary<Variant, Variant, HeapAllocation>& v);
+    explicit Variant(const Span<byte>& v);
     explicit Variant(const CommonValue& v);
 
     ~Variant();
