@@ -365,6 +365,8 @@ namespace
     Array<PxWheelQueryResult> WheelVehiclesResultsPerWheel;
     Array<PxVehicleWheelQueryResult> WheelVehiclesResultsPerVehicle;
     PxVehicleDrivableSurfaceToTireFrictionPairs* WheelTireFrictions = nullptr;
+    bool WheelTireFrictionsDirty = false;
+    Array<float> WheelTireTypes;
 #endif
 }
 
@@ -503,6 +505,10 @@ void* PhysicalMaterial::GetPhysicsMaterial()
 
         const PhysicsCombineMode useRestitutionCombineMode = OverrideRestitutionCombineMode ? RestitutionCombineMode : _restitutionCombineMode;
         material->setRestitutionCombineMode(static_cast<PxCombineMode::Enum>(useRestitutionCombineMode));
+
+#if WITH_VEHICLE
+        WheelTireFrictionsDirty = true;
+#endif
     }
     return _material;
 }
@@ -521,6 +527,10 @@ void PhysicalMaterial::UpdatePhysicsMaterial()
         material->setRestitution(Restitution);
         const PhysicsCombineMode useRestitutionCombineMode = OverrideRestitutionCombineMode ? RestitutionCombineMode : _restitutionCombineMode;
         material->setRestitutionCombineMode(static_cast<PxCombineMode::Enum>(useRestitutionCombineMode));
+
+#if WITH_VEHICLE
+        WheelTireFrictionsDirty = true;
+#endif
     }
 }
 
@@ -1097,16 +1107,31 @@ void PhysicsBackend::EndSimulateScene(void* scene)
             scenePhysX->WheelRaycastBatchQuery = scenePhysX->Scene->createBatchQuery(desc);
         }
 
-        // TODO: expose vehicle tires configuration
-        if (!WheelTireFrictions)
+        // Update lookup table that maps wheel type into the surface friction
+        if (!WheelTireFrictions || WheelTireFrictionsDirty)
         {
-            PxVehicleDrivableSurfaceType surfaceTypes[1];
-            surfaceTypes[0].mType = 0;
-            const PxMaterial* surfaceMaterials[1];
-            surfaceMaterials[0] = DefaultMaterial;
-            WheelTireFrictions = PxVehicleDrivableSurfaceToTireFrictionPairs::allocate(1, 1);
-            WheelTireFrictions->setup(1, 1, surfaceMaterials, surfaceTypes);
-            WheelTireFrictions->setTypePairFriction(0, 0, 5.0f);
+            WheelTireFrictionsDirty = false;
+            RELEASE_PHYSX(WheelTireFrictions);
+            Array<PxMaterial*, InlinedAllocation<8>> materials;
+            materials.Resize(Math::Min<int32>((int32)PhysX->getNbMaterials(), PxVehicleDrivableSurfaceToTireFrictionPairs::eMAX_NB_SURFACE_TYPES));
+            PxMaterial** materialsPtr = materials.Get();
+            PhysX->getMaterials(materialsPtr, materials.Count(), 0);
+            Array<PxVehicleDrivableSurfaceType, InlinedAllocation<8>> tireTypes;
+            tireTypes.Resize(materials.Count());
+            PxVehicleDrivableSurfaceType* tireTypesPtr = tireTypes.Get();
+            for (int32 i = 0; i < tireTypes.Count(); i++)
+                tireTypesPtr[i].mType = i;
+            WheelTireFrictions = PxVehicleDrivableSurfaceToTireFrictionPairs::allocate(WheelTireTypes.Count(), materials.Count());
+            WheelTireFrictions->setup(WheelTireTypes.Count(), materials.Count(), (const PxMaterial**)materialsPtr, tireTypesPtr);
+            for (int32 material = 0; material < materials.Count(); material++)
+            {
+                float friction = materialsPtr[material]->getStaticFriction();
+                for (int32 tireType = 0; tireType < WheelTireTypes.Count(); tireType++)
+                {
+                    float scale = WheelTireTypes[tireType];
+                    WheelTireFrictions->setTypePairFriction(material, tireType, friction * scale);
+                }
+            }
         }
 
         // Setup cache for wheel states
@@ -2522,7 +2547,15 @@ void* PhysicsBackend::CreateVehicle(WheeledVehicle* actor)
         suspensionData.mSpringDamperRate = wheel.SuspensionDampingRate * 2.0f * Math::Sqrt(suspensionData.mSpringStrength * suspensionData.mSprungMass);
 
         PxVehicleTireData tire;
-        tire.mType = 0;
+        int32 tireIndex = WheelTireTypes.Find(wheel.TireFrictionScale);
+        if (tireIndex == -1)
+        {
+            // New tire type
+            tireIndex = WheelTireTypes.Count();
+            WheelTireTypes.Add(wheel.TireFrictionScale);
+            WheelTireFrictionsDirty = true;
+        }
+        tire.mType = tireIndex;
         tire.mLatStiffX = wheel.TireLateralMax;
         tire.mLatStiffY = wheel.TireLateralStiffness;
         tire.mLongitudinalStiffnessPerUnitGravity = wheel.TireLongitudinalStiffness;

@@ -245,6 +245,11 @@ DECLARE_SCENE_OBJECT(WheeledVehicle);
         /// The tire longitudinal stiffness to have given longitudinal slip.
         /// </summary>
         API_FIELD(Attributes="EditorDisplay(\"Tire\"), EditorOrder(32)") float TireLongitudinalStiffness = 1000.0f;
+
+        /// <summary>
+        /// The tire friction scale (scales the drivable surface friction under the tire).
+        /// </summary>
+        API_FIELD(Attributes="EditorDisplay(\"Tire\"), EditorOrder(33)") float TireFrictionScale = 1.0f;
     };
 
     /// <summary>
