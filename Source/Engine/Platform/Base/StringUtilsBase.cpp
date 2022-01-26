@@ -406,6 +406,12 @@ bool StringUtils::Parse(const Char* str, float* result)
     return false;
 }
 
+bool StringUtils::Parse(const char* str, float* result)
+{
+    *result = (float)atof(str);
+    return false;
+}
+
 String StringUtils::ToString(int32 value)
 {
     char buf[STRING_UTILS_ITOSTR_BUFFER_SIZE];

@@ -428,6 +428,7 @@ public:
     // @return Result value
     // @returns True if cannot convert data, otherwise false
     static bool Parse(const Char* str, float* result);
+    static bool Parse(const char* str, float* result);
 
 public:
 

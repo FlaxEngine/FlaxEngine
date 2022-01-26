@@ -21,6 +21,10 @@
 #include <XGameRuntime.h>
 #include <appnotify.h>
 
+#define GDK_LOG(result, method) \
+        if (FAILED(result)) \
+            LOG(Error, "GDK method {0} failed with result 0x{1:x}", TEXT(method), (uint32)result)
+
 inline bool operator==(const APP_LOCAL_DEVICE_ID& l, const APP_LOCAL_DEVICE_ID& r)
 {
     return Platform::MemoryCompare(&l, &r, sizeof(APP_LOCAL_DEVICE_ID)) == 0;
@@ -28,8 +32,8 @@ inline bool operator==(const APP_LOCAL_DEVICE_ID& l, const APP_LOCAL_DEVICE_ID& 
 
 const Char* GDKPlatform::ApplicationWindowClass = TEXT("FlaxWindow");
 void* GDKPlatform::Instance = nullptr;
-Delegate<> GDKPlatform::OnSuspend;
-Delegate<> GDKPlatform::OnResume;
+Delegate<> GDKPlatform::Suspended;
+Delegate<> GDKPlatform::Resumed;
 
 namespace
 {
@@ -51,7 +55,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
     {
         LOG(Info, "Suspending application");
         IsSuspended = true;
-        GDKPlatform::OnSuspend();
+        GDKPlatform::Suspended();
 
         // Complete deferral
         SetEvent(PlmSuspendComplete);
@@ -60,7 +64,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 
         IsSuspended = false;
         LOG(Info, "Resuming application");
-        GDKPlatform::OnResume();
+        GDKPlatform::Resumed();
         return DefWindowProc(hWnd, msg, wParam, lParam);
     }
     }
@@ -93,6 +97,7 @@ void CALLBACK UserChangeEventCallback(_In_opt_ void* context, _In_ XUserLocalId 
         if (user)
         {
             // Logout
+            LOG(Info, "GDK user '{0}' logged out", user->GetName());
             OnPlatformUserRemove(user);
         }
         break;
@@ -161,8 +166,9 @@ void OnMainWindowCreated(HWND hWnd)
 void CALLBACK AddUserComplete(_In_ XAsyncBlock* ab)
 {
     XUserHandle userHandle;
-    HRESULT hr = XUserAddResult(ab, &userHandle);
-    if (SUCCEEDED(hr))
+    HRESULT result = XUserAddResult(ab, &userHandle);
+    delete ab;
+    if (SUCCEEDED(result))
     {
         XUserLocalId userLocalId;
         XUserGetLocalId(userHandle, &userLocalId);
@@ -173,12 +179,24 @@ void CALLBACK AddUserComplete(_In_ XAsyncBlock* ab)
         if (Platform::FindUser(localId) == nullptr)
         {
             // Login
-            auto user = New<User>(userHandle, userLocalId, String::Empty);
+            char gamerTag[XUserGamertagComponentModernMaxBytes];
+            size_t gamerTagSize;
+            XUserGetGamertag(userHandle, XUserGamertagComponent::Modern, ARRAY_COUNT(gamerTag), gamerTag, &gamerTagSize);
+            String name;
+            name.SetUTF8(gamerTag, StringUtils::Length(gamerTag));
+            LOG(Info, "GDK user '{0}' logged in", name);
+            auto user = New<User>(userHandle, userLocalId, name);
             OnPlatformUserAdd(user);
         }
     }
-
-    delete ab;
+    else if (result == E_GAMEUSER_NO_DEFAULT_USER || result == E_GAMEUSER_RESOLVE_USER_ISSUE_REQUIRED || result == 0x8015DC12)
+    {
+        Platform::SignInWithUI();
+    }
+    else
+    {
+        GDK_LOG(result, "XUserAddResult");
+    }
 }
 
 DialogResult MessageBox::Show(Window* parent, const StringView& text, const StringView& caption, MessageBoxButtons buttons, MessageBoxIcon icon)
@@ -312,6 +330,32 @@ bool GDKPlatform::IsRunningOnDevKit()
     return deviceType == XSystemDeviceType::XboxOneXDevkit || deviceType == XSystemDeviceType::XboxScarlettDevkit;
 }
 
+void GDKPlatform::SignInSilently()
+{
+    auto asyncBlock = new XAsyncBlock();
+    asyncBlock->queue = TaskQueue;
+    asyncBlock->callback = AddUserComplete;
+    HRESULT result = XUserAddAsync(XUserAddOptions::AddDefaultUserSilently, asyncBlock);
+    if (FAILED(result))
+    {
+        GDK_LOG(result, "XUserAddAsync");
+        delete asyncBlock;
+    }
+}
+
+void GDKPlatform::SignInWithUI()
+{
+    auto ab = new XAsyncBlock();
+    ab->queue = TaskQueue;
+    ab->callback = AddUserComplete;
+    HRESULT result = XUserAddAsync(XUserAddOptions::AllowGuests, ab);
+    if (FAILED(result))
+    {
+        GDK_LOG(result, "XUserAddAsync");
+        delete ab;
+    }
+}
+
 User* GDKPlatform::FindUser(const XUserLocalId& id)
 {
     User* result = nullptr;
@@ -366,27 +410,25 @@ bool GDKPlatform::Init()
         &UserDeviceAssociationChangedCallbackToken
     );
 
-    // Login the default user
-    {
-        auto asyncBlock = new XAsyncBlock();
-        asyncBlock->queue = TaskQueue;
-        asyncBlock->callback = AddUserComplete;
-        HRESULT hr = XUserAddAsync(XUserAddOptions::AddDefaultUserAllowingUI, asyncBlock);
-        if (FAILED(hr))
-            delete asyncBlock;
-    }
-
     GDKInput::Init();
 
     return false;
 }
 
-void GDKPlatform::BeforeRun()
+void GDKPlatform::LogInfo()
 {
+    Win32Platform::LogInfo();
+
     // Log system info
     const XSystemAnalyticsInfo analyticsInfo = XSystemGetAnalyticsInfo();
     LOG(Info, "{0}, {1}", StringAsUTF16<64>(analyticsInfo.family).Get(), StringAsUTF16<64>(analyticsInfo.form).Get());
     LOG(Info, "OS Version {0}.{1}.{2}.{3}", analyticsInfo.osVersion.major, analyticsInfo.osVersion.minor, analyticsInfo.osVersion.build, analyticsInfo.osVersion.revision);
+}
+
+void GDKPlatform::BeforeRun()
+{
+    // Login the default user
+    SignInSilently();
 }
 
 void GDKPlatform::Tick()

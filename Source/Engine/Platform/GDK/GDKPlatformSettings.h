@@ -15,9 +15,8 @@ class Texture;
 /// </summary>
 API_CLASS(Namespace="FlaxEditor.Content.Settings") class FLAXENGINE_API GDKPlatformSettings : public SettingsBase
 {
-DECLARE_SCRIPTING_TYPE_MINIMAL(GDKPlatformSettings);
+    DECLARE_SCRIPTING_TYPE_MINIMAL(GDKPlatformSettings);
 public:
-
     /// <summary>
     /// Game identity name stored in game package manifest (for store). If empty the product name will be used from Game Settings.
     /// </summary>
@@ -97,6 +96,12 @@ public:
     bool RequiresXboxLive = false;
 
     /// <summary>
+    /// Service Configuration ID (see Xbox Live docs).
+    /// </summary>
+    API_FIELD(Attributes="EditorOrder(330), EditorDisplay(\"Xbox Live\")")
+    StringAnsi SCID;
+
+    /// <summary>
     /// Specifies if the Game DVR system component is enabled or not.
     /// </summary>
     API_FIELD(Attributes="EditorOrder(400), EditorDisplay(\"Media Capture\")")
@@ -106,16 +111,15 @@ public:
     /// Specifies if broadcasting the title should be blocked or allowed.
     /// </summary>
     API_FIELD(Attributes="EditorOrder(410), EditorDisplay(\"Media Capture\")")
-    bool BlockBroadcast  = false;
+    bool BlockBroadcast = false;
 
     /// <summary>
     /// Specifies if Game DVR of the title should be blocked or allowed.
     /// </summary>
     API_FIELD(Attributes="EditorOrder(420), EditorDisplay(\"Media Capture\")")
-    bool BlockGameDVR  = false;
+    bool BlockGameDVR = false;
 
 public:
-
     // [SettingsBase]
     void Deserialize(DeserializeStream& stream, ISerializeModifier* modifier) override
     {
@@ -131,6 +135,7 @@ public:
         DESERIALIZE(TitleId);
         DESERIALIZE(StoreId);
         DESERIALIZE(RequiresXboxLive);
+        DESERIALIZE(SCID);
         DESERIALIZE(GameDVRSystemComponent);
         DESERIALIZE(BlockBroadcast);
         DESERIALIZE(BlockGameDVR);

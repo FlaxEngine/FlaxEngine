@@ -52,17 +52,15 @@ int32 GameBase::LoadProduct()
 
     // Load build game header file
     {
-        int32 tmp;
-        Array<byte> data;
-        FileReadStream* stream = nullptr;
-
 #if 1
         // Open file
+        FileReadStream* stream = nullptr;
         stream = FileReadStream::Open(Globals::ProjectFolder / TEXT("Content/head"));
         if (stream == nullptr)
             goto LOAD_GAME_HEAD_FAILED;
 
         // Check header
+        int32 tmp;
         stream->ReadInt32(&tmp);
         if (tmp != ('x' + 'D') * 131)
             goto LOAD_GAME_HEAD_FAILED;
@@ -73,6 +71,7 @@ int32 GameBase::LoadProduct()
             goto LOAD_GAME_HEAD_FAILED;
 
         // Load game primary data
+        Array<byte> data;
         stream->ReadArray(&data);
         if (data.Count() != 808 + sizeof(Guid))
             goto LOAD_GAME_HEAD_FAILED;
