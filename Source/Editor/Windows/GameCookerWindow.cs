@@ -817,16 +817,23 @@ namespace FlaxEditor.Windows
                 BackgroundColor = Style.Current.LightBackground,
                 Parent = tab,
             };
+            platformSelector.SizeChanged += OnPlatformSelectorSizeChanged;
             var panel = new Panel(ScrollBars.Vertical)
             {
                 AnchorPreset = AnchorPresets.StretchAll,
                 Offsets = new Margin(0, 0, platformSelector.Offsets.Height, 0),
-                Parent = tab
+                Parent = tab,
             };
 
             var settings = new CustomEditorPresenter(null);
             settings.Panel.Parent = panel;
             settings.Select(new BuildTabProxy(this, platformSelector));
+        }
+
+        private void OnPlatformSelectorSizeChanged(Control platformSelector)
+        {
+            var panel = platformSelector.Parent.Children[platformSelector.IndexInParent + 1];
+            panel.Offsets = new Margin(0, 0, platformSelector.Offsets.Height, 0);
         }
 
         /// <summary>
