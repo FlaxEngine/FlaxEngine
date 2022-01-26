@@ -158,8 +158,8 @@ public:
     }
 
 #if PLATFORM_XBOX_SCARLETT ||PLATFORM_XBOX_ONE
-    void OnSuspend();
-    void OnResume();
+    void OnSuspended();
+    void OnResumed();
 #endif
 
 private:

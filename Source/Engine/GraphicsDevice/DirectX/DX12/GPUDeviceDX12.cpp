@@ -251,8 +251,8 @@ bool GPUDeviceDX12::Init()
     updateFrameEvents();
 
 #if PLATFORM_GDK
-    GDKPlatform::OnSuspend.Bind<GPUDeviceDX12, &GPUDeviceDX12::OnSuspend>(this);
-    GDKPlatform::OnResume.Bind<GPUDeviceDX12, &GPUDeviceDX12::OnResume>(this);
+    GDKPlatform::Suspended.Bind<GPUDeviceDX12, &GPUDeviceDX12::OnSuspended>(this);
+    GDKPlatform::Resumed.Bind<GPUDeviceDX12, &GPUDeviceDX12::OnResumed>(this);
 #endif
 #else
     // Get DXGI adapter
@@ -838,12 +838,12 @@ void GPUDeviceDX12::updateRes2Dispose()
 
 #if PLATFORM_XBOX_SCARLETT || PLATFORM_XBOX_ONE
 
-void GPUDeviceDX12::OnSuspend()
+void GPUDeviceDX12::OnSuspended()
 {
     _commandQueue->GetCommandQueue()->SuspendX(0);
 }
 
-void GPUDeviceDX12::OnResume()
+void GPUDeviceDX12::OnResumed()
 {
     _commandQueue->GetCommandQueue()->ResumeX();
 

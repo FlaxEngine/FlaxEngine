@@ -86,6 +86,8 @@ struct BoundingFrustum;
 struct Color;
 struct Color32;
 struct Variant;
+template<typename T>
+class Span;
 class HeapAllocation;
 template<int Capacity>
 class FixedAllocation;

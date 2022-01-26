@@ -411,8 +411,7 @@ namespace Flax.Build.Bindings
                 if ((typeInfo.Type == "Array" || typeInfo.Type == "Span") && typeInfo.GenericArgs != null)
                 {
                     type = "MonoArray*";
-                    var valueClass = GenerateCppGetNativeClass(buildData, typeInfo.GenericArgs[0], caller, functionInfo);
-                    return "MUtils::ToArray({0}, " + valueClass + ")";
+                    return "MUtils::ToArray({0}, " + GenerateCppGetNativeClass(buildData, typeInfo.GenericArgs[0], caller, functionInfo) + ")";
                 }
 
                 // BytesContainer
@@ -733,6 +732,43 @@ namespace Flax.Build.Bindings
                 type = typeInfo.ToString();
                 return string.Empty;
             }
+        }
+
+        private static string GenerateCppWrapperNativeToBox(BuildData buildData, TypeInfo typeInfo, ApiTypeInfo caller, string value)
+        {
+            // Optimize passing scripting objects
+            var apiType = FindApiTypeInfo(buildData, typeInfo, caller);
+            if (apiType != null && apiType.IsScriptingObject)
+                return $"ScriptingObject::ToManaged((ScriptingObject*){value})";
+
+            // Array or Span
+            if ((typeInfo.Type == "Array" || typeInfo.Type == "Span") && typeInfo.GenericArgs != null && typeInfo.GenericArgs.Count >= 1)
+                return $"MUtils::ToArray({value}, {GenerateCppGetNativeClass(buildData, typeInfo.GenericArgs[0], caller, null)})";
+
+            // BytesContainer
+            if (typeInfo.Type == "BytesContainer" && typeInfo.GenericArgs == null)
+                return "MUtils::ToArray({0})";
+
+            // Construct native typename for MUtils template argument
+            var nativeType = new StringBuilder(64);
+            nativeType.Append(typeInfo.Type);
+            if (typeInfo.GenericArgs != null)
+            {
+                nativeType.Append('<');
+                for (var j = 0; j < typeInfo.GenericArgs.Count; j++)
+                {
+                    if (j != 0)
+                        nativeType.Append(", ");
+                    nativeType.Append(typeInfo.GenericArgs[j]);
+                }
+
+                nativeType.Append('>');
+            }
+            if (typeInfo.IsPtr)
+                nativeType.Append('*');
+
+            // Use MUtils to box the value
+            return $"MUtils::Box<{nativeType}>({value}, {GenerateCppGetNativeClass(buildData, typeInfo, caller, null)})";
         }
 
         private static void GenerateCppWrapperFunction(BuildData buildData, StringBuilder contents, ApiTypeInfo caller, FunctionInfo functionInfo, string callFormat = "{0}({1})")
@@ -1127,33 +1163,8 @@ namespace Flax.Build.Bindings
                 separator = true;
                 thunkParams += "void*";
 
-                // Optimize passing scripting objects
-                var apiType = FindApiTypeInfo(buildData, parameterInfo.Type, classInfo);
-                if (apiType != null && apiType.IsScriptingObject)
-                {
-                    thunkCall += $"ScriptingObject::ToManaged((ScriptingObject*){parameterInfo.Name})";
-                    continue;
-                }
-
-                var nativeType = new StringBuilder(64);
-                nativeType.Append(parameterInfo.Type.Type);
-                if (parameterInfo.Type.GenericArgs != null)
-                {
-                    nativeType.Append('<');
-                    for (var j = 0; j < parameterInfo.Type.GenericArgs.Count; j++)
-                    {
-                        if (j != 0)
-                            nativeType.Append(", ");
-                        nativeType.Append(parameterInfo.Type.GenericArgs[j]);
-                    }
-
-                    nativeType.Append('>');
-                }
-                if (parameterInfo.Type.IsPtr)
-                    nativeType.Append('*');
-
                 // Mono thunk call uses boxed values as objects
-                thunkCall += $"MUtils::Box<{nativeType}>({parameterInfo.Name}, {GenerateCppGetNativeClass(buildData, parameterInfo.Type, classInfo, null)})";
+                thunkCall += GenerateCppWrapperNativeToBox(buildData, parameterInfo.Type, classInfo, parameterInfo.Name);
             }
 
             if (functionInfo.ReturnType.IsVoid)

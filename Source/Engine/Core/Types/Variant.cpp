@@ -773,6 +773,21 @@ Variant::Variant(const Dictionary<Variant, Variant>& v)
     AsDictionary = New<Dictionary<Variant, Variant>>(v);
 }
 
+Variant::Variant(const Span<byte>& v)
+    : Type(VariantType::Blob)
+{
+    AsBlob.Length = v.Length();
+    if (AsBlob.Length > 0)
+    {
+        AsBlob.Data = Allocator::Allocate(AsBlob.Length);
+        Platform::MemoryCopy(AsBlob.Data, v.Get(), AsBlob.Length);
+    }
+    else
+    {
+        AsBlob.Data = nullptr;
+    }
+}
+
 Variant::Variant(const CommonValue& value)
     : Variant()
 {

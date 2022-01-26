@@ -23,8 +23,8 @@ public:
     /// </summary>
     static void* Instance;
 
-    static Delegate<> OnSuspend;
-    static Delegate<> OnResume;
+    static Delegate<> Suspended;
+    static Delegate<> Resumed;
 
 public:
 
@@ -44,12 +44,15 @@ public:
 
     static bool IsRunningOnDevKit();
 
+    static void SignInSilently();
+    static void SignInWithUI();
     static User* FindUser(const struct XUserLocalId& id);
 
 public:
 
     // [Win32Platform]
     static bool Init();
+    static void LogInfo();
     static void BeforeRun();
     static void Tick();
     static void BeforeExit();
