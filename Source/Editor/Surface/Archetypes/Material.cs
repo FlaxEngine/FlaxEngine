@@ -620,7 +620,7 @@ namespace FlaxEditor.Surface.Archetypes
             {
                 TypeID = 27,
                 Title = "Rotator",
-                Description = "Rotates UV coordinates according to a scalar angle (0-1)",
+                Description = "Rotates UV coordinates according to a scalar angle (in radians, 0-2PI)",
                 Flags = NodeFlags.MaterialGraph,
                 Size = new Vector2(150, 55),
                 Elements = new[]
