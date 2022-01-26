@@ -136,6 +136,7 @@ namespace FlaxEditor
         public SpriteHandle AndroidIcon128;
         public SpriteHandle PS4Icon128;
         public SpriteHandle PS5Icon128;
+        public SpriteHandle MacOSIcon128;
         public SpriteHandle FlaxLogo128;
         public SpriteHandle SwitchIcon128;
         public SpriteHandle SwitchSettings128;
