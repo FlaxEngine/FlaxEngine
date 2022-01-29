@@ -184,7 +184,7 @@ namespace Flax.Build
         /// </summary>
         public static void GenerateProject(ProjectFormat projectFormat)
         {
-            using (new ProfileEventScope("GenerateProject" + projectFormat.ToString()))
+            using (new ProfileEventScope("GenerateProject" + projectFormat))
             {
                 // Setup
                 var rules = GenerateRulesAssembly();

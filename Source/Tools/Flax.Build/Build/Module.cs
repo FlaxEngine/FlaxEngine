@@ -30,7 +30,7 @@ namespace Flax.Build
         /// <summary>
         /// The name for the output binary module. Can be used to merge multiple native modules into single library. If set to null or <see cref="string.Empty"/> the module won't be using scripting API features.
         /// </summary>
-        public string BinaryModuleName = null;
+        public string BinaryModuleName;
 
         /// <summary>
         /// True if module has native code to build. Can be used for C#-only modules.
