@@ -7,6 +7,8 @@ using FlaxEditor.Content.Settings;
 using FlaxEditor.Windows.Assets;
 using FlaxEngine;
 
+#pragma warning disable CS0649
+
 namespace FlaxEditor.Content.Create
 {
     /// <summary>
