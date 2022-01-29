@@ -413,6 +413,9 @@ namespace Flax.Build
 
                 if (buildData.Target.LinkType != TargetLinkType.Monolithic)
                 {
+                    // Use the library includes required by this module
+                    moduleOptions.LinkEnv.InputLibraries.AddRange(moduleOptions.Libraries);
+
                     // Link all object files into module library
                     var outputLib = Path.Combine(buildData.TargetOptions.OutputFolder, buildData.Platform.GetLinkOutputFileName(module.Name + moduleOptions.HotReloadPostfix, moduleOptions.LinkEnv.Output));
                     LinkNativeBinary(buildData, moduleOptions, outputLib);
