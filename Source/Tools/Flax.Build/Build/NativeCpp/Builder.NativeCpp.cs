@@ -498,6 +498,11 @@ namespace Flax.Build
                 Log.Verbose("No target selected for build");
                 return;
             }
+            if (!target.Platforms.Contains(buildData.Platform.Target) || !target.Architectures.Contains(buildData.Architecture))
+            {
+                Log.Verbose($"Referenced target {reference.Project.Name} doesn't support {buildData.Platform.Target} {buildData.Architecture}");
+                return;
+            }
             if (!buildContext.TryGetValue(target, out var referencedBuildData))
             {
                 Log.Info($"Building referenced target {reference.Project.Name}");
