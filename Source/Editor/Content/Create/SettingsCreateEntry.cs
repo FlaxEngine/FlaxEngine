@@ -1,8 +1,9 @@
 // Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 using System;
+using System.Collections.Generic;
+using System.Reflection;
 using FlaxEditor.Content.Settings;
-using FlaxEditor.Scripting;
 using FlaxEditor.Windows.Assets;
 using FlaxEngine;
 
@@ -14,69 +15,19 @@ namespace FlaxEditor.Content.Create
     /// <seealso cref="FlaxEditor.Content.Create.CreateFileEntry" />
     internal class SettingsCreateEntry : CreateFileEntry
     {
-        /// <summary>
-        /// Types of the settings assets that can be created.
-        /// </summary>
-        internal enum SettingsTypes
-        {
-            GameSettings,
-            AudioSettings,
-            TimeSettings,
-            LayersAndTagsSettings,
-            PhysicsSettings,
-            GraphicsSettings,
-            NavigationSettings,
-            LocalizationSettings,
-            BuildSettings,
-            InputSettings,
-            StreamingSettings,
-            WindowsPlatformSettings,
-            [EditorDisplay(null, "UWP Platform Settings")]
-            UWPPlatformSettings,
-            LinuxPlatformSettings,
-            [EditorDisplay(null, "PS4 Platform Settings")]
-            PS4PlatformSettings,
-            XboxOnePlatformSettings,
-            XboxScarlettPlatformSettings,
-            AndroidPlatformSettings,
-            SwitchPlatformSettings,
-            [EditorDisplay(null, "PS5 Platform Settings")]
-            PS5PlatformSettings,
-            MacPlatformSettings,
-        }
-
-        private static readonly Type[] _types =
-        {
-            typeof(GameSettings),
-            typeof(AudioSettings),
-            typeof(TimeSettings),
-            typeof(LayersAndTagsSettings),
-            typeof(PhysicsSettings),
-            typeof(GraphicsSettings),
-            typeof(NavigationSettings),
-            typeof(LocalizationSettings),
-            typeof(BuildSettings),
-            typeof(InputSettings),
-            typeof(StreamingSettings),
-            typeof(WindowsPlatformSettings),
-            typeof(UWPPlatformSettings),
-            typeof(LinuxPlatformSettings),
-            TypeUtils.GetManagedType(GameSettings.PS4PlatformSettingsTypename),
-            TypeUtils.GetManagedType(GameSettings.XboxOnePlatformSettingsTypename),
-            TypeUtils.GetManagedType(GameSettings.XboxScarlettPlatformSettingsTypename),
-            typeof(AndroidPlatformSettings),
-            TypeUtils.GetManagedType(GameSettings.SwitchPlatformSettingsTypename),
-            TypeUtils.GetManagedType(GameSettings.PS5PlatformSettingsTypename),
-            typeof(MacPlatformSettings),
-        };
-
         internal class Options
         {
-            /// <summary>
-            /// The type.
-            /// </summary>
-            [Tooltip("Type of the settings asset to create")]
-            public SettingsTypes Type = SettingsTypes.GameSettings;
+            [Tooltip("The settings type.")]
+            [TypeReference(checkMethod: nameof(IsValid))]
+            public Type Type;
+
+            [HideInEditor, NoSerialize]
+            public static readonly List<Type> Types = new List<Type>();
+
+            private static bool IsValid(Type type)
+            {
+                return Types.Contains(type);
+            }
         }
 
         private readonly Options _options = new Options();
@@ -91,18 +42,22 @@ namespace FlaxEditor.Content.Create
         public SettingsCreateEntry(string resultUrl)
         : base("Settings", resultUrl)
         {
+            // Find types for settings
+            Options.Types.Clear();
+            foreach (var proxy in Editor.Instance.ContentDatabase.Proxy)
+            {
+                if (proxy is SettingsProxy settingsProxy && settingsProxy.Type != null)
+                    Options.Types.Add(settingsProxy.Type);
+            }
         }
 
         /// <inheritdoc />
         public override bool Create()
         {
             // Create settings asset object and serialize it to pure json asset
-            var type = _types[(int)_options.Type];
+            var type = _options.Type;
             if (type == null)
-            {
-                MessageBox.Show("Cannot create " + _options.Type + " settings. Platform not supported.");
                 return true;
-            }
             var data = Activator.CreateInstance(type);
             if (Editor.SaveJsonAsset(ResultUrl, data))
                 return true;
@@ -114,7 +69,7 @@ namespace FlaxEditor.Content.Create
                 var gameSettingsWindow = Editor.Instance.Windows.FindEditor(gameSettingsItem) as JsonAssetWindow;
                 if (gameSettingsWindow?.Instance is GameSettings)
                 {
-                    if (TrySet(gameSettingsWindow.Instance as GameSettings, ResultUrl, _options.Type))
+                    if (TrySet(gameSettingsWindow.Instance as GameSettings, ResultUrl, type))
                         gameSettingsWindow.MarkAsEdited();
                 }
                 else
@@ -124,10 +79,8 @@ namespace FlaxEditor.Content.Create
                     {
                         if (gameSettingsAsset.CreateInstance() is GameSettings settings)
                         {
-                            if (TrySet(settings, ResultUrl, _options.Type))
-                            {
+                            if (TrySet(settings, ResultUrl, type))
                                 Editor.SaveJsonAsset(GameSettings.GameSettingsAssetPath, settings);
-                            }
                         }
                     }
                 }
@@ -136,115 +89,42 @@ namespace FlaxEditor.Content.Create
             return false;
         }
 
-        private static bool TrySet(GameSettings instance, string resultUrl, SettingsTypes type)
+        private static bool TrySet(GameSettings instance, string resultUrl, Type type)
         {
             var asset = FlaxEngine.Content.LoadAsync<JsonAsset>(resultUrl);
             if (instance != null && asset != null)
             {
-                switch (type)
+                // Try set Game Settings field
+                var fields = typeof(GameSettings).GetFields();
+                foreach (var field in fields)
                 {
-                case SettingsTypes.AudioSettings:
-                    if (instance.Audio != null)
-                        return false;
-                    instance.Audio = asset;
-                    break;
-                case SettingsTypes.TimeSettings:
-                    if (instance.Time != null)
-                        return false;
-                    instance.Time = asset;
-                    break;
-                case SettingsTypes.LayersAndTagsSettings:
-                    if (instance.LayersAndTags != null)
-                        return false;
-                    instance.LayersAndTags = asset;
-                    break;
-                case SettingsTypes.PhysicsSettings:
-                    if (instance.Physics != null)
-                        return false;
-                    instance.Physics = asset;
-                    break;
-                case SettingsTypes.GraphicsSettings:
-                    if (instance.Graphics != null)
-                        return false;
-                    instance.Graphics = asset;
-                    break;
-                case SettingsTypes.NavigationSettings:
-                    if (instance.Navigation != null)
-                        return false;
-                    instance.Navigation = asset;
-                    break;
-                case SettingsTypes.LocalizationSettings:
-                    if (instance.Localization != null)
-                        return false;
-                    instance.Localization = asset;
-                    break;
-                case SettingsTypes.BuildSettings:
-                    if (instance.GameCooking != null)
-                        return false;
-                    instance.GameCooking = asset;
-                    break;
-                case SettingsTypes.InputSettings:
-                    if (instance.Input != null)
-                        return false;
-                    instance.Input = asset;
-                    break;
-                case SettingsTypes.StreamingSettings:
-                    if (instance.Streaming != null)
-                        return false;
-                    instance.Streaming = asset;
-                    break;
-                case SettingsTypes.WindowsPlatformSettings:
-                    if (instance.WindowsPlatform != null)
-                        return false;
-                    instance.WindowsPlatform = asset;
-                    break;
-                case SettingsTypes.UWPPlatformSettings:
-                    if (instance.UWPPlatform != null)
-                        return false;
-                    instance.UWPPlatform = asset;
-                    break;
-                case SettingsTypes.LinuxPlatformSettings:
-                    if (instance.LinuxPlatform != null)
-                        return false;
-                    instance.LinuxPlatform = asset;
-                    break;
-                case SettingsTypes.PS4PlatformSettings:
-                    if (instance.PS4Platform != null)
-                        return false;
-                    instance.PS4Platform = asset;
-                    break;
-                case SettingsTypes.XboxOnePlatformSettings:
-                    if (instance.XboxOnePlatform != null)
-                        return false;
-                    instance.XboxOnePlatform = asset;
-                    break;
-                case SettingsTypes.XboxScarlettPlatformSettings:
-                    if (instance.XboxScarlettPlatform != null)
-                        return false;
-                    instance.XboxScarlettPlatform = asset;
-                    break;
-                case SettingsTypes.AndroidPlatformSettings:
-                    if (instance.AndroidPlatform != null)
-                        return false;
-                    instance.AndroidPlatform = asset;
-                    break;
-                case SettingsTypes.SwitchPlatformSettings:
-                    if (instance.SwitchPlatform != null)
-                        return false;
-                    instance.SwitchPlatform = asset;
-                    break;
-                case SettingsTypes.PS5PlatformSettings:
-                    if (instance.PS5Platform != null)
-                        return false;
-                    instance.PS5Platform = asset;
-                    break;
-                case SettingsTypes.MacPlatformSettings:
-                    if (instance.MacPlatform != null)
-                        return false;
-                    instance.MacPlatform = asset;
-                    break;
+                    if (field.FieldType == typeof(JsonAsset))
+                    {
+                        var attribute = field.GetCustomAttribute<AssetReferenceAttribute>();
+                        if (attribute != null && attribute.TypeName == type.FullName)
+                        {
+                            var value = field.GetValue(instance);
+                            if (value != null)
+                                return false;
+                            field.SetValue(instance, asset);
+                            return true;
+                        }
+                    }
                 }
-                return true;
+
+                // Try with custom settings
+                foreach (var proxy in Editor.Instance.ContentDatabase.Proxy)
+                {
+                    if (proxy is CustomSettingsProxy settingsProxy && settingsProxy.Type == type)
+                    {
+                        if (instance.CustomSettings != null && instance.CustomSettings.ContainsKey(settingsProxy.CustomName))
+                            return false;
+                        if (instance.CustomSettings == null)
+                            instance.CustomSettings = new Dictionary<string, JsonAsset>();
+                        instance.CustomSettings.Add(settingsProxy.CustomName, asset);
+                        return true;
+                    }
+                }
             }
             return false;
         }
