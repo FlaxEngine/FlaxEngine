@@ -2140,6 +2140,8 @@ void MCore::GC::WaitForPendingFinalizers()
 #pragma comment(linker, "/export:mono_type_stack_size")
 #pragma comment(linker, "/export:mono_type_stack_size_internal")
 #pragma comment(linker, "/export:mono_value_box")
+#pragma comment(linker, "/export:mono_value_copy")
+#pragma comment(linker, "/export:mono_value_copy_array")
 #pragma comment(linker, "/export:mono_jit_info_get_code_start")
 #pragma comment(linker, "/export:mono_jit_info_get_code_size")
 

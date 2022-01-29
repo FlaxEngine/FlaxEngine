@@ -90,6 +90,7 @@ namespace Flax.Deps.Dependencies
             "mono_string_",
             "mono_thread_",
             "mono_type_",
+            "mono_value_",
         };
 
         private static readonly string[] MonoExportsSkipPrefixes =
