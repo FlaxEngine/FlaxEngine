@@ -563,7 +563,8 @@ namespace FlaxEditor.CustomEditors.Editors
                         if (disableSingle && child is PropertyNameLabel)
                             break;
 
-                        child.Enabled = false;
+                        if (child != null)
+                            child.Enabled = false;
                     }
                 }
             }
