@@ -224,8 +224,8 @@ class SwitchWindow;
 typedef SwitchWindow Window;
 class SwitchNetwork;
 typedef SwitchNetwork Network;
-class UserBase;
-typedef UserBase User;
+class SwitchUser;
+typedef SwitchUser User;
 
 #elif PLATFORM_MAC
 
