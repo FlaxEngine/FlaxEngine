@@ -577,6 +577,7 @@ public:
         // Reload scripting
         Level::ScriptsReload();
         Scripting::Reload();
+        Level::ScriptsReloaded();
 
         // Restore objects
         for (auto& e : ScriptsReloadObjects)

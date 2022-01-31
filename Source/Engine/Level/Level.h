@@ -228,6 +228,11 @@ public:
     API_EVENT() static Action ScriptsReload;
 
     /// <summary>
+    /// Fired when scene reloaded scripts (new scripting is loaded). All user objects can be restored before scenes reloading.
+    /// </summary>
+    API_EVENT() static Action ScriptsReloaded;
+
+    /// <summary>
     /// Fired when scene ends reloading scripts.
     /// </summary>
     API_EVENT() static Action ScriptsReloadEnd;
