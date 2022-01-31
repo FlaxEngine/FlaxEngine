@@ -5,6 +5,7 @@
 #if USE_EDITOR
 #include "Engine/Platform/File.h"
 #include "Engine/Core/Types/DataContainer.h"
+#include "Engine/Level/Level.h"
 #else
 #include "Storage/ContentStorageManager.h"
 #endif
@@ -205,11 +206,40 @@ JsonAsset::JsonAsset(const SpawnParams& params, const AssetInfo* info)
 
 Asset::LoadResult JsonAsset::loadAsset()
 {
-    // Base
-    auto result = JsonAssetBase::loadAsset();
+    const auto result = JsonAssetBase::loadAsset();
     if (result != LoadResult::Ok || IsInternalType())
         return result;
 
+    if (CreateInstance())
+        return LoadResult::Failed;
+#if USE_EDITOR
+    if (Instance)
+    {
+        // Reload instance when module with this type gets reloaded
+        Level::ScriptsReloadStart.Bind<JsonAsset, &JsonAsset::OnScriptsReloadStart>(this);
+        Level::ScriptsReloaded.Bind<JsonAsset, &JsonAsset::OnScriptsReloaded>(this);
+    }
+#endif
+
+    return LoadResult::Ok;
+}
+
+void JsonAsset::unload(bool isReloading)
+{
+    if (Instance)
+    {
+#if USE_EDITOR
+        Level::ScriptsReloadStart.Unbind<JsonAsset, &JsonAsset::OnScriptsReloadStart>(this);
+        Level::ScriptsReloaded.Unbind<JsonAsset, &JsonAsset::OnScriptsReloaded>(this);
+#endif
+        DeleteInstance();
+    }
+
+    JsonAssetBase::unload(isReloading);
+}
+
+bool JsonAsset::CreateInstance()
+{
     // Try to scripting type for this data
     const StringAsANSI<> dataTypeNameAnsi(DataTypeName.Get(), DataTypeName.Length());
     const auto typeHandle = Scripting::FindScriptingType(StringAnsiView(dataTypeNameAnsi.Get(), DataTypeName.Length()));
@@ -231,7 +261,7 @@ Asset::LoadResult JsonAsset::loadAsset()
             // Allocate object
             const auto instance = Allocator::Allocate(type.Size);
             if (!instance)
-                return LoadResult::Failed;
+                return true;
             Instance = instance;
             InstanceType = typeHandle;
             _dtor = type.Class.Dtor;
@@ -241,27 +271,37 @@ Asset::LoadResult JsonAsset::loadAsset()
             auto modifier = Cache::ISerializeModifier.Get();
             modifier->EngineBuild = DataEngineBuild;
             ((ISerializable*)((byte*)instance + interface->VTableOffset))->Deserialize(*Data, modifier.Value);
-            // TODO: delete object when containing BinaryModule gets unloaded
             break;
         }
-        default: ;
         }
     }
 
-    return result;
+    return false;
 }
 
-void JsonAsset::unload(bool isReloading)
+void JsonAsset::DeleteInstance()
 {
-    // Base
-    JsonAssetBase::unload(isReloading);
+    ASSERT_LOW_LAYER(Instance && _dtor);
+    InstanceType = ScriptingTypeHandle();
+    _dtor(Instance);
+    Allocator::Free(Instance);
+    Instance = nullptr;
+    _dtor = nullptr;
+}
 
-    if (Instance)
+#if USE_EDITOR
+
+void JsonAsset::OnScriptsReloadStart()
+{
+    DeleteInstance();
+}
+
+void JsonAsset::OnScriptsReloaded()
+{
+    if (CreateInstance())
     {
-        InstanceType = ScriptingTypeHandle();
-        _dtor(Instance);
-        Allocator::Free(Instance);
-        Instance = nullptr;
-        _dtor = nullptr;
+        LOG(Warning, "Failed to reload {0} instance {1}.", ToString(), DataTypeName);
     }
 }
+
+#endif

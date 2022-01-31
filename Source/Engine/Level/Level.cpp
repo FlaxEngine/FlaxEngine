@@ -146,6 +146,7 @@ Delegate<Scene*, const Guid&> Level::SceneUnloaded;
 #if USE_EDITOR
 Action Level::ScriptsReloadStart;
 Action Level::ScriptsReload;
+Action Level::ScriptsReloaded;
 Action Level::ScriptsReloadEnd;
 #endif
 Array<String> Level::Tags;

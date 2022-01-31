@@ -117,4 +117,12 @@ protected:
     // [JsonAssetBase]
     LoadResult loadAsset() override;
     void unload(bool isReloading) override;
+
+private:
+    bool CreateInstance();
+    void DeleteInstance();
+#if USE_EDITOR
+    void OnScriptsReloadStart();
+    void OnScriptsReloaded();
+#endif
 };
