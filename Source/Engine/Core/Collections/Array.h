@@ -547,8 +547,8 @@ public:
     /// <summary>
     /// Adds the new items to the end of the collection, possibly reallocating the whole collection to fit. The new items will be zeroed.
     /// </summary>
-    /// Warning! AddZeroed() will create items without calling the constructor and this is not appropriate for item types that require a constructor to function properly.
     /// <remarks>
+    /// Warning! AddZeroed() will create items without calling the constructor and this is not appropriate for item types that require a constructor to function properly.
     /// </remarks>
     /// <param name="count">The number of new items to add.</param>
     void AddZeroed(int32 count = 1)
