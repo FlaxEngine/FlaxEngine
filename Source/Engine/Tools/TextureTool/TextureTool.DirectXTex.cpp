@@ -582,7 +582,7 @@ bool TextureTool::ImportTextureDirectXTex(ImageType type, const StringView& path
 
         // Resize source texture
         LOG(Info, "Resizing texture from {0}x{1} to {2}x{3}.", sourceWidth, sourceHeight, width, height);
-        result = DirectX::Resize(*currentImage->GetImages(), width, height, DirectX::TEX_FILTER_LINEAR, tmpImg);
+        result = DirectX::Resize(*currentImage->GetImages(), width, height, DirectX::TEX_FILTER_LINEAR | DirectX::TEX_FILTER_SEPARATE_ALPHA, tmpImg);
         if (FAILED(result))
         {
             errorMsg = String::Format(TEXT("Cannot resize texture, error: {0:x}"), static_cast<uint32>(result));
