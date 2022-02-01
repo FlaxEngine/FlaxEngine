@@ -23,7 +23,7 @@ class IPhysicsActor;
 class PhysicalMaterial;
 class JsonAsset;
 
-struct PhysicsJointDesc
+struct FLAXENGINE_API PhysicsJointDesc
 {
     Joint* Joint;
     void* Actor0;
@@ -37,7 +37,7 @@ struct PhysicsJointDesc
 /// <summary>
 /// Interface for the physical simulation backend implementation.
 /// </summary>
-class PhysicsBackend
+class FLAXENGINE_API PhysicsBackend
 {
 public:
     enum class ActorFlags
