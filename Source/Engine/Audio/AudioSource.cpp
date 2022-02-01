@@ -102,7 +102,8 @@ void AudioSource::SetAttenuation(float value)
 
 void AudioSource::Play()
 {
-    if (_state == States::Playing)
+    auto state = _state;
+    if (state == States::Playing)
         return;
     if (Clip == nullptr)
     {
@@ -120,8 +121,16 @@ void AudioSource::Play()
     // Audio clips with disabled streaming are controlled by audio source, otherwise streaming manager will play it
     if (Clip->IsStreamable())
     {
-        // Request faster streaming update
-        Clip->RequestStreamingUpdate();
+        if (state == States::Paused)
+        {
+            // Resume
+            PlayInternal();
+        }
+        else
+        {
+            // Request faster streaming update
+            Clip->RequestStreamingUpdate();
+        }
     }
     else
     {

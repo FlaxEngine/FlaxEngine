@@ -96,7 +96,6 @@ bool AudioClip::StreamingTask::Run()
         }
         break;
         default:
-        CRASH;
             return true;
         }
 

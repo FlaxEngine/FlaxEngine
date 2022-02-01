@@ -186,7 +186,7 @@ int32 AudioStreamingHandler::CalculateResidency(StreamableResource* resource, fl
     ASSERT(resource);
     auto clip = static_cast<AudioClip*>(resource);
     const int32 chunksCount = clip->Buffers.Count();
-    bool chunksMask[ASSET_FILE_DATA_CHUNKS];
+    bool chunksMask[ASSET_FILE_DATA_CHUNKS]; // TODO: use single int as bit mask
     Platform::MemoryClear(chunksMask, sizeof(chunksMask));
 
     // Find audio chunks required for streaming
@@ -196,14 +196,14 @@ int32 AudioStreamingHandler::CalculateResidency(StreamableResource* resource, fl
         // TODO: collect refs to audio clip from sources and use faster iteration (but do it thread-safe)
 
         const auto src = Audio::Sources[sourceIndex];
-        if (src->Clip == clip && src->GetState() == AudioSource::States::Playing)
+        if (src->Clip == clip && src->GetState() != AudioSource::States::Stopped)
         {
             // Stream the current and the next chunk if could be used in a while
             const int32 chunk = src->_streamingFirstChunk;
             ASSERT(Math::IsInRange(chunk, 0, chunksCount));
             chunksMask[chunk] = true;
-
-            const float StreamingDstSec = 2.0f;
+            
+            const float StreamingDstSec = 2.0f; // TODO: make it configurable via StreamingSettings
             if (chunk + 1 < chunksCount && src->GetTime() + StreamingDstSec >= clip->GetBufferStartTime(src->_streamingFirstChunk))
             {
                 chunksMask[chunk + 1] = true;
