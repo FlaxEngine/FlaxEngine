@@ -24,7 +24,14 @@
 #if BUILD_RELEASE
 #define ALC_CHECK_ERROR(method)
 #else
-#define ALC_CHECK_ERROR(method) { int alError = alGetError(); if (alError != 0) { LOG(Error, "OpenAL method {0} failed with error 0x{1:X} (at line {2})", TEXT(#method), alError, __LINE__ - 1); PLATFORM_DEBUG_BREAK; } }
+#define ALC_CHECK_ERROR(method) \
+    { \
+        int alError = alGetError(); \
+        if (alError != 0) \
+        { \
+        LOG(Error, "OpenAL method {0} failed with error 0x{1:X} (at line {2})", TEXT(#method), alError, __LINE__ - 1); \
+        } \
+    }
 #endif
 
 #if ALC_MULTIPLE_LISTENERS
