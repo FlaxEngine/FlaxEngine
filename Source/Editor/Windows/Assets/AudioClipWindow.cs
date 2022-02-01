@@ -270,7 +270,10 @@ namespace FlaxEditor.Windows.Assets
 
             // Tick scene
             if (_previewScene)
+            {
                 _previewScene.Update();
+                UpdateToolstrip();
+            }
         }
 
         /// <inheritdoc />
