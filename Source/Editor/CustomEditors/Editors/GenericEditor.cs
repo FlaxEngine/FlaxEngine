@@ -27,6 +27,8 @@ namespace FlaxEditor.CustomEditors.Editors
         /// <seealso cref="System.IComparable" />
         protected class ItemInfo : IComparable
         {
+            private Options.GeneralOptions.MembersOrder _membersOrder;
+
             /// <summary>
             /// The member information from reflection.
             /// </summary>
@@ -41,11 +43,6 @@ namespace FlaxEditor.CustomEditors.Editors
             /// The display attribute.
             /// </summary>
             public EditorDisplayAttribute Display;
-
-            /// <summary>
-            /// The tooltip attribute.
-            /// </summary>
-            public TooltipAttribute Tooltip;
 
             /// <summary>
             /// The custom editor attribute.
@@ -110,7 +107,7 @@ namespace FlaxEditor.CustomEditors.Editors
             /// <summary>
             /// Gets the tooltip text (may be null if not provided).
             /// </summary>
-            public string TooltipText => Tooltip?.Text;
+            public string TooltipText;
 
             /// <summary>
             /// Initializes a new instance of the <see cref="ItemInfo"/> class.
@@ -131,7 +128,6 @@ namespace FlaxEditor.CustomEditors.Editors
                 Info = info;
                 Order = (EditorOrderAttribute)attributes.FirstOrDefault(x => x is EditorOrderAttribute);
                 Display = (EditorDisplayAttribute)attributes.FirstOrDefault(x => x is EditorDisplayAttribute);
-                Tooltip = (TooltipAttribute)attributes.FirstOrDefault(x => x is TooltipAttribute);
                 CustomEditor = (CustomEditorAttribute)attributes.FirstOrDefault(x => x is CustomEditorAttribute);
                 CustomEditorAlias = (CustomEditorAliasAttribute)attributes.FirstOrDefault(x => x is CustomEditorAliasAttribute);
                 Space = (SpaceAttribute)attributes.FirstOrDefault(x => x is SpaceAttribute);
@@ -142,6 +138,9 @@ namespace FlaxEditor.CustomEditors.Editors
 
                 IsReadOnly |= !info.HasSet;
                 DisplayName = Display?.Name ?? CustomEditorsUtil.GetPropertyNameUI(info.Name);
+                var editor = Editor.Instance;
+                TooltipText = editor.CodeDocs.GetTooltip(info, attributes);
+                _membersOrder = editor.Options.Options.General.ScriptMembersOrder;
             }
 
             /// <summary>
@@ -176,7 +175,7 @@ namespace FlaxEditor.CustomEditors.Editors
                             return string.Compare(Display.Group, other.Display.Group, StringComparison.InvariantCulture);
                     }
 
-                    if (Editor.Instance.Options.Options.General.ScriptMembersOrder == Options.GeneralOptions.MembersOrder.Declaration)
+                    if (_membersOrder == Options.GeneralOptions.MembersOrder.Declaration)
                     {
                         // By declaration order
                         if (Info.MetadataToken > other.Info.MetadataToken)
