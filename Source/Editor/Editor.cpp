@@ -621,7 +621,8 @@ bool Editor::Init()
     // Scripts project files generation from command line
     if (CommandLine::Options.GenProjectFiles)
     {
-        const bool failed = ScriptsBuilder::GenerateProject();
+        const String customArgs = TEXT("-verbose -log -logfile=\"Cache/Intermediate/ProjectFileLog.txt\"");
+        const bool failed = ScriptsBuilder::GenerateProject(customArgs);
         exit(failed ? 1 : 0);
         return true;
     }
