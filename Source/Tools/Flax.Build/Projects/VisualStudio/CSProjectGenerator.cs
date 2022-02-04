@@ -77,7 +77,7 @@ namespace Flax.Build.Projects.VisualStudio
 
             csProjectFileContent.AppendLine(string.Format("    <RootNamespace>{0}</RootNamespace>", project.Name));
             csProjectFileContent.AppendLine(string.Format("    <AssemblyName>{0}.CSharp</AssemblyName>", project.Name));
-            csProjectFileContent.AppendLine(string.Format("    <TargetFrameworkVersion>{0}</TargetFrameworkVersion>", "v4.5"));
+            csProjectFileContent.AppendLine(string.Format("    <TargetFrameworkVersion>{0}</TargetFrameworkVersion>", "v4.8"));
             csProjectFileContent.AppendLine("    <LangVersion>7.3</LangVersion>");
             csProjectFileContent.AppendLine("    <FileAlignment>512</FileAlignment>");
             csProjectFileContent.AppendLine("    <TargetFrameworkProfile />");
