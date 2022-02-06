@@ -107,7 +107,7 @@ namespace FlaxEditor.Content
                             if (childFolderChild is BinaryAssetItem c && c.IsOfType<CollisionData>())
                             {
                                 var collisionData = FlaxEngine.Content.Load<CollisionData>(c.ID);
-                                if (collisionData && collisionData.Options.Model == model.ID || collisionData.Options.Model == Guid.Empty)
+                                if (collisionData && (collisionData.Options.Model == model.ID || collisionData.Options.Model == Guid.Empty))
                                 {
                                     Editor.Instance.Windows.ContentWin.Select(c);
                                     if (created != null)

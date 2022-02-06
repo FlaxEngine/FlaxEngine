@@ -229,7 +229,13 @@ namespace FlaxEditor.CustomEditors
                     for (int i = 0; i < Count; i++)
                     {
                         if (!Equals(this[i], _defaultValue))
+                        {
+                            // Special case for String (null string is kind of equal to empty string from the user perspective)
+                            if (this[i] == null && _defaultValue is string defaultValueStr && defaultValueStr.Length == 0)
+                                continue;
+
                             return true;
+                        }
                     }
                 }
                 return false;
