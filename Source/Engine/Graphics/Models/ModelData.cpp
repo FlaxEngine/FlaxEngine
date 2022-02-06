@@ -589,6 +589,17 @@ void MeshData::Merge(MeshData& other)
     }
 }
 
+bool MaterialSlotEntry::UsesProperties() const
+{
+    return Diffuse.Color != Color::White ||
+            Diffuse.TextureIndex != -1 ||
+            Emissive.Color != Color::Transparent ||
+            Emissive.TextureIndex != -1 ||
+            !Math::IsOne(Opacity.Value) ||
+            Opacity.TextureIndex != -1 ||
+            Normals.TextureIndex != -1;
+}
+
 void ModelData::CalculateLODsScreenSizes()
 {
     const float autoComputeLodPowerBase = 0.5f;

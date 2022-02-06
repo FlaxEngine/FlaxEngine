@@ -177,6 +177,7 @@ public:
         bool ImportVertexColors = true;
         bool ImportBlendShapes = false;
         ModelLightmapUVsSource LightmapUVsSource = ModelLightmapUVsSource::Disable;
+        String CollisionMeshesPrefix;
 
         // Transform
         float Scale = 1.0f;

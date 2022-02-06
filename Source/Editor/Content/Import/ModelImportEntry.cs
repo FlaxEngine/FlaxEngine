@@ -164,6 +164,12 @@ namespace FlaxEditor.Content.Import
         public ModelLightmapUVsSource LightmapUVsSource { get; set; } = ModelLightmapUVsSource.Disable;
 
         /// <summary>
+        /// If specified, all meshes which name starts with this prefix will be imported as a separate collision data (excluded used for rendering).
+        /// </summary>
+        [EditorOrder(100), DefaultValue(""), EditorDisplay("Geometry")]
+        public string CollisionMeshesPrefix { get; set; }
+
+        /// <summary>
         /// Custom uniform import scale.
         /// </summary>
         [EditorOrder(500), DefaultValue(1.0f), EditorDisplay("Transform"), Tooltip("Custom uniform import scale")]
@@ -284,7 +290,7 @@ namespace FlaxEditor.Content.Import
         /// </summary>
         [EditorOrder(420), DefaultValue(true), EditorDisplay("Materials", "Restore Materials On Reimport"), Tooltip("If checked, the importer will try to restore the assigned materials to the model slots.")]
         public bool RestoreMaterialsOnReimport { get; set; } = true;
-        
+
         /// <summary>
         /// If checked, the imported mesh/animations are splitted into separate assets. Used if ObjectIndex is set to -1.
         /// </summary>
@@ -314,6 +320,7 @@ namespace FlaxEditor.Content.Import
             public byte ImportVertexColors;
             public byte ImportBlendShapes;
             public ModelLightmapUVsSource LightmapUVsSource;
+            public string CollisionMeshesPrefix;
 
             // Transform
             public float Scale;
@@ -364,6 +371,7 @@ namespace FlaxEditor.Content.Import
                 ImportVertexColors = (byte)(ImportVertexColors ? 1 : 0),
                 ImportBlendShapes = (byte)(ImportBlendShapes ? 1 : 0),
                 LightmapUVsSource = LightmapUVsSource,
+                CollisionMeshesPrefix = CollisionMeshesPrefix,
                 Scale = Scale,
                 Rotation = Rotation,
                 Translation = Translation,
@@ -403,6 +411,7 @@ namespace FlaxEditor.Content.Import
             ImportVertexColors = options.ImportVertexColors != 0;
             ImportBlendShapes = options.ImportBlendShapes != 0;
             LightmapUVsSource = options.LightmapUVsSource;
+            CollisionMeshesPrefix = options.CollisionMeshesPrefix;
             Scale = options.Scale;
             Rotation = options.Rotation;
             Translation = options.Translation;

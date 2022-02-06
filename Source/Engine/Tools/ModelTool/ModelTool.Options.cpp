@@ -42,6 +42,7 @@ void ModelTool::Options::Serialize(SerializeStream& stream, const void* otherObj
     SERIALIZE(ImportVertexColors);
     SERIALIZE(ImportBlendShapes);
     SERIALIZE(LightmapUVsSource);
+    SERIALIZE(CollisionMeshesPrefix);
     SERIALIZE(Scale);
     SERIALIZE(Rotation);
     SERIALIZE(Translation);
@@ -79,6 +80,7 @@ void ModelTool::Options::Deserialize(DeserializeStream& stream, ISerializeModifi
     DESERIALIZE(ImportVertexColors);
     DESERIALIZE(ImportBlendShapes);
     DESERIALIZE(LightmapUVsSource);
+    DESERIALIZE(CollisionMeshesPrefix);
     DESERIALIZE(Scale);
     DESERIALIZE(Rotation);
     DESERIALIZE(Translation);

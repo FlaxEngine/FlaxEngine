@@ -86,6 +86,7 @@ namespace FlaxEditor.Content
             {
                 foreach (var child in modelItem.ParentFolder.Children)
                 {
+                    // Check if there is collision that was made with this model
                     if (child is BinaryAssetItem b && b.IsOfType<CollisionData>())
                     {
                         var collisionData = FlaxEngine.Content.Load<CollisionData>(b.ID);
@@ -95,6 +96,25 @@ namespace FlaxEditor.Content
                             if (created != null)
                                 FlaxEngine.Scripting.InvokeOnUpdate(() => created(collisionData));
                             return;
+                        }
+                    }
+
+                    // Check if there is a auto-imported collision
+                    if (child is ContentFolder childFolder && childFolder.ShortName == modelItem.ShortName)
+                    {
+                        foreach (var childFolderChild in childFolder.Children)
+                        {
+                            if (childFolderChild is BinaryAssetItem c && c.IsOfType<CollisionData>())
+                            {
+                                var collisionData = FlaxEngine.Content.Load<CollisionData>(c.ID);
+                                if (collisionData && collisionData.Options.Model == model.ID || collisionData.Options.Model == Guid.Empty)
+                                {
+                                    Editor.Instance.Windows.ContentWin.Select(c);
+                                    if (created != null)
+                                        FlaxEngine.Scripting.InvokeOnUpdate(() => created(collisionData));
+                                    return;
+                                }
+                            }
                         }
                     }
                 }

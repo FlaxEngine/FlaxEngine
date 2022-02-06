@@ -373,16 +373,7 @@ struct FLAXENGINE_API MaterialSlotEntry
 
     bool TwoSided = false;
 
-    bool UsesProperties() const
-    {
-        return Diffuse.Color != Color::White ||
-                Diffuse.TextureIndex != -1 ||
-                Emissive.Color != Color::Transparent ||
-                Emissive.TextureIndex != -1 ||
-                !Math::IsOne(Opacity.Value) ||
-                Opacity.TextureIndex != -1 ||
-                Normals.TextureIndex != -1;
-    }
+    bool UsesProperties() const;
 };
 
 /// <summary>
