@@ -316,7 +316,7 @@ private:
 public:
 
     StreamTextureMipTask(StreamingTexture* texture, int32 mipIndex)
-        : GPUUploadTextureMipTask(texture->GetTexture(), mipIndex, Span<byte>(nullptr, 0), false)
+        : GPUUploadTextureMipTask(texture->GetTexture(), mipIndex, Span<byte>(nullptr, 0), 0, 0, false)
         , _streamingTexture(texture)
         , _dataLock(_streamingTexture->GetOwner()->LockData())
     {

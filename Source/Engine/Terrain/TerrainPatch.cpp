@@ -1627,7 +1627,9 @@ bool TerrainPatch::ModifySplatMap(int32 index, const Color32* samples, const Int
                 LOG(Warning, "Failed to update splatmap texture. It's not allocated.");
                 continue;
             }
-            t->UploadMipMapAsync(dataSplatmap->Mips[mipIndex].Data, mipIndex)->Start();
+            auto task = t->UploadMipMapAsync(dataSplatmap->Mips[mipIndex].Data, mipIndex);
+            if (task)
+                task->Start();
         }
     }
     else
@@ -1745,7 +1747,9 @@ bool TerrainPatch::UpdateHeightData(const TerrainDataUpdateInfo& info, const Int
     // Update terrain texture (on a GPU)
     for (int32 mipIndex = 0; mipIndex < _dataHeightmap->Mips.Count(); mipIndex++)
     {
-        texture->UploadMipMapAsync(_dataHeightmap->Mips[mipIndex].Data, mipIndex)->Start();
+        auto task = texture->UploadMipMapAsync(_dataHeightmap->Mips[mipIndex].Data, mipIndex);
+        if (task)
+            task->Start();
     }
 
 #if 1
