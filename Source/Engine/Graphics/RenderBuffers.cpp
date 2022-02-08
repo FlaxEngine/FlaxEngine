@@ -7,6 +7,9 @@
 #include "Engine/Graphics/RenderTargetPool.h"
 #include "Engine/Engine/Engine.h"
 
+// How many frames keep cached buffers for temporal or optional effects?
+#define LAZY_FRAMES_COUNT 4
+
 RenderBuffers::RenderBuffers(const SpawnParams& params)
     : ScriptingObject(params)
 {
@@ -35,8 +38,7 @@ void RenderBuffers::Prepare()
     if (VolumetricFog)
     {
         ASSERT(VolumetricFogHistory);
-
-        if (frameIndex - LastFrameVolumetricFog >= 4)
+        if (frameIndex - LastFrameVolumetricFog >= LAZY_FRAMES_COUNT)
         {
             RenderTargetPool::Release(VolumetricFog);
             VolumetricFog = nullptr;
@@ -48,7 +50,7 @@ void RenderBuffers::Prepare()
         }
     }
 #define UPDATE_LAZY_KEEP_RT(name) \
-	if (name && frameIndex - LastFrame##name >= 4) \
+	if (name && frameIndex - LastFrame##name >= LAZY_FRAMES_COUNT) \
 	{ \
 		RenderTargetPool::Release(name); \
 		name = nullptr; \
