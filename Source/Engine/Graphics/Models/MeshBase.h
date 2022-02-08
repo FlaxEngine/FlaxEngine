@@ -95,7 +95,6 @@ public:
     /// <summary>
     /// Determines whether this mesh is using 16 bit index buffer, otherwise it's 32 bit.
     /// </summary>
-    /// <returns>True if this mesh is using 16 bit index buffer, otherwise 32 bit index buffer.</returns>
     API_PROPERTY() FORCE_INLINE bool Use16BitIndexBuffer() const
     {
         return _use16BitIndexBuffer;

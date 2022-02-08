@@ -218,6 +218,13 @@ public:
     /// <param name="value">The clear value.</param>
     virtual void ClearUA(GPUTexture* texture, const uint32 value[4]) = 0;
 
+    /// <summary>
+    /// Clears an unordered access texture with a float value.
+    /// </summary>
+    /// <param name="texture">The texture to clear.</param>
+    /// <param name="value">The clear value.</param>
+    virtual void ClearUA(GPUTexture* texture, const Vector4& value) = 0;
+
 public:
 
     /// <summary>
