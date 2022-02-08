@@ -524,8 +524,20 @@ public:
     /// </summary>
     /// <param name="data">Data to upload (it must be valid for the next a few frames due to GPU latency and async works executing)</param>
     /// <param name="mipIndex">Mip level index.</param>
+    /// <param name="copyData">If true, the data will be copied to the async execution task instead of using the input pointer provided.</param>
     /// <returns>Created async task or null if cannot.</returns>
-    GPUTask* UploadMipMapAsync(const BytesContainer& data, int32 mipIndex);
+    GPUTask* UploadMipMapAsync(const BytesContainer& data, int32 mipIndex, bool copyData = false);
+
+    /// <summary>
+    /// Uploads mip map data to the GPU. Creates async GPU task.
+    /// </summary>
+    /// <param name="data">Data to upload (it must be valid for the next a few frames due to GPU latency and async works executing)</param>
+    /// <param name="mipIndex">Mip level index.</param>
+    /// <param name="rowPitch">The data row pitch.</param>
+    /// <param name="slicePitch">The data slice pitch.</param>
+    /// <param name="copyData">If true, the data will be copied to the async execution task instead of using the input pointer provided.</param>
+    /// <returns>Created async task or null if cannot.</returns>
+    GPUTask* UploadMipMapAsync(const BytesContainer& data, int32 mipIndex, int32 rowPitch, int32 slicePitch, bool copyData = false);
 
     /// <summary>
     /// Stops current thread execution to gather texture data from the GPU.
