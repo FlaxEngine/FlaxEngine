@@ -755,6 +755,20 @@ void GPUContextDX12::ClearUA(GPUTexture* texture, const uint32 value[4])
     _commandList->ClearUnorderedAccessViewUint(desc.GPU, uav, texDX12->GetResource(), value, 0, nullptr);
 }
 
+void GPUContextDX12::ClearUA(GPUTexture* texture, const Vector4& value)
+{
+    ASSERT(texture != nullptr && texture->IsUnorderedAccess());
+    auto texDX12 = reinterpret_cast<GPUTextureDX12*>(texture);
+
+    SetResourceState(texDX12, D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
+    flushRBs();
+    
+    auto uav = ((GPUTextureViewDX12*)(texDX12->IsVolume() ? texDX12->ViewVolume() : texDX12->View(0)))->UAV();
+    Descriptor desc;
+    GetActiveHeapDescriptor(uav, desc);
+    _commandList->ClearUnorderedAccessViewFloat(desc.GPU, uav, texDX12->GetResource(), value.Raw, 0, nullptr);
+}
+
 void GPUContextDX12::ResetRenderTarget()
 {
     if (_rtDepth || _rtCount != 0)
