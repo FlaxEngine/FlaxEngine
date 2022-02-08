@@ -64,6 +64,10 @@ public:
     {
     }
 
+    void ClearUA(GPUTexture* texture, const Vector4& value) override
+    {
+    }
+
     void ResetRenderTarget() override
     {
     }

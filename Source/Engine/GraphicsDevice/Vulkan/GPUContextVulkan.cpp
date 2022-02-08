@@ -874,6 +874,23 @@ void GPUContextVulkan::ClearUA(GPUTexture* texture, const uint32 value[4])
     }
 }
 
+void GPUContextVulkan::ClearUA(GPUTexture* texture, const Vector4& value)
+{
+    const auto texVulkan = static_cast<GPUTextureVulkan*>(texture);
+    if (texVulkan)
+    {
+        auto rtVulkan = ((GPUTextureViewVulkan*)(texVulkan->IsVolume() ? texVulkan->ViewVolume() : texVulkan->View(0)));
+        const auto cmdBuffer = _cmdBufferManager->GetCmdBuffer();
+        if (cmdBuffer->IsInsideRenderPass())
+            EndRenderPass();
+
+        AddImageBarrier(rtVulkan, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
+        FlushBarriers();
+
+        vkCmdClearColorImage(cmdBuffer->GetHandle(), rtVulkan->Image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, (const VkClearColorValue*)value.Raw, 1, &rtVulkan->Info.subresourceRange);
+    }
+}
+
 void GPUContextVulkan::ResetRenderTarget()
 {
     if (_rtDepth || _rtCount != 0)

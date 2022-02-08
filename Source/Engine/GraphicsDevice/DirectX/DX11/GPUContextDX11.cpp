@@ -188,6 +188,13 @@ void GPUContextDX11::ClearUA(GPUTexture* texture, const uint32 value[4])
     _context->ClearUnorderedAccessViewUint(uav, value);
 }
 
+void GPUContextDX11::ClearUA(GPUTexture* texture, const Vector4& value)
+{
+    ASSERT(texture != nullptr && texture->IsUnorderedAccess());
+    auto uav = ((GPUTextureViewDX11*)(texture->IsVolume() ? texture->ViewVolume() : texture->View()))->UAV();
+    _context->ClearUnorderedAccessViewFloat(uav, value.Raw);
+}
+
 void GPUContextDX11::ResetRenderTarget()
 {
     if (_rtCount != 0 || _rtDepth)

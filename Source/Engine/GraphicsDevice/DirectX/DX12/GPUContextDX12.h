@@ -160,6 +160,7 @@ public:
     void ClearUA(GPUBuffer* buf, const Vector4& value) override;
     void ClearUA(GPUBuffer* buf, const uint32 value[4]) override;
     void ClearUA(GPUTexture* texture, const uint32 value[4]) override;
+    void ClearUA(GPUTexture* texture, const Vector4& value) override;
     void ResetRenderTarget() override;
     void SetRenderTarget(GPUTextureView* rt) override;
     void SetRenderTarget(GPUTextureView* depthBuffer, GPUTextureView* rt) override;
