@@ -607,7 +607,25 @@ GPUTask* GPUTexture::UploadMipMapAsync(const BytesContainer& data, int32 mipInde
     ASSERT(IsAllocated());
     ASSERT(mipIndex < MipLevels() && data.IsValid());
     ASSERT(data.Length() >= slicePitch);
-    // TODO: support texture data upload to the GPU on a main thread during rendering without this async task (faster direct upload)
+
+    // Optimize texture upload invoked during rendering
+    if (IsInMainThread() && GPUDevice::Instance->IsRendering())
+    {
+        // Update all array slices
+        const byte* dataSource = data.Get();
+        for (int32 arrayIndex = 0; arrayIndex < _desc.ArraySize; arrayIndex++)
+        {
+            GPUDevice::Instance->GetMainContext()->UpdateTexture(this, arrayIndex, mipIndex, dataSource, rowPitch, slicePitch);
+            dataSource += slicePitch;
+        }
+        if (mipIndex == HighestResidentMipIndex() - 1)
+        {
+            // Mark as mip loaded
+            SetResidentMipLevels(ResidentMipLevels() + 1);
+        }
+        return nullptr;
+    }
+
     auto task = ::New<GPUUploadTextureMipTask>(this, mipIndex, data, rowPitch, slicePitch, copyData);
     ASSERT_LOW_LAYER(task && task->HasReference(this));
     return task;
