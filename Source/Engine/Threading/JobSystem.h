@@ -9,7 +9,14 @@
 /// </summary>
 API_CLASS(Static) class FLAXENGINE_API JobSystem
 {
-DECLARE_SCRIPTING_TYPE_MINIMAL(JobSystem);
+    DECLARE_SCRIPTING_TYPE_MINIMAL(JobSystem);
+
+    /// <summary>
+    /// Executes the job (utility to call dispatch and wait for the end).
+    /// </summary>
+    /// <param name="job">The job. Argument is an index of the job execution.</param>
+    /// <param name="jobCount">The job executions count.</param>
+    API_FUNCTION() static void Execute(const Function<void(int32)>& job, int32 jobCount = 1);
 
     /// <summary>
     /// Dispatches the job for the execution.

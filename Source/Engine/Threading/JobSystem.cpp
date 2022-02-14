@@ -212,6 +212,23 @@ int32 JobSystemThread::Run()
 
 #endif
 
+void JobSystem::Execute(const Function<void(int32)>& job, int32 jobCount)
+{
+    // TODO: disable async if called on job thread? or maybe Wait should handle waiting in job thread to do the processing?
+    if (jobCount > 1)
+    {
+        // Async
+        const int64 jobWaitHandle = Dispatch(job, jobCount);
+        Wait(jobWaitHandle);
+    }
+    else if (jobCount > 0)
+    {
+        // Sync
+        for (int32 i = 0; i < jobCount; i++)
+            job(i);
+    }
+}
+
 int64 JobSystem::Dispatch(const Function<void(int32)>& job, int32 jobCount)
 {
     PROFILE_CPU();
