@@ -431,11 +431,6 @@ bool GPUTexture::Init(const GPUTextureDescription& desc)
             LOG(Warning, "Cannot create texture. Only 2D Texture can be used as a Depth Stencil. Description: {0}", desc.ToString());
             return true;
         }
-        if (desc.MipLevels != 1)
-        {
-            LOG(Warning, "Cannot create texture. Volume texture cannot have more than 1 mip level. Description: {0}", desc.ToString());
-            return true;
-        }
         if (desc.ArraySize != 1)
         {
             LOG(Warning, "Cannot create texture. Volume texture cannot create array of volume textures. Description: {0}", desc.ToString());
