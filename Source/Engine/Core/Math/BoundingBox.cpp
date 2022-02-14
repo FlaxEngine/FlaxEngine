@@ -13,6 +13,26 @@ String BoundingBox::ToString() const
     return String::Format(TEXT("{}"), *this);
 }
 
+void BoundingBox::GetCorners(Vector3 corners[8]) const
+{
+    corners[0] = Vector3(Minimum.X, Maximum.Y, Maximum.Z);
+    corners[1] = Vector3(Maximum.X, Maximum.Y, Maximum.Z);
+    corners[2] = Vector3(Maximum.X, Minimum.Y, Maximum.Z);
+    corners[3] = Vector3(Minimum.X, Minimum.Y, Maximum.Z);
+    corners[4] = Vector3(Minimum.X, Maximum.Y, Minimum.Z);
+    corners[5] = Vector3(Maximum.X, Maximum.Y, Minimum.Z);
+    corners[6] = Vector3(Maximum.X, Minimum.Y, Minimum.Z);
+    corners[7] = Vector3(Minimum.X, Minimum.Y, Minimum.Z);
+}
+
+BoundingBox BoundingBox::MakeOffsetted(const Vector3& offset) const
+{
+    BoundingBox result;
+    result.Minimum = Minimum + offset;
+    result.Maximum = Maximum + offset;
+    return result;
+}
+
 void BoundingBox::FromPoints(const Vector3* points, int32 pointsCount, BoundingBox& result)
 {
     ASSERT(points && pointsCount > 0);

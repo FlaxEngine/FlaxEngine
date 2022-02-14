@@ -76,17 +76,7 @@ public:
     /// Gets the eight corners of the bounding box.
     /// </summary>
     /// <param name="corners">An array of points representing the eight corners of the bounding box.</param>
-    void GetCorners(Vector3 corners[8]) const
-    {
-        corners[0] = Vector3(Minimum.X, Maximum.Y, Maximum.Z);
-        corners[1] = Vector3(Maximum.X, Maximum.Y, Maximum.Z);
-        corners[2] = Vector3(Maximum.X, Minimum.Y, Maximum.Z);
-        corners[3] = Vector3(Minimum.X, Minimum.Y, Maximum.Z);
-        corners[4] = Vector3(Minimum.X, Maximum.Y, Minimum.Z);
-        corners[5] = Vector3(Maximum.X, Maximum.Y, Minimum.Z);
-        corners[6] = Vector3(Maximum.X, Minimum.Y, Minimum.Z);
-        corners[7] = Vector3(Minimum.X, Minimum.Y, Minimum.Z);
-    }
+    void GetCorners(Vector3 corners[8]) const;
 
     /// <summary>
     /// Calculates volume of the box.
@@ -200,13 +190,7 @@ public:
     /// </summary>
     /// <param name="offset">The offset.</param>
     /// <returns>The result.</returns>
-    BoundingBox MakeOffsetted(const Vector3& offset) const
-    {
-        BoundingBox result;
-        result.Minimum = Minimum + offset;
-        result.Maximum = Maximum + offset;
-        return result;
-    }
+    BoundingBox MakeOffsetted(const Vector3& offset) const;
 
 public:
 
@@ -420,6 +404,26 @@ public:
     FORCE_INLINE ContainmentType Contains(const BoundingSphere& sphere) const
     {
         return CollisionsHelper::BoxContainsSphere(*this, sphere);
+    }
+
+    /// <summary>
+    /// Determines the distance between a Bounding Box and a point.
+    /// </summary>
+    /// <param name="point">The point to test.</param>
+    /// <returns>The distance between bounding box and a point.</returns>
+    FORCE_INLINE float Distance(const Vector3& point) const
+    {
+        return CollisionsHelper::DistanceBoxPoint(*this, point);
+    }
+
+    /// <summary>
+    /// Determines the distance between two Bounding Boxed.
+    /// </summary>
+    /// <param name="box">The bounding box to test.</param>
+    /// <returns>The distance between bounding boxes.</returns>
+    FORCE_INLINE float Distance(const BoundingBox& box) const
+    {
+        return CollisionsHelper::DistanceBoxBox(*this, box);
     }
 };
 
