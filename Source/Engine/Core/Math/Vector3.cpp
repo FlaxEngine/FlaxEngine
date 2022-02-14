@@ -165,49 +165,6 @@ void Vector3::Clamp(const Vector3& value, const Vector3& min, const Vector3& max
     result = Vector3(x, y, z);
 }
 
-float Vector3::Distance(const Vector3& value1, const Vector3& value2)
-{
-    const float x = value1.X - value2.X;
-    const float y = value1.Y - value2.Y;
-    const float z = value1.Z - value2.Z;
-    return Math::Sqrt(x * x + y * y + z * z);
-}
-
-float Vector3::DistanceSquared(const Vector3& value1, const Vector3& value2)
-{
-    const float x = value1.X - value2.X;
-    const float y = value1.Y - value2.Y;
-    const float z = value1.Z - value2.Z;
-    return x * x + y * y + z * z;
-}
-
-Vector3 Vector3::Normalize(const Vector3& input)
-{
-    Vector3 output = input;
-    const float length = input.Length();
-    if (!Math::IsZero(length))
-    {
-        const float inv = 1.0f / length;
-        output.X *= inv;
-        output.Y *= inv;
-        output.Z *= inv;
-    }
-    return output;
-}
-
-void Vector3::Normalize(const Vector3& input, Vector3& result)
-{
-    result = input;
-    const float length = input.Length();
-    if (!Math::IsZero(length))
-    {
-        const float inv = 1.0f / length;
-        result.X *= inv;
-        result.Y *= inv;
-        result.Z *= inv;
-    }
-}
-
 void Vector3::Hermite(const Vector3& value1, const Vector3& tangent1, const Vector3& value2, const Vector3& tangent2, float amount, Vector3& result)
 {
     const float squared = amount * amount;
