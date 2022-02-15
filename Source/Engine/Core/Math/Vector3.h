@@ -600,7 +600,10 @@ public:
     // @param min The minimum value,
     // @param max The maximum value
     // @param result When the method completes, contains the clamped value
-    static void Clamp(const Vector3& value, const Vector3& min, const Vector3& max, Vector3& result);
+    static void Clamp(const Vector3& value, const Vector3& min, const Vector3& max, Vector3& result)
+    {
+        result = Vector3(Math::Clamp(value.X, min.X, max.X), Math::Clamp(value.Y, min.Y, max.Y), Math::Clamp(value.Z, min.Z, max.Z));
+    }
 
     // Calculates the distance between two vectors
     // @param value1 The first vector
