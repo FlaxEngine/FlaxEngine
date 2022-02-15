@@ -73,6 +73,7 @@ GPUTexture* RenderTargetPool::Get(const GPUTextureDescription& desc)
     auto newRenderTarget = GPUDevice::Instance->CreateTexture(name);
     if (newRenderTarget->Init(desc))
     {
+        Delete(newRenderTarget);
         LOG(Error, "Cannot create temporary render target. Description: {0}", desc.ToString());
         return nullptr;
     }
