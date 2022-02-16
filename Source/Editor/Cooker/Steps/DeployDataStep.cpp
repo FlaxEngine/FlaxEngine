@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 #include "DeployDataStep.h"
 #include "Engine/Platform/FileSystem.h"
@@ -46,6 +46,7 @@ bool DeployDataStep::Perform(CookingData& data)
     // Deploy engine data for the target platform
     if (data.Tools->OnDeployBinaries(data))
         return true;
+    GameCooker::DeployFiles();
 
     // Register engine in-build assets
     data.AddRootEngineAsset(TEXT("Shaders/AtmospherePreCompute"));

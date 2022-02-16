@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 using System;
 using System.Collections.Generic;
@@ -34,7 +34,7 @@ namespace Flax.Build
                         var platform = Platform.BuildPlatform;
                         var architecture = TargetArchitecture.AnyCPU;
                         var architectureName = "AnyCPU";
-                        var toolchain = platform.HasRequiredSDKsInstalled ? platform.GetToolchain(architecture) : null;
+                        var toolchain = platform.TryGetToolchain(architecture);
 
                         var configuration = TargetConfiguration.Debug;
                         var configurationName = "Debug";
@@ -113,7 +113,7 @@ namespace Flax.Build
                             if (platform is IProjectCustomizer customizer)
                                 customizer.GetProjectArchitectureName(project, platform, architecture, ref architectureName);
 
-                            var toolchain = platform.HasRequiredSDKsInstalled ? platform.GetToolchain(architecture) : null;
+                            var toolchain = platform.TryGetToolchain(architecture);
                             var targetBuildOptions = GetBuildOptions(target, platform, toolchain, architecture, configuration, project.WorkspaceRootPath);
                             var modules = CollectModules(rules, platform, target, targetBuildOptions, toolchain, architecture, configuration);
                             foreach (var module in modules)
@@ -158,6 +158,8 @@ namespace Flax.Build
                 // Pick the project format
                 List<ProjectFormat> projectFormats = new List<ProjectFormat>();
 
+                if (Configuration.ProjectFormatVS2022)
+                    projectFormats.Add(ProjectFormat.VisualStudio2022);
                 if (Configuration.ProjectFormatVS2019)
                     projectFormats.Add(ProjectFormat.VisualStudio2019);
                 if (Configuration.ProjectFormatVS2017)
@@ -182,7 +184,7 @@ namespace Flax.Build
         /// </summary>
         public static void GenerateProject(ProjectFormat projectFormat)
         {
-            using (new ProfileEventScope("GenerateProject" + projectFormat.ToString()))
+            using (new ProfileEventScope("GenerateProject" + projectFormat))
             {
                 // Setup
                 var rules = GenerateRulesAssembly();

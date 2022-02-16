@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 #include "Content.h"
 #include "JsonAsset.h"
@@ -211,12 +211,8 @@ bool FindAssets(const ProjectInfo* project, HashSet<const ProjectInfo*>& project
 
 bool Content::GetAssetInfo(const Guid& id, AssetInfo& info)
 {
-    // Validate ID
     if (!id.IsValid())
-    {
-        LOG(Warning, "Invalid asset ID.");
         return false;
-    }
 
 #if ENABLE_ASSETS_DISCOVERY
 
@@ -322,6 +318,13 @@ bool Content::GetAssetInfo(const StringView& path, AssetInfo& info)
 #endif
 }
 
+Array<Guid> Content::GetAllAssets()
+{
+    Array<Guid> result;
+    Cache.GetAll(result);
+    return result;
+}
+
 Array<Guid> Content::GetAllAssetsByType(const MClass* type)
 {
     Array<Guid> result;
@@ -365,16 +368,17 @@ ContentStats Content::GetStats()
     ContentStats stats;
     AssetsLocker.Lock();
     stats.AssetsCount = Assets.Count();
-    for (auto& e : Assets)
+    int32 loadFailedCount = 0;
+    for (const auto& e : Assets)
     {
         if (e.Value->IsLoaded())
             stats.LoadedAssetsCount++;
         else if (e.Value->LastLoadFailed())
-            stats.LoadingAssetsCount++;
+            loadFailedCount++;
         if (e.Value->IsVirtual())
             stats.VirtualAssetsCount++;
     }
-    stats.LoadingAssetsCount = stats.AssetsCount - stats.LoadingAssetsCount - stats.LoadedAssetsCount;
+    stats.LoadingAssetsCount = stats.AssetsCount - loadFailedCount - stats.LoadedAssetsCount;
     AssetsLocker.Unlock();
     return stats;
 }

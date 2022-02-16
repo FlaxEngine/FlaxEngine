@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -16,6 +16,7 @@
 #define ANIM_GRAPH_MULTI_BLEND_2D_MAX_TRIS 32
 #define ANIM_GRAPH_MAX_STATE_TRANSITIONS 64
 #define ANIM_GRAPH_MAX_CALL_STACK 100
+#define ANIM_GRAPH_MAX_EVENTS 64
 
 class AnimGraph;
 class AnimSubGraph;
@@ -57,6 +58,13 @@ struct RootMotionData
         Rotation = other.Orientation;
     }
 
+    RootMotionData& operator=(const Transform& other)
+    {
+        Translation = other.Translation;
+        Rotation = other.Orientation;
+        return *this;
+    }
+
     RootMotionData& operator+=(const RootMotionData& b);
     RootMotionData& operator+=(const Transform& b);
     RootMotionData& operator-=(const Transform& b);
@@ -75,7 +83,7 @@ struct RootMotionData
 /// Container for skeleton nodes transformation hierarchy and any other required data. 
 /// Unified layout for both local and model transformation spaces.
 /// </summary>
-struct AnimGraphImpulse
+struct FLAXENGINE_API AnimGraphImpulse
 {
     /// <summary>
     /// The skeleton nodes transformation hierarchy nodes. Size always matches the Anim Graph skeleton description.
@@ -243,10 +251,24 @@ public:
 };
 
 /// <summary>
+/// The animation graph slot-based animation.
+/// </summary>
+struct FLAXENGINE_API AnimGraphSlot
+{
+    String Name;
+    AssetReference<Animation> Animation;
+    float Speed = 1.0f;
+    float BlendInTime = 0.0f;
+    float BlendOutTime = 0.0f;
+    bool Pause = false;
+};
+
+/// <summary>
 /// The animation graph instance data storage. Required to update the animation graph.
 /// </summary>
-class AnimGraphInstanceData
+class FLAXENGINE_API AnimGraphInstanceData
 {
+    friend AnimGraphExecutor;
 public:
 
     // ---- Quick documentation ----
@@ -286,6 +308,14 @@ public:
         float TransitionPosition;
     };
 
+    struct SlotBucket
+    {
+        int32 Index;
+        float TimePosition;
+        float BlendInPosition;
+        float BlendOutPosition;
+    };
+
     /// <summary>
     /// The single data storage bucket for the instanced animation graph node. Used to store the node state (playback position, state, transition data).
     /// </summary>
@@ -297,19 +327,9 @@ public:
             MultiBlendBucket MultiBlend;
             BlendPoseBucket BlendPose;
             StateMachineBucket StateMachine;
+            SlotBucket Slot;
         };
     };
-
-public:
-
-    /// <summary>
-    /// Initializes a new instance of the <see cref="AnimGraphInstanceData"/> class.
-    /// </summary>
-    /// <param name="object">The object that represents the instance data source.</param>
-    AnimGraphInstanceData(ScriptingObject* object)
-        : Object(object)
-    {
-    }
 
 public:
 
@@ -358,6 +378,16 @@ public:
     /// </summary>
     ScriptingObject* Object;
 
+    /// <summary>
+    /// The custom event called after local pose evaluation.
+    /// </summary>
+    Delegate<AnimGraphImpulse*> LocalPoseOverride;
+
+    /// <summary>
+    /// The slots animations.
+    /// </summary>
+    Array<AnimGraphSlot, InlinedAllocation<4>> Slots;
+
 public:
 
     /// <summary>
@@ -374,6 +404,18 @@ public:
     /// Invalidates the update timer.
     /// </summary>
     void Invalidate();
+
+private:
+
+    struct Event
+    {
+        AnimEvent* Instance;
+        Animation* Anim;
+        AnimGraphNode* Node;
+        bool Hit;
+    };
+
+    Array<Event, InlinedAllocation<8>> Events;
 };
 
 /// <summary>
@@ -857,7 +899,7 @@ private:
     void ProcessGroupFunction(Box* boxBase, Node* node, Value& value);
 
     int32 GetRootNodeIndex(Animation* anim);
-    void UpdateRootMotion(const Animation::NodeToChannel* mapping, Animation* anim, float pos, float prevPos, Transform& rootNode, RootMotionData& rootMotion);
+    void ExtractRootMotion(const Animation::NodeToChannel* mapping, int32 rootNodeIndex, Animation* anim, float pos, float prevPos, Transform& rootNode, RootMotionData& rootMotion);
     Variant SampleAnimation(AnimGraphNode* node, bool loop, float length, float startTimePos, float prevTimePos, float& newTimePos, Animation* anim, float speed);
     Variant SampleAnimationsWithBlend(AnimGraphNode* node, bool loop, float length, float startTimePos, float prevTimePos, float& newTimePos, Animation* animA, Animation* animB, float speedA, float speedB, float alpha);
     Variant SampleAnimationsWithBlend(AnimGraphNode* node, bool loop, float length, float startTimePos, float prevTimePos, float& newTimePos, Animation* animA, Animation* animB, Animation* animC, float speedA, float speedB, float speedC, float alphaA, float alphaB, float alphaC);

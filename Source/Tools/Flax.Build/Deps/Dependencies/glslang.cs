@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 using System.IO;
 using Flax.Build;
@@ -27,6 +27,11 @@ namespace Flax.Deps.Dependencies
                     return new[]
                     {
                         TargetPlatform.Linux,
+                    };
+                case TargetPlatform.Mac:
+                    return new[]
+                    {
+                        TargetPlatform.Mac,
                     };
                 default: return new TargetPlatform[0];
                 }
@@ -71,10 +76,10 @@ namespace Flax.Deps.Dependencies
 
                     // Build for Win64
                     File.Delete(Path.Combine(buildDir, "CMakeCache.txt"));
-                    RunCmake(buildDir, TargetPlatform.Windows, TargetArchitecture.x64, cmakeArgs);
+                    RunCmake(buildDir, platform, TargetArchitecture.x64, cmakeArgs);
                     Utilities.Run("cmake", string.Format("--build . --config {0} --target install", configuration), null, buildDir, Utilities.RunOptions.None);
                     Deploy.VCEnvironment.BuildSolution(solutionPath, configuration, "x64");
-                    var depsFolder = GetThirdPartyFolder(options, TargetPlatform.Windows, TargetArchitecture.x64);
+                    var depsFolder = GetThirdPartyFolder(options, platform, TargetArchitecture.x64);
                     foreach (var file in outputFiles)
                     {
                         Utilities.FileCopy(file, Path.Combine(depsFolder, Path.GetFileName(file)));
@@ -97,15 +102,43 @@ namespace Flax.Deps.Dependencies
                     };
 
                     // Build for Linux
-                    RunCmake(root, TargetPlatform.Linux, TargetArchitecture.x64, cmakeArgs);
+                    RunCmake(root, platform, TargetArchitecture.x64, cmakeArgs);
                     Utilities.Run("cmake", string.Format("--build . --config {0} --target install", configuration), null, buildDir, Utilities.RunOptions.None);
                     Utilities.Run("make", null, null, root, Utilities.RunOptions.None);
-                    var depsFolder = GetThirdPartyFolder(options, TargetPlatform.Linux, TargetArchitecture.x64);
+                    var depsFolder = GetThirdPartyFolder(options, platform, TargetArchitecture.x64);
                     foreach (var file in outputFiles)
                     {
                         var dst = Path.Combine(depsFolder, Path.GetFileName(file));
                         Utilities.FileCopy(file, dst);
                         //Utilities.Run("strip", string.Format("-s \"{0}\"", dst), null, null, Utilities.RunOptions.None);
+                    }
+                    break;
+                }
+                case TargetPlatform.Mac:
+                {
+                    var outputFiles = new[]
+                    {
+                        Path.Combine(libsRoot, "libGenericCodeGen.a"),
+                        Path.Combine(libsRoot, "libMachineIndependent.a"),
+                        Path.Combine(libsRoot, "libHLSL.a"),
+                        Path.Combine(libsRoot, "libOSDependent.a"),
+                        Path.Combine(libsRoot, "libOGLCompiler.a"),
+                        Path.Combine(libsRoot, "libSPIRV-Tools-opt.a"),
+                        Path.Combine(libsRoot, "libSPIRV-Tools.a"),
+                        Path.Combine(libsRoot, "libSPIRV.a"),
+                        Path.Combine(libsRoot, "libglslang.a"),
+                    };
+
+                    // Build for Mac
+                    RunCmake(root, platform, TargetArchitecture.x64, cmakeArgs);
+                    Utilities.Run("cmake", string.Format("--build . --config {0} --target install", configuration), null, buildDir, Utilities.RunOptions.None);
+                    Utilities.Run("make", null, null, root, Utilities.RunOptions.None);
+                    var depsFolder = GetThirdPartyFolder(options, platform, TargetArchitecture.x64);
+                    foreach (var file in outputFiles)
+                    {
+                        var dst = Path.Combine(depsFolder, Path.GetFileName(file));
+                        Utilities.FileCopy(file, dst);
+                        Utilities.Run("strip", string.Format("\"{0}\"", dst), null, null, Utilities.RunOptions.None);
                     }
                     break;
                 }

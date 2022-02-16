@@ -1543,15 +1543,15 @@ template <typename Range> class basic_writer {
     }
     float_specs fspecs = parse_float_type_spec(specs);
     fspecs.sign = specs.sign;
-    if (::signbit(value)) {  // value < 0 is false for NaN so use signbit.
+    if (signbit(value)) {  // value < 0 is false for NaN so use signbit.
       fspecs.sign = sign::minus;
       value = -value;
     } else if (fspecs.sign == sign::minus) {
       fspecs.sign = sign::none;
     }
 
-    if (!::isfinite(value)) {
-      auto str = ::isinf(value) ? (fspecs.upper ? "INF" : "inf")
+    if (!isfinite(value)) {
+      auto str = isinf(value) ? (fspecs.upper ? "INF" : "inf")
                                    : (fspecs.upper ? "NAN" : "nan");
       return write_padded(specs, nonfinite_writer<char_type>{fspecs.sign, str});
     }

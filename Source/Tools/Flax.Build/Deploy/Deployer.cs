@@ -38,6 +38,7 @@ namespace Flax.Deploy
                         BuildPlatform(TargetPlatform.UWP, TargetArchitecture.x64);
                         BuildPlatform(TargetPlatform.Windows, TargetArchitecture.x64);
                         BuildPlatform(TargetPlatform.Android, TargetArchitecture.ARM64);
+                        BuildPlatform(TargetPlatform.Mac, TargetArchitecture.x64);
                     }
                     else
                     {

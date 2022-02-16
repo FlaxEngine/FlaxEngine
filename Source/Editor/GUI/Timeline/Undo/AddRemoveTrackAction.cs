@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 using System.IO;
 using FlaxEngine;
@@ -24,8 +24,7 @@ namespace FlaxEditor.GUI.Timeline.Undo
             _options = new TrackCreateOptions
             {
                 Archetype = track.Archetype,
-                Loop = track.Loop,
-                Mute = track.Mute,
+                Flags = track.Flags,
             };
             _color = track.Color;
             _name = track.Name;
@@ -44,7 +43,10 @@ namespace FlaxEditor.GUI.Timeline.Undo
         {
             var track = _timeline.FindTrack(_name);
             if (track != null)
+            {
+                Editor.LogWarning($"Cannot add track {_name}. It already exists.");
                 return;
+            }
             track = _options.Archetype.Create(_options);
             track.Name = _name;
             track.Color = _color;
@@ -64,6 +66,11 @@ namespace FlaxEditor.GUI.Timeline.Undo
         private void Remove()
         {
             var track = _timeline.FindTrack(_name);
+            if (track == null)
+            {
+                Editor.LogWarning($"Cannot remove track {_name}. It doesn't already exists.");
+                return;
+            }
             _timeline.Delete(track, false);
         }
 

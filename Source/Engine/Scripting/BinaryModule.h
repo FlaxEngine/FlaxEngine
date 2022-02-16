@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -261,7 +261,7 @@ public:
 private:
 
     int32 _firstManagedTypeIndex;
-    Array<char*> _managedTypesNames;
+    Array<void*> _managedMemoryBlocks;
 
 public:
 
@@ -290,18 +290,25 @@ public:
     /// </summary>
     MAssembly* Assembly;
 
+#if !COMPILE_WITHOUT_CSHARP
     /// <summary>
     /// The scripting types cache that maps the managed class to the scripting type index. Build after assembly is loaded and scripting types get the managed classes information.
     /// </summary>
     Dictionary<MonoClass*, int32, HeapAllocation> ClassToTypeIndex;
+#endif
 
     static ScriptingObject* ManagedObjectSpawn(const ScriptingObjectSpawnParams& params);
     static MMethod* FindMethod(MClass* mclass, const ScriptingTypeMethodSignature& signature);
+#if USE_MONO
+    static ManagedBinaryModule* FindModule(MonoClass* klass);
+    static ScriptingTypeHandle FindType(MonoClass* klass);
+#endif
 
 private:
 
     void OnLoading(MAssembly* assembly);
     void OnLoaded(MAssembly* assembly);
+    void InitType(MClass* mclass);
     void OnUnloading(MAssembly* assembly);
 
 public:

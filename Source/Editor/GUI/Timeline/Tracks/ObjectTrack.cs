@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 using System;
 using System.Collections.Generic;
@@ -16,6 +16,7 @@ namespace FlaxEditor.GUI.Timeline.Tracks
     /// <summary>
     /// The base interface for <see cref="ObjectTrack"/>.
     /// </summary>
+    [HideInEditor]
     public interface IObjectTrack
     {
         /// <summary>
@@ -28,7 +29,7 @@ namespace FlaxEditor.GUI.Timeline.Tracks
     /// The timeline track for animating managed objects.
     /// </summary>
     /// <seealso cref="FlaxEditor.GUI.Timeline.Track" />
-    public abstract class ObjectTrack : Track, IObjectTrack
+    public abstract class ObjectTrack : ConductorTrack, IObjectTrack
     {
         private bool _hasObject;
 
@@ -42,9 +43,13 @@ namespace FlaxEditor.GUI.Timeline.Tracks
         /// </summary>
         public abstract object Object { get; }
 
-        /// <inheritdoc />
-        protected ObjectTrack(ref TrackCreateOptions options)
-        : base(ref options)
+        /// <summary>
+        /// Initializes a new instance of the <see cref="ObjectTrack"/> class.
+        /// </summary>
+        /// <param name="options">The track initial options.</param>
+        /// <param name="useProxyKeyframes">True if show sub-tracks keyframes as a proxy on this track, otherwise false.</param>
+        protected ObjectTrack(ref TrackCreateOptions options, bool useProxyKeyframes = true)
+        : base(ref options, useProxyKeyframes)
         {
             // Add track button
             const float buttonSize = 14;
@@ -75,7 +80,7 @@ namespace FlaxEditor.GUI.Timeline.Tracks
 
             var obj = Object;
             var hasObject = obj != null;
-            TitleTintColor = hasObject ? Color.White : Color.Red;
+            TitleTintColor = hasObject ? (Flags.HasFlag(TrackFlags.PrefabObject) ? Style.Current.ProgressNormal : Color.White) : Color.Red;
             if (hasObject != _hasObject)
                 OnObjectExistenceChanged(obj);
             _hasObject = hasObject;

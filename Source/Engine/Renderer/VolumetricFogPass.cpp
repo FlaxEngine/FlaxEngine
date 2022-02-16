@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 #include "VolumetricFogPass.h"
 #include "ShadowsPass.h"
@@ -113,7 +113,8 @@ bool VolumetricFogPass::Init(RenderContext& renderContext, GPUContext* context, 
     // Check if already prepared for this frame
     if (renderContext.Buffers->LastFrameVolumetricFog == Engine::FrameCount)
     {
-        fog->GetVolumetricFogOptions(options);
+        if (fog)
+            fog->GetVolumetricFogOptions(options);
         return false;
     }
 
@@ -502,9 +503,7 @@ void VolumetricFogPass::Render(RenderContext& renderContext)
 
         context->Dispatch(_csInitialize, groupCountX, groupCountY, groupCountZ);
 
-        context->UnBindUA(0);
-        context->UnBindUA(1);
-        context->FlushState();
+        context->ResetUA();
     }
 
     // Render local fog particles
@@ -655,6 +654,9 @@ void VolumetricFogPass::Render(RenderContext& renderContext)
 
         const int32 csIndex = cache.TemporalReprojection ? 1 : 0;
         context->Dispatch(_csLightScattering.Get(csIndex), groupCountX, groupCountY, groupCountZ);
+
+        context->ResetSR();
+        context->ResetUA();
     }
 
     // Release resources
@@ -688,20 +690,18 @@ void VolumetricFogPass::Render(RenderContext& renderContext)
     {
         PROFILE_GPU("Final Integration");
 
-        context->ResetSR();
         context->BindUA(0, integratedLightScattering->ViewVolume());
-        context->FlushState();
         context->BindSR(0, lightScattering->ViewVolume());
 
         context->Dispatch(_csFinalIntegration, groupCountX, groupCountY, 1);
     }
 
     // Cleanup
-    context->UnBindUA(0);
+    context->ResetUA();
+    context->ResetSR();
     context->ResetRenderTarget();
     auto viewport = renderContext.Task->GetViewport();
     context->SetViewportAndScissors(viewport);
-    context->FlushState();
 }
 
 void VolumetricFogPass::InitCircleBuffer()

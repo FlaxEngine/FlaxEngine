@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -42,6 +42,7 @@ public:
             CameraCut = 16,
             //AnimationChannel = 17,
             //AnimationChannelData = 18,
+            //AnimationEvent = 19,
         };
 
         enum class Flags
@@ -49,6 +50,7 @@ public:
             None = 0,
             Mute = 1,
             Loop = 2,
+            PrefabObject = 4,
         };
 
         /// <summary>
@@ -129,24 +131,23 @@ public:
         }
     };
 
+    struct Media
+    {
+        int32 StartFrame;
+        int32 DurationFrames;
+    };
+
     struct PostProcessMaterialTrack
     {
         struct Data
         {
-            /// <summary>
-            /// The PostFx material asset ID.
-            /// </summary>
             Guid AssetID;
+        };
 
-            /// <summary>
-            /// The start frame of the media play begin.
-            /// </summary>
-            int32 StartFrame;
-
-            /// <summary>
-            /// The total duration of the media playback in the timeline sequence frames amount.
-            /// </summary>
-            int32 DurationFrames;
+        struct Runtime
+        {
+            int32 Count;
+            Media* Media;
         };
     };
 
@@ -154,19 +155,8 @@ public:
     {
         struct Data
         {
-            /// <summary>
-            /// The scene animation asset ID.
-            /// </summary>
             Guid AssetID;
-
-            /// <summary>
-            /// The start frame of the media play begin.
-            /// </summary>
             int32 StartFrame;
-
-            /// <summary>
-            /// The total duration of the media playback in the timeline sequence frames amount.
-            /// </summary>
             int32 DurationFrames;
         };
 
@@ -185,57 +175,36 @@ public:
 
         struct Data
         {
-            /// <summary>
-            /// The start frame of the media play begin.
-            /// </summary>
             int32 StartFrame;
-
-            /// <summary>
-            /// The total duration of the media playback in the timeline sequence frames amount.
-            /// </summary>
             int32 DurationFrames;
-
-            /// <summary>
-            /// The gradient stops count.
-            /// </summary>
             int32 GradientStopsCount;
         };
 
         struct Runtime
         {
-            /// <summary>
-            /// The pointer to the gradient stops array (items count is GradientStopsCount).
-            /// </summary>
             GradientStop* GradientStops;
         };
     };
 
     struct AudioTrack
     {
+        struct Media
+        {
+            int32 StartFrame;
+            int32 DurationFrames;
+            float Offset;
+        };
+
         struct Data
         {
-            /// <summary>
-            /// The audio clip asset ID.
-            /// </summary>
             Guid AssetID;
-
-            /// <summary>
-            /// The start frame of the media play begin.
-            /// </summary>
-            int32 StartFrame;
-
-            /// <summary>
-            /// The total duration of the media playback in the timeline sequence frames amount.
-            /// </summary>
-            int32 DurationFrames;
         };
 
         struct Runtime
         {
-            /// <summary>
-            /// The index of the volume track. If not used then value is -1. Assigned on load.
-            /// </summary>
             int32 VolumeTrackIndex;
+            int32 Count;
+            Media* Media;
         };
     };
 
@@ -245,22 +214,12 @@ public:
 
         struct Data
         {
-            /// <summary>
-            /// The keyframes count.
-            /// </summary>
             int32 KeyframesCount;
         };
 
         struct Runtime
         {
-            /// <summary>
-            /// The keyframes count.
-            /// </summary>
             int32 KeyframesCount;
-
-            /// <summary>
-            /// The keyframes array (items count is KeyframesCount).
-            /// </summary>
             BezierCurveKeyframe<float>* Keyframes;
         };
     };
@@ -269,9 +228,6 @@ public:
     {
         struct Data
         {
-            /// <summary>
-            /// The object ID.
-            /// </summary>
             Guid ID;
         };
 
@@ -306,37 +262,15 @@ public:
     {
         struct Data
         {
-            /// <summary>
-            /// The property value data size (in bytes).
-            /// </summary>
             int32 ValueSize;
-
-            /// <summary>
-            /// The name length.
-            /// </summary>
             int32 PropertyNameLength;
-
-            /// <summary>
-            /// The typename length.
-            /// </summary>
             int32 PropertyTypeNameLength;
         };
 
         struct Runtime
         {
-            /// <summary>
-            /// The property value data size (in bytes).
-            /// </summary>
             int32 ValueSize;
-
-            /// <summary>
-            /// The name of the property (just a member name).
-            /// </summary>
             char* PropertyName;
-
-            /// <summary>
-            /// The typename of the property value (fullname including namespace but not assembly).
-            /// </summary>
             char* PropertyTypeName;
         };
     };
@@ -345,17 +279,11 @@ public:
     {
         struct Data : PropertyTrack::Data
         {
-            /// <summary>
-            /// The keyframes count.
-            /// </summary>
             int32 KeyframesCount;
         };
 
         struct Runtime : PropertyTrack::Runtime
         {
-            /// <summary>
-            /// The keyframes count.
-            /// </summary>
             int32 KeyframesCount;
 
             /// <summary>
@@ -382,22 +310,12 @@ public:
 
         struct Data : PropertyTrack::Data
         {
-            /// <summary>
-            /// The keyframes count.
-            /// </summary>
             int32 KeyframesCount;
         };
 
         struct Runtime : PropertyTrack::Runtime
         {
-            /// <summary>
-            /// The cached curve data type.
-            /// </summary>
             DataTypes DataType;
-
-            /// <summary>
-            /// The keyframes count.
-            /// </summary>
             int32 KeyframesCount;
 
             /// <summary>
@@ -411,17 +329,11 @@ public:
     {
         struct Data : PropertyTrack::Data
         {
-            /// <summary>
-            /// The keyframes count.
-            /// </summary>
             int32 KeyframesCount;
         };
 
         struct Runtime : PropertyTrack::Runtime
         {
-            /// <summary>
-            /// The keyframes count.
-            /// </summary>
             int32 KeyframesCount;
 
             // ..followed by the keyframes times and the values arrays (separate)
@@ -486,19 +398,12 @@ public:
     {
         struct Data : ObjectTrack::Data
         {
-            /// <summary>
-            /// The start frame of the media play begin.
-            /// </summary>
-            int32 StartFrame;
-
-            /// <summary>
-            /// The total duration of the media playback in the timeline sequence frames amount.
-            /// </summary>
-            int32 DurationFrames;
         };
 
         struct Runtime : ObjectTrack::Runtime
         {
+            int32 Count;
+            Media* Media;
         };
     };
 
@@ -534,11 +439,7 @@ public:
     /// <summary>
     /// Gets the animation duration (in seconds).
     /// </summary>
-    /// <returns>The animation duration (in seconds).</returns>
-    API_PROPERTY() FORCE_INLINE float GetDuration() const
-    {
-        return DurationFrames / FramesPerSecond;
-    }
+    API_PROPERTY() float GetDuration() const;
 
 public:
 
@@ -574,3 +475,5 @@ protected:
     void unload(bool isReloading) override;
     AssetChunksFlag getChunksToPreload() const override;
 };
+
+DECLARE_ENUM_OPERATORS(SceneAnimation::Track::Flags);

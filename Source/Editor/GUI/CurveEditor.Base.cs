@@ -1,6 +1,7 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 using System;
+using System.Collections.Generic;
 using FlaxEngine;
 using FlaxEngine.GUI;
 
@@ -10,7 +11,7 @@ namespace FlaxEditor.GUI
     /// The base class for <see cref="CurveBase{T}"/> editors. Allows to use generic curve editor without type information at compile-time.
     /// </summary>
     [HideInEditor]
-    public abstract class CurveEditorBase : ContainerControl
+    public abstract class CurveEditorBase : ContainerControl, IKeyframesEditor
     {
         /// <summary>
         /// The UI use mode flags.
@@ -55,6 +56,11 @@ namespace FlaxEditor.GUI
         public event Action EditingEnd;
 
         /// <summary>
+        /// The function for custom view panning. Gets input movement delta (in curve control space) and returns the renaming input delta to process by curve editor itself.
+        /// </summary>
+        public Func<Vector2, Vector2> CustomViewPanning;
+
+        /// <summary>
         /// The maximum amount of keyframes to use in a single curve.
         /// </summary>
         public int MaxKeyframes = ushort.MaxValue;
@@ -87,7 +93,7 @@ namespace FlaxEditor.GUI
         /// <summary>
         /// Enables drawing time and values axes (lines and labels).
         /// </summary>
-        public bool ShowAxes = true;
+        public UseMode ShowAxes = UseMode.On;
 
         /// <summary>
         /// Gets the type of the curves keyframes value.
@@ -118,6 +124,11 @@ namespace FlaxEditor.GUI
         /// Gets the amount of keyframes added to the curve.
         /// </summary>
         public abstract int KeyframesCount { get; }
+
+        /// <summary>
+        /// Clears the selection.
+        /// </summary>
+        public abstract void ClearSelection();
 
         /// <summary>
         /// Called when curve gets edited.
@@ -192,8 +203,19 @@ namespace FlaxEditor.GUI
         /// Adds the new keyframe (as boxed object).
         /// </summary>
         /// <param name="time">The keyframe time.</param>
-        /// <param name="value">The keyframe value.</param>
-        public abstract void AddKeyframe(float time, object value);
+        /// <param name="value">The keyframe value (boxed).</param>
+        /// <returns>The index of the keyframe.</returns>
+        public abstract int AddKeyframe(float time, object value);
+
+        /// <summary>
+        /// Adds the new keyframe (as boxed object).
+        /// </summary>
+        /// <param name="time">The keyframe time.</param>
+        /// <param name="value">The keyframe value (boxed).</param>
+        /// <param name="tangentIn">The keyframe 'In' tangent value (boxed).</param>
+        /// <param name="tangentOut">The keyframe 'Out' tangent value (boxed).</param>
+        /// <returns>The index of the keyframe.</returns>
+        public abstract int AddKeyframe(float time, object value, object tangentIn, object tangentOut);
 
         /// <summary>
         /// Gets the keyframe data (as boxed objects).
@@ -251,5 +273,35 @@ namespace FlaxEditor.GUI
                                (mode & UseMode.Vertical) == UseMode.Vertical ? value.Y : defaultValue.Y
                               );
         }
+
+        /// <inheritdoc />
+        public IKeyframesEditorContext KeyframesEditorContext { get; set; }
+
+        /// <inheritdoc />
+        public abstract void OnKeyframesDeselect(IKeyframesEditor editor);
+
+        /// <inheritdoc />
+        public abstract void OnKeyframesSelection(IKeyframesEditor editor, ContainerControl control, Rectangle selection);
+
+        /// <inheritdoc />
+        public abstract int OnKeyframesSelectionCount();
+
+        /// <inheritdoc />
+        public abstract void OnKeyframesDelete(IKeyframesEditor editor);
+
+        /// <inheritdoc />
+        public abstract void OnKeyframesMove(IKeyframesEditor editor, ContainerControl control, Vector2 location, bool start, bool end);
+
+        /// <inheritdoc />
+        public abstract void OnKeyframesCopy(IKeyframesEditor editor, float? timeOffset, System.Text.StringBuilder data);
+
+        /// <inheritdoc />
+        public abstract void OnKeyframesPaste(IKeyframesEditor editor, float? timeOffset, string[] datas, ref int index);
+
+        /// <inheritdoc />
+        public abstract void OnKeyframesGet(string trackName, Action<string, float, object> get);
+
+        /// <inheritdoc />
+        public abstract void OnKeyframesSet(List<KeyValuePair<float, object>> keyframes);
     }
 }

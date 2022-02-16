@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 using System;
 using System.IO;
@@ -28,6 +28,11 @@ namespace Flax.Deps.Dependencies
                     return new[]
                     {
                         TargetPlatform.Linux,
+                    };
+                case TargetPlatform.Mac:
+                    return new[]
+                    {
+                        TargetPlatform.Mac,
                     };
                 default: return new TargetPlatform[0];
                 }
@@ -100,9 +105,9 @@ namespace Flax.Deps.Dependencies
 
                     // Build for Win64
                     File.Delete(Path.Combine(root, "CMakeCache.txt"));
-                    RunCmake(root, TargetPlatform.Windows, TargetArchitecture.x64);
+                    RunCmake(root, platform, TargetArchitecture.x64);
                     Deploy.VCEnvironment.BuildSolution(solutionPath, configuration, "x64");
-                    var depsFolder = GetThirdPartyFolder(options, TargetPlatform.Windows, TargetArchitecture.x64);
+                    var depsFolder = GetThirdPartyFolder(options, platform, TargetArchitecture.x64);
                     foreach (var file in binariesWin)
                     {
                         Utilities.FileCopy(file, Path.Combine(depsFolder, Path.GetFileName(file)));
@@ -113,9 +118,19 @@ namespace Flax.Deps.Dependencies
                 case TargetPlatform.Linux:
                 {
                     // Build for Linux
-                    RunCmake(root, TargetPlatform.Linux, TargetArchitecture.x64, " -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=OFF " + globalConfig);
-                    Utilities.Run("make", null, null, root, Utilities.RunOptions.None);
-                    var depsFolder = GetThirdPartyFolder(options, TargetPlatform.Linux, TargetArchitecture.x64);
+                    RunCmake(root, platform, TargetArchitecture.x64, " -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=OFF " + globalConfig);
+                    Utilities.Run("make", null, null, root, Utilities.RunOptions.ThrowExceptionOnError);
+                    var depsFolder = GetThirdPartyFolder(options, platform, TargetArchitecture.x64);
+                    Utilities.FileCopy(Path.Combine(root, "lib", "libassimp.a"), Path.Combine(depsFolder, "libassimp.a"));
+                    Utilities.FileCopy(Path.Combine(root, "lib", "libIrrXML.a"), Path.Combine(depsFolder, "libIrrXML.a"));
+                    break;
+                }
+                case TargetPlatform.Mac:
+                {
+                    // Build for Mac
+                    RunCmake(root, platform, TargetArchitecture.x64, " -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=OFF " + globalConfig);
+                    Utilities.Run("make", null, null, root, Utilities.RunOptions.ThrowExceptionOnError);
+                    var depsFolder = GetThirdPartyFolder(options, platform, TargetArchitecture.x64);
                     Utilities.FileCopy(Path.Combine(root, "lib", "libassimp.a"), Path.Combine(depsFolder, "libassimp.a"));
                     Utilities.FileCopy(Path.Combine(root, "lib", "libIrrXML.a"), Path.Combine(depsFolder, "libIrrXML.a"));
                     break;

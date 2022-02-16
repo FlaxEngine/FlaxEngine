@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 #include "Engine/Platform/Window.h"
 #include "Engine/Engine/Engine.h"
@@ -14,8 +14,11 @@
 #include "Engine/Scripting/ManagedCLR/MUtils.h"
 #include "Engine/Scripting/ManagedCLR/MMethod.h"
 #include "Engine/Scripting/ManagedCLR/MClass.h"
+#if USE_MONO
 #include <ThirdParty/mono-2.0/mono/metadata/appdomain.h>
+#endif
 
+#if USE_MONO
 // Helper macros for calling C# events
 #define BEGIN_INVOKE_EVENT(name, paramsCount) \
 	auto managedInstance = GetManagedInstance(); \
@@ -42,7 +45,7 @@
 	    params[0] = param0; \
 	    params[1] = param1; \
 	    params[2] = param2; \
-	    MonoObject* exception = nullptr; \
+	    MObject* exception = nullptr; \
 	    _method_##name->Invoke(managedInstance, params, &exception); \
 	    END_INVOKE_EVENT(name)
 #define INVOKE_EVENT_PARAMS_3(name, param0, param1, param2) INVOKE_EVENT(name, 3, param0, param1, param2)
@@ -69,14 +72,22 @@
 	for (int32 i = 0; i < outputData.Count(); i++) \
 		*(MonoString**)mono_array_addr_with_size(outputDataMono, sizeof(MonoString*), i) = MUtils::ToString(outputData[i]); \
 	params[2] = outputDataMono; \
-	MonoObject* exception = nullptr; \
+	MObject* exception = nullptr; \
 	auto resultObj = _method_##name->Invoke(GetManagedInstance(), params, &exception); \
     if (resultObj) \
 	    result = (DragDropEffect)MUtils::Unbox<int32>(resultObj); \
 	END_INVOKE_EVENT(name)
+#else
+#define INVOKE_EVENT(name, paramsCount, param0, param1, param2)
+#define INVOKE_EVENT_PARAMS_3(name, param0, param1, param2) INVOKE_EVENT(name, 3, param0, param1, param2)
+#define INVOKE_EVENT_PARAMS_2(name, param0, param1) INVOKE_EVENT(name, 2, param0, param1, nullptr)
+#define INVOKE_EVENT_PARAMS_1(name, param0) INVOKE_EVENT(name, 1, param0, nullptr, nullptr)
+#define INVOKE_EVENT_PARAMS_0(name) INVOKE_EVENT(name, 0, nullptr, nullptr, nullptr)
+#define INVOKE_DRAG_EVENT(name)
+#endif
 
 WindowBase::WindowBase(const CreateWindowSettings& settings)
-    : PersistentScriptingObject(SpawnParams(Guid::New(), TypeInitializer))
+    : ScriptingObject(SpawnParams(Guid::New(), TypeInitializer))
     , _visible(false)
     , _minimized(false)
     , _maximized(false)
@@ -179,7 +190,7 @@ void WindowBase::OnDeleteObject()
     SAFE_DELETE(_swapChain);
 
     // Base
-    PersistentScriptingObject::OnDeleteObject();
+    ScriptingObject::OnDeleteObject();
 }
 
 bool WindowBase::GetRenderingEnabled() const

@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -14,7 +14,7 @@ private:
 
 #if USE_MONO
     MonoClass* _monoClass;
-    void* _attrInfo;
+    void* _attrInfo = nullptr;
 #endif
     const MAssembly* _assembly;
 
@@ -23,7 +23,7 @@ private:
     Array<MMethod*> _methods;
     Array<MField*> _fields;
     Array<MProperty*> _properties;
-    Array<MonoObject*> _attributes;
+    Array<MObject*> _attributes;
     Array<MEvent*> _events;
 
     MVisibility _visibility;
@@ -40,6 +40,7 @@ private:
 
 public:
 
+#if USE_MONO
     /// <summary>
     /// Initializes a new instance of the <see cref="MClass"/> class.
     /// </summary>
@@ -47,6 +48,7 @@ public:
     /// <param name="monoClass">The Mono class.</param>
     /// <param name="fullname">The fullname.</param>
     MClass(const MAssembly* parentAssembly, MonoClass* monoClass, const MString& fullname);
+#endif
 
     /// <summary>
     /// Finalizes an instance of the <see cref="MClass"/> class.
@@ -58,7 +60,6 @@ public:
     /// <summary>
     /// Gets the parent assembly.
     /// </summary>
-    /// <returns>The assembly.</returns>
     const MAssembly* GetAssembly() const
     {
         return _assembly;
@@ -67,26 +68,24 @@ public:
     /// <summary>
     /// Gets the full name of the class (namespace and typename).
     /// </summary>
-    /// <returns>The fullname.</returns>
     FORCE_INLINE const MString& GetFullName() const
     {
         return _fullname;
     }
 
 #if USE_MONO
-
     /// <summary>
     /// Gets the Mono class handle.
     /// </summary>
-    /// <returns>The Mono class.</returns>
-    MonoClass* GetNative() const;
-
+    FORCE_INLINE MonoClass* GetNative() const
+    {
+        return _monoClass;
+    }
 #endif
 
     /// <summary>
     /// Gets class visibility
     /// </summary>
-    /// <returns>Returns visibility struct.</returns>
     FORCE_INLINE MVisibility GetVisibility() const
     {
         return _visibility;
@@ -95,7 +94,6 @@ public:
     /// <summary>
     /// Gets if class is static
     /// </summary>
-    /// <returns>Returns true if class is static, otherwise false.</returns>
     FORCE_INLINE bool IsStatic() const
     {
         return _isStatic != 0;
@@ -104,7 +102,6 @@ public:
     /// <summary>
     /// Gets if class is abstract
     /// </summary>
-    /// <returns>Returns true if class is static, otherwise false.</returns>
     FORCE_INLINE bool IsAbstract() const
     {
         return _isAbstract != 0;
@@ -113,7 +110,6 @@ public:
     /// <summary>
     /// Gets if class is sealed
     /// </summary>
-    /// <returns>Returns true if class is static, otherwise false.</returns>
     FORCE_INLINE bool IsSealed() const
     {
         return _isSealed != 0;
@@ -122,7 +118,6 @@ public:
     /// <summary>
     /// Gets if class is interface
     /// </summary>
-    /// <returns>Returns true if class is static, otherwise false.</returns>
     FORCE_INLINE bool IsInterface() const
     {
         return _isInterface != 0;
@@ -131,19 +126,16 @@ public:
     /// <summary>
     /// Gets if class is generic
     /// </summary>
-    /// <returns>Returns true if class is generic type, otherwise false.</returns>
     bool IsGeneric() const;
 
     /// <summary>
     /// Gets the class type.
     /// </summary>
-    /// <returns>The type.</returns>
     MType GetType() const;
 
     /// <summary>
     /// Returns the base class of this class. Null if this class has no base.
     /// </summary>
-    /// <returns>The base class.</returns>
     MClass* GetBaseClass() const;
 
     /// <summary>
@@ -153,24 +145,25 @@ public:
     /// <returns>True if this class is a sub class of the specified class.</returns>
     bool IsSubClassOf(const MClass* klass) const;
 
+#if USE_MONO
     /// <summary>
     /// Checks if this class is a sub class of the specified class (including any derived types).
     /// </summary>
     /// <param name="monoClass">The Mono class.</param>
     /// <returns>True if this class is a sub class of the specified class.</returns>
     bool IsSubClassOf(MonoClass* monoClass) const;
+#endif
 
     /// <summary>
     /// Checks is the provided object instance of this class' type.
     /// </summary>
     /// <param name="object">The object to check.</param>
     /// <returns>True if object  is an instance the this class.</returns>
-    bool IsInstanceOfType(MonoObject* object) const;
+    bool IsInstanceOfType(MObject* object) const;
 
     /// <summary>
     /// Returns the size of an instance of this class, in bytes.
     /// </summary>
-    /// <returns>The instance size (in bytes).</returns>
     uint32 GetInstanceSize() const;
 
 public:
@@ -230,14 +223,6 @@ public:
     MEvent* GetEvent(const char* name);
 
     /// <summary>
-    /// Adds event with the specified name to the cache.
-    /// </summary>
-    /// <param name="name">The event name.</param>
-    /// <param name="event">The event Mono object.</param>
-    /// <returns>The event.</returns>
-    MEvent* AddEvent(const char* name, MonoEvent* event);
-
-    /// <summary>
     /// Returns all events belonging to this class.
     /// </summary>
     /// <returns>The list of events.</returns>
@@ -269,7 +254,7 @@ public:
     /// Creates a new instance of this class and constructs it.
     /// </summary>
     /// <returns>The created managed object.</returns>
-    MonoObject* CreateInstance() const;
+    MObject* CreateInstance() const;
 
     /// <summary>
     /// Creates a new instance of this class and then constructs it using the constructor with the specified number of parameters.
@@ -277,7 +262,7 @@ public:
     /// <param name="params">The array containing pointers to constructor parameters. Array length must be equal to number of parameters.</param>
     /// <param name="numParams">The number of parameters the constructor accepts.</param>
     /// <returns>The created managed object.</returns>
-    MonoObject* CreateInstance(void** params, uint32 numParams);
+    MObject* CreateInstance(void** params, uint32 numParams);
 
 public:
 
@@ -299,11 +284,11 @@ public:
     /// </summary>
     /// <param name="monoClass">The attribute class to take.</param>
     /// <returns>The attribute object.</returns>
-    MonoObject* GetAttribute(MClass* monoClass);
+    MObject* GetAttribute(MClass* monoClass);
 
     /// <summary>
     /// Returns an instance of all attributes connected with given class. Returns null if the class doesn't have any attributes.
     /// </summary>
     /// <returns>The array of attribute objects.</returns>
-    const Array<MonoObject*>& GetAttributes();
+    const Array<MObject*>& GetAttributes();
 };

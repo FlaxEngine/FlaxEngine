@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 using System;
 using FlaxEngine;
@@ -110,7 +110,7 @@ namespace FlaxEditor.GUI
             bool enabled = EnabledInHierarchy;
 
             // Draw background
-            if (enabled && (IsMouseOver || Checked))
+            if (enabled && (IsMouseOver || IsNavFocused || Checked))
                 Render2D.FillRectangle(clientRect, Checked ? style.BackgroundSelected : _mouseDown ? style.BackgroundHighlighted : (style.LightBackground * 1.3f));
 
             // Draw icon

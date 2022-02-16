@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -77,6 +77,7 @@ public:
     // [Actor]
 #if USE_EDITOR
     void OnDebugDrawSelected() override;
+    BoundingBox GetEditorBox() const override;
 #endif
     void OnLayerChanged() override;
     void Draw(RenderContext& renderContext) override;

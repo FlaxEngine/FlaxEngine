@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 // -----------------------------------------------------------------------------
 // Original code from SharpDX project. https://github.com/sharpdx/SharpDX/
@@ -152,15 +152,9 @@ namespace FlaxEngine
         /// <summary>
         /// Initializes a new instance of the <see cref="Quaternion" /> struct.
         /// </summary>
-        /// <param name="values">
-        /// The values to assign to the X, Y, Z, and W components of the quaternion. This must be an array
-        /// with four elements.
-        /// </param>
+        /// <param name="values">The values to assign to the X, Y, Z, and W components of the quaternion. This must be an array with four elements.</param>
         /// <exception cref="ArgumentNullException">Thrown when <paramref name="values" /> is <c>null</c>.</exception>
-        /// <exception cref="ArgumentOutOfRangeException">
-        /// Thrown when <paramref name="values" /> contains more or less than four
-        /// elements.
-        /// </exception>
+        /// <exception cref="ArgumentOutOfRangeException">Thrown when <paramref name="values" /> contains more or less than four elements.</exception>
         public Quaternion(float[] values)
         {
             if (values == null)
@@ -177,9 +171,6 @@ namespace FlaxEngine
         /// <summary>
         /// Gets a value indicating whether this instance is equivalent to the identity quaternion.
         /// </summary>
-        /// <value>
-        /// <c>true</c> if this instance is an identity quaternion; otherwise, <c>false</c>.
-        /// </value>
         public bool IsIdentity => Equals(Identity);
 
         /// <summary>
@@ -238,7 +229,6 @@ namespace FlaxEngine
         /// <summary>
         /// Gets the angle of the quaternion.
         /// </summary>
-        /// <value>The angle.</value>
         public float Angle
         {
             get
@@ -253,7 +243,6 @@ namespace FlaxEngine
         /// <summary>
         /// Gets the axis components of the quaternion.
         /// </summary>
-        /// <value>The axis components of the quaternion.</value>
         public Vector3 Axis
         {
             get
@@ -270,14 +259,9 @@ namespace FlaxEngine
         /// Gets or sets the component at the specified index.
         /// </summary>
         /// <value>The value of the X, Y, Z, or W component, depending on the index.</value>
-        /// <param name="index">
-        /// The index of the component to access. Use 0 for the X component, 1 for the Y component, 2 for the Z
-        /// component, and 3 for the W component.
-        /// </param>
+        /// <param name="index">The index of the component to access. Use 0 for the X component, 1 for the Y component, 2 for the Z component, and 3 for the W component.</param>
         /// <returns>The value of the component at the specified index.</returns>
-        /// <exception cref="System.ArgumentOutOfRangeException">
-        /// Thrown when the <paramref name="index" /> is out of the range [0, 3].
-        /// </exception>
+        /// <exception cref="System.ArgumentOutOfRangeException">Thrown when the <paramref name="index" /> is out of the range [0, 3].</exception>
         public float this[int index]
         {
             get
@@ -289,10 +273,8 @@ namespace FlaxEngine
                 case 2: return Z;
                 case 3: return W;
                 }
-
                 throw new ArgumentOutOfRangeException(nameof(index), "Indices for Quaternion run from 0 to 3, inclusive.");
             }
-
             set
             {
                 switch (index)
@@ -353,20 +335,14 @@ namespace FlaxEngine
         /// Calculates the length of the quaternion.
         /// </summary>
         /// <returns>The length of the quaternion.</returns>
-        /// <remarks>
-        /// <see cref="Quaternion.LengthSquared" /> may be preferred when only the relative length is needed
-        /// and speed is of the essence.
-        /// </remarks>
+        /// <remarks><see cref="Quaternion.LengthSquared" /> may be preferred when only the relative length is needed and speed is of the essence.</remarks>
         public float Length => (float)Math.Sqrt(X * X + Y * Y + Z * Z + W * W);
 
         /// <summary>
         /// Calculates the squared length of the quaternion.
         /// </summary>
         /// <returns>The squared length of the quaternion.</returns>
-        /// <remarks>
-        /// This method may be preferred to <see cref="Quaternion.Length" /> when only a relative length is needed
-        /// and speed is of the essence.
-        /// </remarks>
+        /// <remarks>This method may be preferred to <see cref="Quaternion.Length" /> when only a relative length is needed and speed is of the essence.</remarks>
         public float LengthSquared => X * X + Y * Y + Z * Z + W * W;
 
         /// <summary>
@@ -1238,8 +1214,7 @@ namespace FlaxEngine
         }
 
         /// <summary>
-        /// Creates a quaternion given a pitch, yaw and roll values.
-        /// Angles are in degrees.
+        /// Creates a quaternion given a pitch, yaw and roll values. Angles are in degrees.
         /// </summary>
         /// <param name="eulerAngles">The pitch, yaw and roll angles of rotation.</param>
         /// <returns>When the method completes, contains the newly created quaternion.</returns>
@@ -1254,8 +1229,7 @@ namespace FlaxEngine
         }
 
         /// <summary>
-        /// Creates a quaternion given a pitch, yaw and roll values.
-        /// Angles are in degrees.
+        /// Creates a quaternion given a pitch, yaw and roll values. Angles are in degrees.
         /// </summary>
         /// <param name="eulerAngles">The pitch, yaw and roll angles of rotation.</param>
         /// <param name="result">When the method completes, contains the newly created quaternion.</param>
@@ -1269,8 +1243,7 @@ namespace FlaxEngine
         }
 
         /// <summary>
-        /// Creates a quaternion given a pitch, yaw and roll values.
-        /// Angles are in degrees.
+        /// Creates a quaternion given a pitch, yaw and roll values. Angles are in degrees.
         /// </summary>
         /// <param name="x">The pitch of rotation (in degrees).</param>
         /// <param name="y">The yaw of rotation (in degrees).</param>
@@ -1287,8 +1260,7 @@ namespace FlaxEngine
         }
 
         /// <summary>
-        /// Creates a quaternion given a pitch, yaw and roll values.
-        /// Angles are in degrees.
+        /// Creates a quaternion given a pitch, yaw and roll values. Angles are in degrees.
         /// </summary>
         /// <param name="x">The pitch of rotation (in degrees).</param>
         /// <param name="y">The yaw of rotation (in degrees).</param>
@@ -1304,8 +1276,7 @@ namespace FlaxEngine
         }
 
         /// <summary>
-        /// Creates a quaternion given a yaw, pitch, and roll value.
-        /// Angles are in radians. Use <see cref="Mathf.RadiansToDegrees"/> to convert degrees to radians.
+        /// Creates a quaternion given a yaw, pitch, and roll value. Angles are in radians. Use <see cref="Mathf.RadiansToDegrees"/> to convert degrees to radians.
         /// </summary>
         /// <param name="yaw">The yaw of rotation (in radians).</param>
         /// <param name="pitch">The pitch of rotation (in radians).</param>
@@ -1331,8 +1302,7 @@ namespace FlaxEngine
         }
 
         /// <summary>
-        /// Creates a quaternion given a yaw, pitch, and roll value.
-        /// Angles are in radians.
+        /// Creates a quaternion given a yaw, pitch, and roll value. Angles are in radians.
         /// </summary>
         /// <param name="yaw">The yaw of rotation (in radians).</param>
         /// <param name="pitch">The pitch of rotation (in radians).</param>
@@ -1523,10 +1493,7 @@ namespace FlaxEngine
         /// </summary>
         /// <param name="left">The first value to compare.</param>
         /// <param name="right">The second value to compare.</param>
-        /// <returns>
-        /// <c>true</c> if <paramref name="left" /> has the same value as <paramref name="right" />; otherwise,
-        /// <c>false</c>.
-        /// </returns>
+        /// <returns><c>true</c> if <paramref name="left" /> has the same value as <paramref name="right" />; otherwise, <c>false</c>.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool operator ==(Quaternion left, Quaternion right)
         {
@@ -1538,10 +1505,7 @@ namespace FlaxEngine
         /// </summary>
         /// <param name="left">The first value to compare.</param>
         /// <param name="right">The second value to compare.</param>
-        /// <returns>
-        /// <c>true</c> if <paramref name="left" /> has a different value than <paramref name="right" />; otherwise,
-        /// <c>false</c>.
-        /// </returns>
+        /// <returns><c>true</c> if <paramref name="left" /> has a different value than <paramref name="right" />; otherwise, <c>false</c>.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool operator !=(Quaternion left, Quaternion right)
         {
@@ -1551,9 +1515,7 @@ namespace FlaxEngine
         /// <summary>
         /// Returns a <see cref="System.String" /> that represents this instance.
         /// </summary>
-        /// <returns>
-        /// A <see cref="System.String" /> that represents this instance.
-        /// </returns>
+        /// <returns>A <see cref="System.String" /> that represents this instance.</returns>
         public override string ToString()
         {
             return string.Format(CultureInfo.CurrentCulture, _formatString, X, Y, Z, W);
@@ -1563,9 +1525,7 @@ namespace FlaxEngine
         /// Returns a <see cref="System.String" /> that represents this instance.
         /// </summary>
         /// <param name="format">The format.</param>
-        /// <returns>
-        /// A <see cref="System.String" /> that represents this instance.
-        /// </returns>
+        /// <returns>A <see cref="System.String" /> that represents this instance.</returns>
         public string ToString(string format)
         {
             if (format == null)
@@ -1579,9 +1539,7 @@ namespace FlaxEngine
         /// Returns a <see cref="System.String" /> that represents this instance.
         /// </summary>
         /// <param name="formatProvider">The format provider.</param>
-        /// <returns>
-        /// A <see cref="System.String" /> that represents this instance.
-        /// </returns>
+        /// <returns>A <see cref="System.String" /> that represents this instance.</returns>
         public string ToString(IFormatProvider formatProvider)
         {
             return string.Format(formatProvider, _formatString, X, Y, Z, W);
@@ -1592,9 +1550,7 @@ namespace FlaxEngine
         /// </summary>
         /// <param name="format">The format.</param>
         /// <param name="formatProvider">The format provider.</param>
-        /// <returns>
-        /// A <see cref="System.String" /> that represents this instance.
-        /// </returns>
+        /// <returns>A <see cref="System.String" /> that represents this instance.</returns>
         public string ToString(string format, IFormatProvider formatProvider)
         {
             if (format == null)
@@ -1607,9 +1563,7 @@ namespace FlaxEngine
         /// <summary>
         /// Returns a hash code for this instance.
         /// </summary>
-        /// <returns>
-        /// A hash code for this instance, suitable for use in hashing algorithms and data structures like a hash table.
-        /// </returns>
+        /// <returns>A hash code for this instance, suitable for use in hashing algorithms and data structures like a hash table.</returns>
         public override int GetHashCode()
         {
             unchecked
@@ -1651,9 +1605,7 @@ namespace FlaxEngine
         /// Determines whether the specified <see cref="Quaternion" /> is equal to this instance.
         /// </summary>
         /// <param name="other">The <see cref="Quaternion" /> to compare with this instance.</param>
-        /// <returns>
-        /// <c>true</c> if the specified <see cref="Quaternion" /> is equal to this instance; otherwise, <c>false</c>.
-        /// </returns>
+        /// <returns><c>true</c> if the specified <see cref="Quaternion" /> is equal to this instance; otherwise, <c>false</c>.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool Equals(ref Quaternion other)
         {
@@ -1665,9 +1617,7 @@ namespace FlaxEngine
         /// Determines whether the specified <see cref="Quaternion" /> is equal to this instance.
         /// </summary>
         /// <param name="other">The <see cref="Quaternion" /> to compare with this instance.</param>
-        /// <returns>
-        /// <c>true</c> if the specified <see cref="Quaternion" /> is equal to this instance; otherwise, <c>false</c>.
-        /// </returns>
+        /// <returns><c>true</c> if the specified <see cref="Quaternion" /> is equal to this instance; otherwise, <c>false</c>.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool Equals(Quaternion other)
         {
@@ -1678,9 +1628,7 @@ namespace FlaxEngine
         /// Determines whether the specified <see cref="System.Object" /> is equal to this instance.
         /// </summary>
         /// <param name="value">The <see cref="System.Object" /> to compare with this instance.</param>
-        /// <returns>
-        /// <c>true</c> if the specified <see cref="System.Object" /> is equal to this instance; otherwise, <c>false</c>.
-        /// </returns>
+        /// <returns><c>true</c> if the specified <see cref="System.Object" /> is equal to this instance; otherwise, <c>false</c>.</returns>
         public override bool Equals(object value)
         {
             if (!(value is Quaternion))

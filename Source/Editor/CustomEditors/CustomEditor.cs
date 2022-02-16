@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 using System;
 using System.Collections.Generic;
@@ -331,17 +331,12 @@ namespace FlaxEditor.CustomEditors
         {
             if (LinkedLabel != null)
             {
-                // Prefab value diff
-                if (Values.HasReferenceValue)
-                {
-                    var style = FlaxEngine.GUI.Style.Current;
-                    LinkedLabel.HighlightStripColor = CanRevertReferenceValue ? style.BackgroundSelected * 0.8f : Color.Transparent;
-                }
-                // Default value diff
-                else if (Values.HasDefaultValue)
-                {
-                    LinkedLabel.HighlightStripColor = CanRevertDefaultValue ? Color.Yellow * 0.8f : Color.Transparent;
-                }
+                var color = Color.Transparent;
+                if (Values.HasReferenceValue && CanRevertReferenceValue)
+                    color = FlaxEngine.GUI.Style.Current.BackgroundSelected;
+                else if (Values.HasDefaultValue && CanRevertDefaultValue)
+                    color = Color.Yellow * 0.8f;
+                LinkedLabel.HighlightStripColor = color;
             }
         }
 
@@ -380,7 +375,7 @@ namespace FlaxEditor.CustomEditors
                     return false;
 
                 // Skip array items (show diff only on a bottom level properties and fields)
-                if (ParentEditor != null && ParentEditor.Values.Type != ScriptType.Null && ParentEditor.Values.Type.IsArray)
+                if (ParentEditor is Editors.ArrayEditor)
                     return false;
 
                 return true;
@@ -394,9 +389,6 @@ namespace FlaxEditor.CustomEditors
         {
             if (!Values.HasDefaultValue)
                 return;
-
-            Editor.Log("Reverting object changes to default");
-
             RevertDiffToDefault(this);
         }
 
@@ -465,7 +457,7 @@ namespace FlaxEditor.CustomEditors
                     return false;
 
                 // Skip array items (show diff only on a bottom level properties and fields)
-                if (ParentEditor != null && ParentEditor.Values.Type != ScriptType.Null && ParentEditor.Values.Type.IsArray)
+                if (ParentEditor is Editors.ArrayEditor)
                     return false;
 
                 return true;
@@ -479,9 +471,6 @@ namespace FlaxEditor.CustomEditors
         {
             if (!Values.HasReferenceValue)
                 return;
-
-            Editor.Log("Reverting object changes to prefab");
-
             RevertDiffToReference(this);
         }
 
@@ -526,8 +515,6 @@ namespace FlaxEditor.CustomEditors
         /// </summary>
         public void Copy()
         {
-            Editor.Log("Copy custom editor value");
-
             try
             {
                 string text;
@@ -619,6 +606,13 @@ namespace FlaxEditor.CustomEditors
                 JsonSerializer.ParseID(text, out var id);
                 obj = FlaxEngine.Object.Find<FlaxEngine.Object>(ref id);
             }
+            else if (Color.TryParseHex(text, out var color))
+            {
+                // Hex color
+                obj = color;
+                if (Values.Type.Type == typeof(Color32))
+                    obj = (Color32)color;
+            }
             else
             {
                 // Default
@@ -657,8 +651,6 @@ namespace FlaxEditor.CustomEditors
         /// </summary>
         public void Paste()
         {
-            Editor.Log("Paste custom editor value");
-
             try
             {
                 if (GetClipboardObject(out var obj, true))

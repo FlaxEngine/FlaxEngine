@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 #if AUDIO_API_XAUDIO2
 
@@ -230,6 +230,8 @@ namespace XAudio2
 
     Source* GetSource(const AudioSource* source)
     {
+        if (source->SourceIDs.Count() == 0)
+            return nullptr;
         const AUDIO_SOURCE_ID_TYPE sourceId = source->SourceIDs[0];
         // 0 is invalid ID so shift them
         return &Sources[sourceId - 1];
@@ -531,7 +533,7 @@ void AudioBackendXAudio2::Source_Cleanup(AudioSource* source)
 void AudioBackendXAudio2::Source_Play(AudioSource* source)
 {
     auto aSource = XAudio2::GetSource(source);
-    if (aSource && aSource->Voice)
+    if (aSource && aSource->Voice && !aSource->IsPlaying)
     {
         // Play
         aSource->Voice->Start();
@@ -542,7 +544,7 @@ void AudioBackendXAudio2::Source_Play(AudioSource* source)
 void AudioBackendXAudio2::Source_Pause(AudioSource* source)
 {
     auto aSource = XAudio2::GetSource(source);
-    if (aSource && aSource->Voice)
+    if (aSource && aSource->Voice && aSource->IsPlaying)
     {
         // Pause
         aSource->Voice->Stop();
@@ -811,13 +813,18 @@ void AudioBackendXAudio2::Base_Update()
         }
         else
         {
+            // Stereo
             dsp.DopplerFactor = 1.0f;
-
-            // TODO: implement proper matrix setup to convert input channels into output mastering voice
-            // hardcoded case for mono audio -> stereo speakers
             Platform::MemoryClear(dsp.pMatrixCoefficients, sizeof(XAudio2::MatrixCoefficients));
-            dsp.pMatrixCoefficients[0] = 0.5f;
-            dsp.pMatrixCoefficients[1] = 0.5f;
+            dsp.pMatrixCoefficients[0] = 1.0f;
+            if (source.Format.nChannels == 1)
+            {
+                dsp.pMatrixCoefficients[1] = 1.0f;
+            }
+            else
+            {
+                dsp.pMatrixCoefficients[3] = 1.0f;
+            }
         }
 
         const float frequencyRatio = dopplerFactor * source.Pitch * dsp.DopplerFactor;

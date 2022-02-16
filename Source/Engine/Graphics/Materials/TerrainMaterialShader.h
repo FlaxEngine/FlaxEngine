@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -16,6 +16,9 @@ private:
         PipelineStateCache Default;
         PipelineStateCache DefaultLightmap;
         PipelineStateCache Depth;
+#if USE_EDITOR
+        PipelineStateCache QuadOverdraw;
+#endif
 
         FORCE_INLINE PipelineStateCache* GetPS(const DrawPass pass, const bool useLightmap)
         {
@@ -25,6 +28,10 @@ private:
                 return &Depth;
             case DrawPass::GBuffer:
                 return useLightmap ? &DefaultLightmap : &Default;
+#if USE_EDITOR
+            case DrawPass::QuadOverdraw:
+                return &QuadOverdraw;
+#endif
             default:
                 return nullptr;
             }
@@ -35,6 +42,9 @@ private:
             Default.Release();
             DefaultLightmap.Release();
             Depth.Release();
+#if USE_EDITOR
+            QuadOverdraw.Release();
+#endif
         }
     };
 

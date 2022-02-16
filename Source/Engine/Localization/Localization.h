@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -10,7 +10,7 @@
 /// </summary>
 API_CLASS(Static) class FLAXENGINE_API Localization
 {
-DECLARE_SCRIPTING_TYPE_MINIMAL(Localization);
+    DECLARE_SCRIPTING_TYPE_MINIMAL(Localization);
 public:
     /// <summary>
     /// Gets the current culture (date, time, currency and values formatting locale).

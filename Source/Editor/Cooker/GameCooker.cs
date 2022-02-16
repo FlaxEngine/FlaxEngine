@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 using System;
 using System.Collections.Generic;
@@ -99,9 +99,11 @@ namespace FlaxEditor
             case BuildPlatform.XboxOne: return PlatformType.XboxOne;
             case BuildPlatform.LinuxX64: return PlatformType.Linux;
             case BuildPlatform.PS4: return PlatformType.PS4;
+            case BuildPlatform.PS5: return PlatformType.PS5;
             case BuildPlatform.AndroidARM64: return PlatformType.Android;
             case BuildPlatform.XboxScarlett: return PlatformType.XboxScarlett;
             case BuildPlatform.Switch: return PlatformType.Switch;
+            case BuildPlatform.MacOSx64: return PlatformType.Mac;
             default: throw new ArgumentOutOfRangeException(nameof(buildPlatform), buildPlatform, null);
             }
         }

@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 using System;
 using System.Collections.Generic;
@@ -341,7 +341,7 @@ namespace FlaxEditor.Windows.Assets
                             editor.FloatValue.MinValue = -1;
                             editor.FloatValue.MaxValue = 1;
                             editor.FloatValue.SlideSpeed = 0.01f;
-                            editor.FloatValue.ValueChanged += () => { proxy.Window._preview.PreviewActor.SetBlendShapeWeight(blendShape, editor.FloatValue.Value); };
+                            editor.FloatValue.ValueChanged += () => { proxy.Window._preview.SetBlendShapeWeight(blendShape, editor.FloatValue.Value); };
                         }
                     }
                 }

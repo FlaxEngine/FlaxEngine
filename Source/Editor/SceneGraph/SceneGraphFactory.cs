@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 using System;
 using System.Collections.Generic;
@@ -44,6 +44,7 @@ namespace FlaxEditor.SceneGraph
             CustomNodesTypes.Add(typeof(SkyLight), typeof(SkyLightNode));
             CustomNodesTypes.Add(typeof(PostFxVolume), typeof(PostFxVolumeNode));
             CustomNodesTypes.Add(typeof(StaticModel), typeof(StaticModelNode));
+            CustomNodesTypes.Add(typeof(AnimatedModel), typeof(AnimatedModelNode));
             CustomNodesTypes.Add(typeof(BoxBrush), typeof(BoxBrushNode));
             CustomNodesTypes.Add(typeof(TextRender), typeof(TextRenderNode));
             CustomNodesTypes.Add(typeof(AudioListener), typeof(AudioListenerNode));
@@ -71,6 +72,7 @@ namespace FlaxEditor.SceneGraph
             CustomNodesTypes.Add(typeof(SplineRopeBody), typeof(ActorNode));
             CustomNodesTypes.Add(typeof(NavMesh), typeof(ActorNode));
             CustomNodesTypes.Add(typeof(SpriteRender), typeof(SpriteRenderNode));
+            CustomNodesTypes.Add(typeof(Joint), typeof(JointNode));
         }
 
         /// <summary>

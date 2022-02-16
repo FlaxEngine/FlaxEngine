@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 #include "Localization.h"
 #include "CultureInfo.h"
@@ -18,6 +18,7 @@ public:
     CultureInfo CurrentCulture;
     CultureInfo CurrentLanguage;
     Array<AssetReference<LocalizedStringTable>> LocalizedStringTables;
+    Array<AssetReference<LocalizedStringTable>> FallbackStringTables;
 
     LocalizationService()
         : EngineService(TEXT("Localization"), -500)
@@ -28,6 +29,42 @@ public:
 
     void OnLocalizationChanged();
 
+    const String& Get(const String& id, int32 index, const String& fallback) const
+    {
+        if (id.IsEmpty())
+            return fallback;
+
+        // Try current tables
+        for (auto& e : LocalizedStringTables)
+        {
+            const auto table = e.Get();
+            const auto messages = table ? table->Entries.TryGet(id) : nullptr;
+            if (messages && messages->Count() > index)
+                return messages->At(index);
+        }
+
+        // Try fallback tables for current tables
+        for (auto& e : LocalizedStringTables)
+        {
+            const auto table = e.Get();
+            const auto fallbackTable = table ? table->FallbackTable.Get() : nullptr;
+            const auto messages = fallbackTable ? fallbackTable->Entries.TryGet(id) : nullptr;
+            if (messages && messages->Count() > index)
+                return messages->At(index);
+        }
+
+        // Try fallback language tables
+        for (auto& e : FallbackStringTables)
+        {
+            const auto table = e.Get();
+            const auto messages = table ? table->Entries.TryGet(id) : nullptr;
+            if (messages && messages->Count() > index)
+                return messages->At(index);
+        }
+
+        return fallback;
+    }
+
     bool Init() override;
 };
 
@@ -36,7 +73,7 @@ namespace
     LocalizationService Instance;
 }
 
-IMPLEMENT_SETTINGS_GETTER(LocalizationSettings, Localization);
+IMPLEMENT_ENGINE_SETTINGS_GETTER(LocalizationSettings, Localization);
 
 void LocalizationSettings::Apply()
 {
@@ -46,6 +83,7 @@ void LocalizationSettings::Apply()
 void LocalizationSettings::Deserialize(DeserializeStream& stream, ISerializeModifier* modifier)
 {
     DESERIALIZE(LocalizedStringTables);
+    DESERIALIZE(DefaultFallbackLanguage);
 }
 
 LocalizedString::LocalizedString(const LocalizedString& other)
@@ -119,10 +157,12 @@ void LocalizationService::OnLocalizationChanged()
     PROFILE_CPU();
 
     Instance.LocalizedStringTables.Clear();
+    Instance.FallbackStringTables.Clear();
+    const StringView en(TEXT("en"));
 
     // Collect all localization tables into mapping locale -> tables
     auto& settings = *LocalizationSettings::Get();
-    Dictionary<String, Array<AssetReference<LocalizedStringTable>, InlinedAllocation<8>>> tables;
+    Dictionary<String, Array<AssetReference<LocalizedStringTable>, InlinedAllocation<32>>> tables;
     for (auto& e : settings.LocalizedStringTables)
     {
         auto table = e.Get();
@@ -142,9 +182,13 @@ void LocalizationService::OnLocalizationChanged()
             table = tables.TryGet(parentLanguage.GetName());
         if (!table)
         {
-            // Fallback to English
-            const CultureInfo english("en");
-            table = tables.TryGet(english.GetName());
+            // Fallback to Default
+            table = tables.TryGet(settings.DefaultFallbackLanguage);
+            if (!table)
+            {
+                // Fallback to English
+                table = tables.TryGet(en);
+            }
         }
     }
 
@@ -162,6 +206,17 @@ void LocalizationService::OnLocalizationChanged()
         }
         LOG(Info, "Using localization for {0}", locale);
         Instance.LocalizedStringTables.Add(table->Get(), table->Count());
+        if (locale != settings.DefaultFallbackLanguage || locale != en)
+        {
+            // Cache fallback language tables to support additional text resolving in case of missing entries in the current language
+            table = tables.TryGet(settings.DefaultFallbackLanguage);
+            if (!table)
+                table = tables.TryGet(en);
+            if (table)
+            {
+                Instance.FallbackStringTables.Add(table->Get(), table->Count());
+            }
+        }
     }
 
 #if PLATFORM_ANDROID
@@ -193,8 +248,12 @@ void LocalizationService::OnLocalizationChanged()
         {
             std::locale::global(std::locale(localeName));
         }
-        catch (std::runtime_error const&) {}
-        catch (...) {}
+        catch (std::runtime_error const&)
+        {
+        }
+        catch (...)
+        {
+        }
     }
 #endif
 
@@ -258,38 +317,12 @@ void Localization::SetCurrentLanguageCulture(const CultureInfo& value)
 
 String Localization::GetString(const String& id, const String& fallback)
 {
-    String result;
-    for (auto& e : Instance.LocalizedStringTables)
-    {
-        const auto table = e.Get();
-        const auto messages = table ? table->Entries.TryGet(id) : nullptr;
-        if (messages && messages->Count() != 0)
-        {
-            result = messages->At(0);
-            break;
-        }
-    }
-    if (result.IsEmpty())
-        result = fallback;
-    return result;
+    return Instance.Get(id, 0, fallback);
 }
 
 String Localization::GetPluralString(const String& id, int32 n, const String& fallback)
 {
-    CHECK_RETURN(n >= 1, fallback);
-    n--;
-    const String* result = nullptr;
-    for (auto& e : Instance.LocalizedStringTables)
-    {
-        const auto table = e.Get();
-        const auto messages = table ? table->Entries.TryGet(id) : nullptr;
-        if (messages && messages->Count() > n)
-        {
-            result = &messages->At(n);
-            break;
-        }
-    }
-    if (!result)
-        result = &fallback;
-    return String::Format(result->GetText(), n);
+    CHECK_RETURN(n >= 1, String::Format(fallback.GetText(), n));
+    const String& format = Instance.Get(id, n - 1, fallback);
+    return String::Format(format.GetText(), n);
 }

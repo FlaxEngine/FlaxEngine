@@ -1,5 +1,6 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
+using System.IO;
 using Flax.Build;
 using Flax.Build.NativeCpp;
 
@@ -35,6 +36,11 @@ public class volk : ThirdPartyModule
             break;
         case TargetPlatform.Android:
             options.PublicDefinitions.Add("VK_USE_PLATFORM_ANDROID_KHR");
+            break;
+        case TargetPlatform.Mac:
+            options.PublicDefinitions.Add("VK_USE_PLATFORM_MACOS_MVK");
+            options.DependencyFiles.Add(Path.Combine(VulkanSdk.Instance.RootPath, "../MoltenVK/dylib/macOS/libMoltenVK.dylib"));
+            options.DependencyFiles.Add(Path.Combine(VulkanSdk.Instance.RootPath, "../MoltenVK/dylib/macOS/MoltenVK_icd.json"));
             break;
         default: throw new InvalidPlatformException(options.Platform.Target);
         }

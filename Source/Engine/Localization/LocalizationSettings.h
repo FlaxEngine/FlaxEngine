@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -11,13 +11,19 @@
 /// </summary>
 API_CLASS(sealed, Namespace="FlaxEditor.Content.Settings") class FLAXENGINE_API LocalizationSettings : public SettingsBase
 {
-DECLARE_SCRIPTING_TYPE_MINIMAL(LocalizationSettings);
+    DECLARE_SCRIPTING_TYPE_MINIMAL(LocalizationSettings);
 public:
     /// <summary>
     /// The list of the string localization tables used by the game.
     /// </summary>
     API_FIELD()
     Array<AssetReference<LocalizedStringTable>> LocalizedStringTables;
+
+    /// <summary>
+    /// The default fallback language to use if localization system fails to pick the system locale language (eg. en-GB).
+    /// </summary>
+    API_FIELD()
+    String DefaultFallbackLanguage;
 
 public:
     /// <summary>

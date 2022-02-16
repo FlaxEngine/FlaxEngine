@@ -1,10 +1,11 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 #if COMPILE_WITH_TEXTURE_TOOL && COMPILE_WITH_STB
 
 #include "TextureTool.h"
 #include "Engine/Core/Log.h"
 #include "Engine/Core/Math/Color32.h"
+#include "Engine/Core/Math/Int2.h"
 #include "Engine/Serialization/FileWriteStream.h"
 #include "Engine/Graphics/RenderTools.h"
 #include "Engine/Graphics/Textures/TextureData.h"
@@ -45,9 +46,9 @@
 #include <ThirdParty/stb/stb_dxt.h>
 
 #if USE_EDITOR
-
+// Compression libs for Editor
 #include <ThirdParty/detex/detex.h>
-
+#include <ThirdParty/bc7enc16/bc7enc16.h>
 #endif
 
 static void stbWrite(void* context, void* data, int size)
@@ -56,107 +57,117 @@ static void stbWrite(void* context, void* data, int size)
     file->WriteBytes(data, (uint32)size);
 }
 
+#if USE_EDITOR
+
+static TextureData const* stbDecompress(const TextureData& textureData, TextureData& decompressed)
+{
+    if (!PixelFormatExtensions::IsCompressed(textureData.Format))
+        return &textureData;
+    decompressed.Format = PixelFormatExtensions::IsSRGB(textureData.Format) ? PixelFormat::R8G8B8A8_UNorm_sRGB : PixelFormat::R8G8B8A8_UNorm;
+    decompressed.Width = textureData.Width;
+    decompressed.Height = textureData.Height;
+    decompressed.Depth = textureData.Depth;
+    decompressed.Items.Resize(1);
+    decompressed.Items[0].Mips.Resize(1);
+
+    TextureMipData* decompressedData = decompressed.GetData(0, 0);
+    decompressedData->RowPitch = textureData.Width * sizeof(Color32);
+    decompressedData->Lines = textureData.Height;
+    decompressedData->DepthPitch = decompressedData->RowPitch * decompressedData->Lines;
+    decompressedData->Data.Allocate(decompressedData->DepthPitch);
+    byte* decompressedBytes = decompressedData->Data.Get();
+
+    Color32 colors[16];
+    int32 blocksWidth = textureData.Width / 4;
+    int32 blocksHeight = textureData.Height / 4;
+    const TextureMipData* blocksData = textureData.GetData(0, 0);
+    const byte* blocksBytes = blocksData->Data.Get();
+
+    switch (textureData.Format)
+    {
+    case PixelFormat::BC1_UNorm:
+    case PixelFormat::BC1_UNorm_sRGB:
+    {
+        for (int32 yBlock = 0; yBlock < blocksHeight; yBlock++)
+        {
+            for (int32 xBlock = 0; xBlock < blocksWidth; xBlock++)
+            {
+                const byte* block = blocksBytes + yBlock * blocksData->RowPitch + xBlock * 8;
+                detexDecompressBlockBC1(block, 0, 0, (byte*)&colors);
+                for (int32 y = 0; y < 4; y++)
+                {
+                    for (int32 x = 0; x < 4; x++)
+                    {
+                        *((Color32*)decompressedBytes + (yBlock * 4 + y) * textureData.Width + (xBlock * 4 + x)) = colors[y * 4 + x];
+                    }
+                }
+            }
+        }
+        break;
+    }
+    case PixelFormat::BC2_UNorm:
+    case PixelFormat::BC2_UNorm_sRGB:
+    {
+        for (int32 yBlock = 0; yBlock < blocksHeight; yBlock++)
+        {
+            for (int32 xBlock = 0; xBlock < blocksWidth; xBlock++)
+            {
+                const byte* block = blocksBytes + yBlock * blocksData->RowPitch + xBlock * 16;
+                detexDecompressBlockBC2(block, 0, 0, (byte*)&colors);
+                for (int32 y = 0; y < 4; y++)
+                {
+                    for (int32 x = 0; x < 4; x++)
+                    {
+                        *((Color32*)decompressedBytes + (yBlock * 4 + y) * textureData.Width + (xBlock * 4 + x)) = colors[y * 4 + x];
+                    }
+                }
+            }
+        }
+        break;
+    }
+    case PixelFormat::BC3_UNorm:
+    case PixelFormat::BC3_UNorm_sRGB:
+    {
+        for (int32 yBlock = 0; yBlock < blocksHeight; yBlock++)
+        {
+            for (int32 xBlock = 0; xBlock < blocksWidth; xBlock++)
+            {
+                const byte* block = blocksBytes + yBlock * blocksData->RowPitch + xBlock * 16;
+                detexDecompressBlockBC3(block, 0, 0, (byte*)&colors);
+                for (int32 y = 0; y < 4; y++)
+                {
+                    for (int32 x = 0; x < 4; x++)
+                    {
+                        *((Color32*)decompressedBytes + (yBlock * 4 + y) * textureData.Width + (xBlock * 4 + x)) = colors[y * 4 + x];
+                    }
+                }
+            }
+        }
+        break;
+    }
+    default:
+        LOG(Warning, "Texture data format {0} is not supported by stb library.", (int32)textureData.Format);
+        return nullptr;
+    }
+    return &decompressed;
+}
+
+#endif
+
 bool TextureTool::ExportTextureStb(ImageType type, const StringView& path, const TextureData& textureData)
 {
     if (textureData.GetArraySize() != 1)
     {
         LOG(Warning, "Exporting texture arrays and cubemaps is not supported by stb library.");
     }
-
     TextureData const* texture = &textureData;
 
 #if USE_EDITOR
     // Handle compressed textures
     TextureData decompressed;
-    if (PixelFormatExtensions::IsCompressed(textureData.Format))
-    {
-        decompressed.Format = PixelFormatExtensions::IsSRGB(textureData.Format) ? PixelFormat::R8G8B8A8_UNorm_sRGB : PixelFormat::R8G8B8A8_UNorm;
-        decompressed.Width = textureData.Width;
-        decompressed.Height = textureData.Height;
-        decompressed.Depth = textureData.Depth;
-        decompressed.Items.Resize(1);
-        decompressed.Items[0].Mips.Resize(1);
-
-        auto decompressedData = decompressed.GetData(0, 0);
-        decompressedData->RowPitch = textureData.Width * sizeof(Color32);
-        decompressedData->Lines = textureData.Height;
-        decompressedData->DepthPitch = decompressedData->RowPitch * decompressedData->Lines;
-        decompressedData->Data.Allocate(decompressedData->DepthPitch);
-
-        Color32 colors[16];
-        int32 blocksWidth = textureData.Width / 4;
-        int32 blocksHeight = textureData.Height / 4;
-        const auto blocksData = texture->GetData(0, 0);
-        byte* decompressedBytes = decompressedData->Data.Get();
-
-        switch (textureData.Format)
-        {
-        case PixelFormat::BC1_UNorm:
-        case PixelFormat::BC1_UNorm_sRGB:
-        {
-            for (int32 yBlock = 0; yBlock < blocksHeight; yBlock++)
-            {
-                for (int32 xBlock = 0; xBlock < blocksWidth; xBlock++)
-                {
-                    const byte* block = blocksData->Data.Get() + yBlock * 4 * blocksData->RowPitch + xBlock * 8;
-                    detexDecompressBlockBC1(block, 0, 0, (byte*)&colors);
-                    for (int32 y = 0; y < 4; y++)
-                    {
-                        for (int32 x = 0; x < 4; x++)
-                        {
-                            *((Color32*)decompressedBytes + (yBlock * 4 + y) * textureData.Width + (xBlock * 4 + x)) = colors[y * 4 + x];
-                        }
-                    }
-                }
-            }
-            break;
-        }
-        case PixelFormat::BC2_UNorm:
-        case PixelFormat::BC2_UNorm_sRGB:
-        {
-            for (int32 yBlock = 0; yBlock < blocksHeight; yBlock++)
-            {
-                for (int32 xBlock = 0; xBlock < blocksWidth; xBlock++)
-                {
-                    const byte* block = blocksData->Data.Get() + yBlock * 4 * blocksData->RowPitch + xBlock * 16;
-                    detexDecompressBlockBC2(block, 0, 0, (byte*)&colors);
-                    for (int32 y = 0; y < 4; y++)
-                    {
-                        for (int32 x = 0; x < 4; x++)
-                        {
-                            *((Color32*)decompressedBytes + (yBlock * 4 + y) * textureData.Width + (xBlock * 4 + x)) = colors[y * 4 + x];
-                        }
-                    }
-                }
-            }
-            break;
-        }
-        case PixelFormat::BC3_UNorm:
-        case PixelFormat::BC3_UNorm_sRGB:
-        {
-            for (int32 yBlock = 0; yBlock < blocksHeight; yBlock++)
-            {
-                for (int32 xBlock = 0; xBlock < blocksWidth; xBlock++)
-                {
-                    const byte* block = blocksData->Data.Get() + yBlock * 4 * blocksData->RowPitch + xBlock * 16;
-                    detexDecompressBlockBC3(block, 0, 0, (byte*)&colors);
-                    for (int32 y = 0; y < 4; y++)
-                    {
-                        for (int32 x = 0; x < 4; x++)
-                        {
-                            *((Color32*)decompressedBytes + (yBlock * 4 + y) * textureData.Width + (xBlock * 4 + x)) = colors[y * 4 + x];
-                        }
-                    }
-                }
-            }
-            break;
-        }
-        default:
-            LOG(Warning, "Texture data format {0} is not supported by stb library.", (int32)textureData.Format);
-            return true;
-        }
-        texture = &decompressed;
-    }
+    texture = stbDecompress(textureData, decompressed);
+    if (!texture)
+        return true;
 #endif
 
     // Convert into RGBA8
@@ -375,14 +386,14 @@ bool TextureTool::ImportTextureStb(ImageType type, const StringView& path, Textu
     // Load image data
     if (type == ImageType::Internal)
     {
+        if (!options.InternalLoad.IsBinded() || options.InternalLoad(textureData))
+            return true;
         if (options.FlipY)
         {
+            // TODO: impl this
             errorMsg = TEXT("Flipping images imported from Internal source is not supported by stb.");
             return true;
         }
-
-        MISSING_CODE("Importing internal textures with STB.");
-        return true;
     }
     else
     {
@@ -507,22 +518,33 @@ bool TextureTool::ImportTextureStb(ImageType type, const StringView& path, Textu
 
 bool TextureTool::ConvertStb(TextureData& dst, const TextureData& src, const PixelFormat dstFormat)
 {
+    TextureData const* textureData = &src;
+
+#if USE_EDITOR
+    // Handle compressed textures
+    TextureData decompressed;
+    textureData = stbDecompress(src, decompressed);
+    if (!textureData)
+        return true;
+#endif
+
     // Setup
-    auto arraySize = src.GetArraySize();
-    dst.Width = src.Width;
-    dst.Height = src.Height;
-    dst.Depth = src.Depth;
+    auto arraySize = textureData->GetArraySize();
+    dst.Width = textureData->Width;
+    dst.Height = textureData->Height;
+    dst.Depth = textureData->Depth;
     dst.Format = dstFormat;
     dst.Items.Resize(arraySize, false);
-    auto formatSize = PixelFormatExtensions::SizeInBytes(src.Format);
-    auto components = PixelFormatExtensions::ComputeComponentsCount(src.Format);
-    auto sampler = TextureTool::GetSampler(src.Format);
+    auto formatSize = PixelFormatExtensions::SizeInBytes(textureData->Format);
+    auto components = PixelFormatExtensions::ComputeComponentsCount(textureData->Format);
+    auto sampler = TextureTool::GetSampler(textureData->Format);
     if (!sampler)
     {
-        LOG(Warning, "Cannot convert image. Unsupported format {0}", static_cast<int32>(src.Format));
+        LOG(Warning, "Cannot convert image. Unsupported format {0}", static_cast<int32>(textureData->Format));
         return true;
     }
 
+#if USE_EDITOR
     if (PixelFormatExtensions::IsCompressed(dstFormat))
     {
         int32 bytesPerBlock;
@@ -539,10 +561,18 @@ bool TextureTool::ConvertStb(TextureData& dst, const TextureData& src, const Pix
         }
         bool isDstSRGB = PixelFormatExtensions::IsSRGB(dstFormat);
 
+        // bc7enc init
+        bc7enc16_compress_block_params params;
+        if (dstFormat == PixelFormat::BC7_UNorm || dstFormat == PixelFormat::BC7_UNorm_sRGB)
+        {
+            bc7enc16_compress_block_params_init(&params);
+            bc7enc16_compress_block_init();
+        }
+
         // Compress all array slices
         for (int32 arrayIndex = 0; arrayIndex < arraySize; arrayIndex++)
         {
-            const auto& srcSlice = src.Items[arrayIndex];
+            const auto& srcSlice = textureData->Items[arrayIndex];
             auto& dstSlice = dst.Items[arrayIndex];
             auto mipLevels = srcSlice.Mips.Count();
             dstSlice.Mips.Resize(mipLevels, false);
@@ -552,8 +582,8 @@ bool TextureTool::ConvertStb(TextureData& dst, const TextureData& src, const Pix
             {
                 const auto& srcMip = srcSlice.Mips[mipIndex];
                 auto& dstMip = dstSlice.Mips[mipIndex];
-                auto mipWidth = Math::Max(src.Width >> mipIndex, 1);
-                auto mipHeight = Math::Max(src.Height >> mipIndex, 1);
+                auto mipWidth = Math::Max(textureData->Width >> mipIndex, 1);
+                auto mipHeight = Math::Max(textureData->Height >> mipIndex, 1);
                 auto blocksWidth = Math::Max(Math::DivideAndRoundUp(mipWidth, 4), 1);
                 auto blocksHeight = Math::Max(Math::DivideAndRoundUp(mipHeight, 4), 1);
 
@@ -582,25 +612,30 @@ bool TextureTool::ConvertStb(TextureData& dst, const TextureData& src, const Pix
                         }
 
                         // Compress block
+                        byte* dstBlock = dstMip.Data.Get() + (yBlock * blocksWidth + xBlock) * bytesPerBlock;
                         switch (dstFormat)
                         {
                         case PixelFormat::BC1_UNorm:
                         case PixelFormat::BC1_UNorm_sRGB:
-                            stb_compress_dxt_block((byte*)dstMip.Data.Get() + (yBlock * blocksWidth + xBlock) * bytesPerBlock, (byte*)&srcBlock, 0, STB_DXT_HIGHQUAL);
+                            stb_compress_dxt_block(dstBlock, (byte*)&srcBlock, 0, STB_DXT_HIGHQUAL);
                             break;
                         case PixelFormat::BC3_UNorm:
                         case PixelFormat::BC3_UNorm_sRGB:
-                            stb_compress_dxt_block((byte*)dstMip.Data.Get() + (yBlock * blocksWidth + xBlock) * bytesPerBlock, (byte*)&srcBlock, 1, STB_DXT_HIGHQUAL);
+                            stb_compress_dxt_block(dstBlock, (byte*)&srcBlock, 1, STB_DXT_HIGHQUAL);
                             break;
                         case PixelFormat::BC4_UNorm:
                             for (int32 i = 1; i < 16; i++)
                                 ((byte*)&srcBlock)[i] = srcBlock[i].R;
-                            stb_compress_bc4_block((byte*)dstMip.Data.Get() + (yBlock * blocksWidth + xBlock) * bytesPerBlock, (byte*)&srcBlock);
+                            stb_compress_bc4_block(dstBlock, (byte*)&srcBlock);
                             break;
                         case PixelFormat::BC5_UNorm:
                             for (int32 i = 0; i < 16; i++)
                                 ((uint16*)&srcBlock)[i] = srcBlock[i].R << 8 | srcBlock[i].G;
-                            stb_compress_bc5_block((byte*)dstMip.Data.Get() + (yBlock * blocksWidth + xBlock) * bytesPerBlock, (byte*)&srcBlock);
+                            stb_compress_bc5_block(dstBlock, (byte*)&srcBlock);
+                            break;
+                        case PixelFormat::BC7_UNorm:
+                        case PixelFormat::BC7_UNorm_sRGB:
+                            bc7enc16_compress_block(dstBlock, &srcBlock, &params);
                             break;
                         default:
                             LOG(Warning, "Cannot compress image. Unsupported format {0}", static_cast<int32>(dstFormat));
@@ -612,6 +647,7 @@ bool TextureTool::ConvertStb(TextureData& dst, const TextureData& src, const Pix
         }
     }
     else
+#endif
     {
         int32 bytesPerPixel = PixelFormatExtensions::SizeInBytes(dstFormat);
         auto dstSampler = TextureTool::GetSampler(dstFormat);
@@ -624,7 +660,7 @@ bool TextureTool::ConvertStb(TextureData& dst, const TextureData& src, const Pix
         // Convert all array slices
         for (int32 arrayIndex = 0; arrayIndex < arraySize; arrayIndex++)
         {
-            const auto& srcSlice = src.Items[arrayIndex];
+            const auto& srcSlice = textureData->Items[arrayIndex];
             auto& dstSlice = dst.Items[arrayIndex];
             auto mipLevels = srcSlice.Mips.Count();
             dstSlice.Mips.Resize(mipLevels, false);
@@ -634,8 +670,8 @@ bool TextureTool::ConvertStb(TextureData& dst, const TextureData& src, const Pix
             {
                 const auto& srcMip = srcSlice.Mips[mipIndex];
                 auto& dstMip = dstSlice.Mips[mipIndex];
-                auto mipWidth = Math::Max(src.Width >> mipIndex, 1);
-                auto mipHeight = Math::Max(src.Height >> mipIndex, 1);
+                auto mipWidth = Math::Max(textureData->Width >> mipIndex, 1);
+                auto mipHeight = Math::Max(textureData->Height >> mipIndex, 1);
 
                 // Allocate memory
                 dstMip.RowPitch = mipWidth * bytesPerPixel;
@@ -669,6 +705,7 @@ bool TextureTool::ResizeStb(PixelFormat format, TextureMipData& dstMip, const Te
     auto components = PixelFormatExtensions::ComputeComponentsCount(format);
     auto srcMipWidth = srcMip.RowPitch / formatSize;
     auto srcMipHeight = srcMip.DepthPitch / srcMip.RowPitch;
+    auto sampler = GetSampler(format);
 
     // Allocate memory
     dstMip.RowPitch = dstMipWidth * formatSize;
@@ -727,6 +764,20 @@ bool TextureTool::ResizeStb(PixelFormat format, TextureMipData& dstMip, const Te
         break;
     }
     default:
+        if (sampler)
+        {
+            const Int2 srcSize(srcMipWidth, srcMipHeight);
+            for (int32 y = 0; y < dstMipHeight; y++)
+            {
+                for (int32 x = 0; x < dstMipWidth; x++)
+                {
+                    const Vector2 uv((float)x / dstMipWidth, (float)y / dstMipHeight);
+                    Color color = SamplePoint(sampler, uv, srcMip.Data.Get(), srcSize, srcMip.RowPitch);
+                    Store(sampler, x, y, dstMip.Data.Get(), dstMip.RowPitch, color);
+                }
+            }
+            return false;
+        }
         LOG(Warning, "Cannot resize image. Unsupported format {0}", static_cast<int32>(format));
         return true;
     }

@@ -1,5 +1,6 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
+using FlaxEditor.GUI.ContextMenu;
 using FlaxEditor.GUI.Input;
 using FlaxEngine;
 using FlaxEditor.Viewport.Widgets;
@@ -16,6 +17,20 @@ namespace FlaxEditor.Viewport.Previews
         private ViewportWidgetButton _playPauseButton;
 
         /// <summary>
+        /// Gets or sets a value indicating whether enable root motion.
+        /// </summary>
+        public bool RootMotion
+        {
+            get => !_snapToOrigin;
+            set
+            {
+                if (!_snapToOrigin == value)
+                    return;
+                _snapToOrigin = !value;
+            }
+        }
+
+        /// <summary>
         /// Initializes a new instance of the <see cref="AnimationPreview"/> class.
         /// </summary>
         /// <param name="useWidgets">if set to <c>true</c> use widgets.</param>
@@ -24,11 +39,12 @@ namespace FlaxEditor.Viewport.Previews
         {
             PlayAnimation = true;
             PlayAnimationChanged += OnPlayAnimationChanged;
+            _snapToOrigin = false;
 
             // Playback Speed
             {
                 var playbackSpeed = ViewWidgetButtonMenu.AddButton("Playback Speed");
-                var playbackSpeedValue = new FloatValueBox(-1, 90, 2, 70.0f, 0.0f, 10000.0f, 0.001f)
+                var playbackSpeedValue = new FloatValueBox(-1, 90, 2, 70.0f, -10000.0f, 10000.0f, 0.001f)
                 {
                     Parent = playbackSpeed
                 };
@@ -46,6 +62,17 @@ namespace FlaxEditor.Viewport.Previews
                 };
                 _playPauseButton.Clicked += button => PlayAnimation = !PlayAnimation;
                 playPauseWidget.Parent = this;
+            }
+
+            // Play Root Motion
+            {
+                var button = ViewWidgetButtonMenu.AddButton("Root Motion");
+                var buttonValue = new CheckBox(90, 2, !_snapToOrigin)
+                {
+                    Parent = button
+                };
+                buttonValue.StateChanged += checkbox => RootMotion = !RootMotion;
+                ViewWidgetButtonMenu.VisibleChanged += control => buttonValue.Checked = RootMotion;
             }
 
             // Enable shadows

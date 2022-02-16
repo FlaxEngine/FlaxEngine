@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 #if GRAPHICS_API_DIRECTX12
 
@@ -589,7 +589,7 @@ void GPUTextureDX12::initHandles()
         }
         if (useUAV)
         {
-            if (isCubeMap || isArray)
+            if (isCubeMap)
             {
                 uavDesc.ViewDimension = D3D12_UAV_DIMENSION_TEXTURE2DARRAY;
                 uavDesc.Texture2DArray.ArraySize = arraySize;

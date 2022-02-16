@@ -1,8 +1,9 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 #pragma once
 
 #include "ReadStream.h"
+#include "Engine/Platform/Platform.h"
 
 /// <summary>
 /// Super fast advanced data reading from raw bytes without any overhead at all
@@ -33,8 +34,8 @@ public:
     /// Init
     /// </summary>
     /// <param name="data">Array with data to read from</param>
-    template<typename T>
-    MemoryReadStream(const Array<T>& data)
+    template<typename T, typename AllocationType = HeapAllocation>
+    MemoryReadStream(const Array<T, AllocationType>& data)
         : MemoryReadStream(data.Get(), data.Count() * sizeof(T))
     {
     }
@@ -52,8 +53,8 @@ public:
     /// Init stream to the custom buffer location
     /// </summary>
     /// <param name="data">Array with data to read from</param>
-    template<typename T>
-    FORCE_INLINE void Init(const Array<T>& data)
+    template<typename T, typename AllocationType = HeapAllocation>
+    FORCE_INLINE void Init(const Array<T, AllocationType>& data)
     {
         Init(data.Get(), data.Count() * sizeof(T));
     }
@@ -78,7 +79,6 @@ public:
     /// <returns>The pointer to the data in memory.</returns>
     void* Read(uint32 bytes)
     {
-        ASSERT(bytes >= 0);
         ASSERT(GetLength() - GetPosition() >= bytes);
         const auto result = (void*)_position;
         _position += bytes;

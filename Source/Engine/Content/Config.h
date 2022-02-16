@@ -1,11 +1,11 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 #pragma once
 
 #include "Engine/Core/Config.h"
 
 // Amount of content loading threads per single physical CPU core
-#define LOADING_THREAD_PER_PHYSICAL_CORE 0.5f
+#define LOADING_THREAD_PER_LOGICAL_CORE 0.5f
 
 // Enable/disable additional assets metadata verification, note: we should disable it for release builds
 #define ASSETS_LOADING_EXTRA_VERIFICATION (BUILD_DEBUG || USE_EDITOR)

@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -25,7 +25,7 @@ public:
     /// <summary>
     /// Describes work result value
     /// </summary>
-    DECLARE_ENUM_4(Result, Ok, AssetLoadError, MissingReferences, LoadDataError);
+    DECLARE_ENUM_5(Result, Ok, AssetLoadError, MissingReferences, LoadDataError, TaskFailed);
 
 private:
 

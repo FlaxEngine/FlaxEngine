@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 using System;
 using System.Collections.Generic;
@@ -229,7 +229,13 @@ namespace FlaxEditor.CustomEditors
                     for (int i = 0; i < Count; i++)
                     {
                         if (!Equals(this[i], _defaultValue))
+                        {
+                            // Special case for String (null string is kind of equal to empty string from the user perspective)
+                            if (this[i] == null && _defaultValue is string defaultValueStr && defaultValueStr.Length == 0)
+                                continue;
+
                             return true;
+                        }
                     }
                 }
                 return false;
@@ -263,6 +269,19 @@ namespace FlaxEditor.CustomEditors
                 {
                     _defaultValue = defaultValueAttribute.Value;
                     _hasDefaultValue = true;
+
+                    if (_defaultValue != null && _defaultValue.GetType() != Type.Type)
+                    {
+                        // Workaround for DefaultValueAttribute that doesn't support certain value types storage
+                        if (Type.Type == typeof(sbyte))
+                            _defaultValue = Convert.ToSByte(_defaultValue);
+                        else if (Type.Type == typeof(ushort))
+                            _defaultValue = Convert.ToUInt16(_defaultValue);
+                        else if (Type.Type == typeof(uint))
+                            _defaultValue = Convert.ToUInt32(_defaultValue);
+                        else if (Type.Type == typeof(ulong))
+                            _defaultValue = Convert.ToUInt64(_defaultValue);
+                    }
                 }
             }
             if (instanceValues._hasReferenceValue)

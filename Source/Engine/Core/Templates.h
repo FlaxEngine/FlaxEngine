@@ -1,8 +1,10 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 #pragma once
 
 #include "Engine/Core/Types/BaseTypes.h"
+
+#ifndef DOXYGEN
 
 // @formatter:off
 
@@ -435,3 +437,5 @@ template<> struct TIsBitwiseConstructible<uint64, int64> { enum { Value = true }
 template<> struct TIsBitwiseConstructible<int64, uint64> { enum { Value = true }; };
 
 // @formatter:on
+
+#endif

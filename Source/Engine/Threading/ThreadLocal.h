@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -81,7 +81,6 @@ protected:
 
     FORCE_INLINE int32 GetIndex()
     {
-        ASSERT(Count() < MaxThreads);
         int64 key = (int64)Platform::GetCurrentThreadID();
         auto index = Hash(key);
         while (true)

@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -48,6 +48,7 @@ public:
     /// <returns>The character</returns>
     FORCE_INLINE T& operator[](int32 index)
     {
+        ASSERT(index >= 0 && index < _length);
         return _data[index];
     }
 
@@ -58,6 +59,7 @@ public:
     /// <returns>The character</returns>
     FORCE_INLINE const T& operator[](int32 index) const
     {
+        ASSERT(index >= 0 && index < _length);
         return _data[index];
     }
 
@@ -335,6 +337,8 @@ public:
     void ReserveSpace(int32 length)
     {
         ASSERT(length >= 0);
+        if (length == _length)
+            return;
         Platform::Free(_data);
         if (length != 0)
         {
@@ -441,14 +445,8 @@ public:
     /// <returns>Number of replacements made (in other words number of occurences of searchText).</returns>
     int32 Replace(const T* searchText, int32 searchTextLength, const T* replacementText, int32 replacementTextLength, StringSearchCase searchCase = StringSearchCase::CaseSensitive)
     {
-        if (!HasChars())
+        if (!HasChars() || searchTextLength == 0)
             return 0;
-
-        if (searchTextLength == 0)
-        {
-            ASSERT(false);  // Empty search text never makes sense, and is always sign of a bug in calling code.
-            return 0;
-        }
 
         int32 replacedCount = 0;
 
@@ -1021,6 +1019,15 @@ public:
     /// <param name="startIndex">The index of the first character to insert.</param>
     /// <param name="other">The string to insert.</param>
     void Insert(int32 startIndex, const String& other);
+
+    /// <summary>
+    /// Removes characters from the string at given location until the end.
+    /// </summary>
+    /// <param name="startIndex">The index of the first character to remove.</param>
+    void Remove(int32 startIndex)
+    {
+        Remove(startIndex, _length - startIndex);
+    }
 
     /// <summary>
     /// Removes characters from the string at given location and length.

@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -10,17 +10,15 @@
 /// </summary>
 API_CLASS(Static, Namespace="FlaxEditor") class FLAXENGINE_API GameCooker
 {
-DECLARE_SCRIPTING_TYPE_NO_SPAWN(GameCooker);
+    DECLARE_SCRIPTING_TYPE_NO_SPAWN(GameCooker);
     friend CookingData;
 public:
-
     /// <summary>
     /// Single build step.
     /// </summary>
     class FLAXENGINE_API BuildStep
     {
     public:
-
         /// <summary>
         /// Finalizes an instance of the <see cref="BuildStep"/> class.
         /// </summary>
@@ -52,7 +50,6 @@ public:
     };
 
 public:
-
     /// <summary>
     /// Gets the current build data. Valid only during active build process.
     /// </summary>
@@ -123,6 +120,21 @@ public:
     /// Occurs when building game progress fires.
     /// </summary>
     static Delegate<const String&, float> OnProgress;
+
+    /// <summary>
+    /// Occurs when game files and data is deployed.
+    /// </summary>
+    API_EVENT() static Action DeployFiles;
+
+    /// <summary>
+    /// Occurs when game files and data are deployed and can be post-processed.
+    /// </summary>
+    API_EVENT() static Action PostProcessFiles;
+
+    /// <summary>
+    /// Occurs when game files and data are ready to be packaged. Called only if game is about to packaged, otherwise this step is skipped.
+    /// </summary>
+    API_EVENT() static Action PackageFiles;
 
     /// <summary>
     /// Occurs when building collects assets to cook.

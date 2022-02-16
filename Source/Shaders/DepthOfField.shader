@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 // Implementation based on:
 //	Bokeh Sample by MJP
@@ -137,11 +137,11 @@ META_CS(true, FEATURE_LEVEL_SM5)
 void CS_DepthOfFieldH(uint3 groupID : SV_GroupID, uint3 groupThreadID : SV_GroupThreadID)
 {
 	// These positions are relative to the "grid", AKA the horizontal group of pixels that this thread group is writing to
-	const uint gridStartX = groupID.x * DOF_GRID_SIZE;
-	const uint gridX = groupThreadID.x - DOF_APRON_SIZE;
+	const int gridStartX = groupID.x * DOF_GRID_SIZE;
+	const int gridX = groupThreadID.x - DOF_APRON_SIZE;
 
 	// These positions are relative to the pixel coordinates
-	const uint sampleX = gridStartX + gridX;
+	const uint sampleX = max(gridStartX + gridX, 0);
 	const uint sampleY = groupID.y;
 
 	uint2 textureSize;
@@ -218,12 +218,12 @@ META_CS(true, FEATURE_LEVEL_SM5)
 void CS_DepthOfFieldV(uint3 groupID : SV_GroupID, uint3 groupThreadID : SV_GroupThreadID)
 {
 	// These positions are relative to the "grid", AKA the vertical group of pixels that this thread group is writing to
-	const uint gridStartY = groupID.y * DOF_GRID_SIZE;
-	const uint gridY = groupThreadID.y - DOF_APRON_SIZE;
+	const int gridStartY = groupID.y * DOF_GRID_SIZE;
+	const int gridY = groupThreadID.y - DOF_APRON_SIZE;
 
 	// These positions are relative to the pixel coordinates
 	const uint sampleX = groupID.x;
-	const uint sampleY = gridStartY + gridY;
+	const uint sampleY = max(gridStartY + gridY, 0);
 
 	uint2 textureSize;
 	Input0.GetDimensions(textureSize.x, textureSize.y);
@@ -311,11 +311,11 @@ META_CS(true, FEATURE_LEVEL_SM5)
 void CS_CoCSpreadH(uint3 groupID : SV_GroupID, uint3 groupThreadID : SV_GroupThreadID)
 {
 	// These positions are relative to the "grid", AKA the horizontal group of pixels that this thread group is writing to
-	const uint gridStartX = groupID.x * DOF_GRID_SIZE;
-	const uint gridX = groupThreadID.x - DOF_APRON_SIZE;
+	const int gridStartX = groupID.x * DOF_GRID_SIZE;
+	const int gridX = groupThreadID.x - DOF_APRON_SIZE;
 
 	// These positions are relative to the pixel coordinates
-	const uint sampleX = gridStartX + gridX;
+	const uint sampleX = max(gridStartX + gridX, 0);
 	const uint sampleY = groupID.y;
 
 	uint2 textureSize;
@@ -382,12 +382,12 @@ META_CS(true, FEATURE_LEVEL_SM5)
 void CS_CoCSpreadV(uint3 groupID : SV_GroupID, uint3 groupThreadID : SV_GroupThreadID)
 {
 	// These positions are relative to the "grid", AKA the vertical group of pixels that this thread group is writing to
-	const uint gridStartY = groupID.y * DOF_GRID_SIZE;
-	const uint gridY = groupThreadID.y - DOF_APRON_SIZE;
+	const int gridStartY = groupID.y * DOF_GRID_SIZE;
+	const int gridY = groupThreadID.y - DOF_APRON_SIZE;
 
 	// These positions are relative to the pixel coordinates
 	const uint sampleX = groupID.x;
-	const uint sampleY = gridStartY + gridY;
+	const uint sampleY = max(gridStartY + gridY, 0);
 
 	uint2 textureSize;
 	Input0.GetDimensions(textureSize.x, textureSize.y);

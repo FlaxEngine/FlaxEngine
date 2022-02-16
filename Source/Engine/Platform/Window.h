@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -10,12 +10,18 @@
 #include "Linux/LinuxWindow.h"
 #elif PLATFORM_PS4
 #include "Platforms/PS4/Engine/Platform/PS4Window.h"
+#elif PLATFORM_XBOX_ONE
+#include "GDK/GDKWindow.h"
 #elif PLATFORM_XBOX_SCARLETT
-#include "Platforms/XboxScarlett/Engine/Platform/XboxScarlettWindow.h"
+#include "GDK/GDKWindow.h"
 #elif PLATFORM_ANDROID
 #include "Android/AndroidWindow.h"
 #elif PLATFORM_SWITCH
 #include "Platforms/Switch/Engine/Platform/SwitchWindow.h"
+#elif PLATFORM_PS5
+#include "Platforms/PS5/Engine/Platform/PS5Window.h"
+#elif PLATFORM_MAC
+#include "Mac/MacWindow.h"
 #else
 #error Missing Window implementation!
 #endif

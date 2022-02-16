@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -69,13 +69,11 @@ public:
 
 	FORCE_INLINE T& PeekFront()
 	{
-		ASSERT(_front != _back);
 		return _allocation.Get()[_front];
 	}
 
 	FORCE_INLINE const T& PeekFront() const
 	{
-		ASSERT(_front != _back);
 		return _allocation.Get()[_front];
 	}
 
@@ -93,7 +91,6 @@ public:
 
 	void PopFront()
 	{
-		ASSERT(_front != _back);
 		Memory::DestructItems(_allocation.Get() + _front, 1);
 		_front = (_front + 1) % _capacity;
 		_count--;

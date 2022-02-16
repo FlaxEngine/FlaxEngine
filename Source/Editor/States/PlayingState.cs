@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 using System;
 using System.Collections.Generic;
@@ -92,9 +92,13 @@ namespace FlaxEditor.States
         {
             Profiler.BeginEvent("PlayingState.CacheSelection");
             _selectedObjects.Clear();
-            for (int i = 0; i < Editor.SceneEditing.Selection.Count; i++)
+            var selection = Editor.SceneEditing.Selection;
+            if (selection.Count != 0)
             {
-                _selectedObjects.Add(Editor.SceneEditing.Selection[i].ID);
+                for (int i = 0; i < selection.Count; i++)
+                    _selectedObjects.Add(selection[i].ID);
+                selection.Clear();
+                Editor.SceneEditing.OnSelectionChanged();
             }
             Profiler.EndEvent();
         }
@@ -102,15 +106,16 @@ namespace FlaxEditor.States
         private void RestoreSelection()
         {
             Profiler.BeginEvent("PlayingState.RestoreSelection");
-            var count = Editor.SceneEditing.Selection.Count;
-            Editor.SceneEditing.Selection.Clear();
+            var selection = Editor.SceneEditing.Selection;
+            var count = selection.Count;
+            selection.Clear();
             for (int i = 0; i < _selectedObjects.Count; i++)
             {
                 var node = SceneGraphFactory.FindNode(_selectedObjects[i]);
                 if (node != null)
-                    Editor.SceneEditing.Selection.Add(node);
+                    selection.Add(node);
             }
-            if (Editor.SceneEditing.Selection.Count != count)
+            if (selection.Count != count)
                 Editor.SceneEditing.OnSelectionChanged();
             Profiler.EndEvent();
         }
@@ -151,7 +156,7 @@ namespace FlaxEditor.States
         private void SetupEditorEnvOptions()
         {
             Time.TimeScale = 1.0f;
-            Physics.AutoSimulation = true;
+            Physics.DefaultScene.AutoSimulation = true;
             Screen.CursorVisible = true;
             Screen.CursorLock = CursorLockMode.None;
         }

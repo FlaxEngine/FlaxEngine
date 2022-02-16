@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 using System;
 using System.Collections.Generic;
@@ -92,6 +92,7 @@ namespace FlaxEditor.Surface
             case MaterialParameterType.GPUTexture: return typeof(GPUTexture);
             case MaterialParameterType.Matrix: return typeof(Matrix);
             case MaterialParameterType.ChannelMask: return typeof(ChannelMask);
+            case MaterialParameterType.GameplayGlobal: return typeof(GameplayGlobals);
             case MaterialParameterType.TextureGroupSampler: return typeof(int);
             default: throw new ArgumentOutOfRangeException(nameof(type), type, null);
             }
@@ -430,17 +431,14 @@ namespace FlaxEditor.Surface
 
         internal static string GetVisualScriptTypeDescription(ScriptType type)
         {
+            if (type == ScriptType.Null)
+                return "null";
             var sb = new StringBuilder();
             if (type.IsStatic)
                 sb.Append("static ");
             else if (type.IsAbstract)
                 sb.Append("abstract ");
-            sb.Append(type.TypeName);
-
-            var attributes = type.GetAttributes(false);
-            var tooltipAttribute = (TooltipAttribute)attributes.FirstOrDefault(x => x is TooltipAttribute);
-            if (tooltipAttribute != null)
-                sb.Append("\n").Append(tooltipAttribute.Text);
+            sb.Append(Editor.Instance.CodeDocs.GetTooltip(type));
             return sb.ToString();
         }
 
@@ -500,10 +498,9 @@ namespace FlaxEditor.Surface
             }
 
             // Tooltip
-            var attributes = member.GetAttributes();
-            var tooltipAttribute = (TooltipAttribute)attributes.FirstOrDefault(x => x is TooltipAttribute);
-            if (tooltipAttribute != null)
-                sb.Append("\n").Append(tooltipAttribute.Text);
+            var tooltip = Editor.Instance.CodeDocs.GetTooltip(member);
+            if (!string.IsNullOrEmpty(tooltip))
+                sb.Append("\n").Append(tooltip);
 
             return sb.ToString();
         }

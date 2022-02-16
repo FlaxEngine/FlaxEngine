@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -16,7 +16,7 @@ class GPUUploadTextureMipTask : public GPUTask
 protected:
 
     GPUTextureReference _texture;
-    int32 _mipIndex;
+    int32 _mipIndex, _rowPitch, _slicePitch;
     BytesContainer _data;
 
 public:
@@ -27,11 +27,15 @@ public:
     /// <param name="texture">The target texture.</param>
     /// <param name="mipIndex">The target texture mip data.</param>
     /// <param name="data">The data to upload.</param>
+    /// <param name="rowPitch">The data row pitch.</param>
+    /// <param name="slicePitch">The data slice pitch.</param>
     /// <param name="copyData">True if copy data to the temporary buffer, otherwise the input data will be used directly. Then ensure it is valid during the copy operation period (for the next few frames).</param>
-    GPUUploadTextureMipTask(GPUTexture* texture, int32 mipIndex, Span<byte> data, bool copyData)
+    GPUUploadTextureMipTask(GPUTexture* texture, int32 mipIndex, Span<byte> data, int32 rowPitch, int32 slicePitch, bool copyData)
         : GPUTask(Type::UploadTexture)
         , _texture(texture)
         , _mipIndex(mipIndex)
+        , _rowPitch(rowPitch)
+        , _slicePitch(slicePitch)
     {
         _texture.OnUnload.Bind<GPUUploadTextureMipTask, &GPUUploadTextureMipTask::OnResourceUnload>(this);
 
@@ -66,18 +70,14 @@ protected:
             return Result::MissingResources;
         ASSERT(texture->IsAllocated());
 
-        // Cache data
-        const int32 arraySize = texture->ArraySize();
-        uint32 rowPitch, slicePitch;
-        texture->ComputePitch(_mipIndex, rowPitch, slicePitch);
-        ASSERT((uint32)_data.Length() >= slicePitch * arraySize);
-
         // Update all array slices
         const byte* dataSource = _data.Get();
+        const int32 arraySize = texture->ArraySize();
+        ASSERT(_data.Length() >= _slicePitch * arraySize);
         for (int32 arrayIndex = 0; arrayIndex < arraySize; arrayIndex++)
         {
-            context->GPU->UpdateTexture(texture, arrayIndex, _mipIndex, dataSource, rowPitch, slicePitch);
-            dataSource += slicePitch;
+            context->GPU->UpdateTexture(texture, arrayIndex, _mipIndex, dataSource, _rowPitch, _slicePitch);
+            dataSource += _slicePitch;
         }
 
         return Result::Ok;

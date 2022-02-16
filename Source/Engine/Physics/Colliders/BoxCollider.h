@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -62,7 +62,7 @@ protected:
 
     // [Collider]
     void UpdateBounds() override;
-    void GetGeometry(PxGeometryHolder& geometry) override;
+    void GetGeometry(CollisionShape& collision) override;
 #if USE_EDITOR
     void DrawPhysicsDebug(RenderView& view) override;
 #endif

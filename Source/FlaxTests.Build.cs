@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 using System;
 using System.IO;
@@ -25,6 +25,7 @@ public class FlaxTestsTarget : EngineTarget
         {
             TargetPlatform.Windows,
             TargetPlatform.Linux,
+            TargetPlatform.Mac,
         };
         Architectures = new[]
         {

@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -12,6 +12,7 @@ class FLAXENGINE_API ManagedSerialization
 {
 public:
 
+#if USE_MONO
     /// <summary>
     /// Serializes managed object to JSON.
     /// </summary>
@@ -40,4 +41,5 @@ public:
     /// <param name="data">The input data.</param>
     /// <param name="object">The object to deserialize.</param>
     static void Deserialize(const StringAnsiView& data, MonoObject* object);
+#endif
 };

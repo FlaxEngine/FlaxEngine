@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 using System;
 using System.IO;
@@ -48,14 +48,17 @@ public class PhysX : DepsModule
         if (useVehicle)
             options.PublicDefinitions.Add("WITH_VEHICLE");
 
+        options.PublicDefinitions.Add("COMPILE_WITH_PHYSX");
+
         string archPostFix = string.Empty;
         switch (options.Platform.Target)
         {
         case TargetPlatform.Windows:
-        case TargetPlatform.XboxOne:
         case TargetPlatform.UWP:
         case TargetPlatform.Linux:
+        case TargetPlatform.XboxOne:
         case TargetPlatform.XboxScarlett:
+        case TargetPlatform.Mac:
             switch (options.Architecture)
             {
             case TargetArchitecture.x86:

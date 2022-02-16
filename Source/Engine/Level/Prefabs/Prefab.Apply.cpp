@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 #include "Prefab.h"
 
@@ -364,6 +364,7 @@ bool PrefabInstanceData::SynchronizePrefabInstances(Array<PrefabInstanceData>& p
                     obj->SetParent(nullptr);
 
                     sceneObjects.Value->RemoveAtKeepOrder(i);
+                    deserializeSceneObjectIndex--;
                     existingObjectsCount--;
                 }
             }
@@ -973,7 +974,7 @@ bool Prefab::ApplyAllInternal(Actor* targetActor, bool linkTargetActorObjectToPr
         {
             // When changing prefab root the target actor is a new root so try to find it in the objects
             int32 targetActorIdx = oldObjectsIds.Find(targetActor->GetPrefabObjectID());
-            if (targetActorIdx > 0 && dynamic_cast<Actor*>(sceneObjects.Value->At(targetActorIdx)))
+            if (targetActorIdx > 0 && targetActorIdx < sceneObjects.Value->Count() && dynamic_cast<Actor*>(sceneObjects.Value->At(targetActorIdx)))
             {
                 root = dynamic_cast<Actor*>(sceneObjects.Value->At(targetActorIdx));
             }

@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 using System;
 using System.Collections.Generic;
@@ -69,7 +69,7 @@ namespace FlaxEditor.Surface.Elements
 
         public Control Create(InputBox box, ref Rectangle bounds)
         {
-            var value = BoolValue.Get(box.ParentNode, box.Archetype);
+            var value = BoolValue.Get(box.ParentNode, box.Archetype, box.Value);
             var control = new CheckBox(bounds.X, bounds.Y, value, bounds.Height)
             {
                 Parent = box.Parent,
@@ -87,9 +87,7 @@ namespace FlaxEditor.Surface.Elements
         public void UpdateDefaultValue(InputBox box, Control control)
         {
             if (control is CheckBox checkBox)
-            {
-                checkBox.Checked = BoolValue.Get(box.ParentNode, box.Archetype);
-            }
+                checkBox.Checked = BoolValue.Get(box.ParentNode, box.Archetype, box.Value);
         }
 
         public void UpdateAttributes(InputBox box, object[] attributes, Control control)
@@ -99,7 +97,7 @@ namespace FlaxEditor.Surface.Elements
         private void OnCheckboxStateChanged(CheckBox control)
         {
             var box = (InputBox)control.Tag;
-            box.ParentNode.SetValue(box.Archetype.ValueIndex, control.Checked);
+            box.Value = control.Checked;
         }
     }
 
@@ -112,7 +110,7 @@ namespace FlaxEditor.Surface.Elements
 
         public Control Create(InputBox box, ref Rectangle bounds)
         {
-            var value = IntegerValue.Get(box.ParentNode, box.Archetype);
+            var value = IntegerValue.Get(box.ParentNode, box.Archetype, box.Value);
             var control = new IntValueBox(value, bounds.X, bounds.Y, 40, int.MinValue, int.MaxValue, 0.01f)
             {
                 Height = bounds.Height,
@@ -131,9 +129,7 @@ namespace FlaxEditor.Surface.Elements
         public void UpdateDefaultValue(InputBox box, Control control)
         {
             if (control is IntValueBox intValue)
-            {
-                intValue.Value = IntegerValue.Get(box.ParentNode, box.Archetype);
-            }
+                intValue.Value = IntegerValue.Get(box.ParentNode, box.Archetype, box.Value);
         }
 
         public void UpdateAttributes(InputBox box, object[] attributes, Control control)
@@ -143,7 +139,10 @@ namespace FlaxEditor.Surface.Elements
         private void OnIntValueBoxChanged(ValueBox<int> control)
         {
             var box = (InputBox)control.Tag;
-            IntegerValue.Set(box.ParentNode, box.Archetype, control.Value);
+            if (box.HasCustomValueAccess)
+                box.Value = control.Value;
+            else
+                IntegerValue.Set(box.ParentNode, box.Archetype, control.Value);
         }
     }
 
@@ -156,7 +155,7 @@ namespace FlaxEditor.Surface.Elements
 
         public Control Create(InputBox box, ref Rectangle bounds)
         {
-            var value = UnsignedIntegerValue.Get(box.ParentNode, box.Archetype);
+            var value = UnsignedIntegerValue.Get(box.ParentNode, box.Archetype, box.Value);
             var control = new UIntValueBox(value, bounds.X, bounds.Y, 40, uint.MinValue, uint.MaxValue, 0.01f)
             {
                 Height = bounds.Height,
@@ -175,9 +174,7 @@ namespace FlaxEditor.Surface.Elements
         public void UpdateDefaultValue(InputBox box, Control control)
         {
             if (control is UIntValueBox intValue)
-            {
-                intValue.Value = UnsignedIntegerValue.Get(box.ParentNode, box.Archetype);
-            }
+                intValue.Value = UnsignedIntegerValue.Get(box.ParentNode, box.Archetype, box.Value);
         }
 
         public void UpdateAttributes(InputBox box, object[] attributes, Control control)
@@ -187,7 +184,10 @@ namespace FlaxEditor.Surface.Elements
         private void OnValueBoxChanged(ValueBox<uint> control)
         {
             var box = (InputBox)control.Tag;
-            UnsignedIntegerValue.Set(box.ParentNode, box.Archetype, control.Value);
+            if (box.HasCustomValueAccess)
+                box.Value = control.Value;
+            else
+                UnsignedIntegerValue.Set(box.ParentNode, box.Archetype, control.Value);
         }
     }
 
@@ -200,7 +200,7 @@ namespace FlaxEditor.Surface.Elements
 
         public Control Create(InputBox box, ref Rectangle bounds)
         {
-            var value = FloatValue.Get(box.ParentNode, box.Archetype);
+            var value = FloatValue.Get(box.ParentNode, box.Archetype, box.Value);
             var control = new FloatValueBox(value, bounds.X, bounds.Y, 40, float.MinValue, float.MaxValue, 0.01f)
             {
                 Height = bounds.Height,
@@ -219,9 +219,7 @@ namespace FlaxEditor.Surface.Elements
         public void UpdateDefaultValue(InputBox box, Control control)
         {
             if (control is FloatValueBox floatValue)
-            {
-                floatValue.Value = FloatValue.Get(box.ParentNode, box.Archetype);
-            }
+                floatValue.Value = FloatValue.Get(box.ParentNode, box.Archetype, box.Value);
         }
 
         public void UpdateAttributes(InputBox box, object[] attributes, Control control)
@@ -231,7 +229,10 @@ namespace FlaxEditor.Surface.Elements
         private void OnFloatValueBoxChanged(ValueBox<float> control)
         {
             var box = (InputBox)control.Tag;
-            FloatValue.Set(box.ParentNode, box.Archetype, control.Value);
+            if (box.HasCustomValueAccess)
+                box.Value = control.Value;
+            else
+                FloatValue.Set(box.ParentNode, box.Archetype, control.Value);
         }
     }
 
@@ -244,7 +245,7 @@ namespace FlaxEditor.Surface.Elements
 
         public Control Create(InputBox box, ref Rectangle bounds)
         {
-            var value = box.ParentNode.Values[box.Archetype.ValueIndex] as string;
+            var value = box.Value as string;
             var control = new TextBox(false, bounds.X, bounds.Y, 40)
             {
                 Text = value,
@@ -265,7 +266,7 @@ namespace FlaxEditor.Surface.Elements
         {
             if (control is TextBox textBox)
             {
-                textBox.Text = box.ParentNode.Values[box.Archetype.ValueIndex] as string;
+                textBox.Text = box.Value as string;
             }
         }
 
@@ -276,7 +277,7 @@ namespace FlaxEditor.Surface.Elements
         private void OnTextBoxTextChanged(TextBoxBase control)
         {
             var box = (InputBox)control.Tag;
-            box.ParentNode.SetValue(box.Archetype.ValueIndex, control.Text);
+            box.Value = control.Text;
         }
     }
 
@@ -341,7 +342,7 @@ namespace FlaxEditor.Surface.Elements
         private Vector2 GetValue(InputBox box)
         {
             var value = Vector2.Zero;
-            var v = box.ParentNode.Values[box.Archetype.ValueIndex];
+            var v = box.Value;
             if (v is Vector2 vec2)
                 value = vec2;
             else if (v is Vector3 vec3)
@@ -363,7 +364,7 @@ namespace FlaxEditor.Surface.Elements
             var box = (InputBox)control.Tag;
             var x = ((FloatValueBox)control.Children[0]).Value;
             var y = ((FloatValueBox)control.Children[1]).Value;
-            box.ParentNode.SetValue(box.Archetype.ValueIndex, new Vector2(x, y));
+            box.Value = new Vector2(x, y);
         }
     }
 
@@ -436,7 +437,7 @@ namespace FlaxEditor.Surface.Elements
         private Vector3 GetValue(InputBox box)
         {
             var value = Vector3.Zero;
-            var v = box.ParentNode.Values[box.Archetype.ValueIndex];
+            var v = box.Value;
             if (v is Vector2 vec2)
                 value = new Vector3(vec2, 0.0f);
             else if (v is Vector3 vec3)
@@ -459,7 +460,7 @@ namespace FlaxEditor.Surface.Elements
             var x = ((FloatValueBox)control.Children[0]).Value;
             var y = ((FloatValueBox)control.Children[1]).Value;
             var z = ((FloatValueBox)control.Children[2]).Value;
-            box.ParentNode.SetValue(box.Archetype.ValueIndex, new Vector3(x, y, z));
+            box.Value = new Vector3(x, y, z);
         }
     }
 
@@ -541,7 +542,7 @@ namespace FlaxEditor.Surface.Elements
         private Vector4 GetValue(InputBox box)
         {
             var value = Vector4.Zero;
-            var v = box.ParentNode.Values[box.Archetype.ValueIndex];
+            var v = box.Value;
             if (v is Vector2 vec2)
                 value = new Vector4(vec2, 0.0f, 0.0f);
             else if (v is Vector3 vec3)
@@ -565,7 +566,7 @@ namespace FlaxEditor.Surface.Elements
             var y = ((FloatValueBox)control.Children[1]).Value;
             var z = ((FloatValueBox)control.Children[2]).Value;
             var w = ((FloatValueBox)control.Children[3]).Value;
-            box.ParentNode.SetValue(box.Archetype.ValueIndex, new Vector4(x, y, z, w));
+            box.Value = new Vector4(x, y, z, w);
         }
     }
 
@@ -638,7 +639,7 @@ namespace FlaxEditor.Surface.Elements
         private Quaternion GetValue(InputBox box)
         {
             var value = Quaternion.Identity;
-            var v = box.ParentNode.Values[box.Archetype.ValueIndex];
+            var v = box.Value;
             if (v is Quaternion quat)
                 value = quat;
             else if (v is Transform transform)
@@ -653,7 +654,7 @@ namespace FlaxEditor.Surface.Elements
             var x = ((FloatValueBox)control.Children[0]).Value;
             var y = ((FloatValueBox)control.Children[1]).Value;
             var z = ((FloatValueBox)control.Children[2]).Value;
-            box.ParentNode.SetValue(box.Archetype.ValueIndex, Quaternion.Euler(x, y, z));
+            box.Value = Quaternion.Euler(x, y, z);
         }
     }
 
@@ -697,7 +698,7 @@ namespace FlaxEditor.Surface.Elements
         private Vector4 GetValue(InputBox box)
         {
             var value = Color.Black;
-            var v = box.ParentNode.Values[box.Archetype.ValueIndex];
+            var v = box.Value;
             if (v is Vector2 vec2)
                 value = new Color(vec2.X, vec2.Y, 0.0f, 1.0f);
             else if (v is Vector3 vec3)
@@ -716,7 +717,7 @@ namespace FlaxEditor.Surface.Elements
         private void OnColorValueChanged(ColorValueBox control)
         {
             var box = (InputBox)control.Tag;
-            box.ParentNode.SetValue(box.Archetype.ValueIndex, control.Value);
+            box.Value = control.Value;
         }
     }
 
@@ -745,7 +746,7 @@ namespace FlaxEditor.Surface.Elements
         private void OnEnumValueChanged(EnumComboBox control)
         {
             var box = (InputBox)control.Tag;
-            box.ParentNode.SetValue(box.Archetype.ValueIndex, control.EnumTypeValue);
+            box.Value = control.EnumTypeValue;
         }
 
         public bool IsValid(InputBox box, Control control)
@@ -768,7 +769,7 @@ namespace FlaxEditor.Surface.Elements
         private object GetValue(InputBox box)
         {
             var value = box.CurrentType.CreateInstance();
-            var v = box.ParentNode.Values[box.Archetype.ValueIndex];
+            var v = box.Value;
             if (v != null && v.GetType().IsEnum)
                 value = v;
             return value;
@@ -804,13 +805,13 @@ namespace FlaxEditor.Surface.Elements
         private void OnTypeValueChanged(TypePickerControl control)
         {
             var box = (InputBox)control.Tag;
-            var v = box.ParentNode.Values[box.Archetype.ValueIndex];
+            var v = box.Value;
             if (v is string)
-                box.ParentNode.SetValue(box.Archetype.ValueIndex, control.ValueTypeName);
+                box.Value = control.ValueTypeName;
             else if (v is Type)
-                box.ParentNode.SetValue(box.Archetype.ValueIndex, TypeUtils.GetType(control.Value));
+                box.Value = TypeUtils.GetType(control.Value);
             else
-                box.ParentNode.SetValue(box.Archetype.ValueIndex, control.Value);
+                box.Value = control.Value;
         }
 
         public bool IsValid(InputBox box, Control control)
@@ -830,12 +831,12 @@ namespace FlaxEditor.Surface.Elements
         {
             var typeReference = (TypeReferenceAttribute)attributes.FirstOrDefault(x => x.GetType() == typeof(TypeReferenceAttribute));
             var type = typeReference != null ? TypeUtils.GetType(typeReference.TypeName) : ScriptType.Null;
-            ((TypePickerControl)control).Type = type ? type : new ScriptType(typeof(object));
+            ((TypePickerControl)control).Type = type ? type : ScriptType.Object;
         }
 
         private string GetValue(InputBox box)
         {
-            var v = box.ParentNode.Values[box.Archetype.ValueIndex];
+            var v = box.Value;
             if (v is Type asType)
                 return asType.FullName;
             if (v is ScriptType asScriptType)
@@ -855,6 +856,10 @@ namespace FlaxEditor.Surface.Elements
     {
         private Control _defaultValueEditor;
         private IDefaultValueEditor _editor;
+        private int _valueIndex;
+        private Func<InputBox, object> _customValueGetter;
+        private Action<InputBox, object> _customValueSetter;
+        private bool _isWatchingForValueChange;
 
         /// <summary>
         /// The handlers for the input box default value editing. Used to display the default to the UI.
@@ -880,13 +885,40 @@ namespace FlaxEditor.Surface.Elements
         /// </summary>
         public Control DefaultValueEditor => _defaultValueEditor;
 
+        /// <summary>
+        /// Gets or sets the value.
+        /// </summary>
+        public object Value
+        {
+            get => _customValueGetter != null ? _customValueGetter(this) : ParentNode.Values[_valueIndex];
+            set
+            {
+                if (_customValueSetter != null)
+                    _customValueSetter(this, value);
+                else
+                    ParentNode.SetValue(_valueIndex, value);
+            }
+        }
+
+        /// <summary>
+        /// Returns true if node has custom value access.
+        /// </summary>
+        public bool HasCustomValueAccess => _customValueGetter != null;
+
+        /// <summary>
+        /// Returns true if node has value.
+        /// </summary>
+        public bool HasValue => _valueIndex != -1 || _customValueGetter != null;
+
         /// <inheritdoc />
         public InputBox(SurfaceNode parentNode, NodeElementArchetype archetype)
         : base(parentNode, archetype, archetype.Position)
         {
             // Check if use inlined default value editor
-            if (Archetype.ValueIndex != -1)
+            _valueIndex = Archetype.ValueIndex;
+            if (_valueIndex != -1)
             {
+                _isWatchingForValueChange = true;
                 ParentNode.ValuesChanged += UpdateDefaultValue;
             }
         }
@@ -896,10 +928,27 @@ namespace FlaxEditor.Surface.Elements
         /// </summary>
         public void UpdateDefaultValue()
         {
-            var currentType = CurrentType.Type;
-            if (_defaultValueEditor != null && currentType != null)
+            if (_defaultValueEditor != null && _currentType.Type != null)
             {
                 _editor.UpdateDefaultValue(this, _defaultValueEditor);
+            }
+        }
+
+        /// <summary>
+        /// Sets the custom accessor callbacks for the box value.
+        /// </summary>
+        /// <param name="getter">The function to call to get value for the box.</param>
+        /// <param name="setter">The function to call to set value for the box.</param>
+        public void UseCustomValueAccess(Func<InputBox, object> getter, Action<InputBox, object> setter)
+        {
+            _customValueGetter = getter;
+            _customValueSetter = setter;
+            if (Connections.Count == 0)
+                CreateDefaultEditor();
+            if (!_isWatchingForValueChange)
+            {
+                _isWatchingForValueChange = true;
+                ParentNode.ValuesChanged += UpdateDefaultValue;
             }
         }
 
@@ -936,7 +985,7 @@ namespace FlaxEditor.Surface.Elements
         {
             base.OnCurrentTypeChanged();
 
-            if (_defaultValueEditor != null && !_editor.IsValid(this, _defaultValueEditor))
+            if (_defaultValueEditor != null && !(_editor.IsValid(this, _defaultValueEditor) && _editor.CanUse(this, ref _currentType)))
             {
                 _defaultValueEditor.Dispose();
                 _defaultValueEditor = null;
@@ -952,7 +1001,7 @@ namespace FlaxEditor.Surface.Elements
         /// <inheritdoc />
         public override void OnConnectionsChanged()
         {
-            bool showEditor = Connections.Count == 0 && Archetype.ValueIndex != -1;
+            bool showEditor = Connections.Count == 0 && HasValue;
             if (showEditor)
             {
                 CreateDefaultEditor();
@@ -986,7 +1035,7 @@ namespace FlaxEditor.Surface.Elements
         /// <inheritdoc />
         public override bool OnMouseUp(Vector2 location, MouseButton button)
         {
-            if (button == MouseButton.Right && Archetype.ValueIndex != -1)
+            if (button == MouseButton.Right && HasValue)
             {
                 var menu = new FlaxEditor.GUI.ContextMenu.ContextMenu();
                 menu.AddButton("Copy value", OnCopyValue);
@@ -1005,6 +1054,19 @@ namespace FlaxEditor.Surface.Elements
             }
 
             return base.OnMouseUp(location, button);
+        }
+        
+        /// <inheritdoc />
+        public override void OnDestroy()
+        {
+            if (_defaultValueEditor != null)
+            {
+                _defaultValueEditor.Dispose();
+                _defaultValueEditor = null;
+                _editor = null;
+            }
+
+            base.OnDestroy();
         }
 
         private bool GetClipboardValue(out object result, bool deserialize)
@@ -1041,8 +1103,7 @@ namespace FlaxEditor.Surface.Elements
 
         private void OnCopyValue()
         {
-            var value = ParentNode.Values[Archetype.ValueIndex];
-
+            var value = Value;
             try
             {
                 string text;
@@ -1087,9 +1148,7 @@ namespace FlaxEditor.Surface.Elements
             try
             {
                 if (GetClipboardValue(out var value, true))
-                {
-                    ParentNode.SetValue(Archetype.ValueIndex, value);
-                }
+                    Value = value;
             }
             catch (Exception ex)
             {
@@ -1103,7 +1162,7 @@ namespace FlaxEditor.Surface.Elements
         /// </summary>
         private void CreateDefaultEditor()
         {
-            if (_defaultValueEditor != null || Archetype.ValueIndex == -1)
+            if (_defaultValueEditor != null || !HasValue)
                 return;
 
             for (int i = 0; i < DefaultValueEditors.Count; i++)
@@ -1112,9 +1171,17 @@ namespace FlaxEditor.Surface.Elements
                 {
                     var bounds = new Rectangle(X + Width + 8 + Style.Current.FontSmall.MeasureText(Text).X, Y, 90, Height);
                     _editor = DefaultValueEditors[i];
-                    _defaultValueEditor = _editor.Create(this, ref bounds);
-                    if (_attributes != null)
-                        _editor.UpdateAttributes(this, _attributes, _defaultValueEditor);
+                    try
+                    {
+                        _defaultValueEditor = _editor.Create(this, ref bounds);
+                        if (_attributes != null)
+                            _editor.UpdateAttributes(this, _attributes, _defaultValueEditor);
+                    }
+                    catch (Exception ex)
+                    {
+                        Editor.LogWarning(ex);
+                        _editor = null;
+                    }
                     break;
                 }
             }

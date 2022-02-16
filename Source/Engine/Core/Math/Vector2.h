@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -6,6 +6,9 @@
 #include "Engine/Core/Formatting.h"
 #include "Engine/Core/Templates.h"
 
+struct Double2;
+struct Double3;
+struct Double4;
 struct Vector3;
 struct Vector4;
 struct Int2;
@@ -107,6 +110,18 @@ public:
     // @param v Vector4 to use X and Y components
     explicit Vector2(const Vector4& xyzw);
 
+    // Init
+    // @param xy Double2 to use X and Y components
+    explicit Vector2(const Double2& xy);
+
+    // Init
+    // @param xyz Double3 to use X and Y components
+    explicit Vector2(const Double3& xyz);
+
+    // Init
+    // @param xyzw Double4 to use X and Y components
+    explicit Vector2(const Double4& xyzw);
+    
     // Init
     // @param color Color value
     explicit Vector2(const Color& color);
@@ -599,6 +614,15 @@ public:
     /// <param name="v2">The third triangle vertex.</param>
     /// <returns>The triangle area.</returns>
     static float TriangleArea(const Vector2& v0, const Vector2& v1, const Vector2& v2);
+	
+	/// <summary>
+    /// Calculates the angle (in radians) between from and to. This is always the smallest value.
+    /// </summary>
+    /// <param name="from">The first vector.</param>
+    /// <param name="to">The second vector.</param>
+    /// <returns>The angle (in radians).</returns>
+    static float Angle(const Vector2& from, const Vector2& to);
+
 };
 
 inline Vector2 operator+(float a, const Vector2& b)

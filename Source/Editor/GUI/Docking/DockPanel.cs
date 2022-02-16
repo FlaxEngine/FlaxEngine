@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 using System;
 using System.Collections.Generic;
@@ -237,9 +237,7 @@ namespace FlaxEditor.GUI.Docking
         /// Determines whether panel contains the specified tab.
         /// </summary>
         /// <param name="tab">The tab.</param>
-        /// <returns>
-        ///   <c>true</c> if panel contains the specified tab; otherwise, <c>false</c>.
-        /// </returns>
+        /// <returns><c>true</c> if panel contains the specified tab; otherwise, <c>false</c>.</returns>
         public bool ContainsTab(DockWindow tab)
         {
             return _tabs.Contains(tab);

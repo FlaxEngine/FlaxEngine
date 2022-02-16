@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 namespace FlaxEngine
 {
@@ -37,10 +37,8 @@ namespace FlaxEngine
         /// <param name="projection">The projection.</param>
         public void SetUp(ref Matrix view, ref Matrix projection)
         {
-            Position = view.TranslationVector;
             Projection = projection;
             NonJitteredProjection = projection;
-            TemporalAAJitter = Vector4.Zero;
             View = view;
 
             UpdateCachedData();

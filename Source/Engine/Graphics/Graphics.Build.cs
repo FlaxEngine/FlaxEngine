@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 using System.Collections.Generic;
 using Flax.Build;
@@ -33,7 +33,6 @@ public abstract class GraphicsDeviceBaseModule : EngineModule
 public class Graphics : EngineModule
 {
     private static bool _logMissingVulkanSDK;
-    private static bool _logMissingWindowsSDK;
 
     /// <inheritdoc />
     public override void Setup(BuildOptions options)
@@ -48,17 +47,17 @@ public class Graphics : EngineModule
             if (VulkanSdk.Instance.IsValid)
                 options.PrivateDependencies.Add("GraphicsDeviceVulkan");
             else
-                Log.WarningOnce("Building for Windows without Vulkan rendering backend (Vulkan SDK is missing)", ref _logMissingVulkanSDK);
+                Log.WarningOnce(string.Format("Building for {0} without Vulkan rendering backend (Vulkan SDK is missing)", options.Platform.Target), ref _logMissingVulkanSDK);
             var windowsToolchain = options.Toolchain as Flax.Build.Platforms.WindowsToolchain;
             if (windowsToolchain != null && windowsToolchain.SDK != Flax.Build.Platforms.WindowsPlatformSDK.v8_1)
                 options.PrivateDependencies.Add("GraphicsDeviceDX12");
             else
-                Log.WarningOnce("Building for Windows without DirectX 12 rendering backend (Windows 10 SDK is required)", ref _logMissingWindowsSDK);
+                Log.WarningOnce(string.Format("Building for {0} without Vulkan rendering backend (Vulkan SDK is missing)", options.Platform.Target), ref _logMissingVulkanSDK);
             break;
-        case TargetPlatform.XboxOne:
         case TargetPlatform.UWP:
             options.PrivateDependencies.Add("GraphicsDeviceDX11");
             break;
+        case TargetPlatform.XboxOne:
         case TargetPlatform.XboxScarlett:
             options.PrivateDependencies.Add("GraphicsDeviceDX12");
             break;
@@ -67,10 +66,13 @@ public class Graphics : EngineModule
             if (VulkanSdk.Instance.IsValid)
                 options.PrivateDependencies.Add("GraphicsDeviceVulkan");
             else
-                Log.WarningOnce("Building for Linux without Vulkan rendering backend (Vulkan SDK is missing)", ref _logMissingVulkanSDK);
+                Log.WarningOnce(string.Format("Building for {0} without Vulkan rendering backend (Vulkan SDK is missing)", options.Platform.Target), ref _logMissingVulkanSDK);
             break;
         case TargetPlatform.PS4:
             options.PrivateDependencies.Add("GraphicsDevicePS4");
+            break;
+        case TargetPlatform.PS5:
+            options.PrivateDependencies.Add("GraphicsDevicePS5");
             break;
         case TargetPlatform.Android:
             options.PrivateDependencies.Add("GraphicsDeviceVulkan");
@@ -78,9 +80,17 @@ public class Graphics : EngineModule
         case TargetPlatform.Switch:
             options.PrivateDependencies.Add("GraphicsDeviceVulkan");
             break;
+        case TargetPlatform.Mac:
+            options.PrivateDependencies.Add("GraphicsDeviceNull");
+            if (VulkanSdk.Instance.IsValid)
+                options.PrivateDependencies.Add("GraphicsDeviceVulkan");
+            else
+                Log.WarningOnce(string.Format("Building for {0} without Vulkan rendering backend (Vulkan SDK is missing)", options.Platform.Target), ref _logMissingVulkanSDK);
+            break;
         default: throw new InvalidPlatformException(options.Platform.Target);
         }
 
+        options.PrivateDependencies.Add("TextureTool");
         if (options.Target.IsEditor)
         {
             options.PublicDependencies.Add("ModelTool");

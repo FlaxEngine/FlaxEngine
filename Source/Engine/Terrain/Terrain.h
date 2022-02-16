@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -458,6 +458,7 @@ protected:
     void OnDisable() override;
     void OnTransformChanged() override;
     void OnActiveInTreeChanged() override;
+    void OnPhysicsSceneChanged(PhysicsScene* previous) override;
     void BeginPlay(SceneBeginData* data) override;
     void EndPlay() override;
 };

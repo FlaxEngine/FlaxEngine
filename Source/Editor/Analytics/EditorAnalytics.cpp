@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 #include "EditorAnalytics.h"
 #include "EditorAnalyticsController.h"
@@ -107,6 +107,8 @@ void EditorAnalytics::StartSession()
             { UA_USER_AGENT, 0, "Windows " FLAXENGINE_VERSION_TEXT },
 #elif PLATFORM_LINUX
             { UA_USER_AGENT, 0, "Linux " FLAXENGINE_VERSION_TEXT },
+#elif PLATFORM_MAC
+            { UA_USER_AGENT, 0, "Mac " FLAXENGINE_VERSION_TEXT },
 #else
 #error "Unknown platform"
 #endif

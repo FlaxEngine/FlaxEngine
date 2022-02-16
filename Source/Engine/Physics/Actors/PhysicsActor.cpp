@@ -1,10 +1,7 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 #include "PhysicsActor.h"
-#include "Engine/Physics/Utilities.h"
-#include "Engine/Physics/Physics.h"
-#include <ThirdParty/PhysX/PxActor.h>
-#include <ThirdParty/PhysX/PxRigidActor.h>
+#include "../PhysicsBackend.h"
 
 PhysicsActor::PhysicsActor(const SpawnParams& params)
     : Actor(params)
@@ -13,28 +10,23 @@ PhysicsActor::PhysicsActor(const SpawnParams& params)
 {
 }
 
-void PhysicsActor::OnActiveTransformChanged(const PxTransform& transform)
+void PhysicsActor::OnActiveTransformChanged()
 {
     // Change actor transform (but with locking)
     ASSERT(!_isUpdatingTransform);
     _isUpdatingTransform = true;
-    //SetTransform(Transform(P2C(transform.p), P2C(transform.q), GetScale()));
+    Transform transform;
+    PhysicsBackend::GetRigidActorPose(GetPhysicsActor(), transform.Translation, transform.Orientation);
+    transform.Scale = _transform.Scale;
+    if (_parent)
     {
-        Transform v;
-        v.Translation = P2C(transform.p);
-        v.Orientation = P2C(transform.q);
-        v.Scale = _transform.Scale;
-
-        if (_parent)
-        {
-            _parent->GetTransform().WorldToLocal(v, _localTransform);
-        }
-        else
-        {
-            _localTransform = v;
-        }
-        OnTransformChanged();
+        _parent->GetTransform().WorldToLocal(transform, _localTransform);
     }
+    else
+    {
+        _localTransform = transform;
+    }
+    OnTransformChanged();
     _isUpdatingTransform = false;
 }
 
@@ -48,31 +40,11 @@ void PhysicsActor::OnTransformChanged()
 
 void PhysicsActor::UpdateBounds()
 {
-    const auto actor = GetPhysXActor();
-    const float boundsScale = 1.02f;
-    if (actor && actor->getScene() != nullptr)
-    {
-        if (actor->is<PxRigidActor>())
-        {
-            const auto rigidActor = (PxRigidActor*)actor;
-            if (rigidActor->getNbShapes() != 0)
-            {
-                _box = P2C(actor->getWorldBounds(boundsScale));
-            }
-            else
-            {
-                _box = BoundingBox(_transform.Translation);
-            }
-        }
-        else
-        {
-            _box = P2C(actor->getWorldBounds(boundsScale));
-        }
-    }
+    void* actor = GetPhysicsActor();
+    if (actor)
+        PhysicsBackend::GetActorBounds(actor, _box);
     else
-    {
         _box = BoundingBox(_transform.Translation);
-    }
     BoundingSphere::FromBox(_box, _sphere);
 }
 

@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 using System.Linq;
 using FlaxEditor.Surface;
@@ -60,7 +60,10 @@ namespace FlaxEditor.CustomEditors.Dedicated
         public override void Refresh()
         {
             if (_isValid != IsValid)
+            {
                 RebuildLayout();
+                return;
+            }
 
             base.Refresh();
         }

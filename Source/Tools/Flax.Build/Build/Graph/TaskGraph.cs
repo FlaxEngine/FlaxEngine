@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 using System;
 using System.Collections.Generic;
@@ -92,6 +92,28 @@ namespace Flax.Build.Graph
 
             Tasks.Add(task);
             return task;
+        }
+
+        /// <summary>
+        /// Checks if that copy task is already added in a graph. Use it for logic that might copy the same file multiple times.
+        /// </summary>
+        /// <param name="dstFile">The destination file path.</param>
+        /// <param name="srcFile">The source file path.</param>
+        /// <returns>True if has copy task already scheduled in a task graph, otherwise false..</returns>
+        public bool HasCopyTask(string dstFile, string srcFile)
+        {
+            for (int i = Tasks.Count - 1; i >= 0; i--)
+            {
+                var t = Tasks[i];
+                if (t.Cost == 1 &&
+                    t.PrerequisiteFiles.Count == 1 && t.PrerequisiteFiles[0] == srcFile &&
+                    t.ProducedFiles.Count == 1 && t.ProducedFiles[0] == dstFile)
+                {
+                    // Already scheduled for copy
+                    return true;
+                }
+            }
+            return false;
         }
 
         /// <summary>

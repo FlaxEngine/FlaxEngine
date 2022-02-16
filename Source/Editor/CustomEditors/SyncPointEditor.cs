@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 using System.Collections.Generic;
 using System.Linq;
@@ -102,6 +102,16 @@ namespace FlaxEditor.CustomEditors
         /// </summary>
         protected virtual void OnModified()
         {
+            var parent = ParentEditor;
+            while (parent != null)
+            {
+                if (parent is SyncPointEditor syncPointEditor)
+                {
+                    syncPointEditor.OnModified();
+                    break;
+                }
+                parent = parent.ParentEditor;
+            }
         }
 
         /// <inheritdoc />

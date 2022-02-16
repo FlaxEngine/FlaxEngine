@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 using System;
 using System.Collections.Generic;
@@ -120,6 +120,7 @@ namespace Flax.Build.Projects.VisualStudio
                 case VisualStudioVersion.VisualStudio2015: return "14.0";
                 case VisualStudioVersion.VisualStudio2017: return "15.0";
                 case VisualStudioVersion.VisualStudio2019: return "16.0";
+                case VisualStudioVersion.VisualStudio2022: return "17.0";
                 }
 
                 return string.Empty;
@@ -275,9 +276,15 @@ namespace Flax.Build.Projects.VisualStudio
             var projects = solution.Projects.Cast<VisualStudioProject>().ToArray();
 
             // Header
-            if (Version == VisualStudioVersion.VisualStudio2019)
+            if (Version == VisualStudioVersion.VisualStudio2022)
             {
-                //vcSolutionFileContent.AppendLine();
+                vcSolutionFileContent.AppendLine("Microsoft Visual Studio Solution File, Format Version 12.00");
+                vcSolutionFileContent.AppendLine("# Visual Studio Version 17");
+                vcSolutionFileContent.AppendLine("VisualStudioVersion = 17.0.31314.256");
+                vcSolutionFileContent.AppendLine("MinimumVisualStudioVersion = 10.0.40219.1");
+            }
+            else if (Version == VisualStudioVersion.VisualStudio2019)
+            {
                 vcSolutionFileContent.AppendLine("Microsoft Visual Studio Solution File, Format Version 12.00");
                 vcSolutionFileContent.AppendLine("# Visual Studio Version 16");
                 vcSolutionFileContent.AppendLine("VisualStudioVersion = 16.0.28315.86");
@@ -285,7 +292,6 @@ namespace Flax.Build.Projects.VisualStudio
             }
             else if (Version == VisualStudioVersion.VisualStudio2017)
             {
-                //vcSolutionFileContent.AppendLine();
                 vcSolutionFileContent.AppendLine("Microsoft Visual Studio Solution File, Format Version 12.00");
                 vcSolutionFileContent.AppendLine("# Visual Studio 15");
                 vcSolutionFileContent.AppendLine("VisualStudioVersion = 15.0.25807.0");
@@ -293,7 +299,6 @@ namespace Flax.Build.Projects.VisualStudio
             }
             else if (Version == VisualStudioVersion.VisualStudio2015)
             {
-                //vcSolutionFileContent.AppendLine();
                 vcSolutionFileContent.AppendLine("Microsoft Visual Studio Solution File, Format Version 12.00");
                 vcSolutionFileContent.AppendLine("# Visual Studio 14");
                 vcSolutionFileContent.AppendLine("VisualStudioVersion = 14.0.22310.1");

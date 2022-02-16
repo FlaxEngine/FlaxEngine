@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 using System;
 using System.Collections.Generic;
@@ -76,9 +76,14 @@ namespace FlaxEditor.Modules.SourceCodeEditing
         /// </summary>
         protected virtual void Search()
         {
-            // Special case for attributes
-            if (_type.Type != null && new ScriptType(typeof(Attribute)).IsAssignableFrom(_type))
+            if (_type == ScriptType.Null)
             {
+                // Special case for all types
+                TypeUtils.GetTypes(_list, _checkFunc, _checkAssembly);
+            }
+            else if (_type.Type != null && new ScriptType(typeof(Attribute)).IsAssignableFrom(_type))
+            {
+                // Special case for attributes
                 TypeUtils.GetTypesWithAttributeDefined(_type.Type, _list, _checkFunc, _checkAssembly);
             }
             else

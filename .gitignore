@@ -19,6 +19,8 @@ Source/*.csproj
 *.tlog
 *.lastbuilddate
 *.opendb
+*.DS_Store
+*.xcodeproj
 
 # NUNIT
 *.VisualState.xml

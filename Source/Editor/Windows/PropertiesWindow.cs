@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 using System.Collections.Generic;
 using System.Linq;
@@ -31,10 +31,10 @@ namespace FlaxEditor.Windows
             Title = "Properties";
             AutoFocus = true;
 
-            Presenter = new CustomEditorPresenter(editor.Undo);
+            Presenter = new CustomEditorPresenter(editor.Undo, null, this);
             Presenter.Panel.Parent = this;
             Presenter.GetUndoObjects += GetUndoObjects;
-            Presenter.CacheExpandedGroups = true;
+            Presenter.Features |= FeatureFlags.CacheExpandedGroups;
 
             Editor.SceneEditing.SelectionChanged += OnSelectionChanged;
         }

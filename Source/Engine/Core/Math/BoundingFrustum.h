@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -249,16 +249,6 @@ public:
     FORCE_INLINE bool Intersects(const BoundingBox& box) const
     {
         return CollisionsHelper::FrustumContainsBox(*this, box) != ContainmentType::Disjoint;
-    }
-
-private:
-
-    static Vector3 Get3PlanesInterPoint(const Plane& p1, const Plane& p2, const Plane& p3)
-    {
-        // P = -d1 * N2xN3 / N1.N2xN3 - d2 * N3xN1 / N2.N3xN1 - d3 * N1xN2 / N3.N1xN2
-        return -p1.D * Vector3::Cross(p2.Normal, p3.Normal) / Vector3::Dot(p1.Normal, Vector3::Cross(p2.Normal, p3.Normal))
-                - p2.D * Vector3::Cross(p3.Normal, p1.Normal) / Vector3::Dot(p2.Normal, Vector3::Cross(p3.Normal, p1.Normal))
-                - p3.D * Vector3::Cross(p1.Normal, p2.Normal) / Vector3::Dot(p3.Normal, Vector3::Cross(p1.Normal, p2.Normal));
     }
 };
 

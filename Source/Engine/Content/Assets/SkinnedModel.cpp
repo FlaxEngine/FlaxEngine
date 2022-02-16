@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 #include "SkinnedModel.h"
 #include "Engine/Core/Log.h"
@@ -54,7 +54,7 @@ public:
     // [ThreadPoolTask]
     bool HasReference(Object* resource) const override
     {
-        return _asset == resource || (_asset && _asset == resource);
+        return _asset == resource;
     }
 
 protected:
@@ -118,8 +118,6 @@ SkinnedModel::SkinnedModel(const SpawnParams& params, const AssetInfo* info)
 
 SkinnedModel::~SkinnedModel()
 {
-    // Ensure to be fully disposed
-    ASSERT(IsInitialized() == false);
     ASSERT(_streamingTask == nullptr);
 }
 

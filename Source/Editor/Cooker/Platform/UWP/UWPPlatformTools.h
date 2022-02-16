@@ -2,7 +2,7 @@
 
 #pragma once
 
-#if PLATFORM_TOOLS_UWP || PLATFORM_TOOLS_XBOX_ONE
+#if PLATFORM_TOOLS_UWP
 
 #include "../../PlatformTools.h"
 
@@ -11,29 +11,13 @@
 /// </summary>
 class UWPPlatformTools : public PlatformTools
 {
-public:
-
-    // [PlatformTools]
-    bool UseAOT() const override;
-    bool OnScriptsStepDone(CookingData& data) override;
-    bool OnDeployBinaries(CookingData& data) override;
-    void OnConfigureAOT(CookingData& data, AotConfig& config) override;
-    bool OnPerformAOT(CookingData& data, AotConfig& config, const String& assemblyPath) override;
-    bool OnPostProcess(CookingData& data) override;
-};
-
-/// <summary>
-/// The Windows Store platform support tools.
-/// </summary>
-class WSAPlatformTools : public UWPPlatformTools
-{
 private:
 
     ArchitectureType _arch;
 
 public:
 
-    WSAPlatformTools(ArchitectureType arch)
+    UWPPlatformTools(ArchitectureType arch)
         : _arch(arch)
     {
     }
@@ -45,20 +29,12 @@ public:
     const Char* GetName() const override;
     PlatformType GetPlatform() const override;
     ArchitectureType GetArchitecture() const override;
-};
-
-/// <summary>
-/// The Xbox One platform support tools.
-/// </summary>
-class XboxOnePlatformTools : public UWPPlatformTools
-{
-public:
-
-    // [PlatformTools]
-    const Char* GetDisplayName() const override;
-    const Char* GetName() const override;
-    PlatformType GetPlatform() const override;
-    ArchitectureType GetArchitecture() const override;
+    bool UseAOT() const override;
+    bool OnScriptsStepDone(CookingData& data) override;
+    bool OnDeployBinaries(CookingData& data) override;
+    void OnConfigureAOT(CookingData& data, AotConfig& config) override;
+    bool OnPerformAOT(CookingData& data, AotConfig& config, const String& assemblyPath) override;
+    bool OnPostProcess(CookingData& data) override;
 };
 
 #endif

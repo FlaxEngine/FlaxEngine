@@ -1,5 +1,8 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
+#include "Double2.h"
+#include "Double3.h"
+#include "Double4.h"
 #include "Vector2.h"
 #include "Vector3.h"
 #include "Vector4.h"
@@ -67,6 +70,27 @@ Vector3::Vector3(const Vector4& xyz)
     : X(xyz.X)
     , Y(xyz.Y)
     , Z(xyz.Z)
+{
+}
+
+Vector3::Vector3(const Double2& xy, float z)
+    : X(static_cast<float>(xy.X))
+    , Y(static_cast<float>(xy.Y))
+    , Z(z)
+{
+}
+
+Vector3::Vector3(const Double3& xyz)
+    : X(static_cast<float>(xyz.X))
+    , Y(static_cast<float>(xyz.Y))
+    , Z(static_cast<float>(xyz.Z))
+{
+}
+
+Vector3::Vector3(const Double4& xyzw)
+    : X(static_cast<float>(xyzw.X))
+    , Y(static_cast<float>(xyzw.Y))
+    , Z(static_cast<float>(xyzw.Z))
 {
 }
 
@@ -358,4 +382,12 @@ void Vector3::FindBestAxisVectors(Vector3& firstAxis, Vector3& secondAxis) const
 float Vector3::TriangleArea(const Vector3& v0, const Vector3& v1, const Vector3& v2)
 {
     return (v2 - v0 ^ v1 - v0).Length() * 0.5f;
+}
+
+float Vector3::Angle(const Vector3& from, const Vector3& to)
+{
+    const float dot = Math::Clamp(Dot(Normalize(from), Normalize(to)), -1.0f, 1.0f);
+    if (Math::Abs(dot) > (1.0f - ZeroTolerance))
+        return dot > 0.0f ? 0.0f : PI;
+    return Math::Acos(dot);
 }

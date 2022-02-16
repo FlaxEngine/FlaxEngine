@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -32,7 +32,7 @@ public:
     /// Extracts IES profile data to R16 format (float).
     /// </summary>
     /// <param name="output">The result data container.</param>
-    /// <returns>Thr multiplier as the texture is normalized.</returns>
+    /// <returns>The multiplier as the texture is normalized.</returns>
     float ExtractInR16(Array<byte>& output);
 
 public:

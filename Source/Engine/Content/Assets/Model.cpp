@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 #include "Model.h"
 #include "Engine/Core/Log.h"
@@ -61,7 +61,7 @@ public:
     // [ThreadPoolTask]
     bool HasReference(Object* resource) const override
     {
-        return _asset == resource || (_asset && _asset == resource);
+        return _asset == resource;
     }
 
 protected:
@@ -125,8 +125,6 @@ Model::Model(const SpawnParams& params, const AssetInfo* info)
 
 Model::~Model()
 {
-    // Ensure to be fully disposed
-    ASSERT(IsInitialized() == false);
     ASSERT(_streamingTask == nullptr);
 }
 

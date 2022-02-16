@@ -1,15 +1,18 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 #if COMPILE_WITH_DX_SHADER_COMPILER
 
 #include "ShaderCompilerDX.h"
 #include "Engine/Core/Log.h"
 #include "Engine/Threading/Threading.h"
+#include "Engine/Engine/Globals.h"
 #include "Engine/Graphics/Config.h"
 #include "Engine/GraphicsDevice/DirectX/DX12/Types.h"
 #include "Engine/Utilities/StringConverter.h"
 #include "Engine/Platform/Win32/IncludeWindowsHeaders.h"
 #include "Engine/Platform/Windows/ComPtr.h"
+#include "Engine/Platform/FileSystem.h"
+#include "Engine/Platform/File.h"
 #include <d3d12shader.h>
 #include <ThirdParty/DirectXShaderCompiler/dxcapi.h>
 
@@ -173,6 +176,13 @@ bool ShaderCompilerDX::CompileShader(ShaderFunctionMeta& meta, WritePermutationD
     args.Add(entryPoint.Get());
     args.Add(options->TargetName.Get());
     Array<const Char*, InlinedAllocation<250>> argsFull;
+    String debugOutputFolder;
+    if (_context->Options->GenerateDebugData)
+    {
+        debugOutputFolder = Globals::ProjectCacheFolder / TEXT("Shaders") / TEXT("DXC");
+        if (!FileSystem::DirectoryExists(debugOutputFolder))
+            FileSystem::CreateDirectory(debugOutputFolder);
+    }
 
     // Compile all shader function permutations
     for (int32 permutationIndex = 0; permutationIndex < meta.Permutations.Count(); permutationIndex++)
@@ -274,6 +284,15 @@ bool ShaderCompilerDX::CompileShader(ShaderFunctionMeta& meta, WritePermutationD
             _context->OnCollectDebugInfo(meta, permutationIndex, (const char*)disassemblyUtf8->GetBufferPointer(), (int32)disassemblyUtf8->GetBufferSize());
         }
 #endif
+        if (_context->Options->GenerateDebugData)
+        {
+            ComPtr<IDxcBlob> pdbBlob;
+            ComPtr<IDxcBlobUtf16> pdbName;
+            if (results->GetOutput(DXC_OUT_PDB, IID_PPV_ARGS(pdbBlob.GetAddressOf()), pdbName.GetAddressOf()) == S_OK)
+            {
+                File::WriteAllBytes(debugOutputFolder / String(pdbName->GetStringPointer(), (int32)pdbName->GetStringLength()), (byte*)pdbBlob->GetBufferPointer(), (int32)pdbBlob->GetBufferSize());
+            }
+        }
 
         // Perform shader reflection
         if (FAILED(containerReflection->Load(shaderBuffer)))

@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 #include "ImportModel.h"
 
@@ -14,6 +14,7 @@
 #include "Engine/Content/Assets/Animation.h"
 #include "Engine/Content/Content.h"
 #include "Engine/Platform/FileSystem.h"
+#include "AssetsImportingManager.h"
 
 bool ImportModelFile::TryGetImportOptions(String path, Options& options)
 {
@@ -111,6 +112,19 @@ CreateAssetResult ImportModelFile::Import(CreateAssetContext& context)
             LOG(Warning, "Missing model import options. Using default values.");
         }
     }
+    if (options.SplitObjects)
+    {
+        options.OnSplitImport.Bind([&context](Options& splitOptions, const String& objectName)
+        {
+            // Recursive importing of the split object
+            String postFix = objectName;
+            const int32 splitPos = postFix.FindLast(TEXT('|'));
+            if (splitPos != -1)
+                postFix = postFix.Substring(splitPos + 1);
+            const String outputPath = String(StringUtils::GetPathWithoutExtension(context.TargetAssetPath)) + TEXT(" ") + postFix + TEXT(".flax");
+            return AssetsImportingManager::Import(context.InputPath, outputPath, &splitOptions);
+        });
+    }
 
     // Import model file
     ModelData modelData;
@@ -149,7 +163,6 @@ CreateAssetResult ImportModelFile::Import(CreateAssetContext& context)
         return result;
 
 #if IMPORT_MODEL_CACHE_OPTIONS
-
     // Create json with import context
     rapidjson_flax::StringBuffer importOptionsMetaBuffer;
     importOptionsMetaBuffer.Reserve(256);
@@ -162,7 +175,6 @@ CreateAssetResult ImportModelFile::Import(CreateAssetContext& context)
     }
     importOptionsMeta.EndObject();
     context.Data.Metadata.Copy((const byte*)importOptionsMetaBuffer.GetString(), (uint32)importOptionsMetaBuffer.GetSize());
-
 #endif
 
     return CreateAssetResult::Ok;
@@ -229,7 +241,7 @@ CreateAssetResult ImportModelFile::ImportModel(CreateAssetContext& context, Mode
 CreateAssetResult ImportModelFile::ImportSkinnedModel(CreateAssetContext& context, ModelData& modelData)
 {
     // Base
-    IMPORT_SETUP(SkinnedModel, 4);
+    IMPORT_SETUP(SkinnedModel, SkinnedModel::SerializedVersion);
 
     // Save skinned model header
     MemoryWriteStream stream(4096);

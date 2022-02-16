@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 using System.IO;
 using Flax.Build;
@@ -63,7 +63,6 @@ namespace Flax.Deps.Dependencies
                     break;
                 }
                 case TargetPlatform.UWP:
-                case TargetPlatform.XboxOne:
                 {
                     var solutionPath = Path.Combine(root, "DirectXTex_Windows10_2017.sln");
                     var binFolder = Path.Combine(root, "DirectXTex", "Bin", "Windows10_2017");
@@ -72,6 +71,23 @@ namespace Flax.Deps.Dependencies
                     foreach (var file in outputFileNames)
                     {
                         Utilities.FileCopy(Path.Combine(binFolder, "x64", configuration, file), Path.Combine(depsFolder, file));
+                    }
+                    break;
+                }
+                case TargetPlatform.XboxOne:
+                {
+                    var solutionPath = Path.Combine(root, "DirectXTex_GXDK_2017.sln");
+                    File.Copy(Path.Combine(GetBinariesFolder(options, platform), "DirectXTex_GXDK_2017.sln"), solutionPath, true);
+                    var projectFileContents = File.ReadAllText(Path.Combine(GetBinariesFolder(options, platform), "DirectXTex_GXDK_2017.vcxproj"));
+                    projectFileContents = projectFileContents.Replace("___VS_TOOLSET___", "v142");
+                    var projectPath = Path.Combine(root, "DirectXTex", "DirectXTex_GXDK_2017.vcxproj");
+                    File.WriteAllText(projectPath, projectFileContents);
+                    var binFolder = Path.Combine(root, "DirectXTex", "Bin", "GXDK_2017");
+                    Deploy.VCEnvironment.BuildSolution(solutionPath, configuration, "Gaming.Xbox.XboxOne.x64");
+                    var depsFolder = GetThirdPartyFolder(options, platform, TargetArchitecture.x64);
+                    foreach (var file in outputFileNames)
+                    {
+                        Utilities.FileCopy(Path.Combine(binFolder, "Gaming.Xbox.XboxOne.x64", configuration, file), Path.Combine(depsFolder, file));
                     }
                     break;
                 }

@@ -1,10 +1,13 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 #pragma once
 
 #include "Engine/Debug/DebugLog.h"
 #include "Engine/Core/Log.h"
 #include "ScriptingType.h"
+#include "Types.h"
+
+#if USE_MONO
 
 extern "C" FLAXENGINE_API void mono_add_internal_call(const char* name, const void* method);
 #define ADD_INTERNAL_CALL(fullName, method) mono_add_internal_call(fullName, (const void*)method)
@@ -44,5 +47,15 @@ extern "C" FLAXENGINE_API void mono_add_internal_call(const char* name, const vo
 		DebugLog::ThrowNullReference(); \
 		return defaultValue; \
 	}
+
+#endif
+
+#else
+
+#define ADD_INTERNAL_CALL(fullName, method)
+#define INTERNAL_CALL_CHECK(obj)
+#define INTERNAL_CALL_CHECK_EXP(expression)
+#define INTERNAL_CALL_CHECK_RETURN(obj, defaultValue)
+#define INTERNAL_CALL_CHECK_EXP_RETURN(expression, defaultValue)
 
 #endif

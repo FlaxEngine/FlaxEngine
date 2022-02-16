@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 using System;
 using FlaxEditor.GUI.ContextMenu;
@@ -20,8 +20,13 @@ namespace FlaxEditor.Viewport.Previews
         private AnimatedModel _previewModel;
         private StaticModel _floorModel;
         private ContextMenuButton _showCurrentLODButton;
-        private bool _playAnimation;
+        private bool _playAnimation, _playAnimationOnce;
         private float _playSpeed = 1.0f;
+
+        /// <summary>
+        /// Snaps the preview actor to the world origin.
+        /// </summary>
+        protected bool _snapToOrigin = true;
 
         /// <summary>
         /// Gets or sets the skinned model asset to preview.
@@ -158,6 +163,7 @@ namespace FlaxEditor.Viewport.Previews
         : base(useWidgets)
         {
             Task.Begin += OnBegin;
+            ScriptsBuilder.ScriptsReloadBegin += OnScriptsReloadBegin;
 
             // Setup preview scene
             _previewModel = new AnimatedModel
@@ -234,12 +240,26 @@ namespace FlaxEditor.Viewport.Previews
             _previewModel.UpdateAnimation();
         }
 
+        /// <summary>
+        /// Sets the weight of the blend shape and updates the preview model (if not animated right now).
+        /// </summary>
+        /// <param name="name">The blend shape name.</param>
+        /// <param name="value">The normalized weight of the blend shape (in range -1:1).</param>
+        public void SetBlendShapeWeight(string name, float value)
+        {
+            _previewModel.SetBlendShapeWeight(name, value);
+            _playAnimationOnce = true;
+        }
+
         private void OnBegin(RenderTask task, GPUContext context)
         {
             if (!ScaleToFit)
             {
-                _previewModel.Scale = Vector3.One;
-                _previewModel.Position = Vector3.Zero;
+                if (_snapToOrigin)
+                {
+                    _previewModel.Scale = Vector3.One;
+                    _previewModel.Position = Vector3.Zero;
+                }
                 return;
             }
 
@@ -254,6 +274,12 @@ namespace FlaxEditor.Viewport.Previews
                 _previewModel.Scale = new Vector3(scale);
                 _previewModel.Position = box.Center * (-0.5f * scale) + new Vector3(0, -10, 0);
             }
+        }
+
+        private void OnScriptsReloadBegin()
+        {
+            // Prevent any crashes due to dangling references to anim events
+            _previewModel.ResetAnimation();
         }
 
         private int ComputeLODIndex(SkinnedModel model)
@@ -302,7 +328,7 @@ namespace FlaxEditor.Viewport.Previews
             // Draw skeleton nodes
             if (_showNodes)
             {
-                _previewModel.GetCurrentPose(out var pose);
+                _previewModel.GetCurrentPose(out var pose, true);
                 var nodes = _previewModel.SkinnedModel?.Nodes;
                 if (pose != null && pose.Length != 0 && nodes != null)
                 {
@@ -380,8 +406,9 @@ namespace FlaxEditor.Viewport.Previews
             base.Update(deltaTime);
 
             // Manually update animation
-            if (PlayAnimation)
+            if (PlayAnimation || _playAnimationOnce)
             {
+                _playAnimationOnce = false;
                 _previewModel.UpdateAnimation();
             }
             else
@@ -408,6 +435,7 @@ namespace FlaxEditor.Viewport.Previews
         /// <inheritdoc />
         public override void OnDestroy()
         {
+            ScriptsBuilder.ScriptsReloadBegin -= OnScriptsReloadBegin;
             Object.Destroy(ref _floorModel);
             Object.Destroy(ref _previewModel);
             NodesMask = null;

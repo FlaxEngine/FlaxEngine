@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 using System.Collections.Generic;
 using System.IO;
@@ -50,6 +50,13 @@ public class Audio : EngineModule
             options.SourcePaths.Add(Path.Combine(Globals.EngineRoot, "Source", "Platforms", "Switch", "Engine", "Audio"));
             options.CompileEnv.PreprocessorDefinitions.Add("AUDIO_API_SWITCH");
             break;
+        case TargetPlatform.PS5:
+            options.SourcePaths.Add(Path.Combine(Globals.EngineRoot, "Source", "Platforms", "PS5", "Engine", "Audio"));
+            options.CompileEnv.PreprocessorDefinitions.Add("AUDIO_API_PS5");
+            break;
+        case TargetPlatform.Mac:
+            useOpenAL = true;
+            break;
         default: throw new InvalidPlatformException(options.Platform.Target);
         }
 
@@ -67,7 +74,6 @@ public class Audio : EngineModule
             switch (options.Platform.Target)
             {
             case TargetPlatform.Windows:
-            case TargetPlatform.XboxOne:
             case TargetPlatform.UWP:
                 options.OutputFiles.Add(Path.Combine(depsRoot, "OpenAL32.lib"));
                 options.DependencyFiles.Add(Path.Combine(depsRoot, "OpenAL32.dll"));
@@ -78,6 +84,12 @@ public class Audio : EngineModule
             case TargetPlatform.Android:
                 options.OutputFiles.Add(Path.Combine(depsRoot, "libopenal.a"));
                 options.Libraries.Add("OpenSLES");
+                break;
+            case TargetPlatform.Mac:
+                options.OutputFiles.Add(Path.Combine(depsRoot, "libopenal.a"));
+                options.Libraries.Add("CoreAudio.framework");
+                options.Libraries.Add("AudioUnit.framework");
+                options.Libraries.Add("AudioToolbox.framework");
                 break;
             default: throw new InvalidPlatformException(options.Platform.Target);
             }

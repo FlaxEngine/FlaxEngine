@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 #include "AnimatedModel.h"
 #include "BoneSocket.h"
@@ -21,8 +21,8 @@ AnimatedModel::AnimatedModel(const SpawnParams& params)
     , _counter(0)
     , _lastMinDstSqr(MAX_float)
     , _lastUpdateFrame(0)
-    , GraphInstance(this)
 {
+    GraphInstance.Object = this;
     _world = Matrix::Identity;
     UpdateBounds();
 
@@ -116,6 +116,8 @@ void AnimatedModel::PreInitSkinningData()
 
 void AnimatedModel::GetCurrentPose(Array<Matrix>& nodesTransformation, bool worldSpace) const
 {
+    if (GraphInstance.NodesPose.IsEmpty())
+        const_cast<AnimatedModel*>(this)->PreInitSkinningData(); // Ensure to have valid nodes pose to return
     nodesTransformation = GraphInstance.NodesPose;
     if (worldSpace)
     {
@@ -127,8 +129,8 @@ void AnimatedModel::GetCurrentPose(Array<Matrix>& nodesTransformation, bool worl
 
 void AnimatedModel::SetCurrentPose(const Array<Matrix>& nodesTransformation, bool worldSpace)
 {
-    if (GraphInstance.NodesPose.Count() == 0)
-        return;
+    if (GraphInstance.NodesPose.IsEmpty())
+        const_cast<AnimatedModel*>(this)->PreInitSkinningData(); // Ensure to have valid nodes pose to return
     CHECK(nodesTransformation.Count() == GraphInstance.NodesPose.Count());
     GraphInstance.NodesPose = nodesTransformation;
     if (worldSpace)
@@ -143,6 +145,8 @@ void AnimatedModel::SetCurrentPose(const Array<Matrix>& nodesTransformation, boo
 
 void AnimatedModel::GetNodeTransformation(int32 nodeIndex, Matrix& nodeTransformation, bool worldSpace) const
 {
+    if (GraphInstance.NodesPose.IsEmpty())
+        const_cast<AnimatedModel*>(this)->PreInitSkinningData(); // Ensure to have valid nodes pose to return
     if (nodeIndex >= 0 && nodeIndex < GraphInstance.NodesPose.Count())
         nodeTransformation = GraphInstance.NodesPose[nodeIndex];
     else
@@ -158,6 +162,8 @@ void AnimatedModel::GetNodeTransformation(const StringView& nodeName, Matrix& no
 
 int32 AnimatedModel::FindClosestNode(const Vector3& location, bool worldSpace) const
 {
+    if (GraphInstance.NodesPose.IsEmpty())
+        const_cast<AnimatedModel*>(this)->PreInitSkinningData(); // Ensure to have valid nodes pose to return
     const Vector3 pos = worldSpace ? _transform.WorldToLocal(location) : location;
     int32 result = -1;
     float closest = MAX_float;
@@ -318,6 +324,89 @@ void AnimatedModel::ClearBlendShapeWeights()
     _blendShapes.Clear();
 }
 
+void AnimatedModel::PlaySlotAnimation(const StringView& slotName, Animation* anim, float speed, float blendInTime, float blendOutTime)
+{
+    CHECK(anim);
+    for (auto& slot : GraphInstance.Slots)
+    {
+        if (slot.Animation == anim && slot.Name == slotName)
+        {
+            slot.Pause = false;
+            slot.BlendInTime = blendInTime;
+            return;
+        }
+    }
+    int32 index = 0;
+    for (; index < GraphInstance.Slots.Count(); index++)
+    {
+        if (GraphInstance.Slots[index].Animation == nullptr)
+            break;
+    }
+    if (index == GraphInstance.Slots.Count())
+        GraphInstance.Slots.AddOne();
+    auto& slot = GraphInstance.Slots[index];
+    slot.Name = slotName;
+    slot.Animation = anim;
+    slot.Speed = speed;
+    slot.BlendInTime = blendInTime;
+    slot.BlendOutTime = blendOutTime;
+}
+
+void AnimatedModel::StopSlotAnimation()
+{
+    GraphInstance.Slots.Clear();
+}
+
+void AnimatedModel::StopSlotAnimation(const StringView& slotName, Animation* anim)
+{
+    for (auto& slot : GraphInstance.Slots)
+    {
+        if (slot.Animation == anim && slot.Name == slotName)
+        {
+            slot.Animation = nullptr;
+            break;
+        }
+    }
+}
+
+void AnimatedModel::PauseSlotAnimation()
+{
+    for (auto& slot : GraphInstance.Slots)
+        slot.Pause = true;
+}
+
+void AnimatedModel::PauseSlotAnimation(const StringView& slotName, Animation* anim)
+{
+    for (auto& slot : GraphInstance.Slots)
+    {
+        if (slot.Animation == anim && slot.Name == slotName)
+        {
+            slot.Pause = true;
+            break;
+        }
+    }
+}
+
+bool AnimatedModel::IsPlayingSlotAnimation()
+{
+    for (auto& slot : GraphInstance.Slots)
+    {
+        if (slot.Animation && !slot.Pause)
+            return true;
+    }
+    return false;
+}
+
+bool AnimatedModel::IsPlayingSlotAnimation(const StringView& slotName, Animation* anim)
+{
+    for (auto& slot : GraphInstance.Slots)
+    {
+        if (slot.Animation == anim && slot.Name == slotName && !slot.Pause)
+            return true;
+    }
+    return false;
+}
+
 void AnimatedModel::ApplyRootMotion(const RootMotionData& rootMotionDelta)
 {
     // Skip if no motion
@@ -422,12 +511,19 @@ void AnimatedModel::UpdateLocalBounds()
         //box = SkinnedModel->GetBox(GraphInstance.RootTransform.GetWorld());
         //box = SkinnedModel->GetBox();
 
-        // Per-bone bounds estimated from positions
-        auto& skeleton = SkinnedModel->Skeleton;
-        const int32 bonesCount = skeleton.Bones.Count();
-        box = BoundingBox(GraphInstance.NodesPose[skeleton.Bones[0].NodeIndex].GetTranslation());
-        for (int32 boneIndex = 1; boneIndex < bonesCount; boneIndex++)
-            box.Merge(GraphInstance.NodesPose[skeleton.Bones[boneIndex].NodeIndex].GetTranslation());
+        if (GraphInstance.NodesPose.Count() != 0)
+        {
+            // Per-bone bounds estimated from positions
+            auto& skeleton = SkinnedModel->Skeleton;
+            const int32 bonesCount = skeleton.Bones.Count();
+            box = BoundingBox(GraphInstance.NodesPose[skeleton.Bones[0].NodeIndex].GetTranslation());
+            for (int32 boneIndex = 1; boneIndex < bonesCount; boneIndex++)
+                box.Merge(GraphInstance.NodesPose[skeleton.Bones[boneIndex].NodeIndex].GetTranslation());
+        }
+        else
+        {
+            box = SkinnedModel->GetBox();
+        }
 
         // Apply margin based on model dimensions
         const Vector3 modelBoxSize = SkinnedModel->GetBox().GetSize();
@@ -647,6 +743,13 @@ void AnimatedModel::OnDebugDrawSelected()
 
     // Base
     ModelInstanceActor::OnDebugDrawSelected();
+}
+
+BoundingBox AnimatedModel::GetEditorBox() const
+{
+    if (SkinnedModel)
+        SkinnedModel->WaitForLoaded(100);
+    return BoundingBox::MakeScaled(_box, 1.0f / BoundsScale);
 }
 
 #endif

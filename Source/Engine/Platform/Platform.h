@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -16,12 +16,18 @@
 #include "Linux/LinuxPlatform.h"
 #elif PLATFORM_PS4
 #include "Platforms/PS4/Engine/Platform/PS4Platform.h"
+#elif PLATFORM_PS5
+#include "Platforms/PS5/Engine/Platform/PS5Platform.h"
+#elif PLATFORM_XBOX_ONE
+#include "Platforms/XboxOne/Engine/Platform/XboxOnePlatform.h"
 #elif PLATFORM_XBOX_SCARLETT
 #include "Platforms/XboxScarlett/Engine/Platform/XboxScarlettPlatform.h"
 #elif PLATFORM_ANDROID
 #include "Android/AndroidPlatform.h"
 #elif PLATFORM_SWITCH
 #include "Platforms/Switch/Engine/Platform/SwitchPlatform.h"
+#elif PLATFORM_MAC
+#include "Mac/MacPlatform.h"
 #else
 #error Missing Platform implementation!
 #endif

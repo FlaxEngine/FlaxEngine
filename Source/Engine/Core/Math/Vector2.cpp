@@ -1,5 +1,8 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
+#include "Double2.h"
+#include "Double3.h"
+#include "Double4.h"
 #include "Vector2.h"
 #include "Vector3.h"
 #include "Vector4.h"
@@ -48,6 +51,24 @@ Vector2::Vector2(const Vector4& xyzw)
 {
 }
 
+Vector2::Vector2(const Double2& xy)
+    : X(static_cast<float>(xy.X))
+    , Y(static_cast<float>(xy.Y))
+{
+}
+
+Vector2::Vector2(const Double3& xyz)
+    : X(static_cast<float>(xyz.X))
+    , Y(static_cast<float>(xyz.Y))
+{
+}
+
+Vector2::Vector2(const Double4& xyzw)
+    : X(static_cast<float>(xyzw.X))
+    , Y(static_cast<float>(xyzw.Y))
+{
+}
+
 Vector2::Vector2(const Color& color)
     : X(color.R)
     , Y(color.G)
@@ -85,4 +106,12 @@ Int2 Vector2::FloorToInt(const Vector2& v)
 float Vector2::TriangleArea(const Vector2& v0, const Vector2& v1, const Vector2& v2)
 {
     return Math::Abs((v0.X * (v1.Y - v2.Y) + v1.X * (v2.Y - v0.Y) + v2.X * (v0.Y - v1.Y)) / 2);
+}
+
+float Vector2::Angle(const Vector2& from, const Vector2& to)
+{
+    const float dot = Math::Clamp(Dot(Normalize(from), Normalize(to)), -1.0f, 1.0f);
+    if (Math::Abs(dot) > (1.0f - ZeroTolerance))
+        return dot > 0.0f ? 0.0f : PI;
+    return Math::Acos(dot);
 }

@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 using System;
 using System.Collections.Generic;
@@ -86,6 +86,56 @@ namespace FlaxEditor.Gizmo
         }
 
         /// <inheritdoc />
+        public override void SnapToGround()
+        {
+            if (Owner.SceneGraphRoot == null)
+                return;
+            var ray = new Ray(Position, Vector3.Down);
+            while (true)
+            {
+                var view = new Ray(Owner.ViewPosition, Owner.ViewDirection);
+                var rayCastFlags = SceneGraphNode.RayCastData.FlagTypes.SkipEditorPrimitives;
+                var hit = Owner.SceneGraphRoot.RayCast(ref ray, ref view, out var distance, out _, rayCastFlags);
+                if (hit != null)
+                {
+                    // Skip snapping selection to itself
+                    bool isSelected = false;
+                    for (var e = hit; e != null && !isSelected; e = e.ParentNode)
+                        isSelected |= IsSelected(e);
+                    if (isSelected)
+                    {
+                        GetSelectedObjectsBounds(out var selectionBounds, out _);
+                        ray.Position = ray.GetPoint(selectionBounds.Size.Y * 0.5f);
+                        continue;
+                    }
+
+                    // Include objects bounds into target snap location
+                    var editorBounds = BoundingBox.Empty;
+                    var bottomToCenter = 100000.0f;
+                    for (int i = 0; i < _selectionParents.Count; i++)
+                    {
+                        if (_selectionParents[i] is ActorNode actorNode)
+                        {
+                            var b = actorNode.Actor.EditorBoxChildren;
+                            BoundingBox.Merge(ref editorBounds, ref b, out editorBounds);
+                            bottomToCenter = Mathf.Min(bottomToCenter, actorNode.Actor.Position.Y - editorBounds.Minimum.Y);
+                        }
+                    }
+                    var newPosition = ray.GetPoint(distance) + new Vector3(0, bottomToCenter, 0);
+
+                    // Snap
+                    StartTransforming();
+                    var translationDelta = newPosition - Position;
+                    var rotationDelta = Quaternion.Identity;
+                    var scaleDelta = Vector3.Zero;
+                    OnApplyTransformation(ref translationDelta, ref rotationDelta, ref scaleDelta);
+                    EndTransforming();
+                }
+                break;
+            }
+        }
+
+        /// <inheritdoc />
         public override void Pick()
         {
             // Ensure player is not moving objects
@@ -95,7 +145,8 @@ namespace FlaxEditor.Gizmo
             // Get mouse ray and try to hit any object
             var ray = Owner.MouseRay;
             var view = new Ray(Owner.ViewPosition, Owner.ViewDirection);
-            bool selectColliders = (Owner.RenderTask.View.Flags & ViewFlags.PhysicsDebug) == ViewFlags.PhysicsDebug;
+            var renderView = Owner.RenderTask.View;
+            bool selectColliders = (renderView.Flags & ViewFlags.PhysicsDebug) == ViewFlags.PhysicsDebug || renderView.Mode == ViewMode.PhysicsColliders;
             SceneGraphNode.RayCastData.FlagTypes rayCastFlags = SceneGraphNode.RayCastData.FlagTypes.None;
             if (!selectColliders)
                 rayCastFlags |= SceneGraphNode.RayCastData.FlagTypes.SkipColliders;
@@ -210,10 +261,7 @@ namespace FlaxEditor.Gizmo
                 if (_selectionParents[i] is ActorNode actorNode)
                 {
                     bounds = BoundingBox.Merge(bounds, actorNode.Actor.BoxWithChildren);
-                    if (actorNode.AffectsNavigationWithChildren)
-                    {
-                        navigationDirty |= actorNode.Actor.HasStaticFlag(StaticFlags.Navigation);
-                    }
+                    navigationDirty |= actorNode.AffectsNavigationWithChildren;
                 }
             }
         }

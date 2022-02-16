@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -8,6 +8,9 @@
 #include "Engine/Core/Types/Variant.h"
 #include "Engine/Core/Collections/Array.h"
 #include "Engine/Scripting/ScriptingObject.h"
+
+#if USE_MONO
+
 #include <ThirdParty/mono-2.0/mono/metadata/object.h>
 #include <ThirdParty/mono-2.0/mono/metadata/appdomain.h>
 
@@ -194,7 +197,7 @@ struct MConverter<T*, typename TEnableIf<TIsBaseOf<class ScriptingObject, T>::Va
 
 // Converter for Scripting Objects (collection of values).
 template<typename T>
-struct MConverter<T, typename TEnableIf<TIsBaseOf<class PersistentScriptingObject, T>::Value>::Type>
+struct MConverter<T, typename TEnableIf<TIsBaseOf<class ScriptingObject, T>::Value>::Type>
 {
     MonoObject* Box(const T& data, MonoClass* klass)
     {
@@ -498,3 +501,5 @@ namespace MUtils
 
     extern void* VariantToManagedArgPtr(Variant& value, const MType& type, bool& failed);
 };
+
+#endif

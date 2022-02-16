@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 #include "FXAA.h"
 #include "Engine/Content/Assets/Shader.h"
@@ -64,6 +64,7 @@ void FXAA::Dispose()
 void FXAA::Render(RenderContext& renderContext, GPUTexture* input, GPUTextureView* output)
 {
     auto context = GPUDevice::Instance->GetMainContext();
+    const auto qualityLevel = Math::Clamp(static_cast<int32>(Graphics::AAQuality), 0, static_cast<int32>(Quality::MAX) - 1);
 
     // Ensure to have valid data
     if (checkIfSkipPass())
@@ -86,6 +87,6 @@ void FXAA::Render(RenderContext& renderContext, GPUTexture* input, GPUTextureVie
 
     // Render
     context->SetRenderTarget(output);
-    context->SetState(_psFXAA.Get(static_cast<int32>(Graphics::AAQuality)));
+    context->SetState(_psFXAA.Get(qualityLevel));
     context->DrawFullscreenTriangle();
 }

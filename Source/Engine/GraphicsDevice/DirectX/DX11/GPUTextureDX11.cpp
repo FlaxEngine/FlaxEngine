@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 #if GRAPHICS_API_DIRECTX11
 
@@ -288,7 +288,6 @@ void GPUTextureDX11::initHandles()
                 // (ViewDimension must be D3D11_SRV_DIMENSION_TEXTURECUBE) [ STATE_CREATION ERROR #126: CREATESHADERRESOURCEVIEW_INVALIDDESC]
                 if (isCubeMap && _device->GetRendererType() != RendererType::DirectX10)
                 {
-                    RendererType aa = _device->GetRendererType();
                     /*if (isCubeMap)
                     {
                         srDesc.ViewDimension = D3D11_SRV_DIMENSION_TEXTURECUBEARRAY;

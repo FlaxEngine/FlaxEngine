@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 #include "ShaderAssetBase.h"
 #include "ShaderStorage.h"
@@ -270,10 +270,17 @@ bool ShaderAssetBase::LoadShaderCache(ShaderCacheResult& result)
         platformDefine.Name = "PLATFORM_WINDOWS";
 #elif PLATFORM_LINUX
         platformDefine.Name = "PLATFORM_LINUX";
+#elif PLATFORM_MAC
+        platformDefine.Name = "PLATFORM_MAC";
 #else
 #error "Unknown platform."
 #endif
-        platformDefine.Definition = nullptr;
+        platformDefine.Definition = "1";
+#if USE_EDITOR
+        auto& editorDefine = options.Macros.AddOne();
+        editorDefine.Name = "USE_EDITOR";
+        editorDefine.Definition = "1";
+#endif
         InitCompilationOptions(options);
         if (ShadersCompilation::Compile(options))
         {

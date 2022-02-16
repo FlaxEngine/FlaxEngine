@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -15,7 +15,9 @@
 #endif
 
 // Amount of back buffers to use
+#ifndef VULKAN_BACK_BUFFERS_COUNT
 #define VULKAN_BACK_BUFFERS_COUNT 2
+#endif
 #define VULKAN_BACK_BUFFERS_COUNT_MAX 16
 
 /// <summary>

@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -672,13 +672,13 @@ public:
     /// <param name="optimalTiling">If set to <c>true</c> the optimal tiling should be used, otherwise use linear tiling.</param>
     /// <returns>The output format.</returns>
     PixelFormat GetClosestSupportedPixelFormat(PixelFormat format, GPUTextureFlags flags, bool optimalTiling);
+    
+    /// <summary>
+    /// Saves the pipeline cache.
+    /// </summary>
+    bool SavePipelineCache();
 
 #if VK_EXT_validation_cache
-
-    /// <summary>
-    /// Loads the validation cache.
-    /// </summary>
-    void LoadValidationCache();
 
     /// <summary>
     /// Saves the validation cache.

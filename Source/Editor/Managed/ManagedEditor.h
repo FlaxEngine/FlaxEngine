@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -14,7 +14,7 @@ namespace CSG
 /// <summary>
 /// Managed Editor root object
 /// </summary>
-class ManagedEditor : public PersistentScriptingObject
+class ManagedEditor : public ScriptingObject
 {
 DECLARE_SCRIPTING_TYPE_NO_SPAWN(ManagedEditor);
 
@@ -144,7 +144,6 @@ private:
 
 public:
 
-    // [PersistentScriptingObject]
-    String ToString() const override;
+    // [ScriptingObject]
     void DestroyManaged() override;
 };

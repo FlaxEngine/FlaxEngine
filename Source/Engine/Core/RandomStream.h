@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -10,7 +10,7 @@
 /// <summary>
 /// Very basic pseudo numbers generator.
 /// </summary>
-class RandomStream
+class FLAXENGINE_API RandomStream
 {
 private:
 
@@ -102,7 +102,6 @@ public:
     uint32 GetUnsignedInt() const
     {
         MutateSeed();
-
         return *(uint32*)&_seed;
     }
 
@@ -144,6 +143,15 @@ public:
             l = result.LengthSquared();
         } while (l > 1.0f || l < ZeroTolerance);
         return Vector3::Normalize(result);
+    }
+    
+    /// <summary>
+    /// Gets a random <see cref="Vector3"/> with components in a range between [0;1].
+    /// </summary>
+    /// <returns>A random <see cref="Vector3"/>.</returns>
+    Vector3 GetVector3() const
+    {
+        return Vector3(GetFraction(), GetFraction(), GetFraction());
     }
 
     /// <summary>

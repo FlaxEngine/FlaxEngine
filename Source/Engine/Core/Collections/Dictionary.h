@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -10,6 +10,9 @@
 /// <summary>
 /// Template for unordered dictionary with mapped key with value pairs.
 /// </summary>
+/// <typeparam name="KeyType">The type of the keys in the dictionary.</typeparam>
+/// <typeparam name="ValueType">The type of the values in the dictionary.</typeparam>
+/// <typeparam name="AllocationType">The type of memory allocator.</typeparam>
 template<typename KeyType, typename ValueType, typename AllocationType = HeapAllocation>
 API_CLASS(InBuild) class Dictionary
 {
@@ -527,7 +530,7 @@ public:
             for (int32 i = 0; i < oldSize; i++)
             {
                 if (oldData[i].IsOccupied())
-                    Add(oldData[i].Key, oldData[i].Value);
+                    Add(oldData[i].Key, MoveTemp(oldData[i].Value));
             }
         }
         if (oldElementsCount != 0)

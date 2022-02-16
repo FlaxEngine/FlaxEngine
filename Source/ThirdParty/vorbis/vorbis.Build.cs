@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 using System.IO;
 using Flax.Build;
@@ -41,11 +41,13 @@ public class vorbis : DepsModule
         case TargetPlatform.Linux:
         case TargetPlatform.Android:
         case TargetPlatform.Switch:
+        case TargetPlatform.Mac:
             options.OutputFiles.Add(Path.Combine(depsRoot, "libvorbis.a"));
             options.OutputFiles.Add(Path.Combine(depsRoot, "libvorbisenc.a"));
             options.OutputFiles.Add(Path.Combine(depsRoot, "libvorbisfile.a"));
             break;
         case TargetPlatform.PS4:
+        case TargetPlatform.PS5:
             options.OutputFiles.Add(Path.Combine(depsRoot, "libvorbis.a"));
             break;
         default: throw new InvalidPlatformException(options.Platform.Target);

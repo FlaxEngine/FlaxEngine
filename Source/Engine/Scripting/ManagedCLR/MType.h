@@ -1,18 +1,17 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 #pragma once
 
 #include "MTypes.h"
 
 /// <summary>
-/// Contains information about managed type
+/// Contains information about managed type.
 /// </summary>
 class MType
 {
 public:
 
 #if USE_MONO
-
     MonoType* _monoType;
 
     /// <summary>
@@ -31,7 +30,6 @@ public:
         : _monoType(nullptr)
     {
     }
-
 #endif
 
     /// <summary>
@@ -46,11 +44,9 @@ public:
     String ToString() const;
 
 #if USE_MONO
-
     /// <summary>
     /// Gets mono type handle
     /// </summary>
-    /// <returns>Mono type</returns>
     MonoType* GetNative() const
     {
         return _monoType;
@@ -78,6 +74,5 @@ public:
     {
         return _monoType != nullptr;
     }
-
 #endif
 };

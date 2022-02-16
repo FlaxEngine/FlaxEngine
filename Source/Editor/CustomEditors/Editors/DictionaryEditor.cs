@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 using System;
 using System.Collections;
@@ -333,7 +333,7 @@ namespace FlaxEditor.CustomEditors.Editors
             {
                 foreach (var e in dictionary.Keys)
                 {
-                    if (e == key)
+                    if (Equals(e, key))
                         continue;
                     newValues[e] = dictionary[e];
                 }
@@ -408,7 +408,7 @@ namespace FlaxEditor.CustomEditors.Editors
                         foreach (var e in newValues.Keys)
                         {
                             var asLong = Convert.ToInt64(e);
-                            if (asLong == uniqueKey)
+                            if (asLong.Equals(uniqueKey))
                             {
                                 uniqueKey++;
                                 isUnique = false;
@@ -449,7 +449,7 @@ namespace FlaxEditor.CustomEditors.Editors
                         isUnique = true;
                         foreach (var e in newValues.Keys)
                         {
-                            if ((string)e == uniqueKey)
+                            if (string.Equals((string)e, uniqueKey, StringComparison.InvariantCulture))
                             {
                                 uniqueKey += "*";
                                 isUnique = false;

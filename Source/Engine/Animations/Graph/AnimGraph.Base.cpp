@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 #include "AnimGraph.h"
 #include "Engine/Core/Collections/Array.h"
@@ -105,6 +105,14 @@ void StateMachineBucketInit(AnimGraphInstanceData::Bucket& bucket)
     bucket.StateMachine.TransitionPosition = 0.0f;
 }
 
+void SlotBucketInit(AnimGraphInstanceData::Bucket& bucket)
+{
+    bucket.Slot.Index = -1;
+    bucket.Slot.TimePosition = 0.0f;
+    bucket.Slot.BlendInPosition = 0.0f;
+    bucket.Slot.BlendOutPosition = 0.0f;
+}
+
 bool SortMultiBlend1D(const byte& a, const byte& b, AnimGraphNode* n)
 {
     // Sort items by X location from the lowest to the highest
@@ -204,6 +212,18 @@ bool AnimGraphBase::onNodeLoaded(Node* n)
             // Triangulate
             Array<Delaunay2D::Triangle, FixedAllocation<ANIM_GRAPH_MULTI_BLEND_2D_MAX_TRIS>> triangles;
             Delaunay2D::Triangulate(vertices, triangles);
+            if (triangles.Count() == 0)
+            {
+                switch (vertices.Count())
+                {
+                case 1:
+                    triangles.Add(Delaunay2D::Triangle(0, 0, 0));
+                    break;
+                case 2:
+                    triangles.Add(Delaunay2D::Triangle(0, 1, 0));
+                    break;
+                }
+            }
 
             // Store triangles vertices indices (map the back to the anim node slots)
             for (int32 i = 0; i < triangles.Count(); i++)
@@ -410,6 +430,12 @@ bool AnimGraphBase::onNodeLoaded(Node* n)
                 data.SrcNodeIndex = -1;
                 data.DstNodeIndex = -1;
             }
+            break;
+        }
+        // Animation Slot
+        case 32:
+        {
+            ADD_BUCKET(SlotBucketInit);
             break;
         }
         }

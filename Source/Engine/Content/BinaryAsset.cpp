@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 #include "BinaryAsset.h"
 #include "Cache/AssetsCache.h"
@@ -114,10 +114,7 @@ void BinaryAsset::Reimport() const
 void BinaryAsset::GetImportMetadata(String& path, String& username) const
 {
     if (Metadata.IsInvalid())
-    {
-        LOG(Warning, "Missing asset metadata.");
         return;
-    }
 
     // Parse metadata and try to get import info
     rapidjson_flax::Document document;

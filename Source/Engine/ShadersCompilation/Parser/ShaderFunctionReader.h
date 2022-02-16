@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -367,15 +367,17 @@ namespace ShaderProcessing
             {
                 // Visible shader
             }
-            else if (token == "false" || token == "0")
+            else if (token == "false" || token == "0" || token.Length == 0)
             {
                 // Hidden shader
                 current.Flags = ShaderFlags::Hidden;
             }
             else
             {
-                parser->OnError(TEXT("Invalid shader function \'isVisible\' option value."));
-                return;
+                // Undefined macro (fallback into hidden shader)
+                current.Flags = ShaderFlags::Hidden;
+                //parser->OnError(String::Format(TEXT("Invalid shader function \'isVisible\' option value \'{0}\'."), String(token.ToString())));
+                //return;
             }
             text.ReadToken(&token);
             token = parser->GetMacros().GetValue(token);
@@ -415,7 +417,7 @@ namespace ShaderProcessing
         void OnParseAfter(IShaderParser* parser, Reader& text) override
         {
             auto& current = ShaderMetaReaderType::_current;
-        
+
             // Validate amount of permutations
             if (current.Permutations.Count() > SHADER_PERMUTATIONS_MAX_COUNT)
             {

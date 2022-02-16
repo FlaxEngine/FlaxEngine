@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 using System.Xml;
 using FlaxEditor.Content;
@@ -270,7 +270,10 @@ namespace FlaxEditor.Windows.Assets
 
             // Tick scene
             if (_previewScene)
+            {
                 _previewScene.Update();
+                UpdateToolstrip();
+            }
         }
 
         /// <inheritdoc />

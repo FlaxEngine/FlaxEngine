@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 using System;
 using System.Collections.Generic;
@@ -24,6 +24,7 @@ namespace FlaxEditor.Surface.Archetypes
             private ComboBoxElement _combobox;
             private readonly List<ISurfaceNodeElement> _dynamicChildren = new List<ISurfaceNodeElement>();
             private bool _isUpdateLocked;
+            private ScriptType _layoutType;
             private NodeElementArchetype[] _layoutElements;
 
             /// <summary>
@@ -178,9 +179,8 @@ namespace FlaxEditor.Surface.Archetypes
             {
             }
 
-            private NodeElementArchetype[] GetElementArchetypes()
+            private NodeElementArchetype[] GetElementArchetypes(SurfaceParameter selected)
             {
-                var selected = GetSelected();
                 if (selected != null && selected.Type.Type != null)
                 {
                     if (Prototypes != null && Prototypes.TryGetValue(selected.Type.Type, out var elements))
@@ -208,24 +208,25 @@ namespace FlaxEditor.Surface.Archetypes
             private void UpdateLayout()
             {
                 // Add elements and calculate node size if type changes
-                var elements = GetElementArchetypes();
-                if (elements != _layoutElements)
+                var selected = GetSelected();
+                var type = selected?.Type ?? ScriptType.Null;
+                if (type != _layoutType || type.Type == typeof(Texture))
                 {
-                    // Clean
-                    ClearDynamicElements();
-
-                    // Build layout
-                    if (elements != null)
+                    var elements = GetElementArchetypes(selected);
+                    if (elements != _layoutElements)
                     {
-                        for (var i = 0; i < elements.Length; i++)
+                        ClearDynamicElements();
+                        if (elements != null)
                         {
-                            var element = AddElement(elements[i]);
-                            _dynamicChildren.Add(element);
+                            for (var i = 0; i < elements.Length; i++)
+                            {
+                                var element = AddElement(elements[i]);
+                                _dynamicChildren.Add(element);
+                            }
                         }
+                        _layoutElements = elements;
                     }
-
-                    // Cache state
-                    _layoutElements = elements;
+                    _layoutType = type;
                 }
 
                 UpdateTitle();
@@ -244,14 +245,12 @@ namespace FlaxEditor.Surface.Archetypes
                 int toSelect = -1;
                 Guid loadedSelected = (Guid)Values[0];
                 _combobox.ClearItems();
-                int index = 0;
                 for (int i = 0; i < Surface.Parameters.Count; i++)
                 {
                     var param = Surface.Parameters[i];
                     _combobox.AddItem(param.Name);
                     if (param.ID == loadedSelected)
-                        toSelect = index;
-                    index++;
+                        toSelect = i;
                 }
                 _combobox.SelectedIndex = toSelect;
                 _isUpdateLocked = false;
@@ -262,29 +261,14 @@ namespace FlaxEditor.Surface.Archetypes
                 if (_isUpdateLocked)
                     return;
                 var selected = GetSelected();
-                Guid selectedID = selected?.ID ?? Guid.Empty;
-                if (selectedID != (Guid)Values[0])
-                {
-                    SetValue(0, selectedID);
-                    UpdateLayout();
-                }
+                var selectedID = selected?.ID ?? Guid.Empty;
+                SetValue(0, selectedID);
             }
 
             private SurfaceParameter GetSelected()
             {
-                SurfaceParameter result = null;
-                int index = 0;
-                for (int i = 0; i < Surface.Parameters.Count; i++)
-                {
-                    var param = Surface.Parameters[i];
-                    if (index == _combobox.SelectedIndex)
-                    {
-                        result = param;
-                        break;
-                    }
-                    index++;
-                }
-                return result;
+                var selectedIndex = _combobox.SelectedIndex;
+                return selectedIndex >= 0 && selectedIndex < Surface.Parameters.Count ? Surface.Parameters[selectedIndex] : null;
             }
 
             private void ClearDynamicElements()
@@ -305,6 +289,12 @@ namespace FlaxEditor.Surface.Archetypes
             {
                 UpdateCombo();
                 UpdateTitle();
+            }
+
+            /// <inheritdoc />
+            public void OnParamEdited(SurfaceParameter param)
+            {
+                UpdateLayout();
             }
 
             /// <inheritdoc />
@@ -339,8 +329,34 @@ namespace FlaxEditor.Surface.Archetypes
             {
                 base.OnValuesChanged();
 
-                UpdateCombo();
+                if (_combobox == null)
+                {
+                    UpdateCombo();
+                }
+                else if (!_isUpdateLocked)
+                {
+                    _isUpdateLocked = true;
+                    int toSelect = -1;
+                    Guid loadedSelected = (Guid)Values[0];
+                    for (int i = 0; i < Surface.Parameters.Count; i++)
+                    {
+                        var param = Surface.Parameters[i];
+                        if (param.ID == loadedSelected)
+                            toSelect = i;
+                    }
+                    _combobox.SelectedIndex = toSelect;
+                    _isUpdateLocked = false;
+                }
                 UpdateLayout();
+            }
+
+            /// <inheritdoc />
+            public override void OnDestroy()
+            {
+                _layoutElements = null;
+                _layoutType = ScriptType.Null;
+
+                base.OnDestroy();
             }
 
             private void UpdateTitle()
@@ -515,14 +531,12 @@ namespace FlaxEditor.Surface.Archetypes
                 int toSelect = -1;
                 Guid loadedSelected = (Guid)Values[0];
                 _combobox.ClearItems();
-                int index = 0;
                 for (int i = 0; i < Surface.Parameters.Count; i++)
                 {
                     var param = Surface.Parameters[i];
                     _combobox.AddItem(param.Name);
                     if (param.ID == loadedSelected)
-                        toSelect = index;
-                    index++;
+                        toSelect = i;
                 }
                 _combobox.SelectedIndex = toSelect;
                 _isUpdateLocked = false;
@@ -547,19 +561,8 @@ namespace FlaxEditor.Surface.Archetypes
 
             private SurfaceParameter GetSelected()
             {
-                SurfaceParameter result = null;
-                int index = 0;
-                for (int i = 0; i < Surface.Parameters.Count; i++)
-                {
-                    var param = Surface.Parameters[i];
-                    if (index == _combobox.SelectedIndex)
-                    {
-                        result = param;
-                        break;
-                    }
-                    index++;
-                }
-                return result;
+                var selectedIndex = _combobox.SelectedIndex;
+                return selectedIndex >= 0 && selectedIndex < Surface.Parameters.Count ? Surface.Parameters[selectedIndex] : null;
             }
 
             /// <inheritdoc />
@@ -572,6 +575,12 @@ namespace FlaxEditor.Surface.Archetypes
             public void OnParamRenamed(SurfaceParameter param)
             {
                 UpdateCombo();
+                UpdateUI();
+            }
+
+            /// <inheritdoc />
+            public void OnParamEdited(SurfaceParameter param)
+            {
                 UpdateUI();
             }
 

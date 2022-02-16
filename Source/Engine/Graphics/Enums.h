@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -70,6 +70,11 @@ API_ENUM() enum class RendererType
     /// </summary>
     PS4 = 11,
 
+    /// <summary>
+    /// PlayStation 5
+    /// </summary>
+    PS5 = 12,
+
     API_ENUM(Attributes="HideInEditor")
     MAX
 };
@@ -120,6 +125,11 @@ API_ENUM() enum class ShaderProfile
     /// DirectX (Shader Model 6 compatible)
     /// </summary>
     DirectX_SM6 = 7,
+
+    /// <summary>
+    /// PlayStation 5
+    /// </summary>
+    PS5 = 8,
 
     API_ENUM(Attributes="HideInEditor")
     MAX
@@ -421,6 +431,9 @@ DECLARE_SCRIPTING_TYPE_MINIMAL(BlendingMode);
     /// </summary>
     API_ENUM() enum class ColorWrite
     {
+        // No color writing.
+        None = 0,
+
         // Allow data to be stored in the red component.
         Red = 1,
         // Allow data to be stored in the green component.
@@ -690,6 +703,12 @@ API_ENUM(Attributes="Flags") enum class DrawPass : int32
     MotionVectors = 1 << 4,
 
     /// <summary>
+    /// The debug quad overdraw rendering (editor-only).
+    /// </summary>
+    API_ENUM(Attributes="HideInEditor")
+    QuadOverdraw = 1 << 20,
+
+    /// <summary>
     /// The default set of draw passes for the scene objects.
     /// </summary>
     API_ENUM(Attributes="HideInEditor")
@@ -813,6 +832,21 @@ API_ENUM() enum class ViewMode
     /// Draw physics colliders debug view
     /// </summary>
     PhysicsColliders = 20,
+
+    /// <summary>
+    /// Draw Level Of Detail number as colors to debug LOD switches.
+    /// </summary>
+    LODPreview = 21,
+
+    /// <summary>
+    /// Draw material shaders complexity to visualize performance of pixels rendering.
+    /// </summary>
+    MaterialComplexity = 22,
+
+    /// <summary>
+    /// Draw geometry overdraw to visualize performance of pixels rendering.
+    /// </summary>
+    QuadOverdraw = 23,
 };
 
 /// <summary>

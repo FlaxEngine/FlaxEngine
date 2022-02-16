@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 using System;
 using FlaxEditor.Content;
@@ -197,7 +197,7 @@ namespace FlaxEditor.GUI.Timeline
                             continue;
                         var track = (NestedSceneAnimationTrack)timeline.NewTrack(NestedSceneAnimationTrack.GetArchetype());
                         track.Asset = sceneAnimation;
-                        track.TrackMedia.DurationFrames = sceneAnimation.DurationFrames;
+                        track.TrackMedia.Duration = sceneAnimation.Duration;
                         track.Rename(assetItem.ShortName);
                         timeline.AddTrack(track);
                     }
@@ -208,7 +208,7 @@ namespace FlaxEditor.GUI.Timeline
                             continue;
                         var track = (AudioTrack)timeline.NewTrack(AudioTrack.GetArchetype());
                         track.Asset = audioClip;
-                        track.TrackMedia.DurationFrames = (int)(audioClip.Length * timeline.FramesPerSecond);
+                        track.TrackMedia.Duration = audioClip.Length;
                         track.Rename(assetItem.ShortName);
                         timeline.AddTrack(track);
                     }
@@ -231,7 +231,6 @@ namespace FlaxEditor.GUI.Timeline
                 state = PlaybackStates.Disabled;
 
             PlaybackState = state;
-            CanPlayPauseStop = Editor.IsPlayMode;
 
             if (_player && _player.Animation)
             {

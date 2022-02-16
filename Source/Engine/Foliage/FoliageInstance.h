@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -10,7 +10,7 @@
 /// <summary>
 /// Foliage instanced mesh instance. Packed data with very little of logic. Managed by the foliage chunks and foliage actor itself.
 /// </summary>
-API_STRUCT(NoPod) struct FoliageInstance
+API_STRUCT(NoPod) struct FLAXENGINE_API FoliageInstance
 {
 DECLARE_SCRIPTING_TYPE_NO_SPAWN(FoliageInstance);
 

@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -56,6 +56,11 @@ API_ENUM(Namespace="FlaxEditor", Attributes="HideInEditor") enum class CodeEdito
     /// Visual Studio 2019
     /// </summary>
     VS2019,
+
+    /// <summary>
+    /// Visual Studio 2022
+    /// </summary>
+    VS2022,
 
     /// <summary>
     /// Visual Studio Code

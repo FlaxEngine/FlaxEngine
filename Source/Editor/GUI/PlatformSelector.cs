@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 using System;
 using FlaxEngine;
@@ -90,6 +90,8 @@ namespace FlaxEditor.GUI
                 new PlatformData(PlatformType.XboxScarlett, icons.XBoxScarletIcon128, "Xbox Scarlett"),
                 new PlatformData(PlatformType.Android, icons.AndroidIcon128, "Android"),
                 new PlatformData(PlatformType.Switch, icons.SwitchIcon128, "Switch"),
+                new PlatformData(PlatformType.PS5, icons.PS5Icon128, "PlayStation 5"),
+                new PlatformData(PlatformType.Mac, icons.MacOSIcon128, "macOS"),
             };
 
             const float IconSize = 64.0f;

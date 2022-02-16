@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -55,6 +55,13 @@ public:
     /// Tangents vectors
     /// </summary>
     Array<Vector3> Tangents;
+
+    /// <summary>
+    /// Bitangents vectors signs (used for bitangent reconstruction). Can be +1 or -1.
+    /// bitangent = cross(normal, tangent) * sign
+    /// sign = dot(cross(bitangent, normal), tangent)
+    /// </summary>
+    Array<float> BitangentSigns;
 
     /// <summary>
     /// Mesh index buffer
@@ -366,16 +373,7 @@ struct FLAXENGINE_API MaterialSlotEntry
 
     bool TwoSided = false;
 
-    bool UsesProperties() const
-    {
-        return Diffuse.Color != Color::White ||
-                Diffuse.TextureIndex != -1 ||
-                Emissive.Color != Color::Transparent ||
-                Emissive.TextureIndex != -1 ||
-                !Math::IsOne(Opacity.Value) ||
-                Opacity.TextureIndex != -1 ||
-                Normals.TextureIndex != -1;
-    }
+    bool UsesProperties() const;
 };
 
 /// <summary>

@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 #include "Plane.h"
 #include "Matrix.h"
@@ -27,6 +27,17 @@ Plane::Plane(const Vector3& point1, const Vector3& point2, const Vector3& point3
 String Plane::ToString() const
 {
     return String::Format(TEXT("{}"), *this);
+}
+
+void Plane::Normalize()
+{
+    const float length = Normal.Length();
+    if (!Math::IsZero(length))
+    {
+        const float rcp = 1.0f / length;
+        Normal *= rcp;
+        D *= rcp;
+    }
 }
 
 void Plane::Constlection(Matrix& result) const

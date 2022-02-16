@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 using System;
 using FlaxEngine;
@@ -108,7 +108,6 @@ namespace FlaxEditor.GUI.ContextMenu
         /// <inheritdoc />
         public override void Draw()
         {
-            // Cache data
             var style = Style.Current;
             var backgroundRect = new Rectangle(-X + 3, 0, Parent.Width - 6, Height);
             var textRect = new Rectangle(0, 0, Width - 8, Height);
@@ -228,15 +227,11 @@ namespace FlaxEditor.GUI.ContextMenu
             {
                 var style = Style.Current;
                 float width = 20;
-
                 if (style.FontMedium)
                 {
                     width += style.FontMedium.MeasureText(Text).X;
-
-                    if (ShortKeys.Length > 0)
-                    {
+                    if (!string.IsNullOrEmpty(ShortKeys))
                         width += 40 + style.FontMedium.MeasureText(ShortKeys).X;
-                    }
                 }
 
                 return Mathf.Max(width, base.MinimumWidth);

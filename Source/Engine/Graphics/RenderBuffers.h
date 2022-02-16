@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -19,7 +19,7 @@
 /// <summary>
 /// The scene rendering buffers container.
 /// </summary>
-API_CLASS() class FLAXENGINE_API RenderBuffers : public PersistentScriptingObject
+API_CLASS() class FLAXENGINE_API RenderBuffers : public ScriptingObject
 {
 DECLARE_SCRIPTING_TYPE(RenderBuffers);
 protected:
@@ -60,12 +60,10 @@ public:
     GPUTexture* LocalShadowedLightScattering = nullptr;
     uint64 LastFrameVolumetricFog = 0;
 
-    struct VolumetricFogData
+    struct
     {
         float MaxDistance;
-    };
-
-    VolumetricFogData VolumetricFogData;
+    } VolumetricFogData;
 
     // Helper buffer with half-resolution depth buffer shared by effects (eg. SSR, Motion Blur). Valid only during frame rendering and on request (see RequestHalfResDepth).
     // Should be released if not used for a few frames.
@@ -177,9 +175,4 @@ public:
     /// Release the buffers data.
     /// </summary>
     API_FUNCTION() void Release();
-
-public:
-
-    // [PersistentScriptingObject]
-    String ToString() const override;
 };

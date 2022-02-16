@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 using System.Collections.Generic;
 using FlaxEditor.Content;
@@ -107,14 +107,18 @@ namespace FlaxEditor.Surface.ContextMenu
         private void BuildList(List<SearchResult> items)
         {
             _resultPanel.DisposeChildren();
+            LockChildrenRecursive();
 
             var dpiScale = DpiScale;
+            var window = RootWindow.Window;
 
             if (items.Count == 0)
             {
                 Height = _searchBox.Height + 1;
                 _resultPanel.ScrollBars = ScrollBars.None;
-                RootWindow.Window.ClientSize = new Vector2(RootWindow.Window.ClientSize.X, Height * dpiScale);
+                window.ClientSize = new Vector2(window.ClientSize.X, Height * dpiScale);
+                UnlockChildrenRecursive();
+                PerformLayout();
                 return;
             }
 
@@ -148,8 +152,9 @@ namespace FlaxEditor.Surface.ContextMenu
                 MatchedItems.Add(searchItem);
             }
 
-            RootWindow.Window.ClientSize = new Vector2(RootWindow.Window.ClientSize.X, Height * dpiScale);
+            window.ClientSize = new Vector2(window.ClientSize.X, Height * dpiScale);
 
+            UnlockChildrenRecursive();
             PerformLayout();
         }
 

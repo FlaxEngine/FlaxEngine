@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 using System;
 using FlaxEditor.Gizmo;
@@ -86,6 +86,13 @@ namespace FlaxEditor.Tools.Foliage
         {
             bounds = BoundingBox.Empty;
             navigationDirty = false;
+            var foliage = GizmoMode.SelectedFoliage;
+            var instanceIndex = GizmoMode.SelectedInstanceIndex;
+            if (foliage && instanceIndex >= 0 && instanceIndex < foliage.InstancesCount)
+            {
+                var instance = foliage.GetInstance(instanceIndex);
+                BoundingBox.FromSphere(ref instance.Bounds, out bounds);
+            }
         }
 
         /// <inheritdoc />

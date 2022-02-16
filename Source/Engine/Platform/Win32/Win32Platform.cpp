@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 #if PLATFORM_WIN32
 
@@ -19,6 +19,8 @@
 #include <xmmintrin.h>
 #include <intrin.h>
 #pragma comment(lib, "Iphlpapi.lib")
+
+static_assert(sizeof(int32) == sizeof(long), "Invalid long size for Interlocked and Atomic operations in Win32Platform.");
 
 namespace
 {
@@ -239,59 +241,6 @@ void Win32Platform::MemoryBarrier()
 #endif
 }
 
-int64 Win32Platform::InterlockedExchange(int64 volatile* dst, int64 exchange)
-{
-    return InterlockedExchange64(dst, exchange);
-}
-
-int32 Win32Platform::InterlockedCompareExchange(int32 volatile* dst, int32 exchange, int32 comperand)
-{
-    static_assert(sizeof(int32) == sizeof(LONG), "Invalid LONG size.");
-    return _InterlockedCompareExchange((LONG volatile*)dst, exchange, comperand);
-}
-
-int64 Win32Platform::InterlockedCompareExchange(int64 volatile* dst, int64 exchange, int64 comperand)
-{
-    return InterlockedCompareExchange64(dst, exchange, comperand);
-}
-
-int64 Win32Platform::InterlockedIncrement(int64 volatile* dst)
-{
-    return InterlockedIncrement64(dst);
-}
-
-int64 Win32Platform::InterlockedDecrement(int64 volatile* dst)
-{
-    return InterlockedDecrement64(dst);
-}
-
-int64 Win32Platform::InterlockedAdd(int64 volatile* dst, int64 value)
-{
-    return InterlockedExchangeAdd64(dst, value);
-}
-
-int32 Win32Platform::AtomicRead(int32 volatile* dst)
-{
-    static_assert(sizeof(int32) == sizeof(LONG), "Invalid LONG size.");
-    return _InterlockedCompareExchange((LONG volatile*)dst, 0, 0);
-}
-
-int64 Win32Platform::AtomicRead(int64 volatile* dst)
-{
-    return InterlockedCompareExchange64(dst, 0, 0);
-}
-
-void Win32Platform::AtomicStore(int32 volatile* dst, int32 value)
-{
-    static_assert(sizeof(int32) == sizeof(LONG), "Invalid LONG size.");
-    _InterlockedExchange((LONG volatile*)dst, value);
-}
-
-void Win32Platform::AtomicStore(int64 volatile* dst, int64 value)
-{
-    InterlockedExchange64(dst, value);
-}
-
 void Win32Platform::Prefetch(void const* ptr)
 {
     _mm_prefetch((char const*)ptr, _MM_HINT_T0);
@@ -385,11 +334,6 @@ ProcessMemoryStats Win32Platform::GetProcessMemoryStats()
 uint64 Win32Platform::GetCurrentProcessId()
 {
     return ::GetCurrentProcessId();
-}
-
-uint64 Win32Platform::GetCurrentThreadID()
-{
-    return ::GetCurrentThreadId();
 }
 
 void Win32Platform::SetThreadPriority(ThreadPriority priority)

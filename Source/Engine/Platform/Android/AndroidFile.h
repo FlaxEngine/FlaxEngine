@@ -1,8 +1,8 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 #pragma once
 
-#if PLATFORM_UNIX
+#if PLATFORM_ANDROID
 
 #include "Engine/Platform/Unix/UnixFile.h"
 

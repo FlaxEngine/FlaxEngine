@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 using System.IO;
 using Flax.Build;
@@ -23,6 +23,7 @@ public class FlaxEditor : EngineTarget
         {
             TargetPlatform.Windows,
             TargetPlatform.Linux,
+            TargetPlatform.Mac,
         };
         Architectures = new[]
         {
@@ -62,6 +63,9 @@ public class FlaxEditor : EngineTarget
         case TargetPlatform.Linux:
             options.OutputFolder = Path.Combine(options.WorkingDirectory, "Binaries", "Editor", "Linux", options.Configuration.ToString());
             options.DependencyFiles.Add(Path.Combine(Globals.EngineRoot, "Source", "Logo.png"));
+            break;
+        case TargetPlatform.Mac:
+            options.OutputFolder = Path.Combine(options.WorkingDirectory, "Binaries", "Editor", "Mac", options.Configuration.ToString());
             break;
         default: throw new InvalidPlatformException(options.Platform.Target, "Not supported Editor platform.");
         }

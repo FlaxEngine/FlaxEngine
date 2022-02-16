@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -11,5 +11,7 @@ class CustomEditorsUtil
 {
 public:
 
+#if USE_MONO
     static MonoReflectionType* GetCustomEditor(MonoReflectionType* refType);
+#endif
 };

@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 using System.ComponentModel;
 using FlaxEditor.GUI.Docking;
@@ -126,6 +126,13 @@ namespace FlaxEditor.Options
         [DefaultValue(1.0f), Limit(0.1f, 4.0f, 0.01f)]
         [EditorDisplay("Interface"), EditorOrder(250), Tooltip("Editor icons scale. Editor restart required.")]
         public float IconsScale { get; set; } = 1.0f;
+
+        /// <summary>
+        /// Gets or sets the editor content window orientation.
+        /// </summary>
+        [DefaultValue(FlaxEngine.GUI.Orientation.Horizontal)]
+        [EditorDisplay("Interface"), EditorOrder(280), Tooltip("Editor content window orientation.")]
+        public FlaxEngine.GUI.Orientation ContentWindowOrientation { get; set; } = FlaxEngine.GUI.Orientation.Horizontal;
 
         /// <summary>
         /// Gets or sets the timestamps prefix mode for output log messages.

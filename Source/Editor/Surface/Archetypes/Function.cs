@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 using System;
 using System.Collections.Generic;
@@ -537,10 +537,7 @@ namespace FlaxEditor.Surface.Archetypes
                 if (methodInfo)
                 {
                     // Update tooltip
-                    var attributes = methodInfo.GetAttributes(true);
-                    var tooltipAttribute = (TooltipAttribute)attributes.FirstOrDefault(x => x is TooltipAttribute);
-                    if (tooltipAttribute != null)
-                        TooltipText = tooltipAttribute.Text;
+                    TooltipText = Editor.Instance.CodeDocs.GetTooltip(methodInfo);
 
                     // Generate signature from the method info
                     MakeBox(0, string.Empty, typeof(void), true);
@@ -1762,17 +1759,19 @@ namespace FlaxEditor.Surface.Archetypes
                     _isTypesChangedEventRegistered = true;
                     Editor.Instance.CodeEditing.TypesChanged += UpdateSignature;
                 }
-                var typeName = (string)Values[2];
-                var isStatic = (bool)Values[3];
                 ScriptType type;
+                bool isStatic;
                 if (fieldInfo)
                 {
                     type = fieldInfo.ValueType;
+                    isStatic = fieldInfo.IsStatic;
                     SetValue(2, type.TypeName);
-                    SetValue(3, type.IsStatic);
+                    SetValue(3, isStatic);
                 }
                 else
                 {
+                    var typeName = (string)Values[2];
+                    isStatic = (bool)Values[3];
                     type = TypeUtils.GetType(typeName);
                 }
                 if (type)
@@ -1851,17 +1850,19 @@ namespace FlaxEditor.Surface.Archetypes
                     _isTypesChangedEventRegistered = true;
                     Editor.Instance.CodeEditing.TypesChanged += UpdateSignature;
                 }
-                var typeName = (string)Values[2];
-                var isStatic = (bool)Values[3];
                 ScriptType type;
+                bool isStatic;
                 if (fieldInfo)
                 {
                     type = fieldInfo.ValueType;
+                    isStatic = fieldInfo.IsStatic;
                     SetValue(2, type.TypeName);
-                    SetValue(3, type.IsStatic);
+                    SetValue(3, isStatic);
                 }
                 else
                 {
+                    var typeName = (string)Values[2];
+                    isStatic = (bool)Values[3];
                     type = TypeUtils.GetType(typeName);
                 }
                 AddBox(false, 2, 0, string.Empty, new ScriptType(typeof(void)), false);

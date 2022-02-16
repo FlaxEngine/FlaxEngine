@@ -1,4 +1,4 @@
-// (c) 2012-2020 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 using System;
 using System.Collections.Generic;
@@ -324,6 +324,11 @@ namespace Flax.Build.Bindings
                 // Read parameter type and name
                 currentParam.Type = ParseType(ref context);
                 currentParam.Name = context.Tokenizer.ExpectToken(TokenType.Identifier).Value;
+                if (currentParam.IsOut && (currentParam.Type.IsPtr || currentParam.Type.IsRef) && currentParam.Type.Type.EndsWith("*"))
+                {
+                    // Pointer to value passed as output pointer
+                    currentParam.Type.Type = currentParam.Type.Type.Remove(currentParam.Type.Type.Length - 1);
+                }
 
                 // Read what's next
                 token = context.Tokenizer.NextToken();
@@ -496,6 +501,21 @@ namespace Flax.Build.Bindings
             if (token.Value != "class")
                 throw new Exception($"Invalid API_CLASS usage (expected 'class' keyword but got '{token.Value} {context.Tokenizer.NextToken().Value}').");
 
+            // Read specifiers
+            while (true)
+            {
+                token = context.Tokenizer.NextToken();
+                if (!desc.IsDeprecated && token.Value == "DEPRECATED")
+                {
+                    desc.IsDeprecated = true;
+                }
+                else
+                {
+                    context.Tokenizer.PreviousToken();
+                    break;
+                }
+            }
+
             // Read name
             desc.Name = desc.NativeName = ParseName(ref context);
 
@@ -574,10 +594,23 @@ namespace Flax.Build.Bindings
             if (token.Value != "class")
                 throw new Exception($"Invalid API_INTERFACE usage (expected 'class' keyword but got '{token.Value} {context.Tokenizer.NextToken().Value}').");
 
+            // Read specifiers
+            while (true)
+            {
+                token = context.Tokenizer.NextToken();
+                if (!desc.IsDeprecated && token.Value == "DEPRECATED")
+                {
+                    desc.IsDeprecated = true;
+                }
+                else
+                {
+                    context.Tokenizer.PreviousToken();
+                    break;
+                }
+            }
+
             // Read name
             desc.Name = desc.NativeName = ParseName(ref context);
-            if (desc.Name.Length < 2 || desc.Name[0] != 'I' || !char.IsUpper(desc.Name[1]))
-                throw new Exception($"Invalid API_INTERFACE name '{desc.Name}' (it must start with 'I' character followed by the uppercase character).");
 
             // Read inheritance
             ParseInheritance(ref context, desc, out _);
@@ -631,7 +664,7 @@ namespace Flax.Build.Bindings
             var tagParams = ParseTagParameters(ref context);
             context.Tokenizer.SkipUntil(TokenType.Identifier);
 
-            // Read 'static' or 'FORCE_INLINE' or 'virtual'
+            // Read specifiers
             var isForceInline = false;
             while (true)
             {
@@ -649,6 +682,11 @@ namespace Flax.Build.Bindings
                 else if (!desc.IsVirtual && token.Value == "virtual")
                 {
                     desc.IsVirtual = true;
+                    context.Tokenizer.NextToken();
+                }
+                else if (!desc.IsDeprecated && token.Value == "DEPRECATED")
+                {
+                    desc.IsDeprecated = true;
                     context.Tokenizer.NextToken();
                 }
                 else
@@ -727,6 +765,9 @@ namespace Flax.Build.Bindings
                 case "noproxy":
                     desc.NoProxy = true;
                     break;
+                case "hidden":
+                    desc.IsHidden = true;
+                    break;
                 default:
                     Log.Warning($"Unknown or not supported tag parameter {tag} used on function {desc.Name}");
                     break;
@@ -760,6 +801,7 @@ namespace Flax.Build.Bindings
                     Name = propertyName,
                     Comment = functionInfo.Comment,
                     IsStatic = functionInfo.IsStatic,
+                    IsHidden = functionInfo.IsHidden,
                     Access = functionInfo.Access,
                     Attributes = functionInfo.Attributes,
                     Type = propertyType,
@@ -783,6 +825,8 @@ namespace Flax.Build.Bindings
                 propertyInfo.Getter = functionInfo;
             else
                 propertyInfo.Setter = functionInfo;
+            propertyInfo.IsDeprecated |= functionInfo.IsDeprecated;
+            propertyInfo.IsHidden |= functionInfo.IsHidden;
 
             if (propertyInfo.Getter != null && propertyInfo.Setter != null)
             {
@@ -836,6 +880,21 @@ namespace Flax.Build.Bindings
             token = context.Tokenizer.NextToken();
             if (token.Value != "class")
                 context.Tokenizer.PreviousToken();
+
+            // Read specifiers
+            while (true)
+            {
+                token = context.Tokenizer.NextToken();
+                if (!desc.IsDeprecated && token.Value == "DEPRECATED")
+                {
+                    desc.IsDeprecated = true;
+                }
+                else
+                {
+                    context.Tokenizer.PreviousToken();
+                    break;
+                }
+            }
 
             // Read name
             desc.Name = desc.NativeName = ParseName(ref context);
@@ -1046,9 +1105,9 @@ namespace Flax.Build.Bindings
             var tagParams = ParseTagParameters(ref context);
             context.Tokenizer.SkipUntil(TokenType.Identifier);
 
-            // Read 'static' or 'mutable'
+            // Read specifiers
             Token token;
-            var isMutable = false;
+            bool isMutable = false, isVolatile = false;
             while (true)
             {
                 token = context.Tokenizer.CurrentToken;
@@ -1060,6 +1119,16 @@ namespace Flax.Build.Bindings
                 else if (!isMutable && token.Value == "mutable")
                 {
                     isMutable = true;
+                    context.Tokenizer.NextToken();
+                }
+                else if (!isVolatile && token.Value == "volatile")
+                {
+                    isVolatile = true;
+                    context.Tokenizer.NextToken();
+                }
+                else if (!desc.IsDeprecated && token.Value == "DEPRECATED")
+                {
+                    desc.IsDeprecated = true;
                     context.Tokenizer.NextToken();
                 }
                 else
@@ -1126,6 +1195,9 @@ namespace Flax.Build.Bindings
                 case "readonly":
                     desc.IsReadOnly = true;
                     break;
+                case "hidden":
+                    desc.IsHidden = true;
+                    break;
                 case "noarray":
                     desc.NoArray = true;
                     break;
@@ -1187,6 +1259,9 @@ namespace Flax.Build.Bindings
                     break;
                 case "name":
                     desc.Name = tag.Value;
+                    break;
+                case "hidden":
+                    desc.IsHidden = true;
                     break;
                 default:
                     Log.Warning($"Unknown or not supported tag parameter {tag} used on event {desc.Name} at line {context.Tokenizer.CurrentLine}");

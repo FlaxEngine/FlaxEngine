@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -37,7 +37,8 @@ private:
 #if COMPILE_WITH_DEV_ENV
     void OnShaderReloading(Asset* obj)
     {
-        _psTAA->ReleaseGPU();
+        if (_psTAA)
+            _psTAA->ReleaseGPU();
         invalidateResources();
     }
 #endif

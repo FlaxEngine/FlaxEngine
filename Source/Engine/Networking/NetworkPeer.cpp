@@ -1,10 +1,8 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 #include "NetworkPeer.h"
 #include "NetworkEvent.h"
-
 #include "Drivers/ENetDriver.h"
-
 #include "Engine/Core/Log.h"
 #include "Engine/Core/Math/Math.h"
 #include "Engine/Platform/CPUInfo.h"
@@ -15,15 +13,43 @@ namespace
     uint32 LastHostId = 0;
 }
 
-void NetworkPeer::Initialize(const NetworkConfig& config)
+bool NetworkPeer::Initialize(const NetworkConfig& config)
 {
-    Config = config;
+    if (NetworkDriver)
+        return true;
 
-    ASSERT(NetworkDriver == nullptr);
-    ASSERT(Config.NetworkDriverType != NetworkDriverType::Undefined);
-    ASSERT(Config.ConnectionsLimit > 0);
-    ASSERT(Config.MessageSize > 32); // TODO: Adjust this, not sure what the lowest limit should be.
-    ASSERT(Config.MessagePoolSize > 128);
+    Config = config;
+    PRAGMA_DISABLE_DEPRECATION_WARNINGS
+    if (Config.NetworkDriver == nullptr && Config.NetworkDriverType == NetworkDriverType::ENet)
+        Config.NetworkDriver = New<ENetDriver>();
+    PRAGMA_ENABLE_DEPRECATION_WARNINGS
+
+    if (Config.NetworkDriver == nullptr)
+    {
+        LOG(Error, "Missing NetworkDriver");
+        return true;
+    }
+    if (Config.ConnectionsLimit <= 0)
+    {
+        LOG(Error, "Invalid ConnectionsLimit");
+        return true;
+    }
+    if (Config.MessageSize <= 32) // TODO: Adjust this, not sure what the lowest limit should be.
+    {
+        LOG(Error, "Invalid MessageSize");
+        return true;
+    }
+    if (Config.MessagePoolSize <= 128)
+    {
+        LOG(Error, "Invalid MessagePoolSize");
+        return true;
+    }
+    NetworkDriver = ToInterface<INetworkDriver>(Config.NetworkDriver);
+    if (!NetworkDriver)
+    {
+        LOG(Error, "NetworkDriver doesn't implement INetworkDriver interface");
+        return true;
+    }
 
     // TODO: Dynamic message pool allocation
     // Setup messages
@@ -35,10 +61,14 @@ void NetworkPeer::Initialize(const NetworkConfig& config)
         MessagePool.Push(messageId);
 
     // Setup network driver
-    NetworkDriver = New<ENetDriver>();
-    NetworkDriver->Initialize(this, Config);
+    if (NetworkDriver->Initialize(this, Config))
+    {
+        LOG(Error, "Failed to initialize NetworkDriver");
+        return true;
+    }
 
-    LOG(Info, "NetworkManager initialized using driver = {0}", static_cast<int>(Config.NetworkDriverType));
+    LOG(Info, "NetworkManager initialized using driver = {0}", NetworkDriver->DriverName());
+    return false;
 }
 
 void NetworkPeer::Shutdown()
@@ -53,7 +83,7 @@ void NetworkPeer::Shutdown()
 void NetworkPeer::CreateMessageBuffers()
 {
     ASSERT(MessageBuffer == nullptr);
-        
+
     const uint32 pageSize = Platform::GetCPUInfo().PageSize;
 
     // Calculate total size in bytes
@@ -69,7 +99,7 @@ void NetworkPeer::CreateMessageBuffers()
 void NetworkPeer::DisposeMessageBuffers()
 {
     ASSERT(MessageBuffer != nullptr);
-        
+
     Platform::FreePages(MessageBuffer);
     MessageBuffer = nullptr;
 }
@@ -117,7 +147,7 @@ void NetworkPeer::RecycleMessage(const NetworkMessage& message)
 #ifdef BUILD_DEBUG
     ASSERT(MessagePool.Contains(message.MessageId) == false);
 #endif
-    
+
     // Return the message id
     MessagePool.Push(message.MessageId);
 }
@@ -136,7 +166,7 @@ void NetworkPeer::AbortSendMessage(const NetworkMessage& message)
 bool NetworkPeer::EndSendMessage(const NetworkChannelType channelType, const NetworkMessage& message)
 {
     ASSERT(message.IsValid());
-    
+
     NetworkDriver->SendMessage(channelType, message);
 
     RecycleMessage(message);
@@ -146,7 +176,7 @@ bool NetworkPeer::EndSendMessage(const NetworkChannelType channelType, const Net
 bool NetworkPeer::EndSendMessage(const NetworkChannelType channelType, const NetworkMessage& message, const NetworkConnection& target)
 {
     ASSERT(message.IsValid());
-    
+
     NetworkDriver->SendMessage(channelType, message, target);
 
     RecycleMessage(message);
@@ -156,7 +186,7 @@ bool NetworkPeer::EndSendMessage(const NetworkChannelType channelType, const Net
 bool NetworkPeer::EndSendMessage(const NetworkChannelType channelType, const NetworkMessage& message, const Array<NetworkConnection>& targets)
 {
     ASSERT(message.IsValid());
-    
+
     NetworkDriver->SendMessage(channelType, message, targets);
 
     RecycleMessage(message);
@@ -166,18 +196,28 @@ bool NetworkPeer::EndSendMessage(const NetworkChannelType channelType, const Net
 NetworkPeer* NetworkPeer::CreatePeer(const NetworkConfig& config)
 {
     // Validate the address for listen/connect
-    NetworkEndPoint endPoint = {};
-    const bool isValidEndPoint = NetworkBase::CreateEndPoint(config.Address, String("7777"), NetworkIPVersion::IPv4, endPoint, false);
-    ASSERT(config.Address == String("any") || isValidEndPoint);
-    
+    if (config.Address != TEXT("any"))
+    {
+        NetworkEndPoint endPoint;
+        if (Network::CreateEndPoint(config.Address, String::Empty, NetworkIPVersion::IPv4, endPoint, false))
+        {
+            LOG(Error, "Invalid end point.");
+            return nullptr;
+        }
+    }
+
     // Alloc new host
-    Peers.Add(New<NetworkPeer>());
-    NetworkPeer* host = Peers.Last();
+    NetworkPeer* host = New<NetworkPeer>();
     host->HostId = LastHostId++;
 
     // Initialize the host
-    host->Initialize(config);
-    
+    if (host->Initialize(config))
+    {
+        Delete(host);
+        return nullptr;
+    }
+
+    Peers.Add(host);
     return host;
 }
 
@@ -187,6 +227,6 @@ void NetworkPeer::ShutdownPeer(NetworkPeer* peer)
     peer->Shutdown();
     peer->HostId = -1;
     Peers.Remove(peer);
-    
+
     Delete(peer);
 }

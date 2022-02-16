@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -6,6 +6,7 @@
 #include "Engine/Content/Asset.h"
 #include "Engine/Content/AssetReference.h"
 #include "Engine/Content/WeakAssetReference.h"
+#include "Engine/Core/Log.h"
 #include "Engine/Profiler/ProfilerCPU.h"
 
 /// <summary>
@@ -23,6 +24,19 @@ public:
         : ContentLoadTask(Type::LoadAsset)
         , Asset(asset)
     {
+    }
+
+    ~LoadAssetTask()
+    {
+        if (Asset)
+        {
+            Asset->Locker.Lock();
+            Asset->_loadFailed = true;
+            Asset->_isLoaded = false;
+            LOG(Error, "Loading asset \'{0}\' result: {1}.", ToString(), ToString(Result::TaskFailed));
+            Asset->_loadingTask = nullptr;
+            Asset->Locker.Unlock();
+        }
     }
 
 public:
@@ -55,7 +69,6 @@ protected:
 
         return Result::Ok;
     }
-
     void OnEnd() override
     {
         Asset = nullptr;

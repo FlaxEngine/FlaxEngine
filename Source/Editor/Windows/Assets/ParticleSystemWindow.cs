@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 using System;
 using System.Linq;
@@ -347,6 +347,7 @@ namespace FlaxEditor.Windows.Assets
             };
             _timeline.Modified += OnTimelineModified;
             _timeline.SelectionChanged += OnTimelineSelectionChanged;
+            _timeline.SetNoTracksText("Loading...");
 
             // Properties editor
             var propertiesEditor = new CustomEditorPresenter(_undo, string.Empty);
@@ -527,6 +528,7 @@ namespace FlaxEditor.Windows.Assets
                 // Setup
                 _undo.Clear();
                 _timeline.Enabled = true;
+                _timeline.SetNoTracksText(null);
                 _propertiesEditor.Select(new GeneralProxy(this));
                 ClearEditedFlag();
             }

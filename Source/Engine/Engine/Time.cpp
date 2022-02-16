@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 #include "Time.h"
 #include "EngineService.h"
@@ -103,7 +103,10 @@ bool Time::TickData::OnTickBegin(float targetFps, float maxDeltaTime)
         }
 
         if (targetFps > ZeroTolerance)
-            NextBegin += (1.0 / targetFps);
+        {
+            int skip = (int)(1 + (time - NextBegin) / (1.0 / targetFps));
+            NextBegin += (1.0 / targetFps) * skip;
+        }
     }
 
     // Update data
@@ -156,7 +159,10 @@ bool Time::FixedStepTickData::OnTickBegin(float targetFps, float maxDeltaTime)
         }
 
         if (targetFps > ZeroTolerance)
-            NextBegin += (1.0 / targetFps);
+        {
+            int skip = (int)(1 + (time - NextBegin) / (1.0 / targetFps));
+            NextBegin += (1.0 / targetFps) * skip;
+        }
     }
     Samples.Add(deltaTime);
 
@@ -183,11 +189,11 @@ double Time::GetNextTick()
     const double nextDraw = Time::Draw.NextBegin;
 
     double nextTick = MAX_double;
-    if (UpdateFPS > 0 && nextUpdate < nextTick)
+    if (UpdateFPS > ZeroTolerance && nextUpdate < nextTick)
         nextTick = nextUpdate;
-    if (PhysicsFPS > 0 && nextPhysics < nextTick)
+    if (PhysicsFPS > ZeroTolerance && nextPhysics < nextTick)
         nextTick = nextPhysics;
-    if (DrawFPS > 0 && nextDraw < nextTick)
+    if (DrawFPS > ZeroTolerance && nextDraw < nextTick)
         nextTick = nextDraw;
 
     if (nextTick == MAX_double)

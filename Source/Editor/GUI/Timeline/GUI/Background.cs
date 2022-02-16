@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 using System;
 using System.Globalization;
@@ -16,6 +16,9 @@ namespace FlaxEditor.GUI.Timeline.GUI
         private readonly Timeline _timeline;
         private float[] _tickSteps;
         private float[] _tickStrengths;
+        private bool _isSelecting;
+        private Vector2 _selectingStartPos = Vector2.Minimum;
+        private Vector2 _mousePos = Vector2.Minimum;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="Background"/> class.
@@ -26,6 +29,87 @@ namespace FlaxEditor.GUI.Timeline.GUI
             _timeline = timeline;
             _tickSteps = Utilities.Utils.CurveTickSteps;
             _tickStrengths = new float[_tickSteps.Length];
+        }
+
+        private void UpdateSelectionRectangle()
+        {
+            var selectionRect = Rectangle.FromPoints(_selectingStartPos, _mousePos);
+            _timeline.OnKeyframesSelection(null, this, selectionRect);
+        }
+
+        /// <inheritdoc />
+        public override bool OnMouseDown(Vector2 location, MouseButton button)
+        {
+            if (base.OnMouseDown(location, button))
+                return true;
+
+            _mousePos = location;
+            if (button == MouseButton.Left)
+            {
+                // Start selecting
+                _isSelecting = true;
+                _selectingStartPos = location;
+                _timeline.OnKeyframesDeselect(null);
+                Focus();
+                StartMouseCapture();
+                return true;
+            }
+
+            return false;
+        }
+
+        /// <inheritdoc />
+        public override bool OnMouseUp(Vector2 location, MouseButton button)
+        {
+            _mousePos = location;
+            if (_isSelecting && button == MouseButton.Left)
+            {
+                // End selecting
+                _isSelecting = false;
+                EndMouseCapture();
+                return true;
+            }
+
+            if (base.OnMouseUp(location, button))
+                return true;
+
+            return true;
+        }
+
+        /// <inheritdoc />
+        public override void OnMouseMove(Vector2 location)
+        {
+            _mousePos = location;
+
+            // Selecting
+            if (_isSelecting)
+            {
+                UpdateSelectionRectangle();
+                return;
+            }
+
+            base.OnMouseMove(location);
+        }
+
+        /// <inheritdoc />
+        public override void OnLostFocus()
+        {
+            if (_isSelecting)
+            {
+                _isSelecting = false;
+                EndMouseCapture();
+            }
+
+            base.OnLostFocus();
+        }
+
+        /// <inheritdoc />
+        public override void OnEndMouseCapture()
+        {
+            _isSelecting = false;
+            EndMouseCapture();
+
+            base.OnEndMouseCapture();
         }
 
         /// <inheritdoc />
@@ -46,10 +130,16 @@ namespace FlaxEditor.GUI.Timeline.GUI
             var areaLeft = -X;
             var areaRight = Parent.Width + mediaBackground.ControlsBounds.BottomRight.X;
             var height = Height;
-            var leftSideMin = PointFromParent(Vector2.Zero);
-            var leftSideMax = BottomLeft;
-            var rightSideMin = UpperRight;
-            var rightSideMax = PointFromParent(Parent.BottomRight) + mediaBackground.ControlsBounds.BottomRight;
+
+            // Calculate the timeline range in the view to optimize background drawing
+            Render2D.PeekClip(out var globalClipping);
+            Render2D.PeekTransform(out var globalTransform);
+            var globalRect = new Rectangle(globalTransform.M31 + areaLeft, globalTransform.M32, areaRight * globalTransform.M11, height * globalTransform.M22);
+            var globalMask = Rectangle.Shared(globalClipping, globalRect);
+            var globalTransformInv = Matrix3x3.Invert(globalTransform);
+            var localRect = Rectangle.FromPoints(Matrix3x3.Transform2D(globalMask.UpperLeft, globalTransformInv), Matrix3x3.Transform2D(globalMask.BottomRight, globalTransformInv));
+            var localRectMin = localRect.UpperLeft;
+            var localRectMax = localRect.BottomRight;
 
             // Draw lines between tracks
             Render2D.DrawLine(new Vector2(areaLeft, 0.5f), new Vector2(areaRight, 0.5f), linesColor);
@@ -69,7 +159,7 @@ namespace FlaxEditor.GUI.Timeline.GUI
                 var track = tracks[i];
                 if (track.Visible && _timeline.SelectedTracks.Contains(track) && _timeline.ContainsFocus)
                 {
-                    Render2D.FillRectangle(new Rectangle(areaLeft, track.Top, areaRight, track.Height), style.BackgroundSelected);
+                    Render2D.FillRectangle(new Rectangle(areaLeft, track.Top, areaRight, track.Height), style.BackgroundSelected.RGBMultiplied(0.4f));
                 }
             }
 
@@ -77,8 +167,8 @@ namespace FlaxEditor.GUI.Timeline.GUI
             var minDistanceBetweenTicks = 50.0f;
             var maxDistanceBetweenTicks = 100.0f;
             var zoom = Timeline.UnitsPerSecond * _timeline.Zoom;
-            var left = Vector2.Min(leftSideMin, rightSideMax).X;
-            var right = Vector2.Max(leftSideMin, rightSideMax).X;
+            var left = Vector2.Min(localRectMin, localRectMax).X;
+            var right = Vector2.Max(localRectMin, localRectMax).X;
             var leftFrame = Mathf.Floor((left - Timeline.StartOffset) / zoom) * _timeline.FramesPerSecond;
             var rightFrame = Mathf.Ceil((right - Timeline.StartOffset) / zoom) * _timeline.FramesPerSecond;
             var min = leftFrame;
@@ -133,6 +223,14 @@ namespace FlaxEditor.GUI.Timeline.GUI
                 }
             }
 
+            // Draw selection rectangle
+            if (_isSelecting)
+            {
+                var selectionRect = Rectangle.FromPoints(_selectingStartPos, _mousePos);
+                Render2D.FillRectangle(selectionRect, Color.Orange * 0.4f);
+                Render2D.DrawRectangle(selectionRect, Color.Orange);
+            }
+
             DrawChildren();
 
             // Disabled overlay
@@ -146,9 +244,15 @@ namespace FlaxEditor.GUI.Timeline.GUI
             }
 
             // Darken area outside the duration
-            var outsideDurationAreaColor = new Color(0, 0, 0, 100);
-            Render2D.FillRectangle(new Rectangle(leftSideMin, leftSideMax.X - leftSideMin.X, height), outsideDurationAreaColor);
-            Render2D.FillRectangle(new Rectangle(rightSideMin, rightSideMax.X - rightSideMin.X, height), outsideDurationAreaColor);
+            {
+                var outsideDurationAreaColor = new Color(0, 0, 0, 100);
+                var leftSideMin = PointFromParent(Vector2.Zero);
+                var leftSideMax = BottomLeft;
+                var rightSideMin = UpperRight;
+                var rightSideMax = PointFromParent(Parent.BottomRight) + mediaBackground.ControlsBounds.BottomRight;
+                Render2D.FillRectangle(new Rectangle(leftSideMin, leftSideMax.X - leftSideMin.X, height), outsideDurationAreaColor);
+                Render2D.FillRectangle(new Rectangle(rightSideMin, rightSideMax.X - rightSideMin.X, height), outsideDurationAreaColor);
+            }
 
             // Draw time axis header
             var timeAxisHeaderOffset = -_timeline.MediaBackground.ViewOffset.Y;
@@ -211,9 +315,28 @@ namespace FlaxEditor.GUI.Timeline.GUI
             // Zoom in/out
             if (IsMouseOver && Root.GetKey(KeyboardKeys.Control))
             {
-                // TODO: preserve the view center point for easier zooming
+                var locationTimeOld = _timeline.MediaBackground.PointFromParent(_timeline, _timeline.Size * 0.5f).X;
+                var frame = (locationTimeOld - Timeline.StartOffset * 2.0f) / _timeline.Zoom / Timeline.UnitsPerSecond * _timeline.FramesPerSecond;
+
                 _timeline.Zoom += delta * 0.1f;
+
+                var locationTimeNew = frame / _timeline.FramesPerSecond * Timeline.UnitsPerSecond * _timeline.Zoom + Timeline.StartOffset * 2.0f;
+                var locationTimeDelta = locationTimeNew - locationTimeOld;
+                var scroll = _timeline.MediaBackground.HScrollBar;
+                if (scroll.Visible && scroll.Enabled)
+                    scroll.TargetValue += locationTimeDelta;
                 return true;
+            }
+
+            // Scroll view horizontally
+            if (IsMouseOver && Root.GetKey(KeyboardKeys.Shift))
+            {
+                var scroll = _timeline.MediaBackground.HScrollBar;
+                if (scroll.Visible && scroll.Enabled)
+                {
+                    scroll.TargetValue -= delta * Timeline.UnitsPerSecond / _timeline.Zoom;
+                    return true;
+                }
             }
 
             return false;

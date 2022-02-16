@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 using System;
 using System.Collections.Generic;
@@ -235,8 +235,9 @@ namespace FlaxEditor.Content.GUI
         /// </summary>
         /// <param name="items">The items to show.</param>
         /// <param name="sortType">The sort method for items.</param>
-        /// <param name="additive">If set to <c>true</c> items will be added to the current selection. Otherwise selection will be cleared before.</param>
-        public void ShowItems(List<ContentItem> items, SortType sortType, bool additive = false)
+        /// <param name="additive">If set to <c>true</c> items will be added to the current list. Otherwise items list will be cleared before.</param>
+        /// <param name="keepSelection">If set to <c>true</c> selected items list will be preserved. Otherwise selection will be cleared before.</param>
+        public void ShowItems(List<ContentItem> items, SortType sortType, bool additive = false, bool keepSelection = false)
         {
             if (items == null)
                 throw new ArgumentNullException();
@@ -253,6 +254,7 @@ namespace FlaxEditor.Content.GUI
             // Lock layout
             var wasLayoutLocked = IsLayoutLocked;
             IsLayoutLocked = true;
+            var selection = !additive && keepSelection ? _selection.ToArray() : null;
 
             // Deselect items if need to
             if (!additive)
@@ -264,6 +266,11 @@ namespace FlaxEditor.Content.GUI
             {
                 items[i].Parent = this;
                 items[i].AddReference(this);
+            }
+            if (selection != null)
+            {
+                _selection.Clear();
+                _selection.AddRange(selection);
             }
 
             // Sort items depending on sortMethod parameter
@@ -506,7 +513,7 @@ namespace FlaxEditor.Content.GUI
                     Select(item, true);
             }
             // Range select
-            else if (Root.GetKey(KeyboardKeys.Shift))
+            else if (_selection.Count != 0 && Root.GetKey(KeyboardKeys.Shift))
             {
                 int min = _selection.Min(x => x.IndexInParent);
                 int max = _selection.Max(x => x.IndexInParent);
@@ -598,6 +605,14 @@ namespace FlaxEditor.Content.GUI
         }
 
         /// <inheritdoc />
+        public override bool OnMouseDown(Vector2 location, MouseButton button)
+        {
+            if (base.OnMouseDown(location, button))
+                return true;
+            return AutoFocus && Focus(this);
+        }
+
+        /// <inheritdoc />
         public override bool OnMouseWheel(Vector2 location, float delta)
         {
             // Check if pressing control key
@@ -632,7 +647,7 @@ namespace FlaxEditor.Content.GUI
                 // Open
                 if (key == KeyboardKeys.Return && _selection.Count != 0)
                 {
-                    foreach (var e in _selection)
+                    foreach (var e in _selection.ToArray())
                         OnOpen?.Invoke(e);
                     return true;
                 }

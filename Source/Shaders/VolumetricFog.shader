@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 // Implementation based on:
 // "Volumetric fog: Unified, compute shader based solution to atmospheric scattering" - Bart Wronski at Siggraph 2014
@@ -210,8 +210,6 @@ float4 PS_InjectLight(Quad_GS2PS input) : SV_Target0
 	uint samplesCount = 1;
 #endif
 
-	float3 L = 0;
-	float3 toLight = 0;
 	float NoL = 0;
 	float distanceAttenuation = 1;
 	float lightRadiusMask = 1;
@@ -227,9 +225,12 @@ float4 PS_InjectLight(Quad_GS2PS input) : SV_Target0
 		float3 cameraVector = normalize(positionWS - GBuffer.ViewPos);
 		float cellRadius = length(positionWS - GetCellPositionWS(gridCoordinate + uint3(1, 1, 1), cellOffset));
 		float distanceBias = max(cellRadius * InverseSquaredLightDistanceBiasScale, 1);
+		float3 toLight = LocalLight.Position - positionWS;
+		float distanceSqr = dot(toLight, toLight);
+		float3 L = toLight * rsqrt(distanceSqr);
 
 		// Calculate the light attenuation
-		GetRadialLightAttenuation(LocalLight, isSpotLight, positionWS, float3(0, 0, 1), distanceBias * distanceBias, toLight, L, NoL, distanceAttenuation, lightRadiusMask, spotAttenuation);
+		GetRadialLightAttenuation(LocalLight, isSpotLight, float3(0, 0, 1), distanceSqr, distanceBias * distanceBias, toLight, L, NoL, distanceAttenuation, lightRadiusMask, spotAttenuation);
 		float combinedAttenuation = distanceAttenuation * lightRadiusMask * spotAttenuation;
 
 		// Peek the shadow

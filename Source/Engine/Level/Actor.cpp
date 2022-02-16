@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 #include "Actor.h"
 #include "ActorsCache.h"
@@ -17,6 +17,7 @@
 #include "Engine/Debug/Exceptions/JsonParseException.h"
 #include "Engine/Graphics/RenderTask.h"
 #include "Engine/Graphics/RenderView.h"
+#include "Engine/Physics/Physics.h"
 #include "Engine/Profiler/ProfilerCPU.h"
 #include "Engine/Scripting/Scripting.h"
 #include "Engine/Serialization/ISerializeModifier.h"
@@ -32,6 +33,37 @@
 #define CHECK_EXECUTE_IN_EDITOR
 #endif
 
+namespace
+{
+    Actor* GetChildByPrefabObjectId(Actor* a, const Guid& prefabObjectId)
+    {
+        Actor* result = nullptr;
+        for (int32 i = 0; i < a->Children.Count(); i++)
+        {
+            if (a->Children[i]->GetPrefabObjectID() == prefabObjectId)
+            {
+                result = a->Children[i];
+                break;
+            }
+        }
+        return result;
+    }
+
+    Script* GetScriptByPrefabObjectId(Actor* a, const Guid& prefabObjectId)
+    {
+        Script* result = nullptr;
+        for (int32 i = 0; i < a->Scripts.Count(); i++)
+        {
+            if (a->Scripts[i]->GetPrefabObjectID() == prefabObjectId)
+            {
+                result = a->Scripts[i];
+                break;
+            }
+        }
+        return result;
+    }
+}
+
 Actor::Actor(const SpawnParams& params)
     : SceneObject(params)
     , _isActive(true)
@@ -46,6 +78,7 @@ Actor::Actor(const SpawnParams& params)
     , _transform(Transform::Identity)
     , _sphere(BoundingSphere::Empty)
     , _box(BoundingBox::Zero)
+    , _physicsScene(nullptr)
     , HideFlags(HideFlags::None)
 {
 }
@@ -382,20 +415,6 @@ Array<Actor*> Actor::GetChildren(const MClass* type) const
     for (auto child : Children)
         if (child->GetClass()->IsSubClassOf(type))
             result.Add(child);
-    return result;
-}
-
-Actor* Actor::GetChildByPrefabObjectId(const Guid& prefabObjectId) const
-{
-    Actor* result = nullptr;
-    for (int32 i = 0; i < Children.Count(); i++)
-    {
-        if (Children[i]->GetPrefabObjectID() == prefabObjectId)
-        {
-            result = Children[i];
-            break;
-        }
-    }
     return result;
 }
 
@@ -919,7 +938,7 @@ void Actor::Serialize(SerializeStream& stream, const void* otherObj)
         for (int32 i = 0; i < other->Children.Count(); i++)
         {
             const Guid prefabObjectId = other->Children[i]->GetPrefabObjectID();
-            if (GetChildByPrefabObjectId(prefabObjectId) == nullptr)
+            if (GetChildByPrefabObjectId(this, prefabObjectId) == nullptr)
             {
                 if (!hasRemovedObjects)
                 {
@@ -934,7 +953,7 @@ void Actor::Serialize(SerializeStream& stream, const void* otherObj)
         for (int32 i = 0; i < other->Scripts.Count(); i++)
         {
             const Guid prefabObjectId = other->Scripts[i]->GetPrefabObjectID();
-            if (GetScriptByPrefabObjectId(prefabObjectId) == nullptr)
+            if (GetScriptByPrefabObjectId(this, prefabObjectId) == nullptr)
             {
                 if (!hasRemovedObjects)
                 {
@@ -1295,20 +1314,6 @@ Script* Actor::GetScriptByID(const Guid& id) const
     return result;
 }
 
-Script* Actor::GetScriptByPrefabObjectId(const Guid& prefabObjectId) const
-{
-    Script* result = nullptr;
-    for (int32 i = 0; i < Scripts.Count(); i++)
-    {
-        if (Scripts[i]->GetPrefabObjectID() == prefabObjectId)
-        {
-            result = Scripts[i];
-            break;
-        }
-    }
-    return result;
-}
-
 bool Actor::IsPrefabRoot() const
 {
     return _isPrefabRoot != 0;
@@ -1426,18 +1431,16 @@ Actor* Actor::Intersects(const Ray& ray, float& distance, Vector3& normal)
 void Actor::LookAt(const Vector3& worldPos)
 {
     const Quaternion orientation = LookingAt(worldPos);
-
     SetOrientation(orientation);
 }
 
 void Actor::LookAt(const Vector3& worldPos, const Vector3& worldUp)
 {
     const Quaternion orientation = LookingAt(worldPos, worldUp);
-
     SetOrientation(orientation);
 }
 
-Quaternion Actor::LookingAt(const Vector3& worldPos)
+Quaternion Actor::LookingAt(const Vector3& worldPos) const
 {
     const Vector3 direction = worldPos - _transform.Translation;
     if (direction.LengthSquared() < ZeroTolerance)
@@ -1464,7 +1467,7 @@ Quaternion Actor::LookingAt(const Vector3& worldPos)
     return orientation;
 }
 
-Quaternion Actor::LookingAt(const Vector3& worldPos, const Vector3& worldUp)
+Quaternion Actor::LookingAt(const Vector3& worldPos, const Vector3& worldUp) const
 {
     const Vector3 direction = worldPos - _transform.Translation;
     if (direction.LengthSquared() < ZeroTolerance)
@@ -1517,6 +1520,8 @@ bool Actor::ToBytes(const Array<Actor*>& actors, MemoryWriteStream& output)
         // By default we collect actors and scripts (they are ManagedObjects recognized by the id)
 
         auto actor = actors[i];
+        if (!actor)
+            continue;
         ids.Add(actor->GetID());
         for (int32 j = 0; j < actor->Scripts.Count(); j++)
         {
@@ -1536,6 +1541,8 @@ bool Actor::ToBytes(const Array<Actor*>& actors, MemoryWriteStream& output)
     for (int32 i = 0; i < actors.Count(); i++)
     {
         Actor* actor = actors[i];
+        if (!actor)
+            continue;
 
         WriteObjectToBytes(actor, buffer, output);
 
@@ -1803,4 +1810,26 @@ void Actor::FromJson(const StringAnsiView& json)
     Deserialize(document, &*modifier);
     Scripting::ObjectsLookupIdMapping.Set(nullptr);
     OnTransformChanged();
+}
+
+void Actor::SetPhysicsScene(PhysicsScene* scene)
+{
+    CHECK(scene);
+
+    const auto previous = GetPhysicsScene();
+    _physicsScene = scene;
+
+    if (previous != _physicsScene)
+    {
+        OnPhysicsSceneChanged(previous);
+
+        // cascade
+        for (auto child : Children)
+            child->SetPhysicsScene(scene);
+    }
+}
+
+PhysicsScene* Actor::GetPhysicsScene() const
+{
+    return _physicsScene ? _physicsScene : Physics::DefaultScene;
 }

@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 using System;
 using System.Collections.Generic;
@@ -375,6 +375,72 @@ namespace FlaxEditor.GUI
         }
 
         /// <summary>
+        /// Shows the context menu popup.
+        /// </summary>
+        protected void ShowPopup()
+        {
+            // Ensure to have valid menu
+            if (_popupMenu == null)
+            {
+                _popupMenu = OnCreatePopup();
+                _popupMenu.MaximumItemsInViewCount = MaximumItemsInViewCount;
+
+                // Bind events
+                _popupMenu.VisibleChanged += cm =>
+                {
+                    var win = Root;
+                    _blockPopup = win != null && new Rectangle(Vector2.Zero, Size).Contains(PointFromWindow(win.MousePosition));
+                    if (!_blockPopup)
+                        Focus();
+                };
+                _popupMenu.ButtonClicked += btn =>
+                {
+                    OnItemClicked((int)btn.Tag);
+                    _popupMenu?.Hide();
+                };
+            }
+
+            // Check if menu hs been already shown
+            if (_popupMenu.Visible)
+            {
+                _popupMenu.Hide();
+                return;
+            }
+
+            PopupShowing?.Invoke(this);
+
+            // Check if has any items
+            if (_items.Count > 0)
+            {
+                // Setup items list
+                var itemControls = _popupMenu.Items.ToArray();
+                foreach (var e in itemControls)
+                    e.Dispose();
+                if (Sorted)
+                    _items.Sort();
+                var style = Style.Current;
+                for (int i = 0; i < _items.Count; i++)
+                {
+                    var btn = _popupMenu.AddButton(_items[i]);
+                    if (_selectedIndices.Contains(i))
+                    {
+                        btn.Icon = style.CheckBoxTick;
+                    }
+                    if (_tooltips != null && _tooltips.Length > i)
+                    {
+                        btn.TooltipText = _tooltips[i];
+                    }
+
+                    btn.Tag = i;
+                }
+
+                // Show dropdown list
+                _popupMenu.MinimumWidth = Width;
+                _popupMenu.Show(this, new Vector2(1, Height));
+            }
+        }
+
+        /// <summary>
         /// Creates the popup menu.
         /// </summary>
         protected virtual ContextMenu.ContextMenu OnCreatePopup()
@@ -426,7 +492,7 @@ namespace FlaxEditor.GUI
                 borderColor = BorderColorSelected;
                 arrowColor = ArrowColorSelected;
             }
-            else if (IsMouseOver)
+            else if (IsMouseOver || IsNavFocused)
             {
                 backgroundColor = BackgroundColorHighlighted;
                 borderColor = BorderColorHighlighted;
@@ -478,11 +544,11 @@ namespace FlaxEditor.GUI
         /// <inheritdoc />
         public override bool OnMouseDown(Vector2 location, MouseButton button)
         {
-            // Check mouse buttons
             if (button == MouseButton.Left)
             {
-                // Set flag
                 _mouseDown = true;
+                Focus();
+                return true;
             }
 
             return base.OnMouseDown(location, button);
@@ -491,72 +557,10 @@ namespace FlaxEditor.GUI
         /// <inheritdoc />
         public override bool OnMouseUp(Vector2 location, MouseButton button)
         {
-            // Check flags
             if (_mouseDown && !_blockPopup)
             {
-                // Clear flag
                 _mouseDown = false;
-
-                // Ensure to have valid menu
-                if (_popupMenu == null)
-                {
-                    _popupMenu = OnCreatePopup();
-                    _popupMenu.MaximumItemsInViewCount = MaximumItemsInViewCount;
-
-                    // Bind events
-                    _popupMenu.VisibleChanged += cm =>
-                    {
-                        var win = Root;
-                        _blockPopup = win != null && new Rectangle(Vector2.Zero, Size).Contains(PointFromWindow(win.MousePosition));
-                        if (!_blockPopup)
-                            Focus();
-                    };
-                    _popupMenu.ButtonClicked += btn =>
-                    {
-                        OnItemClicked((int)btn.Tag);
-                        _popupMenu?.Hide();
-                    };
-                }
-
-                // Check if menu hs been already shown
-                if (_popupMenu.Visible)
-                {
-                    // Hide
-                    _popupMenu.Hide();
-                    return true;
-                }
-
-                PopupShowing?.Invoke(this);
-
-                // Check if has any items
-                if (_items.Count > 0)
-                {
-                    // Setup items list
-                    var itemControls = _popupMenu.Items.ToArray();
-                    foreach (var e in itemControls)
-                        e.Dispose();
-                    if (Sorted)
-                        _items.Sort();
-                    var style = Style.Current;
-                    for (int i = 0; i < _items.Count; i++)
-                    {
-                        var btn = _popupMenu.AddButton(_items[i]);
-                        if (_selectedIndices.Contains(i))
-                        {
-                            btn.Icon = style.CheckBoxTick;
-                        }
-                        if (_tooltips != null && _tooltips.Length > i)
-                        {
-                            btn.TooltipText = _tooltips[i];
-                        }
-
-                        btn.Tag = i;
-                    }
-
-                    // Show dropdown list
-                    _popupMenu.MinimumWidth = Width;
-                    _popupMenu.Show(this, new Vector2(1, Height));
-                }
+                ShowPopup();
             }
             else
             {
@@ -564,6 +568,14 @@ namespace FlaxEditor.GUI
             }
 
             return true;
+        }
+
+        /// <inheritdoc />
+        public override void OnSubmit()
+        {
+            base.OnSubmit();
+
+            ShowPopup();
         }
     }
 }

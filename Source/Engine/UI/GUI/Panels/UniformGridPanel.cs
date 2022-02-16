@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 namespace FlaxEngine.GUI
 {
@@ -75,6 +75,7 @@ namespace FlaxEngine.GUI
         /// <param name="slotPadding">The slot padding.</param>
         public UniformGridPanel(float slotPadding = 2)
         {
+            AutoFocus = false;
             SlotPadding = new Margin(slotPadding);
             _slotsH = _slotsV = 5;
         }

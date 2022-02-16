@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -186,6 +186,7 @@ namespace Serialization
 
         // Raw keyframes data
         stream.WriteInt32(keyframes.Count());
+        static_assert(TIsPODType<T>::Value, "Raw bytes serialization only for raw POD types.");
         stream.WriteBytes(keyframes.Get(), keyframes.Count() * sizeof(KeyFrame));
     }
 
@@ -209,6 +210,7 @@ namespace Serialization
         int32 keyframesCount;
         stream.ReadInt32(&keyframesCount);
         keyframes.Resize(keyframesCount, false);
+        static_assert(TIsPODType<T>::Value, "Raw bytes serialization only for raw POD types.");
         stream.ReadBytes(keyframes.Get(), keyframes.Count() * sizeof(KeyFrame));
 
         return false;

@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 using System;
 using FlaxEngine;
@@ -55,6 +55,7 @@ namespace FlaxEditor.GUI.Input
         protected string _startEditText;
 
         private Vector2 _startSlideLocation;
+        private double _clickStartTime = -1;
 
         /// <summary>
         /// Occurs when value gets changed.
@@ -197,6 +198,14 @@ namespace FlaxEditor.GUI.Input
         }
 
         /// <inheritdoc />
+        public override void OnGotFocus()
+        {
+            base.OnGotFocus();
+
+            SelectAll();
+        }
+
+        /// <inheritdoc />
         public override void OnLostFocus()
         {
             // Check if was sliding
@@ -231,6 +240,9 @@ namespace FlaxEditor.GUI.Input
                 return true;
             }
 
+            if (button == MouseButton.Left && !IsFocused)
+                _clickStartTime = Platform.TimeSeconds;
+
             return base.OnMouseDown(location, button);
         }
 
@@ -242,11 +254,10 @@ namespace FlaxEditor.GUI.Input
                 // Update sliding
                 Vector2 slideLocation = location + Root.TrackingMouseOffset;
                 ApplySliding(Mathf.RoundToInt(slideLocation.X - _startSlideLocation.X) * _slideSpeed);
+                return;
             }
-            else
-            {
-                base.OnMouseMove(location);
-            }
+
+            base.OnMouseMove(location);
         }
 
         /// <inheritdoc />
@@ -256,6 +267,14 @@ namespace FlaxEditor.GUI.Input
             {
                 // End sliding
                 EndSliding();
+                return true;
+            }
+
+            if (button == MouseButton.Left && _clickStartTime > 0 && (Platform.TimeSeconds - _clickStartTime) < 0.2f)
+            {
+                _clickStartTime = -1;
+                OnSelectingEnd();
+                SelectAll();
                 return true;
             }
 

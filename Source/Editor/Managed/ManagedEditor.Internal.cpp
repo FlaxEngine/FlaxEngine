@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 #include "ManagedEditor.h"
 #include "Editor/Editor.h"
@@ -166,6 +166,7 @@ struct InternalModelOptions
     byte ImportVertexColors;
     byte ImportBlendShapes;
     ModelLightmapUVsSource LightmapUVsSource;
+    MonoString* CollisionMeshesPrefix;
 
     // Transform
     float Scale;
@@ -183,7 +184,6 @@ struct InternalModelOptions
     byte OptimizeKeyframes;
     byte EnableRootMotion;
     MonoString* RootNodeName;
-    int32 AnimationIndex;
 
     // Level Of Detail
     byte GenerateLODs;
@@ -195,6 +195,10 @@ struct InternalModelOptions
     byte ImportMaterials;
     byte ImportTextures;
     byte RestoreMaterialsOnReimport;
+
+    // Splitting
+    byte SplitObjects;
+    int32 ObjectIndex;
 
     static void Convert(InternalModelOptions* from, ImportModelFile::Options* to)
     {
@@ -209,7 +213,7 @@ struct InternalModelOptions
         to->ImportLODs = from->ImportLODs;
         to->ImportVertexColors = from->ImportVertexColors;
         to->ImportBlendShapes = from->ImportBlendShapes;
-        to->LightmapUVsSource = from->LightmapUVsSource;
+        to->CollisionMeshesPrefix = MUtils::ToString(from->CollisionMeshesPrefix);
         to->Scale = from->Scale;
         to->Rotation = from->Rotation;
         to->Translation = from->Translation;
@@ -223,7 +227,6 @@ struct InternalModelOptions
         to->OptimizeKeyframes = from->OptimizeKeyframes;
         to->EnableRootMotion = from->EnableRootMotion;
         to->RootNodeName = MUtils::ToString(from->RootNodeName);
-        to->AnimationIndex = from->AnimationIndex;
         to->GenerateLODs = from->GenerateLODs;
         to->BaseLOD = from->BaseLOD;
         to->LODCount = from->LODCount;
@@ -231,6 +234,8 @@ struct InternalModelOptions
         to->ImportMaterials = from->ImportMaterials;
         to->ImportTextures = from->ImportTextures;
         to->RestoreMaterialsOnReimport = from->RestoreMaterialsOnReimport;
+        to->SplitObjects = from->SplitObjects;
+        to->ObjectIndex = from->ObjectIndex;
     }
 
     static void Convert(ImportModelFile::Options* from, InternalModelOptions* to)
@@ -247,6 +252,7 @@ struct InternalModelOptions
         to->ImportVertexColors = from->ImportVertexColors;
         to->ImportBlendShapes = from->ImportBlendShapes;
         to->LightmapUVsSource = from->LightmapUVsSource;
+        to->CollisionMeshesPrefix = MUtils::ToString(from->CollisionMeshesPrefix);
         to->Scale = from->Scale;
         to->Rotation = from->Rotation;
         to->Translation = from->Translation;
@@ -260,7 +266,6 @@ struct InternalModelOptions
         to->OptimizeKeyframes = from->OptimizeKeyframes;
         to->EnableRootMotion = from->EnableRootMotion;
         to->RootNodeName = MUtils::ToString(from->RootNodeName);
-        to->AnimationIndex = from->AnimationIndex;
         to->GenerateLODs = from->GenerateLODs;
         to->BaseLOD = from->BaseLOD;
         to->LODCount = from->LODCount;
@@ -268,6 +273,8 @@ struct InternalModelOptions
         to->ImportMaterials = from->ImportMaterials;
         to->ImportTextures = from->ImportTextures;
         to->RestoreMaterialsOnReimport = from->RestoreMaterialsOnReimport;
+        to->SplitObjects = from->SplitObjects;
+        to->ObjectIndex = from->ObjectIndex;
     }
 };
 
@@ -388,7 +395,7 @@ public:
     {
         ScopeLock lock(CachedLogDataLocker);
 
-        if (CachedLogData.IsEmpty())
+        if (CachedLogData.IsEmpty() || CachedLogData.Get() == nullptr)
             return 0;
 
         int32 count = 0;

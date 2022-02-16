@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 using System;
 using System.Collections.Generic;
@@ -101,9 +101,7 @@ namespace FlaxEditor.Modules
         /// Determines whether the specified scene is edited.
         /// </summary>
         /// <param name="scene">The scene.</param>
-        /// <returns>
-        ///   <c>true</c> if the specified scene is edited; otherwise, <c>false</c>.
-        /// </returns>
+        /// <returns><c>true</c> if the specified scene is edited; otherwise, <c>false</c>.</returns>
         public bool IsEdited(Scene scene)
         {
             var node = GetActorNode(scene) as SceneNode;
@@ -113,9 +111,7 @@ namespace FlaxEditor.Modules
         /// <summary>
         /// Determines whether any scene is edited.
         /// </summary>
-        /// <returns>
-        ///   <c>true</c> if any scene is edited; otherwise, <c>false</c>.
-        /// </returns>
+        /// <returns><c>true</c> if any scene is edited; otherwise, <c>false</c>.</returns>
         public bool IsEdited()
         {
             foreach (var scene in Root.ChildNodes)
@@ -129,9 +125,7 @@ namespace FlaxEditor.Modules
         /// <summary>
         /// Determines whether every scene is edited.
         /// </summary>
-        /// <returns>
-        ///   <c>true</c> if every scene is edited; otherwise, <c>false</c>.
-        /// </returns>
+        /// <returns><c>true</c> if every scene is edited; otherwise, <c>false</c>.</returns>
         public bool IsEverySceneEdited()
         {
             foreach (var scene in Root.ChildNodes)
@@ -238,6 +232,7 @@ namespace FlaxEditor.Modules
                     node.IsEdited = false;
             }
             Level.SaveAllScenesAsync();
+            Editor.UI.AddStatusMessage("Saved!");
         }
 
         /// <summary>
@@ -417,11 +412,8 @@ namespace FlaxEditor.Modules
             // Add to the tree
             var rootNode = Root.TreeNode;
             rootNode.IsLayoutLocked = true;
-            //
             sceneNode.ParentNode = Root;
             rootNode.SortChildren();
-            //
-            treeNode.UnlockChildrenRecursive();
             rootNode.IsLayoutLocked = false;
             rootNode.Parent.PerformLayout();
 
@@ -485,7 +477,6 @@ namespace FlaxEditor.Modules
             var node = SceneGraphFactory.BuildActorNode(actor);
             if (node != null)
             {
-                node.TreeNode.UnlockChildrenRecursive();
                 node.ParentNode = parentNode;
             }
         }
@@ -543,13 +534,8 @@ namespace FlaxEditor.Modules
                 return;
 
             // Get the new parent node (may be missing)
-            if (parentNode != null)
-            {
-                // Change parent
-                node.TreeNode.UnlockChildrenRecursive();
-                node.ParentNode = parentNode;
-            }
-            else
+            node.ParentNode = parentNode;
+            if (parentNode == null)
             {
                 // Check if actor is selected in editor
                 if (Editor.SceneEditing.Selection.Contains(node))

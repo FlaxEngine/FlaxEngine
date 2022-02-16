@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 using System;
 using FlaxEditor.Content;
@@ -57,31 +57,7 @@ namespace FlaxEditor.Modules
             }
             if (window != null && !disableAutoShow)
             {
-                var newLocation = (DockState)Editor.Options.Options.Interface.NewWindowLocation;
-                if (newLocation == DockState.Float)
-                {
-                    // Check if there is a floating window that has the same size
-                    Vector2 defaultSize = window.DefaultSize;
-                    for (var i = 0; i < Editor.UI.MasterPanel.FloatingPanels.Count; i++)
-                    {
-                        var win = Editor.UI.MasterPanel.FloatingPanels[i];
-
-                        // Check if size is similar
-                        if (Vector2.Abs(win.Size - defaultSize).LengthSquared < 100)
-                        {
-                            // Dock
-                            window.Show(DockState.DockFill, win);
-                            window.Focus();
-                            return window;
-                        }
-                    }
-
-                    window.ShowFloating(defaultSize);
-                }
-                else
-                {
-                    window.Show(newLocation);
-                }
+                Editor.Windows.Open(window);
             }
 
             return window;
@@ -93,9 +69,7 @@ namespace FlaxEditor.Modules
         /// <param name="item">The item.</param>
         /// <param name="shortName">The new short name.</param>
         /// <param name="hint">The hint text if name is invalid.</param>
-        /// <returns>
-        ///   <c>true</c> if name is valid; otherwise, <c>false</c>.
-        /// </returns>
+        /// <returns><c>true</c> if name is valid; otherwise, <c>false</c>.</returns>
         public bool IsValidAssetName(ContentItem item, string shortName, out string hint)
         {
             // Check if name is the same except has some chars in upper case and some in lower case

@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 using System;
 using System.Collections.Generic;
@@ -33,9 +33,12 @@ namespace FlaxEditor.Actions
         [Serialize]
         private bool _isInverted;
 
-        /// <summary>
-        /// The node parents.
-        /// </summary>
+        [Serialize]
+        private bool _affectsCSG;
+
+        [Serialize]
+        private bool _affectsNavigation;
+
         [Serialize]
         protected List<SceneGraphNode> _nodeParents;
 
@@ -74,6 +77,7 @@ namespace FlaxEditor.Actions
             // Collect parent nodes to delete
             _nodeParents = new List<SceneGraphNode>(nodes.Count);
             deleteNodes.BuildNodesParents(_nodeParents);
+            OnDirtyInit();
             _nodeParentsIDs = new Guid[_nodeParents.Count];
             for (int i = 0; i < _nodeParentsIDs.Length; i++)
                 _nodeParentsIDs[i] = _nodeParents[i].ID;
@@ -128,10 +132,10 @@ namespace FlaxEditor.Actions
         protected virtual void Delete()
         {
             // Remove objects
+            OnDirty();
             for (int i = 0; i < _nodeParents.Count; i++)
             {
                 var node = _nodeParents[i];
-                Editor.Instance.Scene.MarkSceneEdited(node.ParentScene);
                 node.Delete();
             }
             _nodeParents.Clear();
@@ -209,11 +213,64 @@ namespace FlaxEditor.Actions
                 }
             }
             nodes.BuildNodesParents(_nodeParents);
+            OnDirty();
+        }
 
-            // Mark scenes as modified
+        private void OnDirtyInit()
+        {
             for (int i = 0; i < _nodeParents.Count; i++)
             {
-                Editor.Instance.Scene.MarkSceneEdited(_nodeParents[i].ParentScene);
+                if (_nodeParents[i] is ActorNode node && node.Actor is BoxBrush)
+                {
+                    _affectsCSG = true;
+                    break;
+                }
+            }
+
+            for (int i = 0; i < _nodeParents.Count; i++)
+            {
+                if (_nodeParents[i] is ActorNode actorNode && actorNode.AffectsNavigationWithChildren)
+                {
+                    _affectsNavigation = true;
+                    break;
+                }
+            }
+        }
+
+        private void OnDirty()
+        {
+            // Mark scene as modified
+            foreach (var obj in _nodeParents)
+            {
+                Editor.Instance.Scene.MarkSceneEdited(obj.ParentScene);
+            }
+
+            var editor = Editor.Instance;
+            if (editor.StateMachine.IsPlayMode)
+                return;
+            var options = editor.Options.Options;
+
+            // Auto CSG mesh rebuild
+            if (_affectsCSG && options.General.AutoRebuildCSG)
+            {
+                for (var i = 0; i < _nodeParents.Count; i++)
+                {
+                    if (_nodeParents[i] is ActorNode node && node.Actor is BoxBrush)
+                        node.Actor.Scene.BuildCSG(options.General.AutoRebuildCSGTimeoutMs);
+                }
+            }
+
+            // Auto NavMesh rebuild
+            if (_affectsNavigation && options.General.AutoRebuildNavMesh)
+            {
+                for (var i = 0; i < _nodeParents.Count; i++)
+                {
+                    if (_nodeParents[i] is ActorNode node && node.Actor && node.Actor.Scene && node.AffectsNavigationWithChildren)
+                    {
+                        var bounds = node.Actor.BoxWithChildren;
+                        Navigation.BuildNavMesh(node.Actor.Scene, bounds, options.General.AutoRebuildNavMeshTimeoutMs);
+                    }
+                }
             }
         }
     }

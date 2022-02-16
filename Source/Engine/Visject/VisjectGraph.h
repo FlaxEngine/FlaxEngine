@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -226,7 +226,7 @@ public:
 
 protected:
 
-    ProcessBoxHandler _perGroupProcessCall[18];
+    ProcessBoxHandler _perGroupProcessCall[19];
 
 public:
 
@@ -256,11 +256,25 @@ public:
     void ProcessGroupBitwise(Box* box, Node* node, Value& value);
     void ProcessGroupComparisons(Box* box, Node* node, Value& value);
     void ProcessGroupParticles(Box* box, Node* node, Value& value);
+    void ProcessGroupCollections(Box* box, Node* node, Value& value);
 
 protected:
 
     virtual Value eatBox(Node* caller, Box* box) = 0;
     virtual Graph* GetCurrentGraph() const = 0;
-    Value tryGetValue(Box* box, int32 defaultValueBoxIndex, const Value& defaultValue);
-    Value tryGetValue(Box* box, const Value& defaultValue);
+
+    FORCE_INLINE Value tryGetValue(Box* box, int32 defaultValueBoxIndex, const Value& defaultValue)
+    {
+        const auto parentNode = box->GetParent<Node>();
+        if (box->HasConnection())
+            return eatBox(parentNode, box->FirstConnection());
+        if (parentNode->Values.Count() > defaultValueBoxIndex)
+            return Value(parentNode->Values[defaultValueBoxIndex]);
+        return defaultValue;
+    }
+
+    FORCE_INLINE Value tryGetValue(Box* box, const Value& defaultValue)
+    {
+        return box && box->HasConnection() ? eatBox(box->GetParent<Node>(), box->FirstConnection()) : defaultValue;
+    }
 };

@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -6,6 +6,7 @@
 #include "Engine/Core/Delegate.h"
 #include "Engine/Core/Types/String.h"
 #include "Engine/Core/Types/DateTime.h"
+#include "Engine/Core/Collections/Array.h"
 #include "Engine/Platform/CriticalSection.h"
 #include "Engine/Serialization/FileReadStream.h"
 #include "Engine/Threading/ThreadLocal.h"

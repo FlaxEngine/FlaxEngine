@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 namespace Flax.Build
 {
@@ -32,9 +32,11 @@ namespace Flax.Build
             TargetPlatform.XboxOne,
             TargetPlatform.Linux,
             TargetPlatform.PS4,
+            TargetPlatform.PS5,
             TargetPlatform.XboxScarlett,
             TargetPlatform.Android,
             TargetPlatform.Switch,
+            TargetPlatform.Mac,
         };
 
         /// <summary>

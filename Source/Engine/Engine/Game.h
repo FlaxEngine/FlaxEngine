@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -12,12 +12,18 @@
 #include "Linux/LinuxGame.h"
 #elif PLATFORM_PS4
 #include "Platforms/PS4/Engine/Engine/PS4Game.h"
+#elif PLATFORM_PS5
+#include "Platforms/PS5/Engine/Engine/PS5Game.h"
+#elif PLATFORM_XBOX_ONE
+#include "Platforms/XboxOne/Engine/Engine/XboxOneGame.h"
 #elif PLATFORM_XBOX_SCARLETT
 #include "Platforms/XboxScarlett/Engine/Engine/XboxScarlettGame.h"
 #elif PLATFORM_ANDROID
 #include "Android/AndroidGame.h"
 #elif PLATFORM_SWITCH
 #include "Platforms/Switch/Engine/Engine/SwitchGame.h"
+#elif PLATFORM_MAC
+#include "Mac/MacGame.h"
 #else
 #error Missing Game implementation!
 #endif

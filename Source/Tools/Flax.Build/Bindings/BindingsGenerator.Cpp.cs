@@ -1,4 +1,4 @@
-// (c) 2012-2020 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 using System;
 using System.Collections.Generic;
@@ -27,17 +27,27 @@ namespace Flax.Build.Bindings
         private static readonly HashSet<TypeInfo> CppVariantFromTypes = new HashSet<TypeInfo>();
         private static bool CppNonPodTypesConvertingGeneration = false;
 
-        public static readonly List<string> CppScriptObjectVirtualWrapperMethodsPostfixes = new List<string>
+        public class ScriptingLangInfo
         {
-            "_ManagedWrapper", // C#
+            public bool Enabled;
+            public string VirtualWrapperMethodsPostfix;
+        }
+
+        public static readonly List<ScriptingLangInfo> ScriptingLangInfos = new List<ScriptingLangInfo>
+        {
+            new ScriptingLangInfo
+            {
+                Enabled = true,
+                VirtualWrapperMethodsPostfix = "_ManagedWrapper", // C#
+            },
         };
 
         public static event Action<BuildData, IGrouping<string, Module>, StringBuilder> GenerateCppBinaryModuleHeader;
         public static event Action<BuildData, IGrouping<string, Module>, StringBuilder> GenerateCppBinaryModuleSource;
         public static event Action<BuildData, ModuleInfo, StringBuilder> GenerateCppModuleSource;
-        public static event Action<BuildData, ClassInfo, StringBuilder> GenerateCppClassInternals;
-        public static event Action<BuildData, ClassInfo, StringBuilder> GenerateCppClassInitRuntime;
-        public static event Action<BuildData, ClassInfo, FunctionInfo, int, int, StringBuilder> GenerateCppScriptWrapperFunction;
+        public static event Action<BuildData, VirtualClassInfo, StringBuilder> GenerateCppClassInternals;
+        public static event Action<BuildData, VirtualClassInfo, StringBuilder> GenerateCppClassInitRuntime;
+        public static event Action<BuildData, VirtualClassInfo, FunctionInfo, int, int, StringBuilder> GenerateCppScriptWrapperFunction;
 
         private static readonly List<string> CppInBuildVariantStructures = new List<string>
         {
@@ -348,10 +358,8 @@ namespace Flax.Build.Bindings
             // Use dynamic array as wrapper container for fixed-size native arrays
             if (typeInfo.IsArray)
             {
-                typeInfo.IsArray = false;
-                var arrayType = new TypeInfo { Type = "Array", GenericArgs = new List<TypeInfo> { typeInfo, }, };
+                var arrayType = new TypeInfo { Type = "Array", GenericArgs = new List<TypeInfo> { new TypeInfo(typeInfo) { IsArray = false } } };
                 var result = GenerateCppWrapperNativeToManaged(buildData, arrayType, caller, out type, functionInfo);
-                typeInfo.IsArray = true;
                 return result.Replace("{0}", $"Span<{typeInfo.Type}>({{0}}, {typeInfo.ArraySize})");
             }
 
@@ -403,8 +411,7 @@ namespace Flax.Build.Bindings
                 if ((typeInfo.Type == "Array" || typeInfo.Type == "Span") && typeInfo.GenericArgs != null)
                 {
                     type = "MonoArray*";
-                    var valueClass = GenerateCppGetNativeClass(buildData, typeInfo.GenericArgs[0], caller, functionInfo);
-                    return "MUtils::ToArray({0}, " + valueClass + ")";
+                    return "MUtils::ToArray({0}, " + GenerateCppGetNativeClass(buildData, typeInfo.GenericArgs[0], caller, functionInfo) + ")";
                 }
 
                 // BytesContainer
@@ -456,6 +463,13 @@ namespace Flax.Build.Bindings
                     {
                         type = "MonoObject*";
                         return "ScriptingObject::ToManaged((ScriptingObject*){0})";
+                    }
+
+                    // interface
+                    if (apiType.IsInterface)
+                    {
+                        type = "MonoObject*";
+                        return "ScriptingObject::ToManaged(ScriptingObject::FromInterface({0}, " + apiType.NativeName + "::TypeInitializer))";
                     }
 
                     // Non-POD structure passed as value (eg. it contains string or array inside)
@@ -516,10 +530,8 @@ namespace Flax.Build.Bindings
             // Use dynamic array as wrapper container for fixed-size native arrays
             if (typeInfo.IsArray)
             {
-                typeInfo.IsArray = false;
-                var arrayType = new TypeInfo { Type = "Array", GenericArgs = new List<TypeInfo> { typeInfo, }, };
+                var arrayType = new TypeInfo { Type = "Array", GenericArgs = new List<TypeInfo> { new TypeInfo(typeInfo) { IsArray = false } } };
                 var result = GenerateCppWrapperManagedToNative(buildData, arrayType, caller, out type, functionInfo, out needLocalVariable);
-                typeInfo.IsArray = true;
                 return result + ".Get()";
             }
 
@@ -682,6 +694,14 @@ namespace Flax.Build.Bindings
                         return "MConverter<" + apiType.Name + ">::Unbox({0})";
                     }
 
+                    // Scripting Object
+                    if (functionInfo == null && apiType.IsScriptingObject)
+                    {
+                        // Inside bindings function the managed runtime passes raw unamanged pointer
+                        type = "MonoObject*";
+                        return "(" + typeInfo.Type + "*)ScriptingObject::ToNative({0})";
+                    }
+
                     // Nested type (namespace prefix is required)
                     if (!(apiType.Parent is FileInfo))
                     {
@@ -712,6 +732,43 @@ namespace Flax.Build.Bindings
                 type = typeInfo.ToString();
                 return string.Empty;
             }
+        }
+
+        private static string GenerateCppWrapperNativeToBox(BuildData buildData, TypeInfo typeInfo, ApiTypeInfo caller, string value)
+        {
+            // Optimize passing scripting objects
+            var apiType = FindApiTypeInfo(buildData, typeInfo, caller);
+            if (apiType != null && apiType.IsScriptingObject)
+                return $"ScriptingObject::ToManaged((ScriptingObject*){value})";
+
+            // Array or Span
+            if ((typeInfo.Type == "Array" || typeInfo.Type == "Span") && typeInfo.GenericArgs != null && typeInfo.GenericArgs.Count >= 1)
+                return $"MUtils::ToArray({value}, {GenerateCppGetNativeClass(buildData, typeInfo.GenericArgs[0], caller, null)})";
+
+            // BytesContainer
+            if (typeInfo.Type == "BytesContainer" && typeInfo.GenericArgs == null)
+                return "MUtils::ToArray({0})";
+
+            // Construct native typename for MUtils template argument
+            var nativeType = new StringBuilder(64);
+            nativeType.Append(typeInfo.Type);
+            if (typeInfo.GenericArgs != null)
+            {
+                nativeType.Append('<');
+                for (var j = 0; j < typeInfo.GenericArgs.Count; j++)
+                {
+                    if (j != 0)
+                        nativeType.Append(", ");
+                    nativeType.Append(typeInfo.GenericArgs[j]);
+                }
+
+                nativeType.Append('>');
+            }
+            if (typeInfo.IsPtr)
+                nativeType.Append('*');
+
+            // Use MUtils to box the value
+            return $"MUtils::Box<{nativeType}>({value}, {GenerateCppGetNativeClass(buildData, typeInfo, caller, null)})";
         }
 
         private static void GenerateCppWrapperFunction(BuildData buildData, StringBuilder contents, ApiTypeInfo caller, FunctionInfo functionInfo, string callFormat = "{0}({1})")
@@ -759,6 +816,12 @@ namespace Flax.Build.Bindings
 
                 CppParamsThatNeedConversion[i] = false;
                 CppParamsWrappersCache[i] = GenerateCppWrapperManagedToNative(buildData, parameterInfo.Type, caller, out var managedType, functionInfo, out CppParamsThatNeedLocalVariable[i]);
+
+                // Out parameters that need additional converting will be converted at the native side (eg. object reference)
+                var isOutWithManagedConverter = parameterInfo.IsOut && !string.IsNullOrEmpty(GenerateCSharpManagedToNativeConverter(buildData, parameterInfo.Type, caller));
+                if (isOutWithManagedConverter)
+                    managedType = "MonoObject*";
+
                 contents.Append(managedType);
                 if (parameterInfo.IsRef || parameterInfo.IsOut || UsePassByReference(buildData, parameterInfo.Type, caller))
                     contents.Append('*');
@@ -877,9 +940,11 @@ namespace Flax.Build.Bindings
                     var apiType = FindApiTypeInfo(buildData, parameterInfo.Type, caller);
                     if (apiType != null)
                     {
-                        // TODO: maybe for Out-only params we could skip copying from managed data? see RayCastHit usage converted here from RayCastHitManaged
-                        contents.AppendFormat("        auto {0}Temp = {1};", parameterInfo.Name, param).AppendLine();
-                        if (parameterInfo.Type.IsPtr)
+                        if (parameterInfo.IsOut)
+                            contents.AppendFormat("        {1} {0}Temp;", parameterInfo.Name, new TypeInfo(parameterInfo.Type) { IsRef = false }.GetFullNameNative(buildData, caller)).AppendLine();
+                        else
+                            contents.AppendFormat("        auto {0}Temp = {1};", parameterInfo.Name, param).AppendLine();
+                        if (parameterInfo.Type.IsPtr && !parameterInfo.Type.IsRef)
                             callParams += "&";
                         callParams += parameterInfo.Name;
                         callParams += "Temp";
@@ -977,8 +1042,27 @@ namespace Flax.Build.Bindings
             contents.AppendLine();
         }
 
-        private static void GenerateCppManagedWrapperFunction(BuildData buildData, StringBuilder contents, ClassInfo classInfo, FunctionInfo functionInfo, int scriptVTableSize, int scriptVTableIndex)
+        public static void GenerateCppReturn(BuildData buildData, StringBuilder contents, string indent, TypeInfo type)
         {
+            contents.Append(indent);
+            if (type.IsVoid)
+            {
+                contents.AppendLine("return;");
+                return;
+            }
+            if (type.IsPtr)
+            {
+                contents.AppendLine("return nullptr;");
+                return;
+            }
+            contents.AppendLine($"{type} __return {{}};");
+            contents.Append(indent).AppendLine("return __return;");
+        }
+
+        private static void GenerateCppManagedWrapperFunction(BuildData buildData, StringBuilder contents, VirtualClassInfo classInfo, FunctionInfo functionInfo, int scriptVTableSize, int scriptVTableIndex)
+        {
+            if (!EngineConfiguration.WithCSharp(buildData.TargetOptions))
+                return;
             contents.AppendFormat("    {0} {1}_ManagedWrapper(", functionInfo.ReturnType, functionInfo.UniqueName);
             var separator = false;
             for (var i = 0; i < functionInfo.Parameters.Count; i++)
@@ -998,7 +1082,23 @@ namespace Flax.Build.Bindings
             contents.Append(')');
             contents.AppendLine();
             contents.AppendLine("    {");
-            contents.AppendLine($"        auto object = ({classInfo.NativeName}*)this;");
+            string scriptVTableOffset;
+            if (classInfo.IsInterface)
+            {
+                contents.AppendLine($"        auto object = ScriptingObject::FromInterface(this, {classInfo.NativeName}::TypeInitializer);");
+                contents.AppendLine("        if (object == nullptr)");
+                contents.AppendLine("        {");
+                contents.AppendLine($"            LOG(Error, \"Failed to cast interface {{0}} to scripting object\", TEXT(\"{classInfo.Name}\"));");
+                GenerateCppReturn(buildData, contents, "            ", functionInfo.ReturnType);
+                contents.AppendLine("        }");
+                contents.AppendLine($"        const int32 scriptVTableOffset = {scriptVTableIndex} + object->GetType().GetInterface({classInfo.NativeName}::TypeInitializer)->ScriptVTableOffset;");
+                scriptVTableOffset = "scriptVTableOffset";
+            }
+            else
+            {
+                contents.AppendLine($"        auto object = ({classInfo.NativeName}*)this;");
+                scriptVTableOffset = scriptVTableIndex.ToString();
+            }
             contents.AppendLine("        static THREADLOCAL void* WrapperCallInstance = nullptr;");
 
             contents.AppendLine("        ScriptingTypeHandle managedTypeHandle = object->GetTypeHandle();");
@@ -1013,7 +1113,7 @@ namespace Flax.Build.Bindings
             contents.AppendLine("        {");
             contents.AppendLine("            // Prevent stack overflow by calling native base method");
             contents.AppendLine("            const auto scriptVTableBase = managedTypePtr->Script.ScriptVTableBase;");
-            contents.Append($"            return (this->**({functionInfo.UniqueName}_Internal_Signature*)&scriptVTableBase[{scriptVTableIndex} + 2])(");
+            contents.Append($"            return (this->**({functionInfo.UniqueName}_Internal_Signature*)&scriptVTableBase[{scriptVTableOffset} + 2])(");
             separator = false;
             for (var i = 0; i < functionInfo.Parameters.Count; i++)
             {
@@ -1026,8 +1126,8 @@ namespace Flax.Build.Bindings
             contents.AppendLine(");");
             contents.AppendLine("        }");
             contents.AppendLine("        auto scriptVTable = (MMethod**)managedTypePtr->Script.ScriptVTable;");
-            contents.AppendLine($"        ASSERT(scriptVTable && scriptVTable[{scriptVTableIndex}]);");
-            contents.AppendLine($"        auto method = scriptVTable[{scriptVTableIndex}];");
+            contents.AppendLine($"        ASSERT(scriptVTable && scriptVTable[{scriptVTableOffset}]);");
+            contents.AppendLine($"        auto method = scriptVTable[{scriptVTableOffset}];");
             contents.AppendLine($"        PROFILE_CPU_NAMED(\"{classInfo.FullNameManaged}::{functionInfo.Name}\");");
             contents.AppendLine("        MonoObject* exception = nullptr;");
 
@@ -1063,33 +1163,8 @@ namespace Flax.Build.Bindings
                 separator = true;
                 thunkParams += "void*";
 
-                // Optimize passing scripting objects
-                var apiType = FindApiTypeInfo(buildData, parameterInfo.Type, classInfo);
-                if (apiType != null && apiType.IsScriptingObject)
-                {
-                    thunkCall += $"ScriptingObject::ToManaged((ScriptingObject*){parameterInfo.Name})";
-                    continue;
-                }
-
-                var nativeType = new StringBuilder(64);
-                nativeType.Append(parameterInfo.Type.Type);
-                if (parameterInfo.Type.GenericArgs != null)
-                {
-                    nativeType.Append('<');
-                    for (var j = 0; j < parameterInfo.Type.GenericArgs.Count; j++)
-                    {
-                        if (j != 0)
-                            nativeType.Append(", ");
-                        nativeType.Append(parameterInfo.Type.GenericArgs[j]);
-                    }
-
-                    nativeType.Append('>');
-                }
-                if (parameterInfo.Type.IsPtr)
-                    nativeType.Append('*');
-
                 // Mono thunk call uses boxed values as objects
-                thunkCall += $"MUtils::Box<{nativeType}>({parameterInfo.Name}, {GenerateCppGetNativeClass(buildData, parameterInfo.Type, classInfo, null)})";
+                thunkCall += GenerateCppWrapperNativeToBox(buildData, parameterInfo.Type, classInfo, parameterInfo.Name);
             }
 
             if (functionInfo.ReturnType.IsVoid)
@@ -1122,11 +1197,130 @@ namespace Flax.Build.Bindings
             contents.AppendLine();
         }
 
+        private static string GenerateCppScriptVTable(BuildData buildData, StringBuilder contents, VirtualClassInfo classInfo)
+        {
+            var scriptVTableSize = classInfo.GetScriptVTableSize(out var scriptVTableOffset);
+            if (scriptVTableSize == 0)
+                return "nullptr, nullptr";
+
+            var scriptVTableIndex = scriptVTableOffset;
+            foreach (var functionInfo in classInfo.Functions)
+            {
+                if (!functionInfo.IsVirtual)
+                    continue;
+                GenerateCppManagedWrapperFunction(buildData, contents, classInfo, functionInfo, scriptVTableSize, scriptVTableIndex);
+                GenerateCppScriptWrapperFunction?.Invoke(buildData, classInfo, functionInfo, scriptVTableSize, scriptVTableIndex, contents);
+                scriptVTableIndex++;
+            }
+
+            CppIncludeFiles.Add("Engine/Scripting/ManagedCLR/MMethod.h");
+            CppIncludeFiles.Add("Engine/Scripting/ManagedCLR/MClass.h");
+
+            foreach (var functionInfo in classInfo.Functions)
+            {
+                if (!functionInfo.IsVirtual)
+                    continue;
+                var thunkParams = string.Empty;
+                var separator = false;
+                for (var i = 0; i < functionInfo.Parameters.Count; i++)
+                {
+                    var parameterInfo = functionInfo.Parameters[i];
+                    if (separator)
+                        thunkParams += ", ";
+                    separator = true;
+                    thunkParams += parameterInfo.Type;
+                }
+                var t = functionInfo.IsConst ? " const" : string.Empty;
+                contents.AppendLine($"    typedef {functionInfo.ReturnType} ({classInfo.NativeName}::*{functionInfo.UniqueName}_Signature)({thunkParams}){t};");
+                contents.AppendLine($"    typedef {functionInfo.ReturnType} ({classInfo.NativeName}Internal::*{functionInfo.UniqueName}_Internal_Signature)({thunkParams}){t};");
+            }
+            contents.AppendLine("");
+
+            contents.AppendLine("    static void SetupScriptVTable(MClass* mclass, void**& scriptVTable, void**& scriptVTableBase)");
+            contents.AppendLine("    {");
+            if (classInfo.IsInterface)
+            {
+                contents.AppendLine("        ASSERT(scriptVTable);");
+            }
+            else
+            {
+                contents.AppendLine("        if (!scriptVTable)");
+                contents.AppendLine("        {");
+                contents.AppendLine($"            scriptVTable = (void**)Platform::Allocate(sizeof(void*) * {scriptVTableSize + 1}, 16);");
+                contents.AppendLine($"            Platform::MemoryClear(scriptVTable, sizeof(void*) * {scriptVTableSize + 1});");
+                contents.AppendLine($"            scriptVTableBase = (void**)Platform::Allocate(sizeof(void*) * {scriptVTableSize + 2}, 16);");
+                contents.AppendLine("        }");
+            }
+            scriptVTableIndex = scriptVTableOffset;
+            foreach (var functionInfo in classInfo.Functions)
+            {
+                if (!functionInfo.IsVirtual)
+                    continue;
+                contents.AppendLine($"        scriptVTable[{scriptVTableIndex++}] = mclass->GetMethod(\"{functionInfo.Name}\", {functionInfo.Parameters.Count});");
+            }
+            contents.AppendLine("    }");
+            contents.AppendLine("");
+
+            contents.AppendLine("    static void SetupScriptObjectVTable(void** scriptVTable, void** scriptVTableBase, void** vtable, int32 entriesCount, int32 wrapperIndex)");
+            contents.AppendLine("    {");
+            scriptVTableIndex = scriptVTableOffset;
+            foreach (var functionInfo in classInfo.Functions)
+            {
+                if (!functionInfo.IsVirtual)
+                    continue;
+                contents.AppendLine($"        if (scriptVTable[{scriptVTableIndex}])");
+                contents.AppendLine("        {");
+                contents.AppendLine($"            {functionInfo.UniqueName}_Signature funcPtr = &{classInfo.NativeName}::{functionInfo.Name};");
+                contents.AppendLine("            const int32 vtableIndex = GetVTableIndex(vtable, entriesCount, *(void**)&funcPtr);");
+                contents.AppendLine("            if (vtableIndex > 0 && vtableIndex < entriesCount)");
+                contents.AppendLine("            {");
+                contents.AppendLine($"                scriptVTableBase[{scriptVTableIndex} + 2] = vtable[vtableIndex];");
+                for (int i = 0, count = 0; i < ScriptingLangInfos.Count; i++)
+                {
+                    var langInfo = ScriptingLangInfos[i];
+                    if (!langInfo.Enabled)
+                        continue;
+                    contents.AppendLine(count == 0 ? "                if (wrapperIndex == 0)" : $"                else if (wrapperIndex == {count})");
+                    contents.AppendLine("                {");
+                    contents.AppendLine($"                    auto thunkPtr = &{classInfo.NativeName}Internal::{functionInfo.UniqueName}{langInfo.VirtualWrapperMethodsPostfix};");
+                    contents.AppendLine("                    vtable[vtableIndex] = *(void**)&thunkPtr;");
+                    contents.AppendLine("                }");
+                    count++;
+                }
+                contents.AppendLine("            }");
+                contents.AppendLine("            else");
+                contents.AppendLine("            {");
+                contents.AppendLine($"                LOG(Error, \"Failed to find the vtable entry for method {{0}} in class {{1}}\", TEXT(\"{functionInfo.Name}\"), TEXT(\"{classInfo.Name}\"));");
+                contents.AppendLine("            }");
+                contents.AppendLine("        }");
+
+                scriptVTableIndex++;
+            }
+            contents.AppendLine("    }");
+            contents.AppendLine("");
+
+            return $"&{classInfo.NativeName}Internal::SetupScriptVTable, &{classInfo.NativeName}Internal::SetupScriptObjectVTable";
+        }
+
         private static string GenerateCppAutoSerializationDefineType(BuildData buildData, StringBuilder contents, ModuleInfo moduleInfo, ApiTypeInfo caller, TypeInfo memberType, MemberInfo member)
         {
             if (memberType.IsBitField)
                 return "_BIT";
             return string.Empty;
+        }
+
+        private static bool GenerateCppAutoSerializationSkip(BuildData buildData, ApiTypeInfo caller, MemberInfo memberInfo, TypeInfo typeInfo)
+        {
+            if (memberInfo.IsStatic)
+                return true;
+            if (memberInfo.Access != AccessLevel.Public && !memberInfo.HasAttribute("Serialize"))
+                return true;
+            if (memberInfo.HasAttribute("NoSerialize") || memberInfo.HasAttribute("NonSerialized"))
+                return true;
+            var apiTypeInfo = FindApiTypeInfo(buildData, typeInfo, caller);
+            if (apiTypeInfo != null && apiTypeInfo.IsInterface)
+                return true;
+            return false;
         }
 
         private static void GenerateCppAutoSerialization(BuildData buildData, StringBuilder contents, ModuleInfo moduleInfo, ApiTypeInfo typeInfo, string typeNameNative)
@@ -1136,7 +1330,7 @@ namespace Flax.Build.Bindings
             var baseType = classInfo?.BaseType ?? structureInfo?.BaseType;
             if (classInfo != null && classInfo.IsBaseTypeHidden)
                 baseType = null;
-            if (baseType != null && (baseType.Name == "PersistentScriptingObject" || baseType.Name == "ScriptingObject"))
+            if (baseType != null && (baseType.Name == "PersistentScriptingObject" || baseType.Name == "ScriptingObject" || baseType.Name == "ManagedScriptingObject"))
                 baseType = null;
             CppAutoSerializeFields.Clear();
             CppAutoSerializeProperties.Clear();
@@ -1153,11 +1347,7 @@ namespace Flax.Build.Bindings
             {
                 foreach (var fieldInfo in classInfo.Fields)
                 {
-                    if (fieldInfo.IsStatic)
-                        continue;
-                    if (fieldInfo.Access != AccessLevel.Public && !fieldInfo.HasAttribute("Serialize"))
-                        continue;
-                    if (fieldInfo.HasAttribute("NoSerialize") || fieldInfo.HasAttribute("NonSerialized"))
+                    if (GenerateCppAutoSerializationSkip(buildData, typeInfo, fieldInfo, fieldInfo.Type))
                         continue;
 
                     var typeHint = GenerateCppAutoSerializationDefineType(buildData, contents, moduleInfo, typeInfo, fieldInfo.Type, fieldInfo);
@@ -1167,15 +1357,26 @@ namespace Flax.Build.Bindings
 
                 foreach (var propertyInfo in classInfo.Properties)
                 {
-                    if (propertyInfo.IsStatic || propertyInfo.Getter == null || propertyInfo.Setter == null)
+                    if (propertyInfo.Getter == null || propertyInfo.Setter == null)
                         continue;
-                    if (propertyInfo.Access != AccessLevel.Public && !propertyInfo.HasAttribute("Serialize"))
-                        continue;
-                    if (propertyInfo.HasAttribute("NoSerialize") || propertyInfo.HasAttribute("NonSerialized"))
+                    if (GenerateCppAutoSerializationSkip(buildData, typeInfo, propertyInfo, propertyInfo.Type))
                         continue;
 
-                    var typeHint = GenerateCppAutoSerializationDefineType(buildData, contents, moduleInfo, typeInfo, propertyInfo.Type, propertyInfo);
-                    contents.Append($"    SERIALIZE{typeHint}_MEMBER({propertyInfo.Name}, {propertyInfo.Getter.Name}());").AppendLine();
+                    contents.Append("    {");
+                    contents.Append(" const auto");
+                    if (propertyInfo.Getter.ReturnType.IsConstRef)
+                        contents.Append('&');
+                    contents.Append($" value = {propertyInfo.Getter.Name}();");
+                    contents.Append(" if (other) { const auto");
+                    if (propertyInfo.Getter.ReturnType.IsConstRef)
+                        contents.Append('&');
+                    contents.Append($" otherValue = other->{propertyInfo.Getter.Name}();");
+                    contents.Append(" if (Serialization::ShouldSerialize(value, &otherValue)) { ");
+                    contents.Append($"stream.JKEY(\"{propertyInfo.Name}\"); Serialization::Serialize(stream, value, &otherValue);");
+                    contents.Append(" } } else if (Serialization::ShouldSerialize(value, nullptr)) { ");
+                    contents.Append($"stream.JKEY(\"{propertyInfo.Name}\"); Serialization::Serialize(stream, value, nullptr);");
+                    contents.Append(" }");
+                    contents.Append('}').AppendLine();
                     CppAutoSerializeProperties.Add(propertyInfo);
                 }
             }
@@ -1183,11 +1384,7 @@ namespace Flax.Build.Bindings
             {
                 foreach (var fieldInfo in structureInfo.Fields)
                 {
-                    if (fieldInfo.IsStatic)
-                        continue;
-                    if (fieldInfo.Access != AccessLevel.Public && !fieldInfo.HasAttribute("Serialize"))
-                        continue;
-                    if (fieldInfo.HasAttribute("NoSerialize") || fieldInfo.HasAttribute("NonSerialized"))
+                    if (GenerateCppAutoSerializationSkip(buildData, typeInfo, fieldInfo, fieldInfo.Type))
                         continue;
 
                     var typeHint = GenerateCppAutoSerializationDefineType(buildData, contents, moduleInfo, typeInfo, fieldInfo.Type, fieldInfo);
@@ -1225,7 +1422,7 @@ namespace Flax.Build.Bindings
             contents.Append('}').AppendLine();
         }
 
-        private static string GenerateCppInterfaceInheritanceTable(BuildData buildData, StringBuilder contents, ModuleInfo moduleInfo, ClassStructInfo typeInfo, string typeNameNative)
+        private static string GenerateCppInterfaceInheritanceTable(BuildData buildData, StringBuilder contents, ModuleInfo moduleInfo, VirtualClassInfo typeInfo, string typeNameNative)
         {
             var interfacesPtr = "nullptr";
             var interfaces = typeInfo.Interfaces;
@@ -1236,7 +1433,8 @@ namespace Flax.Build.Bindings
                 for (int i = 0; i < interfaces.Count; i++)
                 {
                     var interfaceInfo = interfaces[i];
-                    contents.Append("    { &").Append(interfaceInfo.NativeName).Append("::TypeInitializer, (int16)VTABLE_OFFSET(").Append(typeInfo.NativeName).Append(", ").Append(interfaceInfo.NativeName).AppendLine(") },");
+                    var scriptVTableOffset = typeInfo.GetScriptVTableOffset(interfaceInfo);
+                    contents.AppendLine($"    {{ &{interfaceInfo.NativeName}::TypeInitializer, (int16)VTABLE_OFFSET({typeInfo.NativeName}, {interfaceInfo.NativeName}), {scriptVTableOffset}, true }},");
                 }
                 contents.AppendLine("    { nullptr, 0 },");
                 contents.AppendLine("};");
@@ -1253,6 +1451,8 @@ namespace Flax.Build.Bindings
             if (classInfo.Parent != null && !(classInfo.Parent is FileInfo))
                 classTypeNameInternal = classInfo.Parent.FullNameNative + '_' + classTypeNameInternal;
             var useScripting = classInfo.IsStatic || classInfo.IsScriptingObject;
+            var useCSharp = EngineConfiguration.WithCSharp(buildData.TargetOptions);
+            var hasInterface = classInfo.Interfaces != null && classInfo.Interfaces.Any(x => x.Access == AccessLevel.Public);
 
             if (classInfo.IsAutoSerialization)
                 GenerateCppAutoSerialization(buildData, contents, moduleInfo, classInfo, classTypeNameNative);
@@ -1265,77 +1465,102 @@ namespace Flax.Build.Bindings
             // Events
             foreach (var eventInfo in classInfo.Events)
             {
-                if (!useScripting)
+                if (!useScripting || eventInfo.IsHidden)
                     continue;
                 var paramsCount = eventInfo.Type.GenericArgs?.Count ?? 0;
-
-                // C# event invoking wrapper (calls C# event from C++ delegate)
-                CppIncludeFiles.Add("Engine/Scripting/ManagedCLR/MClass.h");
-                CppIncludeFiles.Add("Engine/Scripting/ManagedCLR/MEvent.h");
-                CppIncludeFiles.Add("Engine/Scripting/ManagedCLR/MClass.h");
                 CppIncludeFiles.Add("Engine/Profiler/ProfilerCPU.h");
-                contents.Append("    ");
-                if (eventInfo.IsStatic)
-                    contents.Append("static ");
-                contents.AppendFormat("void {0}_ManagedWrapper(", eventInfo.Name);
-                for (var i = 0; i < paramsCount; i++)
-                {
-                    if (i != 0)
-                        contents.Append(", ");
-                    contents.Append(eventInfo.Type.GenericArgs[i]).Append(" arg" + i);
-                }
-                contents.Append(')').AppendLine();
-                contents.Append("    {").AppendLine();
-                contents.Append("        static MMethod* mmethod = nullptr;").AppendLine();
-                contents.Append("        if (!mmethod)").AppendLine();
-                contents.AppendFormat("            mmethod = {1}::TypeInitializer.GetType().ManagedClass->GetMethod(\"Internal_{0}_Invoke\", {2});", eventInfo.Name, classTypeNameNative, paramsCount).AppendLine();
-                contents.Append("        CHECK(mmethod);").AppendLine();
-                contents.Append($"        PROFILE_CPU_NAMED(\"{classInfo.FullNameManaged}::On{eventInfo.Name}\");").AppendLine();
-                contents.Append("        MonoObject* exception = nullptr;").AppendLine();
-                if (paramsCount == 0)
-                    contents.AppendLine("        void** params = nullptr;");
-                else
-                    contents.AppendLine($"        void* params[{paramsCount}];");
-                for (var i = 0; i < paramsCount; i++)
-                {
-                    var paramType = eventInfo.Type.GenericArgs[i];
-                    var paramName = "arg" + i;
-                    var paramValue = GenerateCppWrapperNativeToManagedParam(buildData, contents, paramType, paramName, classInfo, false);
-                    contents.Append($"        params[{i}] = {paramValue};").AppendLine();
-                }
-                if (eventInfo.IsStatic)
-                    contents.AppendLine("        MonoObject* instance = nullptr;");
-                else
-                    contents.AppendLine($"        MonoObject* instance = (({classTypeNameNative}*)this)->GetManagedInstance();");
-                contents.Append("        mono_runtime_invoke(mmethod->GetNative(), instance, params, &exception);").AppendLine();
-                contents.Append("        if (exception)").AppendLine();
-                contents.Append("            DebugLog::LogException(exception);").AppendLine();
-                contents.Append("    }").AppendLine().AppendLine();
-
-                // C# event wrapper binding method (binds/unbinds C# wrapper to C++ delegate)
-                contents.AppendFormat("    static void {0}_ManagedBind(", eventInfo.Name);
-                if (!eventInfo.IsStatic)
-                    contents.AppendFormat("{0}* obj, ", classTypeNameNative);
-                contents.Append("bool bind)").AppendLine();
-                contents.Append("    {").AppendLine();
-                contents.Append("        Function<void(");
-                for (var i = 0; i < paramsCount; i++)
-                {
-                    if (i != 0)
-                        contents.Append(", ");
-                    contents.Append(eventInfo.Type.GenericArgs[i]);
-                }
-                contents.Append(")> f;").AppendLine();
-                if (eventInfo.IsStatic)
-                    contents.AppendFormat("        f.Bind<{0}_ManagedWrapper>();", eventInfo.Name).AppendLine();
-                else
-                    contents.AppendFormat("        f.Bind<{1}Internal, &{1}Internal::{0}_ManagedWrapper>(({1}Internal*)obj);", eventInfo.Name, classTypeNameInternal).AppendLine();
-                contents.Append("        if (bind)").AppendLine();
                 var bindPrefix = eventInfo.IsStatic ? classTypeNameNative + "::" : "obj->";
-                contents.AppendFormat("            {0}{1}.Bind(f);", bindPrefix, eventInfo.Name).AppendLine();
-                contents.Append("        else").AppendLine();
-                contents.AppendFormat("            {0}{1}.Unbind(f);", bindPrefix, eventInfo.Name).AppendLine();
-                contents.Append("    }").AppendLine().AppendLine();
+
+                if (useCSharp)
+                {
+                    // C# event invoking wrapper (calls C# event from C++ delegate)
+                    CppIncludeFiles.Add("Engine/Scripting/ManagedCLR/MClass.h");
+                    CppIncludeFiles.Add("Engine/Scripting/ManagedCLR/MEvent.h");
+                    CppIncludeFiles.Add("Engine/Scripting/ManagedCLR/MClass.h");
+                    contents.Append("    ");
+                    if (eventInfo.IsStatic)
+                        contents.Append("static ");
+                    contents.AppendFormat("void {0}_ManagedWrapper(", eventInfo.Name);
+                    for (var i = 0; i < paramsCount; i++)
+                    {
+                        if (i != 0)
+                            contents.Append(", ");
+                        contents.Append(eventInfo.Type.GenericArgs[i]).Append(" arg" + i);
+                    }
+                    contents.Append(')').AppendLine();
+                    contents.Append("    {").AppendLine();
+                    contents.Append("        static MMethod* mmethod = nullptr;").AppendLine();
+                    contents.Append("        if (!mmethod)").AppendLine();
+                    contents.AppendFormat("            mmethod = {1}::TypeInitializer.GetType().ManagedClass->GetMethod(\"Internal_{0}_Invoke\", {2});", eventInfo.Name, classTypeNameNative, paramsCount).AppendLine();
+                    contents.Append("        CHECK(mmethod);").AppendLine();
+                    contents.Append($"        PROFILE_CPU_NAMED(\"{classInfo.FullNameManaged}::On{eventInfo.Name}\");").AppendLine();
+                    contents.Append("        MonoObject* exception = nullptr;").AppendLine();
+                    if (paramsCount == 0)
+                        contents.AppendLine("        void** params = nullptr;");
+                    else
+                        contents.AppendLine($"        void* params[{paramsCount}];");
+                    for (var i = 0; i < paramsCount; i++)
+                    {
+                        var paramType = eventInfo.Type.GenericArgs[i];
+                        var paramName = "arg" + i;
+                        var paramValue = GenerateCppWrapperNativeToManagedParam(buildData, contents, paramType, paramName, classInfo, false);
+                        contents.Append($"        params[{i}] = {paramValue};").AppendLine();
+                    }
+                    if (eventInfo.IsStatic)
+                        contents.AppendLine("        MonoObject* instance = nullptr;");
+                    else
+                        contents.AppendLine($"        MonoObject* instance = (({classTypeNameNative}*)this)->GetManagedInstance();");
+                    contents.Append("        mono_runtime_invoke(mmethod->GetNative(), instance, params, &exception);").AppendLine();
+                    contents.Append("        if (exception)").AppendLine();
+                    contents.Append("            DebugLog::LogException(exception);").AppendLine();
+                    for (var i = 0; i < paramsCount; i++)
+                    {
+                        var paramType = eventInfo.Type.GenericArgs[i];
+                        if (paramType.IsRef && !paramType.IsConst)
+                        {
+                            // Convert value back from managed to native (could be modified there)
+                            paramType.IsRef = false;
+                            var managedToNative = GenerateCppWrapperManagedToNative(buildData, paramType, classInfo, out var managedType, null, out var _);
+                            var passAsParamPtr = managedType.EndsWith("*");
+                            var paramValue = $"({managedType}{(passAsParamPtr ? "" : "*")})params[{i}]";
+                            if (!string.IsNullOrEmpty(managedToNative))
+                            {
+                                if (!passAsParamPtr)
+                                    paramValue = '*' + paramValue;
+                                paramValue = string.Format(managedToNative, paramValue);
+                            }
+                            else if (!passAsParamPtr)
+                                paramValue = '*' + paramValue;
+                            contents.Append($"        arg{i} = {paramValue};").AppendLine();
+                            paramType.IsRef = true;
+                        }
+                    }
+                    contents.Append("    }").AppendLine().AppendLine();
+
+                    // C# event wrapper binding method (binds/unbinds C# wrapper to C++ delegate)
+                    contents.AppendFormat("    static void {0}_ManagedBind(", eventInfo.Name);
+                    if (!eventInfo.IsStatic)
+                        contents.AppendFormat("{0}* obj, ", classTypeNameNative);
+                    contents.Append("bool bind)").AppendLine();
+                    contents.Append("    {").AppendLine();
+                    contents.Append("        Function<void(");
+                    for (var i = 0; i < paramsCount; i++)
+                    {
+                        if (i != 0)
+                            contents.Append(", ");
+                        contents.Append(eventInfo.Type.GenericArgs[i]);
+                    }
+                    contents.Append(")> f;").AppendLine();
+                    if (eventInfo.IsStatic)
+                        contents.AppendFormat("        f.Bind<{0}_ManagedWrapper>();", eventInfo.Name).AppendLine();
+                    else
+                        contents.AppendFormat("        f.Bind<{1}Internal, &{1}Internal::{0}_ManagedWrapper>(({1}Internal*)obj);", eventInfo.Name, classTypeNameInternal).AppendLine();
+                    contents.Append("        if (bind)").AppendLine();
+                    contents.AppendFormat("            {0}{1}.Bind(f);", bindPrefix, eventInfo.Name).AppendLine();
+                    contents.Append("        else").AppendLine();
+                    contents.AppendFormat("            {0}{1}.Unbind(f);", bindPrefix, eventInfo.Name).AppendLine();
+                    contents.Append("    }").AppendLine().AppendLine();
+                }
 
                 // Generic scripting event invoking wrapper (calls scripting code from C++ delegate)
                 CppIncludeFiles.Add("Engine/Scripting/Events.h");
@@ -1391,7 +1616,7 @@ namespace Flax.Build.Bindings
             // Fields
             foreach (var fieldInfo in classInfo.Fields)
             {
-                if (!useScripting)
+                if (!useScripting || !useCSharp || fieldInfo.IsHidden)
                     continue;
                 if (fieldInfo.Getter != null)
                     GenerateCppWrapperFunction(buildData, contents, classInfo, fieldInfo.Getter, "{0}");
@@ -1408,7 +1633,7 @@ namespace Flax.Build.Bindings
             // Properties
             foreach (var propertyInfo in classInfo.Properties)
             {
-                if (!useScripting)
+                if (!useScripting || !useCSharp || propertyInfo.IsHidden)
                     continue;
                 if (propertyInfo.Getter != null)
                     GenerateCppWrapperFunction(buildData, contents, classInfo, propertyInfo.Getter);
@@ -1419,114 +1644,33 @@ namespace Flax.Build.Bindings
             // Functions
             foreach (var functionInfo in classInfo.Functions)
             {
+                if (!useCSharp || functionInfo.IsHidden)
+                    continue;
                 if (!useScripting)
                     throw new Exception($"Not supported function {functionInfo.Name} inside non-static and non-scripting class type {classInfo.Name}.");
                 GenerateCppWrapperFunction(buildData, contents, classInfo, functionInfo);
             }
 
-            GenerateCppClassInternals?.Invoke(buildData, classInfo, contents);
-
-            // Virtual methods overrides
-            var setupScriptVTable = "nullptr, nullptr";
-            if (!classInfo.IsSealed)
+            // Interface implementation
+            if (hasInterface && useCSharp)
             {
-                var scriptVTableSize = classInfo.GetScriptVTableSize(buildData, out var scriptVTableOffset);
-                if (scriptVTableSize > 0)
+                foreach (var interfaceInfo in classInfo.Interfaces)
                 {
-                    var scriptVTableIndex = scriptVTableOffset;
-                    foreach (var functionInfo in classInfo.Functions)
+                    if (interfaceInfo.Access != AccessLevel.Public)
+                        continue;
+                    foreach (var functionInfo in interfaceInfo.Functions)
                     {
-                        if (functionInfo.IsVirtual)
-                        {
-                            GenerateCppManagedWrapperFunction(buildData, contents, classInfo, functionInfo, scriptVTableSize, scriptVTableIndex);
-                            GenerateCppScriptWrapperFunction?.Invoke(buildData, classInfo, functionInfo, scriptVTableSize, scriptVTableIndex, contents);
-                            scriptVTableIndex++;
-                        }
-                    }
-
-                    if (scriptVTableOffset != scriptVTableSize)
-                    {
-                        CppIncludeFiles.Add("Engine/Scripting/ManagedCLR/MMethod.h");
-                        CppIncludeFiles.Add("Engine/Scripting/ManagedCLR/MClass.h");
-
-                        foreach (var functionInfo in classInfo.Functions)
-                        {
-                            if (!functionInfo.IsVirtual)
-                                continue;
-
-                            var thunkParams = string.Empty;
-                            var separator = false;
-                            for (var i = 0; i < functionInfo.Parameters.Count; i++)
-                            {
-                                var parameterInfo = functionInfo.Parameters[i];
-                                if (separator)
-                                    thunkParams += ", ";
-                                separator = true;
-                                thunkParams += parameterInfo.Type;
-                            }
-                            var t = functionInfo.IsConst ? " const" : string.Empty;
-                            contents.AppendLine($"    typedef {functionInfo.ReturnType} ({classInfo.NativeName}::*{functionInfo.UniqueName}_Signature)({thunkParams}){t};");
-                            contents.AppendLine($"    typedef {functionInfo.ReturnType} ({classInfo.NativeName}Internal::*{functionInfo.UniqueName}_Internal_Signature)({thunkParams}){t};");
-                        }
-                        contents.AppendLine("");
-
-                        contents.AppendLine("    static void SetupScriptVTable(MClass* mclass, void**& scriptVTable, void**& scriptVTableBase)");
-                        contents.AppendLine("    {");
-                        contents.AppendLine("        if (!scriptVTable)");
-                        contents.AppendLine("        {");
-                        contents.AppendLine($"            scriptVTable = (void**)Platform::Allocate(sizeof(void*) * {scriptVTableSize + 1}, 16);");
-                        contents.AppendLine($"            Platform::MemoryClear(scriptVTable, sizeof(void*) * {scriptVTableSize + 1});");
-                        contents.AppendLine($"            scriptVTableBase = (void**)Platform::Allocate(sizeof(void*) * {scriptVTableSize + 2}, 16);");
-                        contents.AppendLine("        }");
-                        scriptVTableIndex = scriptVTableOffset;
-                        foreach (var functionInfo in classInfo.Functions)
-                        {
-                            if (!functionInfo.IsVirtual)
-                                continue;
-                            contents.AppendLine($"        scriptVTable[{scriptVTableIndex++}] = mclass->GetMethod(\"{functionInfo.Name}\", {functionInfo.Parameters.Count});");
-                        }
-                        contents.AppendLine("    }");
-                        contents.AppendLine("");
-
-                        contents.AppendLine("    static void SetupScriptObjectVTable(void** scriptVTable, void** scriptVTableBase, void** vtable, int32 entriesCount, int32 wrapperIndex)");
-                        contents.AppendLine("    {");
-                        scriptVTableIndex = scriptVTableOffset;
-                        foreach (var functionInfo in classInfo.Functions)
-                        {
-                            if (!functionInfo.IsVirtual)
-                                continue;
-
-                            contents.AppendLine($"        if (scriptVTable[{scriptVTableIndex}])");
-                            contents.AppendLine("        {");
-                            contents.AppendLine($"            {functionInfo.UniqueName}_Signature funcPtr = &{classInfo.NativeName}::{functionInfo.Name};");
-                            contents.AppendLine("            const int32 vtableIndex = GetVTableIndex(vtable, entriesCount, *(void**)&funcPtr);");
-                            contents.AppendLine("            if (vtableIndex > 0 && vtableIndex < entriesCount)");
-                            contents.AppendLine("            {");
-                            contents.AppendLine($"                scriptVTableBase[{scriptVTableIndex} + 2] = vtable[vtableIndex];");
-                            for (var i = 0; i < CppScriptObjectVirtualWrapperMethodsPostfixes.Count; i++)
-                            {
-                                contents.AppendLine(i == 0 ? "                if (wrapperIndex == 0)" : $"                else if (wrapperIndex == {i})");
-                                contents.AppendLine("                {");
-                                contents.AppendLine($"                    auto thunkPtr = &{classInfo.NativeName}Internal::{functionInfo.UniqueName}{CppScriptObjectVirtualWrapperMethodsPostfixes[i]};");
-                                contents.AppendLine("                    vtable[vtableIndex] = *(void**)&thunkPtr;");
-                                contents.AppendLine("                }");
-                            }
-                            contents.AppendLine("            }");
-                            contents.AppendLine("            else");
-                            contents.AppendLine("            {");
-                            contents.AppendLine($"                LOG(Error, \"Failed to find the vtable entry for method {{0}} in class {{1}}\", TEXT(\"{functionInfo.Name}\"), TEXT(\"{classInfo.Name}\"));");
-                            contents.AppendLine("            }");
-                            contents.AppendLine("        }");
-
-                            scriptVTableIndex++;
-                        }
-                        contents.AppendLine("    }");
-                        contents.AppendLine("");
-
-                        setupScriptVTable = $"&{classInfo.NativeName}Internal::SetupScriptVTable, &{classInfo.NativeName}Internal::SetupScriptObjectVTable";
+                        if (!classInfo.IsScriptingObject)
+                            throw new Exception($"Class {classInfo.Name} cannot implement interface {interfaceInfo.Name} because it requires ScriptingObject as a base class.");
+                        GenerateCppWrapperFunction(buildData, contents, classInfo, functionInfo);
                     }
                 }
             }
+
+            GenerateCppClassInternals?.Invoke(buildData, classInfo, contents);
+
+            // Virtual methods overrides
+            var setupScriptVTable = GenerateCppScriptVTable(buildData, contents, classInfo);
 
             // Runtime initialization (internal methods binding)
             contents.AppendLine("    static void InitRuntime()");
@@ -1535,13 +1679,22 @@ namespace Flax.Build.Bindings
             {
                 foreach (var eventInfo in classInfo.Events)
                 {
-                    contents.AppendLine($"        ADD_INTERNAL_CALL(\"{classTypeNameManagedInternalCall}::Internal_{eventInfo.Name}_Bind\", &{eventInfo.Name}_ManagedBind);");
-
                     // Register scripting event binder
                     contents.AppendLine($"        ScriptingEvents::EventsTable[Pair<ScriptingTypeHandle, StringView>({classTypeNameNative}::TypeInitializer, StringView(TEXT(\"{eventInfo.Name}\"), {eventInfo.Name.Length}))] = (void(*)(ScriptingObject*, void*, bool)){classTypeNameInternal}Internal::{eventInfo.Name}_Bind;");
                 }
+            }
+            if (useScripting && useCSharp)
+            {
+                foreach (var eventInfo in classInfo.Events)
+                {
+                    if (eventInfo.IsHidden)
+                        continue;
+                    contents.AppendLine($"        ADD_INTERNAL_CALL(\"{classTypeNameManagedInternalCall}::Internal_{eventInfo.Name}_Bind\", &{eventInfo.Name}_ManagedBind);");
+                }
                 foreach (var fieldInfo in classInfo.Fields)
                 {
+                    if (fieldInfo.IsHidden)
+                        continue;
                     if (fieldInfo.Getter != null)
                         contents.AppendLine($"        ADD_INTERNAL_CALL(\"{classTypeNameManagedInternalCall}::Internal_{fieldInfo.Getter.UniqueName}\", &{fieldInfo.Getter.UniqueName});");
                     if (fieldInfo.Setter != null)
@@ -1549,6 +1702,8 @@ namespace Flax.Build.Bindings
                 }
                 foreach (var propertyInfo in classInfo.Properties)
                 {
+                    if (propertyInfo.IsHidden)
+                        continue;
                     if (propertyInfo.Getter != null)
                         contents.AppendLine($"        ADD_INTERNAL_CALL(\"{classTypeNameManagedInternalCall}::Internal_{propertyInfo.Getter.UniqueName}\", &{propertyInfo.Getter.UniqueName});");
                     if (propertyInfo.Setter != null)
@@ -1556,7 +1711,21 @@ namespace Flax.Build.Bindings
                 }
                 foreach (var functionInfo in classInfo.Functions)
                 {
+                    if (functionInfo.IsHidden)
+                        continue;
                     contents.AppendLine($"        ADD_INTERNAL_CALL(\"{classTypeNameManagedInternalCall}::Internal_{functionInfo.UniqueName}\", &{functionInfo.UniqueName});");
+                }
+                if (hasInterface)
+                {
+                    foreach (var interfaceInfo in classInfo.Interfaces)
+                    {
+                        if (interfaceInfo.Access != AccessLevel.Public)
+                            continue;
+                        foreach (var functionInfo in interfaceInfo.Functions)
+                        {
+                            contents.AppendLine($"        ADD_INTERNAL_CALL(\"{classTypeNameManagedInternalCall}::Internal_{functionInfo.UniqueName}\", &{functionInfo.UniqueName});");
+                        }
+                    }
                 }
             }
             GenerateCppClassInitRuntime?.Invoke(buildData, classInfo, contents);
@@ -1631,6 +1800,7 @@ namespace Flax.Build.Bindings
             var structureTypeNameInternal = structureInfo.NativeName;
             if (structureInfo.Parent != null && !(structureInfo.Parent is FileInfo))
                 structureTypeNameInternal = structureInfo.Parent.FullNameNative + '_' + structureTypeNameInternal;
+            var useCSharp = EngineConfiguration.WithCSharp(buildData.TargetOptions);
 
             if (structureInfo.IsAutoSerialization)
                 GenerateCppAutoSerialization(buildData, contents, moduleInfo, structureInfo, structureTypeNameNative);
@@ -1697,12 +1867,15 @@ namespace Flax.Build.Bindings
             contents.AppendLine("    static void InitRuntime()");
             contents.AppendLine("    {");
 
-            foreach (var fieldInfo in structureInfo.Fields)
+            if (useCSharp)
             {
-                if (fieldInfo.Getter != null)
-                    contents.AppendLine($"        ADD_INTERNAL_CALL(\"{structureTypeNameManagedInternalCall}::Internal_{fieldInfo.Getter.UniqueName}\", &{fieldInfo.Getter.UniqueName});");
-                if (fieldInfo.Setter != null)
-                    contents.AppendLine($"        ADD_INTERNAL_CALL(\"{structureTypeNameManagedInternalCall}::Internal_{fieldInfo.Setter.UniqueName}\", &{fieldInfo.Setter.UniqueName});");
+                foreach (var fieldInfo in structureInfo.Fields)
+                {
+                    if (fieldInfo.Getter != null)
+                        contents.AppendLine($"        ADD_INTERNAL_CALL(\"{structureTypeNameManagedInternalCall}::Internal_{fieldInfo.Getter.UniqueName}\", &{fieldInfo.Getter.UniqueName});");
+                    if (fieldInfo.Setter != null)
+                        contents.AppendLine($"        ADD_INTERNAL_CALL(\"{structureTypeNameManagedInternalCall}::Internal_{fieldInfo.Setter.UniqueName}\", &{fieldInfo.Setter.UniqueName});");
+                }
             }
 
             contents.AppendLine("    }").AppendLine();
@@ -1725,28 +1898,41 @@ namespace Flax.Build.Bindings
             contents.AppendLine($"        *({structureTypeNameNative}*)dst = *({structureTypeNameNative}*)src;");
             contents.AppendLine("    }").AppendLine();
 
-            // Boxing structures from native data to managed object
-            CppIncludeFiles.Add("Engine/Scripting/ManagedCLR/MClass.h");
-            if (!structureInfo.IsPod && !CppUsedNonPodTypes.Contains(structureInfo))
-                CppUsedNonPodTypes.Add(structureInfo);
-            contents.AppendLine("    static MonoObject* Box(void* ptr)");
-            contents.AppendLine("    {");
-            contents.AppendLine($"        MonoObject* managed = mono_object_new(mono_domain_get(), {structureTypeNameNative}::TypeInitializer.GetType().ManagedClass->GetNative());");
-            if (structureInfo.IsPod)
-                contents.AppendLine($"        Platform::MemoryCopy(mono_object_unbox(managed), ptr, sizeof({structureTypeNameNative}));");
-            else
-                contents.AppendLine($"        *({structureInfo.NativeName}Managed*)mono_object_unbox(managed) = ToManaged(*({structureTypeNameNative}*)ptr);");
-            contents.AppendLine("        return managed;");
-            contents.AppendLine("    }").AppendLine();
+            if (useCSharp)
+            {
+                // Boxing structures from native data to managed object
+                CppIncludeFiles.Add("Engine/Scripting/ManagedCLR/MClass.h");
+                if (!structureInfo.IsPod && !CppUsedNonPodTypes.Contains(structureInfo))
+                    CppUsedNonPodTypes.Add(structureInfo);
+                contents.AppendLine("    static MObject* Box(void* ptr)");
+                contents.AppendLine("    {");
+                contents.AppendLine($"        MonoObject* managed = mono_object_new(mono_domain_get(), {structureTypeNameNative}::TypeInitializer.GetType().ManagedClass->GetNative());");
+                if (structureInfo.IsPod)
+                    contents.AppendLine($"        Platform::MemoryCopy(mono_object_unbox(managed), ptr, sizeof({structureTypeNameNative}));");
+                else
+                    contents.AppendLine($"        *({structureInfo.NativeName}Managed*)mono_object_unbox(managed) = ToManaged(*({structureTypeNameNative}*)ptr);");
+                contents.AppendLine("        return managed;");
+                contents.AppendLine("    }").AppendLine();
 
-            // Unboxing structures from managed object to native data
-            contents.AppendLine("    static void Unbox(void* ptr, MonoObject* managed)");
-            contents.AppendLine("    {");
-            if (structureInfo.IsPod)
-                contents.AppendLine($"        Platform::MemoryCopy(ptr, mono_object_unbox(managed), sizeof({structureTypeNameNative}));");
+                // Unboxing structures from managed object to native data
+                contents.AppendLine("    static void Unbox(void* ptr, MObject* managed)");
+                contents.AppendLine("    {");
+                if (structureInfo.IsPod)
+                    contents.AppendLine($"        Platform::MemoryCopy(ptr, mono_object_unbox(managed), sizeof({structureTypeNameNative}));");
+                else
+                    contents.AppendLine($"        *({structureTypeNameNative}*)ptr = ToNative(*({structureInfo.NativeName}Managed*)mono_object_unbox(managed));");
+                contents.AppendLine("    }").AppendLine();
+            }
             else
-                contents.AppendLine($"        *({structureTypeNameNative}*)ptr = ToNative(*({structureInfo.NativeName}Managed*)mono_object_unbox(managed));");
-            contents.AppendLine("    }").AppendLine();
+            {
+                contents.AppendLine("    static MObject* Box(void* ptr)");
+                contents.AppendLine("    {");
+                contents.AppendLine("        return nullptr;");
+                contents.AppendLine("    }").AppendLine();
+                contents.AppendLine("    static void Unbox(void* ptr, MObject* managed)");
+                contents.AppendLine("    {");
+                contents.AppendLine("    }").AppendLine();
+            }
 
             // Getter for structure field
             contents.AppendLine("    static void GetField(void* ptr, const String& name, Variant& value)");
@@ -1807,33 +1993,137 @@ namespace Flax.Build.Bindings
             }
         }
 
+        private static void GenerateCppEnum(BuildData buildData, StringBuilder contents, ModuleInfo moduleInfo, EnumInfo enumInfo)
+        {
+            var enumTypeNameNative = enumInfo.FullNameNative;
+            var enumTypeNameManaged = enumInfo.FullNameManaged;
+            var enumTypeNameInternal = enumInfo.NativeName;
+            if (enumInfo.Parent != null && !(enumInfo.Parent is FileInfo))
+                enumTypeNameInternal = enumInfo.Parent.FullNameNative + '_' + enumTypeNameInternal;
+
+            contents.AppendLine();
+            contents.AppendFormat("class {0}Internal", enumTypeNameInternal).AppendLine();
+            contents.Append('{').AppendLine();
+            contents.AppendLine("public:");
+            contents.AppendLine("    static ScriptingType::EnumItem Items[];");
+            contents.Append('}').Append(';').AppendLine();
+            contents.AppendLine();
+
+            // Items
+            contents.AppendFormat("ScriptingType::EnumItem {0}Internal::Items[] = {{", enumTypeNameInternal).AppendLine();
+            foreach (var entry in enumInfo.Entries)
+                contents.AppendFormat("    {{ (uint64){0}::{1}, \"{1}\" }},", enumTypeNameNative, entry.Name).AppendLine();
+            contents.AppendLine("    { 0, nullptr }");
+            contents.AppendLine("};").AppendLine();
+
+            contents.Append($"ScriptingTypeInitializer {enumTypeNameInternal}_TypeInitializer((BinaryModule*)GetBinaryModule{moduleInfo.Name}(), ");
+            contents.Append($"StringAnsiView(\"{enumTypeNameManaged}\", {enumTypeNameManaged.Length}), ");
+            contents.Append($"sizeof({enumTypeNameNative}), ");
+            contents.Append($"{enumTypeNameInternal}Internal::Items);").AppendLine();
+
+            contents.AppendLine($"template<> {moduleInfo.Name.ToUpperInvariant()}_API ScriptingTypeHandle StaticType<{enumTypeNameNative}>() {{ return {enumTypeNameInternal}_TypeInitializer; }}");
+        }
+
         private static void GenerateCppInterface(BuildData buildData, StringBuilder contents, ModuleInfo moduleInfo, InterfaceInfo interfaceInfo)
         {
             var interfaceTypeNameNative = interfaceInfo.FullNameNative;
             var interfaceTypeNameManaged = interfaceInfo.FullNameManaged;
-            var interfaceTypeNameManagedInternalCall = interfaceTypeNameManaged.Replace('+', '/');
             var interfaceTypeNameInternal = interfaceInfo.NativeName;
             if (interfaceInfo.Parent != null && !(interfaceInfo.Parent is FileInfo))
                 interfaceTypeNameInternal = interfaceInfo.Parent.FullNameNative + '_' + interfaceTypeNameInternal;
+
+            // Wrapper interface implement to invoke scripting if inherited in C# or VS
+            contents.AppendLine();
+            contents.AppendFormat("class {0}Wrapper : public ", interfaceTypeNameInternal).Append(interfaceTypeNameNative).AppendLine();
+            contents.Append('{').AppendLine();
+            contents.AppendLine("public:");
+            contents.AppendLine("    ScriptingObject* Object;");
+            foreach (var functionInfo in interfaceInfo.Functions)
+            {
+                if (!functionInfo.IsVirtual)
+                    continue;
+                contents.AppendFormat("    {0} {1}(", functionInfo.ReturnType, functionInfo.Name);
+                var separator = false;
+                for (var i = 0; i < functionInfo.Parameters.Count; i++)
+                {
+                    var parameterInfo = functionInfo.Parameters[i];
+                    if (separator)
+                        contents.Append(", ");
+                    separator = true;
+                    contents.Append(parameterInfo.Type).Append(' ').Append(parameterInfo.Name);
+                }
+                contents.Append(") override").AppendLine();
+                contents.AppendLine("    {");
+                // TODO: try to use ScriptVTable for interfaces implementation in scripting to call proper function instead of manually check at runtime
+                if (functionInfo.Parameters.Count != 0)
+                {
+                    contents.AppendLine($"        Variant parameters[{functionInfo.Parameters.Count}];");
+                    for (var i = 0; i < functionInfo.Parameters.Count; i++)
+                    {
+                        var parameterInfo = functionInfo.Parameters[i];
+                        contents.AppendLine($"        parameters[{i}] = {GenerateCppWrapperNativeToVariant(buildData, parameterInfo.Type, interfaceInfo, parameterInfo.Name)};");
+                    }
+                }
+                else
+                {
+                    contents.AppendLine("        Variant* parameters = nullptr;");
+                }
+                contents.AppendLine("        auto typeHandle = Object->GetTypeHandle();");
+                contents.AppendLine("        while (typeHandle)");
+                contents.AppendLine("        {");
+                contents.AppendLine($"            auto method = typeHandle.Module->FindMethod(typeHandle, \"{functionInfo.Name}\", {functionInfo.Parameters.Count});");
+                contents.AppendLine("            if (method)");
+                contents.AppendLine("            {");
+                contents.AppendLine("                Variant __result;");
+                contents.AppendLine($"                typeHandle.Module->InvokeMethod(method, Object, Span<Variant>(parameters, {functionInfo.Parameters.Count}), __result);");
+                if (functionInfo.ReturnType.IsVoid)
+                    contents.AppendLine("                return;");
+                else
+                    contents.AppendLine($"                return {GenerateCppWrapperVariantToNative(buildData, functionInfo.ReturnType, interfaceInfo, "__result")};");
+                contents.AppendLine("            }");
+                contents.AppendLine("            typeHandle = typeHandle.GetType().GetBaseType();");
+                contents.AppendLine("        }");
+                GenerateCppReturn(buildData, contents, "        ", functionInfo.ReturnType);
+                contents.AppendLine("    }");
+            }
+            if (interfaceInfo.Name == "ISerializable")
+            {
+                // TODO: how to handle other interfaces that have some abstract native methods? maybe NativeOnly tag on interface? do it right and remove this hack
+                contents.AppendLine("    void Serialize(SerializeStream& stream, const void* otherObj) override {} void Deserialize(DeserializeStream& stream, ISerializeModifier* modifier) override {}");
+            }
+            contents.Append('}').Append(';').AppendLine();
 
             contents.AppendLine();
             contents.AppendFormat("class {0}Internal", interfaceTypeNameInternal).AppendLine();
             contents.Append('{').AppendLine();
             contents.AppendLine("public:");
 
+            GenerateCppClassInternals?.Invoke(buildData, interfaceInfo, contents);
+
+            // Virtual methods overrides
+            var setupScriptVTable = GenerateCppScriptVTable(buildData, contents, interfaceInfo);
+
             // Runtime initialization (internal methods binding)
             contents.AppendLine("    static void InitRuntime()");
             contents.AppendLine("    {");
+            GenerateCppClassInitRuntime?.Invoke(buildData, interfaceInfo, contents);
             contents.AppendLine("    }").AppendLine();
+
+            // Interface implementation wrapper accessor for scripting types
+            contents.AppendLine("    static void* GetInterfaceWrapper(ScriptingObject* obj)");
+            contents.AppendLine("    {");
+            contents.AppendLine($"        auto wrapper = New<{interfaceTypeNameInternal}Wrapper>();");
+            contents.AppendLine("        wrapper->Object = obj;");
+            contents.AppendLine("        return wrapper;");
+            contents.AppendLine("    }");
 
             contents.Append('}').Append(';').AppendLine();
             contents.AppendLine();
 
             // Type initializer
             contents.Append($"ScriptingTypeInitializer {interfaceTypeNameNative}::TypeInitializer((BinaryModule*)GetBinaryModule{moduleInfo.Name}(), ");
-            contents.Append($"StringAnsiView(\"{interfaceTypeNameManaged}\", {interfaceTypeNameManaged.Length}), ");
-            contents.Append($"&{interfaceTypeNameInternal}Internal::InitRuntime");
-            contents.Append(");");
+            contents.Append($"StringAnsiView(\"{interfaceTypeNameManaged}\", {interfaceTypeNameManaged.Length}), &{interfaceTypeNameInternal}Internal::InitRuntime,");
+            contents.Append(setupScriptVTable).Append($", &{interfaceTypeNameInternal}Internal::GetInterfaceWrapper").Append(");");
             contents.AppendLine();
 
             // Nested types
@@ -1854,6 +2144,8 @@ namespace Flax.Build.Bindings
                     GenerateCppClass(buildData, contents, moduleInfo, classInfo);
                 else if (type is StructureInfo structureInfo)
                     GenerateCppStruct(buildData, contents, moduleInfo, structureInfo);
+                else if (type is EnumInfo enumInfo)
+                    GenerateCppEnum(buildData, contents, moduleInfo, enumInfo);
                 else if (type is InterfaceInfo interfaceInfo)
                     GenerateCppInterface(buildData, contents, moduleInfo, interfaceInfo);
                 else if (type is InjectCppCodeInfo injectCppCodeInfo)
@@ -1898,8 +2190,13 @@ namespace Flax.Build.Bindings
             CppVariantToTypes.Clear();
             CppVariantFromTypes.Clear();
 
+            // Disable C# scripting based on configuration
+            ScriptingLangInfos[0].Enabled = EngineConfiguration.WithCSharp(buildData.TargetOptions);
+
             contents.AppendLine("// This code was auto-generated. Do not modify it.");
             contents.AppendLine();
+            contents.AppendLine("#include \"Engine/Core/Compiler.h\"");
+            contents.AppendLine("PRAGMA_DISABLE_DEPRECATION_WARNINGS"); // Disable deprecated warnings in generated code
             contents.AppendLine("#include \"Engine/Scripting/Scripting.h\"");
             contents.AppendLine("#include \"Engine/Scripting/InternalCalls.h\"");
             contents.AppendLine("#include \"Engine/Scripting/ManagedCLR/MUtils.h\"");
@@ -2010,8 +2307,11 @@ namespace Flax.Build.Bindings
 
                 // Non-POD types
                 CppUsedNonPodTypesList.Clear();
-                for (int k = 0; k < CppUsedNonPodTypes.Count; k++)
-                    GenerateCppCppUsedNonPodTypes(buildData, CppUsedNonPodTypes[k]);
+                if (EngineConfiguration.WithCSharp(buildData.TargetOptions))
+                {
+                    for (int k = 0; k < CppUsedNonPodTypes.Count; k++)
+                        GenerateCppCppUsedNonPodTypes(buildData, CppUsedNonPodTypes[k]);
+                }
                 foreach (var apiType in CppUsedNonPodTypesList)
                 {
                     header.AppendLine();
@@ -2200,12 +2500,11 @@ namespace Flax.Build.Bindings
                             }
 
                             var wrapper = CppParamsWrappersCache[i];
-                            header.AppendFormat("        MONO_OBJECT_SETREF(obj, {0}, ", fieldInfo.Name);
-                            if (string.IsNullOrEmpty(wrapper))
-                                header.Append("data." + fieldInfo.Name);
+                            var value = string.IsNullOrEmpty(wrapper) ? "data." + fieldInfo.Name : string.Format(wrapper, "data." + fieldInfo.Name);
+                            if (fieldInfo.Type.IsPod(buildData, apiType))
+                                header.AppendFormat("        obj->{0} = {1};", fieldInfo.Name, value).AppendLine();
                             else
-                                header.AppendFormat(wrapper, "data." + fieldInfo.Name);
-                            header.Append(')').Append(';').AppendLine();
+                                header.AppendFormat("        MONO_OBJECT_SETREF(obj, {0}, {1});", fieldInfo.Name, value).AppendLine();
                         }
                         header.Append("        return (MonoObject*)obj;").AppendLine();
                         header.Append("    }").AppendLine();
@@ -2294,6 +2593,8 @@ namespace Flax.Build.Bindings
                     header.AppendFormat("#include \"{0}\"", path).AppendLine();
                 contents.Insert(headerPos, header.ToString());
             }
+
+            contents.AppendLine("PRAGMA_ENABLE_DEPRECATION_WARNINGS");
 
             Utilities.WriteFileIfChanged(bindings.GeneratedCppFilePath, contents.ToString());
         }

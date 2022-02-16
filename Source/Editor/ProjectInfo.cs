@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 using System;
 using System.IO;
@@ -149,6 +149,7 @@ namespace FlaxEditor
                     return _projectsCache[i];
             }
 
+            Profiler.BeginEvent(path);
             try
             {
                 // Load
@@ -204,6 +205,10 @@ namespace FlaxEditor
                 // Failed to load project
                 Editor.LogError("Failed to load project \"" + path + "\".");
                 throw;
+            }
+            finally
+            {
+                Profiler.EndEvent();
             }
         }
 

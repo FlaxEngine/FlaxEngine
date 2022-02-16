@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 #include "Builder.h"
 #include "Engine/Level/Scene/Lightmap.h"
@@ -122,7 +122,11 @@ void ShadowsOfMordor::Builder::SceneBuildCache::UpdateLightmaps()
             ImportTexture::Options options;
             options.Type = TextureFormatType::HdrRGBA;
             options.IndependentChannels = true;
+#if PLATFORM_WINDOWS
             options.Compress = Scene->GetLightmapSettings().CompressLightmaps;
+#else
+            options.Compress = false; // TODO: use better BC7 compressor that would handle alpha more precisely (otherwise lightmaps have artifacts, see TextureTool.stb.cpp)
+#endif
             options.GenerateMipMaps = true;
             options.IsAtlas = false;
             options.sRGB = false;

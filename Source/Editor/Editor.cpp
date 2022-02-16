@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 #if USE_EDITOR
 
@@ -621,10 +621,12 @@ bool Editor::Init()
     // Scripts project files generation from command line
     if (CommandLine::Options.GenProjectFiles)
     {
-        const bool failed = ScriptsBuilder::GenerateProject();
+        const String customArgs = TEXT("-verbose -log -logfile=\"Cache/Intermediate/ProjectFileLog.txt\"");
+        const bool failed = ScriptsBuilder::GenerateProject(customArgs);
         exit(failed ? 1 : 0);
         return true;
     }
+    PROFILE_CPU();
 
     // If during last lightmaps baking engine crashed we could try to restore the progress
     ShadowsOfMordor::Builder::Instance()->CheckIfRestoreState();
@@ -633,10 +635,13 @@ bool Editor::Init()
     Managed = New<ManagedEditor>();
 
     // Show splash screen
-    if (EditorImpl::Splash == nullptr)
-        EditorImpl::Splash = New<SplashScreen>();
-    EditorImpl::Splash->SetTitle(Project->Name);
-    EditorImpl::Splash->Show();
+    {
+        PROFILE_CPU_NAMED("Splash");
+        if (EditorImpl::Splash == nullptr)
+            EditorImpl::Splash = New<SplashScreen>();
+        EditorImpl::Splash->SetTitle(Project->Name);
+        EditorImpl::Splash->Show();
+    }
 
     // Initialize managed editor
     Managed->Init();

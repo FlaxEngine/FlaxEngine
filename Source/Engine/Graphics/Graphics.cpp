@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 #include "Graphics.h"
 #include "GPUDevice.h"
@@ -30,6 +30,9 @@ extern GPUDevice* CreateGPUDeviceDX12();
 #if GRAPHICS_API_PS4
 extern GPUDevice* CreateGPUDevicePS4();
 #endif
+#if GRAPHICS_API_PS5
+extern GPUDevice* CreateGPUDevicePS5();
+#endif
 
 class GraphicsService : public EngineService
 {
@@ -49,11 +52,11 @@ GraphicsService GraphicsServiceInstance;
 
 void Graphics::DisposeDevice()
 {
-    // Clean any danging pointer to last task (might stay if engine is disposing after crash)
-    GPUDevice::Instance->CurrentTask = nullptr;
-
     if (GPUDevice::Instance)
     {
+        // Clean any danging pointer to last task (might stay if engine is disposing after crash)
+        GPUDevice::Instance->CurrentTask = nullptr;
+
         GPUDevice::Instance->Dispose();
         LOG_FLUSH();
         Delete(GPUDevice::Instance);
@@ -117,9 +120,6 @@ bool GraphicsService::Init()
     // Platform default
     if (!device)
     {
-#if PLATFORM_WINDOWS
-
-        // Windows
 #if GRAPHICS_API_DIRECTX11
         if (!device)
             device = CreateGPUDeviceDX11();
@@ -132,57 +132,13 @@ bool GraphicsService::Init()
         if (!device)
             device = CreateGPUDeviceVulkan();
 #endif
-
-#elif PLATFORM_UWP
-
-        // UWP
-		if (!device)
-		    device = CreateGPUDeviceDX11();
-
-#elif PLATFORM_LINUX
-
-        // Linux
-#if GRAPHICS_API_VULKAN
-		if (!device)
-			device = CreateGPUDeviceVulkan();
-#endif
-
-#elif PLATFORM_PS4
-
-        // PS4
 #if GRAPHICS_API_PS4
         if (!device)
             device = CreateGPUDevicePS4();
 #endif
-
-#elif PLATFORM_XBOX_SCARLETT
-
-        // Xbox Scarlett
-#if GRAPHICS_API_DIRECTX12
-	if (!device)
-		device = CreateGPUDeviceDX12();
-#endif
-
-#elif PLATFORM_ANDROID
-
-        // Android
-#if GRAPHICS_API_VULKAN
+#if GRAPHICS_API_PS5
         if (!device)
-            device = CreateGPUDeviceVulkan();
-#endif
-
-#elif PLATFORM_SWITCH
-
-        // Switch
-#if GRAPHICS_API_VULKAN
-        if (!device)
-            device = CreateGPUDeviceVulkan();
-#endif
-
-#elif !defined(GRAPHICS_API_NULL)
-
-#error "Platform does not support GPU devices."
-
+            device = CreateGPUDevicePS5();
 #endif
     }
 

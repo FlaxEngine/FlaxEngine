@@ -1,66 +1,77 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 #include "Engine/Core/Types/String.h"
 #include "Engine/Core/Types/StringView.h"
 #include <ThirdParty/catch2/catch.hpp>
 
-TEST_CASE("String Replace works") {
-    SECTION("Char, case sensitive") {
+TEST_CASE("String Replace works")
+{
+    SECTION("Char, case sensitive")
+    {
         String str("hello HELLO");
         CHECK(str.Replace('l', 'x', StringSearchCase::CaseSensitive) == 2);
         CHECK(str == String("hexxo HELLO"));
     }
 
-    SECTION("Char, ignore case") {
+    SECTION("Char, ignore case")
+    {
         String str("hello HELLO");
         CHECK(str.Replace('l', 'x', StringSearchCase::IgnoreCase) == 4);
         CHECK(str == String("hexxo HExxO"));
     }
 
-    SECTION("case sensitive") {
+    SECTION("case sensitive")
+    {
         String str("hello HELLO this is me saying hello");
         CHECK(str.Replace(TEXT("hello"), TEXT("hi"), StringSearchCase::CaseSensitive) == 2);
         CHECK(str == String("hi HELLO this is me saying hi"));
     }
 
-    SECTION("ignore case") {
+    SECTION("ignore case")
+    {
         String str("hello HELLO this is me saying hello");
         CHECK(str.Replace(TEXT("hello"), TEXT("hi"), StringSearchCase::IgnoreCase) == 3);
         CHECK(str == String("hi hi this is me saying hi"));
     }
 
-    SECTION("case sensitive, search and replace texts identical") {
+    SECTION("case sensitive, search and replace texts identical")
+    {
         String str("hello HELLO this is me saying hello");
         CHECK(str.Replace(TEXT("hello"), TEXT("hello"), StringSearchCase::CaseSensitive) == 2);
         CHECK(str == String("hello HELLO this is me saying hello"));
     }
 
-    SECTION("ignore case, search and replace texts identical") {
+    SECTION("ignore case, search and replace texts identical")
+    {
         String str("hello HELLO this is me saying hello");
         CHECK(str.Replace(TEXT("hello"), TEXT("hello"), StringSearchCase::IgnoreCase) == 3);
         CHECK(str == String("hello hello this is me saying hello"));
     }
 
-    SECTION("case sensitive, replace text empty") {
+    SECTION("case sensitive, replace text empty")
+    {
         String str("hello HELLO this is me saying hello");
         CHECK(str.Replace(TEXT("hello"), TEXT(""), StringSearchCase::CaseSensitive) == 2);
         CHECK(str == String(" HELLO this is me saying "));
     }
 
-    SECTION("ignore case, replace text empty") {
+    SECTION("ignore case, replace text empty")
+    {
         String str("hello HELLO this is me saying hello");
         CHECK(str.Replace(TEXT("hello"), TEXT(""), StringSearchCase::IgnoreCase) == 3);
         CHECK(str == String("  this is me saying "));
     }
 
-    SECTION("no finds") {
+    SECTION("no finds")
+    {
         String str("hello HELLO this is me saying hello");
         CHECK(str.Replace(TEXT("bye"), TEXT("hi"), StringSearchCase::CaseSensitive) == 0);
         CHECK(str.Replace(TEXT("bye"), TEXT("hi"), StringSearchCase::IgnoreCase) == 0);
         CHECK(str == String("hello HELLO this is me saying hello"));
     }
 
-    SECTION("empty input") {
+    SECTION("empty input")
+    {
         String str("");
         CHECK(str.Replace(TEXT("bye"), TEXT("hi"), StringSearchCase::CaseSensitive) == 0);
         CHECK(str.Replace(TEXT("bye"), TEXT("hi"), StringSearchCase::IgnoreCase) == 0);
@@ -68,15 +79,19 @@ TEST_CASE("String Replace works") {
     }
 }
 
-TEST_CASE("String Starts/EndsWith works") {
-    SECTION("StartsWith, case sensitive") {
-        SECTION("Char") {
+TEST_CASE("String Starts/EndsWith works")
+{
+    SECTION("StartsWith, case sensitive")
+    {
+        SECTION("Char")
+        {
             CHECK(String("").StartsWith('h', StringSearchCase::CaseSensitive) == false);
             CHECK(String("hello HELLO").StartsWith('h', StringSearchCase::CaseSensitive) == true);
             CHECK(String("hello HELLO").StartsWith('H', StringSearchCase::CaseSensitive) == false);
         }
 
-        SECTION("String") {
+        SECTION("String")
+        {
             CHECK(String("hello HELLO").StartsWith(String(TEXT("hello")), StringSearchCase::CaseSensitive) == true);
             CHECK(String("hello HELLO").StartsWith(String(TEXT("HELLO")), StringSearchCase::CaseSensitive) == false);
             CHECK(String("hello HELLO").StartsWith(String(TEXT("")), StringSearchCase::CaseSensitive) == true);
@@ -87,7 +102,8 @@ TEST_CASE("String Starts/EndsWith works") {
             CHECK(String("hello HELLO").StartsWith(String(TEXT("xhello HELLO")), StringSearchCase::CaseSensitive) == false);
         }
 
-        SECTION("StringView") {
+        SECTION("StringView")
+        {
             CHECK(String("hello HELLO").StartsWith(StringView(TEXT("hello")), StringSearchCase::CaseSensitive) == true);
             CHECK(String("hello HELLO").StartsWith(StringView(TEXT("HELLO")), StringSearchCase::CaseSensitive) == false);
             CHECK(String("hello HELLO").StartsWith(StringView(), StringSearchCase::CaseSensitive) == true);
@@ -100,14 +116,17 @@ TEST_CASE("String Starts/EndsWith works") {
         }
     }
 
-    SECTION("StartsWith, ignore case") {
-        SECTION("Char") {
+    SECTION("StartsWith, ignore case")
+    {
+        SECTION("Char")
+        {
             CHECK(String("").StartsWith('h', StringSearchCase::IgnoreCase) == false);
             CHECK(String("hello HELLO").StartsWith('h', StringSearchCase::IgnoreCase) == true);
             CHECK(String("hello HELLO").StartsWith('H', StringSearchCase::IgnoreCase) == true);
         }
 
-        SECTION("String") {
+        SECTION("String")
+        {
             CHECK(String("hello HELLO").StartsWith(String(TEXT("hello")), StringSearchCase::IgnoreCase) == true);
             CHECK(String("hello HELLO").StartsWith(String(TEXT("HELLO")), StringSearchCase::IgnoreCase) == true);
             CHECK(String("hello HELLO").StartsWith(String(TEXT("")), StringSearchCase::IgnoreCase) == true);
@@ -118,7 +137,8 @@ TEST_CASE("String Starts/EndsWith works") {
             CHECK(String("hello HELLO").StartsWith(String(TEXT("xhello HELLO")), StringSearchCase::IgnoreCase) == false);
         }
 
-        SECTION("StringView") {
+        SECTION("StringView")
+        {
             CHECK(String("hello HELLO").StartsWith(StringView(TEXT("hello")), StringSearchCase::IgnoreCase) == true);
             CHECK(String("hello HELLO").StartsWith(StringView(TEXT("HELLO")), StringSearchCase::IgnoreCase) == true);
             CHECK(String("hello HELLO").StartsWith(StringView(), StringSearchCase::IgnoreCase) == true);
@@ -131,14 +151,17 @@ TEST_CASE("String Starts/EndsWith works") {
         }
     }
 
-    SECTION("EndsWith, case sensitive") {
-        SECTION("Char") {
+    SECTION("EndsWith, case sensitive")
+    {
+        SECTION("Char")
+        {
             CHECK(String("").EndsWith('h', StringSearchCase::CaseSensitive) == false);
             CHECK(String("hello HELLO").EndsWith('O', StringSearchCase::CaseSensitive) == true);
             CHECK(String("hello HELLO").EndsWith('o', StringSearchCase::CaseSensitive) == false);
         }
 
-        SECTION("String") {
+        SECTION("String")
+        {
             CHECK(String("hello HELLO").EndsWith(String(TEXT("HELLO")), StringSearchCase::CaseSensitive) == true);
             CHECK(String("hello HELLO").EndsWith(String(TEXT("hello")), StringSearchCase::CaseSensitive) == false);
             CHECK(String("hello HELLO").EndsWith(String(TEXT("")), StringSearchCase::CaseSensitive) == true);
@@ -149,7 +172,8 @@ TEST_CASE("String Starts/EndsWith works") {
             CHECK(String("hello HELLO").EndsWith(String(TEXT("xhello HELLO")), StringSearchCase::CaseSensitive) == false);
         }
 
-        SECTION("StringView") {
+        SECTION("StringView")
+        {
             CHECK(String("hello HELLO").EndsWith(StringView(TEXT("HELLO")), StringSearchCase::CaseSensitive) == true);
             CHECK(String("hello HELLO").EndsWith(StringView(TEXT("hello")), StringSearchCase::CaseSensitive) == false);
             CHECK(String("hello HELLO").EndsWith(StringView(), StringSearchCase::CaseSensitive) == true);
@@ -162,14 +186,17 @@ TEST_CASE("String Starts/EndsWith works") {
         }
     }
 
-    SECTION("EndsWith, ignore case") {
-        SECTION("Char") {
+    SECTION("EndsWith, ignore case")
+    {
+        SECTION("Char")
+        {
             CHECK(String("").EndsWith('h', StringSearchCase::IgnoreCase) == false);
             CHECK(String("hello HELLO").EndsWith('O', StringSearchCase::IgnoreCase) == true);
             CHECK(String("hello HELLO").EndsWith('o', StringSearchCase::IgnoreCase) == true);
         }
 
-        SECTION("String") {
+        SECTION("String")
+        {
             CHECK(String("hello HELLO").EndsWith(String(TEXT("HELLO")), StringSearchCase::IgnoreCase) == true);
             CHECK(String("hello HELLO").EndsWith(String(TEXT("hello")), StringSearchCase::IgnoreCase) == true);
             CHECK(String("hello HELLO").EndsWith(String(TEXT("")), StringSearchCase::IgnoreCase) == true);
@@ -180,7 +207,8 @@ TEST_CASE("String Starts/EndsWith works") {
             CHECK(String("hello HELLO").EndsWith(String(TEXT("xhello HELLO")), StringSearchCase::IgnoreCase) == false);
         }
 
-        SECTION("StringView") {
+        SECTION("StringView")
+        {
             CHECK(String("hello HELLO").EndsWith(StringView(TEXT("HELLO")), StringSearchCase::IgnoreCase) == true);
             CHECK(String("hello HELLO").EndsWith(StringView(TEXT("hello")), StringSearchCase::IgnoreCase) == true);
             CHECK(String("hello HELLO").EndsWith(StringView(), StringSearchCase::IgnoreCase) == true);
@@ -194,9 +222,12 @@ TEST_CASE("String Starts/EndsWith works") {
     }
 }
 
-TEST_CASE("String Compare works") {
-    SECTION("String") {
-        SECTION("case sensitive") {
+TEST_CASE("String Compare works")
+{
+    SECTION("String")
+    {
+        SECTION("case sensitive")
+        {
             // Empty strings
             CHECK(String("").Compare(String(TEXT("")), StringSearchCase::CaseSensitive) == 0);
             CHECK(String("").Compare(String(TEXT("xxx")), StringSearchCase::CaseSensitive) < 0);
@@ -224,9 +255,18 @@ TEST_CASE("String Compare works") {
             // Case differences
             CHECK(String("a").Compare(String(TEXT("A")), StringSearchCase::CaseSensitive) > 0);
             CHECK(String("A").Compare(String(TEXT("a")), StringSearchCase::CaseSensitive) < 0);
+
+            // Operators
+            CHECK(String(TEXT("")) == String(TEXT("")));
+            CHECK(String(TEXT("xx")) != String(TEXT("")));
+            CHECK(!(String(TEXT("abcx")) == String(TEXT("xxx"))));
+            CHECK(String(TEXT("abcx")) != String(TEXT("xxx")));
+            CHECK(String(TEXT("xxx")) == String(TEXT("xxx")));
+            CHECK(!(String(TEXT("xxx")) != String(TEXT("xxx"))));
         }
 
-        SECTION("ignore case") {
+        SECTION("ignore case")
+        {
             // Empty strings
             CHECK(String("").Compare(String(TEXT("")), StringSearchCase::IgnoreCase) == 0);
             CHECK(String("").Compare(String(TEXT("xxx")), StringSearchCase::IgnoreCase) < 0);
@@ -257,8 +297,10 @@ TEST_CASE("String Compare works") {
         }
     }
 
-    SECTION("StringView") {
-        SECTION("case sensitive") {
+    SECTION("StringView")
+    {
+        SECTION("case sensitive")
+        {
             // Null string views
             CHECK(StringView().Compare(StringView(), StringSearchCase::CaseSensitive) == 0);
             CHECK(StringView().Compare(StringView(TEXT("xxx")), StringSearchCase::CaseSensitive) < 0);
@@ -291,9 +333,18 @@ TEST_CASE("String Compare works") {
             // Case differences
             CHECK(StringView(TEXT("a")).Compare(StringView(TEXT("A")), StringSearchCase::CaseSensitive) > 0);
             CHECK(StringView(TEXT("A")).Compare(StringView(TEXT("a")), StringSearchCase::CaseSensitive) < 0);
+
+            // Operators
+            CHECK(StringView(TEXT("")) == StringView(TEXT("")));
+            CHECK(StringView(TEXT("xx")) != StringView(TEXT("")));
+            CHECK(!(StringView(TEXT("abcx")) == StringView(TEXT("xxx"))));
+            CHECK(StringView(TEXT("abcx")) != StringView(TEXT("xxx")));
+            CHECK(StringView(TEXT("xxx")) == StringView(TEXT("xxx")));
+            CHECK(!(StringView(TEXT("xxx")) != StringView(TEXT("xxx"))));
         }
 
-        SECTION("ignore case") {
+        SECTION("ignore case")
+        {
             //Null string views
             CHECK(StringView().Compare(StringView(), StringSearchCase::IgnoreCase) == 0);
             CHECK(StringView().Compare(StringView(TEXT("xxx")), StringSearchCase::IgnoreCase) < 0);

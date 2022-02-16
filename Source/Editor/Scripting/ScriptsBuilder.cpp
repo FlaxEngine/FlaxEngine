@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 #include "ScriptsBuilder.h"
 #include "CodeEditor.h"
@@ -211,7 +211,7 @@ void ScriptsBuilder::Compile()
     _isCompileRequested = true;
 }
 
-bool ScriptsBuilder::RunBuildTool(const StringView& args)
+bool ScriptsBuilder::RunBuildTool(const StringView& args, const StringView& workingDir)
 {
     PROFILE_CPU();
     const String buildToolPath = Globals::StartupFolder / TEXT("Binaries/Tools/Flax.Build.exe");
@@ -223,7 +223,7 @@ bool ScriptsBuilder::RunBuildTool(const StringView& args)
 
     // Prepare build options
     StringBuilder cmdLine(args.Length() + buildToolPath.Length() + 200);
-#if PLATFORM_LINUX
+#if PLATFORM_LINUX || PLATFORM_MAC
     const String monoPath = Globals::MonoPath / TEXT("bin/mono");
     if (!FileSystem::FileExists(monoPath))
     {
@@ -242,7 +242,7 @@ bool ScriptsBuilder::RunBuildTool(const StringView& args)
     // TODO: Set env var for the mono MONO_GC_PARAMS=nursery-size64m to boost build performance -> profile it
 
     // Call build tool
-    const int32 result = Platform::RunProcess(StringView(*cmdLine, cmdLine.Length()), StringView::Empty);
+    const int32 result = Platform::RunProcess(StringView(*cmdLine, cmdLine.Length()), workingDir);
     return result != 0;
 }
 
@@ -357,13 +357,15 @@ void ScriptsBuilder::GetBinariesConfiguration(const Char*& target, const Char*& 
     else
     {
         target = TEXT("");
-        LOG(Error, "Missing editor/game targets in project. Please specify EditorTarget and GameTarget properties in .flaxproj file.");
+        LOG(Warning, "Missing editor/game targets in project. Please specify EditorTarget and GameTarget properties in .flaxproj file.");
     }
 
 #if PLATFORM_WINDOWS
     platform = TEXT("Windows");
 #elif PLATFORM_LINUX
     platform = TEXT("Linux");
+#elif PLATFORM_MAC
+    platform = TEXT("Mac");
 #else
 #error "Unknown platform"
 #endif
@@ -395,7 +397,7 @@ bool ScriptsBuilderImpl::compileGameScriptsAsyncInner()
     // Call compilation
     const Char *target, *platform, *architecture, *configuration;
     ScriptsBuilder::GetBinariesConfiguration(target, platform, architecture, configuration);
-    if (!target)
+    if (StringUtils::Length(target) == 0)
     {
         LOG(Info, "Missing EditorTarget in project. Skipping compilation.");
         CallEvent(EventType::ReloadCalled);
@@ -456,7 +458,7 @@ void ScriptsBuilderImpl::CallCompileEvent(EventData& data)
                 LOG(Fatal, "Invalid Editor assembly!");
             }
         }
-        /*MonoObject* exception = nullptr;
+        /*MObject* exception = nullptr;
         void* args[1];
         args[0] = &data.Type;
         Internal_OnEvent->Invoke(nullptr, args, &exception);
@@ -580,7 +582,7 @@ bool ScriptsBuilderService::Init()
     // Remove any remaining files from previous Editor run hot-reloads
     const Char *target, *platform, *architecture, *configuration;
     ScriptsBuilder::GetBinariesConfiguration(target, platform, architecture, configuration);
-    if (target)
+    if (StringUtils::Length(target) != 0)
     {
         const String targetOutput = Globals::ProjectFolder / TEXT("Binaries") / target / platform / architecture / configuration;
         Array<String> files;

@@ -1,9 +1,11 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 #pragma once
 
 #include "Engine/Core/Types/String.h"
+#if USE_MONO
 #include <ThirdParty/mono-2.0/mono/metadata/mono-debug.h>
+#endif
 
 /// <summary>
 /// Class for converting mono classes and methods into usable form without instancing a class.
@@ -13,6 +15,7 @@ class MStaticConverter
 {
 public:
 
+#if USE_MONO
     static MonoClass* GetMonoClassFromObject(MonoObject* monoObject)
     {
         ASSERT(monoObject);
@@ -63,4 +66,5 @@ public:
         }
         return array;
     }
+#endif
 };

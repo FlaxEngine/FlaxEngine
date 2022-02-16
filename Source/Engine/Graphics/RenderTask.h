@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -24,7 +24,7 @@ class Actor;
 /// <summary>
 /// Allows to perform custom rendering using graphics pipeline.
 /// </summary>
-API_CLASS() class FLAXENGINE_API RenderTask : public PersistentScriptingObject
+API_CLASS() class FLAXENGINE_API RenderTask : public ScriptingObject
 {
 DECLARE_SCRIPTING_TYPE(RenderTask);
 

@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 #include "StdTypesContainer.h"
 #include "Scripting.h"
@@ -47,6 +47,7 @@ void StdTypesContainer::Clear()
 
 bool StdTypesContainer::Gather()
 {
+#if !COMPILE_WITHOUT_CSHARP
 #define GET_CLASS(assembly, type, typeName) \
     type = ((ManagedBinaryModule*)CONCAT_MACROS(GetBinaryModule, assembly)())->Assembly->GetClass(typeName); \
     if (type == nullptr) \
@@ -93,5 +94,6 @@ bool StdTypesContainer::Gather()
 
 #undef GET_CLASS
 #undef GET_METHOD
+#endif
     return false;
 }

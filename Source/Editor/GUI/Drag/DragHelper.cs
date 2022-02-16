@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 using System;
 using System.Collections.Generic;
@@ -62,17 +62,11 @@ namespace FlaxEditor.GUI.Drag
         /// <summary>
         /// Gets a value indicating whether this instance has valid drag data.
         /// </summary>
-        /// <value>
-        ///   <c>true</c> if this instance has valid drag data; otherwise, <c>false</c>.
-        /// </value>
         public sealed override bool HasValidDrag => Objects.Count > 0;
 
         /// <summary>
         /// Gets the current drag effect.
         /// </summary>
-        /// <value>
-        /// The effect.
-        /// </value>
         public override DragDropEffect Effect => HasValidDrag ? DragDropEffect.Move : DragDropEffect.None;
 
         /// <summary>

@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 #if COMPILE_WITH_DEBUG_DRAW
 
@@ -44,6 +44,10 @@
 //
 #define DEBUG_DRAW_CYLINDER_RESOLUTION 12
 #define DEBUG_DRAW_CYLINDER_VERTICES (DEBUG_DRAW_CYLINDER_RESOLUTION * 4)
+//
+#define DEBUG_DRAW_CONE_RESOLUTION 32
+//
+#define DEBUG_DRAW_ARC_RESOLUTION 32
 //
 #define DEBUG_DRAW_TRIANGLE_SPHERE_RESOLUTION 12
 
@@ -346,21 +350,15 @@ DebugDrawCall WriteList(int32& vertexCounter, const Array<DebugLine>& list)
 {
     DebugDrawCall drawCall;
     drawCall.StartVertex = vertexCounter;
-
-    Vertex vv[2];
-    for (int32 i = 0; i < list.Count(); i++)
-    {
-        const DebugLine& l = list[i];
-        vv[0].Position = l.Start;
-        vv[0].Color = l.Color;
-        vv[1].Position = l.End;
-        vv[1].Color = vv[0].Color;
-        DebugDrawVB->Write(vv, sizeof(Vertex) * 2);
-    }
-
     drawCall.VertexCount = list.Count() * 2;
     vertexCounter += drawCall.VertexCount;
-
+    Vertex* dst = DebugDrawVB->WriteReserve<Vertex>(drawCall.VertexCount);
+    for (int32 i = 0, j = 0; i < list.Count(); i++)
+    {
+        const DebugLine& l = list[i];
+        dst[j++] = { l.Start, l.Color };
+        dst[j++] = { l.End, l.Color };
+    }
     return drawCall;
 }
 
@@ -368,23 +366,16 @@ DebugDrawCall WriteList(int32& vertexCounter, const Array<DebugTriangle>& list)
 {
     DebugDrawCall drawCall;
     drawCall.StartVertex = vertexCounter;
-
-    Vertex vv[3];
-    for (int32 i = 0; i < list.Count(); i++)
-    {
-        const DebugTriangle& l = list[i];
-        vv[0].Position = l.V0;
-        vv[0].Color = l.Color;
-        vv[1].Position = l.V1;
-        vv[1].Color = vv[0].Color;
-        vv[2].Position = l.V2;
-        vv[2].Color = vv[0].Color;
-        DebugDrawVB->Write(vv, sizeof(Vertex) * 3);
-    }
-
     drawCall.VertexCount = list.Count() * 3;
     vertexCounter += drawCall.VertexCount;
-
+    Vertex* dst = DebugDrawVB->WriteReserve<Vertex>(drawCall.VertexCount);
+    for (int32 i = 0, j = 0; i < list.Count(); i++)
+    {
+        const DebugTriangle& l = list[i];
+        dst[j++] = { l.V0, l.Color };
+        dst[j++] = { l.V1, l.Color };
+        dst[j++] = { l.V2, l.Color };
+    }
     return drawCall;
 }
 
@@ -397,6 +388,18 @@ DebugDrawCall WriteLists(int32& vertexCounter, const Array<T>& listA, const Arra
     drawCall.StartVertex = drawCallA.StartVertex;
     drawCall.VertexCount = drawCallA.VertexCount + drawCallB.VertexCount;
     return drawCall;
+}
+
+FORCE_INLINE DebugTriangle* AppendTriangles(int32 count, float duration, bool depthTest)
+{
+    Array<DebugTriangle>* list;
+    if (depthTest)
+        list = duration > 0 ? &Context->DebugDrawDepthTest.DefaultTriangles : &Context->DebugDrawDepthTest.OneFrameTriangles;
+    else
+        list = duration > 0 ? &Context->DebugDrawDefault.DefaultTriangles : &Context->DebugDrawDefault.OneFrameTriangles;
+    const int32 startIndex = list->Count();
+    list->AddUninitialized(count);
+    return list->Get() + startIndex;
 }
 
 inline void DrawText3D(const DebugText3D& t, const RenderContext& renderContext, const Vector3& viewUp, const Matrix& f, const Matrix& vp, const Viewport& viewport, GPUContext* context, GPUTextureView* target, GPUTextureView* depthBuffer)
@@ -1103,7 +1106,6 @@ void DebugDraw::DrawSphere(const BoundingSphere& sphere, const Color& color, flo
         t.V0 = sphere.Center + SphereTriangleCache[i++] * sphere.Radius;
         t.V1 = sphere.Center + SphereTriangleCache[i++] * sphere.Radius;
         t.V2 = sphere.Center + SphereTriangleCache[i++] * sphere.Radius;
-
         list->Add(t);
     }
 }
@@ -1167,20 +1169,13 @@ void DebugDraw::DrawTriangles(const Span<Vector3>& vertices, const Color& color,
     DebugTriangle t;
     t.Color = Color32(color);
     t.TimeLeft = duration;
-
-    Array<DebugTriangle>* list;
-    if (depthTest)
-        list = duration > 0 ? &Context->DebugDrawDepthTest.DefaultTriangles : &Context->DebugDrawDepthTest.OneFrameTriangles;
-    else
-        list = duration > 0 ? &Context->DebugDrawDefault.DefaultTriangles : &Context->DebugDrawDefault.OneFrameTriangles;
-    list->EnsureCapacity(list->Count() + vertices.Length() / 3);
-
+    auto dst = AppendTriangles(vertices.Length() / 3, duration, depthTest);
     for (int32 i = 0; i < vertices.Length();)
     {
-        t.V0 = vertices[i++];
-        t.V1 = vertices[i++];
-        t.V2 = vertices[i++];
-        list->Add(t);
+        t.V0 = vertices.Get()[i++];
+        t.V1 = vertices.Get()[i++];
+        t.V2 = vertices.Get()[i++];
+        *dst++ = t;
     }
 }
 
@@ -1191,20 +1186,13 @@ void DebugDraw::DrawTriangles(const Span<Vector3>& vertices, const Matrix& trans
     DebugTriangle t;
     t.Color = Color32(color);
     t.TimeLeft = duration;
-
-    Array<DebugTriangle>* list;
-    if (depthTest)
-        list = duration > 0 ? &Context->DebugDrawDepthTest.DefaultTriangles : &Context->DebugDrawDepthTest.OneFrameTriangles;
-    else
-        list = duration > 0 ? &Context->DebugDrawDefault.DefaultTriangles : &Context->DebugDrawDefault.OneFrameTriangles;
-    list->EnsureCapacity(list->Count() + vertices.Length() / 3);
-
+    auto dst = AppendTriangles(vertices.Length() / 3, duration, depthTest);
     for (int32 i = 0; i < vertices.Length();)
     {
-        Vector3::Transform(vertices[i++], transform, t.V0);
-        Vector3::Transform(vertices[i++], transform, t.V1);
-        Vector3::Transform(vertices[i++], transform, t.V2);
-        list->Add(t);
+        Vector3::Transform(vertices.Get()[i++], transform, t.V0);
+        Vector3::Transform(vertices.Get()[i++], transform, t.V1);
+        Vector3::Transform(vertices.Get()[i++], transform, t.V2);
+        *dst++ = t;
     }
 }
 
@@ -1225,20 +1213,13 @@ void DebugDraw::DrawTriangles(const Span<Vector3>& vertices, const Span<int32>& 
     DebugTriangle t;
     t.Color = Color32(color);
     t.TimeLeft = duration;
-
-    Array<DebugTriangle>* list;
-    if (depthTest)
-        list = duration > 0 ? &Context->DebugDrawDepthTest.DefaultTriangles : &Context->DebugDrawDepthTest.OneFrameTriangles;
-    else
-        list = duration > 0 ? &Context->DebugDrawDefault.DefaultTriangles : &Context->DebugDrawDefault.OneFrameTriangles;
-    list->EnsureCapacity(list->Count() + indices.Length() / 3);
-
+    auto dst = AppendTriangles(indices.Length() / 3, duration, depthTest);
     for (int32 i = 0; i < indices.Length();)
     {
-        t.V0 = vertices[indices[i++]];
-        t.V1 = vertices[indices[i++]];
-        t.V2 = vertices[indices[i++]];
-        list->Add(t);
+        t.V0 = vertices[indices.Get()[i++]];
+        t.V1 = vertices[indices.Get()[i++]];
+        t.V2 = vertices[indices.Get()[i++]];
+        *dst++ = t;
     }
 }
 
@@ -1249,20 +1230,13 @@ void DebugDraw::DrawTriangles(const Span<Vector3>& vertices, const Span<int32>& 
     DebugTriangle t;
     t.Color = Color32(color);
     t.TimeLeft = duration;
-
-    Array<DebugTriangle>* list;
-    if (depthTest)
-        list = duration > 0 ? &Context->DebugDrawDepthTest.DefaultTriangles : &Context->DebugDrawDepthTest.OneFrameTriangles;
-    else
-        list = duration > 0 ? &Context->DebugDrawDefault.DefaultTriangles : &Context->DebugDrawDefault.OneFrameTriangles;
-    list->EnsureCapacity(list->Count() + indices.Length() / 3);
-
+    auto dst = AppendTriangles(indices.Length() / 3, duration, depthTest);
     for (int32 i = 0; i < indices.Length();)
     {
-        Vector3::Transform(vertices[indices[i++]], transform, t.V0);
-        Vector3::Transform(vertices[indices[i++]], transform, t.V1);
-        Vector3::Transform(vertices[indices[i++]], transform, t.V2);
-        list->Add(t);
+        Vector3::Transform(vertices[indices.Get()[i++]], transform, t.V0);
+        Vector3::Transform(vertices[indices.Get()[i++]], transform, t.V1);
+        Vector3::Transform(vertices[indices.Get()[i++]], transform, t.V2);
+        *dst++ = t;
     }
 }
 
@@ -1283,20 +1257,13 @@ void DebugDraw::DrawWireTriangles(const Span<Vector3>& vertices, const Color& co
     DebugTriangle t;
     t.Color = Color32(color);
     t.TimeLeft = duration;
-
-    Array<DebugTriangle>* list;
-    if (depthTest)
-        list = duration > 0 ? &Context->DebugDrawDepthTest.DefaultWireTriangles : &Context->DebugDrawDepthTest.OneFrameWireTriangles;
-    else
-        list = duration > 0 ? &Context->DebugDrawDefault.DefaultWireTriangles : &Context->DebugDrawDefault.OneFrameWireTriangles;
-    list->EnsureCapacity(list->Count() + vertices.Length() / 3);
-
+    auto dst = AppendTriangles(vertices.Length() / 3, duration, depthTest);
     for (int32 i = 0; i < vertices.Length();)
     {
-        t.V0 = vertices[i++];
-        t.V1 = vertices[i++];
-        t.V2 = vertices[i++];
-        list->Add(t);
+        t.V0 = vertices.Get()[i++];
+        t.V1 = vertices.Get()[i++];
+        t.V2 = vertices.Get()[i++];
+        *dst++ = t;
     }
 }
 
@@ -1312,20 +1279,13 @@ void DebugDraw::DrawWireTriangles(const Span<Vector3>& vertices, const Span<int3
     DebugTriangle t;
     t.Color = Color32(color);
     t.TimeLeft = duration;
-
-    Array<DebugTriangle>* list;
-    if (depthTest)
-        list = duration > 0 ? &Context->DebugDrawDepthTest.DefaultWireTriangles : &Context->DebugDrawDepthTest.OneFrameWireTriangles;
-    else
-        list = duration > 0 ? &Context->DebugDrawDefault.DefaultWireTriangles : &Context->DebugDrawDefault.OneFrameWireTriangles;
-    list->EnsureCapacity(list->Count() + indices.Length() / 3);
-
+    auto dst = AppendTriangles(indices.Length() / 3, duration, depthTest);
     for (int32 i = 0; i < indices.Length();)
     {
-        t.V0 = vertices[indices[i++]];
-        t.V1 = vertices[indices[i++]];
-        t.V2 = vertices[indices[i++]];
-        list->Add(t);
+        t.V0 = vertices[indices.Get()[i++]];
+        t.V1 = vertices[indices.Get()[i++]];
+        t.V2 = vertices[indices.Get()[i++]];
+        *dst++ = t;
     }
 }
 
@@ -1489,6 +1449,51 @@ namespace
             }
         }
     }
+
+    void DrawCone(Array<DebugTriangle>* list, const Vector3& position, const Quaternion& orientation, float radius, float angleXY, float angleXZ, const Color& color, float duration)
+    {
+        const float tolerance = 0.001f;
+        const float angle1 = Math::Clamp(angleXY, tolerance, PI - tolerance);
+        const float angle2 = Math::Clamp(angleXZ, tolerance, PI - tolerance);
+
+        const float sinX1 = Math::Sin(0.5f * angle1);
+        const float sinY2 = Math::Sin(0.5f * angle2);
+        const float sinSqX1 = sinX1 * sinX1;
+        const float sinSqY2 = sinY2 * sinY2;
+
+        DebugTriangle t;
+        t.Color = Color32(color);
+        t.TimeLeft = duration;
+        const Matrix world = Matrix::RotationQuaternion(orientation) * Matrix::Translation(position);
+        t.V0 = world.GetTranslation();
+
+        Vector3 vertices[DEBUG_DRAW_CONE_RESOLUTION];
+        for (uint32 i = 0; i < DEBUG_DRAW_CONE_RESOLUTION; i++)
+        {
+            const float alpha = (float)i / (float)DEBUG_DRAW_CONE_RESOLUTION;
+            const float azimuth = alpha * TWO_PI;
+
+            const float phi = Math::Atan2(Math::Sin(azimuth) * sinY2, Math::Cos(azimuth) * sinX1);
+            const float sinPhi = Math::Sin(phi);
+            const float cosPhi = Math::Cos(phi);
+            const float sinSqPhi = sinPhi * sinPhi;
+            const float cosSqPhi = cosPhi * cosPhi;
+
+            const float rSq = sinSqX1 * sinSqY2 / (sinSqX1 * sinSqPhi + sinSqY2 * cosSqPhi);
+            const float r = Math::Sqrt(rSq);
+            const float s = Math::Sqrt(1 - rSq);
+
+            Vector3 vertex = Vector3(2 * s * (r * cosPhi), 2 * s * (r * sinPhi), 1 - 2 * rSq) * radius;
+            Vector3::Transform(vertex, world, vertices[i]);
+        }
+
+        for (uint32 i = 0; i < DEBUG_DRAW_CONE_RESOLUTION; i++)
+        {
+            t.V1 = vertices[i];
+            t.V2 = vertices[(i + 1) % DEBUG_DRAW_CONE_RESOLUTION];
+            list->Add(t);
+        }
+    }
 }
 
 void DebugDraw::DrawCylinder(const Vector3& position, const Quaternion& orientation, float radius, float height, const Color& color, float duration, bool depthTest)
@@ -1511,6 +1516,85 @@ void DebugDraw::DrawWireCylinder(const Vector3& position, const Quaternion& orie
     ::DrawCylinder(list, position, orientation, radius, height, color, duration);
 }
 
+void DebugDraw::DrawCone(const Vector3& position, const Quaternion& orientation, float radius, float angleXY, float angleXZ, const Color& color, float duration, bool depthTest)
+{
+    Array<DebugTriangle>* list;
+    if (depthTest)
+        list = duration > 0 ? &Context->DebugDrawDepthTest.DefaultTriangles : &Context->DebugDrawDepthTest.OneFrameTriangles;
+    else
+        list = duration > 0 ? &Context->DebugDrawDefault.DefaultTriangles : &Context->DebugDrawDefault.OneFrameTriangles;
+    ::DrawCone(list, position, orientation, radius, angleXY, angleXZ, color, duration);
+}
+
+void DebugDraw::DrawWireCone(const Vector3& position, const Quaternion& orientation, float radius, float angleXY, float angleXZ, const Color& color, float duration, bool depthTest)
+{
+    Array<DebugTriangle>* list;
+    if (depthTest)
+        list = duration > 0 ? &Context->DebugDrawDepthTest.DefaultWireTriangles : &Context->DebugDrawDepthTest.OneFrameWireTriangles;
+    else
+        list = duration > 0 ? &Context->DebugDrawDefault.DefaultWireTriangles : &Context->DebugDrawDefault.OneFrameWireTriangles;
+    ::DrawCone(list, position, orientation, radius, angleXY, angleXZ, color, duration);
+}
+
+void DebugDraw::DrawArc(const Vector3& position, const Quaternion& orientation, float radius, float angle, const Color& color, float duration, bool depthTest)
+{
+    if (angle <= 0)
+        return;
+    if (angle > TWO_PI)
+        angle = TWO_PI;
+    Array<DebugTriangle>* list;
+    if (depthTest)
+        list = duration > 0 ? &Context->DebugDrawDepthTest.DefaultTriangles : &Context->DebugDrawDepthTest.OneFrameTriangles;
+    else
+        list = duration > 0 ? &Context->DebugDrawDefault.DefaultTriangles : &Context->DebugDrawDefault.OneFrameTriangles;
+    const int32 resolution = Math::CeilToInt((float)DEBUG_DRAW_CONE_RESOLUTION / TWO_PI * angle);
+    const float angleStep = angle / (float)resolution;
+    const Matrix world = Matrix::RotationQuaternion(orientation) * Matrix::Translation(position);
+    float currentAngle = 0.0f;
+    DebugTriangle t;
+    t.Color = Color32(color);
+    t.TimeLeft = duration;
+    t.V0 = world.GetTranslation();
+    Vector3 pos(Math::Cos(0) * radius, Math::Sin(0) * radius, 0);
+    Vector3::Transform(pos, world, t.V2);
+    for (int32 i = 0; i < resolution; i++)
+    {
+        t.V1 = t.V2;
+        currentAngle += angleStep;
+        pos = Vector3(Math::Cos(currentAngle) * radius, Math::Sin(currentAngle) * radius, 0);
+        Vector3::Transform(pos, world, t.V2);
+        list->Add(t);
+    }
+}
+
+void DebugDraw::DrawWireArc(const Vector3& position, const Quaternion& orientation, float radius, float angle, const Color& color, float duration, bool depthTest)
+{
+    if (angle <= 0)
+        return;
+    if (angle > TWO_PI)
+        angle = TWO_PI;
+    const int32 resolution = Math::CeilToInt((float)DEBUG_DRAW_CONE_RESOLUTION / TWO_PI * angle);
+    const float angleStep = angle / (float)resolution;
+    const Matrix world = Matrix::RotationQuaternion(orientation) * Matrix::Translation(position);
+    float currentAngle = 0.0f;
+    Vector3 prevPos(world.GetTranslation());
+    if (angle >= TWO_PI)
+    {
+        prevPos = Vector3(Math::Cos(TWO_PI - angleStep) * radius, Math::Sin(TWO_PI - angleStep) * radius, 0);
+        Vector3::Transform(prevPos, world, prevPos);
+    }
+    for (int32 i = 0; i <= resolution; i++)
+    {
+        Vector3 pos(Math::Cos(currentAngle) * radius, Math::Sin(currentAngle) * radius, 0);
+        Vector3::Transform(pos, world, pos);
+        DrawLine(prevPos, pos, color, duration, depthTest);
+        currentAngle += angleStep;
+        prevPos = pos;
+    }
+    if (angle < TWO_PI)
+        DrawLine(prevPos, world.GetTranslation(), color, duration, depthTest);
+}
+
 void DebugDraw::DrawWireArrow(const Vector3& position, const Quaternion& orientation, float scale, const Color& color, float duration, bool depthTest)
 {
     Vector3 direction, up, right;
@@ -1518,8 +1602,8 @@ void DebugDraw::DrawWireArrow(const Vector3& position, const Quaternion& orienta
     Vector3::Transform(Vector3::Up, orientation, up);
     Vector3::Transform(Vector3::Right, orientation, right);
     const auto end = position + direction * (100.0f * scale);
-    const auto capEnd = position + direction * (60.0f * scale);
-    const float arrowSidesRatio = scale * 40.0f;
+    const auto capEnd = position + direction * (70.0f * scale);
+    const float arrowSidesRatio = scale * 30.0f;
 
     DrawLine(position, end, color, duration, depthTest);
     DrawLine(end, capEnd + up * arrowSidesRatio, color, duration, depthTest);

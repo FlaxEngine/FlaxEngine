@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -15,7 +15,6 @@ class UnixConditionVariable;
 class FLAXENGINE_API UnixCriticalSection
 {
     friend UnixConditionVariable;
-
 private:
 
     pthread_mutex_t _mutex;
@@ -23,8 +22,6 @@ private:
 #if BUILD_DEBUG
     pthread_t _owningThreadId;
 #endif
-
-private:
 
     UnixCriticalSection(const UnixCriticalSection&);
     UnixCriticalSection& operator=(const UnixCriticalSection&);

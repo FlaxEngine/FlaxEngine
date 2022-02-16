@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -113,7 +113,7 @@ DECLARE_SCRIPTING_TYPE_NO_SPAWN(GPUDrawIndexedIndirectArgs);
 /// <summary>
 /// Interface for GPU device context that can record and send graphics commands to the GPU in a sequence.
 /// </summary>
-API_CLASS(Sealed, NoSpawn) class FLAXENGINE_API GPUContext : public PersistentScriptingObject
+API_CLASS(Sealed, NoSpawn) class FLAXENGINE_API GPUContext : public ScriptingObject
 {
 DECLARE_SCRIPTING_TYPE_NO_SPAWN(GPUContext);
 private:
@@ -198,11 +198,32 @@ public:
     API_FUNCTION() virtual void ClearDepth(GPUTextureView* depthBuffer, float depthValue = 1.0f) = 0;
 
     /// <summary>
-    /// Clears an unordered access resource with a float value.
+    /// Clears an unordered access buffer with a float value.
     /// </summary>
     /// <param name="buf">The buffer to clear.</param>
     /// <param name="value">The clear value.</param>
     API_FUNCTION() virtual void ClearUA(GPUBuffer* buf, const Vector4& value) = 0;
+
+    /// <summary>
+    /// Clears an unordered access buffer with a unsigned value.
+    /// </summary>
+    /// <param name="buf">The buffer to clear.</param>
+    /// <param name="value">The clear value.</param>
+    virtual void ClearUA(GPUBuffer* buf, const uint32 value[4]) = 0;
+
+    /// <summary>
+    /// Clears an unordered access texture with a unsigned value.
+    /// </summary>
+    /// <param name="texture">The texture to clear.</param>
+    /// <param name="value">The clear value.</param>
+    virtual void ClearUA(GPUTexture* texture, const uint32 value[4]) = 0;
+
+    /// <summary>
+    /// Clears an unordered access texture with a float value.
+    /// </summary>
+    /// <param name="texture">The texture to clear.</param>
+    /// <param name="value">The clear value.</param>
+    virtual void ClearUA(GPUTexture* texture, const Vector4& value) = 0;
 
 public:
 
@@ -304,13 +325,6 @@ public:
     /// <param name="depthBuffer">The depth buffer (can be null).</param>
     /// <param name="rts">The array with render targets to bind.</param>
     API_FUNCTION() virtual void SetRenderTarget(GPUTextureView* depthBuffer, const Span<GPUTextureView*>& rts) = 0;
-
-    /// <summary>
-    /// Sets the render target and unordered access output.
-    /// </summary>
-    /// <param name="rt">The render target to bind to output.</param>
-    /// <param name="uaOutput">The unordered access buffer to bind to output.</param>
-    API_FUNCTION() virtual void SetRenderTarget(GPUTextureView* rt, GPUBuffer* uaOutput) = 0;
 
 public:
 

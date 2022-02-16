@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 using System;
 using FlaxEditor.Content;
@@ -99,6 +99,8 @@ namespace FlaxEditor.Windows
                     if (item is AssetItem assetItem)
                     {
                         cm.AddButton("Copy asset ID", () => Clipboard.Text = JsonSerializer.GetStringID(assetItem.ID));
+                        cm.AddButton("Select actors using this asset", () => Editor.SceneEditing.SelectActorsUsingAsset(assetItem.ID));
+                        cm.AddButton("Show asset references graph", () => Editor.Windows.Open(new AssetReferencesGraphWindow(Editor, assetItem)));
                     }
 
                     if (Editor.CanExport(item.Path))
@@ -123,6 +125,7 @@ namespace FlaxEditor.Windows
                 // Custom options
                 ContextMenuShow?.Invoke(cm, item);
                 proxy?.OnContentWindowContextMenu(cm, item);
+                item.OnContextMenu(cm);
 
                 cm.AddButton("Copy name to Clipboard", () => Clipboard.Text = item.NamePath);
 

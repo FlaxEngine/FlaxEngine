@@ -11,7 +11,7 @@
 #include "Engine/Content/Content.h"
 #include "Engine/Content/JsonAsset.h"
 
-IMPLEMENT_SETTINGS_GETTER(WindowsPlatformSettings, WindowsPlatform);
+IMPLEMENT_ENGINE_SETTINGS_GETTER(WindowsPlatformSettings, WindowsPlatform);
 
 const Char* WindowsPlatformTools::GetDisplayName() const
 {

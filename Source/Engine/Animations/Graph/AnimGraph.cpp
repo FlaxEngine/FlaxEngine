@@ -1,7 +1,8 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 #include "AnimGraph.h"
 #include "Engine/Animations/Animations.h"
+#include "Engine/Animations/AnimEvent.h"
 #include "Engine/Content/Assets/SkinnedModel.h"
 #include "Engine/Graphics/Models/SkeletonData.h"
 #include "Engine/Scripting/Scripting.h"
@@ -90,6 +91,10 @@ void AnimGraphInstanceData::Clear()
     Parameters.Resize(0);
     State.Resize(0);
     NodesPose.Resize(0);
+    Slots.Resize(0);
+    for (const auto& e : Events)
+        ((AnimContinuousEvent*)e.Instance)->OnEnd((AnimatedModel*)Object, e.Anim, 0.0f, 0.0f);
+    Events.Resize(0);
 }
 
 void AnimGraphInstanceData::ClearState()
@@ -101,6 +106,10 @@ void AnimGraphInstanceData::ClearState()
     RootMotion = RootMotionData::Identity;
     State.Resize(0);
     NodesPose.Resize(0);
+    Slots.Clear();
+    for (const auto& e : Events)
+        ((AnimContinuousEvent*)e.Instance)->OnEnd((AnimatedModel*)Object, e.Anim, 0.0f, 0.0f);
+    Events.Clear();
 }
 
 void AnimGraphInstanceData::Invalidate()
@@ -244,6 +253,8 @@ void AnimGraphExecutor::Update(AnimGraphInstanceData& data, float dt)
             // Initialize buckets
             ResetBuckets(context, &_graph);
         }
+        for (auto& e : data.Events)
+            e.Hit = false;
 
         // Init empty nodes data
         context.EmptyNodes.RootMotion = RootMotionData::Identity;
@@ -258,27 +269,48 @@ void AnimGraphExecutor::Update(AnimGraphInstanceData& data, float dt)
     }
 
     // Update the animation graph and gather skeleton nodes transformations in nodes local space
-    AnimGraphImpulse* animResult;
+    AnimGraphImpulse* animResult = nullptr;
     {
         ANIM_GRAPH_PROFILE_EVENT("Evaluate");
 
-        auto result = eatBox((Node*)_graph._rootNode, &_graph._rootNode->Boxes[0]);
-        if (result.Type.Type != VariantType::Pointer)
+        const Variant result = eatBox((Node*)_graph._rootNode, &_graph._rootNode->Boxes[0]);
+        switch (result.Type.Type)
         {
-            result = VariantType::Null;
-            LOG(Warning, "Invalid animation update result");
+        case VariantType::Pointer:
+            animResult = (AnimGraphImpulse*)result.AsPointer;
+            break;
+        case ValueType::Null:
+            break;
+        default:
+            //LOG(Warning, "Invalid animation update result type {0}", result.Type.ToString());
+            break;
         }
-        animResult = (AnimGraphImpulse*)result.AsPointer;
         if (animResult == nullptr)
             animResult = GetEmptyNodes();
     }
-    Transform* nodesTransformations = animResult->Nodes.Get();
+    if (data.Events.Count() != 0)
+    {
+        ANIM_GRAPH_PROFILE_EVENT("Events");
+        for (int32 i = data.Events.Count() - 1; i >= 0; i--)
+        {
+            const auto& e = data.Events[i];
+            if (!e.Hit)
+            {
+                ((AnimContinuousEvent*)e.Instance)->OnEnd((AnimatedModel*)context.Data->Object, e.Anim, 0.0f, 0.0f);
+                data.Events.RemoveAt(i);
+            }
+        }
+    }
+
+    // Allow for external override of the local pose (eg. by the ragdoll)
+    data.LocalPoseOverride(animResult);
 
     // Calculate the global poses for the skeleton nodes
     {
         ANIM_GRAPH_PROFILE_EVENT("Global Pose");
 
         data.NodesPose.Resize(_skeletonNodesCount, false);
+        Transform* nodesTransformations = animResult->Nodes.Get();
 
         // Note: this assumes that nodes are sorted (parents first)
         for (int32 nodeIndex = 0; nodeIndex < _skeletonNodesCount; nodeIndex++)
@@ -286,7 +318,7 @@ void AnimGraphExecutor::Update(AnimGraphInstanceData& data, float dt)
             const int32 parentIndex = skeleton.Nodes[nodeIndex].ParentIndex;
             if (parentIndex != -1)
             {
-                nodesTransformations[nodeIndex] = nodesTransformations[parentIndex].LocalToWorld(nodesTransformations[nodeIndex]);
+                nodesTransformations[parentIndex].LocalToWorld(nodesTransformations[nodeIndex], nodesTransformations[nodeIndex]);
             }
             nodesTransformations[nodeIndex].GetWorld(data.NodesPose[nodeIndex]);
         }

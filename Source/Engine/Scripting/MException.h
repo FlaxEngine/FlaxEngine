@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -30,6 +30,7 @@ public:
 
 public:
 
+#if USE_MONO
     /// <summary>
     /// Initializes a new instance of the <see cref="MException"/> class.
     /// </summary>
@@ -38,12 +39,13 @@ public:
         : MException((MonoObject*)exception)
     {
     }
+#endif
 
     /// <summary>
     /// Initializes a new instance of the <see cref="MException"/> class.
     /// </summary>
     /// <param name="exception">The exception object.</param>
-    explicit MException(MonoObject* exception);
+    explicit MException(MObject* exception);
 
     /// <summary>
     /// Disposes a instance of the <see cref="MException"/> class.

@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 #include "Engine/Platform/StringUtils.h"
 #include "Engine/Platform/FileSystem.h"
@@ -369,7 +369,7 @@ void StringUtils::PathRemoveRelativeParts(String& path)
     path.Clear();
     for (auto& e : stack)
         path /= e;
-    if (isRooted && path[0] != '/')
+    if (isRooted && path.HasChars() && path[0] != '/')
         path.Insert(0, TEXT("/"));
 }
 
@@ -403,6 +403,12 @@ bool StringUtils::Parse(const Char* str, float* result)
         const int32 len = Length(str);
         return !(str[0] == '0' && ((len == 1) || (len == 3 && (str[1] == ',' || str[1] == '.') && str[2] == '0')));
     }
+    return false;
+}
+
+bool StringUtils::Parse(const char* str, float* result)
+{
+    *result = (float)atof(str);
     return false;
 }
 

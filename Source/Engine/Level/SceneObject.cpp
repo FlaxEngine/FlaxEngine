@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 #include "SceneObject.h"
 #include "Engine/Core/Log.h"
@@ -117,6 +117,7 @@ void SceneObject::Serialize(SerializeStream& stream, const void* otherObj)
         stream.Guid(_parent->GetID());
     }
 
+#if !COMPILE_WITHOUT_CSHARP
     // Handle C# objects data serialization
     if (Flags & ObjectFlags::IsManagedType)
     {
@@ -130,6 +131,7 @@ void SceneObject::Serialize(SerializeStream& stream, const void* otherObj)
             ManagedSerialization::Serialize(stream, GetOrCreateManagedInstance());
         }
     }
+#endif
 
     // Handle custom scripting objects data serialization
     if (Flags & ObjectFlags::IsCustomScriptingType)
@@ -146,6 +148,7 @@ void SceneObject::Deserialize(DeserializeStream& stream, ISerializeModifier* mod
     // _prefabID is deserialized by Actor/Script impl
     DESERIALIZE_MEMBER(PrefabObjectID, _prefabObjectID);
 
+#if !COMPILE_WITHOUT_CSHARP
     // Handle C# objects data serialization
     if (Flags & ObjectFlags::IsManagedType)
     {
@@ -155,6 +158,7 @@ void SceneObject::Deserialize(DeserializeStream& stream, ISerializeModifier* mod
             ManagedSerialization::Deserialize(v->value, GetOrCreateManagedInstance());
         }
     }
+#endif
 
     // Handle custom scripting objects data serialization
     if (Flags & ObjectFlags::IsCustomScriptingType)

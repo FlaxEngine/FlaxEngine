@@ -1,4 +1,6 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
+
+using System;
 
 namespace FlaxEngine.GUI
 {
@@ -11,6 +13,8 @@ namespace FlaxEngine.GUI
     {
         private UICanvas _canvas;
         private Vector2 _mousePosition;
+        private float _navigationHeldTimeUp, _navigationHeldTimeDown, _navigationHeldTimeLeft, _navigationHeldTimeRight, _navigationHeldTimeSubmit;
+        private float _navigationRateTimeUp, _navigationRateTimeDown, _navigationRateTimeLeft, _navigationRateTimeRight, _navigationRateTimeSubmit;
 
         /// <summary>
         /// Gets the owning canvas.
@@ -135,6 +139,77 @@ namespace FlaxEngine.GUI
         {
             return base.ContainsPoint(ref location)
                    && (_canvas.TestCanvasIntersection == null || _canvas.TestCanvasIntersection(ref location));
+        }
+
+        /// <inheritdoc />
+        public override void Update(float deltaTime)
+        {
+            // UI navigation
+            if (_canvas.ReceivesEvents)
+            {
+                UpdateNavigation(deltaTime, _canvas.NavigationInputActionUp, NavDirection.Up, ref _navigationHeldTimeUp, ref _navigationRateTimeUp);
+                UpdateNavigation(deltaTime, _canvas.NavigationInputActionDown, NavDirection.Down, ref _navigationHeldTimeDown, ref _navigationRateTimeDown);
+                UpdateNavigation(deltaTime, _canvas.NavigationInputActionLeft, NavDirection.Left, ref _navigationHeldTimeLeft, ref _navigationRateTimeLeft);
+                UpdateNavigation(deltaTime, _canvas.NavigationInputActionRight, NavDirection.Right, ref _navigationHeldTimeRight, ref _navigationRateTimeRight);
+                UpdateNavigation(deltaTime, _canvas.NavigationInputActionSubmit, ref _navigationHeldTimeSubmit, ref _navigationRateTimeSubmit, SubmitFocused);
+            }
+            else
+            {
+                _navigationHeldTimeUp = _navigationHeldTimeDown = _navigationHeldTimeLeft = _navigationHeldTimeRight = 0;
+                _navigationRateTimeUp = _navigationRateTimeDown = _navigationRateTimeLeft = _navigationRateTimeRight = 0;
+            }
+
+            base.Update(deltaTime);
+        }
+
+        private void UpdateNavigation(float deltaTime, string actionName, NavDirection direction, ref float heldTime, ref float rateTime)
+        {
+            if (Input.GetAction(actionName))
+            {
+                if (heldTime <= Mathf.Epsilon)
+                {
+                    Navigate(direction);
+                }
+                if (heldTime > _canvas.NavigationInputRepeatDelay)
+                {
+                    rateTime += deltaTime;
+                }
+                if (rateTime > _canvas.NavigationInputRepeatRate)
+                {
+                    Navigate(direction);
+                    rateTime = 0;
+                }
+                heldTime += deltaTime;
+            }
+            else
+            {
+                heldTime = rateTime = 0;
+            }
+        }
+
+        private void UpdateNavigation(float deltaTime, string actionName, ref float heldTime, ref float rateTime, Action action)
+        {
+            if (Input.GetAction(actionName))
+            {
+                if (heldTime <= Mathf.Epsilon)
+                {
+                    action();
+                }
+                if (heldTime > _canvas.NavigationInputRepeatDelay)
+                {
+                    rateTime += deltaTime;
+                }
+                if (rateTime > _canvas.NavigationInputRepeatRate)
+                {
+                    action();
+                    rateTime = 0;
+                }
+                heldTime += deltaTime;
+            }
+            else
+            {
+                heldTime = rateTime = 0;
+            }
         }
 
         /// <inheritdoc />

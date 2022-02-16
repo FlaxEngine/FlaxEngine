@@ -1,7 +1,10 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 using System;
+using System.Collections.Generic;
 using System.IO;
+using System.Linq;
+using FlaxEditor.Utilities;
 using FlaxEditor.GUI.Timeline.Undo;
 using FlaxEditor.Viewport.Previews;
 using FlaxEngine;
@@ -13,7 +16,7 @@ namespace FlaxEditor.GUI.Timeline.Tracks
     /// The timeline media that represents an audio clip media event.
     /// </summary>
     /// <seealso cref="FlaxEditor.GUI.Timeline.Media" />
-    public class AudioMedia : SingleMediaAssetMedia
+    public class AudioMedia : Media
     {
         /// <summary>
         /// True if loop track, otherwise audio clip will stop on the end.
@@ -23,19 +26,30 @@ namespace FlaxEditor.GUI.Timeline.Tracks
             get => Track.Loop;
             set
             {
-                if (Track.Loop != value)
-                {
-                    Track.Loop = value;
-                    Preview.DrawMode = value ? AudioClipPreview.DrawModes.Looped : AudioClipPreview.DrawModes.Single;
-                }
+                if (Loop == value)
+                    return;
+                Track.Loop = value;
+                Preview.DrawMode = value ? AudioClipPreview.DrawModes.Looped : AudioClipPreview.DrawModes.Single;
+            }
+        }
+
+        /// <summary>
+        /// Playback offset of the audio (in seconds).
+        /// </summary>
+        public float Offset
+        {
+            get => Preview.ViewOffset;
+            set
+            {
+                if (Mathf.NearEqual(Preview.ViewOffset, value))
+                    return;
+                Preview.ViewOffset = value;
+                Timeline?.MarkAsEdited();
             }
         }
 
         private sealed class Proxy : ProxyBase<AudioTrack, AudioMedia>
         {
-            /// <summary>
-            /// Gets or sets the audio clip to play.
-            /// </summary>
             [EditorDisplay("General"), EditorOrder(10), Tooltip("The audio clip to play.")]
             public AudioClip Audio
             {
@@ -43,17 +57,21 @@ namespace FlaxEditor.GUI.Timeline.Tracks
                 set => Track.Asset = value;
             }
 
-            /// <summary>
-            /// Gets or sets the audio clip looping mode.
-            /// </summary>
             [EditorDisplay("General"), EditorOrder(20), Tooltip("If checked, the audio clip will loop when playback exceeds its duration. Otherwise it will stop play.")]
             public bool Loop
             {
-                get => Track.TrackLoop;
-                set => Track.TrackLoop = value;
+                get => Media.Loop;
+                set => Media.Loop = value;
             }
 
-            /// <inheritdoc />
+            [EditorDisplay("General"), EditorOrder(30), Tooltip("Playback offset of the audio (in seconds).")]
+            [Limit(0, float.MaxValue, 0.01f)]
+            public float Offset
+            {
+                get => Media.Offset;
+                set => Media.Offset = value;
+            }
+
             public Proxy(AudioTrack track, AudioMedia media)
             : base(track, media)
             {
@@ -68,6 +86,8 @@ namespace FlaxEditor.GUI.Timeline.Tracks
         /// <inheritdoc />
         public AudioMedia()
         {
+            CanSplit = true;
+            CanDelete = true;
             Preview = new AudioClipPreview
             {
                 AnchorPreset = AnchorPresets.StretchAll,
@@ -78,11 +98,29 @@ namespace FlaxEditor.GUI.Timeline.Tracks
         }
 
         /// <inheritdoc />
+        protected override void OnStartFrameChanged()
+        {
+            base.OnStartFrameChanged();
+
+            if (Track != null && Track.SubTracks.Count != 0 && Track.SubTracks[0] is AudioVolumeTrack volumeTrack)
+                volumeTrack.UpdateCurve();
+        }
+
+        /// <inheritdoc />
+        protected override void OnDurationFramesChanged()
+        {
+            base.OnDurationFramesChanged();
+
+            if (Track != null && Track.SubTracks.Count != 0 && Track.SubTracks[0] is AudioVolumeTrack volumeTrack)
+                volumeTrack.UpdateCurve();
+        }
+
+        /// <inheritdoc />
         public override void OnTimelineChanged(Track track)
         {
             base.OnTimelineChanged(track);
 
-            PropertiesEditObject = new Proxy(Track as AudioTrack, this);
+            PropertiesEditObject = track != null ? new Proxy((AudioTrack)track, this) : null;
         }
 
         /// <inheritdoc />
@@ -91,6 +129,17 @@ namespace FlaxEditor.GUI.Timeline.Tracks
             base.OnTimelineZoomChanged();
 
             Preview.ViewScale = Timeline.UnitsPerSecond / AudioClipPreview.UnitsPerSecond * Timeline.Zoom;
+        }
+
+        /// <inheritdoc />
+        public override Media Split(int frame)
+        {
+            var offset = Offset + ((float)(frame - StartFrame) / DurationFrames) * Duration;
+            var clone = (AudioMedia)base.Split(frame);
+            clone.Preview.ViewOffset = offset;
+            clone.Preview.Asset = Preview.Asset;
+            clone.Preview.DrawMode = Preview.DrawMode;
+            return clone;
         }
     }
 
@@ -119,48 +168,48 @@ namespace FlaxEditor.GUI.Timeline.Tracks
         private static void LoadTrack(int version, Track track, BinaryReader stream)
         {
             var e = (AudioTrack)track;
-            Guid id = new Guid(stream.ReadBytes(16));
+            Guid id = stream.ReadGuid();
             e.Asset = FlaxEngine.Content.LoadAsync<AudioClip>(id);
-            var m = e.TrackMedia;
-            m.StartFrame = stream.ReadInt32();
-            m.DurationFrames = stream.ReadInt32();
-            m.Preview.DrawMode = track.Loop ? AudioClipPreview.DrawModes.Looped : AudioClipPreview.DrawModes.Single;
+            if (version <= 3)
+            {
+                // [Deprecated on 03.09.2021 expires on 03.09.2023]
+                var m = e.TrackMedia;
+                m.StartFrame = stream.ReadInt32();
+                m.DurationFrames = stream.ReadInt32();
+                m.Preview.ViewOffset = 0.0f;
+                m.Preview.DrawMode = track.Loop ? AudioClipPreview.DrawModes.Looped : AudioClipPreview.DrawModes.Single;
+            }
+            else
+            {
+                var count = stream.ReadInt32();
+                while (e.Media.Count > count)
+                    e.RemoveMedia(e.Media.Last());
+                while (e.Media.Count < count)
+                    e.AddMedia(new AudioMedia());
+                for (int i = 0; i < count; i++)
+                {
+                    var m = (AudioMedia)e.Media[i];
+                    m.StartFrame = stream.ReadInt32();
+                    m.DurationFrames = stream.ReadInt32();
+                    m.Preview.ViewOffset = stream.ReadSingle();
+                    m.Preview.DrawMode = track.Loop ? AudioClipPreview.DrawModes.Looped : AudioClipPreview.DrawModes.Single;
+                    m.Preview.Asset = e.Asset;
+                }
+            }
         }
 
         private static void SaveTrack(Track track, BinaryWriter stream)
         {
             var e = (AudioTrack)track;
-            var assetId = e.Asset?.ID ?? Guid.Empty;
-
-            stream.Write(assetId.ToByteArray());
-
-            if (e.Media.Count != 0)
+            stream.WriteGuid(ref e.AssetID);
+            var count = e.Media.Count;
+            stream.Write(count);
+            for (int i = 0; i < count; i++)
             {
-                var m = e.TrackMedia;
+                var m = (AudioMedia)e.Media[i];
                 stream.Write(m.StartFrame);
                 stream.Write(m.DurationFrames);
-            }
-            else
-            {
-                stream.Write(0);
-                stream.Write(track.Timeline.DurationFrames);
-            }
-        }
-
-        /// <summary>
-        /// Gets or sets the audio clip looping mode.
-        /// </summary>
-        public bool TrackLoop
-        {
-            get => TrackMedia.Loop;
-            set
-            {
-                AudioMedia media = TrackMedia;
-                if (media.Loop == value)
-                    return;
-
-                media.Loop = value;
-                Timeline?.MarkAsEdited();
+                stream.Write(m.Offset);
             }
         }
 
@@ -170,6 +219,8 @@ namespace FlaxEditor.GUI.Timeline.Tracks
         public AudioTrack(ref TrackCreateOptions options)
         : base(ref options)
         {
+            MinMediaCount = 1;
+
             // Add button
             const float buttonSize = 14;
             _addButton = new Button
@@ -217,7 +268,8 @@ namespace FlaxEditor.GUI.Timeline.Tracks
         {
             base.OnAssetChanged();
 
-            TrackMedia.Preview.Asset = Asset;
+            foreach (AudioMedia m in Media)
+                m.Preview.Asset = Asset;
         }
     }
 
@@ -225,7 +277,7 @@ namespace FlaxEditor.GUI.Timeline.Tracks
     /// The child volume track for audio track. Used to animate audio volume over time.
     /// </summary>
     /// <seealso cref="FlaxEditor.GUI.Timeline.Track" />
-    class AudioVolumeTrack : Track
+    class AudioVolumeTrack : Track, IKeyframesEditorContext
     {
         /// <summary>
         /// Gets the archetype.
@@ -278,7 +330,6 @@ namespace FlaxEditor.GUI.Timeline.Tracks
             }
         }
 
-        private AudioMedia _audioMedia;
         private const float CollapsedHeight = 20.0f;
         private const float ExpandedHeight = 64.0f;
         private Label _previewValue;
@@ -305,6 +356,7 @@ namespace FlaxEditor.GUI.Timeline.Tracks
                 ScrollBars = ScrollBars.None,
                 DefaultValue = 1.0f,
                 ShowStartEndLines = true,
+                ShowBackground = false,
             };
             Curve.Edited += OnCurveEdited;
             Curve.EditingStart += OnCurveEditingStart;
@@ -378,34 +430,66 @@ namespace FlaxEditor.GUI.Timeline.Tracks
             }
         }
 
+        private bool GetRangeFrames(out int startFrame, out int endFrame)
+        {
+            if (ParentTrack != null && ParentTrack.Media.Count != 0)
+            {
+                startFrame = ParentTrack.Media[0].StartFrame;
+                endFrame = ParentTrack.Media[0].EndFrame;
+                for (int i = 1; i < ParentTrack.Media.Count; i++)
+                {
+                    endFrame = Mathf.Max(endFrame, ParentTrack.Media[i].EndFrame);
+                }
+                return true;
+            }
+            startFrame = endFrame = 0;
+            return false;
+        }
+
+        private bool GetRangeMedia(out Media startMedia, out Media endMedia)
+        {
+            if (ParentTrack != null && ParentTrack.Media.Count != 0)
+            {
+                startMedia = endMedia = ParentTrack.Media[0];
+                for (int i = 1; i < ParentTrack.Media.Count; i++)
+                {
+                    if (ParentTrack.Media[i].EndFrame >= endMedia.EndFrame)
+                        endMedia = ParentTrack.Media[i];
+                }
+                return true;
+            }
+            startMedia = endMedia = null;
+            return false;
+        }
+
         /// <inheritdoc />
         protected override void OnContextMenu(ContextMenu.ContextMenu menu)
         {
             base.OnContextMenu(menu);
 
-            if (_audioMedia == null || Curve == null)
+            if (!GetRangeFrames(out var startFrame, out _) || Curve == null)
                 return;
             menu.AddSeparator();
             menu.AddButton("Copy Preview Value", () =>
             {
-                var time = (Timeline.CurrentFrame - _audioMedia.StartFrame) / Timeline.FramesPerSecond;
+                var time = (Timeline.CurrentFrame - startFrame) / Timeline.FramesPerSecond;
                 Curve.Evaluate(out var value, time, false);
-                Clipboard.Text = Utils.RoundTo2DecimalPlaces(Mathf.Saturate(value)).ToString("0.00");
+                Clipboard.Text = FlaxEngine.Utils.RoundTo2DecimalPlaces(Mathf.Saturate(value)).ToString("0.00");
             }).LinkTooltip("Copies the current track value to the clipboard").Enabled = Timeline.ShowPreviewValues;
         }
 
         /// <inheritdoc />
         public override bool GetNextKeyframeFrame(float time, out int result)
         {
-            if (_audioMedia != null)
+            if (GetRangeFrames(out var startFrame, out var endFrame))
             {
-                var mediaTime = time - _audioMedia.StartFrame / Timeline.FramesPerSecond;
+                var mediaTime = time - startFrame / Timeline.FramesPerSecond;
                 for (int i = 0; i < Curve.Keyframes.Count; i++)
                 {
                     var k = Curve.Keyframes[i];
                     if (k.Time > mediaTime)
                     {
-                        result = Mathf.FloorToInt(k.Time * Timeline.FramesPerSecond) + _audioMedia.StartFrame;
+                        result = Mathf.FloorToInt(k.Time * Timeline.FramesPerSecond) + startFrame;
                         return true;
                     }
                 }
@@ -416,13 +500,13 @@ namespace FlaxEditor.GUI.Timeline.Tracks
         private void OnAddKeyClicked(Image image, MouseButton button)
         {
             var currentFrame = Timeline.CurrentFrame;
-            if (button == MouseButton.Left && _audioMedia != null && currentFrame >= _audioMedia.StartFrame && currentFrame < _audioMedia.StartFrame + _audioMedia.DurationFrames)
+            if (button == MouseButton.Left && GetRangeFrames(out var startFrame, out var endFrame) && currentFrame >= startFrame && currentFrame < endFrame)
             {
-                var time = (currentFrame - _audioMedia.StartFrame) / Timeline.FramesPerSecond;
+                var time = (currentFrame - startFrame) / Timeline.FramesPerSecond;
                 for (int i = Curve.Keyframes.Count - 1; i >= 0; i--)
                 {
                     var k = Curve.Keyframes[i];
-                    var frame = Mathf.FloorToInt(k.Time * Timeline.FramesPerSecond) + _audioMedia.StartFrame;
+                    var frame = Mathf.FloorToInt(k.Time * Timeline.FramesPerSecond) + startFrame;
                     if (frame == Timeline.CurrentFrame)
                     {
                         // Already added
@@ -446,15 +530,15 @@ namespace FlaxEditor.GUI.Timeline.Tracks
         /// <inheritdoc />
         public override bool GetPreviousKeyframeFrame(float time, out int result)
         {
-            if (_audioMedia != null)
+            if (GetRangeFrames(out var startFrame, out _))
             {
-                var mediaTime = time - _audioMedia.StartFrame / Timeline.FramesPerSecond;
+                var mediaTime = time - startFrame / Timeline.FramesPerSecond;
                 for (int i = Curve.Keyframes.Count - 1; i >= 0; i--)
                 {
                     var k = Curve.Keyframes[i];
                     if (k.Time < mediaTime)
                     {
-                        result = Mathf.FloorToInt(k.Time * Timeline.FramesPerSecond) + _audioMedia.StartFrame;
+                        result = Mathf.FloorToInt(k.Time * Timeline.FramesPerSecond) + startFrame;
                         return true;
                     }
                 }
@@ -464,27 +548,34 @@ namespace FlaxEditor.GUI.Timeline.Tracks
 
         private void UpdatePreviewValue()
         {
-            if (_audioMedia == null || Curve == null || Timeline == null)
+            if (!GetRangeFrames(out var startFrame, out _) || Curve == null || Timeline == null)
                 return;
 
-            var time = (Timeline.CurrentFrame - _audioMedia.StartFrame) / Timeline.FramesPerSecond;
+            var time = (Timeline.CurrentFrame - startFrame) / Timeline.FramesPerSecond;
             Curve.Evaluate(out var value, time, false);
-            _previewValue.Text = Utils.RoundTo2DecimalPlaces(Mathf.Saturate(value)).ToString("0.00");
+            _previewValue.Text = FlaxEngine.Utils.RoundTo2DecimalPlaces(Mathf.Saturate(value)).ToString("0.00");
         }
 
-        private void UpdateCurve()
+        internal void UpdateCurve()
         {
-            if (_audioMedia == null || Curve == null || Timeline == null)
+            if (!GetRangeMedia(out var startMedia, out var endMedia) || Curve == null || Timeline == null)
                 return;
-
-            Curve.Bounds = new Rectangle(_audioMedia.X, Y + 1.0f, _audioMedia.Width, Height - 2.0f);
-
+            bool wasVisible = Curve.Visible;
+            Curve.Visible = Visible;
+            if (!Visible)
+            {
+                if (wasVisible)
+                    Curve.ClearSelection();
+                return;
+            }
+            Curve.KeyframesEditorContext = Timeline;
+            Curve.CustomViewPanning = Timeline.OnKeyframesViewPanning;
+            Curve.Bounds = new Rectangle(startMedia.X, Y + 1.0f, endMedia.Right - startMedia.Left, Height - 2.0f);
             var expanded = IsExpanded;
             if (expanded)
             {
-                //Curve.ViewScale = new Vector2(1.0f, CurveEditor<float>.UnitsPerSecond / Curve.Height);
-                Curve.ViewScale = new Vector2(Timeline.Zoom, 0.4f);
-                Curve.ViewOffset = new Vector2(0.0f, 30.0f);
+                Curve.ViewScale = new Vector2(Timeline.Zoom, 0.7f);
+                Curve.ViewOffset = new Vector2(0.0f, 35.0f);
             }
             else
             {
@@ -492,9 +583,7 @@ namespace FlaxEditor.GUI.Timeline.Tracks
                 Curve.ViewOffset = Vector2.Zero;
             }
             Curve.ShowCollapsed = !expanded;
-            Curve.ShowBackground = expanded;
-            Curve.ShowAxes = expanded;
-            Curve.Visible = Visible;
+            Curve.ShowAxes = expanded ? CurveEditorBase.UseMode.Horizontal : CurveEditorBase.UseMode.Off;
             Curve.UpdateKeyframes();
         }
 
@@ -512,38 +601,30 @@ namespace FlaxEditor.GUI.Timeline.Tracks
         private void OnCurveEditingEnd()
         {
             var after = EditTrackAction.CaptureData(this);
-            if (!Utils.ArraysEqual(_curveEditingStartData, after))
-                Timeline.Undo.AddAction(new EditTrackAction(Timeline, this, _curveEditingStartData, after));
+            if (!FlaxEngine.Utils.ArraysEqual(_curveEditingStartData, after))
+                Timeline.AddBatchedUndoAction(new EditTrackAction(Timeline, this, _curveEditingStartData, after));
             _curveEditingStartData = null;
         }
 
         /// <inheritdoc />
-        protected override bool CanDrag => false;
+        public override bool CanDrag => false;
 
         /// <inheritdoc />
-        protected override bool CanRename => false;
+        public override bool CanRename => false;
 
         /// <inheritdoc />
-        protected override bool CanExpand => true;
+        public override bool CanCopyPaste => false;
+
+        /// <inheritdoc />
+        public override bool CanExpand => true;
 
         /// <inheritdoc />
         public override void OnParentTrackChanged(Track parent)
         {
             base.OnParentTrackChanged(parent);
 
-            if (_audioMedia != null)
+            if (parent != null)
             {
-                _audioMedia.StartFrameChanged -= UpdateCurve;
-                _audioMedia.DurationFramesChanged -= UpdateCurve;
-                _audioMedia = null;
-            }
-
-            if (parent is AudioTrack audioTrack)
-            {
-                var media = audioTrack.TrackMedia;
-                media.StartFrameChanged += UpdateCurve;
-                media.DurationFramesChanged += UpdateCurve;
-                _audioMedia = media;
                 UpdateCurve();
                 UpdatePreviewValue();
             }
@@ -625,6 +706,14 @@ namespace FlaxEditor.GUI.Timeline.Tracks
         }
 
         /// <inheritdoc />
+        public override void OnDuplicated(Track clone)
+        {
+            base.OnDuplicated(clone);
+
+            clone.Name = Guid.NewGuid().ToString("N");
+        }
+
+        /// <inheritdoc />
         public override void OnDestroy()
         {
             if (Curve != null)
@@ -635,6 +724,66 @@ namespace FlaxEditor.GUI.Timeline.Tracks
             _previewValue = null;
 
             base.OnDestroy();
+        }
+
+        /// <inheritdoc />
+        public void OnKeyframesDeselect(IKeyframesEditor editor)
+        {
+            if (Curve != null && Curve.Visible)
+                Curve.OnKeyframesDeselect(editor);
+        }
+
+        /// <inheritdoc />
+        public void OnKeyframesSelection(IKeyframesEditor editor, ContainerControl control, Rectangle selection)
+        {
+            if (Curve != null && Curve.Visible)
+                Curve.OnKeyframesSelection(editor, control, selection);
+        }
+
+        /// <inheritdoc />
+        public int OnKeyframesSelectionCount()
+        {
+            return Curve != null && Curve.Visible ? Curve.OnKeyframesSelectionCount() : 0;
+        }
+
+        /// <inheritdoc />
+        public void OnKeyframesDelete(IKeyframesEditor editor)
+        {
+            if (Curve != null && Curve.Visible)
+                Curve.OnKeyframesDelete(editor);
+        }
+
+        /// <inheritdoc />
+        public void OnKeyframesMove(IKeyframesEditor editor, ContainerControl control, Vector2 location, bool start, bool end)
+        {
+            if (Curve != null && Curve.Visible)
+                Curve.OnKeyframesMove(editor, control, location, start, end);
+        }
+
+        /// <inheritdoc />
+        public void OnKeyframesCopy(IKeyframesEditor editor, float? timeOffset, System.Text.StringBuilder data)
+        {
+            if (Curve != null && Curve.Visible)
+                Curve.OnKeyframesCopy(editor, timeOffset, data);
+        }
+
+        /// <inheritdoc />
+        public void OnKeyframesPaste(IKeyframesEditor editor, float? timeOffset, string[] datas, ref int index)
+        {
+            if (Curve != null && Curve.Visible)
+                Curve.OnKeyframesPaste(editor, timeOffset, datas, ref index);
+        }
+
+        /// <inheritdoc />
+        public void OnKeyframesGet(Action<string, float, object> get)
+        {
+            Curve?.OnKeyframesGet(Name, get);
+        }
+
+        /// <inheritdoc />
+        public void OnKeyframesSet(List<KeyValuePair<float, object>> keyframes)
+        {
+            Curve?.OnKeyframesSet(keyframes);
         }
     }
 }

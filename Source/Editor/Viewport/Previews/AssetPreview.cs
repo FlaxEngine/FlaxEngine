@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 using System;
 using FlaxEditor.Gizmo;
@@ -196,7 +196,7 @@ namespace FlaxEditor.Viewport.Previews
             Task.AddCustomActor(PostFxVolume);
         }
 
-        private void OnPostRender(GPUContext context, RenderContext renderContext)
+        private void OnPostRender(GPUContext context, ref RenderContext renderContext)
         {
             if (renderContext.View.Mode != ViewMode.Default && _editorPrimitives && _editorPrimitives.CanRender)
             {

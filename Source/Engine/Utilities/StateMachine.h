@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -9,7 +9,7 @@ class StateMachine;
 /// <summary>
 /// State machine state
 /// </summary>
-class State
+class FLAXENGINE_API State
 {
     friend StateMachine;
 
@@ -71,7 +71,7 @@ protected:
 /// <summary>
 /// State machine logic pattern
 /// </summary>
-class StateMachine
+class FLAXENGINE_API StateMachine
 {
     friend State;
 

@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -17,6 +17,9 @@
 #if PLATFORM_PS4
 #include "Platforms/PS4/Engine/Platform/PS4PlatformSettings.h"
 #endif
+#if PLATFORM_XBOX_ONE
+#include "Platforms/XboxOne/Engine/Platform/XboxOnePlatformSettings.h"
+#endif
 #if PLATFORM_XBOX_SCARLETT
 #include "Platforms/XboxScarlett/Engine/Platform/XboxScarlettPlatformSettings.h"
 #endif
@@ -25,4 +28,10 @@
 #endif
 #if PLATFORM_SWITCH
 #include "Platforms/Switch/Engine/Platform/SwitchPlatformSettings.h"
+#endif
+#if PLATFORM_PS5
+#include "Platforms/PS5/Engine/Platform/PS5PlatformSettings.h"
+#endif
+#if PLATFORM_MAC
+#include "Engine/Platform/Mac/MacPlatformSettings.h"
 #endif

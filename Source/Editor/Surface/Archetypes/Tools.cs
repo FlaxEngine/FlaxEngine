@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 using System;
 using System.Collections.Generic;
@@ -855,7 +855,7 @@ namespace FlaxEditor.Surface.Archetypes
             {
                 _picker = new TypePickerControl
                 {
-                    Type = new ScriptType(typeof(object)),
+                    Type = ScriptType.Object,
                     Bounds = new Rectangle(FlaxEditor.Surface.Constants.NodeMarginX, FlaxEditor.Surface.Constants.NodeMarginY + FlaxEditor.Surface.Constants.NodeHeaderSize, 140, 16),
                     Parent = this,
                 };
@@ -1346,9 +1346,9 @@ namespace FlaxEditor.Surface.Archetypes
                 Title = "Platform Switch",
                 Description = "Gets the input value based on the runtime-platform type",
                 Flags = NodeFlags.AllGraphs,
-                Size = new Vector2(220, 180),
+                Size = new Vector2(220, 220),
                 ConnectionsHints = ConnectionsHint.Value,
-                IndependentBoxes = new[] { 1, 2, 3, 4, 5, 6, 7, 8, 9 },
+                IndependentBoxes = new[] { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11 },
                 DependentBoxes = new[] { 0 },
                 Elements = new[]
                 {
@@ -1362,6 +1362,8 @@ namespace FlaxEditor.Surface.Archetypes
                     NodeElementArchetype.Factory.Input(6, "Xbox Scarlett", true, null, 7),
                     NodeElementArchetype.Factory.Input(7, "Android", true, null, 8),
                     NodeElementArchetype.Factory.Input(8, "Switch", true, null, 9),
+                    NodeElementArchetype.Factory.Input(9, "PlayStation 5", true, null, 10),
+                    NodeElementArchetype.Factory.Input(10, "Mac", true, null, 11),
                 }
             },
             new NodeArchetype
@@ -1514,7 +1516,7 @@ namespace FlaxEditor.Surface.Archetypes
             {
                 TypeID = 26,
                 Title = "Cast Value",
-                Create = (id, context, arch, groupArch) => new CastNode(id, context, arch, groupArch, new ScriptType(typeof(object))),
+                Create = (id, context, arch, groupArch) => new CastNode(id, context, arch, groupArch, ScriptType.Object),
                 Description = "Tries to cast the object to a given type. Returns null if fails.",
                 Flags = NodeFlags.VisualScriptGraph,
                 Size = new Vector2(200, 60),

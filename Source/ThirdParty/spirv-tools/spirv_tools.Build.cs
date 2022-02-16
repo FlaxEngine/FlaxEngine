@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 using System.IO;
 using Flax.Build;
@@ -35,6 +35,7 @@ public class spirv_tools : DepsModule
             options.OutputFiles.Add(Path.Combine(depsRoot, "SPIRV-Tools-opt.lib"));
             break;
         case TargetPlatform.Linux:
+        case TargetPlatform.Mac:
             options.OutputFiles.Add(Path.Combine(depsRoot, "libSPIRV-Tools.a"));
             options.OutputFiles.Add(Path.Combine(depsRoot, "libSPIRV-Tools-opt.a"));
             break;

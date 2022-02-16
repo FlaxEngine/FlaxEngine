@@ -1,10 +1,11 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Reflection;
 using System.Text;
 
 namespace Flax.Build
@@ -41,6 +42,23 @@ namespace Flax.Build
         public static T[] GetEmptyArray<T>()
         {
             return Enumerable.Empty<T>() as T[];
+        }
+
+        /// <summary>
+        /// Gets the static field value from a given type.
+        /// </summary>
+        /// <param name="typeName">Name of the type.</param>
+        /// <param name="fieldName">Name of the field.</param>
+        /// <returns>The field value.</returns>
+        public static object GetStaticValue(string typeName, string fieldName)
+        {
+            var type = Type.GetType(typeName);
+            if (type == null)
+                throw new Exception($"Cannot find type \'{typeName}\'.");
+            var field = type.GetField(fieldName, BindingFlags.Public | BindingFlags.Static);
+            if (field == null)
+                throw new Exception($"Cannot find static public field \'{fieldName}\' in \'{typeName}\'.");
+            return field.GetValue(null);
         }
 
         /// <summary>
@@ -268,6 +286,11 @@ namespace Flax.Build
             NoLoggingOfRunDuration = 1 << 5,
 
             /// <summary>
+            /// Throws exception when app returns non-zero return code.
+            /// </summary>
+            ThrowExceptionOnError = 1 << 6,
+
+            /// <summary>
             /// The default options.
             /// </summary>
             Default = AppMustExist,
@@ -301,7 +324,10 @@ namespace Flax.Build
         /// <returns>The exit code of the program.</returns>
         public static int Run(string app, string commandLine = null, string input = null, string workspace = null, RunOptions options = RunOptions.Default, Dictionary<string, string> envVars = null)
         {
-            // Check if the application exists, including the PATH directories.
+            if (string.IsNullOrEmpty(app))
+                throw new ArgumentNullException(nameof(app), "Missing app to run.");
+
+            // Check if the application exists, including the PATH directories
             if (options.HasFlag(RunOptions.AppMustExist) && !File.Exists(app))
             {
                 bool existsInPath = false;
@@ -403,9 +429,37 @@ namespace Flax.Build
                 {
                     Log.Info(string.Format("Took {0}s to run {1}, ExitCode={2}", stopwatch.Elapsed.TotalSeconds, Path.GetFileName(app), result));
                 }
+                if (result != 0 && options.HasFlag(RunOptions.ThrowExceptionOnError))
+                {
+                    var format = options.HasFlag(RunOptions.NoLoggingOfRunCommand) ? "App failed with exit code {2}." : "{0} {1} failed with exit code {2}";
+                    throw new Exception(string.Format(format, app, commandLine, result));
+                }
             }
 
             return result;
+        }
+
+        /// <summary>
+        /// Runs the process and reds its standard output as a string.
+        /// </summary>
+        /// <param name="filename">The executable file path.</param>
+        /// <param name="args">The custom arguments.</param>
+        /// <returns>Returned process output.</returns>
+        public static string ReadProcessOutput(string filename, string args = null)
+        {
+            Process p = new Process
+            {
+                StartInfo =
+                {
+                    FileName = filename,
+                    Arguments = args,
+                    UseShellExecute = false,
+                    CreateNoWindow = true,
+                    RedirectStandardOutput = true,
+                }
+            };
+            p.Start();
+            return p.StandardOutput.ReadToEnd().Trim();
         }
 
         /// <summary>

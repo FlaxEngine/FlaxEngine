@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 using System;
 using System.Collections.Generic;
@@ -18,57 +18,106 @@ namespace FlaxEngine.GUI
         [HideInEditor]
         protected class DropdownRoot : Panel
         {
-            private bool _isMouseDown;
-
-            /// <summary>
-            /// Occurs when item gets clicked. Argument is item index.
-            /// </summary>
-            public Action<int> ItemClicked;
-
             /// <summary>
             /// Occurs when popup lost focus.
             /// </summary>
             public Action LostFocus;
 
-            /// <summary>
-            /// The items container control.
-            /// </summary>
-            public ContainerControl ItemsContainer;
-
             /// <inheritdoc />
-            public override bool OnMouseDown(Vector2 location, MouseButton button)
+            public override void OnEndContainsFocus()
             {
-                _isMouseDown = true;
-                var result = base.OnMouseDown(location, button);
-                _isMouseDown = false;
+                base.OnEndContainsFocus();
 
-                if (!result)
-                    return false;
+                // Call event after this 'focus contains flag' propagation ends to prevent focus issues
+                if (LostFocus != null)
+                    Scripting.RunOnUpdate(LostFocus);
+            }
 
-                var itemIndex = ItemsContainer?.GetChildIndexAt(location) ?? -1;
-                if (itemIndex != -1)
-                    ItemClicked(itemIndex);
-
-                return true;
+            private static DropdownLabel FindItem(Control control)
+            {
+                if (control is DropdownLabel item)
+                    return item;
+                if (control is ContainerControl containerControl)
+                {
+                    foreach (var child in containerControl.Children)
+                    {
+                        item = FindItem(child);
+                        if (item != null)
+                            return item;
+                    }
+                }
+                return null;
             }
 
             /// <inheritdoc />
-            public override void OnLostFocus()
+            public override Control OnNavigate(NavDirection direction, Vector2 location, Control caller, List<Control> visited)
             {
-                base.OnLostFocus();
-
-                if (!_isMouseDown)
+                if (IsFocused)
                 {
-                    LostFocus?.Invoke();
+                    // Dropdown root is focused
+                    if (direction == NavDirection.Down)
+                    {
+                        // Pick the first item
+                        return FindItem(this);
+                    }
+
+                    // Close popup
+                    Defocus();
+                    return null;
                 }
+
+                return base.OnNavigate(direction, location, caller, visited);
+            }
+
+            /// <inheritdoc />
+            public override void OnSubmit()
+            {
+                Defocus();
+
+                base.OnSubmit();
             }
 
             /// <inheritdoc />
             public override void OnDestroy()
             {
-                ItemClicked = null;
                 LostFocus = null;
-                ItemsContainer = null;
+
+                base.OnDestroy();
+            }
+        }
+
+        [HideInEditor]
+        private class DropdownLabel : Label
+        {
+            public Action<Label> ItemClicked;
+
+            public override bool OnMouseDown(Vector2 location, MouseButton button)
+            {
+                if (base.OnMouseDown(location, button))
+                    return true;
+                ItemClicked?.Invoke(this);
+                return true;
+            }
+
+            public override bool OnTouchDown(Vector2 location, int pointerId)
+            {
+                if (base.OnTouchDown(location, pointerId))
+                    return true;
+                ItemClicked?.Invoke(this);
+                return true;
+            }
+
+            /// <inheritdoc />
+            public override void OnSubmit()
+            {
+                ItemClicked?.Invoke(this);
+
+                base.OnSubmit();
+            }
+
+            public override void OnDestroy()
+            {
+                ItemClicked = null;
 
                 base.OnDestroy();
             }
@@ -85,6 +134,7 @@ namespace FlaxEngine.GUI
         protected DropdownRoot _popup;
 
         private bool _touchDown;
+        private bool _hadNavFocus;
 
         /// <summary>
         /// The selected index of the item (-1 for no selection).
@@ -233,8 +283,6 @@ namespace FlaxEngine.GUI
         public Dropdown()
         : base(0, 0, 120, 18.0f)
         {
-            AutoFocus = false;
-
             var style = Style.Current;
             Font = new FontReference(style.FontMedium);
             TextColor = style.Foreground;
@@ -350,15 +398,17 @@ namespace FlaxEngine.GUI
 
             for (int i = 0; i < _items.Count; i++)
             {
-                var item = new Spacer
+                var item = new ContainerControl
                 {
+                    AutoFocus = false,
                     Height = itemsHeight,
                     Width = itemsWidth,
                     Parent = container,
                 };
 
-                var label = new Label
+                var label = new DropdownLabel
                 {
+                    AutoFocus = true,
                     X = itemsMargin,
                     Size = new Vector2(itemsWidth - itemsMargin, itemsHeight),
                     Font = Font,
@@ -367,6 +417,12 @@ namespace FlaxEngine.GUI
                     HorizontalAlignment = TextAlignment.Near,
                     Text = _items[i],
                     Parent = item,
+                    Tag = i,
+                };
+                label.ItemClicked += c =>
+                {
+                    OnItemClicked((int)c.Tag);
+                    DestroyPopup();
                 };
                 height += itemsHeight;
                 if (i != 0)
@@ -386,7 +442,6 @@ namespace FlaxEngine.GUI
             }
 
             popup.Size = new Vector2(itemsWidth, height);
-            popup.ItemsContainer = container;
 
             return popup;
         }
@@ -415,6 +470,10 @@ namespace FlaxEngine.GUI
                 OnPopupHide();
                 _popup.Dispose();
                 _popup = null;
+                if (_hadNavFocus)
+                    NavigationFocus();
+                else
+                    Focus();
             }
         }
 
@@ -429,18 +488,10 @@ namespace FlaxEngine.GUI
 
             // Setup popup
             DestroyPopup();
+            _hadNavFocus = IsNavFocused;
             _popup = CreatePopup();
-
-            // Update layout
             _popup.UnlockChildrenRecursive();
             _popup.PerformLayout();
-
-            // Bind events
-            _popup.ItemClicked += index =>
-            {
-                OnItemClicked(index);
-                DestroyPopup();
-            };
             _popup.LostFocus += DestroyPopup;
 
             // Show dropdown popup
@@ -496,7 +547,7 @@ namespace FlaxEngine.GUI
                 borderColor = BorderColorSelected;
                 arrowColor = ArrowColorSelected;
             }
-            else if (IsMouseOver)
+            else if (IsMouseOver || IsNavFocused)
             {
                 backgroundColor = BackgroundColorHighlighted;
                 borderColor = BorderColorHighlighted;
@@ -547,23 +598,25 @@ namespace FlaxEngine.GUI
             if (button == MouseButton.Left)
             {
                 _touchDown = true;
+                Focus();
                 return true;
             }
-
             return false;
         }
 
         /// <inheritdoc />
         public override bool OnMouseUp(Vector2 location, MouseButton button)
         {
+            if (base.OnMouseUp(location, button))
+                return true;
+
             if (_touchDown && button == MouseButton.Left)
             {
                 _touchDown = false;
                 ShowPopup();
                 return true;
             }
-
-            return base.OnMouseUp(location, button);
+            return false;
         }
 
         /// <inheritdoc />
@@ -595,6 +648,14 @@ namespace FlaxEngine.GUI
             _touchDown = false;
 
             base.OnTouchLeave(pointerId);
+        }
+
+        /// <inheritdoc />
+        public override void OnSubmit()
+        {
+            ShowPopup();
+
+            base.OnSubmit();
         }
     }
 }

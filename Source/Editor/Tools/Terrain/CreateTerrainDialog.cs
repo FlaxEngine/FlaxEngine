@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 using System;
 using System.ComponentModel;
@@ -117,7 +117,7 @@ namespace FlaxEditor.Tools.Terrain
                 Offsets = new Margin(-ButtonsWidth - ButtonsMargin, ButtonsWidth, -ButtonsHeight - ButtonsMargin, ButtonsHeight),
                 Parent = this
             };
-            importButton.Clicked += OnCreate;
+            importButton.Clicked += OnSubmit;
             var cancelButton = new Button
             {
                 Text = "Cancel",
@@ -141,9 +141,6 @@ namespace FlaxEditor.Tools.Terrain
 
         private void OnCreate()
         {
-            if (_isWorking)
-                return;
-
             var scene = Level.GetScene(0);
             if (scene == null)
                 throw new InvalidOperationException("No scene found to add terrain to it!");
@@ -201,12 +198,22 @@ namespace FlaxEditor.Tools.Terrain
             _isDone = true;
         }
 
-        private void OnCancel()
+        /// <inheritdoc />
+        public override void OnSubmit()
         {
             if (_isWorking)
                 return;
 
-            Close(DialogResult.Cancel);
+            OnCreate();
+        }
+
+        /// <inheritdoc />
+        public override void OnCancel()
+        {
+            if (_isWorking)
+                return;
+
+            base.OnCancel();
         }
 
         /// <inheritdoc />
@@ -246,7 +253,7 @@ namespace FlaxEditor.Tools.Terrain
                 OnCancel();
                 return true;
             case KeyboardKeys.Return:
-                OnCreate();
+                OnSubmit();
                 return true;
             }
 

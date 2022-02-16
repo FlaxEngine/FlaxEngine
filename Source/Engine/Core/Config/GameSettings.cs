@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 using System;
 using System.Collections.Generic;
@@ -10,6 +10,8 @@ namespace FlaxEditor.Content.Settings
     partial class GameSettings
     {
         internal const string PS4PlatformSettingsTypename = "FlaxEditor.Content.Settings.PS4PlatformSettings";
+        internal const string PS5PlatformSettingsTypename = "FlaxEditor.Content.Settings.PS5PlatformSettings";
+        internal const string XboxOnePlatformSettingsTypename = "FlaxEditor.Content.Settings.XboxOnePlatformSettings";
         internal const string XboxScarlettPlatformSettingsTypename = "FlaxEditor.Content.Settings.XboxScarlettPlatformSettings";
         internal const string SwitchPlatformSettingsTypename = "FlaxEditor.Content.Settings.SwitchPlatformSettings";
 
@@ -111,7 +113,7 @@ namespace FlaxEditor.Content.Settings
         public JsonAsset WindowsPlatform;
 #endif
 
-#if FLAX_EDITOR || PLATFORM_UWP || PLATFORM_XBOX_ONE
+#if FLAX_EDITOR || PLATFORM_UWP
         /// <summary>
         /// Reference to <see cref="UWPPlatformSettings"/> asset. Used to apply configuration on Universal Windows Platform.
         /// </summary>
@@ -133,6 +135,14 @@ namespace FlaxEditor.Content.Settings
         /// </summary>
         [EditorOrder(2040), EditorDisplay("Platform Settings", "PlayStation 4"), AssetReference(PS4PlatformSettingsTypename, true), Tooltip("Reference to PS4 Platform Settings asset")]
         public JsonAsset PS4Platform;
+#endif
+
+#if FLAX_EDITOR || PLATFORM_XBOX_ONE
+        /// <summary>
+        /// Reference to Xbox One Platform Settings asset. Used to apply configuration on Xbox One platform.
+        /// </summary>
+        [EditorOrder(2050), EditorDisplay("Platform Settings", "Xbox One"), AssetReference(XboxOnePlatformSettingsTypename, true), Tooltip("Reference to Xbox One Platform Settings asset")]
+        public JsonAsset XboxOnePlatform;
 #endif
 
 #if FLAX_EDITOR || PLATFORM_XBOX_SCARLETT
@@ -157,6 +167,22 @@ namespace FlaxEditor.Content.Settings
         /// </summary>
         [EditorOrder(2070), EditorDisplay("Platform Settings", "Switch"), AssetReference(SwitchPlatformSettingsTypename, true), Tooltip("Reference to Switch Platform Settings asset")]
         public JsonAsset SwitchPlatform;
+#endif
+
+#if FLAX_EDITOR || PLATFORM_PS5
+        /// <summary>
+        /// Reference to PS5 Platform Settings asset. Used to apply configuration on PS5 platform.
+        /// </summary>
+        [EditorOrder(2080), EditorDisplay("Platform Settings", "PlayStation 5"), AssetReference(PS5PlatformSettingsTypename, true), Tooltip("Reference to PS5 Platform Settings asset")]
+        public JsonAsset PS5Platform;
+#endif
+
+#if FLAX_EDITOR || PLATFORM_MAC
+        /// <summary>
+        /// Reference to <see cref="MacPlatformSettings"/> asset. Used to apply configuration on Mac platform.
+        /// </summary>
+        [EditorOrder(2090), EditorDisplay("Platform Settings", "Mac"), AssetReference(typeof(MacPlatformSettings), true), Tooltip("Reference to Mac Platform Settings asset")]
+        public JsonAsset MacPlatform;
 #endif
 
         /// <summary>
@@ -245,7 +271,7 @@ namespace FlaxEditor.Content.Settings
             if (type == typeof(WindowsPlatformSettings))
                 return LoadAsset<WindowsPlatformSettings>(gameSettings.WindowsPlatform) as T;
 #endif
-#if FLAX_EDITOR || PLATFORM_UWP || PLATFORM_XBOX_ONE
+#if FLAX_EDITOR || PLATFORM_UWP 
             if (type == typeof(UWPPlatformSettings))
                 return LoadAsset<UWPPlatformSettings>(gameSettings.UWPPlatform) as T;
 #endif
@@ -256,6 +282,10 @@ namespace FlaxEditor.Content.Settings
 #if FLAX_EDITOR || PLATFORM_PS4
             if (type.FullName == PS4PlatformSettingsTypename)
                 return LoadAsset(gameSettings.PS4Platform, PS4PlatformSettingsTypename) as T;
+#endif
+#if FLAX_EDITOR || PLATFORM_XBOX_ONE
+            if (type.FullName == XboxOnePlatformSettingsTypename)
+                return LoadAsset(gameSettings.XboxOnePlatform, XboxOnePlatformSettingsTypename) as T;
 #endif
 #if FLAX_EDITOR || PLATFORM_XBOX_SCARLETT
             if (type.FullName == XboxScarlettPlatformSettingsTypename)
@@ -268,6 +298,14 @@ namespace FlaxEditor.Content.Settings
 #if FLAX_EDITOR || PLATFORM_SWITCH
             if (type.FullName == SwitchPlatformSettingsTypename)
                 return LoadAsset(gameSettings.SwitchPlatform, SwitchPlatformSettingsTypename) as T;
+#endif
+#if FLAX_EDITOR || PLATFORM_PS5
+            if (type.FullName == PS5PlatformSettingsTypename)
+                return LoadAsset(gameSettings.PS5Platform, PS5PlatformSettingsTypename) as T;
+#endif
+#if FLAX_EDITOR || PLATFORM_MAC
+            if (type == typeof(MacPlatformSettings))
+                return LoadAsset<MacPlatformSettings>(gameSettings.MacPlatform) as T;
 #endif
 
             if (gameSettings.CustomSettings != null)
@@ -353,14 +391,20 @@ namespace FlaxEditor.Content.Settings
                 return SaveAsset(gameSettings, ref gameSettings.LinuxPlatform, obj);
             if (type.FullName == PS4PlatformSettingsTypename)
                 return SaveAsset(gameSettings, ref gameSettings.PS4Platform, obj);
+            if (type.FullName == XboxOnePlatformSettingsTypename)
+                return SaveAsset(gameSettings, ref gameSettings.XboxOnePlatform, obj);
             if (type.FullName == XboxScarlettPlatformSettingsTypename)
                 return SaveAsset(gameSettings, ref gameSettings.XboxScarlettPlatform, obj);
             if (type == typeof(AndroidPlatformSettings))
                 return SaveAsset(gameSettings, ref gameSettings.AndroidPlatform, obj);
             if (type.FullName == SwitchPlatformSettingsTypename)
                 return SaveAsset(gameSettings, ref gameSettings.SwitchPlatform, obj);
+            if (type.FullName == PS5PlatformSettingsTypename)
+                return SaveAsset(gameSettings, ref gameSettings.PS5Platform, obj);
             if (type == typeof(AudioSettings))
                 return SaveAsset(gameSettings, ref gameSettings.Audio, obj);
+            if (type == typeof(MacPlatformSettings))
+                return SaveAsset(gameSettings, ref gameSettings.MacPlatform, obj);
 
             return true;
         }

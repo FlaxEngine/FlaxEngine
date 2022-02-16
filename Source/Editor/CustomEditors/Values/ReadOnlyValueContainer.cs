@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 using FlaxEditor.Scripting;
 using FlaxEngine;
@@ -17,7 +17,7 @@ namespace FlaxEditor.CustomEditors
         /// </summary>
         /// <param name="value">The initial value.</param>
         public ReadOnlyValueContainer(object value)
-        : base(ScriptMemberInfo.Null, new ScriptType(typeof(object)))
+        : base(ScriptMemberInfo.Null, ScriptType.Object)
         {
             Add(value);
         }

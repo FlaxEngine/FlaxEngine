@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 #include "StreamingTexture.h"
 #include "Engine/Threading/Threading.h"
@@ -114,7 +114,7 @@ bool StreamingTexture::Create(const TextureHeader& header)
     {
         // Ensure that streaming doesn't go too low because the hardware expects the texture to be min in size of compressed texture block
         int32 lastMip = header.MipLevels - 1;
-        while (header.Width >> lastMip < 4 && header.Height >> lastMip < 4)
+        while ((header.Width >> lastMip) < 4 && (header.Height >> lastMip) < 4)
             lastMip--;
         _minMipCountBlockCompressed = header.MipLevels - lastMip + 1;
     }
@@ -144,7 +144,7 @@ void StreamingTexture::UnloadTexture()
 uint64 StreamingTexture::GetTotalMemoryUsage() const
 {
     const uint64 arraySize = _header.IsCubeMap ? 6 : 1;
-    return CalculateTextureMemoryUsage(_header.Format, _header.Width, _header.Height, _header.MipLevels) * arraySize;
+    return RenderTools::CalculateTextureMemoryUsage(_header.Format, _header.Width, _header.Height, _header.MipLevels) * arraySize;
 }
 
 String StreamingTexture::ToString() const
@@ -316,7 +316,7 @@ private:
 public:
 
     StreamTextureMipTask(StreamingTexture* texture, int32 mipIndex)
-        : GPUUploadTextureMipTask(texture->GetTexture(), mipIndex, Span<byte>(nullptr, 0), false)
+        : GPUUploadTextureMipTask(texture->GetTexture(), mipIndex, Span<byte>(nullptr, 0), 0, 0, false)
         , _streamingTexture(texture)
         , _dataLock(_streamingTexture->GetOwner()->LockData())
     {
@@ -345,8 +345,12 @@ protected:
         if (texture == nullptr)
             return Result::MissingResources;
 
-        // Ensure that texture has been allocated before this task
-        ASSERT(texture->IsAllocated());
+        // Ensure that texture has been allocated before this task and has proper format
+        if (!texture->IsAllocated() || texture->Format() != _streamingTexture->GetHeader()->Format)
+        {
+            LOG(Error, "Cannot stream texture {0} (streaming format: {1})", texture->ToString(), (int32)_streamingTexture->GetHeader()->Format);
+            return Result::Failed;
+        }
 
         // Get asset data
         BytesContainer data;
@@ -384,6 +388,16 @@ protected:
 
         // Base
         GPUUploadTextureMipTask::OnEnd();
+    }
+    void OnFail() override
+    {
+        if (_streamingTexture)
+        {
+            // Stop streaming on fail
+            _streamingTexture->CancelStreaming();
+        }
+
+        GPUUploadTextureMipTask::OnFail();
     }
 };
 

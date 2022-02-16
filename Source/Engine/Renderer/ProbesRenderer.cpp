@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 #if COMPILE_WITH_PROBES_BAKING
 
@@ -151,7 +151,8 @@ Delegate<const ProbesRenderer::Entry&> ProbesRenderer::OnFinishBake;
 
 void ProbesRenderer::Bake(EnvironmentProbe* probe, float timeout)
 {
-    ASSERT(probe && dynamic_cast<EnvironmentProbe*>(probe));
+    if (!probe || probe->IsUsingCustomProbe())
+        return;
 
     // Check if already registered for bake
     for (int32 i = 0; i < _probesToBake.Count(); i++)

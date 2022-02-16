@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 using FlaxEngine;
 
@@ -11,6 +11,9 @@ namespace FlaxEditor.SceneGraph.Actors
     [HideInEditor]
     public sealed class NavMeshBoundsVolumeNode : BoxVolumeNode
     {
+        /// <inheritdoc />
+        public override bool AffectsNavigation => true;
+
         /// <inheritdoc />
         public NavMeshBoundsVolumeNode(Actor actor)
         : base(actor)

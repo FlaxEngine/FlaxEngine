@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 #include "Serialization.h"
 #include "Engine/Core/Log.h"
@@ -208,12 +208,14 @@ void Serialization::Serialize(ISerializable::SerializeStream& stream, const Vari
     case VariantType::ManagedObject:
     case VariantType::Structure:
     {
+#if USE_MONO
         MonoObject* obj;
         if (v.Type.Type == VariantType::Structure)
             obj = MUtils::BoxVariant(v);
         else
             obj = (MonoObject*)v;
         ManagedSerialization::Serialize(stream, obj);
+#endif
         break;
     }
     default:
@@ -346,6 +348,7 @@ void Serialization::Deserialize(ISerializable::DeserializeStream& stream, Varian
     case VariantType::ManagedObject:
     case VariantType::Structure:
     {
+#if USE_MONO
         auto obj = (MonoObject*)v;
         if (!obj && v.Type.TypeName)
         {
@@ -369,6 +372,7 @@ void Serialization::Deserialize(ISerializable::DeserializeStream& stream, Varian
         ManagedSerialization::Deserialize(value, obj);
         if (v.Type.Type == VariantType::Structure)
             v = MUtils::UnboxVariant(obj);
+#endif
         break;
     }
     default:

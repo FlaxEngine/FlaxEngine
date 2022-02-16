@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 using System;
 using System.Collections.Generic;
@@ -945,23 +945,33 @@ namespace FlaxEditor.Modules
             Proxy.Add(new SettingsProxy(typeof(UWPPlatformSettings), Editor.Instance.Icons.UWPSettings128));
             Proxy.Add(new SettingsProxy(typeof(LinuxPlatformSettings), Editor.Instance.Icons.LinuxSettings128));
             Proxy.Add(new SettingsProxy(typeof(AndroidPlatformSettings), Editor.Instance.Icons.AndroidSettings128));
+            Proxy.Add(new SettingsProxy(typeof(MacPlatformSettings), Editor.Instance.Icons.Document128));
 
             var typePS4PlatformSettings = TypeUtils.GetManagedType(GameSettings.PS4PlatformSettingsTypename);
             if (typePS4PlatformSettings != null)
                 Proxy.Add(new SettingsProxy(typePS4PlatformSettings, Editor.Instance.Icons.PlaystationSettings128));
 
+            var typeXboxOnePlatformSettings = TypeUtils.GetManagedType(GameSettings.XboxOnePlatformSettingsTypename);
+            if (typeXboxOnePlatformSettings != null)
+                Proxy.Add(new SettingsProxy(typeXboxOnePlatformSettings, Editor.Instance.Icons.XBOXSettings128));
+
             var typeXboxScarlettPlatformSettings = TypeUtils.GetManagedType(GameSettings.XboxScarlettPlatformSettingsTypename);
             if (typeXboxScarlettPlatformSettings != null)
-                Proxy.Add(new SettingsProxy(typeXboxScarlettPlatformSettings, Editor.Instance.Icons.XBoxScarletIcon128));
+                Proxy.Add(new SettingsProxy(typeXboxScarlettPlatformSettings, Editor.Instance.Icons.XBOXSettings128));
 
             var typeSwitchPlatformSettings = TypeUtils.GetManagedType(GameSettings.SwitchPlatformSettingsTypename);
             if (typeSwitchPlatformSettings != null)
                 Proxy.Add(new SettingsProxy(typeSwitchPlatformSettings, Editor.Instance.Icons.SwitchSettings128));
 
+            var typePS5PlatformSettings = TypeUtils.GetManagedType(GameSettings.PS5PlatformSettingsTypename);
+            if (typePS5PlatformSettings != null)
+                Proxy.Add(new SettingsProxy(typePS5PlatformSettings, Editor.Instance.Icons.PlaystationSettings128));
+
             // Last add generic json (won't override other json proxies)
             Proxy.Add(new GenericJsonAssetProxy());
 
             // Create content folders nodes
+            var startTime = Platform.TimeSeconds;
             Engine = new ProjectTreeNode(Editor.EngineProject)
             {
                 Content = new MainContentTreeNode(Engine, ContentFolderType.Content, Globals.EngineContentFolder),
@@ -1001,8 +1011,9 @@ namespace FlaxEditor.Modules
             // Enable events
             _enableEvents = true;
             Editor.ContentImporting.ImportFileEnd += ContentImporting_ImportFileDone;
+            var endTime = Platform.TimeSeconds;
 
-            Editor.Log("Project database created. Items count: " + _itemsCreated);
+            Editor.Log(string.Format("Project database created in {0} ms. Items count: {1}", (int)((endTime - startTime) * 1000.0), _itemsCreated));
         }
 
         private void ContentImporting_ImportFileDone(IFileEntryAction obj, bool failed)

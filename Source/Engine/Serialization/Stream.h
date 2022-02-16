@@ -1,7 +1,8 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 #pragma once
 
+#include "Engine/Core/Core.h"
 #include "Engine/Core/Types/BaseTypes.h"
 
 #define FILESTREAM_BUFFER_SIZE 4096

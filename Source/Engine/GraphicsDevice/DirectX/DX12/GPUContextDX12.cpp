@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 #if GRAPHICS_API_DIRECTX12
 
@@ -417,11 +417,11 @@ void GPUContextDX12::flushUAVs()
 
     // Count UAVs required to be bind to the pipeline (the index of the most significant bit that's set)
     const uint32 uaCount = Math::FloorLog2(uaMask) + 1;
-    ASSERT(uaCount <= GPU_MAX_UA_BINDED + 1);
+    ASSERT(uaCount <= GPU_MAX_UA_BINDED);
 
     // Fill table with source descriptors
     DxShaderHeader& header = _currentCompute ? ((GPUShaderProgramCSDX12*)_currentCompute)->Header : _currentState->Header;
-    D3D12_CPU_DESCRIPTOR_HANDLE srcDescriptorRangeStarts[GPU_MAX_UA_BINDED + 1];
+    D3D12_CPU_DESCRIPTOR_HANDLE srcDescriptorRangeStarts[GPU_MAX_UA_BINDED];
     for (uint32 i = 0; i < uaCount; i++)
     {
         const auto handle = _uaHandles[i];
@@ -716,7 +716,6 @@ void GPUContextDX12::ClearDepth(GPUTextureView* depthBuffer, float depthValue)
 void GPUContextDX12::ClearUA(GPUBuffer* buf, const Vector4& value)
 {
     ASSERT(buf != nullptr && buf->IsUnorderedAccess());
-
     auto bufDX12 = reinterpret_cast<GPUBufferDX12*>(buf);
 
     SetResourceState(bufDX12, D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
@@ -728,9 +727,51 @@ void GPUContextDX12::ClearUA(GPUBuffer* buf, const Vector4& value)
     _commandList->ClearUnorderedAccessViewFloat(desc.GPU, uav, bufDX12->GetResource(), value.Raw, 0, nullptr);
 }
 
+void GPUContextDX12::ClearUA(GPUBuffer* buf, const uint32 value[4])
+{
+    ASSERT(buf != nullptr && buf->IsUnorderedAccess());
+    auto bufDX12 = reinterpret_cast<GPUBufferDX12*>(buf);
+
+    SetResourceState(bufDX12, D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
+    flushRBs();
+
+    auto uav = ((GPUBufferViewDX12*)bufDX12->View())->UAV();
+    Descriptor desc;
+    GetActiveHeapDescriptor(uav, desc);
+    _commandList->ClearUnorderedAccessViewUint(desc.GPU, uav, bufDX12->GetResource(), value, 0, nullptr);
+}
+
+void GPUContextDX12::ClearUA(GPUTexture* texture, const uint32 value[4])
+{
+    ASSERT(texture != nullptr && texture->IsUnorderedAccess());
+    auto texDX12 = reinterpret_cast<GPUTextureDX12*>(texture);
+
+    SetResourceState(texDX12, D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
+    flushRBs();
+
+    auto uav = ((GPUTextureViewDX12*)texDX12->View(0))->UAV();
+    Descriptor desc;
+    GetActiveHeapDescriptor(uav, desc);
+    _commandList->ClearUnorderedAccessViewUint(desc.GPU, uav, texDX12->GetResource(), value, 0, nullptr);
+}
+
+void GPUContextDX12::ClearUA(GPUTexture* texture, const Vector4& value)
+{
+    ASSERT(texture != nullptr && texture->IsUnorderedAccess());
+    auto texDX12 = reinterpret_cast<GPUTextureDX12*>(texture);
+
+    SetResourceState(texDX12, D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
+    flushRBs();
+    
+    auto uav = ((GPUTextureViewDX12*)(texDX12->IsVolume() ? texDX12->ViewVolume() : texDX12->View(0)))->UAV();
+    Descriptor desc;
+    GetActiveHeapDescriptor(uav, desc);
+    _commandList->ClearUnorderedAccessViewFloat(desc.GPU, uav, texDX12->GetResource(), value.Raw, 0, nullptr);
+}
+
 void GPUContextDX12::ResetRenderTarget()
 {
-    if (_rtDepth != nullptr || _rtCount != 0 || _rtDepth)
+    if (_rtDepth || _rtCount != 0)
     {
         _rtDirtyFlag = false;
         _psDirtyFlag = true;
@@ -795,17 +836,6 @@ void GPUContextDX12::SetRenderTarget(GPUTextureView* depthBuffer, const Span<GPU
         _rtDepth = depthBufferDX12;
         Platform::MemoryCopy(_rtHandles, rtvs, rtvsSize);
     }
-}
-
-void GPUContextDX12::SetRenderTarget(GPUTextureView* rt, GPUBuffer* uaOutput)
-{
-    auto uaOutputDX12 = uaOutput ? (GPUBufferViewDX12*)uaOutput->View() : nullptr;
-
-    // Set render target normally
-    SetRenderTarget(nullptr, rt);
-
-    // Bind UAV output to the 2nd slot (after render target to match DX11 binding model)
-    _uaHandles[1] = uaOutputDX12;
 }
 
 void GPUContextDX12::ResetSR()
@@ -904,7 +934,7 @@ void GPUContextDX12::BindVB(const Span<GPUBuffer*>& vertexBuffers, const uint32*
     {
         _vbCount = vertexBuffers.Length();
         Platform::MemoryCopy(_vbViews, views, sizeof(views));
-#if PLATFORM_XBOX_SCARLETT
+#if PLATFORM_XBOX_SCARLETT || PLATFORM_XBOX_ONE
         if (vertexBuffers.Length() == 0)
             return;
 #endif

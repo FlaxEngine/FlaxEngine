@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 #include "CompileScriptsStep.h"
 #include "Editor/Scripting/ScriptsBuilder.h"
@@ -12,6 +12,10 @@
 #include "Editor/Cooker/PlatformTools.h"
 #include "Editor/Editor.h"
 #include "Editor/ProjectInfo.h"
+#include "Engine/Engine/Globals.h"
+#if PLATFORM_MAC
+#include <sys/stat.h>
+#endif
 
 bool CompileScriptsStep::DeployBinaries(CookingData& data, const String& path, const String& projectFolderPath)
 {
@@ -121,11 +125,22 @@ bool CompileScriptsStep::DeployBinaries(CookingData& data, const String& path, c
     {
         const String& dstPath = data.Tools->IsNativeCodeFile(data, file) ? data.NativeCodeOutputPath : data.ManagedCodeOutputPath;
         const String dst = dstPath / StringUtils::GetFileName(file);
-        if (dst != file && FileSystem::CopyFile(dst, file))
+        if (dst == file)
+            continue;
+        if (FileSystem::CopyFile(dst, file))
         {
             data.Error(TEXT("Failed to copy file from {0} to {1}."), file, dst);
             return true;
         }
+
+#if PLATFORM_MAC
+        // Ensure to keep valid file permissions for executable files
+        const StringAsANSI<> fileANSI(*file, file.Length());
+        const StringAsANSI<> dstANSI(*dst, dst.Length());
+        struct stat st;
+        stat(fileANSI.Get(), &st);
+        chmod(dstANSI.Get(), st.st_mode);
+#endif
     }
 
     return false;
@@ -136,12 +151,8 @@ bool CompileScriptsStep::Perform(CookingData& data)
     data.StepProgress(TEXT("Compiling game scripts"), 0);
 
     const ProjectInfo* project = Editor::Project;
-    const String& target = project->GameTarget;
-    if (target.IsEmpty())
-    {
-        LOG(Error, "Empty GameTarget in project.");
-        return true;
-    }
+    String target = project->GameTarget;
+    StringView workingDir;
     const Char *platform, *architecture, *configuration = ::ToString(data.Configuration);
     switch (data.Platform)
     {
@@ -185,9 +196,26 @@ bool CompileScriptsStep::Perform(CookingData& data)
         platform = TEXT("Switch");
         architecture = TEXT("ARM64");
         break;
+    case BuildPlatform::PS5:
+        platform = TEXT("PS5");
+        architecture = TEXT("x64");
+        break;
+    case BuildPlatform::MacOSx64:
+        platform = TEXT("Mac");
+        architecture = TEXT("x64");
+        break;
     default:
         LOG(Error, "Unknown or unsupported build platform.");
         return true;
+    }
+    String targetBuildInfo = project->ProjectFolderPath / TEXT("Binaries") / target / platform / architecture / configuration / target + TEXT(".Build.json");
+    if (target.IsEmpty())
+    {
+        // Fallback to engine-only if game has no code
+        LOG(Warning, "Empty GameTarget in project.");
+        target = TEXT("FlaxGame");
+        workingDir = Globals::StartupFolder;
+        targetBuildInfo = Globals::StartupFolder / TEXT("Source/Platforms") / platform / TEXT("Binaries") / TEXT("Game") / architecture / configuration / target + TEXT(".Build.json");
     }
     _extensionsToSkip.Clear();
     _extensionsToSkip.Add(TEXT(".exp"));
@@ -195,6 +223,7 @@ bool CompileScriptsStep::Perform(CookingData& data)
     _extensionsToSkip.Add(TEXT(".lib"));
     _extensionsToSkip.Add(TEXT(".a"));
     _extensionsToSkip.Add(TEXT(".Build.json"));
+    _extensionsToSkip.Add(TEXT(".DS_Store"));
     if (data.Configuration == BuildConfiguration::Release)
     {
         _extensionsToSkip.Add(TEXT(".xml"));
@@ -216,20 +245,24 @@ bool CompileScriptsStep::Perform(CookingData& data)
         target, platform, architecture, configuration, logFile);
 #if PLATFORM_WINDOWS
     if (data.Platform == BuildPlatform::LinuxX64)
+#elif PLATFORM_LINUX
+    if (data.Platform == BuildPlatform::Windows64 || data.Platform == BuildPlatform::Windows32)
+#else
+    if (false)
+#endif
     {
-        // Skip building C++ for Linux on Windows (no need to install cross-toolchain to build C# game)
+        // Skip building C++ (no need to install cross-toolchain to build C#-only game)
         args += TEXT(" -BuildBindingsOnly");
 
-        // Assume FlaxGame was prebuilt for Linux
+        // Assume FlaxGame was prebuilt for target platform
         args += TEXT(" -SkipTargets=FlaxGame");
     }
-#endif
     for (auto& define : data.CustomDefines)
     {
         args += TEXT(" -D");
         args += define;
     }
-    if (ScriptsBuilder::RunBuildTool(args))
+    if (ScriptsBuilder::RunBuildTool(args, workingDir))
     {
         data.Error(TEXT("Failed to compile game scripts."));
         return true;
@@ -243,7 +276,6 @@ bool CompileScriptsStep::Perform(CookingData& data)
     data.StepProgress(TEXT("Exporting binaries"), 0.8f);
 
     // Deploy binary modules
-    const String targetBuildInfo = project->ProjectFolderPath / TEXT("Binaries") / project->GameTarget / platform / architecture / configuration / target + TEXT(".Build.json");
     if (DeployBinaries(data, targetBuildInfo, project->ProjectFolderPath))
         return true;
 

@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 using System.Reflection;
 using FlaxEngine;
@@ -135,6 +135,8 @@ namespace FlaxEditor
         public SpriteHandle Scene128;
         public SpriteHandle AndroidIcon128;
         public SpriteHandle PS4Icon128;
+        public SpriteHandle PS5Icon128;
+        public SpriteHandle MacOSIcon128;
         public SpriteHandle FlaxLogo128;
         public SpriteHandle SwitchIcon128;
         public SpriteHandle SwitchSettings128;

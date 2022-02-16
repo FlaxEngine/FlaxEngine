@@ -1,8 +1,9 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 #pragma once
 
 #include "Engine/Core/Common.h"
+#include "Engine/Scripting/SoftObjectReference.h"
 
 enum class PixelFormat : unsigned;
 enum class DirectorySearchOption;
@@ -33,6 +34,19 @@ public:
     static bool GetTexture(const Guid& textureId, TextureData& textureData);
     static bool ExportApplicationImage(const Guid& iconId, int32 width, int32 height, PixelFormat format, const String& path, ApplicationImageType type = ApplicationImageType::Icon);
     static bool ExportApplicationImage(const TextureData& icon, int32 width, int32 height, PixelFormat format, const String& path);
+
+    template<typename T>
+    static bool GetApplicationImage(const SoftObjectReference<T>& image, TextureData& imageData, ApplicationImageType type = ApplicationImageType::Icon)
+    {
+        const Guid imageId = image.GetID();
+        return GetApplicationImage(imageId, imageData, type);
+    }
+    template<typename T>
+    static bool ExportApplicationImage(const SoftObjectReference<T>& icon, int32 width, int32 height, PixelFormat format, const String& path, ApplicationImageType type = ApplicationImageType::Icon)
+    {
+        const Guid iconId = icon.GetID();
+        return ExportApplicationImage(iconId, width, height, format, path, type);
+    }
 
 public:
 

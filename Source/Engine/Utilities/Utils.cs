@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 using System;
 using System.Collections.Generic;
@@ -358,6 +358,26 @@ namespace FlaxEngine
         }
 
         /// <summary>
+        /// Deserializes object from Json by reading it as a raw data (ver+length+bytes).
+        /// </summary>
+        /// <remarks>Reads version number, data length and actual data bytes from the stream.</remarks>
+        /// <param name="stream">The stream.</param>
+        /// <param name="obj">The object to deserialize.</param>
+        public static void ReadJson(this BinaryReader stream, ISerializable obj)
+        {
+            // ReadStream::ReadJson
+            var engineBuild = stream.ReadInt32();
+            var size = stream.ReadInt32();
+            if (obj != null)
+            {
+                var data = stream.ReadBytes(size);
+                Json.JsonSerializer.LoadFromBytes(obj, data, engineBuild);
+            }
+            else
+                stream.BaseStream.Seek(size, SeekOrigin.Current);
+        }
+
+        /// <summary>
         /// Writes the color to the binary stream.
         /// </summary>
         /// <param name="stream">The stream.</param>
@@ -547,6 +567,26 @@ namespace FlaxEngine
             stream.Write(value.M42);
             stream.Write(value.M43);
             stream.Write(value.M44);
+        }
+
+        /// <summary>
+        /// Serializes object to Json and writes it as a raw data (ver+length+bytes).
+        /// </summary>
+        /// <param name="stream">The stream.</param>
+        /// <remarks>Writes version number, data length and actual data bytes to the stream.</remarks>
+        /// <param name="obj">The object to serialize.</param>
+        public static void WriteJson(this BinaryWriter stream, ISerializable obj)
+        {
+            // WriteStream::WriteJson
+            stream.Write(Globals.EngineBuildNumber);
+            if (obj != null)
+            {
+                var bytes = Json.JsonSerializer.SaveToBytes(obj);
+                stream.Write(bytes.Length);
+                stream.Write(bytes);
+            }
+            else
+                stream.Write(0);
         }
     }
 }

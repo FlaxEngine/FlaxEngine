@@ -1,9 +1,7 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 #include "CapsuleCollider.h"
 #include "Engine/Serialization/Serialization.h"
-#include "Engine/Physics/Utilities.h"
-#include <ThirdParty/PhysX/PxShape.h>
 
 CapsuleCollider::CapsuleCollider(const SpawnParams& params)
     : Collider(params)
@@ -41,6 +39,8 @@ void CapsuleCollider::SetHeight(const float value)
 
 void CapsuleCollider::DrawPhysicsDebug(RenderView& view)
 {
+    if (!view.CullingFrustum.Intersects(_sphere))
+        return;
     Quaternion rot;
     Quaternion::Multiply(_transform.Orientation, Quaternion::Euler(0, 90, 0), rot);
     const float scaling = _cachedScale.GetAbsolute().MaxValue();
@@ -104,12 +104,11 @@ void CapsuleCollider::UpdateBounds()
     BoundingSphere::FromBox(_box, _sphere);
 }
 
-void CapsuleCollider::GetGeometry(PxGeometryHolder& geometry)
+void CapsuleCollider::GetGeometry(CollisionShape& collision)
 {
     const float scaling = _cachedScale.GetAbsolute().MaxValue();
     const float minSize = 0.001f;
     const float radius = Math::Max(Math::Abs(_radius) * scaling, minSize);
     const float height = Math::Max(Math::Abs(_height) * scaling, minSize);
-    const PxCapsuleGeometry capsule(radius, height * 0.5f);
-    geometry.storeAny(capsule);
+    collision.SetCapsule(radius, height * 0.5f);
 }

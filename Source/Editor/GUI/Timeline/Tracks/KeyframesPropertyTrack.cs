@@ -1,6 +1,7 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
 using System.Runtime.InteropServices;
@@ -15,7 +16,7 @@ namespace FlaxEditor.GUI.Timeline.Tracks
     /// The timeline track for animating object property via keyframes collection.
     /// </summary>
     /// <seealso cref="MemberTrack" />
-    public class KeyframesPropertyTrack : MemberTrack
+    public class KeyframesPropertyTrack : MemberTrack, IKeyframesEditorContext
     {
         /// <summary>
         /// Gets the archetype.
@@ -55,7 +56,7 @@ namespace FlaxEditor.GUI.Timeline.Tracks
 
             var keyframes = new KeyframesEditor.Keyframe[keyframesCount];
             var dataBuffer = new byte[e.ValueSize];
-            var propertyType = Scripting.TypeUtils.GetType(e.MemberTypeName).Type;
+            var propertyType = Scripting.TypeUtils.GetManagedType(e.MemberTypeName);
             if (propertyType == null)
             {
                 e.Keyframes.ResetKeyframes();
@@ -207,7 +208,7 @@ namespace FlaxEditor.GUI.Timeline.Tracks
                     if (frame == Timeline.CurrentFrame)
                     {
                         // Skip if value is the same
-                        if (k.Value == value)
+                        if (Equals(k.Value, value))
                             return;
 
                         // Update existing key value
@@ -248,11 +249,18 @@ namespace FlaxEditor.GUI.Timeline.Tracks
 
         private void UpdateKeyframes()
         {
-            if (Keyframes == null)
+            if (Keyframes == null || Timeline == null)
                 return;
+            bool wasVisible = Keyframes.Visible;
             Keyframes.Visible = Visible;
             if (!Visible)
+            {
+                if (wasVisible)
+                    Keyframes.ClearSelection();
                 return;
+            }
+            Keyframes.KeyframesEditorContext = Timeline;
+            Keyframes.CustomViewPanning = Timeline.OnKeyframesViewPanning;
             Keyframes.Bounds = new Rectangle(Timeline.StartOffset, Y + 1.0f, Timeline.Duration * Timeline.UnitsPerSecond * Timeline.Zoom, Height - 2.0f);
             Keyframes.ViewScale = new Vector2(Timeline.Zoom, 1.0f);
             Keyframes.UpdateKeyframes();
@@ -273,7 +281,7 @@ namespace FlaxEditor.GUI.Timeline.Tracks
         {
             var after = EditTrackAction.CaptureData(this);
             if (!Utils.ArraysEqual(_keyframesEditingStartData, after))
-                Timeline.Undo.AddAction(new EditTrackAction(Timeline, this, _keyframesEditingStartData, after));
+                Timeline.AddBatchedUndoAction(new EditTrackAction(Timeline, this, _keyframesEditingStartData, after));
             _keyframesEditingStartData = null;
         }
 
@@ -385,6 +393,66 @@ namespace FlaxEditor.GUI.Timeline.Tracks
             }
 
             base.OnDestroy();
+        }
+
+        /// <inheritdoc />
+        public new void OnKeyframesDeselect(IKeyframesEditor editor)
+        {
+            if (Keyframes != null && Keyframes.Visible)
+                Keyframes.OnKeyframesDeselect(editor);
+        }
+
+        /// <inheritdoc />
+        public new void OnKeyframesSelection(IKeyframesEditor editor, ContainerControl control, Rectangle selection)
+        {
+            if (Keyframes != null && Keyframes.Visible)
+                Keyframes.OnKeyframesSelection(editor, control, selection);
+        }
+
+        /// <inheritdoc />
+        public new int OnKeyframesSelectionCount()
+        {
+            return Keyframes != null && Keyframes.Visible ? Keyframes.OnKeyframesSelectionCount() : 0;
+        }
+
+        /// <inheritdoc />
+        public new void OnKeyframesDelete(IKeyframesEditor editor)
+        {
+            if (Keyframes != null && Keyframes.Visible)
+                Keyframes.OnKeyframesDelete(editor);
+        }
+
+        /// <inheritdoc />
+        public new void OnKeyframesMove(IKeyframesEditor editor, ContainerControl control, Vector2 location, bool start, bool end)
+        {
+            if (Keyframes != null && Keyframes.Visible)
+                Keyframes.OnKeyframesMove(editor, control, location, start, end);
+        }
+
+        /// <inheritdoc />
+        public new void OnKeyframesCopy(IKeyframesEditor editor, float? timeOffset, StringBuilder data)
+        {
+            if (Keyframes != null && Keyframes.Visible)
+                Keyframes.OnKeyframesCopy(editor, timeOffset, data);
+        }
+
+        /// <inheritdoc />
+        public new void OnKeyframesPaste(IKeyframesEditor editor, float? timeOffset, string[] datas, ref int index)
+        {
+            if (Keyframes != null && Keyframes.Visible)
+                Keyframes.OnKeyframesPaste(editor, timeOffset, datas, ref index);
+        }
+
+        /// <inheritdoc />
+        public new void OnKeyframesGet(Action<string, float, object> get)
+        {
+            Keyframes?.OnKeyframesGet(Name, get);
+        }
+
+        /// <inheritdoc />
+        public new void OnKeyframesSet(List<KeyValuePair<float, object>> keyframes)
+        {
+            Keyframes?.OnKeyframesSet(keyframes);
         }
     }
 }

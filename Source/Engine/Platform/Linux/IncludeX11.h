@@ -1,6 +1,8 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 #pragma once
+
+#if PLATFORM_LINUX
 
 // Hide warning from old headers
 #define register
@@ -38,3 +40,5 @@ namespace X11
 #undef Status
 #undef True
 #undef False
+
+#endif

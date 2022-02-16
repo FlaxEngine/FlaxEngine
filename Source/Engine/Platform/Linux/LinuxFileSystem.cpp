@@ -8,9 +8,11 @@
 #include "Engine/Core/Types/StringView.h"
 #include "Engine/Core/Types/TimeSpan.h"
 #include "Engine/Core/Math/Math.h"
+#include "Engine/Core/Log.h"
 #include "Engine/Utilities/StringConverter.h"
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <sys/sendfile.h>
 #include <unistd.h>
 #include <stdio.h>
 #include <cerrno>
@@ -23,11 +25,28 @@ const DateTime UnixEpoch(1970, 1, 1);
 
 bool LinuxFileSystem::ShowOpenFileDialog(Window* parentWindow, const StringView& initialDirectory, const StringView& filter, bool multiSelect, const StringView& title, Array<String, HeapAllocation>& filenames)
 {
+    const StringAsANSI<> initialDirectoryAnsi(*initialDirectory, initialDirectory.Length());
     const StringAsANSI<> titleAnsi(*title, title.Length());
     char cmd[2048];
-    // TODO: multiSelect support
-    // TODO: filter support
-    sprintf(cmd, "/usr/bin/zenity --modal --file-selection --title=\"%s\" ", titleAnsi.Get());
+    if (FileSystem::FileExists(TEXT("/usr/bin/zenity")))
+    {
+        // TODO: initialDirectory support
+        // TODO: multiSelect support
+        // TODO: filter support
+        sprintf(cmd, "/usr/bin/zenity --modal --file-selection --title=\"%s\" ", titleAnsi.Get());
+    }
+    else if (FileSystem::FileExists(TEXT("/usr/bin/kdialog")))
+    {
+        // TODO: multiSelect support
+        // TODO: filter support
+        const char* initDir = initialDirectory.HasChars() ? initialDirectoryAnsi.Get() : ".";
+        sprintf(cmd, "/usr/bin/kdialog --getopenfilename \"%s\" --title \"%s\" ", initDir, titleAnsi.Get());
+    }
+    else
+    {
+        LOG(Error, "Missing file picker (install zenity or kdialog).");
+        return true;    
+    }
     FILE* f = popen(cmd, "r");
     char buf[2048];
     fgets(buf, ARRAY_COUNT(buf), f); 
@@ -312,7 +331,23 @@ bool LinuxFileSystem::MoveFile(const StringView& dst, const StringView& src, boo
         return true;
     }
 
-    return rename(StringAsANSI<>(*src, src.Length()).Get(), StringAsANSI<>(*dst, dst.Length()).Get()) != 0;
+    if (overwrite)
+    {
+        unlink(StringAsANSI<>(*dst, dst.Length()).Get());
+    }
+    if (rename(StringAsANSI<>(*src, src.Length()).Get(), StringAsANSI<>(*dst, dst.Length()).Get()) != 0)
+    {
+        if (errno == EXDEV)
+        {
+            if (!CopyFile(dst, src))
+            {
+                unlink(StringAsANSI<>(*src, src.Length()).Get());
+                return false;
+            }
+        }
+        return true;
+    }
+    return false;
 }
 
 bool LinuxFileSystem::CopyFile(const StringView& dst, const StringView& src)
@@ -332,24 +367,37 @@ bool LinuxFileSystem::CopyFile(const StringView& dst, const StringView& src)
     if (dstFile < 0)
         goto out_error;
 
-    while (readSize = read(srcFile, buffer, sizeof(buffer)), readSize > 0)
+    // first try the kernel method
+    struct stat statBuf;
+    fstat(srcFile, &statBuf);
+    readSize = 1;
+    while (readSize > 0)
     {
-        char* ptr = buffer;
-        ssize_t writeSize;
-
-        do
+        readSize = sendfile(dstFile, srcFile, 0, statBuf.st_size);
+    }
+    // sendfile could fail for example if the input file is not nmap'able
+    // in this case we fall back to the read/write loop
+    if (readSize < 0)
+    {
+        while (readSize = read(srcFile, buffer, sizeof(buffer)), readSize > 0)
         {
-            writeSize = write(dstFile, ptr, readSize);
-            if (writeSize >= 0)
+            char* ptr = buffer;
+            ssize_t writeSize;
+
+            do
             {
-                readSize -= writeSize;
-                ptr += writeSize;
-            }
-            else if (errno != EINTR)
-            {
-                goto out_error;
-            }
-        } while (readSize > 0);
+                writeSize = write(dstFile, ptr, readSize);
+                if (writeSize >= 0)
+                {
+                    readSize -= writeSize;
+                    ptr += writeSize;
+                }
+                else if (errno != EINTR)
+                {
+                    goto out_error;
+                }
+            } while (readSize > 0);
+        }
     }
 
     if (readSize == 0)

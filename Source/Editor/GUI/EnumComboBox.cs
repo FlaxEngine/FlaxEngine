@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 using System;
 using System.Collections.Generic;
@@ -6,6 +6,7 @@ using System.Linq;
 using System.Reflection;
 using FlaxEditor.CustomEditors;
 using FlaxEditor.CustomEditors.Elements;
+using FlaxEditor.Scripting;
 using FlaxEngine;
 
 namespace FlaxEditor.GUI
@@ -245,7 +246,7 @@ namespace FlaxEditor.GUI
                 if (field.Name.Equals("value__", StringComparison.Ordinal))
                     continue;
 
-                var attributes = (Attribute[])field.GetCustomAttributes();
+                var attributes = field.GetCustomAttributes(false);
                 if (attributes.Any(x => x is HideInEditorAttribute))
                     continue;
 
@@ -269,12 +270,7 @@ namespace FlaxEditor.GUI
                     }
                 }
 
-                string tooltip = null;
-                var tooltipAttr = (TooltipAttribute)attributes.FirstOrDefault(x => x is TooltipAttribute);
-                if (tooltipAttr != null)
-                {
-                    tooltip = tooltipAttr.Text;
-                }
+                string tooltip = Editor.Instance.CodeDocs.GetTooltip(new ScriptMemberInfo(field), attributes);
 
                 entries.Add(new Entry(name, Convert.ToInt64(field.GetRawConstantValue()), tooltip));
             }

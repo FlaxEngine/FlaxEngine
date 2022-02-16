@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 #if COMPILE_WITH_MATERIAL_GRAPH
 
@@ -56,10 +56,8 @@ void MaterialGenerator::ProcessGroupMaterial(Box* box, Node* node, Value& value)
     }
         // Screen Size
     case 7:
-    {
         value = Value(VariantType::Vector2, box->ID == 0 ? TEXT("ScreenSize.xy") : TEXT("ScreenSize.zw"));
         break;
-    }
         // Custom code
     case 8:
     {
@@ -400,7 +398,6 @@ void MaterialGenerator::ProcessGroupMaterial(Box* box, Node* node, Value& value)
     case 30:
     {
         const auto inValue = tryGetValue(node->GetBox(0), 0, Value::Zero);
-
         value = writeLocal(inValue.Type, String::Format(TEXT("ddx({0})"), inValue.Value), node);
         break;
     }
@@ -408,7 +405,6 @@ void MaterialGenerator::ProcessGroupMaterial(Box* box, Node* node, Value& value)
     case 31:
     {
         const auto inValue = tryGetValue(node->GetBox(0), 0, Value::Zero);
-
         value = writeLocal(inValue.Type, String::Format(TEXT("ddy({0})"), inValue.Value), node);
         break;
     }
@@ -416,7 +412,6 @@ void MaterialGenerator::ProcessGroupMaterial(Box* box, Node* node, Value& value)
     case 32:
     {
         const auto inValue = tryGetValue(node->GetBox(0), 0, Value::Zero);
-
         value = writeLocal(ValueType::Float, String::Format(TEXT("sign({0})"), inValue.Value), node);
         break;
     }
@@ -424,7 +419,6 @@ void MaterialGenerator::ProcessGroupMaterial(Box* box, Node* node, Value& value)
     case 33:
     {
         const auto inValue = tryGetValue(node->GetBox(0), 0, Value::Zero);
-
         value = writeLocal(ValueType::Bool, String::Format(TEXT("any({0})"), inValue.Value), node);
         break;
     }
@@ -432,7 +426,6 @@ void MaterialGenerator::ProcessGroupMaterial(Box* box, Node* node, Value& value)
     case 34:
     {
         const auto inValue = tryGetValue(node->GetBox(0), 0, Value::Zero);
-
         value = writeLocal(ValueType::Bool, String::Format(TEXT("all({0})"), inValue.Value), node);
         break;
     }
@@ -542,7 +535,7 @@ void MaterialGenerator::ProcessGroupFunction(Box* box, Node* node, Value& value)
             break;
         }
         Box* functionCallBox = functionCallNode->TryGetBox(inputIndex);
-        if (functionCallBox->HasConnection())
+        if (functionCallBox && functionCallBox->HasConnection())
         {
             // Use provided input value from the function call
             _graphStack.Pop();

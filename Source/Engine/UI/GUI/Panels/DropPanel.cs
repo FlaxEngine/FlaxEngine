@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 using System;
 
@@ -559,6 +559,15 @@ namespace FlaxEngine.GUI
         protected override void PerformLayoutAfterChildren()
         {
             Arrange();
+        }
+
+        /// <inheritdoc />
+        protected override bool CanNavigateChild(Control child)
+        {
+            // Closed panel skips navigation for hidden children
+            if (IsClosed && child.IsScrollable)
+                return false;
+            return base.CanNavigateChild(child);
         }
     }
 }

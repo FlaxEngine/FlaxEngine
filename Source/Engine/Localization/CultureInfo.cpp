@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 #include "CultureInfo.h"
 #include "Engine/Core/Log.h"
@@ -47,8 +47,6 @@ CultureInfo::CultureInfo(int32 lcid)
             break;
         }
     }
-#else
-#error "Missing CultureInfo implementation."
 #endif
     if (!_data)
     {
@@ -89,8 +87,6 @@ CultureInfo::CultureInfo(const StringAnsiView& name)
             break;
         }
     }
-#else
-#error "Missing CultureInfo implementation."
 #endif
     if (!_data)
     {
@@ -132,8 +128,6 @@ bool CultureInfo::IsRightToLeft() const
     const auto data = static_cast<CultureInfoEntry*>(_data);
     if (data)
         return data->text_info.is_right_to_left ? true : false;
-#else
-#error "Missing CultureInfo implementation."
 #endif
     return false;
 }

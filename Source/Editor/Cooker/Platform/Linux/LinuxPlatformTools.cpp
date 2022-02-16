@@ -12,7 +12,7 @@
 #include "Engine/Content/Content.h"
 #include "Engine/Content/JsonAsset.h"
 
-IMPLEMENT_SETTINGS_GETTER(LinuxPlatformSettings, LinuxPlatform);
+IMPLEMENT_ENGINE_SETTINGS_GETTER(LinuxPlatformSettings, LinuxPlatform);
 
 const Char* LinuxPlatformTools::GetDisplayName() const
 {

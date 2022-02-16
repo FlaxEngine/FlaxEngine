@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 using System;
 using System.Collections.Generic;
@@ -394,9 +394,9 @@ namespace FlaxEditor.Surface.ContextMenu
             Profiler.BeginEvent("VisjectCM.Layout");
             if (SelectedItem == null || !SelectedItem.VisibleInHierarchy)
                 SelectedItem = _groups.Find(g => g.Visible)?.Children.Find(c => c.Visible && c is VisjectCMItem) as VisjectCMItem;
+            PerformLayout();
             if (SelectedItem != null)
                 _panel1.ScrollViewTo(SelectedItem);
-            PerformLayout();
             _searchBox.Focus();
             Profiler.EndEvent();
 

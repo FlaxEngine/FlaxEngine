@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 #include "FontTextureAtlas.h"
 #include "Engine/Core/Types/DataContainer.h"
@@ -210,7 +210,9 @@ void FontTextureAtlas::Flush()
         // Upload data to the GPU
         BytesContainer data;
         data.Link(_data);
-        _texture->UploadMipMapAsync(data, 0)->Start();
+        auto task = _texture->UploadMipMapAsync(data, 0);
+        if (task)
+            task->Start();
 
         // Clear dirty flag
         _isDirty = false;

@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 using System;
 using System.Linq;
@@ -1283,6 +1283,14 @@ namespace FlaxEditor.Viewport
 
                     // Get input movement
                     Vector3 moveDelta = Vector3.Zero;
+                    Vector2 mouseDelta = Vector2.Zero;
+                    if (FlaxEngine.Input.GamepadsCount > 0)
+                    {
+                        // Gamepads handling
+                        moveDelta += new Vector3(GetGamepadAxis(GamepadAxis.LeftStickX), 0, GetGamepadAxis(GamepadAxis.LeftStickY));
+                        mouseDelta += new Vector2(GetGamepadAxis(GamepadAxis.RightStickX), -GetGamepadAxis(GamepadAxis.RightStickY));
+                        _input.IsRotating |= !mouseDelta.IsZero;
+                    }
                     if (win.GetKey(KeyboardKeys.ArrowRight))
                     {
                         moveDelta += Vector3.Right;
@@ -1304,7 +1312,6 @@ namespace FlaxEditor.Viewport
 
                     // Update
                     moveDelta *= dt * (60.0f * 4.0f);
-                    Vector2 mouseDelta = Vector2.Zero;
                     UpdateView(dt, ref moveDelta, ref mouseDelta, out _);
                 }
             }
@@ -1464,6 +1471,9 @@ namespace FlaxEditor.Viewport
             new ViewModeOptions(ViewMode.LightmapUVsDensity, "Lightmap UVs Density"),
             new ViewModeOptions(ViewMode.VertexColors, "Vertex Colors"),
             new ViewModeOptions(ViewMode.PhysicsColliders, "Physics Colliders"),
+            new ViewModeOptions(ViewMode.LODPreview, "LOD Preview"),
+            new ViewModeOptions(ViewMode.MaterialComplexity, "Material Complexity"),
+            new ViewModeOptions(ViewMode.QuadOverdraw, "Quad Overdraw"),
         };
 
         private void WidgetCamSpeedShowHide(Control cm)
@@ -1559,6 +1569,13 @@ namespace FlaxEditor.Viewport
                              : SpriteHandle.Invalid;
                 }
             }
+        }
+
+        private float GetGamepadAxis(GamepadAxis axis)
+        {
+            var value = FlaxEngine.Input.GetGamepadAxis(InputGamepadIndex.All, axis);
+            var deadZone = 0.2f;
+            return value >= deadZone || value <= -deadZone ? value : 0.0f;
         }
     }
 }

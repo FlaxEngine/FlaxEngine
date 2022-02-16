@@ -1,10 +1,11 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 #include "CreateCollisionData.h"
 
 #if COMPILE_WITH_ASSETS_IMPORTER
 
 #include "AssetsImportingManager.h"
+#include "Engine/Physics/CollisionData.h"
 
 CreateAssetResult CreateCollisionData::Create(CreateAssetContext& context)
 {

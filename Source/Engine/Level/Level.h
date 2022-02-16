@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -215,6 +215,8 @@ public:
     /// </summary>
     API_EVENT() static Delegate<Scene*, const Guid&> SceneUnloaded;
 
+#if USE_EDITOR
+
     /// <summary>
     /// Fired when scene starts reloading scripts.
     /// </summary>
@@ -226,9 +228,22 @@ public:
     API_EVENT() static Action ScriptsReload;
 
     /// <summary>
+    /// Fired when scene reloaded scripts (new scripting is loaded). All user objects can be restored before scenes reloading.
+    /// </summary>
+    API_EVENT() static Action ScriptsReloaded;
+
+    /// <summary>
     /// Fired when scene ends reloading scripts.
     /// </summary>
     API_EVENT() static Action ScriptsReloadEnd;
+
+    /// <summary>
+    /// Adds object to preserve during scripts reload. Called during ScriptsReloadStart event to serialize and destroy the object that should be restored when scripts reload ends.
+    /// </summary>
+    /// <param name="obj">Reference to the object to preserve during the scripting reload.</param>
+    static void ScriptsReloadRegisterObject(ScriptingObject*& obj);
+
+#endif
 
 public:
 

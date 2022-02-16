@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 using System;
 using FlaxEditor.Scripting;
@@ -244,7 +244,7 @@ namespace FlaxEditor.Surface.Archetypes
                 Title = "Mad",
                 Description = "Performs value multiplication and addition at once",
                 Flags = NodeFlags.AllGraphs,
-                Size = new Vector2(110, 60),
+                Size = new Vector2(160, 60),
                 ConnectionsHints = ConnectionsHint.Numeric,
                 IndependentBoxes = new[]
                 {

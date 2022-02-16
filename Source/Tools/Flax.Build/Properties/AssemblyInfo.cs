@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 using System.Reflection;
 using System.Runtime.InteropServices;
@@ -8,7 +8,7 @@ using System.Runtime.InteropServices;
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("Wojciech Figat")]
 [assembly: AssemblyProduct("Flax.Build")]
-[assembly: AssemblyCopyright("Copyright © 2012-2020 Wojciech Figat")]
+[assembly: AssemblyCopyright("Copyright © 2012-2022 Wojciech Figat")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
 [assembly: ComVisible(false)]

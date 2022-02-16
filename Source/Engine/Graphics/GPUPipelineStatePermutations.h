@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -41,6 +41,11 @@ public:
     }
 
     FORCE_INLINE GPUPipelineState* Get(int index) const
+    {
+        return States[index];
+    }
+
+    FORCE_INLINE GPUPipelineState*& operator[](int32 index)
     {
         return States[index];
     }

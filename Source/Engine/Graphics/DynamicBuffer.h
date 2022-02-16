@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -73,6 +73,27 @@ public:
     FORCE_INLINE void Write(const void* bytes, int32 size)
     {
         Data.Add((byte*)bytes, size);
+    }
+
+    /// <summary>
+    /// Allocates bytes in the buffer by resizing the buffer for new memory and returns the pointer to the start of the allocated space.
+    /// </summary>
+    /// <param name="size">Amount of data to allocate (in bytes)</param>
+    FORCE_INLINE byte* WriteReserve(int32 size)
+    {
+        const int32 start = Data.Count();
+        Data.AddUninitialized(size);
+        return Data.Get() + start;
+    }
+    
+    /// <summary>
+    /// Allocates bytes in the buffer by resizing the buffer for new memory and returns the pointer to the start of the allocated space.
+    /// </summary>
+    /// <param name="count">Amount of items to allocate</param>
+    template<typename T>
+    FORCE_INLINE T* WriteReserve(int32 count)
+    {
+        return (T*)WriteReserve(count * sizeof(T));
     }
 
     /// <summary>

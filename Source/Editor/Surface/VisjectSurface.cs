@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 using System;
 using System.Collections.Generic;
@@ -321,6 +321,16 @@ namespace FlaxEditor.Surface
         public event Action<SurfaceNode> NodeBreakpointEdited;
 
         /// <summary>
+        /// Occurs when two nodes gets connected (via UI).
+        /// </summary>
+        public event Action<IConnectionInstigator, IConnectionInstigator> NodesConnected;
+
+        /// <summary>
+        /// Occurs when two nodes gets disconnected (via UI).
+        /// </summary>
+        public event Action<IConnectionInstigator, IConnectionInstigator> NodesDisconnected;
+
+        /// <summary>
         /// Initializes a new instance of the <see cref="VisjectSurface"/> class.
         /// </summary>
         /// <param name="owner">The owner.</param>
@@ -329,7 +339,7 @@ namespace FlaxEditor.Surface
         /// <param name="style">The custom surface style. Use null to create the default style.</param>
         /// <param name="groups">The custom surface node types. Pass null to use the default nodes set.</param>
         /// <param name="supportsDebugging">True if surface supports debugging features (breakpoints, etc.).</param>
-        public VisjectSurface(IVisjectSurfaceOwner owner, Action onSave, FlaxEditor.Undo undo = null, SurfaceStyle style = null, List<GroupArchetype> groups = null, bool supportsDebugging = false)
+        public VisjectSurface(IVisjectSurfaceOwner owner, Action onSave = null, FlaxEditor.Undo undo = null, SurfaceStyle style = null, List<GroupArchetype> groups = null, bool supportsDebugging = false)
         {
             AnchorPreset = AnchorPresets.StretchAll;
             Offsets = Margin.Zero;
@@ -932,6 +942,23 @@ namespace FlaxEditor.Surface
         public virtual void OnNodeDeleted(SurfaceNode node)
         {
             NodeDeleted?.Invoke(node);
+        }
+
+        /// <summary>
+        /// Called when two nodes gets connected (via UI).
+        /// </summary>
+        public virtual void OnNodesConnected(IConnectionInstigator a, IConnectionInstigator b)
+        {
+            NodesConnected?.Invoke(a, b);
+            MarkAsEdited();
+        }
+
+        /// <summary>
+        /// Called when two nodes gets disconnected (via UI).
+        /// </summary>
+        public virtual void OnNodesDisconnected(IConnectionInstigator a, IConnectionInstigator b)
+        {
+            NodesDisconnected?.Invoke(a, b);
         }
 
         /// <inheritdoc />

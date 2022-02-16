@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 using System;
 using FlaxEditor.Scripting;
@@ -18,86 +18,27 @@ namespace FlaxEditor.Surface.Archetypes
         /// Customized <see cref="SurfaceNode"/> for main material node.
         /// </summary>
         /// <seealso cref="FlaxEditor.Surface.SurfaceNode" />
-        public class SurfaceNodeMaterial : SurfaceNode
+        internal class SurfaceNodeMaterial : SurfaceNode
         {
             /// <summary>
             /// Material node input boxes (each enum item value maps to box ID).
             /// </summary>
-            public enum MaterialNodeBoxes
+            internal enum MaterialNodeBoxes
             {
-                /// <summary>
-                /// The layer input.
-                /// </summary>
                 Layer = 0,
-
-                /// <summary>
-                /// The color input.
-                /// </summary>
                 Color = 1,
-
-                /// <summary>
-                /// The mask input.
-                /// </summary>
                 Mask = 2,
-
-                /// <summary>
-                /// The emissive input.
-                /// </summary>
                 Emissive = 3,
-
-                /// <summary>
-                /// The metalness input.
-                /// </summary>
                 Metalness = 4,
-
-                /// <summary>
-                /// The specular input.
-                /// </summary>
                 Specular = 5,
-
-                /// <summary>
-                /// The roughness input.
-                /// </summary>
                 Roughness = 6,
-
-                /// <summary>
-                /// The ambient occlusion input.
-                /// </summary>
                 AmbientOcclusion = 7,
-
-                /// <summary>
-                /// The normal input.
-                /// </summary>
                 Normal = 8,
-
-                /// <summary>
-                /// The opacity input.
-                /// </summary>
                 Opacity = 9,
-
-                /// <summary>
-                /// The refraction input.
-                /// </summary>
                 Refraction = 10,
-
-                /// <summary>
-                /// The position offset input.
-                /// </summary>
                 PositionOffset = 11,
-
-                /// <summary>
-                /// The tessellation multiplier input.
-                /// </summary>
                 TessellationMultiplier = 12,
-
-                /// <summary>
-                /// The world displacement input.
-                /// </summary>
                 WorldDisplacement = 13,
-
-                /// <summary>
-                /// The subsurface color input.
-                /// </summary>
                 SubsurfaceColor = 14,
             };
 
@@ -159,7 +100,6 @@ namespace FlaxEditor.Surface.Archetypes
                 case MaterialDomain.Deformable:
                 {
                     bool isNotUnlit = info.ShadingModel != MaterialShadingModel.Unlit;
-                    bool isTransparent = info.BlendMode == MaterialBlendMode.Transparent;
                     bool withTess = info.TessellationMode != TessellationMethod.None;
 
                     GetBox(MaterialNodeBoxes.Color).Enabled = isNotUnlit;
@@ -171,7 +111,7 @@ namespace FlaxEditor.Surface.Archetypes
                     GetBox(MaterialNodeBoxes.AmbientOcclusion).Enabled = isNotUnlit;
                     GetBox(MaterialNodeBoxes.Normal).Enabled = isNotUnlit;
                     GetBox(MaterialNodeBoxes.Opacity).Enabled = info.ShadingModel == MaterialShadingModel.Subsurface || info.ShadingModel == MaterialShadingModel.Foliage || info.BlendMode != MaterialBlendMode.Opaque;
-                    GetBox(MaterialNodeBoxes.Refraction).Enabled = isTransparent;
+                    GetBox(MaterialNodeBoxes.Refraction).Enabled = info.BlendMode != MaterialBlendMode.Opaque;
                     GetBox(MaterialNodeBoxes.PositionOffset).Enabled = true;
                     GetBox(MaterialNodeBoxes.TessellationMultiplier).Enabled = withTess;
                     GetBox(MaterialNodeBoxes.WorldDisplacement).Enabled = withTess;
@@ -680,7 +620,7 @@ namespace FlaxEditor.Surface.Archetypes
             {
                 TypeID = 27,
                 Title = "Rotator",
-                Description = "Rotates UV coordinates according to a scalar angle (0-1)",
+                Description = "Rotates UV coordinates according to a scalar angle (in radians, 0-2PI)",
                 Flags = NodeFlags.MaterialGraph,
                 Size = new Vector2(150, 55),
                 Elements = new[]

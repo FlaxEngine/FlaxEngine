@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -14,6 +14,7 @@ struct RenderView;
 struct RenderContext;
 class GPUContext;
 class MemoryWriteStream;
+class PhysicsScene;
 class SceneRendering;
 class SceneRenderTask;
 
@@ -47,6 +48,7 @@ protected:
     BoundingSphere _sphere;
     BoundingBox _box;
     String _name;
+    PhysicsScene* _physicsScene;
 
 private:
 
@@ -239,13 +241,6 @@ public:
                 result.Add((T*)child);
         return result;
     }
-
-    /// <summary>
-    /// Gets the child actor by its prefab object identifier.
-    /// </summary>
-    /// <param name="prefabObjectId">The prefab object identifier.</param>
-    /// <returns>The actor or null.</returns>
-    Actor* GetChildByPrefabObjectId(const Guid& prefabObjectId) const;
 
 public:
 
@@ -693,13 +688,6 @@ public:
     Script* GetScriptByID(const Guid& id) const;
 
     /// <summary>
-    /// Gets the script by its prefab object identifier.
-    /// </summary>
-    /// <param name="prefabObjectId">The prefab object identifier.</param>
-    /// <returns>The script or null.</returns>
-    Script* GetScriptByPrefabObjectId(const Guid& prefabObjectId) const;
-
-    /// <summary>
     /// Gets a value indicating whether this actor is a prefab instance root object.
     /// </summary>
     API_PROPERTY() bool IsPrefabRoot() const;
@@ -796,14 +784,14 @@ public:
     /// Gets rotation of the actor oriented towards the specified world position.
     /// </summary>
     /// <param name="worldPos">The world position to orient towards.</param>
-    API_FUNCTION() Quaternion LookingAt(const Vector3& worldPos);
+    API_FUNCTION() Quaternion LookingAt(const Vector3& worldPos) const;
 
     /// <summary>
     /// Gets rotation of the actor oriented towards the specified world position with upwards direction.
     /// </summary>
     /// <param name="worldPos">The world position to orient towards.</param>
     /// <param name="worldUp">The up direction that Constrains y axis orientation to a plane this vector lies on. This rule might be broken if forward and up direction are nearly parallel.</param>
-    API_FUNCTION() Quaternion LookingAt(const Vector3& worldPos, const Vector3& worldUp);
+    API_FUNCTION() Quaternion LookingAt(const Vector3& worldPos, const Vector3& worldUp) const;
 
 public:
 
@@ -973,6 +961,20 @@ public:
     /// <returns>The scene rendering interface.</returns>
     SceneRendering* GetSceneRendering() const;
 
+public:
+    /// <summary>
+    /// Set the physics world the controller is part of.
+    /// </summary>
+    API_PROPERTY(Attributes="HideInEditor") void SetPhysicsScene(PhysicsScene* scene);
+
+    /// <summary>
+    /// Get the physics world the controller is part of.
+    /// </summary>
+    API_PROPERTY(Attributes="HideInEditor") PhysicsScene* GetPhysicsScene() const;
+
+protected:
+    virtual void OnPhysicsSceneChanged(PhysicsScene* previous) {}
+
 private:
 
     void SetSceneInHierarchy(Scene* scene);
@@ -985,7 +987,7 @@ private:
 
 public:
 
-    // [PersistentScriptingObject]
+    // [ScriptingObject]
     String ToString() const override;
     void OnDeleteObject() override;
 

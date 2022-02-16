@@ -1,8 +1,9 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Diagnostics;
 using Flax.Build.NativeCpp;
 
 namespace Flax.Build
@@ -33,7 +34,31 @@ namespace Flax.Build
                     case PlatformID.Win32S:
                     case PlatformID.Win32Windows:
                     case PlatformID.WinCE: return TargetPlatform.Windows;
-                    case PlatformID.Unix: return TargetPlatform.Linux;
+                    case PlatformID.Unix:
+                    {
+                        try
+                        {
+                            Process p = new Process
+                            {
+                                StartInfo =
+                                {
+                                    UseShellExecute = false,
+                                    RedirectStandardOutput = true,
+                                    FileName = "uname",
+                                    Arguments = "-s",
+                                }
+                            };
+                            p.Start();
+                            string uname = p.StandardOutput.ReadToEnd().Trim();
+                            if (uname == "Darwin")
+                                return TargetPlatform.Mac;
+                        }
+                        catch (Exception)
+                        {
+                        }
+                        return TargetPlatform.Linux;
+                    }
+                    case PlatformID.MacOSX: return TargetPlatform.Mac;
                     default: throw new NotImplementedException(string.Format("Unsupported build platform {0}.", platformId));
                     }
                 }
@@ -184,6 +209,16 @@ namespace Flax.Build
         }
 
         /// <summary>
+        /// Tries to create the build toolchain for a given architecture. Returns null if platform is not supported.
+        /// </summary>
+        /// <param name="targetArchitecture">The target architecture.</param>
+        /// <returns>The toolchain.</returns>
+        public Toolchain TryGetToolchain(TargetArchitecture targetArchitecture)
+        {
+            return HasRequiredSDKsInstalled ? GetToolchain(targetArchitecture) : null;
+        }
+
+        /// <summary>
         /// Creates the build toolchain for a given architecture.
         /// </summary>
         /// <param name="targetArchitecture">The target architecture.</param>
@@ -229,8 +264,10 @@ namespace Flax.Build
             case TargetPlatform.UWP: return targetArchitecture == TargetArchitecture.x64;
             case TargetPlatform.Linux: return targetArchitecture == TargetArchitecture.x64;
             case TargetPlatform.PS4: return targetArchitecture == TargetArchitecture.x64;
+            case TargetPlatform.PS5: return targetArchitecture == TargetArchitecture.x64;
             case TargetPlatform.Android: return targetArchitecture == TargetArchitecture.ARM64;
             case TargetPlatform.Switch: return targetArchitecture == TargetArchitecture.ARM64;
+            case TargetPlatform.Mac: return targetArchitecture == TargetArchitecture.x64;
             default: return false;
             }
         }

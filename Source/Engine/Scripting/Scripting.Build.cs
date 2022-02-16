@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 using Flax.Build;
 using Flax.Build.NativeCpp;
@@ -13,7 +13,11 @@ public class Scripting : EngineModule
     {
         base.Setup(options);
 
-        options.PublicDependencies.Add("mono");
+        if (EngineConfiguration.WithCSharp(options))
+        {
+            options.PublicDependencies.Add("mono");
+        }
+
         options.PrivateDependencies.Add("Utilities");
     }
 }

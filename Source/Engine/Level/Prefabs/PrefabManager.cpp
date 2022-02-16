@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 #include "PrefabManager.h"
 #include "../Scene/Scene.h"
@@ -138,6 +138,7 @@ Actor* PrefabManager::SpawnPrefab(Prefab* prefab, Actor* parent, Dictionary<Guid
     SceneObjectsFactory::Context context(modifier.Value);
 
     // Deserialize prefab objects
+    auto prevIdMapping = Scripting::ObjectsLookupIdMapping.Get();
     Scripting::ObjectsLookupIdMapping.Set(&modifier.Value->IdsMapping);
     for (int32 i = 0; i < objectsCount; i++)
     {
@@ -164,7 +165,7 @@ Actor* PrefabManager::SpawnPrefab(Prefab* prefab, Actor* parent, Dictionary<Guid
         if (obj)
             SceneObjectsFactory::Deserialize(context, obj, stream);
     }
-    Scripting::ObjectsLookupIdMapping.Set(nullptr);
+    Scripting::ObjectsLookupIdMapping.Set(prevIdMapping);
 
     // Assume that prefab has always only one root actor that is serialized first
     if (sceneObjects.Value->IsEmpty())

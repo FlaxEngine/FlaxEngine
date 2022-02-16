@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -93,6 +93,7 @@ public:
     explicit VariantType(Types type, const StringView& typeName);
     explicit VariantType(Types type, const StringAnsiView& typeName);
     explicit VariantType(Types type, struct _MonoClass* klass);
+    explicit VariantType(const StringAnsiView& typeName);
     VariantType(const VariantType& other);
     VariantType(VariantType&& other) noexcept;
 
@@ -119,6 +120,7 @@ public:
     void SetTypeName(const StringView& typeName);
     void SetTypeName(const StringAnsiView& typeName);
     const char* GetTypeName() const;
+    VariantType GetElementType() const;
     ::String ToString() const;
 };
 
@@ -189,6 +191,9 @@ public:
     Variant(const Variant& other);
     Variant(Variant&& other) noexcept;
 
+    explicit Variant(decltype(nullptr));
+    explicit Variant(const VariantType& type);
+    explicit Variant(VariantType&& type);
     Variant(bool v);
     Variant(int16 v);
     Variant(uint16 v);
@@ -224,6 +229,7 @@ public:
     Variant(Array<Variant, HeapAllocation>&& v);
     Variant(const Array<Variant, HeapAllocation>& v);
     explicit Variant(const Dictionary<Variant, Variant, HeapAllocation>& v);
+    explicit Variant(const Span<byte>& v);
     explicit Variant(const CommonValue& v);
 
     ~Variant();
@@ -292,6 +298,7 @@ public:
     explicit operator Rectangle() const;
 
     const Vector2& AsVector2() const;
+    Vector3& AsVector3();
     const Vector3& AsVector3() const;
     const Vector4& AsVector4() const;
     const Int2& AsInt2() const;
@@ -299,6 +306,8 @@ public:
     const Int4& AsInt4() const;
     const Color& AsColor() const;
     const Quaternion& AsQuaternion() const;
+    Array<Variant, HeapAllocation>& AsArray();
+    const Array<Variant, HeapAllocation>& AsArray() const;
 
 public:
 

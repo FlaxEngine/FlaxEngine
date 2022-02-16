@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 using System;
 
@@ -145,7 +145,17 @@ namespace FlaxEngine.GUI
         }
 
         /// <summary>
-        /// Called when mouse clicks the button.
+        /// Initializes a new instance of the <see cref="Button"/> class.
+        /// </summary>
+        /// <param name="location">Position</param>
+        /// <param name="size">Size</param>
+        public Button(Vector2 location, Vector2 size)
+        : this(location.X, location.Y, size.X, size.Y)
+        {
+        }
+
+        /// <summary>
+        /// Called when mouse or touch clicks the button.
         /// </summary>
         protected virtual void OnClick()
         {
@@ -154,7 +164,7 @@ namespace FlaxEngine.GUI
         }
 
         /// <summary>
-        /// Called when buttons starts to be pressed by the used (via mouse or touch).
+        /// Called when button starts to be pressed by the used (via mouse or touch).
         /// </summary>
         protected virtual void OnPressBegin()
         {
@@ -164,7 +174,7 @@ namespace FlaxEngine.GUI
         }
 
         /// <summary>
-        /// Called when buttons ends to be pressed by the used (via mouse or touch).
+        /// Called when button ends to be pressed by the used (via mouse or touch).
         /// </summary>
         protected virtual void OnPressEnd()
         {
@@ -205,7 +215,7 @@ namespace FlaxEngine.GUI
                 backgroundColor = BackgroundColorSelected;
                 borderColor = BorderColorSelected;
             }
-            else if (IsMouseOver)
+            else if (IsMouseOver || IsNavFocused)
             {
                 backgroundColor = BackgroundColorHighlighted;
                 borderColor = BorderColorHighlighted;
@@ -219,7 +229,7 @@ namespace FlaxEngine.GUI
             Render2D.DrawRectangle(clientRect, borderColor);
 
             // Draw text
-            Render2D.DrawText(_font.GetFont(), TextMaterial, _text, clientRect, textColor, TextAlignment.Center, TextAlignment.Center);
+            Render2D.DrawText(_font?.GetFont(), TextMaterial, _text, clientRect, textColor, TextAlignment.Center, TextAlignment.Center);
         }
 
         /// <inheritdoc />
@@ -236,51 +246,59 @@ namespace FlaxEngine.GUI
         /// <inheritdoc />
         public override bool OnMouseDown(Vector2 location, MouseButton button)
         {
+            if (base.OnMouseDown(location, button))
+                return true;
+
             if (button == MouseButton.Left && !_isPressed)
             {
                 OnPressBegin();
                 return true;
             }
-
-            return base.OnMouseDown(location, button);
+            return false;
         }
 
         /// <inheritdoc />
         public override bool OnMouseUp(Vector2 location, MouseButton button)
         {
+            if (base.OnMouseUp(location, button))
+                return true;
+
             if (button == MouseButton.Left && _isPressed)
             {
                 OnPressEnd();
                 OnClick();
                 return true;
             }
-
-            return base.OnMouseUp(location, button);
+            return false;
         }
 
         /// <inheritdoc />
         public override bool OnTouchDown(Vector2 location, int pointerId)
         {
+            if (base.OnTouchDown(location, pointerId))
+                return true;
+
             if (!_isPressed)
             {
                 OnPressBegin();
                 return true;
             }
-
-            return base.OnTouchDown(location, pointerId);
+            return false;
         }
 
         /// <inheritdoc />
         public override bool OnTouchUp(Vector2 location, int pointerId)
         {
+            if (base.OnTouchUp(location, pointerId))
+                return true;
+
             if (_isPressed)
             {
                 OnPressEnd();
                 OnClick();
                 return true;
             }
-
-            return base.OnTouchUp(location, pointerId);
+            return false;
         }
 
         /// <inheritdoc />
@@ -303,6 +321,14 @@ namespace FlaxEngine.GUI
             }
 
             base.OnLostFocus();
+        }
+
+        /// <inheritdoc />
+        public override void OnSubmit()
+        {
+            OnClick();
+
+            base.OnSubmit();
         }
     }
 }

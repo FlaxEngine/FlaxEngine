@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 using System.IO;
 
@@ -12,6 +12,8 @@ namespace Flax.Build.Bindings
         public string Name;
         public string[] Comment;
         public bool IsStatic;
+        public bool IsDeprecated;
+        public bool IsHidden;
         public AccessLevel Access;
         public string Attributes;
 
@@ -25,6 +27,8 @@ namespace Flax.Build.Bindings
             writer.Write(Name);
             BindingsGenerator.Write(writer, Comment);
             writer.Write(IsStatic);
+            writer.Write(IsDeprecated);
+            writer.Write(IsHidden);
             writer.Write((byte)Access);
             BindingsGenerator.Write(writer, Attributes);
         }
@@ -34,6 +38,8 @@ namespace Flax.Build.Bindings
             Name = reader.ReadString();
             Comment = BindingsGenerator.Read(reader, Comment);
             IsStatic = reader.ReadBoolean();
+            IsDeprecated = reader.ReadBoolean();
+            IsHidden = reader.ReadBoolean();
             Access = (AccessLevel)reader.ReadByte();
             Attributes = BindingsGenerator.Read(reader, Attributes);
         }

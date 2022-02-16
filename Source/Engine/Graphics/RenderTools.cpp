@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 #include "RenderTools.h"
 #include "PixelFormatExtensions.h"
@@ -52,6 +52,9 @@ const Char* ToString(RendererType value)
     case RendererType::PS4:
         result = TEXT("PS4");
         break;
+    case RendererType::PS5:
+        result = TEXT("PS5");
+        break;
     default:
         result = TEXT("?");
     }
@@ -86,6 +89,9 @@ const Char* ToString(ShaderProfile value)
         break;
     case ShaderProfile::PS4:
         result = TEXT("PS4");
+        break;
+    case ShaderProfile::PS5:
+        result = TEXT("PS5");
         break;
     default:
         result = TEXT("?");
@@ -289,6 +295,7 @@ FeatureLevel RenderTools::GetFeatureLevel(ShaderProfile profile)
     switch (profile)
     {
     case ShaderProfile::DirectX_SM6:
+    case ShaderProfile::PS5:
         return FeatureLevel::SM6;
     case ShaderProfile::DirectX_SM5:
     case ShaderProfile::Vulkan_SM5:
@@ -313,6 +320,7 @@ bool RenderTools::CanSupportTessellation(ShaderProfile profile)
     case ShaderProfile::DirectX_SM6:
     case ShaderProfile::DirectX_SM5:
     case ShaderProfile::PS4:
+    case ShaderProfile::PS5:
         return true;
     default:
         return false;
@@ -395,6 +403,35 @@ void RenderTools::UpdateModelLODTransition(byte& lodTransition)
     lodTransition = static_cast<byte>(Math::Min<int32>(newProgress, 255));
 }
 
+uint64 RenderTools::CalculateTextureMemoryUsage(PixelFormat format, int32 width, int32 height, int32 mipLevels)
+{
+    uint64 result = 0;
+
+    if (mipLevels == 0)
+        mipLevels = 69;
+
+    uint32 rowPitch, slicePitch;
+    while (mipLevels > 0 && (width >= 1 || height >= 1))
+    {
+        ComputePitch(format, width, height, rowPitch, slicePitch);
+        result += slicePitch;
+
+        if (width > 1)
+            width >>= 1;
+        if (height > 1)
+            height >>= 1;
+
+        mipLevels--;
+    }
+
+    return result;
+}
+
+uint64 RenderTools::CalculateTextureMemoryUsage(PixelFormat format, int32 width, int32 height, int32 depth, int32 mipLevels)
+{
+    return CalculateTextureMemoryUsage(format, width, height, mipLevels) * depth;
+}
+
 float RenderTools::ComputeBoundsScreenRadiusSquared(const Vector3& origin, float radius, const Vector3& viewOrigin, const Matrix& projectionMatrix)
 {
     const float screenMultiple = 0.5f * Math::Max(projectionMatrix.Values[0][0], projectionMatrix.Values[1][1]);
@@ -452,35 +489,6 @@ int32 RenderTools::ComputeSkinnedModelLOD(const SkinnedModel* model, const Vecto
     return 0;
 }
 
-uint64 CalculateTextureMemoryUsage(PixelFormat format, int32 width, int32 height, int32 mipLevels)
-{
-    uint64 result = 0;
-
-    if (mipLevels == 0)
-        mipLevels = 69;
-
-    uint32 rowPitch, slicePitch;
-    while (mipLevels > 0 && (width >= 1 || height >= 1))
-    {
-        RenderTools::ComputePitch(format, width, height, rowPitch, slicePitch);
-        result += slicePitch;
-
-        if (width > 1)
-            width >>= 1;
-        if (height > 1)
-            height >>= 1;
-
-        mipLevels--;
-    }
-
-    return result;
-}
-
-uint64 CalculateTextureMemoryUsage(PixelFormat format, int32 width, int32 height, int32 depth, int32 mipLevels)
-{
-    return CalculateTextureMemoryUsage(format, width, height, mipLevels) * depth;
-}
-
 int32 MipLevelsCount(int32 width, bool useMipLevels)
 {
     if (!useMipLevels)
@@ -489,8 +497,7 @@ int32 MipLevelsCount(int32 width, bool useMipLevels)
     int32 result = 1;
     while (width > 1)
     {
-        if (width > 1)
-            width >>= 1;
+        width >>= 1;
         result++;
     }
 

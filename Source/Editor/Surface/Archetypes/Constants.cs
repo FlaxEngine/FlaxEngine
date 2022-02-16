@@ -1,6 +1,7 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 using System;
+using FlaxEditor.CustomEditors.Editors;
 using FlaxEditor.GUI;
 using FlaxEditor.Scripting;
 using FlaxEditor.Surface.Elements;
@@ -68,6 +69,145 @@ namespace FlaxEditor.Surface.Archetypes
                 _picker = null;
 
                 base.OnDestroy();
+            }
+        }
+
+        private class ArrayNode : SurfaceNode
+        {
+            private OutputBox _output;
+            private TypePickerControl _typePicker;
+            private Button _addButton;
+            private Button _removeButton;
+            private bool _isUpdatingUI;
+
+            public ArrayNode(uint id, VisjectSurfaceContext context, NodeArchetype nodeArch, GroupArchetype groupArch)
+            : base(id, context, nodeArch, groupArch)
+            {
+            }
+
+            public override void OnValuesChanged()
+            {
+                UpdateUI();
+
+                base.OnValuesChanged();
+            }
+
+            public override void OnLoaded()
+            {
+                base.OnLoaded();
+
+                _output = (OutputBox)Elements[0];
+                _typePicker = new TypePickerControl
+                {
+                    Bounds = new Rectangle(FlaxEditor.Surface.Constants.NodeMarginX, FlaxEditor.Surface.Constants.NodeMarginY + FlaxEditor.Surface.Constants.NodeHeaderSize, 160, 16),
+                    Parent = this,
+                };
+                _typePicker.ValueChanged += () => Set(3);
+                _removeButton = new Button(0, _typePicker.Y + FlaxEditor.Surface.Constants.LayoutOffsetY, 20, 20)
+                {
+                    Text = "-",
+                    TooltipText = "Remove the last item (smaller array)",
+                    Parent = this
+                };
+                _removeButton.Clicked += () => Set(((Array)Values[0]).Length - 1);
+                _addButton = new Button(_removeButton.Location, _removeButton.Size)
+                {
+                    Text = "+",
+                    TooltipText = "Add new item to array (bigger array)",
+                    Parent = this
+                };
+                _addButton.Clicked += () => Set(((Array)Values[0]).Length + 1);
+
+                UpdateUI();
+            }
+
+            private void Set(int length)
+            {
+                if (_isUpdatingUI)
+                    return;
+                var prev = (Array)Values[0];
+                var next = Array.CreateInstance(TypeUtils.GetType(_typePicker.Value), length);
+                if (prev.GetType() == next.GetType())
+                    Array.Copy(prev, next, Mathf.Min(prev.Length, next.Length));
+                SetValue(0, next);
+            }
+            
+            public override void OnSurfaceCanEditChanged(bool canEdit)
+            {
+                base.OnSurfaceCanEditChanged(canEdit);
+
+                _typePicker.Enabled = canEdit;
+                _addButton.Enabled = canEdit;
+                _removeButton.Enabled = canEdit;
+            }
+            
+            public override void OnDestroy()
+            {
+                _output = null;
+                _typePicker = null;
+                _addButton = null;
+                _removeButton = null;
+
+                base.OnDestroy();
+            }
+
+            private void UpdateUI()
+            {
+                if (_isUpdatingUI)
+                    return;
+                var array = (Array)Values[0];
+                var arrayType = array.GetType();
+                var elementType = new ScriptType(arrayType.GetElementType());
+                _isUpdatingUI = true;
+                _typePicker.Value = elementType;
+                _output.CurrentType = new ScriptType(arrayType);
+                _isUpdatingUI = false;
+
+                var count = array.Length;
+                var countMin = 0;
+                var countMax = 32;
+                for (int i = 0; i < array.Length; i++)
+                {
+                    var box = (InputBox)AddBox(false, i + 1, i + 1, $"[{i}]", elementType, true);
+                    box.UseCustomValueAccess(GetBoxValue, SetBoxValue);
+                }
+                for (int i = count; i <= countMax; i++)
+                {
+                    var box = GetBox(i + 1);
+                    if (box == null)
+                        break;
+                    RemoveElement(box);
+                }
+                
+                var canEdit = Surface.CanEdit;
+                _typePicker.Enabled = canEdit;
+                _addButton.Enabled = count < countMax && canEdit;
+                _removeButton.Enabled = count > countMin && canEdit;
+
+                Title = string.Format("{0} Array", Surface.GetTypeName(elementType));
+                _typePicker.Width = 160.0f;
+                _addButton.X = 0;
+                _removeButton.X = 0;
+                ResizeAuto();
+                _addButton.X = Width - _addButton.Width - FlaxEditor.Surface.Constants.NodeMarginX;
+                _removeButton.X = _addButton.X - _removeButton.Width - 4;
+                _typePicker.Width = Width - 30;
+            }
+
+            private object GetBoxValue(InputBox box)
+            {
+                var array = (Array)Values[0];
+                return array.GetValue(box.ID - 1);
+            }
+
+            private void SetBoxValue(InputBox box, object value)
+            {
+                if (_isDuringValuesEditing || !Surface.CanEdit)
+                    return;
+                var array = (Array)Values[0];
+                array = (Array)array.Clone();
+                array.SetValue(value, box.ID - 1);
+                SetValue(0, array);
             }
         }
 
@@ -381,6 +521,17 @@ namespace FlaxEditor.Surface.Archetypes
                     NodeElementArchetype.Factory.Output(0, "Value", typeof(uint), 0),
                     NodeElementArchetype.Factory.UnsignedInteger(0, 0, 0, -1, 0, int.MaxValue)
                 }
+            },
+            new NodeArchetype
+            {
+                TypeID = 13,
+                Title = "Array",
+                Create = (id, context, arch, groupArch) => new ArrayNode(id, context, arch, groupArch),
+                Description = "Constant array value.",
+                Flags = NodeFlags.VisualScriptGraph | NodeFlags.AnimGraph,
+                Size = new Vector2(150, 20),
+                DefaultValues = new object[] { new int[] { 0, 1, 2 } },
+                Elements = new[] { NodeElementArchetype.Factory.Output(0, string.Empty, null, 0) }
             },
         };
 

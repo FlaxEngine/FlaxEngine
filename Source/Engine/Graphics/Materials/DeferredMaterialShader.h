@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -21,6 +21,10 @@ private:
         PipelineStateCache MotionVectors;
         PipelineStateCache MotionVectorsSkinned;
         PipelineStateCache MotionVectorsSkinnedPerBone;
+#if USE_EDITOR
+        PipelineStateCache QuadOverdraw;
+        PipelineStateCache QuadOverdrawSkinned;
+#endif
 
         FORCE_INLINE PipelineStateCache* GetPS(const DrawPass pass, const bool useLightmap, const bool useSkinning, const bool perBoneMotionBlur)
         {
@@ -32,6 +36,10 @@ private:
                 return useLightmap ? &DefaultLightmap : (useSkinning ? &DefaultSkinned : &Default);
             case DrawPass::MotionVectors:
                 return useSkinning ? (perBoneMotionBlur ? &MotionVectorsSkinnedPerBone : &MotionVectorsSkinned) : &MotionVectors;
+#if USE_EDITOR
+            case DrawPass::QuadOverdraw:
+                return useSkinning ? &QuadOverdrawSkinned : &QuadOverdraw;
+#endif
             default:
                 return nullptr;
             }
@@ -46,6 +54,10 @@ private:
             DepthSkinned.Release();
             MotionVectors.Release();
             MotionVectorsSkinned.Release();
+#if USE_EDITOR
+            QuadOverdraw.Release();
+            QuadOverdrawSkinned.Release();
+#endif
         }
     };
 

@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 using System;
 using FlaxEditor.Content;
@@ -92,7 +92,7 @@ namespace FlaxEditor.GUI
                     return _selectedItem.ID;
                 return Guid.Empty;
             }
-            set => SelectedAsset = FlaxEngine.Content.LoadAsync(value);
+            set => SelectedItem = Editor.Instance.ContentDatabase.FindAsset(value);
         }
 
         /// <summary>
@@ -148,6 +148,11 @@ namespace FlaxEditor.GUI
         /// Occurs when selected item gets changed.
         /// </summary>
         public event Action SelectedItemChanged;
+
+        /// <summary>
+        /// False if changing selected item is disabled.
+        /// </summary>
+        public bool CanEdit = true;
 
         private bool IsValid(AssetItem item)
         {
@@ -243,7 +248,6 @@ namespace FlaxEditor.GUI
         /// <inheritdoc />
         public override void Draw()
         {
-            // Cache data
             var style = Style.Current;
             var iconRect = IconRect;
             var button1Rect = Button1Rect;
@@ -251,19 +255,24 @@ namespace FlaxEditor.GUI
             var button3Rect = Button3Rect;
 
             // Draw asset picker button
-            Render2D.DrawSprite(style.ArrowDown, button1Rect, button1Rect.Contains(_mousePos) ? style.Foreground : style.ForegroundGrey);
+            if (CanEdit)
+                Render2D.DrawSprite(style.ArrowDown, button1Rect, button1Rect.Contains(_mousePos) ? style.Foreground : style.ForegroundGrey);
 
-            // Check if has item selected
             if (_selectedItem != null)
             {
                 // Draw item preview
                 _selectedItem.DrawThumbnail(ref iconRect);
 
-                // Draw find button
-                Render2D.DrawSprite(style.Search, button2Rect, button2Rect.Contains(_mousePos) ? style.Foreground : style.ForegroundGrey);
-
-                // Draw remove button
-                Render2D.DrawSprite(style.Cross, button3Rect, button3Rect.Contains(_mousePos) ? style.Foreground : style.ForegroundGrey);
+                // Draw buttons
+                if (CanEdit)
+                {
+                    Render2D.DrawSprite(style.Search, button2Rect, button2Rect.Contains(_mousePos) ? style.Foreground : style.ForegroundGrey);
+                    Render2D.DrawSprite(style.Cross, button3Rect, button3Rect.Contains(_mousePos) ? style.Foreground : style.ForegroundGrey);
+                }
+                else
+                {
+                    Render2D.DrawSprite(style.Search, button1Rect, button1Rect.Contains(_mousePos) ? style.Foreground : style.ForegroundGrey);
+                }
 
                 // Draw name
                 float sizeForTextLeft = Width - button1Rect.Right;
@@ -373,7 +382,15 @@ namespace FlaxEditor.GUI
                 _isMouseDown = false;
 
                 // Buttons logic
-                if (Button1Rect.Contains(location))
+                if (!CanEdit)
+                {
+                    if (Button1Rect.Contains(location) && _selectedItem != null)
+                    {
+                        // Select asset
+                        Editor.Instance.Windows.ContentWin.Select(_selectedItem);
+                    }
+                }
+                else if (Button1Rect.Contains(location))
                 {
                     // Show asset picker popup
                     Focus();
@@ -442,7 +459,7 @@ namespace FlaxEditor.GUI
             // Check if drop asset
             if (_dragOverElement == null)
                 _dragOverElement = new DragAssets(IsValid);
-            if (_dragOverElement.OnDragEnter(data))
+            if (CanEdit && _dragOverElement.OnDragEnter(data))
             {
             }
 
@@ -471,7 +488,7 @@ namespace FlaxEditor.GUI
         {
             base.OnDragDrop(ref location, data);
 
-            if (_dragOverElement.HasValidDrag)
+            if (CanEdit && _dragOverElement.HasValidDrag)
             {
                 // Select element
                 SelectedItem = _dragOverElement.Objects[0];

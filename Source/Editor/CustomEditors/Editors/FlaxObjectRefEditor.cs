@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 using System;
 using System.Linq;
@@ -47,7 +47,7 @@ namespace FlaxEditor.CustomEditors.Editors
             {
                 if (_type == value)
                     return;
-                if (value == ScriptType.Null || (value.Type != typeof(Object) && !value.IsSubclassOf(new ScriptType(typeof(Object)))))
+                if (value == ScriptType.Null || (value.Type != typeof(Object) && !value.IsSubclassOf(ScriptType.Object)))
                     throw new ArgumentException(string.Format("Invalid type for FlaxObjectRefEditor. Input type: {0}", value != ScriptType.Null ? value.TypeName : "null"));
 
                 _type = value;
@@ -132,7 +132,7 @@ namespace FlaxEditor.CustomEditors.Editors
         public FlaxObjectRefPickerControl()
         : base(0, 0, 50, 16)
         {
-            _type = new ScriptType(typeof(Object));
+            _type = ScriptType.Object;
         }
 
         private bool IsValid(Object obj)
@@ -191,7 +191,7 @@ namespace FlaxEditor.CustomEditors.Editors
             var button2Rect = new Rectangle(button1Rect.Right + 2, 1, 14, 14);
 
             // Draw frame
-            Render2D.DrawRectangle(frameRect, isEnabled && IsMouseOver ? style.BorderHighlighted : style.BorderNormal);
+            Render2D.DrawRectangle(frameRect, isEnabled && (IsMouseOver || IsNavFocused) ? style.BorderHighlighted : style.BorderNormal);
 
             // Check if has item selected
             if (isSelected)
@@ -329,6 +329,16 @@ namespace FlaxEditor.CustomEditors.Editors
             }
 
             return base.OnMouseDoubleClick(location, button);
+        }
+
+        /// <inheritdoc />
+        public override void OnSubmit()
+        {
+            base.OnSubmit();
+
+            // Picker dropdown menu
+            if (_supportsPickDropDown)
+                ShowDropDownMenu();
         }
 
         private void DoDrag()

@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 using System;
 using System.Linq;
@@ -33,9 +33,6 @@ namespace FlaxEditor.CustomEditors.Editors
         /// <summary>
         /// Gets or sets the allowed type (given type and all sub classes). Must be <see cref="System.Type"/> type of any subclass.
         /// </summary>
-        /// <value>
-        /// The allowed type.
-        /// </value>
         public ScriptType Type
         {
             get => _type;
@@ -57,9 +54,6 @@ namespace FlaxEditor.CustomEditors.Editors
         /// <summary>
         /// Gets or sets the selected types value.
         /// </summary>
-        /// <value>
-        /// The value.
-        /// </value>
         public ScriptType Value
         {
             get => _value;
@@ -119,7 +113,7 @@ namespace FlaxEditor.CustomEditors.Editors
         public TypePickerControl()
         : base(0, 0, 50, 16)
         {
-            _type = new ScriptType(typeof(object));
+            _type = ScriptType.Object;
         }
 
         private bool IsValid(ScriptType obj)
@@ -400,9 +394,9 @@ namespace FlaxEditor.CustomEditors.Editors
             {
                 _element.CustomControl.ValueChanged += () => SetValue(_element.CustomControl.Value.Type);
 
-                if (_element.CustomControl.Type == new ScriptType(typeof(object)))
+                if (_element.CustomControl.Type == ScriptType.Object)
                 {
-                    _element.CustomControl.Type = Values.Type.Type != typeof(object) || Values[0] == null ? new ScriptType(typeof(object)) : TypeUtils.GetObjectType(Values[0]);
+                    _element.CustomControl.Type = Values.Type.Type != typeof(object) || Values[0] == null ? ScriptType.Object : TypeUtils.GetObjectType(Values[0]);
                 }
             }
         }

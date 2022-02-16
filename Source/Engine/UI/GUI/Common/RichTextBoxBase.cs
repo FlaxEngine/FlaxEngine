@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 using System.Collections.Generic;
 
@@ -228,7 +228,7 @@ namespace FlaxEngine.GUI
 
             // Background
             Color backColor = BackgroundColor;
-            if (IsMouseOver)
+            if (IsMouseOver || IsNavFocused)
                 backColor = BackgroundSelectedColor;
             Render2D.FillRectangle(rect, backColor);
             Render2D.DrawRectangle(rect, IsFocused ? BorderSelectedColor : BorderColor);

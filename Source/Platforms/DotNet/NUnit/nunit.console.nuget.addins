@@ -1,0 +1,6 @@
+../../NUnit.Extension.*/**/tools/        # nuget v2 layout
+../../../NUnit.Extension.*/**/tools/     # nuget v3 layout
+../../../../NUnit.Extension.*/**/tools/
+../../nunit.extension.*/**/tools/        # nuget v2 layout
+../../../nunit.extension.*/**/tools/     # nuget v3 layout
+../../../../nunit.extension.*/**/tools/

@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 #if USE_VISUAL_STUDIO_DTE
 
@@ -40,6 +40,9 @@ VisualStudioEditor::VisualStudioEditor(VisualStudioVersion version, const String
     case VisualStudioVersion::VS2019:
         _type = CodeEditorTypes::VS2019;
         break;
+    case VisualStudioVersion::VS2022:
+        _type = CodeEditorTypes::VS2022;
+        break;
     default: CRASH;
         break;
     }
@@ -67,6 +70,9 @@ void VisualStudioEditor::FindEditors(Array<CodeEditor*>* output)
         VisualStudioVersion version;
         switch (info.VersionMajor)
         {
+        case 17:
+            version = VisualStudioVersion::VS2022;
+            break;
         case 16:
             version = VisualStudioVersion::VS2019;
             break;

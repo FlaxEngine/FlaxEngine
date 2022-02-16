@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 #if PLATFORM_UNIX
 
@@ -22,7 +22,6 @@ void* UnixPlatform::Allocate(uint64 size, uint64 alignment)
     {
         uint32_t pad = sizeof(offset_t) + (alignment - 1);
         void* p = malloc(size + pad);
-
         if (p)
         {
             // Add the offset size to malloc's pointer
@@ -31,8 +30,10 @@ void* UnixPlatform::Allocate(uint64 size, uint64 alignment)
             // Calculate the offset and store it behind aligned pointer
             *((offset_t*)ptr - 1) = (offset_t)((uintptr_t)ptr - (uintptr_t)p);
         }
+#if COMPILE_WITH_PROFILER
+        OnMemoryAlloc(ptr, size);
+#endif
     }
-
     return ptr;
 }
 
@@ -40,11 +41,14 @@ void UnixPlatform::Free(void* ptr)
 {
     if (ptr)
     {
+#if COMPILE_WITH_PROFILER
+        OnMemoryFree(ptr);
+#endif
         // Walk backwards from the passed-in pointer to get the pointer offset
         offset_t offset = *((offset_t*)ptr - 1);
 
         // Get original pointer
-        void* p = (void *)((uint8_t *)ptr - offset);
+        void* p = (void*)((uint8_t*)ptr - offset);
 
         // Free memory
         free(p);

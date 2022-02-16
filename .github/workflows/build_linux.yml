@@ -10,16 +10,18 @@ jobs:
     steps:
     - name: Checkout repo
       uses: actions/checkout@v2
-    - name: Checkout LFS
-      run: |
-        git lfs version
-        git lfs pull
     - name: Install dependencies
       run: |
         sudo rm -f /etc/apt/sources.list.d/*
         sudo cp -f .github/workflows/build_linux_sources.list /etc/apt/sources.list
         sudo apt-get update
         sudo apt-get install libx11-dev libxcursor-dev libxinerama-dev build-essential gettext libtool libtool-bin libpulse-dev libasound2-dev libjack-dev portaudio19-dev
+    - name: Setup Vulkan
+      uses: ./.github/actions/vulkan
+    - name: Checkout LFS
+      run: |
+        git lfs version
+        git lfs pull
     - name: Build
       run: |
         ./Development/Scripts/Linux/CallBuildTool.sh -build -log -arch=x64 -platform=Linux -configuration=Development -buildtargets=FlaxEditor
@@ -29,11 +31,13 @@ jobs:
     name: Game (Linux, Release x64)
     runs-on: "ubuntu-20.04"
     steps:
+    - name: Checkout repo
+      uses: actions/checkout@v2
     - name: Install dependencies
       run: |
         sudo apt-get install libx11-dev libxcursor-dev libxinerama-dev
-    - name: Checkout repo
-      uses: actions/checkout@v2
+    - name: Setup Vulkan
+      uses: ./.github/actions/vulkan
     - name: Checkout LFS
       run: |
         git lfs version

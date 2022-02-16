@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 using System.Collections.Generic;
 using System.IO;
@@ -18,6 +18,7 @@ namespace Flax.Build.Bindings
         public string Attributes;
         public string[] Comment;
         public bool IsInBuild;
+        public bool IsDeprecated;
         internal bool IsInited;
 
         public virtual bool IsClass => false;
@@ -107,6 +108,7 @@ namespace Flax.Build.Bindings
             BindingsGenerator.Write(writer, Attributes);
             BindingsGenerator.Write(writer, Comment);
             writer.Write(IsInBuild);
+            writer.Write(IsDeprecated);
             BindingsGenerator.Write(writer, Children);
         }
 
@@ -118,6 +120,7 @@ namespace Flax.Build.Bindings
             Attributes = BindingsGenerator.Read(reader, Attributes);
             Comment = BindingsGenerator.Read(reader, Comment);
             IsInBuild = reader.ReadBoolean();
+            IsDeprecated = reader.ReadBoolean();
             Children = BindingsGenerator.Read(reader, Children);
 
             // Fix hierarchy

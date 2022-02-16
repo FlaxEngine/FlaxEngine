@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 #include "GPUDeviceVulkan.h"
 #include "RenderToolsVulkan.h"
@@ -36,6 +36,9 @@ static const char* GInstanceExtensions[] =
 {
 #if VK_EXT_validation_cache
     VK_EXT_VALIDATION_CACHE_EXTENSION_NAME,
+#endif
+#if defined(VK_KHR_display) && 0
+    VK_KHR_DISPLAY_EXTENSION_NAME,
 #endif
     nullptr
 };
@@ -177,6 +180,16 @@ static bool FindLayerExtension(const Array<LayerExtension>& list, const char* ex
 {
     const char* dummy = nullptr;
     return FindLayerExtension(list, extensionName, dummy);
+}
+
+static bool ListContains(const Array<const char*>& list, const char* name)
+{
+    for (const char* element : list)
+    {
+        if (!StringUtils::Compare(element, name))
+            return true;
+    }
+    return false;
 }
 
 void GPUDeviceVulkan::GetInstanceLayersAndExtensions(Array<const char*>& outInstanceExtensions, Array<const char*>& outInstanceLayers, bool& outDebugUtils)
@@ -486,6 +499,7 @@ void GPUDeviceVulkan::GetDeviceExtensionsAndLayers(VkPhysicalDevice gpu, Array<c
     }
 #endif
 
+    // Find all extensions
     Array<const char*> availableExtensions;
     {
         for (int32 i = 0; i < deviceLayerExtensions[0].Extensions.Count(); i++)
@@ -512,19 +526,7 @@ void GPUDeviceVulkan::GetDeviceExtensionsAndLayers(VkPhysicalDevice gpu, Array<c
     }
     TrimDuplicates(availableExtensions);
 
-    const auto ListContains = [](const Array<const char*>& list, const char* name)
-    {
-        for (const char* element : list)
-        {
-            if (!StringUtils::Compare(element, name))
-            {
-                return true;
-            }
-        }
-
-        return false;
-    };
-
+    // Pick extensions to use
     Array<const char*> platformExtensions;
     VulkanPlatform::GetDeviceExtensions(platformExtensions, outDeviceLayers);
     for (const char* extension : platformExtensions)
@@ -535,7 +537,6 @@ void GPUDeviceVulkan::GetDeviceExtensionsAndLayers(VkPhysicalDevice gpu, Array<c
             break;
         }
     }
-
     for (uint32 i = 0; i < ARRAY_COUNT(GDeviceExtensions) && GDeviceExtensions[i] != nullptr; i++)
     {
         if (ListContains(availableExtensions, GDeviceExtensions[i]))

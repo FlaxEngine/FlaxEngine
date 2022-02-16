@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 #include "RenderList.h"
 #include "Engine/Core/Collections/Sorting.h"
@@ -369,7 +369,7 @@ bool DrawCallsList::IsEmpty() const
 }
 
 RenderList::RenderList(const SpawnParams& params)
-    : PersistentScriptingObject(params)
+    : ScriptingObject(params)
     , DirectionalLights(4)
     , PointLights(32)
     , SpotLights(32)
@@ -636,7 +636,7 @@ DRAW:
             auto& drawCall = DrawCalls[list.Indices[batch.StartIndex]];
 
             int32 vbCount = 0;
-            while (drawCall.Geometry.VertexBuffers[vbCount] && vbCount < ARRAY_COUNT(drawCall.Geometry.VertexBuffers))
+            while (vbCount < ARRAY_COUNT(drawCall.Geometry.VertexBuffers) && drawCall.Geometry.VertexBuffers[vbCount])
             {
                 vb[vbCount] = drawCall.Geometry.VertexBuffers[vbCount];
                 vbOffsets[vbCount] = drawCall.Geometry.VertexBuffersOffsets[vbCount];
@@ -687,7 +687,7 @@ DRAW:
             auto& drawCall = batch.DrawCall;
 
             int32 vbCount = 0;
-            while (drawCall.Geometry.VertexBuffers[vbCount] && vbCount < ARRAY_COUNT(drawCall.Geometry.VertexBuffers))
+            while (vbCount < ARRAY_COUNT(drawCall.Geometry.VertexBuffers) && drawCall.Geometry.VertexBuffers[vbCount])
             {
                 vb[vbCount] = drawCall.Geometry.VertexBuffers[vbCount];
                 vbOffsets[vbCount] = drawCall.Geometry.VertexBuffersOffsets[vbCount];

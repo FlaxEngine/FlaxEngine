@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 #ifndef __LIGHTING__
 #define __LIGHTING__
@@ -118,11 +118,15 @@ float4 GetLighting(float3 viewPos, LightData lightData, GBufferSample gBuffer, f
 	float distanceAttenuation = 1;
 	float lightRadiusMask = 1;
 	float spotAttenuation = 1;
+	float3 toLight = lightData.Direction;
 
 	// Calculate attenuation
 	if (isRadial)
 	{
-		GetRadialLightAttenuation(lightData, isSpotLight, gBuffer.WorldPos, N, 1, lightData.Direction, L, NoL, distanceAttenuation, lightRadiusMask, spotAttenuation);
+		toLight = lightData.Position - gBuffer.WorldPos;
+		float distanceSqr = dot(toLight, toLight);
+		L = toLight * rsqrt(distanceSqr);
+		GetRadialLightAttenuation(lightData, isSpotLight, N, distanceSqr, 1, toLight, L, NoL, distanceAttenuation, lightRadiusMask, spotAttenuation);
 	}
 	float attenuation = distanceAttenuation * lightRadiusMask * spotAttenuation;
 
@@ -136,12 +140,12 @@ float4 GetLighting(float3 viewPos, LightData lightData, GBufferSample gBuffer, f
 	if (shadow.SurfaceShadow + shadow.TransmissionShadow > 0)
 	{
 		gBuffer.Roughness = max(gBuffer.Roughness, lightData.MinRoughness);
-		float energy = AreaLightSpecular(lightData, gBuffer.Roughness, lightData.Direction, L, V, N);
+		float energy = AreaLightSpecular(lightData, gBuffer.Roughness, toLight, L, V, N);
 
 		// Calculate direct lighting
 		LightingData lighting = SurfaceShading(gBuffer, energy, L, V, N);
 #if NO_SPECULAR
-		lighting.Specular = 0;
+		lighting.Specular = float3(0, 0, 0);
 #endif
 
 		// Calculate final light color

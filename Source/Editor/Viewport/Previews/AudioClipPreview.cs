@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 using System;
 using System.Threading.Tasks;
@@ -85,6 +85,11 @@ namespace FlaxEditor.Viewport.Previews
         public DrawModes DrawMode = DrawModes.Fill;
 
         /// <summary>
+        /// The view offset parameter. Shifts the audio preview (in seconds).
+        /// </summary>
+        public float ViewOffset = 0.0f;
+
+        /// <summary>
         /// The view scale parameter. Increase it to zoom in the audio. Usage depends on the current <see cref="DrawMode"/>.
         /// </summary>
         public float ViewScale = 1.0f;
@@ -145,18 +150,32 @@ namespace FlaxEditor.Viewport.Previews
                 const uint maxSamplesPerIndex = 64;
                 uint samplesPerIndexDiff = Math.Max(1, samplesPerIndex / Math.Min(samplesPerIndex, maxSamplesPerIndex));
 
+                // Calculate the clip range in the view to optimize drawing (eg. if only part fo the clip is visible)
+                Render2D.PeekClip(out var globalClipping);
+                Render2D.PeekTransform(out var globalTransform);
+                var globalRect = new Rectangle(globalTransform.M31, globalTransform.M32, width * globalTransform.M11, height * globalTransform.M22);
+                var globalMask = Rectangle.Shared(globalClipping, globalRect);
+                var globalTransformInv = Matrix3x3.Invert(globalTransform);
+                var localRect = Rectangle.FromPoints(Matrix3x3.Transform2D(globalMask.UpperLeft, globalTransformInv), Matrix3x3.Transform2D(globalMask.BottomRight, globalTransformInv));
+                var localRectMin = localRect.UpperLeft;
+                var localRectMax = localRect.BottomRight;
+
                 // Render each clip separately
+                var viewOffset = (uint)(info.SampleRate * info.NumChannels * ViewOffset);
                 for (uint clipIndex = 0; clipIndex < Mathf.CeilToInt(clipsInView); clipIndex++)
                 {
-                    var clipX = clipWidth * clipIndex;
-                    var clipRight = Mathf.Min(width, clipX + clipWidth);
+                    var clipStart = clipWidth * clipIndex;
+                    var clipEnd = clipStart + clipWidth;
+                    var xStart = Mathf.Max(clipStart, localRectMin.X);
+                    var xEnd = Mathf.Min(Mathf.Min(width, clipEnd), localRectMax.X);
+                    var samplesOffset = (uint)((xStart - clipStart) * samplesPerIndex) + viewOffset;
 
                     // Render every audio channel separately
                     for (uint channelIndex = 0; channelIndex < info.NumChannels; channelIndex++)
                     {
-                        uint currentSample = channelIndex;
+                        uint currentSample = channelIndex + samplesOffset;
                         float yCenter = Y + ((2 * channelIndex) + 1) * height / (2.0f * info.NumChannels);
-                        for (float pixelX = clipX; pixelX < clipRight; pixelX++)
+                        for (float pixelX = xStart; pixelX < xEnd; pixelX++)
                         {
                             float samplesSum = 0;
                             int samplesInPixel = 0;
@@ -184,18 +203,26 @@ namespace FlaxEditor.Viewport.Previews
             }
         }
 
+        /// <inheritdoc />
+        public override void OnDestroy()
+        {
+            lock (_locker)
+            {
+                _asset = null;
+                _pcmData = null;
+            }
+
+            base.OnDestroy();
+        }
+
         /// <summary>
         /// Downloads the audio clip raw PCM data. Use it from async thread to prevent blocking,
         /// </summary>
         private void DownloadData()
         {
             var asset = _asset;
-
             if (!asset)
-            {
-                Editor.LogWarning("Failed to get audio clip PCM data. Missing asset.");
                 return;
-            }
 
             float[] data;
             AudioDataInfo dataInfo;

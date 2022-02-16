@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 #include "GPUBuffer.h"
 #include "GPUDevice.h"
@@ -244,6 +244,7 @@ bool GPUBuffer::DownloadData(BytesContainer& result)
     // Ensure not running on main thread
     if (IsInMainThread())
     {
+        // TODO: support mesh data download from GPU on a main thread during rendering
         LOG(Warning, "Cannot download GPU buffer data on a main thread. Use staging readback buffer or invoke this function from another thread.");
         return true;
     }

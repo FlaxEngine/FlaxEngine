@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -9,17 +9,18 @@
 #define GPU_VENDOR_ID_INTEL 0x8086
 #define GPU_VENDOR_ID_NVIDIA 0x10DE
 #define GPU_VENDOR_ID_MICROSOFT 0x1414
+#define GPU_VENDOR_ID_APPLE 0x106B
 
 /// <summary>
 /// Interface for GPU device adapter.
 /// </summary>
-API_CLASS(NoSpawn, Attributes="HideInEditor") class FLAXENGINE_API GPUAdapter : public PersistentScriptingObject
+API_CLASS(NoSpawn, Attributes="HideInEditor") class FLAXENGINE_API GPUAdapter : public ScriptingObject
 {
 DECLARE_SCRIPTING_TYPE_NO_SPAWN(GPUDevice);
 public:
 
     GPUAdapter()
-        : PersistentScriptingObject(SpawnParams(Guid::New(), TypeInitializer))
+        : ScriptingObject(SpawnParams(Guid::New(), TypeInitializer))
     {
     }
 

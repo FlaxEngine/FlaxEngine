@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 using FlaxEngine;
 using FlaxEngine.GUI;
@@ -89,7 +89,7 @@ namespace FlaxEditor.GUI.Docking
             settings.IsRegularWindow = true;
             settings.HasSizingFrame = true;
             settings.ShowAfterFirstPaint = false;
-            settings.ShowInTaskbar = false;
+            settings.ShowInTaskbar = true;
             settings.StartPosition = startPosition;
 
             // Create window

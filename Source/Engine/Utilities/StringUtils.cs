@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 using System;
 using System.Collections.Generic;
@@ -140,14 +140,11 @@ namespace FlaxEngine
         /// Determines whether the specified path is relative or is absolute.
         /// </summary>
         /// <param name="path">The input path.</param>
-        /// <returns>
-        ///   <c>true</c> if the specified path is relative; otherwise, <c>false</c> if is relative.
-        /// </returns>
+        /// <returns><c>true</c> if the specified path is relative; otherwise, <c>false</c> if is relative.</returns>
         public static bool IsRelative(string path)
         {
             bool isRooted = (path.Length >= 2 && char.IsLetterOrDigit(path[0]) && path[1] == ':') ||
                             path.StartsWith("\\\\") ||
-                            path.StartsWith("/") ||
                             path.StartsWith("\\") ||
                             path.StartsWith("/");
             return !isRooted;
@@ -252,6 +249,16 @@ namespace FlaxEngine
             string[] graphemes = s.GraphemeClusters().ToArray();
             Array.Reverse(graphemes);
             return string.Concat(graphemes);
+        }
+
+        /// <summary>
+        /// Removes any new line characters (\r or \n) from the string.
+        /// </summary>
+        /// <param name="s">The string to process.</param>
+        /// <returns>The single-line string.</returns>
+        public static string RemoveNewLine(this string s)
+        {
+            return s.Replace("\n", "").Replace("\r", "");
         }
 
         private static readonly Regex IncNameRegex1 = new Regex("(\\d+)$");

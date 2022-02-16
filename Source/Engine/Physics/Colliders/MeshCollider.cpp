@@ -1,12 +1,12 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 #include "MeshCollider.h"
 #include "Engine/Core/Math/Matrix.h"
 #include "Engine/Core/Math/Ray.h"
 #include "Engine/Serialization/Serialization.h"
-#include "Engine/Physics/Utilities.h"
 #include "Engine/Physics/Physics.h"
-#if USE_EDITOR
+#include "Engine/Physics/PhysicsScene.h"
+#if USE_EDITOR || !BUILD_RELEASE
 #include "Engine/Debug/DebugLog.h"
 #endif
 
@@ -20,7 +20,7 @@ MeshCollider::MeshCollider(const SpawnParams& params)
 void MeshCollider::OnCollisionDataChanged()
 {
     // This should not be called during physics simulation, if it happened use write lock on physx scene
-    ASSERT(!Physics::IsDuringSimulation());
+    ASSERT(!GetScene() || !GetPhysicsScene()->IsDuringSimulation());
 
     if (CollisionData)
     {
@@ -43,10 +43,10 @@ bool MeshCollider::CanAttach(RigidBody* rigidBody) const
     CollisionDataType type = CollisionDataType::None;
     if (CollisionData && CollisionData->IsLoaded())
         type = CollisionData->GetOptions().Type;
-#if USE_EDITOR
+#if USE_EDITOR || !BUILD_RELEASE
     if (type == CollisionDataType::TriangleMesh)
     {
-        LOG(Warning, "Cannot attach {0} using Triangle Mesh collider {1} to RigidBody (not supported)", GetNamePath(), CollisionData->ToString());
+        LOG(Warning, "Cannot attach '{0}' using Triangle Mesh collider '{1}' to Rigid Body (not supported)", GetNamePath(), CollisionData->ToString());
     }
 #endif
     return type != CollisionDataType::TriangleMesh;
@@ -69,6 +69,8 @@ void MeshCollider::DrawPhysicsDebug(RenderView& view)
 {
     if (CollisionData && CollisionData->IsLoaded())
     {
+        if (!view.CullingFrustum.Intersects(_sphere))
+            return;
         if (view.Mode == ViewMode::PhysicsColliders && !GetIsTrigger())
         {
             Array<Vector3>* vertexBuffer;
@@ -144,7 +146,7 @@ void MeshCollider::UpdateBounds()
     BoundingSphere::FromBox(_box, _sphere);
 }
 
-void MeshCollider::GetGeometry(PxGeometryHolder& geometry)
+void MeshCollider::GetGeometry(CollisionShape& collision)
 {
     // Prepare scale
     Vector3 scale = _cachedScale;
@@ -157,25 +159,9 @@ void MeshCollider::GetGeometry(PxGeometryHolder& geometry)
     if (CollisionData && CollisionData->IsLoaded())
         type = CollisionData->GetOptions().Type;
     if (type == CollisionDataType::ConvexMesh)
-    {
-        // Convex mesh
-        PxConvexMeshGeometry convexMesh;
-        convexMesh.scale.scale = C2P(scale);
-        convexMesh.convexMesh = CollisionData->GetConvex();
-        geometry.storeAny(convexMesh);
-    }
+        collision.SetConvexMesh(CollisionData->GetConvex(), scale.Raw);
     else if (type == CollisionDataType::TriangleMesh)
-    {
-        // Triangle mesh
-        PxTriangleMeshGeometry triangleMesh;
-        triangleMesh.scale.scale = C2P(scale);
-        triangleMesh.triangleMesh = CollisionData->GetTriangle();
-        geometry.storeAny(triangleMesh);
-    }
+        collision.SetTriangleMesh(CollisionData->GetTriangle(), scale.Raw);
     else
-    {
-        // Dummy geometry
-        const PxSphereGeometry sphere(minSize);
-        geometry.storeAny(sphere);
-    }
+        collision.SetSphere(minSize);
 }

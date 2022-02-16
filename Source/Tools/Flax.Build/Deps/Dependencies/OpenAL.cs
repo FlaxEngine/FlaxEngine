@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 using System;
 using System.Collections.Generic;
@@ -34,6 +34,11 @@ namespace Flax.Deps.Dependencies
                         TargetPlatform.Linux,
                         TargetPlatform.Android,
                     };
+                case TargetPlatform.Mac:
+                    return new[]
+                    {
+                        TargetPlatform.Mac,
+                    };
                 default: return new TargetPlatform[0];
                 }
             }
@@ -63,7 +68,7 @@ namespace Flax.Deps.Dependencies
                     }
 
                     // Deploy Win64 binaries
-                    var depsFolder = GetThirdPartyFolder(options, TargetPlatform.Windows, TargetArchitecture.x64);
+                    var depsFolder = GetThirdPartyFolder(options, platform, TargetArchitecture.x64);
                     Utilities.FileCopy(Path.Combine(root, "bin", "Win64", "soft_oal.dll"), Path.Combine(depsFolder, "OpenAL32.dll"));
                     Utilities.FileCopy(Path.Combine(root, "libs", "Win64", "OpenAL32.lib"), Path.Combine(depsFolder, "OpenAL32.lib"));
 
@@ -106,7 +111,7 @@ namespace Flax.Deps.Dependencies
                     // Build for Linux
                     Utilities.Run("cmake", "-G \"Unix Makefiles\" -DCMAKE_BUILD_TYPE=Release -DCMAKE_POSITION_INDEPENDENT_CODE=ON -DLIBTYPE=STATIC " + config + " ..", null, buildDir, Utilities.RunOptions.None, envVars);
                     Utilities.Run("cmake", "--build .", null, buildDir, Utilities.RunOptions.None, envVars);
-                    var depsFolder = GetThirdPartyFolder(options, TargetPlatform.Linux, TargetArchitecture.x64);
+                    var depsFolder = GetThirdPartyFolder(options, platform, TargetArchitecture.x64);
                     foreach (var file in binariesToCopy)
                         Utilities.FileCopy(Path.Combine(buildDir, file), Path.Combine(depsFolder, file));
                     break;
@@ -140,9 +145,36 @@ namespace Flax.Deps.Dependencies
                     SetupDirectory(buildDir, true);
 
                     // Build
-                    RunCmake(buildDir, TargetPlatform.Android, TargetArchitecture.ARM64, ".. -DLIBTYPE=STATIC -DCMAKE_BUILD_TYPE=Release " + config);
+                    RunCmake(buildDir, platform, TargetArchitecture.ARM64, ".. -DLIBTYPE=STATIC -DCMAKE_BUILD_TYPE=Release " + config);
                     Utilities.Run("cmake", "--build .", null, buildDir, Utilities.RunOptions.None);
-                    var depsFolder = GetThirdPartyFolder(options, TargetPlatform.Android, TargetArchitecture.ARM64);
+                    var depsFolder = GetThirdPartyFolder(options, platform, TargetArchitecture.ARM64);
+                    foreach (var file in binariesToCopy)
+                        Utilities.FileCopy(Path.Combine(buildDir, file), Path.Combine(depsFolder, file));
+                    break;
+                }
+                case TargetPlatform.Mac:
+                {
+                    var binariesToCopy = new[]
+                    {
+                        "libopenal.a",
+                    };
+                    var config = "-DALSOFT_REQUIRE_COREAUDIO=ON -DALSOFT_EMBED_HRTF_DATA=YES";
+
+                    // Get the source
+                    var packagePath = Path.Combine(root, "package.zip");
+                    File.Delete(packagePath);
+                    Downloader.DownloadFileFromUrlToPath("https://openal-soft.org/openal-releases/openal-soft-" + version + ".tar.bz2", packagePath);
+                    Utilities.Run("tar", "xjf " + packagePath.Replace('\\', '/'), null, root, Utilities.RunOptions.None);
+
+                    // Use separate build directory
+                    root = Path.Combine(root, "openal-soft-" + version);
+                    var buildDir = Path.Combine(root, "build");
+                    SetupDirectory(buildDir, true);
+
+                    // Build for Mac
+                    RunCmake(buildDir, platform, TargetArchitecture.x64, ".. -DLIBTYPE=STATIC -DCMAKE_BUILD_TYPE=Release " + config);
+                    Utilities.Run("cmake", "--build .", null, buildDir, Utilities.RunOptions.None);
+                    var depsFolder = GetThirdPartyFolder(options, platform, TargetArchitecture.x64);
                     foreach (var file in binariesToCopy)
                         Utilities.FileCopy(Path.Combine(buildDir, file), Path.Combine(depsFolder, file));
                     break;

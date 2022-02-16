@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 #include "CookAssetsStep.h"
 #include "Editor/Cooker/PlatformTools.h"
@@ -28,7 +28,10 @@
 #include "Engine/Streaming/StreamingSettings.h"
 #include "Engine/ShadersCompilation/ShadersCompilation.h"
 #include "Engine/Graphics/RenderTools.h"
+#include "Engine/Graphics/Shaders/GPUShader.h"
 #include "Engine/Graphics/Textures/TextureData.h"
+#include "Engine/Graphics/Materials/MaterialShader.h"
+#include "Engine/Particles/Graph/GPU/ParticleEmitterGraph.GPU.h"
 #include "Engine/Engine/Base/GameBase.h"
 #include "Engine/Engine/Globals.h"
 #include "Engine/Tools/TextureTool/TextureTool.h"
@@ -95,34 +98,12 @@ CookAssetsStep::CacheEntry& CookAssetsStep::CacheData::CreateEntry(const Asset* 
     return entry;
 }
 
-void CookAssetsStep::CacheData::InvalidateShaders()
+void CookAssetsStep::CacheData::InvalidateCachePerType(const StringView& typeName)
 {
-    LOG(Info, "Invalidating cached shader assets.");
+    LOG(Info, "Invalidating cooker cache for {0} assets.", typeName);
     for (auto e = Entries.Begin(); e.IsNotEnd(); ++e)
     {
-        auto& typeName = e->Value.TypeName;
-        if (
-            typeName == Shader::TypeName ||
-            typeName == Material::TypeName ||
-            typeName == ParticleEmitter::TypeName
-        )
-        {
-            Entries.Remove(e);
-        }
-    }
-}
-
-void CookAssetsStep::CacheData::InvalidateTextures()
-{
-    LOG(Info, "Invalidating cached texture assets.");
-    for (auto e = Entries.Begin(); e.IsNotEnd(); ++e)
-    {
-        auto& typeName = e->Value.TypeName;
-        if (
-            typeName == Texture::TypeName ||
-            typeName == CubeTexture::TypeName ||
-            typeName == SpriteAtlas::TypeName
-        )
+        if (e->Value.TypeName == typeName)
         {
             Entries.Remove(e);
         }
@@ -210,14 +191,29 @@ void CookAssetsStep::CacheData::Load(CookingData& data)
 
     // Invalidate shaders and assets with shaders if need to rebuild them
     bool invalidateShaders = false;
+    if (GPU_SHADER_CACHE_VERSION != Settings.Global.ShadersVersion)
+    {
+        LOG(Info, "{0} option has been modified.", TEXT("ShadersVersion"));
+        invalidateShaders = true;
+    }
+    if (MATERIAL_GRAPH_VERSION != Settings.Global.MaterialGraphVersion)
+    {
+        LOG(Info, "{0} option has been modified.", TEXT("MaterialGraphVersion"));
+        InvalidateCachePerType(Material::TypeName);
+    }
+    if (PARTICLE_GPU_GRAPH_VERSION != Settings.Global.ParticleGraphVersion)
+    {
+        LOG(Info, "{0} option has been modified.", TEXT("ParticleGraphVersion"));
+        InvalidateCachePerType(ParticleEmitter::TypeName);
+    }
     if (buildSettings->ShadersNoOptimize != Settings.Global.ShadersNoOptimize)
     {
-        LOG(Info, "ShadersNoOptimize option has been modified.");
+        LOG(Info, "{0} option has been modified.", TEXT("ShadersNoOptimize"));
         invalidateShaders = true;
     }
     if (buildSettings->ShadersGenerateDebugData != Settings.Global.ShadersGenerateDebugData)
     {
-        LOG(Info, "ShadersGenerateDebugData option has been modified.");
+        LOG(Info, "{0} option has been modified.", TEXT("ShadersGenerateDebugData"));
         invalidateShaders = true;
     }
 #if PLATFORM_TOOLS_WINDOWS
@@ -230,7 +226,7 @@ void CookAssetsStep::CacheData::Load(CookingData& data)
                 Settings.Windows.SupportVulkan != settings->SupportVulkan;
         if (modified)
         {
-            LOG(Info, "Platform graphics backend options has been modified.");
+            LOG(Info, "{0} option has been modified.", TEXT("Platform graphics backend"));
             invalidateShaders = true;
         }
     }
@@ -244,7 +240,7 @@ void CookAssetsStep::CacheData::Load(CookingData& data)
                 Settings.UWP.SupportDX10 != settings->SupportDX10;
         if (modified)
         {
-            LOG(Info, "Platform graphics backend options has been modified.");
+            LOG(Info, "{0} option has been modified.", TEXT("Platform graphics backend"));
             invalidateShaders = true;
         }
     }
@@ -257,18 +253,24 @@ void CookAssetsStep::CacheData::Load(CookingData& data)
                 Settings.Linux.SupportVulkan != settings->SupportVulkan;
         if (modified)
         {
-            LOG(Info, "Platform graphics backend options has been modified.");
+            LOG(Info, "{0} option has been modified.", TEXT("Platform graphics backend"));
             invalidateShaders = true;
         }
     }
 #endif
     if (invalidateShaders)
-        InvalidateShaders();
+    {
+        InvalidateCachePerType(Shader::TypeName);
+        InvalidateCachePerType(Material::TypeName);
+        InvalidateCachePerType(ParticleEmitter::TypeName);
+    }
 
     // Invalidate textures if streaming settings gets modified
     if (Settings.Global.StreamingSettingsAssetId != gameSettings->Streaming || (Entries.ContainsKey(gameSettings->Streaming) && !Entries[gameSettings->Streaming].IsValid()))
     {
-        InvalidateTextures();
+        InvalidateCachePerType(Texture::TypeName);
+        InvalidateCachePerType(CubeTexture::TypeName);
+        InvalidateCachePerType(SpriteAtlas::TypeName);
     }
 }
 
@@ -463,14 +465,6 @@ bool ProcessShaderBase(CookAssetsStep::AssetCookData& data, ShaderAssetBase* ass
         break;
     }
 #endif
-#if PLATFORM_TOOLS_UWP
-    case BuildPlatform::XboxOne:
-    {
-        const char* platformDefineName = "PLATFORM_XBOX_ONE";
-        COMPILE_PROFILE(DirectX_SM4, SHADER_FILE_CHUNK_INTERNAL_D3D_SM4_CACHE);
-        break;
-    }
-#endif
 #if PLATFORM_TOOLS_LINUX
     case BuildPlatform::LinuxX64:
     {
@@ -488,6 +482,14 @@ bool ProcessShaderBase(CookAssetsStep::AssetCookData& data, ShaderAssetBase* ass
     {
         const char* platformDefineName = "PLATFORM_PS4";
         COMPILE_PROFILE(PS4, SHADER_FILE_CHUNK_INTERNAL_GENERIC_CACHE);
+        break;
+    }
+#endif
+#if PLATFORM_TOOLS_XBOX_ONE
+    case BuildPlatform::XboxOne:
+    {
+        const char* platformDefineName = "PLATFORM_XBOX_ONE";
+        COMPILE_PROFILE(DirectX_SM6, SHADER_FILE_CHUNK_INTERNAL_D3D_SM6_CACHE);
         break;
     }
 #endif
@@ -511,6 +513,22 @@ bool ProcessShaderBase(CookAssetsStep::AssetCookData& data, ShaderAssetBase* ass
     case BuildPlatform::Switch:
     {
         const char* platformDefineName = "PLATFORM_SWITCH";
+        COMPILE_PROFILE(Vulkan_SM5, SHADER_FILE_CHUNK_INTERNAL_VULKAN_SM5_CACHE);
+        break;
+    }
+#endif
+#if PLATFORM_TOOLS_PS5
+    case BuildPlatform::PS5:
+    {
+        const char* platformDefineName = "PLATFORM_PS5";
+        COMPILE_PROFILE(PS5, SHADER_FILE_CHUNK_INTERNAL_GENERIC_CACHE);
+        break;
+    }
+#endif
+#if PLATFORM_TOOLS_MAC
+    case BuildPlatform::MacOSx64:
+    {
+        const char* platformDefineName = "PLATFORM_MAC";
         COMPILE_PROFILE(Vulkan_SM5, SHADER_FILE_CHUNK_INTERNAL_VULKAN_SM5_CACHE);
         break;
     }
@@ -1029,6 +1047,9 @@ bool CookAssetsStep::Perform(CookingData& data)
         cache.Settings.Global.ShadersNoOptimize = buildSettings->ShadersNoOptimize;
         cache.Settings.Global.ShadersGenerateDebugData = buildSettings->ShadersGenerateDebugData;
         cache.Settings.Global.StreamingSettingsAssetId = gameSettings->Streaming;
+        cache.Settings.Global.ShadersVersion = GPU_SHADER_CACHE_VERSION;
+        cache.Settings.Global.MaterialGraphVersion = MATERIAL_GRAPH_VERSION;
+        cache.Settings.Global.ParticleGraphVersion = PARTICLE_GPU_GRAPH_VERSION;
     }
 
     // Note: this step converts all the assets (even the json) into the binary files (FlaxStorage format).
@@ -1040,6 +1061,8 @@ bool CookAssetsStep::Perform(CookingData& data)
     auto minDateTime = DateTime::MinValue();
 #endif
     int32 subStepIndex = 0;
+    AssetReference<Asset> assetRef;
+    assetRef.Unload.Bind([]() { LOG(Error, "Asset gets unloaded while cooking it!"); Platform::Sleep(100); });
     for (auto i = data.Assets.Begin(); i.IsNotEnd(); ++i)
     {
         BUILD_STEP_CANCEL_CHECK;
@@ -1097,16 +1120,16 @@ bool CookAssetsStep::Perform(CookingData& data)
         }
 
         // Load asset (and keep ref)
-        AssetReference<Asset> ref = Content::LoadAsync<Asset>(assetId);
-        if (ref == nullptr)
+        assetRef = Content::LoadAsync<Asset>(assetId);
+        if (assetRef == nullptr)
         {
             data.Error(TEXT("Failed to load asset included in build."));
             return true;
         }
-        e.Info.TypeName = ref->GetTypeName();
+        e.Info.TypeName = assetRef->GetTypeName();
 
         // Cook asset
-        if (Process(data, cache, ref.Get()))
+        if (Process(data, cache, assetRef.Get()))
             return true;
         data.Stats.CookedAssets++;
 

@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -29,7 +29,7 @@ class MaterialBase;
 /// <summary>
 /// Graphics device object for rendering on GPU.
 /// </summary>
-API_CLASS(Sealed, NoSpawn) class FLAXENGINE_API GPUDevice : public PersistentScriptingObject
+API_CLASS(Sealed, NoSpawn) class FLAXENGINE_API GPUDevice : public ScriptingObject
 {
 DECLARE_SCRIPTING_TYPE_NO_SPAWN(GPUDevice);
 public:

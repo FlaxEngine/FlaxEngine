@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 using System;
 using System.Collections.Generic;
@@ -45,6 +45,11 @@ namespace FlaxEditor.GUI
             /// Occurs when items gets clicked by the user.
             /// </summary>
             public event Action<Item> Clicked;
+
+            /// <summary>
+            /// The tint color of the text.
+            /// </summary>
+            public Color TintColor = Color.White;
 
             /// <summary>
             /// Initializes a new instance of the <see cref="Item"/> class.
@@ -112,7 +117,7 @@ namespace FlaxEditor.GUI
                 base.Draw();
 
                 // Overlay
-                if (IsMouseOver)
+                if (IsMouseOver || IsFocused)
                     Render2D.FillRectangle(new Rectangle(Vector2.Zero, Size), style.BackgroundHighlighted);
 
                 // Draw all highlights
@@ -129,7 +134,7 @@ namespace FlaxEditor.GUI
                 }
 
                 // Draw name
-                Render2D.DrawText(style.FontSmall, Name, textRect, Enabled ? style.Foreground : style.ForegroundDisabled, TextAlignment.Near, TextAlignment.Center);
+                Render2D.DrawText(style.FontSmall, Name, textRect, TintColor * (Enabled ? style.Foreground : style.ForegroundDisabled), TextAlignment.Near, TextAlignment.Center);
             }
 
             /// <inheritdoc />
@@ -149,7 +154,6 @@ namespace FlaxEditor.GUI
                 if (button == MouseButton.Left && _isMouseDown)
                 {
                     _isMouseDown = false;
-
                     Clicked?.Invoke(this);
                 }
 
@@ -174,6 +178,7 @@ namespace FlaxEditor.GUI
         }
 
         private readonly TextBox _searchBox;
+        private readonly Panel _scrollPanel;
         private List<DropPanel> _categoryPanels;
         private bool _waitingForInput;
 
@@ -207,7 +212,7 @@ namespace FlaxEditor.GUI
             _searchBox.TextChanged += OnSearchFilterChanged;
 
             // Panel with scrollbar
-            var scrollPanel = new Panel(ScrollBars.Vertical)
+            _scrollPanel = new Panel(ScrollBars.Vertical)
             {
                 Parent = this,
                 AnchorPreset = AnchorPresets.StretchAll,
@@ -217,7 +222,7 @@ namespace FlaxEditor.GUI
             // Items list panel
             ItemsPanel = new VerticalPanel
             {
-                Parent = scrollPanel,
+                Parent = _scrollPanel,
                 AnchorPreset = AnchorPresets.HorizontalStretchTop,
                 IsScrollable = true,
             };
@@ -336,6 +341,32 @@ namespace FlaxEditor.GUI
             PerformLayout(true);
         }
 
+        private List<Item> GetVisibleItems()
+        {
+            var result = new List<Item>();
+            var items = ItemsPanel.Children;
+            for (int i = 0; i < items.Count; i++)
+            {
+                if (items[i] is Item item && item.Visible)
+                    result.Add(item);
+            }
+            if (_categoryPanels != null)
+            {
+                for (int i = 0; i < _categoryPanels.Count; i++)
+                {
+                    var category = _categoryPanels[i];
+                    if (!category.Visible)
+                        continue;
+                    for (int j = 0; j < category.Children.Count; j++)
+                    {
+                        if (category.Children[j] is Item item2 && item2.Visible)
+                            result.Add(item2);
+                    }
+                }
+            }
+            return result;
+        }
+
         /// <inheritdoc />
         protected override void OnShow()
         {
@@ -358,12 +389,63 @@ namespace FlaxEditor.GUI
         /// <inheritdoc />
         public override bool OnKeyDown(KeyboardKeys key)
         {
-            if (key == KeyboardKeys.Escape)
+            var focusedItem = RootWindow.FocusedControl as Item;
+            switch (key)
             {
+            case KeyboardKeys.Escape:
                 Hide();
                 return true;
-            }
+            case KeyboardKeys.ArrowDown:
+                if (RootWindow.FocusedControl == null)
+                {
+                    // Focus search box if nothing is focused
+                    _searchBox.Focus();
+                    return true;
+                }
 
+                //  Focus the first visible item or then next one
+                {
+                    var items = GetVisibleItems();
+                    var focusedIndex = items.IndexOf(focusedItem);
+                    if (focusedIndex == -1)
+                        focusedIndex = -1;
+                    if (focusedIndex + 1 < items.Count)
+                    {
+                        var item = items[focusedIndex + 1];
+                        item.Focus();
+                        _scrollPanel.ScrollViewTo(item);
+                        return true;
+                    }
+                }
+                break;
+            case KeyboardKeys.ArrowUp:
+                if (focusedItem != null)
+                {
+                    //  Focus the previous visible item or the search box
+                    var items = GetVisibleItems();
+                    var focusedIndex = items.IndexOf(focusedItem);
+                    if (focusedIndex == 0)
+                    {
+                        _searchBox.Focus();
+                    }
+                    else if (focusedIndex > 0)
+                    {
+                        var item = items[focusedIndex - 1];
+                        item.Focus();
+                        _scrollPanel.ScrollViewTo(item);
+                        return true;
+                    }
+                }
+                break;
+            case KeyboardKeys.Return:
+                if (focusedItem != null)
+                {
+                    OnClickItem(focusedItem);
+                    return true;
+                }
+                break;
+            }
+            
             if (_waitingForInput)
             {
                 _waitingForInput = false;

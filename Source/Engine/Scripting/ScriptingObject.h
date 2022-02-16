@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -8,9 +8,9 @@
 #include "ManagedCLR/MTypes.h"
 
 /// <summary>
-/// Represents object from unmanaged memory that can use accessed via C# scripting.
+/// Represents object from unmanaged memory that can use accessed via scripting.
 /// </summary>
-API_CLASS(InBuild) class FLAXENGINE_API ScriptingObject : public RemovableObject
+API_CLASS(InBuild) class FLAXENGINE_API ScriptingObject : public Object
 {
     friend class Scripting;
     friend class BinaryModule;
@@ -40,14 +40,23 @@ public:
 
 public:
 
-    /// <summary>
-    /// Spawns a new objects of the given type.
-    /// </summary>
+    // Spawns a new objects of the given type.
+    static ScriptingObject* NewObject(const ScriptingTypeHandle& typeHandle);
     template<typename T>
-    static T* Spawn()
+    static T* NewObject()
     {
-        const SpawnParams params(Guid::New(), T::TypeInitializer);
-        return T::New(params);
+        return (T*)NewObject(T::TypeInitializer);
+    }
+    template<typename T>
+    static T* NewObject(const ScriptingTypeHandle& typeHandle)
+    {
+        auto obj = NewObject(typeHandle);
+        if (obj && !obj->Is<T>())
+        {
+            Delete(obj);
+            obj = nullptr;
+        }
+        return (T*)obj;
     }
 
 public:
@@ -62,12 +71,12 @@ public:
     /// <summary>
     /// Gets the managed instance object.
     /// </summary>
-    MonoObject* GetManagedInstance() const;
+    MObject* GetManagedInstance() const;
 
     /// <summary>
     /// Gets the managed instance object or creates it if missing.
     /// </summary>
-    MonoObject* GetOrCreateManagedInstance() const;
+    MObject* GetOrCreateManagedInstance() const;
 
     /// <summary>
     /// Determines whether managed instance is alive.
@@ -108,9 +117,18 @@ public:
 
 public:
 
-    static ScriptingObject* ToNative(MonoObject* obj);
+    // Tries to cast native interface object to scripting object instance. Returns null if fails.
+    static ScriptingObject* FromInterface(void* interfaceObj, const ScriptingTypeHandle& interfaceType);
+    static void* ToInterface(ScriptingObject* obj, const ScriptingTypeHandle& interfaceType);
+    template<typename T>
+    static T* ToInterface(ScriptingObject* obj)
+    {
+        return (T*)ToInterface(obj, T::TypeInitializer);
+    }
 
-    static MonoObject* ToManaged(ScriptingObject* obj)
+    static ScriptingObject* ToNative(MObject* obj);
+
+    static MObject* ToManaged(ScriptingObject* obj)
     {
         return obj ? obj->GetOrCreateManagedInstance() : nullptr;
     }
@@ -130,7 +148,9 @@ public:
     /// <param name="to">The destination class to the cast.</param>
     /// <returns>True if can, otherwise false.</returns>
     static bool CanCast(MClass* from, MClass* to);
+#if USE_MONO
     static bool CanCast(MClass* from, MonoClass* to);
+#endif
 
     template<typename T>
     static T* Cast(ScriptingObject* obj)
@@ -145,10 +165,12 @@ public:
         return CanCast(GetClass(), type);
     }
 
+#if USE_MONO
     bool Is(MonoClass* klass) const
     {
         return CanCast(GetClass(), klass);
     }
+#endif
 
     template<typename T>
     bool Is() const
@@ -169,7 +191,7 @@ public:
     virtual void OnManagedInstanceDeleted();
     virtual void OnScriptingDispose();
 
-    virtual void CreateManaged() = 0;
+    virtual bool CreateManaged();
     virtual void DestroyManaged();
 
 public:
@@ -177,7 +199,6 @@ public:
     /// <summary>
     /// Determines whether this object is registered or not (can be found by the queries and used in a game).
     /// </summary>
-    /// <returns><c>true</c> if this instance is registered; otherwise, <c>false</c>.</returns>
     FORCE_INLINE bool IsRegistered() const
     {
         return (Flags & ObjectFlags::IsRegistered) != 0;
@@ -195,14 +216,16 @@ public:
 
 protected:
 
+#if USE_MONO
     /// <summary>
     /// Create a new managed object.
     /// </summary>
     MonoObject* CreateManagedInternal();
+#endif
 
 public:
 
-    // [RemovableObject]
+    // [Object]
     void OnDeleteObject() override;
     String ToString() const override;
 };
@@ -225,32 +248,17 @@ public:
 public:
 
     // [ScriptingObject]
-    void CreateManaged() override;
+    void OnManagedInstanceDeleted() override;
+    void OnScriptingDispose() override;
+    bool CreateManaged() override;
 };
 
 /// <summary>
-/// Managed object that uses pinned GC handle to prevent collecting and moving. 
-/// Used by the objects that lifetime is controlled by the C++ side.
+/// Use ScriptingObject instead.
+/// [Deprecated on 5.01.2022, expires on 5.01.2024]
 /// </summary>
 API_CLASS(InBuild) class FLAXENGINE_API PersistentScriptingObject : public ScriptingObject
 {
 public:
-
-    /// <summary>
-    /// Initializes a new instance of the <see cref="PersistentScriptingObject"/> class.
-    /// </summary>
-    /// <param name="params">The object initialization parameters.</param>
-    explicit PersistentScriptingObject(const SpawnParams& params);
-
-    /// <summary>
-    /// Finalizes an instance of the <see cref="PersistentScriptingObject"/> class.
-    /// </summary>
-    ~PersistentScriptingObject();
-
-public:
-
-    // [ManagedScriptingObject]
-    void OnManagedInstanceDeleted() override;
-    void OnScriptingDispose() override;
-    void CreateManaged() override;
+    PersistentScriptingObject(const SpawnParams& params);
 };

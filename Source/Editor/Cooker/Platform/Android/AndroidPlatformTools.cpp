@@ -5,6 +5,8 @@
 #include "AndroidPlatformTools.h"
 #include "Editor/Editor.h"
 #include "Editor/ProjectInfo.h"
+#include "Editor/Cooker/GameCooker.h"
+#include "Editor/Utilities/EditorUtilities.h"
 #include "Engine/Platform/File.h"
 #include "Engine/Platform/FileSystem.h"
 #include "Engine/Platform/Android/AndroidPlatformSettings.h"
@@ -12,11 +14,10 @@
 #include "Engine/Graphics/Textures/TextureData.h"
 #include "Engine/Core/Config/GameSettings.h"
 #include "Engine/Core/Config/BuildSettings.h"
-#include "Editor/Utilities/EditorUtilities.h"
 #include "Engine/Content/Content.h"
 #include "Engine/Content/JsonAsset.h"
 
-IMPLEMENT_SETTINGS_GETTER(AndroidPlatformSettings, AndroidPlatform);
+IMPLEMENT_ENGINE_SETTINGS_GETTER(AndroidPlatformSettings, AndroidPlatform);
 
 namespace
 {
@@ -98,7 +99,14 @@ PixelFormat AndroidPlatformTools::GetTextureFormat(CookingData& data, TextureBas
         }
     }
 
-    return format;
+    switch (format)
+    {
+        // Not all Android devices support R11G11B10 textures (eg. M6 Note)
+    case PixelFormat::R11G11B10_Float:
+        return PixelFormat::R16G16B16A16_UNorm;
+    default:
+        return format;
+    }
 }
 
 void AndroidPlatformTools::OnBuildStarted(CookingData& data)
@@ -269,6 +277,7 @@ bool AndroidPlatformTools::OnPostProcess(CookingData& data)
     {
         return false;
     }
+    GameCooker::PackageFiles();
 
     // Validate environment variables
     Dictionary<String, String> envVars;

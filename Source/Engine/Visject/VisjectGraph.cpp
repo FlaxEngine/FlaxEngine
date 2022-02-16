@@ -1,8 +1,9 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 #include "VisjectGraph.h"
 #include "GraphUtilities.h"
 #include "Engine/Core/Random.h"
+#include "Engine/Core/Collections/Sorting.h"
 #include "Engine/Core/Math/Vector4.h"
 #include "Engine/Core/Math/Transform.h"
 #include "Engine/Engine/GameplayGlobals.h"
@@ -16,6 +17,7 @@
 #include "Engine/Utilities/StringConverter.h"
 
 #define RAND Random::Rand()
+#define ENSURE(condition, errorMsg)  if (!(condition)) { OnError(node, box, errorMsg); return; }
 
 VisjectExecutor::VisjectExecutor()
 {
@@ -32,6 +34,7 @@ VisjectExecutor::VisjectExecutor()
     _perGroupProcessCall[11] = &VisjectExecutor::ProcessGroupBitwise;
     _perGroupProcessCall[12] = &VisjectExecutor::ProcessGroupComparisons;
     _perGroupProcessCall[14] = &VisjectExecutor::ProcessGroupParticles;
+    _perGroupProcessCall[18] = &VisjectExecutor::ProcessGroupCollections;
 }
 
 VisjectExecutor::~VisjectExecutor()
@@ -113,6 +116,22 @@ void VisjectExecutor::ProcessGroupConstants(Box* box, Node* node, Value& value)
         // Enum
     case 11:
         value = node->Values[0];
+        break;
+        // Array
+    case 13:
+        value = node->Values[0];
+        if (value.Type.Type == VariantType::Array)
+        {
+            auto& array = value.AsArray();
+            const int32 count = Math::Min(array.Count(), node->Boxes.Count() - 1);
+            const VariantType elementType = value.Type.GetElementType();
+            for (int32 i = 0; i < count; i++)
+            {
+                auto b = &node->Boxes[i + 1];
+                if (b && b->HasConnection())
+                    array[i] = eatBox(node, b->FirstConnection()).Cast(elementType);
+            }
+        }
         break;
     default:
         break;
@@ -523,6 +542,7 @@ void VisjectExecutor::ProcessGroupPacking(Box* box, Node* node, Value& value)
         const ScriptingTypeHandle typeHandle = Scripting::FindScriptingType(typeNameAnsiView);
         if (!typeHandle)
         {
+#if !COMPILE_WITHOUT_CSHARP
             const auto mclass = Scripting::FindClass(typeNameAnsiView);
             if (mclass)
             {
@@ -559,6 +579,7 @@ void VisjectExecutor::ProcessGroupPacking(Box* box, Node* node, Value& value)
                 }
             }
             else if (typeName.HasChars())
+#endif
             {
                 OnError(node, box, String::Format(TEXT("Missing type '{0}'"), typeName));
             }
@@ -609,6 +630,7 @@ void VisjectExecutor::ProcessGroupPacking(Box* box, Node* node, Value& value)
         const ScriptingTypeHandle typeHandle = Scripting::FindScriptingType(typeNameAnsiView);
         if (!typeHandle)
         {
+#if !COMPILE_WITHOUT_CSHARP
             const auto mclass = Scripting::FindClass(typeNameAnsiView);
             if (mclass)
             {
@@ -646,6 +668,7 @@ void VisjectExecutor::ProcessGroupPacking(Box* box, Node* node, Value& value)
                 }
             }
             else if (typeName.HasChars())
+#endif
             {
                 OnError(node, box, String::Format(TEXT("Missing type '{0}'"), typeName));
             }
@@ -890,6 +913,12 @@ void VisjectExecutor::ProcessGroupTools(Box* box, Node* node, Value& value)
             break;
         case PlatformType::Switch:
             boxId = 9;
+            break;
+        case PlatformType::PS5:
+            boxId = 10;
+            break;
+        case PlatformType::Mac:
+            boxId = 11;
             break;
         default: ;
         }
@@ -1211,17 +1240,105 @@ void VisjectExecutor::ProcessGroupParticles(Box* box, Node* node, Value& value)
     }
 }
 
-VisjectExecutor::Value VisjectExecutor::tryGetValue(Box* box, int32 defaultValueBoxIndex, const Value& defaultValue)
+void VisjectExecutor::ProcessGroupCollections(Box* box, Node* node, Value& value)
 {
-    const auto parentNode = box->GetParent<Node>();
-    if (box->HasConnection())
-        return eatBox(parentNode, box->FirstConnection());
-    if (parentNode->Values.Count() > defaultValueBoxIndex)
-        return Value(parentNode->Values[defaultValueBoxIndex]);
-    return defaultValue;
-}
-
-VisjectExecutor::Value VisjectExecutor::tryGetValue(Box* box, const Value& defaultValue)
-{
-    return box && box->HasConnection() ? eatBox(box->GetParent<Node>(), box->FirstConnection()) : defaultValue;
+    if (node->TypeID < 100)
+    {
+        // Array
+        Variant v = tryGetValue(node->GetBox(0), Value::Null);
+        ENSURE(v.Type.Type == VariantType::Array, String::Format(TEXT("Input value {0} is not an array."), v));
+        auto& array = v.AsArray();
+        Box* b;
+        switch (node->TypeID)
+        {
+            // Count
+        case 1:
+            value = array.Count();
+            break;
+            // Contains
+        case 2:
+            value = array.Contains(tryGetValue(node->GetBox(1), Value::Null));
+            break;
+            // Find
+        case 3:
+            b = node->GetBox(1);
+            ENSURE(b->HasConnection(), TEXT("Missing value to find."));
+            value = array.Find(eatBox(b->GetParent<Node>(), b->FirstConnection()));
+            break;
+            // Find Last
+        case 4:
+            b = node->GetBox(1);
+            ENSURE(b->HasConnection(), TEXT("Missing value to find."));
+            value = array.FindLast(eatBox(b->GetParent<Node>(), b->FirstConnection()));
+            break;
+            // Clear
+        case 5:
+            array.Clear();
+            value = MoveTemp(v);
+            break;
+            // Remove
+        case 6:
+            b = node->GetBox(1);
+            ENSURE(b->HasConnection(), TEXT("Missing value to remove."));
+            array.Remove(eatBox(b->GetParent<Node>(), b->FirstConnection()));
+            value = MoveTemp(v);
+            break;
+            // Remove At
+        case 7:
+        {
+            const int32 index = (int32)tryGetValue(node->GetBox(1), 0, Value::Null);
+            ENSURE(index >= 0 && index < array.Count(), String::Format(TEXT("Array index {0} is out of range [0;{1}]."), index, array.Count() - 1));
+            array.RemoveAt(index);
+            value = MoveTemp(v);
+            break;
+        }
+            // Add
+        case 8:
+            b = node->GetBox(1);
+            ENSURE(b->HasConnection(), TEXT("Missing value to add."));
+            array.Add(eatBox(b->GetParent<Node>(), b->FirstConnection()));
+            value = MoveTemp(v);
+            break;
+            // Insert
+        case 9:
+        {
+            b = node->GetBox(1);
+            ENSURE(b->HasConnection(), TEXT("Missing value to add."));
+            const int32 index = (int32)tryGetValue(node->GetBox(2), 0, Value::Null);
+            ENSURE(index >= 0 && index <= array.Count(), String::Format(TEXT("Array index {0} is out of range [0;{1}]."), index, array.Count()));
+            array.Insert(index, eatBox(b->GetParent<Node>(), b->FirstConnection()));
+            value = MoveTemp(v);
+            break;
+        }
+            // Get
+        case 10:
+        {
+            const int32 index = (int32)tryGetValue(node->GetBox(1), 0, Value::Null);
+            ENSURE(index >= 0 && index < array.Count(), String::Format(TEXT("Array index {0} is out of range [0;{1}]."), index, array.Count() - 1));
+            value = MoveTemp(array[index]);
+            break;
+        }
+            // Set
+        case 11:
+        {
+            b = node->GetBox(2);
+            ENSURE(b->HasConnection(), TEXT("Missing value to set."));
+            const int32 index = (int32)tryGetValue(node->GetBox(1), 0, Value::Null);
+            ENSURE(index >= 0 && index < array.Count(), String::Format(TEXT("Array index {0} is out of range [0;{1}]."), index, array.Count() - 1));
+            array[index] = MoveTemp(eatBox(b->GetParent<Node>(), b->FirstConnection()));
+            value = MoveTemp(v);
+            break;
+        }
+            // Sort
+        case 12:
+            Sorting::QuickSort(array.Get(), array.Count());
+            value = MoveTemp(v);
+            break;
+            // Reverse
+        case 13:
+            array.Reverse();
+            value = MoveTemp(v);
+            break;
+        }
+    }
 }

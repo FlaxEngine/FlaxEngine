@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 #if PLATFORM_LINUX
 
@@ -80,6 +80,8 @@ LinuxWindow::LinuxWindow(const CreateWindowSettings& settings)
 	_resizeDisabled = !settings.HasSizingFrame;
 
 	auto display = (X11::Display*)LinuxPlatform::GetXDisplay();
+    if (!display)
+        return;
 
 	auto screen = XDefaultScreen(display);
 	auto rootWindow = XRootWindow(display, screen);
@@ -241,6 +243,8 @@ LinuxWindow::~LinuxWindow()
 {
 	// Cleanup
 	LINUX_WINDOW_PROLOG;
+    if (!display)
+        return;
 	X11::XDestroyWindow(display, window);
 }
 
@@ -263,9 +267,12 @@ void LinuxWindow::Show()
 
 		// Show
 		LINUX_WINDOW_PROLOG;
-		X11::XMapWindow(display, window);
-		X11::XFlush(display);
-		_focusOnMapped = _settings.AllowInput && _settings.ActivateWhenFirstShown;
+        if (display)
+        {
+            X11::XMapWindow(display, window);
+            X11::XFlush(display);
+        }
+        _focusOnMapped = _settings.AllowInput && _settings.ActivateWhenFirstShown;
 
 		// Base
 		WindowBase::Show();
@@ -278,7 +285,10 @@ void LinuxWindow::Hide()
 	{
 		// Hide
 		LINUX_WINDOW_PROLOG;
-		X11::XUnmapWindow(display, window);
+        if (display)
+        {
+		    X11::XUnmapWindow(display, window);
+        }
 
 		// Base
 		WindowBase::Hide();
@@ -306,6 +316,8 @@ void LinuxWindow::Restore()
 void LinuxWindow::BringToFront(bool force)
 {
 	LINUX_WINDOW_PROLOG;
+    if (!display)
+        return;
 	X11::Atom activeWindow = X11::XInternAtom(display, "_NET_ACTIVE_WINDOW", 0);
 
 	X11::XEvent event;
@@ -338,6 +350,8 @@ void LinuxWindow::SetClientBounds(const Rectangle& clientArea)
 	int32 width = Math::TruncToInt(clientArea.GetWidth());
 	int32 height = Math::TruncToInt(clientArea.GetHeight());
 	LINUX_WINDOW_PROLOG;
+    if (!display)
+        return;
 
 	// If resize is disabled on WM level, we need to force it
 	if (_resizeDisabled)
@@ -362,6 +376,8 @@ void LinuxWindow::SetPosition(const Vector2& position)
 	int32 x = Math::TruncToInt(position.X);
 	int32 y = Math::TruncToInt(position.Y);
 	LINUX_WINDOW_PROLOG;
+    if (!display)
+        return;
 	X11::XMoveWindow(display, window, x, y);
 	X11::XFlush(display);
 }
@@ -371,6 +387,8 @@ void LinuxWindow::SetClientPosition(const Vector2& position)
 	int32 x = Math::TruncToInt(position.X);
 	int32 y = Math::TruncToInt(position.Y);
 	LINUX_WINDOW_PROLOG;
+    if (!display)
+        return;
 	X11::XWindowAttributes xwa;
 	X11::XGetWindowAttributes(display, window, &xwa);
 	X11::XMoveWindow(display, window, x - xwa.border_width, y - xwa.border_width);
@@ -380,6 +398,8 @@ void LinuxWindow::SetClientPosition(const Vector2& position)
 Vector2 LinuxWindow::GetPosition() const
 {
 	LINUX_WINDOW_PROLOG;
+    if (!display)
+        return Vector2::Zero;
 	X11::XWindowAttributes xwa;
 	X11::XGetWindowAttributes(display, window, &xwa);
 	return Vector2((float)xwa.x, (float)xwa.y);
@@ -388,6 +408,8 @@ Vector2 LinuxWindow::GetPosition() const
 Vector2 LinuxWindow::GetSize() const
 {
 	LINUX_WINDOW_PROLOG;
+    if (!display)
+        return _clientSize;
 	X11::XWindowAttributes xwa;
 	X11::XGetWindowAttributes(display, window, &xwa);
 	return Vector2((float)(xwa.width + xwa.border_width), (float)(xwa.height + xwa.border_width));
@@ -401,6 +423,8 @@ Vector2 LinuxWindow::GetClientSize() const
 Vector2 LinuxWindow::ScreenToClient(const Vector2& screenPos) const
 {
 	LINUX_WINDOW_PROLOG;
+    if (!display)
+        return screenPos;
 	int32 x, y;
 	X11::Window child;
 	X11::XTranslateCoordinates(display, X11_DefaultRootWindow(display), window, (int32)screenPos.X, (int32)screenPos.Y, &x, &y, &child);
@@ -410,6 +434,8 @@ Vector2 LinuxWindow::ScreenToClient(const Vector2& screenPos) const
 Vector2 LinuxWindow::ClientToScreen(const Vector2& clientPos) const
 {
 	LINUX_WINDOW_PROLOG;
+    if (!display)
+        return clientPos;
 	int32 x, y;
 	X11::Window child;
 	X11::XTranslateCoordinates(display, window, X11_DefaultRootWindow(display), (int32)clientPos.X, (int32)clientPos.Y, &x, &y, &child);
@@ -419,6 +445,8 @@ Vector2 LinuxWindow::ClientToScreen(const Vector2& clientPos) const
 void LinuxWindow::FlashWindow()
 {
 	LINUX_WINDOW_PROLOG;
+    if (!display)
+        return;
 
 	const X11::Atom wmState = X11::XInternAtom(display, "_NET_WM_STATE", 0);
 	const X11::Atom wmAttention = X11::XInternAtom(display, "_NET_WM_STATE_DEMANDS_ATTENTION", 0);
@@ -439,6 +467,8 @@ void LinuxWindow::GetScreenInfo(int32& x, int32& y, int32& width, int32& height)
 {
 	LINUX_WINDOW_PROLOG;
 	x = y = width = height = 0;
+    if (!display)
+        return;
 
 	int event, err;
 	const bool ok = X11::XineramaQueryExtension(display, &event, &err);
@@ -475,6 +505,8 @@ void LinuxWindow::CheckForWindowResize()
 		return;
 
 	LINUX_WINDOW_PROLOG;
+    if (!display)
+        return;
 
 	// Get client size
 	X11::XWindowAttributes xwa;
@@ -620,6 +652,8 @@ void LinuxWindow::OnConfigureNotify(void* event)
 void LinuxWindow::Maximize(bool enable)
 {
 	LINUX_WINDOW_PROLOG;
+    if (!display)
+        return;
 
 	X11::Atom wmState = X11::XInternAtom(display, "_NET_WM_STATE", 0);
 	X11::Atom wmMaxHorz = X11::XInternAtom(display, "_NET_WM_STATE_MAXIMIZED_HORZ", 0);
@@ -651,6 +685,8 @@ void LinuxWindow::Maximize(bool enable)
 void LinuxWindow::Minimize(bool enable)
 {
 	LINUX_WINDOW_PROLOG;
+    if (!display)
+        return;
 
 	X11::Atom wmChange = X11::XInternAtom(display, "WM_CHANGE_STATE", 0);
 
@@ -668,6 +704,8 @@ void LinuxWindow::Minimize(bool enable)
 bool LinuxWindow::IsWindowMapped()
 {
 	LINUX_WINDOW_PROLOG;
+    if (!display)
+        return false;
 	X11::XWindowAttributes xwa;
 	X11::XGetWindowAttributes(display, window, &xwa);
 	return xwa.map_state != IsUnmapped;
@@ -681,6 +719,8 @@ float LinuxWindow::GetOpacity() const
 void LinuxWindow::SetOpacity(const float opacity)
 {
 	LINUX_WINDOW_PROLOG;
+    if (!display)
+        return;
 
 	if (Math::IsOne(opacity))
 	{
@@ -702,6 +742,8 @@ void LinuxWindow::Focus()
 		return;
 
 	LINUX_WINDOW_PROLOG;
+    if (!display)
+        return;
 
 	X11::XSetInputFocus(display, window, RevertToPointerRoot, CurrentTime);
 	X11::XFlush(display);
@@ -711,6 +753,9 @@ void LinuxWindow::Focus()
 void LinuxWindow::SetTitle(const StringView& title)
 {
 	LINUX_WINDOW_PROLOG;
+	_title = title;
+    if (!display)
+        return;
 	const StringAsANSI<512> titleAnsi(title.Get(), title.Length());
 	const char* text = titleAnsi.Get();
 
@@ -729,8 +774,6 @@ void LinuxWindow::SetTitle(const StringView& title)
 		//X11::XSetWMIconName(display, window, &titleProp);
 		X11::XFree(titleProp.value);
 	}
-
-	_title = title;
 }
 
 void LinuxWindow::StartTrackingMouse(bool useMouseScreenOffset)
@@ -748,6 +791,8 @@ void LinuxWindow::SetCursor(CursorType type)
 	WindowBase::SetCursor(type);
 
 	LINUX_WINDOW_PROLOG;
+    if (!display)
+        return;
 	X11::XDefineCursor(display, window, Cursors[(int32)type]);
 }
 
@@ -764,6 +809,8 @@ void LinuxWindow::SetIcon(TextureData& icon)
 	WindowBase::SetIcon(icon);
 
 	LINUX_WINDOW_PROLOG;
+    if (!display)
+        return;
 	IconErrorFlag = false;
 	int (*oldHandler)(X11::Display*, X11::XErrorEvent*) = X11::XSetErrorHandler(&SetIconErrorHandler);
 	X11::Atom iconAtom = X11::XInternAtom(display, "_NET_WM_ICON", 0);

@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 using System;
 
@@ -10,8 +10,26 @@ namespace FlaxEngine.GUI
     /// <seealso cref="FlaxEngine.GUI.ContainerControl" />
     public class TilesPanel : ContainerControl
     {
+        private Margin _tileMargin;
         private Vector2 _tileSize = new Vector2(64);
         private bool _autoResize = false;
+
+        /// <summary>
+        /// Gets or sets the margin applied to each tile.
+        /// </summary>
+        [EditorOrder(0), Tooltip("The margin applied to each tile.")]
+        public Margin TileMargin
+        {
+            get => _tileMargin;
+            set
+            {
+                if (_tileMargin != value)
+                {
+                    _tileMargin = value;
+                    PerformLayout();
+                }
+            }
+        }
 
         /// <summary>
         /// Gets or sets the size of the tile.
@@ -54,7 +72,17 @@ namespace FlaxEngine.GUI
         /// Initializes a new instance of the <see cref="TilesPanel"/> class.
         /// </summary>
         public TilesPanel()
+        : this(0)
         {
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="TilesPanel"/> class.
+        /// </summary>
+        /// <param name="tileMargin">The tile margin.</param>
+        public TilesPanel(float tileMargin)
+        {
+            TileMargin = new Margin(tileMargin);
             AutoFocus = false;
         }
 
@@ -81,17 +109,17 @@ namespace FlaxEngine.GUI
             {
                 var c = _children[i];
 
-                c.Bounds = new Rectangle(x, y, itemsWidth, itemsHeight);
+                c.Bounds = new Rectangle(x + TileMargin.Left, y + TileMargin.Top, itemsWidth, itemsHeight);
 
-                x += itemsWidth;
-                if (x + itemsWidth > width)
+                x += itemsWidth + TileMargin.Width;
+                if (x + itemsWidth + TileMargin.Width > width)
                 {
                     x = 0;
-                    y += itemsHeight;
+                    y += itemsHeight + TileMargin.Height;
                 }
             }
             if (x > 0)
-                y += itemsHeight;
+                y += itemsHeight + TileMargin.Height;
 
             if (_autoResize)
             {

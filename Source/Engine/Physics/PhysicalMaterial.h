@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -14,7 +14,7 @@ API_AUTO_SERIALIZATION();
 DECLARE_SCRIPTING_TYPE_MINIMAL(PhysicalMaterial);
 private:
 
-    PxMaterial* _material;
+    void* _material;
 
 public:
 
@@ -66,16 +66,22 @@ public:
     API_FIELD(Attributes="HideInEditor")
     bool OverrideRestitutionCombineMode = false;
 
+    /// <summary>
+    /// Physical material density in kilograms per cubic meter (kg/m^3). Higher density means a higher weight of the object using this material. Wood is around 700, water is 1000, steel is around 8000.
+    /// </summary>
+    API_FIELD(Attributes="EditorOrder(10), EditorDisplay(\"Physical Material\")")
+    float Density = 1000.0f;
+
 public:
 
     /// <summary>
     /// Gets the PhysX material.
     /// </summary>
     /// <returns>The native material object.</returns>
-    PxMaterial* GetPhysXMaterial();
+    void* GetPhysicsMaterial();
 
     /// <summary>
-    /// Updates the PhysX material (after any property change).
+    /// Updates the physics material (after any property change).
     /// </summary>
-    void UpdatePhysXMaterial();
+    void UpdatePhysicsMaterial();
 };

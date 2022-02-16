@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 using FlaxEditor.GUI.Input;
 using FlaxEngine;
@@ -57,14 +57,15 @@ namespace FlaxEditor.Surface.Elements
         /// </summary>
         /// <param name="parentNode">The parent node.</param>
         /// <param name="arch">The node element archetype.</param>
+        /// <param name="customValue">The custom value override (optional).</param>
         /// <returns>The result value.</returns>
-        public static uint Get(SurfaceNode parentNode, NodeElementArchetype arch)
+        public static uint Get(SurfaceNode parentNode, NodeElementArchetype arch, object customValue = null)
         {
-            if (arch.ValueIndex < 0)
+            if (arch.ValueIndex < 0 && customValue == null)
                 return 0;
 
             uint result;
-            var value = parentNode.Values[arch.ValueIndex];
+            var value = customValue ?? parentNode.Values[arch.ValueIndex];
 
             // Note: this value box may edit on component of the vector like Vector3.Y, BoxID from Archetype tells which component pick
 

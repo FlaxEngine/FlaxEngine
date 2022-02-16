@@ -1,13 +1,14 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 #pragma once
 
-#include "Engine/Core/Collections/Array.h"
 #include "Stream.h"
+#include "Engine/Core/Templates.h"
 
 struct CommonValue;
 struct Variant;
 struct VariantType;
+class ISerializable;
 
 /// <summary>
 /// Base class for all data read streams
@@ -17,22 +18,11 @@ class FLAXENGINE_API ReadStream : public Stream
 public:
 
     /// <summary>
-    /// Virtual destructor
-    /// </summary>
-    virtual ~ReadStream()
-    {
-    }
-
-public:
-
-    /// <summary>
     /// Reads bytes from the stream
     /// </summary>
     /// <param name="data">Data to read</param>
     /// <param name="bytes">Amount of bytes to read</param>
     virtual void ReadBytes(void* data, uint32 bytes) = 0;
-
-public:
 
     template<typename T>
     FORCE_INLINE void Read(T* data)
@@ -193,15 +183,23 @@ public:
     /// Read data array
     /// </summary>
     /// <param name="data">Array to read</param>
-    template<typename T>
-    void ReadArray(Array<T>* data)
+    template<typename T, typename AllocationType = HeapAllocation>
+    void ReadArray(Array<T, AllocationType>* data)
     {
+        static_assert(TIsPODType<T>::Value, "Only POD types are valid for ReadArray.");
         int32 size;
         ReadInt32(&size);
         data->Resize(size, false);
         if (size > 0)
             ReadBytes(data->Get(), size * sizeof(T));
     }
+
+    /// <summary>
+    /// Deserializes object from Json by reading it as a raw data (ver+length+bytes).
+    /// </summary>
+    /// <remarks>Reads version number, data length and actual data bytes from the stream.</remarks>
+    /// <param name="obj">The object to deserialize.</param>
+    void ReadJson(ISerializable* obj);
 
 public:
 

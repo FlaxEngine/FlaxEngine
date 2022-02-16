@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -7,6 +7,9 @@
 #include "Engine/Core/Templates.h"
 #include "Math.h"
 
+struct Double2;
+struct Double3;
+struct Double4;
 struct Vector2;
 struct Vector3;
 struct Color;
@@ -122,19 +125,19 @@ public:
     // @param xy X and Y values in the vector
     // @param z Z component value
     // @param w W component value
-    Vector4(const Vector2& xy, float z, float w);
+    explicit Vector4(const Vector2& xy, float z, float w);
 
     // Init
     // @param xy X and Y values in the vector
     // @param zw Z and W values in the vector
     // @param z Z component value
     // @param w W component value
-    Vector4(const Vector2& xy, const Vector2& zw);
+    explicit Vector4(const Vector2& xy, const Vector2& zw);
 
     // Init
     // @param xyz X, Y and Z values in the vector
     // @param w W component value
-    Vector4(const Vector3& xyz, float w);
+    explicit Vector4(const Vector3& xyz, float w);
 
     // Init
     // @param xy X and Y values in the vector
@@ -151,6 +154,21 @@ public:
     // @param color Int4 value
     explicit Vector4(const Int4& xyzw);
 
+    // Init
+    // @param xy Double2. X and Y values in the vector
+    // @param z Z component value
+    // @param w W component value
+    explicit Vector4(const Double2& xy, float z, float w);
+
+    // Init
+    // @param xyz Double3. X, Y and Z values in the vector
+    // @param w W component value
+    explicit Vector4(const Double3& xyz, float w);
+    
+    // Init
+    // @param xyzw Double4 value
+    explicit Vector4(const Double4& xyzw);
+    
     // Init
     // @param color Color value
     explicit Vector4(const Color& color);

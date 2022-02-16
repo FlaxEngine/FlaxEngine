@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 #include "FoliageType.h"
 #include "Engine/Core/Collections/ArrayExtensions.h"
@@ -7,7 +7,7 @@
 #include "Foliage.h"
 
 FoliageType::FoliageType()
-    : PersistentScriptingObject(SpawnParams(Guid::New(), TypeInitializer))
+    : ScriptingObject(SpawnParams(Guid::New(), TypeInitializer))
     , Foliage(nullptr)
     , Index(-1)
 {

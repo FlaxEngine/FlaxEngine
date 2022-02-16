@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -23,11 +23,11 @@ protected:
 
     MString _name;
 
-    Array<MonoObject*> _attributes;
-
     int32 _hasCachedAttributes : 1;
     int32 _hasAddMonoMethod : 1;
     int32 _hasRemoveMonoMethod : 1;
+
+    Array<MObject*> _attributes;
 
 public:
 
@@ -40,7 +40,6 @@ public:
     /// <summary>
     /// Gets the event name.
     /// </summary>
-    /// <returns>The name.</returns>
     FORCE_INLINE const MString& GetName() const
     {
         return _name;
@@ -49,7 +48,6 @@ public:
     /// <summary>
     /// Returns the parent class that this method is contained with.
     /// </summary>
-    /// <returns>The parent class.</returns>
     FORCE_INLINE MClass* GetParentClass() const
     {
         return _parentClass;
@@ -58,25 +56,21 @@ public:
     /// <summary>
     /// Gets the event type class.
     /// </summary>
-    /// <returns>The type class.</returns>
     MType GetType();
 
     /// <summary>
     /// Gets the event add method.
     /// </summary>
-    /// <returns>The method object.</returns>
     MMethod* GetAddMethod();
 
     /// <summary>
     /// Gets the event remove method.
     /// </summary>
-    /// <returns>The method object.</returns>
     MMethod* GetRemoveMethod();
 
     /// <summary>
     /// Gets event visibility in the class.
     /// </summary>
-    /// <returns>The event visibility.</returns>
     FORCE_INLINE MVisibility GetVisibility()
     {
         return GetAddMethod()->GetVisibility();
@@ -85,23 +79,19 @@ public:
     /// <summary>
     /// Returns true if event is static.
     /// </summary>
-    /// <returns>True if is static, otherwise false.</returns>
     FORCE_INLINE bool IsStatic()
     {
         return GetAddMethod()->IsStatic();
     }
 
 #if USE_MONO
-
     /// <summary>
     /// Gets the Mono event handle.
     /// </summary>
-    /// <returns>The Mono event.</returns>
     FORCE_INLINE MonoEvent* GetNative() const
     {
         return _monoEvent;
     }
-
 #endif
 
 public:
@@ -124,11 +114,11 @@ public:
     /// </summary>
     /// <param name="monoClass">The attribute class to take.</param>
     /// <returns>The attribute object.</returns>
-    MonoObject* GetAttribute(MClass* monoClass) const;
+    MObject* GetAttribute(MClass* monoClass) const;
 
     /// <summary>
     /// Returns an instance of all attributes connected with given event. Returns null if the event doesn't have any attributes.
     /// </summary>
     /// <returns>The array of attribute objects.</returns>
-    const Array<MonoObject*>& GetAttributes();
+    const Array<MObject*>& GetAttributes();
 };

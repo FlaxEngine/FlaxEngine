@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 using System;
 using System.Collections.Generic;
@@ -153,17 +153,16 @@ namespace FlaxEditor.Modules
                     };
                 }
             }
+            Profiler.BeginEvent("ContentFinding.Search");
 
             string type = ".*";
             string name = charsToFind.Trim();
-
             if (charsToFind.Contains(':'))
             {
                 var args = charsToFind.Split(':');
                 type = ".*" + args[1].Trim() + ".*";
                 name = ".*" + args[0].Trim() + ".*";
             }
-
             if (name.Equals(string.Empty))
                 name = ".*";
 
@@ -173,17 +172,28 @@ namespace FlaxEditor.Modules
 
             foreach (var project in Editor.Instance.ContentDatabase.Projects)
             {
+                Profiler.BeginEvent(project.Project.Name);
                 ProcessItems(nameRegex, typeRegex, project.Folder.Children, matches);
+                Profiler.EndEvent();
             }
             //ProcessSceneNodes(nameRegex, typeRegex, Editor.Instance.Scene.Root, matches);
-            ProcessActors(nameRegex, typeRegex, Editor.Instance.Scene.Root, matches);
-
-            _quickActions.ForEach(action =>
             {
-                if (nameRegex.Match(action.Name).Success && typeRegex.Match("Quick Action").Success)
-                    matches.Add(new SearchResult { Name = action.Name, Type = "Quick Action", Item = action });
-            });
+                Profiler.BeginEvent("Actors");
+                ProcessActors(nameRegex, typeRegex, Editor.Instance.Scene.Root, matches);
+                Profiler.EndEvent();
+            }
 
+            {
+                Profiler.BeginEvent("QuickActions");
+                _quickActions.ForEach(action =>
+                {
+                    if (nameRegex.Match(action.Name).Success && typeRegex.Match("Quick Action").Success)
+                        matches.Add(new SearchResult { Name = action.Name, Type = "Quick Action", Item = action });
+                });
+                Profiler.EndEvent();
+            }
+
+            Profiler.EndEvent();
             return matches;
         }
 

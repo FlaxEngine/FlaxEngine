@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 #if COMPILE_WITH_PARTICLE_GPU_GRAPH
 
@@ -585,7 +585,7 @@ void ParticleEmitterGPUGenerator::ProcessGroupFunction(Box* box, Node* node, Val
             break;
         }
         Box* functionCallBox = functionCallNode->TryGetBox(inputIndex);
-        if (functionCallBox->HasConnection())
+        if (functionCallBox && functionCallBox->HasConnection())
         {
             // Use provided input value from the function call
             _graphStack.Pop();

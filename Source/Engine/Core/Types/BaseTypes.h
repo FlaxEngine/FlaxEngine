@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -86,6 +86,8 @@ struct BoundingFrustum;
 struct Color;
 struct Color32;
 struct Variant;
+template<typename T>
+class Span;
 class HeapAllocation;
 template<int Capacity>
 class FixedAllocation;

@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -37,29 +37,13 @@ public:
     /// <summary>
     /// Finalizes an instance of the <see cref="Object"/> class.
     /// </summary>
-    virtual ~Object()
-    {
-    }
+    virtual ~Object();
 
     /// <summary>
     /// Gets the string representation of this object.
     /// </summary>
     /// <returns>The string.</returns>
     virtual String ToString() const = 0;
-};
-
-/// <summary>
-/// Interface for removable Engine objects.
-/// </summary>
-class FLAXENGINE_API RemovableObject : public Object
-{
-public:
-
-    /// <summary>
-    /// Virtual destructor but protected. Removable objects should be deleted using `DeleteObject` which supports deferred delete.
-    /// Note: it's unsafe to delete object using destructor it it has been marked for deferred delete.
-    /// </summary>
-    virtual ~RemovableObject();
 
     /// <summary>
     /// Deletes the object without queueing it to the ObjectsRemovalService.
@@ -67,7 +51,7 @@ public:
     void DeleteObjectNow();
 
     /// <summary>
-    /// Deletes the object.
+    /// Deletes the object (deferred).
     /// </summary>
     /// <param name="timeToLive">The time to live (in seconds). Use zero to kill it now.</param>
     /// <param name="useGameTime">True if unscaled game time for the object life timeout, otherwise false to use absolute time.</param>
@@ -81,3 +65,6 @@ public:
         Delete(this);
     }
 };
+
+// [Deprecated on 5.01.2022, expires on 5.01.2024]
+typedef Object RemovableObject;

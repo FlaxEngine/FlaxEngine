@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 #include "GameSettings.h"
 #include "Engine/Serialization/JsonTools.h"
@@ -37,30 +37,36 @@ public:
     }
 };
 
-IMPLEMENT_SETTINGS_GETTER(BuildSettings, GameCooking);
-IMPLEMENT_SETTINGS_GETTER(GraphicsSettings, Graphics);
-IMPLEMENT_SETTINGS_GETTER(LayersAndTagsSettings, LayersAndTags);
-IMPLEMENT_SETTINGS_GETTER(TimeSettings, Time);
-IMPLEMENT_SETTINGS_GETTER(AudioSettings, Audio);
-IMPLEMENT_SETTINGS_GETTER(PhysicsSettings, Physics);
-IMPLEMENT_SETTINGS_GETTER(InputSettings, Input);
-IMPLEMENT_SETTINGS_GETTER(StreamingSettings, Streaming);
+IMPLEMENT_ENGINE_SETTINGS_GETTER(BuildSettings, GameCooking);
+IMPLEMENT_ENGINE_SETTINGS_GETTER(GraphicsSettings, Graphics);
+IMPLEMENT_ENGINE_SETTINGS_GETTER(LayersAndTagsSettings, LayersAndTags);
+IMPLEMENT_ENGINE_SETTINGS_GETTER(TimeSettings, Time);
+IMPLEMENT_ENGINE_SETTINGS_GETTER(AudioSettings, Audio);
+IMPLEMENT_ENGINE_SETTINGS_GETTER(PhysicsSettings, Physics);
+IMPLEMENT_ENGINE_SETTINGS_GETTER(InputSettings, Input);
+IMPLEMENT_ENGINE_SETTINGS_GETTER(StreamingSettings, Streaming);
 
 #if !USE_EDITOR
 #if PLATFORM_WINDOWS
-IMPLEMENT_SETTINGS_GETTER(WindowsPlatformSettings, WindowsPlatform);
-#elif PLATFORM_UWP || PLATFORM_XBOX_ONE
-IMPLEMENT_SETTINGS_GETTER(UWPPlatformSettings, UWPPlatform);
+IMPLEMENT_ENGINE_SETTINGS_GETTER(WindowsPlatformSettings, WindowsPlatform);
+#elif PLATFORM_UWP 
+IMPLEMENT_ENGINE_SETTINGS_GETTER(UWPPlatformSettings, UWPPlatform);
 #elif PLATFORM_LINUX
-IMPLEMENT_SETTINGS_GETTER(LinuxPlatformSettings, LinuxPlatform);
+IMPLEMENT_ENGINE_SETTINGS_GETTER(LinuxPlatformSettings, LinuxPlatform);
 #elif PLATFORM_PS4
-IMPLEMENT_SETTINGS_GETTER(PS4PlatformSettings, PS4Platform);
+IMPLEMENT_ENGINE_SETTINGS_GETTER(PS4PlatformSettings, PS4Platform);
+#elif PLATFORM_PS5
+IMPLEMENT_ENGINE_SETTINGS_GETTER(PS5PlatformSettings, PS5Platform);
+#elif PLATFORM_XBOX_ONE
+IMPLEMENT_ENGINE_SETTINGS_GETTER(XboxOnePlatformSettings, XboxOnePlatform);
 #elif PLATFORM_XBOX_SCARLETT
-IMPLEMENT_SETTINGS_GETTER(XboxScarlettPlatformSettings, XboxScarlettPlatform);
+IMPLEMENT_ENGINE_SETTINGS_GETTER(XboxScarlettPlatformSettings, XboxScarlettPlatform);
 #elif PLATFORM_ANDROID
-IMPLEMENT_SETTINGS_GETTER(AndroidPlatformSettings, AndroidPlatform);
+IMPLEMENT_ENGINE_SETTINGS_GETTER(AndroidPlatformSettings, AndroidPlatform);
 #elif PLATFORM_SWITCH
-IMPLEMENT_SETTINGS_GETTER(SwitchPlatformSettings, SwitchPlatform);
+IMPLEMENT_ENGINE_SETTINGS_GETTER(SwitchPlatformSettings, SwitchPlatform);
+#elif PLATFORM_MAC
+IMPLEMENT_ENGINE_SETTINGS_GETTER(MacPlatformSettings, MacPlatform);
 #else
 #error Unknown platform
 #endif
@@ -186,7 +192,7 @@ void GameSettings::Deserialize(DeserializeStream& stream, ISerializeModifier* mo
     SplashScreen = JsonTools::GetGuid(stream, "SplashScreen");
     CustomSettings.Clear();
     const auto customSettings = stream.FindMember("CustomSettings");
-    if (customSettings != stream.MemberEnd())
+    if (customSettings != stream.MemberEnd() && (customSettings->value.IsObject() || customSettings->value.IsArray()))
     {
         auto& items = customSettings->value;
         for (auto it = items.MemberBegin(); it != items.MemberEnd(); ++it)
@@ -217,9 +223,12 @@ void GameSettings::Deserialize(DeserializeStream& stream, ISerializeModifier* mo
     DESERIALIZE(UWPPlatform);
     DESERIALIZE(LinuxPlatform);
     DESERIALIZE(PS4Platform);
+    DESERIALIZE(XboxOnePlatform);
     DESERIALIZE(XboxScarlettPlatform);
     DESERIALIZE(AndroidPlatform);
     DESERIALIZE(SwitchPlatform);
+    DESERIALIZE(PS5Platform);
+    DESERIALIZE(MacPlatform);
 }
 
 void LayersAndTagsSettings::Deserialize(DeserializeStream& stream, ISerializeModifier* modifier)

@@ -1,7 +1,6 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 using System;
-using System.Globalization;
 using System.Runtime.InteropServices;
 
 namespace FlaxEngine
@@ -96,13 +95,12 @@ namespace FlaxEngine
         }
 
         /// <summary>
-        /// Converts the value of the object to its equivalent string representation.
+        /// Returns a <see cref="System.String" /> that represents this instance.
         /// </summary>
-        /// <returns>The string representation of the value of this instance.</returns>
+        /// <returns>A <see cref="System.String" /> that represents this instance.</returns>
         public override string ToString()
         {
-            Vector3 num = this;
-            return num.ToString(CultureInfo.CurrentCulture);
+            return ((Vector3)this).ToString();
         }
 
         /// <summary>
@@ -119,9 +117,7 @@ namespace FlaxEngine
         /// </summary>
         /// <param name="value1" />
         /// <param name="value2" />
-        /// <returns>
-        ///   <c>true</c> if <paramref name="value1" /> is the same instance as <paramref name="value2" /> or 
-        ///   if both are <c>null</c> references or if <c>value1.Equals(value2)</c> returns <c>true</c>; otherwise, <c>false</c>.</returns>
+        /// <returns><c>true</c> if <paramref name="value1" /> is the same instance as <paramref name="value2" /> or if both are <c>null</c> references or if <c>value1.Equals(value2)</c> returns <c>true</c>; otherwise, <c>false</c>.</returns>
         public static bool Equals(ref FloatR11G11B10 value1, ref FloatR11G11B10 value2)
         {
             return value1.value == value2.value;
@@ -145,9 +141,7 @@ namespace FlaxEngine
         public override bool Equals(object obj)
         {
             if (obj == null || obj.GetType() != GetType())
-            {
                 return false;
-            }
             var v = (FloatR11G11B10)obj;
             return v.value == value;
         }

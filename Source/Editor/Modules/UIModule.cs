@@ -1,8 +1,9 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 using System;
 using System.IO;
 using System.Linq;
+using System.Collections.Generic;
 using FlaxEditor.Gizmo;
 using FlaxEditor.GUI;
 using FlaxEditor.GUI.ContextMenu;
@@ -30,6 +31,8 @@ namespace FlaxEditor.Modules
     {
         private Label _progressLabel;
         private ProgressBar _progressBar;
+        private List<KeyValuePair<string, DateTime>> _statusMessages;
+        private ContentStats _contentStats;
 
         private ContextMenuButton _menuFileSaveScenes;
         private ContextMenuButton _menuFileCloseScenes;
@@ -248,19 +251,40 @@ namespace FlaxEditor.Modules
         {
             if (StatusBar == null)
                 return;
+            var contentStats = FlaxEngine.Content.Stats;
 
             Color color;
             if (Editor.StateMachine.IsPlayMode)
-            {
                 color = Color.OrangeRed;
-            }
             else
-            {
                 color = Style.Current.BackgroundSelected;
-            }
 
-            StatusBar.Text = Editor.StateMachine.CurrentState.Status ?? "Ready";
+            string text;
+            if (_statusMessages != null && _statusMessages.Count != 0)
+                text = _statusMessages[0].Key;
+            else if (Editor.StateMachine.CurrentState.Status != null)
+                text = Editor.StateMachine.CurrentState.Status;
+            else if (contentStats.LoadingAssetsCount != 0)
+                text = string.Format("Loading {0}/{1}", contentStats.LoadingAssetsCount, contentStats.AssetsCount);
+            else
+                text = "Ready";
+
+            StatusBar.Text = text;
             StatusBar.StatusColor = color;
+            _contentStats = contentStats;
+        }
+
+        /// <summary>
+        /// Adds the status bar message text to be displayed as a notification.
+        /// </summary>
+        /// <param name="message">The message to display.</param>
+        public void AddStatusMessage(string message)
+        {
+            if (_statusMessages == null)
+                _statusMessages = new List<KeyValuePair<string, DateTime>>();
+            _statusMessages.Add(new KeyValuePair<string, DateTime>(message, DateTime.Now + TimeSpan.FromSeconds(3.0f)));
+            if (_statusMessages.Count == 1)
+                UpdateStatusBar();
         }
 
         internal bool ProgressVisible
@@ -304,6 +328,20 @@ namespace FlaxEditor.Modules
                 {
                     Size = Vector2.Zero,
                 });
+            }
+        }
+
+        /// <inheritdoc />
+        public override void OnUpdate()
+        {
+            if (_statusMessages != null && _statusMessages.Count > 0 && _statusMessages[0].Value - DateTime.Now < TimeSpan.Zero)
+            {
+                _statusMessages.RemoveAt(0);
+                UpdateStatusBar();
+            }
+            else if (FlaxEngine.Content.Stats.LoadingAssetsCount != _contentStats.LoadingAssetsCount)
+            {
+                UpdateStatusBar();
             }
         }
 
@@ -814,6 +852,7 @@ namespace FlaxEditor.Modules
             StatusBar = null;
             _progressLabel = null;
             _progressBar = null;
+            _statusMessages = null;
 
             MenuFile = null;
             MenuGame = null;

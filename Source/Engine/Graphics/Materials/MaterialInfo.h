@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -49,6 +49,9 @@ API_ENUM() enum class MaterialDomain : byte
     /// The particle shader used for volumetric effects rendering such as Volumetric Fog.
     /// </summary>
     VolumeParticle = 7,
+
+    API_ENUM(Attributes="HideInEditor")
+    MAX
 };
 
 /// <summary>

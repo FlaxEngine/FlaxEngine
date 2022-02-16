@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -21,7 +21,7 @@ public:
     /// Global table for registered even binder methods (key is pair of type and event name, value is method that takes instance with event, object to bind and flag to bind or unbind).
     /// </summary>
     /// <remarks>
-    /// Key: pair of event type name (full), event name.
+    /// Key: pair of event type, event name.
     /// Value: event binder function with parameters: event caller instance (null for static events), object to bind, true to bind/false to unbind.
     /// </remarks>
     static Dictionary<Pair<ScriptingTypeHandle, StringView>, void(*)(ScriptingObject*, void*, bool)> EventsTable;
@@ -30,7 +30,7 @@ public:
     /// The action called when any scripting event occurs. Can be used to invoke scripting code that binded to this particular event.
     /// </summary>
     /// <remarks>
-    /// Delegate parameters: event caller instance (null for static events), event invocation parameters list, event type name (full), event name.
+    /// Delegate parameters: event caller instance (null for static events), event invocation parameters list, event type, event name.
     /// </remarks>
     static Delegate<ScriptingObject*, Span<Variant>, ScriptingTypeHandle, StringView> Event;
 };

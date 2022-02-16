@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 using System;
 using System.IO;
@@ -87,7 +87,7 @@ namespace FlaxEditor.GUI.Timeline.Tracks
 
         /// <inheritdoc />
         public StructPropertyTrack(ref TrackCreateOptions options)
-        : base(ref options, false, false)
+        : base(ref options, false, false, true)
         {
             // Add track button
             const float buttonSize = 14;

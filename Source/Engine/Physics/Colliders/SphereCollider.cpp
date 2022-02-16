@@ -1,9 +1,7 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 #include "SphereCollider.h"
 #include "Engine/Serialization/Serialization.h"
-#include "Engine/Physics/Utilities.h"
-#include <PxShape.h>
 
 SphereCollider::SphereCollider(const SpawnParams& params)
     : Collider(params)
@@ -29,6 +27,8 @@ void SphereCollider::SetRadius(const float value)
 
 void SphereCollider::DrawPhysicsDebug(RenderView& view)
 {
+    if (!view.CullingFrustum.Intersects(_sphere))
+        return;
     if (view.Mode == ViewMode::PhysicsColliders && !GetIsTrigger())
         DebugDraw::DrawSphere(_sphere, _staticActor ? Color::CornflowerBlue : Color::Orchid, 0, true);
     else
@@ -76,11 +76,10 @@ void SphereCollider::UpdateBounds()
     _sphere.GetBoundingBox(_box);
 }
 
-void SphereCollider::GetGeometry(PxGeometryHolder& geometry)
+void SphereCollider::GetGeometry(CollisionShape& collision)
 {
     const float scaling = _cachedScale.GetAbsolute().MaxValue();
     const float radius = Math::Abs(_radius) * scaling;
     const float minSize = 0.001f;
-    const PxSphereGeometry sphere(Math::Max(radius, minSize));
-    geometry.storeAny(sphere);
+    collision.SetSphere(Math::Max(radius, minSize));
 }

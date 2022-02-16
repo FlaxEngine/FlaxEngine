@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 #include "LocalizedStringTable.h"
 #include "Engine/Serialization/JsonTools.h"
@@ -33,6 +33,28 @@ void LocalizedStringTable::AddPluralString(const StringView& id, const StringVie
     values[n] = value;
 }
 
+String LocalizedStringTable::GetString(const String& id) const
+{
+    StringView result;
+    const auto messages = Entries.TryGet(id);
+    if (messages && messages->Count() != 0)
+        result = messages->At(0);
+    if (result.IsEmpty() && FallbackTable)
+        result = FallbackTable->GetString(id);
+    return result;
+}
+
+String LocalizedStringTable::GetPluralString(const String& id, int32 n) const
+{
+    StringView result;
+    const auto messages = Entries.TryGet(id);
+    if (messages && messages->Count() > n)
+        result = messages->At(n);
+    if (result.IsEmpty() && FallbackTable)
+        result = FallbackTable->GetPluralString(id, n);
+    return String::Format(result.GetNonTerminatedText(), n);
+}
+
 #if USE_EDITOR
 
 bool LocalizedStringTable::Save(const StringView& path)
@@ -59,6 +81,12 @@ bool LocalizedStringTable::Save(const StringView& path)
     {
         writer.JKEY("Locale");
         writer.String(Locale);
+
+        if (FallbackTable.GetID().IsValid())
+        {
+            writer.JKEY("FallbackTable");
+            writer.Guid(FallbackTable.GetID());
+        }
 
         writer.JKEY("Entries");
         writer.StartObject();
@@ -102,6 +130,9 @@ Asset::LoadResult LocalizedStringTable::loadAsset()
         return result;
 
     JsonTools::GetString(Locale, *Data, "Locale");
+    Guid fallbackTable = Guid::Empty;
+    JsonTools::GetGuid(fallbackTable, *Data, "FallbackTable");
+    FallbackTable = fallbackTable;
     const auto entriesMember = SERIALIZE_FIND_MEMBER((*Data), "Entries");
     if (entriesMember != Data->MemberEnd() && entriesMember->value.IsObject())
     {
@@ -134,5 +165,6 @@ void LocalizedStringTable::unload(bool isReloading)
     JsonAssetBase::unload(isReloading);
 
     Locale.Clear();
+    FallbackTable = nullptr;
     Entries.Clear();
 }

@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 using System;
 using FlaxEditor.GUI.Dialogs;
@@ -78,8 +78,6 @@ namespace FlaxEditor.GUI.Input
                 if (_value != value)
                 {
                     _value = value;
-
-                    // Fire event
                     OnValueChanged();
                 }
             }
@@ -128,16 +126,24 @@ namespace FlaxEditor.GUI.Input
             var r = new Rectangle(2, 2, Width - 4, Height - 4);
 
             Render2D.FillRectangle(r, _value);
-            Render2D.DrawRectangle(r, IsMouseOver ? style.BackgroundSelected : Color.Black);
+            Render2D.DrawRectangle(r, IsMouseOver || IsNavFocused ? style.BackgroundSelected : Color.Black);
         }
 
         /// <inheritdoc />
         public override bool OnMouseUp(Vector2 location, MouseButton button)
         {
+            Focus();
+            OnSubmit();
+            return true;
+        }
+
+        /// <inheritdoc />
+        public override void OnSubmit()
+        {
+            base.OnSubmit();
+
             // Show color picker dialog
             _currentDialog = ShowPickColorDialog?.Invoke(this, _value, OnColorChanged, OnPickerClosed);
-
-            return true;
         }
 
         private void OnColorChanged(Color color, bool sliding)

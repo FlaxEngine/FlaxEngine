@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 using System;
 using System.Collections.Generic;
@@ -167,6 +167,7 @@ namespace Flax.Build
 
         public static event Action<TaskGraph, BuildOptions> PreBuild;
         public static event Action<TaskGraph, BuildOptions> PostBuild;
+        public static event Action<TaskGraph, BuildData> BuildBindings;
 
         /// <summary>
         /// Collects the modules required by the given target to build (includes dependencies).
@@ -224,6 +225,20 @@ namespace Flax.Build
             }
 
             return buildData.Modules;
+        }
+
+        private static void OnBuildBindings(BuildData buildData, TaskGraph graph)
+        {
+            if (buildData.Target.IsPreBuilt)
+                return;
+            using (new ProfileEventScope("BuildBindings"))
+            {
+                if (EngineConfiguration.WithCSharp(buildData.TargetOptions))
+                {
+                    BuildTargetBindings(graph, buildData);
+                }
+                BuildBindings?.Invoke(graph, buildData);
+            }
         }
 
         private static void LinkNativeBinary(BuildData buildData, BuildOptions buildOptions, string outputPath)
@@ -381,7 +396,7 @@ namespace Flax.Build
                     {
                         var project = GetModuleProject(module, buildData);
                         var binaryModuleSourcePath = Path.Combine(project.ProjectFolderPath, "Source", module.BinaryModuleName + ".Gen.cpp");
-                        if (!cppFiles.Contains(binaryModuleSourcePath))
+                        if (!cppFiles.Contains(binaryModuleSourcePath) && File.Exists(binaryModuleSourcePath))
                             cppFiles.Add(binaryModuleSourcePath);
                     }
                 }
@@ -398,6 +413,9 @@ namespace Flax.Build
 
                 if (buildData.Target.LinkType != TargetLinkType.Monolithic)
                 {
+                    // Use the library includes required by this module
+                    moduleOptions.LinkEnv.InputLibraries.AddRange(moduleOptions.Libraries);
+
                     // Link all object files into module library
                     var outputLib = Path.Combine(buildData.TargetOptions.OutputFolder, buildData.Platform.GetLinkOutputFileName(module.Name + moduleOptions.HotReloadPostfix, moduleOptions.LinkEnv.Output));
                     LinkNativeBinary(buildData, moduleOptions, outputLib);
@@ -481,6 +499,11 @@ namespace Flax.Build
             if (target == null)
             {
                 Log.Verbose("No target selected for build");
+                return;
+            }
+            if (!target.Platforms.Contains(buildData.Platform.Target) || !target.Architectures.Contains(buildData.Architecture))
+            {
+                Log.Verbose($"Referenced target {reference.Project.Name} doesn't support {buildData.Platform.Target} {buildData.Architecture}");
                 return;
             }
             if (!buildContext.TryGetValue(target, out var referencedBuildData))
@@ -601,9 +624,7 @@ namespace Flax.Build
 
             // Warn if target has no valid modules
             if (target.Modules.Count == 0)
-            {
                 Log.Warning(string.Format("Target {0} has no modules to build", target.Name));
-            }
 
             // Pick a project
             var project = Globals.Project;
@@ -794,13 +815,7 @@ namespace Flax.Build
             }
 
             // Build scripting API bindings
-            using (new ProfileEventScope("BuildBindings"))
-            {
-                if (!buildData.Target.IsPreBuilt)
-                {
-                    BuildTargetBindings(rules, graph, buildData);
-                }
-            }
+            OnBuildBindings(buildData, graph);
 
             // Link modules into a target
             var outputTargetFilePath = target.GetOutputFilePath(targetBuildOptions);
@@ -835,7 +850,7 @@ namespace Flax.Build
                     var binaryModuleInfo = new BuildTargetBinaryModuleInfo
                     {
                         Name = binaryModule.Key,
-                        ManagedPath = Path.Combine(outputPath, binaryModule.Key + ".CSharp.dll"),
+                        ManagedPath = EngineConfiguration.WithCSharp(targetBuildOptions) ? Path.Combine(outputPath, binaryModule.Key + ".CSharp.dll") : string.Empty,
                     };
                     switch (target.LinkType)
                     {
@@ -942,10 +957,7 @@ namespace Flax.Build
 
             // Warn if target has no valid modules
             if (target.Modules.Count == 0)
-            {
                 Log.Warning(string.Format("Target {0} has no modules to build", target.Name));
-            }
-
             // Pick a project
             var project = Globals.Project;
             if (target is ProjectTarget projectTarget)
@@ -954,7 +966,7 @@ namespace Flax.Build
                 throw new Exception($"Cannot build target {target.Name}. The project file is missing (.flaxproj located in the folder above).");
 
             // Setup build environment for the target
-            var targetBuildOptions = GetBuildOptions(target, platform, null, architecture, configuration, project.ProjectFolderPath, skipBuild ? string.Empty : Configuration.HotReloadPostfix);
+            var targetBuildOptions = GetBuildOptions(target, platform, platform.TryGetToolchain(architecture), architecture, configuration, project.ProjectFolderPath, skipBuild ? string.Empty : Configuration.HotReloadPostfix);
 
             using (new ProfileEventScope("PreBuild"))
             {
@@ -977,7 +989,7 @@ namespace Flax.Build
                 Target = target,
                 TargetOptions = targetBuildOptions,
                 Platform = platform,
-                Toolchain = null,
+                Toolchain = targetBuildOptions.Toolchain,
                 Architecture = architecture,
                 Configuration = configuration,
             };
@@ -1069,11 +1081,7 @@ namespace Flax.Build
             }
 
             // Build scripting API bindings
-            using (new ProfileEventScope("BuildBindings"))
-            {
-                if (!buildData.Target.IsPreBuilt)
-                    BuildTargetBindings(rules, graph, buildData);
-            }
+            OnBuildBindings(buildData, graph);
 
             // Link modules into a target
             var outputTargetFilePath = target.GetOutputFilePath(targetBuildOptions);
@@ -1099,7 +1107,7 @@ namespace Flax.Build
                     var binaryModuleInfo = new BuildTargetBinaryModuleInfo
                     {
                         Name = binaryModule.Key,
-                        ManagedPath = Path.Combine(outputPath, binaryModule.Key + ".CSharp.dll"),
+                        ManagedPath = EngineConfiguration.WithCSharp(targetBuildOptions) ? Path.Combine(outputPath, binaryModule.Key + ".CSharp.dll") : string.Empty,
                     };
 
                     binaryModuleInfo.NativePathProcessed = string.Empty;

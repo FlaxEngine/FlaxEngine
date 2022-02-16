@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -18,9 +18,14 @@ typedef __m128 SimdVector4;
 
 namespace SIMD
 {
+    FORCE_INLINE SimdVector4 Load(float xyzw)
+    {
+        return _mm_set1_ps(xyzw);
+    }
+
     FORCE_INLINE SimdVector4 Load(float x, float y, float z, float w)
     {
-        return _mm_set_ps(x, y, z, w);
+        return _mm_set_ps(w, z, y, x);
     }
 
     FORCE_INLINE SimdVector4 Load(const void* src)
@@ -91,34 +96,39 @@ namespace SIMD
 
 #else
 
-struct SimdFloat4
+struct SimdVector4
 {
 	float X, Y, Z, W;
 };
 
 namespace SIMD
 {
-    FORCE_INLINE SimdFloat4 Load(float x, float y, float z, float w)
+    FORCE_INLINE SimdVector4 Load(float xyzw)
+    {
+		return { xyzw, xyzw, xyzw, xyzw };
+    }
+
+    FORCE_INLINE SimdVector4 Load(float x, float y, float z, float w)
     {
 		return { x, y, z, w };
     }
 
-	FORCE_INLINE SimdFloat4 Load(const void* src)
+	FORCE_INLINE SimdVector4 Load(const void* src)
 	{
-		return *(const SimdFloat4*)src;
+		return *(const SimdVector4*)src;
 	}
 
-	FORCE_INLINE SimdFloat4 Splat(float value)
+	FORCE_INLINE SimdVector4 Splat(float value)
 	{
 		return { value, value, value, value };
 	}
 
-	FORCE_INLINE void Store(void* dst, SimdFloat4 src)
+	FORCE_INLINE void Store(void* dst, SimdVector4 src)
 	{
-		(*(SimdFloat4*)dst) = src;
+		(*(SimdVector4*)dst) = src;
 	}
 
-	FORCE_INLINE int MoveMask(SimdFloat4 a)
+	FORCE_INLINE int MoveMask(SimdVector4 a)
 	{
 		return (a.W < 0 ? (1 << 3) : 0) |
 				(a.Z < 0 ? (1 << 2) : 0) |
@@ -126,7 +136,7 @@ namespace SIMD
 				(a.X < 0 ? 1 : 0);
 	}
 
-	FORCE_INLINE SimdFloat4 Add(SimdFloat4 a, SimdFloat4 b)
+	FORCE_INLINE SimdVector4 Add(SimdVector4 a, SimdVector4 b)
 	{
 		return
 		{
@@ -137,7 +147,7 @@ namespace SIMD
 		};
 	}
 
-	FORCE_INLINE SimdFloat4 Sub(SimdFloat4 a, SimdFloat4 b)
+	FORCE_INLINE SimdVector4 Sub(SimdVector4 a, SimdVector4 b)
 	{
 		return
 		{
@@ -148,7 +158,7 @@ namespace SIMD
 		};
 	}
 
-	FORCE_INLINE SimdFloat4 Mul(SimdFloat4 a, SimdFloat4 b)
+	FORCE_INLINE SimdVector4 Mul(SimdVector4 a, SimdVector4 b)
 	{
 		return
 		{
@@ -159,7 +169,7 @@ namespace SIMD
 		};
 	}
 
-	FORCE_INLINE SimdFloat4 Div(SimdFloat4 a, SimdFloat4 b)
+	FORCE_INLINE SimdVector4 Div(SimdVector4 a, SimdVector4 b)
 	{
 		return
 		{
@@ -170,7 +180,7 @@ namespace SIMD
 		};
 	}
 
-	FORCE_INLINE SimdFloat4 Rcp(SimdFloat4 a)
+	FORCE_INLINE SimdVector4 Rcp(SimdVector4 a)
 	{
 		return
 		{
@@ -181,7 +191,7 @@ namespace SIMD
 		};
 	}
 
-	FORCE_INLINE SimdFloat4 Sqrt(SimdFloat4 a)
+	FORCE_INLINE SimdVector4 Sqrt(SimdVector4 a)
 	{
 		return
 		{
@@ -192,7 +202,7 @@ namespace SIMD
 		};
 	}
 
-	FORCE_INLINE SimdFloat4 Rsqrt(SimdFloat4 a)
+	FORCE_INLINE SimdVector4 Rsqrt(SimdVector4 a)
 	{
 		return
 		{
@@ -203,7 +213,7 @@ namespace SIMD
 		};
 	}
 
-	FORCE_INLINE SimdFloat4 Min(SimdFloat4 a, SimdFloat4 b)
+	FORCE_INLINE SimdVector4 Min(SimdVector4 a, SimdVector4 b)
 	{
 		return
 		{
@@ -214,7 +224,7 @@ namespace SIMD
 		};
 	}
 
-	FORCE_INLINE SimdFloat4 Max(SimdFloat4 a, SimdFloat4 b)
+	FORCE_INLINE SimdVector4 Max(SimdVector4 a, SimdVector4 b)
 	{
 		return
 		{

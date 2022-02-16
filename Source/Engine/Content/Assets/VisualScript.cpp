@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 #include "VisualScript.h"
 #include "Engine/Core/Log.h"
@@ -310,10 +310,17 @@ void VisualScriptExecutor::ProcessGroupTools(Box* box, Node* node, Value& value)
                 const StringAsANSI<100> typeNameAnsi(typeName.Get(), typeName.Length());
                 if (StringUtils::Compare(typeNameAnsi.Get(), obj.Type.GetTypeName()) != 0)
                 {
+#if USE_MONO
                     MonoClass* klass = Scripting::FindClassNative(StringAnsiView(typeNameAnsi.Get(), typeName.Length()));
                     MonoClass* objKlass = MUtils::GetClass(obj);
                     if (!klass || !objKlass || mono_class_is_subclass_of(objKlass, klass, false) == 0)
                         obj = Value::Null;
+#else
+                    const ScriptingTypeHandle type = Scripting::FindScriptingType(StringAnsiView(typeNameAnsi.Get(), typeName.Length()));
+                    const ScriptingTypeHandle objType = Scripting::FindScriptingType(obj.Type.GetTypeName());
+                    if (!type || !objType || objType.IsSubclassOf(type))
+                        obj = Value::Null;
+#endif
                 }
             }
 
@@ -448,6 +455,7 @@ void VisualScriptExecutor::ProcessGroupFunction(Box* boxBase, Node* node, Value&
                 }
                 else
                 {
+#if !COMPILE_WITHOUT_CSHARP
                     // Fallback to C#-only types
                     const auto mclass = Scripting::FindClass(StringAnsiView(typeNameAnsi.Get(), typeName.Length()));
                     if (mclass)
@@ -461,6 +469,7 @@ void VisualScriptExecutor::ProcessGroupFunction(Box* boxBase, Node* node, Value&
                         }
                     }
                     else
+#endif
                     {
                         if (typeName.HasChars())
                         {
@@ -615,7 +624,9 @@ void VisualScriptExecutor::ProcessGroupFunction(Box* boxBase, Node* node, Value&
         {
             // Evaluate method parameter value from the current scope
             auto& scope = ThreadStacks.Get().Stack->Scope;
-            value = scope->Parameters[boxBase->ID - 1];
+            int32 index = boxBase->ID - 1;
+            if (index < scope->Parameters.Length())
+                value = scope->Parameters.Get()[index];
         }
         break;
     }
@@ -1104,6 +1115,81 @@ void VisualScriptExecutor::ProcessGroupFlow(Box* boxBase, Node* node, Value& val
         }
         break;
     }
+        // Array For Each
+    case 7:
+    {
+        const auto scope = ThreadStacks.Get().Stack->Scope;
+        int32 iteratorIndex = 0;
+        for (; iteratorIndex < scope->ReturnedValues.Count(); iteratorIndex++)
+        {
+            const auto& e = scope->ReturnedValues[iteratorIndex];
+            if (e.NodeId == node->ID && e.BoxId == 0)
+                break;
+        }
+        int32 arrayIndex = 0;
+        for (; iteratorIndex < scope->ReturnedValues.Count(); arrayIndex++)
+        {
+            const auto& e = scope->ReturnedValues[arrayIndex];
+            if (e.NodeId == node->ID && e.BoxId == 1)
+                break;
+        }
+        switch (boxBase->ID)
+        {
+            // Loop
+        case 0:
+        {
+            if (iteratorIndex == scope->ReturnedValues.Count())
+            {
+                if (arrayIndex == scope->ReturnedValues.Count())
+                    arrayIndex++;
+                scope->ReturnedValues.AddOne();
+            }
+            if (arrayIndex == scope->ReturnedValues.Count())
+                scope->ReturnedValues.AddOne();
+            auto& iteratorValue = scope->ReturnedValues[iteratorIndex];
+            iteratorValue.NodeId = node->ID;
+            iteratorValue.BoxId = 0;
+            iteratorValue.Value = 0;
+            auto& arrayValue = scope->ReturnedValues[arrayIndex];
+            arrayValue.NodeId = node->ID;
+            arrayValue.BoxId = 1;
+            arrayValue.Value = tryGetValue(node->GetBox(1), Value::Null);
+            if (arrayValue.Value.Type.Type != VariantType::Array)
+            {
+                OnError(node, boxBase, String::Format(TEXT("Input value {0} is not an array."), arrayValue.Value));
+                return;
+            }
+            const int32 count = arrayValue.Value.AsArray().Count();
+            for (; iteratorValue.Value.AsInt < count; iteratorValue.Value.AsInt++)
+            {
+                boxBase = node->GetBox(3);
+                if (boxBase->HasConnection())
+                    eatBox(node, boxBase->FirstConnection());
+            }
+            boxBase = node->GetBox(6);
+            if (boxBase->HasConnection())
+                eatBox(node, boxBase->FirstConnection());
+            break;
+        }
+            // Break
+        case 2:
+            // Reset loop iterator
+            if (iteratorIndex != scope->ReturnedValues.Count())
+                scope->ReturnedValues[iteratorIndex].Value.AsInt = MAX_int32 - 1;
+            break;
+            // Item
+        case 4:
+            if (iteratorIndex != scope->ReturnedValues.Count() && arrayIndex != scope->ReturnedValues.Count())
+                value = scope->ReturnedValues[arrayIndex].Value.AsArray()[(int32)scope->ReturnedValues[iteratorIndex].Value];
+            break;
+            // Index
+        case 5:
+            if (iteratorIndex != scope->ReturnedValues.Count())
+                value = (int32)scope->ReturnedValues[iteratorIndex].Value;
+            break;
+        }
+        break;
+    }
     }
 }
 
@@ -1263,8 +1349,7 @@ Asset::LoadResult VisualScript::load()
             if (visualScriptType.Script.ScriptVTable)
             {
                 // Override object vtable with hacked one that has Visual Script functions calls
-                ASSERT(visualScriptType.Script.VTable);
-                *(void**)object = visualScriptType.Script.VTable;
+                visualScriptType.HackObjectVTable(object, visualScriptType.BaseTypeHandle, 1);
             }
         }
         const int32 oldCount = _oldParamsLayout.Count();
@@ -1407,17 +1492,7 @@ void VisualScript::CacheScriptingType()
         type.ManagedClass = baseType.GetType().ManagedClass;
 
         // Create custom vtable for this class (build out of the wrapper C++ methods that call Visual Script graph)
-        // Call setup for all class starting from the first native type (first that uses virtual calls will allocate table of a proper size, further base types will just add own methods)
-        for (ScriptingTypeHandle e = nativeType; e;)
-        {
-            const ScriptingType& eType = e.GetType();
-            if (eType.Script.SetupScriptVTable)
-            {
-                ASSERT(eType.ManagedClass);
-                eType.Script.SetupScriptVTable(eType.ManagedClass, type.Script.ScriptVTable, type.Script.ScriptVTableBase);
-            }
-            e = eType.GetBaseType();
-        }
+        type.SetupScriptVTable(nativeType);
         MMethod** scriptVTable = (MMethod**)type.Script.ScriptVTable;
         while (scriptVTable && *scriptVTable)
         {
@@ -1484,37 +1559,7 @@ ScriptingObject* VisualScriptingBinaryModule::VisualScriptObjectSpawn(const Scri
     }
 
     // Beware! Hacking vtables incoming! Undefined behaviors exploits! Low-level programming!
-    // What's happening here?
-    // We create a custom vtable for the Visual Script objects that use a native class object with virtual functions overrides.
-    // To make it easy to use in C++ we inject custom wrapper methods into C++ object vtable to execute Visual Script graph from them.
-    // Because virtual member functions calls are C++ ABI and impl-defined this is quite hard. But works.
-    if (visualScriptType.Script.ScriptVTable)
-    {
-        if (!visualScriptType.Script.VTable)
-        {
-            // Duplicate vtable
-            void** vtable = *(void***)object;
-            const int32 prefixSize = GetVTablePrefix();
-            int32 entriesCount = 0;
-            while (vtable[entriesCount] && entriesCount < 200)
-                entriesCount++;
-            const int32 size = entriesCount * sizeof(void*);
-            visualScriptType.Script.VTable = (void**)((byte*)Platform::Allocate(prefixSize + size, 16) + prefixSize);
-            Platform::MemoryCopy((byte*)visualScriptType.Script.VTable - prefixSize, (byte*)vtable - prefixSize, prefixSize + size);
-
-            // Override vtable entries by the class
-            for (ScriptingTypeHandle e = baseTypeHandle; e;)
-            {
-                const ScriptingType& eType = e.GetType();
-                if (eType.Script.SetupScriptObjectVTable)
-                    eType.Script.SetupScriptObjectVTable(visualScriptType.Script.ScriptVTable, visualScriptType.Script.ScriptVTableBase, visualScriptType.Script.VTable, entriesCount, 1);
-                e = eType.GetBaseType();
-            }
-        }
-
-        // Override object vtable with hacked one that has Visual Script functions calls
-        *(void**)object = visualScriptType.Script.VTable;
-    }
+    visualScriptType.HackObjectVTable(object, baseTypeHandle, 1);
 
     // Mark as custom scripting type
     object->Flags |= ObjectFlags::IsCustomScriptingType;

@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 #include "SceneAnimationPlayer.h"
 #include "Engine/Core/Random.h"
@@ -19,7 +19,6 @@
 #include "Engine/Scripting/ManagedCLR/MType.h"
 #include "Engine/Scripting/ManagedCLR/MField.h"
 #include "Engine/Scripting/ManagedCLR/MClass.h"
-#include "Engine/Scripting/ManagedCLR/MMethod.h"
 
 // This could be Update, LateUpdate or FixedUpdate
 #define UPDATE_POINT Update
@@ -31,6 +30,11 @@ SceneAnimationPlayer::SceneAnimationPlayer(const SpawnParams& params)
 {
     Animation.Changed.Bind<SceneAnimationPlayer, &SceneAnimationPlayer::OnAnimationModified>(this);
     Animation.Loaded.Bind<SceneAnimationPlayer, &SceneAnimationPlayer::OnAnimationModified>(this);
+}
+
+float SceneAnimationPlayer::GetTime() const
+{
+    return _time;
 }
 
 void SceneAnimationPlayer::SetTime(float value)
@@ -137,8 +141,6 @@ void SceneAnimationPlayer::Stop()
 
 void SceneAnimationPlayer::Tick(float dt)
 {
-    CHECK(IsActiveInHierarchy() && _state == PlayState::Playing);
-
     // Reset temporary state
     _postFxSettings.PostFxMaterials.Materials.Clear();
     _postFxSettings.CameraArtifacts.OverrideFlags &= ~CameraArtifactsSettings::Override::ScreenFadeColor;
@@ -236,27 +238,29 @@ void SceneAnimationPlayer::MapTrack(const StringView& from, const Guid& to)
         {
             const auto trackData = track.GetData<SceneAnimation::ActorTrack::Data>();
             _objectsMapping[trackData->ID] = to;
-            break;
+            return;
         }
         case SceneAnimation::Track::Types::Script:
         {
             const auto trackData = track.GetData<SceneAnimation::ScriptTrack::Data>();
             _objectsMapping[trackData->ID] = to;
-            break;
+            return;
         }
         case SceneAnimation::Track::Types::CameraCut:
         {
             const auto trackData = track.GetData<SceneAnimation::CameraCutTrack::Data>();
             _objectsMapping[trackData->ID] = to;
-            break;
+            return;
         }
         default: ;
         }
     }
+    LOG(Warning, "Missing track '{0}' in scene animation '{1}' to map into object ID={2}", from, anim->ToString(), to);
 }
 
 void SceneAnimationPlayer::Restore(SceneAnimation* anim, int32 stateIndexOffset)
 {
+#if USE_MONO
     // Restore all tracks
     for (int32 j = 0; j < anim->Tracks.Count(); j++)
     {
@@ -266,16 +270,11 @@ void SceneAnimationPlayer::Restore(SceneAnimation* anim, int32 stateIndexOffset)
         switch (track.Type)
         {
         case SceneAnimation::Track::Types::Actor:
+        case SceneAnimation::Track::Types::Script:
         case SceneAnimation::Track::Types::CameraCut:
         {
             auto& state = _tracks[stateIndexOffset + track.TrackStateIndex];
-            state.ManagedObject = state.Object ? state.Object.GetOrCreateManagedInstance() : nullptr;
-            break;
-        }
-        case SceneAnimation::Track::Types::Script:
-        {
-            auto& state = _tracks[stateIndexOffset + track.TrackStateIndex];
-            state.ManagedObject = state.Object ? state.Object.GetOrCreateManagedInstance() : nullptr;
+            state.ManagedObject = state.Object.GetOrCreateManagedInstance();
             break;
         }
         case SceneAnimation::Track::Types::KeyframesProperty:
@@ -295,7 +294,7 @@ void SceneAnimationPlayer::Restore(SceneAnimation* anim, int32 stateIndexOffset)
                 || state.RestoreStateIndex == -1
                 || (state.Field == nullptr && state.Property == nullptr))
                 break;
-            MonoObject* instance = _tracks[stateIndexOffset + parentTrack.TrackStateIndex].ManagedObject;
+            MObject* instance = _tracks[stateIndexOffset + parentTrack.TrackStateIndex].ManagedObject;
             if (!instance)
                 break;
 
@@ -320,7 +319,7 @@ void SceneAnimationPlayer::Restore(SceneAnimation* anim, int32 stateIndexOffset)
             {
                 if (state.Property)
                 {
-                    MonoObject* exception = nullptr;
+                    MObject* exception = nullptr;
                     state.ManagedObject = state.Property->GetValue(instance, &exception);
                     if (exception)
                     {
@@ -343,7 +342,7 @@ void SceneAnimationPlayer::Restore(SceneAnimation* anim, int32 stateIndexOffset)
             // Set the value
             if (state.Property)
             {
-                MonoObject* exception = nullptr;
+                MObject* exception = nullptr;
                 state.Property->SetValue(instance, value, &exception);
                 if (exception)
                 {
@@ -355,16 +354,17 @@ void SceneAnimationPlayer::Restore(SceneAnimation* anim, int32 stateIndexOffset)
             {
                 state.Field->SetValue(instance, value);
             }
-
             break;
         }
         default: ;
         }
     }
+#endif
 }
 
 bool SceneAnimationPlayer::TickPropertyTrack(int32 trackIndex, int32 stateIndexOffset, SceneAnimation* anim, float time, const SceneAnimation::Track& track, TrackInstance& state, void* target)
 {
+#if USE_MONO
     switch (track.Type)
     {
     case SceneAnimation::Track::Types::KeyframesProperty:
@@ -513,17 +513,18 @@ bool SceneAnimationPlayer::TickPropertyTrack(int32 trackIndex, int32 stateIndexO
     case SceneAnimation::Track::Types::ObjectProperty:
     {
         // Cache the sub-object pointer for the sub-tracks
-        state.ManagedObject = *(MonoObject**)target;
+        state.ManagedObject = *(MObject**)target;
         return false;
     }
     default: ;
     }
-
+#endif
     return true;
 }
 
 void SceneAnimationPlayer::Tick(SceneAnimation* anim, float time, float dt, int32 stateIndexOffset, CallStack& callStack)
 {
+#if USE_MONO
     const float fps = anim->FramesPerSecond;
 #if !BUILD_RELEASE || USE_EDITOR
     callStack.Add(anim);
@@ -539,13 +540,18 @@ void SceneAnimationPlayer::Tick(SceneAnimation* anim, float time, float dt, int3
         {
         case SceneAnimation::Track::Types::PostProcessMaterial:
         {
-            const auto trackData = track.GetData<SceneAnimation::PostProcessMaterialTrack::Data>();
-            const float startTime = trackData->StartFrame / fps;
-            const float durationTime = trackData->DurationFrames / fps;
-            const bool isActive = Math::IsInRange(time, startTime, startTime + durationTime);
-            if (isActive && _postFxSettings.PostFxMaterials.Materials.Count() < POST_PROCESS_SETTINGS_MAX_MATERIALS)
+            const auto runtimeData = track.GetRuntimeData<SceneAnimation::PostProcessMaterialTrack::Runtime>();
+            for (int32 k = 0; k < runtimeData->Count; k++)
             {
-                _postFxSettings.PostFxMaterials.Materials.Add(track.Asset.As<MaterialBase>());
+                const auto& media = runtimeData->Media[k];
+                const float startTime = media.StartFrame / fps;
+                const float durationTime = media.DurationFrames / fps;
+                const bool isActive = Math::IsInRange(time, startTime, startTime + durationTime);
+                if (isActive && _postFxSettings.PostFxMaterials.Materials.Count() < POST_PROCESS_SETTINGS_MAX_MATERIALS)
+                {
+                    _postFxSettings.PostFxMaterials.Materials.Add(track.Asset.As<MaterialBase>());
+                    break;
+                }
             }
             break;
         }
@@ -572,7 +578,6 @@ void SceneAnimationPlayer::Tick(SceneAnimation* anim, float time, float dt, int3
                 }
 
                 // Validate state data space
-                stateIndexOffset += track.TrackStateIndex;
                 if (stateIndexOffset + nestedAnim->TrackStatesCount > _tracks.Count())
                 {
                     LOG(Warning,
@@ -598,7 +603,7 @@ void SceneAnimationPlayer::Tick(SceneAnimation* anim, float time, float dt, int3
                 }
 #endif
 
-                Tick(nestedAnim, mediaTime, dt, stateIndexOffset, callStack);
+                Tick(nestedAnim, mediaTime, dt, stateIndexOffset + track.TrackStateIndex, callStack);
             }
             break;
         }
@@ -648,29 +653,40 @@ void SceneAnimationPlayer::Tick(SceneAnimation* anim, float time, float dt, int3
             const auto clip = track.Asset.As<AudioClip>();
             if (!clip || !clip->IsLoaded())
                 break;
-            const auto trackData = track.GetData<SceneAnimation::AudioTrack::Data>();
             const auto runtimeData = track.GetRuntimeData<SceneAnimation::AudioTrack::Runtime>();
-            const float startTime = trackData->StartFrame / fps;
-            const float durationTime = trackData->DurationFrames / fps;
-            const bool loop = ((int32)track.Flag & (int32)SceneAnimation::Track::Flags::Loop) == (int32)SceneAnimation::Track::Flags::Loop;
-            float mediaTime = time - startTime;
-            auto& state = _tracks[stateIndexOffset + track.TrackStateIndex];
-            auto audioSource = state.Object.As<AudioSource>();
-            if (!audioSource)
+            float mediaTime = -1, mediaDuration, playTime;
+            for (int32 k = 0; k < runtimeData->Count; k++)
             {
-                // Spawn audio source to play the clip
-                audioSource = New<AudioSource>();
-                audioSource->SetStaticFlags(StaticFlags::None);
-                audioSource->HideFlags = HideFlags::FullyHidden;
-                audioSource->Clip = clip;
-                audioSource->SetIsLooping(loop);
-                audioSource->SetParent(this, false, false);
-                _subActors.Add(audioSource);
-                state.Object = audioSource;
+                const auto& media = runtimeData->Media[k];
+                const float startTime = media.StartFrame / fps;
+                const float durationTime = media.DurationFrames / fps;
+                if (Math::IsInRange(time, startTime, startTime + durationTime))
+                {
+                    mediaTime = time - startTime;
+                    playTime = mediaTime + media.Offset;
+                    mediaDuration = durationTime;
+                    break;
+                }
             }
 
-            if (mediaTime >= 0.0f && mediaTime <= durationTime)
+            auto& state = _tracks[stateIndexOffset + track.TrackStateIndex];
+            auto audioSource = state.Object.As<AudioSource>();
+            if (mediaTime >= 0.0f && mediaTime <= mediaDuration)
             {
+                const bool loop = ((int32)track.Flag & (int32)SceneAnimation::Track::Flags::Loop) == (int32)SceneAnimation::Track::Flags::Loop;
+                if (!audioSource)
+                {
+                    // Spawn audio source to play the clip
+                    audioSource = New<AudioSource>();
+                    audioSource->SetStaticFlags(StaticFlags::None);
+                    audioSource->HideFlags = HideFlags::FullyHidden;
+                    audioSource->Clip = clip;
+                    audioSource->SetIsLooping(loop);
+                    audioSource->SetParent(this, false, false);
+                    _subActors.Add(audioSource);
+                    state.Object = audioSource;
+                }
+
                 // Sample volume track
                 float volume = 1.0f;
                 if (runtimeData->VolumeTrackIndex != -1)
@@ -680,7 +696,9 @@ void SceneAnimationPlayer::Tick(SceneAnimation* anim, float time, float dt, int3
                     if (volumeTrackRuntimeData)
                     {
                         SceneAnimation::AudioVolumeTrack::CurveType::KeyFrameData data(volumeTrackRuntimeData->Keyframes, volumeTrackRuntimeData->KeyframesCount);
-                        volumeCurve.Evaluate(data, volume, mediaTime, false);
+                        const auto& firstMedia = runtimeData->Media[0];
+                        auto firstMediaTime = time - firstMedia.StartFrame / fps;
+                        volumeCurve.Evaluate(data, volume, firstMediaTime, false);
                     }
                 }
 
@@ -688,9 +706,9 @@ void SceneAnimationPlayer::Tick(SceneAnimation* anim, float time, float dt, int3
                 if (loop)
                 {
                     // Loop position
-                    mediaTime = Math::Mod(mediaTime, clipLength);
+                    playTime = Math::Mod(playTime, clipLength);
                 }
-                else if (mediaTime >= clipLength)
+                else if (playTime >= clipLength)
                 {
                     // Stop updating after end
                     break;
@@ -708,19 +726,22 @@ void SceneAnimationPlayer::Tick(SceneAnimation* anim, float time, float dt, int3
                 // Synchronize playback position
                 const float maxAudioLag = 0.3f;
                 const auto audioTime = audioSource->GetTime();
-                //LOG(Info, "Audio: {0}, Media : {1}", audioTime, mediaTime);
-                if (Math::Abs(audioTime - mediaTime) > maxAudioLag &&
-                    Math::Abs(audioTime + clipLength - mediaTime) > maxAudioLag &&
-                    Math::Abs(mediaTime + clipLength - audioTime) > maxAudioLag)
+                //LOG(Info, "Audio: {0}, Media : {1}", audioTime, playTime);
+                if (Math::Abs(audioTime - playTime) > maxAudioLag &&
+                    Math::Abs(audioTime + clipLength - playTime) > maxAudioLag &&
+                    Math::Abs(playTime + clipLength - audioTime) > maxAudioLag)
                 {
-                    audioSource->SetTime(mediaTime);
+                    audioSource->SetTime(playTime);
                     //LOG(Info, "Set Time (current audio time: {0})", audioSource->GetTime());
                 }
 
                 // Keep playing
-                audioSource->Play();
+                if (_state == PlayState::Playing)
+                    audioSource->Play();
+                else
+                    audioSource->Pause();
             }
-            else
+            else if (audioSource)
             {
                 // End playback
                 audioSource->Stop();
@@ -744,10 +765,12 @@ void SceneAnimationPlayer::Tick(SceneAnimation* anim, float time, float dt, int3
                 const auto trackData = track.GetData<SceneAnimation::ActorTrack::Data>();
                 Guid id = trackData->ID;
                 _objectsMapping.TryGet(id, id);
-                state.Object = Scripting::FindObject<Actor>(trackData->ID);
+                state.Object = Scripting::TryFindObject<Actor>(id);
                 if (!state.Object)
                 {
-                    LOG(Warning, "Failed to find {3} of ID={0} for track '{1}' in scene animation '{2}'", id, track.Name, anim->ToString(), TEXT("actor"));
+                    if (state.Warn)
+                        LOG(Warning, "Failed to find {3} of ID={0} for track '{1}' in scene animation '{2}'", id, track.Name, anim->ToString(), TEXT("actor"));
+                    state.Warn = false;
                     break;
                 }
             }
@@ -774,10 +797,12 @@ void SceneAnimationPlayer::Tick(SceneAnimation* anim, float time, float dt, int3
                 // Find script
                 Guid id = trackData->ID;
                 _objectsMapping.TryGet(id, id);
-                state.Object = Scripting::FindObject<Script>(id);
+                state.Object = Scripting::TryFindObject<Script>(id);
                 if (!state.Object)
                 {
-                    LOG(Warning, "Failed to find {3} of ID={0} for track '{1}' in scene animation '{2}'", id, track.Name, anim->ToString(), TEXT("script"));
+                    if (state.Warn)
+                        LOG(Warning, "Failed to find {3} of ID={0} for track '{1}' in scene animation '{2}'", id, track.Name, anim->ToString(), TEXT("script"));
+                    state.Warn = false;
                     break;
                 }
 
@@ -809,7 +834,7 @@ void SceneAnimationPlayer::Tick(SceneAnimation* anim, float time, float dt, int3
                 break;
 
             // Skip if parent object is missing
-            MonoObject* instance = _tracks[stateIndexOffset + parentTrack.TrackStateIndex].ManagedObject;
+            MObject* instance = _tracks[stateIndexOffset + parentTrack.TrackStateIndex].ManagedObject;
             if (!instance)
                 break;
 
@@ -842,7 +867,7 @@ void SceneAnimationPlayer::Tick(SceneAnimation* anim, float time, float dt, int3
             {
                 if (state.Property)
                 {
-                    MonoObject* exception = nullptr;
+                    MObject* exception = nullptr;
                     auto boxed = state.Property->GetValue(instance, &exception);
                     if (exception)
                     {
@@ -858,7 +883,7 @@ void SceneAnimationPlayer::Tick(SceneAnimation* anim, float time, float dt, int3
                     }
                     else
                     {
-                        *(MonoObject**)value = (MonoObject*)boxed;
+                        *(MObject**)value = boxed;
                     }
                 }
                 else
@@ -882,7 +907,7 @@ void SceneAnimationPlayer::Tick(SceneAnimation* anim, float time, float dt, int3
                     }
                     case SceneAnimation::Track::Types::ObjectReferenceProperty:
                     {
-                        auto obj = Scripting::FindObject(*(MonoObject**)value);
+                        auto obj = Scripting::FindObject(*(MObject**)value);
                         auto id = obj ? obj->GetID() : Guid::Empty;
                         _restoreData.Add((byte*)&id, sizeof(Guid));
                         break;
@@ -904,7 +929,7 @@ void SceneAnimationPlayer::Tick(SceneAnimation* anim, float time, float dt, int3
                     value = (void*)*(intptr*)value;
                 if (state.Property)
                 {
-                    MonoObject* exception = nullptr;
+                    MObject* exception = nullptr;
                     state.Property->SetValue(instance, value, &exception);
                     if (exception)
                     {
@@ -928,26 +953,7 @@ void SceneAnimationPlayer::Tick(SceneAnimation* anim, float time, float dt, int3
             if (track.ParentIndex == -1)
                 break;
             const auto runtimeData = track.GetRuntimeData<SceneAnimation::EventTrack::Runtime>();
-            auto& state = _tracks[stateIndexOffset + track.TrackStateIndex];
-            const auto& parentTrack = anim->Tracks[track.ParentIndex];
-
-            // Skip if parent object is missing
-            MonoObject* instance = _tracks[stateIndexOffset + parentTrack.TrackStateIndex].ManagedObject;
-            if (!instance)
-                break;
-
-            // Cache method
-            if (!state.Method)
-            {
-                MClass* mclass = Scripting::FindClass(mono_object_get_class(instance));
-                state.Method = mclass->GetMethod(runtimeData->EventName, runtimeData->EventParamsCount);
-
-                // Skip if method is missing
-                if (!state.Method)
-                    break;
-            }
-
-            void* params[SceneAnimation::EventTrack::MaxParams];
+            void* paramsData[SceneAnimation::EventTrack::MaxParams];
 
             // Check if hit any event key since the last update
             float lastTime = time - dt;
@@ -975,18 +981,34 @@ void SceneAnimationPlayer::Tick(SceneAnimation* anim, float time, float dt, int3
                     ptr += sizeof(float);
                     for (int32 paramIndex = 0; paramIndex < runtimeData->EventParamsCount; paramIndex++)
                     {
-                        params[paramIndex] = (void*)ptr;
+                        paramsData[paramIndex] = (void*)ptr;
                         ptr += runtimeData->EventParamSizes[paramIndex];
                     }
 
-                    // Invoke the method
-                    MonoObject* exception = nullptr;
-                    // TODO: use method thunk
-                    state.Method->Invoke(instance, params, &exception);
-                    if (exception)
+                    auto& state = _tracks[stateIndexOffset + track.TrackStateIndex];
+                    const auto& parentTrack = anim->Tracks[track.ParentIndex];
+                    auto& parentTrackState = _tracks[stateIndexOffset + parentTrack.TrackStateIndex];
+                    if (parentTrackState.ManagedObject)
                     {
-                        MException ex(exception);
-                        ex.Log(LogType::Error, TEXT("Event"));
+                        auto instance = parentTrackState.ManagedObject;
+
+                        // Cache method
+                        if (!state.Method)
+                        {
+                            state.Method = mono_class_get_method_from_name(mono_object_get_class(instance), runtimeData->EventName, runtimeData->EventParamsCount);
+                            if (!state.Method)
+                                break;
+                        }
+
+                        // Invoke the method
+                        Variant result;
+                        MObject* exception = nullptr;
+                        mono_runtime_invoke((MonoMethod*)state.Method, instance, paramsData, &exception);
+                        if (exception)
+                        {
+                            MException ex(exception);
+                            ex.Log(LogType::Error, TEXT("Event"));
+                        }
                     }
                 }
                 else
@@ -998,6 +1020,27 @@ void SceneAnimationPlayer::Tick(SceneAnimation* anim, float time, float dt, int3
         }
         case SceneAnimation::Track::Types::CameraCut:
         {
+            // Check if any camera cut media on a track is active
+            bool isActive = false;
+            const auto runtimeData = track.GetRuntimeData<SceneAnimation::CameraCutTrack::Runtime>();
+            for (int32 k = 0; k < runtimeData->Count; k++)
+            {
+                const auto& media = runtimeData->Media[k];
+                const float startTime = media.StartFrame / fps;
+                const float durationTime = media.DurationFrames / fps;
+                if (Math::IsInRange(time, startTime, startTime + durationTime))
+                {
+                    isActive = true;
+                    break;
+                }
+            }
+            if (!isActive)
+            {
+                // Skip updating child tracks if the current position is outside the media clip range
+                j += track.ChildrenCount;
+                break;
+            }
+
             // Cache actor to animate
             const auto trackData = track.GetData<SceneAnimation::CameraCutTrack::Data>();
             auto& state = _tracks[stateIndexOffset + track.TrackStateIndex];
@@ -1008,38 +1051,29 @@ void SceneAnimationPlayer::Tick(SceneAnimation* anim, float time, float dt, int3
                 // Find actor
                 Guid id = trackData->ID;
                 _objectsMapping.TryGet(id, id);
-                state.Object = Scripting::FindObject<Camera>(id);
+                state.Object = Scripting::TryFindObject<Camera>(id);
                 if (!state.Object)
                 {
-                    LOG(Warning, "Failed to find {3} of ID={0} for track '{1}' in scene animation '{2}'", id, track.Name, anim->ToString(), TEXT("actor"));
+                    if (state.Warn)
+                        LOG(Warning, "Failed to find {3} of ID={0} for track '{1}' in scene animation '{2}'", id, track.Name, anim->ToString(), TEXT("camera"));
+                    state.Warn = false;
                     break;
                 }
             }
             state.ManagedObject = state.Object.GetOrCreateManagedInstance();
 
-            // Use camera
-            _isUsingCameraCuts = true;
-            const float startTime = trackData->StartFrame / fps;
-            const float durationTime = trackData->DurationFrames / fps;
-            float mediaTime = time - startTime;
-            if (mediaTime >= 0.0f && mediaTime <= durationTime)
+            // Override camera
+            if (_cameraCutCam == nullptr)
             {
-                if (_cameraCutCam == nullptr)
-                {
-                    // Override camera
-                    _cameraCutCam = (Camera*)state.Object.Get();
-                }
-            }
-            else
-            {
-                // Skip updating child tracks if the current position is outside the media clip range
-                j += track.ChildrenCount;
+                _cameraCutCam = (Camera*)state.Object.Get();
+                _isUsingCameraCuts = true;
             }
             break;
         }
         default: ;
         }
     }
+#endif
 }
 
 void SceneAnimationPlayer::Tick()
@@ -1096,6 +1130,7 @@ void SceneAnimationPlayer::Serialize(SerializeStream& stream, const void* otherO
     SERIALIZE(RandomStartTime);
     SERIALIZE(RestoreStateOnStop);
     SERIALIZE(UpdateMode);
+    SERIALIZE(UsePrefabObjects);
 }
 
 void SceneAnimationPlayer::Deserialize(DeserializeStream& stream, ISerializeModifier* modifier)
@@ -1112,6 +1147,30 @@ void SceneAnimationPlayer::Deserialize(DeserializeStream& stream, ISerializeModi
     DESERIALIZE(RandomStartTime);
     DESERIALIZE(RestoreStateOnStop);
     DESERIALIZE(UpdateMode);
+    DESERIALIZE(UsePrefabObjects);
+
+    if (UsePrefabObjects && Animation && !Animation->WaitForLoaded())
+    {
+        // When loading from prefab automatically map objects from prefab instance into animation tracks with object references
+        for (auto& track : Animation->Tracks)
+        {
+            if (track.Disabled || !(track.Flag & SceneAnimation::Track::Flags::PrefabObject))
+                continue;
+            switch (track.Type)
+            {
+            case SceneAnimation::Track::Types::Actor:
+            case SceneAnimation::Track::Types::Script:
+            case SceneAnimation::Track::Types::CameraCut:
+            {
+                const auto trackData = track.GetData<SceneAnimation::ObjectTrack::Data>();
+                Guid id;
+                if (modifier->IdsMapping.TryGet(trackData->ID, id))
+                    _objectsMapping[trackData->ID] = id;
+                break;
+            }
+            }
+        }
+    }
 }
 
 void SceneAnimationPlayer::Collect(RenderContext& renderContext)

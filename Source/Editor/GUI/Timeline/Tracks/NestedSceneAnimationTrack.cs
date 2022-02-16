@@ -1,8 +1,9 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 using System;
 using System.IO;
 using System.Linq;
+using FlaxEditor.Utilities;
 using FlaxEngine;
 
 namespace FlaxEditor.GUI.Timeline.Tracks
@@ -11,7 +12,7 @@ namespace FlaxEditor.GUI.Timeline.Tracks
     /// The timeline media that represents a nested scene animation media event.
     /// </summary>
     /// <seealso cref="FlaxEditor.GUI.Timeline.Media" />
-    public class NestedSceneAnimationMedia : SingleMediaAssetMedia
+    public class NestedSceneAnimationMedia : Media
     {
         private sealed class Proxy : ProxyBase<NestedSceneAnimationTrack, NestedSceneAnimationMedia>
         {
@@ -47,7 +48,7 @@ namespace FlaxEditor.GUI.Timeline.Tracks
         {
             base.OnTimelineChanged(track);
 
-            PropertiesEditObject = new Proxy(Track as NestedSceneAnimationTrack, this);
+            PropertiesEditObject = track != null ? new Proxy((NestedSceneAnimationTrack)track, this) : null;
         }
     }
 
@@ -76,7 +77,7 @@ namespace FlaxEditor.GUI.Timeline.Tracks
         private static void LoadTrack(int version, Track track, BinaryReader stream)
         {
             var e = (NestedSceneAnimationTrack)track;
-            Guid id = new Guid(stream.ReadBytes(16));
+            Guid id = stream.ReadGuid();
             e.Asset = FlaxEngine.Content.LoadAsync<SceneAnimation>(id);
             var m = e.TrackMedia;
             m.StartFrame = stream.ReadInt32();
@@ -86,10 +87,7 @@ namespace FlaxEditor.GUI.Timeline.Tracks
         private static void SaveTrack(Track track, BinaryWriter stream)
         {
             var e = (NestedSceneAnimationTrack)track;
-            var assetId = e.Asset?.ID ?? Guid.Empty;
-
-            stream.Write(assetId.ToByteArray());
-
+            stream.WriteGuid(ref e.AssetID);
             if (e.Media.Count != 0)
             {
                 var m = e.TrackMedia;
@@ -103,42 +101,42 @@ namespace FlaxEditor.GUI.Timeline.Tracks
             }
         }
 
-        /// <summary>
-        /// Gets or sets the nested animation looping mode.
-        /// </summary>
-        public bool TrackLoop
-        {
-            get => Loop;
-            set
-            {
-                if (Loop == value)
-                    return;
-                Loop = value;
-                Timeline?.MarkAsEdited();
-            }
-        }
-
         /// <inheritdoc />
         public NestedSceneAnimationTrack(ref TrackCreateOptions options)
         : base(ref options)
         {
+            MinMediaCount = 1;
+            MaxMediaCount = 1;
         }
 
         /// <inheritdoc />
         protected override void OnAssetChanged()
         {
-            if (Asset)
+            base.OnAssetChanged();
+
+            CheckCyclicReferences();
+        }
+
+        /// <inheritdoc />
+        public override void OnTimelineChanged(Timeline timeline)
+        {
+            base.OnTimelineChanged(timeline);
+
+            CheckCyclicReferences();
+        }
+
+        private void CheckCyclicReferences()
+        {
+            if (Asset && Timeline is SceneAnimationTimeline timeline)
             {
                 var refs = Asset.GetReferences();
-                var id = ((SceneAnimationTimeline)Timeline)._id;
+                var id = timeline._id;
                 if (Asset.ID == id || refs.Contains(id))
                 {
                     Asset = null;
                     throw new Exception("Cannot use nested scene animation (recursion).");
                 }
             }
-
-            base.OnAssetChanged();
         }
     }
 }

@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 using System.Collections.Generic;
 using System.IO;
@@ -72,7 +72,7 @@ namespace FlaxEditor.GUI.Timeline.Tracks
         {
             var after = EditTrackAction.CaptureData(Track);
             if (!Utils.ArraysEqual(_gradientEditingStartData, after))
-                Timeline.Undo.AddAction(new EditTrackAction(Timeline, Track, _gradientEditingStartData, after));
+                Timeline.AddBatchedUndoAction(new EditTrackAction(Timeline, Track, _gradientEditingStartData, after));
             _gradientEditingStartData = null;
         }
 
@@ -81,7 +81,7 @@ namespace FlaxEditor.GUI.Timeline.Tracks
         {
             base.OnTimelineChanged(track);
 
-            PropertiesEditObject = new Proxy(Track as ScreenFadeTrack, this);
+            PropertiesEditObject = track != null ? new Proxy((ScreenFadeTrack)track, this) : null;
         }
 
         /// <inheritdoc />
@@ -101,9 +101,9 @@ namespace FlaxEditor.GUI.Timeline.Tracks
         }
 
         /// <inheritdoc />
-        public override void OnTimelineShowContextMenu(ContextMenu.ContextMenu menu, Control controlUnderMouse)
+        public override void OnTimelineContextMenu(ContextMenu.ContextMenu menu, float time, Control controlUnderMouse)
         {
-            base.OnTimelineShowContextMenu(menu, controlUnderMouse);
+            base.OnTimelineContextMenu(menu, time, controlUnderMouse);
 
             if (controlUnderMouse is GradientEditor.StopControl stop)
             {

@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 #include "Animations.h"
 #include "Engine/Engine/Engine.h"
@@ -62,6 +62,11 @@ void AnimationsSystem::Job(int32 index)
 #endif
     )
     {
+#if COMPILE_WITH_PROFILER && TRACY_ENABLE
+        const StringView graphName(graph->GetPath());
+        ZoneName(*graphName, graphName.Length());
+#endif
+
         // Prepare skinning data
         animatedModel->SetupSkinningData();
 
@@ -97,7 +102,7 @@ void AnimationsSystem::Execute(TaskGraph* graph)
     UnscaledTime = tickData.UnscaledTime.GetTotalSeconds();
 
 #if USE_EDITOR
-    // If debug flow is registered, then warm it up (eg. static cached method inside DebugFlow_ManagedWrapper) so it doesn;'t crash on highly multi-threaded code
+    // If debug flow is registered, then warm it up (eg. static cached method inside DebugFlow_ManagedWrapper) so it doesn't crash on highly multi-threaded code
     if (Animations::DebugFlow.IsBinded())
         Animations::DebugFlow(nullptr, nullptr, 0, 0);
 #endif

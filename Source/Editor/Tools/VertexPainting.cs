@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 using System;
 using System.Threading;
@@ -634,11 +634,7 @@ namespace FlaxEditor.Tools
                 {
                     _brushMaterial.SetParameterValue("Color", new Color(1.0f, 0.85f, 0.0f)); // TODO: expose to editor options
                     _brushMaterial.SetParameterValue("DepthBuffer", Owner.RenderTask.Buffers.DepthBuffer);
-                    Quaternion rotation;
-                    if (_hitNormal == Vector3.Down)
-                        rotation = Quaternion.RotationZ(Mathf.Pi);
-                    else
-                        rotation = Quaternion.LookRotation(Vector3.Cross(Vector3.Cross(_hitNormal, Vector3.Forward), _hitNormal), _hitNormal);
+                    Quaternion rotation = RootNode.RaycastNormalRotation(ref _hitNormal);
                     Matrix transform = Matrix.Scaling(_gizmoMode.BrushSize * 0.01f) * Matrix.RotationQuaternion(rotation) * Matrix.Translation(_hitLocation);
                     _brushModel.Draw(ref renderContext, _brushMaterial, ref transform);
                 }

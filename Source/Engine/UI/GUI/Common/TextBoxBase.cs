@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 using System;
 using FlaxEngine.Assertions;
@@ -246,7 +246,7 @@ namespace FlaxEngine.GUI
         /// <summary>
         /// Gets or sets the target view offset (text scrolling offset).
         /// </summary>
-        [NoAnimate, NoSerialize]
+        [NoAnimate, NoSerialize, HideInEditor]
         public Vector2 TargetViewOffset
         {
             get => _targetViewOffset;
@@ -431,7 +431,6 @@ namespace FlaxEngine.GUI
             _isMultiline = isMultiline;
             _maxLength = 2147483646;
             _selectionStart = _selectionEnd = -1;
-            AutoFocus = false;
 
             var style = Style.Current;
             CaretColor = style.Foreground;
@@ -1016,6 +1015,28 @@ namespace FlaxEngine.GUI
         }
 
         /// <inheritdoc />
+        public override void NavigationFocus()
+        {
+            base.NavigationFocus();
+
+            if (IsNavFocused)
+                SelectAll();
+        }
+
+        /// <inheritdoc />
+        public override void OnSubmit()
+        {
+            OnEditEnd();
+            if (IsNavFocused)
+            {
+                OnEditBegin();
+                SelectAll();
+            }
+
+            base.OnSubmit();
+        }
+
+        /// <inheritdoc />
         public override void OnMouseMove(Vector2 location)
         {
             base.OnMouseMove(location);
@@ -1215,7 +1236,8 @@ namespace FlaxEngine.GUI
                 SetSelection(-1);
                 _text = _onStartEditValue;
 
-                Defocus();
+                if (!IsNavFocused)
+                    Defocus();
                 OnTextChanged();
 
                 return true;
@@ -1226,7 +1248,7 @@ namespace FlaxEngine.GUI
                     // Insert new line
                     Insert('\n');
                 }
-                else
+                else if (!IsNavFocused)
                 {
                     // End editing
                     Defocus();

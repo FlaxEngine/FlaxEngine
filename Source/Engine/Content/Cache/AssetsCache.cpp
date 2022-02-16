@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 #include "AssetsCache.h"
 #include "Engine/Core/Log.h"
@@ -328,12 +328,17 @@ bool AssetsCache::FindAsset(const Guid& id, AssetInfo& info)
     return result;
 }
 
+void AssetsCache::GetAll(Array<Guid>& result) const
+{
+    PROFILE_CPU();
+    ScopeLock lock(_locker);
+    _registry.GetKeys(result);
+}
+
 void AssetsCache::GetAllByTypeName(const StringView& typeName, Array<Guid>& result) const
 {
     PROFILE_CPU();
-
     ScopeLock lock(_locker);
-
     for (auto i = _registry.Begin(); i.IsNotEnd(); ++i)
     {
         if (i->Value.Info.TypeName == typeName)

@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 #include "Builder.h"
 #include "Engine/Core/Types/TimeSpan.h"
@@ -398,18 +398,18 @@ void ShadowsOfMordor::Builder::onJobRender(GPUContext* context)
             context->BindUA(0, _irradianceReduction->View());
             context->BindSR(0, radianceMap);
             context->Dispatch(_shader->GetShader()->GetCS("CS_Integrate"), 1, HEMISPHERES_RESOLUTION, 1);
+            context->ResetUA();
+            context->ResetSR();
 
             // Downscale H-basis to 1x1 and copy results to lightmap data buffer
             context->BindUA(0, lightmapEntry.LightmapData->View());
-            context->FlushState();
             context->BindSR(0, _irradianceReduction->View());
             // TODO: cache shader handle
             context->Dispatch(_shader->GetShader()->GetCS("CS_Reduction"), 1, NUM_SH_TARGETS, 1);
 
             // Unbind slots now to make rendering backend live easier
-            context->UnBindSR(0);
-            context->UnBindUA(0);
-            context->FlushState();
+            context->ResetSR();
+            context->ResetUA();
 
             // Keep GPU busy
             if (hemispheresToRenderBeforeSyncLeft-- < 0)
@@ -473,9 +473,8 @@ void ShadowsOfMordor::Builder::onJobRender(GPUContext* context)
             blurPasses = 0; // TODO: fix CS_Dilate passes on D3D12 (probably UAV synchronization issue)
         for (int32 blurPassIndex = 0; blurPassIndex < blurPasses; blurPassIndex++)
         {
-            context->UnBindSR(0);
-            context->UnBindUA(0);
-            context->FlushState();
+            context->ResetSR();
+            context->ResetUA();
 
             context->BindSR(0, lightmapEntry.LightmapData->View());
             context->BindUA(0, scene->TempLightmapData->View());

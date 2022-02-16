@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 #include "TerrainMaterialShader.h"
 #include "MaterialShaderFeatures.h"
@@ -183,6 +183,15 @@ bool TerrainMaterialShader::Load()
     // GBuffer Pass with lightmap (use pixel shader permutation for USE_LIGHTMAP=1)
     psDesc.PS = _shader->GetPS("PS_GBuffer", 1);
     _cache.DefaultLightmap.Init(psDesc);
+
+#if USE_EDITOR
+    if (_shader->HasShader("PS_QuadOverdraw"))
+    {
+        // Quad Overdraw
+        psDesc.PS = _shader->GetPS("PS_QuadOverdraw");
+        _cache.QuadOverdraw.Init(psDesc);
+    }
+#endif
 
     // Depth Pass
     psDesc.CullMode = CullMode::TwoSided;

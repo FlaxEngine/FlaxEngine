@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 using System;
 using System.Xml;
@@ -20,7 +20,10 @@ namespace FlaxEditor.Windows
         private readonly GameRoot _guiRoot;
         private bool _showGUI = true;
         private bool _showDebugDraw = false;
+        private bool _isMaximized = false;
         private float _gameStartTime;
+        private GUI.Docking.DockState _maximizeRestoreDockState;
+        private GUI.Docking.DockPanel _maximizeRestoreDockTo;
 
         /// <summary>
         /// Gets the viewport.
@@ -50,6 +53,41 @@ namespace FlaxEditor.Windows
         {
             get => _showDebugDraw;
             set => _showDebugDraw = value;
+        }
+
+        /// <summary>
+        /// Gets or sets a value indicating whether game window is maximized (only in play mode).
+        /// </summary>
+        private bool IsMaximized
+        {
+            get => _isMaximized;
+            set
+            {
+                if (_isMaximized == value)
+                    return;
+                _isMaximized = value;
+                if (value)
+                {
+                    // Maximize
+                    _maximizeRestoreDockTo = _dockedTo;
+                    _maximizeRestoreDockState = _dockedTo.TryGetDockState(out _);
+                    if (_maximizeRestoreDockState != GUI.Docking.DockState.Float)
+                    {
+                        var monitorBounds = Platform.GetMonitorBounds(PointToScreen(Size * 0.5f));
+                        ShowFloating(monitorBounds.Location + new Vector2(200, 200), Vector2.Zero, WindowStartPosition.Manual);
+                    }
+                    if (!RootWindow.IsMaximized)
+                        RootWindow.Maximize();
+                }
+                else
+                {
+                    // Restore
+                    RootWindow.Restore();
+                    if (_maximizeRestoreDockTo != null && _maximizeRestoreDockTo.IsDisposing)
+                        _maximizeRestoreDockTo = null;
+                    Show(_maximizeRestoreDockState, _maximizeRestoreDockTo);
+                }
+            }
         }
 
         /// <summary>
@@ -223,7 +261,7 @@ namespace FlaxEditor.Windows
             InputActions.Add(options => options.StepFrame, Editor.Simulation.RequestPlayOneFrame);
         }
 
-        private void OnPostRender(GPUContext context, RenderContext renderContext)
+        private void OnPostRender(GPUContext context, ref RenderContext renderContext)
         {
             // Debug Draw shapes
             if (_showDebugDraw)
@@ -234,9 +272,19 @@ namespace FlaxEditor.Windows
                 var editWindowViewport = Editor.Windows.EditWin.Viewport;
                 if (editWindowViewport.Task.LastUsedFrame != Engine.FrameCount)
                 {
+                    var drawDebugData = editWindowViewport.DebugDrawData;
+                    drawDebugData.Clear();
+                    var selectedParents = editWindowViewport.TransformGizmo.SelectedParents;
+                    if (selectedParents.Count > 0)
+                    {
+                        for (int i = 0; i < selectedParents.Count; i++)
+                        {
+                            if (selectedParents[i].IsActiveInHierarchy)
+                                selectedParents[i].OnDebugDraw(drawDebugData);
+                        }
+                    }
                     unsafe
                     {
-                        var drawDebugData = editWindowViewport.DebugDrawData;
                         fixed (IntPtr* actors = drawDebugData.ActorsPtrs)
                         {
                             DebugDraw.DrawActors(new IntPtr(actors), drawDebugData.ActorsCount, true);
@@ -276,9 +324,19 @@ namespace FlaxEditor.Windows
         protected override bool CanOpenContentFinder => false;
 
         /// <inheritdoc />
+        protected override bool CanUseNavigation => false;
+
+        /// <inheritdoc />
         public override void OnPlayBegin()
         {
             _gameStartTime = Time.UnscaledGameTime;
+        }
+
+        /// <inheritdoc />
+        public override void OnPlayEnd()
+        {
+            IsMaximized = false;
+            Cursor = CursorType.Default;
         }
 
         /// <inheritdoc />
@@ -432,15 +490,19 @@ namespace FlaxEditor.Windows
                 Screenshot.Capture(string.Empty);
                 return true;
             case KeyboardKeys.F11:
-            {
                 if (Root.GetKey(KeyboardKeys.Shift))
                 {
                     // Unlock mouse in game mode
                     UnlockMouseInPlay();
                     return true;
                 }
+                else if (Editor.IsPlayMode)
+                {
+                    // Maximized game window toggle
+                    IsMaximized = !IsMaximized;
+                    return true;
+                }
                 break;
-            }
             }
 
             // Prevent closing the game window tab during a play session
@@ -472,6 +534,22 @@ namespace FlaxEditor.Windows
 
             // Restore cursor visibility (could be hidden by the game)
             Screen.CursorVisible = true;
+        }
+
+        /// <inheritdoc />
+        public override Control OnNavigate(NavDirection direction, Vector2 location, Control caller, System.Collections.Generic.List<Control> visited)
+        {
+            // Block leaking UI navigation focus outside the game window
+            if (IsFocused && caller != this)
+            {
+                // Pick the first UI control if game UI is not focused yet
+                foreach (var child in _guiRoot.Children)
+                {
+                    if (child.Visible)
+                        return child.OnNavigate(direction, Vector2.Zero, this, visited);
+                }
+            }
+            return null;
         }
 
         /// <inheritdoc />

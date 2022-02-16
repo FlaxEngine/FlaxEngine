@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -80,6 +80,11 @@ public:
     {
         const StringAsUTF8<256> buf(*value, value.Length());
         String(buf.Get());
+    }
+
+    void String(const StringAnsi& value)
+    {
+        String(value.Get(), static_cast<unsigned>(value.Length()));
     }
 
     FORCE_INLINE void RawValue(const StringAnsi& str)

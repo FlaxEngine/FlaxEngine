@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -119,6 +119,9 @@ public:
     /// The description of the pipeline state cached on creation in debug builds. Can be used to help with rendering crashes or issues and validation.
     /// </summary>
     Description DebugDesc;
+#endif
+#if USE_EDITOR
+    int32 Complexity;
 #endif
 
 public:

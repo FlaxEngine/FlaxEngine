@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 using System.IO;
 using Flax.Build;
@@ -35,7 +35,7 @@ public class FlaxGame : EngineTarget
     public override string GetOutputFilePath(BuildOptions options, TargetOutputType? outputType)
     {
         // Override output name on UWP
-        if (options.Platform.Target == TargetPlatform.XboxOne || options.Platform.Target == TargetPlatform.UWP)
+        if (options.Platform.Target == TargetPlatform.UWP)
         {
             return Path.Combine(options.OutputFolder, "FlaxEngine.dll");
         }
@@ -49,7 +49,7 @@ public class FlaxGame : EngineTarget
         base.SetupTargetEnvironment(options);
 
         // Build engine as DLL to be linked in the game UWP project
-        if (options.Platform.Target == TargetPlatform.XboxOne || options.Platform.Target == TargetPlatform.UWP)
+        if (options.Platform.Target == TargetPlatform.UWP)
         {
             options.LinkEnv.Output = LinkerOutput.SharedLibrary;
             options.LinkEnv.GenerateWindowsMetadata = true;

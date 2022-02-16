@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 #include "JsonTools.h"
 #include "ISerializable.h"
@@ -102,6 +102,28 @@ Matrix JsonTools::GetMatrix(const Value& value)
     GetFloat(result.M44, value, "M44");
     return result;
 }
+
+Guid JsonTools::GetGuid(const Value& value)
+{
+    if (value.IsNull())
+        return Guid::Empty;
+    CHECK_RETURN(value.GetStringLength() == 32, Guid::Empty);
+
+    // Split
+    const char* a = value.GetString();
+    const char* b = a + 8;
+    const char* c = b + 8;
+    const char* d = c + 8;
+
+    // Parse
+    Guid result;
+    StringUtils::ParseHex(a, 8, &result.A);
+    StringUtils::ParseHex(b, 8, &result.B);
+    StringUtils::ParseHex(c, 8, &result.C);
+    StringUtils::ParseHex(d, 8, &result.D);
+    return result;
+}
+
 
 DateTime JsonTools::GetDate(const Value& value)
 {

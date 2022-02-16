@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 using System;
 using System.Collections.Generic;
@@ -26,6 +26,7 @@ namespace Flax.Build.Projects.VisualStudio
                 case VisualStudioVersion.VisualStudio2015: return "v140";
                 case VisualStudioVersion.VisualStudio2017: return "v141";
                 case VisualStudioVersion.VisualStudio2019: return "v142";
+                case VisualStudioVersion.VisualStudio2022: return "v143";
                 }
                 return string.Empty;
             }

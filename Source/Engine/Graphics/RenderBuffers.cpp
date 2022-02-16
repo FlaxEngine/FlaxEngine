@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 #include "RenderBuffers.h"
 #include "Engine/Graphics/GPUDevice.h"
@@ -7,8 +7,11 @@
 #include "Engine/Graphics/RenderTargetPool.h"
 #include "Engine/Engine/Engine.h"
 
+// How many frames keep cached buffers for temporal or optional effects?
+#define LAZY_FRAMES_COUNT 4
+
 RenderBuffers::RenderBuffers(const SpawnParams& params)
-    : PersistentScriptingObject(params)
+    : ScriptingObject(params)
 {
 #define CREATE_TEXTURE(name) name = GPUDevice::Instance->CreateTexture(TEXT(#name)); _resources.Add(name)
     CREATE_TEXTURE(DepthBuffer);
@@ -35,8 +38,7 @@ void RenderBuffers::Prepare()
     if (VolumetricFog)
     {
         ASSERT(VolumetricFogHistory);
-
-        if (frameIndex - LastFrameVolumetricFog >= 4)
+        if (frameIndex - LastFrameVolumetricFog >= LAZY_FRAMES_COUNT)
         {
             RenderTargetPool::Release(VolumetricFog);
             VolumetricFog = nullptr;
@@ -48,7 +50,7 @@ void RenderBuffers::Prepare()
         }
     }
 #define UPDATE_LAZY_KEEP_RT(name) \
-	if (name && frameIndex - LastFrame##name >= 4) \
+	if (name && frameIndex - LastFrame##name >= LAZY_FRAMES_COUNT) \
 	{ \
 		RenderTargetPool::Release(name); \
 		name = nullptr; \
@@ -154,7 +156,6 @@ bool RenderBuffers::Init(int32 width, int32 height)
     _aspectRatio = static_cast<float>(width) / height;
     _viewport = Viewport(0, 0, static_cast<float>(width), static_cast<float>(height));
     LastEyeAdaptationTime = 0;
-    LastEyeAdaptationTime = 0;
 
     return result;
 }
@@ -183,9 +184,4 @@ void RenderBuffers::Release()
     UPDATE_LAZY_KEEP_RT(HalfResDepth);
     UPDATE_LAZY_KEEP_RT(LuminanceMap);
 #undef UPDATE_LAZY_KEEP_RT
-}
-
-String RenderBuffers::ToString() const
-{
-    return TEXT("RenderBuffers");
 }

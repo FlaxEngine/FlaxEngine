@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -55,7 +55,7 @@ typedef Dictionary<Guid, Actor*, HeapAllocation> ActorsLookup;
 /// <summary>
 /// Base class for objects that are parts of the scene (actors and scripts).
 /// </summary>
-API_CLASS(Abstract, NoSpawn) class FLAXENGINE_API SceneObject : public PersistentScriptingObject, public ISerializable
+API_CLASS(Abstract, NoSpawn) class FLAXENGINE_API SceneObject : public ScriptingObject, public ISerializable
 {
 DECLARE_SCRIPTING_TYPE_NO_SPAWN(SceneObject);
     friend PrefabInstanceData;
@@ -64,7 +64,7 @@ DECLARE_SCRIPTING_TYPE_NO_SPAWN(SceneObject);
     friend ScriptsFactory;
     friend SceneTicking;
 public:
-    typedef PersistentScriptingObject Base;
+    typedef ScriptingObject Base;
 
     // Scene Object lifetime flow:
     // - Create
@@ -195,7 +195,7 @@ public:
     /// </summary>
     /// <param name="prefabId">The prefab asset identifier.</param>
     /// <param name="prefabObjectId">The prefab object identifier.</param>
-    API_FUNCTION() virtual void LinkPrefab(const Guid& prefabId, const Guid& prefabObjectId);
+    API_FUNCTION(Attributes="NoAnimate") virtual void LinkPrefab(const Guid& prefabId, const Guid& prefabObjectId);
 
     /// <summary>
     /// Breaks the prefab linkage for this object, all its scripts, and all child actors.

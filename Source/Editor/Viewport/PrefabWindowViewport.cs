@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 using System;
 using System.Collections.Generic;
@@ -258,12 +258,12 @@ namespace FlaxEditor.Viewport
             }
         }
 
-        private void OnCollectDrawCalls(RenderContext renderContext)
+        private void OnCollectDrawCalls(ref RenderContext renderContext)
         {
             _debugDrawData.OnDraw(ref renderContext);
         }
 
-        private void OnPostRender(GPUContext context, RenderContext renderContext)
+        private void OnPostRender(GPUContext context, ref RenderContext renderContext)
         {
             if (renderContext.View.Mode != ViewMode.Default)
             {
@@ -568,7 +568,7 @@ namespace FlaxEditor.Viewport
             // Selected UI controls outline
             for (var i = 0; i < _window.Selection.Count; i++)
             {
-                if (_window.Selection[i].EditableObject is UIControl controlActor && controlActor && controlActor.Control != null)
+                if (_window.Selection[i]?.EditableObject is UIControl controlActor && controlActor && controlActor.Control != null)
                 {
                     var control = controlActor.Control;
                     var bounds = Rectangle.FromPoints(control.PointToParent(this, Vector2.Zero), control.PointToParent(this, control.Size));
@@ -702,10 +702,9 @@ namespace FlaxEditor.Viewport
 
         private Vector3 PostProcessSpawnedActorLocation(Actor actor, ref Vector3 hitLocation)
         {
-            Editor.GetActorEditorBox(actor, out BoundingBox box);
-
             // Place the object
-            var location = hitLocation - (box.Size.Length * 0.5f) * ViewDirection;
+            //var location = hitLocation - (box.Size.Length * 0.5f) * ViewDirection;
+            var location = hitLocation;
 
             // Apply grid snapping if enabled
             if (UseSnapping || TransformGizmo.TranslationSnapEnable)

@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 #include "Foliage.h"
 #include "FoliageType.h"
@@ -521,7 +521,6 @@ void Foliage::OnFoliageTypeModelLoaded(int32 index)
                 }
                 BoundingSphere meshBounds;
                 BoundingSphere::FromPoints(corners, 8, meshBounds);
-                ASSERT(meshBounds.Radius > ZeroTolerance);
                 BoundingSphere::Merge(instance.Bounds, meshBounds, instance.Bounds);
             }
 

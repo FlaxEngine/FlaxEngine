@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 using System;
 using System.Collections.Generic;
@@ -71,13 +71,15 @@ namespace Flax.Build.Platforms
         /// </summary>
         /// <param name="platform">The platform.</param>
         /// <param name="architecture">The target architecture.</param>
-        /// <param name="toolchainRoots">The root folder for the toolchains installation.</param>
+        /// <param name="toolchainRoots">The root folder for the toolchains installation. If null, then platform must specify tools paths manually.</param>
         /// <param name="systemCompiler">The system compiler to use. Null if use toolset root.</param>
-        /// <param name="toolchainSubDir">The custom toolchain folder location in <paramref name="toolchainRoots"/> directory. If nul the architecture name will be sued.</param>
-        protected UnixToolchain(UnixPlatform platform, TargetArchitecture architecture, string toolchainRoots, string systemCompiler, string toolchainSubDir = null)
+        /// <param name="toolchainSubDir">The custom toolchain folder location in <paramref name="toolchainRoots"/> directory. If nul the architecture name will be used.</param>
+        protected UnixToolchain(UnixPlatform platform, TargetArchitecture architecture, string toolchainRoots = null, string systemCompiler = null, string toolchainSubDir = null)
         : base(platform, architecture)
         {
             ArchitectureName = GetToolchainName(platform.Target, architecture);
+            if (toolchainRoots == null)
+                return;
 
             // Build paths
             if (systemCompiler != null)
@@ -97,7 +99,11 @@ namespace Flax.Build.Platforms
                 ToolsetRoot = toolchainSubDir == null ? Path.Combine(toolchainRoots, ArchitectureName) : Path.Combine(toolchainRoots, toolchainSubDir);
                 ClangPath = Path.Combine(Path.Combine(ToolsetRoot, string.Format("bin/{0}-{1}", ArchitectureName, "clang++"))) + exeExtension;
                 if (!File.Exists(ClangPath))
+                    ClangPath = Path.Combine(Path.Combine(ToolsetRoot, string.Format("bin/{0}-{1}", ArchitectureName, "clang"))) + exeExtension;
+                if (!File.Exists(ClangPath))
                     ClangPath = Path.Combine(ToolsetRoot, "bin/clang++") + exeExtension;
+                if (!File.Exists(ClangPath))
+                    ClangPath = Path.Combine(ToolsetRoot, "bin/clang") + exeExtension;
                 ArPath = Path.Combine(Path.Combine(ToolsetRoot, string.Format("bin/{0}-{1}", ArchitectureName, "ar"))) + exeExtension;
                 LlvmArPath = Path.Combine(Path.Combine(ToolsetRoot, string.Format("bin/{0}", "llvm-ar"))) + exeExtension;
                 RanlibPath = Path.Combine(Path.Combine(ToolsetRoot, string.Format("bin/{0}-{1}", ArchitectureName, "ranlib"))) + exeExtension;
@@ -107,15 +113,32 @@ namespace Flax.Build.Platforms
             }
 
             // Determinate compiler version
-            if (!File.Exists(ClangPath))
-                throw new Exception(string.Format("Missing Clang ({0})", ClangPath));
+            ClangVersion = GetClangVersion(ClangPath);
+
+            // Check version
+            if (ClangVersion.Major < 6)
+                throw new Exception(string.Format("Unsupported Clang version {0}. Minimum supported is 6.", ClangVersion));
+        }
+
+        public static string GetLibName(string path)
+        {
+            var libName = Path.GetFileNameWithoutExtension(path);
+            if (libName.StartsWith("lib"))
+                libName = libName.Substring(3);
+            return libName;
+        }
+
+        public static Version GetClangVersion(string path)
+        {
+            if (!File.Exists(path))
+                throw new Exception(string.Format("Missing Clang ({0})", path));
             using (var process = new Process())
             {
                 process.StartInfo.UseShellExecute = false;
                 process.StartInfo.CreateNoWindow = true;
                 process.StartInfo.RedirectStandardOutput = true;
                 process.StartInfo.RedirectStandardError = true;
-                process.StartInfo.FileName = ClangPath;
+                process.StartInfo.FileName = path;
                 process.StartInfo.Arguments = "--version";
 
                 process.Start();
@@ -138,26 +161,11 @@ namespace Flax.Build.Platforms
                             minor = Convert.ToInt32(parts[1]);
                         if (parts.Length >= 3)
                             patch = Convert.ToInt32(parts[2]);
-                        ClangVersion = new Version(major, minor, patch);
+                        return new Version(major, minor, patch);
                     }
                 }
-                else
-                {
-                    throw new Exception(string.Format("Failed to get Clang version ({0})", ClangPath));
-                }
+                throw new Exception(string.Format("Failed to get Clang version ({0})", path));
             }
-
-            // Check version
-            if (ClangVersion.Major < 6)
-                throw new Exception(string.Format("Unsupported Clang version {0}. Minimum supported is 6.", ClangVersion));
-        }
-
-        private static string GetLibName(string path)
-        {
-            var libName = Path.GetFileNameWithoutExtension(path);
-            if (libName.StartsWith("lib"))
-                libName = libName.Substring(3);
-            return libName;
         }
 
         /// <summary>
@@ -181,7 +189,8 @@ namespace Flax.Build.Platforms
                 case TargetArchitecture.ARM64: return "aarch64-unknown-linux-gnueabi";
                 default: throw new InvalidArchitectureException(architecture);
                 }
-            case TargetPlatform.PS4: return "orbis";
+            case TargetPlatform.PS4: return (string)Utilities.GetStaticValue("Flax.Build.Platforms.PS4Toolchain", "ToolchainName");
+            case TargetPlatform.PS5: return (string)Utilities.GetStaticValue("Flax.Build.Platforms.PS5Toolchain", "ToolchainName");
             case TargetPlatform.Android:
                 switch (architecture)
                 {
@@ -189,6 +198,12 @@ namespace Flax.Build.Platforms
                 case TargetArchitecture.x64: return "x86_64-linux-android";
                 case TargetArchitecture.ARM: return "armv7a-linux-androideabi";
                 case TargetArchitecture.ARM64: return "aarch64-linux-android";
+                default: throw new InvalidArchitectureException(architecture);
+                }
+            case TargetPlatform.Mac:
+                switch (architecture)
+                {
+                case TargetArchitecture.x64: return "x86_64-apple-macos" + Configuration.MacOSXMinVer;
                 default: throw new InvalidArchitectureException(architecture);
                 }
             default: throw new InvalidPlatformException(platform);

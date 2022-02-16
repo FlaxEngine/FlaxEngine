@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -40,6 +40,7 @@ API_ENUM() enum class D6JointAxis
     /// </summary>
     SwingZ = 5,
 
+    API_ENUM(Attributes="HideInEditor")
     MAX
 };
 
@@ -63,6 +64,7 @@ API_ENUM() enum class D6JointMotion
     /// </summary>
     Free,
 
+    API_ENUM(Attributes="HideInEditor")
     MAX
 };
 
@@ -113,6 +115,7 @@ API_ENUM() enum class D6JointDriveType
     /// </summary>
     Slerp = 5,
 
+    API_ENUM(Attributes="HideInEditor")
     MAX
 };
 
@@ -145,23 +148,15 @@ DECLARE_SCRIPTING_TYPE_MINIMAL(D6JointDrive);
 
 public:
 
-    /// <summary>
-    /// Compares two objects.
-    /// </summary>
-    /// <param name="other">The other.</param>
-    /// <returns>True if both objects are equal.</returns>
     bool operator==(const D6JointDrive& other) const
     {
-        return Stiffness == other.Stiffness
-                && Damping == other.Damping
-                && ForceLimit == other.ForceLimit
-                && Acceleration == other.Acceleration;
+        return Stiffness == other.Stiffness && Damping == other.Damping && ForceLimit == other.ForceLimit && Acceleration == other.Acceleration;
     }
 };
 
 /// <summary>
 /// Physics joint that is the most customizable type of joint. This joint type can be used to create all other built-in joint 
-/// types, and to design your own custom ones, but is less intuitive to use.Allows a specification of a linear 
+/// types, and to design your own custom ones, but is less intuitive to use. Allows a specification of a linear 
 /// constraint (for example for a slider), twist constraint (rotating around X) and swing constraint (rotating around Y and Z). 
 /// It also allows you to constrain limits to only specific axes or completely lock specific axes.
 /// </summary>
@@ -308,28 +303,31 @@ public:
 public:
 
     /// <summary>
-    /// Gets the twist angle of the joint.
+    /// Gets the twist angle of the joint (in the range (-2*Pi, 2*Pi]).
     /// </summary>
     API_PROPERTY() float GetCurrentTwist() const;
 
     /// <summary>
     /// Gets the current swing angle of the joint from the Y axis.
     /// </summary>
-    API_PROPERTY() float GetCurrentSwingYAngle() const;
+    API_PROPERTY() float GetCurrentSwingY() const;
 
     /// <summary>
     /// Gets the current swing angle of the joint from the Z axis.
     /// </summary>
-    API_PROPERTY() float GetCurrentSwingZAngle() const;
+    API_PROPERTY() float GetCurrentSwingZ() const;
 
 public:
 
     // [Joint]
+#if USE_EDITOR
+    void OnDebugDrawSelected() override;
+#endif
     void Serialize(SerializeStream& stream, const void* otherObj) override;
     void Deserialize(DeserializeStream& stream, ISerializeModifier* modifier) override;
 
 protected:
 
     // [Joint]
-    PxJoint* CreateJoint(JointData& data) override;
+    void* CreateJoint(const PhysicsJointDesc& desc) override;
 };

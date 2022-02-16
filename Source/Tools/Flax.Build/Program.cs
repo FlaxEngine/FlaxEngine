@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 using System;
 using System.Diagnostics;
@@ -38,6 +38,7 @@ namespace Flax.Build
             {
                 // Setup
                 CommandLine.Configure(typeof(Configuration));
+                CommandLine.Configure(typeof(EngineConfiguration));
                 foreach (var option in CommandLine.GetOptions())
                 {
                     if (option.Name.Length > 1 && option.Name[0] == 'D')

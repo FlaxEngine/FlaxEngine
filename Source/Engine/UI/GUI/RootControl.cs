@@ -1,5 +1,6 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
+using System;
 using System.Collections.Generic;
 
 namespace FlaxEngine.GUI
@@ -68,6 +69,61 @@ namespace FlaxEngine.GUI
         {
             AutoFocus = false;
         }
+
+        #region Navigation
+
+        /// <summary>
+        /// The custom callback function for UI navigation. Can be used to override the default behaviour.
+        /// </summary>
+        public Action<NavDirection> CustomNavigation;
+
+        /// <summary>
+        /// Performs the UI navigation.
+        /// </summary>
+        /// <param name="direction">The navigation direction.</param>
+        public void Navigate(NavDirection direction)
+        {
+            if (direction == NavDirection.None)
+                return;
+
+            if (CustomNavigation != null)
+            {
+                // Custom
+                CustomNavigation.Invoke(direction);
+                return;
+            }
+
+            var focused = FocusedControl;
+            if (focused == null)
+            {
+                // Nothing is focused so go to the first control
+                focused = OnNavigate(direction, Vector2.Zero, this, new List<Control>());
+                focused?.NavigationFocus();
+                return;
+            }
+
+            var target = focused.GetNavTarget(direction);
+            if (target != null)
+            {
+                // Explicitly specified focus target
+                target.NavigationFocus();
+                return;
+            }
+
+            // Automatic navigation routine
+            target = focused.OnNavigate(direction, focused.GetNavOrigin(direction), this, new List<Control>());
+            target?.NavigationFocus();
+        }
+
+        /// <summary>
+        /// Submits the currently focused control.
+        /// </summary>
+        public void SubmitFocused()
+        {
+            FocusedControl?.OnSubmit();
+        }
+
+        #endregion
 
         /// <inheritdoc />
         public override void Update(float deltaTime)

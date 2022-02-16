@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 using System.IO;
 using Flax.Build.NativeCpp;
@@ -30,8 +30,10 @@ namespace Flax.Build
                 break;
             case TargetPlatform.Linux:
             case TargetPlatform.PS4:
+            case TargetPlatform.PS5:
             case TargetPlatform.Android:
             case TargetPlatform.Switch:
+            case TargetPlatform.Mac:
                 options.OutputFiles.Add(Path.Combine(path, string.Format("lib{0}.a", name)));
                 break;
             default: throw new InvalidPlatformException(options.Platform.Target);

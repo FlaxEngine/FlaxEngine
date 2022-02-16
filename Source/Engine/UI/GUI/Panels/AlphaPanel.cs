@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 namespace FlaxEngine.GUI
 {
@@ -18,6 +18,14 @@ namespace FlaxEngine.GUI
         /// </summary>
         [EditorOrder(10), Tooltip("Whether or not we should ignore previous alphas.")]
         public bool IgnoreStack;
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="AlphaPanel"/> class.
+        /// </summary>
+        public AlphaPanel()
+        {
+            AutoFocus = false;
+        }
 
         /// <inheritdoc/>
         public override void Draw()

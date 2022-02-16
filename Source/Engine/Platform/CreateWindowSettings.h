@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -61,7 +61,7 @@ DECLARE_SCRIPTING_TYPE_MINIMAL(CreateWindowSettings);
     /// <summary>
     /// The maximum size.
     /// </summary>
-    API_FIELD() Vector2 MaximumSize = Vector2(4096, 4096);
+    API_FIELD() Vector2 MaximumSize = Vector2(8192, 4096);
 
     /// <summary>
     /// The start position mode.

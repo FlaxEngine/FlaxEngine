@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -13,7 +13,7 @@ typedef Half Float16;
 /// <summary>
 /// Packed vector, layout: R:10 bytes, G:10 bytes, B:10 bytes, A:2 bytes, all values are stored as floats in range [0;1].
 /// </summary>
-struct FLAXENGINE_API Float1010102
+struct FLAXENGINE_API FloatR10G10B10A2
 {
     union
     {
@@ -28,40 +28,40 @@ struct FLAXENGINE_API Float1010102
         uint32 Value;
     };
 
-    Float1010102() = default;
+    FloatR10G10B10A2() = default;
 
-    explicit Float1010102(uint32 packed)
-        : Value(packed)
-    {
-    }
-
-    Float1010102(float x, float y, float z, float w);
-    Float1010102(const Vector3& v, float alpha = 0);
-    explicit Float1010102(const float* values);
+    explicit FloatR10G10B10A2(uint32 packed);
+    FloatR10G10B10A2(float x, float y, float z, float w);
+    FloatR10G10B10A2(const Vector3& v, float alpha = 0);
+    FloatR10G10B10A2(const Vector4& v);
+    explicit FloatR10G10B10A2(const float* values);
 
     operator uint32() const
     {
         return Value;
     }
 
+    operator Vector3() const;
     operator Vector4() const;
 
-    Float1010102& operator=(const Float1010102& other)
+    FloatR10G10B10A2& operator=(const FloatR10G10B10A2& other)
     {
         Value = other.Value;
         return *this;
     }
 
-    Float1010102& operator=(uint32 packed)
+    FloatR10G10B10A2& operator=(uint32 packed)
     {
         Value = packed;
         return *this;
     }
 
-public:
-
     Vector3 ToVector3() const;
+    Vector4 ToVector4() const;
 };
+
+// [Deprecated on 14.01.2022, expires on 14.01.2024]
+typedef FloatR10G10B10A2 Float1010102;
 
 // The 3D vector is packed into 32 bits with 11/11/10 bits per floating-point component.
 struct FLAXENGINE_API FloatR11G11B10
@@ -114,7 +114,6 @@ struct FLAXENGINE_API FloatR11G11B10
     }
 
 public:
-
     Vector3 ToVector3() const;
 };
 

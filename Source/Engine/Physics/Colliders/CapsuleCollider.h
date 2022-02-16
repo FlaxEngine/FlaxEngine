@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -44,7 +44,7 @@ public:
     API_PROPERTY() void SetRadius(float value);
 
     /// <summary>
-    /// Gets the height of the capsule, measured in the object's local space.
+    /// Gets the height of the capsule, measured in the object's local space between the centers of the hemispherical ends.
     /// </summary>
     /// <remarks>
     /// The capsule height will be scaled by the actor's world scale.
@@ -56,7 +56,7 @@ public:
     }
 
     /// <summary>
-    /// Sets the height of the capsule, measured in the object's local space.
+    /// Sets the height of the capsule, measured in the object's local space between the centers of the hemispherical ends.
     /// </summary>
     /// <remarks>
     /// The capsule height will be scaled by the actor's world scale.
@@ -77,7 +77,7 @@ protected:
 
     // [Collider]
     void UpdateBounds() override;
-    void GetGeometry(PxGeometryHolder& geometry) override;
+    void GetGeometry(CollisionShape& collision) override;
 #if USE_EDITOR
     void DrawPhysicsDebug(RenderView& view) override;
 #endif

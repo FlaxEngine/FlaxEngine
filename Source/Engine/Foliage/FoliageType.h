@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -41,7 +41,7 @@ API_ENUM() enum class FoliageScalingModes
 /// <summary>
 /// Foliage mesh instances type descriptor. Defines the shared properties of the spawned mesh instances.
 /// </summary>
-API_CLASS(Sealed, NoSpawn) class FLAXENGINE_API FoliageType : public PersistentScriptingObject, public ISerializable
+API_CLASS(Sealed, NoSpawn) class FLAXENGINE_API FoliageType : public ScriptingObject, public ISerializable
 {
 DECLARE_SCRIPTING_TYPE_NO_SPAWN(FoliageType);
     friend Foliage;

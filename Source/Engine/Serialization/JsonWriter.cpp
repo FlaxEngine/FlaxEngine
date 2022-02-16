@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 #include "JsonWriter.h"
 #include "Engine/Core/Log.h"
@@ -417,10 +417,7 @@ void JsonWriter::SceneObject(::SceneObject* obj)
         }
         else
         {
-            if (prefab)
-                LOG(Warning, "Failed to load prefab {0}.", prefab->ToString());
-            else
-                LOG(Warning, "Missing prefab with id={0}.", obj->GetPrefabID());
+            LOG(Warning, "Missing prefab with id={0}.", obj->GetPrefabID());
         }
     }
 

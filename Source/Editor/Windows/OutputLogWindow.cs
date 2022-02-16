@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 using System;
 using System.Collections.Generic;
@@ -42,7 +42,7 @@ namespace FlaxEditor.Windows
 
         private struct TextBlockTag
         {
-            public enum Types
+            internal enum Types
             {
                 CodeLocation
             };
@@ -162,7 +162,7 @@ namespace FlaxEditor.Windows
                 WatermarkText = "Search...",
                 Parent = this,
             };
-            _searchBox.TextChanged += OnSearchBoxTextChanged;
+            _searchBox.TextChanged += Refresh;
             _hScroll = new HScrollBar(this, Height - _scrollSize, Width - _scrollSize, _scrollSize)
             {
                 ThumbThickness = 10,
@@ -227,11 +227,6 @@ namespace FlaxEditor.Windows
             menu.AddButton("Load log file...", LoadLogFile);
 
             menu.Show(_viewDropdown.Parent, _viewDropdown.BottomLeft);
-        }
-
-        private void OnSearchBoxTextChanged()
-        {
-            Refresh();
         }
 
         private void ToggleLogTypeShow(LogType type)

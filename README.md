@@ -6,7 +6,7 @@
 Flax Engine is a high quality modern 3D game engine written in C++ and C#.
 From stunning graphics to powerful scripts - Flax can give everything for your games. Designed for fast workflow with many ready to use features waiting for you right now. To learn more see the website ([www.flaxengine.com](https://flaxengine.com)).
 
-This repository contains full source code of the Flax (excluding NDA-protected platforms support). Anyone is welcome to contribute or use the modified source in Flax-based games.
+This repository contains full source code of the Flax Engine (excluding NDA-protected platforms support). Anyone is welcome to contribute or use the modified source in Flax-based games.
 
 # Development
 
@@ -42,20 +42,13 @@ Flax Visual Studio extension provides better programming workflow, C# scripts de
 * Compile Flax project (hit F7 or CTRL+Shift+B)
 * Run Flax (hit F5 key)
 
----
-
-**Note**
-
-If building on Windows to support Vulkan rendering, first install the Vulkan SDK then  set an environment variable to provide the path to the SDK prior to running GenerateProjectFiles.bat:
-
-    set VULKAN_SDK=C:\VulkanSDK\version\
-
----
+> When building on Windows to support Vulkan rendering, first install the Vulkan SDK then set an environment variable to provide the path to the SDK prior to running GenerateProjectFiles.bat: `set VULKAN_SDK=%sdk_path%`
 
 ## Linux
 
 * Install Visual Studio Code
 * Install Mono ([https://www.mono-project.com/download/stable](https://www.mono-project.com/download/stable))
+* Install Vulkan SDK ([https://vulkan.lunarg.com/](https://vulkan.lunarg.com/))
 * Install Git with LFS
 * Install requried packages: `sudo apt-get install libx11-dev libxcursor-dev libxinerama-dev nuget autoconf libogg-dev automake build-essential gettext cmake python libtool libtool-bin libpulse-dev libasound2-dev libjack-dev portaudio19-dev`
 * Install compiler `sudo apt-get install clang lldb lld` (Clang 6 or newer)
@@ -64,21 +57,31 @@ If building on Windows to support Vulkan rendering, first install the Vulkan SDK
 * Open workspace with Visual Code
 * Build and run (configuration and task named `Flax|Editor.Linux.Development|x64`)
 
+## Mac
+
+* Install XCode
+* Install Mono ([https://www.mono-project.com/download/stable](https://www.mono-project.com/download/stable))
+* Install Vulkan SDK ([https://vulkan.lunarg.com/](https://vulkan.lunarg.com/))
+* Clone repo (with LFS)
+* Run `GenerateProjectFiles.command`
+* Open workspace with XCode or Visual Studio Code
+* Build and run (configuration  `Editor.Mac.Development`)
+
 ## Workspace directory
 
 - **Binaries/** - executable files
   - **Editor/** - Flax Editor binaries
   - **Tools/** - tools binaries
-- **Cache/** - local data cache folder used by engine and tools
+- **Cache/** - local data cache folder used by the engine and tools
   - **Intermediate/** - intermediate files and cache for engine build
     - ***ProjectName*/** - per-project build cache data
     - **Deps/** - Flax.Build dependencies building cache
   - **Projects/** - project files location
-- **Content/** - assets and binary files used by engine and editor
+- **Content/** - assets and binary files used by the engine and editor
 - **Development/** - engine development files
   - **Scripts/** - utility scripts
-- **packages/** - Nuget packages cache location
-- **Source/** - source code lcoation
+- **packages/** - NuGet packages cache location
+- **Source/** - source code location
   - **Editor/** - Flax Editor source code
   - **Engine/** - Flax Engine source code
   - **Platforms/** - per-platform sources and dependency files
@@ -88,7 +91,7 @@ If building on Windows to support Vulkan rendering, first install the Vulkan SDK
       - **Binaries/** - per-platform binaries
         - **Game/** - Flax Game binaries
         - **Mono/** - Mono runtime files and data
-        - **ThirdParty/** - prebuild 3rd Party binaries
+        - **ThirdParty/** - prebuilt 3rd Party binaries
   - **Shaders/** - shaders source code
   - **ThirdParty/** - 3rd Party source code
   - **Tools/** - development tools source code
@@ -97,4 +100,4 @@ If building on Windows to support Vulkan rendering, first install the Vulkan SDK
 
 Using Flax source code is strictly governed by the Flax Engine End User License Agreement. If you don't agree to those terms, as amended from time to time, you are not permitted to access or use Flax Engine.
 
-We welcome any contributions to Flax Engine development through pull requests on GitHub. Most of our active development is in the master branch, so we prefer to take pull requests there (particularly for new features). We try to make sure that all new code adheres to the Flax coding standards. All contributions are governed by the terms of the EULA.
+We welcome any contributions to Flax Engine development through pull requests on GitHub. Most of our active development is in the master branch, so we prefer to take pull requests there (particularly for new features). We try to make sure that all new code adheres to the Flax coding standards. All contributions are governed by the terms of the [EULA](https://flaxengine.com/licensing/).

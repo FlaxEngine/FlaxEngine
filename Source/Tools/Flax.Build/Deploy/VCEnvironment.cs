@@ -50,6 +50,7 @@ namespace Flax.Deploy
             switch (Platform.BuildPlatform.Target)
             {
             case TargetPlatform.Linux:
+            case TargetPlatform.Mac:
             {
                 // Use msbuild from Mono
                 toolPath = UnixPlatform.Which("msbuild");
@@ -111,6 +112,7 @@ namespace Flax.Deploy
             switch (Platform.BuildPlatform.Target)
             {
             case TargetPlatform.Linux:
+            case TargetPlatform.Mac:
             {
                 // Use csc from Mono
                 toolPath = UnixPlatform.Which("csc");
@@ -182,6 +184,8 @@ namespace Flax.Deploy
             return false;
         }
 
+        internal static string Verbosity => Configuration.Verbose ? "" : "/verbosity:minimal";
+
         /// <summary>
         /// Runs msbuild.exe with the specified arguments.
         /// </summary>
@@ -201,7 +205,7 @@ namespace Flax.Deploy
                 throw new Exception(string.Format("Project {0} does not exist!", project));
             }
 
-            string cmdLine = string.Format("\"{0}\" /m /t:Build /p:Configuration=\"{1}\" /p:Platform=\"{2}\" /verbosity:minimal /nologo", project, buildConfig, buildPlatform);
+            string cmdLine = string.Format("\"{0}\" /m /t:Build /p:Configuration=\"{1}\" /p:Platform=\"{2}\" {3} /nologo", project, buildConfig, buildPlatform, Verbosity);
             int result = Utilities.Run(msBuild, cmdLine);
             if (result != 0)
             {
@@ -228,7 +232,7 @@ namespace Flax.Deploy
                 throw new Exception(string.Format("Unable to build solution {0}. Solution file not found.", solutionFile));
             }
 
-            string cmdLine = string.Format("\"{0}\" /m /t:Build /p:Configuration=\"{1}\" /p:Platform=\"{2}\" /verbosity:minimal /nologo", solutionFile, buildConfig, buildPlatform);
+            string cmdLine = string.Format("\"{0}\" /m /t:Build /p:Configuration=\"{1}\" /p:Platform=\"{2}\" {3} /nologo", solutionFile, buildConfig, buildPlatform, Verbosity);
             int result = Utilities.Run(msBuild, cmdLine);
             if (result != 0)
             {
@@ -253,7 +257,7 @@ namespace Flax.Deploy
                 throw new Exception(string.Format("Unable to clean solution {0}. Solution file not found.", solutionFile));
             }
 
-            string cmdLine = string.Format("\"{0}\" /t:Clean /verbosity:minimal /nologo", solutionFile);
+            string cmdLine = string.Format("\"{0}\" /t:Clean {1} /nologo", solutionFile, Verbosity);
             Utilities.Run(msBuild, cmdLine);
         }
 
@@ -271,7 +275,7 @@ namespace Flax.Deploy
             var sdk = sdks[sdkKeys.Last()];
             var signtool = Path.Combine(sdk, "bin", "x64", "signtool.exe");
             var cmdLine = string.Format("sign /debug /f \"{0}\" /p \"{1}\" /tr http://timestamp.comodoca.com /td sha256 /fd sha256 \"{2}\"", certificatePath, certificatePass, file);
-            Utilities.Run(signtool, cmdLine);
+            Utilities.Run(signtool, cmdLine, null, null, Utilities.RunOptions.Default | Utilities.RunOptions.ThrowExceptionOnError);
         }
     }
 }

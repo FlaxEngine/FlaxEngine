@@ -1,10 +1,13 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
+
+using FlaxEngine;
 
 namespace FlaxEditor.Content
 {
     /// <summary>
     /// File entry action (import or create).
     /// </summary>
+    [HideInEditor]
     public interface IFileEntryAction
     {
         /// <summary>

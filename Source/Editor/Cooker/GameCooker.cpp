@@ -1,8 +1,10 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 #include "GameCooker.h"
+#include "PlatformTools.h"
 #include "FlaxEngine.Gen.h"
 #include "Engine/Scripting/MainThreadManagedInvokeAction.h"
+#include "Engine/Scripting/ManagedCLR/MTypes.h"
 #include "Engine/Scripting/ManagedCLR/MClass.h"
 #include "Engine/Scripting/Scripting.h"
 #include "Engine/Scripting/ScriptingType.h"
@@ -31,7 +33,7 @@
 #include "Platform/Windows/WindowsPlatformTools.h"
 #include "Engine/Platform/Windows/WindowsPlatformSettings.h"
 #endif
-#if PLATFORM_TOOLS_UWP || PLATFORM_TOOLS_XBOX_ONE
+#if PLATFORM_TOOLS_UWP
 #include "Platform/UWP/UWPPlatformTools.h"
 #include "Engine/Platform/UWP/UWPPlatformSettings.h"
 #endif
@@ -42,6 +44,12 @@
 #if PLATFORM_TOOLS_PS4
 #include "Platforms/PS4/Editor/PlatformTools/PS4PlatformTools.h"
 #endif
+#if PLATFORM_TOOLS_PS5
+#include "Platforms/PS5/Editor/PlatformTools/PS5PlatformTools.h"
+#endif
+#if PLATFORM_TOOLS_XBOX_ONE
+#include "Platforms/XboxOne/Editor/PlatformTools/XboxOnePlatformTools.h"
+#endif
 #if PLATFORM_TOOLS_XBOX_SCARLETT
 #include "Platforms/XboxScarlett/Editor/PlatformTools/XboxScarlettPlatformTools.h"
 #endif
@@ -51,6 +59,10 @@
 #if PLATFORM_TOOLS_SWITCH
 #include "Platforms/Switch/Editor/PlatformTools/SwitchPlatformTools.h"
 #endif
+#if PLATFORM_TOOLS_MAC
+#include "Platform/Mac/MacPlatformTools.h"
+#include "Engine/Platform/Mac/MacPlatformSettings.h"
+#endif
 
 namespace GameCookerImpl
 {
@@ -58,8 +70,8 @@ namespace GameCookerImpl
     MMethod* Internal_OnProgress = nullptr;
     MMethod* Internal_OnCollectAssets = nullptr;
 
-    bool IsRunning = false;
-    bool IsThreadRunning = false;
+    volatile bool IsRunning = false;
+    volatile bool IsThreadRunning = false;
     int64 CancelFlag = 0;
     int64 CancelThreadFlag = 0;
     ConditionVariable ThreadCond;
@@ -94,6 +106,9 @@ using namespace GameCookerImpl;
 
 Delegate<GameCooker::EventType> GameCooker::OnEvent;
 Delegate<const String&, float> GameCooker::OnProgress;
+Action GameCooker::DeployFiles;
+Action GameCooker::PostProcessFiles;
+Action GameCooker::PackageFiles;
 Delegate<HashSet<Guid>&> GameCooker::OnCollectAssets;
 
 const Char* ToString(const BuildPlatform platform)
@@ -120,6 +135,10 @@ const Char* ToString(const BuildPlatform platform)
         return TEXT("Android ARM64");
     case BuildPlatform::Switch:
         return TEXT("Switch");
+    case BuildPlatform::PS5:
+        return TEXT("PlayStation 5");
+    case BuildPlatform::MacOSx64:
+        return TEXT("Mac x64");
     default:
         return TEXT("?");
     }
@@ -155,7 +174,7 @@ CookingData::Statistics::Statistics()
 }
 
 CookingData::CookingData(const SpawnParams& params)
-    : PersistentScriptingObject(params)
+    : ScriptingObject(params)
 {
 }
 
@@ -276,10 +295,10 @@ PlatformTools* GameCooker::GetTools(BuildPlatform platform)
 #endif
 #if PLATFORM_TOOLS_UWP
         case BuildPlatform::UWPx86:
-            result = New<WSAPlatformTools>(ArchitectureType::x86);
+            result = New<UWPPlatformTools>(ArchitectureType::x86);
             break;
         case BuildPlatform::UWPx64:
-            result = New<WSAPlatformTools>(ArchitectureType::x64);
+            result = New<UWPPlatformTools>(ArchitectureType::x64);
             break;
 #endif
 #if PLATFORM_TOOLS_XBOX_ONE
@@ -310,6 +329,16 @@ PlatformTools* GameCooker::GetTools(BuildPlatform platform)
 #if PLATFORM_TOOLS_SWITCH
         case BuildPlatform::Switch:
             result = New<SwitchPlatformTools>();
+            break;
+#endif
+#if PLATFORM_TOOLS_PS5
+        case BuildPlatform::PS5:
+            result = New<PS5PlatformTools>();
+            break;
+#endif
+#if PLATFORM_TOOLS_MAC
+        case BuildPlatform::MacOSx64:
+            result = New<MacPlatformTools>(ArchitectureType::x64);
             break;
 #endif
         }
@@ -437,7 +466,7 @@ void GameCookerImpl::OnCollectAssets(HashSet<Guid>& assets)
     }
 
     MCore::AttachThread();
-    MonoObject* exception = nullptr;
+    MObject* exception = nullptr;
     auto list = (MonoArray*)Internal_OnCollectAssets->Invoke(nullptr, nullptr, &exception);
     if (exception)
     {
@@ -473,7 +502,7 @@ bool GameCookerImpl::Build()
         Steps.Add(New<PostProcessStep>());
     }
 
-    MCore::Instance()->AttachThread();
+    MCore::AttachThread();
 
     // Build Started
     CallEvent(GameCooker::EventType::BuildStarted);

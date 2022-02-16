@@ -1,10 +1,11 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 #include "JsonAsset.h"
 #include "Engine/Threading/Threading.h"
 #if USE_EDITOR
 #include "Engine/Platform/File.h"
 #include "Engine/Core/Types/DataContainer.h"
+#include "Engine/Level/Level.h"
 #else
 #include "Storage/ContentStorageManager.h"
 #endif
@@ -81,6 +82,15 @@ void FindIds(ISerializable::DeserializeStream& node, Array<Guid>& output)
                 output.Add(id);
         }
     }
+}
+
+void JsonAssetBase::GetReferences(const StringAnsiView& json, Array<Guid>& output)
+{
+    ISerializable::SerializeDocument document;
+    document.Parse(json.Get(), json.Length());
+    if (document.HasParseError())
+        return;
+    FindIds(document, output);
 }
 
 void JsonAssetBase::GetReferences(Array<Guid>& output) const
@@ -196,11 +206,40 @@ JsonAsset::JsonAsset(const SpawnParams& params, const AssetInfo* info)
 
 Asset::LoadResult JsonAsset::loadAsset()
 {
-    // Base
-    auto result = JsonAssetBase::loadAsset();
+    const auto result = JsonAssetBase::loadAsset();
     if (result != LoadResult::Ok || IsInternalType())
         return result;
 
+    if (CreateInstance())
+        return LoadResult::Failed;
+#if USE_EDITOR
+    if (Instance)
+    {
+        // Reload instance when module with this type gets reloaded
+        Level::ScriptsReloadStart.Bind<JsonAsset, &JsonAsset::OnScriptsReloadStart>(this);
+        Level::ScriptsReloaded.Bind<JsonAsset, &JsonAsset::OnScriptsReloaded>(this);
+    }
+#endif
+
+    return LoadResult::Ok;
+}
+
+void JsonAsset::unload(bool isReloading)
+{
+    if (Instance)
+    {
+#if USE_EDITOR
+        Level::ScriptsReloadStart.Unbind<JsonAsset, &JsonAsset::OnScriptsReloadStart>(this);
+        Level::ScriptsReloaded.Unbind<JsonAsset, &JsonAsset::OnScriptsReloaded>(this);
+#endif
+        DeleteInstance();
+    }
+
+    JsonAssetBase::unload(isReloading);
+}
+
+bool JsonAsset::CreateInstance()
+{
     // Try to scripting type for this data
     const StringAsANSI<> dataTypeNameAnsi(DataTypeName.Get(), DataTypeName.Length());
     const auto typeHandle = Scripting::FindScriptingType(StringAnsiView(dataTypeNameAnsi.Get(), DataTypeName.Length()));
@@ -212,8 +251,8 @@ Asset::LoadResult JsonAsset::loadAsset()
         case ScriptingTypes::Class:
         {
             // Ensure that object can deserialized
-            const ScriptingType::InterfaceImplementation* interfaces = type.GetInterface(&ISerializable::TypeInitializer);
-            if (!interfaces)
+            const ScriptingType::InterfaceImplementation* interface = type.GetInterface(ISerializable::TypeInitializer);
+            if (!interface)
             {
                 LOG(Warning, "Cannot deserialize {0} from Json Asset because it doesn't implement ISerializable interface.", type.ToString());
                 break;
@@ -222,7 +261,7 @@ Asset::LoadResult JsonAsset::loadAsset()
             // Allocate object
             const auto instance = Allocator::Allocate(type.Size);
             if (!instance)
-                return LoadResult::Failed;
+                return true;
             Instance = instance;
             InstanceType = typeHandle;
             _dtor = type.Class.Dtor;
@@ -231,28 +270,38 @@ Asset::LoadResult JsonAsset::loadAsset()
             // Deserialize object
             auto modifier = Cache::ISerializeModifier.Get();
             modifier->EngineBuild = DataEngineBuild;
-            ((ISerializable*)((byte*)instance + interfaces->VTableOffset))->Deserialize(*Data, modifier.Value);
-            // TODO: delete object when containing BinaryModule gets unloaded
+            ((ISerializable*)((byte*)instance + interface->VTableOffset))->Deserialize(*Data, modifier.Value);
             break;
         }
-        default: ;
         }
     }
 
-    return result;
+    return false;
 }
 
-void JsonAsset::unload(bool isReloading)
+void JsonAsset::DeleteInstance()
 {
-    // Base
-    JsonAssetBase::unload(isReloading);
+    ASSERT_LOW_LAYER(Instance && _dtor);
+    InstanceType = ScriptingTypeHandle();
+    _dtor(Instance);
+    Allocator::Free(Instance);
+    Instance = nullptr;
+    _dtor = nullptr;
+}
 
-    if (Instance)
+#if USE_EDITOR
+
+void JsonAsset::OnScriptsReloadStart()
+{
+    DeleteInstance();
+}
+
+void JsonAsset::OnScriptsReloaded()
+{
+    if (CreateInstance())
     {
-        InstanceType = ScriptingTypeHandle();
-        _dtor(Instance);
-        Allocator::Free(Instance);
-        Instance = nullptr;
-        _dtor = nullptr;
+        LOG(Warning, "Failed to reload {0} instance {1}.", ToString(), DataTypeName);
     }
 }
+
+#endif

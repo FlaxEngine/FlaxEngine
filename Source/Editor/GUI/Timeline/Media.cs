@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 using System;
 using FlaxEditor.GUI.Timeline.Undo;
@@ -35,13 +35,23 @@ namespace FlaxEditor.GUI.Timeline
             public TMedia Media;
 
             /// <summary>
-            /// Gets or sets the start frame of the media event.
+            /// Gets or sets the start frame of the media event (in frames).
             /// </summary>
-            [EditorDisplay("General"), EditorOrder(-10010), Tooltip("Start frame of the media event.")]
+            [EditorDisplay("General"), EditorOrder(-10010), VisibleIf(nameof(UseFrames)), Tooltip("Start frame of the media event (in frames).")]
             public int StartFrame
             {
                 get => Media.StartFrame;
                 set => Media.StartFrame = value;
+            }
+
+            /// <summary>
+            /// Gets or sets the start frame of the media event (in seconds).
+            /// </summary>
+            [EditorDisplay("General"), EditorOrder(-10010), VisibleIf(nameof(UseFrames), true), Tooltip("Start frame of the media event (in seconds).")]
+            public float Start
+            {
+                get => Media.Start;
+                set => Media.Start = value;
             }
 
             /// <summary>
@@ -51,7 +61,11 @@ namespace FlaxEditor.GUI.Timeline
             public int DurationFrames
             {
                 get => Media.DurationFrames;
-                set => Media.DurationFrames = value;
+                set
+                {
+                    if (Media.CanResize)
+                        Media.DurationFrames = value;
+                }
             }
 
             /// <summary>
@@ -61,7 +75,11 @@ namespace FlaxEditor.GUI.Timeline
             public float Duration
             {
                 get => Media.Duration;
-                set => Media.Duration = value;
+                set
+                {
+                    if (Media.CanResize)
+                        Media.Duration = value;
+                }
             }
 
             private bool UseFrames => Media.Timeline.TimeShowMode == Timeline.TimeShowModes.Frames;
@@ -73,7 +91,7 @@ namespace FlaxEditor.GUI.Timeline
             /// <param name="media">The media.</param>
             protected ProxyBase(TTrack track, TMedia media)
             {
-                Track = track ?? throw new ArgumentNullException(nameof(track));
+                Track = track;
                 Media = media ?? throw new ArgumentNullException(nameof(media));
             }
         }
@@ -115,6 +133,11 @@ namespace FlaxEditor.GUI.Timeline
         public event Action StartFrameChanged;
 
         /// <summary>
+        /// Gets the end frame of the media (start + duration).
+        /// </summary>
+        public int EndFrame => _startFrame + _durationFrames;
+
+        /// <summary>
         /// Gets or sets the total duration of the media event in the timeline sequence frames amount.
         /// </summary>
         public int DurationFrames
@@ -141,13 +164,17 @@ namespace FlaxEditor.GUI.Timeline
         public event Action DurationFramesChanged;
 
         /// <summary>
-        /// Gets the media start time in seconds.
+        /// Get or sets the media start time in seconds.
         /// </summary>
         /// <seealso cref="StartFrame"/>
-        public float Start => _startFrame / _timeline.FramesPerSecond;
+        public float Start
+        {
+            get => _startFrame / _timeline.FramesPerSecond;
+            set => StartFrame = (int)(value * _timeline.FramesPerSecond);
+        }
 
         /// <summary>
-        /// Get the media duration in seconds.
+        /// Get or sets the media duration in seconds.
         /// </summary>
         /// <seealso cref="DurationFrames"/>
         public float Duration
@@ -176,6 +203,21 @@ namespace FlaxEditor.GUI.Timeline
         public object PropertiesEditObject;
 
         /// <summary>
+        /// Gets a value indicating whether this media can be split.
+        /// </summary>
+        public bool CanSplit;
+
+        /// <summary>
+        /// Gets a value indicating whether this media can be removed.
+        /// </summary>
+        public bool CanDelete;
+
+        /// <summary>
+        /// Gets a value indicating whether this media can be resized (duration changed).
+        /// </summary>
+        public bool CanResize = true;
+
+        /// <summary>
         /// Initializes a new instance of the <see cref="Media"/> class.
         /// </summary>
         protected Media()
@@ -187,9 +229,12 @@ namespace FlaxEditor.GUI.Timeline
         /// Called when showing timeline context menu to the user. Can be used to add custom buttons.
         /// </summary>
         /// <param name="menu">The menu.</param>
+        /// <param name="time">The time (in seconds) at which context menu is shown (user clicked on a timeline).</param>
         /// <param name="controlUnderMouse">The found control under the mouse cursor.</param>
-        public virtual void OnTimelineShowContextMenu(ContextMenu.ContextMenu menu, Control controlUnderMouse)
+        public virtual void OnTimelineContextMenu(ContextMenu.ContextMenu menu, float time, Control controlUnderMouse)
         {
+            if (CanDelete && Track.Media.Count > Track.MinMediaCount)
+                menu.AddButton("Delete media", Delete);
         }
 
         /// <summary>
@@ -258,6 +303,30 @@ namespace FlaxEditor.GUI.Timeline
             Width = Duration * Timeline.UnitsPerSecond * _timeline.Zoom;
         }
 
+        /// <summary>
+        /// Splits the media at the specified frame.
+        /// </summary>
+        /// <param name="frame">The frame to split at.</param>
+        /// <returns>The another media created after this media split.</returns>
+        public virtual Media Split(int frame)
+        {
+            var clone = (Media)Activator.CreateInstance(GetType());
+            clone.StartFrame = frame;
+            clone.DurationFrames = EndFrame - frame;
+            DurationFrames = DurationFrames - clone.DurationFrames;
+            Track?.AddMedia(clone);
+            Timeline?.MarkAsEdited();
+            return clone;
+        }
+
+        /// <summary>
+        /// Deletes this media.
+        /// </summary>
+        public void Delete()
+        {
+            _timeline.Delete(this);
+        }
+
         /// <inheritdoc />
         public override void GetDesireClientArea(out Rectangle rect)
         {
@@ -273,20 +342,21 @@ namespace FlaxEditor.GUI.Timeline
             var style = Style.Current;
             var bounds = new Rectangle(Vector2.Zero, Size);
 
-            var fillColor = style.Background * 1.5f;
+            var fillColor = BackgroundColor.A > 0.0f ? BackgroundColor : style.Background * 1.5f;
             Render2D.FillRectangle(bounds, fillColor);
 
             var isMovingWholeMedia = _isMoving && !_startMoveRightEdge && !_startMoveLeftEdge;
             var borderHighlightColor = style.BorderHighlighted;
             var moveColor = style.ProgressNormal;
+            var selectedColor = style.BackgroundSelected;
             var moveThickness = 2.0f;
-            var borderColor = isMovingWholeMedia ? moveColor : (IsMouseOver ? borderHighlightColor : style.BorderNormal);
+            var borderColor = isMovingWholeMedia ? moveColor : (Timeline.SelectedMedia.Contains(this) ? selectedColor : (IsMouseOver ? borderHighlightColor : style.BorderNormal));
             Render2D.DrawRectangle(bounds, borderColor, isMovingWholeMedia ? moveThickness : 1.0f);
             if (_startMoveLeftEdge)
             {
                 Render2D.DrawLine(bounds.UpperLeft, bounds.BottomLeft, moveColor, moveThickness);
             }
-            else if (IsMouseOver && MoveLeftEdgeRect.Contains(ref _mouseLocation))
+            else if (IsMouseOver && CanResize && MoveLeftEdgeRect.Contains(ref _mouseLocation))
             {
                 Render2D.DrawLine(bounds.UpperLeft, bounds.BottomLeft, Color.Yellow);
             }
@@ -294,7 +364,7 @@ namespace FlaxEditor.GUI.Timeline
             {
                 Render2D.DrawLine(bounds.UpperRight, bounds.BottomRight, moveColor, moveThickness);
             }
-            else if (IsMouseOver && MoveRightEdgeRect.Contains(ref _mouseLocation))
+            else if (IsMouseOver && CanResize && MoveRightEdgeRect.Contains(ref _mouseLocation))
             {
                 Render2D.DrawLine(bounds.UpperRight, bounds.BottomRight, Color.Yellow);
             }
@@ -314,11 +384,28 @@ namespace FlaxEditor.GUI.Timeline
                 _startMoveLocation = Root.MousePosition;
                 _startMoveStartFrame = StartFrame;
                 _startMoveDuration = DurationFrames;
-                _startMoveLeftEdge = MoveLeftEdgeRect.Contains(ref location);
-                _startMoveRightEdge = MoveRightEdgeRect.Contains(ref location);
-
+                _startMoveLeftEdge = MoveLeftEdgeRect.Contains(ref location) && CanResize;
+                _startMoveRightEdge = MoveRightEdgeRect.Contains(ref location) && CanResize;
                 StartMouseCapture(true);
+                if (_startMoveLeftEdge || _startMoveRightEdge)
+                    return true;
 
+                if (Root.GetKey(KeyboardKeys.Control))
+                {
+                    // Add/Remove selection
+                    if (_timeline.SelectedMedia.Contains(this))
+                        _timeline.Deselect(this);
+                    else
+                        _timeline.Select(this, true);
+                }
+                else
+                {
+                    // Select
+                    if (!_timeline.SelectedMedia.Contains(this))
+                        _timeline.Select(this);
+                }
+
+                _timeline.OnKeyframesMove(null, this, location, true, false);
                 return true;
             }
 
@@ -349,7 +436,8 @@ namespace FlaxEditor.GUI.Timeline
                 }
                 else
                 {
-                    StartFrame = _startMoveStartFrame + moveDelta;
+                    // Move with global timeline selection
+                    _timeline.OnKeyframesMove(null, this, location, false, false);
                 }
 
                 if (StartFrame != startFrame || DurationFrames != durationFrames)
@@ -368,11 +456,34 @@ namespace FlaxEditor.GUI.Timeline
         {
             if (button == MouseButton.Left && _isMoving)
             {
+                if (!_startMoveLeftEdge && !_startMoveRightEdge && !Root.GetKey(KeyboardKeys.Control))
+                {
+                    var moveLocationDelta = Root.MousePosition - _startMoveLocation;
+                    if (moveLocationDelta.Length < 4.0f)
+                    {
+                        // No move so just select itself
+                        _timeline.Select(this);
+                    }
+                }
                 EndMoving();
                 return true;
             }
 
             return base.OnMouseUp(location, button);
+        }
+
+        /// <inheritdoc />
+        public override bool OnMouseDoubleClick(Vector2 location, MouseButton button)
+        {
+            if (base.OnMouseDoubleClick(location, button))
+                return true;
+
+            if (PropertiesEditObject != null)
+            {
+                Timeline.ShowEditPopup(PropertiesEditObject, PointToParent(Timeline, location), Track);
+                return true;
+            }
+            return false;
         }
 
         /// <inheritdoc />
@@ -416,21 +527,29 @@ namespace FlaxEditor.GUI.Timeline
         private void EndMoving()
         {
             _isMoving = false;
-            _startMoveLeftEdge = false;
-            _startMoveRightEdge = false;
-
-            // Re-assign the media start/duration inside the undo recording block
-            if (_startMoveStartFrame != _startFrame || _startMoveDuration != _durationFrames)
+            if (_startMoveLeftEdge || _startMoveRightEdge)
             {
-                var endMoveStartFrame = _startFrame;
-                var endMoveDuration = _durationFrames;
-                _startFrame = _startMoveStartFrame;
-                _durationFrames = _startMoveDuration;
-                using (new TrackUndoBlock(_tack))
+                _startMoveLeftEdge = false;
+                _startMoveRightEdge = false;
+
+                // Re-assign the media start/duration inside the undo recording block
+                if (_startMoveStartFrame != _startFrame || _startMoveDuration != _durationFrames)
                 {
-                    _startFrame = endMoveStartFrame;
-                    _durationFrames = endMoveDuration;
+                    var endMoveStartFrame = _startFrame;
+                    var endMoveDuration = _durationFrames;
+                    _startFrame = _startMoveStartFrame;
+                    _durationFrames = _startMoveDuration;
+                    using (new TrackUndoBlock(_tack))
+                    {
+                        _startFrame = endMoveStartFrame;
+                        _durationFrames = endMoveDuration;
+                    }
                 }
+            }
+            else
+            {
+                // Global timeline selection moving end
+                _timeline.OnKeyframesMove(null, this, _mouseLocation, false, true);
             }
 
             EndMouseCapture();

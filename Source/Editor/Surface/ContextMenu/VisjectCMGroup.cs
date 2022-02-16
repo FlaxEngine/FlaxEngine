@@ -1,7 +1,8 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 using System;
 using FlaxEditor.Surface.Elements;
+using FlaxEditor.Utilities;
 using FlaxEngine;
 using FlaxEngine.GUI;
 
@@ -84,6 +85,19 @@ namespace FlaxEditor.Surface.ContextMenu
                     item.UpdateFilter(filterText);
                     isAnyVisible |= item.Visible;
                 }
+            }
+
+            // Update header title
+            if (QueryFilterHelper.Match(filterText, HeaderText))
+            {
+                for (int i = 0; i < _children.Count; i++)
+                {
+                    if (_children[i] is VisjectCMItem item)
+                    {
+                        item.Visible = true;
+                    }
+                }
+                isAnyVisible = true;
             }
 
             // Update itself

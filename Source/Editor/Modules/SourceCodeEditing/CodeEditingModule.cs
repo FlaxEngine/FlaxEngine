@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 using System;
 using System.Collections.Generic;
@@ -8,7 +8,6 @@ using FlaxEditor.Options;
 using FlaxEditor.Scripting;
 using FlaxEngine;
 using FlaxEngine.GUI;
-using Object = System.Object;
 
 namespace FlaxEditor.Modules.SourceCodeEditing
 {
@@ -21,7 +20,7 @@ namespace FlaxEditor.Modules.SourceCodeEditing
         private sealed class CachedVisualScriptPropertyTypesCollection : CachedTypesCollection
         {
             public CachedVisualScriptPropertyTypesCollection(int capacity, Func<Assembly, bool> checkAssembly)
-            : base(capacity, new ScriptType(typeof(Object)), CheckFunc, checkAssembly)
+            : base(capacity, ScriptType.Object, CheckFunc, checkAssembly)
             {
             }
 
@@ -157,7 +156,7 @@ namespace FlaxEditor.Modules.SourceCodeEditing
         /// <summary> 
         /// The all types collection from all assemblies (excluding C# system libraries). Includes only primitive and basic types from std lib.
         /// </summary>
-        public readonly CachedTypesCollection All = new CachedAllTypesCollection(8096, new ScriptType(typeof(object)), type => true, HasAssemblyValidAnyTypes);
+        public readonly CachedTypesCollection All = new CachedAllTypesCollection(8096, ScriptType.Null, type => true, HasAssemblyValidAnyTypes);
 
         /// <summary>
         /// The all valid types collection for the Visual Script property types (includes basic types like int/float, structures, object references).

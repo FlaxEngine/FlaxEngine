@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 #include "Mesh.h"
 #include "ModelInstanceEntry.h"
@@ -11,7 +11,9 @@
 #include "Engine/Renderer/RenderList.h"
 #include "Engine/Serialization/MemoryReadStream.h"
 #include "Engine/Threading/Threading.h"
+#if USE_MONO
 #include <ThirdParty/mono-2.0/mono/metadata/appdomain.h>
+#endif
 
 namespace
 {
@@ -106,6 +108,8 @@ namespace
         return mesh->UpdateMesh(vertexCount, triangleCount, (VB0ElementType*)vertices, vb1.Get(), vb2.HasItems() ? vb2.Get() : nullptr, triangles);
     }
 
+#if !COMPILE_WITHOUT_CSHARP
+
     template<typename IndexType>
     bool UpdateMesh(Mesh* mesh, uint32 vertexCount, uint32 triangleCount, MonoArray* verticesObj, MonoArray* trianglesObj, MonoArray* normalsObj, MonoArray* tangentsObj, MonoArray* uvObj, MonoArray* colorsObj)
     {
@@ -132,6 +136,8 @@ namespace
 
         return mesh->UpdateTriangles(triangleCount, ib);
     }
+
+#endif
 }
 
 bool Mesh::HasVertexColors() const
@@ -235,42 +241,25 @@ bool Mesh::Load(uint32 vertices, uint32 triangles, void* vb0, void* vb1, void* v
     GPUBuffer* vertexBuffer2 = nullptr;
     GPUBuffer* indexBuffer = nullptr;
 
-    // Create vertex buffer 0
+    // Create GPU buffers
 #if GPU_ENABLE_RESOURCE_NAMING
-    vertexBuffer0 = GPUDevice::Instance->CreateBuffer(GetModel()->ToString() + TEXT(".VB0"));
+#define MESH_BUFFER_NAME(postfix) GetModel()->ToString() + TEXT(postfix)
 #else
-	vertexBuffer0 = GPUDevice::Instance->CreateBuffer(String::Empty);
+#define MESH_BUFFER_NAME(postfix) String::Empty
 #endif
+    vertexBuffer0 = GPUDevice::Instance->CreateBuffer(MESH_BUFFER_NAME(".VB0"));
     if (vertexBuffer0->Init(GPUBufferDescription::Vertex(sizeof(VB0ElementType), vertices, vb0)))
         goto ERROR_LOAD_END;
-
-    // Create vertex buffer 1
-#if GPU_ENABLE_RESOURCE_NAMING
-    vertexBuffer1 = GPUDevice::Instance->CreateBuffer(GetModel()->ToString() + TEXT(".VB1"));
-#else
-	vertexBuffer1 = GPUDevice::Instance->CreateBuffer(String::Empty);
-#endif
+    vertexBuffer1 = GPUDevice::Instance->CreateBuffer(MESH_BUFFER_NAME(".VB1"));
     if (vertexBuffer1->Init(GPUBufferDescription::Vertex(sizeof(VB1ElementType), vertices, vb1)))
         goto ERROR_LOAD_END;
-
-    // Create vertex buffer 2
     if (vb2)
     {
-#if GPU_ENABLE_RESOURCE_NAMING
-        vertexBuffer2 = GPUDevice::Instance->CreateBuffer(GetModel()->ToString() + TEXT(".VB2"));
-#else
-		vertexBuffer2 = GPUDevice::Instance->CreateBuffer(String::Empty);
-#endif
+        vertexBuffer2 = GPUDevice::Instance->CreateBuffer(MESH_BUFFER_NAME(".VB2"));
         if (vertexBuffer2->Init(GPUBufferDescription::Vertex(sizeof(VB2ElementType), vertices, vb2)))
             goto ERROR_LOAD_END;
     }
-
-    // Create index buffer
-#if GPU_ENABLE_RESOURCE_NAMING
-    indexBuffer = GPUDevice::Instance->CreateBuffer(GetModel()->ToString() + TEXT(".IB"));
-#else
-	indexBuffer = GPUDevice::Instance->CreateBuffer(String::Empty);
-#endif
+    indexBuffer = GPUDevice::Instance->CreateBuffer(MESH_BUFFER_NAME(".IB"));
     if (indexBuffer->Init(GPUBufferDescription::Index(ibStride, indicesCount, ib)))
         goto ERROR_LOAD_END;
 
@@ -299,6 +288,7 @@ bool Mesh::Load(uint32 vertices, uint32 triangles, void* vb0, void* vb1, void* v
 
     return false;
 
+#undef MESH_BUFFER_NAME
 ERROR_LOAD_END:
 
     SAFE_DELETE_GPU_RESOURCE(vertexBuffer0);
@@ -446,7 +436,6 @@ void Mesh::Draw(const RenderContext& renderContext, const DrawInfo& info, float 
     drawCall.Geometry.VertexBuffersOffsets[2] = 0;
     if (info.VertexColors && info.VertexColors[_lodIndex])
     {
-        drawCall.Geometry.VertexBuffers[2] = info.VertexColors[_lodIndex];
         // TODO: cache vertexOffset within the model LOD per-mesh
         uint32 vertexOffset = 0;
         for (int32 meshIndex = 0; meshIndex < _index; meshIndex++)
@@ -607,6 +596,8 @@ ScriptingObject* Mesh::GetParentModel()
 {
     return _model;
 }
+
+#if !COMPILE_WITHOUT_CSHARP
 
 bool Mesh::UpdateMeshUInt(int32 vertexCount, int32 triangleCount, MonoArray* verticesObj, MonoArray* trianglesObj, MonoArray* normalsObj, MonoArray* tangentsObj, MonoArray* uvObj, MonoArray* colorsObj)
 {
@@ -780,3 +771,5 @@ bool Mesh::DownloadBuffer(bool forceGpu, MonoArray* resultObj, int32 typeI)
     ConvertMeshData(mesh, type, resultObj, data.Get());
     return false;
 }
+
+#endif

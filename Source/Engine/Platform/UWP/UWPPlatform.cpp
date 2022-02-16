@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 #if PLATFORM_UWP
 
@@ -13,7 +13,7 @@
 
 namespace
 {
-    String UserLocale, ComputerName, UserName;
+    String UserLocale, ComputerName;
     Vector2 VirtualScreenSize = Vector2(0.0f);
     int32 SystemDpi = 96;
 }
@@ -57,9 +57,6 @@ bool UWPPlatform::Init()
     {
         ComputerName = String(buffer);
     }
-
-    // Cannot access user name with a direct API
-    UserName = String::Empty;
 
     SystemDpi = CUWPPlatform->GetDpi();
     Input::Mouse = Impl::Mouse = New<UWPWindow::UWPMouse>();
@@ -143,11 +140,6 @@ String UWPPlatform::GetUserLocaleName()
 String UWPPlatform::GetComputerName()
 {
     return ComputerName;
-}
-
-String UWPPlatform::GetUserName()
-{
-    return UserName;
 }
 
 bool UWPPlatform::GetHasFocus()

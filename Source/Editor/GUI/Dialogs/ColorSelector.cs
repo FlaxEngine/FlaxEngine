@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 using System;
 using FlaxEngine;
@@ -47,6 +47,21 @@ namespace FlaxEditor.GUI.Dialogs
         }
 
         /// <summary>
+        /// Gets a value indicating whether user is using a wheel.
+        /// </summary>
+        public bool IsSliding => _isMouseDownWheel;
+
+        /// <summary>
+        /// Occurs when sliding starts.
+        /// </summary>
+        public event Action SlidingStart;
+
+        /// <summary>
+        /// Occurs when sliding ends.
+        /// </summary>
+        public event Action SlidingEnd;
+
+        /// <summary>
         /// Initializes a new instance of the <see cref="ColorSelector"/> class.
         /// </summary>
         public ColorSelector()
@@ -58,7 +73,7 @@ namespace FlaxEditor.GUI.Dialogs
         /// Initializes a new instance of the <see cref="ColorSelector"/> class.
         /// </summary>
         /// <param name="wheelSize">Size of the wheel.</param>
-        public ColorSelector(float wheelSize = 64)
+        public ColorSelector(float wheelSize)
         : base(0, 0, wheelSize, wheelSize)
         {
             _colorWheelSprite = Editor.Instance.Icons.ColorWheel128;
@@ -125,12 +140,21 @@ namespace FlaxEditor.GUI.Dialogs
                 hsv.Y = Mathf.Saturate(distance / (_wheelRect.Width * 0.5f));
 
                 // Auto set Value to 1 when color is black. Makes editing easier.
-                if (_color == Color.Black && hsv.Z <= 0.001f)
+                if ((_color == Color.Black || _color == Color.Transparent) && hsv.Z <= 0.001f)
                     hsv.Z = 1.0f;
 
                 var color = Color.FromHSV(hsv);
                 color.A = _color.A;
                 Color = color;
+            }
+        }
+
+        private void EndSliding()
+        {
+            if (_isMouseDownWheel)
+            {
+                _isMouseDownWheel = false;
+                SlidingEnd?.Invoke();
             }
         }
 
@@ -155,8 +179,7 @@ namespace FlaxEditor.GUI.Dialogs
         /// <inheritdoc />
         public override void OnLostFocus()
         {
-            // Clear flags
-            _isMouseDownWheel = false;
+            EndSliding();
 
             base.OnLostFocus();
         }
@@ -174,8 +197,12 @@ namespace FlaxEditor.GUI.Dialogs
         {
             if (button == MouseButton.Left && _wheelRect.Contains(location))
             {
-                _isMouseDownWheel = true;
-                StartMouseCapture();
+                if (!_isMouseDownWheel)
+                {
+                    _isMouseDownWheel = true;
+                    StartMouseCapture();
+                    SlidingStart?.Invoke();
+                }
                 UpdateMouse(ref location);
             }
 
@@ -188,8 +215,8 @@ namespace FlaxEditor.GUI.Dialogs
         {
             if (button == MouseButton.Left && _isMouseDownWheel)
             {
-                _isMouseDownWheel = false;
                 EndMouseCapture();
+                EndSliding();
                 return true;
             }
 
@@ -199,8 +226,7 @@ namespace FlaxEditor.GUI.Dialogs
         /// <inheritdoc />
         public override void OnEndMouseCapture()
         {
-            // Clear flags
-            _isMouseDownWheel = false;
+            EndSliding();
         }
 
         /// <inheritdoc />
@@ -244,7 +270,7 @@ namespace FlaxEditor.GUI.Dialogs
             if (_isMouseDownSlider1)
             {
                 var hsv = _color.ToHSV();
-                hsv.Z = 1.001f - Mathf.Saturate((location.Y - _slider1Rect.Y) / _slider1Rect.Height);
+                hsv.Z = 1.0f - Mathf.Saturate((location.Y - _slider1Rect.Y) / _slider1Rect.Height);
 
                 Color = Color.FromHSV(hsv);
             }

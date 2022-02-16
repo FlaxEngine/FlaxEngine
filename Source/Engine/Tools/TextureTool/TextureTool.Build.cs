@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 using System.Collections.Generic;
 using System.IO;
@@ -32,8 +32,10 @@ public class TextureTool : EngineModule
             break;
         case TargetPlatform.Linux:
         case TargetPlatform.PS4:
+        case TargetPlatform.PS5:
         case TargetPlatform.Android:
         case TargetPlatform.Switch:
+        case TargetPlatform.Mac:
             useStb = true;
             break;
         default: throw new InvalidPlatformException(options.Platform.Target);
@@ -52,6 +54,7 @@ public class TextureTool : EngineModule
             {
                 // Use helper lib for decompression
                 options.PrivateDependencies.Add("detex");
+                options.PrivateDependencies.Add("bc7enc16");
             }
         }
 

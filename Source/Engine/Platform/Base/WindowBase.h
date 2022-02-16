@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -269,7 +269,7 @@ API_INJECT_CPP_CODE("#include \"Engine/Platform/Window.h\"");
 /// Native platform window object.
 /// </summary>
 API_CLASS(NoSpawn, NoConstructor, Sealed, Name="Window")
-class FLAXENGINE_API WindowBase : public PersistentScriptingObject
+class FLAXENGINE_API WindowBase : public ScriptingObject
 {
 DECLARE_SCRIPTING_TYPE_NO_SPAWN(WindowBase);
     friend GPUSwapChain;
@@ -521,6 +521,7 @@ public:
     /// <param name="position">The client area position.</param>
     API_PROPERTY() virtual void SetClientPosition(const Vector2& position)
     {
+        SetClientBounds(Rectangle(position, GetClientSize()));
     }
 
     /// <summary>
@@ -676,6 +677,14 @@ public:
     API_PROPERTY() Vector2 GetTrackingMouseOffset() const
     {
         return _trackingMouseOffset;
+    }
+
+    /// <summary>
+    /// Gets the value indicating whenever mouse input is tracked by this window.
+    /// </summary>
+    API_PROPERTY() bool IsMouseTracking() const
+    {
+        return _isTrackingMouse;
     }
 
     /// <summary>
@@ -941,7 +950,7 @@ private:
 
 public:
 
-    // [PersistentScriptingObject]
+    // [ScriptingObject]
     String ToString() const override;
     void OnDeleteObject() override;
 };

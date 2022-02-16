@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 #include "ModelData.h"
 #include "Engine/Core/Log.h"
@@ -17,6 +17,7 @@ void MeshData::Clear()
     UVs.Clear();
     Normals.Clear();
     Tangents.Clear();
+    BitangentSigns.Clear();
     LightmapUVs.Clear();
     Colors.Clear();
     BlendIndices.Clear();
@@ -44,6 +45,7 @@ void MeshData::SwapBuffers(MeshData& other)
     UVs.Swap(other.UVs);
     Normals.Swap(other.Normals);
     Tangents.Swap(other.Tangents);
+    BitangentSigns.Swap(other.BitangentSigns);
     LightmapUVs.Swap(other.LightmapUVs);
     Colors.Swap(other.Colors);
     BlendIndices.Swap(other.BlendIndices);
@@ -59,6 +61,7 @@ void MeshData::Release()
     UVs.Resize(0);
     Normals.Resize(0);
     Tangents.Resize(0);
+    BitangentSigns.Resize(0);
     LightmapUVs.Resize(0);
     Colors.Resize(0);
     BlendIndices.Resize(0);
@@ -72,6 +75,7 @@ void MeshData::InitFromModelVertices(ModelVertex19* vertices, uint32 verticesCou
     UVs.Resize(verticesCount, false);
     Normals.Resize(verticesCount, false);
     Tangents.Resize(verticesCount, false);
+    BitangentSigns.Resize(0);
     LightmapUVs.Resize(verticesCount, false);
     Colors.Resize(0);
     BlendIndices.Resize(0);
@@ -97,6 +101,7 @@ void MeshData::InitFromModelVertices(ModelVertex18* vertices, uint32 verticesCou
     UVs.Resize(verticesCount, false);
     Normals.Resize(verticesCount, false);
     Tangents.Resize(verticesCount, false);
+    BitangentSigns.Resize(0);
     LightmapUVs.Resize(verticesCount, false);
     Colors.Resize(0);
     BlendIndices.Resize(0);
@@ -121,6 +126,7 @@ void MeshData::InitFromModelVertices(ModelVertex15* vertices, uint32 verticesCou
     UVs.Resize(verticesCount, false);
     Normals.Resize(verticesCount, false);
     Tangents.Resize(verticesCount, false);
+    BitangentSigns.Resize(0);
     LightmapUVs.Resize(0);
     Colors.Resize(0);
     BlendIndices.Resize(0);
@@ -144,6 +150,7 @@ void MeshData::InitFromModelVertices(VB0ElementType18* vb0, VB1ElementType18* vb
     UVs.Resize(verticesCount, false);
     Normals.Resize(verticesCount, false);
     Tangents.Resize(verticesCount, false);
+    BitangentSigns.Resize(0);
     LightmapUVs.Resize(verticesCount, false);
     Colors.Resize(0);
     BlendIndices.Resize(0);
@@ -169,6 +176,7 @@ void MeshData::InitFromModelVertices(VB0ElementType18* vb0, VB1ElementType18* vb
     UVs.Resize(verticesCount, false);
     Normals.Resize(verticesCount, false);
     Tangents.Resize(verticesCount, false);
+    BitangentSigns.Resize(0);
     LightmapUVs.Resize(verticesCount, false);
     if (vb2)
     {
@@ -206,6 +214,7 @@ void MeshData::InitFromModelVertices(VB0ElementType15* vb0, VB1ElementType15* vb
     UVs.Resize(verticesCount, false);
     Normals.Resize(verticesCount, false);
     Tangents.Resize(verticesCount, false);
+    BitangentSigns.Resize(0);
     LightmapUVs.Resize(0, false);
     Colors.Resize(0);
     BlendIndices.Resize(0);
@@ -283,6 +292,12 @@ bool MeshData::Pack2Model(WriteStream* stream) const
         LOG(Error, "Invalid size of {0} stream.", TEXT("Tangents"));
         return true;
     }
+    bool hasBitangentSigns = BitangentSigns.HasItems();
+    if (hasBitangentSigns && BitangentSigns.Count() != verticiecCount)
+    {
+        LOG(Error, "Invalid size of {0} stream.", TEXT("BitangentSigns"));
+        return true;
+    }
     bool hasLightmapUVs = LightmapUVs.HasItems();
     if (hasLightmapUVs && LightmapUVs.Count() != verticiecCount)
     {
@@ -314,15 +329,12 @@ bool MeshData::Pack2Model(WriteStream* stream) const
         Vector3 normal = hasNormals ? Normals[i] : Vector3::UnitZ;
         Vector3 tangent = hasTangents ? Tangents[i] : Vector3::UnitX;
         Vector2 lightmapUV = hasLightmapUVs ? LightmapUVs[i] : Vector2::Zero;
-
-        // Calculate bitangent sign
-        Vector3 bitangent = Vector3::Normalize(Vector3::Cross(normal, tangent));
-        byte sign = static_cast<byte>(Vector3::Dot(Vector3::Cross(bitangent, normal), tangent) < 0.0f ? 1 : 0);
+        Vector3 bitangentSign = hasBitangentSigns ? BitangentSigns[i] : Vector3::Dot(Vector3::Cross(Vector3::Normalize(Vector3::Cross(normal, tangent)), normal), tangent);
 
         // Write vertex
         vb1.TexCoord = Half2(uv);
         vb1.Normal = Float1010102(normal * 0.5f + 0.5f, 0);
-        vb1.Tangent = Float1010102(tangent * 0.5f + 0.5f, sign);
+        vb1.Tangent = Float1010102(tangent * 0.5f + 0.5f, static_cast<byte>(bitangentSign < 0 ? 1 : 0));
         vb1.LightmapUVs = Half2(lightmapUV);
         stream->Write(&vb1);
 
@@ -405,6 +417,12 @@ bool MeshData::Pack2SkinnedModel(WriteStream* stream) const
         LOG(Error, "Invalid size of {0} stream.", TEXT("Tangents"));
         return true;
     }
+    bool hasBitangentSigns = BitangentSigns.HasItems();
+    if (hasBitangentSigns && BitangentSigns.Count() != verticiecCount)
+    {
+        LOG(Error, "Invalid size of {0} stream.", TEXT("BitangentSigns"));
+        return true;
+    }
     if (BlendIndices.Count() != verticiecCount)
     {
         LOG(Error, "Invalid size of {0} stream.", TEXT("BlendIndices"));
@@ -441,18 +459,15 @@ bool MeshData::Pack2SkinnedModel(WriteStream* stream) const
         Vector2 uv = hasUVs ? UVs[i] : Vector2::Zero;
         Vector3 normal = hasNormals ? Normals[i] : Vector3::UnitZ;
         Vector3 tangent = hasTangents ? Tangents[i] : Vector3::UnitX;
+        Vector3 bitangentSign = hasBitangentSigns ? BitangentSigns[i] : Vector3::Dot(Vector3::Cross(Vector3::Normalize(Vector3::Cross(normal, tangent)), normal), tangent);
         Int4 blendIndices = BlendIndices[i];
         Vector4 blendWeights = BlendWeights[i];
-
-        // Calculate bitangent sign
-        Vector3 bitangent = Vector3::Normalize(Vector3::Cross(normal, tangent));
-        byte sign = static_cast<byte>(Vector3::Dot(Vector3::Cross(bitangent, normal), tangent) < 0.0f ? 1 : 0);
 
         // Write vertex
         vb.Position = Positions[i];
         vb.TexCoord = Half2(uv);
         vb.Normal = Float1010102(normal * 0.5f + 0.5f, 0);
-        vb.Tangent = Float1010102(tangent * 0.5f + 0.5f, sign);
+        vb.Tangent = Float1010102(tangent * 0.5f + 0.5f, static_cast<byte>(bitangentSign < 0 ? 1 : 0));
         vb.BlendIndices = Color32(blendIndices.X, blendIndices.Y, blendIndices.Z, blendIndices.W);
         vb.BlendWeights = Half4(blendWeights);
         stream->Write(&vb);
@@ -480,21 +495,39 @@ void MeshData::TransformBuffer(const Matrix& matrix)
     Matrix::Transpose(inverseTransposeMatrix, inverseTransposeMatrix);
 
     // Transform positions
+    const auto pp = Positions.Get();
     for (int32 i = 0; i < Positions.Count(); i++)
     {
-        Vector3::Transform(Positions[i], matrix, Positions[i]);
+        auto& p = pp[i];
+        Vector3::Transform(p, matrix, p);
     }
 
     // Transform normals and tangents
+    const auto nn = Normals.Get();
     for (int32 i = 0; i < Normals.Count(); i++)
     {
-        Vector3::TransformNormal(Normals[i], inverseTransposeMatrix, Normals[i]);
-        Normals[i].Normalize();
+        auto& n = nn[i];
+        Vector3::TransformNormal(n, inverseTransposeMatrix, n);
+        n.Normalize();
     }
+    const auto tt = Tangents.Get();
     for (int32 i = 0; i < Tangents.Count(); i++)
     {
-        Vector3::TransformNormal(Tangents[i], inverseTransposeMatrix, Tangents[i]);
-        Tangents[i].Normalize();
+        auto& t = tt[i];
+        Vector3::TransformNormal(t, inverseTransposeMatrix, t);
+        t.Normalize();
+    }
+
+    // Transform blend shapes
+    for (auto& blendShape : BlendShapes)
+    {
+        for (int32 i = 0; i < blendShape.Vertices.Count(); i++)
+        {
+            auto& v = blendShape.Vertices[i];
+            Vector3::Transform(v.PositionDelta, matrix, v.PositionDelta);
+            Vector3::TransformNormal(v.NormalDelta, inverseTransposeMatrix, v.NormalDelta);
+            v.NormalDelta.Normalize();
+        }
     }
 }
 
@@ -522,6 +555,7 @@ void MeshData::Merge(MeshData& other)
     MERGE(UVs, Vector2::Zero);
     MERGE(Normals, Vector3::Forward);
     MERGE(Tangents, Vector3::Right);
+    MERGE(BitangentSigns, 1.0f);
     MERGE(LightmapUVs, Vector2::Zero);
     MERGE(Colors, Color::Black);
     MERGE(BlendIndices, Int4::Zero);
@@ -553,6 +587,17 @@ void MeshData::Merge(MeshData& other)
             blendShape->Vertices[i].VertexIndex += vertexIndexOffset;
         }
     }
+}
+
+bool MaterialSlotEntry::UsesProperties() const
+{
+    return Diffuse.Color != Color::White ||
+            Diffuse.TextureIndex != -1 ||
+            Emissive.Color != Color::Transparent ||
+            Emissive.TextureIndex != -1 ||
+            !Math::IsOne(Opacity.Value) ||
+            Opacity.TextureIndex != -1 ||
+            Normals.TextureIndex != -1;
 }
 
 void ModelData::CalculateLODsScreenSizes()

@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 using System;
 using System.Collections.Generic;
@@ -85,7 +85,7 @@ namespace FlaxEditor.CustomEditors
             {
                 element.Panel.Close(false);
             }
-            else if (this is CustomEditorPresenter presenter && presenter.CacheExpandedGroups)
+            else if (this is CustomEditorPresenter presenter && (presenter.Features & FeatureFlags.CacheExpandedGroups) != 0)
             {
                 if (Editor.Instance.ProjectCache.IsCollapsedGroup(title))
                     element.Panel.Close(false);

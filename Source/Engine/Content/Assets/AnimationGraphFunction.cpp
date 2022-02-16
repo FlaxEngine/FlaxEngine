@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 #include "AnimationGraphFunction.h"
 #include "Engine/Core/Log.h"
@@ -30,7 +30,7 @@ Asset::LoadResult AnimationGraphFunction::load()
 
     // Load function signature
     // Note: search also the nested state machines graphs (state output and transition rule)
-    ProcessGraphForSignature(&graph, true, Array<int32, FixedAllocation<8>>());
+    ProcessGraphForSignature(&graph, true);
     if (Inputs.Count() >= 16 || Outputs.Count() >= 16)
     {
         LOG(Error, "Too many function inputs/outputs in '{0}'. The limit is max 16 inputs and max 16 outputs.", ToString());
@@ -65,11 +65,14 @@ void AnimationGraphFunction::GetSignature(Array<StringView, FixedAllocation<32>>
 {
     types.Resize(32);
     names.Resize(32);
-    for (int32 i = 0; i < Inputs.Count(); i++)
+    for (int32 i = 0, j = 0; i < Inputs.Count(); i++)
     {
         auto& input = Inputs[i];
-        types[i] = input.Type;
-        names[i] = input.Name;
+        if (input.InputIndex != i)
+            continue;
+        types[j] = input.Type;
+        names[j] = input.Name;
+        j++;
     }
     for (int32 i = 0; i < Outputs.Count(); i++)
     {
@@ -79,7 +82,7 @@ void AnimationGraphFunction::GetSignature(Array<StringView, FixedAllocation<32>>
     }
 }
 
-bool AnimationGraphFunction::SaveSurface(BytesContainer& data)
+bool AnimationGraphFunction::SaveSurface(const BytesContainer& data)
 {
     // Wait for asset to be loaded or don't if last load failed
     if (LastLoadFailed())
@@ -113,7 +116,7 @@ bool AnimationGraphFunction::SaveSurface(BytesContainer& data)
 
 #endif
 
-void AnimationGraphFunction::ProcessGraphForSignature(AnimGraphBase* graph, bool canUseOutputs, const Array<int32, FixedAllocation<8>>& graphIndices)
+void AnimationGraphFunction::ProcessGraphForSignature(AnimGraphBase* graph, bool canUseOutputs)
 {
     for (int32 i = 0; i < graph->Nodes.Count(); i++)
     {
@@ -123,13 +126,26 @@ void AnimationGraphFunction::ProcessGraphForSignature(AnimGraphBase* graph, bool
         {
             if (Inputs.Count() < 16)
             {
+                // If there already is an input with that name just batch them together
+                int32 inputIndex = Inputs.Count();
+                auto name = (StringView)node.Values[1];
+                for (auto& e : Inputs)
+                {
+                    if (e.Name == name)
+                    {
+                        inputIndex = e.InputIndex;
+                        break;
+                    }
+                }
+
                 auto& p = Inputs.AddOne();
+                p.InputIndex = inputIndex;
                 p.NodeIndex = i;
-                p.GraphIndices = graphIndices;
 #if USE_EDITOR
                 p.Type = GetGraphFunctionTypeName_Deprecated(node.Values[0]);
-                p.Name = (StringView)node.Values[1];
 #endif
+                p.Name = name;
+
             }
         }
         else if (node.Type == GRAPH_NODE_MAKE_TYPE(16, 2)) // Function Output
@@ -137,32 +153,26 @@ void AnimationGraphFunction::ProcessGraphForSignature(AnimGraphBase* graph, bool
             if (Outputs.Count() < 16 && canUseOutputs)
             {
                 auto& p = Outputs.AddOne();
+                p.InputIndex = i;
                 p.NodeIndex = i;
-                p.GraphIndices = graphIndices;
 #if USE_EDITOR
                 p.Type = GetGraphFunctionTypeName_Deprecated(node.Values[0]);
-                p.Name = (StringView)node.Values[1];
 #endif
+                p.Name = (StringView)node.Values[1];
             }
         }
         else if (node.Type == GRAPH_NODE_MAKE_TYPE(9, 18)) // State Machine
         {
             if (node.Data.StateMachine.Graph)
             {
-                auto subGraph = graphIndices;
-                subGraph.Add(graph->SubGraphs.Find(node.Data.StateMachine.Graph));
-                ASSERT(subGraph.Last() != -1);
-                ProcessGraphForSignature(node.Data.StateMachine.Graph, false, subGraph);
+                ProcessGraphForSignature(node.Data.StateMachine.Graph, false);
             }
         }
         else if (node.Type == GRAPH_NODE_MAKE_TYPE(9, 20)) // State
         {
             if (node.Data.State.Graph)
             {
-                auto subGraph = graphIndices;
-                subGraph.Add(graph->SubGraphs.Find(node.Data.State.Graph));
-                ASSERT(subGraph.Last() != -1);
-                ProcessGraphForSignature(node.Data.State.Graph, false, subGraph);
+                ProcessGraphForSignature(node.Data.State.Graph, false);
             }
         }
     }
@@ -170,10 +180,7 @@ void AnimationGraphFunction::ProcessGraphForSignature(AnimGraphBase* graph, bool
     {
         if (stateTransition.RuleGraph)
         {
-            auto subGraph = graphIndices;
-            subGraph.Add(graph->SubGraphs.Find(stateTransition.RuleGraph));
-            ASSERT(subGraph.Last() != -1);
-            ProcessGraphForSignature(stateTransition.RuleGraph, false, subGraph);
+            ProcessGraphForSignature(stateTransition.RuleGraph, false);
         }
     }
 }

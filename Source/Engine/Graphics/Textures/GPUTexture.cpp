@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 #include "GPUTexture.h"
 #include "GPUTextureDescription.h"
@@ -497,6 +497,8 @@ bool GPUTexture::Init(const GPUTextureDescription& desc)
     if (OnInit())
     {
         ReleaseGPU();
+        _desc.Clear();
+        _residentMipLevels = 0;
         LOG(Warning, "Cannot initialize texture. Description: {0}", desc.ToString());
         return true;
     }
@@ -561,7 +563,7 @@ bool GPUTexture::Resize(int32 width, int32 height, int32 depth)
 
 uint64 GPUTexture::calculateMemoryUsage() const
 {
-    return CalculateTextureMemoryUsage(Format(), Width(), Height(), Depth(), MipLevels()) * ArraySize();
+    return RenderTools::CalculateTextureMemoryUsage(Format(), Width(), Height(), Depth(), MipLevels()) * ArraySize();
 }
 
 String GPUTexture::ToString() const
@@ -593,17 +595,21 @@ void GPUTexture::OnReleaseGPU()
     _residentMipLevels = 0;
 }
 
-GPUTask* GPUTexture::UploadMipMapAsync(const BytesContainer& data, int32 mipIndex)
+GPUTask* GPUTexture::UploadMipMapAsync(const BytesContainer& data, int32 mipIndex, bool copyData)
 {
-    ASSERT(IsRegularTexture() && IsAllocated());
-    //ASSERT(Math::IsInRange(mipIndex, HighestResidentMipIndex() - 1, MipLevels() - 1) && mipIndex < MipLevels() && data.IsValid());
+    uint32 rowPitch, slicePitch;
+    ComputePitch(mipIndex, rowPitch, slicePitch);
+    return UploadMipMapAsync(data, mipIndex, rowPitch, slicePitch, copyData);
+}
+
+GPUTask* GPUTexture::UploadMipMapAsync(const BytesContainer& data, int32 mipIndex, int32 rowPitch, int32 slicePitch, bool copyData)
+{
+    ASSERT(IsAllocated());
     ASSERT(mipIndex < MipLevels() && data.IsValid());
-    ASSERT(data.Length() == SlicePitch(mipIndex) * ArraySize());
-
-    // Create task
-    auto task = ::New<GPUUploadTextureMipTask>(this, mipIndex, data, false);
-    ASSERT(task && task->HasReference(this));
-
+    ASSERT(data.Length() >= slicePitch);
+    // TODO: support texture data upload to the GPU on a main thread during rendering without this async task (faster direct upload)
+    auto task = ::New<GPUUploadTextureMipTask>(this, mipIndex, data, rowPitch, slicePitch, copyData);
+    ASSERT_LOW_LAYER(task && task->HasReference(this));
     return task;
 }
 
@@ -790,9 +796,9 @@ Task* GPUTexture::DownloadDataAsync(TextureData& result)
 
 void GPUTexture::SetResidentMipLevels(int32 count)
 {
-    ASSERT(IsRegularTexture() && IsAllocated());
-    ASSERT(Math::IsInRange(count, 0, MipLevels()));
-
+    count = Math::Clamp(count, 0, MipLevels());
+    if (_residentMipLevels == count || !IsRegularTexture())
+        return;
     _residentMipLevels = count;
     onResidentMipsChanged();
 }

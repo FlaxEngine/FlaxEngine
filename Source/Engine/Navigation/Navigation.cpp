@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 #include "Navigation.h"
 #include "NavigationSettings.h"
@@ -201,7 +201,7 @@ NavigationSettings::NavigationSettings()
     areaWalkable.Cost = 1;
 }
 
-IMPLEMENT_SETTINGS_GETTER(NavigationSettings, Navigation);
+IMPLEMENT_ENGINE_SETTINGS_GETTER(NavigationSettings, Navigation);
 
 void NavigationSettings::Apply()
 {

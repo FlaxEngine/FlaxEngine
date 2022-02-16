@@ -1,14 +1,14 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 #pragma once
 
-#include "Engine/Core/Collections/Array.h"
-#include "Engine/Core/Formatting.h"
 #include "Stream.h"
+#include "Engine/Core/Templates.h"
 
 struct CommonValue;
 struct Variant;
 struct VariantType;
+class ISerializable;
 
 /// <summary>
 /// Base class for all data write streams
@@ -18,22 +18,11 @@ class FLAXENGINE_API WriteStream : public Stream
 public:
 
     /// <summary>
-    /// Virtual destructor
-    /// </summary>
-    virtual ~WriteStream()
-    {
-    }
-
-public:
-
-    /// <summary>
     /// Writes bytes to the stream
     /// </summary>
     /// <param name="data">Data to write</param>
     /// <param name="bytes">Amount of bytes to write</param>
     virtual void WriteBytes(const void* data, uint32 bytes) = 0;
-
-public:
 
     template<typename T>
     FORCE_INLINE void Write(const T* data)
@@ -165,24 +154,6 @@ public:
         WriteBytes((const void*)text, sizeof(Char) * length);
     }
 
-    template<typename... Args>
-    void WriteTextFormatted(const char* format, const Args& ... args)
-    {
-        fmt_flax::allocator_ansi allocator;
-        fmt_flax::memory_buffer_ansi buffer(allocator);
-        fmt_flax::format(buffer, format, args...);
-        WriteText(buffer.data(), (int32)buffer.size());
-    }
-
-    template<typename... Args>
-    void WriteTextFormatted(const Char* format, const Args& ... args)
-    {
-        fmt_flax::allocator allocator;
-        fmt_flax::memory_buffer buffer(allocator);
-        fmt_flax::format(buffer, format, args...);
-        WriteText(buffer.data(), (int32)buffer.size());
-    }
-
     // Write UTF BOM character sequence
     void WriteBOM()
     {
@@ -194,6 +165,7 @@ public:
     // Writes text to the stream
     // @param data Text to write
     void WriteText(const StringView& text);
+    void WriteText(const StringAnsiView& text);
 
     // Writes String to the stream
     // @param data Data to write
@@ -211,7 +183,7 @@ public:
     // Writes Ansi String to the stream
     // @param data Data to write
     // @param lock Characters pass in the stream
-    void WriteStringAnsi(const StringAnsiView& data, int16 lock);
+    void WriteStringAnsi(const StringAnsiView& data, int8 lock);
 
 public:
 
@@ -231,8 +203,8 @@ public:
     /// Write data array
     /// </summary>
     /// <param name="data">Array to write</param>
-    template<typename T>
-    void WriteArray(const Array<T>& data)
+    template<typename T, typename AllocationType = HeapAllocation>
+    void WriteArray(const Array<T, AllocationType>& data)
     {
         static_assert(TIsPODType<T>::Value, "Only POD types are valid for WriteArray.");
         const int32 size = data.Count();
@@ -240,6 +212,14 @@ public:
         if (size > 0)
             WriteBytes(data.Get(), size * sizeof(T));
     }
+
+    /// <summary>
+    /// Serializes object to Json and writes it as a raw data (ver+length+bytes).
+    /// </summary>
+    /// <remarks>Writes version number, data length and actual data bytes to the stream.</remarks>
+    /// <param name="obj">The object to serialize.</param>
+    /// <param name="otherObj">The instance of the object to compare with and serialize only the modified properties. If null, then serialize all properties.</param>
+    void WriteJson(ISerializable* obj, const void* otherObj = nullptr);
 
 public:
 

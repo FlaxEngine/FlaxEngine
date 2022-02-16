@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 #include "Variant.h"
 #include "CommonValue.h"
@@ -32,7 +32,54 @@
 #include <ThirdParty/mono-2.0/mono/metadata/object.h>
 #endif
 
+namespace
+{
+    const char* InBuiltTypesTypeNames[37] =
+    {
+        // @formatter:off
+        "",// Null
+        "System.Void",// Void
+        "System.Boolean",// Bool
+        "System.Int32",// Int
+        "System.UInt32",// Uint
+        "System.Int64",// Int64
+        "System.UInt64",// Uint64
+        "System.Single",// Float
+        "System.Double",// Double
+        "System.IntPtr",// Pointer
+        "System.String",// String
+        "System.Object",// Object
+        "",// Structure
+        "FlaxEngine.Asset",// Asset
+        "System.Byte[]",// Blob
+        "",// Enum
+        "FlaxEngine.Vector2",// Vector2
+        "FlaxEngine.Vector3",// Vector3
+        "FlaxEngine.Vector4",// Vector4
+        "FlaxEngine.Color",// Color
+        "System.Guid",// Guid
+        "FlaxEngine.BoundingBox",// BoundingBox
+        "FlaxEngine.BoundingSphere",// BoundingSphere
+        "FlaxEngine.Quaternion",// Quaternion
+        "FlaxEngine.Transform",// Transform
+        "FlaxEngine.Rectangle",// Rectangle
+        "FlaxEngine.Ray",// Ray
+        "FlaxEngine.Matrix",// Matrix
+        "System.Object[]",// Array
+        "Dictionary<System.Object,System.Object>",// Dictionary
+        "System.Object",// ManagedObject
+        "System.Type",// Typename
+        "FlaxEngine.Int2"// Int2
+        "FlaxEngine.Int3"// Int3
+        "FlaxEngine.Int4"// Int4
+        "System.Int16",// Int16
+        "System.UInt16",// Uint16
+        // @formatter:on
+    };
+}
+
 static_assert(sizeof(VariantType) <= 16, "Invalid VariantType size!");
+static_assert((int32)VariantType::Types::MAX == ARRAY_COUNT(InBuiltTypesTypeNames), "Invalid amount of in-built types infos!");
 
 VariantType::VariantType(Types type, const StringView& typeName)
 {
@@ -54,9 +101,9 @@ VariantType::VariantType(Types type, const StringAnsiView& typeName)
     int32 length = typeName.Length();
     if (length)
     {
-        length++;
-        TypeName = static_cast<char*>(Allocator::Allocate(length));
+        TypeName = static_cast<char*>(Allocator::Allocate(length + 1));
         Platform::MemoryCopy(TypeName, typeName.Get(), length);
+        TypeName[length] = 0;
     }
 }
 
@@ -64,26 +111,82 @@ VariantType::VariantType(Types type, _MonoClass* klass)
 {
     Type = type;
     TypeName = nullptr;
+#if USE_MONO
     if (klass)
     {
         MString typeName;
         MUtils::GetClassFullname(klass, typeName);
-        int32 length = typeName.Length() + 1;
-        TypeName = static_cast<char*>(Allocator::Allocate(length));
+        const int32 length = typeName.Length();
+        TypeName = static_cast<char*>(Allocator::Allocate(length + 1));
         Platform::MemoryCopy(TypeName, typeName.Get(), length);
+        TypeName[length] = 0;
     }
+#endif
+}
+
+VariantType::VariantType(const StringAnsiView& typeName)
+{
+    // Check case for array
+    if (typeName.EndsWith(StringAnsiView("[]"), StringSearchCase::CaseSensitive))
+    {
+        new(this) VariantType(Array, StringAnsiView(typeName.Get(), typeName.Length() - 2));
+        return;
+    }
+
+    // Try using in-built type
+    for (uint32 i = 0; i < ARRAY_COUNT(InBuiltTypesTypeNames); i++)
+    {
+        if (typeName == InBuiltTypesTypeNames[i])
+        {
+            new(this) VariantType((Types)i);
+            return;
+        }
+    }
+
+    // Try using scripting type
+    const ScriptingTypeHandle typeHandle = Scripting::FindScriptingType(typeName);
+    if (typeHandle)
+    {
+        const ScriptingType& type = typeHandle.GetType();
+        switch (type.Type)
+        {
+        case ScriptingTypes::Script:
+        case ScriptingTypes::Class:
+        case ScriptingTypes::Interface:
+            new(this) VariantType(Object, typeName);
+            return;
+        case ScriptingTypes::Structure:
+            new(this) VariantType(Structure, typeName);
+            return;
+        case ScriptingTypes::Enum:
+            new(this) VariantType(Enum, typeName);
+            return;
+        }
+    }
+
+    // Try using managed class
+#if USE_MONO
+    if (const auto mclass = Scripting::FindClass(typeName))
+    {
+        new(this) VariantType(ManagedObject, typeName);
+        return;
+    }
+#endif
+
+    new(this) VariantType();
+    LOG(Warning, "Missing scripting type \'{0}\'", ::String(typeName));
 }
 
 VariantType::VariantType(const VariantType& other)
 {
     Type = other.Type;
     TypeName = nullptr;
-    int32 length = StringUtils::Length(other.TypeName);
+    const int32 length = StringUtils::Length(other.TypeName);
     if (length)
     {
-        length++;
-        TypeName = static_cast<char*>(Allocator::Allocate(length));
+        TypeName = static_cast<char*>(Allocator::Allocate(length + 1));
         Platform::MemoryCopy(TypeName, other.TypeName, length);
+        TypeName[length] = 0;
     }
 }
 
@@ -117,12 +220,12 @@ VariantType& VariantType::operator=(const VariantType& other)
     Type = other.Type;
     Allocator::Free(TypeName);
     TypeName = nullptr;
-    int32 length = StringUtils::Length(other.TypeName);
+    const int32 length = StringUtils::Length(other.TypeName);
     if (length)
     {
-        length++;
-        TypeName = static_cast<char*>(Allocator::Allocate(length));
+        TypeName = static_cast<char*>(Allocator::Allocate(length + 1));
         Platform::MemoryCopy(TypeName, other.TypeName, length);
+        TypeName[length] = 0;
     }
     return *this;
 }
@@ -171,65 +274,21 @@ const char* VariantType::GetTypeName() const
 {
     if (TypeName)
         return TypeName;
-    switch (Type)
+    return InBuiltTypesTypeNames[Type];
+}
+
+VariantType VariantType::GetElementType() const
+{
+    if (Type == Array)
     {
-    case Void:
-        return "System.Void";
-    case Bool:
-        return "System.Boolean";
-    case Int16:
-        return "System.Int16";
-    case Uint16:
-        return "System.UInt16";
-    case Int:
-        return "System.Int32";
-    case Uint:
-        return "System.UInt32";
-    case Int64:
-        return "System.Int64";
-    case Uint64:
-        return "System.UInt64";
-    case Float:
-        return "System.Single";
-    case Double:
-        return "System.Double";
-    case Pointer:
-        return "System.IntPtr";
-    case String:
-        return "System.String";
-    case Object:
-        return "System.Object";
-    case Asset:
-        return "FlaxEngine.Asset";
-    case Vector2:
-        return "FlaxEngine.Vector2";
-    case Vector3:
-        return "FlaxEngine.Vector3";
-    case Vector4:
-        return "FlaxEngine.Vector4";
-    case Color:
-        return "FlaxEngine.Color";
-    case Guid:
-        return "System.Guid";
-    case BoundingBox:
-        return "FlaxEngine.BoundingBox";
-    case BoundingSphere:
-        return "FlaxEngine.BoundingSphere";
-    case Quaternion:
-        return "FlaxEngine.Quaternion";
-    case Transform:
-        return "FlaxEngine.Transform";
-    case Rectangle:
-        return "FlaxEngine.Rectangle";
-    case Ray:
-        return "FlaxEngine.Ray";
-    case Matrix:
-        return "FlaxEngine.Matrix";
-    case Typename:
-        return "System.Type";
-    default:
-        return "";
+        if (TypeName)
+        {
+            const StringAnsiView elementTypename(TypeName, StringUtils::Length(TypeName) - 2);
+            return VariantType(elementTypename);
+        }
+        return VariantType(Object);
     }
+    return VariantType();
 }
 
 ::String VariantType::ToString() const
@@ -371,7 +430,7 @@ static_assert(sizeof(Variant::AsData) >= sizeof(Array<Variant, HeapAllocation>),
 
 const Variant Variant::Zero(0.0f);
 const Variant Variant::One(1.0f);
-const Variant Variant::Null(static_cast<void*>(nullptr));
+const Variant Variant::Null(nullptr);
 const Variant Variant::False(false);
 const Variant Variant::True(true);
 
@@ -436,6 +495,21 @@ Variant::Variant(Variant&& other) noexcept
         Platform::MemoryCopy(AsData, other.AsData, sizeof(AsData));
         break;
     }
+}
+
+Variant::Variant(decltype(nullptr))
+    : Type(VariantType::Null)
+{
+}
+
+Variant::Variant(const VariantType& type)
+    : Type(type)
+{
+}
+
+Variant::Variant(VariantType&& type)
+    : Type(MoveTemp(type))
+{
 }
 
 Variant::Variant(bool v)
@@ -517,11 +591,23 @@ Variant::Variant(Asset* v)
     }
 }
 
+#if USE_MONO
+
 Variant::Variant(_MonoObject* v)
     : Type(VariantType::ManagedObject, v ? mono_object_get_class(v) : nullptr)
 {
     AsUint = v ? mono_gchandle_new(v, true) : 0;
 }
+
+#else
+
+Variant::Variant(_MonoObject* v)
+    : Type(VariantType::ManagedObject, nullptr)
+{
+    AsUint = 0;
+}
+
+#endif
 
 Variant::Variant(const StringView& v)
     : Type(VariantType::String)
@@ -687,6 +773,21 @@ Variant::Variant(const Dictionary<Variant, Variant>& v)
     AsDictionary = New<Dictionary<Variant, Variant>>(v);
 }
 
+Variant::Variant(const Span<byte>& v)
+    : Type(VariantType::Blob)
+{
+    AsBlob.Length = v.Length();
+    if (AsBlob.Length > 0)
+    {
+        AsBlob.Data = Allocator::Allocate(AsBlob.Length);
+        Platform::MemoryCopy(AsBlob.Data, v.Get(), AsBlob.Length);
+    }
+    else
+    {
+        AsBlob.Data = nullptr;
+    }
+}
+
 Variant::Variant(const CommonValue& value)
     : Variant()
 {
@@ -788,8 +889,8 @@ Variant::~Variant()
     case VariantType::Dictionary:
         Delete(AsDictionary);
         break;
-#if USE_MONO
     case VariantType::ManagedObject:
+#if USE_MONO
         if (AsUint)
             mono_gchandle_free(AsUint);
         break;
@@ -912,7 +1013,9 @@ Variant& Variant::operator=(const Variant& other)
             AsDictionary = New<Dictionary<Variant, Variant>>(*other.AsDictionary);
         break;
     case VariantType::ManagedObject:
+#if USE_MONO
         AsUint = other.AsUint ? mono_gchandle_new(mono_gchandle_get_target(other.AsUint), true) : 0;
+#endif
         break;
     case VariantType::Null:
     case VariantType::Void:
@@ -1015,9 +1118,6 @@ bool Variant::operator==(const Variant& other) const
                     return false;
             }
             return true;
-        case VariantType::ManagedObject:
-            // TODO: invoke C# Equality logic?
-            return AsUint == other.AsUint || mono_gchandle_get_target(AsUint) == mono_gchandle_get_target(other.AsUint);
         case VariantType::Typename:
             if (AsBlob.Data == nullptr && other.AsBlob.Data == nullptr)
                 return true;
@@ -1026,6 +1126,11 @@ bool Variant::operator==(const Variant& other) const
             if (other.AsBlob.Data == nullptr)
                 return false;
             return AsBlob.Length == other.AsBlob.Length && StringUtils::Compare(static_cast<const char*>(AsBlob.Data), static_cast<const char*>(other.AsBlob.Data), AsBlob.Length - 1) == 0;
+        case VariantType::ManagedObject:
+#if USE_MONO
+            // TODO: invoke C# Equality logic?
+            return AsUint == other.AsUint || mono_gchandle_get_target(AsUint) == mono_gchandle_get_target(other.AsUint);
+#endif
         default:
             return false;
         }
@@ -1115,7 +1220,9 @@ Variant::operator bool() const
     case VariantType::Asset:
         return AsAsset != nullptr;
     case VariantType::ManagedObject:
+#if USE_MONO
         return AsUint != 0 && mono_gchandle_get_target(AsUint) != nullptr;
+#endif
     default:
         return false;
     }
@@ -1176,6 +1283,12 @@ Variant::operator int8() const
         return (int8)AsDouble;
     case VariantType::Pointer:
         return (int8)(intptr)AsPointer;
+    case VariantType::Vector2:
+        return (int8)AsVector2().X;
+    case VariantType::Vector3:
+        return (int8)AsVector3().X;
+    case VariantType::Vector4:
+        return (int8)AsVector4().X;
     default:
         return 0;
     }
@@ -1206,6 +1319,12 @@ Variant::operator int16() const
         return (int16)AsDouble;
     case VariantType::Pointer:
         return (int16)(intptr)AsPointer;
+    case VariantType::Vector2:
+        return (int16)AsVector2().X;
+    case VariantType::Vector3:
+        return (int16)AsVector3().X;
+    case VariantType::Vector4:
+        return (int16)AsVector4().X;
     default:
         return 0;
     }
@@ -1236,6 +1355,12 @@ Variant::operator int32() const
         return (int32)AsDouble;
     case VariantType::Pointer:
         return (int32)(intptr)AsPointer;
+    case VariantType::Vector2:
+        return (int32)AsVector2().X;
+    case VariantType::Vector3:
+        return (int32)AsVector3().X;
+    case VariantType::Vector4:
+        return (int32)AsVector4().X;
     default:
         return 0;
     }
@@ -1266,6 +1391,12 @@ Variant::operator int64() const
         return (int64)AsDouble;
     case VariantType::Pointer:
         return (int64)AsPointer;
+    case VariantType::Vector2:
+        return (int64)AsVector2().X;
+    case VariantType::Vector3:
+        return (int64)AsVector3().X;
+    case VariantType::Vector4:
+        return (int64)AsVector4().X;
     default:
         return 0;
     }
@@ -1296,6 +1427,12 @@ Variant::operator uint8() const
         return (uint8)AsDouble;
     case VariantType::Pointer:
         return (uint8)(uintptr)AsPointer;
+    case VariantType::Vector2:
+        return (uint8)AsVector2().X;
+    case VariantType::Vector3:
+        return (uint8)AsVector3().X;
+    case VariantType::Vector4:
+        return (uint8)AsVector4().X;
     default:
         return 0;
     }
@@ -1326,6 +1463,12 @@ Variant::operator uint16() const
         return (uint16)AsDouble;
     case VariantType::Pointer:
         return (uint16)(uintptr)AsPointer;
+    case VariantType::Vector2:
+        return (uint16)AsVector2().X;
+    case VariantType::Vector3:
+        return (uint16)AsVector3().X;
+    case VariantType::Vector4:
+        return (uint16)AsVector4().X;
     default:
         return 0;
     }
@@ -1356,6 +1499,12 @@ Variant::operator uint32() const
         return (uint32)AsDouble;
     case VariantType::Pointer:
         return (uint32)(uintptr)AsPointer;
+    case VariantType::Vector2:
+        return (uint32)AsVector2().X;
+    case VariantType::Vector3:
+        return (uint32)AsVector3().X;
+    case VariantType::Vector4:
+        return (uint32)AsVector4().X;
     default:
         return 0;
     }
@@ -1386,6 +1535,12 @@ Variant::operator uint64() const
         return (uint64)AsDouble;
     case VariantType::Pointer:
         return (uint64)AsPointer;
+    case VariantType::Vector2:
+        return (uint64)AsVector2().X;
+    case VariantType::Vector3:
+        return (uint64)AsVector3().X;
+    case VariantType::Vector4:
+        return (uint64)AsVector4().X;
     default:
         return 0;
     }
@@ -1414,6 +1569,12 @@ Variant::operator float() const
         return AsFloat;
     case VariantType::Double:
         return (float)AsDouble;
+    case VariantType::Vector2:
+        return AsVector2().X;
+    case VariantType::Vector3:
+        return AsVector3().X;
+    case VariantType::Vector4:
+        return AsVector4().X;
     default:
         return 0;
     }
@@ -1442,6 +1603,12 @@ Variant::operator double() const
         return (double)AsFloat;
     case VariantType::Double:
         return AsDouble;
+    case VariantType::Vector2:
+        return (double)AsVector2().X;
+    case VariantType::Vector3:
+        return (double)AsVector3().X;
+    case VariantType::Vector4:
+        return (double)AsVector4().X;
     default:
         return 0;
     }
@@ -1461,7 +1628,9 @@ Variant::operator void*() const
     case VariantType::Blob:
         return AsBlob.Data;
     case VariantType::ManagedObject:
+#if USE_MONO
         return AsUint ? mono_gchandle_get_target(AsUint) : nullptr;
+#endif
     default:
         return nullptr;
     }
@@ -1504,7 +1673,11 @@ Variant::operator ScriptingObject*() const
 
 Variant::operator _MonoObject*() const
 {
+#if USE_MONO
     return Type.Type == VariantType::ManagedObject && AsUint ? mono_gchandle_get_target(AsUint) : nullptr;
+#else
+    return nullptr;
+#endif
 }
 
 Variant::operator Asset*() const
@@ -1936,6 +2109,11 @@ const Vector2& Variant::AsVector2() const
     return *(const Vector2*)AsData;
 }
 
+Vector3& Variant::AsVector3()
+{
+    return *(Vector3*)AsData;
+}
+
 const Vector3& Variant::AsVector3() const
 {
     return *(const Vector3*)AsData;
@@ -1969,6 +2147,16 @@ const Color& Variant::AsColor() const
 const Quaternion& Variant::AsQuaternion() const
 {
     return *(const Quaternion*)AsData;
+}
+
+Array<Variant>& Variant::AsArray()
+{
+    return *reinterpret_cast<Array<Variant, HeapAllocation>*>(AsData);
+}
+
+const Array<Variant>& Variant::AsArray() const
+{
+    return *reinterpret_cast<const Array<Variant, HeapAllocation>*>(AsData);
 }
 
 void Variant::SetType(const VariantType& type)
@@ -2011,8 +2199,10 @@ void Variant::SetType(const VariantType& type)
             Delete(AsDictionary);
         break;
     case VariantType::ManagedObject:
+#if USE_MONO
         if (AsUint)
             mono_gchandle_free(AsUint);
+#endif
         break;
     default: ;
     }
@@ -2105,8 +2295,10 @@ void Variant::SetType(VariantType&& type)
             Delete(AsDictionary);
         break;
     case VariantType::ManagedObject:
+#if USE_MONO
         if (AsUint)
             mono_gchandle_free(AsUint);
+#endif
         break;
     default: ;
     }
@@ -2162,6 +2354,13 @@ void Variant::SetType(VariantType&& type)
 void Variant::SetString(const StringView& str)
 {
     SetType(VariantType(VariantType::String));
+    if (str.Length() <= 0)
+    {
+        Allocator::Free(AsBlob.Data);
+        AsBlob.Data = nullptr;
+        AsBlob.Length = 0;
+        return;
+    }
     const int32 length = str.Length() * sizeof(Char) + 2;
     if (AsBlob.Length != length)
     {
@@ -2176,6 +2375,13 @@ void Variant::SetString(const StringView& str)
 void Variant::SetString(const StringAnsiView& str)
 {
     SetType(VariantType(VariantType::String));
+    if (str.Length() <= 0)
+    {
+        Allocator::Free(AsBlob.Data);
+        AsBlob.Data = nullptr;
+        AsBlob.Length = 0;
+        return;
+    }
     const int32 length = str.Length() * sizeof(Char) + 2;
     if (AsBlob.Length != length)
     {
@@ -2190,6 +2396,13 @@ void Variant::SetString(const StringAnsiView& str)
 void Variant::SetTypename(const StringView& typeName)
 {
     SetType(VariantType(VariantType::Typename));
+    if (typeName.Length() <= 0)
+    {
+        Allocator::Free(AsBlob.Data);
+        AsBlob.Data = nullptr;
+        AsBlob.Length = 0;
+        return;
+    }
     const int32 length = typeName.Length() + 1;
     if (AsBlob.Length != length)
     {
@@ -2204,6 +2417,13 @@ void Variant::SetTypename(const StringView& typeName)
 void Variant::SetTypename(const StringAnsiView& typeName)
 {
     SetType(VariantType(VariantType::Typename));
+    if (typeName.Length() <= 0)
+    {
+        Allocator::Free(AsBlob.Data);
+        AsBlob.Data = nullptr;
+        AsBlob.Length = 0;
+        return;
+    }
     const int32 length = typeName.Length() + 1;
     if (AsBlob.Length != length)
     {
@@ -2245,6 +2465,7 @@ void Variant::SetObject(ScriptingObject* object)
 
 void Variant::SetManagedObject(_MonoObject* object)
 {
+#if USE_MONO
     if (object)
     {
         if (Type.Type != VariantType::ManagedObject)
@@ -2257,6 +2478,7 @@ void Variant::SetManagedObject(_MonoObject* object)
             SetType(VariantType(VariantType::ManagedObject));
         AsUint = 0;
     }
+#endif
 }
 
 void Variant::SetAsset(Asset* asset)
@@ -2291,7 +2513,21 @@ String Variant::ToString() const
     case VariantType::Int:
         return StringUtils::ToString(AsInt);
     case VariantType::Uint:
+        return StringUtils::ToString(AsUint);
     case VariantType::Enum:
+        if (Type.TypeName)
+        {
+            const ScriptingTypeHandle typeHandle = Scripting::FindScriptingType(StringAnsiView(Type.TypeName));
+            if (typeHandle && typeHandle.GetType().Type == ScriptingTypes::Enum)
+            {
+                const auto items = typeHandle.GetType().Enum.Items;
+                for (int32 i = 0; items[i].Name; i++)
+                {
+                    if (items[i].Value == AsUint)
+                        return String(items[i].Name);
+                }
+            }
+        }
         return StringUtils::ToString(AsUint);
     case VariantType::Int64:
         return StringUtils::ToString(AsInt64);
@@ -2338,10 +2574,12 @@ String Variant::ToString() const
         return (*(Ray*)AsBlob.Data).ToString();
     case VariantType::Matrix:
         return (*(Matrix*)AsBlob.Data).ToString();
-    case VariantType::ManagedObject:
-        return AsUint ? String(MUtils::ToString(mono_object_to_string(mono_gchandle_get_target(AsUint), nullptr))) : TEXT("null");
     case VariantType::Typename:
         return String((const char*)AsBlob.Data, AsBlob.Length ? AsBlob.Length - 1 : 0);
+    case VariantType::ManagedObject:
+#if USE_MONO
+        return AsUint ? String(MUtils::ToString(mono_object_to_string(mono_gchandle_get_target(AsUint), nullptr))) : TEXT("null");
+#endif
     default:
         return String::Empty;
     }
@@ -3110,6 +3348,7 @@ void Variant::AllocStructure()
         AsBlob.Data = Allocator::Allocate(AsBlob.Length);
         *((int16*)AsBlob.Data) = 0;
     }
+#if USE_MONO
     else if (const auto mclass = Scripting::FindClass(typeName))
     {
         // Fallback to C#-only types
@@ -3134,11 +3373,12 @@ void Variant::AllocStructure()
             AsBlob.Length = 0;
         }
     }
+#endif
     else
     {
         if (typeName.Length() != 0)
         {
-            LOG(Warning, "Missing scripting type \'{0}\'", String(typeName.Get()));
+            LOG(Warning, "Missing scripting type \'{0}\'", String(typeName));
         }
         AsBlob.Data = nullptr;
         AsBlob.Length = 0;
@@ -3213,10 +3453,12 @@ uint32 GetHash(const Variant& key)
         return GetHash(*(Color*)key.AsData);
     case VariantType::Guid:
         return GetHash(*(Guid*)key.AsData);
-    case VariantType::ManagedObject:
-        return key.AsUint ? (uint32)mono_object_hash(mono_gchandle_get_target(key.AsUint)) : 0;
     case VariantType::Typename:
         return GetHash((const char*)key.AsBlob.Data);
+    case VariantType::ManagedObject:
+#if USE_MONO
+        return key.AsUint ? (uint32)mono_object_hash(mono_gchandle_get_target(key.AsUint)) : 0;
+#endif
     default:
         return 0;
     }

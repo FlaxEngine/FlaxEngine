@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 using System.IO;
 using Flax.Build;
@@ -39,6 +39,7 @@ public class glslang : DepsModule
             options.OutputFiles.Add(Path.Combine(depsRoot, "SPIRV.lib"));
             break;
         case TargetPlatform.Linux:
+        case TargetPlatform.Mac:
             options.OutputFiles.Add(Path.Combine(depsRoot, "libGenericCodeGen.a"));
             options.OutputFiles.Add(Path.Combine(depsRoot, "libglslang.a"));
             options.OutputFiles.Add(Path.Combine(depsRoot, "libHLSL.a"));

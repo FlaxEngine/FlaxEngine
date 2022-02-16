@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 #include "Engine/Platform/Platform.h"
 #include "Engine/Platform/File.h"
@@ -131,8 +131,6 @@ void MemoryWriteStream::SetPosition(uint32 seek)
 
 void MemoryWriteStream::WriteBytes(const void* data, uint32 bytes)
 {
-    ASSERT(bytes >= 0);
-
     // Calculate current position
     const uint32 position = GetPosition();
 

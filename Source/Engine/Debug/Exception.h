@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -13,7 +13,7 @@ namespace Log
     /// <summary>
     /// Represents errors that occur during application execution.
     /// </summary>
-    class Exception : public Object
+    class FLAXENGINE_API Exception : public Object
     {
     protected:
 

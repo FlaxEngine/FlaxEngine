@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 using System;
 
@@ -150,7 +150,13 @@ namespace FlaxEngine.GUI
         public Vector2 Location
         {
             get => _bounds.Location;
-            set => Bounds = new Rectangle(value, _bounds.Size);
+            set
+            {
+                if (_bounds.Location.Equals(ref value))
+                    return;
+                var bounds = new Rectangle(value, _bounds.Size);
+                SetBounds(ref bounds);
+            }
         }
 
         /// <summary>
@@ -169,8 +175,14 @@ namespace FlaxEngine.GUI
         [NoSerialize, HideInEditor]
         public float Width
         {
-            get => _bounds.Width;
-            set => Bounds = new Rectangle(_bounds.Location, value, _bounds.Height);
+            get => _bounds.Size.X;
+            set
+            {
+                if (Mathf.NearEqual(_bounds.Size.X, value))
+                    return;
+                var bounds = new Rectangle(_bounds.Location, value, _bounds.Size.Y);
+                SetBounds(ref bounds);
+            }
         }
 
         /// <summary>
@@ -179,8 +191,14 @@ namespace FlaxEngine.GUI
         [NoSerialize, HideInEditor]
         public float Height
         {
-            get => _bounds.Height;
-            set => Bounds = new Rectangle(_bounds.Location, _bounds.Width, value);
+            get => _bounds.Size.Y;
+            set
+            {
+                if (Mathf.NearEqual(_bounds.Size.Y, value))
+                    return;
+                var bounds = new Rectangle(_bounds.Location, _bounds.Size.X, value);
+                SetBounds(ref bounds);
+            }
         }
 
         /// <summary>
@@ -190,7 +208,13 @@ namespace FlaxEngine.GUI
         public Vector2 Size
         {
             get => _bounds.Size;
-            set => Bounds = new Rectangle(_bounds.Location, value);
+            set
+            {
+                if (_bounds.Size.Equals(ref value))
+                    return;
+                var bounds = new Rectangle(_bounds.Location, value);
+                SetBounds(ref bounds);
+            }
         }
 
         /// <summary>
@@ -236,7 +260,12 @@ namespace FlaxEngine.GUI
         /// <summary>
         /// Gets center position of the control relative to the upper-left corner of its container.
         /// </summary>
-        public Vector2 Center => _bounds.Center;
+        [HideInEditor, NoSerialize]
+        public Vector2 Center
+        {
+            get => _bounds.Center;
+            set => Location = value - Size * 0.5f;
+        }
 
         /// <summary>
         /// Gets or sets control's bounds rectangle.
@@ -420,12 +449,12 @@ namespace FlaxEngine.GUI
             UpdateTransform();
 
             // Handle location/size changes
-            if (_bounds.Location != prevBounds.Location)
+            if (!_bounds.Location.Equals(ref prevBounds.Location))
             {
                 OnLocationChanged();
             }
 
-            if (_bounds.Size != prevBounds.Size)
+            if (!_bounds.Size.Equals(ref prevBounds.Size))
             {
                 OnSizeChanged();
             }

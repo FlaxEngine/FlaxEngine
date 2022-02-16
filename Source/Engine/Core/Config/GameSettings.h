@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -77,9 +77,12 @@ public:
     Guid UWPPlatform;
     Guid LinuxPlatform;
     Guid PS4Platform;
+    Guid XboxOnePlatform;
     Guid XboxScarlettPlatform;
     Guid AndroidPlatform;
     Guid SwitchPlatform;
+    Guid PS5Platform;
+    Guid MacPlatform;
 
 public:
 

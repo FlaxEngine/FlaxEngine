@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 using FlaxEngine;
 
@@ -7,6 +7,7 @@ namespace FlaxEditor.CustomEditors.Elements
     /// <summary>
     /// The floating point value editor element.
     /// </summary>
+    [HideInEditor]
     public interface IFloatValueEditor
     {
         /// <summary>

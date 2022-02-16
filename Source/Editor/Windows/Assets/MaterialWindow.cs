@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 using System;
 using System.Collections.Generic;
@@ -255,7 +255,7 @@ namespace FlaxEditor.Windows.Assets
         /// <summary>
         /// Gets or sets the main material node.
         /// </summary>
-        public Surface.Archetypes.Material.SurfaceNodeMaterial MainNode
+        internal Surface.Archetypes.Material.SurfaceNodeMaterial MainNode
         {
             get
             {

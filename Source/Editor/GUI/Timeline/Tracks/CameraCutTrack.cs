@@ -1,9 +1,11 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
+using FlaxEditor.Utilities;
 using FlaxEngine;
 using FlaxEngine.GUI;
 using Object = FlaxEngine.Object;
@@ -32,6 +34,8 @@ namespace FlaxEditor.GUI.Timeline.Tracks
         public CameraCutMedia()
         {
             ClipChildren = true;
+            CanSplit = true;
+            CanDelete = true;
         }
 
         /// <summary>
@@ -291,7 +295,7 @@ namespace FlaxEditor.GUI.Timeline.Tracks
         {
             base.OnTimelineChanged(track);
 
-            PropertiesEditObject = new Proxy(Track as CameraCutTrack, this);
+            PropertiesEditObject = track != null ? new Proxy((CameraCutTrack)track, this) : null;
             UpdateThumbnails();
         }
 
@@ -320,12 +324,12 @@ namespace FlaxEditor.GUI.Timeline.Tracks
         }
 
         /// <inheritdoc />
-        public override void OnTimelineShowContextMenu(ContextMenu.ContextMenu menu, Control controlUnderMouse)
+        public override void OnTimelineContextMenu(ContextMenu.ContextMenu menu, float time, Control controlUnderMouse)
         {
-            base.OnTimelineShowContextMenu(menu, controlUnderMouse);
-
             if (((CameraCutTrack)Track).Camera)
                 menu.AddButton("Refresh thumbnails", () => UpdateThumbnails());
+
+            base.OnTimelineContextMenu(menu, time, controlUnderMouse);
         }
 
         /// <inheritdoc />
@@ -671,26 +675,42 @@ namespace FlaxEditor.GUI.Timeline.Tracks
         private static void LoadTrack(int version, Track track, BinaryReader stream)
         {
             var e = (CameraCutTrack)track;
-            e.ActorID = new Guid(stream.ReadBytes(16));
-            var m = e.TrackMedia;
-            m.StartFrame = stream.ReadInt32();
-            m.DurationFrames = stream.ReadInt32();
+            e.ActorID = stream.ReadGuid();
+            if (version <= 3)
+            {
+                // [Deprecated on 03.09.2021 expires on 03.09.2023]
+                var m = e.TrackMedia;
+                m.StartFrame = stream.ReadInt32();
+                m.DurationFrames = stream.ReadInt32();
+            }
+            else
+            {
+                var count = stream.ReadInt32();
+                while (e.Media.Count > count)
+                    e.RemoveMedia(e.Media.Last());
+                while (e.Media.Count < count)
+                    e.AddMedia(new CameraCutMedia());
+                for (int i = 0; i < count; i++)
+                {
+                    var m = (CameraCutMedia)e.Media[i];
+                    m.StartFrame = stream.ReadInt32();
+                    m.DurationFrames = stream.ReadInt32();
+                    m.UpdateThumbnails();
+                }
+            }
         }
 
         private static void SaveTrack(Track track, BinaryWriter stream)
         {
             var e = (CameraCutTrack)track;
-            stream.Write(e.ActorID.ToByteArray());
-            if (e.Media.Count != 0)
+            stream.WriteGuid(ref e.ActorID);
+            var count = e.Media.Count;
+            stream.Write(count);
+            for (int i = 0; i < count; i++)
             {
-                var m = e.TrackMedia;
+                var m = e.Media[i];
                 stream.Write(m.StartFrame);
                 stream.Write(m.DurationFrames);
-            }
-            else
-            {
-                stream.Write(0);
-                stream.Write(track.Timeline.DurationFrames);
             }
         }
 
@@ -701,10 +721,7 @@ namespace FlaxEditor.GUI.Timeline.Tracks
         /// </summary>
         public Camera Camera => Actor as Camera;
 
-        /// <summary>
-        /// Gets the camera track media.
-        /// </summary>
-        public CameraCutMedia TrackMedia
+        private CameraCutMedia TrackMedia
         {
             get
             {
@@ -728,8 +745,9 @@ namespace FlaxEditor.GUI.Timeline.Tracks
 
         /// <inheritdoc />
         public CameraCutTrack(ref TrackCreateOptions options)
-        : base(ref options)
+        : base(ref options, false)
         {
+            MinMediaCount = 1;
             Height = CameraCutThumbnailRenderer.Height + 8;
 
             // Pilot Camera button
@@ -793,18 +811,32 @@ namespace FlaxEditor.GUI.Timeline.Tracks
             }
         }
 
+        private void UpdateThumbnails()
+        {
+            foreach (CameraCutMedia media in Media)
+                media.UpdateThumbnails();
+        }
+
         /// <inheritdoc />
         protected override void OnObjectExistenceChanged(object obj)
         {
             base.OnObjectExistenceChanged(obj);
 
-            TrackMedia.UpdateThumbnails();
+            UpdateThumbnails();
         }
 
         /// <inheritdoc />
         protected override bool IsActorValid(Actor actor)
         {
             return base.IsActorValid(actor) && actor is Camera;
+        }
+
+        /// <inheritdoc />
+        protected override void OnActorChanged()
+        {
+            base.OnActorChanged();
+
+            UpdateThumbnails();
         }
 
         /// <inheritdoc />

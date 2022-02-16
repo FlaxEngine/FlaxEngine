@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 using System;
 using System.Collections.Generic;
@@ -350,7 +350,7 @@ namespace FlaxEditor.Modules
                             {
                                 // Perform layout
                                 var windowGUI = window.GUI;
-                                windowGUI.UnlockChildrenRecursive();
+                                windowGUI.IsLayoutLocked = false;
                                 windowGUI.PerformLayout();
 
                                 // Show
@@ -378,6 +378,10 @@ namespace FlaxEditor.Modules
                 Editor.LogWarning("Failed to load windows layout.");
                 Editor.LogWarning(ex);
                 return false;
+            }
+            finally
+            {
+                masterPanel.PerformLayout();
             }
 
             return true;
@@ -523,7 +527,7 @@ namespace FlaxEditor.Modules
                     Text = "OK",
                     Parent = this,
                 };
-                okButton.Clicked += OnOk;
+                okButton.Clicked += OnSubmit;
 
                 var cancelButton = new Button(okButton.Left - 54, okButton.Y, 50)
                 {
@@ -535,7 +539,8 @@ namespace FlaxEditor.Modules
                 _dialogSize = okButton.BottomRight + new Vector2(8);
             }
 
-            private void OnOk()
+            /// <inheritdoc />
+            public override void OnSubmit()
             {
                 var name = _textbox.Text;
                 if (name.Length == 0)
@@ -549,31 +554,10 @@ namespace FlaxEditor.Modules
                     return;
                 }
 
-                Close(DialogResult.OK);
+                base.OnSubmit();
 
                 var path = StringUtils.CombinePaths(Globals.ProjectCacheFolder, "Layout_" + name + ".xml");
                 Editor.Instance.Windows.SaveLayout(path);
-            }
-
-            private void OnCancel()
-            {
-                Close(DialogResult.Cancel);
-            }
-
-            /// <inheritdoc />
-            public override bool OnKeyDown(KeyboardKeys key)
-            {
-                switch (key)
-                {
-                case KeyboardKeys.Escape:
-                    OnCancel();
-                    return true;
-                case KeyboardKeys.Return:
-                    OnOk();
-                    return true;
-                }
-
-                return base.OnKeyDown(key);
             }
         }
 
@@ -666,6 +650,36 @@ namespace FlaxEditor.Modules
         }
 
         /// <summary>
+        /// Opens the specified editor window (shows it with editor options handling for new windows).
+        /// </summary>
+        /// <param name="window">The window.</param>
+        public void Open(EditorWindow window)
+        {
+            var newLocation = (DockState)Editor.Options.Options.Interface.NewWindowLocation;
+            if (newLocation == DockState.Float)
+            {
+                // Check if there is a floating window that has the same size
+                Vector2 defaultSize = window.DefaultSize;
+                for (var i = 0; i < Editor.UI.MasterPanel.FloatingPanels.Count; i++)
+                {
+                    var win = Editor.UI.MasterPanel.FloatingPanels[i];
+                    if (Vector2.Abs(win.Size - defaultSize).LengthSquared < 100)
+                    {
+                        window.Show(DockState.DockFill, win);
+                        window.Focus();
+                        return;
+                    }
+                }
+
+                window.ShowFloating(defaultSize);
+            }
+            else
+            {
+                window.Show(newLocation);
+            }
+        }
+
+        /// <summary>
         /// Gets <see cref="EditorWindow"/> that is represented by the given serialized typename. Used to restore workspace layout.
         /// </summary>
         /// <param name="typename">The typename.</param>
@@ -703,7 +717,6 @@ namespace FlaxEditor.Modules
             _windowsLayoutPath = StringUtils.CombinePaths(Globals.ProjectCacheFolder, "WindowsLayout.xml");
 
             // Create main window
-            var dpiScale = Platform.DpiScale;
             var settings = CreateWindowSettings.Default;
             settings.Title = "Flax Editor";
             settings.Size = Platform.DesktopSize;
@@ -712,14 +725,15 @@ namespace FlaxEditor.Modules
 
 #if PLATFORM_WINDOWS
             if (!Editor.Instance.Options.Options.Interface.UseNativeWindowSystem)
-#endif
             {
                 settings.HasBorder = false;
-#if PLATFORM_WINDOWS
+
                 // Skip OS sizing frame and implement it using LeftButtonHit
                 settings.HasSizingFrame = false;
-#endif
             }
+#elif PLATFORM_LINUX
+            settings.HasBorder = false;
+#endif
 
             MainWindow = Platform.CreateWindow(ref settings);
 

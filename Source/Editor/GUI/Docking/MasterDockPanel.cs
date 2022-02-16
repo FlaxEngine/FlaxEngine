@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 using System.Collections.Generic;
 using FlaxEngine;
@@ -132,7 +132,7 @@ namespace FlaxEditor.GUI.Docking
         public override DockState TryGetDockState(out float splitterValue)
         {
             splitterValue = 0.5f;
-            return DockState.Unknown;
+            return DockState.DockFill;
         }
     }
 }

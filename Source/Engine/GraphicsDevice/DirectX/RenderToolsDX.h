@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -296,7 +296,7 @@ namespace RenderToolsDX
 template<typename T>
 inline void SetDebugObjectName(T* resource, const char* data, UINT size)
 {
-#if PLATFORM_XBOX_SCARLETT
+#if PLATFORM_XBOX_SCARLETT || PLATFORM_XBOX_ONE
     const StringAsUTF16<> nameUTF16(data, size);
     resource->SetName(nameUTF16.Get());
 #else
@@ -331,7 +331,7 @@ inline void SetDebugObjectName(ID3D11DeviceChild* resource, const char(&name)[Na
 template<uint32 NameLength>
 inline void SetDebugObjectName(ID3D12DeviceChild* resource, const char (&name)[NameLength])
 {
-#if PLATFORM_XBOX_SCARLETT
+#if PLATFORM_XBOX_SCARLETT || PLATFORM_XBOX_ONE
     const StringAsUTF16<> nameUTF16(name);
     resource->SetName(nameUTF16.Get());
 #else
@@ -362,7 +362,7 @@ inline void SetDebugObjectName(ID3D11Resource* resource, const char(&name)[NameL
 template<uint32 NameLength>
 inline void SetDebugObjectName(ID3D12Resource* resource, const char (&name)[NameLength])
 {
-#if PLATFORM_XBOX_SCARLETT
+#if PLATFORM_XBOX_SCARLETT || PLATFORM_XBOX_ONE
     const StringAsUTF16<> nameUTF16(name);
     resource->SetName(nameUTF16.Get());
 #else
@@ -383,7 +383,7 @@ inline void SetDebugObjectName(ComPtr<T> resource, const char (&name)[NameLength
 template<typename T>
 inline void SetDebugObjectName(T* resource, const Char* data, UINT size)
 {
-#if PLATFORM_XBOX_SCARLETT
+#if PLATFORM_XBOX_SCARLETT || PLATFORM_XBOX_ONE
     if (data && size > 0)
         resource->SetName(data);
 #else

@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 #include "RenderTask.h"
 #include "RenderBuffers.h"
@@ -20,12 +20,16 @@
 #include "Engine/Scripting/Script.h"
 #include "Engine/Scripting/BinaryModule.h"
 #include "Engine/Threading/Threading.h"
+#if USE_MONO
 #include <ThirdParty/mono-2.0/mono/metadata/appdomain.h>
+#endif
 #if USE_EDITOR
 #include "Engine/Renderer/Lightmaps.h"
 #else
 #include "Engine/Engine/Screen.h"
 #endif
+
+#if USE_MONO
 
 // TODO: use API for events and remove this manual wrapper code
 class RenderContextInternal
@@ -53,6 +57,8 @@ namespace
     }
 }
 
+#endif
+
 Array<RenderTask*> RenderTask::Tasks;
 CriticalSection RenderTask::TasksLocker;
 int32 RenderTask::TasksDoneLastFrame;
@@ -76,7 +82,7 @@ void RenderTask::DrawAll()
 }
 
 RenderTask::RenderTask(const SpawnParams& params)
-    : PersistentScriptingObject(params)
+    : ScriptingObject(params)
 {
     // Register
     TasksLocker.Lock();
@@ -174,7 +180,7 @@ void ManagedPostProcessEffect::FetchInfo()
     args[0] = Target->GetOrCreateManagedInstance();
     args[1] = &_location;
     args[2] = &_useSingleTarget;
-    MonoObject* exception = nullptr;
+    MObject* exception = nullptr;
     FetchInfoManaged->Invoke(nullptr, args, &exception);
     if (exception)
         DebugLog::LogException(exception);
@@ -187,6 +193,7 @@ bool ManagedPostProcessEffect::IsLoaded() const
 
 void ManagedPostProcessEffect::Render(RenderContext& renderContext, GPUTexture* input, GPUTexture* output)
 {
+#if USE_MONO
     const auto context = GPUDevice::Instance->GetMainContext();
     auto inputObj = ScriptingObject::ToManaged(input);
     auto outputObj = ScriptingObject::ToManaged(output);
@@ -203,10 +210,11 @@ void ManagedPostProcessEffect::Render(RenderContext& renderContext, GPUTexture* 
     params[1] = &tmp;
     params[2] = inputObj;
     params[3] = outputObj;
-    MonoObject* exception = nullptr;
+    MObject* exception = nullptr;
     renderMethod->InvokeVirtual(Target->GetOrCreateManagedInstance(), params, &exception);
     if (exception)
         DebugLog::LogException(exception);
+#endif
 }
 
 SceneRenderTask::SceneRenderTask(const SpawnParams& params)
@@ -340,6 +348,8 @@ void SceneRenderTask::OnBegin(GPUContext* context)
     }
 
     // Get custom and global PostFx
+    CustomPostFx.Clear();
+#if !COMPILE_WITHOUT_CSHARP
     // TODO: move postFx in SceneRenderTask from C# to C++
     static MMethod* GetPostFxManaged = GetStaticClass()->GetMethod("GetPostFx", 1);
     if (GetPostFxManaged)
@@ -347,7 +357,8 @@ void SceneRenderTask::OnBegin(GPUContext* context)
         int32 count = 0;
         void* params[1];
         params[0] = &count;
-        MonoObject* exception = nullptr;
+        MObject* exception = nullptr;
+#if USE_MONO
         const auto objects = (MonoArray*)GetPostFxManaged->Invoke(GetOrCreateManagedInstance(), params, &exception);
         if (exception)
             DebugLog::LogException(exception);
@@ -359,9 +370,9 @@ void SceneRenderTask::OnBegin(GPUContext* context)
             if (postFx.Target)
                 postFx.FetchInfo();
         }
+#endif
     }
-    else
-        CustomPostFx.Clear();
+#endif
 
     // Setup render buffers for the output rendering resolution
     if (Output)

@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 using FlaxEditor.GUI.ContextMenu;
 using FlaxEngine;
@@ -42,7 +42,7 @@ namespace FlaxEditor.GUI.Docking
         /// <summary>
         /// The mouse position.
         /// </summary>
-        public Vector2 MousePosition;
+        public Vector2 MousePosition = Vector2.Minimum;
 
         /// <summary>
         /// The start drag asynchronous window.
@@ -192,7 +192,7 @@ namespace FlaxEditor.GUI.Docking
                 var tab = _panel.GetTab(0);
 
                 // Draw header
-                bool isMouseOver = IsMouseOver && headerRect.Contains(MousePosition);
+                bool isMouseOver = headerRect.Contains(MousePosition);
                 Render2D.FillRectangle(headerRect, containsFocus ? style.BackgroundSelected : isMouseOver ? style.BackgroundHighlighted : style.LightBackground);
 
                 float iconWidth = tab.Icon.IsValid ? DockPanel.DefaultButtonsSize + DockPanel.DefaultLeftTextMargin : 0;
@@ -238,7 +238,7 @@ namespace FlaxEditor.GUI.Docking
                     var iconWidth = tab.Icon.IsValid ? DockPanel.DefaultButtonsSize + DockPanel.DefaultLeftTextMargin : 0;
                     var width = titleSize.X + DockPanel.DefaultButtonsSize + 2 * DockPanel.DefaultButtonsMargin + DockPanel.DefaultLeftTextMargin + DockPanel.DefaultRightTextMargin + iconWidth;
                     var tabRect = new Rectangle(x, 0, width, DockPanel.DefaultHeaderHeight);
-                    var isMouseOver = IsMouseOver && tabRect.Contains(MousePosition);
+                    var isMouseOver = tabRect.Contains(MousePosition);
                     var isSelected = _panel.SelectedTab == tab;
 
                     // Check if tab is selected
@@ -294,11 +294,11 @@ namespace FlaxEditor.GUI.Docking
         /// <inheritdoc />
         public override void OnLostFocus()
         {
-            // Clear
             IsMouseLeftButtonDown = false;
             IsMouseRightButtonDown = false;
             IsMouseMiddleButtonDown = false;
             MouseDownWindow = null;
+            MousePosition = Vector2.Minimum;
 
             base.OnLostFocus();
         }
@@ -306,7 +306,6 @@ namespace FlaxEditor.GUI.Docking
         /// <inheritdoc />
         public override void OnMouseEnter(Vector2 location)
         {
-            // Cache mouse
             MousePosition = location;
 
             base.OnMouseEnter(location);
@@ -403,10 +402,7 @@ namespace FlaxEditor.GUI.Docking
         /// <inheritdoc />
         public override void OnMouseMove(Vector2 location)
         {
-            // Cache mouse
             MousePosition = location;
-
-            // Check if mouse is down
             if (IsMouseLeftButtonDown)
             {
                 // Check if mouse is outside the header
@@ -453,10 +449,8 @@ namespace FlaxEditor.GUI.Docking
         /// <inheritdoc />
         public override void OnMouseLeave()
         {
-            // Check if mouse is down
             if (IsMouseLeftButtonDown)
             {
-                // Clear flag
                 IsMouseLeftButtonDown = false;
 
                 // Check tabs under mouse position
@@ -466,6 +460,7 @@ namespace FlaxEditor.GUI.Docking
             }
             IsMouseRightButtonDown = false;
             IsMouseMiddleButtonDown = false;
+            MousePosition = Vector2.Minimum;
 
             base.OnMouseLeave();
         }

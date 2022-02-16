@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 // -----------------------------------------------------------------------------
 // Original code from SharpDX project. https://github.com/sharpdx/SharpDX/
@@ -189,20 +189,13 @@ namespace FlaxEngine
         {
             switch (index)
             {
-            case 0:
-                return pLeft;
-            case 1:
-                return pRight;
-            case 2:
-                return pTop;
-            case 3:
-                return pBottom;
-            case 4:
-                return pNear;
-            case 5:
-                return pFar;
-            default:
-                return new Plane();
+            case 0: return pLeft;
+            case 1: return pRight;
+            case 2: return pTop;
+            case 3: return pBottom;
+            case 4: return pNear;
+            case 5: return pFar;
+            default: return new Plane();
             }
         }
 
@@ -255,13 +248,15 @@ namespace FlaxEngine
 
         private static Vector3 Get3PlanesInterPoint(ref Plane p1, ref Plane p2, ref Plane p3)
         {
-            //P = -d1 * N2xN3 / N1.N2xN3 - d2 * N3xN1 / N2.N3xN1 - d3 * N1xN2 / N3.N1xN2 
-            Vector3 v =
-            -p1.D * Vector3.Cross(p2.Normal, p3.Normal) / Vector3.Dot(p1.Normal, Vector3.Cross(p2.Normal, p3.Normal))
-            - p2.D * Vector3.Cross(p3.Normal, p1.Normal) / Vector3.Dot(p2.Normal, Vector3.Cross(p3.Normal, p1.Normal))
-            - p3.D * Vector3.Cross(p1.Normal, p2.Normal) / Vector3.Dot(p3.Normal, Vector3.Cross(p1.Normal, p2.Normal));
-
-            return v;
+            Vector3.Cross(ref p2.Normal, ref p3.Normal, out var n2Xn3);
+            Vector3.Cross(ref p3.Normal, ref p1.Normal, out var n3Xn1);
+            Vector3.Cross(ref p1.Normal, ref p2.Normal, out var n1Xn2);
+            float div1 = Vector3.Dot(ref p1.Normal, ref n2Xn3);
+            float div2 = Vector3.Dot(ref p2.Normal, ref n3Xn1);
+            float div3 = Vector3.Dot(ref p3.Normal, ref n1Xn2);
+            if (Mathf.IsZero(div1 * div2 * div3))
+                return Vector3.Zero;
+            return n2Xn3 * (-p1.D / div1) - n3Xn1 * (p2.D / div2) - n1Xn2 * (p3.D / div3);
         }
 
         /// <summary>
@@ -396,8 +391,7 @@ namespace FlaxEngine
                 }
                 switch (planeResult)
                 {
-                case PlaneIntersectionType.Back:
-                    return ContainmentType.Disjoint;
+                case PlaneIntersectionType.Back: return ContainmentType.Disjoint;
                 case PlaneIntersectionType.Intersecting:
                     result = PlaneIntersectionType.Intersecting;
                     break;
@@ -405,10 +399,8 @@ namespace FlaxEngine
             }
             switch (result)
             {
-            case PlaneIntersectionType.Intersecting:
-                return ContainmentType.Intersects;
-            default:
-                return ContainmentType.Contains;
+            case PlaneIntersectionType.Intersecting: return ContainmentType.Intersects;
+            default: return ContainmentType.Contains;
             }
         }
 
@@ -563,8 +555,7 @@ namespace FlaxEngine
                 }
                 switch (planeResult)
                 {
-                case PlaneIntersectionType.Back:
-                    return ContainmentType.Disjoint;
+                case PlaneIntersectionType.Back: return ContainmentType.Disjoint;
                 case PlaneIntersectionType.Intersecting:
                     result = PlaneIntersectionType.Intersecting;
                     break;
@@ -572,10 +563,8 @@ namespace FlaxEngine
             }
             switch (result)
             {
-            case PlaneIntersectionType.Intersecting:
-                return ContainmentType.Intersects;
-            default:
-                return ContainmentType.Contains;
+            case PlaneIntersectionType.Intersecting: return ContainmentType.Intersects;
+            default: return ContainmentType.Contains;
             }
         }
 

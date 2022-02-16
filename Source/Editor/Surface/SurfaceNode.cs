@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 using System;
 using System.Collections.Generic;
@@ -156,7 +156,7 @@ namespace FlaxEditor.Surface
         /// </summary>
         /// <param name="width">The width.</param>
         /// <param name="height">The height.</param>
-        protected void Resize(float width, float height)
+        public void Resize(float width, float height)
         {
             Size = CalculateNodeSize(width, height);
 
@@ -176,7 +176,7 @@ namespace FlaxEditor.Surface
         /// <summary>
         /// Automatically resizes the node to match the title size and all the elements for best fit of the node dimensions.
         /// </summary>
-        protected void ResizeAuto()
+        public void ResizeAuto()
         {
             var width = 0.0f;
             var height = 0.0f;
@@ -317,7 +317,7 @@ namespace FlaxEditor.Surface
         public Box AddBox(bool isOut, int id, int yLevel, string text, ScriptType type, bool single, int valueIndex = -1)
         {
             if (type == ScriptType.Null)
-                type = new ScriptType(typeof(object));
+                type = ScriptType.Object;
 
             // Try to reuse box
             var box = GetBox(id);
@@ -476,7 +476,7 @@ namespace FlaxEditor.Surface
                 var b = GetBox(Archetype.DependentBoxes[i]);
                 if (b != null)
                 {
-                    b.CurrentType = type;
+                    b.CurrentType = Archetype.DependentBoxFilter != null ? Archetype.DependentBoxFilter(b, type) : type;
                 }
             }
 
@@ -893,7 +893,7 @@ namespace FlaxEditor.Surface
         {
             if (_isDuringValuesEditing || !Surface.CanEdit)
                 return;
-            if (Equals(value, Values[index]))
+            if (FlaxEngine.Json.JsonSerializer.ValueEquals(value, Values[index]))
                 return;
             if (value is byte[] && Values[index] is byte[] && Utils.ArraysEqual((byte[])value, (byte[])Values[index]))
                 return;

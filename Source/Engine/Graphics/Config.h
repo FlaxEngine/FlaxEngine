@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -12,7 +12,7 @@
 #define GPU_MAX_CB_BINDED 4
 
 // Maximum amount of binded unordered access resources at the same time
-#define GPU_MAX_UA_BINDED 2
+#define GPU_MAX_UA_BINDED 4
 
 // Maximum amount of binded texture sampler resources at the same time
 #define GPU_MAX_SAMPLER_BINDED 16

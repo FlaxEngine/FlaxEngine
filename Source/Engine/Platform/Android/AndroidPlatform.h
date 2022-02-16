@@ -1,10 +1,11 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 #pragma once
 
 #if PLATFORM_ANDROID
 
 #include "Engine/Platform/Unix/UnixPlatform.h"
+#include <pthread.h>
 
 struct android_app;
 
@@ -83,7 +84,10 @@ public:
     static int32 GetCacheLineSize();
     static MemoryStats GetMemoryStats();
     static ProcessMemoryStats GetProcessMemoryStats();
-    static uint64 GetCurrentThreadID();
+    static uint64 GetCurrentThreadID()
+    {
+        return static_cast<uint64>(pthread_self());
+    }
     static void SetThreadPriority(ThreadPriority priority);
     static void SetThreadAffinityMask(uint64 affinityMask);
     static void Sleep(int32 milliseconds);
@@ -110,7 +114,6 @@ public:
     static ScreenOrientationType GetScreenOrientationType();
     static String GetUserLocaleName();
     static String GetComputerName();
-    static String GetUserName();
     static bool GetHasFocus();
     static bool GetIsPaused();
     static bool CanOpenUrl(const StringView& url);

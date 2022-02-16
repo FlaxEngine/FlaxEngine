@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -7,17 +7,17 @@
 /// <summary>
 /// Represents a single audio device.
 /// </summary>
-API_CLASS(NoSpawn) class AudioDevice : public PersistentScriptingObject
+API_CLASS(NoSpawn) class AudioDevice : public ScriptingObject
 {
 DECLARE_SCRIPTING_TYPE_NO_SPAWN(AudioDevice);
 
     explicit AudioDevice()
-        : PersistentScriptingObject(SpawnParams(Guid::New(), TypeInitializer))
+        : ScriptingObject(SpawnParams(Guid::New(), TypeInitializer))
     {
     }
 
     AudioDevice(const AudioDevice& other)
-        : PersistentScriptingObject(SpawnParams(Guid::New(), TypeInitializer))
+        : ScriptingObject(SpawnParams(Guid::New(), TypeInitializer))
     {
         Name = other.Name;
         InternalName = other.InternalName;

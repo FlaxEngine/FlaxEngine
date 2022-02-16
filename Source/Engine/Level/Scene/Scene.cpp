@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 #include "Scene.h"
 #include "SceneAsset.h"
@@ -120,6 +120,21 @@ String Scene::GetFilename() const
 String Scene::GetDataFolderPath() const
 {
     return Globals::ProjectContentFolder / TEXT("SceneData") / GetFilename();
+}
+
+Array<Guid> Scene::GetAssetReferences() const
+{
+    Array<Guid> result;
+    const auto asset = Content::Load<SceneAsset>(GetID());
+    if (asset)
+    {
+        asset->GetReferences(result);
+    }
+    else
+    {
+        // TODO: serialize scene to json and collect refs
+    }
+    return result;
 }
 
 #endif

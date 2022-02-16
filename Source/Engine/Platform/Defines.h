@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -48,6 +48,16 @@ API_ENUM() enum class PlatformType
     /// Running on Switch.
     /// </summary>
     Switch = 8,
+
+    /// <summary>
+    /// Running on PlayStation 5.
+    /// </summary>
+    PS5 = 9,
+
+    /// <summary>
+    /// Running on Mac.
+    /// </summary>
+    Mac = 10,
 };
 
 /// <summary>
@@ -103,6 +113,9 @@ API_ENUM() enum class ArchitectureType
 #if !defined(PLATFORM_PS4)
 #define PLATFORM_PS4 0
 #endif
+#if !defined(PLATFORM_PS5)
+#define PLATFORM_PS5 0
+#endif
 #if !defined(PLATFORM_XBOX_SCARLETT)
 #define PLATFORM_XBOX_SCARLETT 0
 #endif
@@ -111,9 +124,6 @@ API_ENUM() enum class ArchitectureType
 #endif
 #if !defined(PLATFORM_MAC)
 #define PLATFORM_MAC 0
-#endif
-#if !defined(PLATFORM_OSX)
-#define PLATFORM_OSX 0
 #endif
 #if !defined(PLATFORM_IOS)
 #define PLATFORM_IOS 0
@@ -130,12 +140,18 @@ API_ENUM() enum class ArchitectureType
 #include "Linux/LinuxDefines.h"
 #elif PLATFORM_PS4
 #include "Platforms/PS4/Engine/Platform/PS4Defines.h"
+#elif PLATFORM_PS5
+#include "Platforms/PS5/Engine/Platform/PS5Defines.h"
+#elif PLATFORM_XBOX_ONE
+#include "Platforms/XboxOne/Engine/Platform/XboxOneDefines.h"
 #elif PLATFORM_XBOX_SCARLETT
 #include "Platforms/XboxScarlett/Engine/Platform/XboxScarlettDefines.h"
 #elif PLATFORM_ANDROID
 #include "Android/AndroidDefines.h"
 #elif PLATFORM_SWITCH
 #include "Platforms/Switch/Engine/Platform/SwitchDefines.h"
+#elif PLATFORM_MAC
+#include "Mac/MacDefines.h"
 #else
 #error Missing Defines implementation!
 #endif
@@ -174,14 +190,26 @@ API_ENUM() enum class ArchitectureType
 #define PLATFORM_32BITS (!PLATFORM_64BITS)
 
 // Platform family defines
-#define PLATFORM_WINDOWS_FAMILY (PLATFORM_WINDOWS || PLATFORM_UWP)
-#define PLATFORM_MICROSOFT_FAMILY (PLATFORM_WINDOWS_FAMILY || PLATFORM_XBOX_ONE)
-#define PLATFORM_UNIX_FAMILY (PLATFORM_LINUX || PLATFORM_ANDROID || PLATFORM_PS4)
-#define PLATFORM_APPLE_FAMILY (PLATFORM_IOS || PLATFORM_OSX)
+#define PLATFORM_WINDOWS_FAMILY (PLATFORM_WINDOWS || PLATFORM_UWP || PLATFORM_XBOX_ONE || PLATFORM_XBOX_SCARLETT)
+#define PLATFORM_MICROSOFT_FAMILY (PLATFORM_WINDOWS_FAMILY)
+#define PLATFORM_APPLE_FAMILY (PLATFORM_MAC || PLATFORM_IOS)
+#define PLATFORM_UNIX_FAMILY (PLATFORM_LINUX || PLATFORM_ANDROID || PLATFORM_PS4 || PLATFORM_PS5 || PLATFORM_APPLE_FAMILY)
 
 // SIMD defines
-#if defined(__i386__) || defined(_M_IX86) || defined(__x86_64__) || defined(_M_X64) || (defined (__EMSCRIPTEN__) && defined(__SSE2__))
+#if defined(__i386__) || defined(_M_IX86) || defined(__x86_64__) || defined(_M_X64) || defined(__SSE2__)
 #define PLATFORM_SIMD_SSE2 1
+#if defined(__SSE3__)
+#define PLATFORM_SIMD_SSE3 1
+#endif
+#if defined(__SSE4__)
+#define PLATFORM_SIMD_SSE4 1
+#endif
+#if defined(__SSE4_1__)
+#define PLATFORM_SIMD_SSE4_1 1
+#endif
+#if defined(__SSE4_2__)
+#define PLATFORM_SIMD_SSE4_2 1
+#endif
 #endif
 #if defined(_M_ARM) || defined(__ARM_NEON__) || defined(__ARM_NEON)
 #define PLATFORM_SIMD_NEON 1

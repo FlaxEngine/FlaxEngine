@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 using System;
 using System.Linq;
@@ -13,7 +13,7 @@ namespace FlaxEditor.GUI.Timeline.Tracks
     /// The timeline track for animating object member (managed object).
     /// </summary>
     /// <seealso cref="FlaxEditor.GUI.Timeline.Track" />
-    public abstract class MemberTrack : Track
+    public abstract class MemberTrack : ConductorTrack
     {
         private float _previewValueLeft;
 
@@ -112,8 +112,9 @@ namespace FlaxEditor.GUI.Timeline.Tracks
         /// <param name="options">The track initial options.</param>
         /// <param name="useNavigationButtons">True if show keyframe navigation buttons, otherwise false.</param>
         /// <param name="useValuePreview">True if show current value preview, otherwise false.</param>
-        protected MemberTrack(ref TrackCreateOptions options, bool useNavigationButtons = true, bool useValuePreview = true)
-        : base(ref options)
+        /// <param name="useProxyKeyframes">True if show sub-tracks keyframes as a proxy on this track, otherwise false.</param>
+        protected MemberTrack(ref TrackCreateOptions options, bool useNavigationButtons = true, bool useValuePreview = true, bool useProxyKeyframes = false)
+        : base(ref options, useProxyKeyframes)
         {
             var uiLeft = _muteCheckbox.Offsets.Left;
 
@@ -283,10 +284,13 @@ namespace FlaxEditor.GUI.Timeline.Tracks
         }
 
         /// <inheritdoc />
-        protected override bool CanDrag => false;
+        public override bool CanDrag => false;
 
         /// <inheritdoc />
-        protected override bool CanRename => false;
+        public override bool CanRename => false;
+
+        /// <inheritdoc />
+        public override bool CanCopyPaste => false;
 
         /// <summary>
         /// Called when member gets changed.
@@ -312,6 +316,14 @@ namespace FlaxEditor.GUI.Timeline.Tracks
                 _previewValue.Visible = Timeline.ShowPreviewValues;
                 Timeline.ShowPreviewValuesChanged += OnTimelineShowPreviewValuesChanged;
             }
+        }
+
+        /// <inheritdoc />
+        public override void OnDuplicated(Track clone)
+        {
+            base.OnDuplicated(clone);
+
+            clone.Name = Guid.NewGuid().ToString("N");
         }
 
         private void OnTimelineShowPreviewValuesChanged()

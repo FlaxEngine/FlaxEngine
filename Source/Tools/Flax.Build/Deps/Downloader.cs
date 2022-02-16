@@ -1,4 +1,4 @@
-﻿// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+﻿// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 using System;
 using System.Collections.Generic;
@@ -61,6 +61,8 @@ namespace Flax.Deps
         public static FileInfo DownloadFileFromUrlToPath(string url, string path)
         {
             Log.Verbose(string.Format("Downloading {0} to {1}", url, path));
+            if (File.Exists(path))
+                File.Delete(path);
 
             if (url.StartsWith(GoogleDriveDomain) || url.StartsWith(GoogleDriveDomain2))
                 return DownloadGoogleDriveFileFromUrlToPath(url, path);

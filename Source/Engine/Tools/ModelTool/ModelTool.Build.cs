@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 using System.Collections.Generic;
 using System.IO;
@@ -56,11 +56,14 @@ public class ModelTool : EngineModule
             options.PrivateDependencies.Add("UVAtlas");
             break;
         case TargetPlatform.Linux:
+        case TargetPlatform.Mac:
             break;
         default: throw new InvalidPlatformException(options.Platform.Target);
         }
 
         options.PrivateDependencies.Add("meshoptimizer");
+        options.PrivateDependencies.Add("MikkTSpace");
+        options.PrivateDependencies.Add("Physics");
 
         options.PublicDefinitions.Add("COMPILE_WITH_MODEL_TOOL");
     }

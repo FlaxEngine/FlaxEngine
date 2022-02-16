@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -20,12 +20,12 @@ public:
 
     struct FunctionParameter
     {
+        int32 InputIndex;
         int32 NodeIndex;
-        Array<int32, FixedAllocation<8>> GraphIndices;
 #if USE_EDITOR
         String Type;
-        String Name;
 #endif
+        String Name;
     };
 
     /// <summary>
@@ -54,13 +54,13 @@ public:
     /// </summary>
     /// <param name="data">The surface graph data.</param>
     /// <returns>True if cannot save it, otherwise false.</returns>
-    API_FUNCTION() bool SaveSurface(BytesContainer& data);
+    API_FUNCTION() bool SaveSurface(const BytesContainer& data);
 
 #endif
 
 private:
 
-    void ProcessGraphForSignature(AnimGraphBase* graph, bool canUseOutputs, const Array<int32, FixedAllocation<8>>& graphIndices);
+    void ProcessGraphForSignature(AnimGraphBase* graph, bool canUseOutputs);
 
 protected:
 

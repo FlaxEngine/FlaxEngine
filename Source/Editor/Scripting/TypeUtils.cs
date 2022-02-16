@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 using System;
 using System.Collections.Generic;
@@ -64,7 +64,7 @@ namespace FlaxEditor.Scripting
                 Utilities.Utils.InitDefaultValues(value);
                 return value;
             }
-            if (new ScriptType(typeof(object)).IsAssignableFrom(type))
+            if (ScriptType.Object.IsAssignableFrom(type))
                 return null;
             if (type.CanCreateInstance)
             {
@@ -149,6 +149,44 @@ namespace FlaxEditor.Scripting
             // Custom types
             foreach (var customTypesInfo in CustomTypes)
                 customTypesInfo.GetDerivedTypes(baseType, result, checkFunc);
+        }
+
+        /// <summary>
+        /// Gets all the types within the given assembly.
+        /// </summary>
+        /// <param name="assembly">The target assembly to check its types.</param>
+        /// <param name="result">The result collection. Elements will be added to it. Clear it before usage.</param>
+        /// <param name="checkFunc">Additional callback used to check if the given type is valid. Returns true if add type, otherwise false.</param>
+        public static void GetTypes(Assembly assembly, List<ScriptType> result, Func<ScriptType, bool> checkFunc)
+        {
+            var types = assembly.GetTypes();
+            for (int i = 0; i < types.Length; i++)
+            {
+                var t = new ScriptType(types[i]);
+                if (checkFunc(t))
+                    result.Add(t);
+            }
+        }
+
+        /// <summary>
+        /// Gets all the types from all the loaded assemblies.
+        /// </summary>
+        /// <param name="result">The result collection. Elements will be added to it. Clear it before usage.</param>
+        /// <param name="checkFunc">Additional callback used to check if the given type is valid. Returns true if add type, otherwise false.</param>
+        /// <param name="checkAssembly">Additional callback used to check if the given assembly is valid. Returns true if search for types in the given assembly, otherwise false.</param>
+        public static void GetTypes(List<ScriptType> result, Func<ScriptType, bool> checkFunc, Func<Assembly, bool> checkAssembly)
+        {
+            // C#/C++ types
+            var assemblies = AppDomain.CurrentDomain.GetAssemblies();
+            for (int i = 0; i < assemblies.Length; i++)
+            {
+                if (checkAssembly(assemblies[i]))
+                    GetTypes(assemblies[i], result, checkFunc);
+            }
+
+            // Custom types
+            foreach (var customTypesInfo in CustomTypes)
+                customTypesInfo.GetTypes(result, checkFunc);
         }
 
         /// <summary>

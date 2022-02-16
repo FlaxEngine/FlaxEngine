@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 using System;
 using System.Collections.Generic;
@@ -508,39 +508,6 @@ namespace FlaxEditor.Gizmo
 
             // Update
             UpdateMatrices();
-        }
-
-        /// <inheritdoc />
-        public override void SnapToGround()
-        {
-            if (Owner.SceneGraphRoot == null)
-                return;
-            var ray = new Ray(Position, Vector3.Down);
-            while (true)
-            {
-                var view = new Ray(Owner.ViewPosition, Owner.ViewDirection);
-                var rayCastFlags = SceneGraphNode.RayCastData.FlagTypes.SkipEditorPrimitives;
-                var hit = Owner.SceneGraphRoot.RayCast(ref ray, ref view, out var distance, out _, rayCastFlags);
-                if (hit != null)
-                {
-                    // Skip snapping selection to itself
-                    if (IsSelected(hit))
-                    {
-                        GetSelectedObjectsBounds(out var selectionBounds, out _);
-                        ray.Position = ray.GetPoint(selectionBounds.Size.Y * 0.5f);
-                        continue;
-                    }
-
-                    // Snap
-                    StartTransforming();
-                    var translationDelta = ray.GetPoint(distance) - Position;
-                    var rotationDelta = Quaternion.Identity;
-                    var scaleDelta = Vector3.Zero;
-                    OnApplyTransformation(ref translationDelta, ref rotationDelta, ref scaleDelta);
-                    EndTransforming();
-                }
-                break;
-            }
         }
 
         /// <summary>

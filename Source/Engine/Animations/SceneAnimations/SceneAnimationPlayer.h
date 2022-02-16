@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -43,11 +43,12 @@ private:
     struct TrackInstance
     {
         ScriptingObjectReference<ScriptingObject> Object;
-        MonoObject* ManagedObject = nullptr;
+        MObject* ManagedObject = nullptr;
         MProperty* Property = nullptr;
         MField* Field = nullptr;
-        MMethod* Method = nullptr;
+        void* Method = nullptr;
         int32 RestoreStateIndex = -1;
+        bool Warn = true;
 
         TrackInstance()
         {
@@ -128,6 +129,12 @@ public:
     API_FIELD(Attributes="EditorDisplay(\"Scene Animation\"), EditorOrder(80), DefaultValue(UpdateModes.EveryUpdate)")
     UpdateModes UpdateMode = UpdateModes::EveryUpdate;
 
+    /// <summary>
+    /// Determines whether the scene animation should automatically map prefab objects from scene animation into prefab instances. Useful for reusable animations to automatically link prefab objects.
+    /// </summary>
+    API_FIELD(Attributes="EditorDisplay(\"Scene Animation\"), EditorOrder(100)")
+    bool UsePrefabObjects = false;
+
 public:
 
     /// <summary>
@@ -158,11 +165,7 @@ public:
     /// Gets the current animation playback time position (seconds).
     /// </summary>
     /// <returns>The animation playback time position (seconds).</returns>
-    API_PROPERTY(Attributes="NoSerialize, HideInEditor")
-    FORCE_INLINE float GetTime() const
-    {
-        return _time;
-    }
+    API_PROPERTY(Attributes="NoSerialize, HideInEditor") float GetTime() const;
 
     /// <summary>
     /// Sets the current animation playback time position (seconds).

@@ -84,7 +84,11 @@ namespace Flax.Build.Projects
             // Pick the newest installed Visual Studio version
             if (format == ProjectFormat.VisualStudio)
             {
-                if (VisualStudioInstance.HasIDE(VisualStudioVersion.VisualStudio2019))
+                if (VisualStudioInstance.HasIDE(VisualStudioVersion.VisualStudio2022))
+                {
+                    format = ProjectFormat.VisualStudio2022;
+                }
+                else if (VisualStudioInstance.HasIDE(VisualStudioVersion.VisualStudio2019))
                 {
                     format = ProjectFormat.VisualStudio2019;
                 }
@@ -106,27 +110,36 @@ namespace Flax.Build.Projects
             switch (format)
             {
             case ProjectFormat.VisualStudio2015:
-                switch (type)
-                {
-                case TargetType.NativeCpp: return new VCProjectGenerator(VisualStudioVersion.VisualStudio2015);
-                case TargetType.DotNet: return new CSProjectGenerator(VisualStudioVersion.VisualStudio2015);
-                default: throw new ArgumentOutOfRangeException(nameof(type), type, null);
-                }
             case ProjectFormat.VisualStudio2017:
-                switch (type)
-                {
-                case TargetType.NativeCpp: return new VCProjectGenerator(VisualStudioVersion.VisualStudio2017);
-                case TargetType.DotNet: return new CSProjectGenerator(VisualStudioVersion.VisualStudio2017);
-                default: throw new ArgumentOutOfRangeException(nameof(type), type, null);
-                }
             case ProjectFormat.VisualStudio2019:
+            case ProjectFormat.VisualStudio2022:
+            {
+                VisualStudioVersion vsVersion;
+                switch (format)
+                {
+                case ProjectFormat.VisualStudio2015:
+                    vsVersion = VisualStudioVersion.VisualStudio2015;
+                    break;
+                case ProjectFormat.VisualStudio2017:
+                    vsVersion = VisualStudioVersion.VisualStudio2017;
+                    break;
+                case ProjectFormat.VisualStudio2019:
+                    vsVersion = VisualStudioVersion.VisualStudio2019;
+                    break;
+                case ProjectFormat.VisualStudio2022:
+                    vsVersion = VisualStudioVersion.VisualStudio2022;
+                    break;
+                default: throw new ArgumentOutOfRangeException(nameof(format), format, null);
+                }
                 switch (type)
                 {
-                case TargetType.NativeCpp: return new VCProjectGenerator(VisualStudioVersion.VisualStudio2019);
-                case TargetType.DotNet: return new CSProjectGenerator(VisualStudioVersion.VisualStudio2019);
+                case TargetType.NativeCpp: return new VCProjectGenerator(vsVersion);
+                case TargetType.DotNet: return new CSProjectGenerator(vsVersion);
                 default: throw new ArgumentOutOfRangeException(nameof(type), type, null);
                 }
+            }
             case ProjectFormat.VisualStudioCode: return new VisualStudioCodeProjectGenerator();
+            case ProjectFormat.XCode: return new XCodeProjectGenerator();
             case ProjectFormat.Custom:
                 if (CustomProjectTypes.TryGetValue(Configuration.ProjectFormatCustom, out var factory))
                     return factory(type);

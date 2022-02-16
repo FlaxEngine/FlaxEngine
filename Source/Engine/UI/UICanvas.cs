@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 using System;
 using System.Globalization;
@@ -240,6 +240,59 @@ namespace FlaxEngine
                 ray = new Ray(Vector3.Zero, Vector3.Forward);
             }
         }
+
+        #region Navigation
+
+        /// <summary>
+        /// The delay (in seconds) before a navigation input event starts repeating if input control is held down (Input Action mode is set to Pressing).
+        /// </summary>
+        [EditorOrder(505), EditorDisplay("Navigation", "Input Repeat Delay")]
+        [Tooltip("TheThe delay (in seconds) before a navigation input event starts repeating if input control is held down (Input Action mode is set to Pressing).")]
+        public float NavigationInputRepeatDelay { get; set; } = 0.5f;
+
+        /// <summary>
+        /// The delay (in seconds) between successive repeated navigation input events after the first one.
+        /// </summary>
+        [EditorOrder(506), EditorDisplay("Navigation", "Input Repeat Rate")]
+        [Tooltip("The delay (in seconds) between successive repeated navigation input events after the first one.")]
+        public float NavigationInputRepeatRate { get; set; } = 0.05f;
+
+        /// <summary>
+        /// The name of the input action for performing UI navigation Up (from Input Settings).
+        /// </summary>
+        [EditorOrder(510), EditorDisplay("Navigation", "Navigate Up")]
+        [Tooltip("The name of the input action for performing UI navigation Up (from Input Settings).")]
+        public string NavigationInputActionUp { get; set; } = "NavigateUp";
+
+        /// <summary>
+        /// The name of the input action for performing UI navigation Down (from Input Settings).
+        /// </summary>
+        [EditorOrder(520), EditorDisplay("Navigation", "Navigate Down")]
+        [Tooltip("The name of the input action for performing UI navigation Down (from Input Settings).")]
+        public string NavigationInputActionDown { get; set; } = "NavigateDown";
+
+        /// <summary>
+        /// The name of the input action for performing UI navigation Left (from Input Settings).
+        /// </summary>
+        [EditorOrder(530), EditorDisplay("Navigation", "Navigate Left")]
+        [Tooltip("The name of the input action for performing UI navigation Left (from Input Settings).")]
+        public string NavigationInputActionLeft { get; set; } = "NavigateLeft";
+
+        /// <summary>
+        /// The name of the input action for performing UI navigation Right (from Input Settings).
+        /// </summary>
+        [EditorOrder(540), EditorDisplay("Navigation", "Navigate Right")]
+        [Tooltip("The name of the input action for performing UI navigation Right (from Input Settings).")]
+        public string NavigationInputActionRight { get; set; } = "NavigateRight";
+
+        /// <summary>
+        /// The name of the input action for performing UI navigation Submit (from Input Settings).
+        /// </summary>
+        [EditorOrder(540), EditorDisplay("Navigation", "Navigate Submit")]
+        [Tooltip("The name of the input action for performing UI navigation Submit (from Input Settings).")]
+        public string NavigationInputActionSubmit { get; set; } = "NavigateSubmit";
+
+        #endregion
 
         /// <summary>
         /// Initializes a new instance of the <see cref="UICanvas"/> class.
@@ -546,6 +599,19 @@ namespace FlaxEngine
                     jsonWriter.WriteEndObject();
                 }
 
+                jsonWriter.WritePropertyName("NavigationInputRepeatDelay");
+                jsonWriter.WriteValue(NavigationInputRepeatDelay);
+                jsonWriter.WritePropertyName("NavigationInputRepeatRate");
+                jsonWriter.WriteValue(NavigationInputRepeatRate);
+                jsonWriter.WritePropertyName("NavigationInputActionUp");
+                jsonWriter.WriteValue(NavigationInputActionUp);
+                jsonWriter.WritePropertyName("NavigationInputActionDown");
+                jsonWriter.WriteValue(NavigationInputActionDown);
+                jsonWriter.WritePropertyName("NavigationInputActionLeft");
+                jsonWriter.WriteValue(NavigationInputActionLeft);
+                jsonWriter.WritePropertyName("NavigationInputActionRight");
+                jsonWriter.WriteValue(NavigationInputActionRight);
+
                 jsonWriter.WriteEndObject();
             }
 
@@ -618,6 +684,37 @@ namespace FlaxEngine
                     jsonWriter.WritePropertyName("Y");
                     jsonWriter.WriteValue(Size.Y);
                     jsonWriter.WriteEndObject();
+                }
+
+                if (!Mathf.NearEqual(NavigationInputRepeatDelay, other.NavigationInputRepeatDelay))
+                {
+                    jsonWriter.WritePropertyName("NavigationInputRepeatDelay");
+                    jsonWriter.WriteValue(NavigationInputRepeatDelay);
+                }
+                if (!Mathf.NearEqual(NavigationInputRepeatRate, other.NavigationInputRepeatRate))
+                {
+                    jsonWriter.WritePropertyName("NavigationInputRepeatRate");
+                    jsonWriter.WriteValue(NavigationInputRepeatRate);
+                }
+                if (NavigationInputActionUp != other.NavigationInputActionUp)
+                {
+                    jsonWriter.WritePropertyName("NavigationInputActionUp");
+                    jsonWriter.WriteValue(NavigationInputActionUp);
+                }
+                if (NavigationInputActionDown != other.NavigationInputActionDown)
+                {
+                    jsonWriter.WritePropertyName("NavigationInputActionDown");
+                    jsonWriter.WriteValue(NavigationInputActionDown);
+                }
+                if (NavigationInputActionLeft != other.NavigationInputActionLeft)
+                {
+                    jsonWriter.WritePropertyName("NavigationInputActionLeft");
+                    jsonWriter.WriteValue(NavigationInputActionLeft);
+                }
+                if (NavigationInputActionRight != other.NavigationInputActionRight)
+                {
+                    jsonWriter.WritePropertyName("NavigationInputActionRight");
+                    jsonWriter.WriteValue(NavigationInputActionRight);
                 }
 
                 jsonWriter.WriteEndObject();

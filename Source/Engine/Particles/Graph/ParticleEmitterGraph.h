@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -295,6 +295,7 @@ public:
             // Particle Emitter Function
         case GRAPH_NODE_MAKE_TYPE(14, 300):
             node->Assets[0] = Content::LoadAsync<Asset>((Guid)node->Values[0]);
+            node->UsesParticleData = true; // TODO: analyze emitter function graph to detect if it's actually using any particle data at all (even from inputs after inline)
             break;
             // Particle Index
         case GRAPH_NODE_MAKE_TYPE(14, 301):

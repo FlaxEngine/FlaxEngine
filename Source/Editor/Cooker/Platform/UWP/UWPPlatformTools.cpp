@@ -1,6 +1,6 @@
 // Copyright (c) 2012-2019 Wojciech Figat. All rights reserved.
 
-#if PLATFORM_TOOLS_UWP || PLATFORM_TOOLS_XBOX_ONE
+#if PLATFORM_TOOLS_UWP
 
 #include "UWPPlatformTools.h"
 #include "Engine/Platform/FileSystem.h"
@@ -14,7 +14,27 @@
 #include "Engine/Content/Content.h"
 #include "Engine/Content/JsonAsset.h"
 
-IMPLEMENT_SETTINGS_GETTER(UWPPlatformSettings, UWPPlatform);
+IMPLEMENT_ENGINE_SETTINGS_GETTER(UWPPlatformSettings, UWPPlatform);
+
+const Char* UWPPlatformTools::GetDisplayName() const
+{
+    return TEXT("Windows Store");
+}
+
+const Char* UWPPlatformTools::GetName() const
+{
+    return TEXT("UWP");
+}
+
+PlatformType UWPPlatformTools::GetPlatform() const
+{
+    return PlatformType::UWP;
+}
+
+ArchitectureType UWPPlatformTools::GetArchitecture() const
+{
+    return _arch;
+}
 
 bool UWPPlatformTools::UseAOT() const
 {
@@ -38,9 +58,8 @@ bool UWPPlatformTools::OnScriptsStepDone(CookingData& data)
 
 bool UWPPlatformTools::OnDeployBinaries(CookingData& data)
 {
-    bool isXboxOne = data.Platform == BuildPlatform::XboxOne;
     const auto platformDataPath = Globals::StartupFolder / TEXT("Source/Platforms");
-    const auto uwpDataPath = platformDataPath / (isXboxOne ? TEXT("XboxOne") : TEXT("UWP")) / TEXT("Binaries");
+    const auto uwpDataPath = platformDataPath / TEXT("UWP/Binaries");
     const auto gameSettings = GameSettings::Get();
     const auto platformSettings = UWPPlatformSettings::Get();
     StringAnsi fileTemplate;
@@ -83,7 +102,6 @@ bool UWPPlatformTools::OnDeployBinaries(CookingData& data)
         mode = "x86";
         break;
     case BuildPlatform::UWPx64:
-    case BuildPlatform::XboxOne:
         mode = "x64";
         break;
     default:
@@ -161,12 +179,12 @@ bool UWPPlatformTools::OnDeployBinaries(CookingData& data)
         if (file)
         {
             auto now = DateTime::Now();
-            file->WriteTextFormatted(
+            file->WriteText(StringAnsi::Format(
                 fileTemplate.Get()
                 , gameSettings->ProductName.ToStringAnsi()
                 , gameSettings->CompanyName.ToStringAnsi()
                 , now.GetYear()
-            );
+            ));
             hasError = file->HasError();
             Delete(file);
         }
@@ -192,10 +210,10 @@ bool UWPPlatformTools::OnDeployBinaries(CookingData& data)
         bool hasError = true;
         if (file)
         {
-            file->WriteTextFormatted(
+            file->WriteText(StringAnsi::Format(
                 fileTemplate.Get()
                 , defaultNamespace.ToStringAnsi() // {0} Default Namespace
-            );
+            ));
             hasError = file->HasError();
             Delete(file);
         }
@@ -240,19 +258,17 @@ bool UWPPlatformTools::OnDeployBinaries(CookingData& data)
             autoRotationPreferences += "DisplayOrientations.PortraitFlipped";
         }
         StringAnsi preferredLaunchWindowingMode = platformSettings->PreferredLaunchWindowingMode == UWPPlatformSettings::WindowMode::FullScreen ? "FullScreen" : "PreferredLaunchViewSize";
-        if (isXboxOne)
-            preferredLaunchWindowingMode = "FullScreen";
 
         // Write data to file
         auto file = FileWriteStream::Open(dstFlaxGeneratedPath);
         bool hasError = true;
         if (file)
         {
-            file->WriteTextFormatted(
+            file->WriteText(StringAnsi::Format(
                 fileTemplate.Get()
                 , autoRotationPreferences.Get()
                 , preferredLaunchWindowingMode.Get()
-            );
+            ));
             hasError = file->HasError();
             Delete(file);
         }
@@ -280,12 +296,12 @@ bool UWPPlatformTools::OnDeployBinaries(CookingData& data)
         bool hasError = true;
         if (file)
         {
-            file->WriteTextFormatted(
+            file->WriteText(StringAnsi::Format(
                 fileTemplate.Get()
                 , projectName.ToStringAnsi() // {0} Project Name
                 , mode // {1} Platform Mode
                 , projectGuid.ToStringAnsi() // {2} Project ID
-            );
+            ));
             hasError = file->HasError();
             Delete(file);
         }
@@ -328,14 +344,14 @@ bool UWPPlatformTools::OnDeployBinaries(CookingData& data)
         bool hasError = true;
         if (file)
         {
-            file->WriteTextFormatted(
+            file->WriteText(StringAnsi::Format(
                 fileTemplate.Get()
                 , projectName.ToStringAnsi() // {0} Project Name
                 , mode // {1} Platform Mode
                 , projectGuid.Get() // {2} Project ID
                 , filesInclude.ToString().ToStringAnsi() // {3} Files to include
                 , defaultNamespace.ToStringAnsi() // {4} Default Namespace
-            );
+            ));
             hasError = file->HasError();
             Delete(file);
         }
@@ -378,13 +394,13 @@ bool UWPPlatformTools::OnDeployBinaries(CookingData& data)
         bool hasError = true;
         if (file)
         {
-            file->WriteTextFormatted(
+            file->WriteText(StringAnsi::Format(
                 fileTemplate.Get()
                 , projectName.ToStringAnsi() // {0} Display Name
                 , gameSettings->CompanyName.ToStringAnsi() // {1} Company Name
                 , productId.ToStringAnsi() // {2} Product ID
                 , defaultNamespace.ToStringAnsi() // {3} Default Namespace
-            );
+            ));
             hasError = file->HasError();
             Delete(file);
         }
@@ -501,46 +517,6 @@ bool UWPPlatformTools::OnPostProcess(CookingData& data)
     }
 
     return false;
-}
-
-const Char* WSAPlatformTools::GetDisplayName() const
-{
-    return TEXT("Windows Store");
-}
-
-const Char* WSAPlatformTools::GetName() const
-{
-    return TEXT("UWP");
-}
-
-PlatformType WSAPlatformTools::GetPlatform() const
-{
-    return PlatformType::UWP;
-}
-
-ArchitectureType WSAPlatformTools::GetArchitecture() const
-{
-    return _arch;
-}
-
-const Char* XboxOnePlatformTools::GetDisplayName() const
-{
-    return TEXT("Xbox One");
-}
-
-const Char* XboxOnePlatformTools::GetName() const
-{
-    return TEXT("XboxOne");
-}
-
-PlatformType XboxOnePlatformTools::GetPlatform() const
-{
-    return PlatformType::XboxOne;
-}
-
-ArchitectureType XboxOnePlatformTools::GetArchitecture() const
-{
-    return ArchitectureType::x64;
 }
 
 #endif

@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -50,7 +50,7 @@ public:
     /// Logs a formatted exception message to the Flax Console.
     /// </summary>
     /// <param name="exceptionObject">Runtime Exception.</param>
-    static void LogException(MonoObject* exceptionObject);
+    static void LogException(MObject* exceptionObject);
 
 public:
 

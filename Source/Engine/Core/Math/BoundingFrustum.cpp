@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 #include "BoundingFrustum.h"
 #include "BoundingBox.h"
@@ -80,6 +80,19 @@ Plane BoundingFrustum::GetPlane(int32 index) const
     default:
         return Plane();
     }
+}
+
+static Vector3 Get3PlanesInterPoint(const Plane& p1, const Plane& p2, const Plane& p3)
+{
+    const Vector3 n2Xn3 = Vector3::Cross(p2.Normal, p3.Normal);
+    const Vector3 n3Xn1 = Vector3::Cross(p3.Normal, p1.Normal);
+    const Vector3 n1Xn2 = Vector3::Cross(p1.Normal, p2.Normal);
+    const float div1 = Vector3::Dot(p1.Normal, n2Xn3);
+    const float div2 = Vector3::Dot(p2.Normal, n3Xn1);
+    const float div3 = Vector3::Dot(p3.Normal, n1Xn2);
+    if (Math::IsZero(div1 * div2 * div3))
+        return Vector3::Zero;
+    return n2Xn3 * (-p1.D / div1) - n3Xn1 * (p2.D / div2) - n1Xn2 * (p3.D / div3);
 }
 
 void BoundingFrustum::GetCorners(Vector3 corners[8]) const

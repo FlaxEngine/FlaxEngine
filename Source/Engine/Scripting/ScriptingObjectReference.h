@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -10,6 +10,7 @@ extern FLAXENGINE_API ScriptingObject* FindObject(const Guid& id, MClass* type);
 /// <summary>
 /// The scripting object reference.
 /// </summary>
+/// <typeparam name="T">The type of the scripting object.</typeparam>
 class FLAXENGINE_API ScriptingObjectReferenceBase
 {
 public:
@@ -59,7 +60,6 @@ public:
     /// <summary>
     /// Gets the object ID.
     /// </summary>
-    /// <returns>The object ID or Guid::Empty if nothing assigned.</returns>
     FORCE_INLINE Guid GetID() const
     {
         return _object ? _object->GetID() : Guid::Empty;
@@ -68,8 +68,7 @@ public:
     /// <summary>
     /// Gets managed instance object (or null if no object linked).
     /// </summary>
-    /// <returns>The managed object instance.</returns>
-    FORCE_INLINE MonoObject* GetManagedInstance() const
+    FORCE_INLINE MObject* GetManagedInstance() const
     {
         return _object ? _object->GetOrCreateManagedInstance() : nullptr;
     }
@@ -77,7 +76,6 @@ public:
     /// <summary>
     /// Determines whether object is assigned and managed instance of the object is alive.
     /// </summary>
-    /// <returns>True if managed object has been created and exists, otherwise false.</returns>
     FORCE_INLINE bool HasManagedInstance() const
     {
         return _object && _object->HasManagedInstance();
@@ -86,8 +84,7 @@ public:
     /// <summary>
     /// Gets the managed instance object or creates it if missing or null if not assigned.
     /// </summary>
-    /// <returns>The Mono managed object.</returns>
-    FORCE_INLINE MonoObject* GetOrCreateManagedInstance() const
+    FORCE_INLINE MObject* GetOrCreateManagedInstance() const
     {
         return _object ? _object->GetOrCreateManagedInstance() : nullptr;
     }
@@ -167,95 +164,42 @@ public:
 
 public:
 
-    /// <summary>
-    /// Compares the property value with the given object.
-    /// </summary>
-    /// <param name="other">The other.</param>
-    /// <returns>True if property object equals the given value.</returns>
     FORCE_INLINE bool operator==(T* other)
     {
         return _object == other;
     }
-
-    /// <summary>
-    /// Compares the property value with the other property value.
-    /// </summary>
-    /// <param name="other">The other property.</param>
-    /// <returns>True if properties are equal.</returns>
-    FORCE_INLINE bool operator==(const ScriptingObjectReference& other)
-    {
-        return _object == other._object;
-    }
-
-    /// <summary>
-    /// Compares the property value with the given object.
-    /// </summary>
-    /// <param name="other">The other.</param>
-    /// <returns>True if property object not equals the given value.</returns>
     FORCE_INLINE bool operator!=(T* other)
     {
         return _object != other;
     }
-
-    /// <summary>
-    /// Compares the property value with the other property value.
-    /// </summary>
-    /// <param name="other">The other property.</param>
-    /// <returns>True if properties are not equal.</returns>
+    FORCE_INLINE bool operator==(const ScriptingObjectReference& other)
+    {
+        return _object == other._object;
+    }
     FORCE_INLINE bool operator!=(const ScriptingObjectReference& other)
     {
         return _object != other._object;
     }
 
-    /// <summary>
-    /// Sets the property to the given property value.
-    /// </summary>
-    /// <param name="other">The other property.</param>
-    /// <returns>The reference to this property.</returns>
-    ScriptingObjectReference& operator=(const ScriptingObjectReference& other)
-    {
-        if (this != &other)
-            OnSet(other.Get());
-        return *this;
-    }
-
-    /// <summary>
-    /// Sets the property to the given value.
-    /// </summary>
-    /// <param name="other">The object.</param>
-    /// <returns>The reference to this property.</returns>
-    FORCE_INLINE ScriptingObjectReference& operator=(const T& other)
-    {
-        OnSet(&other);
-        return *this;
-    }
-
-    /// <summary>
-    /// Sets the property to the given value.
-    /// </summary>
-    /// <param name="other">The object.</param>
-    /// <returns>The reference to this property.</returns>
     FORCE_INLINE ScriptingObjectReference& operator=(T* other)
     {
         OnSet(other);
         return *this;
     }
-
-    /// <summary>
-    /// Sets the property to the object of the given ID.
-    /// </summary>
-    /// <param name="id">The object ID.</param>
-    /// <returns>The reference to this property.</returns>
+    ScriptingObjectReference& operator=(const ScriptingObjectReference& other)
+    {
+        OnSet(other.Get());
+        return *this;
+    }
     FORCE_INLINE ScriptingObjectReference& operator=(const Guid& id)
     {
-        Set(id);
+        OnSet(static_cast<T*>(FindObject(id, T::GetStaticClass())));
         return *this;
     }
 
     /// <summary>
     /// Implicit conversion to the object.
     /// </summary>
-    /// <returns>The object reference.</returns>
     FORCE_INLINE operator T*() const
     {
         return (T*)_object;
@@ -264,7 +208,6 @@ public:
     /// <summary>
     /// Implicit conversion to boolean value.
     /// </summary>
-    /// <returns>True if object has been assigned, otherwise false</returns>
     FORCE_INLINE operator bool() const
     {
         return _object != nullptr;
@@ -273,7 +216,6 @@ public:
     /// <summary>
     /// Object accessor.
     /// </summary>
-    /// <returns>The object reference.</returns>
     FORCE_INLINE T* operator->() const
     {
         return (T*)_object;
@@ -282,7 +224,6 @@ public:
     /// <summary>
     /// Gets the object pointer.
     /// </summary>
-    /// <returns>The object reference.</returns>
     FORCE_INLINE T* Get() const
     {
         return (T*)_object;
@@ -291,31 +232,10 @@ public:
     /// <summary>
     /// Gets the object as a given type (static cast).
     /// </summary>
-    /// <returns>Asset</returns>
     template<typename U>
     FORCE_INLINE U* As() const
     {
         return static_cast<U*>(_object);
-    }
-
-public:
-
-    /// <summary>
-    /// Sets the object.
-    /// </summary>
-    /// <param name="id">The object ID. Uses Scripting to find the registered object of the given ID.</param>
-    FORCE_INLINE void Set(const Guid& id)
-    {
-        Set(static_cast<T*>(FindObject(id, T::GetStaticClass())));
-    }
-
-    /// <summary>
-    /// Sets the object.
-    /// </summary>
-    /// <param name="object">The object.</param>
-    FORCE_INLINE void Set(T* object)
-    {
-        OnSet(object);
     }
 };
 

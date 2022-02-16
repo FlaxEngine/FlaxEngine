@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -221,8 +221,8 @@ public:
     /// <summary>
     /// Sets the fixed FPS for game logic updates (draw and update).
     /// </summary>
-    /// <param name="enable">>True if enable this feature, otherwise false.</param>
-    /// <param name="value">>The fixed draw/update rate for the time.</param>
+    /// <param name="enable">True if enable this feature, otherwise false.</param>
+    /// <param name="value">The fixed draw/update rate for the time.</param>
     API_FUNCTION() static void SetFixedDeltaTime(bool enable, float value);
 
 private:

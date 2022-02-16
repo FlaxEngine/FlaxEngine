@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 using System;
 using FlaxEditor.Scripting;
@@ -156,6 +156,8 @@ namespace FlaxEditor.Surface
                 type = TypeUtils.GetType(typeName.Substring(0, typeName.Length - 1));
                 GetConnectionColor(type, hint, out color);
             }
+            else if (type.IsArray)
+                GetConnectionColor(new ScriptType(type.GetElementType()), hint, out color);
             else if (type.Type == typeof(void))
                 color = Colors.Impulse;
             else if (type.Type == typeof(bool))
@@ -178,7 +180,7 @@ namespace FlaxEditor.Surface
                 color = Colors.Enum;
             else if (type.IsValueType)
                 color = Colors.Structures;
-            else if (new ScriptType(typeof(FlaxEngine.Object)).IsAssignableFrom(type))
+            else if (new ScriptType(typeof(FlaxEngine.Object)).IsAssignableFrom(type) || type.IsInterface)
                 color = Colors.Object;
             else if (hint == ConnectionsHint.Vector)
                 color = Colors.Vector;

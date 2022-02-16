@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -177,6 +177,7 @@ public:
         bool ImportVertexColors = true;
         bool ImportBlendShapes = false;
         ModelLightmapUVsSource LightmapUVsSource = ModelLightmapUVsSource::Disable;
+        String CollisionMeshesPrefix;
 
         // Transform
         float Scale = 1.0f;
@@ -193,7 +194,6 @@ public:
         bool OptimizeKeyframes = true;
         bool EnableRootMotion = false;
         String RootNodeName;
-        int32 AnimationIndex = -1;
 
         // Level Of Detail
         bool GenerateLODs = false;
@@ -205,6 +205,14 @@ public:
         bool ImportMaterials = true;
         bool ImportTextures = true;
         bool RestoreMaterialsOnReimport = true;
+
+        // Splitting
+        bool SplitObjects = false;
+        int32 ObjectIndex = -1;
+
+        // Runtime data for objects splitting during import (used internally)
+        void* SplitContext = nullptr;
+        Function<bool(Options& splitOptions, const String& objectName)> OnSplitImport;
 
     public:
 
@@ -223,7 +231,7 @@ public:
     /// <param name="options">The import options.</param>
     /// <param name="errorMsg">The error message container.</param>
     /// <returns>True if fails, otherwise false.</returns>
-    static bool ImportData(const String& path, ImportedModelData& data, Options options, String& errorMsg);
+    static bool ImportData(const String& path, ImportedModelData& data, Options& options, String& errorMsg);
 
     /// <summary>
     /// Imports the model.
@@ -234,7 +242,7 @@ public:
     /// <param name="errorMsg">The error message container.</param>
     /// <param name="autoImportOutput">The output folder for the additional imported data - optional. Used to auto-import textures and material assets.</param>
     /// <returns>True if fails, otherwise false.</returns>
-    static bool ImportModel(const String& path, ModelData& meshData, Options options, String& errorMsg, const String& autoImportOutput = String::Empty);
+    static bool ImportModel(const String& path, ModelData& meshData, Options& options, String& errorMsg, const String& autoImportOutput = String::Empty);
 
 public:
 
@@ -267,13 +275,13 @@ public:
 private:
 
 #if USE_ASSIMP
-    static bool ImportDataAssimp(const char* path, ImportedModelData& data, const Options& options, String& errorMsg);
+    static bool ImportDataAssimp(const char* path, ImportedModelData& data, Options& options, String& errorMsg);
 #endif
 #if USE_AUTODESK_FBX_SDK
-	static bool ImportDataAutodeskFbxSdk(const char* path, ImportedModelData& data, const Options& options, String& errorMsg);
+	static bool ImportDataAutodeskFbxSdk(const char* path, ImportedModelData& data, Options& options, String& errorMsg);
 #endif
 #if USE_OPEN_FBX
-    static bool ImportDataOpenFBX(const char* path, ImportedModelData& data, const Options& options, String& errorMsg);
+    static bool ImportDataOpenFBX(const char* path, ImportedModelData& data, Options& options, String& errorMsg);
 #endif
 };
 

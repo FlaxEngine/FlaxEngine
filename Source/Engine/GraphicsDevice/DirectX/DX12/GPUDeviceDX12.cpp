@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 #if GRAPHICS_API_DIRECTX12
 
@@ -37,7 +37,7 @@ static bool CheckDX12Support(IDXGIAdapter* adapter)
 
 GPUDevice* GPUDeviceDX12::Create()
 {
-#if PLATFORM_XBOX_SCARLETT
+#if PLATFORM_XBOX_SCARLETT || PLATFORM_XBOX_ONE
     IDXGIFactory4* dxgiFactory = nullptr;
     GPUAdapterDX selectedAdapter;
     selectedAdapter.Index = 0;
@@ -198,17 +198,9 @@ GPUDeviceDX12::GPUDeviceDX12(IDXGIFactory4* dxgiFactory, GPUAdapterDX* adapter)
 {
 }
 
-#if PLATFORM_XBOX_SCARLETT
-namespace XboxScarlett
-{
-    extern Action OnSuspend;
-    extern Action OnResume;
-}
-#endif
-
 bool GPUDeviceDX12::Init()
 {
-#if PLATFORM_XBOX_SCARLETT
+#if PLATFORM_XBOX_SCARLETT || PLATFORM_XBOX_ONE
     // Create DirectX device
     D3D12XBOX_CREATE_DEVICE_PARAMETERS params = {};
     params.Version = D3D12_SDK_VERSION;
@@ -220,7 +212,9 @@ bool GPUDeviceDX12::Init()
     params.GraphicsCommandQueueRingSizeBytes = static_cast<UINT>(D3D12XBOX_DEFAULT_SIZE_BYTES);
     params.GraphicsScratchMemorySizeBytes = static_cast<UINT>(D3D12XBOX_DEFAULT_SIZE_BYTES);
     params.ComputeScratchMemorySizeBytes = static_cast<UINT>(D3D12XBOX_DEFAULT_SIZE_BYTES);
+#if PLATFORM_XBOX_SCARLETT
     params.DisableDXR = TRUE;
+#endif
     VALIDATE_DIRECTX_RESULT(D3D12XboxCreateDevice(nullptr, &params, IID_GRAPHICS_PPV_ARGS(&_device)));
 
     // Setup adapter
@@ -255,8 +249,11 @@ bool GPUDeviceDX12::Init()
     }
     LOG(Info, "Hardware Version: {0}", hwVer);
     updateFrameEvents();
-    XboxScarlett::OnSuspend.Bind<GPUDeviceDX12, &GPUDeviceDX12::OnSuspend>(this);
-    XboxScarlett::OnResume.Bind<GPUDeviceDX12, &GPUDeviceDX12::OnResume>(this);
+
+#if PLATFORM_GDK
+    GDKPlatform::Suspended.Bind<GPUDeviceDX12, &GPUDeviceDX12::OnSuspended>(this);
+    GDKPlatform::Resumed.Bind<GPUDeviceDX12, &GPUDeviceDX12::OnResumed>(this);
+#endif
 #else
     // Get DXGI adapter
     IDXGIAdapter1* adapter;
@@ -839,14 +836,14 @@ void GPUDeviceDX12::updateRes2Dispose()
     _res2DisposeLock.Unlock();
 }
 
-#if PLATFORM_XBOX_SCARLETT
+#if PLATFORM_XBOX_SCARLETT || PLATFORM_XBOX_ONE
 
-void GPUDeviceDX12::OnSuspend()
+void GPUDeviceDX12::OnSuspended()
 {
     _commandQueue->GetCommandQueue()->SuspendX(0);
 }
 
-void GPUDeviceDX12::OnResume()
+void GPUDeviceDX12::OnResumed()
 {
     _commandQueue->GetCommandQueue()->ResumeX();
 

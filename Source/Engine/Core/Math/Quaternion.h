@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -586,6 +586,13 @@ public:
     // @param cameraForwardVector The forward vector of the camera
     // @param result When the method completes, contains the created billboard quaternion
     static void Billboard(const Vector3& objectPosition, const Vector3& cameraPosition, const Vector3& cameraUpVector, const Vector3& cameraForwardVector, Quaternion& result);
+
+    /// <summary>
+    /// Calculates the orientation from the direction vector.
+    /// </summary>
+    /// <param name="direction">The direction vector (normalized).</param>
+    /// <returns>The orientation.</returns>
+    static Quaternion FromDirection(const Vector3& direction);
 
     /// <summary>
     /// Creates a rotation with the specified forward and upwards directions.

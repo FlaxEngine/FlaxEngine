@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -10,9 +10,9 @@ class MemoryReadStream;
 /// <summary>
 /// Represents single Level Of Detail for the skinned model. Contains a collection of the meshes.
 /// </summary>
-API_CLASS(NoSpawn) class FLAXENGINE_API SkinnedModelLOD : public PersistentScriptingObject
+API_CLASS(NoSpawn) class FLAXENGINE_API SkinnedModelLOD : public ScriptingObject
 {
-DECLARE_SCRIPTING_TYPE_WITH_CONSTRUCTOR_IMPL(SkinnedModelLOD, PersistentScriptingObject);
+DECLARE_SCRIPTING_TYPE_WITH_CONSTRUCTOR_IMPL(SkinnedModelLOD, ScriptingObject);
     friend SkinnedModel;
 private:
 

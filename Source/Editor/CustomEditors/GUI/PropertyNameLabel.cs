@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 using FlaxEditor.GUI.ContextMenu;
 using FlaxEngine;
@@ -118,11 +118,15 @@ namespace FlaxEditor.CustomEditors.GUI
 
                 if (linkedEditor != null)
                 {
-                    var revertToPrefab = menu.AddButton("Revert to Prefab", linkedEditor.RevertToReferenceValue);
-                    revertToPrefab.Enabled = linkedEditor.CanRevertReferenceValue;
-                    var resetToDefault = menu.AddButton("Reset to default", linkedEditor.RevertToDefaultValue);
-                    resetToDefault.Enabled = linkedEditor.CanRevertDefaultValue;
-                    menu.AddSeparator();
+                    var features = linkedEditor.Presenter.Features;
+                    if ((features & (FeatureFlags.UseDefault | FeatureFlags.UsePrefab)) != 0)
+                    {
+                        if ((features & FeatureFlags.UsePrefab) != 0)
+                            menu.AddButton("Revert to Prefab", linkedEditor.RevertToReferenceValue).Enabled = linkedEditor.CanRevertReferenceValue;
+                        if ((features & FeatureFlags.UseDefault) != 0)
+                            menu.AddButton("Reset to default", linkedEditor.RevertToDefaultValue).Enabled = linkedEditor.CanRevertDefaultValue;
+                        menu.AddSeparator();
+                    }
                     menu.AddButton("Copy", linkedEditor.Copy);
                     var paste = menu.AddButton("Paste", linkedEditor.Paste);
                     paste.Enabled = linkedEditor.CanPaste;

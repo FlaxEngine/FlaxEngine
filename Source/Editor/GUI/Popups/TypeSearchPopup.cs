@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 using System;
 using System.Linq;
@@ -46,14 +46,8 @@ namespace FlaxEditor.GUI
                 _type = type;
 
                 Name = type.Name;
-                TooltipText = type.TypeName;
+                TooltipText = Editor.Instance.CodeDocs.GetTooltip(type, attributes);
                 Tag = type;
-                var tooltipAttribute = (TooltipAttribute)attributes.FirstOrDefault(x => x is TooltipAttribute);
-                if (tooltipAttribute != null)
-                {
-                    TooltipText += '\n';
-                    TooltipText += tooltipAttribute.Text;
-                }
                 var categoryAttribute = (CategoryAttribute)attributes.FirstOrDefault(x => x is CategoryAttribute);
                 if (categoryAttribute != null)
                 {

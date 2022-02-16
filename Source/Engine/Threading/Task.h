@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -18,7 +18,7 @@ DECLARE_ENUM_EX_6(TaskState, int64, 0, Created, Failed, Canceled, Queued, Runnin
 /// <summary>
 /// Represents an asynchronous operation.
 /// </summary>
-class FLAXENGINE_API Task : public RemovableObject, public NonCopyable
+class FLAXENGINE_API Task : public Object, public NonCopyable
 {
     //
     // Tasks execution and states flow:
@@ -247,6 +247,19 @@ public:
     /// <param name="target">The action target object.</param>
     /// <returns>Task</returns>
     static Task* StartNew(Function<void()>::Signature action, Object* target = nullptr);
+
+    /// <summary>
+    /// Starts the new task.
+    /// </summary>
+    /// <param name="callee">The callee object.</param>
+    /// <returns>Task</returns>
+    template<class T, void(T::* Method)()>
+    static Task* StartNew(T* callee)
+    {
+        Function<void()> action;
+        action.Bind<T, Method>(callee);
+        return StartNew(action, dynamic_cast<Object*>(callee));
+    }
 
     /// <summary>
     /// Starts the new task.

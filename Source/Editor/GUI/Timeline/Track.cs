@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 using System;
 using System.Collections.Generic;
@@ -32,7 +32,7 @@ namespace FlaxEditor.GUI.Timeline
         /// <summary>
         /// The default drag insert position margin.
         /// </summary>
-        public const float DefaultDragInsertPositionMargin = 2.0f;
+        public const float DefaultDragInsertPositionMargin = 4.0f;
 
         /// <summary>
         /// The header height.
@@ -41,6 +41,7 @@ namespace FlaxEditor.GUI.Timeline
 
         private Timeline _timeline;
         private int _trackIndexCached = -1;
+        private TrackFlags _flags;
         private Track _parentTrack;
         internal float _xOffset;
         private Margin _margin = new Margin(2.0f);
@@ -162,14 +163,48 @@ namespace FlaxEditor.GUI.Timeline
         public Color Color = Color.White;
 
         /// <summary>
-        /// The mute flag. Muted tracks are disabled.
+        /// The track flags.
         /// </summary>
-        public bool Mute;
+        public TrackFlags Flags
+        {
+            get => _flags;
+            set
+            {
+                if (_flags == value)
+                    return;
+                _flags = value;
+                _muteCheckbox.Checked = (Flags & TrackFlags.Mute) == 0;
+                Timeline?.MarkAsEdited();
+            }
+        }
 
         /// <summary>
-        /// The loop flag. Looped tracks are doing a playback of its data in a loop.
+        /// Controls <see cref="TrackFlags.Mute"/> flag.
         /// </summary>
-        public bool Loop;
+        public bool Mute
+        {
+            get => (Flags & TrackFlags.Mute) != 0;
+            set => Flags = value ? (Flags | TrackFlags.Mute) : (Flags & ~TrackFlags.Mute);
+        }
+
+        /// <summary>
+        /// Controls <see cref="TrackFlags.Loop"/> flag.
+        /// </summary>
+        public bool Loop
+        {
+            get => (Flags & TrackFlags.Loop) != 0;
+            set => Flags = value ? (Flags | TrackFlags.Loop) : (Flags & ~TrackFlags.Loop);
+        }
+
+        /// <summary>
+        /// The minimum amount of media items for this track.
+        /// </summary>
+        public int MinMediaCount = 0;
+
+        /// <summary>
+        /// The maximum amount of media items for this track.
+        /// </summary>
+        public int MaxMediaCount = 1024;
 
         /// <summary>
         /// The track archetype.
@@ -235,8 +270,7 @@ namespace FlaxEditor.GUI.Timeline
             Archetype = options.Archetype;
             Name = options.Archetype.Name;
             Icon = options.Archetype.Icon;
-            Mute = options.Mute;
-            Loop = options.Loop;
+            _flags = options.Flags;
 
             // Mute checkbox
             const float buttonSize = 14;
@@ -244,7 +278,7 @@ namespace FlaxEditor.GUI.Timeline
             {
                 TooltipText = "Mute track",
                 AutoFocus = true,
-                Checked = !Mute,
+                Checked = (Flags & TrackFlags.Mute) == 0,
                 AnchorPreset = AnchorPresets.MiddleRight,
                 Offsets = new Margin(-buttonSize - 2, buttonSize, buttonSize * -0.5f, buttonSize),
                 IsScrollable = false,
@@ -253,19 +287,12 @@ namespace FlaxEditor.GUI.Timeline
             _muteCheckbox.StateChanged += OnMuteButtonStateChanged;
         }
 
-        internal void SetMute(bool mute)
-        {
-            Mute = mute;
-            _muteCheckbox.Checked = !mute;
-        }
-
         private void OnMuteButtonStateChanged(CheckBox checkBox)
         {
             if (Mute == !checkBox.Checked)
                 return;
             using (new TrackUndoBlock(this))
                 Mute = !checkBox.Checked;
-            Timeline.MarkAsEdited();
         }
 
         /// <summary>
@@ -378,6 +405,14 @@ namespace FlaxEditor.GUI.Timeline
             }
 
             Dispose();
+        }
+
+        /// <summary>
+        /// Called when track gets duplicated.
+        /// </summary>
+        /// <param name="clone">The cloned track instance.</param>
+        public virtual void OnDuplicated(Track clone)
+        {
         }
 
         /// <summary>
@@ -708,17 +743,22 @@ namespace FlaxEditor.GUI.Timeline
         /// <summary>
         /// Gets a value indicating whether user can drag this track.
         /// </summary>
-        protected virtual bool CanDrag => true;
+        public virtual bool CanDrag => true;
 
         /// <summary>
         /// Gets a value indicating whether user can rename this track.
         /// </summary>
-        protected virtual bool CanRename => true;
+        public virtual bool CanRename => true;
+
+        /// <summary>
+        /// Gets a value indicating whether user can copy and paste this track.
+        /// </summary>
+        public virtual bool CanCopyPaste => true;
 
         /// <summary>
         /// Gets a value indicating whether user can expand the track contents of the inner hierarchy.
         /// </summary>
-        protected virtual bool CanExpand => SubTracks.Count > 0;
+        public virtual bool CanExpand => SubTracks.Count > 0;
 
         /// <summary>
         /// Determines whether this track can get the child track.
@@ -989,6 +1029,15 @@ namespace FlaxEditor.GUI.Timeline
         }
 
         /// <summary>
+        /// Called when showing timeline context menu to the user. Can be used to add custom buttons.
+        /// </summary>
+        /// <param name="menu">The menu.</param>
+        /// <param name="time">The time (in seconds) at which context menu is shown (user clicked on a timeline).</param>
+        public virtual void OnTimelineContextMenu(ContextMenu.ContextMenu menu, float time)
+        {
+        }
+
+        /// <summary>
         /// Called when context menu is being prepared to show. Can be used to add custom options.
         /// </summary>
         /// <param name="menu">The menu.</param>
@@ -1009,13 +1058,19 @@ namespace FlaxEditor.GUI.Timeline
                 // Show context menu
                 var menu = new ContextMenu.ContextMenu();
                 if (CanRename)
-                    menu.AddButton("Rename", StartRenaming);
-                menu.AddButton("Delete", Delete);
+                    menu.AddButton("Rename", "F2", StartRenaming);
+                if (CanCopyPaste)
+                    menu.AddButton("Duplicate", "Ctrl+D", () => Timeline.DuplicateSelectedTracks());
+                menu.AddButton("Delete", "Del", Delete);
                 if (CanExpand)
                 {
                     menu.AddSeparator();
                     menu.AddButton("Expand All", ExpandAll);
                     menu.AddButton("Collapse All", CollapseAll);
+                }
+                if (SubTracks.Count > 1)
+                {
+                    menu.AddButton("Sort All", () => _timeline.SortTrack(this, _subTracks.Sort));
                 }
                 OnContextMenu(menu);
                 menu.Show(this, location);
@@ -1246,8 +1301,15 @@ namespace FlaxEditor.GUI.Timeline
                         StartRenaming();
                     return true;
                 case KeyboardKeys.Delete:
-                    _timeline.DeleteSelection();
+                    _timeline.DeleteSelectedTracks();
                     return true;
+                case KeyboardKeys.D:
+                    if (Root.GetKey(KeyboardKeys.Control) && CanCopyPaste)
+                    {
+                        _timeline.DuplicateSelectedTracks();
+                        return true;
+                    }
+                    break;
                 case KeyboardKeys.ArrowLeft:
                     if (CanExpand && IsExpanded)
                     {
@@ -1319,6 +1381,18 @@ namespace FlaxEditor.GUI.Timeline
             // Base
             if (_opened)
                 base.OnKeyUp(key);
+        }
+
+        /// <inheritdoc />
+        public override int Compare(Control other)
+        {
+            if (other is Track otherTrack)
+            {
+                var name = Title ?? Name;
+                var otherName = otherTrack.Title ?? otherTrack.Name;
+                return string.Compare(name, otherName, StringComparison.InvariantCulture);
+            }
+            return base.Compare(other);
         }
 
         /// <inheritdoc />

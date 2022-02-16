@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -595,7 +595,7 @@ public:
     API_PROPERTY() static ScreenOrientationType GetScreenOrientationType();
 
     /// <summary>
-    /// Gets the current  locale culture (eg. "pl-PL" or "en-US").
+    /// Gets the current locale culture (eg. "pl-PL" or "en-US").
     /// </summary>
     API_PROPERTY() static String GetUserLocaleName() = delete;
 
@@ -607,7 +607,7 @@ public:
     /// <summary>
     /// Gets the user name.
     /// </summary>
-    API_PROPERTY() static String GetUserName() = delete;
+    API_PROPERTY() static String GetUserName();
 
     /// <summary>
     /// Returns true if app has user focus.
@@ -624,6 +624,23 @@ public:
     /// </summary>
     /// <param name="result">The result.</param>
     static void CreateGuid(Guid& result);
+
+public:
+
+    /// <summary>
+    /// The list of users.
+    /// </summary>
+    API_FIELD(ReadOnly) static Array<User*, FixedAllocation<8>> Users;
+
+    /// <summary>
+    /// Event called when user gets added (eg. logged in).
+    /// </summary>
+    API_EVENT() static Delegate<User*> UserAdded;
+
+    /// <summary>
+    /// Event called when user gets removed (eg. logged out).
+    /// </summary>
+    API_EVENT() static Delegate<User*> UserRemoved;
 
 public:
 
@@ -726,9 +743,9 @@ public:
 public:
 
     /// <summary>
-    /// Starts a new process.
+    /// Starts a new process (runs app).
     /// </summary>
-    /// <param name="filename">The path to the file.</param>
+    /// <param name="filename">The path to the executable file.</param>
     /// <param name="args">Custom arguments for command line</param>
     /// <param name="workingDir">The custom name of the working directory</param>
     /// <param name="hiddenWindow">True if start process with hidden window</param>
@@ -737,7 +754,7 @@ public:
     API_FUNCTION() static int32 StartProcess(const StringView& filename, const StringView& args, const StringView& workingDir, bool hiddenWindow = false, bool waitForEnd = false);
 
     /// <summary>
-    /// Starts a new process. Waits for it's end and captures its output.
+    /// Starts a new process (runs commandline). Waits for it's end and captures its output.
     /// </summary>
     /// <param name="cmdLine">Command line to execute</param>
     /// <param name="workingDir">The custom path of the working directory.</param>
@@ -746,7 +763,7 @@ public:
     API_FUNCTION() static int32 RunProcess(const StringView& cmdLine, const StringView& workingDir, bool hiddenWindow = true);
 
     /// <summary>
-    /// Starts a new process. Waits for it's end and captures its output.
+    /// Starts a new process (runs commandline). Waits for it's end and captures its output.
     /// </summary>
     /// <param name="cmdLine">Command line to execute</param>
     /// <param name="workingDir">The custom path of the working directory.</param>

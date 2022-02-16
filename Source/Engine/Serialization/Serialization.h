@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -252,6 +252,19 @@ namespace Serialization
     inline void Deserialize(ISerializable::DeserializeStream& stream, String& v, ISerializeModifier* modifier)
     {
         v = stream.GetText();
+    }
+
+    inline bool ShouldSerialize(const StringAnsi& v, const void* otherObj)
+    {
+        return !otherObj || v != *(StringAnsi*)otherObj;
+    }
+    inline void Serialize(ISerializable::SerializeStream& stream, const StringAnsi& v, const void* otherObj)
+    {
+        stream.String(v);
+    }
+    inline void Deserialize(ISerializable::DeserializeStream& stream, StringAnsi& v, ISerializeModifier* modifier)
+    {
+        v = stream.GetTextAnsi();
     }
 
     FLAXENGINE_API bool ShouldSerialize(const Version& v, const void* otherObj);

@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 #include "AudioSource.h"
 #include "Engine/Core/Log.h"
@@ -102,7 +102,8 @@ void AudioSource::SetAttenuation(float value)
 
 void AudioSource::Play()
 {
-    if (_state == States::Playing)
+    auto state = _state;
+    if (state == States::Playing)
         return;
     if (Clip == nullptr)
     {
@@ -120,8 +121,16 @@ void AudioSource::Play()
     // Audio clips with disabled streaming are controlled by audio source, otherwise streaming manager will play it
     if (Clip->IsStreamable())
     {
-        // Request faster streaming update
-        Clip->RequestStreamingUpdate();
+        if (state == States::Paused)
+        {
+            // Resume
+            PlayInternal();
+        }
+        else
+        {
+            // Request faster streaming update
+            Clip->RequestStreamingUpdate();
+        }
     }
     else
     {
@@ -134,17 +143,13 @@ void AudioSource::Play()
 void AudioSource::Pause()
 {
     if (_state != States::Playing)
-    {
-        LOG(Warning, "Cannot pause audio source that is not playing ({0})", GetNamePath());
         return;
-    }
 
     _state = States::Paused;
 
     if (_isActuallyPlayingSth)
     {
         AudioBackend::Source::Pause(this);
-
         _isActuallyPlayingSth = false;
     }
 }
@@ -231,9 +236,11 @@ void AudioSource::Cleanup()
     _savedTime = GetTime();
     Stop();
 
-    AudioBackend::Source::Cleanup(this);
-
-    SourceIDs.Clear();
+    if (SourceIDs.HasItems())
+    {
+        AudioBackend::Source::Cleanup(this);
+        SourceIDs.Clear();
+    }
 }
 
 void AudioSource::OnClipChanged()
@@ -243,13 +250,10 @@ void AudioSource::OnClipChanged()
 
 void AudioSource::OnClipLoaded()
 {
-    if (SourceIDs.IsEmpty())
-        return;
-
     AudioBackend::Source::ClipLoaded(this);
 
     // Start playing if source was waiting for the clip to load
-    if (_state == States::Playing && !_isActuallyPlayingSth)
+    if (SourceIDs.HasItems() && _state == States::Playing && !_isActuallyPlayingSth)
     {
         if (Clip->IsStreamable())
         {

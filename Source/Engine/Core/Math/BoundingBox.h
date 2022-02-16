@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -123,12 +123,13 @@ public:
     /// Sets the size of the box.
     /// </summary>
     /// <param name="value">The box size to set.</param>
-    void SetSize(const Vector3 value)
+    void SetSize(const Vector3& value)
     {
         Vector3 center;
         GetCenter(center);
-        Minimum = center - value;
-        Maximum = center + value;
+        const Vector3 sizeHalf = value * 0.5f;
+        Minimum = center - sizeHalf;
+        Maximum = center + sizeHalf;
     }
 
     /// <summary>

@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 #include "ShadowsPass.h"
 #include "GBufferPass.h"
@@ -243,7 +243,7 @@ void ShadowsPass::Prepare(RenderContext& renderContext, GPUContext* context)
     if (shadowMapsQuality != _currentShadowMapsQuality)
         updateShadowMapSize();
     auto shadowsQuality = Graphics::ShadowsQuality;
-    maxShadowsQuality = Math::Min<int32>(static_cast<int32>(shadowsQuality), static_cast<int32>(view.MaxShadowsQuality));
+    maxShadowsQuality = Math::Clamp(Math::Min<int32>(static_cast<int32>(shadowsQuality), static_cast<int32>(view.MaxShadowsQuality)), 0, static_cast<int32>(Quality::MAX) - 1);
 
     // Use the current render view to sync model LODs with the shadow maps rendering stage
     _shadowContext.LodProxyView = &renderContext.View;

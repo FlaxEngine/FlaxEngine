@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 using System;
 using System.Collections.Generic;
@@ -699,6 +699,11 @@ namespace FlaxEditor.Scripting
         public static readonly ScriptType Void = new ScriptType(typeof(void));
 
         /// <summary>
+        /// A <see cref="ScriptType" /> that is System.Object.
+        /// </summary>
+        public static readonly ScriptType Object = new ScriptType(typeof(object));
+
+        /// <summary>
         /// Gets the type of the script as <see cref="System.Type"/>.
         /// </summary>
         public Type Type => _managed;
@@ -774,6 +779,11 @@ namespace FlaxEditor.Scripting
         /// Gets a value indicating whether the type is a class or a delegate; that is, not a value type or interface.
         /// </summary>
         public bool IsClass => _managed != null ? _managed.IsClass : _custom != null && _custom.IsClass;
+
+        /// <summary>
+        /// Gets a value indicating whether the type is an interface.
+        /// </summary>
+        public bool IsInterface => _managed != null ? _managed.IsInterface : _custom != null && _custom.IsInterface;
 
         /// <summary>
         /// Gets a value indicating whether the type is an array.
@@ -996,6 +1006,20 @@ namespace FlaxEditor.Scripting
         }
 
         /// <summary>
+        /// Determines whether the current type implements the specified interface type. Checks this type, its base classes and implemented interfaces base interfaces too.
+        /// </summary>
+        /// <param name="c">The type of the interface to check.</param>
+        /// <returns>True if this type implements the given interface, otherwise false.</returns>
+        public bool ImplementInterface(ScriptType c)
+        {
+            if (c._managed != null && _managed != null)
+                return c._managed.IsAssignableFrom(_managed);
+            if (_custom != null)
+                return _custom.ImplementInterface(c);
+            return false;
+        }
+
+        /// <summary>
         /// Determines whether the specified object is an instance of the current type.
         /// </summary>
         /// <param name="o">The object to compare with the current type. </param>
@@ -1014,6 +1038,8 @@ namespace FlaxEditor.Scripting
         /// <c>false</c> if none of these conditions are true, or if <paramref name="c" /> is <see cref="Null"/>.</returns>
         public bool IsAssignableFrom(ScriptType c)
         {
+            if (IsInterface)
+                return c.ImplementInterface(this);
             while (c != Null)
             {
                 if (c == this)
@@ -1083,6 +1109,17 @@ namespace FlaxEditor.Scripting
             if (_managed != null)
                 return _managed.GetGenericTypeDefinition();
             throw new NotImplementedException("TODO: Script.Type.GetGenericTypeDefinition for custom types");
+        }
+
+        /// <summary>
+        /// Returns a type object that represents an array of the current type.
+        /// </summary>
+        /// <returns>A type object representing a one-dimensional array of the current type.</returns>
+        public ScriptType MakeArrayType()
+        {
+            if (_managed != null)
+                return new ScriptType(_managed.MakeArrayType());
+            throw new NotImplementedException("TODO: Script.Type.MakeArrayType for custom types");
         }
 
         /// <summary>
@@ -1378,6 +1415,11 @@ namespace FlaxEditor.Scripting
         bool IsClass { get; }
 
         /// <summary>
+        /// Gets a value indicating whether the type is an interface.
+        /// </summary>
+        bool IsInterface { get; }
+
+        /// <summary>
         /// Gets a value indicating whether the type is an array.
         /// </summary>
         bool IsArray { get; }
@@ -1427,6 +1469,13 @@ namespace FlaxEditor.Scripting
         /// </summary>
         /// <returns>The created instance of the object.</returns>
         object CreateInstance();
+
+        /// <summary>
+        /// Determines whether the current type implements the specified interface type. Checks this type, its base classes and implemented interfaces base interfaces too.
+        /// </summary>
+        /// <param name="c">The type of the interface to check.</param>
+        /// <returns>True if this type implements the given interface, otherwise false.</returns>
+        bool ImplementInterface(ScriptType c);
 
         /// <summary>
         /// Determines whether the specified attribute was defined for this type.
@@ -1612,6 +1661,13 @@ namespace FlaxEditor.Scripting
         /// <param name="typeName">The full name of the type.</param>
         /// <returns>The type or null if failed.</returns>
         ScriptType GetType(string typeName);
+
+        /// <summary>
+        /// Gets all the types within all the loaded assemblies.
+        /// </summary>
+        /// <param name="result">The result collection. Elements will be added to it. Clear it before usage.</param>
+        /// <param name="checkFunc">Additional callback used to check if the given type is valid. Returns true if add type, otherwise false.</param>
+        void GetTypes(List<ScriptType> result, Func<ScriptType, bool> checkFunc);
 
         /// <summary>
         /// Gets all the derived types from the given base type (excluding that type) within all the loaded assemblies.

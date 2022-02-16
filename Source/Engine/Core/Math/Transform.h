@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -311,6 +311,16 @@ public:
     FORCE_INLINE Vector3 GetDown() const
     {
         return Vector3::Transform(Vector3::Down, Orientation);
+    }
+    
+    FORCE_INLINE Vector3 GetForward() const
+    {
+        return Vector3::Transform(Vector3::Forward, Orientation);
+    }
+
+    FORCE_INLINE Vector3 GetBackward() const
+    {
+        return Vector3::Transform(Vector3::Backward, Orientation);
     }
 
 public:

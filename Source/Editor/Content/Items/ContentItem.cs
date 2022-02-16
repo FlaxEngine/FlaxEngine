@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 using System;
 using System.Collections.Generic;
@@ -366,7 +366,7 @@ namespace FlaxEditor.Content
         /// <summary>
         /// Updates the tooltip text text.
         /// </summary>
-        protected virtual void UpdateTooltipText()
+        public virtual void UpdateTooltipText()
         {
             TooltipText = "Path: " + Path;
         }
@@ -506,6 +506,14 @@ namespace FlaxEditor.Content
         }
 
         /// <summary>
+        /// Called when context menu is being prepared to show. Can be used to add custom options.
+        /// </summary>
+        /// <param name="menu">The menu.</param>
+        public virtual void OnContextMenu(FlaxEditor.GUI.ContextMenu.ContextMenu menu)
+        {
+        }
+
+        /// <summary>
         /// Called when item gets renamed or location gets changed (path modification).
         /// </summary>
         public virtual void OnPathChanged()
@@ -602,6 +610,15 @@ namespace FlaxEditor.Content
             var result = base.OnShowTooltip(out text, out _, out area);
             location = Size * new Vector2(0.9f, 0.5f);
             return result;
+        }
+
+        /// <inheritdoc />
+        public override void NavigationFocus()
+        {
+            base.NavigationFocus();
+
+            if (IsFocused)
+                (Parent as ContentView)?.Select(this);
         }
 
         /// <inheritdoc />
@@ -728,6 +745,15 @@ namespace FlaxEditor.Content
             }
 
             base.OnMouseLeave();
+        }
+
+        /// <inheritdoc />
+        public override void OnSubmit()
+        {
+            // Open
+            (Parent as ContentView).OnItemDoubleClick(this);
+
+            base.OnSubmit();
         }
 
         /// <inheritdoc />

@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -6,6 +6,7 @@
 #include "Engine/Physics/Collisions.h"
 
 class PhysicsColliderActor;
+class Collider;
 
 /// <summary>
 /// Physics simulation driven object.
@@ -16,7 +17,7 @@ API_CLASS() class FLAXENGINE_API RigidBody : public PhysicsActor
 DECLARE_SCENE_OBJECT(RigidBody);
 protected:
 
-    PxRigidDynamic* _actor;
+    void* _actor;
     Vector3 _cachedScale;
 
     float _mass;
@@ -51,7 +52,6 @@ public:
     /// Kinematic rigidbodies are incompatible with CCD.
     /// </para>
     /// </remarks>
-    /// <returns>The value.</returns>
     API_PROPERTY(Attributes="EditorOrder(10), DefaultValue(false), EditorDisplay(\"Rigid Body\")")
     FORCE_INLINE bool GetIsKinematic() const
     {
@@ -81,7 +81,6 @@ public:
     /// <remarks>
     /// Linear damping can be used to slow down an object. The higher the drag the more the object slows down.
     /// </remarks>
-    /// <returns>The value.</returns>
     API_PROPERTY(Attributes="EditorOrder(60), DefaultValue(0.01f), Limit(0), EditorDisplay(\"Rigid Body\")")
     FORCE_INLINE float GetLinearDamping() const
     {
@@ -103,7 +102,6 @@ public:
     /// <remarks>
     /// Angular damping can be used to slow down the rotation of an object. The higher the drag the more the rotation slows down.
     /// </remarks>
-    /// <returns>The value.</returns>
     API_PROPERTY(Attributes="EditorOrder(70), DefaultValue(0.05f), Limit(0), EditorDisplay(\"Rigid Body\")")
     FORCE_INLINE float GetAngularDamping() const
     {
@@ -122,7 +120,6 @@ public:
     /// <summary>
     /// If true simulation and collisions detection will be enabled for the rigidbody.
     /// </summary>
-    /// <returns>The value.</returns>
     API_PROPERTY(Attributes="EditorOrder(20), DefaultValue(true), EditorDisplay(\"Rigid Body\")")
     FORCE_INLINE bool GetEnableSimulation() const
     {
@@ -138,7 +135,6 @@ public:
     /// <summary>
     /// If true Continuous Collision Detection (CCD) will be used for this component.
     /// </summary>
-    /// <returns>The value.</returns>
     API_PROPERTY(Attributes="EditorOrder(30), DefaultValue(false), EditorDisplay(\"Rigid Body\", \"Use CCD\")")
     FORCE_INLINE bool GetUseCCD() const
     {
@@ -154,7 +150,6 @@ public:
     /// <summary>
     /// If object should have the force of gravity applied.
     /// </summary>
-    /// <returns>The value.</returns>
     API_PROPERTY(Attributes="EditorOrder(40), DefaultValue(true), EditorDisplay(\"Rigid Body\")")
     FORCE_INLINE bool GetEnableGravity() const
     {
@@ -170,7 +165,6 @@ public:
     /// <summary>
     /// If object should start awake, or if it should initially be sleeping.
     /// </summary>
-    /// <returns>The value.</returns>
     API_PROPERTY(Attributes="EditorOrder(50), DefaultValue(true), EditorDisplay(\"Rigid Body\")")
     FORCE_INLINE bool GetStartAwake() const
     {
@@ -186,7 +180,6 @@ public:
     /// <summary>
     /// If true, it will update mass when actor scale changes.
     /// </summary>
-    /// <returns>The value.</returns>
     API_PROPERTY(Attributes="EditorOrder(130), DefaultValue(false), EditorDisplay(\"Rigid Body\")")
     FORCE_INLINE bool GetUpdateMassWhenScaleChanges() const
     {
@@ -196,7 +189,7 @@ public:
     /// <summary>
     /// If true, it will update mass when actor scale changes.
     /// </summary>
-    /// <param name="value">The value.</
+    /// <param name="value">The value.</param>
     API_PROPERTY() void SetUpdateMassWhenScaleChanges(bool value);
 
     /// <summary>
@@ -206,7 +199,6 @@ public:
     /// The angular velocity of rigidbodies is clamped to MaxAngularVelocity to avoid numerical instability with fast rotating bodies.
     /// Because this may prevent intentional fast rotations on objects such as wheels, you can override this value per rigidbody.
     /// </remarks>
-    /// <returns>The value.</returns>
     API_PROPERTY(Attributes="EditorOrder(90), DefaultValue(7.0f), Limit(0), EditorDisplay(\"Rigid Body\")")
     FORCE_INLINE float GetMaxAngularVelocity() const
     {
@@ -226,12 +218,8 @@ public:
     /// <summary>
     /// Override the auto computed mass.
     /// </summary>
-    /// <returns>The value.</returns>
     API_PROPERTY(Attributes="HideInEditor")
-    FORCE_INLINE bool GetOverrideMass() const
-    {
-        return _overrideMass != 0;
-    }
+    bool GetOverrideMass() const;
 
     /// <summary>
     /// Override the auto computed mass.
@@ -240,33 +228,23 @@ public:
     API_PROPERTY() void SetOverrideMass(bool value);
 
     /// <summary>
-    /// Gets the mass value measured in kilograms (use override value only if EnableOverrideMass is enabled).
+    /// Gets the mass value measured in kilograms (use override value only if OverrideMass is checked).
     /// </summary>
-    /// <returns>The value.</returns>
     API_PROPERTY(Attributes="EditorOrder(110), Limit(0), EditorDisplay(\"Rigid Body\")")
-    FORCE_INLINE float GetMass() const
-    {
-        return _mass;
-    }
+    float GetMass() const;
 
     /// <summary>
-    /// Sets the mass value measured in kilograms (use override value only if EnableOverrideMass is enabled).
+    /// Sets the mass value measured in kilograms (use override value only if OverrideMass is checked).
     /// </summary>
-    /// <remarks>
-    /// If set auto enables mass override.
-    /// </remarks>
+    /// <remarks>If set auto enables mass override.</remarks>
     /// <param name="value">The value.</param>
     API_PROPERTY() void SetMass(float value);
 
     /// <summary>
     /// Gets the per-instance scaling of the mass.
     /// </summary>
-    /// <returns>The value.</returns>
     API_PROPERTY(Attributes="EditorOrder(120), DefaultValue(1.0f), Limit(0.001f, 100.0f), EditorDisplay(\"Rigid Body\")")
-    FORCE_INLINE float GetMassScale() const
-    {
-        return _massScale;
-    }
+    float GetMassScale() const;
 
     /// <summary>
     /// Sets the per-instance scaling of the mass.
@@ -277,7 +255,6 @@ public:
     /// <summary>
     /// Gets the user specified offset for the center of mass of this object, from the calculated location.
     /// </summary>
-    /// <returns>The value.</returns>
     API_PROPERTY(Attributes="EditorOrder(140), DefaultValue(typeof(Vector3), \"0,0,0\"), EditorDisplay(\"Rigid Body\", \"Center Of Mass Offset\")")
     FORCE_INLINE Vector3 GetCenterOfMassOffset() const
     {
@@ -293,7 +270,6 @@ public:
     /// <summary>
     /// Gets the object movement constraint flags that define degrees of freedom are allowed for the simulation of object.
     /// </summary>
-    /// <returns>The value.</returns>
     API_PROPERTY(Attributes="EditorOrder(150), DefaultValue(RigidbodyConstraints.None), EditorDisplay(\"Rigid Body\")")
     FORCE_INLINE RigidbodyConstraints GetConstraints() const
     {
@@ -314,7 +290,6 @@ public:
     /// <remarks>
     /// It's used mostly to get the current velocity. Manual modifications may result in unrealistic behaviour.
     /// </remarks>
-    /// <returns>The value.</returns>
     API_PROPERTY(Attributes="HideInEditor")
     Vector3 GetLinearVelocity() const;
 
@@ -333,7 +308,6 @@ public:
     /// <remarks>
     /// It's used mostly to get the current angular velocity. Manual modifications may result in unrealistic behaviour.
     /// </remarks>
-    /// <returns>The value.</returns>
     API_PROPERTY(Attributes="HideInEditor")
     Vector3 GetAngularVelocity() const;
 
@@ -389,13 +363,11 @@ public:
     /// <summary>
     /// Gets the center of the mass in the local space.
     /// </summary>
-    /// <returns>The value.</returns>
     API_PROPERTY() Vector3 GetCenterOfMass() const;
 
     /// <summary>
     /// Determines whether this rigidbody is sleeping.
     /// </summary>
-    /// <returns><c>true</c> if this rigidbody is sleeping; otherwise, <c>false</c>.</returns>
     API_PROPERTY() bool IsSleeping() const;
 
 public:
@@ -414,15 +386,6 @@ public:
     /// Updates the actor's mass (auto calculated mass from density and inertia tensor or overriden value).
     /// </summary>
     API_FUNCTION() void UpdateMass();
-
-    /// <summary>
-    /// Gets the native PhysX rigid actor object.
-    /// </summary>
-    /// <returns>The PhysX dynamic rigid actor.</returns>
-    FORCE_INLINE PxRigidDynamic* GetPhysXRigidActor() const
-    {
-        return _actor;
-    }
 
     /// <summary>
     /// Applies a force (or impulse) defined in the world space to the rigidbody at its center of mass.
@@ -577,11 +540,6 @@ public:
 protected:
 
     /// <summary>
-    /// Creates the physics actor.
-    /// </summary>
-    void CreateActor();
-
-    /// <summary>
     /// Updates the rigidbody scale dependent properties like mass (may be modified when actor transformation changes).
     /// </summary>
     void UpdateScale();
@@ -591,8 +549,7 @@ public:
     // [PhysicsActor]
     void Serialize(SerializeStream& stream, const void* otherObj) override;
     void Deserialize(DeserializeStream& stream, ISerializeModifier* modifier) override;
-    PxActor* GetPhysXActor() override;
-    PxRigidActor* GetRigidActor() override;
+    void* GetPhysicsActor() const override;
 
 protected:
 
@@ -601,4 +558,5 @@ protected:
     void EndPlay() override;
     void OnActiveInTreeChanged() override;
     void OnTransformChanged() override;
+    void OnPhysicsSceneChanged(PhysicsScene* previous) override;
 };

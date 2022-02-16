@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 using System;
 using System.Collections.Generic;
@@ -113,6 +113,10 @@ namespace FlaxEditor.Windows.Assets
             [CustomEditor(typeof(FlaxEditor.CustomEditors.Editors.CultureInfoEditor))]
             public string Locale;
 
+            [EditorOrder(5), EditorDisplay("General"), Tooltip("The fallback language table to use for missing keys. Eg. table for 'en-GB' can point to 'en' as a fallback to prevent problem of missing localized strings.")]
+            [AssetReference(true)]
+            public LocalizedStringTable FallbackTable;
+
             [EditorOrder(10), EditorDisplay("Entries", EditorDisplayAttribute.InlineStyle), Tooltip("The string table. Maps the message id into the localized text. For plural messages the list contains separate items for value numbers.")]
             [Collection(Spacing = 10, OverrideEditorTypeName = "FlaxEditor.Windows.Assets.LocalizedStringTableWindow+EntryEditor")]
             public Dictionary<string, string[]> Entries;
@@ -133,6 +137,8 @@ namespace FlaxEditor.Windows.Assets
             _toolstrip.AddSeparator();
             _undoButton = (ToolStripButton)_toolstrip.AddButton(Editor.Icons.Undo64, _undo.PerformUndo).LinkTooltip("Undo (Ctrl+Z)");
             _redoButton = (ToolStripButton)_toolstrip.AddButton(Editor.Icons.Redo64, _undo.PerformRedo).LinkTooltip("Redo (Ctrl+Y)");
+            _toolstrip.AddSeparator();
+            _toolstrip.AddButton(Editor.Icons.Up64, OnExport).LinkTooltip("Export localization table entries for translation to .pot file");
 
             // Panel
             var panel = new Panel(ScrollBars.Vertical)
@@ -158,6 +164,13 @@ namespace FlaxEditor.Windows.Assets
             UpdateToolstrip();
         }
 
+        private void OnExport()
+        {
+            var tableEntries = new Dictionary<LocalizedStringTable, Dictionary<string, string[]>>();
+            tableEntries[Asset] = _proxy.Entries;
+            CustomEditors.Dedicated.LocalizationSettingsEditor.Export(tableEntries);
+        }
+
         /// <inheritdoc />
         public override void Save()
         {
@@ -165,6 +178,7 @@ namespace FlaxEditor.Windows.Assets
                 return;
 
             _asset.Locale = _proxy.Locale;
+            _asset.FallbackTable = _proxy.FallbackTable;
             _asset.Entries = _proxy.Entries;
             if (_asset.Save(_item.Path))
             {
@@ -191,6 +205,7 @@ namespace FlaxEditor.Windows.Assets
             _proxy = new Proxy
             {
                 Locale = _asset.Locale,
+                FallbackTable = _asset.FallbackTable,
                 Entries = _asset.Entries,
             };
             _presenter.Select(_proxy);

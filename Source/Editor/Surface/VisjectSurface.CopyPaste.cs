@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 using System;
 using System.Collections.Generic;
@@ -275,66 +275,74 @@ namespace FlaxEditor.Surface
                                 var src = nodeData.Values[l].Value;
                                 var dst = node.Values[l];
 
-                                if (nodeData.Values[l].EnumTypeName != null)
+                                try
                                 {
-                                    var enumType = TypeUtils.GetManagedType(nodeData.Values[l].EnumTypeName);
-                                    if (enumType != null)
+                                    if (nodeData.Values[l].EnumTypeName != null)
                                     {
-                                        src = Enum.ToObject(enumType, src);
+                                        var enumType = TypeUtils.GetManagedType(nodeData.Values[l].EnumTypeName);
+                                        if (enumType != null)
+                                        {
+                                            src = Enum.ToObject(enumType, src);
+                                        }
+                                    }
+                                    else if (src is JToken token)
+                                    {
+                                        if (dst is Vector2)
+                                        {
+                                            src = new Vector2(token["X"].Value<float>(),
+                                                              token["Y"].Value<float>());
+                                        }
+                                        else if (dst is Vector3)
+                                        {
+                                            src = new Vector3(token["X"].Value<float>(),
+                                                              token["Y"].Value<float>(),
+                                                              token["Z"].Value<float>());
+                                        }
+                                        else if (dst is Vector4)
+                                        {
+                                            src = new Vector4(token["X"].Value<float>(),
+                                                              token["Y"].Value<float>(),
+                                                              token["Z"].Value<float>(),
+                                                              token["W"].Value<float>());
+                                        }
+                                        else if (dst is Color)
+                                        {
+                                            src = new Color(token["R"].Value<float>(),
+                                                            token["G"].Value<float>(),
+                                                            token["B"].Value<float>(),
+                                                            token["A"].Value<float>());
+                                        }
+                                        else
+                                        {
+                                            Editor.LogWarning("Unknown pasted node value token: " + token);
+                                            src = dst;
+                                        }
+                                    }
+                                    else if (src is double asDouble)
+                                    {
+                                        src = (float)asDouble;
+                                    }
+                                    else if (dst is Guid)
+                                    {
+                                        src = Guid.Parse((string)src);
+                                    }
+                                    else if (dst is int)
+                                    {
+                                        src = Convert.ToInt32(src);
+                                    }
+                                    else if (dst is float)
+                                    {
+                                        src = Convert.ToSingle(src);
+                                    }
+                                    else if (dst is byte[] && src is string s)
+                                    {
+                                        src = Convert.FromBase64String(s);
                                     }
                                 }
-                                else if (src is JToken token)
+                                catch (Exception ex)
                                 {
-                                    if (dst is Vector2)
-                                    {
-                                        src = new Vector2(token["X"].Value<float>(),
-                                                          token["Y"].Value<float>());
-                                    }
-                                    else if (dst is Vector3)
-                                    {
-                                        src = new Vector3(token["X"].Value<float>(),
-                                                          token["Y"].Value<float>(),
-                                                          token["Z"].Value<float>());
-                                    }
-                                    else if (dst is Vector4)
-                                    {
-                                        src = new Vector4(token["X"].Value<float>(),
-                                                          token["Y"].Value<float>(),
-                                                          token["Z"].Value<float>(),
-                                                          token["W"].Value<float>());
-                                    }
-                                    else if (dst is Color)
-                                    {
-                                        src = new Color(token["R"].Value<float>(),
-                                                        token["G"].Value<float>(),
-                                                        token["B"].Value<float>(),
-                                                        token["A"].Value<float>());
-                                    }
-                                    else
-                                    {
-                                        Editor.LogWarning("Unknown pasted node value token: " + token);
-                                        src = dst;
-                                    }
-                                }
-                                else if (src is double asDouble)
-                                {
-                                    src = (float)asDouble;
-                                }
-                                else if (dst is Guid)
-                                {
-                                    src = Guid.Parse((string)src);
-                                }
-                                else if (dst is int)
-                                {
-                                    src = Convert.ToInt32(src);
-                                }
-                                else if (dst is float)
-                                {
-                                    src = Convert.ToSingle(src);
-                                }
-                                else if (dst is byte[] && src is string s)
-                                {
-                                    src = Convert.FromBase64String(s);
+                                    Editor.LogWarning(string.Format("Failed to convert node data from {0} to {1}", src?.GetType().FullName ?? "null", dst?.GetType().FullName ?? "null"));
+                                    Editor.LogWarning(ex);
                                 }
 
                                 node.Values[l] = src;

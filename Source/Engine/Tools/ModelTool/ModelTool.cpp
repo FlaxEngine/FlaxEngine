@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 #if COMPILE_WITH_MODEL_TOOL
 
@@ -16,6 +16,7 @@
 #include "Engine/Tools/TextureTool/TextureTool.h"
 #include "Engine/ContentImporters/AssetsImportingManager.h"
 #include "Engine/ContentImporters/CreateMaterial.h"
+#include "Engine/ContentImporters/CreateCollisionData.h"
 #include "Editor/Utilities/EditorUtilities.h"
 #include <ThirdParty/meshoptimizer/meshoptimizer.h>
 
@@ -26,7 +27,7 @@ void RemoveNamespace(String& name)
         name = name.Substring(namespaceStart + 1);
 }
 
-bool ModelTool::ImportData(const String& path, ImportedModelData& data, Options options, String& errorMsg)
+bool ModelTool::ImportData(const String& path, ImportedModelData& data, Options& options, String& errorMsg)
 {
     // Validate options
     options.Scale = Math::Clamp(options.Scale, 0.0001f, 100000.0f);
@@ -313,7 +314,7 @@ void MeshOptDeallocate(void* ptr)
     Allocator::Free(ptr);
 }
 
-bool ModelTool::ImportModel(const String& path, ModelData& meshData, Options options, String& errorMsg, const String& autoImportOutput)
+bool ModelTool::ImportModel(const String& path, ModelData& meshData, Options& options, String& errorMsg, const String& autoImportOutput)
 {
     LOG(Info, "Importing model from \'{0}\'", path);
     const auto startTime = DateTime::NowUTC();
@@ -562,7 +563,7 @@ bool ModelTool::ImportModel(const String& path, ModelData& meshData, Options opt
             materialOptions.Opacity.Texture = data.Textures[material.Opacity.TextureIndex].AssetID;
         if (material.Normals.TextureIndex != -1)
             materialOptions.Normals.Texture = data.Textures[material.Normals.TextureIndex].AssetID;
-        if (material.TwoSided | material.Diffuse.HasAlphaMask)
+        if (material.TwoSided || material.Diffuse.HasAlphaMask)
             materialOptions.Info.CullMode = CullMode::TwoSided;
         if (!Math::IsOne(material.Opacity.Value) || material.Opacity.TextureIndex != -1)
             materialOptions.Info.BlendMode = MaterialBlendMode::Transparent;
@@ -621,6 +622,41 @@ bool ModelTool::ImportModel(const String& path, ModelData& meshData, Options opt
 
                 // Update new node index using real asset skeleton
                 mesh.NodeIndex = skeletonMapping.SourceToTarget[mesh.NodeIndex];
+            }
+        }
+
+        // Collision mesh output
+        if (options.CollisionMeshesPrefix.HasChars())
+        {
+            // Extract collision meshes
+            ModelData collisionModel;
+            for (auto& lod : data.LODs)
+            {
+                for (int32 i = lod.Meshes.Count() - 1; i >= 0; i--)
+                {
+                    auto mesh = lod.Meshes[i];
+                    if (mesh->Name.StartsWith(options.CollisionMeshesPrefix, StringSearchCase::IgnoreCase))
+                    {
+                        if (collisionModel.LODs.Count() == 0)
+                            collisionModel.LODs.AddOne();
+                        collisionModel.LODs[0].Meshes.Add(mesh);
+                        lod.Meshes.RemoveAtKeepOrder(i);
+                        if (lod.Meshes.IsEmpty())
+                            break;
+                    }
+                }
+            }
+            if (collisionModel.LODs.HasItems())
+            {
+                // Create collision
+                CollisionCooking::Argument arg;
+                arg.Type = CollisionDataType::TriangleMesh;
+                arg.OverrideModelData = &collisionModel;
+                auto assetPath = autoImportOutput / StringUtils::GetFileNameWithoutExtension(path) + TEXT("Collision") ASSET_FILES_EXTENSION_WITH_DOT;
+                if (CreateCollisionData::CookMeshCollision(assetPath, arg))
+                {
+                    LOG(Error, "Failed to create collision mesh.");
+                }
             }
         }
 
@@ -718,7 +754,7 @@ bool ModelTool::ImportModel(const String& path, ModelData& meshData, Options opt
                     // Remove blend shape vertices with empty deltas
                     for (int32 i = blendShape.Vertices.Count() - 1; i >= 0; i--)
                     {
-                        auto& v = blendShape.Vertices[i];
+                        auto& v = blendShape.Vertices.Get()[i];
                         if (v.PositionDelta.IsZero() && v.NormalDelta.IsZero())
                         {
                             blendShape.Vertices.RemoveAt(i);
@@ -739,7 +775,7 @@ bool ModelTool::ImportModel(const String& path, ModelData& meshData, Options opt
         int32 rootIndex = -1;
         for (int32 i = 0; i < data.Skeleton.Nodes.Count(); i++)
         {
-            const auto idx = data.Skeleton.Nodes[i].ParentIndex;
+            const auto idx = data.Skeleton.Nodes.Get()[i].ParentIndex;
             if (idx == -1 && rootIndex == -1)
             {
                 // Found root
@@ -767,7 +803,7 @@ bool ModelTool::ImportModel(const String& path, ModelData& meshData, Options opt
             Swap(data.Skeleton.Nodes[rootIndex], data.Skeleton.Nodes[prevRootIndex]);
             for (int32 i = 0; i < data.Skeleton.Nodes.Count(); i++)
             {
-                auto& node = data.Skeleton.Nodes[i];
+                auto& node = data.Skeleton.Nodes.Get()[i];
                 if (node.ParentIndex == prevRootIndex)
                     node.ParentIndex = rootIndex;
                 else if (node.ParentIndex == rootIndex)
@@ -775,7 +811,7 @@ bool ModelTool::ImportModel(const String& path, ModelData& meshData, Options opt
             }
             for (int32 i = 0; i < data.Skeleton.Bones.Count(); i++)
             {
-                auto& bone = data.Skeleton.Bones[i];
+                auto& bone = data.Skeleton.Bones.Get()[i];
                 if (bone.NodeIndex == prevRootIndex)
                     bone.NodeIndex = rootIndex;
                 else if (bone.NodeIndex == rootIndex)
@@ -827,23 +863,25 @@ bool ModelTool::ImportModel(const String& path, ModelData& meshData, Options opt
         {
             // Transform the root node using the import transformation
             auto& root = data.Skeleton.RootNode();
+            Transform meshTransform = root.LocalTransform.WorldToLocal(importTransform).LocalToWorld(root.LocalTransform);
             root.LocalTransform = importTransform.LocalToWorld(root.LocalTransform);
 
             // Apply import transform on meshes
-            Matrix importTransformMatrix;
-            importTransform.GetWorld(importTransformMatrix);
+            Matrix meshTransformMatrix;
+            meshTransform.GetWorld(meshTransformMatrix);
             for (int32 lodIndex = 0; lodIndex < data.LODs.Count(); lodIndex++)
             {
-                for (int32 meshIndex = 0; meshIndex < data.LODs[lodIndex].Meshes.Count(); meshIndex++)
+                auto& lod = data.LODs[lodIndex];
+                for (int32 meshIndex = 0; meshIndex < lod.Meshes.Count(); meshIndex++)
                 {
-                    data.LODs[lodIndex].Meshes[meshIndex]->TransformBuffer(importTransformMatrix);
+                    lod.Meshes[meshIndex]->TransformBuffer(meshTransformMatrix);
                 }
             }
 
             // Apply import transform on root bones
             for (int32 i = 0; i < data.Skeleton.Bones.Count(); i++)
             {
-                auto& bone = data.Skeleton.Bones[i];
+                auto& bone = data.Skeleton.Bones.Get()[i];
                 if (bone.ParentIndex == -1)
                 {
                     bone.LocalTransform = importTransform.LocalToWorld(bone.LocalTransform);
@@ -919,8 +957,6 @@ bool ModelTool::ImportModel(const String& path, ModelData& meshData, Options opt
 		}
 		reorder_nodes_and_test_it_out!
 #endif
-
-        // TODO: remove nodes that don't have bone attached and all child nodes don' have any bones
     }
     else if (options.Type == ModelType::Animation)
     {

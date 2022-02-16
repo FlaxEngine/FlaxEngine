@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 #include "Streaming.h"
 #include "StreamableResource.h"
@@ -79,6 +79,17 @@ StreamableResource::~StreamableResource()
     StopStreaming();
 }
 
+void StreamableResource::RequestStreamingUpdate()
+{
+    Streaming.LastUpdate = 0;
+}
+
+void StreamableResource::CancelStreaming()
+{
+    Streaming.TargetResidency = 0;
+    Streaming.LastUpdate = DateTime::MaxValue().Ticks;
+}
+
 void StreamableResource::StartStreaming(bool isDynamic)
 {
     _isDynamic = isDynamic;
@@ -153,6 +164,12 @@ void UpdateResource(StreamableResource* resource, DateTime now, double currentTi
                 // When resource wants to perform reallocation on a task then skip further updating until it's done
                 allocateTask->Start();
                 resource->RequestStreamingUpdate();
+                return;
+            }
+            else if (resource->GetAllocatedResidency() < targetResidency)
+            {
+                // Allocation failed (eg. texture format is not supported or run out of memory)
+                resource->CancelStreaming();
                 return;
             }
         }

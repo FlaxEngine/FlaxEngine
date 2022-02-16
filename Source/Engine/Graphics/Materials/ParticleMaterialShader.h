@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -16,6 +16,9 @@ private:
         PipelineStateCache Default;
         PipelineStateCache Depth;
         PipelineStateCache Distortion;
+#if USE_EDITOR
+        PipelineStateCache QuadOverdraw;
+#endif
 
         FORCE_INLINE PipelineStateCache* GetPS(const DrawPass pass)
         {
@@ -27,6 +30,10 @@ private:
                 return &Distortion;
             case DrawPass::Forward:
                 return &Default;
+#if USE_EDITOR
+            case DrawPass::QuadOverdraw:
+                return &QuadOverdraw;
+#endif
             default:
                 return nullptr;
             }
@@ -37,6 +44,9 @@ private:
             Default.Release();
             Depth.Release();
             Distortion.Release();
+#if USE_EDITOR
+            QuadOverdraw.Release();
+#endif
         }
     };
 

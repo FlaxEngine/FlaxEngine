@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 #include "StaticModel.h"
 #include "Engine/Engine/Engine.h"
@@ -238,6 +238,7 @@ void StaticModel::Draw(RenderContext& renderContext)
                     SAFE_DELETE_GPU_RESOURCE(vertexColorsBuffer);
                 }
             }
+            _vertexColorsDirty = false;
         }
 
 #if USE_EDITOR

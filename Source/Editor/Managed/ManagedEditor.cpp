@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 #include "ManagedEditor.h"
 #include "Editor/Editor.h"
@@ -126,7 +126,7 @@ void OnVisualScriptingDebugFlow()
     flowInfo.ScriptInstance = stack->Instance ? stack->Instance->GetOrCreateManagedInstance() : nullptr;
     flowInfo.NodeId = stack->Node->ID;
     flowInfo.BoxId = stack->Box->ID;
-    MonoObject* exception = nullptr;
+    MObject* exception = nullptr;
     void* params[1];
     params[0] = &flowInfo;
     Internal_OnVisualScriptingDebugFlow->Invoke(nullptr, params, &exception);
@@ -140,7 +140,7 @@ void OnVisualScriptingDebugFlow()
 void OnLogMessage(LogType type, const StringView& msg);
 
 ManagedEditor::ManagedEditor()
-    : PersistentScriptingObject(SpawnParams(ObjectID, ManagedEditor::TypeInitializer))
+    : ScriptingObject(SpawnParams(ObjectID, ManagedEditor::TypeInitializer))
 {
     // Link events
     auto editor = ((NativeBinaryModule*)GetBinaryModuleFlaxEngine())->Assembly;
@@ -191,7 +191,7 @@ void ManagedEditor::Init()
     {
         LOG(Fatal, "Failed to create editor instance.");
     }
-    MonoObject* exception = nullptr;
+    MObject* exception = nullptr;
     bool isHeadless = CommandLine::Options.Headless.IsTrue();
     bool skipCompile = CommandLine::Options.SkipCompile.IsTrue();
     bool newProject = CommandLine::Options.NewProject.IsTrue();
@@ -259,7 +259,7 @@ void ManagedEditor::Update()
     }
 
     // Call update
-    MonoObject* exception = nullptr;
+    MObject* exception = nullptr;
     UpdateMethod->Invoke(instance, nullptr, &exception);
     if (exception)
     {
@@ -291,7 +291,7 @@ void ManagedEditor::Exit()
     {
         LOG(Fatal, "Invalid Editor assembly!");
     }
-    MonoObject* exception = nullptr;
+    MObject* exception = nullptr;
     exitMethod->Invoke(instance, nullptr, &exception);
     if (exception)
     {
@@ -476,11 +476,6 @@ void ManagedEditor::OnEditorAssemblyLoaded(MAssembly* assembly)
     CreateManaged();
 }
 
-String ManagedEditor::ToString() const
-{
-    return TEXT("ManagedEditor");
-}
-
 void ManagedEditor::DestroyManaged()
 {
     // Ensure to cleanup managed stuff
@@ -499,5 +494,5 @@ void ManagedEditor::DestroyManaged()
     Internal_OnVisualScriptingDebugFlow = nullptr;
 
     // Base
-    PersistentScriptingObject::DestroyManaged();
+    ScriptingObject::DestroyManaged();
 }

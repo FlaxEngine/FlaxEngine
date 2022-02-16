@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 #include "ParticleEmitterGraph.CPU.h"
 #include "Engine/Particles/ParticleEmitter.h"
@@ -346,6 +346,12 @@ void ParticleEmitterGraphCPUExecutor::ProcessGroupParticles(Box* box, Node* node
             value = Vector2(size.Z, size.W);
         break;
     }
+        // Particle Position (world space)
+    case 212:
+        value = GET_PARTICLE_ATTRIBUTE(0, Vector3);
+        if (context.Emitter->SimulationSpace == ParticlesSimulationSpace::Local)
+            value.AsVector3() = context.Effect->GetTransform().LocalToWorld(value.AsVector3());
+        break;
         // Particle Emitter Function
     case 300:
     {
@@ -419,7 +425,7 @@ void ParticleEmitterGraphCPUExecutor::ProcessGroupFunction(Box* box, Node* node,
         Node* functionCallNode = nullptr;
         ASSERT(context.GraphStack.Count() >= 2);
         Graph* graph;
-        for (int32 i = context.CallStack.Count() - 1; i >= 0; i--)
+        for (int32 i = context.CallStackSize - 1; i >= 0; i--)
         {
             if (context.CallStack[i]->Type == GRAPH_NODE_MAKE_TYPE(14, 300) && context.Functions.TryGet(context.CallStack[i], graph) && context.GraphStack[context.GraphStack.Count() - 1] == graph)
             {

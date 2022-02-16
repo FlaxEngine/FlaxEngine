@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 using System;
 using System.Collections.Generic;
@@ -132,7 +132,7 @@ namespace FlaxEditor.Utilities
                 variantType = VariantType.Structure;
             else if (type == typeof(byte[]))
                 variantType = VariantType.Blob;
-            else if (type == typeof(object[]))
+            else if (type.IsArray)
                 variantType = VariantType.Array;
             else if (type == typeof(Dictionary<object, object>))
                 variantType = VariantType.Dictionary;
@@ -210,6 +210,15 @@ namespace FlaxEditor.Utilities
                 stream.Write(int.MaxValue);
                 stream.WriteStrAnsi(type.FullName, 77);
                 break;
+            case VariantType.Array:
+                if (type != typeof(object[]))
+                {
+                    stream.Write(int.MaxValue);
+                    stream.WriteStrAnsi(type.FullName, 77);
+                }
+                else
+                    stream.Write(0);
+                break;
             default:
                 stream.Write(0);
                 break;
@@ -279,7 +288,7 @@ namespace FlaxEditor.Utilities
             case VariantType.Matrix: return new ScriptType(typeof(Matrix));
             case VariantType.Array: return new ScriptType(typeof(object[]));
             case VariantType.Dictionary: return new ScriptType(typeof(Dictionary<object, object>));
-            case VariantType.ManagedObject: return new ScriptType(typeof(object));
+            case VariantType.ManagedObject: return ScriptType.Object;
             case VariantType.Blob: return new ScriptType(typeof(byte[]));
             default: throw new ArgumentOutOfRangeException($"Unknown Variant Type {variantType} without typename.");
             }
@@ -443,10 +452,14 @@ namespace FlaxEditor.Utilities
             case VariantType.Matrix: return stream.ReadMatrix();
             case VariantType.Array:
             {
+                if (type == null)
+                    type = typeof(object[]);
+                else if (!type.IsArray)
+                    throw new Exception("Invalid arry type for the Variant array " + typeName);
                 var count = stream.ReadInt32();
-                var result = new object[count];
+                var result = Array.CreateInstance(type.GetElementType(), count);
                 for (int i = 0; i < count; i++)
-                    result[i] = stream.ReadVariant();
+                    result.SetValue(stream.ReadVariant(), i);
                 return result;
             }
             case VariantType.Dictionary:
@@ -527,6 +540,15 @@ namespace FlaxEditor.Utilities
             case VariantType.ManagedObject:
                 stream.Write(int.MaxValue);
                 stream.WriteStrAnsi(type.FullName, 77);
+                break;
+            case VariantType.Array:
+                if (type != typeof(object[]))
+                {
+                    stream.Write(int.MaxValue);
+                    stream.WriteStrAnsi(type.FullName, 77);
+                }
+                else
+                    stream.Write(0);
                 break;
             default:
                 stream.Write(0);
@@ -630,10 +652,13 @@ namespace FlaxEditor.Utilities
                 stream.Write((Matrix)value);
                 break;
             case VariantType.Array:
-                stream.Write(((object[])value).Length);
-                foreach (var e in (object[])value)
+            {
+                var array = (Array)value;
+                stream.Write(array.Length);
+                foreach (var e in array)
                     stream.WriteVariant(e);
                 break;
+            }
             case VariantType.Dictionary:
                 stream.Write(((Dictionary<object, object>)value).Count);
                 foreach (var e in (Dictionary<object, object>)value)
@@ -678,6 +703,10 @@ namespace FlaxEditor.Utilities
             case VariantType.Structure:
             case VariantType.ManagedObject:
                 withoutTypeName = false;
+                break;
+            case VariantType.Array:
+                if (value != typeof(object[]))
+                    withoutTypeName = false;
                 break;
             }
             if (withoutTypeName)
@@ -1077,7 +1106,7 @@ namespace FlaxEditor.Utilities
             case VariantType.Array:
             {
                 stream.WriteStartArray();
-                foreach (var e in (object[])value)
+                foreach (var e in (Array)value)
                     stream.WriteVariant(e);
                 stream.WriteEndArray();
                 break;

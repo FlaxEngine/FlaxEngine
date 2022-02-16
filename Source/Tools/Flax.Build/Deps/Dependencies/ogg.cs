@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 using System.Collections.Generic;
 using System.IO;
@@ -28,6 +28,7 @@ namespace Flax.Deps.Dependencies
                         TargetPlatform.UWP,
                         TargetPlatform.XboxOne,
                         TargetPlatform.PS4,
+                        TargetPlatform.PS5,
                         TargetPlatform.XboxScarlett,
                         TargetPlatform.Android,
                         TargetPlatform.Switch,
@@ -36,6 +37,11 @@ namespace Flax.Deps.Dependencies
                     return new[]
                     {
                         TargetPlatform.Linux,
+                    };
+                case TargetPlatform.Mac:
+                    return new[]
+                    {
+                        TargetPlatform.Mac,
                     };
                 default: return new TargetPlatform[0];
                 }
@@ -106,19 +112,6 @@ namespace Flax.Deps.Dependencies
 
                     break;
                 }
-                case TargetPlatform.XboxOne:
-                {
-                    // Fix the MSVC project settings for Xbox One
-                    PatchWindowsTargetPlatformVersion(vcxprojPath, vcxprojContents, "10.0.17763.0", "v141");
-
-                    // Build for Xbox One x64
-                    Deploy.VCEnvironment.BuildSolution(vsSolutionPath, configuration, "x64");
-                    var depsFolder = GetThirdPartyFolder(options, platform, TargetArchitecture.x64);
-                    foreach (var file in binariesToCopyMsvc)
-                        Utilities.FileCopy(Path.Combine(root, "win32", "VS2015", "x64", configuration, file), Path.Combine(depsFolder, file));
-
-                    break;
-                }
                 case TargetPlatform.Linux:
                 {
                     var envVars = new Dictionary<string, string>
@@ -156,6 +149,34 @@ namespace Flax.Deps.Dependencies
 
                     break;
                 }
+                case TargetPlatform.PS5:
+                {
+                    // Get the build data files
+                    Utilities.DirectoryCopy(
+                                            Path.Combine(GetBinariesFolder(options, platform), "Data", "ogg"),
+                                            Path.Combine(root, "PS5"), true, true);
+
+                    // Build for PS5
+                    var solutionPath = Path.Combine(root, "PS5", "libogg_static.sln");
+                    Deploy.VCEnvironment.BuildSolution(solutionPath, "Release", "PROSPERO");
+                    var depsFolder = GetThirdPartyFolder(options, platform, TargetArchitecture.x64);
+                    Utilities.FileCopy(Path.Combine(root, "PS5", "lib", libraryFileName), Path.Combine(depsFolder, libraryFileName));
+
+                    break;
+                }
+                case TargetPlatform.XboxOne:
+                {
+                    // Fix the MSVC project settings for Xbox Scarlett
+                    PatchWindowsTargetPlatformVersion(vcxprojPath, vcxprojContents, "10.0.19041.0", "v142");
+
+                    // Build for Xbox Scarlett x64
+                    Deploy.VCEnvironment.BuildSolution(vsSolutionPath, configuration, "x64");
+                    var depsFolder = GetThirdPartyFolder(options, platform, TargetArchitecture.x64);
+                    foreach (var file in binariesToCopyMsvc)
+                        Utilities.FileCopy(Path.Combine(root, "win32", "VS2015", "x64", configuration, file), Path.Combine(depsFolder, file));
+
+                    break;
+                }
                 case TargetPlatform.XboxScarlett:
                 {
                     // Fix the MSVC project settings for Xbox Scarlett
@@ -175,7 +196,7 @@ namespace Flax.Deps.Dependencies
 
                     // Build for Android
                     SetupDirectory(buildDir, true);
-                    RunCmake(buildDir, TargetPlatform.Android, TargetArchitecture.ARM64, ".. -DCMAKE_BUILD_TYPE=Release");
+                    RunCmake(buildDir, platform, TargetArchitecture.ARM64, ".. -DCMAKE_BUILD_TYPE=Release");
                     Utilities.Run("cmake", "--build .", null, buildDir, Utilities.RunOptions.None);
                     var depsFolder = GetThirdPartyFolder(options, platform, TargetArchitecture.ARM64);
                     Utilities.FileCopy(Path.Combine(buildDir, libraryFileName), Path.Combine(depsFolder, libraryFileName));
@@ -192,6 +213,18 @@ namespace Flax.Deps.Dependencies
                     RunCmake(buildDir, platform, TargetArchitecture.ARM64, ".. -DCMAKE_BUILD_TYPE=Release");
                     Utilities.Run("cmake", "--build .", null, buildDir, Utilities.RunOptions.None);
                     var depsFolder = GetThirdPartyFolder(options, platform, TargetArchitecture.ARM64);
+                    Utilities.FileCopy(Path.Combine(buildDir, libraryFileName), Path.Combine(depsFolder, libraryFileName));
+                    break;
+                }
+                case TargetPlatform.Mac:
+                {
+                    var buildDir = Path.Combine(root, "build");
+
+                    // Build for Mac
+                    SetupDirectory(buildDir, true);
+                    RunCmake(buildDir, platform, TargetArchitecture.x64, ".. -DCMAKE_BUILD_TYPE=Release");
+                    Utilities.Run("cmake", "--build .", null, buildDir, Utilities.RunOptions.None);
+                    var depsFolder = GetThirdPartyFolder(options, platform, TargetArchitecture.x64);
                     Utilities.FileCopy(Path.Combine(buildDir, libraryFileName), Path.Combine(depsFolder, libraryFileName));
                     break;
                 }

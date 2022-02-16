@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 #include "TaskGraph.h"
 #include "JobSystem.h"
@@ -14,7 +14,7 @@ namespace
 }
 
 TaskGraphSystem::TaskGraphSystem(const SpawnParams& params)
-    : PersistentScriptingObject(params)
+    : ScriptingObject(params)
 {
 }
 
@@ -36,7 +36,7 @@ void TaskGraphSystem::PostExecute(TaskGraph* graph)
 }
 
 TaskGraph::TaskGraph(const SpawnParams& params)
-    : PersistentScriptingObject(params)
+    : ScriptingObject(params)
 {
 }
 

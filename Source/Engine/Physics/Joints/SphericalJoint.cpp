@@ -1,9 +1,8 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 #include "SphericalJoint.h"
 #include "Engine/Serialization/Serialization.h"
-#include "Engine/Physics/Utilities.h"
-#include <ThirdParty/PhysX/extensions/PxSphericalJoint.h>
+#include "Engine/Physics/PhysicsBackend.h"
 
 SphericalJoint::SphericalJoint(const SpawnParams& params)
     : Joint(params)
@@ -15,33 +14,46 @@ void SphericalJoint::SetFlags(const SphericalJointFlag value)
 {
     if (_flags == value)
         return;
-
     _flags = value;
-
     if (_joint)
-    {
-        auto joint = static_cast<PxSphericalJoint*>(_joint);
-        joint->setSphericalJointFlag(PxSphericalJointFlag::eLIMIT_ENABLED, (_flags & SphericalJointFlag::Limit) != 0);
-    }
+        PhysicsBackend::SetSphericalJointFlags(_joint, value);
 }
 
 void SphericalJoint::SetLimit(const LimitConeRange& value)
 {
     if (_limit == value)
         return;
-
     _limit = value;
-
     if (_joint)
-    {
-        auto joint = static_cast<PxSphericalJoint*>(_joint);
-        PxJointLimitCone limit(value.YLimitAngle * DegreesToRadians, value.ZLimitAngle * DegreesToRadians, value.ContactDist);
-        limit.stiffness = value.Spring.Stiffness;
-        limit.damping = value.Spring.Damping;
-        limit.restitution = value.Restitution;
-        joint->setLimitCone(limit);
-    }
+        PhysicsBackend::SetSphericalJointLimit(_joint, value);
 }
+
+#if USE_EDITOR
+
+#include "Engine/Debug/DebugDraw.h"
+
+void SphericalJoint::OnDebugDrawSelected()
+{
+    const Vector3 source = GetPosition();
+    const Vector3 target = GetTargetPosition();
+    const float size = 15.0f;
+    const Color color = Color::Green.AlphaMultiplied(0.6f);
+    DebugDraw::DrawWireArrow(source, GetOrientation(), size / 100.0f * 0.5f, Color::Red, 0, false);
+    if (_flags & SphericalJointFlag::Limit)
+    {
+        DEBUG_DRAW_CONE(source, GetOrientation(), size, _limit.YLimitAngle * DegreesToRadians, _limit.ZLimitAngle * DegreesToRadians, color, 0, false);
+    }
+    else
+    {
+        DEBUG_DRAW_SPHERE(BoundingSphere(source, size), color, 0, false);
+    }
+    DEBUG_DRAW_LINE(source, target, Color::Green * 0.6f, 0, false);
+
+    // Base
+    Joint::OnDebugDrawSelected();
+}
+
+#endif
 
 void SphericalJoint::Serialize(SerializeStream& stream, const void* otherObj)
 {
@@ -73,21 +85,10 @@ void SphericalJoint::Deserialize(DeserializeStream& stream, ISerializeModifier* 
     DESERIALIZE_MEMBER(ZLimitAngle, _limit.ZLimitAngle);
 }
 
-PxJoint* SphericalJoint::CreateJoint(JointData& data)
+void* SphericalJoint::CreateJoint(const PhysicsJointDesc& desc)
 {
-    const PxTransform trans0(C2P(data.Pos0), C2P(data.Rot0));
-    const PxTransform trans1(C2P(data.Pos1), C2P(data.Rot1));
-    auto joint = PxSphericalJointCreate(*data.Physics, data.Actor0, trans0, data.Actor1, trans1);
-
-    int32 flags = 0;
-    if (_flags & SphericalJointFlag::Limit)
-        flags |= PxSphericalJointFlag::eLIMIT_ENABLED;
-    joint->setSphericalJointFlags(static_cast<PxSphericalJointFlag::Enum>(flags));
-    PxJointLimitCone limit(_limit.YLimitAngle * DegreesToRadians, _limit.ZLimitAngle * DegreesToRadians, _limit.ContactDist);
-    limit.stiffness = _limit.Spring.Stiffness;
-    limit.damping = _limit.Spring.Damping;
-    limit.restitution = _limit.Restitution;
-    joint->setLimitCone(limit);
-
+    void* joint = PhysicsBackend::CreateSphericalJoint(desc);
+    PhysicsBackend::SetSphericalJointFlags(joint, _flags);
+    PhysicsBackend::SetSphericalJointLimit(joint, _limit);
     return joint;
 }

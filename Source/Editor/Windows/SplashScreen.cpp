@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 #include "SplashScreen.h"
 #include "Engine/Core/Log.h"
@@ -29,7 +29,10 @@ const Char* SplashScreenQuotes[] =
     TEXT("Removing 'C:\\Windows\\'"),
 #elif PLATFORM_LINUX
     TEXT("Time to switch to Windows?"),
-    TEXT("Installing Windows 10..."),
+    TEXT("Installing Windows 10"),
+#elif PLATFORM_MAC
+    TEXT("Hacking your iPhone"),
+    TEXT("Why does macbook heat up?\nBecause it doesn't have windows"),
 #endif
     TEXT("Kappa!"),
     TEXT("How you doin'?"),
@@ -131,7 +134,8 @@ const Char* SplashScreenQuotes[] =
     TEXT("ZOINKS"),
     TEXT("Scooby dooby doo"),
     TEXT("You shall not load!"),
-    TEXT("The roof, the roof, the roof is on fire!")
+    TEXT("The roof, the roof, the roof is on fire!"),
+    TEXT("I've seen better documentation ...\nFrom ransomware gangs !")
 };
 
 SplashScreen::~SplashScreen()

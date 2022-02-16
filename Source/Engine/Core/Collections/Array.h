@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -10,6 +10,8 @@
 /// <summary>
 /// Template for dynamic array with variable capacity.
 /// </summary>
+/// <typeparam name="T">The type of elements in the array.</typeparam>
+/// <typeparam name="AllocationType">The type of memory allocator.</typeparam>
 template<typename T, typename AllocationType = HeapAllocation>
 API_CLASS(InBuild) class Array
 {
@@ -545,8 +547,8 @@ public:
     /// <summary>
     /// Adds the new items to the end of the collection, possibly reallocating the whole collection to fit. The new items will be zeroed.
     /// </summary>
-    /// Warning! AddZeroed() will create items without calling the constructor and this is not appropriate for item types that require a constructor to function properly.
     /// <remarks>
+    /// Warning! AddZeroed() will create items without calling the constructor and this is not appropriate for item types that require a constructor to function properly.
     /// </remarks>
     /// <param name="count">The number of new items to add.</param>
     void AddZeroed(int32 count = 1)

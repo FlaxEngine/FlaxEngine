@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 using System;
 using FlaxEngine;
@@ -32,9 +32,8 @@ namespace FlaxEditor.GUI
             public ActorItemView(Actor actor)
             {
                 _actor = actor;
-
                 Name = actor.Name;
-                TooltipText = actor.TypeName;
+                TooltipText = Utilities.Utils.GetTooltip(actor);
             }
 
             /// <inheritdoc />

@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 using System.IO;
 using Flax.Build;
@@ -22,13 +22,16 @@ public class GraphicsDeviceDX12 : GraphicsDeviceBaseModule
         options.PublicDefinitions.Add("GRAPHICS_API_DIRECTX12");
         switch (options.Platform.Target)
         {
-        case TargetPlatform.Windows:
-            options.OutputFiles.Add("d3d12.lib");
-            options.DelayLoadLibraries.Add("d3d12.dll");
-            break;
-        case TargetPlatform.XboxScarlett:
-            options.OutputFiles.Add("d3d12_xs.lib");
-            break;
+            case TargetPlatform.Windows:
+                options.OutputFiles.Add("d3d12.lib");
+                options.DelayLoadLibraries.Add("d3d12.dll");
+                break;
+            case TargetPlatform.XboxOne:
+                options.OutputFiles.Add("d3d12_x.lib");
+                break;
+            case TargetPlatform.XboxScarlett:
+                options.OutputFiles.Add("d3d12_xs.lib");
+                break;
         }
 
         if (UseWinPixEventRuntime)

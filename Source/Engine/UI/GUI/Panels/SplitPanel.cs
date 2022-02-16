@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 namespace FlaxEngine.GUI
 {
@@ -169,14 +169,12 @@ namespace FlaxEngine.GUI
         /// <inheritdoc />
         public override bool OnMouseDown(Vector2 location, MouseButton button)
         {
-            if (button == MouseButton.Left)
+            if (button == MouseButton.Left && _splitterRect.Contains(location))
             {
-                if (_splitterRect.Contains(location))
-                {
-                    // Start moving splitter
-                    StartTracking();
-                    return false;
-                }
+                // Start moving splitter
+                StartTracking();
+                Focus();
+                return false;
             }
 
             return base.OnMouseDown(location, button);

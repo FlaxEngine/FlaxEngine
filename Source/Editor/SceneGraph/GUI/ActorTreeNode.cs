@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 using System;
 using System.Collections.Generic;
@@ -82,7 +82,7 @@ namespace FlaxEditor.SceneGraph.GUI
             {
                 for (int i = 0; i < parent.ChildrenCount; i++)
                 {
-                    if (parent.Children[i] is ActorTreeNode child)
+                    if (parent.Children[i] is ActorTreeNode child && child.Actor)
                         child._orderInParent = child.Actor.OrderInParent;
                 }
                 parent.SortChildren();
@@ -193,12 +193,27 @@ namespace FlaxEditor.SceneGraph.GUI
         {
             // Update hidden state
             var actor = Actor;
-            if (actor != null && !_hasSearchFilter)
+            if (actor && !_hasSearchFilter)
             {
                 Visible = (actor.HideFlags & HideFlags.HideInHierarchy) == 0;
             }
 
             base.Update(deltaTime);
+        }
+
+
+        /// <inheritdoc />
+        protected override bool ShowTooltip => true;
+
+        /// <inheritdoc />
+        public override bool OnShowTooltip(out string text, out Vector2 location, out Rectangle area)
+        {
+            // Evaluate tooltip text once it's actually needed
+            var actor = _actorNode.Actor;
+            if (string.IsNullOrEmpty(TooltipText) && actor)
+                TooltipText = Surface.SurfaceUtils.GetVisualScriptTypeDescription(TypeUtils.GetObjectType(actor));
+
+            return base.OnShowTooltip(out text, out location, out area);
         }
 
         /// <inheritdoc />
@@ -209,22 +224,25 @@ namespace FlaxEditor.SceneGraph.GUI
             {
                 Color color = Style.Current.Foreground;
                 var actor = Actor;
-                if (actor != null && actor.HasPrefabLink)
+                if (actor)
                 {
-                    // Prefab
-                    color = Style.Current.ProgressNormal;
-                }
+                    if (actor.HasPrefabLink)
+                    {
+                        // Prefab
+                        color = Style.Current.ProgressNormal;
+                    }
 
-                if (actor != null && !actor.IsActiveInHierarchy)
-                {
-                    // Inactive
-                    return Style.Current.ForegroundGrey;
-                }
+                    if (!actor.IsActiveInHierarchy)
+                    {
+                        // Inactive
+                        return Style.Current.ForegroundGrey;
+                    }
 
-                if (actor?.Scene != null && Editor.Instance.StateMachine.IsPlayMode && actor.IsStatic)
-                {
-                    // Static
-                    return color * 0.85f;
+                    if (actor.Scene != null && Editor.Instance.StateMachine.IsPlayMode && actor.IsStatic)
+                    {
+                        // Static
+                        return color * 0.85f;
+                    }
                 }
 
                 // Default

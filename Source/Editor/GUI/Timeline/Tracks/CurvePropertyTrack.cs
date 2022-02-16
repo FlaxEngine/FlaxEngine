@@ -1,6 +1,7 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
 using System.Runtime.InteropServices;
@@ -15,9 +16,92 @@ namespace FlaxEditor.GUI.Timeline.Tracks
     /// The timeline track for animating object property via Curve.
     /// </summary>
     /// <seealso cref="MemberTrack" />
-    public abstract class CurvePropertyTrackBase : MemberTrack
+    public abstract class CurvePropertyTrackBase : MemberTrack, IKeyframesEditorContext
     {
+        private sealed class Splitter : Control
+        {
+            private bool _clicked;
+            internal CurvePropertyTrackBase _track;
+
+            public override void Draw()
+            {
+                var style = Style.Current;
+                if (IsMouseOver || _clicked)
+                    Render2D.FillRectangle(new Rectangle(Vector2.Zero, Size), _clicked ? style.BackgroundSelected : style.BackgroundHighlighted);
+            }
+
+            public override void OnEndMouseCapture()
+            {
+                base.OnEndMouseCapture();
+
+                _clicked = false;
+            }
+
+            public override void Defocus()
+            {
+                base.Defocus();
+
+                _clicked = false;
+            }
+
+            public override void OnMouseEnter(Vector2 location)
+            {
+                base.OnMouseEnter(location);
+
+                Cursor = CursorType.SizeNS;
+            }
+
+            public override void OnMouseLeave()
+            {
+                Cursor = CursorType.Default;
+
+                base.OnMouseLeave();
+            }
+
+            public override bool OnMouseDown(Vector2 location, MouseButton button)
+            {
+                if (button == MouseButton.Left)
+                {
+                    _clicked = true;
+                    Focus();
+                    StartMouseCapture();
+                    return true;
+                }
+
+                return base.OnMouseDown(location, button);
+            }
+
+            public override void OnMouseMove(Vector2 location)
+            {
+                base.OnMouseMove(location);
+
+                if (_clicked)
+                {
+                    var height = Mathf.Clamp(PointToParent(location).Y, 40.0f, 1000.0f);
+                    if (!Mathf.NearEqual(height, _track._expandedHeight))
+                    {
+                        _track.Height = _track._expandedHeight = height;
+                        _track.Timeline.ArrangeTracks();
+                    }
+                }
+            }
+
+            public override bool OnMouseUp(Vector2 location, MouseButton button)
+            {
+                if (button == MouseButton.Left && _clicked)
+                {
+                    _clicked = false;
+                    EndMouseCapture();
+                    return true;
+                }
+
+                return base.OnMouseUp(location, button);
+            }
+        }
+
         private byte[] _curveEditingStartData;
+        private float _expandedHeight = 120.0f;
+        private Splitter _splitter;
 
         /// <summary>
         /// The curve editor.
@@ -25,7 +109,6 @@ namespace FlaxEditor.GUI.Timeline.Tracks
         public CurveEditorBase Curve;
 
         private const float CollapsedHeight = 20.0f;
-        private const float ExpandedHeight = 120.0f;
 
         /// <inheritdoc />
         public CurvePropertyTrackBase(ref TrackCreateOptions options)
@@ -96,7 +179,7 @@ namespace FlaxEditor.GUI.Timeline.Tracks
                     if (frame == Timeline.CurrentFrame)
                     {
                         // Skip if value is the same
-                        if (kValue == value)
+                        if (Equals(kValue, value))
                             return;
 
                         // Update existing key value
@@ -142,19 +225,38 @@ namespace FlaxEditor.GUI.Timeline.Tracks
         {
             if (Curve == null || Timeline == null)
                 return;
+            bool wasVisible = Curve.Visible;
             Curve.Visible = Visible;
             if (!Visible)
+            {
+                if (wasVisible)
+                    Curve.ClearSelection();
                 return;
+            }
             var expanded = IsExpanded;
+            Curve.KeyframesEditorContext = Timeline;
+            Curve.CustomViewPanning = Timeline.OnKeyframesViewPanning;
             Curve.Bounds = new Rectangle(Timeline.StartOffset, Y + 1.0f, Timeline.Duration * Timeline.UnitsPerSecond * Timeline.Zoom, Height - 2.0f);
             Curve.ViewScale = new Vector2(Timeline.Zoom, Curve.ViewScale.Y);
             Curve.ShowCollapsed = !expanded;
-            Curve.ShowBackground = expanded;
-            Curve.ShowAxes = expanded;
+            Curve.ShowAxes = expanded ? CurveEditorBase.UseMode.Horizontal : CurveEditorBase.UseMode.Off;
             Curve.EnableZoom = expanded ? CurveEditorBase.UseMode.Vertical : CurveEditorBase.UseMode.Off;
             Curve.EnablePanning = expanded ? CurveEditorBase.UseMode.Vertical : CurveEditorBase.UseMode.Off;
             Curve.ScrollBars = expanded ? ScrollBars.Vertical : ScrollBars.None;
             Curve.UpdateKeyframes();
+            if (expanded)
+            {
+                if (_splitter == null)
+                {
+                    _splitter = new Splitter
+                    {
+                        _track = this,
+                        Parent = Curve,
+                    };
+                }
+                var splitterHeight = 5.0f;
+                _splitter.Bounds = new Rectangle(0, Curve.Height - splitterHeight, Curve.Width, splitterHeight);
+            }
         }
 
         private void OnKeyframesEdited()
@@ -172,7 +274,7 @@ namespace FlaxEditor.GUI.Timeline.Tracks
         {
             var after = EditTrackAction.CaptureData(this);
             if (!Utils.ArraysEqual(_curveEditingStartData, after))
-                Timeline.Undo.AddAction(new EditTrackAction(Timeline, this, _curveEditingStartData, after));
+                Timeline.AddBatchedUndoAction(new EditTrackAction(Timeline, this, _curveEditingStartData, after));
             _curveEditingStartData = null;
         }
 
@@ -200,6 +302,7 @@ namespace FlaxEditor.GUI.Timeline.Tracks
             Curve = (CurveEditorBase)Activator.CreateInstance(curveEditorType);
             Curve.EnableZoom = CurveEditorBase.UseMode.Vertical;
             Curve.EnablePanning = CurveEditorBase.UseMode.Vertical;
+            Curve.ShowBackground = false;
             Curve.ScrollBars = ScrollBars.Vertical;
             Curve.Parent = Timeline?.MediaPanel;
             Curve.FPS = Timeline?.FramesPerSecond;
@@ -217,10 +320,10 @@ namespace FlaxEditor.GUI.Timeline.Tracks
         {
             if (Curve == null)
                 return;
-
             Curve.Edited -= OnKeyframesEdited;
             Curve.Dispose();
             Curve = null;
+            _splitter = null;
         }
 
         /// <inheritdoc />
@@ -236,7 +339,7 @@ namespace FlaxEditor.GUI.Timeline.Tracks
         }
 
         /// <inheritdoc />
-        protected override bool CanExpand => true;
+        public override bool CanExpand => true;
 
         /// <inheritdoc />
         protected override void OnMemberChanged(MemberInfo value, Type type)
@@ -257,7 +360,7 @@ namespace FlaxEditor.GUI.Timeline.Tracks
         /// <inheritdoc />
         protected override void OnExpandedChanged()
         {
-            Height = IsExpanded ? ExpandedHeight : CollapsedHeight;
+            Height = IsExpanded ? _expandedHeight : CollapsedHeight;
             UpdateCurve();
             if (IsExpanded)
                 Curve.ShowWholeCurve();
@@ -329,6 +432,66 @@ namespace FlaxEditor.GUI.Timeline.Tracks
             DisposeCurve();
 
             base.OnDestroy();
+        }
+
+        /// <inheritdoc />
+        public new void OnKeyframesDeselect(IKeyframesEditor editor)
+        {
+            if (Curve != null && Curve.Visible)
+                Curve.OnKeyframesDeselect(editor);
+        }
+
+        /// <inheritdoc />
+        public new void OnKeyframesSelection(IKeyframesEditor editor, ContainerControl control, Rectangle selection)
+        {
+            if (Curve != null && Curve.Visible)
+                Curve.OnKeyframesSelection(editor, control, selection);
+        }
+
+        /// <inheritdoc />
+        public new int OnKeyframesSelectionCount()
+        {
+            return Curve != null && Curve.Visible ? Curve.OnKeyframesSelectionCount() : 0;
+        }
+
+        /// <inheritdoc />
+        public new void OnKeyframesDelete(IKeyframesEditor editor)
+        {
+            if (Curve != null && Curve.Visible)
+                Curve.OnKeyframesDelete(editor);
+        }
+
+        /// <inheritdoc />
+        public new void OnKeyframesMove(IKeyframesEditor editor, ContainerControl control, Vector2 location, bool start, bool end)
+        {
+            if (Curve != null && Curve.Visible)
+                Curve.OnKeyframesMove(editor, control, location, start, end);
+        }
+
+        /// <inheritdoc />
+        public new void OnKeyframesCopy(IKeyframesEditor editor, float? timeOffset, StringBuilder data)
+        {
+            if (Curve != null && Curve.Visible)
+                Curve.OnKeyframesCopy(editor, timeOffset, data);
+        }
+
+        /// <inheritdoc />
+        public new void OnKeyframesPaste(IKeyframesEditor editor, float? timeOffset, string[] datas, ref int index)
+        {
+            if (Curve != null && Curve.Visible)
+                Curve.OnKeyframesPaste(editor, timeOffset, datas, ref index);
+        }
+
+        /// <inheritdoc />
+        public new void OnKeyframesGet(Action<string, float, object> get)
+        {
+            Curve?.OnKeyframesGet(Name, get);
+        }
+
+        /// <inheritdoc />
+        public new void OnKeyframesSet(List<KeyValuePair<float, object>> keyframes)
+        {
+            Curve?.OnKeyframesSet(keyframes);
         }
     }
 

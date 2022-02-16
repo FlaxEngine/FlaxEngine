@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -46,11 +46,6 @@ public:
 
 public:
 
-    /// <summary>
-    /// Compares two objects.
-    /// </summary>
-    /// <param name="other">The other.</param>
-    /// <returns>True if both objects are equal.</returns>
     bool operator==(const SpringParameters& other) const
     {
         return Stiffness == other.Stiffness && Damping == other.Damping;
@@ -128,18 +123,9 @@ public:
 
 public:
 
-    /// <summary>
-    /// Compares two objects.
-    /// </summary>
-    /// <param name="other">The other.</param>
-    /// <returns>True if both objects are equal.</returns>
     bool operator==(const LimitLinearRange& other) const
     {
-        return Lower == other.Lower
-                && Upper == other.Upper
-                && ContactDist == other.ContactDist
-                && Restitution == other.Restitution
-                && Spring == other.Spring;
+        return Lower == other.Lower && Upper == other.Upper && ContactDist == other.ContactDist && Restitution == other.Restitution && Spring == other.Spring;
     }
 };
 
@@ -205,17 +191,9 @@ public:
 
 public:
 
-    /// <summary>
-    /// Compares two objects.
-    /// </summary>
-    /// <param name="other">The other.</param>
-    /// <returns>True if both objects are equal.</returns>
     bool operator==(const LimitLinear& other) const
     {
-        return Extent == other.Extent
-                && ContactDist == other.ContactDist
-                && Restitution == other.Restitution
-                && Spring == other.Spring;
+        return Extent == other.Extent && ContactDist == other.ContactDist && Restitution == other.Restitution && Spring == other.Spring;
     }
 };
 
@@ -290,18 +268,9 @@ public:
 
 public:
 
-    /// <summary>
-    /// Compares two objects.
-    /// </summary>
-    /// <param name="other">The other.</param>
-    /// <returns>True if both objects are equal.</returns>
     bool operator==(const LimitAngularRange& other) const
     {
-        return Lower == other.Lower
-                && Upper == other.Upper
-                && ContactDist == other.ContactDist
-                && Restitution == other.Restitution
-                && Spring == other.Spring;
+        return Lower == other.Lower && Upper == other.Upper && ContactDist == other.ContactDist && Restitution == other.Restitution && Spring == other.Spring;
     }
 };
 
@@ -330,12 +299,12 @@ DECLARE_SCRIPTING_TYPE_MINIMAL(LimitConeRange);
     /// <summary>
     /// The Y angle of the cone (in degrees). Movement is constrained between 0 and this angle on the Y axis.
     /// </summary>
-    API_FIELD() float YLimitAngle = 90.0f;
+    API_FIELD(Attributes="Limit(0.0f, 180.0f)") float YLimitAngle = 90.0f;
 
     /// <summary>
     /// The Z angle of the cone (in degrees). Movement is constrained between 0 and this angle on the Z axis.
     /// </summary>
-    API_FIELD() float ZLimitAngle = 90.0f;
+    API_FIELD(Attributes="Limit(0.0f, 180.0f)") float ZLimitAngle = 90.0f;
 
 public:
 
@@ -376,17 +345,8 @@ public:
 
 public:
 
-    /// <summary>
-    /// Compares two objects.
-    /// </summary>
-    /// <param name="other">The other.</param>
-    /// <returns>True if both objects are equal.</returns>
     bool operator==(const LimitConeRange& other) const
     {
-        return YLimitAngle == other.YLimitAngle
-                && ZLimitAngle == other.ZLimitAngle
-                && ContactDist == other.ContactDist
-                && Restitution == other.Restitution
-                && Spring == other.Spring;
+        return YLimitAngle == other.YLimitAngle && ZLimitAngle == other.ZLimitAngle && ContactDist == other.ContactDist && Restitution == other.Restitution && Spring == other.Spring;
     }
 };

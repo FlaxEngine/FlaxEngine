@@ -1,6 +1,6 @@
 @echo off
 
-rem Copyright (c) 2012-2020 Wojciech Figat. All rights reserved.
+rem Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 setlocal
 pushd

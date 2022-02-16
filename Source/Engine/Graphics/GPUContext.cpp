@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 #include "GPUContext.h"
 #include "GPUDevice.h"
@@ -6,7 +6,7 @@
 #include "Textures/GPUTexture.h"
 
 GPUContext::GPUContext(GPUDevice* device)
-    : PersistentScriptingObject(ScriptingObjectSpawnParams(Guid::New(), TypeInitializer))
+    : ScriptingObject(ScriptingObjectSpawnParams(Guid::New(), TypeInitializer))
     , _device(device)
 {
 }

@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -16,8 +16,10 @@ private:
     AssetReference<Model> _skyModel;
     AssetReference<Model> _boxModel;
 #if USE_EDITOR
-    class LightmapUVsDensityMaterialShader* _lightmapUVsDensityMaterialShader = nullptr;
-    class VertexColorsMaterialShader* _vertexColorsMaterialShader = nullptr;
+    class LightmapUVsDensityMaterialShader* _lightmapUVsDensity = nullptr;
+    class VertexColorsMaterialShader* _vertexColors = nullptr;
+    class LODPreviewMaterialShader* _lodPreview = nullptr;
+    class MaterialComplexityMaterialShader* _materialComplexity = nullptr;
 #endif
 
 public:
@@ -34,6 +36,10 @@ public:
     /// </summary>
     /// <param name="renderContext">The rendering context.</param>
     void RenderDebug(RenderContext& renderContext);
+
+#if USE_EDITOR
+    void DrawMaterialComplexity(RenderContext& renderContext, GPUContext* context, GPUTextureView* lightBuffer);
+#endif
 
 public:
 

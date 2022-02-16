@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 #include "SceneAnimation.h"
 #include "Engine/Core/Log.h"
@@ -20,6 +20,11 @@ SceneAnimation::SceneAnimation(const SpawnParams& params, const AssetInfo* info)
     , DurationFrames(0)
     , TrackStatesCount(0)
 {
+}
+
+float SceneAnimation::GetDuration() const
+{
+    return (float)DurationFrames / FramesPerSecond;
 }
 
 const BytesContainer& SceneAnimation::LoadTimeline()
@@ -110,8 +115,9 @@ Asset::LoadResult SceneAnimation::load()
     stream.ReadInt32(&version);
     switch (version)
     {
-    case 2:
-    case 3:
+    case 2: // [Deprecated in 2020 expires on 03.09.2023]
+    case 3: // [Deprecated on 03.09.2021 expires on 03.09.2023]
+    case 4:
     {
         stream.ReadFloat(&FramesPerSecond);
         stream.ReadInt32(&DurationFrames);
@@ -125,11 +131,7 @@ Asset::LoadResult SceneAnimation::load()
             auto& track = Tracks[i];
 
             track.Type = (Track::Types)stream.ReadByte();
-            // [Deprecated on 13.07.2019 expires on 13.11.2019]
-            if (version == 6184 || version == 6183)
-                track.Flag = Track::Flags::None;
-            else
-                track.Flag = (Track::Flags)stream.ReadByte();
+            track.Flag = (Track::Flags)stream.ReadByte();
             stream.ReadInt32(&track.ParentIndex);
             stream.ReadInt32(&track.ChildrenCount);
             stream.ReadString(&track.Name, -13);
@@ -143,14 +145,25 @@ Asset::LoadResult SceneAnimation::load()
             switch (track.Type)
             {
             case Track::Types::Folder:
-            {
                 break;
-            }
             case Track::Types::PostProcessMaterial:
             {
                 const auto trackData = stream.Read<PostProcessMaterialTrack::Data>();
                 track.Data = trackData;
                 track.Asset = Content::LoadAsync<MaterialBase>(trackData->AssetID);
+                const auto trackRuntime = _runtimeData.Move<PostProcessMaterialTrack::Runtime>();
+                track.RuntimeData = trackRuntime;
+                if (version <= 3)
+                {
+                    // [Deprecated on 03.09.2021 expires on 03.09.2023]
+                    trackRuntime->Count = 1;
+                    trackRuntime->Media = stream.Read<Media>();
+                }
+                else
+                {
+                    stream.ReadInt32(&trackRuntime->Count);
+                    trackRuntime->Media = stream.Read<Media>(trackRuntime->Count);
+                }
                 if (trackData->AssetID.IsValid() && !track.Asset)
                 {
                     LOG(Warning, "Missing material for track {0} in {1}.", track.Name, ToString());
@@ -197,6 +210,20 @@ Asset::LoadResult SceneAnimation::load()
                 track.RuntimeData = trackRuntime;
                 track.TrackStateIndex = TrackStatesCount++;
                 trackRuntime->VolumeTrackIndex = -1;
+                if (version <= 3)
+                {
+                    // [Deprecated on 03.09.2021 expires on 03.09.2023]
+                    trackRuntime->Count = 1;
+                    trackRuntime->Media = _runtimeData.Move<AudioTrack::Media>();
+                    stream.ReadInt32(&trackRuntime->Media->StartFrame);
+                    stream.ReadInt32(&trackRuntime->Media->DurationFrames);
+                    trackRuntime->Media->Offset = 0.0f;
+                }
+                else
+                {
+                    stream.ReadInt32(&trackRuntime->Count);
+                    trackRuntime->Media = stream.Read<AudioTrack::Media>(trackRuntime->Count);
+                }
                 break;
             }
             case Track::Types::AudioVolume:
@@ -211,7 +238,7 @@ Asset::LoadResult SceneAnimation::load()
                 {
                     if (Tracks[track.ParentIndex].Type == Track::Types::Audio)
                     {
-                        ((AudioTrack::Runtime*)((byte*)_runtimeData.GetHandle() + (intptr)Tracks[track.ParentIndex].RuntimeData))->VolumeTrackIndex = i;
+                        ((AudioTrack::Runtime*)(_runtimeData.GetHandle() + (intptr)Tracks[track.ParentIndex].RuntimeData))->VolumeTrackIndex = i;
                     }
                     else
                     {
@@ -365,6 +392,17 @@ Asset::LoadResult SceneAnimation::load()
                 const auto trackRuntime = _runtimeData.Move<CameraCutTrack::Runtime>();
                 track.RuntimeData = trackRuntime;
                 track.TrackStateIndex = TrackStatesCount++;
+                if (version <= 3)
+                {
+                    // [Deprecated on 03.09.2021 expires on 03.09.2023]
+                    trackRuntime->Count = 1;
+                    trackRuntime->Media = stream.Read<Media>();
+                }
+                else
+                {
+                    stream.ReadInt32(&trackRuntime->Count);
+                    trackRuntime->Media = stream.Read<Media>(trackRuntime->Count);
+                }
                 break;
             }
             default:

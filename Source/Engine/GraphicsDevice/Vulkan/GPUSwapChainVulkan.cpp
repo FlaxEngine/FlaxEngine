@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 #if GRAPHICS_API_VULKAN
 
@@ -312,7 +312,7 @@ bool GPUSwapChainVulkan::CreateSwapChain(int32 width, int32 height)
         VALIDATE_VULKAN_RESULT(vkGetPhysicalDeviceSurfacePresentModesKHR(gpu, _surface, &presentModesCount, nullptr));
         ASSERT(presentModesCount > 0);
 
-        Array<VkPresentModeKHR> presentModes;
+        Array<VkPresentModeKHR, InlinedAllocation<4>> presentModes;
         presentModes.Resize(presentModesCount);
         VALIDATE_VULKAN_RESULT(vkGetPhysicalDeviceSurfacePresentModesKHR(gpu, _surface, &presentModesCount, presentModes.Get()));
 
@@ -363,7 +363,7 @@ bool GPUSwapChainVulkan::CreateSwapChain(int32 width, int32 height)
     VkSwapchainCreateInfoKHR swapChainInfo;
     RenderToolsVulkan::ZeroStruct(swapChainInfo, VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR);
     swapChainInfo.surface = _surface;
-    swapChainInfo.minImageCount = Math::Clamp<uint32_t>(VULKAN_BACK_BUFFERS_COUNT, surfProperties.minImageCount, surfProperties.maxImageCount);
+    swapChainInfo.minImageCount = Math::Clamp<uint32_t>(VULKAN_BACK_BUFFERS_COUNT, surfProperties.minImageCount, Math::Min<uint32_t>(surfProperties.maxImageCount, VULKAN_BACK_BUFFERS_COUNT_MAX));
     swapChainInfo.imageFormat = result.format;
     swapChainInfo.imageColorSpace = result.colorSpace;
     swapChainInfo.imageExtent.width = width;
@@ -415,7 +415,7 @@ bool GPUSwapChainVulkan::CreateSwapChain(int32 width, int32 height)
     }
 
     // Calculate memory usage
-    _memoryUsage = CalculateTextureMemoryUsage(_format, _width, _height, 1) * _backBuffers.Count();
+    _memoryUsage = RenderTools::CalculateTextureMemoryUsage(_format, _width, _height, 1) * _backBuffers.Count();
 
     return false;
 }

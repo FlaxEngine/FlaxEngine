@@ -1,6 +1,7 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Reflection;
@@ -16,7 +17,7 @@ namespace FlaxEditor.GUI.Timeline.Tracks
     /// The timeline track for invoking events on a certain points in the time.
     /// </summary>
     /// <seealso cref="MemberTrack" />
-    public class EventTrack : MemberTrack
+    public class EventTrack : MemberTrack, IKeyframesEditorContext
     {
         /// <summary>
         /// Gets the archetype.
@@ -50,7 +51,7 @@ namespace FlaxEditor.GUI.Timeline.Tracks
             {
                 e.EventParamsSizes[i] = stream.ReadInt32();
                 var paramTypeName = LoadName(stream);
-                e.EventParamsTypes[i] = Scripting.TypeUtils.GetType(paramTypeName).Type;
+                e.EventParamsTypes[i] = Scripting.TypeUtils.GetManagedType(paramTypeName);
                 if (e.EventParamsTypes[i] == null)
                     isInvalid = true;
             }
@@ -281,9 +282,18 @@ namespace FlaxEditor.GUI.Timeline.Tracks
 
         private void UpdateEvents()
         {
-            if (Events == null)
+            if (Events == null || Timeline == null)
                 return;
-
+            bool wasVisible = Events.Visible;
+            Events.Visible = Visible;
+            if (!Visible)
+            {
+                if (wasVisible)
+                    Events.ClearSelection();
+                return;
+            }
+            Events.KeyframesEditorContext = Timeline;
+            Events.CustomViewPanning = Timeline.OnKeyframesViewPanning;
             Events.Bounds = new Rectangle(Timeline.StartOffset, Y + 1.0f, Timeline.Duration * Timeline.UnitsPerSecond * Timeline.Zoom, Height - 2.0f);
             Events.ViewScale = new Vector2(Timeline.Zoom, 1.0f);
             Events.Visible = Visible;
@@ -304,7 +314,7 @@ namespace FlaxEditor.GUI.Timeline.Tracks
         {
             var after = EditTrackAction.CaptureData(this);
             if (!Utils.ArraysEqual(_eventsEditingStartData, after))
-                Timeline.Undo.AddAction(new EditTrackAction(Timeline, this, _eventsEditingStartData, after));
+                Timeline.AddBatchedUndoAction(new EditTrackAction(Timeline, this, _eventsEditingStartData, after));
             _eventsEditingStartData = null;
         }
 
@@ -403,6 +413,66 @@ namespace FlaxEditor.GUI.Timeline.Tracks
             }
 
             base.OnDestroy();
+        }
+
+        /// <inheritdoc />
+        public new void OnKeyframesDeselect(IKeyframesEditor editor)
+        {
+            if (Events != null && Events.Visible)
+                Events.OnKeyframesDeselect(editor);
+        }
+
+        /// <inheritdoc />
+        public new void OnKeyframesSelection(IKeyframesEditor editor, ContainerControl control, Rectangle selection)
+        {
+            if (Events != null && Events.Visible)
+                Events.OnKeyframesSelection(editor, control, selection);
+        }
+
+        /// <inheritdoc />
+        public new int OnKeyframesSelectionCount()
+        {
+            return Events != null && Events.Visible ? Events.OnKeyframesSelectionCount() : 0;
+        }
+
+        /// <inheritdoc />
+        public new void OnKeyframesDelete(IKeyframesEditor editor)
+        {
+            if (Events != null && Events.Visible)
+                Events.OnKeyframesDelete(editor);
+        }
+
+        /// <inheritdoc />
+        public new void OnKeyframesMove(IKeyframesEditor editor, ContainerControl control, Vector2 location, bool start, bool end)
+        {
+            if (Events != null && Events.Visible)
+                Events.OnKeyframesMove(editor, control, location, start, end);
+        }
+
+        /// <inheritdoc />
+        public new void OnKeyframesCopy(IKeyframesEditor editor, float? timeOffset, StringBuilder data)
+        {
+            if (Events != null && Events.Visible)
+                Events.OnKeyframesCopy(editor, timeOffset, data);
+        }
+
+        /// <inheritdoc />
+        public new void OnKeyframesPaste(IKeyframesEditor editor, float? timeOffset, string[] datas, ref int index)
+        {
+            if (Events != null && Events.Visible)
+                Events.OnKeyframesPaste(editor, timeOffset, datas, ref index);
+        }
+
+        /// <inheritdoc />
+        public new void OnKeyframesGet(Action<string, float, object> get)
+        {
+            Events?.OnKeyframesGet(Name, get);
+        }
+
+        /// <inheritdoc />
+        public new void OnKeyframesSet(List<KeyValuePair<float, object>> keyframes)
+        {
+            Events?.OnKeyframesSet(keyframes);
         }
     }
 }

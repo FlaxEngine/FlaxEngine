@@ -1,6 +1,7 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 using FlaxEditor.GUI.Tree;
+using FlaxEngine;
 using FlaxEngine.GUI;
 
 namespace FlaxEditor.CustomEditors.Elements
@@ -8,6 +9,7 @@ namespace FlaxEditor.CustomEditors.Elements
     /// <summary>
     /// Tree nodes elements.
     /// </summary>
+    [HideInEditor]
     public interface ITreeElement
     {
         /// <summary>

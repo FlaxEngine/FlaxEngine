@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 #ifndef __LIGHTING_COMMON__
 #define __LIGHTING_COMMON__
@@ -43,40 +43,20 @@ struct LightingData
 	float3 Transmission;
 };
 
-// Gets a radial attenuation factor for a point light.  
-// WorldLightVector is the vector from the position being shaded to the light, divided by the radius of the light. 
-float RadialAttenuation(float3 worldLightVector, half falloffExponent)
-{
-	float t = dot(worldLightVector, worldLightVector);
-	return pow(1.0f - saturate(t), falloffExponent); 
-}
-
-// Calculates attenuation for a spot light. Where L normalize vector to light.
-float GetSpotAttenuation(LightData lightData, float3 L)
-{
-	// SpotAngles.x is CosOuterCone, SpotAngles.y is InvCosConeDifference
-	return Square(saturate((dot(normalize(-L), lightData.Direction) - lightData.SpotAngles.x) * lightData.SpotAngles.y));
-}
-
 // Calculates radial light (point or spot) attenuation factors (distance, spot and radius mask)
 void GetRadialLightAttenuation(
 	LightData lightData,
 	bool isSpotLight,
-	float3 worldPosition,
 	float3 N,
+	float distanceSqr,
 	float distanceBiasSqr,
-	inout float3 toLight, 
-	inout float3 L, 
+	float3 toLight,
+	float3 L, 
 	inout float NoL, 
 	inout float distanceAttenuation, 
 	inout float lightRadiusMask, 
 	inout float spotAttenuation)
 {
-	toLight = lightData.Position - worldPosition;
-	
-	float distanceSqr = dot(toLight, toLight);
-	L = toLight * rsqrt(distanceSqr);
-
 	if (lightData.InverseSquared)
 	{
 		BRANCH
@@ -95,20 +75,21 @@ void GetRadialLightAttenuation(
 			distanceAttenuation = rcp(distanceSqr + distanceBiasSqr);
 			NoL = saturate(dot(N, L));
 		}
-
 		lightRadiusMask = Square(saturate(1 - Square(distanceSqr * Square(lightData.RadiusInv))));
 	}
 	else
 	{
 		distanceAttenuation = 1;
 		NoL = saturate(dot(N, L));
-
-		lightRadiusMask = RadialAttenuation(toLight * lightData.RadiusInv, lightData.FalloffExponent);	
+		float3 worldLightVector = toLight * lightData.RadiusInv;
+		float t = dot(worldLightVector, worldLightVector);
+		lightRadiusMask = pow(1.0f - saturate(t), lightData.FalloffExponent);
 	}
 
 	if (isSpotLight)
 	{
-		spotAttenuation = GetSpotAttenuation(lightData, L);
+		// SpotAngles.x is CosOuterCone, SpotAngles.y is InvCosConeDifference
+		spotAttenuation = Square(saturate((dot(normalize(-L), lightData.Direction) - lightData.SpotAngles.x) * lightData.SpotAngles.y));
 	}
 }
 

@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 #include "AudioClip.h"
 #include "Audio.h"
@@ -96,7 +96,6 @@ bool AudioClip::StreamingTask::Run()
         }
         break;
         default:
-        CRASH;
             return true;
         }
 

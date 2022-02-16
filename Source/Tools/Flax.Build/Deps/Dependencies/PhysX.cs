@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 using System;
 using System.Collections.Generic;
@@ -31,6 +31,7 @@ namespace Flax.Deps.Dependencies
                         TargetPlatform.UWP,
                         TargetPlatform.XboxOne,
                         TargetPlatform.PS4,
+                        TargetPlatform.PS5,
                         TargetPlatform.XboxScarlett,
                         TargetPlatform.Android,
                         TargetPlatform.Switch,
@@ -39,6 +40,11 @@ namespace Flax.Deps.Dependencies
                     return new[]
                     {
                         TargetPlatform.Linux,
+                    };
+                case TargetPlatform.Mac:
+                    return new[]
+                    {
+                        TargetPlatform.Mac,
                     };
                 default: return new TargetPlatform[0];
                 }
@@ -103,6 +109,7 @@ namespace Flax.Deps.Dependencies
             string buildPlatform;
             bool suppressBitsPostfix = false;
             string binariesPrefix = string.Empty;
+            var envVars = new Dictionary<string, string>();
             switch (architecture)
             {
             case TargetArchitecture.x86:
@@ -139,7 +146,6 @@ namespace Flax.Deps.Dependencies
             case TargetPlatform.Windows:
                 binariesSubDir = string.Format("win.{0}_{1}.vc140.md", arch, bits);
                 break;
-            case TargetPlatform.XboxOne:
             case TargetPlatform.UWP:
                 binariesSubDir = string.Format("uwp.{0}_{1}.vc141", arch, bits);
                 break;
@@ -153,6 +159,13 @@ namespace Flax.Deps.Dependencies
                 suppressBitsPostfix = true;
                 binariesPrefix = "lib";
                 break;
+            case TargetPlatform.PS5:
+                binariesSubDir = "ps5";
+                buildPlatform = "PROSPERO";
+                suppressBitsPostfix = true;
+                binariesPrefix = "lib";
+                break;
+            case TargetPlatform.XboxOne:
             case TargetPlatform.XboxScarlett:
                 binariesSubDir = "win.x86_64.vc142.md";
                 break;
@@ -173,11 +186,15 @@ namespace Flax.Deps.Dependencies
                 suppressBitsPostfix = true;
                 binariesPrefix = "lib";
                 break;
+            case TargetPlatform.Mac:
+                binariesSubDir = "mac.x86_64";
+                binariesPrefix = "lib";
+                envVars.Add("MACOSX_DEPLOYMENT_TARGET", Configuration.MacOSXMinVer);
+                break;
             default: throw new InvalidPlatformException(targetPlatform);
             }
 
             // Setup build environment variables for PhysX build system
-            var envVars = new Dictionary<string, string>();
             switch (BuildPlatform)
             {
             case TargetPlatform.Windows:
@@ -190,11 +207,11 @@ namespace Flax.Deps.Dependencies
                 break;
             }
             case TargetPlatform.Linux:
-            {
                 envVars.Add("CC", "clang-7");
                 envVars.Add("CC_FOR_BUILD", "clang-7");
                 break;
-            }
+            case TargetPlatform.Mac:
+                break;
             default: throw new InvalidPlatformException(BuildPlatform);
             }
             if (AndroidNdk.Instance.IsValid)
@@ -209,9 +226,11 @@ namespace Flax.Deps.Dependencies
             switch (targetPlatform)
             {
             case TargetPlatform.PS4:
+            case TargetPlatform.PS5:
                 // Hack: PS4 uses .o extension for compiler output files but CMake uses .obj even if CMAKE_CXX_OUTPUT_EXTENSION/CMAKE_C_OUTPUT_EXTENSION are specified
-                Utilities.ReplaceInFiles(Path.Combine(root, "physx\\compiler\\ps4"), "*.vcxproj", SearchOption.AllDirectories, ".obj", ".o");
+                Utilities.ReplaceInFiles(Path.Combine(root, "physx\\compiler\\" + binariesSubDir), "*.vcxproj", SearchOption.AllDirectories, ".obj", ".o");
                 break;
+            case TargetPlatform.XboxOne:
             case TargetPlatform.XboxScarlett:
                 // Hack: force to use proper Win10 SDK
                 Utilities.ReplaceInFiles(Path.Combine(root, "physx\\compiler\\vc16win64"), "*.vcxproj", SearchOption.AllDirectories, "10.0.18362.0", "10.0.19041.0");
@@ -267,6 +286,9 @@ namespace Flax.Deps.Dependencies
             case TargetPlatform.Linux:
                 Utilities.Run("make", null, null, Path.Combine(projectGenDir, "compiler", "linux-" + configuration), Utilities.RunOptions.None);
                 break;
+            case TargetPlatform.Mac:
+                Utilities.Run("xcodebuild", "-project PhysXSDK.xcodeproj -alltargets -configuration " + configuration, null, Path.Combine(projectGenDir, "compiler", preset), Utilities.RunOptions.None);
+                break;
             default: throw new InvalidPlatformException(BuildPlatform);
             }
 
@@ -282,6 +304,16 @@ namespace Flax.Deps.Dependencies
                 var filenamePdb = Path.ChangeExtension(filename, "pdb");
                 if (File.Exists(Path.Combine(srcBinaries, filenamePdb)))
                     Utilities.FileCopy(Path.Combine(srcBinaries, filenamePdb), Path.Combine(dstBinaries, filenamePdb));
+
+                // Strip debug symbols to reduce binaries size
+                switch (targetPlatform)
+                {
+                case TargetPlatform.Linux:
+                case TargetPlatform.Mac:
+                case TargetPlatform.Android:
+                    Utilities.Run("strip", "\"" + filename + "\"", null, dstBinaries, Utilities.RunOptions.None);
+                    break;
+                }
             }
             srcBinaries = Path.Combine(root, "physx", "compiler", preset, "sdk_source_bin", configuration);
             var additionalPhysXLibs = new[]
@@ -309,17 +341,20 @@ namespace Flax.Deps.Dependencies
             root = options.IntermediateFolder;
             projectGenDir = Path.Combine(root, "physx");
             solutionFilesRoot = Path.Combine(root, "physx", "compiler");
-            if (BuildPlatform == TargetPlatform.Windows)
+            switch (BuildPlatform)
             {
+            case TargetPlatform.Windows:
                 projectGenPath = Path.Combine(projectGenDir, "generate_projects.bat");
-            }
-            else if (BuildPlatform == TargetPlatform.Linux)
-            {
+                break;
+            case TargetPlatform.Linux:
+            case TargetPlatform.Mac:
                 projectGenPath = Path.Combine(projectGenDir, "generate_projects.sh");
+                break;
+            default: throw new InvalidPlatformException(BuildPlatform);
             }
 
             // Get the source
-            CloneGitRepoSingleBranch(root, "https://github.com/NVIDIAGameWorks/PhysX.git", "4.1");
+            CloneGitRepoSingleBranch(root, "https://github.com/FlaxEngine/PhysX.git", "flax-master");
 
             foreach (var platform in options.Platforms)
             {
@@ -335,11 +370,6 @@ namespace Flax.Deps.Dependencies
                     Build(options, "vc15uwp64", platform, TargetArchitecture.x64);
                     break;
                 }
-                case TargetPlatform.XboxOne:
-                {
-                    Build(options, "vc15uwp64", platform, TargetArchitecture.x64);
-                    break;
-                }
                 case TargetPlatform.Linux:
                 {
                     Build(options, "linux", platform, TargetArchitecture.x64);
@@ -351,7 +381,18 @@ namespace Flax.Deps.Dependencies
                     Build(options, "ps4", platform, TargetArchitecture.x64);
                     break;
                 }
+                case TargetPlatform.PS5:
+                {
+                    Utilities.DirectoryCopy(Path.Combine(GetBinariesFolder(options, platform), "Data", "PhysX"), root, true, true);
+                    Build(options, "ps5", platform, TargetArchitecture.x64);
+                    break;
+                }
                 case TargetPlatform.XboxScarlett:
+                {
+                    Build(options, "vc16win64", platform, TargetArchitecture.x64);
+                    break;
+                }
+                case TargetPlatform.XboxOne:
                 {
                     Build(options, "vc16win64", platform, TargetArchitecture.x64);
                     break;
@@ -365,6 +406,11 @@ namespace Flax.Deps.Dependencies
                 {
                     Utilities.DirectoryCopy(Path.Combine(options.PlatformsFolder, "Switch", "Data", "PhysX"), root, true, true);
                     Build(options, "switch64", platform, TargetArchitecture.ARM64);
+                    break;
+                }
+                case TargetPlatform.Mac:
+                {
+                    Build(options, "mac64", platform, TargetArchitecture.x64);
                     break;
                 }
                 }

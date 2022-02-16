@@ -1,11 +1,8 @@
 // Copyright (c) 2012-2020 Flax Engine. All rights reserved.
 
-using System;
 using System.Collections.Generic;
 using System.IO;
 using Flax.Build;
-using Ionic.Zip;
-using Ionic.Zlib;
 
 namespace Flax.Deploy
 {
@@ -71,15 +68,20 @@ namespace Flax.Deploy
 
                     var packageZipPath = Path.Combine(Deployer.PackageOutputPath, platformName + ".zip");
                     Utilities.FileDelete(packageZipPath);
-                    using (ZipFile zip = new ZipFile())
+#if true
+                    using (var zip = new Ionic.Zip.ZipFile())
                     {
                         zip.AddDirectory(dst);
 
-                        zip.CompressionLevel = CompressionLevel.BestCompression;
-                        zip.Comment = string.Format("Flax Engine {0}.{1}.{2}\nPlatform: {4}\nDate: {3}", Deployer.VersionMajor, Deployer.VersionMinor, Deployer.VersionBuild, DateTime.UtcNow, platformName);
+                        zip.CompressionLevel = Ionic.Zlib.CompressionLevel.BestCompression;
+                        zip.ParallelDeflateThreshold = -1;
+                        zip.Comment = string.Format("Flax Engine {0}.{1}.{2}\nPlatform: {4}\nDate: {3}", Deployer.VersionMajor, Deployer.VersionMinor, Deployer.VersionBuild, System.DateTime.UtcNow, platformName);
 
                         zip.Save(packageZipPath);
                     }
+#else
+                    System.IO.Compression.ZipFile.CreateFromDirectory(dst, packageZipPath);
+#endif
 
                     Log.Info(string.Format("Compressed {0} package size: {1}", platformName, Utilities.GetFileSize(packageZipPath)));
                 }

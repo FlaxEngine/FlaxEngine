@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -18,7 +18,7 @@ API_CLASS() class FLAXENGINE_API SplineCollider : public Collider
 DECLARE_SCENE_OBJECT(SplineCollider);
 private:
     Spline* _spline = nullptr;
-    PxTriangleMesh* _triangleMesh = nullptr;
+    void* _triangleMesh = nullptr;
     Array<Vector3> _vertexBuffer;
     Array<int32> _indexBuffer;
     Transform _preTransform = Transform::Identity;
@@ -76,5 +76,5 @@ protected:
     void DrawPhysicsDebug(RenderView& view) override;
 #endif
     void UpdateBounds() override;
-    void GetGeometry(PxGeometryHolder& geometry) override;
+    void GetGeometry(CollisionShape& collision) override;
 };

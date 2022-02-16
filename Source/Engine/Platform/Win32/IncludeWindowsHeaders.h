@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -23,7 +23,7 @@
 #endif
 
 // Override for Xbox Scarlett
-#if PLATFORM_XBOX_SCARLETT
+#if PLATFORM_XBOX_SCARLETT || PLATFORM_XBOX_ONE
 #define NOBITMAP
 #define NOMCX
 #define NOSERVICE

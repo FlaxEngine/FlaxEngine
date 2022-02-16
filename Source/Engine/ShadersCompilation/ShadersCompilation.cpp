@@ -1,16 +1,19 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 #if COMPILE_WITH_SHADER_COMPILER
 
 #include "ShadersCompilation.h"
 #include "ShaderCompilationContext.h"
 #include "ShaderDebugDataExporter.h"
+#include "Config.h"
+#include "Parser/ShaderProcessing.h"
+#include "Parser/ShaderMeta.h"
 #include "Engine/Engine/EngineService.h"
 #include "Engine/Threading/Threading.h"
 #include "Engine/Core/Log.h"
 #include "Engine/Core/Math/Math.h"
 #include "Engine/Core/Types/TimeSpan.h"
-#include "Parser/ShaderProcessing.h"
+#include "Engine/Graphics/Config.h"
 #include "Engine/Graphics/RenderTools.h"
 #include "Engine/Graphics/Shaders/GPUShader.h"
 #include "Engine/Profiler/ProfilerCPU.h"
@@ -36,6 +39,9 @@
 #endif
 #if COMPILE_WITH_PS4_SHADER_COMPILER
 #include "Platforms/PS4/Engine/ShaderCompilerPS4/ShaderCompilerPS4.h"
+#endif
+#if COMPILE_WITH_PS5_SHADER_COMPILER
+#include "Platforms/PS5/Engine/ShaderCompilerPS5/ShaderCompilerPS5.h"
 #endif
 
 namespace ShadersCompilationImpl
@@ -151,7 +157,6 @@ ShaderCompiler* ShadersCompilation::CreateCompiler(ShaderProfile profile)
     switch (profile)
     {
 #if COMPILE_WITH_D3D_SHADER_COMPILER
-        // Direct 3D
     case ShaderProfile::DirectX_SM4:
     case ShaderProfile::DirectX_SM5:
         result = New<ShaderCompilerD3D>(profile);
@@ -163,15 +168,18 @@ ShaderCompiler* ShadersCompilation::CreateCompiler(ShaderProfile profile)
         break;
 #endif
 #if COMPILE_WITH_VK_SHADER_COMPILER
-        // Vulkan
     case ShaderProfile::Vulkan_SM5:
         result = New<ShaderCompilerVulkan>(profile);
         break;
 #endif
 #if COMPILE_WITH_PS4_SHADER_COMPILER
-        // PS4
     case ShaderProfile::PS4:
         result = New<ShaderCompilerPS4>();
+        break;
+#endif
+#if COMPILE_WITH_PS5_SHADER_COMPILER
+    case ShaderProfile::PS5:
+        result = New<ShaderCompilerPS5>();
         break;
 #endif
     default:
@@ -452,6 +460,32 @@ void ShadersCompilationService::Dispose()
     ShaderIncludesMap.Clear();
     ShaderIncludesWatcher.ClearDelete();
     ShaderIncludesMapLocker.Unlock();
+}
+
+void ShaderCompilationContext::OnError(const char* message)
+{
+    LOG(Error, "Failed to compile '{0}'. {1}", Options->TargetName, String(message));
+}
+
+void ShaderCompilationContext::OnCollectDebugInfo(ShaderFunctionMeta& meta, int32 permutationIndex, const char* data, const int32 dataLength)
+{
+#ifdef GPU_USE_SHADERS_DEBUG_LAYER
+
+    // Cache data
+    meta.Permutations[permutationIndex].DebugData.Set(data, dataLength);
+
+#endif
+}
+
+ShaderCompilationContext::ShaderCompilationContext(const ShaderCompilationOptions* options, ShaderMeta* meta)
+    : Options(options)
+    , Meta(meta)
+    , Output(options->Output)
+{
+    // Convert target name to ANSI text (with limited length)
+    const int32 ansiNameLen = Math::Min<int32>(ARRAY_COUNT(TargetNameAnsi) - 1, options->TargetName.Length());
+    StringUtils::ConvertUTF162ANSI(*options->TargetName, TargetNameAnsi, ansiNameLen);
+    TargetNameAnsi[ansiNameLen] = 0;
 }
 
 #endif

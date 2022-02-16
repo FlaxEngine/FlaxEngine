@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 #include "Engine.h"
 #include "Game.h"
@@ -133,7 +133,7 @@ int32 Engine::Main(const Char* cmdLine)
     Platform::BeforeRun();
     EngineImpl::InitMainWindow();
     Application::BeforeRun();
-#if !USE_EDITOR && (PLATFORM_WINDOWS || PLATFORM_LINUX)
+#if !USE_EDITOR && (PLATFORM_WINDOWS || PLATFORM_LINUX || PLATFORM_MAC)
     EngineImpl::RunInBackground = PlatformSettings::Get()->RunInBackground;
 #endif
     Log::Logger::WriteFloor();
@@ -146,7 +146,7 @@ int32 Engine::Main(const Char* cmdLine)
     while (!ShouldExit())
     {
         // Reduce CPU usage by introducing idle time if the engine is running very fast and has enough time to spend
-        if ((useSleep && Time::UpdateFPS > 0) || !Platform::GetHasFocus())
+        if ((useSleep && Time::UpdateFPS > ZeroTolerance) || !Platform::GetHasFocus())
         {
             double nextTick = Time::GetNextTick();
             double timeToTick = nextTick - Platform::GetTimeSeconds();
@@ -250,7 +250,7 @@ void Engine::OnFixedUpdate()
     // Update services
     EngineService::OnFixedUpdate();
 
-    if (!Time::GetGamePaused() && Physics::AutoSimulation)
+    if (!Time::GetGamePaused())
     {
         const float dt = Time::Physics.DeltaTime.GetTotalSeconds();
         Physics::Simulate(dt);
@@ -531,6 +531,8 @@ void EngineImpl::InitPaths()
     Globals::MonoPath = Globals::StartupFolder / TEXT("Source/Platforms/Editor/Windows/Mono");
 #elif PLATFORM_LINUX
     Globals::MonoPath = Globals::StartupFolder / TEXT("Source/Platforms/Editor/Linux/Mono");
+#elif PLATFORM_MAC
+    Globals::MonoPath = Globals::StartupFolder / TEXT("Source/Platforms/Editor/Mac/Mono");
 #else
     #error "Please specify the Mono data location for Editor on this platform."
 #endif
@@ -605,7 +607,7 @@ void EngineImpl::InitMainWindow()
         return;
     }
 
-#if !USE_EDITOR
+#if !USE_EDITOR && !COMPILE_WITHOUT_CSHARP
     // Inform the managed runtime about the window (game can link GUI to it)
     auto scriptingClass = Scripting::GetStaticClass();
     ASSERT(scriptingClass);
@@ -613,7 +615,7 @@ void EngineImpl::InitMainWindow()
     ASSERT(setWindowMethod);
     void* params[1];
     params[0] = Engine::MainWindow->GetOrCreateManagedInstance();
-    MonoObject* exception = nullptr;
+    MObject* exception = nullptr;
     setWindowMethod->Invoke(nullptr, params, &exception);
     if (exception)
     {

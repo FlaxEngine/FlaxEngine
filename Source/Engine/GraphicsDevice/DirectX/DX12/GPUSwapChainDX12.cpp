@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 #if GRAPHICS_API_DIRECTX12
 
@@ -89,7 +89,7 @@ void GPUSwapChainDX12::releaseBackBuffer()
 
 bool GPUSwapChainDX12::IsFullscreen()
 {
-#if PLATFORM_XBOX_SCARLETT
+#if PLATFORM_XBOX_SCARLETT || PLATFORM_XBOX_ONE
     return true;
 #else
     // Check if has no swap chain created
@@ -154,13 +154,13 @@ bool GPUSwapChainDX12::Resize(int32 width, int32 height)
     _allowTearing = _device->AllowTearing;
     _format = GPU_BACK_BUFFER_PIXEL_FORMAT;
 
-#if PLATFORM_XBOX_SCARLETT
+#if PLATFORM_XBOX_SCARLETT || PLATFORM_XBOX_ONE
     ReleaseGPU();
 
     _currentFrameIndex = 0;
     _width = width;
     _height = height;
-    _memoryUsage = CalculateTextureMemoryUsage(_format, _width, _height, 1) * DX12_BACK_BUFFER_COUNT;
+    _memoryUsage = RenderTools::CalculateTextureMemoryUsage(_format, _width, _height, 1) * DX12_BACK_BUFFER_COUNT;
 
     getBackBuffer();
 #else
@@ -231,7 +231,7 @@ bool GPUSwapChainDX12::Resize(int32 width, int32 height)
     _currentFrameIndex = _swapChain->GetCurrentBackBufferIndex();
     _width = width;
     _height = height;
-    _memoryUsage = CalculateTextureMemoryUsage(_format, _width, _height, 1) * swapChainDesc.BufferCount;
+    _memoryUsage = RenderTools::CalculateTextureMemoryUsage(_format, _width, _height, 1) * swapChainDesc.BufferCount;
 
     getBackBuffer();
 #endif
@@ -283,7 +283,7 @@ void GPUSwapChainDX12::getBackBuffer()
     for (int32 i = 0; i < _backBuffers.Count(); i++)
     {
         ID3D12Resource* backbuffer;
-#if PLATFORM_XBOX_SCARLETT
+#if PLATFORM_XBOX_SCARLETT || PLATFORM_XBOX_ONE
         D3D12_HEAP_PROPERTIES swapChainHeapProperties;
         swapChainHeapProperties.Type = D3D12_HEAP_TYPE_DEFAULT;
         swapChainHeapProperties.CPUPageProperty = D3D12_CPU_PAGE_PROPERTY_UNKNOWN;
@@ -319,7 +319,7 @@ void GPUSwapChainDX12::getBackBuffer()
     }
 }
 
-#if PLATFORM_XBOX_SCARLETT
+#if PLATFORM_XBOX_SCARLETT || PLATFORM_XBOX_ONE
 
 void GPUSwapChainDX12::Begin(RenderTask* task)
 {
@@ -348,7 +348,7 @@ void GPUSwapChainDX12::End(RenderTask* task)
 
 void GPUSwapChainDX12::Present(bool vsync)
 {
-#if PLATFORM_XBOX_SCARLETT
+#if PLATFORM_XBOX_SCARLETT || PLATFORM_XBOX_ONE
     ID3D12Resource* backBuffer = _backBuffers[_currentFrameIndex].GetResource();
     D3D12XBOX_PRESENT_PLANE_PARAMETERS planeParameters = {};
     planeParameters.Token = _framePipelineToken;

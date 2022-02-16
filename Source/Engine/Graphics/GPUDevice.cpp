@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 #include "GPUDevice.h"
 #include "RenderTargetPool.h"
@@ -55,6 +55,23 @@ bool GPUPipelineState::Init(const Description& desc)
     CHECK_STAGE(GS);
     CHECK_STAGE(PS);
 #undef CHECK_STAGE
+
+#if USE_EDITOR
+    // Estimate somehow performance cost of this pipeline state for the content profiling
+    const int32 textureLookupCost = 20;
+    const int32 tessCost = 300;
+    Complexity = Utilities::CountBits(_meta.UsedSRsMask) * textureLookupCost;
+    if (desc.PS)
+        Complexity += desc.PS->GetBindings().InstructionsCount;
+    if (desc.HS || desc.DS)
+        Complexity += tessCost;
+    if (desc.DepthWriteEnable)
+        Complexity += 5;
+    if (desc.DepthTestEnable)
+        Complexity += 5;
+    if (desc.BlendMode.BlendEnable)
+        Complexity += 20;
+#endif
 
     return false;
 }
@@ -156,12 +173,12 @@ GPUPipelineState::Description GPUPipelineState::Description::DefaultFullscreenTr
 };
 
 GPUResource::GPUResource()
-    : PersistentScriptingObject(SpawnParams(Guid::New(), GPUResource::TypeInitializer))
+    : ScriptingObject(SpawnParams(Guid::New(), GPUResource::TypeInitializer))
 {
 }
 
 GPUResource::GPUResource(const SpawnParams& params)
-    : PersistentScriptingObject(params)
+    : ScriptingObject(params)
 {
 }
 
@@ -224,7 +241,7 @@ void GPUResource::OnDeleteObject()
 {
     ReleaseGPU();
 
-    PersistentScriptingObject::OnDeleteObject();
+    ScriptingObject::OnDeleteObject();
 }
 
 double GPUResourceView::DummyLastRenderTime = -1;
@@ -245,7 +262,7 @@ struct GPUDevice::PrivateData
 GPUDevice* GPUDevice::Instance = nullptr;
 
 GPUDevice::GPUDevice(RendererType type, ShaderProfile profile)
-    : PersistentScriptingObject(SpawnParams(Guid::New(), TypeInitializer))
+    : ScriptingObject(SpawnParams(Guid::New(), TypeInitializer))
     , _state(DeviceState::Missing)
     , _isRendering(false)
     , _wasVSyncUsed(false)

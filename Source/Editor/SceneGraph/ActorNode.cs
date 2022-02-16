@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 using System;
 using System.Collections.Generic;
@@ -14,7 +14,7 @@ namespace FlaxEditor.SceneGraph
     /// It's part of the Scene Graph.
     /// </summary>
     /// <seealso cref="SceneGraphNode" />
-    /// <seealso cref="Actor" />
+    /// <seealso cref="FlaxEngine.Actor" />
     [HideInEditor]
     public class ActorNode : SceneGraphNode
     {
@@ -179,12 +179,12 @@ namespace FlaxEditor.SceneGraph
         /// <summary>
         /// Gets a value indicating whether this actor can be used to create prefab from it (as a root).
         /// </summary>
-        public virtual bool CanCreatePrefab => (Actor.HideFlags & HideFlags.DontSave) != HideFlags.DontSave;
+        public virtual bool CanCreatePrefab => (_actor.HideFlags & HideFlags.DontSave) != HideFlags.DontSave;
 
         /// <summary>
         /// Gets a value indicating whether this actor has a valid linkage to the prefab asset.
         /// </summary>
-        public virtual bool HasPrefabLink => Actor.HasPrefabLink;
+        public virtual bool HasPrefabLink => _actor.HasPrefabLink;
 
         /// <inheritdoc />
         public override string Name => _actor.Name;
@@ -228,6 +228,7 @@ namespace FlaxEditor.SceneGraph
             set => _actor.Transform = value;
         }
 
+#if false
         /// <inheritdoc />
         public override SceneGraphNode ParentNode
         {
@@ -238,6 +239,7 @@ namespace FlaxEditor.SceneGraph
                 base.ParentNode = value;
             }
         }
+#endif
 
         /// <inheritdoc />
         public override object EditableObject => _actor;
@@ -250,7 +252,7 @@ namespace FlaxEditor.SceneGraph
             // Skip actors that should not be selected
             if (hit != null && _actor != null && (_actor.HideFlags & HideFlags.DontSelect) == HideFlags.DontSelect)
             {
-                hit = ParentNode;
+                hit = parentNode;
             }
 
             return hit;
@@ -295,25 +297,54 @@ namespace FlaxEditor.SceneGraph
         {
         }
 
+        /// <summary>
+        /// Action called after converting actor in editor.
+        /// </summary>
+        /// <param name="source">The source actor node from which this node was converted.</param>
+        public virtual void PostConvert(ActorNode source)
+        {
+        }
+
         /// <inheritdoc />
         protected override void OnParentChanged()
         {
-            // Update UI node connections
-            _treeNode.Parent = (ParentNode as ActorNode)?.TreeNode;
-
-            // Check if it's a new node and parent has been already ready
-            // (eg. we build new node for spawned actor and link it to the game)
-            if (_treeNode.Parent != null && !_treeNode.Parent.IsLayoutLocked)
-            {
-                _treeNode.IndexInParent = _actor.OrderInParent;
-                _treeNode.Parent.SortChildren();
-
-                // Update UI
-                _treeNode.IsLayoutLocked = false;
-                _treeNode.PerformLayout();
-            }
-
             base.OnParentChanged();
+
+            // Update UI (special case if actor is spawned and added to existing scene tree)
+            var parentTreeNode = (parentNode as ActorNode)?.TreeNode;
+            if (parentTreeNode != null && !parentTreeNode.IsLayoutLocked)
+            {
+                parentTreeNode.IsLayoutLocked = true;
+                _treeNode.Parent = parentTreeNode;
+                _treeNode.IndexInParent = _actor.OrderInParent;
+                parentTreeNode.IsLayoutLocked = false;
+
+                // Skip UI update if node won't be in a view
+                if (parentTreeNode.IsCollapsed)
+                {
+                    TreeNode.UnlockChildrenRecursive();
+                }
+                else
+                {
+                    // Try to perform layout at the level where it makes it the most performant (the least computations)
+                    var tree = parentTreeNode.ParentTree;
+                    if (tree != null)
+                    {
+                        if (tree.Parent is FlaxEngine.GUI.Panel treeParent)
+                            treeParent.PerformLayout();
+                        else
+                            tree.PerformLayout();
+                    }
+                    else
+                    {
+                        parentTreeNode.PerformLayout();
+                    }
+                }
+            }
+            else
+            {
+                _treeNode.Parent = parentTreeNode;
+            }
         }
 
         /// <inheritdoc />

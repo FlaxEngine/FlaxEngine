@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 #include "AnimGraph.h"
 #include "Engine/Debug/DebugLog.h"
@@ -11,6 +11,9 @@
 #include "Engine/Scripting/Scripting.h"
 #include "Engine/Scripting/MException.h"
 #include "Engine/Content/Assets/SkinnedModel.h"
+
+#if USE_MONO
+
 #include <ThirdParty/mono-2.0/mono/metadata/appdomain.h>
 
 struct InternalInitData
@@ -80,15 +83,20 @@ namespace AnimGraphInternal
     }
 }
 
+#endif
+
 void AnimGraphExecutor::initRuntime()
 {
+#if USE_MONO
     ADD_INTERNAL_CALL("FlaxEngine.AnimationGraph::Internal_HasConnection", &AnimGraphInternal::HasConnection);
     ADD_INTERNAL_CALL("FlaxEngine.AnimationGraph::Internal_GetInputValue", &AnimGraphInternal::GetInputValue);
     ADD_INTERNAL_CALL("FlaxEngine.AnimationGraph::Internal_GetOutputImpulseData", &AnimGraphInternal::GetOutputImpulseData);
+#endif
 }
 
 void AnimGraphExecutor::ProcessGroupCustom(Box* boxBase, Node* nodeBase, Value& value)
 {
+#if USE_MONO
     auto& context = Context.Get();
     if (context.ValueCache.TryGet(boxBase, value))
         return;
@@ -124,7 +132,7 @@ void AnimGraphExecutor::ProcessGroupCustom(Box* boxBase, Node* nodeBase, Value& 
     // Evaluate node
     void* params[1];
     params[0] = &internalContext;
-    MonoObject* exception = nullptr;
+    MObject* exception = nullptr;
     MonoObject* result = data.Evaluate->Invoke(obj, params, &exception);
     if (exception)
     {
@@ -136,6 +144,7 @@ void AnimGraphExecutor::ProcessGroupCustom(Box* boxBase, Node* nodeBase, Value& 
     // Extract result
     value = MUtils::UnboxVariant(result);
     context.ValueCache.Add(boxBase, value);
+#endif
 }
 
 bool AnimGraph::IsReady() const
@@ -156,13 +165,16 @@ void AnimGraph::ClearCustomNode(Node* node)
     data.Evaluate = nullptr;
     if (data.Handle)
     {
+#if USE_MONO
         mono_gchandle_free(data.Handle);
+#endif
         data.Handle = 0;
     }
 }
 
 bool AnimGraph::InitCustomNode(Node* node)
 {
+#if USE_MONO
     // Fetch the node logic controller type
     if (node->Values.Count() < 2 || node->Values[0].Type.Type != ValueType::String)
     {
@@ -212,7 +224,7 @@ bool AnimGraph::InitCustomNode(Node* node)
     initData.BaseModel = BaseModel.GetManagedInstance();
     void* params[1];
     params[0] = &initData;
-    MonoObject* exception = nullptr;
+    MObject* exception = nullptr;
     load->Invoke(obj, params, &exception);
     if (exception)
     {
@@ -227,7 +239,7 @@ bool AnimGraph::InitCustomNode(Node* node)
     auto& data = node->Data.Custom;
     data.Evaluate = evaluate;
     data.Handle = handleGC;
-
+#endif
     return false;
 }
 

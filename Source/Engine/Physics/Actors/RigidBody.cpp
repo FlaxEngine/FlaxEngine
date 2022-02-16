@@ -1,14 +1,11 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 #include "RigidBody.h"
-#include "Engine/Physics/Utilities.h"
+#include "Engine/Core/Log.h"
 #include "Engine/Physics/Colliders/Collider.h"
-#include "Engine/Physics/Physics.h"
+#include "Engine/Physics/PhysicsBackend.h"
+#include "Engine/Physics/PhysicsScene.h"
 #include "Engine/Serialization/Serialization.h"
-#include <ThirdParty/PhysX/extensions/PxRigidBodyExt.h>
-#include <ThirdParty/PhysX/PxRigidActor.h>
-#include <ThirdParty/PhysX/PxRigidDynamic.h>
-#include <ThirdParty/PhysX/PxPhysics.h>
 
 RigidBody::RigidBody(const SpawnParams& params)
     : PhysicsActor(params)
@@ -34,52 +31,38 @@ void RigidBody::SetIsKinematic(const bool value)
 {
     if (value == GetIsKinematic())
         return;
-
     _isKinematic = value;
-
     if (_actor)
-        _actor->setRigidBodyFlag(PxRigidBodyFlag::eKINEMATIC, value);
+        PhysicsBackend::SetRigidDynamicActorFlag(_actor, PhysicsBackend::RigidDynamicFlags::Kinematic, value);
 }
 
 void RigidBody::SetLinearDamping(float value)
 {
     if (Math::NearEqual(value, _linearDamping))
         return;
-
     _linearDamping = value;
-
     if (_actor)
-    {
-        _actor->setLinearDamping(value);
-    }
+        PhysicsBackend::SetRigidDynamicActorLinearDamping(_actor, _linearDamping);
 }
 
 void RigidBody::SetAngularDamping(float value)
 {
     if (Math::NearEqual(value, _angularDamping))
         return;
-
     _angularDamping = value;
-
     if (_actor)
-    {
-        _actor->setAngularDamping(value);
-    }
+        PhysicsBackend::SetRigidDynamicActorAngularDamping(_actor, _angularDamping);
 }
 
 void RigidBody::SetEnableSimulation(bool value)
 {
     if (value == GetEnableSimulation())
         return;
-
     _enableSimulation = value;
-
     if (_actor)
     {
         const bool isActive = _enableSimulation && IsActiveInHierarchy();
-        _actor->setActorFlag(PxActorFlag::eDISABLE_SIMULATION, !isActive);
-
-        // Auto wake up
+        PhysicsBackend::SetActorFlag(_actor, PhysicsBackend::ActorFlags::NoSimulation, !isActive);
         if (isActive && GetStartAwake())
             WakeUp();
     }
@@ -89,24 +72,19 @@ void RigidBody::SetUseCCD(bool value)
 {
     if (value == GetUseCCD())
         return;
-
     _useCCD = value;
-
     if (_actor)
-        _actor->setRigidBodyFlag(PxRigidBodyFlag::eENABLE_CCD, value);
+        PhysicsBackend::SetRigidDynamicActorFlag(_actor, PhysicsBackend::RigidDynamicFlags::CCD, value);
 }
 
 void RigidBody::SetEnableGravity(bool value)
 {
     if (value == GetEnableGravity())
         return;
-
     _enableGravity = value;
-
     if (_actor)
     {
-        _actor->setActorFlag(PxActorFlag::eDISABLE_GRAVITY, !value);
-
+        PhysicsBackend::SetActorFlag(_actor, PhysicsBackend::ActorFlags::NoGravity, !value);
         if (value)
             WakeUp();
     }
@@ -126,201 +104,151 @@ void RigidBody::SetMaxAngularVelocity(float value)
 {
     if (Math::NearEqual(value, _maxAngularVelocity))
         return;
-
     _maxAngularVelocity = value;
-
     if (_actor)
-        _actor->setMaxAngularVelocity(value);
+        PhysicsBackend::SetRigidDynamicActorMaxAngularVelocity(_actor, _maxAngularVelocity);
+}
+
+bool RigidBody::GetOverrideMass() const
+{
+    return _overrideMass != 0;
 }
 
 void RigidBody::SetOverrideMass(bool value)
 {
     if (value == GetOverrideMass())
         return;
-
     _overrideMass = value;
-
     UpdateMass();
+}
+
+float RigidBody::GetMass() const
+{
+    return _mass;
 }
 
 void RigidBody::SetMass(float value)
 {
     if (Math::NearEqual(value, _mass))
         return;
-
     _mass = value;
-
-    // Auto enable override
     _overrideMass = true;
-
     UpdateMass();
+}
+
+float RigidBody::GetMassScale() const
+{
+    return _massScale;
 }
 
 void RigidBody::SetMassScale(float value)
 {
     if (Math::NearEqual(value, _massScale))
         return;
-
     _massScale = value;
-
-    if (!_overrideMass)
-        UpdateMass();
+    UpdateMass();
 }
 
 void RigidBody::SetCenterOfMassOffset(const Vector3& value)
 {
     if (Vector3::NearEqual(value, _centerOfMassOffset))
         return;
-
     _centerOfMassOffset = value;
-
     if (_actor)
-    {
-        PxTransform pose = _actor->getCMassLocalPose();
-        pose.p += C2P(_centerOfMassOffset);
-        _actor->setCMassLocalPose(pose);
-    }
+        PhysicsBackend::SetRigidDynamicActorCenterOfMassOffset(_actor, _centerOfMassOffset);
 }
 
 void RigidBody::SetConstraints(const RigidbodyConstraints value)
 {
     if (value == _constraints)
         return;
-
     _constraints = value;
-
     if (_actor)
-    {
-        _actor->setRigidDynamicLockFlags(static_cast<PxRigidDynamicLockFlag::Enum>(value));
-    }
+        PhysicsBackend::SetRigidDynamicActorConstraints(_actor, value);
 }
 
 Vector3 RigidBody::GetLinearVelocity() const
 {
-    return _actor ? P2C(_actor->getLinearVelocity()) : Vector3::Zero;
+    return _actor ? PhysicsBackend::GetRigidDynamicActorLinearVelocity(_actor) : Vector3::Zero;
 }
 
 void RigidBody::SetLinearVelocity(const Vector3& value) const
 {
     if (_actor)
-        _actor->setLinearVelocity(C2P(value), GetStartAwake());
+        PhysicsBackend::SetRigidDynamicActorLinearVelocity(_actor, value, GetStartAwake());
 }
 
 Vector3 RigidBody::GetAngularVelocity() const
 {
-    return _actor ? P2C(_actor->getAngularVelocity()) : Vector3::Zero;
+    return _actor ? PhysicsBackend::GetRigidDynamicActorAngularVelocity(_actor) : Vector3::Zero;
 }
 
 void RigidBody::SetAngularVelocity(const Vector3& value) const
 {
     if (_actor)
-        _actor->setAngularVelocity(C2P(value), GetStartAwake());
+        PhysicsBackend::SetRigidDynamicActorAngularVelocity(_actor, value, GetStartAwake());
 }
 
 float RigidBody::GetMaxDepenetrationVelocity() const
 {
-    return _actor ? _actor->getMaxDepenetrationVelocity() : 0;
+    return _actor ? PhysicsBackend::GetRigidDynamicActorMaxDepenetrationVelocity(_actor) : 0;
 }
 
 void RigidBody::SetMaxDepenetrationVelocity(const float value) const
 {
     if (_actor)
-        _actor->setMaxDepenetrationVelocity(value);
+        PhysicsBackend::SetRigidDynamicActorMaxDepenetrationVelocity(_actor, value);
 }
 
 float RigidBody::GetSleepThreshold() const
 {
-    return _actor ? _actor->getSleepThreshold() : 0;
+    return _actor ? PhysicsBackend::GetRigidDynamicActorSleepThreshold(_actor) : 0;
 }
 
 void RigidBody::SetSleepThreshold(const float value) const
 {
     if (_actor)
-        _actor->setSleepThreshold(value);
+        PhysicsBackend::SetRigidDynamicActorSleepThreshold(_actor, value);
 }
 
 Vector3 RigidBody::GetCenterOfMass() const
 {
-    return _actor ? P2C(_actor->getCMassLocalPose().p) : Vector3::Zero;
+    return _actor ? PhysicsBackend::GetRigidDynamicActorCenterOfMass(_actor) : Vector3::Zero;
 }
 
 bool RigidBody::IsSleeping() const
 {
-    return _actor ? _actor->isSleeping() : false;
+    return _actor ? PhysicsBackend::GetRigidDynamicActorIsSleeping(_actor) : false;
 }
 
 void RigidBody::Sleep() const
 {
-    if (_actor && GetEnableSimulation() && !GetIsKinematic() && IsActiveInHierarchy() && _actor->getScene())
-    {
-        _actor->putToSleep();
-    }
+    if (_actor && GetEnableSimulation() && !GetIsKinematic() && IsActiveInHierarchy())
+        PhysicsBackend::GetRigidActorSleep(_actor);
 }
 
 void RigidBody::WakeUp() const
 {
-    if (_actor && GetEnableSimulation() && !GetIsKinematic() && IsActiveInHierarchy() && _actor->getScene())
-    {
-        _actor->wakeUp();
-    }
+    if (_actor && GetEnableSimulation() && !GetIsKinematic() && IsActiveInHierarchy())
+        PhysicsBackend::GetRigidDynamicActorWakeUp(_actor);
 }
 
 void RigidBody::UpdateMass()
 {
-    // Skip if no actor created
-    if (_actor == nullptr)
-        return;
-
-    // Physical material
-    float densityKGPerCubicUU = 1.0f;
-    float raiseMassToPower = 0.75f;
-    // TODO: link physical material or expose density parameter
-
-    PxRigidBodyExt::updateMassAndInertia(*_actor, densityKGPerCubicUU);
-
-    // Grab old mass so we can apply new mass while maintaining inertia tensor
-    const float oldMass = _actor->getMass();
-    float newMass;
-
-    if (_overrideMass == false)
-    {
-        const float usePow = Math::Clamp<float>(raiseMassToPower, ZeroTolerance, 1.0f);
-        newMass = Math::Pow(oldMass, usePow);
-
-        // Apply user-defined mass scaling
-        newMass *= Math::Clamp<float>(_massScale, 0.01f, 100.0f);
-
-        _mass = newMass;
-    }
-    else
-    {
-        // Min weight of 1g
-        newMass = Math::Max(_mass, 0.001f);
-    }
-
-    ASSERT(newMass > 0.0f);
-
-    const float massRatio = newMass / oldMass;
-    const PxVec3 inertiaTensor = _actor->getMassSpaceInertiaTensor();
-
-    _actor->setMassSpaceInertiaTensor(inertiaTensor * massRatio);
-    _actor->setMass(newMass);
+    if (_actor)
+        PhysicsBackend::UpdateRigidDynamicActorMass(_actor, _mass, _massScale, _overrideMass == 0);
 }
 
 void RigidBody::AddForce(const Vector3& force, ForceMode mode) const
 {
     if (_actor && GetEnableSimulation())
-    {
-        _actor->addForce(C2P(force), static_cast<PxForceMode::Enum>(mode));
-    }
+        PhysicsBackend::AddRigidDynamicActorForce(_actor, force, mode);
 }
 
 void RigidBody::AddForceAtPosition(const Vector3& force, const Vector3& position, ForceMode mode) const
 {
     if (_actor && GetEnableSimulation())
-    {
-        PxRigidBodyExt::addForceAtPos(*_actor, C2P(force), C2P(position), static_cast<PxForceMode::Enum>(mode));
-    }
+        PhysicsBackend::AddRigidDynamicActorForceAtPosition(_actor, force, position, mode);
 }
 
 void RigidBody::AddRelativeForce(const Vector3& force, ForceMode mode) const
@@ -331,9 +259,7 @@ void RigidBody::AddRelativeForce(const Vector3& force, ForceMode mode) const
 void RigidBody::AddTorque(const Vector3& torque, ForceMode mode) const
 {
     if (_actor && GetEnableSimulation())
-    {
-        _actor->addTorque(C2P(torque), static_cast<PxForceMode::Enum>(mode));
-    }
+        PhysicsBackend::AddRigidDynamicActorTorque(_actor, torque, mode);
 }
 
 void RigidBody::AddRelativeTorque(const Vector3& torque, ForceMode mode) const
@@ -344,9 +270,7 @@ void RigidBody::AddRelativeTorque(const Vector3& torque, ForceMode mode) const
 void RigidBody::SetSolverIterationCounts(int32 minPositionIters, int32 minVelocityIters) const
 {
     if (_actor)
-    {
-        _actor->setSolverIterationCounts(Math::Clamp(minPositionIters, 1, 255), Math::Clamp(minVelocityIters, 1, 255));
-    }
+        PhysicsBackend::SetRigidDynamicActorSolverIterationCounts(_actor, minPositionIters, minVelocityIters);
 }
 
 void RigidBody::ClosestPoint(const Vector3& position, Vector3& result) const
@@ -397,67 +321,6 @@ void RigidBody::OnColliderChanged(Collider* c)
     // TODO: maybe wake up only if one ore more shapes attached is active?
     //if (GetStartAwake())
     //	WakeUp();
-}
-
-void RigidBody::CreateActor()
-{
-    ASSERT(_actor == nullptr);
-
-    // Create rigid body
-    const PxTransform trans(C2P(_transform.Translation), C2P(_transform.Orientation));
-    _actor = CPhysX->createRigidDynamic(trans);
-    _actor->userData = this;
-
-    // Setup flags
-#if WITH_PVD
-    PxActorFlags actorFlags = PxActorFlag::eVISUALIZATION;
-#else
-    PxActorFlags actorFlags = static_cast<PxActorFlags>(0);
-#endif
-    const bool isActive = _enableSimulation && IsActiveInHierarchy();
-    if (!isActive)
-        actorFlags |= PxActorFlag::eDISABLE_SIMULATION;
-    if (!_enableGravity)
-        actorFlags |= PxActorFlag::eDISABLE_GRAVITY;
-    _actor->setActorFlags(actorFlags);
-    if (_useCCD)
-        _actor->setRigidBodyFlag(PxRigidBodyFlag::eENABLE_CCD, true);
-    if (_isKinematic)
-        _actor->setRigidBodyFlag(PxRigidBodyFlag::eKINEMATIC, true);
-
-    // Apply properties
-    _actor->setLinearDamping(_linearDamping);
-    _actor->setAngularDamping(_angularDamping);
-    _actor->setMaxAngularVelocity(_maxAngularVelocity);
-    _actor->setRigidDynamicLockFlags(static_cast<PxRigidDynamicLockFlag::Enum>(_constraints));
-
-    // Find colliders to attach
-    for (int32 i = 0; i < Children.Count(); i++)
-    {
-        auto collider = dynamic_cast<Collider*>(Children[i]);
-        if (collider && collider->CanAttach(this))
-        {
-            collider->Attach(this);
-        }
-    }
-
-    // Setup mass (calculate or use overriden value)
-    UpdateMass();
-
-    // Apply the Center Of Mass offset
-    if (!_centerOfMassOffset.IsZero())
-    {
-        PxTransform pose = _actor->getCMassLocalPose();
-        pose.p += C2P(_centerOfMassOffset);
-        _actor->setCMassLocalPose(pose);
-    }
-
-    // Register actor
-    const bool putToSleep = !_startAwake && GetEnableSimulation() && !GetIsKinematic() && IsActiveInHierarchy();
-    Physics::AddActor(_actor, putToSleep);
-
-    // Update cached data
-    UpdateBounds();
 }
 
 void RigidBody::UpdateScale()
@@ -521,19 +384,61 @@ void RigidBody::Deserialize(DeserializeStream& stream, ISerializeModifier* modif
     DESERIALIZE_BIT_MEMBER(UpdateMassWhenScaleChanges, _updateMassWhenScaleChanges);
 }
 
-PxActor* RigidBody::GetPhysXActor()
+void* RigidBody::GetPhysicsActor() const
 {
-    return (PxActor*)_actor;
-}
-
-PxRigidActor* RigidBody::GetRigidActor()
-{
-    return (PxRigidActor*)_actor;
+    return _actor;
 }
 
 void RigidBody::BeginPlay(SceneBeginData* data)
 {
-    CreateActor();
+    // Create rigid body
+    ASSERT(_actor == nullptr);
+    _actor = PhysicsBackend::CreateRigidDynamicActor(this, _transform.Translation, _transform.Orientation);
+
+    // Apply properties
+    auto actorFlags = PhysicsBackend::ActorFlags::None;
+    if (!_enableSimulation || !IsActiveInHierarchy())
+        actorFlags |= PhysicsBackend::ActorFlags::NoSimulation;
+    if (!_enableGravity)
+        actorFlags |= PhysicsBackend::ActorFlags::NoGravity;
+    PhysicsBackend::SetActorFlags(_actor, actorFlags);
+    auto rigidBodyFlags = PhysicsBackend::RigidDynamicFlags::None;
+    if (_isKinematic)
+        rigidBodyFlags |= PhysicsBackend::RigidDynamicFlags::Kinematic;
+    if (_useCCD)
+        rigidBodyFlags |= PhysicsBackend::RigidDynamicFlags::CCD;
+    PhysicsBackend::SetRigidDynamicActorFlags(_actor, rigidBodyFlags);
+    PhysicsBackend::SetRigidDynamicActorLinearDamping(_actor, _linearDamping);
+    PhysicsBackend::SetRigidDynamicActorAngularDamping(_actor, _angularDamping);
+    PhysicsBackend::SetRigidDynamicActorMaxAngularVelocity(_actor, _maxAngularVelocity);
+    PhysicsBackend::SetRigidDynamicActorConstraints(_actor, _constraints);
+
+    // Find colliders to attach
+    for (int32 i = 0; i < Children.Count(); i++)
+    {
+        auto collider = dynamic_cast<Collider*>(Children[i]);
+        if (collider && collider->CanAttach(this))
+        {
+            collider->Attach(this);
+        }
+    }
+
+    // Setup mass (calculate or use overriden value)
+    UpdateMass();
+
+    // Apply the Center Of Mass offset
+    if (!_centerOfMassOffset.IsZero())
+        PhysicsBackend::SetRigidDynamicActorCenterOfMassOffset(_actor, _centerOfMassOffset);
+
+    // Register actor
+    void* scene = GetPhysicsScene()->GetPhysicsScene();
+    PhysicsBackend::AddSceneActor(scene, _actor);
+    const bool putToSleep = !_startAwake && GetEnableSimulation() && !GetIsKinematic() && IsActiveInHierarchy();
+    if (putToSleep)
+        PhysicsBackend::AddSceneActorAction(scene, _actor, PhysicsBackend::ActionType::Sleep);
+
+    // Update cached data
+    UpdateBounds();
 
     // Base
     PhysicsActor::BeginPlay(data);
@@ -541,24 +446,15 @@ void RigidBody::BeginPlay(SceneBeginData* data)
 
 void RigidBody::EndPlay()
 {
-    // Detach all the shapes
-    PxShape* shapes[8];
-    while (_actor && _actor->getNbShapes() > 0)
-    {
-        const uint32 count = _actor->getShapes(shapes, 8, 0);
-        for (uint32 i = 0; i < count; i++)
-        {
-            _actor->detachShape(*shapes[i], false);
-        }
-    }
-
     // Base
     PhysicsActor::EndPlay();
 
     if (_actor)
     {
         // Remove actor
-        Physics::RemoveActor(_actor);
+        void* scene = GetPhysicsScene()->GetPhysicsScene();
+        PhysicsBackend::RemoveSceneActor(scene, _actor);
+        PhysicsBackend::DestroyActor(_actor);
         _actor = nullptr;
     }
 }
@@ -571,7 +467,7 @@ void RigidBody::OnActiveInTreeChanged()
     if (_actor)
     {
         const bool isActive = _enableSimulation && IsActiveInHierarchy();
-        _actor->setActorFlag(PxActorFlag::eDISABLE_SIMULATION, !isActive);
+        PhysicsBackend::SetActorFlag(_actor, PhysicsBackend::ActorFlags::NoSimulation, !isActive);
 
         // Auto wake up
         if (isActive && GetStartAwake())
@@ -590,11 +486,8 @@ void RigidBody::OnTransformChanged()
         // Base (skip PhysicsActor call to optimize)
         Actor::OnTransformChanged();
 
-        const PxTransform trans(C2P(_transform.Translation), C2P(_transform.Orientation));
-        if (GetIsKinematic() && GetEnableSimulation())
-            _actor->setKinematicTarget(trans);
-        else
-            _actor->setGlobalPose(trans, true);
+        const bool kinematic = GetIsKinematic() && GetEnableSimulation();
+        PhysicsBackend::SetRigidActorPose(_actor, _transform.Translation, _transform.Orientation, kinematic, true);
 
         UpdateScale();
         UpdateBounds();
@@ -604,4 +497,14 @@ void RigidBody::OnTransformChanged()
         // Base
         PhysicsActor::OnTransformChanged();
     }
+}
+
+void RigidBody::OnPhysicsSceneChanged(PhysicsScene* previous)
+{
+    PhysicsBackend::RemoveSceneActor(previous->GetPhysicsScene(), _actor);
+    void* scene = GetPhysicsScene()->GetPhysicsScene();
+    PhysicsBackend::AddSceneActor(scene, _actor);
+    const bool putToSleep = !_startAwake && GetEnableSimulation() && !GetIsKinematic() && IsActiveInHierarchy();
+    if (putToSleep)
+        PhysicsBackend::AddSceneActorAction(scene, _actor, PhysicsBackend::ActionType::Sleep);
 }

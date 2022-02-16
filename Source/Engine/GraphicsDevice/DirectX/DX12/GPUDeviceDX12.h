@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -157,14 +157,14 @@ public:
         return 0xffffffff;
     }
 
-#if PLATFORM_XBOX_SCARLETT
-    void OnSuspend();
-    void OnResume();
+#if PLATFORM_XBOX_SCARLETT ||PLATFORM_XBOX_ONE
+    void OnSuspended();
+    void OnResumed();
 #endif
 
 private:
 
-#if PLATFORM_XBOX_SCARLETT
+#if PLATFORM_XBOX_SCARLETT ||PLATFORM_XBOX_ONE
     void updateFrameEvents();
 #endif
     void updateRes2Dispose();

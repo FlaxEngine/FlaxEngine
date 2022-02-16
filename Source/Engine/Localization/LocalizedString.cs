@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 using System;
 using System.Globalization;
@@ -41,7 +41,7 @@ namespace FlaxEngine
         /// <returns>The localized text.</returns>
         public string ToStringPlural(int n)
         {
-            return string.IsNullOrEmpty(Value) ? Localization.GetPluralString(Id, n) : Value;
+            return string.IsNullOrEmpty(Value) ? Localization.GetPluralString(Id, n) : string.Format(Value, n);
         }
 
         /// <summary>

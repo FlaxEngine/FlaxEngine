@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -368,8 +368,10 @@ protected:
 private:
 
     // Internal bindings
+#if !COMPILE_WITHOUT_CSHARP
     API_FUNCTION(NoProxy) void GetKeyframes(MonoArray* data);
     API_FUNCTION(NoProxy) void SetKeyframes(MonoArray* data);
+#endif
 
 public:
 

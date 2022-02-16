@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -21,12 +21,6 @@ protected:
 public:
 
     /// <summary>
-    /// Gets the native PhysX actor object.
-    /// </summary>
-    /// <returns>The PhysX actor.</returns>
-    virtual PxActor* GetPhysXActor() = 0;
-
-    /// <summary>
     /// Updates the bounding box.
     /// </summary>
     void UpdateBounds();
@@ -37,7 +31,7 @@ public:
     bool IntersectsItself(const Ray& ray, float& distance, Vector3& normal) override;
 
     // [IPhysicsActor]
-    void OnActiveTransformChanged(const PxTransform& transform) override;
+    void OnActiveTransformChanged() override;
 
 protected:
 

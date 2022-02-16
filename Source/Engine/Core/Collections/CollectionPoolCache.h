@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -60,6 +60,17 @@ public:
     public:
 
         T* Value;
+
+        ScopeCache() = delete;
+        ScopeCache(const ScopeCache& other) = delete;
+        ScopeCache& operator=(const ScopeCache& other) = delete;
+        ScopeCache& operator=(ScopeCache&& other) noexcept = delete;
+
+        ScopeCache(ScopeCache&& other) noexcept
+        {
+            Value = other.Value;
+            other.Value = nullptr;
+        }
 
         ~ScopeCache()
         {

@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -60,7 +60,7 @@ public:
     /// <summary>
     /// Gets managed instance object (or null if no asset set).
     /// </summary>
-    FORCE_INLINE MonoObject* GetManagedInstance() const
+    FORCE_INLINE MObject* GetManagedInstance() const
     {
         return _asset ? _asset->GetOrCreateManagedInstance() : nullptr;
     }

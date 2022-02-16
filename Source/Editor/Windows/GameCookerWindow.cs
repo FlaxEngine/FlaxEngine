@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 using System;
 using System.Collections.Generic;
@@ -44,6 +44,8 @@ namespace FlaxEditor.Windows
                 { PlatformType.XboxScarlett, new XboxScarlett() },
                 { PlatformType.Android, new Android() },
                 { PlatformType.Switch, new Switch() },
+                { PlatformType.PS5, new PS5() },
+                { PlatformType.Mac, new Mac() },
             };
 
             public BuildTabProxy(GameCookerWindow win, PlatformSelector platformSelector)
@@ -59,6 +61,8 @@ namespace FlaxEditor.Windows
                 PerPlatformOptions[PlatformType.XboxScarlett].Init("Output/XboxScarlett", "XboxScarlett");
                 PerPlatformOptions[PlatformType.Android].Init("Output/Android", "Android");
                 PerPlatformOptions[PlatformType.Switch].Init("Output/Switch", "Switch");
+                PerPlatformOptions[PlatformType.PS5].Init("Output/PS5", "PS5");
+                PerPlatformOptions[PlatformType.Mac].Init("Output/Mac", "Mac");
             }
 
             abstract class Platform
@@ -100,11 +104,29 @@ namespace FlaxEditor.Windows
 
                     // Check if can build on that platform
 #if PLATFORM_WINDOWS
-                    IsSupported = true;
+                    switch (BuildPlatform)
+                    {
+                    case BuildPlatform.MacOSx64:
+                        IsSupported = false;
+                        break;
+                    default:
+                        IsSupported = true;
+                        break;
+                    }
 #elif PLATFORM_LINUX
                     switch (BuildPlatform)
                     {
                     case BuildPlatform.LinuxX64:
+                        IsSupported = true;
+                        break;
+                    default:
+                        IsSupported = false;
+                        break;
+                    }
+#elif PLATFORM_MAC
+                    switch (BuildPlatform)
+                    {
+                    case BuildPlatform.MacOSx64:
                         IsSupported = true;
                         break;
                     default:
@@ -195,6 +217,16 @@ namespace FlaxEditor.Windows
                 protected override BuildPlatform BuildPlatform => BuildPlatform.Switch;
             }
 
+            class PS5 : Platform
+            {
+                protected override BuildPlatform BuildPlatform => BuildPlatform.PS5;
+            }
+
+            class Mac : Platform
+            {
+                protected override BuildPlatform BuildPlatform => BuildPlatform.MacOSx64;
+            }
+
             class Editor : CustomEditor
             {
                 private PlatformType _platform;
@@ -238,6 +270,12 @@ namespace FlaxEditor.Windows
                             break;
                         case PlatformType.Switch:
                             name = "Switch";
+                            break;
+                        case PlatformType.PS5:
+                            name = "PlayStation 5";
+                            break;
+                        case PlatformType.Mac:
+                            name = "Mac";
                             break;
                         default:
                             name = CustomEditorsUtil.GetPropertyNameUI(_platform.ToString());
@@ -779,16 +817,23 @@ namespace FlaxEditor.Windows
                 BackgroundColor = Style.Current.LightBackground,
                 Parent = tab,
             };
+            platformSelector.SizeChanged += OnPlatformSelectorSizeChanged;
             var panel = new Panel(ScrollBars.Vertical)
             {
                 AnchorPreset = AnchorPresets.StretchAll,
                 Offsets = new Margin(0, 0, platformSelector.Offsets.Height, 0),
-                Parent = tab
+                Parent = tab,
             };
 
             var settings = new CustomEditorPresenter(null);
             settings.Panel.Parent = panel;
             settings.Select(new BuildTabProxy(this, platformSelector));
+        }
+
+        private void OnPlatformSelectorSizeChanged(Control platformSelector)
+        {
+            var panel = platformSelector.Parent.Children[platformSelector.IndexInParent + 1];
+            panel.Offsets = new Margin(0, 0, platformSelector.Offsets.Height, 0);
         }
 
         /// <summary>

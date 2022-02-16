@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 using System.Collections.Generic;
 
@@ -190,6 +190,12 @@ namespace Flax.Build
         public static bool ProjectFormatVS2019 = false;
 
         /// <summary>
+        /// Generates Visual Studio 2022 project format files. Valid only with -genproject option.
+        /// </summary>
+        [CommandLine("vs2022", "Generates Visual Studio 2022 project format files. Valid only with -genproject option.")]
+        public static bool ProjectFormatVS2022 = false;
+
+        /// <summary>
         /// Generates Visual Studio Code project format files. Valid only with -genproject option.
         /// </summary>
         [CommandLine("vscode", "Generates Visual Studio Code project format files. Valid only with -genproject option.")]
@@ -211,5 +217,24 @@ namespace Flax.Build
         /// Custom configuration defines provided via command line for the build tool.
         /// </summary>
         public static List<string> CustomDefines = new List<string>();
+    }
+
+    /// <summary>
+    /// The engine configuration options.
+    /// </summary>
+    public static partial class EngineConfiguration
+    {
+        /// <summary>
+        /// True if managed C# scripting should be enabled, otherwise false. Engine without C# is partially supported and can be used when porting to a new platform before implementing C# runtime on it.
+        /// </summary>
+        [CommandLine("useCSharp", "0 to disable C# support in build")]
+        public static bool UseCSharp = true;
+
+        public static bool WithCSharp(NativeCpp.BuildOptions options)
+        {
+            if (options.Platform.Target == TargetPlatform.PS5)
+                return false; // TODO: mono for ps5
+            return UseCSharp || options.Target.IsEditor;
+        }
     }
 }

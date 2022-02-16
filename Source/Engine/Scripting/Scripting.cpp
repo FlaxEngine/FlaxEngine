@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 #include "BinaryModule.h"
 #include "Scripting.h"
@@ -30,8 +30,10 @@
 #include "Engine/Engine/Globals.h"
 #include "Engine/Graphics/RenderTask.h"
 #include "Engine/Serialization/JsonTools.h"
+#if USE_MONO
 #include <ThirdParty/mono-2.0/mono/metadata/mono-debug.h>
 #include <ThirdParty/mono-2.0/mono/metadata/object.h>
+#endif
 
 extern void registerFlaxEngineInternalCalls();
 
@@ -55,8 +57,8 @@ public:
 
 namespace
 {
-    MDomain* _monoRootDomain = nullptr;
-    MDomain* _monoScriptsDomain = nullptr;
+    MDomain* _rootDomain = nullptr;
+    MDomain* _scriptsDomain = nullptr;
     CriticalSection _objectsLocker;
 #define USE_OBJECTS_DISPOSE_CRASHES_DEBUGGING 0
 #if USE_OBJECTS_DISPOSE_CRASHES_DEBUGGING
@@ -134,24 +136,24 @@ bool ScriptingService::Init()
     engineAssembly->Unloading.Bind(onEngineUnloading);
 
     // Initialize managed runtime
-    if (MCore::Instance()->LoadEngine())
+    if (MCore::LoadEngine())
     {
         LOG(Fatal, "Mono initialization failed.");
         return true;
     }
 
     // Cache root domain
-    _monoRootDomain = MCore::Instance()->GetRootDomain();
+    _rootDomain = MCore::GetRootDomain();
 
-#if USE_SINGLE_DOMAIN
+#if USE_SCRIPTING_SINGLE_DOMAIN
     // Use single root domain
-    auto domain = _monoRootDomain;
+    auto domain = _rootDomain;
 #else
-	// Create Mono domain for scripts
-	auto domain = MCore::Instance()->CreateDomain(TEXT("Scripts Domain"));
+    // Create Mono domain for scripts
+    auto domain = MCore::CreateDomain("Scripts Domain");
 #endif
     domain->SetCurrentDomain(true);
-    _monoScriptsDomain = domain;
+    _scriptsDomain = domain;
 
     // Add internal calls
     registerFlaxEngineInternalCalls();
@@ -169,6 +171,9 @@ bool ScriptingService::Init()
     return false;
 }
 
+#if COMPILE_WITHOUT_CSHARP
+#define INVOKE_EVENT(name)
+#else
 #define INVOKE_EVENT(name) \
     if (!_isEngineAssemblyLoaded) return; \
 	if (_method_##name == nullptr) \
@@ -186,9 +191,10 @@ bool ScriptingService::Init()
 			return; \
 		} \
 	} \
-	MonoObject* exception = nullptr; \
+	MObject* exception = nullptr; \
 	_method_##name->Invoke(nullptr, nullptr, &exception); \
 	DebugLog::LogException(exception)
+#endif
 
 void ScriptingService::Update()
 {
@@ -227,12 +233,12 @@ void ScriptingService::BeforeExit()
 
 MDomain* Scripting::GetRootDomain()
 {
-    return _monoRootDomain;
+    return _rootDomain;
 }
 
 MDomain* Scripting::GetScriptsDomain()
 {
-    return _monoScriptsDomain;
+    return _scriptsDomain;
 }
 
 void Scripting::ProcessBuildInfoPath(String& path, const String& projectFolderPath)
@@ -276,10 +282,9 @@ bool Scripting::LoadBinaryModules(const String& path, const String& projectFolde
 
     // Load all references
     auto referencesMember = document.FindMember("References");
-    if (referencesMember != document.MemberEnd())
+    if (referencesMember != document.MemberEnd() && referencesMember->value.IsArray())
     {
         auto& referencesArray = referencesMember->value;
-        ASSERT(referencesArray.IsArray());
         for (rapidjson::SizeType i = 0; i < referencesArray.Size(); i++)
         {
             auto& reference = referencesArray[i];
@@ -308,10 +313,9 @@ bool Scripting::LoadBinaryModules(const String& path, const String& projectFolde
 
     // Load all binary modules
     auto binaryModulesMember = document.FindMember("BinaryModules");
-    if (binaryModulesMember != document.MemberEnd())
+    if (binaryModulesMember != document.MemberEnd() && binaryModulesMember->value.IsArray())
     {
         auto& binaryModulesArray = binaryModulesMember->value;
-        ASSERT(binaryModulesArray.IsArray());
         for (rapidjson::SizeType i = 0; i < binaryModulesArray.Size(); i++)
         {
             auto& binaryModule = binaryModulesArray[i];
@@ -396,6 +400,7 @@ bool Scripting::LoadBinaryModules(const String& path, const String& projectFolde
                 }
             }
 
+#if !COMPILE_WITHOUT_CSHARP
             // C#
             if (managedPath.HasChars() && !((ManagedBinaryModule*)module)->Assembly->IsLoaded())
             {
@@ -405,6 +410,7 @@ bool Scripting::LoadBinaryModules(const String& path, const String& projectFolde
                     return true;
                 }
             }
+#endif
 
             BinaryModuleLoaded(module);
         }
@@ -419,12 +425,14 @@ bool Scripting::Load()
     // Note: this action can be called from main thread (due to Mono problems with assemblies actions from other threads)
     ASSERT(IsInMainThread());
 
+#if !COMPILE_WITHOUT_CSHARP
     // Load C# core assembly
     if (GetBinaryModuleCorlib()->Assembly->Load(mono_get_corlib()))
     {
         LOG(Error, "Failed to load corlib C# assembly.");
         return true;
     }
+#endif
 
     // Load FlaxEngine
     const String flaxEnginePath = Globals::BinariesFolder / TEXT("FlaxEngine.CSharp.dll");
@@ -446,9 +454,10 @@ bool Scripting::Load()
     // Flax.Build outputs the <target>.Build.json with binary modules to use for game scripting
     const Char *target, *platform, *architecture, *configuration;
     ScriptsBuilder::GetBinariesConfiguration(target, platform, architecture, configuration);
-    if (target == nullptr)
+    if (StringUtils::Length(target) == 0)
     {
         LOG(Info, "Missing EditorTarget in project. Not using game script modules.");
+        _hasGameModulesLoaded = true;
         return false;
     }
     const String targetBuildInfo = Globals::ProjectFolder / TEXT("Binaries") / target / platform / architecture / configuration / target + TEXT(".Build.json");
@@ -538,7 +547,7 @@ void Scripting::Release()
     ObjectsRemovalService::Flush();
 
     // Switch domain
-    auto rootDomain = MCore::Instance()->GetRootDomain();
+    auto rootDomain = MCore::GetRootDomain();
     if (rootDomain)
     {
         if (!rootDomain->SetCurrentDomain(false))
@@ -547,8 +556,8 @@ void Scripting::Release()
         }
     }
 
-#if !USE_SINGLE_DOMAIN
-    MCore::Instance()->UnloadDomain("Scripts Domain");
+#if !USE_SCRIPTING_SINGLE_DOMAIN
+    MCore::UnloadDomain("Scripts Domain");
 #endif
 }
 
@@ -646,25 +655,6 @@ void Scripting::Reload(bool canTriggerSceneReload)
 
 #endif
 
-MClass* Scripting::FindClass(MonoClass* monoClass)
-{
-    if (monoClass == nullptr)
-        return nullptr;
-    PROFILE_CPU();
-    auto& modules = BinaryModule::GetModules();
-    for (auto module : modules)
-    {
-        auto managedModule = dynamic_cast<ManagedBinaryModule*>(module);
-        if (managedModule && managedModule->Assembly->IsLoaded())
-        {
-            MClass* result = managedModule->Assembly->GetClass(monoClass);
-            if (result != nullptr)
-                return result;
-        }
-    }
-    return nullptr;
-}
-
 MClass* Scripting::FindClass(const StringAnsiView& fullname)
 {
     if (fullname.IsEmpty())
@@ -677,6 +667,27 @@ MClass* Scripting::FindClass(const StringAnsiView& fullname)
         if (managedModule && managedModule->Assembly->IsLoaded())
         {
             MClass* result = managedModule->Assembly->GetClass(fullname);
+            if (result != nullptr)
+                return result;
+        }
+    }
+    return nullptr;
+}
+
+#if USE_MONO
+
+MClass* Scripting::FindClass(MonoClass* monoClass)
+{
+    if (monoClass == nullptr)
+        return nullptr;
+    PROFILE_CPU();
+    auto& modules = BinaryModule::GetModules();
+    for (auto module : modules)
+    {
+        auto managedModule = dynamic_cast<ManagedBinaryModule*>(module);
+        if (managedModule && managedModule->Assembly->IsLoaded())
+        {
+            MClass* result = managedModule->Assembly->GetClass(monoClass);
             if (result != nullptr)
                 return result;
         }
@@ -702,6 +713,8 @@ MonoClass* Scripting::FindClassNative(const StringAnsiView& fullname)
     }
     return nullptr;
 }
+
+#endif
 
 ScriptingTypeHandle Scripting::FindScriptingType(const StringAnsiView& fullname)
 {
@@ -815,7 +828,7 @@ ScriptingObject* Scripting::TryFindObject(Guid id, MClass* type)
     return result;
 }
 
-ScriptingObject* Scripting::FindObject(const MonoObject* managedInstance)
+ScriptingObject* Scripting::FindObject(const MObject* managedInstance)
 {
     if (managedInstance == nullptr)
         return nullptr;
@@ -937,13 +950,14 @@ bool initFlaxEngine()
     if (StdTypesContainer::Instance()->Gather())
         return true;
 
+#if !COMPILE_WITHOUT_CSHARP
     // Init C# class library
     {
         auto scriptingClass = Scripting::GetStaticClass();
         ASSERT(scriptingClass);
         const auto initMethod = scriptingClass->GetMethod("Init");
         ASSERT(initMethod);
-        MonoObject* exception = nullptr;
+        MObject* exception = nullptr;
         initMethod->Invoke(nullptr, nullptr, &exception);
         if (exception)
         {
@@ -951,10 +965,11 @@ bool initFlaxEngine()
             ex.Log(LogType::Fatal, TEXT("FlaxEngine.Scripting.Init"));
             return true;
         }
-
-        // TODO: move it somewhere to game instance class or similar
-        MainRenderTask::Instance = New<MainRenderTask>();
     }
+#endif
+
+    // TODO: move it somewhere to game instance class or similar
+    MainRenderTask::Instance = New<MainRenderTask>();
 
     return false;
 }
@@ -988,5 +1003,5 @@ void ScriptingService::Dispose()
 {
     Scripting::Release();
 
-    MCore::Instance()->UnloadEngine();
+    MCore::UnloadEngine();
 }

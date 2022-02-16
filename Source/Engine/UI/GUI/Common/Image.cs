@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 using System;
 
@@ -114,7 +114,7 @@ namespace FlaxEngine.GUI
 
             Margin.ShrinkRectangle(ref rect);
 
-            var color = IsMouseOver ? MouseOverColor : Color;
+            var color = IsMouseOver || IsNavFocused ? MouseOverColor : Color;
             if (!Enabled)
                 color *= DisabledTint;
             Brush.Draw(rect, color);

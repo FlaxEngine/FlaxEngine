@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -10,4 +10,6 @@
 #include "Android/AndroidVulkanPlatform.h"
 #elif PLATFORM_SWITCH
 #include "Platforms/Switch/Engine/GraphicsDevice/Vulkan/SwitchVulkanPlatform.h"
+#elif PLATFORM_MAC
+#include "Mac/MacVulkanPlatform.h"
 #endif

@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 using System;
 using System.Threading;
@@ -37,6 +37,11 @@ namespace FlaxEngine.Utilities
         /// Gets the mesh datas (null if during downloading).
         /// </summary>
         public MeshData[][] MeshDatas => _meshDatasInProgress ? null : _meshDatas;
+
+        /// <summary>
+        /// Occurs when mesh data gets downloaded (called on async thread).
+        /// </summary>
+        public event Action Finished;
 
         /// <summary>
         /// Requests the mesh data.
@@ -122,6 +127,8 @@ namespace FlaxEngine.Utilities
                         };
                     }
                 }
+
+                Finished?.Invoke();
             }
             catch (Exception ex)
             {

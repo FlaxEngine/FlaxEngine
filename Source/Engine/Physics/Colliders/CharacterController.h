@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -58,7 +58,7 @@ public:
 
 private:
 
-    PxCapsuleController* _controller;
+    void* _controller;
     float _stepOffset;
     float _slopeLimit;
     float _radius;
@@ -68,7 +68,6 @@ private:
     Vector3 _upDirection;
     NonWalkableModes _nonWalkableMode;
     CollisionFlags _lastFlags;
-    uint32 _filterData[4];
 
 public:
     /// <summary>
@@ -181,11 +180,6 @@ public:
     /// <returns>The collision flags. It can be used to trigger various character animations.</returns>
     API_FUNCTION() CollisionFlags Move(const Vector3& displacement);
 
-    /// <summary>
-    /// Gets the native PhysX rigid actor object.
-    /// </summary>
-    PxRigidDynamic* GetPhysXRigidActor() const;
-
 protected:
 
     /// <summary>
@@ -218,15 +212,14 @@ public:
     RigidBody* GetAttachedRigidBody() const override;
 
     // [IPhysicsActor]
-    void OnActiveTransformChanged(const PxTransform& transform) override;
-    PxRigidActor* GetRigidActor() override;
+    void OnActiveTransformChanged() override;
+    void* GetPhysicsActor() const override;
 
 protected:
 
     // [PhysicsActor]
     void UpdateGeometry() override;
-    void GetGeometry(PxGeometryHolder& geometry) override;
-    void UpdateLayerBits() override;
+    void GetGeometry(CollisionShape& collision) override;
     void BeginPlay(SceneBeginData* data) override;
     void EndPlay() override;
 #if USE_EDITOR
@@ -237,4 +230,5 @@ protected:
     void OnDisable() override;
     void OnParentChanged() override;
     void OnTransformChanged() override;
+    void OnPhysicsSceneChanged(PhysicsScene* previous) override;
 };

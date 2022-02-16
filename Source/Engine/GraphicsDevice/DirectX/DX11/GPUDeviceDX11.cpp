@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 #if GRAPHICS_API_DIRECTX11
 
@@ -78,9 +78,7 @@ static bool TryCreateDevice(IDXGIAdapter* adapter, D3D_FEATURE_LEVEL maxFeatureL
 GPUDevice* GPUDeviceDX11::Create()
 {
     // Configuration
-#if PLATFORM_XBOX_ONE
-	D3D_FEATURE_LEVEL maxAllowedFeatureLevel = D3D_FEATURE_LEVEL_10_0;
-#elif DX11_FORCE_USE_DX10
+#if DX11_FORCE_USE_DX10
 	D3D_FEATURE_LEVEL maxAllowedFeatureLevel = D3D_FEATURE_LEVEL_10_0;
 #elif DX11_FORCE_USE_DX10_1
 	D3D_FEATURE_LEVEL maxAllowedFeatureLevel = D3D_FEATURE_LEVEL_10_1;

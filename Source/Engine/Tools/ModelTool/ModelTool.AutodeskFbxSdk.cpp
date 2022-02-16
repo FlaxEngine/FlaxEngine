@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 #if COMPILE_WITH_MODEL_TOOL && USE_AUTODESK_FBX_SDK
 
@@ -821,7 +821,7 @@ void BakeTransforms(FbxScene* scene)
     scene->GetRootNode()->ConvertPivotAnimationRecursive(nullptr, FbxNode::eDestinationPivot, frameRate, false);
 }
 
-bool ModelTool::ImportDataAutodeskFbxSdk(const char* path, ImportedModelData& data, const Options& options, String& errorMsg)
+bool ModelTool::ImportDataAutodeskFbxSdk(const char* path, ImportedModelData& data, Options& options, String& errorMsg)
 {
     ScopeLock lock(FbxSdkManager::Locker);
 

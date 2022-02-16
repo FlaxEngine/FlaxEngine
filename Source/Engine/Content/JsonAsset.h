@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -53,6 +53,15 @@ public:
     /// </summary>
     API_PROPERTY() String GetData() const;
 
+#if USE_EDITOR
+    /// <summary>
+    /// Parses Json string to find any object references inside it. It can produce list of references to assets and/or scene objects. Supported only in Editor.
+    /// </summary>
+    /// <param name="json">The Json string.</param>
+    /// <param name="output">The output list of object IDs references by the asset (appended, not cleared).</param>
+    API_FUNCTION() static void GetReferences(const StringAnsiView& json, API_PARAM(Out) Array<Guid, HeapAllocation>& output);
+#endif
+
 public:
 
     // [Asset]
@@ -93,9 +102,27 @@ public:
     /// </summary>
     void* Instance;
 
+    /// <summary>
+    /// Gets the deserialized native object instance of the given type. Returns null if asset is not loaded or loaded object has different type.
+    /// </summary>
+    /// <returns>The asset instance object or null.</returns>
+    template<typename T>
+    T* GetInstance() const
+    {
+        return Instance && InstanceType.IsAssignableFrom(T::TypeInitializer) ? (T*)Instance : nullptr;
+    }
+
 protected:
 
     // [JsonAssetBase]
     LoadResult loadAsset() override;
     void unload(bool isReloading) override;
+
+private:
+    bool CreateInstance();
+    void DeleteInstance();
+#if USE_EDITOR
+    void OnScriptsReloadStart();
+    void OnScriptsReloaded();
+#endif
 };

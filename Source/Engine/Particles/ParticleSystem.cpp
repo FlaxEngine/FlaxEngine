@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 #include "ParticleSystem.h"
 #include "ParticleEffect.h"
@@ -51,7 +51,7 @@ BytesContainer ParticleSystem::LoadTimeline()
     MemoryWriteStream stream(512);
     {
         // Save properties
-        stream.WriteInt32(3);
+        stream.WriteInt32(4);
         stream.WriteFloat(FramesPerSecond);
         stream.WriteInt32(DurationFrames);
 
@@ -368,7 +368,8 @@ Asset::LoadResult ParticleSystem::load()
 
         break;
     }
-    case 3:
+    case 3: // [Deprecated on 03.09.2021 expires on 03.09.2023]
+    case 4:
     {
         // Load properties
         stream.ReadFloat(&FramesPerSecond);

@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 using System;
 using FlaxEngine;
@@ -33,6 +33,8 @@ namespace FlaxEditor
         /// <param name="customActionAfter">Custom action to append to the undo block action after recorded modifications apply.</param>
         public UndoBlock(Undo undo, object snapshotInstance, string actionString, IUndoAction customActionBefore = null, IUndoAction customActionAfter = null)
         {
+            if (undo == null)
+                return;
             _snapshotUndoInternal = snapshotInstance;
             _undo = undo;
             _undo.RecordBegin(_snapshotUndoInternal, actionString);
@@ -43,7 +45,7 @@ namespace FlaxEditor
         /// <inheritdoc />
         public void Dispose()
         {
-            _undo.RecordEnd(_snapshotUndoInternal, _customActionBefore, _customActionAfter);
+            _undo?.RecordEnd(_snapshotUndoInternal, _customActionBefore, _customActionAfter);
         }
     }
 }

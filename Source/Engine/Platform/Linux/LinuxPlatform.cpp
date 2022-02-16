@@ -1,9 +1,10 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 #if PLATFORM_LINUX
 
 #include "LinuxPlatform.h"
 #include "LinuxWindow.h"
+#include "LinuxInput.h"
 #include "Engine/Core/Log.h"
 #include "Engine/Core/Types/Guid.h"
 #include "Engine/Core/Types/String.h"
@@ -21,6 +22,7 @@
 #include "Engine/Platform/WindowsManager.h"
 #include "Engine/Platform/Clipboard.h"
 #include "Engine/Platform/IGuiData.h"
+#include "Engine/Platform/Base/PlatformUtils.h"
 #include "Engine/Utilities/StringConverter.h"
 #include "Engine/Threading/Threading.h"
 #include "Engine/Engine/Engine.h"
@@ -34,6 +36,7 @@
 #include <sys/time.h>
 #include <sys/types.h>
 #include <sys/ioctl.h>
+#include <sys/wait.h>
 #include <pthread.h>
 #include <unistd.h>
 #include <sched.h>
@@ -50,7 +53,7 @@
 CPUInfo UnixCpu;
 int ClockSource;
 Guid DeviceId;
-String UserLocale, ComputerName, UserName, HomeDir;
+String UserLocale, ComputerName, HomeDir;
 byte MacAddress[6];
 
 #define UNIX_APP_BUFF_SIZE 256
@@ -211,7 +214,8 @@ static int X11_MessageBoxInit(MessageBoxData* data)
 	if (data->font_set == nullptr)
 	{
 		LINUX_DIALOG_PRINT("Couldn't load font %s", MessageBoxFont);
-		return 1;
+		data->font_set = X11::XCreateFontSet(data->display, "fixed", &missing, &num_missing, NULL);
+		if (missing != nullptr) X11::XFreeStringList(missing);
 	}
 
 	return 0;
@@ -639,6 +643,9 @@ static int X11_MessageBoxLoop(MessageBoxData* data)
 
 DialogResult MessageBox::Show(Window* parent, const StringView& text, const StringView& caption, MessageBoxButtons buttons, MessageBoxIcon icon)
 {
+    if (CommandLine::Options.Headless)
+        return DialogResult::None;
+
 	// Setup for simple popup
 	const StringAsANSI<127> textAnsi(text.Get(), text.Length());
 	const StringAsANSI<511> captionAnsi(caption.Get(), caption.Length());
@@ -833,16 +840,16 @@ int X11ErrorHandler(X11::Display* display, X11::XErrorEvent* event)
 
 int32 CalculateDpi()
 {
-	Vector2 size = Platform::GetDesktopSize();
+	// in X11 a screen is not necessarily identical to a desktop
+	// so we need to stick to one type for pixel and physical size query
 
 	int screenIdx = 0;
 	int widthMM = X11_DisplayWidthMM(xDisplay, screenIdx);
 	int heightMM = X11_DisplayHeightMM(xDisplay, screenIdx);
-	double xdpi = (widthMM ? size.X / (double)widthMM * 25.4 : 0);
-	double ydpi = (heightMM ? size.Y / (double)heightMM * 25.4 : 0);
+	double xdpi = (widthMM ? X11_DisplayWidth(xDisplay, screenIdx) / (double)widthMM * 25.4 : 0);
+	double ydpi = (heightMM ? X11_DisplayHeight(xDisplay, screenIdx) / (double)heightMM * 25.4 : 0);
 	if (xdpi || ydpi)
 		return (int32)Math::Ceil((xdpi + ydpi) / (xdpi && ydpi ? 2 : 1));
-	
 	return 96;
 }
 
@@ -1352,6 +1359,8 @@ public:
 
 DragDropEffect LinuxWindow::DoDragDrop(const StringView& data)
 {
+    if (CommandLine::Options.Headless)
+        return DragDropEffect::None;
 	auto cursorWrong = X11::XCreateFontCursor(xDisplay, 54);
 	auto cursorTransient = X11::XCreateFontCursor(xDisplay, 24);
 	auto cursorGood = X11::XCreateFontCursor(xDisplay, 4);
@@ -1654,6 +1663,8 @@ void LinuxClipboard::Clear()
 
 void LinuxClipboard::SetText(const StringView& text)
 {
+    if (CommandLine::Options.Headless)
+        return;
     auto mainWindow = (LinuxWindow*)Engine::MainWindow;
     if (!mainWindow)
         return;
@@ -1674,6 +1685,8 @@ void LinuxClipboard::SetFiles(const Array<String>& files)
 
 String LinuxClipboard::GetText()
 {
+    if (CommandLine::Options.Headless)
+        return String::Empty;
     String result;
     auto mainWindow = (LinuxWindow*)Engine::MainWindow;
     if (!mainWindow)
@@ -1777,11 +1790,6 @@ ProcessMemoryStats LinuxPlatform::GetProcessMemoryStats()
     result.UsedVirtualMemory = result.UsedPhysicalMemory;
 
     return result;
-}
-
-uint64 LinuxPlatform::GetCurrentThreadID()
-{
-    return static_cast<uint64>(pthread_self());
 }
 
 void LinuxPlatform::SetThreadPriority(ThreadPriority priority)
@@ -2004,6 +2012,11 @@ bool LinuxPlatform::Init()
     UnixCpu.CacheLineSize = sysconf(_SC_LEVEL1_DCACHE_LINESIZE);
     ASSERT(UnixCpu.CacheLineSize && Math::IsPowerOfTwo(UnixCpu.CacheLineSize));
 
+    // Get user name string
+    char buffer[UNIX_APP_BUFF_SIZE];
+    getlogin_r(buffer, UNIX_APP_BUFF_SIZE);
+    OnPlatformUserAdd(New<User>(String(buffer)));
+
     UnixGetMacAddress(MacAddress);
 
     // Generate unique device ID
@@ -2028,8 +2041,6 @@ bool LinuxPlatform::Init()
         DeviceId.D = (uint32)UnixCpu.ClockSpeed * UnixCpu.LogicalProcessorCount * UnixCpu.ProcessorCoreCount * UnixCpu.CacheLineSize;
     }
 
-    char buffer[UNIX_APP_BUFF_SIZE];
-
     // Get user locale string
     setlocale(LC_ALL, "");
     const char* locale = setlocale(LC_CTYPE, NULL);
@@ -2043,10 +2054,6 @@ bool LinuxPlatform::Init()
     // Get computer name string
     gethostname(buffer, UNIX_APP_BUFF_SIZE);
     ComputerName = String(buffer);
-
-    // Get user name string
-    getlogin_r(buffer, UNIX_APP_BUFF_SIZE);
-    UserName = String(buffer);
 
     // Get home dir
     struct passwd pw;
@@ -2062,10 +2069,8 @@ bool LinuxPlatform::Init()
 	Platform::MemoryClear(CursorsImg, sizeof(CursorsImg));
 
     // Skip setup if running in headless mode (X11 might not be available on servers)
-    if (CommandLine::Options.Headless.IsTrue())
-    {
+    if (CommandLine::Options.Headless)
         return false;
-    }
 
 	X11::XInitThreads();
 
@@ -2199,6 +2204,7 @@ bool LinuxPlatform::Init()
 
     Input::Mouse = Impl::Mouse = New<LinuxMouse>();
     Input::Keyboard = Impl::Keyboard = New<LinuxKeyboard>();
+	LinuxInput::Init();
 
     return false;
 }
@@ -2210,6 +2216,8 @@ void LinuxPlatform::BeforeRun()
 void LinuxPlatform::Tick()
 {
 	UnixPlatform::Tick();
+
+	LinuxInput::UpdateState();
 
     if (!xDisplay)
         return;
@@ -2278,12 +2286,12 @@ void LinuxPlatform::Tick()
                         xDndResult = DragDropEffect::None;
                         if (window->_dragOver)
                         {
-                            window->OnDragEnter(&dropData, xDndPos, xDndResult);
+                            window->OnDragOver(&dropData, xDndPos, xDndResult);
                         }
                         else
                         {
                             window->_dragOver = true;
-                            window->OnDragOver(&dropData, xDndPos, xDndResult);
+                            window->OnDragEnter(&dropData, xDndPos, xDndResult);
                         }
                     }
                 }
@@ -2520,6 +2528,7 @@ void LinuxPlatform::Tick()
                             for (auto& e : dropData.Files)
                             {
                                 e.Replace(TEXT("file://"), TEXT(""));
+                                e.Replace(TEXT("%20"), TEXT(" "));
                                 e = e.TrimTrailing();
                             }
                             xDndResult = DragDropEffect::None;
@@ -2593,11 +2602,6 @@ String LinuxPlatform::GetUserLocaleName()
 String LinuxPlatform::GetComputerName()
 {
     return ComputerName;
-}
-
-String LinuxPlatform::GetUserName()
-{
-    return UserName;
 }
 
 bool LinuxPlatform::GetHasFocus()
@@ -2763,80 +2767,118 @@ bool LinuxPlatform::SetEnvironmentVariable(const String& name, const String& val
     return setenv(StringAsANSI<>(*name).Get(), StringAsANSI<>(*value).Get(), true) != 0;
 }
 
+int32 LinuxProcess(const StringView& cmdLine, const StringView& workingDir, const Dictionary<String, String>& environment, bool waitForEnd, bool logOutput)
+{
+	int fildes[2];
+	int32 returnCode = 0;
+	if (logOutput && pipe(fildes) < 0)
+    {
+		LOG(Warning, "Failed to create a pipe, errno={}", errno);
+	}
+
+	pid_t pid = fork();
+	if (pid < 0)
+    {
+		LOG(Warning, "Failed to fork a process, errno={}", errno);
+		return errno;
+	}
+    else if (pid == 0)
+    {
+		// child process
+		int ret;
+		const char* const cmd[] = { "sh", "-c", StringAnsi(cmdLine).GetText(), (char *)0 };
+		// we could use the execve and supply a list of variable assignments but as we would have to build
+		// and quote the values there is hardly any benefit over using setenv() calls
+        for (auto& e : environment)
+        {
+            setenv(StringAnsi(e.Key).GetText(), StringAnsi(e.Value).GetText(), 1);
+        }
+
+        if (workingDir.HasChars() && chdir(StringAnsi(workingDir).GetText()) != 0)
+        {
+            LOG(Warning, "Failed to set working directory to {}, errno={}", workingDir, errno);
+        }
+		if (logOutput)
+        {
+			close(fildes[0]); // close the reading end of the pipe
+			dup2(fildes[1], STDOUT_FILENO); // redirect stdout to pipe
+			dup2(STDOUT_FILENO, STDERR_FILENO); // redirect stderr to stdout
+		}
+
+		ret = execv("/bin/sh", (char **)cmd);
+		if (ret < 0)
+        {
+			LOG(Warning, " failed, errno={}", errno);
+		}
+	}
+    else
+    {
+		// parent process
+		LOG(Info, "{} started, pid={}", cmdLine, pid);
+		if (waitForEnd)
+        {
+			int stat_loc;
+			if (logOutput)
+            {
+				char lineBuffer[1024];
+				close(fildes[1]); // close the writing end of the pipe
+				FILE *stdPipe = fdopen(fildes[0], "r");
+				while (fgets(lineBuffer, sizeof(lineBuffer), stdPipe) != NULL)
+                {
+					char *p = lineBuffer + strlen(lineBuffer)-1;
+					if (*p == '\n') *p=0;
+					Log::Logger::Write(LogType::Info, String(lineBuffer));
+				}
+			}
+			if (waitpid(pid, &stat_loc, 0) < 0)
+            {
+				LOG(Warning, "Waiting for pid {} failed, errno={}", pid, errno);
+				returnCode = errno;
+			}
+            else
+            {
+				if (WIFEXITED(stat_loc))
+                {
+					int error = WEXITSTATUS(stat_loc);
+					if (error != 0)
+                    {
+						LOG(Warning, "Command exited with error code={}", error);
+						returnCode = error;
+					}
+				}
+                else if (WIFSIGNALED(stat_loc))
+                {
+					LOG(Warning, "Command was killed by signal#{}", WTERMSIG(stat_loc));
+					returnCode = EPIPE;
+				}
+                else if (WIFSTOPPED(stat_loc))
+                {
+					LOG(Warning, "Command was stopped by signal#{}", WSTOPSIG(stat_loc));
+					returnCode = EPIPE;
+				}
+			}
+		}
+	}
+
+	return returnCode;
+}
+
 int32 LinuxPlatform::StartProcess(const StringView& filename, const StringView& args, const StringView& workingDir, bool hiddenWindow, bool waitForEnd)
 {
-	String command(filename);
-	if (args.HasChars())
-		command += TEXT(" ") + String(args);
-    LOG(Info, "Command: {0}", command);
-    if (workingDir.HasChars())
-    {
-        LOG(Info, "Working directory: {0}", workingDir);
-    }
-
-	// TODO: support workingDir
-	// TODO: support hiddenWindow
-	// TODO: support waitForEnd
-
-	StringAnsi commandAnsi(command);
-	system(commandAnsi.GetText());
-    return 0;
+	// hiddenWindow has hardly any meaning on UNIX/Linux/OSX as the program that is called decides whether it has a GUI or not
+	String cmdLine(filename);
+	if (args.HasChars()) cmdLine = cmdLine + TEXT(" ") + args;
+	return LinuxProcess(cmdLine, workingDir, Dictionary<String, String>(), waitForEnd, false);
 }
 
 int32 LinuxPlatform::RunProcess(const StringView& cmdLine, const StringView& workingDir, bool hiddenWindow)
 {
-    return RunProcess(cmdLine, workingDir, Dictionary<String, String>(), hiddenWindow);
+    return LinuxProcess(cmdLine, workingDir, Dictionary<String, String>(), true, true);
 }
 
 int32 LinuxPlatform::RunProcess(const StringView& cmdLine, const StringView& workingDir, const Dictionary<String, String>& environment, bool hiddenWindow)
 {
-    LOG(Info, "Command: {0}", cmdLine);
-    if (workingDir.HasChars())
-    {
-        LOG(Info, "Working directory: {0}", workingDir);
-    }
-
-	// TODO: support environment
-	// TODO: support hiddenWindow
-
-	String dir = GetWorkingDirectory();
-	StringAnsi cmdLineAnsi;
-	if (workingDir.HasChars())
-	{
-		cmdLineAnsi += "chmod ";
-		cmdLineAnsi += StringAnsi(workingDir);
-		cmdLineAnsi += "; ";
-	}
-	cmdLineAnsi += StringAnsi(cmdLine);
-
-    FILE* pipe = popen(cmdLineAnsi.GetText(), "r");
-    if (!pipe)
-	{
-        LOG(Warning, "Cannot start process '{0}'", cmdLine);
-        return 1;
-	}
-
-	char rawData[256];
-	StringAnsi pathAnsi;
-	Array<Char> logData;
-	while (fgets(rawData, sizeof(rawData), pipe) != NULL)
-	{
-		logData.Clear();
-		int32 rawDataLength = StringUtils::Length(rawData);
-		if (rawDataLength == 0)
-			continue;
-		if (rawData[rawDataLength - 1] == '\0')
-			rawDataLength--;
-		if (rawData[rawDataLength - 1] == '\n')
-			rawDataLength--;
-		logData.Resize(rawDataLength + 1);
-		StringUtils::ConvertANSI2UTF16(rawData, logData.Get(), rawDataLength);
-		logData.Last() = '\0';
-		Log::Logger::Write(LogType::Info, StringView(logData.Get(), rawDataLength));
-	}
-
-	int32 result = pclose(pipe);
-    return result;
+	return LinuxProcess(cmdLine, workingDir, environment, true, true);
 }
 
 void* LinuxPlatform::LoadLibrary(const Char* filename)

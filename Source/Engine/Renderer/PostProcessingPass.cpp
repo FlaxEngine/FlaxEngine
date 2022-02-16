@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 #include "PostProcessingPass.h"
 #include "RenderList.h"
@@ -183,7 +183,6 @@ void PostProcessingPass::Dispose()
 
 void PostProcessingPass::Render(RenderContext& renderContext, GPUTexture* input, GPUTexture* output, GPUTexture* colorGradingLUT)
 {
-    ASSERT(output->Format() == PixelFormat::R11G11B10_Float);
     auto device = GPUDevice::Instance;
     auto context = device->GetMainContext();
     auto& view = renderContext.View;
@@ -311,7 +310,7 @@ void PostProcessingPass::Render(RenderContext& renderContext, GPUTexture* input,
     ////////////////////////////////////////////////////////////////////////////////////
     // Bloom
 
-    auto tempDesc = GPUTextureDescription::New2D(w2, h2, 0, PixelFormat::R11G11B10_Float, GPUTextureFlags::ShaderResource | GPUTextureFlags::RenderTarget | GPUTextureFlags::PerMipViews);
+    auto tempDesc = GPUTextureDescription::New2D(w2, h2, 0, output->Format(), GPUTextureFlags::ShaderResource | GPUTextureFlags::RenderTarget | GPUTextureFlags::PerMipViews);
     auto bloomTmp1 = RenderTargetPool::Get(tempDesc);
     // TODO: bloomTmp2 could be quarter res because we don't use it's first mip
     auto bloomTmp2 = RenderTargetPool::Get(tempDesc);

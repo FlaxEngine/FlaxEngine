@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 using System;
 using System.Collections.Generic;
@@ -83,7 +83,7 @@ namespace FlaxEditor.Content.Import
                 Offsets = new Margin(-ButtonsWidth - ButtonsMargin, ButtonsWidth, -ButtonsHeight - ButtonsMargin, ButtonsHeight),
                 Parent = this
             };
-            importButton.Clicked += OnImport;
+            importButton.Clicked += OnSubmit;
             var cancelButton = new Button
             {
                 Text = "Cancel",
@@ -189,6 +189,19 @@ namespace FlaxEditor.Content.Import
                 return true;
             }
 
+            public override bool OnKeyDown(KeyboardKeys key)
+            {
+                if (base.OnKeyDown(key))
+                    return true;
+                switch (key)
+                {
+                case KeyboardKeys.F2:
+                    StartRenaming();
+                    return true;
+                }
+                return false;
+            }
+
             /// <summary>
             /// Shows the rename popup for the item.
             /// </summary>
@@ -210,24 +223,6 @@ namespace FlaxEditor.Content.Import
             }
         }
 
-        private void OnImport()
-        {
-            var entries = new List<ImportFileEntry>(_rootNode.ChildrenCount);
-            for (int i = 0; i < _rootNode.ChildrenCount; i++)
-            {
-                if (_rootNode.Children[i].Tag is ImportFileEntry fileEntry)
-                    entries.Add(fileEntry);
-            }
-            Editor.Instance.ContentImporting.LetThemBeImportedxD(entries);
-
-            Close(DialogResult.OK);
-        }
-
-        private void OnCancel()
-        {
-            Close(DialogResult.Cancel);
-        }
-
         private void OnSelectedChanged(List<TreeNode> before, List<TreeNode> after)
         {
             var selection = new List<object>(after.Count);
@@ -241,31 +236,26 @@ namespace FlaxEditor.Content.Import
         }
 
         /// <inheritdoc />
+        public override void OnSubmit()
+        {
+            var entries = new List<ImportFileEntry>(_rootNode.ChildrenCount);
+            for (int i = 0; i < _rootNode.ChildrenCount; i++)
+            {
+                if (_rootNode.Children[i].Tag is ImportFileEntry fileEntry)
+                    entries.Add(fileEntry);
+            }
+            Editor.Instance.ContentImporting.LetThemBeImportedxD(entries);
+
+            base.OnSubmit();
+        }
+
+        /// <inheritdoc />
         protected override void SetupWindowSettings(ref CreateWindowSettings settings)
         {
             base.SetupWindowSettings(ref settings);
 
             settings.MinimumSize = new Vector2(300, 400);
             settings.HasSizingFrame = true;
-        }
-
-        /// <inheritdoc />
-        public override bool OnKeyDown(KeyboardKeys key)
-        {
-            if (base.OnKeyDown(key))
-                return true;
-
-            switch (key)
-            {
-            case KeyboardKeys.Escape:
-                OnCancel();
-                return true;
-            case KeyboardKeys.Return:
-                OnImport();
-                return true;
-            }
-
-            return false;
         }
     }
 }

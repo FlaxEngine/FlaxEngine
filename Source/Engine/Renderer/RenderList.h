@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -207,8 +207,8 @@ class RenderListAllocation
 {
 public:
 
-    static void* Allocate(uintptr size);
-    static void Free(void* ptr, uintptr size);
+    static FLAXENGINE_API void* Allocate(uintptr size);
+    static FLAXENGINE_API void Free(void* ptr, uintptr size);
 
     template<typename T>
     class Data
@@ -322,7 +322,7 @@ struct DrawCallsList
 /// <summary>
 /// Rendering cache container object for the draw calls collecting, sorting and executing.
 /// </summary>
-API_CLASS(Sealed) class FLAXENGINE_API RenderList : public PersistentScriptingObject
+API_CLASS(Sealed) class FLAXENGINE_API RenderList : public ScriptingObject
 {
 DECLARE_SCRIPTING_TYPE(RenderList);
 

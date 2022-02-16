@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -62,7 +62,7 @@ private:
     HWND _windowHandle;
     IDXGISwapChain3* _swapChain;
     int32 _currentFrameIndex;
-#if PLATFORM_XBOX_SCARLETT
+#if PLATFORM_XBOX_SCARLETT || PLATFORM_XBOX_ONE
     D3D12XBOX_FRAME_PIPELINE_TOKEN _framePipelineToken;
 #endif
     Array<BackBufferDX12, FixedAllocation<4>> _backBuffers;
@@ -102,7 +102,7 @@ public:
     bool IsFullscreen() override;
     void SetFullscreen(bool isFullscreen) override;
     GPUTextureView* GetBackBufferView() override;
-#if PLATFORM_XBOX_SCARLETT
+#if PLATFORM_XBOX_SCARLETT || PLATFORM_XBOX_ONE
     void Begin(RenderTask* task) override;
 #endif
     void End(RenderTask* task) override;

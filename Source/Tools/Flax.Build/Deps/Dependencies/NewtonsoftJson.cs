@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 using System.IO;
 using Flax.Build;
@@ -27,7 +27,9 @@ namespace Flax.Deps.Dependencies
                         TargetPlatform.XboxOne,
                         TargetPlatform.XboxScarlett,
                         TargetPlatform.PS4,
+                        TargetPlatform.PS5,
                         TargetPlatform.Switch,
+                        TargetPlatform.Mac,
                     };
                 default: return new TargetPlatform[0];
                 }
@@ -61,6 +63,7 @@ namespace Flax.Deps.Dependencies
                 {
                 case TargetPlatform.Windows:
                 case TargetPlatform.Linux:
+                case TargetPlatform.Mac:
                 {
                     foreach (var file in outputFileNames)
                     {
@@ -81,6 +84,7 @@ namespace Flax.Deps.Dependencies
                 case TargetPlatform.UWP:
                 case TargetPlatform.XboxOne:
                 case TargetPlatform.PS4:
+                case TargetPlatform.PS5:
                 case TargetPlatform.XboxScarlett:
                 case TargetPlatform.Switch:
                 {

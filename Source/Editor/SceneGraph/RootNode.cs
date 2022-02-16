@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 using System;
 using System.Collections.Generic;
@@ -20,6 +20,7 @@ namespace FlaxEditor.SceneGraph
         protected RootNode()
         : base(null, Guid.NewGuid())
         {
+            _treeNode.AutoFocus = false;
         }
 
         /// <summary>
@@ -29,6 +30,7 @@ namespace FlaxEditor.SceneGraph
         protected RootNode(Guid id)
         : base(null, id)
         {
+            _treeNode.AutoFocus = false;
         }
 
         /// <summary>
@@ -116,6 +118,16 @@ namespace FlaxEditor.SceneGraph
                 Flags = flags
             };
             return RayCast(ref data, out distance, out normal);
+        }
+
+        internal static Quaternion RaycastNormalRotation(ref Vector3 normal)
+        {
+            Quaternion rotation;
+            if (normal == Vector3.Down)
+                rotation = Quaternion.RotationZ(Mathf.Pi);
+            else
+                rotation = Quaternion.LookRotation(Vector3.Cross(Vector3.Cross(normal, Vector3.Forward), normal), normal);
+            return rotation;
         }
 
         /// <inheritdoc />

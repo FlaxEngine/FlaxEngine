@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 using System;
 
@@ -166,5 +166,41 @@ namespace FlaxEngine.GUI
         /// The vertical.
         /// </summary>
         Vertical = 1,
+    }
+
+    /// <summary>
+    /// The navigation directions in the user interface layout.
+    /// </summary>
+    public enum NavDirection
+    {
+        /// <summary>
+        /// No direction to skip navigation.
+        /// </summary>
+        None,
+
+        /// <summary>
+        /// The up direction.
+        /// </summary>
+        Up,
+
+        /// <summary>
+        /// The down direction.
+        /// </summary>
+        Down,
+
+        /// <summary>
+        /// The left direction.
+        /// </summary>
+        Left,
+
+        /// <summary>
+        /// The right direction.
+        /// </summary>
+        Right,
+
+        /// <summary>
+        /// The next item (right with layout wrapping).
+        /// </summary>
+        Next,
     }
 }

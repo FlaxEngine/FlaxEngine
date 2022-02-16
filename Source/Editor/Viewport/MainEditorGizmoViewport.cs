@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 using System;
 using System.Collections.Generic;
@@ -428,7 +428,7 @@ namespace FlaxEditor.Viewport
             }
         }
 
-        private void OnCollectDrawCalls(RenderContext renderContext)
+        private void OnCollectDrawCalls(ref RenderContext renderContext)
         {
             if (_previewStaticModel)
             {
@@ -471,9 +471,17 @@ namespace FlaxEditor.Viewport
             }
         }
 
-        private void OnPostRender(GPUContext context, RenderContext renderContext)
+        private void OnPostRender(GPUContext context, ref RenderContext renderContext)
         {
-            if (renderContext.View.Mode != ViewMode.Default)
+            bool renderPostFx = true;
+            switch (renderContext.View.Mode)
+            {
+            case ViewMode.Default:
+            case ViewMode.PhysicsColliders:
+                renderPostFx = false;
+                break;
+            }
+            if (renderPostFx)
             {
                 var task = renderContext.Task;
 
@@ -762,28 +770,31 @@ namespace FlaxEditor.Viewport
             base.OnLeftMouseButtonUp();
         }
 
-        private void GetHitLocation(ref Vector2 location, out SceneGraphNode hit, out Vector3 hitLocation)
+        private void GetHitLocation(ref Vector2 location, out SceneGraphNode hit, out Vector3 hitLocation, out Vector3 hitNormal)
         {
             // Get mouse ray and try to hit any object
             var ray = ConvertMouseToRay(ref location);
             var view = new Ray(ViewPosition, ViewDirection);
             var gridPlane = new Plane(Vector3.Zero, Vector3.Up);
             var flags = SceneGraphNode.RayCastData.FlagTypes.SkipColliders | SceneGraphNode.RayCastData.FlagTypes.SkipEditorPrimitives;
-            hit = Editor.Instance.Scene.Root.RayCast(ref ray, ref view, out var closest, flags);
+            hit = Editor.Instance.Scene.Root.RayCast(ref ray, ref view, out var closest, out var normal, flags);
             if (hit != null)
             {
                 // Use hit location
                 hitLocation = ray.Position + ray.Direction * closest;
+                hitNormal = normal;
             }
             else if (Grid.Enabled && CollisionsHelper.RayIntersectsPlane(ref ray, ref gridPlane, out closest) && closest < 4000.0f)
             {
                 // Use grid location
                 hitLocation = ray.Position + ray.Direction * closest;
+                hitNormal = Vector3.Up;
             }
             else
             {
                 // Use area in front of the viewport
                 hitLocation = ViewPosition + ViewDirection * 100;
+                hitNormal = Vector3.Up;
             }
         }
 
@@ -791,8 +802,11 @@ namespace FlaxEditor.Viewport
         {
             if (_dragAssets.HasValidDrag && _dragAssets.Objects[0].IsOfType<MaterialBase>())
             {
-                GetHitLocation(ref location, out var hit, out _);
+                GetHitLocation(ref location, out var hit, out _, out _);
                 ClearDragEffects();
+                var material = FlaxEngine.Content.LoadAsync<MaterialBase>(_dragAssets.Objects[0].ID);
+                if (material.IsDecal)
+                    return;
 
                 if (hit is StaticModelNode staticModelNode)
                 {
@@ -879,11 +893,15 @@ namespace FlaxEditor.Viewport
 
         private Vector3 PostProcessSpawnedActorLocation(Actor actor, ref Vector3 hitLocation)
         {
-            Editor.GetActorEditorBox(actor, out _);
+            // Refresh actor position to ensure that cached bounds are valid
+            actor.Position = Vector3.One;
+            actor.Position = Vector3.Zero;
 
             // Place the object
             //var location = hitLocation - (box.Size.Length * 0.5f) * ViewDirection;
-            var location = hitLocation;
+            var editorBounds = actor.EditorBoxChildren;
+            var bottomToCenter = actor.Position.Y - editorBounds.Minimum.Y;
+            var location = hitLocation + new Vector3(0, bottomToCenter, 0);
 
             // Apply grid snapping if enabled
             if (UseSnapping || TransformGizmo.TranslationSnapEnable)
@@ -898,7 +916,7 @@ namespace FlaxEditor.Viewport
             return location;
         }
 
-        private void Spawn(Actor actor, ref Vector3 hitLocation)
+        private void Spawn(Actor actor, ref Vector3 hitLocation, ref Vector3 hitNormal)
         {
             actor.Position = PostProcessSpawnedActorLocation(actor, ref hitLocation);
             var parent = actor.Parent ?? Level.GetScene(0);
@@ -907,24 +925,34 @@ namespace FlaxEditor.Viewport
             Focus();
         }
 
-        private void Spawn(AssetItem item, SceneGraphNode hit, ref Vector2 location, ref Vector3 hitLocation)
+        private void Spawn(AssetItem item, SceneGraphNode hit, ref Vector2 location, ref Vector3 hitLocation, ref Vector3 hitNormal)
         {
             if (item.IsOfType<MaterialBase>())
             {
-                if (hit is StaticModelNode staticModelNode)
+                var material = FlaxEngine.Content.LoadAsync<MaterialBase>(item.ID);
+                if (material && !material.WaitForLoaded(100) && material.IsDecal)
+                {
+                    var actor = new Decal
+                    {
+                        Material = material,
+                        LocalOrientation = RootNode.RaycastNormalRotation(ref hitNormal),
+                        Name = item.ShortName
+                    };
+                    DebugDraw.DrawWireArrow(PostProcessSpawnedActorLocation(actor, ref hitNormal), actor.LocalOrientation, 1.0f, Color.Red, 1000000);
+                    Spawn(actor, ref hitLocation, ref hitNormal);
+                }
+                else if (hit is StaticModelNode staticModelNode)
                 {
                     var staticModel = (StaticModel)staticModelNode.Actor;
                     var ray = ConvertMouseToRay(ref location);
                     if (staticModel.IntersectsEntry(ref ray, out _, out _, out var entryIndex))
                     {
-                        var material = FlaxEngine.Content.LoadAsync<MaterialBase>(item.ID);
                         using (new UndoBlock(Undo, staticModel, "Change material"))
                             staticModel.SetMaterial(entryIndex, material);
                     }
                 }
                 else if (hit is BoxBrushNode.SideLinkNode brushSurfaceNode)
                 {
-                    var material = FlaxEngine.Content.LoadAsync<MaterialBase>(item.ID);
                     using (new UndoBlock(Undo, brushSurfaceNode.Brush, "Change material"))
                     {
                         var surface = brushSurfaceNode.Surface;
@@ -942,11 +970,11 @@ namespace FlaxEditor.Viewport
             {
                 var actor = item.OnEditorDrop(this);
                 actor.Name = item.ShortName;
-                Spawn(actor, ref hitLocation);
+                Spawn(actor, ref hitLocation, ref hitNormal);
             }
         }
 
-        private void Spawn(ScriptType item, SceneGraphNode hit, ref Vector2 location, ref Vector3 hitLocation)
+        private void Spawn(ScriptType item, SceneGraphNode hit, ref Vector2 location, ref Vector3 hitLocation, ref Vector3 hitNormal)
         {
             var actor = item.CreateInstance() as Actor;
             if (actor == null)
@@ -955,7 +983,7 @@ namespace FlaxEditor.Viewport
                 return;
             }
             actor.Name = item.Name;
-            Spawn(actor, ref hitLocation);
+            Spawn(actor, ref hitLocation, ref hitNormal);
         }
 
         /// <inheritdoc />
@@ -968,11 +996,11 @@ namespace FlaxEditor.Viewport
                 return result;
 
             // Check if drag sth
-            Vector3 hitLocation = ViewPosition;
+            Vector3 hitLocation = ViewPosition, hitNormal = -ViewDirection;
             SceneGraphNode hit = null;
             if (DragHandlers.HasValidDrag)
             {
-                GetHitLocation(ref location, out hit, out hitLocation);
+                GetHitLocation(ref location, out hit, out hitLocation, out hitNormal);
             }
 
             // Drag assets
@@ -984,7 +1012,7 @@ namespace FlaxEditor.Viewport
                 for (int i = 0; i < _dragAssets.Objects.Count; i++)
                 {
                     var item = _dragAssets.Objects[i];
-                    Spawn(item, hit, ref location, ref hitLocation);
+                    Spawn(item, hit, ref location, ref hitLocation, ref hitNormal);
                 }
             }
             // Drag actor type
@@ -996,7 +1024,7 @@ namespace FlaxEditor.Viewport
                 for (int i = 0; i < _dragActorType.Objects.Count; i++)
                 {
                     var item = _dragActorType.Objects[i];
-                    Spawn(item, hit, ref location, ref hitLocation);
+                    Spawn(item, hit, ref location, ref hitLocation, ref hitNormal);
                 }
             }
 

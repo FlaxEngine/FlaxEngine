@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 namespace Flax.Build
 {
@@ -42,6 +42,7 @@ namespace Flax.Build
             {
                 TargetPlatform.Windows,
                 TargetPlatform.Linux,
+                TargetPlatform.Mac,
             };
             Architectures = new[]
             {

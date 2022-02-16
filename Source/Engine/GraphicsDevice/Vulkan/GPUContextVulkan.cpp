@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 #if GRAPHICS_API_VULKAN
 
@@ -831,21 +831,69 @@ void GPUContextVulkan::ClearDepth(GPUTextureView* depthBuffer, float depthValue)
 void GPUContextVulkan::ClearUA(GPUBuffer* buf, const Vector4& value)
 {
     const auto bufVulkan = static_cast<GPUBufferVulkan*>(buf);
-
     if (bufVulkan)
     {
         const auto cmdBuffer = _cmdBufferManager->GetCmdBuffer();
         if (cmdBuffer->IsInsideRenderPass())
             EndRenderPass();
 
+        // TODO: add support for other components if buffer has them
         uint32_t* data = (uint32_t*)&value;
         vkCmdFillBuffer(cmdBuffer->GetHandle(), bufVulkan->GetHandle(), 0, bufVulkan->GetSize(), *data);
     }
 }
 
+void GPUContextVulkan::ClearUA(GPUBuffer* buf, const uint32 value[4])
+{
+    const auto bufVulkan = static_cast<GPUBufferVulkan*>(buf);
+    if (bufVulkan)
+    {
+        const auto cmdBuffer = _cmdBufferManager->GetCmdBuffer();
+        if (cmdBuffer->IsInsideRenderPass())
+            EndRenderPass();
+
+        // TODO: add support for other components if buffer has them
+        vkCmdFillBuffer(cmdBuffer->GetHandle(), bufVulkan->GetHandle(), 0, bufVulkan->GetSize(), value[0]);
+    }
+}
+
+void GPUContextVulkan::ClearUA(GPUTexture* texture, const uint32 value[4])
+{
+    const auto texVulkan = static_cast<GPUTextureVulkan*>(texture);
+    if (texVulkan)
+    {
+        auto rtVulkan = static_cast<GPUTextureViewVulkan*>(texVulkan->View(0));
+        const auto cmdBuffer = _cmdBufferManager->GetCmdBuffer();
+        if (cmdBuffer->IsInsideRenderPass())
+            EndRenderPass();
+
+        AddImageBarrier(rtVulkan, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
+        FlushBarriers();
+
+        vkCmdClearColorImage(cmdBuffer->GetHandle(), rtVulkan->Image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, (const VkClearColorValue*)value, 1, &rtVulkan->Info.subresourceRange);
+    }
+}
+
+void GPUContextVulkan::ClearUA(GPUTexture* texture, const Vector4& value)
+{
+    const auto texVulkan = static_cast<GPUTextureVulkan*>(texture);
+    if (texVulkan)
+    {
+        auto rtVulkan = ((GPUTextureViewVulkan*)(texVulkan->IsVolume() ? texVulkan->ViewVolume() : texVulkan->View(0)));
+        const auto cmdBuffer = _cmdBufferManager->GetCmdBuffer();
+        if (cmdBuffer->IsInsideRenderPass())
+            EndRenderPass();
+
+        AddImageBarrier(rtVulkan, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
+        FlushBarriers();
+
+        vkCmdClearColorImage(cmdBuffer->GetHandle(), rtVulkan->Image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, (const VkClearColorValue*)value.Raw, 1, &rtVulkan->Info.subresourceRange);
+    }
+}
+
 void GPUContextVulkan::ResetRenderTarget()
 {
-    if (_rtDepth != nullptr || _rtCount != 0 || _rtDepth)
+    if (_rtDepth || _rtCount != 0)
     {
         _rtDirtyFlag = true;
         _psDirtyFlag = true;
@@ -910,12 +958,6 @@ void GPUContextVulkan::SetRenderTarget(GPUTextureView* depthBuffer, const Span<G
         _rtDepth = depthBufferVulkan;
         Platform::MemoryCopy(_rtHandles, rtvs, rtvsSize);
     }
-}
-
-void GPUContextVulkan::SetRenderTarget(GPUTextureView* rt, GPUBuffer* uaOutput)
-{
-    // TODO: implement Draw Indirect and Pixel Shader write to UAV on Vulkan
-    MISSING_CODE("GPUContextVulkan::SetRenderTarget with UA output");
 }
 
 void GPUContextVulkan::ResetSR()
@@ -999,12 +1041,9 @@ void GPUContextVulkan::BindIB(GPUBuffer* indexBuffer)
 
 void GPUContextVulkan::BindSampler(int32 slot, GPUSampler* sampler)
 {
-    ASSERT(slot >= 0 && slot < GPU_MAX_SR_BINDED);
+    ASSERT(slot >= GPU_STATIC_SAMPLERS_COUNT && slot < GPU_MAX_SAMPLER_BINDED);
     const auto handle = sampler ? ((GPUSamplerVulkan*)sampler)->Sampler : nullptr;
-    if (_samplerHandles[slot] != handle)
-    {
-        _samplerHandles[slot] = handle;
-    }
+    _samplerHandles[slot] = handle;
 }
 
 void GPUContextVulkan::UpdateCB(GPUConstantBuffer* cb, const void* data)

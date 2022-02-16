@@ -1,5 +1,5 @@
 #!/bin/sh
-# Copyright (c) 2012-2020 Wojciech Figat. All rights reserved.
+# Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 set -e
 

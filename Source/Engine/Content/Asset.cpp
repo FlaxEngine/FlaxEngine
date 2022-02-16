@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 #include "Asset.h"
 #include "Content.h"
@@ -11,7 +11,9 @@
 #include "Engine/Profiler/ProfilerCPU.h"
 #include "Engine/Threading/MainThreadTask.h"
 #include "Engine/Threading/ConcurrentTaskQueue.h"
+#if USE_MONO
 #include <ThirdParty/mono-2.0/mono/metadata/mono-gc.h>
+#endif
 
 AssetReferenceBase::~AssetReferenceBase()
 {
@@ -173,13 +175,16 @@ void Asset::OnDeleteObject()
 #endif
 }
 
-void Asset::CreateManaged()
+bool Asset::CreateManaged()
 {
     // Base
-    ManagedScriptingObject::CreateManaged();
+    if (ManagedScriptingObject::CreateManaged())
+        return true;
 
     // Managed objects holds a reference to this asset until it will be removed by GC
     AddReference();
+
+    return false;
 }
 
 void Asset::DestroyManaged()
@@ -202,7 +207,9 @@ void Asset::OnManagedInstanceDeleted()
     // Cleanup
     if (_gcHandle)
     {
+#if USE_MONO
         mono_gchandle_free(_gcHandle);
+#endif
         _gcHandle = 0;
     }
 
@@ -480,11 +487,7 @@ bool Asset::onLoad(LoadAssetTask* task)
     // Load asset
     LoadResult result;
     {
-#if TRACY_ENABLE
-        ZoneScoped;
-        const StringView name(GetPath());
-        ZoneName(*name, name.Length());
-#endif
+        PROFILE_CPU_ASSET(this);
         result = loadAsset();
     }
     const bool isLoaded = result == LoadResult::Ok;
@@ -520,7 +523,7 @@ void Asset::onLoaded()
     {
         onLoaded_MainThread();
     }
-    else
+    else if (OnLoaded.IsBinded())
     {
         Function<void()> action;
         action.Bind<Asset, &Asset::onLoaded>(this);

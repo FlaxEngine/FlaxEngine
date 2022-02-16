@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 using System.Collections.Generic;
 using System.IO;
@@ -29,6 +29,7 @@ namespace Flax.Deps.Dependencies
                         TargetPlatform.UWP,
                         TargetPlatform.XboxOne,
                         TargetPlatform.PS4,
+                        TargetPlatform.PS5,
                         TargetPlatform.XboxScarlett,
                         TargetPlatform.Android,
                         TargetPlatform.Switch,
@@ -37,6 +38,11 @@ namespace Flax.Deps.Dependencies
                     return new[]
                     {
                         TargetPlatform.Linux,
+                    };
+                case TargetPlatform.Mac:
+                    return new[]
+                    {
+                        TargetPlatform.Mac,
                     };
                 default: return new TargetPlatform[0];
                 }
@@ -62,10 +68,12 @@ namespace Flax.Deps.Dependencies
             };
 
             // Get the source
-            Downloader.DownloadFileFromUrlToPath("https://sourceforge.net/projects/freetype/files/freetype2/2.10.0/ft2100.zip/download", packagePath);
+            if (!File.Exists(packagePath))
+                Downloader.DownloadFileFromUrlToPath("https://sourceforge.net/projects/freetype/files/freetype2/2.10.0/ft2100.zip/download", packagePath);
             using (ZipArchive archive = ZipFile.Open(packagePath, ZipArchiveMode.Read))
             {
-                archive.ExtractToDirectory(root);
+                if (!Directory.Exists(root))
+                    archive.ExtractToDirectory(root);
                 root = Path.Combine(root, archive.Entries.First().FullName);
             }
 
@@ -112,19 +120,6 @@ namespace Flax.Deps.Dependencies
 
                     break;
                 }
-                case TargetPlatform.XboxOne:
-                {
-                    // Fix the MSVC project settings for Xbox One
-                    PatchWindowsTargetPlatformVersion(vcxprojPath, vcxprojContents, "10.0.17763.0", "v141");
-
-                    // Build for Xbox One x64
-                    Deploy.VCEnvironment.BuildSolution(vsSolutionPath, configurationMsvc, "x64");
-                    var depsFolder = GetThirdPartyFolder(options, platform, TargetArchitecture.x64);
-                    foreach (var filename in binariesToCopyMsvc)
-                        Utilities.FileCopy(Path.Combine(root, "objs", "x64", configurationMsvc, filename), Path.Combine(depsFolder, filename));
-
-                    break;
-                }
                 case TargetPlatform.Linux:
                 {
                     var envVars = new Dictionary<string, string>
@@ -135,10 +130,10 @@ namespace Flax.Deps.Dependencies
                     var buildDir = Path.Combine(root, "build");
 
                     // Fix scripts
-                    Utilities.Run("sed", "-i -e \'s/\r$//\' autogen.sh", null, root, Utilities.RunOptions.None, envVars);
-                    Utilities.Run("sed", "-i -e \'s/\r$//\' configure", null, root, Utilities.RunOptions.None, envVars);
-                    Utilities.Run("chmod", "+x autogen.sh", null, root, Utilities.RunOptions.None);
-                    Utilities.Run("chmod", "+x configure", null, root, Utilities.RunOptions.None);
+                    Utilities.Run("sed", "-i -e \'s/\r$//\' autogen.sh", null, root, Utilities.RunOptions.ThrowExceptionOnError, envVars);
+                    Utilities.Run("sed", "-i -e \'s/\r$//\' configure", null, root, Utilities.RunOptions.ThrowExceptionOnError, envVars);
+                    Utilities.Run("chmod", "+x autogen.sh", null, root, Utilities.RunOptions.ThrowExceptionOnError);
+                    Utilities.Run("chmod", "+x configure", null, root, Utilities.RunOptions.ThrowExceptionOnError);
 
                     Utilities.Run(Path.Combine(root, "autogen.sh"), null, null, root, Utilities.RunOptions.Default, envVars);
 
@@ -154,8 +149,8 @@ namespace Flax.Deps.Dependencies
                     // Build for Linux
                     SetupDirectory(buildDir, true);
                     var toolchain = UnixToolchain.GetToolchainName(platform, TargetArchitecture.x64);
-                    Utilities.Run("cmake", string.Format("-G \"Unix Makefiles\" -DCMAKE_POSITION_INDEPENDENT_CODE=ON -DFT_WITH_BZIP2=OFF -DFT_WITH_ZLIB=OFF -DFT_WITH_PNG=OFF -DCMAKE_BUILD_TYPE=Release -DCMAKE_C_COMPILER_TARGET={0} ..", toolchain), null, buildDir, Utilities.RunOptions.None, envVars);
-                    Utilities.Run("cmake", "--build .", null, buildDir, Utilities.RunOptions.None, envVars);
+                    Utilities.Run("cmake", string.Format("-G \"Unix Makefiles\" -DCMAKE_POSITION_INDEPENDENT_CODE=ON -DFT_WITH_BZIP2=OFF -DFT_WITH_ZLIB=OFF -DFT_WITH_PNG=OFF -DCMAKE_BUILD_TYPE=Release -DCMAKE_C_COMPILER_TARGET={0} ..", toolchain), null, buildDir, Utilities.RunOptions.ThrowExceptionOnError, envVars);
+                    Utilities.Run("cmake", "--build .", null, buildDir, Utilities.RunOptions.ThrowExceptionOnError, envVars);
                     var depsFolder = GetThirdPartyFolder(options, platform, TargetArchitecture.x64);
                     Utilities.FileCopy(Path.Combine(buildDir, libraryFileName), Path.Combine(depsFolder, libraryFileName));
 
@@ -173,6 +168,35 @@ namespace Flax.Deps.Dependencies
                     Deploy.VCEnvironment.BuildSolution(solutionPath, "Release", "ORBIS");
                     var depsFolder = GetThirdPartyFolder(options, platform, TargetArchitecture.x64);
                     Utilities.FileCopy(Path.Combine(root, "lib", "PS4", libraryFileName), Path.Combine(depsFolder, libraryFileName));
+
+                    break;
+                }
+                case TargetPlatform.PS5:
+                {
+                    // Get the build data files
+                    Utilities.DirectoryCopy(
+                                            Path.Combine(GetBinariesFolder(options, platform), "Data", "freetype"),
+                                            Path.Combine(root, "builds", "PS5"), false, true);
+                    Utilities.ReplaceInFile(Path.Combine(root, "include\\freetype\\config\\ftstdlib.h"), "#define ft_getenv  getenv", "char* ft_getenv(const char* n);");
+
+                    // Build for PS5
+                    var solutionPath = Path.Combine(root, "builds", "PS5", "freetype.sln");
+                    Deploy.VCEnvironment.BuildSolution(solutionPath, "Release", "PROSPERO");
+                    var depsFolder = GetThirdPartyFolder(options, platform, TargetArchitecture.x64);
+                    Utilities.FileCopy(Path.Combine(root, "lib", "PS5", libraryFileName), Path.Combine(depsFolder, libraryFileName));
+
+                    break;
+                }
+                case TargetPlatform.XboxOne:
+                {
+                    // Fix the MSVC project settings for Xbox One
+                    PatchWindowsTargetPlatformVersion(vcxprojPath, vcxprojContents, "10.0.19041.0", "v142");
+
+                    // Build for Xbox One x64
+                    Deploy.VCEnvironment.BuildSolution(vsSolutionPath, configurationMsvc, "x64");
+                    var depsFolder = GetThirdPartyFolder(options, platform, TargetArchitecture.x64);
+                    foreach (var filename in binariesToCopyMsvc)
+                        Utilities.FileCopy(Path.Combine(root, "objs", "x64", configurationMsvc, filename), Path.Combine(depsFolder, filename));
 
                     break;
                 }
@@ -218,6 +242,17 @@ namespace Flax.Deps.Dependencies
                     RunCmake(buildDir, platform, TargetArchitecture.ARM64, ".. -DCMAKE_BUILD_TYPE=Release");
                     Utilities.Run("cmake", "--build .", null, buildDir, Utilities.RunOptions.None);
                     var depsFolder = GetThirdPartyFolder(options, platform, TargetArchitecture.ARM64);
+                    Utilities.FileCopy(Path.Combine(buildDir, libraryFileName), Path.Combine(depsFolder, libraryFileName));
+                    break;
+                }
+                case TargetPlatform.Mac:
+                {
+                    // Build for Mac
+                    var buildDir = Path.Combine(root, "build");
+                    SetupDirectory(buildDir, true);
+                    RunCmake(buildDir, platform, TargetArchitecture.x64, ".. -DCMAKE_BUILD_TYPE=Release");
+                    Utilities.Run("cmake", "--build .", null, buildDir, Utilities.RunOptions.None);
+                    var depsFolder = GetThirdPartyFolder(options, platform, TargetArchitecture.x64);
                     Utilities.FileCopy(Path.Combine(buildDir, libraryFileName), Path.Combine(depsFolder, libraryFileName));
                     break;
                 }

@@ -1,10 +1,13 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 using System;
 using System.Collections.Generic;
+using FlaxEditor.Content;
 using FlaxEditor.GUI.ContextMenu;
+using FlaxEditor.GUI.Drag;
 using FlaxEditor.GUI.Tree;
 using FlaxEditor.SceneGraph;
+using FlaxEditor.Scripting;
 using FlaxEngine;
 using FlaxEngine.GUI;
 
@@ -53,6 +56,129 @@ namespace FlaxEditor.Windows.Assets
             public PrefabTree()
             : base(true)
             {
+            }
+        }
+
+        private class SceneTreePanel : Panel
+        {
+            private PrefabWindow _window;
+            private DragAssets _dragAssets;
+            private DragActorType _dragActorType;
+            private DragHandlers _dragHandlers;
+
+            public SceneTreePanel(PrefabWindow window)
+            : base(ScrollBars.Vertical)
+            {
+                _window = window;
+                Offsets = Margin.Zero;
+                AnchorPreset = AnchorPresets.StretchAll;
+            }
+            
+            private bool ValidateDragAsset(AssetItem assetItem)
+            {
+                return assetItem.OnEditorDrag(this);
+            }
+
+            private static bool ValidateDragActorType(ScriptType actorType)
+            {
+                return true;
+            }
+
+            /// <inheritdoc />
+            public override DragDropEffect OnDragEnter(ref Vector2 location, DragData data)
+            {
+                var result = base.OnDragEnter(ref location, data);
+                if (result == DragDropEffect.None)
+                {
+                    if (_dragHandlers == null)
+                        _dragHandlers = new DragHandlers();
+                    if (_dragAssets == null)
+                    {
+                        _dragAssets = new DragAssets(ValidateDragAsset);
+                        _dragHandlers.Add(_dragAssets);
+                    }
+                    if (_dragAssets.OnDragEnter(data))
+                        return _dragAssets.Effect;
+                    if (_dragActorType == null)
+                    {
+                        _dragActorType = new DragActorType(ValidateDragActorType);
+                        _dragHandlers.Add(_dragActorType);
+                    }
+                    if (_dragActorType.OnDragEnter(data))
+                        return _dragActorType.Effect;
+                }
+                return result;
+            }
+
+            /// <inheritdoc />
+            public override DragDropEffect OnDragMove(ref Vector2 location, DragData data)
+            {
+                var result = base.OnDragMove(ref location, data);
+                if (result == DragDropEffect.None)
+                {
+                    result = _dragHandlers.Effect;
+                }
+                return result;
+            }
+
+            /// <inheritdoc />
+            public override void OnDragLeave()
+            {
+                base.OnDragLeave();
+
+                _dragHandlers?.OnDragLeave();
+            }
+
+            /// <inheritdoc />
+            public override DragDropEffect OnDragDrop(ref Vector2 location, DragData data)
+            {
+                var result = base.OnDragDrop(ref location, data);
+                if (result == DragDropEffect.None)
+                {
+                    // Drag assets
+                    if (_dragAssets != null && _dragAssets.HasValidDrag)
+                    {
+                        for (int i = 0; i < _dragAssets.Objects.Count; i++)
+                        {
+                            var item = _dragAssets.Objects[i];
+                            var actor = item.OnEditorDrop(this);
+                            actor.Name = item.ShortName;
+                            _window.Spawn(actor);
+                        }
+                        result = DragDropEffect.Move;
+                    }
+                    // Drag actor type
+                    else if (_dragActorType != null && _dragActorType.HasValidDrag)
+                    {
+                        for (int i = 0; i < _dragActorType.Objects.Count; i++)
+                        {
+                            var item = _dragActorType.Objects[i];
+                            var actor = item.CreateInstance() as Actor;
+                            if (actor == null)
+                            {
+                                Editor.LogWarning("Failed to spawn actor of type " + item.TypeName);
+                                continue;
+                            }
+                            actor.Name = item.Name;
+                            _window.Spawn(actor);
+                        }
+                        result = DragDropEffect.Move;
+                    }
+
+                    _dragHandlers.OnDragDrop(null);
+                }
+                return result;
+            }
+
+            public override void OnDestroy()
+            {
+                _window = null;
+                _dragAssets = null;
+                _dragActorType = null;
+                _dragHandlers?.Clear();
+                _dragHandlers = null;
+
+                base.OnDestroy();
             }
         }
 
@@ -143,7 +269,23 @@ namespace FlaxEditor.Windows.Assets
             }
 
             // Custom options
-
+            bool showCustomNodeOptions = Editor.SceneEditing.Selection.Count == 1;
+            if (!showCustomNodeOptions && Editor.SceneEditing.Selection.Count != 0)
+            {
+                showCustomNodeOptions = true;
+                for (int i = 1; i < Editor.SceneEditing.Selection.Count; i++)
+                {
+                    if (Editor.SceneEditing.Selection[0].GetType() != Editor.SceneEditing.Selection[i].GetType())
+                    {
+                        showCustomNodeOptions = false;
+                        break;
+                    }
+                }
+            }
+            if (showCustomNodeOptions)
+            {
+                Editor.SceneEditing.Selection[0].OnContextMenu(contextMenu);
+            }
             ContextMenuShow?.Invoke(contextMenu);
 
             return contextMenu;
@@ -255,8 +397,11 @@ namespace FlaxEditor.Windows.Assets
 
         private void Update(ActorNode actorNode)
         {
-            actorNode.TreeNode.OnNameChanged();
-            actorNode.TreeNode.OnOrderInParentChanged();
+            if (actorNode.Actor)
+            {
+                actorNode.TreeNode.OnNameChanged();
+                actorNode.TreeNode.OnOrderInParentChanged();
+            }
 
             for (int i = 0; i < actorNode.ChildNodes.Count; i++)
             {

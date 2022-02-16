@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 #include "Decal.h"
 #include "Engine/Content/Assets/MaterialInstance.h"
@@ -56,6 +56,12 @@ void Decal::OnDebugDrawSelected()
 
     // Base
     Actor::OnDebugDrawSelected();
+}
+
+BoundingBox Decal::GetEditorBox() const
+{
+    const Vector3 size(10.0f);
+    return BoundingBox(_transform.Translation - size, _transform.Translation + size);
 }
 
 #endif

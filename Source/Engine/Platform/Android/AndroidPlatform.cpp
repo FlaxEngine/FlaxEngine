@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 #if PLATFORM_ANDROID
 
@@ -709,11 +709,6 @@ ProcessMemoryStats AndroidPlatform::GetProcessMemoryStats()
     return result;
 }
 
-uint64 AndroidPlatform::GetCurrentThreadID()
-{
-    return static_cast<uint64>(pthread_self());
-}
-
 void AndroidPlatform::SetThreadPriority(ThreadPriority priority)
 {
     // TODO: impl this
@@ -954,12 +949,6 @@ String AndroidPlatform::GetUserLocaleName()
 String AndroidPlatform::GetComputerName()
 {
     return DeviceModel;
-}
-
-String AndroidPlatform::GetUserName()
-{
-    // TODO: add support for username on Android
-    return String::Empty;
 }
 
 bool AndroidPlatform::GetHasFocus()

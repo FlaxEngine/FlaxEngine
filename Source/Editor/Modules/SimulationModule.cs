@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 using System;
 using System.Threading;
@@ -67,11 +67,6 @@ namespace FlaxEditor.Modules
             BreakpointHangTag = null;
             BreakpointHangEnd?.Invoke();
         }
-
-        /// <summary>
-        /// Checks if play mode should start only with single frame update and then enter step mode.
-        /// </summary>
-        public bool ShouldPlayModeStartWithStep => Editor.UI.IsPauseButtonChecked;
 
         /// <summary>
         /// Returns true if play mode has been requested.
@@ -242,10 +237,9 @@ namespace FlaxEditor.Modules
                         _isPlayModeRequested = false;
 
                         // Enter play mode
+                        var shouldPlayModeStartWithStep = Editor.UI.IsPauseButtonChecked;
                         Editor.StateMachine.GoToState<PlayingState>();
-
-                        // Check if move just by one frame
-                        if (ShouldPlayModeStartWithStep)
+                        if (shouldPlayModeStartWithStep)
                         {
                             RequestPausePlay();
                         }

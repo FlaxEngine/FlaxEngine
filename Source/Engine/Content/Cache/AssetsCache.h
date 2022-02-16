@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -172,6 +172,12 @@ public:
         AssetInfo info;
         return FindAsset(id, info);
     }
+
+    /// <summary>
+    /// Gets the asset ids.
+    /// </summary>
+    /// <param name="result">The result array.</param>
+    void GetAll(Array<Guid, HeapAllocation>& result) const;
 
     /// <summary>
     /// Gets the asset ids that match the given typename.

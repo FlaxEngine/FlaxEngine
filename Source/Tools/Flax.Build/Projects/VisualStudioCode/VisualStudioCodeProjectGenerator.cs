@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 using System;
 using System.Collections.Generic;
@@ -240,6 +240,35 @@ namespace Flax.Build.Projects.VisualStudioCode
                                         json.EndObject();
                                         break;
                                     }
+                                    case TargetPlatform.Mac:
+                                    {
+                                        VisualStudioCodeInstance.GetInstance();
+                                        json.AddField("command", "mono"); // TODO: use bundled mono
+                                        json.BeginArray("args");
+                                        {
+                                            json.AddUnnamedField(buildToolPath);
+                                            json.AddUnnamedField("--build");
+                                            json.AddUnnamedField("--log");
+                                            json.AddUnnamedField("--mutex");
+                                            json.AddUnnamedField(string.Format("--workspace=\\\"{0}\\\"", buildToolWorkspace));
+                                            json.AddUnnamedField(string.Format("--arch={0}", configuration.Architecture));
+                                            json.AddUnnamedField(string.Format("--configuration={0}", configuration.ConfigurationName));
+                                            json.AddUnnamedField(string.Format("--platform={0}", configuration.PlatformName));
+                                            json.AddUnnamedField(string.Format("--buildTargets={0}", target.Name));
+                                            if (!string.IsNullOrEmpty(Configuration.Compiler))
+                                                json.AddUnnamedField(string.Format("--compiler={0}", Configuration.Compiler));
+                                        }
+                                        json.EndArray();
+
+                                        json.AddField("type", "shell");
+
+                                        json.BeginObject("options");
+                                        {
+                                            json.AddField("cwd", buildToolWorkspace);
+                                        }
+                                        json.EndObject();
+                                        break;
+                                    }
                                     default: throw new Exception("Visual Code project generator does not support current platform.");
                                     }
 
@@ -275,7 +304,7 @@ namespace Flax.Build.Projects.VisualStudioCode
                                     var target = configuration.Target;
 
                                     var outputType = project.OutputType ?? target.OutputType;
-                                    var outputTargetFilePath = target.GetOutputFilePath(configuration.TargetBuildOptions, project.OutputType);
+                                    var outputTargetFilePath = target.GetOutputFilePath(configuration.TargetBuildOptions, TargetOutputType.Executable);
 
                                     json.BeginObject();
                                     {
@@ -345,6 +374,31 @@ namespace Flax.Build.Projects.VisualStudioCode
                                                     json.EndObject();
                                                 }
                                                 json.EndArray();
+                                                json.BeginArray("args");
+                                                {
+                                                    json.AddUnnamedField("--std");
+                                                    if (outputType != TargetOutputType.Executable && configuration.Name.StartsWith("Editor."))
+                                                    {
+                                                        json.AddUnnamedField("--project");
+                                                        json.AddUnnamedField(buildToolWorkspace);
+                                                        json.AddUnnamedField("--skipCompile");
+                                                    }
+                                                }
+                                                json.EndArray();
+                                            }
+                                            break;
+                                        case TargetPlatform.Mac:
+                                            if (configuration.Platform == TargetPlatform.Mac && (outputType != TargetOutputType.Executable || project.Name == "Flax") && configuration.Name.StartsWith("Editor."))
+                                            {
+                                                json.AddField("program", Path.Combine(Globals.EngineRoot, "Binaries", "Editor", "Mac", configuration.ConfigurationName, "FlaxEditor"));
+                                            }
+                                            else
+                                            {
+                                                json.AddField("program", outputTargetFilePath);
+                                            }
+                                            if (configuration.Platform == TargetPlatform.Mac)
+                                            {
+                                                json.AddField("MIMode", "lldb");
                                                 json.BeginArray("args");
                                                 {
                                                     json.AddUnnamedField("--std");

@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 using System;
 using System.Collections.Generic;
@@ -378,6 +378,12 @@ namespace FlaxEngine
             {
                 return Time > other.Time ? 1 : 0;
             }
+
+            /// <inheritdoc />
+            public override string ToString()
+            {
+                return Value?.ToString() ?? string.Empty;
+            }
         }
 
         /// <summary>
@@ -654,6 +660,12 @@ namespace FlaxEngine
             public int CompareTo(Keyframe other)
             {
                 return Time > other.Time ? 1 : 0;
+            }
+
+            /// <inheritdoc />
+            public override string ToString()
+            {
+                return Value?.ToString() ?? string.Empty;
             }
         }
 

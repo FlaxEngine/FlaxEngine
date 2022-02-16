@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 using System;
 using System.Collections.Generic;
@@ -258,7 +258,7 @@ namespace Flax.Build
         (
          @"(?<ws>[ \t]+)|" +
          @"(?<nl>(?:\r\n|\n))|" +
-         @"(?<commul>/\*(?:(?!\*/)(?:.|[\r\n]+))*\*/)|" +
+         @"(?<commul>/\*[^*]*\*+(?:[^/*][^*]*\*+)*/)|" +
          @"(?<comsin>//(.*?)\r?\n)|" +
          @"(?<ident>[a-zA-Z_][a-zA-Z0-9_]*)|" +
          @"(?<hex>0x[0-9a-fA-F]+)|" +

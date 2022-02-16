@@ -93,87 +93,88 @@ namespace Flax.Build.Projects.VisualStudio
         /// <returns>The install locations.</returns>
         public static IReadOnlyList<VisualStudioInstance> GetInstances()
         {
-            if (_installDirs == null)
+            if (_installDirs != null)
+                return _installDirs;
+            _installDirs = new List<VisualStudioInstance>();
+
+            // Skip if running on non-Windows system
+            if (Platform.BuildTargetPlatform != TargetPlatform.Windows)
+                return _installDirs;
+
+            if (Environment.OSVersion.Platform == PlatformID.Win32NT)
             {
-                _installDirs = new List<VisualStudioInstance>();
-
-                // Skip if running on non-Windows system
-                if (Platform.BuildTargetPlatform != TargetPlatform.Windows)
-                    return _installDirs;
-
-                if (Environment.OSVersion.Platform == PlatformID.Win32NT)
+                // Visual Studio 2017-2022
+                List<VisualStudioInstance> preReleaseInstallDirs = null;
+                try
                 {
-                    // Visual Studio 2017-2019
-                    List<VisualStudioInstance> preReleaseInstallDirs = null;
-                    try
+                    SetupConfiguration setup = new SetupConfiguration();
+                    IEnumSetupInstances enumerator = setup.EnumAllInstances();
+
+                    ISetupInstance[] instances = new ISetupInstance[1];
+                    while (true)
                     {
-                        SetupConfiguration setup = new SetupConfiguration();
-                        IEnumSetupInstances enumerator = setup.EnumAllInstances();
+                        enumerator.Next(1, instances, out int fetchedCount);
+                        if (fetchedCount == 0)
+                            break;
 
-                        ISetupInstance[] instances = new ISetupInstance[1];
-                        while (true)
+                        ISetupInstance2 instance = (ISetupInstance2)instances[0];
+                        if ((instance.GetState() & InstanceState.Local) == InstanceState.Local)
                         {
-                            enumerator.Next(1, instances, out int fetchedCount);
-                            if (fetchedCount == 0)
-                                break;
-
-                            ISetupInstance2 instance = (ISetupInstance2)instances[0];
-                            if ((instance.GetState() & InstanceState.Local) == InstanceState.Local)
+                            VisualStudioVersion version;
+                            string displayName = instance.GetDisplayName();
+                            if (displayName.Contains("2017"))
+                                version = VisualStudioVersion.VisualStudio2017;
+                            else if (displayName.Contains("2019"))
+                                version = VisualStudioVersion.VisualStudio2019;
+                            else if (displayName.Contains("2022"))
+                                version = VisualStudioVersion.VisualStudio2022;
+                            else
                             {
-                                VisualStudioVersion version;
-                                string displayName = instance.GetDisplayName();
-                                if (displayName.Contains("2019"))
-                                    version = VisualStudioVersion.VisualStudio2019;
-                                else if (displayName.Contains("2017"))
-                                    version = VisualStudioVersion.VisualStudio2017;
-                                else
-                                    throw new Exception(string.Format("Unknown Visual Studio installation. Display name: {0}", displayName));
+                                Log.Warning(string.Format("Unknown Visual Studio installation. Display name: {0}", displayName));
+                                continue;
+                            }
 
-                                var vsInstance = new VisualStudioInstance
-                                {
-                                    Version = version,
-                                    Path = instance.GetInstallationPath(),
-                                };
+                            var vsInstance = new VisualStudioInstance
+                            {
+                                Version = version,
+                                Path = instance.GetInstallationPath(),
+                            };
 
-                                if (instance is ISetupInstanceCatalog catalog && catalog.IsPrerelease())
-                                {
-                                    if (preReleaseInstallDirs == null)
-                                        preReleaseInstallDirs = new List<VisualStudioInstance>();
-                                    preReleaseInstallDirs.Add(vsInstance);
-                                }
-                                else
-                                {
-                                    _installDirs.Add(vsInstance);
-                                }
+                            if (instance is ISetupInstanceCatalog catalog && catalog.IsPrerelease())
+                            {
+                                if (preReleaseInstallDirs == null)
+                                    preReleaseInstallDirs = new List<VisualStudioInstance>();
+                                preReleaseInstallDirs.Add(vsInstance);
+                            }
+                            else
+                            {
+                                _installDirs.Add(vsInstance);
                             }
                         }
                     }
-                    catch
-                    {
-                        // Ignore errors
-                    }
-
-                    // Add pre-release locations after the normal installations
-                    if (preReleaseInstallDirs != null)
-                        _installDirs.AddRange(preReleaseInstallDirs);
-
-                    // Visual Studio 2015
-                    if (WindowsPlatform.TryReadInstallDirRegistryKey32("Microsoft\\VisualStudio\\SxS\\VS7", "14.0", out var dir))
-                    {
-                        _installDirs.Add(new VisualStudioInstance
-                        {
-                            Version = VisualStudioVersion.VisualStudio2015,
-                            Path = dir,
-                        });
-                    }
+                }
+                catch
+                {
+                    // Ignore errors
                 }
 
-                foreach (var e in _installDirs)
+                // Add pre-release locations after the normal installations
+                if (preReleaseInstallDirs != null)
+                    _installDirs.AddRange(preReleaseInstallDirs);
+
+                // Visual Studio 2015
+                if (WindowsPlatform.TryReadInstallDirRegistryKey32("Microsoft\\VisualStudio\\SxS\\VS7", "14.0", out var dir))
                 {
-                    Log.Verbose($"Found {e.Version} at {e.Path}");
+                    _installDirs.Add(new VisualStudioInstance
+                    {
+                        Version = VisualStudioVersion.VisualStudio2015,
+                        Path = dir,
+                    });
                 }
             }
 
+            foreach (var e in _installDirs)
+                Log.Verbose($"Found {e.Version} at {e.Path}");
             return _installDirs;
         }
     }

@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -156,11 +156,14 @@ public:
 public:
 
     // [Joint]
+#if USE_EDITOR
+    void OnDebugDrawSelected() override;
+#endif
     void Serialize(SerializeStream& stream, const void* otherObj) override;
     void Deserialize(DeserializeStream& stream, ISerializeModifier* modifier) override;
 
 protected:
 
     // [Joint]
-    PxJoint* CreateJoint(JointData& data) override;
+    void* CreateJoint(const PhysicsJointDesc& desc) override;
 };

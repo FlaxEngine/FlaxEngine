@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 using System.Xml;
 using FlaxEngine;
@@ -169,21 +169,30 @@ namespace FlaxEditor.GUI.Docking
         /// <param name="position">Window location.</param>
         public void ShowFloating(Vector2 size, WindowStartPosition position = WindowStartPosition.CenterParent)
         {
-            // Undock
+            ShowFloating(new Vector2(200, 200), size, position);
+        }
+
+        /// <summary>
+        /// Shows the window in a floating state.
+        /// </summary>
+        /// <param name="location">Window location.</param>
+        /// <param name="size">Window size, set Vector2.Zero to use default.</param>
+        /// <param name="position">Window location.</param>
+        public void ShowFloating(Vector2 location, Vector2 size, WindowStartPosition position = WindowStartPosition.CenterParent)
+        {
             Undock();
 
             // Create window
             var winSize = size.LengthSquared > 4 ? size : DefaultSize;
-            var window = FloatWindowDockPanel.CreateFloatWindow(_masterPanel.Root, new Vector2(200, 200), winSize, position, _title);
+            var window = FloatWindowDockPanel.CreateFloatWindow(_masterPanel.Root, location, winSize, position, _title);
             var windowGUI = window.GUI;
 
             // Create dock panel for the window
             var dockPanel = new FloatWindowDockPanel(_masterPanel, windowGUI);
             dockPanel.DockWindowInternal(DockState.DockFill, this);
 
-            Visible = true;
-
             // Perform layout
+            Visible = true;
             windowGUI.UnlockChildrenRecursive();
             windowGUI.PerformLayout();
 

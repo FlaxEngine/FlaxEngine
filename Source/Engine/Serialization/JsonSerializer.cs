@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 using System;
 using System.Globalization;
@@ -15,10 +15,7 @@ using Newtonsoft.Json.Serialization;
 
 namespace FlaxEngine.Json
 {
-    /// <summary>
-    /// Objects serialization tool (json format).
-    /// </summary>
-    public static class JsonSerializer
+    partial class JsonSerializer
     {
         internal class SerializerCache
         {

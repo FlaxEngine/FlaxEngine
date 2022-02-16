@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 using System;
 using System.Linq;
@@ -61,7 +61,7 @@ namespace FlaxEditor.Surface.Archetypes
             /// The particle emitter modules set header (per context).
             /// </summary>
             /// <seealso cref="FlaxEngine.GUI.ContainerControl" />
-            public class ModulesHeader : ContainerControl
+            internal class ModulesHeader : ContainerControl
             {
                 private static readonly string[] Names =
                 {
@@ -168,7 +168,7 @@ namespace FlaxEditor.Surface.Archetypes
             /// <summary>
             /// The particle modules sets headers (per context).
             /// </summary>
-            public readonly ModulesHeader[] Headers = new ModulesHeader[4];
+            internal readonly ModulesHeader[] Headers = new ModulesHeader[4];
 
             /// <inheritdoc />
             public ParticleEmitterNode(uint id, VisjectSurfaceContext context, NodeArchetype nodeArch, GroupArchetype groupArch)

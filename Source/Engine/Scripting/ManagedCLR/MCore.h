@@ -1,64 +1,38 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 #pragma once
 
-#include "Engine/Core/Types/String.h"
-#include "Engine/Core/Collections/Array.h"
-#include "Engine/Core/Singleton.h"
 #include "MTypes.h"
 
 /// <summary>
 /// Main handler for CLR Engine.
 /// </summary>
-class FLAXENGINE_API MCore : public Singleton<MCore>
+class FLAXENGINE_API MCore
 {
-    friend MDomain;
-
-private:
-
-    MDomain* _rootDomain;
-    MDomain* _activeDomain;
-    Array<MDomain*, InlinedAllocation<4>> _domains;
-
 public:
 
     /// <summary>
-    /// Initializes a new instance of the <see cref="MCore"/> class.
+    /// Gets the root domain.
     /// </summary>
-    MCore();
+    static MDomain* GetRootDomain();
 
-public:
+    /// <summary>
+    /// Gets the currently active domain.
+    /// </summary>
+    static MDomain* GetActiveDomain();
 
     /// <summary>
     /// Creates an new empty domain.
     /// </summary>
     /// <param name="domainName">The domain name to create.</param>
     /// <returns>The domain object.</returns>
-    MDomain* CreateDomain(const MString& domainName);
+    static MDomain* CreateDomain(const MString& domainName);
 
     /// <summary>
     /// Unloads the domain.
     /// </summary>
     /// <param name="domainName">The domain name to remove.</param>
-    void UnloadDomain(const MString& domainName);
-
-    /// <summary>
-    /// Gets the root domain.
-    /// </summary>
-    /// <returns>The root domain.</returns>
-    FORCE_INLINE MDomain* GetRootDomain() const
-    {
-        return _rootDomain;
-    }
-
-    /// <summary>
-    /// Gets the currently active domain.
-    /// </summary>
-    /// <returns>The current domain.</returns>
-    FORCE_INLINE MDomain* GetActiveDomain() const
-    {
-        return _activeDomain;
-    }
+    static void UnloadDomain(const MString& domainName);
 
 public:
 
@@ -66,12 +40,12 @@ public:
     /// Initialize CLR Engine
     /// </summary>
     /// <returns>True if failed, otherwise false.</returns>
-    bool LoadEngine();
+    static bool LoadEngine();
 
     /// <summary>
     /// Unload CLR Engine
     /// </summary>
-    void UnloadEngine();
+    static void UnloadEngine();
 
     /// <summary>
     /// Attaches CLR runtime to the current thread. Use it to allow invoking managed runtime from native threads.

@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -72,6 +72,12 @@ public:
     /// <param name="info">The output asset info. Filled with valid values only if method returns true.</param>
     /// <returns>True if found any asset, otherwise false.</returns>
     API_FUNCTION() static bool GetAssetInfo(const StringView& path, API_PARAM(Out) AssetInfo& info);
+
+    /// <summary>
+    /// Finds all the asset IDs. Uses asset registry.
+    /// </summary>
+    /// <returns>The list of all asset IDs.</returns>
+    API_FUNCTION() static Array<Guid, HeapAllocation> GetAllAssets();
 
     /// <summary>
     /// Finds all the asset IDs by type (exact type, without inheritance checks). Uses asset registry.
@@ -334,14 +340,14 @@ public:
     }
 
     /// <summary>
-    /// Creates temporary and virtual asset of thr given type.
+    /// Creates temporary and virtual asset of the given type.
     /// </summary>
     /// <param name="type">The asset type klass.</param>
     /// <returns>Created asset or null if failed.</returns>
     API_FUNCTION() static Asset* CreateVirtualAsset(API_PARAM(Attributes="TypeReference(typeof(Asset))") MClass* type);
 
     /// <summary>
-    /// Creates temporary and virtual asset of thr given type.
+    /// Creates temporary and virtual asset of the given type.
     /// </summary>
     /// <param name="type">The asset type.</param>
     /// <returns>Created asset or null if failed.</returns>

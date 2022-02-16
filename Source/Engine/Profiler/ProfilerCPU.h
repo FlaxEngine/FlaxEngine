@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -402,8 +402,10 @@ struct TIsPODType<ProfilerCPU::Event>
 
 #ifdef TRACY_ENABLE
 #define PROFILE_CPU_SRC_LOC(srcLoc) tracy::ScopedZone ___tracy_scoped_zone( (tracy::SourceLocationData*)&(srcLoc) ); ScopeProfileBlockCPU ProfileBlockCPU((srcLoc).name)
+#define PROFILE_CPU_ASSET(asset) ZoneScoped; const StringView __tracy_asset_name((asset)->GetPath()); ZoneName(*__tracy_asset_name, __tracy_asset_name.Length())
 #else
 #define PROFILE_CPU_SRC_LOC(srcLoc) ScopeProfileBlockCPU ProfileBlockCPU((srcLoc).name)
+#define PROFILE_CPU_ASSET(asset)
 #endif
 
 #else
@@ -412,5 +414,6 @@ struct TIsPODType<ProfilerCPU::Event>
 #define PROFILE_CPU()
 #define PROFILE_CPU_NAMED(name)
 #define PROFILE_CPU_SRC_LOC(srcLoc)
+#define PROFILE_CPU_ASSET(asset)
 
 #endif

@@ -1,8 +1,9 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 using System;
 using System.Collections.Generic;
 using System.IO;
+using FlaxEditor.Utilities;
 using FlaxEngine;
 
 namespace FlaxEditor.GUI.Timeline.Tracks
@@ -11,7 +12,7 @@ namespace FlaxEditor.GUI.Timeline.Tracks
     /// The timeline media that represents a particle miter playback media event.
     /// </summary>
     /// <seealso cref="FlaxEditor.GUI.Timeline.Media" />
-    public class ParticleEmitterMedia : SingleMediaAssetMedia
+    public class ParticleEmitterMedia : Media
     {
         private sealed class Proxy : ProxyBase<ParticleEmitterTrack, ParticleEmitterMedia>
         {
@@ -37,7 +38,7 @@ namespace FlaxEditor.GUI.Timeline.Tracks
         {
             base.OnTimelineChanged(track);
 
-            PropertiesEditObject = new Proxy(Track as ParticleEmitterTrack, this);
+            PropertiesEditObject = track != null ? new Proxy((ParticleEmitterTrack)track, this) : null;
         }
     }
 
@@ -66,7 +67,7 @@ namespace FlaxEditor.GUI.Timeline.Tracks
         private static void LoadTrack(int version, Track track, BinaryReader stream)
         {
             var e = (ParticleEmitterTrack)track;
-            Guid id = new Guid(stream.ReadBytes(16));
+            Guid id = stream.ReadGuid();
             e.Asset = FlaxEngine.Content.LoadAsync<ParticleEmitter>(id);
             stream.ReadInt32(); // Skip emitterIndex
             var m = e.TrackMedia;
@@ -77,11 +78,8 @@ namespace FlaxEditor.GUI.Timeline.Tracks
         private static void SaveTrack(Track track, BinaryWriter stream)
         {
             var e = (ParticleEmitterTrack)track;
-            var emitterId = e.Asset?.ID ?? Guid.Empty;
-
-            stream.Write(emitterId.ToByteArray());
+            stream.WriteGuid(ref e.AssetID);
             stream.Write(((ParticleSystemTimeline)track.Timeline).Emitters.IndexOf(e));
-
             if (e.Media.Count != 0)
             {
                 var m = e.TrackMedia;
@@ -107,6 +105,8 @@ namespace FlaxEditor.GUI.Timeline.Tracks
         public ParticleEmitterTrack(ref TrackCreateOptions options)
         : base(ref options)
         {
+            MinMediaCount = 1;
+            MaxMediaCount = 1;
         }
 
         /// <inheritdoc />

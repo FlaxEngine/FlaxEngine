@@ -1,10 +1,13 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 #pragma once
 
 #if PLATFORM_LINUX || USE_EDITOR
 
 #include "Engine/Core/Config/PlatformSettingsBase.h"
+#include "Engine/Scripting/SoftObjectReference.h"
+
+class Texture;
 
 /// <summary>
 /// Linux platform settings.
@@ -51,10 +54,10 @@ public:
     bool ForceSingleInstance = false;
 
     /// <summary>
-    /// Custom icon texture (asset id) to use for the application (overrides the default one).
+    /// Custom icon texture to use for the application (overrides the default one).
     /// </summary>
-    API_FIELD(Attributes="EditorOrder(1030), CustomEditorAlias(\"FlaxEditor.CustomEditors.Editors.AssetRefEditor\"), AssetReference(typeof(Texture)), EditorDisplay(\"Other\")")
-    Guid OverrideIcon;
+    API_FIELD(Attributes="EditorOrder(1030), EditorDisplay(\"Other\")")
+    SoftObjectReference<Texture> OverrideIcon;
 
     /// <summary>
     /// Enables support for Vulkan. Disabling it reduces compiled shaders count.

@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 using System;
 using FlaxEditor.Surface;
@@ -222,6 +222,7 @@ namespace FlaxEditor.Viewport.Previews
             {
                 _guiMaterialControl = new Image
                 {
+                    Offsets = Margin.Zero,
                     AnchorPreset = AnchorPresets.StretchAll,
                     KeepAspectRatio = false,
                     Brush = new MaterialBrush(),

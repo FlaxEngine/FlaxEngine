@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -768,6 +768,12 @@ public:
         return true;
     }
 };
+
+/// <summary>
+/// An animation spline represented by a set of keyframes, each representing a value point. 
+/// </summary>
+template<typename T>
+using StepCurve = Curve<T, StepCurveKeyframe<T>>;
 
 /// <summary>
 /// An animation spline represented by a set of keyframes, each representing an endpoint of a linear curve. 

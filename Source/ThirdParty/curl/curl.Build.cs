@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 using System.IO;
 using Flax.Build;
@@ -39,6 +39,10 @@ public class curl : DepsModule
             break;
         case TargetPlatform.Linux:
             options.OutputFiles.Add(Path.Combine(depsRoot, "libcurl.a"));
+            break;
+        case TargetPlatform.Mac:
+            options.OutputFiles.Add(Path.Combine(depsRoot, "libcurl.a"));
+            options.OutputFiles.Add("Security.framework");
             break;
         default: throw new InvalidPlatformException(options.Platform.Target);
         }

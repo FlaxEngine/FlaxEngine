@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -12,7 +12,7 @@
 /// <summary>
 /// Particle system parameter.
 /// </summary>
-API_CLASS(NoSpawn) class ParticleEffectParameter : public PersistentScriptingObject
+API_CLASS(NoSpawn) class ParticleEffectParameter : public ScriptingObject
 {
 DECLARE_SCRIPTING_TYPE_NO_SPAWN(ParticleEffectParameter);
     friend ParticleEffect;
@@ -30,7 +30,7 @@ public:
     /// Initializes a new instance of the <see cref="ParticleEffectParameter"/> class.
     /// </summary>
     ParticleEffectParameter()
-        : PersistentScriptingObject(SpawnParams(Guid::New(), TypeInitializer))
+        : ScriptingObject(SpawnParams(Guid::New(), TypeInitializer))
     {
     }
 

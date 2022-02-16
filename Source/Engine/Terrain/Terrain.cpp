@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 #include "Terrain.h"
 #include "TerrainPatch.h"
@@ -7,13 +7,12 @@
 #include "Engine/Level/Scene/SceneRendering.h"
 #include "Engine/Serialization/Serialization.h"
 #include "Engine/Physics/Physics.h"
-#include "Engine/Physics/Utilities.h"
 #include "Engine/Physics/PhysicalMaterial.h"
+#include "Engine/Physics/PhysicsBackend.h"
 #include "Engine/Graphics/RenderView.h"
 #include "Engine/Graphics/RenderTask.h"
 #include "Engine/Graphics/Textures/GPUTexture.h"
 #include "Engine/Profiler/ProfilerCPU.h"
-#include <ThirdParty/PhysX/PxFiltering.h>
 
 Terrain::Terrain(const SpawnParams& params)
     : PhysicsColliderActor(params)
@@ -69,13 +68,11 @@ void Terrain::UpdateLayerBits()
     if (_patches.IsEmpty())
         return;
 
-    PxFilterData filterData;
-
     // Own layer ID
-    filterData.word0 = GetLayerMask();
+    const uint32 mask0 = GetLayerMask();
 
     // Own layer mask
-    filterData.word1 = Physics::LayerMasks[GetLayer()];
+    const uint32 mask1 = Physics::LayerMasks[GetLayer()];
 
     // Update the shapes layer bits
     for (int32 pathIndex = 0; pathIndex < _patches.Count(); pathIndex++)
@@ -83,8 +80,7 @@ void Terrain::UpdateLayerBits()
         const auto patch = _patches[pathIndex];
         if (patch->HasCollision())
         {
-            patch->_physicsShape->setSimulationFilterData(filterData);
-            patch->_physicsShape->setQueryFilterData(filterData);
+            PhysicsBackend::SetShapeFilterMask(patch->_physicsShape, mask0, mask1);
         }
     }
 }
@@ -170,7 +166,6 @@ bool Terrain::RayCast(const Vector3& origin, const Vector3& direction, RayCastHi
     bool result = false;
     RayCastHit tmpHit;
     const Ray ray(origin, direction);
-
     for (int32 pathIndex = 0; pathIndex < _patches.Count(); pathIndex++)
     {
         const auto patch = _patches[pathIndex];
@@ -184,7 +179,6 @@ bool Terrain::RayCast(const Vector3& origin, const Vector3& direction, RayCastHi
             result = true;
         }
     }
-
     return result;
 }
 
@@ -192,13 +186,12 @@ void Terrain::ClosestPoint(const Vector3& position, Vector3& result) const
 {
     float minDistance = MAX_float;
     Vector3 tmp;
-
     for (int32 pathIndex = 0; pathIndex < _patches.Count(); pathIndex++)
     {
         const auto patch = _patches[pathIndex];
         if (patch->HasCollision())
         {
-            patch->ClosestPoint(position, &tmp);
+            patch->ClosestPoint(position, tmp);
             const auto distance = Vector3::DistanceSquared(position, tmp);
             if (distance < minDistance)
             {
@@ -237,22 +230,13 @@ void Terrain::OnPhysicalMaterialChanged()
     if (_patches.IsEmpty())
         return;
 
-    PxMaterial* material = Physics::GetDefaultMaterial();
-    if (PhysicalMaterial)
-    {
-        if (!PhysicalMaterial->WaitForLoaded())
-        {
-            material = ((::PhysicalMaterial*)PhysicalMaterial->Instance)->GetPhysXMaterial();
-        }
-    }
-
     // Update the shapes material
     for (int32 pathIndex = 0; pathIndex < _patches.Count(); pathIndex++)
     {
         const auto patch = _patches[pathIndex];
         if (patch->HasCollision())
         {
-            patch->_physicsShape->setMaterials(&material, 1);
+            PhysicsBackend::SetShapeMaterial(patch->_physicsShape, PhysicalMaterial.Get());
         }
     }
 }
@@ -436,6 +420,8 @@ void Terrain::Setup(int32 lodCount, int32 chunkSize)
 
 void Terrain::AddPatches(const Int2& numberOfPatches)
 {
+    if (_chunkSize == 0)
+        Setup();
     _patches.ClearDelete();
     _patches.EnsureCapacity(numberOfPatches.X * numberOfPatches.Y);
 
@@ -473,6 +459,8 @@ void Terrain::AddPatch(const Int2& patchCoord)
         LOG(Warning, "Cannot add patch at {0}x{1}. The patch at the given location already exists.", patchCoord.X, patchCoord.Y);
         return;
     }
+    if (_chunkSize == 0)
+        Setup();
 
     patch = ::New<TerrainPatch>();
     patch->Init(this, patchCoord.X, patchCoord.Y);
@@ -815,15 +803,22 @@ void Terrain::OnActiveInTreeChanged()
     Actor::OnActiveInTreeChanged();
 
     // Update physics
-    const PxShapeFlags shapeFlags = GetShapeFlags(false, IsActiveInHierarchy());
     for (int32 pathIndex = 0; pathIndex < _patches.Count(); pathIndex++)
     {
         const auto patch = _patches[pathIndex];
         if (patch->HasCollision())
         {
-            patch->_physicsShape->setFlags(shapeFlags);
+            PhysicsBackend::SetShapeState(patch->_physicsShape, IsActiveInHierarchy(), false);
         }
     }
+}
+
+void Terrain::OnPhysicsSceneChanged(PhysicsScene* previous)
+{
+    PhysicsColliderActor::OnPhysicsSceneChanged(previous);
+
+    for (auto patch : _patches)
+        patch->OnPhysicsSceneChanged(previous);
 }
 
 void Terrain::BeginPlay(SceneBeginData* data)

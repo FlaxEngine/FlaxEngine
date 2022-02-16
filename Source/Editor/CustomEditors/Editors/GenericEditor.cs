@@ -1,14 +1,17 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using System.Text;
 using FlaxEditor.CustomEditors.Elements;
 using FlaxEditor.CustomEditors.GUI;
+using FlaxEditor.GUI.ContextMenu;
 using FlaxEditor.Scripting;
 using FlaxEngine;
 using FlaxEngine.GUI;
+using FlaxEngine.Json;
 
 namespace FlaxEditor.CustomEditors.Editors
 {
@@ -24,6 +27,8 @@ namespace FlaxEditor.CustomEditors.Editors
         /// <seealso cref="System.IComparable" />
         protected class ItemInfo : IComparable
         {
+            private Options.GeneralOptions.MembersOrder _membersOrder;
+
             /// <summary>
             /// The member information from reflection.
             /// </summary>
@@ -38,11 +43,6 @@ namespace FlaxEditor.CustomEditors.Editors
             /// The display attribute.
             /// </summary>
             public EditorDisplayAttribute Display;
-
-            /// <summary>
-            /// The tooltip attribute.
-            /// </summary>
-            public TooltipAttribute Tooltip;
 
             /// <summary>
             /// The custom editor attribute.
@@ -107,7 +107,7 @@ namespace FlaxEditor.CustomEditors.Editors
             /// <summary>
             /// Gets the tooltip text (may be null if not provided).
             /// </summary>
-            public string TooltipText => Tooltip?.Text;
+            public string TooltipText;
 
             /// <summary>
             /// Initializes a new instance of the <see cref="ItemInfo"/> class.
@@ -128,7 +128,6 @@ namespace FlaxEditor.CustomEditors.Editors
                 Info = info;
                 Order = (EditorOrderAttribute)attributes.FirstOrDefault(x => x is EditorOrderAttribute);
                 Display = (EditorDisplayAttribute)attributes.FirstOrDefault(x => x is EditorDisplayAttribute);
-                Tooltip = (TooltipAttribute)attributes.FirstOrDefault(x => x is TooltipAttribute);
                 CustomEditor = (CustomEditorAttribute)attributes.FirstOrDefault(x => x is CustomEditorAttribute);
                 CustomEditorAlias = (CustomEditorAliasAttribute)attributes.FirstOrDefault(x => x is CustomEditorAliasAttribute);
                 Space = (SpaceAttribute)attributes.FirstOrDefault(x => x is SpaceAttribute);
@@ -139,6 +138,9 @@ namespace FlaxEditor.CustomEditors.Editors
 
                 IsReadOnly |= !info.HasSet;
                 DisplayName = Display?.Name ?? CustomEditorsUtil.GetPropertyNameUI(info.Name);
+                var editor = Editor.Instance;
+                TooltipText = editor.CodeDocs.GetTooltip(info, attributes);
+                _membersOrder = editor.Options.Options.General.ScriptMembersOrder;
             }
 
             /// <summary>
@@ -173,7 +175,7 @@ namespace FlaxEditor.CustomEditors.Editors
                             return string.Compare(Display.Group, other.Display.Group, StringComparison.InvariantCulture);
                     }
 
-                    if (Editor.Instance.Options.Options.General.ScriptMembersOrder == Options.GeneralOptions.MembersOrder.Declaration)
+                    if (_membersOrder == Options.GeneralOptions.MembersOrder.Declaration)
                     {
                         // By declaration order
                         if (Info.MetadataToken > other.Info.MetadataToken)
@@ -332,6 +334,189 @@ namespace FlaxEditor.CustomEditors.Editors
             return ScriptMemberInfo.Null;
         }
 
+        private void GroupPanelCheckIfCanRevert(LayoutElementsContainer layout, ref bool canRevertReference, ref bool canRevertDefault)
+        {
+            if (layout == null || canRevertReference && canRevertDefault)
+                return;
+
+            foreach (var editor in layout.Editors)
+            {
+                canRevertReference |= editor.CanRevertReferenceValue;
+                canRevertDefault |= editor.CanRevertDefaultValue;
+            }
+
+            foreach (var child in layout.Children)
+                GroupPanelCheckIfCanRevert(child as LayoutElementsContainer, ref canRevertReference, ref canRevertDefault);
+        }
+
+        private void OnGroupPanelRevert(LayoutElementsContainer layout, bool toDefault)
+        {
+            if (layout == null)
+                return;
+
+            foreach (var editor in layout.Editors)
+            {
+                if (toDefault && editor.CanRevertDefaultValue)
+                    editor.RevertToDefaultValue();
+                else if (!toDefault && editor.CanRevertReferenceValue)
+                    editor.RevertToReferenceValue();
+            }
+
+            foreach (var child in layout.Children)
+                OnGroupPanelRevert(child as LayoutElementsContainer, toDefault);
+        }
+
+        private void OnGroupPanelCopy(LayoutElementsContainer layout)
+        {
+            if (layout.Editors.Count == 1)
+            {
+                layout.Editors[0].Copy();
+            }
+            else if (layout.Editors.Count != 0)
+            {
+                var data = new string[layout.Editors.Count];
+                var sb = new StringBuilder();
+                sb.Append("[\n");
+                for (var i = 0; i < layout.Editors.Count; i++)
+                {
+                    layout.Editors[i].Copy();
+                    if (i != 0)
+                        sb.Append(",\n");
+                    sb.Append(Clipboard.Text);
+                    data[i] = Clipboard.Text;
+                }
+                sb.Append("\n]");
+                Clipboard.Text = sb.ToString();
+                Clipboard.Text = JsonSerializer.Serialize(data);
+            }
+            else if (layout.Children.Any(x => x is LayoutElementsContainer))
+            {
+                foreach (var child in layout.Children)
+                {
+                    if (child is LayoutElementsContainer childContainer)
+                    {
+                        OnGroupPanelCopy(childContainer);
+                        break;
+                    }
+                }
+            }
+        }
+
+        private bool OnGroupPanelCanCopy(LayoutElementsContainer layout)
+        {
+            return layout.Editors.Count != 0 || layout.Children.Any(x => x is LayoutElementsContainer);
+        }
+
+        private void OnGroupPanelPaste(LayoutElementsContainer layout)
+        {
+            if (layout.Editors.Count == 1)
+            {
+                layout.Editors[0].Paste();
+            }
+            else if (layout.Editors.Count != 0)
+            {
+                var sb = Clipboard.Text;
+                if (!string.IsNullOrEmpty(sb))
+                {
+                    try
+                    {
+                        var data = JsonSerializer.Deserialize<string[]>(sb);
+                        if (data == null || data.Length != layout.Editors.Count)
+                            return;
+                        for (var i = 0; i < layout.Editors.Count; i++)
+                        {
+                            Clipboard.Text = data[i];
+                            layout.Editors[i].Paste();
+                        }
+                    }
+                    catch
+                    {
+                    }
+                    finally
+                    {
+                        Clipboard.Text = sb;
+                    }
+                }
+            }
+            else if (layout.Children.Any(x => x is LayoutElementsContainer))
+            {
+                foreach (var child in layout.Children)
+                {
+                    if (child is LayoutElementsContainer childContainer)
+                    {
+                        OnGroupPanelPaste(childContainer);
+                        break;
+                    }
+                }
+            }
+        }
+
+        private bool OnGroupPanelCanPaste(LayoutElementsContainer layout)
+        {
+            if (layout.Editors.Count == 1)
+            {
+                return layout.Editors[0].CanPaste;
+            }
+            if (layout.Editors.Count != 0)
+            {
+                var sb = Clipboard.Text;
+                if (!string.IsNullOrEmpty(sb))
+                {
+                    try
+                    {
+                        var data = JsonSerializer.Deserialize<string[]>(sb);
+                        if (data == null || data.Length != layout.Editors.Count)
+                            return false;
+                        for (var i = 0; i < layout.Editors.Count; i++)
+                        {
+                            Clipboard.Text = data[i];
+                            if (!layout.Editors[i].CanPaste)
+                                return false;
+                        }
+                        return true;
+                    }
+                    catch
+                    {
+                        return false;
+                    }
+                    finally
+                    {
+                        Clipboard.Text = sb;
+                    }
+                }
+                return false;
+            }
+            if (layout.Children.Any(x => x is LayoutElementsContainer))
+            {
+                foreach (var child in layout.Children)
+                {
+                    if (child is LayoutElementsContainer childContainer)
+                        return OnGroupPanelCanPaste(childContainer);
+                }
+            }
+            return false;
+        }
+
+        private void OnGroupPanelMouseButtonRightClicked(DropPanel groupPanel, Vector2 location)
+        {
+            var group = (GroupElement)groupPanel.Tag;
+            bool canRevertReference = false, canRevertDefault = false;
+            GroupPanelCheckIfCanRevert(group, ref canRevertReference, ref canRevertDefault);
+
+            var menu = new ContextMenu();
+            var revertToPrefab = menu.AddButton("Revert to Prefab", () => OnGroupPanelRevert(group, false));
+            revertToPrefab.Enabled = canRevertReference;
+            var resetToDefault = menu.AddButton("Reset to default", () => OnGroupPanelRevert(group, true));
+            resetToDefault.Enabled = canRevertDefault;
+            menu.AddSeparator();
+            var copy = menu.AddButton("Copy", () => OnGroupPanelCopy(group));
+            copy.Enabled = OnGroupPanelCanCopy(group);
+            var paste = menu.AddButton("Paste", () => OnGroupPanelPaste(group));
+            paste.Enabled = OnGroupPanelCanPaste(group);
+
+            menu.Show(groupPanel, location);
+        }
+
         /// <summary>
         /// Spawns the property for the given item.
         /// </summary>
@@ -377,7 +562,8 @@ namespace FlaxEditor.CustomEditors.Editors
                         if (disableSingle && child is PropertyNameLabel)
                             break;
 
-                        child.Enabled = false;
+                        if (child != null)
+                            child.Enabled = false;
                     }
                 }
             }
@@ -510,7 +696,11 @@ namespace FlaxEditor.CustomEditors.Editors
                 if (item.UseGroup)
                 {
                     if (lastGroup == null || lastGroup.Panel.HeaderText != item.Display.Group)
+                    {
                         lastGroup = layout.Group(item.Display.Group);
+                        lastGroup.Panel.Tag = lastGroup;
+                        lastGroup.Panel.MouseButtonRightClicked += OnGroupPanelMouseButtonRightClicked;
+                    }
                     itemLayout = lastGroup;
                 }
                 else

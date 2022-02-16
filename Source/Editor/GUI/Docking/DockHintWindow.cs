@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 using System;
 using FlaxEngine;
@@ -100,7 +100,9 @@ namespace FlaxEditor.GUI.Docking
             // Check if window won't be docked
             if (_toSet == DockState.Float)
             {
-                var window = _toMove.Window.Window;
+                var window = _toMove.Window?.Window;
+                if (window == null)
+                    return;
                 Vector2 mouse = FlaxEngine.Input.MouseScreenPosition;
 
                 // Move base window

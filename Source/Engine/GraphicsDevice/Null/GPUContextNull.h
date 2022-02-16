@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -56,6 +56,18 @@ public:
     {
     }
 
+    void ClearUA(GPUBuffer* buf, const uint32 value[4]) override
+    {
+    }
+
+    void ClearUA(GPUTexture* texture, const uint32 value[4]) override
+    {
+    }
+
+    void ClearUA(GPUTexture* texture, const Vector4& value) override
+    {
+    }
+
     void ResetRenderTarget() override
     {
     }
@@ -69,10 +81,6 @@ public:
     }
 
     void SetRenderTarget(GPUTextureView* depthBuffer, const Span<GPUTextureView*>& rts) override
-    {
-    }
-
-    void SetRenderTarget(GPUTextureView* rt, GPUBuffer* uaOutput) override
     {
     }
 

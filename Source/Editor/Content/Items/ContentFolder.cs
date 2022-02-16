@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 using System;
 using System.Collections.Generic;
@@ -135,7 +135,7 @@ namespace FlaxEditor.Content
         }
 
         /// <inheritdoc />
-        protected override void UpdateTooltipText()
+        public override void UpdateTooltipText()
         {
             TooltipText = Path;
         }

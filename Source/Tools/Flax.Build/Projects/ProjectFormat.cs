@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 namespace Flax.Build.Projects
 {
@@ -33,8 +33,18 @@ namespace Flax.Build.Projects
         VisualStudio2019,
 
         /// <summary>
+        /// Visual Studio 2022.
+        /// </summary>
+        VisualStudio2022,
+
+        /// <summary>
         /// Visual Studio Code.
         /// </summary>
         VisualStudioCode,
+
+        /// <summary>
+        /// XCode.
+        /// </summary>
+        XCode,
     }
 }

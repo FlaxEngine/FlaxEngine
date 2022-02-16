@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -97,14 +97,9 @@ public:
 public:
 
     /// <summary>
-    /// Changes the coefficients of the normal vector of the plane to make it of unit length
+    /// Changes the coefficients of the normal vector of the plane to make it of unit length.
     /// </summary>
-    void Normalize()
-    {
-        const float magnitude = Normal.InvLength();
-        Normal *= magnitude;
-        D *= magnitude;
-    }
+    void Normalize();
 
     void Negate()
     {

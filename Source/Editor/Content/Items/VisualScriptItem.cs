@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 using System;
 using System.Collections.Generic;
@@ -339,6 +339,9 @@ namespace FlaxEditor.Content
         public bool IsClass => true;
 
         /// <inheritdoc />
+        public bool IsInterface => false;
+
+        /// <inheritdoc />
         public bool IsArray => false;
 
         /// <inheritdoc />
@@ -369,6 +372,12 @@ namespace FlaxEditor.Content
         public object CreateInstance()
         {
             return Object.New(TypeName);
+        }
+
+        /// <inheritdoc />
+        public bool ImplementInterface(ScriptType c)
+        {
+            return BaseType.ImplementInterface(c);
         }
 
         /// <inheritdoc />

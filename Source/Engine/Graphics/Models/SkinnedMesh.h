@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -19,10 +19,8 @@ API_CLASS(NoSpawn) class FLAXENGINE_API SkinnedMesh : public MeshBase
 DECLARE_SCRIPTING_TYPE_WITH_CONSTRUCTOR_IMPL(SkinnedMesh, MeshBase);
 protected:
 
-    int32 _index;
-    int32 _lodIndex;
-    GPUBuffer* _vertexBuffer;
-    GPUBuffer* _indexBuffer;
+    GPUBuffer* _vertexBuffer = nullptr;
+    GPUBuffer* _indexBuffer = nullptr;
     mutable Array<byte> _cachedIndexBuffer;
     mutable Array<byte> _cachedVertexBuffer;
     mutable int32 _cachedIndexBufferCount;
@@ -50,14 +48,6 @@ public:
     FORCE_INLINE SkinnedModel* GetSkinnedModel() const
     {
         return (SkinnedModel*)_model;
-    }
-
-    /// <summary>
-    /// Gets the mesh index.
-    /// </summary>
-    FORCE_INLINE int32 GetIndex() const
-    {
-        return _index;
     }
 
     /// <summary>
@@ -258,7 +248,9 @@ private:
 
     // Internal bindings
     API_FUNCTION(NoProxy) ScriptingObject* GetParentModel();
+#if !COMPILE_WITHOUT_CSHARP
     API_FUNCTION(NoProxy) bool UpdateMeshUInt(MonoArray* verticesObj, MonoArray* trianglesObj, MonoArray* blendIndicesObj, MonoArray* blendWeightsObj, MonoArray* normalsObj, MonoArray* tangentsObj, MonoArray* uvObj);
     API_FUNCTION(NoProxy) bool UpdateMeshUShort(MonoArray* verticesObj, MonoArray* trianglesObj, MonoArray* blendIndicesObj, MonoArray* blendWeightsObj, MonoArray* normalsObj, MonoArray* tangentsObj, MonoArray* uvObj);
     API_FUNCTION(NoProxy) bool DownloadBuffer(bool forceGpu, MonoArray* resultObj, int32 typeI);
+#endif
 };

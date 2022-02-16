@@ -1,11 +1,11 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 #include "MainThreadManagedInvokeAction.h"
 #include "Engine/Threading/Threading.h"
 #include "Engine/Scripting/ScriptingCalls.h"
 #include "MException.h"
 
-MainThreadManagedInvokeAction* MainThreadManagedInvokeAction::Invoke(MMethod* method, MonoObject* instance, LogType exceptionLevel)
+MainThreadManagedInvokeAction* MainThreadManagedInvokeAction::Invoke(MMethod* method, MObject* instance, LogType exceptionLevel)
 {
     ASSERT_LOW_LAYER(method != nullptr);
 
@@ -23,7 +23,7 @@ MainThreadManagedInvokeAction* MainThreadManagedInvokeAction::Invoke(MMethod* me
     }
 }
 
-MainThreadManagedInvokeAction* MainThreadManagedInvokeAction::Invoke(MMethod* method, ParamsBuilder& params, MonoObject* instance, LogType exceptionLevel)
+MainThreadManagedInvokeAction* MainThreadManagedInvokeAction::Invoke(MMethod* method, ParamsBuilder& params, MObject* instance, LogType exceptionLevel)
 {
     ASSERT_LOW_LAYER(method != nullptr);
 
@@ -59,14 +59,14 @@ MainThreadManagedInvokeAction* MainThreadManagedInvokeAction::Invoke(void* metho
     }
 }
 
-void MainThreadManagedInvokeAction::InvokeNow(MMethod* method, ParamsBuilder& params, MonoObject* instance, LogType exceptionLevel)
+void MainThreadManagedInvokeAction::InvokeNow(MMethod* method, ParamsBuilder& params, MObject* instance, LogType exceptionLevel)
 {
     ASSERT_LOW_LAYER(method != nullptr);
 
     void* paramsData[8];
     params.GetParams(paramsData);
 
-    MonoObject* exception = nullptr;
+    MObject* exception = nullptr;
     method->Invoke(instance, paramsData, &exception);
     if (exception)
     {
@@ -82,14 +82,13 @@ bool MainThreadManagedInvokeAction::Run()
     void* paramsData[8];
     _params.GetParams(paramsData);
 
-    MonoObject* exception = nullptr;
+    MObject* exception = nullptr;
     if (_method)
     {
         _method->Invoke(_instance, paramsData, &exception);
     }
-    else
+    else if (_methodThunk)
     {
-        ASSERT(_methodThunk);
         switch (_params.Count)
         {
         case 0:

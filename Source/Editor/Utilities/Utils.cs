@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 using System;
 using System.Collections.Generic;
@@ -78,13 +78,16 @@ namespace FlaxEditor.Utilities
 
         internal static string GetTooltip(SceneObject obj)
         {
-            var str = obj is Actor actor ? actor.Name : TypeUtils.GetObjectType(obj).Name;
+            var actor = obj as Actor;
+            var str = actor != null ? actor.Name : TypeUtils.GetObjectType(obj).Name;
             var o = obj.Parent;
             while (o)
             {
                 str = o.Name + " -> " + str;
                 o = o.Parent;
             }
+            if (actor != null)
+                str += string.Format(" ({0})", TypeUtils.GetObjectType(obj).Name);
             return str;
         }
 
@@ -826,7 +829,13 @@ namespace FlaxEditor.Utilities
                 var attr = field.GetAttribute<System.ComponentModel.DefaultValueAttribute>();
                 if (attr != null)
                 {
-                    field.SetValue(obj, attr.Value);
+                    // Prevent value type conflicts
+                    var value = attr.Value;
+                    var fieldType = field.ValueType.Type;
+                    if (value != null && value.GetType() != fieldType)
+                        value = Convert.ChangeType(value, fieldType);
+
+                    field.SetValue(obj, value);
                 }
                 else if (isStructure)
                 {
@@ -842,7 +851,13 @@ namespace FlaxEditor.Utilities
                 var attr = property.GetAttribute<System.ComponentModel.DefaultValueAttribute>();
                 if (attr != null)
                 {
-                    property.SetValue(obj, attr.Value);
+                    // Prevent value type conflicts
+                    var value = attr.Value;
+                    var propertyType = property.ValueType.Type;
+                    if (value != null && value.GetType() != propertyType)
+                        value = Convert.ChangeType(value, propertyType);
+
+                    property.SetValue(obj, value);
                 }
             }
         }

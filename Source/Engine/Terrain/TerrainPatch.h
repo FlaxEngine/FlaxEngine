@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -6,7 +6,6 @@
 #include "TerrainChunk.h"
 #include "Engine/Core/Math/Color32.h"
 #include "Engine/Core/Math/Int2.h"
-#include "Engine/Physics/Types.h"
 #include "Engine/Level/Scene/Lightmap.h"
 #include "Engine/Content/Assets/RawDataAsset.h"
 
@@ -38,9 +37,9 @@ private:
     BoundingBox _bounds;
     Vector3 _offset;
     AssetReference<RawDataAsset> _heightfield;
-    PxShape* _physicsShape;
-    PxRigidStatic* _physicsActor;
-    PxHeightField* _physicsHeightField;
+    void* _physicsShape;
+    void* _physicsActor;
+    void* _physicsHeightField;
     CriticalSection _collisionLocker;
     float _collisionScaleXZ;
 #if TERRAIN_UPDATING
@@ -331,7 +330,7 @@ public:
     /// </summary>
     /// <param name="position">The position to find the closest point to it.</param>
     /// <param name="result">The result point on the collider that is closest to the specified location.</param>
-    void ClosestPoint(const Vector3& position, Vector3* result) const;
+    void ClosestPoint(const Vector3& position, Vector3& result) const;
 
 #if USE_EDITOR
 
@@ -373,7 +372,6 @@ private:
     /// <summary>
     /// Determines whether this patch has created collision representation.
     /// </summary>
-    /// <returns><c>true</c> if this patch has collider; otherwise, <c>false</c>.</returns>
     FORCE_INLINE bool HasCollision() const
     {
         return _physicsShape != nullptr;
@@ -411,6 +409,7 @@ private:
     /// <returns>True if failed, otherwise false.</returns>
     bool UpdateCollision();
 
+    void OnPhysicsSceneChanged(PhysicsScene* previous);
 public:
 
     // [ISerializable]

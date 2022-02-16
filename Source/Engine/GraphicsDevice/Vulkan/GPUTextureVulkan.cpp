@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 #if GRAPHICS_API_VULKAN
 
@@ -238,6 +238,11 @@ bool GPUTextureVulkan::OnInit()
     if (useDSV)
         format = PixelFormatExtensions::FindDepthStencilFormat(format);
     _desc.Format = _device->GetClosestSupportedPixelFormat(format, _desc.Flags, optimalTiling);
+    if (_desc.Format == PixelFormat::Unknown)
+    {
+        LOG(Error, "Unsupported texture format {0}.", (int32)format);
+        return true;
+    }
 
     // Setup texture description
     VkImageCreateInfo imageInfo;
