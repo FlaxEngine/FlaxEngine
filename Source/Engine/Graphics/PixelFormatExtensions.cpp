@@ -1,7 +1,6 @@
 // Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 #include "PixelFormatExtensions.h"
-#include "Engine/Core/Collections/Dictionary.h"
 #include "Engine/Core/Math/Math.h"
 
 // ReSharper disable CppClangTidyClangDiagnosticSwitchEnum

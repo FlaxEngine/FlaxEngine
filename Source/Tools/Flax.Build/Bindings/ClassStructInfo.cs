@@ -16,6 +16,7 @@ namespace Flax.Build.Bindings
         public ClassStructInfo BaseType;
         public List<InterfaceInfo> Interfaces;
         public List<TypeInfo> Inheritance; // Data from parsing, used to interfaces and base type construct in Init
+        public List<FunctionInfo> Functions = new List<FunctionInfo>();
 
         public override void Init(Builder.BuildData buildData)
         {
@@ -52,6 +53,7 @@ namespace Flax.Build.Bindings
             writer.Write((byte)BaseTypeInheritance);
             BindingsGenerator.Write(writer, BaseType);
             BindingsGenerator.Write(writer, Inheritance);
+            BindingsGenerator.Write(writer, Functions);
 
             base.Write(writer);
         }
@@ -62,6 +64,7 @@ namespace Flax.Build.Bindings
             BaseTypeInheritance = (AccessLevel)reader.ReadByte();
             BaseType = BindingsGenerator.Read(reader, BaseType);
             Inheritance = BindingsGenerator.Read(reader, Inheritance);
+            Functions = BindingsGenerator.Read(reader, Functions);
 
             base.Read(reader);
         }
@@ -72,8 +75,6 @@ namespace Flax.Build.Bindings
     /// </summary>
     public abstract class VirtualClassInfo : ClassStructInfo
     {
-        public List<FunctionInfo> Functions = new List<FunctionInfo>();
-
         internal HashSet<string> UniqueFunctionNames;
 
         public override void Init(Builder.BuildData buildData)
@@ -99,20 +100,6 @@ namespace Flax.Build.Bindings
         public abstract int GetScriptVTableSize(out int offset);
 
         public abstract int GetScriptVTableOffset(VirtualClassInfo classInfo);
-
-        public override void Write(BinaryWriter writer)
-        {
-            BindingsGenerator.Write(writer, Functions);
-
-            base.Write(writer);
-        }
-
-        public override void Read(BinaryReader reader)
-        {
-            Functions = BindingsGenerator.Read(reader, Functions);
-
-            base.Read(reader);
-        }
 
         public override void AddChild(ApiTypeInfo apiTypeInfo)
         {

@@ -19,6 +19,7 @@ namespace Flax.Build.Bindings
         internal static readonly Dictionary<string, string> CSharpNativeToManagedBasicTypes = new Dictionary<string, string>()
         {
             // Language types
+            { "bool", "bool" },
             { "int8", "sbyte" },
             { "int16", "short" },
             { "int32", "int" },

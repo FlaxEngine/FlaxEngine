@@ -194,12 +194,6 @@ public:
     API_FUNCTION() static void OnFileAdded(CodeEditorTypes editorType, const String& path);
 
     /// <summary>
-    /// Opens the solution project. Handles async opening.
-    /// </summary>
-    /// <param name="editor">The code editor.</param>
-    static void OpenSolution(CodeEditor* editor);
-
-    /// <summary>
     /// The asynchronous open begins.
     /// </summary>
     static Action AsyncOpenBegin;

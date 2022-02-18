@@ -48,6 +48,7 @@ namespace Flax.Build.Bindings
 
         public static event GenerateModuleBindingsDelegate GenerateModuleBindings;
         public static event GenerateBinaryModuleBindingsDelegate GenerateBinaryModuleBindings;
+        public static ModuleInfo CurrentModule;
 
         public static ModuleInfo ParseModule(BuildData buildData, Module module, BuildOptions moduleOptions = null)
         {

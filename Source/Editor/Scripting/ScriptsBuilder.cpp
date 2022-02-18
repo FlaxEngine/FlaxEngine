@@ -156,7 +156,7 @@ bool ScriptsBuilder::IsSourceWorkspaceDirty()
     return _wasProjectStructureChanged;
 }
 
-bool ScriptsBuilder::IsSourceDirty(const TimeSpan& timeout)
+bool ScriptsBuilder::IsSourceDirtyFor(const TimeSpan& timeout)
 {
     ScopeLock scopeLock(_locker);
     return _lastSourceCodeEdited > (_lastCompileAction + timeout);
@@ -626,7 +626,7 @@ void ScriptsBuilderService::Update()
     // Check if compile code (if has been edited)
     const TimeSpan timeToCallCompileIfDirty = TimeSpan::FromMilliseconds(50);
     auto mainWindow = Engine::MainWindow;
-    if (ScriptsBuilder::IsSourceDirty(timeToCallCompileIfDirty) && mainWindow && mainWindow->IsFocused())
+    if (ScriptsBuilder::IsSourceDirtyFor(timeToCallCompileIfDirty) && mainWindow && mainWindow->IsFocused())
     {
         // Check if auto reload is enabled
         if (Editor::Managed->CanAutoReloadScripts())
