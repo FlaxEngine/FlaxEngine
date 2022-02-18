@@ -21,6 +21,11 @@ API_ENUM() enum class CursorLockMode
     /// Cursor position is locked to the center of the game window.
     /// </summary>
     Locked = 1,
+
+    /// <summary>
+    /// Cursor position is confined to the bounds of the game window.
+    /// </summary>
+    Clipped = 2,
 };
 
 /// <summary>

@@ -116,6 +116,19 @@ CursorLockMode Screen::GetCursorLock()
 
 void Screen::SetCursorLock(CursorLockMode mode)
 {
+#if USE_EDITOR
+    const auto win = Editor::Managed->GetGameWindow();
+#else
+    const auto win = Engine::MainWindow;
+#endif
+    if (win && mode == CursorLockMode::Clipped)
+    {
+        win->StartClippingCursor(win->GetClientBounds());
+    }
+    else if (win && CursorLock == CursorLockMode::Clipped)
+    {
+        win->EndClippingCursor();
+    }
     CursorLock = mode;
 }
 
