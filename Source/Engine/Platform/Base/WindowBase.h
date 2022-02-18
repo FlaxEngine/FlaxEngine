@@ -706,7 +706,7 @@ public:
     /// <summary>
     /// Gets the value indicating whenever the cursor is being clipped.
     /// </summary>
-    API_PROPERTY bool IsCursorClipping() const
+    API_PROPERTY() bool IsCursorClipping() const
     {
         return _isClippingCursor;
     }

@@ -582,7 +582,7 @@ void WindowsWindow::StartClippingCursor(const Rectangle& bounds)
     ClipCursor(&lpRect);
 }
 
-void WindowsWindow::EndClippingMouse()
+void WindowsWindow::EndClippingCursor()
 {
     if (_isClippingCursor)
     {
