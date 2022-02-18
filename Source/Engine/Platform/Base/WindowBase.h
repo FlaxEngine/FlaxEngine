@@ -288,6 +288,7 @@ protected:
     bool _isUsingMouseOffset;
     Rectangle _mouseOffsetScreenSize;
     bool _isTrackingMouse;
+    bool _isClippingCursor;
 
     explicit WindowBase(const CreateWindowSettings& settings);
     virtual ~WindowBase();
@@ -691,6 +692,29 @@ public:
     /// Ends the mouse tracking.
     /// </summary>
     API_FUNCTION() virtual void EndTrackingMouse()
+    {
+    }
+
+    /// <summary>
+    /// Starts the cursor clipping.
+    /// </summary>
+    /// <param name="bounds">The bounds that the cursor will be confined to.</param>
+    API_FUNCTION() virtual void StartClippingCursor(const Rectangle& bounds)
+    {
+    }
+
+    /// <summary>
+    /// Gets the value indicating whenever the cursor is being clipped.
+    /// </summary>
+    API_PROPERTY bool IsCursorClipping() const
+    {
+        return _isClippingCursor;
+    }
+
+    /// <summary>
+    /// Ends the cursor clipping.
+    /// </summary>
+    API_FUNCTION() virtual void EndClippingCursor()
     {
     }
 

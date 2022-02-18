@@ -104,6 +104,7 @@ WindowBase::WindowBase(const CreateWindowSettings& settings)
     , _trackingMouseOffset(Vector2::Zero)
     , _isUsingMouseOffset(false)
     , _isTrackingMouse(false)
+    , _isClippingCursor(false)
     , RenderTask(nullptr)
 {
     // Update window location based on start location

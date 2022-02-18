@@ -564,6 +564,34 @@ void WindowsWindow::EndTrackingMouse()
     }
 }
 
+void WindowsWindow::StartClippingCursor(const Rectangle& bounds)
+{
+    ASSERT(HasHWND());
+
+    if (!_isClippingCursor)
+    {
+        _isClippingCursor = true;
+    }
+
+    const RECT lpRect = { 
+        bounds.GetUpperLeft().X,
+        bounds.GetUpperLeft().Y,
+        bounds.GetBottomRight().X,
+        bounds.GetBottomRight().Y
+    };
+    ClipCursor(&lpRect);
+}
+
+void WindowsWindow::EndClippingMouse()
+{
+    if (_isClippingCursor)
+    {
+        _isClippingCursor = false;
+
+        ClipCursor(NULL);
+    }
+}
+
 void WindowsWindow::SetCursor(CursorType type)
 {
     // Base
