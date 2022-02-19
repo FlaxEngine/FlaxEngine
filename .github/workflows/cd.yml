@@ -9,7 +9,7 @@ jobs:
   # Windows
   package-windows-editor:
     name: Editor (Windows)
-    runs-on: "windows-latest"
+    runs-on: "windows-2019"
     steps:
     - name: Checkout repo
       uses: actions/checkout@v2
@@ -34,7 +34,7 @@ jobs:
         path: Output/EditorDebugSymbols.zip
   package-windows-game:
     name: Game (Windows)
-    runs-on: "windows-latest"
+    runs-on: "windows-2019"
     steps:
     - name: Checkout repo
       uses: actions/checkout@v2

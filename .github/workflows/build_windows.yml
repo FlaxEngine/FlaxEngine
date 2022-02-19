@@ -6,7 +6,7 @@ jobs:
   # Editor
   editor-windows:
     name: Editor (Windows, Development x64)
-    runs-on: "windows-latest"
+    runs-on: "windows-2019"
     steps:
     - name: Checkout repo
       uses: actions/checkout@v2
@@ -23,7 +23,7 @@ jobs:
   # Game
   game-windows:
     name: Game (Windows, Release x64)
-    runs-on: "windows-latest"
+    runs-on: "windows-2019"
     steps:
     - name: Checkout repo
       uses: actions/checkout@v2
