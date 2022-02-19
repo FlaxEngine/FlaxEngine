@@ -559,6 +559,12 @@ void Terrain::Draw(RenderContext& renderContext)
 
 void Terrain::DrawGeneric(RenderContext& renderContext)
 {
+    // Prevent issues if no BeginPlay was called
+    if (!IsDuringPlay())
+    {
+        CacheNeighbors();
+    }
+
     Draw(renderContext);
 }
 
