@@ -423,7 +423,7 @@ void ShadowsOfMordor::Builder::onJobRender(GPUContext* context)
 #endif
 
         // Report progress
-        float hemispheresProgress = static_cast<float>(_workerStagePosition1) / lightmapEntry.Hemispheres.Count();
+        float hemispheresProgress = static_cast<float>(_workerStagePosition1) / Math::Max(lightmapEntry.Hemispheres.Count(), 1);
         float lightmapsProgress = static_cast<float>(_workerStagePosition0 + hemispheresProgress) / scene->Lightmaps.Count();
         float bouncesProgress = static_cast<float>(_giBounceRunningIndex) / _bounceCount;
         reportProgress(BuildProgressStep::RenderHemispheres, lightmapsProgress / _bounceCount + bouncesProgress);
