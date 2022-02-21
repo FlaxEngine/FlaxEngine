@@ -593,7 +593,10 @@ public:
     // @param min The minimum value,
     // @param max The maximum value
     // @returns Clamped value
-    static Vector3 Clamp(const Vector3& value, const Vector3& min, const Vector3& max);
+    static Vector3 Clamp(const Vector3& value, const Vector3& min, const Vector3& max)
+    {
+        return Vector3(Math::Clamp(value.X, min.X, max.X), Math::Clamp(value.Y, min.Y, max.Y), Math::Clamp(value.Z, min.Z, max.Z));
+    }
 
     // Restricts a value to be within a specified range
     // @param value The value to clamp

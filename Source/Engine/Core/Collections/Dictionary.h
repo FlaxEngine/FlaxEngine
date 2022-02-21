@@ -544,14 +544,15 @@ public:
     /// Ensures that collection has given capacity.
     /// </summary>
     /// <param name="minCapacity">The minimum required capacity.</param>
-    void EnsureCapacity(int32 minCapacity)
+    /// <param name="preserveContents">True if preserve collection data when changing its size, otherwise collection after resize will be empty.</param>
+    void EnsureCapacity(int32 minCapacity, bool preserveContents = true)
     {
         if (_size >= minCapacity)
             return;
         if (minCapacity < DICTIONARY_DEFAULT_CAPACITY)
             minCapacity = DICTIONARY_DEFAULT_CAPACITY;
         const int32 capacity = _allocation.CalculateCapacityGrow(_size, minCapacity);
-        SetCapacity(capacity);
+        SetCapacity(capacity, preserveContents);
     }
 
     /// <summary>

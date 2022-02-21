@@ -258,7 +258,7 @@ void SplineModel::UpdateDeformationBuffer()
         AnimationUtils::GetTangent(end.Value, end.TangentIn, length, rightTangent);
         for (int32 chunk = 0; chunk < chunksPerSegment; chunk++)
         {
-            const float alpha = (chunk == chunksPerSegment - 1)? 1.0f : ((float)chunk * chunksPerSegmentInv);
+            const float alpha = (chunk == chunksPerSegment - 1) ? 1.0f : ((float)chunk * chunksPerSegmentInv);
 
             // Evaluate transformation at the curve
             AnimationUtils::Bezier(start.Value, leftTangent, rightTangent, end.Value, alpha, transform);

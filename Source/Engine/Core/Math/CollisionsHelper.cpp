@@ -1124,7 +1124,6 @@ bool CollisionsHelper::BoxIntersectsSphere(const BoundingBox& box, const Boundin
     Vector3 vector;
     Vector3::Clamp(sphere.Center, box.Minimum, box.Maximum, vector);
     const float distance = Vector3::DistanceSquared(sphere.Center, vector);
-
     return distance <= sphere.Radius * sphere.Radius;
 }
 

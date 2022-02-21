@@ -131,23 +131,6 @@ Vector3 Vector3::Frac(const Vector3& v)
     );
 }
 
-Vector3 Vector3::Clamp(const Vector3& value, const Vector3& min, const Vector3& max)
-{
-    float x = value.X;
-    x = x > max.X ? max.X : x;
-    x = x < min.X ? min.X : x;
-
-    float y = value.Y;
-    y = y > max.Y ? max.Y : y;
-    y = y < min.Y ? min.Y : y;
-
-    float z = value.Z;
-    z = z > max.Z ? max.Z : z;
-    z = z < min.Z ? min.Z : z;
-
-    return Vector3(x, y, z);
-}
-
 void Vector3::Hermite(const Vector3& value1, const Vector3& tangent1, const Vector3& value2, const Vector3& tangent2, float amount, Vector3& result)
 {
     const float squared = amount * amount;

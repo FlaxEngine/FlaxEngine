@@ -640,7 +640,7 @@ public:
 public:
 
     /// <summary>
-    /// Draws this actor. Called by Scene Rendering service. This call is more optimized than generic Draw (eg. models are rendered during all passed but other actors are invoked only during GBufferFill pass).
+    /// Draws this actor. Called by Scene Rendering service. This call is more optimized than generic Draw (eg. geometry is rendered during all pass types but other actors are drawn only during GBufferFill pass).
     /// </summary>
     /// <param name="renderContext">The rendering context.</param>
     virtual void Draw(RenderContext& renderContext);
