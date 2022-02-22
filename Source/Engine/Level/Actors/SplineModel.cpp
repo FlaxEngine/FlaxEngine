@@ -210,7 +210,7 @@ void SplineModel::OnSplineUpdated()
         BoundingSphere::Merge(_sphere, _instances[i].Sphere, _sphere);
     BoundingBox::FromSphere(_sphere, _box);
     if (_sceneRenderingKey != -1)
-        GetSceneRendering()->UpdateGeometry(this, _sceneRenderingKey);
+        GetSceneRendering()->UpdateActor(this, _sceneRenderingKey);
 }
 
 void SplineModel::UpdateDeformationBuffer()
@@ -429,11 +429,6 @@ void SplineModel::Draw(RenderContext& renderContext)
             renderContext.List->AddDrawCall(drawModes, _staticFlags, drawCall, entry.ReceiveDecals);
         }
     }
-}
-
-void SplineModel::DrawGeneric(RenderContext& renderContext)
-{
-    Draw(renderContext);
 }
 
 bool SplineModel::IntersectsItself(const Ray& ray, float& distance, Vector3& normal)

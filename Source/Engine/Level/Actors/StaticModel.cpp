@@ -199,7 +199,7 @@ void StaticModel::UpdateBounds()
     }
     BoundingSphere::FromBox(_box, _sphere);
     if (_sceneRenderingKey != -1)
-        GetSceneRendering()->UpdateGeometry(this, _sceneRenderingKey);
+        GetSceneRendering()->UpdateActor(this, _sceneRenderingKey);
 }
 
 bool StaticModel::HasContentLoaded() const
@@ -265,14 +265,6 @@ void StaticModel::Draw(RenderContext& renderContext)
     }
 
     GEOMETRY_DRAW_STATE_EVENT_END(_drawState, _world);
-}
-
-void StaticModel::DrawGeneric(RenderContext& renderContext)
-{
-    if (renderContext.View.RenderLayersMask.Mask & GetLayerMask() && renderContext.View.CullingFrustum.Intersects(_box))
-    {
-        Draw(renderContext);
-    }
 }
 
 bool StaticModel::IntersectsItself(const Ray& ray, float& distance, Vector3& normal)

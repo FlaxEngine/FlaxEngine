@@ -392,6 +392,7 @@ void RenderList::Init(RenderContext& renderContext)
 
 void RenderList::Clear()
 {
+    Scenes.Clear();
     DrawCalls.Clear();
     BatchedDrawCalls.Clear();
     for (auto& list : DrawCallsLists)

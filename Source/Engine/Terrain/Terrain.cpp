@@ -47,7 +47,7 @@ void Terrain::UpdateBounds()
     }
     BoundingSphere::FromBox(_box, _sphere);
     if (_sceneRenderingKey != -1)
-        GetSceneRendering()->UpdateGeometry(this, _sceneRenderingKey);
+        GetSceneRendering()->UpdateActor(this, _sceneRenderingKey);
 }
 
 void Terrain::CacheNeighbors()
@@ -557,11 +557,6 @@ void Terrain::Draw(RenderContext& renderContext)
     }
 }
 
-void Terrain::DrawGeneric(RenderContext& renderContext)
-{
-    Draw(renderContext);
-}
-
 #if USE_EDITOR
 
 //#include "Engine/Debug/DebugDraw.h"
@@ -742,7 +737,7 @@ RigidBody* Terrain::GetAttachedRigidBody() const
 
 void Terrain::OnEnable()
 {
-    _sceneRenderingKey = GetSceneRendering()->AddGeometry(this);
+    _sceneRenderingKey = GetSceneRendering()->AddActor(this);
 #if TERRAIN_USE_PHYSICS_DEBUG
     GetSceneRendering()->AddPhysicsDebug<Terrain, &Terrain::DrawPhysicsDebug>(this);
 #endif
@@ -753,7 +748,7 @@ void Terrain::OnEnable()
 
 void Terrain::OnDisable()
 {
-    GetSceneRendering()->RemoveGeometry(this, _sceneRenderingKey);
+    GetSceneRendering()->RemoveActor(this, _sceneRenderingKey);
 #if TERRAIN_USE_PHYSICS_DEBUG
     GetSceneRendering()->RemovePhysicsDebug<Terrain, &Terrain::DrawPhysicsDebug>(this);
 #endif
@@ -794,7 +789,7 @@ void Terrain::OnLayerChanged()
 
     UpdateLayerBits();
     if (_sceneRenderingKey != -1)
-        GetSceneRendering()->UpdateGeometry(this, _sceneRenderingKey);
+        GetSceneRendering()->UpdateActor(this, _sceneRenderingKey);
 }
 
 void Terrain::OnActiveInTreeChanged()

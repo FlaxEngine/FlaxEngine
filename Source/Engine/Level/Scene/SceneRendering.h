@@ -6,7 +6,6 @@
 #include "Engine/Core/Collections/Array.h"
 #include "Engine/Core/Math/BoundingSphere.h"
 #include "Engine/Level/Actor.h"
-#include "Engine/Level/Types.h"
 
 class SceneRenderTask;
 struct PostProcessSettings;
@@ -19,7 +18,6 @@ struct RenderView;
 class FLAXENGINE_API IPostFxSettingsProvider
 {
 public:
-
     /// <summary>
     /// Collects the settings for rendering of the specified task.
     /// </summary>
@@ -39,46 +37,29 @@ public:
 /// </summary>
 class FLAXENGINE_API SceneRendering
 {
-    friend Scene;
 #if USE_EDITOR
     typedef Function<void(RenderView&)> PhysicsDebugCallback;
     friend class ViewportIconsRendererService;
 #endif
-    struct DrawEntry
+public:
+    struct DrawActor
     {
         Actor* Actor;
         uint32 LayerMask;
+        int8 NoCulling : 1;
         BoundingSphere Bounds;
     };
 
-    struct DrawEntries
-    {
-        Array<DrawEntry> List;
-
-        int32 Add(Actor* obj);
-        void Update(Actor* obj, int32 key);
-        void Remove(Actor* obj, int32 key);
-        void Clear();
-        void CullAndDraw(RenderContext& renderContext);
-        void CullAndDrawOffline(RenderContext& renderContext);
-    };
+    Array<DrawActor> Actors;
+    Array<IPostFxSettingsProvider*> PostFxProviders;
 
 private:
-
-    Scene* Scene;
-    DrawEntries Geometry;
-    DrawEntries Common;
-    Array<Actor*> CommonNoCulling;
-    Array<IPostFxSettingsProvider*> PostFxProviders;
 #if USE_EDITOR
     Array<PhysicsDebugCallback> PhysicsDebug;
     Array<Actor*> ViewportIcons;
 #endif
 
-    explicit SceneRendering(::Scene* scene);
-
 public:
-
     /// <summary>
     /// Draws the scene. Performs the optimized actors culling and draw calls submission for the current render pass (defined by the render view).
     /// </summary>
@@ -97,48 +78,9 @@ public:
     void Clear();
 
 public:
-
-    FORCE_INLINE int32 AddGeometry(Actor* obj)
-    {
-        return Geometry.Add(obj);
-    }
-
-    FORCE_INLINE void UpdateGeometry(Actor* obj, int32 key)
-    {
-        Geometry.Update(obj, key);
-    }
-
-    FORCE_INLINE void RemoveGeometry(Actor* obj, int32& key)
-    {
-        Geometry.Remove(obj, key);
-        key = -1;
-    }
-
-    FORCE_INLINE int32 AddCommon(Actor* obj)
-    {
-        return Common.Add(obj);
-    }
-
-    FORCE_INLINE void UpdateCommon(Actor* obj, int32 key)
-    {
-        Common.Update(obj, key);
-    }
-
-    FORCE_INLINE void RemoveCommon(Actor* obj, int32& key)
-    {
-        Common.Remove(obj, key);
-        key = -1;
-    }
-
-    FORCE_INLINE void AddCommonNoCulling(Actor* obj)
-    {
-        CommonNoCulling.Add(obj);
-    }
-
-    FORCE_INLINE void RemoveCommonNoCulling(Actor* obj)
-    {
-        CommonNoCulling.Remove(obj);
-    }
+    int32 AddActor(Actor* a);
+    void UpdateActor(Actor* a, int32 key);
+    void RemoveActor(Actor* a, int32& key);
 
     FORCE_INLINE void AddPostFxProvider(IPostFxSettingsProvider* obj)
     {
@@ -151,7 +93,6 @@ public:
     }
 
 #if USE_EDITOR
-
     template<class T, void(T::*Method)(RenderView&)>
     FORCE_INLINE void AddPhysicsDebug(T* obj)
     {
@@ -177,6 +118,5 @@ public:
     {
         ViewportIcons.Remove(obj);
     }
-
 #endif
 };

@@ -16,6 +16,8 @@
 ExponentialHeightFog::ExponentialHeightFog(const SpawnParams& params)
     : Actor(params)
 {
+    _drawNoCulling = 1;
+
     // Load shader
     _shader = Content::LoadAsyncInternal<Shader>(TEXT("Shaders/Fog"));
     if (_shader == nullptr)
@@ -203,7 +205,7 @@ void ExponentialHeightFog::DrawFog(GPUContext* context, RenderContext& renderCon
 
 void ExponentialHeightFog::OnEnable()
 {
-    GetSceneRendering()->AddCommonNoCulling(this);
+    _sceneRenderingKey = GetSceneRendering()->AddActor(this);
 #if USE_EDITOR
     GetSceneRendering()->AddViewportIcon(this);
 #endif
@@ -217,7 +219,7 @@ void ExponentialHeightFog::OnDisable()
 #if USE_EDITOR
     GetSceneRendering()->RemoveViewportIcon(this);
 #endif
-    GetSceneRendering()->RemoveCommonNoCulling(this);
+    GetSceneRendering()->RemoveActor(this, _sceneRenderingKey);
 
     // Base
     Actor::OnDisable();

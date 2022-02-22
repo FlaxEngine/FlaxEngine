@@ -229,6 +229,8 @@ SceneRenderTask::~SceneRenderTask()
 {
     if (Buffers)
         Buffers->DeleteObjectNow();
+    if (_customActorsScene)
+        Delete(_customActorsScene);
 }
 
 void SceneRenderTask::CameraCut()
@@ -270,18 +272,27 @@ void SceneRenderTask::CollectPostFxVolumes(RenderContext& renderContext)
     }
 }
 
+void AddActorToSceneRendering(SceneRendering* s, Actor* a)
+{
+    if (a && a->IsActiveInHierarchy())
+    {
+        s->AddActor(a);
+        for (Actor* child : a->Children)
+            AddActorToSceneRendering(s, child);
+    }
+}
+
 void SceneRenderTask::OnCollectDrawCalls(RenderContext& renderContext)
 {
     // Draw actors (collect draw calls)
     if ((ActorsSource & ActorsSources::CustomActors) != 0)
     {
-        for (auto a : CustomActors)
-        {
-            if (a && a->GetIsActive())
-            {
-                a->DrawHierarchy(renderContext);
-            }
-        }
+        if (_customActorsScene == nullptr)
+            _customActorsScene = New<SceneRendering>();
+        _customActorsScene->Clear();
+        for (Actor* a : CustomActors)
+            AddActorToSceneRendering(_customActorsScene, a);
+        _customActorsScene->Draw(renderContext);
     }
     if ((ActorsSource & ActorsSources::Scenes) != 0)
     {

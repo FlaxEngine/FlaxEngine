@@ -29,6 +29,8 @@ Sky::Sky(const SpawnParams& params)
     , _psSky(nullptr)
     , _psFog(nullptr)
 {
+    _drawNoCulling = 1;
+
     // Load shader
     _shader = Content::LoadAsyncInternal<Shader>(TEXT("Shaders/Sky"));
     if (_shader == nullptr)
@@ -237,7 +239,7 @@ void Sky::EndPlay()
 
 void Sky::OnEnable()
 {
-    GetSceneRendering()->AddCommonNoCulling(this);
+    _sceneRenderingKey = GetSceneRendering()->AddActor(this);
 #if USE_EDITOR
     GetSceneRendering()->AddViewportIcon(this);
 #endif
@@ -251,7 +253,7 @@ void Sky::OnDisable()
 #if USE_EDITOR
     GetSceneRendering()->RemoveViewportIcon(this);
 #endif
-    GetSceneRendering()->RemoveCommonNoCulling(this);
+    GetSceneRendering()->RemoveActor(this, _sceneRenderingKey);
 
     // Base
     Actor::OnDisable();

@@ -354,7 +354,7 @@ void Camera::OnEnable()
 {
     Cameras.Add(this);
 #if USE_EDITOR
-    GetSceneRendering()->AddCommonNoCulling(this);
+    _sceneRenderingKey = GetSceneRendering()->AddActor(this);
 #endif
 
     // Base
@@ -364,7 +364,7 @@ void Camera::OnEnable()
 void Camera::OnDisable()
 {
 #if USE_EDITOR
-    GetSceneRendering()->RemoveCommonNoCulling(this);
+    GetSceneRendering()->RemoveActor(this, _sceneRenderingKey);
 #endif
     Cameras.Remove(this);
     if (CutSceneCamera == this)

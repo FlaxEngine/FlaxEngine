@@ -17,6 +17,7 @@ SkyLight::SkyLight(const SpawnParams& params)
     : Light(params)
     , _radius(1000000.0f)
 {
+    _drawNoCulling = 1;
     Brightness = 2.0f;
     UpdateBounds();
 }
@@ -170,7 +171,7 @@ bool SkyLight::HasContentLoaded() const
 
 void SkyLight::OnEnable()
 {
-    GetSceneRendering()->AddCommonNoCulling(this);
+    _sceneRenderingKey = GetSceneRendering()->AddActor(this);
 #if USE_EDITOR
     GetSceneRendering()->AddViewportIcon(this);
 #endif
@@ -184,7 +185,7 @@ void SkyLight::OnDisable()
 #if USE_EDITOR
     GetSceneRendering()->RemoveViewportIcon(this);
 #endif
-    GetSceneRendering()->RemoveCommonNoCulling(this);
+    GetSceneRendering()->RemoveActor(this, _sceneRenderingKey);
 
     // Base
     Light::OnDisable();

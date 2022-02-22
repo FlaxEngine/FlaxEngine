@@ -545,7 +545,7 @@ void AnimatedModel::UpdateBounds()
     BoundingBox::Transform(_boxLocal, _world, _box);
     BoundingSphere::FromBox(_box, _sphere);
     if (_sceneRenderingKey != -1)
-        GetSceneRendering()->UpdateGeometry(this, _sceneRenderingKey);
+        GetSceneRendering()->UpdateActor(this, _sceneRenderingKey);
 }
 
 void AnimatedModel::UpdateSockets()
@@ -725,14 +725,6 @@ void AnimatedModel::Draw(RenderContext& renderContext)
     GEOMETRY_DRAW_STATE_EVENT_END(_drawState, _world);
 }
 
-void AnimatedModel::DrawGeneric(RenderContext& renderContext)
-{
-    if (renderContext.View.RenderLayersMask.Mask & GetLayerMask() && renderContext.View.CullingFrustum.Intersects(_box))
-    {
-        Draw(renderContext);
-    }
-}
-
 #if USE_EDITOR
 
 #include "Engine/Debug/DebugDraw.h"
@@ -878,5 +870,5 @@ void AnimatedModel::OnTransformChanged()
     BoundingBox::Transform(_boxLocal, _world, _box);
     BoundingSphere::FromBox(_box, _sphere);
     if (_sceneRenderingKey != -1)
-        GetSceneRendering()->UpdateGeometry(this, _sceneRenderingKey);
+        GetSceneRendering()->UpdateActor(this, _sceneRenderingKey);
 }

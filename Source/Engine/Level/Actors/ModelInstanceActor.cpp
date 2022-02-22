@@ -34,12 +34,12 @@ MaterialInstance* ModelInstanceActor::CreateAndSetVirtualMaterialInstance(int32 
 void ModelInstanceActor::OnLayerChanged()
 {
     if (_sceneRenderingKey != -1)
-        GetSceneRendering()->UpdateGeometry(this, _sceneRenderingKey);
+        GetSceneRendering()->UpdateActor(this, _sceneRenderingKey);
 }
 
 void ModelInstanceActor::OnEnable()
 {
-    _sceneRenderingKey = GetSceneRendering()->AddGeometry(this);
+    _sceneRenderingKey = GetSceneRendering()->AddActor(this);
 
     // Base
     Actor::OnEnable();
@@ -47,7 +47,7 @@ void ModelInstanceActor::OnEnable()
 
 void ModelInstanceActor::OnDisable()
 {
-    GetSceneRendering()->RemoveGeometry(this, _sceneRenderingKey);
+    GetSceneRendering()->RemoveActor(this, _sceneRenderingKey);
 
     // Base
     Actor::OnDisable();

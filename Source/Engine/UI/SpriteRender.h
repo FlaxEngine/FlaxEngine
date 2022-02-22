@@ -95,7 +95,6 @@ public:
     // [Actor]
     bool HasContentLoaded() const override;
     void Draw(RenderContext& renderContext) override;
-    void DrawGeneric(RenderContext& renderContext) override;
     void Serialize(SerializeStream& stream, const void* otherObj) override;
     void Deserialize(DeserializeStream& stream, ISerializeModifier* modifier) override;
     void OnLayerChanged() override;

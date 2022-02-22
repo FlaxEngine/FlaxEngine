@@ -66,12 +66,12 @@ void PointLight::UpdateBounds()
     BoundingBox::FromSphere(_sphere, _box);
 
     if (_sceneRenderingKey != -1)
-        GetSceneRendering()->UpdateCommon(this, _sceneRenderingKey);
+        GetSceneRendering()->UpdateActor(this, _sceneRenderingKey);
 }
 
 void PointLight::OnEnable()
 {
-    _sceneRenderingKey = GetSceneRendering()->AddCommon(this);
+    _sceneRenderingKey = GetSceneRendering()->AddActor(this);
 #if USE_EDITOR
     GetSceneRendering()->AddViewportIcon(this);
 #endif
@@ -85,7 +85,7 @@ void PointLight::OnDisable()
 #if USE_EDITOR
     GetSceneRendering()->RemoveViewportIcon(this);
 #endif
-    GetSceneRendering()->RemoveCommon(this, _sceneRenderingKey);
+    GetSceneRendering()->RemoveActor(this, _sceneRenderingKey);
 
     // Base
     LightWithShadow::OnDisable();
@@ -106,6 +106,7 @@ void PointLight::Draw(RenderContext& renderContext)
     const float radius = GetScaledRadius();
     if ((renderContext.View.Flags & ViewFlags::PointLights) != 0
         && brightness > ZeroTolerance
+        && renderContext.View.Pass & DrawPass::GBuffer
         && radius > ZeroTolerance
         && (ViewDistance < ZeroTolerance || Vector3::DistanceSquared(renderContext.View.Position, GetPosition()) < ViewDistance * ViewDistance))
     {
@@ -165,7 +166,7 @@ void PointLight::OnDebugDrawSelected()
 void PointLight::OnLayerChanged()
 {
     if (_sceneRenderingKey != -1)
-        GetSceneRendering()->UpdateCommon(this, _sceneRenderingKey);
+        GetSceneRendering()->UpdateActor(this, _sceneRenderingKey);
 }
 
 void PointLight::Serialize(SerializeStream& stream, const void* otherObj)

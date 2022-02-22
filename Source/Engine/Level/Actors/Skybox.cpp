@@ -14,6 +14,7 @@
 Skybox::Skybox(const SpawnParams& params)
     : Actor(params)
 {
+    _drawNoCulling = 1;
 }
 
 void Skybox::setupProxy()
@@ -121,7 +122,7 @@ void Skybox::ApplySky(GPUContext* context, RenderContext& renderContext, const M
 
 void Skybox::OnEnable()
 {
-    GetSceneRendering()->AddCommonNoCulling(this);
+    _sceneRenderingKey = GetSceneRendering()->AddActor(this);
 #if USE_EDITOR
     GetSceneRendering()->AddViewportIcon(this);
 #endif
@@ -135,7 +136,7 @@ void Skybox::OnDisable()
 #if USE_EDITOR
     GetSceneRendering()->RemoveViewportIcon(this);
 #endif
-    GetSceneRendering()->RemoveCommonNoCulling(this);
+    GetSceneRendering()->RemoveActor(this, _sceneRenderingKey);
 
     // Base
     Actor::OnDisable();

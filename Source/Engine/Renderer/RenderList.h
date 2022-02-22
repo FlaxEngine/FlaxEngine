@@ -11,6 +11,7 @@
 
 enum class StaticFlags;
 class RenderBuffers;
+class SceneRendering;
 class LightWithShadow;
 class IPostFxSettingsProvider;
 class CubeTexture;
@@ -344,6 +345,11 @@ DECLARE_SCRIPTING_TYPE(RenderList);
     static void CleanupCache();
 
 public:
+
+    /// <summary>
+    /// All scenes for rendering.
+    /// </summary>
+    Array<SceneRendering*> Scenes;
 
     /// <summary>
     /// Draw calls list (for all draw passes).

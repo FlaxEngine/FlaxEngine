@@ -189,7 +189,6 @@ public:
     // [ModelInstanceActor]
     bool HasContentLoaded() const override;
     void Draw(RenderContext& renderContext) override;
-    void DrawGeneric(RenderContext& renderContext) override;
     bool IntersectsItself(const Ray& ray, float& distance, Vector3& normal) override;
     void Serialize(SerializeStream& stream, const void* otherObj) override;
     void Deserialize(DeserializeStream& stream, ISerializeModifier* modifier) override;

@@ -30,6 +30,7 @@ DECLARE_SCENE_OBJECT(Actor);
     friend Level;
     friend PrefabManager;
     friend Scene;
+    friend SceneRendering;
     friend Prefab;
     friend PrefabInstanceData;
 
@@ -39,6 +40,7 @@ protected:
     int8 _isActiveInHierarchy : 1;
     int8 _isPrefabRoot : 1;
     int8 _isEnabled : 1;
+    int8 _drawNoCulling : 1;
     byte _layer;
     byte _tag;
     Scene* _scene;
@@ -644,18 +646,6 @@ public:
     /// </summary>
     /// <param name="renderContext">The rendering context.</param>
     virtual void Draw(RenderContext& renderContext);
-
-    /// <summary>
-    /// Draws this actor. Called during custom actor rendering or any other generic rendering from code.
-    /// </summary>
-    /// <param name="renderContext">The rendering context.</param>
-    virtual void DrawGeneric(RenderContext& renderContext);
-
-    /// <summary>
-    /// Draws this actor and all its children (full scene hierarchy part).
-    /// </summary>
-    /// <param name="renderContext">The rendering context.</param>
-    void DrawHierarchy(RenderContext& renderContext);
 
 #if USE_EDITOR
 

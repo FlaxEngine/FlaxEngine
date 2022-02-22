@@ -114,12 +114,12 @@ void SpotLight::UpdateBounds()
     BoundingBox::FromSphere(_sphere, _box);
 
     if (_sceneRenderingKey != -1)
-        GetSceneRendering()->UpdateCommon(this, _sceneRenderingKey);
+        GetSceneRendering()->UpdateActor(this, _sceneRenderingKey);
 }
 
 void SpotLight::OnEnable()
 {
-    _sceneRenderingKey = GetSceneRendering()->AddCommon(this);
+    _sceneRenderingKey = GetSceneRendering()->AddActor(this);
 #if USE_EDITOR
     GetSceneRendering()->AddViewportIcon(this);
 #endif
@@ -133,7 +133,7 @@ void SpotLight::OnDisable()
 #if USE_EDITOR
     GetSceneRendering()->RemoveViewportIcon(this);
 #endif
-    GetSceneRendering()->RemoveCommon(this, _sceneRenderingKey);
+    GetSceneRendering()->RemoveActor(this, _sceneRenderingKey);
 
     // Base
     LightWithShadow::OnDisable();
@@ -154,6 +154,7 @@ void SpotLight::Draw(RenderContext& renderContext)
     const float radius = GetScaledRadius();
     const float outerConeAngle = GetOuterConeAngle();
     if ((renderContext.View.Flags & ViewFlags::SpotLights) != 0
+        && renderContext.View.Pass & DrawPass::GBuffer
         && brightness > ZeroTolerance
         && radius > ZeroTolerance
         && outerConeAngle > ZeroTolerance

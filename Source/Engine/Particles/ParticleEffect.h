@@ -385,7 +385,6 @@ public:
     // [Actor]
     bool HasContentLoaded() const override;
     void Draw(RenderContext& renderContext) override;
-    void DrawGeneric(RenderContext& renderContext) override;
 #if USE_EDITOR
     void OnDebugDrawSelected() override;
 #endif
