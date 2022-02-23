@@ -242,7 +242,7 @@ void CharacterController::CreateShape()
 
 void CharacterController::UpdateBounds()
 {
-    void* actor = PhysicsBackend::GetShapeActor(_shape);
+    void* actor = _shape ? PhysicsBackend::GetShapeActor(_shape) : nullptr;
     if (actor)
         PhysicsBackend::GetActorBounds(actor, _box);
     else
