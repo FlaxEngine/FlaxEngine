@@ -1025,9 +1025,11 @@ void UpdateGPU(RenderTask* task, GPUContext* context)
             if (track.Type != ParticleSystem::Track::Types::Emitter || track.Disabled)
                 continue;
             const uint32 emitterIndex = track.AsEmitter.Index;
-            auto emitter = particleSystem->Emitters[emitterIndex].Get();
-            auto& data = instance.Emitters[emitterIndex];
-            if (!emitter || !emitter->IsLoaded() || !data.Buffer || emitter->SimulationMode != ParticlesSimulationMode::GPU)
+            ParticleEmitter* emitter = particleSystem->Emitters[emitterIndex].Get();
+            if (!emitter || !emitter->IsLoaded() || emitter->SimulationMode != ParticlesSimulationMode::GPU || instance.Emitters.Count() <= emitterIndex)
+                continue;
+            ParticleEmitterInstance& data = instance.Emitters[emitterIndex];
+            if (!data.Buffer)
                 continue;
             ASSERT(emitter->Capacity != 0 && emitter->Graph.Layout.Size != 0);
 
