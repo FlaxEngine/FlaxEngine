@@ -8,6 +8,7 @@
 
 void MacVulkanPlatform::GetInstanceExtensions(Array<const char*>& extensions, Array<const char*>& layers)
 {
+    extensions.Add(VK_KHR_SURFACE_EXTENSION_NAME);
 	extensions.Add(VK_MVK_MACOS_SURFACE_EXTENSION_NAME);
 }
 

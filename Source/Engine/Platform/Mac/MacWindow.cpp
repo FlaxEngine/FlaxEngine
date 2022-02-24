@@ -837,8 +837,8 @@ DragDropEffect MacWindow::DoDragDrop(const StringView& data)
 void MacWindow::SetCursor(CursorType type)
 {
 	WindowBase::SetCursor(type);
-    if (!_isMouseOver)
-        return;
+    //if (!_isMouseOver)
+    //    return;
     NSCursor* cursor = nullptr;
     switch (type)
     {
@@ -875,6 +875,7 @@ void MacWindow::SetCursor(CursorType type)
     if (cursor)
     {
         [cursor set];
+        [NSCursor unhide];
     }
 }
 

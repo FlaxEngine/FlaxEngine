@@ -270,6 +270,11 @@ bool GPUTextureVulkan::OnInit()
         imageInfo.usage |= VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
     if (useUAV)
         imageInfo.usage |= VK_IMAGE_USAGE_STORAGE_BIT;
+#if PLATFORM_MAC
+    // MoltenVK: VK_ERROR_FEATURE_NOT_PRESENT: vkCreateImageView(): 2D views on 3D images can only be used as color attachments.
+    if (IsVolume() && _desc.HasPerSliceViews())
+        imageInfo.usage &= VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
+#endif
     imageInfo.tiling = optimalTiling ? VK_IMAGE_TILING_OPTIMAL : VK_IMAGE_TILING_LINEAR;
     imageInfo.samples = (VkSampleCountFlagBits)MultiSampleLevel();
     // TODO: set initialLayout to VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL for IsRegularTexture() ???
