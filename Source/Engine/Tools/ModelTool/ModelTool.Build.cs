@@ -15,6 +15,11 @@ public class ModelTool : EngineModule
     {
         base.Setup(options);
 
+        options.PublicDefinitions.Add("COMPILE_WITH_MODEL_TOOL");
+
+        if (!options.Target.IsEditor)
+            return;
+
         bool useAssimp = true;
         bool useAutodeskFbxSdk = false;
         bool useOpenFBX = true;
@@ -56,15 +61,12 @@ public class ModelTool : EngineModule
             options.PrivateDependencies.Add("UVAtlas");
             break;
         case TargetPlatform.Linux:
-        case TargetPlatform.Mac:
-            break;
+        case TargetPlatform.Mac: break;
         default: throw new InvalidPlatformException(options.Platform.Target);
         }
 
         options.PrivateDependencies.Add("meshoptimizer");
         options.PrivateDependencies.Add("MikkTSpace");
-
-        options.PublicDefinitions.Add("COMPILE_WITH_MODEL_TOOL");
     }
 
     /// <inheritdoc />
