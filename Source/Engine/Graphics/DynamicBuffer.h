@@ -170,3 +170,35 @@ protected:
         desc = GPUBufferDescription::Index(_stride, numElements, GPUResourceUsage::Dynamic);
     }
 };
+
+/// <summary>
+/// Dynamic structured buffer that allows to upload data to the GPU from CPU (supports dynamic resizing).
+/// </summary>
+class FLAXENGINE_API DynamicStructuredBuffer : public DynamicBuffer
+{
+private:
+    bool _isUnorderedAccess;
+
+public:
+
+    /// <summary>
+    /// Init
+    /// </summary>
+    /// <param name="initialCapacity">Initial capacity of the buffer (in bytes).</param>
+    /// <param name="stride">Stride in bytes.</param>
+    /// <param name="isUnorderedAccess">True if unordered access usage.</param>
+    /// <param name="name">Buffer name.</param>
+    DynamicStructuredBuffer(uint32 initialCapacity, uint32 stride, bool isUnorderedAccess = false, const String& name = String::Empty)
+        : DynamicBuffer(initialCapacity, stride, name)
+        , _isUnorderedAccess(isUnorderedAccess)
+    {
+    }
+
+protected:
+
+    // [DynamicBuffer]
+    void InitDesc(GPUBufferDescription& desc, int32 numElements) override
+    {
+        desc = GPUBufferDescription::Structured(numElements, _stride, _isUnorderedAccess);
+    }
+};
