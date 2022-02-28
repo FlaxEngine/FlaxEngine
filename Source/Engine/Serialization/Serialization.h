@@ -5,14 +5,19 @@
 #include "SerializationFwd.h"
 #include "Engine/Core/Collections/Array.h"
 #include "Engine/Core/Collections/Dictionary.h"
-#include "Engine/Scripting/ScriptingObjectReference.h"
-#include "Engine/Scripting/SoftObjectReference.h"
-#include "Engine/Content/AssetReference.h"
-#include "Engine/Content/WeakAssetReference.h"
+#include "Engine/Scripting/ScriptingObject.h"
 #include "Engine/Utilities/Encryption.h"
 
 struct Version;
 struct VariantType;
+template<typename T>
+class ScriptingObjectReference;
+template<typename T>
+class SoftObjectReference;
+template<typename T>
+class AssetReference;
+template<typename T>
+class WeakAssetReference;
 template<typename T>
 class SoftAssetReference;
 
