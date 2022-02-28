@@ -234,8 +234,12 @@ namespace Flax.Build.Bindings
                 return result;
             }
 
-            // ScriptingObjectReference or AssetReference or WeakAssetReference or SoftObjectReference
-            if ((typeInfo.Type == "ScriptingObjectReference" || typeInfo.Type == "AssetReference" || typeInfo.Type == "WeakAssetReference" || typeInfo.Type == "SoftObjectReference") && typeInfo.GenericArgs != null)
+            // Object reference property
+            if ((typeInfo.Type == "ScriptingObjectReference" || 
+                 typeInfo.Type == "AssetReference" || 
+                 typeInfo.Type == "WeakAssetReference" || 
+                 typeInfo.Type == "SoftAssetReference" || 
+                 typeInfo.Type == "SoftObjectReference") && typeInfo.GenericArgs != null)
                 return GenerateCSharpNativeToManaged(buildData, typeInfo.GenericArgs[0], caller);
 
             // Array or Span
@@ -311,8 +315,12 @@ namespace Flax.Build.Bindings
                     return "IntPtr";
             }
 
-            // ScriptingObjectReference or AssetReference or WeakAssetReference or SoftObjectReference
-            if ((typeInfo.Type == "ScriptingObjectReference" || typeInfo.Type == "AssetReference" || typeInfo.Type == "WeakAssetReference" || typeInfo.Type == "SoftObjectReference") && typeInfo.GenericArgs != null)
+            // Object reference property
+            if ((typeInfo.Type == "ScriptingObjectReference" || 
+                 typeInfo.Type == "AssetReference" || 
+                 typeInfo.Type == "WeakAssetReference" || 
+                 typeInfo.Type == "SoftAssetReference" || 
+                 typeInfo.Type == "SoftObjectReference") && typeInfo.GenericArgs != null)
                 return "IntPtr";
 
             // Function
@@ -365,8 +373,12 @@ namespace Flax.Build.Bindings
                         return string.Format("FlaxEngine.Object.GetUnmanagedInterface({{0}}, typeof({0}))", apiType.FullNameManaged);
                 }
 
-                // ScriptingObjectReference or AssetReference or WeakAssetReference or SoftObjectReference
-                if ((typeInfo.Type == "ScriptingObjectReference" || typeInfo.Type == "AssetReference" || typeInfo.Type == "WeakAssetReference" || typeInfo.Type == "SoftObjectReference") && typeInfo.GenericArgs != null)
+                // Object reference property
+                if ((typeInfo.Type == "ScriptingObjectReference" || 
+                     typeInfo.Type == "AssetReference" || 
+                     typeInfo.Type == "WeakAssetReference" || 
+                     typeInfo.Type == "SoftAssetReference" || 
+                     typeInfo.Type == "SoftObjectReference") && typeInfo.GenericArgs != null)
                     return "FlaxEngine.Object.GetUnmanagedPtr({0})";
 
                 // Default
