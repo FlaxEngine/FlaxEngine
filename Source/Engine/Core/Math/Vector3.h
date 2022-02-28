@@ -586,11 +586,6 @@ public:
     static Vector3 Floor(const Vector3& v);
     static Vector3 Frac(const Vector3& v);
 
-    static float ScalarProduct(const Vector3& a, const Vector3& b)
-    {
-        return a.X * b.X + a.Y * b.Y + a.Z * b.Z;
-    }
-
 public:
 
     // Restricts a value to be within a specified range
@@ -598,31 +593,61 @@ public:
     // @param min The minimum value,
     // @param max The maximum value
     // @returns Clamped value
-    static Vector3 Clamp(const Vector3& value, const Vector3& min, const Vector3& max);
+    static Vector3 Clamp(const Vector3& value, const Vector3& min, const Vector3& max)
+    {
+        return Vector3(Math::Clamp(value.X, min.X, max.X), Math::Clamp(value.Y, min.Y, max.Y), Math::Clamp(value.Z, min.Z, max.Z));
+    }
 
     // Restricts a value to be within a specified range
     // @param value The value to clamp
     // @param min The minimum value,
     // @param max The maximum value
     // @param result When the method completes, contains the clamped value
-    static void Clamp(const Vector3& value, const Vector3& min, const Vector3& max, Vector3& result);
+    static void Clamp(const Vector3& value, const Vector3& min, const Vector3& max, Vector3& result)
+    {
+        result = Vector3(Math::Clamp(value.X, min.X, max.X), Math::Clamp(value.Y, min.Y, max.Y), Math::Clamp(value.Z, min.Z, max.Z));
+    }
 
     // Calculates the distance between two vectors
     // @param value1 The first vector
     // @param value2 The second vector
     // @returns The distance between the two vectors
-    static float Distance(const Vector3& value1, const Vector3& value2);
+    static float Distance(const Vector3& value1, const Vector3& value2)
+    {
+        const float x = value1.X - value2.X;
+        const float y = value1.Y - value2.Y;
+        const float z = value1.Z - value2.Z;
+        return Math::Sqrt(x * x + y * y + z * z);
+    }
 
     // Calculates the squared distance between two vectors
     // @param value1 The first vector
     // @param value2 The second vector
     // @returns The squared distance between the two vectors
-    static float DistanceSquared(const Vector3& value1, const Vector3& value2);
+    static float DistanceSquared(const Vector3& value1, const Vector3& value2)
+    {
+        const float x = value1.X - value2.X;
+        const float y = value1.Y - value2.Y;
+        const float z = value1.Z - value2.Z;
+        return x * x + y * y + z * z;
+    }
 
     // Performs vector normalization (scales vector up to unit length)
     // @param inout Input vector to normalize
     // @returns Output vector that is normalized (has unit length)
-    static Vector3 Normalize(const Vector3& input);
+    static Vector3 Normalize(const Vector3& input)
+    {
+        Vector3 output = input;
+        const float length = input.Length();
+        if (Math::Abs(length) >= ZeroTolerance)
+        {
+            const float inv = 1.0f / length;
+            output.X *= inv;
+            output.Y *= inv;
+            output.Z *= inv;
+        }
+        return output;
+    }
 
     // Performs vector normalization (scales vector up to unit length). This is a faster version that does not performs check for length equal 0 (it assumes that input vector is not empty).
     // @param inout Input vector to normalize (cannot be zero).
@@ -636,7 +661,10 @@ public:
     // Performs vector normalization (scales vector up to unit length)
     // @param inout Input vector to normalize
     // @param output Output vector that is normalized (has unit length)
-    static void Normalize(const Vector3& input, Vector3& result);
+    static FORCE_INLINE void Normalize(const Vector3& input, Vector3& result)
+    {   
+        result = Normalize(input);
+    }
 
     // dot product with another vector
     static float Dot(const Vector3& a, const Vector3& b)
@@ -650,10 +678,7 @@ public:
     // @param result When the method completes, contains the cross product of the two vectors
     static void Cross(const Vector3& a, const Vector3& b, Vector3& result)
     {
-        result = Vector3(
-            a.Y * b.Z - a.Z * b.Y,
-            a.Z * b.X - a.X * b.Z,
-            a.X * b.Y - a.Y * b.X);
+        result = Vector3(a.Y * b.Z - a.Z * b.Y,a.Z * b.X - a.X * b.Z,a.X * b.Y - a.Y * b.X);
     }
 
     // Calculates the cross product of two vectors
@@ -662,10 +687,7 @@ public:
     // @returns Cross product of the two vectors
     static Vector3 Cross(const Vector3& a, const Vector3& b)
     {
-        return Vector3(
-            a.Y * b.Z - a.Z * b.Y,
-            a.Z * b.X - a.X * b.Z,
-            a.X * b.Y - a.Y * b.X);
+        return Vector3(a.Y * b.Z - a.Z * b.Y,a.Z * b.X - a.X * b.Z,a.X * b.Y - a.Y * b.X);
     }
 
     // Performs a linear interpolation between two vectors
