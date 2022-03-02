@@ -1042,7 +1042,7 @@ void GPUContextVulkan::BindIB(GPUBuffer* indexBuffer)
 void GPUContextVulkan::BindSampler(int32 slot, GPUSampler* sampler)
 {
     ASSERT(slot >= GPU_STATIC_SAMPLERS_COUNT && slot < GPU_MAX_SAMPLER_BINDED);
-    const auto handle = sampler ? ((GPUSamplerVulkan*)sampler)->Sampler : nullptr;
+    const auto handle = sampler ? ((GPUSamplerVulkan*)sampler)->Sampler : VK_NULL_HANDLE;
     _samplerHandles[slot] = handle;
 }
 

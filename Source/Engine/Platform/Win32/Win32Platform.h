@@ -25,7 +25,11 @@ public:
     static void MemoryBarrier();
     static int64 InterlockedExchange(int64 volatile* dst, int64 exchange)
     {
+#if WIN64
         return _InterlockedExchange64(dst, exchange);
+#else
+        return _interlockedexchange64(dst, exchange);
+#endif
     }
     static int32 InterlockedCompareExchange(int32 volatile* dst, int32 exchange, int32 comperand)
     {
@@ -37,15 +41,27 @@ public:
     }
     static int64 InterlockedIncrement(int64 volatile* dst)
     {
+#if WIN64
         return _InterlockedExchangeAdd64(dst, 1) + 1;
+#else
+        return _interlockedexchange64(dst, 1) + 1;
+#endif
     }
     static int64 InterlockedDecrement(int64 volatile* dst)
     {
+#if WIN64
         return _InterlockedExchangeAdd64(dst, -1) - 1;
+#else
+        return _interlockedexchangeadd64(dst, -1) - 1;
+#endif
     }
     static int64 InterlockedAdd(int64 volatile* dst, int64 value)
     {
+#if WIN64
         return _InterlockedExchangeAdd64(dst, value);
+#else
+        return _interlockedexchangeadd64(dst, value);
+#endif
     }
     static int32 AtomicRead(int32 volatile* dst)
     {
@@ -61,7 +77,11 @@ public:
     }
     static void AtomicStore(int64 volatile* dst, int64 value)
     {
+#if WIN64
         _InterlockedExchange64(dst, value);
+#else
+        _interlockedexchange64(dst, value);
+#endif
     }
     static void Prefetch(void const* ptr);
     static void* Allocate(uint64 size, uint64 alignment);
