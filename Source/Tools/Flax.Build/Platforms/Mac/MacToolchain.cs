@@ -271,6 +271,7 @@ namespace Flax.Build.Platforms
 
             // Input libraries
             var libraryPaths = new HashSet<string>();
+            var dylibs =  new HashSet<string>();
             foreach (var library in linkEnvironment.InputLibraries)
             {
                 var dir = Path.GetDirectoryName(library);
@@ -290,6 +291,7 @@ namespace Flax.Build.Platforms
                 else if (ext == ".dylib")
                 {
                     // Link against dynamic library
+                    dylibs.Add(library);
                     task.PrerequisiteFiles.Add(library);
                     libraryPaths.Add(dir);
                     args.Add(string.Format("\"{0}\"", library));
@@ -319,6 +321,7 @@ namespace Flax.Build.Platforms
                 else if (ext == ".dylib")
                 {
                     // Link against dynamic library
+                    dylibs.Add(library);
                     task.PrerequisiteFiles.Add(library);
                     libraryPaths.Add(dir);
                     args.Add(string.Format("\"{0}\"", library));
@@ -374,18 +377,16 @@ namespace Flax.Build.Platforms
             if (options.LinkEnv.Output == LinkerOutput.Executable)
             {
                 // Fix rpath for dynamic libraries
-                foreach (var library in options.Libraries)
+                foreach (var library in dylibs)
                 {
-                    if (!library.EndsWith(".dylib"))
-                        continue;
                     var rpathTask = graph.Add<Task>();
                     rpathTask.ProducedFiles.Add(outputFilePath);
                     rpathTask.WorkingDirectory = options.WorkingDirectory;
                     rpathTask.CommandPath = "install_name_tool";
                     var filename = Path.GetFileName(library);
                     var outputFolder = Path.GetDirectoryName(outputFilePath);
-                    rpathTask.CommandArguments = string.Format("-change \"{0}/{1}\" \"@loader_path/{1}\"", outputFolder, filename);
-                    rpathTask.InfoMessage = "Fixing rpath " + outputFilePath;
+                    rpathTask.CommandArguments = string.Format("-change \"{0}/{1}\" \"@loader_path/{1}\" {2}", outputFolder, filename, outputFilePath);
+                    rpathTask.InfoMessage = "Fixing rpath to " + filename;
                     rpathTask.Cost = 1;
                     rpathTask.DisableCache = true;
                     rpathTask.DependentTasks = new HashSet<Task>();
