@@ -370,6 +370,29 @@ namespace Flax.Build.Platforms
             task.Cost = task.PrerequisiteFiles.Count;
             task.ProducedFiles.Add(outputFilePath);
 
+            Task lastTask = task;
+            if (options.LinkEnv.Output == LinkerOutput.Executable)
+            {
+                // Fix rpath for dynamic libraries
+                foreach (var library in options.Libraries)
+                {
+                    if (!library.EndsWith(".dylib"))
+                        continue;
+                    var rpathTask = graph.Add<Task>();
+                    rpathTask.ProducedFiles.Add(outputFilePath);
+                    rpathTask.WorkingDirectory = options.WorkingDirectory;
+                    rpathTask.CommandPath = "install_name_tool";
+                    var filename = Path.GetFileName(library);
+                    var outputFolder = Path.GetDirectoryName(outputFilePath);
+                    rpathTask.CommandArguments = string.Format("-change \"{0}/{1}\" \"@loader_path/{1}\"", outputFolder, filename);
+                    rpathTask.InfoMessage = "Fixing rpath " + outputFilePath;
+                    rpathTask.Cost = 1;
+                    rpathTask.DisableCache = true;
+                    rpathTask.DependentTasks = new HashSet<Task>();
+                    rpathTask.DependentTasks.Add(lastTask);
+                    lastTask = rpathTask;
+                }
+            }
             if (!options.LinkEnv.DebugInformation)
             {
                 // Strip debug symbols
@@ -382,7 +405,7 @@ namespace Flax.Build.Platforms
                 stripTask.Cost = 1;
                 stripTask.DisableCache = true;
                 stripTask.DependentTasks = new HashSet<Task>();
-                stripTask.DependentTasks.Add(task);
+                stripTask.DependentTasks.Add(lastTask);
             }
         }
 
