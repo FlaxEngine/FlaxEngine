@@ -213,6 +213,7 @@ struct InternalModelOptions
         to->ImportLODs = from->ImportLODs;
         to->ImportVertexColors = from->ImportVertexColors;
         to->ImportBlendShapes = from->ImportBlendShapes;
+        to->LightmapUVsSource = from->LightmapUVsSource;
         to->CollisionMeshesPrefix = MUtils::ToString(from->CollisionMeshesPrefix);
         to->Scale = from->Scale;
         to->Rotation = from->Rotation;
