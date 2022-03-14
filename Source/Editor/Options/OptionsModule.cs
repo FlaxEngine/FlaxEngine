@@ -93,6 +93,11 @@ namespace FlaxEditor.Options
         public void Load()
         {
             Editor.Log("Loading editor options");
+            if (!File.Exists(_optionsFilePath))
+            {
+                Editor.LogWarning("Missing editor settings");
+                return;
+            }
 
             try
             {
@@ -100,12 +105,12 @@ namespace FlaxEditor.Options
                 var asset = FlaxEngine.Content.LoadAsync<JsonAsset>(_optionsFilePath);
                 if (asset == null)
                 {
-                    Editor.LogWarning("Missing or invalid editor settings");
+                    Editor.LogWarning("Invalid editor settings");
                     return;
                 }
                 if (asset.WaitForLoaded())
                 {
-                    Editor.LogWarning("Failed to load editor settings");
+                    Editor.LogError("Failed to load editor settings");
                     return;
                 }
 
