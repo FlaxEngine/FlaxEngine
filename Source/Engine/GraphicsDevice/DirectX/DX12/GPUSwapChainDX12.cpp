@@ -51,6 +51,8 @@ GPUSwapChainDX12::GPUSwapChainDX12(GPUDeviceDX12* device, Window* window)
     , _windowHandle(static_cast<HWND>(window->GetNativePtr()))
     , _swapChain(nullptr)
     , _currentFrameIndex(0)
+    , _allowTearing(false)
+    , _isFullscreen(false)
 {
     ASSERT(_windowHandle);
     _window = window;
