@@ -2,18 +2,27 @@
 
 #include "Model.h"
 #include "Engine/Core/Log.h"
+#include "Engine/Core/Math/Int3.h"
+#include "Engine/Core/RandomStream.h"
 #include "Engine/Engine/Engine.h"
 #include "Engine/Serialization/MemoryReadStream.h"
 #include "Engine/Content/WeakAssetReference.h"
 #include "Engine/Content/Upgraders/ModelAssetUpgrader.h"
 #include "Engine/Content/Factories/BinaryAssetFactory.h"
+#include "Engine/Core/Math/Int2.h"
+#include "Engine/Debug/DebugDraw.h"
 #include "Engine/Graphics/RenderTools.h"
 #include "Engine/Graphics/RenderTask.h"
 #include "Engine/Graphics/Models/ModelInstanceEntry.h"
 #include "Engine/Streaming/StreamingGroup.h"
 #include "Engine/Debug/Exceptions/ArgumentOutOfRangeException.h"
+#include "Engine/Graphics/Async/GPUTask.h"
+#include "Engine/Graphics/Textures/GPUTexture.h"
+#include "Engine/Profiler/ProfilerCPU.h"
 #include "Engine/Renderer/DrawCall.h"
+#include "Engine/Threading/JobSystem.h"
 #include "Engine/Threading/Threading.h"
+#include "Engine/Tools/ModelTool/MeshAccelerationStructure.h"
 #if GPU_ENABLE_ASYNC_RESOURCES_CREATION
 #include "Engine/Threading/ThreadPoolTask.h"
 #define STREAM_TASK_BASE ThreadPoolTask
@@ -37,13 +46,11 @@ REGISTER_BINARY_ASSET_ABSTRACT(ModelBase, "FlaxEngine.ModelBase");
 class StreamModelLODTask : public STREAM_TASK_BASE
 {
 private:
-
     WeakAssetReference<Model> _asset;
     int32 _lodIndex;
     FlaxStorage::LockData _dataLock;
 
 public:
-
     /// <summary>
     /// Init
     /// </summary>
@@ -57,7 +64,6 @@ public:
     }
 
 public:
-
     // [ThreadPoolTask]
     bool HasReference(Object* resource) const override
     {
@@ -65,7 +71,6 @@ public:
     }
 
 protected:
-
     // [ThreadPoolTask]
     bool Run() override
     {
@@ -229,7 +234,7 @@ void Model::Draw(const RenderContext& renderContext, const Mesh::DrawInfo& info)
             info.DrawState->PrevLOD = lodIndex;
         }
     }
-        // Check if there was a gap between frames in drawing this model instance
+    // Check if there was a gap between frames in drawing this model instance
     else if (modelFrame < frame || info.DrawState->PrevLOD == -1)
     {
         // Reset state
@@ -560,6 +565,192 @@ bool Model::Save(bool withMeshDataFromGpu, const StringView& path)
 
 #endif
 
+bool Model::GenerateSDF(float resolutionScale, int32 lodIndex)
+{
+    if (!HasAnyLODInitialized())
+        return true;
+    PROFILE_CPU();
+    auto startTime = Platform::GetTimeSeconds();
+    ScopeLock lock(Locker);
+
+    // Setup SDF texture properties
+    lodIndex = Math::Clamp(lodIndex, HighestResidentLODIndex(), LODs.Count() - 1);
+    auto& lod = LODs[lodIndex];
+    BoundingBox bounds = lod.GetBox();
+    Vector3 size = bounds.GetSize();
+    SDF.WorldUnitsPerVoxel = 10 / Math::Max(resolutionScale, 0.0001f);
+    Int3 resolution(Vector3::Ceil(Vector3::Clamp(size / SDF.WorldUnitsPerVoxel, 4, 256)));
+    Vector3 uvwToLocalMul = size;
+    Vector3 uvwToLocalAdd = bounds.Minimum;
+    SDF.LocalToUVWMul = Vector3::One / uvwToLocalMul;
+    SDF.LocalToUVWAdd = -uvwToLocalAdd / uvwToLocalMul;
+    SDF.MaxDistance = size.MaxValue();
+    SDF.LocalBoundsMin = bounds.Minimum;
+    SDF.LocalBoundsMax = bounds.Maximum;
+    // TODO: maybe apply 1 voxel margin around the geometry?
+    const int32 maxMips = 3;
+    const int32 mipCount = Math::Min(MipLevelsCount(resolution.X, resolution.Y, resolution.Z, true), maxMips);
+    if (!SDF.Texture)
+        SDF.Texture = GPUTexture::New();
+    // TODO: use 8bit format for smaller SDF textures (eg. res<100)
+    if (SDF.Texture->Init(GPUTextureDescription::New3D(resolution.X, resolution.Y, resolution.Z, PixelFormat::R16_Float, GPUTextureFlags::ShaderResource | GPUTextureFlags::UnorderedAccess, mipCount)))
+    {
+        SAFE_DELETE_GPU_RESOURCE(SDF.Texture);
+        return true;
+    }
+
+    // TODO: support GPU to generate model SDF on-the-fly (if called during rendering)
+
+    // Setup acceleration structure for fast ray tracing the mesh triangles
+    MeshAccelerationStructure scene;
+    scene.Add(this, lodIndex);
+    scene.BuildBVH();
+
+    // Allocate memory for the distant field
+    Array<Half> voxels;
+    voxels.Resize(resolution.X * resolution.Y * resolution.Z);
+    Vector3 xyzToLocalMul = uvwToLocalMul / Vector3(resolution);
+    Vector3 xyzToLocalAdd = uvwToLocalAdd;
+
+    // TODO: use optimized sparse storage for SDF data as hierarchical bricks
+    // https://graphics.pixar.com/library/IrradianceAtlas/paper.pdf
+    // http://maverick.inria.fr/Membres/Cyril.Crassin/thesis/CCrassinThesis_EN_Web.pdf
+    // http://ramakarl.com/pdfs/2016_Hoetzlein_GVDB.pdf
+    // https://www.cse.chalmers.se/~uffe/HighResolutionSparseVoxelDAGs.pdf
+    // then use R8 format and brick size of 8x8x8
+
+    // Brute-force for each voxel to calculate distance to the closest triangle with point query and distance sign by raycasting around the voxel
+    const int32 sampleCount = 12;
+    Array<Vector3> sampleDirections;
+    sampleDirections.Resize(sampleCount);
+    {
+        RandomStream rand;
+        sampleDirections.Get()[0] = Vector3::Up;
+        sampleDirections.Get()[1] = Vector3::Down;
+        sampleDirections.Get()[2] = Vector3::Left;
+        sampleDirections.Get()[3] = Vector3::Right;
+        sampleDirections.Get()[4] = Vector3::Forward;
+        sampleDirections.Get()[5] = Vector3::Backward;
+        for (int32 i = 6; i < sampleCount; i++)
+            sampleDirections.Get()[i] = rand.GetUnitVector();
+    }
+    Function<void(int32)> sdfJob = [this, &resolution, &sampleDirections, &scene, &voxels, &xyzToLocalMul, &xyzToLocalAdd](int32 z)
+    {
+        PROFILE_CPU_NAMED("Model SDF Job");
+        const float encodeScale = 1.0f / SDF.MaxDistance;
+        float hitDistance;
+        Vector3 hitNormal, hitPoint;
+        Triangle hitTriangle;
+        const int32 zAddress = resolution.Y * resolution.X * z;
+        for (int32 y = 0; y < resolution.Y; y++)
+        {
+            const int32 yAddress = resolution.X * y + zAddress;
+            for (int32 x = 0; x < resolution.X; x++)
+            {
+                float minDistance = SDF.MaxDistance;
+                Vector3 voxelPos = Vector3((float)x, (float)y, (float)z) * xyzToLocalMul + xyzToLocalAdd;
+
+                // Point query to find the distance to the closest surface
+                scene.PointQuery(voxelPos, minDistance, hitPoint, hitTriangle);
+
+                // Raycast samples around voxel to count triangle backfaces hit
+                int32 hitBackCount = 0, hitCount = 0;
+                for (int32 sample = 0; sample < sampleDirections.Count(); sample++)
+                {
+                    Ray sampleRay(voxelPos, sampleDirections[sample]);
+                    if (scene.RayCast(sampleRay, hitDistance, hitNormal, hitTriangle))
+                    {
+                        hitCount++;
+                        const bool backHit = Vector3::Dot(sampleRay.Direction, hitTriangle.GetNormal()) > 0;
+                        if (backHit)
+                            hitBackCount++;
+                    }
+                }
+
+                float distance = minDistance;
+                // TODO: surface thickness threshold? shift reduce distance for all voxels by something like 0.01 to enlarge thin geometry
+                //if ((float)hitBackCount > )hitCount * 0.3f && hitCount != 0)
+                if ((float)hitBackCount > (float)sampleDirections.Count() * 0.6f && hitCount != 0)
+                {
+                    // Voxel is inside the geometry so turn it into negative distance to the surface
+                    distance *= -1;
+                }
+                const int32 xAddress = x + yAddress;
+                voxels.Get()[xAddress] = Float16Compressor::Compress(distance * encodeScale);
+            }
+        }
+    };
+    JobSystem::Execute(sdfJob, resolution.Z);
+
+    // Upload data to the GPU
+    BytesContainer data;
+    data.Link((byte*)voxels.Get(), voxels.Count() * sizeof(Half));
+    auto task = SDF.Texture->UploadMipMapAsync(data, 0, resolution.X * sizeof(Half), data.Length(), true);
+    if (task)
+        task->Start();
+
+    // Generate mip maps
+    Array<Half> voxelsMip;
+    for (int32 mipLevel = 1; mipLevel < mipCount; mipLevel++)
+    {
+        Int3 resolutionMip = Int3::Max(resolution / 2, Int3::One);
+        voxelsMip.Resize(resolutionMip.X * resolutionMip.Y * resolutionMip.Z);
+
+        // Downscale mip
+        Function<void(int32)> mipJob = [this, &voxelsMip, &voxels, &resolution, &resolutionMip](int32 z)
+        {
+            PROFILE_CPU_NAMED("Model SDF Mip Job");
+            const float encodeScale = 1.0f / SDF.MaxDistance;
+            const float decodeScale = SDF.MaxDistance;
+            const int32 zAddress = resolutionMip.Y * resolutionMip.X * z;
+            for (int32 y = 0; y < resolutionMip.Y; y++)
+            {
+                const int32 yAddress = resolutionMip.X * y + zAddress;
+                for (int32 x = 0; x < resolutionMip.X; x++)
+                {
+                    // Linear box filter around the voxel
+                    float distance = 0;
+                    for (int32 dz = 0; dz < 2; dz++)
+                    {
+                        const int32 dzAddress = (z * 2 + dz) * (resolution.Y * resolution.X);
+                        for (int32 dy = 0; dy < 2; dy++)
+                        {
+                            const int32 dyAddress = (y * 2 + dy) * (resolution.X) + dzAddress;
+                            for (int32 dx = 0; dx < 2; dx++)
+                            {
+                                const int32 dxAddress = (x * 2 + dx) + dyAddress;
+                                const float d = Float16Compressor::Decompress(voxels.Get()[dxAddress]) * decodeScale;
+                                distance += d;
+                            }
+                        }
+                    }
+                    distance *= 1.0f / 8.0f;
+
+                    const int32 xAddress = x + yAddress;
+                    voxelsMip.Get()[xAddress] = Float16Compressor::Compress(distance * encodeScale);
+                }
+            }
+        };
+        JobSystem::Execute(mipJob, resolutionMip.Z);
+
+        // Upload to the GPU
+        data.Link((byte*)voxelsMip.Get(), voxelsMip.Count() * sizeof(Half));
+        task = SDF.Texture->UploadMipMapAsync(data, mipLevel, resolutionMip.X * sizeof(Half), data.Length(), true);
+        if (task)
+            task->Start();
+
+        // Go down
+        voxelsMip.Swap(voxels);
+        resolution = resolutionMip;
+    }
+
+#if !BUILD_RELEASE
+    auto endTime = Platform::GetTimeSeconds();
+    LOG(Info, "Generated SDF {}x{}x{} ({} kB) in {}ms for {}", resolution.X, resolution.Y, resolution.Z, SDF.Texture->GetMemoryUsage() / 1024, (int32)((endTime - startTime) * 1000.0), GetPath());
+#endif
+    return false;
+}
+
 bool Model::Init(const Span<int32>& meshesCountPerLod)
 {
     if (meshesCountPerLod.IsInvalid() || meshesCountPerLod.Length() > MODEL_MAX_LODS)
@@ -574,6 +765,7 @@ bool Model::Init(const Span<int32>& meshesCountPerLod)
     // Setup
     MaterialSlots.Resize(1);
     MinScreenSize = 0.0f;
+    SAFE_DELETE_GPU_RESOURCE(SDF.Texture);
 
     // Setup LODs
     for (int32 lodIndex = 0; lodIndex < LODs.Count(); lodIndex++)
@@ -840,6 +1032,7 @@ void Model::unload(bool isReloading)
     }
 
     // Cleanup
+    SAFE_DELETE_GPU_RESOURCE(SDF.Texture);
     MaterialSlots.Resize(0);
     for (int32 i = 0; i < LODs.Count(); i++)
         LODs[i].Dispose();

@@ -28,6 +28,11 @@ public:
     /// </summary>
     API_FIELD(ReadOnly) Array<ModelLOD, FixedAllocation<MODEL_MAX_LODS>> LODs;
 
+    /// <summary>
+    /// The generated Sign Distant Field (SDF) for this model (merged all meshes). Use GenerateSDF to update it.
+    /// </summary>
+    API_FIELD(ReadOnly) SDFData SDF;
+
 public:
 
     /// <summary>
@@ -200,6 +205,15 @@ public:
     API_FUNCTION() bool Save(bool withMeshDataFromGpu = false, const StringView& path = StringView::Empty);
 
 #endif
+    
+    /// <summary>
+    /// Generates the Sign Distant Field for this model.
+    /// </summary>
+    /// <remarks>Can be called in async in case of SDF generation on a CPU (assuming model is not during rendering).</remarks>
+    /// <param name="resolutionScale">The SDF texture resolution scale. Use higher values for more precise data but with significant performance and memory overhead.</param>
+    /// <param name="lodIndex">The index of the LOD to use for the SDF building.</param>
+    /// <returns>True if failed, otherwise false.</returns>
+    API_FUNCTION() bool GenerateSDF(float resolutionScale = 1.0f, int32 lodIndex = 6);
 
 private:
 
