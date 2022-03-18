@@ -22,6 +22,7 @@ void ForwardShadingFeature::Bind(MaterialShader::BindParameters& params, Span<by
     const int32 envProbeShaderRegisterIndex = srv + 0;
     const int32 skyLightShaderRegisterIndex = srv + 1;
     const int32 dirLightShaderRegisterIndex = srv + 2;
+    const bool canUseShadow = view.Pass != DrawPass::Depth;
 
     // Set fog input
     if (cache->Fog)
@@ -39,7 +40,7 @@ void ForwardShadingFeature::Bind(MaterialShader::BindParameters& params, Span<by
     {
         const auto& dirLight = cache->DirectionalLights.First();
         const auto shadowPass = ShadowsPass::Instance();
-        const bool useShadow = shadowPass->LastDirLightIndex == 0;
+        const bool useShadow = shadowPass->LastDirLightIndex == 0 && canUseShadow;
         if (useShadow)
         {
             data.DirectionalLightShadow = shadowPass->LastDirLight;
