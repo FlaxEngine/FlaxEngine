@@ -90,29 +90,30 @@ bool UploadBufferDX12::UploadTexture(GPUContextDX12* context, ID3D12Resource* te
     _device->GetDevice()->GetCopyableFootprints(&resourceDesc, subresourceIndex, 1, 0, &footprint, &numRows, &rowPitchAligned, &mipSizeAligned);
     rowPitchAligned = footprint.Footprint.RowPitch;
     mipSizeAligned = rowPitchAligned * footprint.Footprint.Height;
+    const uint32 numSlices = resourceDesc.Dimension == D3D12_RESOURCE_DIMENSION_TEXTURE3D ? Math::Max(1, resourceDesc.DepthOrArraySize >> mipIndex) : 1;
+    const uint64 sliceSizeAligned = numSlices * mipSizeAligned;
 
     // Allocate data
-    const DynamicAllocation allocation = Allocate(mipSizeAligned, D3D12_TEXTURE_DATA_PLACEMENT_ALIGNMENT);
-    if (allocation.Size != mipSizeAligned)
+    const DynamicAllocation allocation = Allocate(sliceSizeAligned, D3D12_TEXTURE_DATA_PLACEMENT_ALIGNMENT);
+    if (allocation.Size != sliceSizeAligned)
         return true;
 
-    // Check if can copy rows at once
     byte* ptr = (byte*)srcData;
-    ASSERT(srcSlicePitch <= mipSizeAligned);
-    if (srcRowPitch == rowPitchAligned)
+    ASSERT(srcSlicePitch <= sliceSizeAligned);
+    if (srcSlicePitch == sliceSizeAligned)
     {
         // Copy data at once
         Platform::MemoryCopy(allocation.CPUAddress, ptr, srcSlicePitch);
     }
     else
     {
-        // Use per row copy
+        // Copy data per-row
         byte* dst = static_cast<byte*>(allocation.CPUAddress);
         ASSERT(srcRowPitch <= rowPitchAligned);
-        for (uint32 i = 0; i < numRows; i++)
+        const uint32 numCopies = numSlices * numRows;
+        for (uint32 i = 0; i < numCopies; i++)
         {
             Platform::MemoryCopy(dst, ptr, srcRowPitch);
-
             dst += rowPitchAligned;
             ptr += srcRowPitch;
         }
