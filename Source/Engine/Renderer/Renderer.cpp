@@ -21,6 +21,7 @@
 #include "VolumetricFogPass.h"
 #include "HistogramPass.h"
 #include "AtmospherePreCompute.h"
+#include "GlobalSignDistanceFieldPass.h"
 #include "Utils/MultiScaler.h"
 #include "Utils/BitonicSort.h"
 #include "AntiAliasing/FXAA.h"
@@ -45,7 +46,6 @@ Array<RendererPassBase*> PassList(64);
 class RendererService : public EngineService
 {
 public:
-
     RendererService()
         : EngineService(TEXT("Renderer"), 20)
     {
@@ -81,6 +81,7 @@ bool RendererService::Init()
     PassList.Add(TAA::Instance());
     PassList.Add(SMAA::Instance());
     PassList.Add(HistogramPass::Instance());
+    PassList.Add(GlobalSignDistanceFieldPass::Instance());
 #if USE_EDITOR
     PassList.Add(QuadOverdrawPass::Instance());
 #endif
@@ -340,8 +341,14 @@ void RenderInner(SceneRenderTask* task, RenderContext& renderContext)
     // Fill GBuffer
     GBufferPass::Instance()->Fill(renderContext, lightBuffer->View());
 
-    // Check if debug emissive light
-    if (renderContext.View.Mode == ViewMode::Emissive || renderContext.View.Mode == ViewMode::LightmapUVsDensity)
+    // Debug drawing
+    if (renderContext.View.Mode == ViewMode::GlobalSDF)
+    {
+        GlobalSignDistanceFieldPass::Instance()->RenderDebug(renderContext, context, lightBuffer);
+    }
+    if (renderContext.View.Mode == ViewMode::Emissive || 
+        renderContext.View.Mode == ViewMode::LightmapUVsDensity || 
+        renderContext.View.Mode == ViewMode::GlobalSDF)
     {
         context->ResetRenderTarget();
         context->SetRenderTarget(task->GetOutputView());

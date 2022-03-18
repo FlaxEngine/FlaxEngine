@@ -689,6 +689,8 @@ void AnimatedModel::Update()
 
 void AnimatedModel::Draw(RenderContext& renderContext)
 {
+    if (renderContext.View.Pass == DrawPass::GlobalSDF)
+        return;  // TODO: Animated Model rendering to Global SDF
     GEOMETRY_DRAW_STATE_EVENT_BEGIN(_drawState, _world);
 
     const DrawPass drawModes = (DrawPass)(DrawModes & renderContext.View.Pass & (int32)renderContext.View.GetShadowsDrawPassMask(ShadowsMode));
@@ -806,6 +808,10 @@ void AnimatedModel::Deserialize(DeserializeStream& stream, ISerializeModifier* m
     DESERIALIZE(RootMotionTarget);
 
     Entries.DeserializeIfExists(stream, "Buffer", modifier);
+
+    // [Deprecated on 07.02.2022, expires on 07.02.2024]
+    if (modifier->EngineBuild <= 6330)
+        DrawModes |= DrawPass::GlobalSDF;
 }
 
 bool AnimatedModel::IntersectsEntry(int32 entryIndex, const Ray& ray, float& distance, Vector3& normal)

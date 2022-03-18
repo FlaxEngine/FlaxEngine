@@ -505,6 +505,8 @@ void Terrain::Draw(RenderContext& renderContext)
     DrawPass drawModes = (DrawPass)(DrawModes & renderContext.View.Pass);
     if (drawModes == DrawPass::None)
         return;
+    if (renderContext.View.Pass == DrawPass::GlobalSDF)
+        return; // TODO: Terrain rendering to Global SDF
 
     PROFILE_CPU();
 
@@ -727,6 +729,10 @@ void Terrain::Deserialize(DeserializeStream& stream, ISerializeModifier* modifie
         }
 #endif
     }
+
+    // [Deprecated on 07.02.2022, expires on 07.02.2024]
+    if (modifier->EngineBuild <= 6330)
+        DrawModes |= DrawPass::GlobalSDF;
 }
 
 RigidBody* Terrain::GetAttachedRigidBody() const

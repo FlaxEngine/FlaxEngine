@@ -494,6 +494,8 @@ bool ParticleEffect::HasContentLoaded() const
 
 void ParticleEffect::Draw(RenderContext& renderContext)
 {
+    if (renderContext.View.Pass == DrawPass::GlobalSDF)
+        return;
     _lastMinDstSqr = Math::Min(_lastMinDstSqr, Vector3::DistanceSquared(GetPosition(), renderContext.View.Position));
     Particles::DrawParticles(renderContext, this);
 }
@@ -677,6 +679,10 @@ void ParticleEffect::Deserialize(DeserializeStream& stream, ISerializeModifier* 
     {
         ApplyModifiedParameters();
     }
+
+    // [Deprecated on 07.02.2022, expires on 07.02.2024]
+    if (modifier->EngineBuild <= 6330)
+        DrawModes |= DrawPass::GlobalSDF;
 }
 
 void ParticleEffect::EndPlay()

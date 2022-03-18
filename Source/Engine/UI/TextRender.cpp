@@ -340,6 +340,8 @@ bool TextRender::HasContentLoaded() const
 
 void TextRender::Draw(RenderContext& renderContext)
 {
+    if (renderContext.View.Pass == DrawPass::GlobalSDF)
+        return; // TODO: Text rendering to Global SDF
     if (_isDirty)
     {
         UpdateLayout();
@@ -477,6 +479,10 @@ void TextRender::Deserialize(DeserializeStream& stream, ISerializeModifier* modi
     DESERIALIZE_MEMBER(Wrapping, _layoutOptions.TextWrapping);
     DESERIALIZE_MEMBER(Scale, _layoutOptions.Scale);
     DESERIALIZE_MEMBER(GapScale, _layoutOptions.BaseLinesGapScale);
+
+    // [Deprecated on 07.02.2022, expires on 07.02.2024]
+    if (modifier->EngineBuild <= 6330)
+        DrawModes |= DrawPass::GlobalSDF;
 
     _isDirty = true;
 }

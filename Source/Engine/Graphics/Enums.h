@@ -703,6 +703,11 @@ API_ENUM(Attributes="Flags") enum class DrawPass : int32
     MotionVectors = 1 << 4,
 
     /// <summary>
+    /// The Global Sign Distance Field (SDF) rendering pass.
+    /// </summary>
+    GlobalSDF = 1 << 5,
+
+    /// <summary>
     /// The debug quad overdraw rendering (editor-only).
     /// </summary>
     API_ENUM(Attributes="HideInEditor")
@@ -712,13 +717,13 @@ API_ENUM(Attributes="Flags") enum class DrawPass : int32
     /// The default set of draw passes for the scene objects.
     /// </summary>
     API_ENUM(Attributes="HideInEditor")
-    Default = Depth | GBuffer | Forward | Distortion | MotionVectors,
+    Default = Depth | GBuffer | Forward | Distortion | MotionVectors | GlobalSDF,
 
     /// <summary>
     /// The all draw passes combined into a single mask.
     /// </summary>
     API_ENUM(Attributes="HideInEditor")
-    All = Depth | GBuffer | Forward | Distortion | MotionVectors,
+    All = Depth | GBuffer | Forward | Distortion | MotionVectors | GlobalSDF,
 };
 
 DECLARE_ENUM_OPERATORS(DrawPass);
@@ -847,6 +852,11 @@ API_ENUM() enum class ViewMode
     /// Draw geometry overdraw to visualize performance of pixels rendering.
     /// </summary>
     QuadOverdraw = 23,
+
+    /// <summary>
+    /// Draw global Sign Distant Field (SDF) preview.
+    /// </summary>
+    GlobalSDF = 24,
 };
 
 /// <summary>

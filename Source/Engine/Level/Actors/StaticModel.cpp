@@ -209,6 +209,8 @@ bool StaticModel::HasContentLoaded() const
 
 void StaticModel::Draw(RenderContext& renderContext)
 {
+    if (renderContext.View.Pass == DrawPass::GlobalSDF)
+        return;  // TODO: Static Model rendering to Global SDF
     GEOMETRY_DRAW_STATE_EVENT_BEGIN(_drawState, _world);
 
     const DrawPass drawModes = (DrawPass)(DrawModes & renderContext.View.Pass);
@@ -409,6 +411,9 @@ void StaticModel::Deserialize(DeserializeStream& stream, ISerializeModifier* mod
             DrawModes = DrawPass::Depth;
         }
     }
+    // [Deprecated on 07.02.2022, expires on 07.02.2024]
+    if (modifier->EngineBuild <= 6330)
+        DrawModes |= DrawPass::GlobalSDF;
 
     {
         const auto member = stream.FindMember("RenderPasses");

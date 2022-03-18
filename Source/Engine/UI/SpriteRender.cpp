@@ -106,6 +106,8 @@ bool SpriteRender::HasContentLoaded() const
 
 void SpriteRender::Draw(RenderContext& renderContext)
 {
+    if (renderContext.View.Pass == DrawPass::GlobalSDF)
+        return;
     if (!Material || !Material->IsLoaded() || !_quadModel || !_quadModel->IsLoaded())
         return;
     auto model = _quadModel.As<Model>();

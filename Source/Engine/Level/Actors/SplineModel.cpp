@@ -350,6 +350,8 @@ void SplineModel::Draw(RenderContext& renderContext)
     if (!_spline || !Model || !Model->IsLoaded() || !Model->CanBeRendered() || actorDrawModes == DrawPass::None)
         return;
     auto model = Model.Get();
+    if (renderContext.View.Pass == DrawPass::GlobalSDF)
+        return;  // TODO: Spline Model rendering to Global SDF
     if (!Entries.IsValidFor(model))
         Entries.Setup(model);
 
@@ -469,6 +471,10 @@ void SplineModel::Deserialize(DeserializeStream& stream, ISerializeModifier* mod
     DESERIALIZE(DrawModes);
 
     Entries.DeserializeIfExists(stream, "Buffer", modifier);
+
+    // [Deprecated on 07.02.2022, expires on 07.02.2024]
+    if (modifier->EngineBuild <= 6330)
+        DrawModes |= DrawPass::GlobalSDF;
 }
 
 void SplineModel::OnTransformChanged()
