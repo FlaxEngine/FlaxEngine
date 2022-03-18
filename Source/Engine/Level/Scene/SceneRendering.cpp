@@ -115,11 +115,12 @@ void SceneRendering::UpdateActor(Actor* a, int32 key)
 
 void SceneRendering::RemoveActor(Actor* a, int32& key)
 {
-    if (Actors.IsEmpty())
-        return;
-    auto& e = Actors[key];
-    ASSERT_LOW_LAYER(a == e.Actor);
-    e.Actor = nullptr;
-    e.LayerMask = 0;
+    if (Actors.HasItems())
+    {
+        auto& e = Actors[key];
+        ASSERT_LOW_LAYER(a == e.Actor);
+        e.Actor = nullptr;
+        e.LayerMask = 0;
+    }
     key = -1;
 }
