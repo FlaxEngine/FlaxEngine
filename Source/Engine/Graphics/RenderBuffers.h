@@ -21,18 +21,25 @@
 /// </summary>
 API_CLASS() class FLAXENGINE_API RenderBuffers : public ScriptingObject
 {
-DECLARE_SCRIPTING_TYPE(RenderBuffers);
-protected:
+    DECLARE_SCRIPTING_TYPE(RenderBuffers);
 
+    class CustomBuffer : public Object
+    {
+    public:
+        String Name;
+        uint64 LastFrameUsed = 0;
+
+        String ToString() const override;
+    };
+
+protected:
     int32 _width = 0;
     int32 _height = 0;
     float _aspectRatio = 0.0f;
     Viewport _viewport;
-
     Array<GPUTexture*, FixedAllocation<32>> _resources;
 
 public:
-
     union
     {
         struct
@@ -80,15 +87,16 @@ public:
     GPUTexture* TemporalAA = nullptr;
     uint64 LastFrameTemporalAA = 0;
 
-public:
+    // Maps the custom buffer type into the object that holds the state.
+    Array<CustomBuffer*, HeapAllocation> CustomBuffers;
 
+public:
     /// <summary>
     /// Finalizes an instance of the <see cref="RenderBuffers"/> class.
     /// </summary>
     ~RenderBuffers();
 
 public:
-
     /// <summary>
     /// Prepares buffers for rendering a scene. Called before rendering so other parts can reuse calculated value.
     /// </summary>
@@ -102,7 +110,6 @@ public:
     GPUTexture* RequestHalfResDepth(GPUContext* context);
 
 public:
-
     /// <summary>
     /// Gets the buffers width (in pixels).
     /// </summary>
@@ -143,6 +150,20 @@ public:
         return _viewport;
     }
 
+    template<class T>
+    T* GetCustomBuffer(const StringView& name)
+    {
+        for (CustomBuffer* e : CustomBuffers)
+        {
+            if (e->Name == name)
+                return (T*)e;
+        }
+        CustomBuffer* result = New<T>();
+        result->Name = name;
+        CustomBuffers.Add(result);
+        return (T*)result;
+    }
+
     /// <summary>
     /// Gets the current GPU memory usage by all the buffers (in bytes).
     /// </summary>
@@ -162,7 +183,6 @@ public:
     API_FIELD(ReadOnly) GPUTexture* MotionVectors;
 
 public:
-
     /// <summary>
     /// Allocates the buffers.
     /// </summary>
