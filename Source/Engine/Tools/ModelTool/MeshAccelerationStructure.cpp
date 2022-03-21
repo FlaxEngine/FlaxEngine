@@ -294,6 +294,7 @@ void MeshAccelerationStructure::Add(Model* model, int32 lodIndex)
     ModelLOD& lod = model->LODs[lodIndex];
     const int32 meshesStart = _meshes.Count();
     _meshes.AddDefault(lod.Meshes.Count());
+    bool failed = false;
     for (int32 i = 0; i < lod.Meshes.Count(); i++)
     {
         auto& mesh = lod.Meshes[i];
@@ -302,13 +303,18 @@ void MeshAccelerationStructure::Add(Model* model, int32 lodIndex)
         {
             meshData.Indices = mesh.GetTriangleCount() * 3;
             meshData.Vertices = mesh.GetVertexCount();
-            mesh.DownloadDataGPU(MeshBufferType::Index, meshData.IndexBuffer);
-            mesh.DownloadDataGPU(MeshBufferType::Vertex0, meshData.VertexBuffer);
+            failed |= mesh.DownloadDataGPU(MeshBufferType::Index, meshData.IndexBuffer);
+            failed |= mesh.DownloadDataGPU(MeshBufferType::Vertex0, meshData.VertexBuffer);
         }
         else
         {
-            mesh.DownloadDataCPU(MeshBufferType::Index, meshData.IndexBuffer, meshData.Indices);
-            mesh.DownloadDataCPU(MeshBufferType::Vertex0, meshData.VertexBuffer, meshData.Vertices);
+            failed |= mesh.DownloadDataCPU(MeshBufferType::Index, meshData.IndexBuffer, meshData.Indices);
+            failed |= mesh.DownloadDataCPU(MeshBufferType::Vertex0, meshData.VertexBuffer, meshData.Vertices);
+        }
+        if (failed)
+        {
+            _meshes.Resize(meshesStart);
+            return;
         }
         if (!meshData.IndexBuffer.IsAllocated() && meshData.IndexBuffer.Length() != 0)
         {
