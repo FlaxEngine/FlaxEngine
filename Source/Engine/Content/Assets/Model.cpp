@@ -569,6 +569,12 @@ bool Model::GenerateSDF(float resolutionScale, int32 lodIndex)
 {
     if (!HasAnyLODInitialized())
         return true;
+    if (IsInMainThread() && IsVirtual())
+    {
+        // TODO: could be supported if algorithm could run on a GPU and called during rendering
+        LOG(Warning, "Cannot generate SDF for virtual models on a main thread.");
+        return true;
+    }
     PROFILE_CPU();
     auto startTime = Platform::GetTimeSeconds();
     ScopeLock lock(Locker);
@@ -709,6 +715,7 @@ bool Model::GenerateSDF(float resolutionScale, int32 lodIndex)
                 for (int32 x = 0; x < resolutionMip.X; x++)
                 {
                     // Linear box filter around the voxel
+                    // TODO: use min distance for nearby texels (texel distance + distance to texel)
                     float distance = 0;
                     for (int32 dz = 0; dz < 2; dz++)
                     {
