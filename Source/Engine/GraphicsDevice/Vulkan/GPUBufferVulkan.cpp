@@ -98,7 +98,7 @@ bool GPUBufferVulkan::OnInit()
     bufferInfo.usage = VK_BUFFER_USAGE_TRANSFER_DST_BIT;
     if (useSRV && !(_desc.Flags & GPUBufferFlags::Structured))
         bufferInfo.usage |= VK_BUFFER_USAGE_UNIFORM_TEXEL_BUFFER_BIT;
-    if (useUAV || _desc.Flags & GPUBufferFlags::RawBuffer)
+    if (useUAV || _desc.Flags & GPUBufferFlags::RawBuffer || _desc.Flags & GPUBufferFlags::Structured)
         bufferInfo.usage |= VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
     if (useUAV && useSRV)
         bufferInfo.usage |= VK_BUFFER_USAGE_STORAGE_TEXEL_BUFFER_BIT;

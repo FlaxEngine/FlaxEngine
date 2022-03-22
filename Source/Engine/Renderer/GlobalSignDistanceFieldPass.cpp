@@ -204,7 +204,7 @@ void GlobalSignDistanceFieldPass::Dispose()
     RendererPass::Dispose();
 
     // Cleanup
-    Delete(_modelsBuffer);
+    SAFE_DELETE(_modelsBuffer);
     _modelsTextures.Resize(0);
     SAFE_DELETE_GPU_RESOURCE(_psDebug);
     _shader = nullptr;
@@ -455,7 +455,7 @@ bool GlobalSignDistanceFieldPass::Render(RenderContext& renderContext, GPUContex
                     if (_cb1)
                         context->UpdateCB(_cb1, &data);
                     context->Dispatch(_csClearChunk, chunkDispatchGroups, chunkDispatchGroups, chunkDispatchGroups);
-                    // TODO: don't stall with UAV barrier on D3D12 if UAVs don't change between dispatches
+                    // TODO: don't stall with UAV barrier on D3D12/Vulkan if UAVs don't change between dispatches
                 }
             }
             // TODO: rasterize models into global sdf relative to the cascade origin to prevent fp issues on large worlds
@@ -490,7 +490,7 @@ bool GlobalSignDistanceFieldPass::Render(RenderContext& renderContext, GPUContex
                         cs = _csRasterizeModel1;
                     }
                     context->Dispatch(cs, chunkDispatchGroups, chunkDispatchGroups, chunkDispatchGroups);
-                    // TODO: don't stall with UAV barrier on D3D12 if UAVs don't change between dispatches - only for a sequence of _csRasterizeModel0 dispatches (maybe cache per-shader write/read flags for all UAVs?)
+                    // TODO: don't stall with UAV barrier on D3D12/Vulkan if UAVs don't change between dispatches - only for a sequence of _csRasterizeModel0 dispatches (maybe cache per-shader write/read flags for all UAVs?)
 
 #if GLOBAL_SDF_DEBUG_CHUNKS
                     // Debug draw chunk bounds in world space with number of models in it
