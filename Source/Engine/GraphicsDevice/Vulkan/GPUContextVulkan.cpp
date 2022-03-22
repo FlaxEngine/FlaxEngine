@@ -1107,6 +1107,10 @@ void GPUContextVulkan::Dispatch(GPUShaderProgramCS* shader, uint32 threadGroupCo
     vkCmdDispatch(cmdBuffer->GetHandle(), threadGroupCountX, threadGroupCountY, threadGroupCountZ);
     RENDER_STAT_DISPATCH_CALL();
 
+    // Place a barrier between dispatches, so that UAVs can be read+write in subsequent passes
+    // TODO: optimize it by moving inputs/outputs into higher-layer so eg. Global SDF can manually optimize it
+    vkCmdPipelineBarrier(cmdBuffer->GetHandle(), VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, 0, 0, nullptr, 0, nullptr, 0, nullptr);
+
 #if VK_ENABLE_BARRIERS_DEBUG
     LOG(Warning, "Dispatch");
 #endif
@@ -1140,6 +1144,10 @@ void GPUContextVulkan::DispatchIndirect(GPUShaderProgramCS* shader, GPUBuffer* b
     // Dispatch
     vkCmdDispatchIndirect(cmdBuffer->GetHandle(), bufferForArgsVulkan->GetHandle(), offsetForArgs);
     RENDER_STAT_DISPATCH_CALL();
+
+    // Place a barrier between dispatches, so that UAVs can be read+write in subsequent passes
+    // TODO: optimize it by moving inputs/outputs into higher-layer so eg. Global SDF can manually optimize it
+    vkCmdPipelineBarrier(cmdBuffer->GetHandle(), VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, 0, 0, nullptr, 0, nullptr, 0, nullptr);
 
 #if VK_ENABLE_BARRIERS_DEBUG
     LOG(Warning, "DispatchIndirect");
