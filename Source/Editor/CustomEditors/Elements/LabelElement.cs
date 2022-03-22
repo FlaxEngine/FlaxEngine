@@ -40,6 +40,7 @@ namespace FlaxEditor.CustomEditors.Elements
         public LabelElement AddCopyContextMenu(Action<ContextMenu> customOptions = null)
         {
             Label.RightClick += OnRightClick;
+            _customContextualOptions = customOptions;
             return this;
         }
 
