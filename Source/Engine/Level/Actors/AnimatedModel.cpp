@@ -76,7 +76,8 @@ void AnimatedModel::SetupSkinningData()
 
 void AnimatedModel::PreInitSkinningData()
 {
-    ASSERT(SkinnedModel && SkinnedModel->IsLoaded());
+    if (!SkinnedModel || !SkinnedModel->IsLoaded())
+        return;
 
     ScopeLock lock(SkinnedModel->Locker);
 
