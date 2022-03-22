@@ -1,6 +1,7 @@
 // Copyright (c) 2012-2020 Flax Engine. All rights reserved.
 
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using Flax.Build;
@@ -219,7 +220,8 @@ namespace Flax.Deploy
         /// <param name="solutionFile">Path to the solution file</param>
         /// <param name="buildConfig">Configuration to build.</param>
         /// <param name="buildPlatform">Platform to build.</param>
-        public static void BuildSolution(string solutionFile, string buildConfig, string buildPlatform)
+        /// <param name="props">Custom build properties mapping (property=value).</param>
+        public static void BuildSolution(string solutionFile, string buildConfig, string buildPlatform, Dictionary<string, string> props = null)
         {
             var msBuild = MSBuildPath;
             if (string.IsNullOrEmpty(msBuild))
@@ -233,6 +235,11 @@ namespace Flax.Deploy
             }
 
             string cmdLine = string.Format("\"{0}\" /m /t:Build /p:Configuration=\"{1}\" /p:Platform=\"{2}\" {3} /nologo", solutionFile, buildConfig, buildPlatform, Verbosity);
+            if (props != null)
+            {
+                foreach (var e in props)
+                    cmdLine += string.Format(" /p:{0}={1}", e.Key, e.Value);
+            }
             int result = Utilities.Run(msBuild, cmdLine);
             if (result != 0)
             {
