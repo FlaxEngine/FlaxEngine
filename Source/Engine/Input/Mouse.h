@@ -25,6 +25,16 @@ public:
         Float2 MousePosition;
 
         /// <summary>
+        /// The mouse position delta.
+        /// </summary>
+        Vector2 MouseDelta;
+
+        /// <summary>
+        /// Set when application moved the mouse.
+        /// </summary>
+        bool MouseWasReset;
+
+        /// <summary>
         /// The mouse wheel delta.
         /// </summary>
         float MouseWheelDelta;
@@ -73,7 +83,7 @@ public:
     /// </summary>
     API_PROPERTY() FORCE_INLINE Float2 GetPositionDelta() const
     {
-        return _state.MousePosition - _prevState.MousePosition;
+        return _state.MouseDelta;
     }
 
     /// <summary>
@@ -157,6 +167,13 @@ public:
     /// <param name="position">The mouse position.</param>
     /// <param name="target">The target window to receive this event, otherwise input system will pick the window automatically.</param>
     void OnMouseMove(const Float2& position, Window* target = nullptr);
+
+    /// <summary>
+    /// Called when mouse moves.
+    /// </summary>
+    /// <param name="position">The mouse position.</param>
+    /// <param name="target">The target window to receive this event, otherwise input system will pick the window automatically.</param>
+    void OnMouseMoveDelta(const Vector2& delta, Window* target = nullptr);
 
     /// <summary>
     /// Called when mouse leaves the input source area.

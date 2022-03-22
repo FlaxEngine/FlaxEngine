@@ -10,6 +10,7 @@
 #include "Engine/Input/Gamepad.h"
 #include "Engine/Engine/Engine.h"
 #include "Engine/Profiler/ProfilerCPU.h"
+#include "Engine/Core/Math/Int2.h"
 #include "../Win32/IncludeWindowsHeaders.h"
 
 #define DIRECTINPUT_VERSION 0x0800
@@ -107,12 +108,36 @@ namespace WindowsInputImpl
     bool XInputGamepads[XUSER_MAX_COUNT] = { false };
     WindowsMouse* Mouse = nullptr;
     WindowsKeyboard* Keyboard = nullptr;
+    bool RawInput = true;
 }
 
+#include <hidusage.h>
 void WindowsInput::Init()
 {
     Input::Mouse = WindowsInputImpl::Mouse = New<WindowsMouse>();
     Input::Keyboard = WindowsInputImpl::Keyboard = New<WindowsKeyboard>();
+
+    if (WindowsInputImpl::RawInput)
+    {
+        RAWINPUTDEVICE Rid[2];
+
+        // register mouse
+        Rid[0].usUsagePage = HID_USAGE_PAGE_GENERIC;
+        Rid[0].usUsage = HID_USAGE_GENERIC_MOUSE;
+        Rid[0].dwFlags = (RIDEV_NOLEGACY*0);    // adds mouse and also ignores legacy mouse messages
+        Rid[0].hwndTarget = 0;
+
+        // register keyboard
+        Rid[1].usUsagePage = HID_USAGE_PAGE_GENERIC;
+        Rid[1].usUsage = HID_USAGE_GENERIC_KEYBOARD;
+        Rid[1].dwFlags = (RIDEV_NOLEGACY*0);    // adds keyboard and also ignores legacy keyboard messages
+        Rid[1].hwndTarget = 0;
+
+        if (!RegisterRawInputDevices(Rid, 2, sizeof(Rid[0])))
+        {
+            //registration failed. Call GetLastError for the cause of the error
+        }
+    }
 }
 
 void WindowsInput::Update()
@@ -138,6 +163,8 @@ void WindowsInput::Update()
             }
         }
     }
+
+    // TODO: handle raw input device detection here
 }
 
 bool WindowsInput::WndProc(Window* window, Windows::UINT msg, Windows::WPARAM wParam, Windows::LPARAM lParam)
@@ -147,6 +174,76 @@ bool WindowsInput::WndProc(Window* window, Windows::UINT msg, Windows::WPARAM wP
     if (WindowsInputImpl::Keyboard->WndProc(window, msg, wParam, lParam))
         return true;
     return false;
+}
+
+bool OnRawInput(Vector2 mousePosition, Window* window, HRAWINPUT input)
+{
+    uint32 dataSize;
+    static BYTE* dataBuffer = nullptr;
+    static uint32 dataBufferSize = 0;
+
+    GetRawInputData(input, RID_INPUT, nullptr, &dataSize, sizeof(RAWINPUTHEADER));
+    if (dataSize > dataBufferSize)
+    {
+        if (dataBuffer != nullptr)
+            delete[] dataBuffer;
+        dataBuffer = new BYTE[dataSize];
+        dataBufferSize = dataSize;
+    }
+
+    GetRawInputData(input, RID_INPUT, dataBuffer, &dataSize, sizeof(RAWINPUTHEADER));
+
+    if (((RAWINPUT*)dataBuffer)->header.dwType == RIM_TYPEKEYBOARD) 
+    {
+        RAWKEYBOARD rawKeyboard = ((RAWINPUT*)dataBuffer)->data.keyboard;
+        
+        if ((rawKeyboard.Flags & RI_KEY_BREAK) != 0)
+            Input::Keyboard->OnKeyUp(static_cast<KeyboardKeys>(rawKeyboard.VKey), window);
+        else
+            Input::Keyboard->OnKeyDown(static_cast<KeyboardKeys>(rawKeyboard.VKey), window);
+    }
+    else if (((RAWINPUT*)dataBuffer)->header.dwType == RIM_TYPEMOUSE) 
+    {
+        const RAWMOUSE rawMouse = ((RAWINPUT*)dataBuffer)->data.mouse;
+        Vector2 mousePos;
+        if ((rawMouse.usFlags & MOUSE_MOVE_ABSOLUTE) != 0)
+        {
+            const bool virtualDesktop = (rawMouse.usFlags & MOUSE_VIRTUAL_DESKTOP) != 0;
+            const int width = GetSystemMetrics(virtualDesktop ? SM_CXVIRTUALSCREEN : SM_CXSCREEN);
+            const int height = GetSystemMetrics(virtualDesktop ? SM_CYVIRTUALSCREEN : SM_CYSCREEN);
+            mousePos = Vector2(Int2(
+                static_cast<int>((rawMouse.lLastX / 65535.0f) * width),
+                static_cast<int>((rawMouse.lLastY / 65535.0f) * height)));
+
+            Input::Mouse->OnMouseMove(mousePos, window);
+        }
+        else
+        {
+            // FIXME: This is wrong. The current mouse position does not include
+            // delta movement accumulated during this frame.
+            mousePos = mousePosition;
+
+            const Vector2 mouseDelta(Int2(rawMouse.lLastX, rawMouse.lLastY));
+            mousePos += mouseDelta;
+
+            if (!mouseDelta.IsZero())
+            {
+                //Input::Mouse->OnMouseMove(mousePos, window);
+                Input::Mouse->OnMouseMoveDelta(mouseDelta, window);
+            }
+        }
+
+        if ((rawMouse.usButtonFlags & RI_MOUSE_LEFT_BUTTON_DOWN) != 0)
+            Input::Mouse->OnMouseDown(mousePos, MouseButton::Left, window);
+        if ((rawMouse.usButtonFlags & RI_MOUSE_LEFT_BUTTON_UP) != 0)
+            Input::Mouse->OnMouseUp(mousePos, MouseButton::Left, window);
+        if ((rawMouse.usButtonFlags & RI_MOUSE_RIGHT_BUTTON_DOWN) != 0)
+            Input::Mouse->OnMouseDown(mousePos, MouseButton::Right, window);
+        if ((rawMouse.usButtonFlags & RI_MOUSE_RIGHT_BUTTON_UP) != 0)
+            Input::Mouse->OnMouseUp(mousePos, MouseButton::Right, window);
+    } 
+
+    return true;
 }
 
 bool WindowsKeyboard::WndProc(Window* window, const Windows::UINT msg, Windows::WPARAM wParam, Windows::LPARAM lParam)
@@ -197,6 +294,21 @@ bool WindowsMouse::WndProc(Window* window, const UINT msg, WPARAM wParam, LPARAM
     {
     case WM_MOUSEMOVE:
     {
+        if (!WindowsInputImpl::RawInput)
+        {
+            static Vector2 lastPos = mousePos;
+            if (_state.MouseWasReset)
+            {
+                lastPos = _state.MousePosition;
+                _state.MouseWasReset = false;
+            }
+
+            Vector2 deltaPos = mousePos - lastPos;
+            if (!deltaPos.IsZero())
+                OnMouseMoveDelta(deltaPos, window);
+            lastPos = mousePos;
+        }
+
         OnMouseMove(mousePos, window);
         result = true;
         break;
@@ -291,6 +403,11 @@ bool WindowsMouse::WndProc(Window* window, const UINT msg, WPARAM wParam, LPARAM
             OnMouseWheel(_state.MousePosition, deltaNormalized, window);
         }
         result = true;
+        break;
+    }
+    case WM_INPUT:
+    {
+        result = OnRawInput(_state.MousePosition, window, reinterpret_cast<HRAWINPUT>(lParam));
         break;
     }
     }

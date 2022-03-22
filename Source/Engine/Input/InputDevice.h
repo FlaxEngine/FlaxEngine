@@ -25,6 +25,7 @@ public:
         MouseDoubleClick,
         MouseWheel,
         MouseMove,
+        MouseMoveDelta,
         MouseLeave,
         TouchDown,
         TouchMove,
