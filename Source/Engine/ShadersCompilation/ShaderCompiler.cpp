@@ -9,6 +9,7 @@
 #include "Engine/Platform/File.h"
 #include "Engine/Platform/FileSystem.h"
 #include "Engine/Graphics/RenderTools.h"
+#include "Engine/Graphics/Shaders/GPUShader.h"
 #include "Engine/Threading/Threading.h"
 #include "Engine/Profiler/ProfilerCPU.h"
 #include "Engine/Serialization/MemoryWriteStream.h"
@@ -80,7 +81,7 @@ bool ShaderCompiler::Compile(ShaderCompilationContext* context)
         _constantBuffers.Add({ meta->CB[i].Slot, false, 0 });
 
     // [Output] Version number
-    output->WriteInt32(8);
+    output->WriteInt32(GPU_SHADER_CACHE_VERSION);
 
     // [Output] Additional data start
     const int32 additionalDataStartPos = output->GetPosition();

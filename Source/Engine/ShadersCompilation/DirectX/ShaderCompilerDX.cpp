@@ -406,7 +406,7 @@ bool ShaderCompilerDX::CompileShader(ShaderFunctionMeta& meta, WritePermutationD
                 for (UINT shift = 0; shift < resDesc.BindCount; shift++)
                 {
                     bindings.UsedUAsMask |= 1 << (resDesc.BindPoint + shift);
-                    header.SrDimensions[resDesc.BindPoint + shift] = (byte)resDesc.Dimension; // D3D_SRV_DIMENSION matches D3D12_UAV_DIMENSION
+                    header.UaDimensions[resDesc.BindPoint + shift] = (byte)resDesc.Dimension; // D3D_SRV_DIMENSION matches D3D12_UAV_DIMENSION
                 }
                 break;
             }

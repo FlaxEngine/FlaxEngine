@@ -67,6 +67,7 @@ public class ModelTool : EngineModule
 
         options.PrivateDependencies.Add("meshoptimizer");
         options.PrivateDependencies.Add("MikkTSpace");
+        options.PrivateDependencies.Add("Physics");
     }
 
     /// <inheritdoc />
