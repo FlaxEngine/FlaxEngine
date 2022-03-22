@@ -173,7 +173,9 @@ void InputSettings::Deserialize(DeserializeStream& stream, ISerializeModifier* m
 void Mouse::OnMouseMoved(const Float2& newPosition)
 {
     _prevState.MousePosition = newPosition;
+    _prevState.MouseWasReset = true;
     _state.MousePosition = newPosition;
+    _state.MouseWasReset = true;
 }
 
 void Mouse::OnMouseDown(const Float2& position, const MouseButton button, Window* target)
@@ -220,6 +222,14 @@ void Mouse::OnMouseMove(const Float2& position, Window* target)
     e.MouseData.Position = position;
 }
 
+void Mouse::OnMouseMoveDelta(const Vector2& delta, Window* target)
+{
+    Event& e = _queue.AddOne();
+    e.Type = EventType::MouseMoveDelta;
+    e.Target = target;
+    e.MouseData.Position = delta;
+}
+
 void Mouse::OnMouseLeave(Window* target)
 {
     Event& e = _queue.AddOne();
@@ -244,6 +254,7 @@ void Mouse::ResetState()
     _state.Clear();
 }
 
+#include "Engine/Core/Log.h"
 bool Mouse::Update(EventQueue& queue)
 {
     // Move the current state to the previous
@@ -255,6 +266,7 @@ bool Mouse::Update(EventQueue& queue)
 
     // Handle events
     _state.MouseWheelDelta = 0;
+    _state.MouseDelta = Vector2::Zero;
     for (int32 i = 0; i < _queue.Count(); i++)
     {
         const Event& e = _queue[i];
@@ -283,6 +295,11 @@ bool Mouse::Update(EventQueue& queue)
         case EventType::MouseMove:
         {
             _state.MousePosition = e.MouseData.Position;
+            break;
+        }
+        case EventType::MouseMoveDelta:
+        {
+            _state.MouseDelta += e.MouseData.Position;
             break;
         }
         case EventType::MouseLeave:
