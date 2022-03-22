@@ -314,9 +314,11 @@ bool GlobalSignDistanceFieldPass::Render(RenderContext& renderContext, GPUContex
                 _modelsBuffer->Clear();
                 _modelsTextures.Clear();
             }
-            int32 modelsBufferCount = 0;
 
             // Draw all objects from all scenes into the cascade
+            _modelsBufferCount = 0;
+            _voxelSize = voxelSize;
+            _cascadeBounds = cascadeBounds;
             for (auto* scene : renderContext.List->Scenes)
             {
                 // TODO: optimize for moving camera (copy sdf)
@@ -326,90 +328,6 @@ bool GlobalSignDistanceFieldPass::Render(RenderContext& renderContext, GPUContex
                     if (viewMask & e.LayerMask && e.Bounds.Radius >= minObjectRadius && CollisionsHelper::BoxIntersectsSphere(cascadeBounds, e.Bounds))
                     {
                         e.Actor->Draw(renderContext);
-
-                        // TODO: move to be properly implemented per object type
-                        auto staticModel = ScriptingObject::Cast<StaticModel>(e.Actor);
-                        if (staticModel && staticModel->Model && staticModel->Model->IsLoaded() && staticModel->Model->CanBeRendered() && staticModel->DrawModes & DrawPass::GlobalSDF)
-                        {
-                            // okay so firstly we need SDF for this model
-                            // TODO: implement SDF generation on model import
-                            if (!staticModel->Model->SDF.Texture)
-                                staticModel->Model->GenerateSDF();
-                            ModelBase::SDFData& sdf = staticModel->Model->SDF;
-                            if (sdf.Texture)
-                            {
-                                // Setup object data
-                                BoundingBox objectBounds = staticModel->GetBox();
-                                BoundingBox objectBoundsCascade;
-                                const float objectMargin = voxelSize * GLOBAL_SDF_RASTERIZE_CHUNK_MARGIN;
-                                Vector3::Clamp(objectBounds.Minimum - objectMargin, cascadeBounds.Minimum, cascadeBounds.Maximum, objectBoundsCascade.Minimum);
-                                Vector3::Subtract(objectBoundsCascade.Minimum, cascadeBounds.Minimum, objectBoundsCascade.Minimum);
-                                Vector3::Clamp(objectBounds.Maximum + objectMargin, cascadeBounds.Minimum, cascadeBounds.Maximum, objectBoundsCascade.Maximum);
-                                Vector3::Subtract(objectBoundsCascade.Maximum, cascadeBounds.Minimum, objectBoundsCascade.Maximum);
-                                Int3 objectChunkMin(objectBoundsCascade.Minimum / chunkSize);
-                                Int3 objectChunkMax(objectBoundsCascade.Maximum / chunkSize);
-                                Matrix localToWorld, worldToLocal, volumeToWorld;
-                                staticModel->GetWorld(&localToWorld);
-                                Matrix::Invert(localToWorld, worldToLocal);
-                                BoundingBox localVolumeBounds(sdf.LocalBoundsMin, sdf.LocalBoundsMax);
-                                Vector3 volumeLocalBoundsExtent = localVolumeBounds.GetSize() * 0.5f;
-                                Matrix worldToVolume = worldToLocal * Matrix::Translation(-(localVolumeBounds.Minimum + volumeLocalBoundsExtent));
-                                Matrix::Invert(worldToVolume, volumeToWorld);
-
-                                // Pick the SDF mip for the cascade
-                                int32 mipLevelIndex = 1;
-                                float worldUnitsPerVoxel = sdf.WorldUnitsPerVoxel * localToWorld.GetScaleVector().MaxValue() * 2;
-                                while (voxelSize > worldUnitsPerVoxel && mipLevelIndex < sdf.Texture->MipLevels())
-                                {
-                                    mipLevelIndex++;
-                                    worldUnitsPerVoxel *= 2.0f;
-                                }
-                                mipLevelIndex--;
-
-                                // Volume -> Local -> UVW
-                                Vector3 volumeToUVWMul = sdf.LocalToUVWMul;
-                                Vector3 volumeToUVWAdd = sdf.LocalToUVWAdd + (localVolumeBounds.Minimum + volumeLocalBoundsExtent) * sdf.LocalToUVWMul;
-
-                                // Add model data for the GPU buffer
-                                int32 modelIndex = modelsBufferCount++;
-                                ModelRasterizeData modelData;
-                                Matrix::Transpose(worldToVolume, modelData.WorldToVolume);
-                                Matrix::Transpose(volumeToWorld, modelData.VolumeToWorld);
-                                modelData.VolumeLocalBoundsExtent = volumeLocalBoundsExtent;
-                                modelData.VolumeToUVWMul = volumeToUVWMul;
-                                modelData.VolumeToUVWAdd = volumeToUVWAdd;
-                                modelData.MipOffset = (float)mipLevelIndex;
-                                modelData.DecodeMul = 2.0f * sdf.MaxDistance;
-                                modelData.DecodeAdd = -sdf.MaxDistance;
-                                _modelsBuffer->Write(modelData);
-                                _modelsTextures.Add(sdf.Texture->ViewVolume());
-
-                                // Inject object into the intersecting cascade chunks
-                                RasterizeChunkKey key;
-                                for (key.Coord.Z = objectChunkMin.Z; key.Coord.Z <= objectChunkMax.Z; key.Coord.Z++)
-                                {
-                                    for (key.Coord.Y = objectChunkMin.Y; key.Coord.Y <= objectChunkMax.Y; key.Coord.Y++)
-                                    {
-                                        for (key.Coord.X = objectChunkMin.X; key.Coord.X <= objectChunkMax.X; key.Coord.X++)
-                                        {
-                                            key.Layer = 0;
-                                            key.Hash = key.Coord.Z * (RasterizeChunkKeyHashResolution * RasterizeChunkKeyHashResolution) + key.Coord.Y * RasterizeChunkKeyHashResolution + key.Coord.X;
-                                            RasterizeChunk* chunk = &chunks[key];
-
-                                            // Move to the next layer if chunk has overflown
-                                            while (chunk->ModelsCount == GLOBAL_SDF_RASTERIZE_MODEL_MAX_COUNT)
-                                            {
-                                                key.Layer++;
-                                                key.Hash += RasterizeChunkKeyHashResolution * RasterizeChunkKeyHashResolution * RasterizeChunkKeyHashResolution;
-                                                chunk = &chunks[key];
-                                            }
-
-                                            chunk->Models[chunk->ModelsCount++] = modelIndex;
-                                        }
-                                    }
-                                }
-                            }
-                        }
                     }
                 }
             }
@@ -593,4 +511,81 @@ void GlobalSignDistanceFieldPass::RenderDebug(RenderContext& renderContext, GPUC
     context->SetRenderTarget(output->View());
     context->SetViewportAndScissors(outputSize.X, outputSize.Y);
     context->DrawFullscreenTriangle();
+}
+
+void GlobalSignDistanceFieldPass::RasterizeModelSDF(const ModelBase::SDFData& sdf, const Matrix& localToWorld, const BoundingBox& objectBounds)
+{
+    if (!sdf.Texture)
+        return;
+
+    // Setup object data
+    BoundingBox objectBoundsCascade;
+    const float objectMargin = _voxelSize * GLOBAL_SDF_RASTERIZE_CHUNK_MARGIN;
+    Vector3::Clamp(objectBounds.Minimum - objectMargin, _cascadeBounds.Minimum, _cascadeBounds.Maximum, objectBoundsCascade.Minimum);
+    Vector3::Subtract(objectBoundsCascade.Minimum, _cascadeBounds.Minimum, objectBoundsCascade.Minimum);
+    Vector3::Clamp(objectBounds.Maximum + objectMargin, _cascadeBounds.Minimum, _cascadeBounds.Maximum, objectBoundsCascade.Maximum);
+    Vector3::Subtract(objectBoundsCascade.Maximum, _cascadeBounds.Minimum, objectBoundsCascade.Maximum);
+    const float chunkSize = _voxelSize * GLOBAL_SDF_RASTERIZE_CHUNK_SIZE;
+    Int3 objectChunkMin(objectBoundsCascade.Minimum / chunkSize);
+    Int3 objectChunkMax(objectBoundsCascade.Maximum / chunkSize);
+    Matrix worldToLocal, volumeToWorld;
+    Matrix::Invert(localToWorld, worldToLocal);
+    BoundingBox localVolumeBounds(sdf.LocalBoundsMin, sdf.LocalBoundsMax);
+    Vector3 volumeLocalBoundsExtent = localVolumeBounds.GetSize() * 0.5f;
+    Matrix worldToVolume = worldToLocal * Matrix::Translation(-(localVolumeBounds.Minimum + volumeLocalBoundsExtent));
+    Matrix::Invert(worldToVolume, volumeToWorld);
+
+    // Pick the SDF mip for the cascade
+    int32 mipLevelIndex = 1;
+    float worldUnitsPerVoxel = sdf.WorldUnitsPerVoxel * localToWorld.GetScaleVector().MaxValue() * 2;
+    while (_voxelSize > worldUnitsPerVoxel && mipLevelIndex < sdf.Texture->MipLevels())
+    {
+        mipLevelIndex++;
+        worldUnitsPerVoxel *= 2.0f;
+    }
+    mipLevelIndex--;
+
+    // Volume -> Local -> UVW
+    Vector3 volumeToUVWMul = sdf.LocalToUVWMul;
+    Vector3 volumeToUVWAdd = sdf.LocalToUVWAdd + (localVolumeBounds.Minimum + volumeLocalBoundsExtent) * sdf.LocalToUVWMul;
+
+    // Add model data for the GPU buffer
+    int32 modelIndex = _modelsBufferCount++;
+    ModelRasterizeData modelData;
+    Matrix::Transpose(worldToVolume, modelData.WorldToVolume);
+    Matrix::Transpose(volumeToWorld, modelData.VolumeToWorld);
+    modelData.VolumeLocalBoundsExtent = volumeLocalBoundsExtent;
+    modelData.VolumeToUVWMul = volumeToUVWMul;
+    modelData.VolumeToUVWAdd = volumeToUVWAdd;
+    modelData.MipOffset = (float)mipLevelIndex;
+    modelData.DecodeMul = 2.0f * sdf.MaxDistance;
+    modelData.DecodeAdd = -sdf.MaxDistance;
+    _modelsBuffer->Write(modelData);
+    _modelsTextures.Add(sdf.Texture->ViewVolume());
+
+    // Inject object into the intersecting cascade chunks
+    RasterizeChunkKey key;
+    auto& chunks = ChunksCache;
+    for (key.Coord.Z = objectChunkMin.Z; key.Coord.Z <= objectChunkMax.Z; key.Coord.Z++)
+    {
+        for (key.Coord.Y = objectChunkMin.Y; key.Coord.Y <= objectChunkMax.Y; key.Coord.Y++)
+        {
+            for (key.Coord.X = objectChunkMin.X; key.Coord.X <= objectChunkMax.X; key.Coord.X++)
+            {
+                key.Layer = 0;
+                key.Hash = key.Coord.Z * (RasterizeChunkKeyHashResolution * RasterizeChunkKeyHashResolution) + key.Coord.Y * RasterizeChunkKeyHashResolution + key.Coord.X;
+                RasterizeChunk* chunk = &chunks[key];
+
+                // Move to the next layer if chunk has overflown
+                while (chunk->ModelsCount == GLOBAL_SDF_RASTERIZE_MODEL_MAX_COUNT)
+                {
+                    key.Layer++;
+                    key.Hash += RasterizeChunkKeyHashResolution * RasterizeChunkKeyHashResolution * RasterizeChunkKeyHashResolution;
+                    chunk = &chunks[key];
+                }
+
+                chunk->Models[chunk->ModelsCount++] = modelIndex;
+            }
+        }
+    }
 }

@@ -9,6 +9,7 @@
 #include "Engine/Serialization/Serialization.h"
 #include "Engine/Level/Prefabs/PrefabManager.h"
 #include "Engine/Level/Scene/Scene.h"
+#include "Engine/Renderer/GlobalSignDistanceFieldPass.h"
 #include "Engine/Utilities/Encryption.h"
 #if USE_EDITOR
 #include "Editor/Editor.h"
@@ -209,62 +210,66 @@ bool StaticModel::HasContentLoaded() const
 
 void StaticModel::Draw(RenderContext& renderContext)
 {
+    const DrawPass drawModes = (DrawPass)(DrawModes & renderContext.View.Pass);
+    if (!Model || !Model->IsLoaded() || !Model->CanBeRendered() || drawModes == DrawPass::None)
+        return;
     if (renderContext.View.Pass == DrawPass::GlobalSDF)
-        return;  // TODO: Static Model rendering to Global SDF
+    {
+        if (!Model->SDF.Texture)
+            Model->GenerateSDF();
+        GlobalSignDistanceFieldPass::Instance()->RasterizeModelSDF(Model->SDF, _world, _box);
+        return;
+    }
     GEOMETRY_DRAW_STATE_EVENT_BEGIN(_drawState, _world);
 
-    const DrawPass drawModes = (DrawPass)(DrawModes & renderContext.View.Pass);
-    if (Model && Model->IsLoaded() && drawModes != DrawPass::None)
+    // Flush vertex colors if need to
+    if (_vertexColorsDirty)
     {
-        // Flush vertex colors if need to
-        if (_vertexColorsDirty)
+        for (int32 lodIndex = 0; lodIndex < _vertexColorsCount; lodIndex++)
         {
-            for (int32 lodIndex = 0; lodIndex < _vertexColorsCount; lodIndex++)
+            auto& vertexColorsData = _vertexColorsData[lodIndex];
+            auto& vertexColorsBuffer = _vertexColorsBuffer[lodIndex];
+            if (vertexColorsData.HasItems())
             {
-                auto& vertexColorsData = _vertexColorsData[lodIndex];
-                auto& vertexColorsBuffer = _vertexColorsBuffer[lodIndex];
-                if (vertexColorsData.HasItems())
+                const uint32 size = vertexColorsData.Count() * sizeof(Color32);
+                if (!vertexColorsBuffer)
+                    vertexColorsBuffer = GPUDevice::Instance->CreateBuffer(TEXT("VertexColors"));
+                if (vertexColorsBuffer->GetSize() != size)
                 {
-                    const uint32 size = vertexColorsData.Count() * sizeof(Color32);
-                    if (!vertexColorsBuffer)
-                        vertexColorsBuffer = GPUDevice::Instance->CreateBuffer(TEXT("VertexColors"));
-                    if (vertexColorsBuffer->GetSize() != size)
-                    {
-                        if (vertexColorsBuffer->Init(GPUBufferDescription::Vertex(sizeof(Color32), vertexColorsData.Count())))
-                            return;
-                    }
-                    GPUDevice::Instance->GetMainContext()->UpdateBuffer(vertexColorsBuffer, vertexColorsData.Get(), size);
+                    if (vertexColorsBuffer->Init(GPUBufferDescription::Vertex(sizeof(Color32), vertexColorsData.Count())))
+                        return;
                 }
-                else
-                {
-                    SAFE_DELETE_GPU_RESOURCE(vertexColorsBuffer);
-                }
+                GPUDevice::Instance->GetMainContext()->UpdateBuffer(vertexColorsBuffer, vertexColorsData.Get(), size);
             }
-            _vertexColorsDirty = false;
+            else
+            {
+                SAFE_DELETE_GPU_RESOURCE(vertexColorsBuffer);
+            }
         }
+        _vertexColorsDirty = false;
+    }
 
 #if USE_EDITOR
-        // Disable motion blur effects in editor without play mode enabled to hide minor artifacts on objects moving
-        if (!Editor::IsPlayMode)
-            _drawState.PrevWorld = _world;
+    // Disable motion blur effects in editor without play mode enabled to hide minor artifacts on objects moving
+    if (!Editor::IsPlayMode)
+        _drawState.PrevWorld = _world;
 #endif
 
-        Mesh::DrawInfo draw;
-        draw.Buffer = &Entries;
-        draw.World = &_world;
-        draw.DrawState = &_drawState;
-        draw.Lightmap = _scene->LightmapsData.GetReadyLightmap(Lightmap.TextureIndex);
-        draw.LightmapUVs = &Lightmap.UVsArea;
-        draw.Flags = _staticFlags;
-        draw.DrawModes = drawModes;
-        draw.Bounds = _sphere;
-        draw.PerInstanceRandom = GetPerInstanceRandom();
-        draw.LODBias = _lodBias;
-        draw.ForcedLOD = _forcedLod;
-        draw.VertexColors = _vertexColorsCount ? _vertexColorsBuffer : nullptr;
+    Mesh::DrawInfo draw;
+    draw.Buffer = &Entries;
+    draw.World = &_world;
+    draw.DrawState = &_drawState;
+    draw.Lightmap = _scene->LightmapsData.GetReadyLightmap(Lightmap.TextureIndex);
+    draw.LightmapUVs = &Lightmap.UVsArea;
+    draw.Flags = _staticFlags;
+    draw.DrawModes = drawModes;
+    draw.Bounds = _sphere;
+    draw.PerInstanceRandom = GetPerInstanceRandom();
+    draw.LODBias = _lodBias;
+    draw.ForcedLOD = _forcedLod;
+    draw.VertexColors = _vertexColorsCount ? _vertexColorsBuffer : nullptr;
 
-        Model->Draw(renderContext, draw);
-    }
+    Model->Draw(renderContext, draw);
 
     GEOMETRY_DRAW_STATE_EVENT_END(_drawState, _world);
 }

@@ -37,8 +37,13 @@ private:
     GPUShaderProgramCS* _csGenerateMip1 = nullptr;
     GPUConstantBuffer* _cb0 = nullptr;
     GPUConstantBuffer* _cb1 = nullptr;
+
+    // Rasterization cache
     class DynamicStructuredBuffer* _modelsBuffer = nullptr;
     Array<GPUTextureView*> _modelsTextures;
+    int32 _modelsBufferCount;
+    float _voxelSize;
+    BoundingBox _cascadeBounds;
 
 public:
     /// <summary>
@@ -57,6 +62,8 @@ public:
     /// <param name="context">The GPU context.</param>
     /// <param name="output">The output buffer.</param>
     void RenderDebug(RenderContext& renderContext, GPUContext* context, GPUTexture* output);
+
+    void RasterizeModelSDF(const ModelBase::SDFData& sdf, const Matrix& localToWorld, const BoundingBox& objectBounds);
 
 private:
 #if COMPILE_WITH_DEV_ENV
