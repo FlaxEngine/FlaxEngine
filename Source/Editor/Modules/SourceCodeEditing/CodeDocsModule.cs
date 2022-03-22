@@ -33,6 +33,17 @@ namespace FlaxEditor.Modules.SourceCodeEditing
         /// <param name="type">The type.</param>
         /// <param name="attributes">The type attributes. Optional, if null type attributes will be used.</param>
         /// <returns>The documentation tooltip.</returns>
+        public string GetTooltip(Type type, object[] attributes = null)
+        {
+            return GetTooltip(new ScriptType(type), attributes);
+        }
+
+        /// <summary>
+        /// Gets the tooltip text for the type.
+        /// </summary>
+        /// <param name="type">The type.</param>
+        /// <param name="attributes">The type attributes. Optional, if null type attributes will be used.</param>
+        /// <returns>The documentation tooltip.</returns>
         public string GetTooltip(ScriptType type, object[] attributes = null)
         {
             // Try to use cache
@@ -60,6 +71,19 @@ namespace FlaxEditor.Modules.SourceCodeEditing
 
             _typeCache.Add(type, text);
             return text;
+        }
+
+        /// <summary>
+        /// Gets the tooltip text for the type member.
+        /// </summary>
+        /// <param name="type">The type.</param>
+        /// <param name="memberName">The member name.</param>
+        /// <param name="attributes">The member attributes. Optional, if null member attributes will be used.</param>
+        /// <returns>The documentation tooltip.</returns>
+        public string GetTooltip(Type type, string memberName, object[] attributes = null)
+        {
+            var member = new ScriptType(type).GetMember(memberName, MemberTypes.All, BindingFlags.Public | BindingFlags.Static | BindingFlags.Instance);
+            return GetTooltip(member, attributes);
         }
 
         /// <summary>
