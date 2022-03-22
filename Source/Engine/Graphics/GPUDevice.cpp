@@ -11,6 +11,7 @@
 #include "Engine/Content/Assets/Shader.h"
 #include "Engine/Content/Assets/Material.h"
 #include "Engine/Content/Content.h"
+#include "Engine/Content/SoftAssetReference.h"
 #include "Engine/Platform/Windows/WindowsWindow.h"
 #include "Engine/Render2D/Render2D.h"
 #include "Engine/Engine/CommandLine.h"
@@ -19,7 +20,6 @@
 #include "Engine/Profiler/Profiler.h"
 #include "Engine/Renderer/RenderList.h"
 #include "Engine/Core/Utilities.h"
-#include "Engine/Scripting/SoftObjectReference.h"
 
 GPUPipelineState* GPUPipelineState::Spawn(const SpawnParams& params)
 {
@@ -253,7 +253,7 @@ struct GPUDevice::PrivateData
     GPUPipelineState* PS_Clear = nullptr;
     GPUBuffer* FullscreenTriangleVB = nullptr;
     AssetReference<Material> DefaultMaterial;
-    SoftObjectReference<Material> DefaultDeformableMaterial;
+    SoftAssetReference<Material> DefaultDeformableMaterial;
     AssetReference<Texture> DefaultNormalMap;
     AssetReference<Texture> DefaultWhiteTexture;
     AssetReference<Texture> DefaultBlackTexture;

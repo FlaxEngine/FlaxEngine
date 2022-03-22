@@ -75,8 +75,8 @@ ExportAssetResult AssetExporters::ExportModel(ExportAssetContext& context)
 
         for (uint32 i = 0; i < vertices; i++)
         {
-            auto v = vb1[i].TexCoord;
-            output->WriteText(StringAnsi::Format("vt {0} {1}\n", Float16Compressor::Decompress(v.X), Float16Compressor::Decompress(v.Y)));
+            auto v = vb1[i].TexCoord.ToVector2();
+            output->WriteText(StringAnsi::Format("vt {0} {1}\n", v.X, v.Y));
         }
 
         output->WriteChar('\n');
@@ -180,8 +180,8 @@ ExportAssetResult AssetExporters::ExportSkinnedModel(ExportAssetContext& context
 
         for (uint32 i = 0; i < vertices; i++)
         {
-            auto v = vb0[i].TexCoord;
-            output->WriteText(StringAnsi::Format("vt {0} {1}\n", Float16Compressor::Decompress(v.X), Float16Compressor::Decompress(v.Y)));
+            auto v = vb0[i].TexCoord.ToVector2();
+            output->WriteText(StringAnsi::Format("vt {0} {1}\n", v.X, v.Y));
         }
 
         output->WriteChar('\n');

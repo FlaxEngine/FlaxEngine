@@ -519,14 +519,12 @@ void ReadStream::ReadJson(ISerializable* obj)
 
 void WriteStream::WriteText(const StringView& text)
 {
-    for (int32 i = 0; i < text.Length(); i++)
-        WriteChar(text[i]);
+    WriteBytes(text.Get(), sizeof(Char) * text.Length());
 }
 
 void WriteStream::WriteText(const StringAnsiView& text)
 {
-    for (int32 i = 0; i < text.Length(); i++)
-        WriteChar(text[i]);
+    WriteBytes(text.Get(), sizeof(char) * text.Length());
 }
 
 void WriteStream::WriteString(const StringView& data)

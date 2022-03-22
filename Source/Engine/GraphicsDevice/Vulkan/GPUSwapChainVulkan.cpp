@@ -185,6 +185,8 @@ bool GPUSwapChainVulkan::CreateSwapChain(int32 width, int32 height)
         // Flush removed resources
         _device->DeferredDeletionQueue.ReleaseResources(true);
     }
+    ASSERT(_surface == VK_NULL_HANDLE);
+    ASSERT_LOW_LAYER(_backBuffers.Count() == 0);
 
     // Create platform-dependent surface
     VulkanPlatform::CreateSurface(windowHandle, GPUDeviceVulkan::Instance, &_surface);
@@ -205,7 +207,7 @@ bool GPUSwapChainVulkan::CreateSwapChain(int32 width, int32 height)
         VALIDATE_VULKAN_RESULT(vkGetPhysicalDeviceSurfaceFormatsKHR(gpu, _surface, &surfaceFormatsCount, nullptr));
         ASSERT(surfaceFormatsCount > 0);
 
-        Array<VkSurfaceFormatKHR> surfaceFormats;
+        Array<VkSurfaceFormatKHR, InlinedAllocation<16>> surfaceFormats;
         surfaceFormats.AddZeroed(surfaceFormatsCount);
         VALIDATE_VULKAN_RESULT(vkGetPhysicalDeviceSurfaceFormatsKHR(gpu, _surface, &surfaceFormatsCount, surfaceFormats.Get()));
 
@@ -414,8 +416,8 @@ bool GPUSwapChainVulkan::CreateSwapChain(int32 width, int32 height)
         }
     }
 
-    // Calculate memory usage
-    _memoryUsage = RenderTools::CalculateTextureMemoryUsage(_format, _width, _height, 1) * _backBuffers.Count();
+    // Estimate memory usage
+    _memoryUsage = 1024 + RenderTools::CalculateTextureMemoryUsage(_format, _width, _height, 1) * _backBuffers.Count();
 
     return false;
 }

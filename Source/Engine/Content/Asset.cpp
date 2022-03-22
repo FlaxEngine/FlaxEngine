@@ -2,6 +2,7 @@
 
 #include "Asset.h"
 #include "Content.h"
+#include "SoftAssetReference.h"
 #include "Cache/AssetsCache.h"
 #include "Loading/ContentLoadingManager.h"
 #include "Loading/Tasks/LoadAssetTask.h"
@@ -100,6 +101,65 @@ void WeakAssetReferenceBase::OnUnloaded(Asset* asset)
     Unload();
     asset->OnUnloaded.Unbind<WeakAssetReferenceBase, &WeakAssetReferenceBase::OnUnloaded>(this);
     _asset = nullptr;
+}
+
+String SoftAssetReferenceBase::ToString() const
+{
+    return _asset ? _asset->ToString() : (_id.IsValid() ? _id.ToString() : TEXT("<null>"));
+}
+
+void SoftAssetReferenceBase::OnSet(Asset* asset)
+{
+    if (_asset == asset)
+        return;
+    if (_asset)
+    {
+        _asset->OnUnloaded.Unbind<SoftAssetReferenceBase, &SoftAssetReferenceBase::OnUnloaded>(this);
+        _asset->RemoveReference();
+    }
+    _asset = asset;
+    _id = asset ? asset->GetID() : Guid::Empty;
+    if (asset)
+    {
+        asset->AddReference();
+        asset->OnUnloaded.Bind<SoftAssetReferenceBase, &SoftAssetReferenceBase::OnUnloaded>(this);
+    }
+    Changed();
+}
+
+void SoftAssetReferenceBase::OnSet(const Guid& id)
+{
+    if (_id == id)
+        return;
+    if (_asset)
+    {
+        _asset->OnUnloaded.Unbind<SoftAssetReferenceBase, &SoftAssetReferenceBase::OnUnloaded>(this);
+        _asset->RemoveReference();
+    }
+    _asset = nullptr;
+    _id = id;
+    Changed();
+}
+
+void SoftAssetReferenceBase::OnResolve(const ScriptingTypeHandle& type)
+{
+    ASSERT(!_asset);
+    _asset = ::LoadAsset(_id, type);
+    if (_asset)
+    {
+        _asset->OnUnloaded.Bind<SoftAssetReferenceBase, &SoftAssetReferenceBase::OnUnloaded>(this);
+        _asset->AddReference();
+    }
+}
+
+void SoftAssetReferenceBase::OnUnloaded(Asset* asset)
+{
+    ASSERT(_asset == asset);
+    _asset->RemoveReference();
+    _asset->OnUnloaded.Unbind<SoftAssetReferenceBase, &SoftAssetReferenceBase::OnUnloaded>(this);
+    _asset = nullptr;
+    _id = Guid::Empty;
+    Changed();
 }
 
 Asset::Asset(const SpawnParams& params, const AssetInfo* info)

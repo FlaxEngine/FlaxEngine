@@ -5,14 +5,21 @@
 #include "SerializationFwd.h"
 #include "Engine/Core/Collections/Array.h"
 #include "Engine/Core/Collections/Dictionary.h"
-#include "Engine/Scripting/ScriptingObjectReference.h"
-#include "Engine/Scripting/SoftObjectReference.h"
-#include "Engine/Content/AssetReference.h"
-#include "Engine/Content/WeakAssetReference.h"
+#include "Engine/Scripting/ScriptingObject.h"
 #include "Engine/Utilities/Encryption.h"
 
 struct Version;
 struct VariantType;
+template<typename T>
+class ScriptingObjectReference;
+template<typename T>
+class SoftObjectReference;
+template<typename T>
+class AssetReference;
+template<typename T>
+class WeakAssetReference;
+template<typename T>
+class SoftAssetReference;
 
 // @formatter:off
 
@@ -507,6 +514,26 @@ namespace Serialization
     }
     template<typename T>
     inline void Deserialize(ISerializable::DeserializeStream& stream, WeakAssetReference<T>& v, ISerializeModifier* modifier)
+    {
+        Guid id;
+        Deserialize(stream, id, modifier);
+        v = id;
+    }
+
+    // Soft Asset Reference
+
+    template<typename T>
+    inline bool ShouldSerialize(const SoftAssetReference<T>& v, const void* otherObj)
+    {
+        return !otherObj || v.Get() != ((SoftAssetReference<T>*)otherObj)->Get();
+    }
+    template<typename T>
+    inline void Serialize(ISerializable::SerializeStream& stream, const SoftAssetReference<T>& v, const void* otherObj)
+    {
+        stream.Guid(v.GetID());
+    }
+    template<typename T>
+    inline void Deserialize(ISerializable::DeserializeStream& stream, SoftAssetReference<T>& v, ISerializeModifier* modifier)
     {
         Guid id;
         Deserialize(stream, id, modifier);

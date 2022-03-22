@@ -12,7 +12,6 @@ namespace Flax.Build.Bindings
     public class StructureInfo : ClassStructInfo
     {
         public List<FieldInfo> Fields = new List<FieldInfo>();
-        public List<FunctionInfo> Functions = new List<FunctionInfo>();
         public bool IsAutoSerialization;
         public bool ForceNoPod;
 

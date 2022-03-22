@@ -23,6 +23,8 @@
 #include "Engine/Core/Math/Matrix.h"
 #include "Engine/Scripting/ManagedSerialization.h"
 #include "Engine/Scripting/ManagedCLR/MUtils.h"
+#include "Engine/Scripting/ScriptingObjectReference.h"
+#include "Engine/Content/Asset.h"
 #include "Engine/Utilities/Encryption.h"
 #if USE_MONO
 #include <ThirdParty/mono-2.0/mono/metadata/object.h>

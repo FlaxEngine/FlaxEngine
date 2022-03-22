@@ -366,7 +366,7 @@ void GPUDeviceVulkan::GetInstanceLayersAndExtensions(Array<const char*>& outInst
     }
 
 #if VK_EXT_debug_utils
-    if (!vkTrace && outDebugUtils && FindLayerExtension(globalLayerExtensions, VK_EXT_DEBUG_UTILS_EXTENSION_NAME))
+    if (!vkTrace && FindLayerExtension(globalLayerExtensions, VK_EXT_DEBUG_UTILS_EXTENSION_NAME))
     {
         outInstanceExtensions.Add(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
     }

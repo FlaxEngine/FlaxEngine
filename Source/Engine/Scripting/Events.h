@@ -18,7 +18,7 @@ class FLAXENGINE_API ScriptingEvents
 public:
 
     /// <summary>
-    /// Global table for registered even binder methods (key is pair of type and event name, value is method that takes instance with event, object to bind and flag to bind or unbind).
+    /// Global table for registered event binder methods (key is pair of type and event name, value is method that takes instance with event, object to bind and flag to bind or unbind).
     /// </summary>
     /// <remarks>
     /// Key: pair of event type, event name.

@@ -9,7 +9,7 @@ BlendShapesInstance::MeshInstance::MeshInstance()
     : IsUsed(false)
     , IsDirty(false)
     , DirtyMinVertexIndex(0)
-    , DirtyMaxVertexIndex(MAX_uint32)
+    , DirtyMaxVertexIndex(MAX_uint32 - 1)
     , VertexBuffer(0, sizeof(VB0SkinnedElementType), TEXT("Skinned Mesh Blend Shape"))
 {
 }
@@ -112,7 +112,7 @@ void BlendShapesInstance::Update(SkinnedModel* skinnedModel)
         // Initialize the dynamic vertex buffer data (use the dirty range from the previous update to be cleared with initial data)
         instance.VertexBuffer.Data.Resize(vertexBuffer.Length());
         const uint32 dirtyVertexDataStart = instance.DirtyMinVertexIndex * sizeof(VB0SkinnedElementType);
-        const uint32 dirtyVertexDataLength = Math::Min<uint32>(instance.DirtyMaxVertexIndex - instance.DirtyMinVertexIndex, vertexCount) * sizeof(VB0SkinnedElementType);
+        const uint32 dirtyVertexDataLength = Math::Min<uint32>(instance.DirtyMaxVertexIndex - instance.DirtyMinVertexIndex + 1, vertexCount) * sizeof(VB0SkinnedElementType);
         Platform::MemoryCopy(instance.VertexBuffer.Data.Get() + dirtyVertexDataStart, vertexBuffer.Get() + dirtyVertexDataStart, dirtyVertexDataLength);
 
         // Blend all blend shapes

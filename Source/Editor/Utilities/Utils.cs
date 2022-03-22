@@ -829,7 +829,13 @@ namespace FlaxEditor.Utilities
                 var attr = field.GetAttribute<System.ComponentModel.DefaultValueAttribute>();
                 if (attr != null)
                 {
-                    field.SetValue(obj, attr.Value);
+                    // Prevent value type conflicts
+                    var value = attr.Value;
+                    var fieldType = field.ValueType.Type;
+                    if (value != null && value.GetType() != fieldType)
+                        value = Convert.ChangeType(value, fieldType);
+
+                    field.SetValue(obj, value);
                 }
                 else if (isStructure)
                 {
@@ -845,7 +851,13 @@ namespace FlaxEditor.Utilities
                 var attr = property.GetAttribute<System.ComponentModel.DefaultValueAttribute>();
                 if (attr != null)
                 {
-                    property.SetValue(obj, attr.Value);
+                    // Prevent value type conflicts
+                    var value = attr.Value;
+                    var propertyType = property.ValueType.Type;
+                    if (value != null && value.GetType() != propertyType)
+                        value = Convert.ChangeType(value, propertyType);
+
+                    property.SetValue(obj, value);
                 }
             }
         }

@@ -639,7 +639,7 @@ public:
     {
         Vector3 output = input;
         const float length = input.Length();
-        if (!Math::IsZero(length))
+        if (Math::Abs(length) >= ZeroTolerance)
         {
             const float inv = 1.0f / length;
             output.X *= inv;

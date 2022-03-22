@@ -16,6 +16,7 @@
 #include "Engine/Tools/TextureTool/TextureTool.h"
 #include "Engine/ContentImporters/AssetsImportingManager.h"
 #include "Engine/ContentImporters/CreateMaterial.h"
+#include "Engine/ContentImporters/CreateCollisionData.h"
 #include "Editor/Utilities/EditorUtilities.h"
 #include <ThirdParty/meshoptimizer/meshoptimizer.h>
 
@@ -562,7 +563,7 @@ bool ModelTool::ImportModel(const String& path, ModelData& meshData, Options& op
             materialOptions.Opacity.Texture = data.Textures[material.Opacity.TextureIndex].AssetID;
         if (material.Normals.TextureIndex != -1)
             materialOptions.Normals.Texture = data.Textures[material.Normals.TextureIndex].AssetID;
-        if (material.TwoSided | material.Diffuse.HasAlphaMask)
+        if (material.TwoSided || material.Diffuse.HasAlphaMask)
             materialOptions.Info.CullMode = CullMode::TwoSided;
         if (!Math::IsOne(material.Opacity.Value) || material.Opacity.TextureIndex != -1)
             materialOptions.Info.BlendMode = MaterialBlendMode::Transparent;
@@ -621,6 +622,41 @@ bool ModelTool::ImportModel(const String& path, ModelData& meshData, Options& op
 
                 // Update new node index using real asset skeleton
                 mesh.NodeIndex = skeletonMapping.SourceToTarget[mesh.NodeIndex];
+            }
+        }
+
+        // Collision mesh output
+        if (options.CollisionMeshesPrefix.HasChars())
+        {
+            // Extract collision meshes
+            ModelData collisionModel;
+            for (auto& lod : data.LODs)
+            {
+                for (int32 i = lod.Meshes.Count() - 1; i >= 0; i--)
+                {
+                    auto mesh = lod.Meshes[i];
+                    if (mesh->Name.StartsWith(options.CollisionMeshesPrefix, StringSearchCase::IgnoreCase))
+                    {
+                        if (collisionModel.LODs.Count() == 0)
+                            collisionModel.LODs.AddOne();
+                        collisionModel.LODs[0].Meshes.Add(mesh);
+                        lod.Meshes.RemoveAtKeepOrder(i);
+                        if (lod.Meshes.IsEmpty())
+                            break;
+                    }
+                }
+            }
+            if (collisionModel.LODs.HasItems())
+            {
+                // Create collision
+                CollisionCooking::Argument arg;
+                arg.Type = CollisionDataType::TriangleMesh;
+                arg.OverrideModelData = &collisionModel;
+                auto assetPath = autoImportOutput / StringUtils::GetFileNameWithoutExtension(path) + TEXT("Collision") ASSET_FILES_EXTENSION_WITH_DOT;
+                if (CreateCollisionData::CookMeshCollision(assetPath, arg))
+                {
+                    LOG(Error, "Failed to create collision mesh.");
+                }
             }
         }
 
