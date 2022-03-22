@@ -355,14 +355,14 @@ namespace Flax.Build
             Stopwatch stopwatch = Stopwatch.StartNew();
             if (!options.HasFlag(RunOptions.NoLoggingOfRunCommand))
             {
-                Log.Verbose("Running: " + app + " " + (string.IsNullOrEmpty(commandLine) ? "" : commandLine));
+                Log.Verbose("Running: " + app + (string.IsNullOrEmpty(commandLine) ? "" : " " + commandLine));
             }
 
             bool redirectStdOut = (options & RunOptions.NoStdOutRedirect) != RunOptions.NoStdOutRedirect;
 
             Process proc = new Process();
             proc.StartInfo.FileName = app;
-            proc.StartInfo.Arguments = string.IsNullOrEmpty(commandLine) ? "" : commandLine;
+            proc.StartInfo.Arguments = commandLine != null ? commandLine : "";
             proc.StartInfo.UseShellExecute = false;
             proc.StartInfo.RedirectStandardInput = input != null;
             proc.StartInfo.CreateNoWindow = true;
@@ -386,7 +386,7 @@ namespace Flax.Build
                 {
                     if (env.Key == "PATH")
                     {
-                        proc.StartInfo.EnvironmentVariables[env.Key] = proc.StartInfo.EnvironmentVariables[env.Key] + ';' + env.Value;
+                        proc.StartInfo.EnvironmentVariables[env.Key] = env.Value + ';' + proc.StartInfo.EnvironmentVariables[env.Key];
                     }
                     else
                     {
