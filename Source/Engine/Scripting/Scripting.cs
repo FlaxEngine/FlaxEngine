@@ -170,8 +170,12 @@ namespace FlaxEngine
         private static void OnLocalizationChanged()
         {
             var currentThread = Thread.CurrentThread;
-            currentThread.CurrentUICulture = Localization.CurrentLanguage;
-            currentThread.CurrentCulture = Localization.CurrentCulture;
+            var language = Localization.CurrentLanguage;
+            if (language != null)
+                currentThread.CurrentUICulture = language;
+            var culture = Localization.CurrentCulture;
+            if (culture != null)
+                currentThread.CurrentCulture = culture;
         }
 
         /// <summary>
