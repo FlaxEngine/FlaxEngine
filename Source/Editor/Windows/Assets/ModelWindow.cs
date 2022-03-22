@@ -191,9 +191,9 @@ namespace FlaxEditor.Windows.Assets
                         minScreenSize.FloatValue.MinValue = 0.0f;
                         minScreenSize.FloatValue.MaxValue = 1.0f;
                         minScreenSize.FloatValue.Value = proxy.Asset.MinScreenSize;
-                        minScreenSize.FloatValue.ValueChanged += () =>
+                        minScreenSize.FloatValue.BoxValueChanged += b =>
                         {
-                            proxy.Asset.MinScreenSize = minScreenSize.FloatValue.Value;
+                            proxy.Asset.MinScreenSize = b.Value;
                             proxy.Window.MarkAsEdited();
                         };
                     }
@@ -218,15 +218,15 @@ namespace FlaxEditor.Windows.Assets
                             vertexCount += mesh.VertexCount;
                         }
 
-                        group.Label(string.Format("Triangles: {0:N0}   Vertices: {1:N0}", triangleCount, vertexCount));
-                        group.Label("Size: " + lod.Box.Size);
+                        group.Label(string.Format("Triangles: {0:N0}   Vertices: {1:N0}", triangleCount, vertexCount)).AddCopyContextMenu();
+                        group.Label("Size: " + lod.Box.Size).AddCopyContextMenu();
                         var screenSize = group.FloatValue("Screen Size", "The screen size to switch LODs. Bottom limit of the model screen size to render this LOD.");
                         screenSize.FloatValue.MinValue = 0.0f;
                         screenSize.FloatValue.MaxValue = 10.0f;
                         screenSize.FloatValue.Value = lod.ScreenSize;
-                        screenSize.FloatValue.ValueChanged += () =>
+                        screenSize.FloatValue.BoxValueChanged += b =>
                         {
-                            lod.ScreenSize = screenSize.FloatValue.Value;
+                            lod.ScreenSize = b.Value;
                             proxy.Window.MarkAsEdited();
                         };
 
@@ -234,7 +234,7 @@ namespace FlaxEditor.Windows.Assets
                         for (int meshIndex = 0; meshIndex < meshes.Length; meshIndex++)
                         {
                             var mesh = meshes[meshIndex];
-                            group.Label($"Mesh {meshIndex} (tris: {mesh.TriangleCount:N0}, verts: {mesh.VertexCount:N0})");
+                            group.Label($"Mesh {meshIndex} (tris: {mesh.TriangleCount:N0}, verts: {mesh.VertexCount:N0})").AddCopyContextMenu();
 
                             // Material Slot
                             var materialSlot = group.ComboBox("Material Slot", "Material slot used by this mesh during rendering");
