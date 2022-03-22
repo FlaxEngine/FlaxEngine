@@ -38,9 +38,9 @@ PACK_STRUCT(struct ModelRasterizeData
     Vector3 VolumeToUVWMul;
     float MipOffset;
     Vector3 VolumeToUVWAdd;
-    float MaxDistance;
+    float DecodeMul;
     Vector3 VolumeLocalBoundsExtent;
-    float Padding0;
+    float DecodeAdd;
     });
 
 PACK_STRUCT(struct Data
@@ -379,7 +379,8 @@ bool GlobalSignDistanceFieldPass::Render(RenderContext& renderContext, GPUContex
                                 modelData.VolumeToUVWMul = volumeToUVWMul;
                                 modelData.VolumeToUVWAdd = volumeToUVWAdd;
                                 modelData.MipOffset = (float)mipLevelIndex;
-                                modelData.MaxDistance = sdf.MaxDistance;
+                                modelData.DecodeMul = 2.0f * sdf.MaxDistance;
+                                modelData.DecodeAdd = -sdf.MaxDistance;
                                 _modelsBuffer->Write(modelData);
                                 _modelsTextures.Add(sdf.Texture->ViewVolume());
 

@@ -15,9 +15,9 @@ struct ModelRasterizeData
 	float3 VolumeToUVWMul;
 	float MipOffset;
 	float3 VolumeToUVWAdd;
-	float MaxDistance;
+	float DecodeMul;
 	float3 VolumeLocalBoundsExtent;
-	float Padding0;
+	float DecodeAdd;
 };
 
 META_CB_BEGIN(0, Data)
@@ -73,7 +73,7 @@ float DistanceToModelSDF(float minDistance, ModelRasterizeData modelData, Textur
 	BRANCH if (minDistance <= distanceToVolume) return distanceToVolume;
 
 	// Sample SDF
-	float volumeDistance = modelSDFTex.SampleLevel(SamplerLinearClamp, volumeUV, modelData.MipOffset).x * modelData.MaxDistance;
+	float volumeDistance = modelSDFTex.SampleLevel(SamplerLinearClamp, volumeUV, modelData.MipOffset).x * modelData.DecodeMul + modelData.DecodeAdd;
 
 	// Combine distance to the volume with distance to the surface inside the model
 	float result = CombineDistanceToSDF(volumeDistance, distanceToVolume);
