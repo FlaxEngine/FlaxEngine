@@ -4,6 +4,7 @@
 
 #include "WindowsInput.h"
 #include "WindowsWindow.h"
+#include "Engine/Core/Log.h"
 #include "Engine/Input/Input.h"
 #include "Engine/Input/Mouse.h"
 #include "Engine/Input/Keyboard.h"
@@ -119,24 +120,22 @@ void WindowsInput::Init()
 
     if (WindowsInputImpl::RawInput)
     {
-        RAWINPUTDEVICE Rid[2];
+        RAWINPUTDEVICE rid[2] = {};
 
-        // register mouse
-        Rid[0].usUsagePage = HID_USAGE_PAGE_GENERIC;
-        Rid[0].usUsage = HID_USAGE_GENERIC_MOUSE;
-        Rid[0].dwFlags = (RIDEV_NOLEGACY*0);    // adds mouse and also ignores legacy mouse messages
-        Rid[0].hwndTarget = 0;
+        // Register generic mouse
+        rid[0].usUsagePage = HID_USAGE_PAGE_GENERIC;
+        rid[0].usUsage = HID_USAGE_GENERIC_MOUSE;
+        rid[0].hwndTarget = nullptr;
+        //rid[0].dwFlags = RIDEV_NOLEGACY; // TODO: Enable when double-click and other legacy events are handled in raw input
 
-        // register keyboard
-        Rid[1].usUsagePage = HID_USAGE_PAGE_GENERIC;
-        Rid[1].usUsage = HID_USAGE_GENERIC_KEYBOARD;
-        Rid[1].dwFlags = (RIDEV_NOLEGACY*0);    // adds keyboard and also ignores legacy keyboard messages
-        Rid[1].hwndTarget = 0;
+        // Register generic keyboard
+        rid[1].usUsagePage = HID_USAGE_PAGE_GENERIC;
+        rid[1].usUsage = HID_USAGE_GENERIC_KEYBOARD;
+        rid[1].hwndTarget = nullptr;
+        //rid[1].dwFlags = RIDEV_NOLEGACY; // Should not be enabled, WM_CHAR events would need to be emulated in raw input and that's not really feasible...
 
-        if (!RegisterRawInputDevices(Rid, 2, sizeof(Rid[0])))
-        {
-            //registration failed. Call GetLastError for the cause of the error
-        }
+        if (!RegisterRawInputDevices(rid, 2, sizeof(rid[0])))
+            LOG(Error, "Failed to register RawInput devices. Error: {0}", GetLastError());
     }
 }
 
@@ -178,33 +177,35 @@ bool WindowsInput::WndProc(Window* window, Windows::UINT msg, Windows::WPARAM wP
 
 bool OnRawInput(Vector2 mousePosition, Window* window, HRAWINPUT input)
 {
-    uint32 dataSize;
     static BYTE* dataBuffer = nullptr;
     static uint32 dataBufferSize = 0;
 
+    // Query the size of the buffer first, and allocate enough for the buffer
+    uint32 dataSize;
     GetRawInputData(input, RID_INPUT, nullptr, &dataSize, sizeof(RAWINPUTHEADER));
     if (dataSize > dataBufferSize)
     {
-        if (dataBuffer != nullptr)
-            delete[] dataBuffer;
+        delete[] dataBuffer;
         dataBuffer = new BYTE[dataSize];
         dataBufferSize = dataSize;
     }
 
     GetRawInputData(input, RID_INPUT, dataBuffer, &dataSize, sizeof(RAWINPUTHEADER));
 
-    if (((RAWINPUT*)dataBuffer)->header.dwType == RIM_TYPEKEYBOARD) 
+    const RAWINPUT* rawInput = reinterpret_cast<RAWINPUT*>(dataBuffer);
+    if (rawInput->header.dwType == RIM_TYPEKEYBOARD)
     {
-        RAWKEYBOARD rawKeyboard = ((RAWINPUT*)dataBuffer)->data.keyboard;
-        
+        const RAWKEYBOARD rawKeyboard = rawInput->data.keyboard;
         if ((rawKeyboard.Flags & RI_KEY_BREAK) != 0)
             Input::Keyboard->OnKeyUp(static_cast<KeyboardKeys>(rawKeyboard.VKey), window);
         else
             Input::Keyboard->OnKeyDown(static_cast<KeyboardKeys>(rawKeyboard.VKey), window);
+
+        return true;
     }
-    else if (((RAWINPUT*)dataBuffer)->header.dwType == RIM_TYPEMOUSE) 
+    if (rawInput->header.dwType == RIM_TYPEMOUSE)
     {
-        const RAWMOUSE rawMouse = ((RAWINPUT*)dataBuffer)->data.mouse;
+        const RAWMOUSE rawMouse = rawInput->data.mouse;
         Vector2 mousePos;
         if ((rawMouse.usFlags & MOUSE_MOVE_ABSOLUTE) != 0)
         {
@@ -241,9 +242,28 @@ bool OnRawInput(Vector2 mousePosition, Window* window, HRAWINPUT input)
             Input::Mouse->OnMouseDown(mousePos, MouseButton::Right, window);
         if ((rawMouse.usButtonFlags & RI_MOUSE_RIGHT_BUTTON_UP) != 0)
             Input::Mouse->OnMouseUp(mousePos, MouseButton::Right, window);
-    } 
+        if ((rawMouse.usButtonFlags & RI_MOUSE_MIDDLE_BUTTON_DOWN) != 0)
+            Input::Mouse->OnMouseDown(mousePos, MouseButton::Middle, window);
+        if ((rawMouse.usButtonFlags & RI_MOUSE_MIDDLE_BUTTON_UP) != 0)
+            Input::Mouse->OnMouseUp(mousePos, MouseButton::Middle, window);
+        if ((rawMouse.usButtonFlags & RI_MOUSE_BUTTON_4_DOWN) != 0)
+            Input::Mouse->OnMouseDown(mousePos, MouseButton::Extended1, window);
+        if ((rawMouse.usButtonFlags & RI_MOUSE_BUTTON_4_UP) != 0)
+            Input::Mouse->OnMouseUp(mousePos, MouseButton::Extended1, window);
+        if ((rawMouse.usButtonFlags & RI_MOUSE_BUTTON_5_DOWN) != 0)
+            Input::Mouse->OnMouseDown(mousePos, MouseButton::Extended2, window);
+        if ((rawMouse.usButtonFlags & RI_MOUSE_BUTTON_5_UP) != 0)
+            Input::Mouse->OnMouseUp(mousePos, MouseButton::Extended2, window);
+        if ((rawMouse.usButtonFlags & RI_MOUSE_WHEEL) != 0)
+        {
+            const float deltaNormalized = static_cast<float>(rawMouse.usButtonData) / WHEEL_DELTA;
+            Input::Mouse->OnMouseWheel(mousePos, deltaNormalized, window);
+        }
 
-    return true;
+        return true;
+    }
+
+    return false;
 }
 
 bool WindowsKeyboard::WndProc(Window* window, const Windows::UINT msg, Windows::WPARAM wParam, Windows::LPARAM lParam)
@@ -327,51 +347,63 @@ bool WindowsMouse::WndProc(Window* window, const UINT msg, WPARAM wParam, LPARAM
     }
     case WM_LBUTTONDOWN:
     {
-        OnMouseDown(mousePos, MouseButton::Left, window);
+        if (!WindowsInputImpl::RawInput)
+            OnMouseDown(mousePos, MouseButton::Left, window);
         result = true;
         break;
     }
     case WM_RBUTTONDOWN:
     {
-        OnMouseDown(mousePos, MouseButton::Right, window);
+        if (!WindowsInputImpl::RawInput)
+            OnMouseDown(mousePos, MouseButton::Right, window);
         result = true;
         break;
     }
     case WM_MBUTTONDOWN:
     {
-        OnMouseDown(mousePos, MouseButton::Middle, window);
+        if (!WindowsInputImpl::RawInput)
+            OnMouseDown(mousePos, MouseButton::Middle, window);
         result = true;
         break;
     }
     case WM_XBUTTONDOWN:
     {
-        const auto button = (HIWORD(wParam) & XBUTTON1) ? MouseButton::Extended1 : MouseButton::Extended2;
-        OnMouseDown(mousePos, button, window);
+        if (!WindowsInputImpl::RawInput)
+        {
+            const auto button = (HIWORD(wParam) & XBUTTON1) ? MouseButton::Extended1 : MouseButton::Extended2;
+            OnMouseDown(mousePos, button, window);
+        }
         result = true;
         break;
     }
     case WM_LBUTTONUP:
     {
-        OnMouseUp(mousePos, MouseButton::Left, window);
+        if (!WindowsInputImpl::RawInput)
+            OnMouseUp(mousePos, MouseButton::Left, window);
         result = true;
         break;
     }
     case WM_RBUTTONUP:
     {
-        OnMouseUp(mousePos, MouseButton::Right, window);
+        if (!WindowsInputImpl::RawInput)
+            OnMouseUp(mousePos, MouseButton::Right, window);
         result = true;
         break;
     }
     case WM_MBUTTONUP:
     {
-        OnMouseUp(mousePos, MouseButton::Middle, window);
+        if (!WindowsInputImpl::RawInput)
+            OnMouseUp(mousePos, MouseButton::Middle, window);
         result = true;
         break;
     }
     case WM_XBUTTONUP:
     {
-        const auto button = (HIWORD(wParam) & XBUTTON1) ? MouseButton::Extended1 : MouseButton::Extended2;
-        OnMouseUp(mousePos, button, window);
+        if (!WindowsInputImpl::RawInput)
+        {
+            const auto button = (HIWORD(wParam) & XBUTTON1) ? MouseButton::Extended1 : MouseButton::Extended2;
+            OnMouseUp(mousePos, button, window);
+        }
         result = true;
         break;
     }
