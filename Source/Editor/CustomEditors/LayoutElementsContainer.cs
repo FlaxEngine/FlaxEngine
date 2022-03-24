@@ -133,11 +133,13 @@ namespace FlaxEditor.CustomEditors
         /// Adds new button element.
         /// </summary>
         /// <param name="text">The text.</param>
+        /// <param name="tooltip">The tooltip text.</param>
         /// <returns>The created element.</returns>
-        public ButtonElement Button(string text)
+        public ButtonElement Button(string text, string tooltip = null)
         {
             var element = new ButtonElement();
-            element.Init(text);
+            element.Button.Text = text;
+            element.Button.TooltipText = tooltip;
             OnAddElement(element);
             return element;
         }
@@ -147,11 +149,14 @@ namespace FlaxEditor.CustomEditors
         /// </summary>
         /// <param name="text">The text.</param>
         /// <param name="color">The color.</param>
+        /// <param name="tooltip">The tooltip text.</param>
         /// <returns>The created element.</returns>
-        public ButtonElement Button(string text, Color color)
+        public ButtonElement Button(string text, Color color, string tooltip = null)
         {
             ButtonElement element = new ButtonElement();
-            element.Init(text, color);
+            element.Button.Text = text;
+            element.Button.TooltipText = tooltip;
+            element.Button.SetColors(color);
             OnAddElement(element);
             return element;
         }

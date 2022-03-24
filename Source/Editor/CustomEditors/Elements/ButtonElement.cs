@@ -16,26 +16,6 @@ namespace FlaxEditor.CustomEditors.Elements
         /// </summary>
         public readonly Button Button = new Button();
 
-        /// <summary>
-        /// Initializes the element.
-        /// </summary>
-        /// <param name="text">The text.</param>
-        public void Init(string text)
-        {
-            Button.Text = text;
-        }
-
-        /// <summary>
-        /// Initializes the element.
-        /// </summary>
-        /// <param name="text">The text.</param>
-        /// <param name="color">The color.</param>
-        public void Init(string text, Color color)
-        {
-            Button.Text = text;
-            Button.SetColors(color);
-        }
-
         /// <inheritdoc />
         public override Control Control => Button;
     }

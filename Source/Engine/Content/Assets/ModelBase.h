@@ -14,7 +14,7 @@
 // Chunk 1: LOD0
 // Chunk 2: LOD1
 // ..
-//
+// Chunk 15: SDF
 #define MODEL_LOD_TO_CHUNK_INDEX(lod) (lod + 1)
 
 class MeshBase;
@@ -64,9 +64,19 @@ public:
         API_FIELD() Vector3 LocalBoundsMin;
 
         /// <summary>
+        /// The SDF texture resolution scale used for building texture.
+        /// </summary>
+        API_FIELD() float ResolutionScale = 1.0f;
+
+        /// <summary>
         /// The bounding box of the SDF texture in the model local-space.
         /// </summary>
         API_FIELD() Vector3 LocalBoundsMax;
+
+        /// <summary>
+        /// The model LOD index used for the building.
+        /// </summary>
+        API_FIELD() int32 LOD = 6;
     };
 
 protected:

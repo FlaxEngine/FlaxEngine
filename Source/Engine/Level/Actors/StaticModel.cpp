@@ -215,8 +215,6 @@ void StaticModel::Draw(RenderContext& renderContext)
         return;
     if (renderContext.View.Pass == DrawPass::GlobalSDF)
     {
-        if (!Model->SDF.Texture)
-            Model->GenerateSDF();
         GlobalSignDistanceFieldPass::Instance()->RasterizeModelSDF(Model->SDF, _world, _box);
         return;
     }

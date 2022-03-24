@@ -292,6 +292,18 @@ namespace FlaxEditor.Content.Import
         public bool RestoreMaterialsOnReimport { get; set; } = true;
 
         /// <summary>
+        /// If checked, enables generation of Signed Distance Field (SDF).
+        /// </summary>
+        [EditorOrder(1500), DefaultValue(false), EditorDisplay("SDF"), VisibleIf(nameof(Type_Model))]
+        public bool GenerateSDF { get; set; } = false;
+
+        /// <summary>
+        /// Resolution scale for generated Signed Distance Field (SDF) texture. Higher values improve accuracy but increase memory usage and reduce performance.
+        /// </summary>
+        [EditorOrder(1510), DefaultValue(1.0f), Limit(0.0001f, 100.0f), EditorDisplay("SDF"), VisibleIf(nameof(Type_Model))]
+        public float SDFResolution { get; set; } = 1.0f;
+
+        /// <summary>
         /// If checked, the imported mesh/animations are splitted into separate assets. Used if ObjectIndex is set to -1.
         /// </summary>
         [EditorOrder(2000), DefaultValue(false), EditorDisplay("Splitting"), Tooltip("If checked, the imported mesh/animations are splitted into separate assets. Used if ObjectIndex is set to -1.")]
@@ -302,6 +314,8 @@ namespace FlaxEditor.Content.Import
         /// </summary>
         [EditorOrder(2010), DefaultValue(-1), EditorDisplay("Splitting"), Tooltip("The zero-based index for the mesh/animation clip to import. If the source file has more than one mesh/animation it can be used to pick a desire object. Default -1 imports all objects.")]
         public int ObjectIndex { get; set; } = -1;
+
+        private bool Type_Model => Type == ModelType.Model;
 
         [StructLayout(LayoutKind.Sequential)]
         internal struct InternalOptions
@@ -350,6 +364,10 @@ namespace FlaxEditor.Content.Import
             public byte ImportTextures;
             public byte RestoreMaterialsOnReimport;
 
+            // SDF
+            public byte GenerateSDF;
+            public float SDFResolution;
+
             // Splitting
             public byte SplitObjects;
             public int ObjectIndex;
@@ -392,6 +410,8 @@ namespace FlaxEditor.Content.Import
                 ImportMaterials = (byte)(ImportMaterials ? 1 : 0),
                 ImportTextures = (byte)(ImportTextures ? 1 : 0),
                 RestoreMaterialsOnReimport = (byte)(RestoreMaterialsOnReimport ? 1 : 0),
+                GenerateSDF = (byte)(GenerateSDF ? 1 : 0),
+                SDFResolution = SDFResolution,
                 SplitObjects = (byte)(SplitObjects ? 1 : 0),
                 ObjectIndex = ObjectIndex,
             };
@@ -431,25 +451,22 @@ namespace FlaxEditor.Content.Import
             ImportMaterials = options.ImportMaterials != 0;
             ImportTextures = options.ImportTextures != 0;
             RestoreMaterialsOnReimport = options.RestoreMaterialsOnReimport != 0;
+            GenerateSDF = options.GenerateSDF != 0;
+            SDFResolution = options.SDFResolution;
             SplitObjects = options.SplitObjects != 0;
             ObjectIndex = options.ObjectIndex;
         }
 
         /// <summary>
-        /// Tries the restore the asset import options from the target resource file.
+        /// Tries the restore the asset import options from the target resource file. Applies the project default options too.
         /// </summary>
         /// <param name="options">The options.</param>
         /// <param name="assetPath">The asset path.</param>
         /// <returns>True settings has been restored, otherwise false.</returns>
-        public static bool TryRestore(ref ModelImportSettings options, string assetPath)
+        public static void TryRestore(ref ModelImportSettings options, string assetPath)
         {
-            if (ModelImportEntry.Internal_GetModelImportOptions(assetPath, out var internalOptions))
-            {
-                // Restore settings
-                options.FromInternal(ref internalOptions);
-                return true;
-            }
-            return false;
+            ModelImportEntry.Internal_GetModelImportOptions(assetPath, out var internalOptions);
+            options.FromInternal(ref internalOptions);
         }
     }
 
@@ -495,7 +512,7 @@ namespace FlaxEditor.Content.Import
         #region Internal Calls
 
         [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern bool Internal_GetModelImportOptions(string path, out ModelImportSettings.InternalOptions result);
+        internal static extern void Internal_GetModelImportOptions(string path, out ModelImportSettings.InternalOptions result);
 
         #endregion
     }

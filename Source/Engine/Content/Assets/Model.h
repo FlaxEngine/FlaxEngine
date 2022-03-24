@@ -212,8 +212,14 @@ public:
     /// <remarks>Can be called in async in case of SDF generation on a CPU (assuming model is not during rendering).</remarks>
     /// <param name="resolutionScale">The SDF texture resolution scale. Use higher values for more precise data but with significant performance and memory overhead.</param>
     /// <param name="lodIndex">The index of the LOD to use for the SDF building.</param>
+    /// <param name="cacheData">If true, the generated SDF texture data will be cached on CPU (in asset chunk storage) to allow saving it later, otherwise it will be runtime for GPU-only. Ignored for virtual assets.</param>
     /// <returns>True if failed, otherwise false.</returns>
-    API_FUNCTION() bool GenerateSDF(float resolutionScale = 1.0f, int32 lodIndex = 6);
+    API_FUNCTION() bool GenerateSDF(float resolutionScale = 1.0f, int32 lodIndex = 6, bool cacheData = true);
+
+    /// <summary>
+    /// Sets set SDF data (releases the current one).
+    /// </summary>
+    API_FUNCTION() void SetSDF(const SDFData& sdf);
 
 private:
 

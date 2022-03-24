@@ -409,6 +409,11 @@ public:
     {
         Meshes.ClearDelete();
     }
+
+    /// <summary>
+    /// Gets the bounding box combined for all meshes in this model LOD.
+    /// </summary>
+    BoundingBox GetBox() const;
 };
 
 /// <summary>

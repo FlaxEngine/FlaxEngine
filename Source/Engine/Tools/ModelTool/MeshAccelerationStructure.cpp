@@ -5,6 +5,7 @@
 #include "MeshAccelerationStructure.h"
 #include "Engine/Core/Math/Math.h"
 #include "Engine/Content/Assets/Model.h"
+#include "Engine/Graphics/Models/ModelData.h"
 #include "Engine/Profiler/ProfilerCPU.h"
 
 void MeshAccelerationStructure::BuildBVH(int32 node, int32 maxLeafSize, Array<byte>& scratch)
@@ -323,6 +324,34 @@ void MeshAccelerationStructure::Add(Model* model, int32 lodIndex)
         }
         meshData.Use16BitIndexBuffer = mesh.Use16BitIndexBuffer();
         meshData.Bounds = mesh.GetBox();
+    }
+}
+
+void MeshAccelerationStructure::Add(ModelData* modelData, int32 lodIndex, bool copy)
+{
+    PROFILE_CPU();
+    lodIndex = Math::Clamp(lodIndex, 0, modelData->LODs.Count() - 1);
+    ModelLodData& lod = modelData->LODs[lodIndex];
+    const int32 meshesStart = _meshes.Count();
+    _meshes.AddDefault(lod.Meshes.Count());
+    for (int32 i = 0; i < lod.Meshes.Count(); i++)
+    {
+        MeshData* mesh = lod.Meshes[i];
+        auto& meshData = _meshes[meshesStart + i];
+        meshData.Indices = mesh->Indices.Count();
+        meshData.Vertices = mesh->Positions.Count();
+        if (copy)
+        {
+            meshData.IndexBuffer.Copy((const byte*)mesh->Indices.Get(), meshData.Indices * sizeof(uint32));
+            meshData.VertexBuffer.Copy((const byte*)mesh->Positions.Get(), meshData.Vertices * sizeof(Vector3));
+        }
+        else
+        {
+            meshData.IndexBuffer.Link((const byte*)mesh->Indices.Get(), meshData.Indices * sizeof(uint32));
+            meshData.VertexBuffer.Link((const byte*)mesh->Positions.Get(), meshData.Vertices * sizeof(Vector3));
+        }
+        meshData.Use16BitIndexBuffer = false;
+        mesh->CalculateBox(meshData.Bounds);
     }
 }
 

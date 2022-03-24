@@ -2,14 +2,11 @@
 
 #include "Model.h"
 #include "Engine/Core/Log.h"
-#include "Engine/Core/Math/Int3.h"
-#include "Engine/Core/RandomStream.h"
 #include "Engine/Engine/Engine.h"
 #include "Engine/Serialization/MemoryReadStream.h"
 #include "Engine/Content/WeakAssetReference.h"
 #include "Engine/Content/Upgraders/ModelAssetUpgrader.h"
 #include "Engine/Content/Factories/BinaryAssetFactory.h"
-#include "Engine/Core/Math/Int2.h"
 #include "Engine/Debug/DebugDraw.h"
 #include "Engine/Graphics/RenderTools.h"
 #include "Engine/Graphics/RenderTask.h"
@@ -18,10 +15,11 @@
 #include "Engine/Debug/Exceptions/ArgumentOutOfRangeException.h"
 #include "Engine/Graphics/Async/GPUTask.h"
 #include "Engine/Graphics/Textures/GPUTexture.h"
+#include "Engine/Graphics/Textures/TextureData.h"
 #include "Engine/Profiler/ProfilerCPU.h"
 #include "Engine/Renderer/DrawCall.h"
-#include "Engine/Threading/JobSystem.h"
 #include "Engine/Threading/Threading.h"
+#include "Engine/Tools/ModelTool/ModelTool.h"
 #include "Engine/Tools/ModelTool/MeshAccelerationStructure.h"
 #if GPU_ENABLE_ASYNC_RESOURCES_CREATION
 #include "Engine/Threading/ThreadPoolTask.h"
@@ -526,16 +524,49 @@ bool Model::Save(bool withMeshDataFromGpu, const StringView& path)
                 lodChunk->Data.Copy(meshesStream.GetHandle(), meshesStream.GetPosition());
             }
         }
+
+        // Download SDF data
+        if (SDF.Texture)
+        {
+            auto sdfChunk = GET_CHUNK(15);
+            if (sdfChunk == nullptr)
+                return true;
+            MemoryWriteStream sdfStream;
+            sdfStream.WriteInt32(1); // Version
+            ModelSDFHeader data(SDF, SDF.Texture->GetDescription());
+            sdfStream.Write(&data);
+            TextureData sdfTextureData;
+            if (SDF.Texture->DownloadData(sdfTextureData))
+                return true;
+            for (int32 mipLevel = 0; mipLevel < sdfTextureData.Items[0].Mips.Count(); mipLevel++)
+            {
+                auto& mip = sdfTextureData.Items[0].Mips[mipLevel];
+                ModelSDFMip mipData(mipLevel, mip);
+                sdfStream.Write(&mipData);
+                sdfStream.Write(mip.Data.Get(), mip.Data.Length());
+            }
+            sdfChunk->Data.Copy(sdfStream.GetHandle(), sdfStream.GetPosition());
+        }
     }
     else
     {
-        ASSERT(!IsVirtual());
-
         // Load all chunks with a mesh data
         for (int32 lodIndex = 0; lodIndex < LODs.Count(); lodIndex++)
         {
             if (LoadChunk(MODEL_LOD_TO_CHUNK_INDEX(lodIndex)))
                 return true;
+        }
+
+        if (SDF.Texture)
+        {
+            // SDF data from file (only if has no cached texture data)
+            if (LoadChunk(15))
+                return true;
+        }
+        else
+        {
+            // No SDF texture
+            ReleaseChunk(15);
         }
     }
 
@@ -565,8 +596,9 @@ bool Model::Save(bool withMeshDataFromGpu, const StringView& path)
 
 #endif
 
-bool Model::GenerateSDF(float resolutionScale, int32 lodIndex)
+bool Model::GenerateSDF(float resolutionScale, int32 lodIndex, bool cacheData)
 {
+    ScopeLock lock(Locker);
     if (!HasAnyLODInitialized())
         return true;
     if (IsInMainThread() && IsVirtual())
@@ -575,217 +607,29 @@ bool Model::GenerateSDF(float resolutionScale, int32 lodIndex)
         LOG(Warning, "Cannot generate SDF for virtual models on a main thread.");
         return true;
     }
-    PROFILE_CPU();
-    auto startTime = Platform::GetTimeSeconds();
-    ScopeLock lock(Locker);
-
-    // Setup SDF texture properties
+    cacheData &= Storage != nullptr; // Cache only if has storage linked
     lodIndex = Math::Clamp(lodIndex, HighestResidentLODIndex(), LODs.Count() - 1);
-    auto& lod = LODs[lodIndex];
-    BoundingBox bounds = lod.GetBox();
-    Vector3 size = bounds.GetSize();
-    SDF.WorldUnitsPerVoxel = 10 / Math::Max(resolutionScale, 0.0001f);
-    Int3 resolution(Vector3::Ceil(Vector3::Clamp(size / SDF.WorldUnitsPerVoxel, 4, 256)));
-    Vector3 uvwToLocalMul = size;
-    Vector3 uvwToLocalAdd = bounds.Minimum;
-    SDF.LocalToUVWMul = Vector3::One / uvwToLocalMul;
-    SDF.LocalToUVWAdd = -uvwToLocalAdd / uvwToLocalMul;
-    SDF.MaxDistance = size.MaxValue();
-    SDF.LocalBoundsMin = bounds.Minimum;
-    SDF.LocalBoundsMax = bounds.Maximum;
-    // TODO: maybe apply 1 voxel margin around the geometry?
-    const int32 maxMips = 3;
-    const int32 mipCount = Math::Min(MipLevelsCount(resolution.X, resolution.Y, resolution.Z, true), maxMips);
-    if (!SDF.Texture)
-        SDF.Texture = GPUTexture::New();
-    PixelFormat format = PixelFormat::R16_UNorm;
-    int32 formatStride = 2;
-    float formatMaxValue = MAX_uint16;
-    typedef float (*FormatRead)(void* ptr);
-    typedef void (*FormatWrite)(void* ptr, float v);
-    FormatRead formatRead = [](void* ptr)
-    {
-        return (float)*(uint16*)ptr;
-    };
-    FormatWrite formatWrite = [](void* ptr, float v)
-    {
-        *(uint16*)ptr = (uint16)v;
-    };
-    if (resolution.MaxValue() < 8)
-    {
-        // For smaller meshes use more optimized format (gives small perf and memory gain but introduces artifacts on larger meshes)
-        format = PixelFormat::R8_UNorm;
-        formatStride = 1;
-        formatMaxValue = MAX_uint8;
-        formatRead = [](void* ptr)
-        {
-            return (float)*(uint8*)ptr;
-        };
-        formatWrite = [](void* ptr, float v)
-        {
-            *(uint8*)ptr = (uint8)v;
-        };
-    }
-    if (SDF.Texture->Init(GPUTextureDescription::New3D(resolution.X, resolution.Y, resolution.Z, format, GPUTextureFlags::ShaderResource | GPUTextureFlags::UnorderedAccess, mipCount)))
-    {
-        SAFE_DELETE_GPU_RESOURCE(SDF.Texture);
+
+    // Generate SDF
+    MemoryWriteStream sdfStream;
+    if (ModelTool::GenerateModelSDF(this, nullptr, resolutionScale, lodIndex, &SDF, cacheData ? &sdfStream : nullptr, GetPath()))
         return true;
-    }
 
-    // TODO: support GPU to generate model SDF on-the-fly (if called during rendering)
+    // Set asset data
+    if (cacheData)
+        GetOrCreateChunk(15)->Data.Copy(sdfStream.GetHandle(), sdfStream.GetPosition());
 
-    // Setup acceleration structure for fast ray tracing the mesh triangles
-    MeshAccelerationStructure scene;
-    scene.Add(this, lodIndex);
-    scene.BuildBVH();
-
-    // Allocate memory for the distant field
-    const int32 voxelsSize = resolution.X * resolution.Y * resolution.Z * formatStride;
-    void* voxels = Allocator::Allocate(voxelsSize);
-    Vector3 xyzToLocalMul = uvwToLocalMul / Vector3(resolution);
-    Vector3 xyzToLocalAdd = uvwToLocalAdd;
-    const Vector2 encodeMAD(0.5f / SDF.MaxDistance * formatMaxValue, 0.5f * formatMaxValue);
-    const Vector2 decodeMAD(2.0f * SDF.MaxDistance / formatMaxValue, -SDF.MaxDistance);
-
-    // TODO: use optimized sparse storage for SDF data as hierarchical bricks as in papers below:
-    // https://graphics.pixar.com/library/IrradianceAtlas/paper.pdf
-    // http://maverick.inria.fr/Membres/Cyril.Crassin/thesis/CCrassinThesis_EN_Web.pdf
-    // http://ramakarl.com/pdfs/2016_Hoetzlein_GVDB.pdf
-    // https://www.cse.chalmers.se/~uffe/HighResolutionSparseVoxelDAGs.pdf
-
-    // Brute-force for each voxel to calculate distance to the closest triangle with point query and distance sign by raycasting around the voxel
-    const int32 sampleCount = 12;
-    Array<Vector3> sampleDirections;
-    sampleDirections.Resize(sampleCount);
-    {
-        RandomStream rand;
-        sampleDirections.Get()[0] = Vector3::Up;
-        sampleDirections.Get()[1] = Vector3::Down;
-        sampleDirections.Get()[2] = Vector3::Left;
-        sampleDirections.Get()[3] = Vector3::Right;
-        sampleDirections.Get()[4] = Vector3::Forward;
-        sampleDirections.Get()[5] = Vector3::Backward;
-        for (int32 i = 6; i < sampleCount; i++)
-            sampleDirections.Get()[i] = rand.GetUnitVector();
-    }
-    Function<void(int32)> sdfJob = [this, &resolution, &sampleDirections, &scene, &voxels, &xyzToLocalMul, &xyzToLocalAdd, &encodeMAD, &formatStride, &formatWrite](int32 z)
-    {
-        PROFILE_CPU_NAMED("Model SDF Job");
-        float hitDistance;
-        Vector3 hitNormal, hitPoint;
-        Triangle hitTriangle;
-        const int32 zAddress = resolution.Y * resolution.X * z;
-        for (int32 y = 0; y < resolution.Y; y++)
-        {
-            const int32 yAddress = resolution.X * y + zAddress;
-            for (int32 x = 0; x < resolution.X; x++)
-            {
-                float minDistance = SDF.MaxDistance;
-                Vector3 voxelPos = Vector3((float)x, (float)y, (float)z) * xyzToLocalMul + xyzToLocalAdd;
-
-                // Point query to find the distance to the closest surface
-                scene.PointQuery(voxelPos, minDistance, hitPoint, hitTriangle);
-
-                // Raycast samples around voxel to count triangle backfaces hit
-                int32 hitBackCount = 0, hitCount = 0;
-                for (int32 sample = 0; sample < sampleDirections.Count(); sample++)
-                {
-                    Ray sampleRay(voxelPos, sampleDirections[sample]);
-                    if (scene.RayCast(sampleRay, hitDistance, hitNormal, hitTriangle))
-                    {
-                        hitCount++;
-                        const bool backHit = Vector3::Dot(sampleRay.Direction, hitTriangle.GetNormal()) > 0;
-                        if (backHit)
-                            hitBackCount++;
-                    }
-                }
-
-                float distance = minDistance;
-                // TODO: surface thickness threshold? shift reduce distance for all voxels by something like 0.01 to enlarge thin geometry
-                //if ((float)hitBackCount > )hitCount * 0.3f && hitCount != 0)
-                if ((float)hitBackCount > (float)sampleDirections.Count() * 0.6f && hitCount != 0)
-                {
-                    // Voxel is inside the geometry so turn it into negative distance to the surface
-                    distance *= -1;
-                }
-                const int32 xAddress = x + yAddress;
-                formatWrite((byte*)voxels + xAddress * formatStride, distance * encodeMAD.X + encodeMAD.Y);
-            }
-        }
-    };
-    JobSystem::Execute(sdfJob, resolution.Z);
-
-    // Upload data to the GPU
-    BytesContainer data;
-    data.Link((byte*)voxels, voxelsSize);
-    auto task = SDF.Texture->UploadMipMapAsync(data, 0, resolution.X * formatStride, data.Length(), true);
-    if (task)
-        task->Start();
-
-    // Generate mip maps
-    void* voxelsMip = nullptr;
-    for (int32 mipLevel = 1; mipLevel < mipCount; mipLevel++)
-    {
-        Int3 resolutionMip = Int3::Max(resolution / 2, Int3::One);
-        const int32 voxelsMipSize = resolutionMip.X * resolutionMip.Y * resolutionMip.Z * formatStride;
-        if (voxelsMip == nullptr)
-            voxelsMip = Allocator::Allocate(voxelsMipSize);
-
-        // Downscale mip
-        Function<void(int32)> mipJob = [this, &voxelsMip, &voxels, &resolution, &resolutionMip, &encodeMAD, &decodeMAD, &formatStride, &formatRead, &formatWrite](int32 z)
-        {
-            PROFILE_CPU_NAMED("Model SDF Mip Job");
-            const int32 zAddress = resolutionMip.Y * resolutionMip.X * z;
-            for (int32 y = 0; y < resolutionMip.Y; y++)
-            {
-                const int32 yAddress = resolutionMip.X * y + zAddress;
-                for (int32 x = 0; x < resolutionMip.X; x++)
-                {
-                    // Linear box filter around the voxel
-                    // TODO: use min distance for nearby texels (texel distance + distance to texel)
-                    float distance = 0;
-                    for (int32 dz = 0; dz < 2; dz++)
-                    {
-                        const int32 dzAddress = (z * 2 + dz) * (resolution.Y * resolution.X);
-                        for (int32 dy = 0; dy < 2; dy++)
-                        {
-                            const int32 dyAddress = (y * 2 + dy) * (resolution.X) + dzAddress;
-                            for (int32 dx = 0; dx < 2; dx++)
-                            {
-                                const int32 dxAddress = (x * 2 + dx) + dyAddress;
-                                const float d = formatRead((byte*)voxels + dxAddress * formatStride) * decodeMAD.X + decodeMAD.Y;
-                                distance += d;
-                            }
-                        }
-                    }
-                    distance *= 1.0f / 8.0f;
-
-                    const int32 xAddress = x + yAddress;
-                    formatWrite((byte*)voxelsMip + xAddress * formatStride, distance * encodeMAD.X + encodeMAD.Y);
-                }
-            }
-        };
-        JobSystem::Execute(mipJob, resolutionMip.Z);
-
-        // Upload to the GPU
-        data.Link((byte*)voxelsMip, voxelsMipSize);
-        task = SDF.Texture->UploadMipMapAsync(data, mipLevel, resolutionMip.X * formatStride, data.Length(), true);
-        if (task)
-            task->Start();
-
-        // Go down
-        Swap(voxelsMip, voxels);
-        resolution = resolutionMip;
-    }
-
-    Allocator::Free(voxelsMip);
-    Allocator::Free(voxels);
-
-#if !BUILD_RELEASE
-    auto endTime = Platform::GetTimeSeconds();
-    LOG(Info, "Generated SDF {}x{}x{} ({} kB) in {}ms for {}", resolution.X, resolution.Y, resolution.Z, SDF.Texture->GetMemoryUsage() / 1024, (int32)((endTime - startTime) * 1000.0), GetPath());
-#endif
     return false;
+}
+
+void Model::SetSDF(const SDFData& sdf)
+{
+    ScopeLock lock(Locker);
+    if (SDF.Texture == sdf.Texture)
+        return;
+    SAFE_DELETE_GPU_RESOURCE(SDF.Texture);
+    SDF = sdf;
+    ReleaseChunk(15);
 }
 
 bool Model::Init(const Span<int32>& meshesCountPerLod)
@@ -1039,6 +883,50 @@ Asset::LoadResult Model::load()
         }
     }
 
+    // Load SDF
+    auto chunk15 = GetChunk(15);
+    if (chunk15 && chunk15->IsLoaded())
+    {
+        MemoryReadStream sdfStream(chunk15->Get(), chunk15->Size());
+        int32 version;
+        sdfStream.ReadInt32(&version);
+        switch (version)
+        {
+        case 1:
+        {
+            ModelSDFHeader data;
+            sdfStream.Read(&data);
+            if (!SDF.Texture)
+                SDF.Texture = GPUTexture::New();
+            if (SDF.Texture->Init(GPUTextureDescription::New3D(data.Width, data.Height, data.Depth, data.Format, GPUTextureFlags::ShaderResource | GPUTextureFlags::UnorderedAccess, data.MipLevels)))
+                return LoadResult::Failed;
+            SDF.LocalToUVWMul = data.LocalToUVWMul;
+            SDF.LocalToUVWAdd = data.LocalToUVWAdd;
+            SDF.WorldUnitsPerVoxel = data.WorldUnitsPerVoxel;
+            SDF.MaxDistance = data.MaxDistance;
+            SDF.LocalBoundsMin = data.LocalBoundsMin;
+            SDF.LocalBoundsMax = data.LocalBoundsMax;
+            SDF.ResolutionScale = data.ResolutionScale;
+            SDF.LOD = data.LOD;
+            for (int32 mipLevel = 0; mipLevel < data.MipLevels; mipLevel++)
+            {
+                ModelSDFMip mipData;
+                sdfStream.Read(&mipData);
+                void* mipBytes = sdfStream.Read(mipData.SlicePitch);
+                BytesContainer mipBytesData;
+                mipBytesData.Link((byte*)mipBytes, mipData.SlicePitch);
+                auto task = SDF.Texture->UploadMipMapAsync(mipBytesData, mipData.MipIndex, mipData.RowPitch, mipData.SlicePitch, false);
+                if (task)
+                    task->Start();
+            }
+            break;
+        }
+        default:
+            LOG(Warning, "Unknown SDF data version {0} in {1}", version, ToString());
+            break;
+        }
+    }
+
 #if BUILD_DEBUG || BUILD_DEVELOPMENT
     // Validate LODs
     for (int32 lodIndex = 1; lodIndex < LODs.Count(); lodIndex++)
@@ -1092,7 +980,7 @@ bool Model::init(AssetInitData& initData)
 AssetChunksFlag Model::getChunksToPreload() const
 {
     // Note: we don't preload any LODs here because it's done by the Streaming Manager
-    return GET_CHUNK_FLAG(0);
+    return GET_CHUNK_FLAG(0) | GET_CHUNK_FLAG(15);
 }
 
 void ModelBase::SetupMaterialSlots(int32 slotsCount)

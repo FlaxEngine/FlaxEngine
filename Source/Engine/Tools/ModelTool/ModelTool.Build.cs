@@ -74,5 +74,6 @@ public class ModelTool : EngineModule
     public override void GetFilesToDeploy(List<string> files)
     {
         files.Add(Path.Combine(FolderPath, "ModelTool.h"));
+        files.Add(Path.Combine(FolderPath, "MeshAccelerationStructure.h"));
     }
 }

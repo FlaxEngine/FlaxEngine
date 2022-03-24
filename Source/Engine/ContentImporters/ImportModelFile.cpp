@@ -150,13 +150,13 @@ CreateAssetResult ImportModelFile::Import(CreateAssetContext& context)
     switch (options.Type)
     {
     case ModelTool::ModelType::Model:
-        result = ImportModel(context, modelData);
+        result = ImportModel(context, modelData, &options);
         break;
     case ModelTool::ModelType::SkinnedModel:
-        result = ImportSkinnedModel(context, modelData);
+        result = ImportSkinnedModel(context, modelData, &options);
         break;
     case ModelTool::ModelType::Animation:
-        result = ImportAnimation(context, modelData);
+        result = ImportAnimation(context, modelData, &options);
         break;
     }
     if (result != CreateAssetResult::Ok)
@@ -199,7 +199,7 @@ CreateAssetResult ImportModelFile::Create(CreateAssetContext& context)
     return ImportModel(context, modelData);
 }
 
-CreateAssetResult ImportModelFile::ImportModel(CreateAssetContext& context, ModelData& modelData)
+CreateAssetResult ImportModelFile::ImportModel(CreateAssetContext& context, ModelData& modelData, const Options* options)
 {
     // Base
     IMPORT_SETUP(Model, Model::SerializedVersion);
@@ -235,10 +235,22 @@ CreateAssetResult ImportModelFile::ImportModel(CreateAssetContext& context, Mode
         context.Data.Header.Chunks[chunkIndex]->Data.Copy(stream.GetHandle(), stream.GetPosition());
     }
 
+    // Generate SDF
+    if (options && options->GenerateSDF)
+    {
+        stream.SetPosition(0);
+        if (!ModelTool::GenerateModelSDF(nullptr, &modelData, options->SDFResolution, lodCount - 1, nullptr, &stream, context.TargetAssetPath))
+        {
+            if (context.AllocateChunk(15))
+                return CreateAssetResult::CannotAllocateChunk;
+            context.Data.Header.Chunks[15]->Data.Copy(stream.GetHandle(), stream.GetPosition());
+        }
+    }
+
     return CreateAssetResult::Ok;
 }
 
-CreateAssetResult ImportModelFile::ImportSkinnedModel(CreateAssetContext& context, ModelData& modelData)
+CreateAssetResult ImportModelFile::ImportSkinnedModel(CreateAssetContext& context, ModelData& modelData, const Options* options)
 {
     // Base
     IMPORT_SETUP(SkinnedModel, SkinnedModel::SerializedVersion);
@@ -277,7 +289,7 @@ CreateAssetResult ImportModelFile::ImportSkinnedModel(CreateAssetContext& contex
     return CreateAssetResult::Ok;
 }
 
-CreateAssetResult ImportModelFile::ImportAnimation(CreateAssetContext& context, ModelData& modelData)
+CreateAssetResult ImportModelFile::ImportAnimation(CreateAssetContext& context, ModelData& modelData, const Options* options)
 {
     // Base
     IMPORT_SETUP(Animation, Animation::SerializedVersion);

@@ -10,6 +10,7 @@
 #include "Engine/Core/Collections/Array.h"
 
 class Model;
+class ModelData;
 
 /// <summary>
 /// Acceleration Structure utility for robust ray tracing mesh geometry with optimized data structure.
@@ -58,6 +59,9 @@ private:
 public:
     // Adds the model geometry for the build to the structure.
     void Add(Model* model, int32 lodIndex);
+
+    // Adds the model geometry for the build to the structure.
+    void Add(ModelData* modelData, int32 lodIndex, bool copy = false);
 
     // Adds the triangles geometry for the build to the structure.
     void Add(Vector3* vb, int32 vertices, void* ib, int32 indices, bool use16BitIndex, bool copy = false);

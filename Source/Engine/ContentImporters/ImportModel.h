@@ -48,9 +48,9 @@ public:
 
 private:
 
-    static CreateAssetResult ImportModel(CreateAssetContext& context, ModelData& modelData);
-    static CreateAssetResult ImportSkinnedModel(CreateAssetContext& context, ModelData& modelData);
-    static CreateAssetResult ImportAnimation(CreateAssetContext& context, ModelData& modelData);
+    static CreateAssetResult ImportModel(CreateAssetContext& context, ModelData& modelData, const Options* options = nullptr);
+    static CreateAssetResult ImportSkinnedModel(CreateAssetContext& context, ModelData& modelData, const Options* options = nullptr);
+    static CreateAssetResult ImportAnimation(CreateAssetContext& context, ModelData& modelData, const Options* options = nullptr);
 };
 
 #endif

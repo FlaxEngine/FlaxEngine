@@ -600,6 +600,21 @@ bool MaterialSlotEntry::UsesProperties() const
             Normals.TextureIndex != -1;
 }
 
+BoundingBox ModelLodData::GetBox() const
+{
+    if (Meshes.IsEmpty())
+        return BoundingBox::Empty;
+    BoundingBox bounds;
+    Meshes[0]->CalculateBox(bounds);
+    for (int32 i = 1; i < Meshes.Count(); i++)
+    {
+        BoundingBox b;
+        Meshes[i]->CalculateBox(b);
+        BoundingBox::Merge(bounds, b, bounds);
+    }
+    return bounds;
+}
+
 void ModelData::CalculateLODsScreenSizes()
 {
     const float autoComputeLodPowerBase = 0.5f;
