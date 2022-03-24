@@ -229,6 +229,7 @@ namespace FlaxEditor.CustomEditors.Editors
             }
         }
 
+        private static HashSet<PropertiesList> _visibleIfPropertiesListsCache;
         private VisibleIfCache[] _visibleIfCaches;
         private bool _isNull;
 
@@ -761,8 +762,13 @@ namespace FlaxEditor.CustomEditors.Editors
 
             if (_visibleIfCaches != null)
             {
+                if (_visibleIfPropertiesListsCache == null)
+                    _visibleIfPropertiesListsCache = new HashSet<PropertiesList>();
+                else
+                    _visibleIfPropertiesListsCache.Clear();
                 try
                 {
+                    // Update VisibleIf rules
                     for (int i = 0; i < _visibleIfCaches.Length; i++)
                     {
                         ref var c = ref _visibleIfCaches[i];
@@ -798,6 +804,21 @@ namespace FlaxEditor.CustomEditors.Editors
                         {
                             c.Group.Panel.Visible = visible;
                         }
+                        if (c.PropertiesList != null)
+                            _visibleIfPropertiesListsCache.Add(c.PropertiesList.Properties);
+                    }
+
+                    // Hide properties lists with all labels being hidden
+                    foreach (var propertiesList in _visibleIfPropertiesListsCache)
+                    {
+                        propertiesList.Visible = propertiesList.Children.Any(c => c.Visible);
+                    }
+
+                    // Hide group panels with all properties lists hidden
+                    foreach (var propertiesList in _visibleIfPropertiesListsCache)
+                    {
+                        if (propertiesList.Parent is DropPanel dropPanel)
+                            dropPanel.Visible = propertiesList.Visible || !dropPanel.Children.All(c => c is PropertiesList && !c.Visible);
                     }
                 }
                 catch (Exception ex)
