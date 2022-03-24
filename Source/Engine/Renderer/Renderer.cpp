@@ -29,6 +29,7 @@
 #include "AntiAliasing/SMAA.h"
 #include "Engine/Level/Actor.h"
 #include "Engine/Level/Level.h"
+#include "Engine/Core/Config/GraphicsSettings.h"
 #if USE_EDITOR
 #include "Editor/Editor.h"
 #include "Editor/QuadOverdrawPass.h"
@@ -289,6 +290,7 @@ void Renderer::DrawPostFxMaterial(GPUContext* context, const RenderContext& rend
 void RenderInner(SceneRenderTask* task, RenderContext& renderContext)
 {
     auto context = GPUDevice::Instance->GetMainContext();
+    auto* graphicsSettings = GraphicsSettings::Get();
     auto& view = renderContext.View;
     ASSERT(renderContext.Buffers && renderContext.Buffers->GetWidth() > 0);
 
@@ -337,6 +339,13 @@ void RenderInner(SceneRenderTask* task, RenderContext& renderContext)
         return;
     }
 #endif
+
+    // Global SDF rendering (can be used by materials later on)
+    if (graphicsSettings->EnableGlobalSDF)
+    {
+        GlobalSignDistanceFieldPass::BindingData bindingData;
+        GlobalSignDistanceFieldPass::Instance()->Render(renderContext, context, bindingData);
+    }
 
     // Fill GBuffer
     GBufferPass::Instance()->Fill(renderContext, lightBuffer->View());

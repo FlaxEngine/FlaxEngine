@@ -47,6 +47,14 @@ private:
 
 public:
     /// <summary>
+    /// Gets the Global SDF (only if enabled in Graphics Settings).
+    /// </summary>
+    /// <param name="buffers">The rendering context buffers.</param>
+    /// <param name="result">The result Global SDF data for binding to the shaders.</param>
+    /// <returns>True if there is no valid Global SDF rendered during this frame, otherwise false.</returns>
+    bool Get(const RenderBuffers* buffers, BindingData& result);
+
+    /// <summary>
     /// Renders the Global SDF.
     /// </summary>
     /// <param name="renderContext">The rendering context.</param>

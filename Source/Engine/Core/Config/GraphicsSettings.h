@@ -62,11 +62,17 @@ public:
     API_FIELD(Attributes="EditorOrder(1320), DefaultValue(false), EditorDisplay(\"Quality\", \"Allow CSM Blending\")")
     bool AllowCSMBlending = false;
 
+    /// <summary>
+    /// If checked, enables Global SDF rendering. This can be used in materials, shaders, and particles.
+    /// </summary>
+    API_FIELD(Attributes="EditorOrder(2000), EditorDisplay(\"Global SDF\")")
+    bool EnableGlobalSDF = false;
+
 #if USE_EDITOR
     /// <summary>
     /// If checked, the 'Generate SDF' option will be checked on model import options by default. Use it if your project uses Global SDF (eg. for Global Illumination or particles).
     /// </summary>
-    API_FIELD(Attributes="EditorOrder(2000), EditorDisplay(\"Global SDF\")")
+    API_FIELD(Attributes="EditorOrder(2010), EditorDisplay(\"Global SDF\")")
     bool GenerateSDFOnModelImport = false;
 #endif
 

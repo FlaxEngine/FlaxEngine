@@ -151,6 +151,17 @@ public:
     }
 
     template<class T>
+    const T* FindCustomBuffer(const StringView& name) const
+    {
+        for (CustomBuffer* e : CustomBuffers)
+        {
+            if (e->Name == name)
+                return (const T*)e;
+        }
+        return nullptr;
+    }
+
+    template<class T>
     T* GetCustomBuffer(const StringView& name)
     {
         for (CustomBuffer* e : CustomBuffers)
