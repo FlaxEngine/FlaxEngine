@@ -90,232 +90,269 @@ namespace FlaxEditor.Content.Import
     public class ModelImportSettings
     {
         /// <summary>
-        /// Gets or sets the type of the imported asset.
+        /// Type of the imported asset.
         /// </summary>
-        [EditorOrder(0), Tooltip("Type of the imported asset")]
+        [EditorOrder(0)]
         public ModelType Type { get; set; } = ModelType.Model;
 
         /// <summary>
-        /// True if calculate model normals, otherwise will import them.
+        /// Enable model normal vectors recalculating.
         /// </summary>
-        [EditorOrder(20), DefaultValue(false), EditorDisplay("Geometry"), Tooltip("Enable model normal vectors recalculating")]
+        [EditorDisplay("Geometry"), VisibleIf(nameof(ShowGeometry))]
+        [EditorOrder(20), DefaultValue(false)]
         public bool CalculateNormals { get; set; } = false;
 
         /// <summary>
-        /// Calculated normals smoothing angle.
+        /// Specifies the maximum angle (in degrees) that may be between two face normals at the same vertex position that their are smoothed together. The default value is 175.
         /// </summary>
-        [VisibleIf("CalculateNormals")]
-        [EditorOrder(30), DefaultValue(175.0f), Limit(0, 175, 0.1f), EditorDisplay("Geometry"), Tooltip("Specifies the maximum angle (in degrees) that may be between two face normals at the same vertex position that their are smoothed together. The default value is 175.")]
+        [EditorDisplay("Geometry"), VisibleIf(nameof(ShowSmoothingNormalsAngle))]
+        [EditorOrder(30), DefaultValue(175.0f), Limit(0, 175, 0.1f)]
         public float SmoothingNormalsAngle { get; set; } = 175.0f;
+
+        private bool ShowSmoothingNormalsAngle => ShowGeometry && CalculateNormals;
 
         /// <summary>
         /// If checked, the imported normal vectors of the mesh will be flipped (scaled by -1).
         /// </summary>
-        [EditorOrder(35), DefaultValue(false), EditorDisplay("Geometry"), Tooltip("If checked, the imported normal vectors of the mesh will be flipped (scaled by -1).")]
+        [EditorDisplay("Geometry"), VisibleIf(nameof(ShowGeometry))]
+        [EditorOrder(35), DefaultValue(false)]
         public bool FlipNormals { get; set; } = false;
 
         /// <summary>
-        /// True if calculate model tangents, otherwise will import them.
+        /// Enable model tangent vectors recalculating.
         /// </summary>
-        [EditorOrder(40), DefaultValue(false), EditorDisplay("Geometry"), Tooltip("Enable model tangent vectors recalculating")]
+        [EditorDisplay("Geometry"), VisibleIf(nameof(ShowGeometry))]
+        [EditorOrder(40), DefaultValue(false)]
         public bool CalculateTangents { get; set; } = false;
 
         /// <summary>
-        /// Calculated normals smoothing angle.
+        /// Specifies the maximum angle (in degrees) that may be between two vertex tangents that their tangents and bi-tangents are smoothed. The default value is 45.
         /// </summary>
-        [VisibleIf("CalculateTangents")]
-        [EditorOrder(45), DefaultValue(45.0f), Limit(0, 45, 0.1f), EditorDisplay("Geometry"), Tooltip("Specifies the maximum angle (in degrees) that may be between two vertex tangents that their tangents and bi-tangents are smoothed. The default value is 45.")]
+        [EditorDisplay("Geometry"), VisibleIf(nameof(ShowSmoothingTangentsAngle))]
+        [EditorOrder(45), DefaultValue(45.0f), Limit(0, 45, 0.1f)]
         public float SmoothingTangentsAngle { get; set; } = 45.0f;
+
+        private bool ShowSmoothingTangentsAngle => ShowGeometry && CalculateTangents;
 
         /// <summary>
         /// Enable/disable meshes geometry optimization.
         /// </summary>
-        [EditorOrder(50), DefaultValue(true), EditorDisplay("Geometry"), Tooltip("Enable/disable meshes geometry optimization")]
+        [EditorDisplay("Geometry"), VisibleIf(nameof(ShowGeometry))]
+        [EditorOrder(50), DefaultValue(true)]
         public bool OptimizeMeshes { get; set; } = true;
 
         /// <summary>
         /// Enable/disable geometry merge for meshes with the same materials.
         /// </summary>
-        [EditorOrder(60), DefaultValue(true), EditorDisplay("Geometry"), Tooltip("Enable/disable geometry merge for meshes with the same materials")]
+        [EditorDisplay("Geometry"), VisibleIf(nameof(ShowGeometry))]
+        [EditorOrder(60), DefaultValue(true)]
         public bool MergeMeshes { get; set; } = true;
 
         /// <summary>
         /// Enable/disable importing meshes Level of Details.
         /// </summary>
-        [EditorOrder(70), DefaultValue(true), EditorDisplay("Geometry", "Import LODs"), Tooltip("Enable/disable importing meshes Level of Details")]
+        [EditorDisplay("Geometry", "Import LODs"), VisibleIf(nameof(ShowGeometry))]
+        [EditorOrder(70), DefaultValue(true)]
         public bool ImportLODs { get; set; } = true;
 
         /// <summary>
         /// Enable/disable importing vertex colors (channel 0 only).
         /// </summary>
-        [EditorOrder(80), DefaultValue(true), EditorDisplay("Geometry"), Tooltip("Enable/disable importing vertex colors (channel 0 only)")]
+        [EditorDisplay("Geometry"), VisibleIf(nameof(ShowModel))]
+        [EditorOrder(80), DefaultValue(true)]
         public bool ImportVertexColors { get; set; } = true;
 
         /// <summary>
         /// Enable/disable importing blend shapes (morph targets).
         /// </summary>
-        [EditorOrder(85), DefaultValue(false), EditorDisplay("Geometry"), Tooltip("Enable/disable importing blend shapes (morph targets).")]
+        [EditorDisplay("Geometry"), VisibleIf(nameof(ShowSkinnedModel))]
+        [EditorOrder(85), DefaultValue(false)]
         public bool ImportBlendShapes { get; set; } = false;
 
         /// <summary>
         /// The lightmap UVs source.
         /// </summary>
-        [EditorOrder(90), DefaultValue(ModelLightmapUVsSource.Disable), EditorDisplay("Geometry", "Lightmap UVs Source"), Tooltip("Model lightmap UVs source")]
+        [EditorDisplay("Geometry", "Lightmap UVs Source"), VisibleIf(nameof(ShowModel))]
+        [EditorOrder(90), DefaultValue(ModelLightmapUVsSource.Disable)]
         public ModelLightmapUVsSource LightmapUVsSource { get; set; } = ModelLightmapUVsSource.Disable;
 
         /// <summary>
         /// If specified, all meshes which name starts with this prefix will be imported as a separate collision data (excluded used for rendering).
         /// </summary>
-        [EditorOrder(100), DefaultValue(""), EditorDisplay("Geometry")]
+        [EditorDisplay("Geometry"), VisibleIf(nameof(ShowGeometry))]
+        [EditorOrder(100), DefaultValue("")]
         public string CollisionMeshesPrefix { get; set; }
 
         /// <summary>
         /// Custom uniform import scale.
         /// </summary>
-        [EditorOrder(500), DefaultValue(1.0f), EditorDisplay("Transform"), Tooltip("Custom uniform import scale")]
+        [EditorOrder(500), DefaultValue(1.0f), EditorDisplay("Transform")]
         public float Scale { get; set; } = 1.0f;
 
         /// <summary>
         /// Custom import geometry rotation.
         /// </summary>
         [DefaultValue(typeof(Quaternion), "0,0,0,1")]
-        [EditorOrder(510), EditorDisplay("Transform"), Tooltip("Custom import geometry rotation")]
+        [EditorOrder(510), EditorDisplay("Transform")]
         public Quaternion Rotation { get; set; } = Quaternion.Identity;
 
         /// <summary>
         /// Custom import geometry offset.
         /// </summary>
         [DefaultValue(typeof(Vector3), "0,0,0")]
-        [EditorOrder(520), EditorDisplay("Transform"), Tooltip("Custom import geometry offset")]
+        [EditorOrder(520), EditorDisplay("Transform")]
         public Vector3 Translation { get; set; } = Vector3.Zero;
 
         /// <summary>
         /// If checked, the imported geometry will be shifted to the center of mass.
         /// </summary>
-        [EditorOrder(530), DefaultValue(false), EditorDisplay("Transform"), Tooltip("If checked, the imported geometry will be shifted to the center of mass.")]
+        [EditorOrder(530), DefaultValue(false), EditorDisplay("Transform")]
         public bool CenterGeometry { get; set; } = false;
 
         /// <summary>
-        /// The imported animation duration mode.
+        /// Imported animation duration mode. Can use the original value or overriden by settings.
         /// </summary>
-        [EditorOrder(1000), DefaultValue(AnimationDuration.Imported), EditorDisplay("Animation"), Tooltip("Imported animation duration mode. Can use the original value or overriden by settings.")]
+        [EditorDisplay("Animation"), VisibleIf(nameof(ShowAnimation))]
+        [EditorOrder(1000), DefaultValue(AnimationDuration.Imported)]
         public AnimationDuration Duration { get; set; } = AnimationDuration.Imported;
 
         /// <summary>
-        /// The imported animation first frame index. Used only if Duration mode is set to Custom.
+        /// Imported animation first frame index. Used only if Duration mode is set to Custom.
         /// </summary>
-        [EditorOrder(1010), DefaultValue(0.0f), Limit(0), EditorDisplay("Animation"), Tooltip("Imported animation first frame index. Used only if Duration mode is set to Custom.")]
+        [EditorDisplay("Animation"), VisibleIf(nameof(ShowFramesRange))]
+        [EditorOrder(1010), DefaultValue(0.0f), Limit(0)]
         public float FramesRangeStart { get; set; } = 0;
 
         /// <summary>
-        /// The imported animation end frame index. Used only if Duration mode is set to Custom.
+        /// Imported animation last frame index. Used only if Duration mode is set to Custom.
         /// </summary>
-        [EditorOrder(1020), DefaultValue(0.0f), Limit(0), EditorDisplay("Animation"), Tooltip("Imported animation last frame index. Used only if Duration mode is set to Custom.")]
+        [EditorDisplay("Animation"), VisibleIf(nameof(ShowFramesRange))]
+        [EditorOrder(1020), DefaultValue(0.0f), Limit(0)]
         public float FramesRangeEnd { get; set; } = 0;
+
+        private bool ShowFramesRange => ShowAnimation && Duration == AnimationDuration.Custom;
 
         /// <summary>
         /// The imported animation default frame rate. Can specify the default frames per second amount for imported animation. If value is 0 then the original animation frame rate will be used.
         /// </summary>
-        [EditorOrder(1025), DefaultValue(0.0f), Limit(0, 1000, 0.01f), EditorDisplay("Animation"), Tooltip("The imported animation default frame rate. Can specify the default frames per second amount for imported animation. If value is 0 then the original animation frame rate will be used.")]
+        [EditorDisplay("Animation"), VisibleIf(nameof(ShowAnimation))]
+        [EditorOrder(1025), DefaultValue(0.0f), Limit(0, 1000, 0.01f)]
         public float DefaultFrameRate { get; set; } = 0.0f;
 
         /// <summary>
         /// The imported animation sampling rate. If value is 0 then the original animation speed will be used.
         /// </summary>
-        [EditorOrder(1030), DefaultValue(0.0f), Limit(0, 1000, 0.01f), EditorDisplay("Animation"), Tooltip("The imported animation sampling rate. If value is 0 then the original animation speed will be used.")]
+        [EditorDisplay("Animation"), VisibleIf(nameof(ShowAnimation))]
+        [EditorOrder(1030), DefaultValue(0.0f), Limit(0, 1000, 0.01f)]
         public float SamplingRate { get; set; } = 0.0f;
 
         /// <summary>
         /// The imported animation will have removed tracks with no keyframes or unspecified data.
         /// </summary>
-        [EditorOrder(1040), DefaultValue(true), EditorDisplay("Animation"), Tooltip("The imported animation will have removed tracks with no keyframes or unspecified data.")]
+        [EditorDisplay("Animation"), VisibleIf(nameof(ShowAnimation))]
+        [EditorOrder(1040), DefaultValue(true)]
         public bool SkipEmptyCurves { get; set; } = true;
 
         /// <summary>
         /// The imported animation channels will be optimized to remove redundant keyframes.
         /// </summary>
-        [EditorOrder(1050), DefaultValue(true), EditorDisplay("Animation"), Tooltip("The imported animation channels will be optimized to remove redundant keyframes.")]
+        [EditorDisplay("Animation"), VisibleIf(nameof(ShowAnimation))]
+        [EditorOrder(1050), DefaultValue(true)]
         public bool OptimizeKeyframes { get; set; } = true;
 
         /// <summary>
         /// Enables root motion extraction support from this animation.
         /// </summary>
-        [EditorOrder(1060), DefaultValue(false), EditorDisplay("Animation"), Tooltip("Enables root motion extraction support from this animation.")]
+        [EditorDisplay("Animation"), VisibleIf(nameof(ShowAnimation))]
+        [EditorOrder(1060), DefaultValue(false)]
         public bool EnableRootMotion { get; set; } = false;
 
         /// <summary>
         /// The custom node name to be used as a root motion source. If not specified the actual root node will be used.
         /// </summary>
-        [EditorOrder(1070), DefaultValue(typeof(string), ""), EditorDisplay("Animation"), Tooltip("The custom node name to be used as a root motion source. If not specified the actual root node will be used.")]
+        [EditorDisplay("Animation"), VisibleIf(nameof(ShowAnimation))]
+        [EditorOrder(1070), DefaultValue(typeof(string), "")]
         public string RootNodeName { get; set; }
 
         /// <summary>
         /// If checked, the importer will generate a sequence of LODs based on the base LOD index.
         /// </summary>
-        [EditorOrder(1100), DefaultValue(false), EditorDisplay("Level Of Detail", "Generate LODs"), Tooltip("If checked, the importer will generate a sequence of LODs based on the base LOD index.")]
+        [EditorDisplay("Level Of Detail", "Generate LODs"), VisibleIf(nameof(ShowGeometry))]
+        [EditorOrder(1100), DefaultValue(false)]
         public bool GenerateLODs { get; set; } = false;
 
         /// <summary>
         /// The index of the LOD from the source model data to use as a reference for following LODs generation.
         /// </summary>
-        [EditorOrder(1110), DefaultValue(0), Limit(0, Model.MaxLODs - 1), EditorDisplay("Level Of Detail", "Base LOD"), Tooltip("The index of the LOD from the source model data to use as a reference for following LODs generation.")]
+        [EditorDisplay("Level Of Detail", "Base LOD"), VisibleIf(nameof(ShowGeometry))]
+        [EditorOrder(1110), DefaultValue(0), Limit(0, Model.MaxLODs - 1)]
         public int BaseLOD { get; set; } = 0;
 
         /// <summary>
         /// The amount of LODs to include in the model (all remaining ones starting from Base LOD will be generated).
         /// </summary>
-        [EditorOrder(1120), DefaultValue(4), Limit(1, Model.MaxLODs), EditorDisplay("Level Of Detail", "LOD Count"), Tooltip("The amount of LODs to include in the model (all remaining ones starting from Base LOD will be generated).")]
+        [EditorDisplay("Level Of Detail", "LOD Count"), VisibleIf(nameof(ShowGeometry))]
+        [EditorOrder(1120), DefaultValue(4), Limit(1, Model.MaxLODs)]
         public int LODCount { get; set; } = 4;
 
         /// <summary>
         /// The target amount of triangles for the generated LOD (based on the higher LOD). Normalized to range 0-1. For instance 0.4 cuts the triangle count to 40%.
         /// </summary>
-        [EditorOrder(1130), DefaultValue(0.5f), Limit(0, 1, 0.001f), EditorDisplay("Level Of Detail"), Tooltip("The target amount of triangles for the generated LOD (based on the higher LOD). Normalized to range 0-1. For instance 0.4 cuts the triangle count to 40%.")]
+        [EditorDisplay("Level Of Detail"), VisibleIf(nameof(ShowGeometry))]
+        [EditorOrder(1130), DefaultValue(0.5f), Limit(0, 1, 0.001f)]
         public float TriangleReduction { get; set; } = 0.5f;
 
         /// <summary>
         /// If checked, the importer will create materials for model meshes as specified in the file.
         /// </summary>
-        [EditorOrder(400), DefaultValue(true), EditorDisplay("Materials"), Tooltip("If checked, the importer will create materials for model meshes as specified in the file.")]
+        [EditorDisplay("Materials"), VisibleIf(nameof(ShowGeometry))]
+        [EditorOrder(400), DefaultValue(true)]
         public bool ImportMaterials { get; set; } = true;
 
         /// <summary>
         /// If checked, the importer will import texture files used by the model and any embedded texture resources.
         /// </summary>
-        [EditorOrder(410), DefaultValue(true), EditorDisplay("Materials"), Tooltip("If checked, the importer will import texture files used by the model and any embedded texture resources.")]
+        [EditorDisplay("Materials"), VisibleIf(nameof(ShowGeometry))]
+        [EditorOrder(410), DefaultValue(true)]
         public bool ImportTextures { get; set; } = true;
 
         /// <summary>
         /// If checked, the importer will try to restore the model material slots.
         /// </summary>
-        [EditorOrder(420), DefaultValue(true), EditorDisplay("Materials", "Restore Materials On Reimport"), Tooltip("If checked, the importer will try to restore the assigned materials to the model slots.")]
+        [EditorDisplay("Materials", "Restore Materials On Reimport"), VisibleIf(nameof(ShowGeometry))]
+        [EditorOrder(420), DefaultValue(true)]
         public bool RestoreMaterialsOnReimport { get; set; } = true;
 
         /// <summary>
         /// If checked, enables generation of Signed Distance Field (SDF).
         /// </summary>
-        [EditorOrder(1500), DefaultValue(false), EditorDisplay("SDF"), VisibleIf(nameof(Type_Model))]
+        [EditorDisplay("SDF"), VisibleIf(nameof(ShowModel))]
+        [EditorOrder(1500), DefaultValue(false)]
         public bool GenerateSDF { get; set; } = false;
 
         /// <summary>
         /// Resolution scale for generated Signed Distance Field (SDF) texture. Higher values improve accuracy but increase memory usage and reduce performance.
         /// </summary>
-        [EditorOrder(1510), DefaultValue(1.0f), Limit(0.0001f, 100.0f), EditorDisplay("SDF"), VisibleIf(nameof(Type_Model))]
+        [EditorDisplay("SDF"), VisibleIf(nameof(ShowModel))]
+        [EditorOrder(1510), DefaultValue(1.0f), Limit(0.0001f, 100.0f)]
         public float SDFResolution { get; set; } = 1.0f;
 
         /// <summary>
         /// If checked, the imported mesh/animations are splitted into separate assets. Used if ObjectIndex is set to -1.
         /// </summary>
-        [EditorOrder(2000), DefaultValue(false), EditorDisplay("Splitting"), Tooltip("If checked, the imported mesh/animations are splitted into separate assets. Used if ObjectIndex is set to -1.")]
+        [EditorOrder(2000), DefaultValue(false), EditorDisplay("Splitting")]
         public bool SplitObjects { get; set; } = false;
 
         /// <summary>
         /// The zero-based index for the mesh/animation clip to import. If the source file has more than one mesh/animation it can be used to pick a desire object. Default -1 imports all objects.
         /// </summary>
-        [EditorOrder(2010), DefaultValue(-1), EditorDisplay("Splitting"), Tooltip("The zero-based index for the mesh/animation clip to import. If the source file has more than one mesh/animation it can be used to pick a desire object. Default -1 imports all objects.")]
+        [EditorOrder(2010), DefaultValue(-1), EditorDisplay("Splitting")]
         public int ObjectIndex { get; set; } = -1;
 
-        private bool Type_Model => Type == ModelType.Model;
+        private bool ShowGeometry => Type == ModelType.Model || Type == ModelType.SkinnedModel;
+        private bool ShowModel => Type == ModelType.Model;
+        private bool ShowSkinnedModel => Type == ModelType.SkinnedModel;
+        private bool ShowAnimation => Type == ModelType.Animation;
 
         [StructLayout(LayoutKind.Sequential)]
         internal struct InternalOptions
