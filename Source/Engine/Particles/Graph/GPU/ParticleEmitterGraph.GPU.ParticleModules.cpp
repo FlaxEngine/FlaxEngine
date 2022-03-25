@@ -904,7 +904,7 @@ void ParticleEmitterGPUGenerator::ProcessModule(Node* node)
                 "		float tgtSpeed = {4} * ratio;\n"
                 "		float deltaSpeed = tgtSpeed - spdNormal;\n"
                 "		float3 deltaVelocity = dir * (sign(deltaSpeed) * min(abs(deltaSpeed), DeltaTime * lerp({7}, {5}, ratio)) / max({2}, PARTICLE_THRESHOLD));\n"
-                "		if (dist < 500) {1} += deltaVelocity;\n"
+                "		{1} += deltaVelocity;\n"
                 "	}}\n"
             ), position.Value, velocity.Value, mass.Value, param.ShaderName, attractionSpeed.Value, attractionForce.Value, stickDistance.Value, stickForce.Value);
         break;
