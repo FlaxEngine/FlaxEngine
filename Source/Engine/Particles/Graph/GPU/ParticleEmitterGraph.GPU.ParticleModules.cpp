@@ -877,6 +877,38 @@ void ParticleEmitterGPUGenerator::ProcessModule(Node* node)
         );
         break;
     }
+        // Conform to Global SDF
+    case 335:
+    {
+        auto position = AccessParticleAttribute(node, nodeGpu->Attributes[0], AccessMode::Read);
+        auto velocity = AccessParticleAttribute(node, nodeGpu->Attributes[1], AccessMode::ReadWrite);
+        auto mass = AccessParticleAttribute(node, nodeGpu->Attributes[2], AccessMode::Read);
+        
+        const Value attractionSpeed = GetValue(node->GetBox(0), 2).AsFloat();
+        const Value attractionForce = GetValue(node->GetBox(1), 3).AsFloat();
+        const Value stickDistance = GetValue(node->GetBox(2), 4).AsFloat();
+        const Value stickForce = GetValue(node->GetBox(3), 5).AsFloat();
+        
+        auto param = findOrAddGlobalSDF();
+        _includes.Add(TEXT("./Flax/GlobalSignDistanceField.hlsl"));
+        _writer.Write(
+            TEXT(
+                "	{{\n"
+                "		// Conform to Global SDF\n"
+                "		float dist;\n"
+                "		float3 dir = normalize(SampleGlobalSDFGradient({3}, {3}_Tex, {0}, dist));\n"
+                "		if (dist > 0) dir *= -1;\n"
+                "		float distToSurface = abs(dist);\n"
+                "		float spdNormal = dot(dir, {1});\n"
+                "		float ratio = smoothstep(0.0f, {6} * 2.0f, distToSurface);\n"
+                "		float tgtSpeed = {4} * ratio;\n"
+                "		float deltaSpeed = tgtSpeed - spdNormal;\n"
+                "		float3 deltaVelocity = dir * (sign(deltaSpeed) * min(abs(deltaSpeed), DeltaTime * lerp({7}, {5}, ratio)) / max({2}, PARTICLE_THRESHOLD));\n"
+                "		if (dist < 500) {1} += deltaVelocity;\n"
+                "	}}\n"
+            ), position.Value, velocity.Value, mass.Value, param.ShaderName, attractionSpeed.Value, attractionForce.Value, stickDistance.Value, stickForce.Value);
+        break;
+        }
 
 #undef COLLISION_BEGIN
 #undef COLLISION_LOGIC

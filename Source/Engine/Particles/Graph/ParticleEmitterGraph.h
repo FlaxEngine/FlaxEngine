@@ -415,6 +415,7 @@ public:
 #undef CASE_SET_PARTICLE_ATTRIBUTE
             // Conform to Sphere
         case GRAPH_NODE_MAKE_TYPE(15, 305):
+        case GRAPH_NODE_MAKE_TYPE(15, 335): // Conform to Global SDF
         {
             USE_ATTRIBUTE(Position, Vector3, 0);
             USE_ATTRIBUTE(Velocity, Vector3, 1);

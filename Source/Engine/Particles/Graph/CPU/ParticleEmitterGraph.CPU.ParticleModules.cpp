@@ -1463,6 +1463,12 @@ void ParticleEmitterGraphCPUExecutor::ProcessModule(ParticleEmitterGraphCPUNode*
         // Not supported
         break;
     }
+        // Conform to Global SDF
+    case 335:
+    {
+        // Not supported
+        break;
+    }
 
 #undef COLLISION_BEGIN
 #undef COLLISION_INPUTS_FETCH

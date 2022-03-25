@@ -1362,6 +1362,31 @@ namespace FlaxEditor.Surface.Archetypes
                     NodeElementArchetype.Factory.Input(-0.5f + 0, "Surface Thickness", true, typeof(float), 5, 8),
                 },
             },
+            new NodeArchetype
+            {
+                TypeID = 335,
+                Create = CreateParticleModuleNode,
+                Title = "Conform to Global SDF",
+                Description = "Applies the force vector to particles to conform around Global SDF",
+                Flags = DefaultModuleFlags,
+                Size = new Vector2(200, 4 * Surface.Constants.LayoutOffsetY),
+                DefaultValues = new object[]
+                {
+                    true,
+                    (int)ModuleType.Update,
+                    5.0f,
+                    2000.0f,
+                    1.0f,
+                    5000.0f,
+                },
+                Elements = new[]
+                {
+                    NodeElementArchetype.Factory.Input(-0.5f, "Attraction Speed", true, typeof(float), 0, 2),
+                    NodeElementArchetype.Factory.Input(-0.5f + 1.0f, "Attraction Force", true, typeof(float), 1, 3),
+                    NodeElementArchetype.Factory.Input(-0.5f + 2.0f, "Stick Distance", true, typeof(float), 2, 4),
+                    NodeElementArchetype.Factory.Input(-0.5f + 3.0f, "Stick Force", true, typeof(float), 3, 5),
+                },
+            },
             GetParticleAttribute(ModuleType.Update, 350, "Set Position", "Sets the particle position", typeof(Vector3), Vector3.Zero),
             GetParticleAttribute(ModuleType.Update, 351, "Set Lifetime", "Sets the particle lifetime (in seconds)", typeof(float), 10.0f),
             GetParticleAttribute(ModuleType.Update, 352, "Set Age", "Sets the particle age (in seconds)", typeof(float), 0.0f),
