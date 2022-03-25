@@ -358,6 +358,19 @@ namespace FlaxEditor.Surface.Archetypes
                     NodeElementArchetype.Factory.Input(1, "Location", true, null, 2),
                 }
             },
+            new NodeArchetype
+            {
+                TypeID = 14,
+                Title = "Sample Global SDF",
+                Description = "Samples the Global SDF to get the distance to the closest surface (in world-space). Requires models SDF to be generated and checking `Enable Global SDF` in Graphics Settings.",
+                Flags = NodeFlags.MaterialGraph,
+                Size = new Vector2(200, 20),
+                Elements = new[]
+                {
+                    NodeElementArchetype.Factory.Output(0, "Distance", typeof(float), 0),
+                    NodeElementArchetype.Factory.Input(0, "World Position", true, typeof(Vector3), 1),
+                }
+            },
         };
     }
 }

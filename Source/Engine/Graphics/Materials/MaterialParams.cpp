@@ -11,6 +11,8 @@
 #include "Engine/Graphics/RenderBuffers.h"
 #include "Engine/Graphics/GPUDevice.h"
 #include "Engine/Graphics/GPULimits.h"
+#include "Engine/Graphics/RenderTask.h"
+#include "Engine/Renderer/GlobalSignDistanceFieldPass.h"
 #include "Engine/Streaming/Streaming.h"
 
 bool MaterialInfo8::operator==(const MaterialInfo8& other) const
@@ -157,6 +159,9 @@ const Char* ToString(MaterialParameterType value)
     case MaterialParameterType::TextureGroupSampler:
         result = TEXT("TextureGroupSampler");
         break;
+    case MaterialParameterType::GlobalSDF:
+        result = TEXT("GlobalSDF");
+        break;
     default:
         result = TEXT("");
         break;
@@ -198,7 +203,6 @@ Variant MaterialParameter::GetValue() const
     case MaterialParameterType::GPUTexture:
         return _asGPUTexture.Get();
     default:
-    CRASH;
         return Variant::Zero;
     }
 }
@@ -302,6 +306,8 @@ void MaterialParameter::SetValue(const Variant& value)
         default:
             invalidType = true;
         }
+        break;
+    case MaterialParameterType::GlobalSDF:
         break;
     default:
         invalidType = true;
@@ -475,6 +481,16 @@ void MaterialParameter::Bind(BindMeta& meta) const
     case MaterialParameterType::TextureGroupSampler:
         meta.Context->BindSampler(_registerIndex, Streaming::GetTextureGroupSampler(_asInteger));
         break;
+    case MaterialParameterType::GlobalSDF:
+    {
+        GlobalSignDistanceFieldPass::BindingData bindingData;
+        if (GlobalSignDistanceFieldPass::Instance()->Get(meta.Buffers, bindingData))
+            Platform::MemoryClear(&bindingData, sizeof(bindingData));
+        for (int32 i = 0; i < 4; i++)
+            meta.Context->BindSR(_registerIndex + i, bindingData.Cascades[i] ? bindingData.Cascades[i]->ViewVolume() : nullptr);
+        *((GlobalSignDistanceFieldPass::GlobalSDFData*)(meta.Constants.Get() + _offset)) = bindingData.GlobalSDF;
+        break;
+    }
     default:
         break;
     }

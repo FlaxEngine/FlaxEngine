@@ -1298,6 +1298,27 @@ SerializedMaterialParam& ShaderGenerator::findOrAddTextureGroupSampler(int32 ind
     return param;
 }
 
+SerializedMaterialParam& ShaderGenerator::findOrAddGlobalSDF()
+{
+    // Find
+    for (int32 i = 0; i < _parameters.Count(); i++)
+    {
+        SerializedMaterialParam& param = _parameters[i];
+        if (!param.IsPublic && param.Type == MaterialParameterType::GlobalSDF)
+            return param;
+    }
+
+    // Create
+    SerializedMaterialParam& param = _parameters.AddOne();
+    param.Type = MaterialParameterType::GlobalSDF;
+    param.IsPublic = false;
+    param.Override = true;
+    param.Name = TEXT("Global SDF");
+    param.ShaderName = getParamName(_parameters.Count());
+    param.ID = Guid(_parameters.Count(), 0, 0, 3); // Assign temporary id
+    return param;
+}
+
 String ShaderGenerator::getLocalName(int32 index)
 {
     return TEXT("local") + StringUtils::ToString(index);

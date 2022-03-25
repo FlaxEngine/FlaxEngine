@@ -215,7 +215,7 @@ void GlobalSignDistanceFieldPass::Dispose()
 
 bool GlobalSignDistanceFieldPass::Get(const RenderBuffers* buffers, BindingData& result)
 {
-    auto* sdfData = buffers->FindCustomBuffer<GlobalSignDistanceFieldCustomBuffer>(TEXT("GlobalSignDistanceField"));
+    auto* sdfData = buffers ? buffers->FindCustomBuffer<GlobalSignDistanceFieldCustomBuffer>(TEXT("GlobalSignDistanceField")) : nullptr;
     if (sdfData && sdfData->LastFrameUsed == Engine::FrameCount)
     {
         result = sdfData->Result;

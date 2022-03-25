@@ -57,17 +57,15 @@ struct GlobalSDFHit
 float SampleGlobalSDF(const GlobalSDFData data, Texture3D<float> tex[4], float3 worldPosition, uint minCascade = 0)
 {
 	float distance = data.CascadePosDistance[3].w * 2.0f;
+	UNROLL
 	for (uint cascade = minCascade; cascade < 4; cascade++)
 	{
 		float4 cascadePosDistance = data.CascadePosDistance[cascade];
 		float cascadeMaxDistance = cascadePosDistance.w * 2;
 		float3 posInCascade = worldPosition - cascadePosDistance.xyz;
 		float3 cascadeUV = posInCascade / cascadeMaxDistance + 0.5f;
-		if (any(cascadeUV < 0) || any(cascadeUV > 1))
-			 continue;
-		// TODO: sample mip first
 		float cascadeDistance = tex[cascade].SampleLevel(SamplerLinearClamp, cascadeUV, 0);
-		if (cascadeDistance < 1.0f)
+		if (cascadeDistance < 1.0f && !any(cascadeUV < 0) && !any(cascadeUV > 1))
 		{
 			distance = cascadeDistance * cascadeMaxDistance;
 			break;

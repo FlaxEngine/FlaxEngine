@@ -420,6 +420,16 @@ void MaterialGenerator::ProcessGroupTextures(Box* box, Node* node, Value& value)
         value = writeLocal(VariantType::Vector2, String::Format(TEXT("({3} + float2({0}, {1})) * {2}"), frameX.Value, frameY.Value, framesXYInv.Value, uv.Value), node);
         break;
     }
+    // Sample Global SDF
+    case 14:
+    {
+        auto param = findOrAddGlobalSDF();
+        Value worldPosition = tryGetValue(node->GetBox(1), Value(VariantType::Vector3, TEXT("input.WorldPosition.xyz"))).Cast(VariantType::Vector3);
+        value = writeLocal(VariantType::Float, String::Format(TEXT("SampleGlobalSDF({0}, {0}_Tex, {1})"), param.ShaderName, worldPosition.Value), node);
+        _includes.Add(TEXT("./Flax/GlobalSignDistanceField.hlsl"));
+        //float SampleGlobalSDF(const GlobalSDFData data, Texture3D<float> tex[4], float3 worldPosition, uint minCascade = 0)
+        break;
+    }
     default:
         break;
     }
