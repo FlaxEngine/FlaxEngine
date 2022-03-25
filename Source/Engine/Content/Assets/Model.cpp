@@ -13,6 +13,7 @@
 #include "Engine/Graphics/Models/ModelInstanceEntry.h"
 #include "Engine/Streaming/StreamingGroup.h"
 #include "Engine/Debug/Exceptions/ArgumentOutOfRangeException.h"
+#include "Engine/Graphics/GPUDevice.h"
 #include "Engine/Graphics/Async/GPUTask.h"
 #include "Engine/Graphics/Textures/GPUTexture.h"
 #include "Engine/Graphics/Textures/TextureData.h"
@@ -121,9 +122,16 @@ protected:
 
 REGISTER_BINARY_ASSET_WITH_UPGRADER(Model, "FlaxEngine.Model", ModelAssetUpgrader, true);
 
+static byte EnableModelSDF = 0;
+
 Model::Model(const SpawnParams& params, const AssetInfo* info)
     : ModelBase(params, info, StreamingGroups::Instance()->Models())
 {
+    if (EnableModelSDF == 0 && GPUDevice::Instance)
+    {
+        const bool enable = GPUDevice::Instance->GetFeatureLevel() >= FeatureLevel::SM5;
+        EnableModelSDF = enable ? 1 : 2;
+    }
 }
 
 Model::~Model()
@@ -598,6 +606,8 @@ bool Model::Save(bool withMeshDataFromGpu, const StringView& path)
 
 bool Model::GenerateSDF(float resolutionScale, int32 lodIndex, bool cacheData)
 {
+    if (EnableModelSDF == 2)
+        return true; // Not supported
     ScopeLock lock(Locker);
     if (!HasAnyLODInitialized())
         return true;
@@ -885,7 +895,7 @@ Asset::LoadResult Model::load()
 
     // Load SDF
     auto chunk15 = GetChunk(15);
-    if (chunk15 && chunk15->IsLoaded())
+    if (chunk15 && chunk15->IsLoaded() && EnableModelSDF == 1)
     {
         MemoryReadStream sdfStream(chunk15->Get(), chunk15->Size());
         int32 version;
