@@ -57,6 +57,8 @@ struct GlobalSDFHit
 float SampleGlobalSDF(const GlobalSDFData data, Texture3D<float> tex[4], float3 worldPosition, uint minCascade = 0)
 {
 	float distance = data.CascadePosDistance[3].w * 2.0f;
+	if (distance <= 0.0f)
+		return 60000;
 	UNROLL
 	for (uint cascade = minCascade; cascade < 4; cascade++)
 	{
