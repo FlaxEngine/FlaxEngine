@@ -210,6 +210,7 @@ float4 PS_Debug(Quad_VS2PS input) : SV_Target
 	float3 color = saturate(hit.StepsCount / 80.0f).xxx;
 	if (!hit.IsHit())
 		color.rg *= 0.4f;
+	//else color.rgb = normalize(SampleGlobalSDFGradient(GlobalSDF, GlobalSDFTex, hit.GetHitPosition(trace)));
 	return float4(color, 1);
 }
 

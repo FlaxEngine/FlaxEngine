@@ -76,6 +76,37 @@ float SampleGlobalSDF(const GlobalSDFData data, Texture3D<float> tex[4], float3 
 	return distance;
 }
 
+// Samples the Global SDF and returns the gradient vector (derivative) at the given world location. Normalize it to get normal vector.
+float3 SampleGlobalSDFGradient(const GlobalSDFData data, Texture3D<float> tex[4], float3 worldPosition, uint minCascade = 0)
+{
+	float3 gradient = float3(0, 0.00001f, 0);
+	float distance = data.CascadePosDistance[3].w * 2.0f;
+	if (distance <= 0.0f)
+		return gradient;
+	UNROLL
+	for (uint cascade = minCascade; cascade < 4; cascade++)
+	{
+		float4 cascadePosDistance = data.CascadePosDistance[cascade];
+		float cascadeMaxDistance = cascadePosDistance.w * 2;
+		float3 posInCascade = worldPosition - cascadePosDistance.xyz;
+		float3 cascadeUV = posInCascade / cascadeMaxDistance + 0.5f;
+		float cascadeDistance = tex[cascade].SampleLevel(SamplerLinearClamp, cascadeUV, 0);
+		if (cascadeDistance < 0.9f && !any(cascadeUV < 0) && !any(cascadeUV > 1))
+		{
+			float texelOffset = 0.5f / data.Resolution;
+			float xp = tex[cascade].SampleLevel(SamplerLinearClamp, float3(cascadeUV.x + texelOffset, cascadeUV.y, cascadeUV.z), 0).x;
+			float xn = tex[cascade].SampleLevel(SamplerLinearClamp, float3(cascadeUV.x - texelOffset, cascadeUV.y, cascadeUV.z), 0).x;
+			float yp = tex[cascade].SampleLevel(SamplerLinearClamp, float3(cascadeUV.x, cascadeUV.y + texelOffset, cascadeUV.z), 0).x;
+			float yn = tex[cascade].SampleLevel(SamplerLinearClamp, float3(cascadeUV.x, cascadeUV.y - texelOffset, cascadeUV.z), 0).x;
+			float zp = tex[cascade].SampleLevel(SamplerLinearClamp, float3(cascadeUV.x, cascadeUV.y, cascadeUV.z + texelOffset), 0).x;
+			float zn = tex[cascade].SampleLevel(SamplerLinearClamp, float3(cascadeUV.x, cascadeUV.y, cascadeUV.z - texelOffset), 0).x;
+			gradient = float3(xp - xn, yp - yn, zp - zn) * cascadeMaxDistance;
+			break;
+		}
+	}
+	return gradient;
+}
+
 // Ray traces the Global SDF.
 GlobalSDFHit RayTraceGlobalSDF(const GlobalSDFData data, Texture3D<float> tex[4], Texture3D<float> mips[4], const GlobalSDFTrace trace, uint minCascade = 0)
 {
