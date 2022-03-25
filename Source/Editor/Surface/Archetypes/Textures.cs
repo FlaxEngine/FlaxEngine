@@ -363,7 +363,7 @@ namespace FlaxEditor.Surface.Archetypes
                 TypeID = 14,
                 Title = "Sample Global SDF",
                 Description = "Samples the Global SDF to get the distance to the closest surface (in world-space). Requires models SDF to be generated and checking `Enable Global SDF` in Graphics Settings.",
-                Flags = NodeFlags.MaterialGraph,
+                Flags = NodeFlags.MaterialGraph | NodeFlags.ParticleEmitterGraph,
                 Size = new Vector2(200, 20),
                 Elements = new[]
                 {

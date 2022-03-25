@@ -124,6 +124,13 @@ void ParticleEmitterGraphCPUExecutor::ProcessGroupTextures(Box* box, Node* node,
         value = Value::Zero;
         break;
     }
+    // Sample Global SDF
+    case 14:
+    {
+        // Not supported
+        value = Value::Zero;
+        break;
+    }
     default:
         break;
     }

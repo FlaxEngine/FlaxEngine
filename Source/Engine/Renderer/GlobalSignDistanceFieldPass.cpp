@@ -216,7 +216,7 @@ void GlobalSignDistanceFieldPass::Dispose()
 bool GlobalSignDistanceFieldPass::Get(const RenderBuffers* buffers, BindingData& result)
 {
     auto* sdfData = buffers ? buffers->FindCustomBuffer<GlobalSignDistanceFieldCustomBuffer>(TEXT("GlobalSignDistanceField")) : nullptr;
-    if (sdfData && sdfData->LastFrameUsed == Engine::FrameCount)
+    if (sdfData && sdfData->LastFrameUsed + 1 >= Engine::FrameCount) // Allow to use SDF from the previous frame (eg. particles in Editor using the Editor viewport in Game viewport - Game render task runs first)
     {
         result = sdfData->Result;
         return false;
