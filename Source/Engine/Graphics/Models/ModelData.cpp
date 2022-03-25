@@ -531,6 +531,17 @@ void MeshData::TransformBuffer(const Matrix& matrix)
     }
 }
 
+void MeshData::NormalizeBlendWeights()
+{
+    ASSERT(Positions.Count() == BlendWeights.Count());
+    for (int32 i = 0; i < Positions.Count(); i++)
+    {
+        const float sum = BlendWeights[i].SumValues();
+        const float invSum = sum > ZeroTolerance ? 1.0f / sum : 0.0f;
+        BlendWeights[i] *= invSum;
+    }
+}
+
 void MeshData::Merge(MeshData& other)
 {
     // Merge index buffer (and remap indices)

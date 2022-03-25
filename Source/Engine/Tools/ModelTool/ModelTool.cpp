@@ -12,7 +12,9 @@
 #include "Engine/Threading/JobSystem.h"
 #include "Engine/Graphics/RenderTools.h"
 #include "Engine/Graphics/Async/GPUTask.h"
+#include "Engine/Graphics/Textures/GPUTexture.h"
 #include "Engine/Graphics/Textures/TextureData.h"
+#include "Engine/Graphics/Models/ModelData.h"
 #include "Engine/Content/Assets/Model.h"
 #include "Engine/Serialization/MemoryWriteStream.h"
 #if USE_EDITOR

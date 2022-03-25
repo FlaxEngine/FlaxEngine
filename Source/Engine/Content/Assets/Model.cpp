@@ -617,17 +617,24 @@ bool Model::GenerateSDF(float resolutionScale, int32 lodIndex, bool cacheData)
         LOG(Warning, "Cannot generate SDF for virtual models on a main thread.");
         return true;
     }
-    cacheData &= Storage != nullptr; // Cache only if has storage linked
     lodIndex = Math::Clamp(lodIndex, HighestResidentLODIndex(), LODs.Count() - 1);
 
     // Generate SDF
+#if USE_EDITOR
+    cacheData &= Storage != nullptr; // Cache only if has storage linked
     MemoryWriteStream sdfStream;
-    if (ModelTool::GenerateModelSDF(this, nullptr, resolutionScale, lodIndex, &SDF, cacheData ? &sdfStream : nullptr, GetPath()))
+    MemoryWriteStream* outputStream = cacheData ? &sdfStream : nullptr;
+#else
+    class MemoryWriteStream* outputStream = nullptr;
+#endif
+    if (ModelTool::GenerateModelSDF(this, nullptr, resolutionScale, lodIndex, &SDF, outputStream, GetPath()))
         return true;
 
+#if USE_EDITOR
     // Set asset data
     if (cacheData)
         GetOrCreateChunk(15)->Data.Copy(sdfStream.GetHandle(), sdfStream.GetPosition());
+#endif
 
     return false;
 }

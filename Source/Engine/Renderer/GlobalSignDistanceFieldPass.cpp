@@ -183,7 +183,7 @@ bool GlobalSignDistanceFieldPass::setupResources()
     return false;
 }
 
-#if USE_EDITOR
+#if COMPILE_WITH_DEV_ENV
 
 void GlobalSignDistanceFieldPass::OnShaderReloading(Asset* obj)
 {
