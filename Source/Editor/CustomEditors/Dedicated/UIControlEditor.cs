@@ -642,7 +642,7 @@ namespace FlaxEditor.CustomEditors.Dedicated
                 cm.AddItem(new TypeSearchPopup.TypeItemView(controlTypes[i]));
             }
             cm.ItemClicked += controlType => SetType((ScriptType)controlType.Tag);
-            cm.SortChildren();
+            cm.SortItems();
             cm.Show(button.Parent, button.BottomLeft);
         }
 

@@ -126,7 +126,7 @@ namespace FlaxEditor.Surface.Archetypes
                         });
                     }
                     cm.ItemClicked += item => AddModule((ushort)item.Tag);
-                    cm.SortChildren();
+                    cm.SortItems();
                     cm.Show(this, button.BottomLeft);
                 }
 

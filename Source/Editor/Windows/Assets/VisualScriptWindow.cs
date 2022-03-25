@@ -188,7 +188,7 @@ namespace FlaxEditor.Windows.Assets
                             cm.AddItem(item);
                         }
                         cm.ItemClicked += (ItemsListContextMenu.Item item) => window.SetParamType(index, (ScriptType)item.Tag);
-                        cm.SortChildren();
+                        cm.SortItems();
                         cm.Show(window, window.PointFromScreen(Input.MouseScreenPosition));
                     });
                     b.Enabled = window._canEdit;

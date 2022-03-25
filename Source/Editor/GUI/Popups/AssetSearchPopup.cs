@@ -122,7 +122,7 @@ namespace FlaxEditor.GUI
                 if (project.Content != null)
                     FindAssets(project.Content.Folder);
             }
-            SortChildren();
+            SortItems();
         }
 
         private void OnItemClicked(Item item)

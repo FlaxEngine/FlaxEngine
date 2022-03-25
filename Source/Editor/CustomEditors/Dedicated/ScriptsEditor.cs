@@ -71,7 +71,7 @@ namespace FlaxEditor.CustomEditors.Dedicated
                 cm.AddItem(new TypeSearchPopup.TypeItemView(scripts[i]));
             }
             cm.ItemClicked += item => AddScript((ScriptType)item.Tag);
-            cm.SortChildren();
+            cm.SortItems();
             cm.Show(this, button.BottomLeft);
         }
 
