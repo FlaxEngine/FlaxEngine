@@ -137,6 +137,16 @@ void GPUSwapChainDX12::SetFullscreen(bool isFullscreen)
         }
 
         _isFullscreen = isFullscreen;
+
+        // Buffers must be resized in flip presentation model
+        if (swapChainDesc.SwapEffect == DXGI_SWAP_EFFECT_FLIP_SEQUENTIAL ||
+            swapChainDesc.SwapEffect == DXGI_SWAP_EFFECT_FLIP_DISCARD)
+        {
+            const int32 width = _width;
+            const int32 height = _height;
+            _width = _height = 0;
+            Resize(width, height);
+        }
     }
 #else
     LOG(Info, "Cannot change fullscreen mode on this platform");
@@ -219,7 +229,7 @@ bool GPUSwapChainDX12::Resize(int32 width, int32 height)
         _backBuffers.Resize(swapChainDesc.BufferCount);
 
         // Disable DXGI changes to the window
-        dxgiFactory->MakeWindowAssociation(_windowHandle, 0);
+        VALIDATE_DIRECTX_RESULT(dxgiFactory->MakeWindowAssociation(_windowHandle, DXGI_MWA_NO_ALT_ENTER));
     }
     else
     {
