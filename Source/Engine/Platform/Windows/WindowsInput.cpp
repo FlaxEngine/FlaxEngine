@@ -109,7 +109,7 @@ namespace WindowsInputImpl
     bool XInputGamepads[XUSER_MAX_COUNT] = { false };
     WindowsMouse* Mouse = nullptr;
     WindowsKeyboard* Keyboard = nullptr;
-    bool RawInput = true;
+    bool RawInputEnabled = true;
 }
 
 #include <hidusage.h>
@@ -118,7 +118,7 @@ void WindowsInput::Init()
     Input::Mouse = WindowsInputImpl::Mouse = New<WindowsMouse>();
     Input::Keyboard = WindowsInputImpl::Keyboard = New<WindowsKeyboard>();
 
-    if (WindowsInputImpl::RawInput)
+    if (WindowsInputImpl::RawInputEnabled)
     {
         RAWINPUTDEVICE rid[2] = {};
 
@@ -132,7 +132,6 @@ void WindowsInput::Init()
         rid[1].usUsagePage = HID_USAGE_PAGE_GENERIC;
         rid[1].usUsage = HID_USAGE_GENERIC_KEYBOARD;
         rid[1].hwndTarget = nullptr;
-        //rid[1].dwFlags = RIDEV_NOLEGACY; // Should not be enabled, WM_CHAR events would need to be emulated in raw input and that's not really feasible...
 
         if (!RegisterRawInputDevices(rid, 2, sizeof(rid[0])))
             LOG(Error, "Failed to register RawInput devices. Error: {0}", GetLastError());
@@ -162,8 +161,6 @@ void WindowsInput::Update()
             }
         }
     }
-
-    // TODO: handle raw input device detection here
 }
 
 bool WindowsInput::WndProc(Window* window, Windows::UINT msg, Windows::WPARAM wParam, Windows::LPARAM lParam)
@@ -256,7 +253,8 @@ bool OnRawInput(Vector2 mousePosition, Window* window, HRAWINPUT input)
             Input::Mouse->OnMouseUp(mousePos, MouseButton::Extended2, window);
         if ((rawMouse.usButtonFlags & RI_MOUSE_WHEEL) != 0)
         {
-            const float deltaNormalized = static_cast<float>(rawMouse.usButtonData) / WHEEL_DELTA;
+            const int16 delta = static_cast<int16>(rawMouse.usButtonData);
+            const float deltaNormalized = static_cast<float>(delta) / WHEEL_DELTA;
             Input::Mouse->OnMouseWheel(mousePos, deltaNormalized, window);
         }
 
@@ -282,14 +280,16 @@ bool WindowsKeyboard::WndProc(Window* window, const Windows::UINT msg, Windows::
     case WM_KEYDOWN:
     case WM_SYSKEYDOWN:
     {
-        OnKeyDown(static_cast<KeyboardKeys>(wParam), window);
+        if (!WindowsInputImpl::RawInputEnabled)
+            OnKeyDown(static_cast<KeyboardKeys>(wParam), window);
         result = true;
         break;
     }
     case WM_KEYUP:
     case WM_SYSKEYUP:
     {
-        OnKeyUp(static_cast<KeyboardKeys>(wParam), window);
+        if (!WindowsInputImpl::RawInputEnabled)
+            OnKeyUp(static_cast<KeyboardKeys>(wParam), window);
         result = true;
         break;
     }
@@ -314,7 +314,7 @@ bool WindowsMouse::WndProc(Window* window, const UINT msg, WPARAM wParam, LPARAM
     {
     case WM_MOUSEMOVE:
     {
-        if (!WindowsInputImpl::RawInput)
+        if (!WindowsInputImpl::RawInputEnabled)
         {
             static Vector2 lastPos = mousePos;
             if (_state.MouseWasReset)
@@ -347,28 +347,28 @@ bool WindowsMouse::WndProc(Window* window, const UINT msg, WPARAM wParam, LPARAM
     }
     case WM_LBUTTONDOWN:
     {
-        if (!WindowsInputImpl::RawInput)
+        if (!WindowsInputImpl::RawInputEnabled)
             OnMouseDown(mousePos, MouseButton::Left, window);
         result = true;
         break;
     }
     case WM_RBUTTONDOWN:
     {
-        if (!WindowsInputImpl::RawInput)
+        if (!WindowsInputImpl::RawInputEnabled)
             OnMouseDown(mousePos, MouseButton::Right, window);
         result = true;
         break;
     }
     case WM_MBUTTONDOWN:
     {
-        if (!WindowsInputImpl::RawInput)
+        if (!WindowsInputImpl::RawInputEnabled)
             OnMouseDown(mousePos, MouseButton::Middle, window);
         result = true;
         break;
     }
     case WM_XBUTTONDOWN:
     {
-        if (!WindowsInputImpl::RawInput)
+        if (!WindowsInputImpl::RawInputEnabled)
         {
             const auto button = (HIWORD(wParam) & XBUTTON1) ? MouseButton::Extended1 : MouseButton::Extended2;
             OnMouseDown(mousePos, button, window);
@@ -378,28 +378,28 @@ bool WindowsMouse::WndProc(Window* window, const UINT msg, WPARAM wParam, LPARAM
     }
     case WM_LBUTTONUP:
     {
-        if (!WindowsInputImpl::RawInput)
+        if (!WindowsInputImpl::RawInputEnabled)
             OnMouseUp(mousePos, MouseButton::Left, window);
         result = true;
         break;
     }
     case WM_RBUTTONUP:
     {
-        if (!WindowsInputImpl::RawInput)
+        if (!WindowsInputImpl::RawInputEnabled)
             OnMouseUp(mousePos, MouseButton::Right, window);
         result = true;
         break;
     }
     case WM_MBUTTONUP:
     {
-        if (!WindowsInputImpl::RawInput)
+        if (!WindowsInputImpl::RawInputEnabled)
             OnMouseUp(mousePos, MouseButton::Middle, window);
         result = true;
         break;
     }
     case WM_XBUTTONUP:
     {
-        if (!WindowsInputImpl::RawInput)
+        if (!WindowsInputImpl::RawInputEnabled)
         {
             const auto button = (HIWORD(wParam) & XBUTTON1) ? MouseButton::Extended1 : MouseButton::Extended2;
             OnMouseUp(mousePos, button, window);
@@ -427,19 +427,23 @@ bool WindowsMouse::WndProc(Window* window, const UINT msg, WPARAM wParam, LPARAM
     }
     case WM_MOUSEWHEEL:
     {
-        const short delta = GET_WHEEL_DELTA_WPARAM(wParam);
-        if (delta != 0)
+        if (!WindowsInputImpl::RawInputEnabled)
         {
-            const float deltaNormalized = static_cast<float>(delta) / WHEEL_DELTA;
-            // Use cached mouse position, the input pos is sometimes wrong in Win32
-            OnMouseWheel(_state.MousePosition, deltaNormalized, window);
+            const int16 delta = GET_WHEEL_DELTA_WPARAM(wParam);
+            if (delta != 0)
+            {
+                const float deltaNormalized = static_cast<float>(delta) / WHEEL_DELTA;
+                // Use cached mouse position, the input pos is sometimes wrong in Win32
+                OnMouseWheel(_state.MousePosition, deltaNormalized, window);
+            }
         }
         result = true;
         break;
     }
     case WM_INPUT:
     {
-        result = OnRawInput(_state.MousePosition, window, reinterpret_cast<HRAWINPUT>(lParam));
+        if (WindowsInputImpl::RawInputEnabled)
+            result = OnRawInput(_state.MousePosition, window, reinterpret_cast<HRAWINPUT>(lParam));
         break;
     }
     }
