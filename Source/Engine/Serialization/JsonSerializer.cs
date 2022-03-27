@@ -188,7 +188,7 @@ namespace FlaxEngine.Json
                 while (reader.Read())
                 {
                     if (reader.TokenType != JsonToken.Comment)
-                        throw new FlaxException("Additional text found in JSON string after finishing deserializing object.");
+                        throw new Exception("Additional text found in JSON string after finishing deserializing object.");
                 }
             }
         }
@@ -226,7 +226,7 @@ namespace FlaxEngine.Json
                 while (reader.Read())
                 {
                     if (reader.TokenType != JsonToken.Comment)
-                        throw new FlaxException("Additional text found in JSON string after finishing deserializing object.");
+                        throw new Exception("Additional text found in JSON string after finishing deserializing object.");
                 }
             }
 
@@ -254,7 +254,7 @@ namespace FlaxEngine.Json
                 while (reader.Read())
                 {
                     if (reader.TokenType != JsonToken.Comment)
-                        throw new FlaxException("Additional text found in JSON string after finishing deserializing object.");
+                        throw new Exception("Additional text found in JSON string after finishing deserializing object.");
                 }
             }
 
@@ -297,7 +297,7 @@ namespace FlaxEngine.Json
             while (jsonReader.Read())
             {
                 if (jsonReader.TokenType != JsonToken.Comment)
-                    throw new FlaxException("Additional text found in JSON string after finishing deserializing object.");
+                    throw new Exception("Additional text found in JSON string after finishing deserializing object.");
             }
         }
 

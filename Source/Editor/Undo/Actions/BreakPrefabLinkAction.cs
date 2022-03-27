@@ -68,7 +68,7 @@ namespace FlaxEditor.Actions
             if (actor == null)
                 throw new ArgumentNullException(nameof(actor));
             if (!actor.HasPrefabLink)
-                throw new FlaxException("Cannot register missing prefab link.");
+                throw new Exception("Cannot register missing prefab link.");
             return new BreakPrefabLinkAction(false, actor);
         }
 
@@ -102,11 +102,11 @@ namespace FlaxEditor.Actions
         private void DoLink()
         {
             if (_prefabObjectIds == null)
-                throw new FlaxException("Cannot link prefab. Missing objects Ids mapping.");
+                throw new Exception("Cannot link prefab. Missing objects Ids mapping.");
 
             var actor = Object.Find<Actor>(ref _actorId);
             if (actor == null)
-                throw new FlaxException("Cannot link prefab. Missing actor.");
+                throw new Exception("Cannot link prefab. Missing actor.");
 
             // Restore cached links
             foreach (var e in _prefabObjectIds)
@@ -149,9 +149,9 @@ namespace FlaxEditor.Actions
         {
             var actor = Object.Find<Actor>(ref _actorId);
             if (actor == null)
-                throw new FlaxException("Cannot break prefab link. Missing actor.");
+                throw new Exception("Cannot break prefab link. Missing actor.");
             if (!actor.HasPrefabLink)
-                throw new FlaxException("Cannot break missing prefab link.");
+                throw new Exception("Cannot break missing prefab link.");
 
             if (_prefabObjectIds == null)
                 _prefabObjectIds = new Dictionary<Guid, Guid>(1024);

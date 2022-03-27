@@ -1,5 +1,6 @@
 // Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
+using System;
 using FlaxEditor.Tools.Terrain.Brushes;
 using FlaxEngine;
 
@@ -129,9 +130,7 @@ namespace FlaxEditor.Tools.Terrain.Paint
                 // Get the patch data (cached internally by the c++ core in editor)
                 var sourceData = TerrainTools.GetSplatMapData(terrain, ref patch.PatchCoord, splatmapIndex);
                 if (sourceData == null)
-                {
-                    throw new FlaxException("Cannot modify terrain. Loading splatmap failed. See log for more info.");
-                }
+                    throw new Exception("Cannot modify terrain. Loading splatmap failed. See log for more info.");
 
                 // Record patch data before editing it
                 if (!gizmo.CurrentEditUndoAction.HashPatch(ref patch.PatchCoord))

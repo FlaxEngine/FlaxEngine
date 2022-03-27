@@ -1,6 +1,8 @@
 // Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
+using System;
 using FlaxEngine;
+using Object = FlaxEngine.Object;
 
 namespace FlaxEditor.Viewport.Previews
 {
@@ -39,7 +41,7 @@ namespace FlaxEditor.Viewport.Previews
 
             // Wait for base (don't want to async material parameters set due to async loading)
             if (baseMaterial == null || baseMaterial.WaitForLoaded())
-                throw new FlaxException("Cannot load IES Profile preview material.");
+                throw new Exception("Cannot load IES Profile preview material.");
 
             // Create preview material (virtual)
             _previewMaterial = baseMaterial.CreateVirtualInstance();

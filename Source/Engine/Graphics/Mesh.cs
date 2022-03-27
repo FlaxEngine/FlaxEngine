@@ -154,7 +154,7 @@ namespace FlaxEngine
                 uv,
                 colors
             ))
-                throw new FlaxException("Failed to update mesh data.");
+                throw new Exception("Failed to update mesh data.");
         }
 
         /// <summary>
@@ -201,7 +201,7 @@ namespace FlaxEngine
                 Utils.ExtractArrayFromList(uv),
                 Utils.ExtractArrayFromList(colors)
             ))
-                throw new FlaxException("Failed to update mesh data.");
+                throw new Exception("Failed to update mesh data.");
         }
 
         /// <summary>
@@ -247,7 +247,7 @@ namespace FlaxEngine
                 uv,
                 colors
             ))
-                throw new FlaxException("Failed to update mesh data.");
+                throw new Exception("Failed to update mesh data.");
         }
 
         /// <summary>
@@ -294,7 +294,7 @@ namespace FlaxEngine
                 Utils.ExtractArrayFromList(uv),
                 Utils.ExtractArrayFromList(colors)
             ))
-                throw new FlaxException("Failed to update mesh data.");
+                throw new Exception("Failed to update mesh data.");
         }
 
         /// <summary>
@@ -341,7 +341,7 @@ namespace FlaxEngine
                 uv,
                 colors
             ))
-                throw new FlaxException("Failed to update mesh data.");
+                throw new Exception("Failed to update mesh data.");
         }
 
         /// <summary>
@@ -388,7 +388,7 @@ namespace FlaxEngine
                 Utils.ExtractArrayFromList(uv),
                 Utils.ExtractArrayFromList(colors)
             ))
-                throw new FlaxException("Failed to update mesh data.");
+                throw new Exception("Failed to update mesh data.");
         }
 
         /// <summary>
@@ -412,7 +412,7 @@ namespace FlaxEngine
                 triangles.Length / 3,
                 triangles
             ))
-                throw new FlaxException("Failed to update mesh data.");
+                throw new Exception("Failed to update mesh data.");
         }
 
         /// <summary>
@@ -436,7 +436,7 @@ namespace FlaxEngine
                 triangles.Count / 3,
                 Utils.ExtractArrayFromList(triangles)
             ))
-                throw new FlaxException("Failed to update mesh data.");
+                throw new Exception("Failed to update mesh data.");
         }
 
         /// <summary>
@@ -460,7 +460,7 @@ namespace FlaxEngine
                 triangles.Length / 3,
                 triangles
             ))
-                throw new FlaxException("Failed to update mesh data.");
+                throw new Exception("Failed to update mesh data.");
         }
 
         /// <summary>
@@ -484,7 +484,7 @@ namespace FlaxEngine
                 triangles.Count / 3,
                 Utils.ExtractArrayFromList(triangles)
             ))
-                throw new FlaxException("Failed to update mesh data.");
+                throw new Exception("Failed to update mesh data.");
         }
 
         internal enum InternalBufferType
@@ -506,7 +506,7 @@ namespace FlaxEngine
             var vertices = VertexCount;
             var result = new Vertex0[vertices];
             if (Internal_DownloadBuffer(__unmanagedPtr, forceGpu, result, (int)InternalBufferType.VB0))
-                throw new FlaxException("Failed to download mesh data.");
+                throw new Exception("Failed to download mesh data.");
             return result;
         }
 
@@ -520,7 +520,7 @@ namespace FlaxEngine
             var vertices = VertexCount;
             var result = new Vertex1[vertices];
             if (Internal_DownloadBuffer(__unmanagedPtr, forceGpu, result, (int)InternalBufferType.VB1))
-                throw new FlaxException("Failed to download mesh data.");
+                throw new Exception("Failed to download mesh data.");
             return result;
         }
 
@@ -540,7 +540,7 @@ namespace FlaxEngine
             var vertices = VertexCount;
             var result = new Vertex2[vertices];
             if (Internal_DownloadBuffer(__unmanagedPtr, forceGpu, result, (int)InternalBufferType.VB2))
-                throw new FlaxException("Failed to download mesh data.");
+                throw new Exception("Failed to download mesh data.");
             return result;
         }
 
@@ -597,7 +597,7 @@ namespace FlaxEngine
             var triangles = TriangleCount;
             var result = new uint[triangles * 3];
             if (Internal_DownloadBuffer(__unmanagedPtr, forceGpu, result, (int)InternalBufferType.IB32))
-                throw new FlaxException("Failed to download mesh data.");
+                throw new Exception("Failed to download mesh data.");
             return result;
         }
 
@@ -612,7 +612,7 @@ namespace FlaxEngine
             var triangles = TriangleCount;
             var result = new ushort[triangles * 3];
             if (Internal_DownloadBuffer(__unmanagedPtr, forceGpu, result, (int)InternalBufferType.IB16))
-                throw new FlaxException("Failed to download mesh data.");
+                throw new Exception("Failed to download mesh data.");
             return result;
         }
     }

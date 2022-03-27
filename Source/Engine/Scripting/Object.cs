@@ -47,7 +47,7 @@ namespace FlaxEngine
             {
                 Internal_ManagedInstanceCreated(this);
                 if (__unmanagedPtr == IntPtr.Zero)
-                    throw new FlaxException($"Failed to create native instance for object of type {GetType().FullName} (assembly: {GetType().Assembly.FullName}).");
+                    throw new Exception($"Failed to create native instance for object of type {GetType().FullName} (assembly: {GetType().Assembly.FullName}).");
             }
         }
 

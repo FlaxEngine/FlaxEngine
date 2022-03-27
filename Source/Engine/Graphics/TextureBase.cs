@@ -177,7 +177,7 @@ namespace FlaxEngine
 
                 // Call backend
                 if (Internal_Init(__unmanagedPtr, new IntPtr(&t)))
-                    throw new FlaxException("Failed to init texture data.");
+                    throw new Exception("Failed to init texture data.");
             }
         }
 

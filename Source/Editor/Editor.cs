@@ -891,10 +891,10 @@ namespace FlaxEditor
             if (asset == null)
                 throw new ArgumentNullException(nameof(asset));
             if (asset.WaitForLoaded())
-                throw new FlaxException("Failed to load asset.");
+                throw new Exception("Failed to load asset.");
             var source = Internal_GetShaderAssetSourceCode(FlaxEngine.Object.GetUnmanagedPtr(asset));
             if (source == null)
-                throw new FlaxException("Failed to get source code.");
+                throw new Exception("Failed to get source code.");
             return source;
         }
 

@@ -319,10 +319,10 @@ namespace FlaxEditor.Viewport.Previews
             // Create preview material (virtual)
             var baseMaterial = FlaxEngine.Content.LoadAsyncInternal<Material>("Editor/TexturePreviewMaterial");
             if (baseMaterial == null)
-                throw new FlaxException("Cannot load texture preview material.");
+                throw new Exception("Cannot load texture preview material.");
             _previewMaterial = baseMaterial.CreateVirtualInstance();
             if (_previewMaterial == null)
-                throw new FlaxException("Failed to create virtual material instance for preview material.");
+                throw new Exception("Failed to create virtual material instance for preview material.");
 
             // Add widgets
             if (useWidgets)

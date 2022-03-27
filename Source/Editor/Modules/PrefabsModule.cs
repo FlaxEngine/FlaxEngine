@@ -212,7 +212,7 @@ namespace FlaxEditor.Modules
 
             // Call backend
             if (PrefabManager.Internal_ApplyAll(FlaxEngine.Object.GetUnmanagedPtr(instance)))
-                throw new FlaxException("Failed to apply the prefab. See log to learn more.");
+                throw new Exception("Failed to apply the prefab. See log to learn more.");
 
             PrefabApplied?.Invoke(prefab, instance);
         }
