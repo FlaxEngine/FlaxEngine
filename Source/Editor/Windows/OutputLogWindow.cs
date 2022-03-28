@@ -551,27 +551,30 @@ namespace FlaxEditor.Windows
                             if (j == 0)
                                 regexStart += prefixLength;
                             var regexLength = line.LastCharIndex - regexStart;
-                            var match = _compileRegex.Match(entryText, regexStart, regexLength);
-                            if (match.Success)
+                            if (regexLength > 0)
                             {
-                                switch (match.Groups["level"].Value)
+                                var match = _compileRegex.Match(entryText, regexStart, regexLength);
+                                if (match.Success)
                                 {
-                                case "error":
-                                    textBlock.Style = _output.ErrorStyle;
-                                    break;
-                                case "warning":
-                                    textBlock.Style = _output.WarningStyle;
-                                    break;
+                                    switch (match.Groups["level"].Value)
+                                    {
+                                    case "error":
+                                        textBlock.Style = _output.ErrorStyle;
+                                        break;
+                                    case "warning":
+                                        textBlock.Style = _output.WarningStyle;
+                                        break;
+                                    }
+                                    textBlock.Tag = new TextBlockTag
+                                    {
+                                        Type = TextBlockTag.Types.CodeLocation,
+                                        Url = match.Groups["path"].Value,
+                                        Line = int.Parse(match.Groups["line"].Value),
+                                    };
                                 }
-                                textBlock.Tag = new TextBlockTag
-                                {
-                                    Type = TextBlockTag.Types.CodeLocation,
-                                    Url = match.Groups["path"].Value,
-                                    Line = int.Parse(match.Groups["line"].Value),
-                                };
+                                // TODO: parsing hyperlinks with link
+                                // TODO: parsing file paths with link
                             }
-                            // TODO: parsing hyperlinks with link
-                            // TODO: parsing file paths with link
                         }
 
                         prevBlockBottom += line.Size.Y;
