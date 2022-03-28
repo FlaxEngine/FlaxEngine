@@ -204,6 +204,19 @@ float Luminance(float3 color)
 	return dot(color, float3(0.299f, 0.587f, 0.114f));
 }
 
+// Quaternion multiplication (http://mathworld.wolfram.com/Quaternion.html)
+float4 QuatMultiply(float4 q1, float4 q2)
+{
+    return float4(q2.xyz * q1.w + q1.xyz * q2.w + cross(q1.xyz, q2.xyz), q1.w * q2.w - dot(q1.xyz, q2.xyz));
+}
+
+// Vector rotation with a quaternion (http://mathworld.wolfram.com/Quaternion.html)
+float3 QuatRotateVector(float3 v, float4 q)
+{
+    float4 nq = q * float4(-1, -1, -1, 1);
+    return QuatMultiply(q, QuatMultiply(float4(v, 0), nq)).xyz;
+}
+
 // Samples the unwrapped 3D texture (eg. volume texture of size 16x16x16 would be unwrapped to 256x16)
 float4 SampleUnwrappedTexture3D(Texture2D tex, SamplerState s, float3 uvw, float size)
 {

@@ -80,6 +80,17 @@ public:
     /// </summary>
     /// <param name="type">The type.</param>
     /// <param name="value">The value.</param>
+    ShaderGraphValue(VariantType::Types type, const String&& value)
+        : Type(type)
+        , Value(MoveTemp(value))
+    {
+    }
+
+    /// <summary>
+    /// Initializes a new instance of the <see cref="ShaderGraphValue"/> struct.
+    /// </summary>
+    /// <param name="type">The type.</param>
+    /// <param name="value">The value.</param>
     ShaderGraphValue(VariantType::Types type, const String& value)
         : Type(type)
         , Value(value)
