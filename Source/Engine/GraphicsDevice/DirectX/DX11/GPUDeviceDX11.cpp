@@ -276,7 +276,6 @@ bool GPUDeviceDX11::Init()
         factory5->Release();
     }
 
-
     // Get flags and device type base on current configuration
     uint32 flags = D3D11_CREATE_DEVICE_BGRA_SUPPORT;
 #if GPU_ENABLE_DIAGNOSTICS

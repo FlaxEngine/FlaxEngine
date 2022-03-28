@@ -138,10 +138,12 @@ void GPUSwapChainDX11::Present(bool vsync)
     // Present frame
     ASSERT(_swapChain);
     UINT presentFlags = 0;
+#if PLATFORM_WINDOWS
     if (!vsync && !_isFullscreen && _allowTearing)
     {
         presentFlags |= DXGI_PRESENT_ALLOW_TEARING;
     }
+#endif
     const HRESULT result = _swapChain->Present(vsync ? 1 : 0, presentFlags);
     LOG_DIRECTX_RESULT(result);
 
@@ -159,7 +161,9 @@ bool GPUSwapChainDX11::Resize(int32 width, int32 height)
 
     _device->WaitForGPU();
     GPUDeviceLock lock(_device);
+#if PLATFORM_WINDOWS
     _allowTearing = _device->AllowTearing;
+#endif
     _format = GPU_BACK_BUFFER_PIXEL_FORMAT;
 
 #if PLATFORM_WINDOWS
