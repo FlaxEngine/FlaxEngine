@@ -121,14 +121,14 @@ int32 ParticleEmitterGraphCPUExecutor::ProcessSpawnModule(int32 index)
     // Calculate particles to spawn during this frame
     switch (node->TypeID)
     {
-        // Constant Spawn Rate
+    // Constant Spawn Rate
     case 100:
     {
         const float rate = Math::Max((float)TryGetValue(node->GetBox(0), node->Values[2]), 0.0f);
         spawnCount += rate * context.DeltaTime;
         break;
     }
-        // Single Burst
+    // Single Burst
     case 101:
     {
         const bool isFirstUpdate = (context.Data->Time - context.DeltaTime) <= 0.0f;
@@ -139,7 +139,7 @@ int32 ParticleEmitterGraphCPUExecutor::ProcessSpawnModule(int32 index)
         }
         break;
     }
-        // Periodic
+    // Periodic
     case 102:
     {
         float& nextSpawnTime = data.NextSpawnTime;
@@ -152,7 +152,7 @@ int32 ParticleEmitterGraphCPUExecutor::ProcessSpawnModule(int32 index)
         }
         break;
     }
-        // Periodic Burst (range)
+    // Periodic Burst (range)
     case 103:
     {
         float& nextSpawnTime = data.NextSpawnTime;
@@ -186,7 +186,7 @@ void ParticleEmitterGraphCPUExecutor::ProcessModule(ParticleEmitterGraphCPUNode*
 
     switch (node->TypeID)
     {
-        // Orient Sprite
+    // Orient Sprite
     case 201:
     case 303:
     {
@@ -229,7 +229,7 @@ void ParticleEmitterGraphCPUExecutor::ProcessModule(ParticleEmitterGraphCPUNode*
         }
         break;
     }
-        // Orient Model
+    // Orient Model
     case 213:
     case 309:
     {
@@ -246,7 +246,7 @@ void ParticleEmitterGraphCPUExecutor::ProcessModule(ParticleEmitterGraphCPUNode*
         }
         break;
     }
-        // Update Age
+    // Update Age
     case 300:
     {
         PARTICLE_EMITTER_MODULE("Update Age");
@@ -259,7 +259,7 @@ void ParticleEmitterGraphCPUExecutor::ProcessModule(ParticleEmitterGraphCPUNode*
         }
         break;
     }
-        // Gravity/Force
+    // Gravity/Force
     case 301:
     case 304:
     {
@@ -288,7 +288,7 @@ void ParticleEmitterGraphCPUExecutor::ProcessModule(ParticleEmitterGraphCPUNode*
         }
         break;
     }
-        // Conform to Sphere
+    // Conform to Sphere
     case 305:
     {
         PARTICLE_EMITTER_MODULE("Conform to Sphere");
@@ -351,7 +351,7 @@ void ParticleEmitterGraphCPUExecutor::ProcessModule(ParticleEmitterGraphCPUNode*
 #undef LOGIC
         break;
     }
-        // Kill (sphere)
+    // Kill (sphere)
     case 306:
     {
         PARTICLE_EMITTER_MODULE("Kill");
@@ -400,7 +400,7 @@ void ParticleEmitterGraphCPUExecutor::ProcessModule(ParticleEmitterGraphCPUNode*
 #undef LOGIC
         break;
     }
-        // Kill (box)
+    // Kill (box)
     case 307:
     {
         PARTICLE_EMITTER_MODULE("Kill");
@@ -454,7 +454,7 @@ void ParticleEmitterGraphCPUExecutor::ProcessModule(ParticleEmitterGraphCPUNode*
 #undef LOGIC
         break;
     }
-        // Kill (custom)
+    // Kill (custom)
     case 308:
     {
         PARTICLE_EMITTER_MODULE("Kill (custom)");
@@ -492,7 +492,7 @@ void ParticleEmitterGraphCPUExecutor::ProcessModule(ParticleEmitterGraphCPUNode*
 #undef LOGIC
         break;
     }
-        // Linear Drag
+    // Linear Drag
     case 310:
     {
         PARTICLE_EMITTER_MODULE("Linear Drag");
@@ -538,7 +538,7 @@ void ParticleEmitterGraphCPUExecutor::ProcessModule(ParticleEmitterGraphCPUNode*
 #undef LOGIC
         break;
     }
-        // Turbulence
+    // Turbulence
     case 311:
     {
         PARTICLE_EMITTER_MODULE("Turbulence");
@@ -598,7 +598,7 @@ void ParticleEmitterGraphCPUExecutor::ProcessModule(ParticleEmitterGraphCPUNode*
 #undef LOGIC
         break;
     }
-        // Set Attribute
+    // Set Attribute
     case 200:
     case 302:
     {
@@ -630,7 +630,7 @@ void ParticleEmitterGraphCPUExecutor::ProcessModule(ParticleEmitterGraphCPUNode*
         }
         break;
     }
-        // Set Position/Lifetime/Age/..
+    // Set Position/Lifetime/Age/..
     case 250:
     case 251:
     case 252:
@@ -688,7 +688,7 @@ void ParticleEmitterGraphCPUExecutor::ProcessModule(ParticleEmitterGraphCPUNode*
         }
         break;
     }
-        // Position (sphere surface)
+    // Position (sphere surface)
     case 202:
     {
         PARTICLE_EMITTER_MODULE("Position");
@@ -734,7 +734,7 @@ void ParticleEmitterGraphCPUExecutor::ProcessModule(ParticleEmitterGraphCPUNode*
 #undef LOGIC
         break;
     }
-        // Position (plane)
+    // Position (plane)
     case 203:
     {
         PARTICLE_EMITTER_MODULE("Position");
@@ -773,7 +773,7 @@ void ParticleEmitterGraphCPUExecutor::ProcessModule(ParticleEmitterGraphCPUNode*
 #undef LOGIC
         break;
     }
-        // Position (circle)
+    // Position (circle)
     case 204:
     {
         PARTICLE_EMITTER_MODULE("Position");
@@ -817,7 +817,7 @@ void ParticleEmitterGraphCPUExecutor::ProcessModule(ParticleEmitterGraphCPUNode*
 #undef LOGIC
         break;
     }
-        // Position (disc)
+    // Position (disc)
     case 205:
     {
         PARTICLE_EMITTER_MODULE("Position");
@@ -861,7 +861,7 @@ void ParticleEmitterGraphCPUExecutor::ProcessModule(ParticleEmitterGraphCPUNode*
 #undef LOGIC
         break;
     }
-        // Position (box surface)
+    // Position (box surface)
     case 206:
     {
         PARTICLE_EMITTER_MODULE("Position");
@@ -912,7 +912,7 @@ void ParticleEmitterGraphCPUExecutor::ProcessModule(ParticleEmitterGraphCPUNode*
 #undef LOGIC
         break;
     }
-        // Position (box volume)
+    // Position (box volume)
     case 207:
     {
         PARTICLE_EMITTER_MODULE("Position");
@@ -951,7 +951,7 @@ void ParticleEmitterGraphCPUExecutor::ProcessModule(ParticleEmitterGraphCPUNode*
 #undef LOGIC
         break;
     }
-        // Position (cylinder)
+    // Position (cylinder)
     case 208:
     {
         PARTICLE_EMITTER_MODULE("Position");
@@ -997,7 +997,7 @@ void ParticleEmitterGraphCPUExecutor::ProcessModule(ParticleEmitterGraphCPUNode*
 #undef LOGIC
         break;
     }
-        // Position (line)
+    // Position (line)
     case 209:
     {
         PARTICLE_EMITTER_MODULE("Position");
@@ -1036,7 +1036,7 @@ void ParticleEmitterGraphCPUExecutor::ProcessModule(ParticleEmitterGraphCPUNode*
 #undef LOGIC
         break;
     }
-        // Position (torus)
+    // Position (torus)
     case 210:
     {
         PARTICLE_EMITTER_MODULE("Position");
@@ -1101,7 +1101,7 @@ void ParticleEmitterGraphCPUExecutor::ProcessModule(ParticleEmitterGraphCPUNode*
 #undef LOGIC
         break;
     }
-        // Position (sphere volume)
+    // Position (sphere volume)
     case 211:
     {
         PARTICLE_EMITTER_MODULE("Position");
@@ -1147,13 +1147,13 @@ void ParticleEmitterGraphCPUExecutor::ProcessModule(ParticleEmitterGraphCPUNode*
 #undef LOGIC
         break;
     }
-        // Position (depth)
+    // Position (depth)
     case 212:
     {
         // Not supported
         break;
     }
-        // Position (spiral)
+    // Position (spiral)
     case 214:
     {
         PARTICLE_EMITTER_MODULE("Position");
@@ -1204,14 +1204,14 @@ void ParticleEmitterGraphCPUExecutor::ProcessModule(ParticleEmitterGraphCPUNode*
 #undef LOGIC
         break;
     }
-        // Position (Global SDF)
+    // Position (Global SDF)
     case 215:
     {
         // Not supported
         break;
     }
 
-        // Helper macros for collision modules to share the code
+    // Helper macros for collision modules to share the code
 #define COLLISION_BEGIN() \
 	PARTICLE_EMITTER_MODULE("Collision"); \
 	auto& positionAttr = context.Data->Buffer->Layout->Attributes[node->Attributes[0]]; \
@@ -1251,7 +1251,7 @@ void ParticleEmitterGraphCPUExecutor::ProcessModule(ParticleEmitterGraphCPUNode*
 	velocityPtr += stride; \
 	agePtr += stride
 
-        // Collision (plane)
+    // Collision (plane)
     case 330:
     {
         COLLISION_BEGIN();
@@ -1293,7 +1293,7 @@ void ParticleEmitterGraphCPUExecutor::ProcessModule(ParticleEmitterGraphCPUNode*
 #undef LOGIC
         break;
     }
-        // Collision (sphere)
+    // Collision (sphere)
     case 331:
     {
         COLLISION_BEGIN();
@@ -1338,7 +1338,7 @@ void ParticleEmitterGraphCPUExecutor::ProcessModule(ParticleEmitterGraphCPUNode*
 #undef LOGIC
         break;
     }
-        // Collision (box)
+    // Collision (box)
     case 332:
     {
         COLLISION_BEGIN();
@@ -1398,7 +1398,7 @@ void ParticleEmitterGraphCPUExecutor::ProcessModule(ParticleEmitterGraphCPUNode*
 #undef LOGIC
         break;
     }
-        // Collision (cylinder)
+    // Collision (cylinder)
     case 333:
     {
         COLLISION_BEGIN();
@@ -1463,19 +1463,19 @@ void ParticleEmitterGraphCPUExecutor::ProcessModule(ParticleEmitterGraphCPUNode*
 #undef LOGIC
         break;
     }
-        // Collision (depth)
+    // Collision (depth)
     case 334:
     {
         // Not supported
         break;
     }
-        // Conform to Global SDF
+    // Conform to Global SDF
     case 335:
     {
         // Not supported
         break;
     }
-        // Collision (Global SDF)
+    // Collision (Global SDF)
     case 336:
     {
         // Not supported

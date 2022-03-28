@@ -8,7 +8,7 @@ void MaterialGenerator::ProcessGroupLayers(Box* box, Node* node, Value& value)
 {
     switch (node->TypeID)
     {
-        // Sample Layer
+    // Sample Layer
     case 1:
     {
         Guid id = (Guid)node->Values[0];
@@ -141,7 +141,7 @@ void MaterialGenerator::ProcessGroupLayers(Box* box, Node* node, Value& value)
         value = MaterialValue(VariantType::Void, varName);
         break;
     }
-        // Blend Linear
+    // Blend Linear
     case 2:
     case 5:
     case 8:
@@ -215,8 +215,8 @@ void MaterialGenerator::ProcessGroupLayers(Box* box, Node* node, Value& value)
 #undef EAT_BOX
         break;
     }
-        // Pack Material Layer (old: without TessellationMultiplier, SubsurfaceColor and WorldDisplacement support)
-        // [Deprecated on 2018.10.01, expires on 2019.10.01]
+    // Pack Material Layer (old: without TessellationMultiplier, SubsurfaceColor and WorldDisplacement support)
+    // [Deprecated on 2018.10.01, expires on 2019.10.01]
     case 3:
     {
         // Create new layer
@@ -263,8 +263,8 @@ void MaterialGenerator::ProcessGroupLayers(Box* box, Node* node, Value& value)
 
         break;
     }
-        // Unpack Material Layer
-        // Node type 4 -> [Deprecated on 2018.10.01, expires on 2019.10.01]
+    // Unpack Material Layer
+    // Node type 4 -> [Deprecated on 2018.10.01, expires on 2019.10.01]
     case 4:
     case 7:
     {
@@ -284,7 +284,7 @@ void MaterialGenerator::ProcessGroupLayers(Box* box, Node* node, Value& value)
         }
         break;
     }
-        // Pack Material Layer
+    // Pack Material Layer
     case 6:
     {
         // Create new layer

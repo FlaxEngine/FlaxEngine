@@ -8,7 +8,7 @@ void MaterialGenerator::ProcessGroupTools(Box* box, Node* node, Value& value)
 {
     switch (node->TypeID)
     {
-        // Fresnel
+    // Fresnel
     case 1:
     case 4:
     {
@@ -33,7 +33,7 @@ void MaterialGenerator::ProcessGroupTools(Box* box, Node* node, Value& value)
         value = local6;
         break;
     }
-        // Desaturation
+    // Desaturation
     case 2:
     {
         // Get inputs
@@ -46,13 +46,13 @@ void MaterialGenerator::ProcessGroupTools(Box* box, Node* node, Value& value)
         value = writeFunction3(node, input, dot, scale, TEXT("lerp"), VariantType::Vector3);
         break;
     }
-        // Time
+    // Time
     case 3:
     {
         value = getTime;
         break;
     }
-        // Panner
+    // Panner
     case 6:
     {
         // Get inputs
@@ -68,7 +68,7 @@ void MaterialGenerator::ProcessGroupTools(Box* box, Node* node, Value& value)
         value = writeOperation2(node, uv, local1, '+');
         break;
     }
-        // Linearize Depth
+    // Linearize Depth
     case 7:
     {
         // Get input

@@ -8,7 +8,7 @@ void MaterialGenerator::ProcessGroupParameters(Box* box, Node* node, Value& valu
 {
     switch (node->TypeID)
     {
-        // Get
+    // Get
     case 1:
     {
         // Get parameter

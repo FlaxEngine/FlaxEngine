@@ -8,7 +8,7 @@ void MaterialGenerator::ProcessGroupTextures(Box* box, Node* node, Value& value)
 {
     switch (node->TypeID)
     {
-        // Texture
+    // Texture
     case 1:
     {
         // Check if texture has been selected
@@ -28,11 +28,11 @@ void MaterialGenerator::ProcessGroupTextures(Box* box, Node* node, Value& value)
         }
         break;
     }
-        // TexCoord
+    // TexCoord
     case 2:
         value = getUVs;
         break;
-        // Cube Texture
+    // Cube Texture
     case 3:
     {
         // Check if texture has been selected
@@ -52,7 +52,7 @@ void MaterialGenerator::ProcessGroupTextures(Box* box, Node* node, Value& value)
         }
         break;
     }
-        // Normal Map
+    // Normal Map
     case 4:
     {
         // Check if texture has been selected
@@ -72,7 +72,7 @@ void MaterialGenerator::ProcessGroupTextures(Box* box, Node* node, Value& value)
         }
         break;
     }
-        // Parallax Occlusion Mapping
+    // Parallax Occlusion Mapping
     case 5:
     {
         auto heightTextureBox = node->GetBox(4);
@@ -163,7 +163,7 @@ void MaterialGenerator::ProcessGroupTextures(Box* box, Node* node, Value& value)
         value = result;
         break;
     }
-        // Scene Texture
+    // Scene Texture
     case 6:
     {
         // Get texture type
@@ -267,7 +267,7 @@ void MaterialGenerator::ProcessGroupTextures(Box* box, Node* node, Value& value)
         }
         break;
     }
-        // Scene Color
+    // Scene Color
     case 7:
     {
         // Sample scene color texture
@@ -275,13 +275,13 @@ void MaterialGenerator::ProcessGroupTextures(Box* box, Node* node, Value& value)
         sampleTexture(node, value, box, &param);
         break;
     }
-        // Scene Depth
+    // Scene Depth
     case 8:
     {
         sampleSceneDepth(node, value, box);
         break;
     }
-        // Sample Texture
+    // Sample Texture
     case 9:
     {
         enum CommonSamplerType
@@ -401,7 +401,7 @@ void MaterialGenerator::ProcessGroupTextures(Box* box, Node* node, Value& value)
         value = textureBox->Cache;
         break;
     }
-        // Flipbook
+    // Flipbook
     case 10:
     {
         // Get input values

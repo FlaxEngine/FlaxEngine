@@ -208,7 +208,7 @@ bool ParticleEmitterGPUGenerator::Generate(WriteStream& source, BytesContainer& 
                 typeName = TEXT("uint");
                 break;
             default:
-            CRASH;
+                CRASH;
             }
             _writer.Write(TEXT("// {0:^6} | {1:^6} | {2}\n"), a.Offset, typeName, a.Name);
         }
