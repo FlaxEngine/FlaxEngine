@@ -482,7 +482,6 @@ namespace FlaxEditor.Windows
                         continue;
 
                     var startIndex = _textBuffer.Length;
-
                     switch (_timestampsFormats)
                     {
                     case InterfaceOptions.TimestampsFormats.Utc:
@@ -496,12 +495,12 @@ namespace FlaxEditor.Windows
                         _textBuffer.AppendFormat("[ {0:00}:{1:00}:{2:00}.{3:000} ]: ", diff.Hours, diff.Minutes, diff.Seconds, diff.Milliseconds);
                         break;
                     }
-
                     if (_showLogType)
                     {
                         _textBuffer.AppendFormat("[{0}] ", entry.Level);
                     }
 
+                    var prefixLength = _textBuffer.Length - startIndex;
                     if (entry.Message.IndexOf('\r') != -1)
                         entry.Message = entry.Message.Replace("\r", "");
                     _textBuffer.Append(entry.Message);
@@ -548,7 +547,11 @@ namespace FlaxEditor.Windows
                         if (textBlock.Range.Length > 0)
                         {
                             // Parse compilation error/warning
-                            var match = _compileRegex.Match(entryText, line.FirstCharIndex, textBlock.Range.Length);
+                            var regexStart = line.FirstCharIndex;
+                            if (j == 0)
+                                regexStart += prefixLength;
+                            var regexLength = line.LastCharIndex - regexStart;
+                            var match = _compileRegex.Match(entryText, regexStart, regexLength);
                             if (match.Success)
                             {
                                 switch (match.Groups["level"].Value)
