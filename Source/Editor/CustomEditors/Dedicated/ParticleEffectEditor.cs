@@ -26,6 +26,26 @@ namespace FlaxEditor.CustomEditors.Dedicated
             }
         }
 
+        private object ParameterGet(object instance, GraphParameter parameter, object tag)
+        {
+            if (instance is ParticleEffect particleEffect && particleEffect && parameter && tag is ParticleEffectParameter effectParameter)
+                return particleEffect.GetParameterValue(effectParameter.TrackName, parameter.Name);
+            return null;
+        }
+
+        private void ParameterSet(object instance, object value, GraphParameter parameter, object tag)
+        {
+            if (instance is ParticleEffect particleEffect && particleEffect && parameter && tag is ParticleEffectParameter effectParameter)
+                particleEffect.SetParameterValue(effectParameter.TrackName, parameter.Name, value);
+        }
+
+        private object ParameterDefaultValue(object instance, GraphParameter parameter, object tag)
+        {
+            if (tag is ParticleEffectParameter effectParameter)
+                return effectParameter.DefaultValue;
+            return null;
+        }
+
         /// <inheritdoc />
         public override void Initialize(LayoutElementsContainer layout)
         {
@@ -48,11 +68,7 @@ namespace FlaxEditor.CustomEditors.Dedicated
                 group.Panel.Open(false);
 
                 var data = SurfaceUtils.InitGraphParameters(parametersGroup);
-                SurfaceUtils.DisplayGraphParameters(group, data,
-                                                    (instance, parameter, tag) => ((ParticleEffect)instance).GetParameterValue(trackName, parameter.Name),
-                                                    (instance, value, parameter, tag) => ((ParticleEffect)instance).SetParameterValue(trackName, parameter.Name, value),
-                                                    Values,
-                                                    (instance, parameter, tag) => ((ParticleEffectParameter)tag).DefaultValue);
+                SurfaceUtils.DisplayGraphParameters(group, data, ParameterGet, ParameterSet, Values, ParameterDefaultValue);
             }
         }
 
