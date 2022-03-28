@@ -610,6 +610,27 @@ void ParticleEmitterGPUGenerator::ProcessModule(Node* node)
             ), positionAttr.Value, velocityAttr.Value, center.Value, rotationSpeed.Value, velocityScale.Value, customDataOffset);
         break;
     }
+    // Position (Global SDF)
+    case 215:
+    {
+        auto position = AccessParticleAttribute(node, nodeGpu->Attributes[0], AccessMode::ReadWrite);
+        auto param = findOrAddGlobalSDF();
+        String wsPos = position.Value;
+        if (((ParticleEmitterGraphGPU*)_graphStack.Peek())->SimulationSpace == ParticlesSimulationSpace::Local)
+            wsPos = String::Format(TEXT("mul(float4({0}, 1), WorldMatrix).xyz"), wsPos);
+        _includes.Add(TEXT("./Flax/GlobalSignDistanceField.hlsl"));
+        _writer.Write(
+            TEXT(
+                "	{{\n"
+                "		// Position (Global SDF)\n"
+                "		float3 wsPos = {2};\n"
+                "		float dist;\n"
+                "		float3 dir = -normalize(SampleGlobalSDFGradient({1}, {1}_Tex, wsPos, dist));\n"
+                "		{0} += dir * dist;\n"
+                "	}}\n"
+            ), position.Value, param.ShaderName, wsPos);
+        break;
+    }
 
         // Helper macros for collision modules to share the code
 #define COLLISION_BEGIN() \

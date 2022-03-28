@@ -1204,6 +1204,12 @@ void ParticleEmitterGraphCPUExecutor::ProcessModule(ParticleEmitterGraphCPUNode*
 #undef LOGIC
         break;
     }
+        // Position (Global SDF)
+    case 215:
+    {
+        // Not supported
+        break;
+    }
 
         // Helper macros for collision modules to share the code
 #define COLLISION_BEGIN() \

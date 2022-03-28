@@ -888,7 +888,6 @@ namespace FlaxEditor.Surface.Archetypes
                     NodeElementArchetype.Factory.ComboBox(0, -10.0f, 160, 2, typeof(ParticleModelFacingMode)),
                 },
             },
-
             new NodeArchetype
             {
                 TypeID = 214,
@@ -910,6 +909,20 @@ namespace FlaxEditor.Surface.Archetypes
                     NodeElementArchetype.Factory.Input(-0.5f, "Center", true, typeof(Vector3), 0, 2),
                     NodeElementArchetype.Factory.Input(-0.5f + 1.0f, "Rotation Speed", true, typeof(float), 1, 3),
                     NodeElementArchetype.Factory.Input(-0.5f + 2.0f, "Velocity Scale", true, typeof(float), 2, 4),
+                },
+            },
+            new NodeArchetype
+            {
+                TypeID = 215,
+                Create = CreateParticleModuleNode,
+                Title = "Position (Global SDF)",
+                Description = "Places the particles on Global SDF surface (uses current particle position to snap it to SDF)",
+                Flags = DefaultModuleFlags,
+                Size = new Vector2(200, 0 * Surface.Constants.LayoutOffsetY),
+                DefaultValues = new object[]
+                {
+                    true,
+                    (int)ModuleType.Initialize,
                 },
             },
             GetParticleAttribute(ModuleType.Initialize, 250, "Set Position", "Sets the particle position", typeof(Vector3), Vector3.Zero),

@@ -355,7 +355,7 @@ public:
             USE_ATTRIBUTE(Mass, Float, 2);
             break;
         }
-            // Position (plane/box surface/box volume/cylinder/line/sphere/circle/disc/torus)
+            // Position (plane/box surface/box volume/cylinder/line/sphere/circle/disc/torus/Global SDF)
         case GRAPH_NODE_MAKE_TYPE(15, 202):
         case GRAPH_NODE_MAKE_TYPE(15, 203):
         case GRAPH_NODE_MAKE_TYPE(15, 204):
@@ -366,6 +366,7 @@ public:
         case GRAPH_NODE_MAKE_TYPE(15, 209):
         case GRAPH_NODE_MAKE_TYPE(15, 210):
         case GRAPH_NODE_MAKE_TYPE(15, 211):
+        case GRAPH_NODE_MAKE_TYPE(15, 215):
         {
             USE_ATTRIBUTE(Position, Vector3, 0);
             break;
