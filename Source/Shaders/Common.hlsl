@@ -211,7 +211,7 @@ float4 QuatMultiply(float4 q1, float4 q2)
 }
 
 // Vector rotation with a quaternion (http://mathworld.wolfram.com/Quaternion.html)
-float3 QuatRotateVector(float3 v, float4 q)
+float3 QuatRotateVector(float4 q, float3 v)
 {
     float4 nq = q * float4(-1, -1, -1, 1);
     return QuatMultiply(q, QuatMultiply(float4(v, 0), nq)).xyz;

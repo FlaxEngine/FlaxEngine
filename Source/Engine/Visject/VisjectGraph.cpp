@@ -405,10 +405,16 @@ void VisjectExecutor::ProcessGroupMath(Box* box, Node* node, Value& value)
         const Vector2 rangeA = tryGetValue(node->GetBox(1), node->Values[1]).AsVector2();
         const Vector2 rangeB = tryGetValue(node->GetBox(2), node->Values[2]).AsVector2();
         const bool clamp = tryGetValue(node->GetBox(3), node->Values[3]).AsBool;
-
         auto mapFunc = Math::Remap(inVal, rangeA.X, rangeA.Y, rangeB.X, rangeB.Y);
-
         value = clamp ? Math::Clamp(mapFunc, rangeB.X, rangeB.Y) : mapFunc;
+        break;
+    }
+        // Rotate Vector
+    case 49:
+    {
+        const Quaternion quaternion = (Quaternion)tryGetValue(node->GetBox(0), Quaternion::Identity);
+        const Vector3 vector = (Vector3)tryGetValue(node->GetBox(1), Vector3::Forward);
+        value = quaternion * vector;
         break;
     }
     default:

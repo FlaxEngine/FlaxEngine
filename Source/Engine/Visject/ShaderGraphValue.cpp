@@ -130,7 +130,7 @@ ShaderGraphValue ShaderGraphValue::InitForZero(VariantType::Types type)
         CRASH;
         v = nullptr;
     }
-    return ShaderGraphValue(type, String(v));
+    return ShaderGraphValue(type, v);
 }
 
 ShaderGraphValue ShaderGraphValue::InitForHalf(VariantType::Types type)
@@ -309,7 +309,7 @@ ShaderGraphValue ShaderGraphValue::Cast(const ShaderGraphValue& v, VariantType::
             format = TEXT("{0}.xyz");
             break;
         case VariantType::Types::Quaternion:
-            format = TEXT("QuatRotateVector(float3(0, 0, 1), {0})");
+            format = TEXT("QuatRotateVector({0}, float3(0, 0, 1))"); // Returns direction vector
             break;
         }
         break;
