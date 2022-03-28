@@ -281,6 +281,8 @@ void LightPass::RenderLight(RenderContext& renderContext, GPUTextureView* lightB
             // Set shadow mask
             context->BindSR(5, shadowMaskView);
         }
+        else
+            context->UnBindSR(5);
 
         // Pack light properties buffer
         light.SetupLightData(&perLight.Light, view, renderShadow);
@@ -336,6 +338,8 @@ void LightPass::RenderLight(RenderContext& renderContext, GPUTextureView* lightB
             // Set shadow mask
             context->BindSR(5, shadowMaskView);
         }
+        else
+            context->UnBindSR(5);
 
         // Pack light properties buffer
         light.SetupLightData(&perLight.Light, view, renderShadow);
@@ -377,6 +381,8 @@ void LightPass::RenderLight(RenderContext& renderContext, GPUTextureView* lightB
             // Set shadow mask
             context->BindSR(5, shadowMaskView);
         }
+        else
+            context->UnBindSR(5);
 
         // Pack light properties buffer
         light.SetupLightData(&perLight.Light, view, renderShadow);
