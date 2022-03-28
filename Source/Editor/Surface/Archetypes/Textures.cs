@@ -371,6 +371,20 @@ namespace FlaxEditor.Surface.Archetypes
                     NodeElementArchetype.Factory.Input(0, "World Position", true, typeof(Vector3), 1),
                 }
             },
+            new NodeArchetype
+            {
+                TypeID = 15,
+                Title = "Sample Global SDF Gradient",
+                Description = "Samples the Global SDF to get the gradient and distance to the closest surface (in world-space). Normalize gradient to get SDF surface normal vector. Requires models SDF to be generated and checking `Enable Global SDF` in Graphics Settings.",
+                Flags = NodeFlags.MaterialGraph | NodeFlags.ParticleEmitterGraph,
+                Size = new Vector2(260, 40),
+                Elements = new[]
+                {
+                    NodeElementArchetype.Factory.Output(0, "Gradient", typeof(Vector3), 0),
+                    NodeElementArchetype.Factory.Output(1, "Distance", typeof(float), 2),
+                    NodeElementArchetype.Factory.Input(0, "World Position", true, typeof(Vector3), 1),
+                }
+            },
         };
     }
 }

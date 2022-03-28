@@ -429,6 +429,21 @@ void MaterialGenerator::ProcessGroupTextures(Box* box, Node* node, Value& value)
         _includes.Add(TEXT("./Flax/GlobalSignDistanceField.hlsl"));
         break;
     }
+    // Sample Global SDF Gradient
+    case 15:
+    {
+        auto gradientBox = node->GetBox(0);
+        auto distanceBox = node->GetBox(2);
+        auto param = findOrAddGlobalSDF();
+        Value worldPosition = tryGetValue(node->GetBox(1), Value(VariantType::Vector3, TEXT("input.WorldPosition.xyz"))).Cast(VariantType::Vector3);
+        auto distance = writeLocal(VariantType::Float, node);
+        auto gradient = writeLocal(VariantType::Vector3, String::Format(TEXT("SampleGlobalSDFGradient({0}, {0}_Tex, {1}, {2})"), param.ShaderName, worldPosition.Value, distance.Value), node);
+        _includes.Add(TEXT("./Flax/GlobalSignDistanceField.hlsl"));
+        gradientBox->Cache = gradient;
+        distanceBox->Cache = distance;
+        value = box == gradientBox ? gradient : distance;
+        break;
+    }
     default:
         break;
     }
