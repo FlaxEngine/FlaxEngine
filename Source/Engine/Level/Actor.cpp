@@ -1396,7 +1396,7 @@ bool Actor::HasActorInChildren(Actor* a) const
 
 bool Actor::IntersectsItself(const Ray& ray, float& distance, Vector3& normal)
 {
-    return GetBox().Intersects(ray, distance, normal);
+    return _box.Intersects(ray, distance, normal);
 }
 
 Actor* Actor::Intersects(const Ray& ray, float& distance, Vector3& normal)
