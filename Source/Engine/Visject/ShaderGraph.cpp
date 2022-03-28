@@ -156,6 +156,10 @@ void ShaderGenerator::ProcessGroupMath(Box* box, Node* node, Value& value)
         Box* b2 = node->GetBox(1);
         Value v1 = tryGetValue(b1, 0, Value::Zero);
         Value v2 = tryGetValue(b2, 1, Value::Zero);
+        if (b1->HasConnection())
+            v2 = v2.Cast(v1.Type);
+        else
+            v1 = v1.Cast(v2.Type);
         Char op = '?';
         switch (node->TypeID)
         {
