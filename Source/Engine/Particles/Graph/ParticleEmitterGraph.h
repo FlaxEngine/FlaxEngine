@@ -430,12 +430,13 @@ public:
             USE_ATTRIBUTE(Position, Vector3, 0);
             break;
         }
-            // Collision (plane/sphere/box/cylinder/depth)
+            // Collision (plane/sphere/box/cylinder/depth/Global SDF)
         case GRAPH_NODE_MAKE_TYPE(15, 330):
         case GRAPH_NODE_MAKE_TYPE(15, 331):
         case GRAPH_NODE_MAKE_TYPE(15, 332):
         case GRAPH_NODE_MAKE_TYPE(15, 333):
         case GRAPH_NODE_MAKE_TYPE(15, 334):
+        case GRAPH_NODE_MAKE_TYPE(15, 336):
         {
             USE_ATTRIBUTE(Position, Vector3, 0);
             USE_ATTRIBUTE(Velocity, Vector3, 1);

@@ -156,6 +156,16 @@ private:
     {
         return box->HasConnection() ? eatBox(box->GetParent<Node>(), box->FirstConnection()) : Value::Zero;
     }
+
+    bool IsLocalSimulationSpace() const
+    {
+        return ((ParticleEmitterGraphGPU*)_graphStack.Peek())->SimulationSpace == ParticlesSimulationSpace::Local;
+    }
+
+    bool IsWorldSimulationSpace() const
+    {
+        return ((ParticleEmitterGraphGPU*)_graphStack.Peek())->SimulationSpace == ParticlesSimulationSpace::World;
+    }
 };
 
 #endif

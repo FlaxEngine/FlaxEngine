@@ -427,14 +427,10 @@ void ParticleEmitterGPUGenerator::ProcessGroupParticles(Box* box, Node* node, Va
     }
         // Particle Position (world space)
     case 212:
-    {
         value = AccessParticleAttribute(node, TEXT("Position"), ParticleAttribute::ValueTypes::Vector3, AccessMode::Read);
-        if (((ParticleEmitterGraphGPU*)_graphStack.Peek())->SimulationSpace == ParticlesSimulationSpace::Local)
-        {
+        if (IsLocalSimulationSpace())
             value = writeLocal(VariantType::Vector3, String::Format(TEXT("mul(float4({0}, 1), WorldMatrix).xyz"), value.Value), node);
-        }
         break;
-    }
         // Random Float Range
     case 213:
     {

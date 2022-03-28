@@ -1357,7 +1357,7 @@ namespace FlaxEditor.Surface.Archetypes
                     true,
                     (int)ModuleType.Update,
                     false, // Invert
-                    0.0f, // Radius
+                    5.0f, // Radius
                     0.0f, // Roughness
                     0.1f, // Elasticity
                     0.0f, // Friction
@@ -1398,6 +1398,34 @@ namespace FlaxEditor.Surface.Archetypes
                     NodeElementArchetype.Factory.Input(-0.5f + 1.0f, "Attraction Force", true, typeof(float), 1, 3),
                     NodeElementArchetype.Factory.Input(-0.5f + 2.0f, "Stick Distance", true, typeof(float), 2, 4),
                     NodeElementArchetype.Factory.Input(-0.5f + 3.0f, "Stick Force", true, typeof(float), 3, 5),
+                },
+            },
+            new NodeArchetype
+            {
+                TypeID = 336,
+                Create = CreateParticleModuleNode,
+                Title = "Collision (Global SDF)",
+                Description = "Collides particles with the scene Global SDF",
+                Flags = DefaultModuleFlags,
+                Size = new Vector2(200, 5 * Surface.Constants.LayoutOffsetY),
+                DefaultValues = new object[]
+                {
+                    true,
+                    (int)ModuleType.Update,
+                    false, // Invert
+                    5.0f, // Radius
+                    0.4f, // Roughness
+                    0.1f, // Elasticity
+                    0.0f, // Friction
+                    0.0f, // Lifetime Loss
+                },
+                Elements = new[]
+                {
+                    NodeElementArchetype.Factory.Input(-0.5f + 0, "Radius", true, typeof(float), 0, 3),
+                    NodeElementArchetype.Factory.Input(-0.5f + 1, "Roughness", true, typeof(float), 1, 4),
+                    NodeElementArchetype.Factory.Input(-0.5f + 2, "Elasticity", true, typeof(float), 2, 5),
+                    NodeElementArchetype.Factory.Input(-0.5f + 3, "Friction", true, typeof(float), 3, 6),
+                    NodeElementArchetype.Factory.Input(-0.5f + 4, "Lifetime Loss", true, typeof(float), 4, 7),
                 },
             },
             GetParticleAttribute(ModuleType.Update, 350, "Set Position", "Sets the particle position", typeof(Vector3), Vector3.Zero),

@@ -616,7 +616,7 @@ void ParticleEmitterGPUGenerator::ProcessModule(Node* node)
         auto position = AccessParticleAttribute(node, nodeGpu->Attributes[0], AccessMode::ReadWrite);
         auto param = findOrAddGlobalSDF();
         String wsPos = position.Value;
-        if (((ParticleEmitterGraphGPU*)_graphStack.Peek())->SimulationSpace == ParticlesSimulationSpace::Local)
+        if (IsLocalSimulationSpace())
             wsPos = String::Format(TEXT("mul(float4({0}, 1), WorldMatrix).xyz"), wsPos);
         _includes.Add(TEXT("./Flax/GlobalSignDistanceField.hlsl"));
         _writer.Write(
@@ -666,13 +666,8 @@ void ParticleEmitterGPUGenerator::ProcessModule(Node* node)
     case 330:
     {
         COLLISION_BEGIN();
-
-        auto planePositionBox = node->GetBox(5);
-        auto planeNormalBox = node->GetBox(6);
-
-        const Value planePosition = GetValue(planePositionBox, 8).AsVector3();
-        const Value planeNormal = GetValue(planeNormalBox, 9).AsVector3();
-
+        const Value planePosition = GetValue(node->GetBox(5), 8).AsVector3();
+        const Value planeNormal = GetValue(node->GetBox(6), 9).AsVector3();
         _writer.Write(
             TEXT(
                 "	{{\n"
@@ -699,13 +694,8 @@ void ParticleEmitterGPUGenerator::ProcessModule(Node* node)
     case 331:
     {
         COLLISION_BEGIN();
-
-        auto spherePositionBox = node->GetBox(5);
-        auto sphereRadiusBox = node->GetBox(6);
-
-        const Value spherePosition = GetValue(spherePositionBox, 8).AsVector3();
-        const Value sphereRadius = GetValue(sphereRadiusBox, 9).AsFloat();
-
+        const Value spherePosition = GetValue(node->GetBox(5), 8).AsVector3();
+        const Value sphereRadius = GetValue(node->GetBox(6), 9).AsFloat();
         _writer.Write(
             TEXT(
                 "	{{\n"
@@ -735,13 +725,8 @@ void ParticleEmitterGPUGenerator::ProcessModule(Node* node)
     case 332:
     {
         COLLISION_BEGIN();
-
-        auto boxPositionBox = node->GetBox(5);
-        auto boxSizeBox = node->GetBox(6);
-
-        const Value boxPosition = GetValue(boxPositionBox, 8).AsVector3();
-        const Value boxSize = GetValue(boxSizeBox, 9).AsVector3();
-
+        const Value boxPosition = GetValue(node->GetBox(5), 8).AsVector3();
+        const Value boxSize = GetValue(node->GetBox(6), 9).AsVector3();
         _writer.Write(
             TEXT(
                 "	{{\n"
@@ -786,15 +771,9 @@ void ParticleEmitterGPUGenerator::ProcessModule(Node* node)
     case 333:
     {
         COLLISION_BEGIN();
-
-        auto cylinderPositionBox = node->GetBox(5);
-        auto cylinderHeightBox = node->GetBox(6);
-        auto cylinderRadiusBox = node->GetBox(7);
-
-        const Value cylinderPosition = GetValue(cylinderPositionBox, 8).AsVector3();
-        const Value cylinderHeight = GetValue(cylinderHeightBox, 9).AsFloat();
-        const Value cylinderRadius = GetValue(cylinderRadiusBox, 10).AsFloat();
-
+        const Value cylinderPosition = GetValue(node->GetBox(5), 8).AsVector3();
+        const Value cylinderHeight = GetValue(node->GetBox(6), 9).AsFloat();
+        const Value cylinderRadius = GetValue(node->GetBox(7), 10).AsFloat();
         _writer.Write(
             TEXT(
                 "	{{\n"
@@ -842,13 +821,8 @@ void ParticleEmitterGPUGenerator::ProcessModule(Node* node)
     case 334:
     {
         COLLISION_BEGIN();
-
-        auto surfaceThicknessBox = node->GetBox(5);
-
-        const Value surfaceThickness = GetValue(surfaceThicknessBox, 8).AsFloat();
-
+        const Value surfaceThickness = GetValue(node->GetBox(5), 8).AsFloat();
         const auto sceneDepthTexture = findOrAddSceneTexture(MaterialSceneTextures::SceneDepth);
-
         _writer.Write(
             TEXT(
                 "	{{\n"
@@ -929,7 +903,51 @@ void ParticleEmitterGPUGenerator::ProcessModule(Node* node)
                 "	}}\n"
             ), position.Value, velocity.Value, mass.Value, param.ShaderName, attractionSpeed.Value, attractionForce.Value, stickDistance.Value, stickForce.Value);
         break;
-        }
+    }
+        // Collision (Global SDF)
+    case 336:
+    {
+        COLLISION_BEGIN();
+        auto param = findOrAddGlobalSDF();
+        _includes.Add(TEXT("./Flax/GlobalSignDistanceField.hlsl"));
+        const Char* format = IsLocalSimulationSpace()
+                                 ? TEXT(
+                                     "	{{\n"
+                                     "		// Collision (Global SDF)\n"
+                                     "		float3 nextPos = {0} + {1} * DeltaTime;\n"
+                                     "		nextPos = mul(float4(nextPos, 1), WorldMatrix).xyz;\n"
+                                     "		float dist = SampleGlobalSDF({10}, {10}_Tex, nextPos);\n"
+                                     "		if (dist < {5})\n"
+                                     "		{{\n"
+                                     "			{0} = mul(float4({0}, 1), WorldMatrix).xyz;\n"
+                                     "			float3 n = normalize(SampleGlobalSDFGradient({10}, {10}_Tex, {0}, dist));\n"
+                                     "			{0} += n * -dist;\n"
+                                     "			{0} = mul(float4({0}, 1), InvWorldMatrix).xyz;\n"
+                                     COLLISION_LOGIC()
+                                     "	}}\n"
+                                 )
+                                 : TEXT(
+                                     "	{{\n"
+                                     "		// Collision (Global SDF)\n"
+                                     "		float3 nextPos = {0} + {1} * DeltaTime;\n"
+                                     "		float dist = SampleGlobalSDF({10}, {10}_Tex, nextPos);\n"
+                                     "		if (dist < {5})\n"
+                                     "		{{\n"
+                                     "			float3 n = normalize(SampleGlobalSDFGradient({10}, {10}_Tex, {0}, dist));\n"
+                                     "			{0} += n * -dist;\n"
+                                     COLLISION_LOGIC()
+                                     "	}}\n"
+                                 );
+        _writer.Write(format,
+                      // 0-4
+                      positionAttr.Value, velocityAttr.Value, ageAttr.Value, invert, sign,
+                      // 5-9
+                      radius.Value, roughness.Value, elasticity.Value, friction.Value, lifetimeLoss.Value,
+                      // 10
+                      param.ShaderName
+        );
+        break;
+    }
 
 #undef COLLISION_BEGIN
 #undef COLLISION_LOGIC
