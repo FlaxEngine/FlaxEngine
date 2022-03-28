@@ -52,6 +52,10 @@ public:
 
 public:
 
+    bool AllowTearing = false;
+
+public:
+
     // Gets DX11 device
     ID3D11Device* GetDevice() const
     {

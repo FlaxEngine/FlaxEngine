@@ -23,6 +23,7 @@ private:
 #if PLATFORM_WINDOWS
     HWND _windowHandle;
     IDXGISwapChain* _swapChain;
+    bool _allowTearing, _isFullscreen;
 #else
 	IUnknown* _windowHandle;
 	IDXGISwapChain1* _swapChain;
