@@ -274,6 +274,7 @@ bool GPUDeviceDX12::Init()
             {
                 AllowTearing = true;
             }
+            factory5->Release();
         }
     }
 

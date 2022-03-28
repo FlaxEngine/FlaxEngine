@@ -266,6 +266,17 @@ bool GPUDeviceDX11::Init()
     }
     UpdateOutputs(adapter);
 
+    ComPtr<IDXGIFactory5> factory5;
+    _factoryDXGI->QueryInterface(IID_PPV_ARGS(&factory5));
+    if (factory5)
+    {
+        BOOL allowTearing;
+        if (SUCCEEDED(factory5->CheckFeatureSupport(DXGI_FEATURE_PRESENT_ALLOW_TEARING, &allowTearing, sizeof(allowTearing))) && allowTearing)
+            AllowTearing = true;
+        factory5->Release();
+    }
+
+
     // Get flags and device type base on current configuration
     uint32 flags = D3D11_CREATE_DEVICE_BGRA_SUPPORT;
 #if GPU_ENABLE_DIAGNOSTICS

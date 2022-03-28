@@ -39,6 +39,7 @@ typedef IGraphicsUnknown IDXGISwapChain3;
 #include <D3D11.h>
 #include <d3d11_1.h>
 #include <dxgi1_3.h>
+#include <dxgi1_5.h>
 #endif
 #if GRAPHICS_API_DIRECTX12
 #include <dxgi1_5.h>

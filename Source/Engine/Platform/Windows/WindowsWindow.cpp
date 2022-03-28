@@ -1031,6 +1031,10 @@ LRESULT WindowsWindow::WndProc(UINT msg, WPARAM wParam, LPARAM lParam)
                     // In this case, we don't resize yet -- we wait until the user stops dragging, and a WM_EXITSIZEMOVE message comes.
                     UpdateRegion();
                 }
+                else if (_isSwitchingFullScreen)
+                {
+                    // Ignored
+                }
                 else
                 {
                     // This WM_SIZE come from resizing the window via an API like SetWindowPos() so resize
@@ -1088,6 +1092,12 @@ LRESULT WindowsWindow::WndProc(UINT msg, WPARAM wParam, LPARAM lParam)
         {
             LOG(Info, "Alt+F4 pressed");
             Close(ClosingReason::User);
+            return 0;
+        }
+        if (wParam == VK_RETURN)
+        {
+            LOG(Info, "Alt+Enter pressed");
+            SetIsFullscreen(!IsFullscreen());
             return 0;
         }
         break;
