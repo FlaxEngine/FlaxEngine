@@ -22,6 +22,7 @@
 #include "HistogramPass.h"
 #include "AtmospherePreCompute.h"
 #include "GlobalSignDistanceFieldPass.h"
+#include "GlobalSurfaceAtlasPass.h"
 #include "Utils/MultiScaler.h"
 #include "Utils/BitonicSort.h"
 #include "AntiAliasing/FXAA.h"
@@ -83,6 +84,7 @@ bool RendererService::Init()
     PassList.Add(SMAA::Instance());
     PassList.Add(HistogramPass::Instance());
     PassList.Add(GlobalSignDistanceFieldPass::Instance());
+    PassList.Add(GlobalSurfaceAtlasPass::Instance());
 #if USE_EDITOR
     PassList.Add(QuadOverdrawPass::Instance());
 #endif
@@ -352,11 +354,12 @@ void RenderInner(SceneRenderTask* task, RenderContext& renderContext)
 
     // Debug drawing
     if (renderContext.View.Mode == ViewMode::GlobalSDF)
-    {
         GlobalSignDistanceFieldPass::Instance()->RenderDebug(renderContext, context, lightBuffer);
-    }
-    if (renderContext.View.Mode == ViewMode::Emissive || 
-        renderContext.View.Mode == ViewMode::LightmapUVsDensity || 
+    else if (renderContext.View.Mode == ViewMode::GlobalSurfaceAtlas)
+        GlobalSurfaceAtlasPass::Instance()->RenderDebug(renderContext, context, lightBuffer);
+    if (renderContext.View.Mode == ViewMode::Emissive ||
+        renderContext.View.Mode == ViewMode::LightmapUVsDensity ||
+        renderContext.View.Mode == ViewMode::GlobalSurfaceAtlas ||
         renderContext.View.Mode == ViewMode::GlobalSDF)
     {
         context->ResetRenderTarget();

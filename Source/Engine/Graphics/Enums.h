@@ -854,9 +854,14 @@ API_ENUM() enum class ViewMode
     QuadOverdraw = 23,
 
     /// <summary>
-    /// Draw global Sign Distant Field (SDF) preview.
+    /// Draw Global Sign Distant Field (SDF) preview.
     /// </summary>
     GlobalSDF = 24,
+
+    /// <summary>
+    /// Draw Global Surface Atlas preview.
+    /// </summary>
+    GlobalSurfaceAtlas = 25,
 };
 
 /// <summary>
