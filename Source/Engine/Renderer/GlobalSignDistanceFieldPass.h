@@ -7,7 +7,7 @@
 /// <summary>
 /// Global Sign Distance Field (SDF) rendering pass. Composites scene geometry into series of 3D volume textures that cover the world around the camera for global distance field sampling.
 /// </summary>
-class GlobalSignDistanceFieldPass : public RendererPass<GlobalSignDistanceFieldPass>
+class FLAXENGINE_API GlobalSignDistanceFieldPass : public RendererPass<GlobalSignDistanceFieldPass>
 {
 public:
     // Constant buffer data for Global SDF access on a GPU.

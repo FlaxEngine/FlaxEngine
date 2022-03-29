@@ -37,7 +37,7 @@ public:
 /// Each render pass supports proper resources initialization and disposing.
 /// </summary>
 /// <seealso cref="Object" />
-class RendererPassBase : public Object
+class FLAXENGINE_API RendererPassBase : public Object
 {
 protected:
 
