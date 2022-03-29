@@ -1,7 +1,6 @@
 // Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 #include "GlobalSignDistanceFieldPass.h"
-#include "GBufferPass.h"
 #include "RenderList.h"
 #include "Engine/Core/Math/Int3.h"
 #include "Engine/Core/Collections/HashSet.h"
@@ -134,35 +133,31 @@ String GlobalSignDistanceFieldPass::ToString() const
 bool GlobalSignDistanceFieldPass::Init()
 {
     // Check platform support
-    auto device = GPUDevice::Instance;
-    if (device->GetFeatureLevel() < FeatureLevel::SM5 || !device->Limits.HasCompute || !device->Limits.HasTypedUAVLoad)
-        return false;
-    if (FORMAT_FEATURES_ARE_NOT_SUPPORTED(device->GetFormatFeatures(GLOBAL_SDF_FORMAT).Support, FormatSupport::ShaderSample | FormatSupport::Texture3D))
-        return false;
-
-    // Create pipeline states
-    _psDebug = device->CreatePipelineState();
-
-    // Load shader
-    _shader = Content::LoadAsyncInternal<Shader>(TEXT("Shaders/GlobalSignDistanceField"));
-    if (_shader == nullptr)
-        return false;
-#if COMPILE_WITH_DEV_ENV
-    _shader.Get()->OnReloading.Bind<GlobalSignDistanceFieldPass, &GlobalSignDistanceFieldPass::OnShaderReloading>(this);
-#endif
-
-    // Init buffer
-    _modelsBuffer = New<DynamicStructuredBuffer>(64u * (uint32)sizeof(ModelRasterizeData), (uint32)sizeof(ModelRasterizeData), false, TEXT("GlobalSDF.ModelsBuffer"));
-
+    const auto device = GPUDevice::Instance;
+    _supported = device->GetFeatureLevel() >= FeatureLevel::SM5 && device->Limits.HasCompute && device->Limits.HasTypedUAVLoad
+            && FORMAT_FEATURES_ARE_NOT_SUPPORTED(device->GetFormatFeatures(GLOBAL_SDF_FORMAT).Support, FormatSupport::ShaderSample | FormatSupport::Texture3D);
     return false;
 }
 
 bool GlobalSignDistanceFieldPass::setupResources()
 {
-    // Check shader
-    if (!_shader || !_shader->IsLoaded())
+    // Load shader
+    if (!_shader)
+    {
+        _shader = Content::LoadAsyncInternal<Shader>(TEXT("Shaders/GlobalSignDistanceField"));
+        if (_shader == nullptr)
+            return true;
+#if COMPILE_WITH_DEV_ENV
+        _shader.Get()->OnReloading.Bind<GlobalSignDistanceFieldPass, &GlobalSignDistanceFieldPass::OnShaderReloading>(this);
+#endif
+    }
+    if (!_shader->IsLoaded())
         return true;
+
+    const auto device = GPUDevice::Instance;
     const auto shader = _shader->GetShader();
+
+    // Check shader
     _cb0 = shader->GetCB(0);
     _cb1 = shader->GetCB(1);
     _csRasterizeModel0 = shader->GetCS("CS_RasterizeModel", 0);
@@ -171,10 +166,14 @@ bool GlobalSignDistanceFieldPass::setupResources()
     _csGenerateMip0 = shader->GetCS("CS_GenerateMip", 0);
     _csGenerateMip1 = shader->GetCS("CS_GenerateMip", 1);
 
+    // Init buffer
+    _modelsBuffer = New<DynamicStructuredBuffer>(64u * (uint32)sizeof(ModelRasterizeData), (uint32)sizeof(ModelRasterizeData), false, TEXT("GlobalSDF.ModelsBuffer"));
+
     // Create pipeline state
     GPUPipelineState::Description psDesc = GPUPipelineState::Description::DefaultFullscreenTriangle;
-    if (!_psDebug->IsValid())
+    if (!_psDebug)
     {
+        _psDebug = device->CreatePipelineState();
         psDesc.PS = shader->GetPS("PS_Debug");
         if (_psDebug->Init(psDesc))
             return true;
@@ -187,7 +186,7 @@ bool GlobalSignDistanceFieldPass::setupResources()
 
 void GlobalSignDistanceFieldPass::OnShaderReloading(Asset* obj)
 {
-    _psDebug->ReleaseGPU();
+    SAFE_DELETE_GPU_RESOURCE(_psDebug);
     _csRasterizeModel0 = nullptr;
     _csRasterizeModel1 = nullptr;
     _csClearChunk = nullptr;

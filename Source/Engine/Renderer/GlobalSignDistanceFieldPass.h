@@ -28,6 +28,7 @@ public:
     };
 
 private:
+    bool _supported = false;
     AssetReference<Shader> _shader;
     GPUPipelineState* _psDebug = nullptr;
     GPUShaderProgramCS* _csRasterizeModel0 = nullptr;
