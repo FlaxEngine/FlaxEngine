@@ -135,12 +135,15 @@ bool GlobalSignDistanceFieldPass::Init()
     // Check platform support
     const auto device = GPUDevice::Instance;
     _supported = device->GetFeatureLevel() >= FeatureLevel::SM5 && device->Limits.HasCompute && device->Limits.HasTypedUAVLoad
-            && FORMAT_FEATURES_ARE_NOT_SUPPORTED(device->GetFormatFeatures(GLOBAL_SDF_FORMAT).Support, FormatSupport::ShaderSample | FormatSupport::Texture3D);
+            && FORMAT_FEATURES_ARE_SUPPORTED(device->GetFormatFeatures(GLOBAL_SDF_FORMAT).Support, FormatSupport::ShaderSample | FormatSupport::Texture3D);
     return false;
 }
 
 bool GlobalSignDistanceFieldPass::setupResources()
 {
+    if (!_supported)
+        return true;
+
     // Load shader
     if (!_shader)
     {
@@ -239,7 +242,7 @@ bool GlobalSignDistanceFieldPass::Render(RenderContext& renderContext, GPUContex
         result = sdfData.Result;
         return false;
     }
-
+    sdfData.LastFrameUsed = currentFrame;
     PROFILE_GPU_CPU("Global SDF");
 
     // TODO: configurable via graphics settings
@@ -251,7 +254,6 @@ bool GlobalSignDistanceFieldPass::Render(RenderContext& renderContext, GPUContex
     const float cascadesDistances[] = { distanceExtent, distanceExtent * 2.0f, distanceExtent * 4.0f, distanceExtent * 8.0f };
 
     // Initialize buffers
-    sdfData.LastFrameUsed = currentFrame;
     auto desc = GPUTextureDescription::New3D(resolution, resolution, resolution, GLOBAL_SDF_FORMAT, GPUTextureFlags::ShaderResource | GPUTextureFlags::UnorderedAccess, 1);
     bool updated = false;
     for (GPUTexture*& cascade : sdfData.Cascades)

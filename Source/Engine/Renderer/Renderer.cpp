@@ -326,7 +326,7 @@ void RenderInner(SceneRenderTask* task, RenderContext& renderContext)
     renderContext.List->SortDrawCalls(renderContext, false, DrawCallsListType::Distortion);
 
     // Get the light accumulation buffer
-    auto tempDesc = GPUTextureDescription::New2D(renderContext.Buffers->GetWidth(), renderContext.Buffers->GetHeight(), PixelFormat::R11G11B10_Float);
+    auto tempDesc = GPUTextureDescription::New2D(renderContext.Buffers->GetWidth(), renderContext.Buffers->GetHeight(), LIGHT_BUFFER_FORMAT);
     auto lightBuffer = RenderTargetPool::Get(tempDesc);
 
 #if USE_EDITOR

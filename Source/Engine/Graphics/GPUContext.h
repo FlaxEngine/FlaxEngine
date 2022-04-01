@@ -553,7 +553,7 @@ public:
     /// <summary>
     /// Sets the rendering viewport and scissor rectangle.
     /// </summary>
-    /// <param name="viewport">The viewport.</param>
+    /// <param name="viewport">The viewport (in pixels).</param>
     API_FUNCTION() FORCE_INLINE void SetViewportAndScissors(const Viewport& viewport)
     {
         SetViewport(viewport);
@@ -575,13 +575,13 @@ public:
     /// <summary>
     /// Sets the rendering viewport.
     /// </summary>
-    /// <param name="viewport">The viewport.</param>
+    /// <param name="viewport">The viewport (in pixels).</param>
     API_FUNCTION() virtual void SetViewport(API_PARAM(Ref) const Viewport& viewport) = 0;
 
     /// <summary>
     /// Sets the scissor rectangle.
     /// </summary>
-    /// <param name="scissorRect">The scissor rectangle.</param>
+    /// <param name="scissorRect">The scissor rectangle (in pixels).</param>
     API_FUNCTION() virtual void SetScissor(API_PARAM(Ref) const Rectangle& scissorRect) = 0;
 
 public:

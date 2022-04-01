@@ -72,6 +72,7 @@ public:
     /// <param name="output">The output buffer.</param>
     void RenderDebug(RenderContext& renderContext, GPUContext* context, GPUTexture* output);
 
+    // Rasterize Model SDF into the Global SDF. Call it from actor Draw() method during DrawPass::GlobalSDF.
     void RasterizeModelSDF(const ModelBase::SDFData& sdf, const Matrix& localToWorld, const BoundingBox& objectBounds);
 
 private:

@@ -16,6 +16,9 @@
 #define GBUFFER2_FORMAT PixelFormat::R8G8B8A8_UNorm
 #define GBUFFER3_FORMAT PixelFormat::R8G8B8A8_UNorm
 
+// Light accumulation buffer format (direct+indirect light, materials emissive)
+#define LIGHT_BUFFER_FORMAT PixelFormat::R11G11B10_Float
+
 /// <summary>
 /// The scene rendering buffers container.
 /// </summary>
