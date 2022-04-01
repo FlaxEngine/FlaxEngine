@@ -783,6 +783,28 @@ DRAW:
                 context->DrawIndexedInstanced(drawCall.Draw.IndicesCount, drawCall.InstanceCount, 0, 0, drawCall.Draw.StartIndex);
             }
         }
+        if (list.Batches.IsEmpty() && list.Indices.Count() != 0)
+        {
+            // Draw calls list has nto been batched so execute draw calls separately
+            for (int32 j = 0; j < list.Indices.Count(); j++)
+            {
+                auto& drawCall = DrawCalls[list.Indices[j]];
+                bindParams.FirstDrawCall = &drawCall;
+                drawCall.Material->Bind(bindParams);
+
+                context->BindIB(drawCall.Geometry.IndexBuffer);
+                context->BindVB(ToSpan(drawCall.Geometry.VertexBuffers, 3), drawCall.Geometry.VertexBuffersOffsets);
+
+                if (drawCall.InstanceCount == 0)
+                {
+                    context->DrawIndexedInstancedIndirect(drawCall.Draw.IndirectArgsBuffer, drawCall.Draw.IndirectArgsOffset);
+                }
+                else
+                {
+                    context->DrawIndexedInstanced(drawCall.Draw.IndicesCount, drawCall.InstanceCount, 0, 0, drawCall.Draw.StartIndex);
+                }
+            }
+        }
     }
 }
 
