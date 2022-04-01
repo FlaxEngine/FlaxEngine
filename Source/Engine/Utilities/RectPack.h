@@ -69,6 +69,18 @@ struct RectPack
     NodeType* Insert(SizeType itemWidth, SizeType itemHeight, SizeType itemPadding, Args&&...args)
     {
         NodeType* result;
+        const SizeType paddedWidth = itemWidth + itemPadding;
+        const SizeType paddedHeight = itemHeight + itemPadding;
+
+        // Check if we're free and just the right size
+        if (!IsUsed && Width == paddedWidth && Height == paddedHeight)
+        {
+            // Insert into this slot
+            IsUsed = true;
+            result = (NodeType*)this;
+            result->OnInsert(Forward<Args>(args)...);
+            return result;
+        }
 
         // If there are left and right slots there are empty regions around this slot (it also means this slot is occupied)
         if (Left || Right)
@@ -85,29 +97,13 @@ struct RectPack
                 if (result)
                     return result;
             }
-
-            // Not enough space
-            return nullptr;
         }
-
-        const SizeType paddedWidth = itemWidth + itemPadding;
-        const SizeType paddedHeight = itemHeight + itemPadding;
 
         // This slot can't fit or has been already occupied
         if (IsUsed || paddedWidth > Width || paddedHeight > Height)
         {
             // Not enough space
             return nullptr;
-        }
-
-        // Check if we're just right size
-        if (Width == paddedWidth && Height == paddedHeight)
-        {
-            // Insert into this slot
-            IsUsed = true;
-            result = (NodeType*)this;
-            result->OnInsert(Forward<Args>(args)...);
-            return result;
         }
 
         // The width and height of the new child node
