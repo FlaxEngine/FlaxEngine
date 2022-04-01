@@ -1,6 +1,7 @@
 // Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 #include "DynamicBuffer.h"
+#include "PixelFormatExtensions.h"
 #include "GPUDevice.h"
 #include "Engine/Core/Log.h"
 #include "Engine/Core/Utilities.h"
@@ -86,4 +87,19 @@ void DynamicBuffer::Dispose()
 {
     SAFE_DELETE_GPU_RESOURCE(_buffer);
     Data.Resize(0);
+}
+
+DynamicTypedBuffer::DynamicTypedBuffer(uint32 initialCapacity, PixelFormat format, bool isUnorderedAccess, const String& name)
+    : DynamicBuffer(initialCapacity, PixelFormatExtensions::SizeInBytes(format), name)
+    , _format(format)
+    , _isUnorderedAccess(isUnorderedAccess)
+{
+}
+
+void DynamicTypedBuffer::InitDesc(GPUBufferDescription& desc, int32 numElements)
+{
+    auto bufferFlags = GPUBufferFlags::ShaderResource;
+    if (_isUnorderedAccess)
+        bufferFlags |= GPUBufferFlags::UnorderedAccess;
+    desc = GPUBufferDescription::Buffer(numElements * _stride, bufferFlags, _format, nullptr, _stride);
 }
