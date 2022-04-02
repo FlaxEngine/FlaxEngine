@@ -22,7 +22,7 @@ float Time::PhysicsFPS = 60.0f;
 float Time::DrawFPS = 60.0f;
 float Time::TimeScale = 1.0f;
 Time::TickData Time::Update;
-Time::FixedStepTickData Time::Physics;
+Time::TickData Time::Physics;
 Time::TickData Time::Draw;
 Time::TickData* Time::Current = nullptr;
 
@@ -133,53 +133,6 @@ void Time::TickData::Advance(double time, double deltaTime)
     DeltaTime = TimeSpan::FromSeconds(deltaTime * (double)timeScale);
     Time += DeltaTime;
     TicksCount++;
-}
-
-bool Time::FixedStepTickData::OnTickBegin(float targetFps, float maxDeltaTime)
-{
-    // Check if can perform a tick
-    double time = Platform::GetTimeSeconds();
-    double deltaTime, minDeltaTime;
-    if (FixedDeltaTimeEnable)
-    {
-        deltaTime = (double)FixedDeltaTimeValue;
-        minDeltaTime = deltaTime;
-    }
-    else
-    {
-        if (time < NextBegin)
-            return false;
-
-        minDeltaTime = targetFps > ZeroTolerance ? 1.0 / targetFps : 0.0;
-        deltaTime = Math::Max((time - LastBegin), 0.0);
-        if (deltaTime > maxDeltaTime)
-        {
-            deltaTime = (double)maxDeltaTime;
-            NextBegin = time;
-        }
-
-        if (targetFps > ZeroTolerance)
-        {
-            int skip = (int)(1 + (time - NextBegin) / (1.0 / targetFps));
-            NextBegin += (1.0 / targetFps) * skip;
-        }
-    }
-    Samples.Add(deltaTime);
-
-    // Check if last few ticks were not taking too long so it's running slowly
-    const bool isRunningSlowly = Samples.Average() > 1.5 * minDeltaTime;
-    if (!isRunningSlowly)
-    {
-        // Make steps fixed size
-        const double diff = deltaTime - minDeltaTime;
-        time -= diff;
-        deltaTime = minDeltaTime;
-    }
-
-    // Update data
-    Advance(time, deltaTime);
-
-    return true;
 }
 
 double Time::GetNextTick()

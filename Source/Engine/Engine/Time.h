@@ -86,24 +86,6 @@ public:
         void Advance(double time, double deltaTime);
     };
 
-    /// <summary>
-    /// Ticking method that tries to use fixed steps policy as much as possible (if not running slowly).
-    /// </summary>
-    class FixedStepTickData : public TickData
-    {
-    public:
-
-        /// <summary>
-        /// The last few ticks delta times. Used to check if can use fixed steps or whenever is running slowly so should use normal stepping.
-        /// </summary>
-        SamplesBuffer<double, 4> Samples;
-
-    public:
-
-        // [TickData]
-        bool OnTickBegin(float targetFps, float maxDeltaTime) override;
-    };
-
 private:
 
     static bool _gamePaused;
@@ -149,7 +131,7 @@ public:
     /// <summary>
     /// The physics simulation updating data.
     /// </summary>
-    static FixedStepTickData Physics;
+    static TickData Physics;
 
     /// <summary>
     /// The rendering data.
