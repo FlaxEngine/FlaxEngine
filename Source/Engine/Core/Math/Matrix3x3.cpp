@@ -1,8 +1,9 @@
 // Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 #include "Matrix3x3.h"
-#include "../Types/String.h"
+#include "Matrix.h"
 #include "Quaternion.h"
+#include "../Types/String.h"
 
 const Matrix3x3 Matrix3x3::Zero(0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f);
 const Matrix3x3 Matrix3x3::Identity(
@@ -10,9 +11,35 @@ const Matrix3x3 Matrix3x3::Identity(
     0.0f, 1.0f, 0.0f,
     0.0f, 0.0f, 1.0f);
 
+Matrix3x3::Matrix3x3(const Matrix& matrix)
+{
+    Platform::MemoryCopy(&M11, &matrix.M11, sizeof(Vector3));
+    Platform::MemoryCopy(&M21, &matrix.M21, sizeof(Vector3));
+    Platform::MemoryCopy(&M31, &matrix.M31, sizeof(Vector3));
+}
+
 String Matrix3x3::ToString() const
 {
     return String::Format(TEXT("{}"), *this);
+}
+
+void Matrix3x3::NormalizeScale()
+{
+    const float scaleX = 1.0f / Vector3(M11, M21, M31).Length();
+    const float scaleY = 1.0f / Vector3(M12, M22, M32).Length();
+    const float scaleZ = 1.0f / Vector3(M13, M23, M33).Length();
+
+    M11 *= scaleX;
+    M21 *= scaleX;
+    M31 *= scaleX;
+
+    M12 *= scaleY;
+    M22 *= scaleY;
+    M32 *= scaleY;
+
+    M13 *= scaleZ;
+    M23 *= scaleZ;
+    M33 *= scaleZ;
 }
 
 void Matrix3x3::Invert(const Matrix3x3& value, Matrix3x3& result)

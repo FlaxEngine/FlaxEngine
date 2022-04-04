@@ -11,6 +11,7 @@ struct Double3;
 struct Double4;
 struct Quaternion;
 struct Matrix;
+struct Matrix3x3;
 struct Vector2;
 struct Vector4;
 struct Color;
@@ -766,6 +767,12 @@ public:
     // @param results When the method completes, contains the transformed Vector3s
     // @param vectorsCount Amount of vectors to transform
     static void Transform(const Vector3* vectors, const Matrix& transform, Vector3* results, int32 vectorsCount);
+
+    // Transforms a 3D vector by the given matrix
+    // @param vector The source vector
+    // @param transform The transformation matrix
+    // @param result When the method completes, contains the transformed Vector3
+    static void Transform(const Vector3& vector, const Matrix3x3& transform, Vector3& result);
 
     // Transforms a 3D vector by the given matrix
     // @param vector The source vector

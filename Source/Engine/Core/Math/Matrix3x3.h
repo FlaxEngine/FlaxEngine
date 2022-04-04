@@ -113,6 +113,12 @@ public:
         Platform::MemoryCopy(Raw, values, sizeof(float) * 9);
     }
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="Matrix3x3"/> struct.
+    /// </summary>
+    /// <param name="matrix">The 4 by 4 matrix to initialize from with rotation and scale (translation is skipped).</param>
+    explicit Matrix3x3(const Matrix& matrix);
+
 public:
 
     String ToString() const;
@@ -254,6 +260,11 @@ public:
     {
         Transpose(*this, *this);
     }
+
+    /// <summary>
+    /// Removes any scaling from the matrix by performing the normalization (each row magnitude is 1).
+    /// </summary>
+    void NormalizeScale();
 
 public:
 
