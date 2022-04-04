@@ -93,5 +93,25 @@ namespace FlaxEditor.Content
         public virtual void OnThumbnailDrawCleanup(ThumbnailRequest request)
         {
         }
+
+        /// <summary>
+        /// Initializes rendering settings for asset preview drawing for a thumbnail.
+        /// </summary>
+        /// <param name="preview">The asset preview.</param>
+        protected void InitAssetPreview(Viewport.Previews.AssetPreview preview)
+        {
+            preview.RenderOnlyWithWindow = false;
+            preview.UseAutomaticTaskManagement = false;
+            preview.AnchorPreset = AnchorPresets.StretchAll;
+            preview.Offsets = Margin.Zero;
+
+            var task = preview.Task;
+            task.Enabled = false;
+
+            var eyeAdaptation = preview.PostFxVolume.EyeAdaptation;
+            eyeAdaptation.Mode = EyeAdaptationMode.None;
+            eyeAdaptation.OverrideFlags |= EyeAdaptationSettingsOverride.Mode;
+            preview.PostFxVolume.EyeAdaptation = eyeAdaptation;
+        }
     }
 }
