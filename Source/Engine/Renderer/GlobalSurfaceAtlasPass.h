@@ -10,10 +10,18 @@
 class FLAXENGINE_API GlobalSurfaceAtlasPass : public RendererPass<GlobalSurfaceAtlasPass>
 {
 public:
+    // Constant buffer data for Global Surface Atlas access on a GPU.
+    PACK_STRUCT(struct GlobalSurfaceAtlasData
+        {
+        Vector3 Padding;
+        uint32 ObjectsCount;
+        });
+
     // Binding data for the GPU.
     struct BindingData
     {
-        GPUTexture* Dummy; // TODO: add textures
+        GPUTexture* Atlas[5];
+        GlobalSurfaceAtlasData GlobalSurfaceAtlas;
     };
 
 private:
@@ -21,6 +29,10 @@ private:
     AssetReference<Shader> _shader;
     GPUPipelineState* _psDebug = nullptr;
     GPUConstantBuffer* _cb0 = nullptr;
+
+    // Rasterization cache
+    class DynamicTypedBuffer* _objectsBuffer = nullptr;
+    Array<Pair<Actor*, struct GlobalSurfaceAtlasObject*>> _dirtyObjectsBuffer;
 
 public:
     /// <summary>
