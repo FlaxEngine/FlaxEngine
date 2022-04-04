@@ -108,6 +108,10 @@ namespace FlaxEditor.Content
             var task = preview.Task;
             task.Enabled = false;
 
+            var view = task.View;
+            view.IsSingleFrame = true; // Disable LOD transitions
+            task.View = view;
+
             var eyeAdaptation = preview.PostFxVolume.EyeAdaptation;
             eyeAdaptation.Mode = EyeAdaptationMode.None;
             eyeAdaptation.OverrideFlags |= EyeAdaptationSettingsOverride.Mode;

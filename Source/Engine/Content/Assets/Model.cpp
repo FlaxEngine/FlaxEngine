@@ -194,7 +194,7 @@ void Model::Draw(const RenderContext& renderContext, const Mesh::DrawInfo& info)
         if (lodIndex == -1)
         {
             // Handling model fade-out transition
-            if (modelFrame == frame && info.DrawState->PrevLOD != -1)
+            if (modelFrame == frame && info.DrawState->PrevLOD != -1 && !renderContext.View.IsSingleFrame)
             {
                 // Check if start transition
                 if (info.DrawState->LODTransition == 255)
@@ -223,8 +223,11 @@ void Model::Draw(const RenderContext& renderContext, const Mesh::DrawInfo& info)
     lodIndex += info.LODBias + renderContext.View.ModelLODBias;
     lodIndex = ClampLODIndex(lodIndex);
 
+    if (renderContext.View.IsSingleFrame)
+    {
+    }
     // Check if it's the new frame and could update the drawing state (note: model instance could be rendered many times per frame to different viewports)
-    if (modelFrame == frame)
+    else if (modelFrame == frame)
     {
         // Check if start transition
         if (info.DrawState->PrevLOD != lodIndex && info.DrawState->LODTransition == 255)
@@ -249,7 +252,7 @@ void Model::Draw(const RenderContext& renderContext, const Mesh::DrawInfo& info)
     }
 
     // Draw
-    if (info.DrawState->PrevLOD == lodIndex)
+    if (info.DrawState->PrevLOD == lodIndex || renderContext.View.IsSingleFrame)
     {
         LODs[lodIndex].Draw(renderContext, info, 0.0f);
     }
