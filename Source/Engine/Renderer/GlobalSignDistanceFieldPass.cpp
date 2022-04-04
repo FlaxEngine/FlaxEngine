@@ -336,15 +336,18 @@ bool GlobalSignDistanceFieldPass::Render(RenderContext& renderContext, GPUContex
         _modelsBufferCount = 0;
         _voxelSize = voxelSize;
         _cascadeBounds = cascadeBounds;
-        for (auto* scene : renderContext.List->Scenes)
         {
-            // TODO: optimize for moving camera (copy sdf)
-            // TODO: if chunk is made of static objects only then mark it as static and skip from rendering during the next frame (will need to track objects dirty state in the SceneRendering)
-            for (auto& e : scene->Actors)
+            PROFILE_CPU_NAMED("Draw");
+            for (auto* scene : renderContext.List->Scenes)
             {
-                if (viewMask & e.LayerMask && e.Bounds.Radius >= minObjectRadius && CollisionsHelper::BoxIntersectsSphere(cascadeBounds, e.Bounds))
+                // TODO: optimize for moving camera (copy sdf)
+                // TODO: if chunk is made of static objects only then mark it as static and skip from rendering during the next frame (will need to track objects dirty state in the SceneRendering)
+                for (auto& e : scene->Actors)
                 {
-                    e.Actor->Draw(renderContext);
+                    if (viewMask & e.LayerMask && e.Bounds.Radius >= minObjectRadius && CollisionsHelper::BoxIntersectsSphere(cascadeBounds, e.Bounds))
+                    {
+                        e.Actor->Draw(renderContext);
+                    }
                 }
             }
         }
