@@ -404,7 +404,7 @@ bool UpdateMesh(SkinnedMesh* mesh, MonoArray* verticesObj, MonoArray* trianglesO
     }
     else
     {
-        auto v = Half2(0, 0);
+        auto v = Half2::Zero;
         for (uint32 i = 0; i < vertexCount; i++)
             vb[i].TexCoord = v;
     }

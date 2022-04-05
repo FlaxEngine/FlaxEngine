@@ -45,7 +45,6 @@ class FLAXENGINE_API Float16Compressor
     static const int32 minD = minC - subC - 1;
 
 public:
-
     static Half Compress(const float value)
     {
 #if USE_SSE_HALF_CONVERSION
@@ -102,14 +101,12 @@ public:
 struct FLAXENGINE_API Half2
 {
 public:
-
     /// <summary>
     /// Zero vector
     /// </summary>
     static Half2 Zero;
 
 public:
-
     /// <summary>
     /// Gets or sets the X component of the vector.
     /// </summary>
@@ -121,11 +118,21 @@ public:
     Half Y;
 
 public:
-
     /// <summary>
     /// Default constructor
     /// </summary>
     Half2()
+    {
+    }
+
+    /// <summary>
+    /// Init
+    /// </summary>
+    /// <param name="x">X component</param>
+    /// <param name="y">Y component</param>
+    Half2(Half x, Half y)
+        : X(x)
+        , Y(y)
     {
     }
 
@@ -147,7 +154,6 @@ public:
     Half2(const Vector2& v);
 
 public:
-
     /// <summary>
     /// Convert to Vector2
     /// </summary>
@@ -161,14 +167,12 @@ public:
 struct FLAXENGINE_API Half3
 {
 public:
-
     /// <summary>
     /// Zero vector
     /// </summary>
     static Half3 Zero;
 
 public:
-
     /// <summary>
     /// Gets or sets the X component of the vector.
     /// </summary>
@@ -185,8 +189,14 @@ public:
     Half Z;
 
 public:
-
     Half3()
+    {
+    }
+
+    Half3(Half x, Half y, Half z)
+        : X(x)
+        , Y(y)
+        , Z(z)
     {
     }
 
@@ -200,7 +210,6 @@ public:
     Half3(const Vector3& v);
 
 public:
-
     Vector3 ToVector3() const;
 };
 
@@ -210,14 +219,12 @@ public:
 struct FLAXENGINE_API Half4
 {
 public:
-
     /// <summary>
     /// Zero vector
     /// </summary>
     static Half4 Zero;
 
 public:
-
     /// <summary>
     /// Gets or sets the X component of the vector.
     /// </summary>
@@ -239,8 +246,15 @@ public:
     Half W;
 
 public:
-
     Half4()
+    {
+    }
+
+    Half4(Half x, Half y, Half z, Half w)
+        : X(x)
+        , Y(y)
+        , Z(z)
+        , W(w)
     {
     }
 
@@ -265,7 +279,6 @@ public:
     explicit Half4(const Rectangle& rect);
 
 public:
-
     Vector2 ToVector2() const;
     Vector3 ToVector3() const;
     Vector4 ToVector4() const;
