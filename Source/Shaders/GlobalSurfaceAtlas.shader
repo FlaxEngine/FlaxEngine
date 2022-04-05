@@ -15,6 +15,24 @@ GlobalSDFData GlobalSDF;
 GlobalSurfaceAtlasData GlobalSurfaceAtlas;
 META_CB_END
 
+// Vertex shader for Global Surface Atlas software clearing
+META_VS(true, FEATURE_LEVEL_SM5)
+META_VS_IN_ELEMENT(POSITION, 0, R16G16_FLOAT, 0, ALIGN, PER_VERTEX, 0, true)
+float4 VS_Clear(float2 Position : POSITION0) : SV_Position
+{
+	return float4(Position, 1, 1);
+}
+
+// Pixel shader for Global Surface Atlas software clearing
+META_PS(true, FEATURE_LEVEL_SM5)
+void PS_Clear(out float4 Light : SV_Target0, out float4 RT0 : SV_Target1, out float4 RT1 : SV_Target2, out float4 RT2 : SV_Target3)
+{
+	Light = float4(0, 0, 0, 0);
+	RT0 = float4(0, 0, 0, 0);
+	RT1 = float4(0, 0, 0, 0);
+	RT2 = float4(1, 0, 0, 0);
+}
+
 #ifdef _PS_Debug
 
 Texture3D<float> GlobalSDFTex[4] : register(t0);

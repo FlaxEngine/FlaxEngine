@@ -27,10 +27,12 @@ public:
 private:
     bool _supported = false;
     AssetReference<Shader> _shader;
+    GPUPipelineState* _psClear = nullptr;
     GPUPipelineState* _psDebug = nullptr;
     GPUConstantBuffer* _cb0 = nullptr;
 
     // Rasterization cache
+    class DynamicVertexBuffer* _vertexBuffer = nullptr;
     class DynamicTypedBuffer* _objectsBuffer = nullptr;
     Array<Pair<Actor*, struct GlobalSurfaceAtlasObject*>> _dirtyObjectsBuffer;
 

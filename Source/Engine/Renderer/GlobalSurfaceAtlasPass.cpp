@@ -20,7 +20,7 @@
 #define GLOBAL_SURFACE_ATLAS_OBJECT_SIZE (1)
 #define GLOBAL_SURFACE_ATLAS_OBJECT_STRIDE (16 * GLOBAL_SURFACE_ATLAS_OBJECT_SIZE)
 #define GLOBAL_SURFACE_ATLAS_TILE_PADDING 1 // 1px padding to prevent color bleeding between tiles
-#define GLOBAL_SURFACE_ATLAS_DEBUG_FORCE_TILES_REDRAW 1 // Forces to redraw all object tiles every frame
+#define GLOBAL_SURFACE_ATLAS_DEBUG_FORCE_TILES_REDRAW 0 // Forces to redraw all object tiles every frame
 #define GLOBAL_SURFACE_ATLAS_DEBUG_FORCE_DRAW_OBJECTS 0 // Debug draws object bounds on redraw (and tile draw projection locations)
 
 #if GLOBAL_SURFACE_ATLAS_DEBUG_FORCE_DRAW_OBJECTS
@@ -36,6 +36,11 @@ PACK_STRUCT(struct Data0
     Vector4 ViewFrustumWorldRays[4];
     GlobalSignDistanceFieldPass::GlobalSDFData GlobalSDF;
     GlobalSurfaceAtlasPass::GlobalSurfaceAtlasData GlobalSurfaceAtlas;
+    });
+
+PACK_STRUCT(struct AtlasTileVertex
+    {
+    Half2 Position;
     });
 
 struct GlobalSurfaceAtlasTile : RectPack<GlobalSurfaceAtlasTile, uint16>
@@ -138,6 +143,17 @@ bool GlobalSurfaceAtlasPass::setupResources()
         if (_psDebug->Init(psDesc))
             return true;
     }
+    if (!_psClear)
+    {
+        _psClear = device->CreatePipelineState();
+        psDesc.DepthTestEnable = true;
+        psDesc.DepthWriteEnable = true;
+        psDesc.DepthFunc = ComparisonFunc::Always;
+        psDesc.VS = shader->GetVS("VS_Clear");
+        psDesc.PS = shader->GetPS("PS_Clear");
+        if (_psClear->Init(psDesc))
+            return true;
+    }
 
     return false;
 }
@@ -146,6 +162,7 @@ bool GlobalSurfaceAtlasPass::setupResources()
 
 void GlobalSurfaceAtlasPass::OnShaderReloading(Asset* obj)
 {
+    SAFE_DELETE_GPU_RESOURCE(_psClear);
     SAFE_DELETE_GPU_RESOURCE(_psDebug);
     invalidateResources();
 }
@@ -157,7 +174,9 @@ void GlobalSurfaceAtlasPass::Dispose()
     RendererPass::Dispose();
 
     // Cleanup
+    SAFE_DELETE(_vertexBuffer);
     SAFE_DELETE(_objectsBuffer);
+    SAFE_DELETE_GPU_RESOURCE(_psClear);
     SAFE_DELETE_GPU_RESOURCE(_psDebug);
     _cb0 = nullptr;
     _shader = nullptr;
@@ -208,6 +227,8 @@ bool GlobalSurfaceAtlasPass::Render(RenderContext& renderContext, GPUContext* co
         surfaceAtlasData.Resolution = resolution;
         LOG(Info, "Global Surface Atlas resolution: {0}, memory usage: {1} MB", resolution, memUsage / 1024 / 1024);
     }
+    if (!_vertexBuffer)
+        _vertexBuffer = New<DynamicVertexBuffer>(0u, (uint32)sizeof(AtlasTileVertex), TEXT("GlobalSurfaceAtlas.VertexBuffer"));
 
     // Add objects into the atlas
     if (_objectsBuffer)
@@ -223,7 +244,7 @@ bool GlobalSurfaceAtlasPass::Render(RenderContext& renderContext, GPUContext* co
         const uint16 maxTileResolution = 128; // Maximum size (in texels) of the tile in atlas
         const uint16 tileResolutionAlignment = 8; // Alignment to snap (down) tiles resolution which allows to reuse atlas slots once object gets resizes/replaced by other object
         const float minObjectRadius = 20.0f; // Skip too small objects
-        const float tileTexelsPerWorldUnit = 1.0f / 4.0f; // Scales the tiles resolution
+        const float tileTexelsPerWorldUnit = 1.0f / 10.0f; // Scales the tiles resolution
         const float distanceScalingStart = 2000.0f; // Distance from camera at which the tiles resolution starts to be scaled down
         const float distanceScalingEnd = 5000.0f; // Distance from camera at which the tiles resolution end to be scaled down
         const float distanceScaling = 0.1f; // The scale for tiles at distanceScalingEnd and further away
@@ -376,7 +397,7 @@ bool GlobalSurfaceAtlasPass::Render(RenderContext& renderContext, GPUContext* co
             PROFILE_GPU_CPU("Clear");
             if (noCache || GLOBAL_SURFACE_ATLAS_DEBUG_FORCE_TILES_REDRAW)
             {
-                /// Full-atlas hardware clear
+                // Full-atlas hardware clear
                 context->ClearDepth(depthBuffer);
                 context->Clear(targetBuffers[0], Color::Transparent);
                 context->Clear(targetBuffers[1], Color::Transparent);
@@ -385,7 +406,36 @@ bool GlobalSurfaceAtlasPass::Render(RenderContext& renderContext, GPUContext* co
             }
             else
             {
-                // TODO: clear all dirt tiles in a single draw call (software)
+                // Per-tile clear (with a single draw call)
+                _vertexBuffer->Clear();
+                _vertexBuffer->Data.EnsureCapacity(_dirtyObjectsBuffer.Count() * 6 * sizeof(AtlasTileVertex));
+                const Vector2 posToClipMul(2.0f / resolution, -2.0f / resolution);
+                const Vector2 posToClipAdd(-1.0f, 1.0f);
+                for (const auto& e : _dirtyObjectsBuffer)
+                {
+                    const auto& object = *e.Second;
+                    for (int32 tileIndex = 0; tileIndex < 6; tileIndex++)
+                    {
+                        auto* tile = object.Tiles[tileIndex];
+                        if (!tile)
+                            continue;
+                        Vector2 minPos((float)tile->X, (float)tile->Y), maxPos((float)(tile->X + tile->Width), (float)(tile->Y + tile->Height));
+                        Half2 min(minPos * posToClipMul + posToClipAdd), max(maxPos * posToClipMul + posToClipAdd);
+                        auto* quad = _vertexBuffer->WriteReserve<AtlasTileVertex>(6);
+                        quad[0] = { { max } };
+                        quad[1] = { { min.X, max.Y } };
+                        quad[2] = { { min } };
+                        quad[3] = quad[2];
+                        quad[4] = { { max.X, min.Y } };
+                        quad[5] = quad[0];
+                    }
+                }
+                _vertexBuffer->Flush(context);
+                auto vb = _vertexBuffer->GetBuffer();
+                context->SetState(_psClear);
+                context->SetViewportAndScissors(Viewport(0, 0, resolution, resolution));
+                context->BindVB(ToSpan(&vb, 1));
+                context->DrawInstanced(_vertexBuffer->Data.Count() / sizeof(AtlasTileVertex), 1);
             }
         }
         renderContextTiles.List->DrawCallsLists[(int32)DrawCallsListType::GBuffer].CanUseInstancing = false;
