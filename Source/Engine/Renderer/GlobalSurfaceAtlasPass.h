@@ -21,6 +21,7 @@ public:
     struct BindingData
     {
         GPUTexture* Atlas[5];
+        GPUBuffer* Objects;
         GlobalSurfaceAtlasData GlobalSurfaceAtlas;
     };
 
@@ -33,7 +34,6 @@ private:
 
     // Rasterization cache
     class DynamicVertexBuffer* _vertexBuffer = nullptr;
-    class DynamicTypedBuffer* _objectsBuffer = nullptr;
     Array<Pair<Actor*, struct GlobalSurfaceAtlasObject*>> _dirtyObjectsBuffer;
 
 public:
