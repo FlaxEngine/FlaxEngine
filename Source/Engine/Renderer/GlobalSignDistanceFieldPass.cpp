@@ -170,7 +170,8 @@ bool GlobalSignDistanceFieldPass::setupResources()
     _csGenerateMip1 = shader->GetCS("CS_GenerateMip", 1);
 
     // Init buffer
-    _modelsBuffer = New<DynamicStructuredBuffer>(64u * (uint32)sizeof(ModelRasterizeData), (uint32)sizeof(ModelRasterizeData), false, TEXT("GlobalSDF.ModelsBuffer"));
+    if (!_modelsBuffer)
+        _modelsBuffer = New<DynamicStructuredBuffer>(64u * (uint32)sizeof(ModelRasterizeData), (uint32)sizeof(ModelRasterizeData), false, TEXT("GlobalSDF.ModelsBuffer"));
 
     // Create pipeline state
     GPUPipelineState::Description psDesc = GPUPipelineState::Description::DefaultFullscreenTriangle;
@@ -229,7 +230,7 @@ bool GlobalSignDistanceFieldPass::Get(const RenderBuffers* buffers, BindingData&
 bool GlobalSignDistanceFieldPass::Render(RenderContext& renderContext, GPUContext* context, BindingData& result)
 {
     // Skip if not supported
-    if (setupResources())
+    if (checkIfSkipPass())
         return true;
     if (renderContext.List->Scenes.Count() == 0)
         return true;

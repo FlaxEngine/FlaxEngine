@@ -186,7 +186,7 @@ void GlobalSurfaceAtlasPass::Dispose()
 bool GlobalSurfaceAtlasPass::Render(RenderContext& renderContext, GPUContext* context, BindingData& result)
 {
     // Skip if not supported
-    if (setupResources())
+    if (checkIfSkipPass())
         return true;
     if (renderContext.List->Scenes.Count() == 0)
         return true;

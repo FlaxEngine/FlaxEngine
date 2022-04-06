@@ -245,7 +245,7 @@ void MotionBlurPass::RenderDebug(RenderContext& renderContext, GPUTextureView* f
 {
     auto context = GPUDevice::Instance->GetMainContext();
     const auto motionVectors = renderContext.Buffers->MotionVectors;
-    if (!motionVectors->IsAllocated() || setupResources())
+    if (!motionVectors->IsAllocated() || checkIfSkipPass())
     {
         context->Draw(frame);
         return;
