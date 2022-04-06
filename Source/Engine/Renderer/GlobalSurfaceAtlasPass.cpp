@@ -60,6 +60,7 @@ struct GlobalSurfaceAtlasTile : RectPack<GlobalSurfaceAtlasTile, uint16>
 struct GlobalSurfaceAtlasObject
 {
     uint64 LastFrameUsed;
+    uint64 LastFrameDirty;
     GlobalSurfaceAtlasTile* Tiles[6] = {};
     OrientedBoundingBox Bounds;
 };
@@ -244,7 +245,7 @@ bool GlobalSurfaceAtlasPass::Render(RenderContext& renderContext, GPUContext* co
         const uint16 maxTileResolution = 128; // Maximum size (in texels) of the tile in atlas
         const uint16 tileResolutionAlignment = 8; // Alignment to snap (down) tiles resolution which allows to reuse atlas slots once object gets resizes/replaced by other object
         const float minObjectRadius = 20.0f; // Skip too small objects
-        const float tileTexelsPerWorldUnit = 1.0f / 10.0f; // Scales the tiles resolution
+        const float tileTexelsPerWorldUnit = 1.0f / 20.0f; // Scales the tiles resolution
         const float distanceScalingStart = 2000.0f; // Distance from camera at which the tiles resolution starts to be scaled down
         const float distanceScalingEnd = 5000.0f; // Distance from camera at which the tiles resolution end to be scaled down
         const float distanceScaling = 0.1f; // The scale for tiles at distanceScalingEnd and further away
@@ -260,7 +261,6 @@ bool GlobalSurfaceAtlasPass::Render(RenderContext& renderContext, GPUContext* co
                     auto* staticModel = ScriptingObject::Cast<StaticModel>(e.Actor);
                     if (staticModel && staticModel->Model && staticModel->Model->IsLoaded() && staticModel->Model->CanBeRendered())
                     {
-                        const bool staticLight = staticModel->HasStaticFlag(StaticFlags::Lightmap);
                         Matrix localToWorld;
                         staticModel->GetWorld(&localToWorld);
                         bool anyTile = false, dirty = false;
@@ -299,10 +299,6 @@ bool GlobalSurfaceAtlasPass::Render(RenderContext& renderContext, GPUContext* co
                                 const uint16 currentSize = object->Tiles[tileIndex]->Width;
                                 if (Math::Abs(tileResolution - currentSize) < tileRefitResolutionStep)
                                 {
-                                    if (!staticLight)
-                                    {
-                                        // TODO: collect dirty tile to be rasterized once every X frames
-                                    }
                                     anyTile = true;
                                     continue;
                                 }
@@ -327,12 +323,20 @@ bool GlobalSurfaceAtlasPass::Render(RenderContext& renderContext, GPUContext* co
                         }
                         if (anyTile)
                         {
+                            // Redraw objects from time-to-time (dynamic objects can be animated, static objects can have textures streamed)
+                            uint32 redrawFramesCount = staticModel->HasStaticFlag(StaticFlags::Lightmap) ? 120 : 4;
+                            if (currentFrame - object->LastFrameDirty >= (redrawFramesCount + (e.Actor->GetID().D & redrawFramesCount)))
+                                dirty = true;
+
                             // Mark object as used
                             object->LastFrameUsed = currentFrame;
                             object->Bounds = OrientedBoundingBox(localBounds);
                             object->Bounds.Transform(localToWorld);
                             if (dirty || GLOBAL_SURFACE_ATLAS_DEBUG_FORCE_TILES_REDRAW)
+                            {
+                                object->LastFrameDirty = currentFrame;
                                 _dirtyObjectsBuffer.Add(ToPair(e.Actor, object));
+                            }
                             // TODO: populate ObjectsBuffer with objects tiles data
 
                             // Write to objects buffer (this must match unpacking logic in HLSL)
