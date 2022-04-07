@@ -37,8 +37,9 @@ void PS_Clear(out float4 Light : SV_Target0, out float4 RT0 : SV_Target1, out fl
 
 Texture3D<float> GlobalSDFTex[4] : register(t0);
 Texture3D<float> GlobalSDFMip[4] : register(t4);
-Texture2D GlobalSurfaceAtlasTex : register(t8);
-Buffer<float4> GlobalSurfaceAtlasObjects : register(t9);
+Buffer<float4> GlobalSurfaceAtlasObjects : register(t8);
+Texture2D GlobalSurfaceAtlasDepth : register(t9);
+Texture2D GlobalSurfaceAtlasTex : register(t10);
 
 // Pixel shader for Global Surface Atlas debug drawing
 META_PS(true, FEATURE_LEVEL_SM5)
@@ -61,7 +62,7 @@ float4 PS_Debug(Quad_VS2PS input) : SV_Target
 	//return float4(hit.HitNormal * 0.5f + 0.5f, 1);
 
 	// Sample Global Surface Atlas at the hit location
-	float4 surfaceColor = SampleGlobalSurfaceAtlas(GlobalSurfaceAtlas, GlobalSurfaceAtlasTex, GlobalSurfaceAtlasObjects, hit.GetHitPosition(trace), -viewRay);
+	float4 surfaceColor = SampleGlobalSurfaceAtlas(GlobalSurfaceAtlas, GlobalSurfaceAtlasObjects, GlobalSurfaceAtlasDepth, GlobalSurfaceAtlasTex, hit.GetHitPosition(trace), -viewRay);
 	return float4(surfaceColor.rgb, 1);
 }
 

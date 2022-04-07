@@ -17,7 +17,7 @@
 #include "Engine/Utilities/RectPack.h"
 
 // This must match HLSL
-#define GLOBAL_SURFACE_ATLAS_OBJECT_SIZE 5 // Amount of Vector4s per-object
+#define GLOBAL_SURFACE_ATLAS_OBJECT_SIZE (5 + 6 * 5) // Amount of float4s per-object
 #define GLOBAL_SURFACE_ATLAS_TILE_PADDING 1 // 1px padding to prevent color bleeding between tiles
 #define GLOBAL_SURFACE_ATLAS_DEBUG_FORCE_TILES_REDRAW 0 // Forces to redraw all object tiles every frame
 #define GLOBAL_SURFACE_ATLAS_DEBUG_FORCE_DRAW_OBJECTS 0 // Debug draws object bounds on redraw (and tile draw projection locations)
@@ -44,6 +44,11 @@ PACK_STRUCT(struct AtlasTileVertex
 
 struct GlobalSurfaceAtlasTile : RectPack<GlobalSurfaceAtlasTile, uint16>
 {
+    Vector3 ViewDirection;
+    Vector3 ViewPosition; // TODO: use from ViewMatrix
+    Vector3 ViewBoundsSize;
+    Matrix ViewMatrix;
+
     GlobalSurfaceAtlasTile(uint16 x, uint16 y, uint16 width, uint16 height)
         : RectPack<GlobalSurfaceAtlasTile, uint16>(x, y, width, height)
     {
@@ -209,6 +214,7 @@ bool GlobalSurfaceAtlasPass::Render(RenderContext& renderContext, GPUContext* co
 
     // TODO: configurable via graphics settings
     const int32 resolution = 4096;
+    const float resolutionInv = 1.0f / resolution;
     // TODO: configurable via postFx settings (maybe use Global SDF distance?)
     const float distance = 20000;
 
@@ -350,6 +356,55 @@ bool GlobalSurfaceAtlasPass::Render(RenderContext& renderContext, GPUContext* co
                             objectData[2] = Vector4(worldToLocalBounds.M21, worldToLocalBounds.M22, worldToLocalBounds.M23, worldToLocalBounds.M42);
                             objectData[3] = Vector4(worldToLocalBounds.M31, worldToLocalBounds.M32, worldToLocalBounds.M33, worldToLocalBounds.M43);
                             objectData[4] = Vector4(object->Bounds.Extents, 0.0f);
+                            // TODO: try to optimize memory footprint (eg. merge scale into extents and use rotation+offset but reconstruct rotation from two axes with sign)
+                            for (int32 tileIndex = 0; tileIndex < 6; tileIndex++)
+                            {
+                                auto* tile = object->Tiles[tileIndex];
+                                const int32 tileStart = 5 + tileIndex * 5;
+                                if (!tile)
+                                {
+                                    // Disable tile
+                                    objectData[tileStart + 4] = Vector4::Zero;
+                                    continue;
+                                }
+
+                                // Setup view to render object from the side
+                                Vector3 xAxis, yAxis, zAxis = Vector3::Zero;
+                                zAxis.Raw[tileIndex / 2] = tileIndex & 1 ? 1.0f : -1.0f;
+                                yAxis = tileIndex == 2 || tileIndex == 3 ? Vector3::Right : Vector3::Up;
+                                Vector3::Cross(yAxis, zAxis, xAxis);
+                                Vector3 localSpaceOffset = -zAxis * object->Bounds.Extents;
+                                Vector3::TransformNormal(xAxis, object->Bounds.Transformation, xAxis);
+                                Vector3::TransformNormal(yAxis, object->Bounds.Transformation, yAxis);
+                                Vector3::TransformNormal(zAxis, object->Bounds.Transformation, zAxis);
+                                xAxis.NormalizeFast();
+                                yAxis.NormalizeFast();
+                                zAxis.NormalizeFast();
+                                Vector3::Transform(localSpaceOffset, object->Bounds.Transformation, tile->ViewPosition);
+                                tile->ViewDirection = zAxis;
+
+                                // Create view matrix
+                                tile->ViewMatrix.SetColumn1(Vector4(xAxis, -Vector3::Dot(xAxis, tile->ViewPosition)));
+                                tile->ViewMatrix.SetColumn2(Vector4(yAxis, -Vector3::Dot(yAxis, tile->ViewPosition)));
+                                tile->ViewMatrix.SetColumn3(Vector4(zAxis, -Vector3::Dot(zAxis, tile->ViewPosition)));
+                                tile->ViewMatrix.SetColumn4(Vector4(0, 0, 0, 1));
+
+                                // Calculate object bounds size in the view
+                                OrientedBoundingBox viewBounds(object->Bounds);
+                                viewBounds.Transform(tile->ViewMatrix);
+                                Vector3 viewExtent;
+                                Vector3::TransformNormal(viewBounds.Extents, viewBounds.Transformation, viewExtent);
+                                tile->ViewBoundsSize = viewExtent.GetAbsolute() * 2.0f;
+
+                                // Per-tile data
+                                const float tileWidth = (float)tile->Width - GLOBAL_SURFACE_ATLAS_TILE_PADDING;
+                                const float tileHeight = (float)tile->Height - GLOBAL_SURFACE_ATLAS_TILE_PADDING;
+                                objectData[tileStart + 0] = Vector4(tile->X, tile->Y, tileWidth, tileHeight);
+                                objectData[tileStart + 1] = Vector4(tile->ViewMatrix.M11, tile->ViewMatrix.M12, tile->ViewMatrix.M13, tile->ViewMatrix.M41);
+                                objectData[tileStart + 2] = Vector4(tile->ViewMatrix.M21, tile->ViewMatrix.M22, tile->ViewMatrix.M23, tile->ViewMatrix.M42);
+                                objectData[tileStart + 3] = Vector4(tile->ViewMatrix.M31, tile->ViewMatrix.M32, tile->ViewMatrix.M33, tile->ViewMatrix.M43);
+                                objectData[tileStart + 4] = Vector4(tile->ViewBoundsSize, 1.0f);
+                            }
                         }
                     }
                 }
@@ -418,7 +473,7 @@ bool GlobalSurfaceAtlasPass::Render(RenderContext& renderContext, GPUContext* co
                 // Per-tile clear (with a single draw call)
                 _vertexBuffer->Clear();
                 _vertexBuffer->Data.EnsureCapacity(_dirtyObjectsBuffer.Count() * 6 * sizeof(AtlasTileVertex));
-                const Vector2 posToClipMul(2.0f / resolution, -2.0f / resolution);
+                const Vector2 posToClipMul(2.0f * resolutionInv, -2.0f * resolutionInv);
                 const Vector2 posToClipAdd(-1.0f, 1.0f);
                 for (const auto& e : _dirtyObjectsBuffer)
                 {
@@ -475,41 +530,14 @@ bool GlobalSurfaceAtlasPass::Render(RenderContext& renderContext, GPUContext* co
                 const float tileWidth = (float)tile->Width - GLOBAL_SURFACE_ATLAS_TILE_PADDING;
                 const float tileHeight = (float)tile->Height - GLOBAL_SURFACE_ATLAS_TILE_PADDING;
 
-                // Setup view to render object from the side
-                Vector3 xAxis, yAxis, zAxis = Vector3::Zero;
-                zAxis.Raw[tileIndex / 2] = tileIndex & 1 ? 1.0f : -1.0f;
-                yAxis = tileIndex == 2 || tileIndex == 3 ? Vector3::Right : Vector3::Up;
-                Vector3::Cross(yAxis, zAxis, xAxis);
-                Vector3 localSpaceOffset = -zAxis * object.Bounds.Extents;
-                Vector3::TransformNormal(xAxis, object.Bounds.Transformation, xAxis);
-                Vector3::TransformNormal(yAxis, object.Bounds.Transformation, yAxis);
-                Vector3::TransformNormal(zAxis, object.Bounds.Transformation, zAxis);
-                xAxis.NormalizeFast();
-                yAxis.NormalizeFast();
-                zAxis.NormalizeFast();
-                Vector3::Transform(localSpaceOffset, object.Bounds.Transformation, renderContextTiles.View.Position);
-                renderContextTiles.View.Direction = zAxis;
-
-                // Create view matrix
-                Matrix viewMatrix;
-                viewMatrix.SetColumn1(Vector4(xAxis, -Vector3::Dot(xAxis, renderContextTiles.View.Position)));
-                viewMatrix.SetColumn2(Vector4(yAxis, -Vector3::Dot(yAxis, renderContextTiles.View.Position)));
-                viewMatrix.SetColumn3(Vector4(zAxis, -Vector3::Dot(zAxis, renderContextTiles.View.Position)));
-                viewMatrix.SetColumn4(Vector4(0, 0, 0, 1));
-
-                // Calculate object bounds size in the view
-                OrientedBoundingBox viewBounds(object.Bounds);
-                viewBounds.Transform(viewMatrix);
-                Vector3 viewExtent;
-                Vector3::TransformNormal(viewBounds.Extents, viewBounds.Transformation, viewExtent);
-                Vector3 viewBoundsSize = viewExtent.GetAbsolute() * 2.0f;
-
                 // Setup projection to capture object from the side
+                renderContextTiles.View.Position = tile->ViewPosition;
+                renderContextTiles.View.Direction = tile->ViewDirection;
                 renderContextTiles.View.Near = -0.1f; // Small offset to prevent clipping with the closest triangles
-                renderContextTiles.View.Far = viewBoundsSize.Z + 0.2f;
+                renderContextTiles.View.Far = tile->ViewBoundsSize.Z + 0.2f;
                 Matrix projectionMatrix;
-                Matrix::Ortho(viewBoundsSize.X, viewBoundsSize.Y, renderContextTiles.View.Near, renderContextTiles.View.Far, projectionMatrix);
-                renderContextTiles.View.SetUp(viewMatrix, projectionMatrix);
+                Matrix::Ortho(tile->ViewBoundsSize.X, tile->ViewBoundsSize.Y, renderContextTiles.View.Near, renderContextTiles.View.Far, projectionMatrix);
+                renderContextTiles.View.SetUp(tile->ViewMatrix, projectionMatrix);
 #if GLOBAL_SURFACE_ATLAS_DEBUG_FORCE_DRAW_OBJECTS
                 DebugDraw::DrawLine(renderContextTiles.View.Position, renderContextTiles.View.Position + renderContextTiles.View.Direction * 20.0f, Color::Orange);
                 DebugDraw::DrawWireSphere(BoundingSphere(renderContextTiles.View.Position, 10.0f), Color::Green);
@@ -573,8 +601,15 @@ void GlobalSurfaceAtlasPass::RenderDebug(RenderContext& renderContext, GPUContex
         context->BindSR(i, bindingDataSDF.Cascades[i]->ViewVolume());
         context->BindSR(i + 4, bindingDataSDF.CascadeMips[i]->ViewVolume());
     }
-    context->BindSR(8, bindingData.Atlas[1]->View()); // TODO: pass Atlas[4]=AtlasDirectLight
-    context->BindSR(9, bindingData.Objects ? bindingData.Objects->View() : nullptr);
+    context->BindSR(8, bindingData.Objects ? bindingData.Objects->View() : nullptr);
+    context->BindSR(9, bindingData.Atlas[0]->View());
+    {
+        GPUTexture* tex = bindingData.Atlas[1]; // Preview diffuse
+        //GPUTexture* tex = bindingData.Atlas[2]; // Preview normals
+        //GPUTexture* tex = bindingData.Atlas[3]; // Preview roughness/metalness/ao
+        //GPUTexture* tex = bindingData.Atlas[4]; // Preview direct light
+        context->BindSR(10, tex->View());
+    }
     context->SetState(_psDebug);
     context->SetRenderTarget(output->View());
     context->SetViewportAndScissors(outputSize.X, outputSize.Y);
