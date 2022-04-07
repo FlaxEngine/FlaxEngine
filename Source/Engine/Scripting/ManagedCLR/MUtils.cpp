@@ -114,7 +114,7 @@ MonoString* MUtils::ToString(const String& str)
 MonoString* MUtils::ToString(const String& str, MonoDomain* domain)
 {
     if (str.IsEmpty())
-        return mono_string_empty(mono_domain_get());
+        return mono_string_empty(domain);
     return mono_string_new_utf16(domain, (const mono_unichar2*)*str, str.Length());
 }
 
