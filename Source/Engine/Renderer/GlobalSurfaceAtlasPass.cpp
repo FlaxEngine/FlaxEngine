@@ -145,6 +145,8 @@ bool GlobalSurfaceAtlasPass::setupResources()
     const auto device = GPUDevice::Instance;
     const auto shader = _shader->GetShader();
     _cb0 = shader->GetCB(0);
+    if (!_cb0)
+        return true;
 
     // Create pipeline state
     GPUPipelineState::Description psDesc = GPUPipelineState::Description::DefaultFullscreenTriangle;
@@ -285,7 +287,7 @@ bool GlobalSurfaceAtlasPass::Render(RenderContext& renderContext, GPUContext* co
                             boundsSizeTile.Raw[tileIndex / 2] = MAX_float; // Ignore depth size
                             boundsSizeTile.Absolute();
                             uint16 tileResolution = (uint16)(boundsSizeTile.MinValue() * tilesScale);
-                            if (tileResolution < minTileResolution)
+                            if (tileResolution < 4)
                             {
                                 // Skip too small surfaces
                                 if (object && object->Tiles[tileIndex])
@@ -399,7 +401,7 @@ bool GlobalSurfaceAtlasPass::Render(RenderContext& renderContext, GPUContext* co
                                 // Per-tile data
                                 const float tileWidth = (float)tile->Width - GLOBAL_SURFACE_ATLAS_TILE_PADDING;
                                 const float tileHeight = (float)tile->Height - GLOBAL_SURFACE_ATLAS_TILE_PADDING;
-                                objectData[tileStart + 0] = Vector4(tile->X, tile->Y, tileWidth, tileHeight);
+                                objectData[tileStart + 0] = Vector4(tile->X, tile->Y, tileWidth, tileHeight) * resolutionInv;
                                 objectData[tileStart + 1] = Vector4(tile->ViewMatrix.M11, tile->ViewMatrix.M12, tile->ViewMatrix.M13, tile->ViewMatrix.M41);
                                 objectData[tileStart + 2] = Vector4(tile->ViewMatrix.M21, tile->ViewMatrix.M22, tile->ViewMatrix.M23, tile->ViewMatrix.M42);
                                 objectData[tileStart + 3] = Vector4(tile->ViewMatrix.M31, tile->ViewMatrix.M32, tile->ViewMatrix.M33, tile->ViewMatrix.M43);

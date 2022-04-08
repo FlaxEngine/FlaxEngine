@@ -5,11 +5,11 @@
 
 // This must match C++
 #define GLOBAL_SURFACE_ATLAS_OBJECT_SIZE (5 + 6 * 5) // Amount of float4s per-object
-#define GLOBAL_SURFACE_ATLAS_TILE_NORMAL_THRESHOLD 0.3f // Cut-off value for tiles transitions blending during sampling
+#define GLOBAL_SURFACE_ATLAS_TILE_NORMAL_THRESHOLD 0.25f // Cut-off value for tiles transitions blending during sampling
 
 struct GlobalSurfaceTile
 {
-	float4 AtlasRect;
+	float4 AtlasRectUV;
 	float4x4 WorldToLocal;
 	float3 ViewBoundsSize;
 	bool Enabled;
@@ -61,7 +61,7 @@ GlobalSurfaceTile LoadGlobalSurfaceAtlasTile(Buffer<float4> objects, uint object
 	float4 vector3 = objects.Load(tileStart + 3);
 	float4 vector4 = objects.Load(tileStart + 4);
 	GlobalSurfaceTile tile = (GlobalSurfaceTile)0;
-	tile.AtlasRect = vector0.xyzw;
+	tile.AtlasRectUV = vector0.xyzw;
 	tile.WorldToLocal[0] = float4(vector1.xyz, 0.0f);
 	tile.WorldToLocal[1] = float4(vector2.xyz, 0.0f);
 	tile.WorldToLocal[2] = float4(vector3.xyz, 0.0f);
@@ -78,11 +78,64 @@ struct GlobalSurfaceAtlasData
 	uint ObjectsCount;
 };
 
+float3 SampleGlobalSurfaceAtlasTex(Texture2D atlas, float2 atlasUV, float4 bilinearWeights)
+{
+	float4 sampleX = atlas.GatherRed(SamplerLinearClamp, atlasUV);
+	float4 sampleY = atlas.GatherGreen(SamplerLinearClamp, atlasUV);
+	float4 sampleZ = atlas.GatherBlue(SamplerLinearClamp, atlasUV);
+	return float3(dot(sampleX, bilinearWeights), dot(sampleY, bilinearWeights), dot(sampleZ, bilinearWeights));
+}
+
+float4 SampleGlobalSurfaceAtlasTile(GlobalSurfaceTile tile, Texture2D depth, Texture2D atlas, float3 worldPosition, float3 worldNormal, float surfaceThreshold)
+{
+	// Tile normal weight based on the sampling angle
+	float3 tileNormal = normalize(mul(worldNormal, (float3x3)tile.WorldToLocal));
+	float normalWeight = saturate(dot(float3(0, 0, -1), tileNormal));
+	normalWeight = (normalWeight - GLOBAL_SURFACE_ATLAS_TILE_NORMAL_THRESHOLD) / (1.0f - GLOBAL_SURFACE_ATLAS_TILE_NORMAL_THRESHOLD);
+	if (normalWeight <= 0.0f)
+		return 0;
+
+	// Get tile UV and depth at the world position
+	float3 tilePosition = mul(float4(worldPosition, 1), tile.WorldToLocal).xyz;
+	float tileDepth = tilePosition.z / tile.ViewBoundsSize.z;
+	float2 tileUV = (tilePosition.xy / tile.ViewBoundsSize.xy) + 0.5f;
+	tileUV.y = 1.0 - tileUV.y;
+	float2 atlasUV = tileUV * tile.AtlasRectUV.zw + tile.AtlasRectUV.xy;
+
+	// Calculate bilinear weights
+	float4 bilinearWeights;
+	bilinearWeights.x = (1.0 - tileUV.x) * (tileUV.y);
+	bilinearWeights.y = (tileUV.x) * (tileUV.y);
+	bilinearWeights.z = (tileUV.x) * (1 - tileUV.y);
+	bilinearWeights.w = (1 - tileUV.x) * (1 - tileUV.y);
+	bilinearWeights = saturate(bilinearWeights);
+
+	// Tile depth weight based on sample position occlusion
+	float4 tileZ = depth.Gather(SamplerLinearClamp, atlasUV, 0.0f);
+	float depthThreshold = 2.0f * surfaceThreshold / tile.ViewBoundsSize.z;
+	float4 depthVisibility = 1.0f;
+	UNROLL
+	for (uint i = 0; i < 4; i++)
+		depthVisibility[i] = 1.0f - saturate((abs(tileDepth - tileZ[i]) - depthThreshold) / (0.5f * depthThreshold));
+	float sampleWeight = normalWeight * dot(depthVisibility, bilinearWeights);
+	if (sampleWeight <= 0.0f)
+		return 0;
+	bilinearWeights = depthVisibility * bilinearWeights;
+	//bilinearWeights = normalize(bilinearWeights);
+
+	// Sample atlas texture
+	float3 sampleColor = SampleGlobalSurfaceAtlasTex(atlas, atlasUV, bilinearWeights);
+
+	//return float4(sampleWeight.xxx, sampleWeight);
+	return float4(sampleColor.rgb * sampleWeight, sampleWeight);
+	//return float4(normalWeight.xxx, sampleWeight);
+}
+
 // Samples the Global Surface Atlas and returns the lighting (with opacity) at the given world location (and direction).
 float4 SampleGlobalSurfaceAtlas(const GlobalSurfaceAtlasData data, Buffer<float4> objects, Texture2D depth, Texture2D atlas, float3 worldPosition, float3 worldNormal)
 {
 	float4 result = float4(0, 0, 0, 0);
-	float surfaceThreshold = 10.0f; // Additional threshold between object or tile size compared with input data (error due to SDF or LOD incorrect appearance)
+	float surfaceThreshold = 20.0f; // Additional threshold between object or tile size compared with input data (error due to SDF or LOD incorrect appearance)
 	// TODO: add grid culling to object for faster lookup
 	LOOP
 	for (uint objectIndex = 0; objectIndex < data.ObjectsCount && result.a <= 0.0f; objectIndex++)
@@ -96,42 +149,34 @@ float4 SampleGlobalSurfaceAtlas(const GlobalSurfaceAtlasData data, Buffer<float4
 		float3 localExtent = object.Extent + surfaceThreshold;
 		if (any(localPosition > localExtent) || any(localPosition < -localExtent))
 			continue;
-		float3 localNormal = normalize(mul(worldNormal, (float3x3)object.WorldToLocal));
 
-		// Pick tiles to sample based on the directionality
+		// Sample tiles based on the directionality
+		// TODO: place enabled tiles mask in object data to skip reading disabled tiles
 		// TODO: sample 1/2/3 tiles with weight based on sample normal
-		uint tileIndex = 2;
-
-		GlobalSurfaceTile tile = LoadGlobalSurfaceAtlasTile(objects, objectIndex, tileIndex);
-
-		// Tile normal weight based on the sampling angle
-		float3 tileNormal = normalize(mul(worldNormal, (float3x3)tile.WorldToLocal));
-		float normalWeight = saturate(dot(float3(0, 0, -1), tileNormal));
-		normalWeight = (normalWeight - GLOBAL_SURFACE_ATLAS_TILE_NORMAL_THRESHOLD) / (1.0f - GLOBAL_SURFACE_ATLAS_TILE_NORMAL_THRESHOLD);
-		if (normalWeight <= 0.0f)
-			continue;
-
-		// Get tile UV and depth at the world position
-		float3 tilePosition = mul(float4(worldPosition, 1), tile.WorldToLocal).xyz;
-		float tileDepth = tilePosition.z / tile.ViewBoundsSize.z;
-		float2 tileUV = (tilePosition.xy / tile.ViewBoundsSize.xy) + 0.5f;
-		tileUV.y = 1.0 - tileUV.y;
-		float2 atlasCoord = tileUV * tile.AtlasRect.zw + tile.AtlasRect.xy;
-
-		// Tile depth weight based on sample position occlusion
-		// TODO: gather 4 depth samples to smooth weight (depth weight per-sample used late for bilinear weights)
-		float tileZ = depth.Load(int3(atlasCoord, 0)).x;
-		float depthThreshold = 2.0f * surfaceThreshold / tile.ViewBoundsSize.z;
-		float depthWeight = 1.0f - saturate((abs(tileDepth - tileZ) - depthThreshold) / (0.5f * depthThreshold));
-		if (depthWeight <= 0.0f)
-			continue;
-
-		// Sample atlas texture
-		// TODO: separate GatherRed/Blue/Green with bilinear weights
-		float4 color = atlas.Load(int3(atlasCoord, 0));
-
-		// TODO: implement Global Surface Atlas sampling
-		result = float4(color.rgb, 1);
+		float3 localNormal = normalize(mul(worldNormal, (float3x3)object.WorldToLocal));
+		float3 localNormalSq = localNormal * localNormal;
+		if (localNormalSq.x > GLOBAL_SURFACE_ATLAS_TILE_NORMAL_THRESHOLD * GLOBAL_SURFACE_ATLAS_TILE_NORMAL_THRESHOLD)
+		{
+			uint tileIndex = localNormal.x > 0.0f ? 0 : 1;
+			GlobalSurfaceTile tile = LoadGlobalSurfaceAtlasTile(objects, objectIndex, tileIndex);
+			result += SampleGlobalSurfaceAtlasTile(tile, depth, atlas, worldPosition, worldNormal, surfaceThreshold);
+		}
+		if (localNormalSq.y > GLOBAL_SURFACE_ATLAS_TILE_NORMAL_THRESHOLD * GLOBAL_SURFACE_ATLAS_TILE_NORMAL_THRESHOLD)
+		{
+			uint tileIndex = localNormal.y > 0.0f ? 2 : 3;
+			GlobalSurfaceTile tile = LoadGlobalSurfaceAtlasTile(objects, objectIndex, tileIndex);
+			result += SampleGlobalSurfaceAtlasTile(tile, depth, atlas, worldPosition, worldNormal, surfaceThreshold);
+		}
+		if (localNormalSq.z > GLOBAL_SURFACE_ATLAS_TILE_NORMAL_THRESHOLD * GLOBAL_SURFACE_ATLAS_TILE_NORMAL_THRESHOLD)
+		{
+			uint tileIndex = localNormal.z > 0.0f ? 4 : 5;
+			GlobalSurfaceTile tile = LoadGlobalSurfaceAtlasTile(objects, objectIndex, tileIndex);
+			result += SampleGlobalSurfaceAtlasTile(tile, depth, atlas, worldPosition, worldNormal, surfaceThreshold);
+		}
 	}
+
+	// Normalize result
+	result.rgb /= max(result.a, 0.0001f);
+
 	return result;
 }
