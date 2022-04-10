@@ -2,7 +2,6 @@
 
 #include "MCore.h"
 #include "MDomain.h"
-#include "MClass.h"
 #include "Engine/Core/Log.h"
 #include "Engine/Core/Types/String.h"
 #include "Engine/Core/Types/DateTime.h"
@@ -352,6 +351,9 @@ bool MCore::LoadEngine()
 {
     PROFILE_CPU();
     ASSERT(Globals::MonoPath.IsANSI());
+
+    // Debugging Mono GC
+    //Platform::SetEnvironmentVariable(TEXT("MONO_GC_DEBUG"), TEXT("6:gc-log.txt,check-remset-consistency,nursery-canaries"));
 
 #if 0
     // Override memory allocation callback

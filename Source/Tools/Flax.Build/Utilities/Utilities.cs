@@ -245,6 +245,26 @@ namespace Flax.Build
         }
 
         /// <summary>
+        /// Deletes the directories inside a directory.
+        /// </summary>
+        /// <param name="directoryPath">The directory path.</param>
+        /// <param name="searchPattern">The custom filter for the directories to delete. Can be used to select files to delete. Null if unused.</param>
+        /// <param name="withSubdirs">if set to <c>true</c> with sub-directories (recursive delete operation).</param>
+        public static void DirectoriesDelete(string directoryPath, string searchPattern = null, bool withSubdirs = true)
+        {
+            if (!Directory.Exists(directoryPath))
+                return;
+            if (searchPattern == null)
+                searchPattern = "*";
+
+            var directories = Directory.GetDirectories(directoryPath, searchPattern, withSubdirs ? SearchOption.AllDirectories : SearchOption.TopDirectoryOnly);
+            for (int i = 0; i < directories.Length; i++)
+            {
+                DirectoryDelete(directories[i]);
+            }
+        }
+
+        /// <summary>
         /// The process run options.
         /// </summary>
         [Flags]

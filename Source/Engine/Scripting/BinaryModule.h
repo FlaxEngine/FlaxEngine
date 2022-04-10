@@ -260,7 +260,7 @@ public:
 
 private:
 
-    int32 _firstManagedTypeIndex;
+    int32 _firstManagedTypeIndex = 0;
     Array<void*> _managedMemoryBlocks;
 
 public:
