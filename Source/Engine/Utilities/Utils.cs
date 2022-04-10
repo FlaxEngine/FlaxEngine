@@ -357,6 +357,14 @@ namespace FlaxEngine
             return new Matrix(stream.ReadSingle(), stream.ReadSingle(), stream.ReadSingle(), stream.ReadSingle(), stream.ReadSingle(), stream.ReadSingle(), stream.ReadSingle(), stream.ReadSingle(), stream.ReadSingle(), stream.ReadSingle(), stream.ReadSingle(), stream.ReadSingle(), stream.ReadSingle(), stream.ReadSingle(), stream.ReadSingle(), stream.ReadSingle());
         }
 
+        internal static byte[] ReadJsonBytes(this BinaryReader stream)
+        {
+            // ReadStream::ReadJson
+            var engineBuild = stream.ReadInt32();
+            var size = stream.ReadInt32();
+            return stream.ReadBytes(size);
+        }
+
         /// <summary>
         /// Deserializes object from Json by reading it as a raw data (ver+length+bytes).
         /// </summary>
@@ -567,6 +575,19 @@ namespace FlaxEngine
             stream.Write(value.M42);
             stream.Write(value.M43);
             stream.Write(value.M44);
+        }
+
+        internal static void WriteJsonBytes(this BinaryWriter stream, byte[] bytes)
+        {
+            // WriteStream::WriteJson
+            stream.Write(Globals.EngineBuildNumber);
+            if (bytes != null)
+            {
+                stream.Write(bytes.Length);
+                stream.Write(bytes);
+            }
+            else
+                stream.Write(0);
         }
 
         /// <summary>
