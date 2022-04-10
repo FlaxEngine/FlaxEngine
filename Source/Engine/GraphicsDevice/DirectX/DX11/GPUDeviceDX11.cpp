@@ -271,9 +271,13 @@ bool GPUDeviceDX11::Init()
     if (factory5)
     {
         BOOL allowTearing;
-        if (SUCCEEDED(factory5->CheckFeatureSupport(DXGI_FEATURE_PRESENT_ALLOW_TEARING, &allowTearing, sizeof(allowTearing))) && allowTearing)
+        if (SUCCEEDED(factory5->CheckFeatureSupport(DXGI_FEATURE_PRESENT_ALLOW_TEARING, &allowTearing, sizeof(allowTearing)))
+            && allowTearing
+#if PLATFORM_WINDOWS
+            && GetModuleHandleA("renderdoc.dll") == nullptr // Disable tearing with RenderDoc (prevents crashing)
+#endif
+        )
             AllowTearing = true;
-        factory5->Release();
     }
 
     // Get flags and device type base on current configuration
@@ -286,18 +290,7 @@ bool GPUDeviceDX11::Init()
     // Create DirectX device
     D3D_FEATURE_LEVEL createdFeatureLevel = static_cast<D3D_FEATURE_LEVEL>(0);
     auto targetFeatureLevel = GetD3DFeatureLevel();
-    VALIDATE_DIRECTX_RESULT(D3D11CreateDevice(
-        adapter,
-        D3D_DRIVER_TYPE_UNKNOWN,
-        NULL,
-        flags,
-        &targetFeatureLevel,
-        1,
-        D3D11_SDK_VERSION,
-        &_device,
-        &createdFeatureLevel,
-        &_imContext
-    ));
+    VALIDATE_DIRECTX_RESULT(D3D11CreateDevice(adapter, D3D_DRIVER_TYPE_UNKNOWN, NULL, flags, &targetFeatureLevel, 1, D3D11_SDK_VERSION, &_device, &createdFeatureLevel, &_imContext));
 
     // Validate result
     ASSERT(_device);
