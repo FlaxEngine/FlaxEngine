@@ -242,7 +242,7 @@ bool GlobalSurfaceAtlasPass::Render(RenderContext& renderContext, GPUContext* co
     PROFILE_GPU_CPU("Global Surface Atlas");
 
     // TODO: configurable via graphics settings
-    const int32 resolution = 4096;
+    const int32 resolution = 2048;
     const float resolutionInv = 1.0f / resolution;
     // TODO: configurable via postFx settings (maybe use Global SDF distance?)
     const float distance = 20000;
@@ -601,6 +601,7 @@ bool GlobalSurfaceAtlasPass::Render(RenderContext& renderContext, GPUContext* co
     result.Atlas[3] = surfaceAtlasData.AtlasGBuffer2;
     result.Atlas[4] = surfaceAtlasData.AtlasDirectLight;
     result.Objects = surfaceAtlasData.ObjectsBuffer.GetBuffer();
+    result.GlobalSurfaceAtlas.Resolution = (float)resolution;
     result.GlobalSurfaceAtlas.ObjectsCount = surfaceAtlasData.Objects.Count();
     surfaceAtlasData.Result = result;
     return false;
