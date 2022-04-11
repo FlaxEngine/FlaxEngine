@@ -65,8 +65,35 @@ struct GlobalSurfaceAtlasObject
 {
     uint64 LastFrameUsed;
     uint64 LastFrameDirty;
-    GlobalSurfaceAtlasTile* Tiles[6] = {};
+    GlobalSurfaceAtlasTile* Tiles[6];
     OrientedBoundingBox Bounds;
+
+    GlobalSurfaceAtlasObject()
+    {
+        Platform::MemoryClear(this, sizeof(GlobalSurfaceAtlasObject));
+    }
+
+    GlobalSurfaceAtlasObject(const GlobalSurfaceAtlasObject& other)
+    {
+        Platform::MemoryCopy(this, &other, sizeof(GlobalSurfaceAtlasObject));
+    }
+
+    GlobalSurfaceAtlasObject(GlobalSurfaceAtlasObject&& other) noexcept
+    {
+        Platform::MemoryCopy(this, &other, sizeof(GlobalSurfaceAtlasObject));
+    }
+
+    GlobalSurfaceAtlasObject& operator=(const GlobalSurfaceAtlasObject& other)
+    {
+        Platform::MemoryCopy(this, &other, sizeof(GlobalSurfaceAtlasObject));
+        return *this;
+    }
+
+    GlobalSurfaceAtlasObject& operator=(GlobalSurfaceAtlasObject&& other) noexcept
+    {
+        Platform::MemoryCopy(this, &other, sizeof(GlobalSurfaceAtlasObject));
+        return *this;
+    }
 };
 
 class GlobalSurfaceAtlasCustomBuffer : public RenderBuffers::CustomBuffer
@@ -345,7 +372,7 @@ bool GlobalSurfaceAtlasPass::Render(RenderContext& renderContext, GPUContext* co
                             if (dirty || GLOBAL_SURFACE_ATLAS_DEBUG_FORCE_TILES_REDRAW)
                             {
                                 object->LastFrameDirty = currentFrame;
-                                _dirtyObjectsBuffer.Add(ToPair(e.Actor, object));
+                                _dirtyObjectsBuffer.Add(e.Actor);
                             }
 
                             // Write to objects buffer (this must match unpacking logic in HLSL)
@@ -477,9 +504,9 @@ bool GlobalSurfaceAtlasPass::Render(RenderContext& renderContext, GPUContext* co
                 _vertexBuffer->Data.EnsureCapacity(_dirtyObjectsBuffer.Count() * 6 * sizeof(AtlasTileVertex));
                 const Vector2 posToClipMul(2.0f * resolutionInv, -2.0f * resolutionInv);
                 const Vector2 posToClipAdd(-1.0f, 1.0f);
-                for (const auto& e : _dirtyObjectsBuffer)
+                for (Actor* actor : _dirtyObjectsBuffer)
                 {
-                    const auto& object = *e.Second;
+                    const auto& object = ((const Dictionary<Actor*, GlobalSurfaceAtlasObject>&)surfaceAtlasData.Objects)[actor];
                     for (int32 tileIndex = 0; tileIndex < 6; tileIndex++)
                     {
                         auto* tile = object.Tiles[tileIndex];
@@ -504,23 +531,29 @@ bool GlobalSurfaceAtlasPass::Render(RenderContext& renderContext, GPUContext* co
                 context->DrawInstanced(_vertexBuffer->Data.Count() / sizeof(AtlasTileVertex), 1);
             }
         }
-        renderContextTiles.List->DrawCallsLists[(int32)DrawCallsListType::GBuffer].CanUseInstancing = false;
-        renderContextTiles.List->DrawCallsLists[(int32)DrawCallsListType::GBufferNoDecals].CanUseInstancing = false;
-        for (const auto& e : _dirtyObjectsBuffer)
+        // TODO: limit dirty objects count on a first frame (eg. collect overflown objects to be redirty next frame)
+        auto& drawCallsListGBuffer = renderContextTiles.List->DrawCallsLists[(int32)DrawCallsListType::GBuffer];
+        auto& drawCallsListGBufferNoDecals = renderContextTiles.List->DrawCallsLists[(int32)DrawCallsListType::GBufferNoDecals];
+        drawCallsListGBuffer.CanUseInstancing = false;
+        drawCallsListGBufferNoDecals.CanUseInstancing = false;
+        for (Actor* actor : _dirtyObjectsBuffer)
         {
-            renderContextTiles.List->Clear();
+            // Clear draw calls list
             renderContextTiles.List->DrawCalls.Clear();
-            renderContextTiles.List->DrawCallsLists[(int32)DrawCallsListType::GBuffer].Indices.Clear();
-            renderContextTiles.List->DrawCallsLists[(int32)DrawCallsListType::GBufferNoDecals].Indices.Clear();
+            renderContextTiles.List->BatchedDrawCalls.Clear();
+            drawCallsListGBuffer.Indices.Clear();
+            drawCallsListGBuffer.PreBatchedDrawCalls.Clear();
+            drawCallsListGBufferNoDecals.Indices.Clear();
+            drawCallsListGBufferNoDecals.PreBatchedDrawCalls.Clear();
 
             // Fake projection matrix to disable Screen Size culling based on RenderTools::ComputeBoundsScreenRadiusSquared
             renderContextTiles.View.Projection.Values[0][0] = 10000.0f;
 
             // Collect draw calls for the object
-            e.First->Draw(renderContextTiles);
+            actor->Draw(renderContextTiles);
 
             // Render all tiles into the atlas
-            GlobalSurfaceAtlasObject& object = *e.Second;
+            const auto& object = ((const Dictionary<Actor*, GlobalSurfaceAtlasObject>&)surfaceAtlasData.Objects)[actor];
 #if GLOBAL_SURFACE_ATLAS_DEBUG_FORCE_DRAW_OBJECTS
             DebugDraw::DrawBox(object.Bounds, Color::Red.AlphaMultiplied(0.4f));
 #endif
@@ -547,8 +580,8 @@ bool GlobalSurfaceAtlasPass::Render(RenderContext& renderContext, GPUContext* co
 
                 // Draw
                 context->SetViewportAndScissors(Viewport(tile->X, tile->Y, tileWidth, tileHeight));
-                renderContextTiles.List->ExecuteDrawCalls(renderContextTiles, DrawCallsListType::GBuffer);
-                renderContextTiles.List->ExecuteDrawCalls(renderContextTiles, DrawCallsListType::GBufferNoDecals);
+                renderContextTiles.List->ExecuteDrawCalls(renderContextTiles, drawCallsListGBuffer);
+                renderContextTiles.List->ExecuteDrawCalls(renderContextTiles, drawCallsListGBufferNoDecals);
             }
         }
         context->ResetRenderTarget();

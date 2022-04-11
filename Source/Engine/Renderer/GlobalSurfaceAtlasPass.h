@@ -34,7 +34,7 @@ private:
 
     // Rasterization cache
     class DynamicVertexBuffer* _vertexBuffer = nullptr;
-    Array<Pair<Actor*, struct GlobalSurfaceAtlasObject*>> _dirtyObjectsBuffer;
+    Array<Actor*> _dirtyObjectsBuffer;
 
 public:
     /// <summary>
