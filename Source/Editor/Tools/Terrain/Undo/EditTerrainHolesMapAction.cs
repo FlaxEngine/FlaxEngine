@@ -37,7 +37,7 @@ namespace FlaxEditor.Tools.Terrain.Undo
             var offset = Int2.Zero;
             var size = new Int2((int)Mathf.Sqrt(_heightmapLength));
             if (TerrainTools.ModifyHolesMask(Terrain, ref patchCoord, (byte*)data, ref offset, ref size))
-                throw new FlaxException("Failed to modify the terrain holes.");
+                throw new Exception("Failed to modify the terrain holes.");
         }
     }
 }

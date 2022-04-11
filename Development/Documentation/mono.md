@@ -2,6 +2,8 @@
 
 Custom fork: [https://github.com/FlaxEngine/mono](https://github.com/FlaxEngine/mono) with custom features for C# assemblies hot-reloading at runtime without domain unload (more: [https://flaxengine.com/blog/flax-facts-16-scripts-hot-reload/](https://flaxengine.com/blog/flax-facts-16-scripts-hot-reload/)).
 
+Startup docs about building mono: [https://www.mono-project.com/docs/compiling-mono/](https://www.mono-project.com/docs/compiling-mono/)
+
 ### Notes
 
 Some useful notes and tips for devs:

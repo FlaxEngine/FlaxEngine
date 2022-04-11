@@ -1331,7 +1331,7 @@ void Render2D::DrawText(Font* font, const StringView& text, const Color& color, 
                 {
                     // Calculate character size and atlas coordinates
                     const float x = pointer.X + entry.OffsetX * scale;
-                    const float y = pointer.Y + (font->GetHeight() + font->GetDescender() - entry.OffsetY) * scale;
+                    const float y = pointer.Y - entry.OffsetY * scale + Math::Ceil((font->GetHeight() + font->GetDescender()) * scale);
 
                     Rectangle charRect(x, y, entry.UVSize.X * scale, entry.UVSize.Y * scale);
                     charRect.Offset(layout.Bounds.Location);

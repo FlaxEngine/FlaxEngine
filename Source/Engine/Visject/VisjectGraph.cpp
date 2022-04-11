@@ -154,8 +154,13 @@ void VisjectExecutor::ProcessGroupMath(Box* box, Node* node, Value& value)
     case 40:
     case 41:
     {
-        Value v1 = tryGetValue(node->GetBox(0), 0, Value::Zero);
-        Value v2 = tryGetValue(node->GetBox(1), 1, Value::Zero).Cast(v1.Type);
+        auto b1 = node->GetBox(0);
+        Value v1 = tryGetValue(b1, 0, Value::Zero);
+        Value v2 = tryGetValue(node->GetBox(1), 1, Value::Zero);
+        if (b1->HasConnection())
+            v2 = v2.Cast(v1.Type);
+        else
+            v1 = v1.Cast(v2.Type);
         GraphUtilities::ApplySomeMathHere(node->TypeID, value, v1, v2);
         break;
     }

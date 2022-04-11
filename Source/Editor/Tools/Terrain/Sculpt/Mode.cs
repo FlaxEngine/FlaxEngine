@@ -1,5 +1,6 @@
 // Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
+using System;
 using FlaxEditor.Tools.Terrain.Brushes;
 using FlaxEngine;
 
@@ -128,9 +129,7 @@ namespace FlaxEditor.Tools.Terrain.Sculpt
                 float* sourceHeights = EditHoles ? null : TerrainTools.GetHeightmapData(terrain, ref patch.PatchCoord);
                 byte* sourceHoles = EditHoles ? TerrainTools.GetHolesMaskData(terrain, ref patch.PatchCoord) : null;
                 if (sourceHeights == null && sourceHoles == null)
-                {
-                    throw new FlaxException("Cannot modify terrain. Loading heightmap failed. See log for more info.");
-                }
+                    throw new Exception("Cannot modify terrain. Loading heightmap failed. See log for more info.");
 
                 // Record patch data before editing it
                 if (!gizmo.CurrentEditUndoAction.HashPatch(ref patch.PatchCoord))

@@ -221,6 +221,7 @@ void CookAssetsStep::CacheData::Load(CookingData& data)
     {
         const auto settings = WindowsPlatformSettings::Get();
         const bool modified =
+                Settings.Windows.SupportDX12 != settings->SupportDX12 ||
                 Settings.Windows.SupportDX11 != settings->SupportDX11 ||
                 Settings.Windows.SupportDX10 != settings->SupportDX10 ||
                 Settings.Windows.SupportVulkan != settings->SupportVulkan;
@@ -1025,6 +1026,7 @@ bool CookAssetsStep::Perform(CookingData& data)
 #if PLATFORM_TOOLS_WINDOWS
     {
         const auto settings = WindowsPlatformSettings::Get();
+        cache.Settings.Windows.SupportDX12 = settings->SupportDX12;
         cache.Settings.Windows.SupportDX11 = settings->SupportDX11;
         cache.Settings.Windows.SupportDX10 = settings->SupportDX10;
         cache.Settings.Windows.SupportVulkan = settings->SupportVulkan;

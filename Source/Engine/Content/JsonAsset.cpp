@@ -281,9 +281,10 @@ bool JsonAsset::CreateInstance()
 
 void JsonAsset::DeleteInstance()
 {
-    ASSERT_LOW_LAYER(Instance && _dtor);
-    InstanceType = ScriptingTypeHandle();
+    if (!Instance || !_dtor)
+        return;
     _dtor(Instance);
+    InstanceType = ScriptingTypeHandle();
     Allocator::Free(Instance);
     Instance = nullptr;
     _dtor = nullptr;

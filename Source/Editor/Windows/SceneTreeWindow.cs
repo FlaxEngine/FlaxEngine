@@ -326,7 +326,7 @@ namespace FlaxEditor.Windows
 
             _isUpdatingSelection = false;
         }
-        
+
         private bool ValidateDragAsset(AssetItem assetItem)
         {
             return assetItem.OnEditorDrag(this);
@@ -417,7 +417,7 @@ namespace FlaxEditor.Windows
         public override DragDropEffect OnDragEnter(ref Vector2 location, DragData data)
         {
             var result = base.OnDragEnter(ref location, data);
-            if (result == DragDropEffect.None && Editor.StateMachine.CurrentState.CanEditScene)
+            if (Editor.StateMachine.CurrentState.CanEditScene)
             {
                 if (_dragHandlers == null)
                     _dragHandlers = new DragHandlers();
@@ -426,14 +426,14 @@ namespace FlaxEditor.Windows
                     _dragAssets = new DragAssets(ValidateDragAsset);
                     _dragHandlers.Add(_dragAssets);
                 }
-                if (_dragAssets.OnDragEnter(data))
+                if (_dragAssets.OnDragEnter(data) && result == DragDropEffect.None)
                     return _dragAssets.Effect;
                 if (_dragActorType == null)
                 {
                     _dragActorType = new DragActorType(ValidateDragActorType);
                     _dragHandlers.Add(_dragActorType);
                 }
-                if (_dragActorType.OnDragEnter(data))
+                if (_dragActorType.OnDragEnter(data) && result == DragDropEffect.None)
                     return _dragActorType.Effect;
             }
             return result;

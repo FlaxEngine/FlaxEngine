@@ -1607,6 +1607,12 @@ void PhysicsBackend::GetActorBounds(void* actor, BoundingBox& bounds)
     bounds = P2C(actorPhysX->getWorldBounds(boundsScale));
 }
 
+int32 PhysicsBackend::GetRigidActorShapesCount(void* actor)
+{
+    auto actorPhysX = (PxRigidActor*)actor;
+    return actorPhysX->getNbShapes();
+}
+
 void* PhysicsBackend::CreateRigidDynamicActor(IPhysicsActor* actor, const Vector3& position, const Quaternion& orientation)
 {
     const PxTransform trans(C2P(position), C2P(orientation));
@@ -1749,13 +1755,13 @@ bool PhysicsBackend::GetRigidDynamicActorIsSleeping(void* actor)
     return actorPhysX->isSleeping();
 }
 
-void PhysicsBackend::GetRigidActorSleep(void* actor)
+void PhysicsBackend::RigidDynamicActorSleep(void* actor)
 {
     auto actorPhysX = (PxRigidDynamic*)actor;
     actorPhysX->putToSleep();
 }
 
-void PhysicsBackend::GetRigidDynamicActorWakeUp(void* actor)
+void PhysicsBackend::RigidDynamicActorWakeUp(void* actor)
 {
     auto actorPhysX = (PxRigidDynamic*)actor;
     actorPhysX->wakeUp();

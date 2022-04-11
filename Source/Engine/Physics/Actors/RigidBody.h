@@ -2,7 +2,9 @@
 
 #pragma once
 
-#include "PhysicsActor.h"
+#include "Engine/Level/Actor.h"
+#include "Engine/Physics/Types.h"
+#include "Engine/Physics/Actors/IPhysicsActor.h"
 #include "Engine/Physics/Collisions.h"
 
 class PhysicsColliderActor;
@@ -11,8 +13,8 @@ class Collider;
 /// <summary>
 /// Physics simulation driven object.
 /// </summary>
-/// <seealso cref="PhysicsActor" />
-API_CLASS() class FLAXENGINE_API RigidBody : public PhysicsActor
+/// <seealso cref="Actor" />
+API_CLASS() class FLAXENGINE_API RigidBody : public Actor, public IPhysicsActor
 {
 DECLARE_SCENE_OBJECT(RigidBody);
 protected:
@@ -35,6 +37,7 @@ protected:
     int32 _startAwake : 1;
     int32 _updateMassWhenScaleChanges : 1;
     int32 _overrideMass : 1;
+    int32 _isUpdatingTransform : 1;
 
 public:
 
@@ -537,7 +540,10 @@ public:
     // Called when collider gets detached from this rigidbody or activated/deactivated. Used to update rigidbody mass.
     virtual void OnColliderChanged(Collider* c);
 
-protected:
+    /// <summary>
+    /// Updates the bounding box.
+    /// </summary>
+    void UpdateBounds();
 
     /// <summary>
     /// Updates the rigidbody scale dependent properties like mass (may be modified when actor transformation changes).
@@ -546,14 +552,17 @@ protected:
 
 public:
 
-    // [PhysicsActor]
+    // [Actor]
     void Serialize(SerializeStream& stream, const void* otherObj) override;
     void Deserialize(DeserializeStream& stream, ISerializeModifier* modifier) override;
+
+    // [IPhysicsActor]
     void* GetPhysicsActor() const override;
+    void OnActiveTransformChanged() override;
 
 protected:
 
-    // [PhysicsActor]
+    // [Actor]
     void BeginPlay(SceneBeginData* data) override;
     void EndPlay() override;
     void OnActiveInTreeChanged() override;

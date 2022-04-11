@@ -8,8 +8,9 @@
 #include "Engine/Serialization/Serialization.h"
 
 RigidBody::RigidBody(const SpawnParams& params)
-    : PhysicsActor(params)
+    : Actor(params)
     , _actor(nullptr)
+    , _cachedScale(1.0f)
     , _mass(1.0f)
     , _linearDamping(0.01f)
     , _angularDamping(0.05f)
@@ -24,6 +25,7 @@ RigidBody::RigidBody(const SpawnParams& params)
     , _startAwake(true)
     , _updateMassWhenScaleChanges(false)
     , _overrideMass(false)
+    , _isUpdatingTransform(false)
 {
 }
 
@@ -224,13 +226,13 @@ bool RigidBody::IsSleeping() const
 void RigidBody::Sleep() const
 {
     if (_actor && GetEnableSimulation() && !GetIsKinematic() && IsActiveInHierarchy())
-        PhysicsBackend::GetRigidActorSleep(_actor);
+        PhysicsBackend::RigidDynamicActorSleep(_actor);
 }
 
 void RigidBody::WakeUp() const
 {
     if (_actor && GetEnableSimulation() && !GetIsKinematic() && IsActiveInHierarchy())
-        PhysicsBackend::GetRigidDynamicActorWakeUp(_actor);
+        PhysicsBackend::RigidDynamicActorWakeUp(_actor);
 }
 
 void RigidBody::UpdateMass()
@@ -323,6 +325,16 @@ void RigidBody::OnColliderChanged(Collider* c)
     //	WakeUp();
 }
 
+void RigidBody::UpdateBounds()
+{
+    void* actor = GetPhysicsActor();
+    if (actor && PhysicsBackend::GetRigidActorShapesCount(actor) != 0)
+        PhysicsBackend::GetActorBounds(actor, _box);
+    else
+        _box = BoundingBox(_transform.Translation);
+    BoundingSphere::FromBox(_box, _sphere);
+}
+
 void RigidBody::UpdateScale()
 {
     const Vector3 scale = GetScale();
@@ -339,7 +351,7 @@ void RigidBody::UpdateScale()
 void RigidBody::Serialize(SerializeStream& stream, const void* otherObj)
 {
     // Base
-    PhysicsActor::Serialize(stream, otherObj);
+    Actor::Serialize(stream, otherObj);
 
     SERIALIZE_GET_OTHER_OBJ(RigidBody);
 
@@ -364,7 +376,7 @@ void RigidBody::Serialize(SerializeStream& stream, const void* otherObj)
 void RigidBody::Deserialize(DeserializeStream& stream, ISerializeModifier* modifier)
 {
     // Base
-    PhysicsActor::Deserialize(stream, modifier);
+    Actor::Deserialize(stream, modifier);
 
     DESERIALIZE_BIT_MEMBER(OverrideMass, _overrideMass);
     DESERIALIZE_MEMBER(Mass, _mass);
@@ -387,6 +399,26 @@ void RigidBody::Deserialize(DeserializeStream& stream, ISerializeModifier* modif
 void* RigidBody::GetPhysicsActor() const
 {
     return _actor;
+}
+
+void RigidBody::OnActiveTransformChanged()
+{
+    // Change actor transform (but with locking)
+    ASSERT(!_isUpdatingTransform);
+    _isUpdatingTransform = true;
+    Transform transform;
+    PhysicsBackend::GetRigidActorPose(GetPhysicsActor(), transform.Translation, transform.Orientation);
+    transform.Scale = _transform.Scale;
+    if (_parent)
+    {
+        _parent->GetTransform().WorldToLocal(transform, _localTransform);
+    }
+    else
+    {
+        _localTransform = transform;
+    }
+    OnTransformChanged();
+    _isUpdatingTransform = false;
 }
 
 void RigidBody::BeginPlay(SceneBeginData* data)
@@ -441,13 +473,13 @@ void RigidBody::BeginPlay(SceneBeginData* data)
     UpdateBounds();
 
     // Base
-    PhysicsActor::BeginPlay(data);
+    Actor::BeginPlay(data);
 }
 
 void RigidBody::EndPlay()
 {
     // Base
-    PhysicsActor::EndPlay();
+    Actor::EndPlay();
 
     if (_actor)
     {
@@ -462,7 +494,7 @@ void RigidBody::EndPlay()
 void RigidBody::OnActiveInTreeChanged()
 {
     // Base
-    PhysicsActor::OnActiveInTreeChanged();
+    Actor::OnActiveInTreeChanged();
 
     if (_actor)
     {
@@ -480,23 +512,18 @@ void RigidBody::OnActiveInTreeChanged()
 
 void RigidBody::OnTransformChanged()
 {
+    // Base
+    Actor::OnTransformChanged();
+
     // Update physics is not during physics state synchronization
     if (!_isUpdatingTransform && _actor)
     {
-        // Base (skip PhysicsActor call to optimize)
-        Actor::OnTransformChanged();
-
         const bool kinematic = GetIsKinematic() && GetEnableSimulation();
         PhysicsBackend::SetRigidActorPose(_actor, _transform.Translation, _transform.Orientation, kinematic, true);
-
         UpdateScale();
-        UpdateBounds();
     }
-    else
-    {
-        // Base
-        PhysicsActor::OnTransformChanged();
-    }
+
+    UpdateBounds();
 }
 
 void RigidBody::OnPhysicsSceneChanged(PhysicsScene* previous)

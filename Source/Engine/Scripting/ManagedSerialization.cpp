@@ -10,7 +10,7 @@
 #include "ManagedCLR/MMethod.h"
 #include <ThirdParty/mono-2.0/mono/metadata/mono-debug.h>
 
-void ManagedSerialization::Serialize(ISerializable::SerializeStream& stream, MonoObject* object)
+void ManagedSerialization::Serialize(ISerializable::SerializeStream& stream, MObject* object)
 {
     if (!object)
     {
@@ -47,7 +47,7 @@ void ManagedSerialization::Serialize(ISerializable::SerializeStream& stream, Mon
     mono_free(invokeResultChars);
 }
 
-void ManagedSerialization::SerializeDiff(ISerializable::SerializeStream& stream, MonoObject* object, MonoObject* other)
+void ManagedSerialization::SerializeDiff(ISerializable::SerializeStream& stream, MObject* object, MObject* other)
 {
     if (!object || !other)
     {
@@ -85,7 +85,7 @@ void ManagedSerialization::SerializeDiff(ISerializable::SerializeStream& stream,
     mono_free(invokeResultChars);
 }
 
-void ManagedSerialization::Deserialize(ISerializable::DeserializeStream& stream, MonoObject* object)
+void ManagedSerialization::Deserialize(ISerializable::DeserializeStream& stream, MObject* object)
 {
     if (!object)
         return;
@@ -98,7 +98,7 @@ void ManagedSerialization::Deserialize(ISerializable::DeserializeStream& stream,
     Deserialize(StringAnsiView(buffer.GetString(), (int32)buffer.GetSize()), object);
 }
 
-void ManagedSerialization::Deserialize(const StringAnsiView& data, MonoObject* object)
+void ManagedSerialization::Deserialize(const StringAnsiView& data, MObject* object)
 {
     const char* str = data.Get();
     const int32 len = data.Length();

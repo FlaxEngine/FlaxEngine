@@ -541,7 +541,7 @@ void RenderInner(SceneRenderTask* task, RenderContext& renderContext)
         renderContext.List->RunMaterialPostFxPass(context, renderContext, MaterialPostFxLocation::AfterAntiAliasingPass, frameBuffer, tempBuffer);
 
         // PostFx -> (up-scaling) -> Back Buffer
-        if (Math::IsOne(task->RenderingPercentage))
+        if (task->RenderingPercentage >= 1.0f)
         {
             PROFILE_GPU("Copy frame");
             context->SetRenderTarget(task->GetOutputView());

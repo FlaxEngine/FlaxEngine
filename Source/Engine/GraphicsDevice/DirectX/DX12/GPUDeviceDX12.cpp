@@ -264,17 +264,19 @@ bool GPUDeviceDX12::Init()
         return true;
     }
     UpdateOutputs(adapter);
+
+    ComPtr<IDXGIFactory5> factory5;
+    _factoryDXGI->QueryInterface(IID_PPV_ARGS(&factory5));
+    if (factory5)
     {
-        ComPtr<IDXGIFactory5> factory5;
-        _factoryDXGI->QueryInterface(IID_PPV_ARGS(&factory5));
-        if (factory5)
-        {
-            BOOL allowTearing;
-            if (SUCCEEDED(factory5->CheckFeatureSupport(DXGI_FEATURE_PRESENT_ALLOW_TEARING, &allowTearing, sizeof(allowTearing))) && allowTearing)
-            {
-                AllowTearing = true;
-            }
-        }
+        BOOL allowTearing;
+        if (SUCCEEDED(factory5->CheckFeatureSupport(DXGI_FEATURE_PRESENT_ALLOW_TEARING, &allowTearing, sizeof(allowTearing)))
+            && allowTearing
+#if PLATFORM_WINDOWS
+            && GetModuleHandleA("renderdoc.dll") == nullptr // Disable tearing with RenderDoc (prevents crashing)
+#endif
+        )
+            AllowTearing = true;
     }
 
     // Create DirectX device

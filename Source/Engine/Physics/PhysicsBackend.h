@@ -131,6 +131,7 @@ public:
     static ActorFlags GetActorFlags(void* actor);
     static void SetActorFlags(void* actor, ActorFlags value);
     static void GetActorBounds(void* actor, BoundingBox& bounds);
+    static int32 GetRigidActorShapesCount(void* actor);
     static void* CreateRigidDynamicActor(IPhysicsActor* actor, const Vector3& position, const Quaternion& orientation);
     static void* CreateRigidStaticActor(IPhysicsActor* actor, const Vector3& position, const Quaternion& orientation);
     static RigidDynamicFlags GetRigidDynamicActorFlags(void* actor);
@@ -148,8 +149,8 @@ public:
     static Vector3 GetRigidDynamicActorCenterOfMass(void* actor);
     static void SetRigidDynamicActorCenterOfMassOffset(void* actor, const Vector3& value);
     static bool GetRigidDynamicActorIsSleeping(void* actor);
-    static void GetRigidActorSleep(void* actor);
-    static void GetRigidDynamicActorWakeUp(void* actor);
+    static void RigidDynamicActorSleep(void* actor);
+    static void RigidDynamicActorWakeUp(void* actor);
     static float GetRigidDynamicActorSleepThreshold(void* actor);
     static void SetRigidDynamicActorSleepThreshold(void* actor, float value);
     static float GetRigidDynamicActorMaxDepenetrationVelocity(void* actor);

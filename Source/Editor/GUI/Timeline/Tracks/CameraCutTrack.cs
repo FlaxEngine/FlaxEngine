@@ -631,7 +631,7 @@ namespace FlaxEditor.GUI.Timeline.Tracks
                 }
             }
             if (spriteIndex == -1)
-                throw new FlaxException();
+                throw new Exception();
             atlas.Count++;
             _atlases[atlasIndex] = atlas;
             var sprite = new SpriteHandle(atlas.Texture, spriteIndex);

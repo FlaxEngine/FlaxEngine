@@ -100,6 +100,18 @@ namespace Flax.Deps
         }
 
         /// <summary>
+        /// Clones the directory.
+        /// </summary>
+        /// <param name="src">The source folder path.</param>
+        /// <param name="dst">The destination folder path.</param>
+        public static void CloneDirectory(string src, string dst)
+        {
+            if (Directory.Exists(dst))
+                Utilities.DirectoryDelete(dst);
+            Utilities.DirectoryCopy(src, dst);
+        }
+
+        /// <summary>
         /// Clones the git repository from the remote url (full repository).
         /// </summary>
         /// <param name="path">The local path for close.</param>
@@ -275,30 +287,76 @@ namespace Flax.Deps
         /// </summary>
         /// <param name="path">The path.</param>
         /// <param name="workspace">The workspace folder.</param>
-        /// <param name="envVars">Custom environment variables to pass to the child process.</param>
-        public static void RunCygwin(string path, string workspace = null, Dictionary<string, string> envVars = null)
+        public static void RunCygwin(string path, string workspace = null)
         {
-            string app;
+            RunBash(path, string.Empty, workspace);
+        }
+
+        /// <summary>
+        /// Runs the bash script (executes natively on Unix platforms, uses Cygwin on Windows).
+        /// </summary>
+        /// <param name="path">The script or command path.</param>
+        /// <param name="args">The arguments.</param>
+        /// <param name="workspace">The workspace folder.</param>
+        /// <param name="envVars">Custom environment variables to pass to the child process.</param>
+        public static void RunBash(string path, string args = null, string workspace = null, Dictionary<string, string> envVars = null)
+        {
             switch (BuildPlatform)
             {
             case TargetPlatform.Windows:
             {
+                // Find Cygwin
                 var cygwinFolder = Environment.GetEnvironmentVariable("CYGWIN");
                 if (string.IsNullOrEmpty(cygwinFolder) || !Directory.Exists(cygwinFolder))
                 {
                     cygwinFolder = "C:\\cygwin";
                     if (!Directory.Exists(cygwinFolder))
-                        throw new Exception("Missing Cygwin. Install Cygwin64 to C:\\cygwin or set CYGWIN env variable to install location folder.");
+                    {
+                        cygwinFolder = "C:\\cygwin64";
+                        if (!Directory.Exists(cygwinFolder))
+                            throw new Exception("Missing Cygwin. Install Cygwin64 to C:\\cygwin or set CYGWIN env variable to install location folder.");
+                    }
                 }
-                app = Path.Combine(cygwinFolder, "bin\\bash.exe");
+                var cygwinBinFolder = Path.Combine(cygwinFolder, "bin");
+
+                // Ensure that Cygwin binaries folder is in a PATH
+                string envPath = null;
+                envVars?.TryGetValue("PATH", out envPath);
+                if (envPath == null || envPath.IndexOf(cygwinBinFolder, StringComparison.OrdinalIgnoreCase) == -1)
+                {
+                    if (envVars == null)
+                        envVars = new Dictionary<string, string>();
+                    envVars["PATH"] = cygwinBinFolder;
+                    if (envPath != null)
+                        envVars["PATH"] += ";" + envPath;
+                }
+
+                // Get the executable file path
+                if (path.EndsWith(".sh", StringComparison.OrdinalIgnoreCase))
+                {
+                    // Bash script
+                    if (args == null)
+                        args = path.Replace('\\', '/');
+                    else
+                        args = path.Replace('\\', '/') + " " + args;
+                    path = Path.Combine(cygwinBinFolder, "bash.exe");
+                }
+                else if (File.Exists(Path.Combine(cygwinBinFolder, path + ".exe")))
+                {
+                    // Tool (eg. make)
+                    path = Path.Combine(cygwinBinFolder, path + ".exe");
+                }
+                else
+                {
+                    throw new Exception("Cannot execute command " + path + " with args " + args);
+                }
                 break;
             }
             case TargetPlatform.Linux:
-                app = "bash";
-                break;
+            case TargetPlatform.Mac: break;
             default: throw new InvalidPlatformException(BuildPlatform);
             }
-            Utilities.Run(app, path, null, workspace, Utilities.RunOptions.None, envVars);
+            Utilities.Run(path, args, null, workspace, Utilities.RunOptions.ThrowExceptionOnError, envVars);
         }
     }
 }

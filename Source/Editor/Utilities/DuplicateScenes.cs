@@ -72,7 +72,7 @@ namespace FlaxEditor.Utilities
             if (Level.UnloadAllScenes())
             {
                 Profiler.EndEvent();
-                throw new FlaxException("Failed to unload scenes.");
+                throw new Exception("Failed to unload scenes.");
             }
             FlaxEngine.Scripting.FlushRemovedObjects();
 
@@ -82,7 +82,7 @@ namespace FlaxEditor.Utilities
                 if (noScenes != null && noScenes.Length != 0)
                 {
                     Profiler.EndEvent();
-                    throw new FlaxException("Failed to unload scenes.");
+                    throw new Exception("Failed to unload scenes.");
                 }
             }
 
@@ -110,7 +110,7 @@ namespace FlaxEditor.Utilities
                 if (scene == null)
                 {
                     Profiler.EndEvent();
-                    throw new FlaxException("Failed to deserialize scene");
+                    throw new Exception("Failed to deserialize scene");
                 }
             }
 
@@ -131,7 +131,7 @@ namespace FlaxEditor.Utilities
             if (Level.UnloadAllScenes())
             {
                 Profiler.EndEvent();
-                throw new FlaxException("Failed to unload scenes.");
+                throw new Exception("Failed to unload scenes.");
             }
             FlaxEngine.Scripting.FlushRemovedObjects();
             Profiler.EndEvent();
@@ -154,7 +154,7 @@ namespace FlaxEditor.Utilities
                 if (scene == null)
                 {
                     Profiler.EndEvent();
-                    throw new FlaxException("Failed to deserialize scene");
+                    throw new Exception("Failed to deserialize scene");
                 }
 
                 // Restore `dirty` state
