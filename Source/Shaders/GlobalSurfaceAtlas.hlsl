@@ -99,7 +99,7 @@ float4 SampleGlobalSurfaceAtlasTile(const GlobalSurfaceAtlasData data, GlobalSur
 	// Get tile UV and depth at the world position
 	float3 tilePosition = mul(float4(worldPosition, 1), tile.WorldToLocal).xyz;
 	float tileDepth = tilePosition.z / tile.ViewBoundsSize.z;
-	float2 tileUV = (tilePosition.xy / tile.ViewBoundsSize.xy) + 0.5f;
+	float2 tileUV = saturate((tilePosition.xy / tile.ViewBoundsSize.xy) + 0.5f);
 	tileUV.y = 1.0 - tileUV.y;
 	float2 atlasUV = tileUV * tile.AtlasRectUV.zw + tile.AtlasRectUV.xy;
 
@@ -143,7 +143,7 @@ float4 SampleGlobalSurfaceAtlas(const GlobalSurfaceAtlasData data, Buffer<float4
 	float surfaceThreshold = 20.0f; // Additional threshold between object or tile size compared with input data (error due to SDF or LOD incorrect appearance)
 	// TODO: add grid culling to object for faster lookup
 	LOOP
-	for (uint objectIndex = 0; objectIndex < data.ObjectsCount && result.a <= 0.0f; objectIndex++)
+	for (uint objectIndex = 0; objectIndex < data.ObjectsCount; objectIndex++)
 	{
 		// Cull point vs sphere
 		float4 objectBounds = LoadGlobalSurfaceAtlasObjectBounds(objects, objectIndex);

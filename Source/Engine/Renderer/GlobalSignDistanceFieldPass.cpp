@@ -251,7 +251,7 @@ bool GlobalSignDistanceFieldPass::Render(RenderContext& renderContext, GPUContex
     const int32 mipFactor = 4;
     const int32 resolutionMip = Math::DivideAndRoundUp(resolution, mipFactor);
     // TODO: configurable via postFx settings
-    const float distanceExtent = 2500.0f;
+    const float distanceExtent = 2000.0f;
     const float cascadesDistances[] = { distanceExtent, distanceExtent * 2.0f, distanceExtent * 4.0f, distanceExtent * 8.0f };
 
     // Initialize buffers
@@ -403,8 +403,10 @@ bool GlobalSignDistanceFieldPass::Render(RenderContext& renderContext, GPUContex
             PROFILE_GPU_CPU("Rasterize Chunks");
             for (auto& e : chunks)
             {
-                // Rasterize non-empty chunk
+                // Rasterize non-empty chunk (first layer so can override existing chunk data)
                 auto& key = e.Key;
+                if (key.Layer != 0)
+                    continue;
                 auto& chunk = e.Value;
                 for (int32 i = 0; i < chunk.ModelsCount; i++)
                 {
@@ -417,20 +419,9 @@ bool GlobalSignDistanceFieldPass::Render(RenderContext& renderContext, GPUContex
                 data.ModelsCount = chunk.ModelsCount;
                 if (_cb1)
                     context->UpdateCB(_cb1, &data);
-                GPUShaderProgramCS* cs;
-                if (key.Layer == 0)
-                {
-                    // First layer so can override existing chunk data
-                    cs = _csRasterizeModel0;
-                    nonEmptyChunks.Add(key);
-                }
-                else
-                {
-                    // Another layer so need combine with existing chunk data
-                    cs = _csRasterizeModel1;
-                }
-                context->Dispatch(cs, chunkDispatchGroups, chunkDispatchGroups, chunkDispatchGroups);
-                // TODO: don't stall with UAV barrier on D3D12/Vulkan if UAVs don't change between dispatches - only for a sequence of _csRasterizeModel0 dispatches (maybe cache per-shader write/read flags for all UAVs?)
+                nonEmptyChunks.Add(key);
+                context->Dispatch(_csRasterizeModel0, chunkDispatchGroups, chunkDispatchGroups, chunkDispatchGroups);
+                // TODO: don't stall with UAV barrier on D3D12/Vulkan if UAVs don't change between dispatches (maybe cache per-shader write/read flags for all UAVs?)
 
 #if GLOBAL_SDF_DEBUG_CHUNKS
                 // Debug draw chunk bounds in world space with number of models in it
@@ -442,6 +433,26 @@ bool GlobalSignDistanceFieldPass::Render(RenderContext& renderContext, GPUContex
                     DebugDraw::DrawText(StringUtils::ToString(chunk.ModelsCount), chunkBounds.GetCenter() + Vector3(0, 50.0f * key.Layer, 0), Color::Red);
                 }
 #endif
+            }
+            for (auto& e : chunks)
+            {
+                // Rasterize non-empty chunk (additive layers so so need combine with existing chunk data)
+                auto& key = e.Key;
+                if (key.Layer == 0)
+                    continue;
+                auto& chunk = e.Value;
+                for (int32 i = 0; i < chunk.ModelsCount; i++)
+                {
+                    int32 model = chunk.Models[i];
+                    data.Models[i] = model;
+                    context->BindSR(i + 1, _modelsTextures[model]);
+                }
+                ASSERT_LOW_LAYER(chunk.ModelsCount != 0);
+                data.ChunkCoord = key.Coord * GLOBAL_SDF_RASTERIZE_CHUNK_SIZE;
+                data.ModelsCount = chunk.ModelsCount;
+                if (_cb1)
+                    context->UpdateCB(_cb1, &data);
+                context->Dispatch(_csRasterizeModel1, chunkDispatchGroups, chunkDispatchGroups, chunkDispatchGroups);
             }
         }
 
