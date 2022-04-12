@@ -50,7 +50,7 @@ void ForwardShadingFeature::Bind(MaterialShader::BindParameters& params, Span<by
         {
             context->UnBindSR(dirLightShaderRegisterIndex);
         }
-        dirLight.SetupLightData(&data.DirectionalLight, view, useShadow);
+        dirLight.SetupLightData(&data.DirectionalLight, useShadow);
     }
     else
     {
@@ -63,7 +63,7 @@ void ForwardShadingFeature::Bind(MaterialShader::BindParameters& params, Span<by
     if (cache->SkyLights.HasItems())
     {
         auto& skyLight = cache->SkyLights.First();
-        skyLight.SetupLightData(&data.SkyLight, view, false);
+        skyLight.SetupLightData(&data.SkyLight, false);
         const auto texture = skyLight.Image ? skyLight.Image->GetTexture() : nullptr;
         context->BindSR(skyLightShaderRegisterIndex, GET_TEXTURE_VIEW_SAFE(texture));
     }
@@ -104,7 +104,7 @@ void ForwardShadingFeature::Bind(MaterialShader::BindParameters& params, Span<by
         const auto& light = cache->PointLights[i];
         if (BoundingSphere(light.Position, light.Radius).Contains(drawCall.World.GetTranslation()) != ContainmentType::Disjoint)
         {
-            light.SetupLightData(&data.LocalLights[data.LocalLightsCount], view, false);
+            light.SetupLightData(&data.LocalLights[data.LocalLightsCount], false);
             data.LocalLightsCount++;
         }
     }
@@ -113,7 +113,7 @@ void ForwardShadingFeature::Bind(MaterialShader::BindParameters& params, Span<by
         const auto& light = cache->SpotLights[i];
         if (BoundingSphere(light.Position, light.Radius).Contains(drawCall.World.GetTranslation()) != ContainmentType::Disjoint)
         {
-            light.SetupLightData(&data.LocalLights[data.LocalLightsCount], view, false);
+            light.SetupLightData(&data.LocalLights[data.LocalLightsCount], false);
             data.LocalLightsCount++;
         }
     }

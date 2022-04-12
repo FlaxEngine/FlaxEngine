@@ -42,7 +42,7 @@ struct RendererDirectionalLightData
     float ContactShadowsLength;
     ShadowsCastingMode ShadowsMode;
 
-    void SetupLightData(LightData* data, const RenderView& view, bool useShadow) const;
+    void SetupLightData(LightData* data, bool useShadow) const;
 };
 
 struct RendererSpotLightData
@@ -80,7 +80,7 @@ struct RendererSpotLightData
 
     GPUTexture* IESTexture;
 
-    void SetupLightData(LightData* data, const RenderView& view, bool useShadow) const;
+    void SetupLightData(LightData* data, bool useShadow) const;
 };
 
 struct RendererPointLightData
@@ -114,7 +114,7 @@ struct RendererPointLightData
 
     GPUTexture* IESTexture;
 
-    void SetupLightData(LightData* data, const RenderView& view, bool useShadow) const;
+    void SetupLightData(LightData* data, bool useShadow) const;
 };
 
 struct RendererSkyLightData
@@ -132,7 +132,7 @@ struct RendererSkyLightData
 
     CubeTexture* Image;
 
-    void SetupLightData(LightData* data, const RenderView& view, bool useShadow) const;
+    void SetupLightData(LightData* data, bool useShadow) const;
 };
 
 /// <summary>

@@ -325,7 +325,7 @@ void ShadowsPass::RenderShadow(RenderContext& renderContext, RendererPointLightD
 
     // Setup shader data
     GBufferPass::SetInputs(view, sperLight.GBuffer);
-    light.SetupLightData(&sperLight.Light, view, true);
+    light.SetupLightData(&sperLight.Light, true);
     sperLight.LightShadow.ShadowMapSize = shadowMapsSizeCube;
     sperLight.LightShadow.Sharpness = light.ShadowsSharpness;
     sperLight.LightShadow.Fade = Math::Saturate(light.ShadowsStrength * fade);
@@ -427,7 +427,7 @@ void ShadowsPass::RenderShadow(RenderContext& renderContext, RendererSpotLightDa
 
     // Setup shader data
     GBufferPass::SetInputs(view, sperLight.GBuffer);
-    light.SetupLightData(&sperLight.Light, view, true);
+    light.SetupLightData(&sperLight.Light, true);
     sperLight.LightShadow.ShadowMapSize = shadowMapsSizeCube;
     sperLight.LightShadow.Sharpness = light.ShadowsSharpness;
     sperLight.LightShadow.Fade = Math::Saturate(light.ShadowsStrength * fade);
@@ -719,7 +719,7 @@ void ShadowsPass::RenderShadow(RenderContext& renderContext, RendererDirectional
 
     // Setup shader data
     GBufferPass::SetInputs(view, sperLight.GBuffer);
-    light.SetupLightData(&sperLight.Light, view, true);
+    light.SetupLightData(&sperLight.Light, true);
     sperLight.LightShadow.ShadowMapSize = shadowMapsSizeCSM;
     sperLight.LightShadow.Sharpness = light.ShadowsSharpness;
     sperLight.LightShadow.Fade = Math::Saturate(light.ShadowsStrength);
