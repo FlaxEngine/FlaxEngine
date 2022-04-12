@@ -100,6 +100,8 @@ class GlobalSurfaceAtlasCustomBuffer : public RenderBuffers::CustomBuffer
 {
 public:
     int32 Resolution = 0;
+    uint64 LastFrameAtlasInsertFail = 0;
+    uint64 LastFrameAtlasDefragmentation = 0;
     GPUTexture* AtlasDepth = nullptr;
     GPUTexture* AtlasGBuffer0 = nullptr;
     GPUTexture* AtlasGBuffer1 = nullptr;
@@ -115,6 +117,14 @@ public:
     {
     }
 
+    FORCE_INLINE void ClearObjects()
+    {
+        LastFrameAtlasDefragmentation = Engine::FrameCount;
+        SAFE_DELETE(AtlasTiles);
+        ObjectsBuffer.Clear();
+        Objects.Clear();
+    }
+
     FORCE_INLINE void Clear()
     {
         RenderTargetPool::Release(AtlasDepth);
@@ -122,9 +132,7 @@ public:
         RenderTargetPool::Release(AtlasGBuffer1);
         RenderTargetPool::Release(AtlasGBuffer2);
         RenderTargetPool::Release(AtlasDirectLight);
-        SAFE_DELETE(AtlasTiles);
-        ObjectsBuffer.Clear();
-        Objects.Clear();
+        ClearObjects();
     }
 
     ~GlobalSurfaceAtlasCustomBuffer()
@@ -252,7 +260,6 @@ bool GlobalSurfaceAtlasPass::Render(RenderContext& renderContext, GPUContext* co
     if (noCache)
     {
         surfaceAtlasData.Clear();
-        surfaceAtlasData.AtlasTiles = New<GlobalSurfaceAtlasTile>(0, 0, resolution, resolution);
 
         auto desc = GPUTextureDescription::New2D(resolution, resolution, PixelFormat::Unknown);
         uint64 memUsage = 0;
@@ -268,6 +275,18 @@ bool GlobalSurfaceAtlasPass::Render(RenderContext& renderContext, GPUContext* co
         surfaceAtlasData.Resolution = resolution;
         LOG(Info, "Global Surface Atlas resolution: {0}, memory usage: {1} MB", resolution, memUsage / 1024 / 1024);
     }
+    else
+    {
+        // Perform atlas defragmentation if needed
+        // TODO: track atlas used vs free ratio to skip defragmentation if it's nearly full (then maybe auto resize up?)
+        if (currentFrame - surfaceAtlasData.LastFrameAtlasInsertFail < 10 &&
+            currentFrame - surfaceAtlasData.LastFrameAtlasDefragmentation > 60)
+        {
+            surfaceAtlasData.ClearObjects();
+        }
+    }
+    if (!surfaceAtlasData.AtlasTiles)
+        surfaceAtlasData.AtlasTiles = New<GlobalSurfaceAtlasTile>(0, 0, resolution, resolution);
     if (!_vertexBuffer)
         _vertexBuffer = New<DynamicVertexBuffer>(0u, (uint32)sizeof(AtlasTileVertex), TEXT("GlobalSurfaceAtlas.VertexBuffer"));
 
@@ -353,9 +372,11 @@ bool GlobalSurfaceAtlasPass::Render(RenderContext& renderContext, GPUContext* co
                                 anyTile = true;
                                 dirty = true;
                             }
-                            else if (object)
+                            else
                             {
-                                object->Tiles[tileIndex] = nullptr;
+                                if (object)
+                                    object->Tiles[tileIndex] = nullptr;
+                                surfaceAtlasData.LastFrameAtlasInsertFail = currentFrame;
                             }
                         }
                         if (anyTile)
@@ -454,7 +475,6 @@ bool GlobalSurfaceAtlasPass::Render(RenderContext& renderContext, GPUContext* co
             surfaceAtlasData.Objects.Remove(it);
         }
     }
-    // TODO: perform atlas defragmentation after certain amount of tiles removal
 
     // Send objects data to the GPU
     {
