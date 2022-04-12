@@ -77,6 +77,10 @@ namespace FlaxEditor.Windows.Assets
             [EditorOrder(200), DefaultValue(true), EditorDisplay("Transparency"), Tooltip("Enables reflections when rendering material.")]
             public bool EnableReflections;
 
+            [VisibleIf(nameof(EnableReflections))]
+            [EditorOrder(210), DefaultValue(false), EditorDisplay("Transparency"), Tooltip("Enables Screen Space Reflections when rendering material.")]
+            public bool EnableScreenSpaceReflections;
+
             [EditorOrder(210), DefaultValue(true), EditorDisplay("Transparency"), Tooltip("Enables fog effects when rendering material.")]
             public bool EnableFog;
 
@@ -142,6 +146,7 @@ namespace FlaxEditor.Windows.Assets
                 DepthTest = (info.FeaturesFlags & MaterialFeaturesFlags.DisableDepthTest) == 0;
                 DepthWrite = (info.FeaturesFlags & MaterialFeaturesFlags.DisableDepthWrite) == 0;
                 EnableReflections = (info.FeaturesFlags & MaterialFeaturesFlags.DisableReflections) == 0;
+                EnableScreenSpaceReflections = (info.FeaturesFlags & MaterialFeaturesFlags.ScreenSpaceReflections) != 0;
                 EnableFog = (info.FeaturesFlags & MaterialFeaturesFlags.DisableFog) == 0;
                 EnableDistortion = (info.FeaturesFlags & MaterialFeaturesFlags.DisableDistortion) == 0;
                 PixelNormalOffsetRefraction = (info.FeaturesFlags & MaterialFeaturesFlags.PixelNormalOffsetRefraction) != 0;
@@ -177,6 +182,8 @@ namespace FlaxEditor.Windows.Assets
                     info.FeaturesFlags |= MaterialFeaturesFlags.DisableDepthWrite;
                 if (!EnableReflections)
                     info.FeaturesFlags |= MaterialFeaturesFlags.DisableReflections;
+                if (EnableScreenSpaceReflections)
+                    info.FeaturesFlags |= MaterialFeaturesFlags.ScreenSpaceReflections;
                 if (!EnableFog)
                     info.FeaturesFlags |= MaterialFeaturesFlags.DisableFog;
                 if (!EnableDistortion)

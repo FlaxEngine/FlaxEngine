@@ -42,18 +42,13 @@ float4 SampleReflectionProbe(float3 viewPos, TextureCube probe, ProbeData data, 
 	return probeSample * fade;
 }
 
-float3 GetEnvProbeLighting(float3 viewPos, TextureCube probe, ProbeData data, GBufferSample gBuffer)
+// Calculates the reflective environment lighting to multiply the raw reflection color for the specular light (eg. from Env Probe or SSR).
+float3 GetReflectionSpecularLighting(float3 viewPos, GBufferSample gBuffer)
 {
-	// Calculate reflections
-	float3 reflections = SampleReflectionProbe(viewPos, probe, data, gBuffer.WorldPos, gBuffer.Normal, gBuffer.Roughness).rgb;
-
-	// Calculate specular color
 	float3 specularColor = GetSpecularColor(gBuffer);
-
-	// Calculate reflecion color
 	float3 V = normalize(viewPos - gBuffer.WorldPos);
 	float NoV = saturate(dot(gBuffer.Normal, V));
-	return reflections * EnvBRDFApprox(specularColor, gBuffer.Roughness, NoV);
+	return EnvBRDFApprox(specularColor, gBuffer.Roughness, NoV);
 }
 
 #endif

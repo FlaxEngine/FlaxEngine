@@ -398,6 +398,14 @@ bool MaterialGenerator::Generate(WriteStream& source, MaterialInfo& materialInfo
         _writer.Write(TEXT("#define MATERIAL_MASK_THRESHOLD ({0})\n"), baseLayer->MaskThreshold);
         _writer.Write(TEXT("#define CUSTOM_VERTEX_INTERPOLATORS_COUNT ({0})\n"), _vsToPsInterpolants.Count());
         _writer.Write(TEXT("#define MATERIAL_OPACITY_THRESHOLD ({0})\n"), baseLayer->OpacityThreshold);
+        if (materialInfo.BlendMode != MaterialBlendMode::Opaque && !(materialInfo.FeaturesFlags & MaterialFeaturesFlags::DisableReflections) && materialInfo.FeaturesFlags & MaterialFeaturesFlags::ScreenSpaceReflections)
+        {
+            // Inject depth and color buffers for Screen Space Reflections used by transparent material
+            auto sceneDepthTexture = findOrAddSceneTexture(MaterialSceneTextures::SceneDepth);
+            auto sceneColorTexture = findOrAddSceneTexture(MaterialSceneTextures::SceneColor);
+            _writer.Write(TEXT("#define MATERIAL_REFLECTIONS_SSR_DEPTH ({0})\n"), sceneDepthTexture.ShaderName);
+            _writer.Write(TEXT("#define MATERIAL_REFLECTIONS_SSR_COLOR ({0})\n"), sceneColorTexture.ShaderName);
+        }
         WRITE_FEATURES(Defines);
         inputs[In_Defines] = _writer.ToString();
         _writer.Clear();
@@ -447,6 +455,7 @@ bool MaterialGenerator::Generate(WriteStream& source, MaterialInfo& materialInfo
         }
         for (auto f : features)
         {
+            // Process SRV slots used in template
             const auto& text = Features[f].Inputs[(int32)FeatureTemplateInputsMapping::Resources];
             const Char* str = text.Get();
             int32 prevIdx = 0, idx = 0;

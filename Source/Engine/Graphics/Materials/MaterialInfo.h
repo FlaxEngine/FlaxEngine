@@ -272,6 +272,11 @@ API_ENUM(Attributes="Flags") enum class MaterialFeaturesFlags : uint32
     /// The flag used to enable refraction offset based on the difference between the per-pixel normal and the per-vertex normal. Useful for large water-like surfaces.
     /// </summary>
     PixelNormalOffsetRefraction = 1 << 9,
+
+    /// <summary>
+    /// The flag used to enable high-quality reflections based on the screen space raytracing. Useful for large water-like surfaces. The Forward Pass materials option.
+    /// </summary>
+    ScreenSpaceReflections = 1 << 10,
 };
 
 DECLARE_ENUM_OPERATORS(MaterialFeaturesFlags);
