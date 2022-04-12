@@ -45,7 +45,6 @@ Array<RendererPassBase*> PassList(64);
 class RendererService : public EngineService
 {
 public:
-
     RendererService()
         : EngineService(TEXT("Renderer"), 20)
     {
@@ -429,8 +428,9 @@ void RenderInner(SceneRenderTask* task, RenderContext& renderContext)
     }
 
     // Run forward pass
-    auto forwardPassResult = renderContext.Buffers->RT1_FloatRGB;
-    ForwardPass::Instance()->Render(renderContext, lightBuffer, forwardPassResult);
+    GPUTexture* frameBuffer = renderContext.Buffers->RT1_FloatRGB;
+    GPUTexture* tempBuffer = renderContext.Buffers->RT2_FloatRGB;
+    ForwardPass::Instance()->Render(renderContext, lightBuffer, frameBuffer);
 
     // Cleanup
     context->ResetRenderTarget();
@@ -443,15 +443,9 @@ void RenderInner(SceneRenderTask* task, RenderContext& renderContext)
     {
         context->SetRenderTarget(task->GetOutputView());
         context->SetViewportAndScissors(task->GetOutputViewport());
-        context->Draw(forwardPassResult);
+        context->Draw(frameBuffer);
         return;
     }
-
-    // Prepare buffers for post processing frame
-    GPUTexture* frameBuffer = renderContext.Buffers->RT1_FloatRGB;
-    GPUTexture* tempBuffer = renderContext.Buffers->RT2_FloatRGB;
-    if (forwardPassResult == tempBuffer)
-        Swap(frameBuffer, tempBuffer);
 
     // Material and Custom PostFx
     renderContext.List->RunMaterialPostFxPass(context, renderContext, MaterialPostFxLocation::BeforePostProcessingPass, frameBuffer, tempBuffer);

@@ -553,7 +553,7 @@ bool CanUseInstancing(DrawPass pass)
     return pass == DrawPass::GBuffer || pass == DrawPass::Depth;
 }
 
-void RenderList::ExecuteDrawCalls(const RenderContext& renderContext, DrawCallsList& list)
+void RenderList::ExecuteDrawCalls(const RenderContext& renderContext, DrawCallsList& list, GPUTextureView* input)
 {
     if (list.IsEmpty())
         return;
@@ -625,6 +625,7 @@ DRAW:
 
     // Execute draw calls
     MaterialBase::BindParameters bindParams(context, renderContext);
+    bindParams.Input = input;
     if (useInstancing)
     {
         int32 instanceBufferOffset = 0;

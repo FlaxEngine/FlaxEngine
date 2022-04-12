@@ -74,10 +74,7 @@ void ForwardPass::Dispose()
 void ForwardPass::Render(RenderContext& renderContext, GPUTexture* input, GPUTexture* output)
 {
     PROFILE_GPU_CPU("Forward");
-
-    // Cache data
-    auto device = GPUDevice::Instance;
-    auto context = device->GetMainContext();
+    auto context = GPUDevice::Instance->GetMainContext();
     auto& view = renderContext.View;
     auto mainCache = renderContext.List;
 
@@ -141,6 +138,6 @@ void ForwardPass::Render(RenderContext& renderContext, GPUTexture* input, GPUTex
         // Run forward pass
         view.Pass = DrawPass::Forward;
         context->SetRenderTarget(depthBufferHandle, output->View());
-        mainCache->ExecuteDrawCalls(renderContext, forwardList);
+        mainCache->ExecuteDrawCalls(renderContext, forwardList, input->View());
     }
 }
