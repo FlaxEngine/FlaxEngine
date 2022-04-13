@@ -25,38 +25,26 @@ namespace FlaxEngine
             if (WaitForLoaded())
                 return null;
 
-            var assemblies = AppDomain.CurrentDomain.GetAssemblies();
+            object obj = null;
             var dataTypeName = DataTypeName;
-
-            for (int i = 0; i < assemblies.Length; i++)
+            var type = Type.GetType(dataTypeName);
+            if (type != null)
             {
-                var assembly = assemblies[i];
-                if (assembly != null)
+                try
                 {
-                    var type = assembly.GetType(dataTypeName);
-                    if (type != null)
-                    {
-                        object obj = null;
-                        try
-                        {
-                            // Create instance
-                            obj = Activator.CreateInstance(type);
+                    // Create instance
+                    obj = Activator.CreateInstance(type);
 
-                            // Deserialize object
-                            var data = Data;
-                            JsonSerializer.Deserialize(obj, data);
-                        }
-                        catch (Exception ex)
-                        {
-                            Debug.LogException(ex);
-                        }
-
-                        return obj;
-                    }
+                    // Deserialize object
+                    var data = Data;
+                    JsonSerializer.Deserialize(obj, data);
+                }
+                catch (Exception ex)
+                {
+                    Debug.LogException(ex);
                 }
             }
-
-            return null;
+            return obj;
         }
     }
 }
