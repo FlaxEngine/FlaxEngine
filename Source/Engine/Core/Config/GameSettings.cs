@@ -202,7 +202,7 @@ namespace FlaxEditor.Content.Settings
             var asset = FlaxEngine.Content.LoadAsync<JsonAsset>(GameSettingsAssetPath);
             if (asset && !asset.WaitForLoaded())
             {
-                if (asset.CreateInstance() is GameSettings result)
+                if (asset.Instance is GameSettings result)
                     return result;
             }
             return new GameSettings();
@@ -212,7 +212,7 @@ namespace FlaxEditor.Content.Settings
         {
             if (asset && !asset.WaitForLoaded())
             {
-                if (asset.CreateInstance() is T result)
+                if (asset.Instance is T result)
                     return result;
             }
             return new T();
@@ -222,7 +222,7 @@ namespace FlaxEditor.Content.Settings
         {
             if (asset && !asset.WaitForLoaded() && asset.DataTypeName == typename)
             {
-                if (asset.CreateInstance() is SettingsBase result)
+                if (asset.Instance is SettingsBase result)
                     return result;
             }
             return null;
@@ -314,7 +314,7 @@ namespace FlaxEditor.Content.Settings
                 {
                     if (e.Value && !e.Value.WaitForLoaded() && e.Value.DataTypeName == type.FullName)
                     {
-                        var custom = e.Value.CreateInstance();
+                        var custom = e.Value.Instance;
                         if (custom is T result)
                             return result;
                     }
