@@ -418,6 +418,17 @@ Array<Actor*> Actor::GetChildren(const MClass* type) const
     return result;
 }
 
+void Actor::DestroyChildren(float timeLeft)
+{
+    Array<Actor*> children = Children;
+    const bool useGameTime = timeLeft > ZeroTolerance;
+    for (Actor* child : children)
+    {
+        child->SetParent(nullptr, false, false);
+        child->DeleteObject(timeLeft, useGameTime);
+    }
+}
+
 bool Actor::HasTag(const StringView& tag) const
 {
     return HasTag() && tag == Level::Tags[_tag];

@@ -297,23 +297,6 @@ namespace FlaxEngine
         }
 
         /// <summary>
-        /// Destroys the children. Calls Object.Destroy on every child actor and unlink them for the parent.
-        /// </summary>
-        /// <param name="timeLeft">The time left to destroy object (in seconds).</param>
-        [NoAnimate]
-        public void DestroyChildren(float timeLeft = 0.0f)
-        {
-            if (ChildrenCount == 0)
-                return;
-            Actor[] children = Children;
-            for (var i = 0; i < children.Length; i++)
-            {
-                children[i].Parent = null;
-                Destroy(children[i], timeLeft);
-            }
-        }
-
-        /// <summary>
         /// Gets the matrix that transforms a point from the world space to local space of the actor.
         /// </summary>
         public Matrix WorldToLocalMatrix
