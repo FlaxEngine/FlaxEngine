@@ -258,6 +258,24 @@ namespace FlaxEditor.Surface.Archetypes
                     NodeElementArchetype.Factory.Output(0, string.Empty, null, 1)
                 }
             },
+            new NodeArchetype
+            {
+                TypeID = 14,
+                Title = "Array Add Unique",
+                Description = "Adds the unique item to the array (to the end). Does nothing it specified item was already added.",
+                Flags = NodeFlags.VisualScriptGraph | NodeFlags.AnimGraph,
+                Size = new Vector2(170, 40),
+                ConnectionsHints = ConnectionsHint.Array,
+                IndependentBoxes = new int[] { 0 },
+                DependentBoxes = new int[] { 1, 2 },
+                DependentBoxFilter = GetArrayItemType,
+                Elements = new[]
+                {
+                    NodeElementArchetype.Factory.Input(0, "Array", true, null, 0),
+                    NodeElementArchetype.Factory.Input(1, "Item", true, typeof(object), 1),
+                    NodeElementArchetype.Factory.Output(0, string.Empty, null, 2)
+                }
+            },
             // first 100 IDs reserved for arrays
         };
     }

@@ -1344,6 +1344,13 @@ void VisjectExecutor::ProcessGroupCollections(Box* box, Node* node, Value& value
             array.Reverse();
             value = MoveTemp(v);
             break;
+            // Add Unique
+        case 14:
+            b = node->GetBox(1);
+            ENSURE(b->HasConnection(), TEXT("Missing value to add."));
+            array.AddUnique(eatBox(b->GetParent<Node>(), b->FirstConnection()));
+            value = MoveTemp(v);
+            break;
         }
     }
 }
