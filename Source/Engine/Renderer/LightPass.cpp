@@ -141,27 +141,6 @@ bool LightPass::setupResources()
     return false;
 }
 
-template<typename T>
-bool CanRenderShadow(RenderView& view, const T& light)
-{
-    bool result = false;
-    switch ((ShadowsCastingMode)light.ShadowsMode)
-    {
-    case ShadowsCastingMode::StaticOnly:
-        result = view.IsOfflinePass;
-        break;
-    case ShadowsCastingMode::DynamicOnly:
-        result = !view.IsOfflinePass;
-        break;
-    case ShadowsCastingMode::All:
-        result = true;
-        break;
-    default:
-        break;
-    }
-    return result && light.ShadowsStrength > ZeroTolerance;
-}
-
 void LightPass::Dispose()
 {
     // Base
