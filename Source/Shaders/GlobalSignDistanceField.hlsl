@@ -6,6 +6,7 @@
 #define GLOBAL_SDF_RASTERIZE_CHUNK_SIZE 32
 #define GLOBAL_SDF_RASTERIZE_CHUNK_MARGIN 4
 #define GLOBAL_SDF_MIP_FLOODS 5
+#define GLOBAL_SDF_WORLD_SIZE 60000.0f
 
 // Global SDF data for a constant buffer
 struct GlobalSDFData
@@ -61,7 +62,7 @@ float SampleGlobalSDF(const GlobalSDFData data, Texture3D<float> tex[4], float3 
 {
 	float distance = data.CascadePosDistance[3].w * 2.0f;
 	if (distance <= 0.0f)
-		return 60000;
+		return GLOBAL_SDF_WORLD_SIZE;
 	UNROLL
 	for (uint cascade = 0; cascade < 4; cascade++)
 	{
@@ -83,7 +84,7 @@ float SampleGlobalSDF(const GlobalSDFData data, Texture3D<float> tex[4], float3 
 float3 SampleGlobalSDFGradient(const GlobalSDFData data, Texture3D<float> tex[4], float3 worldPosition, out float distance)
 {
 	float3 gradient = float3(0, 0.00001f, 0);
-	distance = 60000;
+	distance = GLOBAL_SDF_WORLD_SIZE;
 	if (data.CascadePosDistance[3].w <= 0.0f)
 		return gradient;
 	UNROLL

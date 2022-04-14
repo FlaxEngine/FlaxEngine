@@ -12,7 +12,8 @@
 META_CB_BEGIN(0, Data)
 float3 ViewWorldPos;
 float ViewNearPlane;
-float3 Padding00;
+float2 Padding00;
+float LightShadowsStrengthOneMinus;
 float ViewFarPlane;
 float4 ViewFrustumWorldRays[4];
 GlobalSDFData GlobalSDF;
@@ -66,6 +67,8 @@ void PS_Clear(out float4 Light : SV_Target0, out float4 RT0 : SV_Target1, out fl
 
 // GBuffer+Depth at 0-3 slots
 Buffer<float4> GlobalSurfaceAtlasObjects : register(t4);
+Texture3D<float> GlobalSDFTex[4] : register(t5);
+Texture3D<float> GlobalSDFMip[4] : register(t9);
 
 // Pixel shader for Global Surface Atlas shading with direct light contribution
 META_PS(true, FEATURE_LEVEL_SM5)
@@ -81,11 +84,10 @@ float4 PS_DirectLighting(AtlasVertexOutput input) : SV_Target
 	// Load GBuffer sample from atlas
 	GBufferData gBufferData = (GBufferData)0;
 	GBufferSample gBuffer = SampleGBuffer(gBufferData, atlasUV);
-
-	// Skip unlit pixels
 	BRANCH
 	if (gBuffer.ShadingModel == SHADING_MODEL_UNLIT)
 	{
+		// Skip unlit pixels
 		discard;
 		return 0;
 	}
@@ -102,11 +104,43 @@ float4 PS_DirectLighting(AtlasVertexOutput input) : SV_Target
 	float4x4 tileLocalToWorld = Inverse(tile.WorldToLocal);
 	gBuffer.WorldPos = mul(float4(gBufferTilePos, 1), tileLocalToWorld).xyz;
 
+	// Calculate shadowing
+	float3 L = Light.Direction;
+#if RADIAL_LIGHT
+	float3 toLight = Light.Position - gBuffer.WorldPos;
+	float toLightDst = length(toLight);
+	if (toLightDst >= Light.Radius)
+	{
+		// Skip texels outside the light influence range
+		discard;
+		return 0;
+	}
+	L = toLight / toLightDst;
+#else
+	float toLightDst = GLOBAL_SDF_WORLD_SIZE;
+#endif
 	float4 shadowMask = 1;
-	BRANCH
 	if (Light.CastShadows > 0)
 	{
-		// TODO: calculate shadow for the light (use Global SDF)
+		float NoL = dot(gBuffer.Normal, L);
+		float shadowBias = 10.0f;
+		float bias = 2 * shadowBias * saturate(1 - NoL) + shadowBias;
+		BRANCH
+		if (NoL > 0)
+		{
+			// TODO: try using shadow map for on-screen pixels
+			// TODO: try using cone trace with Global SDF for smoother shadow (eg. for sun shadows or for area lights)
+
+			// Shot a ray from light into texel to see if there is any occluder
+			GlobalSDFTrace trace;
+			trace.Init(gBuffer.WorldPos + gBuffer.Normal * shadowBias, L, bias, toLightDst - bias);
+			GlobalSDFHit hit = RayTraceGlobalSDF(GlobalSDF, GlobalSDFTex, GlobalSDFMip, trace);
+			shadowMask = hit.IsHit() ? LightShadowsStrengthOneMinus : 1;
+		}
+		else
+		{
+			shadowMask = 0;
+		}
 	}
 
 	// Calculate lighting

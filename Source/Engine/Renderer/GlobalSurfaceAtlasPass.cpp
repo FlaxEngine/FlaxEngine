@@ -32,7 +32,8 @@ PACK_STRUCT(struct Data0
     {
     Vector3 ViewWorldPos;
     float ViewNearPlane;
-    Vector3 Padding00;
+    Vector2 Padding00;
+    float LightShadowsStrength;
     float ViewFarPlane;
     Vector4 ViewFrustumWorldRays[4];
     GlobalSignDistanceFieldPass::GlobalSDFData GlobalSDF;
@@ -51,7 +52,7 @@ PACK_STRUCT(struct AtlasTileVertex
 struct GlobalSurfaceAtlasTile : RectPack<GlobalSurfaceAtlasTile, uint16>
 {
     Vector3 ViewDirection;
-    Vector3 ViewPosition; // TODO: use from ViewMatrix
+    Vector3 ViewPosition;
     Vector3 ViewBoundsSize;
     Matrix ViewMatrix;
 
@@ -428,7 +429,6 @@ bool GlobalSurfaceAtlasPass::Render(RenderContext& renderContext, GPUContext* co
 
                             // Insert tile into atlas
                             auto* tile = surfaceAtlasData.AtlasTiles->Insert(tileResolution, tileResolution, 0, &surfaceAtlasData, e.Actor, tileIndex);
-                            // TODO: try to perform atlas defragmentation if it's full (eg. max once per ~10s)
                             if (tile)
                             {
                                 if (!object)
@@ -680,7 +680,10 @@ bool GlobalSurfaceAtlasPass::Render(RenderContext& renderContext, GPUContext* co
 
         // Copy emissive light into the final direct lighting atlas
         // TODO: test perf diff when manually copying only dirty object tiles and dirty light tiles
-        context->CopyTexture(surfaceAtlasData.AtlasDirectLight, 0, 0, 0, 0, surfaceAtlasData.AtlasEmissive, 0);
+        {
+            PROFILE_GPU_CPU("Copy Emissive");
+            context->CopyTexture(surfaceAtlasData.AtlasDirectLight, 0, 0, 0, 0, surfaceAtlasData.AtlasEmissive, 0);
+        }
 
         context->SetViewportAndScissors(Viewport(0, 0, resolution, resolution));
         context->SetRenderTarget(surfaceAtlasData.AtlasDirectLight->View());
@@ -689,6 +692,11 @@ bool GlobalSurfaceAtlasPass::Render(RenderContext& renderContext, GPUContext* co
         context->BindSR(2, surfaceAtlasData.AtlasGBuffer2->View());
         context->BindSR(3, surfaceAtlasData.AtlasDepth->View());
         context->BindSR(4, surfaceAtlasData.ObjectsBuffer.GetBuffer()->View());
+        for (int32 i = 0; i < 4; i++)
+        {
+            context->BindSR(i + 5, bindingDataSDF.Cascades[i]->ViewVolume());
+            context->BindSR(i + 9, bindingDataSDF.CascadeMips[i]->ViewVolume());
+        }
         context->BindCB(0, _cb0);
         Data0 data;
         data.ViewWorldPos = renderContext.View.Position;
@@ -717,6 +725,7 @@ bool GlobalSurfaceAtlasPass::Render(RenderContext& renderContext, GPUContext* co
             const bool useShadow = CanRenderShadow(renderContext.View, light);
             // TODO: test perf/quality when using Shadow Map for directional light (ShadowsPass::Instance()->LastDirLightShadowMap) instead of Global SDF trace
             light.SetupLightData(&data.Light, useShadow);
+            data.LightShadowsStrength = 1.0f - light.ShadowsStrength;
             context->UpdateCB(_cb0, &data);
             context->SetState(_psDirectLighting0);
             VB_DRAW();
@@ -743,6 +752,7 @@ bool GlobalSurfaceAtlasPass::Render(RenderContext& renderContext, GPUContext* co
             // Draw draw light
             const bool useShadow = CanRenderShadow(renderContext.View, light);
             light.SetupLightData(&data.Light, useShadow);
+            data.LightShadowsStrength = 1.0f - light.ShadowsStrength;
             context->UpdateCB(_cb0, &data);
             context->SetState(_psDirectLighting1);
             VB_DRAW();
@@ -769,6 +779,7 @@ bool GlobalSurfaceAtlasPass::Render(RenderContext& renderContext, GPUContext* co
             // Draw draw light
             const bool useShadow = CanRenderShadow(renderContext.View, light);
             light.SetupLightData(&data.Light, useShadow);
+            data.LightShadowsStrength = 1.0f - light.ShadowsStrength;
             context->UpdateCB(_cb0, &data);
             context->SetState(_psDirectLighting1);
             VB_DRAW();
@@ -778,6 +789,8 @@ bool GlobalSurfaceAtlasPass::Render(RenderContext& renderContext, GPUContext* co
     }
 
     // TODO: indirect lighting apply to get infinite bounces for GI
+
+    // TODO: explore atlas tiles optimization with feedback from renderer (eg. when tile is sampled by GI/Reflections mark it as used, then sort tiles by importance and prioritize updates for ones frequently used)
 
 #undef WRITE_TILE
     return false;
