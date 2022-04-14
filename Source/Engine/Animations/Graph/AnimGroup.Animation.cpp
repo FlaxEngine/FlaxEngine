@@ -1924,6 +1924,8 @@ void AnimGraphExecutor::ProcessGroupAnimation(Box* boxBase, Node* nodeBase, Valu
                     bucket.TimePosition = 0.0f;
                     bucket.BlendInPosition = 0.0f;
                     bucket.BlendOutPosition = 0.0f;
+                    bucket.LoopsDone = 0;
+                    bucket.LoopsLeft = slot.LoopCount;
                     break;
                 }
             }
@@ -1940,18 +1942,27 @@ void AnimGraphExecutor::ProcessGroupAnimation(Box* boxBase, Node* nodeBase, Valu
         ASSERT(slot.Animation && slot.Animation->IsLoaded());
         const float deltaTime = slot.Pause ? 0.0f : context.DeltaTime * slot.Speed;
         const float length = anim->GetLength();
+        const bool loop = bucket.LoopsLeft != 0;
         float newTimePos = bucket.TimePosition + deltaTime;
         if (newTimePos >= length)
         {
-            // End playing animation
-            value = tryGetValue(node->GetBox(1), Value::Null);
-            bucket.Index = -1;
-            slot.Animation = nullptr;
-            return;
+            if (bucket.LoopsLeft == 0)
+            {
+                // End playing animation
+                value = tryGetValue(node->GetBox(1), Value::Null);
+                bucket.Index = -1;
+                slot.Animation = nullptr;
+                return;
+            }
+
+            // Loop animation
+            if (bucket.LoopsLeft > 0)
+                bucket.LoopsLeft--;
+            bucket.LoopsDone++;
         }
-        value = SampleAnimation(node, false, length, 0.0f, bucket.TimePosition, newTimePos, anim, slot.Speed);
+        value = SampleAnimation(node, loop, length, 0.0f, bucket.TimePosition, newTimePos, anim, slot.Speed);
         bucket.TimePosition = newTimePos;
-        if (slot.BlendOutTime > 0.0f && length - slot.BlendOutTime < bucket.TimePosition)
+        if (bucket.LoopsLeft == 0 && slot.BlendOutTime > 0.0f && length - slot.BlendOutTime < bucket.TimePosition)
         {
             // Blend out
             auto input = tryGetValue(node->GetBox(1), Value::Null);
@@ -1959,7 +1970,7 @@ void AnimGraphExecutor::ProcessGroupAnimation(Box* boxBase, Node* nodeBase, Valu
             const float alpha = Math::Saturate(bucket.BlendOutPosition / slot.BlendOutTime);
             value = Blend(node, value, input, alpha, AlphaBlendMode::HermiteCubic);
         }
-        else if (slot.BlendInTime > 0.0f && bucket.BlendInPosition < slot.BlendInTime)
+        else if (bucket.LoopsDone == 0 && slot.BlendInTime > 0.0f && bucket.BlendInPosition < slot.BlendInTime)
         {
             // Blend in
             auto input = tryGetValue(node->GetBox(1), Value::Null);

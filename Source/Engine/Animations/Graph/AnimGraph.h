@@ -260,6 +260,7 @@ struct FLAXENGINE_API AnimGraphSlot
     float Speed = 1.0f;
     float BlendInTime = 0.0f;
     float BlendOutTime = 0.0f;
+    int32 LoopCount = 0;
     bool Pause = false;
 };
 
@@ -314,6 +315,8 @@ public:
         float TimePosition;
         float BlendInPosition;
         float BlendOutPosition;
+        int32 LoopsDone;
+        int32 LoopsLeft;
     };
 
     /// <summary>

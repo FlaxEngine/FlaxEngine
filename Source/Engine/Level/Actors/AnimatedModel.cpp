@@ -325,7 +325,7 @@ void AnimatedModel::ClearBlendShapeWeights()
     _blendShapes.Clear();
 }
 
-void AnimatedModel::PlaySlotAnimation(const StringView& slotName, Animation* anim, float speed, float blendInTime, float blendOutTime)
+void AnimatedModel::PlaySlotAnimation(const StringView& slotName, Animation* anim, float speed, float blendInTime, float blendOutTime, int32 loopCount)
 {
     CHECK(anim);
     for (auto& slot : GraphInstance.Slots)
@@ -334,6 +334,7 @@ void AnimatedModel::PlaySlotAnimation(const StringView& slotName, Animation* ani
         {
             slot.Pause = false;
             slot.BlendInTime = blendInTime;
+            slot.LoopCount = loopCount;
             return;
         }
     }
@@ -351,6 +352,7 @@ void AnimatedModel::PlaySlotAnimation(const StringView& slotName, Animation* ani
     slot.Speed = speed;
     slot.BlendInTime = blendInTime;
     slot.BlendOutTime = blendOutTime;
+    slot.LoopCount = loopCount;
 }
 
 void AnimatedModel::StopSlotAnimation()
