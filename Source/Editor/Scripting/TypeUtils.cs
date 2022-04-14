@@ -233,7 +233,18 @@ namespace FlaxEditor.Scripting
         {
             if (string.IsNullOrEmpty(typeName))
                 return null;
-            return Type.GetType(typeName);
+            var assemblies = AppDomain.CurrentDomain.GetAssemblies();
+            for (int i = 0; i < assemblies.Length; i++)
+            {
+                var assembly = assemblies[i];
+                if (assembly != null)
+                {
+                    var type = assembly.GetType(typeName);
+                    if (type != null)
+                        return type;
+                }
+            }
+            return null;
         }
 
         /// <summary>
@@ -247,10 +258,18 @@ namespace FlaxEditor.Scripting
                 return ScriptType.Null;
 
             // C#/C++ types
+            var assemblies = AppDomain.CurrentDomain.GetAssemblies();
+            for (int i = 0; i < assemblies.Length; i++)
             {
-                var type = Type.GetType(typeName);
-                if (type != null)
-                    return new ScriptType(type);
+                var assembly = assemblies[i];
+                if (assembly != null)
+                {
+                    var type = assembly.GetType(typeName);
+                    if (type != null)
+                    {
+                        return new ScriptType(type);
+                    }
+                }
             }
 
             // Custom types
@@ -258,7 +277,9 @@ namespace FlaxEditor.Scripting
             {
                 var type = customTypesInfo.GetType(typeName);
                 if (type)
+                {
                     return type;
+                }
             }
 
             return ScriptType.Null;

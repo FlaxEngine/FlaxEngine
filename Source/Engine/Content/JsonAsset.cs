@@ -34,31 +34,37 @@ namespace FlaxEngine
             if (WaitForLoaded())
                 return null;
 
-            object obj = null;
             var dataTypeName = DataTypeName;
-            var type = Type.GetType(dataTypeName);
-            if (type != null)
+            var assemblies = AppDomain.CurrentDomain.GetAssemblies();
+            for (int i = 0; i < assemblies.Length; i++)
             {
-                try
+                var assembly = assemblies[i];
+                if (assembly != null)
                 {
-                    // Create instance
-                    obj = Activator.CreateInstance(type);
+                    var type = assembly.GetType(dataTypeName);
+                    if (type != null)
+                    {
+                        object obj = null;
+                        try
+                        {
+                            // Create instance
+                            obj = Activator.CreateInstance(type);
 
-                    // Deserialize object
-                    var data = Data;
-                    JsonSerializer.Deserialize(obj, data);
-                }
-                catch (Exception ex)
-                {
-                    Debug.LogException(ex, this);
+                            // Deserialize object
+                            var data = Data;
+                            JsonSerializer.Deserialize(obj, data);
+                        }
+                        catch (Exception ex)
+                        {
+                            Debug.LogException(ex, this);
+                        }
+                        return obj;
+                    }
                 }
             }
-            else
-            {
-                Debug.LogError(string.Format("Missing type '{0}' to create Json Asset instance.", dataTypeName), this);
-            }
 
-            return obj;
+            Debug.LogError(string.Format("Missing type '{0}' to create Json Asset instance.", dataTypeName), this);
+            return null;
         }
     }
 }
