@@ -163,7 +163,7 @@ bool MaterialGenerator::Generate(WriteStream& source, MaterialInfo& materialInfo
 
     // Cache data
     MaterialLayer* baseLayer = GetRootLayer();
-    MaterialGraphNode* baseNode = baseLayer->Root;
+    auto* baseNode = baseLayer->Root;
     _treeLayerVarName = baseLayer->GetVariableName(nullptr);
     _treeLayer = baseLayer;
     _graphStack.Add(&_treeLayer->Graph);
@@ -492,6 +492,21 @@ bool MaterialGenerator::Generate(WriteStream& source, MaterialInfo& materialInfo
     // Utilities
     {
         WRITE_FEATURES(Utilities);
+        Array<Graph*, InlinedAllocation<8>> graphs;
+        _functions.GetValues(graphs);
+        for (MaterialLayer* layer : _layers)
+            graphs.Add(&layer->Graph);
+        for (Graph* graph : graphs)
+        {
+            for (const MaterialGraph::Node& node : graph->Nodes)
+            {
+                if (node.Type == GRAPH_NODE_MAKE_TYPE(1, 38) && (bool)node.Values[1])
+                {
+                    // Custom Global Code
+                    _writer.Write((StringView)node.Values[0]);
+                }
+            }
+        }
         inputs[In_Utilities] = _writer.ToString();
         _writer.Clear();
     }

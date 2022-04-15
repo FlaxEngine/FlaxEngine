@@ -7,10 +7,6 @@
 #include "Engine/Core/Enums.h"
 #include "Engine/Visject/ShaderGraph.h"
 
-class MaterialGraphNode : public ShaderGraphNode<>
-{
-};
-
 class MaterialGraph : public ShaderGraph<>
 {
 };

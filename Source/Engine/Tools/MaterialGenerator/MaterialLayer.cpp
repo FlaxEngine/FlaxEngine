@@ -50,7 +50,7 @@ void MaterialLayer::Prepare()
             const auto node = &Graph.Nodes[i];
             if (node->Type == ROOT_NODE_TYPE)
             {
-                Root = (MaterialGraphNode*)node;
+                Root = node;
                 break;
             }
         }
@@ -159,7 +159,7 @@ MaterialLayer* MaterialLayer::Load(const Guid& id, ReadStream* graphData, const 
     {
         if (layer->Graph.Nodes[i].Type == ROOT_NODE_TYPE)
         {
-            layer->Root = (MaterialGraphNode*)&layer->Graph.Nodes[i];
+            layer->Root = &layer->Graph.Nodes[i];
             break;
         }
     }
@@ -233,7 +233,7 @@ void MaterialLayer::createRootNode()
 #undef INIT_BOX
 
     // Mark as root
-    Root = (MaterialGraphNode*)&rootNode;
+    Root = &rootNode;
 }
 
 #endif

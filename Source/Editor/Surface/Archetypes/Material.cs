@@ -192,7 +192,7 @@ namespace FlaxEditor.Surface.Archetypes
                     GetBox(MaterialNodeBoxes.SubsurfaceColor).Enabled = false;
                     break;
                 }
-                    default: throw new ArgumentOutOfRangeException();
+                default: throw new ArgumentOutOfRangeException();
                 }
             }
 
@@ -807,7 +807,26 @@ namespace FlaxEditor.Surface.Archetypes
                     NodeElementArchetype.Factory.Input(0, "RGB", true, typeof(Vector3), 0, 0),
                     NodeElementArchetype.Factory.Output(0, "HSV", typeof(Vector3), 1),
                 }
-            }
+            },
+            new NodeArchetype
+            {
+                TypeID = 38,
+                Title = "Custom Global Code",
+                Description = "Custom global HLSL shader code expression (placed before material shader code). Can contain includes to shader utilities or declare functions to reuse later.",
+                Flags = NodeFlags.MaterialGraph,
+                Size = new Vector2(300, 220),
+                DefaultValues = new object[]
+                {
+                    "// Here you can add HLSL code\nfloat4 GetCustomColor()\n{\n\treturn float4(1, 0, 0, 1);\n}",
+                    true,
+                },
+                Elements = new[]
+                {
+                    NodeElementArchetype.Factory.Bool(0, 0, 1),
+                    NodeElementArchetype.Factory.Text(20, 0, "Enabled"),
+                    NodeElementArchetype.Factory.TextBox(0, 20, 300, 200, 0),
+                }
+            },
         };
     }
 }
