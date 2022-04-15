@@ -274,6 +274,16 @@ namespace FlaxEditor.CustomEditors
             return element;
         }
 
+        internal LabelElement Header(HeaderAttribute header)
+        {
+            var element = Header(header.Text);
+            if (header.FontSize != -1)
+                element.Label.Font = new FontReference(element.Label.Font.Font, header.FontSize);
+            if (header.Color != 0)
+                element.Label.TextColor = Color.FromRGBA(header.Color);
+            return element;
+        }
+
         /// <summary>
         /// Adds new text box element.
         /// </summary>

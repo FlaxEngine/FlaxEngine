@@ -715,7 +715,7 @@ namespace FlaxEditor.CustomEditors.Editors
 
                 // Header
                 if (item.Header != null)
-                    itemLayout.Header(item.Header.Text);
+                    itemLayout.Header(item.Header);
 
                 try
                 {

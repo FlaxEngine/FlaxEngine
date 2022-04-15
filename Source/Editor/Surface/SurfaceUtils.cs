@@ -317,7 +317,7 @@ namespace FlaxEditor.Surface
 
                 // Header
                 if (e.Header != null)
-                    itemLayout.Header(e.Header.Text);
+                    itemLayout.Header(e.Header);
 
                 // Values container
                 var valueType = new ScriptType(e.Type);
