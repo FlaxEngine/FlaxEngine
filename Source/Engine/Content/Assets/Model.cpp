@@ -15,6 +15,7 @@
 #include "Engine/Debug/Exceptions/ArgumentOutOfRangeException.h"
 #include "Engine/Graphics/GPUDevice.h"
 #include "Engine/Graphics/Async/GPUTask.h"
+#include "Engine/Graphics/Async/Tasks/GPUUploadTextureMipTask.h"
 #include "Engine/Graphics/Textures/GPUTexture.h"
 #include "Engine/Graphics/Textures/TextureData.h"
 #include "Engine/Profiler/ProfilerCPU.h"
@@ -50,11 +51,6 @@ private:
     FlaxStorage::LockData _dataLock;
 
 public:
-    /// <summary>
-    /// Init
-    /// </summary>
-    /// <param name="model">Parent model</param>
-    /// <param name="lodIndex">LOD to stream index</param>
     StreamModelLODTask(Model* model, int32 lodIndex)
         : _asset(model)
         , _lodIndex(lodIndex)
@@ -63,21 +59,16 @@ public:
     }
 
 public:
-    // [ThreadPoolTask]
     bool HasReference(Object* resource) const override
     {
         return _asset == resource;
     }
 
-protected:
-    // [ThreadPoolTask]
     bool Run() override
     {
         AssetReference<Model> model = _asset.Get();
         if (model == nullptr)
-        {
             return true;
-        }
 
         // Get data
         BytesContainer data;
@@ -117,6 +108,42 @@ protected:
 
         // Base
         STREAM_TASK_BASE::OnEnd();
+    }
+};
+
+class StreamModelSDFTask : public GPUUploadTextureMipTask
+{
+private:
+    WeakAssetReference<Model> _asset;
+    FlaxStorage::LockData _dataLock;
+
+public:
+    StreamModelSDFTask(Model* model, GPUTexture* texture, const Span<byte>& data, int32 mipIndex, int32 rowPitch, int32 slicePitch)
+        : GPUUploadTextureMipTask(texture, mipIndex, data, rowPitch, slicePitch, false)
+        , _asset(model)
+        , _dataLock(model->Storage->Lock())
+    {
+    }
+
+    bool HasReference(Object* resource) const override
+    {
+        return _asset == resource;
+    }
+
+    Result run(GPUTasksContext* context) override
+    {
+        AssetReference<Model> model = _asset.Get();
+        if (model == nullptr)
+            return Result::MissingResources;
+        return GPUUploadTextureMipTask::run(context);
+    }
+
+    void OnEnd() override
+    {
+        _dataLock.Release();
+
+        // Base
+        GPUUploadTextureMipTask::OnEnd();
     }
 };
 
@@ -933,11 +960,8 @@ Asset::LoadResult Model::load()
                 ModelSDFMip mipData;
                 sdfStream.Read(&mipData);
                 void* mipBytes = sdfStream.Read(mipData.SlicePitch);
-                BytesContainer mipBytesData;
-                mipBytesData.Link((byte*)mipBytes, mipData.SlicePitch);
-                auto task = SDF.Texture->UploadMipMapAsync(mipBytesData, mipData.MipIndex, mipData.RowPitch, mipData.SlicePitch, false);
-                if (task)
-                    task->Start();
+                auto task = ::New<StreamModelSDFTask>(this, SDF.Texture, Span<byte>((byte*)mipBytes, mipData.SlicePitch), mipData.MipIndex, mipData.RowPitch, mipData.SlicePitch);
+                task->Start();
             }
             break;
         }
