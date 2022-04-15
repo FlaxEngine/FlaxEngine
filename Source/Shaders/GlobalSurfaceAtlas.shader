@@ -13,7 +13,7 @@ META_CB_BEGIN(0, Data)
 float3 ViewWorldPos;
 float ViewNearPlane;
 float2 Padding00;
-float LightShadowsStrengthOneMinus;
+float LightShadowsStrength;
 float ViewFarPlane;
 float4 ViewFrustumWorldRays[4];
 GlobalSDFData GlobalSDF;
@@ -131,11 +131,11 @@ float4 PS_DirectLighting(AtlasVertexOutput input) : SV_Target
 			// TODO: try using shadow map for on-screen pixels
 			// TODO: try using cone trace with Global SDF for smoother shadow (eg. for sun shadows or for area lights)
 
-			// Shot a ray from light into texel to see if there is any occluder
+			// Shot a ray from texel into the light to see if there is any occluder
 			GlobalSDFTrace trace;
 			trace.Init(gBuffer.WorldPos + gBuffer.Normal * shadowBias, L, bias, toLightDst - bias);
 			GlobalSDFHit hit = RayTraceGlobalSDF(GlobalSDF, GlobalSDFTex, GlobalSDFMip, trace);
-			shadowMask = hit.IsHit() ? LightShadowsStrengthOneMinus : 1;
+			shadowMask = hit.IsHit() ? LightShadowsStrength : 1;
 		}
 		else
 		{
