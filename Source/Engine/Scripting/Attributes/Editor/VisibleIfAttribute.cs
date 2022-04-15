@@ -27,7 +27,7 @@ namespace FlaxEngine
         }
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="HeaderAttribute"/> class.
+        /// Initializes a new instance of the <see cref="VisibleIfAttribute"/> class.
         /// </summary>
         /// <param name="memberName">The name of the field or property of the object. Must be a bool type.</param>
         /// <param name="invert">True if invert member value when computing the visibility value.</param>

@@ -96,7 +96,7 @@ namespace FlaxEngine
         /// <summary>
         /// Gets the font object described by the structure.
         /// </summary>
-        /// <returns>Th font or null if descriptor is invalid.</returns>
+        /// <returns>The font or null if descriptor is invalid.</returns>
         public Font GetFont()
         {
             if (_cachedFont)
