@@ -653,11 +653,9 @@ public:
     bool Remove(const KeyComparableType& key)
     {
         if (IsEmpty())
-            return true;
-
+            return false;
         FindPositionResult pos;
         FindPosition(key, pos);
-
         if (pos.ObjectIndex != -1)
         {
             _allocation.Get()[pos.ObjectIndex].Delete();
