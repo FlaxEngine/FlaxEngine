@@ -26,6 +26,9 @@ API_CLASS() class FLAXENGINE_API RenderBuffers : public ScriptingObject
 {
     DECLARE_SCRIPTING_TYPE(RenderBuffers);
 
+    /// <summary>
+    /// The custom rendering state.
+    /// </summary>
     class CustomBuffer : public Object
     {
     public:

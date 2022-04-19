@@ -289,7 +289,8 @@ void SceneRenderTask::OnCollectDrawCalls(RenderContext& renderContext)
     {
         if (_customActorsScene == nullptr)
             _customActorsScene = New<SceneRendering>();
-        _customActorsScene->Clear();
+        else
+            _customActorsScene->Clear();
         for (Actor* a : CustomActors)
             AddActorToSceneRendering(_customActorsScene, a);
         _customActorsScene->Draw(renderContext);
@@ -414,7 +415,7 @@ void SceneRenderTask::OnEnd(GPUContext* context)
     // Swap matrices
     View.PrevView = View.View;
     View.PrevProjection = View.Projection;
-    Matrix::Multiply(View.PrevView, View.PrevProjection, View.PrevViewProjection);
+    View.PrevViewProjection = View.ViewProjection();
 }
 
 bool SceneRenderTask::Resize(int32 width, int32 height)

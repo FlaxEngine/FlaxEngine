@@ -25,10 +25,7 @@ void SceneRendering::Draw(RenderContext& renderContext)
             if (view.RenderLayersMask.Mask & e.LayerMask && (e.NoCulling || frustum.Intersects(e.Bounds)) && e.Actor->GetStaticFlags() & view.StaticFlagsMask)
             {
 #if SCENE_RENDERING_USE_PROFILER
-                PROFILE_CPU();
-#if TRACY_ENABLE
-                ___tracy_scoped_zone.Name(*e.Actor->GetName(), e.Actor->GetName().Length());
-#endif
+                PROFILE_CPU_ACTOR(e.Actor);
 #endif
                 e.Actor->Draw(renderContext);
             }
@@ -42,10 +39,7 @@ void SceneRendering::Draw(RenderContext& renderContext)
             if (view.RenderLayersMask.Mask & e.LayerMask && (e.NoCulling || frustum.Intersects(e.Bounds)))
             {
 #if SCENE_RENDERING_USE_PROFILER
-                PROFILE_CPU();
-#if TRACY_ENABLE
-                ___tracy_scoped_zone.Name(*e.Actor->GetName(), e.Actor->GetName().Length());
-#endif
+                PROFILE_CPU_ACTOR(e.Actor);
 #endif
                 e.Actor->Draw(renderContext);
             }
@@ -88,6 +82,7 @@ void SceneRendering::Clear()
 int32 SceneRendering::AddActor(Actor* a)
 {
     int32 key = 0;
+    // TODO: track removedCount and skip searching for free entry if there is none
     for (; key < Actors.Count(); key++)
     {
         if (Actors[key].Actor == nullptr)

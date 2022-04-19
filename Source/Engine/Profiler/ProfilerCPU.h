@@ -403,9 +403,11 @@ struct TIsPODType<ProfilerCPU::Event>
 #ifdef TRACY_ENABLE
 #define PROFILE_CPU_SRC_LOC(srcLoc) tracy::ScopedZone ___tracy_scoped_zone( (tracy::SourceLocationData*)&(srcLoc) ); ScopeProfileBlockCPU ProfileBlockCPU((srcLoc).name)
 #define PROFILE_CPU_ASSET(asset) ZoneScoped; const StringView __tracy_asset_name((asset)->GetPath()); ZoneName(*__tracy_asset_name, __tracy_asset_name.Length())
+#define PROFILE_CPU_ACTOR(actor) ZoneScoped; const StringView __tracy_actor_name((actor)->GetName()); ZoneName(*__tracy_actor_name, __tracy_actor_name.Length())
 #else
 #define PROFILE_CPU_SRC_LOC(srcLoc) ScopeProfileBlockCPU ProfileBlockCPU((srcLoc).name)
 #define PROFILE_CPU_ASSET(asset)
+#define PROFILE_CPU_ACTOR(actor)
 #endif
 
 #else
@@ -415,5 +417,6 @@ struct TIsPODType<ProfilerCPU::Event>
 #define PROFILE_CPU_NAMED(name)
 #define PROFILE_CPU_SRC_LOC(srcLoc)
 #define PROFILE_CPU_ASSET(asset)
+#define PROFILE_CPU_ACTOR(actor)
 
 #endif
