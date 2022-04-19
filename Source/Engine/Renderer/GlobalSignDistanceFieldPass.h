@@ -45,6 +45,7 @@ private:
     int32 _modelsBufferCount;
     float _voxelSize;
     BoundingBox _cascadeBounds;
+    class GlobalSignDistanceFieldCustomBuffer* _sdfData;
 
 public:
     /// <summary>
@@ -73,7 +74,7 @@ public:
     void RenderDebug(RenderContext& renderContext, GPUContext* context, GPUTexture* output);
 
     // Rasterize Model SDF into the Global SDF. Call it from actor Draw() method during DrawPass::GlobalSDF.
-    void RasterizeModelSDF(const ModelBase::SDFData& sdf, const Matrix& localToWorld, const BoundingBox& objectBounds);
+    void RasterizeModelSDF(Actor* actor, const ModelBase::SDFData& sdf, const Matrix& localToWorld, const BoundingBox& objectBounds);
 
 private:
 #if COMPILE_WITH_DEV_ENV

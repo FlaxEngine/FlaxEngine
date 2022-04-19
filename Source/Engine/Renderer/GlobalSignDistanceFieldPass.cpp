@@ -17,13 +17,15 @@
 // Some of those constants must match in shader
 // TODO: try using R8 format for Global SDF
 #define GLOBAL_SDF_FORMAT PixelFormat::R16_Float
-#define GLOBAL_SDF_RASTERIZE_MODEL_MAX_COUNT 28
+#define GLOBAL_SDF_RASTERIZE_MODEL_MAX_COUNT 28 // The maximum amount of models to rasterize at once as a batch into Global SDF.
 #define GLOBAL_SDF_RASTERIZE_GROUP_SIZE 8
-#define GLOBAL_SDF_RASTERIZE_CHUNK_SIZE 32
-#define GLOBAL_SDF_RASTERIZE_CHUNK_MARGIN 4
+#define GLOBAL_SDF_RASTERIZE_CHUNK_SIZE 32 // Global SDF chunk size in voxels.
+#define GLOBAL_SDF_RASTERIZE_CHUNK_MARGIN 4 // The margin in voxels around objects for culling. Reduces artifacts but reduces performance.
+#define GLOBAL_SDF_RASTERIZE_MIP_FACTOR 4 // Global SDF mip resolution downscale factor.
 #define GLOBAL_SDF_MIP_GROUP_SIZE 4
-#define GLOBAL_SDF_MIP_FLOODS 5
+#define GLOBAL_SDF_MIP_FLOODS 5 // Amount of flood fill passes for mip.
 #define GLOBAL_SDF_DEBUG_CHUNKS 0
+#define GLOBAL_SDF_ACTOR_IS_STATIC(actor) ((actor->GetStaticFlags() & (StaticFlags::Lightmap | StaticFlags::Transform)) == (int32)(StaticFlags::Lightmap | StaticFlags::Transform))
 
 static_assert(GLOBAL_SDF_RASTERIZE_MODEL_MAX_COUNT % 4 == 0, "Must be multiple of 4 due to data packing for GPU constant buffer.");
 #if GLOBAL_SDF_DEBUG_CHUNKS
@@ -79,6 +81,7 @@ struct RasterizeModel
 
 struct RasterizeChunk
 {
+    bool Dynamic = false;
     int32 ModelsCount = 0;
     int32 Models[GLOBAL_SDF_RASTERIZE_MODEL_MAX_COUNT];
 };
@@ -91,6 +94,12 @@ struct RasterizeChunkKey
     int32 Layer;
     Int3 Coord;
 
+    FORCE_INLINE void NextLayer()
+    {
+        Layer++;
+        Hash += RasterizeChunkKeyHashResolution * RasterizeChunkKeyHashResolution * RasterizeChunkKeyHashResolution;
+    }
+
     friend bool operator==(const RasterizeChunkKey& a, const RasterizeChunkKey& b)
     {
         return a.Hash == b.Hash && a.Coord == b.Coord && a.Layer == b.Layer;
@@ -102,21 +111,97 @@ uint32 GetHash(const RasterizeChunkKey& key)
     return key.Hash;
 }
 
-class GlobalSignDistanceFieldCustomBuffer : public RenderBuffers::CustomBuffer
+struct CascadeData
+{
+    GPUTexture* Texture = nullptr;
+    GPUTexture* Mip = nullptr;
+    Vector3 Position;
+    float VoxelSize;
+    BoundingBox Bounds;
+    HashSet<RasterizeChunkKey> NonEmptyChunks;
+    HashSet<RasterizeChunkKey> StaticChunks;
+
+    FORCE_INLINE void OnSceneRenderingDirty(const BoundingBox& objectBounds)
+    {
+        if (StaticChunks.IsEmpty() || !Bounds.Intersects(objectBounds))
+            return;
+
+        BoundingBox objectBoundsCascade;
+        const float objectMargin = VoxelSize * GLOBAL_SDF_RASTERIZE_CHUNK_MARGIN;
+        Vector3::Clamp(objectBounds.Minimum - objectMargin, Bounds.Minimum, Bounds.Maximum, objectBoundsCascade.Minimum);
+        Vector3::Subtract(objectBoundsCascade.Minimum, Bounds.Minimum, objectBoundsCascade.Minimum);
+        Vector3::Clamp(objectBounds.Maximum + objectMargin, Bounds.Minimum, Bounds.Maximum, objectBoundsCascade.Maximum);
+        Vector3::Subtract(objectBoundsCascade.Maximum, Bounds.Minimum, objectBoundsCascade.Maximum);
+        const float chunkSize = VoxelSize * GLOBAL_SDF_RASTERIZE_CHUNK_SIZE;
+        const Int3 objectChunkMin(objectBoundsCascade.Minimum / chunkSize);
+        const Int3 objectChunkMax(objectBoundsCascade.Maximum / chunkSize);
+
+        // Invalidate static chunks intersecting with dirty bounds
+        RasterizeChunkKey key;
+        key.Layer = 0;
+        for (key.Coord.Z = objectChunkMin.Z; key.Coord.Z <= objectChunkMax.Z; key.Coord.Z++)
+        {
+            for (key.Coord.Y = objectChunkMin.Y; key.Coord.Y <= objectChunkMax.Y; key.Coord.Y++)
+            {
+                for (key.Coord.X = objectChunkMin.X; key.Coord.X <= objectChunkMax.X; key.Coord.X++)
+                {
+                    key.Hash = key.Coord.Z * (RasterizeChunkKeyHashResolution * RasterizeChunkKeyHashResolution) + key.Coord.Y * RasterizeChunkKeyHashResolution + key.Coord.X;
+                    StaticChunks.Remove(key);
+                }
+            }
+        }
+    }
+
+    ~CascadeData()
+    {
+        RenderTargetPool::Release(Texture);
+        RenderTargetPool::Release(Mip);
+    }
+};
+
+class GlobalSignDistanceFieldCustomBuffer : public RenderBuffers::CustomBuffer, public ISceneRenderingListener
 {
 public:
-    GPUTexture* Cascades[4] = {};
-    GPUTexture* CascadeMips[4] = {};
-    Vector3 Positions[4];
-    HashSet<RasterizeChunkKey> NonEmptyChunks[4];
+    CascadeData Cascades[4];
+    HashSet<ScriptingTypeHandle> ObjectTypes;
     GlobalSignDistanceFieldPass::BindingData Result;
 
-    ~GlobalSignDistanceFieldCustomBuffer()
+    FORCE_INLINE void OnSceneRenderingDirty(const BoundingBox& objectBounds)
     {
-        for (GPUTexture* cascade : Cascades)
-            RenderTargetPool::Release(cascade);
-        for (GPUTexture* mip : CascadeMips)
-            RenderTargetPool::Release(mip);
+        for (auto& cascade : Cascades)
+            cascade.OnSceneRenderingDirty(objectBounds);
+    }
+
+    // [ISceneRenderingListener]
+    void OnSceneRenderingAddActor(Actor* a) override
+    {
+        if (GLOBAL_SDF_ACTOR_IS_STATIC(a) && ObjectTypes.Contains(a->GetTypeHandle()))
+        {
+            OnSceneRenderingDirty(a->GetBox());
+        }
+    }
+
+    void OnSceneRenderingUpdateActor(Actor* a, const BoundingSphere& prevBounds) override
+    {
+        if (GLOBAL_SDF_ACTOR_IS_STATIC(a) && ObjectTypes.Contains(a->GetTypeHandle()))
+        {
+            OnSceneRenderingDirty(BoundingBox::FromSphere(prevBounds));
+            OnSceneRenderingDirty(a->GetBox());
+        }
+    }
+
+    void OnSceneRenderingRemoveActor(Actor* a) override
+    {
+        if (GLOBAL_SDF_ACTOR_IS_STATIC(a) && ObjectTypes.Contains(a->GetTypeHandle()))
+        {
+            OnSceneRenderingDirty(a->GetBox());
+        }
+    }
+
+    void OnSceneRenderingClear(SceneRendering* scene) override
+    {
+        for (auto& cascade : Cascades)
+            cascade.StaticChunks.Clear();
     }
 };
 
@@ -163,6 +248,8 @@ bool GlobalSignDistanceFieldPass::setupResources()
     // Check shader
     _cb0 = shader->GetCB(0);
     _cb1 = shader->GetCB(1);
+    if (!_cb0 || !_cb1)
+        return true;
     _csRasterizeModel0 = shader->GetCS("CS_RasterizeModel", 0);
     _csRasterizeModel1 = shader->GetCS("CS_RasterizeModel", 1);
     _csClearChunk = shader->GetCS("CS_ClearChunk");
@@ -248,8 +335,7 @@ bool GlobalSignDistanceFieldPass::Render(RenderContext& renderContext, GPUContex
 
     // TODO: configurable via graphics settings
     const int32 resolution = 256;
-    const int32 mipFactor = 4;
-    const int32 resolutionMip = Math::DivideAndRoundUp(resolution, mipFactor);
+    const int32 resolutionMip = Math::DivideAndRoundUp(resolution, GLOBAL_SDF_RASTERIZE_MIP_FACTOR);
     // TODO: configurable via postFx settings
     const float distanceExtent = 2000.0f;
     const float cascadesDistances[] = { distanceExtent, distanceExtent * 2.0f, distanceExtent * 4.0f, distanceExtent * 8.0f };
@@ -257,47 +343,59 @@ bool GlobalSignDistanceFieldPass::Render(RenderContext& renderContext, GPUContex
     // Initialize buffers
     auto desc = GPUTextureDescription::New3D(resolution, resolution, resolution, GLOBAL_SDF_FORMAT, GPUTextureFlags::ShaderResource | GPUTextureFlags::UnorderedAccess, 1);
     bool updated = false;
-    for (GPUTexture*& cascade : sdfData.Cascades)
+    for (auto& cascade : sdfData.Cascades)
     {
-        if (cascade && cascade->Width() != desc.Width)
+        GPUTexture*& texture = cascade.Texture;
+        if (texture && texture->Width() != desc.Width)
         {
-            RenderTargetPool::Release(cascade);
-            cascade = nullptr;
+            RenderTargetPool::Release(texture);
+            texture = nullptr;
         }
-        if (!cascade)
+        if (!texture)
         {
-            cascade = RenderTargetPool::Get(desc);
-            if (!cascade)
+            texture = RenderTargetPool::Get(desc);
+            if (!texture)
                 return true;
             updated = true;
-            PROFILE_GPU_CPU("Init");
-            context->ClearUA(cascade, Vector4::One);
         }
     }
     desc = GPUTextureDescription::New3D(resolutionMip, resolutionMip, resolutionMip, GLOBAL_SDF_FORMAT, GPUTextureFlags::ShaderResource | GPUTextureFlags::UnorderedAccess, 1);
-    for (GPUTexture*& cascadeMip : sdfData.CascadeMips)
+    for (auto& cascade : sdfData.Cascades)
     {
-        if (cascadeMip && cascadeMip->Width() != desc.Width)
+        GPUTexture*& texture = cascade.Mip;
+        if (texture && texture->Width() != desc.Width)
         {
-            RenderTargetPool::Release(cascadeMip);
-            cascadeMip = nullptr;
+            RenderTargetPool::Release(texture);
+            texture = nullptr;
         }
-        if (!cascadeMip)
+        if (!texture)
         {
-            cascadeMip = RenderTargetPool::Get(desc);
-            if (!cascadeMip)
+            texture = RenderTargetPool::Get(desc);
+            if (!texture)
                 return true;
             updated = true;
         }
     }
     GPUTexture* tmpMip = nullptr;
     if (updated)
-        LOG(Info, "Global SDF memory usage: {0} MB", (sdfData.Cascades[0]->GetMemoryUsage() + sdfData.CascadeMips[0]->GetMemoryUsage()) * ARRAY_COUNT(sdfData.Cascades) / 1024 / 1024);
+    {
+        PROFILE_GPU_CPU("Init");
+        for (auto& cascade : sdfData.Cascades)
+        {
+            cascade.NonEmptyChunks.Clear();
+            cascade.StaticChunks.Clear();
+            context->ClearUA(cascade.Texture, Vector4::One);
+            context->ClearUA(cascade.Mip, Vector4::One);
+        }
+        LOG(Info, "Global SDF memory usage: {0} MB", (sdfData.Cascades[0].Texture->GetMemoryUsage() + sdfData.Cascades[0].Mip->GetMemoryUsage()) * ARRAY_COUNT(sdfData.Cascades) / 1024 / 1024);
+    }
+    for (SceneRendering* scene : renderContext.List->Scenes)
+        sdfData.ListenSceneRendering(scene);
 
     // Rasterize world geometry into Global SDF
     renderContext.View.Pass = DrawPass::GlobalSDF;
     uint32 viewMask = renderContext.View.RenderLayersMask;
-    const bool useCache = !updated && !renderContext.Task->IsCameraCut;
+    const bool useCache = !updated;
     static_assert(GLOBAL_SDF_RASTERIZE_CHUNK_SIZE % GLOBAL_SDF_RASTERIZE_GROUP_SIZE == 0, "Invalid chunk size for Global SDF rasterization group size.");
     const int32 rasterizeChunks = Math::CeilToInt((float)resolution / (float)GLOBAL_SDF_RASTERIZE_CHUNK_SIZE);
     auto& chunks = ChunksCache;
@@ -306,24 +404,24 @@ bool GlobalSignDistanceFieldPass::Render(RenderContext& renderContext, GPUContex
     const uint64 cascadeFrequencies[] = { 2, 3, 5, 11 };
     //const uint64 cascadeFrequencies[] = { 1, 1, 1, 1 };
     for (int32 cascade = 0; cascade < 4; cascade++)
+    for (int32 cascadeIndex = 0; cascadeIndex < 4; cascadeIndex++)
     {
         // Reduce frequency of the updates
-        if (useCache && (Engine::FrameCount % cascadeFrequencies[cascade]) != 0)
+        if (useCache && (Engine::FrameCount % cascadeFrequencies[cascadeIndex]) != 0)
             continue;
-        const float distance = cascadesDistances[cascade];
+        auto& cascade = sdfData.Cascades[cascadeIndex];
+        const float distance = cascadesDistances[cascadeIndex];
         const float maxDistance = distance * 2;
         const float voxelSize = maxDistance / resolution;
-        const float snapping = voxelSize * mipFactor;
-        const Vector3 center = Vector3::Floor(renderContext.View.Position / snapping) * snapping;
-        // TODO: cascade scrolling on movement to reduce dirty chunks?
+        const float chunkSize = voxelSize * GLOBAL_SDF_RASTERIZE_CHUNK_SIZE;
+        static_assert(GLOBAL_SDF_RASTERIZE_CHUNK_SIZE % GLOBAL_SDF_RASTERIZE_MIP_FACTOR == 0, "Adjust chunk size to match the mip factor scale.");
+        const Vector3 center = Vector3::Floor(renderContext.View.Position / chunkSize) * chunkSize;
         //const Vector3 center = Vector3::Zero;
-        sdfData.Positions[cascade] = center;
         BoundingBox cascadeBounds(center - distance, center + distance);
         // TODO: add scene detail scale factor to PostFx settings (eg. to increase or decrease scene details and quality)
         const float minObjectRadius = Math::Max(20.0f, voxelSize * 0.5f); // Skip too small objects for this cascade
-        const float chunkSize = voxelSize * GLOBAL_SDF_RASTERIZE_CHUNK_SIZE;
-        GPUTextureView* cascadeView = sdfData.Cascades[cascade]->ViewVolume();
-        GPUTextureView* cascadeMipView = sdfData.CascadeMips[cascade]->ViewVolume();
+        GPUTextureView* cascadeView = cascade.Texture->ViewVolume();
+        GPUTextureView* cascadeMipView = cascade.Mip->ViewVolume();
 
         // Clear cascade before rasterization
         {
@@ -333,17 +431,26 @@ bool GlobalSignDistanceFieldPass::Render(RenderContext& renderContext, GPUContex
             _modelsTextures.Clear();
         }
 
+        // Check if cascade center has been moved
+        if (!(useCache && Vector3::NearEqual(cascade.Position, center, voxelSize)))
+        {
+            // TODO: optimize for moving camera (copy sdf for cached chunks)
+            cascade.StaticChunks.Clear();
+        }
+        cascade.Position = center;
+        cascade.VoxelSize = voxelSize;
+        cascade.Bounds = cascadeBounds;
+
         // Draw all objects from all scenes into the cascade
         _modelsBufferCount = 0;
         _voxelSize = voxelSize;
         _cascadeBounds = cascadeBounds;
+        _sdfData = &sdfData;
         {
             PROFILE_CPU_NAMED("Draw");
-            for (auto* scene : renderContext.List->Scenes)
+            for (SceneRendering* scene : renderContext.List->Scenes)
             {
-                // TODO: optimize for moving camera (copy sdf)
-                // TODO: if chunk is made of static objects only then mark it as static and skip from rendering during the next frame (will need to track objects dirty state in the SceneRendering)
-                for (auto& e : scene->Actors)
+                for (const auto& e : scene->Actors)
                 {
                     if (viewMask & e.LayerMask && e.Bounds.Radius >= minObjectRadius && CollisionsHelper::BoxIntersectsSphere(cascadeBounds, e.Bounds))
                     {
@@ -374,38 +481,62 @@ bool GlobalSignDistanceFieldPass::Render(RenderContext& renderContext, GPUContex
         data.MaxDistance = maxDistance;
         data.CascadeResolution = resolution;
         data.CascadeMipResolution = resolutionMip;
-        data.CascadeMipFactor = mipFactor;
+        data.CascadeMipFactor = GLOBAL_SDF_RASTERIZE_MIP_FACTOR;
         context->BindUA(0, cascadeView);
         context->BindSR(0, _modelsBuffer->GetBuffer() ? _modelsBuffer->GetBuffer()->View() : nullptr);
-        if (_cb1)
-            context->BindCB(1, _cb1);
+        context->BindCB(1, _cb1);
         const int32 chunkDispatchGroups = GLOBAL_SDF_RASTERIZE_CHUNK_SIZE / GLOBAL_SDF_RASTERIZE_GROUP_SIZE;
-        auto& nonEmptyChunks = sdfData.NonEmptyChunks[cascade];
+        bool anyChunkDispatch = false;
         {
             PROFILE_GPU_CPU("Clear Chunks");
-            for (auto it = nonEmptyChunks.Begin(); it.IsNotEnd(); ++it)
+            for (auto it = cascade.NonEmptyChunks.Begin(); it.IsNotEnd(); ++it)
             {
                 auto& key = it->Item;
                 if (chunks.ContainsKey(key))
                     continue;
 
                 // Clear empty chunk
-                nonEmptyChunks.Remove(it);
+                cascade.NonEmptyChunks.Remove(it);
                 data.ChunkCoord = key.Coord * GLOBAL_SDF_RASTERIZE_CHUNK_SIZE;
-                if (_cb1)
-                    context->UpdateCB(_cb1, &data);
+                context->UpdateCB(_cb1, &data);
                 context->Dispatch(_csClearChunk, chunkDispatchGroups, chunkDispatchGroups, chunkDispatchGroups);
+                anyChunkDispatch = true;
                 // TODO: don't stall with UAV barrier on D3D12/Vulkan if UAVs don't change between dispatches
             }
         }
         // TODO: rasterize models into global sdf relative to the cascade origin to prevent fp issues on large worlds
         {
             PROFILE_GPU_CPU("Rasterize Chunks");
-            for (auto& e : chunks)
+
+            // Update static chunks
+            for (auto it = chunks.Begin(); it.IsNotEnd(); ++it)
             {
-                // Rasterize non-empty chunk (first layer so can override existing chunk data)
-                auto& key = e.Key;
-                if (key.Layer != 0)
+                auto& e = *it;
+                if (e.Key.Layer != 0)
+                    continue;
+                if (e.Value.Dynamic)
+                {
+                    // Remove static chunk with dynamic objects
+                    cascade.StaticChunks.Remove(e.Key);
+                }
+                else if (cascade.StaticChunks.Contains(e.Key))
+                {
+                    // Skip updating static chunk
+                    auto key = e.Key;
+                    while (chunks.Remove(key))
+                        key.NextLayer();
+                }
+                else
+                {
+                    // Add to cache (render now but skip next frame)
+                    cascade.StaticChunks.Add(e.Key);
+                }
+            }
+
+            // Rasterize non-empty chunk (first layer so can override existing chunk data)
+            for (const auto& e : chunks)
+            {
+                if (e.Key.Layer != 0)
                     continue;
                 auto& chunk = e.Value;
                 for (int32 i = 0; i < chunk.ModelsCount; i++)
@@ -415,30 +546,38 @@ bool GlobalSignDistanceFieldPass::Render(RenderContext& renderContext, GPUContex
                     context->BindSR(i + 1, _modelsTextures[model]);
                 }
                 ASSERT_LOW_LAYER(chunk.ModelsCount != 0);
-                data.ChunkCoord = key.Coord * GLOBAL_SDF_RASTERIZE_CHUNK_SIZE;
+                data.ChunkCoord = e.Key.Coord * GLOBAL_SDF_RASTERIZE_CHUNK_SIZE;
                 data.ModelsCount = chunk.ModelsCount;
-                if (_cb1)
-                    context->UpdateCB(_cb1, &data);
-                nonEmptyChunks.Add(key);
+                context->UpdateCB(_cb1, &data);
+                cascade.NonEmptyChunks.Add(e.Key);
                 context->Dispatch(_csRasterizeModel0, chunkDispatchGroups, chunkDispatchGroups, chunkDispatchGroups);
+                anyChunkDispatch = true;
                 // TODO: don't stall with UAV barrier on D3D12/Vulkan if UAVs don't change between dispatches (maybe cache per-shader write/read flags for all UAVs?)
 
 #if GLOBAL_SDF_DEBUG_CHUNKS
                 // Debug draw chunk bounds in world space with number of models in it
-                if (cascade + 1 == GLOBAL_SDF_DEBUG_CHUNKS)
+                if (cascadeIndex + 1 == GLOBAL_SDF_DEBUG_CHUNKS)
                 {
-                    Vector3 chunkMin = cascadeBounds.Minimum + Vector3(key.Coord) * chunkSize;
+                    int32 count = chunk.ModelsCount;
+                    RasterizeChunkKey tmp = e.Key;
+                    tmp.NextLayer();
+                    while (chunks.ContainsKey(tmp))
+                    {
+                        count += chunks[tmp].ModelsCount;
+                        tmp.NextLayer();
+                    }
+                    Vector3 chunkMin = cascadeBounds.Minimum + Vector3(e.Key.Coord) * chunkSize;
                     BoundingBox chunkBounds(chunkMin, chunkMin + chunkSize);
                     DebugDraw::DrawWireBox(chunkBounds, Color::Red, 0, false);
-                    DebugDraw::DrawText(StringUtils::ToString(chunk.ModelsCount), chunkBounds.GetCenter() + Vector3(0, 50.0f * key.Layer, 0), Color::Red);
+                    DebugDraw::DrawText(StringUtils::ToString(count), chunkBounds.GetCenter(), Color::Red);
                 }
 #endif
             }
-            for (auto& e : chunks)
+
+            // Rasterize non-empty chunk (additive layers so so need combine with existing chunk data)
+            for (const auto& e : chunks)
             {
-                // Rasterize non-empty chunk (additive layers so so need combine with existing chunk data)
-                auto& key = e.Key;
-                if (key.Layer == 0)
+                if (e.Key.Layer == 0)
                     continue;
                 auto& chunk = e.Value;
                 for (int32 i = 0; i < chunk.ModelsCount; i++)
@@ -448,19 +587,19 @@ bool GlobalSignDistanceFieldPass::Render(RenderContext& renderContext, GPUContex
                     context->BindSR(i + 1, _modelsTextures[model]);
                 }
                 ASSERT_LOW_LAYER(chunk.ModelsCount != 0);
-                data.ChunkCoord = key.Coord * GLOBAL_SDF_RASTERIZE_CHUNK_SIZE;
+                data.ChunkCoord = e.Key.Coord * GLOBAL_SDF_RASTERIZE_CHUNK_SIZE;
                 data.ModelsCount = chunk.ModelsCount;
-                if (_cb1)
-                    context->UpdateCB(_cb1, &data);
+                context->UpdateCB(_cb1, &data);
                 context->Dispatch(_csRasterizeModel1, chunkDispatchGroups, chunkDispatchGroups, chunkDispatchGroups);
+                anyChunkDispatch = true;
             }
         }
 
         // Generate mip out of cascade (empty chunks have distance value 1 which is incorrect so mip will be used as a fallback - lower res)
+        if (updated || anyChunkDispatch)
         {
             PROFILE_GPU_CPU("Generate Mip");
-            if (_cb1)
-                context->UpdateCB(_cb1, &data);
+            context->UpdateCB(_cb1, &data);
             context->ResetUA();
             context->BindSR(0, cascadeView);
             context->BindUA(0, cascadeMipView);
@@ -494,17 +633,19 @@ bool GlobalSignDistanceFieldPass::Render(RenderContext& renderContext, GPUContex
 
     // Copy results
     static_assert(ARRAY_COUNT(result.Cascades) == ARRAY_COUNT(sdfData.Cascades), "Invalid cascades count.");
-    static_assert(ARRAY_COUNT(result.CascadeMips) == ARRAY_COUNT(sdfData.CascadeMips), "Invalid cascades count.");
-    Platform::MemoryCopy(result.Cascades, sdfData.Cascades, sizeof(result.Cascades));
-    Platform::MemoryCopy(result.CascadeMips, sdfData.CascadeMips, sizeof(result.CascadeMips));
-    for (int32 cascade = 0; cascade < 4; cascade++)
+    static_assert(ARRAY_COUNT(result.CascadeMips) == ARRAY_COUNT(sdfData.Cascades), "Invalid cascades count.");
+    static_assert(ARRAY_COUNT(sdfData.Cascades) == 4, "Invalid cascades count.");
+    for (int32 cascadeIndex = 0; cascadeIndex < 4; cascadeIndex++)
     {
-        const float distance = cascadesDistances[cascade];
+        auto& cascade = sdfData.Cascades[cascadeIndex];
+        const float distance = cascadesDistances[cascadeIndex];
         const float maxDistance = distance * 2;
         const float voxelSize = maxDistance / resolution;
-        const Vector3 center = sdfData.Positions[cascade];
-        result.GlobalSDF.CascadePosDistance[cascade] = Vector4(center, distance);
-        result.GlobalSDF.CascadeVoxelSize.Raw[cascade] = voxelSize;
+        const Vector3 center = cascade.Position;
+        result.GlobalSDF.CascadePosDistance[cascadeIndex] = Vector4(center, distance);
+        result.GlobalSDF.CascadeVoxelSize.Raw[cascadeIndex] = voxelSize;
+        result.Cascades[cascadeIndex] = cascade.Texture;
+        result.CascadeMips[cascadeIndex] = cascade.Mip;
     }
     result.GlobalSDF.Resolution = (float)resolution;
     sdfData.Result = result;
@@ -522,7 +663,6 @@ void GlobalSignDistanceFieldPass::RenderDebug(RenderContext& renderContext, GPUC
 
     PROFILE_GPU_CPU("Global SDF Debug");
     const Vector2 outputSize(output->Size());
-    if (_cb0)
     {
         Data data;
         data.ViewWorldPos = renderContext.View.Position;
@@ -545,7 +685,7 @@ void GlobalSignDistanceFieldPass::RenderDebug(RenderContext& renderContext, GPUC
     context->DrawFullscreenTriangle();
 }
 
-void GlobalSignDistanceFieldPass::RasterizeModelSDF(const ModelBase::SDFData& sdf, const Matrix& localToWorld, const BoundingBox& objectBounds)
+void GlobalSignDistanceFieldPass::RasterizeModelSDF(Actor* actor, const ModelBase::SDFData& sdf, const Matrix& localToWorld, const BoundingBox& objectBounds)
 {
     if (!sdf.Texture)
         return;
@@ -596,8 +736,10 @@ void GlobalSignDistanceFieldPass::RasterizeModelSDF(const ModelBase::SDFData& sd
     _modelsTextures.Add(sdf.Texture->ViewVolume());
 
     // Inject object into the intersecting cascade chunks
+    _sdfData->ObjectTypes.Add(actor->GetTypeHandle());
     RasterizeChunkKey key;
     auto& chunks = ChunksCache;
+    const bool dynamic = !GLOBAL_SDF_ACTOR_IS_STATIC(actor);
     for (key.Coord.Z = objectChunkMin.Z; key.Coord.Z <= objectChunkMax.Z; key.Coord.Z++)
     {
         for (key.Coord.Y = objectChunkMin.Y; key.Coord.Y <= objectChunkMax.Y; key.Coord.Y++)
@@ -607,12 +749,12 @@ void GlobalSignDistanceFieldPass::RasterizeModelSDF(const ModelBase::SDFData& sd
                 key.Layer = 0;
                 key.Hash = key.Coord.Z * (RasterizeChunkKeyHashResolution * RasterizeChunkKeyHashResolution) + key.Coord.Y * RasterizeChunkKeyHashResolution + key.Coord.X;
                 RasterizeChunk* chunk = &chunks[key];
+                chunk->Dynamic |= dynamic;
 
                 // Move to the next layer if chunk has overflown
                 while (chunk->ModelsCount == GLOBAL_SDF_RASTERIZE_MODEL_MAX_COUNT)
                 {
-                    key.Layer++;
-                    key.Hash += RasterizeChunkKeyHashResolution * RasterizeChunkKeyHashResolution * RasterizeChunkKeyHashResolution;
+                    key.NextLayer();
                     chunk = &chunks[key];
                 }
 
