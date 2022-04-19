@@ -8,6 +8,7 @@
 #include "Engine/Level/Actor.h"
 
 class SceneRenderTask;
+class SceneRendering;
 struct PostProcessSettings;
 struct RenderContext;
 struct RenderView;
@@ -30,6 +31,28 @@ public:
     /// <param name="other">The other settings to blend to.</param>
     /// <param name="weight">The blending weight (normalized to 0-1 range).</param>
     virtual void Blend(PostProcessSettings& other, float weight) = 0;
+};
+
+/// <summary>
+/// Interface for objects to plug into Scene Rendering and listen for its evens such as static actors changes which are relevant for drawing cache.
+/// </summary>
+/// <seealso cref="SceneRendering"/>
+class FLAXENGINE_API ISceneRenderingListener
+{
+    friend SceneRendering;
+private:
+    Array<SceneRendering*, InlinedAllocation<8>> _scenes;
+public:
+    ~ISceneRenderingListener();
+
+    // Starts listening to the scene rendering events.
+    void ListenSceneRendering(SceneRendering* scene);
+
+    // Events called by Scene Rendering
+    virtual void OnSceneRenderingAddActor(Actor* a) = 0;
+    virtual void OnSceneRenderingUpdateActor(Actor* a, const BoundingSphere& prevBounds) = 0;
+    virtual void OnSceneRenderingRemoveActor(Actor* a) = 0;
+    virtual void OnSceneRenderingClear(SceneRendering* scene) = 0;
 };
 
 /// <summary>
@@ -58,6 +81,10 @@ private:
     Array<PhysicsDebugCallback> PhysicsDebug;
     Array<Actor*> ViewportIcons;
 #endif
+
+    // Listener - some rendering systems cache state of the scene (eg. in RenderBuffers::CustomBuffer), this extensions allows those systems to invalidate cache and handle scene changes
+    friend ISceneRenderingListener;
+    Array<ISceneRenderingListener*, InlinedAllocation<8>> _listeners;
 
 public:
     /// <summary>

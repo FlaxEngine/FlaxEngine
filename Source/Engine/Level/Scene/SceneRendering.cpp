@@ -10,6 +10,23 @@
 #include "Engine/Profiler/ProfilerCPU.h"
 #endif
 
+ISceneRenderingListener::~ISceneRenderingListener()
+{
+    for (SceneRendering* scene : _scenes)
+    {
+        scene->_listeners.Remove(this);
+    }
+}
+
+void ISceneRenderingListener::ListenSceneRendering(SceneRendering* scene)
+{
+    if (!_scenes.Contains(scene))
+    {
+        _scenes.Add(scene);
+        scene->_listeners.Add(this);
+    }
+}
+
 void SceneRendering::Draw(RenderContext& renderContext)
 {
     auto& view = renderContext.View;
@@ -73,6 +90,12 @@ void SceneRendering::CollectPostFxVolumes(RenderContext& renderContext)
 
 void SceneRendering::Clear()
 {
+    for (auto* listener : _listeners)
+    {
+        listener->OnSceneRenderingClear(this);
+        listener->_scenes.Remove(this);
+    }
+    _listeners.Clear();
     Actors.Clear();
 #if USE_EDITOR
     PhysicsDebug.Clear();
@@ -95,6 +118,8 @@ int32 SceneRendering::AddActor(Actor* a)
     e.LayerMask = a->GetLayerMask();
     e.Bounds = a->GetSphere();
     e.NoCulling = a->_drawNoCulling;
+    for (auto* listener : _listeners)
+        listener->OnSceneRenderingAddActor(a);
     return key;
 }
 
@@ -104,6 +129,8 @@ void SceneRendering::UpdateActor(Actor* a, int32 key)
         return;
     auto& e = Actors[key];
     ASSERT_LOW_LAYER(a == e.Actor);
+    for (auto* listener : _listeners)
+        listener->OnSceneRenderingUpdateActor(a, e.Bounds);
     e.LayerMask = a->GetLayerMask();
     e.Bounds = a->GetSphere();
 }
@@ -114,6 +141,8 @@ void SceneRendering::RemoveActor(Actor* a, int32& key)
     {
         auto& e = Actors[key];
         ASSERT_LOW_LAYER(a == e.Actor);
+        for (auto* listener : _listeners)
+            listener->OnSceneRenderingRemoveActor(a);
         e.Actor = nullptr;
         e.LayerMask = 0;
     }
