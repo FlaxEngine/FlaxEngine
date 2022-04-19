@@ -378,10 +378,10 @@ public:
 
         // Insert
         ASSERT(pos.FreeSlotIndex != -1);
-        auto bucket = &_allocation.Get()[pos.FreeSlotIndex];
-        bucket->Occupy(key);
+        Bucket& bucket = _allocation.Get()[pos.FreeSlotIndex];
+        bucket.Occupy(key);
         _elementsCount++;
-        return bucket->Value;
+        return bucket.Value;
     }
 
     /// <summary>
@@ -481,7 +481,7 @@ public:
 #endif
     void ClearDelete()
     {
-        for (auto i = Begin(); i.IsNotEnd(); ++i)
+        for (Iterator i = Begin(); i.IsNotEnd(); ++i)
         {
             if (i->Value)
                 Delete(i->Value);
@@ -553,14 +553,6 @@ public:
             minCapacity = DICTIONARY_DEFAULT_CAPACITY;
         const int32 capacity = _allocation.CalculateCapacityGrow(_size, minCapacity);
         SetCapacity(capacity, preserveContents);
-    }
-
-    /// <summary>
-    /// Cleanup collection data (changes size to 0 without data preserving).
-    /// </summary>
-    FORCE_INLINE void Cleanup()
-    {
-        SetCapacity(0, false);
     }
 
     /// <summary>
@@ -640,7 +632,7 @@ public:
     void Add(const Iterator& i)
     {
         ASSERT(&i._collection != this && i);
-        Bucket& bucket = *i;
+        const Bucket& bucket = *i;
         Add(bucket.Key, bucket.Value);
     }
 
@@ -693,7 +685,7 @@ public:
     int32 RemoveValue(const ValueType& value)
     {
         int32 result = 0;
-        for (auto i = Begin(); i.IsNotEnd(); ++i)
+        for (Iterator i = Begin(); i.IsNotEnd(); ++i)
         {
             if (i->Value == value)
             {
@@ -714,16 +706,11 @@ public:
     template<typename KeyComparableType>
     Iterator Find(const KeyComparableType& key) const
     {
-        if (HasItems())
-        {
-            const Bucket* data = _allocation.Get();
-            for (int32 i = 0; i < _size; i++)
-            {
-                if (data[i].IsOccupied() && data[i].Key == key)
-                    return Iterator(*this, i);
-            }
-        }
-        return End();
+        if (IsEmpty())
+            return End();
+        FindPositionResult pos;
+        FindPosition(key, pos);
+        return pos.ObjectIndex != -1 ? Iterator(*this, pos.ObjectIndex) : End();
     }
 
     /// <summary>
@@ -794,7 +781,7 @@ public:
     {
         Clear();
         SetCapacity(other.Capacity(), false);
-        for (auto i = other.Begin(); i != other.End(); ++i)
+        for (Iterator i = other.Begin(); i != other.End(); ++i)
             Add(i);
         ASSERT(Count() == other.Count());
         ASSERT(Capacity() == other.Capacity());
@@ -807,7 +794,7 @@ public:
     template<typename ArrayAllocation>
     void GetKeys(Array<KeyType, ArrayAllocation>& result) const
     {
-        for (auto i = Begin(); i.IsNotEnd(); ++i)
+        for (Iterator i = Begin(); i.IsNotEnd(); ++i)
             result.Add(i->Key);
     }
 
@@ -818,7 +805,7 @@ public:
     template<typename ArrayAllocation>
     void GetValues(Array<ValueType, ArrayAllocation>& result) const
     {
-        for (auto i = Begin(); i.IsNotEnd(); ++i)
+        for (Iterator i = Begin(); i.IsNotEnd(); ++i)
             result.Add(i->Value);
     }
 
@@ -893,7 +880,7 @@ protected:
         while (checksCount < _size)
         {
             // Empty bucket
-            auto& bucket = data[bucketIndex];
+            const Bucket& bucket = data[bucketIndex];
             if (bucket.IsEmpty())
             {
                 // Found place to insert
