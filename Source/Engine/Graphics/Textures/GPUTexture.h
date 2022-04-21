@@ -568,6 +568,11 @@ public:
     /// </summary>
     API_PROPERTY() void SetResidentMipLevels(int32 count);
     
+    /// <summary>
+    /// Event called when texture residency gets changed. Texture Mip gets loaded into GPU memory and is ready to use.
+    /// </summary>
+    Delegate<GPUTexture*> ResidentMipsChanged;
+
 protected:
 
     virtual bool OnInit() = 0;

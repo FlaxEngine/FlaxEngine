@@ -91,6 +91,7 @@ public:
 
         // Update residency level
         model->_loadedLODs++;
+        model->ResidencyChanged();
 
         return false;
     }
@@ -697,11 +698,8 @@ bool Model::Init(const Span<int32>& meshesCountPerLod)
 
     // Setup LODs
     for (int32 lodIndex = 0; lodIndex < LODs.Count(); lodIndex++)
-    {
         LODs[lodIndex].Dispose();
-    }
     LODs.Resize(meshesCountPerLod.Length());
-    _loadedLODs = meshesCountPerLod.Length();
 
     // Setup meshes
     for (int32 lodIndex = 0; lodIndex < meshesCountPerLod.Length(); lodIndex++)
@@ -719,6 +717,10 @@ bool Model::Init(const Span<int32>& meshesCountPerLod)
             lod.Meshes[meshIndex].Init(this, lodIndex, meshIndex, 0, BoundingBox::Zero, BoundingSphere::Empty, true);
         }
     }
+
+    // Update resource residency
+    _loadedLODs = meshesCountPerLod.Length();
+    ResidencyChanged();
 
     return false;
 }
@@ -836,6 +838,7 @@ Task* Model::CreateStreamingTask(int32 residency)
         for (int32 i = HighestResidentLODIndex(); i < LODs.Count() - residency; i++)
             LODs[i].Unload();
         _loadedLODs = residency;
+        ResidencyChanged();
     }
 
     return result;
@@ -945,7 +948,7 @@ Asset::LoadResult Model::load()
             sdfStream.Read(&data);
             if (!SDF.Texture)
                 SDF.Texture = GPUTexture::New();
-            if (SDF.Texture->Init(GPUTextureDescription::New3D(data.Width, data.Height, data.Depth, data.Format, GPUTextureFlags::ShaderResource | GPUTextureFlags::UnorderedAccess, data.MipLevels)))
+            if (SDF.Texture->Init(GPUTextureDescription::New3D(data.Width, data.Height, data.Depth, data.Format, GPUTextureFlags::ShaderResource, data.MipLevels)))
                 return LoadResult::Failed;
             SDF.LocalToUVWMul = data.LocalToUVWMul;
             SDF.LocalToUVWAdd = data.LocalToUVWAdd;

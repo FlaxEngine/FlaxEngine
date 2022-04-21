@@ -85,6 +85,7 @@ protected:
 
         // Update residency level
         model->_loadedLODs++;
+        model->ResidencyChanged();
 
         return false;
     }
@@ -676,11 +677,8 @@ bool SkinnedModel::Init(const Span<int32>& meshesCountPerLod)
 
     // Setup LODs
     for (int32 lodIndex = 0; lodIndex < LODs.Count(); lodIndex++)
-    {
         LODs[lodIndex].Dispose();
-    }
     LODs.Resize(meshesCountPerLod.Length());
-    _loadedLODs = meshesCountPerLod.Length();
 
     // Setup meshes
     for (int32 lodIndex = 0; lodIndex < meshesCountPerLod.Length(); lodIndex++)
@@ -698,6 +696,10 @@ bool SkinnedModel::Init(const Span<int32>& meshesCountPerLod)
             lod.Meshes[meshIndex].Init(this, lodIndex, meshIndex, 0, BoundingBox::Zero, BoundingSphere::Empty);
         }
     }
+
+    // Update resource residency
+    _loadedLODs = meshesCountPerLod.Length();
+    ResidencyChanged();
 
     return false;
 }
@@ -827,6 +829,7 @@ Task* SkinnedModel::CreateStreamingTask(int32 residency)
         for (int32 i = HighestResidentLODIndex(); i < LODs.Count() - residency; i++)
             LODs[i].Unload();
         _loadedLODs = residency;
+        ResidencyChanged();
     }
 
     return result;

@@ -814,4 +814,5 @@ void GPUTexture::SetResidentMipLevels(int32 count)
         return;
     _residentMipLevels = count;
     OnResidentMipsChanged();
+    ResidentMipsChanged(this);
 }
