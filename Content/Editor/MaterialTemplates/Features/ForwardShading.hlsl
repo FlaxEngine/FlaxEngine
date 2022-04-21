@@ -6,6 +6,10 @@
 #include "./Flax/LightingCommon.hlsl"
 #if USE_REFLECTIONS
 #include "./Flax/ReflectionsCommon.hlsl"
+#define MATERIAL_REFLECTIONS_SSR 1
+#if MATERIAL_REFLECTIONS == MATERIAL_REFLECTIONS_SSR
+#include "./Flax/SSR.hlsl"
+#endif
 #endif
 #include "./Flax/Lighting.hlsl"
 #include "./Flax/ShadowsSampling.hlsl"
@@ -93,9 +97,29 @@ float4 PS_Forward(PixelInput input) : SV_Target0
 		light += GetLighting(ViewPos, localLight, gBuffer, shadowMask, true, isSpotLight);
 	}
 
-#if USE_REFLECTIONS
 	// Calculate reflections
-	light.rgb += GetEnvProbeLighting(ViewPos, EnvProbe, EnvironmentProbe, gBuffer) * light.a;	
+#if USE_REFLECTIONS
+	float3 reflections = SampleReflectionProbe(ViewPos, EnvProbe, EnvironmentProbe, gBuffer.WorldPos, gBuffer.Normal, gBuffer.Roughness).rgb;
+
+#if MATERIAL_REFLECTIONS == MATERIAL_REFLECTIONS_SSR
+	// Screen Space Reflections
+	Texture2D sceneDepthTexture = MATERIAL_REFLECTIONS_SSR_DEPTH; // Material Generator inserts depth and color buffers and plugs it via internal define
+	Texture2D sceneColorTexture = MATERIAL_REFLECTIONS_SSR_COLOR;
+	float2 screenUV = materialInput.SvPosition.xy * ScreenSize.zw;
+	float stepSize = ScreenSize.z; // 1 / screenWidth
+	float maxSamples = 32;
+	float worldAntiSelfOcclusionBias = 0.1f;
+	float brdfBias = 0.82f;
+	float drawDistance = 5000.0f;
+	float3 hit = TraceSceenSpaceReflection(screenUV, gBuffer, sceneDepthTexture, ViewPos, ViewMatrix, ViewProjectionMatrix, stepSize, maxSamples, false, 0.0f, worldAntiSelfOcclusionBias, brdfBias, drawDistance);
+	if (hit.z > 0)
+	{
+		float3 screenColor = sceneColorTexture.SampleLevel(SamplerPointClamp, hit.xy, 0).rgb;
+		reflections = lerp(reflections, screenColor, hit.z);
+	}
+#endif
+
+	light.rgb += reflections * GetReflectionSpecularLighting(ViewPos, gBuffer) * light.a;	
 #endif
 
 	// Add lighting (apply ambient occlusion)

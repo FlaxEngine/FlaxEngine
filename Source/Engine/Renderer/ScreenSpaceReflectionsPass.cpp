@@ -42,12 +42,9 @@ PACK_STRUCT(struct Data
     float TemporalScale;
 
     float RayTraceStep;
-    float NoTemporalEffect;
+    float TemporalEffect;
     float Intensity;
     float FadeOutDistance;
-
-    Vector3 Dummy0;
-    float InvFadeDistance;
 
     Matrix ViewMatrix;
     Matrix ViewProjectionMatrix;
@@ -248,11 +245,10 @@ void ScreenSpaceReflectionsPass::Render(RenderContext& renderContext, GPUTexture
     data.MaxColorMiplevel = settings.UseColorBufferMips ? (float)colorBufferMips - 2.0f : 0.0f;
     data.RayTraceStep = static_cast<float>(settings.DepthResolution) / (float)width;
     data.Intensity = settings.Intensity;
-    data.FadeOutDistance = settings.FadeOutDistance;
-    data.InvFadeDistance = 1.0f / settings.FadeDistance;
+    data.FadeOutDistance = Math::Max(settings.FadeOutDistance, 100.0f);
     data.TemporalScale = settings.TemporalScale;
     data.TemporalResponse = settings.TemporalResponse;
-    data.NoTemporalEffect = useTemporal ? 0.0f : 1.0f;
+    data.TemporalEffect = useTemporal ? 1.0f : 0.0f;
     if (useTemporal)
     {
         const float time = Time::Draw.UnscaledTime.GetTotalSeconds();

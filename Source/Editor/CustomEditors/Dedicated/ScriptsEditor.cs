@@ -49,10 +49,10 @@ namespace FlaxEditor.CustomEditors.Dedicated
                 Parent = this,
                 Bounds = new Rectangle((Width - addScriptButtonWidth) / 2, 1, addScriptButtonWidth, 18),
             };
-            addScriptButton.ButtonClicked += AddScriptButtonOnClicked;
+            addScriptButton.ButtonClicked += OnAddScriptButtonClicked;
         }
 
-        private void AddScriptButtonOnClicked(Button button)
+        private void OnAddScriptButtonClicked(Button button)
         {
             var scripts = Editor.Instance.CodeEditing.Scripts.Get();
             if (scripts.Count == 0)

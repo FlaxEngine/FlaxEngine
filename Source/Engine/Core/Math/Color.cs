@@ -231,6 +231,20 @@ namespace FlaxEngine
         }
 
         /// <summary>
+        /// Creates <see cref="Color"/> from the RGBA value.
+        /// </summary>
+        /// <param name="rgb">The packed RGBA value.</param>
+        /// <returns>The color.</returns>
+        public static Color FromRGBA(uint rgb)
+        {
+            return new Color(
+                             ((rgb >> 16) & 0xff) / 255.0f,
+                             ((rgb >> 8) & 0xff) / 255.0f,
+                             (rgb & 0xff) / 255.0f,
+                             ((rgb >> 24) & 0xff) / 255.0f);
+        }
+
+        /// <summary>
         /// Gets the color value as the hexadecimal string.
         /// </summary>
         /// <returns></returns>

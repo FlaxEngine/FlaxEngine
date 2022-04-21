@@ -7,27 +7,35 @@ namespace FlaxEngine
 {
     partial class JsonAsset
     {
+        private object _instance;
+
         /// <summary>
-        /// Creates the serialized object instance from the json asset data.
+        /// Gets the instance of the serialized object from the json asset data. Cached internally.
         /// </summary>
-        /// <returns>The created object or null.</returns>
+        public object Instance => _instance ?? (_instance = CreateInstance());
+
+        /// <summary>
+        /// Creates a new instance of the serialized object from the json asset data.
+        /// </summary>
+        /// <remarks>Use <see cref="Instance"/> to get cached object.</remarks>
+        /// <returns>The new object or null if failed.</returns>
         public T CreateInstance<T>()
         {
             return (T)CreateInstance();
         }
 
         /// <summary>
-        /// Creates the serialized object instance from the json asset data.
+        /// Creates a new instance of the serialized object from the json asset data.
         /// </summary>
-        /// <returns>The created object or null.</returns>
+        /// <remarks>Use <see cref="Instance"/> to get cached object.</remarks>
+        /// <returns>The new object or null if failed.</returns>
         public object CreateInstance()
         {
             if (WaitForLoaded())
                 return null;
 
-            var assemblies = AppDomain.CurrentDomain.GetAssemblies();
             var dataTypeName = DataTypeName;
-
+            var assemblies = AppDomain.CurrentDomain.GetAssemblies();
             for (int i = 0; i < assemblies.Length; i++)
             {
                 var assembly = assemblies[i];
@@ -48,14 +56,14 @@ namespace FlaxEngine
                         }
                         catch (Exception ex)
                         {
-                            Debug.LogException(ex);
+                            Debug.LogException(ex, this);
                         }
-
                         return obj;
                     }
                 }
             }
 
+            Debug.LogError(string.Format("Missing type '{0}' to create Json Asset instance.", dataTypeName), this);
             return null;
         }
     }

@@ -406,11 +406,13 @@ void MaterialParameter::Bind(BindMeta& meta) const
             {
             case MaterialSceneTextures::SceneDepth:
                 view = meta.CanSampleDepth
-                           ? (GPUDevice::Instance->Limits.HasReadOnlyDepth ? meta.Buffers->DepthBuffer->ViewReadOnlyDepth() : meta.Buffers->DepthBuffer->View())
+                           ? meta.Buffers->DepthBuffer->GetDescription().Flags & GPUTextureFlags::ReadOnlyDepthView ? meta.Buffers->DepthBuffer->ViewReadOnlyDepth() : meta.Buffers->DepthBuffer->View()
                            : GPUDevice::Instance->GetDefaultWhiteTexture()->View();
                 break;
             case MaterialSceneTextures::AmbientOcclusion:
             case MaterialSceneTextures::BaseColor:
+            case MaterialSceneTextures::DiffuseColor:
+            case MaterialSceneTextures::SpecularColor:
                 view = meta.CanSampleGBuffer ? meta.Buffers->GBuffer0->View() : nullptr;
                 break;
             case MaterialSceneTextures::WorldNormal:

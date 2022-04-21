@@ -163,7 +163,7 @@ bool MaterialGenerator::Generate(WriteStream& source, MaterialInfo& materialInfo
 
     // Cache data
     MaterialLayer* baseLayer = GetRootLayer();
-    MaterialGraphNode* baseNode = baseLayer->Root;
+    auto* baseNode = baseLayer->Root;
     _treeLayerVarName = baseLayer->GetVariableName(nullptr);
     _treeLayer = baseLayer;
     _graphStack.Add(&_treeLayer->Graph);
@@ -398,6 +398,14 @@ bool MaterialGenerator::Generate(WriteStream& source, MaterialInfo& materialInfo
         _writer.Write(TEXT("#define MATERIAL_MASK_THRESHOLD ({0})\n"), baseLayer->MaskThreshold);
         _writer.Write(TEXT("#define CUSTOM_VERTEX_INTERPOLATORS_COUNT ({0})\n"), _vsToPsInterpolants.Count());
         _writer.Write(TEXT("#define MATERIAL_OPACITY_THRESHOLD ({0})\n"), baseLayer->OpacityThreshold);
+        if (materialInfo.BlendMode != MaterialBlendMode::Opaque && !(materialInfo.FeaturesFlags & MaterialFeaturesFlags::DisableReflections) && materialInfo.FeaturesFlags & MaterialFeaturesFlags::ScreenSpaceReflections)
+        {
+            // Inject depth and color buffers for Screen Space Reflections used by transparent material
+            auto sceneDepthTexture = findOrAddSceneTexture(MaterialSceneTextures::SceneDepth);
+            auto sceneColorTexture = findOrAddSceneTexture(MaterialSceneTextures::SceneColor);
+            _writer.Write(TEXT("#define MATERIAL_REFLECTIONS_SSR_DEPTH ({0})\n"), sceneDepthTexture.ShaderName);
+            _writer.Write(TEXT("#define MATERIAL_REFLECTIONS_SSR_COLOR ({0})\n"), sceneColorTexture.ShaderName);
+        }
         WRITE_FEATURES(Defines);
         inputs[In_Defines] = _writer.ToString();
         _writer.Clear();
@@ -447,6 +455,7 @@ bool MaterialGenerator::Generate(WriteStream& source, MaterialInfo& materialInfo
         }
         for (auto f : features)
         {
+            // Process SRV slots used in template
             const auto& text = Features[f].Inputs[(int32)FeatureTemplateInputsMapping::Resources];
             const Char* str = text.Get();
             int32 prevIdx = 0, idx = 0;
@@ -483,6 +492,21 @@ bool MaterialGenerator::Generate(WriteStream& source, MaterialInfo& materialInfo
     // Utilities
     {
         WRITE_FEATURES(Utilities);
+        Array<Graph*, InlinedAllocation<8>> graphs;
+        _functions.GetValues(graphs);
+        for (MaterialLayer* layer : _layers)
+            graphs.Add(&layer->Graph);
+        for (Graph* graph : graphs)
+        {
+            for (const MaterialGraph::Node& node : graph->Nodes)
+            {
+                if (node.Type == GRAPH_NODE_MAKE_TYPE(1, 38) && (bool)node.Values[1])
+                {
+                    // Custom Global Code
+                    _writer.Write((StringView)node.Values[0]);
+                }
+            }
+        }
         inputs[In_Utilities] = _writer.ToString();
         _writer.Clear();
     }

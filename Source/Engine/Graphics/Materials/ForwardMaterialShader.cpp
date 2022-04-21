@@ -70,7 +70,7 @@ void ForwardMaterialShader::Bind(BindParameters& params)
     MaterialParameter::BindMeta bindMeta;
     bindMeta.Context = context;
     bindMeta.Constants = cb;
-    bindMeta.Input = nullptr; // forward pass materials cannot sample scene color for now
+    bindMeta.Input = params.Input;
     bindMeta.Buffers = params.RenderContext.Buffers;
     bindMeta.CanSampleDepth = GPUDevice::Instance->Limits.HasReadOnlyDepth;
     bindMeta.CanSampleGBuffer = true;

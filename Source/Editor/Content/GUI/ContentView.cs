@@ -690,6 +690,30 @@ namespace FlaxEditor.Content.GUI
         }
 
         /// <inheritdoc />
+        public override bool OnCharInput(char c)
+        {
+            if (base.OnCharInput(c))
+                return true;
+
+            if (char.IsLetterOrDigit(c) && _items.Count != 0)
+            {
+                // Jump to the item starting with this character
+                c = char.ToLowerInvariant(c);
+                for (int i = 0; i < _items.Count; i++)
+                {
+                    var name = _items[i].ShortName;
+                    if (!string.IsNullOrEmpty(name) && char.ToLowerInvariant(name[0]) == c)
+                    {
+                        Select(_items[i]);
+                        break;
+                    }
+                }
+            }
+
+            return false;
+        }
+
+        /// <inheritdoc />
         protected override void PerformLayoutBeforeChildren()
         {
             float width = GetClientArea().Width;

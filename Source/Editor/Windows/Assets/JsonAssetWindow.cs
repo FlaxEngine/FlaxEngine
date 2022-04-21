@@ -1,5 +1,6 @@
 // Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
+using System;
 using FlaxEditor.Content;
 using FlaxEditor.CustomEditors;
 using FlaxEditor.GUI;
@@ -106,19 +107,50 @@ namespace FlaxEditor.Windows.Assets
         /// <inheritdoc />
         protected override void OnAssetLoaded()
         {
-            _object = Asset.CreateInstance();
+            _object = Asset.Instance;
+            if (_object == null)
+            {
+                // Hint developer about cause of failure
+                var dataTypeName = Asset.DataTypeName;
+                var type = Type.GetType(dataTypeName);
+                if (type != null)
+                {
+                    try
+                    {
+                        var obj = Activator.CreateInstance(type);
+                        var data = Asset.Data;
+                        FlaxEngine.Json.JsonSerializer.Deserialize(obj, data);
+                    }
+                    catch (Exception ex)
+                    {
+                        _presenter.NoSelectionText = "Failed to load asset. See log for more. " + ex.Message.Replace('\n', ' ');
+                    }
+                }
+                else
+                {
+                    _presenter.NoSelectionText = string.Format("Missing type '{0}'.", dataTypeName);
+                }
+            }
             _presenter.Select(_object);
             _undo.Clear();
             ClearEditedFlag();
 
             // Auto-close on scripting reload if json asset is from game scripts (it might be reloaded)
-            if (_object != null && FlaxEngine.Scripting.IsTypeFromGameScripts(_object.GetType()) && !_isRegisteredForScriptsReload)
+            if ((_object == null || FlaxEngine.Scripting.IsTypeFromGameScripts(_object.GetType())) && !_isRegisteredForScriptsReload)
             {
                 _isRegisteredForScriptsReload = true;
                 ScriptsBuilder.ScriptsReloadBegin += OnScriptsReloadBegin;
             }
 
             base.OnAssetLoaded();
+        }
+
+        /// <inheritdoc />
+        protected override void OnAssetLoadFailed()
+        {
+            _presenter.NoSelectionText = "Failed to load the asset.";
+
+            base.OnAssetLoadFailed();
         }
 
         /// <inheritdoc />

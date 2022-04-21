@@ -410,7 +410,7 @@ namespace FlaxEditor.Surface
                 // Header
                 var header = (HeaderAttribute)attributes.FirstOrDefault(x => x is HeaderAttribute);
                 if (header != null)
-                    itemLayout.Header(header.Text);
+                    itemLayout.Header(header);
 
                 var propertyValue = new CustomValueContainer
                 (

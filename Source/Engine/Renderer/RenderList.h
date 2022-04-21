@@ -570,9 +570,10 @@ public:
     /// </summary>
     /// <param name="renderContext">The rendering context.</param>
     /// <param name="listType">The collected draw calls list type.</param>
-    API_FUNCTION() FORCE_INLINE void ExecuteDrawCalls(API_PARAM(Ref) const RenderContext& renderContext, DrawCallsListType listType)
+    /// <param name="input">The input scene color. It's optional and used in forward/postFx rendering.</param>
+    API_FUNCTION() FORCE_INLINE void ExecuteDrawCalls(API_PARAM(Ref) const RenderContext& renderContext, DrawCallsListType listType, GPUTextureView* input = nullptr)
     {
-        ExecuteDrawCalls(renderContext, DrawCallsLists[(int32)listType]);
+        ExecuteDrawCalls(renderContext, DrawCallsLists[(int32)listType], input);
     }
 
     /// <summary>
@@ -580,7 +581,8 @@ public:
     /// </summary>
     /// <param name="renderContext">The rendering context.</param>
     /// <param name="list">The collected draw calls list.</param>
-    void ExecuteDrawCalls(const RenderContext& renderContext, DrawCallsList& list);
+    /// <param name="input">The input scene color. It's optional and used in forward/postFx rendering.</param>
+    void ExecuteDrawCalls(const RenderContext& renderContext, DrawCallsList& list, GPUTextureView* input = nullptr);
 };
 
 /// <summary>

@@ -123,7 +123,7 @@ CreateAssetResult CreateMaterial::Create(CreateAssetContext& context)
         if (context.AllocateChunk(SHADER_FILE_CHUNK_VISJECT_SURFACE))
             return CreateAssetResult::CannotAllocateChunk;
         layer->Graph.Nodes.EnsureCapacity(32);
-        layer->Root = (MaterialGraphNode*)&layer->Graph.Nodes[0];
+        layer->Root = &layer->Graph.Nodes[0];
         for (auto& box : layer->Root->Boxes)
             box.Parent = layer->Root;
         Meta11 meta;

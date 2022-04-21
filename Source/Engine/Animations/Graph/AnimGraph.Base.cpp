@@ -111,6 +111,8 @@ void SlotBucketInit(AnimGraphInstanceData::Bucket& bucket)
     bucket.Slot.TimePosition = 0.0f;
     bucket.Slot.BlendInPosition = 0.0f;
     bucket.Slot.BlendOutPosition = 0.0f;
+    bucket.Slot.LoopsDone = 0;
+    bucket.Slot.LoopsLeft = 0;
 }
 
 bool SortMultiBlend1D(const byte& a, const byte& b, AnimGraphNode* n)

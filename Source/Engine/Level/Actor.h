@@ -244,6 +244,12 @@ public:
         return result;
     }
 
+    /// <summary>
+    /// Destroys the children. Calls Object.Destroy on every child actor and unlinks them for this actor.
+    /// </summary>
+    /// <param name="timeLeft">The time left to destroy object (in seconds).</param>
+    API_FUNCTION(Attributes="NoAnimate") void DestroyChildren(float timeLeft = 0.0f);
+
 public:
 
     /// <summary>
