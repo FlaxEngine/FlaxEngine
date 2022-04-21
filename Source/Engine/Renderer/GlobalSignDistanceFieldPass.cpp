@@ -167,6 +167,15 @@ public:
     HashSet<GPUTexture*> SDFTextures;
     GlobalSignDistanceFieldPass::BindingData Result;
 
+    ~GlobalSignDistanceFieldCustomBuffer()
+    {
+        for (const auto& e : SDFTextures)
+        {
+            e.Item->Deleted.Unbind<GlobalSignDistanceFieldCustomBuffer, &GlobalSignDistanceFieldCustomBuffer::OnSDFTextureDeleted>(this);
+            e.Item->ResidentMipsChanged.Unbind<GlobalSignDistanceFieldCustomBuffer, &GlobalSignDistanceFieldCustomBuffer::OnSDFTextureResidentMipsChanged>(this);
+        }
+    }
+
     void OnSDFTextureDeleted(ScriptingObject* object)
     {
         auto* texture = (GPUTexture*)object;
