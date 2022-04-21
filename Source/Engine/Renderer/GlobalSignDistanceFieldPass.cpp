@@ -164,7 +164,31 @@ class GlobalSignDistanceFieldCustomBuffer : public RenderBuffers::CustomBuffer, 
 public:
     CascadeData Cascades[4];
     HashSet<ScriptingTypeHandle> ObjectTypes;
+    HashSet<GPUTexture*> SDFTextures;
     GlobalSignDistanceFieldPass::BindingData Result;
+
+    void OnSDFTextureDeleted(ScriptingObject* object)
+    {
+        auto* texture = (GPUTexture*)object;
+        if (SDFTextures.Remove(texture))
+        {
+            texture->Deleted.Unbind<GlobalSignDistanceFieldCustomBuffer, &GlobalSignDistanceFieldCustomBuffer::OnSDFTextureDeleted>(this);
+            texture->ResidentMipsChanged.Unbind<GlobalSignDistanceFieldCustomBuffer, &GlobalSignDistanceFieldCustomBuffer::OnSDFTextureResidentMipsChanged>(this);
+        }
+    }
+
+    void OnSDFTextureResidentMipsChanged(GPUTexture* texture)
+    {
+        // Stop tracking texture streaming once it gets fully loaded
+        if (texture->ResidentMipLevels() == texture->MipLevels())
+        {
+            OnSDFTextureDeleted(texture);
+
+            // Clear static chunks cache
+            for (auto& cascade : Cascades)
+                cascade.StaticChunks.Clear();
+        }
+    }
 
     FORCE_INLINE void OnSceneRenderingDirty(const BoundingBox& objectBounds)
     {
@@ -762,5 +786,13 @@ void GlobalSignDistanceFieldPass::RasterizeModelSDF(Actor* actor, const ModelBas
                 chunk->Models[chunk->ModelsCount++] = modelIndex;
             }
         }
+    }
+
+    // Track streaming for SDF textures used in static chunks to invalidate cache
+    if (!dynamic && sdf.Texture->ResidentMipLevels() != sdf.Texture->MipLevels() && !_sdfData->SDFTextures.Contains(sdf.Texture))
+    {
+        sdf.Texture->Deleted.Bind<GlobalSignDistanceFieldCustomBuffer, &GlobalSignDistanceFieldCustomBuffer::OnSDFTextureDeleted>(_sdfData);
+        sdf.Texture->ResidentMipsChanged.Bind<GlobalSignDistanceFieldCustomBuffer, &GlobalSignDistanceFieldCustomBuffer::OnSDFTextureResidentMipsChanged>(_sdfData);
+        _sdfData->SDFTextures.Add(sdf.Texture);
     }
 }

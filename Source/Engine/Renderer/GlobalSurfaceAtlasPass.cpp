@@ -371,6 +371,7 @@ bool GlobalSurfaceAtlasPass::Render(RenderContext& renderContext, GPUContext* co
         const float distanceScalingStart = 2000.0f; // Distance from camera at which the tiles resolution starts to be scaled down
         const float distanceScalingEnd = 5000.0f; // Distance from camera at which the tiles resolution end to be scaled down
         const float distanceScaling = 0.1f; // The scale for tiles at distanceScalingEnd and further away
+        // TODO: add DetailsScale param to adjust quality of scene details in Global Surface Atlas
         static_assert(GLOBAL_SURFACE_ATLAS_TILE_PADDING < minTileResolution, "Invalid tile size configuration.");
         for (auto* scene : renderContext.List->Scenes)
         {
