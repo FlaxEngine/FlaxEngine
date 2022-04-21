@@ -47,8 +47,8 @@ void ModelInstanceActor::OnEnable()
 
 void ModelInstanceActor::OnDisable()
 {
-    GetSceneRendering()->RemoveActor(this, _sceneRenderingKey);
-
     // Base
     Actor::OnDisable();
+
+    GetSceneRendering()->RemoveActor(this, _sceneRenderingKey);
 }

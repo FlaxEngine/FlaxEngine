@@ -477,7 +477,6 @@ bool GlobalSignDistanceFieldPass::Render(RenderContext& renderContext, GPUContex
         data.CascadeMipResolution = resolutionMip;
         data.CascadeMipFactor = GLOBAL_SDF_RASTERIZE_MIP_FACTOR;
         context->BindUA(0, cascadeView);
-        context->BindSR(0, _modelsBuffer->GetBuffer() ? _modelsBuffer->GetBuffer()->View() : nullptr);
         context->BindCB(1, _cb1);
         const int32 chunkDispatchGroups = GLOBAL_SDF_RASTERIZE_CHUNK_SIZE / GLOBAL_SDF_RASTERIZE_GROUP_SIZE;
         bool anyChunkDispatch = false;
@@ -533,6 +532,7 @@ bool GlobalSignDistanceFieldPass::Render(RenderContext& renderContext, GPUContex
                 PROFILE_GPU_CPU("Update Models");
                 _modelsBuffer->Flush(context);
             }
+            context->BindSR(0, _modelsBuffer->GetBuffer() ? _modelsBuffer->GetBuffer()->View() : nullptr);
 
             // Rasterize non-empty chunk (first layer so can override existing chunk data)
             for (const auto& e : chunks)
