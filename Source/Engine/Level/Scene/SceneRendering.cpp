@@ -6,6 +6,7 @@
 #include "Engine/Graphics/RenderTask.h"
 #include "Engine/Graphics/RenderView.h"
 #include "Engine/Renderer/RenderList.h"
+#include "Engine/Threading/Threading.h"
 #if SCENE_RENDERING_USE_PROFILER
 #include "Engine/Profiler/ProfilerCPU.h"
 #endif
@@ -29,6 +30,7 @@ void ISceneRenderingListener::ListenSceneRendering(SceneRendering* scene)
 
 void SceneRendering::Draw(RenderContext& renderContext)
 {
+    ScopeLock lock(Locker);
     auto& view = renderContext.View;
     const BoundingFrustum frustum = view.CullingFrustum;
     renderContext.List->Scenes.Add(this);
@@ -90,6 +92,7 @@ void SceneRendering::CollectPostFxVolumes(RenderContext& renderContext)
 
 void SceneRendering::Clear()
 {
+    ScopeLock lock(Locker);
     for (auto* listener : _listeners)
     {
         listener->OnSceneRenderingClear(this);
@@ -104,6 +107,7 @@ void SceneRendering::Clear()
 
 int32 SceneRendering::AddActor(Actor* a)
 {
+    ScopeLock lock(Locker);
     int32 key = 0;
     // TODO: track removedCount and skip searching for free entry if there is none
     for (; key < Actors.Count(); key++)
@@ -125,6 +129,7 @@ int32 SceneRendering::AddActor(Actor* a)
 
 void SceneRendering::UpdateActor(Actor* a, int32 key)
 {
+    ScopeLock lock(Locker);
     if (Actors.IsEmpty())
         return;
     auto& e = Actors[key];
@@ -137,6 +142,7 @@ void SceneRendering::UpdateActor(Actor* a, int32 key)
 
 void SceneRendering::RemoveActor(Actor* a, int32& key)
 {
+    ScopeLock lock(Locker);
     if (Actors.HasItems())
     {
         auto& e = Actors[key];

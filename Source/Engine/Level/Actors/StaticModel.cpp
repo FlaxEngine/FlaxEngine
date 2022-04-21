@@ -163,20 +163,46 @@ void StaticModel::RemoveVertexColors()
 
 void StaticModel::OnModelChanged()
 {
+    if (_residencyChangedModel)
+    {
+        _residencyChangedModel = nullptr;
+        Model->ResidencyChanged.Unbind<StaticModel, &StaticModel::OnModelResidencyChanged>(this);
+    }
     RemoveVertexColors();
     Entries.Release();
-
     if (Model && !Model->IsLoaded())
-    {
         UpdateBounds();
-    }
+    else if (!Model && _sceneRenderingKey != -1)
+        GetSceneRendering()->RemoveActor(this, _sceneRenderingKey);
 }
 
 void StaticModel::OnModelLoaded()
 {
     Entries.SetupIfInvalid(Model);
-
     UpdateBounds();
+    if (_sceneRenderingKey == -1 && _scene)
+    {
+        // Register for rendering but once the model has any LOD loaded
+        if (Model->GetLoadedLODs() == 0)
+        {
+            _residencyChangedModel = Model;
+            Model->ResidencyChanged.Bind<StaticModel, &StaticModel::OnModelResidencyChanged>(this);
+        }
+        else
+        {
+            _sceneRenderingKey = GetSceneRendering()->AddActor(this);
+        }
+    }
+}
+
+void StaticModel::OnModelResidencyChanged()
+{
+    if (_sceneRenderingKey == -1 && _scene && Model && Model->GetLoadedLODs() > 0)
+    {
+        _sceneRenderingKey = GetSceneRendering()->AddActor(this);
+        _residencyChangedModel = nullptr;
+        Model->ResidencyChanged.Unbind<StaticModel, &StaticModel::OnModelResidencyChanged>(this);
+    }
 }
 
 void StaticModel::UpdateBounds()
@@ -487,4 +513,29 @@ void StaticModel::OnTransformChanged()
 
     _transform.GetWorld(_world);
     UpdateBounds();
+}
+
+void StaticModel::OnEnable()
+{
+    if (_scene && Model && Model->IsLoaded() && Model->GetLoadedLODs() > 0 && _sceneRenderingKey == -1)
+        _sceneRenderingKey = GetSceneRendering()->AddActor(this);
+
+    // Skip ModelInstanceActor (add to SceneRendering manually)
+    Actor::OnEnable();
+}
+
+void StaticModel::OnDisable()
+{
+    // Skip ModelInstanceActor (add to SceneRendering manually)
+    Actor::OnDisable();
+
+    if (_sceneRenderingKey != -1)
+    {
+        GetSceneRendering()->RemoveActor(this, _sceneRenderingKey);
+    }
+    else if (_residencyChangedModel)
+    {
+        _residencyChangedModel = nullptr;
+        Model->ResidencyChanged.Unbind<StaticModel, &StaticModel::OnModelResidencyChanged>(this);
+    }
 }

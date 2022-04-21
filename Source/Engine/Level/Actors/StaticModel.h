@@ -25,6 +25,7 @@ private:
     byte _vertexColorsCount;
     Array<Color32> _vertexColorsData[MODEL_MAX_LODS];
     GPUBuffer* _vertexColorsBuffer[MODEL_MAX_LODS];
+    Model* _residencyChangedModel = nullptr;
 
 public:
 
@@ -182,6 +183,7 @@ private:
 
     void OnModelChanged();
     void OnModelLoaded();
+    void OnModelResidencyChanged();
     void UpdateBounds();
 
 public:
@@ -199,4 +201,6 @@ protected:
 
     // [ModelInstanceActor]
     void OnTransformChanged() override;
+    void OnEnable() override;
+    void OnDisable() override;
 };

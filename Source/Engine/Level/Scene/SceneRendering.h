@@ -6,6 +6,7 @@
 #include "Engine/Core/Collections/Array.h"
 #include "Engine/Core/Math/BoundingSphere.h"
 #include "Engine/Level/Actor.h"
+#include "Engine/Platform/CriticalSection.h"
 
 class SceneRenderTask;
 class SceneRendering;
@@ -75,6 +76,7 @@ public:
 
     Array<DrawActor> Actors;
     Array<IPostFxSettingsProvider*> PostFxProviders;
+    CriticalSection Locker;
 
 private:
 #if USE_EDITOR
