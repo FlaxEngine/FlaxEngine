@@ -89,6 +89,12 @@ void DynamicBuffer::Dispose()
     Data.Resize(0);
 }
 
+void DynamicStructuredBuffer::InitDesc(GPUBufferDescription& desc, int32 numElements)
+{
+    desc = GPUBufferDescription::Structured(numElements, _stride, _isUnorderedAccess);
+    desc.Usage = GPUResourceUsage::Dynamic;
+}
+
 DynamicTypedBuffer::DynamicTypedBuffer(uint32 initialCapacity, PixelFormat format, bool isUnorderedAccess, const String& name)
     : DynamicBuffer(initialCapacity, PixelFormatExtensions::SizeInBytes(format), name)
     , _format(format)
@@ -101,5 +107,5 @@ void DynamicTypedBuffer::InitDesc(GPUBufferDescription& desc, int32 numElements)
     auto bufferFlags = GPUBufferFlags::ShaderResource;
     if (_isUnorderedAccess)
         bufferFlags |= GPUBufferFlags::UnorderedAccess;
-    desc = GPUBufferDescription::Buffer(numElements * _stride, bufferFlags, _format, nullptr, _stride);
+    desc = GPUBufferDescription::Buffer(numElements * _stride, bufferFlags, _format, nullptr, _stride, GPUResourceUsage::Dynamic);
 }

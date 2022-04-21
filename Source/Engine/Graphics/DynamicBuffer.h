@@ -197,10 +197,7 @@ public:
 protected:
 
     // [DynamicBuffer]
-    void InitDesc(GPUBufferDescription& desc, int32 numElements) override
-    {
-        desc = GPUBufferDescription::Structured(numElements, _stride, _isUnorderedAccess);
-    }
+    void InitDesc(GPUBufferDescription& desc, int32 numElements) override;
 };
 
 /// <summary>
