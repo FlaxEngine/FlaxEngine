@@ -460,12 +460,6 @@ bool GlobalSignDistanceFieldPass::Render(RenderContext& renderContext, GPUContex
             }
         }
 
-        // Send models data to the GPU
-        {
-            PROFILE_GPU_CPU("Update Models");
-            _modelsBuffer->Flush(context);
-        }
-
         // Perform batched chunks rasterization
         if (!anyDraw)
         {
@@ -531,6 +525,13 @@ bool GlobalSignDistanceFieldPass::Render(RenderContext& renderContext, GPUContex
                     // Add to cache (render now but skip next frame)
                     cascade.StaticChunks.Add(e.Key);
                 }
+            }
+
+            // Send models data to the GPU
+            if (chunks.Count() != 0)
+            {
+                PROFILE_GPU_CPU("Update Models");
+                _modelsBuffer->Flush(context);
             }
 
             // Rasterize non-empty chunk (first layer so can override existing chunk data)
