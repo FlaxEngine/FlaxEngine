@@ -123,7 +123,7 @@ bool ModelTool::GenerateModelSDF(Model* inputModel, ModelData* modelData, float 
             *(uint8*)ptr = (uint8)v;
         };
     }
-    GPUTextureDescription textureDesc = GPUTextureDescription::New3D(resolution.X, resolution.Y, resolution.Z, format, GPUTextureFlags::ShaderResource | GPUTextureFlags::UnorderedAccess, mipCount);
+    GPUTextureDescription textureDesc = GPUTextureDescription::New3D(resolution.X, resolution.Y, resolution.Z, format, GPUTextureFlags::ShaderResource, mipCount);
     if (outputSDF)
     {
         *outputSDF = sdf;

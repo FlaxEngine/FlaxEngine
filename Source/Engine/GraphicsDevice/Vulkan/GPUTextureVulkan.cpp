@@ -425,29 +425,19 @@ void GPUTextureVulkan::initHandles()
     }
 }
 
-void GPUTextureVulkan::onResidentMipsChanged()
+void GPUTextureVulkan::OnResidentMipsChanged()
 {
-    // We support changing resident mip maps only for regular textures (render targets and depth buffers don't use that feature at all)
-    ASSERT(IsRegularTexture() && _handlesPerSlice.Count() == 1);
-    ASSERT(!IsVolume());
-
-    // Change view
-    auto& handle = _handlesPerSlice[0];
-    handle.Release();
+    // Update view
     VkExtent3D extent;
     extent.width = Width();
     extent.height = Height();
     extent.depth = Depth();
     const int32 firstMipIndex = MipLevels() - ResidentMipLevels();
     const int32 mipLevels = ResidentMipLevels();
-    if (IsCubeMap())
-    {
-        handle.Init(_device, this, _image, mipLevels, Format(), MultiSampleLevel(), extent, VK_IMAGE_VIEW_TYPE_CUBE, mipLevels, firstMipIndex, ArraySize());
-    }
-    else
-    {
-        handle.Init(_device, this, _image, mipLevels, Format(), MultiSampleLevel(), extent, VK_IMAGE_VIEW_TYPE_2D, mipLevels, firstMipIndex, ArraySize());
-    }
+    const VkImageViewType viewType = IsVolume() ? VK_IMAGE_VIEW_TYPE_3D : (IsCubeMap() ? VK_IMAGE_VIEW_TYPE_CUBE : VK_IMAGE_VIEW_TYPE_2D);
+    GPUTextureViewVulkan& view = IsVolume() ? _handleVolume : _handlesPerSlice[0];
+    view.Release();
+    view.Init(_device, this, _image, mipLevels, Format(), MultiSampleLevel(), extent, viewType, mipLevels, firstMipIndex, ArraySize());
 }
 
 void GPUTextureVulkan::OnReleaseGPU()

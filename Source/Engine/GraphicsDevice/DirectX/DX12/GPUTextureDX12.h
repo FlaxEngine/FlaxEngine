@@ -216,7 +216,7 @@ protected:
 
     // [GPUTexture]
     bool OnInit() override;
-    void onResidentMipsChanged() override;
+    void OnResidentMipsChanged() override;
     void OnReleaseGPU() override;
 };
 

@@ -813,5 +813,5 @@ void GPUTexture::SetResidentMipLevels(int32 count)
     if (_residentMipLevels == count || !IsRegularTexture())
         return;
     _residentMipLevels = count;
-    onResidentMipsChanged();
+    OnResidentMipsChanged();
 }

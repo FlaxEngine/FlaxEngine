@@ -688,7 +688,7 @@ void GlobalSignDistanceFieldPass::RenderDebug(RenderContext& renderContext, GPUC
 
 void GlobalSignDistanceFieldPass::RasterizeModelSDF(Actor* actor, const ModelBase::SDFData& sdf, const Matrix& localToWorld, const BoundingBox& objectBounds)
 {
-    if (!sdf.Texture)
+    if (!sdf.Texture || sdf.Texture->ResidentMipLevels() == 0)
         return;
 
     // Setup object data
