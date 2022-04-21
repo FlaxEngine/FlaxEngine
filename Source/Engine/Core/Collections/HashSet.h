@@ -480,7 +480,7 @@ public:
     bool Remove(const ItemType& item)
     {
         if (IsEmpty())
-            return true;
+            return false;
         FindPositionResult pos;
         FindPosition(item, pos);
         if (pos.ObjectIndex != -1)
