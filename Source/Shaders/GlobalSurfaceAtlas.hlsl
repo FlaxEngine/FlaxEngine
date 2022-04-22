@@ -4,7 +4,8 @@
 #include "./Flax/Collisions.hlsl"
 
 // This must match C++
-#define GLOBAL_SURFACE_ATLAS_OBJECT_SIZE (5 + 6 * 5) // Amount of float4s per-object
+#define GLOBAL_SURFACE_ATLAS_OBJECT_BUFFER_STRIDE 6 // Amount of float4s per-object
+#define GLOBAL_SURFACE_ATLAS_TILE_BUFFER_STRIDE 5 // Amount of float4s per-tile
 #define GLOBAL_SURFACE_ATLAS_TILE_NORMAL_THRESHOLD 0.1f // Cut-off value for tiles transitions blending during sampling
 #define GLOBAL_SURFACE_ATLAS_TILE_PROJ_PLANE_OFFSET 0.1f // Small offset to prevent clipping with the closest triangles (shifts near and far planes)
 
@@ -13,7 +14,6 @@ struct GlobalSurfaceTile
 	float4 AtlasRectUV;
 	float4x4 WorldToLocal;
 	float3 ViewBoundsSize;
-	bool Enabled;
 };
 
 struct GlobalSurfaceObject
@@ -22,24 +22,26 @@ struct GlobalSurfaceObject
 	float BoundsRadius;
 	float4x4 WorldToLocal;
 	float3 Extent;
+	uint TileIndices[6];
 };
 
 float4 LoadGlobalSurfaceAtlasObjectBounds(Buffer<float4> objects, uint objectIndex)
 {
 	// This must match C++
-	const uint objectStart = objectIndex * GLOBAL_SURFACE_ATLAS_OBJECT_SIZE;
+	const uint objectStart = objectIndex * GLOBAL_SURFACE_ATLAS_OBJECT_BUFFER_STRIDE;
 	return objects.Load(objectStart);
 }
 
 GlobalSurfaceObject LoadGlobalSurfaceAtlasObject(Buffer<float4> objects, uint objectIndex)
 {
 	// This must match C++
-	const uint objectStart = objectIndex * GLOBAL_SURFACE_ATLAS_OBJECT_SIZE;
+	const uint objectStart = objectIndex * GLOBAL_SURFACE_ATLAS_OBJECT_BUFFER_STRIDE;
 	float4 vector0 = objects.Load(objectStart + 0);
 	float4 vector1 = objects.Load(objectStart + 1);
 	float4 vector2 = objects.Load(objectStart + 2);
 	float4 vector3 = objects.Load(objectStart + 3);
 	float4 vector4 = objects.Load(objectStart + 4); // w unused
+	float4 vector5 = objects.Load(objectStart + 5); // w unused
 	GlobalSurfaceObject object = (GlobalSurfaceObject)0;
 	object.BoundsPosition = vector0.xyz;
 	object.BoundsRadius = vector0.w;
@@ -48,19 +50,27 @@ GlobalSurfaceObject LoadGlobalSurfaceAtlasObject(Buffer<float4> objects, uint ob
 	object.WorldToLocal[2] = float4(vector3.xyz, 0.0f);
 	object.WorldToLocal[3] = float4(vector1.w, vector2.w, vector3.w, 1.0f);
 	object.Extent = vector4.xyz;
+	uint vector5x = asuint(vector5.x);
+	uint vector5y = asuint(vector5.y);
+	uint vector5z = asuint(vector5.z);
+	object.TileIndices[0] = vector5x & 0xffff; // Limitation on max 65k active tiles
+	object.TileIndices[1] = vector5x >> 16;
+	object.TileIndices[2] = vector5y & 0xffff;
+	object.TileIndices[3] = vector5y >> 16;
+	object.TileIndices[4] = vector5z & 0xffff;
+	object.TileIndices[5] = vector5z >> 16;
 	return object;
 }
 
-GlobalSurfaceTile LoadGlobalSurfaceAtlasTile(Buffer<float4> objects, uint objectIndex, uint tileIndex)
+GlobalSurfaceTile LoadGlobalSurfaceAtlasTile(Buffer<float4> objects, uint tileIndex)
 {
 	// This must match C++
-	const uint objectStart = objectIndex * GLOBAL_SURFACE_ATLAS_OBJECT_SIZE;
-	const uint tileStart = objectStart + 5 + tileIndex * 5;
+	const uint tileStart = tileIndex * GLOBAL_SURFACE_ATLAS_TILE_BUFFER_STRIDE;
 	float4 vector0 = objects.Load(tileStart + 0);
 	float4 vector1 = objects.Load(tileStart + 1);
 	float4 vector2 = objects.Load(tileStart + 2);
 	float4 vector3 = objects.Load(tileStart + 3);
-	float4 vector4 = objects.Load(tileStart + 4);
+	float4 vector4 = objects.Load(tileStart + 4); // w unused
 	GlobalSurfaceTile tile = (GlobalSurfaceTile)0;
 	tile.AtlasRectUV = vector0.xyzw;
 	tile.WorldToLocal[0] = float4(vector1.xyz, 0.0f);
@@ -68,7 +78,6 @@ GlobalSurfaceTile LoadGlobalSurfaceAtlasTile(Buffer<float4> objects, uint object
 	tile.WorldToLocal[2] = float4(vector3.xyz, 0.0f);
 	tile.WorldToLocal[3] = float4(vector1.w, vector2.w, vector3.w, 1.0f);
 	tile.ViewBoundsSize = vector4.xyz;
-	tile.Enabled = vector4.w > 0;
 	return tile;
 }
 
@@ -138,7 +147,7 @@ float4 SampleGlobalSurfaceAtlasTile(const GlobalSurfaceAtlasData data, GlobalSur
 }
 
 // Samples the Global Surface Atlas and returns the lighting (with opacity) at the given world location (and direction).
-float4 SampleGlobalSurfaceAtlas(const GlobalSurfaceAtlasData data, Buffer<float4> objects, Texture2D depth, Texture2D atlas, float3 worldPosition, float3 worldNormal)
+float4 SampleGlobalSurfaceAtlas(const GlobalSurfaceAtlasData data, Buffer<float4> objects, Buffer<float4> tiles, Texture2D depth, Texture2D atlas, float3 worldPosition, float3 worldNormal)
 {
 	float4 result = float4(0, 0, 0, 0);
 	float surfaceThreshold = 20.0f; // Additional threshold between object or tile size compared with input data (error due to SDF or LOD incorrect appearance)
@@ -157,25 +166,24 @@ float4 SampleGlobalSurfaceAtlas(const GlobalSurfaceAtlasData data, Buffer<float4
 			continue;
 
 		// Sample tiles based on the directionality
-		// TODO: place enabled tiles mask in object data to skip reading disabled tiles
 		float3 localNormal = normalize(mul(worldNormal, (float3x3)object.WorldToLocal));
 		float3 localNormalSq = localNormal * localNormal;
-		if (localNormalSq.x > GLOBAL_SURFACE_ATLAS_TILE_NORMAL_THRESHOLD * GLOBAL_SURFACE_ATLAS_TILE_NORMAL_THRESHOLD)
+		uint tileIndex = object.TileIndices[localNormal.x > 0.0f ? 0 : 1];
+		if (localNormalSq.x > GLOBAL_SURFACE_ATLAS_TILE_NORMAL_THRESHOLD * GLOBAL_SURFACE_ATLAS_TILE_NORMAL_THRESHOLD && tileIndex != 0)
 		{
-			uint tileIndex = localNormal.x > 0.0f ? 0 : 1;
-			GlobalSurfaceTile tile = LoadGlobalSurfaceAtlasTile(objects, objectIndex, tileIndex);
+			GlobalSurfaceTile tile = LoadGlobalSurfaceAtlasTile(tiles, tileIndex);
 			result += SampleGlobalSurfaceAtlasTile(data, tile, depth, atlas, worldPosition, worldNormal, surfaceThreshold);
 		}
-		if (localNormalSq.y > GLOBAL_SURFACE_ATLAS_TILE_NORMAL_THRESHOLD * GLOBAL_SURFACE_ATLAS_TILE_NORMAL_THRESHOLD)
+		tileIndex = object.TileIndices[localNormal.y > 0.0f ? 2 : 3];
+		if (localNormalSq.y > GLOBAL_SURFACE_ATLAS_TILE_NORMAL_THRESHOLD * GLOBAL_SURFACE_ATLAS_TILE_NORMAL_THRESHOLD && tileIndex != 0)
 		{
-			uint tileIndex = localNormal.y > 0.0f ? 2 : 3;
-			GlobalSurfaceTile tile = LoadGlobalSurfaceAtlasTile(objects, objectIndex, tileIndex);
+			GlobalSurfaceTile tile = LoadGlobalSurfaceAtlasTile(tiles, tileIndex);
 			result += SampleGlobalSurfaceAtlasTile(data, tile, depth, atlas, worldPosition, worldNormal, surfaceThreshold);
 		}
-		if (localNormalSq.z > GLOBAL_SURFACE_ATLAS_TILE_NORMAL_THRESHOLD * GLOBAL_SURFACE_ATLAS_TILE_NORMAL_THRESHOLD)
+		tileIndex = object.TileIndices[localNormal.z > 0.0f ? 4 : 5];
+		if (localNormalSq.z > GLOBAL_SURFACE_ATLAS_TILE_NORMAL_THRESHOLD * GLOBAL_SURFACE_ATLAS_TILE_NORMAL_THRESHOLD && tileIndex != 0)
 		{
-			uint tileIndex = localNormal.z > 0.0f ? 4 : 5;
-			GlobalSurfaceTile tile = LoadGlobalSurfaceAtlasTile(objects, objectIndex, tileIndex);
+			GlobalSurfaceTile tile = LoadGlobalSurfaceAtlasTile(tiles, tileIndex);
 			result += SampleGlobalSurfaceAtlasTile(data, tile, depth, atlas, worldPosition, worldNormal, surfaceThreshold);
 		}
 	}

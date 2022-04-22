@@ -67,8 +67,9 @@ void PS_Clear(out float4 Light : SV_Target0, out float4 RT0 : SV_Target1, out fl
 
 // GBuffer+Depth at 0-3 slots
 Buffer<float4> GlobalSurfaceAtlasObjects : register(t4);
-Texture3D<float> GlobalSDFTex[4] : register(t5);
-Texture3D<float> GlobalSDFMip[4] : register(t9);
+Buffer<float4> GlobalSurfaceAtlasTiles : register(t5);
+Texture3D<float> GlobalSDFTex[4] : register(t6);
+Texture3D<float> GlobalSDFMip[4] : register(t10);
 
 // Pixel shader for Global Surface Atlas shading with direct light contribution
 META_PS(true, FEATURE_LEVEL_SM5)
@@ -78,7 +79,7 @@ float4 PS_DirectLighting(AtlasVertexOutput input) : SV_Target
 {
 	// Load current tile info
 	//GlobalSurfaceObject object = LoadGlobalSurfaceAtlasObject(GlobalSurfaceAtlasObjects, input.Index.x);
-	GlobalSurfaceTile tile = LoadGlobalSurfaceAtlasTile(GlobalSurfaceAtlasObjects, input.Index.x, input.Index.y);
+	GlobalSurfaceTile tile = LoadGlobalSurfaceAtlasTile(GlobalSurfaceAtlasTiles, input.Index.y);
 	float2 atlasUV = input.TileUV * tile.AtlasRectUV.zw + tile.AtlasRectUV.xy;
 
 	// Load GBuffer sample from atlas
@@ -161,8 +162,9 @@ float4 PS_DirectLighting(AtlasVertexOutput input) : SV_Target
 Texture3D<float> GlobalSDFTex[4] : register(t0);
 Texture3D<float> GlobalSDFMip[4] : register(t4);
 Buffer<float4> GlobalSurfaceAtlasObjects : register(t8);
-Texture2D GlobalSurfaceAtlasDepth : register(t9);
-Texture2D GlobalSurfaceAtlasTex : register(t10);
+Buffer<float4> GlobalSurfaceAtlasTiles : register(t9);
+Texture2D GlobalSurfaceAtlasDepth : register(t10);
+Texture2D GlobalSurfaceAtlasTex : register(t11);
 
 // Pixel shader for Global Surface Atlas debug drawing
 META_PS(true, FEATURE_LEVEL_SM5)
@@ -185,7 +187,7 @@ float4 PS_Debug(Quad_VS2PS input) : SV_Target
 	//return float4(hit.HitNormal * 0.5f + 0.5f, 1);
 
 	// Sample Global Surface Atlas at the hit location
-	float4 surfaceColor = SampleGlobalSurfaceAtlas(GlobalSurfaceAtlas, GlobalSurfaceAtlasObjects, GlobalSurfaceAtlasDepth, GlobalSurfaceAtlasTex, hit.GetHitPosition(trace), -viewRay);
+	float4 surfaceColor = SampleGlobalSurfaceAtlas(GlobalSurfaceAtlas, GlobalSurfaceAtlasObjects, GlobalSurfaceAtlasTiles, GlobalSurfaceAtlasDepth, GlobalSurfaceAtlasTex, hit.GetHitPosition(trace), -viewRay);
 	return float4(surfaceColor.rgb, 1);
 }
 

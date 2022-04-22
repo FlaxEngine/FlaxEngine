@@ -18,7 +18,8 @@
 #include "Engine/Utilities/RectPack.h"
 
 // This must match HLSL
-#define GLOBAL_SURFACE_ATLAS_OBJECT_SIZE (5 + 6 * 5) // Amount of float4s per-object
+#define GLOBAL_SURFACE_ATLAS_OBJECT_BUFFER_STRIDE 6 // Amount of float4s per-object
+#define GLOBAL_SURFACE_ATLAS_TILE_BUFFER_STRIDE 5 // Amount of float4s per-tile
 #define GLOBAL_SURFACE_ATLAS_TILE_PADDING 1 // 1px padding to prevent color bleeding between tiles
 #define GLOBAL_SURFACE_ATLAS_TILE_PROJ_PLANE_OFFSET 0.1f // Small offset to prevent clipping with the closest triangles (shifts near and far planes)
 #define GLOBAL_SURFACE_ATLAS_DEBUG_FORCE_REDRAW_TILES 0 // Forces to redraw all object tiles every frame
@@ -55,6 +56,7 @@ struct GlobalSurfaceAtlasTile : RectPack<GlobalSurfaceAtlasTile, uint16>
     Vector3 ViewPosition;
     Vector3 ViewBoundsSize;
     Matrix ViewMatrix;
+    uint16 TileIndex;
 
     GlobalSurfaceAtlasTile(uint16 x, uint16 y, uint16 width, uint16 height)
         : RectPack<GlobalSurfaceAtlasTile, uint16>(x, y, width, height)
@@ -118,13 +120,16 @@ public:
     GPUTexture* AtlasGBuffer2 = nullptr;
     GPUTexture* AtlasDirectLight = nullptr;
     DynamicTypedBuffer ObjectsBuffer;
+    DynamicTypedBuffer TilesBuffer;
     uint32 ObjectIndexCounter;
+    uint16 TileIndexCounter;
     GlobalSurfaceAtlasPass::BindingData Result;
     GlobalSurfaceAtlasTile* AtlasTiles = nullptr; // TODO: optimize with a single allocation for atlas tiles
     Dictionary<Actor*, GlobalSurfaceAtlasObject> Objects;
 
     GlobalSurfaceAtlasCustomBuffer()
-        : ObjectsBuffer(256 * GLOBAL_SURFACE_ATLAS_OBJECT_SIZE, PixelFormat::R32G32B32A32_Float, false, TEXT("GlobalSurfaceAtlas.ObjectsBuffer"))
+        : ObjectsBuffer(256 * GLOBAL_SURFACE_ATLAS_OBJECT_BUFFER_STRIDE, PixelFormat::R32G32B32A32_Float, false, TEXT("GlobalSurfaceAtlas.ObjectsBuffer"))
+        , TilesBuffer(256 * GLOBAL_SURFACE_ATLAS_TILE_BUFFER_STRIDE * 3 / 4, PixelFormat::R32G32B32A32_Float, false, TEXT("GlobalSurfaceAtlas.TilesBuffer"))
     {
     }
 
@@ -133,6 +138,7 @@ public:
         LastFrameAtlasDefragmentation = Engine::FrameCount;
         SAFE_DELETE(AtlasTiles);
         ObjectsBuffer.Clear();
+        TilesBuffer.Clear();
         Objects.Clear();
     }
 
@@ -344,20 +350,28 @@ bool GlobalSurfaceAtlasPass::Render(RenderContext& renderContext, GPUContext* co
         Half2 min(minPos * posToClipMul + posToClipAdd), max(maxPos * posToClipMul + posToClipAdd); \
         Vector2 minUV(0, 0), maxUV(1, 1); \
         auto* quad = _vertexBuffer->WriteReserve<AtlasTileVertex>(6); \
-        quad[0] = { { max }, { maxUV }, (uint16)object.Index, (uint16)tileIndex }; \
-        quad[1] = { { min.X, max.Y }, { minUV.X, maxUV.Y }, (uint16)object.Index, (uint16)tileIndex }; \
-        quad[2] = { { min }, { minUV }, (uint16)object.Index, (uint16)tileIndex }; \
+        quad[0] = { { max }, { maxUV }, (uint16)object.Index, tile->TileIndex }; \
+        quad[1] = { { min.X, max.Y }, { minUV.X, maxUV.Y }, (uint16)object.Index, tile->TileIndex }; \
+        quad[2] = { { min }, { minUV }, (uint16)object.Index, tile->TileIndex }; \
         quad[3] = quad[2]; \
-        quad[4] = { { max.X, min.Y }, { maxUV.X, minUV.Y }, (uint16)object.Index, (uint16)tileIndex }; \
+        quad[4] = { { max.X, min.Y }, { maxUV.X, minUV.Y }, (uint16)object.Index, tile->TileIndex }; \
         quad[5] = quad[0]
 #define VB_DRAW() \
         _vertexBuffer->Flush(context); \
         auto vb = _vertexBuffer->GetBuffer(); \
         context->BindVB(ToSpan(&vb, 1)); \
         context->DrawInstanced(_vertexBuffer->Data.Count() / sizeof(AtlasTileVertex), 1);
+
     // Add objects into the atlas
     surfaceAtlasData.ObjectsBuffer.Clear();
+    surfaceAtlasData.TilesBuffer.Clear();
     surfaceAtlasData.ObjectIndexCounter = 0;
+    {
+        // Tile at index 0 is invalid
+        surfaceAtlasData.TileIndexCounter = 1;
+        auto* tileData = surfaceAtlasData.TilesBuffer.WriteReserve<Vector4>(GLOBAL_SURFACE_ATLAS_TILE_BUFFER_STRIDE);
+        Platform::MemoryClear(tileData, sizeof(Vector4) * GLOBAL_SURFACE_ATLAS_TILE_BUFFER_STRIDE);
+    }
     _dirtyObjectsBuffer.Clear();
     {
         PROFILE_CPU_NAMED("Draw");
@@ -468,23 +482,22 @@ bool GlobalSurfaceAtlasPass::Render(RenderContext& renderContext, GPUContext* co
                             Matrix::Invert(object->Bounds.Transformation, worldToLocalBounds);
                             // TODO: cache data for static objects to optimize CPU perf (move ObjectsBuffer into surfaceAtlasData)
                             object->Index = surfaceAtlasData.ObjectIndexCounter++;
-                            auto* objectData = surfaceAtlasData.ObjectsBuffer.WriteReserve<Vector4>(GLOBAL_SURFACE_ATLAS_OBJECT_SIZE);
+                            auto* objectData = surfaceAtlasData.ObjectsBuffer.WriteReserve<Vector4>(GLOBAL_SURFACE_ATLAS_OBJECT_BUFFER_STRIDE);
                             objectData[0] = *(Vector4*)&e.Bounds;
                             objectData[1] = Vector4(worldToLocalBounds.M11, worldToLocalBounds.M12, worldToLocalBounds.M13, worldToLocalBounds.M41);
                             objectData[2] = Vector4(worldToLocalBounds.M21, worldToLocalBounds.M22, worldToLocalBounds.M23, worldToLocalBounds.M42);
                             objectData[3] = Vector4(worldToLocalBounds.M31, worldToLocalBounds.M32, worldToLocalBounds.M33, worldToLocalBounds.M43);
-                            objectData[4] = Vector4(object->Bounds.Extents, 0.0f);
+                            objectData[4] = Vector4(object->Bounds.Extents, 0.0f); // w unused
+                            objectData[5] = Vector4::Zero; // w unused
+                            auto tileIndices = reinterpret_cast<uint16*>(&objectData[5]); // xyz used for tile indices packed into uint16
                             // TODO: try to optimize memory footprint (eg. merge scale into extents and use rotation+offset but reconstruct rotation from two axes with sign)
                             for (int32 tileIndex = 0; tileIndex < 6; tileIndex++)
                             {
                                 auto* tile = object->Tiles[tileIndex];
-                                const int32 tileStart = 5 + tileIndex * 5;
                                 if (!tile)
-                                {
-                                    // Disable tile
-                                    objectData[tileStart + 4] = Vector4::Zero;
                                     continue;
-                                }
+                                tile->TileIndex = surfaceAtlasData.TileIndexCounter++;
+                                tileIndices[tileIndex] = tile->TileIndex;
 
                                 // Setup view to render object from the side
                                 Vector3 xAxis, yAxis, zAxis = Vector3::Zero;
@@ -517,11 +530,12 @@ bool GlobalSurfaceAtlasPass::Render(RenderContext& renderContext, GPUContext* co
                                 // Per-tile data
                                 const float tileWidth = (float)tile->Width - GLOBAL_SURFACE_ATLAS_TILE_PADDING;
                                 const float tileHeight = (float)tile->Height - GLOBAL_SURFACE_ATLAS_TILE_PADDING;
-                                objectData[tileStart + 0] = Vector4(tile->X, tile->Y, tileWidth, tileHeight) * resolutionInv;
-                                objectData[tileStart + 1] = Vector4(tile->ViewMatrix.M11, tile->ViewMatrix.M12, tile->ViewMatrix.M13, tile->ViewMatrix.M41);
-                                objectData[tileStart + 2] = Vector4(tile->ViewMatrix.M21, tile->ViewMatrix.M22, tile->ViewMatrix.M23, tile->ViewMatrix.M42);
-                                objectData[tileStart + 3] = Vector4(tile->ViewMatrix.M31, tile->ViewMatrix.M32, tile->ViewMatrix.M33, tile->ViewMatrix.M43);
-                                objectData[tileStart + 4] = Vector4(tile->ViewBoundsSize, 1.0f);
+                                auto* tileData = surfaceAtlasData.TilesBuffer.WriteReserve<Vector4>(GLOBAL_SURFACE_ATLAS_TILE_BUFFER_STRIDE);
+                                tileData[0] = Vector4(tile->X, tile->Y, tileWidth, tileHeight) * resolutionInv;
+                                tileData[1] = Vector4(tile->ViewMatrix.M11, tile->ViewMatrix.M12, tile->ViewMatrix.M13, tile->ViewMatrix.M41);
+                                tileData[2] = Vector4(tile->ViewMatrix.M21, tile->ViewMatrix.M22, tile->ViewMatrix.M23, tile->ViewMatrix.M42);
+                                tileData[3] = Vector4(tile->ViewMatrix.M31, tile->ViewMatrix.M32, tile->ViewMatrix.M33, tile->ViewMatrix.M43);
+                                tileData[4] = Vector4(tile->ViewBoundsSize, 0.0f); // w unused
                             }
                         }
                     }
@@ -548,6 +562,7 @@ bool GlobalSurfaceAtlasPass::Render(RenderContext& renderContext, GPUContext* co
     {
         PROFILE_GPU_CPU("Update Objects");
         surfaceAtlasData.ObjectsBuffer.Flush(context);
+        surfaceAtlasData.TilesBuffer.Flush(context);
     }
 
     // Rasterize world geometry material properties into Global Surface Atlas
@@ -670,6 +685,7 @@ bool GlobalSurfaceAtlasPass::Render(RenderContext& renderContext, GPUContext* co
     result.Atlas[3] = surfaceAtlasData.AtlasGBuffer2;
     result.Atlas[4] = surfaceAtlasData.AtlasDirectLight;
     result.Objects = surfaceAtlasData.ObjectsBuffer.GetBuffer();
+    result.Tiles = surfaceAtlasData.TilesBuffer.GetBuffer();
     result.GlobalSurfaceAtlas.Resolution = (float)resolution;
     result.GlobalSurfaceAtlas.ObjectsCount = surfaceAtlasData.Objects.Count();
     surfaceAtlasData.Result = result;
@@ -693,10 +709,11 @@ bool GlobalSurfaceAtlasPass::Render(RenderContext& renderContext, GPUContext* co
         context->BindSR(2, surfaceAtlasData.AtlasGBuffer2->View());
         context->BindSR(3, surfaceAtlasData.AtlasDepth->View());
         context->BindSR(4, surfaceAtlasData.ObjectsBuffer.GetBuffer()->View());
+        context->BindSR(5, surfaceAtlasData.TilesBuffer.GetBuffer()->View());
         for (int32 i = 0; i < 4; i++)
         {
-            context->BindSR(i + 5, bindingDataSDF.Cascades[i]->ViewVolume());
-            context->BindSR(i + 9, bindingDataSDF.CascadeMips[i]->ViewVolume());
+            context->BindSR(i + 6, bindingDataSDF.Cascades[i]->ViewVolume());
+            context->BindSR(i + 10, bindingDataSDF.CascadeMips[i]->ViewVolume());
         }
         context->BindCB(0, _cb0);
         Data0 data;
@@ -827,13 +844,14 @@ void GlobalSurfaceAtlasPass::RenderDebug(RenderContext& renderContext, GPUContex
         context->BindSR(i + 4, bindingDataSDF.CascadeMips[i]->ViewVolume());
     }
     context->BindSR(8, bindingData.Objects ? bindingData.Objects->View() : nullptr);
-    context->BindSR(9, bindingData.Atlas[0]->View());
+    context->BindSR(9, bindingData.Tiles ? bindingData.Tiles->View() : nullptr);
+    context->BindSR(10, bindingData.Atlas[0]->View());
     {
         //GPUTexture* tex = bindingData.Atlas[1]; // Preview diffuse
         //GPUTexture* tex = bindingData.Atlas[2]; // Preview normals
         //GPUTexture* tex = bindingData.Atlas[3]; // Preview roughness/metalness/ao
         GPUTexture* tex = bindingData.Atlas[4]; // Preview direct light
-        context->BindSR(10, tex->View());
+        context->BindSR(11, tex->View());
     }
     context->SetState(_psDebug);
     context->SetRenderTarget(output->View());

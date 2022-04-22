@@ -23,6 +23,7 @@ public:
     {
         GPUTexture* Atlas[5];
         GPUBuffer* Objects;
+        GPUBuffer* Tiles;
         GlobalSurfaceAtlasData GlobalSurfaceAtlas;
     };
 
