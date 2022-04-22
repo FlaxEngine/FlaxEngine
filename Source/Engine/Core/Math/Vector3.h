@@ -229,18 +229,16 @@ public:
     }
 
     /// <summary>
-    /// Calculates a vector with values being absolute values of that vector
+    /// Calculates a vector with values being absolute values of that vector.
     /// </summary>
-    /// <returns>Absolute vector</returns>
     Vector3 GetAbsolute() const
     {
         return Vector3(Math::Abs(X), Math::Abs(Y), Math::Abs(Z));
     }
 
     /// <summary>
-    /// Calculates a vector with values being opposite to values of that vector
+    /// Calculates a vector with values being opposite to values of that vector.
     /// </summary>
-    /// <returns>Negative vector</returns>
     Vector3 GetNegative() const
     {
         return Vector3(-X, -Y, -Z);
@@ -249,7 +247,6 @@ public:
     /// <summary>
     /// Calculates a normalized vector that has length equal to 1.
     /// </summary>
-    /// <returns>The normalized vector.</returns>
     Vector3 GetNormalized() const
     {
         const float rcp = 1.0f / Length();
@@ -257,63 +254,56 @@ public:
     }
 
     /// <summary>
-    /// Returns average arithmetic of all the components
+    /// Returns the average arithmetic of all the components.
     /// </summary>
-    /// <returns>Average arithmetic of all the components</returns>
     float AverageArithmetic() const
     {
         return (X + Y + Z) * 0.333333334f;
     }
 
     /// <summary>
-    /// Gets sum of all vector components values
+    /// Gets the sum of all vector components values.
     /// </summary>
-    /// <returns>Sum of X,Y and Z</returns>
     float SumValues() const
     {
         return X + Y + Z;
     }
 
     /// <summary>
-    /// Returns minimum value of all the components
+    /// Returns the minimum value of all the components.
     /// </summary>
-    /// <returns>Minimum value</returns>
     float MinValue() const
     {
         return Math::Min(X, Y, Z);
     }
 
     /// <summary>
-    /// Returns maximum value of all the components
+    /// Returns the maximum value of all the components.
     /// </summary>
-    /// <returns>Maximum value</returns>
     float MaxValue() const
     {
         return Math::Max(X, Y, Z);
     }
 
     /// <summary>
-    /// Returns true if vector has one or more components is not a number (NaN)
+    /// Returns true if vector has one or more components is not a number (NaN).
     /// </summary>
-    /// <returns>True if one or more components is not a number (NaN)</returns>
     bool IsNaN() const
     {
         return isnan(X) || isnan(Y) || isnan(Z);
     }
 
     /// <summary>
-    /// Returns true if vector has one or more components equal to +/- infinity
+    /// Returns true if vector has one or more components equal to +/- infinity.
     /// </summary>
-    /// <returns>True if one or more components equal to +/- infinity</returns>
     bool IsInfinity() const
     {
         return isinf(X) || isinf(Y) || isinf(Z);
     }
 
     /// <summary>
-    /// Returns true if vector has one or more components equal to +/- infinity or NaN
+    /// Returns true if vector has one or more components equal to +/- infinity or NaN.
     /// </summary>
-    /// <returns>True if one or more components equal to +/- infinity or NaN</returns>
     bool IsNanOrInfinity() const
     {
         return IsInfinity() || IsNaN();
