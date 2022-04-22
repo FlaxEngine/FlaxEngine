@@ -354,7 +354,7 @@ void Camera::OnEnable()
 {
     Cameras.Add(this);
 #if USE_EDITOR
-    _sceneRenderingKey = GetSceneRendering()->AddActor(this);
+    GetSceneRendering()->AddActor(this, _sceneRenderingKey);
 #endif
 
     // Base

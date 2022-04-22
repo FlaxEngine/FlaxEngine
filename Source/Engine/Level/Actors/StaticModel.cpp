@@ -180,28 +180,28 @@ void StaticModel::OnModelLoaded()
 {
     Entries.SetupIfInvalid(Model);
     UpdateBounds();
-    if (_sceneRenderingKey == -1 && _scene)
+    if (_sceneRenderingKey == -1 && _scene && _isActiveInHierarchy && _isEnabled && !_residencyChangedModel)
     {
         // Register for rendering but once the model has any LOD loaded
         if (Model->GetLoadedLODs() == 0)
         {
             _residencyChangedModel = Model;
-            Model->ResidencyChanged.Bind<StaticModel, &StaticModel::OnModelResidencyChanged>(this);
+            _residencyChangedModel->ResidencyChanged.Bind<StaticModel, &StaticModel::OnModelResidencyChanged>(this);
         }
         else
         {
-            _sceneRenderingKey = GetSceneRendering()->AddActor(this);
+            GetSceneRendering()->AddActor(this, _sceneRenderingKey);
         }
     }
 }
 
 void StaticModel::OnModelResidencyChanged()
 {
-    if (_sceneRenderingKey == -1 && _scene && Model && Model->GetLoadedLODs() > 0)
+    if (_sceneRenderingKey == -1 && _scene && Model && Model->GetLoadedLODs() > 0 && _residencyChangedModel)
     {
-        _sceneRenderingKey = GetSceneRendering()->AddActor(this);
+        GetSceneRendering()->AddActor(this, _sceneRenderingKey);
+        _residencyChangedModel->ResidencyChanged.Unbind<StaticModel, &StaticModel::OnModelResidencyChanged>(this);
         _residencyChangedModel = nullptr;
-        Model->ResidencyChanged.Unbind<StaticModel, &StaticModel::OnModelResidencyChanged>(this);
     }
 }
 
@@ -517,8 +517,10 @@ void StaticModel::OnTransformChanged()
 
 void StaticModel::OnEnable()
 {
-    if (_scene && Model && Model->IsLoaded() && Model->GetLoadedLODs() > 0 && _sceneRenderingKey == -1)
-        _sceneRenderingKey = GetSceneRendering()->AddActor(this);
+    if (_scene && _sceneRenderingKey == -1 && !_residencyChangedModel && Model && Model->IsLoaded() && Model->GetLoadedLODs() != 0)
+    {
+        GetSceneRendering()->AddActor(this, _sceneRenderingKey);
+    }
 
     // Skip ModelInstanceActor (add to SceneRendering manually)
     Actor::OnEnable();
@@ -533,9 +535,9 @@ void StaticModel::OnDisable()
     {
         GetSceneRendering()->RemoveActor(this, _sceneRenderingKey);
     }
-    else if (_residencyChangedModel)
+    if (_residencyChangedModel)
     {
+        _residencyChangedModel->ResidencyChanged.Unbind<StaticModel, &StaticModel::OnModelResidencyChanged>(this);
         _residencyChangedModel = nullptr;
-        Model->ResidencyChanged.Unbind<StaticModel, &StaticModel::OnModelResidencyChanged>(this);
     }
 }

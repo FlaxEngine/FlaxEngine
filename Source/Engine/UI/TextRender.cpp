@@ -496,7 +496,7 @@ void TextRender::OnEnable()
     {
         UpdateLayout();
     }
-    _sceneRenderingKey = GetSceneRendering()->AddActor(this);
+    GetSceneRendering()->AddActor(this, _sceneRenderingKey);
 }
 
 void TextRender::OnDisable()

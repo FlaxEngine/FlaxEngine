@@ -122,7 +122,7 @@ bool Decal::IntersectsItself(const Ray& ray, float& distance, Vector3& normal)
 
 void Decal::OnEnable()
 {
-    _sceneRenderingKey = GetSceneRendering()->AddActor(this);
+    GetSceneRendering()->AddActor(this, _sceneRenderingKey);
 #if USE_EDITOR
     GetSceneRendering()->AddViewportIcon(this);
 #endif

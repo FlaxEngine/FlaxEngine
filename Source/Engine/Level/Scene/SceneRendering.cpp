@@ -105,26 +105,28 @@ void SceneRendering::Clear()
 #endif
 }
 
-int32 SceneRendering::AddActor(Actor* a)
+void SceneRendering::AddActor(Actor* a, int32& key)
 {
     ScopeLock lock(Locker);
-    int32 key = 0;
-    // TODO: track removedCount and skip searching for free entry if there is none
-    for (; key < Actors.Count(); key++)
+    if (key == -1)
     {
-        if (Actors[key].Actor == nullptr)
-            break;
+        // TODO: track removedCount and skip searching for free entry if there is none
+        key = 0;
+        for (; key < Actors.Count(); key++)
+        {
+            if (Actors[key].Actor == nullptr)
+                break;
+        }
+        if (key == Actors.Count())
+            Actors.AddOne();
+        auto& e = Actors[key];
+        e.Actor = a;
+        e.LayerMask = a->GetLayerMask();
+        e.Bounds = a->GetSphere();
+        e.NoCulling = a->_drawNoCulling;
+        for (auto* listener : _listeners)
+            listener->OnSceneRenderingAddActor(a);
     }
-    if (key == Actors.Count())
-        Actors.AddOne();
-    auto& e = Actors[key];
-    e.Actor = a;
-    e.LayerMask = a->GetLayerMask();
-    e.Bounds = a->GetSphere();
-    e.NoCulling = a->_drawNoCulling;
-    for (auto* listener : _listeners)
-        listener->OnSceneRenderingAddActor(a);
-    return key;
 }
 
 void SceneRendering::UpdateActor(Actor* a, int32 key)

@@ -107,7 +107,7 @@ public:
     void Clear();
 
 public:
-    int32 AddActor(Actor* a);
+    void AddActor(Actor* a, int32& key);
     void UpdateActor(Actor* a, int32 key);
     void RemoveActor(Actor* a, int32& key);
 

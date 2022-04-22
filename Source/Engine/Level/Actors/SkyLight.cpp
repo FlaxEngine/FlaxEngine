@@ -171,7 +171,7 @@ bool SkyLight::HasContentLoaded() const
 
 void SkyLight::OnEnable()
 {
-    _sceneRenderingKey = GetSceneRendering()->AddActor(this);
+    GetSceneRendering()->AddActor(this, _sceneRenderingKey);
 #if USE_EDITOR
     GetSceneRendering()->AddViewportIcon(this);
 #endif

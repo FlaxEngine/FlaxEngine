@@ -1229,7 +1229,7 @@ void Foliage::OnLayerChanged()
 
 void Foliage::OnEnable()
 {
-    _sceneRenderingKey = GetSceneRendering()->AddActor(this);
+    GetSceneRendering()->AddActor(this, _sceneRenderingKey);
 
     // Base
     Actor::OnEnable();

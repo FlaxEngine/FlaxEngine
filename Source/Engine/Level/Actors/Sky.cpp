@@ -239,7 +239,7 @@ void Sky::EndPlay()
 
 void Sky::OnEnable()
 {
-    _sceneRenderingKey = GetSceneRendering()->AddActor(this);
+    GetSceneRendering()->AddActor(this, _sceneRenderingKey);
 #if USE_EDITOR
     GetSceneRendering()->AddViewportIcon(this);
 #endif

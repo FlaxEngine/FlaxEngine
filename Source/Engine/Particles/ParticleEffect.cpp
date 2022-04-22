@@ -700,7 +700,7 @@ void ParticleEffect::EndPlay()
 void ParticleEffect::OnEnable()
 {
     GetScene()->Ticking.Update.AddTick<ParticleEffect, &ParticleEffect::Update>(this);
-    _sceneRenderingKey = GetSceneRendering()->AddActor(this);
+    GetSceneRendering()->AddActor(this, _sceneRenderingKey);
 #if USE_EDITOR
     GetSceneRendering()->AddViewportIcon(this);
     GetScene()->Ticking.Update.AddTickExecuteInEditor<ParticleEffect, &ParticleEffect::UpdateExecuteInEditor>(this);

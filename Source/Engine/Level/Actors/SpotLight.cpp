@@ -119,7 +119,7 @@ void SpotLight::UpdateBounds()
 
 void SpotLight::OnEnable()
 {
-    _sceneRenderingKey = GetSceneRendering()->AddActor(this);
+    GetSceneRendering()->AddActor(this, _sceneRenderingKey);
 #if USE_EDITOR
     GetSceneRendering()->AddViewportIcon(this);
 #endif

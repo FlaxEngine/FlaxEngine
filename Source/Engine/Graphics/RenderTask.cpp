@@ -276,7 +276,8 @@ void AddActorToSceneRendering(SceneRendering* s, Actor* a)
 {
     if (a && a->IsActiveInHierarchy())
     {
-        s->AddActor(a);
+        int32 key = -1;
+        s->AddActor(a, key);
         for (Actor* child : a->Children)
             AddActorToSceneRendering(s, child);
     }

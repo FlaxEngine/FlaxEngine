@@ -39,7 +39,7 @@ void ModelInstanceActor::OnLayerChanged()
 
 void ModelInstanceActor::OnEnable()
 {
-    _sceneRenderingKey = GetSceneRendering()->AddActor(this);
+    GetSceneRendering()->AddActor(this, _sceneRenderingKey);
 
     // Base
     Actor::OnEnable();

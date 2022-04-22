@@ -190,7 +190,7 @@ void SpriteRender::OnEndPlay()
 
 void SpriteRender::OnEnable()
 {
-    _sceneRenderingKey = GetSceneRendering()->AddActor(this);
+    GetSceneRendering()->AddActor(this, _sceneRenderingKey);
 
     // Base
     Actor::OnEnable();

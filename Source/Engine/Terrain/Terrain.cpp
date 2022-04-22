@@ -743,7 +743,7 @@ RigidBody* Terrain::GetAttachedRigidBody() const
 
 void Terrain::OnEnable()
 {
-    _sceneRenderingKey = GetSceneRendering()->AddActor(this);
+    GetSceneRendering()->AddActor(this, _sceneRenderingKey);
 #if TERRAIN_USE_PHYSICS_DEBUG
     GetSceneRendering()->AddPhysicsDebug<Terrain, &Terrain::DrawPhysicsDebug>(this);
 #endif

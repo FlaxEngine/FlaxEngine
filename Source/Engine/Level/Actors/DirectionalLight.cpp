@@ -68,7 +68,7 @@ bool DirectionalLight::IntersectsItself(const Ray& ray, float& distance, Vector3
 
 void DirectionalLight::OnEnable()
 {
-    _sceneRenderingKey = GetSceneRendering()->AddActor(this);
+    GetSceneRendering()->AddActor(this, _sceneRenderingKey);
 #if USE_EDITOR
     GetSceneRendering()->AddViewportIcon(this);
 #endif
