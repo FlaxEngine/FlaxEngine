@@ -10,6 +10,7 @@
 #include "Engine/Level/Prefabs/PrefabManager.h"
 #include "Engine/Level/Scene/Scene.h"
 #include "Engine/Renderer/GlobalSignDistanceFieldPass.h"
+#include "Engine/Renderer/GlobalSurfaceAtlasPass.h"
 #include "Engine/Utilities/Encryption.h"
 #if USE_EDITOR
 #include "Editor/Editor.h"
@@ -244,6 +245,11 @@ void StaticModel::Draw(RenderContext& renderContext)
         GlobalSignDistanceFieldPass::Instance()->RasterizeModelSDF(this, Model->SDF, _world, _box);
         return;
     }
+    if (renderContext.View.Pass == DrawPass::GlobalSurfaceAtlas)
+    {
+        GlobalSurfaceAtlasPass::Instance()->RasterizeActor(this, _world, Model->LODs.Last().GetBox());
+        return;
+    }
     GEOMETRY_DRAW_STATE_EVENT_BEGIN(_drawState, _world);
 
     // Flush vertex colors if need to
@@ -443,6 +449,9 @@ void StaticModel::Deserialize(DeserializeStream& stream, ISerializeModifier* mod
     // [Deprecated on 07.02.2022, expires on 07.02.2024]
     if (modifier->EngineBuild <= 6330)
         DrawModes |= DrawPass::GlobalSDF;
+    // [Deprecated on 27.04.2022, expires on 27.04.2024]
+    if (modifier->EngineBuild <= 6331)
+        DrawModes |= DrawPass::GlobalSurfaceAtlas;
 
     {
         const auto member = stream.FindMember("RenderPasses");

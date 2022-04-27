@@ -342,6 +342,8 @@ void TextRender::Draw(RenderContext& renderContext)
 {
     if (renderContext.View.Pass == DrawPass::GlobalSDF)
         return; // TODO: Text rendering to Global SDF
+    if (renderContext.View.Pass == DrawPass::GlobalSurfaceAtlas)
+        return; // TODO: Text rendering to Global Surface Atlas
     if (_isDirty)
     {
         UpdateLayout();
@@ -483,6 +485,9 @@ void TextRender::Deserialize(DeserializeStream& stream, ISerializeModifier* modi
     // [Deprecated on 07.02.2022, expires on 07.02.2024]
     if (modifier->EngineBuild <= 6330)
         DrawModes |= DrawPass::GlobalSDF;
+    // [Deprecated on 27.04.2022, expires on 27.04.2024]
+    if (modifier->EngineBuild <= 6331)
+        DrawModes |= DrawPass::GlobalSurfaceAtlas;
 
     _isDirty = true;
 }

@@ -33,7 +33,11 @@ void ExponentialHeightFog::Draw(RenderContext& renderContext)
 {
     // Render only when shader is valid and fog can be rendered
     // Do not render exponential fog in orthographic views
-    if ((renderContext.View.Flags & ViewFlags::Fog) != 0 && _shader && _shader->IsLoaded() && renderContext.View.IsPerspectiveProjection())
+    if ((renderContext.View.Flags & ViewFlags::Fog) != 0 
+        && renderContext.View.Pass & DrawPass::GBuffer
+        && _shader 
+        && _shader->IsLoaded() 
+        && renderContext.View.IsPerspectiveProjection())
     {
         // Prepare
         if (_psFog.States[0] == nullptr)

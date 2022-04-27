@@ -106,7 +106,7 @@ bool SpriteRender::HasContentLoaded() const
 
 void SpriteRender::Draw(RenderContext& renderContext)
 {
-    if (renderContext.View.Pass == DrawPass::GlobalSDF)
+    if (renderContext.View.Pass == DrawPass::GlobalSDF || renderContext.View.Pass == DrawPass::GlobalSurfaceAtlas)
         return;
     if (!Material || !Material->IsLoaded() || !_quadModel || !_quadModel->IsLoaded())
         return;

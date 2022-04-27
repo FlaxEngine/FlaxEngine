@@ -20,6 +20,7 @@ void DirectionalLight::Draw(RenderContext& renderContext)
     AdjustBrightness(renderContext.View, brightness);
     if (Brightness > ZeroTolerance
         && (renderContext.View.Flags & ViewFlags::DirectionalLights) != 0
+        && renderContext.View.Pass & DrawPass::GBuffer
         && (ViewDistance < ZeroTolerance || Vector3::DistanceSquared(renderContext.View.Position, GetPosition()) < ViewDistance * ViewDistance))
     {
         RendererDirectionalLightData data;

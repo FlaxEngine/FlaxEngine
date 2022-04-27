@@ -129,6 +129,15 @@ public:
     GlobalSurfaceAtlasTile* AtlasTiles = nullptr; // TODO: optimize with a single allocation for atlas tiles
     Dictionary<Actor*, GlobalSurfaceAtlasObject> Objects;
 
+    // Cached data to be reused during RasterizeActor
+    uint64 CurrentFrame;
+    float ResolutionInv;
+    Vector3 ViewPosition;
+    float TileTexelsPerWorldUnit;
+    float DistanceScalingStart;
+    float DistanceScalingEnd;
+    float DistanceScaling;
+
     FORCE_INLINE void ClearObjects()
     {
         CulledObjectsCounterIndex = -1;
@@ -374,176 +383,30 @@ bool GlobalSurfaceAtlasPass::Render(RenderContext& renderContext, GPUContext* co
         context->DrawInstanced(_vertexBuffer->Data.Count() / sizeof(AtlasTileVertex), 1);
 
     // Add objects into the atlas
-    _objectsBuffer->Clear();
-    _dirtyObjectsBuffer.Clear();
     {
         PROFILE_CPU_NAMED("Draw");
+        _objectsBuffer->Clear();
+        _dirtyObjectsBuffer.Clear();
+        _surfaceAtlasData = &surfaceAtlasData;
+        renderContext.View.Pass = DrawPass::GlobalSurfaceAtlas;
+        surfaceAtlasData.CurrentFrame = currentFrame;
+        surfaceAtlasData.ResolutionInv = resolutionInv;
+        surfaceAtlasData.ViewPosition = renderContext.View.Position;
+        surfaceAtlasData.TileTexelsPerWorldUnit = 1.0f / 10.0f; // Scales the tiles resolution
+        surfaceAtlasData.DistanceScalingStart = 2000.0f; // Distance from camera at which the tiles resolution starts to be scaled down
+        surfaceAtlasData.DistanceScalingEnd = 5000.0f; // Distance from camera at which the tiles resolution end to be scaled down
+        surfaceAtlasData.DistanceScaling = 0.1f; // The scale for tiles at distanceScalingEnd and further away
+        // TODO: add DetailsScale param to adjust quality of scene details in Global Surface Atlas
         const uint32 viewMask = renderContext.View.RenderLayersMask;
         const Vector3 viewPosition = renderContext.View.Position;
-        const uint16 minTileResolution = 8; // Minimum size (in texels) of the tile in atlas
-        const uint16 maxTileResolution = 128; // Maximum size (in texels) of the tile in atlas
-        const uint16 tileResolutionAlignment = 8; // Alignment to snap (down) tiles resolution which allows to reuse atlas slots once object gets resizes/replaced by other object
         const float minObjectRadius = 20.0f; // Skip too small objects
-        const float tileTexelsPerWorldUnit = 1.0f / 10.0f; // Scales the tiles resolution
-        const float distanceScalingStart = 2000.0f; // Distance from camera at which the tiles resolution starts to be scaled down
-        const float distanceScalingEnd = 5000.0f; // Distance from camera at which the tiles resolution end to be scaled down
-        const float distanceScaling = 0.1f; // The scale for tiles at distanceScalingEnd and further away
-        // TODO: add DetailsScale param to adjust quality of scene details in Global Surface Atlas
-        static_assert(GLOBAL_SURFACE_ATLAS_TILE_PADDING < minTileResolution, "Invalid tile size configuration.");
         for (auto* scene : renderContext.List->Scenes)
         {
-            // TODO: optimize for static objects (SceneRendering could have separate and optimized caching for static actors)
             for (auto& e : scene->Actors)
             {
                 if (viewMask & e.LayerMask && e.Bounds.Radius >= minObjectRadius && CollisionsHelper::DistanceSpherePoint(e.Bounds, viewPosition) < distance)
                 {
-                    // TODO: move into actor-specific Draw() impl (eg. via GlobalSurfaceAtlas pass)
-                    auto* staticModel = ScriptingObject::Cast<StaticModel>(e.Actor);
-                    if (staticModel && staticModel->Model && staticModel->Model->IsLoaded() && staticModel->Model->CanBeRendered())
-                    {
-                        Matrix localToWorld;
-                        staticModel->GetWorld(&localToWorld);
-                        bool anyTile = false, dirty = false;
-                        GlobalSurfaceAtlasObject* object = surfaceAtlasData.Objects.TryGet(e.Actor);
-                        auto& lod = staticModel->Model->LODs.Last();
-                        BoundingBox localBounds = lod.GetBox();
-                        Vector3 boundsSize = localBounds.GetSize() * staticModel->GetScale();
-                        const float distanceScale = Math::Lerp(1.0f, distanceScaling, Math::InverseLerp(distanceScalingStart, distanceScalingEnd, CollisionsHelper::DistanceSpherePoint(e.Bounds, viewPosition)));
-                        const float tilesScale = tileTexelsPerWorldUnit * distanceScale;
-                        for (int32 tileIndex = 0; tileIndex < 6; tileIndex++)
-                        {
-                            // Calculate optimal tile resolution for the object side
-                            Vector3 boundsSizeTile = boundsSize;
-                            boundsSizeTile.Raw[tileIndex / 2] = MAX_float; // Ignore depth size
-                            boundsSizeTile.Absolute();
-                            uint16 tileResolution = (uint16)(boundsSizeTile.MinValue() * tilesScale);
-                            if (tileResolution < 4)
-                            {
-                                // Skip too small surfaces
-                                if (object && object->Tiles[tileIndex])
-                                {
-                                    object->Tiles[tileIndex]->Free();
-                                    object->Tiles[tileIndex] = nullptr;
-                                }
-                                continue;
-                            }
-
-                            // Clamp and snap to reduce atlas fragmentation
-                            tileResolution = Math::Clamp(tileResolution, minTileResolution, maxTileResolution);
-                            tileResolution = Math::AlignDown(tileResolution, tileResolutionAlignment);
-
-                            // Reuse current tile (refit only on a significant resolution change)
-                            if (object && object->Tiles[tileIndex])
-                            {
-                                const uint16 tileRefitResolutionStep = 32;
-                                const uint16 currentSize = object->Tiles[tileIndex]->Width;
-                                if (Math::Abs(tileResolution - currentSize) < tileRefitResolutionStep)
-                                {
-                                    anyTile = true;
-                                    continue;
-                                }
-                                object->Tiles[tileIndex]->Free();
-                            }
-
-                            // Insert tile into atlas
-                            auto* tile = surfaceAtlasData.AtlasTiles->Insert(tileResolution, tileResolution, 0, &surfaceAtlasData, e.Actor, tileIndex);
-                            if (tile)
-                            {
-                                if (!object)
-                                    object = &surfaceAtlasData.Objects[e.Actor];
-                                object->Tiles[tileIndex] = tile;
-                                anyTile = true;
-                                dirty = true;
-                            }
-                            else
-                            {
-                                if (object)
-                                    object->Tiles[tileIndex] = nullptr;
-                                surfaceAtlasData.LastFrameAtlasInsertFail = currentFrame;
-                            }
-                        }
-                        if (anyTile)
-                        {
-                            // Redraw objects from time-to-time (dynamic objects can be animated, static objects can have textures streamed)
-                            uint32 redrawFramesCount = staticModel->HasStaticFlag(StaticFlags::Lightmap) ? 120 : 4;
-                            if (currentFrame - object->LastFrameDirty >= (redrawFramesCount + (e.Actor->GetID().D & redrawFramesCount)))
-                                dirty = true;
-
-                            // Mark object as used
-                            object->LastFrameUsed = currentFrame;
-                            object->Bounds = OrientedBoundingBox(localBounds);
-                            object->Bounds.Transform(localToWorld);
-                            object->Radius = e.Bounds.Radius;
-                            if (dirty || GLOBAL_SURFACE_ATLAS_DEBUG_FORCE_REDRAW_TILES)
-                            {
-                                object->LastFrameDirty = currentFrame;
-                                _dirtyObjectsBuffer.Add(e.Actor);
-                            }
-
-                            // Write to objects buffer (this must match unpacking logic in HLSL)
-                            Matrix worldToLocalBounds;
-                            Matrix::Invert(object->Bounds.Transformation, worldToLocalBounds);
-                            uint32 objectAddress = _objectsBuffer->Data.Count() / sizeof(Vector4);
-                            auto* objectData = _objectsBuffer->WriteReserve<Vector4>(GLOBAL_SURFACE_ATLAS_OBJECT_DATA_STRIDE);
-                            objectData[0] = *(Vector4*)&e.Bounds;
-                            objectData[1] = Vector4::Zero; // w unused
-                            objectData[2] = Vector4(worldToLocalBounds.M11, worldToLocalBounds.M12, worldToLocalBounds.M13, worldToLocalBounds.M41);
-                            objectData[3] = Vector4(worldToLocalBounds.M21, worldToLocalBounds.M22, worldToLocalBounds.M23, worldToLocalBounds.M42);
-                            objectData[4] = Vector4(worldToLocalBounds.M31, worldToLocalBounds.M32, worldToLocalBounds.M33, worldToLocalBounds.M43);
-                            objectData[5] = Vector4(object->Bounds.Extents, 0.0f); // w unused
-                            auto tileOffsets = reinterpret_cast<uint16*>(&objectData[1]); // xyz used for tile offsets packed into uint16
-                            auto objectDataSize = reinterpret_cast<uint32*>(&objectData[1].W); // w used for object size (count of Vector4s for object+tiles)
-                            *objectDataSize = GLOBAL_SURFACE_ATLAS_OBJECT_DATA_STRIDE;
-                            for (int32 tileIndex = 0; tileIndex < 6; tileIndex++)
-                            {
-                                auto* tile = object->Tiles[tileIndex];
-                                if (!tile)
-                                    continue;
-                                tile->ObjectAddressOffset = *objectDataSize;
-                                tile->Address = objectAddress + tile->ObjectAddressOffset;
-                                tileOffsets[tileIndex] = tile->ObjectAddressOffset;
-                                *objectDataSize += GLOBAL_SURFACE_ATLAS_TILE_DATA_STRIDE;
-
-                                // Setup view to render object from the side
-                                Vector3 xAxis, yAxis, zAxis = Vector3::Zero;
-                                zAxis.Raw[tileIndex / 2] = tileIndex & 1 ? 1.0f : -1.0f;
-                                yAxis = tileIndex == 2 || tileIndex == 3 ? Vector3::Right : Vector3::Up;
-                                Vector3::Cross(yAxis, zAxis, xAxis);
-                                Vector3 localSpaceOffset = -zAxis * object->Bounds.Extents;
-                                Vector3::TransformNormal(xAxis, object->Bounds.Transformation, xAxis);
-                                Vector3::TransformNormal(yAxis, object->Bounds.Transformation, yAxis);
-                                Vector3::TransformNormal(zAxis, object->Bounds.Transformation, zAxis);
-                                xAxis.NormalizeFast();
-                                yAxis.NormalizeFast();
-                                zAxis.NormalizeFast();
-                                Vector3::Transform(localSpaceOffset, object->Bounds.Transformation, tile->ViewPosition);
-                                tile->ViewDirection = zAxis;
-
-                                // Create view matrix
-                                tile->ViewMatrix.SetColumn1(Vector4(xAxis, -Vector3::Dot(xAxis, tile->ViewPosition)));
-                                tile->ViewMatrix.SetColumn2(Vector4(yAxis, -Vector3::Dot(yAxis, tile->ViewPosition)));
-                                tile->ViewMatrix.SetColumn3(Vector4(zAxis, -Vector3::Dot(zAxis, tile->ViewPosition)));
-                                tile->ViewMatrix.SetColumn4(Vector4(0, 0, 0, 1));
-
-                                // Calculate object bounds size in the view
-                                OrientedBoundingBox viewBounds(object->Bounds);
-                                viewBounds.Transform(tile->ViewMatrix);
-                                Vector3 viewExtent;
-                                Vector3::TransformNormal(viewBounds.Extents, viewBounds.Transformation, viewExtent);
-                                tile->ViewBoundsSize = viewExtent.GetAbsolute() * 2.0f;
-
-                                // Per-tile data
-                                const float tileWidth = (float)tile->Width - GLOBAL_SURFACE_ATLAS_TILE_PADDING;
-                                const float tileHeight = (float)tile->Height - GLOBAL_SURFACE_ATLAS_TILE_PADDING;
-                                auto* tileData = _objectsBuffer->WriteReserve<Vector4>(GLOBAL_SURFACE_ATLAS_TILE_DATA_STRIDE);
-                                tileData[0] = Vector4(tile->X, tile->Y, tileWidth, tileHeight) * resolutionInv;
-                                tileData[1] = Vector4(tile->ViewMatrix.M11, tile->ViewMatrix.M12, tile->ViewMatrix.M13, tile->ViewMatrix.M41);
-                                tileData[2] = Vector4(tile->ViewMatrix.M21, tile->ViewMatrix.M22, tile->ViewMatrix.M23, tile->ViewMatrix.M42);
-                                tileData[3] = Vector4(tile->ViewMatrix.M31, tile->ViewMatrix.M32, tile->ViewMatrix.M33, tile->ViewMatrix.M43);
-                                tileData[4] = Vector4(tile->ViewBoundsSize, 0.0f); // w unused
-                            }
-                        }
-                    }
+                    e.Actor->Draw(renderContext);
                 }
             }
         }
@@ -980,4 +843,151 @@ void GlobalSurfaceAtlasPass::RenderDebug(RenderContext& renderContext, GPUContex
     context->SetRenderTarget(output->View());
     context->SetViewportAndScissors(outputSize.X, outputSize.Y);
     context->DrawFullscreenTriangle();
+}
+
+void GlobalSurfaceAtlasPass::RasterizeActor(Actor* actor, const Matrix& localToWorld, const BoundingBox& localBounds)
+{
+    GlobalSurfaceAtlasCustomBuffer& surfaceAtlasData = *_surfaceAtlasData;
+    BoundingSphere actorBounds = actor->GetSphere();
+    Vector3 boundsSize = localBounds.GetSize() * actor->GetScale();
+    const float distanceScale = Math::Lerp(1.0f, surfaceAtlasData.DistanceScaling, Math::InverseLerp(surfaceAtlasData.DistanceScalingStart, surfaceAtlasData.DistanceScalingEnd, CollisionsHelper::DistanceSpherePoint(actorBounds, surfaceAtlasData.ViewPosition)));
+    const float tilesScale = surfaceAtlasData.TileTexelsPerWorldUnit * distanceScale;
+    GlobalSurfaceAtlasObject* object = surfaceAtlasData.Objects.TryGet(actor);
+    bool anyTile = false, dirty = false;
+    for (int32 tileIndex = 0; tileIndex < 6; tileIndex++)
+    {
+        // Calculate optimal tile resolution for the object side
+        Vector3 boundsSizeTile = boundsSize;
+        boundsSizeTile.Raw[tileIndex / 2] = MAX_float; // Ignore depth size
+        boundsSizeTile.Absolute();
+        uint16 tileResolution = (uint16)(boundsSizeTile.MinValue() * tilesScale);
+        if (tileResolution < 4)
+        {
+            // Skip too small surfaces
+            if (object && object->Tiles[tileIndex])
+            {
+                object->Tiles[tileIndex]->Free();
+                object->Tiles[tileIndex] = nullptr;
+            }
+            continue;
+        }
+
+        // Clamp tile resolution (in pixels)
+        static_assert(GLOBAL_SURFACE_ATLAS_TILE_PADDING < 8, "Invalid tile size configuration. Minimum tile size must be larger than padding.");
+        tileResolution = Math::Clamp<uint16>(tileResolution, 8, 128);
+
+        // Snap tiles resolution (down) which allows to reuse atlas slots once object gets resizes/replaced by other object
+        tileResolution = Math::AlignDown<uint16>(tileResolution, 8);
+
+        // Reuse current tile (refit only on a significant resolution change)
+        if (object && object->Tiles[tileIndex])
+        {
+            const uint16 tileRefitResolutionStep = 32;
+            const uint16 currentSize = object->Tiles[tileIndex]->Width;
+            if (Math::Abs(tileResolution - currentSize) < tileRefitResolutionStep)
+            {
+                anyTile = true;
+                continue;
+            }
+            object->Tiles[tileIndex]->Free();
+        }
+
+        // Insert tile into atlas
+        auto* tile = surfaceAtlasData.AtlasTiles->Insert(tileResolution, tileResolution, 0, &surfaceAtlasData, actor, tileIndex);
+        if (tile)
+        {
+            if (!object)
+                object = &surfaceAtlasData.Objects[actor];
+            object->Tiles[tileIndex] = tile;
+            anyTile = true;
+            dirty = true;
+        }
+        else
+        {
+            if (object)
+                object->Tiles[tileIndex] = nullptr;
+            surfaceAtlasData.LastFrameAtlasInsertFail = surfaceAtlasData.CurrentFrame;
+        }
+    }
+    if (!anyTile)
+        return;
+
+    // Redraw objects from time-to-time (dynamic objects can be animated, static objects can have textures streamed)
+    uint32 redrawFramesCount = actor->HasStaticFlag(StaticFlags::Lightmap) ? 120 : 4;
+    if (surfaceAtlasData.CurrentFrame - object->LastFrameDirty >= (redrawFramesCount + (actor->GetID().D & redrawFramesCount)))
+        dirty = true;
+
+    // Mark object as used
+    object->LastFrameUsed = surfaceAtlasData.CurrentFrame;
+    object->Bounds = OrientedBoundingBox(localBounds);
+    object->Bounds.Transform(localToWorld);
+    object->Radius = actorBounds.Radius;
+    if (dirty || GLOBAL_SURFACE_ATLAS_DEBUG_FORCE_REDRAW_TILES)
+    {
+        object->LastFrameDirty = surfaceAtlasData.CurrentFrame;
+        _dirtyObjectsBuffer.Add(actor);
+    }
+
+    // Write to objects buffer (this must match unpacking logic in HLSL)
+    Matrix worldToLocalBounds;
+    Matrix::Invert(object->Bounds.Transformation, worldToLocalBounds);
+    uint32 objectAddress = _objectsBuffer->Data.Count() / sizeof(Vector4);
+    auto* objectData = _objectsBuffer->WriteReserve<Vector4>(GLOBAL_SURFACE_ATLAS_OBJECT_DATA_STRIDE);
+    objectData[0] = *(Vector4*)&actorBounds;
+    objectData[1] = Vector4::Zero; // w unused
+    objectData[2] = Vector4(worldToLocalBounds.M11, worldToLocalBounds.M12, worldToLocalBounds.M13, worldToLocalBounds.M41);
+    objectData[3] = Vector4(worldToLocalBounds.M21, worldToLocalBounds.M22, worldToLocalBounds.M23, worldToLocalBounds.M42);
+    objectData[4] = Vector4(worldToLocalBounds.M31, worldToLocalBounds.M32, worldToLocalBounds.M33, worldToLocalBounds.M43);
+    objectData[5] = Vector4(object->Bounds.Extents, 0.0f); // w unused
+    auto tileOffsets = reinterpret_cast<uint16*>(&objectData[1]); // xyz used for tile offsets packed into uint16
+    auto objectDataSize = reinterpret_cast<uint32*>(&objectData[1].W); // w used for object size (count of Vector4s for object+tiles)
+    *objectDataSize = GLOBAL_SURFACE_ATLAS_OBJECT_DATA_STRIDE;
+    for (int32 tileIndex = 0; tileIndex < 6; tileIndex++)
+    {
+        auto* tile = object->Tiles[tileIndex];
+        if (!tile)
+            continue;
+        tile->ObjectAddressOffset = *objectDataSize;
+        tile->Address = objectAddress + tile->ObjectAddressOffset;
+        tileOffsets[tileIndex] = tile->ObjectAddressOffset;
+        *objectDataSize += GLOBAL_SURFACE_ATLAS_TILE_DATA_STRIDE;
+
+        // Setup view to render object from the side
+        Vector3 xAxis, yAxis, zAxis = Vector3::Zero;
+        zAxis.Raw[tileIndex / 2] = tileIndex & 1 ? 1.0f : -1.0f;
+        yAxis = tileIndex == 2 || tileIndex == 3 ? Vector3::Right : Vector3::Up;
+        Vector3::Cross(yAxis, zAxis, xAxis);
+        Vector3 localSpaceOffset = -zAxis * object->Bounds.Extents;
+        Vector3::TransformNormal(xAxis, object->Bounds.Transformation, xAxis);
+        Vector3::TransformNormal(yAxis, object->Bounds.Transformation, yAxis);
+        Vector3::TransformNormal(zAxis, object->Bounds.Transformation, zAxis);
+        xAxis.NormalizeFast();
+        yAxis.NormalizeFast();
+        zAxis.NormalizeFast();
+        Vector3::Transform(localSpaceOffset, object->Bounds.Transformation, tile->ViewPosition);
+        tile->ViewDirection = zAxis;
+
+        // Create view matrix
+        tile->ViewMatrix.SetColumn1(Vector4(xAxis, -Vector3::Dot(xAxis, tile->ViewPosition)));
+        tile->ViewMatrix.SetColumn2(Vector4(yAxis, -Vector3::Dot(yAxis, tile->ViewPosition)));
+        tile->ViewMatrix.SetColumn3(Vector4(zAxis, -Vector3::Dot(zAxis, tile->ViewPosition)));
+        tile->ViewMatrix.SetColumn4(Vector4(0, 0, 0, 1));
+
+        // Calculate object bounds size in the view
+        OrientedBoundingBox viewBounds(object->Bounds);
+        viewBounds.Transform(tile->ViewMatrix);
+        Vector3 viewExtent;
+        Vector3::TransformNormal(viewBounds.Extents, viewBounds.Transformation, viewExtent);
+        tile->ViewBoundsSize = viewExtent.GetAbsolute() * 2.0f;
+
+        // Per-tile data
+        const float tileWidth = (float)tile->Width - GLOBAL_SURFACE_ATLAS_TILE_PADDING;
+        const float tileHeight = (float)tile->Height - GLOBAL_SURFACE_ATLAS_TILE_PADDING;
+        auto* tileData = _objectsBuffer->WriteReserve<Vector4>(GLOBAL_SURFACE_ATLAS_TILE_DATA_STRIDE);
+        tileData[0] = Vector4(tile->X, tile->Y, tileWidth, tileHeight) * surfaceAtlasData.ResolutionInv;
+        tileData[1] = Vector4(tile->ViewMatrix.M11, tile->ViewMatrix.M12, tile->ViewMatrix.M13, tile->ViewMatrix.M41);
+        tileData[2] = Vector4(tile->ViewMatrix.M21, tile->ViewMatrix.M22, tile->ViewMatrix.M23, tile->ViewMatrix.M42);
+        tileData[3] = Vector4(tile->ViewMatrix.M31, tile->ViewMatrix.M32, tile->ViewMatrix.M33, tile->ViewMatrix.M43);
+        tileData[4] = Vector4(tile->ViewBoundsSize, 0.0f); // w unused
+    }
 }

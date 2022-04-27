@@ -352,6 +352,8 @@ void SplineModel::Draw(RenderContext& renderContext)
     auto model = Model.Get();
     if (renderContext.View.Pass == DrawPass::GlobalSDF)
         return;  // TODO: Spline Model rendering to Global SDF
+    if (renderContext.View.Pass == DrawPass::GlobalSurfaceAtlas)
+        return;  // TODO: Spline Model rendering to Global Surface Atlas
     if (!Entries.IsValidFor(model))
         Entries.Setup(model);
 
@@ -475,6 +477,9 @@ void SplineModel::Deserialize(DeserializeStream& stream, ISerializeModifier* mod
     // [Deprecated on 07.02.2022, expires on 07.02.2024]
     if (modifier->EngineBuild <= 6330)
         DrawModes |= DrawPass::GlobalSDF;
+    // [Deprecated on 27.04.2022, expires on 27.04.2024]
+    if (modifier->EngineBuild <= 6331)
+        DrawModes |= DrawPass::GlobalSurfaceAtlas;
 }
 
 void SplineModel::OnTransformChanged()

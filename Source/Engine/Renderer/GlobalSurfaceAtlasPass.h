@@ -44,6 +44,7 @@ private:
     class GPUBuffer* _culledObjectsSizeBuffer = nullptr;
     class DynamicTypedBuffer* _objectsBuffer = nullptr;
     class DynamicVertexBuffer* _vertexBuffer = nullptr;
+    class GlobalSurfaceAtlasCustomBuffer* _surfaceAtlasData;
     Array<Actor*> _dirtyObjectsBuffer;
     uint64 _culledObjectsSizeFrames[8];
 
@@ -64,6 +65,9 @@ public:
     /// <param name="context">The GPU context.</param>
     /// <param name="output">The output buffer.</param>
     void RenderDebug(RenderContext& renderContext, GPUContext* context, GPUTexture* output);
+
+    // Rasterize actor into the Global Surface Atlas. Call it from actor Draw() method during DrawPass::GlobalSurfaceAtlas.
+    void RasterizeActor(Actor* actor, const Matrix& localToWorld, const BoundingBox& localBounds);
 
 private:
 #if COMPILE_WITH_DEV_ENV

@@ -847,6 +847,8 @@ void Foliage::Draw(RenderContext& renderContext)
 {
     if (renderContext.View.Pass == DrawPass::GlobalSDF)
         return;  // TODO: Foliage rendering to Global SDF
+    if (renderContext.View.Pass == DrawPass::GlobalSurfaceAtlas)
+        return; // Not supported
     if (Instances.IsEmpty())
         return;
     auto& view = renderContext.View;

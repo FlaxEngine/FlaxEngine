@@ -703,9 +703,14 @@ API_ENUM(Attributes="Flags") enum class DrawPass : int32
     MotionVectors = 1 << 4,
 
     /// <summary>
-    /// The Global Sign Distance Field (SDF) rendering pass.
+    /// The Global Sign Distance Field (SDF) rendering pass. Used for software raytracing though the scene on a GPU.
     /// </summary>
     GlobalSDF = 1 << 5,
+
+    /// <summary>
+    /// The Global Surface Atlas rendering pass. Used for software raytracing though the scene on a GPU to evaluate the object surface material properties.
+    /// </summary>
+    GlobalSurfaceAtlas = 1 << 6,
 
     /// <summary>
     /// The debug quad overdraw rendering (editor-only).
@@ -717,13 +722,13 @@ API_ENUM(Attributes="Flags") enum class DrawPass : int32
     /// The default set of draw passes for the scene objects.
     /// </summary>
     API_ENUM(Attributes="HideInEditor")
-    Default = Depth | GBuffer | Forward | Distortion | MotionVectors | GlobalSDF,
+    Default = Depth | GBuffer | Forward | Distortion | MotionVectors | GlobalSDF | GlobalSurfaceAtlas,
 
     /// <summary>
     /// The all draw passes combined into a single mask.
     /// </summary>
     API_ENUM(Attributes="HideInEditor")
-    All = Depth | GBuffer | Forward | Distortion | MotionVectors | GlobalSDF,
+    All = Depth | GBuffer | Forward | Distortion | MotionVectors | GlobalSDF | GlobalSurfaceAtlas,
 };
 
 DECLARE_ENUM_OPERATORS(DrawPass);

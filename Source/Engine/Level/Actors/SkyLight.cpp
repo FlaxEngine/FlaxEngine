@@ -101,6 +101,7 @@ void SkyLight::Draw(RenderContext& renderContext)
     float brightness = Brightness;
     AdjustBrightness(renderContext.View, brightness);
     if ((renderContext.View.Flags & ViewFlags::SkyLights) != 0
+        && renderContext.View.Pass & DrawPass::GBuffer
         && brightness > ZeroTolerance
         && (ViewDistance < ZeroTolerance || Vector3::DistanceSquared(renderContext.View.Position, GetPosition()) < ViewDistance * ViewDistance))
     {

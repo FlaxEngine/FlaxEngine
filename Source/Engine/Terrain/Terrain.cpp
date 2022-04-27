@@ -507,6 +507,8 @@ void Terrain::Draw(RenderContext& renderContext)
         return;
     if (renderContext.View.Pass == DrawPass::GlobalSDF)
         return; // TODO: Terrain rendering to Global SDF
+    if (renderContext.View.Pass == DrawPass::GlobalSurfaceAtlas)
+        return; // TODO: Terrain rendering to Global Surface Atlas
 
     PROFILE_CPU();
 
@@ -733,6 +735,9 @@ void Terrain::Deserialize(DeserializeStream& stream, ISerializeModifier* modifie
     // [Deprecated on 07.02.2022, expires on 07.02.2024]
     if (modifier->EngineBuild <= 6330)
         DrawModes |= DrawPass::GlobalSDF;
+    // [Deprecated on 27.04.2022, expires on 27.04.2024]
+    if (modifier->EngineBuild <= 6331)
+        DrawModes |= DrawPass::GlobalSurfaceAtlas;
 }
 
 RigidBody* Terrain::GetAttachedRigidBody() const
