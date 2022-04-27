@@ -35,4 +35,11 @@ float2 LineHitBox(float3 lineStart, float3 lineEnd, float3 boxMin, float3 boxMax
 	return saturate(intersections);
 }
 
+// Determines whether there is an intersection between a box and a sphere.
+bool BoxIntersectsSphere(float3 boxMin, float3 boxMax, float3 sphereCenter, float sphereRadius)
+{
+	const float3 clampedCenter = clamp(sphereCenter, boxMin, boxMax);
+    return distance(sphereCenter, clampedCenter) <= sphereRadius;
+}
+
 #endif

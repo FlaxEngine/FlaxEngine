@@ -13,8 +13,11 @@ public:
     // Constant buffer data for Global Surface Atlas access on a GPU.
     PACK_STRUCT(struct GlobalSurfaceAtlasData
         {
-        Vector2 Padding;
+        Vector3 ViewPos;
+        float Padding0;
+        float Padding1;
         float Resolution;
+        float ChunkSize;
         uint32 ObjectsCount;
         });
 
@@ -22,8 +25,8 @@ public:
     struct BindingData
     {
         GPUTexture* Atlas[5];
-        GPUBuffer* Objects;
-        GPUBuffer* Tiles;
+        GPUBuffer* Chunks;
+        GPUBuffer* CulledObjects;
         GlobalSurfaceAtlasData GlobalSurfaceAtlas;
     };
 
@@ -35,10 +38,14 @@ private:
     GPUPipelineState* _psDirectLighting1 = nullptr;
     GPUPipelineState* _psDebug = nullptr;
     GPUConstantBuffer* _cb0 = nullptr;
+    GPUShaderProgramCS* _csCullObjects;
 
-    // Rasterization cache
+    // Cache
+    class GPUBuffer* _culledObjectsSizeBuffer = nullptr;
+    class DynamicTypedBuffer* _objectsBuffer = nullptr;
     class DynamicVertexBuffer* _vertexBuffer = nullptr;
     Array<Actor*> _dirtyObjectsBuffer;
+    uint64 _culledObjectsSizeFrames[8];
 
 public:
     /// <summary>
