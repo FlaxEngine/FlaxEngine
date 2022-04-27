@@ -714,7 +714,7 @@ namespace FlaxEditor.Scripting
         public IScriptType IScriptType => _custom;
 
         /// <summary>
-        /// Gets a type name (eg. name of the class or enum without leading namespace).
+        /// Gets a type display name (eg. name of the class or enum without leading namespace).
         /// </summary>
         public string Name
         {
@@ -724,19 +724,7 @@ namespace FlaxEditor.Scripting
                     return _custom.Name;
                 if (_managed == null)
                     return string.Empty;
-                if (_managed == typeof(float))
-                    return "Float";
-                if (_managed == typeof(int))
-                    return "Int";
-                if (_managed == typeof(uint))
-                    return "Uint";
-                if (_managed == typeof(short))
-                    return "Int16";
-                if (_managed == typeof(ushort))
-                    return "Uint16";
-                if (_managed == typeof(bool))
-                    return "Bool";
-                return _managed.Name;
+                return _managed.GetTypeDisplayName();
             }
         }
 
@@ -789,6 +777,11 @@ namespace FlaxEditor.Scripting
         /// Gets a value indicating whether the type is an array.
         /// </summary>
         public bool IsArray => _managed != null ? _managed.IsArray : _custom != null && _custom.IsArray;
+
+        /// <summary>
+        /// Gets a value indicating whether the type is a dictionary.
+        /// </summary>
+        public bool IsDictionary => IsGenericType && GetGenericTypeDefinition() == typeof(Dictionary<,>);
 
         /// <summary>
         /// Gets a value indicating whether the type is a value type (basic type, enumeration or a structure).
@@ -981,7 +974,7 @@ namespace FlaxEditor.Scripting
         public override string ToString()
         {
             if (_managed != null)
-                return _managed.FullName ?? string.Empty;
+                return _managed.GetTypeDisplayName() ?? string.Empty;
             if (_custom != null)
                 return _custom.TypeName;
             return "<null>";
@@ -1120,6 +1113,15 @@ namespace FlaxEditor.Scripting
             if (_managed != null)
                 return new ScriptType(_managed.MakeArrayType());
             throw new NotImplementedException("TODO: Script.Type.MakeArrayType for custom types");
+        }
+
+        /// <summary>
+        /// Returns a type object that represents a dictionary of the key and value types.
+        /// </summary>
+        /// <returns>A type object representing a dictionary of the key and value types.</returns>
+        public static ScriptType MakeDictionaryType(ScriptType keyType, ScriptType valueType)
+        {
+            return new ScriptType(typeof(Dictionary<,>).MakeGenericType(TypeUtils.GetType(keyType), TypeUtils.GetType(valueType)));
         }
 
         /// <summary>

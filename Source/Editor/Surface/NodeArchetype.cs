@@ -58,6 +58,11 @@ namespace FlaxEditor.Surface
         Array = 32,
 
         /// <summary>
+        /// Allow any dictionary types connections.
+        /// </summary>
+        Dictionary = 64,
+
+        /// <summary>
         /// Allow any scalar or vector numeric value types connections (bool, int, float, vector2, color..).
         /// </summary>
         Numeric = Scalar | Vector,
@@ -65,7 +70,7 @@ namespace FlaxEditor.Surface
         /// <summary>
         /// All flags.
         /// </summary>
-        All = Scalar | Vector | Enum | Anything | Value | Array,
+        All = Scalar | Vector | Enum | Anything | Value | Array | Dictionary,
     }
 
     /// <summary>

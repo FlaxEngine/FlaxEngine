@@ -132,7 +132,7 @@ namespace FlaxEditor.Surface.Archetypes
                     Array.Copy(prev, next, Mathf.Min(prev.Length, next.Length));
                 SetValue(0, next);
             }
-            
+
             public override void OnSurfaceCanEditChanged(bool canEdit)
             {
                 base.OnSurfaceCanEditChanged(canEdit);
@@ -141,7 +141,7 @@ namespace FlaxEditor.Surface.Archetypes
                 _addButton.Enabled = canEdit;
                 _removeButton.Enabled = canEdit;
             }
-            
+
             public override void OnDestroy()
             {
                 _output = null;
@@ -179,7 +179,7 @@ namespace FlaxEditor.Surface.Archetypes
                         break;
                     RemoveElement(box);
                 }
-                
+
                 var canEdit = Surface.CanEdit;
                 _typePicker.Enabled = canEdit;
                 _addButton.Enabled = count < countMax && canEdit;
@@ -193,6 +193,132 @@ namespace FlaxEditor.Surface.Archetypes
                 _addButton.X = Width - _addButton.Width - FlaxEditor.Surface.Constants.NodeMarginX;
                 _removeButton.X = _addButton.X - _removeButton.Width - 4;
                 _typePicker.Width = Width - 30;
+            }
+
+            private object GetBoxValue(InputBox box)
+            {
+                var array = (Array)Values[0];
+                return array.GetValue(box.ID - 1);
+            }
+
+            private void SetBoxValue(InputBox box, object value)
+            {
+                if (_isDuringValuesEditing || !Surface.CanEdit)
+                    return;
+                var array = (Array)Values[0];
+                array = (Array)array.Clone();
+                array.SetValue(value, box.ID - 1);
+                SetValue(0, array);
+            }
+        }
+
+        private class DictionaryNode : SurfaceNode
+        {
+            private OutputBox _output;
+            private TypePickerControl _keyTypePicker;
+            private TypePickerControl _valueTypePicker;
+            private bool _isUpdatingUI;
+
+            public DictionaryNode(uint id, VisjectSurfaceContext context, NodeArchetype nodeArch, GroupArchetype groupArch)
+            : base(id, context, nodeArch, groupArch)
+            {
+            }
+
+            public override void OnValuesChanged()
+            {
+                UpdateUI();
+
+                base.OnValuesChanged();
+            }
+
+            public override void OnLoaded()
+            {
+                base.OnLoaded();
+
+                _output = (OutputBox)Elements[0];
+                _keyTypePicker = new TypePickerControl
+                {
+                    Bounds = new Rectangle(FlaxEditor.Surface.Constants.NodeMarginX, FlaxEditor.Surface.Constants.NodeMarginY + FlaxEditor.Surface.Constants.NodeHeaderSize, 160, 16),
+                    Parent = this,
+                };
+                _keyTypePicker.ValueChanged += OnKeyTypeChanged;
+                _valueTypePicker = new TypePickerControl
+                {
+                    Bounds = new Rectangle(_keyTypePicker.X, _keyTypePicker.Y + FlaxEditor.Surface.Constants.LayoutOffsetY, _keyTypePicker.Width, _keyTypePicker.Height),
+                    Parent = this,
+                };
+                _valueTypePicker.ValueChanged += OnValueTypeChanged;
+
+                UpdateUI();
+            }
+
+            private void OnKeyTypeChanged()
+            {
+                if (_isUpdatingUI)
+                    return;
+                SetValue(0, _keyTypePicker.ValueTypeName);
+            }
+
+            private void OnValueTypeChanged()
+            {
+                if (_isUpdatingUI)
+                    return;
+                SetValue(1, _valueTypePicker.ValueTypeName);
+            }
+
+            public override void OnSurfaceCanEditChanged(bool canEdit)
+            {
+                base.OnSurfaceCanEditChanged(canEdit);
+
+                _keyTypePicker.Enabled = canEdit;
+                _valueTypePicker.Enabled = canEdit;
+            }
+
+            public override void OnDestroy()
+            {
+                _output = null;
+                _keyTypePicker = null;
+                _valueTypePicker = null;
+
+                base.OnDestroy();
+            }
+
+            private void UpdateUI()
+            {
+                if (_isUpdatingUI)
+                    return;
+                var keyTypeName = (string)Values[0];
+                var valueTypeName = (string)Values[1];
+                var keyType = TypeUtils.GetType(keyTypeName);
+                var valueType = TypeUtils.GetType(valueTypeName);
+                if (keyType == ScriptType.Null)
+                {
+                    Editor.LogError("Missing type " + keyTypeName);
+                    keyType = ScriptType.Object;
+                }
+                if (valueType == ScriptType.Null)
+                {
+                    Editor.LogError("Missing type " + valueTypeName);
+                    valueType = ScriptType.Object;
+                }
+                var dictionaryType = ScriptType.MakeDictionaryType(keyType, valueType);
+
+                _isUpdatingUI = true;
+                _keyTypePicker.Value = keyType;
+                _valueTypePicker.Value = valueType;
+                _output.CurrentType = dictionaryType;
+                _isUpdatingUI = false;
+
+                var canEdit = Surface.CanEdit;
+                _keyTypePicker.Enabled = canEdit;
+                _valueTypePicker.Enabled = canEdit;
+
+                Title = Surface.GetTypeName(dictionaryType);
+                _keyTypePicker.Width = 160.0f;
+                _valueTypePicker.Width = 160.0f;
+                ResizeAuto();
+                _keyTypePicker.Width = Width - 30;
+                _valueTypePicker.Width = Width - 30;
             }
 
             private object GetBoxValue(InputBox box)
@@ -236,12 +362,12 @@ namespace FlaxEditor.Surface.Archetypes
                 TryParseText = (string filterText, out object[] data) =>
                 {
                     data = null;
-                    if (filterText == "true")
+                    if (string.Equals(filterText, bool.TrueString, StringComparison.OrdinalIgnoreCase))
                     {
                         data = new object[] { true };
                         return true;
                     }
-                    if (filterText == "false")
+                    if (string.Equals(filterText, bool.FalseString, StringComparison.OrdinalIgnoreCase))
                     {
                         data = new object[] { false };
                         return true;
@@ -542,6 +668,17 @@ namespace FlaxEditor.Surface.Archetypes
                 Flags = NodeFlags.VisualScriptGraph | NodeFlags.AnimGraph,
                 Size = new Vector2(150, 20),
                 DefaultValues = new object[] { new int[] { 0, 1, 2 } },
+                Elements = new[] { NodeElementArchetype.Factory.Output(0, string.Empty, null, 0) }
+            },
+            new NodeArchetype
+            {
+                TypeID = 14,
+                Title = "Dictionary",
+                Create = (id, context, arch, groupArch) => new DictionaryNode(id, context, arch, groupArch),
+                Description = "Creates an empty dictionary.",
+                Flags = NodeFlags.VisualScriptGraph | NodeFlags.AnimGraph,
+                Size = new Vector2(150, 40),
+                DefaultValues = new object[] { typeof(int).FullName, typeof(string).FullName },
                 Elements = new[] { NodeElementArchetype.Factory.Output(0, string.Empty, null, 0) }
             },
         };

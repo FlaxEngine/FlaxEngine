@@ -14,6 +14,9 @@
 #if USE_MONO
 #include <ThirdParty/mono-2.0/mono/metadata/appdomain.h>
 
+/// <summary>
+/// Utility interop between C++ and C# for Dictionary collection.
+/// </summary>
 struct FLAXENGINE_API ManagedDictionary
 {
     MonoObject* Instance;
@@ -74,17 +77,13 @@ struct FLAXENGINE_API ManagedDictionary
         return result;
     }
 
-    static ManagedDictionary New(MonoType* keyType, MonoType* valueType)
+    static MonoReflectionType* GetClass(MonoType* keyType, MonoType* valueType)
     {
-        ManagedDictionary result;
-
         auto domain = mono_domain_get();
         auto scriptingClass = Scripting::GetStaticClass();
-        CHECK_RETURN(scriptingClass, result);
+        CHECK_RETURN(scriptingClass, nullptr);
         auto makeGenericMethod = scriptingClass->GetMethod("MakeGenericType", 2);
-        CHECK_RETURN(makeGenericMethod, result);
-        auto createMethod = StdTypesContainer::Instance()->ActivatorClass->GetMethod("CreateInstance", 2);
-        CHECK_RETURN(createMethod, result);
+        CHECK_RETURN(makeGenericMethod, nullptr);
 
         auto genericType = MUtils::GetType(StdTypesContainer::Instance()->DictionaryClass->GetNative());
         auto genericArgs = mono_array_new(domain, mono_get_object_class(), 2);
@@ -100,9 +99,25 @@ struct FLAXENGINE_API ManagedDictionary
         {
             MException ex(exception);
             ex.Log(LogType::Error, TEXT(""));
-            return result;
+            return nullptr;
         }
+        return (MonoReflectionType*)dictionaryType;
+    }
 
+    static ManagedDictionary New(MonoType* keyType, MonoType* valueType)
+    {
+        ManagedDictionary result;
+        auto dictionaryType = GetClass(keyType, valueType);
+        if (!dictionaryType)
+            return result;
+
+        auto scriptingClass = Scripting::GetStaticClass();
+        CHECK_RETURN(scriptingClass, result);
+        auto createMethod = StdTypesContainer::Instance()->ActivatorClass->GetMethod("CreateInstance", 2);
+        CHECK_RETURN(createMethod, result);
+
+        MObject* exception = nullptr;
+        void* params[2];
         params[0] = dictionaryType;
         params[1] = nullptr;
         auto instance = createMethod->Invoke(nullptr, params, &exception);

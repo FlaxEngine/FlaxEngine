@@ -175,37 +175,51 @@ namespace FlaxEditor.Windows.Assets
                 // Parameter type editing
                 var cmType = menu.AddChildMenu("Type");
                 {
-                    var b = cmType.ContextMenu.AddButton(window.Surface.GetTypeName(param.Type) + "...", () => 
+                    var isArray = param.Type.IsArray;
+                    var isDictionary = !isArray && param.Type.IsDictionary;
+                    ScriptType singleValueType, arrayType, dictionaryType;
+                    ContextMenuButton b;
+                    if (isDictionary)
                     {
-                        // Show context menu with list of parameter types to use
-                        var cm = new ItemsListContextMenu(180);
-                        var newParameterTypes = window.NewParameterTypes;
-                        foreach (var newParameterType in newParameterTypes)
-                        {
-                            var item = new TypeSearchPopup.TypeItemView(newParameterType);
-                            if (newParameterType.Type != null)
-                                item.Name = window.VisjectSurface.GetTypeName(newParameterType);
-                            cm.AddItem(item);
-                        }
-                        cm.ItemClicked += (ItemsListContextMenu.Item item) => window.SetParamType(index, (ScriptType)item.Tag);
-                        cm.SortChildren();
-                        cm.Show(window, window.PointFromScreen(Input.MouseScreenPosition));
-                    });
-                    b.Enabled = window._canEdit;
-                    b.TooltipText = "Opens the type picker window to change the parameter type.";
-                    cmType.ContextMenu.AddSeparator();
+                        var args = param.Type.GetGenericArguments();
+                        singleValueType = new ScriptType(args[0]);
+                        arrayType = singleValueType.MakeArrayType();
+                        dictionaryType = param.Type;
+                        var keyName = window.Surface.GetTypeName(new ScriptType(args[0]));
+                        var valueName = window.Surface.GetTypeName(new ScriptType(args[1]));
 
-                    ScriptType singleValueType, arrayType;
-                    if (param.Type.IsArray)
-                    {
-                        singleValueType = new ScriptType(param.Type.GetElementType());
-                        arrayType = param.Type;
+                        b = cmType.ContextMenu.AddButton($"Dictionary<{keyName}, {valueName}>");
+                        b.Enabled = false;
+
+                        b = cmType.ContextMenu.AddButton($"Edit key type: {keyName}...", () => OnChangeType(item => window.SetParamType(index, ScriptType.MakeDictionaryType((ScriptType)item.Tag, new ScriptType(args[1])))));
+                        b.Enabled = window._canEdit;
+                        b.TooltipText = "Opens the type picker window to change the parameter type.";
+
+                        b = cmType.ContextMenu.AddButton($"Edit value type: {valueName}...", () => OnChangeType(item => window.SetParamType(index, ScriptType.MakeDictionaryType(new ScriptType(args[0]), (ScriptType)item.Tag))));
+                        b.Enabled = window._canEdit;
+                        b.TooltipText = "Opens the type picker window to change the parameter type.";
                     }
                     else
                     {
-                        singleValueType = param.Type;
-                        arrayType = param.Type.MakeArrayType();
+                        if (isArray)
+                        {
+                            singleValueType = new ScriptType(param.Type.GetElementType());
+                            arrayType = param.Type;
+                            dictionaryType = ScriptType.MakeDictionaryType(new ScriptType(typeof(int)), singleValueType);
+                            b = cmType.ContextMenu.AddButton(window.Surface.GetTypeName(singleValueType) + "[]...", () => OnChangeType(item => window.SetParamType(index, ((ScriptType)item.Tag).MakeArrayType())));
+                        }
+                        else
+                        {
+                            singleValueType = param.Type;
+                            arrayType = param.Type.MakeArrayType();
+                            dictionaryType = ScriptType.MakeDictionaryType(new ScriptType(typeof(int)), singleValueType);
+                            b = cmType.ContextMenu.AddButton(window.Surface.GetTypeName(param.Type) + "...", () => OnChangeType(item => window.SetParamType(index, (ScriptType)item.Tag)));
+                        }
+                        b.Enabled = window._canEdit;
+                        b.TooltipText = "Opens the type picker window to change the parameter type.";
                     }
+                    cmType.ContextMenu.AddSeparator();
+
                     b = cmType.ContextMenu.AddButton("Value", () => window.SetParamType(index, singleValueType));
                     b.Checked = param.Type == singleValueType;
                     b.Enabled = window._canEdit;
@@ -214,7 +228,29 @@ namespace FlaxEditor.Windows.Assets
                     b.Checked = param.Type == arrayType;
                     b.Enabled = window._canEdit;
                     b.TooltipText = "Changes parameter type to an array.";
+                    b = cmType.ContextMenu.AddButton("Dictionary", () => window.SetParamType(index, dictionaryType));
+                    b.Checked = param.Type == dictionaryType;
+                    b.Enabled = window._canEdit;
+                    b.TooltipText = "Changes parameter type to a dictionary.";
                 }
+            }
+
+            private void OnChangeType(Action<ItemsListContextMenu.Item> itemClicked)
+            {
+                // Show context menu with list of parameter types to use
+                var cm = new ItemsListContextMenu(180);
+                var window = (VisualScriptWindow)Values[0];
+                var newParameterTypes = window.NewParameterTypes;
+                foreach (var newParameterType in newParameterTypes)
+                {
+                    var item = new TypeSearchPopup.TypeItemView(newParameterType);
+                    if (newParameterType.Type != null)
+                        item.Name = window.VisjectSurface.GetTypeName(newParameterType);
+                    cm.AddItem(item);
+                }
+                cm.ItemClicked += itemClicked;
+                cm.SortChildren();
+                cm.Show(window, window.PointFromScreen(Input.MouseScreenPosition));
             }
         }
 
@@ -366,7 +402,7 @@ namespace FlaxEditor.Windows.Assets
                 gridControl.Height = Button.DefaultHeight;
                 gridControl.SlotsHorizontally = 2;
                 gridControl.SlotsVertically = 1;
-                
+
                 var addOverride = grid.Button("Add Override");
                 addOverride.Button.Clicked += OnOverrideMethodClicked;
                 // TODO: Add sender arg to button clicked action?

@@ -3,6 +3,7 @@
 using System;
 using System.Collections.Generic;
 using System.Reflection;
+using System.Text;
 using FlaxEngine;
 
 namespace FlaxEditor.Scripting
@@ -31,6 +32,74 @@ namespace FlaxEditor.Scripting
                 return type.FullName != typeName ? GetType(typeName) : new ScriptType(type);
             }
             return o != null ? new ScriptType(o.GetType()) : ScriptType.Null;
+        }
+
+        /// <summary>
+        /// Gets the typename full name.
+        /// </summary>
+        /// <param name="type">The type.</param>
+        /// <returns>The full typename of the type.</returns>
+        public static string GetTypeName(this Type type)
+        {
+            if (type.IsGenericType)
+            {
+                // For generic types (eg. Dictionary) FullName returns generic parameter types with fully qualified name so simplify it manually
+                var sb = new StringBuilder();
+                sb.Append(type.Namespace);
+                sb.Append('.');
+                sb.Append(type.Name);
+                sb.Append('[');
+                var genericArgs = type.GetGenericArguments();
+                for (var i = 0; i < genericArgs.Length; i++)
+                {
+                    if (i != 0)
+                        sb.Append(',');
+                    sb.Append(genericArgs[i].GetTypeName());
+                }
+                sb.Append(']');
+                return sb.ToString();
+            }
+            return type.FullName;
+        }
+
+        /// <summary>
+        /// Gets the typename name for UI.
+        /// </summary>
+        /// <param name="type">The type.</param>
+        /// <returns>The display of the type.</returns>
+        public static string GetTypeDisplayName(this Type type)
+        {
+            // Special display for in-built basic types
+            if (type == typeof(bool))
+                return "Bool";
+            if (type == typeof(float))
+                return "Float";
+            if (type == typeof(int))
+                return "Int";
+            if (type == typeof(uint))
+                return "Uint";
+
+            // For generic types (eg. Dictionary) Name returns generic parameter types with fully qualified name so simplify it manually
+            if (type.IsGenericType)
+            {
+                var sb = new StringBuilder();
+                var name = type.Name;
+                var idx = name.IndexOf('`');
+                sb.Append(idx != -1 ? name.Substring(0, idx) : name);
+                sb.Append('<');
+                var genericArgs = type.GetGenericArguments();
+                for (var i = 0; i < genericArgs.Length; i++)
+                {
+                    if (i != 0)
+                        sb.Append(", ");
+                    sb.Append(genericArgs[i].GetTypeDisplayName());
+                }
+                sb.Append('>');
+                return sb.ToString();
+            }
+
+            // Default name
+            return type.Name;
         }
 
         /// <summary>

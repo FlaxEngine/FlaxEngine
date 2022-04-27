@@ -1,6 +1,7 @@
 // Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using FlaxEditor.Scripting;
@@ -134,7 +135,7 @@ namespace FlaxEditor.Utilities
                 variantType = VariantType.Blob;
             else if (type.IsArray)
                 variantType = VariantType.Array;
-            else if (type == typeof(Dictionary<object, object>))
+            else if (type == typeof(Dictionary<object, object>) || (type.IsGenericType && type.GetGenericTypeDefinition() == typeof(Dictionary<,>)))
                 variantType = VariantType.Dictionary;
             else if (type.IsPointer || type.IsByRef)
             {
@@ -206,15 +207,27 @@ namespace FlaxEditor.Utilities
             case VariantType.Enum:
             case VariantType.Structure:
             case VariantType.ManagedObject:
-            case VariantType.Typename:
                 stream.Write(int.MaxValue);
                 stream.WriteStrAnsi(type.FullName, 77);
+                break;
+            case VariantType.Typename:
+                stream.Write(int.MaxValue);
+                stream.WriteStrAnsi(type.GetTypeName(), 77);
                 break;
             case VariantType.Array:
                 if (type != typeof(object[]))
                 {
                     stream.Write(int.MaxValue);
                     stream.WriteStrAnsi(type.FullName, 77);
+                }
+                else
+                    stream.Write(0);
+                break;
+            case VariantType.Dictionary:
+                if (type != typeof(Dictionary<object, object>))
+                {
+                    stream.Write(int.MaxValue);
+                    stream.WriteStrAnsi(type.GetTypeName(), 77);
                 }
                 else
                     stream.Write(0);
@@ -455,7 +468,7 @@ namespace FlaxEditor.Utilities
                 if (type == null)
                     type = typeof(object[]);
                 else if (!type.IsArray)
-                    throw new Exception("Invalid arry type for the Variant array " + typeName);
+                    throw new Exception("Invalid type for the Variant array " + typeName);
                 var count = stream.ReadInt32();
                 var result = Array.CreateInstance(type.GetElementType(), count);
                 for (int i = 0; i < count; i++)
@@ -464,8 +477,12 @@ namespace FlaxEditor.Utilities
             }
             case VariantType.Dictionary:
             {
+                if (type == null)
+                    type = typeof(Dictionary<object, object>);
+                else if (!type.IsGenericType || type.GetGenericTypeDefinition() != typeof(Dictionary<,>))
+                    throw new Exception("Invalid type for the Variant dictionary " + typeName);
                 var count = stream.ReadInt32();
-                var result = new Dictionary<object, object>();
+                var result = (IDictionary)Activator.CreateInstance(type);
                 for (int i = 0; i < count; i++)
                     result.Add(stream.ReadVariant(), stream.ReadVariant());
                 return result;
@@ -500,7 +517,7 @@ namespace FlaxEditor.Utilities
                 }
                 return null;
             }
-            default: throw new ArgumentOutOfRangeException($"Unknown Variant Type {variantType}." + (type != null ? $" Type: {type.FullName}" : string.Empty));
+            default: throw new ArgumentOutOfRangeException($"Unknown Variant Type {variantType}." + (type != null ? $" Type: {type.GetTypeDisplayName()}" : string.Empty));
             }
         }
 
@@ -546,6 +563,15 @@ namespace FlaxEditor.Utilities
                 {
                     stream.Write(int.MaxValue);
                     stream.WriteStrAnsi(type.FullName, 77);
+                }
+                else
+                    stream.Write(0);
+                break;
+            case VariantType.Dictionary:
+                if (type != typeof(Dictionary<object, object>))
+                {
+                    stream.Write(int.MaxValue);
+                    stream.WriteStrAnsi(type.GetTypeName(), 77);
                 }
                 else
                     stream.Write(0);
@@ -660,16 +686,19 @@ namespace FlaxEditor.Utilities
                 break;
             }
             case VariantType.Dictionary:
-                stream.Write(((Dictionary<object, object>)value).Count);
-                foreach (var e in (Dictionary<object, object>)value)
+            {
+                var dictionary = (IDictionary)value;
+                stream.Write(dictionary.Count);
+                foreach (var key in dictionary.Keys)
                 {
-                    stream.WriteVariant(e.Key);
-                    stream.WriteVariant(e.Value);
+                    stream.WriteVariant(key);
+                    stream.WriteVariant(dictionary[key]);
                 }
                 break;
+            }
             case VariantType.Typename:
                 if (value is Type)
-                    stream.WriteStrAnsi(((Type)value).FullName, -14);
+                    stream.WriteStrAnsi(((Type)value).GetTypeName(), -14);
                 else if (value is ScriptType)
                     stream.WriteStrAnsi(((ScriptType)value).TypeName, -14);
                 break;
@@ -708,6 +737,10 @@ namespace FlaxEditor.Utilities
                 if (value != typeof(object[]))
                     withoutTypeName = false;
                 break;
+            case VariantType.Dictionary:
+                if (value != typeof(Dictionary<object, object>))
+                    withoutTypeName = false;
+                break;
             }
             if (withoutTypeName)
             {
@@ -721,7 +754,7 @@ namespace FlaxEditor.Utilities
                 stream.WriteValue((int)variantType);
 
                 stream.WritePropertyName("TypeName");
-                stream.WriteValue(value.FullName);
+                stream.WriteValue(value.GetTypeName());
 
                 stream.WriteEndObject();
             }
@@ -1114,19 +1147,20 @@ namespace FlaxEditor.Utilities
             case VariantType.Dictionary:
             {
                 stream.WriteStartArray();
-                foreach (var e in (Dictionary<object, object>)value)
+                var dictionary = (IDictionary)value;
+                foreach (var key in dictionary.Keys)
                 {
                     stream.WritePropertyName("Key");
-                    stream.WriteVariant(e.Key);
+                    stream.WriteVariant(key);
                     stream.WritePropertyName("Value");
-                    stream.WriteVariant(e.Value);
+                    stream.WriteVariant(dictionary[key]);
                 }
                 stream.WriteEndArray();
                 break;
             }
             case VariantType.Typename:
                 if (value is Type)
-                    stream.WriteValue(((Type)value).FullName);
+                    stream.WriteValue(((Type)value).GetTypeName());
                 else if (value is ScriptType)
                     stream.WriteValue(((ScriptType)value).TypeName);
                 break;
@@ -1137,7 +1171,7 @@ namespace FlaxEditor.Utilities
                 stream.WriteRaw(json);
                 break;
             }
-            default: throw new ArgumentOutOfRangeException($"Unknown Variant Type {variantType} for type {type.FullName}.");
+            default: throw new ArgumentOutOfRangeException($"Unknown Variant Type {variantType} for type {type.GetTypeDisplayName()}.");
             }
             // ReSharper restore PossibleNullReferenceException
 

@@ -1190,6 +1190,85 @@ void VisualScriptExecutor::ProcessGroupFlow(Box* boxBase, Node* node, Value& val
         }
         break;
     }
+    // Dictionary For Each
+    case 8:
+    {
+        const auto scope = ThreadStacks.Get().Stack->Scope;
+        int32 iteratorIndex = 0;
+        for (; iteratorIndex < scope->ReturnedValues.Count(); iteratorIndex++)
+        {
+            const auto& e = scope->ReturnedValues[iteratorIndex];
+            if (e.NodeId == node->ID && e.BoxId == 0)
+                break;
+        }
+        int32 dictionaryIndex = 0;
+        for (; iteratorIndex < scope->ReturnedValues.Count(); dictionaryIndex++)
+        {
+            const auto& e = scope->ReturnedValues[dictionaryIndex];
+            if (e.NodeId == node->ID && e.BoxId == 1)
+                break;
+        }
+        switch (boxBase->ID)
+        {
+        // Loop
+        case 0:
+        {
+            if (iteratorIndex == scope->ReturnedValues.Count())
+            {
+                if (dictionaryIndex == scope->ReturnedValues.Count())
+                    dictionaryIndex++;
+                scope->ReturnedValues.AddOne();
+            }
+            if (dictionaryIndex == scope->ReturnedValues.Count())
+                scope->ReturnedValues.AddOne();
+            auto& iteratorValue = scope->ReturnedValues[iteratorIndex];
+            iteratorValue.NodeId = node->ID;
+            iteratorValue.BoxId = 0;
+            auto& dictionaryValue = scope->ReturnedValues[dictionaryIndex];
+            dictionaryValue.NodeId = node->ID;
+            dictionaryValue.BoxId = 1;
+            dictionaryValue.Value = tryGetValue(node->GetBox(4), Value::Null);
+            if (dictionaryValue.Value.Type.Type != VariantType::Dictionary)
+            {
+                OnError(node, boxBase, String::Format(TEXT("Input value {0} is not a dictionary."), dictionaryValue.Value));
+                return;
+            }
+            auto& dictionary = *dictionaryValue.Value.AsDictionary;
+            iteratorValue.Value = dictionary.Begin().Index();
+            int32 end = dictionary.End().Index();
+            while (iteratorValue.Value.AsInt < end)
+            {
+                boxBase = node->GetBox(3);
+                if (boxBase->HasConnection())
+                    eatBox(node, boxBase->FirstConnection());
+                Dictionary<Variant, Variant>::Iterator it(dictionary, iteratorValue.Value.AsInt);
+                ++it;
+                iteratorValue.Value.AsInt = it.Index();
+            }
+            boxBase = node->GetBox(6);
+            if (boxBase->HasConnection())
+                eatBox(node, boxBase->FirstConnection());
+            break;
+        }
+        // Key
+        case 1:
+            if (iteratorIndex != scope->ReturnedValues.Count() && dictionaryIndex != scope->ReturnedValues.Count())
+                value = Dictionary<Variant, Variant>::Iterator(*scope->ReturnedValues[dictionaryIndex].Value.AsDictionary, scope->ReturnedValues[iteratorIndex].Value.AsInt)->Key;
+            break;
+        // Value
+        case 2:
+            if (iteratorIndex != scope->ReturnedValues.Count() && dictionaryIndex != scope->ReturnedValues.Count())
+                value = Dictionary<Variant, Variant>::Iterator(*scope->ReturnedValues[dictionaryIndex].Value.AsDictionary, scope->ReturnedValues[iteratorIndex].Value.AsInt)->Value;
+            break;
+        // Break
+        case 5:
+            // Reset loop iterator
+            if (iteratorIndex != scope->ReturnedValues.Count())
+                scope->ReturnedValues[iteratorIndex].Value.AsInt = MAX_int32 - 1;
+            break;
+        }
+        break;
+    }
     }
 }
 
