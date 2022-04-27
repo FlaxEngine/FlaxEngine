@@ -156,10 +156,10 @@ float4 SampleGlobalSurfaceAtlasTile(const GlobalSurfaceAtlasData data, GlobalSur
 }
 
 // Samples the Global Surface Atlas and returns the lighting (with opacity) at the given world location (and direction).
-float4 SampleGlobalSurfaceAtlas(const GlobalSurfaceAtlasData data, ByteAddressBuffer chunks, Buffer<float4> culledObjects, Texture2D depth, Texture2D atlas, float3 worldPosition, float3 worldNormal)
+// surfaceThreshold - Additional threshold (in world-units) between object or tile size compared with input data (error due to SDF or LOD incorrect appearance)
+float4 SampleGlobalSurfaceAtlas(const GlobalSurfaceAtlasData data, ByteAddressBuffer chunks, Buffer<float4> culledObjects, Texture2D depth, Texture2D atlas, float3 worldPosition, float3 worldNormal, float surfaceThreshold = 20.0f)
 {
 	float4 result = float4(0, 0, 0, 0);
-	float surfaceThreshold = 20.0f; // Additional threshold between object or tile size compared with input data (error due to SDF or LOD incorrect appearance)
 
 	// Snap to the closest chunk to get culled objects
 	uint3 chunkCoord = (uint3)clamp(floor((worldPosition - data.ViewPos) / data.ChunkSize + (GLOBAL_SURFACE_ATLAS_CHUNKS_RESOLUTION * 0.5f)), 0, GLOBAL_SURFACE_ATLAS_CHUNKS_RESOLUTION - 1);
