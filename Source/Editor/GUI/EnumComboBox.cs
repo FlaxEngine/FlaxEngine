@@ -261,7 +261,7 @@ namespace FlaxEditor.GUI
                     switch (formatMode)
                     {
                     case EnumDisplayAttribute.FormatMode.Default:
-                        name = CustomEditorsUtil.GetPropertyNameUI(field.Name);
+                        name = Utilities.Utils.GetPropertyNameUI(field.Name);
                         break;
                     case EnumDisplayAttribute.FormatMode.None:
                         name = field.Name;

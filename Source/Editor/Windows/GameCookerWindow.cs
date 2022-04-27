@@ -278,7 +278,7 @@ namespace FlaxEditor.Windows
                             name = "Mac";
                             break;
                         default:
-                            name = CustomEditorsUtil.GetPropertyNameUI(_platform.ToString());
+                            name = Utilities.Utils.GetPropertyNameUI(_platform.ToString());
                             break;
                         }
                         var group = layout.Group(name);

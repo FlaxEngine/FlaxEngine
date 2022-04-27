@@ -334,7 +334,7 @@ namespace FlaxEditor.Content.Settings
             }
 
             // Create new settings asset and link it to the game settings
-            var path = StringUtils.CombinePaths(Globals.ProjectContentFolder, "Settings", CustomEditors.CustomEditorsUtil.GetPropertyNameUI(typeof(T).Name) + ".json");
+            var path = StringUtils.CombinePaths(Globals.ProjectContentFolder, "Settings", Utilities.Utils.GetPropertyNameUI(typeof(T).Name) + ".json");
             if (Editor.SaveJsonAsset(path, obj))
                 return true;
             asset = FlaxEngine.Content.LoadAsync<JsonAsset>(path);

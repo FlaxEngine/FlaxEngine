@@ -41,7 +41,7 @@ namespace FlaxEditor.Surface
                 for (int i = 0; i < options.Count; i++)
                 {
                     var type = options[i];
-                    _options[i] = new OptionType(CustomEditorsUtil.GetPropertyNameUI(type.Name), type, Creator);
+                    _options[i] = new OptionType(Utilities.Utils.GetPropertyNameUI(type.Name), type, Creator);
                 }
 
                 base.Initialize(layout);

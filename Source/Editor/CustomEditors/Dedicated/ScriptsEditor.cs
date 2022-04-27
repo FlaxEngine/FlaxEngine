@@ -611,7 +611,7 @@ namespace FlaxEditor.CustomEditors.Dedicated
                 var editor = CustomEditorsUtil.CreateEditor(scriptType, false);
 
                 // Create group
-                var title = CustomEditorsUtil.GetPropertyNameUI(scriptType.Name);
+                var title = Utilities.Utils.GetPropertyNameUI(scriptType.Name);
                 var group = layout.Group(title, editor);
                 if ((Presenter.Features & FeatureFlags.CacheExpandedGroups) != 0)
                 {

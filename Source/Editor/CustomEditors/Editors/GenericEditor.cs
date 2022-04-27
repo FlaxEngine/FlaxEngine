@@ -137,7 +137,7 @@ namespace FlaxEditor.CustomEditors.Editors
                 ExpandGroups = attributes.FirstOrDefault(x => x is ExpandGroupsAttribute) != null;
 
                 IsReadOnly |= !info.HasSet;
-                DisplayName = Display?.Name ?? CustomEditorsUtil.GetPropertyNameUI(info.Name);
+                DisplayName = Display?.Name ?? Utilities.Utils.GetPropertyNameUI(info.Name);
                 var editor = Editor.Instance;
                 TooltipText = editor.CodeDocs.GetTooltip(info, attributes);
                 _membersOrder = editor.Options.Options.General.ScriptMembersOrder;

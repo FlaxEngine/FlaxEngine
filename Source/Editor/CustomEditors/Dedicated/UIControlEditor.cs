@@ -32,7 +32,7 @@ namespace FlaxEditor.CustomEditors.Dedicated
                     if (_presets != value)
                     {
                         _presets = value;
-                        TooltipText = CustomEditorsUtil.GetPropertyNameUI(_presets.ToString());
+                        TooltipText = Utilities.Utils.GetPropertyNameUI(_presets.ToString());
                     }
                 }
             }
