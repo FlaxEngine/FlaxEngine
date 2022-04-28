@@ -222,7 +222,7 @@ void VisualScriptExecutor::ProcessGroupParameters(Box* box, Node* node, Value& v
             LOG(Error, "Failed to access Visual Script parameter for {0}.", stack.Stack->Instance->ToString());
             PrintStack(LogType::Error);
         }
-        if (node->Boxes[2].HasConnection())
+        if (box->ID == 0 && node->Boxes[2].HasConnection())
             eatBox(node, node->Boxes[2].FirstConnection());
         break;
     }
