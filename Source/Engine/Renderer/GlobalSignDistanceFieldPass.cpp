@@ -18,6 +18,7 @@
 // TODO: try using R8 format for Global SDF
 #define GLOBAL_SDF_FORMAT PixelFormat::R16_Float
 #define GLOBAL_SDF_RASTERIZE_MODEL_MAX_COUNT 28 // The maximum amount of models to rasterize at once as a batch into Global SDF.
+#define GLOBAL_SDF_RASTERIZE_HEIGHTFIELD_MAX_COUNT 2 // The maximum amount of heightfields to store in a single chunk.
 #define GLOBAL_SDF_RASTERIZE_GROUP_SIZE 8
 #define GLOBAL_SDF_RASTERIZE_CHUNK_SIZE 32 // Global SDF chunk size in voxels.
 #define GLOBAL_SDF_RASTERIZE_CHUNK_MARGIN 4 // The margin in voxels around objects for culling. Reduces artifacts but reduces performance.
@@ -32,7 +33,7 @@ static_assert(GLOBAL_SDF_RASTERIZE_MODEL_MAX_COUNT % 4 == 0, "Must be multiple o
 #include "Engine/Debug/DebugDraw.h"
 #endif
 
-PACK_STRUCT(struct ModelRasterizeData
+PACK_STRUCT(struct ObjectRasterizeData
     {
     Matrix WorldToVolume; // TODO: use 3x4 matrix
     Matrix VolumeToWorld; // TODO: use 3x4 matrix
@@ -59,13 +60,14 @@ PACK_STRUCT(struct ModelsRasterizeData
     Int3 ChunkCoord;
     float MaxDistance;
     Vector3 CascadeCoordToPosMul;
-    int ModelsCount;
+    int ObjectsCount;
     Vector3 CascadeCoordToPosAdd;
     int32 CascadeResolution;
-    Vector2 Padding0;
+    float Padding0;
+    float CascadeVoxelSize;
     int32 CascadeMipResolution;
     int32 CascadeMipFactor;
-    uint32 Models[GLOBAL_SDF_RASTERIZE_MODEL_MAX_COUNT];
+    uint32 Objects[GLOBAL_SDF_RASTERIZE_MODEL_MAX_COUNT];
     });
 
 struct RasterizeModel
@@ -82,6 +84,7 @@ struct RasterizeModel
 struct RasterizeChunk
 {
     uint16 ModelsCount;
+    uint16 HeightfieldsCount : 15;
     uint16 Dynamic : 1;
     uint16 Models[GLOBAL_SDF_RASTERIZE_MODEL_MAX_COUNT];
     uint16 Heightfields[GLOBAL_SDF_RASTERIZE_HEIGHTFIELD_MAX_COUNT];
@@ -89,6 +92,7 @@ struct RasterizeChunk
     RasterizeChunk()
     {
         ModelsCount = 0;
+        HeightfieldsCount = 0;
         Dynamic = false;
     }
 };
@@ -292,13 +296,14 @@ bool GlobalSignDistanceFieldPass::setupResources()
         return true;
     _csRasterizeModel0 = shader->GetCS("CS_RasterizeModel", 0);
     _csRasterizeModel1 = shader->GetCS("CS_RasterizeModel", 1);
+    _csRasterizeHeightfield = shader->GetCS("CS_RasterizeHeightfield");
     _csClearChunk = shader->GetCS("CS_ClearChunk");
     _csGenerateMip0 = shader->GetCS("CS_GenerateMip", 0);
     _csGenerateMip1 = shader->GetCS("CS_GenerateMip", 1);
 
     // Init buffer
-    if (!_modelsBuffer)
-        _modelsBuffer = New<DynamicStructuredBuffer>(64u * (uint32)sizeof(ModelRasterizeData), (uint32)sizeof(ModelRasterizeData), false, TEXT("GlobalSDF.ModelsBuffer"));
+    if (!_objectsBuffer)
+        _objectsBuffer = New<DynamicStructuredBuffer>(64u * (uint32)sizeof(ObjectRasterizeData), (uint32)sizeof(ObjectRasterizeData), false, TEXT("GlobalSDF.ObjectsBuffer"));
 
     // Create pipeline state
     GPUPipelineState::Description psDesc = GPUPipelineState::Description::DefaultFullscreenTriangle;
@@ -320,6 +325,7 @@ void GlobalSignDistanceFieldPass::OnShaderReloading(Asset* obj)
     SAFE_DELETE_GPU_RESOURCE(_psDebug);
     _csRasterizeModel0 = nullptr;
     _csRasterizeModel1 = nullptr;
+    _csRasterizeHeightfield = nullptr;
     _csClearChunk = nullptr;
     _csGenerateMip0 = nullptr;
     _csGenerateMip1 = nullptr;
@@ -335,8 +341,8 @@ void GlobalSignDistanceFieldPass::Dispose()
     RendererPass::Dispose();
 
     // Cleanup
-    SAFE_DELETE(_modelsBuffer);
-    _modelsTextures.Resize(0);
+    SAFE_DELETE(_objectsBuffer);
+    _objectsTextures.Resize(0);
     SAFE_DELETE_GPU_RESOURCE(_psDebug);
     _shader = nullptr;
     ChunksCache.Clear();
@@ -467,8 +473,8 @@ bool GlobalSignDistanceFieldPass::Render(RenderContext& renderContext, GPUContex
         {
             PROFILE_CPU_NAMED("Clear");
             chunks.Clear();
-            _modelsBuffer->Clear();
-            _modelsTextures.Clear();
+            _objectsBuffer->Clear();
+            _objectsTextures.Clear();
         }
 
         // Check if cascade center has been moved
@@ -482,9 +488,10 @@ bool GlobalSignDistanceFieldPass::Render(RenderContext& renderContext, GPUContex
         cascade.Bounds = cascadeBounds;
 
         // Draw all objects from all scenes into the cascade
-        _modelsBufferCount = 0;
+        _objectsBufferCount = 0;
         _voxelSize = voxelSize;
         _cascadeBounds = cascadeBounds;
+        _cascadeIndex = cascadeIndex;
         _sdfData = &sdfData;
         {
             PROFILE_CPU_NAMED("Draw");
@@ -516,6 +523,7 @@ bool GlobalSignDistanceFieldPass::Render(RenderContext& renderContext, GPUContex
         data.CascadeResolution = resolution;
         data.CascadeMipResolution = resolutionMip;
         data.CascadeMipFactor = GLOBAL_SDF_RASTERIZE_MIP_FACTOR;
+        data.CascadeVoxelSize = voxelSize;
         context->BindUA(0, cascadeView);
         context->BindCB(1, _cb1);
         const int32 chunkDispatchGroups = GLOBAL_SDF_RASTERIZE_CHUNK_SIZE / GLOBAL_SDF_RASTERIZE_GROUP_SIZE;
@@ -569,42 +577,61 @@ bool GlobalSignDistanceFieldPass::Render(RenderContext& renderContext, GPUContex
             // Send models data to the GPU
             if (chunks.Count() != 0)
             {
-                PROFILE_GPU_CPU("Update Models");
-                _modelsBuffer->Flush(context);
+                PROFILE_GPU_CPU("Update Objects");
+                _objectsBuffer->Flush(context);
             }
-            context->BindSR(0, _modelsBuffer->GetBuffer() ? _modelsBuffer->GetBuffer()->View() : nullptr);
+            context->BindSR(0, _objectsBuffer->GetBuffer() ? _objectsBuffer->GetBuffer()->View() : nullptr);
 
-            // Rasterize non-empty chunk (first layer so can override existing chunk data)
+            // Rasterize non-empty chunks (first layer so can override existing chunk data)
             for (const auto& e : chunks)
             {
                 if (e.Key.Layer != 0)
                     continue;
                 auto& chunk = e.Value;
+                cascade.NonEmptyChunks.Add(e.Key);
+
                 for (int32 i = 0; i < chunk.ModelsCount; i++)
                 {
-                    int32 model = chunk.Models[i];
-                    data.Models[i] = model;
-                    context->BindSR(i + 1, _modelsTextures[model]);
+                    auto objectIndex = chunk.Models[i];
+                    data.Objects[i] = objectIndex;
+                    context->BindSR(i + 1, _objectsTextures[objectIndex]);
                 }
-                ASSERT_LOW_LAYER(chunk.ModelsCount != 0);
+                for (int32 i = chunk.ModelsCount; i < GLOBAL_SDF_RASTERIZE_HEIGHTFIELD_MAX_COUNT; i++)
+                    context->UnBindSR(i + 1);
                 data.ChunkCoord = e.Key.Coord * GLOBAL_SDF_RASTERIZE_CHUNK_SIZE;
-                data.ModelsCount = chunk.ModelsCount;
+                data.ObjectsCount = chunk.ModelsCount;
                 context->UpdateCB(_cb1, &data);
-                cascade.NonEmptyChunks.Add(e.Key);
-                context->Dispatch(_csRasterizeModel0, chunkDispatchGroups, chunkDispatchGroups, chunkDispatchGroups);
+                auto cs = data.ObjectsCount != 0 ? _csRasterizeModel0 : _csClearChunk; // Terrain-only chunk can be quickly cleared
+                context->Dispatch(cs, chunkDispatchGroups, chunkDispatchGroups, chunkDispatchGroups);
                 anyChunkDispatch = true;
                 // TODO: don't stall with UAV barrier on D3D12/Vulkan if UAVs don't change between dispatches (maybe cache per-shader write/read flags for all UAVs?)
+
+                if (chunk.HeightfieldsCount != 0)
+                {
+                    // Inject heightfield (additive)
+                    for (int32 i = 0; i < chunk.HeightfieldsCount; i++)
+                    {
+                        auto objectIndex = chunk.Heightfields[i];
+                        data.Objects[i] = objectIndex;
+                        context->BindSR(i + 1, _objectsTextures[objectIndex]);
+                    }
+                    for (int32 i = chunk.HeightfieldsCount; i < GLOBAL_SDF_RASTERIZE_HEIGHTFIELD_MAX_COUNT; i++)
+                        context->UnBindSR(i + 1);
+                    data.ObjectsCount = chunk.HeightfieldsCount;
+                    context->UpdateCB(_cb1, &data);
+                    context->Dispatch(_csRasterizeHeightfield, chunkDispatchGroups, chunkDispatchGroups, chunkDispatchGroups);
+                }
 
 #if GLOBAL_SDF_DEBUG_CHUNKS
                 // Debug draw chunk bounds in world space with number of models in it
                 if (cascadeIndex + 1 == GLOBAL_SDF_DEBUG_CHUNKS)
                 {
-                    int32 count = chunk.ModelsCount;
+                    int32 count = chunk.ModelsCount + chunk.HeightfieldsCount;
                     RasterizeChunkKey tmp = e.Key;
                     tmp.NextLayer();
                     while (chunks.ContainsKey(tmp))
                     {
-                        count += chunks[tmp].ModelsCount;
+                        count += chunks[tmp].ModelsCount + chunks[tmp].HeightfieldsCount;
                         tmp.NextLayer();
                     }
                     Vector3 chunkMin = cascadeBounds.Minimum + Vector3(e.Key.Coord) * chunkSize;
@@ -615,23 +642,45 @@ bool GlobalSignDistanceFieldPass::Render(RenderContext& renderContext, GPUContex
 #endif
             }
 
-            // Rasterize non-empty chunk (additive layers so so need combine with existing chunk data)
+            // Rasterize non-empty chunks (additive layers so so need combine with existing chunk data)
             for (const auto& e : chunks)
             {
                 if (e.Key.Layer == 0)
                     continue;
                 auto& chunk = e.Value;
-                for (int32 i = 0; i < chunk.ModelsCount; i++)
-                {
-                    int32 model = chunk.Models[i];
-                    data.Models[i] = model;
-                    context->BindSR(i + 1, _modelsTextures[model]);
-                }
-                ASSERT_LOW_LAYER(chunk.ModelsCount != 0);
                 data.ChunkCoord = e.Key.Coord * GLOBAL_SDF_RASTERIZE_CHUNK_SIZE;
-                data.ModelsCount = chunk.ModelsCount;
-                context->UpdateCB(_cb1, &data);
-                context->Dispatch(_csRasterizeModel1, chunkDispatchGroups, chunkDispatchGroups, chunkDispatchGroups);
+
+                if (chunk.ModelsCount != 0)
+                {
+                    // Inject models (additive)
+                    for (int32 i = 0; i < chunk.ModelsCount; i++)
+                    {
+                        auto objectIndex = chunk.Models[i];
+                        data.Objects[i] = objectIndex;
+                        context->BindSR(i + 1, _objectsTextures[objectIndex]);
+                    }
+                    for (int32 i = chunk.ModelsCount; i < GLOBAL_SDF_RASTERIZE_HEIGHTFIELD_MAX_COUNT; i++)
+                        context->UnBindSR(i + 1);
+                    data.ObjectsCount = chunk.ModelsCount;
+                    context->UpdateCB(_cb1, &data);
+                    context->Dispatch(_csRasterizeModel1, chunkDispatchGroups, chunkDispatchGroups, chunkDispatchGroups);
+                }
+
+                if (chunk.HeightfieldsCount != 0)
+                {
+                    // Inject heightfields (additive)
+                    for (int32 i = 0; i < chunk.HeightfieldsCount; i++)
+                    {
+                        auto objectIndex = chunk.Heightfields[i];
+                        data.Objects[i] = objectIndex;
+                        context->BindSR(i + 1, _objectsTextures[objectIndex]);
+                    }
+                    for (int32 i = chunk.HeightfieldsCount; i < GLOBAL_SDF_RASTERIZE_HEIGHTFIELD_MAX_COUNT; i++)
+                        context->UnBindSR(i + 1);
+                    data.ObjectsCount = chunk.HeightfieldsCount;
+                    context->UpdateCB(_cb1, &data);
+                    context->Dispatch(_csRasterizeHeightfield, chunkDispatchGroups, chunkDispatchGroups, chunkDispatchGroups);
+                }
                 anyChunkDispatch = true;
             }
         }
@@ -762,19 +811,19 @@ void GlobalSignDistanceFieldPass::RasterizeModelSDF(Actor* actor, const ModelBas
     Vector3 volumeToUVWMul = sdf.LocalToUVWMul;
     Vector3 volumeToUVWAdd = sdf.LocalToUVWAdd + (localVolumeBounds.Minimum + volumeLocalBoundsExtent) * sdf.LocalToUVWMul;
 
-    // Add model data for the GPU buffer
-    uint16 modelIndex = _modelsBufferCount++;
-    ModelRasterizeData modelData;
-    Matrix::Transpose(worldToVolume, modelData.WorldToVolume);
-    Matrix::Transpose(volumeToWorld, modelData.VolumeToWorld);
-    modelData.VolumeLocalBoundsExtent = volumeLocalBoundsExtent;
-    modelData.VolumeToUVWMul = volumeToUVWMul;
-    modelData.VolumeToUVWAdd = volumeToUVWAdd;
-    modelData.MipOffset = (float)mipLevelIndex;
-    modelData.DecodeMul = 2.0f * sdf.MaxDistance;
-    modelData.DecodeAdd = -sdf.MaxDistance;
-    _modelsBuffer->Write(modelData);
-    _modelsTextures.Add(sdf.Texture->ViewVolume());
+    // Add object data for the GPU buffer
+    uint16 objectIndex = _objectsBufferCount++;
+    ObjectRasterizeData objectData;
+    Matrix::Transpose(worldToVolume, objectData.WorldToVolume);
+    Matrix::Transpose(volumeToWorld, objectData.VolumeToWorld);
+    objectData.VolumeLocalBoundsExtent = volumeLocalBoundsExtent;
+    objectData.VolumeToUVWMul = volumeToUVWMul;
+    objectData.VolumeToUVWAdd = volumeToUVWAdd;
+    objectData.MipOffset = (float)mipLevelIndex;
+    objectData.DecodeMul = 2.0f * sdf.MaxDistance;
+    objectData.DecodeAdd = -sdf.MaxDistance;
+    _objectsBuffer->Write(objectData);
+    _objectsTextures.Add(sdf.Texture->ViewVolume());
 
     // Inject object into the intersecting cascade chunks
     _sdfData->ObjectTypes.Add(actor->GetTypeHandle());
@@ -799,7 +848,7 @@ void GlobalSignDistanceFieldPass::RasterizeModelSDF(Actor* actor, const ModelBas
                     chunk = &chunks[key];
                 }
 
-                chunk->Models[chunk->ModelsCount++] = modelIndex;
+                chunk->Models[chunk->ModelsCount++] = objectIndex;
             }
         }
     }
@@ -810,5 +859,71 @@ void GlobalSignDistanceFieldPass::RasterizeModelSDF(Actor* actor, const ModelBas
         sdf.Texture->Deleted.Bind<GlobalSignDistanceFieldCustomBuffer, &GlobalSignDistanceFieldCustomBuffer::OnSDFTextureDeleted>(_sdfData);
         sdf.Texture->ResidentMipsChanged.Bind<GlobalSignDistanceFieldCustomBuffer, &GlobalSignDistanceFieldCustomBuffer::OnSDFTextureResidentMipsChanged>(_sdfData);
         _sdfData->SDFTextures.Add(sdf.Texture);
+    }
+}
+
+void GlobalSignDistanceFieldPass::RasterizeHeightfield(Actor* actor, GPUTexture* heightfield, const Matrix& localToWorld, const BoundingBox& objectBounds, const Vector4& localToUV)
+{
+    if (!heightfield || heightfield->ResidentMipLevels() == 0)
+        return;
+
+    // Setup object data
+    BoundingBox objectBoundsCascade;
+    const float objectMargin = _voxelSize * GLOBAL_SDF_RASTERIZE_CHUNK_MARGIN;
+    Vector3::Clamp(objectBounds.Minimum - objectMargin, _cascadeBounds.Minimum, _cascadeBounds.Maximum, objectBoundsCascade.Minimum);
+    Vector3::Subtract(objectBoundsCascade.Minimum, _cascadeBounds.Minimum, objectBoundsCascade.Minimum);
+    Vector3::Clamp(objectBounds.Maximum + objectMargin, _cascadeBounds.Minimum, _cascadeBounds.Maximum, objectBoundsCascade.Maximum);
+    Vector3::Subtract(objectBoundsCascade.Maximum, _cascadeBounds.Minimum, objectBoundsCascade.Maximum);
+    const float chunkSize = _voxelSize * GLOBAL_SDF_RASTERIZE_CHUNK_SIZE;
+    const Int3 objectChunkMin(objectBoundsCascade.Minimum / chunkSize);
+    const Int3 objectChunkMax(objectBoundsCascade.Maximum / chunkSize);
+
+    // Add object data for the GPU buffer
+    uint16 objectIndex = _objectsBufferCount++;
+    ObjectRasterizeData objectData;
+    Matrix worldToLocal;
+    Matrix::Invert(localToWorld, worldToLocal);
+    Matrix::Transpose(worldToLocal, objectData.WorldToVolume);
+    Matrix::Transpose(localToWorld, objectData.VolumeToWorld);
+    objectData.VolumeToUVWMul = Vector3(localToUV.X, 1.0f, localToUV.Y);
+    objectData.VolumeToUVWAdd = Vector3(localToUV.Z, 0.0f, localToUV.W);
+    objectData.MipOffset = (float)_cascadeIndex * 0.5f; // Use lower-quality mip for far cascades
+    _objectsBuffer->Write(objectData);
+    _objectsTextures.Add(heightfield->View());
+
+    // Inject object into the intersecting cascade chunks
+    _sdfData->ObjectTypes.Add(actor->GetTypeHandle());
+    RasterizeChunkKey key;
+    auto& chunks = ChunksCache;
+    const bool dynamic = !GLOBAL_SDF_ACTOR_IS_STATIC(actor);
+    for (key.Coord.Z = objectChunkMin.Z; key.Coord.Z <= objectChunkMax.Z; key.Coord.Z++)
+    {
+        for (key.Coord.Y = objectChunkMin.Y; key.Coord.Y <= objectChunkMax.Y; key.Coord.Y++)
+        {
+            for (key.Coord.X = objectChunkMin.X; key.Coord.X <= objectChunkMax.X; key.Coord.X++)
+            {
+                key.Layer = 0;
+                key.Hash = key.Coord.Z * (RasterizeChunkKeyHashResolution * RasterizeChunkKeyHashResolution) + key.Coord.Y * RasterizeChunkKeyHashResolution + key.Coord.X;
+                RasterizeChunk* chunk = &chunks[key];
+                chunk->Dynamic |= dynamic;
+
+                // Move to the next layer if chunk has overflown
+                while (chunk->HeightfieldsCount == GLOBAL_SDF_RASTERIZE_HEIGHTFIELD_MAX_COUNT)
+                {
+                    key.NextLayer();
+                    chunk = &chunks[key];
+                }
+
+                chunk->Heightfields[chunk->HeightfieldsCount++] = objectIndex;
+            }
+        }
+    }
+
+    // Track streaming for textures used in static chunks to invalidate cache
+    if (!dynamic && heightfield->ResidentMipLevels() != heightfield->MipLevels() && !_sdfData->SDFTextures.Contains(heightfield))
+    {
+        heightfield->Deleted.Bind<GlobalSignDistanceFieldCustomBuffer, &GlobalSignDistanceFieldCustomBuffer::OnSDFTextureDeleted>(_sdfData);
+        heightfield->ResidentMipsChanged.Bind<GlobalSignDistanceFieldCustomBuffer, &GlobalSignDistanceFieldCustomBuffer::OnSDFTextureResidentMipsChanged>(_sdfData);
+        _sdfData->SDFTextures.Add(heightfield);
     }
 }

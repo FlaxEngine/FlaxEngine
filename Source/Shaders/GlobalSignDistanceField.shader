@@ -5,10 +5,11 @@
 #include "./Flax/GlobalSignDistanceField.hlsl"
 
 #define GLOBAL_SDF_RASTERIZE_MODEL_MAX_COUNT 28
+#define GLOBAL_SDF_RASTERIZE_HEIGHTFIELD_MAX_COUNT 2
 #define GLOBAL_SDF_RASTERIZE_GROUP_SIZE 8
 #define GLOBAL_SDF_MIP_GROUP_SIZE 4
 
-struct ModelRasterizeData
+struct ObjectRasterizeData
 {
 	float4x4 WorldToVolume; // TODO: use 3x4 matrix
 	float4x4 VolumeToWorld; // TODO: use 3x4 matrix
@@ -33,13 +34,14 @@ META_CB_BEGIN(1, ModelsRasterizeData)
 int3 ChunkCoord;
 float MaxDistance;
 float3 CascadeCoordToPosMul;
-int ModelsCount;
+int ObjectsCount;
 float3 CascadeCoordToPosAdd;
 int CascadeResolution;
-float2 Padding0;
+float Padding0;
+float CascadeVoxelSize;
 int CascadeMipResolution;
 int CascadeMipFactor;
-uint4 Models[GLOBAL_SDF_RASTERIZE_MODEL_MAX_COUNT / 4];
+uint4 Objects[GLOBAL_SDF_RASTERIZE_MODEL_MAX_COUNT / 4];
 META_CB_END
 
 float CombineDistanceToSDF(float sdf, float distanceToSDF)
@@ -54,13 +56,18 @@ float CombineDistanceToSDF(float sdf, float distanceToSDF)
 	return sqrt(Square(max(sdf, 0)) + Square(distanceToSDF)); 
 }
 
-#if defined(_CS_RasterizeModel)
+#if defined(_CS_RasterizeModel) || defined(_CS_RasterizeHeightfield)
 
 RWTexture3D<float> GlobalSDFTex : register(u0);
-StructuredBuffer<ModelRasterizeData> ModelsBuffer : register(t0);
-Texture3D<float> ModelSDFTex[GLOBAL_SDF_RASTERIZE_MODEL_MAX_COUNT] : register(t1);
+StructuredBuffer<ObjectRasterizeData> ObjectsBuffer : register(t0);
 
-float DistanceToModelSDF(float minDistance, ModelRasterizeData modelData, Texture3D<float> modelSDFTex, float3 worldPos)
+#endif
+
+#if defined(_CS_RasterizeModel)
+
+Texture3D<float> ObjectsTextures[GLOBAL_SDF_RASTERIZE_MODEL_MAX_COUNT] : register(t1);
+
+float DistanceToModelSDF(float minDistance, ObjectRasterizeData modelData, Texture3D<float> modelSDFTex, float3 worldPos)
 {
 	// Compute SDF volume UVs and distance in world-space to the volume bounds
 	float3 volumePos = mul(float4(worldPos, 1), modelData.WorldToVolume).xyz;
@@ -98,11 +105,55 @@ void CS_RasterizeModel(uint3 GroupId : SV_GroupID, uint3 DispatchThreadId : SV_D
 #if READ_SDF
 	minDistance *= GlobalSDFTex[voxelCoord];
 #endif
-	for (int i = 0; i < ModelsCount; i++)
+	for (uint i = 0; i < ObjectsCount; i++)
 	{
-		ModelRasterizeData modelData = ModelsBuffer[Models[i / 4][i % 4]];
-		float modelDistance = DistanceToModelSDF(minDistance, modelData, ModelSDFTex[i], voxelWorldPos);
-		minDistance = min(minDistance, modelDistance);
+		ObjectRasterizeData objectData = ObjectsBuffer[Objects[i / 4][i % 4]];
+		float objectDistance = DistanceToModelSDF(minDistance, objectData, ObjectsTextures[i], voxelWorldPos);
+		minDistance = min(minDistance, objectDistance);
+	}
+	GlobalSDFTex[voxelCoord] = saturate(minDistance / MaxDistance);
+}
+
+#endif
+
+#if defined(_CS_RasterizeHeightfield)
+
+Texture2D<float4> ObjectsTextures[GLOBAL_SDF_RASTERIZE_HEIGHTFIELD_MAX_COUNT] : register(t1);
+
+// Compute shader for rasterizing heightfield into Global SDF
+META_CS(true, FEATURE_LEVEL_SM5)
+[numthreads(GLOBAL_SDF_RASTERIZE_GROUP_SIZE, GLOBAL_SDF_RASTERIZE_GROUP_SIZE, GLOBAL_SDF_RASTERIZE_GROUP_SIZE)]
+void CS_RasterizeHeightfield(uint3 GroupId : SV_GroupID, uint3 DispatchThreadId : SV_DispatchThreadID, uint3 GroupThreadId : SV_GroupThreadID)
+{
+	uint3 voxelCoord = ChunkCoord + DispatchThreadId;
+	float3 voxelWorldPos = voxelCoord * CascadeCoordToPosMul + CascadeCoordToPosAdd;
+	float minDistance = MaxDistance * GlobalSDFTex[voxelCoord];
+	float thickness = CascadeVoxelSize * -4;
+	for (uint i = 0; i < ObjectsCount; i++)
+	{
+		ObjectRasterizeData objectData = ObjectsBuffer[Objects[i / 4][i % 4]];
+
+		// Convert voxel world-space position into heightfield local-space position and get heightfield UV
+		float3 volumePos = mul(float4(voxelWorldPos, 1), objectData.WorldToVolume).xyz;
+		float3 volumeUV = volumePos * objectData.VolumeToUVWMul + objectData.VolumeToUVWAdd;
+		float2 heightfieldUV = float2(volumeUV.x, volumeUV.z);
+
+		// Sample the heightfield
+		float4 heightmapValue = ObjectsTextures[i].SampleLevel(SamplerLinearClamp, heightfieldUV, objectData.MipOffset);
+		bool isHole = (heightmapValue.b + heightmapValue.a) >= 1.9f;
+		if (isHole || any(heightfieldUV < 0.0f) || any(heightfieldUV > 1.0f))
+			continue;
+		float height = (float)((int)(heightmapValue.x * 255.0) + ((int)(heightmapValue.y * 255) << 8)) / 65535.0;
+		float2 positionXZ = volumePos.xz;
+		float3 position = float3(positionXZ.x, height, positionXZ.y);
+		float3 heightfieldPosition = mul(float4(position, 1), objectData.VolumeToWorld).xyz;
+		float3 heightfieldNormal = normalize(float3(objectData.VolumeToWorld[0].y, objectData.VolumeToWorld[1].y, objectData.VolumeToWorld[2].y));
+
+		// Calculate distance from voxel center to the heightfield
+		float objectDistance = dot(heightfieldNormal, voxelWorldPos - heightfieldPosition);
+		if (objectDistance < thickness)
+			objectDistance = thickness - objectDistance;
+		minDistance = min(minDistance, objectDistance);
 	}
 	GlobalSDFTex[voxelCoord] = saturate(minDistance / MaxDistance);
 }

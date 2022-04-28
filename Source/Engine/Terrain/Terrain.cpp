@@ -13,6 +13,7 @@
 #include "Engine/Graphics/RenderTask.h"
 #include "Engine/Graphics/Textures/GPUTexture.h"
 #include "Engine/Profiler/ProfilerCPU.h"
+#include "Engine/Renderer/GlobalSignDistanceFieldPass.h"
 
 Terrain::Terrain(const SpawnParams& params)
     : PhysicsColliderActor(params)
@@ -506,7 +507,25 @@ void Terrain::Draw(RenderContext& renderContext)
     if (drawModes == DrawPass::None)
         return;
     if (renderContext.View.Pass == DrawPass::GlobalSDF)
-        return; // TODO: Terrain rendering to Global SDF
+    {
+        const float chunkSize = TERRAIN_UNITS_PER_VERTEX * (float)_chunkSize;
+        const float posToUV = 0.25f / chunkSize;
+        Vector4 localToUV(posToUV, posToUV, 0.0f, 0.0f);
+        Matrix localToWorld;
+        for (const TerrainPatch* patch : _patches)
+        {
+            if (!patch->Heightmap)
+                continue;
+            Transform patchTransform;
+            patchTransform.Translation = patch->_offset + Vector3(0, patch->_yOffset, 0);
+            patchTransform.Orientation = Quaternion::Identity;
+            patchTransform.Scale = Vector3(1.0f, patch->_yHeight, 1.0f);
+            patchTransform = _transform.LocalToWorld(patchTransform);
+            patchTransform.GetWorld(localToWorld);
+            GlobalSignDistanceFieldPass::Instance()->RasterizeHeightfield(this, patch->Heightmap->GetTexture(), localToWorld, patch->_bounds, localToUV);
+        }
+        return;
+    }
     if (renderContext.View.Pass == DrawPass::GlobalSurfaceAtlas)
         return; // TODO: Terrain rendering to Global Surface Atlas
 

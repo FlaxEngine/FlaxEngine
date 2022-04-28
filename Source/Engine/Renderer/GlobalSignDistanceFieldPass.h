@@ -33,6 +33,7 @@ private:
     GPUPipelineState* _psDebug = nullptr;
     GPUShaderProgramCS* _csRasterizeModel0 = nullptr;
     GPUShaderProgramCS* _csRasterizeModel1 = nullptr;
+    GPUShaderProgramCS* _csRasterizeHeightfield = nullptr;
     GPUShaderProgramCS* _csClearChunk = nullptr;
     GPUShaderProgramCS* _csGenerateMip0 = nullptr;
     GPUShaderProgramCS* _csGenerateMip1 = nullptr;
@@ -40,9 +41,10 @@ private:
     GPUConstantBuffer* _cb1 = nullptr;
 
     // Rasterization cache
-    class DynamicStructuredBuffer* _modelsBuffer = nullptr;
-    Array<GPUTextureView*> _modelsTextures;
-    uint16 _modelsBufferCount;
+    class DynamicStructuredBuffer* _objectsBuffer = nullptr;
+    Array<GPUTextureView*> _objectsTextures;
+    uint16 _objectsBufferCount;
+    int32 _cascadeIndex;
     float _voxelSize;
     BoundingBox _cascadeBounds;
     class GlobalSignDistanceFieldCustomBuffer* _sdfData;
@@ -75,6 +77,8 @@ public:
 
     // Rasterize Model SDF into the Global SDF. Call it from actor Draw() method during DrawPass::GlobalSDF.
     void RasterizeModelSDF(Actor* actor, const ModelBase::SDFData& sdf, const Matrix& localToWorld, const BoundingBox& objectBounds);
+
+    void RasterizeHeightfield(Actor* actor, GPUTexture* heightfield, const Matrix& localToWorld, const BoundingBox& objectBounds, const Vector4& localToUV);
 
 private:
 #if COMPILE_WITH_DEV_ENV
