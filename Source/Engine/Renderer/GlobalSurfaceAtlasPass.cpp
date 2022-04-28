@@ -832,17 +832,33 @@ void GlobalSurfaceAtlasPass::RenderDebug(RenderContext& renderContext, GPUContex
     context->BindSR(8, bindingData.Chunks ? bindingData.Chunks->View() : nullptr);
     context->BindSR(9, bindingData.CulledObjects ? bindingData.CulledObjects->View() : nullptr);
     context->BindSR(10, bindingData.Atlas[0]->View());
-    {
-        //GPUTexture* tex = bindingData.Atlas[1]; // Preview diffuse
-        //GPUTexture* tex = bindingData.Atlas[2]; // Preview normals
-        //GPUTexture* tex = bindingData.Atlas[3]; // Preview roughness/metalness/ao
-        GPUTexture* tex = bindingData.Atlas[4]; // Preview direct light
-        context->BindSR(11, tex->View());
-    }
     context->SetState(_psDebug);
     context->SetRenderTarget(output->View());
-    context->SetViewportAndScissors(outputSize.X, outputSize.Y);
-    context->DrawFullscreenTriangle();
+    {
+        Vector2 outputSizeThird = outputSize * 0.333f;
+        Vector2 outputSizeTwoThird = outputSize * 0.666f;
+
+        // Full screen - diffuse
+        context->BindSR(11, bindingData.Atlas[1]->View());
+        context->SetViewport(outputSize.X, outputSize.Y);
+        context->SetScissor(Rectangle(0, 0, outputSizeTwoThird.X, outputSize.Y));
+        context->DrawFullscreenTriangle();
+
+        // Bottom left - normals
+        context->BindSR(11, bindingData.Atlas[2]->View());
+        context->SetViewportAndScissors(Viewport(outputSizeTwoThird.X, 0, outputSizeThird.X, outputSizeThird.Y));
+        context->DrawFullscreenTriangle();
+
+        // Bottom middle - direct light
+        context->BindSR(11, bindingData.Atlas[4]->View());
+        context->SetViewportAndScissors(Viewport(outputSizeTwoThird.X, outputSizeThird.Y, outputSizeThird.X, outputSizeThird.Y));
+        context->DrawFullscreenTriangle();
+
+        // Bottom right - roughness/metalness/ao
+        context->BindSR(11, bindingData.Atlas[3]->View());
+        context->SetViewportAndScissors(Viewport(outputSizeTwoThird.X, outputSizeTwoThird.Y, outputSizeThird.X, outputSizeThird.Y));
+        context->DrawFullscreenTriangle();
+    }
 }
 
 void GlobalSurfaceAtlasPass::RasterizeActor(Actor* actor, const Matrix& localToWorld, const BoundingBox& localBounds)
