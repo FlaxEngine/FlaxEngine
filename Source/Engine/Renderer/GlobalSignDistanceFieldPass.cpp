@@ -81,9 +81,16 @@ struct RasterizeModel
 
 struct RasterizeChunk
 {
-    bool Dynamic = false;
-    int32 ModelsCount = 0;
-    int32 Models[GLOBAL_SDF_RASTERIZE_MODEL_MAX_COUNT];
+    uint16 ModelsCount;
+    uint16 Dynamic : 1;
+    uint16 Models[GLOBAL_SDF_RASTERIZE_MODEL_MAX_COUNT];
+    uint16 Heightfields[GLOBAL_SDF_RASTERIZE_HEIGHTFIELD_MAX_COUNT];
+
+    RasterizeChunk()
+    {
+        ModelsCount = 0;
+        Dynamic = false;
+    }
 };
 
 constexpr int32 RasterizeChunkKeyHashResolution = GLOBAL_SDF_RASTERIZE_CHUNK_SIZE;
@@ -756,7 +763,7 @@ void GlobalSignDistanceFieldPass::RasterizeModelSDF(Actor* actor, const ModelBas
     Vector3 volumeToUVWAdd = sdf.LocalToUVWAdd + (localVolumeBounds.Minimum + volumeLocalBoundsExtent) * sdf.LocalToUVWMul;
 
     // Add model data for the GPU buffer
-    int32 modelIndex = _modelsBufferCount++;
+    uint16 modelIndex = _modelsBufferCount++;
     ModelRasterizeData modelData;
     Matrix::Transpose(worldToVolume, modelData.WorldToVolume);
     Matrix::Transpose(volumeToWorld, modelData.VolumeToWorld);
@@ -797,7 +804,7 @@ void GlobalSignDistanceFieldPass::RasterizeModelSDF(Actor* actor, const ModelBas
         }
     }
 
-    // Track streaming for SDF textures used in static chunks to invalidate cache
+    // Track streaming for textures used in static chunks to invalidate cache
     if (!dynamic && sdf.Texture->ResidentMipLevels() != sdf.Texture->MipLevels() && !_sdfData->SDFTextures.Contains(sdf.Texture))
     {
         sdf.Texture->Deleted.Bind<GlobalSignDistanceFieldCustomBuffer, &GlobalSignDistanceFieldCustomBuffer::OnSDFTextureDeleted>(_sdfData);

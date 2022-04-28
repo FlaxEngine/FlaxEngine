@@ -42,7 +42,7 @@ private:
     // Rasterization cache
     class DynamicStructuredBuffer* _modelsBuffer = nullptr;
     Array<GPUTextureView*> _modelsTextures;
-    int32 _modelsBufferCount;
+    uint16 _modelsBufferCount;
     float _voxelSize;
     BoundingBox _cascadeBounds;
     class GlobalSignDistanceFieldCustomBuffer* _sdfData;
