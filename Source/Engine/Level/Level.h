@@ -362,7 +362,7 @@ public:
     /// </summary>
     /// <param name="type">Type of the actor to search for. Includes any actors derived from the type.</param>
     /// <returns>Found actor or null.</returns>
-    API_FUNCTION() static Actor* FindActor(const MClass* type);
+    API_FUNCTION() static Actor* FindActor(API_PARAM(Attributes="TypeReference(typeof(Actor))") const MClass* type);
 
     /// <summary>
     /// Tries to find the actor of the given type in all the loaded scenes.
@@ -379,7 +379,7 @@ public:
     /// </summary>
     /// <param name="type">Type of the script to search for. Includes any scripts derived from the type.</param>
     /// <returns>Found script or null.</returns>
-    API_FUNCTION() static Script* FindScript(const MClass* type);
+    API_FUNCTION() static Script* FindScript(API_PARAM(Attributes="TypeReference(typeof(Script))") const MClass* type);
 
     /// <summary>
     /// Tries to find the script of the given type in all the loaded scenes.
@@ -396,14 +396,14 @@ public:
     /// </summary>
     /// <param name="type">Type of the actor to search for. Includes any actors derived from the type.</param>
     /// <returns>Found actors list.</returns>
-    API_FUNCTION() static Array<Actor*> GetActors(const MClass* type);
+    API_FUNCTION() static Array<Actor*> GetActors(API_PARAM(Attributes="TypeReference(typeof(Actor))") const MClass* type);
 
     /// <summary>
     /// Finds all the scripts of the given type in all the loaded scenes.
     /// </summary>
     /// <param name="type">Type of the script to search for. Includes any scripts derived from the type.</param>
     /// <returns>Found scripts list.</returns>
-    API_FUNCTION() static Array<Script*> GetScripts(const MClass* type);
+    API_FUNCTION() static Array<Script*> GetScripts(API_PARAM(Attributes="TypeReference(typeof(Script))") const MClass* type);
 
     /// <summary>
     /// Tries to find scene with given ID.
