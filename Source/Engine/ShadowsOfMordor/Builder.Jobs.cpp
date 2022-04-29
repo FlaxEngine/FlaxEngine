@@ -152,8 +152,7 @@ void ShadowsOfMordor::Builder::onJobRender(GPUContext* context)
                 auto chunkSize = terrain->GetChunkSize();
                 const auto heightmap = patch->Heightmap.Get()->GetTexture();
 
-                Matrix world;
-                chunk->GetWorld(&world);
+                const Matrix& world = chunk->GetWorld();
                 Matrix::Transpose(world, shaderData.WorldMatrix);
                 shaderData.LightmapArea = chunk->Lightmap.UVsArea;
                 shaderData.TerrainChunkSizeLOD0 = TERRAIN_UNITS_PER_VERTEX * chunkSize;

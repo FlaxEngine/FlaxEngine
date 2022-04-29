@@ -247,7 +247,7 @@ void StaticModel::Draw(RenderContext& renderContext)
     }
     if (renderContext.View.Pass == DrawPass::GlobalSurfaceAtlas)
     {
-        GlobalSurfaceAtlasPass::Instance()->RasterizeActor(this, _world, Model->LODs.Last().GetBox());
+        GlobalSurfaceAtlasPass::Instance()->RasterizeActor(this, this, _sphere, _world, Model->LODs.Last().GetBox());
         return;
     }
     GEOMETRY_DRAW_STATE_EVENT_BEGIN(_drawState, _world);

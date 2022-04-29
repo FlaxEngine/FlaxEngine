@@ -378,7 +378,7 @@ void SplineModel::Draw(RenderContext& renderContext)
     for (int32 segment = 0; segment < _instances.Count(); segment++)
     {
         auto& instance = _instances[segment];
-        if (!renderContext.View.CullingFrustum.Intersects(instance.Sphere))
+        if (!(renderContext.View.IsCullingDisabled || renderContext.View.CullingFrustum.Intersects(instance.Sphere)))
             continue;
         drawCall.Deformable.Segment = (float)segment;
 

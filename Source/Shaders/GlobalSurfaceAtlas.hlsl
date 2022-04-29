@@ -193,8 +193,21 @@ float4 SampleGlobalSurfaceAtlas(const GlobalSurfaceAtlasData data, ByteAddressBu
 		if (any(localPosition > localExtent) || any(localPosition < -localExtent))
 			continue;
 
+		// Remove the scale vector from the transformation matrix
+		float3x3 worldToLocal = object.WorldToLocal;
+		float scaleX = length(worldToLocal[0]);
+		float scaleY = length(worldToLocal[1]);
+		float scaleZ = length(worldToLocal[2]);
+		float3 invScale = float3(
+			scaleX > 0.00001f ? 1.0f / scaleX : 0.0f,
+			scaleY > 0.00001f ? 1.0f / scaleY : 0.0f,
+			scaleZ > 0.00001f ? 1.0f / scaleZ : 0.0f);
+		worldToLocal[0] *= invScale.x;
+		worldToLocal[1] *= invScale.y;
+		worldToLocal[2] *= invScale.z;
+
 		// Sample tiles based on the directionality
-		float3 localNormal = normalize(mul(worldNormal, (float3x3)object.WorldToLocal));
+		float3 localNormal = normalize(mul(worldNormal, worldToLocal));
 		float3 localNormalSq = localNormal * localNormal;
 		uint tileOffset = object.TileOffsets[localNormal.x > 0.0f ? 0 : 1];
 		if (localNormalSq.x > GLOBAL_SURFACE_ATLAS_TILE_NORMAL_THRESHOLD * GLOBAL_SURFACE_ATLAS_TILE_NORMAL_THRESHOLD && tileOffset != 0)

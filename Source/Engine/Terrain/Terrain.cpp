@@ -14,6 +14,7 @@
 #include "Engine/Graphics/Textures/GPUTexture.h"
 #include "Engine/Profiler/ProfilerCPU.h"
 #include "Engine/Renderer/GlobalSignDistanceFieldPass.h"
+#include "Engine/Renderer/GlobalSurfaceAtlasPass.h"
 
 Terrain::Terrain(const SpawnParams& params)
     : PhysicsColliderActor(params)
@@ -527,7 +528,25 @@ void Terrain::Draw(RenderContext& renderContext)
         return;
     }
     if (renderContext.View.Pass == DrawPass::GlobalSurfaceAtlas)
-        return; // TODO: Terrain rendering to Global Surface Atlas
+    {
+        for (TerrainPatch* patch : _patches)
+        {
+            if (!patch->Heightmap)
+                continue;
+            Matrix worldToLocal;
+            BoundingSphere chunkSphere;
+            BoundingBox localBounds;
+            for (int32 chunkIndex = 0; chunkIndex < TerrainPatch::CHUNKS_COUNT; chunkIndex++)
+            {
+                TerrainChunk* chunk = &patch->Chunks[chunkIndex];
+                Matrix::Invert(chunk->GetWorld(), worldToLocal);
+                BoundingBox::Transform(chunk->GetBounds(), worldToLocal, localBounds);
+                BoundingSphere::FromBox(chunk->GetBounds(), chunkSphere);
+                GlobalSurfaceAtlasPass::Instance()->RasterizeActor(this, chunk, chunkSphere, chunk->GetWorld(), localBounds, 1 << 2);
+            }
+        }
+        return;
+    }
 
     PROFILE_CPU();
 
@@ -541,7 +560,7 @@ void Terrain::Draw(RenderContext& renderContext)
     for (int32 patchIndex = 0; patchIndex < _patches.Count(); patchIndex++)
     {
         const auto patch = _patches[patchIndex];
-        if (frustum.Intersects(patch->_bounds))
+        if (renderContext.View.IsCullingDisabled || frustum.Intersects(patch->_bounds))
         {
             // Skip if has no heightmap or it's not loaded
             if (patch->Heightmap == nullptr || patch->Heightmap->GetTexture()->ResidentMipLevels() == 0)
@@ -552,7 +571,7 @@ void Terrain::Draw(RenderContext& renderContext)
             {
                 auto chunk = &patch->Chunks[chunkIndex];
                 chunk->_cachedDrawLOD = 0;
-                if (frustum.Intersects(chunk->_bounds))
+                if (renderContext.View.IsCullingDisabled || frustum.Intersects(chunk->_bounds))
                 {
                     if (chunk->PrepareDraw(renderContext))
                     {

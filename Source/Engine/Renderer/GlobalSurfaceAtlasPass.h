@@ -45,7 +45,7 @@ private:
     class DynamicTypedBuffer* _objectsBuffer = nullptr;
     class DynamicVertexBuffer* _vertexBuffer = nullptr;
     class GlobalSurfaceAtlasCustomBuffer* _surfaceAtlasData;
-    Array<Actor*> _dirtyObjectsBuffer;
+    Array<void*> _dirtyObjectsBuffer;
     uint64 _culledObjectsSizeFrames[8];
 
 public:
@@ -67,7 +67,7 @@ public:
     void RenderDebug(RenderContext& renderContext, GPUContext* context, GPUTexture* output);
 
     // Rasterize actor into the Global Surface Atlas. Call it from actor Draw() method during DrawPass::GlobalSurfaceAtlas.
-    void RasterizeActor(Actor* actor, const Matrix& localToWorld, const BoundingBox& localBounds);
+    void RasterizeActor(Actor* actor, void* actorObject, const BoundingSphere& actorObjectBounds, const Matrix& localToWorld, const BoundingBox& localBounds, uint32 tilesMask = MAX_uint32);
 
 private:
 #if COMPILE_WITH_DEV_ENV
