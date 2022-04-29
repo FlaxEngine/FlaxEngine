@@ -635,7 +635,7 @@ bool Model::Save(bool withMeshDataFromGpu, const StringView& path)
 
 #endif
 
-bool Model::GenerateSDF(float resolutionScale, int32 lodIndex, bool cacheData)
+bool Model::GenerateSDF(float resolutionScale, int32 lodIndex, bool cacheData, float backfacesThreshold)
 {
     if (EnableModelSDF == 2)
         return true; // Not supported
@@ -658,7 +658,7 @@ bool Model::GenerateSDF(float resolutionScale, int32 lodIndex, bool cacheData)
 #else
     class MemoryWriteStream* outputStream = nullptr;
 #endif
-    if (ModelTool::GenerateModelSDF(this, nullptr, resolutionScale, lodIndex, &SDF, outputStream, GetPath()))
+    if (ModelTool::GenerateModelSDF(this, nullptr, resolutionScale, lodIndex, &SDF, outputStream, GetPath(), backfacesThreshold))
         return true;
 
 #if USE_EDITOR

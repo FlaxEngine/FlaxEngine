@@ -66,7 +66,7 @@ ModelSDFMip::ModelSDFMip(int32 mipIndex, const TextureMipData& mip)
 {
 }
 
-bool ModelTool::GenerateModelSDF(Model* inputModel, ModelData* modelData, float resolutionScale, int32 lodIndex, ModelBase::SDFData* outputSDF, MemoryWriteStream* outputStream, const StringView& assetName)
+bool ModelTool::GenerateModelSDF(Model* inputModel, ModelData* modelData, float resolutionScale, int32 lodIndex, ModelBase::SDFData* outputSDF, MemoryWriteStream* outputStream, const StringView& assetName, float backfacesThreshold)
 {
     PROFILE_CPU();
     auto startTime = Platform::GetTimeSeconds();
@@ -176,7 +176,7 @@ bool ModelTool::GenerateModelSDF(Model* inputModel, ModelData* modelData, float 
         for (int32 i = 6; i < sampleCount; i++)
             sampleDirections.Get()[i] = rand.GetUnitVector();
     }
-    Function<void(int32)> sdfJob = [&sdf, &resolution, &sampleDirections, &scene, &voxels, &xyzToLocalMul, &xyzToLocalAdd, &encodeMAD, &formatStride, &formatWrite](int32 z)
+    Function<void(int32)> sdfJob = [&sdf, &resolution, &backfacesThreshold, &sampleDirections, &scene, &voxels, &xyzToLocalMul, &xyzToLocalAdd, &encodeMAD, &formatStride, &formatWrite](int32 z)
     {
         PROFILE_CPU_NAMED("Model SDF Job");
         float hitDistance;
@@ -210,8 +210,8 @@ bool ModelTool::GenerateModelSDF(Model* inputModel, ModelData* modelData, float 
 
                 float distance = minDistance;
                 // TODO: surface thickness threshold? shift reduce distance for all voxels by something like 0.01 to enlarge thin geometry
-                //if ((float)hitBackCount > )hitCount * 0.3f && hitCount != 0)
-                if ((float)hitBackCount > (float)sampleDirections.Count() * 0.6f && hitCount != 0)
+                // if ((float)hitBackCount > (float)hitCount * 0.3f && hitCount != 0)
+                if ((float)hitBackCount > (float)sampleDirections.Count() * backfacesThreshold && hitCount != 0)
                 {
                     // Voxel is inside the geometry so turn it into negative distance to the surface
                     distance *= -1;

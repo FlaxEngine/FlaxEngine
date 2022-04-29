@@ -128,7 +128,7 @@ void CS_RasterizeHeightfield(uint3 GroupId : SV_GroupID, uint3 DispatchThreadId 
 	uint3 voxelCoord = ChunkCoord + DispatchThreadId;
 	float3 voxelWorldPos = voxelCoord * CascadeCoordToPosMul + CascadeCoordToPosAdd;
 	float minDistance = MaxDistance * GlobalSDFTex[voxelCoord];
-	float thickness = CascadeVoxelSize * -4;
+	float thickness = CascadeVoxelSize * -8;
 	for (uint i = 0; i < ObjectsCount; i++)
 	{
 		ObjectRasterizeData objectData = ObjectsBuffer[Objects[i / 4][i % 4]];

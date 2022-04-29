@@ -580,10 +580,13 @@ bool GlobalSurfaceAtlasPass::Render(RenderContext& renderContext, GPUContext* co
             {
                 // Get the last counter value (accept staging readback delay)
                 auto data = (uint32*)_culledObjectsSizeBuffer->Map(GPUResourceMapMode::Read);
-                uint32 counter = data[surfaceAtlasData.CulledObjectsCounterIndex];
-                _culledObjectsSizeBuffer->Unmap();
-                if (counter > 0)
-                    objectsBufferCapacity = counter * sizeof(Vector4);
+                if (data)
+                {
+                    uint32 counter = data[surfaceAtlasData.CulledObjectsCounterIndex];
+                    _culledObjectsSizeBuffer->Unmap();
+                    if (counter > 0)
+                        objectsBufferCapacity = counter * sizeof(Vector4);
+                }
             }
             if (surfaceAtlasData.CulledObjectsCounterIndex == -1)
             {

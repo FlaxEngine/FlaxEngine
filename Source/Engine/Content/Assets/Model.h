@@ -213,8 +213,9 @@ public:
     /// <param name="resolutionScale">The SDF texture resolution scale. Use higher values for more precise data but with significant performance and memory overhead.</param>
     /// <param name="lodIndex">The index of the LOD to use for the SDF building.</param>
     /// <param name="cacheData">If true, the generated SDF texture data will be cached on CPU (in asset chunk storage) to allow saving it later, otherwise it will be runtime for GPU-only. Ignored for virtual assets or in build.</param>
+    /// <param name="backfacesThreshold">Custom threshold (in range 0-1) for adjusting mesh internals detection based on the percentage of test rays hit triangle backfaces. Use lower value for more dense mesh.</param>
     /// <returns>True if failed, otherwise false.</returns>
-    API_FUNCTION() bool GenerateSDF(float resolutionScale = 1.0f, int32 lodIndex = 6, bool cacheData = true);
+    API_FUNCTION() bool GenerateSDF(float resolutionScale = 1.0f, int32 lodIndex = 6, bool cacheData = true, float backfacesThreshold = 0.6f);
 
     /// <summary>
     /// Sets set SDF data (releases the current one).

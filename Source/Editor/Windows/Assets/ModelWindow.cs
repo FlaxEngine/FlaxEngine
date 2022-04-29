@@ -201,6 +201,13 @@ namespace FlaxEditor.Windows.Assets
                         resolution.FloatValue.MaxValue = 100.0f;
                         resolution.FloatValue.Value = sdf.Texture != null ? sdf.ResolutionScale : 1.0f;
                         resolution.FloatValue.BoxValueChanged += b => { proxy.Window._importSettings.SDFResolution = b.Value; };
+                        proxy.Window._importSettings.SDFResolution = sdf.ResolutionScale;
+
+                        var backfacesThreshold = group.FloatValue("Backfaces Threshold", "Custom threshold (in range 0-1) for adjusting mesh internals detection based on the percentage of test rays hit triangle backfaces. Use lower value for more dense mesh.");
+                        backfacesThreshold.FloatValue.MinValue = 0.001f;
+                        backfacesThreshold.FloatValue.MaxValue = 1.0f;
+                        backfacesThreshold.FloatValue.Value = proxy.Window._backfacesThreshold;
+                        backfacesThreshold.FloatValue.BoxValueChanged += b => { proxy.Window._backfacesThreshold = b.Value; };
 
                         var lodIndex = group.IntegerValue("LOD Index", "Index of the model Level of Detail to use for SDF data building. By default uses the lowest quality LOD for fast building.");
                         lodIndex.IntValue.MinValue = 0;
@@ -286,7 +293,7 @@ namespace FlaxEditor.Windows.Assets
                 private void OnRebuildSDF()
                 {
                     var proxy = (MeshesPropertiesProxy)Values[0];
-                    proxy.Asset.GenerateSDF(proxy.Window._importSettings.SDFResolution, _sdfModelLodIndex.Value);
+                    proxy.Asset.GenerateSDF(proxy.Window._importSettings.SDFResolution, _sdfModelLodIndex.Value, true, proxy.Window._backfacesThreshold);
                     proxy.Window.MarkAsEdited();
                     Presenter.BuildLayoutOnUpdate();
                 }
@@ -770,6 +777,7 @@ namespace FlaxEditor.Windows.Assets
         private StaticModel _highlightActor;
         private MeshDataCache _meshData;
         private ModelImportSettings _importSettings = new ModelImportSettings();
+        private float _backfacesThreshold = 0.6f;
 
         /// <inheritdoc />
         public ModelWindow(Editor editor, AssetItem item)

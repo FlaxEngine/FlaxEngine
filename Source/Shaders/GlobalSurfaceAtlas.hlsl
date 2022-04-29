@@ -194,7 +194,7 @@ float4 SampleGlobalSurfaceAtlas(const GlobalSurfaceAtlasData data, ByteAddressBu
 			continue;
 
 		// Remove the scale vector from the transformation matrix
-		float3x3 worldToLocal = object.WorldToLocal;
+		float3x3 worldToLocal = (float3x3)object.WorldToLocal;
 		float scaleX = length(worldToLocal[0]);
 		float scaleY = length(worldToLocal[1]);
 		float scaleZ = length(worldToLocal[2]);
