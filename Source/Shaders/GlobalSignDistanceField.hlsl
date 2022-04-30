@@ -45,7 +45,7 @@ struct GlobalSDFHit
 	float HitTime;
 	uint HitCascade;
 	uint StepsCount;
-	
+
 	bool IsHit()
 	{
 		return HitTime >= 0.0f;
@@ -135,15 +135,20 @@ GlobalSDFHit RayTraceGlobalSDF(const GlobalSDFData data, Texture3D<float> tex[4]
 		float2 intersections = LineHitBox(trace.WorldPosition, traceEndPosition, cascadePosDistance.xyz - cascadePosDistance.www, cascadePosDistance.xyz + cascadePosDistance.www);
 		intersections.xy *= traceMaxDistance;
 		intersections.x = max(intersections.x, nextIntersectionStart);
+		float stepTime = intersections.x;
 		if (intersections.x >= intersections.y)
-			break;
-
-		// Skip the current cascade tracing on the next cascade
-		nextIntersectionStart = intersections.y;
+		{
+			// Skip the current cascade if the ray starts outside it
+			stepTime = intersections.y;
+		}
+		else
+		{
+			// Skip the current cascade tracing on the next cascade
+			nextIntersectionStart = intersections.y;
+		}
 
 		// Walk over the cascade SDF
 		uint step = 0;
-		float stepTime = intersections.x;
 		LOOP
 		for (; step < 250 && stepTime < intersections.y; step++)
 		{
