@@ -1154,17 +1154,19 @@ void VisualScriptExecutor::ProcessGroupFlow(Box* boxBase, Node* node, Value& val
             arrayValue.NodeId = node->ID;
             arrayValue.BoxId = 1;
             arrayValue.Value = tryGetValue(node->GetBox(1), Value::Null);
-            if (arrayValue.Value.Type.Type != VariantType::Array)
+            if (arrayValue.Value.Type.Type == VariantType::Array)
+            {
+                const int32 count = arrayValue.Value.AsArray().Count();
+                for (; iteratorValue.Value.AsInt < count; iteratorValue.Value.AsInt++)
+                {
+                    boxBase = node->GetBox(3);
+                    if (boxBase->HasConnection())
+                        eatBox(node, boxBase->FirstConnection());
+                }
+            }
+            else if (arrayValue.Value.Type.Type != VariantType::Null)
             {
                 OnError(node, boxBase, String::Format(TEXT("Input value {0} is not an array."), arrayValue.Value));
-                return;
-            }
-            const int32 count = arrayValue.Value.AsArray().Count();
-            for (; iteratorValue.Value.AsInt < count; iteratorValue.Value.AsInt++)
-            {
-                boxBase = node->GetBox(3);
-                if (boxBase->HasConnection())
-                    eatBox(node, boxBase->FirstConnection());
             }
             boxBase = node->GetBox(6);
             if (boxBase->HasConnection())
@@ -1228,22 +1230,25 @@ void VisualScriptExecutor::ProcessGroupFlow(Box* boxBase, Node* node, Value& val
             dictionaryValue.NodeId = node->ID;
             dictionaryValue.BoxId = 1;
             dictionaryValue.Value = tryGetValue(node->GetBox(4), Value::Null);
-            if (dictionaryValue.Value.Type.Type != VariantType::Dictionary)
+            if (dictionaryValue.Value.Type.Type == VariantType::Dictionary)
+            {
+                auto& dictionary = *dictionaryValue.Value.AsDictionary;
+                iteratorValue.Value = dictionary.Begin().Index();
+                int32 end = dictionary.End().Index();
+                while (iteratorValue.Value.AsInt < end)
+                {
+                    boxBase = node->GetBox(3);
+                    if (boxBase->HasConnection())
+                        eatBox(node, boxBase->FirstConnection());
+                    Dictionary<Variant, Variant>::Iterator it(dictionary, iteratorValue.Value.AsInt);
+                    ++it;
+                    iteratorValue.Value.AsInt = it.Index();
+                }
+            }
+            else if (dictionaryValue.Value.Type.Type != VariantType::Null)
             {
                 OnError(node, boxBase, String::Format(TEXT("Input value {0} is not a dictionary."), dictionaryValue.Value));
                 return;
-            }
-            auto& dictionary = *dictionaryValue.Value.AsDictionary;
-            iteratorValue.Value = dictionary.Begin().Index();
-            int32 end = dictionary.End().Index();
-            while (iteratorValue.Value.AsInt < end)
-            {
-                boxBase = node->GetBox(3);
-                if (boxBase->HasConnection())
-                    eatBox(node, boxBase->FirstConnection());
-                Dictionary<Variant, Variant>::Iterator it(dictionary, iteratorValue.Value.AsInt);
-                ++it;
-                iteratorValue.Value.AsInt = it.Index();
             }
             boxBase = node->GetBox(6);
             if (boxBase->HasConnection())
