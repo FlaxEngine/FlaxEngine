@@ -548,7 +548,7 @@ namespace FlaxEditor.CustomEditors
                             text = text.Remove(idx, endIdx - idx);
                     }
                 }
-                else if (new ScriptType(typeof(FlaxEngine.Object)).IsAssignableFrom(Values.Type))
+                else if (ScriptType.FlaxObject.IsAssignableFrom(Values.Type))
                 {
                     // Object reference
                     text = JsonSerializer.GetStringID(Values[0] as FlaxEngine.Object);
@@ -598,7 +598,7 @@ namespace FlaxEditor.CustomEditors
                     return false;
                 }
             }
-            else if (new ScriptType(typeof(FlaxEngine.Object)).IsAssignableFrom(Values.Type))
+            else if (ScriptType.FlaxObject.IsAssignableFrom(Values.Type))
             {
                 // Object reference
                 if (text.Length != 32)

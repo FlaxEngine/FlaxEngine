@@ -704,6 +704,11 @@ namespace FlaxEditor.Scripting
         public static readonly ScriptType Object = new ScriptType(typeof(object));
 
         /// <summary>
+        /// A <see cref="ScriptType" /> that is FlaxEngine.Object.
+        /// </summary>
+        public static readonly ScriptType FlaxObject = new ScriptType(typeof(FlaxEngine.Object));
+
+        /// <summary>
         /// Gets the type of the script as <see cref="System.Type"/>.
         /// </summary>
         public Type Type => _managed;
@@ -827,7 +832,7 @@ namespace FlaxEditor.Scripting
             {
                 if (_managed != null)
                     return _managed.GetConstructor(Type.EmptyTypes) != null;
-                return _custom.CanCreateInstance;
+                return _custom?.CanCreateInstance ?? false;
             }
         }
 
@@ -1003,12 +1008,12 @@ namespace FlaxEditor.Scripting
         /// </summary>
         /// <param name="c">The type of the interface to check.</param>
         /// <returns>True if this type implements the given interface, otherwise false.</returns>
-        public bool ImplementInterface(ScriptType c)
+        public bool HasInterface(ScriptType c)
         {
             if (c._managed != null && _managed != null)
                 return c._managed.IsAssignableFrom(_managed);
             if (_custom != null)
-                return _custom.ImplementInterface(c);
+                return _custom.HasInterface(c);
             return false;
         }
 
@@ -1032,7 +1037,7 @@ namespace FlaxEditor.Scripting
         public bool IsAssignableFrom(ScriptType c)
         {
             if (IsInterface)
-                return c.ImplementInterface(this);
+                return c.HasInterface(this);
             while (c != Null)
             {
                 if (c == this)
@@ -1075,11 +1080,13 @@ namespace FlaxEditor.Scripting
         /// When overridden in a derived class, returns the type of the object encompassed or referred to by the current array, pointer or reference type.
         /// </summary>
         /// <returns>The type of the object encompassed or referred to by the current array, pointer, or reference type, or <see langword="null" /> if the current type is not an array or a pointer, or is not passed by reference, or represents a generic type or a type parameter in the definition of a generic type or generic method.</returns>
-        public Type GetElementType()
+        public ScriptType GetElementType()
         {
             if (_managed != null)
-                return _managed.GetElementType();
-            throw new NotImplementedException("TODO: Script.Type.GetElementType for custom types");
+                return new ScriptType(_managed.GetElementType());
+            if (_custom is ScriptTypeArray array)
+                return array.ElementType;
+            return Null;
         }
 
         /// <summary>
@@ -1112,7 +1119,9 @@ namespace FlaxEditor.Scripting
         {
             if (_managed != null)
                 return new ScriptType(_managed.MakeArrayType());
-            throw new NotImplementedException("TODO: Script.Type.MakeArrayType for custom types");
+            if (_custom != null)
+                return new ScriptType(new ScriptTypeArray(this));
+            return Null;
         }
 
         /// <summary>

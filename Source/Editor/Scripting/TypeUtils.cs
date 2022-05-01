@@ -335,9 +335,7 @@ namespace FlaxEditor.Scripting
                 {
                     var type = assembly.GetType(typeName);
                     if (type != null)
-                    {
                         return new ScriptType(type);
-                    }
                 }
             }
 
@@ -346,8 +344,18 @@ namespace FlaxEditor.Scripting
             {
                 var type = customTypesInfo.GetType(typeName);
                 if (type)
-                {
                     return type;
+            }
+            if (typeName.EndsWith("[]"))
+            {
+                if (typeName[0] == '.')
+                    typeName = typeName.Substring(1);
+                typeName = typeName.Substring(0, typeName.Length - 2);
+                foreach (var customTypesInfo in CustomTypes)
+                {
+                    var type = customTypesInfo.GetType(typeName);
+                    if (type)
+                        return type.MakeArrayType();
                 }
             }
 
@@ -361,10 +369,10 @@ namespace FlaxEditor.Scripting
         /// <returns>The created object or null if failed.</returns>
         public static object CreateInstance(string typeName)
         {
-            var type = GetType(typeName);
-            if (type)
+            object obj = null;
+            ScriptType type = GetType(typeName);
+            if (type && type.CanCreateInstance)
             {
-                object obj = null;
                 try
                 {
                     return obj = type.CreateInstance();
@@ -373,11 +381,19 @@ namespace FlaxEditor.Scripting
                 {
                     Debug.LogException(ex);
                 }
-
-                return obj;
             }
+            return obj;
+        }
 
-            return null;
+        /// <summary>
+        /// Creates a one-dimensional <see cref="T:System.Array" /> of the specified type and length.
+        /// </summary>
+        /// <param name="elementType">The type of the array to create.</param>
+        /// <param name="size">The length of the array to create.</param>
+        /// <returns>The created object or null if failed.</returns>
+        public static Array CreateArrayInstance(ScriptType elementType, int size)
+        {
+            return Array.CreateInstance(GetType(elementType), size);
         }
 
         /// <summary>
@@ -402,6 +418,8 @@ namespace FlaxEditor.Scripting
         /// <returns>The managed type.</returns>
         public static Type GetType(ScriptType type)
         {
+            if (type == ScriptType.Null)
+                return null;
             while (type.Type == null)
                 type = type.BaseType;
             return type.Type;

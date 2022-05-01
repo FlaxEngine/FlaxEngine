@@ -101,7 +101,7 @@ namespace FlaxEditor.CustomEditors.Editors
             get
             {
                 var type = Values.Type;
-                return new ScriptType(type.IsGenericType ? type.GetGenericArguments()[0] : type.GetElementType());
+                return type.IsGenericType ? new ScriptType(type.GetGenericArguments()[0]) : type.GetElementType();
             }
         }
 

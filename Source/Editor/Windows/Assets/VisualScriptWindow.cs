@@ -203,7 +203,7 @@ namespace FlaxEditor.Windows.Assets
                     {
                         if (isArray)
                         {
-                            singleValueType = new ScriptType(param.Type.GetElementType());
+                            singleValueType = param.Type.GetElementType();
                             arrayType = param.Type;
                             dictionaryType = ScriptType.MakeDictionaryType(new ScriptType(typeof(int)), singleValueType);
                             b = cmType.ContextMenu.AddButton(window.Surface.GetTypeName(singleValueType) + "[]...", () => OnChangeType(item => window.SetParamType(index, ((ScriptType)item.Tag).MakeArrayType())));

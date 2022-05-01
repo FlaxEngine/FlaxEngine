@@ -155,7 +155,7 @@ namespace FlaxEditor.CustomEditors
             }
             if (targetType.IsGenericType)
             {
-                if (DictionaryEditor.CanEditType(targetTypeType))
+                if (targetTypeType.GetGenericTypeDefinition() == typeof(Dictionary<,>))
                 {
                     return new DictionaryEditor();
                 }

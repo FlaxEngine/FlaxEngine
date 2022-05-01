@@ -16,7 +16,7 @@ namespace FlaxEditor.Surface.Archetypes
         {
             if (type == ScriptType.Null)
                 return box.DefaultType;
-            return box.DefaultType != null ? new ScriptType(type.GetElementType()) : type;
+            return box.DefaultType != null ? type.GetElementType() : type;
         }
 
         internal static ScriptType GetDictionaryItemType(Box box, ScriptType type)

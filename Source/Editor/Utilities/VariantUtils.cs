@@ -282,7 +282,7 @@ namespace FlaxEditor.Utilities
             case VariantType.Pointer: return new ScriptType(typeof(IntPtr));
             case VariantType.String: return new ScriptType(typeof(string));
             case VariantType.Typename: return new ScriptType(typeof(Type));
-            case VariantType.Object: return new ScriptType(typeof(FlaxEngine.Object));
+            case VariantType.Object: return ScriptType.FlaxObject;
             case VariantType.Asset: return new ScriptType(typeof(Asset));
             case VariantType.Vector2: return new ScriptType(typeof(Vector2));
             case VariantType.Vector3: return new ScriptType(typeof(Vector3));

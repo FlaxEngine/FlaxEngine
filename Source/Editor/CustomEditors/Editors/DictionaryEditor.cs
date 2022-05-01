@@ -143,22 +143,6 @@ namespace FlaxEditor.CustomEditors.Editors
         private bool _keyEdited;
 
         /// <summary>
-        /// Determines whether this editor[can edit the specified dictionary type.
-        /// </summary>
-        /// <param name="type">Type of the dictionary.</param>
-        /// <returns>True if can edit, otherwise false.</returns>
-        public static bool CanEditType(Type type)
-        {
-            // Ensure it's a generic dictionary type
-            if (type.IsGenericType && type.GetGenericTypeDefinition() == typeof(Dictionary<,>))
-            {
-                return true;
-            }
-
-            return false;
-        }
-
-        /// <summary>
         /// Gets the length of the collection.
         /// </summary>
         public int Count => (Values[0] as IDictionary)?.Count ?? 0;

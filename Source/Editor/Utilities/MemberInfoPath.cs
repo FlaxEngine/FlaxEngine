@@ -41,7 +41,7 @@ namespace FlaxEditor.Utilities
 
                     // Special case for collections
                     if (Index != null)
-                        result = new ScriptType(result.GetElementType());
+                        result = result.GetElementType();
 
                     return result;
                 }

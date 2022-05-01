@@ -113,7 +113,7 @@ namespace FlaxEditor.Scripting
         /// </summary>
         /// <param name="c">The type of the interface to check.</param>
         /// <returns>True if this type implements the given interface, otherwise false.</returns>
-        bool ImplementInterface(ScriptType c);
+        bool HasInterface(ScriptType c);
 
         /// <summary>
         /// Determines whether the specified attribute was defined for this type.

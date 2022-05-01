@@ -76,7 +76,7 @@ namespace FlaxEditor.Surface
 
                 // Implicit casting is supported for object reference to test whenever it is valid
                 var toType = to.Type;
-                if (_supportsImplicitCastFromObjectToBoolean && toType == typeof(bool) && new ScriptType(typeof(FlaxEngine.Object)).IsAssignableFrom(from))
+                if (_supportsImplicitCastFromObjectToBoolean && toType == typeof(bool) && ScriptType.FlaxObject.IsAssignableFrom(from))
                 {
                     return true;
                 }
