@@ -107,7 +107,7 @@ float4 PS_Forward(PixelInput input) : SV_Target0
 	Texture2D sceneColorTexture = MATERIAL_REFLECTIONS_SSR_COLOR;
 	float2 screenUV = materialInput.SvPosition.xy * ScreenSize.zw;
 	float stepSize = ScreenSize.z; // 1 / screenWidth
-	float maxSamples = 32;
+	float maxSamples = 48;
 	float worldAntiSelfOcclusionBias = 0.1f;
 	float brdfBias = 0.82f;
 	float drawDistance = 5000.0f;
