@@ -1263,6 +1263,8 @@ void VisjectExecutor::ProcessGroupCollections(Box* box, Node* node, Value& value
     {
         // Array
         Variant v = tryGetValue(node->GetBox(0), Value::Null);
+        if (v.Type.Type == VariantType::Null)
+            v = Variant(Array<Variant>());
         ENSURE(v.Type.Type == VariantType::Array, String::Format(TEXT("Input value {0} is not an array."), v));
         auto& array = v.AsArray();
         Box* b;
@@ -1369,6 +1371,8 @@ void VisjectExecutor::ProcessGroupCollections(Box* box, Node* node, Value& value
     {
         // Dictionary
         Variant v = tryGetValue(node->GetBox(0), Value::Null);
+        if (v.Type.Type == VariantType::Null)
+            v = Variant(Dictionary<Variant, Variant>());
         ENSURE(v.Type.Type == VariantType::Dictionary, String::Format(TEXT("Input value {0} is not a dictionary."), v));
         auto& dictionary = *v.AsDictionary;
         switch (node->TypeID)
