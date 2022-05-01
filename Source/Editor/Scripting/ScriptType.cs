@@ -1121,7 +1121,7 @@ namespace FlaxEditor.Scripting
                 return new ScriptType(_managed.MakeArrayType());
             if (_custom != null)
                 return new ScriptType(new ScriptTypeArray(this));
-            return Null;
+            throw new ArgumentNullException();
         }
 
         /// <summary>
@@ -1130,6 +1130,8 @@ namespace FlaxEditor.Scripting
         /// <returns>A type object representing a dictionary of the key and value types.</returns>
         public static ScriptType MakeDictionaryType(ScriptType keyType, ScriptType valueType)
         {
+            if (keyType == Null || valueType == Null)
+                throw new ArgumentNullException();
             return new ScriptType(typeof(Dictionary<,>).MakeGenericType(TypeUtils.GetType(keyType), TypeUtils.GetType(valueType)));
         }
 

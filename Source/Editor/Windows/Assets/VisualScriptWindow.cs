@@ -201,7 +201,12 @@ namespace FlaxEditor.Windows.Assets
                     }
                     else
                     {
-                        if (isArray)
+                        if (param.Type == ScriptType.Null)
+                        {
+                            b = cmType.ContextMenu.AddButton(window.Surface.GetTypeName(param.Type) + "...", () => OnChangeType(item => window.SetParamType(index, (ScriptType)item.Tag)));
+                            return;
+                        }
+                        else if (isArray)
                         {
                             singleValueType = param.Type.GetElementType();
                             arrayType = param.Type;
