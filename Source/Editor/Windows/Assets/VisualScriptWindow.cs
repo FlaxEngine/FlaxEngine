@@ -1239,6 +1239,22 @@ namespace FlaxEditor.Windows.Assets
                 AfterType = type,
                 AfterValue = TypeUtils.GetDefaultValue(type),
             };
+            if (action.BeforeValue != null)
+            {
+                // Try to maintain existing value
+                var beforeType = TypeUtils.GetObjectType(action.BeforeValue);
+                if (type.IsArray && beforeType.IsArray && type.GetElementType().IsAssignableFrom(beforeType.GetElementType()))
+                {
+                    var beforeArray = (Array)action.BeforeValue;
+                    var afterArray = TypeUtils.CreateArrayInstance(type.GetElementType(), beforeArray.Length);
+                    Array.Copy(beforeArray, afterArray, beforeArray.Length);
+                    action.AfterValue = afterArray;
+                }
+                else if (type.IsAssignableFrom(beforeType))
+                {
+                    action.AfterValue = action.BeforeValue;
+                }
+            }
             _undo.AddAction(action);
             action.Do();
         }
