@@ -19,10 +19,41 @@
 #include "Engine/Scripting/Scripting.h"
 #include "Engine/Scripting/ScriptingObject.h"
 #include "Engine/Scripting/StdTypesContainer.h"
+#include "Engine/Scripting/InternalCalls/ManagedDictionary.h"
 #include "Engine/Utilities/StringConverter.h"
 #include "Engine/Content/Asset.h"
 
 #if USE_MONO
+
+// Inlined mono private types to access MonoType internals
+
+typedef struct _MonoGenericClass MonoGenericClass;
+typedef struct _MonoGenericContext MonoGenericContext;
+
+struct _MonoGenericInst
+{
+    unsigned int id;
+    unsigned int type_argc : 22;
+    unsigned int is_open : 1;
+    MonoType* type_argv[MONO_ZERO_LEN_ARRAY];
+};
+
+struct _MonoGenericContext
+{
+    MonoGenericInst* class_inst;
+    MonoGenericInst* method_inst;
+};
+
+struct _MonoGenericClass
+{
+    MonoClass* container_class;
+    MonoGenericContext context;
+    unsigned int is_dynamic : 1;
+    unsigned int is_tb_open : 1;
+    unsigned int need_sync : 1;
+    MonoClass* cached_class;
+    class MonoImageSet* owner;
+};
 
 struct _MonoType
 {
@@ -42,6 +73,21 @@ struct _MonoType
     unsigned int byref : 1;
     unsigned int pinned : 1;
 };
+
+namespace
+{
+    // typeName in format System.Collections.Generic.Dictionary`2[KeyType,ValueType]
+    void GetDictionaryKeyValueTypes(const StringAnsiView& typeName, MonoClass*& keyClass, MonoClass*& valueClass)
+    {
+        const int32 keyStart = typeName.Find('[');
+        const int32 keyEnd = typeName.Find(',');
+        const int32 valueEnd = typeName.Find(']');
+        const StringAnsiView keyTypename(*typeName + keyStart + 1, keyEnd - keyStart - 1);
+        const StringAnsiView valueTypename(*typeName + keyEnd + 1, valueEnd - keyEnd - 1);
+        keyClass = Scripting::FindClassNative(keyTypename);
+        valueClass = Scripting::FindClassNative(valueTypename);
+    }
+}
 
 StringView MUtils::ToString(MonoString* str)
 {
@@ -439,6 +485,30 @@ Variant MUtils::UnboxVariant(MonoObject* value)
         }
         return v;
     }
+    case MONO_TYPE_GENERICINST:
+    {
+        if (StringUtils::Compare(mono_class_get_name(klass), "Dictionary`2") == 0 && StringUtils::Compare(mono_class_get_namespace(klass), "System.Collections.Generic") == 0)
+        {
+            // Dictionary
+            ManagedDictionary managed(value);
+            MonoArray* managedKeys = managed.GetKeys();
+            auto length = managedKeys ? (int32)mono_array_length(managedKeys) : 0;
+            Dictionary<Variant, Variant> native;
+            native.EnsureCapacity(length);
+            for (int32 i = 0; i < length; i++)
+            {
+                MonoObject* keyManaged = mono_array_get(managedKeys, MonoObject*, i);
+                MonoObject* valueManaged = managed.GetValue(keyManaged);
+                native.Add(UnboxVariant(keyManaged), UnboxVariant(valueManaged));
+            }
+            Variant v(MoveTemp(native));
+            StringAnsi typeName;
+            GetClassFullname(klass, typeName);
+            v.Type.SetTypeName(typeName);
+            return v;
+        }
+        break;
+    }
     }
 
     if (mono_class_is_subclass_of(klass, Asset::GetStaticClass()->GetNative(), false) != 0)
@@ -473,7 +543,6 @@ Variant MUtils::UnboxVariant(MonoObject* value)
         }
         return Variant(value);
     }
-    // TODO: support any dictionary unboxing
 
     return Variant(value);
 }
@@ -642,7 +711,31 @@ MonoObject* MUtils::BoxVariant(const Variant& value)
         }
         return (MonoObject*)managed;
     }
-        // TODO: VariantType::Dictionary
+    case VariantType::Dictionary:
+    {
+        // Get dictionary key and value types
+        MonoClass *keyClass, *valueClass;
+        GetDictionaryKeyValueTypes(value.Type.GetTypeName(), keyClass, valueClass);
+        if (!keyClass || !valueClass)
+        {
+            LOG(Error, "Invalid type to box {0}", value.Type);
+            return nullptr;
+        }
+
+        // Allocate managed dictionary
+        ManagedDictionary managed = ManagedDictionary::New(mono_class_get_type(keyClass), mono_class_get_type(valueClass));
+        if (!managed.Instance)
+            return nullptr;
+
+        // Add native keys and values
+        const auto& dictionary = *value.AsDictionary;
+        for (const auto& e : dictionary)
+        {
+            managed.Add(BoxVariant(e.Key), BoxVariant(e.Value));
+        }
+
+        return managed.Instance;
+    }
     case VariantType::Structure:
     {
         if (value.AsBlob.Data == nullptr)
@@ -684,7 +777,6 @@ void MUtils::GetClassFullname(MonoObject* obj, MString& fullname)
 {
     if (obj == nullptr)
         return;
-
     MonoClass* monoClass = mono_object_get_class(obj);
     GetClassFullname(monoClass, fullname);
 }
@@ -693,11 +785,13 @@ void MUtils::GetClassFullname(MonoClass* monoClass, MString& fullname)
 {
     static MString plusStr("+");
     static MString dotStr(".");
-    MonoClass* nestingClass = mono_class_get_nesting_type(monoClass);
-    MonoClass* lastClass = monoClass;
 
+    // Name
     fullname = mono_class_get_name(monoClass);
 
+    // Outer class for nested types
+    MonoClass* nestingClass = mono_class_get_nesting_type(monoClass);
+    MonoClass* lastClass = monoClass;
     while (nestingClass)
     {
         lastClass = nestingClass;
@@ -705,9 +799,27 @@ void MUtils::GetClassFullname(MonoClass* monoClass, MString& fullname)
         nestingClass = mono_class_get_nesting_type(nestingClass);
     }
 
+    // Namespace
     const char* lastClassNamespace = mono_class_get_namespace(lastClass);
     if (lastClassNamespace && *lastClassNamespace)
         fullname = lastClassNamespace + dotStr + fullname;
+
+    // Generic instance arguments
+    const MonoType* monoType = mono_class_get_type(monoClass);
+    if (monoType && monoType->type == MONO_TYPE_GENERICINST)
+    {
+        fullname += '[';
+        MString tmp;
+        for (unsigned int i = 0; i < monoType->data.generic_class->context.class_inst->type_argc; i++)
+        {
+            if (i != 0)
+                fullname += ',';
+            MonoType* argType = monoType->data.generic_class->context.class_inst->type_argv[i];
+            GetClassFullname(mono_type_get_class(argType), tmp);
+            fullname += tmp;
+        }
+        fullname += ']';
+    }
 }
 
 void MUtils::GetClassFullname(MonoReflectionType* type, MString& fullname)
@@ -715,7 +827,7 @@ void MUtils::GetClassFullname(MonoReflectionType* type, MString& fullname)
     if (!type)
         return;
     MonoType* monoType = mono_reflection_type_get_type(type);
-    MonoClass* monoClass = mono_type_get_class(monoType);
+    MonoClass* monoClass = mono_class_from_mono_type(monoType);
     GetClassFullname(monoClass, fullname);
 }
 
@@ -729,7 +841,7 @@ MonoClass* MUtils::GetClass(MonoReflectionType* type)
     if (!type)
         return nullptr;
     MonoType* monoType = mono_reflection_type_get_type(type);
-    return mono_type_get_class(monoType);
+    return mono_class_from_mono_type(monoType);
 }
 
 MonoClass* MUtils::GetClass(const VariantType& value)
@@ -805,6 +917,17 @@ MonoClass* MUtils::GetClass(const VariantType& value)
                 return mono_array_class_get(mclass->GetNative(), 1);
         }
         return mono_array_class_get(mono_get_object_class(), 1);
+    case VariantType::Dictionary:
+    {
+        MonoClass *keyClass, *valueClass;
+        GetDictionaryKeyValueTypes(value.GetTypeName(), keyClass, valueClass);
+        if (!keyClass || !valueClass)
+        {
+            LOG(Error, "Invalid type to box {0}", value.ToString());
+            return nullptr;
+        }
+        return GetClass(ManagedDictionary::GetClass(mono_class_get_type(keyClass), mono_class_get_type(valueClass)));
+    }
     case VariantType::ManagedObject:
         return mono_get_object_class();
     default: ;
@@ -1049,6 +1172,15 @@ void* MUtils::VariantToManagedArgPtr(Variant& value, const MType& type, bool& fa
             return nullptr;
         MonoObject* object = BoxVariant(value);
         if (object && !mono_class_is_subclass_of(mono_object_get_class(object), mono_array_class_get(type.GetNative()->data.klass, 1), false))
+            object = nullptr;
+        return object;
+    }
+    case MONO_TYPE_GENERICINST:
+    {
+        if (value.Type.Type == VariantType::Null)
+            return nullptr;
+        MonoObject* object = BoxVariant(value);
+        if (object && !mono_class_is_subclass_of(mono_object_get_class(object), mono_class_from_mono_type(type.GetNative()), false))
             object = nullptr;
         return object;
     }

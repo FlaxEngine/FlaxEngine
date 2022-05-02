@@ -375,9 +375,9 @@ namespace FlaxEditor.Content
         }
 
         /// <inheritdoc />
-        public bool ImplementInterface(ScriptType c)
+        public bool HasInterface(ScriptType c)
         {
-            return BaseType.ImplementInterface(c);
+            return BaseType.HasInterface(c);
         }
 
         /// <inheritdoc />

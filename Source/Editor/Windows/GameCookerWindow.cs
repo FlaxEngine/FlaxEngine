@@ -28,6 +28,7 @@ namespace FlaxEditor.Windows
         /// <summary>
         /// Proxy object for the Build tab.
         /// </summary>
+        [HideInEditor]
         [CustomEditor(typeof(BuildTabProxy.Editor))]
         private class BuildTabProxy
         {
@@ -65,6 +66,7 @@ namespace FlaxEditor.Windows
                 PerPlatformOptions[PlatformType.Mac].Init("Output/Mac", "Mac");
             }
 
+            [HideInEditor]
             abstract class Platform
             {
                 [HideInEditor]

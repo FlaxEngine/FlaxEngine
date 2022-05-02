@@ -202,6 +202,8 @@ namespace FlaxEditor.Surface.Elements
                 return "Scalar";
             if ((hint & ConnectionsHint.Array) == ConnectionsHint.Array)
                 return "Array";
+            if ((hint & ConnectionsHint.Dictionary) == ConnectionsHint.Dictionary)
+                return "Dictionary";
             return null;
         }
 
@@ -215,7 +217,6 @@ namespace FlaxEditor.Surface.Elements
             // Check direct connection
             if (Surface.CanUseDirectCast(type, _currentType))
             {
-                // Can
                 return true;
             }
 
@@ -224,25 +225,15 @@ namespace FlaxEditor.Surface.Elements
             if (Archetype.ConnectionsType == ScriptType.Null && connectionsHints != ConnectionsHint.None)
             {
                 if ((connectionsHints & ConnectionsHint.Anything) == ConnectionsHint.Anything)
-                {
-                    // Can
                     return true;
-                }
                 if ((connectionsHints & ConnectionsHint.Value) == ConnectionsHint.Value && type.Type != typeof(void))
-                {
-                    // Can
                     return true;
-                }
                 if ((connectionsHints & ConnectionsHint.Enum) == ConnectionsHint.Enum && type.IsEnum)
-                {
-                    // Can
                     return true;
-                }
                 if ((connectionsHints & ConnectionsHint.Array) == ConnectionsHint.Array && type.IsArray)
-                {
-                    // Can
                     return true;
-                }
+                if ((connectionsHints & ConnectionsHint.Dictionary) == ConnectionsHint.Dictionary && type.IsDictionary)
+                    return true;
                 if ((connectionsHints & ConnectionsHint.Vector) == ConnectionsHint.Vector)
                 {
                     var t = type.Type;
@@ -251,7 +242,6 @@ namespace FlaxEditor.Surface.Elements
                         t == typeof(Vector4) ||
                         t == typeof(Color))
                     {
-                        // Can
                         return true;
                     }
                 }
@@ -270,7 +260,6 @@ namespace FlaxEditor.Surface.Elements
                         t == typeof(float) ||
                         t == typeof(double))
                     {
-                        // Can
                         return true;
                     }
                 }

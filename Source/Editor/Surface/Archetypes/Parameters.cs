@@ -181,9 +181,9 @@ namespace FlaxEditor.Surface.Archetypes
 
             private NodeElementArchetype[] GetElementArchetypes(SurfaceParameter selected)
             {
-                if (selected != null && selected.Type.Type != null)
+                if (selected != null && selected.Type != ScriptType.Null)
                 {
-                    if (Prototypes != null && Prototypes.TryGetValue(selected.Type.Type, out var elements))
+                    if (selected.Type.Type != null && Prototypes != null && Prototypes.TryGetValue(selected.Type.Type, out var elements))
                     {
                         // Special case for Normal Maps
                         if (selected.Type.Type == typeof(Texture) && UseNormalMaps && selected.Value != null)

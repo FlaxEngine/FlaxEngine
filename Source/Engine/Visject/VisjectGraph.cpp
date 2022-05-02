@@ -133,6 +133,18 @@ void VisjectExecutor::ProcessGroupConstants(Box* box, Node* node, Value& value)
             }
         }
         break;
+    // Dictionary
+    case 14:
+    {
+        value = Variant(Dictionary<Variant, Variant>());
+        String typeName = TEXT("System.Collections.Generic.Dictionary`2[");
+        typeName += (StringView)node->Values[0];
+        typeName += ',';
+        typeName += (StringView)node->Values[1];
+        typeName += ']';
+        value.Type.SetTypeName(typeName);
+        break;
+    }
     default:
         break;
     }
@@ -1257,6 +1269,8 @@ void VisjectExecutor::ProcessGroupCollections(Box* box, Node* node, Value& value
     {
         // Array
         Variant v = tryGetValue(node->GetBox(0), Value::Null);
+        if (v.Type.Type == VariantType::Null)
+            v = Variant(Array<Variant>());
         ENSURE(v.Type.Type == VariantType::Array, String::Format(TEXT("Input value {0} is not an array."), v));
         auto& array = v.AsArray();
         Box* b;
@@ -1357,6 +1371,67 @@ void VisjectExecutor::ProcessGroupCollections(Box* box, Node* node, Value& value
             array.AddUnique(eatBox(b->GetParent<Node>(), b->FirstConnection()));
             value = MoveTemp(v);
             break;
+        }
+    }
+    else if (node->TypeID < 200)
+    {
+        // Dictionary
+        Variant v = tryGetValue(node->GetBox(0), Value::Null);
+        if (v.Type.Type == VariantType::Null)
+            v = Variant(Dictionary<Variant, Variant>());
+        ENSURE(v.Type.Type == VariantType::Dictionary, String::Format(TEXT("Input value {0} is not a dictionary."), v));
+        auto& dictionary = *v.AsDictionary;
+        switch (node->TypeID)
+        {
+        // Count
+        case 101:
+            value = dictionary.Count();
+            break;
+        // Contains Key
+        case 102:
+        {
+            Variant inKey = tryGetValue(node->GetBox(1), 0, Value::Null);
+            value = dictionary.ContainsKey(inKey);
+            break;
+        }
+        // Contains Value
+        case 103:
+        {
+            Variant inValue = tryGetValue(node->GetBox(2), 0, Value::Null);
+            value = dictionary.ContainsValue(inValue);
+            break;
+        }
+        // Clear
+        case 104:
+            dictionary.Clear();
+            value = MoveTemp(v);
+            break;
+        // Remove
+        case 105:
+        {
+            Variant inKey = tryGetValue(node->GetBox(1), 0, Value::Null);
+            dictionary.Remove(inKey);
+            value = MoveTemp(v);
+            break;
+        }
+        // Set
+        case 106:
+        {
+            Variant inKey = tryGetValue(node->GetBox(1), 0, Value::Null);
+            Variant inValue = tryGetValue(node->GetBox(2), 1, Value::Null);
+            dictionary[MoveTemp(inKey)] = MoveTemp(inValue);
+            value = MoveTemp(v);
+            break;
+        }
+        // Get
+        case 107:
+        {
+            Variant key = tryGetValue(node->GetBox(1), 0, Value::Null);
+            Variant* valuePtr = dictionary.TryGet(key);
+            ENSURE(valuePtr, TEXT("Missing key to get."));
+            value = MoveTemp(*valuePtr);
+            break;
+        }
         }
     }
 }

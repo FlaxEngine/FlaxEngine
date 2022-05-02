@@ -59,6 +59,8 @@ namespace FlaxEditor.CustomEditors
 
         internal static CustomEditor CreateEditor(ScriptType targetType, bool canUseRefPicker = true)
         {
+            if (targetType == ScriptType.Null)
+                return new GenericEditor();
             if (targetType.IsArray)
             {
                 return new ArrayEditor();
@@ -107,7 +109,7 @@ namespace FlaxEditor.CustomEditors
             }
             if (targetType.IsGenericType)
             {
-                if (DictionaryEditor.CanEditType(targetTypeType))
+                if (targetTypeType.GetGenericTypeDefinition() == typeof(Dictionary<,>))
                 {
                     return new DictionaryEditor();
                 }

@@ -1679,7 +1679,7 @@ namespace FlaxEngine
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool operator ==(Vector2 left, Vector2 right)
         {
-            return Mathf.NearEqual(left.X, left.X) && Mathf.NearEqual(left.Y, right.Y);
+            return Mathf.NearEqual(left.X, right.X) && Mathf.NearEqual(left.Y, right.Y);
         }
 
         /// <summary>
@@ -1691,7 +1691,7 @@ namespace FlaxEngine
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool operator !=(Vector2 left, Vector2 right)
         {
-            return !Mathf.NearEqual(left.X, left.X) || !Mathf.NearEqual(left.Y, right.Y);
+            return !Mathf.NearEqual(left.X, right.X) || !Mathf.NearEqual(left.Y, right.Y);
         }
 
         /// <summary>

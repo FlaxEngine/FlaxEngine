@@ -10,7 +10,6 @@
 #include "Engine/Core/Collections/Dictionary.h"
 #include "Engine/Content/Asset.h"
 #include "Engine/Core/Cache.h"
-#include "Engine/Debug/DebugLog.h"
 #include "Engine/Debug/Exceptions/JsonParseException.h"
 #include "Engine/Profiler/ProfilerCPU.h"
 #include "Engine/Scripting/ManagedSerialization.h"
@@ -458,12 +457,11 @@ void ReadStream::ReadVariant(Variant* data)
         auto& dictionary = *data->AsDictionary;
         dictionary.Clear();
         dictionary.EnsureCapacity(count);
-        Variant key, value;
         for (int32 i = 0; i < count; i++)
         {
+            Variant key;
             ReadVariant(&key);
-            ReadVariant(&value);
-            dictionary.Add(key, value);
+            ReadVariant(&dictionary[MoveTemp(key)]);
         }
         break;
     }

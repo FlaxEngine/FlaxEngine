@@ -387,17 +387,7 @@ namespace FlaxEditor.Surface
         /// <returns>The display name (for UI).</returns>
         public virtual string GetTypeName(ScriptType type)
         {
-            if (type == ScriptType.Null)
-                return null;
-            if (type.Type == typeof(float))
-                return "Float";
-            if (type.Type == typeof(int))
-                return "Int";
-            if (type.Type == typeof(uint))
-                return "Uint";
-            if (type.Type == typeof(bool))
-                return "Bool";
-            return type.Name;
+            return type == ScriptType.Null ? null : type.Name;
         }
 
         /// <summary>

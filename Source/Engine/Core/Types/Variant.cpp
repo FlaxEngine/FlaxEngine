@@ -66,7 +66,7 @@ namespace
         "FlaxEngine.Ray",// Ray
         "FlaxEngine.Matrix",// Matrix
         "System.Object[]",// Array
-        "Dictionary<System.Object,System.Object>",// Dictionary
+        "System.Collections.Generic.Dictionary`2[System.Object,System.Object]",// Dictionary
         "System.Object",// ManagedObject
         "System.Type",// Typename
         "FlaxEngine.Int2"// Int2
@@ -765,6 +765,12 @@ Variant::Variant(const Array<Variant, HeapAllocation>& v)
 {
     auto* array = reinterpret_cast<Array<Variant, HeapAllocation>*>(AsData);
     new(array)Array<Variant, HeapAllocation>(v);
+}
+
+Variant::Variant(Dictionary<Variant, Variant>&& v)
+    : Type(VariantType::Dictionary)
+{
+    AsDictionary = New<Dictionary<Variant, Variant>>(MoveTemp(v));
 }
 
 Variant::Variant(const Dictionary<Variant, Variant>& v)

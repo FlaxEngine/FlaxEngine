@@ -492,6 +492,19 @@ namespace FlaxEditor.Surface
                             return true;
                         }
                     }
+                    if (box.HasSingleConnection)
+                    {
+                        var connectedBox = box.Connections[0];
+                        for (int i = 0; i < state.Locals.Length; i++)
+                        {
+                            ref var local = ref state.Locals[i];
+                            if (local.BoxId == connectedBox.ID && local.NodeId == connectedBox.ParentNode.ID)
+                            {
+                                text = $"{local.Value ?? string.Empty} ({local.ValueTypeName})";
+                                return true;
+                            }
+                        }
+                    }
                 }
 
                 // Evaluate the value using the Visual Scripting backend

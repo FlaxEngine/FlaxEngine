@@ -331,6 +331,29 @@ namespace FlaxEditor.Surface.Archetypes
                     NodeElementArchetype.Factory.Output(3, "Done", typeof(void), 6, true),
                 }
             },
+            new NodeArchetype
+            {
+                TypeID = 8,
+                Title = "Dictionary For Each",
+                AlternativeTitles = new[] { "foreach" },
+                Description = "Iterates over the dictionary items.",
+                Flags = NodeFlags.VisualScriptGraph,
+                Size = new Vector2(180, 80),
+                ConnectionsHints = ConnectionsHint.Dictionary,
+                IndependentBoxes = new int[] { 4 },
+                DependentBoxes = new int[] { 1, 2, },
+                DependentBoxFilter = Collections.GetDictionaryItemType,
+                Elements = new[]
+                {
+                    NodeElementArchetype.Factory.Input(0, string.Empty, false, typeof(void), 0),
+                    NodeElementArchetype.Factory.Input(1, "Dictionary", true, null, 4),
+                    NodeElementArchetype.Factory.Input(2, "Break", false, typeof(void), 5),
+                    NodeElementArchetype.Factory.Output(0, "Loop", typeof(void), 3, true),
+                    NodeElementArchetype.Factory.Output(1, "Key", typeof(object), 1),
+                    NodeElementArchetype.Factory.Output(2, "Value", typeof(object), 2),
+                    NodeElementArchetype.Factory.Output(3, "Done", typeof(void), 6, true),
+                }
+            },
         };
     }
 }

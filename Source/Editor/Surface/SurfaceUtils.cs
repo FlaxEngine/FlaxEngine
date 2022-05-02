@@ -415,8 +415,13 @@ namespace FlaxEditor.Surface
 
         internal static bool IsValidVisualScriptType(ScriptType scriptType)
         {
-            if (scriptType.IsGenericType || !scriptType.IsPublic || scriptType.HasAttribute(typeof(HideInEditorAttribute), true))
+            if (!scriptType.IsPublic || scriptType.HasAttribute(typeof(HideInEditorAttribute), true))
                 return false;
+            if (scriptType.IsGenericType)
+            {
+                // Only Dictionary generic type is valid
+                return scriptType.GetGenericTypeDefinition() == typeof(Dictionary<,>);
+            }
             var managedType = TypeUtils.GetType(scriptType);
             return !TypeUtils.IsDelegate(managedType);
         }

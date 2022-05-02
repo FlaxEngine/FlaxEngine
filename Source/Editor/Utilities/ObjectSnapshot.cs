@@ -64,11 +64,11 @@ namespace FlaxEditor.Utilities
                 && memberValue != null
                 && !refStack.Contains(memberValue))
             {
-                if (memberType.IsArray && !typeof(FlaxEngine.Object).IsAssignableFrom(memberType.GetElementType()))
+                if (memberType.IsArray && !ScriptType.FlaxObject.IsAssignableFrom(memberType.GetElementType()))
                 {
                     // Array
                     var array = (Array)memberValue;
-                    var elementType = new ScriptType(memberType.GetElementType());
+                    var elementType = memberType.GetElementType();
                     var length = array.Length;
                     refStack.Push(memberValue);
                     for (int i = 0; i < length; i++)
@@ -78,7 +78,7 @@ namespace FlaxEditor.Utilities
                     }
                     refStack.Pop();
                 }
-                else if (typeof(IList).IsAssignableFrom(memberType.Type) && !typeof(FlaxEngine.Object).IsAssignableFrom(memberType.GetElementType()))
+                else if (typeof(IList).IsAssignableFrom(memberType.Type) && !ScriptType.FlaxObject.IsAssignableFrom(memberType.GetElementType()))
                 {
                     // List
                     var list = (IList)memberValue;
@@ -105,7 +105,7 @@ namespace FlaxEditor.Utilities
                         GetEntries(new MemberInfoPath.Entry(member.Member, key), membersPath, result, values, refStack, valueType, value);
                     }
                 }
-                else if (memberType.IsClass && !new ScriptType(typeof(FlaxEngine.Object)).IsAssignableFrom(memberType))
+                else if (memberType.IsClass && !ScriptType.FlaxObject.IsAssignableFrom(memberType))
                 {
                     // Object
                     refStack.Push(memberValue);

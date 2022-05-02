@@ -796,7 +796,7 @@ namespace FlaxEditor.Surface.Archetypes
             {
                 _picker = new TypePickerControl
                 {
-                    Type = new ScriptType(typeof(FlaxEngine.Object)),
+                    Type = ScriptType.FlaxObject,
                     Bounds = new Rectangle(FlaxEditor.Surface.Constants.NodeMarginX + 20, FlaxEditor.Surface.Constants.NodeMarginY + FlaxEditor.Surface.Constants.NodeHeaderSize, 160, 16),
                     Parent = this,
                 };
@@ -833,7 +833,7 @@ namespace FlaxEditor.Surface.Archetypes
             {
                 var type = TypeUtils.GetType((string)Values[0]);
                 var box = (OutputBox)GetBox(0);
-                box.CurrentType = type ? type : new ScriptType(typeof(FlaxEngine.Object));
+                box.CurrentType = type ? type : ScriptType.FlaxObject;
             }
 
             /// <inheritdoc />
@@ -905,7 +905,7 @@ namespace FlaxEditor.Surface.Archetypes
             {
                 _picker = new TypePickerControl
                 {
-                    Type = new ScriptType(typeof(FlaxEngine.Object)),
+                    Type = ScriptType.FlaxObject,
                     Bounds = new Rectangle(FlaxEditor.Surface.Constants.NodeMarginX + 20, FlaxEditor.Surface.Constants.NodeMarginY + FlaxEditor.Surface.Constants.NodeHeaderSize, 160, 16),
                     Parent = this,
                 };

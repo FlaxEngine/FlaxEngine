@@ -245,6 +245,7 @@ public:
         Dictionary& _collection;
         int32 _index;
 
+    public:
         Iterator(Dictionary& collection, const int32 index)
             : _collection(collection)
             , _index(index)
@@ -256,8 +257,6 @@ public:
             , _index(index)
         {
         }
-
-    public:
 
         Iterator(const Iterator& i)
             : _collection(i._collection)
@@ -272,6 +271,10 @@ public:
         }
 
     public:
+        FORCE_INLINE int32 Index() const
+        {
+            return _index;
+        }
 
         FORCE_INLINE bool IsEnd() const
         {

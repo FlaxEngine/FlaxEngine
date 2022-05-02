@@ -16,7 +16,16 @@ namespace FlaxEditor.Surface.Archetypes
         {
             if (type == ScriptType.Null)
                 return box.DefaultType;
-            return box.DefaultType != null ? new ScriptType(type.GetElementType()) : type;
+            return box.DefaultType != null ? type.GetElementType() : type;
+        }
+
+        internal static ScriptType GetDictionaryItemType(Box box, ScriptType type)
+        {
+            if (type == ScriptType.Null)
+                return box.DefaultType;
+            // BoxID = 1 is Key
+            // BoxID = 2 is Value
+            return box.DefaultType != null ? new ScriptType(type.GetGenericArguments()[box.ID == 1 ? 0 : 1]) : type;
         }
 
         /// <summary>
@@ -28,7 +37,7 @@ namespace FlaxEditor.Surface.Archetypes
             {
                 TypeID = 1,
                 Title = "Array Length",
-                Description = "Gets the length of the arary (amount of the items).",
+                Description = "Gets the length of the array (amount of the items).",
                 AlternativeTitles = new[] { "Count" },
                 Flags = NodeFlags.VisualScriptGraph | NodeFlags.AnimGraph,
                 Size = new Vector2(150, 20),
@@ -44,7 +53,7 @@ namespace FlaxEditor.Surface.Archetypes
             {
                 TypeID = 2,
                 Title = "Array Contains",
-                Description = "Returns the true if arrayt contains a given item, otherwise false.",
+                Description = "Returns the true if array contains a given item, otherwise false.",
                 AlternativeTitles = new[] { "Contains" },
                 Flags = NodeFlags.VisualScriptGraph | NodeFlags.AnimGraph,
                 Size = new Vector2(150, 40),
@@ -277,6 +286,138 @@ namespace FlaxEditor.Surface.Archetypes
                 }
             },
             // first 100 IDs reserved for arrays
+
+            new NodeArchetype
+            {
+                TypeID = 101,
+                Title = "Dictionary Count",
+                Description = "Gets the size of the dictionary (amount of the items).",
+                AlternativeTitles = new[] { "size" },
+                Flags = NodeFlags.VisualScriptGraph | NodeFlags.AnimGraph,
+                Size = new Vector2(180, 20),
+                ConnectionsHints = ConnectionsHint.Dictionary,
+                IndependentBoxes = new int[] { 0 },
+                Elements = new[]
+                {
+                    NodeElementArchetype.Factory.Input(0, "Dictionary", true, null, 0),
+                    NodeElementArchetype.Factory.Output(0, string.Empty, typeof(int), 1)
+                }
+            },
+            new NodeArchetype
+            {
+                TypeID = 102,
+                Title = "Dictionary Contains Key",
+                Description = "Returns the true if dictionary contains a given key, otherwise false.",
+                AlternativeTitles = new[] { "Contains" },
+                Flags = NodeFlags.VisualScriptGraph | NodeFlags.AnimGraph,
+                Size = new Vector2(240, 40),
+                DefaultValues = new object[] { 0 },
+                ConnectionsHints = ConnectionsHint.Dictionary,
+                IndependentBoxes = new int[] { 0 },
+                DependentBoxes = new int[] { 1 },
+                DependentBoxFilter = GetDictionaryItemType,
+                Elements = new[]
+                {
+                    NodeElementArchetype.Factory.Input(0, "Dictionary", true, null, 0),
+                    NodeElementArchetype.Factory.Input(1, "Key", true, typeof(object), 1, 0),
+                    NodeElementArchetype.Factory.Output(0, string.Empty, typeof(bool), 3)
+                }
+            },
+            new NodeArchetype
+            {
+                TypeID = 103,
+                Title = "Dictionary Contains Value",
+                Description = "Returns the true if dictionary contains a given value, otherwise false.",
+                AlternativeTitles = new[] { "Contains" },
+                Flags = NodeFlags.VisualScriptGraph | NodeFlags.AnimGraph,
+                Size = new Vector2(240, 40),
+                DefaultValues = new object[] { 0 },
+                ConnectionsHints = ConnectionsHint.Dictionary,
+                IndependentBoxes = new int[] { 0 },
+                DependentBoxes = new int[] { 2 },
+                DependentBoxFilter = GetDictionaryItemType,
+                Elements = new[]
+                {
+                    NodeElementArchetype.Factory.Input(0, "Dictionary", true, null, 0),
+                    NodeElementArchetype.Factory.Input(1, "Value", true, typeof(object), 2, 0),
+                    NodeElementArchetype.Factory.Output(0, string.Empty, typeof(bool), 3)
+                }
+            },
+            new NodeArchetype
+            {
+                TypeID = 104,
+                Title = "Dictionary Clear",
+                Description = "Clears dictionary.",
+                Flags = NodeFlags.VisualScriptGraph | NodeFlags.AnimGraph,
+                Size = new Vector2(180, 20),
+                ConnectionsHints = ConnectionsHint.Dictionary,
+                IndependentBoxes = new int[] { 0 },
+                DependentBoxes = new int[] { 1 },
+                Elements = new[]
+                {
+                    NodeElementArchetype.Factory.Input(0, "Dictionary", true, null, 0),
+                    NodeElementArchetype.Factory.Output(0, string.Empty, null, 1)
+                }
+            },
+            new NodeArchetype
+            {
+                TypeID = 105,
+                Title = "Dictionary Remove",
+                Description = "Removes the given item from the dictionary (by key).",
+                Flags = NodeFlags.VisualScriptGraph | NodeFlags.AnimGraph,
+                Size = new Vector2(180, 40),
+                DefaultValues = new object[] { 0 },
+                ConnectionsHints = ConnectionsHint.Dictionary,
+                IndependentBoxes = new int[] { 0 },
+                DependentBoxes = new int[] { 1, 3 },
+                DependentBoxFilter = GetDictionaryItemType,
+                Elements = new[]
+                {
+                    NodeElementArchetype.Factory.Input(0, "Dictionary", true, null, 0),
+                    NodeElementArchetype.Factory.Input(1, "Key", true, typeof(object), 1, 0),
+                    NodeElementArchetype.Factory.Output(0, string.Empty, null, 3)
+                }
+            },
+            new NodeArchetype
+            {
+                TypeID = 106,
+                Title = "Dictionary Set",
+                Description = "Set the item in the dictionary (a pair of key and value). Adds or updates the pair.",
+                Flags = NodeFlags.VisualScriptGraph | NodeFlags.AnimGraph,
+                Size = new Vector2(180, 60),
+                DefaultValues = new object[] { 0, 0 },
+                ConnectionsHints = ConnectionsHint.Dictionary,
+                IndependentBoxes = new int[] { 0 },
+                DependentBoxes = new int[] { 1, 2, 3 },
+                DependentBoxFilter = GetDictionaryItemType,
+                Elements = new[]
+                {
+                    NodeElementArchetype.Factory.Input(0, "Dictionary", true, null, 0),
+                    NodeElementArchetype.Factory.Input(1, "Key", true, typeof(object), 1, 0),
+                    NodeElementArchetype.Factory.Input(2, "Value", true, typeof(object), 2, 1),
+                    NodeElementArchetype.Factory.Output(0, string.Empty, null, 3)
+                }
+            },
+            new NodeArchetype
+            {
+                TypeID = 107,
+                Title = "Dictionary Get",
+                Description = "Gets the item from the dictionary (a pair of key and value).",
+                Flags = NodeFlags.VisualScriptGraph | NodeFlags.AnimGraph,
+                Size = new Vector2(180, 40),
+                DefaultValues = new object[] { 0 },
+                ConnectionsHints = ConnectionsHint.Dictionary,
+                IndependentBoxes = new int[] { 0 },
+                DependentBoxes = new int[] { 1, 3 },
+                DependentBoxFilter = GetDictionaryItemType,
+                Elements = new[]
+                {
+                    NodeElementArchetype.Factory.Input(0, "Dictionary", true, null, 0),
+                    NodeElementArchetype.Factory.Input(1, "Key", true, typeof(object), 1, 0),
+                    NodeElementArchetype.Factory.Output(0, string.Empty, typeof(object), 3)
+                }
+            },
+            // second 100 IDs reserved for dictionaries
         };
     }
 }
