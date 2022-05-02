@@ -5,9 +5,9 @@
 
 #include "./Flax/Common.hlsl"
 #include "./Flax/Math.hlsl"
-#include "./Flax/GlobalSurfaceAtlas.hlsl"
-#include "./Flax/GlobalSignDistanceField.hlsl"
 #include "./Flax/LightingCommon.hlsl"
+#include "./Flax/GlobalSignDistanceField.hlsl"
+#include "./Flax/GI/GlobalSurfaceAtlas.hlsl"
 
 META_CB_BEGIN(0, Data)
 float3 ViewWorldPos;

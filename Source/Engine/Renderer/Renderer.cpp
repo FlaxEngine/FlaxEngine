@@ -22,7 +22,7 @@
 #include "HistogramPass.h"
 #include "AtmospherePreCompute.h"
 #include "GlobalSignDistanceFieldPass.h"
-#include "GlobalSurfaceAtlasPass.h"
+#include "GI/GlobalSurfaceAtlasPass.h"
 #include "Utils/MultiScaler.h"
 #include "Utils/BitonicSort.h"
 #include "AntiAliasing/FXAA.h"

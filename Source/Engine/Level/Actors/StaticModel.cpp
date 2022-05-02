@@ -10,7 +10,7 @@
 #include "Engine/Level/Prefabs/PrefabManager.h"
 #include "Engine/Level/Scene/Scene.h"
 #include "Engine/Renderer/GlobalSignDistanceFieldPass.h"
-#include "Engine/Renderer/GlobalSurfaceAtlasPass.h"
+#include "Engine/Renderer/GI/GlobalSurfaceAtlasPass.h"
 #include "Engine/Utilities/Encryption.h"
 #if USE_EDITOR
 #include "Editor/Editor.h"

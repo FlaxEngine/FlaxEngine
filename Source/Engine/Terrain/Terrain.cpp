@@ -14,7 +14,7 @@
 #include "Engine/Graphics/Textures/GPUTexture.h"
 #include "Engine/Profiler/ProfilerCPU.h"
 #include "Engine/Renderer/GlobalSignDistanceFieldPass.h"
-#include "Engine/Renderer/GlobalSurfaceAtlasPass.h"
+#include "Engine/Renderer/GI/GlobalSurfaceAtlasPass.h"
 
 Terrain::Terrain(const SpawnParams& params)
     : PhysicsColliderActor(params)

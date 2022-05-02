@@ -2,7 +2,7 @@
 
 #pragma once
 
-#include "RendererPass.h"
+#include "../RendererPass.h"
 
 /// <summary>
 /// Global Surface Atlas rendering pass. Captures scene geometry into a single atlas texture which contains surface diffuse color, normal vector, emission light, and calculates direct+indirect lighting. Used by Global Illumination and Reflections.

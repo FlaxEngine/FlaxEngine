@@ -1,9 +1,9 @@
 // Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 #include "GlobalSurfaceAtlasPass.h"
-#include "GlobalSignDistanceFieldPass.h"
-#include "RenderList.h"
-#include "ShadowsPass.h"
+#include "../GlobalSignDistanceFieldPass.h"
+#include "../RenderList.h"
+#include "../ShadowsPass.h"
 #include "Engine/Core/Math/Matrix3x3.h"
 #include "Engine/Core/Math/OrientedBoundingBox.h"
 #include "Engine/Engine/Engine.h"
@@ -192,7 +192,7 @@ bool GlobalSurfaceAtlasPass::setupResources()
     // Load shader
     if (!_shader)
     {
-        _shader = Content::LoadAsyncInternal<Shader>(TEXT("Shaders/GlobalSurfaceAtlas"));
+        _shader = Content::LoadAsyncInternal<Shader>(TEXT("Shaders/GI/GlobalSurfaceAtlas"));
         if (_shader == nullptr)
             return true;
 #if COMPILE_WITH_DEV_ENV
