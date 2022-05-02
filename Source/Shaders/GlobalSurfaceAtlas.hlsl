@@ -175,6 +175,8 @@ float4 SampleGlobalSurfaceAtlas(const GlobalSurfaceAtlasData data, ByteAddressBu
 	float4 chunkHeader = culledObjects[objectsStart];
 	objectsStart++;
 	uint objectsCount = asuint(chunkHeader.x);
+	if (objectsCount > data.ObjectsCount) // Prevents crashing - don't know why the data is invalid here (rare issue when moving fast though scene with terrain)
+		return result;
 
 	// Loop over culled objects inside the chunk
 	LOOP
