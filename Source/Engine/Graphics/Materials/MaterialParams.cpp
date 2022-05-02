@@ -490,7 +490,7 @@ void MaterialParameter::Bind(BindMeta& meta) const
             Platform::MemoryClear(&bindingData, sizeof(bindingData));
         for (int32 i = 0; i < 4; i++)
             meta.Context->BindSR(_registerIndex + i, bindingData.Cascades[i] ? bindingData.Cascades[i]->ViewVolume() : nullptr);
-        *((GlobalSignDistanceFieldPass::GlobalSDFData*)(meta.Constants.Get() + _offset)) = bindingData.GlobalSDF;
+        *((GlobalSignDistanceFieldPass::ConstantsData*)(meta.Constants.Get() + _offset)) = bindingData.GlobalSDF;
         break;
     }
     default:

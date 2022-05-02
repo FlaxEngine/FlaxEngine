@@ -112,7 +112,7 @@ void ShaderGraphUtilities::GenerateShaderConstantBuffer(TextWriterUnicode& write
         }
         case MaterialParameterType::GlobalSDF:
             zeroRegister = false;
-            size = sizeof(GlobalSignDistanceFieldPass::GlobalSDFData);
+            size = sizeof(GlobalSignDistanceFieldPass::ConstantsData);
             alignment = 16;
             format = TEXT("GlobalSDFData {0};");
             break;

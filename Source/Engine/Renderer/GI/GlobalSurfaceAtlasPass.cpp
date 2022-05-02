@@ -41,8 +41,8 @@ PACK_STRUCT(struct Data0
     float LightShadowsStrength;
     float ViewFarPlane;
     Vector4 ViewFrustumWorldRays[4];
-    GlobalSignDistanceFieldPass::GlobalSDFData GlobalSDF;
-    GlobalSurfaceAtlasPass::GlobalSurfaceAtlasData GlobalSurfaceAtlas;
+    GlobalSignDistanceFieldPass::ConstantsData GlobalSDF;
+    GlobalSurfaceAtlasPass::ConstantsData GlobalSurfaceAtlas;
     LightData Light;
     });
 

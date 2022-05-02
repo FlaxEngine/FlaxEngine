@@ -52,7 +52,7 @@ PACK_STRUCT(struct Data
     Vector3 Padding00;
     float ViewFarPlane;
     Vector4 ViewFrustumWorldRays[4];
-    GlobalSignDistanceFieldPass::GlobalSDFData GlobalSDF;
+    GlobalSignDistanceFieldPass::ConstantsData GlobalSDF;
     });
 
 PACK_STRUCT(struct ModelsRasterizeData
