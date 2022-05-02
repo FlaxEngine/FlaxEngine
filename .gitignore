@@ -148,5 +148,6 @@ bin/
 obj/
 *.vcxproj.filters
 .vscode/
+.idea/
 *.code-workspace
 
