@@ -25,7 +25,7 @@ namespace IncludedFiles
     {
         String Path;
         DateTime LastEditTime;
-        Array<byte> Source;
+        StringAnsi Source;
     };
 
     CriticalSection Locker;
@@ -222,7 +222,7 @@ bool ShaderCompiler::GetIncludedFileSource(ShaderCompilationContext* context, co
         result = New<IncludedFiles::File>();
         result->Path = path;
         result->LastEditTime = FileSystem::GetFileLastEditTime(path);
-        if (File::ReadAllBytes(result->Path, result->Source))
+        if (File::ReadAllText(result->Path, result->Source))
         {
             LOG(Error, "Failed to load shader source file '{0}' included in '{1}' (path: '{2}')", String(includedFile), String(sourceFile), path);
             Delete(result);
@@ -234,8 +234,8 @@ bool ShaderCompiler::GetIncludedFileSource(ShaderCompilationContext* context, co
     context->Includes.Add(path);
 
     // Copy to output
-    source = (const char*)result->Source.Get();
-    sourceLength = result->Source.Count() - 1;
+    source = result->Source.Get();
+    sourceLength = result->Source.Length();
     return false;
 }
 
