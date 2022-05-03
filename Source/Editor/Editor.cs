@@ -216,6 +216,26 @@ namespace FlaxEditor
         /// </summary>
         public ProjectInfo EngineProject;
 
+        /// <summary>
+        /// Occurs when play mode is beginning (before entering play mode).
+        /// </summary>
+        public event Action PlayModeBeginning;
+
+        /// <summary>
+        /// Occurs when play mode begins (after entering play mode).
+        /// </summary>
+        public event Action PlayModeBegin;
+
+        /// <summary>
+        /// Occurs when play mode is ending (before leaving play mode).
+        /// </summary>
+        public event Action PlayModeEnding;
+
+        /// <summary>
+        /// Occurs when play mode ends (after leaving play mode).
+        /// </summary>
+        public event Action PlayModeEnd;
+
         internal Editor()
         {
             Instance = this;
@@ -523,16 +543,24 @@ namespace FlaxEditor
         {
             for (int i = 0; i < _modules.Count; i++)
                 _modules[i].OnPlayBeginning();
+            PlayModeBeginning?.Invoke();
         }
 
         internal void OnPlayBegin()
         {
             for (int i = 0; i < _modules.Count; i++)
                 _modules[i].OnPlayBegin();
+            PlayModeBegin?.Invoke();
+        }
+
+        internal void OnPlayEnding()
+        {
+            PlayModeEnding?.Invoke();
         }
 
         internal void OnPlayEnd()
         {
+            PlayModeEnd?.Invoke();
             for (int i = 0; i < _modules.Count; i++)
                 _modules[i].OnPlayEnd();
         }

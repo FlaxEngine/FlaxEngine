@@ -171,6 +171,7 @@ namespace FlaxEditor.States
         public override void OnExit(State nextState)
         {
             Profiler.BeginEvent("PlayingState.OnExit");
+            Editor.OnPlayEnding();
             IsPaused = true;
 
             // Remove references to the scene objects
