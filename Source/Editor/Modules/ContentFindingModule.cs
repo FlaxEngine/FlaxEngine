@@ -45,12 +45,13 @@ namespace FlaxEditor.Modules
     /// </summary>
     public class ContentFindingModule : EditorModule
     {
-        private List<QuickAction> _quickActions = new List<QuickAction>();
+        private List<QuickAction> _quickActions;
+        private ContentFinder _finder;
 
         /// <summary>
         /// The content finding context menu.
         /// </summary>
-        public ContentFinder Finder { get; private set; }
+        public ContentFinder Finder => _finder ?? (_finder = new ContentFinder());
 
         /// <summary>
         /// Initializes a new instance of the <see cref="ContentFindingModule"/> class.
@@ -62,21 +63,19 @@ namespace FlaxEditor.Modules
         }
 
         /// <inheritdoc />
-        public override void OnInit()
-        {
-            base.OnInit();
-
-            Finder = new ContentFinder();
-        }
-
-        /// <inheritdoc />
         public override void OnExit()
         {
-            _quickActions.Clear();
-            _quickActions = null;
+            if (_quickActions != null)
+            {
+                _quickActions.Clear();
+                _quickActions = null;
+            }
 
-            Finder?.Dispose();
-            Finder = null;
+            if (_finder != null)
+            {
+                _finder.Dispose();
+                _finder = null;
+            }
 
             base.OnExit();
         }
@@ -87,8 +86,9 @@ namespace FlaxEditor.Modules
         /// <param name="control">The target control to show finder over it.</param>
         public void ShowFinder(Control control)
         {
-            var position = (control.Size - new Vector2(Finder.Width, 300.0f)) * 0.5f;
-            Finder.Show(control, position);
+            var finder = Finder;
+            var position = (control.Size - new Vector2(finder.Width, 300.0f)) * 0.5f;
+            finder.Show(control, position);
         }
 
         /// <summary>
@@ -98,6 +98,8 @@ namespace FlaxEditor.Modules
         /// <param name="action">The actual action callback.</param>
         public void AddQuickAction(string name, Action action)
         {
+            if (_quickActions == null)
+                _quickActions = new List<QuickAction>();
             _quickActions.Add(new QuickAction
             {
                 Name = name,
@@ -112,6 +114,8 @@ namespace FlaxEditor.Modules
         /// <returns>True when it succeed, false if there is no Quick Action with this name.</returns>
         public bool RemoveQuickAction(string name)
         {
+            if (_quickActions == null)
+                return false;
             foreach (var action in _quickActions)
             {
                 if (action.Name.Equals(name))
@@ -120,7 +124,6 @@ namespace FlaxEditor.Modules
                     return true;
                 }
             }
-
             return false;
         }
 
@@ -183,13 +186,14 @@ namespace FlaxEditor.Modules
                 Profiler.EndEvent();
             }
 
+            if (_quickActions != null)
             {
                 Profiler.BeginEvent("QuickActions");
-                _quickActions.ForEach(action =>
+                foreach (var action in _quickActions)
                 {
                     if (nameRegex.Match(action.Name).Success && typeRegex.Match("Quick Action").Success)
                         matches.Add(new SearchResult { Name = action.Name, Type = "Quick Action", Item = action });
-                });
+                }
                 Profiler.EndEvent();
             }
 
