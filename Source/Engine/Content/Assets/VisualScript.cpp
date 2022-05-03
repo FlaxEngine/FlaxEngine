@@ -1750,6 +1750,7 @@ void VisualScriptingBinaryModule::OnEvent(ScriptingObject* object, Span<Variant>
     else
     {
         // Static event
+        bool called = false;
         for (auto& asset : Content::GetAssetsRaw())
         {
             if (const auto visualScript = ScriptingObject::Cast<VisualScript>(asset.Value))
@@ -1763,10 +1764,13 @@ void VisualScriptingBinaryModule::OnEvent(ScriptingObject* object, Span<Variant>
                             continue;
                         for (auto& m : b.BindedMethods)
                         {
-                            VisualScripting::Invoke(m, object, parameters);
+                            VisualScripting::Invoke(m, nullptr, parameters);
                         }
+                        called = true;
                     }
                 }
+                if (called)
+                    break;
             }
         }
     }
