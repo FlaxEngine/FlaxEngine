@@ -619,6 +619,8 @@ namespace FlaxEngine.GUI
             // Filter text
             if (str.IndexOf('\r') != -1)
                 str = str.Replace("\r", "");
+            if (!IsMultiline && str.IndexOf('\n') != -1)
+                str = str.Replace("\n", "");
 
             int selectionLength = SelectionLength;
             int charactersLeft = MaxLength - _text.Length + selectionLength;
