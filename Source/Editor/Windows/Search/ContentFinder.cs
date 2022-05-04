@@ -14,11 +14,12 @@ namespace FlaxEditor.Windows.Search
     /// </summary>
     /// <seealso cref="FlaxEditor.GUI.ContextMenu.ContextMenuBase" />
     [HideInEditor]
-    public class ContentFinder : ContextMenuBase
+    internal class ContentFinder : ContextMenuBase
     {
         private Panel _resultPanel;
         private TextBox _searchBox;
         private SearchItem _selectedItem;
+        private List<SearchItem> _matchedItems = new List<SearchItem>();
 
         /// <summary>
         /// Gets or sets the height per item.
@@ -33,12 +34,12 @@ namespace FlaxEditor.Windows.Search
         /// <summary>
         /// Gets or sets the selected item.
         /// </summary>
-        public SearchItem SelectedItem
+        internal SearchItem SelectedItem
         {
             get => _selectedItem;
             set
             {
-                if (value == _selectedItem || (value != null && !MatchedItems.Contains(value)))
+                if (value == _selectedItem || (value != null && !_matchedItems.Contains(value)))
                     return;
 
                 if (_selectedItem != null)
@@ -51,8 +52,7 @@ namespace FlaxEditor.Windows.Search
                 if (_selectedItem != null)
                 {
                     _selectedItem.BackgroundColor = Style.Current.BackgroundSelected;
-
-                    if (MatchedItems.Count > VisibleItemCount)
+                    if (_matchedItems.Count > VisibleItemCount)
                     {
                         _resultPanel.VScrollBar.SmoothingScale = 0;
                         _resultPanel.ScrollViewTo(_selectedItem);
@@ -65,8 +65,6 @@ namespace FlaxEditor.Windows.Search
         /// <summary>
         /// Gets actual matched item list.
         /// </summary>
-        public List<SearchItem> MatchedItems { get; } = new List<SearchItem>();
-
         internal bool Hand;
 
         /// <summary>
@@ -97,7 +95,7 @@ namespace FlaxEditor.Windows.Search
 
         private void OnTextChanged()
         {
-            MatchedItems.Clear();
+            _matchedItems.Clear();
             SelectedItem = null;
 
             var results = Editor.Instance.ContentFinding.Search(_searchBox.Text);
@@ -149,7 +147,7 @@ namespace FlaxEditor.Windows.Search
                     searchItem = new SearchItem(item.Name, item.Type, item.Item, this, itemsWidth, itemHeight);
                 searchItem.Y = i * itemHeight;
                 searchItem.Parent = _resultPanel;
-                MatchedItems.Add(searchItem);
+                _matchedItems.Add(searchItem);
             }
 
             window.ClientSize = new Vector2(window.ClientSize.X, Height * dpiScale);
@@ -184,30 +182,30 @@ namespace FlaxEditor.Windows.Search
             {
             case KeyboardKeys.ArrowDown:
             {
-                if (MatchedItems.Count == 0)
+                if (_matchedItems.Count == 0)
                     return true;
                 int currentPos;
                 if (_selectedItem != null)
                 {
-                    currentPos = MatchedItems.IndexOf(_selectedItem) + 1;
-                    if (currentPos >= MatchedItems.Count)
+                    currentPos = _matchedItems.IndexOf(_selectedItem) + 1;
+                    if (currentPos >= _matchedItems.Count)
                         currentPos--;
                 }
                 else
                 {
                     currentPos = 0;
                 }
-                SelectedItem = MatchedItems[currentPos];
+                SelectedItem = _matchedItems[currentPos];
                 return true;
             }
             case KeyboardKeys.ArrowUp:
             {
-                if (MatchedItems.Count == 0)
+                if (_matchedItems.Count == 0)
                     return true;
                 int currentPos;
                 if (_selectedItem != null)
                 {
-                    currentPos = MatchedItems.IndexOf(_selectedItem) - 1;
+                    currentPos = _matchedItems.IndexOf(_selectedItem) - 1;
                     if (currentPos < 0)
                         currentPos = 0;
                 }
@@ -215,7 +213,7 @@ namespace FlaxEditor.Windows.Search
                 {
                     currentPos = 0;
                 }
-                SelectedItem = MatchedItems[currentPos];
+                SelectedItem = _matchedItems[currentPos];
                 return true;
             }
             case KeyboardKeys.Return:
@@ -225,10 +223,10 @@ namespace FlaxEditor.Windows.Search
                     Hide();
                     Editor.Instance.ContentFinding.Open(_selectedItem.Item);
                 }
-                else if (_selectedItem == null && _searchBox.TextLength != 0 && MatchedItems.Count != 0)
+                else if (_selectedItem == null && _searchBox.TextLength != 0 && _matchedItems.Count != 0)
                 {
                     Hide();
-                    Editor.Instance.ContentFinding.Open(MatchedItems[0].Item);
+                    Editor.Instance.ContentFinding.Open(_matchedItems[0].Item);
                 }
                 return true;
             }

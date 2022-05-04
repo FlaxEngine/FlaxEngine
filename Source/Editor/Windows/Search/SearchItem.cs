@@ -11,7 +11,7 @@ namespace FlaxEditor.Windows.Search
     /// The <see cref="ContentFinder"/> item.
     /// </summary>
     [HideInEditor]
-    public class SearchItem : ContainerControl
+    internal class SearchItem : ContainerControl
     {
         private ContentFinder _finder;
 
@@ -117,7 +117,7 @@ namespace FlaxEditor.Windows.Search
     /// </summary>
     /// <seealso cref="FlaxEditor.Windows.Search.SearchItem" />
     /// <seealso cref="FlaxEditor.Content.IContentItemOwner" />
-    public class AssetSearchItem : SearchItem, IContentItemOwner
+    internal class AssetSearchItem : SearchItem, IContentItemOwner
     {
         private AssetItem _asset;
         private FlaxEditor.GUI.ContextMenu.ContextMenu _cm;

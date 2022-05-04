@@ -51,7 +51,7 @@ namespace FlaxEditor.Modules
         /// <summary>
         /// The content finding context menu.
         /// </summary>
-        public ContentFinder Finder => _finder ?? (_finder = new ContentFinder());
+        internal ContentFinder Finder => _finder ?? (_finder = new ContentFinder());
 
         /// <summary>
         /// Initializes a new instance of the <see cref="ContentFindingModule"/> class.
