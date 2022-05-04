@@ -7,7 +7,7 @@ using FlaxEditor.Modules;
 using FlaxEngine;
 using FlaxEngine.GUI;
 
-namespace FlaxEditor.Surface.ContextMenu
+namespace FlaxEditor.Windows.Search
 {
     /// <summary>
     /// The content finder popup. Allows to search for project items and quickly navigate to.

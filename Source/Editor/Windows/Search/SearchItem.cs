@@ -2,11 +2,10 @@
 
 using FlaxEditor.Content;
 using FlaxEditor.GUI.ContextMenu;
-using FlaxEditor.Windows;
 using FlaxEngine;
 using FlaxEngine.GUI;
 
-namespace FlaxEditor.Surface.ContextMenu
+namespace FlaxEditor.Windows.Search
 {
     /// <summary>
     /// The <see cref="ContentFinder"/> item.
@@ -116,7 +115,7 @@ namespace FlaxEditor.Surface.ContextMenu
     /// <summary>
     /// The <see cref="SearchItem"/> for assets. Supports using asset thumbnail.
     /// </summary>
-    /// <seealso cref="FlaxEditor.Surface.ContextMenu.SearchItem" />
+    /// <seealso cref="FlaxEditor.Windows.Search.SearchItem" />
     /// <seealso cref="FlaxEditor.Content.IContentItemOwner" />
     public class AssetSearchItem : SearchItem, IContentItemOwner
     {

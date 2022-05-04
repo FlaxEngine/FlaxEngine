@@ -6,7 +6,7 @@ using System.Linq;
 using System.Text.RegularExpressions;
 using FlaxEditor.Content;
 using FlaxEditor.SceneGraph;
-using FlaxEditor.Surface.ContextMenu;
+using FlaxEditor.Windows.Search;
 using FlaxEngine;
 using FlaxEngine.GUI;
 
