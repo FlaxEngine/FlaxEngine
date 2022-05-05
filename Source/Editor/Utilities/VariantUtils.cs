@@ -513,7 +513,9 @@ namespace FlaxEditor.Utilities
                 {
                     // Json
                     var json = stream.ReadStrAnsi(-71);
-                    return FlaxEngine.Json.JsonSerializer.Deserialize(json, type);
+                    if (json.Length != 0)
+                        return FlaxEngine.Json.JsonSerializer.Deserialize(json, type);
+                    return Activator.CreateInstance(type);
                 }
                 return null;
             }
