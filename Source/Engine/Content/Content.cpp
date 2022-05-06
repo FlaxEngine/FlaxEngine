@@ -230,7 +230,7 @@ bool Content::GetAssetInfo(const Guid& id, AssetInfo& info)
     auto diff = now - LastWorkspaceDiscovery;
     if (diff <= TimeSpan::FromSeconds(5))
     {
-        LOG(Warning, "Cannot perform workspace scan for '{1}'. Too often call. Time diff: {0} ms", static_cast<int32>(diff.GetTotalMilliseconds()), id);
+        //LOG(Warning, "Cannot perform workspace scan for '{1}'. Too often call. Time diff: {0} ms", static_cast<int32>(diff.GetTotalMilliseconds()), id);
         return false;
     }
     LastWorkspaceDiscovery = now;
