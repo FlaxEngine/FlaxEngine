@@ -91,7 +91,7 @@ namespace FlaxEditor.Surface.Elements
                     _currentType = value;
 
                     // Check if will need to update box connections due to type change
-                    if (Surface._isUpdatingBoxTypes == 0 && HasAnyConnection && !CanCast(prev, _currentType))
+                    if ((Surface == null || Surface._isUpdatingBoxTypes == 0) && HasAnyConnection && !CanCast(prev, _currentType))
                     {
                         // Remove all invalid connections and update those which still can be valid
                         var connections = Connections.ToArray();
@@ -181,9 +181,12 @@ namespace FlaxEditor.Surface.Elements
         {
             _currentType = DefaultType;
             Text = Archetype.Text;
-            var hints = parentNode.Archetype.ConnectionsHints;
-            Surface.Style.GetConnectionColor(_currentType, hints, out _currentTypeColor);
-            TooltipText = Surface.GetTypeName(CurrentType) ?? GetConnectionHintTypeName(hints);
+            if (Surface != null)
+            {
+                var hints = parentNode.Archetype.ConnectionsHints;
+                Surface.Style.GetConnectionColor(_currentType, hints, out _currentTypeColor);
+                TooltipText = Surface.GetTypeName(CurrentType) ?? GetConnectionHintTypeName(hints);
+            }
         }
 
         private static string GetConnectionHintTypeName(ConnectionsHint hint)
@@ -215,9 +218,15 @@ namespace FlaxEditor.Surface.Elements
         public bool CanUseType(ScriptType type)
         {
             // Check direct connection
-            if (Surface.CanUseDirectCast(type, _currentType))
+            if (Surface != null)
             {
-                return true;
+                if (Surface.CanUseDirectCast(type, _currentType))
+                    return true;
+            }
+            else
+            {
+                if (VisjectSurface.CanUseDirectCastStatic(type, _currentType))
+                    return true;
             }
 
             // Check using connection hints
@@ -464,9 +473,12 @@ namespace FlaxEditor.Surface.Elements
         /// </summary>
         protected virtual void OnCurrentTypeChanged()
         {
-            var hints = ParentNode.Archetype.ConnectionsHints;
-            Surface.Style.GetConnectionColor(_currentType, hints, out _currentTypeColor);
-            TooltipText = Surface.GetTypeName(CurrentType) ?? GetConnectionHintTypeName(hints);
+            if (Surface != null)
+            {
+                var hints = ParentNode.Archetype.ConnectionsHints;
+                Surface.Style.GetConnectionColor(_currentType, hints, out _currentTypeColor);
+                TooltipText = Surface.GetTypeName(CurrentType) ?? GetConnectionHintTypeName(hints);
+            }
             CurrentTypeChanged?.Invoke(this);
         }
 

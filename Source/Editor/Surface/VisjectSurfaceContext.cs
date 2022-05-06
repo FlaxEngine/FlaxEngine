@@ -335,7 +335,8 @@ namespace FlaxEditor.Surface
         /// <returns>Created node.</returns>
         public SurfaceNode SpawnNode(ushort groupID, ushort typeID, Vector2 location, object[] customValues = null, Action<SurfaceNode> beforeSpawned = null)
         {
-            if (NodeFactory.GetArchetype(_surface.NodeArchetypes, groupID, typeID, out var groupArchetype, out var nodeArchetype))
+            var nodeArchetypes = _surface?.NodeArchetypes ?? NodeFactory.DefaultGroups;
+            if (NodeFactory.GetArchetype(nodeArchetypes, groupID, typeID, out var groupArchetype, out var nodeArchetype))
             {
                 return SpawnNode(groupArchetype, nodeArchetype, location, customValues, beforeSpawned);
             }
@@ -360,7 +361,7 @@ namespace FlaxEditor.Surface
             var flags = nodeArchetype.Flags;
             nodeArchetype.Flags &= ~NodeFlags.NoSpawnViaGUI;
             nodeArchetype.Flags &= ~NodeFlags.NoSpawnViaPaste;
-            if (!_surface.CanUseNodeType(nodeArchetype))
+            if (_surface != null && !_surface.CanUseNodeType(nodeArchetype))
             {
                 nodeArchetype.Flags = flags;
                 Editor.LogWarning("Cannot spawn given node type. Title: " + nodeArchetype.Title);
@@ -394,7 +395,8 @@ namespace FlaxEditor.Surface
             OnControlSpawned(node);
 
             // Undo action
-            Surface.Undo?.AddAction(new AddRemoveNodeAction(node, true));
+            if (Surface != null && Surface.Undo != null)
+                Surface.Undo.AddAction(new AddRemoveNodeAction(node, true));
 
             MarkAsModified();
 

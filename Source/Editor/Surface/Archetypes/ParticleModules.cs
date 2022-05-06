@@ -275,7 +275,7 @@ namespace FlaxEditor.Surface.Archetypes
 
                 base.OnSurfaceLoaded();
 
-                ParticleSurface.ArrangeModulesNodes();
+                ParticleSurface?.ArrangeModulesNodes();
             }
 
             /// <inheritdoc />

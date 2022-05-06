@@ -77,7 +77,8 @@ namespace FlaxEditor.Surface
         /// <returns>True if failed, otherwise false.</returns>
         public bool Load()
         {
-            Surface._isUpdatingBoxTypes++;
+            if (_surface != null)
+                _surface._isUpdatingBoxTypes++;
 
             try
             {
@@ -178,7 +179,8 @@ namespace FlaxEditor.Surface
             }
             finally
             {
-                Surface._isUpdatingBoxTypes--;
+                if (_surface != null)
+                    _surface._isUpdatingBoxTypes--;
             }
 
             return false;
@@ -445,6 +447,9 @@ namespace FlaxEditor.Surface
         {
             // IMPORTANT! This must match C++ Graph format
 
+            var nodeArchetypes = _surface?.NodeArchetypes ?? NodeFactory.DefaultGroups;
+            var customNodes = _surface?.GetCustomNodes();
+
             // Magic Code
             int tmp = stream.ReadInt32();
             if (tmp != 1963542358)
@@ -489,7 +494,7 @@ namespace FlaxEditor.Surface
                     if (groupId == Archetypes.Custom.GroupID)
                         node = new DummyCustomNode(id, this);
                     else
-                        node = NodeFactory.CreateNode(_surface.NodeArchetypes, id, this, groupId, typeId);
+                        node = NodeFactory.CreateNode(nodeArchetypes, id, this, groupId, typeId);
                     if (node == null)
                         node = new MissingNode(id, this, groupId, typeId);
                     Nodes.Add(node);
@@ -550,7 +555,6 @@ namespace FlaxEditor.Surface
                         string typeName = typeNameValue as string ?? string.Empty;
 
                         // Find custom node archetype that matches this node type (it must be unique)
-                        var customNodes = _surface.GetCustomNodes();
                         if (customNodes?.Archetypes != null && typeName.Length != 0)
                         {
                             NodeArchetype arch = null;
@@ -674,7 +678,7 @@ namespace FlaxEditor.Surface
                     if (groupId == Archetypes.Custom.GroupID)
                         node = new DummyCustomNode(id, this);
                     else
-                        node = NodeFactory.CreateNode(_surface.NodeArchetypes, id, this, groupId, typeId);
+                        node = NodeFactory.CreateNode(nodeArchetypes, id, this, groupId, typeId);
                     if (node == null)
                         node = new MissingNode(id, this, groupId, typeId);
                     Nodes.Add(node);
@@ -722,7 +726,6 @@ namespace FlaxEditor.Surface
                         string typeName = typeNameValue as string ?? string.Empty;
 
                         // Find custom node archetype that matches this node type (it must be unique)
-                        var customNodes = _surface.GetCustomNodes();
                         if (customNodes?.Archetypes != null && typeName.Length != 0)
                         {
                             NodeArchetype arch = null;
@@ -856,7 +859,7 @@ namespace FlaxEditor.Surface
         {
             control.OnSpawned();
             ControlSpawned?.Invoke(control);
-            if (control is SurfaceNode node)
+            if (Surface != null && control is SurfaceNode node)
                 Surface.OnNodeSpawned(node);
         }
 

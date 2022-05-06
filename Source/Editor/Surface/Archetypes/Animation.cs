@@ -53,7 +53,8 @@ namespace FlaxEditor.Surface.Archetypes
             {
                 base.OnSurfaceLoaded();
 
-                UpdateTitle();
+                if (Surface != null)
+                    UpdateTitle();
             }
 
             private void UpdateTitle()

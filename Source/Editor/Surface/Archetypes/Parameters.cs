@@ -312,8 +312,11 @@ namespace FlaxEditor.Surface.Archetypes
             {
                 base.OnLoaded();
 
-                UpdateCombo();
-                UpdateLayout();
+                if (Surface != null)
+                {
+                    UpdateCombo();
+                    UpdateLayout();
+                }
             }
 
             /// <inheritdoc />
@@ -321,7 +324,10 @@ namespace FlaxEditor.Surface.Archetypes
             {
                 base.OnSurfaceLoaded();
 
-                UpdateTitle();
+                if (Surface != null)
+                {
+                    UpdateTitle();
+                }
             }
 
             /// <inheritdoc />
@@ -601,8 +607,11 @@ namespace FlaxEditor.Surface.Archetypes
             {
                 base.OnLoaded();
 
-                UpdateCombo();
-                UpdateUI();
+                if (Surface != null)
+                {
+                    UpdateCombo();
+                    UpdateUI();
+                }
             }
 
             /// <inheritdoc />
@@ -610,7 +619,10 @@ namespace FlaxEditor.Surface.Archetypes
             {
                 base.OnSurfaceLoaded();
 
-                UpdateUI();
+                if (Surface != null)
+                {
+                    UpdateUI();
+                }
             }
 
             /// <inheritdoc />

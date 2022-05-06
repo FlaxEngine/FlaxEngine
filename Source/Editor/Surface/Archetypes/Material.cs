@@ -65,7 +65,7 @@ namespace FlaxEditor.Surface.Archetypes
             {
                 // Try get parent material window
                 // Maybe too hacky :D
-                if (!(Surface.Owner is MaterialWindow materialWindow) || materialWindow.Item == null)
+                if (!(Surface?.Owner is MaterialWindow materialWindow) || materialWindow.Item == null)
                     return;
 
                 // Layered material

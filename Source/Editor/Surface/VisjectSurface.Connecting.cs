@@ -47,13 +47,7 @@ namespace FlaxEditor.Surface
 
     public partial class VisjectSurface
     {
-        /// <summary>
-        /// Checks if can use direct conversion from one type to another.
-        /// </summary>
-        /// <param name="from">Source type.</param>
-        /// <param name="to">Target type.</param>
-        /// <returns>True if can use direct conversion, otherwise false.</returns>
-        public bool CanUseDirectCast(ScriptType from, ScriptType to)
+        internal static bool CanUseDirectCastStatic(ScriptType from, ScriptType to, bool supportsImplicitCastFromObjectToBoolean = true)
         {
             if (from == ScriptType.Null || to == ScriptType.Null)
                 return false;
@@ -76,7 +70,7 @@ namespace FlaxEditor.Surface
 
                 // Implicit casting is supported for object reference to test whenever it is valid
                 var toType = to.Type;
-                if (_supportsImplicitCastFromObjectToBoolean && toType == typeof(bool) && ScriptType.FlaxObject.IsAssignableFrom(from))
+                if (supportsImplicitCastFromObjectToBoolean && toType == typeof(bool) && ScriptType.FlaxObject.IsAssignableFrom(from))
                 {
                     return true;
                 }
@@ -122,6 +116,17 @@ namespace FlaxEditor.Surface
                 }
             }
             return result;
+        }
+
+        /// <summary>
+        /// Checks if can use direct conversion from one type to another.
+        /// </summary>
+        /// <param name="from">Source type.</param>
+        /// <param name="to">Target type.</param>
+        /// <returns>True if can use direct conversion, otherwise false.</returns>
+        public bool CanUseDirectCast(ScriptType from, ScriptType to)
+        {
+            return CanUseDirectCastStatic(from, to, _supportsImplicitCastFromObjectToBoolean);
         }
 
         /// <summary>

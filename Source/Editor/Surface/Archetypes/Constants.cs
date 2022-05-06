@@ -309,6 +309,8 @@ namespace FlaxEditor.Surface.Archetypes
                 _output.CurrentType = dictionaryType;
                 _isUpdatingUI = false;
 
+                if (Surface == null)
+                    return;
                 var canEdit = Surface.CanEdit;
                 _keyTypePicker.Enabled = canEdit;
                 _valueTypePicker.Enabled = canEdit;

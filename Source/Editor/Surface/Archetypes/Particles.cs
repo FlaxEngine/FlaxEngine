@@ -218,6 +218,9 @@ namespace FlaxEditor.Surface.Archetypes
             {
                 base.OnSurfaceLoaded();
 
+                if (Surface == null)
+                    return;
+
                 // Always keep root node in the back (modules with lay on top of it)
                 IndexInParent = 0;
 
@@ -231,7 +234,7 @@ namespace FlaxEditor.Surface.Archetypes
             {
                 base.OnLocationChanged();
 
-                if (Surface != null && ParticleSurface._rootNode == this)
+                if (ParticleSurface != null && ParticleSurface._rootNode == this)
                 {
                     // Update modules to match root node location
                     ParticleSurface.ArrangeModulesNodes();
@@ -242,7 +245,8 @@ namespace FlaxEditor.Surface.Archetypes
             public override void OnDestroy()
             {
                 // Unlink
-                ParticleSurface._rootNode = null;
+                if (ParticleSurface != null)
+                    ParticleSurface._rootNode = null;
 
                 base.OnDestroy();
             }

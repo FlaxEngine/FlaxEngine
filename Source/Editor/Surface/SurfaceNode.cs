@@ -158,6 +158,8 @@ namespace FlaxEditor.Surface
         /// <param name="height">The height.</param>
         public void Resize(float width, float height)
         {
+            if (Surface == null)
+                return;
             Size = CalculateNodeSize(width, height);
 
             // Update boxes on width change
@@ -178,6 +180,8 @@ namespace FlaxEditor.Surface
         /// </summary>
         public void ResizeAuto()
         {
+            if (Surface == null)
+                return;
             var width = 0.0f;
             var height = 0.0f;
             var leftHeight = 0.0f;
@@ -462,10 +466,21 @@ namespace FlaxEditor.Surface
                     }
 
                     // Check if that type if part of default type
-                    if (Surface.CanUseDirectCast(type, b.Connections[0].DefaultType))
+                    if (Surface != null)
                     {
-                        type = b.Connections[0].CurrentType;
-                        break;
+                        if (Surface.CanUseDirectCast(type, b.Connections[0].DefaultType))
+                        {
+                            type = b.Connections[0].CurrentType;
+                            break;
+                        }
+                    }
+                    else
+                    {
+                        if (VisjectSurface.CanUseDirectCastStatic(type, b.Connections[0].DefaultType))
+                        {
+                            type = b.Connections[0].CurrentType;
+                            break;
+                        }
                     }
                 }
             }
@@ -891,7 +906,7 @@ namespace FlaxEditor.Surface
         /// <param name="graphEdited">True if graph has been edited (nodes structure or parameter value).</param>
         public virtual void SetValue(int index, object value, bool graphEdited = true)
         {
-            if (_isDuringValuesEditing || !Surface.CanEdit)
+            if (_isDuringValuesEditing || (Surface != null && !Surface.CanEdit))
                 return;
             if (FlaxEngine.Json.JsonSerializer.ValueEquals(value, Values[index]))
                 return;
@@ -900,13 +915,13 @@ namespace FlaxEditor.Surface
 
             _isDuringValuesEditing = true;
 
-            var before = Surface.Undo != null ? (object[])Values.Clone() : null;
+            var before = Surface?.Undo != null ? (object[])Values.Clone() : null;
 
             Values[index] = value;
             OnValuesChanged();
-            Surface.MarkAsEdited(graphEdited);
+            Surface?.MarkAsEdited(graphEdited);
 
-            Surface.Undo?.AddAction(new EditNodeValuesAction(this, before, graphEdited));
+            Surface?.Undo?.AddAction(new EditNodeValuesAction(this, before, graphEdited));
 
             _isDuringValuesEditing = false;
         }
@@ -948,7 +963,7 @@ namespace FlaxEditor.Surface
         public virtual void OnValuesChanged()
         {
             ValuesChanged?.Invoke();
-            Surface.OnNodeValuesEdited(this);
+            Surface?.OnNodeValuesEdited(this);
         }
 
         /// <summary>

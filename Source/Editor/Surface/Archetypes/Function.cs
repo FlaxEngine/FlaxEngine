@@ -380,16 +380,19 @@ namespace FlaxEditor.Surface.Archetypes
             public FunctionInputNode(uint id, VisjectSurfaceContext context, NodeArchetype nodeArch, GroupArchetype groupArch)
             : base(id, context, nodeArch, groupArch)
             {
-                _types = ((IFunctionSurface)Surface).FunctionTypes;
-                _typePicker = new ComboBox
+                if (Surface is IFunctionSurface surface)
                 {
-                    Location = new Vector2(4, 32),
-                    Width = 80.0f,
-                    Parent = this,
-                };
-                for (int i = 0; i < _types.Length; i++)
-                    _typePicker.AddItem(Surface.GetTypeName(new ScriptType(_types[i])));
-                _nameField.Location = new Vector2(_typePicker.Right + 2.0f, _typePicker.Y);
+                    _types = surface.FunctionTypes;
+                    _typePicker = new ComboBox
+                    {
+                        Location = new Vector2(4, 32),
+                        Width = 80.0f,
+                        Parent = this,
+                    };
+                    for (int i = 0; i < _types.Length; i++)
+                        _typePicker.AddItem(Surface.GetTypeName(new ScriptType(_types[i])));
+                    _nameField.Location = new Vector2(_typePicker.Right + 2.0f, _typePicker.Y);
+                }
             }
 
             /// <inheritdoc />
@@ -401,8 +404,11 @@ namespace FlaxEditor.Surface.Archetypes
                 _outputBox.CurrentType = SignatureType;
                 _defaultValueBox = GetBox(1);
                 _defaultValueBox.CurrentType = _outputBox.CurrentType;
-                _typePicker.SelectedIndex = Array.IndexOf(_types, _outputBox.CurrentType.Type);
-                _typePicker.SelectedIndexChanged += OnTypePickerSelectedIndexChanged;
+                if (_typePicker != null)
+                {
+                    _typePicker.SelectedIndex = Array.IndexOf(_types, _outputBox.CurrentType.Type);
+                    _typePicker.SelectedIndexChanged += OnTypePickerSelectedIndexChanged;
+                }
             }
 
             private void OnTypePickerSelectedIndexChanged(ComboBox picker)
@@ -417,7 +423,8 @@ namespace FlaxEditor.Surface.Archetypes
 
                 _outputBox.CurrentType = SignatureType;
                 _defaultValueBox.CurrentType = _outputBox.CurrentType;
-                _typePicker.SelectedIndex = Array.IndexOf(_types, _outputBox.CurrentType.Type);
+                if (_typePicker != null)
+                    _typePicker.SelectedIndex = Array.IndexOf(_types, _outputBox.CurrentType.Type);
             }
 
             /// <inheritdoc />
@@ -442,16 +449,19 @@ namespace FlaxEditor.Surface.Archetypes
             public FunctionOutputNode(uint id, VisjectSurfaceContext context, NodeArchetype nodeArch, GroupArchetype groupArch)
             : base(id, context, nodeArch, groupArch)
             {
-                _types = ((IFunctionSurface)Surface).FunctionTypes;
-                _typePicker = new ComboBox
+                if (Surface is IFunctionSurface surface)
                 {
-                    Location = new Vector2(24, 32),
-                    Width = 80.0f,
-                    Parent = this,
-                };
-                for (int i = 0; i < _types.Length; i++)
-                    _typePicker.AddItem(Surface.GetTypeName(new ScriptType(_types[i])));
-                _nameField.Location = new Vector2(_typePicker.Right + 2.0f, _typePicker.Y);
+                    _types = surface.FunctionTypes;
+                    _typePicker = new ComboBox
+                    {
+                        Location = new Vector2(24, 32),
+                        Width = 80.0f,
+                        Parent = this,
+                    };
+                    for (int i = 0; i < _types.Length; i++)
+                        _typePicker.AddItem(Surface.GetTypeName(new ScriptType(_types[i])));
+                    _nameField.Location = new Vector2(_typePicker.Right + 2.0f, _typePicker.Y);
+                }
             }
 
             /// <inheritdoc />
@@ -461,8 +471,11 @@ namespace FlaxEditor.Surface.Archetypes
 
                 _inputBox = GetBox(0);
                 _inputBox.CurrentType = SignatureType;
-                _typePicker.SelectedIndex = Array.IndexOf(_types, _inputBox.CurrentType.Type);
-                _typePicker.SelectedIndexChanged += OnTypePickerSelectedIndexChanged;
+                if (_typePicker != null)
+                {
+                    _typePicker.SelectedIndex = Array.IndexOf(_types, _inputBox.CurrentType.Type);
+                    _typePicker.SelectedIndexChanged += OnTypePickerSelectedIndexChanged;
+                }
             }
 
             private void OnTypePickerSelectedIndexChanged(ComboBox picker)
@@ -476,7 +489,8 @@ namespace FlaxEditor.Surface.Archetypes
                 base.OnValuesChanged();
 
                 _inputBox.CurrentType = SignatureType;
-                _typePicker.SelectedIndex = Array.IndexOf(_types, _inputBox.CurrentType.Type);
+                if (_typePicker != null)
+                    _typePicker.SelectedIndex = Array.IndexOf(_types, _inputBox.CurrentType.Type);
             }
 
             /// <inheritdoc />
@@ -505,8 +519,8 @@ namespace FlaxEditor.Surface.Archetypes
             {
                 _parameters = null;
                 var methodInfo = ScriptMemberInfo.Null;
-                var surface = (VisualScriptSurface)Surface;
-                if (surface.Script && !surface.Script.WaitForLoaded(100))
+                var surface = Surface as VisualScriptSurface;
+                if (surface != null && surface.Script && !surface.Script.WaitForLoaded(100))
                 {
                     var scriptMeta = surface.Script.Meta;
                     var scriptType = TypeUtils.GetType(scriptMeta.BaseTypename);
@@ -520,7 +534,7 @@ namespace FlaxEditor.Surface.Archetypes
                         }
                     }
                 }
-                if (!_isTypesChangedEventRegistered)
+                if (!_isTypesChangedEventRegistered && surface != null)
                 {
                     _isTypesChangedEventRegistered = true;
                     Editor.Instance.CodeEditing.TypesChanged += UpdateSignature;
@@ -976,7 +990,8 @@ namespace FlaxEditor.Surface.Archetypes
                 if (method)
                 {
                     TooltipText = SurfaceUtils.GetVisualScriptMemberInfoDescription(method);
-                    SetValue(4, GetSignatureData(method, parameters));
+                    if (Surface != null)
+                        SetValue(4, GetSignatureData(method, parameters));
                 }
 
                 ResizeAuto();
@@ -1656,9 +1671,9 @@ namespace FlaxEditor.Surface.Archetypes
                 LoadSignature();
 
                 // Send event
-                for (int i = 0; i < Surface.Nodes.Count; i++)
+                for (int i = 0; i < Context.Nodes.Count; i++)
                 {
-                    if (Surface.Nodes[i] is IFunctionsDependantNode node)
+                    if (Context.Nodes[i] is IFunctionsDependantNode node)
                         node.OnFunctionCreated(this);
                 }
             }
@@ -1754,7 +1769,7 @@ namespace FlaxEditor.Surface.Archetypes
                         }
                     }
                 }
-                if (!_isTypesChangedEventRegistered)
+                if (!_isTypesChangedEventRegistered && Surface != null)
                 {
                     _isTypesChangedEventRegistered = true;
                     Editor.Instance.CodeEditing.TypesChanged += UpdateSignature;
@@ -1765,8 +1780,11 @@ namespace FlaxEditor.Surface.Archetypes
                 {
                     type = fieldInfo.ValueType;
                     isStatic = fieldInfo.IsStatic;
-                    SetValue(2, type.TypeName);
-                    SetValue(3, isStatic);
+                    if (Surface != null)
+                    {
+                        SetValue(2, type.TypeName);
+                        SetValue(3, isStatic);
+                    }
                 }
                 else
                 {

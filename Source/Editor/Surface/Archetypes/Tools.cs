@@ -685,10 +685,10 @@ namespace FlaxEditor.Surface.Archetypes
             {
                 base.OnLoaded();
 
-                var surface = (VisualScriptSurface)Context.Surface;
-                var type = TypeUtils.GetType(surface.Script.ScriptTypeName);
-                var box = (OutputBox)GetBox(0);
-                box.CurrentType = type ? type : new ScriptType(typeof(VisualScript));
+                var type = ScriptType.Null;
+                if (Context.Surface is VisualScriptSurface visjectSurface)
+                    type = TypeUtils.GetType(visjectSurface.Script.ScriptTypeName);
+                GetBox(0).CurrentType = type ? type : new ScriptType(typeof(VisualScript));
             }
         }
 
@@ -825,7 +825,8 @@ namespace FlaxEditor.Surface.Archetypes
             {
                 base.OnLoaded();
 
-                _picker.ValueTypeName = (string)Values[0];
+                if (Surface != null)
+                    _picker.ValueTypeName = (string)Values[0];
                 UpdateOutputBox();
             }
 
@@ -883,7 +884,8 @@ namespace FlaxEditor.Surface.Archetypes
             {
                 base.OnLoaded();
 
-                _picker.ValueTypeName = (string)Values[0];
+                if (Surface != null)
+                    _picker.ValueTypeName = (string)Values[0];
             }
 
             /// <inheritdoc />
@@ -933,7 +935,8 @@ namespace FlaxEditor.Surface.Archetypes
             {
                 base.OnLoaded();
 
-                _picker.ValueTypeName = (string)Values[0];
+                if (Surface != null)
+                    _picker.ValueTypeName = (string)Values[0];
             }
 
             /// <inheritdoc />
@@ -984,7 +987,8 @@ namespace FlaxEditor.Surface.Archetypes
             {
                 base.OnLoaded();
 
-                _picker.ValueTypeName = (string)Values[0];
+                if (Surface != null)
+                    _picker.ValueTypeName = (string)Values[0];
                 UpdateOutputBox();
             }
 

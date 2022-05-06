@@ -227,7 +227,8 @@ namespace FlaxEditor.Surface.Archetypes
             /// <inheritdoc />
             public override void OnDestroy()
             {
-                Surface.RemoveContext(this);
+                if (Surface != null)
+                    Surface.RemoveContext(this);
 
                 _maxTransitionsPerUpdate = null;
                 _reinitializeOnBecomingRelevant = null;
