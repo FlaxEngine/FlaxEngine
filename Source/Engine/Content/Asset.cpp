@@ -350,7 +350,7 @@ namespace ContentLoadingManagerImpl
     extern ConcurrentTaskQueue<ContentLoadTask> Tasks;
 };
 
-bool Asset::WaitForLoaded(double timeoutInMilliseconds)
+bool Asset::WaitForLoaded(double timeoutInMilliseconds) const
 {
     // This function is used many time when some parts of the engine need to wait for asset loading end (it may fail but has to end).
     // But it cannot be just a simple active-wait loop.
@@ -376,7 +376,7 @@ bool Asset::WaitForLoaded(double timeoutInMilliseconds)
         // If running on a main thread we can flush asset `Loaded` event
         if (IsInMainThread())
         {
-            Content::tryCallOnLoaded(this);
+            Content::tryCallOnLoaded((Asset*)this);
         }
 
         return false;
@@ -467,7 +467,7 @@ bool Asset::WaitForLoaded(double timeoutInMilliseconds)
     // If running on a main thread we can flush asset `Loaded` event
     if (IsInMainThread() && IsLoaded())
     {
-        Content::tryCallOnLoaded(this);
+        Content::tryCallOnLoaded((Asset*)this);
     }
 
     return _isLoaded == 0;

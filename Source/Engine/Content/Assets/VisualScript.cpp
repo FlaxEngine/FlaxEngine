@@ -2116,6 +2116,8 @@ const VisualScript::Field* VisualScript::FindField(const StringAnsiView& name) c
 
 BytesContainer VisualScript::LoadSurface()
 {
+    if (WaitForLoaded())
+        return BytesContainer();
     ScopeLock lock(Locker);
     if (!LoadChunks(GET_CHUNK_FLAG(0)))
     {
@@ -2124,7 +2126,6 @@ BytesContainer VisualScript::LoadSurface()
         result.Copy(data->Data);
         return result;
     }
-
     LOG(Warning, "\'{0}\' surface data is missing.", ToString());
     return BytesContainer();
 }

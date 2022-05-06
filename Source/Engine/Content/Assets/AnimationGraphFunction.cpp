@@ -54,6 +54,8 @@ AssetChunksFlag AnimationGraphFunction::getChunksToPreload() const
 BytesContainer AnimationGraphFunction::LoadSurface() const
 {
     BytesContainer result;
+    if (WaitForLoaded())
+        return result;
     ScopeLock lock(Locker);
     result.Link(GraphData);
     return result;

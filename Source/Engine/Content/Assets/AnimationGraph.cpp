@@ -129,6 +129,8 @@ bool AnimationGraph::InitAsAnimation(SkinnedModel* baseModel, Animation* anim, b
 
 BytesContainer AnimationGraph::LoadSurface()
 {
+    if (!IsVirtual() && WaitForLoaded())
+        return BytesContainer();
     ScopeLock lock(Locker);
 
     if (IsVirtual())

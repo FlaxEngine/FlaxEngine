@@ -335,6 +335,8 @@ void ParticleEmitter::InitCompilationOptions(ShaderCompilationOptions& options)
 BytesContainer ParticleEmitter::LoadSurface(bool createDefaultIfMissing)
 {
     BytesContainer result;
+    if (WaitForLoaded())
+        return result;
     ScopeLock lock(Locker);
 
     // Check if has that chunk
