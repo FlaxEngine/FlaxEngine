@@ -1322,6 +1322,7 @@ namespace FlaxEditor.Windows.Assets
                     _surface.ShowWholeGraph();
                 }
                 LoadBreakpoints();
+                SurfaceLoaded?.Invoke();
                 Editor.VisualScriptingDebugFlow += OnDebugFlow;
             }
             else if (_refreshPropertiesOnLoad && _asset.IsLoaded)
@@ -1380,6 +1381,9 @@ namespace FlaxEditor.Windows.Assets
 
         /// <inheritdoc />
         public IEnumerable<ScriptType> NewParameterTypes => Editor.CodeEditing.VisualScriptPropertyTypes.Get();
+
+        /// <inheritdoc />
+        public event Action SurfaceLoaded;
 
         /// <inheritdoc />
         public void OnParamRenameUndo()

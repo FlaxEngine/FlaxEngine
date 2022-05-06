@@ -271,18 +271,7 @@ namespace FlaxEditor.Content
         /// <summary>
         /// Gets the asset name relative to the project root folder (without asset file extension)
         /// </summary>
-        public string NamePath
-        {
-            get
-            {
-                string result = Path;
-                if (result.StartsWith(Globals.ProjectFolder))
-                {
-                    result = result.Substring(Globals.ProjectFolder.Length + 1);
-                }
-                return StringUtils.GetPathWithoutExtension(result);
-            }
-        }
+        public string NamePath => FlaxEditor.Utilities.Utils.GetAssetNamePath(Path);
 
         /// <summary>
         /// Gets the default name of the content item thumbnail. Returns null if not used.

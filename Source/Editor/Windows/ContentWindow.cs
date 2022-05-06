@@ -220,7 +220,7 @@ namespace FlaxEditor.Windows
                         filterButton.Checked = _viewDropdown.IsSelected(filterButton.Text);
                 }
             };
-            
+
             var sortBy = menu.AddChildMenu("Sort by");
             sortBy.ContextMenu.AddButton("Alphabetic Order", OnSortByButtonClicked).Tag = SortType.AlphabeticOrder;
             sortBy.ContextMenu.AddButton("Alphabetic Reverse", OnSortByButtonClicked).Tag = SortType.AlphabeticReverse;
@@ -260,10 +260,12 @@ namespace FlaxEditor.Windows
         {
             switch ((SortType)button.Tag)
             {
-                case SortType.AlphabeticOrder: _sortType = SortType.AlphabeticOrder;
-                    break;
-                case SortType.AlphabeticReverse: _sortType = SortType.AlphabeticReverse;
-                    break;
+            case SortType.AlphabeticOrder:
+                _sortType = SortType.AlphabeticOrder;
+                break;
+            case SortType.AlphabeticReverse:
+                _sortType = SortType.AlphabeticReverse;
+                break;
             }
             RefreshView(SelectedNode);
         }
@@ -446,14 +448,15 @@ namespace FlaxEditor.Windows
         /// <param name="items">The items to delete.</param>
         public void Delete(List<ContentItem> items)
         {
-            if (items.Count == 0) return;
+            if (items.Count == 0)
+                return;
 
             // TODO: remove items that depend on different items in the list: use wants to remove `folderA` and `folderA/asset.x`, we should just remove `folderA`
             var toDelete = new List<ContentItem>(items);
 
-            string msg = toDelete.Count == 1 ? 
-                  string.Format("Are you sure to delete \'{0}\'?\nThis action cannot be undone. Files will be deleted permanently.", items[0].Path)
-                : string.Format("Are you sure to delete {0} selected items?\nThis action cannot be undone. Files will be deleted permanently.", items.Count);
+            string msg = toDelete.Count == 1
+                         ? string.Format("Are you sure to delete \'{0}\'?\nThis action cannot be undone. Files will be deleted permanently.", items[0].Path)
+                         : string.Format("Are you sure to delete {0} selected items?\nThis action cannot be undone. Files will be deleted permanently.", items.Count);
 
             // Ask user
             if (MessageBox.Show(msg, "Delete asset(s)", MessageBoxButtons.OKCancel, MessageBoxIcon.Question) != DialogResult.OK)
@@ -767,12 +770,6 @@ namespace FlaxEditor.Windows
             _navigateUpButton.Enabled = folder != null && _tree.SelectedNode != _root;
         }
 
-        private void AddFolder2Root(ContentTreeNode node)
-        {
-            // Add to the root
-            _root.AddChild(node);
-        }
-
         private void RemoveFolder2Root(ContentTreeNode node)
         {
             // Remove from the root
@@ -790,7 +787,7 @@ namespace FlaxEditor.Windows
             _root.Expand(true);
 
             foreach (var project in Editor.ContentDatabase.Projects)
-                AddFolder2Root(project);
+                _root.AddChild(project);
 
             Editor.ContentDatabase.Game?.Expand(true);
             _tree.Margin = new Margin(0.0f, 0.0f, -16.0f, 2.0f); // Hide root node
@@ -842,7 +839,7 @@ namespace FlaxEditor.Windows
             {
                 while (_root.HasChildren)
                 {
-                    RemoveFolder2Root((ContentTreeNode)_root.GetChild(0));
+                    _root.RemoveChild((ContentTreeNode)_root.GetChild(0));
                 }
             }
         }

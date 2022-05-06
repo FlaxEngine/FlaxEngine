@@ -49,11 +49,6 @@ namespace FlaxEditor.Modules
         private ContentFinder _finder;
 
         /// <summary>
-        /// The content finding context menu.
-        /// </summary>
-        internal ContentFinder Finder => _finder ?? (_finder = new ContentFinder());
-
-        /// <summary>
         /// Initializes a new instance of the <see cref="ContentFindingModule"/> class.
         /// </summary>
         /// <param name="editor">The editor.</param>
@@ -81,12 +76,12 @@ namespace FlaxEditor.Modules
         }
 
         /// <summary>
-        /// Shows the finder.
+        /// Shows the content finder popup.
         /// </summary>
         /// <param name="control">The target control to show finder over it.</param>
         public void ShowFinder(Control control)
         {
-            var finder = Finder;
+            var finder = _finder ?? (_finder = new ContentFinder());
             var position = (control.Size - new Vector2(finder.Width, 300.0f)) * 0.5f;
             finder.Show(control, position);
         }

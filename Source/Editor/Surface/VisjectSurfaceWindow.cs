@@ -42,6 +42,11 @@ namespace FlaxEditor.Surface
         IEnumerable<ScriptType> NewParameterTypes { get; }
 
         /// <summary>
+        /// Event called when surface gets loaded (eg. after opening the window).
+        /// </summary>
+        event Action SurfaceLoaded;
+
+        /// <summary>
         /// Called when parameter rename undo action is performed.
         /// </summary>
         void OnParamRenameUndo();
@@ -974,6 +979,7 @@ namespace FlaxEditor.Surface
                     _showWholeGraphOnLoad = false;
                     _surface.ShowWholeGraph();
                 }
+                SurfaceLoaded?.Invoke();
             }
             else if (_refreshPropertiesOnLoad && _asset.IsLoaded)
             {
@@ -1022,6 +1028,9 @@ namespace FlaxEditor.Surface
 
         /// <inheritdoc />
         public abstract IEnumerable<ScriptType> NewParameterTypes { get; }
+
+        /// <inheritdoc />
+        public event Action SurfaceLoaded;
 
         /// <inheritdoc />
         public virtual void OnParamRenameUndo()

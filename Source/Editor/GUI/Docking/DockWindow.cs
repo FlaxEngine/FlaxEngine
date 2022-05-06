@@ -57,6 +57,11 @@ namespace FlaxEditor.GUI.Docking
         public bool IsSelected => _dockedTo?.SelectedTab == this;
 
         /// <summary>
+        /// Gets a value indicating whether this window is hidden from the user (eg. not shown or hidden on closed).
+        /// </summary>
+        public bool IsHidden => !Visible || _dockedTo == null;
+
+        /// <summary>
         /// Gets the default window size.
         /// </summary>
         /// <remarks>
