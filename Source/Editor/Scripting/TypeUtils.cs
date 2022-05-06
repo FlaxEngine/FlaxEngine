@@ -332,6 +332,17 @@ namespace FlaxEditor.Scripting
                 if (type != null)
                     return new ScriptType(type);
             }
+            var assemblies = AppDomain.CurrentDomain.GetAssemblies();
+            for (int i = 0; i < assemblies.Length; i++)
+            {
+                var assembly = assemblies[i];
+                if (assembly != null)
+                {
+                    var type = assembly.GetType(typeName);
+                    if (type != null)
+                        return new ScriptType(type);
+                }
+            }
 
             // Custom types
             foreach (var customTypesInfo in CustomTypes)
