@@ -251,7 +251,7 @@ bool Content::GetAssetInfo(const Guid& id, AssetInfo& info)
         return true;
     }
 
-    LOG(Warning, "Cannot find {0}.", id);
+    //LOG(Warning, "Cannot find {0}.", id);
     return false;
 
 #else
