@@ -68,7 +68,6 @@ struct ScenePhysX
     float LastDeltaTime = 0.0f;
     FixedStepper Stepper;
     SimulationEventCallback EventsCallback;
-    Array<PxActor*> AddActors;
     Array<PxActor*> RemoveActors;
     Array<PhysicsColliderActor*> RemoveColliders;
     Array<Joint*> RemoveJoints;
@@ -1279,7 +1278,7 @@ void PhysicsBackend::AddSceneActor(void* scene, void* actor)
 {
     auto scenePhysX = (ScenePhysX*)scene;
     FlushLocker.Lock();
-    scenePhysX->AddActors.Add((PxActor*)actor);
+    scenePhysX->Scene->addActor(*(PxActor*)actor);
     FlushLocker.Unlock();
 }
 
@@ -2989,13 +2988,6 @@ void PhysicsBackend::FlushRequests(void* scene)
 {
     auto scenePhysX = (ScenePhysX*)scene;
     FlushLocker.Lock();
-
-    // Add objects
-    if (scenePhysX->AddActors.HasItems())
-    {
-        scenePhysX->Scene->addActors(scenePhysX->AddActors.Get(), scenePhysX->AddActors.Count());
-        scenePhysX->AddActors.Clear();
-    }
 
     // Perform latent actions
     for (int32 i = 0; i < scenePhysX->Actions.Count(); i++)
