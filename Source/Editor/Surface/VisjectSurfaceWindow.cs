@@ -778,11 +778,13 @@ namespace FlaxEditor.Surface
             _undoButton = (ToolStripButton)_toolstrip.AddButton(Editor.Icons.Undo64, _undo.PerformUndo).LinkTooltip("Undo (Ctrl+Z)");
             _redoButton = (ToolStripButton)_toolstrip.AddButton(Editor.Icons.Redo64, _undo.PerformRedo).LinkTooltip("Redo (Ctrl+Y)");
             _toolstrip.AddSeparator();
+            _toolstrip.AddButton(Editor.Icons.Search64, Editor.ContentFinding.ShowSearch).LinkTooltip("Open content search tool (Ctrl+F)");
             _toolstrip.AddButton(editor.Icons.CenterView64, ShowWholeGraph).LinkTooltip("Show whole graph");
 
             // Setup input actions
             InputActions.Add(options => options.Undo, _undo.PerformUndo);
             InputActions.Add(options => options.Redo, _undo.PerformRedo);
+            InputActions.Add(options => options.Search, Editor.ContentFinding.ShowSearch);
         }
 
         private void OnUndoRedo(IUndoAction action)

@@ -511,6 +511,7 @@ namespace FlaxEditor.Modules
             cm.AddButton("Graphics Quality", Editor.Windows.GraphicsQualityWin.FocusOrShow);
             cm.AddButton("Game Cooker", Editor.Windows.GameCookerWin.FocusOrShow);
             cm.AddButton("Profiler", Editor.Windows.ProfilerWin.FocusOrShow);
+            cm.AddButton("Content Search", Editor.ContentFinding.ShowSearch);
             cm.AddButton("Visual Script Debugger", Editor.Windows.VisualScriptDebuggerWin.FocusOrShow);
             cm.AddSeparator();
             cm.AddButton("Save window layout", Editor.Windows.SaveLayout);

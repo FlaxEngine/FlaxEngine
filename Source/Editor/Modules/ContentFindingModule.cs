@@ -5,10 +5,12 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text.RegularExpressions;
 using FlaxEditor.Content;
+using FlaxEditor.GUI.Docking;
 using FlaxEditor.SceneGraph;
 using FlaxEditor.Windows.Search;
 using FlaxEngine;
 using FlaxEngine.GUI;
+using FlaxEngine.Windows.Search;
 
 namespace FlaxEditor.Modules
 {
@@ -47,6 +49,7 @@ namespace FlaxEditor.Modules
     {
         private List<QuickAction> _quickActions;
         private ContentFinder _finder;
+        private ContentSearchWindow _searchWin;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="ContentFindingModule"/> class.
@@ -72,7 +75,85 @@ namespace FlaxEditor.Modules
                 _finder = null;
             }
 
+            if (_searchWin != null)
+            {
+                _searchWin.Dispose();
+                _searchWin = null;
+            }
+
             base.OnExit();
+        }
+
+        /// <summary>
+        /// Shows the content search window.
+        /// </summary>
+        public void ShowSearch()
+        {
+            // Try to find the currently focused editor window that might call this
+            DockWindow window = null;
+            foreach (var editorWindow in Editor.Windows.Windows)
+            {
+                if (editorWindow.Visible && editorWindow.ContainsFocus)
+                {
+                    window = editorWindow;
+                    break;
+                }
+            }
+
+            ShowSearch(window);
+        }
+
+        /// <summary>
+        /// Shows the content search window.
+        /// </summary>
+        /// <param name="control">The target control to show search for it.</param>
+        /// <param name="query">The initial query for the search.</param>
+        public void ShowSearch(Control control, string query = null)
+        {
+            // Try to find the owning window
+            DockWindow window = null;
+            while (control != null && window == null)
+            {
+                window = control as DockWindow;
+                control = control.Parent;
+            }
+
+            ShowSearch(window, query);
+        }
+
+        /// <summary>
+        /// Shows the content search window.
+        /// </summary>
+        /// <param name="window">The target window to show search next to it.</param>
+        /// <param name="query">The initial query for the search.</param>
+        public void ShowSearch(DockWindow window, string query = null)
+        {
+            if (_searchWin == null)
+                _searchWin = new ContentSearchWindow(Editor);
+            _searchWin.TargetWindow = window;
+            if (!_searchWin.IsHidden)
+            {
+                // Focus
+                _searchWin.SelectTab();
+                _searchWin.Focus();
+            }
+            else if (window != null)
+            {
+                // Show docked to the target window
+                _searchWin.Show(DockState.DockBottom, window);
+                _searchWin.SearchLocation = ContentSearchWindow.SearchLocations.CurrentAsset;
+            }
+            else
+            {
+                // Show floating
+                _searchWin.ShowFloating();
+                _searchWin.SearchLocation = ContentSearchWindow.SearchLocations.AllAssets;
+            }
+            if (query != null)
+            {
+                _searchWin.Query = query;
+                _searchWin.Search();
+            }
         }
 
         /// <summary>
