@@ -396,6 +396,10 @@ namespace FlaxEditor.Surface
                 {
                     node.Value.OnSurfaceLoaded();
                 }
+                foreach (var node in nodes)
+                {
+                    node.Value.OnSpawned();
+                }
 
                 // Add undo action
                 if (Undo != null && nodes.Count > 0)
