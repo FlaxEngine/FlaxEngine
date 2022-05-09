@@ -38,7 +38,7 @@ namespace FlaxEditor.Scripting
         /// <summary>
         /// Gets a member name (eg. name of the field or method without leading class name nor namespace prefixes).
         /// </summary>
-        public string Name => _managed?.Name ?? _custom?.Name;
+        public string Name => _managed?.Name ?? _custom?.Name ?? string.Empty;
 
         /// <summary>
         /// Gets a metadata token for sorting so it may not be the actual token.

@@ -1079,12 +1079,28 @@ namespace FlaxEditor.Surface.Archetypes
                 base.OnShowSecondaryContextMenu(menu, location);
 
                 var method = GetMethod(out _, out _, out _);
-                if (method && !method.ValueType.IsVoid)
+                if (method)
                 {
                     menu.AddSeparator();
-                    menu.AddButton((bool)Values[3] ? "Convert to method call" : "Convert to pure node", () => SetValue(3, !(bool)Values[3])).Enabled = Surface.CanEdit;
+                    if (!method.ValueType.IsVoid)
+                        menu.AddButton((bool)Values[3] ? "Convert to method call" : "Convert to pure node", () => SetValue(3, !(bool)Values[3])).Enabled = Surface.CanEdit;
+                    menu.AddButton("Find references...", OnFindReferences);
                 }
-                // TODO: add Find References option to search Visual Script function usages in the whole project
+            }
+
+            private void OnFindReferences()
+            {
+                Editor.Instance.ContentFinding.ShowSearch(Surface, '\"' + ContentSearchText + '\"');
+            }
+
+            /// <inheritdoc />
+            public override string ContentSearchText
+            {
+                get
+                {
+                    var method = GetMethod(out var scriptType, out _, out _);
+                    return scriptType.TypeName + '.' + method.Name;
+                }
             }
 
             /// <inheritdoc />
@@ -1547,7 +1563,7 @@ namespace FlaxEditor.Surface.Archetypes
                 menu.AddButton("Add return node", OnAddReturnNode).Enabled = _signature.ReturnType != ScriptType.Null && Surface.CanEdit;
                 menu.AddButton("Edit signature...", OnEditSignature).Enabled = Surface.CanEdit;
                 menu.AddButton("Edit attributes...", OnEditAttributes).Enabled = Surface.CanEdit;
-                // TODO: add Find References option to search Visual Script function usages in the whole project
+                menu.AddButton("Find references...", OnFindReferences);
             }
 
             private void OnAddReturnNode()
@@ -1638,6 +1654,11 @@ namespace FlaxEditor.Surface.Archetypes
                 editor.Show(this, Vector2.Zero);
             }
 
+            private void OnFindReferences()
+            {
+                Editor.Instance.ContentFinding.ShowSearch(Surface, '\"' + ContentSearchText + '\"');
+            }
+
             private void CheckFunctionName(ref string name)
             {
                 if (string.IsNullOrEmpty(name))
@@ -1649,6 +1670,20 @@ namespace FlaxEditor.Surface.Archetypes
                 while (Context.Nodes.Any(node => node != this && node is VisualScriptFunctionNode other && other._signature.Name == value))
                     value = originalValue + " " + count++;
                 name = value;
+            }
+
+            /// <inheritdoc />
+            public override string ContentSearchText
+            {
+                get
+                {
+                    var visualScript = Context.Context.SurfaceAsset as VisualScript;
+                    if (visualScript == null && Surface is VisualScriptSurface visualScriptSurface)
+                        visualScript = visualScriptSurface.Script;
+                    if (visualScript != null)
+                        return visualScript.ScriptTypeName + '.' + _signature.Name;
+                    return _signature.Name;
+                }
             }
 
             /// <inheritdoc />
@@ -1743,20 +1778,19 @@ namespace FlaxEditor.Surface.Archetypes
             }
         }
 
-        private sealed class GetFieldNode : SurfaceNode
+        private abstract class FieldNodeBase : SurfaceNode
         {
             private bool _isTypesChangedEventRegistered;
 
-            /// <inheritdoc />
-            public GetFieldNode(uint id, VisjectSurfaceContext context, NodeArchetype nodeArch, GroupArchetype groupArch)
+            protected FieldNodeBase(uint id, VisjectSurfaceContext context, NodeArchetype nodeArch, GroupArchetype groupArch)
             : base(id, context, nodeArch, groupArch)
             {
             }
 
-            private void UpdateSignature()
+            protected ScriptMemberInfo GetField(out ScriptType scriptType)
             {
                 var fieldInfo = ScriptMemberInfo.Null;
-                var scriptType = TypeUtils.GetType((string)Values[0]);
+                scriptType = TypeUtils.GetType((string)Values[0]);
                 if (scriptType != ScriptType.Null)
                 {
                     var members = scriptType.GetMembers((string)Values[1], MemberTypes.Field, BindingFlags.Public | BindingFlags.Instance | BindingFlags.Static | BindingFlags.DeclaredOnly);
@@ -1774,6 +1808,68 @@ namespace FlaxEditor.Surface.Archetypes
                     _isTypesChangedEventRegistered = true;
                     Editor.Instance.CodeEditing.TypesChanged += UpdateSignature;
                 }
+                return fieldInfo;
+            }
+
+            protected abstract void UpdateSignature();
+
+            /// <inheritdoc />
+            public override void OnShowSecondaryContextMenu(FlaxEditor.GUI.ContextMenu.ContextMenu menu, Vector2 location)
+            {
+                base.OnShowSecondaryContextMenu(menu, location);
+
+                if (GetField(out _) == ScriptMemberInfo.Null)
+                    return;
+                menu.AddSeparator();
+                menu.AddButton("Find references...", OnFindReferences);
+            }
+
+            private void OnFindReferences()
+            {
+                Editor.Instance.ContentFinding.ShowSearch(Surface, '\"' + ContentSearchText + '\"');
+            }
+
+            /// <inheritdoc />
+            public override string ContentSearchText
+            {
+                get
+                {
+                    var fieldInfo = GetField(out var scriptType);
+                    return scriptType.TypeName + '.' + fieldInfo.Name;
+                }
+            }
+
+            /// <inheritdoc />
+            public override void OnValuesChanged()
+            {
+                base.OnValuesChanged();
+
+                UpdateSignature();
+            }
+
+            /// <inheritdoc />
+            public override void OnDestroy()
+            {
+                if (_isTypesChangedEventRegistered)
+                {
+                    _isTypesChangedEventRegistered = false;
+                    Editor.Instance.CodeEditing.TypesChanged -= UpdateSignature;
+                }
+
+                base.OnDestroy();
+            }
+        }
+
+        private sealed class GetFieldNode : FieldNodeBase
+        {
+            public GetFieldNode(uint id, VisjectSurfaceContext context, NodeArchetype nodeArch, GroupArchetype groupArch)
+            : base(id, context, nodeArch, groupArch)
+            {
+            }
+
+            protected override void UpdateSignature()
+            {
+                var fieldInfo = GetField(out var scriptType);
                 ScriptType type;
                 bool isStatic;
                 if (fieldInfo)
@@ -1816,58 +1912,18 @@ namespace FlaxEditor.Surface.Archetypes
                 Title = "Get " + SurfaceUtils.GetMethodDisplayName((string)Values[1]);
                 UpdateSignature();
             }
-
-            /// <inheritdoc />
-            public override void OnValuesChanged()
-            {
-                base.OnValuesChanged();
-
-                UpdateSignature();
-            }
-
-            /// <inheritdoc />
-            public override void OnDestroy()
-            {
-                if (_isTypesChangedEventRegistered)
-                {
-                    _isTypesChangedEventRegistered = false;
-                    Editor.Instance.CodeEditing.TypesChanged -= UpdateSignature;
-                }
-
-                base.OnDestroy();
-            }
         }
 
-        private sealed class SetFieldNode : SurfaceNode
+        private sealed class SetFieldNode : FieldNodeBase
         {
-            private bool _isTypesChangedEventRegistered;
-
             public SetFieldNode(uint id, VisjectSurfaceContext context, NodeArchetype nodeArch, GroupArchetype groupArch)
             : base(id, context, nodeArch, groupArch)
             {
             }
 
-            private void UpdateSignature()
+            protected override void UpdateSignature()
             {
-                var fieldInfo = ScriptMemberInfo.Null;
-                var scriptType = TypeUtils.GetType((string)Values[0]);
-                if (scriptType != ScriptType.Null)
-                {
-                    var members = scriptType.GetMembers((string)Values[1], MemberTypes.Field, BindingFlags.Public | BindingFlags.Instance | BindingFlags.Static | BindingFlags.DeclaredOnly);
-                    foreach (var member in members)
-                    {
-                        if (SurfaceUtils.IsValidVisualScriptField(member))
-                        {
-                            fieldInfo = member;
-                            break;
-                        }
-                    }
-                }
-                if (!_isTypesChangedEventRegistered)
-                {
-                    _isTypesChangedEventRegistered = true;
-                    Editor.Instance.CodeEditing.TypesChanged += UpdateSignature;
-                }
+                var fieldInfo = GetField(out var scriptType);
                 ScriptType type;
                 bool isStatic;
                 if (fieldInfo)
@@ -1908,26 +1964,6 @@ namespace FlaxEditor.Surface.Archetypes
 
                 Title = "Set " + SurfaceUtils.GetMethodDisplayName((string)Values[1]);
                 UpdateSignature();
-            }
-
-            /// <inheritdoc />
-            public override void OnValuesChanged()
-            {
-                base.OnValuesChanged();
-
-                UpdateSignature();
-            }
-
-            /// <inheritdoc />
-            public override void OnDestroy()
-            {
-                if (_isTypesChangedEventRegistered)
-                {
-                    _isTypesChangedEventRegistered = false;
-                    Editor.Instance.CodeEditing.TypesChanged -= UpdateSignature;
-                }
-
-                base.OnDestroy();
             }
         }
 

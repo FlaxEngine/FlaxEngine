@@ -577,6 +577,15 @@ namespace FlaxEditor.Surface
         /// <param name="menu">The context menu.</param>
         protected virtual void OnParamContextMenu(int index, FlaxEditor.GUI.ContextMenu.ContextMenu menu)
         {
+            menu.AddSeparator();
+            menu.AddButton("Find references...", () => OnFindReferences(index));
+        }
+
+        private void OnFindReferences(int index)
+        {
+            var window = (IVisjectSurfaceWindow)Values[0];
+            var param = window.VisjectSurface.Parameters[index];
+            Editor.Instance.ContentFinding.ShowSearch(window.VisjectSurface, '\"' + FlaxEngine.Json.JsonSerializer.GetStringID(param.ID) + '\"');
         }
     }
 
@@ -889,6 +898,9 @@ namespace FlaxEditor.Surface
 
             base.OnAssetLinked();
         }
+
+        /// <inheritdoc />
+        public Asset SurfaceAsset => Asset;
 
         /// <inheritdoc />
         public abstract string SurfaceName { get; }

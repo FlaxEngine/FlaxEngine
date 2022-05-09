@@ -400,6 +400,9 @@ namespace FlaxEditor.Windows
         }
 
         /// <inheritdoc />
+        public Asset SurfaceAsset => null;
+
+        /// <inheritdoc />
         public string SurfaceName => "References";
 
         /// <inheritdoc />

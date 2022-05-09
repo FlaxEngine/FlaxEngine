@@ -267,8 +267,12 @@ namespace FlaxEditor.Surface.Archetypes
 
             private SurfaceParameter GetSelected()
             {
-                var selectedIndex = _combobox.SelectedIndex;
-                return selectedIndex >= 0 && selectedIndex < Surface.Parameters.Count ? Surface.Parameters[selectedIndex] : null;
+                if (Surface != null)
+                {
+                    var selectedIndex = _combobox.SelectedIndex;
+                    return selectedIndex >= 0 && selectedIndex < Surface.Parameters.Count ? Surface.Parameters[selectedIndex] : null;
+                }
+                return Context.GetParameter((Guid)Values[0]);
             }
 
             private void ClearDynamicElements()
@@ -276,6 +280,46 @@ namespace FlaxEditor.Surface.Archetypes
                 for (int i = 0; i < _dynamicChildren.Count; i++)
                     RemoveElement(_dynamicChildren[i]);
                 _dynamicChildren.Clear();
+            }
+
+            /// <inheritdoc />
+            public override void OnShowSecondaryContextMenu(FlaxEditor.GUI.ContextMenu.ContextMenu menu, Vector2 location)
+            {
+                base.OnShowSecondaryContextMenu(menu, location);
+
+                if (GetSelected() == null)
+                    return;
+                menu.AddSeparator();
+                menu.AddButton("Find references...", OnFindReferences);
+            }
+
+            private void OnFindReferences()
+            {
+                var selected = GetSelected();
+                var query = ContentSearchText ?? FlaxEngine.Json.JsonSerializer.GetStringID(selected.ID);
+                Editor.Instance.ContentFinding.ShowSearch(Surface, '\"' + query + '\"');
+            }
+
+            /// <inheritdoc />
+            public override string ContentSearchText
+            {
+                get
+                {
+                    if (Surface is VisualScriptSurface visualScriptSurface)
+                    {
+                        // Override with parameter typename
+                        var selected = GetSelected();
+                        return visualScriptSurface.Script.ScriptTypeName + '.' + selected.Name;
+                    }
+                    if (Context.Context.SurfaceAsset is VisualScript visualScript)
+                    {
+                        // Override with parameter typename
+                        var selected = Context.GetParameter((Guid)Values[0]);
+                        if (selected != null)
+                            return visualScript.ScriptTypeName + '.' + selected.Name;
+                    }
+                    return null;
+                }
             }
 
             /// <inheritdoc />
@@ -324,10 +368,7 @@ namespace FlaxEditor.Surface.Archetypes
             {
                 base.OnSurfaceLoaded();
 
-                if (Surface != null)
-                {
-                    UpdateTitle();
-                }
+                UpdateTitle();
             }
 
             /// <inheritdoc />
@@ -369,8 +410,11 @@ namespace FlaxEditor.Surface.Archetypes
             {
                 var selected = GetSelected();
                 Title = selected != null ? "Get " + selected.Name : "Get Parameter";
-                ResizeAuto();
-                _combobox.Width = Width - 30;
+                if (_combobox != null)
+                {
+                    ResizeAuto();
+                    _combobox.Width = Width - 30;
+                }
             }
         }
 
@@ -567,8 +611,52 @@ namespace FlaxEditor.Surface.Archetypes
 
             private SurfaceParameter GetSelected()
             {
-                var selectedIndex = _combobox.SelectedIndex;
-                return selectedIndex >= 0 && selectedIndex < Surface.Parameters.Count ? Surface.Parameters[selectedIndex] : null;
+                if (Surface != null)
+                {
+                    var selectedIndex = _combobox.SelectedIndex;
+                    return selectedIndex >= 0 && selectedIndex < Surface.Parameters.Count ? Surface.Parameters[selectedIndex] : null;
+                }
+                return Context.GetParameter((Guid)Values[0]);
+            }
+
+            /// <inheritdoc />
+            public override void OnShowSecondaryContextMenu(FlaxEditor.GUI.ContextMenu.ContextMenu menu, Vector2 location)
+            {
+                base.OnShowSecondaryContextMenu(menu, location);
+
+                if (GetSelected() == null)
+                    return;
+                menu.AddSeparator();
+                menu.AddButton("Find references...", OnFindReferences);
+            }
+
+            private void OnFindReferences()
+            {
+                var selected = GetSelected();
+                var query = ContentSearchText ?? FlaxEngine.Json.JsonSerializer.GetStringID(selected.ID);
+                Editor.Instance.ContentFinding.ShowSearch(Surface, '\"' + query + '\"');
+            }
+
+            /// <inheritdoc />
+            public override string ContentSearchText
+            {
+                get
+                {
+                    if (Surface is VisualScriptSurface visualScriptSurface)
+                    {
+                        // Override with parameter typename
+                        var selected = GetSelected();
+                        return visualScriptSurface.Script.ScriptTypeName + '.' + selected.Name;
+                    }
+                    if (Context.Context.SurfaceAsset is VisualScript visualScript)
+                    {
+                        // Override with parameter typename
+                        var selected = Context.GetParameter((Guid)Values[0]);
+                        if (selected != null)
+                            return visualScript.ScriptTypeName + '.' + selected.Name;
+                    }
+                    return null;
+                }
             }
 
             /// <inheritdoc />
@@ -608,10 +696,8 @@ namespace FlaxEditor.Surface.Archetypes
                 base.OnLoaded();
 
                 if (Surface != null)
-                {
                     UpdateCombo();
-                    UpdateUI();
-                }
+                UpdateUI();
             }
 
             /// <inheritdoc />
@@ -641,8 +727,11 @@ namespace FlaxEditor.Surface.Archetypes
                 box.Enabled = selected != null;
                 box.CurrentType = selected?.Type ?? ScriptType.Null;
                 Title = selected != null ? "Set " + selected.Name : "Set Parameter";
-                ResizeAuto();
-                _combobox.Width = Width - 50;
+                if (_combobox != null)
+                {
+                    ResizeAuto();
+                    _combobox.Width = Width - 50;
+                }
             }
         }
 

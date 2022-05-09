@@ -8,6 +8,7 @@ using FlaxEditor.Scripting;
 using FlaxEditor.Surface;
 using FlaxEditor.Viewport.Previews;
 using FlaxEngine;
+using FlaxEngine.Windows.Search;
 
 // ReSharper disable UnusedMember.Local
 // ReSharper disable UnusedMember.Global
@@ -21,7 +22,7 @@ namespace FlaxEditor.Windows.Assets
     /// <seealso cref="ParticleEmitter" />
     /// <seealso cref="ParticleEmitterSurface" />
     /// <seealso cref="ParticleEmitterPreview" />
-    public sealed class ParticleEmitterWindow : VisjectSurfaceWindow<ParticleEmitter, ParticleEmitterSurface, ParticleEmitterPreview>
+    public sealed class ParticleEmitterWindow : VisjectSurfaceWindow<ParticleEmitter, ParticleEmitterSurface, ParticleEmitterPreview>, ISearchWindow
     {
         private readonly ScriptType[] _newParameterTypes =
         {
@@ -271,5 +272,8 @@ namespace FlaxEditor.Windows.Assets
 
             return base.SaveToOriginal();
         }
+
+        /// <inheritdoc />
+        public SearchAssetTypes AssetType => SearchAssetTypes.ParticleEmitter;
     }
 }

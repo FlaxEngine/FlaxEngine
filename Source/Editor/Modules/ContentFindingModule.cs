@@ -149,6 +149,10 @@ namespace FlaxEditor.Modules
                 _searchWin.ShowFloating();
                 _searchWin.SearchLocation = ContentSearchWindow.SearchLocations.AllAssets;
             }
+            if (window is ISearchWindow searchWindow)
+            {
+                _searchWin.SearchAssets = searchWindow.AssetType;
+            }
             if (query != null)
             {
                 _searchWin.Query = query;

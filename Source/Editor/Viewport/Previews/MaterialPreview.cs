@@ -342,6 +342,9 @@ namespace FlaxEditor.Viewport.Previews
         }
 
         /// <inheritdoc />
+        public Asset SurfaceAsset => null;
+
+        /// <inheritdoc />
         string ISurfaceContext.SurfaceName => string.Empty;
 
         /// <inheritdoc />

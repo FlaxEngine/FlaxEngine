@@ -8,6 +8,7 @@ using FlaxEditor.Scripting;
 using FlaxEditor.Surface;
 using FlaxEditor.Viewport.Previews;
 using FlaxEngine;
+using FlaxEngine.Windows.Search;
 
 // ReSharper disable UnusedMember.Local
 // ReSharper disable UnusedMember.Global
@@ -21,7 +22,7 @@ namespace FlaxEditor.Windows.Assets
     /// <seealso cref="Material" />
     /// <seealso cref="MaterialSurface" />
     /// <seealso cref="MaterialPreview" />
-    public sealed class MaterialWindow : VisjectSurfaceWindow<Material, MaterialSurface, MaterialPreview>
+    public sealed class MaterialWindow : VisjectSurfaceWindow<Material, MaterialSurface, MaterialPreview>, ISearchWindow
     {
         private readonly ScriptType[] _newParameterTypes =
         {
@@ -385,5 +386,8 @@ namespace FlaxEditor.Windows.Assets
 
             return base.SaveToOriginal();
         }
+
+        /// <inheritdoc />
+        public SearchAssetTypes AssetType => SearchAssetTypes.Material;
     }
 }

@@ -20,6 +20,54 @@ using FlaxEngine.GUI;
 namespace FlaxEngine.Windows.Search
 {
     /// <summary>
+    /// Content searching asset types.
+    /// </summary>
+    [Flags]
+    public enum SearchAssetTypes
+    {
+        /// <summary>
+        /// The none.
+        /// </summary>
+        None = 0,
+
+        /// <summary>
+        /// The visual script.
+        /// </summary>
+        VisualScript = 1 << 0,
+
+        /// <summary>
+        /// The material.
+        /// </summary>
+        Material = 1 << 1,
+
+        /// <summary>
+        /// The animation graph.
+        /// </summary>
+        AnimGraph = 1 << 2,
+
+        /// <summary>
+        /// The particle emitter.
+        /// </summary>
+        ParticleEmitter = 1 << 3,
+
+        /// <summary>
+        /// All types.
+        /// </summary>
+        All = VisualScript | Material | AnimGraph | ParticleEmitter,
+    }
+
+    /// <summary>
+    /// Interface for Editor windows to customize search.
+    /// </summary>
+    public interface ISearchWindow
+    {
+        /// <summary>
+        /// Gets the type of the asset for the search.
+        /// </summary>
+        SearchAssetTypes AssetType { get; }
+    }
+
+    /// <summary>
     /// The content searching window. Allows to search inside Visual Scripts, Materials, Particles and other assets.
     /// </summary>
     internal class ContentSearchWindow : EditorWindow
@@ -45,22 +93,11 @@ namespace FlaxEngine.Windows.Search
             AllAssets,
         }
 
-        /// <summary>
-        /// Content searching asset types.
-        /// </summary>
-        [Flags]
-        public enum SearchAssetTypes
-        {
-            None = 0,
-            VisualScript = 1 << 0,
-            Material = 1 << 1,
-            AnimGraph = 1 << 2,
-            ParticleEmitter = 1 << 3,
-            All = VisualScript | Material | AnimGraph | ParticleEmitter,
-        }
-
         private sealed class SearchSurfaceContext : ISurfaceContext
         {
+            /// <inheritdoc />
+            public Asset SurfaceAsset { get; set; }
+
             /// <inheritdoc />
             public string SurfaceName => string.Empty;
 
@@ -223,6 +260,7 @@ namespace FlaxEngine.Windows.Search
 
             if (_loadingLabel.Visible)
                 _loadingLabel.Text = string.Format("Searching {0}%...", (int)_progress);
+            _resultsTreeRoot.Expand(true);
 
             lock (_pendingResults)
             {
@@ -488,6 +526,7 @@ namespace FlaxEngine.Windows.Search
             // Load Visject surface from data
             if (surfaceData == null || surfaceData.Length == 0)
                 return;
+            _searchSurfaceContext.SurfaceAsset = asset;
             _searchSurfaceContext.SurfaceData = surfaceData;
             if (_visjectSurfaceContext.Load())
             {
@@ -522,30 +561,39 @@ namespace FlaxEngine.Windows.Search
             }
 
             // Search nodes
+            var newTreeNodes = new List<SearchResultTreeNode>();
             foreach (var node in _visjectSurfaceContext.Nodes)
             {
-                SearchResultTreeNode nodeTreeNode = null;
+                newTreeNodes.Clear();
                 if (node.Values != null)
                 {
                     foreach (var value in node.Values)
                     {
                         SearchVisjectMatch(value, (matchedValue, matchedText) =>
                         {
-                            AddAssetSearchResult(ref assetTreeNode, asset);
-                            if (nodeTreeNode == null)
-                                nodeTreeNode = new SearchResultTreeNode
-                                {
-                                    Text = node.Title,
-                                    TooltipText = node.TooltipText,
-                                    Tag = node.ID,
-                                    Navigate = OnNavigateVisjectNode,
-                                    Parent = assetTreeNode,
-                                };
                             var valueTreeNode = AddVisjectSearchResult(matchedValue, matchedText, node.Archetype.ConnectionsHints);
                             valueTreeNode.Tag = node.ID;
                             valueTreeNode.Navigate = OnNavigateVisjectNode;
-                            valueTreeNode.Parent = nodeTreeNode;
+                            newTreeNodes.Add(valueTreeNode);
                         });
+                    }
+                }
+                var nodeSearchText = node.ContentSearchText;
+
+                if (newTreeNodes.Count != 0 || (nodeSearchText != null && IsSearchMatch(ref nodeSearchText)))
+                {
+                    AddAssetSearchResult(ref assetTreeNode, asset);
+                    var nodeTreeNode = new SearchResultTreeNode
+                    {
+                        Text = node.Title,
+                        TooltipText = node.TooltipText,
+                        Tag = node.ID,
+                        Navigate = OnNavigateVisjectNode,
+                        Parent = assetTreeNode,
+                    };
+                    foreach (var newTreeNode in newTreeNodes)
+                    {
+                        newTreeNode.Parent = nodeTreeNode;
                     }
                 }
             }

@@ -136,6 +136,11 @@ namespace FlaxEditor.Surface
         }
 
         /// <summary>
+        /// Gets the custom text for Content Search. Can be used to include node in search results for a specific text query.
+        /// </summary>
+        public virtual string ContentSearchText => null;
+
+        /// <summary>
         /// Gets the color of the footer of the node.
         /// </summary>
         protected virtual Color FooterColor => GroupArchetype.Color;

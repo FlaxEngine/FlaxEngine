@@ -238,6 +238,9 @@ namespace FlaxEditor.Surface.Archetypes
             }
 
             /// <inheritdoc />
+            public Asset SurfaceAsset => null;
+
+            /// <inheritdoc />
             public string SurfaceName => StateMachineTitle;
 
             /// <inheritdoc />
@@ -1296,6 +1299,9 @@ namespace FlaxEditor.Surface.Archetypes
             }
 
             /// <inheritdoc />
+            public Asset SurfaceAsset => null;
+
+            /// <inheritdoc />
             public string SurfaceName => StateTitle;
 
             /// <inheritdoc />
@@ -1661,6 +1667,9 @@ namespace FlaxEditor.Surface.Archetypes
             {
                 data = _data;
             }
+
+            /// <inheritdoc />
+            public Asset SurfaceAsset => null;
 
             /// <inheritdoc />
             public string SurfaceName => string.Format("{0} to {1}", SourceState.StateTitle, DestinationState.StateTitle);

@@ -13,6 +13,7 @@ using FlaxEditor.Viewport.Cameras;
 using FlaxEditor.Viewport.Previews;
 using FlaxEngine;
 using FlaxEngine.GUI;
+using FlaxEngine.Windows.Search;
 using Object = FlaxEngine.Object;
 
 // ReSharper disable UnusedMember.Local
@@ -27,7 +28,7 @@ namespace FlaxEditor.Windows.Assets
     /// <seealso cref="AnimationGraph" />
     /// <seealso cref="AnimGraphSurface" />
     /// <seealso cref="AnimatedModelPreview" />
-    public sealed class AnimationGraphWindow : VisjectSurfaceWindow<AnimationGraph, AnimGraphSurface, AnimatedModelPreview>
+    public sealed class AnimationGraphWindow : VisjectSurfaceWindow<AnimationGraph, AnimGraphSurface, AnimatedModelPreview>, ISearchWindow
     {
         internal static Guid BaseModelId = new Guid(1000, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
 
@@ -426,5 +427,8 @@ namespace FlaxEditor.Windows.Assets
 
             base.OnDestroy();
         }
+
+        /// <inheritdoc />
+        public SearchAssetTypes AssetType => SearchAssetTypes.AnimGraph;
     }
 }

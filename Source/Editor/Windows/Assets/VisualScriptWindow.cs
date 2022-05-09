@@ -16,6 +16,7 @@ using FlaxEditor.Surface;
 using FlaxEngine;
 using FlaxEngine.GUI;
 using FlaxEngine.Json;
+using FlaxEngine.Windows.Search;
 
 #pragma warning disable 649
 
@@ -30,7 +31,7 @@ namespace FlaxEditor.Windows.Assets
     /// </summary>
     /// <seealso cref="VisualScript" />
     /// <seealso cref="VisualScriptSurface" />
-    public sealed class VisualScriptWindow : AssetEditorWindowBase<VisualScript>, IVisjectSurfaceWindow
+    public sealed class VisualScriptWindow : AssetEditorWindowBase<VisualScript>, IVisjectSurfaceWindow, ISearchWindow
     {
         private struct BreakpointData
         {
@@ -238,6 +239,9 @@ namespace FlaxEditor.Windows.Assets
                     b.Enabled = window._canEdit;
                     b.TooltipText = "Changes parameter type to a dictionary.";
                 }
+
+                menu.AddSeparator();
+                menu.AddButton("Find references...", () => OnFindReferences(index));
             }
 
             private void OnChangeType(Action<ItemsListContextMenu.Item> itemClicked)
@@ -256,6 +260,13 @@ namespace FlaxEditor.Windows.Assets
                 cm.ItemClicked += itemClicked;
                 cm.SortChildren();
                 cm.Show(window, window.PointFromScreen(Input.MouseScreenPosition));
+            }
+
+            private void OnFindReferences(int index)
+            {
+                var window = (VisualScriptWindow)Values[0];
+                var param = window.Surface.Parameters[index];
+                Editor.Instance.ContentFinding.ShowSearch(window, '\"' + window.Asset.ScriptTypeName + '.' + param.Name + '\"');
             }
         }
 
@@ -1098,6 +1109,9 @@ namespace FlaxEditor.Windows.Assets
         }
 
         /// <inheritdoc />
+        public Asset SurfaceAsset => Asset;
+
+        /// <inheritdoc />
         public string SurfaceName => "Visual Script";
 
         /// <inheritdoc />
@@ -1431,5 +1445,8 @@ namespace FlaxEditor.Windows.Assets
 
         /// <inheritdoc />
         public VisjectSurface VisjectSurface => _surface;
+
+        /// <inheritdoc />
+        public SearchAssetTypes AssetType => SearchAssetTypes.VisualScript;
     }
 }
