@@ -468,6 +468,7 @@ namespace FlaxEngine.Windows.Search
             }
 
             // Iterate over all assets
+            var tempFolder = StringUtils.NormalizePath(Path.GetDirectoryName(Globals.TemporaryFolder));
             for (var i = 0; i < assets.Length && !_token.IsCancellationRequested; i++)
             {
                 var id = assets[i];
@@ -475,6 +476,8 @@ namespace FlaxEngine.Windows.Search
                 if (!Content.GetAssetInfo(id, out var assetInfo))
                     continue;
                 if (!validTypeNames.Contains(assetInfo.TypeName))
+                    continue;
+                if (assetInfo.Path.StartsWith(tempFolder))
                     continue;
                 // TODO: implement assets indexing or other caching for faster searching
                 var asset = Content.LoadAsync(id);
