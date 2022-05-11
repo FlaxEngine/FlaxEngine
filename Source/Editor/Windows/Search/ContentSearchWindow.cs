@@ -411,6 +411,17 @@ namespace FlaxEngine.Windows.Search
             try
             {
                 SearchAsyncInner();
+
+                lock (_pendingResults)
+                {
+                    if (!_token.IsCancellationRequested && _resultsTreeRoot.ChildrenCount == 0 && _pendingResults.Count == 0)
+                    {
+                        _pendingResults.Add(new SearchResultTreeNode
+                        {
+                            Text = "No results",
+                        });
+                    }
+                }
             }
             catch (Exception ex)
             {
