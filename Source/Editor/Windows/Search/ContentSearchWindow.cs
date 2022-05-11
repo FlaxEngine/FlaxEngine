@@ -135,10 +135,18 @@ namespace FlaxEngine.Windows.Search
             /// <inheritdoc />
             public override bool OnKeyDown(KeyboardKeys key)
             {
-                if (IsFocused && key == KeyboardKeys.Return && Navigate != null)
+                if (IsFocused)
                 {
-                    Navigate.Invoke(this);
-                    return true;
+                    if (key == KeyboardKeys.Return && Navigate != null)
+                    {
+                        Navigate.Invoke(this);
+                        return true;
+                    }
+                    if (key == KeyboardKeys.C && Root.GetKey(KeyboardKeys.Control))
+                    {
+                        Clipboard.Text = Text;
+                        return true;
+                    }
                 }
                 return base.OnKeyDown(key);
             }
