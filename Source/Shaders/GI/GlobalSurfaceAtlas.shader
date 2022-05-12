@@ -22,7 +22,7 @@ GlobalSurfaceAtlasData GlobalSurfaceAtlas;
 LightData Light;
 META_CB_END
 
-struct AtlasVertexIput
+struct AtlasVertexInput
 {
 	float2 Position : POSITION0;
 	float2 TileUV : TEXCOORD0;
@@ -41,7 +41,7 @@ META_VS(true, FEATURE_LEVEL_SM5)
 META_VS_IN_ELEMENT(POSITION, 0, R16G16_FLOAT, 0, ALIGN, PER_VERTEX, 0, true)
 META_VS_IN_ELEMENT(TEXCOORD, 0, R16G16_FLOAT, 0, ALIGN, PER_VERTEX, 0, true)
 META_VS_IN_ELEMENT(TEXCOORD, 1, R32_UINT,  0, ALIGN, PER_VERTEX, 0, true)
-AtlasVertexOutput VS_Atlas(AtlasVertexIput input)
+AtlasVertexOutput VS_Atlas(AtlasVertexInput input)
 {
 	AtlasVertexOutput output;
 	output.Position = float4(input.Position, 1, 1);

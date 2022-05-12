@@ -732,12 +732,12 @@ bool GlobalSignDistanceFieldPass::Render(RenderContext& renderContext, GPUContex
         const float maxDistance = distance * 2;
         const float voxelSize = maxDistance / resolution;
         const Vector3 center = cascade.Position;
-        result.GlobalSDF.CascadePosDistance[cascadeIndex] = Vector4(center, distance);
-        result.GlobalSDF.CascadeVoxelSize.Raw[cascadeIndex] = voxelSize;
+        result.Constants.CascadePosDistance[cascadeIndex] = Vector4(center, distance);
+        result.Constants.CascadeVoxelSize.Raw[cascadeIndex] = voxelSize;
         result.Cascades[cascadeIndex] = cascade.Texture;
         result.CascadeMips[cascadeIndex] = cascade.Mip;
     }
-    result.GlobalSDF.Resolution = (float)resolution;
+    result.Constants.Resolution = (float)resolution;
     sdfData.Result = result;
     return false;
 }
@@ -760,7 +760,7 @@ void GlobalSignDistanceFieldPass::RenderDebug(RenderContext& renderContext, GPUC
         data.ViewFarPlane = renderContext.View.Far;
         for (int32 i = 0; i < 4; i++)
             data.ViewFrustumWorldRays[i] = Vector4(renderContext.List->FrustumCornersWs[i + 4], 0);
-        data.GlobalSDF = bindingData.GlobalSDF;
+        data.GlobalSDF = bindingData.Constants;
         context->UpdateCB(_cb0, &data);
         context->BindCB(0, _cb0);
     }

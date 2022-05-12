@@ -24,10 +24,21 @@ public:
     // Binding data for the GPU.
     struct BindingData
     {
-        GPUTexture* Atlas[5];
+        union
+        {
+            struct
+            {
+                GPUTexture* AtlasDepth;
+                GPUTexture* AtlasGBuffer0;
+                GPUTexture* AtlasGBuffer1;
+                GPUTexture* AtlasGBuffer2;
+                GPUTexture* AtlasLighting;
+            };
+            GPUTexture* Atlas[5];
+        };
         GPUBuffer* Chunks;
         GPUBuffer* CulledObjects;
-        ConstantsData GlobalSurfaceAtlas;
+        ConstantsData Constants;
     };
 
 private:

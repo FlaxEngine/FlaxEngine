@@ -24,7 +24,7 @@ public:
     {
         GPUTexture* Cascades[4];
         GPUTexture* CascadeMips[4];
-        ConstantsData GlobalSDF;
+        ConstantsData Constants;
     };
 
 private:
