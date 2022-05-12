@@ -236,6 +236,39 @@ namespace FlaxEditor.Surface.Archetypes
             }
         }
 
+        internal enum MaterialTemplateInputsMapping
+        {
+            /// <summary>
+            /// Constant buffers.
+            /// </summary>
+            Constants = 1,
+            
+            /// <summary>
+            /// Shader resources such as textures and buffers.
+            /// </summary>
+            ShaderResources = 2,
+            
+            /// <summary>
+            /// Pre-processor definitions.
+            /// </summary>
+            Defines = 3,
+            
+            /// <summary>
+            /// Included files.
+            /// </summary>
+            Includes = 7,
+            
+            /// <summary>
+            /// Default location after all shader resources and methods but before actual material code.
+            /// </summary>
+            Utilities = 8,
+            
+            /// <summary>
+            /// Shader functions location after all material shaders.
+            /// </summary>
+            Shaders = 9,
+        }
+
         /// <summary>
         /// The nodes for that group.
         /// </summary>
@@ -814,17 +847,20 @@ namespace FlaxEditor.Surface.Archetypes
                 Title = "Custom Global Code",
                 Description = "Custom global HLSL shader code expression (placed before material shader code). Can contain includes to shader utilities or declare functions to reuse later.",
                 Flags = NodeFlags.MaterialGraph,
-                Size = new Vector2(300, 220),
+                Size = new Vector2(300, 240),
                 DefaultValues = new object[]
                 {
                     "// Here you can add HLSL code\nfloat4 GetCustomColor()\n{\n\treturn float4(1, 0, 0, 1);\n}",
                     true,
+                    (int)MaterialTemplateInputsMapping.Utilities,
                 },
                 Elements = new[]
                 {
                     NodeElementArchetype.Factory.Bool(0, 0, 1),
                     NodeElementArchetype.Factory.Text(20, 0, "Enabled"),
-                    NodeElementArchetype.Factory.TextBox(0, 20, 300, 200, 0),
+                    NodeElementArchetype.Factory.Text(0, 20, "Location"),
+                    NodeElementArchetype.Factory.Enum(50, 20, 120, 2, typeof(MaterialTemplateInputsMapping)),
+                    NodeElementArchetype.Factory.TextBox(0, 40, 300, 200, 0),
                 }
             },
         };
