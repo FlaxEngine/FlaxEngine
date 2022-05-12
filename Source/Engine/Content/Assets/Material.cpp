@@ -48,6 +48,11 @@ const MaterialInfo& Material::GetInfo() const
     return EmptyInfo;
 }
 
+GPUShader* Material::GetShader() const
+{
+    return _materialShader ? _materialShader->GetShader() : nullptr;
+}
+
 bool Material::IsReady() const
 {
     return _materialShader && _materialShader->IsReady();
@@ -431,7 +436,7 @@ void Material::InitCompilationOptions(ShaderCompilationOptions& options)
     options.Macros.Add({ "USE_GBUFFER_CUSTOM_DATA", Numbers[useCustomData ? 1 : 0] });
     options.Macros.Add({ "USE_REFLECTIONS", Numbers[info.FeaturesFlags & MaterialFeaturesFlags::DisableReflections ? 0 : 1] });
     if (!(info.FeaturesFlags & MaterialFeaturesFlags::DisableReflections) && info.FeaturesFlags & MaterialFeaturesFlags::ScreenSpaceReflections)
-        options.Macros.Add({ "MATERIAL_REFLECTIONS", Numbers[1]});
+        options.Macros.Add({ "MATERIAL_REFLECTIONS", Numbers[1] });
     options.Macros.Add({ "USE_FOG", Numbers[info.FeaturesFlags & MaterialFeaturesFlags::DisableFog ? 0 : 1] });
     if (useForward)
         options.Macros.Add({ "USE_PIXEL_NORMAL_OFFSET_REFRACTION", Numbers[info.FeaturesFlags & MaterialFeaturesFlags::PixelNormalOffsetRefraction ? 1 : 0] });

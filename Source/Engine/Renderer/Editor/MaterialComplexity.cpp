@@ -29,6 +29,11 @@ const MaterialInfo& MaterialComplexityMaterialShader::WrapperShader::GetInfo() c
     return Info;
 }
 
+GPUShader* MaterialComplexityMaterialShader::WrapperShader::GetShader() const
+{
+    return MaterialAsset->GetShader();
+}
+
 bool MaterialComplexityMaterialShader::WrapperShader::IsReady() const
 {
     return MaterialAsset && MaterialAsset->IsReady();

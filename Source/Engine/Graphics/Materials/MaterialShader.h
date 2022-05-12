@@ -98,8 +98,6 @@ public:
     /// <returns>The created and loaded material or null if failed.</returns>
     static MaterialShader* CreateDummy(MemoryReadStream& shaderCacheStream, const MaterialInfo& info);
 
-    GPUShader* GetShader() const;
-
     /// <summary>
     /// Clears the loaded data.
     /// </summary>
@@ -114,5 +112,6 @@ public:
 
     // [IMaterial]
     const MaterialInfo& GetInfo() const override;
+    GPUShader* GetShader() const override;
     bool IsReady() const override;
 };
