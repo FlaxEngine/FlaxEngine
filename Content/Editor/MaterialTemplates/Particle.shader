@@ -76,8 +76,8 @@ struct VertexOutput
 #if USE_CUSTOM_VERTEX_INTERPOLATORS
 	float4 CustomVSToPS[CUSTOM_VERTEX_INTERPOLATORS_COUNT] : TEXCOORD9;
 #endif
-	float3 InstanceOrigin    : TEXCOORD6;
-	float InstanceParams     : TEXCOORD7; // x-PerInstanceRandom
+	nointerpolation float3 InstanceOrigin : TEXCOORD6;
+	nointerpolation float InstanceParams : TEXCOORD7; // x-PerInstanceRandom
 };
 
 // Interpolants passed to the pixel shader
@@ -94,8 +94,8 @@ struct PixelInput
 #if USE_CUSTOM_VERTEX_INTERPOLATORS
 	float4 CustomVSToPS[CUSTOM_VERTEX_INTERPOLATORS_COUNT] : TEXCOORD9;
 #endif
-	float3 InstanceOrigin    : TEXCOORD6;
-	float InstanceParams     : TEXCOORD7; // x-PerInstanceRandom
+	nointerpolation float3 InstanceOrigin : TEXCOORD6;
+	nointerpolation float InstanceParams : TEXCOORD7; // x-PerInstanceRandom
 	bool IsFrontFace         : SV_IsFrontFace;
 };
 

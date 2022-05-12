@@ -98,26 +98,24 @@ struct ModelInput
 #if USE_VERTEX_COLOR
 	half4 Color       : COLOR;
 #endif
-
 #if USE_INSTANCING
 	float4 InstanceOrigin      : ATTRIBUTE0; // .w contains PerInstanceRandom
 	float4 InstanceTransform1  : ATTRIBUTE1; // .w contains LODDitherFactor
 	float3 InstanceTransform2  : ATTRIBUTE2;
 	float3 InstanceTransform3  : ATTRIBUTE3;
-	half4 InstanceLightmapArea : ATTRIBUTE4; 
+	half4 InstanceLightmapArea : ATTRIBUTE4;
 #endif
 };
 
 struct ModelInput_PosOnly
 {
 	float3 Position   : POSITION;
-	
 #if USE_INSTANCING
 	float4 InstanceOrigin      : ATTRIBUTE0; // .w contains PerInstanceRandom
 	float4 InstanceTransform1  : ATTRIBUTE1; // .w contains LODDitherFactor
 	float3 InstanceTransform2  : ATTRIBUTE2;
 	float3 InstanceTransform3  : ATTRIBUTE3;
-	half4 InstanceLightmapArea : ATTRIBUTE4; 
+	half4 InstanceLightmapArea : ATTRIBUTE4;
 #endif
 };
 
@@ -129,13 +127,12 @@ struct ModelInput_Skinned
 	float4 Tangent      : TANGENT;
 	uint4 BlendIndices  : BLENDINDICES;
 	float4 BlendWeights : BLENDWEIGHT;
-	
 #if USE_INSTANCING
 	float4 InstanceOrigin      : ATTRIBUTE0; // .w contains PerInstanceRandom
 	float4 InstanceTransform1  : ATTRIBUTE1; // .w contains LODDitherFactor
 	float3 InstanceTransform2  : ATTRIBUTE2;
 	float3 InstanceTransform3  : ATTRIBUTE3;
-	half4 InstanceLightmapArea : ATTRIBUTE4; 
+	half4 InstanceLightmapArea : ATTRIBUTE4;
 #endif
 };
 
