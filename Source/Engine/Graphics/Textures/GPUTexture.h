@@ -36,7 +36,8 @@ protected:
         _parent = parent;
         _format = format;
         _msaa = msaa;
-        LastRenderTime = &parent->LastRenderTime;
+        if (parent)
+            LastRenderTime = &parent->LastRenderTime;
     }
 
 public:

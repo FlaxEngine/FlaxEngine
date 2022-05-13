@@ -1053,10 +1053,10 @@ void DrawBatch(int32 startIndex, int32 count)
         }
 
         // Skip if no chance to render anything
+        renderTargetWidth = Math::AlignDown(renderTargetWidth, 4);
+        renderTargetHeight = Math::AlignDown(renderTargetHeight, 4);
         if (renderTargetWidth <= 0 || renderTargetHeight <= 0)
-        {
             return;
-        }
 
         // Get temporary textures
         auto desc = GPUTextureDescription::New2D(renderTargetWidth, renderTargetHeight, PS_Blur_Format);
