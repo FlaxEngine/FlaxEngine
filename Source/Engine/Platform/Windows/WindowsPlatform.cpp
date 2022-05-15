@@ -626,10 +626,17 @@ bool WindowsPlatform::Init()
         return true;
     }
 
-    // Set lowest possible timer resolution for previous Windows versions
-    if (VersionMajor < 10 || (VersionMajor == 10 && VersionBuild < 17134))
+    // Set the lowest possible timer resolution
+    const HMODULE ntdll = LoadLibraryW(L"ntdll.dll");
+    if (ntdll)
     {
-        timeBeginPeriod(1);
+        typedef LONG (WIN_API_CALLCONV *NtSetTimerResolution)(ULONG DesiredResolution, unsigned char SetResolution, ULONG* CurrentResolution);
+        const NtSetTimerResolution ntSetTimerResolution = (NtSetTimerResolution)GetProcAddress(ntdll, "NtSetTimerResolution");
+
+        ULONG currentResolution;
+        ntSetTimerResolution(1, TRUE, &currentResolution);
+
+        ::FreeLibrary(ntdll);
     }
 
     DWORD tmp;
