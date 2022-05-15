@@ -20,7 +20,6 @@
 #include "../Win32/IncludeWindowsHeaders.h"
 #include <VersionHelpers.h>
 #include <ShellAPI.h>
-#include <timeapi.h>
 #include <Psapi.h>
 #include <objbase.h>
 #include <cstdio>
@@ -596,7 +595,7 @@ bool WindowsPlatform::Init()
 {
     if (Win32Platform::Init())
         return true;
-   
+
     // Init console output (engine is linked with /SUBSYSTEM:WINDOWS so it lacks of proper console output on Windows)
     if (CommandLine::Options.Std)
     {
@@ -632,10 +631,11 @@ bool WindowsPlatform::Init()
     {
         typedef LONG (WIN_API_CALLCONV *NtSetTimerResolution)(ULONG DesiredResolution, unsigned char SetResolution, ULONG* CurrentResolution);
         const NtSetTimerResolution ntSetTimerResolution = (NtSetTimerResolution)GetProcAddress(ntdll, "NtSetTimerResolution");
-
-        ULONG currentResolution;
-        ntSetTimerResolution(1, TRUE, &currentResolution);
-
+        if (ntSetTimerResolution)
+        {
+            ULONG currentResolution;
+            ntSetTimerResolution(1, TRUE, &currentResolution);
+        }
         ::FreeLibrary(ntdll);
     }
 
