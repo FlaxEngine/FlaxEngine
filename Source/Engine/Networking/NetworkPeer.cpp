@@ -74,9 +74,10 @@ bool NetworkPeer::Initialize(const NetworkConfig& config)
 void NetworkPeer::Shutdown()
 {
     NetworkDriver->Dispose();
-    Delete(NetworkDriver);
+    Delete(Config.NetworkDriver);
     DisposeMessageBuffers();
 
+    Config.NetworkDriver = nullptr;
     NetworkDriver = nullptr;
 }
 
@@ -223,7 +224,9 @@ NetworkPeer* NetworkPeer::CreatePeer(const NetworkConfig& config)
 
 void NetworkPeer::ShutdownPeer(NetworkPeer* peer)
 {
-    ASSERT(peer->IsValid());
+    if (!peer)
+        return;
+    CHECK(peer->IsValid());
     peer->Shutdown();
     peer->HostId = -1;
     Peers.Remove(peer);

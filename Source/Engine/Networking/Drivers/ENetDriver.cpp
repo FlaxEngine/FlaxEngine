@@ -80,7 +80,6 @@ void ENetDriver::Dispose()
     enet_deinitialize();
 
     _peerMap.Clear();
-    _peerMap = {};
 
     _peer = nullptr;
     _host = nullptr;
