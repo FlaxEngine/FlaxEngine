@@ -279,7 +279,6 @@ namespace FlaxEngine
                 }
                 throw new ArgumentOutOfRangeException(nameof(index), "Indices for Vector3 run from 0 to 2, inclusive.");
             }
-
             set
             {
                 switch (index)
@@ -353,12 +352,7 @@ namespace FlaxEngine
         /// <returns>A three-element array containing the components of the vector.</returns>
         public float[] ToArray()
         {
-            return new[]
-            {
-                X,
-                Y,
-                Z
-            };
+            return new[] { X, Y, Z };
         }
 
         /// <summary>
@@ -384,7 +378,7 @@ namespace FlaxEngine
         }
 
         /// <summary>
-        /// Perform a component-wise addition
+        /// Performs a component-wise addition.
         /// </summary>
         /// <param name="left">The input vector</param>
         /// <param name="right">The scalar value to be added to elements</param>
@@ -395,7 +389,7 @@ namespace FlaxEngine
         }
 
         /// <summary>
-        /// Perform a component-wise addition
+        /// Performs a component-wise addition.
         /// </summary>
         /// <param name="left">The input vector</param>
         /// <param name="right">The scalar value to be added to elements</param>
@@ -428,7 +422,7 @@ namespace FlaxEngine
         }
 
         /// <summary>
-        /// Perform a component-wise subtraction
+        /// Performs a component-wise subtraction.
         /// </summary>
         /// <param name="left">The input vector</param>
         /// <param name="right">The scalar value to be subtracted from elements</param>
@@ -439,7 +433,7 @@ namespace FlaxEngine
         }
 
         /// <summary>
-        /// Perform a component-wise subtraction
+        /// Performs a component-wise subtraction.
         /// </summary>
         /// <param name="left">The input vector</param>
         /// <param name="right">The scalar value to be subtracted from elements</param>
@@ -450,7 +444,7 @@ namespace FlaxEngine
         }
 
         /// <summary>
-        /// Perform a component-wise subtraction
+        /// Performs a component-wise subtraction.
         /// </summary>
         /// <param name="left">The scalar value to be subtracted from elements</param>
         /// <param name="right">The input vector.</param>
@@ -461,7 +455,7 @@ namespace FlaxEngine
         }
 
         /// <summary>
-        /// Perform a component-wise subtraction
+        /// Performs a component-wise subtraction.
         /// </summary>
         /// <param name="left">The scalar value to be subtracted from elements</param>
         /// <param name="right">The input vector.</param>
@@ -602,8 +596,7 @@ namespace FlaxEngine
         }
 
         /// <summary>
-        /// Returns a <see cref="Vector3" /> containing the 3D Cartesian coordinates of a point specified in Barycentric
-        /// coordinates relative to a 3D triangle.
+        /// Returns a <see cref="Vector3" /> containing the 3D Cartesian coordinates of a point specified in Barycentric coordinates relative to a 3D triangle.
         /// </summary>
         /// <param name="value1">A <see cref="Vector3" /> containing the 3D Cartesian coordinates of vertex 1 of the triangle.</param>
         /// <param name="value2">A <see cref="Vector3" /> containing the 3D Cartesian coordinates of vertex 2 of the triangle.</param>
@@ -619,8 +612,7 @@ namespace FlaxEngine
         }
 
         /// <summary>
-        /// Returns a <see cref="Vector3" /> containing the 3D Cartesian coordinates of a point specified in Barycentric
-        /// coordinates relative to a 3D triangle.
+        /// Returns a <see cref="Vector3" /> containing the 3D Cartesian coordinates of a point specified in Barycentric coordinates relative to a 3D triangle.
         /// </summary>
         /// <param name="value1">A <see cref="Vector3" /> containing the 3D Cartesian coordinates of vertex 1 of the triangle.</param>
         /// <param name="value2">A <see cref="Vector3" /> containing the 3D Cartesian coordinates of vertex 2 of the triangle.</param>
@@ -646,15 +638,12 @@ namespace FlaxEngine
             float x = value.X;
             x = x > max.X ? max.X : x;
             x = x < min.X ? min.X : x;
-
             float y = value.Y;
             y = y > max.Y ? max.Y : y;
             y = y < min.Y ? min.Y : y;
-
             float z = value.Z;
             z = z > max.Z ? max.Z : z;
             z = z < min.Z ? min.Z : z;
-
             result = new Vector3(x, y, z);
         }
 
@@ -747,14 +736,6 @@ namespace FlaxEngine
         /// <param name="value1">The first vector.</param>
         /// <param name="value2">The second vector.</param>
         /// <param name="result">When the method completes, contains the squared distance between the two vectors.</param>
-        /// <remarks>
-        /// Distance squared is the value before taking the square root.
-        /// Distance squared can often be used in place of distance if relative comparisons are being made.
-        /// For example, consider three points A, B, and C. To determine whether B or C is further from A,
-        /// compare the distance between A and B to the distance between A and C. Calculating the two distances
-        /// involves two square roots, which are computationally expensive. However, using distance squared
-        /// provides the same information and avoids calculating two square roots.
-        /// </remarks>
         public static void DistanceSquared(ref Vector3 value1, ref Vector3 value2, out float result)
         {
             float x = value1.X - value2.X;
@@ -769,14 +750,6 @@ namespace FlaxEngine
         /// <param name="value1">The first vector.</param>
         /// <param name="value2">The second vector.</param>
         /// <returns>The squared distance between the two vectors.</returns>
-        /// <remarks>
-        /// Distance squared is the value before taking the square root.
-        /// Distance squared can often be used in place of distance if relative comparisons are being made.
-        /// For example, consider three points A, B, and C. To determine whether B or C is further from A,
-        /// compare the distance between A and B to the distance between A and C. Calculating the two distances
-        /// involves two square roots, which are computationally expensive. However, using distance squared
-        /// provides the same information and avoids calculating two square roots.
-        /// </remarks>
         public static float DistanceSquared(ref Vector3 value1, ref Vector3 value2)
         {
             float x = value1.X - value2.X;
@@ -791,14 +764,6 @@ namespace FlaxEngine
         /// <param name="value1">The first vector.</param>
         /// <param name="value2">The second vector.</param>
         /// <returns>The squared distance between the two vectors.</returns>
-        /// <remarks>
-        /// Distance squared is the value before taking the square root.
-        /// Distance squared can often be used in place of distance if relative comparisons are being made.
-        /// For example, consider three points A, B, and C. To determine whether B or C is further from A,
-        /// compare the distance between A and B to the distance between A and C. Calculating the two distances
-        /// involves two square roots, which are computationally expensive. However, using distance squared
-        /// provides the same information and avoids calculating two square roots.
-        /// </remarks>
         public static float DistanceSquared(Vector3 value1, Vector3 value2)
         {
             float x = value1.X - value2.X;
@@ -982,7 +947,7 @@ namespace FlaxEngine
         /// <param name="max">Max Length</param>
         public static Vector3 ClampLength(Vector3 vector, float min, float max)
         {
-            ClampLength(ref vector, min, max, out Vector3 retVect);
+            ClampLength(vector, min, max, out Vector3 retVect);
             return retVect;
         }
 
@@ -992,27 +957,26 @@ namespace FlaxEngine
         /// <param name="vector">Input Vector.</param>
         /// <param name="min">Min Length</param>
         /// <param name="max">Max Length</param>
-        /// <param name="retVect">The Return Vector</param>
-        public static void ClampLength(ref Vector3 vector, float min, float max, out Vector3 retVect)
+        /// <param name="result">The result vector.</param>
+        public static void ClampLength(Vector3 vector, float min, float max, out Vector3 result)
         {
-            retVect.X = vector.X;
-            retVect.Y = vector.Y;
-            retVect.Z = vector.Z;
-
-            float lenSq = retVect.LengthSquared;
+            result.X = vector.X;
+            result.Y = vector.Y;
+            result.Z = vector.Z;
+            float lenSq = result.LengthSquared;
             if (lenSq > max * max)
             {
                 float scaleFactor = max / (float)Math.Sqrt(lenSq);
-                retVect.X = retVect.X * scaleFactor;
-                retVect.Y = retVect.Y * scaleFactor;
-                retVect.Z = retVect.Z * scaleFactor;
+                result.X *= scaleFactor;
+                result.Y *= scaleFactor;
+                result.Z *= scaleFactor;
             }
             if (lenSq < min * min)
             {
                 float scaleFactor = min / (float)Math.Sqrt(lenSq);
-                retVect.X = retVect.X * scaleFactor;
-                retVect.Y = retVect.Y * scaleFactor;
-                retVect.Z = retVect.Z * scaleFactor;
+                result.X *= scaleFactor;
+                result.Y *= scaleFactor;
+                result.Z *= scaleFactor;
             }
         }
 
@@ -1088,7 +1052,6 @@ namespace FlaxEngine
             float part2 = -2.0f * cubed + 3.0f * squared;
             float part3 = cubed - 2.0f * squared + amount;
             float part4 = cubed - squared;
-
             result.X = value1.X * part1 + value2.X * part2 + tangent1.X * part3 + tangent2.X * part4;
             result.Y = value1.Y * part1 + value2.Y * part2 + tangent1.Y * part3 + tangent2.Y * part4;
             result.Z = value1.Z * part1 + value2.Z * part2 + tangent1.Z * part3 + tangent2.Z * part4;
@@ -1122,15 +1085,12 @@ namespace FlaxEngine
         {
             float squared = amount * amount;
             float cubed = amount * squared;
-
             result.X = 0.5f * (2.0f * value2.X + (-value1.X + value3.X) * amount +
                                (2.0f * value1.X - 5.0f * value2.X + 4.0f * value3.X - value4.X) * squared +
                                (-value1.X + 3.0f * value2.X - 3.0f * value3.X + value4.X) * cubed);
-
             result.Y = 0.5f * (2.0f * value2.Y + (-value1.Y + value3.Y) * amount +
                                (2.0f * value1.Y - 5.0f * value2.Y + 4.0f * value3.Y - value4.Y) * squared +
                                (-value1.Y + 3.0f * value2.Y - 3.0f * value3.Y + value4.Y) * cubed);
-
             result.Z = 0.5f * (2.0f * value2.Z + (-value1.Z + value3.Z) * amount +
                                (2.0f * value1.Z - 5.0f * value2.Z + 4.0f * value3.Z - value4.Z) * squared +
                                (-value1.Z + 3.0f * value2.Z - 3.0f * value3.Z + value4.Z) * cubed);
@@ -1265,7 +1225,6 @@ namespace FlaxEngine
         public static void Project(ref Vector3 vector, float x, float y, float width, float height, float minZ, float maxZ, ref Matrix worldViewProjection, out Vector3 result)
         {
             TransformCoordinate(ref vector, ref worldViewProjection, out var v);
-
             result = new Vector3((1.0f + v.X) * 0.5f * width + x, (1.0f - v.Y) * 0.5f * height + y, v.Z * (maxZ - minZ) + minZ);
         }
 
@@ -1301,13 +1260,13 @@ namespace FlaxEngine
         /// <param name="result">When the method completes, contains the vector in object space.</param>
         public static void Unproject(ref Vector3 vector, float x, float y, float width, float height, float minZ, float maxZ, ref Matrix worldViewProjection, out Vector3 result)
         {
-            var v = new Vector3();
             Matrix.Invert(ref worldViewProjection, out var matrix);
-
-            v.X = (vector.X - x) / width * 2.0f - 1.0f;
-            v.Y = -((vector.Y - y) / height * 2.0f - 1.0f);
-            v.Z = (vector.Z - minZ) / (maxZ - minZ);
-
+            var v = new Vector3
+            {
+                X = (vector.X - x) / width * 2.0f - 1.0f,
+                Y = -((vector.Y - y) / height * 2.0f - 1.0f),
+                Z = (vector.Z - minZ) / (maxZ - minZ)
+            };
             TransformCoordinate(ref v, ref matrix, out result);
         }
 
@@ -1342,7 +1301,6 @@ namespace FlaxEngine
         public static void Reflect(ref Vector3 vector, ref Vector3 normal, out Vector3 result)
         {
             float dot = vector.X * normal.X + vector.Y * normal.Y + vector.Z * normal.Z;
-
             result.X = vector.X - 2.0f * dot * normal.X;
             result.Y = vector.Y - 2.0f * dot * normal.Y;
             result.Z = vector.Z - 2.0f * dot * normal.Z;
@@ -1389,22 +1347,18 @@ namespace FlaxEngine
             //q3 = m3 - ((q1 ⋅ m3) / (q1 ⋅ q1)) * q1 - ((q2 ⋅ m3) / (q2 ⋅ q2)) * q2
             //q4 = m4 - ((q1 ⋅ m4) / (q1 ⋅ q1)) * q1 - ((q2 ⋅ m4) / (q2 ⋅ q2)) * q2 - ((q3 ⋅ m4) / (q3 ⋅ q3)) * q3
             //q5 = ...
-
             if (source == null)
                 throw new ArgumentNullException(nameof(source));
             if (destination == null)
                 throw new ArgumentNullException(nameof(destination));
             if (destination.Length < source.Length)
                 throw new ArgumentOutOfRangeException(nameof(destination), "The destination array must be of same length or larger length than the source array.");
-
             for (var i = 0; i < source.Length; ++i)
             {
-                Vector3 s = source[i];
-
+                Vector3 v = source[i];
                 for (var r = 0; r < i; ++r)
-                    s -= Dot(destination[r], s) / Dot(destination[r], destination[r]) * destination[r];
-
-                destination[i] = s;
+                    v -= Dot(destination[r], v) / Dot(destination[r], destination[r]) * destination[r];
+                destination[i] = v;
             }
         }
 
@@ -1438,23 +1392,19 @@ namespace FlaxEngine
             //q3 = (m3 - (q1 ⋅ m3) * q1 - (q2 ⋅ m3) * q2) / |m3 - (q1 ⋅ m3) * q1 - (q2 ⋅ m3) * q2|
             //q4 = (m4 - (q1 ⋅ m4) * q1 - (q2 ⋅ m4) * q2 - (q3 ⋅ m4) * q3) / |m4 - (q1 ⋅ m4) * q1 - (q2 ⋅ m4) * q2 - (q3 ⋅ m4) * q3|
             //q5 = ...
-
             if (source == null)
                 throw new ArgumentNullException(nameof(source));
             if (destination == null)
                 throw new ArgumentNullException(nameof(destination));
             if (destination.Length < source.Length)
                 throw new ArgumentOutOfRangeException(nameof(destination), "The destination array must be of same length or larger length than the source array.");
-
             for (var i = 0; i < source.Length; ++i)
             {
-                Vector3 s = source[i];
-
+                Vector3 v = source[i];
                 for (var r = 0; r < i; ++r)
-                    s -= Dot(destination[r], s) * destination[r];
-
-                s.Normalize();
-                destination[i] = s;
+                    v -= Dot(destination[r], v) * destination[r];
+                v.Normalize();
+                destination[i] = v;
             }
         }
 
@@ -1478,7 +1428,6 @@ namespace FlaxEngine
             float yy = rotation.Y * y;
             float yz = rotation.Y * z;
             float zz = rotation.Z * z;
-
             result = new Vector3(vector.X * (1.0f - yy - zz) + vector.Y * (xy - wz) + vector.Z * (xz + wy),
                                  vector.X * (xy + wz) + vector.Y * (1.0f - xx - zz) + vector.Z * (yz - wx),
                                  vector.X * (xz - wy) + vector.Y * (yz + wx) + vector.Z * (1.0f - xx - yy));
@@ -1512,7 +1461,6 @@ namespace FlaxEngine
                 throw new ArgumentNullException(nameof(destination));
             if (destination.Length < source.Length)
                 throw new ArgumentOutOfRangeException(nameof(destination), "The destination array must be of same length or larger length than the source array.");
-
             float x = rotation.X + rotation.X;
             float y = rotation.Y + rotation.Y;
             float z = rotation.Z + rotation.Z;
@@ -1525,7 +1473,6 @@ namespace FlaxEngine
             float yy = rotation.Y * y;
             float yz = rotation.Y * z;
             float zz = rotation.Z * z;
-
             float num1 = 1.0f - yy - zz;
             float num2 = xy - wz;
             float num3 = xz + wy;
@@ -1535,7 +1482,6 @@ namespace FlaxEngine
             float num7 = xz - wy;
             float num8 = yz + wx;
             float num9 = 1.0f - xx - yy;
-
             for (var i = 0; i < source.Length; i++)
             {
                 destination[i] = new Vector3(source[i].X * num1 + source[i].Y * num2 + source[i].Z * num3,
@@ -1624,7 +1570,6 @@ namespace FlaxEngine
                 throw new ArgumentNullException(nameof(destination));
             if (destination.Length < source.Length)
                 throw new ArgumentOutOfRangeException(nameof(destination), "The destination array must be of same length or larger length than the source array.");
-
             for (var i = 0; i < source.Length; ++i)
                 Transform(ref source[i], ref transform, out destination[i]);
         }
@@ -1651,7 +1596,6 @@ namespace FlaxEngine
                 Z = coordinate.X * transform.M13 + coordinate.Y * transform.M23 + coordinate.Z * transform.M33 + transform.M43,
                 W = 1f / (coordinate.X * transform.M14 + coordinate.Y * transform.M24 + coordinate.Z * transform.M34 + transform.M44)
             };
-
             result = new Vector3(vector.X * vector.W, vector.Y * vector.W, vector.Z * vector.W);
         }
 
@@ -1699,7 +1643,6 @@ namespace FlaxEngine
                 throw new ArgumentNullException(nameof(destination));
             if (destination.Length < source.Length)
                 throw new ArgumentOutOfRangeException(nameof(destination), "The destination array must be of same length or larger length than the source array.");
-
             for (var i = 0; i < source.Length; i++)
                 TransformCoordinate(ref source[i], ref transform, out destination[i]);
         }
@@ -1766,7 +1709,6 @@ namespace FlaxEngine
                 throw new ArgumentNullException(nameof(destination));
             if (destination.Length < source.Length)
                 throw new ArgumentOutOfRangeException(nameof(destination), "The destination array must be of same length or larger length than the source array.");
-
             for (var i = 0; i < source.Length; ++i)
                 TransformNormal(ref source[i], ref transform, out destination[i]);
         }
@@ -1783,8 +1725,7 @@ namespace FlaxEngine
         }
 
         /// <summary>
-        /// Multiplies a vector with another by performing component-wise multiplication equivalent to
-        /// <see cref="Multiply(ref Vector3,ref Vector3,out Vector3)" />.
+        /// Multiplies a vector with another by performing component-wise multiplication equivalent to <see cref="Multiply(ref Vector3,ref Vector3,out Vector3)" />.
         /// </summary>
         /// <param name="left">The first vector to multiply.</param>
         /// <param name="right">The second vector to multiply.</param>
@@ -1926,7 +1867,7 @@ namespace FlaxEngine
         }
 
         /// <summary>
-        /// Perform a component-wise addition
+        /// Performs a component-wise addition.
         /// </summary>
         /// <param name="value">The input vector.</param>
         /// <param name="scalar">The scalar value to be added on elements</param>
@@ -1937,7 +1878,7 @@ namespace FlaxEngine
         }
 
         /// <summary>
-        /// Perform a component-wise addition
+        /// Performs a component-wise addition.
         /// </summary>
         /// <param name="value">The input vector.</param>
         /// <param name="scalar">The scalar value to be added on elements</param>
@@ -1948,7 +1889,7 @@ namespace FlaxEngine
         }
 
         /// <summary>
-        /// Perform a component-wise subtraction
+        /// Performs a component-wise subtraction.
         /// </summary>
         /// <param name="value">The input vector.</param>
         /// <param name="scalar">The scalar value to be subtracted from elements</param>
@@ -1959,7 +1900,7 @@ namespace FlaxEngine
         }
 
         /// <summary>
-        /// Perform a component-wise subtraction
+        /// Performs a component-wise subtraction.
         /// </summary>
         /// <param name="value">The input vector.</param>
         /// <param name="scalar">The scalar value to be subtracted from elements</param>

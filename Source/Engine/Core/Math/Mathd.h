@@ -2,8 +2,8 @@
 
 #pragma once
 
-#include <math.h>
 #include "Engine/Core/Types/BaseTypes.h"
+#include <math.h>
 
 namespace Math
 {

@@ -2,11 +2,10 @@
 
 #pragma once
 
-#include "Engine/Platform/Platform.h"
-#include "Engine/Core/Formatting.h"
-#include "Engine/Core/Templates.h"
 #include "Math.h"
 #include "Mathd.h"
+#include "Engine/Core/Formatting.h"
+#include "Engine/Core/Templates.h"
 
 struct Double2;
 struct Double3;
@@ -22,7 +21,7 @@ struct Int3;
 struct Int4;
 
 /// <summary>
-/// Represents a four dimensional mathematical vector.
+/// Represents a four dimensional mathematical vector with 64-bit precision (per-component).
 /// </summary>
 API_STRUCT() struct FLAXENGINE_API Double4
 {
@@ -140,7 +139,7 @@ public:
     
     // Init
     // @param xyzw Vector4 value
-    explicit Double4(const Vector4& xyzw);
+    Double4(const Vector4& xyzw);
 
     // Init
     // @param xy X and Y values in the vector

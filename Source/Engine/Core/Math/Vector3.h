@@ -19,7 +19,7 @@ struct Int3;
 struct Int4;
 
 /// <summary>
-/// Represents a three dimensional mathematical vector.
+/// Represents a three dimensional mathematical vector with 32-bit precision (per-component).
 /// </summary>
 API_STRUCT() struct FLAXENGINE_API Vector3
 {
@@ -167,11 +167,11 @@ public:
 
     // Init
     // @param xyz Double3 value
-    explicit Vector3(const Double3& xyz);
+    Vector3(const Double3& xyz);
 
     // Init
     // @param xyzw Double4 value
-    explicit  Vector3(const Double4& xyzw);
+    explicit Vector3(const Double4& xyzw);
     
     // Init
     // @param color Color value

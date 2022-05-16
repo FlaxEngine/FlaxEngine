@@ -1,4 +1,4 @@
-﻿// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 using System;
 using System.ComponentModel;
@@ -49,7 +49,7 @@ namespace FlaxEngine
         {
             return Math.Abs(f);
         }
-        
+
         /// <summary>
         /// Returns the arc-cosine of f - the angle in radians whose cosine is f.
         /// </summary>
@@ -388,7 +388,7 @@ namespace FlaxEngine
         {
             return (long)Math.Round(f);
         }
-        
+
         /// <summary>
         /// Returns the sign of f.
         /// </summary>
@@ -444,8 +444,7 @@ namespace FlaxEngine
         /// <param name="maxSpeed">The maximum speed.</param>
         /// <param name="deltaTime">The delta time (in seconds) since last update.</param>
         /// <returns>The smoothed value.</returns>
-        public static double SmoothDamp(double current, double target, ref double currentVelocity, double smoothTime, [DefaultValue("double.PositiveInfinity")]
-                                        double maxSpeed, [DefaultValue("Time.DeltaTime")] double deltaTime)
+        public static double SmoothDamp(double current, double target, ref double currentVelocity, double smoothTime, [DefaultValue("double.PositiveInfinity")] double maxSpeed, [DefaultValue("Time.DeltaTime")] double deltaTime)
         {
             smoothTime = Max(0.0001d, smoothTime);
             double a = 2d / smoothTime;
@@ -504,8 +503,7 @@ namespace FlaxEngine
         /// <param name="maxSpeed">The maximum speed.</param>
         /// <param name="deltaTime">The delta time (in seconds) since last update.</param>
         /// <returns>The smoothed value.</returns>
-        public static double SmoothDampAngle(double current, double target, ref double currentVelocity, double smoothTime, [DefaultValue("double.PositiveInfinity")]
-                                             double maxSpeed, [DefaultValue("Time.DeltaTime")] double deltaTime)
+        public static double SmoothDampAngle(double current, double target, ref double currentVelocity, double smoothTime, [DefaultValue("double.PositiveInfinity")] double maxSpeed, [DefaultValue("Time.DeltaTime")] double deltaTime)
         {
             target = current + DeltaAngle(current, target);
             return SmoothDamp(current, target, ref currentVelocity, smoothTime, maxSpeed, deltaTime);

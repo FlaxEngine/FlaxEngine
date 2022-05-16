@@ -19,7 +19,7 @@ struct Color;
 struct Matrix;
 
 /// <summary>
-/// Represents a two dimensional mathematical vector.
+/// Represents a two dimensional mathematical vector with 64-bit precision (per-component).
 /// </summary>
 API_STRUCT() struct FLAXENGINE_API Double3
 {
@@ -146,7 +146,7 @@ public:
     
     // Init
     // @param xyz Vector3 value
-    explicit Double3(const Vector3& xyz);
+    Double3(const Vector3& xyz);
 
     // Init
     // @param xyz Vector4 value

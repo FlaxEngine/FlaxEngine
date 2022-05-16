@@ -19,7 +19,7 @@ struct Color;
 struct Matrix;
 
 /// <summary>
-/// Represents a two dimensional mathematical vector.
+/// Represents a two dimensional mathematical vector with 64-bit precision (per-component).
 /// </summary>
 API_STRUCT() struct FLAXENGINE_API Double2
 {
@@ -115,7 +115,7 @@ public:
 
     // Init
     // @param v Vector2 to use X and Y components
-    explicit Double2(const Vector2& xy);
+    Double2(const Vector2& xy);
     
     // Init
     // @param v Vector3 to use X and Y components
