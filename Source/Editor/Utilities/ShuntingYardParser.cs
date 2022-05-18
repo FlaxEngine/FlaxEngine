@@ -272,8 +272,7 @@ namespace FlaxEditor.Utilities
 
                 // Operators go on stack, unless last operator on stack has higher precedence
                 case TokenType.Operator:
-                    while (stack.Any() && stack.Peek().Type == TokenType.Operator &&
-                           CompareOperators(tok.Value, stack.Peek().Value))
+                    while (stack.Any() && stack.Peek().Type == TokenType.Operator && CompareOperators(tok.Value, stack.Peek().Value))
                     {
                         yield return stack.Pop();
                     }

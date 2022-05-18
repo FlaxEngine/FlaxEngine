@@ -1,6 +1,7 @@
 // Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 using System;
+using System.Globalization;
 using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
@@ -910,6 +911,99 @@ namespace FlaxEditor.Utilities
                 path = path.Substring(Globals.ProjectFolder.Length + 1);
             }
             return StringUtils.GetPathWithoutExtension(path);
+        }
+
+        /// <summary>
+        /// Formats the floating point value (double precision) into the readable text representation.
+        /// </summary>
+        /// <param name="value">The value.</param>
+        /// <returns>The text representation.</returns>
+        public static string FormatFloat(float value)
+        {
+            if (float.IsPositiveInfinity(value) || value == float.MaxValue)
+                return "Infinity";
+            if (float.IsNegativeInfinity(value) || value == float.MinValue)
+                return "-Infinity";
+            string str = value.ToString("r", CultureInfo.InvariantCulture);
+            return FormatFloat(str, value < 0);
+        }
+
+        /// <summary>
+        /// Formats the floating point value (single precision) into the readable text representation.
+        /// </summary>
+        /// <param name="value">The value.</param>
+        /// <returns>The text representation.</returns>
+        public static string FormatFloat(double value)
+        {
+            if (double.IsPositiveInfinity(value) || value == double.MaxValue)
+                return "Infinity";
+            if (double.IsNegativeInfinity(value) || value == double.MinValue)
+                return "-Infinity";
+            string str = value.ToString("r", CultureInfo.InvariantCulture);
+            return FormatFloat(str, value < 0);
+        }
+
+        internal static string FormatFloat(string str, bool isNegative)
+        {
+            // Reference: https://stackoverflow.com/questions/1546113/double-to-string-conversion-without-scientific-notation
+            int x = str.IndexOf('E');
+            if (x < 0)
+                return str;
+            int x1 = x + 1;
+            string s, exp = str.Substring(x1, str.Length - x1);
+            int e = int.Parse(exp);
+            int numDecimals = 0;
+            if (isNegative)
+            {
+                int len = x - 3;
+                if (e >= 0)
+                {
+                    if (len > 0)
+                    {
+                        s = str.Substring(0, 2) + str.Substring(3, len);
+                        numDecimals = len;
+                    }
+                    else
+                        s = str.Substring(0, 2);
+                }
+                else
+                {
+                    if (len > 0)
+                    {
+                        s = str.Substring(1, 1) + str.Substring(3, len);
+                        numDecimals = len;
+                    }
+                    else
+                        s = str.Substring(1, 1);
+                }
+            }
+            else
+            {
+                int len = x - 2;
+                if (len > 0)
+                {
+                    s = str[0] + str.Substring(2, len);
+                    numDecimals = len;
+                }
+                else
+                    s = str[0].ToString();
+            }
+            if (e >= 0)
+            {
+                e -= numDecimals;
+                string z = new string('0', e);
+                s = s + z;
+            }
+            else
+            {
+                e = -e - 1;
+                string z = new string('0', e);
+                if (isNegative)
+                    s = "-0." + z + s;
+                else
+                    s = "0." + z + s;
+            }
+            return s;
         }
     }
 }

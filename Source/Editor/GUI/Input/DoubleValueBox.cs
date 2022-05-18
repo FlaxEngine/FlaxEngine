@@ -1,7 +1,6 @@
 // Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 using System;
-using System.Globalization;
 using FlaxEditor.Utilities;
 using FlaxEngine;
 
@@ -20,8 +19,8 @@ namespace FlaxEditor.GUI.Input
             get => _value;
             set
             {
-                value = Mathf.Clamp(value, _min, _max);
-                if (Math.Abs(_value - value) > Mathf.Epsilon)
+                value = Mathd.Clamp(value, _min, _max);
+                if (Math.Abs(_value - value) > Mathd.Epsilon)
                 {
                     // Set value
                     _value = value;
@@ -39,7 +38,7 @@ namespace FlaxEditor.GUI.Input
             get => _min;
             set
             {
-                if (!Mathf.NearEqual(_min, value))
+                if (!Mathd.NearEqual(_min, value))
                 {
                     if (value > _max)
                         throw new ArgumentException();
@@ -56,7 +55,7 @@ namespace FlaxEditor.GUI.Input
             get => _max;
             set
             {
-                if (!Mathf.NearEqual(_max, value))
+                if (!Mathd.NearEqual(_max, value))
                 {
                     if (value < _min)
                         throw new ArgumentException();
@@ -78,7 +77,7 @@ namespace FlaxEditor.GUI.Input
         /// <param name="max">The maximum value.</param>
         /// <param name="slideSpeed">The slide speed.</param>
         public DoubleValueBox(double value, float x = 0, float y = 0, float width = 120, double min = double.MinValue, double max = double.MaxValue, float slideSpeed = 1)
-        : base(Mathf.Clamp(value, min, max), x, y, width, min, max, slideSpeed)
+        : base(Mathd.Clamp(value, min, max), x, y, width, min, max, slideSpeed)
         {
             UpdateText();
         }
@@ -133,15 +132,7 @@ namespace FlaxEditor.GUI.Input
         /// <inheritdoc />
         protected sealed override void UpdateText()
         {
-            string text;
-            if (double.IsPositiveInfinity(_value) || _value == double.MaxValue)
-                text = "Infinity";
-            else if (double.IsNegativeInfinity(_value) || _value == double.MinValue)
-                text = "-Infinity";
-            else
-                text = _value.ToString(CultureInfo.InvariantCulture);
-
-            SetText(text);
+            SetText(Utilities.Utils.FormatFloat(_value));
         }
 
         /// <inheritdoc />
