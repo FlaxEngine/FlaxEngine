@@ -36,7 +36,8 @@ namespace FlaxEngine.TypeConverters
         {
             if (destinationType == typeof(string))
             {
-                return ((Vector4)value).X + "," + ((Vector4)value).Y + "," + ((Vector4)value).Z + "," + ((Vector4)value).W;
+                var v = (Vector4)value;
+                return v.X + "," + v.Y + "," + v.Z + "," + v.W;
             }
 
             return base.ConvertTo(context, culture, value, destinationType);

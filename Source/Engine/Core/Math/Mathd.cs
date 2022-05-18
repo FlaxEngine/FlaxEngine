@@ -14,7 +14,7 @@ namespace FlaxEngine
         /// <summary>
         /// The value for which all absolute numbers smaller than are considered equal to zero.
         /// </summary>
-        public const double Epsilon = 1e-7f;
+        public const double Epsilon = 1e-300;
 
         /// <summary>
         /// A value specifying the approximation of π which is 180 degrees.
@@ -721,21 +721,12 @@ namespace FlaxEngine
         }
 
         /// <summary>
-        /// Checks if a and b are almost equals, taking into account the magnitude of floating point numbers (unlike
-        /// <see cref="WithinEpsilon" /> method). See Remarks.
-        /// See remarks.
+        /// Checks if a and b are almost equals, taking into account the magnitude of floating point numbers (unlike <see cref="WithinEpsilon" /> method). See Remarks. See remarks.
         /// </summary>
         /// <param name="a">The left value to compare.</param>
         /// <param name="b">The right value to compare.</param>
         /// <returns><c>true</c> if a almost equal to b, <c>false</c> otherwise</returns>
-        /// <remarks>
-        /// The code is using the technique described by Bruce Dawson in
-        /// <a href="http://randomascii.wordpress.com/2012/02/25/comparing-floating-point-numbers-2012-edition/">
-        ///   Comparing
-        ///   Floating point numbers 2012 edition
-        /// </a>
-        /// .
-        /// </remarks>
+        /// <remarks>The code is using the technique described by Bruce Dawson in <a href="http://randomascii.wordpress.com/2012/02/25/comparing-floating-point-numbers-2012-edition/">Comparing Floating point numbers 2012 edition</a>.</remarks>
         public static unsafe bool NearEqual(double a, double b)
         {
             // Check if the numbers are really close -- needed
@@ -888,17 +879,14 @@ namespace FlaxEngine
         public static double UnwindRadians(double angle)
         {
             // TODO: make it faster?
-
             while (angle > Pi)
             {
                 angle -= TwoPi;
             }
-
             while (angle < -Pi)
             {
                 angle += TwoPi;
             }
-
             return angle;
         }
 
@@ -910,17 +898,14 @@ namespace FlaxEngine
         public static double UnwindDegrees(double angle)
         {
             // TODO: make it faster?
-
             while (angle > 180.0f)
             {
                 angle -= 360.0f;
             }
-
             while (angle < -180.0f)
             {
                 angle += 360.0f;
             }
-
             return angle;
         }
 
@@ -962,9 +947,7 @@ namespace FlaxEngine
         /// <param name="amount">Value between 0 and 1 indicating interpolation amount.</param>
         public static double SmoothStep(double amount)
         {
-            return amount <= 0d ? 0d
-                   : amount >= 1d ? 1d
-                   : amount * amount * (3d - 2d * amount);
+            return amount <= 0d ? 0d : amount >= 1d ? 1d : amount * amount * (3d - 2d * amount);
         }
 
         /// <summary>
@@ -976,9 +959,7 @@ namespace FlaxEngine
         /// <param name="amount">Value between 0 and 1 indicating interpolation amount.</param>
         public static double SmootherStep(double amount)
         {
-            return amount <= 0d ? 0d
-                   : amount >= 1d ? 1d
-                   : amount * amount * amount * (amount * (amount * 6d - 15d) + 10d);
+            return amount <= 0d ? 0d : amount >= 1d ? 1d : amount * amount * amount * (amount * (amount * 6d - 15d) + 10d);
         }
 
         /// <summary>
@@ -991,7 +972,6 @@ namespace FlaxEngine
         {
             if (modulo == 0d)
                 return value;
-
             return value % modulo;
         }
 

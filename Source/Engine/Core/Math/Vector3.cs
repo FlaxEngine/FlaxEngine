@@ -1204,9 +1204,9 @@ namespace FlaxEngine
         /// <returns>The angle (in degrees).</returns>
         public static float Angle(Vector3 from, Vector3 to)
         {
-            float dot = Mathf.Clamp(Dot(from.Normalized, to.Normalized), -1F, 1F);
-            if (Mathf.Abs(dot) > (1F - Mathf.Epsilon))
-                return dot > 0F ? 0F : 180F;
+            float dot = Mathf.Clamp(Dot(from.Normalized, to.Normalized), -1.0f, 1.0f);
+            if (Mathf.Abs(dot) > (1.0f - Mathf.Epsilon))
+                return dot > 0.0f ? 0.0f : 180.0f;
             return Mathf.Acos(dot) * Mathf.RadiansToDegrees;
         }
 

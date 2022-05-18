@@ -65,7 +65,7 @@ namespace FlaxEngine
         /// <param name="f"></param>
         public static float Acos(float f)
         {
-            return (float)Math.Acos(f);
+            return (float)Mathf.Acos(f);
         }
 
         /// <summary>
@@ -1092,17 +1092,14 @@ namespace FlaxEngine
         public static float UnwindRadians(float angle)
         {
             // TODO: make it faster?
-
             while (angle > Pi)
             {
                 angle -= TwoPi;
             }
-
             while (angle < -Pi)
             {
                 angle += TwoPi;
             }
-
             return angle;
         }
 
@@ -1114,17 +1111,14 @@ namespace FlaxEngine
         public static float UnwindDegrees(float angle)
         {
             // TODO: make it faster?
-
             while (angle > 180.0f)
             {
                 angle -= 360.0f;
             }
-
             while (angle < -180.0f)
             {
                 angle += 360.0f;
             }
-
             return angle;
         }
 
@@ -1204,8 +1198,7 @@ namespace FlaxEngine
         /// Interpolates between two values using a linear function by a given amount.
         /// </summary>
         /// <remarks>
-        /// See http://www.encyclopediaofmath.org/index.php/Linear_interpolation and
-        /// http://fgiesen.wordpress.com/2012/08/15/linear-interpolation-past-present-and-future/
+        /// See http://www.encyclopediaofmath.org/index.php/Linear_interpolation and http://fgiesen.wordpress.com/2012/08/15/linear-interpolation-past-present-and-future/
         /// </remarks>
         /// <param name="from">Value to interpolate from.</param>
         /// <param name="to">Value to interpolate to.</param>
@@ -1220,8 +1213,7 @@ namespace FlaxEngine
         /// Interpolates between two values using a linear function by a given amount.
         /// </summary>
         /// <remarks>
-        /// See http://www.encyclopediaofmath.org/index.php/Linear_interpolation and
-        /// http://fgiesen.wordpress.com/2012/08/15/linear-interpolation-past-present-and-future/
+        /// See http://www.encyclopediaofmath.org/index.php/Linear_interpolation and http://fgiesen.wordpress.com/2012/08/15/linear-interpolation-past-present-and-future/
         /// </remarks>
         /// <param name="from">Value to interpolate from.</param>
         /// <param name="to">Value to interpolate to.</param>
@@ -1236,8 +1228,7 @@ namespace FlaxEngine
         /// Interpolates between two values using a linear function by a given amount.
         /// </summary>
         /// <remarks>
-        /// See http://www.encyclopediaofmath.org/index.php/Linear_interpolation and
-        /// http://fgiesen.wordpress.com/2012/08/15/linear-interpolation-past-present-and-future/
+        /// See http://www.encyclopediaofmath.org/index.php/Linear_interpolation and http://fgiesen.wordpress.com/2012/08/15/linear-interpolation-past-present-and-future/
         /// </remarks>
         /// <param name="from">Value to interpolate from.</param>
         /// <param name="to">Value to interpolate to.</param>
@@ -1252,8 +1243,7 @@ namespace FlaxEngine
         /// Interpolates between two values using a linear function by a given amount.
         /// </summary>
         /// <remarks>
-        /// See http://www.encyclopediaofmath.org/index.php/Linear_interpolation and
-        /// http://fgiesen.wordpress.com/2012/08/15/linear-interpolation-past-present-and-future/
+        /// See http://www.encyclopediaofmath.org/index.php/Linear_interpolation and http://fgiesen.wordpress.com/2012/08/15/linear-interpolation-past-present-and-future/
         /// </remarks>
         /// <param name="from">Value to interpolate from.</param>
         /// <param name="to">Value to interpolate to.</param>
@@ -1273,9 +1263,7 @@ namespace FlaxEngine
         /// <param name="amount">Value between 0 and 1 indicating interpolation amount.</param>
         public static float SmoothStep(float amount)
         {
-            return amount <= 0 ? 0
-                   : amount >= 1 ? 1
-                   : amount * amount * (3 - 2 * amount);
+            return amount <= 0 ? 0 : amount >= 1 ? 1 : amount * amount * (3 - 2 * amount);
         }
 
         /// <summary>
@@ -1287,9 +1275,7 @@ namespace FlaxEngine
         /// <param name="amount">Value between 0 and 1 indicating interpolation amount.</param>
         public static float SmootherStep(float amount)
         {
-            return amount <= 0 ? 0
-                   : amount >= 1 ? 1
-                   : amount * amount * amount * (amount * (amount * 6 - 15) + 10);
+            return amount <= 0 ? 0 : amount >= 1 ? 1 : amount * amount * amount * (amount * (amount * 6 - 15) + 10);
         }
 
         /// <summary>
@@ -1302,7 +1288,6 @@ namespace FlaxEngine
         {
             if (modulo == 0.0f)
                 return value;
-
             return value % modulo;
         }
 
