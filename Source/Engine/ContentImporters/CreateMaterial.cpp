@@ -61,13 +61,13 @@ namespace
         return &node;
     }
 
-    ShaderGraphNode<>* AddTextureNode(MaterialLayer* layer, const Guid& textureId)
+    ShaderGraphNode<>* AddTextureNode(MaterialLayer* layer, const Guid& textureId, bool normalMap = false)
     {
         if (!textureId.IsValid())
             return nullptr;
         auto& node = layer->Graph.Nodes.AddOne();
         node.ID = layer->Graph.Nodes.Count();
-        node.Type = GRAPH_NODE_MAKE_TYPE(5, 1);
+        node.Type = GRAPH_NODE_MAKE_TYPE(5, normalMap ? 4 : 1);
         node.Boxes.Resize(7);
         node.Boxes[0] = MaterialGraphBox(&node, 0, VariantType::Vector2); // UVs
         node.Boxes[6] = MaterialGraphBox(&node, 6, VariantType::Object); // Texture Reference
@@ -178,7 +178,7 @@ CreateAssetResult CreateMaterial::Create(CreateAssetContext& context)
             CONNECT(layer->Root->Boxes[static_cast<int32>(MaterialGraphBoxes::Emissive)], emissiveColor->Boxes[0]);
             SET_POS(emissiveColor, Vector2(-493.5272f, -2.926111f));
         }
-        auto normalMap = AddTextureNode(layer, options.Normals.Texture);
+        auto normalMap = AddTextureNode(layer, options.Normals.Texture, true);
         if (normalMap)
         {
             CONNECT(layer->Root->Boxes[static_cast<int32>(MaterialGraphBoxes::Normal)], normalMap->Boxes[1]);
