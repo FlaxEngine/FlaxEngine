@@ -1437,6 +1437,16 @@ bool CollisionsHelper::LineIntersectsRect(const Vector2& p1, const Vector2& p2, 
     return (topoverlap < botoverlap) && (!((botoverlap < t) || (topoverlap > b)));*/
 }
 
+Vector2 CollisionsHelper::LineHitsBox(const Vector3& lineStart, const Vector3& lineEnd, const Vector3& boxMin, const Vector3& boxMax)
+{
+    const Vector3 invDirection = 1.0f / (lineEnd - lineStart);
+    const Vector3 enterIntersection = (boxMin - lineStart) * invDirection;
+    const Vector3 exitIntersection = (boxMax - lineStart) * invDirection;
+    const Vector3 minIntersections = Vector3::Min(enterIntersection, exitIntersection);
+    const Vector3 maxIntersections = Vector3::Max(enterIntersection, exitIntersection);
+    return Vector2(Math::Saturate(minIntersections.MaxValue()), Math::Saturate(maxIntersections.MinValue()));
+}
+
 bool CollisionsHelper::IsPointInTriangle(const Vector2& point, const Vector2& a, const Vector2& b, const Vector2& c)
 {
     const Vector2 an = a - point;

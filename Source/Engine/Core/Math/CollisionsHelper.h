@@ -569,6 +569,12 @@ public:
     /// <returns>True if line intersects with the rectangle</returns>
     static bool LineIntersectsRect(const Vector2& p1, const Vector2& p2, const Rectangle& rect);
 
+    // Hits axis-aligned box (boxMin, boxMax) with a line (lineStart, lineEnd).
+    // Returns the intersections on the line (x - closest, y - furthest).
+    // Line hits the box if: intersections.x < intersections.y.
+    // Hit point is: hitPoint = lineStart + (lineEnd - lineStart) * intersections.x/y.
+    static Vector2 LineHitsBox(const Vector3& lineStart, const Vector3& lineEnd, const Vector3& boxMin, const Vector3& boxMax);
+
     /// <summary>
     /// Determines whether the given 2D point is inside the specified triangle.
     /// </summary>
