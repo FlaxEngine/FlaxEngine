@@ -53,6 +53,16 @@ const ScriptingType& ScriptingTypeHandle::GetType() const
     return Module->Types[TypeIndex];
 }
 
+#if USE_MONO
+
+MonoClass* ScriptingTypeHandle::GetMonoClass() const
+{
+    ASSERT_LOW_LAYER(Module && Module->Types[TypeIndex].ManagedClass);
+    return Module->Types[TypeIndex].ManagedClass->GetNative();
+}
+
+#endif
+
 bool ScriptingTypeHandle::IsSubclassOf(ScriptingTypeHandle c) const
 {
     auto type = *this;

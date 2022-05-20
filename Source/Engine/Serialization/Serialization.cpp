@@ -162,44 +162,53 @@ void Serialization::Serialize(ISerializable::SerializeStream& stream, const Vari
     case VariantType::Vector4:
         stream.Vector4(*(Vector4*)v.AsData);
         break;
+    case VariantType::Double2:
+        stream.Double2(v.AsDouble2());
+        break;
+    case VariantType::Double3:
+        stream.Double3(v.AsDouble3());
+        break;
+    case VariantType::Double4:
+        stream.Double4(v.AsDouble4());
+        break;
     case VariantType::Int2:
-        stream.Int2(*(Int2*)v.AsData);
+        stream.Int2(v.AsInt2());
         break;
     case VariantType::Int3:
-        stream.Int3(*(Int3*)v.AsData);
+        stream.Int3(v.AsInt3());
         break;
     case VariantType::Int4:
-        stream.Int4(*(Int4*)v.AsData);
+        stream.Int4(v.AsInt4());
         break;
     case VariantType::Color:
-        stream.Color(*(Color*)v.AsData);
+        stream.Color(v.AsColor());
         break;
     case VariantType::Guid:
-        stream.Guid(*(Guid*)v.AsData);
+        stream.Guid(v.AsGuid());
         break;
     case VariantType::BoundingSphere:
-        stream.BoundingSphere(*(BoundingSphere*)v.AsData);
+        stream.BoundingSphere(v.AsBoundingSphere());
         break;
     case VariantType::Quaternion:
-        stream.Quaternion(*(Quaternion*)v.AsData);
+        stream.Quaternion(v.AsQuaternion());
         break;
     case VariantType::Rectangle:
-        stream.Rectangle(*(Rectangle*)v.AsData);
+        stream.Rectangle(v.AsRectangle());
         break;
     case VariantType::BoundingBox:
-        stream.BoundingBox(*(BoundingBox*)v.AsBlob.Data);
+        stream.BoundingBox(v.AsBoundingBox());
         break;
     case VariantType::Transform:
-        stream.Transform(*(Transform*)v.AsBlob.Data);
+        stream.Transform(v.AsTransform());
         break;
     case VariantType::Ray:
-        stream.Ray(*(Ray*)v.AsBlob.Data);
+        stream.Ray(v.AsRay());
         break;
     case VariantType::Matrix:
-        stream.Matrix(*(Matrix*)v.AsBlob.Data);
+        stream.Matrix(v.AsMatrix());
         break;
     case VariantType::Array:
-        Serialize(stream, *(Array<Variant, HeapAllocation>*)v.AsData, nullptr);
+        Serialize(stream, v.AsArray(), nullptr);
         break;
     case VariantType::Dictionary:
         Serialize(stream, *v.AsDictionary, nullptr);
@@ -304,6 +313,15 @@ void Serialization::Deserialize(ISerializable::DeserializeStream& stream, Varian
     case VariantType::Vector4:
         Deserialize(value, *(Vector4*)v.AsData, modifier);
         break;
+    case VariantType::Double2:
+        Deserialize(value, *(Double2*)v.AsData, modifier);
+        break;
+    case VariantType::Double3:
+        Deserialize(value, *(Double3*)v.AsData, modifier);
+        break;
+    case VariantType::Double4:
+        Deserialize(value, *(Double4*)v.AsBlob.Data, modifier);
+        break;
     case VariantType::Int2:
         Deserialize(value, *(Int2*)v.AsData, modifier);
         break;
@@ -329,13 +347,13 @@ void Serialization::Deserialize(ISerializable::DeserializeStream& stream, Varian
         Deserialize(value, *(Rectangle*)v.AsData, modifier);
         break;
     case VariantType::BoundingBox:
-        Deserialize(value, *(BoundingBox*)v.AsBlob.Data, modifier);
+        Deserialize(value, *(BoundingBox*)v.AsData, modifier);
         break;
     case VariantType::Transform:
         Deserialize(value, *(Transform*)v.AsBlob.Data, modifier);
         break;
     case VariantType::Ray:
-        Deserialize(value, *(Ray*)v.AsBlob.Data, modifier);
+        Deserialize(value, *(Ray*)v.AsData, modifier);
         break;
     case VariantType::Matrix:
         Deserialize(value, *(Matrix*)v.AsBlob.Data, modifier);

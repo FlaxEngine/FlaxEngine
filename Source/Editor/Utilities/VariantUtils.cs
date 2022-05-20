@@ -60,6 +60,10 @@ namespace FlaxEditor.Utilities
 
             Int16,
             Uint16,
+
+            Double2,
+            Double3,
+            Double4,
         }
 
         internal static VariantType ToVariantType(this Type type)

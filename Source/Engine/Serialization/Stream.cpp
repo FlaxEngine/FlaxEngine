@@ -7,6 +7,9 @@
 #include "MemoryReadStream.h"
 #include "Engine/Core/Types/CommonValue.h"
 #include "Engine/Core/Types/Variant.h"
+#include "Engine/Core/Math/Double2.h"
+#include "Engine/Core/Math/Double3.h"
+#include "Engine/Core/Math/Double4.h"
 #include "Engine/Core/Collections/Dictionary.h"
 #include "Engine/Content/Asset.h"
 #include "Engine/Core/Cache.h"
@@ -413,6 +416,15 @@ void ReadStream::ReadVariant(Variant* data)
     case VariantType::Vector4:
         ReadBytes(&data->AsData, sizeof(Vector4));
         break;
+    case VariantType::Double2:
+        ReadBytes(&data->AsData, sizeof(Double2));
+        break;
+    case VariantType::Double3:
+        ReadBytes(&data->AsData, sizeof(Double3));
+        break;
+    case VariantType::Double4:
+        ReadBytes(data->AsBlob.Data, sizeof(Double4));
+        break;
     case VariantType::Color:
         ReadBytes(&data->AsData, sizeof(Color));
         break;
@@ -420,7 +432,7 @@ void ReadStream::ReadVariant(Variant* data)
         ReadBytes(&data->AsData, sizeof(Guid));
         break;
     case VariantType::BoundingBox:
-        ReadBytes(data->AsBlob.Data, sizeof(BoundingBox));
+        ReadBytes(&data->AsData, sizeof(BoundingBox));
         break;
     case VariantType::BoundingSphere:
         ReadBytes(&data->AsData, sizeof(BoundingSphere));
@@ -435,7 +447,7 @@ void ReadStream::ReadVariant(Variant* data)
         ReadBytes(&data->AsData, sizeof(Rectangle));
         break;
     case VariantType::Ray:
-        ReadBytes(data->AsBlob.Data, sizeof(Ray));
+        ReadBytes(&data->AsData, sizeof(Ray));
         break;
     case VariantType::Matrix:
         ReadBytes(data->AsBlob.Data, sizeof(Matrix));
@@ -679,13 +691,13 @@ void WriteStream::WriteVariant(const Variant& data)
         WriteBytes(data.AsBlob.Data, data.AsBlob.Length);
         break;
     case VariantType::BoundingBox:
-        WriteBytes(data.AsBlob.Data, sizeof(BoundingBox));
+        WriteBytes(data.AsData, sizeof(BoundingBox));
         break;
     case VariantType::Transform:
         WriteBytes(data.AsBlob.Data, sizeof(Transform));
         break;
     case VariantType::Ray:
-        WriteBytes(data.AsBlob.Data, sizeof(Ray));
+        WriteBytes(data.AsData, sizeof(Ray));
         break;
     case VariantType::Matrix:
         WriteBytes(data.AsBlob.Data, sizeof(Matrix));
@@ -695,28 +707,37 @@ void WriteStream::WriteVariant(const Variant& data)
         Write(&id);
         break;
     case VariantType::Vector2:
-        Write(data.AsData, sizeof(Vector2));
+        WriteBytes(data.AsData, sizeof(Vector2));
         break;
     case VariantType::Vector3:
-        Write(data.AsData, sizeof(Vector3));
+        WriteBytes(data.AsData, sizeof(Vector3));
         break;
     case VariantType::Vector4:
-        Write(data.AsData, sizeof(Vector4));
+        WriteBytes(data.AsData, sizeof(Vector4));
+        break;
+    case VariantType::Double2:
+        WriteBytes(data.AsData, sizeof(Double2));
+        break;
+    case VariantType::Double3:
+        WriteBytes(data.AsData, sizeof(Double3));
+        break;
+    case VariantType::Double4:
+        WriteBytes(data.AsBlob.Data, sizeof(Double4));
         break;
     case VariantType::Color:
-        Write(data.AsData, sizeof(Color));
+        WriteBytes(data.AsData, sizeof(Color));
         break;
     case VariantType::Guid:
-        Write(data.AsData, sizeof(Guid));
+        WriteBytes(data.AsData, sizeof(Guid));
         break;
     case VariantType::Quaternion:
-        Write(data.AsData, sizeof(Quaternion));
+        WriteBytes(data.AsData, sizeof(Quaternion));
         break;
     case VariantType::Rectangle:
-        Write(data.AsData, sizeof(Rectangle));
+        WriteBytes(data.AsData, sizeof(Rectangle));
         break;
     case VariantType::BoundingSphere:
-        Write(data.AsData, sizeof(BoundingSphere));
+        WriteBytes(data.AsData, sizeof(BoundingSphere));
         break;
     case VariantType::Array:
         id.A = ((Array<Variant>*)data.AsData)->Count();

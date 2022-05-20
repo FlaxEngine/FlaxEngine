@@ -12,6 +12,12 @@
 #include "Engine/Core/Math/Vector2.h"
 #include "Engine/Core/Math/Vector3.h"
 #include "Engine/Core/Math/Vector4.h"
+#include "Engine/Core/Math/Double2.h"
+#include "Engine/Core/Math/Double3.h"
+#include "Engine/Core/Math/Double4.h"
+#include "Engine/Core/Math/Int2.h"
+#include "Engine/Core/Math/Int3.h"
+#include "Engine/Core/Math/Int4.h"
 #include "Engine/Core/Math/Quaternion.h"
 #include "Engine/Core/Math/Matrix.h"
 #include "Engine/Core/Math/Transform.h"
@@ -236,6 +242,18 @@ VariantType MUtils::UnboxVariantType(MonoType* monoType)
             return VariantType(VariantType::Vector3);
         if (klass == stdTypes.Vector4Class->GetNative())
             return VariantType(VariantType::Vector4);
+        if (klass == Int2::TypeInitializer.GetMonoClass())
+            return VariantType(VariantType::Int2);
+        if (klass == Int3::TypeInitializer.GetMonoClass())
+            return VariantType(VariantType::Int3);
+        if (klass == Int4::TypeInitializer.GetMonoClass())
+            return VariantType(VariantType::Int4);
+        if (klass == Double2::TypeInitializer.GetMonoClass())
+            return VariantType(VariantType::Double2);
+        if (klass == Double3::TypeInitializer.GetMonoClass())
+            return VariantType(VariantType::Double3);
+        if (klass == Double4::TypeInitializer.GetMonoClass())
+            return VariantType(VariantType::Double4);
         if (klass == stdTypes.ColorClass->GetNative())
             return VariantType(VariantType::Color);
         if (klass == stdTypes.BoundingBoxClass->GetNative())
@@ -359,6 +377,18 @@ Variant MUtils::UnboxVariant(MonoObject* value)
             return *static_cast<Vector3*>(unboxed);
         if (klass == stdTypes.Vector4Class->GetNative())
             return *static_cast<Vector4*>(unboxed);
+        if (klass == Int2::TypeInitializer.GetType().ManagedClass->GetNative())
+            return *static_cast<Int2*>(unboxed);
+        if (klass == Int3::TypeInitializer.GetType().ManagedClass->GetNative())
+            return *static_cast<Int3*>(unboxed);
+        if (klass == Int4::TypeInitializer.GetType().ManagedClass->GetNative())
+            return *static_cast<Int4*>(unboxed);
+        if (klass == Double2::TypeInitializer.GetType().ManagedClass->GetNative())
+            return *static_cast<Double2*>(unboxed);
+        if (klass == Double3::TypeInitializer.GetType().ManagedClass->GetNative())
+            return *static_cast<Double3*>(unboxed);
+        if (klass == Double4::TypeInitializer.GetType().ManagedClass->GetNative())
+            return *static_cast<Double4*>(unboxed);
         if (klass == stdTypes.ColorClass->GetNative())
             return *static_cast<Color*>(unboxed);
         if (klass == stdTypes.BoundingBoxClass->GetNative())
@@ -421,6 +451,8 @@ Variant MUtils::UnboxVariant(MonoObject* value)
             case VariantType::Color:
             case VariantType::Guid:
             case VariantType::BoundingSphere:
+            case VariantType::BoundingBox:
+            case VariantType::Ray:
             case VariantType::Quaternion:
             case VariantType::Rectangle:
             case VariantType::Int2:
@@ -428,6 +460,8 @@ Variant MUtils::UnboxVariant(MonoObject* value)
             case VariantType::Int4:
             case VariantType::Int16:
             case VariantType::Uint16:
+            case VariantType::Double2:
+            case VariantType::Double3:
                 // Optimized unboxing of raw data type
                 for (int32 i = 0; i < array.Count(); i++)
                 {
@@ -436,10 +470,9 @@ Variant MUtils::UnboxVariant(MonoObject* value)
                     Platform::MemoryCopy(&a.AsData, mono_array_addr_with_size((MonoArray*)value, elementSize, i), elementSize);
                 }
                 break;
-            case VariantType::BoundingBox:
             case VariantType::Transform:
-            case VariantType::Ray:
             case VariantType::Matrix:
+            case VariantType::Double4:
                 // Optimized unboxing of raw data type
                 for (int32 i = 0; i < array.Count(); i++)
                 {
@@ -579,6 +612,12 @@ MonoObject* MUtils::BoxVariant(const Variant& value)
         return mono_value_box(mono_domain_get(), stdTypes.Vector3Class->GetNative(), (void*)&value.AsData);
     case VariantType::Vector4:
         return mono_value_box(mono_domain_get(), stdTypes.Vector4Class->GetNative(), (void*)&value.AsData);
+    case VariantType::Double2:
+        return mono_value_box(mono_domain_get(), Double2::TypeInitializer.GetMonoClass(), (void*)&value.AsData);
+    case VariantType::Double3:
+        return mono_value_box(mono_domain_get(), Double3::TypeInitializer.GetMonoClass(), (void*)&value.AsData);
+    case VariantType::Double4:
+        return mono_value_box(mono_domain_get(), Double4::TypeInitializer.GetMonoClass(), value.AsBlob.Data);
     case VariantType::Color:
         return mono_value_box(mono_domain_get(), stdTypes.ColorClass->GetNative(), (void*)&value.AsData);
     case VariantType::Guid:
@@ -594,9 +633,9 @@ MonoObject* MUtils::BoxVariant(const Variant& value)
     case VariantType::Pointer:
         return mono_value_box(mono_domain_get(), mono_get_intptr_class(), (void*)&value.AsPointer);
     case VariantType::Ray:
-        return mono_value_box(mono_domain_get(), stdTypes.RayClass->GetNative(), value.AsBlob.Data);
+        return mono_value_box(mono_domain_get(), stdTypes.RayClass->GetNative(), (void*)&value.AsData);
     case VariantType::BoundingBox:
-        return mono_value_box(mono_domain_get(), stdTypes.BoundingBoxClass->GetNative(), value.AsBlob.Data);
+        return mono_value_box(mono_domain_get(), stdTypes.BoundingBoxClass->GetNative(), (void*)&value.AsData);
     case VariantType::Transform:
         return mono_value_box(mono_domain_get(), stdTypes.TransformClass->GetNative(), value.AsBlob.Data);
     case VariantType::Matrix:
@@ -656,21 +695,24 @@ MonoObject* MUtils::BoxVariant(const Variant& value)
                 case VariantType::Color:
                 case VariantType::Guid:
                 case VariantType::BoundingSphere:
+                case VariantType::BoundingBox:
                 case VariantType::Quaternion:
+                case VariantType::Ray:
                 case VariantType::Rectangle:
                 case VariantType::Int2:
                 case VariantType::Int3:
                 case VariantType::Int4:
                 case VariantType::Int16:
                 case VariantType::Uint16:
+                case VariantType::Double2:
+                case VariantType::Double3:
                     // Optimized boxing of raw data type
                     for (int32 i = 0; i < array.Count(); i++)
                         Platform::MemoryCopy(mono_array_addr_with_size(managed, elementSize, i), &array[i].AsData, elementSize);
                     break;
-                case VariantType::BoundingBox:
                 case VariantType::Transform:
-                case VariantType::Ray:
                 case VariantType::Matrix:
+                case VariantType::Double4:
                     // Optimized boxing of raw data type
                     for (int32 i = 0; i < array.Count(); i++)
                         Platform::MemoryCopy(mono_array_addr_with_size(managed, elementSize, i), array[i].AsBlob.Data, elementSize);
@@ -888,6 +930,12 @@ MonoClass* MUtils::GetClass(const VariantType& value)
         return stdTypes.Vector3Class->GetNative();
     case VariantType::Vector4:
         return stdTypes.Vector4Class->GetNative();
+    case VariantType::Double2:
+        return Double2::TypeInitializer.GetMonoClass();
+    case VariantType::Double3:
+        return Double3::TypeInitializer.GetMonoClass();
+    case VariantType::Double4:
+        return Double4::TypeInitializer.GetMonoClass();
     case VariantType::Color:
         return stdTypes.ColorClass->GetNative();
     case VariantType::Guid:
@@ -972,6 +1020,12 @@ MonoClass* MUtils::GetClass(const Variant& value)
         return stdTypes.Vector3Class->GetNative();
     case VariantType::Vector4:
         return stdTypes.Vector4Class->GetNative();
+    case VariantType::Double2:
+        return Double2::TypeInitializer.GetMonoClass();
+    case VariantType::Double3:
+        return Double3::TypeInitializer.GetMonoClass();
+    case VariantType::Double4:
+        return Double4::TypeInitializer.GetMonoClass();
     case VariantType::Color:
         return stdTypes.ColorClass->GetNative();
     case VariantType::Guid:
@@ -1096,33 +1150,36 @@ void* MUtils::VariantToManagedArgPtr(Variant& value, const MType& type, bool& fa
             return &value.AsUint64;
         }
         const auto stdTypes = StdTypesContainer::Instance();
-#define CASE_IN_BUILD_TYPE(type) \
-    if (klass == stdTypes->type##Class->GetNative()) \
-    { \
-        if (value.Type.Type != VariantType::type) \
-            value = (type)value; \
-        return value.AsData; \
-    }
-        CASE_IN_BUILD_TYPE(Vector2);
-        CASE_IN_BUILD_TYPE(Vector3);
-        CASE_IN_BUILD_TYPE(Vector4);
-        CASE_IN_BUILD_TYPE(Color);
-        CASE_IN_BUILD_TYPE(Quaternion);
-        CASE_IN_BUILD_TYPE(Guid);
-        CASE_IN_BUILD_TYPE(Rectangle);
-        CASE_IN_BUILD_TYPE(BoundingSphere);
-#undef CASE_IN_BUILD_TYPE
-#define CASE_IN_BUILD_TYPE(type) \
+#define CASE_IN_BUILD_TYPE(type, access) \
     if (klass == stdTypes->type##Class->GetNative()) \
     { \
         if (value.Type.Type != VariantType::type) \
             value = Variant((type)value); \
-        return value.AsBlob.Data; \
+        return value.access; \
     }
-        CASE_IN_BUILD_TYPE(Matrix);
-        CASE_IN_BUILD_TYPE(BoundingBox);
-        CASE_IN_BUILD_TYPE(Transform);
-        CASE_IN_BUILD_TYPE(Ray);
+        CASE_IN_BUILD_TYPE(Vector2, AsData);
+        CASE_IN_BUILD_TYPE(Vector3, AsData);
+        CASE_IN_BUILD_TYPE(Vector4, AsData);
+        CASE_IN_BUILD_TYPE(Color, AsData);
+        CASE_IN_BUILD_TYPE(Quaternion, AsData);
+        CASE_IN_BUILD_TYPE(Guid, AsData);
+        CASE_IN_BUILD_TYPE(Ray, AsData);
+        CASE_IN_BUILD_TYPE(Rectangle, AsData);
+        CASE_IN_BUILD_TYPE(BoundingSphere, AsData);
+        CASE_IN_BUILD_TYPE(BoundingBox, AsData);
+        CASE_IN_BUILD_TYPE(Matrix, AsBlob.Data);
+        CASE_IN_BUILD_TYPE(Transform, AsBlob.Data);
+#undef CASE_IN_BUILD_TYPE
+#define CASE_IN_BUILD_TYPE(type, access) \
+    if (klass == type::TypeInitializer.GetMonoClass()) \
+    { \
+        if (value.Type.Type != VariantType::type) \
+            value = Variant((type)value); \
+        return value.access; \
+    }
+        CASE_IN_BUILD_TYPE(Double2, AsData);
+        CASE_IN_BUILD_TYPE(Double3, AsData);
+        CASE_IN_BUILD_TYPE(Double4, AsBlob.Data);
 #undef CASE_IN_BUILD_TYPE
         if (mono_class_is_valuetype(klass))
         {

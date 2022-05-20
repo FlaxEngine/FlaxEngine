@@ -61,6 +61,10 @@ API_STRUCT(InBuild) struct FLAXENGINE_API VariantType
         Int16,
         Uint16,
 
+        Double2,
+        Double3,
+        Double4,
+
         MAX
     };
 
@@ -162,7 +166,7 @@ API_STRUCT(InBuild) struct FLAXENGINE_API Variant
 
         Dictionary<Variant, Variant, HeapAllocation>* AsDictionary;
 
-        byte AsData[16];
+        byte AsData[24];
     };
 
 public:
@@ -215,6 +219,9 @@ public:
     Variant(const Vector2& v);
     Variant(const Vector3& v);
     Variant(const Vector4& v);
+    Variant(const Double2& v);
+    Variant(const Double3& v);
+    Variant(const Double4& v);
     Variant(const Int2& v);
     Variant(const Int3& v);
     Variant(const Int4& v);
@@ -285,6 +292,9 @@ public:
     explicit operator Vector2() const;
     explicit operator Vector3() const;
     explicit operator Vector4() const;
+    explicit operator Double2() const;
+    explicit operator Double3() const;
+    explicit operator Double4() const;
     explicit operator Int2() const;
     explicit operator Int3() const;
     explicit operator Int4() const;
@@ -302,11 +312,21 @@ public:
     Vector3& AsVector3();
     const Vector3& AsVector3() const;
     const Vector4& AsVector4() const;
+    const Double2& AsDouble2() const;
+    const Double3& AsDouble3() const;
+    const Double4& AsDouble4() const;
     const Int2& AsInt2() const;
     const Int3& AsInt3() const;
     const Int4& AsInt4() const;
     const Color& AsColor() const;
     const Quaternion& AsQuaternion() const;
+    const Rectangle& AsRectangle() const;
+    const Guid& AsGuid() const;
+    const BoundingSphere& AsBoundingSphere() const;
+    const BoundingBox& AsBoundingBox() const;
+    const Ray& AsRay() const;
+    const Transform& AsTransform() const;
+    const Matrix& AsMatrix() const;
     Array<Variant, HeapAllocation>& AsArray();
     const Array<Variant, HeapAllocation>& AsArray() const;
 
