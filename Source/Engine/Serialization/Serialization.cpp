@@ -10,6 +10,9 @@
 #include "Engine/Core/Math/Vector2.h"
 #include "Engine/Core/Math/Vector3.h"
 #include "Engine/Core/Math/Vector4.h"
+#include "Engine/Core/Math/Double2.h"
+#include "Engine/Core/Math/Double3.h"
+#include "Engine/Core/Math/Double4.h"
 #include "Engine/Core/Math/Quaternion.h"
 #include "Engine/Core/Math/BoundingBox.h"
 #include "Engine/Core/Math/BoundingSphere.h"
@@ -517,6 +520,51 @@ bool Serialization::ShouldSerialize(const Vector4& v, const void* otherObj)
 }
 
 void Serialization::Deserialize(ISerializable::DeserializeStream& stream, Vector4& v, ISerializeModifier* modifier)
+{
+    const auto mX = SERIALIZE_FIND_MEMBER(stream, "X");
+    const auto mY = SERIALIZE_FIND_MEMBER(stream, "Y");
+    const auto mZ = SERIALIZE_FIND_MEMBER(stream, "Z");
+    const auto mW = SERIALIZE_FIND_MEMBER(stream, "W");
+    v.X = mX != stream.MemberEnd() ? mX->value.GetFloat() : 0.0f;
+    v.Y = mY != stream.MemberEnd() ? mY->value.GetFloat() : 0.0f;
+    v.Z = mZ != stream.MemberEnd() ? mZ->value.GetFloat() : 0.0f;
+    v.W = mW != stream.MemberEnd() ? mW->value.GetFloat() : 0.0f;
+}
+
+bool Serialization::ShouldSerialize(const Double2& v, const void* otherObj)
+{
+    return !otherObj || !Double2::NearEqual(v, *(Double2*)otherObj, SERIALIZE_EPSILON_DOUBLE);
+}
+
+void Serialization::Deserialize(ISerializable::DeserializeStream& stream, Double2& v, ISerializeModifier* modifier)
+{
+    const auto mX = SERIALIZE_FIND_MEMBER(stream, "X");
+    const auto mY = SERIALIZE_FIND_MEMBER(stream, "Y");
+    v.X = mX != stream.MemberEnd() ? mX->value.GetFloat() : 0.0f;
+    v.Y = mY != stream.MemberEnd() ? mY->value.GetFloat() : 0.0f;
+}
+
+bool Serialization::ShouldSerialize(const Double3& v, const void* otherObj)
+{
+    return !otherObj || !Double3::NearEqual(v, *(Double3*)otherObj, SERIALIZE_EPSILON_DOUBLE);
+}
+
+void Serialization::Deserialize(ISerializable::DeserializeStream& stream, Double3& v, ISerializeModifier* modifier)
+{
+    const auto mX = SERIALIZE_FIND_MEMBER(stream, "X");
+    const auto mY = SERIALIZE_FIND_MEMBER(stream, "Y");
+    const auto mZ = SERIALIZE_FIND_MEMBER(stream, "Z");
+    v.X = mX != stream.MemberEnd() ? mX->value.GetFloat() : 0.0f;
+    v.Y = mY != stream.MemberEnd() ? mY->value.GetFloat() : 0.0f;
+    v.Z = mZ != stream.MemberEnd() ? mZ->value.GetFloat() : 0.0f;
+}
+
+bool Serialization::ShouldSerialize(const Double4& v, const void* otherObj)
+{
+    return !otherObj || !Double4::NearEqual(v, *(Double4*)otherObj, SERIALIZE_EPSILON_DOUBLE);
+}
+
+void Serialization::Deserialize(ISerializable::DeserializeStream& stream, Double4& v, ISerializeModifier* modifier)
 {
     const auto mX = SERIALIZE_FIND_MEMBER(stream, "X");
     const auto mY = SERIALIZE_FIND_MEMBER(stream, "Y");

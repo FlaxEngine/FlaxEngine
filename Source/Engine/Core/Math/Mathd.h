@@ -227,7 +227,7 @@ namespace Math
     /// <returns>False if a almost equal to b, otherwise true</returns>
     static bool NotNearEqual(double a, double b)
     {
-        return Abs(a - b) >= 2 * 2.2204460492503131e-016;
+        return Abs(a - b) >= ZeroToleranceDouble;
     }
 
     /// <summary>
@@ -238,7 +238,7 @@ namespace Math
     /// <returns>True if a almost equal to b, otherwise false</returns>
     static bool NearEqual(double a, double b)
     {
-        return Abs(a - b) < 2 * 2.2204460492503131e-016;
+        return Abs(a - b) < ZeroToleranceDouble;
     }
 
     /// <summary>

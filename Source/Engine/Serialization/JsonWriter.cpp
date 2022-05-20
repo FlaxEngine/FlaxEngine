@@ -4,6 +4,9 @@
 #include "Engine/Core/Log.h"
 #include "Engine/Core/Types/CommonValue.h"
 #include "Engine/Content/Content.h"
+#include "Engine/Core/Math/Double2.h"
+#include "Engine/Core/Math/Double3.h"
+#include "Engine/Core/Math/Double4.h"
 #include "Engine/Core/Math/Int2.h"
 #include "Engine/Core/Math/Int3.h"
 #include "Engine/Core/Math/Int4.h"
@@ -60,6 +63,42 @@ void JsonWriter::Vector4(const ::Vector4& value)
     Float(value.Z);
     JKEY("W");
     Float(value.W);
+    EndObject();
+}
+
+void JsonWriter::Double2(const ::Double2& value)
+{
+    StartObject();
+    JKEY("X");
+    Double(value.X);
+    JKEY("Y");
+    Double(value.Y);
+    EndObject();
+}
+
+void JsonWriter::Double3(const ::Double3& value)
+{
+    StartObject();
+    JKEY("X");
+    Double(value.X);
+    JKEY("Y");
+    Double(value.Y);
+    JKEY("Z");
+    Double(value.Z);
+    EndObject();
+}
+
+void JsonWriter::Double4(const ::Double4& value)
+{
+    StartObject();
+    JKEY("X");
+    Double(value.X);
+    JKEY("Y");
+    Double(value.Y);
+    JKEY("Z");
+    Double(value.Z);
+    JKEY("W");
+    Double(value.W);
     EndObject();
 }
 

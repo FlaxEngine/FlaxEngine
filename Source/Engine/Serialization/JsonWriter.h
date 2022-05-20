@@ -110,6 +110,9 @@ public:
     void Vector2(const Vector2& value);
     void Vector3(const Vector3& value);
     void Vector4(const Vector4& value);
+    void Double2(const Double2& value);
+    void Double3(const Double3& value);
+    void Double4(const Double4& value);
     void Int2(const Int2& value);
     void Int3(const Int3& value);
     void Int4(const Int4& value);

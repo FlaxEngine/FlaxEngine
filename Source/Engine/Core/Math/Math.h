@@ -17,6 +17,7 @@
 
 // The value for which all absolute numbers smaller than are considered equal to zero.
 #define ZeroTolerance 1e-6f
+#define ZeroToleranceDouble 1e-16
 
 // Converts radians to degrees.
 #define RadiansToDegrees (180.0f / PI)

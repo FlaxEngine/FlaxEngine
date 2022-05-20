@@ -184,7 +184,7 @@ namespace Serialization
 
     inline bool ShouldSerialize(const float& v, const void* otherObj)
     {
-        return !otherObj || abs(v - *(float*)otherObj) > SERIALIZE_EPSILON;
+        return !otherObj || fabsf(v - *(float*)otherObj) > SERIALIZE_EPSILON;
     }
     inline void Serialize(ISerializable::SerializeStream& stream, const float& v, const void* otherObj)
     {
@@ -197,7 +197,7 @@ namespace Serialization
 
     inline bool ShouldSerialize(const double& v, const void* otherObj)
     {
-        return !otherObj || v != *(double*)otherObj;
+        return !otherObj || fabs(v - *(double*)otherObj) > SERIALIZE_EPSILON_DOUBLE;
     }
     inline void Serialize(ISerializable::SerializeStream& stream, const double& v, const void* otherObj)
     {
@@ -300,6 +300,27 @@ namespace Serialization
         stream.Vector4(v);
     }
     FLAXENGINE_API void Deserialize(ISerializable::DeserializeStream& stream, Vector4& v, ISerializeModifier* modifier);
+
+    FLAXENGINE_API bool ShouldSerialize(const Double2& v, const void* otherObj);
+    inline void Serialize(ISerializable::SerializeStream& stream, const Double2& v, const void* otherObj)
+    {
+        stream.Double2(v);
+    }
+    FLAXENGINE_API void Deserialize(ISerializable::DeserializeStream& stream, Double2& v, ISerializeModifier* modifier);
+
+    FLAXENGINE_API bool ShouldSerialize(const Double3& v, const void* otherObj);
+    inline void Serialize(ISerializable::SerializeStream& stream, const Double3& v, const void* otherObj)
+    {
+        stream.Double3(v);
+    }
+    FLAXENGINE_API void Deserialize(ISerializable::DeserializeStream& stream, Double3& v, ISerializeModifier* modifier);
+
+    FLAXENGINE_API bool ShouldSerialize(const Double4& v, const void* otherObj);
+    inline void Serialize(ISerializable::SerializeStream& stream, const Double4& v, const void* otherObj)
+    {
+        stream.Double4(v);
+    }
+    FLAXENGINE_API void Deserialize(ISerializable::DeserializeStream& stream, Double4& v, ISerializeModifier* modifier);
 
     FLAXENGINE_API bool ShouldSerialize(const Int2& v, const void* otherObj);
     inline void Serialize(ISerializable::SerializeStream& stream, const Int2& v, const void* otherObj)
