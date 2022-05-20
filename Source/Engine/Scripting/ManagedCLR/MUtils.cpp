@@ -377,17 +377,17 @@ Variant MUtils::UnboxVariant(MonoObject* value)
             return *static_cast<Vector3*>(unboxed);
         if (klass == stdTypes.Vector4Class->GetNative())
             return *static_cast<Vector4*>(unboxed);
-        if (klass == Int2::TypeInitializer.GetType().ManagedClass->GetNative())
+        if (klass == Int2::TypeInitializer.GetMonoClass())
             return *static_cast<Int2*>(unboxed);
-        if (klass == Int3::TypeInitializer.GetType().ManagedClass->GetNative())
+        if (klass == Int3::TypeInitializer.GetMonoClass())
             return *static_cast<Int3*>(unboxed);
-        if (klass == Int4::TypeInitializer.GetType().ManagedClass->GetNative())
+        if (klass == Int4::TypeInitializer.GetMonoClass())
             return *static_cast<Int4*>(unboxed);
-        if (klass == Double2::TypeInitializer.GetType().ManagedClass->GetNative())
+        if (klass == Double2::TypeInitializer.GetMonoClass())
             return *static_cast<Double2*>(unboxed);
-        if (klass == Double3::TypeInitializer.GetType().ManagedClass->GetNative())
+        if (klass == Double3::TypeInitializer.GetMonoClass())
             return *static_cast<Double3*>(unboxed);
-        if (klass == Double4::TypeInitializer.GetType().ManagedClass->GetNative())
+        if (klass == Double4::TypeInitializer.GetMonoClass())
             return *static_cast<Double4*>(unboxed);
         if (klass == stdTypes.ColorClass->GetNative())
             return *static_cast<Color*>(unboxed);
