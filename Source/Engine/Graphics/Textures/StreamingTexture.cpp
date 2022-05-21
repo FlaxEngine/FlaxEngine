@@ -233,6 +233,7 @@ protected:
     {
         Swap(_streamingTexture->_texture, _newTexture);
         _streamingTexture->GetTexture()->SetResidentMipLevels(_uploadedMipCount);
+        _streamingTexture->ResidencyChanged();
         SAFE_DELETE_GPU_RESOURCE(_newTexture);
 
         // Base
@@ -447,6 +448,7 @@ Task* StreamingTexture::CreateStreamingTask(int32 residency)
         {
             // Do the quick data release
             _texture->ReleaseGPU();
+            ResidencyChanged();
         }
         else
         {

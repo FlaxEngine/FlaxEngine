@@ -14,14 +14,13 @@
 /// </summary>
 API_CLASS() class FLAXENGINE_API ExponentialHeightFog : public Actor, public IFogRenderer
 {
-DECLARE_SCENE_OBJECT(ExponentialHeightFog);
+    DECLARE_SCENE_OBJECT(ExponentialHeightFog);
 private:
-
     AssetReference<Shader> _shader;
     GPUPipelineStatePermutationsPs<2> _psFog;
+    int32 _sceneRenderingKey = -1;
 
 public:
-
     /// <summary>
     /// The fog density factor.
     /// </summary>
@@ -61,7 +60,6 @@ public:
     float FogCutoffDistance = 0.0f;
 
 public:
-
     /// <summary>
     /// Directional light used for Directional Inscattering.
     /// </summary>
@@ -90,7 +88,6 @@ public:
     Color DirectionalInscatteringColor = Color(0.25, 0.25f, 0.125f);
 
 public:
-
     /// <summary>
     /// Whether to enable Volumetric fog. Graphics quality settings control the resolution of the fog simulation.
     /// </summary>
@@ -133,7 +130,6 @@ public:
     float VolumetricFogDistance = 6000.0f;
 
 private:
-
 #if COMPILE_WITH_DEV_ENV
     void OnShaderReloading(Asset* obj)
     {
@@ -142,7 +138,6 @@ private:
 #endif
 
 public:
-
     // [Actor]
 #if USE_EDITOR
     BoundingBox GetEditorBox() const override
@@ -163,7 +158,6 @@ public:
     void DrawFog(GPUContext* context, RenderContext& renderContext, GPUTextureView* output) override;
 
 protected:
-
     // [Actor]
     void OnEnable() override;
     void OnDisable() override;

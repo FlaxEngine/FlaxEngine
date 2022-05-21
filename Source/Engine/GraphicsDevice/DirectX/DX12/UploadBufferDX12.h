@@ -141,9 +141,8 @@ struct DynamicAllocation
     }
 
     /// <summary>
-    /// Returns true if allocation is invalid
+    /// Returns true if allocation is invalid.
     /// </summary>
-    /// <returns>True if allocation in invalid</returns>
     bool IsInvalid() const
     {
         return CPUAddress == nullptr || Size == 0 || Page == nullptr;

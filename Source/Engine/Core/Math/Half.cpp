@@ -12,9 +12,9 @@ static_assert(sizeof(Half2) == 4, "Invalid Half2 type size.");
 static_assert(sizeof(Half3) == 6, "Invalid Half3 type size.");
 static_assert(sizeof(Half4) == 8, "Invalid Half4 type size.");
 
-Half2 Half2::Zero(0, 0);
-Half3 Half3::Zero(0, 0, 0);
-Half4 Half4::Zero(0, 0, 0, 0);
+Half2 Half2::Zero(0.0f, 0.0f);
+Half3 Half3::Zero(0.0f, 0.0f, 0.0f);
+Half4 Half4::Zero(0.0f, 0.0f, 0.0f, 0.0f);
 
 Half2::Half2(const Vector2& v)
 {

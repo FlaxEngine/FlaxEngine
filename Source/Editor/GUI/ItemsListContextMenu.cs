@@ -263,6 +263,19 @@ namespace FlaxEditor.GUI
             PerformLayout(true);
             _searchBox.Focus();
         }
+        
+        /// <summary>
+        /// Sorts the items list (by item name by default).
+        /// </summary>
+        public void SortItems()
+        {
+            ItemsPanel.SortChildren();
+            if (_categoryPanels != null)
+            {
+                for (int i = 0; i < _categoryPanels.Count; i++)
+                    _categoryPanels[i].SortChildren();
+            }
+        }
 
         /// <summary>
         /// Adds the item to the view and registers for the click event.

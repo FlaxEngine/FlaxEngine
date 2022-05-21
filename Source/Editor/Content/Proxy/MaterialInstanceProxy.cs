@@ -51,19 +51,8 @@ namespace FlaxEditor.Content
         {
             if (_preview == null)
             {
-                _preview = new MaterialPreview(false)
-                {
-                    RenderOnlyWithWindow = false,
-                    UseAutomaticTaskManagement = false,
-                    AnchorPreset = AnchorPresets.StretchAll,
-                    Offsets = Margin.Zero,
-                };
-                _preview.Task.Enabled = false;
-
-                var eyeAdaptation = _preview.PostFxVolume.EyeAdaptation;
-                eyeAdaptation.Mode = EyeAdaptationMode.None;
-                eyeAdaptation.OverrideFlags |= EyeAdaptationSettingsOverride.Mode;
-                _preview.PostFxVolume.EyeAdaptation = eyeAdaptation;
+                _preview = new MaterialPreview(false);
+                InitAssetPreview(_preview);
             }
 
             // TODO: disable streaming for dependant assets during thumbnail rendering (and restore it after)

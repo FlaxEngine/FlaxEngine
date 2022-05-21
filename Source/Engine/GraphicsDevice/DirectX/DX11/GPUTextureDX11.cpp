@@ -109,37 +109,37 @@ bool GPUTextureDX11::OnInit()
     return false;
 }
 
-void GPUTextureDX11::onResidentMipsChanged()
+void GPUTextureDX11::OnResidentMipsChanged()
 {
-    // We support changing resident mip maps only for regular textures (render targets and depth buffers don't use that feature at all)
-    ASSERT(IsRegularTexture() && _handlesPerSlice.Count() == 1);
-    ASSERT(!IsVolume());
-
-    // Fill description
+    const int32 firstMipIndex = MipLevels() - ResidentMipLevels();
+    const int32 mipLevels = ResidentMipLevels();
     D3D11_SHADER_RESOURCE_VIEW_DESC srDesc;
     srDesc.Format = _dxgiFormatSRV;
     if (IsCubeMap())
     {
         srDesc.ViewDimension = D3D11_SRV_DIMENSION_TEXTURECUBE;
-        srDesc.TextureCube.MostDetailedMip = MipLevels() - ResidentMipLevels();
-        srDesc.TextureCube.MipLevels = ResidentMipLevels();
+        srDesc.TextureCube.MostDetailedMip = firstMipIndex;
+        srDesc.TextureCube.MipLevels = mipLevels;
+    }
+    else if (IsVolume())
+    {
+        srDesc.ViewDimension = D3D11_SRV_DIMENSION_TEXTURE3D;
+        srDesc.Texture3D.MostDetailedMip = firstMipIndex;
+        srDesc.Texture3D.MipLevels = mipLevels;
     }
     else
     {
         srDesc.ViewDimension = D3D11_SRV_DIMENSION_TEXTURE2D;
-        srDesc.Texture2D.MostDetailedMip = MipLevels() - ResidentMipLevels();
-        srDesc.Texture2D.MipLevels = ResidentMipLevels();
+        srDesc.Texture2D.MostDetailedMip = firstMipIndex;
+        srDesc.Texture2D.MipLevels = mipLevels;
     }
-
-    // Create new view
     ID3D11ShaderResourceView* srView;
     VALIDATE_DIRECTX_RESULT(_device->GetDevice()->CreateShaderResourceView(_resource, &srDesc, &srView));
-
-    // Change view
-    if (_handlesPerSlice[0].GetParent() == nullptr)
-        _handlesPerSlice[0].Init(this, nullptr, srView, nullptr, nullptr, Format(), MultiSampleLevel());
+    GPUTextureViewDX11& view = IsVolume() ? _handleVolume : _handlesPerSlice[0];
+    if (view.GetParent() == nullptr)
+       view.Init(this, nullptr, srView, nullptr, nullptr, Format(), MultiSampleLevel());
     else
-        _handlesPerSlice[0].SetSRV(srView);
+        view.SetSRV(srView);
 }
 
 void GPUTextureDX11::OnReleaseGPU()

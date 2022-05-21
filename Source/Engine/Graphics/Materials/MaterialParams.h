@@ -128,6 +128,11 @@ enum class MaterialParameterType : byte
     /// The texture sampler derived from texture group settings.
     /// </summary>
     TextureGroupSampler = 19,
+
+    /// <summary>
+    /// The Global SDF (textures and constants).
+    /// </summary>
+    GlobalSDF = 20,
 };
 
 const Char* ToString(MaterialParameterType value);

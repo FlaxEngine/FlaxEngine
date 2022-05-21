@@ -120,7 +120,7 @@ bool ParticleEmitterGPUGenerator::sampleSceneTexture(Node* caller, Box* box, con
         result = Value(VariantType::Float, valueBox->Cache.Value + _subs[3]);
         break;
     default:
-    CRASH;
+        CRASH;
         break;
     }
 
@@ -151,7 +151,7 @@ void ParticleEmitterGPUGenerator::ProcessGroupTextures(Box* box, Node* node, Val
 {
     switch (node->TypeID)
     {
-        // Scene Texture
+    // Scene Texture
     case 6:
     {
         // Get texture type
@@ -255,11 +255,11 @@ void ParticleEmitterGPUGenerator::ProcessGroupTextures(Box* box, Node* node, Val
         }
         break;
     }
-        // Scene Depth
+    // Scene Depth
     case 8:
         sampleSceneDepth(node, value, box);
         break;
-        // Texture
+    // Texture
     case 11:
     {
         // Check if texture has been selected
@@ -276,7 +276,7 @@ void ParticleEmitterGPUGenerator::ProcessGroupTextures(Box* box, Node* node, Val
         }
         break;
     }
-        // Load Texture
+    // Load Texture
     case 13:
     {
         // Get input texture
@@ -301,6 +301,15 @@ void ParticleEmitterGPUGenerator::ProcessGroupTextures(Box* box, Node* node, Val
 
         // Load texture
         loadTexture(node, box, copy, value);
+        break;
+    }
+    // Sample Global SDF
+    case 14:
+    {
+        auto param = findOrAddGlobalSDF();
+        Value worldPosition = tryGetValue(node->GetBox(1), Value(VariantType::Vector3, TEXT("input.WorldPosition.xyz"))).Cast(VariantType::Vector3);
+        value = writeLocal(VariantType::Float, String::Format(TEXT("SampleGlobalSDF({0}, {0}_Tex, {1})"), param.ShaderName, worldPosition.Value), node);
+        _includes.Add(TEXT("./Flax/GlobalSignDistanceField.hlsl"));
         break;
     }
     default:

@@ -16,19 +16,17 @@ class GPUPipelineState;
 /// </summary>
 API_CLASS() class FLAXENGINE_API Sky : public Actor, public IAtmosphericFogRenderer, public ISkyRenderer
 {
-DECLARE_SCENE_OBJECT(Sky);
+    DECLARE_SCENE_OBJECT(Sky);
 private:
-
     AssetReference<Shader> _shader;
     GPUPipelineState* _psSky;
     GPUPipelineState* _psFog;
+    int32 _sceneRenderingKey = -1;
 
 public:
-
     ~Sky();
 
 public:
-
     /// <summary>
     /// Directional light that is used to simulate the sun.
     /// </summary>
@@ -48,7 +46,6 @@ public:
     float SunPower = 8.0f;
 
 private:
-
 #if COMPILE_WITH_DEV_ENV
     void OnShaderReloading(Asset* obj)
     {
@@ -59,7 +56,6 @@ private:
     void InitConfig(AtmosphericFogData& config) const;
 
 public:
-
     // [Actor]
 #if USE_EDITOR
     BoundingBox GetEditorBox() const override
@@ -81,7 +77,6 @@ public:
     void ApplySky(GPUContext* context, RenderContext& renderContext, const Matrix& world) override;
 
 protected:
-
     // [Actor]
     void EndPlay() override;
     void OnEnable() override;

@@ -10,6 +10,7 @@ struct Vector2;
 struct Vector3;
 struct Vector4;
 struct Matrix;
+struct Matrix3x3;
 
 /// <summary>
 /// Represents a four dimensional mathematical quaternion. Euler angles are stored in: pitch, yaw, roll order (x, y, z).
@@ -565,6 +566,11 @@ public:
     // @param matrix The rotation matrix
     // @param result When the method completes, contains the newly created quaternion
     static void RotationMatrix(const Matrix& matrix, Quaternion& result);
+
+    // Creates a quaternion given a rotation matrix
+    // @param matrix The rotation matrix
+    // @param result When the method completes, contains the newly created quaternion
+    static void RotationMatrix(const Matrix3x3& matrix, Quaternion& result);
 
     // Creates a left-handed, look-at quaternion
     // @param eye The position of the viewer's eye

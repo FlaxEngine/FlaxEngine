@@ -330,7 +330,7 @@ void TextRender::UpdateLayout()
     BoundingBox::Transform(_localBox, _world, _box);
     BoundingSphere::FromBox(_box, _sphere);
     if (_sceneRenderingKey != -1)
-        GetSceneRendering()->UpdateGeometry(this, _sceneRenderingKey);
+        GetSceneRendering()->UpdateActor(this, _sceneRenderingKey);
 }
 
 bool TextRender::HasContentLoaded() const
@@ -340,6 +340,10 @@ bool TextRender::HasContentLoaded() const
 
 void TextRender::Draw(RenderContext& renderContext)
 {
+    if (renderContext.View.Pass == DrawPass::GlobalSDF)
+        return; // TODO: Text rendering to Global SDF
+    if (renderContext.View.Pass == DrawPass::GlobalSurfaceAtlas)
+        return; // TODO: Text rendering to Global Surface Atlas
     if (_isDirty)
     {
         UpdateLayout();
@@ -400,11 +404,6 @@ void TextRender::Draw(RenderContext& renderContext)
     GEOMETRY_DRAW_STATE_EVENT_END(_drawState, _world);
 }
 
-void TextRender::DrawGeneric(RenderContext& renderContext)
-{
-    Draw(renderContext);
-}
-
 #if USE_EDITOR
 
 #include "Engine/Debug/DebugDraw.h"
@@ -426,7 +425,7 @@ void TextRender::OnDebugDrawSelected()
 void TextRender::OnLayerChanged()
 {
     if (_sceneRenderingKey != -1)
-        GetSceneRendering()->UpdateGeometry(this, _sceneRenderingKey);
+        GetSceneRendering()->UpdateActor(this, _sceneRenderingKey);
 }
 
 bool TextRender::IntersectsItself(const Ray& ray, float& distance, Vector3& normal)
@@ -483,6 +482,13 @@ void TextRender::Deserialize(DeserializeStream& stream, ISerializeModifier* modi
     DESERIALIZE_MEMBER(Scale, _layoutOptions.Scale);
     DESERIALIZE_MEMBER(GapScale, _layoutOptions.BaseLinesGapScale);
 
+    // [Deprecated on 07.02.2022, expires on 07.02.2024]
+    if (modifier->EngineBuild <= 6330)
+        DrawModes |= DrawPass::GlobalSDF;
+    // [Deprecated on 27.04.2022, expires on 27.04.2024]
+    if (modifier->EngineBuild <= 6331)
+        DrawModes |= DrawPass::GlobalSurfaceAtlas;
+
     _isDirty = true;
 }
 
@@ -495,7 +501,7 @@ void TextRender::OnEnable()
     {
         UpdateLayout();
     }
-    _sceneRenderingKey = GetSceneRendering()->AddGeometry(this);
+    GetSceneRendering()->AddActor(this, _sceneRenderingKey);
 }
 
 void TextRender::OnDisable()
@@ -505,7 +511,7 @@ void TextRender::OnDisable()
         _isLocalized = false;
         Localization::LocalizationChanged.Unbind<TextRender, &TextRender::UpdateLayout>(this);
     }
-    GetSceneRendering()->RemoveGeometry(this, _sceneRenderingKey);
+    GetSceneRendering()->RemoveActor(this, _sceneRenderingKey);
 
     // Base
     Actor::OnDisable();
@@ -520,5 +526,5 @@ void TextRender::OnTransformChanged()
     BoundingBox::Transform(_localBox, _world, _box);
     BoundingSphere::FromBox(_box, _sphere);
     if (_sceneRenderingKey != -1)
-        GetSceneRendering()->UpdateGeometry(this, _sceneRenderingKey);
+        GetSceneRendering()->UpdateActor(this, _sceneRenderingKey);
 }

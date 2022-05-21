@@ -67,7 +67,7 @@ namespace FlaxEditor.GUI
             {
                 Find(Level.GetScene(i));
             }
-            SortChildren();
+            SortItems();
         }
 
         private void OnItemClicked(Item item)

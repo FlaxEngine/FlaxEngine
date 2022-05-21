@@ -324,15 +324,14 @@ void Asset::Reload()
             Content::AssetReloading(this);
         OnReloading(this);
 
-        // Fire unload event
-        // TODO: maybe just call release storage ref or sth? we cannot call onUnload because managed asset objects gets invalidated
-        //onUnload_MainThread();
-
         ScopeLock lock(Locker);
 
-        // Unload current data
-        unload(true);
-        _isLoaded = false;
+        if (IsLoaded())
+        {
+            // Unload current data
+            unload(true);
+            _isLoaded = false;
+        }
 
         // Start reloading process
         startLoading();

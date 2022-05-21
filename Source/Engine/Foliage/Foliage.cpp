@@ -559,7 +559,7 @@ void Foliage::OnFoliageTypeModelLoaded(int32 index)
         }
         BoundingSphere::FromBox(_box, _sphere);
         if (_sceneRenderingKey != -1)
-            GetSceneRendering()->UpdateGeometry(this, _sceneRenderingKey);
+            GetSceneRendering()->UpdateActor(this, _sceneRenderingKey);
     }
     {
         PROFILE_CPU_NAMED("Create Clusters");
@@ -606,7 +606,7 @@ void Foliage::RebuildClusters()
         _box = BoundingBox(_transform.Translation, _transform.Translation);
         _sphere = BoundingSphere(_transform.Translation, 0.0f);
         if (_sceneRenderingKey != -1)
-            GetSceneRendering()->UpdateGeometry(this, _sceneRenderingKey);
+            GetSceneRendering()->UpdateActor(this, _sceneRenderingKey);
         return;
     }
 
@@ -696,7 +696,7 @@ void Foliage::RebuildClusters()
         _box = totalBounds;
         BoundingSphere::FromBox(_box, _sphere);
         if (_sceneRenderingKey != -1)
-            GetSceneRendering()->UpdateGeometry(this, _sceneRenderingKey);
+            GetSceneRendering()->UpdateActor(this, _sceneRenderingKey);
     }
 
     // Insert all instances to the clusters
@@ -845,6 +845,10 @@ bool Foliage::Intersects(const Ray& ray, float& distance, Vector3& normal, int32
 
 void Foliage::Draw(RenderContext& renderContext)
 {
+    if (renderContext.View.Pass == DrawPass::GlobalSDF)
+        return;  // TODO: Foliage rendering to Global SDF
+    if (renderContext.View.Pass == DrawPass::GlobalSurfaceAtlas)
+        return; // Not supported
     if (Instances.IsEmpty())
         return;
     auto& view = renderContext.View;
@@ -1014,11 +1018,6 @@ void Foliage::Draw(RenderContext& renderContext)
         }
     }
 #endif
-}
-
-void Foliage::DrawGeneric(RenderContext& renderContext)
-{
-    Draw(renderContext);
 }
 
 bool Foliage::IntersectsItself(const Ray& ray, float& distance, Vector3& normal)
@@ -1227,12 +1226,12 @@ void Foliage::Deserialize(DeserializeStream& stream, ISerializeModifier* modifie
 void Foliage::OnLayerChanged()
 {
     if (_sceneRenderingKey != -1)
-        GetSceneRendering()->UpdateGeometry(this, _sceneRenderingKey);
+        GetSceneRendering()->UpdateActor(this, _sceneRenderingKey);
 }
 
 void Foliage::OnEnable()
 {
-    _sceneRenderingKey = GetSceneRendering()->AddGeometry(this);
+    GetSceneRendering()->AddActor(this, _sceneRenderingKey);
 
     // Base
     Actor::OnEnable();
@@ -1240,7 +1239,7 @@ void Foliage::OnEnable()
 
 void Foliage::OnDisable()
 {
-    GetSceneRendering()->RemoveGeometry(this, _sceneRenderingKey);
+    GetSceneRendering()->RemoveActor(this, _sceneRenderingKey);
 
     // Base
     Actor::OnDisable();

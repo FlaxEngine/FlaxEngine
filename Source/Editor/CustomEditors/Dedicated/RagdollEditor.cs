@@ -273,7 +273,7 @@ namespace FlaxEditor.CustomEditors.Dedicated
                 cm.AddItem(item);
             }
             cm.ItemClicked += item => action((string)item.Tag);
-            cm.SortChildren();
+            cm.SortItems();
             cm.Show(button.Parent, button.BottomLeft);
         }
 

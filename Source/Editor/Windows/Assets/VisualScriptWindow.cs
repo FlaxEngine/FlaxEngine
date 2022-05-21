@@ -258,7 +258,7 @@ namespace FlaxEditor.Windows.Assets
                     cm.AddItem(item);
                 }
                 cm.ItemClicked += itemClicked;
-                cm.SortChildren();
+                cm.SortItems();
                 cm.Show(window, window.PointFromScreen(Input.MouseScreenPosition));
             }
 

@@ -11,9 +11,9 @@
 /// </summary>
 API_CLASS(sealed, Namespace="FlaxEditor.Content.Settings") class FLAXENGINE_API GraphicsSettings : public SettingsBase
 {
-DECLARE_SCRIPTING_TYPE_MINIMAL(GraphicsSettings);
+    API_AUTO_SERIALIZATION();
+    DECLARE_SCRIPTING_TYPE_MINIMAL(GraphicsSettings);
 public:
-
     /// <summary>
     /// Enables rendering synchronization with the refresh rate of the display device to avoid "tearing" artifacts.
     /// </summary>
@@ -62,8 +62,21 @@ public:
     API_FIELD(Attributes="EditorOrder(1320), DefaultValue(false), EditorDisplay(\"Quality\", \"Allow CSM Blending\")")
     bool AllowCSMBlending = false;
 
-public:
+    /// <summary>
+    /// If checked, enables Global SDF rendering. This can be used in materials, shaders, and particles.
+    /// </summary>
+    API_FIELD(Attributes="EditorOrder(2000), EditorDisplay(\"Global SDF\")")
+    bool EnableGlobalSDF = false;
 
+#if USE_EDITOR
+    /// <summary>
+    /// If checked, the 'Generate SDF' option will be checked on model import options by default. Use it if your project uses Global SDF (eg. for Global Illumination or particles).
+    /// </summary>
+    API_FIELD(Attributes="EditorOrder(2010), EditorDisplay(\"Global SDF\")")
+    bool GenerateSDFOnModelImport = false;
+#endif
+
+public:
     /// <summary>
     /// Gets the instance of the settings asset (default value if missing). Object returned by this method is always loaded with valid data to use.
     /// </summary>
@@ -71,15 +84,4 @@ public:
 
     // [SettingsBase]
     void Apply() override;
-    void Deserialize(DeserializeStream& stream, ISerializeModifier* modifier) final override
-    {
-        DESERIALIZE(UseVSync);
-        DESERIALIZE(AAQuality);
-        DESERIALIZE(SSRQuality);
-        DESERIALIZE(SSAOQuality);
-        DESERIALIZE(VolumetricFogQuality);
-        DESERIALIZE(ShadowsQuality);
-        DESERIALIZE(ShadowMapsQuality);
-        DESERIALIZE(AllowCSMBlending);
-    }
 };

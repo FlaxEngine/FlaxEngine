@@ -10,6 +10,7 @@
 DirectionalLight::DirectionalLight(const SpawnParams& params)
     : LightWithShadow(params)
 {
+    _drawNoCulling = 1;
     Brightness = 8.0f;
 }
 
@@ -19,6 +20,7 @@ void DirectionalLight::Draw(RenderContext& renderContext)
     AdjustBrightness(renderContext.View, brightness);
     if (Brightness > ZeroTolerance
         && (renderContext.View.Flags & ViewFlags::DirectionalLights) != 0
+        && renderContext.View.Pass & DrawPass::GBuffer
         && (ViewDistance < ZeroTolerance || Vector3::DistanceSquared(renderContext.View.Position, GetPosition()) < ViewDistance * ViewDistance))
     {
         RendererDirectionalLightData data;
@@ -67,7 +69,7 @@ bool DirectionalLight::IntersectsItself(const Ray& ray, float& distance, Vector3
 
 void DirectionalLight::OnEnable()
 {
-    GetSceneRendering()->AddCommonNoCulling(this);
+    GetSceneRendering()->AddActor(this, _sceneRenderingKey);
 #if USE_EDITOR
     GetSceneRendering()->AddViewportIcon(this);
 #endif
@@ -81,7 +83,7 @@ void DirectionalLight::OnDisable()
 #if USE_EDITOR
     GetSceneRendering()->RemoveViewportIcon(this);
 #endif
-    GetSceneRendering()->RemoveCommonNoCulling(this);
+    GetSceneRendering()->RemoveActor(this, _sceneRenderingKey);
 
     // Base
     LightWithShadow::OnDisable();

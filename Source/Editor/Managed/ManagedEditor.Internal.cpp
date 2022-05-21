@@ -29,6 +29,7 @@
 #include "Engine/Level/Actor.h"
 #include "Engine/Level/Prefabs/Prefab.h"
 #include "Engine/Core/Config/GameSettings.h"
+#include "Engine/Core/Config/GraphicsSettings.h"
 #include "Engine/Core/Cache.h"
 #include "Engine/CSG/CSGBuilder.h"
 #include "Engine/Debug/DebugLog.h"
@@ -196,6 +197,10 @@ struct InternalModelOptions
     byte ImportTextures;
     byte RestoreMaterialsOnReimport;
 
+    // SDF
+    byte GenerateSDF;
+    float SDFResolution;
+
     // Splitting
     byte SplitObjects;
     int32 ObjectIndex;
@@ -235,6 +240,8 @@ struct InternalModelOptions
         to->ImportMaterials = from->ImportMaterials;
         to->ImportTextures = from->ImportTextures;
         to->RestoreMaterialsOnReimport = from->RestoreMaterialsOnReimport;
+        to->GenerateSDF = from->GenerateSDF;
+        to->SDFResolution = from->SDFResolution;
         to->SplitObjects = from->SplitObjects;
         to->ObjectIndex = from->ObjectIndex;
     }
@@ -274,6 +281,8 @@ struct InternalModelOptions
         to->ImportMaterials = from->ImportMaterials;
         to->ImportTextures = from->ImportTextures;
         to->RestoreMaterialsOnReimport = from->RestoreMaterialsOnReimport;
+        to->GenerateSDF = from->GenerateSDF;
+        to->SDFResolution = from->SDFResolution;
         to->SplitObjects = from->SplitObjects;
         to->ObjectIndex = from->ObjectIndex;
     }
@@ -626,22 +635,23 @@ public:
         return false;
     }
 
-    static bool GetModelImportOptions(MonoString* pathObj, InternalModelOptions* result)
+    static void GetModelImportOptions(MonoString* pathObj, InternalModelOptions* result)
     {
+        // Initialize defaults   
+        ImportModelFile::Options options;
+        if (const auto* graphicsSettings = GraphicsSettings::Get())
+        {
+            options.GenerateSDF = graphicsSettings->GenerateSDFOnModelImport;
+        }
+
+        // Get options from model
         String path;
         MUtils::ToString(pathObj, path);
         FileSystem::NormalizePath(path);
+        ImportModelFile::TryGetImportOptions(path, options);
 
-        ImportModelFile::Options options;
-        if (ImportModelFile::TryGetImportOptions(path, options))
-        {
-            // Convert into managed storage
-            InternalModelOptions::Convert(&options, result);
-
-            return true;
-        }
-
-        return false;
+        // Convert into managed storage
+        InternalModelOptions::Convert(&options, result);
     }
 
     static bool GetAudioImportOptions(MonoString* pathObj, InternalAudioOptions* result)
@@ -852,7 +862,7 @@ public:
                     continue;
                 switch (e.Type)
                 {
-                    // Keyboard events
+                // Keyboard events
                 case InputDevice::EventType::Char:
                     window->OnCharInput(e.CharData.Char);
                     break;
@@ -862,7 +872,7 @@ public:
                 case InputDevice::EventType::KeyUp:
                     window->OnKeyUp(e.KeyData.Key);
                     break;
-                    // Mouse events
+                // Mouse events
                 case InputDevice::EventType::MouseDown:
                     window->OnMouseDown(window->ScreenToClient(e.MouseData.Position), e.MouseData.Button);
                     break;

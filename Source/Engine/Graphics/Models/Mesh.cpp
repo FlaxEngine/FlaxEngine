@@ -89,12 +89,12 @@ namespace
         }
         else
         {
-            auto v = Half2(0, 0);
+            auto v = Half2::Zero;
             for (uint32 i = 0; i < vertexCount; i++)
                 vb1[i].TexCoord = v;
         }
         {
-            auto v = Half2(0, 0);
+            auto v = Half2::Zero;
             for (uint32 i = 0; i < vertexCount; i++)
                 vb1[i].LightmapUVs = v;
         }

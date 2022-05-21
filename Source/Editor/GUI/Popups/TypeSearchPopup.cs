@@ -95,7 +95,7 @@ namespace FlaxEditor.GUI
                     }
                 }
             }
-            SortChildren();
+            SortItems();
         }
 
         private void OnItemClicked(Item item)

@@ -1,6 +1,6 @@
 // Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
-#if COMPILE_WITH_MODEL_TOOL
+#if COMPILE_WITH_MODEL_TOOL && USE_EDITOR
 
 #include "VertexTriangleAdjacency.h"
 #include "Engine/Core/Math/Math.h"

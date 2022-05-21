@@ -83,7 +83,7 @@ void Animation::ClearCache()
 
     // Free memory
     MappingCache.Clear();
-    MappingCache.Cleanup();
+    MappingCache.SetCapacity(0);
 }
 
 const Animation::NodeToChannel* Animation::GetMapping(SkinnedModel* obj)

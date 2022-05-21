@@ -518,12 +518,12 @@ bool GPUDeviceDX11::Init()
         dsDesc.FrontFace = defaultStencilOp;
         dsDesc.BackFace = defaultStencilOp;
         int32 index;
-#define CREATE_DEPTH_STENCIL_STATE(depthTextEnable, depthWrite) \
-			dsDesc.DepthEnable = depthTextEnable; \
+#define CREATE_DEPTH_STENCIL_STATE(depthEnable, depthWrite) \
+			dsDesc.DepthEnable = depthEnable; \
 			dsDesc.DepthWriteMask = depthWrite ? D3D11_DEPTH_WRITE_MASK_ALL : D3D11_DEPTH_WRITE_MASK_ZERO; \
 			for(int32 depthFunc = 1; depthFunc <= 8; depthFunc++) { \
 			dsDesc.DepthFunc = (D3D11_COMPARISON_FUNC)depthFunc; \
-			index = (int32)depthFunc + (depthTextEnable ? 0 : 9) + (depthWrite ? 0 : 18); \
+			index = (int32)depthFunc + (depthEnable ? 0 : 9) + (depthWrite ? 0 : 18); \
 			HRESULT result = _device->CreateDepthStencilState(&dsDesc, &DepthStencilStates[index]); \
 			LOG_DIRECTX_RESULT_WITH_RETURN(result); }
         CREATE_DEPTH_STENCIL_STATE(false, false);

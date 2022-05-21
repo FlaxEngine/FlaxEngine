@@ -223,7 +223,7 @@ namespace FlaxEditor.Windows
                 if (!QueryFilterHelper.Match(filterText, text, out QueryFilterHelper.Range[] ranges))
                     continue;
 
-                var item = _groupSearch.AddChild(CreateActorItem(CustomEditors.CustomEditorsUtil.GetPropertyNameUI(text), actorType));
+                var item = _groupSearch.AddChild(CreateActorItem(Utilities.Utils.GetPropertyNameUI(text), actorType));
 
                 var highlights = new List<Rectangle>(ranges.Length);
                 var style = Style.Current;

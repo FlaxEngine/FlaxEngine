@@ -22,6 +22,11 @@ const MaterialInfo& LODPreviewMaterialShader::GetInfo() const
     return _material->GetInfo();
 }
 
+GPUShader* LODPreviewMaterialShader::GetShader() const
+{
+    return _material->GetShader();
+}
+
 bool LODPreviewMaterialShader::IsReady() const
 {
     return _material && _material->IsReady();

@@ -48,7 +48,7 @@ void DecalMaterialShader::Bind(BindParameters& params)
     bindMeta.Context = context;
     bindMeta.Constants = cb;
     bindMeta.Input = nullptr;
-    bindMeta.Buffers = nullptr;
+    bindMeta.Buffers = params.RenderContext.Buffers;
     bindMeta.CanSampleDepth = true;
     bindMeta.CanSampleGBuffer = false;
     MaterialParams::Bind(params.ParamsLink, bindMeta);

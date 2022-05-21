@@ -249,7 +249,7 @@ bool SortDecal(Decal* const& a, Decal* const& b)
 void GBufferPass::RenderDebug(RenderContext& renderContext)
 {
     // Check if has resources loaded
-    if (setupResources())
+    if (checkIfSkipPass())
         return;
 
     // Cache data

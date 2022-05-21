@@ -1124,7 +1124,6 @@ bool CollisionsHelper::BoxIntersectsSphere(const BoundingBox& box, const Boundin
     Vector3 vector;
     Vector3::Clamp(sphere.Center, box.Minimum, box.Maximum, vector);
     const float distance = Vector3::DistanceSquared(sphere.Center, vector);
-
     return distance <= sphere.Radius * sphere.Radius;
 }
 
@@ -1436,6 +1435,16 @@ bool CollisionsHelper::LineIntersectsRect(const Vector2& p1, const Vector2& p2, 
     // lower than the bottom of the rectangle we don't have intersection. So return the negative
     // of that. Much faster than checking each of the points is within the bounds of the rectangle.
     return (topoverlap < botoverlap) && (!((botoverlap < t) || (topoverlap > b)));*/
+}
+
+Vector2 CollisionsHelper::LineHitsBox(const Vector3& lineStart, const Vector3& lineEnd, const Vector3& boxMin, const Vector3& boxMax)
+{
+    const Vector3 invDirection = 1.0f / (lineEnd - lineStart);
+    const Vector3 enterIntersection = (boxMin - lineStart) * invDirection;
+    const Vector3 exitIntersection = (boxMax - lineStart) * invDirection;
+    const Vector3 minIntersections = Vector3::Min(enterIntersection, exitIntersection);
+    const Vector3 maxIntersections = Vector3::Max(enterIntersection, exitIntersection);
+    return Vector2(Math::Saturate(minIntersections.MaxValue()), Math::Saturate(maxIntersections.MinValue()));
 }
 
 bool CollisionsHelper::IsPointInTriangle(const Vector2& point, const Vector2& a, const Vector2& b, const Vector2& c)

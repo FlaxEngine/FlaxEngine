@@ -306,7 +306,7 @@ void VolumetricFogPass::RenderRadialLight(RenderContext& renderContext, GPUConte
     perLight.LocalLightScatteringIntensity = light.VolumetricScatteringIntensity;
     perLight.ViewSpaceBoundingSphere = Vector4(viewSpaceLightBoundsOrigin, bounds.Radius);
     Matrix::Transpose(view.Projection, perLight.ViewToVolumeClip);
-    light.SetupLightData(&perLight.LocalLight, view, true);
+    light.SetupLightData(&perLight.LocalLight, true);
     perLight.LocalLightShadow = shadow;
 
     // Upload data
@@ -365,7 +365,7 @@ void VolumetricFogPass::RenderRadialLight(RenderContext& renderContext, GPUConte
         perLight.LocalLightScatteringIntensity = light.VolumetricScatteringIntensity;
         perLight.ViewSpaceBoundingSphere = Vector4(viewSpaceLightBoundsOrigin, bounds.Radius);
         Matrix::Transpose(renderContext.View.Projection, perLight.ViewToVolumeClip);
-        light.SetupLightData(&perLight.LocalLight, renderContext.View, withShadow);
+        light.SetupLightData(&perLight.LocalLight, withShadow);
 
         // Upload data
         context->UpdateCB(cb1, &perLight);
@@ -441,7 +441,7 @@ void VolumetricFogPass::Render(RenderContext& renderContext)
         {
             const auto shadowPass = ShadowsPass::Instance();
             const bool useShadow = dirLight.CastVolumetricShadow && shadowPass->LastDirLightIndex == dirLightIndex;
-            dirLight.SetupLightData(&_cache.Data.DirectionalLight, view, useShadow);
+            dirLight.SetupLightData(&_cache.Data.DirectionalLight, useShadow);
             _cache.Data.DirectionalLight.Color *= brightness;
             if (useShadow)
             {

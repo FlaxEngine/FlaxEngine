@@ -548,7 +548,7 @@ void AnimatedModel::UpdateBounds()
     BoundingBox::Transform(_boxLocal, _world, _box);
     BoundingSphere::FromBox(_box, _sphere);
     if (_sceneRenderingKey != -1)
-        GetSceneRendering()->UpdateGeometry(this, _sceneRenderingKey);
+        GetSceneRendering()->UpdateActor(this, _sceneRenderingKey);
 }
 
 void AnimatedModel::UpdateSockets()
@@ -692,6 +692,10 @@ void AnimatedModel::Update()
 
 void AnimatedModel::Draw(RenderContext& renderContext)
 {
+    if (renderContext.View.Pass == DrawPass::GlobalSDF)
+        return;  // TODO: Animated Model rendering to Global SDF
+    if (renderContext.View.Pass == DrawPass::GlobalSurfaceAtlas)
+        return;  // No supported
     GEOMETRY_DRAW_STATE_EVENT_BEGIN(_drawState, _world);
 
     const DrawPass drawModes = (DrawPass)(DrawModes & renderContext.View.Pass & (int32)renderContext.View.GetShadowsDrawPassMask(ShadowsMode));
@@ -726,14 +730,6 @@ void AnimatedModel::Draw(RenderContext& renderContext)
     }
 
     GEOMETRY_DRAW_STATE_EVENT_END(_drawState, _world);
-}
-
-void AnimatedModel::DrawGeneric(RenderContext& renderContext)
-{
-    if (renderContext.View.RenderLayersMask.Mask & GetLayerMask() && renderContext.View.CullingFrustum.Intersects(_box))
-    {
-        Draw(renderContext);
-    }
 }
 
 #if USE_EDITOR
@@ -817,6 +813,13 @@ void AnimatedModel::Deserialize(DeserializeStream& stream, ISerializeModifier* m
     DESERIALIZE(RootMotionTarget);
 
     Entries.DeserializeIfExists(stream, "Buffer", modifier);
+
+    // [Deprecated on 07.02.2022, expires on 07.02.2024]
+    if (modifier->EngineBuild <= 6330)
+        DrawModes |= DrawPass::GlobalSDF;
+    // [Deprecated on 27.04.2022, expires on 27.04.2024]
+    if (modifier->EngineBuild <= 6331)
+        DrawModes |= DrawPass::GlobalSurfaceAtlas;
 }
 
 bool AnimatedModel::IntersectsEntry(int32 entryIndex, const Ray& ray, float& distance, Vector3& normal)
@@ -881,5 +884,5 @@ void AnimatedModel::OnTransformChanged()
     BoundingBox::Transform(_boxLocal, _world, _box);
     BoundingSphere::FromBox(_box, _sphere);
     if (_sceneRenderingKey != -1)
-        GetSceneRendering()->UpdateGeometry(this, _sceneRenderingKey);
+        GetSceneRendering()->UpdateActor(this, _sceneRenderingKey);
 }

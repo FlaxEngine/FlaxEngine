@@ -427,6 +427,20 @@ namespace FlaxEditor.Surface.Archetypes
                     NodeElementArchetype.Factory.Output(0, string.Empty, typeof(float), 4),
                 }
             },
+            new NodeArchetype
+            {
+                TypeID = 49,
+                Title = "Rotate Vector",
+                Description = "Rotates given vector using the Quaternion",
+                Flags = NodeFlags.AllGraphs,
+                Size = new Vector2(200, 40),
+                Elements = new[]
+                {
+                    NodeElementArchetype.Factory.Input(0, "Quaternion", true, typeof(Quaternion), 0),
+                    NodeElementArchetype.Factory.Input(1, "Vector", true, typeof(Vector3), 1),
+                    NodeElementArchetype.Factory.Output(0, string.Empty, typeof(Vector3), 2),
+                }
+            },
         };
     }
 }

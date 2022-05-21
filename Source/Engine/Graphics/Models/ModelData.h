@@ -2,7 +2,6 @@
 
 #pragma once
 
-#include "Engine/Core/Common.h"
 #include "Engine/Core/Math/BoundingSphere.h"
 #include "Engine/Core/Math/BoundingBox.h"
 #include "Engine/Core/Math/Int4.h"
@@ -281,16 +280,7 @@ public:
     /// <summary>
     /// Normalizes the blend weights. Requires to have vertices with positions and blend weights setup.
     /// </summary>
-    void NormalizeBlendWeights()
-    {
-        ASSERT(Positions.Count() == BlendWeights.Count());
-        for (int32 i = 0; i < Positions.Count(); i++)
-        {
-            const float sum = BlendWeights[i].SumValues();
-            const float invSum = sum > ZeroTolerance ? 1.0f / sum : 0.0f;
-            BlendWeights[i] *= invSum;
-        }
-    }
+    void NormalizeBlendWeights();
 
     /// <summary>
     /// Merges this mesh data with the specified other mesh.
@@ -409,6 +399,11 @@ public:
     {
         Meshes.ClearDelete();
     }
+
+    /// <summary>
+    /// Gets the bounding box combined for all meshes in this model LOD.
+    /// </summary>
+    BoundingBox GetBox() const;
 };
 
 /// <summary>

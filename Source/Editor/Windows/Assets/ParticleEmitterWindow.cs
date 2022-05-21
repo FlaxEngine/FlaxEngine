@@ -263,6 +263,9 @@ namespace FlaxEditor.Windows.Assets
         }
 
         /// <inheritdoc />
+        protected override bool CanEditSurfaceOnAssetLoadError => true;
+
+        /// <inheritdoc />
         protected override bool SaveToOriginal()
         {
             // Copy shader cache from the temporary Particle Emitter (will skip compilation on Reload - faster)

@@ -25,6 +25,11 @@ RenderBuffers::RenderBuffers(const SpawnParams& params)
 #undef CREATE_TEXTURE
 }
 
+String RenderBuffers::CustomBuffer::ToString() const
+{
+    return Name;
+}
+
 RenderBuffers::~RenderBuffers()
 {
     Release();
@@ -61,6 +66,15 @@ void RenderBuffers::Prepare()
     UPDATE_LAZY_KEEP_RT(HalfResDepth);
     UPDATE_LAZY_KEEP_RT(LuminanceMap);
 #undef UPDATE_LAZY_KEEP_RT
+    for (int32 i = CustomBuffers.Count() - 1; i >= 0; i--)
+    {
+        CustomBuffer* e = CustomBuffers[i];
+        if (frameIndex - e->LastFrameUsed >= LAZY_FRAMES_COUNT)
+        {
+            Delete(e);
+            CustomBuffers.RemoveAt(i);
+        }
+    }
 }
 
 GPUTexture* RenderBuffers::RequestHalfResDepth(GPUContext* context)
@@ -184,4 +198,5 @@ void RenderBuffers::Release()
     UPDATE_LAZY_KEEP_RT(HalfResDepth);
     UPDATE_LAZY_KEEP_RT(LuminanceMap);
 #undef UPDATE_LAZY_KEEP_RT
+    CustomBuffers.ClearDelete();
 }

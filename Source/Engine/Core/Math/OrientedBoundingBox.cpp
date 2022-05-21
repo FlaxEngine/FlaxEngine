@@ -8,9 +8,16 @@
 
 OrientedBoundingBox::OrientedBoundingBox(const BoundingBox& bb)
 {
-    const Vector3 center = bb.Minimum + (bb.Maximum - bb.Minimum) / 2.0f;
+    const Vector3 center = bb.Minimum + (bb.Maximum - bb.Minimum) * 0.5f;
     Extents = bb.Maximum - center;
     Matrix::Translation(center, Transformation);
+}
+
+OrientedBoundingBox::OrientedBoundingBox(const Vector3& extents, const Matrix3x3& rotationScale, const Vector3& translation)
+    : Extents(extents)
+    , Transformation(rotationScale)
+{
+    Transformation.SetTranslation(translation);
 }
 
 OrientedBoundingBox::OrientedBoundingBox(Vector3 points[], int32 pointCount)
@@ -102,6 +109,12 @@ void OrientedBoundingBox::GetBoundingBox(BoundingBox& result) const
     GetCorners(corners);
 
     BoundingBox::FromPoints(corners, 8, result);
+}
+
+void OrientedBoundingBox::Transform(const Matrix& matrix)
+{
+    const Matrix tmp = Transformation;
+    Matrix::Multiply(tmp, matrix, Transformation);
 }
 
 ContainmentType OrientedBoundingBox::Contains(const Vector3& point, float* distance) const

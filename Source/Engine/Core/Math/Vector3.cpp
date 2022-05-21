@@ -9,6 +9,7 @@
 #include "Color.h"
 #include "Quaternion.h"
 #include "Matrix.h"
+#include "Matrix3x3.h"
 #include "Int2.h"
 #include "Int3.h"
 #include "Int4.h"
@@ -215,9 +216,15 @@ void Vector3::Transform(const Vector3& vector, const Matrix& transform, Vector3&
 void Vector3::Transform(const Vector3* vectors, const Matrix& transform, Vector3* results, int32 vectorsCount)
 {
     for (int32 i = 0; i < vectorsCount; i++)
-    {
         Transform(vectors[i], transform, results[i]);
-    }
+}
+
+void Vector3::Transform(const Vector3& vector, const Matrix3x3& transform, Vector3& result)
+{
+    result = Vector3(
+        vector.X * transform.M11 + vector.Y * transform.M21 + vector.Z * transform.M31,
+        vector.X * transform.M12 + vector.Y * transform.M22 + vector.Z * transform.M32,
+        vector.X * transform.M13 + vector.Y * transform.M23 + vector.Z * transform.M33);
 }
 
 Vector3 Vector3::Transform(const Vector3& vector, const Matrix& transform)

@@ -212,16 +212,17 @@ namespace RenderToolsDX
         if (errorCode == DXGI_ERROR_DEVICE_REMOVED || errorCode == DXGI_ERROR_DEVICE_RESET || errorCode == DXGI_ERROR_DRIVER_INTERNAL_ERROR)
         {
             HRESULT reason = S_OK;
+            const RendererType rendererType = GPUDevice::Instance ? GPUDevice::Instance->GetRendererType() : RendererType::Unknown;
 #if GRAPHICS_API_DIRECTX12
-            if (GPUDevice::Instance->GetRendererType() == RendererType::DirectX12)
+            if (rendererType == RendererType::DirectX12)
             {
                 reason = ((ID3D12Device*)GPUDevice::Instance->GetNativePtr())->GetDeviceRemovedReason();
             }
 #endif
 #if GRAPHICS_API_DIRECTX11
-            if (GPUDevice::Instance->GetRendererType() == RendererType::DirectX11 ||
-                GPUDevice::Instance->GetRendererType() == RendererType::DirectX10_1 ||
-                GPUDevice::Instance->GetRendererType() == RendererType::DirectX10)
+            if (rendererType == RendererType::DirectX11 ||
+                rendererType == RendererType::DirectX10_1 ||
+                rendererType == RendererType::DirectX10)
             {
                 reason = ((ID3D11Device*)GPUDevice::Instance->GetNativePtr())->GetDeviceRemovedReason();
             }

@@ -282,15 +282,17 @@ bool ShaderAssetBase::LoadShaderCache(ShaderCacheResult& result)
         editorDefine.Definition = "1";
 #endif
         InitCompilationOptions(options);
-        if (ShadersCompilation::Compile(options))
+        const bool failed = ShadersCompilation::Compile(options);
+
+        // Encrypt source code
+        Encryption::EncryptBytes(reinterpret_cast<byte*>(source), sourceLength);
+
+        if (failed)
         {
             LOG(Error, "Failed to compile shader '{0}'", parent->ToString());
             return true;
         }
         LOG(Info, "Shader '{0}' compiled! Cache size: {1} bytes", parent->ToString(), cacheStream.GetPosition());
-
-        // Encrypt source code
-        Encryption::EncryptBytes(reinterpret_cast<byte*>(source), sourceLength);
 
         // Save compilation result (based on current caching policy)
         if (cachingMode == ShaderStorage::CachingMode::AssetInternal)
@@ -345,7 +347,7 @@ bool ShaderAssetBase::LoadShaderCache(ShaderCacheResult& result)
         result.Data.Link(cacheChunk->Data);
     }
 #if COMPILE_WITH_SHADER_CACHE_MANAGER
-        // Check if has cached shader
+    // Check if has cached shader
     else if (cachedEntry.IsValid() || ShaderCacheManager::TryGetEntry(shaderProfile, parent->GetID(), cachedEntry))
     {
         // Load results from cache

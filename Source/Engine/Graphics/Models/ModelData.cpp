@@ -531,6 +531,17 @@ void MeshData::TransformBuffer(const Matrix& matrix)
     }
 }
 
+void MeshData::NormalizeBlendWeights()
+{
+    ASSERT(Positions.Count() == BlendWeights.Count());
+    for (int32 i = 0; i < Positions.Count(); i++)
+    {
+        const float sum = BlendWeights[i].SumValues();
+        const float invSum = sum > ZeroTolerance ? 1.0f / sum : 0.0f;
+        BlendWeights[i] *= invSum;
+    }
+}
+
 void MeshData::Merge(MeshData& other)
 {
     // Merge index buffer (and remap indices)
@@ -598,6 +609,21 @@ bool MaterialSlotEntry::UsesProperties() const
             !Math::IsOne(Opacity.Value) ||
             Opacity.TextureIndex != -1 ||
             Normals.TextureIndex != -1;
+}
+
+BoundingBox ModelLodData::GetBox() const
+{
+    if (Meshes.IsEmpty())
+        return BoundingBox::Empty;
+    BoundingBox bounds;
+    Meshes[0]->CalculateBox(bounds);
+    for (int32 i = 1; i < Meshes.Count(); i++)
+    {
+        BoundingBox b;
+        Meshes[i]->CalculateBox(b);
+        BoundingBox::Merge(bounds, b, bounds);
+    }
+    return bounds;
 }
 
 void ModelData::CalculateLODsScreenSizes()

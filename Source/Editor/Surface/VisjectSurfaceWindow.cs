@@ -466,7 +466,7 @@ namespace FlaxEditor.Surface
                 cm.AddItem(item);
             }
             cm.ItemClicked += OnAddParameterItemClicked;
-            cm.SortChildren();
+            cm.SortItems();
             cm.Show(button.Parent, button.BottomLeft);
         }
 

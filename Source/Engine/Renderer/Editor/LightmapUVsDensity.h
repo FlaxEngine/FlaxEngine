@@ -40,6 +40,7 @@ public:
 
     // [IMaterial]
     const MaterialInfo& GetInfo() const override;
+    GPUShader* GetShader() const override;
     bool IsReady() const override;
     DrawPass GetDrawModes() const override;
     void Bind(BindParameters& params) override;

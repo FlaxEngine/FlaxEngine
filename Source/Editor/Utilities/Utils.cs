@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
 using System.Runtime.InteropServices;
+using System.Text;
 using FlaxEditor.GUI.ContextMenu;
 using FlaxEditor.GUI.Tree;
 using FlaxEditor.SceneGraph;
@@ -28,6 +29,8 @@ namespace FlaxEditor.Utilities
     /// </summary>
     public static class Utils
     {
+        private static readonly StringBuilder CachedSb = new StringBuilder(256);
+
         private static readonly string[] MemorySizePostfixes =
         {
             "B",
@@ -861,6 +864,62 @@ namespace FlaxEditor.Utilities
                     property.SetValue(obj, value);
                 }
             }
+        }
+
+        /// <summary>
+        /// Gets the property name for UI. Removes unnecessary characters and filters text. Makes it more user-friendly.
+        /// </summary>
+        /// <param name="name">The name.</param>
+        /// <returns>The result.</returns>
+        public static string GetPropertyNameUI(string name)
+        {
+            int length = name.Length;
+            StringBuilder sb = CachedSb;
+            sb.Clear();
+            sb.EnsureCapacity(length + 8);
+            int startIndex = 0;
+
+            // Skip some prefixes
+            if (name.StartsWith("g_") || name.StartsWith("m_"))
+                startIndex = 2;
+
+            // Filter text
+            var lastChar = '\0';
+            for (int i = startIndex; i < length; i++)
+            {
+                var c = name[i];
+
+                // Space before word starting with uppercase letter
+                if (char.IsUpper(c) && i > 0)
+                {
+                    if (lastChar != ' ' && (!char.IsUpper(name[i - 1]) || (i + 1 != length && !char.IsUpper(name[i + 1]))))
+                    {
+                        lastChar = ' ';
+                        sb.Append(lastChar);
+                    }
+                }
+                // Space instead of underscore
+                else if (c == '_')
+                {
+                    if (sb.Length > 0 && lastChar != ' ')
+                    {
+                        lastChar = ' ';
+                        sb.Append(lastChar);
+                    }
+                    continue;
+                }
+                // Space before digits sequence
+                else if (i > 1 && char.IsDigit(c) && !char.IsDigit(name[i - 1]) && lastChar != ' ')
+                {
+                    lastChar = ' ';
+                    sb.Append(lastChar);
+                }
+
+                lastChar = c;
+                sb.Append(lastChar);
+            }
+
+            return sb.ToString();
         }
 
         /// <summary>

@@ -98,6 +98,16 @@ public:
     API_FIELD() bool IsOfflinePass = false;
 
     /// <summary>
+    /// Flag used by single-frame rendering passes (eg. thumbnail rendering, model view caching) to reject LOD transitions animations and other temporal draw effects.
+    /// </summary>
+    API_FIELD() bool IsSingleFrame = false;
+
+    /// <summary>
+    /// Flag used by custom passes to skip any object culling when drawing.
+    /// </summary>
+    API_FIELD() bool IsCullingDisabled = false;
+
+    /// <summary>
     /// The static flags mask used to hide objects that don't have a given static flags. Eg. use StaticFlags::Lightmap to render only objects that can use lightmap.
     /// </summary>
     API_FIELD() StaticFlags StaticFlagsMask = StaticFlags::None;

@@ -43,8 +43,8 @@ struct GeometryData
 #endif
 	float3 WorldNormal : TEXCOORD3;
 	float4 WorldTangent : TEXCOORD4;
-	float3 InstanceOrigin : TEXCOORD5;
-	float2 InstanceParams : TEXCOORD6; // x-PerInstanceRandom, y-LODDitherFactor
+	nointerpolation float3 InstanceOrigin : TEXCOORD5;
+	nointerpolation float2 InstanceParams : TEXCOORD6; // x-PerInstanceRandom, y-LODDitherFactor
 	float3 PrevWorldPosition : TEXCOORD7;
 };
 

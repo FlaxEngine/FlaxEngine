@@ -322,13 +322,13 @@ struct TIsPODType<GeometryDrawStateData>
 
 #define GEOMETRY_DRAW_STATE_EVENT_BEGIN(drawState, worldMatrix) \
     const auto frame = Engine::FrameCount; \
-	if (drawState.PrevFrame + 1 < frame) \
+	if (drawState.PrevFrame + 1 < frame && !renderContext.View.IsSingleFrame) \
 	{ \
         drawState.PrevWorld = worldMatrix; \
     }
 
 #define GEOMETRY_DRAW_STATE_EVENT_END(drawState, worldMatrix) \
-	if (drawState.PrevFrame != frame) \
+	if (drawState.PrevFrame != frame && !renderContext.View.IsSingleFrame) \
 	{ \
 		drawState.PrevWorld = worldMatrix; \
 		drawState.PrevFrame = frame; \

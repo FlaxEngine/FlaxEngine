@@ -144,24 +144,6 @@ GBufferSample SampleGBufferFast(GBufferData gBuffer, float2 uv)
 	return result;
 }
 
-// Sample GBuffer normal vector, shading model and view space position
-GBufferSample SampleGBufferNormalVPos(GBufferData gBuffer, float2 uv)
-{
-	GBufferSample result;
-
-	// Sample GBuffer
-	float4 gBuffer1 = SAMPLE_RT(GBuffer1, uv);
-
-	// Decode normal and shading model
-	result.Normal = DecodeNormal(gBuffer1.rgb);
-	result.ShadingModel = (int)(gBuffer1.a * 3.999);
-
-	// Calculate view space position
-	result.ViewPos = GetViewPos(gBuffer, uv);
-
-	return result;
-}
-
 #if defined(USE_GBUFFER_CUSTOM_DATA)
 
 // Sample GBuffer custom data only

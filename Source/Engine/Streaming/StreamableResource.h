@@ -2,6 +2,7 @@
 
 #pragma once
 
+#include "Engine/Core/Delegate.h"
 #include "Engine/Core/Collections/SamplesBuffer.h"
 
 class StreamingGroup;
@@ -111,6 +112,11 @@ public:
     };
 
     StreamingCache Streaming;
+    
+    /// <summary>
+    /// Event called when current resource residency gets changed (eg. model LOD or texture MIP gets loaded). Usually called from async thread.
+    /// </summary>
+    Action ResidencyChanged;
 
     /// <summary>
     /// Requests the streaming update for this resource during next streaming manager update.

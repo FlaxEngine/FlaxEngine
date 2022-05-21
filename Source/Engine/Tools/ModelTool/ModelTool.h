@@ -5,6 +5,8 @@
 #if COMPILE_WITH_MODEL_TOOL
 
 #include "Engine/Core/Config.h"
+#include "Engine/Content/Assets/ModelBase.h"
+#if USE_EDITOR
 #include "Engine/Serialization/ISerializable.h"
 #include "Engine/Graphics/Models/ModelData.h"
 #include "Engine/Graphics/Models/SkeletonData.h"
@@ -141,13 +143,52 @@ public:
     }
 };
 
+#endif
+
+struct ModelSDFHeader
+{
+    Vector3 LocalToUVWMul;
+    float WorldUnitsPerVoxel;
+    Vector3 LocalToUVWAdd;
+    float MaxDistance;
+    Vector3 LocalBoundsMin;
+    int32 MipLevels;
+    Vector3 LocalBoundsMax;
+    int32 Width;
+    int32 Height;
+    int32 Depth;
+    PixelFormat Format;
+    float ResolutionScale;
+    int32 LOD;
+
+    ModelSDFHeader() = default;
+    ModelSDFHeader(const ModelBase::SDFData& sdf, const struct GPUTextureDescription& desc);
+};
+
+struct ModelSDFMip
+{
+    int32 MipIndex;
+    uint32 RowPitch;
+    uint32 SlicePitch;
+
+    ModelSDFMip() = default;
+    ModelSDFMip(int32 mipIndex, uint32 rowPitch, uint32 slicePitch);
+    ModelSDFMip(int32 mipIndex, const TextureMipData& mip);
+};
+
 /// <summary>
-/// Import models and animations helper.
+/// Models data  importing and processing utility.
 /// </summary>
 class FLAXENGINE_API ModelTool
 {
 public:
 
+    // Optional: inputModel or modelData
+    // Optional: outputSDF or null, outputStream or null
+    static bool GenerateModelSDF(class Model* inputModel, class ModelData* modelData, float resolutionScale, int32 lodIndex, ModelBase::SDFData* outputSDF, class MemoryWriteStream* outputStream, const StringView& assetName, float backfacesThreshold = 0.6f);
+
+#if USE_EDITOR
+public:
     /// <summary>
     /// Declares the imported data type.
     /// </summary>
@@ -205,6 +246,10 @@ public:
         bool ImportMaterials = true;
         bool ImportTextures = true;
         bool RestoreMaterialsOnReimport = true;
+
+        // SDF
+        bool GenerateSDF = false;
+        float SDFResolution = 1.0f;
 
         // Splitting
         bool SplitObjects = false;
@@ -282,6 +327,7 @@ private:
 #endif
 #if USE_OPEN_FBX
     static bool ImportDataOpenFBX(const char* path, ImportedModelData& data, Options& options, String& errorMsg);
+#endif
 #endif
 };
 

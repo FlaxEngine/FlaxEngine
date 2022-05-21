@@ -219,7 +219,7 @@ namespace FlaxEditor.Windows.Assets
                             vertexCount += mesh.VertexCount;
                         }
 
-                        group.Label(string.Format("Triangles: {0:N0}   Vertices: {1:N0}", triangleCount, vertexCount));
+                        group.Label(string.Format("Triangles: {0:N0}   Vertices: {1:N0}", triangleCount, vertexCount)).AddCopyContextMenu();
                         group.Label("Size: " + lod.Box.Size);
                         var screenSize = group.FloatValue("Screen Size", "The screen size to switch LODs. Bottom limit of the model screen size to render this LOD.");
                         screenSize.FloatValue.MinValue = 0.0f;
@@ -235,7 +235,7 @@ namespace FlaxEditor.Windows.Assets
                         for (int meshIndex = 0; meshIndex < meshes.Length; meshIndex++)
                         {
                             var mesh = meshes[meshIndex];
-                            group.Label($"Mesh {meshIndex} (tris: {mesh.TriangleCount:N0}, verts: {mesh.VertexCount:N0})");
+                            group.Label($"Mesh {meshIndex} (tris: {mesh.TriangleCount:N0}, verts: {mesh.VertexCount:N0})").AddCopyContextMenu();
 
                             // Material Slot
                             var materialSlot = group.ComboBox("Material Slot", "Material slot used by this mesh during rendering");

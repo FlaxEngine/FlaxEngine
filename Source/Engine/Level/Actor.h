@@ -30,6 +30,7 @@ DECLARE_SCENE_OBJECT(Actor);
     friend Level;
     friend PrefabManager;
     friend Scene;
+    friend SceneRendering;
     friend Prefab;
     friend PrefabInstanceData;
 
@@ -39,6 +40,7 @@ protected:
     int8 _isActiveInHierarchy : 1;
     int8 _isPrefabRoot : 1;
     int8 _isEnabled : 1;
+    int8 _drawNoCulling : 1;
     byte _layer;
     byte _tag;
     StaticFlags _staticFlags;
@@ -646,22 +648,10 @@ public:
 public:
 
     /// <summary>
-    /// Draws this actor. Called by Scene Rendering service. This call is more optimized than generic Draw (eg. models are rendered during all passed but other actors are invoked only during GBufferFill pass).
+    /// Draws this actor. Called by Scene Rendering service. This call is more optimized than generic Draw (eg. geometry is rendered during all pass types but other actors are drawn only during GBufferFill pass).
     /// </summary>
     /// <param name="renderContext">The rendering context.</param>
     virtual void Draw(RenderContext& renderContext);
-
-    /// <summary>
-    /// Draws this actor. Called during custom actor rendering or any other generic rendering from code.
-    /// </summary>
-    /// <param name="renderContext">The rendering context.</param>
-    virtual void DrawGeneric(RenderContext& renderContext);
-
-    /// <summary>
-    /// Draws this actor and all its children (full scene hierarchy part).
-    /// </summary>
-    /// <param name="renderContext">The rendering context.</param>
-    void DrawHierarchy(RenderContext& renderContext);
 
 #if USE_EDITOR
 

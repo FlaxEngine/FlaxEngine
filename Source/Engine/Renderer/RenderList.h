@@ -11,6 +11,7 @@
 
 enum class StaticFlags;
 class RenderBuffers;
+class SceneRendering;
 class LightWithShadow;
 class IPostFxSettingsProvider;
 class CubeTexture;
@@ -41,7 +42,7 @@ struct RendererDirectionalLightData
     float ContactShadowsLength;
     ShadowsCastingMode ShadowsMode;
 
-    void SetupLightData(LightData* data, const RenderView& view, bool useShadow) const;
+    void SetupLightData(LightData* data, bool useShadow) const;
 };
 
 struct RendererSpotLightData
@@ -79,7 +80,7 @@ struct RendererSpotLightData
 
     GPUTexture* IESTexture;
 
-    void SetupLightData(LightData* data, const RenderView& view, bool useShadow) const;
+    void SetupLightData(LightData* data, bool useShadow) const;
 };
 
 struct RendererPointLightData
@@ -113,7 +114,7 @@ struct RendererPointLightData
 
     GPUTexture* IESTexture;
 
-    void SetupLightData(LightData* data, const RenderView& view, bool useShadow) const;
+    void SetupLightData(LightData* data, bool useShadow) const;
 };
 
 struct RendererSkyLightData
@@ -131,7 +132,7 @@ struct RendererSkyLightData
 
     CubeTexture* Image;
 
-    void SetupLightData(LightData* data, const RenderView& view, bool useShadow) const;
+    void SetupLightData(LightData* data, bool useShadow) const;
 };
 
 /// <summary>
@@ -344,6 +345,11 @@ DECLARE_SCRIPTING_TYPE(RenderList);
     static void CleanupCache();
 
 public:
+
+    /// <summary>
+    /// All scenes for rendering.
+    /// </summary>
+    Array<SceneRendering*> Scenes;
 
     /// <summary>
     /// Draw calls list (for all draw passes).

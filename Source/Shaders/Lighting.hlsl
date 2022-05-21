@@ -3,10 +3,6 @@
 #ifndef __LIGHTING__
 #define __LIGHTING__
 
-#if !defined(USE_GBUFFER_CUSTOM_DATA)
-#error "Cannot calculate lighting without custom data in GBuffer. Define USE_GBUFFER_CUSTOM_DATA."
-#endif
-
 #include "./Flax/LightingCommon.hlsl"
 
 ShadowData GetShadow(LightData lightData, GBufferSample gBuffer, float4 shadowMask)
@@ -20,21 +16,23 @@ ShadowData GetShadow(LightData lightData, GBufferSample gBuffer, float4 shadowMa
 LightingData StandardShading(GBufferSample gBuffer, float energy, float3 L, float3 V, half3 N)
 {
 	float3 diffuseColor = GetDiffuseColor(gBuffer);
-	float3 specularColor = GetSpecularColor(gBuffer);
-
 	float3 H = normalize(V + L);
 	float NoL = saturate(dot(N, L));
 	float NoV = max(dot(N, V), 1e-5);
 	float NoH = saturate(dot(N, H));
 	float VoH = saturate(dot(V, H));
 
-	float D = D_GGX(gBuffer.Roughness, NoH) * energy;
-	float Vis = Vis_SmithJointApprox(gBuffer.Roughness, NoV, NoL);
-	float3 F = F_Schlick(specularColor, VoH);
-
 	LightingData lighting;
 	lighting.Diffuse = Diffuse_Lambert(diffuseColor);
+#if defined(NO_SPECULAR)
+	lighting.Specular = 0;
+#else
+	float3 specularColor = GetSpecularColor(gBuffer);
+	float3 F = F_Schlick(specularColor, VoH);
+	float D = D_GGX(gBuffer.Roughness, NoH) * energy;
+	float Vis = Vis_SmithJointApprox(gBuffer.Roughness, NoV, NoL);
 	lighting.Specular = (D * Vis) * F;
+#endif
 	lighting.Transmission = 0;
 	return lighting;
 }
@@ -42,7 +40,7 @@ LightingData StandardShading(GBufferSample gBuffer, float energy, float3 L, floa
 LightingData SubsurfaceShading(GBufferSample gBuffer, float energy, float3 L, float3 V, half3 N)
 {
 	LightingData lighting = StandardShading(gBuffer, energy, L, V, N);
-
+#if defined(USE_GBUFFER_CUSTOM_DATA)
 	// Fake effect of the light going through the material
 	float3 subsurfaceColor = gBuffer.CustomData.rgb;
 	float opacity = gBuffer.CustomData.a;
@@ -51,21 +49,21 @@ LightingData SubsurfaceShading(GBufferSample gBuffer, float energy, float3 L, fl
 	float normalContribution = saturate(dot(N, H) * opacity + 1.0f - opacity);
 	float backScatter = gBuffer.AO * normalContribution / (PI * 2.0f);
 	lighting.Transmission = lerp(backScatter, 1, inscatter) * subsurfaceColor;
-
+#endif
 	return lighting;
 }
 
 LightingData FoliageShading(GBufferSample gBuffer, float energy, float3 L, float3 V, half3 N)
 {
 	LightingData lighting = StandardShading(gBuffer, energy, L, V, N);
-
+#if defined(USE_GBUFFER_CUSTOM_DATA)
 	// Fake effect of the light going through the thin foliage
 	float3 subsurfaceColor = gBuffer.CustomData.rgb;
 	float wrapNoL = saturate((-dot(N, L) + 0.5f) / 2.25);
 	float VoL = dot(V, L);
 	float scatter = D_GGX(0.36, saturate(-VoL));
 	lighting.Transmission = subsurfaceColor * (wrapNoL * scatter);
-
+#endif
 	return lighting;
 }
 
@@ -144,9 +142,6 @@ float4 GetLighting(float3 viewPos, LightData lightData, GBufferSample gBuffer, f
 
 		// Calculate direct lighting
 		LightingData lighting = SurfaceShading(gBuffer, energy, L, V, N);
-#if NO_SPECULAR
-		lighting.Specular = float3(0, 0, 0);
-#endif
 
 		// Calculate final light color
 		float3 surfaceLight = (lighting.Diffuse + lighting.Specular) * (NoL * attenuation * shadow.SurfaceShadow);

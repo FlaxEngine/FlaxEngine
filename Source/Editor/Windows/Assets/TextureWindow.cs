@@ -36,9 +36,9 @@ namespace FlaxEditor.Windows.Assets
                 // Texture info
                 var general = layout.Group("General");
                 general.Label("Format: " + texture.Format);
-                general.Label(string.Format("Size: {0}x{1}", texture.Width, texture.Height));
+                general.Label(string.Format("Size: {0}x{1}", texture.Width, texture.Height)).AddCopyContextMenu();
                 general.Label("Mip levels: " + texture.MipLevels);
-                general.Label("Memory usage: " + Utilities.Utils.FormatBytesCount(texture.TotalMemoryUsage));
+                general.Label("Memory usage: " + Utilities.Utils.FormatBytesCount(texture.TotalMemoryUsage)).AddCopyContextMenu();
 
                 // Texture properties
                 var properties = layout.Group("Properties");

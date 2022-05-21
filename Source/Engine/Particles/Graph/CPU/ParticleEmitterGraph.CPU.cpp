@@ -102,7 +102,7 @@ void ParticleEmitterGraphCPU::InitializeNode(Node* node)
 
     switch (node->Type)
     {
-        // Position (spiral)
+    // Position (spiral)
     case GRAPH_NODE_MAKE_TYPE(15, 214):
         node->CustomDataOffset = CustomDataSize;
         CustomDataSize += sizeof(float);
@@ -226,7 +226,7 @@ bool ParticleEmitterGraphCPUExecutor::ComputeBounds(ParticleEmitter* emitter, Pa
             const auto module = emitter->Graph.RenderModules[moduleIndex];
             switch (module->TypeID)
             {
-                // Sprite Rendering
+            // Sprite Rendering
             case 400:
             {
                 if (_graph._attrSpriteSize != -1)
@@ -246,7 +246,7 @@ bool ParticleEmitterGraphCPUExecutor::ComputeBounds(ParticleEmitter* emitter, Pa
                 }
                 break;
             }
-                // Light Rendering
+            // Light Rendering
             case 401:
             {
                 // Prepare graph data
@@ -269,7 +269,7 @@ bool ParticleEmitterGraphCPUExecutor::ComputeBounds(ParticleEmitter* emitter, Pa
 
                 break;
             }
-                // Model Rendering
+            // Model Rendering
             case 403:
             {
                 const auto modelAsset = (Model*)module->Assets[0].Get();
@@ -297,7 +297,7 @@ bool ParticleEmitterGraphCPUExecutor::ComputeBounds(ParticleEmitter* emitter, Pa
                 }
                 break;
             }
-                // Ribbon Rendering
+            // Ribbon Rendering
             case 404:
             {
                 if (_graph._attrRibbonWidth != -1)
@@ -317,7 +317,7 @@ bool ParticleEmitterGraphCPUExecutor::ComputeBounds(ParticleEmitter* emitter, Pa
                 }
                 break;
             }
-                // Volumetric Fog Rendering
+            // Volumetric Fog Rendering
             case 405:
             {
                 // Find the maximum radius of the particle

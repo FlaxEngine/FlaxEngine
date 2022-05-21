@@ -9,19 +9,19 @@
 #include "Engine/Content/Content.h"
 #include "Engine/Engine/GameplayGlobals.h"
 #include "Engine/Graphics/Config.h"
+#include "Engine/Renderer/GlobalSignDistanceFieldPass.h"
 
 void ShaderGraphUtilities::GenerateShaderConstantBuffer(TextWriterUnicode& writer, Array<SerializedMaterialParam>& parameters)
 {
     int32 constantsOffset = 0;
     int32 paddingIndex = 0;
-
     for (int32 i = 0; i < parameters.Count(); i++)
     {
         auto& param = parameters[i];
-
         const Char* format = nullptr;
         int32 size;
         int32 alignment;
+        bool zeroRegister = true;
         switch (param.Type)
         {
         case MaterialParameterType::Bool:
@@ -107,11 +107,15 @@ void ShaderGraphUtilities::GenerateShaderConstantBuffer(TextWriterUnicode& write
                 alignment = 16;
                 format = TEXT("float4 {0};");
                 break;
-            default: ;
             }
             break;
         }
-        default: ;
+        case MaterialParameterType::GlobalSDF:
+            zeroRegister = false;
+            size = sizeof(GlobalSignDistanceFieldPass::ConstantsData);
+            alignment = 16;
+            format = TEXT("GlobalSDFData {0};");
+            break;
         }
         if (format)
         {
@@ -126,7 +130,8 @@ void ShaderGraphUtilities::GenerateShaderConstantBuffer(TextWriterUnicode& write
                 }
             }
 
-            param.RegisterIndex = 0;
+            if (zeroRegister)
+                param.RegisterIndex = 0;
             param.Offset = constantsOffset;
             writer.WriteLine(format, param.ShaderName);
             constantsOffset += size;
@@ -139,7 +144,9 @@ const Char* ShaderGraphUtilities::GenerateShaderResources(TextWriterUnicode& wri
     for (int32 i = 0; i < parameters.Count(); i++)
     {
         auto& param = parameters[i];
-        const Char* format;
+        const Char* format = nullptr;
+        bool zeroOffset = true;
+        int32 registers = 1;
         switch (param.Type)
         {
         case MaterialParameterType::NormalMap:
@@ -158,16 +165,19 @@ const Char* ShaderGraphUtilities::GenerateShaderResources(TextWriterUnicode& wri
         case MaterialParameterType::GPUTextureVolume:
             format = TEXT("Texture3D {0} : register(t{1});");
             break;
-        default:
-            format = nullptr;
+        case MaterialParameterType::GlobalSDF:
+            format = TEXT("Texture3D<float> {0}_Tex[4] : register(t{1});");
+            registers = 4;
+            zeroOffset = false;
             break;
         }
         if (format)
         {
-            param.Offset = 0;
+            if (zeroOffset)
+                param.Offset = 0;
             param.RegisterIndex = (byte)startRegister;
             writer.WriteLine(format, param.ShaderName, startRegister);
-            startRegister++;
+            startRegister += registers;
             if (param.RegisterIndex >= GPU_MAX_SR_BINDED)
             {
                 return TEXT("Too many textures used. The maximum supported amount is " MACRO_TO_STR(GPU_MAX_SR_BINDED) " (including lightmaps and utility textures for lighting).");

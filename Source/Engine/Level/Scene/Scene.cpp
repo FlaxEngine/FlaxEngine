@@ -60,7 +60,6 @@ NavMeshBoundsVolume* SceneNavigation::FindNavigationBoundsOverlap(const Bounding
 
 Scene::Scene(const SpawnParams& params)
     : Actor(params)
-    , Rendering(this)
     , LightmapsData(this)
     , CSGData(this)
 {

@@ -888,7 +888,6 @@ namespace FlaxEditor.Surface.Archetypes
                     NodeElementArchetype.Factory.ComboBox(0, -10.0f, 160, 2, typeof(ParticleModelFacingMode)),
                 },
             },
-
             new NodeArchetype
             {
                 TypeID = 214,
@@ -910,6 +909,20 @@ namespace FlaxEditor.Surface.Archetypes
                     NodeElementArchetype.Factory.Input(-0.5f, "Center", true, typeof(Vector3), 0, 2),
                     NodeElementArchetype.Factory.Input(-0.5f + 1.0f, "Rotation Speed", true, typeof(float), 1, 3),
                     NodeElementArchetype.Factory.Input(-0.5f + 2.0f, "Velocity Scale", true, typeof(float), 2, 4),
+                },
+            },
+            new NodeArchetype
+            {
+                TypeID = 215,
+                Create = CreateParticleModuleNode,
+                Title = "Position (Global SDF)",
+                Description = "Places the particles on Global SDF surface (uses current particle position to snap it to SDF)",
+                Flags = DefaultModuleFlags,
+                Size = new Vector2(200, 0 * Surface.Constants.LayoutOffsetY),
+                DefaultValues = new object[]
+                {
+                    true,
+                    (int)ModuleType.Initialize,
                 },
             },
             GetParticleAttribute(ModuleType.Initialize, 250, "Set Position", "Sets the particle position", typeof(Vector3), Vector3.Zero),
@@ -1344,7 +1357,7 @@ namespace FlaxEditor.Surface.Archetypes
                     true,
                     (int)ModuleType.Update,
                     false, // Invert
-                    0.0f, // Radius
+                    5.0f, // Radius
                     0.0f, // Roughness
                     0.1f, // Elasticity
                     0.0f, // Friction
@@ -1360,6 +1373,59 @@ namespace FlaxEditor.Surface.Archetypes
                     NodeElementArchetype.Factory.Input(-0.5f + 5, "Lifetime Loss", true, typeof(float), 4, 7),
 
                     NodeElementArchetype.Factory.Input(-0.5f + 0, "Surface Thickness", true, typeof(float), 5, 8),
+                },
+            },
+            new NodeArchetype
+            {
+                TypeID = 335,
+                Create = CreateParticleModuleNode,
+                Title = "Conform to Global SDF",
+                Description = "Applies the force vector to particles to conform around Global SDF",
+                Flags = DefaultModuleFlags,
+                Size = new Vector2(200, 4 * Surface.Constants.LayoutOffsetY),
+                DefaultValues = new object[]
+                {
+                    true,
+                    (int)ModuleType.Update,
+                    5.0f,
+                    2000.0f,
+                    1.0f,
+                    5000.0f,
+                },
+                Elements = new[]
+                {
+                    NodeElementArchetype.Factory.Input(-0.5f, "Attraction Speed", true, typeof(float), 0, 2),
+                    NodeElementArchetype.Factory.Input(-0.5f + 1.0f, "Attraction Force", true, typeof(float), 1, 3),
+                    NodeElementArchetype.Factory.Input(-0.5f + 2.0f, "Stick Distance", true, typeof(float), 2, 4),
+                    NodeElementArchetype.Factory.Input(-0.5f + 3.0f, "Stick Force", true, typeof(float), 3, 5),
+                },
+            },
+            new NodeArchetype
+            {
+                TypeID = 336,
+                Create = CreateParticleModuleNode,
+                Title = "Collision (Global SDF)",
+                Description = "Collides particles with the scene Global SDF",
+                Flags = DefaultModuleFlags,
+                Size = new Vector2(200, 5 * Surface.Constants.LayoutOffsetY),
+                DefaultValues = new object[]
+                {
+                    true,
+                    (int)ModuleType.Update,
+                    false, // Invert
+                    5.0f, // Radius
+                    0.4f, // Roughness
+                    0.1f, // Elasticity
+                    0.0f, // Friction
+                    0.0f, // Lifetime Loss
+                },
+                Elements = new[]
+                {
+                    NodeElementArchetype.Factory.Input(-0.5f + 0, "Radius", true, typeof(float), 0, 3),
+                    NodeElementArchetype.Factory.Input(-0.5f + 1, "Roughness", true, typeof(float), 1, 4),
+                    NodeElementArchetype.Factory.Input(-0.5f + 2, "Elasticity", true, typeof(float), 2, 5),
+                    NodeElementArchetype.Factory.Input(-0.5f + 3, "Friction", true, typeof(float), 3, 6),
+                    NodeElementArchetype.Factory.Input(-0.5f + 4, "Lifetime Loss", true, typeof(float), 4, 7),
                 },
             },
             GetParticleAttribute(ModuleType.Update, 350, "Set Position", "Sets the particle position", typeof(Vector3), Vector3.Zero),

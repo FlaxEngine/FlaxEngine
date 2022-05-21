@@ -44,10 +44,10 @@ void GPUBufferViewVulkan::Release()
 #endif
 }
 
-void GPUBufferViewVulkan::DescriptorAsUniformTexelBuffer(GPUContextVulkan* context, const VkBufferView*& bufferView)
+void GPUBufferViewVulkan::DescriptorAsUniformTexelBuffer(GPUContextVulkan* context, VkBufferView& bufferView)
 {
     ASSERT_LOW_LAYER(View != VK_NULL_HANDLE);
-    bufferView = &View;
+    bufferView = View;
     context->AddBufferBarrier(Owner, VK_ACCESS_SHADER_READ_BIT);
 }
 
@@ -60,10 +60,10 @@ void GPUBufferViewVulkan::DescriptorAsStorageBuffer(GPUContextVulkan* context, V
     context->AddBufferBarrier(Owner, VK_ACCESS_SHADER_READ_BIT);
 }
 
-void GPUBufferViewVulkan::DescriptorAsStorageTexelBuffer(GPUContextVulkan* context, const VkBufferView*& bufferView)
+void GPUBufferViewVulkan::DescriptorAsStorageTexelBuffer(GPUContextVulkan* context, VkBufferView& bufferView)
 {
     ASSERT_LOW_LAYER(View != VK_NULL_HANDLE);
-    bufferView = &View;
+    bufferView = View;
     context->AddBufferBarrier(Owner, VK_ACCESS_SHADER_READ_BIT);
 }
 
@@ -98,7 +98,7 @@ bool GPUBufferVulkan::OnInit()
     bufferInfo.usage = VK_BUFFER_USAGE_TRANSFER_DST_BIT;
     if (useSRV && !(_desc.Flags & GPUBufferFlags::Structured))
         bufferInfo.usage |= VK_BUFFER_USAGE_UNIFORM_TEXEL_BUFFER_BIT;
-    if (useUAV || _desc.Flags & GPUBufferFlags::RawBuffer)
+    if (useUAV || _desc.Flags & GPUBufferFlags::RawBuffer || _desc.Flags & GPUBufferFlags::Structured)
         bufferInfo.usage |= VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
     if (useUAV && useSRV)
         bufferInfo.usage |= VK_BUFFER_USAGE_STORAGE_TEXEL_BUFFER_BIT;

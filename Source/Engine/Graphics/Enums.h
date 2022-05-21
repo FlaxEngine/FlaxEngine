@@ -703,6 +703,16 @@ API_ENUM(Attributes="Flags") enum class DrawPass : int32
     MotionVectors = 1 << 4,
 
     /// <summary>
+    /// The Global Sign Distance Field (SDF) rendering pass. Used for software raytracing though the scene on a GPU.
+    /// </summary>
+    GlobalSDF = 1 << 5,
+
+    /// <summary>
+    /// The Global Surface Atlas rendering pass. Used for software raytracing though the scene on a GPU to evaluate the object surface material properties.
+    /// </summary>
+    GlobalSurfaceAtlas = 1 << 6,
+
+    /// <summary>
     /// The debug quad overdraw rendering (editor-only).
     /// </summary>
     API_ENUM(Attributes="HideInEditor")
@@ -712,13 +722,13 @@ API_ENUM(Attributes="Flags") enum class DrawPass : int32
     /// The default set of draw passes for the scene objects.
     /// </summary>
     API_ENUM(Attributes="HideInEditor")
-    Default = Depth | GBuffer | Forward | Distortion | MotionVectors,
+    Default = Depth | GBuffer | Forward | Distortion | MotionVectors | GlobalSDF | GlobalSurfaceAtlas,
 
     /// <summary>
     /// The all draw passes combined into a single mask.
     /// </summary>
     API_ENUM(Attributes="HideInEditor")
-    All = Depth | GBuffer | Forward | Distortion | MotionVectors,
+    All = Depth | GBuffer | Forward | Distortion | MotionVectors | GlobalSDF | GlobalSurfaceAtlas,
 };
 
 DECLARE_ENUM_OPERATORS(DrawPass);
@@ -847,6 +857,16 @@ API_ENUM() enum class ViewMode
     /// Draw geometry overdraw to visualize performance of pixels rendering.
     /// </summary>
     QuadOverdraw = 23,
+
+    /// <summary>
+    /// Draw Global Sign Distant Field (SDF) preview.
+    /// </summary>
+    GlobalSDF = 24,
+
+    /// <summary>
+    /// Draw Global Surface Atlas preview.
+    /// </summary>
+    GlobalSurfaceAtlas = 25,
 };
 
 /// <summary>
@@ -997,7 +1017,7 @@ API_ENUM(Attributes="Flags") enum class ViewFlags : int64
     /// <summary>
     /// Default flags for materials/models previews generating.
     /// </summary>
-    DefaultAssetPreview = Reflections | Decals | GI | DirectionalLights | PointLights | SpotLights | SkyLights | SpecularLight | AntiAliasing | Bloom | ToneMapping | EyeAdaptation | CameraArtifacts | LensFlares | ContactShadows,
+    DefaultAssetPreview = Reflections | Decals | DirectionalLights | PointLights | SpotLights | SkyLights | SpecularLight | AntiAliasing | Bloom | ToneMapping | EyeAdaptation | CameraArtifacts | LensFlares | ContactShadows,
 };
 
 DECLARE_ENUM_OPERATORS(ViewFlags);

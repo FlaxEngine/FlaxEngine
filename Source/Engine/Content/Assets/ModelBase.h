@@ -14,7 +14,7 @@
 // Chunk 1: LOD0
 // Chunk 2: LOD1
 // ..
-//
+// Chunk 15: SDF
 #define MODEL_LOD_TO_CHUNK_INDEX(lod) (lod + 1)
 
 class MeshBase;
@@ -24,9 +24,62 @@ class MeshBase;
 /// </summary>
 API_CLASS(Abstract, NoSpawn) class FLAXENGINE_API ModelBase : public BinaryAsset, public StreamableResource
 {
-DECLARE_ASSET_HEADER(ModelBase);
-protected:
+    DECLARE_ASSET_HEADER(ModelBase);
+public:
+    /// <summary>
+    /// The Sign Distant Field (SDF) data for the model.
+    /// </summary>
+    API_STRUCT() struct SDFData
+    {
+        DECLARE_SCRIPTING_TYPE_MINIMAL(SDFData);
 
+        /// <summary>
+        /// The SDF volume texture (merged all meshes).
+        /// </summary>
+        API_FIELD() GPUTexture* Texture = nullptr;
+
+        /// <summary>
+        /// The transformation scale from model local-space to the generated SDF texture space (local-space -> uv).
+        /// </summary>
+        API_FIELD() Vector3 LocalToUVWMul;
+
+        /// <summary>
+        /// Amount of world-units per SDF texture voxel.
+        /// </summary>
+        API_FIELD() float WorldUnitsPerVoxel;
+
+        /// <summary>
+        /// The transformation offset from model local-space to the generated SDF texture space (local-space -> uv).
+        /// </summary>
+        API_FIELD() Vector3 LocalToUVWAdd;
+
+        /// <summary>
+        /// The maximum distance stored in the SDF texture. Used to rescale normalized SDF into world-units (in model local space).
+        /// </summary>
+        API_FIELD() float MaxDistance;
+
+        /// <summary>
+        /// The bounding box of the SDF texture in the model local-space.
+        /// </summary>
+        API_FIELD() Vector3 LocalBoundsMin;
+
+        /// <summary>
+        /// The SDF texture resolution scale used for building texture.
+        /// </summary>
+        API_FIELD() float ResolutionScale = 1.0f;
+
+        /// <summary>
+        /// The bounding box of the SDF texture in the model local-space.
+        /// </summary>
+        API_FIELD() Vector3 LocalBoundsMax;
+
+        /// <summary>
+        /// The model LOD index used for the building.
+        /// </summary>
+        API_FIELD() int32 LOD = 6;
+    };
+
+protected:
     explicit ModelBase(const SpawnParams& params, const AssetInfo* info, StreamingGroup* group)
         : BinaryAsset(params, info)
         , StreamableResource(group)
@@ -34,7 +87,6 @@ protected:
     }
 
 public:
-
     /// <summary>
     /// The minimum screen size to draw this model (the bottom limit). Used to cull small models. Set to 0 to disable this feature.
     /// </summary>

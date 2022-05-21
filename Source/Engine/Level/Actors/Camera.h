@@ -52,6 +52,7 @@ private:
     ModelInstanceEntries _previewModelBuffer;
     BoundingBox _previewModelBox;
     Matrix _previewModelWorld;
+    int32 _sceneRenderingKey = -1;
 #endif
 
 public:

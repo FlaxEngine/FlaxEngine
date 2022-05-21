@@ -392,6 +392,21 @@ bool MaterialGenerator::Generate(WriteStream& source, MaterialInfo& materialInfo
     // Update material usage based on material generator outputs
     materialInfo.UsageFlags = baseLayer->UsageFlags;
 
+    // Find all Custom Global Code nodes
+    Array<const MaterialGraph::Node*, InlinedAllocation<8>> customGlobalCodeNodes;
+    Array<Graph*, InlinedAllocation<8>> graphs;
+    _functions.GetValues(graphs);
+    for (MaterialLayer* layer : _layers)
+        graphs.Add(&layer->Graph);
+    for (Graph* graph : graphs)
+    {
+        for (const MaterialGraph::Node& node : graph->Nodes)
+        {
+            if (node.Type == GRAPH_NODE_MAKE_TYPE(1, 38) && (bool)node.Values[1])
+                customGlobalCodeNodes.Add(&node);
+        }
+    }
+
 #define WRITE_FEATURES(input) FeaturesLock.Lock(); for (auto f : features) _writer.Write(Features[f].Inputs[(int32)FeatureTemplateInputsMapping::input]); FeaturesLock.Unlock();
     // Defines
     {
@@ -408,6 +423,7 @@ bool MaterialGenerator::Generate(WriteStream& source, MaterialInfo& materialInfo
         }
         WRITE_FEATURES(Defines);
         inputs[In_Defines] = _writer.ToString();
+        WriteCustomGlobalCode(customGlobalCodeNodes, In_Defines);
         _writer.Clear();
     }
 
@@ -416,6 +432,7 @@ bool MaterialGenerator::Generate(WriteStream& source, MaterialInfo& materialInfo
         for (auto& include : _includes)
             _writer.Write(TEXT("#include \"{0}\"\n"), include.Item);
         WRITE_FEATURES(Includes);
+        WriteCustomGlobalCode(customGlobalCodeNodes, In_Includes);
         inputs[In_Includes] = _writer.ToString();
         _writer.Clear();
     }
@@ -425,6 +442,7 @@ bool MaterialGenerator::Generate(WriteStream& source, MaterialInfo& materialInfo
         WRITE_FEATURES(Constants);
         if (_parameters.HasItems())
             ShaderGraphUtilities::GenerateShaderConstantBuffer(_writer, _parameters);
+        WriteCustomGlobalCode(customGlobalCodeNodes, In_Constants);
         inputs[In_Constants] = _writer.ToString();
         _writer.Clear();
     }
@@ -485,6 +503,7 @@ bool MaterialGenerator::Generate(WriteStream& source, MaterialInfo& materialInfo
                 return true;
             }
         }
+        WriteCustomGlobalCode(customGlobalCodeNodes, In_ShaderResources);
         inputs[In_ShaderResources] = _writer.ToString();
         _writer.Clear();
     }
@@ -492,21 +511,7 @@ bool MaterialGenerator::Generate(WriteStream& source, MaterialInfo& materialInfo
     // Utilities
     {
         WRITE_FEATURES(Utilities);
-        Array<Graph*, InlinedAllocation<8>> graphs;
-        _functions.GetValues(graphs);
-        for (MaterialLayer* layer : _layers)
-            graphs.Add(&layer->Graph);
-        for (Graph* graph : graphs)
-        {
-            for (const MaterialGraph::Node& node : graph->Nodes)
-            {
-                if (node.Type == GRAPH_NODE_MAKE_TYPE(1, 38) && (bool)node.Values[1])
-                {
-                    // Custom Global Code
-                    _writer.Write((StringView)node.Values[0]);
-                }
-            }
-        }
+        WriteCustomGlobalCode(customGlobalCodeNodes, In_Utilities);
         inputs[In_Utilities] = _writer.ToString();
         _writer.Clear();
     }
@@ -514,6 +519,7 @@ bool MaterialGenerator::Generate(WriteStream& source, MaterialInfo& materialInfo
     // Shaders
     {
         WRITE_FEATURES(Shaders);
+        WriteCustomGlobalCode(customGlobalCodeNodes, In_Shaders);
         inputs[In_Shaders] = _writer.ToString();
         _writer.Clear();
     }
@@ -796,6 +802,19 @@ void MaterialGenerator::ProcessGroupMath(Box* box, Node* node, Value& value)
     default:
         ShaderGenerator::ProcessGroupMath(box, node, value);
         break;
+    }
+}
+
+void MaterialGenerator::WriteCustomGlobalCode(const Array<const MaterialGraph::Node*, InlinedAllocation<8>>& nodes, int32 templateInputsMapping)
+{
+    for (const MaterialGraph::Node* node : nodes)
+    {
+        if ((int32)node->Values[2] == templateInputsMapping)
+        {
+            _writer.Write(TEXT("\n"));
+            _writer.Write((StringView)node->Values[0]);
+            _writer.Write(TEXT("\n"));
+        }
     }
 }
 

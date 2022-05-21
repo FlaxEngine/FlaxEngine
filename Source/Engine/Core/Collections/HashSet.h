@@ -2,31 +2,28 @@
 
 #pragma once
 
-#include "Engine/Core/Core.h"
-#include "Engine/Core/Math/Math.h"
-#include "Engine/Platform/Platform.h"
-#include "HashFunctions.h"
-#include "Config.h"
+#include "Engine/Core/Memory/Memory.h"
+#include "Engine/Core/Memory/Allocation.h"
+#include "Engine/Core/Collections/HashFunctions.h"
+#include "Engine/Core/Collections/Config.h"
 
 /// <summary>
 /// Template for unordered set of values (without duplicates with O(1) lookup access).
 /// </summary>
 /// <typeparam name="T">The type of elements in the set.</typeparam>
-template<typename T>
+/// <typeparam name="AllocationType">The type of memory allocator.</typeparam>
+template<typename T, typename AllocationType = HeapAllocation>
 API_CLASS(InBuild) class HashSet
 {
     friend HashSet;
-
 public:
 
     /// <summary>
-    /// Describes single portion of space for the item in a hash map
+    /// Describes single portion of space for the item in a hash map.
     /// </summary>
     struct Bucket
     {
         friend HashSet;
-
-    public:
 
         enum State : byte
         {
@@ -34,45 +31,32 @@ public:
             Deleted,
             Occupied,
         };
-
-    public:
-
+        
+        /// <summary>The item.</summary>
         T Item;
 
     private:
-
         State _state;
-
-    public:
-
-        Bucket()
-            : _state(Empty)
-        {
-        }
-
-        ~Bucket()
-        {
-        }
-
-    public:
 
         void Free()
         {
+            if (_state == Occupied)
+                Memory::DestructItem(&Item);
             _state = Empty;
         }
 
         void Delete()
         {
             _state = Deleted;
+            Memory::DestructItem(&Item);
         }
 
-        void Occupy(const T& item)
+        template<typename ItemType>
+        void Occupy(const ItemType& item)
         {
-            Item = item;
+            Memory::ConstructItems(&Item, &item, 1);
             _state = Occupied;
         }
-
-    public:
 
         FORCE_INLINE bool IsEmpty() const
         {
@@ -94,13 +78,15 @@ public:
             return _state != Occupied;
         }
     };
+    
+    typedef typename AllocationType::template Data<Bucket> AllocationData;
 
 private:
 
     int32 _elementsCount = 0;
     int32 _deletedCount = 0;
-    int32 _tableSize = 0;
-    Bucket* _table = nullptr;
+    int32 _size = 0;
+    AllocationData _allocation;
 
 public:
 
@@ -117,8 +103,25 @@ public:
     /// <param name="capacity">The initial capacity.</param>
     HashSet(int32 capacity)
     {
-        ASSERT(capacity >= 0);
         SetCapacity(capacity);
+    }
+
+    /// <summary>
+    /// Initializes a new instance of the <see cref="HashSet"/> class.
+    /// </summary>
+    /// <param name="other">The other collection to move.</param>
+    HashSet(HashSet&& other) noexcept
+        : _elementsCount(other._elementsCount)
+        , _deletedCount(other._deletedCount)
+        , _size(other._size)
+    {
+        _elementsCount = other._elementsCount;
+        _deletedCount = other._deletedCount;
+        _size = other._size;
+        other._elementsCount = 0;
+        other._deletedCount = 0;
+        other._size = 0;
+        _allocation.Swap(other._allocation);
     }
 
     /// <summary>
@@ -137,9 +140,30 @@ public:
     /// <returns>The reference to this.</returns>
     HashSet& operator=(const HashSet& other)
     {
-        // Ensure we're not trying to set to itself
         if (this != &other)
             Clone(other);
+        return *this;
+    }
+
+    /// <summary>
+    /// Moves the data from the other collection.
+    /// </summary>
+    /// <param name="other">The other collection to move.</param>
+    /// <returns>The reference to this.</returns>
+    HashSet& operator=(HashSet&& other) noexcept
+    {
+        if (this != &other)
+        {
+            Clear();
+            _allocation.Free();
+            _elementsCount = other._elementsCount;
+            _deletedCount = other._deletedCount;
+            _size = other._size;
+            other._elementsCount = 0;
+            other._deletedCount = 0;
+            other._size = 0;
+            _allocation.Swap(other._allocation);
+        }
         return *this;
     }
 
@@ -148,7 +172,7 @@ public:
     /// </summary>
     ~HashSet()
     {
-        Cleanup();
+        SetCapacity(0, false);
     }
 
 public:
@@ -156,7 +180,6 @@ public:
     /// <summary>
     /// Gets the amount of the elements in the collection.
     /// </summary>
-    /// <returns>The amount of elements in the collection.</returns>
     FORCE_INLINE int32 Count() const
     {
         return _elementsCount;
@@ -165,16 +188,14 @@ public:
     /// <summary>
     /// Gets the amount of the elements that can be contained by the collection.
     /// </summary>
-    /// <returns>The capacity of the collection.</returns>
     FORCE_INLINE int32 Capacity() const
     {
-        return _tableSize;
+        return _size;
     }
 
     /// <summary>
     /// Returns true if collection is empty.
     /// </summary>
-    /// <returns>True if is empty, otherwise false.</returns>
     FORCE_INLINE bool IsEmpty() const
     {
         return _elementsCount == 0;
@@ -183,7 +204,6 @@ public:
     /// <summary>
     /// Returns true if collection has one or more elements.
     /// </summary>
-    /// <returns>True if isn't empty, otherwise false.</returns>
     FORCE_INLINE bool HasItems() const
     {
         return _elementsCount != 0;
@@ -197,9 +217,7 @@ public:
     struct Iterator
     {
         friend HashSet;
-
     private:
-
         HashSet& _collection;
         int32 _index;
 
@@ -223,41 +241,37 @@ public:
         {
         }
 
+        Iterator(Iterator&& i)
+            : _collection(i._collection)
+            , _index(i._index)
+        {
+        }
+
     public:
 
-        /// <summary>
-        /// Checks if iterator is in the end of the collection
-        /// </summary>
-        /// <returns>True if is in the end, otherwise false</returns>
         FORCE_INLINE bool IsEnd() const
         {
             return _index == _collection.Capacity();
         }
 
-        /// <summary>
-        /// Checks if iterator is not in the end of the collection
-        /// </summary>
-        /// <returns>True if is not in the end, otherwise false</returns>
         FORCE_INLINE bool IsNotEnd() const
         {
             return _index != _collection.Capacity();
         }
 
-    public:
-
         FORCE_INLINE Bucket& operator*() const
         {
-            return _collection._table[_index];
+            return _collection._allocation.Get()[_index];
         }
 
         FORCE_INLINE Bucket* operator->() const
         {
-            return &_collection._table[_index];
+            return &_collection._allocation.Get()[_index];
         }
 
         FORCE_INLINE explicit operator bool() const
         {
-            return _index >= 0 && _index < _collection._tableSize;
+            return _index >= 0 && _index < _collection._size;
         }
 
         FORCE_INLINE bool operator !() const
@@ -275,17 +289,16 @@ public:
             return _index != v._index || &_collection != &v._collection;
         }
 
-    public:
-
         Iterator& operator++()
         {
             const int32 capacity = _collection.Capacity();
             if (_index != capacity)
             {
+                const Bucket* data = _collection._allocation.Get();
                 do
                 {
                     _index++;
-                } while (_index != capacity && _collection._table[_index].IsNotOccupied());
+                } while (_index != capacity && data[_index].IsNotOccupied());
             }
             return *this;
         }
@@ -301,10 +314,11 @@ public:
         {
             if (_index > 0)
             {
+                const Bucket* data = _collection._allocation.Get();
                 do
                 {
                     _index--;
-                } while (_index > 0 && _collection._table[_index].IsNotOccupied());
+                } while (_index > 0 && data[_index].IsNotOccupied());
             }
             return *this;
         }
@@ -324,22 +338,25 @@ public:
     /// </summary>
     void Clear()
     {
-        if (_table)
+        if (_elementsCount + _deletedCount != 0)
         {
-            // Free all buckets
-            // Note: this will not clear allocated objects space!
-            for (int32 i = 0; i < _tableSize; i++)
-                _table[i].Free();
+            Bucket* data = _allocation.Get();
+            for (int32 i = 0; i < _size; i++)
+                data[i].Free();
             _elementsCount = _deletedCount = 0;
         }
     }
 
     /// <summary>
-    /// Clear the collection and delete value objects.
+    /// Clears the collection and delete value objects.
+    /// Note: collection must contain pointers to the objects that have public destructor and be allocated using New method.
     /// </summary>
+#if defined(_MSC_VER)
+    template<typename = typename TEnableIf<TIsPointer<T>::Value>::Type>
+#endif
     void ClearDelete()
     {
-        for (auto i = Begin(); i.IsNotEnd(); ++i)
+        for (Iterator i = Begin(); i.IsNotEnd(); ++i)
         {
             if (i->Value)
                 ::Delete(i->Value);
@@ -354,86 +371,63 @@ public:
     /// <param name="preserveContents">Enable/disable preserving collection contents during resizing</param>
     void SetCapacity(int32 capacity, bool preserveContents = true)
     {
-        // Validate input
-        ASSERT(capacity >= 0);
-
-        // Check if capacity won't change
         if (capacity == Capacity())
             return;
-
-        // Cache previous state
-        auto oldTable = _table;
-        auto oldTableSize = _tableSize;
-
-        // Clear elements counters
-        const auto oldElementsCount = _elementsCount;
+        ASSERT(capacity >= 0);
+        AllocationData oldAllocation;
+        oldAllocation.Swap(_allocation);
+        const int32 oldSize = _size;
+        const int32 oldElementsCount = _elementsCount;
         _deletedCount = _elementsCount = 0;
-
-        // Check if need to create a new table
-        if (capacity > 0)
+        if (capacity != 0 && (capacity & (capacity - 1)) != 0)
         {
-            // Align capacity value
-            if (Math::IsPowerOfTwo(capacity) == false)
-                capacity = Math::RoundUpToPowerOf2(capacity);
-
-            // Allocate new table
-            _table = NewArray<Bucket>(capacity);
-            _tableSize = capacity;
-
-            // Check if preserve content
-            if (oldElementsCount != 0 && preserveContents)
+            // Align capacity value to the next power of two (if it's not)
+            capacity++;
+            capacity |= capacity >> 1;
+            capacity |= capacity >> 2;
+            capacity |= capacity >> 4;
+            capacity |= capacity >> 8;
+            capacity |= capacity >> 16;
+            capacity = capacity + 1;
+        }
+        if (capacity)
+        {
+            _allocation.Allocate(capacity);
+            Bucket* data = _allocation.Get();
+            for (int32 i = 0; i < capacity; i++)
+                data[i]._state = Bucket::Empty;
+        }
+        _size = capacity;
+        Bucket* oldData = oldAllocation.Get();
+        if (oldElementsCount != 0 && preserveContents)
+        {
+            // TODO; move keys and values on realloc
+            for (int32 i = 0; i < oldSize; i++)
             {
-                // Try to preserve all values in the collection
-                for (int32 i = 0; i < oldTableSize; i++)
-                {
-                    if (oldTable[i].IsOccupied())
-                        Add(oldTable[i].Item);
-                }
+                if (oldData[i].IsOccupied())
+                    Add(oldData[i].Item);
             }
         }
-        else
+        if (oldElementsCount != 0)
         {
-            // Clear data
-            _table = nullptr;
-            _tableSize = 0;
-        }
-        ASSERT(preserveContents == false || _elementsCount == oldElementsCount);
-
-        // Delete old table
-        if (oldTable)
-        {
-            DeleteArray(oldTable, oldTableSize);
+            for (int32 i = 0; i < oldSize; i++)
+                oldData[i].Free();
         }
     }
 
     /// <summary>
-    /// Increases collection capacity by given extra size (content will be preserved)
+    /// Ensures that collection has given capacity.
     /// </summary>
-    /// <param name="extraSize">Extra size to enlarge collection</param>
-    FORCE_INLINE void IncreaseCapacity(int32 extraSize)
-    {
-        ASSERT(extraSize >= 0);
-        SetCapacity(Capacity() + extraSize);
-    }
-
-    /// <summary>
-    /// Ensures that collection has given capacity
-    /// </summary>
-    /// <param name="minCapacity">Minimum required capacity</param>
-    void EnsureCapacity(int32 minCapacity)
+    /// <param name="minCapacity">The minimum required capacity.</param>
+    /// <param name="preserveContents">True if preserve collection data when changing its size, otherwise collection after resize will be empty.</param>
+    void EnsureCapacity(int32 minCapacity, bool preserveContents = true)
     {
         if (Capacity() >= minCapacity)
             return;
-        int32 num = Capacity() == 0 ? DICTIONARY_DEFAULT_CAPACITY : Capacity() * 2;
-        SetCapacity(Math::Clamp<int32>(num, minCapacity, MAX_int32 - 1410));
-    }
-
-    /// <summary>
-    /// Cleanup collection data (changes size to 0 without data preserving)
-    /// </summary>
-    FORCE_INLINE void Cleanup()
-    {
-        SetCapacity(0, false);
+        if (minCapacity < DICTIONARY_DEFAULT_CAPACITY)
+            minCapacity = DICTIONARY_DEFAULT_CAPACITY;
+        const int32 capacity = _allocation.CalculateCapacityGrow(_size, minCapacity);
+        SetCapacity(capacity, preserveContents);
     }
 
 public:
@@ -443,7 +437,8 @@ public:
     /// </summary>
     /// <param name="item">The element to add to the set.</param>
     /// <returns>True if element has been added to the collection, otherwise false if the element is already present.</returns>
-    bool Add(const T& item)
+    template<typename ItemType>
+    bool Add(const ItemType& item)
     {
         // Ensure to have enough memory for the next item (in case of new element insertion)
         EnsureCapacity(_elementsCount + _deletedCount + 1);
@@ -453,12 +448,12 @@ public:
         FindPosition(item, pos);
 
         // Check if object has been already added
-        if (pos.ObjectIndex != INVALID_INDEX)
+        if (pos.ObjectIndex != -1)
             return false;
 
         // Insert
-        ASSERT(pos.FreeSlotIndex != INVALID_INDEX);
-        auto bucket = &_table[pos.FreeSlotIndex];
+        ASSERT(pos.FreeSlotIndex != -1);
+        Bucket* bucket = &_allocation.Get()[pos.FreeSlotIndex];
         bucket->Occupy(item);
         _elementsCount++;
 
@@ -472,7 +467,7 @@ public:
     void Add(const Iterator& i)
     {
         ASSERT(&i._collection != this && i);
-        Bucket& bucket = *i;
+        const Bucket& bucket = *i;
         Add(bucket.Item);
     }
 
@@ -481,22 +476,20 @@ public:
     /// </summary>
     /// <param name="item">The element to remove.</param>
     /// <returns>True if cannot remove item from the collection because cannot find it, otherwise false.</returns>
-    bool Remove(const T& item)
+    template<typename ItemType>
+    bool Remove(const ItemType& item)
     {
         if (IsEmpty())
-            return true;
-
+            return false;
         FindPositionResult pos;
         FindPosition(item, pos);
-
-        if (pos.ObjectIndex != INVALID_INDEX)
+        if (pos.ObjectIndex != -1)
         {
-            _table[pos.ObjectIndex].Delete();
+            _allocation.Get()[pos.ObjectIndex].Delete();
             _elementsCount--;
             _deletedCount++;
             return true;
         }
-
         return false;
     }
 
@@ -510,8 +503,8 @@ public:
         ASSERT(&i._collection == this);
         if (i)
         {
-            ASSERT(_table[i._index].IsOccupied());
-            _table[i._index].Delete();
+            ASSERT(_allocation.Get()[i._index].IsOccupied());
+            _allocation.Get()[i._index].Delete();
             _elementsCount--;
             _deletedCount++;
             return true;
@@ -526,15 +519,14 @@ public:
     /// </summary>
     /// <param name="item">Item to find</param>
     /// <returns>Iterator for the found element or End if cannot find it</returns>
-    Iterator Find(const T& item) const
+    template<typename ItemType>
+    Iterator Find(const ItemType& item) const
     {
         if (IsEmpty())
             return End();
-
         FindPositionResult pos;
         FindPosition(item, pos);
-
-        return pos.ObjectIndex != INVALID_INDEX ? Iterator(*this, pos.ObjectIndex) : End();
+        return pos.ObjectIndex != -1 ? Iterator(*this, pos.ObjectIndex) : End();
     }
 
     /// <summary>
@@ -542,15 +534,14 @@ public:
     /// </summary>
     /// <param name="item">The item to locate.</param>
     /// <returns>True if value has been found in a collection, otherwise false</returns>
-    bool Contains(const T& item) const
+    template<typename ItemType>
+    bool Contains(const ItemType& item) const
     {
         if (IsEmpty())
             return false;
-
         FindPositionResult pos;
         FindPosition(item, pos);
-
-        return pos.ObjectIndex != INVALID_INDEX;
+        return pos.ObjectIndex != -1;
     }
 
 public:
@@ -561,41 +552,26 @@ public:
     /// <param name="other">Other collection to clone</param>
     void Clone(const HashSet& other)
     {
-        // Clear previous data
         Clear();
-
-        // Update capacity
         SetCapacity(other.Capacity(), false);
-
-        // Clone items
-        for (auto i = other.Begin(); i != other.End(); ++i)
+        for (Iterator i = other.Begin(); i != other.End(); ++i)
             Add(i);
-
-        // Check
         ASSERT(Count() == other.Count());
         ASSERT(Capacity() == other.Capacity());
     }
 
 public:
 
-    /// <summary>
-    /// Gets iterator for beginning of the collection.
-    /// </summary>
-    /// <returns>Iterator for beginning of the collection.</returns>
     Iterator Begin() const
     {
-        Iterator i(*this, INVALID_INDEX);
+        Iterator i(*this, -1);
         ++i;
         return i;
     }
 
-    /// <summary>
-    /// Gets iterator for ending of the collection.
-    /// </summary>
-    /// <returns>Iterator for ending of the collection.</returns>
     Iterator End() const
     {
-        return Iterator(*this, _tableSize);
+        return Iterator(*this, _size);
     }
 
     Iterator begin()
@@ -607,7 +583,7 @@ public:
 
     FORCE_INLINE Iterator end()
     {
-        return Iterator(*this, _tableSize);
+        return Iterator(*this, _size);
     }
 
     const Iterator begin() const
@@ -619,11 +595,14 @@ public:
 
     FORCE_INLINE const Iterator end() const
     {
-        return Iterator(*this, _tableSize);
+        return Iterator(*this, _size);
     }
 
 protected:
 
+    /// <summary>
+    /// The result container of the set item lookup searching.
+    /// </summary>
     struct FindPositionResult
     {
         int32 ObjectIndex;
@@ -632,42 +611,43 @@ protected:
 
     /// <summary>
     /// Returns a pair of positions: 1st where the object is, 2nd where
-    /// it would go if you wanted to insert it. 1st is INVALID_INDEX
-    /// if object is not found; 2nd is INVALID_INDEX if it is.
+    /// it would go if you wanted to insert it. 1st is -1
+    /// if object is not found; 2nd is -1 if it is.
     /// Note: because of deletions where-to-insert is not trivial: it's the
     /// first deleted bucket we see, as long as we don't find the item later
     /// </summary>
     /// <param name="item">The item to find</param>
     /// <param name="result">Pair of values: where the object is and where it would go if you wanted to insert it</param>
-    void FindPosition(const T& item, FindPositionResult& result) const
+    template<typename ItemType>
+    void FindPosition(const ItemType& item, FindPositionResult& result) const
     {
-        ASSERT(_table);
-
-        const int32 tableSizeMinusOne = _tableSize - 1;
+        ASSERT(_size);
+        const int32 tableSizeMinusOne = _size - 1;
         int32 bucketIndex = GetHash(item) & tableSizeMinusOne;
-        int32 insertPos = INVALID_INDEX;
+        int32 insertPos = -1;
         int32 numChecks = 0;
-        result.FreeSlotIndex = INVALID_INDEX;
-
-        while (numChecks < _tableSize)
+        const Bucket* data = _allocation.Get();
+        result.FreeSlotIndex = -1;
+        while (numChecks < _size)
         {
             // Empty bucket
-            if (_table[bucketIndex].IsEmpty())
+            const Bucket& bucket = data[bucketIndex];
+            if (bucket.IsEmpty())
             {
                 // Found place to insert
-                result.ObjectIndex = INVALID_INDEX;
-                result.FreeSlotIndex = insertPos == INVALID_INDEX ? bucketIndex : insertPos;
+                result.ObjectIndex = -1;
+                result.FreeSlotIndex = insertPos == -1 ? bucketIndex : insertPos;
                 return;
             }
             // Deleted bucket
-            if (_table[bucketIndex].IsDeleted())
+            if (bucket.IsDeleted())
             {
                 // Keep searching but mark to insert
-                if (insertPos == INVALID_INDEX)
+                if (insertPos == -1)
                     insertPos = bucketIndex;
             }
                 // Occupied bucket by target item
-            else if (_table[bucketIndex].Item == item)
+            else if (bucket.Item == item)
             {
                 // Found item
                 result.ObjectIndex = bucketIndex;
@@ -675,10 +655,9 @@ protected:
             }
 
             numChecks++;
-            bucketIndex = (bucketIndex + DICTIONARY_PROB_FUNC(_tableSize, numChecks)) & tableSizeMinusOne;
+            bucketIndex = (bucketIndex + DICTIONARY_PROB_FUNC(_size, numChecks)) & tableSizeMinusOne;
         }
-
-        result.ObjectIndex = INVALID_INDEX;
+        result.ObjectIndex = -1;
         result.FreeSlotIndex = insertPos;
     }
 };

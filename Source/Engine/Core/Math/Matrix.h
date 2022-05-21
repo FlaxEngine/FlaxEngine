@@ -150,6 +150,8 @@ public:
         Platform::MemoryCopy(Raw, values, sizeof(float) * 16);
     }
 
+    explicit Matrix(const Matrix3x3& matrix);
+
 public:
 
     String ToString() const;

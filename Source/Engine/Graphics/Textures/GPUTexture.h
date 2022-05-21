@@ -568,12 +568,17 @@ public:
     /// Sets the number of resident mipmap levels in the texture (already uploaded to the GPU).
     /// </summary>
     API_PROPERTY() void SetResidentMipLevels(int32 count);
+    
+    /// <summary>
+    /// Event called when texture residency gets changed. Texture Mip gets loaded into GPU memory and is ready to use.
+    /// </summary>
+    Delegate<GPUTexture*> ResidentMipsChanged;
 
 protected:
 
     virtual bool OnInit() = 0;
     uint64 calculateMemoryUsage() const;
-    virtual void onResidentMipsChanged() = 0;
+    virtual void OnResidentMipsChanged() = 0;
 
 public:
 

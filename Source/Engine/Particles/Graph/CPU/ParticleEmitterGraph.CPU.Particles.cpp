@@ -15,7 +15,7 @@ void ParticleEmitterGraphCPUExecutor::ProcessGroupParameters(Box* box, Node* nod
     auto& context = Context.Get();
     switch (node->TypeID)
     {
-        // Get
+    // Get
     case 2:
     {
         int32 paramIndex;
@@ -96,31 +96,38 @@ void ParticleEmitterGraphCPUExecutor::ProcessGroupTextures(Box* box, Node* node,
 {
     switch (node->TypeID)
     {
-        // Scene Texture
+    // Scene Texture
     case 6:
     {
         // Not supported
         value = Value::Zero;
         break;
     }
-        // Scene Depth
+    // Scene Depth
     case 8:
     {
         // Not supported
         value = Value::Zero;
         break;
     }
-        // Texture
+    // Texture
     case 11:
     {
         // TODO: support sampling textures in CPU particles
         value = Value::Zero;
         break;
     }
-        // Load Texture
+    // Load Texture
     case 13:
     {
         // TODO: support sampling textures in CPU particles
+        value = Value::Zero;
+        break;
+    }
+    // Sample Global SDF
+    case 14:
+    {
+        // Not supported
         value = Value::Zero;
         break;
     }
@@ -134,18 +141,18 @@ void ParticleEmitterGraphCPUExecutor::ProcessGroupTools(Box* box, Node* node, Va
     auto& context = Context.Get();
     switch (node->TypeID)
     {
-        // Linearize Depth
+    // Linearize Depth
     case 7:
     {
         // TODO: support Linearize Depth in CPU particles
         value = Value::Zero;
         break;
     }
-        // Time
+    // Time
     case 8:
         value = box->ID == 0 ? context.Data->Time : context.DeltaTime;
         break;
-        // Transform Position To Screen UV
+    // Transform Position To Screen UV
     case 9:
     {
         GET_VIEW();
@@ -169,7 +176,7 @@ void ParticleEmitterGraphCPUExecutor::ProcessGroupParticles(Box* box, Node* node
     auto node = (ParticleEmitterGraphCPUNode*)nodeBase;
     switch (node->TypeID)
     {
-        // Particle Attribute
+    // Particle Attribute
     case 100:
     {
         byte* ptr = ACCESS_PARTICLE_ATTRIBUTE(0);
@@ -197,7 +204,7 @@ void ParticleEmitterGraphCPUExecutor::ProcessGroupParticles(Box* box, Node* node
         }
         break;
     }
-        // Particle Attribute (by index)
+    // Particle Attribute (by index)
     case 303:
     {
         const auto particleIndex = tryGetValue(node->GetBox(1), context.ParticleIndex);
@@ -226,61 +233,61 @@ void ParticleEmitterGraphCPUExecutor::ProcessGroupParticles(Box* box, Node* node
         }
         break;
     }
-        // Particle Position
+    // Particle Position
     case 101:
     {
         value = GET_PARTICLE_ATTRIBUTE(0, Vector3);
         break;
     }
-        // Particle Lifetime
+    // Particle Lifetime
     case 102:
     {
         value = GET_PARTICLE_ATTRIBUTE(0, float);
         break;
     }
-        // Particle Age
+    // Particle Age
     case 103:
     {
         value = GET_PARTICLE_ATTRIBUTE(0, float);
         break;
     }
-        // Particle Color
+    // Particle Color
     case 104:
     {
         value = GET_PARTICLE_ATTRIBUTE(0, Vector4);
         break;
     }
-        // Particle Velocity
+    // Particle Velocity
     case 105:
     {
         value = GET_PARTICLE_ATTRIBUTE(0, Vector3);
         break;
     }
-        // Particle Sprite Size
+    // Particle Sprite Size
     case 106:
     {
         value = GET_PARTICLE_ATTRIBUTE(0, Vector2);
         break;
     }
-        // Particle Mass
+    // Particle Mass
     case 107:
     {
         value = GET_PARTICLE_ATTRIBUTE(0, float);
         break;
     }
-        // Particle Rotation
+    // Particle Rotation
     case 108:
     {
         value = GET_PARTICLE_ATTRIBUTE(0, Vector3);
         break;
     }
-        // Particle Angular Velocity
+    // Particle Angular Velocity
     case 109:
     {
         value = GET_PARTICLE_ATTRIBUTE(0, Vector3);
         break;
     }
-        // Particle Normalized Age
+    // Particle Normalized Age
     case 110:
     {
         const float age = GET_PARTICLE_ATTRIBUTE(0, float);
@@ -288,55 +295,55 @@ void ParticleEmitterGraphCPUExecutor::ProcessGroupParticles(Box* box, Node* node
         value = age / Math::Max(lifetime, ZeroTolerance);
         break;
     }
-        // Particle Radius
+    // Particle Radius
     case 111:
     {
         value = GET_PARTICLE_ATTRIBUTE(0, float);
         break;
     }
-        // Effect Position
+    // Effect Position
     case 200:
     {
         value = context.Effect->GetPosition();
         break;
     }
-        // Effect Rotation
+    // Effect Rotation
     case 201:
     {
         value = context.Effect->GetOrientation();
         break;
     }
-        // Effect Scale
+    // Effect Scale
     case 202:
     {
         value = context.Effect->GetScale();
         break;
     }
-        // Simulation Mode
+    // Simulation Mode
     case 203:
     {
         value = box->ID == 0;
         break;
     }
-        // View Position
+    // View Position
     case 204:
     {
         value = context.ViewTask ? context.ViewTask->View.Position : Vector3::Zero;
         break;
     }
-        // View Direction
+    // View Direction
     case 205:
     {
         value = context.ViewTask ? context.ViewTask->View.Direction : Vector3::Forward;
         break;
     }
-        // View Far Plane
+    // View Far Plane
     case 206:
     {
         value = context.ViewTask ? context.ViewTask->View.Far : 0.0f;
         break;
     }
-        // Screen Size
+    // Screen Size
     case 207:
     {
         const Vector4 size = context.ViewTask ? context.ViewTask->View.ScreenSize : Vector4::Zero;
@@ -346,13 +353,13 @@ void ParticleEmitterGraphCPUExecutor::ProcessGroupParticles(Box* box, Node* node
             value = Vector2(size.Z, size.W);
         break;
     }
-        // Particle Position (world space)
+    // Particle Position (world space)
     case 212:
         value = GET_PARTICLE_ATTRIBUTE(0, Vector3);
         if (context.Emitter->SimulationSpace == ParticlesSimulationSpace::Local)
             value.AsVector3() = context.Effect->GetTransform().LocalToWorld(value.AsVector3());
         break;
-        // Particle Emitter Function
+    // Particle Emitter Function
     case 300:
     {
         // Load function asset
@@ -399,11 +406,11 @@ void ParticleEmitterGraphCPUExecutor::ProcessGroupParticles(Box* box, Node* node
         context.GraphStack.Pop();
         break;
     }
-        // Particle Index
+    // Particle Index
     case 301:
         value = context.ParticleIndex;
         break;
-        // Particles Count
+    // Particles Count
     case 302:
         value = (uint32)context.Data->Buffer->CPU.Count;
         break;
@@ -418,7 +425,7 @@ void ParticleEmitterGraphCPUExecutor::ProcessGroupFunction(Box* box, Node* node,
     auto& context = Context.Get();
     switch (node->TypeID)
     {
-        // Function Input
+    // Function Input
     case 1:
     {
         // Find the function call

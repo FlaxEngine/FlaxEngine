@@ -11,9 +11,8 @@
 /// </summary>
 API_CLASS() class FLAXENGINE_API SkyLight : public Light
 {
-DECLARE_SCENE_OBJECT(SkyLight);
+    DECLARE_SCENE_OBJECT(SkyLight);
 public:
-
     /// <summary>
     /// Sky light source mode.
     /// </summary>
@@ -31,12 +30,11 @@ public:
     };
 
 private:
-
     AssetReference<CubeTexture> _bakedProbe;
     float _radius;
+    int32 _sceneRenderingKey = -1;
 
 public:
-
     /// <summary>
     /// Additional color to add. Source texture colors are summed with it. Can be used to apply custom ambient color.
     /// </summary>
@@ -62,7 +60,6 @@ public:
     AssetReference<CubeTexture> CustomTexture;
 
 public:
-
     /// <summary>
     /// Gets the radius.
     /// </summary>
@@ -98,7 +95,6 @@ public:
     }
 
 public:
-
     /// <summary>
     /// Bakes that probe.
     /// </summary>
@@ -112,11 +108,9 @@ public:
     void SetProbeData(TextureData& data);
 
 private:
-
     void UpdateBounds();
 
 public:
-
     // [Light]
     void Draw(RenderContext& renderContext) override;
 #if USE_EDITOR
@@ -127,7 +121,6 @@ public:
     bool HasContentLoaded() const override;
 
 protected:
-
     // [Light]
     void OnEnable() override;
     void OnDisable() override;

@@ -461,7 +461,7 @@ void ParticleSystem::unload(bool isReloading)
     FramesPerSecond = 0.0f;
     DurationFrames = 0;
     Emitters.Resize(0);
-    EmittersParametersOverrides.Cleanup();
+    EmittersParametersOverrides.SetCapacity(0);
     Tracks.Resize(0);
 }
 

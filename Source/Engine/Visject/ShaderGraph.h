@@ -286,6 +286,7 @@ protected:
     SerializedMaterialParam findOrAddCubeTexture(const Guid& id);
     SerializedMaterialParam findOrAddSceneTexture(MaterialSceneTextures type);
     SerializedMaterialParam& findOrAddTextureGroupSampler(int32 index);
+    SerializedMaterialParam& findOrAddGlobalSDF();
 
     static String getLocalName(int32 index);
     static String getParamName(int32 index);

@@ -53,6 +53,11 @@ const MaterialInfo& LightmapUVsDensityMaterialShader::GetInfo() const
     return _info;
 }
 
+GPUShader* LightmapUVsDensityMaterialShader::GetShader() const
+{
+    return _shader->GetShader();
+}
+
 bool LightmapUVsDensityMaterialShader::IsReady() const
 {
     return _shader && _shader->IsLoaded();

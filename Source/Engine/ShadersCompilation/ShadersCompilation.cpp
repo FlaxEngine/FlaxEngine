@@ -19,6 +19,8 @@
 #include "Engine/Profiler/ProfilerCPU.h"
 #include "Engine/Serialization/MemoryReadStream.h"
 #include "Engine/Content/Asset.h"
+#include "Engine/Content/Content.h"
+#include "Engine/Content/Assets/Shader.h"
 #if USE_EDITOR
 #define COMPILE_WITH_ASSETS_IMPORTER 1 // Hack to use shaders importing in this module
 #include "Engine/ContentImporters/AssetsImportingManager.h"
@@ -56,7 +58,6 @@ using namespace ShadersCompilationImpl;
 class ShadersCompilationService : public EngineService
 {
 public:
-
     ShadersCompilationService()
         : EngineService(TEXT("Shaders Compilation Service"), -100)
     {
@@ -250,6 +251,7 @@ namespace
         if (action == FileSystemAction::Delete)
             return;
 
+        // Get list of assets using this shader file
         Array<Asset*> toReload;
         {
             ScopeLock lock(ShaderIncludesMapLocker);
@@ -258,6 +260,13 @@ namespace
             if (file == ShaderIncludesMap.End())
                 return;
             toReload = file->Value;
+        }
+
+        // Add any shaders that failed to load (eg. due to error in included header)
+        for (Asset* asset : Content::GetAssets())
+        {
+            if (asset->LastLoadFailed() && asset->Is<Shader>() && !toReload.Contains(asset))
+                toReload.Add(asset);
         }
 
         LOG(Info, "Shader include \'{0}\' has been modified.", path);

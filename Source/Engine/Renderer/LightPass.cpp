@@ -141,27 +141,6 @@ bool LightPass::setupResources()
     return false;
 }
 
-template<typename T>
-bool CanRenderShadow(RenderView& view, const T& light)
-{
-    bool result = false;
-    switch ((ShadowsCastingMode)light.ShadowsMode)
-    {
-    case ShadowsCastingMode::StaticOnly:
-        result = view.IsOfflinePass;
-        break;
-    case ShadowsCastingMode::DynamicOnly:
-        result = !view.IsOfflinePass;
-        break;
-    case ShadowsCastingMode::All:
-        result = true;
-        break;
-    default:
-        break;
-    }
-    return result && light.ShadowsStrength > ZeroTolerance;
-}
-
 void LightPass::Dispose()
 {
     // Base
@@ -281,9 +260,11 @@ void LightPass::RenderLight(RenderContext& renderContext, GPUTextureView* lightB
             // Set shadow mask
             context->BindSR(5, shadowMaskView);
         }
+        else
+            context->UnBindSR(5);
 
         // Pack light properties buffer
-        light.SetupLightData(&perLight.Light, view, renderShadow);
+        light.SetupLightData(&perLight.Light, renderShadow);
         Matrix::Transpose(wvp, perLight.WVP);
         if (useIES)
         {
@@ -336,9 +317,11 @@ void LightPass::RenderLight(RenderContext& renderContext, GPUTextureView* lightB
             // Set shadow mask
             context->BindSR(5, shadowMaskView);
         }
+        else
+            context->UnBindSR(5);
 
         // Pack light properties buffer
-        light.SetupLightData(&perLight.Light, view, renderShadow);
+        light.SetupLightData(&perLight.Light, renderShadow);
         Matrix::Transpose(wvp, perLight.WVP);
         if (useIES)
         {
@@ -377,9 +360,11 @@ void LightPass::RenderLight(RenderContext& renderContext, GPUTextureView* lightB
             // Set shadow mask
             context->BindSR(5, shadowMaskView);
         }
+        else
+            context->UnBindSR(5);
 
         // Pack light properties buffer
-        light.SetupLightData(&perLight.Light, view, renderShadow);
+        light.SetupLightData(&perLight.Light, renderShadow);
 
         // Calculate lighting
         context->UpdateCB(cb0, &perLight);
@@ -413,7 +398,7 @@ void LightPass::RenderLight(RenderContext& renderContext, GPUTextureView* lightB
         Matrix::Multiply(world, view.ViewProjection(), wvp);
 
         // Pack light properties buffer
-        light.SetupLightData(&perLight.Light, view, false);
+        light.SetupLightData(&perLight.Light, false);
         Matrix::Transpose(wvp, perLight.WVP);
 
         // Bind source image

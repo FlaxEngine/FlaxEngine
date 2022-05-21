@@ -41,7 +41,7 @@ namespace
     Array<MemPoolEntry> MemPool;
 }
 
-void RendererDirectionalLightData::SetupLightData(LightData* data, const RenderView& view, bool useShadow) const
+void RendererDirectionalLightData::SetupLightData(LightData* data, bool useShadow) const
 {
     data->SpotAngles.X = -2.0f;
     data->SpotAngles.Y = 1.0f;
@@ -58,7 +58,7 @@ void RendererDirectionalLightData::SetupLightData(LightData* data, const RenderV
     data->RadiusInv = 0;
 }
 
-void RendererSpotLightData::SetupLightData(LightData* data, const RenderView& view, bool useShadow) const
+void RendererSpotLightData::SetupLightData(LightData* data, bool useShadow) const
 {
     data->SpotAngles.X = CosOuterCone;
     data->SpotAngles.Y = InvCosConeDifference;
@@ -75,7 +75,7 @@ void RendererSpotLightData::SetupLightData(LightData* data, const RenderView& vi
     data->RadiusInv = 1.0f / Radius;
 }
 
-void RendererPointLightData::SetupLightData(LightData* data, const RenderView& view, bool useShadow) const
+void RendererPointLightData::SetupLightData(LightData* data, bool useShadow) const
 {
     data->SpotAngles.X = -2.0f;
     data->SpotAngles.Y = 1.0f;
@@ -92,7 +92,7 @@ void RendererPointLightData::SetupLightData(LightData* data, const RenderView& v
     data->RadiusInv = 1.0f / Radius;
 }
 
-void RendererSkyLightData::SetupLightData(LightData* data, const RenderView& view, bool useShadow) const
+void RendererSkyLightData::SetupLightData(LightData* data, bool useShadow) const
 {
     data->SpotAngles.X = AdditiveColor.X;
     data->SpotAngles.Y = AdditiveColor.Y;
@@ -392,6 +392,7 @@ void RenderList::Init(RenderContext& renderContext)
 
 void RenderList::Clear()
 {
+    Scenes.Clear();
     DrawCalls.Clear();
     BatchedDrawCalls.Clear();
     for (auto& list : DrawCallsLists)
@@ -781,6 +782,28 @@ DRAW:
                 context->BindIB(drawCall.Geometry.IndexBuffer);
                 context->BindVB(ToSpan(drawCall.Geometry.VertexBuffers, 3), drawCall.Geometry.VertexBuffersOffsets);
                 context->DrawIndexedInstanced(drawCall.Draw.IndicesCount, drawCall.InstanceCount, 0, 0, drawCall.Draw.StartIndex);
+            }
+        }
+        if (list.Batches.IsEmpty() && list.Indices.Count() != 0)
+        {
+            // Draw calls list has nto been batched so execute draw calls separately
+            for (int32 j = 0; j < list.Indices.Count(); j++)
+            {
+                auto& drawCall = DrawCalls[list.Indices[j]];
+                bindParams.FirstDrawCall = &drawCall;
+                drawCall.Material->Bind(bindParams);
+
+                context->BindIB(drawCall.Geometry.IndexBuffer);
+                context->BindVB(ToSpan(drawCall.Geometry.VertexBuffers, 3), drawCall.Geometry.VertexBuffersOffsets);
+
+                if (drawCall.InstanceCount == 0)
+                {
+                    context->DrawIndexedInstancedIndirect(drawCall.Draw.IndirectArgsBuffer, drawCall.Draw.IndirectArgsOffset);
+                }
+                else
+                {
+                    context->DrawIndexedInstanced(drawCall.Draw.IndicesCount, drawCall.InstanceCount, 0, 0, drawCall.Draw.StartIndex);
+                }
             }
         }
     }

@@ -9,6 +9,8 @@
 #include "Engine/Serialization/Serialization.h"
 #include "Engine/Level/Prefabs/PrefabManager.h"
 #include "Engine/Level/Scene/Scene.h"
+#include "Engine/Renderer/GlobalSignDistanceFieldPass.h"
+#include "Engine/Renderer/GI/GlobalSurfaceAtlasPass.h"
 #include "Engine/Utilities/Encryption.h"
 #if USE_EDITOR
 #include "Editor/Editor.h"
@@ -162,20 +164,46 @@ void StaticModel::RemoveVertexColors()
 
 void StaticModel::OnModelChanged()
 {
+    if (_residencyChangedModel)
+    {
+        _residencyChangedModel = nullptr;
+        Model->ResidencyChanged.Unbind<StaticModel, &StaticModel::OnModelResidencyChanged>(this);
+    }
     RemoveVertexColors();
     Entries.Release();
-
     if (Model && !Model->IsLoaded())
-    {
         UpdateBounds();
-    }
+    else if (!Model && _sceneRenderingKey != -1)
+        GetSceneRendering()->RemoveActor(this, _sceneRenderingKey);
 }
 
 void StaticModel::OnModelLoaded()
 {
     Entries.SetupIfInvalid(Model);
-
     UpdateBounds();
+    if (_sceneRenderingKey == -1 && _scene && _isActiveInHierarchy && _isEnabled && !_residencyChangedModel)
+    {
+        // Register for rendering but once the model has any LOD loaded
+        if (Model->GetLoadedLODs() == 0)
+        {
+            _residencyChangedModel = Model;
+            _residencyChangedModel->ResidencyChanged.Bind<StaticModel, &StaticModel::OnModelResidencyChanged>(this);
+        }
+        else
+        {
+            GetSceneRendering()->AddActor(this, _sceneRenderingKey);
+        }
+    }
+}
+
+void StaticModel::OnModelResidencyChanged()
+{
+    if (_sceneRenderingKey == -1 && _scene && Model && Model->GetLoadedLODs() > 0 && _residencyChangedModel)
+    {
+        GetSceneRendering()->AddActor(this, _sceneRenderingKey);
+        _residencyChangedModel->ResidencyChanged.Unbind<StaticModel, &StaticModel::OnModelResidencyChanged>(this);
+        _residencyChangedModel = nullptr;
+    }
 }
 
 void StaticModel::UpdateBounds()
@@ -199,7 +227,7 @@ void StaticModel::UpdateBounds()
     }
     BoundingSphere::FromBox(_box, _sphere);
     if (_sceneRenderingKey != -1)
-        GetSceneRendering()->UpdateGeometry(this, _sceneRenderingKey);
+        GetSceneRendering()->UpdateActor(this, _sceneRenderingKey);
 }
 
 bool StaticModel::HasContentLoaded() const
@@ -209,70 +237,71 @@ bool StaticModel::HasContentLoaded() const
 
 void StaticModel::Draw(RenderContext& renderContext)
 {
+    const DrawPass drawModes = (DrawPass)(DrawModes & renderContext.View.Pass);
+    if (!Model || !Model->IsLoaded() || !Model->CanBeRendered() || drawModes == DrawPass::None)
+        return;
+    if (renderContext.View.Pass == DrawPass::GlobalSDF)
+    {
+        GlobalSignDistanceFieldPass::Instance()->RasterizeModelSDF(this, Model->SDF, _world, _box);
+        return;
+    }
+    if (renderContext.View.Pass == DrawPass::GlobalSurfaceAtlas)
+    {
+        GlobalSurfaceAtlasPass::Instance()->RasterizeActor(this, this, _sphere, _world, Model->LODs.Last().GetBox());
+        return;
+    }
     GEOMETRY_DRAW_STATE_EVENT_BEGIN(_drawState, _world);
 
-    const DrawPass drawModes = (DrawPass)(DrawModes & renderContext.View.Pass);
-    if (Model && Model->IsLoaded() && drawModes != DrawPass::None)
+    // Flush vertex colors if need to
+    if (_vertexColorsDirty)
     {
-        // Flush vertex colors if need to
-        if (_vertexColorsDirty)
+        for (int32 lodIndex = 0; lodIndex < _vertexColorsCount; lodIndex++)
         {
-            for (int32 lodIndex = 0; lodIndex < _vertexColorsCount; lodIndex++)
+            auto& vertexColorsData = _vertexColorsData[lodIndex];
+            auto& vertexColorsBuffer = _vertexColorsBuffer[lodIndex];
+            if (vertexColorsData.HasItems())
             {
-                auto& vertexColorsData = _vertexColorsData[lodIndex];
-                auto& vertexColorsBuffer = _vertexColorsBuffer[lodIndex];
-                if (vertexColorsData.HasItems())
+                const uint32 size = vertexColorsData.Count() * sizeof(Color32);
+                if (!vertexColorsBuffer)
+                    vertexColorsBuffer = GPUDevice::Instance->CreateBuffer(TEXT("VertexColors"));
+                if (vertexColorsBuffer->GetSize() != size)
                 {
-                    const uint32 size = vertexColorsData.Count() * sizeof(Color32);
-                    if (!vertexColorsBuffer)
-                        vertexColorsBuffer = GPUDevice::Instance->CreateBuffer(TEXT("VertexColors"));
-                    if (vertexColorsBuffer->GetSize() != size)
-                    {
-                        if (vertexColorsBuffer->Init(GPUBufferDescription::Vertex(sizeof(Color32), vertexColorsData.Count())))
-                            return;
-                    }
-                    GPUDevice::Instance->GetMainContext()->UpdateBuffer(vertexColorsBuffer, vertexColorsData.Get(), size);
+                    if (vertexColorsBuffer->Init(GPUBufferDescription::Vertex(sizeof(Color32), vertexColorsData.Count())))
+                        return;
                 }
-                else
-                {
-                    SAFE_DELETE_GPU_RESOURCE(vertexColorsBuffer);
-                }
+                GPUDevice::Instance->GetMainContext()->UpdateBuffer(vertexColorsBuffer, vertexColorsData.Get(), size);
             }
-            _vertexColorsDirty = false;
+            else
+            {
+                SAFE_DELETE_GPU_RESOURCE(vertexColorsBuffer);
+            }
         }
+        _vertexColorsDirty = false;
+    }
 
 #if USE_EDITOR
-        // Disable motion blur effects in editor without play mode enabled to hide minor artifacts on objects moving
-        if (!Editor::IsPlayMode)
-            _drawState.PrevWorld = _world;
+    // Disable motion blur effects in editor without play mode enabled to hide minor artifacts on objects moving
+    if (!Editor::IsPlayMode)
+        _drawState.PrevWorld = _world;
 #endif
 
-        Mesh::DrawInfo draw;
-        draw.Buffer = &Entries;
-        draw.World = &_world;
-        draw.DrawState = &_drawState;
-        draw.Lightmap = _scene->LightmapsData.GetReadyLightmap(Lightmap.TextureIndex);
-        draw.LightmapUVs = &Lightmap.UVsArea;
-        draw.Flags = _staticFlags;
-        draw.DrawModes = drawModes;
-        draw.Bounds = _sphere;
-        draw.PerInstanceRandom = GetPerInstanceRandom();
-        draw.LODBias = _lodBias;
-        draw.ForcedLOD = _forcedLod;
-        draw.VertexColors = _vertexColorsCount ? _vertexColorsBuffer : nullptr;
+    Mesh::DrawInfo draw;
+    draw.Buffer = &Entries;
+    draw.World = &_world;
+    draw.DrawState = &_drawState;
+    draw.Lightmap = _scene->LightmapsData.GetReadyLightmap(Lightmap.TextureIndex);
+    draw.LightmapUVs = &Lightmap.UVsArea;
+    draw.Flags = _staticFlags;
+    draw.DrawModes = drawModes;
+    draw.Bounds = _sphere;
+    draw.PerInstanceRandom = GetPerInstanceRandom();
+    draw.LODBias = _lodBias;
+    draw.ForcedLOD = _forcedLod;
+    draw.VertexColors = _vertexColorsCount ? _vertexColorsBuffer : nullptr;
 
-        Model->Draw(renderContext, draw);
-    }
+    Model->Draw(renderContext, draw);
 
     GEOMETRY_DRAW_STATE_EVENT_END(_drawState, _world);
-}
-
-void StaticModel::DrawGeneric(RenderContext& renderContext)
-{
-    if (renderContext.View.RenderLayersMask.Mask & GetLayerMask() && renderContext.View.CullingFrustum.Intersects(_box))
-    {
-        Draw(renderContext);
-    }
 }
 
 bool StaticModel::IntersectsItself(const Ray& ray, float& distance, Vector3& normal)
@@ -417,6 +446,12 @@ void StaticModel::Deserialize(DeserializeStream& stream, ISerializeModifier* mod
             DrawModes = DrawPass::Depth;
         }
     }
+    // [Deprecated on 07.02.2022, expires on 07.02.2024]
+    if (modifier->EngineBuild <= 6330)
+        DrawModes |= DrawPass::GlobalSDF;
+    // [Deprecated on 27.04.2022, expires on 27.04.2024]
+    if (modifier->EngineBuild <= 6331)
+        DrawModes |= DrawPass::GlobalSurfaceAtlas;
 
     {
         const auto member = stream.FindMember("RenderPasses");
@@ -487,4 +522,31 @@ void StaticModel::OnTransformChanged()
 
     _transform.GetWorld(_world);
     UpdateBounds();
+}
+
+void StaticModel::OnEnable()
+{
+    if (_scene && _sceneRenderingKey == -1 && !_residencyChangedModel && Model && Model->IsLoaded() && Model->GetLoadedLODs() != 0)
+    {
+        GetSceneRendering()->AddActor(this, _sceneRenderingKey);
+    }
+
+    // Skip ModelInstanceActor (add to SceneRendering manually)
+    Actor::OnEnable();
+}
+
+void StaticModel::OnDisable()
+{
+    // Skip ModelInstanceActor (add to SceneRendering manually)
+    Actor::OnDisable();
+
+    if (_sceneRenderingKey != -1)
+    {
+        GetSceneRendering()->RemoveActor(this, _sceneRenderingKey);
+    }
+    if (_residencyChangedModel)
+    {
+        _residencyChangedModel->ResidencyChanged.Unbind<StaticModel, &StaticModel::OnModelResidencyChanged>(this);
+        _residencyChangedModel = nullptr;
+    }
 }

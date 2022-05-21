@@ -55,7 +55,6 @@ public:
     /// <summary>
     /// Gets the x coordinate.
     /// </summary>
-    /// <returns>The x position.</returns>
     FORCE_INLINE int32 GetX() const
     {
         return _x;
@@ -64,7 +63,6 @@ public:
     /// <summary>
     /// Gets the z coordinate.
     /// </summary>
-    /// <returns>The z position.</returns>
     FORCE_INLINE int32 GetZ() const
     {
         return _z;
@@ -73,7 +71,6 @@ public:
     /// <summary>
     /// Gets the patch.
     /// </summary>
-    /// <returns>The terrain patch,</returns>
     FORCE_INLINE TerrainPatch* GetPatch() const
     {
         return _patch;
@@ -82,19 +79,17 @@ public:
     /// <summary>
     /// Gets the chunk world bounds.
     /// </summary>
-    /// <returns>The bounding box.</returns>
     FORCE_INLINE const BoundingBox& GetBounds() const
     {
         return _bounds;
     }
 
     /// <summary>
-    /// Gets the model world matrix transform.
+    /// Gets the chunk world matrix transform.
     /// </summary>
-    /// <param name="world">The result world matrix.</param>
-    FORCE_INLINE void GetWorld(Matrix* world) const
+    FORCE_INLINE const Matrix& GetWorld() const
     {
-        *world = _world;
+        return _world;
     }
 
     /// <summary>
@@ -109,7 +104,6 @@ public:
     /// <summary>
     /// Determines whether this chunk has valid lightmap data.
     /// </summary>
-    /// <returns><c>true</c> if this chunk has valid lightmap data; otherwise, <c>false</c>.</returns>
     FORCE_INLINE bool HasLightmap() const
     {
         return Lightmap.TextureIndex != INVALID_INDEX;

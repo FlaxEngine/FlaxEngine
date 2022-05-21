@@ -25,9 +25,6 @@ struct RectPack
     SizeType Width;
     SizeType Height;
 
-    // The remaining space amount inside this slot (updated on every insertion, initial it equal to width*height).
-    SizeType SpaceLeft;
-
     // True, if slot has been allocated, otherwise it's free.
     bool IsUsed;
 
@@ -45,7 +42,6 @@ struct RectPack
         , Y(y)
         , Width(width)
         , Height(height)
-        , SpaceLeft(width * height)
         , IsUsed(false)
     {
     }
@@ -75,13 +71,15 @@ struct RectPack
         NodeType* result;
         const SizeType paddedWidth = itemWidth + itemPadding;
         const SizeType paddedHeight = itemHeight + itemPadding;
-        const SizeType paddedSize = paddedWidth * paddedHeight;
 
-        // Check if there is enough space to fix that item within this slot
-        if (SpaceLeft < paddedSize)
+        // Check if we're free and just the right size
+        if (!IsUsed && Width == paddedWidth && Height == paddedHeight)
         {
-            // Not enough space
-            return nullptr;
+            // Insert into this slot
+            IsUsed = true;
+            result = (NodeType*)this;
+            result->OnInsert(Forward<Args>(args)...);
+            return result;
         }
 
         // If there are left and right slots there are empty regions around this slot (it also means this slot is occupied)
@@ -91,23 +89,14 @@ struct RectPack
             {
                 result = Left->Insert(itemWidth, itemHeight, itemPadding, Forward<Args>(args)...);
                 if (result)
-                {
-                    SpaceLeft -= paddedSize;
                     return result;
-                }
             }
             if (Right)
             {
                 result = Right->Insert(itemWidth, itemHeight, itemPadding, Forward<Args>(args)...);
                 if (result)
-                {
-                    SpaceLeft -= paddedSize;
                     return result;
-                }
             }
-
-            // Not enough space
-            return nullptr;
         }
 
         // This slot can't fit or has been already occupied
@@ -115,17 +104,6 @@ struct RectPack
         {
             // Not enough space
             return nullptr;
-        }
-
-        // Check if we're just right size
-        if (Width == paddedWidth && Height == paddedHeight)
-        {
-            // Insert into this slot
-            IsUsed = true;
-            SpaceLeft -= paddedSize;
-            result = (NodeType*)this;
-            result->OnInsert(Forward<Args>(args)...);
-            return result;
         }
 
         // The width and height of the new child node
@@ -152,9 +130,20 @@ struct RectPack
 
         // Insert into this slot
         IsUsed = true;
-        SpaceLeft -= paddedSize;
         result = (NodeType*)this;
         result->OnInsert(Forward<Args>(args)...);
         return result;
+    }
+
+    /// <summary>
+    /// Frees the node.
+    /// </summary>
+    /// <returns>The node that contains inserted an item or null if failed to find a free space.</returns>
+    template<class... Args>
+    void Free(Args&&...args)
+    {
+        ASSERT(IsUsed);
+        IsUsed = false;
+        ((NodeType*)this)->OnFree(Forward<Args>(args)...);
     }
 };

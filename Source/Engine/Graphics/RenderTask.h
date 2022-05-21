@@ -220,6 +220,10 @@ public:
 API_CLASS() class FLAXENGINE_API SceneRenderTask : public RenderTask
 {
 DECLARE_SCRIPTING_TYPE(SceneRenderTask);
+protected:
+    class SceneRendering* _customActorsScene = nullptr;
+
+public:
 
     /// <summary>
     /// Finalizes an instance of the <see cref="SceneRenderTask"/> class.

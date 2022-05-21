@@ -177,7 +177,7 @@ namespace FlaxEditor.GUI.Timeline.Tracks
                 if (SubTracks.Any(x => x is IObjectTrack y && y.Object == script))
                     continue;
 
-                var name = CustomEditorsUtil.GetPropertyNameUI(script.GetType().Name);
+                var name = Utilities.Utils.GetPropertyNameUI(script.GetType().Name);
                 menu.AddButton(name, OnAddScriptTrack).Tag = script;
             }
         }

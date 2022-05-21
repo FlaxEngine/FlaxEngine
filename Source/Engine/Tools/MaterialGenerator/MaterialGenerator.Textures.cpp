@@ -8,7 +8,7 @@ void MaterialGenerator::ProcessGroupTextures(Box* box, Node* node, Value& value)
 {
     switch (node->TypeID)
     {
-        // Texture
+    // Texture
     case 1:
     {
         // Check if texture has been selected
@@ -28,11 +28,11 @@ void MaterialGenerator::ProcessGroupTextures(Box* box, Node* node, Value& value)
         }
         break;
     }
-        // TexCoord
+    // TexCoord
     case 2:
         value = getUVs;
         break;
-        // Cube Texture
+    // Cube Texture
     case 3:
     {
         // Check if texture has been selected
@@ -52,7 +52,7 @@ void MaterialGenerator::ProcessGroupTextures(Box* box, Node* node, Value& value)
         }
         break;
     }
-        // Normal Map
+    // Normal Map
     case 4:
     {
         // Check if texture has been selected
@@ -72,7 +72,7 @@ void MaterialGenerator::ProcessGroupTextures(Box* box, Node* node, Value& value)
         }
         break;
     }
-        // Parallax Occlusion Mapping
+    // Parallax Occlusion Mapping
     case 5:
     {
         auto heightTextureBox = node->GetBox(4);
@@ -163,7 +163,7 @@ void MaterialGenerator::ProcessGroupTextures(Box* box, Node* node, Value& value)
         value = result;
         break;
     }
-        // Scene Texture
+    // Scene Texture
     case 6:
     {
         // Get texture type
@@ -267,7 +267,7 @@ void MaterialGenerator::ProcessGroupTextures(Box* box, Node* node, Value& value)
         }
         break;
     }
-        // Scene Color
+    // Scene Color
     case 7:
     {
         // Sample scene color texture
@@ -275,13 +275,13 @@ void MaterialGenerator::ProcessGroupTextures(Box* box, Node* node, Value& value)
         sampleTexture(node, value, box, &param);
         break;
     }
-        // Scene Depth
+    // Scene Depth
     case 8:
     {
         sampleSceneDepth(node, value, box);
         break;
     }
-        // Sample Texture
+    // Sample Texture
     case 9:
     {
         enum CommonSamplerType
@@ -401,7 +401,7 @@ void MaterialGenerator::ProcessGroupTextures(Box* box, Node* node, Value& value)
         value = textureBox->Cache;
         break;
     }
-        // Flipbook
+    // Flipbook
     case 10:
     {
         // Get input values
@@ -418,6 +418,30 @@ void MaterialGenerator::ProcessGroupTextures(Box* box, Node* node, Value& value)
         auto frameY = writeLocal(VariantType::Float, String::Format(TEXT("abs({0} * {1}.y - (floor({2} * {3}.x) + {0} * 1))"), invertY.Value, framesXY.Value, frame.Value, framesXYInv.Value), node);
         auto frameX = writeLocal(VariantType::Float, String::Format(TEXT("abs({0} * {1}.x - (({2} - {1}.x * floor({2} * {3}.x)) + {0} * 1))"), invertX.Value, framesXY.Value, frame.Value, framesXYInv.Value), node);
         value = writeLocal(VariantType::Vector2, String::Format(TEXT("({3} + float2({0}, {1})) * {2}"), frameX.Value, frameY.Value, framesXYInv.Value, uv.Value), node);
+        break;
+    }
+    // Sample Global SDF
+    case 14:
+    {
+        auto param = findOrAddGlobalSDF();
+        Value worldPosition = tryGetValue(node->GetBox(1), Value(VariantType::Vector3, TEXT("input.WorldPosition.xyz"))).Cast(VariantType::Vector3);
+        value = writeLocal(VariantType::Float, String::Format(TEXT("SampleGlobalSDF({0}, {0}_Tex, {1})"), param.ShaderName, worldPosition.Value), node);
+        _includes.Add(TEXT("./Flax/GlobalSignDistanceField.hlsl"));
+        break;
+    }
+    // Sample Global SDF Gradient
+    case 15:
+    {
+        auto gradientBox = node->GetBox(0);
+        auto distanceBox = node->GetBox(2);
+        auto param = findOrAddGlobalSDF();
+        Value worldPosition = tryGetValue(node->GetBox(1), Value(VariantType::Vector3, TEXT("input.WorldPosition.xyz"))).Cast(VariantType::Vector3);
+        auto distance = writeLocal(VariantType::Float, node);
+        auto gradient = writeLocal(VariantType::Vector3, String::Format(TEXT("SampleGlobalSDFGradient({0}, {0}_Tex, {1}, {2})"), param.ShaderName, worldPosition.Value, distance.Value), node);
+        _includes.Add(TEXT("./Flax/GlobalSignDistanceField.hlsl"));
+        gradientBox->Cache = gradient;
+        distanceBox->Cache = distance;
+        value = box == gradientBox ? gradient : distance;
         break;
     }
     default:

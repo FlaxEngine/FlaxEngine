@@ -41,6 +41,11 @@ const MaterialInfo& VertexColorsMaterialShader::GetInfo() const
     return _info;
 }
 
+GPUShader* VertexColorsMaterialShader::GetShader() const
+{
+    return _shader->GetShader();
+}
+
 bool VertexColorsMaterialShader::IsReady() const
 {
     return _shader && _shader->IsLoaded();

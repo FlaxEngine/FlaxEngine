@@ -16,6 +16,8 @@
 ExponentialHeightFog::ExponentialHeightFog(const SpawnParams& params)
     : Actor(params)
 {
+    _drawNoCulling = 1;
+
     // Load shader
     _shader = Content::LoadAsyncInternal<Shader>(TEXT("Shaders/Fog"));
     if (_shader == nullptr)
@@ -31,7 +33,11 @@ void ExponentialHeightFog::Draw(RenderContext& renderContext)
 {
     // Render only when shader is valid and fog can be rendered
     // Do not render exponential fog in orthographic views
-    if ((renderContext.View.Flags & ViewFlags::Fog) != 0 && _shader && _shader->IsLoaded() && renderContext.View.IsPerspectiveProjection())
+    if ((renderContext.View.Flags & ViewFlags::Fog) != 0 
+        && renderContext.View.Pass & DrawPass::GBuffer
+        && _shader 
+        && _shader->IsLoaded() 
+        && renderContext.View.IsPerspectiveProjection())
     {
         // Prepare
         if (_psFog.States[0] == nullptr)
@@ -203,7 +209,7 @@ void ExponentialHeightFog::DrawFog(GPUContext* context, RenderContext& renderCon
 
 void ExponentialHeightFog::OnEnable()
 {
-    GetSceneRendering()->AddCommonNoCulling(this);
+    GetSceneRendering()->AddActor(this, _sceneRenderingKey);
 #if USE_EDITOR
     GetSceneRendering()->AddViewportIcon(this);
 #endif
@@ -217,7 +223,7 @@ void ExponentialHeightFog::OnDisable()
 #if USE_EDITOR
     GetSceneRendering()->RemoveViewportIcon(this);
 #endif
-    GetSceneRendering()->RemoveCommonNoCulling(this);
+    GetSceneRendering()->RemoveActor(this, _sceneRenderingKey);
 
     // Base
     Actor::OnDisable();

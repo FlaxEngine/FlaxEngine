@@ -457,7 +457,7 @@ namespace FlaxEditor.Surface
                     if (field.Name.Equals("value__"))
                         continue;
 
-                    var name = CustomEditorsUtil.GetPropertyNameUI(field.Name);
+                    var name = Utilities.Utils.GetPropertyNameUI(field.Name);
                     values.Add(name);
                 }
                 return ComboBox(x, y, width, valueIndex, values.ToArray());

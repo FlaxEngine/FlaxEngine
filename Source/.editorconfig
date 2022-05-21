@@ -18,6 +18,11 @@ indent_size = 4
 indent_style = space
 indent_size = 4
 
+# Shader files
+[*.{hlsl,shader,glsl}]
+indent_style = space
+indent_size = 4
+
 # XAML files
 [*.xaml]
 indent_style = space

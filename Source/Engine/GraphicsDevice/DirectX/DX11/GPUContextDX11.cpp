@@ -732,7 +732,9 @@ void GPUContextDX11::UpdateTexture(GPUTexture* texture, int32 arrayIndex, int32 
     auto textureDX11 = static_cast<GPUTextureDX11*>(texture);
 
     const int32 subresourceIndex = RenderToolsDX::CalcSubresourceIndex(mipIndex, arrayIndex, texture->MipLevels());
-    const uint32 depthPitch = texture->IsVolume() ? slicePitch / texture->Depth() : slicePitch;
+    uint32 depthPitch = slicePitch;
+    if (texture->IsVolume())
+        depthPitch /= Math::Max(1, texture->Depth() >> mipIndex);
     _context->UpdateSubresource(textureDX11->GetResource(), subresourceIndex, nullptr, data, (UINT)rowPitch, (UINT)depthPitch);
 
     //D3D11_MAPPED_SUBRESOURCE mapped;

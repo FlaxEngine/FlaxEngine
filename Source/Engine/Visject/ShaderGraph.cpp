@@ -413,9 +413,16 @@ void ShaderGenerator::ProcessGroupMath(Box* box, Node* node, Value& value)
         const auto rangeA = tryGetValue(node->GetBox(1), node->Values[1].AsVector2());
         const auto rangeB = tryGetValue(node->GetBox(2), node->Values[2].AsVector2());
         const auto clamp  = tryGetValue(node->GetBox(3), node->Values[3]).AsBool();
-
         const auto mapFunc = String::Format(TEXT("{2}.x + ({0} - {1}.x) * ({2}.y - {2}.x) / ({1}.y - {1}.x)"), inVal.Value, rangeA.Value, rangeB.Value);
         value = writeLocal(ValueType::Float, String::Format(TEXT("{2} ? clamp({0}, {1}.x, {1}.y) : {0}"), mapFunc, rangeB.Value, clamp.Value), node);
+        break;
+    }
+        // Rotate Vector
+    case 49:
+    {
+        const Value quaternion = tryGetValue(node->GetBox(0), Value::InitForZero(VariantType::Quaternion)).Cast(VariantType::Quaternion);
+        const Value vector = tryGetValue(node->GetBox(1), Vector3::Forward).Cast(VariantType::Vector3);
+        value = writeLocal(ValueType::Vector3, String::Format(TEXT("QuatRotateVector({0}, {1})"), quaternion.Value, vector.Value), node);
         break;
     }
     default:
@@ -1298,6 +1305,27 @@ SerializedMaterialParam& ShaderGenerator::findOrAddTextureGroupSampler(int32 ind
     param.Name = TEXT("Texture Group Sampler");
     param.ShaderName = getParamName(_parameters.Count());
     param.AsInteger = index;
+    param.ID = Guid(_parameters.Count(), 0, 0, 3); // Assign temporary id
+    return param;
+}
+
+SerializedMaterialParam& ShaderGenerator::findOrAddGlobalSDF()
+{
+    // Find
+    for (int32 i = 0; i < _parameters.Count(); i++)
+    {
+        SerializedMaterialParam& param = _parameters[i];
+        if (!param.IsPublic && param.Type == MaterialParameterType::GlobalSDF)
+            return param;
+    }
+
+    // Create
+    SerializedMaterialParam& param = _parameters.AddOne();
+    param.Type = MaterialParameterType::GlobalSDF;
+    param.IsPublic = false;
+    param.Override = true;
+    param.Name = TEXT("Global SDF");
+    param.ShaderName = getParamName(_parameters.Count());
     param.ID = Guid(_parameters.Count(), 0, 0, 3); // Assign temporary id
     return param;
 }

@@ -431,11 +431,6 @@ bool GPUTexture::Init(const GPUTextureDescription& desc)
             LOG(Warning, "Cannot create texture. Only 2D Texture can be used as a Depth Stencil. Description: {0}", desc.ToString());
             return true;
         }
-        if (desc.MipLevels != 1)
-        {
-            LOG(Warning, "Cannot create texture. Volume texture cannot have more than 1 mip level. Description: {0}", desc.ToString());
-            return true;
-        }
         if (desc.ArraySize != 1)
         {
             LOG(Warning, "Cannot create texture. Volume texture cannot create array of volume textures. Description: {0}", desc.ToString());
@@ -607,7 +602,25 @@ GPUTask* GPUTexture::UploadMipMapAsync(const BytesContainer& data, int32 mipInde
     ASSERT(IsAllocated());
     ASSERT(mipIndex < MipLevels() && data.IsValid());
     ASSERT(data.Length() >= slicePitch);
-    // TODO: support texture data upload to the GPU on a main thread during rendering without this async task (faster direct upload)
+
+    // Optimize texture upload invoked during rendering
+    if (IsInMainThread() && GPUDevice::Instance->IsRendering())
+    {
+        // Update all array slices
+        const byte* dataSource = data.Get();
+        for (int32 arrayIndex = 0; arrayIndex < _desc.ArraySize; arrayIndex++)
+        {
+            GPUDevice::Instance->GetMainContext()->UpdateTexture(this, arrayIndex, mipIndex, dataSource, rowPitch, slicePitch);
+            dataSource += slicePitch;
+        }
+        if (mipIndex == HighestResidentMipIndex() - 1)
+        {
+            // Mark as mip loaded
+            SetResidentMipLevels(ResidentMipLevels() + 1);
+        }
+        return nullptr;
+    }
+
     auto task = ::New<GPUUploadTextureMipTask>(this, mipIndex, data, rowPitch, slicePitch, copyData);
     ASSERT_LOW_LAYER(task && task->HasReference(this));
     return task;
@@ -800,5 +813,6 @@ void GPUTexture::SetResidentMipLevels(int32 count)
     if (_residentMipLevels == count || !IsRegularTexture())
         return;
     _residentMipLevels = count;
-    onResidentMipsChanged();
+    OnResidentMipsChanged();
+    ResidentMipsChanged(this);
 }

@@ -378,9 +378,10 @@ void Level::DrawActors(RenderContext& renderContext)
 
     //ScopeLock lock(ScenesLock);
 
-    for (int32 i = 0; i < Scenes.Count(); i++)
+    for (Scene* scene : Scenes)
     {
-        Scenes[i]->Rendering.Draw(renderContext);
+        if (scene->IsActiveInHierarchy())
+            scene->Rendering.Draw(renderContext);
     }
 }
 
@@ -390,9 +391,10 @@ void Level::CollectPostFxVolumes(RenderContext& renderContext)
 
     //ScopeLock lock(ScenesLock);
 
-    for (int32 i = 0; i < Scenes.Count(); i++)
+    for (Scene* scene : Scenes)
     {
-        Scenes[i]->Rendering.CollectPostFxVolumes(renderContext);
+        if (scene->IsActiveInHierarchy())
+            scene->Rendering.CollectPostFxVolumes(renderContext);
     }
 }
 

@@ -106,6 +106,8 @@ bool SpriteRender::HasContentLoaded() const
 
 void SpriteRender::Draw(RenderContext& renderContext)
 {
+    if (renderContext.View.Pass == DrawPass::GlobalSDF || renderContext.View.Pass == DrawPass::GlobalSurfaceAtlas)
+        return;
     if (!Material || !Material->IsLoaded() || !_quadModel || !_quadModel->IsLoaded())
         return;
     auto model = _quadModel.As<Model>();
@@ -129,11 +131,6 @@ void SpriteRender::Draw(RenderContext& renderContext)
         Matrix::Multiply(m1, m2, world);
     }
     model->LODs[0].Draw(renderContext, _materialInstance, world, GetStaticFlags(), false, DrawModes, GetPerInstanceRandom());
-}
-
-void SpriteRender::DrawGeneric(RenderContext& renderContext)
-{
-    Draw(renderContext);
 }
 
 void SpriteRender::Serialize(SerializeStream& stream, const void* otherObj)
@@ -173,7 +170,7 @@ void SpriteRender::Deserialize(DeserializeStream& stream, ISerializeModifier* mo
 void SpriteRender::OnLayerChanged()
 {
     if (_sceneRenderingKey != -1)
-        GetSceneRendering()->UpdateGeometry(this, _sceneRenderingKey);
+        GetSceneRendering()->UpdateActor(this, _sceneRenderingKey);
 }
 
 void SpriteRender::OnEndPlay()
@@ -193,7 +190,7 @@ void SpriteRender::OnEndPlay()
 
 void SpriteRender::OnEnable()
 {
-    _sceneRenderingKey = GetSceneRendering()->AddGeometry(this);
+    GetSceneRendering()->AddActor(this, _sceneRenderingKey);
 
     // Base
     Actor::OnEnable();
@@ -201,7 +198,7 @@ void SpriteRender::OnEnable()
 
 void SpriteRender::OnDisable()
 {
-    GetSceneRendering()->RemoveGeometry(this, _sceneRenderingKey);
+    GetSceneRendering()->RemoveActor(this, _sceneRenderingKey);
 
     // Base
     Actor::OnDisable();
@@ -218,5 +215,5 @@ void SpriteRender::OnTransformChanged()
     BoundingSphere::Transform(localSphere, world, _sphere);
     BoundingBox::FromSphere(_sphere, _box);
     if (_sceneRenderingKey != -1)
-        GetSceneRendering()->UpdateGeometry(this, _sceneRenderingKey);
+        GetSceneRendering()->UpdateActor(this, _sceneRenderingKey);
 }

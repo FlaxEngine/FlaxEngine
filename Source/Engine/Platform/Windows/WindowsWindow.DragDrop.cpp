@@ -6,7 +6,6 @@
 
 #if USE_EDITOR
 
-#include "Engine/Core/Log.h"
 #include "Engine/Core/Collections/Array.h"
 #include "Engine/Engine/Engine.h"
 #include "Engine/Platform/IGuiData.h"
@@ -575,27 +574,15 @@ public:
 
     int64 ExitFlag = 0;
 
-public:
-
     // [ThreadPoolTask]
     bool Run() override
     {
-        const uint64 beginFrame = Engine::FrameCount;
-
         Scripting::GetScriptsDomain()->Dispatch();
-
         while (Platform::AtomicRead(&ExitFlag) == 0)
         {
-            // Render single frame
             Engine::OnDraw();
-
-            // Wait for a while
             Platform::Sleep(20);
         }
-
-        const uint64 endFrame = Engine::FrameCount;
-        LOG(Info, "Rendered {0} frames during DoDragDrop stall.", endFrame - beginFrame);
-
         return false;
     }
 };

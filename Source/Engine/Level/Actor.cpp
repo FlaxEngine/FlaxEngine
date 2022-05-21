@@ -81,6 +81,7 @@ Actor::Actor(const SpawnParams& params)
     , _physicsScene(nullptr)
     , HideFlags(HideFlags::None)
 {
+    _drawNoCulling = 0;
 }
 
 SceneRendering* Actor::GetSceneRendering() const
@@ -1230,45 +1231,6 @@ void Actor::UnregisterObjectHierarchy()
 
 void Actor::Draw(RenderContext& renderContext)
 {
-}
-
-void Actor::DrawGeneric(RenderContext& renderContext)
-{
-    // Generic drawing uses only GBuffer Fill Pass and simple frustum culling (see SceneRendering for more optimized drawing)
-    if (renderContext.View.Pass & DrawPass::GBuffer)
-    {
-        Draw(renderContext);
-    }
-}
-
-void Actor::DrawHierarchy(RenderContext& renderContext)
-{
-    // Draw actor itself
-    DrawGeneric(renderContext);
-
-    // Draw children
-    if (renderContext.View.IsOfflinePass)
-    {
-        for (int32 i = 0; i < Children.Count(); i++)
-        {
-            auto child = Children[i];
-            if (child->GetIsActive() && child->GetStaticFlags() & renderContext.View.StaticFlagsMask)
-            {
-                child->DrawHierarchy(renderContext);
-            }
-        }
-    }
-    else
-    {
-        for (int32 i = 0; i < Children.Count(); i++)
-        {
-            auto child = Children[i];
-            if (child->GetIsActive())
-            {
-                child->DrawHierarchy(renderContext);
-            }
-        }
-    }
 }
 
 #if USE_EDITOR

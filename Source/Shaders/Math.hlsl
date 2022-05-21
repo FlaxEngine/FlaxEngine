@@ -54,6 +54,36 @@ float4 Square(float4 x)
 	return x * x;
 }
 
+float Min2(float2 x)
+{
+	return min(x.x, x.y);
+}
+
+float Min3(float3 x)
+{
+	return min(x.x, min(x.y, x.z));
+}
+
+float Min4(float4 x)
+{
+	return min(x.x, min(x.y, min(x.z, x.w)));
+}
+
+float Max2(float2 x)
+{
+	return max(x.x, x.y);
+}
+
+float Max3(float3 x)
+{
+	return max(x.x, max(x.y, x.z));
+}
+
+float Max4(float4 x)
+{
+	return max(x.x, max(x.y, max(x.z, x.w)));
+}
+
 float Pow2(float x)
 {
 	return x * x;

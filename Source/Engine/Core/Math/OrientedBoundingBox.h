@@ -40,6 +40,8 @@ public:
         Transformation = transformation;
     }
 
+    OrientedBoundingBox(const Vector3& extents, const Matrix3x3& rotationScale, const Vector3& translation);
+
     // Init
     // @param minimum The minimum vertex of the bounding box.
     // @param maximum The maximum vertex of the bounding box.
@@ -99,10 +101,7 @@ public:
 
     // Transforms this box using a transformation matrix.
     // @param mat The transformation matrix.
-    void Transform(const Matrix& mat)
-    {
-        Transformation *= mat;
-    }
+    void Transform(const Matrix& matrix);
 
     // Scales the OBB by scaling its Extents without affecting the Transformation matrix.
     // By keeping Transformation matrix scaling-free, the collision detection methods will be more accurate.

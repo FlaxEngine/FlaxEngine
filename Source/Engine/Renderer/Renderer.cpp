@@ -21,6 +21,8 @@
 #include "VolumetricFogPass.h"
 #include "HistogramPass.h"
 #include "AtmospherePreCompute.h"
+#include "GlobalSignDistanceFieldPass.h"
+#include "GI/GlobalSurfaceAtlasPass.h"
 #include "Utils/MultiScaler.h"
 #include "Utils/BitonicSort.h"
 #include "AntiAliasing/FXAA.h"
@@ -28,6 +30,7 @@
 #include "AntiAliasing/SMAA.h"
 #include "Engine/Level/Actor.h"
 #include "Engine/Level/Level.h"
+#include "Engine/Core/Config/GraphicsSettings.h"
 #if USE_EDITOR
 #include "Editor/Editor.h"
 #include "Editor/QuadOverdrawPass.h"
@@ -80,6 +83,8 @@ bool RendererService::Init()
     PassList.Add(TAA::Instance());
     PassList.Add(SMAA::Instance());
     PassList.Add(HistogramPass::Instance());
+    PassList.Add(GlobalSignDistanceFieldPass::Instance());
+    PassList.Add(GlobalSurfaceAtlasPass::Instance());
 #if USE_EDITOR
     PassList.Add(QuadOverdrawPass::Instance());
 #endif
@@ -287,6 +292,7 @@ void Renderer::DrawPostFxMaterial(GPUContext* context, const RenderContext& rend
 void RenderInner(SceneRenderTask* task, RenderContext& renderContext)
 {
     auto context = GPUDevice::Instance->GetMainContext();
+    auto* graphicsSettings = GraphicsSettings::Get();
     auto& view = renderContext.View;
     ASSERT(renderContext.Buffers && renderContext.Buffers->GetWidth() > 0);
 
@@ -320,7 +326,7 @@ void RenderInner(SceneRenderTask* task, RenderContext& renderContext)
     renderContext.List->SortDrawCalls(renderContext, false, DrawCallsListType::Distortion);
 
     // Get the light accumulation buffer
-    auto tempDesc = GPUTextureDescription::New2D(renderContext.Buffers->GetWidth(), renderContext.Buffers->GetHeight(), PixelFormat::R11G11B10_Float);
+    auto tempDesc = GPUTextureDescription::New2D(renderContext.Buffers->GetWidth(), renderContext.Buffers->GetHeight(), LIGHT_BUFFER_FORMAT);
     auto lightBuffer = RenderTargetPool::Get(tempDesc);
 
 #if USE_EDITOR
@@ -336,11 +342,25 @@ void RenderInner(SceneRenderTask* task, RenderContext& renderContext)
     }
 #endif
 
+    // Global SDF rendering (can be used by materials later on)
+    if (graphicsSettings->EnableGlobalSDF)
+    {
+        GlobalSignDistanceFieldPass::BindingData bindingData;
+        GlobalSignDistanceFieldPass::Instance()->Render(renderContext, context, bindingData);
+    }
+
     // Fill GBuffer
     GBufferPass::Instance()->Fill(renderContext, lightBuffer->View());
 
-    // Check if debug emissive light
-    if (renderContext.View.Mode == ViewMode::Emissive || renderContext.View.Mode == ViewMode::LightmapUVsDensity)
+    // Debug drawing
+    if (renderContext.View.Mode == ViewMode::GlobalSDF)
+        GlobalSignDistanceFieldPass::Instance()->RenderDebug(renderContext, context, lightBuffer);
+    else if (renderContext.View.Mode == ViewMode::GlobalSurfaceAtlas)
+        GlobalSurfaceAtlasPass::Instance()->RenderDebug(renderContext, context, lightBuffer);
+    if (renderContext.View.Mode == ViewMode::Emissive ||
+        renderContext.View.Mode == ViewMode::LightmapUVsDensity ||
+        renderContext.View.Mode == ViewMode::GlobalSurfaceAtlas ||
+        renderContext.View.Mode == ViewMode::GlobalSDF)
     {
         context->ResetRenderTarget();
         context->SetRenderTarget(task->GetOutputView());

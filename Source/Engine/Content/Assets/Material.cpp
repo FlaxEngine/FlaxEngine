@@ -48,6 +48,11 @@ const MaterialInfo& Material::GetInfo() const
     return EmptyInfo;
 }
 
+GPUShader* Material::GetShader() const
+{
+    return _materialShader ? _materialShader->GetShader() : nullptr;
+}
+
 bool Material::IsReady() const
 {
     return _materialShader && _materialShader->IsReady();

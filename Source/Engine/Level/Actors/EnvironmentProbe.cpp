@@ -127,12 +127,15 @@ void EnvironmentProbe::UpdateBounds()
     _sphere = BoundingSphere(GetPosition(), GetScaledRadius());
     BoundingBox::FromSphere(_sphere, _box);
     if (_sceneRenderingKey != -1)
-        GetSceneRendering()->UpdateCommon(this, _sceneRenderingKey);
+        GetSceneRendering()->UpdateActor(this, _sceneRenderingKey);
 }
 
 void EnvironmentProbe::Draw(RenderContext& renderContext)
 {
-    if (Brightness > ZeroTolerance && (renderContext.View.Flags & ViewFlags::Reflections) != 0 && HasProbeLoaded())
+    if (Brightness > ZeroTolerance &&
+        (renderContext.View.Flags & ViewFlags::Reflections) != 0 &&
+        renderContext.View.Pass & DrawPass::GBuffer &&
+        HasProbeLoaded())
     {
         renderContext.List->EnvironmentProbes.Add(this);
     }
@@ -156,7 +159,7 @@ void EnvironmentProbe::OnDebugDrawSelected()
 void EnvironmentProbe::OnLayerChanged()
 {
     if (_sceneRenderingKey != -1)
-        GetSceneRendering()->UpdateCommon(this, _sceneRenderingKey);
+        GetSceneRendering()->UpdateActor(this, _sceneRenderingKey);
 }
 
 void EnvironmentProbe::Serialize(SerializeStream& stream, const void* otherObj)
@@ -199,7 +202,7 @@ bool EnvironmentProbe::IntersectsItself(const Ray& ray, float& distance, Vector3
 
 void EnvironmentProbe::OnEnable()
 {
-    _sceneRenderingKey = GetSceneRendering()->AddCommon(this);
+    GetSceneRendering()->AddActor(this, _sceneRenderingKey);
 #if USE_EDITOR
     GetSceneRendering()->AddViewportIcon(this);
 #endif
@@ -213,7 +216,7 @@ void EnvironmentProbe::OnDisable()
 #if USE_EDITOR
     GetSceneRendering()->RemoveViewportIcon(this);
 #endif
-    GetSceneRendering()->RemoveCommon(this, _sceneRenderingKey);
+    GetSceneRendering()->RemoveActor(this, _sceneRenderingKey);
 
     // Base
     Actor::OnDisable();

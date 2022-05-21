@@ -57,7 +57,7 @@ protected:
         return false;
     }
 
-    void onResidentMipsChanged() override
+    void OnResidentMipsChanged() override
     {
     }
 };

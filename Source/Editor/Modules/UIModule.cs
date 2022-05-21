@@ -58,6 +58,7 @@ namespace FlaxEditor.Modules
         private ContextMenuButton _menuToolsBakeAllEnvProbes;
         private ContextMenuButton _menuToolsBuildCSGMesh;
         private ContextMenuButton _menuToolsBuildNavMesh;
+        private ContextMenuButton _menuToolsBuildAllMesgesSDF;
         private ContextMenuButton _menuToolsCancelBuilding;
         private ContextMenuButton _menuToolsSetTheCurrentSceneViewAsDefault;
         private ContextMenuChildMenu _menuWindowApplyWindowLayout;
@@ -484,6 +485,7 @@ namespace FlaxEditor.Modules
             _menuToolsBakeAllEnvProbes = cm.AddButton("Bake all env probes", BakeAllEnvProbes);
             _menuToolsBuildCSGMesh = cm.AddButton("Build CSG mesh", BuildCSG);
             _menuToolsBuildNavMesh = cm.AddButton("Build Nav Mesh", BuildNavMesh);
+            _menuToolsBuildAllMesgesSDF = cm.AddButton("Build all meshes SDF", BuildAllMeshesSDF);
             cm.AddSeparator();
             cm.AddButton("Game Cooker", Editor.Windows.GameCookerWin.FocusOrShow);
             _menuToolsCancelBuilding = cm.AddButton("Cancel building game", () => GameCooker.Cancel());
@@ -709,6 +711,7 @@ namespace FlaxEditor.Modules
             _menuToolsBakeLightmaps.Text = isBakingLightmaps ? "Cancel baking lightmaps" : "Bake lightmaps";
             _menuToolsClearLightmaps.Enabled = canEdit;
             _menuToolsBakeAllEnvProbes.Enabled = canEdit;
+            _menuToolsBuildAllMesgesSDF.Enabled = canEdit && !isBakingLightmaps;
             _menuToolsBuildCSGMesh.Enabled = canEdit;
             _menuToolsBuildNavMesh.Enabled = canEdit;
             _menuToolsCancelBuilding.Enabled = GameCooker.IsRunning;
@@ -834,6 +837,24 @@ namespace FlaxEditor.Modules
             var scenes = Level.Scenes;
             scenes.ToList().ForEach(x => Navigation.BuildNavMesh(x, 0));
             Editor.Scene.MarkSceneEdited(scenes);
+        }
+
+        private void BuildAllMeshesSDF()
+        {
+            // TODO: async maybe with progress reporting?
+            Editor.Scene.ExecuteOnGraph(node =>
+            {
+                if (node is StaticModelNode staticModelNode && staticModelNode.Actor is StaticModel staticModel)
+                {
+                    if (staticModel.DrawModes.HasFlag(DrawPass.GlobalSDF) && staticModel.Model != null && !staticModel.Model.IsVirtual && staticModel.Model.SDF.Texture == null)
+                    {
+                        Editor.Log("Generating SDF for " + staticModel.Model);
+                        if (!staticModel.Model.GenerateSDF())
+                            staticModel.Model.Save();
+                    }
+                }
+                return true;
+            });
         }
 
         private void SetTheCurrentSceneViewAsDefault()

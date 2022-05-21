@@ -6,9 +6,10 @@
 #include "Engine/Core/Collections/Array.h"
 #include "Engine/Core/Math/BoundingSphere.h"
 #include "Engine/Level/Actor.h"
-#include "Engine/Level/Types.h"
+#include "Engine/Platform/CriticalSection.h"
 
 class SceneRenderTask;
+class SceneRendering;
 struct PostProcessSettings;
 struct RenderContext;
 struct RenderView;
@@ -19,7 +20,6 @@ struct RenderView;
 class FLAXENGINE_API IPostFxSettingsProvider
 {
 public:
-
     /// <summary>
     /// Collects the settings for rendering of the specified task.
     /// </summary>
@@ -35,50 +35,60 @@ public:
 };
 
 /// <summary>
+/// Interface for objects to plug into Scene Rendering and listen for its evens such as static actors changes which are relevant for drawing cache.
+/// </summary>
+/// <seealso cref="SceneRendering"/>
+class FLAXENGINE_API ISceneRenderingListener
+{
+    friend SceneRendering;
+private:
+    Array<SceneRendering*, InlinedAllocation<8>> _scenes;
+public:
+    ~ISceneRenderingListener();
+
+    // Starts listening to the scene rendering events.
+    void ListenSceneRendering(SceneRendering* scene);
+
+    // Events called by Scene Rendering
+    virtual void OnSceneRenderingAddActor(Actor* a) = 0;
+    virtual void OnSceneRenderingUpdateActor(Actor* a, const BoundingSphere& prevBounds) = 0;
+    virtual void OnSceneRenderingRemoveActor(Actor* a) = 0;
+    virtual void OnSceneRenderingClear(SceneRendering* scene) = 0;
+};
+
+/// <summary>
 /// Scene rendering helper subsystem that boosts the level rendering by providing efficient objects cache and culling implementation.
 /// </summary>
 class FLAXENGINE_API SceneRendering
 {
-    friend Scene;
 #if USE_EDITOR
     typedef Function<void(RenderView&)> PhysicsDebugCallback;
     friend class ViewportIconsRendererService;
 #endif
-    struct DrawEntry
+public:
+    struct DrawActor
     {
         Actor* Actor;
         uint32 LayerMask;
+        int8 NoCulling : 1;
         BoundingSphere Bounds;
     };
 
-    struct DrawEntries
-    {
-        Array<DrawEntry> List;
-
-        int32 Add(Actor* obj);
-        void Update(Actor* obj, int32 key);
-        void Remove(Actor* obj, int32 key);
-        void Clear();
-        void CullAndDraw(RenderContext& renderContext);
-        void CullAndDrawOffline(RenderContext& renderContext);
-    };
+    Array<DrawActor> Actors;
+    Array<IPostFxSettingsProvider*> PostFxProviders;
+    CriticalSection Locker;
 
 private:
-
-    Scene* Scene;
-    DrawEntries Geometry;
-    DrawEntries Common;
-    Array<Actor*> CommonNoCulling;
-    Array<IPostFxSettingsProvider*> PostFxProviders;
 #if USE_EDITOR
     Array<PhysicsDebugCallback> PhysicsDebug;
     Array<Actor*> ViewportIcons;
 #endif
 
-    explicit SceneRendering(::Scene* scene);
+    // Listener - some rendering systems cache state of the scene (eg. in RenderBuffers::CustomBuffer), this extensions allows those systems to invalidate cache and handle scene changes
+    friend ISceneRenderingListener;
+    Array<ISceneRenderingListener*, InlinedAllocation<8>> _listeners;
 
 public:
-
     /// <summary>
     /// Draws the scene. Performs the optimized actors culling and draw calls submission for the current render pass (defined by the render view).
     /// </summary>
@@ -97,48 +107,9 @@ public:
     void Clear();
 
 public:
-
-    FORCE_INLINE int32 AddGeometry(Actor* obj)
-    {
-        return Geometry.Add(obj);
-    }
-
-    FORCE_INLINE void UpdateGeometry(Actor* obj, int32 key)
-    {
-        Geometry.Update(obj, key);
-    }
-
-    FORCE_INLINE void RemoveGeometry(Actor* obj, int32& key)
-    {
-        Geometry.Remove(obj, key);
-        key = -1;
-    }
-
-    FORCE_INLINE int32 AddCommon(Actor* obj)
-    {
-        return Common.Add(obj);
-    }
-
-    FORCE_INLINE void UpdateCommon(Actor* obj, int32 key)
-    {
-        Common.Update(obj, key);
-    }
-
-    FORCE_INLINE void RemoveCommon(Actor* obj, int32& key)
-    {
-        Common.Remove(obj, key);
-        key = -1;
-    }
-
-    FORCE_INLINE void AddCommonNoCulling(Actor* obj)
-    {
-        CommonNoCulling.Add(obj);
-    }
-
-    FORCE_INLINE void RemoveCommonNoCulling(Actor* obj)
-    {
-        CommonNoCulling.Remove(obj);
-    }
+    void AddActor(Actor* a, int32& key);
+    void UpdateActor(Actor* a, int32 key);
+    void RemoveActor(Actor* a, int32& key);
 
     FORCE_INLINE void AddPostFxProvider(IPostFxSettingsProvider* obj)
     {
@@ -151,7 +122,6 @@ public:
     }
 
 #if USE_EDITOR
-
     template<class T, void(T::*Method)(RenderView&)>
     FORCE_INLINE void AddPhysicsDebug(T* obj)
     {
@@ -177,6 +147,5 @@ public:
     {
         ViewportIcons.Remove(obj);
     }
-
 #endif
 };

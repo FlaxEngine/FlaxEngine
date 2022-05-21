@@ -209,11 +209,22 @@ static VKAPI_ATTR VkBool32 VKAPI_PTR DebugUtilsCallback(VkDebugUtilsMessageSever
         type = TEXT("Perf");
     }
 
-    if (callbackData->pMessageIdName)
-        LOG(Info, "[Vulkan] {0} {1}:{2}({3}) {4}", type, severity, callbackData->messageIdNumber, String(callbackData->pMessageIdName), String(callbackData->pMessage));
-    else
-        LOG(Info, "[Vulkan] {0} {1}:{2} {3}", type, severity, callbackData->messageIdNumber, String(callbackData->pMessage));
+    // Fix invalid characters in hex values (bug in Debug Layer)
+    char* handleStart = (char*)StringUtils::FindIgnoreCase(callbackData->pMessage, "0x");
+    while (handleStart != nullptr)
+    {
+        while (*handleStart != ' ' && *handleStart != 0)
+            *handleStart++ = Math::Clamp<char>(*handleStart, '0', 'z');
+        if (*handleStart == 0)
+            break;
+        handleStart = (char*)StringUtils::FindIgnoreCase(handleStart, "0x");
+    }
 
+    const String message(callbackData->pMessage);
+    if (callbackData->pMessageIdName)
+        LOG(Info, "[Vulkan] {0} {1}:{2}({3}) {4}", type, severity, callbackData->messageIdNumber, String(callbackData->pMessageIdName), message);
+    else
+        LOG(Info, "[Vulkan] {0} {1}:{2} {3}", type, severity, callbackData->messageIdNumber, message);
     return VK_FALSE;
 }
 

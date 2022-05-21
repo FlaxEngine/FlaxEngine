@@ -17,6 +17,7 @@ SkyLight::SkyLight(const SpawnParams& params)
     : Light(params)
     , _radius(1000000.0f)
 {
+    _drawNoCulling = 1;
     Brightness = 2.0f;
     UpdateBounds();
 }
@@ -100,6 +101,7 @@ void SkyLight::Draw(RenderContext& renderContext)
     float brightness = Brightness;
     AdjustBrightness(renderContext.View, brightness);
     if ((renderContext.View.Flags & ViewFlags::SkyLights) != 0
+        && renderContext.View.Pass & DrawPass::GBuffer
         && brightness > ZeroTolerance
         && (ViewDistance < ZeroTolerance || Vector3::DistanceSquared(renderContext.View.Position, GetPosition()) < ViewDistance * ViewDistance))
     {
@@ -170,7 +172,7 @@ bool SkyLight::HasContentLoaded() const
 
 void SkyLight::OnEnable()
 {
-    GetSceneRendering()->AddCommonNoCulling(this);
+    GetSceneRendering()->AddActor(this, _sceneRenderingKey);
 #if USE_EDITOR
     GetSceneRendering()->AddViewportIcon(this);
 #endif
@@ -184,7 +186,7 @@ void SkyLight::OnDisable()
 #if USE_EDITOR
     GetSceneRendering()->RemoveViewportIcon(this);
 #endif
-    GetSceneRendering()->RemoveCommonNoCulling(this);
+    GetSceneRendering()->RemoveActor(this, _sceneRenderingKey);
 
     // Base
     Light::OnDisable();

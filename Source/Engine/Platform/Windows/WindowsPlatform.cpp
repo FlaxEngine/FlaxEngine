@@ -176,8 +176,12 @@ void GetWindowsVersion(String& windowsName, int32& versionMajor, int32& versionM
             VersionMajor = 6;
             VersionMinor = 2;
         }
-
-        if (VersionMajor == 0 && VersionMinor == 0)
+        else if (VersionMajor >= 10 && VersionBuild >= 22000)
+        {
+            // Windows 11
+            windowsName.Replace(TEXT("10"), TEXT("11"));
+        }
+        else if (VersionMajor == 0 && VersionMinor == 0)
         {
             String windowsVersion;
             GetStringRegKey(hKey, TEXT("CurrentVersion"), windowsVersion, TEXT(""));

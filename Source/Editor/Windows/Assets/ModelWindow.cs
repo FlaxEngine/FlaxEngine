@@ -38,7 +38,7 @@ namespace FlaxEditor.Windows.Assets
                 PreviewLight.ShadowsDistance = 2000.0f;
                 Task.ViewFlags |= ViewFlags.Shadows;
             }
-            
+
             public override void Draw()
             {
                 base.Draw();
@@ -75,10 +75,7 @@ namespace FlaxEditor.Windows.Assets
                 base.OnClean();
             }
 
-            /// <summary>
-            /// Updates the highlight/isolate effects on UI.
-            /// </summary>
-            public void UpdateEffectsOnUI()
+            private void UpdateEffectsOnUI()
             {
                 Window._skipEffectsGuiEvents = true;
 
@@ -97,10 +94,7 @@ namespace FlaxEditor.Windows.Assets
                 Window._skipEffectsGuiEvents = false;
             }
 
-            /// <summary>
-            /// Updates the material slots UI parts. Should be called after material slot rename.
-            /// </summary>
-            public void UpdateMaterialSlotsUI()
+            private void UpdateMaterialSlotsUI()
             {
                 Window._skipEffectsGuiEvents = true;
 
@@ -123,12 +117,7 @@ namespace FlaxEditor.Windows.Assets
                 Window._skipEffectsGuiEvents = false;
             }
 
-            /// <summary>
-            /// Sets the material slot index to the mesh.
-            /// </summary>
-            /// <param name="mesh">The mesh.</param>
-            /// <param name="newSlotIndex">New index of the material slot to use.</param>
-            public void SetMaterialSlot(Mesh mesh, int newSlotIndex)
+            private void SetMaterialSlot(Mesh mesh, int newSlotIndex)
             {
                 if (Window._skipEffectsGuiEvents)
                     return;
@@ -139,11 +128,7 @@ namespace FlaxEditor.Windows.Assets
                 Window.MarkAsEdited();
             }
 
-            /// <summary>
-            /// Sets the material slot to isolate.
-            /// </summary>
-            /// <param name="mesh">The mesh.</param>
-            public void SetIsolate(Mesh mesh)
+            private void SetIsolate(Mesh mesh)
             {
                 if (Window._skipEffectsGuiEvents)
                     return;
@@ -153,11 +138,7 @@ namespace FlaxEditor.Windows.Assets
                 UpdateEffectsOnUI();
             }
 
-            /// <summary>
-            /// Sets the material slot index to highlight.
-            /// </summary>
-            /// <param name="mesh">The mesh.</param>
-            public void SetHighlight(Mesh mesh)
+            private void SetHighlight(Mesh mesh)
             {
                 if (Window._skipEffectsGuiEvents)
                     return;
@@ -169,6 +150,8 @@ namespace FlaxEditor.Windows.Assets
 
             private class ProxyEditor : ProxyEditorBase
             {
+                private CustomEditors.Elements.IntegerValueElement _sdfModelLodIndex;
+
                 public override void Initialize(LayoutElementsContainer layout)
                 {
                     var proxy = (MeshesPropertiesProxy)Values[0];
@@ -191,11 +174,58 @@ namespace FlaxEditor.Windows.Assets
                         minScreenSize.FloatValue.MinValue = 0.0f;
                         minScreenSize.FloatValue.MaxValue = 1.0f;
                         minScreenSize.FloatValue.Value = proxy.Asset.MinScreenSize;
-                        minScreenSize.FloatValue.ValueChanged += () =>
+                        minScreenSize.FloatValue.BoxValueChanged += b =>
                         {
-                            proxy.Asset.MinScreenSize = minScreenSize.FloatValue.Value;
+                            proxy.Asset.MinScreenSize = b.Value;
                             proxy.Window.MarkAsEdited();
                         };
+                    }
+
+                    // SDF
+                    {
+                        var group = layout.Group("SDF");
+
+                        var sdf = proxy.Asset.SDF;
+                        if (sdf.Texture != null)
+                        {
+                            var size = sdf.Texture.Size3;
+                            group.Label($"SDF Texture {size.X}x{size.Y}x{size.Z} ({Utilities.Utils.FormatBytesCount(sdf.Texture.MemoryUsage)})").AddCopyContextMenu();
+                        }
+                        else
+                        {
+                            group.Label("No SDF");
+                        }
+
+                        var resolution = group.FloatValue("Resolution Scale", proxy.Window.Editor.CodeDocs.GetTooltip(typeof(ModelImportSettings), nameof(ModelImportSettings.SDFResolution)));
+                        resolution.FloatValue.MinValue = 0.0001f;
+                        resolution.FloatValue.MaxValue = 100.0f;
+                        resolution.FloatValue.Value = sdf.Texture != null ? sdf.ResolutionScale : 1.0f;
+                        resolution.FloatValue.BoxValueChanged += b => { proxy.Window._importSettings.SDFResolution = b.Value; };
+                        proxy.Window._importSettings.SDFResolution = sdf.ResolutionScale;
+
+                        var backfacesThreshold = group.FloatValue("Backfaces Threshold", "Custom threshold (in range 0-1) for adjusting mesh internals detection based on the percentage of test rays hit triangle backfaces. Use lower value for more dense mesh.");
+                        backfacesThreshold.FloatValue.MinValue = 0.001f;
+                        backfacesThreshold.FloatValue.MaxValue = 1.0f;
+                        backfacesThreshold.FloatValue.Value = proxy.Window._backfacesThreshold;
+                        backfacesThreshold.FloatValue.BoxValueChanged += b => { proxy.Window._backfacesThreshold = b.Value; };
+
+                        var lodIndex = group.IntegerValue("LOD Index", "Index of the model Level of Detail to use for SDF data building. By default uses the lowest quality LOD for fast building.");
+                        lodIndex.IntValue.MinValue = 0;
+                        lodIndex.IntValue.MaxValue = lods.Length - 1;
+                        lodIndex.IntValue.Value = sdf.Texture != null ? sdf.LOD : 6;
+                        _sdfModelLodIndex = lodIndex;
+
+                        var buttons = group.CustomContainer<UniformGridPanel>();
+                        var gridControl = buttons.CustomControl;
+                        gridControl.ClipChildren = false;
+                        gridControl.Height = Button.DefaultHeight;
+                        gridControl.SlotsHorizontally = 2;
+                        gridControl.SlotsVertically = 1;
+                        var rebuildButton = buttons.Button("Rebuild", "Rebuilds the model SDF.").Button;
+                        rebuildButton.Clicked += OnRebuildSDF;
+                        var removeButton = buttons.Button("Remove", "Removes the model SDF data from the asset.").Button;
+                        removeButton.Enabled = sdf.Texture != null;
+                        removeButton.Clicked += OnRemoveSDF;
                     }
 
                     // Group per LOD
@@ -218,15 +248,15 @@ namespace FlaxEditor.Windows.Assets
                             vertexCount += mesh.VertexCount;
                         }
 
-                        group.Label(string.Format("Triangles: {0:N0}   Vertices: {1:N0}", triangleCount, vertexCount));
-                        group.Label("Size: " + lod.Box.Size);
+                        group.Label(string.Format("Triangles: {0:N0}   Vertices: {1:N0}", triangleCount, vertexCount)).AddCopyContextMenu();
+                        group.Label("Size: " + lod.Box.Size).AddCopyContextMenu();
                         var screenSize = group.FloatValue("Screen Size", "The screen size to switch LODs. Bottom limit of the model screen size to render this LOD.");
                         screenSize.FloatValue.MinValue = 0.0f;
                         screenSize.FloatValue.MaxValue = 10.0f;
                         screenSize.FloatValue.Value = lod.ScreenSize;
-                        screenSize.FloatValue.ValueChanged += () =>
+                        screenSize.FloatValue.BoxValueChanged += b =>
                         {
-                            lod.ScreenSize = screenSize.FloatValue.Value;
+                            lod.ScreenSize = b.Value;
                             proxy.Window.MarkAsEdited();
                         };
 
@@ -234,7 +264,7 @@ namespace FlaxEditor.Windows.Assets
                         for (int meshIndex = 0; meshIndex < meshes.Length; meshIndex++)
                         {
                             var mesh = meshes[meshIndex];
-                            group.Label($"Mesh {meshIndex} (tris: {mesh.TriangleCount:N0}, verts: {mesh.VertexCount:N0})");
+                            group.Label($"Mesh {meshIndex} (tris: {mesh.TriangleCount:N0}, verts: {mesh.VertexCount:N0})").AddCopyContextMenu();
 
                             // Material Slot
                             var materialSlot = group.ComboBox("Material Slot", "Material slot used by this mesh during rendering");
@@ -258,6 +288,22 @@ namespace FlaxEditor.Windows.Assets
 
                     // Refresh UI
                     proxy.UpdateMaterialSlotsUI();
+                }
+
+                private void OnRebuildSDF()
+                {
+                    var proxy = (MeshesPropertiesProxy)Values[0];
+                    proxy.Asset.GenerateSDF(proxy.Window._importSettings.SDFResolution, _sdfModelLodIndex.Value, true, proxy.Window._backfacesThreshold);
+                    proxy.Window.MarkAsEdited();
+                    Presenter.BuildLayoutOnUpdate();
+                }
+
+                private void OnRemoveSDF()
+                {
+                    var proxy = (MeshesPropertiesProxy)Values[0];
+                    proxy.Asset.SetSDF(new ModelBase.SDFData());
+                    proxy.Window.MarkAsEdited();
+                    Presenter.BuildLayoutOnUpdate();
                 }
 
                 internal override void RefreshInternal()
@@ -645,14 +691,14 @@ namespace FlaxEditor.Windows.Assets
         [CustomEditor(typeof(ProxyEditor))]
         private sealed class ImportPropertiesProxy : PropertiesProxyBase
         {
-            private ModelImportSettings ImportSettings = new ModelImportSettings();
+            private ModelImportSettings ImportSettings;
 
             /// <inheritdoc />
             public override void OnLoad(ModelWindow window)
             {
                 base.OnLoad(window);
 
-                ModelImportSettings.TryRestore(ref ImportSettings, window.Item.Path);
+                ImportSettings = window._importSettings;
             }
 
             public void Reimport()
@@ -675,7 +721,7 @@ namespace FlaxEditor.Windows.Assets
                     {
                         var group = layout.Group("Import Settings");
 
-                        var importSettingsField = typeof(ImportPropertiesProxy).GetField("ImportSettings", BindingFlags.NonPublic | BindingFlags.Instance);
+                        var importSettingsField = typeof(ImportPropertiesProxy).GetField(nameof(ImportSettings), BindingFlags.NonPublic | BindingFlags.Instance);
                         var importSettingsValues = new ValueContainer(new ScriptMemberInfo(importSettingsField)) { proxy.ImportSettings };
                         group.Object(importSettingsValues);
 
@@ -730,6 +776,8 @@ namespace FlaxEditor.Windows.Assets
         private readonly ModelPreview _preview;
         private StaticModel _highlightActor;
         private MeshDataCache _meshData;
+        private ModelImportSettings _importSettings = new ModelImportSettings();
+        private float _backfacesThreshold = 0.6f;
 
         /// <inheritdoc />
         public ModelWindow(Editor editor, AssetItem item)
@@ -868,6 +916,7 @@ namespace FlaxEditor.Windows.Assets
         {
             _refreshOnLODsLoaded = true;
             _preview.ViewportCamera.SetArcBallView(Asset.GetBox());
+            ModelImportSettings.TryRestore(ref _importSettings, Item.Path);
             UpdateEffectsOnAsset();
 
             // TODO: disable streaming for this model

@@ -2,6 +2,7 @@
 
 #include "ShaderGraphValue.h"
 #include "Engine/Core/Log.h"
+#include "Engine/Core/Math/Quaternion.h"
 #include "Engine/Core/Math/Vector2.h"
 #include "Engine/Core/Math/Vector3.h"
 #include "Engine/Core/Math/Vector4.h"
@@ -53,6 +54,10 @@ ShaderGraphValue::ShaderGraphValue(const Variant& v)
     case VariantType::Color:
         Type = VariantType::Types::Vector4;
         Value = String::Format(TEXT("float4({0}, {1}, {2}, {3})"), (*(Vector4*)v.AsData).X, (*(Vector4*)v.AsData).Y, (*(Vector4*)v.AsData).Z, (*(Vector4*)v.AsData).W);
+        break;
+    case VariantType::Quaternion:
+        Type = VariantType::Types::Quaternion;
+        Value = String::Format(TEXT("float4({0}, {1}, {2}, {3})"), (*(Quaternion*)v.AsData).X, (*(Quaternion*)v.AsData).Y, (*(Quaternion*)v.AsData).Z, (*(Quaternion*)v.AsData).W);
         break;
     case VariantType::String:
         Type = VariantType::Types::String;
@@ -115,14 +120,17 @@ ShaderGraphValue ShaderGraphValue::InitForZero(VariantType::Types type)
     case VariantType::Types::Color:
         v = TEXT("float4(0, 0, 0, 0)");
         break;
+    case VariantType::Types::Quaternion:
+        v = TEXT("float4(0, 0, 0, 1)");
+        break;
     case VariantType::Types::Void:
         v = TEXT("((Material)0)");
         break;
     default:
-    CRASH;
+        CRASH;
         v = nullptr;
     }
-    return ShaderGraphValue(type, String(v));
+    return ShaderGraphValue(type, v);
 }
 
 ShaderGraphValue ShaderGraphValue::InitForHalf(VariantType::Types type)
@@ -145,11 +153,12 @@ ShaderGraphValue ShaderGraphValue::InitForHalf(VariantType::Types type)
         v = TEXT("float3(0.5, 0.5, 0.5)");
         break;
     case VariantType::Types::Vector4:
+    case VariantType::Types::Quaternion:
     case VariantType::Types::Color:
         v = TEXT("float4(0.5, 0.5, 0.5, 0.5)");
         break;
     default:
-    CRASH;
+        CRASH;
         v = nullptr;
     }
     return ShaderGraphValue(type, String(v));
@@ -175,11 +184,12 @@ ShaderGraphValue ShaderGraphValue::InitForOne(VariantType::Types type)
         v = TEXT("float3(1, 1, 1)");
         break;
     case VariantType::Types::Vector4:
+    case VariantType::Types::Quaternion:
     case VariantType::Types::Color:
         v = TEXT("float4(1, 1, 1, 1)");
         break;
     default:
-    CRASH;
+        CRASH;
         v = nullptr;
     }
     return ShaderGraphValue(type, String(v));
@@ -208,6 +218,7 @@ ShaderGraphValue ShaderGraphValue::Cast(const ShaderGraphValue& v, VariantType::
         case VariantType::Types::Vector2:
         case VariantType::Types::Vector3:
         case VariantType::Types::Vector4:
+        case VariantType::Types::Quaternion:
         case VariantType::Types::Color:
             format = TEXT("((bool){0}.x)");
             break;
@@ -224,6 +235,7 @@ ShaderGraphValue ShaderGraphValue::Cast(const ShaderGraphValue& v, VariantType::
         case VariantType::Types::Vector2:
         case VariantType::Types::Vector3:
         case VariantType::Types::Vector4:
+        case VariantType::Types::Quaternion:
         case VariantType::Types::Color:
             format = TEXT("((int){0}.x)");
             break;
@@ -240,6 +252,7 @@ ShaderGraphValue ShaderGraphValue::Cast(const ShaderGraphValue& v, VariantType::
         case VariantType::Types::Vector2:
         case VariantType::Types::Vector3:
         case VariantType::Types::Vector4:
+        case VariantType::Types::Quaternion:
         case VariantType::Types::Color:
             format = TEXT("((uint){0}.x)");
             break;
@@ -256,6 +269,7 @@ ShaderGraphValue ShaderGraphValue::Cast(const ShaderGraphValue& v, VariantType::
         case VariantType::Types::Vector2:
         case VariantType::Types::Vector3:
         case VariantType::Types::Vector4:
+        case VariantType::Types::Quaternion:
         case VariantType::Types::Color:
             format = TEXT("((float){0}.x)");
             break;
@@ -272,6 +286,7 @@ ShaderGraphValue ShaderGraphValue::Cast(const ShaderGraphValue& v, VariantType::
             break;
         case VariantType::Types::Vector3:
         case VariantType::Types::Vector4:
+        case VariantType::Types::Quaternion:
         case VariantType::Types::Color:
             format = TEXT("{0}.xy");
             break;
@@ -293,6 +308,9 @@ ShaderGraphValue ShaderGraphValue::Cast(const ShaderGraphValue& v, VariantType::
         case VariantType::Types::Color:
             format = TEXT("{0}.xyz");
             break;
+        case VariantType::Types::Quaternion:
+            format = TEXT("QuatRotateVector({0}, float3(0, 0, 1))"); // Returns direction vector
+            break;
         }
         break;
     case VariantType::Types::Vector4:
@@ -311,6 +329,16 @@ ShaderGraphValue ShaderGraphValue::Cast(const ShaderGraphValue& v, VariantType::
         case VariantType::Types::Vector3:
             format = TEXT("float4({0}.xyz, 0)");
             break;
+        case VariantType::Types::Color:
+        case VariantType::Types::Vector4:
+        case VariantType::Types::Quaternion:
+            format = TEXT("{0}");
+            break;
+        }
+        break;
+    case VariantType::Types::Quaternion:
+        switch (v.Type)
+        {
         case VariantType::Types::Color:
         case VariantType::Types::Vector4:
             format = TEXT("{0}");

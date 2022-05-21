@@ -249,7 +249,9 @@ bool Camera::HasContentLoaded() const
 
 void Camera::Draw(RenderContext& renderContext)
 {
-    if (renderContext.View.Flags & ViewFlags::EditorSprites && _previewModel && _previewModel->IsLoaded())
+    if (renderContext.View.Flags & ViewFlags::EditorSprites
+        && _previewModel
+        && _previewModel->IsLoaded())
     {
         GeometryDrawStateData drawState;
         Mesh::DrawInfo draw;
@@ -259,14 +261,16 @@ void Camera::Draw(RenderContext& renderContext)
         draw.Lightmap = nullptr;
         draw.LightmapUVs = nullptr;
         draw.Flags = StaticFlags::Transform;
-        draw.DrawModes = (DrawPass)(DrawPass::Default & renderContext.View.Pass);
+        draw.DrawModes = (DrawPass)((DrawPass::Depth | DrawPass::GBuffer | DrawPass::Forward) & renderContext.View.Pass);
         BoundingSphere::FromBox(_previewModelBox, draw.Bounds);
         draw.PerInstanceRandom = GetPerInstanceRandom();
         draw.LODBias = 0;
         draw.ForcedLOD = -1;
         draw.VertexColors = nullptr;
-
-        _previewModel->Draw(renderContext, draw);
+        if (draw.DrawModes != DrawPass::None)
+        {
+            _previewModel->Draw(renderContext, draw);
+        }
     }
 }
 
@@ -354,7 +358,7 @@ void Camera::OnEnable()
 {
     Cameras.Add(this);
 #if USE_EDITOR
-    GetSceneRendering()->AddCommonNoCulling(this);
+    GetSceneRendering()->AddActor(this, _sceneRenderingKey);
 #endif
 
     // Base
@@ -364,7 +368,7 @@ void Camera::OnEnable()
 void Camera::OnDisable()
 {
 #if USE_EDITOR
-    GetSceneRendering()->RemoveCommonNoCulling(this);
+    GetSceneRendering()->RemoveActor(this, _sceneRenderingKey);
 #endif
     Cameras.Remove(this);
     if (CutSceneCamera == this)
