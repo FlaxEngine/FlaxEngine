@@ -23,9 +23,8 @@ struct Matrix;
 /// </summary>
 API_STRUCT() struct FLAXENGINE_API Double3
 {
-DECLARE_SCRIPTING_TYPE_MINIMAL(Double3);
+    DECLARE_SCRIPTING_TYPE_MINIMAL(Double3);
 public:
-
     union
     {
         struct
@@ -51,7 +50,6 @@ public:
     };
 
 public:
-
     // Vector with all components equal 0
     static const Double3 Zero;
 
@@ -69,7 +67,7 @@ public:
 
     // Vector X=0, Y=0, Z=1
     static const Double3 UnitZ;
-    
+
     // A unit vector designating up (0, 1, 0)
     static const Double3 Up;
 
@@ -87,7 +85,7 @@ public:
 
     // A unit vector designating backward in a a-handed coordinate system (0, 0, -1)
     static const Double3 Backward;
-    
+
     // A minimum Double3
     static const Double3 Minimum;
 
@@ -95,8 +93,6 @@ public:
     static const Double3 Maximum;
 
 public:
-
-
     /// <summary>
     /// Empty constructor.
     /// </summary>
@@ -143,7 +139,7 @@ public:
     // Init
     // @param xy Vector2 value
     explicit Double3(const Vector2& xy);
-    
+
     // Init
     // @param xyz Vector3 value
     Double3(const Vector3& xyz);
@@ -168,26 +164,24 @@ public:
     // Init
     // @param xy Double2 value
     explicit Double3(const Double2& xy);
-    
+
     // Init
     // @param xy Double2 value
     // @param z Z component value
     explicit Double3(const Double2& xy, double z);
-    
+
     // Init
     // @param xyzw Double4 value
     explicit Double3(const Double4& xyzw);
-    
+
     // Init
     // @param color Color value
     explicit Double3(const Color& color);
 
 public:
-
     String ToString() const;
 
 public:
-
     // Gets a value indicting whether this instance is normalized
     bool IsNormalized() const
     {
@@ -324,16 +318,15 @@ public:
     }
 
 public:
-
     /// <summary>
     /// Performs vector normalization (scales vector up to unit length)
     /// </summary>
     void Normalize()
     {
-        const double length = Length();
-        if (!Math::IsZero(length))
+        const double length = Math::Sqrt(X * X + Y * Y + Z * Z);
+        if (Math::Abs(length) >= ZeroTolerance)
         {
-            const double inv = 1.0f / length;
+            const double inv = 1.0 / length;
             X *= inv;
             Y *= inv;
             Z *= inv;
@@ -345,7 +338,7 @@ public:
     /// </summary>
     void NormalizeFast()
     {
-        const double inv = 1.0f / Length();
+        const double inv = 1.0 / Math::Sqrt(X * X + Y * Y + Z * Z);
         X *= inv;
         Y *= inv;
         Z *= inv;
@@ -377,26 +370,25 @@ public:
     void UnwindEuler();
 
 public:
-
     // Arithmetic operators with Double3
     Double3 operator+(const Double3& b) const
     {
-        return Add(*this, b);
+        return Double3(X + b.X, Y + b.Y, Z + b.Z);
     }
 
     Double3 operator-(const Double3& b) const
     {
-        return Subtract(*this, b);
+        return Double3(X - b.X, Y - b.Y, Z - b.Z);
     }
 
     Double3 operator*(const Double3& b) const
     {
-        return Multiply(*this, b);
+        return Double3(X * b.X, Y * b.Y, Z * b.Z);
     }
 
     Double3 operator/(const Double3& b) const
     {
-        return Divide(*this, b);
+        return Double3(X / b.X, Y / b.Y, Z / b.Z);
     }
 
     Double3 operator-() const
@@ -417,47 +409,55 @@ public:
     // op= operators with Vector3
     Double3& operator+=(const Double3& b)
     {
-        *this = Add(*this, b);
+        X += b.X;
+        Y += b.Y;
+        Z += b.Z;
         return *this;
     }
 
     Double3& operator-=(const Double3& b)
     {
-        *this = Subtract(*this, b);
+        X -= b.X;
+        Y -= b.Y;
+        Z -= b.Z;
         return *this;
     }
 
     Double3& operator*=(const Double3& b)
     {
-        *this = Multiply(*this, b);
+        X *= b.X;
+        Y *= b.Y;
+        Z *= b.Z;
         return *this;
     }
 
     Double3& operator/=(const Double3& b)
     {
-        *this = Divide(*this, b);
+        X /= b.X;
+        Y /= b.Y;
+        Z /= b.Z;
         return *this;
     }
 
     // Arithmetic operators with double
     Double3 operator+(double b) const
     {
-        return Add(*this, b);
+        return Double3(X + b, Y + b, Z + b);
     }
 
     Double3 operator-(double b) const
     {
-        return Subtract(*this, b);
+        return Double3(X - b, Y - b, Z - b);
     }
 
     Double3 operator*(double b) const
     {
-        return Multiply(*this, b);
+        return Double3(X * b, Y * b, Z * b);
     }
 
     Double3 operator/(double b) const
     {
-        return Divide(*this, b);
+        return Double3(X / b, Y / b, Z / b);
     }
 
     // op= operators with double
@@ -517,7 +517,6 @@ public:
     }
 
 public:
-
     static bool NearEqual(const Double3& a, const Double3& b)
     {
         return Math::NearEqual(a.X, b.X) && Math::NearEqual(a.Y, b.Y) && Math::NearEqual(a.Z, b.Z);
@@ -529,7 +528,6 @@ public:
     }
 
 public:
-
     static void Add(const Double3& a, const Double3& b, Double3& result)
     {
         result.X = a.X + b.X;
@@ -597,7 +595,6 @@ public:
     }
 
 public:
-
     // Restricts a value to be within a specified range
     // @param value The value to clamp
     // @param min The minimum value,
@@ -655,10 +652,7 @@ public:
     // @param result When the method completes, contains the cross product of the two vectors
     static void Cross(const Double3& a, const Double3& b, Double3& result)
     {
-        result = Double3(
-            a.Y * b.Z - a.Z * b.Y,
-            a.Z * b.X - a.X * b.Z,
-            a.X * b.Y - a.Y * b.X);
+        result = Double3(a.Y * b.Z - a.Z * b.Y, a.Z * b.X - a.X * b.Z, a.X * b.Y - a.Y * b.X);
     }
 
     // Calculates the cross product of two vectors
@@ -667,10 +661,7 @@ public:
     // @returns Cross product of the two vectors
     static Double3 Cross(const Double3& a, const Double3& b)
     {
-        return Double3(
-            a.Y * b.Z - a.Z * b.Y,
-            a.Z * b.X - a.X * b.Z,
-            a.X * b.Y - a.Y * b.X);
+        return Double3(a.Y * b.Z - a.Z * b.Y, a.Z * b.X - a.X * b.Z, a.X * b.Y - a.Y * b.X);
     }
 
     // Performs a linear interpolation between two vectors
@@ -810,114 +801,14 @@ public:
         result = Double3(a.X < b.X ? a.X : b.X, a.Y < b.Y ? a.Y : b.Y, a.Z < b.Z ? a.Z : b.Z);
     }
 
-    /// <summary>
-    /// Projects a vector onto another vector.
-    /// </summary>
-    /// <param name="vector">The vector to project.</param>
-    /// <param name="onNormal">The projection normal vector.</param>
-    /// <returns>The projected vector.</returns>
-    static Double3 Project(const Double3& vector, const Double3& onNormal);
-
-    /// <summary>
-    /// Projects a vector onto a plane defined by a normal orthogonal to the plane.
-    /// </summary>
-    /// <param name="vector">The vector to project.</param>
-    /// <param name="planeNormal">The plane normal vector.</param>
-    /// <returns>The projected vector.</returns>
-    static Double3 ProjectOnPlane(const Double3& vector, const Double3& planeNormal)
-    {
-        return vector - Project(vector, planeNormal);
-    }
-
-    // Projects a 3D vector from object space into screen space
-    // @param vector The vector to project
-    // @param x The X position of the viewport
-    // @param y The Y position of the viewport
-    // @param width The width of the viewport
-    // @param height The height of the viewport
-    // @param minZ The minimum depth of the viewport
-    // @param maxZ The maximum depth of the viewport
-    // @param worldViewProjection The combined world-view-projection matrix
-    // @param result When the method completes, contains the vector in screen space
-    static void Project(const Double3& vector, double x, double y, double width, double height, double minZ, double maxZ, const Matrix& worldViewProjection, Double3& result);
-
-    // Projects a 3D vector from object space into screen space
-    // @param vector The vector to project
-    // @param x The X position of the viewport
-    // @param y The Y position of the viewport
-    // @param width The width of the viewport
-    // @param height The height of the viewport
-    // @param minZ The minimum depth of the viewport
-    // @param maxZ The maximum depth of the viewport
-    // @param worldViewProjection The combined world-view-projection matrix
-    // @returns The vector in screen space
-    static Double3 Project(const Double3& vector, double x, double y, double width, double height, double minZ, double maxZ, const Matrix& worldViewProjection)
-    {
-        Double3 result;
-        Project(vector, x, y, width, height, minZ, maxZ, worldViewProjection, result);
-        return result;
-    }
-
-    // Projects a 3D vector from screen space into object space
-    // @param vector The vector to project
-    // @param x The X position of the viewport
-    // @param y The Y position of the viewport
-    // @param width The width of the viewport
-    // @param height The height of the viewport
-    // @param minZ The minimum depth of the viewport
-    // @param maxZ The maximum depth of the viewport
-    // @param worldViewProjection The combined world-view-projection matrix
-    // @param result When the method completes, contains the vector in object space
-    static void Unproject(const Double3& vector, double x, double y, double width, double height, double minZ, double maxZ, const Matrix& worldViewProjection, Double3& result);
-
-    // Projects a 3D vector from screen space into object space
-    // @param vector The vector to project
-    // @param x The X position of the viewport
-    // @param y The Y position of the viewport
-    // @param width The width of the viewport
-    // @param height The height of the viewport
-    // @param minZ The minimum depth of the viewport
-    // @param maxZ The maximum depth of the viewport
-    // @param worldViewProjection The combined world-view-projection matrix
-    // @returns The vector in object space
-    static Double3 Unproject(const Double3& vector, double x, double y, double width, double height, double minZ, double maxZ, const Matrix& worldViewProjection)
-    {
-        Double3 result;
-        Unproject(vector, x, y, width, height, minZ, maxZ, worldViewProjection, result);
-        return result;
-    }
-
-    /// <summary>
-    /// Creates an orthonormal basis from a basis with at least two orthogonal vectors.
-    /// </summary>
-    /// <param name="xAxis">The X axis.</param>
-    /// <param name="yAxis">The y axis.</param>
-    /// <param name="zAxis">The z axis.</param>
-    static void CreateOrthonormalBasis(Double3& xAxis, Double3& yAxis, Double3& zAxis);
-
-    /// <summary>
-    /// Finds the best arbitrary axis vectors to represent U and V axes of a plane, by using this vector as the normal of the plane.
-    /// </summary>
-    /// <param name="firstAxis">The reference to first axis.</param>
-    /// <param name="secondAxis">The reference to second axis.</param>
-    void FindBestAxisVectors(Double3& firstAxis, Double3& secondAxis) const;
-
     static Double3 Round(const Double3& v)
     {
-        return Double3(
-            Math::Round(v.X),
-            Math::Round(v.Y),
-            Math::Round(v.Z)
-        );
+        return Double3(Math::Round(v.X), Math::Round(v.Y), Math::Round(v.Z));
     }
 
     static Double3 Ceil(const Double3& v)
     {
-        return Double3(
-            Math::Ceil(v.X),
-            Math::Ceil(v.Y),
-            Math::Ceil(v.Z)
-        );
+        return Double3(Math::Ceil(v.X), Math::Ceil(v.Y), Math::Ceil(v.Z));
     }
 
     static Double3 Abs(const Double3& v)
@@ -941,7 +832,6 @@ public:
     /// <param name="to">The second vector.</param>
     /// <returns>The angle (in radians).</returns>
     static double Angle(const Double3& from, const Double3& to);
-
 };
 
 inline Double3 operator+(double a, const Double3& b)

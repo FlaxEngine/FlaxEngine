@@ -194,7 +194,7 @@ Double3 Double3::Normalize(const Double3& input)
     const double length = input.Length();
     if (!Math::IsZero(length))
     {
-        const double inv = 1.0f / length;
+        const double inv = 1.0 / length;
         output.X *= inv;
         output.Y *= inv;
         output.Z *= inv;
@@ -208,7 +208,7 @@ void Double3::Normalize(const Double3& input, Double3& result)
     const double length = input.Length();
     if (!Math::IsZero(length))
     {
-        const double inv = 1.0f / length;
+        const double inv = 1.0 / length;
         result.X *= inv;
         result.Y *= inv;
         result.Z *= inv;
@@ -328,62 +328,6 @@ void Double3::TransformNormal(const Double3& normal, const Matrix& transform, Do
         normal.X * transform.M11 + normal.Y * transform.M21 + normal.Z * transform.M31,
         normal.X * transform.M12 + normal.Y * transform.M22 + normal.Z * transform.M32,
         normal.X * transform.M13 + normal.Y * transform.M23 + normal.Z * transform.M33);
-}
-
-Double3 Double3::Project(const Double3& vector, const Double3& onNormal)
-{
-    const double sqrMag = Dot(onNormal, onNormal);
-    if (sqrMag < ZeroTolerance)
-        return Zero;
-    return onNormal * Dot(vector, onNormal) / sqrMag;
-}
-
-void Double3::Project(const Double3& vector, double x, double y, double width, double height, double minZ, double maxZ, const Matrix& worldViewProjection, Double3& result)
-{
-    Double3 v;
-    TransformCoordinate(vector, worldViewProjection, v);
-
-    result = Double3((1.0 + v.X) * 0.5 * width + x, (1.0 - v.Y) * 0.5 * height + y, v.Z * (maxZ - minZ) + minZ);
-}
-
-void Double3::Unproject(const Double3& vector, double x, double y, double width, double height, double minZ, double maxZ, const Matrix& worldViewProjection, Double3& result)
-{
-    Matrix matrix;
-    Matrix::Invert(worldViewProjection, matrix);
-
-    const Double3 v = Double3((vector.X - x) / width * 2.0 - 1.0, -((vector.Y - y) / height * 2.0 - 1.0), (vector.Z - minZ) / (maxZ - minZ));
-
-    TransformCoordinate(v, matrix, result);
-}
-
-void Double3::CreateOrthonormalBasis(Double3& xAxis, Double3& yAxis, Double3& zAxis)
-{
-    xAxis -= (xAxis | zAxis) / (zAxis | zAxis) * zAxis;
-    yAxis -= (yAxis | zAxis) / (zAxis | zAxis) * zAxis;
-
-    if (xAxis.LengthSquared() < ZeroTolerance)
-        xAxis = yAxis ^ zAxis;
-    if (yAxis.LengthSquared() < ZeroTolerance)
-        yAxis = xAxis ^ zAxis;
-
-    xAxis.Normalize();
-    yAxis.Normalize();
-    zAxis.Normalize();
-}
-
-void Double3::FindBestAxisVectors(Double3& firstAxis, Double3& secondAxis) const
-{
-    const double absX = Math::Abs(X);
-    const double absY = Math::Abs(Y);
-    const double absZ = Math::Abs(Z);
-
-    if (absZ > absX && absZ > absY)
-        firstAxis = Double3(1, 0, 0);
-    else
-        firstAxis = Double3(0, 0, 1);
-
-    firstAxis = (firstAxis - *this * (firstAxis | *this)).GetNormalized();
-    secondAxis = firstAxis ^ *this;
 }
 
 double Double3::TriangleArea(const Double3& v0, const Double3& v1, const Double3& v2)

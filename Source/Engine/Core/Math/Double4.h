@@ -223,7 +223,7 @@ public:
     /// <returns>Average arithmetic of all the components</returns>
     double AverageArithmetic() const
     {
-        return (X + Y + Z + W) * 0.25f;
+        return (X + Y + Z + W) * 0.25;
     }
 
     /// <summary>

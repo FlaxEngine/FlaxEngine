@@ -23,9 +23,8 @@ struct Int4;
 /// </summary>
 API_STRUCT() struct FLAXENGINE_API Vector3
 {
-DECLARE_SCRIPTING_TYPE_MINIMAL(Vector3);
+    DECLARE_SCRIPTING_TYPE_MINIMAL(Vector3);
 public:
-
     union
     {
         struct
@@ -51,7 +50,6 @@ public:
     };
 
 public:
-
     // Vector with all components equal zero (0, 0, 0)
     static const Vector3 Zero;
 
@@ -95,7 +93,6 @@ public:
     static const Vector3 Maximum;
 
 public:
-
     /// <summary>
     /// Empty constructor.
     /// </summary>
@@ -146,7 +143,7 @@ public:
     // Init
     // @param xy Int22 with X and Y components values
     // @param z Z component value
-    explicit  Vector3(const Int2& xy, float z);
+    explicit Vector3(const Int2& xy, float z);
 
     // Init
     // @param xyz Int3 value
@@ -154,7 +151,7 @@ public:
 
     // Init
     // @param xyzw Int4 value
-    explicit  Vector3(const Int4& xyzw);
+    explicit Vector3(const Int4& xyzw);
 
     // Init
     // @param xyz Vector4 value
@@ -163,7 +160,7 @@ public:
     // Init
     // @param xy Double2 with X and Y components values
     // @param z Z component value
-    explicit  Vector3(const Double2& xy, float z);
+    explicit Vector3(const Double2& xy, float z);
 
     // Init
     // @param xyz Double3 value
@@ -172,17 +169,15 @@ public:
     // Init
     // @param xyzw Double4 value
     explicit Vector3(const Double4& xyzw);
-    
+
     // Init
     // @param color Color value
     explicit Vector3(const Color& color);
 
 public:
-
     String ToString() const;
 
 public:
-
     // Gets a value indicting whether this instance is normalized
     bool IsNormalized() const
     {
@@ -319,14 +314,13 @@ public:
     }
 
 public:
-
     /// <summary>
     /// Performs vector normalization (scales vector up to unit length)
     /// </summary>
     void Normalize()
     {
-        const float length = Length();
-        if (!Math::IsZero(length))
+        const float length = Math::Sqrt(X * X + Y * Y + Z * Z);
+        if (Math::Abs(length) >= ZeroTolerance)
         {
             const float inv = 1.0f / length;
             X *= inv;
@@ -340,7 +334,7 @@ public:
     /// </summary>
     void NormalizeFast()
     {
-        const float inv = 1.0f / Length();
+        const float inv = 1.0f / Math::Sqrt(X * X + Y * Y + Z * Z);
         X *= inv;
         Y *= inv;
         Z *= inv;
@@ -372,26 +366,25 @@ public:
     void UnwindEuler();
 
 public:
-
     // Arithmetic operators with Vector3
     Vector3 operator+(const Vector3& b) const
     {
-        return Add(*this, b);
+        return Vector3(X + b.X, Y + b.Y, Z + b.Z);
     }
 
     Vector3 operator-(const Vector3& b) const
     {
-        return Subtract(*this, b);
+        return Vector3(X - b.X, Y - b.Y, Z - b.Z);
     }
 
     Vector3 operator*(const Vector3& b) const
     {
-        return Multiply(*this, b);
+        return Vector3(X * b.X, Y * b.Y, Z * b.Z);
     }
 
     Vector3 operator/(const Vector3& b) const
     {
-        return Divide(*this, b);
+        return Vector3(X / b.X, Y / b.Y, Z / b.Z);
     }
 
     Vector3 operator-() const
@@ -412,47 +405,55 @@ public:
     // op= operators with Vector3
     Vector3& operator+=(const Vector3& b)
     {
-        *this = Add(*this, b);
+        X += b.X;
+        Y += b.Y;
+        Z += b.Z;
         return *this;
     }
 
     Vector3& operator-=(const Vector3& b)
     {
-        *this = Subtract(*this, b);
+        X -= b.X;
+        Y -= b.Y;
+        Z -= b.Z;
         return *this;
     }
 
     Vector3& operator*=(const Vector3& b)
     {
-        *this = Multiply(*this, b);
+        X *= b.X;
+        Y *= b.Y;
+        Z *= b.Z;
         return *this;
     }
 
     Vector3& operator/=(const Vector3& b)
     {
-        *this = Divide(*this, b);
+        X /= b.X;
+        Y /= b.Y;
+        Z /= b.Z;
         return *this;
     }
 
     // Arithmetic operators with float
     Vector3 operator+(float b) const
     {
-        return Add(*this, b);
+        return Vector3(X + b, Y + b, Z + b);
     }
 
     Vector3 operator-(float b) const
     {
-        return Subtract(*this, b);
+        return Vector3(X - b, Y - b, Z - b);
     }
 
     Vector3 operator*(float b) const
     {
-        return Multiply(*this, b);
+        return Vector3(X * b, Y * b, Z * b);
     }
 
     Vector3 operator/(float b) const
     {
-        return Divide(*this, b);
+        return Vector3(X / b, Y / b, Z / b);
     }
 
     // op= operators with float
@@ -512,7 +513,6 @@ public:
     }
 
 public:
-
     static bool NearEqual(const Vector3& a, const Vector3& b)
     {
         return Math::NearEqual(a.X, b.X) && Math::NearEqual(a.Y, b.Y) && Math::NearEqual(a.Z, b.Z);
@@ -524,7 +524,6 @@ public:
     }
 
 public:
-
     static void Add(const Vector3& a, const Vector3& b, Vector3& result)
     {
         result.X = a.X + b.X;
@@ -587,7 +586,6 @@ public:
     static Vector3 Frac(const Vector3& v);
 
 public:
-
     // Restricts a value to be within a specified range
     // @param value The value to clamp
     // @param min The minimum value,
@@ -662,7 +660,7 @@ public:
     // @param inout Input vector to normalize
     // @param output Output vector that is normalized (has unit length)
     static FORCE_INLINE void Normalize(const Vector3& input, Vector3& result)
-    {   
+    {
         result = Normalize(input);
     }
 
@@ -678,7 +676,7 @@ public:
     // @param result When the method completes, contains the cross product of the two vectors
     static void Cross(const Vector3& a, const Vector3& b, Vector3& result)
     {
-        result = Vector3(a.Y * b.Z - a.Z * b.Y,a.Z * b.X - a.X * b.Z,a.X * b.Y - a.Y * b.X);
+        result = Vector3(a.Y * b.Z - a.Z * b.Y, a.Z * b.X - a.X * b.Z, a.X * b.Y - a.Y * b.X);
     }
 
     // Calculates the cross product of two vectors
@@ -687,7 +685,7 @@ public:
     // @returns Cross product of the two vectors
     static Vector3 Cross(const Vector3& a, const Vector3& b)
     {
-        return Vector3(a.Y * b.Z - a.Z * b.Y,a.Z * b.X - a.X * b.Z,a.X * b.Y - a.Y * b.X);
+        return Vector3(a.Y * b.Z - a.Z * b.Y, a.Z * b.X - a.X * b.Z, a.X * b.Y - a.Y * b.X);
     }
 
     // Performs a linear interpolation between two vectors
@@ -921,20 +919,12 @@ public:
 
     static Vector3 Round(const Vector3& v)
     {
-        return Vector3(
-            Math::Round(v.X),
-            Math::Round(v.Y),
-            Math::Round(v.Z)
-        );
+        return Vector3(Math::Round(v.X), Math::Round(v.Y), Math::Round(v.Z));
     }
 
     static Vector3 Ceil(const Vector3& v)
     {
-        return Vector3(
-            Math::Ceil(v.X),
-            Math::Ceil(v.Y),
-            Math::Ceil(v.Z)
-        );
+        return Vector3(Math::Ceil(v.X), Math::Ceil(v.Y), Math::Ceil(v.Z));
     }
 
     static Vector3 Abs(const Vector3& v)
@@ -958,7 +948,6 @@ public:
     /// <param name="to">The second vector.</param>
     /// <returns>The angle (in radians).</returns>
     static float Angle(const Vector3& from, const Vector3& to);
-
 };
 
 inline Vector3 operator+(float a, const Vector3& b)

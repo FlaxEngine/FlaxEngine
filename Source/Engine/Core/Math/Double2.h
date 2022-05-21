@@ -389,7 +389,7 @@ public:
         const double length = Length();
         if (!Math::IsZero(length))
         {
-            const double invLength = 1. / length;
+            const double invLength = 1.0 / length;
             X *= invLength;
             Y *= invLength;
         }
