@@ -215,7 +215,7 @@ public:
     }
 
     /// <summary>
-    /// Returns average arithmetic of all the components.
+    /// Returns the average arithmetic of all the components.
     /// </summary>
     double AverageArithmetic() const
     {
@@ -223,7 +223,7 @@ public:
     }
 
     /// <summary>
-    /// Gets sum of all vector components values.
+    /// Gets the sum of all vector components values.
     /// </summary>
     double SumValues() const
     {
@@ -231,7 +231,7 @@ public:
     }
 
     /// <summary>
-    /// Returns minimum value of all the components.
+    /// Returns the minimum value of all the components.
     /// </summary>
     double MinValue() const
     {
@@ -239,7 +239,7 @@ public:
     }
 
     /// <summary>
-    /// Returns maximum value of all the components.
+    /// Returns the maximum value of all the components.
     /// </summary>
     double MaxValue() const
     {

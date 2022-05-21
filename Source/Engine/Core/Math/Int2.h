@@ -11,9 +11,8 @@
 /// </summary>
 API_STRUCT() struct FLAXENGINE_API Int2
 {
-DECLARE_SCRIPTING_TYPE_MINIMAL(Int2);
+    DECLARE_SCRIPTING_TYPE_MINIMAL(Int2);
 public:
-
     union
     {
         struct
@@ -34,7 +33,6 @@ public:
     };
 
 public:
-
     // Vector with all components equal 0
     static const Int2 Zero;
 
@@ -48,7 +46,6 @@ public:
     static const Int2 Maximum;
 
 public:
-
     /// <summary>
     /// Empty constructor.
     /// </summary>
@@ -80,7 +77,7 @@ public:
     // Init
     // @param xyzw Int4 to use X and Y components
     Int2(const Int4& xyzw);
-    
+
     // Init
     // @param xy Vector2 to use X and Y components
     explicit Int2(const Vector2& xy);
@@ -92,13 +89,11 @@ public:
     // Init
     // @param xyzw Vector4 to use X and Y components
     explicit Int2(const Vector4& xyzw);
-    
-public:
 
+public:
     String ToString() const;
 
 public:
-
     // Arithmetic operators with Int2
 
     Int2 operator+(const Int2& b) const
@@ -233,7 +228,6 @@ public:
     }
 
 public:
-
     static void Add(const Int2& a, const Int2& b, Int2& result)
     {
         result.X = a.X + b.X;
@@ -306,7 +300,7 @@ public:
     {
         return X == 1 && Y == 1;
     }
-    
+
     /// <summary>
     /// Calculates a vector with values being opposite to values of that vector
     /// </summary>
@@ -315,7 +309,7 @@ public:
     {
         return Int2(-X, -Y);
     }
-    
+
     /// <summary>
     /// Returns average arithmetic of all the components
     /// </summary>
@@ -352,7 +346,6 @@ public:
         return Math::Max(X, Y);
     }
 
-    
     // Returns a vector containing the smallest components of the specified vectors
     // @param a The first source vector
     // @param b The second source vector

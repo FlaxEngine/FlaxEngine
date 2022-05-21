@@ -13,9 +13,8 @@ struct Transform;
 /// </summary>
 API_STRUCT() struct FLAXENGINE_API Matrix
 {
-DECLARE_SCRIPTING_TYPE_MINIMAL(Matrix);
+    DECLARE_SCRIPTING_TYPE_MINIMAL(Matrix);
 public:
-
     union
     {
         struct
@@ -74,7 +73,6 @@ public:
     };
 
 public:
-
     /// <summary>A matrix with all of its components set to zero.</summary>
     static const Matrix Zero;
 
@@ -82,7 +80,6 @@ public:
     static const Matrix Identity;
 
 public:
-
     /// <summary>
     /// Empty constructor.
     /// </summary>
@@ -153,11 +150,9 @@ public:
     explicit Matrix(const Matrix3x3& matrix);
 
 public:
-
     String ToString() const;
 
 public:
-
     // Gets the up Vector3 of the matrix; that is M21, M22, and M23.
     Vector3 GetUp() const
     {
@@ -430,7 +425,6 @@ public:
     float RotDeterminant() const;
 
 public:
-
     // Inverts the matrix.
     void Invert()
     {
@@ -449,7 +443,6 @@ public:
     void NormalizeScale();
 
 public:
-
     /// <summary>
     /// Decomposes a rotation matrix with the specified yaw, pitch, roll.
     /// </summary>
@@ -492,7 +485,6 @@ public:
     void Decompose(Vector3& scale, Matrix& rotation, Vector3& translation) const;
 
 public:
-
     Matrix operator*(const float scale) const
     {
         Matrix result;
@@ -553,7 +545,6 @@ public:
     }
 
 public:
-
     // Calculates the sum of two matrices.
     // @param left The first matrix to add.
     // @param right The second matrix to add.
@@ -1141,7 +1132,6 @@ public:
     static void CreateFromAxisAngle(const Vector3& axis, float angle, Matrix& result);
 
 public:
-
     static Vector4 TransformPosition(const Matrix& m, const Vector3& v);
     static Vector4 TransformPosition(const Matrix& m, const Vector4& v);
 };

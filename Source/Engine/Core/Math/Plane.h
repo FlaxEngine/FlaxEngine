@@ -10,14 +10,12 @@
 /// </summary>
 API_STRUCT() struct FLAXENGINE_API Plane
 {
-DECLARE_SCRIPTING_TYPE_MINIMAL(Plane);
+    DECLARE_SCRIPTING_TYPE_MINIMAL(Plane);
 public:
-
     static const float DistanceEpsilon;
     static const float NormalEpsilon;
 
 public:
-
     /// <summary>
     /// The normal vector of the plane.
     /// </summary>
@@ -29,7 +27,6 @@ public:
     API_FIELD() float D;
 
 public:
-
     /// <summary>
     /// Empty constructor.
     /// </summary>
@@ -91,11 +88,9 @@ public:
     Plane(const Vector3& point1, const Vector3& point2, const Vector3& point3);
 
 public:
-
     String ToString() const;
 
 public:
-
     /// <summary>
     /// Changes the coefficients of the normal vector of the plane to make it of unit length.
     /// </summary>
@@ -128,7 +123,6 @@ public:
     void Shadow(const Vector4& light, Matrix& result) const;
 
 public:
-
     // Scales a plane by the given value
     // @param scale The amount by which to scale the plane
     // @param plane The plane to scale
@@ -154,7 +148,6 @@ public:
     }
 
 public:
-
     void Translate(const Vector3& translation)
     {
         const Vector3 mul = Normal * translation;
@@ -176,7 +169,6 @@ public:
     }
 
 public:
-
     static Vector3 Intersection(const Plane& inPlane1, const Plane& inPlane2, const Plane& inPlane3)
     {
         // intersection point with 3 planes
@@ -214,7 +206,6 @@ public:
     }
 
 public:
-
     // Determines if there is an intersection between the current object and a point
     // @param point The point to test
     // @returns Whether the two objects intersected
@@ -301,7 +292,6 @@ public:
     }
 
 public:
-
     // Scales the plane by the given scaling factor
     // @param value The plane to scale
     // @param scale The amount by which to scale the plane

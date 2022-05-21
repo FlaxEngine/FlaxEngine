@@ -9,7 +9,7 @@
 /// </summary>
 API_STRUCT() struct FLAXENGINE_API Rectangle
 {
-DECLARE_SCRIPTING_TYPE_MINIMAL(Rectangle);
+    DECLARE_SCRIPTING_TYPE_MINIMAL(Rectangle);
 
     /// <summary>
     /// The empty rectangle.
@@ -17,7 +17,6 @@ DECLARE_SCRIPTING_TYPE_MINIMAL(Rectangle);
     static Rectangle Empty;
 
 public:
-
     /// <summary>
     /// Rectangle location (coordinates of the upper-left corner)
     /// </summary>
@@ -29,7 +28,6 @@ public:
     API_FIELD() Vector2 Size;
 
 public:
-
     /// <summary>
     /// Empty constructor.
     /// </summary>
@@ -58,11 +56,9 @@ public:
     }
 
 public:
-
     String ToString() const;
 
 public:
-
     // Returns width of the rectangle
     float GetWidth() const
     {
@@ -145,7 +141,6 @@ public:
     }
 
 public:
-
     // Offset rectangle Location point
     // @param v Offset to add
     // @returns Result rectangle
@@ -208,7 +203,6 @@ public:
     }
 
 public:
-
     static bool NearEqual(const Rectangle& a, const Rectangle& b)
     {
         return Vector2::NearEqual(a.Location, b.Location) && Vector2::NearEqual(a.Size, b.Size);
@@ -220,7 +214,6 @@ public:
     }
 
 public:
-
     // Checks if rectangle contains given point
     // @param location Point location to check
     // @returns True if point is inside rectangle's area
@@ -237,7 +230,6 @@ public:
     bool Intersects(const Rectangle& value) const;
 
 public:
-
     // Offset rectangle position
     // @param x X coordinate offset
     // @param y Y coordinate offset
@@ -253,7 +245,6 @@ public:
     Rectangle MakeOffsetted(const Vector2& offset) const;
 
 public:
-
     // Expand rectangle area in all directions by given amount
     // @param toExpand Amount of units to expand a rectangle
     void Expand(float toExpand);
@@ -264,7 +255,6 @@ public:
     Rectangle MakeExpanded(float toExpand) const;
 
 public:
-
     // Scale rectangle area in all directions by given amount
     // @param scale Scale value to expand a rectangle
     void Scale(float scale);
@@ -275,7 +265,6 @@ public:
     Rectangle MakeScaled(float scale) const;
 
 public:
-
     // Calculates a rectangle that contains the union of rectangle and the arbitrary point
     // @param a The rectangle
     // @param b The point

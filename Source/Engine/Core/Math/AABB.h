@@ -11,7 +11,6 @@
 struct FLAXENGINE_API AABB
 {
 public:
-
     int32 MinX;
     int32 MaxX;
 
@@ -22,7 +21,6 @@ public:
     int32 MaxZ;
 
 public:
-
     AABB()
     {
         MinX = MAX_int32;
@@ -49,7 +47,6 @@ public:
     }
 
 public:
-
     int32 Width() const
     {
         return MaxX - MinX;
@@ -86,7 +83,6 @@ public:
     }
 
 public:
-
     void Clear()
     {
         MinX = MAX_int32;
@@ -184,7 +180,6 @@ public:
     }
 
 public:
-
     bool IsOutside(const AABB& other) const
     {
         return MaxX - other.MinX < 0 || MinX - other.MaxX > 0 ||

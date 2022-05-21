@@ -24,9 +24,8 @@ struct Int4;
 /// </summary>
 API_STRUCT() struct FLAXENGINE_API Vector4
 {
-DECLARE_SCRIPTING_TYPE_MINIMAL(Vector4);
+    DECLARE_SCRIPTING_TYPE_MINIMAL(Vector4);
 public:
-
     union
     {
         struct
@@ -59,7 +58,6 @@ public:
     };
 
 public:
-
     // Vector with all components equal 0
     static const Vector4 Zero;
 
@@ -85,7 +83,6 @@ public:
     static const Vector4 Maximum;
 
 public:
-
     /// <summary>
     /// Empty constructor.
     /// </summary>
@@ -120,169 +117,113 @@ public:
     {
     }
 
-    // Init
-    // @param xy X and Y values in the vector
-    // @param z Z component value
-    // @param w W component value
     explicit Vector4(const Vector2& xy, float z, float w);
-
-    // Init
-    // @param xy X and Y values in the vector
-    // @param zw Z and W values in the vector
-    // @param z Z component value
-    // @param w W component value
     explicit Vector4(const Vector2& xy, const Vector2& zw);
-
-    // Init
-    // @param xyz X, Y and Z values in the vector
-    // @param w W component value
     explicit Vector4(const Vector3& xyz, float w);
-
-    // Init
-    // @param xy X and Y values in the vector
-    // @param z Z component value
-    // @param w W component value
     explicit Vector4(const Int2& xy, float z, float w);
-
-    // Init
-    // @param xyz X, Y and Z values in the vector
-    // @param w W component value
     explicit Vector4(const Int3& xyz, float w);
-    
-    // Init
-    // @param color Int4 value
     explicit Vector4(const Int4& xyzw);
-
-    // Init
-    // @param xy Double2. X and Y values in the vector
-    // @param z Z component value
-    // @param w W component value
     explicit Vector4(const Double2& xy, float z, float w);
-
-    // Init
-    // @param xyz Double3. X, Y and Z values in the vector
-    // @param w W component value
     explicit Vector4(const Double3& xyz, float w);
-    
-    // Init
-    // @param xyzw Double4 value
     Vector4(const Double4& xyzw);
-    
-    // Init
-    // @param color Color value
     explicit Vector4(const Color& color);
-
-    // Init
-    // @param rect Rectangle value
     explicit Vector4(const Rectangle& rect);
 
 public:
-
     String ToString() const;
 
 public:
-
-    // Gets a value indicting whether this vector is zero
+    // Gets a value indicting whether this vector is zero.
     bool IsZero() const
     {
         return Math::IsZero(X) && Math::IsZero(Y) && Math::IsZero(Z) && Math::IsZero(W);
     }
 
-    // Gets a value indicting whether any vector component is zero
+    // Gets a value indicting whether any vector component is zero.
     bool IsAnyZero() const
     {
         return Math::IsZero(X) || Math::IsZero(Y) || Math::IsZero(Z) || Math::IsZero(W);
     }
 
-    // Gets a value indicting whether this vector is one
+    // Gets a value indicting whether this vector is one.
     bool IsOne() const
     {
         return Math::IsOne(X) && Math::IsOne(Y) && Math::IsOne(Z) && Math::IsOne(W);
     }
 
     /// <summary>
-    /// Calculates a vector with values being absolute values of that vector
+    /// Calculates a vector with values being absolute values of that vector.
     /// </summary>
-    /// <returns>Absolute vector</returns>
     Vector4 GetAbsolute() const
     {
         return Vector4(Math::Abs(X), Math::Abs(Y), Math::Abs(Z), Math::Abs(W));
     }
 
     /// <summary>
-    /// Calculates a vector with values being opposite to values of that vector
+    /// Calculates a vector with values being opposite to values of that vector.
     /// </summary>
-    /// <returns>Negative vector</returns>
     Vector4 GetNegative() const
     {
         return Vector4(-X, -Y, -Z, -W);
     }
 
     /// <summary>
-    /// Returns average arithmetic of all the components
+    /// Returns the average arithmetic of all the components.
     /// </summary>
-    /// <returns>Average arithmetic of all the components</returns>
     float AverageArithmetic() const
     {
         return (X + Y + Z + W) * 0.25f;
     }
 
     /// <summary>
-    /// Gets sum of all vector components values
+    /// Gets the sum of all vector components values.
     /// </summary>
-    /// <returns>Sum of X, Y, Z and W</returns>
     float SumValues() const
     {
         return X + Y + Z + W;
     }
 
     /// <summary>
-    /// Returns minimum value of all the components
+    /// Returns the minimum value of all the components.
     /// </summary>
-    /// <returns>Minimum value</returns>
     float MinValue() const
     {
         return Math::Min(X, Y, Z, W);
     }
 
     /// <summary>
-    /// Returns maximum value of all the components
+    /// Returns the maximum value of all the components.
     /// </summary>
-    /// <returns>Maximum value</returns>
     float MaxValue() const
     {
         return Math::Max(X, Y, Z, W);
     }
 
     /// <summary>
-    /// Returns true if vector has one or more components is not a number (NaN)
+    /// Returns true if vector has one or more components is not a number (NaN).
     /// </summary>
-    /// <returns>True if one or more components is not a number (NaN)</returns>
     bool IsNaN() const
     {
         return isnan(X) || isnan(Y) || isnan(Z) || isnan(W);
     }
 
     /// <summary>
-    /// Returns true if vector has one or more components equal to +/- infinity
+    /// Returns true if vector has one or more components equal to +/- infinity.
     /// </summary>
-    /// <returns>True if one or more components equal to +/- infinity</returns>
     bool IsInfinity() const
     {
         return isinf(X) || isinf(Y) || isinf(Z) || isinf(W);
     }
 
     /// <summary>
-    /// Returns true if vector has one or more components equal to +/- infinity or NaN
+    /// Returns true if vector has one or more components equal to +/- infinity or NaN.
     /// </summary>
-    /// <returns>True if one or more components equal to +/- infinity or NaN</returns>
     bool IsNanOrInfinity() const
     {
         return IsInfinity() || IsNaN();
     }
 
 public:
-
     // Arithmetic operators with Vector4
     inline Vector4 operator+(const Vector4& b) const
     {
@@ -407,7 +348,6 @@ public:
     }
 
 public:
-
     static bool NearEqual(const Vector4& a, const Vector4& b)
     {
         return Math::NearEqual(a.X, b.X) && Math::NearEqual(a.Y, b.Y) && Math::NearEqual(a.Z, b.Z) && Math::NearEqual(a.W, b.W);
@@ -419,7 +359,6 @@ public:
     }
 
 public:
-
     static void Add(const Vector4& a, const Vector4& b, Vector4& result)
     {
         result.X = a.X + b.X;
@@ -476,7 +415,6 @@ public:
     static Vector4 Ceil(const Vector4& v);
 
 public:
-
     // Restricts a value to be within a specified range
     // @param value The value to clamp
     // @param min The minimum value,

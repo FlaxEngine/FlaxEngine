@@ -11,9 +11,8 @@
 /// </summary>
 API_STRUCT() struct FLAXENGINE_API BoundingBox
 {
-DECLARE_SCRIPTING_TYPE_MINIMAL(BoundingBox);
+    DECLARE_SCRIPTING_TYPE_MINIMAL(BoundingBox);
 public:
-
     /// <summary>
     /// A <see cref="BoundingBox"/> which represents an empty space.
     /// </summary>
@@ -25,7 +24,6 @@ public:
     static const BoundingBox Zero;
 
 public:
-
     /// <summary>
     /// The minimum point of the box.
     /// </summary>
@@ -37,7 +35,6 @@ public:
     API_FIELD() Vector3 Maximum;
 
 public:
-
     /// <summary>
     /// Empty constructor.
     /// </summary>
@@ -67,11 +64,9 @@ public:
     }
 
 public:
-
     String ToString() const;
 
 public:
-
     /// <summary>
     /// Gets the eight corners of the bounding box.
     /// </summary>
@@ -152,7 +147,6 @@ public:
     }
 
 public:
-
     static bool NearEqual(const BoundingBox& a, const BoundingBox& b)
     {
         return Vector3::NearEqual(a.Minimum, b.Minimum) && Vector3::NearEqual(a.Maximum, b.Maximum);
@@ -164,7 +158,6 @@ public:
     }
 
 public:
-
     /// <summary>
     /// Merges the box with a point.
     /// </summary>
@@ -193,7 +186,6 @@ public:
     BoundingBox MakeOffsetted(const Vector3& offset) const;
 
 public:
-
     FORCE_INLINE bool operator==(const BoundingBox& other) const
     {
         return Minimum == other.Minimum && Maximum == other.Maximum;
@@ -212,7 +204,6 @@ public:
     }
 
 public:
-
     /// <summary>
     /// Constructs a Bounding Box that fully contains the given pair of points.
     /// </summary>
@@ -300,7 +291,6 @@ public:
     static void Transform(const BoundingBox& box, const Matrix& matrix, BoundingBox& result);
 
 public:
-
     /// <summary>
     /// Determines if there is an intersection between the current object and a Ray.
     /// </summary>

@@ -12,7 +12,6 @@
 API_STRUCT(InBuild) struct FLAXENGINE_API Matrix3x3
 {
 public:
-
     union
     {
         struct
@@ -50,7 +49,6 @@ public:
     };
 
 public:
-
     /// <summary>
     /// A matrix with all of its components set to zero.
     /// </summary>
@@ -62,7 +60,6 @@ public:
     static const Matrix3x3 Identity;
 
 public:
-
     /// <summary>
     /// Empty constructor.
     /// </summary>
@@ -120,11 +117,9 @@ public:
     explicit Matrix3x3(const Matrix& matrix);
 
 public:
-
     String ToString() const;
 
 public:
-
     // Gets the first row in the matrix; that is M11, M12 and M13.
     Vector3 GetRow1() const
     {
@@ -244,7 +239,6 @@ public:
     }
 
 public:
-
     /// <summary>
     /// Inverts the Matrix3x3.
     /// </summary>
@@ -267,7 +261,6 @@ public:
     void NormalizeScale();
 
 public:
-
     /// <summary>
     /// Calculates the inverse of the specified Matrix3x3.
     /// </summary>
@@ -307,7 +300,6 @@ public:
     }
 
 public:
-
     /// <summary>
     /// Determines the sum of two matrices.
     /// </summary>
@@ -435,7 +427,6 @@ public:
     }
 
 public:
-
     /// <summary>
     /// Creates 2D translation matrix.
     /// </summary>
@@ -491,7 +482,6 @@ public:
     }
 
 public:
-
     /// <summary>
     /// Creates a rotation matrix from a quaternion
     /// </summary>
@@ -512,7 +502,6 @@ public:
     static void RotationQuaternion(const Quaternion& rotation, Matrix3x3& result);
 
 public:
-
     /// <summary>
     /// Tests for equality between two objects.
     /// </summary>

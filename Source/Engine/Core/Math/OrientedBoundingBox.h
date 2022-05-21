@@ -11,7 +11,6 @@
 API_STRUCT(InBuild) struct FLAXENGINE_API OrientedBoundingBox
 {
 public:
-
     // Half lengths of the box along each axis.
     Vector3 Extents;
 
@@ -19,7 +18,6 @@ public:
     Matrix Transformation;
 
 public:
-
     /// <summary>
     /// Empty constructor.
     /// </summary>
@@ -58,11 +56,9 @@ public:
     OrientedBoundingBox(Vector3 points[], int32 pointCount);
 
 public:
-
     String ToString() const;
 
 public:
-
     // Gets the eight corners of the bounding box.
     void GetCorners(Vector3 corners[8]) const;
 
@@ -98,7 +94,6 @@ public:
     void GetBoundingBox(BoundingBox& result) const;
 
 public:
-
     // Transforms this box using a transformation matrix.
     // @param mat The transformation matrix.
     void Transform(const Matrix& matrix);
@@ -127,7 +122,6 @@ public:
     }
 
 public:
-
     FORCE_INLINE bool operator==(const OrientedBoundingBox& other) const
     {
         return Extents == other.Extents && Transformation == other.Transformation;
@@ -146,7 +140,6 @@ public:
     }
 
 private:
-
     static void GetRows(const Matrix& mat, Vector3 rows[3])
     {
         rows[0] = Vector3(mat.M11, mat.M12, mat.M13);
@@ -155,7 +148,6 @@ private:
     }
 
 public:
-
     /// <summary>
     /// Creates the centered box (axis aligned).
     /// </summary>
@@ -183,7 +175,6 @@ public:
     }
 
 public:
-
     // Determines whether a OBB contains a point.
     // @param point The point to test.
     // @returns The type of containment the two objects have.

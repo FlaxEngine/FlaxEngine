@@ -23,9 +23,8 @@ struct Matrix;
 /// </summary>
 API_STRUCT() struct FLAXENGINE_API Double2
 {
-DECLARE_SCRIPTING_TYPE_MINIMAL(Double2);
+    DECLARE_SCRIPTING_TYPE_MINIMAL(Double2);
 public:
-
     union
     {
         struct
@@ -46,7 +45,6 @@ public:
     };
 
 public:
-
     // Vector with all components equal 0
     static const Double2 Zero;
 
@@ -66,7 +64,6 @@ public:
     static const Double2 Maximum;
 
 public:
-
     /// <summary>
     /// Empty constructor.
     /// </summary>
@@ -100,49 +97,21 @@ public:
         , Y(xy[1])
     {
     }
-    
-    // Init
-    // @param v Int2 to use X and Y components
+
     explicit Double2(const Int2& xy);
-
-    // Init
-    // @param v Int3 to use X and Y components
     explicit Double2(const Int3& xyz);
-
-    // Init
-    // @param v Int4 to use X and Y components
     explicit Double2(const Int4& xyzw);
-
-    // Init
-    // @param v Vector2 to use X and Y components
     Double2(const Vector2& xy);
-    
-    // Init
-    // @param v Vector3 to use X and Y components
     explicit Double2(const Vector3& xyz);
-
-    // Init
-    // @param v Vector4 to use X and Y components
     explicit Double2(const Vector4& xyzw);
-
-    // Init
-    // @param v Double3 to use X and Y components
     explicit Double2(const Double3& xyz);
-
-    // Init
-    // @param v Double4 to use X and Y components
     explicit Double2(const Double4& xyzw);
-
-    // Init
-    // @param color Color value
     explicit Double2(const Color& color);
 
 public:
-
     String ToString() const;
 
 public:
-
     // Arithmetic operators with Double2
     Double2 operator+(const Double2& b) const
     {
@@ -272,7 +241,6 @@ public:
     }
 
 public:
-
     static bool NearEqual(const Double2& a, const Double2& b)
     {
         return Math::NearEqual(a.X, b.X) && Math::NearEqual(a.Y, b.Y);
@@ -284,7 +252,6 @@ public:
     }
 
 public:
-
     static double Dot(const Double2& a, const Double2& b)
     {
         return a.X * b.X + a.Y * b.Y;
@@ -396,137 +363,125 @@ public:
     }
 
 public:
-
-    // Gets a value indicting whether this instance is normalized
+    // Gets a value indicting whether this instance is normalized.
     bool IsNormalized() const
     {
         return Math::IsOne(X * X + Y * Y);
     }
 
-    // Gets a value indicting whether this vector is zero
+    // Gets a value indicting whether this vector is zero.
     bool IsZero() const
     {
         return Math::IsZero(X) && Math::IsZero(Y);
     }
 
-    // Gets a value indicting whether any vector component is zero
+    // Gets a value indicting whether any vector component is zero.
     bool IsAnyZero() const
     {
         return Math::IsZero(X) || Math::IsZero(Y);
     }
 
-    // Gets a value indicting whether this vector is zero
+    // Gets a value indicting whether this vector is zero.
     bool IsOne() const
     {
         return Math::IsOne(X) && Math::IsOne(Y);
     }
 
-    // Calculates length of the vector
-    // @returns Length of the vector
+    // Calculates length of the vector.
     double Length() const
     {
         return Math::Sqrt(X * X + Y * Y);
     }
 
-    // Calculates the squared length of the vector
-    // @returns The squared length of the vector
+    // Calculates the squared length of the vector.
     double LengthSquared() const
     {
         return X * X + Y * Y;
     }
 
-    // Calculates inverted length of the vector (1 / Length())
+    // Calculates inverted length of the vector (1 / length).
     double InvLength() const
     {
         return 1. / Length();
     }
 
-    // Calculates a vector with values being absolute values of that vector
+    // Calculates a vector with values being absolute values of that vector.
     Double2 GetAbsolute() const
     {
         return Double2(Math::Abs(X), Math::Abs(Y));
     }
 
-    // Calculates a vector with values being opposite to values of that vector
+    // Calculates a vector with values being opposite to values of that vector.
     Double2 GetNegative() const
     {
         return Double2(-X, -Y);
     }
 
     /// <summary>
-    /// Returns average arithmetic of all the components
+    /// Returns the average arithmetic of all the components.
     /// </summary>
-    /// <returns>Average arithmetic of all the components</returns>
     double AverageArithmetic() const
     {
         return (X + Y) * 0.5;
     }
 
     /// <summary>
-    /// Gets sum of all vector components values
+    /// Gets the sum of all vector components values.
     /// </summary>
-    /// <returns>Sum of X,Y and Z</returns>
     double SumValues() const
     {
         return X + Y;
     }
 
     /// <summary>
-    /// Gets multiplication result of all vector components values
+    /// Gets the multiplication result of all vector components values.
     /// </summary>
-    /// <returns>X * Y</returns>
     double MulValues() const
     {
         return X * Y;
     }
 
     /// <summary>
-    /// Returns minimum value of all the components
+    /// Returns the minimum value of all the components.
     /// </summary>
-    /// <returns>Minimum value</returns>
     double MinValue() const
     {
         return Math::Min(X, Y);
     }
 
     /// <summary>
-    /// Returns maximum value of all the components
+    /// Returns the maximum value of all the components.
     /// </summary>
-    /// <returns>Maximum value</returns>
     double MaxValue() const
     {
         return Math::Max(X, Y);
     }
 
     /// <summary>
-    /// Returns true if vector has one or more components is not a number (NaN)
+    /// Returns true if vector has one or more components is not a number (NaN).
     /// </summary>
-    /// <returns>True if one or more components is not a number (NaN)</returns>
     bool IsNaN() const
     {
         return isnan(X) || isnan(Y);
     }
 
     /// <summary>
-    /// Returns true if vector has one or more components equal to +/- infinity
+    /// Returns true if vector has one or more components equal to +/- infinity.
     /// </summary>
-    /// <returns>True if one or more components equal to +/- infinity</returns>
     bool IsInfinity() const
     {
         return isinf(X) || isinf(Y);
     }
 
     /// <summary>
-    /// Returns true if vector has one or more components equal to +/- infinity or NaN
+    /// Returns true if vector has one or more components equal to +/- infinity or NaN.
     /// </summary>
-    /// <returns>True if one or more components equal to +/- infinity or NaN</returns>
     bool IsNanOrInfinity() const
     {
         return IsInfinity() || IsNaN();
     }
 
 public:
-
     // Performs a linear interpolation between two vectors
     // @param start Start vector
     // @param end End vector
@@ -616,7 +571,6 @@ public:
     }
 
 public:
-
     /// <summary>
     /// Calculates the area of the triangle.
     /// </summary>
@@ -625,15 +579,14 @@ public:
     /// <param name="v2">The third triangle vertex.</param>
     /// <returns>The triangle area.</returns>
     static double TriangleArea(const Double2& v0, const Double2& v1, const Double2& v2);
-    
-	/// <summary>
+
+    /// <summary>
     /// Calculates the angle (in radians) between from and to. This is always the smallest value.
     /// </summary>
     /// <param name="from">The first vector.</param>
     /// <param name="to">The second vector.</param>
     /// <returns>The angle (in radians).</returns>
     static double Angle(const Double2& from, const Double2& to);
-
 };
 
 inline Double2 operator+(double a, const Double2& b)

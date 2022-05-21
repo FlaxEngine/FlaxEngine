@@ -13,7 +13,6 @@
 API_STRUCT(InBuild) struct FLAXENGINE_API BoundingFrustum
 {
 private:
-
     Matrix _matrix;
     Plane _pNear;
     Plane _pFar;
@@ -23,7 +22,6 @@ private:
     Plane _pBottom;
 
 public:
-
     /// <summary>
     /// Empty constructor.
     /// </summary>
@@ -41,11 +39,9 @@ public:
     }
 
 public:
-
     String ToString() const;
 
 public:
-
     /// <summary>
     /// Gets the matrix that describes this bounding frustum.
     /// </summary>
@@ -194,7 +190,6 @@ public:
     float GetHeightAtDepth(float depth) const;
 
 public:
-
     FORCE_INLINE bool operator==(const BoundingFrustum& other) const
     {
         return _matrix == other._matrix;
@@ -206,7 +201,6 @@ public:
     }
 
 public:
-
     /// <summary>
     /// Checks whether a point lays inside, intersects or lays outside the frustum.
     /// </summary>

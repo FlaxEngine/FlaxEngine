@@ -17,9 +17,8 @@ struct Matrix3x3;
 /// </summary>
 API_STRUCT() struct FLAXENGINE_API Quaternion
 {
-DECLARE_SCRIPTING_TYPE_MINIMAL(Quaternion);
+    DECLARE_SCRIPTING_TYPE_MINIMAL(Quaternion);
 public:
-
     union
     {
         struct
@@ -52,7 +51,6 @@ public:
     };
 
 public:
-
     /// <summary>
     /// Quaternion with all components equal 0.
     /// </summary>
@@ -69,7 +67,6 @@ public:
     static Quaternion Identity;
 
 public:
-
     /// <summary>
     /// Empty constructor.
     /// </summary>
@@ -111,11 +108,9 @@ public:
     explicit Quaternion(const Vector4& value);
 
 public:
-
     String ToString() const;
 
 public:
-
     /// <summary>
     /// Gets a value indicating whether this instance is equivalent to the identity quaternion.
     /// </summary>
@@ -283,7 +278,6 @@ public:
     void Multiply(const Quaternion& other);
 
 public:
-
     /// <summary>
     /// Adds two quaternions.
     /// </summary>
@@ -406,7 +400,6 @@ public:
     }
 
 public:
-
     /// <summary>
     /// Determines whether the specified <see cref="Quaternion" /> structures are equal.
     /// </summary>
@@ -431,7 +424,6 @@ public:
     }
 
 public:
-
     /// <summary>
     /// Calculates the inverse of the specified quaternion.
     /// </summary>

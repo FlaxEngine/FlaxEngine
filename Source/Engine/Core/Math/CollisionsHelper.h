@@ -60,7 +60,6 @@ enum class PlaneIntersectionType
 class FLAXENGINE_API CollisionsHelper
 {
 public:
-
     /// <summary>
     /// Determines the closest point between a point and a line.
     /// </summary>

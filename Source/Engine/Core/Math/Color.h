@@ -16,9 +16,8 @@ struct Color32;
 /// </summary>
 API_STRUCT() struct FLAXENGINE_API Color
 {
-DECLARE_SCRIPTING_TYPE_MINIMAL(Color);
+    DECLARE_SCRIPTING_TYPE_MINIMAL(Color);
 public:
-
     union
     {
         struct
@@ -51,7 +50,6 @@ public:
     };
 
 public:
-
     /// <summary>
     /// Empty constructor.
     /// </summary>
@@ -119,7 +117,6 @@ public:
     explicit Color(const Color32& color);
 
 public:
-
     /// <summary>
     /// Initializes from values in range [0;255].
     /// </summary>
@@ -177,12 +174,10 @@ public:
     static Color Random();
 
 public:
-
     String ToString() const;
     String ToHexString() const;
 
 public:
-
     bool operator==(const Color& other) const
     {
         return R == other.R && G == other.G && B == other.B && A == other.A;
@@ -270,12 +265,10 @@ public:
     bool HasOpacity() const;
 
 public:
-
     static bool NearEqual(const Color& a, const Color& b);
     static bool NearEqual(const Color& a, const Color& b, float epsilon);
 
 public:
-
     // Get color as vector structure.
     Vector3 ToVector3() const;
 
@@ -343,7 +336,6 @@ public:
     }
 
 public:
-
     uint32 GetHashCode() const;
 
     static uint32 GetHashCode(const Color& v)
@@ -352,7 +344,6 @@ public:
     }
 
 public:
-
     static Color Transparent;
     static Color AliceBlue;
     static Color AntiqueWhite;

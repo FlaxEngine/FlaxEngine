@@ -11,7 +11,6 @@
 struct FLAXENGINE_API Triangle
 {
 public:
-
     /// <summary>
     /// The first vertex.
     /// </summary>
@@ -28,7 +27,6 @@ public:
     Vector3 V2;
 
 public:
-
     /// <summary>
     /// Empty constructor.
     /// </summary>
@@ -50,14 +48,12 @@ public:
     }
 
 public:
-
     Vector3 GetNormal() const
     {
         return Vector3::Normalize((V1 - V0) ^ (V2 - V0));
     }
 
 public:
-
     // Determines if there is an intersection between the current object and a Ray
     // @param ray The ray to test
     // @returns Whether the two objects intersected

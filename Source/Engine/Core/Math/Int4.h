@@ -11,9 +11,8 @@
 /// </summary>
 API_STRUCT() struct FLAXENGINE_API Int4
 {
-DECLARE_SCRIPTING_TYPE_MINIMAL(Int4);
+    DECLARE_SCRIPTING_TYPE_MINIMAL(Int4);
 public:
-
     union
     {
         struct
@@ -44,7 +43,6 @@ public:
     };
 
 public:
-
     // Vector with all components equal 0
     static const Int4 Zero;
 
@@ -56,9 +54,8 @@ public:
 
     // A maximum Int4
     static const Int4 Maximum;
-    
-public:
 
+public:
     /// <summary>
     /// Empty constructor.
     /// </summary>
@@ -110,17 +107,15 @@ public:
     // @param v Vector3 to use X , Y and Z components
     // @param w W component value
     explicit Int4(const Vector3& xyz, int32 w);
-    
+
     // Init
     // @param v Vector to use X, Y, Z and W components
     explicit Int4(const Vector4& xyzw);
 
 public:
-
     String ToString() const;
 
 public:
-
     // Arithmetic operators with Int2
 
     Int4 operator+(const Int4& b) const
@@ -255,7 +250,6 @@ public:
     }
 
 public:
-
     static void Add(const Int4& a, const Int4& b, Int4& result)
     {
         result.X = a.X + b.X;
@@ -305,9 +299,8 @@ public:
     {
         return Int4(a.X / b, a.Y / b, a.Z / b, a.Y / b);
     }
-    
-public:
 
+public:
     /// <summary>
     /// Gets a value indicting whether this vector is zero.
     /// </summary>
@@ -334,7 +327,7 @@ public:
     {
         return X == 1 && Y == 1 && Z == 1 && W == 1;
     }
-    
+
     /// <summary>
     /// Calculates a vector with values being opposite to values of that vector
     /// </summary>
@@ -343,7 +336,7 @@ public:
     {
         return Int4(-X, -Y, -Z, -W);
     }
-    
+
     /// <summary>
     /// Returns average arithmetic of all the components
     /// </summary>
@@ -379,7 +372,7 @@ public:
     {
         return Math::Max(X, Y, Z, W);
     }
-    
+
     // Returns a vector containing the largest components of the specified vectors
     // @param a The first source vector
     // @param b The second source vector

@@ -13,7 +13,7 @@ struct Matrix;
 /// </summary>
 API_STRUCT() struct FLAXENGINE_API Transform
 {
-DECLARE_SCRIPTING_TYPE_MINIMAL(Transform);
+    DECLARE_SCRIPTING_TYPE_MINIMAL(Transform);
 
     /// <summary>
     /// The translation vector of the transform.
@@ -31,14 +31,12 @@ DECLARE_SCRIPTING_TYPE_MINIMAL(Transform);
     API_FIELD(Attributes="EditorOrder(30), Limit(float.MinValue, float.MaxValue, 0.01f)") Vector3 Scale;
 
 public:
-
     /// <summary>
     /// An identity transform.
     /// </summary>
     static Transform Identity;
 
 public:
-
     /// <summary>
     /// Empty constructor.
     /// </summary>
@@ -83,11 +81,9 @@ public:
     }
 
 public:
-
     String ToString() const;
 
 public:
-
     /// <summary>
     /// Checks if transform is an identity transformation
     /// </summary>
@@ -116,7 +112,6 @@ public:
     }
 
 public:
-
     /// <summary>
     /// Gets rotation matrix (from Orientation)
     /// </summary>
@@ -148,7 +143,6 @@ public:
     void GetWorld(Matrix& result) const;
 
 public:
-
     /// <summary>
     /// Adds translation to this transform.
     /// </summary>
@@ -250,7 +244,6 @@ public:
     void WorldToLocal(const Vector3* points, int32 pointsCount, Vector3* result) const;
 
 public:
-
     FORCE_INLINE Transform operator*(const Transform& other) const
     {
         return LocalToWorld(other);
@@ -292,7 +285,6 @@ public:
     }
 
 public:
-
     FORCE_INLINE Vector3 GetRight() const
     {
         return Vector3::Transform(Vector3::Right, Orientation);
@@ -312,7 +304,7 @@ public:
     {
         return Vector3::Transform(Vector3::Down, Orientation);
     }
-    
+
     FORCE_INLINE Vector3 GetForward() const
     {
         return Vector3::Transform(Vector3::Forward, Orientation);
@@ -324,7 +316,6 @@ public:
     }
 
 public:
-
     static Transform Lerp(const Transform& t1, const Transform& t2, float amount);
     static void Lerp(const Transform& t1, const Transform& t2, float amount, Transform& result);
 };

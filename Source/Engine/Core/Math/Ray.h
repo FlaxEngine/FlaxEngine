@@ -13,9 +13,8 @@ struct Viewport;
 /// </summary>
 API_STRUCT() struct FLAXENGINE_API Ray
 {
-DECLARE_SCRIPTING_TYPE_MINIMAL(Ray);
+    DECLARE_SCRIPTING_TYPE_MINIMAL(Ray);
 public:
-
     /// <summary>
     /// The position in three dimensional space where the ray starts.
     /// </summary>
@@ -27,14 +26,12 @@ public:
     API_FIELD() Vector3 Direction;
 
 public:
-
     /// <summary>
     /// Identity ray (at zero origin pointing forwards).
     /// </summary>
     static Ray Identity;
 
 public:
-
     /// <summary>
     /// Empty constructor.
     /// </summary>
@@ -54,11 +51,9 @@ public:
     }
 
 public:
-
     String ToString() const;
 
 public:
-
     FORCE_INLINE bool operator==(const Ray& other) const
     {
         return Position == other.Position && Direction == other.Direction;
@@ -80,7 +75,6 @@ public:
     }
 
 public:
-
     /// <summary>
     /// Gets a point at distance long ray.
     /// </summary>
@@ -260,7 +254,6 @@ public:
     }
 
 public:
-
     /// <summary>
     /// Calculates a world space ray from 2d screen coordinates.
     /// </summary>

@@ -12,16 +12,14 @@
 /// </summary>
 API_STRUCT() struct FLAXENGINE_API BoundingSphere
 {
-DECLARE_SCRIPTING_TYPE_MINIMAL(BoundingSphere);
+    DECLARE_SCRIPTING_TYPE_MINIMAL(BoundingSphere);
 public:
-
     /// <summary>
     /// An empty bounding sphere (Center = 0 and Radius = 0).
     /// </summary>
     static const BoundingSphere Empty;
 
 public:
-
     /// <summary>
     /// The center of the sphere in three dimensional space.
     /// </summary>
@@ -33,7 +31,6 @@ public:
     API_FIELD() float Radius;
 
 public:
-
     /// <summary>
     /// Empty constructor.
     /// </summary>
@@ -53,11 +50,9 @@ public:
     }
 
 public:
-
     String ToString() const;
 
 public:
-
     FORCE_INLINE bool operator==(const BoundingSphere& other) const
     {
         return Center == other.Center && Radius == other.Radius;
@@ -69,7 +64,6 @@ public:
     }
 
 public:
-
     static bool NearEqual(const BoundingSphere& a, const BoundingSphere& b)
     {
         return Vector3::NearEqual(a.Center, b.Center) && Math::NearEqual(a.Radius, b.Radius);
@@ -81,7 +75,6 @@ public:
     }
 
 public:
-
     /// <summary>
     /// Determines if there is an intersection between the current object and a Ray.
     /// </summary>
@@ -175,7 +168,6 @@ public:
     ContainmentType Contains(const BoundingSphere& sphere) const;
 
 public:
-
     /// <summary>
     /// Gets the box which contains whole sphere.
     /// </summary>

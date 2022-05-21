@@ -132,7 +132,6 @@ public:
     {
     }
 
-
     explicit Vector3(const Vector2& xy, float z);
     explicit Vector3(const Vector2& xy);
     explicit Vector3(const Int2& xy, float z);
@@ -358,7 +357,7 @@ public:
     {
         return Dot(*this, b);
     }
-    
+
     Vector3& operator+=(const Vector3& b)
     {
         X += b.X;
@@ -390,7 +389,7 @@ public:
         Z /= b.Z;
         return *this;
     }
-    
+
     Vector3 operator+(float b) const
     {
         return Vector3(X + b, Y + b, Z + b);
@@ -410,7 +409,7 @@ public:
     {
         return Vector3(X / b, Y / b, Z / b);
     }
-    
+
     Vector3& operator+=(float b)
     {
         *this = Add(*this, b);
@@ -434,7 +433,7 @@ public:
         *this = Divide(*this, b);
         return *this;
     }
-    
+
     bool operator==(const Vector3& b) const
     {
         return X == b.X && Y == b.Y && Z == b.Z;

@@ -6,15 +6,13 @@
 #include "Engine/Core/Formatting.h"
 #include "Engine/Core/Templates.h"
 
-
 /// <summary>
 /// Three-components vector (32 bit integer type).
 /// </summary>
 API_STRUCT() struct FLAXENGINE_API Int3
 {
-DECLARE_SCRIPTING_TYPE_MINIMAL(Int3);
+    DECLARE_SCRIPTING_TYPE_MINIMAL(Int3);
 public:
-
     union
     {
         struct
@@ -40,7 +38,6 @@ public:
     };
 
 public:
-
     // Vector with all components equal 0
     static const Int3 Zero;
 
@@ -54,7 +51,6 @@ public:
     static const Int3 Maximum;
 
 public:
-
     /// <summary>
     /// Empty constructor.
     /// </summary>
@@ -95,7 +91,7 @@ public:
     // @param v Vector2 to use X and Y components
     // @param z Z component value
     explicit Int3(const Vector2& xy, int32 z);
-    
+
     // Init
     // @param v Vector3 to use X, Y and Z components
     explicit Int3(const Vector3& xyz);
@@ -103,13 +99,11 @@ public:
     // Init
     // @param v Vector4 to use X and Y components
     explicit Int3(const Vector4& xyzw);
-    
-public:
 
+public:
     String ToString() const;
 
 public:
-
     // Arithmetic operators with Int2
 
     Int3 operator+(const Int3& b) const
@@ -244,7 +238,6 @@ public:
     }
 
 public:
-
     static void Add(const Int3& a, const Int3& b, Int3& result)
     {
         result.X = a.X + b.X;
@@ -294,7 +287,6 @@ public:
     }
 
 public:
-
     /// <summary>
     /// Gets a value indicting whether this vector is zero.
     /// </summary>
@@ -321,7 +313,7 @@ public:
     {
         return X == 1 && Y == 1 && Z == 1;
     }
-    
+
     /// <summary>
     /// Calculates a vector with values being opposite to values of that vector
     /// </summary>
@@ -330,7 +322,7 @@ public:
     {
         return Int3(-X, -Y, -Z);
     }
-    
+
     /// <summary>
     /// Returns average arithmetic of all the components
     /// </summary>
@@ -366,7 +358,7 @@ public:
     {
         return Math::Max(X, Y, Z);
     }
-    
+
     // Returns a vector containing the largest components of the specified vectors
     // @param a The first source vector
     // @param b The second source vector
