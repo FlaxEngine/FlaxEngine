@@ -5,6 +5,8 @@
 #include "Engine/Core/Math/Color.h"
 #include "Engine/Scripting/ScriptingType.h"
 #include "Engine/Core/Types/Span.h"
+#include "Engine/Core/Math/Vector2.h"
+#include "Engine/Core/Math/Matrix.h"
 
 struct SpriteHandle;
 struct TextLayoutOptions;
@@ -42,6 +44,13 @@ DECLARE_SCRIPTING_TYPE_NO_SPAWN(Render2D);
         /// Enables automatic geometry vertices snapping to integer coordinates in screen space. Reduces aliasing and sampling artifacts. Might be disabled for 3D projection viewport or for complex UI transformations.
         /// </summary>
         VertexSnapping = 1,
+    };
+
+public:
+    struct CustomData
+    {
+        Matrix ViewProjection;
+        Float2 ViewSize;
     };
 
 public:

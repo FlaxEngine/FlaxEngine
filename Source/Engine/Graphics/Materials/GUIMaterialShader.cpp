@@ -20,6 +20,7 @@ PACK_STRUCT(struct GUIMaterialShaderData {
     float TimeParam;
     Float4 ViewInfo;
     Float4 ScreenSize;
+    Float4 ViewSize;
     });
 
 void GUIMaterialShader::Bind(BindParameters& params)
@@ -32,6 +33,7 @@ void GUIMaterialShader::Bind(BindParameters& params)
     cb = Span<byte>(cb.Get() + sizeof(GUIMaterialShaderData), cb.Length() - sizeof(GUIMaterialShaderData));
     int32 srv = 0;
     const auto ps = context->IsDepthBufferBinded() ? _cache.Depth : _cache.NoDepth;
+    auto customData = (Render2D::CustomData*)params.CustomData;
 
     // Setup parameters
     MaterialParameter::BindMeta bindMeta;
@@ -45,8 +47,8 @@ void GUIMaterialShader::Bind(BindParameters& params)
 
     // Setup material constants
     {
-        const auto viewProjectionMatrix = (Matrix*)params.CustomData;
-        Matrix::Transpose(*viewProjectionMatrix, materialData->ViewProjectionMatrix);
+        const auto viewProjectionMatrix = customData->ViewProjection;
+        Matrix::Transpose(viewProjectionMatrix, materialData->ViewProjectionMatrix);
         Matrix::Transpose(Matrix::Identity, materialData->WorldMatrix);
         Matrix::Transpose(Matrix::Identity, materialData->ViewMatrix);
         materialData->ViewPos = Float3::Zero;
@@ -56,6 +58,7 @@ void GUIMaterialShader::Bind(BindParameters& params)
         materialData->ViewInfo = Float4::Zero;
         auto& viewport = Render2D::GetViewport();
         materialData->ScreenSize = Float4(viewport.Width, viewport.Height, 1.0f / viewport.Width, 1.0f / viewport.Height);
+        materialData->ViewSize = Float4(customData->ViewSize.X, customData->ViewSize.Y, 1.0f / customData->ViewSize.X, 1.0f / customData->ViewSize.Y);
     }
 
     // Bind constants

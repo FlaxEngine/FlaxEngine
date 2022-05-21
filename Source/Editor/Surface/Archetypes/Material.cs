@@ -863,6 +863,19 @@ namespace FlaxEditor.Surface.Archetypes
                     NodeElementArchetype.Factory.TextBox(0, 40, 300, 200, 0),
                 }
             },
+            new NodeArchetype
+            {
+                TypeID = 39,
+                Title = "View Size",
+                Description = "The size of the view.",
+                Flags = NodeFlags.MaterialGraph,
+                Size = new Float2(150, 40),
+                Elements = new[]
+                {
+                    NodeElementArchetype.Factory.Output(0, "Size", typeof(Float2), 0),
+                    NodeElementArchetype.Factory.Output(1, "Inv Size", typeof(Float2), 1),
+                }
+            },
         };
     }
 }
