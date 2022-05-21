@@ -41,13 +41,13 @@ protected:
     int8 _isEnabled : 1;
     byte _layer;
     byte _tag;
-    Scene* _scene;
     StaticFlags _staticFlags;
     Transform _localTransform;
     Transform _transform;
     BoundingSphere _sphere;
     BoundingBox _box;
     String _name;
+    Scene* _scene;
     PhysicsScene* _physicsScene;
 
 private:
