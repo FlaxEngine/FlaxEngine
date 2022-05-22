@@ -1,5 +1,6 @@
 // Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
+using System;
 using System.Collections.Generic;
 
 namespace FlaxEngine.GUI
@@ -211,7 +212,7 @@ namespace FlaxEngine.GUI
                 var hitPos = CharIndexAtPoint(ref location);
                 int spaceLoc = _text.LastIndexOfAny(Separators, hitPos - 2);
                 var left = spaceLoc == -1 ? 0 : spaceLoc + 1;
-                spaceLoc = _text.IndexOfAny(Separators, hitPos + 1);
+                spaceLoc = _text.IndexOfAny(Separators, Math.Min(hitPos + 1, _text.Length));
                 var right = spaceLoc == -1 ? textLength : spaceLoc;
                 SetSelection(left, right);
             }
