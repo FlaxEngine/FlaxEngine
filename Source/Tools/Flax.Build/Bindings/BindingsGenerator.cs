@@ -296,6 +296,11 @@ namespace Flax.Build.Bindings
                             else
                                 throw new Exception($"Not supported location for event {eventInfo.Name} at line {tokenizer.CurrentLine}. Place it in the class to use API bindings for it.");
                         }
+                        else if (string.Equals(token.Value, ApiTokens.Typedef, StringComparison.Ordinal))
+                        {
+                            var typeInfo = ParseTypedef(ref context);
+                            fileInfo.AddChild(typeInfo);
+                        }
                         else if (string.Equals(token.Value, ApiTokens.InjectCppCode, StringComparison.Ordinal))
                         {
                             var injectCppCodeInfo = ParseInjectCppCode(ref context);

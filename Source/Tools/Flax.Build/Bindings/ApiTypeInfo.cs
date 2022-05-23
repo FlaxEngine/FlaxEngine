@@ -1,14 +1,16 @@
 // Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
+using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Text;
 
 namespace Flax.Build.Bindings
 {
     /// <summary>
     /// The native type information for bindings generator.
     /// </summary>
-    public class ApiTypeInfo : IBindingsCache
+    public class ApiTypeInfo : IBindingsCache, ICloneable
     {
         public ApiTypeInfo Parent;
         public List<ApiTypeInfo> Children = new List<ApiTypeInfo>();
@@ -135,6 +137,21 @@ namespace Flax.Build.Bindings
         public override string ToString()
         {
             return Name;
+        }
+
+        /// <inheritdoc />
+        public object Clone()
+        {
+            var clone = (ApiTypeInfo)Activator.CreateInstance(GetType());
+            using (var stream = new MemoryStream(1024))
+            {
+                using (var writer = new BinaryWriter(stream, Encoding.UTF8, true))
+                    Write(writer);
+                stream.Position = 0;
+                using (var reader = new BinaryReader(stream))
+                    clone.Read(reader);
+            }
+            return clone;
         }
     }
 }

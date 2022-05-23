@@ -311,7 +311,7 @@ namespace Flax.Build.Bindings
                             currentParam.Attributes = tag.Value;
                             break;
                         default:
-                            Log.Warning($"Unknown or not supported tag parameter {tag} used on parameter at line {context.Tokenizer.CurrentLine}.");
+                            Log.Warning($"Unknown or not supported tag parameter {tag} used on {"function parameter"} at line {context.Tokenizer.CurrentLine}");
                             break;
                         }
                     }
@@ -567,7 +567,7 @@ namespace Flax.Build.Bindings
                     desc.Namespace = tag.Value;
                     break;
                 default:
-                    Log.Warning($"Unknown or not supported tag parameter {tag} used on class {desc.Name} at line {context.Tokenizer.CurrentLine}");
+                    Log.Warning($"Unknown or not supported tag parameter {tag} used on {desc.Name} at line {context.Tokenizer.CurrentLine}");
                     break;
                 }
             }
@@ -648,7 +648,7 @@ namespace Flax.Build.Bindings
                     desc.Namespace = tag.Value;
                     break;
                 default:
-                    Log.Warning($"Unknown or not supported tag parameter {tag} used on interface {desc.Name} at line {context.Tokenizer.CurrentLine}");
+                    Log.Warning($"Unknown or not supported tag parameter {tag} used on {desc.Name} at line {context.Tokenizer.CurrentLine}");
                     break;
                 }
             }
@@ -775,7 +775,7 @@ namespace Flax.Build.Bindings
                     desc.IsHidden = true;
                     break;
                 default:
-                    Log.Warning($"Unknown or not supported tag parameter {tag} used on function {desc.Name}");
+                    Log.Warning($"Unknown or not supported tag parameter {tag} used on {desc.Name} at line {context.Tokenizer.CurrentLine}");
                     break;
                 }
             }
@@ -965,7 +965,7 @@ namespace Flax.Build.Bindings
                                 entry.Attributes = tag.Value;
                                 break;
                             default:
-                                Log.Warning($"Unknown or not supported tag parameter {tag} used on enum {desc.Name} entry at line {context.Tokenizer.CurrentLine}");
+                                Log.Warning($"Unknown or not supported tag parameter {tag} used on {desc.Name + " enum entry"} at line {context.Tokenizer.CurrentLine}");
                                 break;
                             }
                         }
@@ -1029,7 +1029,7 @@ namespace Flax.Build.Bindings
                     desc.Namespace = tag.Value;
                     break;
                 default:
-                    Log.Warning($"Unknown or not supported tag parameter {tag} used on enum {desc.Name} at line {context.Tokenizer.CurrentLine}");
+                    Log.Warning($"Unknown or not supported tag parameter {tag} used on {desc.Name} at line {context.Tokenizer.CurrentLine}");
                     break;
                 }
             }
@@ -1093,7 +1093,7 @@ namespace Flax.Build.Bindings
                     desc.Namespace = tag.Value;
                     break;
                 default:
-                    Log.Warning($"Unknown or not supported tag parameter {tag} used on struct {desc.Name} at line {context.Tokenizer.CurrentLine}");
+                    Log.Warning($"Unknown or not supported tag parameter {tag} used on {desc.Name} at line {context.Tokenizer.CurrentLine}");
                     break;
                 }
             }
@@ -1211,7 +1211,7 @@ namespace Flax.Build.Bindings
                     desc.NoArray = true;
                     break;
                 default:
-                    Log.Warning($"Unknown or not supported tag parameter {tag} used on field {desc.Name} at line {context.Tokenizer.CurrentLine}");
+                    Log.Warning($"Unknown or not supported tag parameter {tag} used on {desc.Name} at line {context.Tokenizer.CurrentLine}");
                     break;
                 }
             }
@@ -1273,7 +1273,7 @@ namespace Flax.Build.Bindings
                     desc.IsHidden = true;
                     break;
                 default:
-                    Log.Warning($"Unknown or not supported tag parameter {tag} used on event {desc.Name} at line {context.Tokenizer.CurrentLine}");
+                    Log.Warning($"Unknown or not supported tag parameter {tag} used on {desc.Name} at line {context.Tokenizer.CurrentLine}");
                     break;
                 }
             }
@@ -1289,6 +1289,60 @@ namespace Flax.Build.Bindings
             };
             desc.Code = desc.Code.Substring(1, desc.Code.Length - 2);
             context.Tokenizer.ExpectToken(TokenType.RightParent);
+            return desc;
+        }
+
+        private static TypedefInfo ParseTypedef(ref ParsingContext context)
+        {
+            var desc = new TypedefInfo
+            {
+            };
+
+            // Read the documentation comment
+            desc.Comment = ParseComment(ref context);
+
+            // Read parameters from the tag
+            var tagParams = ParseTagParameters(ref context);
+
+            // Read 'typedef' keyword
+            var token = context.Tokenizer.NextToken();
+            if (token.Value != "typedef")
+                throw new Exception($"Invalid {ApiTokens.Typedef} usage (expected 'typedef' keyword but got '{token.Value} {context.Tokenizer.NextToken().Value}').");
+
+            // Read type definition
+            desc.Type = ParseType(ref context);
+
+            // Read name
+            desc.Name = ParseName(ref context);
+
+            // Read ';'
+            context.Tokenizer.ExpectToken(TokenType.SemiColon);
+
+            // Process tag parameters
+            foreach (var tag in tagParams)
+            {
+                switch (tag.Tag.ToLower())
+                {
+                case "alias":
+                    desc.IsAlias = true;
+                    break;
+                case "inbuild":
+                    desc.IsInBuild = true;
+                    break;
+                case "attributes":
+                    desc.Attributes = tag.Value;
+                    break;
+                case "name":
+                    desc.Name = tag.Value;
+                    break;
+                case "namespace":
+                    desc.Namespace = tag.Value;
+                    break;
+                default:
+                    Log.Warning($"Unknown or not supported tag parameter {tag} used on {desc.Name} at line {context.Tokenizer.CurrentLine}");
+                    break;
+                }
+            }
             return desc;
         }
     }

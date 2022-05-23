@@ -20,6 +20,7 @@ namespace Flax.Build.Bindings
             public const string Field = "API_FIELD";
             public const string Event = "API_EVENT";
             public const string Param = "API_PARAM";
+            public const string Typedef = "API_TYPEDEF";
             public const string InjectCppCode = "API_INJECT_CPP_CODE";
             public const string AutoSerialization = "API_AUTO_SERIALIZATION";
 
@@ -29,6 +30,7 @@ namespace Flax.Build.Bindings
                 Class,
                 Struct,
                 Interface,
+                Typedef,
             };
         }
 
@@ -306,6 +308,8 @@ namespace Flax.Build.Bindings
                 if (child.Name == typeInfo.Type)
                 {
                     child.EnsureInited(buildData);
+                    if (child is TypedefInfo typedef)
+                        return typedef.Typedef;
                     return child;
                 }
 

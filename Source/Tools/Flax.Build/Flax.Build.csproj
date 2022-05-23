@@ -84,6 +84,7 @@
     <Compile Include="Bindings\ModuleInfo.cs" />
     <Compile Include="Bindings\PropertyInfo.cs" />
     <Compile Include="Bindings\StructureInfo.cs" />
+    <Compile Include="Bindings\TypedefInfo.cs" />
     <Compile Include="Bindings\TypeInfo.cs" />
     <Compile Include="Build\Assembler.cs" />
     <Compile Include="Build\Builder.cs" />
