@@ -45,6 +45,7 @@ struct GlobalSDFHit
 	float HitTime;
 	uint HitCascade;
 	uint StepsCount;
+	float HitSDF;
 
 	bool IsHit()
 	{
@@ -180,6 +181,7 @@ GlobalSDFHit RayTraceGlobalSDF(const GlobalSDFData data, Texture3D<float> tex[4]
 				// Surface hit
 				hit.HitTime = max(stepTime + stepDistance - minSurfaceThickness, 0.0f);
 				hit.HitCascade = cascade;
+				hit.HitSDF = stepDistance;
 				if (trace.NeedsHitNormal)
 				{
 					// Calculate hit normal from SDF gradient
@@ -201,4 +203,11 @@ GlobalSDFHit RayTraceGlobalSDF(const GlobalSDFData data, Texture3D<float> tex[4]
 		hit.StepsCount += step;
 	}
 	return hit;
+}
+
+// Calculates the surface threshold for Global Surface Atlas sampling which matches the Global SDF trace to reduce artifacts
+float GetGlobalSurfaceAtlasThreshold(GlobalSDFHit hit)
+{
+	// Scale the threshold based on the hit cascade (less precision)
+	return hit.HitCascade * 10.0f + 20.0f;
 }

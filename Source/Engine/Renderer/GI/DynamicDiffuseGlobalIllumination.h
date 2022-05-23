@@ -1,0 +1,93 @@
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
+
+#pragma once
+
+#include "../RendererPass.h"
+#include "Engine/Core/Math/Int3.h"
+#include "Engine/Graphics/Textures/GPUTexture.h"
+
+/// <summary>
+/// Dynamic Diffuse Global Illumination rendering pass.
+/// </summary>
+class FLAXENGINE_API DynamicDiffuseGlobalIlluminationPass : public RendererPass<DynamicDiffuseGlobalIlluminationPass>
+{
+public:
+    // Constant buffer data for DDGI access on a GPU.
+    PACK_STRUCT(struct ConstantsData
+        {
+        Vector3 ProbesOrigin;
+        float ProbesSpacing;
+        Vector4 RaysRotation;
+        uint32 ProbesCounts[3];
+        float IrradianceGamma;
+        Int3 ProbesScrollOffsets;
+        float ProbeHistoryWeight;
+        Vector3 ViewDir;
+        uint32 RaysCount;
+        Int3 ProbeScrollDirections;
+        float RayMaxDistance;
+        uint32 ProbeScrollClear[3];
+        uint32 Padding0;
+        });
+
+    // Binding data for the GPU.
+    struct BindingData
+    {
+        ConstantsData Constants;
+        GPUTextureView* ProbesState;
+        GPUTextureView* ProbesDistance;
+        GPUTextureView* ProbesIrradiance;
+    };
+
+private:
+    bool _supported = false;
+    AssetReference<Shader> _shader;
+    GPUConstantBuffer* _cb0 = nullptr;
+    GPUShaderProgramCS* _csClassify;
+    GPUShaderProgramCS* _csTraceRays;
+    GPUShaderProgramCS* _csUpdateProbesIrradiance;
+    GPUShaderProgramCS* _csUpdateProbesDistance;
+    GPUShaderProgramCS* _csUpdateBordersIrradianceRow;
+    GPUShaderProgramCS* _csUpdateBordersIrradianceCollumn;
+    GPUShaderProgramCS* _csUpdateBordersDistanceRow;
+    GPUShaderProgramCS* _csUpdateBordersDistanceCollumn;
+    GPUPipelineState* _psIndirectLighting;
+#if USE_EDITOR
+    AssetReference<Model> _debugModel;
+    AssetReference<MaterialBase> _debugMaterial;
+#endif
+
+public:
+    /// <summary>
+    /// Gets the DDGI binding data (only if enabled).
+    /// </summary>
+    /// <param name="buffers">The rendering context buffers.</param>
+    /// <param name="result">The result DDGI data for binding to the shaders.</param>
+    /// <returns>True if failed to render (platform doesn't support it, out of video memory, disabled feature or effect is not ready), otherwise false.</returns>
+    bool Get(const RenderBuffers* buffers, BindingData& result);
+
+    /// <summary>
+    /// Renders the DDGI.
+    /// </summary>
+    /// <param name="renderContext">The rendering context.</param>
+    /// <param name="context">The GPU context.</param>
+    /// <param name="lightBuffer">The light accumulation buffer (input and output).</param>
+    /// <returns>True if failed to render (platform doesn't support it, out of video memory, disabled feature or effect is not ready), otherwise false.</returns>
+    bool Render(RenderContext& renderContext, GPUContext* context, GPUTextureView* lightBuffer);
+
+private:
+#if COMPILE_WITH_DEV_ENV
+    uint64 LastFrameShaderReload = 0;
+    void OnShaderReloading(Asset* obj);
+#endif
+
+public:
+    // [RendererPass]
+    String ToString() const override;
+    bool Init() override;
+    void Dispose() override;
+
+protected:
+    // [RendererPass]
+    bool setupResources() override;
+};

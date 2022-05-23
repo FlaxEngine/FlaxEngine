@@ -7,7 +7,7 @@
 #define GLOBAL_SURFACE_ATLAS_CHUNKS_RESOLUTION 40 // Amount of chunks (in each direction) to split atlas draw distance for objects culling
 #define GLOBAL_SURFACE_ATLAS_CHUNKS_GROUP_SIZE 4
 #define GLOBAL_SURFACE_ATLAS_TILE_DATA_STRIDE 5 // Amount of float4s per-tile
-#define GLOBAL_SURFACE_ATLAS_TILE_NORMAL_THRESHOLD 0.1f // Cut-off value for tiles transitions blending during sampling
+#define GLOBAL_SURFACE_ATLAS_TILE_NORMAL_THRESHOLD 0.05f // Cut-off value for tiles transitions blending during sampling
 #define GLOBAL_SURFACE_ATLAS_TILE_PROJ_PLANE_OFFSET 0.1f // Small offset to prevent clipping with the closest triangles (shifts near and far planes)
 
 struct GlobalSurfaceTile
