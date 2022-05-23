@@ -8,6 +8,7 @@
 #include "./Flax/LightingCommon.hlsl"
 #include "./Flax/GlobalSignDistanceField.hlsl"
 #include "./Flax/GI/GlobalSurfaceAtlas.hlsl"
+#include "./Flax/GI/DDGI.hlsl"
 
 META_CB_BEGIN(0, Data)
 float3 ViewWorldPos;
@@ -19,6 +20,7 @@ float ViewFarPlane;
 float4 ViewFrustumWorldRays[4];
 GlobalSDFData GlobalSDF;
 GlobalSurfaceAtlasData GlobalSurfaceAtlas;
+DDGIData DDGI;
 LightData Light;
 META_CB_END
 
@@ -60,7 +62,7 @@ void PS_Clear(out float4 Light : SV_Target0, out float4 RT0 : SV_Target1, out fl
 	RT2 = float4(1, 0, 0, 0);
 }
 
-#ifdef _PS_DirectLighting
+#ifdef _PS_Lighting
 
 #include "./Flax/GBuffer.hlsl"
 #include "./Flax/Matrix.hlsl"
@@ -68,14 +70,21 @@ void PS_Clear(out float4 Light : SV_Target0, out float4 RT0 : SV_Target1, out fl
 
 // GBuffer+Depth at 0-3 slots
 Buffer<float4> GlobalSurfaceAtlasObjects : register(t4);
+#if INDIRECT_LIGHT
+Texture2D<float4> ProbesState : register(t5);
+Texture2D<float4> ProbesDistance : register(t6);
+Texture2D<float4> ProbesIrradiance : register(t7);
+#else
 Texture3D<float> GlobalSDFTex[4] : register(t5);
 Texture3D<float> GlobalSDFMip[4] : register(t9);
+#endif
 
 // Pixel shader for Global Surface Atlas shading with direct light contribution
 META_PS(true, FEATURE_LEVEL_SM5)
 META_PERMUTATION_1(RADIAL_LIGHT=0)
 META_PERMUTATION_1(RADIAL_LIGHT=1)
-float4 PS_DirectLighting(AtlasVertexOutput input) : SV_Target
+META_PERMUTATION_1(INDIRECT_LIGHT=1)
+float4 PS_Lighting(AtlasVertexOutput input) : SV_Target
 {
 	// Load current tile info
 	GlobalSurfaceTile tile = LoadGlobalSurfaceAtlasTile(GlobalSurfaceAtlasObjects, input.TileAddress);
@@ -104,6 +113,16 @@ float4 PS_DirectLighting(AtlasVertexOutput input) : SV_Target
 	float4x4 tileLocalToWorld = Inverse(tile.WorldToLocal);
 	gBuffer.WorldPos = mul(float4(gBufferTilePos, 1), tileLocalToWorld).xyz;
 
+#if INDIRECT_LIGHT
+    // Sample irradiance
+    float bias = 1.0f;
+    float3 irradiance = SampleDDGIIrradiance(DDGI, ProbesState, ProbesDistance, ProbesIrradiance, gBuffer.WorldPos, gBuffer.Normal, bias);
+
+    // Calculate lighting
+    float3 diffuseColor = GetDiffuseColor(gBuffer);
+    float3 diffuse = Diffuse_Lambert(diffuseColor);
+    float4 light = float4(diffuse * irradiance, 1);
+#else
 	// Calculate shadowing
 	float3 L = Light.Direction;
 #if RADIAL_LIGHT
@@ -150,6 +169,7 @@ float4 PS_DirectLighting(AtlasVertexOutput input) : SV_Target
 	bool isSpotLight = false;
 #endif
 	float4 light = GetLighting(ViewWorldPos, Light, gBuffer, shadowMask, RADIAL_LIGHT, isSpotLight);
+#endif
 
 	return light;
 }

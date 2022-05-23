@@ -1,6 +1,7 @@
 // Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 #include "GlobalSurfaceAtlasPass.h"
+#include "DynamicDiffuseGlobalIllumination.h"
 #include "../GlobalSignDistanceFieldPass.h"
 #include "../GBufferPass.h"
 #include "../RenderList.h"
@@ -44,6 +45,7 @@ PACK_STRUCT(struct Data0
     Vector4 ViewFrustumWorldRays[4];
     GlobalSignDistanceFieldPass::ConstantsData GlobalSDF;
     GlobalSurfaceAtlasPass::ConstantsData GlobalSurfaceAtlas;
+    DynamicDiffuseGlobalIlluminationPass::ConstantsData DDGI;
     LightData Light;
     });
 
@@ -123,7 +125,7 @@ public:
     GPUTexture* AtlasGBuffer0 = nullptr;
     GPUTexture* AtlasGBuffer1 = nullptr;
     GPUTexture* AtlasGBuffer2 = nullptr;
-    GPUTexture* AtlasDirectLight = nullptr;
+    GPUTexture* AtlasLighting = nullptr;
     GPUBuffer* ChunksBuffer = nullptr;
     GPUBuffer* CulledObjectsBuffer = nullptr;
     int32 CulledObjectsCounterIndex = -1;
@@ -155,7 +157,7 @@ public:
         RenderTargetPool::Release(AtlasGBuffer0);
         RenderTargetPool::Release(AtlasGBuffer1);
         RenderTargetPool::Release(AtlasGBuffer2);
-        RenderTargetPool::Release(AtlasDirectLight);
+        RenderTargetPool::Release(AtlasLighting);
         ClearObjects();
     }
 
@@ -238,12 +240,16 @@ bool GlobalSurfaceAtlasPass::setupResources()
         psDesc.DepthFunc = ComparisonFunc::Never;
         psDesc.BlendMode = BlendingMode::Add;
         psDesc.BlendMode.RenderTargetWriteMask = BlendingMode::ColorWrite::RGB;
-        psDesc.PS = shader->GetPS("PS_DirectLighting", 0);
+        psDesc.PS = shader->GetPS("PS_Lighting", 0);
         if (_psDirectLighting0->Init(psDesc))
             return true;
         _psDirectLighting1 = device->CreatePipelineState();
-        psDesc.PS = shader->GetPS("PS_DirectLighting", 1);
+        psDesc.PS = shader->GetPS("PS_Lighting", 1);
         if (_psDirectLighting1->Init(psDesc))
+            return true;
+        _psIndirectLighting = device->CreatePipelineState();
+        psDesc.PS = shader->GetPS("PS_Lighting", 2);
+        if (_psIndirectLighting->Init(psDesc))
             return true;
     }
 
@@ -257,6 +263,7 @@ void GlobalSurfaceAtlasPass::OnShaderReloading(Asset* obj)
     SAFE_DELETE_GPU_RESOURCE(_psClear);
     SAFE_DELETE_GPU_RESOURCE(_psDirectLighting0);
     SAFE_DELETE_GPU_RESOURCE(_psDirectLighting1);
+    SAFE_DELETE_GPU_RESOURCE(_psIndirectLighting);
     SAFE_DELETE_GPU_RESOURCE(_psDebug);
     invalidateResources();
 }
@@ -274,6 +281,7 @@ void GlobalSurfaceAtlasPass::Dispose()
     SAFE_DELETE_GPU_RESOURCE(_psClear);
     SAFE_DELETE_GPU_RESOURCE(_psDirectLighting0);
     SAFE_DELETE_GPU_RESOURCE(_psDirectLighting1);
+    SAFE_DELETE_GPU_RESOURCE(_psIndirectLighting);
     SAFE_DELETE_GPU_RESOURCE(_psDebug);
     _cb0 = nullptr;
     _shader = nullptr;
@@ -323,7 +331,7 @@ bool GlobalSurfaceAtlasPass::Render(RenderContext& renderContext, GPUContext* co
         INIT_ATLAS_TEXTURE(AtlasGBuffer0, GBUFFER0_FORMAT);
         INIT_ATLAS_TEXTURE(AtlasGBuffer1, GBUFFER1_FORMAT);
         INIT_ATLAS_TEXTURE(AtlasGBuffer2, GBUFFER2_FORMAT);
-        INIT_ATLAS_TEXTURE(AtlasDirectLight, LIGHT_BUFFER_FORMAT);
+        INIT_ATLAS_TEXTURE(AtlasLighting, LIGHT_BUFFER_FORMAT);
         desc.Flags = GPUTextureFlags::DepthStencil | GPUTextureFlags::ShaderResource;
         INIT_ATLAS_TEXTURE(AtlasDepth, PixelFormat::D16_UNorm);
 #undef INIT_ATLAS_TEXTURE
@@ -679,7 +687,7 @@ bool GlobalSurfaceAtlasPass::Render(RenderContext& renderContext, GPUContext* co
     result.Atlas[1] = surfaceAtlasData.AtlasGBuffer0;
     result.Atlas[2] = surfaceAtlasData.AtlasGBuffer1;
     result.Atlas[3] = surfaceAtlasData.AtlasGBuffer2;
-    result.Atlas[4] = surfaceAtlasData.AtlasDirectLight;
+    result.Atlas[4] = surfaceAtlasData.AtlasLighting;
     result.Chunks = surfaceAtlasData.ChunksBuffer;
     result.CulledObjects = surfaceAtlasData.CulledObjectsBuffer;
     surfaceAtlasData.Result = result;
@@ -690,14 +698,14 @@ bool GlobalSurfaceAtlasPass::Render(RenderContext& renderContext, GPUContext* co
         PROFILE_GPU_CPU("Direct Lighting");
 
         // Copy emissive light into the final direct lighting atlas
-        // TODO: test perf diff when manually copying only dirty object tiles and dirty light tiles
+        // TODO: test perf diff when manually copying only dirty object tiles and dirty light tiles together with indirect lighting
         {
             PROFILE_GPU_CPU("Copy Emissive");
-            context->CopyTexture(surfaceAtlasData.AtlasDirectLight, 0, 0, 0, 0, surfaceAtlasData.AtlasEmissive, 0);
+            context->CopyTexture(surfaceAtlasData.AtlasLighting, 0, 0, 0, 0, surfaceAtlasData.AtlasEmissive, 0);
         }
 
         context->SetViewportAndScissors(Viewport(0, 0, resolution, resolution));
-        context->SetRenderTarget(surfaceAtlasData.AtlasDirectLight->View());
+        context->SetRenderTarget(surfaceAtlasData.AtlasLighting->View());
         context->BindSR(0, surfaceAtlasData.AtlasGBuffer0->View());
         context->BindSR(1, surfaceAtlasData.AtlasGBuffer1->View());
         context->BindSR(2, surfaceAtlasData.AtlasGBuffer2->View());
@@ -795,7 +803,38 @@ bool GlobalSurfaceAtlasPass::Render(RenderContext& renderContext, GPUContext* co
             context->SetState(_psDirectLighting1);
             VB_DRAW();
         }
+        if (renderContext.View.Flags & ViewFlags::GI)
+        {
+            // TODO: add option to PostFx Volume for realtime GI type (None, DDGI)
+            DynamicDiffuseGlobalIlluminationPass::BindingData bindingDataDDGI;
+            if (!DynamicDiffuseGlobalIlluminationPass::Instance()->Get(renderContext.Buffers, bindingDataDDGI))
+            {
+                // Collect tiles to shade
+                _vertexBuffer->Clear();
+                for (const auto& e : surfaceAtlasData.Objects)
+                {
+                    const auto& object = e.Value;
+                    for (int32 tileIndex = 0; tileIndex < 6; tileIndex++)
+                    {
+                        auto* tile = object.Tiles[tileIndex];
+                        if (!tile)
+                            continue;
+                        VB_WRITE_TILE(tile);
+                    }
+                }
 
+                // Draw draw indirect light
+                data.DDGI = bindingDataDDGI.Constants;
+                context->BindSR(5, bindingDataDDGI.ProbesState);
+                context->BindSR(6, bindingDataDDGI.ProbesDistance);
+                context->BindSR(7, bindingDataDDGI.ProbesIrradiance);
+                context->UpdateCB(_cb0, &data);
+                context->SetState(_psIndirectLighting);
+                VB_DRAW();
+            }
+        }
+
+        context->ResetSR();
         context->ResetRenderTarget();
     }
 
@@ -809,6 +848,12 @@ bool GlobalSurfaceAtlasPass::Render(RenderContext& renderContext, GPUContext* co
 
 void GlobalSurfaceAtlasPass::RenderDebug(RenderContext& renderContext, GPUContext* context, GPUTexture* output)
 {
+    // Render all dependant effects
+    if (renderContext.View.Flags & ViewFlags::GI)
+    {
+        // TODO: add option to PostFx Volume for realtime GI type (None, DDGI)
+        DynamicDiffuseGlobalIlluminationPass::Instance()->Render(renderContext, context, nullptr);
+    }
     GlobalSignDistanceFieldPass::BindingData bindingDataSDF;
     BindingData bindingData;
     if (GlobalSignDistanceFieldPass::Instance()->Render(renderContext, context, bindingDataSDF) || Render(renderContext, context, bindingData))

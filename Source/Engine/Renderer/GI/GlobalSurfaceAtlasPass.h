@@ -47,6 +47,7 @@ private:
     GPUPipelineState* _psClear = nullptr;
     GPUPipelineState* _psDirectLighting0 = nullptr;
     GPUPipelineState* _psDirectLighting1 = nullptr;
+    GPUPipelineState* _psIndirectLighting = nullptr;
     GPUPipelineState* _psDebug = nullptr;
     GPUConstantBuffer* _cb0 = nullptr;
     GPUShaderProgramCS* _csCullObjects;

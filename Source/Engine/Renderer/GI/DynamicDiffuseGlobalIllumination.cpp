@@ -455,6 +455,7 @@ bool DynamicDiffuseGlobalIlluminationPass::Render(RenderContext& renderContext, 
     }
 
     // Render indirect lighting
+    if (lightBuffer)
     {
         PROFILE_GPU_CPU("Indirect Lighting");
 #if 0
@@ -477,7 +478,7 @@ bool DynamicDiffuseGlobalIlluminationPass::Render(RenderContext& renderContext, 
 
 #if USE_EDITOR
     // Probes debug drawing
-    if (debugProbes)
+    if (debugProbes && lightBuffer)
     {
         PROFILE_GPU_CPU("Debug Probes");
         if (!_debugModel)
