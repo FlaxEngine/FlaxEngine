@@ -361,6 +361,7 @@ namespace Flax.Build.Bindings
                             break;
                         }
                         case "if":
+                        case "elif":
                         {
                             // Parse condition
                             var condition = string.Empty;
@@ -509,6 +510,22 @@ namespace Flax.Build.Bindings
                     case "if":
                     case "ifdef":
                         ifsCount++;
+                        break;
+                    case "else":
+                        if (ifsCount == 1)
+                        {
+                            // Continue with `else` block
+                            return;
+                        }
+                        break;
+                    case "elif":
+                        if (ifsCount == 1)
+                        {
+                            // Rollback to process conditional block
+                            tokenizer.PreviousToken();
+                            tokenizer.PreviousToken();
+                            return;
+                        }
                         break;
                     case "endif":
                         ifsCount--;
