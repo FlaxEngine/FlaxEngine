@@ -541,7 +541,7 @@ namespace Flax.Build.Bindings
         private static bool UseBindings(object type)
         {
             var apiTypeInfo = type as ApiTypeInfo;
-            if (apiTypeInfo != null && apiTypeInfo.IsInBuild)
+            if (apiTypeInfo != null && apiTypeInfo.SkipGeneration)
                 return false;
             if ((type is ModuleInfo || type is FileInfo) && apiTypeInfo != null)
             {

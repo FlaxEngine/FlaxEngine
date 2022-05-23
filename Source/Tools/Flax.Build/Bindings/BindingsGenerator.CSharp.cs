@@ -235,10 +235,10 @@ namespace Flax.Build.Bindings
             }
 
             // Object reference property
-            if ((typeInfo.Type == "ScriptingObjectReference" || 
-                 typeInfo.Type == "AssetReference" || 
-                 typeInfo.Type == "WeakAssetReference" || 
-                 typeInfo.Type == "SoftAssetReference" || 
+            if ((typeInfo.Type == "ScriptingObjectReference" ||
+                 typeInfo.Type == "AssetReference" ||
+                 typeInfo.Type == "WeakAssetReference" ||
+                 typeInfo.Type == "SoftAssetReference" ||
                  typeInfo.Type == "SoftObjectReference") && typeInfo.GenericArgs != null)
                 return GenerateCSharpNativeToManaged(buildData, typeInfo.GenericArgs[0], caller);
 
@@ -284,21 +284,23 @@ namespace Flax.Build.Bindings
 
             // Find API type info
             var apiType = FindApiTypeInfo(buildData, typeInfo, caller);
+            var typeName = typeInfo.Type.Replace("::", ".");
             if (apiType != null)
             {
                 CSharpUsedNamespaces.Add(apiType.Namespace);
-
                 if (apiType.IsScriptingObject || apiType.IsInterface)
-                    return typeInfo.Type.Replace("::", ".");
+                    return typeName;
                 if (typeInfo.IsPtr && apiType.IsPod)
-                    return typeInfo.Type.Replace("::", ".") + '*';
+                    return typeName + '*';
+                if (apiType is LangType && CSharpNativeToManagedBasicTypes.TryGetValue(apiType.Name, out result))
+                    return result;
             }
 
             // Pointer
             if (typeInfo.IsPtr)
                 return "IntPtr";
 
-            return typeInfo.Type.Replace("::", ".");
+            return typeName;
         }
 
         private static string GenerateCSharpManagedToNativeType(BuildData buildData, TypeInfo typeInfo, ApiTypeInfo caller)
@@ -316,10 +318,10 @@ namespace Flax.Build.Bindings
             }
 
             // Object reference property
-            if ((typeInfo.Type == "ScriptingObjectReference" || 
-                 typeInfo.Type == "AssetReference" || 
-                 typeInfo.Type == "WeakAssetReference" || 
-                 typeInfo.Type == "SoftAssetReference" || 
+            if ((typeInfo.Type == "ScriptingObjectReference" ||
+                 typeInfo.Type == "AssetReference" ||
+                 typeInfo.Type == "WeakAssetReference" ||
+                 typeInfo.Type == "SoftAssetReference" ||
                  typeInfo.Type == "SoftObjectReference") && typeInfo.GenericArgs != null)
                 return "IntPtr";
 
@@ -374,10 +376,10 @@ namespace Flax.Build.Bindings
                 }
 
                 // Object reference property
-                if ((typeInfo.Type == "ScriptingObjectReference" || 
-                     typeInfo.Type == "AssetReference" || 
-                     typeInfo.Type == "WeakAssetReference" || 
-                     typeInfo.Type == "SoftAssetReference" || 
+                if ((typeInfo.Type == "ScriptingObjectReference" ||
+                     typeInfo.Type == "AssetReference" ||
+                     typeInfo.Type == "WeakAssetReference" ||
+                     typeInfo.Type == "SoftAssetReference" ||
                      typeInfo.Type == "SoftObjectReference") && typeInfo.GenericArgs != null)
                     return "FlaxEngine.Object.GetUnmanagedPtr({0})";
 
@@ -1355,7 +1357,7 @@ namespace Flax.Build.Bindings
 
         private static bool GenerateCSharpType(BuildData buildData, StringBuilder contents, string indent, object type)
         {
-            if (type is ApiTypeInfo apiTypeInfo && apiTypeInfo.IsInBuild)
+            if (type is ApiTypeInfo apiTypeInfo && apiTypeInfo.SkipGeneration)
                 return false;
 
             try

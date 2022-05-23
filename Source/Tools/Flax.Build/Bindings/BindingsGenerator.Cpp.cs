@@ -131,10 +131,10 @@ namespace Flax.Build.Bindings
                 return value;
             if (typeInfo.Type == "String")
                 return $"Variant(StringView({value}))";
-            if (typeInfo.Type == "AssetReference" || 
-                typeInfo.Type == "WeakAssetReference" || 
-                typeInfo.Type == "SoftAssetReference" || 
-                typeInfo.Type == "ScriptingObjectReference" || 
+            if (typeInfo.Type == "AssetReference" ||
+                typeInfo.Type == "WeakAssetReference" ||
+                typeInfo.Type == "SoftAssetReference" ||
+                typeInfo.Type == "ScriptingObjectReference" ||
                 typeInfo.Type == "SoftObjectReference")
                 return $"Variant({value}.Get())";
             if (typeInfo.IsArray)
@@ -254,7 +254,7 @@ namespace Flax.Build.Bindings
                 CppReferencesFiles.Add(apiType.File);
                 if (apiType.IsStruct && !apiType.IsPod && !CppUsedNonPodTypes.Contains(apiType))
                     CppUsedNonPodTypes.Add(apiType);
-                if (!apiType.IsInBuild && !apiType.IsEnum)
+                if (!apiType.SkipGeneration && !apiType.IsEnum)
                 {
                     // Use declared type initializer
                     CppIncludeFiles.Add("Engine/Scripting/ManagedCLR/MClass.h");
@@ -329,7 +329,7 @@ namespace Flax.Build.Bindings
                 CppReferencesFiles.Add(apiType.File);
                 if (apiType.IsStruct && !apiType.IsPod && !CppUsedNonPodTypes.Contains(apiType))
                     CppUsedNonPodTypes.Add(apiType);
-                if (!apiType.IsInBuild && !apiType.IsEnum)
+                if (!apiType.SkipGeneration && !apiType.IsEnum)
                 {
                     // Use declared type initializer
                     CppIncludeFiles.Add("Engine/Scripting/ManagedCLR/MClass.h");
@@ -406,10 +406,10 @@ namespace Flax.Build.Bindings
                 return "MUtils::ToManaged({0})";
             default:
                 // Object reference property
-                if ((typeInfo.Type == "ScriptingObjectReference" || 
-                     typeInfo.Type == "AssetReference" || 
-                     typeInfo.Type == "WeakAssetReference" || 
-                     typeInfo.Type == "SoftAssetReference" || 
+                if ((typeInfo.Type == "ScriptingObjectReference" ||
+                     typeInfo.Type == "AssetReference" ||
+                     typeInfo.Type == "WeakAssetReference" ||
+                     typeInfo.Type == "SoftAssetReference" ||
                      typeInfo.Type == "SoftObjectReference") && typeInfo.GenericArgs != null)
                 {
                     type = "MonoObject*";
@@ -578,10 +578,10 @@ namespace Flax.Build.Bindings
                 return "MUtils::ToNative({0})";
             default:
                 // Object reference property
-                if ((typeInfo.Type == "ScriptingObjectReference" || 
-                     typeInfo.Type == "AssetReference" || 
-                     typeInfo.Type == "WeakAssetReference" || 
-                     typeInfo.Type == "SoftAssetReference" || 
+                if ((typeInfo.Type == "ScriptingObjectReference" ||
+                     typeInfo.Type == "AssetReference" ||
+                     typeInfo.Type == "WeakAssetReference" ||
+                     typeInfo.Type == "SoftAssetReference" ||
                      typeInfo.Type == "SoftObjectReference") && typeInfo.GenericArgs != null)
                 {
                     // For non-pod types converting only, other API converts managed to unmanaged object in C# wrapper code)
@@ -2156,7 +2156,7 @@ namespace Flax.Build.Bindings
 
         private static void GenerateCppType(BuildData buildData, StringBuilder contents, ModuleInfo moduleInfo, object type)
         {
-            if (type is ApiTypeInfo apiTypeInfo && apiTypeInfo.IsInBuild)
+            if (type is ApiTypeInfo apiTypeInfo && apiTypeInfo.SkipGeneration)
                 return;
 
             try
@@ -2196,6 +2196,11 @@ namespace Flax.Build.Bindings
                         GenerateCppCppUsedNonPodTypes(buildData, fieldApiType);
                     }
                 }
+            }
+            if (apiType is ClassStructInfo classStructInfo)
+            {
+                if (classStructInfo.IsTemplate)
+                    throw new Exception($"Cannot use template type '{classStructInfo}' as non-POD type for cross-language bindings.");
             }
             if (!CppUsedNonPodTypesList.Contains(apiType))
                 CppUsedNonPodTypesList.Add(apiType);

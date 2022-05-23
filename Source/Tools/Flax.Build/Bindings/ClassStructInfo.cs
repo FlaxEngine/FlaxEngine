@@ -13,10 +13,13 @@ namespace Flax.Build.Bindings
     {
         public AccessLevel Access;
         public AccessLevel BaseTypeInheritance;
+        public bool IsTemplate;
         public ClassStructInfo BaseType;
         public List<InterfaceInfo> Interfaces;
         public List<TypeInfo> Inheritance; // Data from parsing, used to interfaces and base type construct in Init
         public List<FunctionInfo> Functions = new List<FunctionInfo>();
+
+        public override bool SkipGeneration => IsInBuild || IsTemplate;
 
         public override void Init(Builder.BuildData buildData)
         {
@@ -51,6 +54,7 @@ namespace Flax.Build.Bindings
         {
             writer.Write((byte)Access);
             writer.Write((byte)BaseTypeInheritance);
+            writer.Write(IsTemplate);
             BindingsGenerator.Write(writer, BaseType);
             BindingsGenerator.Write(writer, Inheritance);
             BindingsGenerator.Write(writer, Functions);
@@ -62,6 +66,7 @@ namespace Flax.Build.Bindings
         {
             Access = (AccessLevel)reader.ReadByte();
             BaseTypeInheritance = (AccessLevel)reader.ReadByte();
+            IsTemplate = reader.ReadBoolean();
             BaseType = BindingsGenerator.Read(reader, BaseType);
             Inheritance = BindingsGenerator.Read(reader, Inheritance);
             Functions = BindingsGenerator.Read(reader, Functions);

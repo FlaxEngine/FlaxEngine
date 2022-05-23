@@ -499,7 +499,7 @@ namespace Flax.Build.Bindings
             // Read 'class' keyword
             var token = context.Tokenizer.NextToken();
             if (token.Value != "class")
-                throw new Exception($"Invalid API_CLASS usage (expected 'class' keyword but got '{token.Value} {context.Tokenizer.NextToken().Value}').");
+                throw new Exception($"Invalid {ApiTokens.Class} usage (expected 'class' keyword but got '{token.Value} {context.Tokenizer.NextToken().Value}').");
 
             // Read specifiers
             while (true)
@@ -551,6 +551,9 @@ namespace Flax.Build.Bindings
                 case "private":
                     desc.Access = AccessLevel.Private;
                     break;
+                case "template":
+                    desc.IsTemplate = true;
+                    break;
                 case "inbuild":
                     desc.IsInBuild = true;
                     break;
@@ -592,7 +595,7 @@ namespace Flax.Build.Bindings
             // Read 'class' keyword
             var token = context.Tokenizer.NextToken();
             if (token.Value != "class")
-                throw new Exception($"Invalid API_INTERFACE usage (expected 'class' keyword but got '{token.Value} {context.Tokenizer.NextToken().Value}').");
+                throw new Exception($"Invalid {ApiTokens.Interface} usage (expected 'class' keyword but got '{token.Value} {context.Tokenizer.NextToken().Value}').");
 
             // Read specifiers
             while (true)
@@ -628,6 +631,9 @@ namespace Flax.Build.Bindings
                     break;
                 case "private":
                     desc.Access = AccessLevel.Private;
+                    break;
+                case "template":
+                    desc.IsTemplate = true;
                     break;
                 case "inbuild":
                     desc.IsInBuild = true;
@@ -876,7 +882,7 @@ namespace Flax.Build.Bindings
             // Read 'enum' or `enum class` keywords
             var token = context.Tokenizer.NextToken();
             if (token.Value != "enum")
-                throw new Exception($"Invalid API_ENUM usage at line {context.Tokenizer.CurrentLine} (expected 'enum' keyword but got '{token.Value} {context.Tokenizer.NextToken().Value}').");
+                throw new Exception($"Invalid {ApiTokens.Enum} usage at line {context.Tokenizer.CurrentLine} (expected 'enum' keyword but got '{token.Value} {context.Tokenizer.NextToken().Value}').");
             token = context.Tokenizer.NextToken();
             if (token.Value != "class")
                 context.Tokenizer.PreviousToken();
@@ -1046,7 +1052,7 @@ namespace Flax.Build.Bindings
             // Read 'struct' keyword
             var token = context.Tokenizer.NextToken();
             if (token.Value != "struct")
-                throw new Exception($"Invalid API_STRUCT usage (expected 'struct' keyword but got '{token.Value} {context.Tokenizer.NextToken().Value}').");
+                throw new Exception($"Invalid {ApiTokens.Struct} usage (expected 'struct' keyword but got '{token.Value} {context.Tokenizer.NextToken().Value}').");
 
             // Read name
             desc.Name = desc.NativeName = ParseName(ref context);
@@ -1067,6 +1073,9 @@ namespace Flax.Build.Bindings
                     break;
                 case "private":
                     desc.Access = AccessLevel.Private;
+                    break;
+                case "template":
+                    desc.IsTemplate = true;
                     break;
                 case "inbuild":
                     desc.IsInBuild = true;
@@ -1232,7 +1241,7 @@ namespace Flax.Build.Bindings
             if (desc.Type.Type == "Action")
                 desc.Type = new TypeInfo { Type = "Delegate", GenericArgs = new List<TypeInfo>() };
             else if (desc.Type.Type != "Delegate")
-                throw new Exception($"Invalid API_EVENT type. Only Action and Delegate<> types are supported. '{desc.Type}' used on event at line {context.Tokenizer.CurrentLine}.");
+                throw new Exception($"Invalid {ApiTokens.Event} type. Only Action and Delegate<> types are supported. '{desc.Type}' used on event at line {context.Tokenizer.CurrentLine}.");
 
             // Read name
             desc.Name = ParseName(ref context);

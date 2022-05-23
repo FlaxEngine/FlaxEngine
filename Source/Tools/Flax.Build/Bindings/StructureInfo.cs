@@ -25,7 +25,7 @@ namespace Flax.Build.Bindings
         {
             base.Init(buildData);
 
-            if (ForceNoPod || (Interfaces != null && Interfaces.Count != 0))
+            if (ForceNoPod || (Interfaces != null && Interfaces.Count != 0) || IsTemplate)
             {
                 _isPod = false;
                 return;

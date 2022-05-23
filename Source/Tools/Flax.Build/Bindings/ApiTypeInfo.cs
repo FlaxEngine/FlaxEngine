@@ -28,6 +28,7 @@ namespace Flax.Build.Bindings
         public virtual bool IsValueType => false;
         public virtual bool IsScriptingObject => false;
         public virtual bool IsPod => false;
+        public virtual bool SkipGeneration => IsInBuild;
 
         public FileInfo File
         {
