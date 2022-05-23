@@ -376,10 +376,8 @@ namespace Flax.Build.Platforms
             {
             case WindowsPlatformToolset.v143:
             case WindowsPlatformToolset.v142:
-            case WindowsPlatformToolset.v141:
-                return Path.Combine(vcToolChainDir, "lib", "x86", "store", "references");
-            case WindowsPlatformToolset.v140:
-                return Path.Combine(vcToolChainDir, "lib", "store", "references");
+            case WindowsPlatformToolset.v141: return Path.Combine(vcToolChainDir, "lib", "x86", "store", "references");
+            case WindowsPlatformToolset.v140: return Path.Combine(vcToolChainDir, "lib", "store", "references");
             default: return null;
             }
         }
@@ -906,11 +904,7 @@ namespace Flax.Build.Platforms
                 // Create AppxManifest file
                 {
                     using (var stringWriter = new StringWriterWithEncoding(Encoding.UTF8))
-                    using (var xmlTextWriter = XmlWriter.Create(stringWriter, new XmlWriterSettings
-                    {
-                        Encoding = Encoding.UTF8,
-                        Indent = true,
-                    }))
+                    using (var xmlTextWriter = XmlWriter.Create(stringWriter, new XmlWriterSettings { Encoding = Encoding.UTF8, Indent = true, }))
                     {
                         xmlTextWriter.WriteStartDocument();
 

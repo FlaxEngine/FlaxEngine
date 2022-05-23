@@ -31,7 +31,7 @@ namespace Flax.Deploy
             var dst = Path.GetDirectoryName(dstPath);
             if (!Directory.Exists(dst))
                 Directory.CreateDirectory(dst);
-            
+
             if (!File.Exists(srcPath))
             {
                 if (optional)

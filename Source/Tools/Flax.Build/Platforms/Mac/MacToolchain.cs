@@ -271,7 +271,7 @@ namespace Flax.Build.Platforms
 
             // Input libraries
             var libraryPaths = new HashSet<string>();
-            var dylibs =  new HashSet<string>();
+            var dylibs = new HashSet<string>();
             foreach (var library in linkEnvironment.InputLibraries)
             {
                 var dir = Path.GetDirectoryName(library);

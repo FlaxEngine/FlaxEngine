@@ -49,7 +49,7 @@ namespace Flax.Build.Bindings
                 reader.ReadBoolean() != Module.BuildCSharp ||
                 reader.ReadString() != Globals.Project.Name ||
                 reader.ReadString() != Globals.Project.Version.ToString()
-            )
+               )
                 throw new Exception();
 
             base.Read(reader);
