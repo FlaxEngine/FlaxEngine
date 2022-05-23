@@ -51,6 +51,7 @@
 #define API_FIELD(...)
 #define API_EVENT(...)
 #define API_PARAM(...)
+#define API_TYPEDEF(...)
 #define API_INJECT_CPP_CODE(...)
 #define API_AUTO_SERIALIZATION(...) public: void Serialize(SerializeStream& stream, const void* otherObj) override; void Deserialize(DeserializeStream& stream, ISerializeModifier* modifier) override;
 #define DECLARE_SCRIPTING_TYPE_MINIMAL(type) public: friend class type##Internal; static struct ScriptingTypeInitializer TypeInitializer;
