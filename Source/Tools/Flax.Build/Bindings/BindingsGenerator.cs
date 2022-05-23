@@ -218,6 +218,7 @@ namespace Flax.Build.Bindings
                     ScopeAccessStack = new Stack<AccessLevel>(),
                     PreprocessorDefines = new Dictionary<string, string>(),
                 };
+                context.PreprocessorDefines.Add("FLAX_BUILD_BINDINGS", "1");
                 context.EnterScope(fileInfo);
 
                 // Process the source code
