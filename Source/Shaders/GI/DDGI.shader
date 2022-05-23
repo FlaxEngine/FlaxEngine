@@ -121,6 +121,7 @@ Buffer<float4> GlobalSurfaceAtlasCulledObjects : register(t9);
 Texture2D GlobalSurfaceAtlasDepth : register(t10);
 Texture2D GlobalSurfaceAtlasTex : register(t11);
 Texture2D<float4> ProbesState : register(t12);
+TextureCube Skybox : register(t13);
 
 // Compute shader for tracing rays for probes using Global SDF and Global Surface Atlas.
 META_CS(true, FEATURE_LEVEL_SM5)
@@ -167,7 +168,7 @@ void CS_TraceRays(uint3 GroupId : SV_GroupID, uint3 DispatchThreadId : SV_Dispat
     else
     {
         // Ray hits sky
-        radiance.rgb = float3(0, 0, 0); // TODO: sample sky/skybox with a fallback radiance
+        radiance.rgb = Skybox.SampleLevel(SamplerLinearClamp, probeRayDirection, 0);
         radiance.a = 1e27f; // Sky is the limit
     }
 

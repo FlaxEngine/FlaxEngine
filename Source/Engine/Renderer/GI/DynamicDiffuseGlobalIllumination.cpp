@@ -272,6 +272,7 @@ bool DynamicDiffuseGlobalIlluminationPass::Render(RenderContext& renderContext, 
     GlobalSurfaceAtlasPass::BindingData bindingDataSurfaceAtlas;
     if (GlobalSurfaceAtlasPass::Instance()->Render(renderContext, context, bindingDataSurfaceAtlas))
         return true;
+    GPUTextureView* skybox = GBufferPass::Instance()->RenderSkybox(renderContext, context);
 
     // Skip if already done in the current frame
     const auto currentFrame = Engine::FrameCount;
@@ -411,6 +412,7 @@ bool DynamicDiffuseGlobalIlluminationPass::Render(RenderContext& renderContext, 
         context->BindSR(10, bindingDataSurfaceAtlas.AtlasDepth->View());
         context->BindSR(11, bindingDataSurfaceAtlas.AtlasLighting->View());
         context->BindSR(12, ddgiData.Result.ProbesState);
+        context->BindSR(13, skybox);
         context->BindUA(0, ddgiData.ProbesTrace->View());
         context->Dispatch(_csTraceRays, probeRaysCount / DDGI_TRACE_RAYS_GROUP_SIZE_X, probesCount, 1);
         context->ResetUA();

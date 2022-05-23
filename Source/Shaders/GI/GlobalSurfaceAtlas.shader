@@ -12,7 +12,7 @@
 META_CB_BEGIN(0, Data)
 float3 ViewWorldPos;
 float ViewNearPlane;
-float Padding00;
+float SkyboxIntensity;
 uint CulledObjectsCapacity;
 float LightShadowsStrength;
 float ViewFarPlane;
@@ -245,6 +245,7 @@ ByteAddressBuffer GlobalSurfaceAtlasChunks : register(t8);
 Buffer<float4> GlobalSurfaceAtlasCulledObjects : register(t9);
 Texture2D GlobalSurfaceAtlasDepth : register(t10);
 Texture2D GlobalSurfaceAtlasTex : register(t11);
+TextureCube Skybox : register(t12);
 
 // Pixel shader for Global Surface Atlas debug drawing
 META_PS(true, FEATURE_LEVEL_SM5)
@@ -262,14 +263,23 @@ float4 PS_Debug(Quad_VS2PS input) : SV_Target
 	trace.Init(ViewWorldPos, viewRay, ViewNearPlane, ViewFarPlane);
 	trace.NeedsHitNormal = true;
 	GlobalSDFHit hit = RayTraceGlobalSDF(GlobalSDF, GlobalSDFTex, GlobalSDFMip, trace);
-	if (!hit.IsHit())
-		return float4(float3(0.4f, 0.4f, 1.0f) * saturate(hit.StepsCount / 80.0f), 1);
-	//return float4(hit.HitNormal * 0.5f + 0.5f, 1);
 
-	// Sample Global Surface Atlas at the hit location
-	float surfaceThreshold = GetGlobalSurfaceAtlasThreshold(hit);
-	float4 surfaceColor = SampleGlobalSurfaceAtlas(GlobalSurfaceAtlas, GlobalSurfaceAtlasChunks, GlobalSurfaceAtlasCulledObjects, GlobalSurfaceAtlasDepth, GlobalSurfaceAtlasTex, hit.GetHitPosition(trace), -viewRay, surfaceThreshold);
-	return float4(surfaceColor.rgb, 1);
+    float3 color;
+	if (hit.IsHit())
+	{
+        // Sample Global Surface Atlas at the hit location
+        float surfaceThreshold = GetGlobalSurfaceAtlasThreshold(hit);
+        color = SampleGlobalSurfaceAtlas(GlobalSurfaceAtlas, GlobalSurfaceAtlasChunks, GlobalSurfaceAtlasCulledObjects, GlobalSurfaceAtlasDepth, GlobalSurfaceAtlasTex, hit.GetHitPosition(trace), -viewRay, surfaceThreshold).rgb;
+	    //color = hit.HitNormal * 0.5f + 0.5f;
+    }
+    else
+    {
+        // Sample skybox
+        float3 skybox = Skybox.SampleLevel(SamplerLinearClamp, viewRay, 0);
+        float3 sky = float3(0.4f, 0.4f, 1.0f) * saturate(hit.StepsCount / 80.0f);
+        color = lerp(sky, skybox, SkyboxIntensity);
+    }
+    return float4(color, 1);
 }
 
 #endif

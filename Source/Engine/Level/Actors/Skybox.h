@@ -68,6 +68,7 @@ public:
     bool IntersectsItself(const Ray& ray, float& distance, Vector3& normal) override;
 
     // [ISkyRenderer]
+    bool IsDynamicSky() const override;
     void ApplySky(GPUContext* context, RenderContext& renderContext, const Matrix& world) override;
 
 protected:

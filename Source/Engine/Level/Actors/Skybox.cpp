@@ -87,6 +87,11 @@ bool Skybox::IntersectsItself(const Ray& ray, float& distance, Vector3& normal)
     return false;
 }
 
+bool Skybox::IsDynamicSky() const
+{
+    return !IsStatic();
+}
+
 void Skybox::ApplySky(GPUContext* context, RenderContext& renderContext, const Matrix& world)
 {
     // Prepare mock draw call data

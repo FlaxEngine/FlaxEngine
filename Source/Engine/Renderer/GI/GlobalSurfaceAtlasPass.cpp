@@ -2,6 +2,7 @@
 
 #include "GlobalSurfaceAtlasPass.h"
 #include "../GlobalSignDistanceFieldPass.h"
+#include "../GBufferPass.h"
 #include "../RenderList.h"
 #include "../ShadowsPass.h"
 #include "Engine/Core/Math/Matrix3x3.h"
@@ -36,7 +37,7 @@ PACK_STRUCT(struct Data0
     {
     Vector3 ViewWorldPos;
     float ViewNearPlane;
-    float Padding00;
+    float SkyboxIntensity;
     uint32 CulledObjectsCapacity;
     float LightShadowsStrength;
     float ViewFarPlane;
@@ -815,11 +816,12 @@ void GlobalSurfaceAtlasPass::RenderDebug(RenderContext& renderContext, GPUContex
         context->Draw(output, renderContext.Buffers->GBuffer0);
         return;
     }
+    GPUTextureView* skybox = GBufferPass::Instance()->RenderSkybox(renderContext, context);
 
     PROFILE_GPU_CPU("Global Surface Atlas Debug");
     const Vector2 outputSize(output->Size());
+    Data0 data;
     {
-        Data0 data;
         data.ViewWorldPos = renderContext.View.Position;
         data.ViewNearPlane = renderContext.View.Near;
         data.ViewFarPlane = renderContext.View.Far;
@@ -827,6 +829,7 @@ void GlobalSurfaceAtlasPass::RenderDebug(RenderContext& renderContext, GPUContex
             data.ViewFrustumWorldRays[i] = Vector4(renderContext.List->FrustumCornersWs[i + 4], 0);
         data.GlobalSDF = bindingDataSDF.Constants;
         data.GlobalSurfaceAtlas = bindingData.Constants;
+        data.SkyboxIntensity = 1.0f;
         context->UpdateCB(_cb0, &data);
         context->BindCB(0, _cb0);
     }
@@ -838,6 +841,7 @@ void GlobalSurfaceAtlasPass::RenderDebug(RenderContext& renderContext, GPUContex
     context->BindSR(8, bindingData.Chunks ? bindingData.Chunks->View() : nullptr);
     context->BindSR(9, bindingData.CulledObjects ? bindingData.CulledObjects->View() : nullptr);
     context->BindSR(10, bindingData.AtlasDepth->View());
+    context->BindSR(12, skybox);
     context->SetState(_psDebug);
     context->SetRenderTarget(output->View());
     {
@@ -849,6 +853,10 @@ void GlobalSurfaceAtlasPass::RenderDebug(RenderContext& renderContext, GPUContex
         context->SetViewport(outputSize.X, outputSize.Y);
         context->SetScissor(Rectangle(0, 0, outputSizeTwoThird.X, outputSize.Y));
         context->DrawFullscreenTriangle();
+
+        // Disable skybox
+        data.SkyboxIntensity = 0.0f;
+        context->UpdateCB(_cb0, &data);
 
         // Bottom left - diffuse
         context->BindSR(11, bindingData.AtlasGBuffer0->View());

@@ -74,6 +74,7 @@ public:
     void DrawFog(GPUContext* context, RenderContext& renderContext, GPUTextureView* output) override;
 
     // [ISkyRenderer]
+    bool IsDynamicSky() const override;
     void ApplySky(GPUContext* context, RenderContext& renderContext, const Matrix& world) override;
 
 protected:

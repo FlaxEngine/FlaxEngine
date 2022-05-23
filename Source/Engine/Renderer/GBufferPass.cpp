@@ -14,10 +14,12 @@
 #include "Engine/Graphics/Shaders/GPUShader.h"
 #include "Engine/Graphics/RenderTask.h"
 #include "Engine/Graphics/RenderBuffers.h"
+#include "Engine/Graphics/RenderTargetPool.h"
 #include "Engine/Content/Assets/Shader.h"
 #include "Engine/Content/Content.h"
 #include "Engine/Content/Assets/Model.h"
 #include "Engine/Level/Actors/Decal.h"
+#include "Engine/Engine/Engine.h"
 
 PACK_STRUCT(struct GBufferPassData{
     GBufferData GBuffer;
@@ -144,7 +146,6 @@ void GBufferPass::Fill(RenderContext& renderContext, GPUTextureView* lightBuffer
     // Cache data
     auto device = GPUDevice::Instance;
     auto context = device->GetMainContext();
-    auto& view = renderContext.View;
     GPUTextureView* targetBuffers[5] =
     {
         lightBuffer,
@@ -153,7 +154,7 @@ void GBufferPass::Fill(RenderContext& renderContext, GPUTextureView* lightBuffer
         renderContext.Buffers->GBuffer2->View(),
         renderContext.Buffers->GBuffer3->View(),
     };
-    view.Pass = DrawPass::GBuffer;
+    renderContext.View.Pass = DrawPass::GBuffer;
 
     // Clear GBuffer
     {
@@ -222,20 +223,7 @@ void GBufferPass::Fill(RenderContext& renderContext, GPUTextureView* lightBuffer
     if (renderContext.List->Sky && _skyModel && _skyModel->CanBeRendered())
     {
         PROFILE_GPU_CPU("Sky");
-
-        // Cache data
-        auto model = _skyModel.Get();
-        auto box = model->GetBox();
-
-        // Calculate sphere model transform to cover far plane
-        Matrix m1, m2;
-        Matrix::Scaling(view.Far / (box.GetSize().Y * 0.5f) * 0.95f, m1); // Scale to fit whole view frustum
-        Matrix::CreateWorld(view.Position, Vector3::Up, Vector3::Backward, m2); // Rotate sphere model
-        m1 *= m2;
-
-        // Draw sky
-        renderContext.List->Sky->ApplySky(context, renderContext, m1);
-        model->Render(context);
+        DrawSky(renderContext, context);
     }
 
     context->ResetRenderTarget();
@@ -278,6 +266,65 @@ void GBufferPass::RenderDebug(RenderContext& renderContext)
 
     // Cleanup
     context->ResetSR();
+}
+
+// Custom render buffer for realtime skybox capturing (eg. used by GI).
+class SkyboxCustomBuffer : public RenderBuffers::CustomBuffer
+{
+public:
+    uint64 LastCaptureFrame = 0;
+    GPUTexture* Skybox = nullptr;
+
+    ~SkyboxCustomBuffer()
+    {
+        RenderTargetPool::Release(Skybox);
+    }
+};
+
+GPUTextureView* GBufferPass::RenderSkybox(RenderContext& renderContext, GPUContext* context)
+{
+    GPUTextureView* result = nullptr;
+    if (renderContext.List->Sky && _skyModel && _skyModel->CanBeRendered())
+    {
+        // Initialize skybox texture
+        auto& skyboxData = *renderContext.Buffers->GetCustomBuffer<SkyboxCustomBuffer>(TEXT("Skybox"));
+        bool dirty = false;
+        const int32 resolution = 16;
+        if (!skyboxData.Skybox)
+        {
+            const auto desc = GPUTextureDescription::NewCube(resolution, PixelFormat::R11G11B10_Float);
+            skyboxData.Skybox = RenderTargetPool::Get(desc);
+            if (!skyboxData.Skybox)
+                return nullptr;
+            dirty = true;
+        }
+
+        // Redraw sky from time-to-time (dynamic skies can be animated, static skies can have textures streamed)
+        const uint32 redrawFramesCount = renderContext.List->Sky->IsDynamicSky() ? 4 : 240;
+        if (Engine::FrameCount - skyboxData.LastCaptureFrame >= redrawFramesCount)
+            dirty = true;
+
+        if (dirty)
+        {
+            PROFILE_GPU_CPU("Skybox");
+            skyboxData.LastCaptureFrame = Engine::FrameCount;
+            const RenderView originalView = renderContext.View;
+            renderContext.View.Pass = DrawPass::GBuffer;
+            renderContext.View.SetUpCube(10.0f, 10000.0f, originalView.Position);
+            for (int32 faceIndex = 0; faceIndex < 6; faceIndex++)
+            {
+                renderContext.View.SetFace(faceIndex);
+                context->SetRenderTarget(skyboxData.Skybox->View(faceIndex));
+                context->SetViewportAndScissors(resolution, resolution);
+                DrawSky(renderContext, context);
+            }
+            renderContext.View = originalView;
+            context->ResetRenderTarget();
+        }
+
+        result = skyboxData.Skybox->ViewArray();
+    }
+    return result;
 }
 
 #if USE_EDITOR
@@ -324,6 +371,23 @@ void GBufferPass::SetInputs(const RenderView& view, GBufferData& gBuffer)
     gBuffer.ViewFar = view.Far;
     Matrix::Transpose(view.IV, gBuffer.InvViewMatrix);
     Matrix::Transpose(view.IP, gBuffer.InvProjectionMatrix);
+}
+
+void GBufferPass::DrawSky(RenderContext& renderContext, GPUContext* context)
+{
+    // Cache data
+    auto model = _skyModel.Get();
+    auto box = model->GetBox();
+
+    // Calculate sphere model transform to cover far plane
+    Matrix m1, m2;
+    Matrix::Scaling(renderContext.View.Far / (box.GetSize().Y * 0.5f) * 0.95f, m1); // Scale to fit whole view frustum
+    Matrix::CreateWorld(renderContext.View.Position, Vector3::Up, Vector3::Backward, m2); // Rotate sphere model
+    m1 *= m2;
+
+    // Draw sky
+    renderContext.List->Sky->ApplySky(context, renderContext, m1);
+    model->Render(context);
 }
 
 void GBufferPass::DrawDecals(RenderContext& renderContext, GPUTextureView* lightBuffer)

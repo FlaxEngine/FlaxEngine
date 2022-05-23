@@ -36,6 +36,11 @@ class ISkyRenderer
 public:
 
     /// <summary>
+    /// Returns true if sky is realtime, otherwise it's static.
+    /// </summary>
+    virtual bool IsDynamicSky() const = 0;
+
+    /// <summary>
     /// Apply sky material/shader state to the GPU pipeline with custom parameters set (render to GBuffer).
     /// </summary>
     /// <param name="context">The context responsible for rendering commands.</param>
