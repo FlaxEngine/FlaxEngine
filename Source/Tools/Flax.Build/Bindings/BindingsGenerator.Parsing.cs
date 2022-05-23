@@ -62,6 +62,7 @@ namespace Flax.Build.Bindings
                 tokensCount++;
                 switch (token.Type)
                 {
+                case TokenType.Newline:
                 case TokenType.Whitespace: break;
                 case TokenType.CommentMultiLine:
                 {
@@ -71,16 +72,40 @@ namespace Flax.Build.Bindings
                 case TokenType.CommentSingleLine:
                 {
                     var commentLine = token.Value.Trim();
-
-                    // Fix '//' comments
                     if (commentLine.StartsWith("// "))
+                    {
+                        // Fix '//' comments
                         commentLine = "/// " + commentLine.Substring(3);
-
-                    // Fix inlined summary
-                    if (commentLine.StartsWith("/// <summary>") && commentLine.EndsWith("</summary>"))
+                    }
+                    else if (commentLine.StartsWith("/// <summary>") && commentLine.EndsWith("</summary>"))
+                    {
+                        // Fix inlined summary
                         commentLine = "/// " + commentLine.Substring(13, commentLine.Length - 23);
-
+                        isValid = false;
+                    }
+                    else if (commentLine.StartsWith("/// <summary>"))
+                    {
+                        // End searching after summary begin found
+                        isValid = false;
+                    }
                     context.StringCache.Insert(0, commentLine);
+                    break;
+                }
+                case TokenType.GreaterThan:
+                {
+                    // Template definition
+                    // TODO: return created template definition for Template types
+                    while (isValid)
+                    {
+                        token = context.Tokenizer.PreviousToken(true, true);
+                        tokensCount++;
+                        if (token.Type == TokenType.LessThan)
+                        {
+                            token = context.Tokenizer.PreviousToken(true, true);
+                            tokensCount++;
+                            break;
+                        }
+                    }
                     break;
                 }
                 default:
