@@ -378,7 +378,7 @@ namespace Flax.Build.Bindings
                                 var negate = tokenValue[0] == '!';
                                 if (negate)
                                     tokenValue = tokenValue.Substring(1);
-                                tokenValue = ReplacePreProcessorDefines(tokenValue, context.PreprocessorDefines.Keys);
+                                tokenValue = ReplacePreProcessorDefines(tokenValue, context.PreprocessorDefines);
                                 tokenValue = ReplacePreProcessorDefines(tokenValue, moduleOptions.PublicDefinitions);
                                 tokenValue = ReplacePreProcessorDefines(tokenValue, moduleOptions.PrivateDefinitions);
                                 tokenValue = ReplacePreProcessorDefines(tokenValue, moduleOptions.CompileEnv.PreprocessorDefinitions);
@@ -481,6 +481,16 @@ namespace Flax.Build.Bindings
             {
                 if (string.Equals(text, define, StringComparison.Ordinal))
                     text = text.Replace(define, "1");
+            }
+            return text;
+        }
+
+        private static string ReplacePreProcessorDefines(string text, IDictionary<string, string> defines)
+        {
+            foreach (var e in defines)
+            {
+                if (string.Equals(text, e.Key, StringComparison.Ordinal))
+                    text = text.Replace(e.Key, string.IsNullOrEmpty(e.Value) ? "1" : e.Value);
             }
             return text;
         }
