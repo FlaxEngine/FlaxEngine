@@ -118,6 +118,8 @@ namespace Flax.Build.Bindings
             for (var i = 0; i < tokensCount; i++)
                 context.Tokenizer.NextToken(true, true);
 
+            if (context.StringCache.Count == 0)
+                return null;
             if (context.StringCache.Count == 1)
             {
                 // Ensure to have summary begin/end pair
@@ -880,11 +882,14 @@ namespace Flax.Build.Bindings
                     throw new Exception($"Property {propertyName} in class {classInfo.Name} (line {context.Tokenizer.CurrentLine}) has mismatching getter return type ({getterType}) and setter parameter type ({setterType}). Both getter and setter methods must use the same value type used for property.");
                 }
 
-                // Fix documentation comment to reflect both getter and setters available
-                for (var i = 0; i < propertyInfo.Comment.Length; i++)
+                if (propertyInfo.Comment != null)
                 {
-                    ref var comment = ref propertyInfo.Comment[i];
-                    comment = comment.Replace("/// Gets ", "/// Gets or sets ");
+                    // Fix documentation comment to reflect both getter and setters available
+                    for (var i = 0; i < propertyInfo.Comment.Length; i++)
+                    {
+                        ref var comment = ref propertyInfo.Comment[i];
+                        comment = comment.Replace("/// Gets ", "/// Gets or sets ");
+                    }
                 }
             }
 

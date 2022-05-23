@@ -538,10 +538,14 @@ namespace Flax.Build.Bindings
             }
         }
 
-        private static void GenerateCSharpComment(StringBuilder contents, string indent, string[] comment)
+        private static void GenerateCSharpComment(StringBuilder contents, string indent, string[] comment, bool skipMeta = false)
         {
+            if (comment == null)
+                return;
             foreach (var c in comment)
             {
+                if (skipMeta && (c.Contains("/// <returns>") || c.Contains("<param name=")))
+                    continue;
                 contents.Append(indent).Append(c.Replace("::", ".")).AppendLine();
             }
         }
@@ -744,13 +748,7 @@ namespace Flax.Build.Bindings
                     }
                 }
 
-                foreach (var comment in eventInfo.Comment)
-                {
-                    if (comment.Contains("/// <returns>"))
-                        continue;
-                    contents.Append(indent).Append(comment.Replace("::", ".")).AppendLine();
-                }
-
+                GenerateCSharpComment(contents, indent, eventInfo.Comment, true);
                 GenerateCSharpAttributes(buildData, contents, indent, classInfo, eventInfo, useUnmanaged);
                 contents.Append(indent);
                 if (eventInfo.Access == AccessLevel.Public)
@@ -835,14 +833,7 @@ namespace Flax.Build.Bindings
                 if (fieldInfo.Getter == null || fieldInfo.IsHidden)
                     continue;
                 contents.AppendLine();
-
-                foreach (var comment in fieldInfo.Comment)
-                {
-                    if (comment.Contains("/// <returns>"))
-                        continue;
-                    contents.Append(indent).Append(comment.Replace("::", ".")).AppendLine();
-                }
-
+                GenerateCSharpComment(contents, indent, fieldInfo.Comment, true);
                 GenerateCSharpAttributes(buildData, contents, indent, classInfo, fieldInfo, useUnmanaged, fieldInfo.DefaultValue, fieldInfo.Type);
                 contents.Append(indent);
                 if (fieldInfo.Access == AccessLevel.Public)
@@ -894,14 +885,7 @@ namespace Flax.Build.Bindings
                     throw new NotImplementedException("TODO: support properties inside non-static and non-scripting API class types.");
 
                 contents.AppendLine();
-
-                foreach (var comment in propertyInfo.Comment)
-                {
-                    if (comment.Contains("/// <returns>") || comment.Contains("<param name="))
-                        continue;
-                    contents.Append(indent).Append(comment.Replace("::", ".")).AppendLine();
-                }
-
+                GenerateCSharpComment(contents, indent, propertyInfo.Comment, true);
                 GenerateCSharpAttributes(buildData, contents, indent, classInfo, propertyInfo, useUnmanaged);
                 contents.Append(indent);
                 if (propertyInfo.Access == AccessLevel.Public)
@@ -1127,10 +1111,7 @@ namespace Flax.Build.Bindings
             foreach (var fieldInfo in structureInfo.Fields)
             {
                 contents.AppendLine();
-
-                foreach (var comment in fieldInfo.Comment)
-                    contents.Append(indent).Append(comment).AppendLine();
-
+                GenerateCSharpComment(contents, indent, fieldInfo.Comment);
                 GenerateCSharpAttributes(buildData, contents, indent, structureInfo, fieldInfo, fieldInfo.IsStatic, fieldInfo.DefaultValue, fieldInfo.Type);
                 contents.Append(indent);
                 if (fieldInfo.Access == AccessLevel.Public)
@@ -1153,8 +1134,7 @@ namespace Flax.Build.Bindings
                     for (int i = 1; i < fieldInfo.Type.ArraySize; i++)
                     {
                         contents.AppendLine();
-                        foreach (var comment in fieldInfo.Comment)
-                            contents.Append(indent).Append(comment).AppendLine();
+                        GenerateCSharpComment(contents, indent, fieldInfo.Comment);
                         GenerateCSharpAttributes(buildData, contents, indent, structureInfo, fieldInfo, fieldInfo.IsStatic);
                         contents.Append(indent);
                         if (fieldInfo.Access == AccessLevel.Public)
@@ -1257,10 +1237,7 @@ namespace Flax.Build.Bindings
             foreach (var entryInfo in enumInfo.Entries)
             {
                 contents.AppendLine();
-
-                foreach (var comment in entryInfo.Comment)
-                    contents.Append(indent).Append(comment).AppendLine();
-
+                GenerateCSharpComment(contents, indent, entryInfo.Comment);
                 GenerateCSharpAttributes(buildData, contents, indent, enumInfo, entryInfo.Attributes, entryInfo.Comment, true, false);
                 contents.Append(indent).Append(entryInfo.Name);
                 if (!string.IsNullOrEmpty(entryInfo.Value))
