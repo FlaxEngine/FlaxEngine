@@ -37,6 +37,11 @@ namespace Flax.Build.Bindings
         {
         }
 
+        public TypeInfo(string type)
+        {
+            Type = type;
+        }
+
         public TypeInfo(TypeInfo other)
         {
             Type = other.Type;

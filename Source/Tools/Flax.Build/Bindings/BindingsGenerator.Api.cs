@@ -37,115 +37,67 @@ namespace Flax.Build.Bindings
         public static readonly Dictionary<TypeInfo, ApiTypeInfo> InBuildTypes = new Dictionary<TypeInfo, ApiTypeInfo>
         {
             {
-                new TypeInfo
-                {
-                    Type = "void",
-                },
+                new TypeInfo("void"),
                 new LangType("void")
             },
             {
-                new TypeInfo
-                {
-                    Type = "bool",
-                },
+                new TypeInfo("bool"),
                 new LangType("bool")
             },
             {
-                new TypeInfo
-                {
-                    Type = "byte",
-                },
+                new TypeInfo("byte"),
                 new LangType("byte")
             },
             {
-                new TypeInfo
-                {
-                    Type = "int8",
-                },
+                new TypeInfo("int8"),
                 new LangType("int8")
             },
             {
-                new TypeInfo
-                {
-                    Type = "int16",
-                },
+                new TypeInfo("int16"),
                 new LangType("int16")
             },
             {
-                new TypeInfo
-                {
-                    Type = "int32",
-                },
+                new TypeInfo("int32"),
                 new LangType("int32")
             },
             {
-                new TypeInfo
-                {
-                    Type = "int64",
-                },
+                new TypeInfo("int64"),
                 new LangType("int64")
             },
             {
-                new TypeInfo
-                {
-                    Type = "uint8",
-                },
+                new TypeInfo("uint8"),
                 new LangType("uint8")
             },
             {
-                new TypeInfo
-                {
-                    Type = "uint16",
-                },
+                new TypeInfo("uint16"),
                 new LangType("uint16")
             },
             {
-                new TypeInfo
-                {
-                    Type = "uint32",
-                },
+                new TypeInfo("uint32"),
                 new LangType("uint32")
             },
             {
-                new TypeInfo
-                {
-                    Type = "uint64",
-                },
+                new TypeInfo("uint64"),
                 new LangType("uint64")
             },
             {
-                new TypeInfo
-                {
-                    Type = "float",
-                },
+                new TypeInfo("float"),
                 new LangType("float")
             },
             {
-                new TypeInfo
-                {
-                    Type = "double",
-                },
+                new TypeInfo("double"),
                 new LangType("double")
             },
             {
-                new TypeInfo
-                {
-                    Type = "Char",
-                },
+                new TypeInfo("Char"),
                 new LangType("char")
             },
             {
-                new TypeInfo
-                {
-                    Type = "char",
-                },
+                new TypeInfo("char"),
                 new LangType("sbyte")
             },
             {
-                new TypeInfo
-                {
-                    Type = "void*",
-                },
+                new TypeInfo("void*"),
                 new LangType("IntPtr")
             },
         };
@@ -286,12 +238,12 @@ namespace Flax.Build.Bindings
             if (typeInfo.Type.Contains("::"))
             {
                 var nesting = typeInfo.Type.Split(new[] { "::" }, StringSplitOptions.None);
-                result = FindApiTypeInfo(buildData, new TypeInfo { Type = nesting[0], }, caller);
+                result = FindApiTypeInfo(buildData, new TypeInfo(nesting[0]), caller);
                 for (int i = 1; i < nesting.Length; i++)
                 {
                     if (result == null)
                         return null;
-                    result = FindApiTypeInfoInner(buildData, new TypeInfo { Type = nesting[i], }, result);
+                    result = FindApiTypeInfoInner(buildData, new TypeInfo(nesting[i]), result);
                 }
                 return result;
             }
