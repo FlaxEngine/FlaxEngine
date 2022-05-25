@@ -43,6 +43,17 @@ namespace Flax.Build.Bindings
             }
         }
 
+        public ModuleInfo ParentModule
+        {
+            get
+            {
+                var result = this;
+                while (result != null && !(result is ModuleInfo))
+                    result = result.Parent;
+                return result as ModuleInfo;
+            }
+        }
+
         /// <summary>
         /// Gets the name of the type as it would be referenced from the parent module namespace in the native code. It includes the nesting parent types and typename. For instance enum defined in class will have prefix of that class name.
         /// </summary>

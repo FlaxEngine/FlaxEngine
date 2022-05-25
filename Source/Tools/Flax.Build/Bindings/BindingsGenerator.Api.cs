@@ -255,22 +255,56 @@ namespace Flax.Build.Bindings
 
         private static ApiTypeInfo FindApiTypeInfoInner(BuildData buildData, TypeInfo typeInfo, ApiTypeInfo parent)
         {
+            ApiTypeInfo result = null;
             foreach (var child in parent.Children)
             {
                 if (child.Name == typeInfo.Type)
                 {
-                    child.EnsureInited(buildData);
-                    if (child is TypedefInfo typedef)
-                        return typedef.Typedef;
-                    return child;
+                    result = child;
+
+                    // Special case when searching for template types (use instantiated template if input type has generic arguments)
+                    if (child is ClassStructInfo classStructInfo && classStructInfo.IsTemplate && typeInfo.GenericArgs != null)
+                    {
+                        // Support instantiated template type with instantiated arguments (eg. 'typedef Vector3Base<Real> Vector3' where 'typedef float Real')
+                        var inflatedType = typeInfo.Inflate(buildData, child);
+
+                        // Find any typedef which introduced this type (eg. 'typedef Vector3Base<float> Float3')
+                        result = FindTypedef(buildData, inflatedType, parent.ParentModule);
+                        if (result == TypedefInfo.Current)
+                            result = child; // Use template type for the current typedef
+                        else if (result == null)
+                            continue; // Invalid template match
+                    }
+
+                    result.EnsureInited(buildData);
+                    if (result is TypedefInfo typedef)
+                        result = typedef.Typedef;
+                    break;
                 }
 
-                var result = FindApiTypeInfoInner(buildData, typeInfo, child);
+                result = FindApiTypeInfoInner(buildData, typeInfo, child);
                 if (result != null)
-                    return result;
+                    break;
             }
+            return result;
+        }
 
-            return null;
+        private static ApiTypeInfo FindTypedef(BuildData buildData, TypeInfo typeInfo, ApiTypeInfo parent)
+        {
+            ApiTypeInfo result = null;
+            foreach (var child in parent.Children)
+            {
+                if (child is TypedefInfo typedef && typedef.Type.Equals(typeInfo))
+                {
+                    result = child;
+                    break;
+                }
+
+                result = FindTypedef(buildData, typeInfo, child);
+                if (result != null)
+                    break;
+            }
+            return result;
         }
     }
 }

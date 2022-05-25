@@ -56,6 +56,30 @@ namespace Flax.Build.Bindings
         }
 
         /// <summary>
+        /// Inflates the type with typedefs for generic arguments.
+        /// </summary>
+        public TypeInfo Inflate(Builder.BuildData buildData, ApiTypeInfo caller)
+        {
+            if (GenericArgs != null && GenericArgs.Count != 0)
+            {
+                var inflated = new TypeInfo(this);
+                for (int i = 0; i < inflated.GenericArgs.Count; i++)
+                {
+                    var arg = new TypeInfo(inflated.GenericArgs[i]);
+                    var argType = BindingsGenerator.FindApiTypeInfo(buildData, arg, caller);
+                    if (argType != null)
+                    {
+                        arg.Type = argType.Name;
+                        arg.GenericArgs = null;
+                    }
+                    inflated.GenericArgs[i] = arg;
+                }
+                return inflated;
+            }
+            return this;
+        }
+
+        /// <summary>
         /// Gets a value indicating whether this type is POD (plain old data).
         /// </summary>
         public bool IsPod(Builder.BuildData buildData, ApiTypeInfo caller)

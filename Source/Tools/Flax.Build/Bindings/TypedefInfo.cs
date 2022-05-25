@@ -14,6 +14,9 @@ namespace Flax.Build.Bindings
         public TypeInfo Type;
         public ApiTypeInfo Typedef;
 
+        // Guards to prevent looped initialization for typedefs that are recursive
+        internal static TypedefInfo Current;
+
         public override void Init(Builder.BuildData buildData)
         {
             base.Init(buildData);
@@ -38,7 +41,10 @@ namespace Flax.Build.Bindings
             }
 
             // Find typedef type
+            var current = Current;
+            Current = this;
             var apiTypeInfo = BindingsGenerator.FindApiTypeInfo(buildData, Type, Parent);
+            Current = current;
             if (apiTypeInfo == null)
                 throw new Exception(string.Format("Unknown type '{0}' for typedef '{1}'.", Type, Name));
             apiTypeInfo.EnsureInited(buildData);
@@ -46,8 +52,6 @@ namespace Flax.Build.Bindings
             // Alias type without introducing any new type
             if (IsAlias || apiTypeInfo is LangType)
             {
-                if (apiTypeInfo is ClassStructInfo typedefClassStruct && typedefClassStruct.IsTemplate)
-                    throw new Exception(string.Format("Cannot use typedef '{0}' for type '{1}' that is a template.", Name, Type));
                 Typedef = apiTypeInfo;
                 return;
             }
