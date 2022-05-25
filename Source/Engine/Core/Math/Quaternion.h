@@ -6,9 +6,6 @@
 #include "Engine/Core/Formatting.h"
 #include "Engine/Core/Templates.h"
 
-struct Vector2;
-struct Vector3;
-struct Vector4;
 struct Matrix;
 struct Matrix3x3;
 
@@ -230,17 +227,6 @@ public:
             Z = -Z * lengthSq;
             W = W * lengthSq;
         }
-    }
-
-    /// <summary>
-    /// Reverses the direction of the quaternion.
-    /// </summary>
-    void Negate()
-    {
-        X = -X;
-        Y = -Y;
-        Z = -Z;
-        W = -W;
     }
 
     /// <summary>

@@ -5,7 +5,6 @@
 
 #include "Vector2.h"
 
-struct Vector3;
 struct Matrix;
 struct Rectangle;
 

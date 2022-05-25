@@ -7,8 +7,6 @@
 #include "Engine/Platform/Types.h"
 #include "../Win32/WindowsMinimal.h"
 
-struct Vector2;
-
 /// <summary>
 /// Windows platform specific implementation of the input system parts. Handles XInput devices.
 /// </summary>

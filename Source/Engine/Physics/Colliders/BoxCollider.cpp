@@ -136,8 +136,7 @@ void BoxCollider::UpdateBounds()
 void BoxCollider::GetGeometry(CollisionShape& collision)
 {
     Vector3 size = _size * _cachedScale;
-    size.Absolute();
     const float minSize = 0.001f;
-    size = Vector3::Max(size * 0.5f, Vector3(minSize));
+    size = Vector3::Max(size.GetAbsolute() * 0.5f, Vector3(minSize));
     collision.SetBox(size.Raw);
 }

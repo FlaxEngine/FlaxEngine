@@ -2,6 +2,7 @@
 
 #include "Transform.h"
 #include "Matrix.h"
+#include "Vector2.h"
 #include "../Types/String.h"
 
 Transform Transform::Identity(Vector3(0, 0, 0));
@@ -70,13 +71,6 @@ Transform Transform::Subtract(const Transform& other) const
     return result;
 }
 
-Transform Transform::LocalToWorld(const Transform& other) const
-{
-    Transform result;
-    LocalToWorld(other, result);
-    return result;
-}
-
 void Transform::LocalToWorld(const Transform& other, Transform& result) const
 {
     //Quaternion::Multiply(Orientation, other.Orientation, result.Orientation);
@@ -128,13 +122,6 @@ void Transform::LocalToWorld(const Transform& other, Transform& result) const
     result.Translation = Vector3(tmp.X + Translation.X, tmp.Y + Translation.Y, tmp.Z + Translation.Z);
 }
 
-Vector3 Transform::LocalToWorld(const Vector3& point) const
-{
-    Vector3 result = point * Scale;
-    Vector3::Transform(result, Orientation, result);
-    return result + Translation;
-}
-
 Vector3 Transform::LocalToWorldVector(const Vector3& vector) const
 {
     Vector3 result = vector * Scale;
@@ -147,38 +134,6 @@ void Transform::LocalToWorld(const Vector3& point, Vector3& result) const
     Vector3 tmp = point * Scale;
     Vector3::Transform(tmp, Orientation, tmp);
     Vector3::Add(tmp, Translation, result);
-}
-
-void Transform::LocalToWorld(const Vector3* points, int32 pointsCount, Vector3* result) const
-{
-    for (int32 i = 0; i < pointsCount; i++)
-    {
-        result[i] = Vector3::Transform(points[i] * Scale, Orientation) + Translation;
-    }
-}
-
-Transform Transform::WorldToLocal(const Transform& other) const
-{
-    Transform result;
-
-    Vector3 invScale = Scale;
-    if (invScale.X != 0.0f)
-        invScale.X = 1.0f / invScale.X;
-    if (invScale.Y != 0.0f)
-        invScale.Y = 1.0f / invScale.Y;
-    if (invScale.Z != 0.0f)
-        invScale.Z = 1.0f / invScale.Z;
-
-    const Quaternion invRotation = Orientation.Conjugated();
-
-    Quaternion::Multiply(invRotation, other.Orientation, result.Orientation);
-    result.Orientation.Normalize();
-    Vector3::Multiply(other.Scale, invScale, result.Scale);
-    const Vector3 tmp = other.Translation - Translation;
-    Vector3::Transform(tmp, invRotation, result.Translation);
-    Vector3::Multiply(result.Translation, invScale, result.Translation);
-
-    return result;
 }
 
 void Transform::WorldToLocal(const Transform& other, Transform& result) const
@@ -201,7 +156,7 @@ void Transform::WorldToLocal(const Transform& other, Transform& result) const
     Vector3::Multiply(result.Translation, invScale, result.Translation);
 }
 
-Vector3 Transform::WorldToLocal(const Vector3& point) const
+void Transform::WorldToLocal(const Vector3& point, Vector3& result) const
 {
     Vector3 invScale = Scale;
     if (invScale.X != 0.0f)
@@ -210,13 +165,10 @@ Vector3 Transform::WorldToLocal(const Vector3& point) const
         invScale.Y = 1.0f / invScale.Y;
     if (invScale.Z != 0.0f)
         invScale.Z = 1.0f / invScale.Z;
-
     const Quaternion invRotation = Orientation.Conjugated();
-
-    Vector3 result = point - Translation;
+    result = point - Translation;
     Vector3::Transform(result, invRotation, result);
-
-    return result * invScale;
+    result *= invScale;
 }
 
 Vector3 Transform::WorldToLocalVector(const Vector3& vector) const
@@ -235,26 +187,6 @@ Vector3 Transform::WorldToLocalVector(const Vector3& vector) const
     Vector3::Transform(vector, invRotation, result);
 
     return result * invScale;
-}
-
-void Transform::WorldToLocal(const Vector3* points, int32 pointsCount, Vector3* result) const
-{
-    Vector3 invScale = Scale;
-    if (invScale.X != 0.0f)
-        invScale.X = 1.0f / invScale.X;
-    if (invScale.Y != 0.0f)
-        invScale.Y = 1.0f / invScale.Y;
-    if (invScale.Z != 0.0f)
-        invScale.Z = 1.0f / invScale.Z;
-
-    const Quaternion invRotation = Orientation.Conjugated();
-
-    for (int32 i = 0; i < pointsCount; i++)
-    {
-        result[i] = points[i] - Translation;
-        Vector3::Transform(result[i], invRotation, result[i]);
-        result[i] *= invScale;
-    }
 }
 
 Transform Transform::Lerp(const Transform& t1, const Transform& t2, float amount)

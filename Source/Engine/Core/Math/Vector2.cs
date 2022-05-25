@@ -57,6 +57,24 @@ using System.Runtime.InteropServices;
 
 namespace FlaxEngine
 {
+    /// <summary>
+    /// Represents a two dimensional mathematical vector.
+    /// </summary>
+    [Unmanaged]
+    [StructLayout(LayoutKind.Sequential)]
+    public unsafe partial struct Vector2
+    {
+        /// <summary>
+        /// The X component.
+        /// </summary>
+        public float X;
+
+        /// <summary>
+        /// The Y component.
+        /// </summary>
+        public float Y;
+    }
+
     [Serializable]
     [TypeConverter(typeof(TypeConverters.Vector2Converter))]
     partial struct Vector2 : IEquatable<Vector2>, IFormattable

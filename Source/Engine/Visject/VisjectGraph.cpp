@@ -338,13 +338,13 @@ void VisjectExecutor::ProcessGroupMath(Box* box, Node* node, Value& value)
         switch (v1.Type.Type)
         {
         case VariantType::Vector2:
-            value = v1.AsVector2() - 2 * v2.AsVector2() * Vector2::Dot(v1.AsVector2(), v2.AsVector2());
+            value = v1.AsVector2() - 2.0f * v2.AsVector2() * Vector2::Dot(v1.AsVector2(), v2.AsVector2());
             break;
         case VariantType::Vector3:
-            value = v1.AsVector3() - 2 * v2.AsVector3() * Vector3::Dot(v1.AsVector3(), v2.AsVector3());
+            value = v1.AsVector3() - 2.0f * v2.AsVector3() * Vector3::Dot(v1.AsVector3(), v2.AsVector3());
             break;
         case VariantType::Vector4:
-            value = Vector4(v1.AsVector4() - 2 * v2.AsVector4() * Vector3::Dot((Vector3)v1, (Vector3)v2));
+            value = Vector4(v1.AsVector4() - 2.0f * v2.AsVector4() * Vector3::Dot((Vector3)v1, (Vector3)v2));
             break;
         default: CRASH;
             break;

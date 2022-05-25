@@ -57,6 +57,34 @@ using System.Runtime.InteropServices;
 
 namespace FlaxEngine
 {
+    /// <summary>
+    /// Represents a four dimensional mathematical vector.
+    /// </summary>
+    [Unmanaged]
+    [StructLayout(LayoutKind.Sequential)]
+    public unsafe partial struct Vector4
+    {
+        /// <summary>
+        /// The X component.
+        /// </summary>
+        public float X;
+
+        /// <summary>
+        /// The Y component.
+        /// </summary>
+        public float Y;
+
+        /// <summary>
+        /// The Z component.
+        /// </summary>
+        public float Z;
+
+        /// <summary>
+        /// The W component.
+        /// </summary>
+        public float W;
+    }
+
     [Serializable]
     [TypeConverter(typeof(TypeConverters.Vector4Converter))]
     partial struct Vector4 : IEquatable<Vector4>, IFormattable

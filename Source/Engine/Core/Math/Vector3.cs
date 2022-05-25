@@ -57,6 +57,29 @@ using System.Runtime.InteropServices;
 
 namespace FlaxEngine
 {
+    /// <summary>
+    /// Represents a three dimensional mathematical vector.
+    /// </summary>
+    [Unmanaged]
+    [StructLayout(LayoutKind.Sequential)]
+    public unsafe partial struct Vector3
+    {
+        /// <summary>
+        /// The X component.
+        /// </summary>
+        public float X;
+
+        /// <summary>
+        /// The Y component.
+        /// </summary>
+        public float Y;
+
+        /// <summary>
+        /// The Z component.
+        /// </summary>
+        public float Z;
+    }
+
     [Serializable]
     [TypeConverter(typeof(TypeConverters.Vector3Converter))]
     partial struct Vector3 : IEquatable<Vector3>, IFormattable
@@ -324,26 +347,6 @@ namespace FlaxEngine
                 Y *= inv;
                 Z *= inv;
             }
-        }
-
-        /// <summary>
-        /// Reverses the direction of the vector.
-        /// </summary>
-        public void Negate()
-        {
-            X *= -1;
-            Y *= -1;
-            Z *= -1;
-        }
-
-        /// <summary>
-        /// When this vector contains Euler angles (degrees), ensure that angles are between +/-180
-        /// </summary>
-        public void UnwindEuler()
-        {
-            X = Mathf.UnwindDegrees(X);
-            Y = Mathf.UnwindDegrees(Y);
-            Z = Mathf.UnwindDegrees(Z);
         }
 
         /// <summary>

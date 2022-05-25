@@ -629,8 +629,8 @@ bool ModifyCollision(const TerrainDataUpdateInfo& info, TextureBase::InitData* i
     const int32 collisionLOD = Math::Clamp<int32>(collisionLod, 0, initData->Mips.Count() - 1);
     const int32 heightFieldChunkSize = ((info.ChunkSize + 1) >> collisionLOD) - 1;
     const int32 heightFieldSize = heightFieldChunkSize * TerrainPatch::CHUNKS_COUNT_EDGE + 1;
-    const Int2 samplesOffset = Vector2::FloorToInt(modifiedOffsetRatio * (float)heightFieldSize);
-    Int2 samplesSize = Vector2::CeilToInt(modifiedSizeRatio * (float)heightFieldSize);
+    const Int2 samplesOffset(Vector2::Floor(modifiedOffsetRatio * (float)heightFieldSize));
+    Int2 samplesSize(Vector2::Ceil(modifiedSizeRatio * (float)heightFieldSize));
     samplesSize.X = Math::Max(samplesSize.X, 1);
     samplesSize.Y = Math::Max(samplesSize.Y, 1);
     Int2 samplesEnd = samplesOffset + samplesSize;

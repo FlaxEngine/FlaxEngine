@@ -9,7 +9,6 @@
 #include "Engine/Core/Types/Span.h"
 
 struct RenderContext;
-struct OrientedBoundingBox;
 class GPUTextureView;
 class GPUContext;
 class RenderTask;

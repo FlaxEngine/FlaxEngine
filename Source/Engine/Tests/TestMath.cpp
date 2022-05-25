@@ -107,7 +107,8 @@ TEST_CASE("Transform")
 
         Vector3 a4T[1];
         Vector3 a4Ta[1] = { t2.Translation };
-        t1.LocalToWorld(a4Ta, ARRAY_COUNT(a4Ta), a4T);
+        for (int32 i = 0; i < ARRAY_COUNT(a4Ta); i++)
+            a4T[i] = t1.LocalToWorld(a4Ta[i]);
         Vector3 a4 = a4T[0];
 
         CHECK(Vector3::NearEqual(a1.Translation, a2));
@@ -135,7 +136,8 @@ TEST_CASE("Transform")
 
         Vector3 a4T[1];
         Vector3 a4Ta[1] = { t2.Translation };
-        t1.WorldToLocal(a4Ta, ARRAY_COUNT(a4Ta), a4T);
+        for (int32 i = 0; i < ARRAY_COUNT(a4Ta); i++)
+            a4T[i] = t1.WorldToLocal(a4Ta[i]);
         Vector3 a4 = a4T[0];
 
         CHECK(Vector3::NearEqual(a1.Translation, a2));

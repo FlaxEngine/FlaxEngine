@@ -221,8 +221,7 @@ namespace FlaxEngine
                 }
 
                 result *= Mathf.RadiansToDegrees;
-                result.UnwindEuler();
-                return result;
+                return new Vector3(Mathf.UnwindDegrees(result.X), Mathf.UnwindDegrees(result.Y), Mathf.UnwindDegrees(result.Z));
             }
         }
 

@@ -3,29 +3,19 @@
 #pragma once
 
 #include "Math.h"
+#include "Mathd.h"
 #include "Engine/Core/Formatting.h"
 #include "Engine/Core/Templates.h"
 
-struct Double2;
-struct Double3;
-struct Double4;
-struct Quaternion;
-struct Matrix;
-struct Matrix3x3;
-struct Vector2;
-struct Vector4;
-struct Color;
-class String;
-struct Int3;
-struct Int4;
-
 /// <summary>
-/// Represents a three dimensional mathematical vector with 32-bit precision (per-component).
+/// Represents a three dimensional mathematical vector.
 /// </summary>
-API_STRUCT() struct FLAXENGINE_API Vector3
+template<typename T>
+API_STRUCT(Template) struct Vector3Base
 {
-    DECLARE_SCRIPTING_TYPE_MINIMAL(Vector3);
-public:
+    typedef T Real;
+    static struct ScriptingTypeInitializer TypeInitializer;
+
     union
     {
         struct
@@ -33,118 +23,116 @@ public:
             /// <summary>
             /// The X component.
             /// </summary>
-            API_FIELD() float X;
+            API_FIELD() T X;
 
             /// <summary>
             /// The Y component.
             /// </summary>
-            API_FIELD() float Y;
+            API_FIELD() T Y;
 
             /// <summary>
             /// The Z component.
             /// </summary>
-            API_FIELD() float Z;
+            API_FIELD() T Z;
         };
 
-        // Raw values
-        float Raw[3];
+        /// <summary>
+        /// The raw vector values (in XYZ order).
+        /// </summary>
+        T Raw[3];
     };
 
 public:
     // Vector with all components equal zero (0, 0, 0).
-    static const Vector3 Zero;
+    static FLAXENGINE_API const Vector3Base<T> Zero;
 
     // Vector with all components equal one (1, 1, 1).
-    static const Vector3 One;
+    static FLAXENGINE_API const Vector3Base<T> One;
 
     // Vector with all components equal half (0.5, 0.5, 0.5).
-    static const Vector3 Half;
+    static FLAXENGINE_API const Vector3Base<T> Half;
 
     // The X unit vector (1, 0, 0).
-    static const Vector3 UnitX;
+    static FLAXENGINE_API const Vector3Base<T> UnitX;
 
     // The Y unit vector (0, 1, 0).
-    static const Vector3 UnitY;
+    static FLAXENGINE_API const Vector3Base<T> UnitY;
 
     // The Z unit vector (0, 0, 1).
-    static const Vector3 UnitZ;
+    static FLAXENGINE_API const Vector3Base<T> UnitZ;
 
     // A unit vector designating up (0, 1, 0).
-    static const Vector3 Up;
+    static FLAXENGINE_API const Vector3Base<T> Up;
 
     // A unit vector designating down (0, -1, 0).
-    static const Vector3 Down;
+    static FLAXENGINE_API const Vector3Base<T> Down;
 
     // A unit vector designating a (-1, 0, 0).
-    static const Vector3 Left;
+    static FLAXENGINE_API const Vector3Base<T> Left;
 
     // A unit vector designating b (1, 0, 0).
-    static const Vector3 Right;
+    static FLAXENGINE_API const Vector3Base<T> Right;
 
     // A unit vector designating forward in a a-handed coordinate system (0, 0, 1).
-    static const Vector3 Forward;
+    static FLAXENGINE_API const Vector3Base<T> Forward;
 
     // A unit vector designating backward in a a-handed coordinate system (0, 0, -1).
-    static const Vector3 Backward;
+    static FLAXENGINE_API const Vector3Base<T> Backward;
 
-    // A minimum Vector3.
-    static const Vector3 Minimum;
+    // Vector with all components equal maximum value.
+    static FLAXENGINE_API const Vector3Base<T> Minimum;
 
-    // A maximum Vector3.
-    static const Vector3 Maximum;
+    // Vector with all components equal minimum value.
+    static FLAXENGINE_API const Vector3Base<T> Maximum;
 
 public:
     /// <summary>
     /// Empty constructor.
     /// </summary>
-    Vector3()
+    Vector3Base()
     {
     }
 
-    // Init
-    // @param xyz Value to assign to the all components
-    Vector3(float xyz)
+    FORCE_INLINE Vector3Base(T xyz)
         : X(xyz)
         , Y(xyz)
         , Z(xyz)
     {
     }
 
-    // Init
-    // @param x X component value
-    // @param y Y component value
-    // @param z Z component value
-    Vector3(float x, float y, float z)
-        : X(x)
-        , Y(y)
-        , Z(z)
-    {
-    }
-
-    /// <summary>
-    /// Init
-    /// </summary>
-    /// <param name="v">X, Y and Z components in an array</param>
-    explicit Vector3(const float* xyz)
+    FORCE_INLINE explicit Vector3Base(const T* xyz)
         : X(xyz[0])
         , Y(xyz[1])
         , Z(xyz[2])
     {
     }
 
-    explicit Vector3(const Vector2& xy, float z);
-    explicit Vector3(const Vector2& xy);
-    explicit Vector3(const Int2& xy, float z);
-    explicit Vector3(const Int3& xyz);
-    explicit Vector3(const Int4& xyzw);
-    explicit Vector3(const Vector4& xyz);
-    explicit Vector3(const Double2& xy, float z);
-    Vector3(const Double3& xyz);
-    explicit Vector3(const Double4& xyzw);
-    explicit Vector3(const Color& color);
+    FORCE_INLINE Vector3Base(T x, T y, T z)
+        : X(x)
+        , Y(y)
+        , Z(z)
+    {
+    }
+
+    template<typename U = T, typename TEnableIf<TNot<TIsTheSame<T, U>>::Value>::Type...>
+    FORCE_INLINE explicit Vector3Base(const Vector3Base<U>& xyz)
+        : X((T)xyz.X)
+        , Y((T)xyz.Y)
+        , Z((T)xyz.Z)
+    {
+    }
+
+    FLAXENGINE_API Vector3Base(const Float2& xy, T z = 0);
+    FLAXENGINE_API Vector3Base(const Double2& xy, T z = 0);
+    FLAXENGINE_API Vector3Base(const Int2& xy, T z = 0);
+    FLAXENGINE_API Vector3Base(const Int3& xyz);
+    FLAXENGINE_API explicit Vector3Base(const Float4& xyz);
+    FLAXENGINE_API explicit Vector3Base(const Double4& xyz);
+    FLAXENGINE_API explicit Vector3Base(const Int4& xyz);
+    FLAXENGINE_API explicit Vector3Base(const Color& color);
 
 public:
-    String ToString() const;
+    FLAXENGINE_API String ToString() const;
 
 public:
     // Gets a value indicting whether this instance is normalized.
@@ -172,52 +160,27 @@ public:
     }
 
     // Calculates the length of the vector.
-    float Length() const
+    T Length() const
     {
         return Math::Sqrt(X * X + Y * Y + Z * Z);
     }
 
     // Calculates the squared length of the vector.
-    float LengthSquared() const
+    T LengthSquared() const
     {
         return X * X + Y * Y + Z * Z;
     }
 
     // Calculates inverted length of the vector (1 / length).
-    float InvLength() const
+    T InvLength() const
     {
         return 1.0f / Length();
     }
 
     /// <summary>
-    /// Calculates a vector with values being absolute values of that vector.
-    /// </summary>
-    Vector3 GetAbsolute() const
-    {
-        return Vector3(Math::Abs(X), Math::Abs(Y), Math::Abs(Z));
-    }
-
-    /// <summary>
-    /// Calculates a vector with values being opposite to values of that vector.
-    /// </summary>
-    Vector3 GetNegative() const
-    {
-        return Vector3(-X, -Y, -Z);
-    }
-
-    /// <summary>
-    /// Calculates a normalized vector that has length equal to 1.
-    /// </summary>
-    Vector3 GetNormalized() const
-    {
-        const float rcp = 1.0f / Length();
-        return Vector3(X * rcp, Y * rcp, Z * rcp);
-    }
-
-    /// <summary>
     /// Returns the average arithmetic of all the components.
     /// </summary>
-    float AverageArithmetic() const
+    T AverageArithmetic() const
     {
         return (X + Y + Z) * 0.333333334f;
     }
@@ -225,7 +188,7 @@ public:
     /// <summary>
     /// Gets the sum of all vector components values.
     /// </summary>
-    float SumValues() const
+    T SumValues() const
     {
         return X + Y + Z;
     }
@@ -233,7 +196,7 @@ public:
     /// <summary>
     /// Returns the minimum value of all the components.
     /// </summary>
-    float MinValue() const
+    T MinValue() const
     {
         return Math::Min(X, Y, Z);
     }
@@ -241,7 +204,7 @@ public:
     /// <summary>
     /// Returns the maximum value of all the components.
     /// </summary>
-    float MaxValue() const
+    T MaxValue() const
     {
         return Math::Max(X, Y, Z);
     }
@@ -270,16 +233,41 @@ public:
         return IsInfinity() || IsNaN();
     }
 
+    /// <summary>
+    /// Calculates a vector with values being absolute values of that vector.
+    /// </summary>
+    Vector3Base GetAbsolute() const
+    {
+        return Vector3Base(Math::Abs(X), Math::Abs(Y), Math::Abs(Z));
+    }
+
+    /// <summary>
+    /// Calculates a vector with values being opposite to values of that vector.
+    /// </summary>
+    Vector3Base GetNegative() const
+    {
+        return Vector3Base(-X, -Y, -Z);
+    }
+
+    /// <summary>
+    /// Calculates a normalized vector that has length equal to 1.
+    /// </summary>
+    Vector3Base GetNormalized() const
+    {
+        const T rcp = 1.0f / Length();
+        return Vector3Base(X * rcp, Y * rcp, Z * rcp);
+    }
+
 public:
     /// <summary>
     /// Performs vector normalization (scales vector up to unit length).
     /// </summary>
     void Normalize()
     {
-        const float length = Math::Sqrt(X * X + Y * Y + Z * Z);
+        const T length = Math::Sqrt(X * X + Y * Y + Z * Z);
         if (Math::Abs(length) >= ZeroTolerance)
         {
-            const float inv = 1.0f / length;
+            const T inv = 1.0f / length;
             X *= inv;
             Y *= inv;
             Z *= inv;
@@ -291,74 +279,69 @@ public:
     /// </summary>
     void NormalizeFast()
     {
-        const float inv = 1.0f / Math::Sqrt(X * X + Y * Y + Z * Z);
+        const T inv = 1.0f / Math::Sqrt(X * X + Y * Y + Z * Z);
         X *= inv;
         Y *= inv;
         Z *= inv;
     }
 
-    /// <summary>
-    /// Sets all vector components to the absolute values.
-    /// </summary>
-    void Absolute()
-    {
-        X = Math::Abs(X);
-        Y = Math::Abs(Y);
-        Z = Math::Abs(Z);
-    }
-
-    /// <summary>
-    /// Negates all components of that vector.
-    /// </summary>
-    void Negate()
-    {
-        X = -X;
-        Y = -Y;
-        Z = -Z;
-    }
-
-    /// <summary>
-    /// When this vector contains Euler angles (degrees), ensure that angles are between +/-180.
-    /// </summary>
-    void UnwindEuler();
-
 public:
-    Vector3 operator+(const Vector3& b) const
+    Vector3Base operator+(const Vector3Base& b) const
     {
-        return Vector3(X + b.X, Y + b.Y, Z + b.Z);
+        return Vector3Base(X + b.X, Y + b.Y, Z + b.Z);
     }
 
-    Vector3 operator-(const Vector3& b) const
+    Vector3Base operator-(const Vector3Base& b) const
     {
-        return Vector3(X - b.X, Y - b.Y, Z - b.Z);
+        return Vector3Base(X - b.X, Y - b.Y, Z - b.Z);
     }
 
-    Vector3 operator*(const Vector3& b) const
+    Vector3Base operator*(const Vector3Base& b) const
     {
-        return Vector3(X * b.X, Y * b.Y, Z * b.Z);
+        return Vector3Base(X * b.X, Y * b.Y, Z * b.Z);
     }
 
-    Vector3 operator/(const Vector3& b) const
+    Vector3Base operator/(const Vector3Base& b) const
     {
-        return Vector3(X / b.X, Y / b.Y, Z / b.Z);
+        return Vector3Base(X / b.X, Y / b.Y, Z / b.Z);
     }
 
-    Vector3 operator-() const
+    Vector3Base operator-() const
     {
-        return Vector3(-X, -Y, -Z);
+        return Vector3Base(-X, -Y, -Z);
     }
 
-    Vector3 operator^(const Vector3& b) const
+    Vector3Base operator+(T b) const
+    {
+        return Vector3Base(X + b, Y + b, Z + b);
+    }
+
+    Vector3Base operator-(T b) const
+    {
+        return Vector3Base(X - b, Y - b, Z - b);
+    }
+
+    Vector3Base operator*(T b) const
+    {
+        return Vector3Base(X * b, Y * b, Z * b);
+    }
+
+    Vector3Base operator/(T b) const
+    {
+        return Vector3Base(X / b, Y / b, Z / b);
+    }
+
+    Vector3Base operator^(const Vector3Base& b) const
     {
         return Cross(*this, b);
     }
 
-    float operator|(const Vector3& b) const
+    T operator|(const Vector3Base& b) const
     {
         return Dot(*this, b);
     }
 
-    Vector3& operator+=(const Vector3& b)
+    Vector3Base& operator+=(const Vector3Base& b)
     {
         X += b.X;
         Y += b.Y;
@@ -366,7 +349,7 @@ public:
         return *this;
     }
 
-    Vector3& operator-=(const Vector3& b)
+    Vector3Base& operator-=(const Vector3Base& b)
     {
         X -= b.X;
         Y -= b.Y;
@@ -374,7 +357,7 @@ public:
         return *this;
     }
 
-    Vector3& operator*=(const Vector3& b)
+    Vector3Base& operator*=(const Vector3Base& b)
     {
         X *= b.X;
         Y *= b.Y;
@@ -382,7 +365,7 @@ public:
         return *this;
     }
 
-    Vector3& operator/=(const Vector3& b)
+    Vector3Base& operator/=(const Vector3Base& b)
     {
         X /= b.X;
         Y /= b.Y;
@@ -390,234 +373,227 @@ public:
         return *this;
     }
 
-    Vector3 operator+(float b) const
+    Vector3Base& operator+=(T b)
     {
-        return Vector3(X + b, Y + b, Z + b);
-    }
-
-    Vector3 operator-(float b) const
-    {
-        return Vector3(X - b, Y - b, Z - b);
-    }
-
-    Vector3 operator*(float b) const
-    {
-        return Vector3(X * b, Y * b, Z * b);
-    }
-
-    Vector3 operator/(float b) const
-    {
-        return Vector3(X / b, Y / b, Z / b);
-    }
-
-    Vector3& operator+=(float b)
-    {
-        *this = Add(*this, b);
+        X += b;
+        Y += b;
+        Z += b;
         return *this;
     }
 
-    Vector3& operator-=(float b)
+    Vector3Base& operator-=(T b)
     {
-        *this = Subtract(*this, b);
+        X -= b;
+        Y -= b;
+        Z -= b;
         return *this;
     }
 
-    Vector3& operator*=(float b)
+    Vector3Base& operator*=(T b)
     {
-        *this = Multiply(*this, b);
+        X *= b;
+        Y *= b;
+        Z *= b;
         return *this;
     }
 
-    Vector3& operator/=(float b)
+    Vector3Base& operator/=(T b)
     {
-        *this = Divide(*this, b);
+        X /= b;
+        Y /= b;
+        Z /= b;
         return *this;
     }
 
-    bool operator==(const Vector3& b) const
+    bool operator==(const Vector3Base& b) const
     {
         return X == b.X && Y == b.Y && Z == b.Z;
     }
 
-    bool operator!=(const Vector3& b) const
+    bool operator!=(const Vector3Base& b) const
     {
         return X != b.X || Y != b.Y || Z != b.Z;
     }
 
-    bool operator>(const Vector3& b) const
+    bool operator>(const Vector3Base& b) const
     {
         return X > b.X && Y > b.Y && Z > b.Z;
     }
 
-    bool operator>=(const Vector3& b) const
+    bool operator>=(const Vector3Base& b) const
     {
         return X >= b.X && Y >= b.Y && Z >= b.Z;
     }
 
-    bool operator<(const Vector3& b) const
+    bool operator<(const Vector3Base& b) const
     {
         return X < b.X && Y < b.Y && Z < b.Z;
     }
 
-    bool operator<=(const Vector3& b) const
+    bool operator<=(const Vector3Base& b) const
     {
         return X <= b.X && Y <= b.Y && Z <= b.Z;
     }
 
 public:
-    static bool NearEqual(const Vector3& a, const Vector3& b)
+    static bool NearEqual(const Vector3Base& a, const Vector3Base& b)
     {
         return Math::NearEqual(a.X, b.X) && Math::NearEqual(a.Y, b.Y) && Math::NearEqual(a.Z, b.Z);
     }
 
-    static bool NearEqual(const Vector3& a, const Vector3& b, float epsilon)
+    static bool NearEqual(const Vector3Base& a, const Vector3Base& b, T epsilon)
     {
         return Math::NearEqual(a.X, b.X, epsilon) && Math::NearEqual(a.Y, b.Y, epsilon) && Math::NearEqual(a.Z, b.Z, epsilon);
     }
 
 public:
-    static void Add(const Vector3& a, const Vector3& b, Vector3& result)
+    static void Add(const Vector3Base& a, const Vector3Base& b, Vector3Base& result)
     {
-        result.X = a.X + b.X;
-        result.Y = a.Y + b.Y;
-        result.Z = a.Z + b.Z;
+        result = Vector3Base(a.X + b.X, a.Y + b.Y, a.Z + b.Z);
     }
 
-    static Vector3 Add(const Vector3& a, const Vector3& b)
+    static void Subtract(const Vector3Base& a, const Vector3Base& b, Vector3Base& result)
     {
-        Vector3 result;
-        Add(a, b, result);
-        return result;
+        result = Vector3Base(a.X - b.X, a.Y - b.Y, a.Z - b.Z);
     }
 
-    static void Subtract(const Vector3& a, const Vector3& b, Vector3& result)
+    static void Multiply(const Vector3Base& a, const Vector3Base& b, Vector3Base& result)
     {
-        result.X = a.X - b.X;
-        result.Y = a.Y - b.Y;
-        result.Z = a.Z - b.Z;
+        result = Vector3Base(a.X * b.X, a.Y * b.Y, a.Z * b.Z);
     }
 
-    static Vector3 Subtract(const Vector3& a, const Vector3& b)
+    static void Divide(const Vector3Base& a, const Vector3Base& b, Vector3Base& result)
     {
-        Vector3 result;
-        Subtract(a, b, result);
-        return result;
+        result = Vector3Base(a.X / b.X, a.Y / b.Y, a.Z / b.Z);
     }
 
-    static Vector3 Multiply(const Vector3& a, const Vector3& b)
+    static void Min(const Vector3Base& a, const Vector3Base& b, Vector3Base& result)
     {
-        return Vector3(a.X * b.X, a.Y * b.Y, a.Z * b.Z);
+        result = Vector3(a.X < b.X ? a.X : b.X, a.Y < b.Y ? a.Y : b.Y, a.Z < b.Z ? a.Z : b.Z);
     }
 
-    static void Multiply(const Vector3& a, const Vector3& b, Vector3& result)
+    static void Max(const Vector3Base& a, const Vector3Base& b, Vector3Base& result)
     {
-        result = Vector3(a.X * b.X, a.Y * b.Y, a.Z * b.Z);
+        result = Vector3(a.X > b.X ? a.X : b.X, a.Y > b.Y ? a.Y : b.Y, a.Z > b.Z ? a.Z : b.Z);
     }
 
-    static Vector3 Multiply(const Vector3& a, float b)
+public:
+    static Vector3Base Min(const Vector3Base& a, const Vector3Base& b)
     {
-        return Vector3(a.X * b, a.Y * b, a.Z * b);
+        return Vector3Base(a.X < b.X ? a.X : b.X, a.Y < b.Y ? a.Y : b.Y, a.Z < b.Z ? a.Z : b.Z);
     }
 
-    static Vector3 Divide(const Vector3& a, const Vector3& b)
+    static Vector3Base Max(const Vector3Base& a, const Vector3Base& b)
     {
-        return Vector3(a.X / b.X, a.Y / b.Y, a.Z / b.Z);
+        return Vector3Base(a.X > b.X ? a.X : b.X, a.Y > b.Y ? a.Y : b.Y, a.Z > b.Z ? a.Z : b.Z);
     }
 
-    static void Divide(const Vector3& a, const Vector3& b, Vector3& result)
+    static Vector3Base Floor(const Vector3Base& v)
     {
-        result = Vector3(a.X / b.X, a.Y / b.Y, a.Z / b.Z);
+        return Vector3Base(Math::Floor(v.X), Math::Floor(v.Y), Math::Floor(v.Z));
     }
 
-    static Vector3 Divide(const Vector3& a, float b)
+    static Vector3Base Frac(const Vector3Base& v)
     {
-        return Vector3(a.X / b, a.Y / b, a.Z / b);
+        return Vector3(v.X - (int32)v.X, v.Y - (int32)v.Y, v.Z - (int32)v.Z);
     }
 
-    static Vector3 Floor(const Vector3& v);
-    static Vector3 Frac(const Vector3& v);
+    static Vector3Base Round(const Vector3Base& v)
+    {
+        return Vector3Base(Math::Round(v.X), Math::Round(v.Y), Math::Round(v.Z));
+    }
+
+    static Vector3Base Ceil(const Vector3Base& v)
+    {
+        return Vector3Base(Math::Ceil(v.X), Math::Ceil(v.Y), Math::Ceil(v.Z));
+    }
+
+    static Vector3Base Abs(const Vector3Base& v)
+    {
+        return Vector3Base(Math::Abs(v.X), Math::Abs(v.Y), Math::Abs(v.Z));
+    }
 
 public:
     // Restricts a value to be within a specified range
-    // @param value The value to clamp
+    // @param v The value to clamp
     // @param min The minimum value,
     // @param max The maximum value
     // @returns Clamped value
-    static Vector3 Clamp(const Vector3& value, const Vector3& min, const Vector3& max)
+    static Vector3Base Clamp(const Vector3Base& v, const Vector3Base& min, const Vector3Base& max)
     {
-        return Vector3(Math::Clamp(value.X, min.X, max.X), Math::Clamp(value.Y, min.Y, max.Y), Math::Clamp(value.Z, min.Z, max.Z));
+        Vector3Base result;
+        Clamp(v, min, max, result);
+        return result;
     }
 
     // Restricts a value to be within a specified range
-    // @param value The value to clamp
+    // @param v The value to clamp
     // @param min The minimum value,
     // @param max The maximum value
     // @param result When the method completes, contains the clamped value
-    static void Clamp(const Vector3& value, const Vector3& min, const Vector3& max, Vector3& result)
+    static void Clamp(const Vector3Base& v, const Vector3Base& min, const Vector3Base& max, Vector3Base& result)
     {
-        result = Vector3(Math::Clamp(value.X, min.X, max.X), Math::Clamp(value.Y, min.Y, max.Y), Math::Clamp(value.Z, min.Z, max.Z));
+        result = Vector3Base(Math::Clamp(v.X, min.X, max.X), Math::Clamp(v.Y, min.Y, max.Y), Math::Clamp(v.Z, min.Z, max.Z));
     }
 
     // Calculates the distance between two vectors
-    // @param value1 The first vector
-    // @param value2 The second vector
+    // @param a The first vector
+    // @param b The second vector
     // @returns The distance between the two vectors
-    static float Distance(const Vector3& value1, const Vector3& value2)
+    static T Distance(const Vector3Base& a, const Vector3Base& b)
     {
-        const float x = value1.X - value2.X;
-        const float y = value1.Y - value2.Y;
-        const float z = value1.Z - value2.Z;
+        const T x = a.X - b.X;
+        const T y = a.Y - b.Y;
+        const T z = a.Z - b.Z;
         return Math::Sqrt(x * x + y * y + z * z);
     }
 
     // Calculates the squared distance between two vectors
-    // @param value1 The first vector
-    // @param value2 The second vector
+    // @param a The first vector
+    // @param b The second vector
     // @returns The squared distance between the two vectors
-    static float DistanceSquared(const Vector3& value1, const Vector3& value2)
+    static T DistanceSquared(const Vector3Base& a, const Vector3Base& b)
     {
-        const float x = value1.X - value2.X;
-        const float y = value1.Y - value2.Y;
-        const float z = value1.Z - value2.Z;
+        const T x = a.X - b.X;
+        const T y = a.Y - b.Y;
+        const T z = a.Z - b.Z;
         return x * x + y * y + z * z;
     }
 
-    // Performs vector normalization (scales vector up to unit length)
-    // @param inout Input vector to normalize
-    // @returns Output vector that is normalized (has unit length)
-    static Vector3 Normalize(const Vector3& input)
+    // Performs vector normalization (scales vector up to unit length).
+    static Vector3Base Normalize(const Vector3Base& v)
     {
-        Vector3 output = input;
-        const float length = input.Length();
+        Vector3Base r = v;
+        const T length = Math::Sqrt(r.X * r.X + r.Y * r.Y + r.Z * r.Z);
         if (Math::Abs(length) >= ZeroTolerance)
         {
-            const float inv = 1.0f / length;
-            output.X *= inv;
-            output.Y *= inv;
-            output.Z *= inv;
+            const T inv = 1.0f / length;
+            r.X *= inv;
+            r.Y *= inv;
+            r.Z *= inv;
         }
-        return output;
+        return r;
     }
 
     // Performs vector normalization (scales vector up to unit length). This is a faster version that does not performs check for length equal 0 (it assumes that input vector is not empty).
     // @param inout Input vector to normalize (cannot be zero).
     // @returns Output vector that is normalized (has unit length)
-    static Vector3 NormalizeFast(const Vector3& input)
+    static Vector3Base NormalizeFast(const Vector3Base& v)
     {
-        const float inv = 1.0f / input.Length();
-        return Vector3(input.X * inv, input.Y * inv, input.Z * inv);
+        const T inv = 1.0f / v.Length();
+        return Vector3Base(v.X * inv, v.Y * inv, v.Z * inv);
     }
 
     // Performs vector normalization (scales vector up to unit length)
     // @param inout Input vector to normalize
     // @param output Output vector that is normalized (has unit length)
-    static FORCE_INLINE void Normalize(const Vector3& input, Vector3& result)
+    static FORCE_INLINE void Normalize(const Vector3Base& input, Vector3Base& result)
     {
         result = Normalize(input);
     }
 
     // dot product with another vector
-    static float Dot(const Vector3& a, const Vector3& b)
+    static T Dot(const Vector3Base& a, const Vector3Base& b)
     {
         return a.X * b.X + a.Y * b.Y + a.Z * b.Z;
     }
@@ -626,18 +602,18 @@ public:
     // @param a First source vector
     // @param b Second source vector
     // @param result When the method completes, contains the cross product of the two vectors
-    static void Cross(const Vector3& a, const Vector3& b, Vector3& result)
+    static void Cross(const Vector3Base& a, const Vector3Base& b, Vector3Base& result)
     {
-        result = Vector3(a.Y * b.Z - a.Z * b.Y, a.Z * b.X - a.X * b.Z, a.X * b.Y - a.Y * b.X);
+        result = Vector3Base(a.Y * b.Z - a.Z * b.Y, a.Z * b.X - a.X * b.Z, a.X * b.Y - a.Y * b.X);
     }
 
     // Calculates the cross product of two vectors
     // @param a First source vector
     // @param b Second source vector
     // @returns Cross product of the two vectors
-    static Vector3 Cross(const Vector3& a, const Vector3& b)
+    static Vector3Base Cross(const Vector3Base& a, const Vector3Base& b)
     {
-        return Vector3(a.Y * b.Z - a.Z * b.Y, a.Z * b.X - a.X * b.Z, a.X * b.Y - a.Y * b.X);
+        return Vector3Base(a.Y * b.Z - a.Z * b.Y, a.Z * b.X - a.X * b.Z, a.X * b.Y - a.Y * b.X);
     }
 
     // Performs a linear interpolation between two vectors
@@ -645,7 +621,7 @@ public:
     // @param end End vector
     // @param amount Value between 0 and 1 indicating the weight of end
     // @param result When the method completes, contains the linear interpolation of the two vectors
-    static void Lerp(const Vector3& start, const Vector3& end, float amount, Vector3& result)
+    static void Lerp(const Vector3Base& start, const Vector3Base& end, T amount, Vector3Base& result)
     {
         result.X = Math::Lerp(start.X, end.X, amount);
         result.Y = Math::Lerp(start.Y, end.Y, amount);
@@ -655,9 +631,9 @@ public:
     // <summary>
     // Performs a linear interpolation between two vectors.
     // </summary>
-    static Vector3 Lerp(const Vector3& start, const Vector3& end, float amount)
+    static Vector3Base Lerp(const Vector3Base& start, const Vector3Base& end, T amount)
     {
-        Vector3 result;
+        Vector3Base result;
         Lerp(start, end, amount, result);
         return result;
     }
@@ -667,7 +643,7 @@ public:
     // @param end End vector
     // @param amount Value between 0 and 1 indicating the weight of end
     // @param result When the method completes, contains the cubic interpolation of the two vectors
-    static void SmoothStep(const Vector3& start, const Vector3& end, float amount, Vector3& result)
+    static void SmoothStep(const Vector3Base& start, const Vector3Base& end, T amount, Vector3Base& result)
     {
         amount = Math::SmoothStep(amount);
         Lerp(start, end, amount, result);
@@ -680,104 +656,61 @@ public:
     // @param tangent2 Second source tangent vector
     // @param amount Weighting factor,
     // @param result When the method completes, contains the result of the Hermite spline interpolation,
-    static void Hermite(const Vector3& value1, const Vector3& tangent1, const Vector3& value2, const Vector3& tangent2, float amount, Vector3& result);
+    static FLAXENGINE_API void Hermite(const Vector3Base& value1, const Vector3Base& tangent1, const Vector3Base& value2, const Vector3Base& tangent2, T amount, Vector3Base& result);
 
     // Returns the reflection of a vector off a surface that has the specified normal
     // @param vector The source vector
     // @param normal Normal of the surface
     // @param result When the method completes, contains the reflected vector
-    static void Reflect(const Vector3& vector, const Vector3& normal, Vector3& result);
+    static FLAXENGINE_API void Reflect(const Vector3Base& vector, const Vector3Base& normal, Vector3Base& result);
 
     // Transforms a 3D vector by the given Quaternion rotation
     // @param vector The vector to rotate
     // @param rotation The Quaternion rotation to apply
-    // @param result When the method completes, contains the transformed Vector4
-    static void Transform(const Vector3& vector, const Quaternion& rotation, Vector3& result);
+    // @param result When the method completes, contains the transformed Vector3
+    static FLAXENGINE_API void Transform(const Vector3Base& vector, const Quaternion& rotation, Vector3Base& result);
 
     // Transforms a 3D vector by the given Quaternion rotation
     // @param vector The vector to rotate
     // @param rotation The Quaternion rotation to apply
-    // @returns The transformed Vector4
-    static Vector3 Transform(const Vector3& vector, const Quaternion& rotation);
+    // @returns The transformed Vector3
+    static FLAXENGINE_API Vector3Base Transform(const Vector3Base& vector, const Quaternion& rotation);
 
     // Transforms a 3D vector by the given matrix
     // @param vector The source vector
     // @param transform The transformation matrix
     // @param result When the method completes, contains the transformed Vector3
-    static void Transform(const Vector3& vector, const Matrix& transform, Vector3& result);
-
-    // Transforms a 3D vectors by the given matrix
-    // @param vectors The source vectors
-    // @param transform The transformation matrix
-    // @param results When the method completes, contains the transformed Vector3s
-    // @param vectorsCount Amount of vectors to transform
-    static void Transform(const Vector3* vectors, const Matrix& transform, Vector3* results, int32 vectorsCount);
+    static FLAXENGINE_API void Transform(const Vector3Base& vector, const Matrix& transform, Vector3Base& result);
 
     // Transforms a 3D vector by the given matrix
     // @param vector The source vector
     // @param transform The transformation matrix
     // @param result When the method completes, contains the transformed Vector3
-    static void Transform(const Vector3& vector, const Matrix3x3& transform, Vector3& result);
+    static FLAXENGINE_API void Transform(const Vector3Base& vector, const Matrix3x3& transform, Vector3Base& result);
 
     // Transforms a 3D vector by the given matrix
     // @param vector The source vector
     // @param transform The transformation matrix
     // @returns Transformed Vector3
-    static Vector3 Transform(const Vector3& vector, const Matrix& transform);
+    static FLAXENGINE_API Vector3Base Transform(const Vector3Base& vector, const Matrix& transform);
 
     // Transforms a 3D vector by the given matrix
     // @param vector The source vector
     // @param transform The transformation matrix
     // @param result When the method completes, contains the transformed Vector4
-    static void Transform(const Vector3& vector, const Matrix& transform, Vector4& result);
+    static FLAXENGINE_API void Transform(const Vector3Base& vector, const Matrix& transform, Vector4Base<T>& result);
 
     // Performs a coordinate transformation using the given matrix
     // @param coordinate The coordinate vector to transform
     // @param transform The transformation matrix
     // @param result When the method completes, contains the transformed coordinates
-    static void TransformCoordinate(const Vector3& coordinate, const Matrix& transform, Vector3& result);
+    static FLAXENGINE_API void TransformCoordinate(const Vector3Base& coordinate, const Matrix& transform, Vector3Base& result);
 
     // Performs a normal transformation using the given matrix
     // @param normal The normal vector to transform
     // @param transform The transformation matrix
     // @param result When the method completes, contains the transformed normal
-    static void TransformNormal(const Vector3& normal, const Matrix& transform, Vector3& result);
-
-    // Returns a vector containing the largest components of the specified vectors
-    // @param a The first source vector
-    // @param b The second source vector
-    // @param result When the method completes, contains an new vector composed of the largest components of the source vectors
-    static Vector3 Max(const Vector3& a, const Vector3& b)
-    {
-        return Vector3(a.X > b.X ? a.X : b.X, a.Y > b.Y ? a.Y : b.Y, a.Z > b.Z ? a.Z : b.Z);
-    }
-
-    // Returns a vector containing the smallest components of the specified vectors
-    // @param a The first source vector
-    // @param b The second source vector
-    // @param result When the method completes, contains an new vector composed of the smallest components of the source vectors
-    static Vector3 Min(const Vector3& a, const Vector3& b)
-    {
-        return Vector3(a.X < b.X ? a.X : b.X, a.Y < b.Y ? a.Y : b.Y, a.Z < b.Z ? a.Z : b.Z);
-    }
-
-    // Returns a vector containing the largest components of the specified vectors
-    // @param a The first source vector
-    // @param b The second source vector
-    // @param result When the method completes, contains an new vector composed of the largest components of the source vectors
-    static void Max(const Vector3& a, const Vector3& b, Vector3& result)
-    {
-        result = Vector3(a.X > b.X ? a.X : b.X, a.Y > b.Y ? a.Y : b.Y, a.Z > b.Z ? a.Z : b.Z);
-    }
-
-    // Returns a vector containing the smallest components of the specified vectors
-    // @param a The first source vector
-    // @param b The second source vector
-    // @param result When the method completes, contains an new vector composed of the smallest components of the source vectors
-    static void Min(const Vector3& a, const Vector3& b, Vector3& result)
-    {
-        result = Vector3(a.X < b.X ? a.X : b.X, a.Y < b.Y ? a.Y : b.Y, a.Z < b.Z ? a.Z : b.Z);
-    }
+    static FLAXENGINE_API void TransformNormal(const Vector3Base& normal, const Matrix& transform, Vector3Base& result);
 
     /// <summary>
     /// Projects a vector onto another vector.
@@ -785,7 +718,7 @@ public:
     /// <param name="vector">The vector to project.</param>
     /// <param name="onNormal">The projection normal vector.</param>
     /// <returns>The projected vector.</returns>
-    static Vector3 Project(const Vector3& vector, const Vector3& onNormal);
+    static FLAXENGINE_API Vector3Base Project(const Vector3Base& vector, const Vector3Base& onNormal);
 
     /// <summary>
     /// Projects a vector onto a plane defined by a normal orthogonal to the plane.
@@ -793,7 +726,7 @@ public:
     /// <param name="vector">The vector to project.</param>
     /// <param name="planeNormal">The plane normal vector.</param>
     /// <returns>The projected vector.</returns>
-    static Vector3 ProjectOnPlane(const Vector3& vector, const Vector3& planeNormal)
+    static Vector3Base ProjectOnPlane(const Vector3Base& vector, const Vector3Base& planeNormal)
     {
         return vector - Project(vector, planeNormal);
     }
@@ -808,7 +741,7 @@ public:
     // @param maxZ The maximum depth of the viewport
     // @param worldViewProjection The combined world-view-projection matrix
     // @param result When the method completes, contains the vector in screen space
-    static void Project(const Vector3& vector, float x, float y, float width, float height, float minZ, float maxZ, const Matrix& worldViewProjection, Vector3& result);
+    static FLAXENGINE_API void Project(const Vector3Base& vector, float x, float y, float width, float height, float minZ, float maxZ, const Matrix& worldViewProjection, Vector3Base& result);
 
     // Projects a 3D vector from object space into screen space
     // @param vector The vector to project
@@ -820,9 +753,9 @@ public:
     // @param maxZ The maximum depth of the viewport
     // @param worldViewProjection The combined world-view-projection matrix
     // @returns The vector in screen space
-    static Vector3 Project(const Vector3& vector, float x, float y, float width, float height, float minZ, float maxZ, const Matrix& worldViewProjection)
+    static Vector3Base Project(const Vector3Base& vector, float x, float y, float width, float height, float minZ, float maxZ, const Matrix& worldViewProjection)
     {
-        Vector3 result;
+        Vector3Base result;
         Project(vector, x, y, width, height, minZ, maxZ, worldViewProjection, result);
         return result;
     }
@@ -837,7 +770,7 @@ public:
     // @param maxZ The maximum depth of the viewport
     // @param worldViewProjection The combined world-view-projection matrix
     // @param result When the method completes, contains the vector in object space
-    static void Unproject(const Vector3& vector, float x, float y, float width, float height, float minZ, float maxZ, const Matrix& worldViewProjection, Vector3& result);
+    static FLAXENGINE_API void Unproject(const Vector3Base& vector, float x, float y, float width, float height, float minZ, float maxZ, const Matrix& worldViewProjection, Vector3Base& result);
 
     // Projects a 3D vector from screen space into object space
     // @param vector The vector to project
@@ -849,9 +782,9 @@ public:
     // @param maxZ The maximum depth of the viewport
     // @param worldViewProjection The combined world-view-projection matrix
     // @returns The vector in object space
-    static Vector3 Unproject(const Vector3& vector, float x, float y, float width, float height, float minZ, float maxZ, const Matrix& worldViewProjection)
+    static Vector3Base Unproject(const Vector3Base& vector, float x, float y, float width, float height, float minZ, float maxZ, const Matrix& worldViewProjection)
     {
-        Vector3 result;
+        Vector3Base result;
         Unproject(vector, x, y, width, height, minZ, maxZ, worldViewProjection, result);
         return result;
     }
@@ -862,29 +795,14 @@ public:
     /// <param name="xAxis">The X axis.</param>
     /// <param name="yAxis">The y axis.</param>
     /// <param name="zAxis">The z axis.</param>
-    static void CreateOrthonormalBasis(Vector3& xAxis, Vector3& yAxis, Vector3& zAxis);
+    static FLAXENGINE_API void CreateOrthonormalBasis(Vector3Base& xAxis, Vector3Base& yAxis, Vector3Base& zAxis);
 
     /// <summary>
     /// Finds the best arbitrary axis vectors to represent U and V axes of a plane, by using this vector as the normal of the plane.
     /// </summary>
     /// <param name="firstAxis">The reference to first axis.</param>
     /// <param name="secondAxis">The reference to second axis.</param>
-    void FindBestAxisVectors(Vector3& firstAxis, Vector3& secondAxis) const;
-
-    static Vector3 Round(const Vector3& v)
-    {
-        return Vector3(Math::Round(v.X), Math::Round(v.Y), Math::Round(v.Z));
-    }
-
-    static Vector3 Ceil(const Vector3& v)
-    {
-        return Vector3(Math::Ceil(v.X), Math::Ceil(v.Y), Math::Ceil(v.Z));
-    }
-
-    static Vector3 Abs(const Vector3& v)
-    {
-        return Vector3(Math::Abs(v.X), Math::Abs(v.Y), Math::Abs(v.Z));
-    }
+    FLAXENGINE_API void FindBestAxisVectors(Vector3Base& firstAxis, Vector3Base& secondAxis) const;
 
     /// <summary>
     /// Calculates the area of the triangle.
@@ -893,7 +811,7 @@ public:
     /// <param name="v1">The second triangle vertex.</param>
     /// <param name="v2">The third triangle vertex.</param>
     /// <returns>The triangle area.</returns>
-    static float TriangleArea(const Vector3& v0, const Vector3& v1, const Vector3& v2);
+    static FLAXENGINE_API T TriangleArea(const Vector3Base& v0, const Vector3Base& v1, const Vector3Base& v2);
 
     /// <summary>
     /// Calculates the angle (in radians) between from and to. This is always the smallest value.
@@ -901,41 +819,68 @@ public:
     /// <param name="from">The first vector.</param>
     /// <param name="to">The second vector.</param>
     /// <returns>The angle (in radians).</returns>
-    static float Angle(const Vector3& from, const Vector3& to);
+    static FLAXENGINE_API T Angle(const Vector3Base& from, const Vector3Base& to);
 };
 
-inline Vector3 operator+(float a, const Vector3& b)
+template<typename T>
+inline Vector3Base<T> operator+(T a, const Vector3Base<T>& b)
 {
     return b + a;
 }
 
-inline Vector3 operator-(float a, const Vector3& b)
+template<typename T>
+inline Vector3Base<T> operator-(T a, const Vector3Base<T>& b)
 {
-    return Vector3(a) - b;
+    return Vector3Base<T>(a) - b;
 }
 
-inline Vector3 operator*(float a, const Vector3& b)
+template<typename T>
+inline Vector3Base<T> operator*(T a, const Vector3Base<T>& b)
 {
     return b * a;
 }
 
-inline Vector3 operator/(float a, const Vector3& b)
+template<typename T>
+inline Vector3Base<T> operator/(T a, const Vector3Base<T>& b)
 {
-    return Vector3(a) / b;
+    return Vector3Base<T>(a) / b;
 }
 
 namespace Math
 {
-    FORCE_INLINE static bool NearEqual(const Vector3& a, const Vector3& b)
+    template<typename T>
+    FORCE_INLINE static bool NearEqual(const Vector3Base<T>& a, const Vector3Base<T>& b)
     {
-        return Vector3::NearEqual(a, b);
+        return Vector3Base<T>::NearEqual(a, b);
+    }
+
+    template<typename T>
+    FORCE_INLINE static Vector3Base<T> UnwindDegrees(const Vector3Base<T>& v)
+    {
+        return Vector3Base<T>(UnwindDegrees(v.X), UnwindDegrees(v.Y), UnwindDegrees(v.Z));
     }
 }
 
 template<>
-struct TIsPODType<Vector3>
+struct TIsPODType<Float3>
 {
     enum { Value = true };
 };
 
-DEFINE_DEFAULT_FORMATTING(Vector3, "X:{0} Y:{1} Z:{2}", v.X, v.Y, v.Z);
+DEFINE_DEFAULT_FORMATTING(Float3, "X:{0} Y:{1} Z:{2}", v.X, v.Y, v.Z);
+
+template<>
+struct TIsPODType<Double3>
+{
+    enum { Value = true };
+};
+
+DEFINE_DEFAULT_FORMATTING(Double3, "X:{0} Y:{1} Z:{2}", v.X, v.Y, v.Z);
+
+template<>
+struct TIsPODType<Int3>
+{
+    enum { Value = true };
+};
+
+DEFINE_DEFAULT_FORMATTING(Int3, "X:{0} Y:{1} Z:{2}", v.X, v.Y, v.Z);

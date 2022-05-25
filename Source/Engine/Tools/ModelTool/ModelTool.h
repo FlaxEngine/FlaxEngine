@@ -223,7 +223,7 @@ public:
         // Transform
         float Scale = 1.0f;
         Quaternion Rotation = Quaternion::Identity;
-        Vector3 Translation = Vector3::Zero;
+        Float3 Translation = Float3::Zero;
         bool CenterGeometry = false;
 
         // Animation

@@ -84,8 +84,8 @@ void BoxVolume::OnDebugDrawSelected()
     for (int32 i = 0; i < 6; i++)
     {
         sideLinksFinal[i] = sideLinks[i] * _size;
+        _transform.LocalToWorld(sideLinksFinal[i], sideLinksFinal[i]);
     }
-    _transform.LocalToWorld(sideLinksFinal, 6, sideLinksFinal);
     for (int32 i = 0; i < 6; i++)
     {
         DEBUG_DRAW_WIRE_SPHERE(BoundingSphere(sideLinksFinal[i], 10.0f), Color::YellowGreen, 0, true);

@@ -31,7 +31,7 @@ namespace CSG
         Surface()
             : Plane()
             , TexCoordScale(1)
-            , TexCoordOffset(0)
+            , TexCoordOffset(0.0f)
             , TexCoordRotation(0)
             , ScaleInLightmap(1)
         {
@@ -41,7 +41,7 @@ namespace CSG
             : Plane(plane)
             , Material(Guid::Empty)
             , TexCoordScale(1)
-            , TexCoordOffset(0)
+            , TexCoordOffset(0.0f)
             , TexCoordRotation(0)
             , ScaleInLightmap(1)
         {
@@ -51,7 +51,7 @@ namespace CSG
             : Plane(plane)
             , Material(plane.Material)
             , TexCoordScale(1)
-            , TexCoordOffset(0)
+            , TexCoordOffset(0.0f)
             , TexCoordRotation(0)
             , ScaleInLightmap(1)
         {
@@ -61,7 +61,7 @@ namespace CSG
             : Plane(normal, d)
             , Material(Guid::Empty)
             , TexCoordScale(1)
-            , TexCoordOffset(0)
+            , TexCoordOffset(0.0f)
             , TexCoordRotation(0)
             , ScaleInLightmap(1)
         {
@@ -71,7 +71,7 @@ namespace CSG
             : Plane(point1, point2, point3)
             , Material(Guid::Empty)
             , TexCoordScale(1)
-            , TexCoordOffset(0)
+            , TexCoordOffset(0.0f)
             , TexCoordRotation(0)
             , ScaleInLightmap(1)
         {

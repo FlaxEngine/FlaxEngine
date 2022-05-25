@@ -46,7 +46,6 @@ using namespace CSGBuilderImpl;
 class CSGBuilderService : public EngineService
 {
 public:
-
     CSGBuilderService()
         : EngineService(TEXT("CSG Builder"), 90)
     {
@@ -336,7 +335,8 @@ bool CSGBuilderImpl::buildInner(Scene* scene, BuildData& data)
                         for (int32 meshIndex = 0; meshIndex < lod->Meshes.Count(); meshIndex++)
                         {
                             const auto v = &lod->Meshes[meshIndex]->Positions;
-                            Vector3::Transform(v->Get(), m2, v->Get(), v->Count());
+                            for (int32 i = 0; i < v->Count(); i++)
+                                Vector3::Transform(v->Get()[i], m2, v->Get()[i]);
                         }
                     }
                 }

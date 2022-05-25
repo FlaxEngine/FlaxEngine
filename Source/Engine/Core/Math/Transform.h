@@ -85,18 +85,16 @@ public:
 
 public:
     /// <summary>
-    /// Checks if transform is an identity transformation
+    /// Checks if transform is an identity transformation.
     /// </summary>
-    /// <returns>True if is identity, otherwise false</returns>
     bool IsIdentity() const
     {
         return Translation.IsZero() && Orientation.IsIdentity() && Scale.IsOne();
     }
 
     /// <summary>
-    /// Returns true if transform has one or more components equal to +/- infinity or NaN
+    /// Returns true if transform has one or more components equal to +/- infinity or NaN.
     /// </summary>
-    /// <returns>True if one or more components equal to +/- infinity or NaN</returns>
     bool IsNanOrInfinity() const
     {
         return Translation.IsNanOrInfinity() || Orientation.IsNanOrInfinity() || Scale.IsNanOrInfinity();
@@ -105,7 +103,6 @@ public:
     /// <summary>
     /// Calculates the determinant of this transformation.
     /// </summary>
-    /// <returns>The determinant.</returns>
     FORCE_INLINE float GetDeterminant() const
     {
         return Scale.X * Scale.Y * Scale.Z;
@@ -113,31 +110,31 @@ public:
 
 public:
     /// <summary>
-    /// Gets rotation matrix (from Orientation)
+    /// Gets rotation matrix (from Orientation).
     /// </summary>
     /// <returns>Rotation matrix</returns>
     Matrix GetRotation() const;
 
     /// <summary>
-    /// Gets rotation matrix (from Orientation)
+    /// Gets rotation matrix (from Orientation).
     /// </summary>
     /// <param name="result">Matrix to set</param>
     void GetRotation(Matrix& result) const;
 
     /// <summary>
-    /// Sets rotation matrix (from Orientation)
+    /// Sets rotation matrix (from Orientation).
     /// </summary>
     /// <param name="value">Rotation matrix</param>
     void SetRotation(const Matrix& value);
 
     /// <summary>
-    /// Gets world matrix that describes transformation as a 4 by 4 matrix
+    /// Gets world matrix that describes transformation as a 4 by 4 matrix.
     /// </summary>
     /// <returns>World matrix</returns>
     Matrix GetWorld() const;
 
     /// <summary>
-    /// Gets world matrix that describes transformation as a 4 by 4 matrix
+    /// Gets world matrix that describes transformation as a 4 by 4 matrix.
     /// </summary>
     /// <param name="result">World matrix</param>
     void GetWorld(Matrix& result) const;
@@ -169,7 +166,12 @@ public:
     /// </summary>
     /// <param name="other">The local space transformation.</param>
     /// <returns>The world space transformation.</returns>
-    Transform LocalToWorld(const Transform& other) const;
+    Transform LocalToWorld(const Transform& other) const
+    {
+        Transform result;
+        LocalToWorld(other, result);
+        return result;
+    }
 
     /// <summary>
     /// Performs transformation of the given transform in local space to the world space of this transform.
@@ -183,7 +185,12 @@ public:
     /// </summary>
     /// <param name="point">The local space point.</param>
     /// <returns>The world space point.</returns>
-    Vector3 LocalToWorld(const Vector3& point) const;
+    Vector3 LocalToWorld(const Vector3& point) const
+    {
+        Vector3 result;
+        LocalToWorld(point, result);
+        return result;
+    }
 
     /// <summary>
     /// Performs transformation of the given vector in local space to the world space of this transform.
@@ -200,19 +207,16 @@ public:
     void LocalToWorld(const Vector3& point, Vector3& result) const;
 
     /// <summary>
-    /// Performs transformation of the given points in local space to the world space of this transform.
-    /// </summary>
-    /// <param name="points">The local space points.</param>
-    /// <param name="pointsCount">The amount of the points.</param>
-    /// <param name="result">The world space points.</param>
-    void LocalToWorld(const Vector3* points, int32 pointsCount, Vector3* result) const;
-
-    /// <summary>
     /// Performs transformation of the given transform in local space to the world space of this transform.
     /// </summary>
     /// <param name="other">The world space transformation.</param>
     /// <returns>The local space transformation.</returns>
-    Transform WorldToLocal(const Transform& other) const;
+    Transform WorldToLocal(const Transform& other) const
+    {
+        Transform result;
+        WorldToLocal(other, result);
+        return result;
+    }
 
     /// <summary>
     /// Performs transformation of the given transform in world space to the local space of this transform.
@@ -225,8 +229,20 @@ public:
     /// Performs transformation of the given point in world space to the local space of this transform.
     /// </summary>
     /// <param name="point">The world space point.</param>
+    /// <param name="result">The local space point.</param>
+    void WorldToLocal(const Vector3& point, Vector3& result) const;
+
+    /// <summary>
+    /// Performs transformation of the given point in world space to the local space of this transform.
+    /// </summary>
+    /// <param name="point">The world space point.</param>
     /// <returns>The local space point.</returns>
-    Vector3 WorldToLocal(const Vector3& point) const;
+    Vector3 WorldToLocal(const Vector3& point) const
+    {
+        Vector3 result;
+        WorldToLocal(point, result);
+        return result;
+    }
 
     /// <summary>
     /// Performs transformation of the given vector in world space to the local space of this transform.
@@ -234,14 +250,6 @@ public:
     /// <param name="vector">The world space vector.</param>
     /// <returns>The local space vector.</returns>
     Vector3 WorldToLocalVector(const Vector3& vector) const;
-
-    /// <summary>
-    /// Performs transformation of the given points in world space to the local space of this transform.
-    /// </summary>
-    /// <param name="points">The world space points.</param>
-    /// <param name="pointsCount">The amount of the points.</param>
-    /// <param name="result">The local space points.</param>
-    void WorldToLocal(const Vector3* points, int32 pointsCount, Vector3* result) const;
 
 public:
     FORCE_INLINE Transform operator*(const Transform& other) const

@@ -71,9 +71,7 @@ Vector3 Quaternion::GetEuler() const
         result.Z = Math::Atan2(2.0f * q.X * q.Y + 2.0f * q.Z * q.W, 1 - 2.0f * (q.Y * q.Y + q.Z * q.Z));
     }
 
-    result *= RadiansToDegrees;
-    result.UnwindEuler();
-    return result;
+    return Math::UnwindDegrees(result * RadiansToDegrees);
 }
 
 void Quaternion::Multiply(const Quaternion& other)

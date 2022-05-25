@@ -387,7 +387,8 @@ RenderList::RenderList(const SpawnParams& params)
 void RenderList::Init(RenderContext& renderContext)
 {
     renderContext.View.Frustum.GetCorners(FrustumCornersWs);
-    Vector3::Transform(FrustumCornersWs, renderContext.View.View, FrustumCornersVs, 8);
+    for (int32 i = 0; i < 8; i++)
+        Vector3::Transform(FrustumCornersWs[i], renderContext.View.View, FrustumCornersVs[i]);
 }
 
 void RenderList::Clear()

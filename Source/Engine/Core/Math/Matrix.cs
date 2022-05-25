@@ -2899,7 +2899,7 @@ namespace FlaxEngine
         public static void CreateWorld(ref Vector3 position, ref Vector3 forward, ref Vector3 up, out Matrix result)
         {
             Vector3.Normalize(ref forward, out var vector3);
-            vector3.Negate();
+            vector3 = vector3.Negative;
             Vector3 vector31 = Vector3.Cross(up, vector3);
             vector31.Normalize();
             Vector3.Cross(ref vector3, ref vector31, out var vector32);

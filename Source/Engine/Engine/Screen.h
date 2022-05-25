@@ -4,6 +4,7 @@
 
 #include "Engine/Scripting/ScriptingType.h"
 #include "Engine/Input/Enums.h"
+#include "Engine/Core/Math/Vector2.h"
 
 /// <summary>
 /// Helper class to access display information.

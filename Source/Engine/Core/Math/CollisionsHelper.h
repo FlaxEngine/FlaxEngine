@@ -2,15 +2,7 @@
 
 #pragma once
 
-struct Vector2;
-struct Vector3;
-struct Vector4;
-struct Ray;
-struct Plane;
-struct Rectangle;
-struct BoundingBox;
-struct BoundingSphere;
-struct BoundingFrustum;
+#include "Engine/Core/Types/BaseTypes.h"
 
 /// <summary>
 /// Describes how one bounding volume contains another.

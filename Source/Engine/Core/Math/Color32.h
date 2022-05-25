@@ -5,9 +5,6 @@
 #include "Engine/Core/Formatting.h"
 #include "Engine/Core/Templates.h"
 
-class String;
-struct Vector3;
-struct Vector4;
 struct Color;
 
 /// <summary>

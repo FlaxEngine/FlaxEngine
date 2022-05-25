@@ -280,8 +280,7 @@ void SplineCollider::GetGeometry(CollisionShape& collision)
 
     // Prepare scale
     Vector3 scale = _cachedScale;
-    scale.Absolute();
-    scale = Vector3::Max(scale, minSize);
+    scale = Vector3::Max(scale.GetAbsolute(), minSize);
 
     // TODO: add support for cooking collision for static splines in editor and reusing it in game
 

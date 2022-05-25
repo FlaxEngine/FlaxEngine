@@ -1555,7 +1555,7 @@ void DebugDraw::DrawArc(const Vector3& position, const Quaternion& orientation, 
     t.Color = Color32(color);
     t.TimeLeft = duration;
     t.V0 = world.GetTranslation();
-    Vector3 pos(Math::Cos(0) * radius, Math::Sin(0) * radius, 0);
+    Vector3 pos(Math::Cos(0.0f) * radius, Math::Sin(0.0f) * radius, 0);
     Vector3::Transform(pos, world, t.V2);
     for (int32 i = 0; i < resolution; i++)
     {

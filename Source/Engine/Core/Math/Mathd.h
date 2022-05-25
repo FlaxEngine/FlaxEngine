@@ -294,26 +294,6 @@ namespace Math
         return delta;
     }
 
-    // Given a heading which may be outside the +/- PI range, 'unwind' it back into that range
-    static double UnwindRadians(double a)
-    {
-        while (a > PI)
-            a -= TWO_PI;
-        while (a < -PI)
-            a += TWO_PI;
-        return a;
-    }
-
-    // Utility to ensure angle is between +/- 180 degrees by unwinding
-    static double UnwindDegrees(double a)
-    {
-        while (a > 180.)
-            a -= 360.;
-        while (a < -180.)
-            a += 360.;
-        return a;
-    }
-
     /// <summary>
     ///  Returns value based on comparand. The main purpose of this function is to avoid branching based on floating point comparison which can be avoided via compiler intrinsics.
     /// </summary>

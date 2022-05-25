@@ -3,27 +3,21 @@
 #pragma once
 
 #include "Math.h"
+#include "Mathd.h"
 #include "Engine/Core/Formatting.h"
 #include "Engine/Core/Templates.h"
 
-struct Double2;
-struct Double3;
-struct Double4;
-struct Vector3;
-struct Vector4;
-struct Int2;
-struct Int3;
-struct Int4;
-struct Color;
-struct Matrix;
+#include <type_traits>
 
 /// <summary>
-/// Represents a two dimensional mathematical vector with 32-bit precision (per-component).
+/// Represents a two dimensional mathematical vector.
 /// </summary>
-API_STRUCT() struct FLAXENGINE_API Vector2
+template<typename T>
+API_STRUCT(Template) struct Vector2Base
 {
-    DECLARE_SCRIPTING_TYPE_MINIMAL(Vector2);
-public:
+    typedef T Real;
+    static struct ScriptingTypeInitializer TypeInitializer;
+
     union
     {
         struct
@@ -31,325 +25,82 @@ public:
             /// <summary>
             /// The X component of the vector.
             /// </summary>
-            API_FIELD() float X;
+            API_FIELD() T X;
 
             /// <summary>
             /// The Y component of the vector.
             /// </summary>
-            API_FIELD() float Y;
+            API_FIELD() T Y;
         };
 
-        // Raw values
-        float Raw[2];
+        /// <summary>
+        /// The raw vector values (in XY order).
+        /// </summary>
+        T Raw[2];
     };
 
 public:
     // Vector with all components equal 0
-    static const Vector2 Zero;
+    static FLAXENGINE_API const Vector2Base<T> Zero;
 
     // Vector with all components equal 1
-    static const Vector2 One;
+    static FLAXENGINE_API const Vector2Base<T> One;
 
     // Vector X=1, Y=0
-    static const Vector2 UnitX;
+    static FLAXENGINE_API const Vector2Base<T> UnitX;
 
     // Vector X=0, Y=1
-    static const Vector2 UnitY;
+    static FLAXENGINE_API const Vector2Base<T> UnitY;
 
-    // A minimum Vector2
-    static const Vector2 Minimum;
+    // Vector with all components equal maximum value.
+    static FLAXENGINE_API const Vector2Base<T> Minimum;
 
-    // A maximum Vector2
-    static const Vector2 Maximum;
+    // Vector with all components equal minimum value.
+    static FLAXENGINE_API const Vector2Base<T> Maximum;
 
 public:
     /// <summary>
     /// Empty constructor.
     /// </summary>
-    Vector2()
+    Vector2Base()
     {
     }
 
-    // Init
-    // @param xy Value to assign to the all components
-    Vector2(float xy)
+    FORCE_INLINE Vector2Base(T xy)
         : X(xy)
         , Y(xy)
     {
     }
 
-    // Init
-    // @param x X component value
-    // @param y Y component value
-    Vector2(float x, float y)
+    FORCE_INLINE explicit Vector2Base(const T* xy)
+        : X(xy[0])
+        , Y(xy[1])
+    {
+    }
+
+    FORCE_INLINE Vector2Base(T x, T y)
         : X(x)
         , Y(y)
     {
     }
 
-    explicit Vector2(const Int2& xy);
-    explicit Vector2(const Int3& xyz);
-    explicit Vector2(const Int4& xyzw);
-    explicit Vector2(const Vector3& xyz);
-    explicit Vector2(const Vector4& xyzw);
-    Vector2(const Double2& xy);
-    explicit Vector2(const Double3& xyz);
-    explicit Vector2(const Double4& xyzw);
-    explicit Vector2(const Color& color);
+    template<typename U = T, typename TEnableIf<TNot<TIsTheSame<T, U>>::Value>::Type...>
+    FORCE_INLINE explicit Vector2Base(const Vector2Base<U>& xy)
+        : X((T)xy.X)
+        , Y((T)xy.Y)
+    {
+    }
+
+    FLAXENGINE_API explicit Vector2Base(const Int3& xy);
+    FLAXENGINE_API explicit Vector2Base(const Int4& xy);
+    FLAXENGINE_API explicit Vector2Base(const Float3& xy);
+    FLAXENGINE_API explicit Vector2Base(const Float4& xy);
+    FLAXENGINE_API explicit Vector2Base(const Double3& xy);
+    FLAXENGINE_API explicit Vector2Base(const Double4& xy);
+    FLAXENGINE_API explicit Vector2Base(const Color& color);
 
 public:
-    String ToString() const;
-
-public:
-    // Arithmetic operators with Vector2
-    Vector2 operator+(const Vector2& b) const
-    {
-        return Add(*this, b);
-    }
-
-    Vector2 operator-(const Vector2& b) const
-    {
-        return Subtract(*this, b);
-    }
-
-    Vector2 operator*(const Vector2& b) const
-    {
-        return Multiply(*this, b);
-    }
-
-    Vector2 operator/(const Vector2& b) const
-    {
-        return Divide(*this, b);
-    }
-
-    Vector2 operator-() const
-    {
-        return Vector2(-X, -Y);
-    }
-
-    // op= operators with Vector2
-    Vector2& operator+=(const Vector2& b)
-    {
-        *this = Add(*this, b);
-        return *this;
-    }
-
-    Vector2& operator-=(const Vector2& b)
-    {
-        *this = Subtract(*this, b);
-        return *this;
-    }
-
-    Vector2& operator*=(const Vector2& b)
-    {
-        *this = Multiply(*this, b);
-        return *this;
-    }
-
-    Vector2& operator/=(const Vector2& b)
-    {
-        *this = Divide(*this, b);
-        return *this;
-    }
-
-    // Arithmetic operators with float
-    Vector2 operator+(float b) const
-    {
-        return Add(*this, b);
-    }
-
-    Vector2 operator-(float b) const
-    {
-        return Subtract(*this, b);
-    }
-
-    Vector2 operator*(float b) const
-    {
-        return Multiply(*this, b);
-    }
-
-    Vector2 operator/(float b) const
-    {
-        return Divide(*this, b);
-    }
-
-    // op= operators with float
-    Vector2& operator+=(float b)
-    {
-        *this = Add(*this, b);
-        return *this;
-    }
-
-    Vector2& operator-=(float b)
-    {
-        *this = Subtract(*this, b);
-        return *this;
-    }
-
-    Vector2& operator*=(float b)
-    {
-        *this = Multiply(*this, b);
-        return *this;
-    }
-
-    Vector2& operator/=(float b)
-    {
-        *this = Divide(*this, b);
-        return *this;
-    }
-
-    // Comparison operators
-    bool operator==(const Vector2& b) const
-    {
-        return X == b.X && Y == b.Y;
-    }
-
-    bool operator!=(const Vector2& b) const
-    {
-        return X != b.X || Y != b.Y;
-    }
-
-    bool operator>(const Vector2& b) const
-    {
-        return X > b.X && Y > b.Y;
-    }
-
-    bool operator>=(const Vector2& b) const
-    {
-        return X >= b.X && Y >= b.Y;
-    }
-
-    bool operator<(const Vector2& b) const
-    {
-        return X < b.X && Y < b.Y;
-    }
-
-    bool operator<=(const Vector2& b) const
-    {
-        return X <= b.X && Y <= b.Y;
-    }
-
-public:
-    static bool NearEqual(const Vector2& a, const Vector2& b)
-    {
-        return Math::NearEqual(a.X, b.X) && Math::NearEqual(a.Y, b.Y);
-    }
-
-    static bool NearEqual(const Vector2& a, const Vector2& b, float epsilon)
-    {
-        return Math::NearEqual(a.X, b.X, epsilon) && Math::NearEqual(a.Y, b.Y, epsilon);
-    }
-
-public:
-    static float Dot(const Vector2& a, const Vector2& b)
-    {
-        return a.X * b.X + a.Y * b.Y;
-    }
-
-    static float Cross(const Vector2& a, const Vector2& b)
-    {
-        return a.X * b.Y - a.Y * b.X;
-    }
-
-    static void Add(const Vector2& a, const Vector2& b, Vector2& result)
-    {
-        result.X = a.X + b.X;
-        result.Y = a.Y + b.Y;
-    }
-
-    static Vector2 Add(const Vector2& a, const Vector2& b)
-    {
-        Vector2 result;
-        Add(a, b, result);
-        return result;
-    }
-
-    static void Subtract(const Vector2& a, const Vector2& b, Vector2& result)
-    {
-        result.X = a.X - b.X;
-        result.Y = a.Y - b.Y;
-    }
-
-    static Vector2 Subtract(const Vector2& a, const Vector2& b)
-    {
-        Vector2 result;
-        Subtract(a, b, result);
-        return result;
-    }
-
-    static Vector2 Multiply(const Vector2& a, const Vector2& b)
-    {
-        return Vector2(a.X * b.X, a.Y * b.Y);
-    }
-
-    static Vector2 Multiply(const Vector2& a, float b)
-    {
-        return Vector2(a.X * b, a.Y * b);
-    }
-
-    static Vector2 Divide(const Vector2& a, const Vector2& b)
-    {
-        return Vector2(a.X / b.X, a.Y / b.Y);
-    }
-
-    static Vector2 Divide(const Vector2& a, float b)
-    {
-        return Vector2(a.X / b, a.Y / b);
-    }
-
-    // Calculates distance between two points in 2D
-    // @param a 1st point
-    // @param b 2nd point
-    // @returns Distance
-    static float Distance(const Vector2& a, const Vector2& b)
-    {
-        const float x = a.X - b.X;
-        const float y = a.Y - b.Y;
-        return Math::Sqrt(x * x + y * y);
-    }
-
-    // Calculates the squared distance between two points in 2D
-    // @param a 1st point
-    // @param b 2nd point
-    // @returns Distance
-    static float DistanceSquared(const Vector2& a, const Vector2& b)
-    {
-        const float x = a.X - b.X;
-        const float y = a.Y - b.Y;
-        return x * x + y * y;
-    }
-
-    // Clamp vector values within given range
-    // @param v Vector to clamp
-    // @param min Minimum value
-    // @param max Maximum value
-    // @returns Clamped vector
-    static Vector2 Clamp(const Vector2& v, float min, float max)
-    {
-        return Vector2(Math::Clamp(v.X, min, max), Math::Clamp(v.Y, min, max));
-    }
-
-    // Clamp vector values within given range
-    // @param v Vector to clamp
-    // @param min Minimum value
-    // @param max Maximum value
-    // @returns Clamped vector
-    static Vector2 Clamp(const Vector2& v, const Vector2& min, const Vector2& max)
-    {
-        return Vector2(Math::Clamp(v.X, min.X, max.X), Math::Clamp(v.Y, min.Y, max.Y));
-    }
-
-    // Performs vector normalization (scales vector up to unit length)
-    void Normalize()
-    {
-        const float length = Length();
-        if (!Math::IsZero(length))
-        {
-            const float invLength = 1.0f / length;
-            X *= invLength;
-            Y *= invLength;
-        }
-    }
+    FLAXENGINE_API String ToString() const;
 
 public:
     // Gets a value indicting whether this instance is normalized.
@@ -377,39 +128,27 @@ public:
     }
 
     // Calculates the length of the vector.
-    float Length() const
+    T Length() const
     {
         return Math::Sqrt(X * X + Y * Y);
     }
 
     // Calculates the squared length of the vector.
-    float LengthSquared() const
+    T LengthSquared() const
     {
         return X * X + Y * Y;
     }
 
     // Calculates inverted length of the vector (1 / length).
-    float InvLength() const
+    T InvLength() const
     {
         return 1.0f / Length();
-    }
-
-    // Calculates a vector with values being absolute values of that vector.
-    Vector2 GetAbsolute() const
-    {
-        return Vector2(Math::Abs(X), Math::Abs(Y));
-    }
-
-    // Calculates a vector with values being opposite to values of that vector.
-    Vector2 GetNegative() const
-    {
-        return Vector2(-X, -Y);
     }
 
     /// <summary>
     /// Returns the average arithmetic of all the components.
     /// </summary>
-    float AverageArithmetic() const
+    T AverageArithmetic() const
     {
         return (X + Y) * 0.5f;
     }
@@ -417,7 +156,7 @@ public:
     /// <summary>
     /// Gets the sum of all vector components values.
     /// </summary>
-    float SumValues() const
+    T SumValues() const
     {
         return X + Y;
     }
@@ -425,7 +164,7 @@ public:
     /// <summary>
     /// Gets the multiplication result of all vector components values.
     /// </summary>
-    float MulValues() const
+    T MulValues() const
     {
         return X * Y;
     }
@@ -433,7 +172,7 @@ public:
     /// <summary>
     /// Returns the minimum value of all the components.
     /// </summary>
-    float MinValue() const
+    T MinValue() const
     {
         return Math::Min(X, Y);
     }
@@ -441,7 +180,7 @@ public:
     /// <summary>
     /// Returns the maximum value of all the components.
     /// </summary>
-    float MaxValue() const
+    T MaxValue() const
     {
         return Math::Max(X, Y);
     }
@@ -470,13 +209,322 @@ public:
         return IsInfinity() || IsNaN();
     }
 
+    /// <summary>
+    /// Calculates a vector with values being absolute values of that vector.
+    /// </summary>
+    Vector2Base GetAbsolute() const
+    {
+        return Vector2Base(Math::Abs(X), Math::Abs(Y));
+    }
+
+    /// <summary>
+    /// Calculates a vector with values being opposite to values of that vector.
+    /// </summary>
+    Vector2Base GetNegative() const
+    {
+        return Vector2Base(-X, -Y);
+    }
+
 public:
+    /// <summary>
+    /// Performs vector normalization (scales vector up to unit length).
+    /// </summary>
+    void Normalize()
+    {
+        const T length = Math::Sqrt(X * X + Y * Y);
+        if (!Math::IsZero(length))
+        {
+            const T invLength = 1.0f / length;
+            X *= invLength;
+            Y *= invLength;
+        }
+    }
+
+public:
+    Vector2Base operator+(const Vector2Base& b) const
+    {
+        return Vector2Base(X + b.X, Y + b.Y);
+    }
+
+    Vector2Base operator-(const Vector2Base& b) const
+    {
+        return Vector2Base(X - b.X, Y - b.Y);
+    }
+
+    Vector2Base operator*(const Vector2Base& b) const
+    {
+        return Vector2Base(X * b.X, Y * b.Y);
+    }
+
+    Vector2Base operator/(const Vector2Base& b) const
+    {
+        return Vector2Base(X / b.X, Y / b.Y);
+    }
+
+    Vector2Base operator-() const
+    {
+        return Vector2Base(-X, -Y);
+    }
+
+    Vector2Base operator+(T b) const
+    {
+        return Vector2Base(X + b, Y + b);
+    }
+
+    Vector2Base operator-(T b) const
+    {
+        return Vector2Base(X - b, Y - b);
+    }
+
+    Vector2Base operator*(T b) const
+    {
+        return Vector2Base(X * b, Y * b);
+    }
+
+    Vector2Base operator/(T b) const
+    {
+        return Vector2Base(X / b, Y / b);
+    }
+
+    Vector2Base& operator+=(const Vector2Base& b)
+    {
+        X += b.X;
+        Y += b.Y;
+        return *this;
+    }
+
+    Vector2Base& operator-=(const Vector2Base& b)
+    {
+        X -= b.X;
+        Y -= b.Y;
+        return *this;
+    }
+
+    Vector2Base& operator*=(const Vector2Base& b)
+    {
+        X *= b.X;
+        Y *= b.Y;
+        return *this;
+    }
+
+    Vector2Base& operator/=(const Vector2Base& b)
+    {
+        X /= b.X;
+        Y /= b.Y;
+        return *this;
+    }
+
+    Vector2Base& operator+=(T b)
+    {
+        X += b;
+        Y += b;
+        return *this;
+    }
+
+    Vector2Base& operator-=(T b)
+    {
+        X -= b;
+        Y -= b;
+        return *this;
+    }
+
+    Vector2Base& operator*=(T b)
+    {
+        X *= b;
+        Y *= b;
+        return *this;
+    }
+
+    Vector2Base& operator/=(T b)
+    {
+        X /= b;
+        Y /= b;
+        return *this;
+    }
+
+    bool operator==(const Vector2Base& b) const
+    {
+        return X == b.X && Y == b.Y;
+    }
+
+    bool operator!=(const Vector2Base& b) const
+    {
+        return X != b.X || Y != b.Y;
+    }
+
+    bool operator>(const Vector2Base& b) const
+    {
+        return X > b.X && Y > b.Y;
+    }
+
+    bool operator>=(const Vector2Base& b) const
+    {
+        return X >= b.X && Y >= b.Y;
+    }
+
+    bool operator<(const Vector2Base& b) const
+    {
+        return X < b.X && Y < b.Y;
+    }
+
+    bool operator<=(const Vector2Base& b) const
+    {
+        return X <= b.X && Y <= b.Y;
+    }
+
+public:
+    static bool NearEqual(const Vector2Base& a, const Vector2Base& b)
+    {
+        return Math::NearEqual(a.X, b.X) && Math::NearEqual(a.Y, b.Y);
+    }
+
+    static bool NearEqual(const Vector2Base& a, const Vector2Base& b, T epsilon)
+    {
+        return Math::NearEqual(a.X, b.X, epsilon) && Math::NearEqual(a.Y, b.Y, epsilon);
+    }
+
+public:
+    static T Dot(const Vector2Base& a, const Vector2Base& b)
+    {
+        return a.X * b.X + a.Y * b.Y;
+    }
+
+    static T Cross(const Vector2Base& a, const Vector2Base& b)
+    {
+        return a.X * b.Y - a.Y * b.X;
+    }
+
+    static void Add(const Vector2Base& a, const Vector2Base& b, Vector2Base& result)
+    {
+        result = Vector2Base(a.X + b.X, a.Y + b.Y);
+    }
+
+    static void Subtract(const Vector2Base& a, const Vector2Base& b, Vector2Base& result)
+    {
+        result = Vector2Base(a.X - b.X, a.Y - b.Y);
+    }
+
+    static void Multiply(const Vector2Base& a, const Vector2Base& b, Vector2Base& result)
+    {
+        result = Vector2Base(a.X * b.X, a.Y * b.Y);
+    }
+
+    static void Divide(const Vector2Base& a, const Vector2Base& b, Vector2Base& result)
+    {
+        result = Vector2Base(a.X / b.X, a.Y / b.Y);
+    }
+
+    static void Min(const Vector2Base& a, const Vector2Base& b, Vector2Base& result)
+    {
+        result = Vector2Base(a.X < b.X ? a.X : b.X, a.Y < b.Y ? a.Y : b.Y);
+    }
+
+    static void Max(const Vector2Base& a, const Vector2Base& b, Vector2Base& result)
+    {
+        result = Vector2Base(a.X > b.X ? a.X : b.X, a.Y > b.Y ? a.Y : b.Y);
+    }
+
+public:
+    static Vector2Base Min(const Vector2Base& a, const Vector2Base& b)
+    {
+        return Vector2Base(a.X < b.X ? a.X : b.X, a.Y < b.Y ? a.Y : b.Y);
+    }
+
+    static Vector2Base Max(const Vector2Base& a, const Vector2Base& b)
+    {
+        return Vector2Base(a.X > b.X ? a.X : b.X, a.Y > b.Y ? a.Y : b.Y);
+    }
+
+    static Vector2Base Floor(const Vector2Base& v)
+    {
+        return Vector2Base(Math::Floor(v.X), Math::Floor(v.Y));
+    }
+
+    static Vector2Base Frac(const Vector2Base& v)
+    {
+        return Vector3(v.X - (int32)v.X, v.Y - (int32)v.Y);
+    }
+
+    static Vector2Base Round(const Vector2Base& v)
+    {
+        return Vector2Base(Math::Round(v.X), Math::Round(v.Y));
+    }
+
+    static Vector2Base Ceil(const Vector2Base& v)
+    {
+        return Vector2Base(Math::Ceil(v.X), Math::Ceil(v.Y));
+    }
+
+    static Vector2Base Abs(const Vector2Base& v)
+    {
+        return Vector2Base(Math::Abs(v.X), Math::Abs(v.Y));
+    }
+
+public:
+    // Clamp vector values within given range
+    // @param v Vector to clamp
+    // @param min Minimum value
+    // @param max Maximum value
+    // @returns Clamped vector
+    static Vector2Base Clamp(const Vector2Base& v, const Vector2Base& min, const Vector2Base& max)
+    {
+        Vector2Base result;
+        Clamp(v, min, max, result);
+        return result;
+    }
+
+    // Restricts a value to be within a specified range
+    // @param v The value to clamp
+    // @param min The minimum value,
+    // @param max The maximum value
+    // @param result When the method completes, contains the clamped value
+    static void Clamp(const Vector2Base& v, const Vector2Base& min, const Vector2Base& max, Vector2Base& result)
+    {
+        result = Vector2Base(Math::Clamp(v.X, min.X, max.X), Math::Clamp(v.Y, min.Y, max.Y));
+    }
+
+    // Calculates distance between two points in 2D
+    // @param a 1st point
+    // @param b 2nd point
+    // @returns Distance
+    static T Distance(const Vector2Base& a, const Vector2Base& b)
+    {
+        const T x = a.X - b.X;
+        const T y = a.Y - b.Y;
+        return Math::Sqrt(x * x + y * y);
+    }
+
+    // Calculates the squared distance between two points in 2D
+    // @param a 1st point
+    // @param b 2nd point
+    // @returns Distance
+    static T DistanceSquared(const Vector2Base& a, const Vector2Base& b)
+    {
+        const T x = a.X - b.X;
+        const T y = a.Y - b.Y;
+        return x * x + y * y;
+    }
+
+    // Performs vector normalization (scales vector up to unit length).
+    static Vector2Base Normalize(const Vector2Base& v)
+    {
+        Vector2Base r = v;
+        const T length = Math::Sqrt(r.X * r.X + r.Y * r.Y);
+        if (Math::Abs(length) >= ZeroTolerance)
+        {
+            const T inv = 1.0f / length;
+            r.X *= inv;
+            r.Y *= inv;
+        }
+        return r;
+    }
+
     // Performs a linear interpolation between two vectors
     // @param start Start vector
     // @param end End vector
     // @param amount Value between 0 and 1 indicating the weight of end
     // @param result When the method completes, contains the linear interpolation of the two vectors
-    static void Lerp(const Vector2& start, const Vector2& end, float amount, Vector2& result)
+    static void Lerp(const Vector2Base& start, const Vector2Base& end, T amount, Vector2Base& result)
     {
         result.X = Math::Lerp(start.X, end.X, amount);
         result.Y = Math::Lerp(start.Y, end.Y, amount);
@@ -489,74 +537,11 @@ public:
     // @param end End vector,
     // @param amount Value between 0 and 1 indicating the weight of @paramref end"/>,
     // @returns The linear interpolation of the two vectors
-    static Vector2 Lerp(const Vector2& start, const Vector2& end, float amount)
+    static Vector2Base Lerp(const Vector2Base& start, const Vector2Base& end, T amount)
     {
-        Vector2 result;
+        Vector2Base result;
         Lerp(start, end, amount, result);
         return result;
-    }
-
-    static Vector2 Abs(const Vector2& v)
-    {
-        return Vector2(Math::Abs(v.X), Math::Abs(v.Y));
-    }
-
-    // Creates vector from minimum components of two vectors
-    static Vector2 Min(const Vector2& a, const Vector2& b)
-    {
-        return Vector2(a.X < b.X ? a.X : b.X, a.Y < b.Y ? a.Y : b.Y);
-    }
-
-    // Creates vector from minimum components of two vectors
-    static void Min(const Vector2& a, const Vector2& b, Vector2& result)
-    {
-        result = Vector2(a.X < b.X ? a.X : b.X, a.Y < b.Y ? a.Y : b.Y);
-    }
-
-    // Creates vector from maximum components of two vectors
-    static Vector2 Max(const Vector2& a, const Vector2& b)
-    {
-        return Vector2(a.X > b.X ? a.X : b.X, a.Y > b.Y ? a.Y : b.Y);
-    }
-
-    // Creates vector from maximum components of two vectors
-    static void Max(const Vector2& a, const Vector2& b, Vector2& result)
-    {
-        result = Vector2(a.X > b.X ? a.X : b.X, a.Y > b.Y ? a.Y : b.Y);
-    }
-
-    // Returns normalized vector
-    static Vector2 Normalize(const Vector2& v);
-
-    static Vector2 Round(const Vector2& v)
-    {
-        return Vector2(Math::Round(v.X), Math::Round(v.Y));
-    }
-
-    static Vector2 Ceil(const Vector2& v)
-    {
-        return Vector2(Math::Ceil(v.X), Math::Ceil(v.Y));
-    }
-
-    static Vector2 Floor(const Vector2& v)
-    {
-        return Vector2(Math::Floor(v.X), Math::Floor(v.Y));
-    }
-
-    static Vector2 Frac(const Vector2& v)
-    {
-        return Vector2(v.X - (int32)v.X, v.Y - (int32)v.Y);
-    }
-
-    static Int2 CeilToInt(const Vector2& v);
-    static Int2 FloorToInt(const Vector2& v);
-
-    static Vector2 Mod(const Vector2& v)
-    {
-        return Vector2(
-            (float)(v.X - (int32)v.X),
-            (float)(v.Y - (int32)v.Y)
-        );
     }
 
 public:
@@ -567,7 +552,7 @@ public:
     /// <param name="v1">The second triangle vertex.</param>
     /// <param name="v2">The third triangle vertex.</param>
     /// <returns>The triangle area.</returns>
-    static float TriangleArea(const Vector2& v0, const Vector2& v1, const Vector2& v2);
+    FLAXENGINE_API static T TriangleArea(const Vector2Base& v0, const Vector2Base& v1, const Vector2Base& v2);
 
     /// <summary>
     /// Calculates the angle (in radians) between from and to. This is always the smallest value.
@@ -575,41 +560,62 @@ public:
     /// <param name="from">The first vector.</param>
     /// <param name="to">The second vector.</param>
     /// <returns>The angle (in radians).</returns>
-    static float Angle(const Vector2& from, const Vector2& to);
+    FLAXENGINE_API static T Angle(const Vector2Base& from, const Vector2Base& to);
 };
 
-inline Vector2 operator+(float a, const Vector2& b)
+template<typename T>
+inline Vector2Base<T> operator+(T a, const Vector2Base<T>& b)
 {
     return b + a;
 }
 
-inline Vector2 operator-(float a, const Vector2& b)
+template<typename T>
+inline Vector2Base<T> operator-(T a, const Vector2Base<T>& b)
 {
-    return Vector2(a) - b;
+    return Vector2Base<T>(a) - b;
 }
 
-inline Vector2 operator*(float a, const Vector2& b)
+template<typename T>
+inline Vector2Base<T> operator*(T a, const Vector2Base<T>& b)
 {
     return b * a;
 }
 
-inline Vector2 operator/(float a, const Vector2& b)
+template<typename T>
+inline Vector2Base<T> operator/(T a, const Vector2Base<T>& b)
 {
-    return Vector2(a) / b;
+    return Vector2Base<T>(a) / b;
 }
 
 namespace Math
 {
-    FORCE_INLINE static bool NearEqual(const Vector2& a, const Vector2& b)
+    template<typename T>
+    FORCE_INLINE static bool NearEqual(const Vector2Base<T>& a, const Vector2Base<T>& b)
     {
-        return Vector2::NearEqual(a, b);
+        return Vector2Base<T>::NearEqual(a, b);
     }
 }
 
 template<>
-struct TIsPODType<Vector2>
+struct TIsPODType<Float2>
 {
     enum { Value = true };
 };
 
-DEFINE_DEFAULT_FORMATTING(Vector2, "X:{0} Y:{1}", v.X, v.Y);
+DEFINE_DEFAULT_FORMATTING(Float2, "X:{0} Y:{1}", v.X, v.Y);
+
+template<>
+struct TIsPODType<Double2>
+{
+    enum { Value = true };
+};
+
+DEFINE_DEFAULT_FORMATTING(Double2, "X:{0} Y:{1}", v.X, v.Y);
+
+template<>
+struct TIsPODType<Int2>
+{
+    enum { Value = true };
+};
+
+DEFINE_DEFAULT_FORMATTING(Int2, "X:{0} Y:{1}", v.X, v.Y);

@@ -3,29 +3,19 @@
 #pragma once
 
 #include "Math.h"
+#include "Mathd.h"
 #include "Engine/Core/Formatting.h"
 #include "Engine/Core/Templates.h"
-
-struct Double2;
-struct Double3;
-struct Double4;
-struct Vector2;
-struct Vector3;
-struct Color;
-struct Matrix;
-struct Rectangle;
-class String;
-struct Int2;
-struct Int3;
-struct Int4;
 
 /// <summary>
 /// Represents a four dimensional mathematical vector with 32-bit precision (per-component).
 /// </summary>
-API_STRUCT() struct FLAXENGINE_API Vector4
+template<typename T>
+API_STRUCT(Template) struct Vector4Base
 {
-    DECLARE_SCRIPTING_TYPE_MINIMAL(Vector4);
-public:
+    typedef T Real;
+    static struct ScriptingTypeInitializer TypeInitializer;
+
     union
     {
         struct
@@ -33,66 +23,64 @@ public:
             /// <summary>
             /// The X component.
             /// </summary>
-            API_FIELD() float X;
+            API_FIELD() T X;
 
             /// <summary>
             /// The Y component.
             /// </summary>
-            API_FIELD() float Y;
+            API_FIELD() T Y;
 
             /// <summary>
             /// The Z component.
             /// </summary>
-            API_FIELD() float Z;
+            API_FIELD() T Z;
 
             /// <summary>
             /// The W component.
             /// </summary>
-            API_FIELD() float W;
+            API_FIELD() T W;
         };
 
         /// <summary>
-        /// The raw vector values (in xyzw order).
+        /// The raw vector values (in XYZW order).
         /// </summary>
-        float Raw[4];
+        T Raw[4];
     };
 
 public:
     // Vector with all components equal 0
-    static const Vector4 Zero;
+    static FLAXENGINE_API const Vector4Base<T> Zero;
 
     // Vector with all components equal 1
-    static const Vector4 One;
+    static FLAXENGINE_API const Vector4Base<T> One;
 
     // Vector X=1, Y=0, Z=0, W=0
-    static const Vector4 UnitX;
+    static FLAXENGINE_API const Vector4Base<T> UnitX;
 
     // Vector X=0, Y=1, Z=0, W=0
-    static const Vector4 UnitY;
+    static FLAXENGINE_API const Vector4Base<T> UnitY;
 
     // Vector X=0, Y=0, Z=1, W=0
-    static const Vector4 UnitZ;
+    static FLAXENGINE_API const Vector4Base<T> UnitZ;
 
     // Vector X=0, Y=0, Z=0, W=1
-    static const Vector4 UnitW;
+    static FLAXENGINE_API const Vector4Base<T> UnitW;
 
-    // A minimum Vector4
-    static const Vector4 Minimum;
+    // Vector with all components equal maximum value.
+    static FLAXENGINE_API const Vector4Base<T> Minimum;
 
-    // A maximum Vector4
-    static const Vector4 Maximum;
+    // Vector with all components equal minimum value.
+    static FLAXENGINE_API const Vector4Base<T> Maximum;
 
 public:
     /// <summary>
     /// Empty constructor.
     /// </summary>
-    Vector4()
+    Vector4Base()
     {
     }
 
-    // Init
-    // @param xyzw Value to assign to the all components
-    Vector4(float xyzw)
+    FORCE_INLINE Vector4Base(T xyzw)
         : X(xyzw)
         , Y(xyzw)
         , Z(xyzw)
@@ -100,16 +88,15 @@ public:
     {
     }
 
-    // Init
-    // @param xyzw Values to assign
-    explicit Vector4(float xyzw[4]);
+    FORCE_INLINE explicit Vector4Base(const T* xyzw)
+        : X(xyzw[0])
+        , Y(xyzw[1])
+        , Z(xyzw[2])
+        , W(xyzw[3])
+    {
+    }
 
-    // Init
-    // @param x X component value
-    // @param y Y component value
-    // @param z Z component value
-    // @param w W component value
-    Vector4(float x, float y, float z, float w)
+    FORCE_INLINE Vector4Base(T x, T y, T z, T w)
         : X(x)
         , Y(y)
         , Z(z)
@@ -117,20 +104,28 @@ public:
     {
     }
 
-    explicit Vector4(const Vector2& xy, float z, float w);
-    explicit Vector4(const Vector2& xy, const Vector2& zw);
-    explicit Vector4(const Vector3& xyz, float w);
-    explicit Vector4(const Int2& xy, float z, float w);
-    explicit Vector4(const Int3& xyz, float w);
-    explicit Vector4(const Int4& xyzw);
-    explicit Vector4(const Double2& xy, float z, float w);
-    explicit Vector4(const Double3& xyz, float w);
-    Vector4(const Double4& xyzw);
-    explicit Vector4(const Color& color);
-    explicit Vector4(const Rectangle& rect);
+    template<typename U = T, typename TEnableIf<TNot<TIsTheSame<T, U>>::Value>::Type...>
+    FORCE_INLINE explicit Vector4Base(const Vector4Base<U>& xyzw)
+        : X((T)xyzw.X)
+        , Y((T)xyzw.Y)
+        , Z((T)xyzw.Z)
+        , W((T)xyzw.W)
+    {
+    }
+
+    FLAXENGINE_API explicit Vector4Base(const Float2& xy, T z = 0, T w = 0);
+    FLAXENGINE_API explicit Vector4Base(const Float2& xy, const Float2& zw);
+    FLAXENGINE_API explicit Vector4Base(const Float3& xyz, T w = 0);
+    FLAXENGINE_API explicit Vector4Base(const Int2& xy, T z = 0, T w = 0);
+    FLAXENGINE_API explicit Vector4Base(const Int3& xyz, T w = 0);
+    FLAXENGINE_API explicit Vector4Base(const Double2& xy, T z = 0, T w = 0);
+    FLAXENGINE_API explicit Vector4Base(const Double2& xy, const Double2& zw);
+    FLAXENGINE_API explicit Vector4Base(const Double3& xyz, T w = 0);
+    FLAXENGINE_API explicit Vector4Base(const Color& color);
+    FLAXENGINE_API explicit Vector4Base(const Rectangle& rect);
 
 public:
-    String ToString() const;
+    FLAXENGINE_API String ToString() const;
 
 public:
     // Gets a value indicting whether this vector is zero.
@@ -152,25 +147,9 @@ public:
     }
 
     /// <summary>
-    /// Calculates a vector with values being absolute values of that vector.
-    /// </summary>
-    Vector4 GetAbsolute() const
-    {
-        return Vector4(Math::Abs(X), Math::Abs(Y), Math::Abs(Z), Math::Abs(W));
-    }
-
-    /// <summary>
-    /// Calculates a vector with values being opposite to values of that vector.
-    /// </summary>
-    Vector4 GetNegative() const
-    {
-        return Vector4(-X, -Y, -Z, -W);
-    }
-
-    /// <summary>
     /// Returns the average arithmetic of all the components.
     /// </summary>
-    float AverageArithmetic() const
+    T AverageArithmetic() const
     {
         return (X + Y + Z + W) * 0.25f;
     }
@@ -178,7 +157,7 @@ public:
     /// <summary>
     /// Gets the sum of all vector components values.
     /// </summary>
-    float SumValues() const
+    T SumValues() const
     {
         return X + Y + Z + W;
     }
@@ -186,7 +165,7 @@ public:
     /// <summary>
     /// Returns the minimum value of all the components.
     /// </summary>
-    float MinValue() const
+    T MinValue() const
     {
         return Math::Min(X, Y, Z, W);
     }
@@ -194,7 +173,7 @@ public:
     /// <summary>
     /// Returns the maximum value of all the components.
     /// </summary>
-    float MaxValue() const
+    T MaxValue() const
     {
         return Math::Max(X, Y, Z, W);
     }
@@ -223,218 +202,257 @@ public:
         return IsInfinity() || IsNaN();
     }
 
+    /// <summary>
+    /// Calculates a vector with values being absolute values of that vector.
+    /// </summary>
+    Vector4Base GetAbsolute() const
+    {
+        return Vector4Base(Math::Abs(X), Math::Abs(Y), Math::Abs(Z), Math::Abs(W));
+    }
+
+    /// <summary>
+    /// Calculates a vector with values being opposite to values of that vector.
+    /// </summary>
+    Vector4Base GetNegative() const
+    {
+        return Vector4Base(-X, -Y, -Z, -W);
+    }
+
 public:
-    // Arithmetic operators with Vector4
-    inline Vector4 operator+(const Vector4& b) const
+    Vector4Base operator+(const Vector4Base& b) const
     {
-        return Add(*this, b);
+        return Vector4Base(X + b.X, Y + b.Y, Z + b.Z, W + b.W);
     }
 
-    inline Vector4 operator-(const Vector4& b) const
+    Vector4Base operator-(const Vector4Base& b) const
     {
-        return Subtract(*this, b);
+        return Vector4Base(X - b.X, Y - b.Y, Z - b.Z, W - b.W);
     }
 
-    inline Vector4 operator*(const Vector4& b) const
+    Vector4Base operator*(const Vector4Base& b) const
     {
-        return Multiply(*this, b);
+        return Vector4Base(X * b.X, Y * b.Y, Z * b.Z, W * b.W);
     }
 
-    inline Vector4 operator/(const Vector4& b) const
+    Vector4Base operator/(const Vector4Base& b) const
     {
-        return Divide(*this, b);
+        return Vector4Base(X / b.X, Y / b.Y, Z / b.Z, W / b.W);
     }
 
-    // op= operators with Vector4
-    inline Vector4& operator+=(const Vector4& b)
+    Vector4Base operator-() const
     {
-        *this = Add(*this, b);
+        return Vector4Base(-X, -Y, -Z, -W);
+    }
+
+    Vector4Base operator+(T b) const
+    {
+        return Vector4Base(X + b, Y + b, Z + b, W + b);
+    }
+
+    Vector4Base operator-(T b) const
+    {
+        return Vector4Base(X - b, Y - b, Z - b, W - b);
+    }
+
+    Vector4Base operator*(T b) const
+    {
+        return Vector4Base(X * b, Y * b, Z * b, W * b);
+    }
+
+    Vector4Base operator/(T b) const
+    {
+        return Vector4Base(X / b, Y / b, Z / b, W / b);
+    }
+
+    Vector4Base& operator+=(const Vector4Base& b)
+    {
+        X += b.X;
+        Y += b.Y;
+        Z += b.Z;
+        W += b.W;
         return *this;
     }
 
-    inline Vector4& operator-=(const Vector4& b)
+    Vector4Base& operator-=(const Vector4Base& b)
     {
-        *this = Subtract(*this, b);
+        X -= b.X;
+        Y -= b.Y;
+        Z -= b.Z;
+        W -= b.W;
         return *this;
     }
 
-    inline Vector4& operator*=(const Vector4& b)
+    Vector4Base& operator*=(const Vector4Base& b)
     {
-        *this = Multiply(*this, b);
+        X *= b.X;
+        Y *= b.Y;
+        Z *= b.Z;
+        W *= b.W;
         return *this;
     }
 
-    inline Vector4& operator/=(const Vector4& b)
+    Vector4Base& operator/=(const Vector4Base& b)
     {
-        *this = Divide(*this, b);
+        X /= b.X;
+        Y /= b.Y;
+        Z /= b.Z;
+        W /= b.W;
         return *this;
     }
 
-    // Arithmetic operators with float
-    inline Vector4 operator+(float b) const
+    Vector4Base& operator+=(T b)
     {
-        return Add(*this, b);
-    }
-
-    inline Vector4 operator-(float b) const
-    {
-        return Subtract(*this, b);
-    }
-
-    inline Vector4 operator*(float b) const
-    {
-        return Multiply(*this, b);
-    }
-
-    inline Vector4 operator/(float b) const
-    {
-        return Divide(*this, b);
-    }
-
-    // op= operators with float
-    inline Vector4& operator+=(float b)
-    {
-        *this = Add(*this, b);
+        X += b;
+        Y += b;
+        Z += b;
+        W += b;
         return *this;
     }
 
-    inline Vector4& operator-=(float b)
+    Vector4Base& operator-=(T b)
     {
-        *this = Subtract(*this, b);
+        X -= b;
+        Y -= b;
+        Z -= b;
+        W -= b;
         return *this;
     }
 
-    inline Vector4& operator*=(float b)
+    Vector4Base& operator*=(T b)
     {
-        *this = Multiply(*this, b);
+        X *= b;
+        Y *= b;
+        Z *= b;
+        W *= b;
         return *this;
     }
 
-    inline Vector4& operator/=(float b)
+    Vector4Base& operator/=(T b)
     {
-        *this = Divide(*this, b);
+        X /= b;
+        Y /= b;
+        Z /= b;
+        W /= b;
         return *this;
     }
 
-    // Comparison
-    inline bool operator==(const Vector4& b) const
+    bool operator==(const Vector4Base& b) const
     {
         return X == b.X && Y == b.Y && Z == b.Z && W == b.W;
     }
 
-    inline bool operator!=(const Vector4& b) const
+    bool operator!=(const Vector4Base& b) const
     {
         return X != b.X || Y != b.Y || Z != b.Z || W != b.W;
     }
 
-    inline bool operator>(const Vector4& b) const
+    bool operator>(const Vector4Base& b) const
     {
         return X > b.X && Y > b.Y && Z > b.Z && W > b.W;
     }
 
-    inline bool operator>=(const Vector4& b) const
+    bool operator>=(const Vector4Base& b) const
     {
         return X >= b.X && Y >= b.Y && Z >= b.Z && W >= b.W;
     }
 
-    inline bool operator<(const Vector4& b) const
+    bool operator<(const Vector4Base& b) const
     {
         return X < b.X && Y < b.Y && Z < b.Z && W < b.W;
     }
 
-    inline bool operator<=(const Vector4& b) const
+    bool operator<=(const Vector4Base& b) const
     {
         return X <= b.X && Y <= b.Y && Z <= b.Z && W <= b.W;
     }
 
 public:
-    static bool NearEqual(const Vector4& a, const Vector4& b)
+    static bool NearEqual(const Vector4Base& a, const Vector4Base& b)
     {
         return Math::NearEqual(a.X, b.X) && Math::NearEqual(a.Y, b.Y) && Math::NearEqual(a.Z, b.Z) && Math::NearEqual(a.W, b.W);
     }
 
-    static bool NearEqual(const Vector4& a, const Vector4& b, float epsilon)
+    static bool NearEqual(const Vector4Base& a, const Vector4Base& b, T epsilon)
     {
         return Math::NearEqual(a.X, b.X, epsilon) && Math::NearEqual(a.Y, b.Y, epsilon) && Math::NearEqual(a.Z, b.Z, epsilon) && Math::NearEqual(a.W, b.W, epsilon);
     }
 
 public:
-    static void Add(const Vector4& a, const Vector4& b, Vector4& result)
+    static void Add(const Vector4Base& a, const Vector4Base& b, Vector4Base& result)
     {
-        result.X = a.X + b.X;
-        result.Y = a.Y + b.Y;
-        result.Z = a.Z + b.Z;
-        result.W = a.W + b.W;
+        result = Vector4Base(a.X + b.X, a.Y + b.Y, a.Z + b.Z, a.W + b.W);
     }
 
-    static Vector4 Add(const Vector4& a, const Vector4& b)
+    static void Subtract(const Vector4Base& a, const Vector4Base& b, Vector4Base& result)
     {
-        Vector4 result;
-        Add(a, b, result);
-        return result;
+        result = Vector4Base(a.X - b.X, a.Y - b.Y, a.Z - b.Z, a.W - b.W);
     }
 
-    static void Subtract(const Vector4& a, const Vector4& b, Vector4& result)
+    static void Multiply(const Vector4Base& a, const Vector4Base& b, Vector4Base& result)
     {
-        result.X = a.X - b.X;
-        result.Y = a.Y - b.Y;
-        result.Z = a.Z - b.Z;
-        result.W = a.W - b.W;
+        result = Vector4Base(a.X * b, a.Y * b, a.Z * b, a.W * b);
     }
 
-    static Vector4 Subtract(const Vector4& a, const Vector4& b)
+    static void Divide(const Vector4Base& a, const Vector4Base& b, Vector4Base& result)
     {
-        Vector4 result;
-        Subtract(a, b, result);
-        return result;
+        result = Vector4Base(a.X / b.X, a.Y / b.Y, a.Z / b.Z, a.W / b.W);
     }
 
-    static Vector4 Multiply(const Vector4& a, const Vector4& b)
+public:
+    static Vector4Base Floor(const Vector4Base& v)
     {
-        return Vector4(a.X * b.X, a.Y * b.Y, a.Z * b.Z, a.W * b.W);
+        return Vector4Base(Math::Floor(v.X), Math::Floor(v.Y), Math::Floor(v.Z), Math::Floor(v.W));
     }
 
-    static Vector4 Multiply(const Vector4& a, float b)
+    static Vector4Base Frac(const Vector4Base& v)
     {
-        return Vector4(a.X * b, a.Y * b, a.Z * b, a.W * b);
+        return Vector4Base(v.X - (int32)v.X, v.Y - (int32)v.Y, v.Z - (int32)v.Z, v.W - (int32)v.W);
     }
 
-    static Vector4 Divide(const Vector4& a, const Vector4& b)
+    static Vector4Base Round(const Vector4Base& v)
     {
-        return Vector4(a.X / b.X, a.Y / b.Y, a.Z / b.Z, a.W / b.W);
+        return Vector4Base(Math::Round(v.X), Math::Round(v.Y), Math::Round(v.Z), Math::Round(v.W));
     }
 
-    static Vector4 Divide(const Vector4& a, float b)
+    static Vector4Base Ceil(const Vector4Base& v)
     {
-        return Vector4(a.X / b, a.Y / b, a.Z / b, a.W / b);
+        return Vector4Base(Math::Ceil(v.X), Math::Ceil(v.Y), Math::Ceil(v.Z), Math::Ceil(v.W));
     }
 
-    static Vector4 Floor(const Vector4& v);
-    static Vector4 Frac(const Vector4& v);
-    static Vector4 Round(const Vector4& v);
-    static Vector4 Ceil(const Vector4& v);
+    static Vector4Base Abs(const Vector4Base& v)
+    {
+        return Vector4Base(Math::Abs(v.X), Math::Abs(v.Y), Math::Abs(v.Z), Math::Abs(v.W));
+    }
 
 public:
     // Restricts a value to be within a specified range
-    // @param value The value to clamp
+    // @param v The value to clamp
     // @param min The minimum value,
     // @param max The maximum value
     // @returns Clamped value
-    static Vector4 Clamp(const Vector4& value, const Vector4& min, const Vector4& max);
+    static Vector4Base Clamp(const Vector4Base& v, const Vector4Base& min, const Vector4Base& max)
+    {
+        Vector4Base result;
+        Clamp(v, min, max, result);
+        return result;
+    }
 
     // Restricts a value to be within a specified range
-    // @param value The value to clamp
+    // @param v The value to clamp
     // @param min The minimum value,
     // @param max The maximum value
     // @param result When the method completes, contains the clamped value
-    static void Clamp(const Vector4& value, const Vector4& min, const Vector4& max, Vector4& result);
+    static void Clamp(const Vector4Base& v, const Vector4Base& min, const Vector4Base& max, Vector4Base& result)
+    {
+        result = Vector4Base(Math::Clamp(v.X, min.X, max.X), Math::Clamp(v.Y, min.Y, max.Y), Math::Clamp(v.Z, min.Z, max.Z), Math::Clamp(v.W, min.W, max.W));
+    }
 
     // Performs a linear interpolation between two vectors
     // @param start Start vector
     // @param end End vector
     // @param amount Value between 0 and 1 indicating the weight of end
     // @param result When the method completes, contains the linear interpolation of the two vectors
-    static void Lerp(const Vector4& start, const Vector4& end, float amount, Vector4& result)
+    static void Lerp(const Vector4Base& start, const Vector4Base& end, T amount, Vector4Base& result)
     {
         result.X = Math::Lerp(start.X, end.X, amount);
         result.Y = Math::Lerp(start.Y, end.Y, amount);
@@ -449,48 +467,69 @@ public:
     // @param end End vector,
     // @param amount Value between 0 and 1 indicating the weight of @paramref end"/>,
     // @returns The linear interpolation of the two vectors
-    static Vector4 Lerp(const Vector4& start, const Vector4& end, float amount)
+    static Vector4Base Lerp(const Vector4Base& start, const Vector4Base& end, T amount)
     {
-        Vector4 result;
+        Vector4Base result;
         Lerp(start, end, amount, result);
         return result;
     }
 
-    static Vector4 Transform(const Vector4& v, const Matrix& m);
+    FLAXENGINE_API static Vector4Base Transform(const Vector4Base& v, const Matrix& m);
 };
 
-inline Vector4 operator+(float a, const Vector4& b)
+template<typename T>
+inline Vector4Base<T> operator+(T a, const Vector4Base<T>& b)
 {
     return b + a;
 }
 
-inline Vector4 operator-(float a, const Vector4& b)
+template<typename T>
+inline Vector4Base<T> operator-(T a, const Vector4Base<T>& b)
 {
-    return Vector4(a) - b;
+    return Vector4Base<T>(a) - b;
 }
 
-inline Vector4 operator*(float a, const Vector4& b)
+template<typename T>
+inline Vector4Base<T> operator*(T a, const Vector4Base<T>& b)
 {
     return b * a;
 }
 
-inline Vector4 operator/(float a, const Vector4& b)
+template<typename T>
+inline Vector4Base<T> operator/(T a, const Vector4Base<T>& b)
 {
-    return Vector4(a) / b;
+    return Vector4Base<T>(a) / b;
 }
 
 namespace Math
 {
-    FORCE_INLINE static bool NearEqual(const Vector4& a, const Vector4& b)
+    template<typename T>
+    FORCE_INLINE static bool NearEqual(const Vector4Base<T>& a, const Vector4Base<T>& b)
     {
-        return Vector4::NearEqual(a, b);
+        return Vector4Base<T>::NearEqual(a, b);
     }
 }
 
 template<>
-struct TIsPODType<Vector4>
+struct TIsPODType<Float4>
 {
     enum { Value = true };
 };
 
-DEFINE_DEFAULT_FORMATTING(Vector4, "X:{0} Y:{1} Z:{2} W:{3}", v.X, v.Y, v.Z, v.W);
+DEFINE_DEFAULT_FORMATTING(Float4, "X:{0} Y:{1} Z:{2} W:{3}", v.X, v.Y, v.Z, v.W);
+
+template<>
+struct TIsPODType<Double4>
+{
+    enum { Value = true };
+};
+
+DEFINE_DEFAULT_FORMATTING(Double4, "X:{0} Y:{1} Z:{2} W:{3}", v.X, v.Y, v.Z, v.W);
+
+template<>
+struct TIsPODType<Int4>
+{
+    enum { Value = true };
+};
+
+DEFINE_DEFAULT_FORMATTING(Int4, "X:{0} Y:{1} Z:{2} W:{3}", v.X, v.Y, v.Z, v.W);

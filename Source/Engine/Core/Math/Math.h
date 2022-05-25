@@ -631,7 +631,8 @@ namespace Math
     }
 
     // Given a heading which may be outside the +/- PI range, 'unwind' it back into that range
-    static float UnwindRadians(float a)
+    template<typename T>
+    static T UnwindRadians(T a)
     {
         while (a > PI)
             a -= TWO_PI;
@@ -641,12 +642,13 @@ namespace Math
     }
 
     // Utility to ensure angle is between +/- 180 degrees by unwinding
-    static float UnwindDegrees(float a)
+    template<typename T>
+    static T UnwindDegrees(T a)
     {
-        while (a > 180.f)
-            a -= 360.f;
-        while (a < -180.f)
-            a += 360.f;
+        while (a > 180)
+            a -= 360;
+        while (a < -180)
+            a += 360;
         return a;
     }
 

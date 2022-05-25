@@ -9,8 +9,6 @@
 #include "PixelFormat.h"
 #include "Config.h"
 
-struct Color;
-struct Vector4;
 class GPUConstantBuffer;
 class GPUShaderProgramCS;
 class GPUBuffer;

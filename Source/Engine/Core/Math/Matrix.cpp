@@ -611,7 +611,7 @@ void Matrix::CreateWorld(const Vector3& position, const Vector3& forward, const 
     Vector3 vector3, vector31, vector32;
 
     Vector3::Normalize(forward, vector3);
-    vector3.Negate();
+    vector3 = vector3.GetNegative();
     Vector3::Normalize(Vector3::Cross(up, vector3), vector31);
     Vector3::Cross(vector3, vector31, vector32);
 

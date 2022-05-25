@@ -135,8 +135,7 @@ ContainmentType OrientedBoundingBox::Contains(const Vector3& point, float* dista
         // Get minimum distance to edge in local space
         Vector3 tmp;
         Vector3::Subtract(Extents, locPoint, tmp);
-        tmp.Absolute();
-        const float minDstToEdgeLocal = tmp.MinValue();
+        const float minDstToEdgeLocal = tmp.GetAbsolute().MinValue();
 
         // Transform distance to world space
         Vector3 dstVec = Vector3::UnitX * minDstToEdgeLocal;

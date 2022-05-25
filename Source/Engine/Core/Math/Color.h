@@ -6,9 +6,6 @@
 #include "Engine/Core/Math/Math.h"
 #include "Engine/Core/Templates.h"
 
-class String;
-struct Vector3;
-struct Vector4;
 struct Color32;
 
 /// <summary>
