@@ -347,6 +347,9 @@ META_PERMUTATION_2(DDGI_PROBE_UPDATE_MODE=1, BORDER_ROW=0)
 [numthreads(DDGI_PROBE_UPDATE_BORDERS_GROUP_SIZE, DDGI_PROBE_UPDATE_BORDERS_GROUP_SIZE, 1)]
 void CS_UpdateBorders(uint3 DispatchThreadId : SV_DispatchThreadID)
 {
+#define COPY_PIXEL RWOutput[threadCoordinates] = RWOutput[copyCoordinates]
+#define COPY_PIXEL_DEBUG RWOutput[threadCoordinates] = float4(5, 0, 0, 1)
+
     uint probeSideLength = DDGI_PROBE_RESOLUTION + 2;
     uint probeSideLengthMinusOne = probeSideLength - 1;
     uint2 copyCoordinates = uint2(0, 0);
@@ -363,13 +366,13 @@ void CS_UpdateBorders(uint3 DispatchThreadId : SV_DispatchThreadID)
 #if !BORDER_ROW
         // Left corner
         copyCoordinates.x = threadCoordinates.x + DDGI_PROBE_RESOLUTION;
-        copyCoordinates.y = threadCoordinates.y - sign(corner - 1) * DDGI_PROBE_RESOLUTION;
-        RWOutput[threadCoordinates] = RWOutput[copyCoordinates];
+        copyCoordinates.y = threadCoordinates.y - sign((int)corner - 1) * DDGI_PROBE_RESOLUTION;
+        COPY_PIXEL;
 
         // Right corner
         threadCoordinates.x += probeSideLengthMinusOne;
         copyCoordinates.x = threadCoordinates.x - DDGI_PROBE_RESOLUTION;
-        RWOutput[threadCoordinates] = RWOutput[copyCoordinates];
+        COPY_PIXEL;
 #endif
         return;
     }
@@ -385,7 +388,7 @@ void CS_UpdateBorders(uint3 DispatchThreadId : SV_DispatchThreadID)
     uint offset = probeSideLengthMinusOne - (threadCoordinates.y % probeSideLength);
     copyCoordinates = uint2(threadCoordinates.x + 1, probeStart + offset);
 #endif
-    RWOutput[threadCoordinates] = RWOutput[copyCoordinates];
+    COPY_PIXEL;
 
 #if BORDER_ROW
     // Bottom row
@@ -396,7 +399,9 @@ void CS_UpdateBorders(uint3 DispatchThreadId : SV_DispatchThreadID)
     threadCoordinates.x += probeSideLengthMinusOne;
     copyCoordinates = uint2(threadCoordinates.x - 1, probeStart + offset);
 #endif
-    RWOutput[threadCoordinates] = RWOutput[copyCoordinates];
+    COPY_PIXEL;
+#undef COPY_PIXEL
+#undef COPY_PIXEL_DEBUG
 }
 
 #endif
