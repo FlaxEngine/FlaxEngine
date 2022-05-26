@@ -17,6 +17,9 @@
 #include "Engine/Graphics/Shaders/GPUShader.h"
 #include "Engine/Level/Actors/StaticModel.h"
 #include "Engine/Level/Scene/SceneRendering.h"
+#include "Engine/Renderer/ColorGradingPass.h"
+#include "Engine/Renderer/EyeAdaptationPass.h"
+#include "Engine/Renderer/PostProcessingPass.h"
 #include "Engine/Utilities/RectPack.h"
 
 // This must match HLSL
@@ -888,16 +891,40 @@ void GlobalSurfaceAtlasPass::RenderDebug(RenderContext& renderContext, GPUContex
     context->BindSR(10, bindingData.AtlasDepth->View());
     context->BindSR(12, skybox);
     context->SetState(_psDebug);
-    context->SetRenderTarget(output->View());
     {
         Vector2 outputSizeThird = outputSize * 0.333f;
         Vector2 outputSizeTwoThird = outputSize * 0.666f;
+
+        GPUTexture* tempBuffer = renderContext.Buffers->RT2_FloatRGB;
+        context->SetRenderTarget(tempBuffer->View());
 
         // Full screen - direct light
         context->BindSR(11, bindingData.AtlasLighting->View());
         context->SetViewport(outputSize.X, outputSize.Y);
         context->SetScissor(Rectangle(0, 0, outputSizeTwoThird.X, outputSize.Y));
         context->DrawFullscreenTriangle();
+
+        // Color Grading and Post-Processing to improve readability in bright/dark scenes
+        context->ResetRenderTarget();
+        auto colorGradingLUT = ColorGradingPass::Instance()->RenderLUT(renderContext);
+        EyeAdaptationPass::Instance()->Render(renderContext, tempBuffer);
+        PostProcessingPass::Instance()->Render(renderContext, tempBuffer, output, colorGradingLUT);
+        RenderTargetPool::Release(colorGradingLUT);
+        context->ResetRenderTarget();
+
+        // Rebind resources
+        for (int32 i = 0; i < 4; i++)
+        {
+            context->BindSR(i, bindingDataSDF.Cascades[i]->ViewVolume());
+            context->BindSR(i + 4, bindingDataSDF.CascadeMips[i]->ViewVolume());
+        }
+        context->BindSR(8, bindingData.Chunks ? bindingData.Chunks->View() : nullptr);
+        context->BindSR(9, bindingData.CulledObjects ? bindingData.CulledObjects->View() : nullptr);
+        context->BindSR(10, bindingData.AtlasDepth->View());
+        context->BindSR(12, skybox);
+        context->BindCB(0, _cb0);
+        context->SetState(_psDebug);
+        context->SetRenderTarget(output->View());
 
         // Disable skybox
         data.SkyboxIntensity = 0.0f;
