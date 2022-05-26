@@ -527,5 +527,8 @@ bool DynamicDiffuseGlobalIlluminationPass::Render(RenderContext& renderContext, 
     }
 #endif
 
+    context->ResetRenderTarget();
+    context->ResetSR();
+
     return false;
 }
