@@ -15,7 +15,8 @@
 #include "../Win32/IncludeWindowsHeaders.h"
 
 #define DIRECTINPUT_VERSION 0x0800
-#include <xinput.h>
+#include <Xinput.h>
+#include <hidusage.h>
 
 /// <summary>
 /// Implementation of the keyboard device for Windows platform.
@@ -36,6 +37,7 @@ public:
 public:
 
     bool WndProc(Window* window, Windows::UINT msg, Windows::WPARAM wParam, Windows::LPARAM lParam);
+    bool WndProcRawInput(Window* window, Windows::UINT msg, Windows::WPARAM wParam, Windows::LPARAM lParam);
 };
 
 /// <summary>
@@ -57,6 +59,7 @@ public:
 public:
 
     bool WndProc(Window* window, Windows::UINT msg, Windows::WPARAM wParam, Windows::LPARAM lParam);
+    bool WndProcRawInput(Window* window, Windows::UINT msg, Windows::WPARAM wParam, Windows::LPARAM lParam);
 
 public:
 
@@ -112,7 +115,6 @@ namespace WindowsInputImpl
     bool RawInputEnabled = true;
 }
 
-#include <hidusage.h>
 void WindowsInput::Init()
 {
     Input::Mouse = WindowsInputImpl::Mouse = New<WindowsMouse>();
@@ -266,6 +268,9 @@ bool OnRawInput(Vector2 mousePosition, Window* window, HRAWINPUT input)
 
 bool WindowsKeyboard::WndProc(Window* window, const Windows::UINT msg, Windows::WPARAM wParam, Windows::LPARAM lParam)
 {
+    if (WindowsInputImpl::RawInputEnabled && WndProcRawInput(window, msg, wParam, lParam))
+        return true;
+
     bool result = false;
 
     // Handle keyboard related messages
@@ -280,16 +285,35 @@ bool WindowsKeyboard::WndProc(Window* window, const Windows::UINT msg, Windows::
     case WM_KEYDOWN:
     case WM_SYSKEYDOWN:
     {
-        if (!WindowsInputImpl::RawInputEnabled)
-            OnKeyDown(static_cast<KeyboardKeys>(wParam), window);
+        OnKeyDown(static_cast<KeyboardKeys>(wParam), window);
         result = true;
         break;
     }
     case WM_KEYUP:
     case WM_SYSKEYUP:
     {
-        if (!WindowsInputImpl::RawInputEnabled)
-            OnKeyUp(static_cast<KeyboardKeys>(wParam), window);
+        OnKeyUp(static_cast<KeyboardKeys>(wParam), window);
+        result = true;
+        break;
+    }
+    }
+
+    return result;
+}
+
+bool WindowsKeyboard::WndProcRawInput(Window* window, const Windows::UINT msg, Windows::WPARAM wParam, Windows::LPARAM lParam)
+{
+    bool result = false;
+
+    // Handle keyboard related messages
+    switch (msg)
+    {
+    case WM_KEYDOWN:
+    case WM_SYSKEYDOWN:
+    case WM_KEYUP:
+    case WM_SYSKEYUP:
+    {
+        // Ignored with raw input
         result = true;
         break;
     }
@@ -300,6 +324,9 @@ bool WindowsKeyboard::WndProc(Window* window, const Windows::UINT msg, Windows::
 
 bool WindowsMouse::WndProc(Window* window, const UINT msg, WPARAM wParam, LPARAM lParam)
 {
+    if (WindowsInputImpl::RawInputEnabled && WndProcRawInput(window, msg, wParam, lParam))
+        return true;
+
     bool result = false;
 
     // Get mouse position in screen coordinates
@@ -314,20 +341,17 @@ bool WindowsMouse::WndProc(Window* window, const UINT msg, WPARAM wParam, LPARAM
     {
     case WM_MOUSEMOVE:
     {
-        if (!WindowsInputImpl::RawInputEnabled)
+        static Vector2 lastPos = mousePos;
+        if (_state.MouseWasReset)
         {
-            static Vector2 lastPos = mousePos;
-            if (_state.MouseWasReset)
-            {
-                lastPos = _state.MousePosition;
-                _state.MouseWasReset = false;
-            }
-
-            Vector2 deltaPos = mousePos - lastPos;
-            if (!deltaPos.IsZero())
-                OnMouseMoveDelta(deltaPos, window);
-            lastPos = mousePos;
+            lastPos = _state.MousePosition;
+            _state.MouseWasReset = false;
         }
+
+        Vector2 deltaPos = mousePos - lastPos;
+        if (!deltaPos.IsZero())
+            OnMouseMoveDelta(deltaPos, window);
+        lastPos = mousePos;
 
         OnMouseMove(mousePos, window);
         result = true;
@@ -347,63 +371,53 @@ bool WindowsMouse::WndProc(Window* window, const UINT msg, WPARAM wParam, LPARAM
     }
     case WM_LBUTTONDOWN:
     {
-        if (!WindowsInputImpl::RawInputEnabled)
-            OnMouseDown(mousePos, MouseButton::Left, window);
+        OnMouseDown(mousePos, MouseButton::Left, window);
         result = true;
         break;
     }
     case WM_RBUTTONDOWN:
     {
-        if (!WindowsInputImpl::RawInputEnabled)
-            OnMouseDown(mousePos, MouseButton::Right, window);
+        OnMouseDown(mousePos, MouseButton::Right, window);
         result = true;
         break;
     }
     case WM_MBUTTONDOWN:
     {
-        if (!WindowsInputImpl::RawInputEnabled)
-            OnMouseDown(mousePos, MouseButton::Middle, window);
+        OnMouseDown(mousePos, MouseButton::Middle, window);
         result = true;
         break;
     }
     case WM_XBUTTONDOWN:
     {
-        if (!WindowsInputImpl::RawInputEnabled)
-        {
-            const auto button = (HIWORD(wParam) & XBUTTON1) ? MouseButton::Extended1 : MouseButton::Extended2;
-            OnMouseDown(mousePos, button, window);
-        }
+        const auto button = (HIWORD(wParam) & XBUTTON1) ? MouseButton::Extended1 : MouseButton::Extended2;
+        OnMouseDown(mousePos, button, window);
+
         result = true;
         break;
     }
     case WM_LBUTTONUP:
     {
-        if (!WindowsInputImpl::RawInputEnabled)
-            OnMouseUp(mousePos, MouseButton::Left, window);
+        OnMouseUp(mousePos, MouseButton::Left, window);
         result = true;
         break;
     }
     case WM_RBUTTONUP:
     {
-        if (!WindowsInputImpl::RawInputEnabled)
-            OnMouseUp(mousePos, MouseButton::Right, window);
+        OnMouseUp(mousePos, MouseButton::Right, window);
         result = true;
         break;
     }
     case WM_MBUTTONUP:
     {
-        if (!WindowsInputImpl::RawInputEnabled)
-            OnMouseUp(mousePos, MouseButton::Middle, window);
+        OnMouseUp(mousePos, MouseButton::Middle, window);
         result = true;
         break;
     }
     case WM_XBUTTONUP:
     {
-        if (!WindowsInputImpl::RawInputEnabled)
-        {
-            const auto button = (HIWORD(wParam) & XBUTTON1) ? MouseButton::Extended1 : MouseButton::Extended2;
-            OnMouseUp(mousePos, button, window);
-        }
+        const auto button = (HIWORD(wParam) & XBUTTON1) ? MouseButton::Extended1 : MouseButton::Extended2;
+        OnMouseUp(mousePos, button, window);
+
         result = true;
         break;
     }
@@ -427,23 +441,55 @@ bool WindowsMouse::WndProc(Window* window, const UINT msg, WPARAM wParam, LPARAM
     }
     case WM_MOUSEWHEEL:
     {
-        if (!WindowsInputImpl::RawInputEnabled)
+        const int16 delta = GET_WHEEL_DELTA_WPARAM(wParam);
+        if (delta != 0)
         {
-            const int16 delta = GET_WHEEL_DELTA_WPARAM(wParam);
-            if (delta != 0)
-            {
-                const float deltaNormalized = static_cast<float>(delta) / WHEEL_DELTA;
-                // Use cached mouse position, the input pos is sometimes wrong in Win32
-                OnMouseWheel(_state.MousePosition, deltaNormalized, window);
-            }
+            const float deltaNormalized = static_cast<float>(delta) / WHEEL_DELTA;
+            // Use cached mouse position, the input pos is sometimes wrong in Win32
+            OnMouseWheel(_state.MousePosition, deltaNormalized, window);
         }
+
         result = true;
+        break;
+    }
+    }
+
+    return result;
+}
+
+bool WindowsMouse::WndProcRawInput(Window* window, const UINT msg, WPARAM wParam, LPARAM lParam)
+{
+    bool result = false;
+
+    // Handle mouse related messages
+    switch (msg)
+    {
+    case WM_LBUTTONDOWN:
+    case WM_RBUTTONDOWN:
+    case WM_MBUTTONDOWN:
+    case WM_XBUTTONDOWN:
+    case WM_LBUTTONUP:
+    case WM_RBUTTONUP:
+    case WM_MBUTTONUP:
+    case WM_XBUTTONUP:
+    case WM_MOUSEWHEEL:
+    {
+        // Ignored with raw input
+        result = true;
+        break;
+    }
+    case WM_MOUSEMOVE:
+    case WM_MOUSELEAVE:
+    case WM_LBUTTONDBLCLK:
+    case WM_RBUTTONDBLCLK:
+    case WM_MBUTTONDBLCLK:
+    {
+        // Might need to be handled here
         break;
     }
     case WM_INPUT:
     {
-        if (WindowsInputImpl::RawInputEnabled)
-            result = OnRawInput(_state.MousePosition, window, reinterpret_cast<HRAWINPUT>(lParam));
+        result = OnRawInput(_state.MousePosition, window, reinterpret_cast<HRAWINPUT>(lParam));
         break;
     }
     }
