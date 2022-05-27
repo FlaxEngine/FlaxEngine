@@ -90,8 +90,13 @@ void CS_Classify(uint3 DispatchThreadId : SV_DispatchThreadID)
     {
         if (abs(sdf) < relocateLimit)
         {
-            // Relocate it
-            probeState.xyz = probeState.xyz + sdfNormal * (sdf + threshold);
+            float3 offsetToAdd = sdfNormal * (sdf + threshold);
+            if (distance(probeState.xyz, offsetToAdd) < relocateLimit)
+            {
+                // Relocate it
+                probeState.xyz = probeState.xyz + offsetToAdd;
+            }
+            // TODO: maybe sample SDF at the relocated location and disable probe if it's still in the geometry?
         }
         else
         {
@@ -400,6 +405,7 @@ void CS_UpdateBorders(uint3 DispatchThreadId : SV_DispatchThreadID)
     copyCoordinates = uint2(threadCoordinates.x - 1, probeStart + offset);
 #endif
     COPY_PIXEL;
+
 #undef COPY_PIXEL
 #undef COPY_PIXEL_DEBUG
 }

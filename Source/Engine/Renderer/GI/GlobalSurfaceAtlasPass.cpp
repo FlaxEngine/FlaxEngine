@@ -896,6 +896,7 @@ void GlobalSurfaceAtlasPass::RenderDebug(RenderContext& renderContext, GPUContex
         Vector2 outputSizeTwoThird = outputSize * 0.666f;
 
         GPUTexture* tempBuffer = renderContext.Buffers->RT2_FloatRGB;
+        context->Clear(tempBuffer->View(), Color::Black);
         context->SetRenderTarget(tempBuffer->View());
 
         // Full screen - direct light

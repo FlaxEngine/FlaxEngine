@@ -97,16 +97,10 @@ float LoadDDGIProbeState(DDGIData data, Texture2D<float4> probesState, uint prob
 // Loads probe world-space position (XYZ) and probe state (W)
 float4 LoadDDGIProbePositionAndState(DDGIData data, Texture2D<float4> probesState, uint probeIndex, uint3 probeCoords)
 {
-    float4 result;
-    result.xyz = GetDDGIProbeWorldPosition(data, probeCoords);
-
-    // Probe state contains relocation's offset and the classification's state
     int2 probeDataCoords = GetDDGIProbeTexelCoords(data, probeIndex);
     float4 probeState = probesState.Load(int3(probeDataCoords, 0));
-    result.xyz += probeState.xyz;
-    result.w = probeState.w;
-
-    return result;
+    probeState.xyz += GetDDGIProbeWorldPosition(data, probeCoords);
+    return probeState;
 }
 
 // Calculates texture UVs for sampling probes atlas texture (irradiance or distance)
@@ -192,6 +186,10 @@ float3 SampleDDGIIrradiance(DDGIData data, Texture2D<float4> probesState, Textur
 #if DDGI_SRGB_BLENDING
         probeIrradiance = pow(probeIrradiance, data.IrradianceGamma * 0.5f);
 #endif
+
+        // Debug probe offset visualization
+        //float4 probeState = probesState.Load(int3(GetDDGIProbeTexelCoords(data, probeIndex), 0));
+        //probeIrradiance = float3(max(frac(probeState.xyz) * 2, 0.1f));
 
         // Accumulate weighted irradiance
         irradiance += float4(probeIrradiance * weight, weight);
