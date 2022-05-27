@@ -38,6 +38,10 @@ DECLARE_SCRIPTING_TYPE_MINIMAL(ModelInstanceEntry);
 public:
 
     bool operator==(const ModelInstanceEntry& other) const;
+    FORCE_INLINE bool operator!=(const ModelInstanceEntry& other) const
+    {
+        return !operator==(other);
+    }
 };
 
 /// <summary>
