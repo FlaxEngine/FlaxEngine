@@ -117,7 +117,7 @@ struct GlobalSurfaceAtlasObject
     }
 };
 
-class GlobalSurfaceAtlasCustomBuffer : public RenderBuffers::CustomBuffer
+class GlobalSurfaceAtlasCustomBuffer : public RenderBuffers::CustomBuffer, public ISceneRenderingListener
 {
 public:
     int32 Resolution = 0;
@@ -169,6 +169,33 @@ public:
         SAFE_DELETE_GPU_RESOURCE(ChunksBuffer);
         SAFE_DELETE_GPU_RESOURCE(CulledObjectsBuffer);
         Clear();
+    }
+
+    // [ISceneRenderingListener]
+    void OnSceneRenderingAddActor(Actor* a) override
+    {
+    }
+
+    void OnSceneRenderingUpdateActor(Actor* a, const BoundingSphere& prevBounds) override
+    {
+        // Dirty static objects to redraw when changed (eg. material modification)
+        if (a->HasStaticFlag(StaticFlags::Lightmap))
+        {
+            GlobalSurfaceAtlasObject* object = Objects.TryGet(a);
+            if (object)
+            {
+                // Dirty object to redraw
+                object->LastFrameDirty = 0;
+            }
+        }
+    }
+
+    void OnSceneRenderingRemoveActor(Actor* a) override
+    {
+    }
+
+    void OnSceneRenderingClear(SceneRendering* scene) override
+    {
     }
 };
 
@@ -358,6 +385,8 @@ bool GlobalSurfaceAtlasPass::Render(RenderContext& renderContext, GPUContext* co
             surfaceAtlasData.ClearObjects();
         }
     }
+    for (SceneRendering* scene : renderContext.List->Scenes)
+        surfaceAtlasData.ListenSceneRendering(scene);
     if (!surfaceAtlasData.AtlasTiles)
         surfaceAtlasData.AtlasTiles = New<GlobalSurfaceAtlasTile>(0, 0, resolution, resolution);
     if (!_vertexBuffer)
