@@ -176,13 +176,13 @@ void RiderCodeEditor::FindEditors(Array<CodeEditor*>* output)
     for (auto directory : subDirectories)
         SearchDirectory(&installations, directory);
 
-    // Rider for Unreal Engine
+    // Lookup from all known registry locations
+    SearchRegistry(&installations, HKEY_CURRENT_USER, TEXT("SOFTWARE\\WOW6432Node\\JetBrains\\Rider for Unreal Engine"));
     SearchRegistry(&installations, HKEY_LOCAL_MACHINE, TEXT("SOFTWARE\\WOW6432Node\\JetBrains\\Rider for Unreal Engine"));
-
-    // Versions 2021 or later
+    SearchRegistry(&installations, HKEY_CURRENT_USER, TEXT("SOFTWARE\\JetBrains\\JetBrains Rider"));
+    SearchRegistry(&installations, HKEY_LOCAL_MACHINE, TEXT("SOFTWARE\\JetBrains\\JetBrains Rider"));
     SearchRegistry(&installations, HKEY_CURRENT_USER, TEXT("SOFTWARE\\JetBrains\\Rider"), TEXT("InstallDir"));
-
-    // Versions 2020 or earlier
+    SearchRegistry(&installations, HKEY_LOCAL_MACHINE, TEXT("SOFTWARE\\JetBrains\\Rider"), TEXT("InstallDir"));
     SearchRegistry(&installations, HKEY_CURRENT_USER, TEXT("SOFTWARE\\WOW6432Node\\JetBrains\\JetBrains Rider"));
     SearchRegistry(&installations, HKEY_LOCAL_MACHINE, TEXT("SOFTWARE\\WOW6432Node\\JetBrains\\JetBrains Rider"));
 
