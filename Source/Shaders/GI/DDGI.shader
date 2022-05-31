@@ -27,7 +27,8 @@ DDGIData DDGI;
 GlobalSDFData GlobalSDF;
 GlobalSurfaceAtlasData GlobalSurfaceAtlas;
 GBufferData GBuffer;
-float3 Padding0;
+float2 Padding0;
+float ResetBlend;
 float IndirectLightingIntensity;
 META_CB_END
 
@@ -228,8 +229,7 @@ void CS_UpdateProbes(uint3 DispatchThreadId : SV_DispatchThreadID, uint GroupInd
             {
                 // Clear probe and return
                 //RWOutput[outputCoords] = float4(0, 0, 0, 0);
-                if (!skip)
-                    RWOutput[outputCoords] = float4(0, 0, 0, 0);
+                //if (!skip) RWOutput[outputCoords] = float4(0, 0, 0, 0);
                 skip = true;
             }
         }
@@ -260,7 +260,7 @@ void CS_UpdateProbes(uint3 DispatchThreadId : SV_DispatchThreadID, uint GroupInd
     if (skip)
     {
         // Clear probe
-        //RWOutput[outputCoords] = float4(0, 0, 0, 0);
+        RWOutput[outputCoords] = float4(0, 0, 0, 0);
         return;
     }
 
@@ -310,17 +310,15 @@ void CS_UpdateProbes(uint3 DispatchThreadId : SV_DispatchThreadID, uint GroupInd
     // Blend current value with the previous probe data
     float3 previous = RWOutput[outputCoords].rgb;
     float historyWeight = DDGI.ProbeHistoryWeight;
-    if (dot(previous, previous) == 0)
-    {
-        // Cut any blend from zero
+    //historyWeight = 0.0f;
+    if (ResetBlend || dot(previous, previous) == 0)
         historyWeight = 0.0f;
-    }
 #if DDGI_PROBE_UPDATE_MODE == 0
     result *= IndirectLightingIntensity;
 #if DDGI_SRGB_BLENDING
     result.rgb = pow(result.rgb, 1.0f / DDGI.IrradianceGamma);
 #endif
-    float3 irradianceDelta = result.rgb - previous.rgb;
+    float3 irradianceDelta = result.rgb - previous;
     float irradianceDeltaMax = Max3(abs(irradianceDelta));
     if (irradianceDeltaMax > 0.25f)
     {
@@ -330,12 +328,13 @@ void CS_UpdateProbes(uint3 DispatchThreadId : SV_DispatchThreadID, uint GroupInd
     if (irradianceDeltaMax > 0.8f)
     {
         // Reduce flickering during rapid brightness changes
-        result.rgb = previous.rgb + (irradianceDelta * 0.25f);
+        result.rgb = previous + (irradianceDelta * 0.25f);
     }
     float3 resultDelta = (1.0f - historyWeight) * irradianceDelta;
-    if (Max3(result.rgb) < Max3(previous.rgb))
+    if (Max3(result.rgb) < Max3(previous))
         resultDelta = min(max(abs(resultDelta), 1.0f / 1024.0f), abs(irradianceDelta)) * sign(resultDelta);
-    result = float4(previous.rgb + resultDelta, 1.0f);
+    result = float4(previous + resultDelta, 1.0f);
+    //result = float4(lerp(result.rgb, previous.rgb, historyWeight), 1.0f);
 #else
     result = float4(lerp(result.rg, previous.rg, historyWeight), 0.0f, 1.0f);
 #endif

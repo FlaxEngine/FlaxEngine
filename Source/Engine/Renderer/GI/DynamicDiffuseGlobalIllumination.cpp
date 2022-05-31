@@ -43,7 +43,8 @@ PACK_STRUCT(struct Data0
     GlobalSignDistanceFieldPass::ConstantsData GlobalSDF;
     GlobalSurfaceAtlasPass::ConstantsData GlobalSurfaceAtlas;
     GBufferData GBuffer;
-    Vector3 Padding0;
+    Vector2 Padding0;
+    float ResetBlend;
     float IndirectLightingIntensity;
     });
 
@@ -283,7 +284,7 @@ bool DynamicDiffuseGlobalIlluminationPass::Render(RenderContext& renderContext, 
 
     // TODO: configurable via graphics settings
     const Quality quality = Quality::Ultra;
-    bool debugProbes = true; // TODO: add debug option to draw probes locations -> in Graphics window - Editor-only
+    bool debugProbes = false; // TODO: add debug option to draw probes locations -> in Graphics window - Editor-only
     // TODO: configurable via postFx settings (maybe use Global SDF distance?)
     const float indirectLightingIntensity = 1.0f;
     const Vector3 giDistance(2000, 2000, 2000); // GI distance around the view (in each direction)
@@ -291,7 +292,7 @@ bool DynamicDiffuseGlobalIlluminationPass::Render(RenderContext& renderContext, 
     const Int3 probesCounts(Vector3::Ceil(giDistance / giResolution));
     const Vector3 probesDistance = Vector3(probesCounts) * giResolution;
     const int32 probeRaysCount = Math::Min(Math::AlignUp(256, DDGI_TRACE_RAYS_GROUP_SIZE_X), DDGI_TRACE_RAYS_LIMIT); // TODO: make it based on the GI Quality
-    const float probeHistoryWeight = 0.97f;
+    const float probeHistoryWeight = 0.8f;
 
     // Init buffers
     const int32 probesCount = probesCounts.X * probesCounts.Y * probesCounts.Z;
@@ -347,6 +348,7 @@ bool DynamicDiffuseGlobalIlluminationPass::Render(RenderContext& renderContext, 
     viewOrigin += viewDirection * viewOriginOffset;
     const float viewOriginSnapping = giResolution;
     viewOrigin = Vector3::Floor(viewOrigin / viewOriginSnapping) * viewOriginSnapping;
+    //viewOrigin = Vector3::Zero;
     CalculateVolumeScrolling(ddgiData, viewOrigin);
 
     // Upload constants
@@ -377,6 +379,7 @@ bool DynamicDiffuseGlobalIlluminationPass::Render(RenderContext& renderContext, 
         data.DDGI = ddgiData.Result.Constants;
         data.GlobalSDF = bindingDataSDF.Constants;
         data.GlobalSurfaceAtlas = bindingDataSurfaceAtlas.Constants;
+        data.ResetBlend = clear ? 1.0f : 0.0f;
         data.IndirectLightingIntensity = indirectLightingIntensity;
         GBufferPass::SetInputs(renderContext.View, data.GBuffer);
         context->UpdateCB(_cb0, &data);

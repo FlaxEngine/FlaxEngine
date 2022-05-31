@@ -437,7 +437,7 @@ bool GlobalSurfaceAtlasPass::Render(RenderContext& renderContext, GPUContext* co
         surfaceAtlasData.TileTexelsPerWorldUnit = 1.0f / 10.0f; // Scales the tiles resolution
         surfaceAtlasData.DistanceScalingStart = 2000.0f; // Distance from camera at which the tiles resolution starts to be scaled down
         surfaceAtlasData.DistanceScalingEnd = 5000.0f; // Distance from camera at which the tiles resolution end to be scaled down
-        surfaceAtlasData.DistanceScaling = 0.1f; // The scale for tiles at distanceScalingEnd and further away
+        surfaceAtlasData.DistanceScaling = 0.2f; // The scale for tiles at distanceScalingEnd and further away
         // TODO: add DetailsScale param to adjust quality of scene details in Global Surface Atlas
         const uint32 viewMask = renderContext.View.RenderLayersMask;
         const Vector3 viewPosition = renderContext.View.Position;
@@ -595,6 +595,9 @@ bool GlobalSurfaceAtlasPass::Render(RenderContext& renderContext, GPUContext* co
     result.Constants.ChunkSize = distance / (float)GLOBAL_SURFACE_ATLAS_CHUNKS_RESOLUTION;
     result.Constants.ObjectsCount = surfaceAtlasData.Objects.Count();
 
+    // If we don't know the culled objects buffer capacity then we shouldn't use atlas results as many objects are still missing (see CulledObjectsCounterIndex usage)
+    bool notReady = false;
+
     // Cull objects into chunks (for faster Atlas sampling)
     if (surfaceAtlasData.Objects.Count() != 0)
     {
@@ -620,18 +623,23 @@ bool GlobalSurfaceAtlasPass::Render(RenderContext& renderContext, GPUContext* co
             if (surfaceAtlasData.CulledObjectsCounterIndex != -1)
             {
                 // Get the last counter value (accept staging readback delay)
+                notReady = true;
                 auto data = (uint32*)_culledObjectsSizeBuffer->Map(GPUResourceMapMode::Read);
                 if (data)
                 {
                     uint32 counter = data[surfaceAtlasData.CulledObjectsCounterIndex];
                     _culledObjectsSizeBuffer->Unmap();
                     if (counter > 0)
+                    {
                         objectsBufferCapacity = counter * sizeof(Vector4);
+                        notReady = false;
+                    }
                 }
             }
             if (surfaceAtlasData.CulledObjectsCounterIndex == -1)
             {
                 // Find a free timer slot
+                notReady = true;
                 for (int32 i = 0; i < ARRAY_COUNT(_culledObjectsSizeFrames); i++)
                 {
                     if (currentFrame - _culledObjectsSizeFrames[i] > GPU_ASYNC_LATENCY)
@@ -870,12 +878,10 @@ bool GlobalSurfaceAtlasPass::Render(RenderContext& renderContext, GPUContext* co
         context->ResetRenderTarget();
     }
 
-    // TODO: indirect lighting apply to get infinite bounces for GI
-
     // TODO: explore atlas tiles optimization with feedback from renderer (eg. when tile is sampled by GI/Reflections mark it as used, then sort tiles by importance and prioritize updates for ones frequently used)
 
 #undef WRITE_TILE
-    return false;
+    return notReady;
 }
 
 void GlobalSurfaceAtlasPass::RenderDebug(RenderContext& renderContext, GPUContext* context, GPUTexture* output)
