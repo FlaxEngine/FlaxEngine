@@ -28,6 +28,8 @@
 #define GLOBAL_SURFACE_ATLAS_OBJECT_DATA_STRIDE 6 // Amount of float4s per-object
 #define GLOBAL_SURFACE_ATLAS_TILE_DATA_STRIDE 5 // Amount of float4s per-tile
 #define GLOBAL_SURFACE_ATLAS_TILE_PADDING 1 // 1px padding to prevent color bleeding between tiles
+#define GLOBAL_SURFACE_ATLAS_TILE_SIZE_MIN 8 // The minimum size of the tile
+#define GLOBAL_SURFACE_ATLAS_TILE_SIZE_MAX 192 // The maximum size of the tile
 #define GLOBAL_SURFACE_ATLAS_TILE_PROJ_PLANE_OFFSET 0.1f // Small offset to prevent clipping with the closest triangles (shifts near and far planes)
 #define GLOBAL_SURFACE_ATLAS_DEBUG_FORCE_REDRAW_TILES 0 // Forces to redraw all object tiles every frame
 #define GLOBAL_SURFACE_ATLAS_DEBUG_DRAW_OBJECTS 0 // Debug draws object bounds on redraw (and tile draw projection locations)
@@ -1013,8 +1015,8 @@ void GlobalSurfaceAtlasPass::RasterizeActor(Actor* actor, void* actorObject, con
         }
 
         // Clamp tile resolution (in pixels)
-        static_assert(GLOBAL_SURFACE_ATLAS_TILE_PADDING < 8, "Invalid tile size configuration. Minimum tile size must be larger than padding.");
-        tileResolution = Math::Clamp<uint16>(tileResolution, 8, 128);
+        static_assert(GLOBAL_SURFACE_ATLAS_TILE_PADDING < GLOBAL_SURFACE_ATLAS_TILE_SIZE_MIN, "Invalid tile size configuration. Minimum tile size must be larger than padding.");
+        tileResolution = Math::Clamp<uint16>(tileResolution, GLOBAL_SURFACE_ATLAS_TILE_SIZE_MIN, GLOBAL_SURFACE_ATLAS_TILE_SIZE_MAX);
 
         // Snap tiles resolution (down) which allows to reuse atlas slots once object gets resizes/replaced by other object
         tileResolution = Math::AlignDown<uint16>(tileResolution, 8);

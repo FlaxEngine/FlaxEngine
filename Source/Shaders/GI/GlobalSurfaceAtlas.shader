@@ -113,6 +113,9 @@ float4 PS_Lighting(AtlasVertexOutput input) : SV_Target
 	float4x4 tileLocalToWorld = Inverse(tile.WorldToLocal);
 	gBuffer.WorldPos = mul(float4(gBufferTilePos, 1), tileLocalToWorld).xyz;
 
+	// Boost material diffuse color to improve GI
+	gBuffer.Color *= 1.1f;
+
 #if INDIRECT_LIGHT
     // Sample irradiance
     float bias = 1.0f;

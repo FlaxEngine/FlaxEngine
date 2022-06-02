@@ -132,7 +132,7 @@ public:
     /// <summary>
     /// The draw passes to use for rendering this foliage type.
     /// </summary>
-    API_FIELD() DrawPass DrawModes = DrawPass::Default;
+    API_FIELD() DrawPass DrawModes = DrawPass::Depth | DrawPass::GBuffer | DrawPass::Forward;
 
     /// <summary>
     /// The shadows casting mode.

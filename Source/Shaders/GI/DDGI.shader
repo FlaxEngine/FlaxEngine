@@ -320,12 +320,13 @@ void CS_UpdateProbes(uint3 DispatchThreadId : SV_DispatchThreadID, uint GroupInd
 #endif
     float3 irradianceDelta = result.rgb - previous;
     float irradianceDeltaMax = Max3(abs(irradianceDelta));
-    if (irradianceDeltaMax > 0.25f)
+    float irradianceDeltaLen = length(irradianceDelta);
+    if (irradianceDeltaMax > 0.2f)
     {
         // Reduce history weight after significant lighting change
-        historyWeight = max(historyWeight - 0.2f, 0.0f);
+        historyWeight = max(historyWeight - 0.7f, 0.0f);
     }
-    if (irradianceDeltaMax > 0.8f)
+    if (irradianceDeltaLen > 2.0f)
     {
         // Reduce flickering during rapid brightness changes
         result.rgb = previous + (irradianceDelta * 0.25f);
