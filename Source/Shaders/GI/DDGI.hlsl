@@ -140,14 +140,15 @@ float3 SampleDDGIIrradiance(DDGIData data, Texture2D<float4> probesState, Textur
         uint probeIndex = GetDDGIScrollingProbeIndex(data, probeCoords);
 
         // Load probe position and state
-        float4 probePositionAndState = LoadDDGIProbePositionAndState(data, probesState, probeIndex, probeCoords);
-        if (probePositionAndState.w == DDGI_PROBE_STATE_INACTIVE)
+        float4 probeState = probesState.Load(int3(GetDDGIProbeTexelCoords(data, probeIndex), 0));
+        if (probeState.w == DDGI_PROBE_STATE_INACTIVE)
             continue;
+        float3 probePosition = baseProbeWorldPosition + ((probeCoords - baseProbeCoords) * data.ProbesSpacing) + probeState.xyz;
 
         // Calculate the distance and direction from the (biased and non-biased) shading point and the probe
-        float3 worldPosToProbe = normalize(probePositionAndState.xyz - worldPosition);
-        float3 biasedPosToProbe = normalize(probePositionAndState.xyz - biasedWorldPosition);
-        float biasedPosToProbeDist = length(probePositionAndState.xyz - biasedWorldPosition);
+        float3 worldPosToProbe = normalize(probePosition.xyz - worldPosition);
+        float3 biasedPosToProbe = normalize(probePosition.xyz - biasedWorldPosition);
+        float biasedPosToProbeDist = length(probePosition.xyz - biasedWorldPosition);
 
         // Smooth backface test
         float weight = Square(dot(worldPosToProbe, worldNormal) * 0.5f + 0.5f);
@@ -188,7 +189,6 @@ float3 SampleDDGIIrradiance(DDGIData data, Texture2D<float4> probesState, Textur
 #endif
 
         // Debug probe offset visualization
-        //float4 probeState = probesState.Load(int3(GetDDGIProbeTexelCoords(data, probeIndex), 0));
         //probeIrradiance = float3(max(frac(probeState.xyz) * 2, 0.1f));
 
         // Accumulate weighted irradiance
