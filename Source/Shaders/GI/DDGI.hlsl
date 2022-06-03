@@ -143,16 +143,17 @@ float3 SampleDDGIIrradiance(DDGIData data, Texture2D<float4> probesState, Textur
         float4 probeState = probesState.Load(int3(GetDDGIProbeTexelCoords(data, probeIndex), 0));
         if (probeState.w == DDGI_PROBE_STATE_INACTIVE)
             continue;
-        float3 probePosition = baseProbeWorldPosition + ((probeCoords - baseProbeCoords) * data.ProbesSpacing) + probeState.xyz;
+        float3 probeBasePosition = baseProbeWorldPosition + ((probeCoords - baseProbeCoords) * data.ProbesSpacing);
+        float3 probePosition = probeBasePosition + probeState.xyz;
 
         // Calculate the distance and direction from the (biased and non-biased) shading point and the probe
-        float3 worldPosToProbe = normalize(probePosition.xyz - worldPosition);
-        float3 biasedPosToProbe = normalize(probePosition.xyz - biasedWorldPosition);
-        float biasedPosToProbeDist = length(probePosition.xyz - biasedWorldPosition);
+        float3 worldPosToProbe = normalize(probePosition - worldPosition);
+        float3 biasedPosToProbe = normalize(probePosition - biasedWorldPosition);
+        float biasedPosToProbeDist = length(probePosition - biasedWorldPosition);
 
         // Smooth backface test
         float weight = Square(dot(worldPosToProbe, worldNormal) * 0.5f + 0.5f);
-
+        
         // Sample distance texture
         float2 octahedralCoords = GetOctahedralCoords(-biasedPosToProbe);
         float2 uv = GetDDGIProbeUV(data, probeIndex, octahedralCoords, DDGI_PROBE_RESOLUTION_DISTANCE);

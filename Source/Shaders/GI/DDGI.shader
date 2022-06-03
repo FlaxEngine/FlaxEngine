@@ -71,44 +71,53 @@ void CS_Classify(uint3 DispatchThreadId : SV_DispatchThreadID)
 
     // Load probe state and position
     float4 probeState = RWProbesState[probeDataCoords];
-    float3 probePosition = GetDDGIProbeWorldPosition(DDGI, probeCoords);
-    // TODO: reset probe offset for scrolled probes
-    probePosition.xyz += probeState.xyz;
+    float3 probeBasePosition = GetDDGIProbeWorldPosition(DDGI, probeCoords);
+    float3 probePosition = probeBasePosition + probeState.xyz;
     probeState.w = DDGI_PROBE_STATE_ACTIVE;
 
     // Use Global SDF to quickly get distance and direction to the scene geometry
     float sdf;
     float3 sdfNormal = normalize(SampleGlobalSDFGradient(GlobalSDF, GlobalSDFTex, probePosition.xyz, sdf));
     float threshold = GlobalSDF.CascadeVoxelSize[0] * 0.5f;
-    float distanceLimit = length(DDGI.ProbesSpacing) * 1.5f + threshold;
+    float distanceLimit = length(DDGI.ProbesSpacing) * 2.0f;
     float relocateLimit = length(DDGI.ProbesSpacing) * 0.6f;
-    if (abs(sdf) > distanceLimit + threshold) // Probe is too far from geometry
+    if (abs(sdf) > distanceLimit) // Probe is too far from geometry
     {
         // Disable it
         probeState = float4(0, 0, 0, DDGI_PROBE_STATE_INACTIVE);
     }
-    else if (sdf < threshold) // Probe is inside geometry
+    else
     {
-        if (abs(sdf) < relocateLimit)
+        if (sdf < threshold) // Probe is inside geometry
         {
-            float3 offsetToAdd = sdfNormal * (sdf + threshold);
-            if (distance(probeState.xyz, offsetToAdd) < relocateLimit)
+            if (abs(sdf) < relocateLimit)
             {
-                // Relocate it
-                probeState.xyz = probeState.xyz + offsetToAdd;
+                float3 offsetToAdd = sdfNormal * sdf;
+                if (distance(probeState.xyz, offsetToAdd) < relocateLimit)
+                {
+                    // Relocate it
+                    probeState.xyz += offsetToAdd;
+                }
             }
-            // TODO: maybe sample SDF at the relocated location and disable probe if it's still in the geometry?
+            else
+            {
+                // Reset relocation
+                probeState.xyz = float3(0, 0, 0);
+            }
         }
-        else
+        else if (sdf > threshold * 2.0f) // Probe is far enough any geometry
         {
             // Reset relocation
             probeState.xyz = float3(0, 0, 0);
         }
-    }
-    else if (sdf > relocateLimit) // Probe is far enough any geometry
-    {
-        // Reset relocation
-        probeState.xyz = float3(0, 0, 0);
+
+        // Check if probe is relocated but the base location is fine
+        sdf = SampleGlobalSDF(GlobalSDF, GlobalSDFTex, probeBasePosition.xyz);
+        if (sdf > threshold)
+        {
+            // Reset relocation
+            probeState.xyz = float3(0, 0, 0);
+        }
     }
 
     RWProbesState[probeDataCoords] = probeState;
