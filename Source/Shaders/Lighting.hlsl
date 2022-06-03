@@ -5,6 +5,10 @@
 
 #include "./Flax/LightingCommon.hlsl"
 
+#ifndef NO_SPECULAR
+#define NO_SPECULAR 0
+#endif
+
 ShadowData GetShadow(LightData lightData, GBufferSample gBuffer, float4 shadowMask)
 {
 	ShadowData shadow;
@@ -24,7 +28,7 @@ LightingData StandardShading(GBufferSample gBuffer, float energy, float3 L, floa
 
 	LightingData lighting;
 	lighting.Diffuse = Diffuse_Lambert(diffuseColor);
-#if defined(NO_SPECULAR)
+#if NO_SPECULAR
 	lighting.Specular = 0;
 #else
 	float3 specularColor = GetSpecularColor(gBuffer);

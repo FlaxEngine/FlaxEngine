@@ -1,7 +1,7 @@
 // Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 // Diffuse-only lighting
-#define NO_SPECULAR
+#define NO_SPECULAR 1
 
 #include "./Flax/Common.hlsl"
 #include "./Flax/Math.hlsl"
