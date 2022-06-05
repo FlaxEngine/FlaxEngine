@@ -126,7 +126,7 @@ void ProfilerCPU::Thread::EndEvent()
 {
     const double time = Platform::GetTimeSeconds() * 1000.0;
     _depth--;
-    Event& e = Buffer.Get(Buffer.GetCount() - 1);
+    Event& e = (Buffer.Last()--).Event();
     e.End = time;
 }
 
