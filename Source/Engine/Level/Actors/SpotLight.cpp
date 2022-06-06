@@ -182,6 +182,7 @@ void SpotLight::Draw(RenderContext& renderContext)
         data.CosOuterCone = _cosOuterCone;
         data.InvCosConeDifference = _invCosConeDifference;
         data.ContactShadowsLength = ContactShadowsLength;
+        data.IndirectLightingIntensity = IndirectLightingIntensity;
         data.IESTexture = IESTexture ? IESTexture->GetTexture() : nullptr;
         Vector3::Transform(Vector3::Up, GetOrientation(), data.UpVector);
         data.OuterConeAngle = outerConeAngle;

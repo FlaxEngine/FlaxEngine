@@ -112,6 +112,7 @@ void SkyLight::Draw(RenderContext& renderContext)
         data.CastVolumetricShadow = CastVolumetricShadow;
         data.RenderedVolumetricFog = 0;
         data.AdditiveColor = AdditiveColor.ToVector3() * (AdditiveColor.A * brightness);
+        data.IndirectLightingIntensity = IndirectLightingIntensity;
         data.Radius = GetScaledRadius();
         data.Image = GetSource();
         renderContext.List->SkyLights.Add(data);

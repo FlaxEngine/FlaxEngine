@@ -786,6 +786,7 @@ bool GlobalSurfaceAtlasPass::Render(RenderContext& renderContext, GPUContext* co
             const bool useShadow = CanRenderShadow(renderContext.View, light);
             // TODO: test perf/quality when using Shadow Map for directional light (ShadowsPass::Instance()->LastDirLightShadowMap) instead of Global SDF trace
             light.SetupLightData(&data.Light, useShadow);
+            data.Light.Color *= light.IndirectLightingIntensity;
             data.LightShadowsStrength = 1.0f - light.ShadowsStrength;
             context->UpdateCB(_cb0, &data);
             context->SetState(_psDirectLighting0);
@@ -813,6 +814,7 @@ bool GlobalSurfaceAtlasPass::Render(RenderContext& renderContext, GPUContext* co
             // Draw draw light
             const bool useShadow = CanRenderShadow(renderContext.View, light);
             light.SetupLightData(&data.Light, useShadow);
+            data.Light.Color *= light.IndirectLightingIntensity;
             data.LightShadowsStrength = 1.0f - light.ShadowsStrength;
             context->UpdateCB(_cb0, &data);
             context->SetState(_psDirectLighting1);
@@ -840,6 +842,7 @@ bool GlobalSurfaceAtlasPass::Render(RenderContext& renderContext, GPUContext* co
             // Draw draw light
             const bool useShadow = CanRenderShadow(renderContext.View, light);
             light.SetupLightData(&data.Light, useShadow);
+            data.Light.Color *= light.IndirectLightingIntensity;
             data.LightShadowsStrength = 1.0f - light.ShadowsStrength;
             context->UpdateCB(_cb0, &data);
             context->SetState(_psDirectLighting1);
