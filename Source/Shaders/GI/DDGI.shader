@@ -119,7 +119,7 @@ void CS_Classify(uint3 DispatchThreadId : SV_DispatchThreadID)
             probeState.xyz = float3(0, 0, 0);
         }
     }
-
+	
     RWProbesState[probeDataCoords] = probeState;
 }
 
@@ -236,7 +236,8 @@ void CS_UpdateProbes(uint3 DispatchThreadId : SV_DispatchThreadID, uint GroupInd
             uint coord = (probeCount + (scrollDirection ? (scrollOffset - 1) : (scrollOffset % probeCount))) % probeCount;
             if (probeCoords[planeIndex] == coord)
             {
-                // Skip scrolled probes
+                // Clear and skip scrolled probes
+                RWOutput[outputCoords] = float4(0, 0, 0, 0);
                 skip = true;
             }
         }
@@ -262,11 +263,7 @@ void CS_UpdateProbes(uint3 DispatchThreadId : SV_DispatchThreadID, uint GroupInd
     }
     GroupMemoryBarrierWithGroupSync();
     if (skip)
-    {
-        // Clear probe
-        RWOutput[outputCoords] = float4(0, 0, 0, 0);
         return;
-    }
 
     // Calculate octahedral projection for probe (unwraps spherical projection into a square)
     float2 octahedralCoords = GetOctahedralCoords(DispatchThreadId.xy, DDGI_PROBE_RESOLUTION);

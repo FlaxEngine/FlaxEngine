@@ -116,44 +116,6 @@ void CalculateVolumeRandomRotation(Matrix3x3& matrix)
     matrix.M33 = 1.0f - 2.0f * u3;
 }
 
-int32 AbsFloor(const float value)
-{
-    return value >= 0.0f ? (int32)Math::Floor(value) : (int32)Math::Ceil(value);
-}
-
-int32 GetSignNotZero(const float value)
-{
-    return value >= 0.0f ? 1 : -1;
-}
-
-Vector3 GetVolumeOrigin(DDGICustomBuffer& ddgiData)
-{
-    return ddgiData.ProbesOrigin + Vector3(ddgiData.ProbeScrollOffsets) * ddgiData.ProbesSpacing;
-}
-
-void CalculateVolumeScrolling(DDGICustomBuffer& ddgiData, const Vector3& viewOrigin)
-{
-    // Reset the volume origin and scroll offsets for each axis
-    for (int32 axis = 0; axis < 3; axis++)
-    {
-        if (ddgiData.ProbeScrollOffsets.Raw[axis] != 0 && (ddgiData.ProbeScrollOffsets.Raw[axis] % ddgiData.ProbeCounts.Raw[axis] == 0))
-        {
-            ddgiData.ProbesOrigin.Raw[axis] += (float)ddgiData.ProbeCounts.Raw[axis] * ddgiData.ProbesSpacing * (float)ddgiData.ProbeScrollDirections.Raw[axis];
-            ddgiData.ProbeScrollOffsets.Raw[axis] = 0;
-        }
-    }
-
-    // Calculate the count of grid cells between the view origin and the scroll anchor
-    const Vector3 translation = viewOrigin - GetVolumeOrigin(ddgiData);
-    for (int32 axis = 0; axis < 3; axis++)
-    {
-        const int32 scroll = AbsFloor(translation.Raw[axis] / ddgiData.ProbesSpacing);
-        ddgiData.ProbeScrollOffsets.Raw[axis] += scroll;
-        ddgiData.ProbeScrollClear[axis] = scroll != 0;
-        ddgiData.ProbeScrollDirections.Raw[axis] = GetSignNotZero(translation.Raw[axis]);
-    }
-}
-
 String DynamicDiffuseGlobalIlluminationPass::ToString() const
 {
     return TEXT("DynamicDiffuseGlobalIlluminationPass");
@@ -294,6 +256,17 @@ bool DynamicDiffuseGlobalIlluminationPass::Render(RenderContext& renderContext, 
     const Vector3 probesDistance = Vector3(probesCounts) * giResolution;
     const int32 probeRaysCount = Math::Min(Math::AlignUp(256, DDGI_TRACE_RAYS_GROUP_SIZE_X), DDGI_TRACE_RAYS_LIMIT); // TODO: make it based on the GI Quality
 
+    // Calculate view origin
+    Vector3 viewOrigin = renderContext.View.Position;
+    Vector3 viewDirection = renderContext.View.Direction;
+    const float probesDistanceMax = probesDistance.MaxValue();
+    const Vector2 viewRayHit = CollisionsHelper::LineHitsBox(viewOrigin, viewOrigin + viewDirection * (probesDistanceMax * 2.0f), viewOrigin - probesDistance, viewOrigin + probesDistance);
+    const float viewOriginOffset = viewRayHit.Y * probesDistanceMax * 0.8f;
+    viewOrigin += viewDirection * viewOriginOffset;
+    const float viewOriginSnapping = giResolution;
+    viewOrigin = Vector3::Floor(viewOrigin / viewOriginSnapping) * viewOriginSnapping;
+    //viewOrigin = Vector3::Zero;
+
     // Init buffers
     const int32 probesCount = probesCounts.X * probesCounts.Y * probesCounts.Z;
     if (probesCount == 0 || indirectLightingIntensity <= ZeroTolerance)
@@ -308,6 +281,7 @@ bool DynamicDiffuseGlobalIlluminationPass::Render(RenderContext& renderContext, 
         ddgiData.ProbeRaysCount = probeRaysCount;
         ddgiData.ProbesSpacing = giResolution;
         ddgiData.ProbeCounts = probesCounts;
+        ddgiData.ProbesOrigin = viewOrigin;
 
         // Allocate probes textures
         uint64 memUsage = 0;
@@ -335,29 +309,36 @@ bool DynamicDiffuseGlobalIlluminationPass::Render(RenderContext& renderContext, 
         context->ClearUA(ddgiData.ProbesDistance, Vector4::Zero);
     }
 
-    // Compute random rotation matrix for probe rays orientation (randomized every frame)
-    Matrix3x3 raysRotationMatrix;
-    CalculateVolumeRandomRotation(raysRotationMatrix);
-
     // Compute scrolling (probes are placed around camera but are scrolling to increase stability during movement)
-    Vector3 viewOrigin = renderContext.View.Position;
-    Vector3 viewDirection = renderContext.View.Direction;
-    const float probesDistanceMax = probesDistance.MaxValue();
-    const Vector2 viewRayHit = CollisionsHelper::LineHitsBox(viewOrigin, viewOrigin + viewDirection * (probesDistanceMax * 2.0f), viewOrigin - probesDistance, viewOrigin + probesDistance);
-    const float viewOriginOffset = viewRayHit.Y * probesDistanceMax * 0.8f;
-    viewOrigin += viewDirection * viewOriginOffset;
-    const float viewOriginSnapping = giResolution;
-    viewOrigin = Vector3::Floor(viewOrigin / viewOriginSnapping) * viewOriginSnapping;
-    //viewOrigin = Vector3::Zero;
-    CalculateVolumeScrolling(ddgiData, viewOrigin);
+    {
+        
+        // Reset the volume origin and scroll offsets for each axis
+        for (int32 axis = 0; axis < 3; axis++)
+        {
+            if (ddgiData.ProbeScrollOffsets.Raw[axis] != 0 && (ddgiData.ProbeScrollOffsets.Raw[axis] % ddgiData.ProbeCounts.Raw[axis] == 0))
+            {
+                ddgiData.ProbesOrigin.Raw[axis] += (float)ddgiData.ProbeCounts.Raw[axis] * ddgiData.ProbesSpacing * (float)ddgiData.ProbeScrollDirections.Raw[axis];
+                ddgiData.ProbeScrollOffsets.Raw[axis] = 0;
+            }
+        }
+
+        // Calculate the count of grid cells between the view origin and the scroll anchor
+        const Vector3 volumeOrigin = ddgiData.ProbesOrigin + Vector3(ddgiData.ProbeScrollOffsets) * ddgiData.ProbesSpacing;
+        const Vector3 translation = viewOrigin - volumeOrigin;
+        for (int32 axis = 0; axis < 3; axis++)
+        {
+            const float value = translation.Raw[axis] / ddgiData.ProbesSpacing;
+            const int32 scroll = value >= 0.0f ? (int32)Math::Floor(value) : (int32)Math::Ceil(value);
+            ddgiData.ProbeScrollOffsets.Raw[axis] += scroll;
+            ddgiData.ProbeScrollClear[axis] = scroll != 0;
+            ddgiData.ProbeScrollDirections.Raw[axis] = translation.Raw[axis]  >= 0.0f ? 1 : -1;
+        }
+    }
 
     // Upload constants
     {
         ddgiData.Result.Constants.ProbesOrigin = ddgiData.ProbesOrigin;
         ddgiData.Result.Constants.ProbesSpacing = ddgiData.ProbesSpacing;
-        Quaternion& raysRotation = *(Quaternion*)&ddgiData.Result.Constants.RaysRotation;
-        Quaternion::RotationMatrix(raysRotationMatrix, raysRotation);
-        raysRotation.Conjugate();
         ddgiData.Result.Constants.ProbesCounts[0] = probesCounts.X;
         ddgiData.Result.Constants.ProbesCounts[1] = probesCounts.Y;
         ddgiData.Result.Constants.ProbesCounts[2] = probesCounts.Z;
@@ -374,6 +355,13 @@ bool DynamicDiffuseGlobalIlluminationPass::Render(RenderContext& renderContext, 
         ddgiData.Result.ProbesState = ddgiData.ProbesState->View();
         ddgiData.Result.ProbesDistance = ddgiData.ProbesDistance->View();
         ddgiData.Result.ProbesIrradiance = ddgiData.ProbesIrradiance->View();
+
+        // Compute random rotation matrix for probe rays orientation (randomized every frame)
+        Matrix3x3 raysRotationMatrix;
+        CalculateVolumeRandomRotation(raysRotationMatrix);
+        Quaternion& raysRotation = *(Quaternion*)&ddgiData.Result.Constants.RaysRotation;
+        Quaternion::RotationMatrix(raysRotationMatrix, raysRotation);
+        raysRotation.Conjugate();
 
         Data0 data;
         data.DDGI = ddgiData.Result.Constants;
