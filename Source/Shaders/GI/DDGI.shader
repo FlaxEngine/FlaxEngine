@@ -236,9 +236,7 @@ void CS_UpdateProbes(uint3 DispatchThreadId : SV_DispatchThreadID, uint GroupInd
             uint coord = (probeCount + (scrollDirection ? (scrollOffset - 1) : (scrollOffset % probeCount))) % probeCount;
             if (probeCoords[planeIndex] == coord)
             {
-                // Clear probe and return
-                //RWOutput[outputCoords] = float4(0, 0, 0, 0);
-                //if (!skip) RWOutput[outputCoords] = float4(0, 0, 0, 0);
+                // Skip scrolled probes
                 skip = true;
             }
         }
@@ -249,29 +247,30 @@ void CS_UpdateProbes(uint3 DispatchThreadId : SV_DispatchThreadID, uint GroupInd
     if (probeState == DDGI_PROBE_STATE_INACTIVE)
         skip = true;
 
-    // Calculate octahedral projection for probe (unwraps spherical projection into a square)
-    float2 octahedralCoords = GetOctahedralCoords(DispatchThreadId.xy, DDGI_PROBE_RESOLUTION);
-    float3 octahedralDirection = GetOctahedralDirection(octahedralCoords);
-
-    // Load trace rays results into shared memory to reuse across whole thread group
-    uint count = (uint)(ceil((float)(DDGI_TRACE_RAYS_LIMIT) / (float)(DDGI_PROBE_RESOLUTION * DDGI_PROBE_RESOLUTION)));
-    for (uint i = 0; i < count; i++)
+    if (!skip)
     {
-        uint rayIndex = (GroupIndex * count) + i;
-        if (rayIndex >= DDGI.RaysCount)
-            break;
-        CachedProbesTraceRadiance[rayIndex] = ProbesTrace[uint2(rayIndex, probeIndex)];
-        CachedProbesTraceDirection[rayIndex] = GetProbeRayDirection(DDGI, rayIndex);
+        // Load trace rays results into shared memory to reuse across whole thread group
+        uint count = (uint)(ceil((float)(DDGI_TRACE_RAYS_LIMIT) / (float)(DDGI_PROBE_RESOLUTION * DDGI_PROBE_RESOLUTION)));
+        for (uint i = 0; i < count; i++)
+        {
+            uint rayIndex = (GroupIndex * count) + i;
+            if (rayIndex >= DDGI.RaysCount)
+                break;
+            CachedProbesTraceRadiance[rayIndex] = ProbesTrace[uint2(rayIndex, probeIndex)];
+            CachedProbesTraceDirection[rayIndex] = GetProbeRayDirection(DDGI, rayIndex);
+        }
     }
     GroupMemoryBarrierWithGroupSync();
-
-    // TODO: optimize probes updating to build indirect dispatch args and probes indices list before tracing rays and blending irradiance/distance
     if (skip)
     {
         // Clear probe
         RWOutput[outputCoords] = float4(0, 0, 0, 0);
         return;
     }
+
+    // Calculate octahedral projection for probe (unwraps spherical projection into a square)
+    float2 octahedralCoords = GetOctahedralCoords(DispatchThreadId.xy, DDGI_PROBE_RESOLUTION);
+    float3 octahedralDirection = GetOctahedralDirection(octahedralCoords);
 
     // Loop over rays
     float4 result = float4(0, 0, 0, 0);

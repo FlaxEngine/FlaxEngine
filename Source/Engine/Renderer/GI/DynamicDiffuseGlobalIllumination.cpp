@@ -287,12 +287,12 @@ bool DynamicDiffuseGlobalIlluminationPass::Render(RenderContext& renderContext, 
     bool debugProbes = false; // TODO: add debug option to draw probes locations -> in Graphics window - Editor-only
     // TODO: configurable via postFx settings (maybe use Global SDF distance?)
     const float indirectLightingIntensity = 1.0f;
+    const float probeHistoryWeight = 0.8f;
     const Vector3 giDistance(2000, 2000, 2000); // GI distance around the view (in each direction)
     const float giResolution = 100.0f; // GI probes placement spacing
     const Int3 probesCounts(Vector3::Ceil(giDistance / giResolution));
     const Vector3 probesDistance = Vector3(probesCounts) * giResolution;
     const int32 probeRaysCount = Math::Min(Math::AlignUp(256, DDGI_TRACE_RAYS_GROUP_SIZE_X), DDGI_TRACE_RAYS_LIMIT); // TODO: make it based on the GI Quality
-    const float probeHistoryWeight = 0.8f;
 
     // Init buffers
     const int32 probesCount = probesCounts.X * probesCounts.Y * probesCounts.Z;
