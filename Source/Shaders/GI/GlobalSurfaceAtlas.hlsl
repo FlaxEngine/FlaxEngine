@@ -218,7 +218,7 @@ float4 SampleGlobalSurfaceAtlas(const GlobalSurfaceAtlasData data, ByteAddressBu
 #if GLOBAL_SURFACE_ATLAS_TILE_NORMAL_THRESHOLD_ENABLED
 		float3 localNormal = normalize(mul(worldNormal, worldToLocal));
 		float3 localNormalSq = localNormal * localNormal;
-	    uint tileOffset = object.TileOffsets[localNormal.y > 0.0f ? 0 : 1];
+	    uint tileOffset = object.TileOffsets[localNormal.x > 0.0f ? 0 : 1];
 	    if (localNormalSq.x > GLOBAL_SURFACE_ATLAS_TILE_NORMAL_THRESHOLD * GLOBAL_SURFACE_ATLAS_TILE_NORMAL_THRESHOLD && tileOffset != 0)
 	    {
 	        GlobalSurfaceTile tile = LoadGlobalSurfaceAtlasTile(culledObjects, objectAddress + tileOffset);
