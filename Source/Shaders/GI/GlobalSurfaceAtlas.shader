@@ -126,7 +126,7 @@ float4 PS_Lighting(AtlasVertexOutput input) : SV_Target
     float3 diffuseColor = GetDiffuseColor(gBuffer);
     diffuseColor = min(diffuseColor, 0.9f); // Nothing reflects diffuse like perfectly in the real world (ensure to have energy loss at each light bounce)
     float3 diffuse = Diffuse_Lambert(diffuseColor);
-    float4 light = float4(diffuse * irradiance, 1);
+    float4 light = float4(diffuse * irradiance * gBuffer.AO, 1);
 #else
 	// Calculate shadowing
 	float3 L = Light.Direction;

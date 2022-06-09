@@ -465,7 +465,7 @@ void PS_IndirectLighting(Quad_VS2PS input, out float4 output : SV_Target0)
     // Calculate lighting
     float3 diffuseColor = GetDiffuseColor(gBuffer);
     float3 diffuse = Diffuse_Lambert(diffuseColor);
-    output = float4(diffuse * irradiance, 1);
+    output = float4(diffuse * irradiance * gBuffer.AO, 1);
 }
 
 #endif
