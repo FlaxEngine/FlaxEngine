@@ -86,7 +86,7 @@ void CS_Classify(uint3 DispatchThreadId : SV_DispatchThreadID)
     float sdf;
     float3 sdfNormal = normalize(SampleGlobalSDFGradient(GlobalSDF, GlobalSDFTex, probePosition.xyz, sdf));
     float sdfDst = abs(sdf);
-    float threshold = GlobalSDF.CascadeVoxelSize[CascadeIndex] * 0.5f;
+    float threshold = GlobalSDF.CascadeVoxelSize[CascadeIndex];
     float distanceLimit = length(probesSpacing) * 2.0f;
     float relocateLimit = length(probesSpacing) * 0.6f;
     if (sdfDst > distanceLimit) // Probe is too far from geometry
@@ -305,7 +305,10 @@ void CS_UpdateProbes(uint3 DispatchThreadId : SV_DispatchThreadID, uint GroupInd
 
             // Skip further blending after reaching backfaces limit
             if (backfacesCount >= backfacesLimit)
-                return;
+            {
+                result = float4(0, 0, 0, 1);
+                break;
+            }
             continue;
         }
 
@@ -313,7 +316,7 @@ void CS_UpdateProbes(uint3 DispatchThreadId : SV_DispatchThreadID, uint GroupInd
         result += float4(rayRadiance.rgb * rayWeight, rayWeight);
 #else
         // Increase reaction speed for depth discontinuities
-        rayWeight = pow(rayWeight, 4.0f);
+        rayWeight = pow(rayWeight, 10.0f);
 
         // Add distance (R), distance^2 (G) and weight (A)
         float rayDistance = min(abs(rayRadiance.w), distanceLimit);

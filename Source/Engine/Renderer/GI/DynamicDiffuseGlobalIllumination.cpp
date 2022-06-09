@@ -276,6 +276,7 @@ bool DynamicDiffuseGlobalIlluminationPass::Render(RenderContext& renderContext, 
     const float distanceExtent = distance / cascadesDistanceScales[cascadesCount - 1];
     const float verticalRangeScale = 0.8f; // Scales the probes volume size at Y axis (horizontal aspect ratio makes the DDGI use less probes vertically to cover whole screen)
     const float probesSpacing = 200.0f; // GI probes placement spacing nearby camera (for closest cascade; gets automatically reduced for further cascades)
+    const Color fallbackIrradiance = Color::Black; // Irradiance lighting outside the DDGI range used as a fallback to prevent pure-black scene outside the GI range
     const Int3 probesCounts(Vector3::Ceil(Vector3(distanceExtent, distanceExtent * verticalRangeScale, distanceExtent) / probesSpacing));
     const int32 probeRaysCount = Math::Min(Math::AlignUp(256, DDGI_TRACE_RAYS_GROUP_SIZE_X), DDGI_TRACE_RAYS_LIMIT); // TODO: make it based on the GI Quality
 
@@ -413,6 +414,7 @@ bool DynamicDiffuseGlobalIlluminationPass::Render(RenderContext& renderContext, 
         ddgiData.Result.Constants.RaysCount = probeRaysCount;
         ddgiData.Result.Constants.ProbeHistoryWeight = probeHistoryWeight;
         ddgiData.Result.Constants.IrradianceGamma = 5.0f;
+        ddgiData.Result.Constants.FallbackIrradiance = fallbackIrradiance.ToVector3() * fallbackIrradiance.A;
         ddgiData.Result.ProbesState = ddgiData.ProbesState->View();
         ddgiData.Result.ProbesDistance = ddgiData.ProbesDistance->View();
         ddgiData.Result.ProbesIrradiance = ddgiData.ProbesIrradiance->View();

@@ -34,6 +34,8 @@ struct DDGIData
     float4 RaysRotation;
     float3 ViewDir;
     uint RaysCount;
+    float3 FallbackIrradiance;
+    float Padding1;
 };
 
 uint GetDDGIProbeIndex(DDGIData data, uint3 probeCoords)
@@ -133,7 +135,7 @@ float3 SampleDDGIIrradiance(DDGIData data, Texture2D<float4> probesState, Textur
             break;
     }
     if (cascadeIndex == data.CascadesCount)
-        return float3(0, 0, 0);
+        return data.FallbackIrradiance;
  
     float probesSpacing = data.ProbesOriginAndSpacing[cascadeIndex].w;
     float3 probesOrigin = data.ProbesScrollOffsets[cascadeIndex].xyz * probesSpacing + data.ProbesOriginAndSpacing[cascadeIndex].xyz;

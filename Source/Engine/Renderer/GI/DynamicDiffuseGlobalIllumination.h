@@ -27,6 +27,8 @@ public:
         Vector4 RaysRotation;
         Vector3 ViewDir;
         uint32 RaysCount;
+        Vector3 FallbackIrradiance;
+        float Padding1;
         });
 
     // Binding data for the GPU.
