@@ -383,8 +383,10 @@ bool GlobalSignDistanceFieldPass::Render(RenderContext& renderContext, GPUContex
     const int32 resolution = 256;
     const int32 resolutionMip = Math::DivideAndRoundUp(resolution, GLOBAL_SDF_RASTERIZE_MIP_FACTOR);
     // TODO: configurable via postFx settings
-    const float distanceExtent = 2000.0f;
-    const float cascadesDistances[] = { distanceExtent, distanceExtent * 2.0f, distanceExtent * 4.0f, distanceExtent * 8.0f };
+    const int32 cascadesCount = 4; // in range 1-4
+    const float distance = true ? 20000.0f : 16000.0f; // TODO: switch based if using GI, then use GI range
+    const float cascadesDistanceScales[] = { 1.0f, 2.0f, 4.0f, 8.0f };
+    const float distanceExtent = distance / cascadesDistanceScales[cascadesCount - 1];
 
     // Initialize buffers
     auto desc = GPUTextureDescription::New3D(resolution, resolution, resolution, GLOBAL_SDF_FORMAT, GPUTextureFlags::ShaderResource | GPUTextureFlags::UnorderedAccess, 1);
@@ -449,23 +451,22 @@ bool GlobalSignDistanceFieldPass::Render(RenderContext& renderContext, GPUContex
     bool anyDraw = false;
     const uint64 cascadeFrequencies[] = { 2, 3, 5, 11 };
     //const uint64 cascadeFrequencies[] = { 1, 1, 1, 1 };
-    for (int32 cascade = 0; cascade < 4; cascade++)
     for (int32 cascadeIndex = 0; cascadeIndex < 4; cascadeIndex++)
     {
         // Reduce frequency of the updates
         if (useCache && (Engine::FrameCount % cascadeFrequencies[cascadeIndex]) != 0)
             continue;
         auto& cascade = sdfData.Cascades[cascadeIndex];
-        const float distance = cascadesDistances[cascadeIndex];
-        const float maxDistance = distance * 2;
-        const float voxelSize = maxDistance / resolution;
-        const float chunkSize = voxelSize * GLOBAL_SDF_RASTERIZE_CHUNK_SIZE;
+        const float cascadeDistance = distanceExtent * cascadesDistanceScales[cascadeIndex];
+        const float cascadeMaxDistance = cascadeDistance * 2;
+        const float cascadeVoxelSize = cascadeMaxDistance / resolution;
+        const float cascadeChunkSize = cascadeVoxelSize * GLOBAL_SDF_RASTERIZE_CHUNK_SIZE;
         static_assert(GLOBAL_SDF_RASTERIZE_CHUNK_SIZE % GLOBAL_SDF_RASTERIZE_MIP_FACTOR == 0, "Adjust chunk size to match the mip factor scale.");
-        const Vector3 center = Vector3::Floor(renderContext.View.Position / chunkSize) * chunkSize;
+        const Vector3 center = Vector3::Floor(renderContext.View.Position / cascadeChunkSize) * cascadeChunkSize;
         //const Vector3 center = Vector3::Zero;
-        BoundingBox cascadeBounds(center - distance, center + distance);
+        BoundingBox cascadeBounds(center - cascadeDistance, center + cascadeDistance);
         // TODO: add scene detail scale factor to PostFx settings (eg. to increase or decrease scene details and quality)
-        const float minObjectRadius = Math::Max(20.0f, voxelSize * 0.5f); // Skip too small objects for this cascade
+        const float minObjectRadius = Math::Max(20.0f, cascadeVoxelSize * 0.5f); // Skip too small objects for this cascade
         GPUTextureView* cascadeView = cascade.Texture->ViewVolume();
         GPUTextureView* cascadeMipView = cascade.Mip->ViewVolume();
 
@@ -478,18 +479,18 @@ bool GlobalSignDistanceFieldPass::Render(RenderContext& renderContext, GPUContex
         }
 
         // Check if cascade center has been moved
-        if (!(useCache && Vector3::NearEqual(cascade.Position, center, voxelSize)))
+        if (!(useCache && Vector3::NearEqual(cascade.Position, center, cascadeVoxelSize)))
         {
             // TODO: optimize for moving camera (copy sdf for cached chunks)
             cascade.StaticChunks.Clear();
         }
         cascade.Position = center;
-        cascade.VoxelSize = voxelSize;
+        cascade.VoxelSize = cascadeVoxelSize;
         cascade.Bounds = cascadeBounds;
 
         // Draw all objects from all scenes into the cascade
         _objectsBufferCount = 0;
-        _voxelSize = voxelSize;
+        _voxelSize = cascadeVoxelSize;
         _cascadeBounds = cascadeBounds;
         _cascadeIndex = cascadeIndex;
         _sdfData = &sdfData;
@@ -518,12 +519,12 @@ bool GlobalSignDistanceFieldPass::Render(RenderContext& renderContext, GPUContex
         }
         ModelsRasterizeData data;
         data.CascadeCoordToPosMul = cascadeBounds.GetSize() / resolution;
-        data.CascadeCoordToPosAdd = cascadeBounds.Minimum + voxelSize * 0.5f;
-        data.MaxDistance = maxDistance;
+        data.CascadeCoordToPosAdd = cascadeBounds.Minimum + cascadeVoxelSize * 0.5f;
+        data.MaxDistance = cascadeMaxDistance;
         data.CascadeResolution = resolution;
         data.CascadeMipResolution = resolutionMip;
         data.CascadeMipFactor = GLOBAL_SDF_RASTERIZE_MIP_FACTOR;
-        data.CascadeVoxelSize = voxelSize;
+        data.CascadeVoxelSize = cascadeVoxelSize;
         context->BindUA(0, cascadeView);
         context->BindCB(1, _cb1);
         const int32 chunkDispatchGroups = GLOBAL_SDF_RASTERIZE_CHUNK_SIZE / GLOBAL_SDF_RASTERIZE_GROUP_SIZE;
@@ -728,12 +729,12 @@ bool GlobalSignDistanceFieldPass::Render(RenderContext& renderContext, GPUContex
     for (int32 cascadeIndex = 0; cascadeIndex < 4; cascadeIndex++)
     {
         auto& cascade = sdfData.Cascades[cascadeIndex];
-        const float distance = cascadesDistances[cascadeIndex];
-        const float maxDistance = distance * 2;
-        const float voxelSize = maxDistance / resolution;
+        const float cascadeDistance = distanceExtent * cascadesDistanceScales[cascadeIndex];
+        const float cascadeMaxDistance = cascadeDistance * 2;
+        const float cascadeVoxelSize = cascadeMaxDistance / resolution;
         const Vector3 center = cascade.Position;
-        result.Constants.CascadePosDistance[cascadeIndex] = Vector4(center, distance);
-        result.Constants.CascadeVoxelSize.Raw[cascadeIndex] = voxelSize;
+        result.Constants.CascadePosDistance[cascadeIndex] = Vector4(center, cascadeDistance);
+        result.Constants.CascadeVoxelSize.Raw[cascadeIndex] = cascadeVoxelSize;
         result.Cascades[cascadeIndex] = cascade.Texture;
         result.CascadeMips[cascadeIndex] = cascade.Mip;
     }

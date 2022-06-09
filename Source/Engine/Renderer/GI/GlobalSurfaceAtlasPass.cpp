@@ -346,8 +346,8 @@ bool GlobalSurfaceAtlasPass::Render(RenderContext& renderContext, GPUContext* co
     // TODO: configurable via graphics settings
     const int32 resolution = 2048;
     const float resolutionInv = 1.0f / resolution;
-    // TODO: configurable via postFx settings (maybe use Global SDF distance?)
-    const float distance = 20000;
+    // TODO: configurable via postFx settings (use GI distance)
+    const float distance = 20000.0f;
 
     // Initialize buffers
     bool noCache = surfaceAtlasData.Resolution != resolution;

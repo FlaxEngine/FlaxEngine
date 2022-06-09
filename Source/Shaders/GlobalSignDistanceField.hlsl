@@ -209,5 +209,5 @@ GlobalSDFHit RayTraceGlobalSDF(const GlobalSDFData data, Texture3D<float> tex[4]
 float GetGlobalSurfaceAtlasThreshold(GlobalSDFHit hit)
 {
 	// Scale the threshold based on the hit cascade (less precision)
-	return hit.HitCascade * 10.0f + 20.0f;
+	return hit.HitCascade * 20.0f + 25.0f;
 }

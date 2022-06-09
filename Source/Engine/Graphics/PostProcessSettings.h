@@ -202,13 +202,13 @@ DECLARE_SCRIPTING_TYPE_NO_SPAWN(AmbientOcclusionSettings);
     /// <summary>
     /// Ambient occlusion intensity.
     /// </summary>
-    API_FIELD(Attributes="DefaultValue(0.8f), Limit(0, 5.0f, 0.01f), EditorOrder(1), PostProcessSetting((int)AmbientOcclusionSettingsOverride.Intensity)")
+    API_FIELD(Attributes="DefaultValue(0.8f), Limit(0, 10.0f, 0.01f), EditorOrder(1), PostProcessSetting((int)AmbientOcclusionSettingsOverride.Intensity)")
     float Intensity = 0.8f;
 
     /// <summary>
     /// Ambient occlusion power.
     /// </summary>
-    API_FIELD(Attributes="DefaultValue(0.75f), Limit(0, 4.0f, 0.01f), EditorOrder(2), PostProcessSetting((int)AmbientOcclusionSettingsOverride.Power)")
+    API_FIELD(Attributes="DefaultValue(0.75f), Limit(0, 10.0f, 0.01f), EditorOrder(2), PostProcessSetting((int)AmbientOcclusionSettingsOverride.Power)")
     float Power = 0.75f;
 
     /// <summary>

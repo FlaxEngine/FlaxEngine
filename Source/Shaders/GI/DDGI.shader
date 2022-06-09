@@ -22,14 +22,20 @@
 #define DDGI_PROBE_UPDATE_BORDERS_GROUP_SIZE 8
 #define DDGI_PROBE_CLASSIFY_GROUP_SIZE 32
 
-META_CB_BEGIN(0, Data)
+META_CB_BEGIN(0, Data0)
 DDGIData DDGI;
 GlobalSDFData GlobalSDF;
 GlobalSurfaceAtlasData GlobalSurfaceAtlas;
 GBufferData GBuffer;
-float2 Padding0;
 float ResetBlend;
+float TemporalTime;
 float IndirectLightingIntensity;
+float2 Padding0;
+META_CB_END
+
+META_CB_BEGIN(1, Data1)
+float3 Padding1;
+uint CascadeIndex;
 META_CB_END
 
 // Calculates the evenly distributed direction ray on a sphere (Spherical Fibonacci lattice)
@@ -66,22 +72,24 @@ void CS_Classify(uint3 DispatchThreadId : SV_DispatchThreadID)
     if (probeIndex >= probesCount)
         return;
     uint3 probeCoords = GetDDGIProbeCoords(DDGI, probeIndex);
-    probeIndex = GetDDGIScrollingProbeIndex(DDGI, probeCoords);
-    int2 probeDataCoords = GetDDGIProbeTexelCoords(DDGI, probeIndex);
+    probeIndex = GetDDGIScrollingProbeIndex(DDGI, CascadeIndex, probeCoords);
+    int2 probeDataCoords = GetDDGIProbeTexelCoords(DDGI, CascadeIndex, probeIndex);
+    float probesSpacing = DDGI.ProbesOriginAndSpacing[CascadeIndex].w;
 
     // Load probe state and position
     float4 probeState = RWProbesState[probeDataCoords];
-    float3 probeBasePosition = GetDDGIProbeWorldPosition(DDGI, probeCoords);
+    float3 probeBasePosition = GetDDGIProbeWorldPosition(DDGI, CascadeIndex, probeCoords);
     float3 probePosition = probeBasePosition + probeState.xyz;
     probeState.w = DDGI_PROBE_STATE_ACTIVE;
 
     // Use Global SDF to quickly get distance and direction to the scene geometry
     float sdf;
     float3 sdfNormal = normalize(SampleGlobalSDFGradient(GlobalSDF, GlobalSDFTex, probePosition.xyz, sdf));
-    float threshold = GlobalSDF.CascadeVoxelSize[0] * 0.5f;
-    float distanceLimit = length(DDGI.ProbesSpacing) * 2.0f;
-    float relocateLimit = length(DDGI.ProbesSpacing) * 0.6f;
-    if (abs(sdf) > distanceLimit) // Probe is too far from geometry
+    float sdfDst = abs(sdf);
+    float threshold = GlobalSDF.CascadeVoxelSize[CascadeIndex] * 0.5f;
+    float distanceLimit = length(probesSpacing) * 2.0f;
+    float relocateLimit = length(probesSpacing) * 0.6f;
+    if (sdfDst > distanceLimit) // Probe is too far from geometry
     {
         // Disable it
         probeState = float4(0, 0, 0, DDGI_PROBE_STATE_INACTIVE);
@@ -90,9 +98,9 @@ void CS_Classify(uint3 DispatchThreadId : SV_DispatchThreadID)
     {
         if (sdf < threshold) // Probe is inside geometry
         {
-            if (abs(sdf) < relocateLimit)
+            if (sdfDst < relocateLimit)
             {
-                float3 offsetToAdd = sdfNormal * sdf;
+                float3 offsetToAdd = sdfNormal * (sdf + threshold);
                 if (distance(probeState.xyz, offsetToAdd) < relocateLimit)
                 {
                     // Relocate it
@@ -105,7 +113,7 @@ void CS_Classify(uint3 DispatchThreadId : SV_DispatchThreadID)
                 probeState.xyz = float3(0, 0, 0);
             }
         }
-        else if (sdf > threshold * 2.0f) // Probe is far enough any geometry
+        else if (sdf > threshold * 4.0f) // Probe is far enough any geometry
         {
             // Reset relocation
             probeState.xyz = float3(0, 0, 0);
@@ -146,10 +154,10 @@ void CS_TraceRays(uint3 GroupId : SV_GroupID, uint3 DispatchThreadId : SV_Dispat
     uint rayIndex = DispatchThreadId.x;
     uint probeIndex = DispatchThreadId.y;
     uint3 probeCoords = GetDDGIProbeCoords(DDGI, probeIndex);
-    probeIndex = GetDDGIScrollingProbeIndex(DDGI, probeCoords);
+    probeIndex = GetDDGIScrollingProbeIndex(DDGI, CascadeIndex, probeCoords);
 
     // Load current probe state and position
-    float4 probePositionAndState = LoadDDGIProbePositionAndState(DDGI, ProbesState, probeIndex, probeCoords);
+    float4 probePositionAndState = LoadDDGIProbePositionAndState(DDGI, ProbesState, CascadeIndex, probeIndex, probeCoords);
     if (probePositionAndState.w == DDGI_PROBE_STATE_INACTIVE)
         return; // Skip disabled probes
     float3 probeRayDirection = GetProbeRayDirection(DDGI, rayIndex);
@@ -222,16 +230,20 @@ void CS_UpdateProbes(uint3 DispatchThreadId : SV_DispatchThreadID, uint GroupInd
     uint probesCount = DDGI.ProbesCounts.x * DDGI.ProbesCounts.y * DDGI.ProbesCounts.z;
     bool skip = probeIndex >= probesCount;
     uint2 outputCoords = uint2(1, 1) + DispatchThreadId.xy + (DispatchThreadId.xy / DDGI_PROBE_RESOLUTION) * 2;
-
+    outputCoords.y += CascadeIndex * DDGI.ProbesCounts.z * (DDGI_PROBE_RESOLUTION + 2);
+    
     // Clear probes that have been scrolled to a new positions (blending with current irradiance will happen the next frame)
     uint3 probeCoords = GetDDGIProbeCoords(DDGI, probeIndex);
+    int3 probesScrollOffsets = DDGI.ProbesScrollOffsets[CascadeIndex].xyz;
+    int probeScrollClear = DDGI.ProbesScrollOffsets[CascadeIndex].w;
+    int3 probeScrollDirections = DDGI.ProbeScrollDirections[CascadeIndex].xyz;
     UNROLL
     for (uint planeIndex = 0; planeIndex < 3; planeIndex++)
     {
-        if (DDGI.ProbeScrollClear[planeIndex])
+        if (probeScrollClear & (1 << planeIndex) && !skip)
         {
-            int scrollOffset = DDGI.ProbesScrollOffsets[planeIndex];
-            int scrollDirection = DDGI.ProbeScrollDirections[planeIndex];
+            int scrollOffset = probesScrollOffsets[planeIndex];
+            int scrollDirection = probeScrollDirections[planeIndex];
             uint probeCount = DDGI.ProbesCounts[planeIndex];
             uint coord = (probeCount + (scrollDirection ? (scrollOffset - 1) : (scrollOffset % probeCount))) % probeCount;
             if (probeCoords[planeIndex] == coord)
@@ -244,7 +256,7 @@ void CS_UpdateProbes(uint3 DispatchThreadId : SV_DispatchThreadID, uint GroupInd
     }
 
     // Skip disabled probes
-    float probeState = LoadDDGIProbeState(DDGI, ProbesState, probeIndex);
+    float probeState = LoadDDGIProbeState(DDGI, ProbesState, CascadeIndex, probeIndex);
     if (probeState == DDGI_PROBE_STATE_INACTIVE)
         skip = true;
 
@@ -275,7 +287,8 @@ void CS_UpdateProbes(uint3 DispatchThreadId : SV_DispatchThreadID, uint GroupInd
     uint backfacesCount = 0;
     uint backfacesLimit = uint(DDGI.RaysCount * 0.1f);
 #else
-    float distanceLimit = length(DDGI.ProbesSpacing) * 1.5f;
+    float probesSpacing = DDGI.ProbesOriginAndSpacing[CascadeIndex].w;
+    float distanceLimit = length(probesSpacing) * 1.5f;
 #endif
     LOOP
     for (uint rayIndex = 0; rayIndex < DDGI.RaysCount; rayIndex++)
@@ -420,6 +433,7 @@ void CS_UpdateBorders(uint3 DispatchThreadId : SV_DispatchThreadID)
 #ifdef _PS_IndirectLighting
 
 #include "./Flax/GBuffer.hlsl"
+#include "./Flax/Random.hlsl"
 #include "./Flax/LightingCommon.hlsl"
 
 Texture2D<float4> ProbesState : register(t4);
@@ -445,8 +459,9 @@ void PS_IndirectLighting(Quad_VS2PS input, out float4 output : SV_Target0)
 
     // Sample irradiance
     float bias = 1.0f;
-    float3 irradiance = SampleDDGIIrradiance(DDGI, ProbesState, ProbesDistance, ProbesIrradiance, gBuffer.WorldPos, gBuffer.Normal, bias);
-
+    float dither = RandN2(input.TexCoord + TemporalTime).x;
+    float3 irradiance = SampleDDGIIrradiance(DDGI, ProbesState, ProbesDistance, ProbesIrradiance, gBuffer.WorldPos, gBuffer.Normal, bias, dither);
+    
     // Calculate lighting
     float3 diffuseColor = GetDiffuseColor(gBuffer);
     float3 diffuse = Diffuse_Lambert(diffuseColor);

@@ -3,7 +3,7 @@
 #pragma once
 
 #include "../RendererPass.h"
-#include "Engine/Core/Math/Int3.h"
+#include "Engine/Core/Math/Int4.h"
 #include "Engine/Graphics/Textures/GPUTexture.h"
 
 /// <summary>
@@ -15,19 +15,18 @@ public:
     // Constant buffer data for DDGI access on a GPU.
     PACK_STRUCT(struct ConstantsData
         {
-        Vector3 ProbesOrigin;
-        float ProbesSpacing;
-        Vector4 RaysRotation;
+        Vector4 ProbesOriginAndSpacing[4];
+        Int4 ProbesScrollOffsets[4];
+        Int4 ProbeScrollDirections[4];
         uint32 ProbesCounts[3];
+        uint32 CascadesCount;
         float IrradianceGamma;
-        Int3 ProbesScrollOffsets;
         float ProbeHistoryWeight;
+        float RayMaxDistance;
+        float Padding0;
+        Vector4 RaysRotation;
         Vector3 ViewDir;
         uint32 RaysCount;
-        Int3 ProbeScrollDirections;
-        float RayMaxDistance;
-        uint32 ProbeScrollClear[3];
-        uint32 Padding0;
         });
 
     // Binding data for the GPU.
@@ -43,6 +42,7 @@ private:
     bool _supported = false;
     AssetReference<Shader> _shader;
     GPUConstantBuffer* _cb0 = nullptr;
+    GPUConstantBuffer* _cb1 = nullptr;
     GPUShaderProgramCS* _csClassify;
     GPUShaderProgramCS* _csTraceRays;
     GPUShaderProgramCS* _csUpdateProbesIrradiance;
