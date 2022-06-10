@@ -58,6 +58,11 @@ public:
     /// </summary>
     API_FIELD() static Quality GlobalSDFQuality;
 
+    /// <summary>
+    /// The Global Illumination quality. Controls the quality of the GI effect.
+    /// </summary>
+    API_FIELD() static Quality GIQuality;
+
 public:
 
     /// <summary>

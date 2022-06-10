@@ -28,6 +28,12 @@ public:
     AmbientOcclusionSettings AmbientOcclusion;
 
     /// <summary>
+    /// The Global Illumination effect settings.
+    /// </summary>
+    API_FIELD(Attributes="EditorDisplay(\"Global Illumination\"), EditorOrder(150)")
+    GlobalIlluminationSettings GlobalIllumination;
+
+    /// <summary>
     /// The bloom effect settings.
     /// </summary>
     API_FIELD(Attributes="EditorDisplay(\"Bloom\"), EditorOrder(200)")

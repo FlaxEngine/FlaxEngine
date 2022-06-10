@@ -27,10 +27,9 @@ DDGIData DDGI;
 GlobalSDFData GlobalSDF;
 GlobalSurfaceAtlasData GlobalSurfaceAtlas;
 GBufferData GBuffer;
+float2 Padding0;
 float ResetBlend;
 float TemporalTime;
-float IndirectLightingIntensity;
-float2 Padding0;
 META_CB_END
 
 META_CB_BEGIN(1, Data1)
@@ -343,7 +342,7 @@ void CS_UpdateProbes(uint3 GroupThreadId : SV_GroupThreadID, uint3 GroupId : SV_
     if (ResetBlend || dot(previous, previous) == 0)
         historyWeight = 0.0f;
 #if DDGI_PROBE_UPDATE_MODE == 0
-    result *= IndirectLightingIntensity;
+    result *= DDGI.IndirectLightingIntensity;
 #if DDGI_SRGB_BLENDING
     result.rgb = pow(result.rgb, 1.0f / DDGI.IrradianceGamma);
 #endif

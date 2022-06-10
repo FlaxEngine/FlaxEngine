@@ -120,6 +120,7 @@ float4 PS_Lighting(AtlasVertexOutput input) : SV_Target
     // Sample irradiance
     float bias = 1.0f;
     float3 irradiance = SampleDDGIIrradiance(DDGI, ProbesState, ProbesDistance, ProbesIrradiance, gBuffer.WorldPos, gBuffer.Normal, bias);
+    irradiance /= DDGI.IndirectLightingIntensity;
     //irradiance = 0;
 
     // Calculate lighting

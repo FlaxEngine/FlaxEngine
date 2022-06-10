@@ -14,6 +14,7 @@
 #include "Engine/Debug/DebugDraw.h"
 #include "Engine/Engine/Time.h"
 #include "Engine/Graphics/GPUDevice.h"
+#include "Engine/Graphics/Graphics.h"
 #include "Engine/Graphics/RenderTask.h"
 #include "Engine/Graphics/RenderBuffers.h"
 #include "Engine/Graphics/RenderTargetPool.h"
@@ -45,10 +46,9 @@ PACK_STRUCT(struct Data0
     GlobalSignDistanceFieldPass::ConstantsData GlobalSDF;
     GlobalSurfaceAtlasPass::ConstantsData GlobalSurfaceAtlas;
     GBufferData GBuffer;
+    Vector2 Padding0;
     float ResetBlend;
     float TemporalTime;
-    float IndirectLightingIntensity;
-    float Padding0;
     });
 
 PACK_STRUCT(struct Data1
@@ -266,22 +266,52 @@ bool DynamicDiffuseGlobalIlluminationPass::Render(RenderContext& renderContext, 
     ddgiData.LastFrameUsed = currentFrame;
     PROFILE_GPU_CPU("Dynamic Diffuse Global Illumination");
 
-    // TODO: configurable via graphics settings
-    const Quality quality = Quality::Ultra;
+    // Setup options
+    auto& settings = renderContext.List->Settings.GlobalIllumination;
+    // TODO: implement GI Quality to affect cascades update rate, probes spacing and rays count per probe
+    const float probesSpacing = 100.0f; // GI probes placement spacing nearby camera (for closest cascade; gets automatically reduced for further cascades)
+    switch (Graphics::GIQuality)
+    {
+    case Quality::Low:
+        break;
+    case Quality::Medium:
+        break;
+    case Quality::High:
+        break;
+    case Quality::Ultra:
+    default:
+        break;
+    }
     bool debugProbes = false; // TODO: add debug option to draw probes locations -> in Graphics window - Editor-only
-    // TODO: configurable via postFx settings (maybe use Global SDF distance?)
-    const float indirectLightingIntensity = 1.0f;
-    const float probeHistoryWeight = 0.8f;
-    const int32 cascadesCount = 4; // in range 1-4
-    // TODO: use GI.Distance as a easier to adjust total distance and automatically calculate distanceExtent from it
-    const float distance = 20000.0f; // GI distance around the view (in each direction)
+    const float indirectLightingIntensity = settings.Intensity;
+    const float probeHistoryWeight = Math::Clamp(settings.TemporalResponse, 0.0f, 0.98f);
+    const float distance = settings.Distance;
+    const Color fallbackIrradiance = settings.FallbackIrradiance;
+    const int32 probeRaysCount = Math::Min(Math::AlignUp(256, DDGI_TRACE_RAYS_GROUP_SIZE_X), DDGI_TRACE_RAYS_LIMIT); // TODO: make it based on the GI Quality
+
+    // Automatically calculate amount of cascades to cover the GI distance at the current probes spacing
+    const int32 idealProbesCount = 20; // Ideal amount of probes per-cascade to try to fit in order to cover whole distance
+    int32 cascadesCount = 1;
+    float idealDistance = idealProbesCount * probesSpacing;
+    while (cascadesCount < 4 && idealDistance < distance)
+    {
+        idealDistance *= 2;
+        cascadesCount++;
+    }
+
+    // Calculate the probes count based on the amount of cascades and the distance to cover
     const float cascadesDistanceScales[] = { 1.0f, 3.0f, 6.0f, 10.0f }; // Scales each cascade further away from the camera origin
     const float distanceExtent = distance / cascadesDistanceScales[cascadesCount - 1];
     const float verticalRangeScale = 0.8f; // Scales the probes volume size at Y axis (horizontal aspect ratio makes the DDGI use less probes vertically to cover whole screen)
-    const float probesSpacing = 200.0f; // GI probes placement spacing nearby camera (for closest cascade; gets automatically reduced for further cascades)
-    const Color fallbackIrradiance = Color::Black; // Irradiance lighting outside the DDGI range used as a fallback to prevent pure-black scene outside the GI range
-    const Int3 probesCounts(Vector3::Ceil(Vector3(distanceExtent, distanceExtent * verticalRangeScale, distanceExtent) / probesSpacing));
-    const int32 probeRaysCount = Math::Min(Math::AlignUp(256, DDGI_TRACE_RAYS_GROUP_SIZE_X), DDGI_TRACE_RAYS_LIMIT); // TODO: make it based on the GI Quality
+    Int3 probesCounts(Vector3::Ceil(Vector3(distanceExtent, distanceExtent * verticalRangeScale, distanceExtent) / probesSpacing));
+    const int32 maxProbeSize = Math::Max(DDGI_PROBE_RESOLUTION_IRRADIANCE, DDGI_PROBE_RESOLUTION_DISTANCE) + 2;
+    const int32 maxTextureSize = Math::Min(GPUDevice::Instance->Limits.MaximumTexture2DSize, GPU_MAX_TEXTURE_SIZE);
+    while (probesCounts.X * probesCounts.Y * maxProbeSize > maxTextureSize
+        || probesCounts.Z * cascadesCount * maxProbeSize > maxTextureSize)
+    {
+        // Decrease quality to ensure the probes texture won't overflow
+        probesCounts -= 1;
+    }
 
     // Initialize cascades
     float probesSpacings[4];
@@ -417,6 +447,7 @@ bool DynamicDiffuseGlobalIlluminationPass::Render(RenderContext& renderContext, 
         ddgiData.Result.Constants.RaysCount = probeRaysCount;
         ddgiData.Result.Constants.ProbeHistoryWeight = probeHistoryWeight;
         ddgiData.Result.Constants.IrradianceGamma = 5.0f;
+        ddgiData.Result.Constants.IndirectLightingIntensity = indirectLightingIntensity;
         ddgiData.Result.Constants.FallbackIrradiance = fallbackIrradiance.ToVector3() * fallbackIrradiance.A;
         ddgiData.Result.ProbesState = ddgiData.ProbesState->View();
         ddgiData.Result.ProbesDistance = ddgiData.ProbesDistance->View();
@@ -446,7 +477,6 @@ bool DynamicDiffuseGlobalIlluminationPass::Render(RenderContext& renderContext, 
         {
             data.TemporalTime = 0.0f;
         }
-        data.IndirectLightingIntensity = indirectLightingIntensity;
         GBufferPass::SetInputs(renderContext.View, data.GBuffer);
         context->UpdateCB(_cb0, &data);
         context->BindCB(0, _cb0);

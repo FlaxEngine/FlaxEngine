@@ -8,6 +8,7 @@
 #define BLEND_FLOAT(name) if ((((int32)other.OverrideFlags & (int32)Override::name) != 0)) name = Math::Lerp(name, other.name, weight)
 #define BLEND_INT(name) BLEND_FLOAT(name)
 #define BLEND_VEC3(name) if ((((int32)other.OverrideFlags & (int32)Override::name) != 0)) name = Vector3::Lerp(name, other.name, weight)
+#define BLEND_COL(name) if ((((int32)other.OverrideFlags & (int32)Override::name) != 0)) name = Color::Lerp(name, other.name, weight)
 #define BLEND_ENUM(name) BLEND_BOOL(name)
 #define BLEND_PROPERTY(name) BLEND_BOOL(name)
 
@@ -21,6 +22,16 @@ void AmbientOcclusionSettings::BlendWith(AmbientOcclusionSettings& other, float 
     BLEND_FLOAT(Radius);
     BLEND_FLOAT(FadeOutDistance);
     BLEND_FLOAT(FadeDistance);
+}
+
+void GlobalIlluminationSettings::BlendWith(GlobalIlluminationSettings& other, float weight)
+{
+    const bool isHalf = weight >= 0.5f;
+    BLEND_BOOL(Mode);
+    BLEND_FLOAT(Intensity);
+    BLEND_FLOAT(TemporalResponse);
+    BLEND_FLOAT(Distance);
+    BLEND_COL(FallbackIrradiance);
 }
 
 void BloomSettings::BlendWith(BloomSettings& other, float weight)
@@ -209,6 +220,7 @@ void PostFxMaterialsSettings::BlendWith(PostFxMaterialsSettings& other, float we
 void PostProcessSettings::BlendWith(PostProcessSettings& other, float weight)
 {
     AmbientOcclusion.BlendWith(other.AmbientOcclusion, weight);
+    GlobalIllumination.BlendWith(other.GlobalIllumination, weight);
     Bloom.BlendWith(other.Bloom, weight);
     ToneMapping.BlendWith(other.ToneMapping, weight);
     ColorGrading.BlendWith(other.ColorGrading, weight);
@@ -251,6 +263,9 @@ void PostProcessSettings::Serialize(SerializeStream& stream, const void* otherOb
 
     stream.JKEY("AO");
     stream.Object(&AmbientOcclusion, other ? &other->AmbientOcclusion : nullptr);
+    
+    stream.JKEY("GI");
+    stream.Object(&GlobalIllumination, other ? &other->GlobalIllumination : nullptr);
 
     stream.JKEY("Bloom");
     stream.Object(&Bloom, other ? &other->Bloom : nullptr);
@@ -289,6 +304,7 @@ void PostProcessSettings::Serialize(SerializeStream& stream, const void* otherOb
 void PostProcessSettings::Deserialize(DeserializeStream& stream, ISerializeModifier* modifier)
 {
     AmbientOcclusion.DeserializeIfExists(stream, "AO", modifier);
+    GlobalIllumination.DeserializeIfExists(stream, "GI", modifier);
     Bloom.DeserializeIfExists(stream, "Bloom", modifier);
     ToneMapping.DeserializeIfExists(stream, "ToneMapping", modifier);
     ColorGrading.DeserializeIfExists(stream, "ColorGrading", modifier);

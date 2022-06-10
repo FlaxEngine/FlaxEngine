@@ -23,12 +23,12 @@ public:
         float IrradianceGamma;
         float ProbeHistoryWeight;
         float RayMaxDistance;
-        float Padding0;
+        float IndirectLightingIntensity;
         Vector4 RaysRotation;
         Vector3 ViewDir;
         uint32 RaysCount;
         Vector3 FallbackIrradiance;
-        float Padding1;
+        float Padding0;
         });
 
     // Binding data for the GPU.

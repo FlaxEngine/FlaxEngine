@@ -30,12 +30,12 @@ struct DDGIData
     float IrradianceGamma;
     float ProbeHistoryWeight;
     float RayMaxDistance;
-    float Padding0;
+    float IndirectLightingIntensity;
     float4 RaysRotation;
     float3 ViewDir;
     uint RaysCount;
     float3 FallbackIrradiance;
-    float Padding1;
+    float Padding0;
 };
 
 uint GetDDGIProbeIndex(DDGIData data, uint3 probeCoords)

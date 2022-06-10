@@ -72,6 +72,14 @@ namespace FlaxEditor.Windows
                 set => Graphics.GlobalSDFQuality = value;
             }
 
+            [DefaultValue(Quality.High)]
+            [EditorOrder(1290), EditorDisplay("Quality"), Tooltip("The Global Illumination quality. Controls the quality of the GI effect.")]
+            public Quality GIQuality
+            {
+                get => Graphics.GIQuality;
+                set => Graphics.GIQuality = value;
+            }
+
             [DefaultValue(Quality.Medium)]
             [EditorOrder(1300), EditorDisplay("Quality", "Shadows Quality"), Tooltip("The shadows quality.")]
             public Quality ShadowsQuality

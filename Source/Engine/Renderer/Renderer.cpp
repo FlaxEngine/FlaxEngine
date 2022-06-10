@@ -401,8 +401,12 @@ void RenderInner(SceneRenderTask* task, RenderContext& renderContext)
     LightPass::Instance()->RenderLight(renderContext, *lightBuffer);
     if (renderContext.View.Flags & ViewFlags::GI)
     {
-        // TODO: add option to PostFx Volume for realtime GI type (None, DDGI)
-        DynamicDiffuseGlobalIlluminationPass::Instance()->Render(renderContext, context, *lightBuffer);
+        switch (renderContext.List->Settings.GlobalIllumination.Mode)
+        {
+        case GlobalIlluminationMode::DDGI:
+            DynamicDiffuseGlobalIlluminationPass::Instance()->Render(renderContext, context, *lightBuffer);
+            break;
+        }
     }
     if (renderContext.View.Mode == ViewMode::LightBuffer)
     {

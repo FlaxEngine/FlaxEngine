@@ -416,7 +416,8 @@ bool GlobalSignDistanceFieldPass::Render(RenderContext& renderContext, GPUContex
         break;
     }
     const int32 resolutionMip = Math::DivideAndRoundUp(resolution, GLOBAL_SDF_RASTERIZE_MIP_FACTOR);
-    const float distance = true ? 20000.0f : 16000.0f; // TODO: switch based if using GI, then use GI range
+    auto& giSettings = renderContext.List->Settings.GlobalIllumination;
+    const float distance = giSettings.Mode == GlobalIlluminationMode::DDGI ? giSettings.Distance : 15000.0f;
     const float cascadesDistanceScales[] = { 1.0f, 2.5f, 5.0f, 10.0f };
     const float distanceExtent = distance / cascadesDistanceScales[cascadesCount - 1];
 

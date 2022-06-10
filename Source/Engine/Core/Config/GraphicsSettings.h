@@ -82,6 +82,12 @@ public:
     bool GenerateSDFOnModelImport = false;
 #endif
 
+    /// <summary>
+    /// The Global Illumination quality. Controls the quality of the GI effect.
+    /// </summary>
+    API_FIELD(Attributes="EditorOrder(2100), DefaultValue(Quality.High), EditorDisplay(\"Quality\")")
+    Quality GIQuality = Quality::High;
+
 public:
     /// <summary>
     /// Gets the instance of the settings asset (default value if missing). Object returned by this method is always loaded with valid data to use.

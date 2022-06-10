@@ -343,11 +343,12 @@ bool GlobalSurfaceAtlasPass::Render(RenderContext& renderContext, GPUContext* co
     surfaceAtlasData.LastFrameUsed = currentFrame;
     PROFILE_GPU_CPU("Global Surface Atlas");
 
+    // Setup options
     // TODO: configurable via graphics settings
     const int32 resolution = 2048;
     const float resolutionInv = 1.0f / resolution;
-    // TODO: configurable via postFx settings (use GI distance)
-    const float distance = 20000.0f;
+    auto& giSettings = renderContext.List->Settings.GlobalIllumination;
+    const float distance = giSettings.Distance;
 
     // Initialize buffers
     bool noCache = surfaceAtlasData.Resolution != resolution;
@@ -847,32 +848,36 @@ bool GlobalSurfaceAtlasPass::Render(RenderContext& renderContext, GPUContext* co
         }
         if (renderContext.View.Flags & ViewFlags::GI)
         {
-            // TODO: add option to PostFx Volume for realtime GI type (None, DDGI)
-            DynamicDiffuseGlobalIlluminationPass::BindingData bindingDataDDGI;
-            if (!DynamicDiffuseGlobalIlluminationPass::Instance()->Get(renderContext.Buffers, bindingDataDDGI))
+            // Draw draw indirect light from Global Illumination
+            switch (renderContext.List->Settings.GlobalIllumination.Mode)
             {
-                // Collect tiles to shade
-                _vertexBuffer->Clear();
-                for (const auto& e : surfaceAtlasData.Objects)
+            case GlobalIlluminationMode::DDGI:
+            {
+                DynamicDiffuseGlobalIlluminationPass::BindingData bindingDataDDGI;
+                if (!DynamicDiffuseGlobalIlluminationPass::Instance()->Get(renderContext.Buffers, bindingDataDDGI))
                 {
-                    const auto& object = e.Value;
-                    for (int32 tileIndex = 0; tileIndex < 6; tileIndex++)
+                    _vertexBuffer->Clear();
+                    for (const auto& e : surfaceAtlasData.Objects)
                     {
-                        auto* tile = object.Tiles[tileIndex];
-                        if (!tile)
-                            continue;
-                        VB_WRITE_TILE(tile);
+                        const auto& object = e.Value;
+                        for (int32 tileIndex = 0; tileIndex < 6; tileIndex++)
+                        {
+                            auto* tile = object.Tiles[tileIndex];
+                            if (!tile)
+                                continue;
+                            VB_WRITE_TILE(tile);
+                        }
                     }
+                    data.DDGI = bindingDataDDGI.Constants;
+                    context->BindSR(5, bindingDataDDGI.ProbesState);
+                    context->BindSR(6, bindingDataDDGI.ProbesDistance);
+                    context->BindSR(7, bindingDataDDGI.ProbesIrradiance);
+                    context->UpdateCB(_cb0, &data);
+                    context->SetState(_psIndirectLighting);
+                    VB_DRAW();
                 }
-
-                // Draw draw indirect light
-                data.DDGI = bindingDataDDGI.Constants;
-                context->BindSR(5, bindingDataDDGI.ProbesState);
-                context->BindSR(6, bindingDataDDGI.ProbesDistance);
-                context->BindSR(7, bindingDataDDGI.ProbesIrradiance);
-                context->UpdateCB(_cb0, &data);
-                context->SetState(_psIndirectLighting);
-                VB_DRAW();
+                break;
+            }
             }
         }
 
@@ -888,11 +893,15 @@ bool GlobalSurfaceAtlasPass::Render(RenderContext& renderContext, GPUContext* co
 
 void GlobalSurfaceAtlasPass::RenderDebug(RenderContext& renderContext, GPUContext* context, GPUTexture* output)
 {
-    // Render all dependant effects
+    // Render all dependant effects before
     if (renderContext.View.Flags & ViewFlags::GI)
     {
-        // TODO: add option to PostFx Volume for realtime GI type (None, DDGI)
-        DynamicDiffuseGlobalIlluminationPass::Instance()->Render(renderContext, context, nullptr);
+        switch (renderContext.List->Settings.GlobalIllumination.Mode)
+        {
+        case GlobalIlluminationMode::DDGI:
+            DynamicDiffuseGlobalIlluminationPass::Instance()->Render(renderContext, context, nullptr);
+            break;
+        }
     }
     GlobalSignDistanceFieldPass::BindingData bindingDataSDF;
     BindingData bindingData;

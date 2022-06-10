@@ -14,4 +14,5 @@ void GraphicsSettings::Apply()
     Graphics::ShadowMapsQuality = ShadowMapsQuality;
     Graphics::AllowCSMBlending = AllowCSMBlending;
     Graphics::GlobalSDFQuality = GlobalSDFQuality;
+    Graphics::GIQuality = GIQuality;
 }

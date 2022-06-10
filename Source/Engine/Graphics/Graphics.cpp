@@ -15,6 +15,7 @@ Quality Graphics::ShadowsQuality = Quality::Medium;
 Quality Graphics::ShadowMapsQuality = Quality::Medium;
 bool Graphics::AllowCSMBlending = false;
 Quality Graphics::GlobalSDFQuality = Quality::High;
+Quality Graphics::GIQuality = Quality::High;
 
 #if GRAPHICS_API_NULL
 extern GPUDevice* CreateGPUDeviceNull();
