@@ -293,7 +293,7 @@ float4 PS_Debug(Quad_VS2PS input) : SV_Target
 	if (hit.IsHit())
 	{
         // Sample Global Surface Atlas at the hit location
-        float surfaceThreshold = GetGlobalSurfaceAtlasThreshold(hit);
+        float surfaceThreshold = GetGlobalSurfaceAtlasThreshold(GlobalSDF, hit);
         color = SampleGlobalSurfaceAtlas(GlobalSurfaceAtlas, GlobalSurfaceAtlasChunks, GlobalSurfaceAtlasCulledObjects, GlobalSurfaceAtlasDepth, GlobalSurfaceAtlasTex, hit.GetHitPosition(trace), -viewRay, surfaceThreshold).rgb;
 	    //color = hit.HitNormal * 0.5f + 0.5f;
     }

@@ -7,6 +7,7 @@
 #include "Engine/Engine/Engine.h"
 #include "Engine/Content/Content.h"
 #include "Engine/Graphics/GPUDevice.h"
+#include "Engine/Graphics/Graphics.h"
 #include "Engine/Graphics/RenderTask.h"
 #include "Engine/Graphics/RenderBuffers.h"
 #include "Engine/Graphics/RenderTargetPool.h"
@@ -173,7 +174,8 @@ struct CascadeData
 class GlobalSignDistanceFieldCustomBuffer : public RenderBuffers::CustomBuffer, public ISceneRenderingListener
 {
 public:
-    CascadeData Cascades[4];
+    int32 Resolution = 0;
+    Array<CascadeData, FixedAllocation<4>> Cascades;
     HashSet<ScriptingTypeHandle> ObjectTypes;
     HashSet<GPUTexture*> SDFTextures;
     GlobalSignDistanceFieldPass::BindingData Result;
@@ -349,6 +351,18 @@ void GlobalSignDistanceFieldPass::Dispose()
     ChunksCache.SetCapacity(0);
 }
 
+void GlobalSignDistanceFieldPass::BindingData::BindCascades(GPUContext* context, int32 srvSlot)
+{
+    for (int32 i = 0; i < 4; i++)
+        context->BindSR(srvSlot + i, Cascades[i] ? Cascades[i]->ViewVolume() : nullptr);
+}
+
+void GlobalSignDistanceFieldPass::BindingData::BindCascadeMips(GPUContext* context, int32 srvSlot)
+{
+    for (int32 i = 0; i < 4; i++)
+        context->BindSR(srvSlot + i, CascadeMips[i] ? CascadeMips[i]->ViewVolume() : nullptr);
+}
+
 bool GlobalSignDistanceFieldPass::Get(const RenderBuffers* buffers, BindingData& result)
 {
     auto* sdfData = buffers ? buffers->FindCustomBuffer<GlobalSignDistanceFieldCustomBuffer>(TEXT("GlobalSignDistanceField")) : nullptr;
@@ -379,49 +393,71 @@ bool GlobalSignDistanceFieldPass::Render(RenderContext& renderContext, GPUContex
     sdfData.LastFrameUsed = currentFrame;
     PROFILE_GPU_CPU("Global SDF");
 
-    // TODO: configurable via graphics settings
-    const int32 resolution = 256;
+    // Setup options
+    int32 resolution, cascadesCount;
+    switch (Graphics::GlobalSDFQuality)
+    {
+    case Quality::Low:
+        resolution = 128;
+        cascadesCount = 2;
+        break;
+    case Quality::Medium:
+        resolution = 128;
+        cascadesCount = 3;
+        break;
+    case Quality::High:
+        resolution = 192;
+        cascadesCount = 4;
+        break;
+    case Quality::Ultra:
+    default:
+        resolution = 256;
+        cascadesCount = 4;
+        break;
+    }
     const int32 resolutionMip = Math::DivideAndRoundUp(resolution, GLOBAL_SDF_RASTERIZE_MIP_FACTOR);
-    // TODO: configurable via postFx settings
-    const int32 cascadesCount = 4; // in range 1-4
     const float distance = true ? 20000.0f : 16000.0f; // TODO: switch based if using GI, then use GI range
-    const float cascadesDistanceScales[] = { 1.0f, 2.0f, 4.0f, 8.0f };
+    const float cascadesDistanceScales[] = { 1.0f, 2.5f, 5.0f, 10.0f };
     const float distanceExtent = distance / cascadesDistanceScales[cascadesCount - 1];
 
     // Initialize buffers
-    auto desc = GPUTextureDescription::New3D(resolution, resolution, resolution, GLOBAL_SDF_FORMAT, GPUTextureFlags::ShaderResource | GPUTextureFlags::UnorderedAccess, 1);
     bool updated = false;
-    for (auto& cascade : sdfData.Cascades)
+    if (sdfData.Cascades.Count() != cascadesCount || sdfData.Resolution != resolution)
     {
-        GPUTexture*& texture = cascade.Texture;
-        if (texture && texture->Width() != desc.Width)
+        sdfData.Cascades.Resize(cascadesCount);
+        sdfData.Resolution = resolution;
+        updated = true;
+        auto desc = GPUTextureDescription::New3D(resolution, resolution, resolution, GLOBAL_SDF_FORMAT, GPUTextureFlags::ShaderResource | GPUTextureFlags::UnorderedAccess, 1);
+        for (auto& cascade : sdfData.Cascades)
         {
-            RenderTargetPool::Release(texture);
-            texture = nullptr;
-        }
-        if (!texture)
-        {
-            texture = RenderTargetPool::Get(desc);
+            GPUTexture*& texture = cascade.Texture;
+            if (texture && texture->Width() != desc.Width)
+            {
+                RenderTargetPool::Release(texture);
+                texture = nullptr;
+            }
             if (!texture)
-                return true;
-            updated = true;
+            {
+                texture = RenderTargetPool::Get(desc);
+                if (!texture)
+                    return true;
+            }
         }
-    }
-    desc = GPUTextureDescription::New3D(resolutionMip, resolutionMip, resolutionMip, GLOBAL_SDF_FORMAT, GPUTextureFlags::ShaderResource | GPUTextureFlags::UnorderedAccess, 1);
-    for (auto& cascade : sdfData.Cascades)
-    {
-        GPUTexture*& texture = cascade.Mip;
-        if (texture && texture->Width() != desc.Width)
+        desc.Width = desc.Height = desc.Depth = resolutionMip;
+        for (auto& cascade : sdfData.Cascades)
         {
-            RenderTargetPool::Release(texture);
-            texture = nullptr;
-        }
-        if (!texture)
-        {
-            texture = RenderTargetPool::Get(desc);
+            GPUTexture*& texture = cascade.Mip;
+            if (texture && texture->Width() != desc.Width)
+            {
+                RenderTargetPool::Release(texture);
+                texture = nullptr;
+            }
             if (!texture)
-                return true;
-            updated = true;
+            {
+                texture = RenderTargetPool::Get(desc);
+                if (!texture)
+                    return true;
+            }
         }
     }
     GPUTexture* tmpMip = nullptr;
@@ -451,7 +487,7 @@ bool GlobalSignDistanceFieldPass::Render(RenderContext& renderContext, GPUContex
     bool anyDraw = false;
     const uint64 cascadeFrequencies[] = { 2, 3, 5, 11 };
     //const uint64 cascadeFrequencies[] = { 1, 1, 1, 1 };
-    for (int32 cascadeIndex = 0; cascadeIndex < 4; cascadeIndex++)
+    for (int32 cascadeIndex = 0; cascadeIndex < cascadesCount; cascadeIndex++)
     {
         // Reduce frequency of the updates
         if (useCache && (Engine::FrameCount % cascadeFrequencies[cascadeIndex]) != 0)
@@ -513,12 +549,13 @@ bool GlobalSignDistanceFieldPass::Render(RenderContext& renderContext, GPUContex
         {
             anyDraw = true;
             context->ResetSR();
+            auto desc = GPUTextureDescription::New3D(resolution, resolution, resolution, GLOBAL_SDF_FORMAT, GPUTextureFlags::ShaderResource | GPUTextureFlags::UnorderedAccess, 1);
             tmpMip = RenderTargetPool::Get(desc);
             if (!tmpMip)
                 return true;
         }
         ModelsRasterizeData data;
-        data.CascadeCoordToPosMul = cascadeBounds.GetSize() / resolution;
+        data.CascadeCoordToPosMul = cascadeBounds.GetSize() / (float)resolution;
         data.CascadeCoordToPosAdd = cascadeBounds.Minimum + cascadeVoxelSize * 0.5f;
         data.MaxDistance = cascadeMaxDistance;
         data.CascadeResolution = resolution;
@@ -725,8 +762,7 @@ bool GlobalSignDistanceFieldPass::Render(RenderContext& renderContext, GPUContex
     // Copy results
     static_assert(ARRAY_COUNT(result.Cascades) == ARRAY_COUNT(sdfData.Cascades), "Invalid cascades count.");
     static_assert(ARRAY_COUNT(result.CascadeMips) == ARRAY_COUNT(sdfData.Cascades), "Invalid cascades count.");
-    static_assert(ARRAY_COUNT(sdfData.Cascades) == 4, "Invalid cascades count.");
-    for (int32 cascadeIndex = 0; cascadeIndex < 4; cascadeIndex++)
+    for (int32 cascadeIndex = 0; cascadeIndex < cascadesCount; cascadeIndex++)
     {
         auto& cascade = sdfData.Cascades[cascadeIndex];
         const float cascadeDistance = distanceExtent * cascadesDistanceScales[cascadeIndex];
@@ -738,7 +774,15 @@ bool GlobalSignDistanceFieldPass::Render(RenderContext& renderContext, GPUContex
         result.Cascades[cascadeIndex] = cascade.Texture;
         result.CascadeMips[cascadeIndex] = cascade.Mip;
     }
+    for (int32 cascadeIndex = cascadesCount; cascadeIndex < 4; cascadeIndex++)
+    {
+        result.Constants.CascadePosDistance[cascadeIndex] = result.Constants.CascadePosDistance[cascadesCount - 1];
+        result.Constants.CascadeVoxelSize.Raw[cascadeIndex] = result.Constants.CascadeVoxelSize.Raw[cascadesCount - 1];
+        result.Cascades[cascadeIndex] = nullptr;
+        result.CascadeMips[cascadeIndex] = nullptr;
+    }
     result.Constants.Resolution = (float)resolution;
+    result.Constants.CascadesCount = cascadesCount;
     sdfData.Result = result;
     return false;
 }
@@ -765,11 +809,8 @@ void GlobalSignDistanceFieldPass::RenderDebug(RenderContext& renderContext, GPUC
         context->UpdateCB(_cb0, &data);
         context->BindCB(0, _cb0);
     }
-    for (int32 i = 0; i < 4; i++)
-    {
-        context->BindSR(i, bindingData.Cascades[i]->ViewVolume());
-        context->BindSR(i + 4, bindingData.CascadeMips[i]->ViewVolume());
-    }
+    bindingData.BindCascades(context, 0);
+    bindingData.BindCascadeMips(context, 4);
     context->SetState(_psDebug);
     context->SetRenderTarget(output->View());
     context->SetViewportAndScissors(outputSize.X, outputSize.Y);

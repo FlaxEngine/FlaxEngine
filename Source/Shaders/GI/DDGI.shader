@@ -181,7 +181,7 @@ void CS_TraceRays(uint3 DispatchThreadId : SV_DispatchThreadID)
         {
             // Sample Global Surface Atlas to get the lighting at the hit location
             float3 hitPosition = hit.GetHitPosition(trace);
-            float surfaceThreshold = GetGlobalSurfaceAtlasThreshold(hit);
+            float surfaceThreshold = GetGlobalSurfaceAtlasThreshold(GlobalSDF, hit);
             float4 surfaceColor = SampleGlobalSurfaceAtlas(GlobalSurfaceAtlas, GlobalSurfaceAtlasChunks, GlobalSurfaceAtlasCulledObjects, GlobalSurfaceAtlasDepth, GlobalSurfaceAtlasTex, hitPosition, -probeRayDirection, surfaceThreshold);
             radiance = float4(surfaceColor.rgb, hit.HitTime);
 

@@ -753,11 +753,8 @@ bool GlobalSurfaceAtlasPass::Render(RenderContext& renderContext, GPUContext* co
         context->BindSR(2, surfaceAtlasData.AtlasGBuffer2->View());
         context->BindSR(3, surfaceAtlasData.AtlasDepth->View());
         context->BindSR(4, _objectsBuffer->GetBuffer()->View());
-        for (int32 i = 0; i < 4; i++)
-        {
-            context->BindSR(i + 5, bindingDataSDF.Cascades[i]->ViewVolume());
-            context->BindSR(i + 9, bindingDataSDF.CascadeMips[i]->ViewVolume());
-        }
+        bindingDataSDF.BindCascades(context, 5);
+        bindingDataSDF.BindCascadeMips(context, 9);
         context->BindCB(0, _cb0);
         Data0 data;
         data.ViewWorldPos = renderContext.View.Position;
@@ -921,11 +918,8 @@ void GlobalSurfaceAtlasPass::RenderDebug(RenderContext& renderContext, GPUContex
         context->UpdateCB(_cb0, &data);
         context->BindCB(0, _cb0);
     }
-    for (int32 i = 0; i < 4; i++)
-    {
-        context->BindSR(i, bindingDataSDF.Cascades[i]->ViewVolume());
-        context->BindSR(i + 4, bindingDataSDF.CascadeMips[i]->ViewVolume());
-    }
+    bindingDataSDF.BindCascades(context, 0);
+    bindingDataSDF.BindCascadeMips(context, 4);
     context->BindSR(8, bindingData.Chunks ? bindingData.Chunks->View() : nullptr);
     context->BindSR(9, bindingData.CulledObjects ? bindingData.CulledObjects->View() : nullptr);
     context->BindSR(10, bindingData.AtlasDepth->View());
@@ -954,11 +948,8 @@ void GlobalSurfaceAtlasPass::RenderDebug(RenderContext& renderContext, GPUContex
         context->ResetRenderTarget();
 
         // Rebind resources
-        for (int32 i = 0; i < 4; i++)
-        {
-            context->BindSR(i, bindingDataSDF.Cascades[i]->ViewVolume());
-            context->BindSR(i + 4, bindingDataSDF.CascadeMips[i]->ViewVolume());
-        }
+        bindingDataSDF.BindCascades(context, 0);
+        bindingDataSDF.BindCascadeMips(context, 4);
         context->BindSR(8, bindingData.Chunks ? bindingData.Chunks->View() : nullptr);
         context->BindSR(9, bindingData.CulledObjects ? bindingData.CulledObjects->View() : nullptr);
         context->BindSR(10, bindingData.AtlasDepth->View());

@@ -13,7 +13,8 @@ struct GlobalSDFData
 {
 	float4 CascadePosDistance[4];
 	float4 CascadeVoxelSize;
-	float3 Padding;
+	float2 Padding;
+    uint CascadesCount;
 	float Resolution;
 };
 
@@ -65,7 +66,7 @@ float SampleGlobalSDF(const GlobalSDFData data, Texture3D<float> tex[4], float3 
 	if (distance <= 0.0f)
 		return GLOBAL_SDF_WORLD_SIZE;
 	UNROLL
-	for (uint cascade = 0; cascade < 4; cascade++)
+	for (uint cascade = 0; cascade < data.CascadesCount; cascade++)
 	{
 		float4 cascadePosDistance = data.CascadePosDistance[cascade];
 		float cascadeMaxDistance = cascadePosDistance.w * 2;
@@ -89,7 +90,7 @@ float3 SampleGlobalSDFGradient(const GlobalSDFData data, Texture3D<float> tex[4]
 	if (data.CascadePosDistance[3].w <= 0.0f)
 		return gradient;
 	UNROLL
-	for (uint cascade = 0; cascade < 4; cascade++)
+	for (uint cascade = 0; cascade < data.CascadesCount; cascade++)
 	{
 		float4 cascadePosDistance = data.CascadePosDistance[cascade];
 		float cascadeMaxDistance = cascadePosDistance.w * 2;
@@ -124,7 +125,7 @@ GlobalSDFHit RayTraceGlobalSDF(const GlobalSDFData data, Texture3D<float> tex[4]
 	float traceMaxDistance = min(trace.MaxDistance, data.CascadePosDistance[3].w * 2);
 	float3 traceEndPosition = trace.WorldPosition + trace.WorldDirection * traceMaxDistance;
 	UNROLL
-	for (uint cascade = 0; cascade < 4 && hit.HitTime < 0.0f; cascade++)
+	for (uint cascade = 0; cascade < data.CascadesCount && hit.HitTime < 0.0f; cascade++)
 	{
 		float4 cascadePosDistance = data.CascadePosDistance[cascade];
 		float cascadeMaxDistance = cascadePosDistance.w * 2;
@@ -206,8 +207,8 @@ GlobalSDFHit RayTraceGlobalSDF(const GlobalSDFData data, Texture3D<float> tex[4]
 }
 
 // Calculates the surface threshold for Global Surface Atlas sampling which matches the Global SDF trace to reduce artifacts
-float GetGlobalSurfaceAtlasThreshold(GlobalSDFHit hit)
+float GetGlobalSurfaceAtlasThreshold(const GlobalSDFData data, const GlobalSDFHit hit)
 {
-	// Scale the threshold based on the hit cascade (less precision)
-	return hit.HitCascade * 20.0f + 25.0f;
+    // Scale the threshold based on the hit cascade (less precision)
+    return data.CascadeVoxelSize[hit.HitCascade] * 1.1f;
 }

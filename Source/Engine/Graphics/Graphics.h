@@ -53,6 +53,11 @@ public:
     /// </summary>
     API_FIELD() static bool AllowCSMBlending;
 
+    /// <summary>
+    /// The Global SDF quality. Controls the volume texture resolution and amount of cascades to use.
+    /// </summary>
+    API_FIELD() static Quality GlobalSDFQuality;
+
 public:
 
     /// <summary>
