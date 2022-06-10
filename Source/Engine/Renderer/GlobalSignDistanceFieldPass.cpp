@@ -476,6 +476,16 @@ bool GlobalSignDistanceFieldPass::Render(RenderContext& renderContext, GPUContex
     for (SceneRendering* scene : renderContext.List->Scenes)
         sdfData.ListenSceneRendering(scene);
 
+    // Calculate origin for Global SDF by shifting it towards the view direction to account for better view frustum coverage
+    Vector3 viewOrigin = renderContext.View.Position;
+    {
+        Vector3 viewDirection = renderContext.View.Direction;
+        const float cascade0Distance = distanceExtent * cascadesDistanceScales[0];
+        const Vector2 viewRayHit = CollisionsHelper::LineHitsBox(viewOrigin, viewOrigin + viewDirection * (cascade0Distance * 2.0f), viewOrigin - cascade0Distance, viewOrigin + cascade0Distance);
+        const float viewOriginOffset = viewRayHit.Y * cascade0Distance * 0.6f;
+        viewOrigin += viewDirection * viewOriginOffset;
+    }
+
     // Rasterize world geometry into Global SDF
     renderContext.View.Pass = DrawPass::GlobalSDF;
     uint32 viewMask = renderContext.View.RenderLayersMask;
@@ -498,7 +508,7 @@ bool GlobalSignDistanceFieldPass::Render(RenderContext& renderContext, GPUContex
         const float cascadeVoxelSize = cascadeMaxDistance / resolution;
         const float cascadeChunkSize = cascadeVoxelSize * GLOBAL_SDF_RASTERIZE_CHUNK_SIZE;
         static_assert(GLOBAL_SDF_RASTERIZE_CHUNK_SIZE % GLOBAL_SDF_RASTERIZE_MIP_FACTOR == 0, "Adjust chunk size to match the mip factor scale.");
-        const Vector3 center = Vector3::Floor(renderContext.View.Position / cascadeChunkSize) * cascadeChunkSize;
+        const Vector3 center = Vector3::Floor(viewOrigin / cascadeChunkSize) * cascadeChunkSize;
         //const Vector3 center = Vector3::Zero;
         BoundingBox cascadeBounds(center - cascadeDistance, center + cascadeDistance);
         // TODO: add scene detail scale factor to PostFx settings (eg. to increase or decrease scene details and quality)
