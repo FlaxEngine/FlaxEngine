@@ -31,6 +31,7 @@
 // "Dynamic Diffuse Global Illumination with Ray-Traced Irradiance Fields", https://jcgt.org/published/0008/02/01/
 
 // This must match HLSL
+#define DDGI_TRACE_RAYS_PROBES_COUNT_LIMIT 4096 // Maximum amount of probes to update at once during rays tracing and blending
 #define DDGI_TRACE_RAYS_GROUP_SIZE_X 32
 #define DDGI_TRACE_RAYS_LIMIT 512 // Limit of rays per-probe (runtime value can be smaller)
 #define DDGI_PROBE_RESOLUTION_IRRADIANCE 6 // Resolution (in texels) for probe irradiance data (excluding 1px padding on each side)
@@ -52,8 +53,10 @@ PACK_STRUCT(struct Data0
 
 PACK_STRUCT(struct Data1
     {
-    Vector3 Padding1;
-    uint32 CascadeIndex; // TODO: use push constants on Vulkan or root signature data on DX12 to reduce overhead of changing single DWORD
+    // TODO: use push constants on Vulkan or root signature data on DX12 to reduce overhead of changing single DWORD
+    Vector2 Padding1;
+    uint32 CascadeIndex;
+    uint32 ProbeIndexOffset;
     });
 
 class DDGICustomBuffer : public RenderBuffers::CustomBuffer
@@ -335,7 +338,7 @@ bool DynamicDiffuseGlobalIlluminationPass::Render(RenderContext& renderContext, 
         // TODO rethink probes data placement in memory -> what if we get [50x50x30] resolution? That's 75000 probes! Use sparse storage with active-only probes
 #define INIT_TEXTURE(texture, format, width, height) desc.Format = format; desc.Width = width; desc.Height = height; ddgiData.texture = RenderTargetPool::Get(desc); if (!ddgiData.texture) return true; memUsage += ddgiData.texture->GetMemoryUsage()
         desc.Flags = GPUTextureFlags::ShaderResource | GPUTextureFlags::UnorderedAccess;
-        INIT_TEXTURE(ProbesTrace, PixelFormat::R16G16B16A16_Float, probeRaysCount, probesCountTotal); // TODO: limit to 4k probes for a single batch to trace
+        INIT_TEXTURE(ProbesTrace, PixelFormat::R16G16B16A16_Float, probeRaysCount, Math::Min(probesCountCascade, DDGI_TRACE_RAYS_PROBES_COUNT_LIMIT));
         INIT_TEXTURE(ProbesState, PixelFormat::R16G16B16A16_Float, probesCountTotalX, probesCountTotalY); // TODO: optimize to a RGBA32 (pos offset can be normalized to [0-0.5] range of ProbesSpacing and packed with state flag)
         INIT_TEXTURE(ProbesIrradiance, PixelFormat::R11G11B10_Float, probesCountTotalX * (DDGI_PROBE_RESOLUTION_IRRADIANCE + 2), probesCountTotalY * (DDGI_PROBE_RESOLUTION_IRRADIANCE + 2));
         INIT_TEXTURE(ProbesDistance, PixelFormat::R16G16_Float, probesCountTotalX * (DDGI_PROBE_RESOLUTION_DISTANCE + 2), probesCountTotalY * (DDGI_PROBE_RESOLUTION_DISTANCE + 2));
@@ -481,59 +484,57 @@ bool DynamicDiffuseGlobalIlluminationPass::Render(RenderContext& renderContext, 
             if (cascadeSkipUpdate[cascadeIndex])
                 continue;
             anyDirty = true;
-            Data1 data;
-            data.CascadeIndex = cascadeIndex;
-            context->UpdateCB(_cb1, &data);
-            context->BindCB(1, _cb1);
 
-            // TODO: run probes tracing+update in 4k batches
-
-            // Trace rays from probes
+            // Update probes in batches so ProbesTrace texture can be smaller
+            for (int32 probesOffset = 0; probesOffset < probesCountCascade; probesOffset += DDGI_TRACE_RAYS_PROBES_COUNT_LIMIT)
             {
-                PROFILE_GPU_CPU("Trace Rays");
+                uint32 probesBatchSize = Math::Min(probesCountCascade - probesOffset, DDGI_TRACE_RAYS_PROBES_COUNT_LIMIT);
+                Data1 data;
+                data.CascadeIndex = cascadeIndex;
+                data.ProbeIndexOffset = probesOffset;
+                context->UpdateCB(_cb1, &data);
+                context->BindCB(1, _cb1);
 
-                // Global SDF with Global Surface Atlas software raytracing (thread X - per probe ray, thread Y - per probe)
-                ASSERT_LOW_LAYER((probeRaysCount % DDGI_TRACE_RAYS_GROUP_SIZE_X) == 0);
-                for (int32 i = 0; i < 4; i++)
+                // Trace rays from probes
                 {
-                    context->BindSR(i, bindingDataSDF.Cascades[i]->ViewVolume());
-                    context->BindSR(i + 4, bindingDataSDF.CascadeMips[i]->ViewVolume());
-                }
-                context->BindSR(8, bindingDataSurfaceAtlas.Chunks ? bindingDataSurfaceAtlas.Chunks->View() : nullptr);
-                context->BindSR(9, bindingDataSurfaceAtlas.CulledObjects ? bindingDataSurfaceAtlas.CulledObjects->View() : nullptr);
-                context->BindSR(10, bindingDataSurfaceAtlas.AtlasDepth->View());
-                context->BindSR(11, bindingDataSurfaceAtlas.AtlasLighting->View());
-                context->BindSR(12, ddgiData.Result.ProbesState);
-                context->BindSR(13, skybox);
-                context->BindUA(0, ddgiData.ProbesTrace->View());
-                context->Dispatch(_csTraceRays, probeRaysCount / DDGI_TRACE_RAYS_GROUP_SIZE_X, probesCountCascade, 1);
-                context->ResetUA();
-                context->ResetSR();
+                    PROFILE_GPU_CPU("Trace Rays");
 
+                    // Global SDF with Global Surface Atlas software raytracing (thread X - per probe ray, thread Y - per probe)
+                    ASSERT_LOW_LAYER((probeRaysCount % DDGI_TRACE_RAYS_GROUP_SIZE_X) == 0);
+                    for (int32 i = 0; i < 4; i++)
+                    {
+                        context->BindSR(i, bindingDataSDF.Cascades[i]->ViewVolume());
+                        context->BindSR(i + 4, bindingDataSDF.CascadeMips[i]->ViewVolume());
+                    }
+                    context->BindSR(8, bindingDataSurfaceAtlas.Chunks ? bindingDataSurfaceAtlas.Chunks->View() : nullptr);
+                    context->BindSR(9, bindingDataSurfaceAtlas.CulledObjects ? bindingDataSurfaceAtlas.CulledObjects->View() : nullptr);
+                    context->BindSR(10, bindingDataSurfaceAtlas.AtlasDepth->View());
+                    context->BindSR(11, bindingDataSurfaceAtlas.AtlasLighting->View());
+                    context->BindSR(12, ddgiData.Result.ProbesState);
+                    context->BindSR(13, skybox);
+                    context->BindUA(0, ddgiData.ProbesTrace->View());
+                    context->Dispatch(_csTraceRays, probeRaysCount / DDGI_TRACE_RAYS_GROUP_SIZE_X, probesBatchSize, 1);
+                    context->ResetUA();
+                    context->ResetSR();
 #if 0
-                // Probes trace debug preview
-                context->SetViewportAndScissors(renderContext.View.ScreenSize.X, renderContext.View.ScreenSize.Y);
-                context->SetRenderTarget(lightBuffer);
-                context->Draw(ddgiData.ProbesTrace);
-                return false;
+                    // Probes trace debug preview
+                    context->SetViewportAndScissors(renderContext.View.ScreenSize.X, renderContext.View.ScreenSize.Y);
+                    context->SetRenderTarget(lightBuffer);
+                    context->Draw(ddgiData.ProbesTrace);
+                    return false;
 #endif
-            }
+                }
 
-            context->BindSR(0, ddgiData.Result.ProbesState);
-            context->BindSR(1, ddgiData.ProbesTrace->View());
-
-            // Update probes irradiance texture
-            {
-                PROFILE_GPU_CPU("Update Irradiance");
-                context->BindUA(0, ddgiData.Result.ProbesIrradiance);
-                context->Dispatch(_csUpdateProbesIrradiance, probesCountCascadeX, probesCountCascadeY, 1);
-            }
-
-            // Update probes distance texture
-            {
-                PROFILE_GPU_CPU("Update Distance");
-                context->BindUA(0, ddgiData.Result.ProbesDistance);
-                context->Dispatch(_csUpdateProbesDistance, probesCountCascadeX, probesCountCascadeY, 1);
+                // Update probes irradiance and distance textures (one thread-group per probe)
+                {
+                    PROFILE_GPU_CPU("Update Probes");
+                    context->BindSR(0, ddgiData.Result.ProbesState);
+                    context->BindSR(1, ddgiData.ProbesTrace->View());
+                    context->BindUA(0, ddgiData.Result.ProbesIrradiance);
+                    context->Dispatch(_csUpdateProbesIrradiance, probesBatchSize, 1, 1);
+                    context->BindUA(0, ddgiData.Result.ProbesDistance);
+                    context->Dispatch(_csUpdateProbesDistance, probesBatchSize, 1, 1);
+                }
             }
         }
 
