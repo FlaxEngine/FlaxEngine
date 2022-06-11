@@ -112,7 +112,13 @@ namespace WindowsInputImpl
     bool XInputGamepads[XUSER_MAX_COUNT] = { false };
     WindowsMouse* Mouse = nullptr;
     WindowsKeyboard* Keyboard = nullptr;
-    bool RawInputEnabled = true;
+}
+
+namespace WindowsRawInputImpl
+{
+    bool UseRawInput = true;
+    Window* LastLeaveWindow = nullptr;
+    Window* CurrentInputWindow = nullptr;
 }
 
 void WindowsInput::Init()
@@ -120,7 +126,7 @@ void WindowsInput::Init()
     Input::Mouse = WindowsInputImpl::Mouse = New<WindowsMouse>();
     Input::Keyboard = WindowsInputImpl::Keyboard = New<WindowsKeyboard>();
 
-    if (WindowsInputImpl::RawInputEnabled)
+    if (WindowsRawInputImpl::UseRawInput)
     {
         RAWINPUTDEVICE rid[2] = {};
 
@@ -176,6 +182,8 @@ bool WindowsInput::WndProc(Window* window, Windows::UINT msg, Windows::WPARAM wP
 
 bool OnRawInput(Vector2 mousePosition, Window* window, HRAWINPUT input)
 {
+    // TODO: use GetRawInputBuffer to avoid filling the message queue with high polling rate mice
+
     static BYTE* dataBuffer = nullptr;
     static uint32 dataBufferSize = 0;
 
@@ -190,6 +198,13 @@ bool OnRawInput(Vector2 mousePosition, Window* window, HRAWINPUT input)
     }
 
     GetRawInputData(input, RID_INPUT, dataBuffer, &dataSize, sizeof(RAWINPUTHEADER));
+
+    // Workaround to send the input to the topmost window after focusing the window from other applications.
+    if (WindowsRawInputImpl::LastLeaveWindow == window || WindowsRawInputImpl::LastLeaveWindow == nullptr)
+    {
+        if (WindowsRawInputImpl::CurrentInputWindow != nullptr)
+            window = WindowsRawInputImpl::CurrentInputWindow;
+    }
 
     const RAWINPUT* rawInput = reinterpret_cast<RAWINPUT*>(dataBuffer);
     if (rawInput->header.dwType == RIM_TYPEKEYBOARD)
@@ -227,10 +242,7 @@ bool OnRawInput(Vector2 mousePosition, Window* window, HRAWINPUT input)
             mousePos += mouseDelta;
 
             if (!mouseDelta.IsZero())
-            {
-                //Input::Mouse->OnMouseMove(mousePos, window);
                 Input::Mouse->OnMouseMoveDelta(mouseDelta, window);
-            }
         }
 
         if ((rawMouse.usButtonFlags & RI_MOUSE_LEFT_BUTTON_DOWN) != 0)
@@ -268,7 +280,7 @@ bool OnRawInput(Vector2 mousePosition, Window* window, HRAWINPUT input)
 
 bool WindowsKeyboard::WndProc(Window* window, const Windows::UINT msg, Windows::WPARAM wParam, Windows::LPARAM lParam)
 {
-    if (WindowsInputImpl::RawInputEnabled && WndProcRawInput(window, msg, wParam, lParam))
+    if (WindowsRawInputImpl::UseRawInput && WndProcRawInput(window, msg, wParam, lParam))
         return true;
 
     bool result = false;
@@ -324,7 +336,7 @@ bool WindowsKeyboard::WndProcRawInput(Window* window, const Windows::UINT msg, W
 
 bool WindowsMouse::WndProc(Window* window, const UINT msg, WPARAM wParam, LPARAM lParam)
 {
-    if (WindowsInputImpl::RawInputEnabled && WndProcRawInput(window, msg, wParam, lParam))
+    if (WindowsRawInputImpl::UseRawInput && WndProcRawInput(window, msg, wParam, lParam))
         return true;
 
     bool result = false;
@@ -341,17 +353,21 @@ bool WindowsMouse::WndProc(Window* window, const UINT msg, WPARAM wParam, LPARAM
     {
     case WM_MOUSEMOVE:
     {
-        static Vector2 lastPos = mousePos;
-        if (_state.MouseWasReset)
+        if (!WindowsRawInputImpl::UseRawInput)
         {
-            lastPos = _state.MousePosition;
-            _state.MouseWasReset = false;
-        }
+            // Calculate mouse deltas since last message
+            static Vector2 lastPos = mousePos;
+            if (_state.MouseWasReset)
+            {
+                lastPos = _state.MousePosition;
+                _state.MouseWasReset = false;
+            }
 
-        Vector2 deltaPos = mousePos - lastPos;
-        if (!deltaPos.IsZero())
-            OnMouseMoveDelta(deltaPos, window);
-        lastPos = mousePos;
+            Vector2 deltaPos = mousePos - lastPos;
+            if (!deltaPos.IsZero())
+                OnMouseMoveDelta(deltaPos, window);
+            lastPos = mousePos;
+        }
 
         OnMouseMove(mousePos, window);
         result = true;
@@ -475,16 +491,35 @@ bool WindowsMouse::WndProcRawInput(Window* window, const UINT msg, WPARAM wParam
     case WM_MOUSEWHEEL:
     {
         // Ignored with raw input
+        WindowsRawInputImpl::CurrentInputWindow = window;
         result = true;
         break;
     }
     case WM_MOUSEMOVE:
-    case WM_MOUSELEAVE:
+    {
+        WindowsRawInputImpl::CurrentInputWindow = window;
+        break;
+    }
     case WM_LBUTTONDBLCLK:
     case WM_RBUTTONDBLCLK:
     case WM_MBUTTONDBLCLK:
     {
         // Might need to be handled here
+        break;
+    }
+    case WM_MOUSELEAVE:
+    {
+        WindowsRawInputImpl::LastLeaveWindow = window;
+        break;
+    }
+    case WM_ACTIVATE:
+    {
+        break;
+    }
+    case WM_ACTIVATEAPP:
+    {
+        // Reset when switching between apps
+        WindowsRawInputImpl::LastLeaveWindow = nullptr;
         break;
     }
     case WM_INPUT:
