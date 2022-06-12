@@ -10,6 +10,27 @@
 #include "Engine/Content/Assets/MaterialBase.h"
 
 /// <summary>
+/// Global Illumination effect rendering modes.
+/// </summary>
+API_ENUM() enum class GlobalIlluminationMode
+{
+    /// <summary>
+    /// Disabled GI effect.
+    /// </summary>
+    None = 0,
+
+    /// <summary>
+    /// Dynamic Diffuse Global Illumination algorithm with scrolling probes volume (with cascades). Uses software raytracing - requires Global SDF and Global Surface Atlas.
+    /// </summary>
+    DDGI = 1,
+
+    /// <summary>
+    /// The custom GI algorithm - plugged-in externally.
+    /// </summary>
+    Custom = 2,
+};
+
+/// <summary>
 /// Tone mapping effect rendering modes.
 /// </summary>
 API_ENUM() enum class ToneMappingMode
@@ -183,8 +204,8 @@ API_ENUM(Attributes="Flags") enum class AmbientOcclusionSettingsOverride : int32
 /// </summary>
 API_STRUCT() struct FLAXENGINE_API AmbientOcclusionSettings : ISerializable
 {
-API_AUTO_SERIALIZATION();
-DECLARE_SCRIPTING_TYPE_NO_SPAWN(AmbientOcclusionSettings);
+    API_AUTO_SERIALIZATION();
+    DECLARE_SCRIPTING_TYPE_NO_SPAWN(AmbientOcclusionSettings);
     typedef AmbientOcclusionSettingsOverride Override;
 
     /// <summary>
@@ -202,13 +223,13 @@ DECLARE_SCRIPTING_TYPE_NO_SPAWN(AmbientOcclusionSettings);
     /// <summary>
     /// Ambient occlusion intensity.
     /// </summary>
-    API_FIELD(Attributes="DefaultValue(0.8f), Limit(0, 5.0f, 0.01f), EditorOrder(1), PostProcessSetting((int)AmbientOcclusionSettingsOverride.Intensity)")
+    API_FIELD(Attributes="DefaultValue(0.8f), Limit(0, 10.0f, 0.01f), EditorOrder(1), PostProcessSetting((int)AmbientOcclusionSettingsOverride.Intensity)")
     float Intensity = 0.8f;
 
     /// <summary>
     /// Ambient occlusion power.
     /// </summary>
-    API_FIELD(Attributes="DefaultValue(0.75f), Limit(0, 4.0f, 0.01f), EditorOrder(2), PostProcessSetting((int)AmbientOcclusionSettingsOverride.Power)")
+    API_FIELD(Attributes="DefaultValue(0.75f), Limit(0, 10.0f, 0.01f), EditorOrder(2), PostProcessSetting((int)AmbientOcclusionSettingsOverride.Power)")
     float Power = 0.75f;
 
     /// <summary>
@@ -230,13 +251,107 @@ DECLARE_SCRIPTING_TYPE_NO_SPAWN(AmbientOcclusionSettings);
     float FadeDistance = 500.0f;
 
 public:
-
     /// <summary>
     /// Blends the settings using given weight.
     /// </summary>
     /// <param name="other">The other settings.</param>
     /// <param name="weight">The blend weight.</param>
     void BlendWith(AmbientOcclusionSettings& other, float weight);
+};
+
+/// <summary>
+/// The <see cref="GlobalIlluminationSettings"/> structure members override flags.
+/// </summary>
+API_ENUM(Attributes="Flags") enum class GlobalIlluminationSettingsOverride : int32
+{
+    /// <summary>
+    /// None properties.
+    /// </summary>
+    None = 0,
+
+    /// <summary>
+    /// Overrides <see cref="GlobalIlluminationSettings.Mode"/> property.
+    /// </summary>
+    Mode = 1 << 0,
+
+    /// <summary>
+    /// Overrides <see cref="GlobalIlluminationSettings.Intensity"/> property.
+    /// </summary>
+    Intensity = 1 << 1,
+
+    /// <summary>
+    /// Overrides <see cref="GlobalIlluminationSettings.TemporalResponse"/> property.
+    /// </summary>
+    TemporalResponse = 1 << 2,
+
+    /// <summary>
+    /// Overrides <see cref="GlobalIlluminationSettings.Distance"/> property.
+    /// </summary>
+    Distance = 1 << 3,
+
+    /// <summary>
+    /// Overrides <see cref="GlobalIlluminationSettings.FallbackIrradiance"/> property.
+    /// </summary>
+    FallbackIrradiance = 1 << 4,
+
+    /// <summary>
+    /// All properties.
+    /// </summary>
+    All = Mode | Intensity | TemporalResponse | Distance | FallbackIrradiance,
+};
+
+/// <summary>
+/// Contains settings for Global Illumination effect rendering.
+/// </summary>
+API_STRUCT() struct FLAXENGINE_API GlobalIlluminationSettings : ISerializable
+{
+    API_AUTO_SERIALIZATION();
+    DECLARE_SCRIPTING_TYPE_NO_SPAWN(GlobalIlluminationSettings);
+    typedef GlobalIlluminationSettingsOverride Override;
+
+    /// <summary>
+    /// The flags for overriden properties.
+    /// </summary>
+    API_FIELD(Attributes="HideInEditor")
+    GlobalIlluminationSettingsOverride OverrideFlags = Override::None;
+
+    /// <summary>
+    /// The Global Illumination mode to use.
+    /// </summary>
+    API_FIELD(Attributes="EditorOrder(0), PostProcessSetting((int)GlobalIlluminationSettingsOverride.Mode)")
+    GlobalIlluminationMode Mode = GlobalIlluminationMode::None;
+    
+    /// <summary>
+    /// Global Illumination indirect lighting intensity scale. Can be used to boost or reduce GI effect.
+    /// </summary>
+    API_FIELD(Attributes="EditorOrder(10), Limit(0, 10, 0.01f), PostProcessSetting((int)GlobalIlluminationSettingsOverride.Intensity)")
+    float Intensity = 1.0f;
+    
+    /// <summary>
+    /// Defines how quickly GI blends between the the current frame and the history buffer. Lower values update GI faster, but with more jittering and noise. If the camera in your game doesn't move much, we recommend values closer to 1.
+    /// </summary>
+    API_FIELD(Attributes="EditorOrder(20), Limit(0, 1), PostProcessSetting((int)GlobalIlluminationSettingsOverride.TemporalResponse)")
+    float TemporalResponse = 0.8f;
+
+    /// <summary>
+    /// Draw distance of the Global Illumination effect. Scene outside the range will use fallback irradiance.
+    /// </summary>
+    API_FIELD(Attributes="EditorOrder(30), Limit(1000), PostProcessSetting((int)GlobalIlluminationSettingsOverride.Distance)")
+    float Distance = 20000.0f;
+
+    /// <summary>
+    /// The irradiance lighting outside the GI range used as a fallback to prevent pure-black scene outside the Global Illumination range.
+    /// </summary>
+    API_FIELD(Attributes="EditorOrder(40), PostProcessSetting((int)GlobalIlluminationSettingsOverride.FallbackIrradiance)")
+    Color FallbackIrradiance = Color::Black;
+
+public:
+    /// <summary>
+    /// Blends the settings using given weight.
+    /// </summary>
+    /// <param name="other">The other settings.</param>
+    /// <param name="weight">The blend weight.</param>
+    void BlendWith(GlobalIlluminationSettings& other, float weight);
 };
 
 /// <summary>
@@ -285,8 +400,8 @@ API_ENUM(Attributes="Flags") enum class BloomSettingsOverride : int32
 /// </summary>
 API_STRUCT() struct FLAXENGINE_API BloomSettings : ISerializable
 {
-API_AUTO_SERIALIZATION();
-DECLARE_SCRIPTING_TYPE_NO_SPAWN(BloomSettings);
+    API_AUTO_SERIALIZATION();
+    DECLARE_SCRIPTING_TYPE_NO_SPAWN(BloomSettings);
     typedef BloomSettingsOverride Override;
 
     /// <summary>
@@ -326,7 +441,6 @@ DECLARE_SCRIPTING_TYPE_NO_SPAWN(BloomSettings);
     float Limit = 10.0f;
 
 public:
-
     /// <summary>
     /// Blends the settings using given weight.
     /// </summary>
@@ -371,8 +485,8 @@ API_ENUM(Attributes="Flags") enum class ToneMappingSettingsOverride : int32
 /// </summary>
 API_STRUCT() struct FLAXENGINE_API ToneMappingSettings : ISerializable
 {
-API_AUTO_SERIALIZATION();
-DECLARE_SCRIPTING_TYPE_NO_SPAWN(ToneMappingSettings);
+    API_AUTO_SERIALIZATION();
+    DECLARE_SCRIPTING_TYPE_NO_SPAWN(ToneMappingSettings);
     typedef ToneMappingSettingsOverride Override;
 
     /// <summary>
@@ -400,7 +514,6 @@ DECLARE_SCRIPTING_TYPE_NO_SPAWN(ToneMappingSettings);
     ToneMappingMode Mode = ToneMappingMode::ACES;
 
 public:
-
     /// <summary>
     /// Blends the settings using given weight.
     /// </summary>
@@ -550,8 +663,8 @@ API_ENUM(Attributes="Flags") enum class ColorGradingSettingsOverride : int32
 /// </summary>
 API_STRUCT() struct FLAXENGINE_API ColorGradingSettings : ISerializable
 {
-API_AUTO_SERIALIZATION();
-DECLARE_SCRIPTING_TYPE_NO_SPAWN(ColorGradingSettings);
+    API_AUTO_SERIALIZATION();
+    DECLARE_SCRIPTING_TYPE_NO_SPAWN(ColorGradingSettings);
     typedef ColorGradingSettingsOverride Override;
 
     /// <summary>
@@ -717,7 +830,6 @@ DECLARE_SCRIPTING_TYPE_NO_SPAWN(ColorGradingSettings);
     float LutWeight = 1.0f;
 
 public:
-
     /// <summary>
     /// Blends the settings using given weight.
     /// </summary>
@@ -792,8 +904,8 @@ API_ENUM(Attributes="Flags") enum class EyeAdaptationSettingsOverride : int32
 /// </summary>
 API_STRUCT() struct FLAXENGINE_API EyeAdaptationSettings : ISerializable
 {
-API_AUTO_SERIALIZATION();
-DECLARE_SCRIPTING_TYPE_NO_SPAWN(EyeAdaptationSettings);
+    API_AUTO_SERIALIZATION();
+    DECLARE_SCRIPTING_TYPE_NO_SPAWN(EyeAdaptationSettings);
     typedef EyeAdaptationSettingsOverride Override;
 
     /// <summary>
@@ -857,7 +969,6 @@ DECLARE_SCRIPTING_TYPE_NO_SPAWN(EyeAdaptationSettings);
     float HistogramHighPercent = 98.0f;
 
 public:
-
     /// <summary>
     /// Blends the settings using given weight.
     /// </summary>
@@ -927,8 +1038,8 @@ API_ENUM(Attributes="Flags") enum class CameraArtifactsSettingsOverride : int32
 /// </summary>
 API_STRUCT() struct FLAXENGINE_API CameraArtifactsSettings : ISerializable
 {
-API_AUTO_SERIALIZATION();
-DECLARE_SCRIPTING_TYPE_NO_SPAWN(CameraArtifactsSettings);
+    API_AUTO_SERIALIZATION();
+    DECLARE_SCRIPTING_TYPE_NO_SPAWN(CameraArtifactsSettings);
     typedef CameraArtifactsSettingsOverride Override;
 
     /// <summary>
@@ -986,7 +1097,6 @@ DECLARE_SCRIPTING_TYPE_NO_SPAWN(CameraArtifactsSettings);
     Color ScreenFadeColor = Color::Transparent;
 
 public:
-
     /// <summary>
     /// Blends the settings using given weight.
     /// </summary>
@@ -1076,8 +1186,8 @@ API_ENUM(Attributes="Flags") enum class LensFlaresSettingsOverride : int32
 /// </summary>
 API_STRUCT() struct FLAXENGINE_API LensFlaresSettings : ISerializable
 {
-API_AUTO_SERIALIZATION();
-DECLARE_SCRIPTING_TYPE_NO_SPAWN(LensFlaresSettings);
+    API_AUTO_SERIALIZATION();
+    DECLARE_SCRIPTING_TYPE_NO_SPAWN(LensFlaresSettings);
     typedef LensFlaresSettingsOverride Override;
 
     /// <summary>
@@ -1159,7 +1269,6 @@ DECLARE_SCRIPTING_TYPE_NO_SPAWN(LensFlaresSettings);
     AssetReference<Texture> LensStar;
 
 public:
-
     /// <summary>
     /// Blends the settings using given weight.
     /// </summary>
@@ -1269,8 +1378,8 @@ API_ENUM(Attributes="Flags") enum class DepthOfFieldSettingsOverride : int32
 /// </summary>
 API_STRUCT() struct FLAXENGINE_API DepthOfFieldSettings : ISerializable
 {
-API_AUTO_SERIALIZATION();
-DECLARE_SCRIPTING_TYPE_NO_SPAWN(DepthOfFieldSettings);
+    API_AUTO_SERIALIZATION();
+    DECLARE_SCRIPTING_TYPE_NO_SPAWN(DepthOfFieldSettings);
     typedef DepthOfFieldSettingsOverride Override;
 
     /// <summary>
@@ -1376,7 +1485,6 @@ DECLARE_SCRIPTING_TYPE_NO_SPAWN(DepthOfFieldSettings);
     float BokehDepthCutoff = 1.5f;
 
 public:
-
     /// <summary>
     /// Blends the settings using given weight.
     /// </summary>
@@ -1426,8 +1534,8 @@ API_ENUM(Attributes="Flags") enum class MotionBlurSettingsOverride : int32
 /// </summary>
 API_STRUCT() struct FLAXENGINE_API MotionBlurSettings : ISerializable
 {
-API_AUTO_SERIALIZATION();
-DECLARE_SCRIPTING_TYPE_NO_SPAWN(MotionBlurSettings);
+    API_AUTO_SERIALIZATION();
+    DECLARE_SCRIPTING_TYPE_NO_SPAWN(MotionBlurSettings);
     typedef MotionBlurSettingsOverride Override;
 
     /// <summary>
@@ -1461,7 +1569,6 @@ DECLARE_SCRIPTING_TYPE_NO_SPAWN(MotionBlurSettings);
     ResolutionMode MotionVectorsResolution = ResolutionMode::Half;
 
 public:
-
     /// <summary>
     /// Blends the settings using given weight.
     /// </summary>
@@ -1566,8 +1673,8 @@ API_ENUM(Attributes="Flags") enum class ScreenSpaceReflectionsSettingsOverride :
 /// </summary>
 API_STRUCT() struct FLAXENGINE_API ScreenSpaceReflectionsSettings : ISerializable
 {
-API_AUTO_SERIALIZATION();
-DECLARE_SCRIPTING_TYPE_NO_SPAWN(ScreenSpaceReflectionsSettings);
+    API_AUTO_SERIALIZATION();
+    DECLARE_SCRIPTING_TYPE_NO_SPAWN(ScreenSpaceReflectionsSettings);
     typedef ScreenSpaceReflectionsSettingsOverride Override;
 
     /// <summary>
@@ -1667,7 +1774,6 @@ DECLARE_SCRIPTING_TYPE_NO_SPAWN(ScreenSpaceReflectionsSettings);
     float TemporalResponse = 0.8f;
 
 public:
-
     /// <summary>
     /// Blends the settings using given weight.
     /// </summary>
@@ -1722,8 +1828,8 @@ API_ENUM(Attributes="Flags") enum class AntiAliasingSettingsOverride : int32
 /// </summary>
 API_STRUCT() struct FLAXENGINE_API AntiAliasingSettings : ISerializable
 {
-API_AUTO_SERIALIZATION();
-DECLARE_SCRIPTING_TYPE_NO_SPAWN(AntiAliasingSettings);
+    API_AUTO_SERIALIZATION();
+    DECLARE_SCRIPTING_TYPE_NO_SPAWN(AntiAliasingSettings);
     typedef AntiAliasingSettingsOverride Override;
 
     /// <summary>
@@ -1763,7 +1869,6 @@ DECLARE_SCRIPTING_TYPE_NO_SPAWN(AntiAliasingSettings);
     float TAA_MotionBlending = 0.4f;
 
 public:
-
     /// <summary>
     /// Blends the settings using given weight.
     /// </summary>
@@ -1777,8 +1882,8 @@ public:
 /// </summary>
 API_STRUCT() struct FLAXENGINE_API PostFxMaterialsSettings : ISerializable
 {
-API_AUTO_SERIALIZATION();
-DECLARE_SCRIPTING_TYPE_NO_SPAWN(PostFxMaterialsSettings);
+    API_AUTO_SERIALIZATION();
+    DECLARE_SCRIPTING_TYPE_NO_SPAWN(PostFxMaterialsSettings);
 
     /// <summary>
     /// The post-process materials collection for rendering (fixed capacity).
@@ -1787,7 +1892,6 @@ DECLARE_SCRIPTING_TYPE_NO_SPAWN(PostFxMaterialsSettings);
     Array<AssetReference<MaterialBase>, FixedAllocation<POST_PROCESS_SETTINGS_MAX_MATERIALS>> Materials;
 
 public:
-
     /// <summary>
     /// Blends the settings using given weight.
     /// </summary>
@@ -1801,13 +1905,19 @@ public:
 /// </summary>
 API_STRUCT() struct FLAXENGINE_API PostProcessSettings : ISerializable
 {
-DECLARE_SCRIPTING_TYPE_NO_SPAWN(PostProcessSettings);
+    DECLARE_SCRIPTING_TYPE_NO_SPAWN(PostProcessSettings);
 
     /// <summary>
     /// The ambient occlusion effect settings.
     /// </summary>
     API_FIELD()
     AmbientOcclusionSettings AmbientOcclusion;
+
+    /// <summary>
+    /// The global illumination effect settings.
+    /// </summary>
+    API_FIELD()
+    GlobalIlluminationSettings GlobalIllumination;
 
     /// <summary>
     /// The bloom effect settings.
@@ -1876,7 +1986,6 @@ DECLARE_SCRIPTING_TYPE_NO_SPAWN(PostProcessSettings);
     PostFxMaterialsSettings PostFxMaterials;
 
 public:
-
     /// <summary>
     /// Blends the settings using given weight.
     /// </summary>
@@ -1891,13 +2000,13 @@ public:
     bool HasContentLoaded() const;
 
 public:
-
     // [ISerializable]
     void Serialize(SerializeStream& stream, const void* otherObj) override;
     void Deserialize(DeserializeStream& stream, ISerializeModifier* modifier) override;
 };
 
 DECLARE_ENUM_OPERATORS(AmbientOcclusionSettingsOverride);
+DECLARE_ENUM_OPERATORS(GlobalIlluminationSettingsOverride);
 DECLARE_ENUM_OPERATORS(BloomSettingsOverride);
 DECLARE_ENUM_OPERATORS(ToneMappingSettingsOverride);
 DECLARE_ENUM_OPERATORS(ColorGradingSettingsOverride);

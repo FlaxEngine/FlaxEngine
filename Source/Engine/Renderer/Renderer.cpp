@@ -23,6 +23,7 @@
 #include "AtmospherePreCompute.h"
 #include "GlobalSignDistanceFieldPass.h"
 #include "GI/GlobalSurfaceAtlasPass.h"
+#include "GI/DynamicDiffuseGlobalIllumination.h"
 #include "Utils/MultiScaler.h"
 #include "Utils/BitonicSort.h"
 #include "AntiAliasing/FXAA.h"
@@ -85,6 +86,7 @@ bool RendererService::Init()
     PassList.Add(HistogramPass::Instance());
     PassList.Add(GlobalSignDistanceFieldPass::Instance());
     PassList.Add(GlobalSurfaceAtlasPass::Instance());
+    PassList.Add(DynamicDiffuseGlobalIlluminationPass::Instance());
 #if USE_EDITOR
     PassList.Add(QuadOverdrawPass::Instance());
 #endif
@@ -397,6 +399,15 @@ void RenderInner(SceneRenderTask* task, RenderContext& renderContext)
 
     // Render lighting
     LightPass::Instance()->RenderLight(renderContext, *lightBuffer);
+    if (renderContext.View.Flags & ViewFlags::GI)
+    {
+        switch (renderContext.List->Settings.GlobalIllumination.Mode)
+        {
+        case GlobalIlluminationMode::DDGI:
+            DynamicDiffuseGlobalIlluminationPass::Instance()->Render(renderContext, context, *lightBuffer);
+            break;
+        }
+    }
     if (renderContext.View.Mode == ViewMode::LightBuffer)
     {
         auto colorGradingLUT = ColorGradingPass::Instance()->RenderLUT(renderContext);
@@ -499,7 +510,7 @@ void RenderInner(SceneRenderTask* task, RenderContext& renderContext)
     context->ResetRenderTarget();
     context->ResetSR();
     context->FlushState();
-
+    
     // Custom Post Processing
     renderContext.List->RunMaterialPostFxPass(context, renderContext, MaterialPostFxLocation::AfterPostProcessingPass, frameBuffer, tempBuffer);
     renderContext.List->RunCustomPostFxPass(context, renderContext, PostProcessEffectLocation::Default, frameBuffer, tempBuffer);

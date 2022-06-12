@@ -70,6 +70,7 @@ bool DeployDataStep::Perform(CookingData& data)
     data.AddRootEngineAsset(TEXT("Shaders/GPUParticlesSorting"));
     data.AddRootEngineAsset(TEXT("Shaders/GlobalSignDistanceField"));
     data.AddRootEngineAsset(TEXT("Shaders/GI/GlobalSurfaceAtlas"));
+    data.AddRootEngineAsset(TEXT("Shaders/GI/DDGI"));
     data.AddRootEngineAsset(TEXT("Shaders/Quad"));
     data.AddRootEngineAsset(TEXT("Shaders/Reflections"));
     data.AddRootEngineAsset(TEXT("Shaders/Shadows"));

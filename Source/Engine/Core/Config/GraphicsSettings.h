@@ -68,6 +68,12 @@ public:
     API_FIELD(Attributes="EditorOrder(2000), EditorDisplay(\"Global SDF\")")
     bool EnableGlobalSDF = false;
 
+    /// <summary>
+    /// The Global SDF quality. Controls the volume texture resolution and amount of cascades to use.
+    /// </summary>
+    API_FIELD(Attributes="EditorOrder(2005), DefaultValue(Quality.High), EditorDisplay(\"Quality\")")
+    Quality GlobalSDFQuality = Quality::High;
+
 #if USE_EDITOR
     /// <summary>
     /// If checked, the 'Generate SDF' option will be checked on model import options by default. Use it if your project uses Global SDF (eg. for Global Illumination or particles).
@@ -75,6 +81,12 @@ public:
     API_FIELD(Attributes="EditorOrder(2010), EditorDisplay(\"Global SDF\")")
     bool GenerateSDFOnModelImport = false;
 #endif
+
+    /// <summary>
+    /// The Global Illumination quality. Controls the quality of the GI effect.
+    /// </summary>
+    API_FIELD(Attributes="EditorOrder(2100), DefaultValue(Quality.High), EditorDisplay(\"Quality\")")
+    Quality GIQuality = Quality::High;
 
 public:
     /// <summary>

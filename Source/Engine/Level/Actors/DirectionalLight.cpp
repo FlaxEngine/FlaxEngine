@@ -35,6 +35,7 @@ void DirectionalLight::Draw(RenderContext& renderContext)
         data.ShadowsDepthBias = ShadowsDepthBias;
         data.ShadowsSharpness = ShadowsSharpness;
         data.VolumetricScatteringIntensity = VolumetricScatteringIntensity;
+        data.IndirectLightingIntensity = IndirectLightingIntensity;
         data.CastVolumetricShadow = CastVolumetricShadow;
         data.RenderedVolumetricFog = 0;
         data.ShadowsMode = ShadowsMode;

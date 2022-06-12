@@ -111,6 +111,25 @@ namespace FlaxEditor.CustomEditors.Dedicated
     }
 
     /// <summary>
+    /// Editor for <see cref="GlobalIlluminationSettings"/> type.
+    /// </summary>
+    [CustomEditor(typeof(GlobalIlluminationSettings)), DefaultEditor]
+    sealed class GlobalIlluminationSettingsEditor : PostProcessSettingsEditor
+    {
+        /// <inheritdoc />
+        protected override int OverrideFlags
+        {
+            get => (int)((GlobalIlluminationSettings)Values[0]).OverrideFlags;
+            set
+            {
+                var settings = (GlobalIlluminationSettings)Values[0];
+                settings.OverrideFlags = (GlobalIlluminationSettingsOverride)value;
+                SetValue(settings);
+            }
+        }
+    }
+
+    /// <summary>
     /// Editor for <see cref="BloomSettings"/> type.
     /// </summary>
     [CustomEditor(typeof(BloomSettings)), DefaultEditor]

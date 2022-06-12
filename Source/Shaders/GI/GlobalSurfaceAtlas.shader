@@ -1,24 +1,26 @@
 // Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 // Diffuse-only lighting
-#define NO_SPECULAR
+#define NO_SPECULAR 1
 
 #include "./Flax/Common.hlsl"
 #include "./Flax/Math.hlsl"
 #include "./Flax/LightingCommon.hlsl"
 #include "./Flax/GlobalSignDistanceField.hlsl"
 #include "./Flax/GI/GlobalSurfaceAtlas.hlsl"
+#include "./Flax/GI/DDGI.hlsl"
 
 META_CB_BEGIN(0, Data)
 float3 ViewWorldPos;
 float ViewNearPlane;
-float Padding00;
+float SkyboxIntensity;
 uint CulledObjectsCapacity;
 float LightShadowsStrength;
 float ViewFarPlane;
 float4 ViewFrustumWorldRays[4];
 GlobalSDFData GlobalSDF;
 GlobalSurfaceAtlasData GlobalSurfaceAtlas;
+DDGIData DDGI;
 LightData Light;
 META_CB_END
 
@@ -60,7 +62,7 @@ void PS_Clear(out float4 Light : SV_Target0, out float4 RT0 : SV_Target1, out fl
 	RT2 = float4(1, 0, 0, 0);
 }
 
-#ifdef _PS_DirectLighting
+#ifdef _PS_Lighting
 
 #include "./Flax/GBuffer.hlsl"
 #include "./Flax/Matrix.hlsl"
@@ -68,14 +70,21 @@ void PS_Clear(out float4 Light : SV_Target0, out float4 RT0 : SV_Target1, out fl
 
 // GBuffer+Depth at 0-3 slots
 Buffer<float4> GlobalSurfaceAtlasObjects : register(t4);
+#if INDIRECT_LIGHT
+Texture2D<float4> ProbesState : register(t5);
+Texture2D<float4> ProbesDistance : register(t6);
+Texture2D<float4> ProbesIrradiance : register(t7);
+#else
 Texture3D<float> GlobalSDFTex[4] : register(t5);
 Texture3D<float> GlobalSDFMip[4] : register(t9);
+#endif
 
 // Pixel shader for Global Surface Atlas shading with direct light contribution
 META_PS(true, FEATURE_LEVEL_SM5)
 META_PERMUTATION_1(RADIAL_LIGHT=0)
 META_PERMUTATION_1(RADIAL_LIGHT=1)
-float4 PS_DirectLighting(AtlasVertexOutput input) : SV_Target
+META_PERMUTATION_1(INDIRECT_LIGHT=1)
+float4 PS_Lighting(AtlasVertexOutput input) : SV_Target
 {
 	// Load current tile info
 	GlobalSurfaceTile tile = LoadGlobalSurfaceAtlasTile(GlobalSurfaceAtlasObjects, input.TileAddress);
@@ -104,6 +113,22 @@ float4 PS_DirectLighting(AtlasVertexOutput input) : SV_Target
 	float4x4 tileLocalToWorld = Inverse(tile.WorldToLocal);
 	gBuffer.WorldPos = mul(float4(gBufferTilePos, 1), tileLocalToWorld).xyz;
 
+	// Boost material diffuse color to improve GI
+	gBuffer.Color *= 1.1f;
+
+#if INDIRECT_LIGHT
+    // Sample irradiance
+    float bias = 1.0f;
+    float3 irradiance = SampleDDGIIrradiance(DDGI, ProbesState, ProbesDistance, ProbesIrradiance, gBuffer.WorldPos, gBuffer.Normal, bias);
+    irradiance /= DDGI.IndirectLightingIntensity;
+    //irradiance = 0;
+
+    // Calculate lighting
+    float3 diffuseColor = GetDiffuseColor(gBuffer);
+    diffuseColor = min(diffuseColor, 0.9f); // Nothing reflects diffuse like perfectly in the real world (ensure to have energy loss at each light bounce)
+    float3 diffuse = Diffuse_Lambert(diffuseColor);
+    float4 light = float4(diffuse * irradiance * gBuffer.AO, 1);
+#else
 	// Calculate shadowing
 	float3 L = Light.Direction;
 #if RADIAL_LIGHT
@@ -150,6 +175,7 @@ float4 PS_DirectLighting(AtlasVertexOutput input) : SV_Target
 	bool isSpotLight = false;
 #endif
 	float4 light = GetLighting(ViewWorldPos, Light, gBuffer, shadowMask, RADIAL_LIGHT, isSpotLight);
+#endif
 
 	return light;
 }
@@ -245,6 +271,7 @@ ByteAddressBuffer GlobalSurfaceAtlasChunks : register(t8);
 Buffer<float4> GlobalSurfaceAtlasCulledObjects : register(t9);
 Texture2D GlobalSurfaceAtlasDepth : register(t10);
 Texture2D GlobalSurfaceAtlasTex : register(t11);
+TextureCube Skybox : register(t12);
 
 // Pixel shader for Global Surface Atlas debug drawing
 META_PS(true, FEATURE_LEVEL_SM5)
@@ -262,14 +289,23 @@ float4 PS_Debug(Quad_VS2PS input) : SV_Target
 	trace.Init(ViewWorldPos, viewRay, ViewNearPlane, ViewFarPlane);
 	trace.NeedsHitNormal = true;
 	GlobalSDFHit hit = RayTraceGlobalSDF(GlobalSDF, GlobalSDFTex, GlobalSDFMip, trace);
-	if (!hit.IsHit())
-		return float4(float3(0.4f, 0.4f, 1.0f) * saturate(hit.StepsCount / 80.0f), 1);
-	//return float4(hit.HitNormal * 0.5f + 0.5f, 1);
 
-	// Sample Global Surface Atlas at the hit location
-	float surfaceThreshold = hit.HitCascade * 10.0f + 20.0f; // Scale the threshold based on the hit cascade (less precision)
-	float4 surfaceColor = SampleGlobalSurfaceAtlas(GlobalSurfaceAtlas, GlobalSurfaceAtlasChunks, GlobalSurfaceAtlasCulledObjects, GlobalSurfaceAtlasDepth, GlobalSurfaceAtlasTex, hit.GetHitPosition(trace), -viewRay, surfaceThreshold);
-	return float4(surfaceColor.rgb, 1);
+    float3 color;
+	if (hit.IsHit())
+	{
+        // Sample Global Surface Atlas at the hit location
+        float surfaceThreshold = GetGlobalSurfaceAtlasThreshold(GlobalSDF, hit);
+        color = SampleGlobalSurfaceAtlas(GlobalSurfaceAtlas, GlobalSurfaceAtlasChunks, GlobalSurfaceAtlasCulledObjects, GlobalSurfaceAtlasDepth, GlobalSurfaceAtlasTex, hit.GetHitPosition(trace), -viewRay, surfaceThreshold).rgb;
+	    //color = hit.HitNormal * 0.5f + 0.5f;
+    }
+    else
+    {
+        // Sample skybox
+        float3 skybox = Skybox.SampleLevel(SamplerLinearClamp, viewRay, 0);
+        float3 sky = float3(0.4f, 0.4f, 1.0f) * saturate(hit.StepsCount / 80.0f);
+        color = lerp(sky, skybox, SkyboxIntensity);
+    }
+    return float4(color, 1);
 }
 
 #endif

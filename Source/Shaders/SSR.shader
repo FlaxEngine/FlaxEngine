@@ -138,7 +138,7 @@ float4 PS_ResolvePass(Quad_VS2PS input) : SV_Target0
 	float3 viewVector = normalize(gBufferData.ViewPos - gBuffer.WorldPos);
 
 	// Randomize it a little
-	float2 random = RandN2(uv, TemporalTime);
+	float2 random = RandN2(uv + TemporalTime);
 	float2 blueNoise = random.xy * 2.0 - 1.0;
 	float2x2 offsetRotationMatrix = float2x2(blueNoise.x, blueNoise.y, -blueNoise.y, blueNoise.x);
 

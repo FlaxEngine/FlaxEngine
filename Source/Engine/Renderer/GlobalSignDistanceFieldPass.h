@@ -15,7 +15,8 @@ public:
         {
         Float4 CascadePosDistance[4];
         Float4 CascadeVoxelSize;
-        Float3 Padding;
+        Float2 Padding;
+        uint32 CascadesCount;
         float Resolution;
         });
 
@@ -25,6 +26,9 @@ public:
         GPUTexture* Cascades[4];
         GPUTexture* CascadeMips[4];
         ConstantsData Constants;
+
+        void BindCascades(GPUContext* context, int32 srvSlot);
+        void BindCascadeMips(GPUContext* context, int32 srvSlot);
     };
 
 private:

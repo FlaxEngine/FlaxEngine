@@ -131,6 +131,7 @@ void PointLight::Draw(RenderContext& renderContext)
         data.SourceRadius = SourceRadius;
         data.SourceLength = SourceLength;
         data.ContactShadowsLength = ContactShadowsLength;
+        data.IndirectLightingIntensity = IndirectLightingIntensity;
         data.IESTexture = IESTexture ? IESTexture->GetTexture() : nullptr;
         renderContext.List->PointLights.Add(data);
     }

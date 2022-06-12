@@ -6,16 +6,6 @@
 #include "./Flax/MonteCarlo.hlsl"
 #include "./Flax/GBufferCommon.hlsl"
 
-float max2(float2 v)
-{
-	return max(v.x, v.y);
-}
-
-float2 RandN2(float2 pos, float2 random)
-{
-	return frac(sin(dot(pos.xy + random, float2(12.9898, 78.233))) * float2(43758.5453, 28001.8384));
-}
-
 // 1:-1 to 0:1
 float2 ClipToUv(float2 clipPos)
 {
@@ -62,7 +52,7 @@ float3 TraceSceenSpaceReflection(float2 uv, GBufferSample gBuffer, Texture2D dep
 	float3 normalVS = mul(gBuffer.Normal, (float3x3)viewMatrix);
 
 	// Randomize it a little
-	float2 jitter = RandN2(uv, temporalTime);
+	float2 jitter = RandN2(uv + temporalTime);
 	float2 Xi = jitter;
 	Xi.y = lerp(Xi.y, 0.0, brdfBias);
 	float3 H = temporal ? TangentToWorld(gBuffer.Normal, ImportanceSampleGGX(Xi, gBuffer.Roughness)) : gBuffer.Normal;
@@ -80,7 +70,8 @@ float3 TraceSceenSpaceReflection(float2 uv, GBufferSample gBuffer, Texture2D dep
 	float3 endUV = ProjectWorldToUv(startWS + reflectWS, viewProjectionMatrix);
 
 	float3 rayUV = endUV - startUV;
-	rayUV *= stepSize / max2(abs(rayUV.xy));
+    float2 rayUVAbs = abs(rayUV.xy);
+	rayUV *= stepSize / max(rayUVAbs.x, rayUVAbs.y);
 	float3 startUv = startUV + rayUV * 2;
 
 	float3 currOffset = startUv;

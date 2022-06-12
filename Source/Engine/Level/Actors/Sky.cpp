@@ -195,6 +195,11 @@ void Sky::DrawFog(GPUContext* context, RenderContext& renderContext, GPUTextureV
     context->DrawFullscreenTriangle();
 }
 
+bool Sky::IsDynamicSky() const
+{
+    return !IsStatic() || (SunLight && !SunLight->IsStatic());
+}
+
 void Sky::ApplySky(GPUContext* context, RenderContext& renderContext, const Matrix& world)
 {
     // Get precomputed cache and bind it to the pipeline

@@ -156,28 +156,24 @@ public:
         return _viewport;
     }
 
+    const CustomBuffer* FindCustomBuffer(const StringView& name) const;
+
     template<class T>
     const T* FindCustomBuffer(const StringView& name) const
     {
-        for (CustomBuffer* e : CustomBuffers)
-        {
-            if (e->Name == name)
-                return (const T*)e;
-        }
-        return nullptr;
+        return (const T*)FindCustomBuffer(name);
     }
 
     template<class T>
     T* GetCustomBuffer(const StringView& name)
     {
-        for (CustomBuffer* e : CustomBuffers)
+        CustomBuffer* result = (CustomBuffer*)FindCustomBuffer(name);
+        if (!result)
         {
-            if (e->Name == name)
-                return (T*)e;
+            result = New<T>();
+            result->Name = name;
+            CustomBuffers.Add(result);
         }
-        CustomBuffer* result = New<T>();
-        result->Name = name;
-        CustomBuffers.Add(result);
         return (T*)result;
     }
 

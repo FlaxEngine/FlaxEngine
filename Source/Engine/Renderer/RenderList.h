@@ -34,6 +34,7 @@ struct RendererDirectionalLightData
     float ShadowsSharpness;
     float VolumetricScatteringIntensity;
 
+    float IndirectLightingIntensity;
     int8 CastVolumetricShadow : 1;
     int8 RenderedVolumetricFog : 1;
 
@@ -72,6 +73,7 @@ struct RendererSpotLightData
     float CosOuterCone;
     float InvCosConeDifference;
     float ContactShadowsLength;
+    float IndirectLightingIntensity;
     ShadowsCastingMode ShadowsMode;
 
     int8 CastVolumetricShadow : 1;
@@ -106,6 +108,7 @@ struct RendererPointLightData
 
     float SourceLength;
     float ContactShadowsLength;
+    float IndirectLightingIntensity;
     ShadowsCastingMode ShadowsMode;
 
     int8 CastVolumetricShadow : 1;
@@ -126,6 +129,7 @@ struct RendererSkyLightData
     float Radius;
 
     Float3 AdditiveColor;
+    float IndirectLightingIntensity;
 
     int8 CastVolumetricShadow : 1;
     int8 RenderedVolumetricFog : 1;

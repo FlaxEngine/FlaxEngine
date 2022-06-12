@@ -111,6 +111,16 @@ GPUTexture* RenderBuffers::RequestHalfResDepth(GPUContext* context)
     return HalfResDepth;
 }
 
+const RenderBuffers::CustomBuffer* RenderBuffers::FindCustomBuffer(const StringView& name) const
+{
+    for (const CustomBuffer* e : CustomBuffers)
+    {
+        if (e->Name == name)
+            return e;
+    }
+    return nullptr;
+}
+
 uint64 RenderBuffers::GetMemoryUsage() const
 {
     uint64 result = 0;

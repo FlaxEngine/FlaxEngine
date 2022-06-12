@@ -37,6 +37,14 @@ public:
     /// <param name="renderContext">The rendering context.</param>
     void RenderDebug(RenderContext& renderContext);
 
+    /// <summary>
+    /// Renders the sky or skybox into low-resolution cubemap. Can be used to sample realtime sky lighting in GI passes.
+    /// </summary>
+    /// <param name="renderContext">The rendering context.</param>
+    /// <param name="context">The GPU context.</param>
+    /// <returns>Rendered cubemap or null if not ready or failed.</returns>
+    GPUTextureView* RenderSkybox(RenderContext& renderContext, GPUContext* context);
+
 #if USE_EDITOR
     void DrawMaterialComplexity(RenderContext& renderContext, GPUContext* context, GPUTextureView* lightBuffer);
 #endif
@@ -54,6 +62,7 @@ public:
 
 private:
 
+    void DrawSky(RenderContext& renderContext, GPUContext* context);
     void DrawDecals(RenderContext& renderContext, GPUTextureView* lightBuffer);
 
 #if COMPILE_WITH_DEV_ENV
