@@ -161,10 +161,10 @@ void SpotLight::Draw(RenderContext& renderContext)
         && (ViewDistance < ZeroTolerance || Vector3::DistanceSquared(renderContext.View.Position, GetPosition()) < ViewDistance * ViewDistance))
     {
         RendererSpotLightData data;
-        data.Position = GetPosition();
+        data.Position = GetPosition(); // TODO: large-worlds
         data.MinRoughness = MinRoughness;
         data.ShadowsDistance = ShadowsDistance;
-        data.Color = Color.ToVector3() * (Color.A * brightness);
+        data.Color = Color.ToFloat3() * (Color.A * brightness);
         data.ShadowsStrength = ShadowsStrength;
         data.Direction = _direction;
         data.ShadowsFadeDistance = ShadowsFadeDistance;
@@ -183,7 +183,7 @@ void SpotLight::Draw(RenderContext& renderContext)
         data.InvCosConeDifference = _invCosConeDifference;
         data.ContactShadowsLength = ContactShadowsLength;
         data.IESTexture = IESTexture ? IESTexture->GetTexture() : nullptr;
-        Vector3::Transform(Vector3::Up, GetOrientation(), data.UpVector);
+        Float3::Transform(Float3::Up, GetOrientation(), data.UpVector);
         data.OuterConeAngle = outerConeAngle;
         renderContext.List->SpotLights.Add(data);
     }
@@ -264,7 +264,7 @@ void SpotLight::Deserialize(DeserializeStream& stream, ISerializeModifier* modif
     DESERIALIZE(IESBrightnessScale);
 }
 
-bool SpotLight::IntersectsItself(const Ray& ray, float& distance, Vector3& normal)
+bool SpotLight::IntersectsItself(const Ray& ray, Real& distance, Vector3& normal)
 {
     return CollisionsHelper::RayIntersectsSphere(ray, _sphere, distance, normal);
 }

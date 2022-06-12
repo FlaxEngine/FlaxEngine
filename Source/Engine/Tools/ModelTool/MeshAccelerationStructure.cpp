@@ -26,8 +26,7 @@ void MeshAccelerationStructure::BuildBVH(int32 node, int32 maxLeafSize, Array<by
     right.Leaf.MeshIndex = root.Leaf.MeshIndex;
 
     // Mid-point splitting based on the largest axis
-    Vector3 boundsSize;
-    root.Bounds.GetSize(boundsSize);
+    const Float3 boundsSize = root.Bounds.GetSize();
     int32 axisCount = 0;
     int32 axis = 0;
 RETRY:
@@ -51,9 +50,9 @@ RETRY:
         // Go to the next axis
         axis = (axis + 1) % 3;
     }
-    const float midPoint = root.Bounds.Minimum.Raw[axis] + boundsSize.Raw[axis] * 0.5f;
+    const float midPoint = (float)(root.Bounds.Minimum.Raw[axis] + boundsSize.Raw[axis] * 0.5f);
     const Mesh& meshData = _meshes[root.Leaf.MeshIndex];
-    const Vector3* vb = meshData.VertexBuffer.Get<Vector3>();
+    const Float3* vb = meshData.VertexBuffer.Get<Float3>();
     int32 indexStart = root.Leaf.TriangleIndex * 3;
     int32 indexEnd = indexStart + root.Leaf.TriangleCount * 3;
     left.Leaf.TriangleCount = 0;
@@ -152,7 +151,7 @@ RETRY:
     BuildBVH(childIndex + 1, maxLeafSize, scratch);
 }
 
-bool MeshAccelerationStructure::PointQueryBVH(int32 node, const Vector3& point, float& hitDistance, Vector3& hitPoint, Triangle& hitTriangle) const
+bool MeshAccelerationStructure::PointQueryBVH(int32 node, const Vector3& point, Real& hitDistance, Vector3& hitPoint, Triangle& hitTriangle) const
 {
     const auto& root = _bvh[node];
     bool hit = false;
@@ -161,7 +160,7 @@ bool MeshAccelerationStructure::PointQueryBVH(int32 node, const Vector3& point, 
         // Find closest triangle
         Vector3 p;
         const Mesh& meshData = _meshes[root.Leaf.MeshIndex];
-        const Vector3* vb = meshData.VertexBuffer.Get<Vector3>();
+        const Float3* vb = meshData.VertexBuffer.Get<Float3>();
         const int32 indexStart = root.Leaf.TriangleIndex * 3;
         const int32 indexEnd = indexStart + root.Leaf.TriangleCount * 3;
         if (meshData.Use16BitIndexBuffer)
@@ -173,7 +172,7 @@ bool MeshAccelerationStructure::PointQueryBVH(int32 node, const Vector3& point, 
                 Vector3 v1 = vb[ib16[i++]];
                 Vector3 v2 = vb[ib16[i++]];
                 CollisionsHelper::ClosestPointPointTriangle(point, v0, v1, v2, p);
-                const float distance = Vector3::Distance(point, p);
+                const Real distance = Vector3::Distance(point, p);
                 if (distance < hitDistance)
                 {
                     hitDistance = distance;
@@ -192,7 +191,7 @@ bool MeshAccelerationStructure::PointQueryBVH(int32 node, const Vector3& point, 
                 Vector3 v1 = vb[ib32[i++]];
                 Vector3 v2 = vb[ib32[i++]];
                 CollisionsHelper::ClosestPointPointTriangle(point, v0, v1, v2, p);
-                const float distance = Vector3::Distance(point, p);
+                const Real distance = Vector3::Distance(point, p);
                 if (distance < hitDistance)
                 {
                     hitDistance = distance;
@@ -218,19 +217,19 @@ bool MeshAccelerationStructure::PointQueryBVH(int32 node, const Vector3& point, 
     return hit;
 }
 
-bool MeshAccelerationStructure::RayCastBVH(int32 node, const Ray& ray, float& hitDistance, Vector3& hitNormal, Triangle& hitTriangle) const
+bool MeshAccelerationStructure::RayCastBVH(int32 node, const Ray& ray, Real& hitDistance, Vector3& hitNormal, Triangle& hitTriangle) const
 {
     const auto& root = _bvh[node];
     if (!root.Bounds.Intersects(ray))
         return false;
     Vector3 normal;
-    float distance;
+    Real distance;
     bool hit = false;
     if (root.Leaf.IsLeaf)
     {
         // Ray cast along triangles in the leaf 
         const Mesh& meshData = _meshes[root.Leaf.MeshIndex];
-        const Vector3* vb = meshData.VertexBuffer.Get<Vector3>();
+        const Float3* vb = meshData.VertexBuffer.Get<Float3>();
         const int32 indexStart = root.Leaf.TriangleIndex * 3;
         const int32 indexEnd = indexStart + root.Leaf.TriangleCount * 3;
         if (meshData.Use16BitIndexBuffer)
@@ -343,28 +342,28 @@ void MeshAccelerationStructure::Add(ModelData* modelData, int32 lodIndex, bool c
         if (copy)
         {
             meshData.IndexBuffer.Copy((const byte*)mesh->Indices.Get(), meshData.Indices * sizeof(uint32));
-            meshData.VertexBuffer.Copy((const byte*)mesh->Positions.Get(), meshData.Vertices * sizeof(Vector3));
+            meshData.VertexBuffer.Copy((const byte*)mesh->Positions.Get(), meshData.Vertices * sizeof(Float3));
         }
         else
         {
             meshData.IndexBuffer.Link((const byte*)mesh->Indices.Get(), meshData.Indices * sizeof(uint32));
-            meshData.VertexBuffer.Link((const byte*)mesh->Positions.Get(), meshData.Vertices * sizeof(Vector3));
+            meshData.VertexBuffer.Link((const byte*)mesh->Positions.Get(), meshData.Vertices * sizeof(Float3));
         }
         meshData.Use16BitIndexBuffer = false;
         mesh->CalculateBox(meshData.Bounds);
     }
 }
 
-void MeshAccelerationStructure::Add(Vector3* vb, int32 vertices, void* ib, int32 indices, bool use16BitIndex, bool copy)
+void MeshAccelerationStructure::Add(Float3* vb, int32 vertices, void* ib, int32 indices, bool use16BitIndex, bool copy)
 {
     auto& meshData = _meshes.AddOne();
     if (copy)
     {
-        meshData.VertexBuffer.Copy((const byte*)vb, vertices * sizeof(Vector3));
+        meshData.VertexBuffer.Copy((const byte*)vb, vertices * sizeof(Float3));
     }
     else
     {
-        meshData.VertexBuffer.Link((const byte*)vb, vertices * sizeof(Vector3));
+        meshData.VertexBuffer.Link((const byte*)vb, vertices * sizeof(Float3));
     }
     meshData.IndexBuffer.Copy((const byte*)ib, indices * (use16BitIndex ? sizeof(uint16) : sizeof(uint32)));
     meshData.Vertices = vertices;
@@ -409,9 +408,9 @@ void MeshAccelerationStructure::BuildBVH(int32 maxLeafSize)
         BuildBVH(i + 1, maxLeafSize, scratch);
 }
 
-bool MeshAccelerationStructure::PointQuery(const Vector3& point, float& hitDistance, Vector3& hitPoint, Triangle& hitTriangle, float maxDistance) const
+bool MeshAccelerationStructure::PointQuery(const Vector3& point, Real& hitDistance, Vector3& hitPoint, Triangle& hitTriangle, Real maxDistance) const
 {
-    hitDistance = maxDistance >= MAX_float ? maxDistance : maxDistance * maxDistance;
+    hitDistance = maxDistance >= MAX_Real ? maxDistance : maxDistance * maxDistance;
     bool hit = false;
 
     // BVH
@@ -449,7 +448,7 @@ bool MeshAccelerationStructure::PointQuery(const Vector3& point, float& hitDista
         Vector3 p;
         for (const Mesh& meshData : _meshes)
         {
-            const Vector3* vb = meshData.VertexBuffer.Get<Vector3>();
+            const Float3* vb = meshData.VertexBuffer.Get<Float3>();
             if (meshData.Use16BitIndexBuffer)
             {
                 const uint16* ib16 = meshData.IndexBuffer.Get<uint16>();
@@ -459,7 +458,7 @@ bool MeshAccelerationStructure::PointQuery(const Vector3& point, float& hitDista
                     Vector3 v1 = vb[ib16[i++]];
                     Vector3 v2 = vb[ib16[i++]];
                     CollisionsHelper::ClosestPointPointTriangle(point, v0, v1, v2, p);
-                    const float distance = Vector3::DistanceSquared(point, p);
+                    const Real distance = Vector3::DistanceSquared(point, p);
                     if (distance < hitDistance)
                     {
                         hitDistance = distance;
@@ -478,7 +477,7 @@ bool MeshAccelerationStructure::PointQuery(const Vector3& point, float& hitDista
                     Vector3 v1 = vb[ib32[i++]];
                     Vector3 v2 = vb[ib32[i++]];
                     CollisionsHelper::ClosestPointPointTriangle(point, v0, v1, v2, p);
-                    const float distance = Vector3::DistanceSquared(point, p);
+                    const Real distance = Vector3::DistanceSquared(point, p);
                     if (distance < hitDistance)
                     {
                         hitDistance = distance;
@@ -495,7 +494,7 @@ bool MeshAccelerationStructure::PointQuery(const Vector3& point, float& hitDista
     }
 }
 
-bool MeshAccelerationStructure::RayCast(const Ray& ray, float& hitDistance, Vector3& hitNormal, Triangle& hitTriangle, float maxDistance) const
+bool MeshAccelerationStructure::RayCast(const Ray& ray, Real& hitDistance, Vector3& hitNormal, Triangle& hitTriangle, Real maxDistance) const
 {
     hitDistance = maxDistance;
 
@@ -508,13 +507,13 @@ bool MeshAccelerationStructure::RayCast(const Ray& ray, float& hitDistance, Vect
     // Brute-force
     {
         Vector3 normal;
-        float distance;
+        Real distance;
         bool hit = false;
         for (const Mesh& meshData : _meshes)
         {
             if (!meshData.Bounds.Intersects(ray))
                 continue;
-            const Vector3* vb = meshData.VertexBuffer.Get<Vector3>();
+            const Float3* vb = meshData.VertexBuffer.Get<Float3>();
             if (meshData.Use16BitIndexBuffer)
             {
                 const uint16* ib16 = meshData.IndexBuffer.Get<uint16>();

@@ -26,9 +26,9 @@ struct ParticleAttribute
     enum class ValueTypes
     {
         Float,
-        Vector2,
-        Vector3,
-        Vector4,
+        Float2,
+        Float3,
+        Float4,
         Int,
         Uint,
     };
@@ -56,11 +56,11 @@ struct ParticleAttribute
     {
         switch (ValueType)
         {
-        case ValueTypes::Vector2:
+        case ValueTypes::Float2:
             return 8;
-        case ValueTypes::Vector3:
+        case ValueTypes::Float3:
             return 12;
-        case ValueTypes::Vector4:
+        case ValueTypes::Float4:
             return 16;
         case ValueTypes::Float:
         case ValueTypes::Int:

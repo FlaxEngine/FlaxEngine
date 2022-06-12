@@ -12,12 +12,12 @@ void InverseKinematics::SolveAimIK(const Transform& node, const Vector3& target,
 
 void InverseKinematics::SolveTwoBoneIK(Transform& rootNode, Transform& jointNode, Transform& targetNode, const Vector3& target, const Vector3& jointTarget, bool allowStretching, float maxStretchScale)
 {
-    float lowerLimbLength = (targetNode.Translation - jointNode.Translation).Length();
-    float upperLimbLength = (jointNode.Translation - rootNode.Translation).Length();
+    Real lowerLimbLength = (targetNode.Translation - jointNode.Translation).Length();
+    Real upperLimbLength = (jointNode.Translation - rootNode.Translation).Length();
     Vector3 jointPos = jointNode.Translation;
     Vector3 desiredDelta = target - rootNode.Translation;
-    float desiredLength = desiredDelta.Length();
-    float limbLengthLimit = lowerLimbLength + upperLimbLength;
+    Real desiredLength = desiredDelta.Length();
+    Real limbLengthLimit = lowerLimbLength + upperLimbLength;
 
     Vector3 desiredDir;
     if (desiredLength < ZeroTolerance)
@@ -31,7 +31,7 @@ void InverseKinematics::SolveTwoBoneIK(Transform& rootNode, Transform& jointNode
     }
 
     Vector3 jointTargetDelta = jointTarget - rootNode.Translation;
-    const float jointTargetLengthSqr = jointTargetDelta.LengthSquared();
+    const Real jointTargetLengthSqr = jointTargetDelta.LengthSquared();
 
     Vector3 jointPlaneNormal, jointBendDir;
     if (jointTargetLengthSqr < ZeroTolerance * ZeroTolerance)
@@ -56,12 +56,12 @@ void InverseKinematics::SolveTwoBoneIK(Transform& rootNode, Transform& jointNode
 
     if (allowStretching)
     {
-        const float initialStretchRatio = 1.0f;
-        const float range = maxStretchScale - initialStretchRatio;
+        const Real initialStretchRatio = 1.0f;
+        const Real range = maxStretchScale - initialStretchRatio;
         if (range > ZeroTolerance && limbLengthLimit > ZeroTolerance)
         {
-            const float reachRatio = desiredLength / limbLengthLimit;
-            const float scalingFactor = (maxStretchScale - 1.0f) * Math::Saturate((reachRatio - initialStretchRatio) / range);
+            const Real reachRatio = desiredLength / limbLengthLimit;
+            const Real scalingFactor = (maxStretchScale - 1.0f) * Math::Saturate((reachRatio - initialStretchRatio) / range);
             if (scalingFactor > ZeroTolerance)
             {
                 lowerLimbLength *= 1.0f + scalingFactor;
@@ -81,13 +81,13 @@ void InverseKinematics::SolveTwoBoneIK(Transform& rootNode, Transform& jointNode
     }
     else
     {
-        const float twoAb = 2.0f * upperLimbLength * desiredLength;
-        const float cosAngle = twoAb > ZeroTolerance ? (upperLimbLength * upperLimbLength + desiredLength * desiredLength - lowerLimbLength * lowerLimbLength) / twoAb : 0.0f;
+        const Real twoAb = 2.0f * upperLimbLength * desiredLength;
+        const Real cosAngle = twoAb > ZeroTolerance ? (upperLimbLength * upperLimbLength + desiredLength * desiredLength - lowerLimbLength * lowerLimbLength) / twoAb : 0.0f;
         const bool reverseUpperBone = cosAngle < 0.0f;
-        const float angle = Math::Acos(cosAngle);
-        const float jointLineDist = upperLimbLength * Math::Sin(angle);
-        const float projJointDistSqr = upperLimbLength * upperLimbLength - jointLineDist * jointLineDist;
-        float projJointDist = projJointDistSqr > 0.0f ? Math::Sqrt(projJointDistSqr) : 0.0f;
+        const Real angle = Math::Acos(cosAngle);
+        const Real jointLineDist = upperLimbLength * Math::Sin(angle);
+        const Real projJointDistSqr = upperLimbLength * upperLimbLength - jointLineDist * jointLineDist;
+        Real projJointDist = projJointDistSqr > 0.0f ? Math::Sqrt(projJointDistSqr) : 0.0f;
         if (reverseUpperBone)
             projJointDist *= -1.0f;
         resultJointPos = rootNode.Translation + projJointDist * desiredDir + jointLineDist * jointBendDir;

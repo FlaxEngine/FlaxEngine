@@ -14,7 +14,7 @@ private:
 
     PACK_STRUCT(struct Data
         {
-            Vector4 ScreenSize;
+            Float4 ScreenSize;
         });
 
     AssetReference<Shader> _shader;

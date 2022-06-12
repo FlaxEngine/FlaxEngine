@@ -69,7 +69,7 @@ void CapsuleCollider::OnDebugDrawSelected()
 
 #endif
 
-bool CapsuleCollider::IntersectsItself(const Ray& ray, float& distance, Vector3& normal)
+bool CapsuleCollider::IntersectsItself(const Ray& ray, Real& distance, Vector3& normal)
 {
     return _orientedBox.Intersects(ray, distance, normal);
 }

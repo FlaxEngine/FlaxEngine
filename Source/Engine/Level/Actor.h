@@ -451,7 +451,7 @@ public:
     /// Gets actor scale in 3D space.
     /// </summary>
     API_PROPERTY(Attributes="HideInEditor, NoSerialize")
-    FORCE_INLINE Vector3 GetScale() const
+    FORCE_INLINE Float3 GetScale() const
     {
         return _transform.Scale;
     }
@@ -460,7 +460,7 @@ public:
     /// Sets actor scale in 3D space
     /// </summary>
     /// <param name="value">The value to set.</param>
-    API_PROPERTY() void SetScale(const Vector3& value);
+    API_PROPERTY() void SetScale(const Float3& value);
 
     /// <summary>
     /// Gets actor rotation matrix.
@@ -489,16 +489,16 @@ public:
     /// </summary>
     /// <returns>The result value.</returns>
     API_PROPERTY(Attributes="HideInEditor, NoSerialize")
-    FORCE_INLINE Vector3 GetDirection() const
+    FORCE_INLINE Float3 GetDirection() const
     {
-        return Vector3::Transform(Vector3::Forward, GetOrientation());
+        return Float3::Transform(Float3::Forward, GetOrientation());
     }
 
     /// <summary>
     /// Sets actor direction vector (forward)
     /// </summary>
     /// <param name="value">The value to set.</param>
-    API_PROPERTY() void SetDirection(const Vector3& value);
+    API_PROPERTY() void SetDirection(const Float3& value);
 
 public:
 
@@ -525,7 +525,7 @@ public:
     /// <summary>
     /// Gets local position of the actor in parent actor space.
     /// </summary>
-    API_PROPERTY(Attributes="EditorDisplay(\"Transform\", \"Position\"), DefaultValue(typeof(Vector3), \"0,0,0\"), EditorOrder(-30), NoSerialize, CustomEditorAlias(\"FlaxEditor.CustomEditors.Editors.ActorTransformEditor+PositionScaleEditor\")")
+    API_PROPERTY(Attributes="EditorDisplay(\"Transform\", \"Position\"), DefaultValue(typeof(Vector3), \"0,0,0\"), EditorOrder(-30), NoSerialize, CustomEditorAlias(\"FlaxEditor.CustomEditors.Editors.ActorTransformEditor+PositionEditor\")")
     FORCE_INLINE Vector3 GetLocalPosition() const
     {
         return _localTransform.Translation;
@@ -555,8 +555,8 @@ public:
     /// <summary>
     /// Gets local scale vector of the actor in parent actor space.
     /// </summary>
-    API_PROPERTY(Attributes="EditorDisplay(\"Transform\", \"Scale\"), DefaultValue(typeof(Vector3), \"1,1,1\"), Limit(float.MinValue, float.MaxValue, 0.01f), EditorOrder(-10), NoSerialize, CustomEditorAlias(\"FlaxEditor.CustomEditors.Editors.ActorTransformEditor+PositionScaleEditor\")")
-    FORCE_INLINE Vector3 GetLocalScale() const
+    API_PROPERTY(Attributes="EditorDisplay(\"Transform\", \"Scale\"), DefaultValue(typeof(Float3), \"1,1,1\"), Limit(float.MinValue, float.MaxValue, 0.01f), EditorOrder(-10), NoSerialize, CustomEditorAlias(\"FlaxEditor.CustomEditors.Editors.ActorTransformEditor+ScaleEditor\")")
+    FORCE_INLINE Float3 GetLocalScale() const
     {
         return _localTransform.Scale;
     }
@@ -565,7 +565,7 @@ public:
     /// Sets local scale vector of the actor in parent actor space.
     /// </summary>
     /// <param name="value">The value to set.</param>
-    API_PROPERTY() void SetLocalScale(const Vector3& value);
+    API_PROPERTY() void SetLocalScale(const Float3& value);
 
     /// <summary>
     /// Moves the actor (also can rotate it) in world space.
@@ -752,7 +752,7 @@ public:
     /// <param name="distance">When the method completes, contains the distance of the intersection (if any valid).</param>
     /// <param name="normal">When the method completes, contains the intersection surface normal vector (if any valid).</param>
     /// <returns>True whether the two objects intersected, otherwise false.</returns>
-    API_FUNCTION() virtual bool IntersectsItself(const Ray& ray, API_PARAM(Out) float& distance, API_PARAM(Out) Vector3& normal);
+    API_FUNCTION() virtual bool IntersectsItself(const Ray& ray, API_PARAM(Out) Real& distance, API_PARAM(Out) Vector3& normal);
 
     /// <summary>
     /// Determines if there is an intersection between the current object or any it's child and a ray.
@@ -761,7 +761,7 @@ public:
     /// <param name="distance">When the method completes, contains the distance of the intersection (if any valid).</param>
     /// <param name="normal">When the method completes, contains the intersection surface normal vector (if any valid).</param>
     /// <returns>The target hit actor that is the closest to the ray.</returns>
-    API_FUNCTION() Actor* Intersects(const Ray& ray, API_PARAM(Out) float& distance, API_PARAM(Out) Vector3& normal);
+    API_FUNCTION() Actor* Intersects(const Ray& ray, API_PARAM(Out) Real& distance, API_PARAM(Out) Vector3& normal);
 
     /// <summary>
     /// Rotates actor to orient it towards the specified world position.

@@ -104,7 +104,7 @@ namespace FlaxEditor.GUI
             // Cache data
             var style = Style.Current;
             float iconSize = Height - DefaultMargin;
-            var clientRect = new Rectangle(Vector2.Zero, Size);
+            var clientRect = new Rectangle(Float2.Zero, Size);
             var iconRect = new Rectangle(DefaultMargin, DefaultMargin, iconSize, iconSize);
             var textRect = new Rectangle(DefaultMargin, 0, 0, Height);
             bool enabled = EnabledInHierarchy;
@@ -151,7 +151,7 @@ namespace FlaxEditor.GUI
         }
 
         /// <inheritdoc />
-        public override bool OnMouseDown(Vector2 location, MouseButton button)
+        public override bool OnMouseDown(Float2 location, MouseButton button)
         {
             if (button == MouseButton.Left)
             {
@@ -166,7 +166,7 @@ namespace FlaxEditor.GUI
         }
 
         /// <inheritdoc />
-        public override bool OnMouseUp(Vector2 location, MouseButton button)
+        public override bool OnMouseUp(Float2 location, MouseButton button)
         {
             if (button == MouseButton.Left && _mouseDown)
             {

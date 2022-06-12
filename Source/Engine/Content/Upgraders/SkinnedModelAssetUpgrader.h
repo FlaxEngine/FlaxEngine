@@ -84,7 +84,7 @@ private:
                 newVertex.Normal = oldVertex.Normal;
                 newVertex.Tangent = oldVertex.Tangent;
                 newVertex.BlendIndices = oldVertex.BlendIndices;
-                Vector4 blendWeights = Vector4(oldVertex.BlendWeights.R / 255.0f, oldVertex.BlendWeights.G / 255.0f, oldVertex.BlendWeights.B / 255.0f, oldVertex.BlendWeights.A / 255.0f);
+                Float4 blendWeights(oldVertex.BlendWeights.R / 255.0f, oldVertex.BlendWeights.G / 255.0f, oldVertex.BlendWeights.B / 255.0f, oldVertex.BlendWeights.A / 255.0f);
                 const float sum = blendWeights.SumValues();
                 const float invSum = sum > ZeroTolerance ? 1.0f / sum : 0.0f;
                 blendWeights *= invSum;

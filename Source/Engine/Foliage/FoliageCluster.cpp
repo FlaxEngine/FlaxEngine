@@ -88,10 +88,10 @@ void FoliageCluster::UpdateCullDistance()
     }
 }
 
-bool FoliageCluster::Intersects(Foliage* foliage, const Ray& ray, float& distance, Vector3& normal, FoliageInstance*& instance)
+bool FoliageCluster::Intersects(Foliage* foliage, const Ray& ray, Real& distance, Vector3& normal, FoliageInstance*& instance)
 {
     bool result = false;
-    float minDistance = MAX_float;
+    Real minDistance = MAX_Real;
     Vector3 minDistanceNormal = Vector3::Up;
     FoliageInstance* minInstance = nullptr;
 

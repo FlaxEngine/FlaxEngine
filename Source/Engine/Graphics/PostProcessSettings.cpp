@@ -7,7 +7,7 @@
 #define BLEND_BOOL(name) name = (((int32)other.OverrideFlags & (int32)Override::name) != 0) && isHalf ? other.name : name
 #define BLEND_FLOAT(name) if ((((int32)other.OverrideFlags & (int32)Override::name) != 0)) name = Math::Lerp(name, other.name, weight)
 #define BLEND_INT(name) BLEND_FLOAT(name)
-#define BLEND_VEC3(name) if ((((int32)other.OverrideFlags & (int32)Override::name) != 0)) name = Vector3::Lerp(name, other.name, weight)
+#define BLEND_VEC3(name) if ((((int32)other.OverrideFlags & (int32)Override::name) != 0)) name = Float3::Lerp(name, other.name, weight)
 #define BLEND_ENUM(name) BLEND_BOOL(name)
 #define BLEND_PROPERTY(name) BLEND_BOOL(name)
 

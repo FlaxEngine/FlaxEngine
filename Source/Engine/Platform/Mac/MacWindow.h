@@ -14,7 +14,7 @@ class MacWindow : public WindowBase
 {
 private:
 
-    Vector2 _clientSize;
+    Float2 _clientSize;
     void* _window;
     bool _isMouseOver = false;
 
@@ -39,12 +39,12 @@ public:
     bool IsForegroundWindow() const override;
     void BringToFront(bool force) override;
 	void SetClientBounds(const Rectangle& clientArea) override;
-	void SetPosition(const Vector2& position) override;
-	Vector2 GetPosition() const override;
-	Vector2 GetSize() const override;
-	Vector2 GetClientSize() const override;
-	Vector2 ScreenToClient(const Vector2& screenPos) const override;
-	Vector2 ClientToScreen(const Vector2& clientPos) const override;
+	void SetPosition(const Float2& position) override;
+	Float2 GetPosition() const override;
+	Float2 GetSize() const override;
+	Float2 GetClientSize() const override;
+	Float2 ScreenToClient(const Float2& screenPos) const override;
+	Float2 ClientToScreen(const Float2& clientPos) const override;
     void FlashWindow() override;
     void SetIsFullscreen(bool isFullscreen) override;
     void SetOpacity(float opacity) override;

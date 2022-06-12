@@ -149,7 +149,7 @@ namespace FlaxEngine.GUI
         /// </summary>
         /// <param name="location">Position</param>
         /// <param name="size">Size</param>
-        public Button(Vector2 location, Vector2 size)
+        public Button(Float2 location, Float2 size)
         : this(location.X, location.Y, size.X, size.Y)
         {
         }
@@ -199,7 +199,7 @@ namespace FlaxEngine.GUI
         public override void DrawSelf()
         {
             // Cache data
-            Rectangle clientRect = new Rectangle(Vector2.Zero, Size);
+            Rectangle clientRect = new Rectangle(Float2.Zero, Size);
             bool enabled = EnabledInHierarchy;
             Color backgroundColor = BackgroundColor;
             Color borderColor = BorderColor;
@@ -244,7 +244,7 @@ namespace FlaxEngine.GUI
         }
 
         /// <inheritdoc />
-        public override bool OnMouseDown(Vector2 location, MouseButton button)
+        public override bool OnMouseDown(Float2 location, MouseButton button)
         {
             if (base.OnMouseDown(location, button))
                 return true;
@@ -258,7 +258,7 @@ namespace FlaxEngine.GUI
         }
 
         /// <inheritdoc />
-        public override bool OnMouseUp(Vector2 location, MouseButton button)
+        public override bool OnMouseUp(Float2 location, MouseButton button)
         {
             if (base.OnMouseUp(location, button))
                 return true;
@@ -273,7 +273,7 @@ namespace FlaxEngine.GUI
         }
 
         /// <inheritdoc />
-        public override bool OnTouchDown(Vector2 location, int pointerId)
+        public override bool OnTouchDown(Float2 location, int pointerId)
         {
             if (base.OnTouchDown(location, pointerId))
                 return true;
@@ -287,7 +287,7 @@ namespace FlaxEngine.GUI
         }
 
         /// <inheritdoc />
-        public override bool OnTouchUp(Vector2 location, int pointerId)
+        public override bool OnTouchUp(Float2 location, int pointerId)
         {
             if (base.OnTouchUp(location, pointerId))
                 return true;

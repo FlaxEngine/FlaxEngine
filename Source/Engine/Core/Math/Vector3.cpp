@@ -83,10 +83,10 @@ Float3::Vector3Base(const Int4& xyz)
 }
 
 template<>
-Float3::Vector3Base(const Vector4& xyz)
-    : X(xyz.X)
-    , Y(xyz.Y)
-    , Z(xyz.Z)
+Float3::Vector3Base(const Float4& xyz)
+    : X((float)xyz.X)
+    , Y((float)xyz.Y)
+    , Z((float)xyz.Z)
 {
 }
 

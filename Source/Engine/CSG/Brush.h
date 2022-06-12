@@ -18,8 +18,8 @@ namespace CSG
     struct Surface : Plane
     {
         Guid Material;
-        Vector2 TexCoordScale;
-        Vector2 TexCoordOffset;
+        Float2 TexCoordScale;
+        Float2 TexCoordOffset;
         float TexCoordRotation;
         float ScaleInLightmap;
 
@@ -79,12 +79,11 @@ namespace CSG
 
     public:
 
-        static Vector3 Intersection(const Vector3& start, const Vector3& end, float sdist, float edist)
+        static Vector3 Intersection(const Vector3& start, const Vector3& end, Real sdist, Real edist)
         {
             Vector3 vector = end - start;
-            float length = edist - sdist;
-            float delta = edist / length;
-
+            Real length = edist - sdist;
+            Real delta = edist / length;
             return end - (delta * vector);
         }
 
@@ -93,18 +92,7 @@ namespace CSG
             return Intersection(start, end, Distance(start), Distance(end));
         }
 
-        float Distance(float x, float y, float z) const
-        {
-            return
-            (
-                (Normal.X * x) +
-                (Normal.Y * y) +
-                (Normal.Z * z) -
-                (D)
-            );
-        }
-
-        float Distance(const Vector3& vertex) const
+        Real Distance(const Vector3& vertex) const
         {
             return
             (
@@ -115,18 +103,13 @@ namespace CSG
             );
         }
 
-        static PlaneIntersectionType OnSide(float distance)
+        static PlaneIntersectionType OnSide(Real distance)
         {
             if (distance > DistanceEpsilon)
                 return PlaneIntersectionType::Front;
             if (distance < -DistanceEpsilon)
                 return PlaneIntersectionType::Back;
             return PlaneIntersectionType::Intersecting;
-        }
-
-        PlaneIntersectionType OnSide(float x, float y, float z) const
-        {
-            return OnSide(Distance(x, y, z));
         }
 
         PlaneIntersectionType OnSide(const Vector3& vertex) const
@@ -139,24 +122,20 @@ namespace CSG
             Vector3 min;
             Vector3 max;
 
-            max.X = static_cast<float>((Normal.X >= 0.0f) ? box.MinX : box.MaxX);
-            max.Y = static_cast<float>((Normal.Y >= 0.0f) ? box.MinY : box.MaxY);
-            max.Z = static_cast<float>((Normal.Z >= 0.0f) ? box.MinZ : box.MaxZ);
+            max.X = static_cast<Real>((Normal.X >= 0.0f) ? box.MinX : box.MaxX);
+            max.Y = static_cast<Real>((Normal.Y >= 0.0f) ? box.MinY : box.MaxY);
+            max.Z = static_cast<Real>((Normal.Z >= 0.0f) ? box.MinZ : box.MaxZ);
 
-            min.X = static_cast<float>((Normal.X >= 0.0f) ? box.MaxX : box.MinX);
-            min.Y = static_cast<float>((Normal.Y >= 0.0f) ? box.MaxY : box.MinY);
-            min.Z = static_cast<float>((Normal.Z >= 0.0f) ? box.MaxZ : box.MinZ);
+            min.X = static_cast<Real>((Normal.X >= 0.0f) ? box.MaxX : box.MinX);
+            min.Y = static_cast<Real>((Normal.Y >= 0.0f) ? box.MaxY : box.MinY);
+            min.Z = static_cast<Real>((Normal.Z >= 0.0f) ? box.MaxZ : box.MinZ);
 
-            float distance = Vector3::Dot(Normal, max) - D;
-
+            Real distance = Vector3::Dot(Normal, max) - D;
             if (distance > DistanceEpsilon)
                 return PlaneIntersectionType::Front;
-
             distance = Vector3::Dot(Normal, min) - D;
-
             if (distance < -DistanceEpsilon)
                 return PlaneIntersectionType::Back;
-
             return PlaneIntersectionType::Intersecting;
         }
     };

@@ -105,11 +105,11 @@ bool FeatureData::Init()
     return false;
 }
 
-MaterialValue MaterialGenerator::getUVs(VariantType::Vector2, TEXT("input.TexCoord"));
+MaterialValue MaterialGenerator::getUVs(VariantType::Float2, TEXT("input.TexCoord"));
 MaterialValue MaterialGenerator::getTime(VariantType::Float, TEXT("TimeParam"));
-MaterialValue MaterialGenerator::getNormal(VariantType::Vector3, TEXT("input.TBN[2]"));
-MaterialValue MaterialGenerator::getNormalZero(VariantType::Vector3, TEXT("float3(0, 0, 1)"));
-MaterialValue MaterialGenerator::getVertexColor(VariantType::Vector4, TEXT("GetVertexColor(input)"));
+MaterialValue MaterialGenerator::getNormal(VariantType::Float3, TEXT("input.TBN[2]"));
+MaterialValue MaterialGenerator::getNormalZero(VariantType::Float3, TEXT("float3(0, 0, 1)"));
+MaterialValue MaterialGenerator::getVertexColor(VariantType::Float4, TEXT("GetVertexColor(input)"));
 
 MaterialGenerator::MaterialGenerator()
 {
@@ -380,7 +380,7 @@ bool MaterialGenerator::Generate(WriteStream& source, MaterialInfo& materialInfo
         eatMaterialGraphBox(baseLayer, MaterialGraphBoxes::TessellationMultiplier);
         for (int32 i = 0; i < _vsToPsInterpolants.Count(); i++)
         {
-            const auto value = tryGetValue(_vsToPsInterpolants[i], Value::Zero).AsVector4().Value;
+            const auto value = tryGetValue(_vsToPsInterpolants[i], Value::Zero).AsFloat4().Value;
             _writer.Write(TEXT("\tmaterial.CustomVSToPS[{0}] = {1};\n"), i, value);
         }
         _writer.Write(TEXT("\treturn material;"));
@@ -659,15 +659,15 @@ MaterialGraphParameter* MaterialGenerator::findGraphParam(const Guid& id)
 void MaterialGenerator::createGradients(Node* caller)
 {
     if (_ddx.IsInvalid())
-        _ddx = writeLocal(VariantType::Vector2, TEXT("ddx(input.TexCoord.xy)"), caller);
+        _ddx = writeLocal(VariantType::Float2, TEXT("ddx(input.TexCoord.xy)"), caller);
     if (_ddy.IsInvalid())
-        _ddy = writeLocal(VariantType::Vector2, TEXT("ddy(input.TexCoord.xy)"), caller);
+        _ddy = writeLocal(VariantType::Float2, TEXT("ddy(input.TexCoord.xy)"), caller);
 }
 
 MaterialGenerator::Value MaterialGenerator::getCameraVector(Node* caller)
 {
     if (_cameraVector.IsInvalid())
-        _cameraVector = writeLocal(VariantType::Vector3, TEXT("normalize(ViewPos.xyz - input.WorldPosition.xyz)"), caller);
+        _cameraVector = writeLocal(VariantType::Float3, TEXT("normalize(ViewPos.xyz - input.WorldPosition.xyz)"), caller);
     return _cameraVector;
 }
 
@@ -704,7 +704,7 @@ void MaterialGenerator::ProcessGroupMath(Box* box, Node* node, Value& value)
     case 30:
     {
         // Get input vector
-        auto v = tryGetValue(node->GetBox(0), Value::InitForZero(VariantType::Vector3));
+        auto v = tryGetValue(node->GetBox(0), Value::InitForZero(VariantType::Float3));
 
         // Select transformation spaces
         ASSERT(node->Values[0].Type == VariantType::Int && node->Values[1].Type == VariantType::Int);
@@ -795,7 +795,7 @@ void MaterialGenerator::ProcessGroupMath(Box* box, Node* node, Value& value)
             ASSERT(format != nullptr);
 
             // Write operation
-            value = writeLocal(VariantType::Vector3, String::Format(format, v.Value), node);
+            value = writeLocal(VariantType::Float3, String::Format(format, v.Value), node);
         }
         break;
     }

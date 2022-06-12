@@ -73,7 +73,7 @@ void EditorAnalytics::StartSession()
     }
     if (ScreenResolution.IsEmpty())
     {
-        const Vector2 desktopSize = Platform::GetDesktopSize();
+        const auto desktopSize = Platform::GetDesktopSize();
         ScreenResolution = StringAnsi(StringUtils::ToString((int32)desktopSize.X)) + "x" + StringAnsi(StringUtils::ToString((int32)desktopSize.Y));
     }
     if (UserLanguage.IsEmpty())

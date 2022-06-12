@@ -105,7 +105,7 @@ namespace FlaxEditor.GUI.ContextMenu
         /// </summary>
         /// <param name="parent">Parent control to attach to it.</param>
         /// <param name="location">Popup menu origin location in parent control coordinates.</param>
-        public virtual void Show(Control parent, Vector2 location)
+        public virtual void Show(Control parent, Float2 location)
         {
             Assert.IsNotNull(parent);
 
@@ -130,12 +130,12 @@ namespace FlaxEditor.GUI.ContextMenu
 
             // Calculate popup direction and initial location (fit on a single monitor)
             var dpiScale = parentWin.DpiScale;
-            Vector2 dpiSize = Size * dpiScale;
-            Vector2 locationWS = parent.PointToWindow(location);
-            Vector2 locationSS = parentWin.PointToScreen(locationWS);
-            Location = Vector2.Zero;
-            Rectangle monitorBounds = Platform.GetMonitorBounds(locationSS);
-            Vector2 rightBottomLocationSS = locationSS + dpiSize;
+            var dpiSize = Size * dpiScale;
+            var locationWS = parent.PointToWindow(location);
+            var locationSS = parentWin.PointToScreen(locationWS);
+            Location = Float2.Zero;
+            var monitorBounds = Platform.GetMonitorBounds(locationSS);
+            var rightBottomLocationSS = locationSS + dpiSize;
             bool isUp = false, isLeft = false;
             if (UseAutomaticDirectionFix)
             {
@@ -250,7 +250,7 @@ namespace FlaxEditor.GUI.ContextMenu
         /// <param name="child">The child menu.</param>
         /// <param name="location">The child menu initial location.</param>
         /// <param name="isSubMenu">True if context menu is a normal sub-menu, otherwise it is a custom menu popup linked as child.</param>
-        public void ShowChild(ContextMenuBase child, Vector2 location, bool isSubMenu = true)
+        public void ShowChild(ContextMenuBase child, Float2 location, bool isSubMenu = true)
         {
             // Hide current child
             HideChild();
@@ -376,7 +376,7 @@ namespace FlaxEditor.GUI.ContextMenu
         {
             // Draw background
             var style = Style.Current;
-            var bounds = new Rectangle(Vector2.Zero, Size);
+            var bounds = new Rectangle(Float2.Zero, Size);
             Render2D.FillRectangle(bounds, style.Background);
             Render2D.DrawRectangle(bounds, Color.Lerp(style.BackgroundSelected, style.Background, 0.6f));
 
@@ -384,14 +384,14 @@ namespace FlaxEditor.GUI.ContextMenu
         }
 
         /// <inheritdoc />
-        public override bool OnMouseDown(Vector2 location, MouseButton button)
+        public override bool OnMouseDown(Float2 location, MouseButton button)
         {
             base.OnMouseDown(location, button);
             return true;
         }
 
         /// <inheritdoc />
-        public override bool OnMouseUp(Vector2 location, MouseButton button)
+        public override bool OnMouseUp(Float2 location, MouseButton button)
         {
             base.OnMouseUp(location, button);
             return true;

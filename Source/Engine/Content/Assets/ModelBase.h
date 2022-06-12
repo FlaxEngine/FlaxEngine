@@ -41,7 +41,7 @@ public:
         /// <summary>
         /// The transformation scale from model local-space to the generated SDF texture space (local-space -> uv).
         /// </summary>
-        API_FIELD() Vector3 LocalToUVWMul;
+        API_FIELD() Float3 LocalToUVWMul;
 
         /// <summary>
         /// Amount of world-units per SDF texture voxel.
@@ -51,7 +51,7 @@ public:
         /// <summary>
         /// The transformation offset from model local-space to the generated SDF texture space (local-space -> uv).
         /// </summary>
-        API_FIELD() Vector3 LocalToUVWAdd;
+        API_FIELD() Float3 LocalToUVWAdd;
 
         /// <summary>
         /// The maximum distance stored in the SDF texture. Used to rescale normalized SDF into world-units (in model local space).
@@ -61,7 +61,7 @@ public:
         /// <summary>
         /// The bounding box of the SDF texture in the model local-space.
         /// </summary>
-        API_FIELD() Vector3 LocalBoundsMin;
+        API_FIELD() Float3 LocalBoundsMin;
 
         /// <summary>
         /// The SDF texture resolution scale used for building texture.
@@ -71,7 +71,7 @@ public:
         /// <summary>
         /// The bounding box of the SDF texture in the model local-space.
         /// </summary>
-        API_FIELD() Vector3 LocalBoundsMax;
+        API_FIELD() Float3 LocalBoundsMax;
 
         /// <summary>
         /// The model LOD index used for the building.

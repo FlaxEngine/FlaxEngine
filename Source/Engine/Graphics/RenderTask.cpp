@@ -220,8 +220,8 @@ void ManagedPostProcessEffect::Render(RenderContext& renderContext, GPUTexture* 
 SceneRenderTask::SceneRenderTask(const SpawnParams& params)
     : RenderTask(params)
 {
-    View.Position = Vector3::Zero;
-    View.Direction = Vector3::Forward;
+    View.Position = Float3::Zero;
+    View.Direction = Float3::Forward;
     Buffers = New<RenderBuffers>();
 }
 

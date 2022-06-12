@@ -81,7 +81,7 @@ X11::Atom xAtomClipboard;
 X11::Atom xDnDRequested = 0;
 X11::Window xDndSourceWindow = 0;
 DragDropEffect xDndResult;
-Vector2 xDndPos;
+Float2 xDndPos;
 int32 xDnDVersion = 0;
 int32 SystemDpi = 96;
 X11::Cursor Cursors[(int32)CursorType::MAX];
@@ -1185,7 +1185,7 @@ public:
 public:
 
     // [Mouse]
-    void SetMousePosition(const Vector2& newPosition) final override
+    void SetMousePosition(const Float2& newPosition) final override
     {
         LinuxPlatform::SetMousePosition(newPosition);
 
@@ -1457,7 +1457,7 @@ DragDropEffect LinuxWindow::DoDragDrop(const StringView& data)
             	status = Unreceptive;
             else if(version == -1)
             	status = Unaware;
-            xDndPos = Vector2((float)event.xmotion.x_root, (float)event.xmotion.y_root);
+            xDndPos = Float2((float)event.xmotion.x_root, (float)event.xmotion.y_root);
 
             // Update mouse grab
             if (status == Unaware)
@@ -2278,7 +2278,7 @@ void LinuxPlatform::Tick()
                     m.data.l[4] = xAtomXdndActionCopy;
                     X11::XSendEvent(xDisplay, event.xclient.data.l[0], 0, NoEventMask, (X11::XEvent*)&m);
                     X11::XFlush(xDisplay);
-                    xDndPos = Vector2((float)(event.xclient.data.l[2]  >> 16), (float)(event.xclient.data.l[2] & 0xffff));
+                    xDndPos = Float2((float)(event.xclient.data.l[2]  >> 16), (float)(event.xclient.data.l[2] & 0xffff));
                     window = WindowsManager::GetByNativePtr((void*)event.xany.window);
                     if (window)
                     {
@@ -2631,10 +2631,10 @@ void LinuxPlatform::OpenUrl(const StringView& url)
     system(cmd);
 }
 
-Vector2 LinuxPlatform::GetMousePosition()
+Float2 LinuxPlatform::GetMousePosition()
 {
     if (!xDisplay)
-        return Vector2::Zero;
+        return Float2::Zero;
 
 	int32 x, y;
 	uint32 screenCount = (uint32)X11::XScreenCount(xDisplay);
@@ -2648,10 +2648,10 @@ Vector2 LinuxPlatform::GetMousePosition()
 			break;
 	}
 
-	return Vector2((float)x, (float)y);
+	return Float2((float)x, (float)y);
 }
 
-void LinuxPlatform::SetMousePosition(const Vector2& pos)
+void LinuxPlatform::SetMousePosition(const Float2& pos)
 {
     if (!xDisplay)
         return;
@@ -2678,37 +2678,37 @@ void LinuxPlatform::SetMousePosition(const Vector2& pos)
 	}
 }
 
-Vector2 LinuxPlatform::GetDesktopSize()
+Float2 LinuxPlatform::GetDesktopSize()
 {
     if (!xDisplay)
-        return Vector2::Zero;
+        return Float2::Zero;
 
 	int event, err;
 	const bool ok = X11::XineramaQueryExtension(xDisplay, &event, &err);
 	if (!ok)
-		return Vector2::Zero;
+		return Float2::Zero;
 
 	int count;
 	int screenIdx = 0;
 	X11::XineramaScreenInfo* xsi = X11::XineramaQueryScreens(xDisplay, &count);
 	if (screenIdx >= count)
-		return Vector2::Zero;
+		return Float2::Zero;
 
-	Vector2 size((float)xsi[screenIdx].width, (float)xsi[screenIdx].height);
+	Float2 size((float)xsi[screenIdx].width, (float)xsi[screenIdx].height);
 	X11::XFree(xsi);
 	return size;
 }
 
-Rectangle LinuxPlatform::GetMonitorBounds(const Vector2& screenPos)
+Rectangle LinuxPlatform::GetMonitorBounds(const Float2& screenPos)
 {
 	// TODO: do it in a proper way
-	return Rectangle(Vector2::Zero, GetDesktopSize());
+	return Rectangle(Float2::Zero, GetDesktopSize());
 }
 
 Rectangle LinuxPlatform::GetVirtualDesktopBounds()
 {
 	// TODO: do it in a proper way
-	return Rectangle(Vector2::Zero, GetDesktopSize());
+	return Rectangle(Float2::Zero, GetDesktopSize());
 }
 
 String LinuxPlatform::GetMainDirectory()

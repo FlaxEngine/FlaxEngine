@@ -509,5 +509,35 @@ namespace FlaxEditor.Surface
 
             return sb.ToString();
         }
+
+        internal static Double4 GetDouble4(object v, float w = 0.0f)
+        {
+            var value = new Double4(0, 0, 0, w);
+            if (v is Vector2 vec2)
+                value = new Double4(vec2, 0.0f, w);
+            else if (v is Vector3 vec3)
+                value = new Double4(vec3, w);
+            else if (v is Vector4 vec4)
+                value = vec4;
+            else if (v is Float2 float2)
+                value = new Double4(float2, 0.0, w);
+            else if (v is Float3 float3)
+                value = new Double4(float3, w);
+            else if (v is Float4 float4)
+                value = float4;
+            else if (v is Double2 double2)
+                value = new Double4(double2, 0.0, w);
+            else if (v is Double3 double3)
+                value = new Double4(double3, w);
+            else if (v is Double4 double4)
+                value = double4;
+            else if (v is Color col)
+                value = new Double4(col.R, col.G, col.B, col.A);
+            else if (v is float f)
+                value = new Double4(f);
+            else if (v is int i)
+                value = new Double4(i);
+            return value;
+        }
     }
 }

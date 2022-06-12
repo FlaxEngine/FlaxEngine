@@ -225,6 +225,12 @@ namespace Flax.Build
     public static partial class EngineConfiguration
     {
         /// <summary>
+        /// 1 to enable large worlds with 64-bit coordinates precision support in build (USE_LARGE_WORLDS=1).
+        /// </summary>
+        [CommandLine("useLargeWorlds", "1 to enable large worlds with 64-bit coordinates precision support in build (USE_LARGE_WORLDS=1)")]
+        public static bool UseLargeWorlds = false;
+
+        /// <summary>
         /// True if managed C# scripting should be enabled, otherwise false. Engine without C# is partially supported and can be used when porting to a new platform before implementing C# runtime on it.
         /// </summary>
         [CommandLine("useCSharp", "0 to disable C# support in build")]
@@ -235,6 +241,12 @@ namespace Flax.Build
             if (options.Platform.Target == TargetPlatform.PS5)
                 return false; // TODO: mono for ps5
             return UseCSharp || options.Target.IsEditor;
+        }
+
+        public static bool WithLargeWorlds(NativeCpp.BuildOptions options)
+        {
+            // This can be used to selectively control 64-bit coordinates per-platform or build configuration
+            return UseLargeWorlds;
         }
     }
 }

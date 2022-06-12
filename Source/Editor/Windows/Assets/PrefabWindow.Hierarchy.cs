@@ -85,7 +85,7 @@ namespace FlaxEditor.Windows.Assets
             }
 
             /// <inheritdoc />
-            public override DragDropEffect OnDragEnter(ref Vector2 location, DragData data)
+            public override DragDropEffect OnDragEnter(ref Float2 location, DragData data)
             {
                 var result = base.OnDragEnter(ref location, data);
                 if (result == DragDropEffect.None)
@@ -111,7 +111,7 @@ namespace FlaxEditor.Windows.Assets
             }
 
             /// <inheritdoc />
-            public override DragDropEffect OnDragMove(ref Vector2 location, DragData data)
+            public override DragDropEffect OnDragMove(ref Float2 location, DragData data)
             {
                 var result = base.OnDragMove(ref location, data);
                 if (result == DragDropEffect.None)
@@ -130,7 +130,7 @@ namespace FlaxEditor.Windows.Assets
             }
 
             /// <inheritdoc />
-            public override DragDropEffect OnDragDrop(ref Vector2 location, DragData data)
+            public override DragDropEffect OnDragDrop(ref Float2 location, DragData data)
             {
                 var result = base.OnDragDrop(ref location, data);
                 if (result == DragDropEffect.None)
@@ -296,7 +296,7 @@ namespace FlaxEditor.Windows.Assets
         /// </summary>
         /// <param name="parent">The parent control.</param>
         /// <param name="location">The location (within a given control).</param>
-        private void ShowContextMenu(Control parent, ref Vector2 location)
+        private void ShowContextMenu(Control parent, ref Float2 location)
         {
             var contextMenu = CreateContextMenu();
 
@@ -386,7 +386,7 @@ namespace FlaxEditor.Windows.Assets
             Undo.AddAction(action);
         }
 
-        private void OnTreeRightClick(TreeNode node, Vector2 location)
+        private void OnTreeRightClick(TreeNode node, Float2 location)
         {
             // Skip if it's loading data
             if (Graph.Main == null)

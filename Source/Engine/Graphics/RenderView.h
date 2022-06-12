@@ -26,7 +26,7 @@ DECLARE_SCRIPTING_TYPE_MINIMAL(RenderView);
     /// <summary>
     /// The position of the view.
     /// </summary>
-    API_FIELD() Vector3 Position;
+    API_FIELD() Float3 Position;
 
     /// <summary>
     /// The far plane.
@@ -36,7 +36,7 @@ DECLARE_SCRIPTING_TYPE_MINIMAL(RenderView);
     /// <summary>
     /// The direction of the view.
     /// </summary>
-    API_FIELD() Vector3 Direction;
+    API_FIELD() Float3 Direction;
 
     /// <summary>
     /// The near plane.
@@ -162,17 +162,17 @@ public:
     /// <summary>
     /// The view information vector with packed components to reconstruct linear depth and view position from the hardware depth buffer. Cached before rendering.
     /// </summary>
-    API_FIELD() Vector4 ViewInfo;
+    API_FIELD() Float4 ViewInfo;
 
     /// <summary>
     /// The screen size packed (x - width, y - height, zw - inv width, w - inv height). Cached before rendering.
     /// </summary>
-    API_FIELD() Vector4 ScreenSize;
+    API_FIELD() Float4 ScreenSize;
 
     /// <summary>
     /// The temporal AA jitter packed (xy - this frame jitter, zw - previous frame jitter). Cached before rendering. Zero if TAA is disabled. The value added to projection matrix (in clip space).
     /// </summary>
-    API_FIELD() Vector4 TemporalAAJitter;
+    API_FIELD() Float4 TemporalAAJitter;
 
     /// <summary>
     /// The previous frame view matrix.
@@ -207,7 +207,7 @@ public:
     /// <param name="width">The rendering width.</param>
     /// <param name="height">The rendering height.</param>
     /// <param name="temporalAAJitter">The temporal jitter for this frame.</param>
-    void PrepareCache(RenderContext& renderContext, float width, float height, const Vector2& temporalAAJitter);
+    void PrepareCache(RenderContext& renderContext, float width, float height, const Float2& temporalAAJitter);
 
     /// <summary>
     /// Determines whether view is perspective projection or orthographic.
@@ -240,22 +240,7 @@ public:
     // Set up view with custom params
     // @param view View matrix
     // @param projection Projection matrix
-    void SetUp(const Matrix& view, const Matrix& projection)
-    {
-        // Copy data
-        Projection = projection;
-        NonJitteredProjection = projection;
-        View = view;
-        Matrix::Invert(View, IV);
-        Matrix::Invert(Projection, IP);
-
-        // Compute matrix
-        Matrix viewProjection;
-        Matrix::Multiply(View, Projection, viewProjection);
-        Matrix::Invert(viewProjection, IVP);
-        Frustum.SetMatrix(viewProjection);
-        CullingFrustum = Frustum;
-    }
+    void SetUp(const Matrix& view, const Matrix& projection);
 
     /// <summary>
     /// Set up view for cube rendering
@@ -263,18 +248,7 @@ public:
     /// <param name="nearPlane">Near plane</param>
     /// <param name="farPlane">Far plane</param>
     /// <param name="position">Camera's position</param>
-    void SetUpCube(float nearPlane, float farPlane, const Vector3& position)
-    {
-        // Copy data
-        Near = nearPlane;
-        Far = farPlane;
-        Position = position;
-
-        // Create projection matrix
-        Matrix::PerspectiveFov(PI_OVER_2, 1.0f, nearPlane, farPlane, Projection);
-        NonJitteredProjection = Projection;
-        Matrix::Invert(Projection, IP);
-    }
+    void SetUpCube(float nearPlane, float farPlane, const Float3& position);
 
     /// <summary>
     /// Set up view for given face of the cube rendering
@@ -291,28 +265,7 @@ public:
     /// <param name="direction">Camera's direction vector</param>
     /// <param name="up">Camera's up vector</param>
     /// <param name="angle">Camera's FOV angle (in degrees)</param>
-    void SetProjector(float nearPlane, float farPlane, const Vector3& position, const Vector3& direction, const Vector3& up, float angle)
-    {
-        // Copy data
-        Near = nearPlane;
-        Far = farPlane;
-        Position = position;
-
-        // Create projection matrix
-        Matrix::PerspectiveFov(angle * DegreesToRadians, 1.0f, nearPlane, farPlane, Projection);
-        NonJitteredProjection = Projection;
-        Matrix::Invert(Projection, IP);
-
-        // Create view matrix
-        Direction = direction;
-        Matrix::LookAt(Position, Position + Direction, up, View);
-        Matrix::Invert(View, IV);
-
-        // Compute frustum matrix
-        Frustum.SetMatrix(View, Projection);
-        Matrix::Invert(ViewProjection(), IVP);
-        CullingFrustum = Frustum;
-    }
+    void SetProjector(float nearPlane, float farPlane, const Float3& position, const Float3& direction, const Float3& up, float angle);
 
     // Copy view data from camera
     // @param camera Camera to copy its data

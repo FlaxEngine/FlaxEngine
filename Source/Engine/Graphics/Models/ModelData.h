@@ -4,7 +4,6 @@
 
 #include "Engine/Core/Math/BoundingSphere.h"
 #include "Engine/Core/Math/BoundingBox.h"
-#include "Engine/Core/Math/Int4.h"
 #include "Engine/Serialization/Stream.h"
 #include "Engine/Graphics/Enums.h"
 #include "Types.h"
@@ -38,22 +37,22 @@ public:
     /// <summary>
     /// Mesh positions buffer
     /// </summary>
-    Array<Vector3> Positions;
+    Array<Float3> Positions;
 
     /// <summary>
     /// Texture coordinates
     /// </summary>
-    Array<Vector2> UVs;
+    Array<Float2> UVs;
 
     /// <summary>
     /// Normals vector
     /// </summary>
-    Array<Vector3> Normals;
+    Array<Float3> Normals;
 
     /// <summary>
     /// Tangents vectors
     /// </summary>
-    Array<Vector3> Tangents;
+    Array<Float3> Tangents;
 
     /// <summary>
     /// Bitangents vectors signs (used for bitangent reconstruction). Can be +1 or -1.
@@ -70,7 +69,7 @@ public:
     /// <summary>
     /// Lightmap UVs
     /// </summary>
-    Array<Vector2> LightmapUVs;
+    Array<Float2> LightmapUVs;
 
     /// <summary>
     /// Vertex colors
@@ -85,7 +84,7 @@ public:
     /// <summary>
     /// Skinned mesh index buffer (max 4 per bone)
     /// </summary>
-    Array<Vector4> BlendWeights;
+    Array<Float4> BlendWeights;
 
     /// <summary>
     /// Blend shapes used by this mesh
@@ -205,21 +204,13 @@ public:
     /// Calculate bounding box for the mesh
     /// </summary>
     /// <param name="result">Output box</param>
-    void CalculateBox(BoundingBox& result) const
-    {
-        if (Positions.HasItems())
-            BoundingBox::FromPoints(Positions.Get(), Positions.Count(), result);
-    }
+    void CalculateBox(BoundingBox& result) const;
 
     /// <summary>
     /// Calculate bounding sphere for the mesh
     /// </summary>
     /// <param name="result">Output sphere</param>
-    void CalculateSphere(BoundingSphere& result) const
-    {
-        if (Positions.HasItems())
-            BoundingSphere::FromPoints(Positions.Get(), Positions.Count(), result);
-    }
+    void CalculateSphere(BoundingSphere& result) const;
 
 public:
 
@@ -242,7 +233,7 @@ public:
     /// <param name="position">The target position to check.</param>
     /// <param name="epsilon">The position comparision epsilon.</param>
     /// <param name="result">The output vertices indices array.</param>
-    void FindPositions(const Vector3& position, float epsilon, Array<int32>& result);
+    void FindPositions(const Float3& position, float epsilon, Array<int32>& result);
 
     /// <summary>
     /// Generates the normal vectors for the mesh geometry.

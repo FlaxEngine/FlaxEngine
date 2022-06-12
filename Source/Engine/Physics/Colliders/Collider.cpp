@@ -14,7 +14,7 @@
 
 Collider::Collider(const SpawnParams& params)
     : PhysicsColliderActor(params)
-    , _center(Vector3::Zero)
+    , _center(Float3::Zero)
     , _isTrigger(false)
     , _shape(nullptr)
     , _staticActor(nullptr)
@@ -442,8 +442,8 @@ void Collider::OnTransformChanged()
         }
     }
 
-    const Vector3 scale = GetScale();
-    if (!Vector3::NearEqual(_cachedScale, scale))
+    const Float3 scale = GetScale();
+    if (!Float3::NearEqual(_cachedScale, scale))
         UpdateGeometry();
     UpdateBounds();
 }

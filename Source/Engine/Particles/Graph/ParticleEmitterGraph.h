@@ -206,7 +206,7 @@ public:
         case GRAPH_NODE_MAKE_TYPE(14, 212):
         {
             node->UsesParticleData = true;
-            USE_ATTRIBUTE(Position, Vector3, 0);
+            USE_ATTRIBUTE(Position, Float3, 0);
             break;
         }
             // Particle Lifetime
@@ -227,21 +227,21 @@ public:
         case GRAPH_NODE_MAKE_TYPE(14, 104):
         {
             node->UsesParticleData = true;
-            USE_ATTRIBUTE(Color, Vector4, 0);
+            USE_ATTRIBUTE(Color, Float4, 0);
             break;
         }
             // Particle Velocity
         case GRAPH_NODE_MAKE_TYPE(14, 105):
         {
             node->UsesParticleData = true;
-            USE_ATTRIBUTE(Velocity, Vector3, 0);
+            USE_ATTRIBUTE(Velocity, Float3, 0);
             break;
         }
             // Particle Sprite Size
         case GRAPH_NODE_MAKE_TYPE(14, 106):
         {
             node->UsesParticleData = true;
-            USE_ATTRIBUTE(SpriteSize, Vector2, 0);
+            USE_ATTRIBUTE(SpriteSize, Float2, 0);
             break;
         }
             // Particle Mass
@@ -255,13 +255,13 @@ public:
         case GRAPH_NODE_MAKE_TYPE(14, 108):
         {
             node->UsesParticleData = true;
-            USE_ATTRIBUTE(Rotation, Vector3, 0);
+            USE_ATTRIBUTE(Rotation, Float3, 0);
             break;
         }
             // Particle Angular Velocity
         case GRAPH_NODE_MAKE_TYPE(14, 109):
         {
-            USE_ATTRIBUTE(AngularVelocity, Vector3, 0);
+            USE_ATTRIBUTE(AngularVelocity, Float3, 0);
             break;
         }
             // Particle Normalized Age
@@ -312,7 +312,7 @@ public:
             if (((ParticleSpriteFacingMode)node->Values[2].AsInt) == ParticleSpriteFacingMode::CustomFacingVector ||
                 ((ParticleSpriteFacingMode)node->Values[2].AsInt) == ParticleSpriteFacingMode::FixedAxis)
             {
-                USE_ATTRIBUTE(SpriteFacingVector, Vector3, 1);
+                USE_ATTRIBUTE(SpriteFacingVector, Float3, 1);
             }
             break;
         }
@@ -333,25 +333,25 @@ public:
         case GRAPH_NODE_MAKE_TYPE(15, 301):
         case GRAPH_NODE_MAKE_TYPE(15, 304):
         {
-            USE_ATTRIBUTE(Velocity, Vector3, 0);
+            USE_ATTRIBUTE(Velocity, Float3, 0);
             break;
         }
             // Linear Drag
         case GRAPH_NODE_MAKE_TYPE(15, 310):
         {
-            USE_ATTRIBUTE(Velocity, Vector3, 0);
+            USE_ATTRIBUTE(Velocity, Float3, 0);
             USE_ATTRIBUTE(Mass, Float, 1);
             if (node->Values[3].AsBool)
             {
-                USE_ATTRIBUTE(SpriteSize, Vector2, 2);
+                USE_ATTRIBUTE(SpriteSize, Float2, 2);
             }
             break;
         }
             // Turbulence
         case GRAPH_NODE_MAKE_TYPE(15, 311):
         {
-            USE_ATTRIBUTE(Position, Vector3, 0);
-            USE_ATTRIBUTE(Velocity, Vector3, 1);
+            USE_ATTRIBUTE(Position, Float3, 0);
+            USE_ATTRIBUTE(Velocity, Float3, 1);
             USE_ATTRIBUTE(Mass, Float, 2);
             break;
         }
@@ -368,21 +368,21 @@ public:
         case GRAPH_NODE_MAKE_TYPE(15, 211):
         case GRAPH_NODE_MAKE_TYPE(15, 215):
         {
-            USE_ATTRIBUTE(Position, Vector3, 0);
+            USE_ATTRIBUTE(Position, Float3, 0);
             break;
         }
             // Position (depth)
         case GRAPH_NODE_MAKE_TYPE(15, 212):
         {
-            USE_ATTRIBUTE(Position, Vector3, 0);
+            USE_ATTRIBUTE(Position, Float3, 0);
             USE_ATTRIBUTE(Lifetime, Float, 1);
             break;
         }
             // Position (spiral)
         case GRAPH_NODE_MAKE_TYPE(15, 214):
         {
-            USE_ATTRIBUTE(Position, Vector3, 0);
-            USE_ATTRIBUTE(Velocity, Vector3, 1);
+            USE_ATTRIBUTE(Position, Float3, 0);
+            USE_ATTRIBUTE(Velocity, Float3, 1);
             break;
         }
             // Set Attribute
@@ -399,27 +399,27 @@ public:
         }
             // Set Position/Lifetime/Age/..
 #define CASE_SET_PARTICLE_ATTRIBUTE(id0, id1, name, type) case GRAPH_NODE_MAKE_TYPE(15, id0): case GRAPH_NODE_MAKE_TYPE(15, id1): USE_ATTRIBUTE(name, type, 0); break
-        CASE_SET_PARTICLE_ATTRIBUTE(250, 350, Position, Vector3);
+        CASE_SET_PARTICLE_ATTRIBUTE(250, 350, Position, Float3);
         CASE_SET_PARTICLE_ATTRIBUTE(251, 351, Lifetime, Float);
         CASE_SET_PARTICLE_ATTRIBUTE(252, 352, Age, Float);
-        CASE_SET_PARTICLE_ATTRIBUTE(253, 353, Color, Vector4);
-        CASE_SET_PARTICLE_ATTRIBUTE(254, 354, Velocity, Vector3);
-        CASE_SET_PARTICLE_ATTRIBUTE(255, 355, SpriteSize, Vector2);
+        CASE_SET_PARTICLE_ATTRIBUTE(253, 353, Color, Float4);
+        CASE_SET_PARTICLE_ATTRIBUTE(254, 354, Velocity, Float3);
+        CASE_SET_PARTICLE_ATTRIBUTE(255, 355, SpriteSize, Float2);
         CASE_SET_PARTICLE_ATTRIBUTE(256, 356, Mass, Float);
-        CASE_SET_PARTICLE_ATTRIBUTE(257, 357, Rotation, Vector3);
-        CASE_SET_PARTICLE_ATTRIBUTE(258, 358, AngularVelocity, Vector3);
-        CASE_SET_PARTICLE_ATTRIBUTE(259, 359, Scale, Vector3);
+        CASE_SET_PARTICLE_ATTRIBUTE(257, 357, Rotation, Float3);
+        CASE_SET_PARTICLE_ATTRIBUTE(258, 358, AngularVelocity, Float3);
+        CASE_SET_PARTICLE_ATTRIBUTE(259, 359, Scale, Float3);
         CASE_SET_PARTICLE_ATTRIBUTE(260, 360, RibbonWidth, Float);
         CASE_SET_PARTICLE_ATTRIBUTE(261, 361, RibbonTwist, Float);
-        CASE_SET_PARTICLE_ATTRIBUTE(262, 362, RibbonFacingVector, Vector3);
+        CASE_SET_PARTICLE_ATTRIBUTE(262, 362, RibbonFacingVector, Float3);
         CASE_SET_PARTICLE_ATTRIBUTE(263, 363, Radius, Float);
 #undef CASE_SET_PARTICLE_ATTRIBUTE
             // Conform to Sphere
         case GRAPH_NODE_MAKE_TYPE(15, 305):
         case GRAPH_NODE_MAKE_TYPE(15, 335): // Conform to Global SDF
         {
-            USE_ATTRIBUTE(Position, Vector3, 0);
-            USE_ATTRIBUTE(Velocity, Vector3, 1);
+            USE_ATTRIBUTE(Position, Float3, 0);
+            USE_ATTRIBUTE(Velocity, Float3, 1);
             USE_ATTRIBUTE(Mass, Float, 2);
             break;
         }
@@ -427,7 +427,7 @@ public:
         case GRAPH_NODE_MAKE_TYPE(15, 306):
         case GRAPH_NODE_MAKE_TYPE(15, 307):
         {
-            USE_ATTRIBUTE(Position, Vector3, 0);
+            USE_ATTRIBUTE(Position, Float3, 0);
             break;
         }
             // Collision (plane/sphere/box/cylinder/depth/Global SDF)
@@ -438,8 +438,8 @@ public:
         case GRAPH_NODE_MAKE_TYPE(15, 334):
         case GRAPH_NODE_MAKE_TYPE(15, 336):
         {
-            USE_ATTRIBUTE(Position, Vector3, 0);
-            USE_ATTRIBUTE(Velocity, Vector3, 1);
+            USE_ATTRIBUTE(Position, Float3, 0);
+            USE_ATTRIBUTE(Velocity, Float3, 1);
             USE_ATTRIBUTE(Age, Float, 2);
             break;
         }
@@ -447,9 +447,9 @@ public:
         case GRAPH_NODE_MAKE_TYPE(15, 400):
         {
             node->Assets[0] = Content::LoadAsync<Asset>((Guid)node->Values[2]);
-            USE_ATTRIBUTE(Position, Vector3, 0);
-            USE_ATTRIBUTE(Rotation, Vector3, 1);
-            USE_ATTRIBUTE(SpriteSize, Vector2, 2);
+            USE_ATTRIBUTE(Position, Float3, 0);
+            USE_ATTRIBUTE(Rotation, Float3, 1);
+            USE_ATTRIBUTE(SpriteSize, Float2, 2);
             break;
         }
             // Sort
@@ -485,16 +485,16 @@ public:
         {
             node->Assets[0] = Content::LoadAsync<Asset>((Guid)node->Values[2]);
             node->Assets[1] = Content::LoadAsync<Asset>((Guid)node->Values[3]);
-            USE_ATTRIBUTE(Position, Vector3, 0);
-            USE_ATTRIBUTE(Rotation, Vector3, 1);
-            USE_ATTRIBUTE(Scale, Vector3, 2);
+            USE_ATTRIBUTE(Position, Float3, 0);
+            USE_ATTRIBUTE(Rotation, Float3, 1);
+            USE_ATTRIBUTE(Scale, Float3, 2);
             break;
         }
             // Ribbon Rendering
         case GRAPH_NODE_MAKE_TYPE(15, 404):
         {
             node->Assets[0] = Content::LoadAsync<Asset>((Guid)node->Values[2]);
-            USE_ATTRIBUTE(Position, Vector3, 0);
+            USE_ATTRIBUTE(Position, Float3, 0);
             // TODO: add support for custom sorting key - not only by age
             USE_ATTRIBUTE(Age, Float, 1);
             break;
@@ -503,7 +503,7 @@ public:
         case GRAPH_NODE_MAKE_TYPE(15, 405):
         {
             node->Assets[0] = Content::LoadAsync<Asset>((Guid)node->Values[2]);
-            USE_ATTRIBUTE(Position, Vector3, 0);
+            USE_ATTRIBUTE(Position, Float3, 0);
             USE_ATTRIBUTE(Radius, Float, 1);
             break;
         }
@@ -561,7 +561,7 @@ public:
             return true;
 
         // Compute particle data layout and initialize used nodes (for only used nodes, start depth searching rom the modules)
-        Layout.AddAttribute(TEXT("Position"), ParticleAttribute::ValueTypes::Vector3);
+        Layout.AddAttribute(TEXT("Position"), ParticleAttribute::ValueTypes::Float3);
 #define PROCESS_MODULES(modules) for (int32 i = 0; i < modules.Count(); i++) { InitializeNode(modules[i]); }
         PROCESS_MODULES(SpawnModules);
         PROCESS_MODULES(InitModules);
@@ -598,17 +598,17 @@ public:
             _attr##name = idx; \
             if (idx != -1) \
                 AttributesDefaults[idx] = defaultValue
-        SETUP_ATTRIBUTE(Position, Vector3, Variant(Vector3::Zero));
-        SETUP_ATTRIBUTE(Velocity, Vector3, Variant(Vector3::Zero));
-        SETUP_ATTRIBUTE(Rotation, Vector3, Variant(Vector3::Zero));
-        SETUP_ATTRIBUTE(AngularVelocity, Vector3, Variant(Vector3::Zero));
+        SETUP_ATTRIBUTE(Position, Float3, Variant(Float3::Zero));
+        SETUP_ATTRIBUTE(Velocity, Float3, Variant(Float3::Zero));
+        SETUP_ATTRIBUTE(Rotation, Float3, Variant(Float3::Zero));
+        SETUP_ATTRIBUTE(AngularVelocity, Float3, Variant(Float3::Zero));
         SETUP_ATTRIBUTE(Age, Float, Variant::Zero);
         SETUP_ATTRIBUTE(Lifetime, Float, Variant(5.0f));
-        SETUP_ATTRIBUTE(SpriteSize, Vector2, Variant(Vector2(50.0f)));
-        SETUP_ATTRIBUTE(Scale, Vector3, Variant(Vector3::One));
+        SETUP_ATTRIBUTE(SpriteSize, Float2, Variant(Float2(50.0f)));
+        SETUP_ATTRIBUTE(Scale, Float3, Variant(Float3::One));
         SETUP_ATTRIBUTE(Mass, Float, Variant(1.0f));
         SETUP_ATTRIBUTE(RibbonWidth, Float, Variant(10.0f));
-        SETUP_ATTRIBUTE(Color, Vector4, Variant(Vector4(0.0f, 0.0f, 0.0f, 1.0f)));
+        SETUP_ATTRIBUTE(Color, Float4, Variant(Float4(0.0f, 0.0f, 0.0f, 1.0f)));
         SETUP_ATTRIBUTE(Radius, Float, Variant(100.0f));
 #undef SETUP_ATTRIBUTE
 

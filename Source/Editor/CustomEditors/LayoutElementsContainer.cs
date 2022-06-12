@@ -55,7 +55,7 @@ namespace FlaxEditor.CustomEditors
             return element;
         }
 
-        private void OnGroupPanelMouseButtonRightClicked(DropPanel groupPanel, Vector2 location)
+        private void OnGroupPanelMouseButtonRightClicked(DropPanel groupPanel, Float2 location)
         {
             var linkedEditor = (CustomEditor)groupPanel.Tag;
             var menu = new ContextMenu();

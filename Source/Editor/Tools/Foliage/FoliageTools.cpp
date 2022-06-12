@@ -17,7 +17,7 @@ struct GeometryTriangle
     Vector3 Vector1;
     Vector3 Vector2;
     Vector3 Normal;
-    float Area;
+    Real Area;
 
     GeometryTriangle(const bool isDeterminantPositive, const Vector3& v0, const Vector3& v1, const Vector3& v2)
     {
@@ -26,7 +26,7 @@ struct GeometryTriangle
         Vector2 = v2 - Vertex;
 
         Normal = isDeterminantPositive ? Vector1 ^ Vector2 : Vector2 ^ Vector1;
-        const float normalLength = Normal.Length();
+        const Real normalLength = Normal.Length();
         Area = normalLength * 0.5f;
         if (normalLength > ZeroTolerance)
         {
@@ -231,7 +231,7 @@ void FoliageTools::Paint(Foliage* foliage, Span<int32> foliageTypesIndices, cons
                 }
 
                 // Calculate amount of foliage instances to place
-                const float targetInstanceCountEst = triangle.Area * foliageType.PaintDensity * densityScale / (1000.0f * 1000.0f);
+                const float targetInstanceCountEst = (float)(triangle.Area * foliageType.PaintDensity * densityScale / (1000.0f * 1000.0f));
                 const int32 targetInstanceCount = targetInstanceCountEst > 1.0f ? Math::RoundToInt(targetInstanceCountEst) : Random::Rand() < targetInstanceCountEst ? 1 : 0;
 
                 // Try to add new instances

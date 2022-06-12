@@ -59,7 +59,7 @@ public:
 public:
 
     // [Mouse]
-    void SetMousePosition(const Vector2& newPosition) final override
+    void SetMousePosition(const Float2& newPosition) final override
     {
         ::SetCursorPos(static_cast<int32>(newPosition.X), static_cast<int32>(newPosition.Y));
 
@@ -190,7 +190,7 @@ bool WindowsMouse::WndProc(Window* window, const UINT msg, WPARAM wParam, LPARAM
     p.x = static_cast<LONG>(WINDOWS_GET_X_LPARAM(lParam));
     p.y = static_cast<LONG>(WINDOWS_GET_Y_LPARAM(lParam));
     ::ClientToScreen(window->GetHWND(), &p);
-    const auto mousePos = Vector2(static_cast<float>(p.x), static_cast<float>(p.y));
+    const Float2 mousePos(static_cast<float>(p.x), static_cast<float>(p.y));
 
     // Handle mouse related messages
     switch (msg)

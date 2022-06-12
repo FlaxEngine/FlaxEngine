@@ -1,3 +1,9 @@
+#if USE_LARGE_WORLDS
+using Real = System.Double;
+#else
+using Real = System.Single;
+#endif
+
 // Copyright (c) 2014-2022 Wojciech Figat. All rights reserved.
 
 // -----------------------------------------------------------------------------
@@ -95,8 +101,8 @@ namespace FlaxEngine
             if ((points == null) || (points.Length == 0))
                 throw new ArgumentNullException(nameof(points));
 
-            var minimum = new Vector3(float.MaxValue);
-            var maximum = new Vector3(float.MinValue);
+            var minimum = Vector3.Maximum;
+            var maximum = Vector3.Minimum;
 
             for (var i = 0; i < points.Length; ++i)
             {
@@ -269,7 +275,7 @@ namespace FlaxEngine
         /// By keeping Transformation matrix scaling-free, the collision detection methods will be more accurate.
         /// </summary>
         /// <param name="scaling"></param>
-        public void Scale(float scaling)
+        public void Scale(Real scaling)
         {
             Extents *= scaling;
         }
@@ -426,7 +432,7 @@ namespace FlaxEngine
             // Transform sphere center into the obb coordinates
             Vector3.TransformCoordinate(ref sphere.Center, ref invTrans, out Vector3 locCenter);
 
-            float locRadius;
+            Real locRadius;
             if (ignoreScale)
                 locRadius = sphere.Radius;
             else
@@ -440,7 +446,7 @@ namespace FlaxEngine
             //Perform regular BoundingBox to BoundingSphere containment check
             Vector3 minusExtens = -Extents;
             Vector3.Clamp(ref locCenter, ref minusExtens, ref Extents, out Vector3 vector);
-            float distance = Vector3.DistanceSquared(ref locCenter, ref vector);
+            Real distance = Vector3.DistanceSquared(ref locCenter, ref vector);
 
             if (distance > locRadius * locRadius)
                 return ContainmentType.Disjoint;
@@ -451,13 +457,13 @@ namespace FlaxEngine
             return ContainmentType.Intersects;
         }
 
-        private static Vector3[] GetRows(ref Matrix mat)
+        private static Float3[] GetRows(ref Matrix mat)
         {
             return new[]
             {
-                new Vector3(mat.M11, mat.M12, mat.M13),
-                new Vector3(mat.M21, mat.M22, mat.M23),
-                new Vector3(mat.M31, mat.M32, mat.M33)
+                new Float3(mat.M11, mat.M12, mat.M13),
+                new Float3(mat.M21, mat.M22, mat.M23),
+                new Float3(mat.M31, mat.M32, mat.M33)
             };
         }
 
@@ -476,20 +482,20 @@ namespace FlaxEngine
             //http://www.3dkingdoms.com/weekly/bbox.cpp
             Vector3 SizeA = Extents;
             Vector3 SizeB = obb.Extents;
-            Vector3[] RotA = GetRows(ref Transformation);
-            Vector3[] RotB = GetRows(ref obb.Transformation);
+            var RotA = GetRows(ref Transformation);
+            var RotB = GetRows(ref obb.Transformation);
 
             var R = new Matrix(); // Rotation from B to A
             var AR = new Matrix(); // absolute values of R matrix, to use with box extents
 
-            float ExtentA, ExtentB, Separation;
+            Real ExtentA, ExtentB, Separation;
             int i, k;
 
             // Calculate B to A rotation matrix
             for (i = 0; i < 3; i++)
             for (k = 0; k < 3; k++)
             {
-                R[i, k] = Vector3.Dot(RotA[i], RotB[k]);
+                R[i, k] = Float3.Dot(RotA[i], RotB[k]);
                 AR[i, k] = Math.Abs(R[i, k]);
             }
 
@@ -608,9 +614,9 @@ namespace FlaxEngine
 
             Vector3 SizeA = Extents;
             Vector3 SizeB = boxExtents;
-            Vector3[] RotA = GetRows(ref Transformation);
+            var RotA = GetRows(ref Transformation);
 
-            float ExtentA, ExtentB, Separation;
+            Real ExtentA, ExtentB, Separation;
             int i, k;
 
             // Rotation from B to A
@@ -697,7 +703,7 @@ namespace FlaxEngine
         /// <param name="ray">The ray to test.</param>
         /// <param name="distance">When the method completes, contains the distance of intersection from the ray start, or 0 if there was no intersection.</param>
         /// <returns>Whether the two objects intersected.</returns>
-        public bool Intersects(ref Ray ray, out float distance)
+        public bool Intersects(ref Ray ray, out Real distance)
         {
             if (Intersects(ref ray, out Vector3 point))
             {
@@ -749,34 +755,34 @@ namespace FlaxEngine
         /// <summary>
         /// Calculates the matrix required to transfer any point from one <see cref="OrientedBoundingBox" /> local coordinates to another.
         /// </summary>
-        /// <param name="A">The source OrientedBoundingBox.</param>
-        /// <param name="B">The target OrientedBoundingBox.</param>
-        /// <param name="NoMatrixScaleApplied">If true, the method will use a fast algorithm which is inapplicable if a scale is applied to the transformation matrix of the OrientedBoundingBox.</param>
+        /// <param name="a">The source OrientedBoundingBox.</param>
+        /// <param name="b">The target OrientedBoundingBox.</param>
+        /// <param name="noMatrixScaleApplied">If true, the method will use a fast algorithm which is inapplicable if a scale is applied to the transformation matrix of the OrientedBoundingBox.</param>
         /// <returns>The matrix.</returns>
-        public static Matrix GetBoxToBoxMatrix(ref OrientedBoundingBox A, ref OrientedBoundingBox B, bool NoMatrixScaleApplied = false)
+        public static Matrix GetBoxToBoxMatrix(ref OrientedBoundingBox a, ref OrientedBoundingBox b, bool noMatrixScaleApplied = false)
         {
             Matrix AtoB_Matrix;
 
             // Calculate B to A transformation matrix
-            if (NoMatrixScaleApplied)
+            if (noMatrixScaleApplied)
             {
-                Vector3[] RotA = GetRows(ref A.Transformation);
-                Vector3[] RotB = GetRows(ref B.Transformation);
+                var RotA = GetRows(ref a.Transformation);
+                var RotB = GetRows(ref b.Transformation);
                 AtoB_Matrix = new Matrix();
                 int i, k;
                 for (i = 0; i < 3; i++)
                 for (k = 0; k < 3; k++)
-                    AtoB_Matrix[i, k] = Vector3.Dot(RotB[i], RotA[k]);
-                Vector3 v = B.Center - A.Center;
-                AtoB_Matrix.M41 = Vector3.Dot(v, RotA[0]);
-                AtoB_Matrix.M42 = Vector3.Dot(v, RotA[1]);
-                AtoB_Matrix.M43 = Vector3.Dot(v, RotA[2]);
+                    AtoB_Matrix[i, k] = Float3.Dot(RotB[i], RotA[k]);
+                Vector3 v = b.Center - a.Center;
+                AtoB_Matrix.M41 = Float3.Dot(v, RotA[0]);
+                AtoB_Matrix.M42 = Float3.Dot(v, RotA[1]);
+                AtoB_Matrix.M43 = Float3.Dot(v, RotA[2]);
                 AtoB_Matrix.M44 = 1;
             }
             else
             {
-                Matrix.Invert(ref A.Transformation, out Matrix AInvMat);
-                AtoB_Matrix = B.Transformation * AInvMat;
+                Matrix.Invert(ref a.Transformation, out Matrix AInvMat);
+                AtoB_Matrix = b.Transformation * AInvMat;
             }
 
             return AtoB_Matrix;
@@ -785,20 +791,21 @@ namespace FlaxEngine
         /// <summary>
         /// Merge an OrientedBoundingBox B into another OrientedBoundingBox A, by expanding A to contain B and keeping A orientation.
         /// </summary>
-        /// <param name="A">The <see cref="OrientedBoundingBox" /> to merge into it.</param>
-        /// <param name="B">The <see cref="OrientedBoundingBox" /> to be merged</param>
-        /// <param name="NoMatrixScaleApplied">If true, the method will use a fast algorithm which is inapplicable if a scale is applied to the transformation matrix of the OrientedBoundingBox.</param>
+        /// <param name="a">The <see cref="OrientedBoundingBox" /> to merge into it.</param>
+        /// <param name="b">The <see cref="OrientedBoundingBox" /> to be merged</param>
+        /// <param name="noMatrixScaleApplied">If true, the method will use a fast algorithm which is inapplicable if a scale is applied to the transformation matrix of the OrientedBoundingBox.</param>
         /// <remarks>Unlike merging axis aligned boxes, The operation is not interchangeable, because it keeps A orientation and merge B into it.</remarks>
-        public static void Merge(ref OrientedBoundingBox A, ref OrientedBoundingBox B, bool NoMatrixScaleApplied = false)
+        public static void Merge(ref OrientedBoundingBox a, ref OrientedBoundingBox b, bool noMatrixScaleApplied = false)
         {
-            Matrix AtoB_Matrix = GetBoxToBoxMatrix(ref A, ref B, NoMatrixScaleApplied);
+            Matrix AtoB_Matrix = GetBoxToBoxMatrix(ref a, ref b, noMatrixScaleApplied);
 
             //Get B corners in A Space
-            Vector3[] bCorners = B.GetLocalCorners();
-            Vector3.TransformCoordinate(bCorners, ref AtoB_Matrix, bCorners);
+            Vector3[] bCorners = b.GetLocalCorners();
+            for (int i = 0; i < bCorners.Length; i++)
+                Vector3.TransformCoordinate(ref bCorners[i], ref AtoB_Matrix, out bCorners[i]);
 
             //Get A local Bounding Box
-            var A_LocalBB = new BoundingBox(-A.Extents, A.Extents);
+            var A_LocalBB = new BoundingBox(-a.Extents, a.Extents);
 
             //Find B BoundingBox in A Space
             BoundingBox B_LocalBB = BoundingBox.FromPoints(bCorners);
@@ -808,29 +815,29 @@ namespace FlaxEngine
 
             //Find the new Extents and Center, Transform Center back to world
             Vector3 newCenter = mergedBB.Minimum + (mergedBB.Maximum - mergedBB.Minimum) / 2f;
-            A.Extents = mergedBB.Maximum - newCenter;
-            Vector3.TransformCoordinate(ref newCenter, ref A.Transformation, out newCenter);
-            A.Transformation.TranslationVector = newCenter;
+            a.Extents = mergedBB.Maximum - newCenter;
+            Vector3.TransformCoordinate(ref newCenter, ref a.Transformation, out newCenter);
+            a.Transformation.TranslationVector = newCenter;
         }
 
         /// <summary>
         /// Merge this OrientedBoundingBox into another OrientedBoundingBox, keeping the other OrientedBoundingBox orientation.
         /// </summary>
-        /// <param name="OBB">The other <see cref="OrientedBoundingBox" /> to merge into.</param>
-        /// <param name="NoMatrixScaleApplied">If true, the method will use a fast algorithm which is inapplicable if a scale is applied to the transformation matrix of the OrientedBoundingBox.</param>
-        public void MergeInto(ref OrientedBoundingBox OBB, bool NoMatrixScaleApplied = false)
+        /// <param name="oob">The other <see cref="OrientedBoundingBox" /> to merge into.</param>
+        /// <param name="noMatrixScaleApplied">If true, the method will use a fast algorithm which is inapplicable if a scale is applied to the transformation matrix of the OrientedBoundingBox.</param>
+        public void MergeInto(ref OrientedBoundingBox oob, bool noMatrixScaleApplied = false)
         {
-            Merge(ref OBB, ref this, NoMatrixScaleApplied);
+            Merge(ref oob, ref this, noMatrixScaleApplied);
         }
 
         /// <summary>
         /// Merge another OrientedBoundingBox into this OrientedBoundingBox.
         /// </summary>
-        /// <param name="OBB">The other <see cref="OrientedBoundingBox" /> to merge into this OrientedBoundingBox.</param>
-        /// <param name="NoMatrixScaleApplied">If true, the method will use a fast algorithm which is inapplicable if a scale is applied to the transformation matrix of the OrientedBoundingBox.</param>
-        public void Add(ref OrientedBoundingBox OBB, bool NoMatrixScaleApplied = false)
+        /// <param name="oob">The other <see cref="OrientedBoundingBox" /> to merge into this OrientedBoundingBox.</param>
+        /// <param name="noMatrixScaleApplied">If true, the method will use a fast algorithm which is inapplicable if a scale is applied to the transformation matrix of the OrientedBoundingBox.</param>
+        public void Add(ref OrientedBoundingBox oob, bool noMatrixScaleApplied = false)
         {
-            Merge(ref this, ref OBB, NoMatrixScaleApplied);
+            Merge(ref this, ref oob, noMatrixScaleApplied);
         }
 
         /// <summary>
@@ -862,11 +869,7 @@ namespace FlaxEngine
         /// <returns><c>true</c> if the specified <see cref="System.Object" /> is equal to this instance; otherwise, <c>false</c>.</returns>
         public override bool Equals(object value)
         {
-            if (!(value is OrientedBoundingBox))
-                return false;
-
-            var strongValue = (OrientedBoundingBox)value;
-            return Equals(ref strongValue);
+            return value is OrientedBoundingBox other && Equals(ref other);
         }
 
         /// <summary>
@@ -934,9 +937,7 @@ namespace FlaxEngine
         {
             if (format == null)
                 return ToString();
-
-            return string.Format(CultureInfo.CurrentCulture, "Center: {0}, Extents: {1}", Center.ToString(format, CultureInfo.CurrentCulture),
-                                 Extents.ToString(format, CultureInfo.CurrentCulture));
+            return string.Format(CultureInfo.CurrentCulture, "Center: {0}, Extents: {1}", Center.ToString(format, CultureInfo.CurrentCulture), Extents.ToString(format, CultureInfo.CurrentCulture));
         }
 
         /// <summary>
@@ -959,9 +960,7 @@ namespace FlaxEngine
         {
             if (format == null)
                 return ToString(formatProvider);
-
-            return string.Format(formatProvider, "Center: {0}, Extents: {1}", Center.ToString(format, formatProvider),
-                                 Extents.ToString(format, formatProvider));
+            return string.Format(formatProvider, "Center: {0}, Extents: {1}", Center.ToString(format, formatProvider), Extents.ToString(format, formatProvider));
         }
     }
 }

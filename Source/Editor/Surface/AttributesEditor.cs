@@ -77,7 +77,7 @@ namespace FlaxEditor.Surface
             // Context menu dimensions
             const float width = 340.0f;
             const float height = 370.0f;
-            Size = new Vector2(width, height);
+            Size = new Float2(width, height);
 
             // Title
             var title = new Label(2, 2, width - 4, 23.0f)

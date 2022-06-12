@@ -93,7 +93,7 @@ namespace FlaxEditor.Windows
             }
 
             /// <inheritdoc />
-            public override bool OnMouseDoubleClick(Vector2 location, MouseButton button)
+            public override bool OnMouseDoubleClick(Float2 location, MouseButton button)
             {
                 // Click on text block
                 int textLength = TextLength;
@@ -181,7 +181,7 @@ namespace FlaxEditor.Windows
                 IsReadOnly = true,
                 IsMultiline = true,
                 BackgroundSelectedFlashSpeed = 0.0f,
-                Location = new Vector2(2, _viewDropdown.Bottom + 2),
+                Location = new Float2(2, _viewDropdown.Bottom + 2),
                 Parent = this,
             };
             _output.TargetViewOffsetChanged += OnOutputTargetViewOffsetChanged;
@@ -408,12 +408,12 @@ namespace FlaxEditor.Windows
             if (_output != null)
             {
                 _searchBox.Width = Width - _viewDropdown.Right - 2 - _scrollSize;
-                _output.Size = new Vector2(_vScroll.X - 2, _hScroll.Y - 4 - _viewDropdown.Bottom);
+                _output.Size = new Float2(_vScroll.X - 2, _hScroll.Y - 4 - _viewDropdown.Bottom);
             }
         }
 
         /// <inheritdoc />
-        public override bool OnMouseUp(Vector2 location, MouseButton button)
+        public override bool OnMouseUp(Float2 location, MouseButton button)
         {
             if (base.OnMouseUp(location, button))
                 return true;
@@ -542,7 +542,7 @@ namespace FlaxEditor.Windows
                         ref var line = ref lines[j];
                         textBlock.Range.StartIndex = startIndex + line.FirstCharIndex;
                         textBlock.Range.EndIndex = startIndex + line.LastCharIndex;
-                        textBlock.Bounds = new Rectangle(new Vector2(0.0f, prevBlockBottom), line.Size);
+                        textBlock.Bounds = new Rectangle(new Float2(0.0f, prevBlockBottom), line.Size);
 
                         if (textBlock.Range.Length > 0)
                         {

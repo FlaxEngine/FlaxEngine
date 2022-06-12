@@ -45,7 +45,7 @@ void SphereCollider::OnDebugDrawSelected()
 
 #endif
 
-bool SphereCollider::IntersectsItself(const Ray& ray, float& distance, Vector3& normal)
+bool SphereCollider::IntersectsItself(const Ray& ray, Real& distance, Vector3& normal)
 {
     return _sphere.Intersects(ray, distance, normal);
 }

@@ -176,8 +176,8 @@ namespace FlaxEditor.Surface.Elements
         }
 
         /// <inheritdoc />
-        protected Box(SurfaceNode parentNode, NodeElementArchetype archetype, Vector2 location)
-        : base(parentNode, archetype, location, new Vector2(Constants.BoxSize), false)
+        protected Box(SurfaceNode parentNode, NodeElementArchetype archetype, Float2 location)
+        : base(parentNode, archetype, location, new Float2(Constants.BoxSize), false)
         {
             _currentType = DefaultType;
             Text = Archetype.Text;
@@ -249,6 +249,15 @@ namespace FlaxEditor.Surface.Elements
                     if (t == typeof(Vector2) ||
                         t == typeof(Vector3) ||
                         t == typeof(Vector4) ||
+                        t == typeof(Float2) ||
+                        t == typeof(Float3) ||
+                        t == typeof(Float4) ||
+                        t == typeof(Double2) ||
+                        t == typeof(Double3) ||
+                        t == typeof(Double4) ||
+                        t == typeof(Int2) ||
+                        t == typeof(Int3) ||
+                        t == typeof(Int4) ||
                         t == typeof(Color))
                     {
                         return true;
@@ -512,7 +521,7 @@ namespace FlaxEditor.Surface.Elements
         /// </summary>
         protected void DrawBox()
         {
-            var rect = new Rectangle(Vector2.Zero, Size);
+            var rect = new Rectangle(Float2.Zero, Size);
 
             // Size culling
             const float minBoxSize = 5.0f;
@@ -546,7 +555,7 @@ namespace FlaxEditor.Surface.Elements
         }
 
         /// <inheritdoc />
-        public override void OnMouseEnter(Vector2 location)
+        public override void OnMouseEnter(Float2 location)
         {
             if (Surface.GetBoxDebuggerTooltip(this, out var debuggerTooltip))
             {
@@ -558,7 +567,7 @@ namespace FlaxEditor.Surface.Elements
         }
 
         /// <inheritdoc />
-        public override bool OnMouseDown(Vector2 location, MouseButton button)
+        public override bool OnMouseDown(Float2 location, MouseButton button)
         {
             if (base.OnMouseDown(location, button))
                 return true;
@@ -611,14 +620,14 @@ namespace FlaxEditor.Surface.Elements
         }
 
         /// <inheritdoc />
-        public override void OnMouseMove(Vector2 location)
+        public override void OnMouseMove(Float2 location)
         {
             Surface.ConnectingOver(this);
             base.OnMouseMove(location);
         }
 
         /// <inheritdoc />
-        public override bool OnMouseUp(Vector2 location, MouseButton button)
+        public override bool OnMouseUp(Float2 location, MouseButton button)
         {
             if (base.OnMouseUp(location, button))
                 return true;
@@ -672,7 +681,7 @@ namespace FlaxEditor.Surface.Elements
         }
 
         /// <inheritdoc />
-        public Vector2 ConnectionOrigin
+        public Float2 ConnectionOrigin
         {
             get
             {
@@ -771,7 +780,7 @@ namespace FlaxEditor.Surface.Elements
         }
 
         /// <inheritdoc />
-        public void DrawConnectingLine(ref Vector2 startPos, ref Vector2 endPos, ref Color color)
+        public void DrawConnectingLine(ref Float2 startPos, ref Float2 endPos, ref Color color)
         {
             OutputBox.DrawConnection(ref startPos, ref endPos, ref color, 2);
         }

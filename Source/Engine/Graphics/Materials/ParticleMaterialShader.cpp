@@ -18,12 +18,12 @@ PACK_STRUCT(struct ParticleMaterialShaderData {
     Matrix ViewProjectionMatrix;
     Matrix WorldMatrix;
     Matrix ViewMatrix;
-    Vector3 ViewPos;
+    Float3 ViewPos;
     float ViewFar;
-    Vector3 ViewDir;
+    Float3 ViewDir;
     float TimeParam;
-    Vector4 ViewInfo;
-    Vector4 ScreenSize;
+    Float4 ViewInfo;
+    Float4 ScreenSize;
     uint32 SortedIndicesOffset;
     float PerInstanceRandom;
     int32 ParticleStride;
@@ -36,8 +36,8 @@ PACK_STRUCT(struct ParticleMaterialShaderData {
     int32 ScaleOffset;
     int32 ModelFacingModeOffset;
     float RibbonUVTilingDistance;
-    Vector2 RibbonUVScale;
-    Vector2 RibbonUVOffset;
+    Float2 RibbonUVScale;
+    Float2 RibbonUVOffset;
     int32 RibbonWidthOffset;
     int32 RibbonTwistOffset;
     int32 RibbonFacingVectorOffset;
@@ -119,13 +119,13 @@ void ParticleMaterialShader::Bind(BindParameters& params)
         materialData->SortedIndicesOffset = drawCall.Particle.Particles->GPU.SortedIndices && params.RenderContext.View.Pass != DrawPass::Depth ? sortedIndicesOffset : 0xFFFFFFFF;
         materialData->PerInstanceRandom = drawCall.PerInstanceRandom;
         materialData->ParticleStride = drawCall.Particle.Particles->Stride;
-        materialData->PositionOffset = drawCall.Particle.Particles->Layout->FindAttributeOffset(ParticlePosition, ParticleAttribute::ValueTypes::Vector3);
-        materialData->SpriteSizeOffset = drawCall.Particle.Particles->Layout->FindAttributeOffset(ParticleSpriteSize, ParticleAttribute::ValueTypes::Vector2);
+        materialData->PositionOffset = drawCall.Particle.Particles->Layout->FindAttributeOffset(ParticlePosition, ParticleAttribute::ValueTypes::Float3);
+        materialData->SpriteSizeOffset = drawCall.Particle.Particles->Layout->FindAttributeOffset(ParticleSpriteSize, ParticleAttribute::ValueTypes::Float2);
         materialData->SpriteFacingModeOffset = drawCall.Particle.Particles->Layout->FindAttributeOffset(ParticleSpriteFacingMode, ParticleAttribute::ValueTypes::Int, -1);
-        materialData->SpriteFacingVectorOffset = drawCall.Particle.Particles->Layout->FindAttributeOffset(ParticleSpriteFacingVector, ParticleAttribute::ValueTypes::Vector3);
-        materialData->VelocityOffset = drawCall.Particle.Particles->Layout->FindAttributeOffset(ParticleVelocityOffset, ParticleAttribute::ValueTypes::Vector3);
-        materialData->RotationOffset = drawCall.Particle.Particles->Layout->FindAttributeOffset(ParticleRotationOffset, ParticleAttribute::ValueTypes::Vector3, -1);
-        materialData->ScaleOffset = drawCall.Particle.Particles->Layout->FindAttributeOffset(ParticleScaleOffset, ParticleAttribute::ValueTypes::Vector3, -1);
+        materialData->SpriteFacingVectorOffset = drawCall.Particle.Particles->Layout->FindAttributeOffset(ParticleSpriteFacingVector, ParticleAttribute::ValueTypes::Float3);
+        materialData->VelocityOffset = drawCall.Particle.Particles->Layout->FindAttributeOffset(ParticleVelocityOffset, ParticleAttribute::ValueTypes::Float3);
+        materialData->RotationOffset = drawCall.Particle.Particles->Layout->FindAttributeOffset(ParticleRotationOffset, ParticleAttribute::ValueTypes::Float3, -1);
+        materialData->ScaleOffset = drawCall.Particle.Particles->Layout->FindAttributeOffset(ParticleScaleOffset, ParticleAttribute::ValueTypes::Float3, -1);
         materialData->ModelFacingModeOffset = drawCall.Particle.Particles->Layout->FindAttributeOffset(ParticleModelFacingModeOffset, ParticleAttribute::ValueTypes::Int, -1);
         Matrix::Invert(drawCall.World, materialData->WorldMatrixInverseTransposed);
     }
@@ -159,7 +159,7 @@ void ParticleMaterialShader::Bind(BindParameters& params)
 
         materialData->RibbonWidthOffset = drawCall.Particle.Particles->Layout->FindAttributeOffset(ParticleRibbonWidth, ParticleAttribute::ValueTypes::Float, -1);
         materialData->RibbonTwistOffset = drawCall.Particle.Particles->Layout->FindAttributeOffset(ParticleRibbonTwist, ParticleAttribute::ValueTypes::Float, -1);
-        materialData->RibbonFacingVectorOffset = drawCall.Particle.Particles->Layout->FindAttributeOffset(ParticleRibbonFacingVector, ParticleAttribute::ValueTypes::Vector3, -1);
+        materialData->RibbonFacingVectorOffset = drawCall.Particle.Particles->Layout->FindAttributeOffset(ParticleRibbonFacingVector, ParticleAttribute::ValueTypes::Float3, -1);
 
         materialData->RibbonUVTilingDistance = drawCall.Particle.Ribbon.UVTilingDistance;
         materialData->RibbonUVScale.X = drawCall.Particle.Ribbon.UVScaleX;

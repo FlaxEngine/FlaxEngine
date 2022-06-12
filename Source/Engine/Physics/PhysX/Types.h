@@ -64,52 +64,95 @@ using namespace physx;
 
 #define RELEASE_PHYSX(x) if(x) { (x)->release(); x = nullptr; }
 
-inline PxVec2& C2P(const Vector2& v)
+#if USE_LARGE_WORLDS
+
+inline PxVec2 C2P(const Vector2& v)
+{
+    return PxVec2((float)v.X, (float)v.Y);
+}
+
+inline PxVec3 C2P(const Vector3& v)
+{
+    return PxVec3((float)v.X, (float)v.Y, (float)v.Z);
+}
+
+inline PxVec4 C2P(const Vector4& v)
+{
+    return PxVec4((float)v.X, (float)v.Y, (float)v.Z, (float)v.W);
+}
+
+inline PxBounds3 C2P(const BoundingBox& v)
+{
+    return PxBounds3(C2P(v.Minimum), C2P(v.Maximum));
+}
+
+inline Vector2 P2C(const PxVec2& v)
+{
+    return Vector2(v.x, v.y);
+}
+
+inline Vector3 P2C(const PxVec3& v)
+{
+    return Vector3(v.x, v.y, v.z);
+}
+
+inline Vector4 P2C(const PxVec4& v)
+{
+    return Vector4(v.x, v.y, v.z, v.w);
+}
+
+inline BoundingBox P2C(const PxBounds3& v)
+{
+    return BoundingBox(P2C(v.minimum), P2C(v.maximum));
+}
+
+inline Vector3 P2C(const PxExtendedVec3& v)
+{
+#ifdef PX_BIG_WORLDS
+    return *(Vector3*)&v;
+#else
+    return Vector3(v.x, v.y, v.z);
+#endif
+}
+
+#else
+
+inline PxVec2 C2P(const Vector2& v)
 {
     return *(PxVec2*)&v;
 }
 
-inline PxVec3& C2P(const Vector3& v)
+inline PxVec3 C2P(const Vector3& v)
 {
     return *(PxVec3*)&v;
 }
 
-inline PxVec4& C2P(const Vector4& v)
+inline PxVec4 C2P(const Vector4& v)
 {
     return *(PxVec4*)&v;
 }
 
-inline PxQuat& C2P(const Quaternion& v)
-{
-    return *(PxQuat*)&v;
-}
-
-inline PxBounds3& C2P(const BoundingBox& v)
+inline PxBounds3 C2P(const BoundingBox& v)
 {
     return *(PxBounds3*)&v;
 }
 
-inline Vector2& P2C(const PxVec2& v)
+inline Vector2 P2C(const PxVec2& v)
 {
     return *(Vector2*)&v;
 }
 
-inline Vector3& P2C(const PxVec3& v)
+inline Vector3 P2C(const PxVec3& v)
 {
     return *(Vector3*)&v;
 }
 
-inline Vector4& P2C(const PxVec4& v)
+inline Vector4 P2C(const PxVec4& v)
 {
     return *(Vector4*)&v;
 }
 
-inline Quaternion& P2C(const PxQuat& v)
-{
-    return *(Quaternion*)&v;
-}
-
-inline BoundingBox& P2C(const PxBounds3& v)
+inline BoundingBox P2C(const PxBounds3& v)
 {
     return *(BoundingBox*)&v;
 }
@@ -121,6 +164,18 @@ inline Vector3 P2C(const PxExtendedVec3& v)
 #else
 	return *(Vector3*)&v;
 #endif
+}
+
+#endif
+
+inline PxQuat& C2P(const Quaternion& v)
+{
+    return *(PxQuat*)&v;
+}
+
+inline Quaternion& P2C(const PxQuat& v)
+{
+    return *(Quaternion*)&v;
 }
 
 inline float M2ToCm2(float v)

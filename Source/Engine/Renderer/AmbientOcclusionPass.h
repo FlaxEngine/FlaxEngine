@@ -22,16 +22,16 @@ private:
     PACK_STRUCT(struct ASSAOConstants {
         GBufferData GBuffer;
 
-        Vector2 ViewportPixelSize;
-        Vector2 HalfViewportPixelSize;
+        Float2 ViewportPixelSize;
+        Float2 HalfViewportPixelSize;
 
         int32 PerPassFullResCoordOffsetX;
         int32 PerPassFullResCoordOffsetY;
         int32 PassIndex;
         float EffectMaxDistance;
 
-        Vector2 Viewport2xPixelSize;
-        Vector2 Viewport2xPixelSize_x_025;
+        Float2 Viewport2xPixelSize;
+        Float2 Viewport2xPixelSize_x_025;
 
         float EffectRadius;
         float EffectShadowStrength;
@@ -48,7 +48,7 @@ private:
         float InvSharpness;
         float DetailAOStrength;
 
-        Vector4 PatternRotScaleMatrices[5];
+        Float4 PatternRotScaleMatrices[5];
 
         Matrix ViewMatrix;
         });

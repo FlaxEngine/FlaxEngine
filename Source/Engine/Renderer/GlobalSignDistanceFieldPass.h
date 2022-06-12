@@ -13,9 +13,9 @@ public:
     // Constant buffer data for Global SDF access on a GPU.
     PACK_STRUCT(struct ConstantsData
         {
-        Vector4 CascadePosDistance[4];
-        Vector4 CascadeVoxelSize;
-        Vector3 Padding;
+        Float4 CascadePosDistance[4];
+        Float4 CascadeVoxelSize;
+        Float3 Padding;
         float Resolution;
         });
 
@@ -78,7 +78,7 @@ public:
     // Rasterize Model SDF into the Global SDF. Call it from actor Draw() method during DrawPass::GlobalSDF.
     void RasterizeModelSDF(Actor* actor, const ModelBase::SDFData& sdf, const Matrix& localToWorld, const BoundingBox& objectBounds);
 
-    void RasterizeHeightfield(Actor* actor, GPUTexture* heightfield, const Matrix& localToWorld, const BoundingBox& objectBounds, const Vector4& localToUV);
+    void RasterizeHeightfield(Actor* actor, GPUTexture* heightfield, const Matrix& localToWorld, const BoundingBox& objectBounds, const Float4& localToUV);
 
 private:
 #if COMPILE_WITH_DEV_ENV

@@ -104,12 +104,12 @@ void Foliage::DrawInstance(RenderContext& renderContext, FoliageInstance& instan
 
         // Add instance to the draw batch
         auto& instanceData = e->Instances.AddOne();
-        instanceData.InstanceOrigin = Vector3(instance.World.M41, instance.World.M42, instance.World.M43);
+        instanceData.InstanceOrigin = Float3(instance.World.M41, instance.World.M42, instance.World.M43);
         instanceData.PerInstanceRandom = instance.Random;
-        instanceData.InstanceTransform1 = Vector3(instance.World.M11, instance.World.M12, instance.World.M13);
+        instanceData.InstanceTransform1 = Float3(instance.World.M11, instance.World.M12, instance.World.M13);
         instanceData.LODDitherFactor = lodDitherFactor;
-        instanceData.InstanceTransform2 = Vector3(instance.World.M21, instance.World.M22, instance.World.M23);
-        instanceData.InstanceTransform3 = Vector3(instance.World.M31, instance.World.M32, instance.World.M33);
+        instanceData.InstanceTransform2 = Float3(instance.World.M21, instance.World.M22, instance.World.M23);
+        instanceData.InstanceTransform3 = Float3(instance.World.M31, instance.World.M32, instance.World.M33);
         instanceData.InstanceLightmapArea = Half4(instance.Lightmap.UVsArea);
     }
 }
@@ -151,7 +151,7 @@ void Foliage::DrawCluster(RenderContext& renderContext, FoliageCluster* cluster,
                 const auto modelFrame = instance.DrawState.PrevFrame + 1;
 
                 // Select a proper LOD index (model may be culled)
-                int32 lodIndex = RenderTools::ComputeModelLOD(model, instance.Bounds.Center, instance.Bounds.Radius, renderContext);
+                int32 lodIndex = RenderTools::ComputeModelLOD(model, instance.Bounds.Center, (float)instance.Bounds.Radius, renderContext); // TODO: large-worlds
                 if (lodIndex == -1)
                 {
                     // Handling model fade-out transition
@@ -801,20 +801,20 @@ void Foliage::SetGlobalDensityScale(float value)
     SceneQuery::TreeExecute(f);
 }
 
-bool Foliage::Intersects(const Ray& ray, float& distance, Vector3& normal, int32& instanceIndex)
+bool Foliage::Intersects(const Ray& ray, Real& distance, Vector3& normal, int32& instanceIndex)
 {
     PROFILE_CPU();
 
     instanceIndex = -1;
     normal = Vector3::Up;
-    distance = MAX_float;
+    distance = MAX_Real;
 
     FoliageInstance* instance = nullptr;
 #if FOLIAGE_USE_SINGLE_QUAD_TREE
     if (Root)
         Root->Intersects(this, ray, distance, normal, instance);
 #else
-    float tmpDistance;
+    Real tmpDistance;
     Vector3 tmpNormal;
     FoliageInstance* tmpInstance;
     for (auto& type : FoliageTypes)
@@ -954,13 +954,13 @@ void Foliage::Draw(RenderContext& renderContext)
                 auto& firstInstance = batch.Instances[0];
                 batch.DrawCall.ObjectPosition = firstInstance.InstanceOrigin;
                 batch.DrawCall.PerInstanceRandom = firstInstance.PerInstanceRandom;
-                auto lightmapArea = firstInstance.InstanceLightmapArea.ToVector4();
+                auto lightmapArea = firstInstance.InstanceLightmapArea.ToFloat4();
                 batch.DrawCall.Surface.LightmapUVsArea = *(Rectangle*)&lightmapArea;
                 batch.DrawCall.Surface.LODDitherFactor = firstInstance.LODDitherFactor;
-                batch.DrawCall.World.SetRow1(Vector4(firstInstance.InstanceTransform1, 0.0f));
-                batch.DrawCall.World.SetRow2(Vector4(firstInstance.InstanceTransform2, 0.0f));
-                batch.DrawCall.World.SetRow3(Vector4(firstInstance.InstanceTransform3, 0.0f));
-                batch.DrawCall.World.SetRow4(Vector4(firstInstance.InstanceOrigin, 1.0f));
+                batch.DrawCall.World.SetRow1(Float4(firstInstance.InstanceTransform1, 0.0f));
+                batch.DrawCall.World.SetRow2(Float4(firstInstance.InstanceTransform2, 0.0f));
+                batch.DrawCall.World.SetRow3(Float4(firstInstance.InstanceTransform3, 0.0f));
+                batch.DrawCall.World.SetRow4(Float4(firstInstance.InstanceOrigin, 1.0f));
                 batch.DrawCall.Surface.PrevWorld = batch.DrawCall.World;
                 batch.DrawCall.Surface.GeometrySize = mesh.GetBox().GetSize();
                 batch.DrawCall.Surface.Skinning = nullptr;
@@ -999,13 +999,13 @@ void Foliage::Draw(RenderContext& renderContext)
                         auto& instance = batch.Instances[j];
                         drawCall.ObjectPosition = instance.InstanceOrigin;
                         drawCall.PerInstanceRandom = instance.PerInstanceRandom;
-                        lightmapArea = instance.InstanceLightmapArea.ToVector4();
+                        lightmapArea = instance.InstanceLightmapArea.ToFloat4();
                         drawCall.Surface.LightmapUVsArea = *(Rectangle*)&lightmapArea;
                         drawCall.Surface.LODDitherFactor = instance.LODDitherFactor;
-                        drawCall.World.SetRow1(Vector4(instance.InstanceTransform1, 0.0f));
-                        drawCall.World.SetRow2(Vector4(instance.InstanceTransform2, 0.0f));
-                        drawCall.World.SetRow3(Vector4(instance.InstanceTransform3, 0.0f));
-                        drawCall.World.SetRow4(Vector4(instance.InstanceOrigin, 1.0f));
+                        drawCall.World.SetRow1(Float4(instance.InstanceTransform1, 0.0f));
+                        drawCall.World.SetRow2(Float4(instance.InstanceTransform2, 0.0f));
+                        drawCall.World.SetRow3(Float4(instance.InstanceTransform3, 0.0f));
+                        drawCall.World.SetRow4(Float4(instance.InstanceOrigin, 1.0f));
                         const int32 drawCallIndex = renderContext.List->DrawCalls.Count();
                         renderContext.List->DrawCalls.Add(drawCall);
                         renderContext.List->DrawCallsLists[(int32)DrawCallsListType::Forward].Indices.Add(drawCallIndex);
@@ -1020,7 +1020,7 @@ void Foliage::Draw(RenderContext& renderContext)
 #endif
 }
 
-bool Foliage::IntersectsItself(const Ray& ray, float& distance, Vector3& normal)
+bool Foliage::IntersectsItself(const Ray& ray, Real& distance, Vector3& normal)
 {
     int32 instanceIndex;
     return Intersects(ray, distance, normal, instanceIndex);
@@ -1039,7 +1039,9 @@ struct InstanceEncoded1
 {
     int32 Type;
     float Random;
-    Transform Transform;
+    Float3 Translation;
+    Quaternion Orientation;
+    Float3 Scale;
 
     static constexpr int32 Size = 48;
     static constexpr int32 Base64Size = GetInstanceBase64Size(Size);
@@ -1049,7 +1051,9 @@ struct InstanceEncoded2
 {
     int32 Type;
     float Random;
-    Transform Transform;
+    Float3 Translation;
+    Quaternion Orientation;
+    Float3 Scale;
     LightmapEntry Lightmap;
 
     static const int32 Size = 68;
@@ -1094,7 +1098,9 @@ void Foliage::Serialize(SerializeStream& stream, const void* otherObj)
 
         enc.Type = instance.Type;
         enc.Random = instance.Random;
-        enc.Transform = instance.Transform;
+        enc.Translation = instance.Transform.Translation;
+        enc.Orientation = instance.Transform.Orientation;
+        enc.Scale = instance.Transform.Scale;
         enc.Lightmap = instance.Lightmap;
 
         Encryption::Base64Encode((const byte*)&enc, sizeof(enc), base64 + 1);
@@ -1173,7 +1179,9 @@ void Foliage::Deserialize(DeserializeStream& stream, ISerializeModifier* modifie
 
                 instance.Type = enc.Type;
                 instance.Random = enc.Random;
-                instance.Transform = enc.Transform;
+                instance.Transform.Translation = enc.Translation;
+                instance.Transform.Orientation = enc.Orientation;
+                instance.Transform.Scale = enc.Scale;
                 instance.Lightmap = LightmapEntry();
             }
         }
@@ -1195,7 +1203,9 @@ void Foliage::Deserialize(DeserializeStream& stream, ISerializeModifier* modifie
 
                 instance.Type = enc.Type;
                 instance.Random = enc.Random;
-                instance.Transform = enc.Transform;
+                instance.Transform.Translation = enc.Translation;
+                instance.Transform.Orientation = enc.Orientation;
+                instance.Transform.Scale = enc.Scale;
                 instance.Lightmap = enc.Lightmap;
             }
         }

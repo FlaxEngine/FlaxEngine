@@ -130,7 +130,7 @@ namespace FlaxEditor.GUI.Input
         }
 
         /// <inheritdoc />
-        public override bool OnMouseUp(Vector2 location, MouseButton button)
+        public override bool OnMouseUp(Float2 location, MouseButton button)
         {
             Focus();
             OnSubmit();

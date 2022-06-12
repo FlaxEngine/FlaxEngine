@@ -48,9 +48,9 @@ public:
     }
 
     /// <summary>
-    /// Gets texture size of Vector2::Zero if not loaded.
+    /// Gets texture size of Float2::Zero if not loaded.
     /// </summary>
-    Vector2 Size() const;
+    Float2 Size() const;
 
     /// <summary>
     /// Gets a value indicating whether this instance is initialized. 

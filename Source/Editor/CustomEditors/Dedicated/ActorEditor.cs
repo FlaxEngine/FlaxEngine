@@ -75,7 +75,7 @@ namespace FlaxEditor.CustomEditors.Dedicated
 
                         // Viewing changes applied to this actor
                         var viewChanges = panel.Button("View Changes");
-                        viewChanges.Button.Clicked += () => ViewChanges(viewChanges.Button, new Vector2(0.0f, 20.0f));
+                        viewChanges.Button.Clicked += () => ViewChanges(viewChanges.Button, new Float2(0.0f, 20.0f));
 
                         // Link event to update editor on prefab apply
                         _linkedPrefabId = prefab.ID;
@@ -319,7 +319,7 @@ namespace FlaxEditor.CustomEditors.Dedicated
             return result;
         }
 
-        private void ViewChanges(Control target, Vector2 targetLocation)
+        private void ViewChanges(Control target, Float2 targetLocation)
         {
             // Build a tree out of modified properties
             var rootNode = ProcessDiff(this, false);
@@ -343,7 +343,7 @@ namespace FlaxEditor.CustomEditors.Dedicated
             cm.Show(target, targetLocation);
         }
 
-        private void OnDiffNodeRightClick(TreeNode node, Vector2 location)
+        private void OnDiffNodeRightClick(TreeNode node, Float2 location)
         {
             var diffMenu = (PrefabDiffContextMenu)node.ParentTree.Tag;
 
@@ -353,7 +353,7 @@ namespace FlaxEditor.CustomEditors.Dedicated
             menu.AddButton("Revert All", OnDiffRevertAll);
             menu.AddButton("Apply All", OnDiffApplyAll);
 
-            diffMenu.ShowChild(menu, node.PointToParent(diffMenu, new Vector2(location.X, node.HeaderHeight)));
+            diffMenu.ShowChild(menu, node.PointToParent(diffMenu, new Float2(location.X, node.HeaderHeight)));
         }
 
         private void OnDiffRevertAll()

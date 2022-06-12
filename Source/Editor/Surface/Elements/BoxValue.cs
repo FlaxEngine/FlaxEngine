@@ -1,6 +1,11 @@
+#if USE_LARGE_WORLDS
+using RealValueBox = FlaxEditor.GUI.Input.DoubleValueBox;
+#else
+using RealValueBox = FlaxEditor.GUI.Input.FloatValueBox;
+#endif
+
 // Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
-using FlaxEditor.GUI.Input;
 using FlaxEngine;
 using FlaxEngine.GUI;
 
@@ -14,7 +19,7 @@ namespace FlaxEditor.Surface.Elements
     [HideInEditor]
     public sealed class BoxValue : ContainerControl, ISurfaceNodeElement
     {
-        private FloatValueBox _minX, _minY, _minZ, _maxX, _maxY, _maxZ;
+        private RealValueBox _minX, _minY, _minZ, _maxX, _maxY, _maxZ;
         private const float BoxWidth = 50;
         private const float LabelWidth = 26;
         private const float MarginX = 2;
@@ -76,21 +81,21 @@ namespace FlaxEditor.Surface.Elements
                 HorizontalAlignment = TextAlignment.Near,
                 Parent = this
             };
-            _minX = new FloatValueBox(value.Minimum.X, LabelWidth, minY, BoxWidth, float.MinValue, float.MaxValue, SlideSpeed)
+            _minX = new RealValueBox(value.Minimum.X, LabelWidth, minY, BoxWidth, float.MinValue, float.MaxValue, SlideSpeed)
             {
                 BorderColor = Color.Lerp(axisColorX, back, grayOutFactor),
                 BorderSelectedColor = axisColorX,
                 Parent = this
             };
             _minX.ValueChanged += OnValueChanged;
-            _minY = new FloatValueBox(value.Minimum.Y, _minX.Right + MarginX, minY, BoxWidth, float.MinValue, float.MaxValue, SlideSpeed)
+            _minY = new RealValueBox(value.Minimum.Y, _minX.Right + MarginX, minY, BoxWidth, float.MinValue, float.MaxValue, SlideSpeed)
             {
                 BorderColor = Color.Lerp(axisColorY, back, grayOutFactor),
                 BorderSelectedColor = axisColorY,
                 Parent = this
             };
             _minY.ValueChanged += OnValueChanged;
-            _minZ = new FloatValueBox(value.Minimum.Z, _minY.Right + MarginX, minY, BoxWidth, float.MinValue, float.MaxValue, SlideSpeed)
+            _minZ = new RealValueBox(value.Minimum.Z, _minY.Right + MarginX, minY, BoxWidth, float.MinValue, float.MaxValue, SlideSpeed)
             {
                 BorderColor = Color.Lerp(axisColorZ, back, grayOutFactor),
                 BorderSelectedColor = axisColorZ,
@@ -106,21 +111,21 @@ namespace FlaxEditor.Surface.Elements
                 HorizontalAlignment = TextAlignment.Near,
                 Parent = this
             };
-            _maxX = new FloatValueBox(value.Maximum.X, LabelWidth, maxY, BoxWidth, float.MinValue, float.MaxValue, SlideSpeed)
+            _maxX = new RealValueBox(value.Maximum.X, LabelWidth, maxY, BoxWidth, float.MinValue, float.MaxValue, SlideSpeed)
             {
                 BorderColor = Color.Lerp(axisColorX, back, grayOutFactor),
                 BorderSelectedColor = axisColorX,
                 Parent = this
             };
             _maxX.ValueChanged += OnValueChanged;
-            _maxY = new FloatValueBox(value.Maximum.Y, _maxX.Right + MarginX, maxY, BoxWidth, float.MinValue, float.MaxValue, SlideSpeed)
+            _maxY = new RealValueBox(value.Maximum.Y, _maxX.Right + MarginX, maxY, BoxWidth, float.MinValue, float.MaxValue, SlideSpeed)
             {
                 BorderColor = Color.Lerp(axisColorY, back, grayOutFactor),
                 BorderSelectedColor = axisColorY,
                 Parent = this
             };
             _maxY.ValueChanged += OnValueChanged;
-            _maxZ = new FloatValueBox(value.Maximum.Z, _maxY.Right + MarginX, maxY, BoxWidth, float.MinValue, float.MaxValue, SlideSpeed)
+            _maxZ = new RealValueBox(value.Maximum.Z, _maxY.Right + MarginX, maxY, BoxWidth, float.MinValue, float.MaxValue, SlideSpeed)
             {
                 BorderColor = Color.Lerp(axisColorZ, back, grayOutFactor),
                 BorderSelectedColor = axisColorZ,

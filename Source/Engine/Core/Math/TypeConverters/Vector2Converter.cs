@@ -15,7 +15,6 @@ namespace FlaxEngine.TypeConverters
             {
                 return true;
             }
-
             return base.CanConvertFrom(context, sourceType);
         }
 
@@ -27,7 +26,6 @@ namespace FlaxEngine.TypeConverters
                 string[] v = str.Split(',');
                 return new Vector2(float.Parse(v[0]), float.Parse(v[1]));
             }
-
             return base.ConvertFrom(context, culture, value);
         }
 
@@ -39,7 +37,6 @@ namespace FlaxEngine.TypeConverters
                 var v = (Vector2)value;
                 return v.X + "," + v.Y;
             }
-
             return base.ConvertTo(context, culture, value, destinationType);
         }
     }

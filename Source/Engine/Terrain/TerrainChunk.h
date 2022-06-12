@@ -25,7 +25,7 @@ private:
 
     TerrainPatch* _patch;
     uint16 _x, _z;
-    Vector4 _heightmapUVScaleBias;
+    Float4 _heightmapUVScaleBias;
     Matrix _world;
     BoundingBox _bounds;
     Vector3 _boundsCenter;
@@ -96,7 +96,7 @@ public:
     /// Gets the scale (in XY) and bias (in ZW) applied to the vertex UVs to get the chunk coordinates.
     /// </summary>
     /// <param name="result">The result.</param>
-    FORCE_INLINE void GetHeightmapUVScaleBias(Vector4* result) const
+    FORCE_INLINE void GetHeightmapUVScaleBias(Float4* result) const
     {
         *result = _heightmapUVScaleBias;
     }
@@ -146,7 +146,7 @@ public:
     /// <param name="ray">The ray.</param>
     /// <param name="distance">The output distance.</param>
     /// <returns>True if chunk intersects with the ray, otherwise false.</returns>
-    bool Intersects(const Ray& ray, float& distance);
+    bool Intersects(const Ray& ray, Real& distance);
 
     /// <summary>
     /// Updates the cached bounds of the chunk.

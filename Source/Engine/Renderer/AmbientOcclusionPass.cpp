@@ -341,11 +341,11 @@ void AmbientOcclusionPass::UpdateCB(const RenderContext& renderContext, GPUConte
     GBufferPass::SetInputs(view, _constantsBufferData.GBuffer);
     Matrix::Transpose(view.View, _constantsBufferData.ViewMatrix);
 
-    _constantsBufferData.ViewportPixelSize = Vector2(1.0f / m_sizeX, 1.0f / m_sizeY);
-    _constantsBufferData.HalfViewportPixelSize = Vector2(1.0f / m_halfSizeX, 1.0f / m_halfSizeY);
+    _constantsBufferData.ViewportPixelSize = Float2(1.0f / m_sizeX, 1.0f / m_sizeY);
+    _constantsBufferData.HalfViewportPixelSize = Float2(1.0f / m_halfSizeX, 1.0f / m_halfSizeY);
 
-    _constantsBufferData.Viewport2xPixelSize = Vector2(_constantsBufferData.ViewportPixelSize.X * 2.0f, _constantsBufferData.ViewportPixelSize.Y * 2.0f);
-    _constantsBufferData.Viewport2xPixelSize_x_025 = Vector2(_constantsBufferData.Viewport2xPixelSize.X * 0.25f, _constantsBufferData.Viewport2xPixelSize.Y * 0.25f);
+    _constantsBufferData.Viewport2xPixelSize = Float2(_constantsBufferData.ViewportPixelSize.X * 2.0f, _constantsBufferData.ViewportPixelSize.Y * 2.0f);
+    _constantsBufferData.Viewport2xPixelSize_x_025 = Float2(_constantsBufferData.Viewport2xPixelSize.X * 0.25f, _constantsBufferData.Viewport2xPixelSize.Y * 0.25f);
 
     const float tanHalfFOVY = 1.0f / proj.Values[1][1];
 
@@ -403,7 +403,7 @@ void AmbientOcclusionPass::UpdateCB(const RenderContext& renderContext, GPUConte
         const float sa = Math::Sin(angle0);
 
         const float scale = 1.0f + (a - 1.5f + (b - (subPassCount - 1.0f) * 0.5f) / static_cast<float>(subPassCount)) * 0.07f;
-        _constantsBufferData.PatternRotScaleMatrices[subPass] = Vector4(scale * ca, scale * -sa, -scale * sa, -scale * ca);
+        _constantsBufferData.PatternRotScaleMatrices[subPass] = Float4(scale * ca, scale * -sa, -scale * sa, -scale * ca);
     }
 
     // Update buffer

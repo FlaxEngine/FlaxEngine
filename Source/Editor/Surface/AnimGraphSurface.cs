@@ -44,7 +44,7 @@ namespace FlaxEditor.Surface
                             Utils.GetEmptyArray<byte>(),
                             Utils.GetEmptyArray<byte>(),
                         },
-                        Size = new Vector2(100, 0),
+                        Size = new Float2(100, 0),
                     },
                 }
             }
@@ -63,7 +63,7 @@ namespace FlaxEditor.Surface
                     Title = "Transition Source State Anim",
                     Description = "The animation state machine transition source state animation data information",
                     Flags = NodeFlags.AnimGraph,
-                    Size = new Vector2(270, 110),
+                    Size = new Float2(270, 110),
                     Elements = new[]
                     {
                         NodeElementArchetype.Factory.Output(0, "Length", typeof(float), 0),
@@ -349,7 +349,7 @@ namespace FlaxEditor.Surface
         }
 
         /// <inheritdoc />
-        protected override void OnShowPrimaryMenu(VisjectCM activeCM, Vector2 location, Box startBox)
+        protected override void OnShowPrimaryMenu(VisjectCM activeCM, Float2 location, Box startBox)
         {
             // Check if show additional nodes in the current surface context
             if (activeCM != _cmStateMachineMenu)

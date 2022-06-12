@@ -46,22 +46,22 @@ DECLARE_SCRIPTING_TYPE_MINIMAL(CreateWindowSettings);
     /// <summary>
     /// The custom start position.
     /// </summary>
-    API_FIELD() Vector2 Position = Vector2(100, 400);
+    API_FIELD() Float2 Position = Float2(100, 400);
 
     /// <summary>
     /// The client size.
     /// </summary>
-    API_FIELD() Vector2 Size = Vector2(640, 480);
+    API_FIELD() Float2 Size = Float2(640, 480);
 
     /// <summary>
     /// The minimum size.
     /// </summary>
-    API_FIELD() Vector2 MinimumSize = Vector2(1, 1);
+    API_FIELD() Float2 MinimumSize = Float2(1, 1);
 
     /// <summary>
     /// The maximum size.
     /// </summary>
-    API_FIELD() Vector2 MaximumSize = Vector2(8192, 4096);
+    API_FIELD() Float2 MaximumSize = Float2(8192, 4096);
 
     /// <summary>
     /// The start position mode.

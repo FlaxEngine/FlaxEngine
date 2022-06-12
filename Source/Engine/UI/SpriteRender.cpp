@@ -21,12 +21,12 @@ SpriteRender::SpriteRender(const SpawnParams& params)
     Image.Changed.Bind<SpriteRender, &SpriteRender::SetImage>(this);
 }
 
-Vector2 SpriteRender::GetSize() const
+Float2 SpriteRender::GetSize() const
 {
     return _size;
 }
 
-void SpriteRender::SetSize(const Vector2& value)
+void SpriteRender::SetSize(const Float2& value)
 {
     if (_size == value)
         return;
@@ -118,6 +118,7 @@ void SpriteRender::Draw(RenderContext& renderContext)
     Matrix::Scaling(_size.X, _size.Y, 1.0f, m2);
     Matrix::RotationY(PI, m3);
     Matrix::Multiply(m2, m3, m1);
+    // TODO: large-worlds
     if (FaceCamera)
     {
         Matrix::Billboard(_transform.Translation, view.Position, Vector3::Up, view.Direction, m2);

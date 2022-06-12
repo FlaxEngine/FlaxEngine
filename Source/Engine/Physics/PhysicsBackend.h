@@ -147,7 +147,7 @@ public:
     static Vector3 GetRigidDynamicActorAngularVelocity(void* actor);
     static void SetRigidDynamicActorAngularVelocity(void* actor, const Vector3& value, bool wakeUp);
     static Vector3 GetRigidDynamicActorCenterOfMass(void* actor);
-    static void SetRigidDynamicActorCenterOfMassOffset(void* actor, const Vector3& value);
+    static void SetRigidDynamicActorCenterOfMassOffset(void* actor, const Float3& value);
     static bool GetRigidDynamicActorIsSleeping(void* actor);
     static void RigidDynamicActorSleep(void* actor);
     static void RigidDynamicActorWakeUp(void* actor);
@@ -257,8 +257,8 @@ public:
     static void* CreateConvexMesh(byte* data, int32 dataSize, BoundingBox& localBounds);
     static void* CreateTriangleMesh(byte* data, int32 dataSize, BoundingBox& localBounds);
     static void* CreateHeightField(byte* data, int32 dataSize);
-    static void GetConvexMeshTriangles(void* contextMesh, Array<Vector3, HeapAllocation>& vertexBuffer, Array<int32, HeapAllocation>& indexBuffer);
-    static void GetTriangleMeshTriangles(void* triangleMesh, Array<Vector3, HeapAllocation>& vertexBuffer, Array<int32, HeapAllocation>& indexBuffer);
+    static void GetConvexMeshTriangles(void* contextMesh, Array<Float3, HeapAllocation>& vertexBuffer, Array<int32, HeapAllocation>& indexBuffer);
+    static void GetTriangleMeshTriangles(void* triangleMesh, Array<Float3, HeapAllocation>& vertexBuffer, Array<int32, HeapAllocation>& indexBuffer);
     static const uint32* GetTriangleMeshRemap(void* triangleMesh, uint32& count);
     static void GetHeightFieldSize(void* heightField, int32& rows, int32& columns);
     static float GetHeightFieldHeight(void* heightField, float x, float z);

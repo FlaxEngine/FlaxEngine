@@ -14,7 +14,7 @@ template<typename T>
 API_STRUCT(Template) struct Vector4Base
 {
     typedef T Real;
-    static struct ScriptingTypeInitializer TypeInitializer;
+    static FLAXENGINE_API struct ScriptingTypeInitializer TypeInitializer;
 
     union
     {
@@ -105,7 +105,7 @@ public:
     }
 
     template<typename U = T, typename TEnableIf<TNot<TIsTheSame<T, U>>::Value>::Type...>
-    FORCE_INLINE explicit Vector4Base(const Vector4Base<U>& xyzw)
+    FORCE_INLINE Vector4Base(const Vector4Base<U>& xyzw)
         : X((T)xyzw.X)
         , Y((T)xyzw.Y)
         , Z((T)xyzw.Z)
@@ -261,6 +261,30 @@ public:
 
     Vector4Base operator/(T b) const
     {
+        return Vector4Base(X / b, Y / b, Z / b, W / b);
+    }
+
+    Vector4Base operator+(typename TOtherFloat<T>::Type a) const
+    {
+        T b = (T)a;
+        return Vector4Base(X + b, Y + b, Z + b, W + b);
+    }
+
+    Vector4Base operator-(typename TOtherFloat<T>::Type a) const
+    {
+        T b = (T)a;
+        return Vector4Base(X - b, Y - b, Z - b, W - b);
+    }
+
+    Vector4Base operator*(typename TOtherFloat<T>::Type a) const
+    {
+        T b = (T)a;
+        return Vector4Base(X * b, Y * b, Z * b, W * b);
+    }
+
+    Vector4Base operator/(typename TOtherFloat<T>::Type a) const
+    {
+        T b = (T)a;
         return Vector4Base(X / b, Y / b, Z / b, W / b);
     }
 
@@ -497,6 +521,30 @@ inline Vector4Base<T> operator*(T a, const Vector4Base<T>& b)
 
 template<typename T>
 inline Vector4Base<T> operator/(T a, const Vector4Base<T>& b)
+{
+    return Vector4Base<T>(a) / b;
+}
+
+template<typename T>
+inline Vector4Base<T> operator+(typename TOtherFloat<T>::Type a, const Vector4Base<T>& b)
+{
+    return b + a;
+}
+
+template<typename T>
+inline Vector4Base<T> operator-(typename TOtherFloat<T>::Type a, const Vector4Base<T>& b)
+{
+    return Vector4Base<T>(a) - b;
+}
+
+template<typename T>
+inline Vector4Base<T> operator*(typename TOtherFloat<T>::Type a, const Vector4Base<T>& b)
+{
+    return b * a;
+}
+
+template<typename T>
+inline Vector4Base<T> operator/(typename TOtherFloat<T>::Type a, const Vector4Base<T>& b)
 {
     return Vector4Base<T>(a) / b;
 }

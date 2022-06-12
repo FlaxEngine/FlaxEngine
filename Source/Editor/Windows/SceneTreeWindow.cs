@@ -175,7 +175,7 @@ namespace FlaxEditor.Windows
             };
             _tree.AddChild(root.TreeNode);
             _tree.SelectedChanged += Tree_OnSelectedChanged;
-            _tree.RightClick += Tree_OnRightClick;
+            _tree.RightClick += OnTreeRightClick;
             _tree.Parent = this;
 
             // Setup input actions
@@ -278,7 +278,7 @@ namespace FlaxEditor.Windows
             }
         }
 
-        private void Tree_OnRightClick(TreeNode node, Vector2 location)
+        private void OnTreeRightClick(TreeNode node, Float2 location)
         {
             if (!Editor.StateMachine.CurrentState.CanEditScene)
                 return;
@@ -368,7 +368,7 @@ namespace FlaxEditor.Windows
         }
 
         /// <inheritdoc />
-        public override bool OnMouseDown(Vector2 location, MouseButton buttons)
+        public override bool OnMouseDown(Float2 location, MouseButton buttons)
         {
             if (base.OnMouseDown(location, buttons))
                 return true;
@@ -383,7 +383,7 @@ namespace FlaxEditor.Windows
         }
 
         /// <inheritdoc />
-        public override bool OnMouseUp(Vector2 location, MouseButton buttons)
+        public override bool OnMouseUp(Float2 location, MouseButton buttons)
         {
             if (base.OnMouseUp(location, buttons))
                 return true;
@@ -414,7 +414,7 @@ namespace FlaxEditor.Windows
         }
 
         /// <inheritdoc />
-        public override DragDropEffect OnDragEnter(ref Vector2 location, DragData data)
+        public override DragDropEffect OnDragEnter(ref Float2 location, DragData data)
         {
             var result = base.OnDragEnter(ref location, data);
             if (Editor.StateMachine.CurrentState.CanEditScene)
@@ -440,7 +440,7 @@ namespace FlaxEditor.Windows
         }
 
         /// <inheritdoc />
-        public override DragDropEffect OnDragMove(ref Vector2 location, DragData data)
+        public override DragDropEffect OnDragMove(ref Float2 location, DragData data)
         {
             var result = base.OnDragMove(ref location, data);
             if (result == DragDropEffect.None && Editor.StateMachine.CurrentState.CanEditScene && _dragHandlers != null)
@@ -459,7 +459,7 @@ namespace FlaxEditor.Windows
         }
 
         /// <inheritdoc />
-        public override DragDropEffect OnDragDrop(ref Vector2 location, DragData data)
+        public override DragDropEffect OnDragDrop(ref Float2 location, DragData data)
         {
             var result = base.OnDragDrop(ref location, data);
             if (result == DragDropEffect.None)

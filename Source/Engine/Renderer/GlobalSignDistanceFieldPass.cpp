@@ -2,7 +2,7 @@
 
 #include "GlobalSignDistanceFieldPass.h"
 #include "RenderList.h"
-#include "Engine/Core/Math/Int3.h"
+#include "Engine/Core/Math/Vector3.h"
 #include "Engine/Core/Collections/HashSet.h"
 #include "Engine/Engine/Engine.h"
 #include "Engine/Content/Content.h"
@@ -37,21 +37,21 @@ PACK_STRUCT(struct ObjectRasterizeData
     {
     Matrix WorldToVolume; // TODO: use 3x4 matrix
     Matrix VolumeToWorld; // TODO: use 3x4 matrix
-    Vector3 VolumeToUVWMul;
+    Float3 VolumeToUVWMul;
     float MipOffset;
-    Vector3 VolumeToUVWAdd;
+    Float3 VolumeToUVWAdd;
     float DecodeMul;
-    Vector3 VolumeLocalBoundsExtent;
+    Float3 VolumeLocalBoundsExtent;
     float DecodeAdd;
     });
 
 PACK_STRUCT(struct Data
     {
-    Vector3 ViewWorldPos;
+    Float3 ViewWorldPos;
     float ViewNearPlane;
-    Vector3 Padding00;
+    Float3 Padding00;
     float ViewFarPlane;
-    Vector4 ViewFrustumWorldRays[4];
+    Float4 ViewFrustumWorldRays[4];
     GlobalSignDistanceFieldPass::ConstantsData GlobalSDF;
     });
 
@@ -59,9 +59,9 @@ PACK_STRUCT(struct ModelsRasterizeData
     {
     Int3 ChunkCoord;
     float MaxDistance;
-    Vector3 CascadeCoordToPosMul;
+    Float3 CascadeCoordToPosMul;
     int ObjectsCount;
-    Vector3 CascadeCoordToPosAdd;
+    Float3 CascadeCoordToPosAdd;
     int32 CascadeResolution;
     float Padding0;
     float CascadeVoxelSize;
@@ -74,9 +74,9 @@ struct RasterizeModel
 {
     Matrix WorldToVolume;
     Matrix VolumeToWorld;
-    Vector3 VolumeToUVWMul;
-    Vector3 VolumeToUVWAdd;
-    Vector3 VolumeLocalBoundsExtent;
+    Float4 VolumeToUVWMul;
+    Float4 VolumeToUVWAdd;
+    Float4 VolumeLocalBoundsExtent;
     float MipOffset;
     const ModelBase::SDFData* SDF;
 };
@@ -430,8 +430,8 @@ bool GlobalSignDistanceFieldPass::Render(RenderContext& renderContext, GPUContex
         {
             cascade.NonEmptyChunks.Clear();
             cascade.StaticChunks.Clear();
-            context->ClearUA(cascade.Texture, Vector4::One);
-            context->ClearUA(cascade.Mip, Vector4::One);
+            context->ClearUA(cascade.Texture, Float4::One);
+            context->ClearUA(cascade.Mip, Float4::One);
         }
         LOG(Info, "Global SDF memory usage: {0} MB", (sdfData.Cascades[0].Texture->GetMemoryUsage() + sdfData.Cascades[0].Mip->GetMemoryUsage()) * ARRAY_COUNT(sdfData.Cascades) / 1024 / 1024);
     }
@@ -517,8 +517,8 @@ bool GlobalSignDistanceFieldPass::Render(RenderContext& renderContext, GPUContex
                 return true;
         }
         ModelsRasterizeData data;
-        data.CascadeCoordToPosMul = cascadeBounds.GetSize() / resolution;
-        data.CascadeCoordToPosAdd = cascadeBounds.Minimum + voxelSize * 0.5f;
+        data.CascadeCoordToPosMul = (Float3)cascadeBounds.GetSize() / (float)resolution;
+        data.CascadeCoordToPosAdd = (Float3)cascadeBounds.Minimum + voxelSize * 0.5f;
         data.MaxDistance = maxDistance;
         data.CascadeResolution = resolution;
         data.CascadeMipResolution = resolutionMip;
@@ -752,7 +752,7 @@ void GlobalSignDistanceFieldPass::RenderDebug(RenderContext& renderContext, GPUC
     }
 
     PROFILE_GPU_CPU("Global SDF Debug");
-    const Vector2 outputSize(output->Size());
+    const Float2 outputSize(output->Size());
     {
         Data data;
         data.ViewWorldPos = renderContext.View.Position;
@@ -808,8 +808,8 @@ void GlobalSignDistanceFieldPass::RasterizeModelSDF(Actor* actor, const ModelBas
     mipLevelIndex--;
 
     // Volume -> Local -> UVW
-    Vector3 volumeToUVWMul = sdf.LocalToUVWMul;
-    Vector3 volumeToUVWAdd = sdf.LocalToUVWAdd + (localVolumeBounds.Minimum + volumeLocalBoundsExtent) * sdf.LocalToUVWMul;
+    Float3 volumeToUVWMul = sdf.LocalToUVWMul;
+    Float3 volumeToUVWAdd = sdf.LocalToUVWAdd + (localVolumeBounds.Minimum + volumeLocalBoundsExtent) * sdf.LocalToUVWMul;
 
     // Add object data for the GPU buffer
     uint16 objectIndex = _objectsBufferCount++;
@@ -862,7 +862,7 @@ void GlobalSignDistanceFieldPass::RasterizeModelSDF(Actor* actor, const ModelBas
     }
 }
 
-void GlobalSignDistanceFieldPass::RasterizeHeightfield(Actor* actor, GPUTexture* heightfield, const Matrix& localToWorld, const BoundingBox& objectBounds, const Vector4& localToUV)
+void GlobalSignDistanceFieldPass::RasterizeHeightfield(Actor* actor, GPUTexture* heightfield, const Matrix& localToWorld, const BoundingBox& objectBounds, const Float4& localToUV)
 {
     if (!heightfield || heightfield->ResidentMipLevels() == 0)
         return;
@@ -885,8 +885,8 @@ void GlobalSignDistanceFieldPass::RasterizeHeightfield(Actor* actor, GPUTexture*
     Matrix::Invert(localToWorld, worldToLocal);
     Matrix::Transpose(worldToLocal, objectData.WorldToVolume);
     Matrix::Transpose(localToWorld, objectData.VolumeToWorld);
-    objectData.VolumeToUVWMul = Vector3(localToUV.X, 1.0f, localToUV.Y);
-    objectData.VolumeToUVWAdd = Vector3(localToUV.Z, 0.0f, localToUV.W);
+    objectData.VolumeToUVWMul = Float3(localToUV.X, 1.0f, localToUV.Y);
+    objectData.VolumeToUVWAdd = Float3(localToUV.Z, 0.0f, localToUV.W);
     objectData.MipOffset = (float)_cascadeIndex * 0.5f; // Use lower-quality mip for far cascades
     _objectsBuffer->Write(objectData);
     _objectsTextures.Add(heightfield->View());

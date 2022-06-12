@@ -536,7 +536,7 @@ namespace FlaxEditor.Modules
                 };
                 cancelButton.Clicked += OnCancel;
 
-                _dialogSize = okButton.BottomRight + new Vector2(8);
+                _dialogSize = okButton.BottomRight + new Float2(8);
             }
 
             /// <inheritdoc />
@@ -659,11 +659,11 @@ namespace FlaxEditor.Modules
             if (newLocation == DockState.Float)
             {
                 // Check if there is a floating window that has the same size
-                Vector2 defaultSize = window.DefaultSize;
+                var defaultSize = window.DefaultSize;
                 for (var i = 0; i < Editor.UI.MasterPanel.FloatingPanels.Count; i++)
                 {
                     var win = Editor.UI.MasterPanel.FloatingPanels[i];
-                    if (Vector2.Abs(win.Size - defaultSize).LengthSquared < 100)
+                    if (Float2.Abs(win.Size - defaultSize).LengthSquared < 100)
                     {
                         window.Show(DockState.DockFill, win);
                         window.Focus();

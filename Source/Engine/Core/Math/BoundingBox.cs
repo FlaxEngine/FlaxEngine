@@ -1,3 +1,9 @@
+#if USE_LARGE_WORLDS
+using Real = System.Double;
+#else
+using Real = System.Single;
+#endif
+
 // Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 // -----------------------------------------------------------------------------
@@ -48,7 +54,6 @@
 * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 * THE SOFTWARE.
 */
-
 using System;
 using System.Globalization;
 using System.Runtime.CompilerServices;
@@ -144,7 +149,7 @@ namespace FlaxEngine
         /// <returns>Whether the two objects intersected.</returns>
         public bool Intersects(ref Ray ray)
         {
-            return CollisionsHelper.RayIntersectsBox(ref ray, ref this, out float _);
+            return CollisionsHelper.RayIntersectsBox(ref ray, ref this, out Real _);
         }
 
         /// <summary>
@@ -153,10 +158,27 @@ namespace FlaxEngine
         /// <param name="ray">The ray to test.</param>
         /// <param name="distance">When the method completes, contains the distance of the intersection, or 0 if there was no intersection.</param>
         /// <returns>Whether the two objects intersected.</returns>
-        public bool Intersects(ref Ray ray, out float distance)
+        public bool Intersects(ref Ray ray, out Real distance)
         {
             return CollisionsHelper.RayIntersectsBox(ref ray, ref this, out distance);
         }
+
+#if USE_LARGE_WORLDS
+        /// <summary>
+        /// Determines if there is an intersection between the current object and a <see cref="Ray" />.
+        /// [Deprecated on 26.05.2022, expires on 26.05.2024]
+        /// </summary>
+        /// <param name="ray">The ray to test.</param>
+        /// <param name="distance">When the method completes, contains the distance of the intersection, or 0 if there was no intersection.</param>
+        /// <returns>Whether the two objects intersected.</returns>
+        [Obsolete("Deprecated in 1.4")]
+        public bool Intersects(ref Ray ray, out float distance)
+        {
+            var result = CollisionsHelper.RayIntersectsBox(ref ray, ref this, out Real dst);
+            distance = (float)dst;
+            return result;
+        }
+#endif
 
         /// <summary>
         /// Determines if there is an intersection between the current object and a <see cref="Ray" />.
@@ -317,16 +339,13 @@ namespace FlaxEngine
         {
             if (points == null)
                 throw new ArgumentNullException(nameof(points));
-
-            var min = new Vector3(float.MaxValue);
-            var max = new Vector3(float.MinValue);
-
+            var min = Vector3.Maximum;
+            var max = Vector3.Minimum;
             for (var i = 0; i < points.Length; ++i)
             {
                 Vector3.Min(ref min, ref points[i], out min);
                 Vector3.Max(ref max, ref points[i], out max);
             }
-
             result = new BoundingBox(min, max);
         }
 
@@ -340,16 +359,13 @@ namespace FlaxEngine
         {
             if (points == null)
                 throw new ArgumentNullException(nameof(points));
-
-            var min = new Vector3(float.MaxValue);
-            var max = new Vector3(float.MinValue);
-
+            var min = Vector3.Maximum;
+            var max = Vector3.Minimum;
             for (var i = 0; i < points.Length; ++i)
             {
                 Vector3.Min(ref min, ref points[i], out min);
                 Vector3.Max(ref max, ref points[i], out max);
             }
-
             return new BoundingBox(min, max);
         }
 
@@ -425,15 +441,15 @@ namespace FlaxEngine
         {
             // Reference: http://dev.theomader.com/transform-bounding-boxes/
 
-            var right = transform.Right;
+            Double3 right = transform.Right;
             var xa = right * box.Minimum.X;
             var xb = right * box.Maximum.X;
 
-            var up = transform.Up;
+            Double3 up = transform.Up;
             var ya = up * box.Minimum.Y;
             var yb = up * box.Maximum.Y;
 
-            var backward = transform.Backward;
+            Double3 backward = transform.Backward;
             var za = backward * box.Minimum.Z;
             var zb = backward * box.Maximum.Z;
 
@@ -478,12 +494,12 @@ namespace FlaxEngine
         /// <param name="box">The box.</param>
         /// <param name="scale">The bounds scale.</param>
         /// <returns>The scaled bounds.</returns>
-        public static BoundingBox MakeScaled(ref BoundingBox box, float scale)
+        public static BoundingBox MakeScaled(ref BoundingBox box, Real scale)
         {
             Vector3.Subtract(ref box.Maximum, ref box.Minimum, out var size);
             Vector3 sizeHalf = size * 0.5f;
             Vector3 center = box.Minimum + sizeHalf;
-            sizeHalf = sizeHalf * scale;
+            sizeHalf *= scale;
             return new BoundingBox(center - sizeHalf, center + sizeHalf);
         }
 
@@ -530,28 +546,19 @@ namespace FlaxEngine
         /// <returns>A <see cref="System.String" /> that represents this instance.</returns>
         public override string ToString()
         {
-            return string.Format(CultureInfo.CurrentCulture,
-                                 "Minimum:{0} Maximum:{1}",
-                                 Minimum.ToString(),
-                                 Maximum.ToString());
+            return string.Format(CultureInfo.CurrentCulture, "Minimum:{0} Maximum:{1}", Minimum.ToString(), Maximum.ToString());
         }
 
         /// <summary>
         /// Returns a <see cref="System.String" /> that represents this instance.
         /// </summary>
         /// <param name="format">The format.</param>
-        /// <returns>
-        /// A <see cref="System.String" /> that represents this instance.
-        /// </returns>
+        /// <returns>A <see cref="System.String" /> that represents this instance.</returns>
         public string ToString(string format)
         {
             if (format == null)
                 return ToString();
-
-            return string.Format(CultureInfo.CurrentCulture,
-                                 "Minimum:{0} Maximum:{1}",
-                                 Minimum.ToString(format, CultureInfo.CurrentCulture),
-                                 Maximum.ToString(format, CultureInfo.CurrentCulture));
+            return string.Format(CultureInfo.CurrentCulture, "Minimum:{0} Maximum:{1}", Minimum.ToString(format, CultureInfo.CurrentCulture), Maximum.ToString(format, CultureInfo.CurrentCulture));
         }
 
         /// <summary>
@@ -561,10 +568,7 @@ namespace FlaxEngine
         /// <returns>A <see cref="System.String" /> that represents this instance.</returns>
         public string ToString(IFormatProvider formatProvider)
         {
-            return string.Format(formatProvider,
-                                 "Minimum:{0} Maximum:{1}",
-                                 Minimum.ToString(),
-                                 Maximum.ToString());
+            return string.Format(formatProvider, "Minimum:{0} Maximum:{1}", Minimum.ToString(), Maximum.ToString());
         }
 
         /// <summary>
@@ -577,11 +581,7 @@ namespace FlaxEngine
         {
             if (format == null)
                 return ToString(formatProvider);
-
-            return string.Format(formatProvider,
-                                 "Minimum:{0} Maximum:{1}",
-                                 Minimum.ToString(format, formatProvider),
-                                 Maximum.ToString(format, formatProvider));
+            return string.Format(formatProvider, "Minimum:{0} Maximum:{1}", Minimum.ToString(format, formatProvider), Maximum.ToString(format, formatProvider));
         }
 
         /// <summary>
@@ -604,7 +604,7 @@ namespace FlaxEngine
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool Equals(ref BoundingBox value)
         {
-            return (Minimum == value.Minimum) && (Maximum == value.Maximum);
+            return Minimum == value.Minimum && Maximum == value.Maximum;
         }
 
         /// <summary>
@@ -625,10 +625,7 @@ namespace FlaxEngine
         /// <returns><c>true</c> if the specified <see cref="System.Object" /> is equal to this instance; otherwise, <c>false</c>.</returns>
         public override bool Equals(object value)
         {
-            if (!(value is BoundingBox))
-                return false;
-            var strongValue = (BoundingBox)value;
-            return Equals(ref strongValue);
+            return value is BoundingBox other && Equals(ref other);
         }
     }
 }

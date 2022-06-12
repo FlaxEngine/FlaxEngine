@@ -62,17 +62,17 @@ namespace FlaxEngine.GUI
         /// <summary>
         /// The view offset
         /// </summary>
-        protected Vector2 _viewOffset;
+        protected Float2 _viewOffset;
 
         /// <summary>
         /// The target view offset.
         /// </summary>
-        protected Vector2 _targetViewOffset;
+        protected Float2 _targetViewOffset;
 
         /// <summary>
         /// The text size calculated from font.
         /// </summary>
-        protected Vector2 _textSize;
+        protected Float2 _textSize;
 
         /// <summary>
         /// Flag used to indicate whenever text can contain multiple lines.
@@ -231,7 +231,7 @@ namespace FlaxEngine.GUI
         /// <summary>
         /// Gets the size of the text (cached).
         /// </summary>
-        public Vector2 TextSize => _textSize;
+        public Float2 TextSize => _textSize;
 
         /// <summary>
         /// Occurs when target view offset gets changed.
@@ -241,21 +241,20 @@ namespace FlaxEngine.GUI
         /// <summary>
         /// Gets the current view offset (text scrolling offset). Includes the smoothing.
         /// </summary>
-        public Vector2 ViewOffset => _viewOffset;
+        public Float2 ViewOffset => _viewOffset;
 
         /// <summary>
         /// Gets or sets the target view offset (text scrolling offset).
         /// </summary>
         [NoAnimate, NoSerialize, HideInEditor]
-        public Vector2 TargetViewOffset
+        public Float2 TargetViewOffset
         {
             get => _targetViewOffset;
             set
             {
-                value = Vector2.Round(value);
-                if (Vector2.NearEqual(ref value, ref _targetViewOffset))
+                value = Float2.Round(value);
+                if (Float2.NearEqual(ref value, ref _targetViewOffset))
                     return;
-
                 _targetViewOffset = _viewOffset = value;
                 OnTargetViewOffsetChanged();
             }
@@ -391,7 +390,7 @@ namespace FlaxEngine.GUI
             get
             {
                 const float caretWidth = 1.2f;
-                Vector2 caretPos = GetCharPosition(CaretPosition, out var height);
+                Float2 caretPos = GetCharPosition(CaretPosition, out var height);
                 return new Rectangle(
                                      caretPos.X - (caretWidth * 0.5f),
                                      caretPos.Y,
@@ -462,7 +461,7 @@ namespace FlaxEngine.GUI
         /// </summary>
         public virtual void ResetViewOffset()
         {
-            TargetViewOffset = Vector2.Zero;
+            TargetViewOffset = Float2.Zero;
         }
 
         /// <summary>
@@ -550,7 +549,7 @@ namespace FlaxEngine.GUI
             // If it's empty
             if (_text.Length == 0)
             {
-                TargetViewOffset = Vector2.Zero;
+                TargetViewOffset = Float2.Zero;
                 return;
             }
 
@@ -564,8 +563,8 @@ namespace FlaxEngine.GUI
             Rectangle textArea = TextRectangle;
 
             // Update view offset (caret needs to be in a view)
-            Vector2 caretInView = caretBounds.Location - _targetViewOffset;
-            Vector2 clampedCaretInView = Vector2.Clamp(caretInView, textArea.UpperLeft, textArea.BottomRight);
+            var caretInView = caretBounds.Location - _targetViewOffset;
+            var clampedCaretInView = Float2.Clamp(caretInView, textArea.UpperLeft, textArea.BottomRight);
             TargetViewOffset += caretInView - clampedCaretInView;
         }
 
@@ -593,7 +592,7 @@ namespace FlaxEngine.GUI
         /// </summary>
         /// <param name="location">The location (in control-space).</param>
         /// <returns>The character index under the location</returns>
-        public virtual int CharIndexAtPoint(ref Vector2 location)
+        public virtual int CharIndexAtPoint(ref Float2 location)
         {
             return HitTestText(location + _viewOffset);
         }
@@ -849,7 +848,7 @@ namespace FlaxEngine.GUI
             if (!IsMultiline)
                 return 0;
 
-            Vector2 location = GetCharPosition(index, out var height);
+            var location = GetCharPosition(index, out var height);
             location.Y += height;
 
             return HitTestText(location);
@@ -860,7 +859,7 @@ namespace FlaxEngine.GUI
             if (!IsMultiline)
                 return _text.Length;
 
-            Vector2 location = GetCharPosition(index, out var height);
+            var location = GetCharPosition(index, out var height);
             location.Y -= height;
 
             return HitTestText(location);
@@ -870,7 +869,7 @@ namespace FlaxEngine.GUI
         /// Calculates total text size. Called by <see cref="OnTextChanged"/> to cache the text size.
         /// </summary>
         /// <returns>The total text size.</returns>
-        public abstract Vector2 GetTextSize();
+        public abstract Float2 GetTextSize();
 
         /// <summary>
         /// Calculates character position for given character index.
@@ -878,14 +877,14 @@ namespace FlaxEngine.GUI
         /// <param name="index">The text position to get it's coordinates.</param>
         /// <param name="height">The character height (at the given character position).</param>
         /// <returns>The character position (upper left corner which can be used for a caret position).</returns>
-        public abstract Vector2 GetCharPosition(int index, out float height);
+        public abstract Float2 GetCharPosition(int index, out float height);
 
         /// <summary>
         /// Calculates hit character index at given location.
         /// </summary>
         /// <param name="location">The location to test.</param>
         /// <returns>The selected character position index (can be equal to text length if location is outside of the layout rectangle).</returns>
-        public abstract int HitTestText(Vector2 location);
+        public abstract int HitTestText(Float2 location);
 
         /// <summary>
         /// Called when is multiline gets changed.
@@ -984,7 +983,7 @@ namespace FlaxEngine.GUI
             _animateTime += deltaTime;
 
             // Animate view offset
-            _viewOffset = isDeltaSlow ? _targetViewOffset : Vector2.Lerp(_viewOffset, _targetViewOffset, deltaTime * 20.0f);
+            _viewOffset = isDeltaSlow ? _targetViewOffset : Float2.Lerp(_viewOffset, _targetViewOffset, deltaTime * 20.0f);
 
             base.Update(deltaTime);
         }
@@ -1039,7 +1038,7 @@ namespace FlaxEngine.GUI
         }
 
         /// <inheritdoc />
-        public override void OnMouseMove(Vector2 location)
+        public override void OnMouseMove(Float2 location)
         {
             base.OnMouseMove(location);
 
@@ -1054,7 +1053,7 @@ namespace FlaxEngine.GUI
         }
 
         /// <inheritdoc />
-        public override bool OnMouseDown(Vector2 location, MouseButton button)
+        public override bool OnMouseDown(Float2 location, MouseButton button)
         {
             if (base.OnMouseDown(location, button))
                 return true;
@@ -1093,7 +1092,7 @@ namespace FlaxEngine.GUI
         }
 
         /// <inheritdoc />
-        public override bool OnMouseUp(Vector2 location, MouseButton button)
+        public override bool OnMouseUp(Float2 location, MouseButton button)
         {
             if (base.OnMouseUp(location, button))
                 return true;
@@ -1108,7 +1107,7 @@ namespace FlaxEngine.GUI
         }
 
         /// <inheritdoc />
-        public override bool OnMouseWheel(Vector2 location, float delta)
+        public override bool OnMouseWheel(Float2 location, float delta)
         {
             if (base.OnMouseWheel(location, delta))
                 return true;
@@ -1116,7 +1115,7 @@ namespace FlaxEngine.GUI
             // Multiline scroll
             if (IsMultiline && _text.Length != 0)
             {
-                TargetViewOffset = Vector2.Clamp(_targetViewOffset - new Vector2(0, delta * 10.0f), Vector2.Zero, new Vector2(_targetViewOffset.X, _textSize.Y));
+                TargetViewOffset = Float2.Clamp(_targetViewOffset - new Float2(0, delta * 10.0f), Float2.Zero, new Float2(_targetViewOffset.X, _textSize.Y));
                 return true;
             }
 

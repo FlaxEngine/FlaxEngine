@@ -18,7 +18,7 @@ namespace FlaxEditor.Surface
     {
         private Rectangle _colorButtonRect;
         private Rectangle _resizeButtonRect;
-        private Vector2 _startResizingSize;
+        private Float2 _startResizingSize;
 
         /// <summary>
         /// True if sizing tool is in use.
@@ -46,9 +46,9 @@ namespace FlaxEditor.Surface
             set => SetValue(1, value, false);
         }
 
-        private Vector2 SizeValue
+        private Float2 SizeValue
         {
-            get => (Vector2)Values[2];
+            get => (Float2)Values[2];
             set => SetValue(2, value, false);
         }
 
@@ -104,7 +104,7 @@ namespace FlaxEditor.Surface
         }
 
         /// <inheritdoc />
-        public override bool CanSelect(ref Vector2 location)
+        public override bool CanSelect(ref Float2 location)
         {
             return _headerRect.MakeOffsetted(Location).Contains(ref location) && !_resizeButtonRect.MakeOffsetted(Location).Contains(ref location);
         }
@@ -132,13 +132,13 @@ namespace FlaxEditor.Surface
         {
             var style = Style.Current;
             var color = Color;
-            var backgroundRect = new Rectangle(Vector2.Zero, Size);
+            var backgroundRect = new Rectangle(Float2.Zero, Size);
             var headerColor = new Color(Mathf.Clamp(color.R, 0.1f, 0.3f), Mathf.Clamp(color.G, 0.1f, 0.3f), Mathf.Clamp(color.B, 0.1f, 0.3f), 0.4f);
             if (IsSelected)
                 headerColor *= 2.0f;
 
             // Paint background
-            Render2D.FillRectangle(new Rectangle(Vector2.Zero, Size), BackgroundColor);
+            Render2D.FillRectangle(new Rectangle(Float2.Zero, Size), BackgroundColor);
 
             // Draw child controls
             DrawChildren();
@@ -174,7 +174,7 @@ namespace FlaxEditor.Surface
         }
 
         /// <inheritdoc />
-        protected override Vector2 CalculateNodeSize(float width, float height)
+        protected override Float2 CalculateNodeSize(float width, float height)
         {
             return Size;
         }
@@ -207,13 +207,13 @@ namespace FlaxEditor.Surface
         }
 
         /// <inheritdoc />
-        public override bool ContainsPoint(ref Vector2 location)
+        public override bool ContainsPoint(ref Float2 location)
         {
             return _headerRect.Contains(ref location) || _resizeButtonRect.Contains(ref location);
         }
 
         /// <inheritdoc />
-        public override bool OnMouseDown(Vector2 location, MouseButton button)
+        public override bool OnMouseDown(Float2 location, MouseButton button)
         {
             if (base.OnMouseDown(location, button))
                 return true;
@@ -233,13 +233,13 @@ namespace FlaxEditor.Surface
         }
 
         /// <inheritdoc />
-        public override void OnMouseMove(Vector2 location)
+        public override void OnMouseMove(Float2 location)
         {
             // Check if is resizing
             if (_isResizing)
             {
                 // Update size
-                Size = Vector2.Max(location, new Vector2(140.0f, _headerRect.Bottom));
+                Size = Float2.Max(location, new Float2(140.0f, _headerRect.Bottom));
             }
             else
             {
@@ -249,7 +249,7 @@ namespace FlaxEditor.Surface
         }
 
         /// <inheritdoc />
-        public override bool OnMouseDoubleClick(Vector2 location, MouseButton button)
+        public override bool OnMouseDoubleClick(Float2 location, MouseButton button)
         {
             if (base.OnMouseDoubleClick(location, button))
                 return true;
@@ -281,7 +281,7 @@ namespace FlaxEditor.Surface
         }
 
         /// <inheritdoc />
-        public override bool OnMouseUp(Vector2 location, MouseButton button)
+        public override bool OnMouseUp(Float2 location, MouseButton button)
         {
             if (button == MouseButton.Left && _isResizing)
             {

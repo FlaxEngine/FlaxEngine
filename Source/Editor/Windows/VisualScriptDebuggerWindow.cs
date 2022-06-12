@@ -73,7 +73,7 @@ namespace FlaxEditor.Windows
                 }
 
                 /// <inheritdoc />
-                protected override bool OnMouseDoubleClickHeader(ref Vector2 location, MouseButton button)
+                protected override bool OnMouseDoubleClickHeader(ref Float2 location, MouseButton button)
                 {
                     var node = GetNode(Tag);
                     ((VisualScriptWindow)node?.Surface.Owner)?.ShowNode(node);
@@ -117,7 +117,7 @@ namespace FlaxEditor.Windows
                 }
             }
 
-            private void OnTreeRightClick(TreeNode treeNode, Vector2 location)
+            private void OnTreeRightClick(TreeNode treeNode, Float2 location)
             {
                 var menu = new ContextMenu
                 {
@@ -422,7 +422,7 @@ namespace FlaxEditor.Windows
             {
                 AnchorPreset = AnchorPresets.StretchAll,
                 Offsets = new Margin(0, 0, toolstrip.Bottom, 0),
-                TabsSize = new Vector2(80, 20),
+                TabsSize = new Float2(80, 20),
                 TabsTextHorizontalAlignment = TextAlignment.Center,
                 UseScroll = true,
                 Parent = this

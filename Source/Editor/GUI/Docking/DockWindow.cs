@@ -15,7 +15,7 @@ namespace FlaxEditor.GUI.Docking
     public class DockWindow : Panel
     {
         private string _title;
-        private Vector2 _titleSize;
+        private Float2 _titleSize;
 
         /// <summary>
         /// The master panel.
@@ -67,7 +67,7 @@ namespace FlaxEditor.GUI.Docking
         /// <remarks>
         /// Scaled by the DPI, because the window should be large enough for its content on every monitor
         /// </remarks>
-        public virtual Vector2 DefaultSize => new Vector2(900, 580) * DpiScale;
+        public virtual Float2 DefaultSize => new Float2(900, 580) * DpiScale;
 
         /// <summary>
         /// Gets the serialization typename.
@@ -85,7 +85,7 @@ namespace FlaxEditor.GUI.Docking
                 _title = value;
 
                 // Invalidate cached title size
-                _titleSize = new Vector2(-1);
+                _titleSize = new Float2(-1);
                 PerformLayoutBeforeChildren();
 
                 // Check if is docked to the floating window and is selected so update window title
@@ -104,7 +104,7 @@ namespace FlaxEditor.GUI.Docking
         /// <summary>
         /// Gets the size of the title.
         /// </summary>
-        public Vector2 TitleSize => _titleSize;
+        public Float2 TitleSize => _titleSize;
 
         /// <summary>
         /// The input actions collection to processed during user input.
@@ -155,7 +155,7 @@ namespace FlaxEditor.GUI.Docking
         /// </summary>
         public void ShowFloating()
         {
-            ShowFloating(Vector2.Zero);
+            ShowFloating(Float2.Zero);
         }
 
         /// <summary>
@@ -164,26 +164,26 @@ namespace FlaxEditor.GUI.Docking
         /// <param name="position">Window location.</param>
         public void ShowFloating(WindowStartPosition position)
         {
-            ShowFloating(Vector2.Zero, position);
+            ShowFloating(Float2.Zero, position);
         }
 
         /// <summary>
         /// Shows the window in a floating state.
         /// </summary>
-        /// <param name="size">Window size, set Vector2.Zero to use default.</param>
+        /// <param name="size">Window size, set <see cref="Float2.Zero"/> to use default.</param>
         /// <param name="position">Window location.</param>
-        public void ShowFloating(Vector2 size, WindowStartPosition position = WindowStartPosition.CenterParent)
+        public void ShowFloating(Float2 size, WindowStartPosition position = WindowStartPosition.CenterParent)
         {
-            ShowFloating(new Vector2(200, 200), size, position);
+            ShowFloating(new Float2(200, 200), size, position);
         }
 
         /// <summary>
         /// Shows the window in a floating state.
         /// </summary>
         /// <param name="location">Window location.</param>
-        /// <param name="size">Window size, set Vector2.Zero to use default.</param>
+        /// <param name="size">Window size, set <see cref="Float2.Zero"/> to use default.</param>
         /// <param name="position">Window location.</param>
-        public void ShowFloating(Vector2 location, Vector2 size, WindowStartPosition position = WindowStartPosition.CenterParent)
+        public void ShowFloating(Float2 location, Float2 size, WindowStartPosition position = WindowStartPosition.CenterParent)
         {
             Undock();
 

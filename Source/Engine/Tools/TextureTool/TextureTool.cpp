@@ -8,7 +8,7 @@
 #include "Engine/Core/Types/TimeSpan.h"
 #include "Engine/Core/Math/Packed.h"
 #include "Engine/Core/Math/Color32.h"
-#include "Engine/Core/Math/Int2.h"
+#include "Engine/Core/Math/Vector2.h"
 #include "Engine/Platform/FileSystem.h"
 #include "Engine/Serialization/JsonWriter.h"
 #include "Engine/Serialization/JsonTools.h"
@@ -123,10 +123,10 @@ void TextureTool::Options::Serialize(SerializeStream& stream, const void* otherO
         stream.StartObject();
 
         stream.JKEY("Position");
-        stream.Vector2(s.Area.Location);
+        stream.Float2(s.Area.Location);
 
         stream.JKEY("Size");
-        stream.Vector2(s.Area.Size);
+        stream.Float2(s.Area.Size);
 
         stream.JKEY("Name");
         stream.String(s.Name);
@@ -170,8 +170,8 @@ void TextureTool::Options::Deserialize(DeserializeStream& stream, ISerializeModi
             Sprite s;
             auto& stData = spritesArray[i];
 
-            s.Area.Location = JsonTools::GetVector2(stData, "Position", Vector2::Zero);
-            s.Area.Size = JsonTools::GetVector2(stData, "Size", Vector2::One);
+            s.Area.Location = JsonTools::GetFloat2(stData, "Position", Float2::Zero);
+            s.Area.Size = JsonTools::GetFloat2(stData, "Size", Float2::One);
             s.Name = JsonTools::GetString(stData, "Name");
 
             Sprites.Add(s);
@@ -377,26 +377,26 @@ TextureTool::PixelFormatSampler PixelFormatSamplers[] =
 {
     {
         PixelFormat::R32G32B32A32_Float,
-        sizeof(Vector4),
+        sizeof(Float4),
         [](const void* ptr)
         {
-            return Color(*(Vector4*)ptr);
+            return Color(*(Float4*)ptr);
         },
         [](const void* ptr, const Color& color)
         {
-            *(Vector4*)ptr = color.ToVector4();
+            *(Float4*)ptr = color.ToFloat4();
         },
     },
     {
         PixelFormat::R32G32B32_Float,
-        sizeof(Vector3),
+        sizeof(Float3),
         [](const void* ptr)
         {
-            return Color(*(Vector3*)ptr, 1.0f);
+            return Color(*(Float3*)ptr, 1.0f);
         },
         [](const void* ptr, const Color& color)
         {
-            *(Vector3*)ptr = color.ToVector3();
+            *(Float3*)ptr = color.ToFloat3();
         },
     },
     {
@@ -404,7 +404,7 @@ TextureTool::PixelFormatSampler PixelFormatSamplers[] =
         sizeof(Half4),
         [](const void* ptr)
         {
-            return Color(((Half4*)ptr)->ToVector4());
+            return Color(((Half4*)ptr)->ToFloat4());
         },
         [](const void* ptr, const Color& color)
         {
@@ -416,7 +416,7 @@ TextureTool::PixelFormatSampler PixelFormatSamplers[] =
         sizeof(RGBA16UNorm),
         [](const void* ptr)
         {
-            return Color(((RGBA16UNorm*)ptr)->ToVector4());
+            return Color(((RGBA16UNorm*)ptr)->ToFloat4());
         },
         [](const void* ptr, const Color& color)
         {
@@ -425,14 +425,14 @@ TextureTool::PixelFormatSampler PixelFormatSamplers[] =
     },
     {
         PixelFormat::R32G32_Float,
-        sizeof(Vector2),
+        sizeof(Float2),
         [](const void* ptr)
         {
-            return Color(((Vector2*)ptr)->X, ((Vector2*)ptr)->Y, 1.0f);
+            return Color(((Float2*)ptr)->X, ((Float2*)ptr)->Y, 1.0f);
         },
         [](const void* ptr, const Color& color)
         {
-            *(Vector2*)ptr = Vector2(color.R, color.G);
+            *(Float2*)ptr = Float2(color.R, color.G);
         },
     },
     {
@@ -465,7 +465,7 @@ TextureTool::PixelFormatSampler PixelFormatSamplers[] =
         sizeof(Half2),
         [](const void* ptr)
         {
-            const Vector2 rg = ((Half2*)ptr)->ToVector2();
+            const Float2 rg = ((Half2*)ptr)->ToFloat2();
             return Color(rg.X, rg.Y, 0, 1);
         },
         [](const void* ptr, const Color& color)
@@ -478,7 +478,7 @@ TextureTool::PixelFormatSampler PixelFormatSamplers[] =
         sizeof(RG16UNorm),
         [](const void* ptr)
         {
-            const Vector2 rg = ((RG16UNorm*)ptr)->ToVector2();
+            const Float2 rg = ((RG16UNorm*)ptr)->ToFloat2();
             return Color(rg.X, rg.Y, 0, 1);
         },
         [](const void* ptr, const Color& color)
@@ -605,7 +605,7 @@ TextureTool::PixelFormatSampler PixelFormatSamplers[] =
         sizeof(FloatR11G11B10),
         [](const void* ptr)
         {
-            const Vector3 rgb = ((FloatR11G11B10*)ptr)->ToVector3();
+            const Float3 rgb = ((FloatR11G11B10*)ptr)->ToFloat3();
             return Color(rgb.X, rgb.Y, rgb.Z);
         },
         [](const void* ptr, const Color& color)
@@ -618,7 +618,7 @@ TextureTool::PixelFormatSampler PixelFormatSamplers[] =
         sizeof(Float1010102),
         [](const void* ptr)
         {
-            const Vector3 rgb = ((Float1010102*)ptr)->ToVector3();
+            const Float3 rgb = ((Float1010102*)ptr)->ToFloat3();
             return Color(rgb.X, rgb.Y, rgb.Z);
         },
         [](const void* ptr, const Color& color)
@@ -645,7 +645,7 @@ void TextureTool::Store(const PixelFormatSampler* sampler, int32 x, int32 y, con
     sampler->Store((byte*)data + rowPitch * y + sampler->PixelSize * x, color);
 }
 
-Color TextureTool::SamplePoint(const PixelFormatSampler* sampler, const Vector2& uv, const void* data, const Int2& size, int32 rowPitch)
+Color TextureTool::SamplePoint(const PixelFormatSampler* sampler, const Float2& uv, const void* data, const Int2& size, int32 rowPitch)
 {
     ASSERT_LOW_LAYER(sampler);
 
@@ -661,14 +661,14 @@ Color TextureTool::SamplePoint(const PixelFormatSampler* sampler, int32 x, int32
     return sampler->Sample((byte*)data + rowPitch * y + sampler->PixelSize * x);
 }
 
-Color TextureTool::SampleLinear(const PixelFormatSampler* sampler, const Vector2& uv, const void* data, const Int2& size, int32 rowPitch)
+Color TextureTool::SampleLinear(const PixelFormatSampler* sampler, const Float2& uv, const void* data, const Int2& size, int32 rowPitch)
 {
     ASSERT_LOW_LAYER(sampler);
 
     const Int2 end = size - 1;
     const Int2 uvFloor(Math::Min(Math::FloorToInt(uv.X * size.X), end.X), Math::Min(Math::FloorToInt(uv.Y * size.Y), end.Y));
     const Int2 uvNext(Math::Min(uvFloor.X + 1, end.X), Math::Min(uvFloor.Y + 1, end.Y));
-    const Vector2 uvFraction(uv.X * size.Y - uvFloor.X, uv.Y * size.Y - uvFloor.Y);
+    const Float2 uvFraction(uv.X * size.Y - uvFloor.X, uv.Y * size.Y - uvFloor.Y);
 
     const Color v00 = sampler->Sample((byte*)data + rowPitch * uvFloor.Y + sampler->PixelSize * uvFloor.X);
     const Color v01 = sampler->Sample((byte*)data + rowPitch * uvFloor.Y + sampler->PixelSize * uvNext.X);

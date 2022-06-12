@@ -13,16 +13,28 @@ String BoundingBox::ToString() const
     return String::Format(TEXT("{}"), *this);
 }
 
-void BoundingBox::GetCorners(Vector3 corners[8]) const
+void BoundingBox::GetCorners(Float3 corners[8]) const
 {
-    corners[0] = Vector3(Minimum.X, Maximum.Y, Maximum.Z);
-    corners[1] = Vector3(Maximum.X, Maximum.Y, Maximum.Z);
-    corners[2] = Vector3(Maximum.X, Minimum.Y, Maximum.Z);
-    corners[3] = Vector3(Minimum.X, Minimum.Y, Maximum.Z);
-    corners[4] = Vector3(Minimum.X, Maximum.Y, Minimum.Z);
-    corners[5] = Vector3(Maximum.X, Maximum.Y, Minimum.Z);
-    corners[6] = Vector3(Maximum.X, Minimum.Y, Minimum.Z);
-    corners[7] = Vector3(Minimum.X, Minimum.Y, Minimum.Z);
+    corners[0] = Float3((float)Minimum.X, (float)Maximum.Y, (float)Maximum.Z);
+    corners[1] = Float3((float)Maximum.X, (float)Maximum.Y, (float)Maximum.Z);
+    corners[2] = Float3((float)Maximum.X, (float)Minimum.Y, (float)Maximum.Z);
+    corners[3] = Float3((float)Minimum.X, (float)Minimum.Y, (float)Maximum.Z);
+    corners[4] = Float3((float)Minimum.X, (float)Maximum.Y, (float)Minimum.Z);
+    corners[5] = Float3((float)Maximum.X, (float)Maximum.Y, (float)Minimum.Z);
+    corners[6] = Float3((float)Maximum.X, (float)Minimum.Y, (float)Minimum.Z);
+    corners[7] = Float3((float)Minimum.X, (float)Minimum.Y, (float)Minimum.Z);
+}
+
+void BoundingBox::GetCorners(Double3 corners[8]) const
+{
+    corners[0] = Double3(Minimum.X, Maximum.Y, Maximum.Z);
+    corners[1] = Double3(Maximum.X, Maximum.Y, Maximum.Z);
+    corners[2] = Double3(Maximum.X, Minimum.Y, Maximum.Z);
+    corners[3] = Double3(Minimum.X, Minimum.Y, Maximum.Z);
+    corners[4] = Double3(Minimum.X, Maximum.Y, Minimum.Z);
+    corners[5] = Double3(Maximum.X, Maximum.Y, Minimum.Z);
+    corners[6] = Double3(Maximum.X, Minimum.Y, Minimum.Z);
+    corners[7] = Double3(Minimum.X, Minimum.Y, Minimum.Z);
 }
 
 BoundingBox BoundingBox::MakeOffsetted(const Vector3& offset) const
@@ -33,24 +45,30 @@ BoundingBox BoundingBox::MakeOffsetted(const Vector3& offset) const
     return result;
 }
 
-void BoundingBox::FromPoints(const Vector3* points, int32 pointsCount, BoundingBox& result)
+void BoundingBox::FromPoints(const Float3* points, int32 pointsCount, BoundingBox& result)
 {
     ASSERT(points && pointsCount > 0);
-    Vector3 min = points[0];
-    Vector3 max = points[0];
+    Float3 min = points[0];
+    Float3 max = points[0];
     for (int32 i = 1; i < pointsCount; i++)
     {
-        Vector3::Min(min, points[i], min);
-        Vector3::Max(max, points[i], max);
+        Float3::Min(min, points[i], min);
+        Float3::Max(max, points[i], max);
     }
     result = BoundingBox(min, max);
 }
 
-BoundingBox BoundingBox::FromPoints(const Vector3* points, int32 pointsCount)
+void BoundingBox::FromPoints(const Double3* points, int32 pointsCount, BoundingBox& result)
 {
-    BoundingBox result;
-    FromPoints(points, pointsCount, result);
-    return result;
+    ASSERT(points && pointsCount > 0);
+    Double3 min = points[0];
+    Double3 max = points[0];
+    for (int32 i = 1; i < pointsCount; i++)
+    {
+        Double3::Min(min, points[i], min);
+        Double3::Max(max, points[i], max);
+    }
+    result = BoundingBox((Vector3)min, (Vector3)max);
 }
 
 void BoundingBox::FromSphere(const BoundingSphere& sphere, BoundingBox& result)
@@ -83,7 +101,7 @@ BoundingBox BoundingBox::MakeOffsetted(const BoundingBox& box, const Vector3& of
     return result;
 }
 
-BoundingBox BoundingBox::MakeScaled(const BoundingBox& box, float scale)
+BoundingBox BoundingBox::MakeScaled(const BoundingBox& box, Real scale)
 {
     Vector3 size;
     Vector3::Subtract(box.Maximum, box.Minimum, size);

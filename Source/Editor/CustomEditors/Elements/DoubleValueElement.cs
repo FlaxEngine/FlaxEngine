@@ -17,14 +17,20 @@ namespace FlaxEditor.CustomEditors.Elements
         /// <summary>
         /// The double value box.
         /// </summary>
-        public readonly DoubleValueBox DoubleValue;
+        public readonly DoubleValueBox ValueBox;
+
+        /// <summary>
+        /// [Deprecated on 26.05.2022, expires on 26.05.2024]
+        /// </summary>
+        [System.Obsolete("Deprecated in 1.4")]
+        public DoubleValueBox DoubleValue => ValueBox;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="FloatValueElement"/> class.
         /// </summary>
         public DoubleValueElement()
         {
-            DoubleValue = new DoubleValueBox(0);
+            ValueBox = new DoubleValueBox(0);
         }
 
         /// <summary>
@@ -40,7 +46,7 @@ namespace FlaxEditor.CustomEditors.Elements
                 var limit = attributes.FirstOrDefault(x => x is LimitAttribute);
                 if (limit != null)
                 {
-                    DoubleValue.SetLimits((LimitAttribute)limit);
+                    ValueBox.SetLimits((LimitAttribute)limit);
                 }
             }
         }
@@ -53,7 +59,7 @@ namespace FlaxEditor.CustomEditors.Elements
         {
             if (limit != null)
             {
-                DoubleValue.SetLimits(limit);
+                ValueBox.SetLimits(limit);
             }
         }
 
@@ -65,25 +71,25 @@ namespace FlaxEditor.CustomEditors.Elements
         {
             if (other != null)
             {
-                DoubleValue.SetLimits(other.DoubleValue);
+                ValueBox.SetLimits(other.ValueBox);
             }
         }
 
         /// <inheritdoc />
-        public override Control Control => DoubleValue;
+        public override Control Control => ValueBox;
 
         /// <summary>
         /// Gets or sets the value.
         /// </summary>
         public double Value
         {
-            get => DoubleValue.Value;
-            set => DoubleValue.Value = value;
+            get => ValueBox.Value;
+            set => ValueBox.Value = value;
         }
 
         /// <summary>
         /// Gets a value indicating whether user is using a slider.
         /// </summary>
-        public bool IsSliding => DoubleValue.IsSliding;
+        public bool IsSliding => ValueBox.IsSliding;
     }
 }

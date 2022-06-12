@@ -21,12 +21,12 @@ struct BlendShapeVertex
     /// <summary>
     /// The position offset.
     /// </summary>
-    Vector3 PositionDelta;
+    Float3 PositionDelta;
 
     /// <summary>
     /// The normal vector offset (tangent Z).
     /// </summary>
-    Vector3 NormalDelta;
+    Float3 NormalDelta;
 
     /// <summary>
     /// The index of the vertex in the mesh to blend.

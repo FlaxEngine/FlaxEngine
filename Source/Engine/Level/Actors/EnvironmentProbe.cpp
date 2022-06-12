@@ -47,8 +47,8 @@ float EnvironmentProbe::GetScaledRadius() const
 void EnvironmentProbe::SetupProbeData(ProbeData* data) const
 {
     const float radius = GetScaledRadius();
-    data->Data0 = Vector4(GetPosition(), 0);
-    data->Data1 = Vector4(radius, 1.0f / radius, Brightness, 0);
+    data->Data0 = Float4(GetPosition(), 0); // TODO: large-worlds
+    data->Data1 = Float4(radius, 1.0f / radius, Brightness, 0);
 }
 
 CubeTexture* EnvironmentProbe::GetCustomProbe() const
@@ -195,7 +195,7 @@ bool EnvironmentProbe::HasContentLoaded() const
     return _probe == nullptr || _probe->IsLoaded();
 }
 
-bool EnvironmentProbe::IntersectsItself(const Ray& ray, float& distance, Vector3& normal)
+bool EnvironmentProbe::IntersectsItself(const Ray& ray, Real& distance, Vector3& normal)
 {
     return CollisionsHelper::RayIntersectsSphere(ray, _sphere, distance, normal);
 }

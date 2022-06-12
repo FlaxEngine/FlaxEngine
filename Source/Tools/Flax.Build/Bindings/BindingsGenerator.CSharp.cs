@@ -57,6 +57,22 @@ namespace Flax.Build.Bindings
             { "MonoArray", "Array" },
         };
 
+        private static readonly string[] CSharpVectorTypes =
+        {
+            "Vector2",
+            "Vector3",
+            "Vector4",
+            "Float2",
+            "Float3",
+            "Float4",
+            "Double2",
+            "Double2",
+            "Double3",
+            "Int2",
+            "Int3",
+            "Int4",
+        };
+
         private static string GenerateCSharpDefaultValueNativeToManaged(BuildData buildData, string value, ApiTypeInfo caller, TypeInfo valueType = null, bool attribute = false)
         {
             if (string.IsNullOrEmpty(value))
@@ -111,12 +127,11 @@ namespace Flax.Build.Bindings
                 if (value.Contains('(') && value.Contains(')'))
                 {
                     // Support for in-built types
-                    if (value.StartsWith("Vector2("))
-                        return $"typeof(Vector2), \"{value.Substring(8, value.Length - 9).Replace("f", "")}\"";
-                    if (value.StartsWith("Vector3("))
-                        return $"typeof(Vector3), \"{value.Substring(8, value.Length - 9).Replace("f", "")}\"";
-                    if (value.StartsWith("Vector4("))
-                        return $"typeof(Vector4), \"{value.Substring(8, value.Length - 9).Replace("f", "")}\"";
+                    foreach (var vectorType in CSharpVectorTypes)
+                    {
+                        if (value.Length > vectorType.Length + 4 && value.StartsWith(vectorType) && value[vectorType.Length] == '(')
+                            return $"typeof({vectorType}), \"{value.Substring(vectorType.Length + 1, value.Length - vectorType.Length - 2).Replace("f", "")}\"";
+                    }
 
                     return null;
                 }
@@ -129,10 +144,31 @@ namespace Flax.Build.Bindings
                     {
                     case "Vector2.Zero": return "typeof(Vector2), \"0,0\"";
                     case "Vector2.One": return "typeof(Vector2), \"1,1\"";
+                    case "Float2.Zero": return "typeof(Float2), \"0,0\"";
+                    case "Float2.One": return "typeof(Float2), \"1,1\"";
+                    case "Double2.Zero": return "typeof(Double2), \"0,0\"";
+                    case "Double2.One": return "typeof(Double2), \"1,1\"";
+                    case "Int2.Zero": return "typeof(Int2), \"0,0\"";
+                    case "Int2.One": return "typeof(Int2), \"1,1\"";
+
                     case "Vector3.Zero": return "typeof(Vector3), \"0,0,0\"";
                     case "Vector3.One": return "typeof(Vector3), \"1,1,1\"";
+                    case "Float3.Zero": return "typeof(Float3), \"0,0,0\"";
+                    case "Float3.One": return "typeof(Float3), \"1,1,1\"";
+                    case "Double3.Zero": return "typeof(Double3), \"0,0,0\"";
+                    case "Double3.One": return "typeof(Double3), \"1,1,1\"";
+                    case "Int3.Zero": return "typeof(Int3), \"0,0,0\"";
+                    case "Int3.One": return "typeof(Int3), \"1,1,1\"";
+
                     case "Vector4.Zero": return "typeof(Vector4), \"0,0,0,0\"";
                     case "Vector4.One": return "typeof(Vector4), \"1,1,1,1\"";
+                    case "Double4.Zero": return "typeof(Double4), \"0,0,0,0\"";
+                    case "Double4.One": return "typeof(Double4), \"1,1,1,1\"";
+                    case "Float4.Zero": return "typeof(Float4), \"0,0,0,0\"";
+                    case "Float4.One": return "typeof(Float4), \"1,1,1,1\"";
+                    case "Int4.Zero": return "typeof(Float4), \"0,0,0,0\"";
+                    case "Int4.One": return "typeof(Float4), \"1,1,1,1\"";
+
                     case "Quaternion.Identity": return "typeof(Quaternion), \"0,0,0,1\"";
                     }
 

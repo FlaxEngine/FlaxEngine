@@ -32,21 +32,21 @@ DECLARE_SCRIPTING_TYPE_NO_SPAWN(Screen);
     /// Gets the window size.
     /// </summary>
     /// <returns>The value</returns>
-    API_PROPERTY() static Vector2 GetSize();
+    API_PROPERTY() static Float2 GetSize();
 
     /// <summary>
     /// Converts the screen-space position to the game viewport position.
     /// </summary>
     /// <param name="screenPos">The screen-space position.</param>
     /// <returns>The game viewport position.</returns>
-    API_FUNCTION() static Vector2 ScreenToGameViewport(const Vector2& screenPos);
+    API_FUNCTION() static Float2 ScreenToGameViewport(const Float2& screenPos);
 
     /// <summary>
     /// Converts the game viewport position to the screen-space position.
     /// </summary>
     /// <param name="viewportPos">The game viewport position.</param>
     /// <returns>The screen-space position.</returns>
-    API_FUNCTION() static Vector2 GameViewportToScreen(const Vector2& viewportPos);
+    API_FUNCTION() static Float2 GameViewportToScreen(const Float2& viewportPos);
 
     /// <summary>
     /// Sets the window size.
@@ -55,7 +55,7 @@ DECLARE_SCRIPTING_TYPE_NO_SPAWN(Screen);
     /// Resizing may not happen immediately. It will be performed before next frame rendering.
     /// </remarks>
     /// <param name="value">The value.</param>
-    API_PROPERTY() static void SetSize(const Vector2& value);
+    API_PROPERTY() static void SetSize(const Float2& value);
 
     /// <summary>
     /// Gets the cursor visible flag.

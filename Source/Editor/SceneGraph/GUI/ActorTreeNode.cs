@@ -206,7 +206,7 @@ namespace FlaxEditor.SceneGraph.GUI
         protected override bool ShowTooltip => true;
 
         /// <inheritdoc />
-        public override bool OnShowTooltip(out string text, out Vector2 location, out Rectangle area)
+        public override bool OnShowTooltip(out string text, out Float2 location, out Rectangle area)
         {
             // Evaluate tooltip text once it's actually needed
             var actor = _actorNode.Actor;

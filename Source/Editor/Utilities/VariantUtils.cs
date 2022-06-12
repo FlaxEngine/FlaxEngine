@@ -36,9 +36,9 @@ namespace FlaxEditor.Utilities
             Blob,
             Enum,
 
-            Vector2,
-            Vector3,
-            Vector4,
+            Float2,
+            Float3,
+            Float4,
             Color,
             Guid,
             BoundingBox,
@@ -64,6 +64,16 @@ namespace FlaxEditor.Utilities
             Double2,
             Double3,
             Double4,
+
+#if USE_LARGE_WORLDS
+            Vector2 = Double2,
+            Vector3 = Double3,
+            Vector4 = Double4,
+#else
+            Vector2 = Float2,
+            Vector3 = Float3,
+            Vector4 = Float4,
+#endif
         }
 
         internal static VariantType ToVariantType(this Type type)
@@ -111,6 +121,18 @@ namespace FlaxEditor.Utilities
                 variantType = VariantType.Ray;
             else if (type == typeof(Matrix))
                 variantType = VariantType.Matrix;
+            else if (type == typeof(Float2))
+                variantType = VariantType.Float2;
+            else if (type == typeof(Float3))
+                variantType = VariantType.Float3;
+            else if (type == typeof(Float4))
+                variantType = VariantType.Float4;
+            else if (type == typeof(Double2))
+                variantType = VariantType.Double2;
+            else if (type == typeof(Double3))
+                variantType = VariantType.Double3;
+            else if (type == typeof(Double4))
+                variantType = VariantType.Double4;
             else if (type == typeof(Vector2))
                 variantType = VariantType.Vector2;
             else if (type == typeof(Vector3))
@@ -288,9 +310,12 @@ namespace FlaxEditor.Utilities
             case VariantType.Typename: return new ScriptType(typeof(Type));
             case VariantType.Object: return ScriptType.FlaxObject;
             case VariantType.Asset: return new ScriptType(typeof(Asset));
-            case VariantType.Vector2: return new ScriptType(typeof(Vector2));
-            case VariantType.Vector3: return new ScriptType(typeof(Vector3));
-            case VariantType.Vector4: return new ScriptType(typeof(Vector4));
+            case VariantType.Float2: return new ScriptType(typeof(Float2));
+            case VariantType.Float3: return new ScriptType(typeof(Float3));
+            case VariantType.Float4: return new ScriptType(typeof(Float4));
+            case VariantType.Double2: return new ScriptType(typeof(Double2));
+            case VariantType.Double3: return new ScriptType(typeof(Double3));
+            case VariantType.Double4: return new ScriptType(typeof(Double4));
             case VariantType.Int2: return new ScriptType(typeof(Int2));
             case VariantType.Int3: return new ScriptType(typeof(Int3));
             case VariantType.Int4: return new ScriptType(typeof(Int4));
@@ -357,9 +382,12 @@ namespace FlaxEditor.Utilities
             case VariantType.Typename: return typeof(Type);
             case VariantType.Object: return typeof(FlaxEngine.Object);
             case VariantType.Asset: return typeof(Asset);
-            case VariantType.Vector2: return typeof(Vector2);
-            case VariantType.Vector3: return typeof(Vector3);
-            case VariantType.Vector4: return typeof(Vector4);
+            case VariantType.Float2: return typeof(Float2);
+            case VariantType.Float3: return typeof(Float3);
+            case VariantType.Float4: return typeof(Float4);
+            case VariantType.Double2: return typeof(Double2);
+            case VariantType.Double3: return typeof(Double3);
+            case VariantType.Double4: return typeof(Double4);
             case VariantType.Int2: return typeof(Int2);
             case VariantType.Int3: return typeof(Int3);
             case VariantType.Int4: return typeof(Int4);
@@ -452,9 +480,12 @@ namespace FlaxEditor.Utilities
                     throw new Exception("Missing enum type of the Variant.");
                 return Enum.ToObject(type, stream.ReadUInt64());
             }
-            case VariantType.Vector2: return stream.ReadVector2();
-            case VariantType.Vector3: return stream.ReadVector3();
-            case VariantType.Vector4: return stream.ReadVector4();
+            case VariantType.Float2: return stream.ReadFloat2();
+            case VariantType.Float3: return stream.ReadFloat3();
+            case VariantType.Float4: return stream.ReadFloat4();
+            case VariantType.Double2: return stream.ReadDouble2();
+            case VariantType.Double3: return stream.ReadDouble3();
+            case VariantType.Double4: return stream.ReadDouble4();
             case VariantType.Int2: return stream.ReadInt2();
             case VariantType.Int3: return stream.ReadInt3();
             case VariantType.Int4: return stream.ReadInt4();
@@ -637,15 +668,42 @@ namespace FlaxEditor.Utilities
             case VariantType.Enum:
                 stream.Write(Convert.ToUInt64(value));
                 break;
-            case VariantType.Vector2:
-                stream.Write((Vector2)value);
+            case VariantType.Float2:
+            {
+                var asVector2 = value is Float2 v ? v : (Float2)(Vector2)value;
+                stream.Write(asVector2);
                 break;
-            case VariantType.Vector3:
-                stream.Write((Vector3)value);
+            }
+            case VariantType.Float3:
+            {
+                var asVector3 = value is Float3 v ? v : (Float3)(Vector3)value;
+                stream.Write(asVector3);
                 break;
-            case VariantType.Vector4:
-                stream.Write((Vector4)value);
+            }
+            case VariantType.Float4:
+            {
+                var asVector4 = value is Float4 v ? v : (Float4)(Vector4)value;
+                stream.Write(asVector4);
                 break;
+            }
+            case VariantType.Double2:
+            {
+                var asVector2 = value is Double2 v ? v : (Double2)(Vector2)value;
+                stream.Write(asVector2);
+                break;
+            }
+            case VariantType.Double3:
+            {
+                var asVector3 = value is Double3 v ? v : (Double3)(Vector3)value;
+                stream.Write(asVector3);
+                break;
+            }
+            case VariantType.Double4:
+            {
+                var asVector4 = value is Double4 v ? v : (Double4)(Vector4)value;
+                stream.Write(asVector4);
+                break;
+            }
             case VariantType.Int2:
                 stream.Write((Int2)value);
                 break;
@@ -830,9 +888,9 @@ namespace FlaxEditor.Utilities
             case VariantType.Enum:
                 stream.WriteValue(Convert.ToUInt64(value));
                 break;
-            case VariantType.Vector2:
+            case VariantType.Float2:
             {
-                var asVector2 = (Vector2)value;
+                var asVector2 = value is Float2 v ? v : (Float2)(Vector2)value;
                 stream.WriteStartObject();
 
                 stream.WritePropertyName("X");
@@ -843,9 +901,9 @@ namespace FlaxEditor.Utilities
                 stream.WriteEndObject();
                 break;
             }
-            case VariantType.Vector3:
+            case VariantType.Float3:
             {
-                var asVector3 = (Vector3)value;
+                var asVector3 = value is Float3 v ? v : (Float3)(Vector3)value;
                 stream.WriteStartObject();
 
                 stream.WritePropertyName("X");
@@ -858,9 +916,54 @@ namespace FlaxEditor.Utilities
                 stream.WriteEndObject();
                 break;
             }
-            case VariantType.Vector4:
+            case VariantType.Float4:
             {
-                var asVector4 = (Vector4)value;
+                var asVector4 = value is Float4 v ? v : (Float4)(Vector4)value;
+                stream.WriteStartObject();
+
+                stream.WritePropertyName("X");
+                stream.WriteValue(asVector4.X);
+                stream.WritePropertyName("Y");
+                stream.WriteValue(asVector4.Y);
+                stream.WritePropertyName("Z");
+                stream.WriteValue(asVector4.Z);
+                stream.WritePropertyName("W");
+                stream.WriteValue(asVector4.W);
+
+                stream.WriteEndObject();
+                break;
+            }
+            case VariantType.Double2:
+            {
+                var asVector2 = value is Double2 v ? v : (Double2)(Vector2)value;
+                stream.WriteStartObject();
+
+                stream.WritePropertyName("X");
+                stream.WriteValue(asVector2.X);
+                stream.WritePropertyName("Y");
+                stream.WriteValue(asVector2.Y);
+
+                stream.WriteEndObject();
+                break;
+            }
+            case VariantType.Double3:
+            {
+                var asVector3 = value is Double3 v ? v : (Double3)(Vector3)value;
+                stream.WriteStartObject();
+
+                stream.WritePropertyName("X");
+                stream.WriteValue(asVector3.X);
+                stream.WritePropertyName("Y");
+                stream.WriteValue(asVector3.Y);
+                stream.WritePropertyName("Z");
+                stream.WriteValue(asVector3.Z);
+
+                stream.WriteEndObject();
+                break;
+            }
+            case VariantType.Double4:
+            {
+                var asVector4 = value is Double4 v ? v : (Double4)(Vector4)value;
                 stream.WriteStartObject();
 
                 stream.WritePropertyName("X");

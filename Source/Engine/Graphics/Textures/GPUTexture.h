@@ -320,12 +320,12 @@ public:
     /// <summary>
     /// Gets the texture total size in pixels.
     /// </summary>
-    API_PROPERTY() Vector2 Size() const;
+    API_PROPERTY() Float2 Size() const;
 
     /// <summary>
     /// Gets the texture total size in pixels (with depth).
     /// </summary>
-    API_PROPERTY() Vector3 Size3() const;
+    API_PROPERTY() Float3 Size3() const;
 
     /// <summary>
     /// Returns true if texture has size that is power of two.

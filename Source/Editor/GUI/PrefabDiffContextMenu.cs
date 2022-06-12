@@ -36,7 +36,7 @@ namespace FlaxEditor.GUI
         public PrefabDiffContextMenu(float width = 280, float height = 260)
         {
             // Context menu dimensions
-            Size = new Vector2(width, height);
+            Size = new Float2(width, height);
 
             // Buttons
             float buttonsWidth = (width - 6.0f) * 0.5f;

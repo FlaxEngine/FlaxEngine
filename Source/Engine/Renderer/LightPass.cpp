@@ -233,7 +233,7 @@ void LightPass::RenderLight(RenderContext& renderContext, GPUTextureView* lightB
         // Cache data
         auto& light = mainCache->PointLights[lightIndex];
         float lightRadius = light.Radius;
-        Vector3 lightPosition = light.Position;
+        Float3 lightPosition = light.Position;
         const bool renderShadow = useShadows && CanRenderShadow(view, light) && ShadowsPass::Instance()->CanRenderShadow(renderContext, light);
         bool useIES = light.IESTexture != nullptr;
 
@@ -290,7 +290,7 @@ void LightPass::RenderLight(RenderContext& renderContext, GPUTextureView* lightB
         // Cache data
         auto& light = mainCache->SpotLights[lightIndex];
         float lightRadius = light.Radius;
-        Vector3 lightPosition = light.Position;
+        Float3 lightPosition = light.Position;
         const bool renderShadow = useShadows && CanRenderShadow(view, light) && ShadowsPass::Instance()->CanRenderShadow(renderContext, light);
         bool useIES = light.IESTexture != nullptr;
 
@@ -384,7 +384,7 @@ void LightPass::RenderLight(RenderContext& renderContext, GPUTextureView* lightB
         // Cache data
         auto& light = mainCache->SkyLights[lightIndex];
         float lightRadius = light.Radius;
-        Vector3 lightPosition = light.Position;
+        Float3 lightPosition = light.Position;
 
         // Get distance from view center to light center less radius (check if view is inside a sphere)
         float distance = ViewToCenterLessRadius(view, lightPosition, lightRadius * sphereModelScale);

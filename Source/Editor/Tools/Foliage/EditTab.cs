@@ -110,7 +110,7 @@ namespace FlaxEditor.Tools.Foliage
             }
 
             [EditorOrder(30), EditorDisplay("Instance"), Tooltip("The local-space scale of the mesh relative to the foliage actor.")]
-            public Vector3 Scale
+            public Float3 Scale
             {
                 get => _instance.Transform.Scale;
                 set

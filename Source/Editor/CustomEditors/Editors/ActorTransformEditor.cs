@@ -26,10 +26,10 @@ namespace FlaxEditor.CustomEditors.Editors
         public static Color AxisColorZ = new Color(0.0f, 0.0235294f, 1.0f, 1.0f);
 
         /// <summary>
-        /// Custom editor for actor position/scale property.
+        /// Custom editor for actor position property.
         /// </summary>
         /// <seealso cref="FlaxEditor.CustomEditors.Editors.Vector3Editor" />
-        public class PositionScaleEditor : Vector3Editor
+        public class PositionEditor : Vector3Editor
         {
             /// <inheritdoc />
             public override void Initialize(LayoutElementsContainer layout)
@@ -39,12 +39,12 @@ namespace FlaxEditor.CustomEditors.Editors
                 // Override colors
                 var back = FlaxEngine.GUI.Style.Current.TextBoxBackground;
                 var grayOutFactor = 0.6f;
-                XElement.FloatValue.BorderColor = Color.Lerp(AxisColorX, back, grayOutFactor);
-                XElement.FloatValue.BorderSelectedColor = AxisColorX;
-                YElement.FloatValue.BorderColor = Color.Lerp(AxisColorY, back, grayOutFactor);
-                YElement.FloatValue.BorderSelectedColor = AxisColorY;
-                ZElement.FloatValue.BorderColor = Color.Lerp(AxisColorZ, back, grayOutFactor);
-                ZElement.FloatValue.BorderSelectedColor = AxisColorZ;
+                XElement.ValueBox.BorderColor = Color.Lerp(AxisColorX, back, grayOutFactor);
+                XElement.ValueBox.BorderSelectedColor = AxisColorX;
+                YElement.ValueBox.BorderColor = Color.Lerp(AxisColorY, back, grayOutFactor);
+                YElement.ValueBox.BorderSelectedColor = AxisColorY;
+                ZElement.ValueBox.BorderColor = Color.Lerp(AxisColorZ, back, grayOutFactor);
+                ZElement.ValueBox.BorderSelectedColor = AxisColorZ;
             }
         }
 
@@ -62,12 +62,35 @@ namespace FlaxEditor.CustomEditors.Editors
                 // Override colors
                 var back = FlaxEngine.GUI.Style.Current.TextBoxBackground;
                 var grayOutFactor = 0.6f;
-                XElement.FloatValue.BorderColor = Color.Lerp(AxisColorX, back, grayOutFactor);
-                XElement.FloatValue.BorderSelectedColor = AxisColorX;
-                YElement.FloatValue.BorderColor = Color.Lerp(AxisColorY, back, grayOutFactor);
-                YElement.FloatValue.BorderSelectedColor = AxisColorY;
-                ZElement.FloatValue.BorderColor = Color.Lerp(AxisColorZ, back, grayOutFactor);
-                ZElement.FloatValue.BorderSelectedColor = AxisColorZ;
+                XElement.ValueBox.BorderColor = Color.Lerp(AxisColorX, back, grayOutFactor);
+                XElement.ValueBox.BorderSelectedColor = AxisColorX;
+                YElement.ValueBox.BorderColor = Color.Lerp(AxisColorY, back, grayOutFactor);
+                YElement.ValueBox.BorderSelectedColor = AxisColorY;
+                ZElement.ValueBox.BorderColor = Color.Lerp(AxisColorZ, back, grayOutFactor);
+                ZElement.ValueBox.BorderSelectedColor = AxisColorZ;
+            }
+        }
+
+        /// <summary>
+        /// Custom editor for actor scale property.
+        /// </summary>
+        /// <seealso cref="FlaxEditor.CustomEditors.Editors.Float3Editor" />
+        public class ScaleEditor : Float3Editor
+        {
+            /// <inheritdoc />
+            public override void Initialize(LayoutElementsContainer layout)
+            {
+                base.Initialize(layout);
+
+                // Override colors
+                var back = FlaxEngine.GUI.Style.Current.TextBoxBackground;
+                var grayOutFactor = 0.6f;
+                XElement.ValueBox.BorderColor = Color.Lerp(AxisColorX, back, grayOutFactor);
+                XElement.ValueBox.BorderSelectedColor = AxisColorX;
+                YElement.ValueBox.BorderColor = Color.Lerp(AxisColorY, back, grayOutFactor);
+                YElement.ValueBox.BorderSelectedColor = AxisColorY;
+                ZElement.ValueBox.BorderColor = Color.Lerp(AxisColorZ, back, grayOutFactor);
+                ZElement.ValueBox.BorderSelectedColor = AxisColorZ;
             }
         }
     }

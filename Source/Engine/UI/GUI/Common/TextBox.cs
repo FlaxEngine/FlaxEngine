@@ -95,25 +95,25 @@ namespace FlaxEngine.GUI
         }
 
         /// <inheritdoc />
-        public override Vector2 GetTextSize()
+        public override Float2 GetTextSize()
         {
             var font = Font.GetFont();
             if (font == null)
             {
-                return Vector2.Zero;
+                return Float2.Zero;
             }
 
             return font.MeasureText(_text, ref _layout);
         }
 
         /// <inheritdoc />
-        public override Vector2 GetCharPosition(int index, out float height)
+        public override Float2 GetCharPosition(int index, out float height)
         {
             var font = Font.GetFont();
             if (font == null)
             {
                 height = Height;
-                return Vector2.Zero;
+                return Float2.Zero;
             }
 
             height = font.Height / DpiScale;
@@ -121,7 +121,7 @@ namespace FlaxEngine.GUI
         }
 
         /// <inheritdoc />
-        public override int HitTestText(Vector2 location)
+        public override int HitTestText(Float2 location)
         {
             var font = Font.GetFont();
             if (font == null)
@@ -144,7 +144,7 @@ namespace FlaxEngine.GUI
         public override void DrawSelf()
         {
             // Cache data
-            var rect = new Rectangle(Vector2.Zero, Size);
+            var rect = new Rectangle(Float2.Zero, Size);
             bool enabled = EnabledInHierarchy;
             var font = Font.GetFont();
             if (!font)
@@ -166,8 +166,8 @@ namespace FlaxEngine.GUI
             // Check if sth is selected to draw selection
             if (HasSelection)
             {
-                Vector2 leftEdge = font.GetCharPosition(_text, SelectionLeft, ref _layout);
-                Vector2 rightEdge = font.GetCharPosition(_text, SelectionRight, ref _layout);
+                var leftEdge = font.GetCharPosition(_text, SelectionLeft, ref _layout);
+                var rightEdge = font.GetCharPosition(_text, SelectionRight, ref _layout);
                 float fontHeight = font.Height / DpiScale;
 
                 // Draw selection background
@@ -230,7 +230,7 @@ namespace FlaxEngine.GUI
         }
 
         /// <inheritdoc />
-        public override bool OnMouseDoubleClick(Vector2 location, MouseButton button)
+        public override bool OnMouseDoubleClick(Float2 location, MouseButton button)
         {
             SelectAll();
             return base.OnMouseDoubleClick(location, button);

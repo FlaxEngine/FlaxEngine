@@ -108,7 +108,7 @@ namespace FlaxEditor.CustomEditors.Editors
         private void ShowPicker()
         {
             var menu = CreatePicker(Culture, value => { Culture = value; });
-            menu.Show(_label, new Vector2(0, _label.Height));
+            menu.Show(_label, new Float2(0, _label.Height));
         }
 
         internal static ContextMenuBase CreatePicker(CultureInfo value, Action<CultureInfo> changed)

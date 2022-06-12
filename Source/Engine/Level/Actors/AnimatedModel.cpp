@@ -19,7 +19,7 @@ AnimatedModel::AnimatedModel(const SpawnParams& params)
     : ModelInstanceActor(params)
     , _actualMode(AnimationUpdateMode::Never)
     , _counter(0)
-    , _lastMinDstSqr(MAX_float)
+    , _lastMinDstSqr(MAX_Real)
     , _lastUpdateFrame(0)
 {
     GraphInstance.Object = this;
@@ -167,11 +167,11 @@ int32 AnimatedModel::FindClosestNode(const Vector3& location, bool worldSpace) c
         const_cast<AnimatedModel*>(this)->PreInitSkinningData(); // Ensure to have valid nodes pose to return
     const Vector3 pos = worldSpace ? _transform.WorldToLocal(location) : location;
     int32 result = -1;
-    float closest = MAX_float;
+    Real closest = MAX_Real;
     for (int32 nodeIndex = 0; nodeIndex < GraphInstance.NodesPose.Count(); nodeIndex++)
     {
         const Vector3 node = GraphInstance.NodesPose[nodeIndex].GetTranslation();
-        const float dst = Vector3::DistanceSquared(node, pos);
+        const Real dst = Vector3::DistanceSquared(node, pos);
         if (dst < closest)
         {
             closest = dst;
@@ -684,10 +684,10 @@ void AnimatedModel::Update()
     default:
         break;
     }
-    if (updateAnim && (UpdateWhenOffscreen || _lastMinDstSqr < MAX_float))
+    if (updateAnim && (UpdateWhenOffscreen || _lastMinDstSqr < MAX_Real))
         UpdateAnimation();
 
-    _lastMinDstSqr = MAX_float;
+    _lastMinDstSqr = MAX_Real;
 }
 
 void AnimatedModel::Draw(RenderContext& renderContext)
@@ -753,7 +753,7 @@ BoundingBox AnimatedModel::GetEditorBox() const
 
 #endif
 
-bool AnimatedModel::IntersectsItself(const Ray& ray, float& distance, Vector3& normal)
+bool AnimatedModel::IntersectsItself(const Ray& ray, Real& distance, Vector3& normal)
 {
     bool result = false;
 
@@ -822,7 +822,7 @@ void AnimatedModel::Deserialize(DeserializeStream& stream, ISerializeModifier* m
         DrawModes |= DrawPass::GlobalSurfaceAtlas;
 }
 
-bool AnimatedModel::IntersectsEntry(int32 entryIndex, const Ray& ray, float& distance, Vector3& normal)
+bool AnimatedModel::IntersectsEntry(int32 entryIndex, const Ray& ray, Real& distance, Vector3& normal)
 {
     auto model = SkinnedModel.Get();
     if (!model || !model->IsInitialized() || model->GetLoadedLODs() == 0)
@@ -842,7 +842,7 @@ bool AnimatedModel::IntersectsEntry(int32 entryIndex, const Ray& ray, float& dis
     return false;
 }
 
-bool AnimatedModel::IntersectsEntry(const Ray& ray, float& distance, Vector3& normal, int32& entryIndex)
+bool AnimatedModel::IntersectsEntry(const Ray& ray, Real& distance, Vector3& normal, int32& entryIndex)
 {
     auto model = SkinnedModel.Get();
     if (!model || !model->IsInitialized() || model->GetLoadedLODs() == 0)
@@ -850,7 +850,7 @@ bool AnimatedModel::IntersectsEntry(const Ray& ray, float& distance, Vector3& no
 
     // Find mesh in the highest loaded LOD that is using the given material slot index and ray hits it
     bool result = false;
-    float closest = MAX_float;
+    Real closest = MAX_Real;
     Vector3 closestNormal = Vector3::Up;
     int32 closestEntry = -1;
     auto& meshes = model->LODs[model->HighestResidentLODIndex()].Meshes;
@@ -858,7 +858,7 @@ bool AnimatedModel::IntersectsEntry(const Ray& ray, float& distance, Vector3& no
     {
         // Test intersection with mesh and check if is closer than previous
         const auto& mesh = meshes[i];
-        float dst;
+        Real dst;
         Vector3 nrm;
         if (mesh.Intersects(ray, _world, dst, nrm) && dst < closest)
         {

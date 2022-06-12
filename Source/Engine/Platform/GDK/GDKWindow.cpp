@@ -23,7 +23,7 @@ GDKWindow::GDKWindow(const CreateWindowSettings& settings)
     int32 clientHeight = Math::TruncToInt(settings.Size.Y);
     int32 windowWidth = clientWidth;
     int32 windowHeight = clientHeight;
-    _clientSize = Vector2((float)clientWidth, (float)clientHeight);
+    _clientSize = Float2((float)clientWidth, (float)clientHeight);
 
     // Setup window style
     uint32 style = WS_POPUP, exStyle = 0;
@@ -213,7 +213,7 @@ void GDKWindow::CheckForWindowResize()
     GetClientRect(_handle, &rect);
     const int32 width = Math::Max(rect.right - rect.left, 0L);
     const int32 height = Math::Max(rect.bottom - rect.top, 0L);
-    _clientSize = Vector2(static_cast<float>(width), static_cast<float>(height));
+    _clientSize = Float2(static_cast<float>(width), static_cast<float>(height));
 
     // Check if window size has been changed
     if (width > 0 && height > 0 && (_swapChain == nullptr || width != _swapChain->GetWidth() || height != _swapChain->GetHeight()))

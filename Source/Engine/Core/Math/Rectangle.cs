@@ -11,7 +11,7 @@ namespace FlaxEngine
         /// <summary>
         /// A <see cref="Rectangle"/> which represents an empty space.
         /// </summary>
-        public static readonly Rectangle Empty = new Rectangle(Vector2.Zero, Vector2.Zero);
+        public static readonly Rectangle Empty = new Rectangle(Float2.Zero, Float2.Zero);
 
         /// <summary>
         /// Gets or sets X coordinate of the left edge of the rectangle
@@ -72,27 +72,27 @@ namespace FlaxEngine
         /// <summary>
         /// Gets position of the upper left corner of the rectangle
         /// </summary>
-        public Vector2 UpperLeft => Location;
+        public Float2 UpperLeft => Location;
 
         /// <summary>
         /// Gets position of the upper right corner of the rectangle
         /// </summary>
-        public Vector2 UpperRight => new Vector2(Location.X + Size.X, Location.Y);
+        public Float2 UpperRight => new Float2(Location.X + Size.X, Location.Y);
 
         /// <summary>
         /// Gets position of the bottom right corner of the rectangle
         /// </summary>
-        public Vector2 BottomRight => Location + Size;
+        public Float2 BottomRight => Location + Size;
 
         /// <summary>
         /// Gets position of the bottom left corner of the rectangle
         /// </summary>
-        public Vector2 BottomLeft => new Vector2(Location.X, Location.Y + Size.Y);
+        public Float2 BottomLeft => new Float2(Location.X, Location.Y + Size.Y);
 
         /// <summary>
         /// Gets center position of the rectangle
         /// </summary>
-        public Vector2 Center => Location + Size * 0.5f;
+        public Float2 Center => Location + Size * 0.5f;
 
         /// <summary>
         /// Init
@@ -103,8 +103,8 @@ namespace FlaxEngine
         /// <param name="height">Height</param>
         public Rectangle(float x, float y, float width, float height)
         {
-            Location = new Vector2(x, y);
-            Size = new Vector2(width, height);
+            Location = new Float2(x, y);
+            Size = new Float2(width, height);
         }
 
         /// <summary>
@@ -113,10 +113,10 @@ namespace FlaxEngine
         /// <param name="location">Location of the upper left corner</param>
         /// <param name="width">Width</param>
         /// <param name="height">Height</param>
-        public Rectangle(Vector2 location, float width, float height)
+        public Rectangle(Float2 location, float width, float height)
         {
             Location = location;
-            Size = new Vector2(width, height);
+            Size = new Float2(width, height);
         }
 
         /// <summary>
@@ -125,9 +125,9 @@ namespace FlaxEngine
         /// <param name="x">X coordinate</param>
         /// <param name="y">Y coordinate</param>
         /// <param name="size">Size</param>
-        public Rectangle(float x, float y, Vector2 size)
+        public Rectangle(float x, float y, Float2 size)
         {
-            Location = new Vector2(x, y);
+            Location = new Float2(x, y);
             Size = size;
         }
 
@@ -136,7 +136,7 @@ namespace FlaxEngine
         /// </summary>
         /// <param name="location">Location of the upper left corner</param>
         /// <param name="size">Size</param>
-        public Rectangle(Vector2 location, Vector2 size)
+        public Rectangle(Float2 location, Float2 size)
         {
             Location = location;
             Size = size;
@@ -147,7 +147,7 @@ namespace FlaxEngine
         /// </summary>
         /// <param name="location">Point location to check</param>
         /// <returns>True if point is inside rectangle's area</returns>
-        public bool Contains(Vector2 location)
+        public bool Contains(Float2 location)
         {
             return (location.X >= Location.X && location.Y >= Location.Y) && (location.X <= Location.X + Size.X && location.Y <= Location.Y + Size.Y);
         }
@@ -157,7 +157,7 @@ namespace FlaxEngine
         /// </summary>
         /// <param name="location">Point location to check</param>
         /// <returns>True if point is inside rectangle's area</returns>
-        public bool Contains(ref Vector2 location)
+        public bool Contains(ref Float2 location)
         {
             return (location.X >= Location.X && location.Y >= Location.Y) && (location.X <= Location.X + Size.X && location.Y <= Location.Y + Size.Y);
         }
@@ -217,7 +217,7 @@ namespace FlaxEngine
         /// Offset rectangle position
         /// </summary>
         /// <param name="offset">X and Y coordinate offset</param>
-        public void Offset(Vector2 offset)
+        public void Offset(Float2 offset)
         {
             Location += offset;
         }
@@ -230,7 +230,7 @@ namespace FlaxEngine
         /// <returns>Offseted rectangle</returns>
         public Rectangle MakeOffsetted(float x, float y)
         {
-            return new Rectangle(Location + new Vector2(x, y), Size);
+            return new Rectangle(Location + new Float2(x, y), Size);
         }
 
         /// <summary>
@@ -238,7 +238,7 @@ namespace FlaxEngine
         /// </summary>
         /// <param name="offset">X and Y coordinate offset</param>
         /// <returns>Offseted rectangle</returns>
-        public Rectangle MakeOffsetted(Vector2 offset)
+        public Rectangle MakeOffsetted(Float2 offset)
         {
             return new Rectangle(Location + offset, Size);
         }
@@ -269,7 +269,7 @@ namespace FlaxEngine
         /// <param name="scale">Scale value to expand a rectangle</param>
         public void Scale(float scale)
         {
-            Vector2 toExpand = Size * (scale - 1.0f) * 0.5f;
+            Float2 toExpand = Size * (scale - 1.0f) * 0.5f;
             Location -= toExpand * 0.5f;
             Size += toExpand;
         }
@@ -281,7 +281,7 @@ namespace FlaxEngine
         /// <returns>Scaled rectangle</returns>
         public Rectangle MakeScaled(float scale)
         {
-            Vector2 toExpand = Size * (scale - 1.0f) * 0.5f;
+            Float2 toExpand = Size * (scale - 1.0f) * 0.5f;
             return new Rectangle(Location - toExpand * 0.5f, Size + toExpand);
         }
 
@@ -293,7 +293,7 @@ namespace FlaxEngine
         /// <returns>Resulting distance, 0 if overlapping</returns>
         public static float Distance(Rectangle a, Rectangle b)
         {
-            return Vector2.Max(Vector2.Zero, Vector2.Abs(a.Center - b.Center) - ((a.Size + b.Size) * 0.5f)).Length;
+            return Float2.Max(Float2.Zero, Float2.Abs(a.Center - b.Center) - ((a.Size + b.Size) * 0.5f)).Length;
         }
 
         /// <summary>
@@ -302,7 +302,7 @@ namespace FlaxEngine
         /// <param name="rect">The rectangle.</param>
         /// <param name="p">The point.</param>
         /// <returns>The resulting distance, 0 if point is inside the rectangle.</returns>
-        public static float Distance(Rectangle rect, Vector2 p)
+        public static float Distance(Rectangle rect, Float2 p)
         {
             var max = rect.Location + rect.Size;
             var dx = Mathf.Max(Mathf.Max(rect.Location.X - p.X, p.X - max.X), 0);
@@ -389,11 +389,11 @@ namespace FlaxEngine
         /// <param name="p1">First point</param>
         /// <param name="p2">Second point</param>
         /// <returns>Rectangle that contains both p1 and p2</returns>
-        public static Rectangle FromPoints(Vector2 p1, Vector2 p2)
+        public static Rectangle FromPoints(Float2 p1, Float2 p2)
         {
-            Vector2.Min(ref p1, ref p2, out var upperLeft);
-            Vector2.Max(ref p1, ref p2, out var rightBottom);
-            return new Rectangle(upperLeft, Vector2.Max(rightBottom - upperLeft, Vector2.Zero));
+            Float2.Min(ref p1, ref p2, out var upperLeft);
+            Float2.Max(ref p1, ref p2, out var rightBottom);
+            return new Rectangle(upperLeft, Float2.Max(rightBottom - upperLeft, Float2.Zero));
         }
 
         /// <summary>
@@ -403,11 +403,11 @@ namespace FlaxEngine
         /// <param name="p2">Second point</param>
         /// <returns>Rectangle that contains both p1 and p2</returns>
         /// <param name="result">When the method completes, contains the rectangle that contains both p1 and p2 points.</param>
-        public static void FromPoints(ref Vector2 p1, ref Vector2 p2, out Rectangle result)
+        public static void FromPoints(ref Float2 p1, ref Float2 p2, out Rectangle result)
         {
-            Vector2.Min(ref p1, ref p2, out var upperLeft);
-            Vector2.Max(ref p1, ref p2, out var rightBottom);
-            result = new Rectangle(upperLeft, Vector2.Max(rightBottom - upperLeft, Vector2.Zero));
+            Float2.Min(ref p1, ref p2, out var upperLeft);
+            Float2.Max(ref p1, ref p2, out var rightBottom);
+            result = new Rectangle(upperLeft, Float2.Max(rightBottom - upperLeft, Float2.Zero));
         }
 
         #region Operators
@@ -417,10 +417,8 @@ namespace FlaxEngine
         /// </summary>
         /// <param name="rectangle">The rectangle.</param>
         /// <param name="offset">The offset.</param>
-        /// <returns>
-        /// The result of the operator.
-        /// </returns>
-        public static Rectangle operator +(Rectangle rectangle, Vector2 offset)
+        /// <returns>The result of the operator.</returns>
+        public static Rectangle operator +(Rectangle rectangle, Float2 offset)
         {
             return new Rectangle(rectangle.Location + offset, rectangle.Size);
         }
@@ -430,10 +428,8 @@ namespace FlaxEngine
         /// </summary>
         /// <param name="rectangle">The rectangle.</param>
         /// <param name="offset">The offset.</param>
-        /// <returns>
-        /// The result of the operator.
-        /// </returns>
-        public static Rectangle operator -(Rectangle rectangle, Vector2 offset)
+        /// <returns>The result of the operator.</returns>
+        public static Rectangle operator -(Rectangle rectangle, Float2 offset)
         {
             return new Rectangle(rectangle.Location - offset, rectangle.Size);
         }
@@ -443,9 +439,7 @@ namespace FlaxEngine
         /// </summary>
         /// <param name="rectangle">The rectangle.</param>
         /// <param name="scale">The scale.</param>
-        /// <returns>
-        /// The result of the operator.
-        /// </returns>
+        /// <returns>The result of the operator.</returns>
         public static Rectangle operator *(Rectangle rectangle, float scale)
         {
             return rectangle.MakeScaled(scale);
@@ -456,10 +450,7 @@ namespace FlaxEngine
         /// </summary>
         /// <param name="left">The first value to compare.</param>
         /// <param name="right">The second value to compare.</param>
-        /// <returns>
-        /// <c>true</c> if <paramref name="left" /> has the same value as <paramref name="right" />; otherwise,
-        /// <c>false</c>.
-        /// </returns>
+        /// <returns><c>true</c> if <paramref name="left" /> has the same value as <paramref name="right" />; otherwise, <c>false</c>.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool operator ==(Rectangle left, Rectangle right)
         {
@@ -471,10 +462,7 @@ namespace FlaxEngine
         /// </summary>
         /// <param name="left">The first value to compare.</param>
         /// <param name="right">The second value to compare.</param>
-        /// <returns>
-        /// <c>true</c> if <paramref name="left" /> has a different value than <paramref name="right" />; otherwise,
-        /// <c>false</c>.
-        /// </returns>
+        /// <returns><c>true</c> if <paramref name="left" /> has a different value than <paramref name="right" />; otherwise, <c>false</c>.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool operator !=(Rectangle left, Rectangle right)
         {
@@ -487,9 +475,7 @@ namespace FlaxEngine
         /// Determines whether the specified <see cref="Rectangle" /> is equal to this instance.
         /// </summary>
         /// <param name="other">The <see cref="Rectangle" /> to compare with this instance.</param>
-        /// <returns>
-        /// <c>true</c> if the specified <see cref="Rectangle" /> is equal to this instance; otherwise, <c>false</c>.
-        /// </returns>
+        /// <returns><c>true</c> if the specified <see cref="Rectangle" /> is equal to this instance; otherwise, <c>false</c>.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool Equals(ref Rectangle other)
         {

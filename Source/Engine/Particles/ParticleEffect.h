@@ -182,7 +182,7 @@ public:
 private:
 
     uint64 _lastUpdateFrame;
-    float _lastMinDstSqr;
+    Real _lastMinDstSqr;
     Matrix _world;
     int32 _sceneRenderingKey = -1;
     uint32 _parametersVersion = 0; // Version number for _parameters to be in sync with Instance.ParametersVersion

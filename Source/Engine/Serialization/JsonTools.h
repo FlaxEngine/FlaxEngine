@@ -28,12 +28,10 @@ struct CommonValue;
 class FLAXENGINE_API JsonTools
 {
 public:
-
     typedef rapidjson_flax::Document Document;
     typedef rapidjson_flax::Value Value;
 
 public:
-
     FORCE_INLINE static void MergeDocuments(Document& target, Document& source)
     {
         MergeObjects(target, source, target.GetAllocator());
@@ -49,105 +47,48 @@ public:
     static void ChangeIds(Document& doc, const Dictionary<Guid, Guid, HeapAllocation>& mapping);
 
 public:
-
-    static Vector2 GetVector2(const Value& value)
+    FORCE_INLINE static Vector2 GetVector2(const Value& value)
     {
-        Vector2 result;
-        const auto mX = value.FindMember("X");
-        const auto mY = value.FindMember("Y");
-        result.X = mX != value.MemberEnd() ? mX->value.GetFloat() : 0.0f;
-        result.Y = mY != value.MemberEnd() ? mY->value.GetFloat() : 0.0f;
-        return result;
+#if USE_LARGE_WORLDS
+        return GetDouble2(value);
+#else
+        return GetFloat2(value);
+#endif
     }
 
-    static Vector3 GetVector3(const Value& value)
+    FORCE_INLINE static Vector3 GetVector3(const Value& value)
     {
-        Vector3 result;
-        const auto mX = value.FindMember("X");
-        const auto mY = value.FindMember("Y");
-        const auto mZ = value.FindMember("Z");
-        result.X = mX != value.MemberEnd() ? mX->value.GetFloat() : 0.0f;
-        result.Y = mY != value.MemberEnd() ? mY->value.GetFloat() : 0.0f;
-        result.Z = mZ != value.MemberEnd() ? mZ->value.GetFloat() : 0.0f;
-        return result;
+#if USE_LARGE_WORLDS
+        return GetDouble3(value);
+#else
+        return GetFloat3(value);
+#endif
     }
 
-    static Vector4 GetVector4(const Value& value)
+    FORCE_INLINE static Vector4 GetVector4(const Value& value)
     {
-        Vector4 result;
-        const auto mX = value.FindMember("X");
-        const auto mY = value.FindMember("Y");
-        const auto mZ = value.FindMember("Z");
-        const auto mW = value.FindMember("W");
-        result.X = mX != value.MemberEnd() ? mX->value.GetFloat() : 0.0f;
-        result.Y = mY != value.MemberEnd() ? mY->value.GetFloat() : 0.0f;
-        result.Z = mZ != value.MemberEnd() ? mZ->value.GetFloat() : 0.0f;
-        result.W = mW != value.MemberEnd() ? mW->value.GetFloat() : 0.0f;
-        return result;
+#if USE_LARGE_WORLDS
+        return GetDouble4(value);
+#else
+        return GetFloat4(value);
+#endif
     }
 
-    static Color GetColor(const Value& value)
-    {
-        Color result;
-        const auto mR = value.FindMember("R");
-        const auto mG = value.FindMember("G");
-        const auto mB = value.FindMember("B");
-        const auto mA = value.FindMember("A");
-        result.R = mR != value.MemberEnd() ? mR->value.GetFloat() : 0.0f;
-        result.G = mG != value.MemberEnd() ? mG->value.GetFloat() : 0.0f;
-        result.B = mB != value.MemberEnd() ? mB->value.GetFloat() : 0.0f;
-        result.A = mA != value.MemberEnd() ? mA->value.GetFloat() : 0.0f;
-        return result;
-    }
+    static Float2 GetFloat2(const Value& value);
+    static Float3 GetFloat3(const Value& value);
+    static Float4 GetFloat4(const Value& value);
 
-    static Quaternion GetQuaternion(const Value& value)
-    {
-        Quaternion result;
-        const auto mX = value.FindMember("X");
-        const auto mY = value.FindMember("Y");
-        const auto mZ = value.FindMember("Z");
-        const auto mW = value.FindMember("W");
-        result.X = mX != value.MemberEnd() ? mX->value.GetFloat() : 0.0f;
-        result.Y = mY != value.MemberEnd() ? mY->value.GetFloat() : 0.0f;
-        result.Z = mZ != value.MemberEnd() ? mZ->value.GetFloat() : 0.0f;
-        result.W = mW != value.MemberEnd() ? mW->value.GetFloat() : 0.0f;
-        return result;
-    }
+    static Double2 GetDouble2(const Value& value);
+    static Double3 GetDouble3(const Value& value);
+    static Double4 GetDouble4(const Value& value);
 
-    static Ray GetRay(const Value& value)
-    {
-        return Ray(
-            GetVector3(value, "Position", Vector3::Zero),
-            GetVector3(value, "Direction", Vector3::One)
-        );
-    }
-
+    static Color GetColor(const Value& value);
+    static Quaternion GetQuaternion(const Value& value);
+    static Ray GetRay(const Value& value);
     static Matrix GetMatrix(const Value& value);
-
-    static Transform GetTransform(const Value& value)
-    {
-        return Transform(
-            GetVector3(value, "Translation", Vector3::Zero),
-            GetQuaternion(value, "Orientation", Quaternion::Identity),
-            GetVector3(value, "Scale", Vector3::One)
-        );
-    }
-
-    static void GetTransform(Transform& result, const Value& value)
-    {
-        GetVector3(result.Translation, value, "Translation");
-        GetQuaternion(result.Orientation, value, "Orientation");
-        GetVector3(result.Scale, value, "Scale");
-    }
-
-    static Plane GetPlane(const Value& value)
-    {
-        Plane result;
-        const auto mD = value.FindMember("D");
-        result.Normal = GetVector3(value, "Normal", Vector3::One);
-        result.D = mD != value.MemberEnd() ? mD->value.GetFloat() : 0.0f;
-        return result;
-    }
+    static Transform GetTransform(const Value& value);
+    static void GetTransform(Transform& result, const Value& value);
+    static Plane GetPlane(const Value& value);
 
     static Rectangle GetRectangle(const Value& value)
     {
@@ -157,33 +98,14 @@ public:
         );
     }
 
-    static BoundingSphere GetBoundingSphere(const Value& value)
-    {
-        BoundingSphere result;
-        const auto mRadius = value.FindMember("Radius");
-        result.Center = GetVector3(value, "Center", Vector3::Zero);
-        result.Radius = mRadius != value.MemberEnd() ? mRadius->value.GetFloat() : 0.0f;
-        return result;
-    }
-
-    static BoundingBox GetBoundingBox(const Value& value)
-    {
-        return BoundingBox(
-            GetVector3(value, "Minimum", Vector3::Zero),
-            GetVector3(value, "Maximum", Vector3::Zero)
-        );
-    }
-
+    static BoundingSphere GetBoundingSphere(const Value& value);
+    static BoundingBox GetBoundingBox(const Value& value);
     static Guid GetGuid(const Value& value);
-
     static DateTime GetDate(const Value& value);
-
     static DateTime GetDateTime(const Value& value);
-
     static CommonValue GetCommonValue(const Value& value);
 
 public:
-
     FORCE_INLINE static String GetString(const Value& node, const char* name)
     {
         auto member = node.FindMember(name);
@@ -191,7 +113,6 @@ public:
     }
 
 public:
-
     FORCE_INLINE static bool GetBool(const Value& node, const char* name, const bool defaultValue)
     {
         auto member = node.FindMember(name);
@@ -235,6 +156,12 @@ public:
     DECLARE_GETTER(Vector2);
     DECLARE_GETTER(Vector3);
     DECLARE_GETTER(Vector4);
+    DECLARE_GETTER(Float2);
+    DECLARE_GETTER(Float3);
+    DECLARE_GETTER(Float4);
+    DECLARE_GETTER(Double2);
+    DECLARE_GETTER(Double3);
+    DECLARE_GETTER(Double4);
     DECLARE_GETTER(Color);
     DECLARE_GETTER(Quaternion);
     DECLARE_GETTER(BoundingBox);
@@ -264,7 +191,6 @@ public:
     }
 
 public:
-
     FORCE_INLINE static void GetBool(bool& result, const Value& node, const char* name)
     {
         const auto member = node.FindMember(name);
@@ -361,6 +287,12 @@ public:
     DECLARE_GETTER(Vector2);
     DECLARE_GETTER(Vector3);
     DECLARE_GETTER(Vector4);
+    DECLARE_GETTER(Float2);
+    DECLARE_GETTER(Float3);
+    DECLARE_GETTER(Float4);
+    DECLARE_GETTER(Double2);
+    DECLARE_GETTER(Double3);
+    DECLARE_GETTER(Double4);
     DECLARE_GETTER(Color);
     DECLARE_GETTER(Quaternion);
     DECLARE_GETTER(BoundingBox);

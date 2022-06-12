@@ -18,7 +18,7 @@ namespace FlaxEngine.Tests
         [Test]
         public void TestWorldMatrix()
         {
-            Transform t1 = new Transform(new Vector3(10, 1, 10), Quaternion.Euler(45, 0, -15), new Vector3(1.5f, 0.5f, 0.1f));
+            Transform t1 = new Transform(new Vector3(10, 1, 10), Quaternion.Euler(45, 0, -15), new Float3(1.5f, 0.5f, 0.1f));
 
             Matrix a1 = t1.GetWorld();
 
@@ -28,12 +28,13 @@ namespace FlaxEngine.Tests
                 Matrix.Scaling(ref t1.Scale, out a2);
                 Matrix.RotationQuaternion(ref t1.Orientation, out m2);
                 Matrix.Multiply(ref a2, ref m2, out m1);
-                Matrix.Translation(ref t1.Translation, out m2);
+                Float3 translation = t1.Translation;
+                Matrix.Translation(ref translation, out m2);
                 Matrix.Multiply(ref m1, ref m2, out a2);
             }
 
             Matrix a3;
-            Matrix.Transformation(ref t1.Scale, ref t1.Orientation, ref t1.Translation, out a3);
+            t1.GetWorld(out a3);
 
             Assert.AreEqual(a1, a2);
             Assert.AreEqual(a1, a3);
@@ -45,8 +46,8 @@ namespace FlaxEngine.Tests
         [Test]
         public void TestLocalToWorld()
         {
-            Transform t1 = new Transform(new Vector3(10, 1, 10), Quaternion.Euler(45, 0, -15), new Vector3(1.5f, 0.5f, 0.1f));
-            Transform t2 = new Transform(new Vector3(0, 20, 0), Quaternion.Euler(0, 0, 15), new Vector3(1.0f, 2.0f, 1.0f));
+            Transform t1 = new Transform(new Vector3(10, 1, 10), Quaternion.Euler(45, 0, -15), new Float3(1.5f, 0.5f, 0.1f));
+            Transform t2 = new Transform(new Vector3(0, 20, 0), Quaternion.Euler(0, 0, 15), new Float3(1.0f, 2.0f, 1.0f));
 
             Transform a1 = t1.LocalToWorld(t2);
             Vector3 a2 = t1.LocalToWorld(t2.Translation);
@@ -77,13 +78,13 @@ namespace FlaxEngine.Tests
         [Test]
         public void TestWorldToLocal()
         {
-            Transform t1 = new Transform(new Vector3(10, 1, 10), Quaternion.Euler(45, 0, -15), new Vector3(1.5f, 0.5f, 0.1f));
-            Transform t2 = new Transform(new Vector3(0, 20, 0), Quaternion.Euler(0, 0, 15), new Vector3(1.0f, 2.0f, 1.0f));
+            Transform t1 = new Transform(new Vector3(10, 1, 10), Quaternion.Euler(45, 0, -15), new Float3(1.5f, 0.5f, 0.1f));
+            Transform t2 = new Transform(new Vector3(0, 20, 0), Quaternion.Euler(0, 0, 15), new Float3(1.0f, 2.0f, 1.0f));
 
             Transform a1 = t1.WorldToLocal(t2);
-            Vector3 a2 = t1.WorldToLocal(t2.Translation);
+            Float3 a2 = t1.WorldToLocal(t2.Translation);
 
-            Vector3 a3;
+            Float3 a3;
             {
                 Matrix scale, rotation, scaleRotation;
                 Matrix.Scaling(ref t1.Scale, out scale);
@@ -91,14 +92,14 @@ namespace FlaxEngine.Tests
                 Matrix.Multiply(ref scale, ref rotation, out scaleRotation);
                 Matrix.Invert(ref scaleRotation, out scale);
                 a3 = t2.Translation - t1.Translation;
-                Vector3.Transform(ref a3, ref scale, out a3);
+                Float3.Transform(ref a3, ref scale, out a3);
             }
 
             var a4T = new Vector3[1];
             t1.WorldToLocal(new Vector3[1] { t2.Translation }, a4T);
-            Vector3 a4 = a4T[0];
+            Float3 a4 = a4T[0];
 
-            Assert.AreEqual(a1.Translation, a2);
+            Assert.AreEqual((Float3)a1.Translation, a2);
             Assert.AreEqual(a2, a3);
             Assert.AreEqual(a2, a4);
         }
@@ -111,28 +112,28 @@ namespace FlaxEngine.Tests
         {
             Transform trans = new Transform(new Vector3(1, 2, 3));
 
-            Assert.AreEqual(new Vector3(1, 2, 3), trans.LocalToWorld(new Vector3(0, 0, 0)));
-            Assert.AreEqual(new Vector3(4, 4, 4), trans.LocalToWorld(new Vector3(3, 2, 1)));
-            Assert.AreEqual(new Vector3(-1, -2, -3), trans.WorldToLocal(new Vector3(0, 0, 0)));
-            Assert.AreEqual(new Vector3(0, 0, 0), trans.WorldToLocal(new Vector3(1, 2, 3)));
+            Assert.AreEqual(new Float3(1, 2, 3), (Float3)trans.LocalToWorld(new Float3(0, 0, 0)));
+            Assert.AreEqual(new Float3(4, 4, 4), (Float3)trans.LocalToWorld(new Float3(3, 2, 1)));
+            Assert.AreEqual(new Float3(-1, -2, -3), (Float3)trans.WorldToLocal(new Float3(0, 0, 0)));
+            Assert.AreEqual(new Float3(0, 0, 0), (Float3)trans.WorldToLocal(new Float3(1, 2, 3)));
 
             trans = new Transform(Vector3.Zero, Quaternion.Euler(0, 90, 0));
-            Assert.AreEqual(new Vector3(0, 2, -1), trans.LocalToWorld(new Vector3(1, 2, 0)));
+            Assert.AreEqual(new Float3(0, 2, -1), (Float3)trans.LocalToWorld(new Float3(1, 2, 0)));
 
             trans.Translation = new Vector3(1, 0, 0);
             trans.Orientation = Quaternion.RotationX((float)Math.PI * 0.5f);
             trans.Scale = new Vector3(2, 2, 2);
-            Assert.AreEqual(new Vector3(1, 0, 2), trans.LocalToWorld(new Vector3(0, 1, 0)));
+            Assert.AreEqual(new Float3(1, 0, 2), (Float3)trans.LocalToWorld(new Float3(0, 1, 0)));
 
             Transform t1 = trans.LocalToWorld(Transform.Identity);
-            Assert.AreEqual(new Vector3(1.0f, 0, 0), t1.Translation);
+            Assert.AreEqual(new Float3(1.0f, 0, 0), (Float3)t1.Translation);
             Assert.AreEqual(Quaternion.RotationX((float)Math.PI * 0.5f), t1.Orientation);
-            Assert.AreEqual(new Vector3(2.0f, 2.0f, 2.0f), t1.Scale);
+            Assert.AreEqual(new Float3(2.0f, 2.0f, 2.0f), t1.Scale);
 
             Transform t2 = trans.WorldToLocal(Transform.Identity);
-            Assert.AreEqual(new Vector3(-0.5f, 0, 0), t2.Translation);
+            Assert.AreEqual(new Float3(-0.5f, 0, 0), (Float3)t2.Translation);
             Assert.AreEqual(Quaternion.RotationX((float)Math.PI * -0.5f), t2.Orientation);
-            Assert.AreEqual(new Vector3(0.5f, 0.5f, 0.5f), t2.Scale);
+            Assert.AreEqual(new Float3(0.5f, 0.5f, 0.5f), t2.Scale);
 
             var rand = new Random(10);
             for (int i = 0; i < 10; i++)

@@ -258,7 +258,7 @@ public:
     static ShaderGraphValue Float2(const ShaderGraphValue& x, const ShaderGraphValue& y)
     {
         return ShaderGraphValue(
-            VariantType::Types::Vector2,
+            VariantType::Types::Float2,
             String::Format(TEXT("float2({0}, {1})"),
                            Cast(x, VariantType::Types::Float).Value,
                            Cast(y, VariantType::Types::Float).Value));
@@ -274,7 +274,7 @@ public:
     static ShaderGraphValue Float3(const ShaderGraphValue& x, const ShaderGraphValue& y, const ShaderGraphValue& z)
     {
         return ShaderGraphValue(
-            VariantType::Types::Vector3,
+            VariantType::Types::Float3,
             String::Format(TEXT("float3({0}, {1}, {2})"),
                            Cast(x, VariantType::Types::Float).Value,
                            Cast(y, VariantType::Types::Float).Value,
@@ -292,7 +292,7 @@ public:
     static ShaderGraphValue Float4(const ShaderGraphValue& x, const ShaderGraphValue& y, const ShaderGraphValue& z, const ShaderGraphValue& w)
     {
         return ShaderGraphValue(
-            VariantType::Types::Vector4,
+            VariantType::Types::Float4,
             String::Format(TEXT("float4({0}, {1}, {2}, {3})"),
                            Cast(x, VariantType::Types::Float).Value,
                            Cast(y, VariantType::Types::Float).Value,
@@ -377,30 +377,30 @@ public:
     }
 
     /// <summary>
-    /// Casts the value to the Vector2 type.
+    /// Casts the value to the Float2 type.
     /// </summary>
-    /// <returns>Vector2</returns>
-    ShaderGraphValue AsVector2() const
+    /// <returns>Float2</returns>
+    ShaderGraphValue AsFloat2() const
     {
-        return Cast(*this, VariantType::Types::Vector2);
+        return Cast(*this, VariantType::Types::Float2);
     }
 
     /// <summary>
-    /// Casts the value to the Vector3 type.
+    /// Casts the value to the Float3 type.
     /// </summary>
-    /// <returns>Vector3</returns>
-    ShaderGraphValue AsVector3() const
+    /// <returns>Float3</returns>
+    ShaderGraphValue AsFloat3() const
     {
-        return Cast(*this, VariantType::Types::Vector3);
+        return Cast(*this, VariantType::Types::Float3);
     }
 
     /// <summary>
-    /// Casts the value to the Vector4 type.
+    /// Casts the value to the Float4 type.
     /// </summary>
-    /// <returns>Vector4</returns>
-    ShaderGraphValue AsVector4() const
+    /// <returns>Float4</returns>
+    ShaderGraphValue AsFloat4() const
     {
-        return Cast(*this, VariantType::Types::Vector4);
+        return Cast(*this, VariantType::Types::Float4);
     }
 
     /// <summary>

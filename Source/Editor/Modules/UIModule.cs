@@ -327,7 +327,7 @@ namespace FlaxEditor.Modules
             {
                 mainWindow.AddChild(new CustomWindowBorderControl
                 {
-                    Size = Vector2.Zero,
+                    Size = Float2.Zero,
                 });
             }
         }
@@ -403,13 +403,13 @@ namespace FlaxEditor.Modules
             {
                 var targetControlDesktopCenter = targetControl.PointToScreen(targetControl.Size * 0.5f);
                 var desktopSize = Platform.GetMonitorBounds(targetControlDesktopCenter);
-                var pos = targetControlDesktopCenter + new Vector2(10.0f, -dialog.Height * 0.5f);
+                var pos = targetControlDesktopCenter + new Float2(10.0f, -dialog.Height * 0.5f);
                 var dialogEnd = pos + dialog.Size;
-                var desktopEnd = desktopSize.BottomRight - new Vector2(10.0f);
+                var desktopEnd = desktopSize.BottomRight - new Float2(10.0f);
                 if (dialogEnd.X >= desktopEnd.X || dialogEnd.Y >= desktopEnd.Y)
-                    pos = targetControl.PointToScreen(Vector2.Zero) - new Vector2(10.0f + dialog.Width, dialog.Height);
+                    pos = targetControl.PointToScreen(Float2.Zero) - new Float2(10.0f + dialog.Width, dialog.Height);
                 var desktopBounds = Platform.VirtualDesktopBounds;
-                pos = Vector2.Clamp(pos, desktopBounds.UpperLeft, desktopBounds.BottomRight - dialog.Size);
+                pos = Float2.Clamp(pos, desktopBounds.UpperLeft, desktopBounds.BottomRight - dialog.Size);
                 dialog.RootWindow.Window.Position = pos;
             }
 

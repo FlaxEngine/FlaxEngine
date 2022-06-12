@@ -565,128 +565,128 @@ DECLARE_SCRIPTING_TYPE_NO_SPAWN(ColorGradingSettings);
     /// <summary>
     /// Gets or sets the color saturation (applies globally to the whole image). Default is 1.
     /// </summary>
-    API_FIELD(Attributes="DefaultValue(typeof(Vector4), \"1,1,1,1\"), CustomEditorAlias(\"FlaxEditor.CustomEditors.Editors.ColorTrackball\"), EditorOrder(0), PostProcessSetting((int)ColorGradingSettingsOverride.ColorSaturation), Limit(0, 2, 0.01f), EditorDisplay(\"Global\", \"Saturation\")")
-    Vector4 ColorSaturation = Vector4::One;
+    API_FIELD(Attributes="DefaultValue(typeof(Float4), \"1,1,1,1\"), CustomEditorAlias(\"FlaxEditor.CustomEditors.Editors.ColorTrackball\"), EditorOrder(0), PostProcessSetting((int)ColorGradingSettingsOverride.ColorSaturation), Limit(0, 2, 0.01f), EditorDisplay(\"Global\", \"Saturation\")")
+    Float4 ColorSaturation = Float4::One;
 
     /// <summary>
     /// Gets or sets the color contrast (applies globally to the whole image). Default is 1.
     /// </summary>
-    API_FIELD(Attributes="DefaultValue(typeof(Vector4), \"1,1,1,1\"), CustomEditorAlias(\"FlaxEditor.CustomEditors.Editors.ColorTrackball\"), EditorOrder(1), PostProcessSetting((int)ColorGradingSettingsOverride.ColorContrast), Limit(0, 2, 0.01f), EditorDisplay(\"Global\", \"Contrast\")")
-    Vector4 ColorContrast = Vector4::One;
+    API_FIELD(Attributes="DefaultValue(typeof(Float4), \"1,1,1,1\"), CustomEditorAlias(\"FlaxEditor.CustomEditors.Editors.ColorTrackball\"), EditorOrder(1), PostProcessSetting((int)ColorGradingSettingsOverride.ColorContrast), Limit(0, 2, 0.01f), EditorDisplay(\"Global\", \"Contrast\")")
+    Float4 ColorContrast = Float4::One;
 
     /// <summary>
     /// Gets or sets the color gamma (applies globally to the whole image). Default is 1.
     /// </summary>
-    API_FIELD(Attributes="DefaultValue(typeof(Vector4), \"1,1,1,1\"), CustomEditorAlias(\"FlaxEditor.CustomEditors.Editors.ColorTrackball\"), EditorOrder(2), PostProcessSetting((int)ColorGradingSettingsOverride.ColorGamma), Limit(0, 2, 0.01f), EditorDisplay(\"Global\", \"Gamma\")")
-    Vector4 ColorGamma = Vector4::One;
+    API_FIELD(Attributes="DefaultValue(typeof(Float4), \"1,1,1,1\"), CustomEditorAlias(\"FlaxEditor.CustomEditors.Editors.ColorTrackball\"), EditorOrder(2), PostProcessSetting((int)ColorGradingSettingsOverride.ColorGamma), Limit(0, 2, 0.01f), EditorDisplay(\"Global\", \"Gamma\")")
+    Float4 ColorGamma = Float4::One;
 
     /// <summary>
     /// Gets or sets the color gain (applies globally to the whole image). Default is 1.
     /// </summary>
-    API_FIELD(Attributes="DefaultValue(typeof(Vector4), \"1,1,1,1\"), CustomEditorAlias(\"FlaxEditor.CustomEditors.Editors.ColorTrackball\"), EditorOrder(3), PostProcessSetting((int)ColorGradingSettingsOverride.ColorGain), Limit(0, 2, 0.01f), EditorDisplay(\"Global\", \"Gain\")")
-    Vector4 ColorGain = Vector4::One;
+    API_FIELD(Attributes="DefaultValue(typeof(Float4), \"1,1,1,1\"), CustomEditorAlias(\"FlaxEditor.CustomEditors.Editors.ColorTrackball\"), EditorOrder(3), PostProcessSetting((int)ColorGradingSettingsOverride.ColorGain), Limit(0, 2, 0.01f), EditorDisplay(\"Global\", \"Gain\")")
+    Float4 ColorGain = Float4::One;
 
     /// <summary>
     /// Gets or sets the color offset (applies globally to the whole image). Default is 0.
     /// </summary>
-    API_FIELD(Attributes="DefaultValue(typeof(Vector4), \"0,0,0,0\"), CustomEditorAlias(\"FlaxEditor.CustomEditors.Editors.ColorTrackball\"), EditorOrder(4), PostProcessSetting((int)ColorGradingSettingsOverride.ColorOffset), Limit(-1, 1, 0.001f), EditorDisplay(\"Global\", \"Offset\")")
-    Vector4 ColorOffset = Vector4::Zero;
+    API_FIELD(Attributes="DefaultValue(typeof(Float4), \"0,0,0,0\"), CustomEditorAlias(\"FlaxEditor.CustomEditors.Editors.ColorTrackball\"), EditorOrder(4), PostProcessSetting((int)ColorGradingSettingsOverride.ColorOffset), Limit(-1, 1, 0.001f), EditorDisplay(\"Global\", \"Offset\")")
+    Float4 ColorOffset = Float4::Zero;
 
     // Shadows
 
     /// <summary>
     /// Gets or sets the color saturation (applies to shadows only). Default is 1.
     /// </summary>
-    API_FIELD(Attributes="DefaultValue(typeof(Vector4), \"1,1,1,1\"), CustomEditorAlias(\"FlaxEditor.CustomEditors.Editors.ColorTrackball\"), EditorOrder(5), PostProcessSetting((int)ColorGradingSettingsOverride.ColorSaturationShadows), Limit(0, 2, 0.01f), EditorDisplay(\"Shadows\", \"Shadows Saturation\")")
-    Vector4 ColorSaturationShadows = Vector4::One;
+    API_FIELD(Attributes="DefaultValue(typeof(Float4), \"1,1,1,1\"), CustomEditorAlias(\"FlaxEditor.CustomEditors.Editors.ColorTrackball\"), EditorOrder(5), PostProcessSetting((int)ColorGradingSettingsOverride.ColorSaturationShadows), Limit(0, 2, 0.01f), EditorDisplay(\"Shadows\", \"Shadows Saturation\")")
+    Float4 ColorSaturationShadows = Float4::One;
 
     /// <summary>
     /// Gets or sets the color contrast (applies to shadows only). Default is 1.
     /// </summary>
-    API_FIELD(Attributes="DefaultValue(typeof(Vector4), \"1,1,1,1\"), CustomEditorAlias(\"FlaxEditor.CustomEditors.Editors.ColorTrackball\"), EditorOrder(6), PostProcessSetting((int)ColorGradingSettingsOverride.ColorContrastShadows), Limit(0, 2, 0.01f), EditorDisplay(\"Shadows\", \"Shadows Contrast\")")
-    Vector4 ColorContrastShadows = Vector4::One;
+    API_FIELD(Attributes="DefaultValue(typeof(Float4), \"1,1,1,1\"), CustomEditorAlias(\"FlaxEditor.CustomEditors.Editors.ColorTrackball\"), EditorOrder(6), PostProcessSetting((int)ColorGradingSettingsOverride.ColorContrastShadows), Limit(0, 2, 0.01f), EditorDisplay(\"Shadows\", \"Shadows Contrast\")")
+    Float4 ColorContrastShadows = Float4::One;
 
     /// <summary>
     /// Gets or sets the color gamma (applies to shadows only). Default is 1.
     /// </summary>
-    API_FIELD(Attributes="DefaultValue(typeof(Vector4), \"1,1,1,1\"), CustomEditorAlias(\"FlaxEditor.CustomEditors.Editors.ColorTrackball\"), EditorOrder(7), PostProcessSetting((int)ColorGradingSettingsOverride.ColorGammaShadows), Limit(0, 2, 0.01f), EditorDisplay(\"Shadows\", \"Shadows Gamma\")")
-    Vector4 ColorGammaShadows = Vector4::One;
+    API_FIELD(Attributes="DefaultValue(typeof(Float4), \"1,1,1,1\"), CustomEditorAlias(\"FlaxEditor.CustomEditors.Editors.ColorTrackball\"), EditorOrder(7), PostProcessSetting((int)ColorGradingSettingsOverride.ColorGammaShadows), Limit(0, 2, 0.01f), EditorDisplay(\"Shadows\", \"Shadows Gamma\")")
+    Float4 ColorGammaShadows = Float4::One;
 
     /// <summary>
     /// Gets or sets the color gain (applies to shadows only). Default is 1.
     /// </summary>
-    API_FIELD(Attributes="DefaultValue(typeof(Vector4), \"1,1,1,1\"), CustomEditorAlias(\"FlaxEditor.CustomEditors.Editors.ColorTrackball\"), EditorOrder(8), PostProcessSetting((int)ColorGradingSettingsOverride.ColorGainShadows), Limit(0, 2, 0.01f), EditorDisplay(\"Shadows\", \"Shadows Gain\")")
-    Vector4 ColorGainShadows = Vector4::One;
+    API_FIELD(Attributes="DefaultValue(typeof(Float4), \"1,1,1,1\"), CustomEditorAlias(\"FlaxEditor.CustomEditors.Editors.ColorTrackball\"), EditorOrder(8), PostProcessSetting((int)ColorGradingSettingsOverride.ColorGainShadows), Limit(0, 2, 0.01f), EditorDisplay(\"Shadows\", \"Shadows Gain\")")
+    Float4 ColorGainShadows = Float4::One;
 
     /// <summary>
     /// Gets or sets the color offset (applies to shadows only). Default is 0.
     /// </summary>
-    API_FIELD(Attributes="DefaultValue(typeof(Vector4), \"0,0,0,0\"), CustomEditorAlias(\"FlaxEditor.CustomEditors.Editors.ColorTrackball\"), EditorOrder(9), PostProcessSetting((int)ColorGradingSettingsOverride.ColorOffsetShadows), Limit(-1, 1, 0.001f), EditorDisplay(\"Shadows\", \"Shadows Offset\")")
-    Vector4 ColorOffsetShadows = Vector4::Zero;
+    API_FIELD(Attributes="DefaultValue(typeof(Float4), \"0,0,0,0\"), CustomEditorAlias(\"FlaxEditor.CustomEditors.Editors.ColorTrackball\"), EditorOrder(9), PostProcessSetting((int)ColorGradingSettingsOverride.ColorOffsetShadows), Limit(-1, 1, 0.001f), EditorDisplay(\"Shadows\", \"Shadows Offset\")")
+    Float4 ColorOffsetShadows = Float4::Zero;
 
     // Midtones
 
     /// <summary>
     /// Gets or sets the color saturation (applies to midtones only). Default is 1.
     /// </summary>
-    API_FIELD(Attributes="DefaultValue(typeof(Vector4), \"1,1,1,1\"), CustomEditorAlias(\"FlaxEditor.CustomEditors.Editors.ColorTrackball\"), EditorOrder(10), PostProcessSetting((int)ColorGradingSettingsOverride.ColorSaturationMidtones), Limit(0, 2, 0.01f), EditorDisplay(\"Midtones\", \"Midtones Saturation\")")
-    Vector4 ColorSaturationMidtones = Vector4::One;
+    API_FIELD(Attributes="DefaultValue(typeof(Float4), \"1,1,1,1\"), CustomEditorAlias(\"FlaxEditor.CustomEditors.Editors.ColorTrackball\"), EditorOrder(10), PostProcessSetting((int)ColorGradingSettingsOverride.ColorSaturationMidtones), Limit(0, 2, 0.01f), EditorDisplay(\"Midtones\", \"Midtones Saturation\")")
+    Float4 ColorSaturationMidtones = Float4::One;
 
     /// <summary>
     /// Gets or sets the color contrast (applies to midtones only). Default is 1.
     /// </summary>
-    API_FIELD(Attributes="DefaultValue(typeof(Vector4), \"1,1,1,1\"), CustomEditorAlias(\"FlaxEditor.CustomEditors.Editors.ColorTrackball\"), EditorOrder(11), PostProcessSetting((int)ColorGradingSettingsOverride.ColorContrastMidtones), Limit(0, 2, 0.01f), EditorDisplay(\"Midtones\", \"Midtones Contrast\")")
-    Vector4 ColorContrastMidtones = Vector4::One;
+    API_FIELD(Attributes="DefaultValue(typeof(Float4), \"1,1,1,1\"), CustomEditorAlias(\"FlaxEditor.CustomEditors.Editors.ColorTrackball\"), EditorOrder(11), PostProcessSetting((int)ColorGradingSettingsOverride.ColorContrastMidtones), Limit(0, 2, 0.01f), EditorDisplay(\"Midtones\", \"Midtones Contrast\")")
+    Float4 ColorContrastMidtones = Float4::One;
 
     /// <summary>
     /// Gets or sets the color gamma (applies to midtones only). Default is 1.
     /// </summary>
-    API_FIELD(Attributes="DefaultValue(typeof(Vector4), \"1,1,1,1\"), CustomEditorAlias(\"FlaxEditor.CustomEditors.Editors.ColorTrackball\"), EditorOrder(12), PostProcessSetting((int)ColorGradingSettingsOverride.ColorGammaMidtones), Limit(0, 2, 0.01f), EditorDisplay(\"Midtones\", \"Midtones Gamma\")")
-    Vector4 ColorGammaMidtones = Vector4::One;
+    API_FIELD(Attributes="DefaultValue(typeof(Float4), \"1,1,1,1\"), CustomEditorAlias(\"FlaxEditor.CustomEditors.Editors.ColorTrackball\"), EditorOrder(12), PostProcessSetting((int)ColorGradingSettingsOverride.ColorGammaMidtones), Limit(0, 2, 0.01f), EditorDisplay(\"Midtones\", \"Midtones Gamma\")")
+    Float4 ColorGammaMidtones = Float4::One;
 
     /// <summary>
     /// Gets or sets the color gain (applies to midtones only). Default is 1.
     /// </summary>
-    API_FIELD(Attributes="DefaultValue(typeof(Vector4), \"1,1,1,1\"), CustomEditorAlias(\"FlaxEditor.CustomEditors.Editors.ColorTrackball\"), EditorOrder(13), PostProcessSetting((int)ColorGradingSettingsOverride.ColorGainMidtones), Limit(0, 2, 0.01f), EditorDisplay(\"Midtones\", \"Midtones Gain\")")
-    Vector4 ColorGainMidtones = Vector4::One;
+    API_FIELD(Attributes="DefaultValue(typeof(Float4), \"1,1,1,1\"), CustomEditorAlias(\"FlaxEditor.CustomEditors.Editors.ColorTrackball\"), EditorOrder(13), PostProcessSetting((int)ColorGradingSettingsOverride.ColorGainMidtones), Limit(0, 2, 0.01f), EditorDisplay(\"Midtones\", \"Midtones Gain\")")
+    Float4 ColorGainMidtones = Float4::One;
 
     /// <summary>
     /// Gets or sets the color offset (applies to midtones only). Default is 0.
     /// </summary>
-    API_FIELD(Attributes="DefaultValue(typeof(Vector4), \"0,0,0,0\"), CustomEditorAlias(\"FlaxEditor.CustomEditors.Editors.ColorTrackball\"), EditorOrder(14), PostProcessSetting((int)ColorGradingSettingsOverride.ColorOffsetMidtones), Limit(-1, 1, 0.001f), EditorDisplay(\"Midtones\", \"Midtones Offset\")")
-    Vector4 ColorOffsetMidtones = Vector4::Zero;
+    API_FIELD(Attributes="DefaultValue(typeof(Float4), \"0,0,0,0\"), CustomEditorAlias(\"FlaxEditor.CustomEditors.Editors.ColorTrackball\"), EditorOrder(14), PostProcessSetting((int)ColorGradingSettingsOverride.ColorOffsetMidtones), Limit(-1, 1, 0.001f), EditorDisplay(\"Midtones\", \"Midtones Offset\")")
+    Float4 ColorOffsetMidtones = Float4::Zero;
 
     // Highlights
 
     /// <summary>
     /// Gets or sets the color saturation (applies to highlights only). Default is 1.
     /// </summary>
-    API_FIELD(Attributes="DefaultValue(typeof(Vector4), \"1,1,1,1\"), CustomEditorAlias(\"FlaxEditor.CustomEditors.Editors.ColorTrackball\"), EditorOrder(15), PostProcessSetting((int)ColorGradingSettingsOverride.ColorSaturationHighlights), Limit(0, 2, 0.01f), EditorDisplay(\"Highlights\", \"Highlights Saturation\")")
-    Vector4 ColorSaturationHighlights = Vector4::One;
+    API_FIELD(Attributes="DefaultValue(typeof(Float4), \"1,1,1,1\"), CustomEditorAlias(\"FlaxEditor.CustomEditors.Editors.ColorTrackball\"), EditorOrder(15), PostProcessSetting((int)ColorGradingSettingsOverride.ColorSaturationHighlights), Limit(0, 2, 0.01f), EditorDisplay(\"Highlights\", \"Highlights Saturation\")")
+    Float4 ColorSaturationHighlights = Float4::One;
 
     /// <summary>
     /// Gets or sets the color contrast (applies to highlights only). Default is 1.
     /// </summary>
-    API_FIELD(Attributes="DefaultValue(typeof(Vector4), \"1,1,1,1\"), CustomEditorAlias(\"FlaxEditor.CustomEditors.Editors.ColorTrackball\"), EditorOrder(16), PostProcessSetting((int)ColorGradingSettingsOverride.ColorContrastHighlights), Limit(0, 2, 0.01f), EditorDisplay(\"Highlights\", \"Highlights Contrast\")")
-    Vector4 ColorContrastHighlights = Vector4::One;
+    API_FIELD(Attributes="DefaultValue(typeof(Float4), \"1,1,1,1\"), CustomEditorAlias(\"FlaxEditor.CustomEditors.Editors.ColorTrackball\"), EditorOrder(16), PostProcessSetting((int)ColorGradingSettingsOverride.ColorContrastHighlights), Limit(0, 2, 0.01f), EditorDisplay(\"Highlights\", \"Highlights Contrast\")")
+    Float4 ColorContrastHighlights = Float4::One;
 
     /// <summary>
     /// Gets or sets the color gamma (applies to highlights only). Default is 1.
     /// </summary>
-    API_FIELD(Attributes="DefaultValue(typeof(Vector4), \"1,1,1,1\"), CustomEditorAlias(\"FlaxEditor.CustomEditors.Editors.ColorTrackball\"), EditorOrder(17), PostProcessSetting((int)ColorGradingSettingsOverride.ColorGammaHighlights), Limit(0, 2, 0.01f), EditorDisplay(\"Highlights\", \"Highlights Gamma\")")
-    Vector4 ColorGammaHighlights = Vector4::One;
+    API_FIELD(Attributes="DefaultValue(typeof(Float4), \"1,1,1,1\"), CustomEditorAlias(\"FlaxEditor.CustomEditors.Editors.ColorTrackball\"), EditorOrder(17), PostProcessSetting((int)ColorGradingSettingsOverride.ColorGammaHighlights), Limit(0, 2, 0.01f), EditorDisplay(\"Highlights\", \"Highlights Gamma\")")
+    Float4 ColorGammaHighlights = Float4::One;
 
     /// <summary>
     /// Gets or sets the color gain (applies to highlights only). Default is 1.
     /// </summary>
-    API_FIELD(Attributes="DefaultValue(typeof(Vector4), \"1,1,1,1\"), CustomEditorAlias(\"FlaxEditor.CustomEditors.Editors.ColorTrackball\"), EditorOrder(18), PostProcessSetting((int)ColorGradingSettingsOverride.ColorGainHighlights), Limit(0, 2, 0.01f), EditorDisplay(\"Highlights\", \"Highlights Gain\")")
-    Vector4 ColorGainHighlights = Vector4::One;
+    API_FIELD(Attributes="DefaultValue(typeof(Float4), \"1,1,1,1\"), CustomEditorAlias(\"FlaxEditor.CustomEditors.Editors.ColorTrackball\"), EditorOrder(18), PostProcessSetting((int)ColorGradingSettingsOverride.ColorGainHighlights), Limit(0, 2, 0.01f), EditorDisplay(\"Highlights\", \"Highlights Gain\")")
+    Float4 ColorGainHighlights = Float4::One;
 
     /// <summary>
     /// Gets or sets the color offset (applies to highlights only). Default is 0.
     /// </summary>
-    API_FIELD(Attributes="DefaultValue(typeof(Vector4), \"0,0,0,0\"), CustomEditorAlias(\"FlaxEditor.CustomEditors.Editors.ColorTrackball\"), EditorOrder(19), PostProcessSetting((int)ColorGradingSettingsOverride.ColorOffsetHighlights), Limit(-1, 1, 0.001f), EditorDisplay(\"Highlights\", \"Highlights Offset\")")
-    Vector4 ColorOffsetHighlights = Vector4::Zero;
+    API_FIELD(Attributes="DefaultValue(typeof(Float4), \"0,0,0,0\"), CustomEditorAlias(\"FlaxEditor.CustomEditors.Editors.ColorTrackball\"), EditorOrder(19), PostProcessSetting((int)ColorGradingSettingsOverride.ColorOffsetHighlights), Limit(-1, 1, 0.001f), EditorDisplay(\"Highlights\", \"Highlights Offset\")")
+    Float4 ColorOffsetHighlights = Float4::Zero;
 
     //
 
@@ -947,7 +947,7 @@ DECLARE_SCRIPTING_TYPE_NO_SPAWN(CameraArtifactsSettings);
     /// Color of the vignette.
     /// </summary>
     API_FIELD(Attributes="EditorOrder(1), PostProcessSetting((int)CameraArtifactsSettingsOverride.VignetteColor)")
-    Vector3 VignetteColor = Vector3(0, 0, 0.001f);
+    Float3 VignetteColor = Float3(0, 0, 0.001f);
 
     /// <summary>
     /// Controls shape of the vignette. Values near 0 produce rectangle shape. Higher values result in round shape. The default value is 0.125.

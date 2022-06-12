@@ -103,7 +103,7 @@ namespace FlaxEditor.GUI.Timeline.Tracks
             RenderView view = new RenderView();
             var track = (CameraCutTrack)Track;
             Camera cam = track.Camera;
-            var viewport = new FlaxEngine.Viewport(Vector2.Zero, task.Buffers.Size);
+            var viewport = new FlaxEngine.Viewport(Float2.Zero, task.Buffers.Size);
             Quaternion orientation = Quaternion.Identity;
             view.Near = 10.0f;
             view.Far = 20000.0f;
@@ -169,7 +169,7 @@ namespace FlaxEditor.GUI.Timeline.Tracks
             }
 
             // Build view
-            view.Direction = Vector3.Forward * orientation;
+            view.Direction = Float3.Forward * orientation;
             if (usePerspective)
             {
                 float aspect = customAspectRatio <= 0.0f ? viewport.AspectRatio : customAspectRatio;
@@ -181,10 +181,10 @@ namespace FlaxEditor.GUI.Timeline.Tracks
             }
 
             Vector3 target = view.Position + view.Direction;
-            var up = Vector3.Transform(Vector3.Up, orientation);
+            var up = Float3.Transform(Float3.Up, orientation);
             view.View = Matrix.LookAt(view.Position, target, up);
             view.NonJitteredProjection = view.Projection;
-            view.TemporalAAJitter = Vector4.Zero;
+            view.TemporalAAJitter = Float4.Zero;
             view.ModelLODDistanceFactor = 100.0f;
             view.Flags = ViewFlags.DefaultGame & ~(ViewFlags.MotionBlur);
             view.UpdateCachedData();
@@ -591,7 +591,7 @@ namespace FlaxEditor.GUI.Timeline.Tracks
                 spriteAtlas.Init(ref initData);
 
                 // Setup sprite atlas slots (each per thumbnail)
-                var thumbnailSizeUV = new Vector2(width / atlasSize, height / atlasSize);
+                var thumbnailSizeUV = new Float2(width / atlasSize, height / atlasSize);
                 for (int i = 0; i < count; i++)
                 {
                     var x = i % countX;
@@ -599,7 +599,7 @@ namespace FlaxEditor.GUI.Timeline.Tracks
                     var s = new Sprite
                     {
                         Name = string.Empty,
-                        Area = new Rectangle(new Vector2(x, y) * thumbnailSizeUV, thumbnailSizeUV),
+                        Area = new Rectangle(new Float2(x, y) * thumbnailSizeUV, thumbnailSizeUV),
                     };
                     spriteAtlas.AddSprite(s);
                 }

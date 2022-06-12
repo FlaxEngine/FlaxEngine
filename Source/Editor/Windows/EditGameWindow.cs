@@ -82,7 +82,7 @@ namespace FlaxEditor.Windows
 
                 // Copy camera view parameters for the scene rendering
                 var view = sceneTask.View;
-                var viewport = new FlaxEngine.Viewport(Vector2.Zero, sceneTask.Buffers.Size);
+                var viewport = new FlaxEngine.Viewport(Float2.Zero, sceneTask.Buffers.Size);
                 view.CopyFrom(Camera, ref viewport);
                 sceneTask.View = view;
             }
@@ -107,7 +107,7 @@ namespace FlaxEditor.Windows
                 base.Draw();
 
                 // Draw frame
-                Render2D.DrawRectangle(new Rectangle(Vector2.Zero, Size), Color.Black);
+                Render2D.DrawRectangle(new Rectangle(Float2.Zero, Size), Color.Black);
             }
 
             /// <inheritdoc />
@@ -303,11 +303,11 @@ namespace FlaxEditor.Windows
                 const float maxWidth = maxHeight * aspectRatio;
                 const float viewSpaceMaxPercentage = 0.7f;
                 const float margin = 10;
-                Vector2 totalSize = Size * viewSpaceMaxPercentage - margin;
-                Vector2 singleSize = totalSize / count - count * margin;
+                var totalSize = Size * viewSpaceMaxPercentage - margin;
+                var singleSize = totalSize / count - count * margin;
                 float sizeX = Mathf.Clamp(singleSize.X, minWidth, maxWidth);
                 float sizeY = sizeX / aspectRatio;
-                singleSize = new Vector2(sizeX, sizeY);
+                singleSize = new Float2(sizeX, sizeY);
                 int countPerX = Mathf.FloorToInt(totalSize.X / singleSize.X);
                 int countPerY = Mathf.FloorToInt(totalSize.Y / singleSize.Y);
                 int index = 0;
@@ -318,7 +318,7 @@ namespace FlaxEditor.Windows
                         if (index == count)
                             break;
 
-                        var pos = Size - (singleSize + margin) * new Vector2(x, y);
+                        var pos = Size - (singleSize + margin) * new Float2(x, y);
                         _previews[index++].Bounds = new Rectangle(pos, singleSize);
                     }
 

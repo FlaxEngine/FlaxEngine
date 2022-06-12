@@ -360,8 +360,8 @@ void CharacterController::OnTransformChanged()
     if (!_isUpdatingTransform && _controller)
     {
         PhysicsBackend::SetControllerPosition(_controller, _transform.Translation);
-        const Vector3 scale = GetScale();
-        if (!Vector3::NearEqual(_cachedScale, scale))
+        const Float3 scale = GetScale();
+        if (!Float3::NearEqual(_cachedScale, scale))
             UpdateGeometry();
         UpdateBounds();
     }

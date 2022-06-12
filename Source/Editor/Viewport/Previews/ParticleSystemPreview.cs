@@ -184,9 +184,9 @@ namespace FlaxEditor.Viewport.Previews
         /// <param name="targetSize">The target size of the effect.</param>
         public void FitIntoView(float targetSize = 300.0f)
         {
-            _previewEffect.Scale = Vector3.One;
-            float maxSize = Mathf.Max(0.001f, _previewEffect.Box.Size.MaxValue);
-            _previewEffect.Scale = new Vector3(targetSize / maxSize);
+            _previewEffect.Scale = Float3.One;
+            float maxSize = Mathf.Max(0.001f, (float)_previewEffect.Box.Size.MaxValue);
+            _previewEffect.Scale = new Float3(targetSize / maxSize);
         }
 
         /// <inheritdoc />
@@ -221,7 +221,7 @@ namespace FlaxEditor.Viewport.Previews
                 Render2D.DrawText(
                                   Style.Current.FontSmall,
                                   "Particles: " + count,
-                                  new Rectangle(Vector2.Zero, Size),
+                                  new Rectangle(Float2.Zero, Size),
                                   Color.Wheat,
                                   TextAlignment.Near,
                                   TextAlignment.Far);

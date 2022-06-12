@@ -657,19 +657,19 @@ namespace FlaxEditor.Windows.Assets
                 VerticalAlignment = TextAlignment.Center,
                 HorizontalAlignment = TextAlignment.Far,
                 Parent = previewPlayerPickerContainer,
-                Size = new Vector2(60.0f, _toolstrip.Height),
+                Size = new Float2(60.0f, _toolstrip.Height),
                 Text = "Player:",
                 TooltipText = "The current scene animation player actor to preview. Pick the player to debug it's playback.",
             };
             _previewPlayerPicker = new FlaxObjectRefPickerControl
             {
-                Location = new Vector2(previewPlayerPickerLabel.Right + 4.0f, 8.0f),
+                Location = new Float2(previewPlayerPickerLabel.Right + 4.0f, 8.0f),
                 Width = 140.0f,
                 Type = new ScriptType(typeof(SceneAnimationPlayer)),
                 Parent = previewPlayerPickerContainer,
             };
             previewPlayerPickerContainer.Width = _previewPlayerPicker.Right + 2.0f;
-            previewPlayerPickerContainer.Size = new Vector2(_previewPlayerPicker.Right + 2.0f, _toolstrip.Height);
+            previewPlayerPickerContainer.Size = new Float2(_previewPlayerPicker.Right + 2.0f, _toolstrip.Height);
             previewPlayerPickerContainer.Parent = _toolstrip;
             _previewPlayerPicker.CheckValid = OnCheckValid;
             _previewPlayerPicker.ValueChanged += OnPreviewPlayerPickerChanged;

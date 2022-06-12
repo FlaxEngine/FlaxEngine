@@ -119,7 +119,7 @@ namespace FlaxEditor.Windows
                 // Cache data
                 var style = Style.Current;
                 var index = IndexInParent;
-                var clientRect = new Rectangle(Vector2.Zero, Size);
+                var clientRect = new Rectangle(Float2.Zero, Size);
 
                 // Background
                 if (_window._selected == this)
@@ -219,14 +219,14 @@ namespace FlaxEditor.Windows
                 Clipboard.Text = Info.Replace("\r\n", "\n").Replace("\n", Environment.NewLine);
             }
 
-            public override bool OnMouseDoubleClick(Vector2 location, MouseButton button)
+            public override bool OnMouseDoubleClick(Float2 location, MouseButton button)
             {
                 Open();
                 return true;
             }
 
             /// <inheritdoc />
-            public override bool OnMouseDown(Vector2 location, MouseButton button)
+            public override bool OnMouseDown(Float2 location, MouseButton button)
             {
                 if (base.OnMouseDown(location, button))
                     return true;
@@ -243,7 +243,7 @@ namespace FlaxEditor.Windows
             }
 
             /// <inheritdoc />
-            public override bool OnMouseUp(Vector2 location, MouseButton button)
+            public override bool OnMouseUp(Float2 location, MouseButton button)
             {
                 if (base.OnMouseUp(location, button))
                     return true;

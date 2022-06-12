@@ -74,7 +74,7 @@ namespace FlaxEngine
         /// Angles order (xyz): pitch, yaw and roll.
         /// </remarks>
         [HideInEditor, NoSerialize, NoAnimate]
-        public Vector3 EulerAngles
+        public Float3 EulerAngles
         {
             get => Orientation.EulerAngles;
             set
@@ -92,7 +92,7 @@ namespace FlaxEngine
         /// Angles order (xyz): pitch, yaw and roll.
         /// </remarks>
         [HideInEditor, NoSerialize, NoAnimate]
-        public Vector3 LocalEulerAngles
+        public Float3 LocalEulerAngles
         {
             get => LocalOrientation.EulerAngles;
             set

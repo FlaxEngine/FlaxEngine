@@ -21,11 +21,11 @@ void PostFxVolume::Collect(RenderContext& renderContext)
     float weight = _blendWeight;
     if (_isBounded)
     {
-        float distance;
+        Real distance;
         if (_bounds.Contains(renderContext.View.Position, &distance) == ContainmentType::Contains)
         {
             if (_blendRadius > 0.0f)
-                weight = Math::Saturate(distance / _blendRadius) * weight;
+                weight = Math::Saturate((float)distance / _blendRadius) * weight;
         }
         else
         {

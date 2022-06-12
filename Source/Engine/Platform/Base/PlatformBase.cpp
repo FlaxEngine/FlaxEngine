@@ -520,7 +520,7 @@ void PlatformBase::CreateGuid(Guid& result)
     result = Guid(dateThingHigh, randomThing | (sequentialThing << 16), cyclesThing, dateThingLow);
 }
 
-Vector2 PlatformBase::GetVirtualDesktopSize()
+Float2 PlatformBase::GetVirtualDesktopSize()
 {
     return Platform::GetVirtualDesktopBounds().Size;
 }

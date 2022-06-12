@@ -20,14 +20,14 @@ DECLARE_SCENE_OBJECT(RigidBody);
 protected:
 
     void* _actor;
-    Vector3 _cachedScale;
+    Float3 _cachedScale;
 
     float _mass;
     float _linearDamping;
     float _angularDamping;
     float _maxAngularVelocity;
     float _massScale;
-    Vector3 _centerOfMassOffset;
+    Float3 _centerOfMassOffset;
     RigidbodyConstraints _constraints;
 
     int32 _enableSimulation : 1;
@@ -259,7 +259,7 @@ public:
     /// Gets the user specified offset for the center of mass of this object, from the calculated location.
     /// </summary>
     API_PROPERTY(Attributes="EditorOrder(140), DefaultValue(typeof(Vector3), \"0,0,0\"), EditorDisplay(\"Rigid Body\", \"Center Of Mass Offset\")")
-    FORCE_INLINE Vector3 GetCenterOfMassOffset() const
+    FORCE_INLINE Float3 GetCenterOfMassOffset() const
     {
         return _centerOfMassOffset;
     }
@@ -268,7 +268,7 @@ public:
     /// Sets the user specified offset for the center of mass of this object, from the calculated location.
     /// </summary>
     /// <param name="value">The value.</param>
-    API_PROPERTY() void SetCenterOfMassOffset(const Vector3& value);
+    API_PROPERTY() void SetCenterOfMassOffset(const Float3& value);
 
     /// <summary>
     /// Gets the object movement constraint flags that define degrees of freedom are allowed for the simulation of object.

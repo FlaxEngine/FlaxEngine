@@ -53,12 +53,12 @@ namespace FlaxEngine.GUI
         /// <summary>
         /// Gets the margin's location (Left, Top).
         /// </summary>
-        public Vector2 Location => new Vector2(Left, Top);
+        public Float2 Location => new Float2(Left, Top);
 
         /// <summary>
         /// Gets the margin's total size. Cumulative margin size (Left + Right, Top + Bottom).
         /// </summary>
-        public Vector2 Size => new Vector2(Left + Right, Top + Bottom);
+        public Float2 Size => new Float2(Left + Right, Top + Bottom);
 
         /// <summary>
         /// Gets the width (left + right).
@@ -172,9 +172,7 @@ namespace FlaxEngine.GUI
         /// <summary>
         /// Returns a <see cref="System.String" /> that represents this instance.
         /// </summary>
-        /// <returns>
-        /// A <see cref="System.String" /> that represents this instance.
-        /// </returns>
+        /// <returns>A <see cref="System.String" /> that represents this instance.</returns>
         public override string ToString()
         {
             return string.Format(CultureInfo.CurrentCulture, "Left:{0} Right:{1} Top:{2} Bottom:{3}", Left, Right, Top, Bottom);
@@ -184,41 +182,32 @@ namespace FlaxEngine.GUI
         /// Returns a <see cref="System.String" /> that represents this instance.
         /// </summary>
         /// <param name="format">The format.</param>
-        /// <returns>
-        /// A <see cref="System.String" /> that represents this instance.
-        /// </returns>
+        /// <returns>A <see cref="System.String" /> that represents this instance.</returns>
         public string ToString(string format)
         {
             if (format == null)
                 return ToString();
-
-            return string.Format(
-                CultureInfo.CurrentCulture,
-                _formatString,
-                Left.ToString(format, CultureInfo.CurrentCulture),
-                Right.ToString(format, CultureInfo.CurrentCulture),
-                Top.ToString(format, CultureInfo.CurrentCulture),
-                Bottom.ToString(format, CultureInfo.CurrentCulture)
-            );
+            return string.Format(CultureInfo.CurrentCulture, _formatString,
+                                 Left.ToString(format, CultureInfo.CurrentCulture),
+                                 Right.ToString(format, CultureInfo.CurrentCulture),
+                                 Top.ToString(format, CultureInfo.CurrentCulture),
+                                 Bottom.ToString(format, CultureInfo.CurrentCulture)
+                                );
         }
 
         /// <summary>
         /// Returns a <see cref="System.String" /> that represents this instance.
         /// </summary>
         /// <param name="formatProvider">The format provider.</param>
-        /// <returns>
-        /// A <see cref="System.String" /> that represents this instance.
-        /// </returns>
+        /// <returns>A <see cref="System.String" /> that represents this instance.</returns>
         public string ToString(IFormatProvider formatProvider)
         {
-            return string.Format(
-                formatProvider,
-                _formatString,
-                Left,
-                Right,
-                Top,
-                Bottom
-            );
+            return string.Format(formatProvider, _formatString,
+                                 Left,
+                                 Right,
+                                 Top,
+                                 Bottom
+                                );
         }
 
         /// <summary>
@@ -226,30 +215,23 @@ namespace FlaxEngine.GUI
         /// </summary>
         /// <param name="format">The format.</param>
         /// <param name="formatProvider">The format provider.</param>
-        /// <returns>
-        /// A <see cref="System.String" /> that represents this instance.
-        /// </returns>
+        /// <returns>A <see cref="System.String" /> that represents this instance.</returns>
         public string ToString(string format, IFormatProvider formatProvider)
         {
             if (format == null)
                 return ToString(formatProvider);
-
-            return string.Format(
-                formatProvider,
-                _formatString,
-                Left.ToString(format, formatProvider),
-                Right.ToString(format, formatProvider),
-                Top.ToString(format, formatProvider),
-                Bottom.ToString(format, formatProvider)
-            );
+            return string.Format(formatProvider, _formatString,
+                                 Left.ToString(format, formatProvider),
+                                 Right.ToString(format, formatProvider),
+                                 Top.ToString(format, formatProvider),
+                                 Bottom.ToString(format, formatProvider)
+                                );
         }
 
         /// <summary>
         /// Returns a hash code for this instance.
         /// </summary>
-        /// <returns>
-        /// A hash code for this instance, suitable for use in hashing algorithms and data structures like a hash table.
-        /// </returns>
+        /// <returns>A hash code for this instance, suitable for use in hashing algorithms and data structures like a hash table.</returns>
         public override int GetHashCode()
         {
             unchecked
@@ -266,9 +248,7 @@ namespace FlaxEngine.GUI
         /// Determines whether the specified <see cref="Margin" /> is equal to this instance.
         /// </summary>
         /// <param name="other">The <see cref="Margin" /> to compare with this instance.</param>
-        /// <returns>
-        /// <c>true</c> if the specified <see cref="Margin" /> is equal to this instance; otherwise, <c>false</c>.
-        /// </returns>
+        /// <returns><c>true</c> if the specified <see cref="Margin" /> is equal to this instance; otherwise, <c>false</c>.</returns>
         public bool Equals(ref Margin other)
         {
             return Mathf.NearEqual(other.Left, Left) &&
@@ -290,9 +270,7 @@ namespace FlaxEngine.GUI
         /// Determines whether the specified <see cref="Margin" /> is equal to this instance.
         /// </summary>
         /// <param name="other">The <see cref="Margin" /> to compare with this instance.</param>
-        /// <returns>
-        /// <c>true</c> if the specified <see cref="Margin" /> is equal to this instance; otherwise, <c>false</c>.
-        /// </returns>
+        /// <returns><c>true</c> if the specified <see cref="Margin" /> is equal to this instance; otherwise, <c>false</c>.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool Equals(Margin other)
         {
@@ -303,16 +281,10 @@ namespace FlaxEngine.GUI
         /// Determines whether the specified <see cref="System.Object" /> is equal to this instance.
         /// </summary>
         /// <param name="value">The <see cref="System.Object" /> to compare with this instance.</param>
-        /// <returns>
-        /// <c>true</c> if the specified <see cref="System.Object" /> is equal to this instance; otherwise, <c>false</c>.
-        /// </returns>
+        /// <returns><c>true</c> if the specified <see cref="System.Object" /> is equal to this instance; otherwise, <c>false</c>.</returns>
         public override bool Equals(object value)
         {
-            if (!(value is Margin))
-                return false;
-
-            var strongValue = (Margin)value;
-            return Equals(ref strongValue);
+            return value is Margin margin && Equals(ref margin);
         }
     }
 }

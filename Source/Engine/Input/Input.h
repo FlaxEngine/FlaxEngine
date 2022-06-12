@@ -69,10 +69,10 @@ public:
 
     typedef Delegate<Char> CharDelegate;
     typedef Delegate<KeyboardKeys> KeyboardDelegate;
-    typedef Delegate<const Vector2&> MouseDelegate;
-    typedef Delegate<const Vector2&, MouseButton> MouseButtonDelegate;
-    typedef Delegate<const Vector2&, float> MouseWheelDelegate;
-    typedef Delegate<const Vector2&, int32> TouchDelegate;
+    typedef Delegate<const Float2&> MouseDelegate;
+    typedef Delegate<const Float2&, MouseButton> MouseButtonDelegate;
+    typedef Delegate<const Float2&, float> MouseWheelDelegate;
+    typedef Delegate<const Float2&, int32> TouchDelegate;
 
     /// <summary>
     /// Event fired on character input.
@@ -169,31 +169,31 @@ public:
     /// Gets the mouse position in game window coordinates.
     /// </summary>
     /// <returns>Mouse cursor coordinates</returns>
-    API_PROPERTY() static Vector2 GetMousePosition();
+    API_PROPERTY() static Float2 GetMousePosition();
 
     /// <summary>
     /// Sets the mouse position in game window coordinates.
     /// </summary>
     /// <param name="position">Mouse position to set on</param>
-    API_PROPERTY() static void SetMousePosition(const Vector2& position);
+    API_PROPERTY() static void SetMousePosition(const Float2& position);
 
     /// <summary>
     /// Gets the mouse position in screen-space coordinates.
     /// </summary>
     /// <returns>Mouse cursor coordinates</returns>
-    API_PROPERTY() static Vector2 GetMouseScreenPosition();
+    API_PROPERTY() static Float2 GetMouseScreenPosition();
 
     /// <summary>
     /// Sets the mouse position in screen-space coordinates.
     /// </summary>
     /// <param name="position">Mouse position to set on</param>
-    API_PROPERTY() static void SetMouseScreenPosition(const Vector2& position);
+    API_PROPERTY() static void SetMouseScreenPosition(const Float2& position);
 
     /// <summary>
     /// Gets the mouse position change during the last frame.
     /// </summary>
     /// <returns>Mouse cursor position delta</returns>
-    API_PROPERTY() static Vector2 GetMousePositionDelta();
+    API_PROPERTY() static Float2 GetMousePositionDelta();
 
     /// <summary>
     /// Gets the mouse wheel change during the last frame.

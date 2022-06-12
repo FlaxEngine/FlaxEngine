@@ -4,7 +4,7 @@
 
 #include "Engine/Core/Math/Vector3.h"
 #include "Engine/Core/Math/Ray.h"
-#include "Engine/Core/Math/Triangle.h"
+#include "Engine/Core/Math/CollisionsHelper.h"
 #include "Engine/Core/Collections/Array.h"
 
 /// <summary>
@@ -14,10 +14,15 @@ class FLAXENGINE_API CollisionProxy
 {
 public:
 
+    struct CollisionTriangle
+    {
+        Float3 V0, V1, V2;
+    };
+
     /// <summary>
     /// The triangles.
     /// </summary>
-    Array<Triangle> Triangles;
+    Array<CollisionTriangle> Triangles;
 
 public:
 
@@ -27,7 +32,7 @@ public:
     }
 
     template<typename IndexType>
-    void Init(uint32 vertices, uint32 triangles, Vector3* positions, IndexType* indices)
+    void Init(uint32 vertices, uint32 triangles, Float3* positions, IndexType* indices)
     {
         Triangles.Clear();
         Triangles.EnsureCapacity(triangles, false);
@@ -51,23 +56,24 @@ public:
         Triangles.Clear();
     }
 
-    bool Intersects(const Ray& ray, const Matrix& world, float& distance, Vector3& normal) const
+    bool Intersects(const Ray& ray, const Matrix& world, Real& distance, Vector3& normal) const
     {
-        // TODO: use SIMD
         for (int32 i = 0; i < Triangles.Count(); i++)
         {
-            Triangle triangle = Triangles[i];
+            CollisionTriangle triangle = Triangles[i];
+            Float3::Transform(triangle.V0, world, triangle.V0);
+            Float3::Transform(triangle.V1, world, triangle.V1);
+            Float3::Transform(triangle.V2, world, triangle.V2);
 
-            Vector3::Transform(triangle.V0, world, triangle.V0);
-            Vector3::Transform(triangle.V1, world, triangle.V1);
-            Vector3::Transform(triangle.V2, world, triangle.V2);
-
-            if (triangle.Intersects(ray, distance, normal))
+            // TODO: use 32-bit precision for intersection
+            Real d;
+            if (CollisionsHelper::RayIntersectsTriangle(ray, triangle.V0, triangle.V1, triangle.V2, d))
             {
+                normal = Vector3::Normalize((triangle.V1 - triangle.V0) ^ (triangle.V2 - triangle.V0));
+                distance = d;
                 return true;
             }
         }
-
         return false;
     }
 };

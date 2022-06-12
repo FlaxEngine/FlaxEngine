@@ -845,7 +845,7 @@ namespace FlaxEditor.Windows
         }
 
         /// <inheritdoc />
-        public override bool OnMouseUp(Vector2 location, MouseButton button)
+        public override bool OnMouseUp(Float2 location, MouseButton button)
         {
             // Check if it's a right mouse button
             if (button == MouseButton.Right)

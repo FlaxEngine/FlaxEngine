@@ -17,7 +17,7 @@
 // Must match structure defined in Terrain.shader
 struct TerrainVertex
 {
-    Vector2 TexCoord;
+    Float2 TexCoord;
     Color32 Morph;
 };
 
@@ -116,7 +116,7 @@ bool TerrainManager::GetChunkGeometry(DrawCall& drawCall, int32 chunkSize, int32
             vertex->TexCoord.Y = z * vertexTexelSnapTexCoord;
 
             // Smooth LODs morphing based on Barycentric coordinates to morph to the lower LOD near chunk edges
-            Vector4 coord(vertex->TexCoord.Y, vertex->TexCoord.X, 1.0f - vertex->TexCoord.X, 1.0f - vertex->TexCoord.Y);
+            Float4 coord(vertex->TexCoord.Y, vertex->TexCoord.X, 1.0f - vertex->TexCoord.X, 1.0f - vertex->TexCoord.Y);
 
             // Apply some contrast
             const float AdjustPower = 0.3f;

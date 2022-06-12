@@ -304,7 +304,7 @@ void StaticModel::Draw(RenderContext& renderContext)
     GEOMETRY_DRAW_STATE_EVENT_END(_drawState, _world);
 }
 
-bool StaticModel::IntersectsItself(const Ray& ray, float& distance, Vector3& normal)
+bool StaticModel::IntersectsItself(const Ray& ray, Real& distance, Vector3& normal)
 {
     bool result = false;
 
@@ -462,7 +462,7 @@ void StaticModel::Deserialize(DeserializeStream& stream, ISerializeModifier* mod
     }
 }
 
-bool StaticModel::IntersectsEntry(int32 entryIndex, const Ray& ray, float& distance, Vector3& normal)
+bool StaticModel::IntersectsEntry(int32 entryIndex, const Ray& ray, Real& distance, Vector3& normal)
 {
     auto model = Model.Get();
     if (!model || !model->IsInitialized() || model->GetLoadedLODs() == 0)
@@ -482,7 +482,7 @@ bool StaticModel::IntersectsEntry(int32 entryIndex, const Ray& ray, float& dista
     return false;
 }
 
-bool StaticModel::IntersectsEntry(const Ray& ray, float& distance, Vector3& normal, int32& entryIndex)
+bool StaticModel::IntersectsEntry(const Ray& ray, Real& distance, Vector3& normal, int32& entryIndex)
 {
     auto model = Model.Get();
     if (!model || !model->IsInitialized() || model->GetLoadedLODs() == 0)
@@ -490,7 +490,7 @@ bool StaticModel::IntersectsEntry(const Ray& ray, float& distance, Vector3& norm
 
     // Find mesh in the highest loaded LOD that is using the given material slot index and ray hits it
     bool result = false;
-    float closest = MAX_float;
+    Real closest = MAX_Real;
     Vector3 closestNormal = Vector3::Up;
     int32 closestEntry = -1;
     auto& meshes = model->LODs[model->HighestResidentLODIndex()].Meshes;
@@ -498,7 +498,7 @@ bool StaticModel::IntersectsEntry(const Ray& ray, float& distance, Vector3& norm
     {
         // Test intersection with mesh and check if is closer than previous
         const auto& mesh = meshes[i];
-        float dst;
+        Real dst;
         Vector3 nrm;
         if (mesh.Intersects(ray, _world, dst, nrm) && dst < closest)
         {

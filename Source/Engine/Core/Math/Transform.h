@@ -28,7 +28,7 @@ API_STRUCT() struct FLAXENGINE_API Transform
     /// <summary>
     /// The scale vector of the transform.
     /// </summary>
-    API_FIELD(Attributes="EditorOrder(30), Limit(float.MinValue, float.MaxValue, 0.01f)") Vector3 Scale;
+    API_FIELD(Attributes="EditorOrder(30), Limit(float.MinValue, float.MaxValue, 0.01f)") Float3 Scale;
 
 public:
     /// <summary>
@@ -73,7 +73,7 @@ public:
     /// <param name="position">3D position</param>
     /// <param name="rotation">Transform rotation</param>
     /// <param name="scale">Transform scale</param>
-    Transform(const Vector3& position, const Quaternion& rotation, const Vector3& scale)
+    Transform(const Vector3& position, const Quaternion& rotation, const Float3& scale)
         : Translation(position)
         , Orientation(rotation)
         , Scale(scale)
@@ -284,43 +284,43 @@ public:
 
     static bool NearEqual(const Transform& a, const Transform& b)
     {
-        return Vector3::NearEqual(a.Translation, b.Translation) && Quaternion::NearEqual(a.Orientation, b.Orientation) && Vector3::NearEqual(a.Scale, b.Scale);
+        return Vector3::NearEqual(a.Translation, b.Translation) && Quaternion::NearEqual(a.Orientation, b.Orientation) && Float3::NearEqual(a.Scale, b.Scale);
     }
 
     static bool NearEqual(const Transform& a, const Transform& b, float epsilon)
     {
-        return Vector3::NearEqual(a.Translation, b.Translation, epsilon) && Quaternion::NearEqual(a.Orientation, b.Orientation, epsilon) && Vector3::NearEqual(a.Scale, b.Scale, epsilon);
+        return Vector3::NearEqual(a.Translation, b.Translation, epsilon) && Quaternion::NearEqual(a.Orientation, b.Orientation, epsilon) && Float3::NearEqual(a.Scale, b.Scale, epsilon);
     }
 
 public:
-    FORCE_INLINE Vector3 GetRight() const
+    FORCE_INLINE Float3 GetRight() const
     {
-        return Vector3::Transform(Vector3::Right, Orientation);
+        return Float3::Transform(Float3::Right, Orientation);
     }
 
-    FORCE_INLINE Vector3 GetLeft() const
+    FORCE_INLINE Float3 GetLeft() const
     {
-        return Vector3::Transform(Vector3::Left, Orientation);
+        return Float3::Transform(Float3::Left, Orientation);
     }
 
-    FORCE_INLINE Vector3 GetUp() const
+    FORCE_INLINE Float3 GetUp() const
     {
-        return Vector3::Transform(Vector3::Up, Orientation);
+        return Float3::Transform(Float3::Up, Orientation);
     }
 
-    FORCE_INLINE Vector3 GetDown() const
+    FORCE_INLINE Float3 GetDown() const
     {
-        return Vector3::Transform(Vector3::Down, Orientation);
+        return Float3::Transform(Float3::Down, Orientation);
     }
 
-    FORCE_INLINE Vector3 GetForward() const
+    FORCE_INLINE Float3 GetForward() const
     {
-        return Vector3::Transform(Vector3::Forward, Orientation);
+        return Float3::Transform(Float3::Forward, Orientation);
     }
 
-    FORCE_INLINE Vector3 GetBackward() const
+    FORCE_INLINE Float3 GetBackward() const
     {
-        return Vector3::Transform(Vector3::Backward, Orientation);
+        return Float3::Transform(Float3::Backward, Orientation);
     }
 
 public:

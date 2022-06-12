@@ -103,8 +103,8 @@ namespace ShadowsOfMordor
         /// </summary>
         struct HemisphereData
         {
-            Vector3 Position;
-            Vector3 Normal;
+            Float3 Position;
+            Float3 Normal;
 
             int16 TexelX;
             int16 TexelY;

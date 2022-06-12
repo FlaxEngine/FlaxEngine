@@ -28,7 +28,7 @@ public:
     /// <summary>
     /// The radius of the sphere.
     /// </summary>
-    API_FIELD() float Radius;
+    API_FIELD() Real Radius;
 
 public:
     /// <summary>
@@ -43,7 +43,7 @@ public:
     /// </summary>
     /// <param name="center">The center of the sphere in three dimensional space.</param>
     /// <param name="radius">The radius of the sphere.</param>
-    BoundingSphere(const Vector3& center, float radius)
+    BoundingSphere(const Vector3& center, Real radius)
         : Center(center)
         , Radius(radius)
     {
@@ -69,7 +69,7 @@ public:
         return Vector3::NearEqual(a.Center, b.Center) && Math::NearEqual(a.Radius, b.Radius);
     }
 
-    static bool NearEqual(const BoundingSphere& a, const BoundingSphere& b, float epsilon)
+    static bool NearEqual(const BoundingSphere& a, const BoundingSphere& b, Real epsilon)
     {
         return Vector3::NearEqual(a.Center, b.Center, epsilon) && Math::NearEqual(a.Radius, b.Radius, epsilon);
     }
@@ -88,7 +88,7 @@ public:
     /// <param name="ray">The ray to test.</param>
     /// <param name="distance">When the method completes, contains the distance of the intersection, or 0 if there was no intersection.</param>
     /// <returns>Whether the two objects intersected.</returns>
-    bool Intersects(const Ray& ray, float& distance) const;
+    bool Intersects(const Ray& ray, Real& distance) const;
 
     /// <summary>
     /// Determines if there is an intersection between the current object and a Ray.
@@ -97,7 +97,7 @@ public:
     /// <param name="distance">When the method completes, contains the distance of the intersection, or 0 if there was no intersection.</param>
     /// <param name="normal">When the method completes, contains the intersection surface normal vector, or Vector3::Up if there was no intersection.</param>
     /// <returns>Whether the two objects intersected.</returns>
-    bool Intersects(const Ray& ray, float& distance, Vector3& normal) const;
+    bool Intersects(const Ray& ray, Real& distance, Vector3& normal) const;
 
     /// <summary>
     /// Determines if there is an intersection between the current object and a Ray.
@@ -186,7 +186,15 @@ public:
     /// <param name="points">The points that will be contained by the sphere.</param>
     /// <param name="pointsCount">The amount of points to use.</param>
     /// <param name="result">When the method completes, contains the newly constructed bounding sphere.</param>
-    static void FromPoints(const Vector3* points, int32 pointsCount, BoundingSphere& result);
+    static void FromPoints(const Float3* points, int32 pointsCount, BoundingSphere& result);
+
+    /// <summary>
+    /// Constructs a BoundingSphere that fully contains the given points
+    /// </summary>
+    /// <param name="points">The points that will be contained by the sphere.</param>
+    /// <param name="pointsCount">The amount of points to use.</param>
+    /// <param name="result">When the method completes, contains the newly constructed bounding sphere.</param>
+    static void FromPoints(const Double3* points, int32 pointsCount, BoundingSphere& result);
 
     /// <summary>
     /// Constructs a Bounding Sphere from a given box.

@@ -52,18 +52,18 @@ public:
             struct
             {
                 MouseButton Button;
-                Vector2 Position;
+                Float2 Position;
             } MouseData;
 
             struct
             {
                 float WheelDelta;
-                Vector2 Position;
+                Float2 Position;
             } MouseWheelData;
 
             struct
             {
-                Vector2 Position;
+                Float2 Position;
                 int32 PointerId;
             } TouchData;
         };

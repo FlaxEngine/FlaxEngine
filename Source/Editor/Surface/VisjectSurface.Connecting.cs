@@ -14,7 +14,7 @@ namespace FlaxEditor.Surface
         /// <summary>
         /// Gets the connection origin point (in surface node space).
         /// </summary>
-        Vector2 ConnectionOrigin { get; }
+        Float2 ConnectionOrigin { get; }
 
         /// <summary>
         /// Determines whether this surface object is connected with the specified other object.
@@ -36,7 +36,7 @@ namespace FlaxEditor.Surface
         /// <param name="startPos">The start position.</param>
         /// <param name="endPos">The end position.</param>
         /// <param name="color">The color.</param>
-        void DrawConnectingLine(ref Vector2 startPos, ref Vector2 endPos, ref Color color);
+        void DrawConnectingLine(ref Float2 startPos, ref Float2 endPos, ref Color color);
 
         /// <summary>
         /// Created the new connection with the specified other object.
@@ -91,6 +91,15 @@ namespace FlaxEditor.Surface
                     fromType == typeof(Vector2) ||
                     fromType == typeof(Vector3) ||
                     fromType == typeof(Vector4) ||
+                    fromType == typeof(Float2) ||
+                    fromType == typeof(Float3) ||
+                    fromType == typeof(Float4) ||
+                    fromType == typeof(Double2) ||
+                    fromType == typeof(Double3) ||
+                    fromType == typeof(Double4) ||
+                    fromType == typeof(Int2) ||
+                    fromType == typeof(Int3) ||
+                    fromType == typeof(Int4) ||
                     fromType == typeof(Color) ||
                     fromType == typeof(Quaternion))
                 {
@@ -108,6 +117,15 @@ namespace FlaxEditor.Surface
                         toType == typeof(Vector2) ||
                         toType == typeof(Vector3) ||
                         toType == typeof(Vector4) ||
+                        toType == typeof(Float2) ||
+                        toType == typeof(Float3) ||
+                        toType == typeof(Float4) ||
+                        toType == typeof(Double2) ||
+                        toType == typeof(Double3) ||
+                        toType == typeof(Double4) ||
+                        toType == typeof(Int2) ||
+                        toType == typeof(Int3) ||
+                        toType == typeof(Int4) ||
                         toType == typeof(Color) ||
                         toType == typeof(Quaternion))
                     {

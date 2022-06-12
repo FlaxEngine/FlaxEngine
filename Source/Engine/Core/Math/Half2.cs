@@ -174,27 +174,27 @@ namespace FlaxEngine
         /// <returns>A <see cref="System.String" /> that represents this instance.</returns>
         public override string ToString()
         {
-            return ((Vector2)this).ToString();
+            return ((Float2)this).ToString();
         }
 
         /// <summary>
-        /// Performs an explicit conversion from <see cref="Vector3"/> to <see cref="Half3"/>.
+        /// Performs an explicit conversion from <see cref="Float2"/> to <see cref="Half3"/>.
         /// </summary>
         /// <param name="value">The value.</param>
         /// <returns>The result of the conversion.</returns>
-        public static explicit operator Half2(Vector2 value)
+        public static explicit operator Half2(Float2 value)
         {
             return new Half2((Half)value.X, (Half)value.Y);
         }
 
         /// <summary>
-        /// Performs an explicit conversion from <see cref="Vector3"/> to <see cref="Half3"/>.
+        /// Performs an explicit conversion from <see cref="Float2"/> to <see cref="Half3"/>.
         /// </summary>
         /// <param name="value">The value.</param>
         /// <returns>The result of the conversion.</returns>
-        public static explicit operator Vector2(Half2 value)
+        public static explicit operator Float2(Half2 value)
         {
-            return new Vector2(value.X, value.Y);
+            return new Float2(value.X, value.Y);
         }
     }
 }

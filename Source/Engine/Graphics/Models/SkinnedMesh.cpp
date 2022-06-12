@@ -102,7 +102,9 @@ bool SkinnedMesh::UpdateMesh(uint32 vertexCount, uint32 triangleCount, VB0Skinne
     if (!failed)
     {
         // Calculate mesh bounds
-        SetBounds(BoundingBox::FromPoints((Vector3*)vb, vertexCount));
+        BoundingBox bounds;
+        BoundingBox::FromPoints((Float3*)vb, vertexCount, bounds);
+        SetBounds(bounds);
 
         // Send event (actors using this model can update bounds, etc.)
         model->onLoaded();
@@ -111,7 +113,7 @@ bool SkinnedMesh::UpdateMesh(uint32 vertexCount, uint32 triangleCount, VB0Skinne
     return failed;
 }
 
-bool SkinnedMesh::Intersects(const Ray& ray, const Matrix& world, float& distance, Vector3& normal) const
+bool SkinnedMesh::Intersects(const Ray& ray, const Matrix& world, Real& distance, Vector3& normal) const
 {
     // Transform points
     Vector3 min, max;
@@ -329,10 +331,10 @@ bool UpdateMesh(SkinnedMesh* mesh, MonoArray* verticesObj, MonoArray* trianglesO
     // Get buffers data
     const auto vertexCount = (uint32)mono_array_length(verticesObj);
     const auto triangleCount = (uint32)mono_array_length(trianglesObj) / 3;
-    auto vertices = (Vector3*)(void*)mono_array_addr_with_size(verticesObj, sizeof(Vector3), 0);
+    auto vertices = (Float3*)(void*)mono_array_addr_with_size(verticesObj, sizeof(Float3), 0);
     auto ib = (IndexType*)(void*)mono_array_addr_with_size(trianglesObj, sizeof(int32), 0);
     auto blendIndices = (Int4*)(void*)mono_array_addr_with_size(blendIndicesObj, sizeof(Int4), 0);
-    auto blendWeights = (Vector4*)(void*)mono_array_addr_with_size(blendWeightsObj, sizeof(Vector4), 0);
+    auto blendWeights = (Float4*)(void*)mono_array_addr_with_size(blendWeightsObj, sizeof(Float4), 0);
     Array<VB0SkinnedElementType> vb;
     vb.Resize(vertexCount);
     for (uint32 i = 0; i < vertexCount; i++)
@@ -341,19 +343,19 @@ bool UpdateMesh(SkinnedMesh* mesh, MonoArray* verticesObj, MonoArray* trianglesO
     }
     if (normalsObj)
     {
-        const auto normals = (Vector3*)(void*)mono_array_addr_with_size(normalsObj, sizeof(Vector3), 0);
+        const auto normals = (Float3*)(void*)mono_array_addr_with_size(normalsObj, sizeof(Float3), 0);
         if (tangentsObj)
         {
-            const auto tangents = (Vector3*)(void*)mono_array_addr_with_size(tangentsObj, sizeof(Vector3), 0);
+            const auto tangents = (Float3*)(void*)mono_array_addr_with_size(tangentsObj, sizeof(Float3), 0);
             for (uint32 i = 0; i < vertexCount; i++)
             {
                 // Peek normal and tangent
-                const Vector3 normal = normals[i];
-                const Vector3 tangent = tangents[i];
+                const Float3 normal = normals[i];
+                const Float3 tangent = tangents[i];
 
                 // Calculate bitangent sign
-                Vector3 bitangent = Vector3::Normalize(Vector3::Cross(normal, tangent));
-                byte sign = static_cast<byte>(Vector3::Dot(Vector3::Cross(bitangent, normal), tangent) < 0.0f ? 1 : 0);
+                Float3 bitangent = Float3::Normalize(Float3::Cross(normal, tangent));
+                byte sign = static_cast<byte>(Float3::Dot(Float3::Cross(bitangent, normal), tangent) < 0.0f ? 1 : 0);
 
                 // Set tangent frame
                 vb[i].Tangent = Float1010102(tangent * 0.5f + 0.5f, sign);
@@ -365,20 +367,20 @@ bool UpdateMesh(SkinnedMesh* mesh, MonoArray* verticesObj, MonoArray* trianglesO
             for (uint32 i = 0; i < vertexCount; i++)
             {
                 // Peek normal
-                const Vector3 normal = normals[i];
+                const Float3 normal = normals[i];
 
                 // Calculate tangent
-                Vector3 c1 = Vector3::Cross(normal, Vector3::UnitZ);
-                Vector3 c2 = Vector3::Cross(normal, Vector3::UnitY);
-                Vector3 tangent;
+                Float3 c1 = Float3::Cross(normal, Float3::UnitZ);
+                Float3 c2 = Float3::Cross(normal, Float3::UnitY);
+                Float3 tangent;
                 if (c1.LengthSquared() > c2.LengthSquared())
                     tangent = c1;
                 else
                     tangent = c2;
 
                 // Calculate bitangent sign
-                Vector3 bitangent = Vector3::Normalize(Vector3::Cross(normal, tangent));
-                byte sign = static_cast<byte>(Vector3::Dot(Vector3::Cross(bitangent, normal), tangent) < 0.0f ? 1 : 0);
+                Float3 bitangent = Float3::Normalize(Float3::Cross(normal, tangent));
+                byte sign = static_cast<byte>(Float3::Dot(Float3::Cross(bitangent, normal), tangent) < 0.0f ? 1 : 0);
 
                 // Set tangent frame
                 vb[i].Tangent = Float1010102(tangent * 0.5f + 0.5f, sign);
@@ -388,8 +390,8 @@ bool UpdateMesh(SkinnedMesh* mesh, MonoArray* verticesObj, MonoArray* trianglesO
     }
     else
     {
-        const auto n = Float1010102(Vector3::UnitZ);
-        const auto t = Float1010102(Vector3::UnitX);
+        const auto n = Float1010102(Float3::UnitZ);
+        const auto t = Float1010102(Float3::UnitX);
         for (uint32 i = 0; i < vertexCount; i++)
         {
             vb[i].Normal = n;
@@ -398,7 +400,7 @@ bool UpdateMesh(SkinnedMesh* mesh, MonoArray* verticesObj, MonoArray* trianglesO
     }
     if (uvObj)
     {
-        const auto uvs = (Vector2*)(void*)mono_array_addr_with_size(uvObj, sizeof(Vector2), 0);
+        const auto uvs = (Float2*)(void*)mono_array_addr_with_size(uvObj, sizeof(Float2), 0);
         for (uint32 i = 0; i < vertexCount; i++)
             vb[i].TexCoord = Half2(uvs[i]);
     }

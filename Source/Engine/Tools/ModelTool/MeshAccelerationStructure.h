@@ -53,8 +53,8 @@ private:
     Array<BVH> _bvh;
 
     void BuildBVH(int32 node, int32 maxLeafSize, Array<byte>& scratch);
-    bool PointQueryBVH(int32 node, const Vector3& point, float& hitDistance, Vector3& hitPoint, Triangle& hitTriangle) const;
-    bool RayCastBVH(int32 node, const Ray& ray, float& hitDistance, Vector3& hitNormal, Triangle& hitTriangle) const;
+    bool PointQueryBVH(int32 node, const Vector3& point, Real& hitDistance, Vector3& hitPoint, Triangle& hitTriangle) const;
+    bool RayCastBVH(int32 node, const Ray& ray, Real& hitDistance, Vector3& hitNormal, Triangle& hitTriangle) const;
 
 public:
     // Adds the model geometry for the build to the structure.
@@ -64,16 +64,16 @@ public:
     void Add(ModelData* modelData, int32 lodIndex, bool copy = false);
 
     // Adds the triangles geometry for the build to the structure.
-    void Add(Vector3* vb, int32 vertices, void* ib, int32 indices, bool use16BitIndex, bool copy = false);
+    void Add(Float3* vb, int32 vertices, void* ib, int32 indices, bool use16BitIndex, bool copy = false);
 
     // Builds Bounding Volume Hierarchy (BVH) structure for accelerated geometry queries.
     void BuildBVH(int32 maxLeafSize = 16);
 
     // Queries the closest triangle.
-    bool PointQuery(const Vector3& point, float& hitDistance, Vector3& hitPoint, Triangle& hitTriangle, float maxDistance = MAX_float) const;
+    bool PointQuery(const Vector3& point, Real& hitDistance, Vector3& hitPoint, Triangle& hitTriangle, Real maxDistance = MAX_Real) const;
 
     // Ray traces the triangles.
-    bool RayCast(const Ray& ray, float& hitDistance, Vector3& hitNormal, Triangle& hitTriangle, float maxDistance = MAX_float) const;
+    bool RayCast(const Ray& ray, Real& hitDistance, Vector3& hitNormal, Triangle& hitTriangle, Real maxDistance = MAX_Real) const;
 };
 
 #endif

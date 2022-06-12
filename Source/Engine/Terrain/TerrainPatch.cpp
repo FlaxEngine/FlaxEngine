@@ -51,7 +51,7 @@ void TerrainPatch::Init(Terrain* terrain, int16 x, int16 z)
     _x = x;
     _z = z;
     const float size = _terrain->_chunkSize * TERRAIN_UNITS_PER_VERTEX * CHUNKS_COUNT_EDGE;
-    _offset = Vector3(_x * size, 0.0f, _z * size);
+    _offset = Float3(_x * size, 0.0f, _z * size);
     _yOffset = 0.0f;
     _yHeight = 1.0f;
     for (int32 i = 0; i < CHUNKS_COUNT; i++)
@@ -328,10 +328,10 @@ void UpdateNormalsAndHoles(const TerrainDataUpdateInfo& info, const float* heigh
 
     // Prepare memory
     const int32 normalsLength = normalsSize.X * normalsSize.Y;
-    GET_TERRAIN_SCRATCH_BUFFER(normalsPerVertex, normalsLength, Vector3);
+    GET_TERRAIN_SCRATCH_BUFFER(normalsPerVertex, normalsLength, Float3);
 
     // Clear normals (for accumulation pass)
-    Platform::MemoryClear(normalsPerVertex, normalsLength * sizeof(Vector3));
+    Platform::MemoryClear(normalsPerVertex, normalsLength * sizeof(Float3));
 
     // Calculate per-quad normals and apply them to nearby vertices
     for (int32 z = normalsStart.Y; z < normalsEnd.Y - 1; z++)
@@ -342,7 +342,7 @@ void UpdateNormalsAndHoles(const TerrainDataUpdateInfo& info, const float* heigh
 #define GET_VERTEX(a, b) \
 	int32 i##a##b = (z + (b) - normalsStart.Y) * normalsSize.X + (x + (a) - normalsStart.X); \
 	int32 h##a##b = (z + (b)) * heightMapSize + (x + (a)); \
-	Vector3 v##a##b; v##a##b.X = (x + (a)) * TERRAIN_UNITS_PER_VERTEX; \
+	Float3 v##a##b; v##a##b.X = (x + (a)) * TERRAIN_UNITS_PER_VERTEX; \
 	v##a##b.Y = heightmap[h##a##b]; \
 	v##a##b.Z = (z + (b)) * TERRAIN_UNITS_PER_VERTEX
             GET_VERTEX(0, 0);
@@ -354,9 +354,9 @@ void UpdateNormalsAndHoles(const TerrainDataUpdateInfo& info, const float* heigh
             // TODO: use SIMD for those calculations
 
             // Calculate normals for quad two vertices
-            Vector3 n0 = Vector3::Normalize((v00 - v01) ^ (v01 - v10));
-            Vector3 n1 = Vector3::Normalize((v11 - v10) ^ (v10 - v01));
-            Vector3 n2 = n0 + n1;
+            Float3 n0 = Float3::Normalize((v00 - v01) ^ (v01 - v10));
+            Float3 n1 = Float3::Normalize((v11 - v10) ^ (v10 - v01));
+            Float3 n2 = n0 + n1;
 
             // Apply normal to each vertex using it
             normalsPerVertex[i00] += n1;
@@ -374,7 +374,7 @@ void UpdateNormalsAndHoles(const TerrainDataUpdateInfo& info, const float* heigh
             // Get four normals for the nearby quads
 #define GET_NORMAL(a, b) \
 	int32 i##a##b = (z + (b - 1)) * normalsSize.X + (x + (a - 1)); \
-	Vector3 n##a##b = Vector3::NormalizeFast(normalsPerVertex[i##a##b])
+	Float3 n##a##b = Float3::NormalizeFast(normalsPerVertex[i##a##b])
             GET_NORMAL(0, 0);
             GET_NORMAL(1, 0);
             GET_NORMAL(0, 1);
@@ -395,10 +395,10 @@ void UpdateNormalsAndHoles(const TerrainDataUpdateInfo& info, const float* heigh
              * 20   21   22
              */
 
-            const Vector3 avg = (n00 + n01 + n02 + n10 + n11 + n12 + n20 + n21 + n22) * (1.0f / 9.0f);
+            const Float3 avg = (n00 + n01 + n02 + n10 + n11 + n12 + n20 + n21 + n22) * (1.0f / 9.0f);
 
             // Smooth normals by performing interpolation to average for nearby quads
-            normalsPerVertex[i11] = Vector3::Lerp(n11, avg, 0.6f);
+            normalsPerVertex[i11] = Float3::Lerp(n11, avg, 0.6f);
         }
     }
 
@@ -448,10 +448,10 @@ void UpdateNormalsAndHoles(const TerrainDataUpdateInfo& info, const float* heigh
 #if BUILD_DEBUG
                 ASSERT(normalIndex >= 0 && normalIndex < normalsLength);
 #endif
-                Vector3 normal = Vector3::NormalizeFast(normalsPerVertex[normalIndex]) * 0.5f + 0.5f;
+                Float3 normal = Float3::NormalizeFast(normalsPerVertex[normalIndex]) * 0.5f + 0.5f;
 
                 if (holesMask && !holesMask[heightmapIndex])
-                    normal = Vector3::One;
+                    normal = Float3::One;
 
                 ptr[textureIndex].B = (uint8)(normal.X * MAX_uint8);
                 ptr[textureIndex].A = (uint8)(normal.Z * MAX_uint8);
@@ -2351,10 +2351,10 @@ void TerrainPatch::GetCollisionTriangles(const BoundingSphere& bounds, Array<Vec
     // Normalize bounds and map to actual triangles buffer
     int32 rows, cols;
     PhysicsBackend::GetHeightFieldSize(_physicsHeightField, rows, cols);
-    int32 startRow = Math::FloorToInt(min.X / size * rows);
-    int32 startCol = Math::FloorToInt(min.Z / size * cols);
-    int32 endRow = Math::CeilToInt(max.X / size * rows);
-    int32 endCol = Math::CeilToInt(max.Z / size * cols);
+    int32 startRow = (int32)Math::Floor(min.X / size * rows);
+    int32 startCol = (int32)Math::Floor(min.Z / size * cols);
+    int32 endRow = (int32)Math::Ceil(max.X / size * rows);
+    int32 endCol = (int32)Math::Ceil(max.Z / size * cols);
 
     // Normalize bounds to patch borders
     startRow = Math::Clamp(startRow, 0, rows - 2);
@@ -2411,7 +2411,7 @@ void TerrainPatch::GetCollisionTriangles(const BoundingSphere& bounds, Array<Vec
 
 #endif
 
-void TerrainPatch::ExtractCollisionGeometry(Array<Vector3>& vertexBuffer, Array<int32>& indexBuffer)
+void TerrainPatch::ExtractCollisionGeometry(Array<Float3>& vertexBuffer, Array<int32>& indexBuffer)
 {
     vertexBuffer.Clear();
     indexBuffer.Clear();
@@ -2432,18 +2432,18 @@ void TerrainPatch::ExtractCollisionGeometry(Array<Vector3>& vertexBuffer, Array<
         {
             const float size = _terrain->_chunkSize * TERRAIN_UNITS_PER_VERTEX * CHUNKS_COUNT_EDGE;
             const Transform terrainTransform = _terrain->_transform;
-            Transform localTransform(Vector3(_x * size, _yOffset, _z * size), Quaternion::Identity, Vector3(_collisionScaleXZ, _yHeight, _collisionScaleXZ));
+            const Transform localTransform(Vector3(_x * size, _yOffset, _z * size), Quaternion::Identity, Float3(_collisionScaleXZ, _yHeight, _collisionScaleXZ));
             const Matrix world = localTransform.GetWorld() * terrainTransform.GetWorld();
 
             const int32 vertexCount = rows * cols;
             _collisionVertices.Resize(vertexCount);
-            Vector3* vb = _collisionVertices.Get();
+            Float3* vb = _collisionVertices.Get();
             for (int32 row = 0; row < rows; row++)
             {
                 for (int32 col = 0; col < cols; col++)
                 {
-                    Vector3 v((float)row, PhysicsBackend::GetHeightFieldHeight(_physicsHeightField, (float)row, (float)col) / TERRAIN_PATCH_COLLISION_QUANTIZATION, (float)col);
-                    Vector3::Transform(v, world, v);
+                    Float3 v((float)row, PhysicsBackend::GetHeightFieldHeight(_physicsHeightField, (float)row, (float)col) / TERRAIN_PATCH_COLLISION_QUANTIZATION, (float)col);
+                    Float3::Transform(v, world, v);
                     *vb++ = v;
                 }
             }

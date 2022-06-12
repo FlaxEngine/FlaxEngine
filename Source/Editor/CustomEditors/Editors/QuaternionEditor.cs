@@ -12,7 +12,7 @@ namespace FlaxEditor.CustomEditors.Editors
     [CustomEditor(typeof(Quaternion)), DefaultEditor]
     public class QuaternionEditor : CustomEditor
     {
-        private Vector3 _cachedAngles = Vector3.Zero;
+        private Float3 _cachedAngles = Float3.Zero;
         private object _cachedToken;
 
         /// <summary>
@@ -44,16 +44,16 @@ namespace FlaxEditor.CustomEditors.Editors
             gridControl.SlotsVertically = 1;
 
             XElement = grid.FloatValue();
-            XElement.FloatValue.ValueChanged += OnValueChanged;
-            XElement.FloatValue.SlidingEnd += ClearToken;
+            XElement.ValueBox.ValueChanged += OnValueChanged;
+            XElement.ValueBox.SlidingEnd += ClearToken;
 
             YElement = grid.FloatValue();
-            YElement.FloatValue.ValueChanged += OnValueChanged;
-            YElement.FloatValue.SlidingEnd += ClearToken;
+            YElement.ValueBox.ValueChanged += OnValueChanged;
+            YElement.ValueBox.SlidingEnd += ClearToken;
 
             ZElement = grid.FloatValue();
-            ZElement.FloatValue.ValueChanged += OnValueChanged;
-            ZElement.FloatValue.SlidingEnd += ClearToken;
+            ZElement.ValueBox.ValueChanged += OnValueChanged;
+            ZElement.ValueBox.SlidingEnd += ClearToken;
         }
 
         private void OnValueChanged()
@@ -65,9 +65,9 @@ namespace FlaxEditor.CustomEditors.Editors
             var token = isSliding ? this : null;
             var useCachedAngles = isSliding && token == _cachedToken;
 
-            float x = (useCachedAngles && !XElement.IsSliding) ? _cachedAngles.X : XElement.FloatValue.Value;
-            float y = (useCachedAngles && !YElement.IsSliding) ? _cachedAngles.Y : YElement.FloatValue.Value;
-            float z = (useCachedAngles && !ZElement.IsSliding) ? _cachedAngles.Z : ZElement.FloatValue.Value;
+            float x = (useCachedAngles && !XElement.IsSliding) ? _cachedAngles.X : XElement.ValueBox.Value;
+            float y = (useCachedAngles && !YElement.IsSliding) ? _cachedAngles.Y : YElement.ValueBox.Value;
+            float z = (useCachedAngles && !ZElement.IsSliding) ? _cachedAngles.Z : ZElement.ValueBox.Value;
 
             x = Mathf.UnwindDegrees(x);
             y = Mathf.UnwindDegrees(y);
@@ -75,7 +75,7 @@ namespace FlaxEditor.CustomEditors.Editors
 
             if (!useCachedAngles)
             {
-                _cachedAngles = new Vector3(x, y, z);
+                _cachedAngles = new Float3(x, y, z);
             }
 
             _cachedToken = token;
@@ -104,9 +104,9 @@ namespace FlaxEditor.CustomEditors.Editors
             {
                 var value = (Quaternion)Values[0];
                 var euler = value.EulerAngles;
-                XElement.FloatValue.Value = euler.X;
-                YElement.FloatValue.Value = euler.Y;
-                ZElement.FloatValue.Value = euler.Z;
+                XElement.ValueBox.Value = euler.X;
+                YElement.ValueBox.Value = euler.Y;
+                ZElement.ValueBox.Value = euler.Z;
             }
         }
     }

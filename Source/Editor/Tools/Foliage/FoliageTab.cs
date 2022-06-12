@@ -112,7 +112,7 @@ namespace FlaxEditor.Tools.Foliage
                 UseScroll = true,
                 AnchorPreset = AnchorPresets.StretchAll,
                 Offsets = Margin.Zero,
-                TabsSize = new Vector2(50, 32),
+                TabsSize = new Float2(50, 32),
                 Parent = this
             };
 

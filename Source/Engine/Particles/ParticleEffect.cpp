@@ -12,7 +12,7 @@
 ParticleEffect::ParticleEffect(const SpawnParams& params)
     : Actor(params)
     , _lastUpdateFrame(0)
-    , _lastMinDstSqr(MAX_float)
+    , _lastMinDstSqr(MAX_Real)
 {
     _world = Matrix::Identity;
     UpdateBounds();
@@ -269,7 +269,7 @@ void ParticleEffect::UpdateSimulation()
 
     // Request update
     _lastUpdateFrame = Engine::FrameCount;
-    _lastMinDstSqr = MAX_float;
+    _lastMinDstSqr = MAX_Real;
     Particles::UpdateEffect(this);
 }
 
@@ -394,7 +394,7 @@ void ParticleEffect::SetParametersOverrides(const Array<ParameterOverride>& valu
 void ParticleEffect::Update()
 {
     // Skip if off-screen
-    if (!UpdateWhenOffscreen && _lastMinDstSqr >= MAX_float)
+    if (!UpdateWhenOffscreen && _lastMinDstSqr >= MAX_Real)
         return;
 
     if (UpdateMode == SimulationUpdateMode::FixedTimestep)

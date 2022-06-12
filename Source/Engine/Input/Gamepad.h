@@ -61,7 +61,7 @@ struct FLAXENGINE_API GamepadLayout
     /// <summary>
     /// The axis ranges mapping (X is scale, Y is offset. Eg. mappedVal = X * value + Y). It allows to invert any axis or map axis range.
     /// </summary>
-    Vector2 AxisMap[(int32)GamepadAxis::MAX];
+    Float2 AxisMap[(int32)GamepadAxis::MAX];
 
     /// <summary>
     /// Initializes layout with default values.

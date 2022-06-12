@@ -736,7 +736,7 @@ namespace FlaxEditor.Viewport
 
                 // Apply scale
                 const float scaleLimit = 99_999_999.0f;
-                trans.Scale = Vector3.Clamp(trans.Scale + scaleDelta, new Vector3(-scaleLimit), new Vector3(scaleLimit));
+                trans.Scale = Float3.Clamp(trans.Scale + scaleDelta, new Float3(-scaleLimit), new Float3(scaleLimit));
 
                 // Apply translation
                 trans.Translation += translationDelta;
@@ -770,7 +770,7 @@ namespace FlaxEditor.Viewport
             base.OnLeftMouseButtonUp();
         }
 
-        private void GetHitLocation(ref Vector2 location, out SceneGraphNode hit, out Vector3 hitLocation, out Vector3 hitNormal)
+        private void GetHitLocation(ref Float2 location, out SceneGraphNode hit, out Vector3 hitLocation, out Vector3 hitNormal)
         {
             // Get mouse ray and try to hit any object
             var ray = ConvertMouseToRay(ref location);
@@ -798,7 +798,7 @@ namespace FlaxEditor.Viewport
             }
         }
 
-        private void SetDragEffects(ref Vector2 location)
+        private void SetDragEffects(ref Float2 location)
         {
             if (_dragAssets.HasValidDrag && _dragAssets.Objects[0].IsOfType<MaterialBase>())
             {
@@ -829,7 +829,7 @@ namespace FlaxEditor.Viewport
         }
 
         /// <inheritdoc />
-        public override DragDropEffect OnDragEnter(ref Vector2 location, DragData data)
+        public override DragDropEffect OnDragEnter(ref Float2 location, DragData data)
         {
             ClearDragEffects();
 
@@ -868,7 +868,7 @@ namespace FlaxEditor.Viewport
         }
 
         /// <inheritdoc />
-        public override DragDropEffect OnDragMove(ref Vector2 location, DragData data)
+        public override DragDropEffect OnDragMove(ref Float2 location, DragData data)
         {
             ClearDragEffects();
 
@@ -925,7 +925,7 @@ namespace FlaxEditor.Viewport
             Focus();
         }
 
-        private void Spawn(AssetItem item, SceneGraphNode hit, ref Vector2 location, ref Vector3 hitLocation, ref Vector3 hitNormal)
+        private void Spawn(AssetItem item, SceneGraphNode hit, ref Float2 location, ref Vector3 hitLocation, ref Vector3 hitNormal)
         {
             if (item.IsOfType<MaterialBase>())
             {
@@ -974,7 +974,7 @@ namespace FlaxEditor.Viewport
             }
         }
 
-        private void Spawn(ScriptType item, SceneGraphNode hit, ref Vector2 location, ref Vector3 hitLocation, ref Vector3 hitNormal)
+        private void Spawn(ScriptType item, SceneGraphNode hit, ref Float2 location, ref Vector3 hitLocation, ref Vector3 hitNormal)
         {
             var actor = item.CreateInstance() as Actor;
             if (actor == null)
@@ -987,7 +987,7 @@ namespace FlaxEditor.Viewport
         }
 
         /// <inheritdoc />
-        public override DragDropEffect OnDragDrop(ref Vector2 location, DragData data)
+        public override DragDropEffect OnDragDrop(ref Float2 location, DragData data)
         {
             ClearDragEffects();
 

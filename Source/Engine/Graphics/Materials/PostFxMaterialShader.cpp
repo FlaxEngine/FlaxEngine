@@ -11,13 +11,13 @@
 
 PACK_STRUCT(struct PostFxMaterialShaderData {
     Matrix ViewMatrix;
-    Vector3 ViewPos;
+    Float3 ViewPos;
     float ViewFar;
-    Vector3 ViewDir;
+    Float3 ViewDir;
     float TimeParam;
-    Vector4 ViewInfo;
-    Vector4 ScreenSize;
-    Vector4 TemporalAAJitter;
+    Float4 ViewInfo;
+    Float4 ScreenSize;
+    Float4 TemporalAAJitter;
     });
 
 void PostFxMaterialShader::Bind(BindParameters& params)

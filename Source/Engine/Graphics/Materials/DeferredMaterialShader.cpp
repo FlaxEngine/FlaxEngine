@@ -22,19 +22,19 @@ PACK_STRUCT(struct DeferredMaterialShaderData {
     Matrix ViewMatrix;
     Matrix PrevViewProjectionMatrix;
     Matrix PrevWorldMatrix;
-    Vector3 ViewPos;
+    Float3 ViewPos;
     float ViewFar;
-    Vector3 ViewDir;
+    Float3 ViewDir;
     float TimeParam;
-    Vector4 ViewInfo;
-    Vector4 ScreenSize;
-    Vector3 WorldInvScale;
+    Float4 ViewInfo;
+    Float4 ScreenSize;
+    Float3 WorldInvScale;
     float WorldDeterminantSign;
-    Vector2 Dummy0;
+    Float2 Dummy0;
     float LODDitherFactor;
     float PerInstanceRandom;
-    Vector4 TemporalAAJitter;
-    Vector3 GeometrySize;
+    Float4 TemporalAAJitter;
+    Float3 GeometrySize;
     float Dummy1;
     });
 
@@ -92,10 +92,10 @@ void DeferredMaterialShader::Bind(BindParameters& params)
         materialData->TimeParam = params.TimeParam;
         materialData->ViewInfo = view.ViewInfo;
         materialData->ScreenSize = view.ScreenSize;
-        const float scaleX = Vector3(drawCall.World.M11, drawCall.World.M12, drawCall.World.M13).Length();
-        const float scaleY = Vector3(drawCall.World.M21, drawCall.World.M22, drawCall.World.M23).Length();
-        const float scaleZ = Vector3(drawCall.World.M31, drawCall.World.M32, drawCall.World.M33).Length();
-        materialData->WorldInvScale = Vector3(
+        const float scaleX = Float3(drawCall.World.M11, drawCall.World.M12, drawCall.World.M13).Length();
+        const float scaleY = Float3(drawCall.World.M21, drawCall.World.M22, drawCall.World.M23).Length();
+        const float scaleZ = Float3(drawCall.World.M31, drawCall.World.M32, drawCall.World.M33).Length();
+        materialData->WorldInvScale = Float3(
             scaleX > 0.00001f ? 1.0f / scaleX : 0.0f,
             scaleY > 0.00001f ? 1.0f / scaleY : 0.0f,
             scaleZ > 0.00001f ? 1.0f / scaleZ : 0.0f);

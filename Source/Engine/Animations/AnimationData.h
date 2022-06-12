@@ -21,7 +21,7 @@ public:
     /// <summary>
     /// The position channel animation.
     /// </summary>
-    LinearCurve<Vector3> Position;
+    LinearCurve<Float3> Position;
 
     /// <summary>
     /// The rotation channel animation.
@@ -31,7 +31,7 @@ public:
     /// <summary>
     /// The scale channel animation.
     /// </summary>
-    LinearCurve<Vector3> Scale;
+    LinearCurve<Float3> Scale;
 
 public:
 
@@ -39,9 +39,9 @@ public:
     /// Initializes a new instance of the <see cref="NodeAnimationData"/> class.
     /// </summary>
     NodeAnimationData()
-        : Position(Vector3::Zero)
+        : Position(Float3::Zero)
         , Rotation(Quaternion::Identity)
-        , Scale(Vector3::One)
+        , Scale(Float3::One)
     {
     }
 
@@ -56,7 +56,11 @@ public:
     void Evaluate(float time, Transform* result, bool loop = true) const
     {
         if (Position.GetKeyframes().HasItems())
-            Position.Evaluate(result->Translation, time, loop);
+        {
+            Float3 position;
+            Position.Evaluate(position, time, loop);
+            result->Translation = position;
+        }
         if (Rotation.GetKeyframes().HasItems())
             Rotation.Evaluate(result->Orientation, time, loop);
         if (Scale.GetKeyframes().HasItems())
@@ -71,7 +75,9 @@ public:
     /// <param name="loop">If true the curve will loop when it goes past the end or beginning. Otherwise the curve value will be clamped.</param>
     void EvaluateAll(float time, Transform* result, bool loop = true) const
     {
-        Position.Evaluate(result->Translation, time, loop);
+        Float3 position;
+        Position.Evaluate(position, time, loop);
+        result->Translation = position;
         Rotation.Evaluate(result->Orientation, time, loop);
         Scale.Evaluate(result->Scale, time, loop);
     }

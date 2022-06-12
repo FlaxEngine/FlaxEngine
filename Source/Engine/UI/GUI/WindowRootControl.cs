@@ -151,13 +151,13 @@ namespace FlaxEngine.GUI
         }
 
         /// <inheritdoc />
-        public override Vector2 TrackingMouseOffset => _window.TrackingMouseOffset / _window.DpiScale;
+        public override Float2 TrackingMouseOffset => _window.TrackingMouseOffset / _window.DpiScale;
 
         /// <inheritdoc />
         public override WindowRootControl RootWindow => this;
 
         /// <inheritdoc />
-        public override Vector2 MousePosition
+        public override Float2 MousePosition
         {
             get => _window.MousePosition / _window.DpiScale;
             set => _window.MousePosition = value * _window.DpiScale;
@@ -232,13 +232,13 @@ namespace FlaxEngine.GUI
         }
 
         /// <inheritdoc />
-        public override Vector2 PointFromScreen(Vector2 location)
+        public override Float2 PointFromScreen(Float2 location)
         {
             return _window.ScreenToClient(location) / _window.DpiScale;
         }
 
         /// <inheritdoc />
-        public override Vector2 PointToScreen(Vector2 location)
+        public override Float2 PointToScreen(Float2 location)
         {
             return _window.ClientToScreen(location * _window.DpiScale);
         }
@@ -284,7 +284,7 @@ namespace FlaxEngine.GUI
         }
 
         /// <inheritdoc />
-        public override bool OnMouseDown(Vector2 location, MouseButton button)
+        public override bool OnMouseDown(Float2 location, MouseButton button)
         {
             if (_trackingControl != null)
             {
@@ -295,7 +295,7 @@ namespace FlaxEngine.GUI
         }
 
         /// <inheritdoc />
-        public override bool OnMouseUp(Vector2 location, MouseButton button)
+        public override bool OnMouseUp(Float2 location, MouseButton button)
         {
             if (_trackingControl != null)
             {
@@ -306,7 +306,7 @@ namespace FlaxEngine.GUI
         }
 
         /// <inheritdoc />
-        public override bool OnMouseDoubleClick(Vector2 location, MouseButton button)
+        public override bool OnMouseDoubleClick(Float2 location, MouseButton button)
         {
             if (_trackingControl != null)
             {
@@ -317,7 +317,7 @@ namespace FlaxEngine.GUI
         }
 
         /// <inheritdoc />
-        public override bool OnMouseWheel(Vector2 location, float delta)
+        public override bool OnMouseWheel(Float2 location, float delta)
         {
             if (_trackingControl != null)
             {
@@ -328,7 +328,7 @@ namespace FlaxEngine.GUI
         }
 
         /// <inheritdoc />
-        public override void OnMouseMove(Vector2 location)
+        public override void OnMouseMove(Float2 location)
         {
             if (_trackingControl != null)
             {

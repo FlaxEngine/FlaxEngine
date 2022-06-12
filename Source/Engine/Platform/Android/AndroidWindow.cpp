@@ -45,7 +45,7 @@ void AndroidWindow::Hide()
 
 void AndroidWindow::SetClientBounds(const Rectangle& clientArea)
 {
-    if (Vector2::NearEqual(_clientSize, clientArea.Size))
+    if (Float2::NearEqual(_clientSize, clientArea.Size))
         return;
 
     const int32 width = static_cast<int32>(clientArea.GetWidth());

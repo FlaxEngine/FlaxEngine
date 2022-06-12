@@ -1,3 +1,9 @@
+#if USE_LARGE_WORLDS
+using Real = System.Double;
+#else
+using Real = System.Single;
+#endif
+
 // Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 // -----------------------------------------------------------------------------
@@ -48,7 +54,6 @@
 * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 * THE SOFTWARE.
 */
-
 using System;
 using System.ComponentModel;
 using System.Globalization;
@@ -828,7 +833,7 @@ namespace FlaxEngine
         /// <returns>The result.</returns>
         public static Double2 Round(Double2 v)
         {
-            return new Double2(Mathd.Round(v.X), Mathd.Round(v.Y));
+            return new Double2(Math.Round(v.X), Math.Round(v.Y));
         }
 
         /// <summary>
@@ -838,7 +843,7 @@ namespace FlaxEngine
         /// <returns>The result.</returns>
         public static Double2 Ceil(Double2 v)
         {
-            return new Double2(Mathd.Ceil(v.X), Mathd.Ceil(v.Y));
+            return new Double2(Math.Ceiling(v.X), Math.Ceiling(v.Y));
         }
 
         /// <summary>
@@ -1111,95 +1116,6 @@ namespace FlaxEngine
         }
 
         /// <summary>
-        /// Orthogonalizes a list of vectors.
-        /// </summary>
-        /// <param name="destination">The list of orthogonalized vectors.</param>
-        /// <param name="source">The list of vectors to orthogonalize.</param>
-        /// <remarks>
-        /// <para>
-        ///   Orthogonalization is the process of making all vectors orthogonal to each other. This
-        ///   means that any given vector in the list will be orthogonal to any other given vector in the
-        ///   list.
-        /// </para>
-        /// <para>
-        ///   Because this method uses the modified Gram-Schmidt process, the resulting vectors
-        ///   tend to be numerically unstable. The numeric stability decreases according to the vectors
-        ///   position in the list so that the first vector is the most stable and the last vector is the
-        ///   least stable.
-        /// </para>
-        /// </remarks>
-        /// <exception cref="ArgumentNullException">Thrown when <paramref name="source" /> or <paramref name="destination" /> is <c>null</c>.</exception>
-        /// <exception cref="ArgumentOutOfRangeException">Thrown when <paramref name="destination" /> is shorter in length than <paramref name="source" />.</exception>
-        public static void Orthogonalize(Double2[] destination, params Double2[] source)
-        {
-            //Uses the modified Gram-Schmidt process.
-            //q1 = m1
-            //q2 = m2 - ((q1 ⋅ m2) / (q1 ⋅ q1)) * q1
-            //q3 = m3 - ((q1 ⋅ m3) / (q1 ⋅ q1)) * q1 - ((q2 ⋅ m3) / (q2 ⋅ q2)) * q2
-            //q4 = m4 - ((q1 ⋅ m4) / (q1 ⋅ q1)) * q1 - ((q2 ⋅ m4) / (q2 ⋅ q2)) * q2 - ((q3 ⋅ m4) / (q3 ⋅ q3)) * q3
-            //q5 = ...
-            if (source == null)
-                throw new ArgumentNullException(nameof(source));
-            if (destination == null)
-                throw new ArgumentNullException(nameof(destination));
-            if (destination.Length < source.Length)
-                throw new ArgumentOutOfRangeException(nameof(destination), "The destination array must be of same length or larger length than the source array.");
-            for (var i = 0; i < source.Length; ++i)
-            {
-                Double2 v = source[i];
-                for (var r = 0; r < i; ++r)
-                    v -= Dot(destination[r], v) / Dot(destination[r], destination[r]) * destination[r];
-                destination[i] = v;
-            }
-        }
-
-        /// <summary>
-        /// Orthonormalizes a list of vectors.
-        /// </summary>
-        /// <param name="destination">The list of orthonormalized vectors.</param>
-        /// <param name="source">The list of vectors to orthonormalize.</param>
-        /// <remarks>
-        /// <para>
-        ///   Orthonormalization is the process of making all vectors orthogonal to each
-        ///   other and making all vectors of unit length. This means that any given vector will
-        ///   be orthogonal to any other given vector in the list.
-        /// </para>
-        /// <para>
-        ///   Because this method uses the modified Gram-Schmidt process, the resulting vectors
-        ///   tend to be numerically unstable. The numeric stability decreases according to the vectors
-        ///   position in the list so that the first vector is the most stable and the last vector is the
-        ///   least stable.
-        /// </para>
-        /// </remarks>
-        /// <exception cref="ArgumentNullException">Thrown when <paramref name="source" /> or <paramref name="destination" /> is <c>null</c>.</exception>
-        /// <exception cref="ArgumentOutOfRangeException">Thrown when <paramref name="destination" /> is shorter in length than<paramref name="source" />.</exception>
-        public static void Orthonormalize(Double2[] destination, params Double2[] source)
-        {
-            //Uses the modified Gram-Schmidt process.
-            //Because we are making unit vectors, we can optimize the math for orthogonalization
-            //and simplify the projection operation to remove the division.
-            //q1 = m1 / |m1|
-            //q2 = (m2 - (q1 ⋅ m2) * q1) / |m2 - (q1 ⋅ m2) * q1|
-            //q3 = (m3 - (q1 ⋅ m3) * q1 - (q2 ⋅ m3) * q2) / |m3 - (q1 ⋅ m3) * q1 - (q2 ⋅ m3) * q2|
-            //q4 = (m4 - (q1 ⋅ m4) * q1 - (q2 ⋅ m4) * q2 - (q3 ⋅ m4) * q3) / |m4 - (q1 ⋅ m4) * q1 - (q2 ⋅ m4) * q2 - (q3 ⋅ m4) * q3|
-            //q5 = ...
-            if (source == null)
-                throw new ArgumentNullException(nameof(source));
-            if (destination == null)
-                throw new ArgumentNullException(nameof(destination));
-            if (destination.Length < source.Length)
-                throw new ArgumentOutOfRangeException(nameof(destination), "The destination array must be of same length or larger length than the source array.");
-            for (var i = 0; i < source.Length; ++i)
-            {
-                Double2 v = source[i];
-                for (var r = 0; r < i; ++r)
-                    v -= Dot(destination[r], v) * destination[r];
-                v.Normalize();
-                destination[i] = v;
-            }
-        }
-
-        /// <summary>
         /// Transforms a 2D vector by the given <see cref="Quaternion" /> rotation.
         /// </summary>
         /// <param name="vector">The vector to rotate.</param>
@@ -1231,38 +1147,6 @@ namespace FlaxEngine
         }
 
         /// <summary>
-        /// Transforms an array of vectors by the given <see cref="Quaternion" /> rotation.
-        /// </summary>
-        /// <param name="source">The array of vectors to transform.</param>
-        /// <param name="rotation">The <see cref="Quaternion" /> rotation to apply.</param>
-        /// <param name="destination">The array for which the transformed vectors are stored. This array may be the same array as <paramref name="source" />.</param>
-        /// <exception cref="ArgumentNullException">Thrown when <paramref name="source" /> or <paramref name="destination" /> is <c>null</c>.</exception>
-        /// <exception cref="ArgumentOutOfRangeException">Thrown when <paramref name="destination" /> is shorter in length than <paramref name="source" />.</exception>
-        public static void Transform(Double2[] source, ref Quaternion rotation, Double2[] destination)
-        {
-            if (source == null)
-                throw new ArgumentNullException(nameof(source));
-            if (destination == null)
-                throw new ArgumentNullException(nameof(destination));
-            if (destination.Length < source.Length)
-                throw new ArgumentOutOfRangeException(nameof(destination), "The destination array must be of same length or larger length than the source array.");
-            double x = rotation.X + rotation.X;
-            double y = rotation.Y + rotation.Y;
-            double z = rotation.Z + rotation.Z;
-            double wz = rotation.W * z;
-            double xx = rotation.X * x;
-            double xy = rotation.X * y;
-            double yy = rotation.Y * y;
-            double zz = rotation.Z * z;
-            double num1 = 1.0 - yy - zz;
-            double num2 = xy - wz;
-            double num3 = xy + wz;
-            double num4 = 1.0 - xx - zz;
-            for (var i = 0; i < source.Length; ++i)
-                destination[i] = new Double2(source[i].X * num1 + source[i].Y * num2, source[i].X * num3 + source[i].Y * num4);
-        }
-
-        /// <summary>
         /// Transforms a 2D vector by the given <see cref="Matrix" />.
         /// </summary>
         /// <param name="vector">The source vector.</param>
@@ -1286,26 +1170,6 @@ namespace FlaxEngine
         {
             Transform(ref vector, ref transform, out Double4 result);
             return result;
-        }
-
-        /// <summary>
-        /// Transforms an array of 2D vectors by the given <see cref="Matrix" />.
-        /// </summary>
-        /// <param name="source">The array of vectors to transform.</param>
-        /// <param name="transform">The transformation <see cref="Matrix" />.</param>
-        /// <param name="destination">The array for which the transformed vectors are stored.</param>
-        /// <exception cref="ArgumentNullException">Thrown when <paramref name="source" /> or <paramref name="destination" /> is <c>null</c>.</exception>
-        /// <exception cref="ArgumentOutOfRangeException">Thrown when <paramref name="destination" /> is shorter in length than <paramref name="source" />.</exception>
-        public static void Transform(Double2[] source, ref Matrix transform, Double4[] destination)
-        {
-            if (source == null)
-                throw new ArgumentNullException(nameof(source));
-            if (destination == null)
-                throw new ArgumentNullException(nameof(destination));
-            if (destination.Length < source.Length)
-                throw new ArgumentOutOfRangeException(nameof(destination), "The destination array must be of same length or larger length than the source array.");
-            for (var i = 0; i < source.Length; ++i)
-                Transform(ref source[i], ref transform, out destination[i]);
         }
 
         /// <summary>
@@ -1353,33 +1217,6 @@ namespace FlaxEngine
         }
 
         /// <summary>
-        /// Performs a coordinate transformation on an array of vectors using the given <see cref="Matrix" />.
-        /// </summary>
-        /// <param name="source">The array of coordinate vectors to transform.</param>
-        /// <param name="transform">The transformation <see cref="Matrix" />.</param>
-        /// <param name="destination">The array for which the transformed vectors are stored. This array may be the same array as <paramref name="source" />.</param>
-        /// <exception cref="ArgumentNullException">Thrown when <paramref name="source" /> or <paramref name="destination" /> is <c>null</c>.</exception>
-        /// <exception cref="ArgumentOutOfRangeException">Thrown when <paramref name="destination" /> is shorter in length than <paramref name="source" />.</exception>
-        /// <remarks>
-        /// A coordinate transform performs the transformation with the assumption that the w component
-        /// is one. The four dimensional vector obtained from the transformation operation has each
-        /// component in the vector divided by the w component. This forces the w component to be one and
-        /// therefore makes the vector homogeneous. The homogeneous vector is often preferred when working
-        /// with coordinates as the w component can safely be ignored.
-        /// </remarks>
-        public static void TransformCoordinate(Double2[] source, ref Matrix transform, Double2[] destination)
-        {
-            if (source == null)
-                throw new ArgumentNullException(nameof(source));
-            if (destination == null)
-                throw new ArgumentNullException(nameof(destination));
-            if (destination.Length < source.Length)
-                throw new ArgumentOutOfRangeException(nameof(destination), "The destination array must be of same length or larger length than the source array.");
-            for (var i = 0; i < source.Length; ++i)
-                TransformCoordinate(ref source[i], ref transform, out destination[i]);
-        }
-
-        /// <summary>
         /// Performs a normal transformation using the given <see cref="Matrix" />.
         /// </summary>
         /// <param name="normal">The normal vector to transform.</param>
@@ -1415,33 +1252,6 @@ namespace FlaxEngine
         {
             TransformNormal(ref normal, ref transform, out Double2 result);
             return result;
-        }
-
-        /// <summary>
-        /// Performs a normal transformation on an array of vectors using the given <see cref="Matrix" />.
-        /// </summary>
-        /// <param name="source">The array of normal vectors to transform.</param>
-        /// <param name="transform">The transformation <see cref="Matrix" />.</param>
-        /// <param name="destination">The array for which the transformed vectors are stored. This array may be the same array as <paramref name="source" />.</param>
-        /// <exception cref="ArgumentNullException">Thrown when <paramref name="source" /> or <paramref name="destination" /> is <c>null</c>.</exception>
-        /// <exception cref="ArgumentOutOfRangeException">Thrown when <paramref name="destination" /> is shorter in length than <paramref name="source" />.</exception>
-        /// <remarks>
-        /// A normal transform performs the transformation with the assumption that the w component
-        /// is zero. This causes the fourth row and fourth column of the matrix to be unused. The
-        /// end result is a vector that is not translated, but all other transformation properties
-        /// apply. This is often preferred for normal vectors as normals purely represent direction
-        /// rather than location because normal vectors should not be translated.
-        /// </remarks>
-        public static void TransformNormal(Double2[] source, ref Matrix transform, Double2[] destination)
-        {
-            if (source == null)
-                throw new ArgumentNullException(nameof(source));
-            if (destination == null)
-                throw new ArgumentNullException(nameof(destination));
-            if (destination.Length < source.Length)
-                throw new ArgumentOutOfRangeException(nameof(destination), "The destination array must be of same length or larger length than the source array.");
-            for (var i = 0; i < source.Length; ++i)
-                TransformNormal(ref source[i], ref transform, out destination[i]);
         }
 
         /// <summary>
@@ -1654,6 +1464,26 @@ namespace FlaxEngine
         }
 
         /// <summary>
+        /// Performs an implicit conversion from <see cref="Double2" /> to <see cref="Float2" />.
+        /// </summary>
+        /// <param name="value">The value.</param>
+        /// <returns>The result of the conversion.</returns>
+        public static implicit operator Float2(Double2 value)
+        {
+            return new Float2((float)value.X, (float)value.Y);
+        }
+
+        /// <summary>
+        /// Performs an implicit conversion from <see cref="Double2" /> to <see cref="Vector2" />.
+        /// </summary>
+        /// <param name="value">The value.</param>
+        /// <returns>The result of the conversion.</returns>
+        public static implicit operator Vector2(Double2 value)
+        {
+            return new Vector2((Real)value.X, (Real)value.Y);
+        }
+
+        /// <summary>
         /// Performs an explicit conversion from <see cref="Double2" /> to <see cref="Vector3" />.
         /// </summary>
         /// <param name="value">The value.</param>
@@ -1765,9 +1595,7 @@ namespace FlaxEngine
         /// <returns><c>true</c> if the specified <see cref="System.Object" /> is equal to this instance; otherwise, <c>false</c>.</returns>
         public override bool Equals(object value)
         {
-            if (!(value is Double2 other))
-                return false;
-            return Mathd.NearEqual(other.X, X) && Mathd.NearEqual(other.Y, Y);
+            return value is Double2 other && Mathd.NearEqual(other.X, X) && Mathd.NearEqual(other.Y, Y);
         }
     }
 }

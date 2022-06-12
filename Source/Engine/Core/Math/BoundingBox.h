@@ -71,13 +71,19 @@ public:
     /// Gets the eight corners of the bounding box.
     /// </summary>
     /// <param name="corners">An array of points representing the eight corners of the bounding box.</param>
-    void GetCorners(Vector3 corners[8]) const;
+    void GetCorners(Float3 corners[8]) const;
+
+    /// <summary>
+    /// Gets the eight corners of the bounding box.
+    /// </summary>
+    /// <param name="corners">An array of points representing the eight corners of the bounding box.</param>
+    void GetCorners(Double3 corners[8]) const;
 
     /// <summary>
     /// Calculates volume of the box.
     /// </summary>
     /// <returns>The box volume.</returns>
-    float GetVolume() const
+    Real GetVolume() const
     {
         Vector3 size;
         Vector3::Subtract(Maximum, Minimum, size);
@@ -152,7 +158,7 @@ public:
         return Vector3::NearEqual(a.Minimum, b.Minimum) && Vector3::NearEqual(a.Maximum, b.Maximum);
     }
 
-    static bool NearEqual(const BoundingBox& a, const BoundingBox& b, float epsilon)
+    static bool NearEqual(const BoundingBox& a, const BoundingBox& b, Real epsilon)
     {
         return Vector3::NearEqual(a.Minimum, b.Minimum, epsilon) && Vector3::NearEqual(a.Maximum, b.Maximum, epsilon);
     }
@@ -222,15 +228,15 @@ public:
     /// <param name="points">The points that will be contained by the box.</param>
     /// <param name="pointsCount">The amount of points to use.</param>
     /// <param name="result">The constructed bounding box.</param>
-    static void FromPoints(const Vector3* points, int32 pointsCount, BoundingBox& result);
+    static void FromPoints(const Float3* points, int32 pointsCount, BoundingBox& result);
 
     /// <summary>
     /// Constructs a Bounding Box that fully contains the given points.
     /// </summary>
     /// <param name="points">The points that will be contained by the box.</param>
     /// <param name="pointsCount">The amount of points to use.</param>
-    /// <returns>The constructed bounding box.</returns>
-    static BoundingBox FromPoints(const Vector3* points, int32 pointsCount);
+    /// <param name="result">The constructed bounding box.</param>
+    static void FromPoints(const Double3* points, int32 pointsCount, BoundingBox& result);
 
     /// <summary>
     /// Constructs a Bounding Box from a given sphere.
@@ -280,7 +286,7 @@ public:
     /// <param name="box">The box.</param>
     /// <param name="scale">The bounds scale.</param>
     /// <returns>The scaled bounds.</returns>
-    static BoundingBox MakeScaled(const BoundingBox& box, float scale);
+    static BoundingBox MakeScaled(const BoundingBox& box, Real scale);
 
     /// <summary>
     /// Transforms the bounding box using the specified matrix.
@@ -298,7 +304,7 @@ public:
     /// <returns>Whether the two objects intersected.</returns>
     FORCE_INLINE bool Intersects(const Ray& ray) const
     {
-        float distance;
+        Real distance;
         return CollisionsHelper::RayIntersectsBox(ray, *this, distance);
     }
 
@@ -308,7 +314,7 @@ public:
     /// <param name="ray">The ray to test.</param>
     /// <param name="distance">When the method completes, contains the distance of the intersection, or 0 if there was no intersection.</param>
     /// <returns> Whether the two objects intersected.</returns>
-    FORCE_INLINE bool Intersects(const Ray& ray, float& distance) const
+    FORCE_INLINE bool Intersects(const Ray& ray, Real& distance) const
     {
         return CollisionsHelper::RayIntersectsBox(ray, *this, distance);
     }
@@ -320,7 +326,7 @@ public:
     /// <param name="distance">When the method completes, contains the distance of the intersection, or 0 if there was no intersection.</param>
     /// <param name="normal">When the method completes, contains the intersection surface normal vector, or Vector3::Up if there was no intersection.</param>
     /// <returns>Whether the two objects intersected.</returns>
-    FORCE_INLINE bool Intersects(const Ray& ray, float& distance, Vector3& normal) const
+    FORCE_INLINE bool Intersects(const Ray& ray, Real& distance, Vector3& normal) const
     {
         return CollisionsHelper::RayIntersectsBox(ray, *this, distance, normal);
     }
@@ -401,7 +407,7 @@ public:
     /// </summary>
     /// <param name="point">The point to test.</param>
     /// <returns>The distance between bounding box and a point.</returns>
-    FORCE_INLINE float Distance(const Vector3& point) const
+    FORCE_INLINE Real Distance(const Vector3& point) const
     {
         return CollisionsHelper::DistanceBoxPoint(*this, point);
     }
@@ -411,7 +417,7 @@ public:
     /// </summary>
     /// <param name="box">The bounding box to test.</param>
     /// <returns>The distance between bounding boxes.</returns>
-    FORCE_INLINE float Distance(const BoundingBox& box) const
+    FORCE_INLINE Real Distance(const BoundingBox& box) const
     {
         return CollisionsHelper::DistanceBoxBox(*this, box);
     }

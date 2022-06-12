@@ -24,10 +24,10 @@ void DirectionalLight::Draw(RenderContext& renderContext)
         && (ViewDistance < ZeroTolerance || Vector3::DistanceSquared(renderContext.View.Position, GetPosition()) < ViewDistance * ViewDistance))
     {
         RendererDirectionalLightData data;
-        data.Position = GetPosition();
+        data.Position = GetPosition(); // TODO: large-worlds
         data.MinRoughness = MinRoughness;
         data.ShadowsDistance = ShadowsDistance;
-        data.Color = Color.ToVector3() * (Color.A * brightness);
+        data.Color = Color.ToFloat3() * (Color.A * brightness);
         data.ShadowsStrength = ShadowsStrength;
         data.Direction = GetDirection();
         data.ShadowsFadeDistance = ShadowsFadeDistance;
@@ -62,7 +62,7 @@ void DirectionalLight::Deserialize(DeserializeStream& stream, ISerializeModifier
     DESERIALIZE(CascadeCount);
 }
 
-bool DirectionalLight::IntersectsItself(const Ray& ray, float& distance, Vector3& normal)
+bool DirectionalLight::IntersectsItself(const Ray& ray, Real& distance, Vector3& normal)
 {
     return false;
 }

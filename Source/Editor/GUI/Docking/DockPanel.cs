@@ -123,7 +123,7 @@ namespace FlaxEditor.GUI.Docking
                 if (parentWin == null)
                     throw new InvalidOperationException("Missing parent window.");
                 var control = _tabsProxy != null ? (Control)_tabsProxy : this;
-                var clientPos = control.PointToWindow(Vector2.Zero);
+                var clientPos = control.PointToWindow(Float2.Zero);
                 return new Rectangle(parentWin.PointToScreen(clientPos), control.Size * DpiScale);
             }
         }
@@ -305,14 +305,14 @@ namespace FlaxEditor.GUI.Docking
         /// </summary>
         /// <param name="position">Screen space position to test</param>
         /// <returns>Dock panel that has been hit or null if nothing found</returns>
-        public DockPanel HitTest(ref Vector2 position)
+        public DockPanel HitTest(ref Float2 position)
         {
             // Get parent window and transform point position into local coordinates system
             var parentWin = Root;
             if (parentWin == null)
                 return null;
-            Vector2 clientPos = parentWin.PointFromScreen(position);
-            Vector2 localPos = PointFromWindow(clientPos);
+            var clientPos = parentWin.PointFromScreen(position);
+            var localPos = PointFromWindow(clientPos);
 
             // Early out
             if (localPos.X < 0 || localPos.Y < 0)

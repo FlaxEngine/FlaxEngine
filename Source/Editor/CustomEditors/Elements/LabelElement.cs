@@ -28,7 +28,7 @@ namespace FlaxEditor.CustomEditors.Elements
         {
             Label = new ClickableLabel
             {
-                Size = new Vector2(100, 18),
+                Size = new Float2(100, 18),
                 HorizontalAlignment = TextAlignment.Near,
             };
             // TODO: auto height for label

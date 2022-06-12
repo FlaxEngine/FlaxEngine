@@ -19,13 +19,13 @@ TEST_CASE("FloatR10G10B10A2")
 {
     SECTION("Test Conversion")
     {
-        CHECK(Vector4::NearEqual(Vector4::Zero, FloatR10G10B10A2(Vector4::Zero).ToVector4()));
-        CHECK(Vector4::NearEqual(Vector4::One, FloatR10G10B10A2(Vector4::One).ToVector4()));
-        CHECK(Vector4::NearEqual(Vector4(0.5004888f, 0.5004888f, 0.5004888f, 0.666667f), FloatR10G10B10A2(Vector4(0.5f)).ToVector4()));
-        CHECK(Vector4::NearEqual(Vector4(1, 0, 0, 0), FloatR10G10B10A2(Vector4(1, 0, 0, 0)).ToVector4()));
-        CHECK(Vector4::NearEqual(Vector4(0, 1, 0, 0), FloatR10G10B10A2(Vector4(0, 1, 0, 0)).ToVector4()));
-        CHECK(Vector4::NearEqual(Vector4(0, 0, 1, 0), FloatR10G10B10A2(Vector4(0, 0, 1, 0)).ToVector4()));
-        CHECK(Vector4::NearEqual(Vector4(0, 0, 0, 1), FloatR10G10B10A2(Vector4(0, 0, 0, 1)).ToVector4()));
+        CHECK(Float4::NearEqual(Float4::Zero, FloatR10G10B10A2(Float4::Zero).ToFloat4()));
+        CHECK(Float4::NearEqual(Float4::One, FloatR10G10B10A2(Float4::One).ToFloat4()));
+        CHECK(Float4::NearEqual(Float4(0.5004888f, 0.5004888f, 0.5004888f, 0.666667f), FloatR10G10B10A2(Vector4(0.5f)).ToFloat4()));
+        CHECK(Float4::NearEqual(Float4(1, 0, 0, 0), FloatR10G10B10A2(Float4(1, 0, 0, 0)).ToFloat4()));
+        CHECK(Float4::NearEqual(Float4(0, 1, 0, 0), FloatR10G10B10A2(Float4(0, 1, 0, 0)).ToFloat4()));
+        CHECK(Float4::NearEqual(Float4(0, 0, 1, 0), FloatR10G10B10A2(Float4(0, 0, 1, 0)).ToFloat4()));
+        CHECK(Float4::NearEqual(Float4(0, 0, 0, 1), FloatR10G10B10A2(Float4(0, 0, 0, 1)).ToFloat4()));
     }
 }
 
@@ -33,13 +33,13 @@ TEST_CASE("FloatR11G11B10")
 {
     SECTION("Test Conversion")
     {
-        CHECK(Vector3::NearEqual(Vector3::Zero, FloatR11G11B10(Vector3::Zero).ToVector3()));
-        CHECK(Vector3::NearEqual(Vector3::One, FloatR11G11B10(Vector3::One).ToVector3()));
-        CHECK(Vector3::NearEqual(Vector3(0.5f, 0.5f, 0.5f), FloatR11G11B10(Vector3(0.5f)).ToVector3()));
-        CHECK(Vector3::NearEqual(Vector3(1, 0, 0), FloatR11G11B10(Vector3(1, 0, 0)).ToVector3()));
-        CHECK(Vector3::NearEqual(Vector3(0, 1, 0), FloatR11G11B10(Vector3(0, 1, 0)).ToVector3()));
-        CHECK(Vector3::NearEqual(Vector3(0, 0, 1), FloatR11G11B10(Vector3(0, 0, 1)).ToVector3()));
-        CHECK(Vector3::NearEqual(Vector3(10, 11, 12), FloatR11G11B10(Vector3(10, 11, 12)).ToVector3()));
+        CHECK(Float3::NearEqual(Float3::Zero, FloatR11G11B10(Float3::Zero).ToFloat3()));
+        CHECK(Float3::NearEqual(Float3::One, FloatR11G11B10(Float3::One).ToFloat3()));
+        CHECK(Float3::NearEqual(Float3(0.5f, 0.5f, 0.5f), FloatR11G11B10(Float3(0.5f)).ToFloat3()));
+        CHECK(Float3::NearEqual(Float3(1, 0, 0), FloatR11G11B10(Float3(1, 0, 0)).ToFloat3()));
+        CHECK(Float3::NearEqual(Float3(0, 1, 0), FloatR11G11B10(Float3(0, 1, 0)).ToFloat3()));
+        CHECK(Float3::NearEqual(Float3(0, 0, 1), FloatR11G11B10(Float3(0, 0, 1)).ToFloat3()));
+        CHECK(Float3::NearEqual(Float3(10, 11, 12), FloatR11G11B10(Float3(10, 11, 12)).ToFloat3()));
     }
 }
 
@@ -49,8 +49,8 @@ TEST_CASE("Quaternion")
     {
         CHECK(Quaternion::NearEqual(Quaternion::Euler(90, 0, 0), Quaternion(0.7071068f, 0, 0, 0.7071068f)));
         CHECK(Quaternion::NearEqual(Quaternion::Euler(25, 0, 10), Quaternion(0.215616f, -0.018864f, 0.0850898f, 0.9725809f)));
-        CHECK(Vector3::NearEqual(Vector3(25, 0, 10), Quaternion::Euler(25, 0, 10).GetEuler()));
-        CHECK(Vector3::NearEqual(Vector3(25, -5, 10), Quaternion::Euler(25, -5, 10).GetEuler()));
+        CHECK(Float3::NearEqual(Float3(25, 0, 10), Quaternion::Euler(25, 0, 10).GetEuler()));
+        CHECK(Float3::NearEqual(Float3(25, -5, 10), Quaternion::Euler(25, -5, 10).GetEuler()));
     }
     SECTION("Test Multiply")
     {
@@ -66,7 +66,7 @@ TEST_CASE("Transform")
 {
     SECTION("Test World Matrix")
     {
-        Transform t1(Vector3(10, 1, 10), Quaternion::Euler(45, 0, -15), Vector3(1.5f, 0.5f, 0.1f));
+        Transform t1(Vector3(10, 1, 10), Quaternion::Euler(45, 0, -15), Float3(1.5f, 0.5f, 0.1f));
 
         Matrix a1 = t1.GetWorld();
 
@@ -88,8 +88,8 @@ TEST_CASE("Transform")
     }
     SECTION("Test Local To World")
     {
-        Transform t1(Vector3(10, 1, 10), Quaternion::Euler(45, 0, -15), Vector3(1.5f, 0.5f, 0.1f));
-        Transform t2(Vector3(0, 20, 0), Quaternion::Euler(0, 0, 15), Vector3(1.0f, 2.0f, 1.0f));
+        Transform t1(Vector3(10, 1, 10), Quaternion::Euler(45, 0, -15), Float3(1.5f, 0.5f, 0.1f));
+        Transform t2(Vector3(0, 20, 0), Quaternion::Euler(0, 0, 15), Float3(1.0f, 2.0f, 1.0f));
 
         Transform a1 = t1.LocalToWorld(t2);
         Vector3 a2 = t1.LocalToWorld(t2.Translation);
@@ -111,14 +111,14 @@ TEST_CASE("Transform")
             a4T[i] = t1.LocalToWorld(a4Ta[i]);
         Vector3 a4 = a4T[0];
 
-        CHECK(Vector3::NearEqual(a1.Translation, a2));
-        CHECK(Vector3::NearEqual(a2, a3));
-        CHECK(Vector3::NearEqual(a2, a4));
+        CHECK(Float3::NearEqual(a1.Translation, a2));
+        CHECK(Float3::NearEqual(a2, a3));
+        CHECK(Float3::NearEqual(a2, a4));
     }
     SECTION("Test World To Local")
     {
-        Transform t1 = Transform(Vector3(10, 1, 10), Quaternion::Euler(45, 0, -15), Vector3(1.5f, 0.5f, 0.1f));
-        Transform t2 = Transform(Vector3(0, 20, 0), Quaternion::Euler(0, 0, 15), Vector3(1.0f, 2.0f, 1.0f));
+        Transform t1 = Transform(Vector3(10, 1, 10), Quaternion::Euler(45, 0, -15), Float3(1.5f, 0.5f, 0.1f));
+        Transform t2 = Transform(Vector3(0, 20, 0), Quaternion::Euler(0, 0, 15), Float3(1.0f, 2.0f, 1.0f));
 
         Transform a1 = t1.WorldToLocal(t2);
         Vector3 a2 = t1.WorldToLocal(t2.Translation);
@@ -140,36 +140,36 @@ TEST_CASE("Transform")
             a4T[i] = t1.WorldToLocal(a4Ta[i]);
         Vector3 a4 = a4T[0];
 
-        CHECK(Vector3::NearEqual(a1.Translation, a2));
-        CHECK(Vector3::NearEqual(a2, a3, 0.0001f));
-        CHECK(Vector3::NearEqual(a2, a4));
+        CHECK(Float3::NearEqual(a1.Translation, a2));
+        CHECK(Float3::NearEqual(a2, a3, 0.0001f));
+        CHECK(Float3::NearEqual(a2, a4));
     }
     SECTION("Test World Local Space")
     {
         Transform trans = Transform(Vector3(1, 2, 3));
 
-        CHECK(Vector3::NearEqual(Vector3(1, 2, 3), trans.LocalToWorld(Vector3(0, 0, 0))));
-        CHECK(Vector3::NearEqual(Vector3(4, 4, 4), trans.LocalToWorld(Vector3(3, 2, 1))));
-        CHECK(Vector3::NearEqual(Vector3(-1, -2, -3), trans.WorldToLocal(Vector3(0, 0, 0))));
-        CHECK(Vector3::NearEqual(Vector3(0, 0, 0), trans.WorldToLocal(Vector3(1, 2, 3))));
+        CHECK(Float3::NearEqual(Vector3(1, 2, 3), trans.LocalToWorld(Vector3(0, 0, 0))));
+        CHECK(Float3::NearEqual(Vector3(4, 4, 4), trans.LocalToWorld(Vector3(3, 2, 1))));
+        CHECK(Float3::NearEqual(Vector3(-1, -2, -3), trans.WorldToLocal(Vector3(0, 0, 0))));
+        CHECK(Float3::NearEqual(Vector3(0, 0, 0), trans.WorldToLocal(Vector3(1, 2, 3))));
 
         trans = Transform(Vector3::Zero, Quaternion::Euler(0, 90, 0));
-        CHECK(Vector3::NearEqual(Vector3(0, 2, -1), trans.LocalToWorld(Vector3(1, 2, 0))));
+        CHECK(Float3::NearEqual(Vector3(0, 2, -1), trans.LocalToWorld(Vector3(1, 2, 0))));
 
         trans.Translation = Vector3(1, 0, 0);
         trans.Orientation = RotationX(PI * 0.5f);
         trans.Scale = Vector3(2, 2, 2);
-        CHECK(Vector3::NearEqual(Vector3(1, 0, 2), trans.LocalToWorld(Vector3(0, 1, 0))));
+        CHECK(Float3::NearEqual(Vector3(1, 0, 2), trans.LocalToWorld(Vector3(0, 1, 0))));
 
         Transform t1 = trans.LocalToWorld(Transform::Identity);
-        CHECK(Vector3::NearEqual(Vector3(1.0f, 0, 0), t1.Translation));
+        CHECK(Float3::NearEqual(Vector3(1.0f, 0, 0), t1.Translation));
         CHECK(Quaternion::NearEqual(RotationX(PI * 0.5f), t1.Orientation));
-        CHECK(Vector3::NearEqual(Vector3(2.0f, 2.0f, 2.0f), t1.Scale));
+        CHECK(Float3::NearEqual(Vector3(2.0f, 2.0f, 2.0f), t1.Scale));
 
         Transform t2 = trans.WorldToLocal(Transform::Identity);
-        CHECK(Vector3::NearEqual(Vector3(-0.5f, 0, 0), t2.Translation));
+        CHECK(Float3::NearEqual(Vector3(-0.5f, 0, 0), t2.Translation));
         CHECK(Quaternion::NearEqual(RotationX(PI * -0.5f), t2.Orientation));
-        CHECK(Vector3::NearEqual(Vector3(0.5f, 0.5f, 0.5f), t2.Scale));
+        CHECK(Float3::NearEqual(Vector3(0.5f, 0.5f, 0.5f), t2.Scale));
 
         RandomStream rand(10);
         for (int32 i = 0; i < 10; i++)

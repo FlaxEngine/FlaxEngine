@@ -170,7 +170,7 @@ public:
     /// <param name="uvs">The texture coordinates (per vertex).</param>
     /// <param name="colors">The vertex colors (per vertex).</param>
     /// <returns>True if failed, otherwise false.</returns>
-    bool UpdateMesh(uint32 vertexCount, uint32 triangleCount, Vector3* vertices, uint16* triangles, Vector3* normals = nullptr, Vector3* tangents = nullptr, Vector2* uvs = nullptr, Color32* colors = nullptr);
+    bool UpdateMesh(uint32 vertexCount, uint32 triangleCount, Float3* vertices, uint16* triangles, Float3* normals = nullptr, Float3* tangents = nullptr, Float2* uvs = nullptr, Color32* colors = nullptr);
 
     /// <summary>
     /// Updates the model mesh (used by the virtual models created with Init rather than Load).
@@ -186,7 +186,7 @@ public:
     /// <param name="uvs">The texture coordinates (per vertex).</param>
     /// <param name="colors">The vertex colors (per vertex).</param>
     /// <returns>True if failed, otherwise false.</returns>
-    bool UpdateMesh(uint32 vertexCount, uint32 triangleCount, Vector3* vertices, uint32* triangles, Vector3* normals = nullptr, Vector3* tangents = nullptr, Vector2* uvs = nullptr, Color32* colors = nullptr);
+    bool UpdateMesh(uint32 vertexCount, uint32 triangleCount, Float3* vertices, uint32* triangles, Float3* normals = nullptr, Float3* tangents = nullptr, Float2* uvs = nullptr, Color32* colors = nullptr);
 
 public:
 
@@ -263,7 +263,7 @@ public:
     /// <param name="distance">When the method completes and returns true, contains the distance of the intersection (if any valid).</param>
     /// <param name="normal">When the method completes, contains the intersection surface normal vector (if any valid).</param>
     /// <returns>True whether the two objects intersected</returns>
-    bool Intersects(const Ray& ray, const Matrix& world, float& distance, Vector3& normal) const;
+    bool Intersects(const Ray& ray, const Matrix& world, Real& distance, Vector3& normal) const;
 
     /// <summary>
     /// Retrieves the eight corners of the bounding box.

@@ -594,18 +594,18 @@ namespace FlaxEditor.Content.GUI
             // Check if drag is over
             if (IsDragOver && _validDragOver)
             {
-                Render2D.FillRectangle(new Rectangle(Vector2.Zero, Size), style.BackgroundSelected * 0.4f);
+                Render2D.FillRectangle(new Rectangle(Float2.Zero, Size), style.BackgroundSelected * 0.4f);
             }
 
             // Check if it's an empty thing
             if (_items.Count == 0)
             {
-                Render2D.DrawText(style.FontSmall, IsSearching ? "No results" : "Empty", new Rectangle(Vector2.Zero, Size), style.ForegroundDisabled, TextAlignment.Center, TextAlignment.Center);
+                Render2D.DrawText(style.FontSmall, IsSearching ? "No results" : "Empty", new Rectangle(Float2.Zero, Size), style.ForegroundDisabled, TextAlignment.Center, TextAlignment.Center);
             }
         }
 
         /// <inheritdoc />
-        public override bool OnMouseDown(Vector2 location, MouseButton button)
+        public override bool OnMouseDown(Float2 location, MouseButton button)
         {
             if (base.OnMouseDown(location, button))
                 return true;
@@ -613,7 +613,7 @@ namespace FlaxEditor.Content.GUI
         }
 
         /// <inheritdoc />
-        public override bool OnMouseWheel(Vector2 location, float delta)
+        public override bool OnMouseWheel(Float2 location, float delta)
         {
             // Check if pressing control key
             if (Root.GetKey(KeyboardKeys.Control))
@@ -655,26 +655,26 @@ namespace FlaxEditor.Content.GUI
                 // Movement with arrows
                 {
                     var root = _selection[0];
-                    Vector2 size = root.Size;
-                    Vector2 offset = Vector2.Minimum;
+                    var size = root.Size;
+                    var offset = Float2.Minimum;
                     ContentItem item = null;
                     if (key == KeyboardKeys.ArrowUp)
                     {
-                        offset = new Vector2(0, -size.Y);
+                        offset = new Float2(0, -size.Y);
                     }
                     else if (key == KeyboardKeys.ArrowDown)
                     {
-                        offset = new Vector2(0, size.Y);
+                        offset = new Float2(0, size.Y);
                     }
                     else if (key == KeyboardKeys.ArrowRight)
                     {
-                        offset = new Vector2(size.X, 0);
+                        offset = new Float2(size.X, 0);
                     }
                     else if (key == KeyboardKeys.ArrowLeft)
                     {
-                        offset = new Vector2(-size.X, 0);
+                        offset = new Float2(-size.X, 0);
                     }
-                    if (offset != Vector2.Minimum)
+                    if (offset != Float2.Minimum)
                     {
                         item = GetChildAt(root.Location + size / 2 + offset) as ContentItem;
                     }

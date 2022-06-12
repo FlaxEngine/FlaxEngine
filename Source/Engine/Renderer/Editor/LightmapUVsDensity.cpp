@@ -21,9 +21,9 @@ PACK_STRUCT(struct LightmapUVsDensityMaterialShaderData {
     Matrix ViewProjectionMatrix;
     Matrix WorldMatrix;
     Rectangle LightmapArea;
-    Vector3 WorldInvScale;
+    Float3 WorldInvScale;
     float LightmapTexelsPerWorldUnit;
-    Vector3 Dummy0;
+    Float3 Dummy0;
     float LightmapSize;
     });
 
@@ -176,10 +176,10 @@ void LightmapUVsDensityMaterialShader::Bind(BindParameters& params)
         LightmapUVsDensityMaterialShaderData data;
         Matrix::Transpose(params.RenderContext.View.Frustum.GetMatrix(), data.ViewProjectionMatrix);
         Matrix::Transpose(drawCall.World, data.WorldMatrix);
-        const float scaleX = Vector3(drawCall.World.M11, drawCall.World.M12, drawCall.World.M13).Length();
-        const float scaleY = Vector3(drawCall.World.M21, drawCall.World.M22, drawCall.World.M23).Length();
-        const float scaleZ = Vector3(drawCall.World.M31, drawCall.World.M32, drawCall.World.M33).Length();
-        data.WorldInvScale = Vector3(
+        const float scaleX = Float3(drawCall.World.M11, drawCall.World.M12, drawCall.World.M13).Length();
+        const float scaleY = Float3(drawCall.World.M21, drawCall.World.M22, drawCall.World.M23).Length();
+        const float scaleZ = Float3(drawCall.World.M31, drawCall.World.M32, drawCall.World.M33).Length();
+        data.WorldInvScale = Float3(
             scaleX > 0.00001f ? 1.0f / scaleX : 0.0f,
             scaleY > 0.00001f ? 1.0f / scaleY : 0.0f,
             scaleZ > 0.00001f ? 1.0f / scaleZ : 0.0f);
@@ -203,14 +203,14 @@ void LightmapUVsDensityMaterialShader::Bind(BindParameters& params)
                 }
             }
             BoundingBox box = drawCallModelLod->GetBox(drawCall.World);
-            Vector3 size = box.GetSize();
+            Float3 size = box.GetSize();
             float dimensionsCoeff = size.AverageArithmetic();
             if (size.X <= 1.0f)
-                dimensionsCoeff = Vector2(size.Y, size.Z).AverageArithmetic();
+                dimensionsCoeff = Float2(size.Y, size.Z).AverageArithmetic();
             else if (size.Y <= 1.0f)
-                dimensionsCoeff = Vector2(size.X, size.Z).AverageArithmetic();
+                dimensionsCoeff = Float2(size.X, size.Z).AverageArithmetic();
             else if (size.Z <= 1.0f)
-                dimensionsCoeff = Vector2(size.Y, size.X).AverageArithmetic();
+                dimensionsCoeff = Float2(size.Y, size.X).AverageArithmetic();
             float scale = globalObjectsScale * scaleInLightmap * ShadowsOfMordor::LightmapTexelsPerWorldUnit * dimensionsCoeff;
             if (scale <= ZeroTolerance)
                 scale = 0.0f;

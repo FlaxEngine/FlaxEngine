@@ -75,7 +75,7 @@ void DistanceJoint::OnDebugDrawSelected()
     const Vector3 source = GetPosition();
     const Vector3 target = GetTargetPosition();
     Vector3 dir = target - source;
-    const float len = dir.Length();
+    const float len = (float)dir.Length();
     dir *= 1.0f / len;
     Vector3 start = source, end = target;
     float max = 0, min = 0;

@@ -20,7 +20,7 @@ public:
     struct CustomData
     {
         GPUShader* Shader;
-        Vector3 GridSize;
+        Float3 GridSize;
         float VolumetricFogMaxDistance;
         int32 ParticleIndex;
     };
@@ -28,22 +28,22 @@ public:
 private:
 
     PACK_STRUCT(struct SkyLightData {
-        Vector3 MultiplyColor;
+        Float3 MultiplyColor;
         float VolumetricScatteringIntensity;
-        Vector3 AdditiveColor;
+        Float3 AdditiveColor;
         float Dummt0;
         });
 
     PACK_STRUCT(struct Data {
         GBufferData GBuffer;
 
-        Vector3 GlobalAlbedo;
+        Float3 GlobalAlbedo;
         float GlobalExtinctionScale;
 
-        Vector3 GlobalEmissive;
+        Float3 GlobalEmissive;
         float HistoryWeight;
 
-        Vector3 GridSize;
+        Float3 GridSize;
         uint32 MissedHistorySamplesCount;
 
         uint32 GridSizeIntX;
@@ -51,15 +51,15 @@ private:
         uint32 GridSizeIntZ;
         float PhaseG;
 
-        Vector2 Dummy0;
+        Float2 Dummy0;
         float VolumetricFogMaxDistance;
         float InverseSquaredLightDistanceBiasScale;
 
-        Vector4 FogParameters;
+        Float4 FogParameters;
 
         Matrix PrevWorldToClip;
 
-        Vector4 FrameJitterOffsets[8];
+        Float4 FrameJitterOffsets[8];
 
         LightData DirectionalLight;
         LightShadowData DirectionalLightShadow;
@@ -67,11 +67,11 @@ private:
         });
 
     PACK_STRUCT(struct PerLight {
-        Vector2 SliceToDepth;
+        Float2 SliceToDepth;
         int32 MinZ;
         float LocalLightScatteringIntensity;
 
-        Vector4 ViewSpaceBoundingSphere;
+        Float4 ViewSpaceBoundingSphere;
         Matrix ViewToVolumeClip;
 
         LightData LocalLight;
@@ -131,7 +131,7 @@ private:
         /// <summary>
         /// The calculated size of the volume texture.
         /// </summary>
-        Vector3 GridSize;
+        Float3 GridSize;
 
         /// <summary>
         /// The cached per-frame data for the constant buffer.

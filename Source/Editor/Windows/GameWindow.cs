@@ -1,6 +1,7 @@
 // Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 using System;
+using System.Collections.Generic;
 using System.Xml;
 using FlaxEditor.GUI.ContextMenu;
 using FlaxEditor.GUI.Input;
@@ -74,7 +75,7 @@ namespace FlaxEditor.Windows
                     if (_maximizeRestoreDockState != GUI.Docking.DockState.Float)
                     {
                         var monitorBounds = Platform.GetMonitorBounds(PointToScreen(Size * 0.5f));
-                        ShowFloating(monitorBounds.Location + new Vector2(200, 200), Vector2.Zero, WindowStartPosition.Manual);
+                        ShowFloating(monitorBounds.Location + new Float2(200, 200), Float2.Zero, WindowStartPosition.Manual);
                     }
                     if (!RootWindow.IsMaximized)
                         RootWindow.Maximize();
@@ -112,7 +113,7 @@ namespace FlaxEditor.Windows
                 return base.OnCharInput(c);
             }
 
-            public override DragDropEffect OnDragDrop(ref Vector2 location, DragData data)
+            public override DragDropEffect OnDragDrop(ref Float2 location, DragData data)
             {
                 if (!EnableEvents)
                     return DragDropEffect.None;
@@ -120,7 +121,7 @@ namespace FlaxEditor.Windows
                 return base.OnDragDrop(ref location, data);
             }
 
-            public override DragDropEffect OnDragEnter(ref Vector2 location, DragData data)
+            public override DragDropEffect OnDragEnter(ref Float2 location, DragData data)
             {
                 if (!EnableEvents)
                     return DragDropEffect.None;
@@ -136,7 +137,7 @@ namespace FlaxEditor.Windows
                 base.OnDragLeave();
             }
 
-            public override DragDropEffect OnDragMove(ref Vector2 location, DragData data)
+            public override DragDropEffect OnDragMove(ref Float2 location, DragData data)
             {
                 if (!EnableEvents)
                     return DragDropEffect.None;
@@ -160,7 +161,7 @@ namespace FlaxEditor.Windows
                 base.OnKeyUp(key);
             }
 
-            public override bool OnMouseDoubleClick(Vector2 location, MouseButton button)
+            public override bool OnMouseDoubleClick(Float2 location, MouseButton button)
             {
                 if (!EnableEvents)
                     return false;
@@ -168,7 +169,7 @@ namespace FlaxEditor.Windows
                 return base.OnMouseDoubleClick(location, button);
             }
 
-            public override bool OnMouseDown(Vector2 location, MouseButton button)
+            public override bool OnMouseDown(Float2 location, MouseButton button)
             {
                 if (!EnableEvents)
                     return false;
@@ -176,7 +177,7 @@ namespace FlaxEditor.Windows
                 return base.OnMouseDown(location, button);
             }
 
-            public override void OnMouseEnter(Vector2 location)
+            public override void OnMouseEnter(Float2 location)
             {
                 if (!EnableEvents)
                     return;
@@ -192,7 +193,7 @@ namespace FlaxEditor.Windows
                 base.OnMouseLeave();
             }
 
-            public override void OnMouseMove(Vector2 location)
+            public override void OnMouseMove(Float2 location)
             {
                 if (!EnableEvents)
                     return;
@@ -200,7 +201,7 @@ namespace FlaxEditor.Windows
                 base.OnMouseMove(location);
             }
 
-            public override bool OnMouseUp(Vector2 location, MouseButton button)
+            public override bool OnMouseUp(Float2 location, MouseButton button)
             {
                 if (!EnableEvents)
                     return false;
@@ -208,7 +209,7 @@ namespace FlaxEditor.Windows
                 return base.OnMouseUp(location, button);
             }
 
-            public override bool OnMouseWheel(Vector2 location, float delta)
+            public override bool OnMouseWheel(Float2 location, float delta)
             {
                 if (!EnableEvents)
                     return false;
@@ -398,7 +399,7 @@ namespace FlaxEditor.Windows
             if (Camera.MainCamera == null)
             {
                 var style = Style.Current;
-                Render2D.DrawText(style.FontLarge, "No camera", new Rectangle(Vector2.Zero, Size), style.ForegroundDisabled, TextAlignment.Center, TextAlignment.Center);
+                Render2D.DrawText(style.FontLarge, "No camera", new Rectangle(Float2.Zero, Size), style.ForegroundDisabled, TextAlignment.Center, TextAlignment.Center);
             }
 
             // Selected UI controls outline
@@ -407,7 +408,7 @@ namespace FlaxEditor.Windows
                 if (Editor.Instance.SceneEditing.Selection[i].EditableObject is UIControl controlActor && controlActor && controlActor.Control != null)
                 {
                     var control = controlActor.Control;
-                    var bounds = Rectangle.FromPoints(control.PointToParent(_viewport, Vector2.Zero), control.PointToParent(_viewport, control.Size));
+                    var bounds = Rectangle.FromPoints(control.PointToParent(_viewport, Float2.Zero), control.PointToParent(_viewport, control.Size));
                     Render2D.DrawRectangle(bounds, Editor.Instance.Options.Options.Visual.SelectionOutlineColor0, Editor.Instance.Options.Options.Visual.UISelectionOutlineSize);
                 }
             }
@@ -423,9 +424,9 @@ namespace FlaxEditor.Windows
                 if (animTime < 0)
                 {
                     var alpha = Mathf.Saturate(-animTime / fadeOutTime);
-                    var rect = new Rectangle(new Vector2(6), Size - 12);
+                    var rect = new Rectangle(new Float2(6), Size - 12);
                     var text = "Press Shift+F11 to unlock the mouse";
-                    Render2D.DrawText(style.FontSmall, text, rect + new Vector2(1.0f), style.Background * alpha, TextAlignment.Near, TextAlignment.Far);
+                    Render2D.DrawText(style.FontSmall, text, rect + new Float2(1.0f), style.Background * alpha, TextAlignment.Near, TextAlignment.Far);
                     Render2D.DrawText(style.FontSmall, text, rect, style.Foreground * alpha, TextAlignment.Near, TextAlignment.Far);
                 }
 
@@ -435,13 +436,13 @@ namespace FlaxEditor.Windows
                 if (animTime < 0)
                 {
                     float alpha = Mathf.Saturate(-animTime / fadeOutTime);
-                    Render2D.DrawRectangle(new Rectangle(new Vector2(4), Size - 8), Color.Orange * alpha);
+                    Render2D.DrawRectangle(new Rectangle(new Float2(4), Size - 8), Color.Orange * alpha);
                 }
 
                 // Add overlay during debugger breakpoint hang
                 if (Editor.Instance.Simulation.IsDuringBreakpointHang)
                 {
-                    var bounds = new Rectangle(Vector2.Zero, Size);
+                    var bounds = new Rectangle(Float2.Zero, Size);
                     Render2D.FillRectangle(bounds, new Color(0.0f, 0.0f, 0.0f, 0.2f));
                     Render2D.DrawText(Style.Current.FontLarge, "Debugger breakpoint hit...", bounds, Color.White, TextAlignment.Center, TextAlignment.Center);
                 }
@@ -522,7 +523,7 @@ namespace FlaxEditor.Windows
             // Center mouse in play mode
             if (CenterMouseOnFocus && Editor.StateMachine.IsPlayMode && !Editor.StateMachine.PlayingState.IsPaused)
             {
-                Vector2 center = PointToWindow(Size * 0.5f);
+                var center = PointToWindow(Size * 0.5f);
                 Root.MousePosition = center;
             }
         }
@@ -537,7 +538,7 @@ namespace FlaxEditor.Windows
         }
 
         /// <inheritdoc />
-        public override Control OnNavigate(NavDirection direction, Vector2 location, Control caller, System.Collections.Generic.List<Control> visited)
+        public override Control OnNavigate(NavDirection direction, Float2 location, Control caller, List<Control> visited)
         {
             // Block leaking UI navigation focus outside the game window
             if (IsFocused && caller != this)
@@ -546,14 +547,14 @@ namespace FlaxEditor.Windows
                 foreach (var child in _guiRoot.Children)
                 {
                     if (child.Visible)
-                        return child.OnNavigate(direction, Vector2.Zero, this, visited);
+                        return child.OnNavigate(direction, Float2.Zero, this, visited);
                 }
             }
             return null;
         }
 
         /// <inheritdoc />
-        public override bool OnMouseDown(Vector2 location, MouseButton button)
+        public override bool OnMouseDown(Float2 location, MouseButton button)
         {
             var result = base.OnMouseDown(location, button);
 

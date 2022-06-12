@@ -37,7 +37,7 @@ namespace FlaxEngine.GUI
         }
 
         /// <inheritdoc />
-        public Vector2 Size => Texture?.Size ?? Vector2.Zero;
+        public Float2 Size => Texture?.Size ?? Float2.Zero;
 
         /// <inheritdoc />
         public void Draw(Rectangle rect, Color color)

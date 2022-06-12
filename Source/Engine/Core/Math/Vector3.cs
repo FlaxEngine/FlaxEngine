@@ -1,3 +1,9 @@
+#if USE_LARGE_WORLDS
+using Real = System.Double;
+#else
+using Real = System.Single;
+#endif
+
 // Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 // -----------------------------------------------------------------------------
@@ -48,7 +54,6 @@
 * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 * THE SOFTWARE.
 */
-
 using System;
 using System.ComponentModel;
 using System.Globalization;
@@ -61,30 +66,27 @@ namespace FlaxEngine
     /// Represents a three dimensional mathematical vector.
     /// </summary>
     [Unmanaged]
+    [Serializable]
     [StructLayout(LayoutKind.Sequential)]
-    public unsafe partial struct Vector3
+    [TypeConverter(typeof(TypeConverters.Vector3Converter))]
+    public unsafe partial struct Vector3 : IEquatable<Vector3>, IFormattable
     {
+        private static readonly string _formatString = "X:{0:F2} Y:{1:F2} Z:{2:F2}";
+
         /// <summary>
         /// The X component.
         /// </summary>
-        public float X;
+        public Real X;
 
         /// <summary>
         /// The Y component.
         /// </summary>
-        public float Y;
+        public Real Y;
 
         /// <summary>
         /// The Z component.
         /// </summary>
-        public float Z;
-    }
-
-    [Serializable]
-    [TypeConverter(typeof(TypeConverters.Vector3Converter))]
-    partial struct Vector3 : IEquatable<Vector3>, IFormattable
-    {
-        private static readonly string _formatString = "X:{0:F2} Y:{1:F2} Z:{2:F2}";
+        public Real Z;
 
         /// <summary>
         /// The size of the <see cref="Vector3" /> type, in bytes.
@@ -152,12 +154,12 @@ namespace FlaxEngine
         public static readonly Vector3 Backward = new Vector3(0.0f, 0.0f, -1.0f);
 
         /// <summary>
-        /// A <see cref="Vector3" /> with all components equal to <see cref="float.MinValue"/>.
+        /// A <see cref="Vector3" /> with all components equal to <see cref="double.MinValue"/> (or <see cref="float.MinValue"/> if using 32-bit precision).
         /// </summary>
         public static readonly Vector3 Minimum = new Vector3(float.MinValue);
 
         /// <summary>
-        /// A <see cref="Vector3" /> with all components equal to <see cref="float.MaxValue"/>.
+        /// A <see cref="Vector3" /> with all components equal to <see cref="double.MaxValue"/> (or <see cref="float.MaxValue"/> if using 32-bit precision).
         /// </summary>
         public static readonly Vector3 Maximum = new Vector3(float.MaxValue);
 
@@ -188,9 +190,31 @@ namespace FlaxEngine
         /// <summary>
         /// Initializes a new instance of the <see cref="Vector3" /> struct.
         /// </summary>
+        /// <param name="value">The value that will be assigned to all components.</param>
+        public Vector3(double value)
+        {
+            X = Y = Z = (Real)value;
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="Vector3" /> struct.
+        /// </summary>
+        /// <param name="x">Initial value for the X component of the vector.</param>
+        /// <param name="y">Initial value for the Y component of the vector.</param>
+        /// <param name="z">Initial value for the Z component of the vector.</param>
+        public Vector3(double x, double y, double z)
+        {
+            X = (Real)x;
+            Y = (Real)y;
+            Z = (Real)z;
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="Vector3" /> struct.
+        /// </summary>
         /// <param name="value">A vector containing the values with which to initialize the X and Y components.</param>
         /// <param name="z">Initial value for the Z component of the vector.</param>
-        public Vector3(Vector2 value, float z)
+        public Vector3(Vector2 value, Real z)
         {
             X = value.X;
             Y = value.Y;
@@ -214,7 +238,7 @@ namespace FlaxEngine
         /// <param name="values">The values to assign to the X, Y, and Z components of the vector. This must be an array with three elements.</param>
         /// <exception cref="ArgumentNullException">Thrown when <paramref name="values" /> is <c>null</c>.</exception>
         /// <exception cref="ArgumentOutOfRangeException"> Thrown when <paramref name="values" /> contains more or less than three elements.</exception>
-        public Vector3(float[] values)
+        public Vector3(Real[] values)
         {
             if (values == null)
                 throw new ArgumentNullException(nameof(values));
@@ -256,22 +280,22 @@ namespace FlaxEngine
         /// <summary>
         /// Gets a minimum component value
         /// </summary>
-        public float MinValue => Mathf.Min(X, Mathf.Min(Y, Z));
+        public Real MinValue => Mathf.Min(X, Mathf.Min(Y, Z));
 
         /// <summary>
         /// Gets a maximum component value
         /// </summary>
-        public float MaxValue => Mathf.Max(X, Mathf.Max(Y, Z));
+        public Real MaxValue => Mathf.Max(X, Mathf.Max(Y, Z));
 
         /// <summary>
         /// Gets an arithmetic average value of all vector components.
         /// </summary>
-        public float AvgValue => (X + Y + Z) * (1.0f / 3.0f);
+        public Real AvgValue => (X + Y + Z) * (1.0f / 3.0f);
 
         /// <summary>
         /// Gets a sum of the component values.
         /// </summary>
-        public float ValuesSum => X + Y + Z;
+        public Real ValuesSum => X + Y + Z;
 
         /// <summary>
         /// Gets a vector with values being absolute values of that vector.
@@ -290,7 +314,7 @@ namespace FlaxEngine
         /// <param name="index">The index of the component to access. Use 0 for the X component, 1 for the Y component, and 2 for the Z component.</param>
         /// <returns>The value of the component at the specified index.</returns>
         /// <exception cref="System.ArgumentOutOfRangeException">Thrown when the <paramref name="index" /> is out of the range [0, 2].</exception>
-        public float this[int index]
+        public Real this[int index]
         {
             get
             {
@@ -325,24 +349,24 @@ namespace FlaxEngine
         /// </summary>
         /// <returns>The length of the vector.</returns>
         /// <remarks><see cref="Vector3.LengthSquared" /> may be preferred when only the relative length is needed and speed is of the essence.</remarks>
-        public float Length => (float)Math.Sqrt(X * X + Y * Y + Z * Z);
+        public Real Length => (Real)Math.Sqrt(X * X + Y * Y + Z * Z);
 
         /// <summary>
         /// Calculates the squared length of the vector.
         /// </summary>
         /// <returns>The squared length of the vector.</returns>
         /// <remarks>This method may be preferred to <see cref="Vector3.Length" /> when only a relative length is needed and speed is of the essence.</remarks>
-        public float LengthSquared => X * X + Y * Y + Z * Z;
+        public Real LengthSquared => X * X + Y * Y + Z * Z;
 
         /// <summary>
         /// Converts the vector into a unit vector.
         /// </summary>
         public void Normalize()
         {
-            float length = Length;
+            Real length = Length;
             if (!Mathf.IsZero(length))
             {
-                float inv = 1.0f / length;
+                Real inv = 1.0f / length;
                 X *= inv;
                 Y *= inv;
                 Z *= inv;
@@ -353,7 +377,7 @@ namespace FlaxEngine
         /// Creates an array containing the elements of the vector.
         /// </summary>
         /// <returns>A three-element array containing the components of the vector.</returns>
-        public float[] ToArray()
+        public Real[] ToArray()
         {
             return new[] { X, Y, Z };
         }
@@ -638,13 +662,13 @@ namespace FlaxEngine
         /// <param name="result">When the method completes, contains the clamped value.</param>
         public static void Clamp(ref Vector3 value, ref Vector3 min, ref Vector3 max, out Vector3 result)
         {
-            float x = value.X;
+            Real x = value.X;
             x = x > max.X ? max.X : x;
             x = x < min.X ? min.X : x;
-            float y = value.Y;
+            Real y = value.Y;
             y = y > max.Y ? max.Y : y;
             y = y < min.Y ? min.Y : y;
-            float z = value.Z;
+            Real z = value.Z;
             z = z > max.Z ? max.Z : z;
             z = z < min.Z ? min.Z : z;
             result = new Vector3(x, y, z);
@@ -694,13 +718,13 @@ namespace FlaxEngine
         /// <param name="value1">The first vector.</param>
         /// <param name="value2">The second vector.</param>
         /// <param name="result">When the method completes, contains the distance between the two vectors.</param>
-        /// <remarks><see cref="Vector3.DistanceSquared(ref Vector3, ref Vector3, out float)" /> may be preferred when only the relative distance is needed and speed is of the essence.</remarks>
-        public static void Distance(ref Vector3 value1, ref Vector3 value2, out float result)
+        /// <remarks><see cref="Vector3.DistanceSquared(ref Vector3, ref Vector3, out Real)" /> may be preferred when only the relative distance is needed and speed is of the essence.</remarks>
+        public static void Distance(ref Vector3 value1, ref Vector3 value2, out Real result)
         {
-            float x = value1.X - value2.X;
-            float y = value1.Y - value2.Y;
-            float z = value1.Z - value2.Z;
-            result = (float)Math.Sqrt(x * x + y * y + z * z);
+            Real x = value1.X - value2.X;
+            Real y = value1.Y - value2.Y;
+            Real z = value1.Z - value2.Z;
+            result = (Real)Math.Sqrt(x * x + y * y + z * z);
         }
 
         /// <summary>
@@ -709,13 +733,13 @@ namespace FlaxEngine
         /// <param name="value1">The first vector.</param>
         /// <param name="value2">The second vector.</param>
         /// <returns>The distance between the two vectors.</returns>
-        /// <remarks><see cref="Vector3.DistanceSquared(ref Vector3, ref Vector3, out float)" /> may be preferred when only the relative distance is needed and speed is of the essence.</remarks>
-        public static float Distance(ref Vector3 value1, ref Vector3 value2)
+        /// <remarks><see cref="Vector3.DistanceSquared(ref Vector3, ref Vector3, out Real)" /> may be preferred when only the relative distance is needed and speed is of the essence.</remarks>
+        public static Real Distance(ref Vector3 value1, ref Vector3 value2)
         {
-            float x = value1.X - value2.X;
-            float y = value1.Y - value2.Y;
-            float z = value1.Z - value2.Z;
-            return (float)Math.Sqrt(x * x + y * y + z * z);
+            Real x = value1.X - value2.X;
+            Real y = value1.Y - value2.Y;
+            Real z = value1.Z - value2.Z;
+            return (Real)Math.Sqrt(x * x + y * y + z * z);
         }
 
         /// <summary>
@@ -725,12 +749,12 @@ namespace FlaxEngine
         /// <param name="value2">The second vector.</param>
         /// <returns>The distance between the two vectors.</returns>
         /// <remarks><see cref="Vector3.DistanceSquared(Vector3, Vector3)" /> may be preferred when only the relative distance is needed and speed is of the essence.</remarks>
-        public static float Distance(Vector3 value1, Vector3 value2)
+        public static Real Distance(Vector3 value1, Vector3 value2)
         {
-            float x = value1.X - value2.X;
-            float y = value1.Y - value2.Y;
-            float z = value1.Z - value2.Z;
-            return (float)Math.Sqrt(x * x + y * y + z * z);
+            Real x = value1.X - value2.X;
+            Real y = value1.Y - value2.Y;
+            Real z = value1.Z - value2.Z;
+            return (Real)Math.Sqrt(x * x + y * y + z * z);
         }
 
         /// <summary>
@@ -739,11 +763,11 @@ namespace FlaxEngine
         /// <param name="value1">The first vector.</param>
         /// <param name="value2">The second vector.</param>
         /// <param name="result">When the method completes, contains the squared distance between the two vectors.</param>
-        public static void DistanceSquared(ref Vector3 value1, ref Vector3 value2, out float result)
+        public static void DistanceSquared(ref Vector3 value1, ref Vector3 value2, out Real result)
         {
-            float x = value1.X - value2.X;
-            float y = value1.Y - value2.Y;
-            float z = value1.Z - value2.Z;
+            Real x = value1.X - value2.X;
+            Real y = value1.Y - value2.Y;
+            Real z = value1.Z - value2.Z;
             result = x * x + y * y + z * z;
         }
 
@@ -753,11 +777,11 @@ namespace FlaxEngine
         /// <param name="value1">The first vector.</param>
         /// <param name="value2">The second vector.</param>
         /// <returns>The squared distance between the two vectors.</returns>
-        public static float DistanceSquared(ref Vector3 value1, ref Vector3 value2)
+        public static Real DistanceSquared(ref Vector3 value1, ref Vector3 value2)
         {
-            float x = value1.X - value2.X;
-            float y = value1.Y - value2.Y;
-            float z = value1.Z - value2.Z;
+            Real x = value1.X - value2.X;
+            Real y = value1.Y - value2.Y;
+            Real z = value1.Z - value2.Z;
             return x * x + y * y + z * z;
         }
 
@@ -767,11 +791,11 @@ namespace FlaxEngine
         /// <param name="value1">The first vector.</param>
         /// <param name="value2">The second vector.</param>
         /// <returns>The squared distance between the two vectors.</returns>
-        public static float DistanceSquared(Vector3 value1, Vector3 value2)
+        public static Real DistanceSquared(Vector3 value1, Vector3 value2)
         {
-            float x = value1.X - value2.X;
-            float y = value1.Y - value2.Y;
-            float z = value1.Z - value2.Z;
+            Real x = value1.X - value2.X;
+            Real y = value1.Y - value2.Y;
+            Real z = value1.Z - value2.Z;
             return x * x + y * y + z * z;
         }
 
@@ -781,11 +805,11 @@ namespace FlaxEngine
         /// <param name="value1">The first vector.</param>
         /// <param name="value2">The second vector.</param>
         /// <param name="result">When the method completes, contains the distance between the two vectors in the XY plane.</param>
-        public static void DistanceXY(ref Vector3 value1, ref Vector3 value2, out float result)
+        public static void DistanceXY(ref Vector3 value1, ref Vector3 value2, out Real result)
         {
-            float x = value1.X - value2.X;
-            float y = value1.Y - value2.Y;
-            result = (float)Math.Sqrt(x * x + y * y);
+            Real x = value1.X - value2.X;
+            Real y = value1.Y - value2.Y;
+            result = (Real)Math.Sqrt(x * x + y * y);
         }
 
         /// <summary>
@@ -794,10 +818,10 @@ namespace FlaxEngine
         /// <param name="value1">The first vector.</param>
         /// <param name="value2">The second vector</param>
         /// <param name="result">When the method completes, contains the squared distance between the two vectors in the XY plane.</param>
-        public static void DistanceXYSquared(ref Vector3 value1, ref Vector3 value2, out float result)
+        public static void DistanceXYSquared(ref Vector3 value1, ref Vector3 value2, out Real result)
         {
-            float x = value1.X - value2.X;
-            float y = value1.Y - value2.Y;
+            Real x = value1.X - value2.X;
+            Real y = value1.Y - value2.Y;
             result = x * x + y * y;
         }
 
@@ -807,11 +831,11 @@ namespace FlaxEngine
         /// <param name="value1">The first vector.</param>
         /// <param name="value2">The second vector.</param>
         /// <param name="result">When the method completes, contains the distance between the two vectors in the XY plane.</param>
-        public static void DistanceXZ(ref Vector3 value1, ref Vector3 value2, out float result)
+        public static void DistanceXZ(ref Vector3 value1, ref Vector3 value2, out Real result)
         {
-            float x = value1.X - value2.X;
-            float z = value1.Z - value2.Z;
-            result = (float)Math.Sqrt(x * x + z * z);
+            Real x = value1.X - value2.X;
+            Real z = value1.Z - value2.Z;
+            result = (Real)Math.Sqrt(x * x + z * z);
         }
 
         /// <summary>
@@ -820,10 +844,10 @@ namespace FlaxEngine
         /// <param name="value1">The first vector.</param>
         /// <param name="value2">The second vector</param>
         /// <param name="result">When the method completes, contains the squared distance between the two vectors in the XY plane.</param>
-        public static void DistanceXZSquared(ref Vector3 value1, ref Vector3 value2, out float result)
+        public static void DistanceXZSquared(ref Vector3 value1, ref Vector3 value2, out Real result)
         {
-            float x = value1.X - value2.X;
-            float z = value1.Z - value2.Z;
+            Real x = value1.X - value2.X;
+            Real z = value1.Z - value2.Z;
             result = x * x + z * z;
         }
 
@@ -833,11 +857,11 @@ namespace FlaxEngine
         /// <param name="value1">The first vector.</param>
         /// <param name="value2">The second vector.</param>
         /// <param name="result">When the method completes, contains the distance between the two vectors in the YZ plane.</param>
-        public static void DistanceYZ(ref Vector3 value1, ref Vector3 value2, out float result)
+        public static void DistanceYZ(ref Vector3 value1, ref Vector3 value2, out Real result)
         {
-            float y = value1.Y - value2.Y;
-            float z = value1.Z - value2.Z;
-            result = (float)Math.Sqrt(y * y + z * z);
+            Real y = value1.Y - value2.Y;
+            Real z = value1.Z - value2.Z;
+            result = (Real)Math.Sqrt(y * y + z * z);
         }
 
         /// <summary>
@@ -846,10 +870,10 @@ namespace FlaxEngine
         /// <param name="value1">The first vector.</param>
         /// <param name="value2">The second vector</param>
         /// <param name="result">When the method completes, contains the squared distance between the two vectors in the YZ plane.</param>
-        public static void DistanceYZSquared(ref Vector3 value1, ref Vector3 value2, out float result)
+        public static void DistanceYZSquared(ref Vector3 value1, ref Vector3 value2, out Real result)
         {
-            float y = value1.Y - value2.Y;
-            float z = value1.Z - value2.Z;
+            Real y = value1.Y - value2.Y;
+            Real z = value1.Z - value2.Z;
             result = y * y + z * z;
         }
 
@@ -883,7 +907,7 @@ namespace FlaxEngine
         /// <param name="left">First source vector.</param>
         /// <param name="right">Second source vector.</param>
         /// <param name="result">When the method completes, contains the dot product of the two vectors.</param>
-        public static void Dot(ref Vector3 left, ref Vector3 right, out float result)
+        public static void Dot(ref Vector3 left, ref Vector3 right, out Real result)
         {
             result = left.X * right.X + left.Y * right.Y + left.Z * right.Z;
         }
@@ -894,7 +918,7 @@ namespace FlaxEngine
         /// <param name="left">First source vector.</param>
         /// <param name="right">Second source vector.</param>
         /// <returns>The dot product of the two vectors.</returns>
-        public static float Dot(ref Vector3 left, ref Vector3 right)
+        public static Real Dot(ref Vector3 left, ref Vector3 right)
         {
             return left.X * right.X + left.Y * right.Y + left.Z * right.Z;
         }
@@ -905,7 +929,7 @@ namespace FlaxEngine
         /// <param name="left">First source vector.</param>
         /// <param name="right">Second source vector.</param>
         /// <returns>The dot product of the two vectors.</returns>
-        public static float Dot(Vector3 left, Vector3 right)
+        public static Real Dot(Vector3 left, Vector3 right)
         {
             return left.X * right.X + left.Y * right.Y + left.Z * right.Z;
         }
@@ -937,7 +961,7 @@ namespace FlaxEngine
         /// </summary>
         /// <param name="vector">Input Vector.</param>
         /// <param name="max">Max Length</param>
-        public static Vector3 ClampLength(Vector3 vector, float max)
+        public static Vector3 ClampLength(Vector3 vector, Real max)
         {
             return ClampLength(vector, 0, max);
         }
@@ -948,10 +972,10 @@ namespace FlaxEngine
         /// <param name="vector">Input Vector.</param>
         /// <param name="min">Min Length</param>
         /// <param name="max">Max Length</param>
-        public static Vector3 ClampLength(Vector3 vector, float min, float max)
+        public static Vector3 ClampLength(Vector3 vector, Real min, Real max)
         {
-            ClampLength(vector, min, max, out Vector3 retVect);
-            return retVect;
+            ClampLength(vector, min, max, out Vector3 result);
+            return result;
         }
 
         /// <summary>
@@ -961,22 +985,22 @@ namespace FlaxEngine
         /// <param name="min">Min Length</param>
         /// <param name="max">Max Length</param>
         /// <param name="result">The result vector.</param>
-        public static void ClampLength(Vector3 vector, float min, float max, out Vector3 result)
+        public static void ClampLength(Vector3 vector, Real min, Real max, out Vector3 result)
         {
             result.X = vector.X;
             result.Y = vector.Y;
             result.Z = vector.Z;
-            float lenSq = result.LengthSquared;
+            var lenSq = result.LengthSquared;
             if (lenSq > max * max)
             {
-                float scaleFactor = max / (float)Math.Sqrt(lenSq);
+                var scaleFactor = max / (Real)Math.Sqrt(lenSq);
                 result.X *= scaleFactor;
                 result.Y *= scaleFactor;
                 result.Z *= scaleFactor;
             }
             if (lenSq < min * min)
             {
-                float scaleFactor = min / (float)Math.Sqrt(lenSq);
+                var scaleFactor = min / (Real)Math.Sqrt(lenSq);
                 result.X *= scaleFactor;
                 result.Y *= scaleFactor;
                 result.Z *= scaleFactor;
@@ -1182,7 +1206,7 @@ namespace FlaxEngine
         /// <returns>The projected vector.</returns>
         public static Vector3 Project(Vector3 vector, Vector3 onNormal)
         {
-            float sqrMag = Dot(onNormal, onNormal);
+            Real sqrMag = Dot(onNormal, onNormal);
             if (sqrMag < Mathf.Epsilon)
                 return Zero;
             return onNormal * Dot(vector, onNormal) / sqrMag;
@@ -1205,12 +1229,12 @@ namespace FlaxEngine
         /// <param name="from">The first vector.</param>
         /// <param name="to">The second vector.</param>
         /// <returns>The angle (in degrees).</returns>
-        public static float Angle(Vector3 from, Vector3 to)
+        public static Real Angle(Vector3 from, Vector3 to)
         {
-            float dot = Mathf.Clamp(Dot(from.Normalized, to.Normalized), -1.0f, 1.0f);
+            Real dot = Mathf.Clamp(Dot(from.Normalized, to.Normalized), -1.0f, 1.0f);
             if (Mathf.Abs(dot) > (1.0f - Mathf.Epsilon))
                 return dot > 0.0f ? 0.0f : 180.0f;
-            return Mathf.Acos(dot) * Mathf.RadiansToDegrees;
+            return (Real)Math.Acos(dot) * Mathf.RadiansToDegrees;
         }
 
         /// <summary>
@@ -1297,13 +1321,10 @@ namespace FlaxEngine
         /// <param name="vector">The source vector.</param>
         /// <param name="normal">Normal of the surface.</param>
         /// <param name="result">When the method completes, contains the reflected vector.</param>
-        /// <remarks>
-        /// Reflect only gives the direction of a reflection off a surface, it does not determine
-        /// whether the original vector was close enough to the surface to hit it.
-        /// </remarks>
+        /// <remarks>Reflect only gives the direction of a reflection off a surface, it does not determine whether the original vector was close enough to the surface to hit it.</remarks>
         public static void Reflect(ref Vector3 vector, ref Vector3 normal, out Vector3 result)
         {
-            float dot = vector.X * normal.X + vector.Y * normal.Y + vector.Z * normal.Z;
+            Real dot = vector.X * normal.X + vector.Y * normal.Y + vector.Z * normal.Z;
             result.X = vector.X - 2.0f * dot * normal.X;
             result.Y = vector.Y - 2.0f * dot * normal.Y;
             result.Z = vector.Z - 2.0f * dot * normal.Z;
@@ -1320,95 +1341,6 @@ namespace FlaxEngine
         {
             Reflect(ref vector, ref normal, out var result);
             return result;
-        }
-
-        /// <summary>
-        /// Orthogonalizes a list of vectors.
-        /// </summary>
-        /// <param name="destination">The list of orthogonalized vectors.</param>
-        /// <param name="source">The list of vectors to orthogonalize.</param>
-        /// <remarks>
-        /// <para>
-        ///   Orthogonalization is the process of making all vectors orthogonal to each other. This
-        ///   means that any given vector in the list will be orthogonal to any other given vector in the
-        ///   list.
-        /// </para>
-        /// <para>
-        ///   Because this method uses the modified Gram-Schmidt process, the resulting vectors
-        ///   tend to be numerically unstable. The numeric stability decreases according to the vectors
-        ///   position in the list so that the first vector is the most stable and the last vector is the
-        ///   least stable.
-        /// </para>
-        /// </remarks>
-        /// <exception cref="ArgumentNullException">Thrown when <paramref name="source" /> or <paramref name="destination" /> is <c>null</c>.</exception>
-        /// <exception cref="ArgumentOutOfRangeException">Thrown when <paramref name="destination" /> is shorter in length than <paramref name="source" />.</exception>
-        public static void Orthogonalize(Vector3[] destination, params Vector3[] source)
-        {
-            //Uses the modified Gram-Schmidt process.
-            //q1 = m1
-            //q2 = m2 - ((q1 ⋅ m2) / (q1 ⋅ q1)) * q1
-            //q3 = m3 - ((q1 ⋅ m3) / (q1 ⋅ q1)) * q1 - ((q2 ⋅ m3) / (q2 ⋅ q2)) * q2
-            //q4 = m4 - ((q1 ⋅ m4) / (q1 ⋅ q1)) * q1 - ((q2 ⋅ m4) / (q2 ⋅ q2)) * q2 - ((q3 ⋅ m4) / (q3 ⋅ q3)) * q3
-            //q5 = ...
-            if (source == null)
-                throw new ArgumentNullException(nameof(source));
-            if (destination == null)
-                throw new ArgumentNullException(nameof(destination));
-            if (destination.Length < source.Length)
-                throw new ArgumentOutOfRangeException(nameof(destination), "The destination array must be of same length or larger length than the source array.");
-            for (var i = 0; i < source.Length; ++i)
-            {
-                Vector3 v = source[i];
-                for (var r = 0; r < i; ++r)
-                    v -= Dot(destination[r], v) / Dot(destination[r], destination[r]) * destination[r];
-                destination[i] = v;
-            }
-        }
-
-        /// <summary>
-        /// Orthonormalizes a list of vectors.
-        /// </summary>
-        /// <param name="destination">The list of orthonormalized vectors.</param>
-        /// <param name="source">The list of vectors to orthonormalize.</param>
-        /// <remarks>
-        /// <para>
-        ///   Orthonormalization is the process of making all vectors orthogonal to each
-        ///   other and making all vectors of unit length. This means that any given vector will
-        ///   be orthogonal to any other given vector in the list.
-        /// </para>
-        /// <para>
-        ///   Because this method uses the modified Gram-Schmidt process, the resulting vectors
-        ///   tend to be numerically unstable. The numeric stability decreases according to the vectors
-        ///   position in the list so that the first vector is the most stable and the last vector is the
-        ///   least stable.
-        /// </para>
-        /// </remarks>
-        /// <exception cref="ArgumentNullException">Thrown when <paramref name="source" /> or <paramref name="destination" /> is <c>null</c>.</exception>
-        /// <exception cref="ArgumentOutOfRangeException">Thrown when <paramref name="destination" /> is shorter in length than <paramref name="source" />.</exception>
-        public static void Orthonormalize(Vector3[] destination, params Vector3[] source)
-        {
-            //Uses the modified Gram-Schmidt process.
-            //Because we are making unit vectors, we can optimize the math for orthogonalization
-            //and simplify the projection operation to remove the division.
-            //q1 = m1 / |m1|
-            //q2 = (m2 - (q1 ⋅ m2) * q1) / |m2 - (q1 ⋅ m2) * q1|
-            //q3 = (m3 - (q1 ⋅ m3) * q1 - (q2 ⋅ m3) * q2) / |m3 - (q1 ⋅ m3) * q1 - (q2 ⋅ m3) * q2|
-            //q4 = (m4 - (q1 ⋅ m4) * q1 - (q2 ⋅ m4) * q2 - (q3 ⋅ m4) * q3) / |m4 - (q1 ⋅ m4) * q1 - (q2 ⋅ m4) * q2 - (q3 ⋅ m4) * q3|
-            //q5 = ...
-            if (source == null)
-                throw new ArgumentNullException(nameof(source));
-            if (destination == null)
-                throw new ArgumentNullException(nameof(destination));
-            if (destination.Length < source.Length)
-                throw new ArgumentOutOfRangeException(nameof(destination), "The destination array must be of same length or larger length than the source array.");
-            for (var i = 0; i < source.Length; ++i)
-            {
-                Vector3 v = source[i];
-                for (var r = 0; r < i; ++r)
-                    v -= Dot(destination[r], v) * destination[r];
-                v.Normalize();
-                destination[i] = v;
-            }
         }
 
         /// <summary>
@@ -1446,51 +1378,6 @@ namespace FlaxEngine
         {
             Transform(ref vector, ref rotation, out var result);
             return result;
-        }
-
-        /// <summary>
-        /// Transforms an array of vectors by the given <see cref="Quaternion" /> rotation.
-        /// </summary>
-        /// <param name="source">The array of vectors to transform.</param>
-        /// <param name="rotation">The <see cref="Quaternion" /> rotation to apply.</param>
-        /// <param name="destination">The array for which the transformed vectors are stored. This array may be the same array as <paramref name="source" />.</param>
-        /// <exception cref="ArgumentNullException">Thrown when <paramref name="source" /> or <paramref name="destination" /> is <c>null</c>.</exception>
-        /// <exception cref="ArgumentOutOfRangeException">Thrown when <paramref name="destination" /> is shorter in length than <paramref name="source" />.</exception>
-        public static void Transform(Vector3[] source, ref Quaternion rotation, Vector3[] destination)
-        {
-            if (source == null)
-                throw new ArgumentNullException(nameof(source));
-            if (destination == null)
-                throw new ArgumentNullException(nameof(destination));
-            if (destination.Length < source.Length)
-                throw new ArgumentOutOfRangeException(nameof(destination), "The destination array must be of same length or larger length than the source array.");
-            float x = rotation.X + rotation.X;
-            float y = rotation.Y + rotation.Y;
-            float z = rotation.Z + rotation.Z;
-            float wx = rotation.W * x;
-            float wy = rotation.W * y;
-            float wz = rotation.W * z;
-            float xx = rotation.X * x;
-            float xy = rotation.X * y;
-            float xz = rotation.X * z;
-            float yy = rotation.Y * y;
-            float yz = rotation.Y * z;
-            float zz = rotation.Z * z;
-            float num1 = 1.0f - yy - zz;
-            float num2 = xy - wz;
-            float num3 = xz + wy;
-            float num4 = xy + wz;
-            float num5 = 1.0f - xx - zz;
-            float num6 = yz - wx;
-            float num7 = xz - wy;
-            float num8 = yz + wx;
-            float num9 = 1.0f - xx - yy;
-            for (var i = 0; i < source.Length; i++)
-            {
-                destination[i] = new Vector3(source[i].X * num1 + source[i].Y * num2 + source[i].Z * num3,
-                                             source[i].X * num4 + source[i].Y * num5 + source[i].Z * num6,
-                                             source[i].X * num7 + source[i].Y * num8 + source[i].Z * num9);
-            }
         }
 
         /// <summary>
@@ -1558,26 +1445,6 @@ namespace FlaxEngine
         }
 
         /// <summary>
-        /// Transforms an array of 3D vectors by the given <see cref="Matrix" />.
-        /// </summary>
-        /// <param name="source">The array of vectors to transform.</param>
-        /// <param name="transform">The transformation <see cref="Matrix" />.</param>
-        /// <param name="destination">The array for which the transformed vectors are stored.</param>
-        /// <exception cref="ArgumentNullException">Thrown when <paramref name="source" /> or <paramref name="destination" /> is <c>null</c>.</exception>
-        /// <exception cref="ArgumentOutOfRangeException">Thrown when <paramref name="destination" /> is shorter in length than <paramref name="source" />.</exception>
-        public static void Transform(Vector3[] source, ref Matrix transform, Vector4[] destination)
-        {
-            if (source == null)
-                throw new ArgumentNullException(nameof(source));
-            if (destination == null)
-                throw new ArgumentNullException(nameof(destination));
-            if (destination.Length < source.Length)
-                throw new ArgumentOutOfRangeException(nameof(destination), "The destination array must be of same length or larger length than the source array.");
-            for (var i = 0; i < source.Length; ++i)
-                Transform(ref source[i], ref transform, out destination[i]);
-        }
-
-        /// <summary>
         /// Performs a coordinate transformation using the given <see cref="Matrix" />.
         /// </summary>
         /// <param name="coordinate">The coordinate vector to transform.</param>
@@ -1622,35 +1489,6 @@ namespace FlaxEngine
         }
 
         /// <summary>
-        /// Performs a coordinate transformation on an array of vectors using the given <see cref="Matrix" />.
-        /// </summary>
-        /// <param name="source">The array of coordinate vectors to transform.</param>
-        /// <param name="transform">The transformation <see cref="Matrix" />.</param>
-        /// <param name="destination">The array for which the transformed vectors are stored. This array may be the same array as <paramref name="source" />.</param>
-        /// <exception cref="ArgumentNullException">Thrown when <paramref name="source" /> or <paramref name="destination" /> is <c>null</c>.</exception>
-        /// <exception cref="ArgumentOutOfRangeException">Thrown when <paramref name="destination" /> is shorter in length than
-        /// <paramref name="source" />.
-        /// </exception>
-        /// <remarks>
-        /// A coordinate transform performs the transformation with the assumption that the w component
-        /// is one. The four dimensional vector obtained from the transformation operation has each
-        /// component in the vector divided by the w component. This forces the w component to be one and
-        /// therefore makes the vector homogeneous. The homogeneous vector is often preferred when working
-        /// with coordinates as the w component can safely be ignored.
-        /// </remarks>
-        public static void TransformCoordinate(Vector3[] source, ref Matrix transform, Vector3[] destination)
-        {
-            if (source == null)
-                throw new ArgumentNullException(nameof(source));
-            if (destination == null)
-                throw new ArgumentNullException(nameof(destination));
-            if (destination.Length < source.Length)
-                throw new ArgumentOutOfRangeException(nameof(destination), "The destination array must be of same length or larger length than the source array.");
-            for (var i = 0; i < source.Length; i++)
-                TransformCoordinate(ref source[i], ref transform, out destination[i]);
-        }
-
-        /// <summary>
         /// Performs a normal transformation using the given <see cref="Matrix" />.
         /// </summary>
         /// <param name="normal">The normal vector to transform.</param>
@@ -1687,33 +1525,6 @@ namespace FlaxEngine
         {
             TransformNormal(ref normal, ref transform, out var result);
             return result;
-        }
-
-        /// <summary>
-        /// Performs a normal transformation on an array of vectors using the given <see cref="Matrix" />.
-        /// </summary>
-        /// <param name="source">The array of normal vectors to transform.</param>
-        /// <param name="transform">The transformation <see cref="Matrix" />.</param>
-        /// <param name="destination">The array for which the transformed vectors are stored. This array may be the same array as <paramref name="source" />.</param>
-        /// <exception cref="ArgumentNullException">Thrown when <paramref name="source" /> or <paramref name="destination" /> is <c>null</c>.</exception>
-        /// <exception cref="ArgumentOutOfRangeException">Thrown when <paramref name="destination" /> is shorter in length than <paramref name="source" />.</exception>
-        /// <remarks>
-        /// A normal transform performs the transformation with the assumption that the w component
-        /// is zero. This causes the fourth row and fourth column of the matrix to be unused. The
-        /// end result is a vector that is not translated, but all other transformation properties
-        /// apply. This is often preferred for normal vectors as normals purely represent direction
-        /// rather than location because normal vectors should not be translated.
-        /// </remarks>
-        public static void TransformNormal(Vector3[] source, ref Matrix transform, Vector3[] destination)
-        {
-            if (source == null)
-                throw new ArgumentNullException(nameof(source));
-            if (destination == null)
-                throw new ArgumentNullException(nameof(destination));
-            if (destination.Length < source.Length)
-                throw new ArgumentOutOfRangeException(nameof(destination), "The destination array must be of same length or larger length than the source array.");
-            for (var i = 0; i < source.Length; ++i)
-                TransformNormal(ref source[i], ref transform, out destination[i]);
         }
 
         /// <summary>
@@ -1787,7 +1598,7 @@ namespace FlaxEngine
         /// <param name="value">The vector to scale.</param>
         /// <param name="scale">The amount by which to scale the vector.</param>
         /// <returns>The scaled vector.</returns>
-        public static Vector3 operator *(float scale, Vector3 value)
+        public static Vector3 operator *(Real scale, Vector3 value)
         {
             return new Vector3(value.X * scale, value.Y * scale, value.Z * scale);
         }
@@ -1798,7 +1609,7 @@ namespace FlaxEngine
         /// <param name="value">The vector to scale.</param>
         /// <param name="scale">The amount by which to scale the vector.</param>
         /// <returns>The scaled vector.</returns>
-        public static Vector3 operator *(Vector3 value, float scale)
+        public static Vector3 operator *(Vector3 value, Real scale)
         {
             return new Vector3(value.X * scale, value.Y * scale, value.Z * scale);
         }
@@ -1809,7 +1620,7 @@ namespace FlaxEngine
         /// <param name="value">The vector to scale.</param>
         /// <param name="scale">The amount by which to scale the vector.</param>
         /// <returns>The scaled vector.</returns>
-        public static Vector3 operator /(Vector3 value, float scale)
+        public static Vector3 operator /(Vector3 value, Real scale)
         {
             return new Vector3(value.X / scale, value.Y / scale, value.Z / scale);
         }
@@ -1820,7 +1631,7 @@ namespace FlaxEngine
         /// <param name="scale">The amount by which to scale the vector.</param>
         /// <param name="value">The vector to scale.</param>
         /// <returns>The scaled vector.</returns>
-        public static Vector3 operator /(float scale, Vector3 value)
+        public static Vector3 operator /(Real scale, Vector3 value)
         {
             return new Vector3(scale / value.X, scale / value.Y, scale / value.Z);
         }
@@ -1842,7 +1653,7 @@ namespace FlaxEngine
         /// <param name="value">The vector to scale.</param>
         /// <param name="scale">The amount by which to scale the vector.</param>
         /// <returns>The remained vector.</returns>
-        public static Vector3 operator %(Vector3 value, float scale)
+        public static Vector3 operator %(Vector3 value, Real scale)
         {
             return new Vector3(value.X % scale, value.Y % scale, value.Z % scale);
         }
@@ -1853,7 +1664,7 @@ namespace FlaxEngine
         /// <param name="value">The amount by which to scale the vector.</param>
         /// <param name="scale">The vector to scale.</param>
         /// <returns>The remained vector.</returns>
-        public static Vector3 operator %(float value, Vector3 scale)
+        public static Vector3 operator %(Real value, Vector3 scale)
         {
             return new Vector3(value % scale.X, value % scale.Y, value % scale.Z);
         }
@@ -1875,7 +1686,7 @@ namespace FlaxEngine
         /// <param name="value">The input vector.</param>
         /// <param name="scalar">The scalar value to be added on elements</param>
         /// <returns>The vector with added scalar for each element.</returns>
-        public static Vector3 operator +(Vector3 value, float scalar)
+        public static Vector3 operator +(Vector3 value, Real scalar)
         {
             return new Vector3(value.X + scalar, value.Y + scalar, value.Z + scalar);
         }
@@ -1886,7 +1697,7 @@ namespace FlaxEngine
         /// <param name="value">The input vector.</param>
         /// <param name="scalar">The scalar value to be added on elements</param>
         /// <returns>The vector with added scalar for each element.</returns>
-        public static Vector3 operator +(float scalar, Vector3 value)
+        public static Vector3 operator +(Real scalar, Vector3 value)
         {
             return new Vector3(scalar + value.X, scalar + value.Y, scalar + value.Z);
         }
@@ -1897,7 +1708,7 @@ namespace FlaxEngine
         /// <param name="value">The input vector.</param>
         /// <param name="scalar">The scalar value to be subtracted from elements</param>
         /// <returns>The vector with added scalar from each element.</returns>
-        public static Vector3 operator -(Vector3 value, float scalar)
+        public static Vector3 operator -(Vector3 value, Real scalar)
         {
             return new Vector3(value.X - scalar, value.Y - scalar, value.Z - scalar);
         }
@@ -1908,9 +1719,75 @@ namespace FlaxEngine
         /// <param name="value">The input vector.</param>
         /// <param name="scalar">The scalar value to be subtracted from elements</param>
         /// <returns>The vector with subtracted scalar from each element.</returns>
-        public static Vector3 operator -(float scalar, Vector3 value)
+        public static Vector3 operator -(Real scalar, Vector3 value)
         {
             return new Vector3(scalar - value.X, scalar - value.Y, scalar - value.Z);
+        }
+
+        /// <summary>
+        /// Adds a vector to another by performing component-wise addition.
+        /// </summary>
+        /// <param name="left">The first vector to add.</param>
+        /// <param name="right">The second vector to add.</param>
+        /// <returns>The sum of the two vectors.</returns>
+        public static Float3 operator +(Float3 left, Vector3 right)
+        {
+            return new Float3(left.X + (float)right.X, left.Y + (float)right.Y, left.Z + (float)right.Z);
+        }
+
+        /// <summary>
+        /// Subtracts a vector from another by performing component-wise subtraction.
+        /// </summary>
+        /// <param name="left">The first vector to add.</param>
+        /// <param name="right">The second vector to add.</param>
+        /// <returns>The sum of the two vectors.</returns>
+        public static Float3 operator -(Float3 left, Vector3 right)
+        {
+            return new Float3(left.X - (float)right.X, left.Y - (float)right.Y, left.Z - (float)right.Z);
+        }
+
+        /// <summary>
+        /// Multiplies a vector with another by performing component-wise multiplication.
+        /// </summary>
+        /// <param name="left">The first vector to multiply.</param>
+        /// <param name="right">The second vector to multiply.</param>
+        /// <returns>The multiplication of the two vectors.</returns>
+        public static Float3 operator *(Float3 left, Vector3 right)
+        {
+            return new Float3(left.X * (float)right.X, left.Y * (float)right.Y, left.Z * (float)right.Z);
+        }
+
+        /// <summary>
+        /// Adds a vector to another by performing component-wise addition.
+        /// </summary>
+        /// <param name="left">The first vector to add.</param>
+        /// <param name="right">The second vector to add.</param>
+        /// <returns>The sum of the two vectors.</returns>
+        public static Vector3 operator +(Vector3 left, Float3 right)
+        {
+            return new Vector3(left.X + (Real)right.X, left.Y + (Real)right.Y, left.Z + (Real)right.Z);
+        }
+
+        /// <summary>
+        /// Subtracts a vector from another by performing component-wise subtraction.
+        /// </summary>
+        /// <param name="left">The first vector to add.</param>
+        /// <param name="right">The second vector to add.</param>
+        /// <returns>The sum of the two vectors.</returns>
+        public static Vector3 operator -(Vector3 left, Float3 right)
+        {
+            return new Vector3(left.X - (Real)right.X, left.Y - (Real)right.Y, left.Z - (Real)right.Z);
+        }
+
+        /// <summary>
+        /// Multiplies a vector with another by performing component-wise multiplication.
+        /// </summary>
+        /// <param name="left">The first vector to multiply.</param>
+        /// <param name="right">The second vector to multiply.</param>
+        /// <returns>The multiplication of the two vectors.</returns>
+        public static Vector3 operator *(Vector3 left, Float3 right)
+        {
+            return new Vector3(left.X * (Real)right.X, left.Y * (Real)right.Y, left.Z * (Real)right.Z);
         }
 
         /// <summary>
@@ -1935,6 +1812,26 @@ namespace FlaxEngine
         public static bool operator !=(Vector3 left, Vector3 right)
         {
             return !Mathf.NearEqual(left.X, right.X) || !Mathf.NearEqual(left.Y, right.Y) || !Mathf.NearEqual(left.Z, right.Z);
+        }
+
+        /// <summary>
+        /// Performs an explicit conversion from <see cref="Vector3" /> to <see cref="Float3" />.
+        /// </summary>
+        /// <param name="value">The value.</param>
+        /// <returns>The result of the conversion.</returns>
+        public static implicit operator Float3(Vector3 value)
+        {
+            return new Float3((float)value.X, (float)value.Y, (float)value.Z);
+        }
+
+        /// <summary>
+        /// Performs an explicit conversion from <see cref="Vector3" /> to <see cref="Double3" />.
+        /// </summary>
+        /// <param name="value">The value.</param>
+        /// <returns>The result of the conversion.</returns>
+        public static implicit operator Double3(Vector3 value)
+        {
+            return new Double3(value.X, value.Y, value.Z);
         }
 
         /// <summary>
@@ -2044,9 +1941,7 @@ namespace FlaxEngine
         /// <returns><c>true</c> if the specified <see cref="System.Object" /> is equal to this instance; otherwise, <c>false</c>.</returns>
         public override bool Equals(object value)
         {
-            if (!(value is Vector3 other))
-                return false;
-            return Mathf.NearEqual(other.X, X) && Mathf.NearEqual(other.Y, Y) && Mathf.NearEqual(other.Z, Z);
+            return value is Vector3 other && Mathf.NearEqual(other.X, X) && Mathf.NearEqual(other.Y, Y) && Mathf.NearEqual(other.Z, Z);
         }
     }
 }

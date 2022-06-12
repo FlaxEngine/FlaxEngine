@@ -118,8 +118,8 @@ void SlotBucketInit(AnimGraphInstanceData::Bucket& bucket)
 bool SortMultiBlend1D(const byte& a, const byte& b, AnimGraphNode* n)
 {
     // Sort items by X location from the lowest to the highest
-    const auto aX = a == ANIM_GRAPH_MULTI_BLEND_MAX_ANIMS ? MAX_float : n->Values[4 + a * 2].AsVector4().X;
-    const auto bX = b == ANIM_GRAPH_MULTI_BLEND_MAX_ANIMS ? MAX_float : n->Values[4 + b * 2].AsVector4().X;
+    const auto aX = a == ANIM_GRAPH_MULTI_BLEND_MAX_ANIMS ? MAX_float : n->Values[4 + a * 2].AsFloat4().X;
+    const auto bX = b == ANIM_GRAPH_MULTI_BLEND_MAX_ANIMS ? MAX_float : n->Values[4 + b * 2].AsFloat4().X;
     return aX < bX;
 }
 
@@ -172,10 +172,10 @@ bool AnimGraphBase::onNodeLoaded(Node* n)
         {
             ADD_BUCKET(MultiBlendBucketInit);
             n->Data.MultiBlend1D.Length = -1;
-            const Vector4 range = n->Values[0].AsVector4();
+            const Float4 range = n->Values[0].AsFloat4();
             for (int32 i = 0; i < ANIM_GRAPH_MULTI_BLEND_MAX_ANIMS; i++)
             {
-                auto data0 = n->Values[i * 2 + 4].AsVector4();
+                auto data0 = n->Values[i * 2 + 4].AsFloat4();
                 data0.X = Math::Clamp(data0.X, range.X, range.Y);
                 n->Assets[i] = Content::LoadAsync<Animation>((Guid)n->Values[i * 2 + 5]);
                 n->Data.MultiBlend1D.IndicesSorted[i] = n->Assets[i] ? i : ANIM_GRAPH_MULTI_BLEND_MAX_ANIMS;
@@ -190,12 +190,12 @@ bool AnimGraphBase::onNodeLoaded(Node* n)
             n->Data.MultiBlend2D.Length = -1;
 
             // Get blend points locations
-            Array<Vector2, FixedAllocation<ANIM_GRAPH_MULTI_BLEND_MAX_ANIMS + 3>> vertices;
+            Array<Float2, FixedAllocation<ANIM_GRAPH_MULTI_BLEND_MAX_ANIMS + 3>> vertices;
             byte vertexIndexToAnimIndex[ANIM_GRAPH_MULTI_BLEND_MAX_ANIMS];
-            const Vector4 range = n->Values[0].AsVector4();
+            const Float4 range = n->Values[0].AsFloat4();
             for (int32 i = 0; i < ANIM_GRAPH_MULTI_BLEND_MAX_ANIMS; i++)
             {
-                auto data0 = n->Values[i * 2 + 4].AsVector4();
+                auto data0 = n->Values[i * 2 + 4].AsFloat4();
                 data0.X = Math::Clamp(data0.X, range.X, range.Y);
                 data0.Y = Math::Clamp(data0.Y, range.Z, range.W);
                 n->Assets[i] = (Asset*)Content::LoadAsync<Animation>((Guid)n->Values[i * 2 + 5]);
@@ -203,7 +203,7 @@ bool AnimGraphBase::onNodeLoaded(Node* n)
                 {
                     const int32 vertexIndex = vertices.Count();
                     vertexIndexToAnimIndex[vertexIndex] = i;
-                    vertices.Add(Vector2(n->Values[i * 2 + 4].AsVector4()));
+                    vertices.Add(Float2(n->Values[i * 2 + 4].AsFloat4()));
                 }
                 else
                 {

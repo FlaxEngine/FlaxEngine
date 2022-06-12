@@ -152,7 +152,7 @@ namespace FlaxEditor.Tools.Foliage
 
             // Apply scale
             const float scaleLimit = 99_999_999.0f;
-            trans.Scale = Vector3.Clamp(trans.Scale + scaleDelta, new Vector3(-scaleLimit), new Vector3(scaleLimit));
+            trans.Scale = Float3.Clamp(trans.Scale + scaleDelta, new Float3(-scaleLimit), new Float3(scaleLimit));
 
             // Apply translation
             trans.Translation += translationDelta;

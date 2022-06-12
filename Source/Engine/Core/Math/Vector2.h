@@ -7,8 +7,6 @@
 #include "Engine/Core/Formatting.h"
 #include "Engine/Core/Templates.h"
 
-#include <type_traits>
-
 /// <summary>
 /// Represents a two dimensional mathematical vector.
 /// </summary>
@@ -16,7 +14,7 @@ template<typename T>
 API_STRUCT(Template) struct Vector2Base
 {
     typedef T Real;
-    static struct ScriptingTypeInitializer TypeInitializer;
+    static FLAXENGINE_API struct ScriptingTypeInitializer TypeInitializer;
 
     union
     {
@@ -85,7 +83,7 @@ public:
     }
 
     template<typename U = T, typename TEnableIf<TNot<TIsTheSame<T, U>>::Value>::Type...>
-    FORCE_INLINE explicit Vector2Base(const Vector2Base<U>& xy)
+    FORCE_INLINE Vector2Base(const Vector2Base<U>& xy)
         : X((T)xy.X)
         , Y((T)xy.Y)
     {
@@ -283,6 +281,30 @@ public:
 
     Vector2Base operator/(T b) const
     {
+        return Vector2Base(X / b, Y / b);
+    }
+
+    Vector2Base operator+(typename TOtherFloat<T>::Type a) const
+    {
+        T b = (T)a;
+        return Vector2Base(X + b, Y + b);
+    }
+
+    Vector2Base operator-(typename TOtherFloat<T>::Type a) const
+    {
+        T b = (T)a;
+        return Vector2Base(X - b, Y - b);
+    }
+
+    Vector2Base operator*(typename TOtherFloat<T>::Type a) const
+    {
+        T b = (T)a;
+        return Vector2Base(X * b, Y * b);
+    }
+
+    Vector2Base operator/(typename TOtherFloat<T>::Type a) const
+    {
+        T b = (T)a;
         return Vector2Base(X / b, Y / b);
     }
 
@@ -583,6 +605,30 @@ inline Vector2Base<T> operator*(T a, const Vector2Base<T>& b)
 
 template<typename T>
 inline Vector2Base<T> operator/(T a, const Vector2Base<T>& b)
+{
+    return Vector2Base<T>(a) / b;
+}
+
+template<typename T>
+inline Vector2Base<T> operator+(typename TOtherFloat<T>::Type a, const Vector2Base<T>& b)
+{
+    return b + a;
+}
+
+template<typename T>
+inline Vector2Base<T> operator-(typename TOtherFloat<T>::Type a, const Vector2Base<T>& b)
+{
+    return Vector2Base<T>(a) - b;
+}
+
+template<typename T>
+inline Vector2Base<T> operator*(typename TOtherFloat<T>::Type a, const Vector2Base<T>& b)
+{
+    return b * a;
+}
+
+template<typename T>
+inline Vector2Base<T> operator/(typename TOtherFloat<T>::Type a, const Vector2Base<T>& b)
 {
     return Vector2Base<T>(a) / b;
 }

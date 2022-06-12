@@ -75,8 +75,8 @@ void QuadOverdrawPass::Render(RenderContext& renderContext, GPUContext* context,
         // Draw sky
         auto box = skyModel->GetBox();
         Matrix m1, m2;
-        Matrix::Scaling(renderContext.View.Far / (box.GetSize().Y * 0.5f) * 0.95f, m1);
-        Matrix::CreateWorld(renderContext.View.Position, Vector3::Up, Vector3::Backward, m2);
+        Matrix::Scaling(renderContext.View.Far / ((float)box.GetSize().Y * 0.5f) * 0.95f, m1);
+        Matrix::CreateWorld(renderContext.View.Position, Float3::Up, Float3::Backward, m2);
         m1 *= m2;
         drawCall.World = m1;
         drawCall.ObjectPosition = drawCall.World.GetTranslation();

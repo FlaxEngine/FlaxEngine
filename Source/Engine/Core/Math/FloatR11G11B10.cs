@@ -38,7 +38,7 @@ namespace FlaxEngine
         /// Initializes a new instance of the <see cref = "T:FlaxEngine.FloatR11G11B10" /> structure.
         /// </summary>
         /// <param name="value">The floating point value that should be stored in compressed format.</param>
-        public FloatR11G11B10(Vector3 value)
+        public FloatR11G11B10(Float3 value)
         {
             this.value = Pack(value.X, value.Y, value.Z);
         }
@@ -53,23 +53,23 @@ namespace FlaxEngine
         }
 
         /// <summary>
-        /// Performs an explicit conversion from <see cref = "T:FlaxEngine.Vector4" /> to <see cref = "T:FlaxEngine.FloatR11G11B10" />.
+        /// Performs an explicit conversion from <see cref = "T:FlaxEngine.Float3" /> to <see cref = "T:FlaxEngine.FloatR11G11B10" />.
         /// </summary>
         /// <param name="value">The value to be converted.</param>
         /// <returns>The converted value.</returns>
-        public static explicit operator FloatR11G11B10(Vector3 value)
+        public static explicit operator FloatR11G11B10(Float3 value)
         {
             return new FloatR11G11B10(value);
         }
 
         /// <summary>
-        /// Performs an implicit conversion from <see cref = "T:FlaxEngine.FloatR11G11B10" /> to <see cref = "T:FlaxEngine.Vector4" />.
+        /// Performs an implicit conversion from <see cref = "T:FlaxEngine.FloatR11G11B10" /> to <see cref = "T:FlaxEngine.Float3" />.
         /// </summary>
         /// <param name="value">The value to be converted.</param>
         /// <returns>The converted value.</returns>
-        public static implicit operator Vector3(FloatR11G11B10 value)
+        public static implicit operator Float3(FloatR11G11B10 value)
         {
-            return value.ToVector3();
+            return value.ToFloat3();
         }
 
         /// <summary>
@@ -100,7 +100,7 @@ namespace FlaxEngine
         /// <returns>A <see cref="System.String" /> that represents this instance.</returns>
         public override string ToString()
         {
-            return ((Vector3)this).ToString();
+            return ((Float3)this).ToString();
         }
 
         /// <summary>
@@ -140,10 +140,7 @@ namespace FlaxEngine
         /// <returns><c>true</c> if the current instance is equal to the specified object; <c>false</c> otherwise.</returns>
         public override bool Equals(object obj)
         {
-            if (obj == null || obj.GetType() != GetType())
-                return false;
-            var v = (FloatR11G11B10)obj;
-            return v.value == value;
+            return obj is FloatR11G11B10 other && value == other.value;
         }
 
         private static unsafe uint Pack(float x, float y, float z)
@@ -284,10 +281,10 @@ namespace FlaxEngine
         }
 
         /// <summary>
-        /// Unpacks vector to Vector3.
+        /// Unpacks vector to Float3.
         /// </summary>
-        /// <returns>Vector3 value</returns>
-        public unsafe Vector3 ToVector3()
+        /// <returns>Float3 value</returns>
+        public unsafe Float3 ToFloat3()
         {
             int zeroExponent = -112;
 
@@ -409,7 +406,7 @@ namespace FlaxEngine
             }
 
             float* resultAsFloat = (float*)result;
-            return new Vector3(resultAsFloat[0], resultAsFloat[1], resultAsFloat[2]);
+            return new Float3(resultAsFloat[0], resultAsFloat[1], resultAsFloat[2]);
         }
     }
 }

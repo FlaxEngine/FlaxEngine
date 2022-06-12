@@ -19,22 +19,22 @@ PACK_STRUCT(struct TerrainMaterialShaderData {
     Matrix ViewProjectionMatrix;
     Matrix WorldMatrix;
     Matrix ViewMatrix;
-    Vector3 ViewPos;
+    Float3 ViewPos;
     float ViewFar;
-    Vector3 ViewDir;
+    Float3 ViewDir;
     float TimeParam;
-    Vector4 ViewInfo;
-    Vector4 ScreenSize;
-    Vector3 WorldInvScale;
+    Float4 ViewInfo;
+    Float4 ScreenSize;
+    Float3 WorldInvScale;
     float WorldDeterminantSign;
     float PerInstanceRandom;
     float CurrentLOD; // Index of the current LOD
     float ChunkSizeNextLOD; // ChunkSize for the next current LOD (after applying LOD down-scaling)
     float TerrainChunkSizeLOD0; // Size of the terrain chunk in world units of the top-most LOD0
-    Vector4 HeightmapUVScaleBias; // xy-scale, zw-offset for chunk geometry UVs into heightmap UVs (as single MAD instruction)
-    Vector4 NeighborLOD; // Per component LOD index for chunk neighbors ordered: top, left, right, bottom
-    Vector2 OffsetUV; // Offset applied to the texture coordinates (used to implement seamless UVs based on chunk location relative to terrain root)
-    Vector2 Dummy0;
+    Float4 HeightmapUVScaleBias; // xy-scale, zw-offset for chunk geometry UVs into heightmap UVs (as single MAD instruction)
+    Float4 NeighborLOD; // Per component LOD index for chunk neighbors ordered: top, left, right, bottom
+    Float2 OffsetUV; // Offset applied to the texture coordinates (used to implement seamless UVs based on chunk location relative to terrain root)
+    Float2 Dummy0;
     });
 
 DrawPass TerrainMaterialShader::GetDrawModes() const
@@ -83,10 +83,10 @@ void TerrainMaterialShader::Bind(BindParameters& params)
         materialData->TimeParam = params.TimeParam;
         materialData->ViewInfo = view.ViewInfo;
         materialData->ScreenSize = view.ScreenSize;
-        const float scaleX = Vector3(drawCall.World.M11, drawCall.World.M12, drawCall.World.M13).Length();
-        const float scaleY = Vector3(drawCall.World.M21, drawCall.World.M22, drawCall.World.M23).Length();
-        const float scaleZ = Vector3(drawCall.World.M31, drawCall.World.M32, drawCall.World.M33).Length();
-        materialData->WorldInvScale = Vector3(
+        const float scaleX = Float3(drawCall.World.M11, drawCall.World.M12, drawCall.World.M13).Length();
+        const float scaleY = Float3(drawCall.World.M21, drawCall.World.M22, drawCall.World.M23).Length();
+        const float scaleZ = Float3(drawCall.World.M31, drawCall.World.M32, drawCall.World.M33).Length();
+        materialData->WorldInvScale = Float3(
             scaleX > 0.00001f ? 1.0f / scaleX : 0.0f,
             scaleY > 0.00001f ? 1.0f / scaleY : 0.0f,
             scaleZ > 0.00001f ? 1.0f / scaleZ : 0.0f);

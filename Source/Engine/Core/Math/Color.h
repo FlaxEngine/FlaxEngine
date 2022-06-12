@@ -99,13 +99,13 @@ public:
     /// </summary>
     /// <param name="rgb">The red, green and blue channels value.</param>
     /// <param name="a">The alpha channel value.</param>
-    Color(const Vector3& rgb, float a);
+    Color(const Float3& rgb, float a);
 
     /// <summary>
     /// Initializes a new instance of the <see cref="Color"/> struct.
     /// </summary>
     /// <param name="rgba">The red, green, blue and alpha channels value.</param>
-    explicit Color(const Vector4& rgba);
+    explicit Color(const Float4& rgba);
 
     /// <summary>
     /// Initializes a new instance of the <see cref="Color"/> struct.
@@ -162,7 +162,7 @@ public:
     /// <param name="hsv">The HSV color.</param>
     /// <param name="alpha">The alpha value. Default is 1.</param>
     /// <returns>The RGB color.</returns>
-    static Color FromHSV(const Vector3& hsv, float alpha = 1.0f);
+    static Color FromHSV(const Float3& hsv, float alpha = 1.0f);
 
     /// <summary>
     /// Gets random color with opaque alpha.
@@ -267,16 +267,16 @@ public:
 
 public:
     // Get color as vector structure.
-    Vector3 ToVector3() const;
+    Float3 ToFloat3() const;
 
     // Get color as vector structure.
-    Vector4 ToVector4() const;
+    Float4 ToFloat4() const;
 
     /// <summary>
     /// Gets Hue[0-360], Saturation[0-1] and Value[0-1] from RGB color.
     /// </summary>
     /// <returns>HSV color</returns>
-    Vector3 ToHSV() const;
+    Float3 ToHSV() const;
 
     /// <summary>
     /// Performs a linear interpolation between two colors.

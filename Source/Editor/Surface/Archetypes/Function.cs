@@ -302,7 +302,7 @@ namespace FlaxEditor.Surface.Archetypes
             }
 
             /// <inheritdoc />
-            public override bool OnMouseDoubleClick(Vector2 location, MouseButton button)
+            public override bool OnMouseDoubleClick(Float2 location, MouseButton button)
             {
                 if (base.OnMouseDoubleClick(location, button))
                     return true;
@@ -317,7 +317,7 @@ namespace FlaxEditor.Surface.Archetypes
             }
 
             /// <inheritdoc />
-            public override void OnShowSecondaryContextMenu(FlaxEditor.GUI.ContextMenu.ContextMenu menu, Vector2 location)
+            public override void OnShowSecondaryContextMenu(FlaxEditor.GUI.ContextMenu.ContextMenu menu, Float2 location)
             {
                 base.OnShowSecondaryContextMenu(menu, location);
 
@@ -385,13 +385,13 @@ namespace FlaxEditor.Surface.Archetypes
                     _types = surface.FunctionTypes;
                     _typePicker = new ComboBox
                     {
-                        Location = new Vector2(4, 32),
+                        Location = new Float2(4, 32),
                         Width = 80.0f,
                         Parent = this,
                     };
                     for (int i = 0; i < _types.Length; i++)
                         _typePicker.AddItem(Surface.GetTypeName(new ScriptType(_types[i])));
-                    _nameField.Location = new Vector2(_typePicker.Right + 2.0f, _typePicker.Y);
+                    _nameField.Location = new Float2(_typePicker.Right + 2.0f, _typePicker.Y);
                 }
             }
 
@@ -454,13 +454,13 @@ namespace FlaxEditor.Surface.Archetypes
                     _types = surface.FunctionTypes;
                     _typePicker = new ComboBox
                     {
-                        Location = new Vector2(24, 32),
+                        Location = new Float2(24, 32),
                         Width = 80.0f,
                         Parent = this,
                     };
                     for (int i = 0; i < _types.Length; i++)
                         _typePicker.AddItem(Surface.GetTypeName(new ScriptType(_types[i])));
-                    _nameField.Location = new Vector2(_typePicker.Right + 2.0f, _typePicker.Y);
+                    _nameField.Location = new Float2(_typePicker.Right + 2.0f, _typePicker.Y);
                 }
             }
 
@@ -681,7 +681,7 @@ namespace FlaxEditor.Surface.Archetypes
             }
 
             /// <inheritdoc />
-            public override void OnShowSecondaryContextMenu(FlaxEditor.GUI.ContextMenu.ContextMenu menu, Vector2 location)
+            public override void OnShowSecondaryContextMenu(FlaxEditor.GUI.ContextMenu.ContextMenu menu, Float2 location)
             {
                 base.OnShowSecondaryContextMenu(menu, location);
 
@@ -698,7 +698,7 @@ namespace FlaxEditor.Surface.Archetypes
                 var impulseBox = GetBox(0);
                 var method = GetMethod();
                 _parameters = null;
-                var node = Context.SpawnNode(16, 5, UpperRight + new Vector2(40, 0), new object[] { method.ValueType.TypeName });
+                var node = Context.SpawnNode(16, 5, UpperRight + new Float2(40, 0), new object[] { method.ValueType.TypeName });
                 if (node != null && !impulseBox.HasAnyConnection)
                     impulseBox.Connect(node.GetBox(0));
             }
@@ -709,7 +709,7 @@ namespace FlaxEditor.Surface.Archetypes
                 var method = GetMethod();
                 _parameters = null;
                 var parametersCount = method.ParametersCount;
-                var node = Context.SpawnNode(16, 4, UpperRight + new Vector2(40, 0), new object[]
+                var node = Context.SpawnNode(16, 4, UpperRight + new Float2(40, 0), new object[]
                 {
                     method.DeclaringType.TypeName, // Script typename
                     method.Name, // Method name
@@ -1074,7 +1074,7 @@ namespace FlaxEditor.Surface.Archetypes
             }
 
             /// <inheritdoc />
-            public override void OnShowSecondaryContextMenu(FlaxEditor.GUI.ContextMenu.ContextMenu menu, Vector2 location)
+            public override void OnShowSecondaryContextMenu(FlaxEditor.GUI.ContextMenu.ContextMenu menu, Float2 location)
             {
                 base.OnShowSecondaryContextMenu(menu, location);
 
@@ -1104,7 +1104,7 @@ namespace FlaxEditor.Surface.Archetypes
             }
 
             /// <inheritdoc />
-            public override bool OnMouseDoubleClick(Vector2 location, MouseButton button)
+            public override bool OnMouseDoubleClick(Float2 location, MouseButton button)
             {
                 if (button == MouseButton.Left && _headerRect.Contains(ref location))
                 {
@@ -1343,7 +1343,7 @@ namespace FlaxEditor.Surface.Archetypes
                     // Context menu dimensions
                     const float width = 340.0f;
                     const float height = 370.0f;
-                    Size = new Vector2(width, height);
+                    Size = new Float2(width, height);
 
                     // Title
                     var title = new Label(2, 2, width - 4, 23.0f)
@@ -1555,7 +1555,7 @@ namespace FlaxEditor.Surface.Archetypes
             }
 
             /// <inheritdoc />
-            public override void OnShowSecondaryContextMenu(FlaxEditor.GUI.ContextMenu.ContextMenu menu, Vector2 location)
+            public override void OnShowSecondaryContextMenu(FlaxEditor.GUI.ContextMenu.ContextMenu menu, Float2 location)
             {
                 base.OnShowSecondaryContextMenu(menu, location);
 
@@ -1569,7 +1569,7 @@ namespace FlaxEditor.Surface.Archetypes
             private void OnAddReturnNode()
             {
                 var impulseBox = GetBox(0);
-                var node = Context.SpawnNode(16, 5, UpperRight + new Vector2(40, 0), new object[] { _signature.ReturnType.TypeName });
+                var node = Context.SpawnNode(16, 5, UpperRight + new Float2(40, 0), new object[] { _signature.ReturnType.TypeName });
                 if (node != null && !impulseBox.HasAnyConnection)
                     impulseBox.Connect(node.GetBox(0));
             }
@@ -1632,7 +1632,7 @@ namespace FlaxEditor.Surface.Archetypes
                             node.OnFunctionEdited(this);
                     }
                 };
-                editor.Show(this, Vector2.Zero);
+                editor.Show(this, Float2.Zero);
             }
 
             private void OnEditAttributes()
@@ -1651,7 +1651,7 @@ namespace FlaxEditor.Surface.Archetypes
                     action.Window.Undo?.AddAction(action);
                     action.Do();
                 };
-                editor.Show(this, Vector2.Zero);
+                editor.Show(this, Float2.Zero);
             }
 
             private void OnFindReferences()
@@ -1687,7 +1687,7 @@ namespace FlaxEditor.Surface.Archetypes
             }
 
             /// <inheritdoc />
-            public override bool OnMouseDoubleClick(Vector2 location, MouseButton button)
+            public override bool OnMouseDoubleClick(Float2 location, MouseButton button)
             {
                 if (button == MouseButton.Left && _headerRect.Contains(ref location))
                 {
@@ -1814,7 +1814,7 @@ namespace FlaxEditor.Surface.Archetypes
             protected abstract void UpdateSignature();
 
             /// <inheritdoc />
-            public override void OnShowSecondaryContextMenu(FlaxEditor.GUI.ContextMenu.ContextMenu menu, Vector2 location)
+            public override void OnShowSecondaryContextMenu(FlaxEditor.GUI.ContextMenu.ContextMenu menu, Float2 location)
             {
                 base.OnShowSecondaryContextMenu(menu, location);
 
@@ -2007,8 +2007,8 @@ namespace FlaxEditor.Surface.Archetypes
                     _combobox.SelectedIndexChanged += OnSelectedChanged;
                     _helperButton = new Image
                     {
-                        Location = _combobox.UpperRight + new Vector2(4, 3),
-                        Size = new Vector2(12.0f),
+                        Location = _combobox.UpperRight + new Float2(4, 3),
+                        Size = new Float2(12.0f),
                         Parent = this,
                     };
                     _helperButton.Clicked += OnHelperButtonClicked;
@@ -2075,8 +2075,8 @@ namespace FlaxEditor.Surface.Archetypes
                 {
                     // Create new function that matches the event signature
                     var surfaceBounds = Surface.AllNodesBounds;
-                    Surface.ShowArea(new Rectangle(surfaceBounds.BottomLeft, new Vector2(200, 150)).MakeExpanded(400.0f));
-                    var node = Surface.Context.SpawnNode(16, 6, surfaceBounds.BottomLeft + new Vector2(0, 50), null, OnBeforeSpawnedNewHandler);
+                    Surface.ShowArea(new Rectangle(surfaceBounds.BottomLeft, new Float2(200, 150)).MakeExpanded(400.0f));
+                    var node = Surface.Context.SpawnNode(16, 6, surfaceBounds.BottomLeft + new Float2(0, 50), null, OnBeforeSpawnedNewHandler);
                     Surface.Select(node);
 
                     // Bind this function
@@ -2227,7 +2227,7 @@ namespace FlaxEditor.Surface.Archetypes
                 Title = "Function Input",
                 Description = "The graph function input data",
                 Flags = NodeFlags.MaterialGraph | NodeFlags.ParticleEmitterGraph | NodeFlags.AnimGraph | NodeFlags.NoSpawnViaPaste,
-                Size = new Vector2(240, 60),
+                Size = new Float2(240, 60),
                 DefaultValues = new object[]
                 {
                     typeof(float).FullName,
@@ -2246,7 +2246,7 @@ namespace FlaxEditor.Surface.Archetypes
                 Title = "Function Output",
                 Description = "The graph function output data",
                 Flags = NodeFlags.MaterialGraph | NodeFlags.ParticleEmitterGraph | NodeFlags.AnimGraph | NodeFlags.NoSpawnViaPaste,
-                Size = new Vector2(240, 60),
+                Size = new Float2(240, 60),
                 DefaultValues = new object[]
                 {
                     typeof(float).FullName,
@@ -2264,7 +2264,7 @@ namespace FlaxEditor.Surface.Archetypes
                 Title = string.Empty,
                 Description = "Overrides the base class method with custom implementation",
                 Flags = NodeFlags.VisualScriptGraph | NodeFlags.NoSpawnViaGUI | NodeFlags.NoSpawnViaPaste,
-                Size = new Vector2(240, 60),
+                Size = new Float2(240, 60),
                 DefaultValues = new object[]
                 {
                     string.Empty, // Overriden method name
@@ -2278,7 +2278,7 @@ namespace FlaxEditor.Surface.Archetypes
                 Create = (id, context, arch, groupArch) => new InvokeMethodNode(id, context, arch, groupArch),
                 Title = string.Empty,
                 Flags = NodeFlags.VisualScriptGraph | NodeFlags.NoSpawnViaGUI,
-                Size = new Vector2(240, 60),
+                Size = new Float2(240, 60),
                 DefaultValues = new object[]
                 {
                     string.Empty, // Script typename
@@ -2301,7 +2301,7 @@ namespace FlaxEditor.Surface.Archetypes
                 Create = (id, context, arch, groupArch) => new ReturnNode(id, context, arch, groupArch),
                 Title = "Return",
                 Flags = NodeFlags.VisualScriptGraph | NodeFlags.NoSpawnViaGUI,
-                Size = new Vector2(100, 40),
+                Size = new Float2(100, 40),
                 DefaultValues = new object[]
                 {
                     string.Empty, // Value TypeName
@@ -2319,7 +2319,7 @@ namespace FlaxEditor.Surface.Archetypes
                 Title = "New Function",
                 Description = "Adds a new function to the script",
                 Flags = NodeFlags.VisualScriptGraph,
-                Size = new Vector2(240, 20),
+                Size = new Float2(240, 20),
                 DefaultValues = new object[]
                 {
                     Utils.GetEmptyArray<byte>(), // Function signature data
@@ -2331,7 +2331,7 @@ namespace FlaxEditor.Surface.Archetypes
                 Create = (id, context, arch, groupArch) => new GetFieldNode(id, context, arch, groupArch),
                 Title = string.Empty,
                 Flags = NodeFlags.VisualScriptGraph | NodeFlags.NoSpawnViaGUI,
-                Size = new Vector2(240, 60),
+                Size = new Float2(240, 60),
                 DefaultValues = new object[]
                 {
                     string.Empty, // Script typename
@@ -2346,7 +2346,7 @@ namespace FlaxEditor.Surface.Archetypes
                 Create = (id, context, arch, groupArch) => new SetFieldNode(id, context, arch, groupArch),
                 Title = string.Empty,
                 Flags = NodeFlags.VisualScriptGraph | NodeFlags.NoSpawnViaGUI,
-                Size = new Vector2(240, 60),
+                Size = new Float2(240, 60),
                 DefaultValues = new object[]
                 {
                     string.Empty, // Script typename
@@ -2362,7 +2362,7 @@ namespace FlaxEditor.Surface.Archetypes
                 Create = (id, context, arch, groupArch) => new BindEventNode(id, context, arch, groupArch),
                 Title = string.Empty,
                 Flags = NodeFlags.VisualScriptGraph | NodeFlags.NoSpawnViaGUI,
-                Size = new Vector2(260, 60),
+                Size = new Float2(260, 60),
                 DefaultValues = new object[]
                 {
                     string.Empty, // Event type
@@ -2384,7 +2384,7 @@ namespace FlaxEditor.Surface.Archetypes
                 Create = (id, context, arch, groupArch) => new UnbindEventNode(id, context, arch, groupArch),
                 Title = string.Empty,
                 Flags = NodeFlags.VisualScriptGraph | NodeFlags.NoSpawnViaGUI,
-                Size = new Vector2(260, 60),
+                Size = new Float2(260, 60),
                 DefaultValues = new object[]
                 {
                     string.Empty, // Event type

@@ -105,7 +105,7 @@ namespace FlaxEditor.Windows.Profiler
                 if (_selectedSampleIndex != -1)
                 {
                     float selectedX = Width - (_samples.Count - _selectedSampleIndex - 1) * PointsOffset;
-                    Render2D.DrawLine(new Vector2(selectedX, 0), new Vector2(selectedX, chartHeight), Color.White, 1.5f);
+                    Render2D.DrawLine(new Float2(selectedX, 0), new Float2(selectedX, chartHeight), Color.White, 1.5f);
                 }
 
                 int samplesInViewCount = Math.Min((int)(Width / PointsOffset), _samples.Count) - 1;
@@ -116,16 +116,16 @@ namespace FlaxEditor.Windows.Profiler
                 }
 
                 Color chartColor = style.BackgroundSelected;
-                Vector2 chartRoot = chartRect.BottomRight;
+                var chartRoot = chartRect.BottomRight;
                 float samplesRange = maxValue * 1.1f;
                 float samplesCoeff = -chartHeight / samplesRange;
-                Vector2 posPrev = chartRoot + new Vector2(0, _samples.Last * samplesCoeff);
+                var posPrev = chartRoot + new Float2(0, _samples.Last * samplesCoeff);
                 float posX = 0;
 
                 for (int i = _samples.Count - 1; i >= 0; i--)
                 {
                     float sample = _samples[i];
-                    Vector2 pos = chartRoot + new Vector2(posX, sample * samplesCoeff);
+                    var pos = chartRoot + new Float2(posX, sample * samplesCoeff);
                     Render2D.DrawLine(posPrev, pos, chartColor);
                     posPrev = pos;
                     posX -= PointsOffset;
@@ -142,14 +142,14 @@ namespace FlaxEditor.Windows.Profiler
             Render2D.DrawText(style.FontMedium, _sample, headerTextRect, Color.White, TextAlignment.Far, TextAlignment.Center);
         }
 
-        private void OnClick(ref Vector2 location)
+        private void OnClick(ref Float2 location)
         {
             float samplesWidth = _samples.Count * PointsOffset;
             SelectedSampleIndex = (int)((samplesWidth - Width + location.X) / PointsOffset);
         }
 
         /// <inheritdoc />
-        public override bool OnMouseDown(Vector2 location, MouseButton button)
+        public override bool OnMouseDown(Float2 location, MouseButton button)
         {
             if (button == MouseButton.Left && location.Y < (Height - TitleHeight))
             {
@@ -163,7 +163,7 @@ namespace FlaxEditor.Windows.Profiler
         }
 
         /// <inheritdoc />
-        public override void OnMouseMove(Vector2 location)
+        public override void OnMouseMove(Float2 location)
         {
             if (_isSelecting)
             {
@@ -174,7 +174,7 @@ namespace FlaxEditor.Windows.Profiler
         }
 
         /// <inheritdoc />
-        public override bool OnMouseUp(Vector2 location, MouseButton button)
+        public override bool OnMouseUp(Float2 location, MouseButton button)
         {
             if (button == MouseButton.Left && _isSelecting)
             {

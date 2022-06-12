@@ -15,7 +15,7 @@ PointLight::PointLight(const SpawnParams& params)
     ShadowsDistance = 2000.0f;
     ShadowsFadeDistance = 100.0f;
     ShadowsDepthBias = 0.5f;
-    _direction = Vector3::Forward;
+    _direction = Float3::Forward;
     _sphere = BoundingSphere(Vector3::Zero, _radius);
     BoundingBox::FromSphere(_sphere, _box);
 }
@@ -58,7 +58,7 @@ void PointLight::SetRadius(float value)
 void PointLight::UpdateBounds()
 {
     // Cache light direction
-    Vector3::Transform(Vector3::Forward, _transform.Orientation, _direction);
+    Float3::Transform(Float3::Forward, _transform.Orientation, _direction);
     _direction.Normalize();
 
     // Cache bounding box
@@ -111,10 +111,10 @@ void PointLight::Draw(RenderContext& renderContext)
         && (ViewDistance < ZeroTolerance || Vector3::DistanceSquared(renderContext.View.Position, GetPosition()) < ViewDistance * ViewDistance))
     {
         RendererPointLightData data;
-        data.Position = GetPosition();
+        data.Position = GetPosition(); // TODO: large-worlds
         data.MinRoughness = MinRoughness;
         data.ShadowsDistance = ShadowsDistance;
-        data.Color = Color.ToVector3() * (Color.A * brightness);
+        data.Color = Color.ToFloat3() * (Color.A * brightness);
         data.ShadowsStrength = ShadowsStrength;
         data.Direction = _direction;
         data.ShadowsFadeDistance = ShadowsFadeDistance;
@@ -201,7 +201,7 @@ void PointLight::Deserialize(DeserializeStream& stream, ISerializeModifier* modi
     DESERIALIZE(IESBrightnessScale);
 }
 
-bool PointLight::IntersectsItself(const Ray& ray, float& distance, Vector3& normal)
+bool PointLight::IntersectsItself(const Ray& ray, Real& distance, Vector3& normal)
 {
     return CollisionsHelper::RayIntersectsSphere(ray, _sphere, distance, normal);
 }

@@ -194,7 +194,7 @@ namespace FlaxEditor.Viewport.Previews
                                 float sampleValueAvgScaled = sampleValueAvg * sampleValueScale;
                                 if (sampleValueAvgScaled > 0.1f)
                                 {
-                                    Render2D.DrawLine(new Vector2(pixelX, yCenter - sampleValueAvgScaled), new Vector2(pixelX, yCenter + sampleValueAvgScaled), color);
+                                    Render2D.DrawLine(new Float2(pixelX, yCenter - sampleValueAvgScaled), new Float2(pixelX, yCenter + sampleValueAvgScaled), color);
                                 }
                             }
                         }

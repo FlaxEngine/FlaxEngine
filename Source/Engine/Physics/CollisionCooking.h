@@ -22,7 +22,7 @@ public:
     struct CookingInput
     {
         int32 VertexCount = 0;
-        Vector3* VertexData = nullptr;
+        Float3* VertexData = nullptr;
         int32 IndexCount = 0;
         void* IndexData = nullptr;
         bool Is16bitIndexData = false;

@@ -163,23 +163,23 @@ namespace FlaxEngine
         }
 
         /// <summary>
-        /// Performs an explicit conversion from <see cref="Vector3"/> to <see cref="Half3"/>.
+        /// Performs an explicit conversion from <see cref="Float3"/> to <see cref="Half3"/>.
         /// </summary>
         /// <param name="value">The value.</param>
         /// <returns>The result of the conversion.</returns>
-        public static explicit operator Half3(Vector3 value)
+        public static explicit operator Half3(Float3 value)
         {
             return new Half3((Half)value.X, (Half)value.Y, (Half)value.Z);
         }
 
         /// <summary>
-        /// Performs an explicit conversion from <see cref="Vector3"/> to <see cref="Half3"/>.
+        /// Performs an explicit conversion from <see cref="Float3"/> to <see cref="Half3"/>.
         /// </summary>
         /// <param name="value">The value.</param>
         /// <returns>The result of the conversion.</returns>
-        public static explicit operator Vector3(Half3 value)
+        public static explicit operator Float3(Half3 value)
         {
-            return new Vector3(value.X, value.Y, value.Z);
+            return new Float3(value.X, value.Y, value.Z);
         }
 
         /// <summary>
@@ -207,7 +207,7 @@ namespace FlaxEngine
         /// <returns>A <see cref="System.String" /> that represents this instance.</returns>
         public override string ToString()
         {
-            return ((Vector3)this).ToString();
+            return ((Float3)this).ToString();
         }
     }
 }

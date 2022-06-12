@@ -25,26 +25,26 @@ void ParticleEmitterGraphCPUExecutor::ProcessGroupParameters(Box* box, Node* nod
             value = context.Data->Parameters[paramIndex];
             switch (param->Type.Type)
             {
-            case VariantType::Vector2:
+            case VariantType::Float2:
                 switch (box->ID)
                 {
                 case 1:
                 case 2:
-                    value = value.AsVector2().Raw[box->ID - 1];
+                    value = value.AsFloat2().Raw[box->ID - 1];
                     break;
                 }
                 break;
-            case VariantType::Vector3:
+            case VariantType::Float3:
                 switch (box->ID)
                 {
                 case 1:
                 case 2:
                 case 3:
-                    value = value.AsVector3().Raw[box->ID - 1];
+                    value = value.AsFloat3().Raw[box->ID - 1];
                     break;
                 }
                 break;
-            case VariantType::Vector4:
+            case VariantType::Float4:
             case VariantType::Color:
                 switch (box->ID)
                 {
@@ -52,7 +52,37 @@ void ParticleEmitterGraphCPUExecutor::ProcessGroupParameters(Box* box, Node* nod
                 case 2:
                 case 3:
                 case 4:
-                    value = value.AsVector4().Raw[box->ID - 1];
+                    value = value.AsFloat4().Raw[box->ID - 1];
+                    break;
+                }
+                break;
+            case VariantType::Double2:
+                switch (box->ID)
+                {
+                case 1:
+                case 2:
+                    value = value.AsDouble2().Raw[box->ID - 1];
+                    break;
+                }
+                break;
+            case VariantType::Double3:
+                switch (box->ID)
+                {
+                case 1:
+                case 2:
+                case 3:
+                    value = value.AsDouble3().Raw[box->ID - 1];
+                    break;
+                }
+                break;
+            case VariantType::Double4:
+                switch (box->ID)
+                {
+                case 1:
+                case 2:
+                case 3:
+                case 4:
+                    value = value.AsDouble4().Raw[box->ID - 1];
                     break;
                 }
                 break;
@@ -157,11 +187,11 @@ void ParticleEmitterGraphCPUExecutor::ProcessGroupTools(Box* box, Node* node, Va
     {
         GET_VIEW();
         const Matrix viewProjection = context.ViewTask ? context.ViewTask->View.PrevViewProjection : Matrix::Identity;
-        const Vector3 position = (Vector3)TryGetValue(node->GetBox(0), Value::Zero);
-        Vector4 projPos;
-        Vector3::Transform(position, viewProjection);
+        const Float3 position = (Float3)TryGetValue(node->GetBox(0), Value::Zero);
+        Float4 projPos;
+        Float3::Transform(position, viewProjection);
         projPos /= projPos.W;
-        value = Vector2(projPos.X * 0.5f + 0.5f, projPos.Y * 0.5f + 0.5f);
+        value = Float2(projPos.X * 0.5f + 0.5f, projPos.Y * 0.5f + 0.5f);
         break;
     }
     default:
@@ -185,14 +215,14 @@ void ParticleEmitterGraphCPUExecutor::ProcessGroupParticles(Box* box, Node* node
         case ParticleAttribute::ValueTypes::Float:
             value = *(float*)ptr;
             break;
-        case ParticleAttribute::ValueTypes::Vector2:
-            value = *(Vector2*)ptr;
+        case ParticleAttribute::ValueTypes::Float2:
+            value = *(Float2*)ptr;
             break;
-        case ParticleAttribute::ValueTypes::Vector3:
-            value = *(Vector3*)ptr;
+        case ParticleAttribute::ValueTypes::Float3:
+            value = *(Float3*)ptr;
             break;
-        case ParticleAttribute::ValueTypes::Vector4:
-            value = *(Vector4*)ptr;
+        case ParticleAttribute::ValueTypes::Float4:
+            value = *(Float4*)ptr;
             break;
         case ParticleAttribute::ValueTypes::Int:
             value = *(int32*)ptr;
@@ -214,14 +244,14 @@ void ParticleEmitterGraphCPUExecutor::ProcessGroupParticles(Box* box, Node* node
         case ParticleAttribute::ValueTypes::Float:
             value = *(float*)ptr;
             break;
-        case ParticleAttribute::ValueTypes::Vector2:
-            value = *(Vector2*)ptr;
+        case ParticleAttribute::ValueTypes::Float2:
+            value = *(Float2*)ptr;
             break;
-        case ParticleAttribute::ValueTypes::Vector3:
-            value = *(Vector3*)ptr;
+        case ParticleAttribute::ValueTypes::Float3:
+            value = *(Float3*)ptr;
             break;
-        case ParticleAttribute::ValueTypes::Vector4:
-            value = *(Vector4*)ptr;
+        case ParticleAttribute::ValueTypes::Float4:
+            value = *(Float4*)ptr;
             break;
         case ParticleAttribute::ValueTypes::Int:
             value = *(int32*)ptr;
@@ -236,7 +266,7 @@ void ParticleEmitterGraphCPUExecutor::ProcessGroupParticles(Box* box, Node* node
     // Particle Position
     case 101:
     {
-        value = GET_PARTICLE_ATTRIBUTE(0, Vector3);
+        value = GET_PARTICLE_ATTRIBUTE(0, Float3);
         break;
     }
     // Particle Lifetime
@@ -254,19 +284,19 @@ void ParticleEmitterGraphCPUExecutor::ProcessGroupParticles(Box* box, Node* node
     // Particle Color
     case 104:
     {
-        value = GET_PARTICLE_ATTRIBUTE(0, Vector4);
+        value = GET_PARTICLE_ATTRIBUTE(0, Float4);
         break;
     }
     // Particle Velocity
     case 105:
     {
-        value = GET_PARTICLE_ATTRIBUTE(0, Vector3);
+        value = GET_PARTICLE_ATTRIBUTE(0, Float3);
         break;
     }
     // Particle Sprite Size
     case 106:
     {
-        value = GET_PARTICLE_ATTRIBUTE(0, Vector2);
+        value = GET_PARTICLE_ATTRIBUTE(0, Float2);
         break;
     }
     // Particle Mass
@@ -278,13 +308,13 @@ void ParticleEmitterGraphCPUExecutor::ProcessGroupParticles(Box* box, Node* node
     // Particle Rotation
     case 108:
     {
-        value = GET_PARTICLE_ATTRIBUTE(0, Vector3);
+        value = GET_PARTICLE_ATTRIBUTE(0, Float3);
         break;
     }
     // Particle Angular Velocity
     case 109:
     {
-        value = GET_PARTICLE_ATTRIBUTE(0, Vector3);
+        value = GET_PARTICLE_ATTRIBUTE(0, Float3);
         break;
     }
     // Particle Normalized Age
@@ -328,13 +358,13 @@ void ParticleEmitterGraphCPUExecutor::ProcessGroupParticles(Box* box, Node* node
     // View Position
     case 204:
     {
-        value = context.ViewTask ? context.ViewTask->View.Position : Vector3::Zero;
+        value = context.ViewTask ? context.ViewTask->View.Position : Float3::Zero;
         break;
     }
     // View Direction
     case 205:
     {
-        value = context.ViewTask ? context.ViewTask->View.Direction : Vector3::Forward;
+        value = context.ViewTask ? context.ViewTask->View.Direction : Float3::Forward;
         break;
     }
     // View Far Plane
@@ -346,18 +376,18 @@ void ParticleEmitterGraphCPUExecutor::ProcessGroupParticles(Box* box, Node* node
     // Screen Size
     case 207:
     {
-        const Vector4 size = context.ViewTask ? context.ViewTask->View.ScreenSize : Vector4::Zero;
+        const Float4 size = context.ViewTask ? context.ViewTask->View.ScreenSize : Float4::Zero;
         if (box->ID == 0)
-            value = Vector2(size.X, size.Y);
+            value = Float2(size.X, size.Y);
         else
-            value = Vector2(size.Z, size.W);
+            value = Float2(size.Z, size.W);
         break;
     }
     // Particle Position (world space)
     case 212:
-        value = GET_PARTICLE_ATTRIBUTE(0, Vector3);
+        value = GET_PARTICLE_ATTRIBUTE(0, Float3);
         if (context.Emitter->SimulationSpace == ParticlesSimulationSpace::Local)
-            value.AsVector3() = context.Effect->GetTransform().LocalToWorld(value.AsVector3());
+            value.AsFloat3() = context.Effect->GetTransform().LocalToWorld(value.AsFloat3());
         break;
     // Particle Emitter Function
     case 300:
@@ -387,7 +417,7 @@ void ParticleEmitterGraphCPUExecutor::ProcessGroupParticles(Box* box, Node* node
 #endif
 
         // Get function graph
-        Graph* graph = (Graph*)&function->Graph;
+        ParticleEmitterGraphCPU* graph = &function->Graph;
         context.Functions[nodeBase] = graph;
 
         // Peek the function output (function->Outputs maps the functions outputs to output nodes indices)
@@ -397,7 +427,7 @@ void ParticleEmitterGraphCPUExecutor::ProcessGroupParticles(Box* box, Node* node
             value = Value::Zero;
             break;
         }
-        Node* functionOutputNode = &graph->Nodes[function->Outputs[outputIndex]];
+        auto* functionOutputNode = &graph->Nodes[function->Outputs[outputIndex]];
         Box* functionOutputBox = functionOutputNode->TryGetBox(0);
 
         // Evaluate the function output
@@ -431,7 +461,7 @@ void ParticleEmitterGraphCPUExecutor::ProcessGroupFunction(Box* box, Node* node,
         // Find the function call
         Node* functionCallNode = nullptr;
         ASSERT(context.GraphStack.Count() >= 2);
-        Graph* graph;
+        ParticleEmitterGraphCPU* graph;
         for (int32 i = context.CallStackSize - 1; i >= 0; i--)
         {
             if (context.CallStack[i]->Type == GRAPH_NODE_MAKE_TYPE(14, 300) && context.Functions.TryGet(context.CallStack[i], graph) && context.GraphStack[context.GraphStack.Count() - 1] == graph)

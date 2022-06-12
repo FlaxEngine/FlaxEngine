@@ -53,7 +53,7 @@ namespace FlaxEngine
         /// Gets or sets the sprite location (in pixels).
         /// </summary>
         [NoSerialize]
-        public Vector2 Location
+        public Float2 Location
         {
             get => Area.Location * Atlas.Size;
             set
@@ -68,7 +68,7 @@ namespace FlaxEngine
         /// Gets or sets the sprite size (in pixels).
         /// </summary>
         [NoSerialize]
-        public Vector2 Size
+        public Float2 Size
         {
             get => Area.Size * Atlas.Size;
             set

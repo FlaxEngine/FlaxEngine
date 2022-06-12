@@ -11,7 +11,7 @@ void MaterialGenerator::ProcessGroupMaterial(Box* box, Node* node, Value& value)
     {
     // World Position
     case 2:
-        value = Value(VariantType::Vector3, TEXT("input.WorldPosition.xyz"));
+        value = Value(VariantType::Float3, TEXT("input.WorldPosition.xyz"));
         break;
     // View
     case 3:
@@ -20,11 +20,11 @@ void MaterialGenerator::ProcessGroupMaterial(Box* box, Node* node, Value& value)
         {
         // Position
         case 0:
-            value = Value(VariantType::Vector3, TEXT("ViewPos"));
+            value = Value(VariantType::Float3, TEXT("ViewPos"));
             break;
         // Direction
         case 1:
-            value = Value(VariantType::Vector3, TEXT("ViewDir"));
+            value = Value(VariantType::Float3, TEXT("ViewDir"));
             break;
         // Far Plane
         case 2:
@@ -47,16 +47,16 @@ void MaterialGenerator::ProcessGroupMaterial(Box* box, Node* node, Value& value)
     {
         // Position
         if (box->ID == 0)
-            value = Value(VariantType::Vector2, TEXT("input.SvPosition.xy"));
+            value = Value(VariantType::Float2, TEXT("input.SvPosition.xy"));
             // Texcoord
         else if (box->ID == 1)
-            value = writeLocal(VariantType::Vector2, TEXT("input.SvPosition.xy * ScreenSize.zw"), node);
+            value = writeLocal(VariantType::Float2, TEXT("input.SvPosition.xy * ScreenSize.zw"), node);
 
         break;
     }
     // Screen Size
     case 7:
-        value = Value(VariantType::Vector2, box->ID == 0 ? TEXT("ScreenSize.xy") : TEXT("ScreenSize.zw"));
+        value = Value(VariantType::Float2, box->ID == 0 ? TEXT("ScreenSize.xy") : TEXT("ScreenSize.zw"));
         break;
     // Custom code
     case 8:
@@ -80,7 +80,7 @@ void MaterialGenerator::ProcessGroupMaterial(Box* box, Node* node, Value& value)
             const auto outputBox = node->GetBox(Output0BoxID + i);
             if (outputBox && outputBox->HasConnection())
             {
-                values[i] = writeLocal(VariantType::Vector4, node);
+                values[i] = writeLocal(VariantType::Float4, node);
             }
         }
 
@@ -94,8 +94,8 @@ void MaterialGenerator::ProcessGroupMaterial(Box* box, Node* node, Value& value)
             if (inputBox && inputBox->HasConnection())
             {
                 auto inputValue = tryGetValue(inputBox, Value::Zero);
-                if (inputValue.Type != VariantType::Vector4)
-                    inputValue = inputValue.Cast(VariantType::Vector4);
+                if (inputValue.Type != VariantType::Float4)
+                    inputValue = inputValue.Cast(VariantType::Float4);
                 code.Replace(*inputName, *inputValue.Value, StringSearchCase::CaseSensitive);
             }
         }
@@ -129,7 +129,7 @@ void MaterialGenerator::ProcessGroupMaterial(Box* box, Node* node, Value& value)
     }
     // Object Position
     case 9:
-        value = Value(VariantType::Vector3, TEXT("GetObjectPosition(input)"));
+        value = Value(VariantType::Float3, TEXT("GetObjectPosition(input)"));
         break;
     // Two Sided Sign
     case 10:
@@ -143,8 +143,8 @@ void MaterialGenerator::ProcessGroupMaterial(Box* box, Node* node, Value& value)
 
         // TODO: for pixel shader it could calc PixelDepth = mul(float4(WorldPos.xyz, 1), ViewProjMatrix).w and use it
 
-        auto x1 = writeLocal(VariantType::Vector3, TEXT("ViewPos - input.WorldPosition"), node);
-        auto x2 = writeLocal(VariantType::Vector3, TEXT("TransformViewVectorToWorld(input, float3(0, 0, -1))"), node);
+        auto x1 = writeLocal(VariantType::Float3, TEXT("ViewPos - input.WorldPosition"), node);
+        auto x2 = writeLocal(VariantType::Float3, TEXT("TransformViewVectorToWorld(input, float3(0, 0, -1))"), node);
         auto x3 = writeLocal(VariantType::Float, String::Format(TEXT("dot(normalize({0}), {1}) * length({0})"), x1.Value, x2.Value), node);
         auto x4 = writeLocal(VariantType::Float, String::Format(TEXT("{0} - {1}"), x3.Value, fadeOffset.Value), node);
         auto x5 = writeLocal(VariantType::Float, String::Format(TEXT("saturate({0} / {1})"), x4.Value, faeLength.Value), node);
@@ -159,11 +159,11 @@ void MaterialGenerator::ProcessGroupMaterial(Box* box, Node* node, Value& value)
         break;
     // Pre-skinned Local Position
     case 13:
-        value = _treeType == MaterialTreeType::VertexShader ? Value(VariantType::Vector3, TEXT("input.PreSkinnedPosition")) : Value::Zero;
+        value = _treeType == MaterialTreeType::VertexShader ? Value(VariantType::Float3, TEXT("input.PreSkinnedPosition")) : Value::Zero;
         break;
     // Pre-skinned Local Normal
     case 14:
-        value = _treeType == MaterialTreeType::VertexShader ? Value(VariantType::Vector3, TEXT("input.PreSkinnedNormal")) : Value::Zero;
+        value = _treeType == MaterialTreeType::VertexShader ? Value(VariantType::Float3, TEXT("input.PreSkinnedNormal")) : Value::Zero;
         break;
     // Depth
     case 15:
@@ -171,15 +171,15 @@ void MaterialGenerator::ProcessGroupMaterial(Box* box, Node* node, Value& value)
         break;
     // Tangent
     case 16:
-        value = Value(VariantType::Vector3, TEXT("input.TBN[0]"));
+        value = Value(VariantType::Float3, TEXT("input.TBN[0]"));
         break;
     // Bitangent
     case 17:
-        value = Value(VariantType::Vector3, TEXT("input.TBN[1]"));
+        value = Value(VariantType::Float3, TEXT("input.TBN[1]"));
         break;
     // Camera Position
     case 18:
-        value = Value(VariantType::Vector3, TEXT("ViewPos"));
+        value = Value(VariantType::Float3, TEXT("ViewPos"));
         break;
     // Per Instance Random
     case 19:
@@ -193,7 +193,7 @@ void MaterialGenerator::ProcessGroupMaterial(Box* box, Node* node, Value& value)
         // If used in VS then pass the value from the input box
         if (_treeType == MaterialTreeType::VertexShader)
         {
-            value = tryGetValue(input, Value::Zero).AsVector4();
+            value = tryGetValue(input, Value::Zero).AsFloat4();
             break;
         }
 
@@ -215,7 +215,7 @@ void MaterialGenerator::ProcessGroupMaterial(Box* box, Node* node, Value& value)
         }
 
         // Indicate the interpolator slot usage
-        value = Value(VariantType::Vector4, String::Format(TEXT("input.CustomVSToPS[{0}]"), _vsToPsInterpolants.Count()));
+        value = Value(VariantType::Float4, String::Format(TEXT("input.CustomVSToPS[{0}]"), _vsToPsInterpolants.Count()));
         _vsToPsInterpolants.Add(input);
         break;
     }
@@ -256,7 +256,7 @@ void MaterialGenerator::ProcessGroupMaterial(Box* box, Node* node, Value& value)
     case 23:
     {
         // Calculate screen-space UVs
-        auto screenUVs = writeLocal(VariantType::Vector2, TEXT("input.SvPosition.xy * ScreenSize.zw"), node);
+        auto screenUVs = writeLocal(VariantType::Float2, TEXT("input.SvPosition.xy * ScreenSize.zw"), node);
 
         // Sample scene depth buffer
         auto sceneDepthTexture = findOrAddSceneTexture(MaterialSceneTextures::SceneDepth);
@@ -335,35 +335,35 @@ void MaterialGenerator::ProcessGroupMaterial(Box* box, Node* node, Value& value)
     }
     // Object Size
     case 25:
-        value = Value(VariantType::Vector3, TEXT("GetObjectSize(input)"));
+        value = Value(VariantType::Float3, TEXT("GetObjectSize(input)"));
         break;
     // Blend Normals
     case 26:
     {
-        const auto baseNormal = tryGetValue(node->GetBox(0), getNormalZero).AsVector3();
-        const auto additionalNormal = tryGetValue(node->GetBox(1), getNormalZero).AsVector3();
+        const auto baseNormal = tryGetValue(node->GetBox(0), getNormalZero).AsFloat3();
+        const auto additionalNormal = tryGetValue(node->GetBox(1), getNormalZero).AsFloat3();
 
         const String text1 = String::Format(TEXT("(float2({0}.xy) + float2({1}.xy) * 2.0)"), baseNormal.Value, additionalNormal.Value);
-        const auto appendXY = writeLocal(ValueType::Vector2, text1, node);
+        const auto appendXY = writeLocal(ValueType::Float2, text1, node);
 
         const String text2 = String::Format(TEXT("float3({0}, sqrt(saturate(1.0 - dot({0}.xy, {0}.xy))))"), appendXY.Value);
-        value = writeLocal(ValueType::Vector3, text2, node);
+        value = writeLocal(ValueType::Float3, text2, node);
         break;
     }
     // Rotator
     case 27:
     {
-        const auto uv = tryGetValue(node->GetBox(0), getUVs).AsVector2();
-        const auto center = tryGetValue(node->GetBox(1), Value::Zero).AsVector2();
+        const auto uv = tryGetValue(node->GetBox(0), getUVs).AsFloat2();
+        const auto center = tryGetValue(node->GetBox(1), Value::Zero).AsFloat2();
         const auto rotationAngle = tryGetValue(node->GetBox(2), Value::Zero).AsFloat();
 
-        auto x1 = writeLocal(ValueType::Vector2, String::Format(TEXT("({0} * -1) + {1}"), center.Value, uv.Value), node);
-        auto raCosSin = writeLocal(ValueType::Vector2, String::Format(TEXT("float2(cos({0}), sin({0}))"), rotationAngle.Value), node);
+        auto x1 = writeLocal(ValueType::Float2, String::Format(TEXT("({0} * -1) + {1}"), center.Value, uv.Value), node);
+        auto raCosSin = writeLocal(ValueType::Float2, String::Format(TEXT("float2(cos({0}), sin({0}))"), rotationAngle.Value), node);
 
-        auto dotB1 = writeLocal(ValueType::Vector2, String::Format(TEXT("float2({0}.x, {0}.y * -1)"), raCosSin.Value), node);
-        auto dotB2 = writeLocal(ValueType::Vector2, String::Format(TEXT("float2({0}.y, {0}.x)"), raCosSin.Value), node);
+        auto dotB1 = writeLocal(ValueType::Float2, String::Format(TEXT("float2({0}.x, {0}.y * -1)"), raCosSin.Value), node);
+        auto dotB2 = writeLocal(ValueType::Float2, String::Format(TEXT("float2({0}.y, {0}.x)"), raCosSin.Value), node);
 
-        value = writeLocal(ValueType::Vector2, String::Format(TEXT("{3} + float2(dot({0},{1}), dot({0},{2}))"), x1.Value, dotB1.Value, dotB2.Value, center.Value), node);
+        value = writeLocal(ValueType::Float2, String::Format(TEXT("{3} + float2(dot({0},{1}), dot({0},{2}))"), x1.Value, dotB1.Value, dotB2.Value, center.Value), node);
         break;
     }
     // Sphere Mask
@@ -387,11 +387,11 @@ void MaterialGenerator::ProcessGroupMaterial(Box* box, Node* node, Value& value)
     // Tiling & Offset
     case 29:
     {
-        const auto uv = tryGetValue(node->GetBox(0), getUVs).AsVector2();
-        const auto tiling = tryGetValue(node->GetBox(1), node->Values[0]).AsVector2();
-        const auto offset = tryGetValue(node->GetBox(2), node->Values[1]).AsVector2();
+        const auto uv = tryGetValue(node->GetBox(0), getUVs).AsFloat2();
+        const auto tiling = tryGetValue(node->GetBox(1), node->Values[0]).AsFloat2();
+        const auto offset = tryGetValue(node->GetBox(2), node->Values[1]).AsFloat2();
 
-        value = writeLocal(ValueType::Vector2, String::Format(TEXT("{0} * {1} + {2}"), uv.Value, tiling.Value, offset.Value), node);
+        value = writeLocal(ValueType::Float2, String::Format(TEXT("{0} * {1} + {2}"), uv.Value, tiling.Value, offset.Value), node);
         break;
     }
     // DDX
@@ -446,21 +446,21 @@ void MaterialGenerator::ProcessGroupMaterial(Box* box, Node* node, Value& value)
         auto z = writeLocal(ValueType::Float, String::Format(TEXT("194.18f * log({0}) - 1448.6f"), temperature.Value), node);
 
         // Final color
-        auto color = writeLocal(ValueType::Vector3, String::Format(TEXT("float3({0}, {1}, {2})"), x.Value, y.Value, z.Value), node);
-        color = writeLocal(ValueType::Vector3, String::Format(TEXT("clamp({0}, 0.0f, 255.0f) / 255.0f"), color.Value), node);
-        value = writeLocal(ValueType::Vector3, String::Format(TEXT("{1} < 1000.0f ? {0} * {1}/1000.0f : {0}"), color.Value, temperature.Value), node);
+        auto color = writeLocal(ValueType::Float3, String::Format(TEXT("float3({0}, {1}, {2})"), x.Value, y.Value, z.Value), node);
+        color = writeLocal(ValueType::Float3, String::Format(TEXT("clamp({0}, 0.0f, 255.0f) / 255.0f"), color.Value), node);
+        value = writeLocal(ValueType::Float3, String::Format(TEXT("{1} < 1000.0f ? {0} * {1}/1000.0f : {0}"), color.Value, temperature.Value), node);
         break;
     }
     // HSVToRGB
     case 36:
     {
-        const auto hsv = tryGetValue(node->GetBox(0), node->Values[0]).AsVector3();
+        const auto hsv = tryGetValue(node->GetBox(0), node->Values[0]).AsFloat3();
 
         // Normalize from 360
-        auto color = writeLocal(ValueType::Vector3, String::Format(TEXT("float3({0}.x / 360.0f, {0}.y, {0}.z)"), hsv.Value), node);
+        auto color = writeLocal(ValueType::Float3, String::Format(TEXT("float3({0}.x / 360.0f, {0}.y, {0}.z)"), hsv.Value), node);
 
-        auto x1 = writeLocal(ValueType::Vector3, String::Format(TEXT("clamp(abs(fmod({0}.x * 6.0 + float3(0.0f, 4.0f, 2.0f), 6.0f) - 3.0f) - 1.0f, 0.0f, 1.0f)"), color.Value), node);
-        value = writeLocal(ValueType::Vector3, String::Format(TEXT("{1}.z * lerp(float3(1.0, 1.0, 1.0), {0}, {1}.y)"), x1.Value, color.Value), node);
+        auto x1 = writeLocal(ValueType::Float3, String::Format(TEXT("clamp(abs(fmod({0}.x * 6.0 + float3(0.0f, 4.0f, 2.0f), 6.0f) - 3.0f) - 1.0f, 0.0f, 1.0f)"), color.Value), node);
+        value = writeLocal(ValueType::Float3, String::Format(TEXT("{1}.z * lerp(float3(1.0, 1.0, 1.0), {0}, {1}.y)"), x1.Value, color.Value), node);
         break;
     }
     // RGBToHSV
@@ -468,16 +468,16 @@ void MaterialGenerator::ProcessGroupMaterial(Box* box, Node* node, Value& value)
     {
         // Reference: Ian Taylor, https://www.chilliant.com/rgb2hsv.html
 
-        const auto rgb = tryGetValue(node->GetBox(0), node->Values[0]).AsVector3();
+        const auto rgb = tryGetValue(node->GetBox(0), node->Values[0]).AsFloat3();
         const auto epsilon = writeLocal(ValueType::Float, TEXT("1e-10"), node);
 
-        auto p = writeLocal(ValueType::Vector4, String::Format(TEXT("({0}.g < {0}.b) ? float4({0}.bg, -1.0f, 2.0f/3.0f) : float4({0}.gb, 0.0f, -1.0f/3.0f)"), rgb.Value), node);
-        auto q = writeLocal(ValueType::Vector4, String::Format(TEXT("({0}.r < {1}.x) ? float4({1}.xyw, {0}.r) : float4({0}.r, {1}.yzx)"), rgb.Value, p.Value), node);
+        auto p = writeLocal(ValueType::Float4, String::Format(TEXT("({0}.g < {0}.b) ? float4({0}.bg, -1.0f, 2.0f/3.0f) : float4({0}.gb, 0.0f, -1.0f/3.0f)"), rgb.Value), node);
+        auto q = writeLocal(ValueType::Float4, String::Format(TEXT("({0}.r < {1}.x) ? float4({1}.xyw, {0}.r) : float4({0}.r, {1}.yzx)"), rgb.Value, p.Value), node);
         auto c = writeLocal(ValueType::Float, String::Format(TEXT("{0}.x - min({0}.w, {0}.y)"), q.Value), node);
         auto h = writeLocal(ValueType::Float, String::Format(TEXT("abs(({0}.w - {0}.y) / (6 * {1} + {2}) + {0}.z)"), q.Value, c.Value, epsilon.Value), node);
 
-        auto hcv = writeLocal(ValueType::Vector3, String::Format(TEXT("float3({0}, {1}, {2}.x)"), h.Value, c.Value, q.Value), node);
-        value = writeLocal(ValueType::Vector3, String::Format(TEXT("float3({0}.x * 360.0f, {0}.y / ({0}.z + {1}), {0}.z)"), hcv.Value, epsilon.Value), node);
+        auto hcv = writeLocal(ValueType::Float3, String::Format(TEXT("float3({0}, {1}, {2}.x)"), h.Value, c.Value, q.Value), node);
+        value = writeLocal(ValueType::Float3, String::Format(TEXT("float3({0}.x * 360.0f, {0}.y / ({0}.z + {1}), {0}.z)"), hcv.Value, epsilon.Value), node);
         break;
     }
     default:

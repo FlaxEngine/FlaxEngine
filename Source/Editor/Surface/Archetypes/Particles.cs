@@ -26,19 +26,19 @@ namespace FlaxEditor.Surface.Archetypes
             Float,
 
             /// <summary>
-            /// <see cref="FlaxEngine.Vector2"/>
+            /// <see cref="FlaxEngine.Float2"/>
             /// </summary>
-            Vector2,
+            Float2,
 
             /// <summary>
-            /// <see cref="FlaxEngine.Vector3"/>
+            /// <see cref="FlaxEngine.Float3"/>
             /// </summary>
-            Vector3,
+            Float3,
 
             /// <summary>
-            /// <see cref="FlaxEngine.Vector4"/>
+            /// <see cref="FlaxEngine.Float4"/>
             /// </summary>
-            Vector4,
+            Float4,
 
             /// <summary>
             /// <see cref="int"/>
@@ -133,14 +133,14 @@ namespace FlaxEditor.Surface.Archetypes
                 private void AddModule(ushort typeId)
                 {
                     var parent = (SurfaceNode)Parent;
-                    parent.Surface.Context.SpawnNode(15, typeId, Vector2.Zero);
+                    parent.Surface.Context.SpawnNode(15, typeId, Float2.Zero);
                 }
 
                 /// <inheritdoc />
                 public override void Draw()
                 {
                     var style = Style.Current;
-                    var backgroundRect = new Rectangle(Vector2.Zero, Size);
+                    var backgroundRect = new Rectangle(Float2.Zero, Size);
                     var mousePosition = ((SurfaceNode)Parent).MousePosition;
                     mousePosition = PointFromParent(ref mousePosition);
 
@@ -184,7 +184,7 @@ namespace FlaxEditor.Surface.Archetypes
             public override void Draw()
             {
                 var style = Style.Current;
-                var backgroundRect = new Rectangle(Vector2.Zero, Size);
+                var backgroundRect = new Rectangle(Float2.Zero, Size);
 
                 // Background
                 Render2D.FillRectangle(backgroundRect, style.BackgroundNormal);
@@ -288,14 +288,14 @@ namespace FlaxEditor.Surface.Archetypes
                 case ValueTypes.Float:
                     type = typeof(float);
                     break;
-                case ValueTypes.Vector2:
-                    type = typeof(Vector2);
+                case ValueTypes.Float2:
+                    type = typeof(Float2);
                     break;
-                case ValueTypes.Vector3:
-                    type = typeof(Vector3);
+                case ValueTypes.Float3:
+                    type = typeof(Float3);
                     break;
-                case ValueTypes.Vector4:
-                    type = typeof(Vector4);
+                case ValueTypes.Float4:
+                    type = typeof(Float4);
                     break;
                 case ValueTypes.Int:
                     type = typeof(int);
@@ -341,7 +341,7 @@ namespace FlaxEditor.Surface.Archetypes
                 Title = "Particle Emitter",
                 Description = "Main particle emitter node. Contains a set of modules per emitter context. Modules are executed in order from top to bottom of the stack.",
                 Flags = NodeFlags.ParticleEmitterGraph | NodeFlags.NoRemove | NodeFlags.NoSpawnViaGUI | NodeFlags.NoSpawnViaPaste | NodeFlags.NoCloseButton,
-                Size = new Vector2(300, 600),
+                Size = new Float2(300, 600),
                 DefaultValues = new object[]
                 {
                     1000, // Capacity
@@ -387,11 +387,11 @@ namespace FlaxEditor.Surface.Archetypes
                 Title = "Particle Attribute",
                 Description = "Particle attribute data access node. Use it to read the particle data.",
                 Flags = NodeFlags.MaterialGraph | NodeFlags.ParticleEmitterGraph,
-                Size = new Vector2(200, 50),
+                Size = new Float2(200, 50),
                 DefaultValues = new object[]
                 {
                     "Color", // Name
-                    (int)ValueTypes.Vector4, // ValueType
+                    (int)ValueTypes.Float4, // ValueType
                 },
                 Elements = new[]
                 {
@@ -407,11 +407,11 @@ namespace FlaxEditor.Surface.Archetypes
                 Title = "Particle Attribute (by index)",
                 Description = "Particle attribute data access node. Use it to read the other particle data.",
                 Flags = NodeFlags.MaterialGraph | NodeFlags.ParticleEmitterGraph,
-                Size = new Vector2(260, 60),
+                Size = new Float2(260, 60),
                 DefaultValues = new object[]
                 {
                     "Color", // Name
-                    (int)ValueTypes.Vector4, // ValueType
+                    (int)ValueTypes.Float4, // ValueType
                 },
                 Elements = new[]
                 {
@@ -427,10 +427,10 @@ namespace FlaxEditor.Surface.Archetypes
                 Title = "Particle Position",
                 Description = "Particle position (in simulation space for emitter graph, world space in material graph).",
                 Flags = NodeFlags.MaterialGraph | NodeFlags.ParticleEmitterGraph,
-                Size = new Vector2(200, 30),
+                Size = new Float2(200, 30),
                 Elements = new[]
                 {
-                    NodeElementArchetype.Factory.Output(0, string.Empty, typeof(Vector3), 0),
+                    NodeElementArchetype.Factory.Output(0, string.Empty, typeof(Float3), 0),
                 }
             },
             new NodeArchetype
@@ -439,7 +439,7 @@ namespace FlaxEditor.Surface.Archetypes
                 Title = "Particle Lifetime",
                 Description = "Particle lifetime (in seconds).",
                 Flags = NodeFlags.MaterialGraph | NodeFlags.ParticleEmitterGraph,
-                Size = new Vector2(200, 30),
+                Size = new Float2(200, 30),
                 Elements = new[]
                 {
                     NodeElementArchetype.Factory.Output(0, string.Empty, typeof(float), 0),
@@ -451,7 +451,7 @@ namespace FlaxEditor.Surface.Archetypes
                 Title = "Particle Age",
                 Description = "Particle age (in seconds).",
                 Flags = NodeFlags.MaterialGraph | NodeFlags.ParticleEmitterGraph,
-                Size = new Vector2(200, 30),
+                Size = new Float2(200, 30),
                 Elements = new[]
                 {
                     NodeElementArchetype.Factory.Output(0, string.Empty, typeof(float), 0),
@@ -463,10 +463,10 @@ namespace FlaxEditor.Surface.Archetypes
                 Title = "Particle Color",
                 Description = "Particle color (RGBA).",
                 Flags = NodeFlags.MaterialGraph | NodeFlags.ParticleEmitterGraph,
-                Size = new Vector2(200, 30),
+                Size = new Float2(200, 30),
                 Elements = new[]
                 {
-                    NodeElementArchetype.Factory.Output(0, string.Empty, typeof(Vector4), 0),
+                    NodeElementArchetype.Factory.Output(0, string.Empty, typeof(Float4), 0),
                 }
             },
             new NodeArchetype
@@ -475,10 +475,10 @@ namespace FlaxEditor.Surface.Archetypes
                 Title = "Particle Velocity",
                 Description = "Particle velocity (position delta per second).",
                 Flags = NodeFlags.MaterialGraph | NodeFlags.ParticleEmitterGraph,
-                Size = new Vector2(200, 30),
+                Size = new Float2(200, 30),
                 Elements = new[]
                 {
-                    NodeElementArchetype.Factory.Output(0, string.Empty, typeof(Vector3), 0),
+                    NodeElementArchetype.Factory.Output(0, string.Empty, typeof(Float3), 0),
                 }
             },
             new NodeArchetype
@@ -487,10 +487,10 @@ namespace FlaxEditor.Surface.Archetypes
                 Title = "Particle Sprite Size",
                 Description = "Particle size (width and height of the sprite).",
                 Flags = NodeFlags.MaterialGraph | NodeFlags.ParticleEmitterGraph,
-                Size = new Vector2(200, 30),
+                Size = new Float2(200, 30),
                 Elements = new[]
                 {
-                    NodeElementArchetype.Factory.Output(0, string.Empty, typeof(Vector2), 0),
+                    NodeElementArchetype.Factory.Output(0, string.Empty, typeof(Float2), 0),
                 }
             },
             new NodeArchetype
@@ -499,7 +499,7 @@ namespace FlaxEditor.Surface.Archetypes
                 Title = "Particle Mass",
                 Description = "Particle mass (in kilograms).",
                 Flags = NodeFlags.MaterialGraph | NodeFlags.ParticleEmitterGraph,
-                Size = new Vector2(200, 30),
+                Size = new Float2(200, 30),
                 Elements = new[]
                 {
                     NodeElementArchetype.Factory.Output(0, string.Empty, typeof(float), 0),
@@ -511,10 +511,10 @@ namespace FlaxEditor.Surface.Archetypes
                 Title = "Particle Rotation",
                 Description = "Particle rotation (in XYZ).",
                 Flags = NodeFlags.MaterialGraph | NodeFlags.ParticleEmitterGraph,
-                Size = new Vector2(200, 30),
+                Size = new Float2(200, 30),
                 Elements = new[]
                 {
-                    NodeElementArchetype.Factory.Output(0, string.Empty, typeof(Vector3), 0),
+                    NodeElementArchetype.Factory.Output(0, string.Empty, typeof(Float3), 0),
                 }
             },
             new NodeArchetype
@@ -523,10 +523,10 @@ namespace FlaxEditor.Surface.Archetypes
                 Title = "Particle Angular Velocity",
                 Description = "Particle velocity (rotation delta per second).",
                 Flags = NodeFlags.MaterialGraph | NodeFlags.ParticleEmitterGraph,
-                Size = new Vector2(230, 30),
+                Size = new Float2(230, 30),
                 Elements = new[]
                 {
-                    NodeElementArchetype.Factory.Output(0, string.Empty, typeof(Vector3), 0),
+                    NodeElementArchetype.Factory.Output(0, string.Empty, typeof(Float3), 0),
                 }
             },
             new NodeArchetype
@@ -535,7 +535,7 @@ namespace FlaxEditor.Surface.Archetypes
                 Title = "Particle Normalized Age",
                 Description = "Particle normalized age to range 0-1 (age divided by lifetime).",
                 Flags = NodeFlags.MaterialGraph | NodeFlags.ParticleEmitterGraph,
-                Size = new Vector2(230, 30),
+                Size = new Float2(230, 30),
                 Elements = new[]
                 {
                     NodeElementArchetype.Factory.Output(0, string.Empty, typeof(float), 0),
@@ -547,7 +547,7 @@ namespace FlaxEditor.Surface.Archetypes
                 Title = "Particle Radius",
                 Description = "Particle radius.",
                 Flags = NodeFlags.MaterialGraph | NodeFlags.ParticleEmitterGraph,
-                Size = new Vector2(200, 30),
+                Size = new Float2(200, 30),
                 Elements = new[]
                 {
                     NodeElementArchetype.Factory.Output(0, string.Empty, typeof(float), 0),
@@ -561,10 +561,10 @@ namespace FlaxEditor.Surface.Archetypes
                 Title = "Effect Position",
                 Description = "Particle effect position (in world space).",
                 Flags = NodeFlags.ParticleEmitterGraph,
-                Size = new Vector2(230, 30),
+                Size = new Float2(230, 30),
                 Elements = new[]
                 {
-                    NodeElementArchetype.Factory.Output(0, string.Empty, typeof(Vector3), 0),
+                    NodeElementArchetype.Factory.Output(0, string.Empty, typeof(Float3), 0),
                 }
             },
             new NodeArchetype
@@ -573,7 +573,7 @@ namespace FlaxEditor.Surface.Archetypes
                 Title = "Effect Rotation",
                 Description = "Particle effect rotation (in world space).",
                 Flags = NodeFlags.ParticleEmitterGraph,
-                Size = new Vector2(230, 30),
+                Size = new Float2(230, 30),
                 Elements = new[]
                 {
                     NodeElementArchetype.Factory.Output(0, string.Empty, typeof(Quaternion), 0),
@@ -585,10 +585,10 @@ namespace FlaxEditor.Surface.Archetypes
                 Title = "Effect Scale",
                 Description = "Particle effect scale (in world space).",
                 Flags = NodeFlags.ParticleEmitterGraph,
-                Size = new Vector2(230, 30),
+                Size = new Float2(230, 30),
                 Elements = new[]
                 {
-                    NodeElementArchetype.Factory.Output(0, string.Empty, typeof(Vector3), 0),
+                    NodeElementArchetype.Factory.Output(0, string.Empty, typeof(Float3), 0),
                 }
             },
             new NodeArchetype
@@ -597,7 +597,7 @@ namespace FlaxEditor.Surface.Archetypes
                 Title = "Simulation Mode",
                 Description = "Particle emitter simulation execution mode.",
                 Flags = NodeFlags.ParticleEmitterGraph,
-                Size = new Vector2(230, 40),
+                Size = new Float2(230, 40),
                 Elements = new[]
                 {
                     NodeElementArchetype.Factory.Output(0, "CPU", typeof(bool), 0),
@@ -610,10 +610,10 @@ namespace FlaxEditor.Surface.Archetypes
                 Title = "View Position",
                 Description = "World-space camera location (of the main game view)",
                 Flags = NodeFlags.ParticleEmitterGraph,
-                Size = new Vector2(160, 40),
+                Size = new Float2(160, 40),
                 Elements = new[]
                 {
-                    NodeElementArchetype.Factory.Output(0, string.Empty, typeof(Vector3), 0),
+                    NodeElementArchetype.Factory.Output(0, string.Empty, typeof(Float3), 0),
                 }
             },
             new NodeArchetype
@@ -622,10 +622,10 @@ namespace FlaxEditor.Surface.Archetypes
                 Title = "View Direction",
                 Description = "Camera forward vector (of the main game view)",
                 Flags = NodeFlags.ParticleEmitterGraph,
-                Size = new Vector2(160, 40),
+                Size = new Float2(160, 40),
                 Elements = new[]
                 {
-                    NodeElementArchetype.Factory.Output(0, string.Empty, typeof(Vector3), 0),
+                    NodeElementArchetype.Factory.Output(0, string.Empty, typeof(Float3), 0),
                 }
             },
             new NodeArchetype
@@ -634,7 +634,7 @@ namespace FlaxEditor.Surface.Archetypes
                 Title = "View Far Plane",
                 Description = "Camera far plane distance (of the main game view)",
                 Flags = NodeFlags.ParticleEmitterGraph,
-                Size = new Vector2(160, 40),
+                Size = new Float2(160, 40),
                 Elements = new[]
                 {
                     NodeElementArchetype.Factory.Output(0, string.Empty, typeof(float), 0),
@@ -646,11 +646,11 @@ namespace FlaxEditor.Surface.Archetypes
                 Title = "Screen Size",
                 Description = "Gets the screen size (of the main game view)",
                 Flags = NodeFlags.ParticleEmitterGraph,
-                Size = new Vector2(160, 40),
+                Size = new Float2(160, 40),
                 Elements = new[]
                 {
-                    NodeElementArchetype.Factory.Output(0, "Size", typeof(Vector2), 0),
-                    NodeElementArchetype.Factory.Output(1, "Inv Size", typeof(Vector2), 1),
+                    NodeElementArchetype.Factory.Output(0, "Size", typeof(Float2), 0),
+                    NodeElementArchetype.Factory.Output(1, "Inv Size", typeof(Float2), 1),
                 }
             },
 
@@ -661,7 +661,7 @@ namespace FlaxEditor.Surface.Archetypes
                 Title = "Random Float",
                 Description = "Gets the random floating point value (normalized to 0-1 range)",
                 Flags = NodeFlags.ParticleEmitterGraph | NodeFlags.AnimGraph,
-                Size = new Vector2(160, 30),
+                Size = new Float2(160, 30),
                 Elements = new[]
                 {
                     NodeElementArchetype.Factory.Output(0, string.Empty, typeof(float), 0),
@@ -670,37 +670,37 @@ namespace FlaxEditor.Surface.Archetypes
             new NodeArchetype
             {
                 TypeID = 209,
-                Title = "Random Vector2",
-                Description = "Gets the random Vector2 value (normalized to 0-1 range)",
+                Title = "Random Float2",
+                Description = "Gets the random Float2 value (normalized to 0-1 range)",
                 Flags = NodeFlags.ParticleEmitterGraph | NodeFlags.AnimGraph,
-                Size = new Vector2(160, 30),
+                Size = new Float2(160, 30),
                 Elements = new[]
                 {
-                    NodeElementArchetype.Factory.Output(0, string.Empty, typeof(Vector2), 0),
+                    NodeElementArchetype.Factory.Output(0, string.Empty, typeof(Float2), 0),
                 }
             },
             new NodeArchetype
             {
                 TypeID = 210,
-                Title = "Random Vector3",
-                Description = "Gets the random Vector3 value (normalized to 0-1 range)",
+                Title = "Random Float3",
+                Description = "Gets the random Float3 value (normalized to 0-1 range)",
                 Flags = NodeFlags.ParticleEmitterGraph | NodeFlags.AnimGraph,
-                Size = new Vector2(160, 30),
+                Size = new Float2(160, 30),
                 Elements = new[]
                 {
-                    NodeElementArchetype.Factory.Output(0, string.Empty, typeof(Vector3), 0),
+                    NodeElementArchetype.Factory.Output(0, string.Empty, typeof(Float3), 0),
                 }
             },
             new NodeArchetype
             {
                 TypeID = 211,
-                Title = "Random Vector4",
-                Description = "Gets the random Vector4 value (normalized to 0-1 range)",
+                Title = "Random Float4",
+                Description = "Gets the random Float4 value (normalized to 0-1 range)",
                 Flags = NodeFlags.ParticleEmitterGraph | NodeFlags.AnimGraph,
-                Size = new Vector2(160, 30),
+                Size = new Float2(160, 30),
                 Elements = new[]
                 {
-                    NodeElementArchetype.Factory.Output(0, string.Empty, typeof(Vector4), 0),
+                    NodeElementArchetype.Factory.Output(0, string.Empty, typeof(Float4), 0),
                 }
             },
             new NodeArchetype
@@ -709,10 +709,10 @@ namespace FlaxEditor.Surface.Archetypes
                 Title = "Particle Position (world space)",
                 Description = "Particle position (in world space).",
                 Flags = NodeFlags.ParticleEmitterGraph,
-                Size = new Vector2(280, 30),
+                Size = new Float2(280, 30),
                 Elements = new[]
                 {
-                    NodeElementArchetype.Factory.Output(0, string.Empty, typeof(Vector3), 0),
+                    NodeElementArchetype.Factory.Output(0, string.Empty, typeof(Float3), 0),
                 }
             },
             new NodeArchetype
@@ -721,7 +721,7 @@ namespace FlaxEditor.Surface.Archetypes
                 Title = "Random Float Range",
                 Description = "Gets the random floating point value from a given range",
                 Flags = NodeFlags.ParticleEmitterGraph | NodeFlags.AnimGraph,
-                Size = new Vector2(260, 40),
+                Size = new Float2(260, 40),
                 DefaultValues = new object[]
                 {
                     0.0f,
@@ -741,18 +741,18 @@ namespace FlaxEditor.Surface.Archetypes
             new NodeArchetype
             {
                 TypeID = 214,
-                Title = "Random Vector2 Range",
-                Description = "Gets the random Vector2 value from a given range (per-component range)",
+                Title = "Random Float2 Range",
+                Description = "Gets the random Float2 value from a given range (per-component range)",
                 Flags = NodeFlags.ParticleEmitterGraph | NodeFlags.AnimGraph,
-                Size = new Vector2(260, 40),
+                Size = new Float2(260, 40),
                 DefaultValues = new object[]
                 {
-                    new Vector2(0.0f),
-                    new Vector2(1.0f),
+                    new Float2(0.0f),
+                    new Float2(1.0f),
                 },
                 Elements = new[]
                 {
-                    NodeElementArchetype.Factory.Output(0, string.Empty, typeof(Vector2), 0),
+                    NodeElementArchetype.Factory.Output(0, string.Empty, typeof(Float2), 0),
 
                     NodeElementArchetype.Factory.Text(0, 0, "Min", 30.0f, 18.0f),
                     NodeElementArchetype.Factory.Vector_X(30, 0, 0),
@@ -766,18 +766,18 @@ namespace FlaxEditor.Surface.Archetypes
             new NodeArchetype
             {
                 TypeID = 215,
-                Title = "Random Vector3 Range",
-                Description = "Gets the random Vector3 value from a given range (per-component range)",
+                Title = "Random Float3 Range",
+                Description = "Gets the random Float3 value from a given range (per-component range)",
                 Flags = NodeFlags.ParticleEmitterGraph | NodeFlags.AnimGraph,
-                Size = new Vector2(260, 40),
+                Size = new Float2(260, 40),
                 DefaultValues = new object[]
                 {
-                    new Vector3(0.0f),
-                    new Vector3(1.0f),
+                    new Float3(0.0f),
+                    new Float3(1.0f),
                 },
                 Elements = new[]
                 {
-                    NodeElementArchetype.Factory.Output(0, string.Empty, typeof(Vector3), 0),
+                    NodeElementArchetype.Factory.Output(0, string.Empty, typeof(Float3), 0),
 
                     NodeElementArchetype.Factory.Text(0, 0, "Min", 30.0f, 18.0f),
                     NodeElementArchetype.Factory.Vector_X(30, 0, 0),
@@ -793,18 +793,18 @@ namespace FlaxEditor.Surface.Archetypes
             new NodeArchetype
             {
                 TypeID = 216,
-                Title = "Random Vector4 Range",
-                Description = "Gets the random Vector4 value from a given range (per-component range)",
+                Title = "Random Float4 Range",
+                Description = "Gets the random Float4 value from a given range (per-component range)",
                 Flags = NodeFlags.ParticleEmitterGraph | NodeFlags.AnimGraph,
-                Size = new Vector2(260, 40),
+                Size = new Float2(260, 40),
                 DefaultValues = new object[]
                 {
-                    new Vector4(0.0f),
-                    new Vector4(1.0f),
+                    new Float4(0.0f),
+                    new Float4(1.0f),
                 },
                 Elements = new[]
                 {
-                    NodeElementArchetype.Factory.Output(0, string.Empty, typeof(Vector4), 0),
+                    NodeElementArchetype.Factory.Output(0, string.Empty, typeof(Float4), 0),
 
                     NodeElementArchetype.Factory.Text(0, 0, "Min", 30.0f, 18.0f),
                     NodeElementArchetype.Factory.Vector_X(30, 0, 0),
@@ -828,7 +828,7 @@ namespace FlaxEditor.Surface.Archetypes
                 Title = "Particle Emitter Function",
                 Description = "Calls particle emitter function",
                 Flags = NodeFlags.ParticleEmitterGraph,
-                Size = new Vector2(220, 120),
+                Size = new Float2(220, 120),
                 DefaultValues = new object[]
                 {
                     Guid.Empty,
@@ -844,7 +844,7 @@ namespace FlaxEditor.Surface.Archetypes
                 Title = "Particle Index",
                 Description = "Gets the zero-based index of the current particle",
                 Flags = NodeFlags.ParticleEmitterGraph,
-                Size = new Vector2(160, 20),
+                Size = new Float2(160, 20),
                 Elements = new[]
                 {
                     NodeElementArchetype.Factory.Output(0, string.Empty, typeof(uint), 0),
@@ -856,7 +856,7 @@ namespace FlaxEditor.Surface.Archetypes
                 Title = "Particles Count",
                 Description = "Gets the amount of particles alive in the current emitter",
                 Flags = NodeFlags.ParticleEmitterGraph,
-                Size = new Vector2(160, 20),
+                Size = new Float2(160, 20),
                 Elements = new[]
                 {
                     NodeElementArchetype.Factory.Output(0, string.Empty, typeof(uint), 0),

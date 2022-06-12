@@ -89,7 +89,7 @@ GPUTextureDescription GPUTextureDescription::New2D(int32 width, int32 height, Pi
     return desc;
 }
 
-GPUTextureDescription GPUTextureDescription::New3D(const Vector3& size, PixelFormat format, GPUTextureFlags textureFlags)
+GPUTextureDescription GPUTextureDescription::New3D(const Float3& size, PixelFormat format, GPUTextureFlags textureFlags)
 {
     return New3D((int32)size.X, (int32)size.Y, (int32)size.Z, 1, format, textureFlags);
 }
@@ -229,14 +229,14 @@ GPUTexture::GPUTexture()
     _desc.Clear();
 }
 
-Vector2 GPUTexture::Size() const
+Float2 GPUTexture::Size() const
 {
-    return Vector2(static_cast<float>(_desc.Width), static_cast<float>(_desc.Height));
+    return Float2(static_cast<float>(_desc.Width), static_cast<float>(_desc.Height));
 }
 
-Vector3 GPUTexture::Size3() const
+Float3 GPUTexture::Size3() const
 {
-    return Vector3(static_cast<float>(_desc.Width), static_cast<float>(_desc.Height), static_cast<float>(_desc.Depth));
+    return Float3(static_cast<float>(_desc.Width), static_cast<float>(_desc.Height), static_cast<float>(_desc.Depth));
 }
 
 bool GPUTexture::IsPowerOfTwo() const

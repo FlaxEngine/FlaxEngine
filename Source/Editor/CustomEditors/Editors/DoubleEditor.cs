@@ -33,8 +33,8 @@ namespace FlaxEditor.CustomEditors.Editors
                     // Use double value editor with limit
                     var doubleValue = layout.DoubleValue();
                     doubleValue.SetLimits((LimitAttribute)limit);
-                    doubleValue.DoubleValue.ValueChanged += OnValueChanged;
-                    doubleValue.DoubleValue.SlidingEnd += ClearToken;
+                    doubleValue.ValueBox.ValueChanged += OnValueChanged;
+                    doubleValue.ValueBox.SlidingEnd += ClearToken;
                     _element = doubleValue;
                     return;
                 }
@@ -43,8 +43,8 @@ namespace FlaxEditor.CustomEditors.Editors
             {
                 // Use double value editor
                 var doubleValue = layout.DoubleValue();
-                doubleValue.DoubleValue.ValueChanged += OnValueChanged;
-                doubleValue.DoubleValue.SlidingEnd += ClearToken;
+                doubleValue.ValueBox.ValueChanged += OnValueChanged;
+                doubleValue.ValueBox.SlidingEnd += ClearToken;
                 _element = doubleValue;
             }
         }

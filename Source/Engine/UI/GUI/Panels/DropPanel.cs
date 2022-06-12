@@ -134,7 +134,7 @@ namespace FlaxEngine.GUI
         /// <summary>
         /// Occurs when mouse right-clicks over the header.
         /// </summary>
-        public event Action<DropPanel, Vector2> MouseButtonRightClicked;
+        public event Action<DropPanel, Float2> MouseButtonRightClicked;
 
         /// <summary>
         /// Occurs when drop panel is opened or closed.
@@ -204,18 +204,18 @@ namespace FlaxEngine.GUI
         protected override bool ShowTooltip => base.ShowTooltip && _mouseOverHeader;
 
         /// <inheritdoc />
-        public override bool OnShowTooltip(out string text, out Vector2 location, out Rectangle area)
+        public override bool OnShowTooltip(out string text, out Float2 location, out Rectangle area)
         {
             var result = base.OnShowTooltip(out text, out location, out area);
 
             // Change the position
-            location = new Vector2(Width * 0.5f, HeaderHeight);
+            location = new Float2(Width * 0.5f, HeaderHeight);
 
             return result;
         }
 
         /// <inheritdoc />
-        public override bool OnTestTooltipOverControl(ref Vector2 location)
+        public override bool OnTestTooltipOverControl(ref Float2 location)
         {
             return HeaderRectangle.Contains(ref location);
         }
@@ -336,7 +336,7 @@ namespace FlaxEngine.GUI
             var backgroundColor = BackgroundColor;
             if (backgroundColor.A > 0.0f)
             {
-                Render2D.FillRectangle(new Rectangle(Vector2.Zero, Size), backgroundColor);
+                Render2D.FillRectangle(new Rectangle(Float2.Zero, Size), backgroundColor);
             }
 
             // Header
@@ -434,7 +434,7 @@ namespace FlaxEngine.GUI
         }
 
         /// <inheritdoc />
-        public override bool OnMouseDown(Vector2 location, MouseButton button)
+        public override bool OnMouseDown(Float2 location, MouseButton button)
         {
             if (base.OnMouseDown(location, button))
                 return true;
@@ -455,7 +455,7 @@ namespace FlaxEngine.GUI
         }
 
         /// <inheritdoc />
-        public override void OnMouseMove(Vector2 location)
+        public override void OnMouseMove(Float2 location)
         {
             _mouseOverHeader = HeaderRectangle.Contains(location);
 
@@ -463,7 +463,7 @@ namespace FlaxEngine.GUI
         }
 
         /// <inheritdoc />
-        public override bool OnMouseUp(Vector2 location, MouseButton button)
+        public override bool OnMouseUp(Float2 location, MouseButton button)
         {
             if (base.OnMouseUp(location, button))
                 return true;

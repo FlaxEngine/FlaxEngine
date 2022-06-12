@@ -167,17 +167,17 @@ public:
     /// <summary>
     /// The scale minimum values per axis.
     /// </summary>
-    API_FIELD() Vector3 PaintScaleMin = Vector3::One;
+    API_FIELD() Float3 PaintScaleMin = Float3::One;
 
     /// <summary>
     /// The scale maximum values per axis.
     /// </summary>
-    API_FIELD() Vector3 PaintScaleMax = Vector3::One;
+    API_FIELD() Float3 PaintScaleMax = Float3::One;
 
     /// <summary>
     /// The per-instance random offset range on axis Y.
     /// </summary>
-    API_FIELD() Vector2 PlacementOffsetY = Vector2::Zero;
+    API_FIELD() Float2 PlacementOffsetY = Float2::Zero;
 
     /// <summary>
     /// The random pitch angle range (uniform in both ways around normal vector).
@@ -227,7 +227,7 @@ public:
     /// <summary>
     /// Gets the random scale for the foliage instance of this type.
     /// </summary>
-    Vector3 GetRandomScale() const;
+    Float3 GetRandomScale() const;
 
 private:
 

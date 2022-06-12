@@ -122,14 +122,14 @@ bool ExponentialHeightFog::HasContentLoaded() const
     return _shader && _shader->IsLoaded();
 }
 
-bool ExponentialHeightFog::IntersectsItself(const Ray& ray, float& distance, Vector3& normal)
+bool ExponentialHeightFog::IntersectsItself(const Ray& ray, Real& distance, Vector3& normal)
 {
     return false;
 }
 
 void ExponentialHeightFog::GetVolumetricFogOptions(VolumetricFogOptions& result) const
 {
-    const float height = GetPosition().Y;
+    const float height = (float)GetPosition().Y;
     const float density = FogDensity / 1000.0f;
     const float heightFalloff = FogHeightFalloff / 1000.0f;
 
@@ -139,18 +139,18 @@ void ExponentialHeightFog::GetVolumetricFogOptions(VolumetricFogOptions& result)
     result.Emissive = VolumetricFogEmissive * (1.0f / 100.0f);
     result.ExtinctionScale = VolumetricFogExtinctionScale;
     result.Distance = VolumetricFogDistance;
-    result.FogParameters = Vector4(density, height, heightFalloff, 0.0f);
+    result.FogParameters = Float4(density, height, heightFalloff, 0.0f);
 }
 
 void ExponentialHeightFog::GetExponentialHeightFogData(const RenderView& view, ExponentialHeightFogData& result) const
 {
-    const float height = GetPosition().Y;
+    const float height = (float)GetPosition().Y;
     const float density = FogDensity / 1000.0f;
     const float heightFalloff = FogHeightFalloff / 1000.0f;
     const float viewHeight = view.Position.Y;
     const bool useDirectionalLightInscattering = DirectionalInscatteringLight != nullptr;
 
-    result.FogInscatteringColor = FogInscatteringColor.ToVector3();
+    result.FogInscatteringColor = FogInscatteringColor.ToFloat3();
     result.FogMinOpacity = 1.0f - FogMaxOpacity;
     result.FogDensity = density;
     result.FogHeight = height;
@@ -162,14 +162,14 @@ void ExponentialHeightFog::GetExponentialHeightFogData(const RenderView& view, E
     if (useDirectionalLightInscattering)
     {
         result.InscatteringLightDirection = -DirectionalInscatteringLight->GetDirection();
-        result.DirectionalInscatteringColor = DirectionalInscatteringColor.ToVector3();
+        result.DirectionalInscatteringColor = DirectionalInscatteringColor.ToFloat3();
         result.DirectionalInscatteringExponent = Math::Clamp(DirectionalInscatteringExponent, 0.000001f, 1000.0f);
         result.DirectionalInscatteringStartDistance = Math::Min(DirectionalInscatteringStartDistance, view.Far - 1.0f);
     }
     else
     {
-        result.InscatteringLightDirection = Vector3::Zero;
-        result.DirectionalInscatteringColor = Vector3::Zero;
+        result.InscatteringLightDirection = Float3::Zero;
+        result.DirectionalInscatteringColor = Float3::Zero;
         result.DirectionalInscatteringExponent = 4.0f;
         result.DirectionalInscatteringStartDistance = 0.0f;
     }

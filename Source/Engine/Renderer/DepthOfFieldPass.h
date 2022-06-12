@@ -16,34 +16,34 @@ class DepthOfFieldPass : public RendererPass<DepthOfFieldPass>
 private:
 
     PACK_STRUCT(struct Data {
-        Vector2 ProjectionAB;
+        Float2 ProjectionAB;
         float BokehDepthCullThreshold;
         float BokehDepthCutoff;
 
-        Vector4 DOFDepths;
+        Float4 DOFDepths;
 
         float MaxBokehSize;
         float BokehBrightnessThreshold;
         float BokehBlurThreshold;
         float BokehFalloff;
 
-        Vector2 BokehTargetSize;
-        Vector2 DOFTargetSize;
+        Float2 BokehTargetSize;
+        Float2 DOFTargetSize;
 
-        Vector2 InputSize;
+        Float2 InputSize;
         float DepthLimit;
         float BlurStrength;
 
-        Vector3 Dummy;
+        Float3 Dummy;
         float BokehBrightness;
     });
 
     // Structure used for outputting bokeh points to an AppendStructuredBuffer
     struct BokehPoint
     {
-        Vector3 Position;
+        Float3 Position;
         float Blur;
-        Vector3 Color;
+        Float3 Color;
     };
 
     bool _platformSupportsDoF = false;

@@ -87,15 +87,27 @@ static Vector3 Get3PlanesInterPoint(const Plane& p1, const Plane& p2, const Plan
     const Vector3 n2Xn3 = Vector3::Cross(p2.Normal, p3.Normal);
     const Vector3 n3Xn1 = Vector3::Cross(p3.Normal, p1.Normal);
     const Vector3 n1Xn2 = Vector3::Cross(p1.Normal, p2.Normal);
-    const float div1 = Vector3::Dot(p1.Normal, n2Xn3);
-    const float div2 = Vector3::Dot(p2.Normal, n3Xn1);
-    const float div3 = Vector3::Dot(p3.Normal, n1Xn2);
+    const Real div1 = Vector3::Dot(p1.Normal, n2Xn3);
+    const Real div2 = Vector3::Dot(p2.Normal, n3Xn1);
+    const Real div3 = Vector3::Dot(p3.Normal, n1Xn2);
     if (Math::IsZero(div1 * div2 * div3))
         return Vector3::Zero;
     return n2Xn3 * (-p1.D / div1) - n3Xn1 * (p2.D / div2) - n1Xn2 * (p3.D / div3);
 }
 
-void BoundingFrustum::GetCorners(Vector3 corners[8]) const
+void BoundingFrustum::GetCorners(Float3 corners[8]) const
+{
+    corners[0] = Get3PlanesInterPoint(_pNear, _pBottom, _pRight);
+    corners[1] = Get3PlanesInterPoint(_pNear, _pTop, _pRight);
+    corners[2] = Get3PlanesInterPoint(_pNear, _pTop, _pLeft);
+    corners[3] = Get3PlanesInterPoint(_pNear, _pBottom, _pLeft);
+    corners[4] = Get3PlanesInterPoint(_pFar, _pBottom, _pRight);
+    corners[5] = Get3PlanesInterPoint(_pFar, _pTop, _pRight);
+    corners[6] = Get3PlanesInterPoint(_pFar, _pTop, _pLeft);
+    corners[7] = Get3PlanesInterPoint(_pFar, _pBottom, _pLeft);
+}
+
+void BoundingFrustum::GetCorners(Double3 corners[8]) const
 {
     corners[0] = Get3PlanesInterPoint(_pNear, _pBottom, _pRight);
     corners[1] = Get3PlanesInterPoint(_pNear, _pTop, _pRight);
@@ -123,13 +135,13 @@ void BoundingFrustum::GetSphere(BoundingSphere& result) const
 
 float BoundingFrustum::GetWidthAtDepth(float depth) const
 {
-    const float hAngle = PI / 2.0f - Math::Acos(Vector3::Dot(_pNear.Normal, _pLeft.Normal));
+    const float hAngle = PI / 2.0f - Math::Acos((float)Vector3::Dot(_pNear.Normal, _pLeft.Normal));
     return Math::Tan(hAngle) * depth * 2.0f;
 }
 
 float BoundingFrustum::GetHeightAtDepth(float depth) const
 {
-    const float vAngle = PI / 2.0f - Math::Acos(Vector3::Dot(_pNear.Normal, _pTop.Normal));
+    const float vAngle = PI / 2.0f - Math::Acos((float)Vector3::Dot(_pNear.Normal, _pTop.Normal));
     return Math::Tan(vAngle) * depth * 2.0f;
 }
 

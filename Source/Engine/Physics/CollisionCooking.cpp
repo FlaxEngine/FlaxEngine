@@ -15,7 +15,7 @@ bool CollisionCooking::CookCollision(const Argument& arg, CollisionData::Seriali
     if (arg.ConvexVertexLimit == 0)
         convexVertexLimit = CONVEX_VERTEX_MAX;
 
-    DataContainer<Vector3> finalVertexData;
+    DataContainer<Float3> finalVertexData;
     DataContainer<uint32> finalIndexData;
     const bool needIndexBuffer = arg.Type == CollisionDataType::TriangleMesh;
 
@@ -71,7 +71,7 @@ bool CollisionCooking::CookCollision(const Argument& arg, CollisionData::Seriali
 
                 const int32 firstVertexIndex = vertexCounter;
                 const int32 vertexCount = mesh->Positions.Count();
-                Platform::MemoryCopy(finalVertexData.Get() + firstVertexIndex, mesh->Positions.Get(), vertexCount * sizeof(Vector3));
+                Platform::MemoryCopy(finalVertexData.Get() + firstVertexIndex, mesh->Positions.Get(), vertexCount * sizeof(Float3));
                 vertexCounter += vertexCount;
 
                 if (needIndexBuffer)
@@ -211,7 +211,7 @@ bool CollisionCooking::CookCollision(const Argument& arg, CollisionData::Seriali
 
             const int32 firstVertexIndex = vertexCounter;
             const int32 vertexCount = vertexCounts[i];
-            Platform::MemoryCopy(finalVertexData.Get() + firstVertexIndex, vData.Get(), vertexCount * sizeof(Vector3));
+            Platform::MemoryCopy(finalVertexData.Get() + firstVertexIndex, vData.Get(), vertexCount * sizeof(Float3));
             vertexCounter += vertexCount;
 
             if (needIndexBuffer)

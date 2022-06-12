@@ -5,7 +5,7 @@
 #include "TextureTool.h"
 #include "Engine/Core/Log.h"
 #include "Engine/Core/Math/Color32.h"
-#include "Engine/Core/Math/Int2.h"
+#include "Engine/Core/Math/Vector2.h"
 #include "Engine/Serialization/FileWriteStream.h"
 #include "Engine/Graphics/RenderTools.h"
 #include "Engine/Graphics/Textures/TextureData.h"
@@ -185,7 +185,7 @@ bool TextureTool::ExportTextureStb(ImageType type, const StringView& path, const
     {
         data.Resize(sizeof(float) * comp * texture->Width * texture->Height);
 
-        auto ptr = (Vector4*)data.Get();
+        auto ptr = (Float4*)data.Get();
         for (int32 y = 0; y < texture->Height; y++)
         {
             for (int32 x = 0; x < texture->Width; x++)
@@ -193,7 +193,7 @@ bool TextureTool::ExportTextureStb(ImageType type, const StringView& path, const
                 Color color = SamplePoint(sampler, x, y, srcData->Data.Get(), srcData->RowPitch);
                 if (sRGB)
                     color = Color::SrgbToLinear(color);
-                *(ptr + x + y * texture->Width) = color.ToVector4();
+                *(ptr + x + y * texture->Width) = color.ToFloat4();
             }
         }
     }
@@ -771,7 +771,7 @@ bool TextureTool::ResizeStb(PixelFormat format, TextureMipData& dstMip, const Te
             {
                 for (int32 x = 0; x < dstMipWidth; x++)
                 {
-                    const Vector2 uv((float)x / dstMipWidth, (float)y / dstMipHeight);
+                    const Float2 uv((float)x / dstMipWidth, (float)y / dstMipHeight);
                     Color color = SamplePoint(sampler, uv, srcMip.Data.Get(), srcSize, srcMip.RowPitch);
                     Store(sampler, x, y, dstMip.Data.Get(), dstMip.RowPitch, color);
                 }

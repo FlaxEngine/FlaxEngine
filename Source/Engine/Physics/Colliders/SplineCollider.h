@@ -19,7 +19,7 @@ DECLARE_SCENE_OBJECT(SplineCollider);
 private:
     Spline* _spline = nullptr;
     void* _triangleMesh = nullptr;
-    Array<Vector3> _vertexBuffer;
+    Array<Float3> _vertexBuffer;
     Array<int32> _indexBuffer;
     Transform _preTransform = Transform::Identity;
 
@@ -47,7 +47,7 @@ public:
     /// </summary>
     /// <param name="vertexBuffer">The output vertex buffer.</param>
     /// <param name="indexBuffer">The output index buffer.</param>
-    void ExtractGeometry(Array<Vector3>& vertexBuffer, Array<int32>& indexBuffer) const;
+    void ExtractGeometry(Array<Float3>& vertexBuffer, Array<int32>& indexBuffer) const;
 
 private:
 
@@ -63,7 +63,7 @@ public:
 #if USE_EDITOR
     void OnDebugDrawSelected() override;
 #endif
-    bool IntersectsItself(const Ray& ray, float& distance, Vector3& normal) override;
+    bool IntersectsItself(const Ray& ray, Real& distance, Vector3& normal) override;
     void Serialize(SerializeStream& stream, const void* otherObj) override;
     void Deserialize(DeserializeStream& stream, ISerializeModifier* modifier) override;
     void OnParentChanged() override;

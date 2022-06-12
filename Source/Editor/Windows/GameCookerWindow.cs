@@ -387,8 +387,8 @@ namespace FlaxEditor.Windows
                 base.Draw();
 
                 var color = Style.Current.Background * 0.8f;
-                Render2D.DrawLine(new Vector2(Width, 0), new Vector2(Width, Height), color);
-                Render2D.DrawLine(new Vector2(0, 48), new Vector2(Width, 48), color);
+                Render2D.DrawLine(new Float2(Width, 0), new Float2(Width, Height), color);
+                Render2D.DrawLine(new Float2(0, 48), new Float2(Width, 48), color);
             }
         }
 
@@ -517,7 +517,7 @@ namespace FlaxEditor.Windows
                 Orientation = Orientation.Vertical,
                 AnchorPreset = AnchorPresets.StretchAll,
                 Offsets = Margin.Zero,
-                TabsSize = new Vector2(120, 32),
+                TabsSize = new Float2(120, 32),
                 Parent = this
             };
 

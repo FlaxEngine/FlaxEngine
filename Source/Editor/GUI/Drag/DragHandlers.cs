@@ -17,7 +17,7 @@ namespace FlaxEditor.GUI.Drag
         /// </summary>
         /// <param name="data">The data.</param>
         /// <returns>The result.</returns>
-        public DragDropEffect OnDragEnter( /*ref Vector2 location, */ DragData data)
+        public DragDropEffect OnDragEnter(DragData data)
         {
             DragDropEffect effect = DragDropEffect.None;
 

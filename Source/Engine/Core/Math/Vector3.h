@@ -14,7 +14,7 @@ template<typename T>
 API_STRUCT(Template) struct Vector3Base
 {
     typedef T Real;
-    static struct ScriptingTypeInitializer TypeInitializer;
+    static FLAXENGINE_API struct ScriptingTypeInitializer TypeInitializer;
 
     union
     {
@@ -115,7 +115,7 @@ public:
     }
 
     template<typename U = T, typename TEnableIf<TNot<TIsTheSame<T, U>>::Value>::Type...>
-    FORCE_INLINE explicit Vector3Base(const Vector3Base<U>& xyz)
+    FORCE_INLINE Vector3Base(const Vector3Base<U>& xyz)
         : X((T)xyz.X)
         , Y((T)xyz.Y)
         , Z((T)xyz.Z)
@@ -331,6 +331,30 @@ public:
         return Vector3Base(X / b, Y / b, Z / b);
     }
 
+    Vector3Base operator+(typename TOtherFloat<T>::Type a) const
+    {
+        T b = (T)a;
+        return Vector3Base(X + b, Y + b, Z + b);
+    }
+
+    Vector3Base operator-(typename TOtherFloat<T>::Type a) const
+    {
+        T b = (T)a;
+        return Vector3Base(X - b, Y - b, Z - b);
+    }
+
+    Vector3Base operator*(typename TOtherFloat<T>::Type a) const
+    {
+        T b = (T)a;
+        return Vector3Base(X * (T)b, Y * b, Z * b);
+    }
+
+    Vector3Base operator/(typename TOtherFloat<T>::Type a) const
+    {
+        T b = (T)a;
+        return Vector3Base(X / b, Y / b, Z / b);
+    }
+
     Vector3Base operator^(const Vector3Base& b) const
     {
         return Cross(*this, b);
@@ -469,12 +493,12 @@ public:
 
     static void Min(const Vector3Base& a, const Vector3Base& b, Vector3Base& result)
     {
-        result = Vector3(a.X < b.X ? a.X : b.X, a.Y < b.Y ? a.Y : b.Y, a.Z < b.Z ? a.Z : b.Z);
+        result = Vector3Base(a.X < b.X ? a.X : b.X, a.Y < b.Y ? a.Y : b.Y, a.Z < b.Z ? a.Z : b.Z);
     }
 
     static void Max(const Vector3Base& a, const Vector3Base& b, Vector3Base& result)
     {
-        result = Vector3(a.X > b.X ? a.X : b.X, a.Y > b.Y ? a.Y : b.Y, a.Z > b.Z ? a.Z : b.Z);
+        result = Vector3Base(a.X > b.X ? a.X : b.X, a.Y > b.Y ? a.Y : b.Y, a.Z > b.Z ? a.Z : b.Z);
     }
 
 public:
@@ -495,7 +519,7 @@ public:
 
     static Vector3Base Frac(const Vector3Base& v)
     {
-        return Vector3(v.X - (int32)v.X, v.Y - (int32)v.Y, v.Z - (int32)v.Z);
+        return Vector3Base(v.X - (int32)v.X, v.Y - (int32)v.Y, v.Z - (int32)v.Z);
     }
 
     static Vector3Base Round(const Vector3Base& v)
@@ -842,6 +866,30 @@ inline Vector3Base<T> operator*(T a, const Vector3Base<T>& b)
 
 template<typename T>
 inline Vector3Base<T> operator/(T a, const Vector3Base<T>& b)
+{
+    return Vector3Base<T>(a) / b;
+}
+
+template<typename T>
+inline Vector3Base<T> operator+(typename TOtherFloat<T>::Type a, const Vector3Base<T>& b)
+{
+    return b + a;
+}
+
+template<typename T>
+inline Vector3Base<T> operator-(typename TOtherFloat<T>::Type a, const Vector3Base<T>& b)
+{
+    return Vector3Base<T>(a) - b;
+}
+
+template<typename T>
+inline Vector3Base<T> operator*(typename TOtherFloat<T>::Type a, const Vector3Base<T>& b)
+{
+    return b * a;
+}
+
+template<typename T>
+inline Vector3Base<T> operator/(typename TOtherFloat<T>::Type a, const Vector3Base<T>& b)
 {
     return Vector3Base<T>(a) / b;
 }

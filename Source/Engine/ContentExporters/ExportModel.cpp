@@ -75,7 +75,7 @@ ExportAssetResult AssetExporters::ExportModel(ExportAssetContext& context)
 
         for (uint32 i = 0; i < vertices; i++)
         {
-            auto v = vb1[i].TexCoord.ToVector2();
+            auto v = vb1[i].TexCoord.ToFloat2();
             output->WriteText(StringAnsi::Format("vt {0} {1}\n", v.X, v.Y));
         }
 
@@ -83,7 +83,7 @@ ExportAssetResult AssetExporters::ExportModel(ExportAssetContext& context)
 
         for (uint32 i = 0; i < vertices; i++)
         {
-            auto v = vb1[i].Normal.ToVector3() * 2.0f - 1.0f;
+            auto v = vb1[i].Normal.ToFloat3() * 2.0f - 1.0f;
             output->WriteText(StringAnsi::Format("vn {0} {1} {2}\n", v.X, v.Y, v.Z));
         }
 
@@ -180,7 +180,7 @@ ExportAssetResult AssetExporters::ExportSkinnedModel(ExportAssetContext& context
 
         for (uint32 i = 0; i < vertices; i++)
         {
-            auto v = vb0[i].TexCoord.ToVector2();
+            auto v = vb0[i].TexCoord.ToFloat2();
             output->WriteText(StringAnsi::Format("vt {0} {1}\n", v.X, v.Y));
         }
 
@@ -188,7 +188,7 @@ ExportAssetResult AssetExporters::ExportSkinnedModel(ExportAssetContext& context
 
         for (uint32 i = 0; i < vertices; i++)
         {
-            auto v = vb0[i].Normal.ToVector3() * 2.0f - 1.0f;
+            auto v = vb0[i].Normal.ToFloat3() * 2.0f - 1.0f;
             output->WriteText(StringAnsi::Format("vn {0} {1} {2}\n", v.X, v.Y, v.Z));
         }
 

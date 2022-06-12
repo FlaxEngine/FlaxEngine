@@ -64,9 +64,9 @@ void VisjectExecutor::ProcessGroupConstants(Box* box, Node* node, Value& value)
         if (box->ID == 0)
             value = cv;
         else if (box->ID == 1)
-            value = cv.AsVector2().X;
+            value = cv.AsFloat2().X;
         else if (box->ID == 2)
-            value = cv.AsVector2().Y;
+            value = cv.AsFloat2().Y;
         break;
     }
     case 5:
@@ -75,11 +75,11 @@ void VisjectExecutor::ProcessGroupConstants(Box* box, Node* node, Value& value)
         if (box->ID == 0)
             value = cv;
         else if (box->ID == 1)
-            value = cv.AsVector3().X;
+            value = cv.AsFloat3().X;
         else if (box->ID == 2)
-            value = cv.AsVector3().Y;
+            value = cv.AsFloat3().Y;
         else if (box->ID == 3)
-            value = cv.AsVector3().Z;
+            value = cv.AsFloat3().Z;
         break;
     }
     case 6:
@@ -89,13 +89,13 @@ void VisjectExecutor::ProcessGroupConstants(Box* box, Node* node, Value& value)
         if (box->ID == 0)
             value = cv;
         else if (box->ID == 1)
-            value = cv.AsVector4().X;
+            value = cv.AsFloat4().X;
         else if (box->ID == 2)
-            value = cv.AsVector4().Y;
+            value = cv.AsFloat4().Y;
         else if (box->ID == 3)
-            value = cv.AsVector4().Z;
+            value = cv.AsFloat4().Z;
         else if (box->ID == 4)
-            value = cv.AsVector4().W;
+            value = cv.AsFloat4().W;
         break;
     }
     case 8:
@@ -211,14 +211,23 @@ void VisjectExecutor::ProcessGroupMath(Box* box, Node* node, Value& value)
         {
             switch (v1.Type.Type)
             {
-            case VariantType::Vector2:
-                value = v1.AsVector2().Length();
+            case VariantType::Float2:
+                value = v1.AsFloat2().Length();
                 break;
-            case VariantType::Vector3:
-                value = v1.AsVector3().Length();
+            case VariantType::Float3:
+                value = v1.AsFloat3().Length();
                 break;
-            case VariantType::Vector4:
-                value = Vector3(v1.AsVector4()).Length();
+            case VariantType::Float4:
+                value = Float3(v1.AsFloat4()).Length();
+                break;
+            case VariantType::Double2:
+                value = v1.AsDouble2().Length();
+                break;
+            case VariantType::Double3:
+                value = v1.AsDouble3().Length();
+                break;
+            case VariantType::Double4:
+                value = Double3(v1.AsDouble4()).Length();
                 break;
             default: CRASH;
                 break;
@@ -237,14 +246,23 @@ void VisjectExecutor::ProcessGroupMath(Box* box, Node* node, Value& value)
             case VariantType::Float:
                 value = Math::Saturate(v1.AsFloat);
                 break;
-            case VariantType::Vector2:
-                value = Vector2::Normalize(v1.AsVector2());
+            case VariantType::Float2:
+                value = Float2::Normalize(v1.AsFloat2());
                 break;
-            case VariantType::Vector3:
-                value = Vector3::Normalize(v1.AsVector3());
+            case VariantType::Float3:
+                value = Float3::Normalize(v1.AsFloat3());
                 break;
-            case VariantType::Vector4:
-                value = Vector4(Vector3::Normalize(Vector3(v1.AsVector4())), 0.0f);
+            case VariantType::Float4:
+                value = Float4(Float3::Normalize(Float3(v1.AsFloat4())), 0.0f);
+                break;
+            case VariantType::Double2:
+                value = Double2::Normalize(v1.AsDouble2());
+                break;
+            case VariantType::Double3:
+                value = Double3::Normalize(v1.AsDouble3());
+                break;
+            case VariantType::Double4:
+                value = Double4(Double3::Normalize(Double3(v1.AsDouble3())), 0.0f);
                 break;
             default: CRASH;
                 break;
@@ -265,8 +283,11 @@ void VisjectExecutor::ProcessGroupMath(Box* box, Node* node, Value& value)
         case 18:
             switch (v1.Type.Type)
             {
-            case VariantType::Vector3:
-                value = Vector3::Cross(v1.AsVector3(), v2.AsVector3());
+            case VariantType::Float3:
+                value = Float3::Cross(v1.AsFloat3(), v2.AsFloat3());
+                break;
+            case VariantType::Double3:
+                value = Double3::Cross(v1.AsDouble3(), v2.AsDouble3());
                 break;
             default: CRASH;
                 break;
@@ -275,15 +296,24 @@ void VisjectExecutor::ProcessGroupMath(Box* box, Node* node, Value& value)
         case 19:
             switch (v1.Type.Type)
             {
-            case VariantType::Vector2:
-                value = Vector2::Distance(v1.AsVector2(), v2.AsVector2());
+            case VariantType::Float2:
+                value = Float2::Distance(v1.AsFloat2(), v2.AsFloat2());
                 break;
-            case VariantType::Vector3:
-                value = Vector3::Distance(v1.AsVector3(), v2.AsVector3());
+            case VariantType::Float3:
+                value = Float3::Distance(v1.AsFloat3(), v2.AsFloat3());
                 break;
-            case VariantType::Vector4:
+            case VariantType::Float4:
             case VariantType::Color:
-                value = Vector3::Distance((Vector3)v1, (Vector3)v2);
+                value = Float3::Distance((Float3)v1, (Float3)v2);
+                break;
+            case VariantType::Double2:
+                value = Double2::Distance(v1.AsDouble2(), v2.AsDouble2());
+                break;
+            case VariantType::Double3:
+                value = Double3::Distance(v1.AsDouble3(), v2.AsDouble3());
+                break;
+            case VariantType::Double4:
+                value = Double3::Distance((Double3)v1, (Double3)v2);
                 break;
             default: CRASH;
                 break;
@@ -292,15 +322,24 @@ void VisjectExecutor::ProcessGroupMath(Box* box, Node* node, Value& value)
         case 20:
             switch (v1.Type.Type)
             {
-            case VariantType::Vector2:
-                value = Vector2::Dot(v1.AsVector2(), v2.AsVector2());
+            case VariantType::Float2:
+                value = Float2::Dot(v1.AsFloat2(), v2.AsFloat2());
                 break;
-            case VariantType::Vector3:
-                value = Vector3::Dot(v1.AsVector3(), v2.AsVector3());
+            case VariantType::Float3:
+                value = Float3::Dot(v1.AsFloat3(), v2.AsFloat3());
                 break;
-            case VariantType::Vector4:
+            case VariantType::Float4:
             case VariantType::Color:
-                value = Vector3::Dot((Vector3)v1, (Vector3)v2);
+                value = Float3::Dot((Float3)v1, (Float3)v2);
+                break;
+            case VariantType::Double2:
+                value = Double2::Dot(v1.AsDouble2(), v2.AsDouble2());
+                break;
+            case VariantType::Double3:
+                value = Double3::Dot(v1.AsDouble3(), v2.AsDouble3());
+                break;
+            case VariantType::Double4:
+                value = Double3::Dot((Double3)v1, (Double3)v2);
                 break;
             default: CRASH;
                 break;
@@ -337,14 +376,14 @@ void VisjectExecutor::ProcessGroupMath(Box* box, Node* node, Value& value)
         Value v2 = tryGetValue(node->GetBox(1), Value::Zero).Cast(v1.Type);
         switch (v1.Type.Type)
         {
-        case VariantType::Vector2:
-            value = v1.AsVector2() - 2.0f * v2.AsVector2() * Vector2::Dot(v1.AsVector2(), v2.AsVector2());
+        case VariantType::Float2:
+            value = v1.AsFloat2() - 2.0f * v2.AsFloat2() * Float2::Dot(v1.AsFloat2(), v2.AsFloat2());
             break;
-        case VariantType::Vector3:
-            value = v1.AsVector3() - 2.0f * v2.AsVector3() * Vector3::Dot(v1.AsVector3(), v2.AsVector3());
+        case VariantType::Float3:
+            value = v1.AsFloat3() - 2.0f * v2.AsFloat3() * Float3::Dot(v1.AsFloat3(), v2.AsFloat3());
             break;
-        case VariantType::Vector4:
-            value = Vector4(v1.AsVector4() - 2.0f * v2.AsVector4() * Vector3::Dot((Vector3)v1, (Vector3)v2));
+        case VariantType::Float4:
+            value = Float4(v1.AsFloat4() - 2.0f * v2.AsFloat4() * Float3::Dot((Float3)v1, (Float3)v2));
             break;
         default: CRASH;
             break;
@@ -366,7 +405,7 @@ void VisjectExecutor::ProcessGroupMath(Box* box, Node* node, Value& value)
         // Extract Largest Component
     case 32:
     {
-        const auto v1 = (Vector3)tryGetValue(node->GetBox(0), Value::Zero);
+        const auto v1 = (Float3)tryGetValue(node->GetBox(0), Value::Zero);
         value = Math::ExtractLargestComponent(v1);
         break;
     }
@@ -376,17 +415,17 @@ void VisjectExecutor::ProcessGroupMath(Box* box, Node* node, Value& value)
         ASSERT(node->Values.Count() == 2 && node->Values[0].Type == VariantType::Float && node->Values[1].Type == VariantType::Float);
         const auto bias = node->Values[0].AsFloat;
         const auto scale = node->Values[1].AsFloat;
-        const auto input = (Vector3)tryGetValue(node->GetBox(0), Value::Zero);
+        const auto input = (Float3)tryGetValue(node->GetBox(0), Value::Zero);
         value = (input + bias) * scale;
         break;
     }
         // Rotate About Axis
     case 37:
     {
-        const auto normalizedRotationAxis = (Vector3)tryGetValue(node->GetBox(0), Value::Zero);
+        const auto normalizedRotationAxis = (Float3)tryGetValue(node->GetBox(0), Value::Zero);
         const auto rotationAngle = (float)tryGetValue(node->GetBox(1), Value::Zero);
-        const auto pivotPoint = (Vector3)tryGetValue(node->GetBox(2), Value::Zero);
-        const auto position = (Vector3)tryGetValue(node->GetBox(3), Value::Zero);
+        const auto pivotPoint = (Float3)tryGetValue(node->GetBox(2), Value::Zero);
+        const auto position = (Float3)tryGetValue(node->GetBox(3), Value::Zero);
         value = Math::RotateAboutAxis(normalizedRotationAxis, rotationAngle, pivotPoint, position);
         break;
     }
@@ -419,8 +458,8 @@ void VisjectExecutor::ProcessGroupMath(Box* box, Node* node, Value& value)
     case 48:
     {
         const float inVal = tryGetValue(node->GetBox(0), node->Values[0]).AsFloat;
-        const Vector2 rangeA = tryGetValue(node->GetBox(1), node->Values[1]).AsVector2();
-        const Vector2 rangeB = tryGetValue(node->GetBox(2), node->Values[2]).AsVector2();
+        const Float2 rangeA = tryGetValue(node->GetBox(1), node->Values[1]).AsFloat2();
+        const Float2 rangeB = tryGetValue(node->GetBox(2), node->Values[2]).AsFloat2();
         const bool clamp = tryGetValue(node->GetBox(3), node->Values[3]).AsBool;
         auto mapFunc = Math::Remap(inVal, rangeA.X, rangeA.Y, rangeB.X, rangeB.Y);
         value = clamp ? Math::Clamp(mapFunc, rangeB.X, rangeB.Y) : mapFunc;
@@ -430,7 +469,7 @@ void VisjectExecutor::ProcessGroupMath(Box* box, Node* node, Value& value)
     case 49:
     {
         const Quaternion quaternion = (Quaternion)tryGetValue(node->GetBox(0), Quaternion::Identity);
-        const Vector3 vector = (Vector3)tryGetValue(node->GetBox(1), Vector3::Forward);
+        const Float3 vector = (Float3)tryGetValue(node->GetBox(1), Float3::Forward);
         value = quaternion * vector;
         break;
     }
@@ -448,7 +487,7 @@ void VisjectExecutor::ProcessGroupPacking(Box* box, Node* node, Value& value)
     {
         float vX = (float)tryGetValue(node->GetBox(1), node->Values[0]);
         float vY = (float)tryGetValue(node->GetBox(2), node->Values[1]);
-        value = Vector2(vX, vY);
+        value = Float2(vX, vY);
         break;
     }
     case 21:
@@ -456,7 +495,7 @@ void VisjectExecutor::ProcessGroupPacking(Box* box, Node* node, Value& value)
         float vX = (float)tryGetValue(node->GetBox(1), node->Values[0]);
         float vY = (float)tryGetValue(node->GetBox(2), node->Values[1]);
         float vZ = (float)tryGetValue(node->GetBox(3), node->Values[2]);
-        value = Vector3(vX, vY, vZ);
+        value = Float3(vX, vY, vZ);
         break;
     }
     case 22:
@@ -465,7 +504,7 @@ void VisjectExecutor::ProcessGroupPacking(Box* box, Node* node, Value& value)
         float vY = (float)tryGetValue(node->GetBox(2), node->Values[1]);
         float vZ = (float)tryGetValue(node->GetBox(3), node->Values[2]);
         float vW = (float)tryGetValue(node->GetBox(4), node->Values[3]);
-        value = Vector4(vX, vY, vZ, vW);
+        value = Float4(vX, vY, vZ, vW);
         break;
     }
     case 23:
@@ -480,7 +519,7 @@ void VisjectExecutor::ProcessGroupPacking(Box* box, Node* node, Value& value)
     {
         const Vector3 vX = (Vector3)tryGetValue(node->GetBox(1), Vector3::Zero);
         const Quaternion vY = (Quaternion)tryGetValue(node->GetBox(2), Quaternion::Identity);
-        const Vector3 vZ = (Vector3)tryGetValue(node->GetBox(3), Vector3::One);
+        const Float3 vZ = (Float3)tryGetValue(node->GetBox(3), Float3::One);
         value = Variant(Transform(vX, vY, vZ));
         break;
     }
@@ -494,7 +533,7 @@ void VisjectExecutor::ProcessGroupPacking(Box* box, Node* node, Value& value)
         // Unpack
     case 30:
     {
-        Vector2 v = (Vector2)tryGetValue(node->GetBox(0), Vector2::Zero);
+        Float2 v = (Float2)tryGetValue(node->GetBox(0), Float2::Zero);
         int32 subIndex = box->ID - 1;
         ASSERT(subIndex >= 0 && subIndex < 2);
         value = v.Raw[subIndex];
@@ -502,7 +541,7 @@ void VisjectExecutor::ProcessGroupPacking(Box* box, Node* node, Value& value)
     }
     case 31:
     {
-        Vector3 v = (Vector3)tryGetValue(node->GetBox(0), Vector3::Zero);
+        Float3 v = (Float3)tryGetValue(node->GetBox(0), Float3::Zero);
         int32 subIndex = box->ID - 1;
         ASSERT(subIndex >= 0 && subIndex < 3);
         value = v.Raw[subIndex];
@@ -510,7 +549,7 @@ void VisjectExecutor::ProcessGroupPacking(Box* box, Node* node, Value& value)
     }
     case 32:
     {
-        Vector4 v = (Vector4)tryGetValue(node->GetBox(0), Vector4::Zero);
+        Float4 v = (Float4)tryGetValue(node->GetBox(0), Float4::Zero);
         int32 subIndex = box->ID - 1;
         ASSERT(subIndex >= 0 && subIndex < 4);
         value = v.Raw[subIndex];
@@ -518,7 +557,7 @@ void VisjectExecutor::ProcessGroupPacking(Box* box, Node* node, Value& value)
     }
     case 33:
     {
-        const Vector3 v = ((Quaternion)tryGetValue(node->GetBox(0), Quaternion::Identity)).GetEuler();
+        const Float3 v = ((Quaternion)tryGetValue(node->GetBox(0), Quaternion::Identity)).GetEuler();
         const int32 subIndex = box->ID - 1;
         ASSERT(subIndex >= 0 && subIndex < 3);
         value = v.Raw[subIndex];
@@ -734,38 +773,38 @@ void VisjectExecutor::ProcessGroupPacking(Box* box, Node* node, Value& value)
     case 42:
     case 43:
     {
-        const Vector4 v = (Vector4)tryGetValue(node->GetBox(0), Vector4::Zero);
+        const Float4 v = (Float4)tryGetValue(node->GetBox(0), Float4::Zero);
         value = v.Raw[node->TypeID - 40];
         break;
     }
         // Mask XY, YZ, XZ,...
     case 44:
     {
-        value = (Vector2)tryGetValue(node->GetBox(0), Vector2::Zero);
+        value = (Float2)tryGetValue(node->GetBox(0), Float2::Zero);
         break;
     }
     case 45:
     {
-        const Vector4 v = (Vector4)tryGetValue(node->GetBox(0), Vector4::Zero);
-        value = Vector2(v.X, v.Z);
+        const Float4 v = (Float4)tryGetValue(node->GetBox(0), Float4::Zero);
+        value = Float2(v.X, v.Z);
         break;
     }
     case 46:
     {
-        const Vector4 v = (Vector4)tryGetValue(node->GetBox(0), Vector4::Zero);
-        value = Vector2(v.Y, v.Z);
+        const Float4 v = (Float4)tryGetValue(node->GetBox(0), Float4::Zero);
+        value = Float2(v.Y, v.Z);
         break;
     }
     case 47:
     {
-        const Vector4 v = (Vector4)tryGetValue(node->GetBox(0), Vector4::Zero);
-        value = Vector2(v.Z, v.W);
+        const Float4 v = (Float4)tryGetValue(node->GetBox(0), Float4::Zero);
+        value = Float2(v.Z, v.W);
         break;
     }
         // Mask XYZ
     case 70:
     {
-        value = (Vector3)tryGetValue(node->GetBox(0), Vector3::Zero);
+        value = (Float3)tryGetValue(node->GetBox(0), Float3::Zero);
         break;
     }
         // Append
@@ -792,21 +831,21 @@ void VisjectExecutor::ProcessGroupPacking(Box* box, Node* node, Value& value)
             value = count0 ? value0 : value1;
             break;
         case 2:
-            value = Vector2((float)value0, (float)value1);
+            value = Float2((float)value0, (float)value1);
             break;
         case 3:
             if (count0 == 1)
-                value = Vector3((float)value0, value1.AsVector2().X, value1.AsVector2().Y);
+                value = Float3((float)value0, value1.AsFloat2().X, value1.AsFloat2().Y);
             else
-                value = Vector3((Vector2)value0, (float)value1);
+                value = Float3((Float2)value0, (float)value1);
             break;
         case 4:
             if (count0 == 1)
-                value = Vector4((float)value0, value1.AsVector3().X, value1.AsVector3().Y, value1.AsVector3().Z);
+                value = Float4((float)value0, value1.AsFloat3().X, value1.AsFloat3().Y, value1.AsFloat3().Z);
             else if (count0 == 2)
-                value = Vector4(value0.AsVector2().X, value0.AsVector2().Y, value1.AsVector2().X, value1.AsVector2().Y);
+                value = Float4(value0.AsFloat2().X, value0.AsFloat2().Y, value1.AsFloat2().X, value1.AsFloat2().Y);
             else
-                value = Vector4((Vector3)value0, (float)value1);
+                value = Float4((Float3)value0, (float)value1);
             break;
         default:
             value = Value::Zero;
@@ -890,9 +929,9 @@ void VisjectExecutor::ProcessGroupTools(Box* box, Node* node, Value& value)
 			break; \
 		}
     SAMPLE_CURVE(12, FloatCurves, float, Float)
-    SAMPLE_CURVE(13, Vector2Curves, Vector2, Vector2)
-    SAMPLE_CURVE(14, Vector3Curves, Vector3, Vector3)
-    SAMPLE_CURVE(15, Vector4Curves, Vector4, Vector4)
+    SAMPLE_CURVE(13, Float2Curves, Float2, Float2)
+    SAMPLE_CURVE(14, Float3Curves, Float3, Float3)
+    SAMPLE_CURVE(15, Float4Curves, Float4, Float4)
 #undef SETUP_CURVE
         // Get Gameplay Global
     case 16:
@@ -1199,19 +1238,19 @@ void VisjectExecutor::ProcessGroupParticles(Box* box, Node* node, Value& value)
         // Random Vector2
     case 209:
     {
-        value = Vector2(RAND, RAND);
+        value = Float2(RAND, RAND);
         break;
     }
         // Random Vector3
     case 210:
     {
-        value = Vector3(RAND, RAND, RAND);
+        value = Float3(RAND, RAND, RAND);
         break;
     }
         // Random Vector4
     case 211:
     {
-        value = Vector4(RAND, RAND, RAND, RAND);
+        value = Float4(RAND, RAND, RAND, RAND);
         break;
     }
         // Random Float Range
@@ -1225,9 +1264,9 @@ void VisjectExecutor::ProcessGroupParticles(Box* box, Node* node, Value& value)
         // Random Vector2 Range
     case 214:
     {
-        auto a = (Vector2)node->Values[0];
-        auto b = (Vector2)node->Values[1];
-        value = Vector2(
+        auto a = (Float2)node->Values[0];
+        auto b = (Float2)node->Values[1];
+        value = Float2(
             Math::Lerp(a.X, b.X, RAND),
             Math::Lerp(a.Y, b.Y, RAND)
         );
@@ -1236,9 +1275,9 @@ void VisjectExecutor::ProcessGroupParticles(Box* box, Node* node, Value& value)
         // Random Vector3 Range
     case 215:
     {
-        auto a = (Vector3)node->Values[0];
-        auto b = (Vector3)node->Values[1];
-        value = Vector3(
+        auto a = (Float3)node->Values[0];
+        auto b = (Float3)node->Values[1];
+        value = Float3(
             Math::Lerp(a.X, b.X, RAND),
             Math::Lerp(a.Y, b.Y, RAND),
             Math::Lerp(a.Z, b.Z, RAND)
@@ -1248,9 +1287,9 @@ void VisjectExecutor::ProcessGroupParticles(Box* box, Node* node, Value& value)
         // Random Vector4 Range
     case 216:
     {
-        auto a = (Vector4)node->Values[0];
-        auto b = (Vector4)node->Values[1];
-        value = Vector4(
+        auto a = (Float4)node->Values[0];
+        auto b = (Float4)node->Values[1];
+        value = Float4(
             Math::Lerp(a.X, b.X, RAND),
             Math::Lerp(a.Y, b.Y, RAND),
             Math::Lerp(a.Z, b.Z, RAND),

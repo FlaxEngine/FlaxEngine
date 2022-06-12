@@ -32,7 +32,7 @@ namespace FlaxEditor.Surface.Archetypes
                     base.Draw();
 
                     var style = Style.Current;
-                    var bounds = new Rectangle(Vector2.Zero, Size);
+                    var bounds = new Rectangle(Float2.Zero, Size);
                     var count = (int)Node.Values[0];
                     if (count == 0)
                     {
@@ -51,7 +51,7 @@ namespace FlaxEditor.Surface.Archetypes
 
                         if (prevTime > 0.0f)
                         {
-                            Render2D.FillRectangle(new Rectangle(Vector2.Zero, prevTime * width, height), prevColor);
+                            Render2D.FillRectangle(new Rectangle(Float2.Zero, prevTime * width, height), prevColor);
                         }
 
                         for (int i = 1; i < count; i++)
@@ -86,7 +86,7 @@ namespace FlaxEditor.Surface.Archetypes
             private class GradientStop : Control
             {
                 private bool _isMoving;
-                private Vector2 _startMovePos;
+                private Float2 _startMovePos;
 
                 public ColorGradientNode Node;
                 public Color Color;
@@ -98,7 +98,7 @@ namespace FlaxEditor.Surface.Archetypes
 
                     var isSelected = Node._selected == this;
                     var arrowRect = new Rectangle(0, 0, 16.0f, 16.0f);
-                    var arrowTransform = Matrix3x3.Translation2D(new Vector2(-16.0f, -8.0f)) * Matrix3x3.RotationZ(-Mathf.PiOverTwo) * Matrix3x3.Translation2D(new Vector2(8.0f, 0));
+                    var arrowTransform = Matrix3x3.Translation2D(new Float2(-16.0f, -8.0f)) * Matrix3x3.RotationZ(-Mathf.PiOverTwo) * Matrix3x3.Translation2D(new Float2(8.0f, 0));
                     var color = Color;
                     if (IsMouseOver)
                         color *= 1.3f;
@@ -112,7 +112,7 @@ namespace FlaxEditor.Surface.Archetypes
                 }
 
                 /// <inheritdoc />
-                public override bool OnMouseDown(Vector2 location, MouseButton button)
+                public override bool OnMouseDown(Float2 location, MouseButton button)
                 {
                     if (button == MouseButton.Left)
                     {
@@ -127,7 +127,7 @@ namespace FlaxEditor.Surface.Archetypes
                 }
 
                 /// <inheritdoc />
-                public override bool OnMouseUp(Vector2 location, MouseButton button)
+                public override bool OnMouseUp(Float2 location, MouseButton button)
                 {
                     if (button == MouseButton.Left && _isMoving)
                     {
@@ -139,25 +139,25 @@ namespace FlaxEditor.Surface.Archetypes
                 }
 
                 /// <inheritdoc />
-                public override bool OnShowTooltip(out string text, out Vector2 location, out Rectangle area)
+                public override bool OnShowTooltip(out string text, out Float2 location, out Rectangle area)
                 {
                     // Don't show tooltip is user is moving the stop
                     return base.OnShowTooltip(out text, out location, out area) && !_isMoving;
                 }
 
                 /// <inheritdoc />
-                public override bool OnTestTooltipOverControl(ref Vector2 location)
+                public override bool OnTestTooltipOverControl(ref Float2 location)
                 {
                     // Don't show tooltip is user is moving the stop
                     return base.OnTestTooltipOverControl(ref location) && !_isMoving;
                 }
 
                 /// <inheritdoc />
-                public override void OnMouseMove(Vector2 location)
+                public override void OnMouseMove(Float2 location)
                 {
-                    if (_isMoving && Vector2.DistanceSquared(ref location, ref _startMovePos) > 25.0f)
+                    if (_isMoving && Float2.DistanceSquared(ref location, ref _startMovePos) > 25.0f)
                     {
-                        _startMovePos = Vector2.Minimum;
+                        _startMovePos = Float2.Minimum;
                         var index = Node._stops.IndexOf(this);
                         var time = (PointToParent(location).X - Node._gradient.BottomLeft.X) / Node._gradient.Width;
                         Node.SetStopTime(index, time);
@@ -203,7 +203,7 @@ namespace FlaxEditor.Surface.Archetypes
                 _gradient = new Gradient
                 {
                     Node = this,
-                    Bounds = new Rectangle(upperLeft + new Vector2(gradientMargin, 10.0f), upperRight.X - upperLeft.X - gradientMargin * 2.0f, 40.0f),
+                    Bounds = new Rectangle(upperLeft + new Float2(gradientMargin, 10.0f), upperRight.X - upperLeft.X - gradientMargin * 2.0f, 40.0f),
                     Parent = this,
                 };
 
@@ -383,7 +383,7 @@ namespace FlaxEditor.Surface.Archetypes
                     {
                         AutoFocus = false,
                         Node = this,
-                        Size = new Vector2(16.0f, 16.0f),
+                        Size = new Float2(16.0f, 16.0f),
                         Parent = this,
                     };
                     _stops.Add(stop);
@@ -394,7 +394,7 @@ namespace FlaxEditor.Surface.Archetypes
                 {
                     var stop = _stops[i];
                     var time = (float)Values[i * 2 + 1];
-                    stop.Location = _gradient.BottomLeft + new Vector2(time * _gradient.Width - stop.Width * 0.5f, 0.0f);
+                    stop.Location = _gradient.BottomLeft + new Float2(time * _gradient.Width - stop.Width * 0.5f, 0.0f);
                     stop.Color = (Color)Values[i * 2 + 2];
                     stop.TooltipText = stop.Color + " at " + time;
                 }
@@ -436,7 +436,7 @@ namespace FlaxEditor.Surface.Archetypes
                     Create = (id, context, arch, groupArch) => new CurveNode<T>(id, context, arch, groupArch),
                     Description = "An animation spline represented by a set of keyframes, each representing an endpoint of a Bezier curve.",
                     Flags = NodeFlags.AllGraphs,
-                    Size = new Vector2(400, 180.0f),
+                    Size = new Float2(400, 180.0f),
                     DefaultValues = new object[]
                     {
                         // Keyframes count
@@ -487,7 +487,7 @@ namespace FlaxEditor.Surface.Archetypes
                 _curve = new BezierCurveEditor<T>
                 {
                     MaxKeyframes = 7,
-                    Bounds = new Rectangle(upperLeft + new Vector2(curveMargin, 10.0f), upperRight.X - upperLeft.X - curveMargin * 2.0f, 140.0f),
+                    Bounds = new Rectangle(upperLeft + new Float2(curveMargin, 10.0f), upperRight.X - upperLeft.X - curveMargin * 2.0f, 140.0f),
                     Parent = this
                 };
                 _curve.Edited += OnCurveEdited;
@@ -1009,7 +1009,7 @@ namespace FlaxEditor.Surface.Archetypes
 
         private class RerouteNode : SurfaceNode
         {
-            public static readonly Vector2 DefaultSize = new Vector2(16);
+            public static readonly Float2 DefaultSize = new Float2(16);
 
             /// <inheritdoc />
             protected override bool ShowTooltip => false;
@@ -1030,8 +1030,8 @@ namespace FlaxEditor.Surface.Archetypes
 
                 var inputBox = GetBox(0);
                 var outputBox = GetBox(1);
-                inputBox.Location = Vector2.Zero;
-                outputBox.Location = Vector2.Zero;
+                inputBox.Location = Float2.Zero;
+                outputBox.Location = Float2.Zero;
 
                 UpdateBoxes();
             }
@@ -1054,7 +1054,7 @@ namespace FlaxEditor.Surface.Archetypes
             }
 
             /// <inheritdoc />
-            public override bool CanSelect(ref Vector2 location)
+            public override bool CanSelect(ref Float2 location)
             {
                 return new Rectangle(Location, DefaultSize).Contains(ref location);
             }
@@ -1097,7 +1097,7 @@ namespace FlaxEditor.Surface.Archetypes
                     var hints = inputBox.Connections[0].ParentNode.Archetype.ConnectionsHints;
                     Surface.Style.GetConnectionColor(inputBox.Connections[0].CurrentType, hints, out connectionColor);
                     SpriteHandle icon = style.Icons.BoxClose;
-                    Render2D.DrawSprite(icon, new Rectangle(Vector2.Zero, DefaultSize), connectionColor);
+                    Render2D.DrawSprite(icon, new Rectangle(Float2.Zero, DefaultSize), connectionColor);
                 }
 
                 base.Draw();
@@ -1116,12 +1116,12 @@ namespace FlaxEditor.Surface.Archetypes
                 Title = "Fresnel",
                 Description = "Calculates a falloff based on the dot product of the surface normal and the direction to the camera",
                 Flags = NodeFlags.MaterialGraph | NodeFlags.NoSpawnViaGUI | NodeFlags.NoSpawnViaPaste,
-                Size = new Vector2(140, 60),
+                Size = new Float2(140, 60),
                 Elements = new[]
                 {
                     NodeElementArchetype.Factory.Input(0, "Exponent", true, typeof(float), 0),
                     NodeElementArchetype.Factory.Input(1, "Base Reflect Fraction", true, typeof(float), 1),
-                    NodeElementArchetype.Factory.Input(2, "Normal", true, typeof(Vector3), 2),
+                    NodeElementArchetype.Factory.Input(2, "Normal", true, typeof(Float3), 2),
                     NodeElementArchetype.Factory.Output(0, "", typeof(float), 3)
                 }
             },
@@ -1131,16 +1131,16 @@ namespace FlaxEditor.Surface.Archetypes
                 Title = "Desaturation",
                 Description = "Desaturates input, or converts the colors of its input into shades of gray, based a certain percentage",
                 Flags = NodeFlags.MaterialGraph,
-                Size = new Vector2(140, 130),
+                Size = new Float2(140, 130),
                 DefaultValues = new object[]
                 {
-                    new Vector3(0.3f, 0.59f, 0.11f)
+                    new Float3(0.3f, 0.59f, 0.11f)
                 },
                 Elements = new[]
                 {
-                    NodeElementArchetype.Factory.Input(0, "Input", true, typeof(Vector3), 0),
+                    NodeElementArchetype.Factory.Input(0, "Input", true, typeof(Float3), 0),
                     NodeElementArchetype.Factory.Input(1, "Scale", true, typeof(float), 1),
-                    NodeElementArchetype.Factory.Output(0, "Result", typeof(Vector3), 2),
+                    NodeElementArchetype.Factory.Output(0, "Result", typeof(Float3), 2),
                     NodeElementArchetype.Factory.Text(0, Surface.Constants.LayoutOffsetY * 2 + 5, "Luminance Factors"),
                     NodeElementArchetype.Factory.Vector_X(0, Surface.Constants.LayoutOffsetY * 3 + 5, 0),
                     NodeElementArchetype.Factory.Vector_Y(0, Surface.Constants.LayoutOffsetY * 4 + 5, 0),
@@ -1153,7 +1153,7 @@ namespace FlaxEditor.Surface.Archetypes
                 Title = "Time",
                 Description = "Game time constant",
                 Flags = NodeFlags.MaterialGraph,
-                Size = new Vector2(110, 20),
+                Size = new Float2(110, 20),
                 Elements = new[]
                 {
                     NodeElementArchetype.Factory.Output(0, "", typeof(float), 0),
@@ -1165,7 +1165,7 @@ namespace FlaxEditor.Surface.Archetypes
                 Title = "Fresnel",
                 Description = "Calculates a falloff based on the dot product of the surface normal and the direction to the camera",
                 Flags = NodeFlags.MaterialGraph,
-                Size = new Vector2(200, 60),
+                Size = new Float2(200, 60),
                 DefaultValues = new object[]
                 {
                     5.0f,
@@ -1185,7 +1185,7 @@ namespace FlaxEditor.Surface.Archetypes
                 Title = "Time",
                 Description = "Game time constant",
                 Flags = NodeFlags.AnimGraph,
-                Size = new Vector2(140, 40),
+                Size = new Float2(140, 40),
                 Elements = new[]
                 {
                     NodeElementArchetype.Factory.Output(0, "Animation Time", typeof(float), 0),
@@ -1198,19 +1198,19 @@ namespace FlaxEditor.Surface.Archetypes
                 Title = "Panner",
                 Description = "Animates UVs over time",
                 Flags = NodeFlags.MaterialGraph,
-                Size = new Vector2(170, 80),
+                Size = new Float2(170, 80),
                 DefaultValues = new object[]
                 {
                     false
                 },
                 Elements = new[]
                 {
-                    NodeElementArchetype.Factory.Input(0, "UV", true, typeof(Vector2), 0),
+                    NodeElementArchetype.Factory.Input(0, "UV", true, typeof(Float2), 0),
                     NodeElementArchetype.Factory.Input(1, "Time", true, typeof(float), 1),
-                    NodeElementArchetype.Factory.Input(2, "Speed", true, typeof(Vector2), 2),
+                    NodeElementArchetype.Factory.Input(2, "Speed", true, typeof(Float2), 2),
                     NodeElementArchetype.Factory.Text(18, Surface.Constants.LayoutOffsetY * 3 + 5, "Fractional Part"),
                     NodeElementArchetype.Factory.Bool(0, Surface.Constants.LayoutOffsetY * 3 + 5, 0),
-                    NodeElementArchetype.Factory.Output(0, "", typeof(Vector2), 3)
+                    NodeElementArchetype.Factory.Output(0, "", typeof(Float2), 3)
                 }
             },
             new NodeArchetype
@@ -1219,7 +1219,7 @@ namespace FlaxEditor.Surface.Archetypes
                 Title = "Linearize Depth",
                 Description = "Scene depth buffer texture lookup node",
                 Flags = NodeFlags.MaterialGraph | NodeFlags.ParticleEmitterGraph,
-                Size = new Vector2(240, 40),
+                Size = new Float2(240, 40),
                 Elements = new[]
                 {
                     NodeElementArchetype.Factory.Input(0, "Hardware Depth", true, typeof(float), 0),
@@ -1232,7 +1232,7 @@ namespace FlaxEditor.Surface.Archetypes
                 Title = "Time",
                 Description = "Simulation time and update delta time access",
                 Flags = NodeFlags.ParticleEmitterGraph,
-                Size = new Vector2(140, 40),
+                Size = new Float2(140, 40),
                 Elements = new[]
                 {
                     NodeElementArchetype.Factory.Output(0, "Simulation Time", typeof(float), 0),
@@ -1245,11 +1245,11 @@ namespace FlaxEditor.Surface.Archetypes
                 Title = "Transform Position To Screen UV",
                 Description = "Transforms world-space position into screen space coordinates (normalized)",
                 Flags = NodeFlags.ParticleEmitterGraph,
-                Size = new Vector2(300, 40),
+                Size = new Float2(300, 40),
                 Elements = new[]
                 {
-                    NodeElementArchetype.Factory.Input(0, "World Space", true, typeof(Vector3), 0),
-                    NodeElementArchetype.Factory.Output(0, "Screen Space UV", typeof(Vector2), 1),
+                    NodeElementArchetype.Factory.Input(0, "World Space", true, typeof(Float3), 0),
+                    NodeElementArchetype.Factory.Output(0, "Screen Space UV", typeof(Float2), 1),
                 }
             },
             new NodeArchetype
@@ -1259,7 +1259,7 @@ namespace FlaxEditor.Surface.Archetypes
                 Create = (id, context, arch, groupArch) => new ColorGradientNode(id, context, arch, groupArch),
                 Description = "Linear color gradient sampler",
                 Flags = NodeFlags.AllGraphs,
-                Size = new Vector2(400, 150.0f),
+                Size = new Float2(400, 150.0f),
                 DefaultValues = new object[]
                 {
                     // Stops count
@@ -1284,7 +1284,7 @@ namespace FlaxEditor.Surface.Archetypes
                 Elements = new[]
                 {
                     NodeElementArchetype.Factory.Input(0, "Time", true, typeof(float), 0),
-                    NodeElementArchetype.Factory.Output(0, string.Empty, typeof(Vector4), 1),
+                    NodeElementArchetype.Factory.Output(0, string.Empty, typeof(Float4), 1),
                 }
             },
             new NodeArchetype
@@ -1301,7 +1301,7 @@ namespace FlaxEditor.Surface.Archetypes
                         {
                             filterText.Substring(2),
                             new Color(1.0f, 1.0f, 1.0f, 0.2f),
-                            new Vector2(400.0f, 400.0f),
+                            new Float2(400.0f, 400.0f),
                         };
                         return true;
                     }
@@ -1312,18 +1312,18 @@ namespace FlaxEditor.Surface.Archetypes
                 },
                 Create = (id, context, arch, groupArch) => new SurfaceComment(id, context, arch, groupArch),
                 Flags = NodeFlags.AllGraphs,
-                Size = new Vector2(400.0f, 400.0f),
+                Size = new Float2(400.0f, 400.0f),
                 DefaultValues = new object[]
                 {
                     "Comment", // Title
                     new Color(1.0f, 1.0f, 1.0f, 0.2f), // Color
-                    new Vector2(400.0f, 400.0f), // Size
+                    new Float2(400.0f, 400.0f), // Size
                 },
             },
             CurveNode<float>.GetArchetype(12, "Curve", typeof(float), 0.0f, 1.0f),
-            CurveNode<Vector2>.GetArchetype(13, "Curve Vector2", typeof(Vector2), Vector2.Zero, Vector2.One),
-            CurveNode<Vector3>.GetArchetype(14, "Curve Vector3", typeof(Vector3), Vector3.Zero, Vector3.One),
-            CurveNode<Vector4>.GetArchetype(15, "Curve Vector4", typeof(Vector4), Vector4.Zero, Vector4.One),
+            CurveNode<Float2>.GetArchetype(13, "Curve Float2", typeof(Float2), Float2.Zero, Float2.One),
+            CurveNode<Float3>.GetArchetype(14, "Curve Float3", typeof(Float3), Float3.Zero, Float3.One),
+            CurveNode<Float4>.GetArchetype(15, "Curve Float4", typeof(Float4), Float4.Zero, Float4.One),
             new NodeArchetype
             {
                 TypeID = 16,
@@ -1331,7 +1331,7 @@ namespace FlaxEditor.Surface.Archetypes
                 Title = "Get Gameplay Global",
                 Description = "Gets the Gameplay Global variable value",
                 Flags = NodeFlags.AllGraphs,
-                Size = new Vector2(220, 90),
+                Size = new Float2(220, 90),
                 DefaultValues = new object[]
                 {
                     Guid.Empty,
@@ -1350,7 +1350,7 @@ namespace FlaxEditor.Surface.Archetypes
                 Title = "Platform Switch",
                 Description = "Gets the input value based on the runtime-platform type",
                 Flags = NodeFlags.AllGraphs,
-                Size = new Vector2(220, 220),
+                Size = new Float2(220, 220),
                 ConnectionsHints = ConnectionsHint.Value,
                 IndependentBoxes = new[] { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11 },
                 DependentBoxes = new[] { 0 },
@@ -1377,7 +1377,7 @@ namespace FlaxEditor.Surface.Archetypes
                 Create = (id, context, arch, groupArch) => new AssetReferenceNode(id, context, arch, groupArch),
                 Description = "References an asset.",
                 Flags = NodeFlags.VisualScriptGraph | NodeFlags.AnimGraph,
-                Size = new Vector2(200, 70),
+                Size = new Float2(200, 70),
                 DefaultValues = new object[]
                 {
                     Guid.Empty,
@@ -1395,7 +1395,7 @@ namespace FlaxEditor.Surface.Archetypes
                 Create = (id, context, arch, groupArch) => new ThisNode(id, context, arch, groupArch),
                 Description = "Gets the reference to this script object instance (self).",
                 Flags = NodeFlags.VisualScriptGraph,
-                Size = new Vector2(140, 20),
+                Size = new Float2(140, 20),
                 AlternativeTitles = new[]
                 {
                     "self",
@@ -1412,7 +1412,7 @@ namespace FlaxEditor.Surface.Archetypes
                 Description = "Converts the value into a human-readable string representation.",
                 ConnectionsHints = ConnectionsHint.Anything,
                 Flags = NodeFlags.VisualScriptGraph | NodeFlags.AnimGraph,
-                Size = new Vector2(140, 20),
+                Size = new Float2(140, 20),
                 AlternativeTitles = new[]
                 {
                     "tostring",
@@ -1430,7 +1430,7 @@ namespace FlaxEditor.Surface.Archetypes
                 Create = (id, context, arch, groupArch) => new ActorReferenceNode(id, context, arch, groupArch),
                 Description = "References an actor.",
                 Flags = NodeFlags.VisualScriptGraph,
-                Size = new Vector2(200, 20),
+                Size = new Float2(200, 20),
                 DefaultValues = new object[]
                 {
                     Guid.Empty,
@@ -1448,7 +1448,7 @@ namespace FlaxEditor.Surface.Archetypes
                 Create = (id, context, arch, groupArch) => new AsNode(id, context, arch, groupArch),
                 Description = "Casts the object to a different type. Returns null if cast fails.",
                 Flags = NodeFlags.VisualScriptGraph | NodeFlags.AnimGraph,
-                Size = new Vector2(200, 20),
+                Size = new Float2(200, 20),
                 DefaultValues = new object[]
                 {
                     string.Empty, // Typename
@@ -1466,7 +1466,7 @@ namespace FlaxEditor.Surface.Archetypes
                 Create = (id, context, arch, groupArch) => new TypeReferenceNode(id, context, arch, groupArch),
                 Description = "Scripting type picker.",
                 Flags = NodeFlags.VisualScriptGraph | NodeFlags.AnimGraph,
-                Size = new Vector2(200, 40),
+                Size = new Float2(200, 40),
                 DefaultValues = new object[]
                 {
                     string.Empty, // Typename
@@ -1484,7 +1484,7 @@ namespace FlaxEditor.Surface.Archetypes
                 Create = (id, context, arch, groupArch) => new IsNode(id, context, arch, groupArch),
                 Description = "Checks if the object is of the given type. Return true if so, false otherwise.",
                 Flags = NodeFlags.VisualScriptGraph | NodeFlags.AnimGraph,
-                Size = new Vector2(200, 20),
+                Size = new Float2(200, 20),
                 DefaultValues = new object[]
                 {
                     string.Empty, // Typename
@@ -1502,7 +1502,7 @@ namespace FlaxEditor.Surface.Archetypes
                 Create = (id, context, arch, groupArch) => new CastNode(id, context, arch, groupArch, new ScriptType(typeof(FlaxEngine.Object))),
                 Description = "Tries to cast the object to a given type. Returns null if fails.",
                 Flags = NodeFlags.VisualScriptGraph,
-                Size = new Vector2(200, 60),
+                Size = new Float2(200, 60),
                 DefaultValues = new object[]
                 {
                     string.Empty, // Typename
@@ -1523,7 +1523,7 @@ namespace FlaxEditor.Surface.Archetypes
                 Create = (id, context, arch, groupArch) => new CastNode(id, context, arch, groupArch, ScriptType.Object),
                 Description = "Tries to cast the object to a given type. Returns null if fails.",
                 Flags = NodeFlags.VisualScriptGraph,
-                Size = new Vector2(200, 60),
+                Size = new Float2(200, 60),
                 DefaultValues = new object[]
                 {
                     string.Empty, // Typename
@@ -1543,7 +1543,7 @@ namespace FlaxEditor.Surface.Archetypes
                 Title = "Is Null",
                 Description = "Checks if the object is null. Return false if it's valid.",
                 Flags = NodeFlags.VisualScriptGraph | NodeFlags.AnimGraph,
-                Size = new Vector2(150, 20),
+                Size = new Float2(150, 20),
                 Elements = new[]
                 {
                     NodeElementArchetype.Factory.Output(0, string.Empty, typeof(bool), 0),
@@ -1556,7 +1556,7 @@ namespace FlaxEditor.Surface.Archetypes
                 Title = "Is Valid",
                 Description = "Checks if the object is valid. Return false if it's null.",
                 Flags = NodeFlags.VisualScriptGraph | NodeFlags.AnimGraph,
-                Size = new Vector2(150, 20),
+                Size = new Float2(150, 20),
                 Elements = new[]
                 {
                     NodeElementArchetype.Factory.Output(0, string.Empty, typeof(bool), 0),

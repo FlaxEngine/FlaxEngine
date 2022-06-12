@@ -36,9 +36,9 @@ API_STRUCT(InBuild) struct FLAXENGINE_API VariantType
         Blob,
         Enum,
 
-        Vector2,
-        Vector3,
-        Vector4,
+        Float2,
+        Float3,
+        Float4,
         Color,
         Guid,
         BoundingBox,
@@ -65,7 +65,16 @@ API_STRUCT(InBuild) struct FLAXENGINE_API VariantType
         Double3,
         Double4,
 
-        MAX
+        MAX,
+#if USE_LARGE_WORLDS
+        Vector2 = Double2,
+        Vector3 = Double3,
+        Vector4 = Double4,
+#else
+        Vector2 = Float2,
+        Vector3 = Float3,
+        Vector4 = Float4,
+#endif
     };
 
 public:
@@ -216,9 +225,9 @@ public:
     Variant(const Char* v);
     Variant(const char* v);
     Variant(const Guid& v);
-    Variant(const Vector2& v);
-    Variant(const Vector3& v);
-    Variant(const Vector4& v);
+    Variant(const Float2& v);
+    Variant(const Float3& v);
+    Variant(const Float4& v);
     Variant(const Double2& v);
     Variant(const Double3& v);
     Variant(const Double4& v);
@@ -289,9 +298,9 @@ public:
     explicit operator ScriptingObject*() const;
     explicit operator struct _MonoObject*() const;
     explicit operator Asset*() const;
-    explicit operator Vector2() const;
-    explicit operator Vector3() const;
-    explicit operator Vector4() const;
+    explicit operator Float2() const;
+    explicit operator Float3() const;
+    explicit operator Float4() const;
     explicit operator Double2() const;
     explicit operator Double3() const;
     explicit operator Double4() const;
@@ -309,9 +318,12 @@ public:
     explicit operator Rectangle() const;
 
     const Vector2& AsVector2() const;
-    Vector3& AsVector3();
     const Vector3& AsVector3() const;
     const Vector4& AsVector4() const;
+    const Float2& AsFloat2() const;
+    Float3& AsFloat3();
+    const Float3& AsFloat3() const;
+    const Float4& AsFloat4() const;
     const Double2& AsDouble2() const;
     const Double3& AsDouble3() const;
     const Double4& AsDouble4() const;
@@ -322,8 +334,11 @@ public:
     const Quaternion& AsQuaternion() const;
     const Rectangle& AsRectangle() const;
     const Guid& AsGuid() const;
+    BoundingSphere& AsBoundingSphere();
     const BoundingSphere& AsBoundingSphere() const;
+    BoundingBox& AsBoundingBox();
     const BoundingBox& AsBoundingBox() const;
+    Ray& AsRay();
     const Ray& AsRay() const;
     const Transform& AsTransform() const;
     const Matrix& AsMatrix() const;

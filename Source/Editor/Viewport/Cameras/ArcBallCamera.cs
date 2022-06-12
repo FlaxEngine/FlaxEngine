@@ -1,3 +1,9 @@
+#if USE_LARGE_WORLDS
+using Real = System.Double;
+#else
+using Real = System.Single;
+#endif
+
 // Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 using FlaxEngine;
@@ -12,7 +18,7 @@ namespace FlaxEditor.Viewport.Cameras
     public class ArcBallCamera : ViewportCamera
     {
         private Vector3 _orbitCenter;
-        private float _orbitRadius;
+        private Real _orbitRadius;
 
         /// <summary>
         /// Gets or sets the orbit center.
@@ -30,7 +36,7 @@ namespace FlaxEditor.Viewport.Cameras
         /// <summary>
         /// Gets or sets the orbit radius.
         /// </summary>
-        public float OrbitRadius
+        public Real OrbitRadius
         {
             get => _orbitRadius;
             set
@@ -95,7 +101,7 @@ namespace FlaxEditor.Viewport.Cameras
         }
 
         /// <inheritdoc />
-        public override void SetArcBallView(Quaternion orientation, Vector3 orbitCenter, float orbitRadius)
+        public override void SetArcBallView(Quaternion orientation, Vector3 orbitCenter, Real orbitRadius)
         {
             base.SetArcBallView(orientation, orbitCenter, orbitRadius);
 
@@ -104,7 +110,7 @@ namespace FlaxEditor.Viewport.Cameras
         }
 
         /// <inheritdoc />
-        public override void UpdateView(float dt, ref Vector3 moveDelta, ref Vector2 mouseDelta, out bool centerMouse)
+        public override void UpdateView(float dt, ref Vector3 moveDelta, ref Float2 mouseDelta, out bool centerMouse)
         {
             centerMouse = true;
 

@@ -16,7 +16,7 @@ DECLARE_SCENE_OBJECT(SpriteRender);
 private:
 
     Color _color;
-    Vector2 _size;
+    Float2 _size;
     SpriteHandle _sprite;
     MaterialInstance* _materialInstance = nullptr;
     MaterialParameter* _paramImage = nullptr;
@@ -31,12 +31,12 @@ public:
     /// Gets the size of the sprite.
     /// </summary>
     API_PROPERTY(Attributes="EditorOrder(0), EditorDisplay(\"Sprite\")")
-    Vector2 GetSize() const;
+    Float2 GetSize() const;
 
     /// <summary>
     /// Sets the size of the sprite.
     /// </summary>
-    API_PROPERTY() void SetSize(const Vector2& value);
+    API_PROPERTY() void SetSize(const Float2& value);
 
     /// <summary>
     /// Gets the color of the sprite. Passed to the sprite material in parameter named `Color`.

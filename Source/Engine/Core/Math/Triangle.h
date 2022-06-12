@@ -59,7 +59,7 @@ public:
     // @returns Whether the two objects intersected
     bool Intersects(const Ray& ray) const
     {
-        float distance;
+        Real distance;
         return CollisionsHelper::RayIntersectsTriangle(ray, V0, V1, V2, distance);
     }
 
@@ -67,7 +67,7 @@ public:
     // @param ray The ray to test
     // @param distance When the method completes, contains the distance of the intersection, or 0 if there was no intersection
     // @returns Whether the two objects intersected
-    bool Intersects(const Ray& ray, float& distance) const
+    bool Intersects(const Ray& ray, Real& distance) const
     {
         return CollisionsHelper::RayIntersectsTriangle(ray, V0, V1, V2, distance);
     }
@@ -77,7 +77,7 @@ public:
     // @param distance When the method completes, contains the distance of the intersection, or 0 if there was no intersection
     // @param normal When the method completes, contains the intersection surface normal vector, or Vector3::Up if there was no intersection
     // @returns Whether the two objects intersected
-    bool Intersects(const Ray& ray, float& distance, Vector3& normal) const
+    bool Intersects(const Ray& ray, Real& distance, Vector3& normal) const
     {
         return CollisionsHelper::RayIntersectsTriangle(ray, V0, V1, V2, distance, normal);
     }

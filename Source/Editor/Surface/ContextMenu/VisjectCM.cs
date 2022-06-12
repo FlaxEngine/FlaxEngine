@@ -125,7 +125,7 @@ namespace FlaxEditor.Surface.ContextMenu
                 _parameterSetNodeArchetype = info.ParameterSetNodeArchetype ?? Archetypes.Parameters.Nodes[3];
 
             // Context menu dimensions
-            Size = new Vector2(320, 220);
+            Size = new Float2(320, 220);
 
             // Search box
             _searchBox = new TextBox(false, 1, 1)
@@ -559,7 +559,7 @@ namespace FlaxEditor.Surface.ContextMenu
         }
 
         /// <inheritdoc />
-        public override void Show(Control parent, Vector2 location)
+        public override void Show(Control parent, Float2 location)
         {
             Show(parent, location, null);
         }
@@ -570,7 +570,7 @@ namespace FlaxEditor.Surface.ContextMenu
         /// <param name="parent">Parent control to attach to it.</param>
         /// <param name="location">Popup menu origin location in parent control coordinates.</param>
         /// <param name="startBox">The currently selected box that the new node will get connected to. Can be null</param>
-        public void Show(Control parent, Vector2 location, Elements.Box startBox)
+        public void Show(Control parent, Float2 location, Elements.Box startBox)
         {
             _selectedBox = startBox;
             base.Show(parent, location);

@@ -295,7 +295,7 @@ namespace FlaxEditor.GUI.Timeline.Tracks
             Events.KeyframesEditorContext = Timeline;
             Events.CustomViewPanning = Timeline.OnKeyframesViewPanning;
             Events.Bounds = new Rectangle(Timeline.StartOffset, Y + 1.0f, Timeline.Duration * Timeline.UnitsPerSecond * Timeline.Zoom, Height - 2.0f);
-            Events.ViewScale = new Vector2(Timeline.Zoom, 1.0f);
+            Events.ViewScale = new Float2(Timeline.Zoom, 1.0f);
             Events.Visible = Visible;
             Events.UpdateKeyframes();
         }
@@ -443,7 +443,7 @@ namespace FlaxEditor.GUI.Timeline.Tracks
         }
 
         /// <inheritdoc />
-        public new void OnKeyframesMove(IKeyframesEditor editor, ContainerControl control, Vector2 location, bool start, bool end)
+        public new void OnKeyframesMove(IKeyframesEditor editor, ContainerControl control, Float2 location, bool start, bool end)
         {
             if (Events != null && Events.Visible)
                 Events.OnKeyframesMove(editor, control, location, start, end);

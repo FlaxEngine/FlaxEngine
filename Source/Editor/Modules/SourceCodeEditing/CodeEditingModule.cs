@@ -46,16 +46,6 @@ namespace FlaxEditor.Modules.SourceCodeEditing
                 _list.Add(new ScriptType(typeof(float)));
                 _list.Add(new ScriptType(typeof(double)));
                 _list.Add(new ScriptType(typeof(string)));
-                _list.Add(new ScriptType(typeof(Vector2)));
-                _list.Add(new ScriptType(typeof(Vector3)));
-                _list.Add(new ScriptType(typeof(Vector4)));
-                _list.Add(new ScriptType(typeof(Color)));
-                _list.Add(new ScriptType(typeof(Quaternion)));
-                _list.Add(new ScriptType(typeof(BoundingBox)));
-                _list.Add(new ScriptType(typeof(BoundingSphere)));
-                _list.Add(new ScriptType(typeof(Rectangle)));
-                _list.Add(new ScriptType(typeof(Matrix)));
-                _list.Add(new ScriptType(typeof(Ray)));
                 _list.Add(new ScriptType(typeof(Guid)));
 
                 base.Search();

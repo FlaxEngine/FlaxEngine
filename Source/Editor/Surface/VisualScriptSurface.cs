@@ -544,7 +544,7 @@ namespace FlaxEditor.Surface
         }
 
         /// <inheritdoc />
-        protected override void OnShowPrimaryMenu(VisjectCM activeCM, Vector2 location, Box startBox)
+        protected override void OnShowPrimaryMenu(VisjectCM activeCM, Float2 location, Box startBox)
         {
             Profiler.BeginEvent("Setup Visual Script Context Menu");
 
@@ -654,7 +654,7 @@ namespace FlaxEditor.Surface
         }
 
         /// <inheritdoc />
-        public override DragDropEffect OnDragDrop(ref Vector2 location, DragData data)
+        public override DragDropEffect OnDragDrop(ref Float2 location, DragData data)
         {
             var args = new DragDropEventArgs
             {

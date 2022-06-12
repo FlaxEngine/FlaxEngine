@@ -12,12 +12,6 @@
 #include "Engine/Core/Math/Vector2.h"
 #include "Engine/Core/Math/Vector3.h"
 #include "Engine/Core/Math/Vector4.h"
-#include "Engine/Core/Math/Double2.h"
-#include "Engine/Core/Math/Double3.h"
-#include "Engine/Core/Math/Double4.h"
-#include "Engine/Core/Math/Int2.h"
-#include "Engine/Core/Math/Int3.h"
-#include "Engine/Core/Math/Int4.h"
 #include "Engine/Core/Math/Quaternion.h"
 #include "Engine/Core/Math/Matrix.h"
 #include "Engine/Core/Math/Transform.h"
@@ -248,6 +242,12 @@ VariantType MUtils::UnboxVariantType(MonoType* monoType)
             return VariantType(VariantType::Int3);
         if (klass == Int4::TypeInitializer.GetMonoClass())
             return VariantType(VariantType::Int4);
+        if (klass == Float2::TypeInitializer.GetMonoClass())
+            return VariantType(VariantType::Float2);
+        if (klass == Float3::TypeInitializer.GetMonoClass())
+            return VariantType(VariantType::Float3);
+        if (klass == Float4::TypeInitializer.GetMonoClass())
+            return VariantType(VariantType::Float4);
         if (klass == Double2::TypeInitializer.GetMonoClass())
             return VariantType(VariantType::Double2);
         if (klass == Double3::TypeInitializer.GetMonoClass())
@@ -383,6 +383,12 @@ Variant MUtils::UnboxVariant(MonoObject* value)
             return *static_cast<Int3*>(unboxed);
         if (klass == Int4::TypeInitializer.GetMonoClass())
             return *static_cast<Int4*>(unboxed);
+        if (klass == Float2::TypeInitializer.GetMonoClass())
+            return *static_cast<Float2*>(unboxed);
+        if (klass == Float3::TypeInitializer.GetMonoClass())
+            return *static_cast<Float3*>(unboxed);
+        if (klass == Float4::TypeInitializer.GetMonoClass())
+            return *static_cast<Float4*>(unboxed);
         if (klass == Double2::TypeInitializer.GetMonoClass())
             return *static_cast<Double2*>(unboxed);
         if (klass == Double3::TypeInitializer.GetMonoClass())
@@ -445,14 +451,11 @@ Variant MUtils::UnboxVariant(MonoObject* value)
             case VariantType::Uint64:
             case VariantType::Float:
             case VariantType::Double:
-            case VariantType::Vector2:
-            case VariantType::Vector3:
-            case VariantType::Vector4:
+            case VariantType::Float2:
+            case VariantType::Float3:
+            case VariantType::Float4:
             case VariantType::Color:
             case VariantType::Guid:
-            case VariantType::BoundingSphere:
-            case VariantType::BoundingBox:
-            case VariantType::Ray:
             case VariantType::Quaternion:
             case VariantType::Rectangle:
             case VariantType::Int2:
@@ -462,6 +465,11 @@ Variant MUtils::UnboxVariant(MonoObject* value)
             case VariantType::Uint16:
             case VariantType::Double2:
             case VariantType::Double3:
+#if !USE_LARGE_WORLDS
+            case VariantType::BoundingSphere:
+            case VariantType::BoundingBox:
+            case VariantType::Ray:
+#endif
                 // Optimized unboxing of raw data type
                 for (int32 i = 0; i < array.Count(); i++)
                 {
@@ -473,6 +481,11 @@ Variant MUtils::UnboxVariant(MonoObject* value)
             case VariantType::Transform:
             case VariantType::Matrix:
             case VariantType::Double4:
+#if USE_LARGE_WORLDS
+            case VariantType::BoundingSphere:
+            case VariantType::BoundingBox:
+            case VariantType::Ray:
+#endif
                 // Optimized unboxing of raw data type
                 for (int32 i = 0; i < array.Count(); i++)
                 {
@@ -606,12 +619,12 @@ MonoObject* MUtils::BoxVariant(const Variant& value)
         return mono_value_box(mono_domain_get(), mono_get_single_class(), (void*)&value.AsFloat);
     case VariantType::Double:
         return mono_value_box(mono_domain_get(), mono_get_double_class(), (void*)&value.AsDouble);
-    case VariantType::Vector2:
-        return mono_value_box(mono_domain_get(), stdTypes.Vector2Class->GetNative(), (void*)&value.AsData);
-    case VariantType::Vector3:
-        return mono_value_box(mono_domain_get(), stdTypes.Vector3Class->GetNative(), (void*)&value.AsData);
-    case VariantType::Vector4:
-        return mono_value_box(mono_domain_get(), stdTypes.Vector4Class->GetNative(), (void*)&value.AsData);
+    case VariantType::Float2:
+        return mono_value_box(mono_domain_get(), Float2::TypeInitializer.GetMonoClass(), (void*)&value.AsData);
+    case VariantType::Float3:
+        return mono_value_box(mono_domain_get(), Float3::TypeInitializer.GetMonoClass(), (void*)&value.AsData);
+    case VariantType::Float4:
+        return mono_value_box(mono_domain_get(), Float4::TypeInitializer.GetMonoClass(), (void*)&value.AsData);
     case VariantType::Double2:
         return mono_value_box(mono_domain_get(), Double2::TypeInitializer.GetMonoClass(), (void*)&value.AsData);
     case VariantType::Double3:
@@ -627,15 +640,15 @@ MonoObject* MUtils::BoxVariant(const Variant& value)
     case VariantType::Quaternion:
         return mono_value_box(mono_domain_get(), stdTypes.QuaternionClass->GetNative(), (void*)&value.AsData);
     case VariantType::BoundingSphere:
-        return mono_value_box(mono_domain_get(), stdTypes.BoundingSphereClass->GetNative(), (void*)&value.AsData);
+        return mono_value_box(mono_domain_get(), stdTypes.BoundingSphereClass->GetNative(), (void*)&value.AsBoundingSphere());
     case VariantType::Rectangle:
         return mono_value_box(mono_domain_get(), stdTypes.RectangleClass->GetNative(), (void*)&value.AsData);
     case VariantType::Pointer:
         return mono_value_box(mono_domain_get(), mono_get_intptr_class(), (void*)&value.AsPointer);
     case VariantType::Ray:
-        return mono_value_box(mono_domain_get(), stdTypes.RayClass->GetNative(), (void*)&value.AsData);
+        return mono_value_box(mono_domain_get(), stdTypes.RayClass->GetNative(), (void*)&value.AsRay());
     case VariantType::BoundingBox:
-        return mono_value_box(mono_domain_get(), stdTypes.BoundingBoxClass->GetNative(), (void*)&value.AsData);
+        return mono_value_box(mono_domain_get(), stdTypes.BoundingBoxClass->GetNative(), (void*)&value.AsBoundingBox());
     case VariantType::Transform:
         return mono_value_box(mono_domain_get(), stdTypes.TransformClass->GetNative(), value.AsBlob.Data);
     case VariantType::Matrix:
@@ -689,15 +702,12 @@ MonoObject* MUtils::BoxVariant(const Variant& value)
                 case VariantType::Uint64:
                 case VariantType::Float:
                 case VariantType::Double:
-                case VariantType::Vector2:
-                case VariantType::Vector3:
-                case VariantType::Vector4:
+                case VariantType::Float2:
+                case VariantType::Float3:
+                case VariantType::Float4:
                 case VariantType::Color:
                 case VariantType::Guid:
-                case VariantType::BoundingSphere:
-                case VariantType::BoundingBox:
                 case VariantType::Quaternion:
-                case VariantType::Ray:
                 case VariantType::Rectangle:
                 case VariantType::Int2:
                 case VariantType::Int3:
@@ -706,6 +716,11 @@ MonoObject* MUtils::BoxVariant(const Variant& value)
                 case VariantType::Uint16:
                 case VariantType::Double2:
                 case VariantType::Double3:
+#if !USE_LARGE_WORLDS
+                case VariantType::BoundingSphere:
+                case VariantType::BoundingBox:
+                case VariantType::Ray:
+#endif
                     // Optimized boxing of raw data type
                     for (int32 i = 0; i < array.Count(); i++)
                         Platform::MemoryCopy(mono_array_addr_with_size(managed, elementSize, i), &array[i].AsData, elementSize);
@@ -713,6 +728,11 @@ MonoObject* MUtils::BoxVariant(const Variant& value)
                 case VariantType::Transform:
                 case VariantType::Matrix:
                 case VariantType::Double4:
+#if USE_LARGE_WORLDS
+                case VariantType::BoundingSphere:
+                case VariantType::BoundingBox:
+                case VariantType::Ray:
+#endif
                     // Optimized boxing of raw data type
                     for (int32 i = 0; i < array.Count(); i++)
                         Platform::MemoryCopy(mono_array_addr_with_size(managed, elementSize, i), array[i].AsBlob.Data, elementSize);
@@ -924,12 +944,12 @@ MonoClass* MUtils::GetClass(const VariantType& value)
         return Asset::GetStaticClass()->GetNative();
     case VariantType::Blob:
         return mono_array_class_get(mono_get_byte_class(), 1);
-    case VariantType::Vector2:
-        return stdTypes.Vector2Class->GetNative();
-    case VariantType::Vector3:
-        return stdTypes.Vector3Class->GetNative();
-    case VariantType::Vector4:
-        return stdTypes.Vector4Class->GetNative();
+    case VariantType::Float2:
+        return Double2::TypeInitializer.GetMonoClass();
+    case VariantType::Float3:
+        return Float3::TypeInitializer.GetMonoClass();
+    case VariantType::Float4:
+        return Float4::TypeInitializer.GetMonoClass();
     case VariantType::Double2:
         return Double2::TypeInitializer.GetMonoClass();
     case VariantType::Double3:
@@ -1014,12 +1034,12 @@ MonoClass* MUtils::GetClass(const Variant& value)
         return mono_get_string_class();
     case VariantType::Blob:
         return mono_array_class_get(mono_get_byte_class(), 1);
-    case VariantType::Vector2:
-        return stdTypes.Vector2Class->GetNative();
-    case VariantType::Vector3:
-        return stdTypes.Vector3Class->GetNative();
-    case VariantType::Vector4:
-        return stdTypes.Vector4Class->GetNative();
+    case VariantType::Float2:
+        return Float2::TypeInitializer.GetMonoClass();
+    case VariantType::Float3:
+        return Float3::TypeInitializer.GetMonoClass();
+    case VariantType::Float4:
+        return Float4::TypeInitializer.GetMonoClass();
     case VariantType::Double2:
         return Double2::TypeInitializer.GetMonoClass();
     case VariantType::Double3:
@@ -1157,18 +1177,26 @@ void* MUtils::VariantToManagedArgPtr(Variant& value, const MType& type, bool& fa
             value = Variant((type)value); \
         return value.access; \
     }
-        CASE_IN_BUILD_TYPE(Vector2, AsData);
-        CASE_IN_BUILD_TYPE(Vector3, AsData);
-        CASE_IN_BUILD_TYPE(Vector4, AsData);
         CASE_IN_BUILD_TYPE(Color, AsData);
         CASE_IN_BUILD_TYPE(Quaternion, AsData);
         CASE_IN_BUILD_TYPE(Guid, AsData);
-        CASE_IN_BUILD_TYPE(Ray, AsData);
         CASE_IN_BUILD_TYPE(Rectangle, AsData);
-        CASE_IN_BUILD_TYPE(BoundingSphere, AsData);
-        CASE_IN_BUILD_TYPE(BoundingBox, AsData);
         CASE_IN_BUILD_TYPE(Matrix, AsBlob.Data);
         CASE_IN_BUILD_TYPE(Transform, AsBlob.Data);
+#undef CASE_IN_BUILD_TYPE
+#define CASE_IN_BUILD_TYPE(type, access) \
+    if (klass == stdTypes->type##Class->GetNative()) \
+    { \
+        if (value.Type.Type != VariantType::type) \
+            value = Variant((type)value); \
+        return (void*)&value.access(); \
+    }
+        CASE_IN_BUILD_TYPE(Vector2, AsVector2);
+        CASE_IN_BUILD_TYPE(Vector3, AsVector3);
+        CASE_IN_BUILD_TYPE(Vector4, AsVector4);
+        CASE_IN_BUILD_TYPE(BoundingSphere, AsBoundingSphere);
+        CASE_IN_BUILD_TYPE(BoundingBox, AsBoundingBox);
+        CASE_IN_BUILD_TYPE(Ray, AsRay);
 #undef CASE_IN_BUILD_TYPE
 #define CASE_IN_BUILD_TYPE(type, access) \
     if (klass == type::TypeInitializer.GetMonoClass()) \
@@ -1177,6 +1205,9 @@ void* MUtils::VariantToManagedArgPtr(Variant& value, const MType& type, bool& fa
             value = Variant((type)value); \
         return value.access; \
     }
+        CASE_IN_BUILD_TYPE(Float2, AsData);
+        CASE_IN_BUILD_TYPE(Float3, AsData);
+        CASE_IN_BUILD_TYPE(Float4, AsData);
         CASE_IN_BUILD_TYPE(Double2, AsData);
         CASE_IN_BUILD_TYPE(Double3, AsData);
         CASE_IN_BUILD_TYPE(Double4, AsBlob.Data);

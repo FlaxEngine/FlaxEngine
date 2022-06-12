@@ -113,7 +113,7 @@ namespace FlaxEngine
 
                     // Reset size
                     if (previous == CanvasRenderMode.ScreenSpace || (_renderMode == CanvasRenderMode.WorldSpace || _renderMode == CanvasRenderMode.WorldSpaceFaceCamera))
-                        Size = new Vector2(500, 500);
+                        Size = new Float2(500, 500);
                 }
             }
         }
@@ -163,7 +163,7 @@ namespace FlaxEngine
         /// Gets or sets the size of the canvas. Used only in <see cref="CanvasRenderMode.WorldSpace"/> or <see cref="CanvasRenderMode.WorldSpaceFaceCamera"/>.
         /// </summary>
         [EditorOrder(20), EditorDisplay("Canvas"), VisibleIf("Editor_IsWorldSpace"), Tooltip("Canvas size.")]
-        public Vector2 Size
+        public Float2 Size
         {
             get => _guiRoot.Size;
             set
@@ -203,7 +203,7 @@ namespace FlaxEngine
         /// </summary>
         /// <param name="location">The location of the point to test in coordinates of the canvas root control (see <see cref="GUI"/>).</param>
         /// <returns>True if canvas was hit, otherwise false.</returns>
-        public delegate bool TestCanvasIntersectionDelegate(ref Vector2 location);
+        public delegate bool TestCanvasIntersectionDelegate(ref Float2 location);
 
         /// <summary>
         /// The callback used to perform custom canvas intersection test. Can be used to implement a canvas that has a holes or non-rectangular shape.
@@ -216,7 +216,7 @@ namespace FlaxEngine
         /// </summary>
         /// <param name="location">The location in screen-space.</param>
         /// <param name="ray">The output ray in world-space.</param>
-        public delegate void CalculateRayDelegate(ref Vector2 location, out Ray ray);
+        public delegate void CalculateRayDelegate(ref Float2 location, out Ray ray);
 
         /// <summary>
         /// The current implementation of the <see cref="CalculateRayDelegate"/> used to calculate the mouse ray in 3D from the 2D location. Cannot be null.
@@ -228,7 +228,7 @@ namespace FlaxEngine
         /// </summary>
         /// <param name="location">The location in screen-space.</param>
         /// <param name="ray">The output ray in world-space.</param>
-        public static void DefaultCalculateRay(ref Vector2 location, out Ray ray)
+        public static void DefaultCalculateRay(ref Float2 location, out Ray ray)
         {
             var camera = Camera.MainCamera;
             if (camera)
@@ -326,10 +326,10 @@ namespace FlaxEngine
             {
                 OrientedBoundingBox bounds = new OrientedBoundingBox
                 {
-                    Extents = new Vector3(_guiRoot.Size * 0.5f, Mathf.Epsilon)
+                    Extents = new Float3(_guiRoot.Size * 0.5f, Mathf.Epsilon)
                 };
                 GetWorldMatrix(out Matrix world);
-                Matrix.Translation(bounds.Extents.X, bounds.Extents.Y, 0, out Matrix offset);
+                Matrix.Translation((float)bounds.Extents.X, (float)bounds.Extents.Y, 0, out Matrix offset);
                 Matrix.Multiply(ref offset, ref world, out bounds.Transformation);
                 return bounds;
             }
@@ -369,7 +369,7 @@ namespace FlaxEngine
                     Quaternion.Euler(180, 180, 0, out var quat);
                     Matrix.RotationQuaternion(ref quat, out m2);
                     Matrix.Multiply(ref m3, ref m2, out m1);
-                    m2 = Matrix.Transformation(Vector3.One, Quaternion.FromDirection(-view.Direction), transform.Translation);
+                    m2 = Matrix.Transformation(Float3.One, Quaternion.FromDirection(-view.Direction), transform.Translation);
                     Matrix.Multiply(ref m1, ref m2, out world);
                 }
                 else if (_renderMode == CanvasRenderMode.CameraSpace)
@@ -377,15 +377,15 @@ namespace FlaxEngine
                     var view = _editorTask.View;
                     var frustum = view.Frustum;
                     if (!frustum.IsOrthographic)
-                        _guiRoot.Size = new Vector2(frustum.GetWidthAtDepth(Distance), frustum.GetHeightAtDepth(Distance));
+                        _guiRoot.Size = new Float2(frustum.GetWidthAtDepth(Distance), frustum.GetHeightAtDepth(Distance));
                     else
                         _guiRoot.Size = _editorTask.Viewport.Size;
                     Matrix.Translation(_guiRoot.Width / -2.0f, _guiRoot.Height / -2.0f, 0, out world);
                     Matrix.RotationYawPitchRoll(Mathf.Pi, Mathf.Pi, 0, out var tmp2);
                     Matrix.Multiply(ref world, ref tmp2, out var tmp1);
-                    var viewPos = view.Position;
-                    var viewRot = view.Direction != Vector3.Up ? Quaternion.LookRotation(view.Direction, Vector3.Up) : Quaternion.LookRotation(view.Direction, Vector3.Right);
-                    var viewUp = Vector3.Up * viewRot;
+                    var viewPos = (Float3)view.Position; // TODO: large-worlds
+                    var viewRot = view.Direction != Float3.Up ? Quaternion.LookRotation(view.Direction, Float3.Up) : Quaternion.LookRotation(view.Direction, Float3.Right);
+                    var viewUp = Float3.Up * viewRot;
                     var viewForward = view.Direction;
                     var pos = view.Position + view.Direction * Distance;
                     Matrix.Billboard(ref pos, ref viewPos, ref viewUp, ref viewForward, out tmp2);
@@ -432,7 +432,7 @@ namespace FlaxEngine
                     camera.GetMatrices(out tmp1, out var tmp3, ref viewport);
                     Matrix.Multiply(ref tmp1, ref tmp3, out tmp2);
                     var frustum = new BoundingFrustum(tmp2);
-                    _guiRoot.Size = new Vector2(frustum.GetWidthAtDepth(Distance), frustum.GetHeightAtDepth(Distance));
+                    _guiRoot.Size = new Float2(frustum.GetWidthAtDepth(Distance), frustum.GetHeightAtDepth(Distance));
                 }
                 else
                 {
@@ -445,10 +445,10 @@ namespace FlaxEngine
                 Matrix.Multiply(ref world, ref tmp2, out tmp1);
 
                 // In front of the camera
-                var viewPos = camera.Position;
+                var viewPos = (Float3)camera.Position; // TODO: large-worlds
                 var viewRot = camera.Orientation;
-                var viewUp = Vector3.Up * viewRot;
-                var viewForward = Vector3.Forward * viewRot;
+                var viewUp = Float3.Up * viewRot;
+                var viewForward = Float3.Forward * viewRot;
                 var pos = viewPos + viewForward * Distance;
                 Matrix.Billboard(ref pos, ref viewPos, ref viewUp, ref viewForward, out tmp2);
 

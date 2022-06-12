@@ -182,7 +182,7 @@ bool VolumetricFogPass::Init(RenderContext& renderContext, GPUContext* context, 
     // Prepare
     const int32 width = renderContext.Buffers->GetWidth();
     const int32 height = renderContext.Buffers->GetHeight();
-    _cache.GridSize = Vector3(
+    _cache.GridSize = Float3(
         (float)Math::DivideAndRoundUp(width, _cache.GridPixelSize),
         (float)Math::DivideAndRoundUp(height, _cache.GridPixelSize),
         (float)_cache.GridSizeZ);
@@ -191,9 +191,9 @@ bool VolumetricFogPass::Init(RenderContext& renderContext, GPUContext* context, 
 
     // Init data (partial, without directional light or sky light data);
     GBufferPass::SetInputs(renderContext.View, _cache.Data.GBuffer);
-    _cache.Data.GlobalAlbedo = options.Albedo.ToVector3() * options.Albedo.A;
+    _cache.Data.GlobalAlbedo = options.Albedo.ToFloat3() * options.Albedo.A;
     _cache.Data.GlobalExtinctionScale = options.ExtinctionScale;
-    _cache.Data.GlobalEmissive = options.Emissive.ToVector3() * options.Emissive.A;
+    _cache.Data.GlobalEmissive = options.Emissive.ToFloat3() * options.Emissive.A;
     _cache.Data.GridSize = _cache.GridSize;
     _cache.Data.GridSizeIntX = (uint32)_cache.GridSize.X;
     _cache.Data.GridSizeIntY = (uint32)_cache.GridSize.Y;
@@ -209,7 +209,7 @@ bool VolumetricFogPass::Init(RenderContext& renderContext, GPUContext* context, 
     _cache.Data.SkyLight.VolumetricScatteringIntensity = 0;
 
     // Fill frame jitter history
-    const Vector4 defaultOffset = Vector4(0.5f, 0.5f, 0.5f, 0.0f);
+    const Float4 defaultOffset(0.5f, 0.5f, 0.5f, 0.0f);
     for (int32 i = 0; i < ARRAY_COUNT(_cache.Data.FrameJitterOffsets); i++)
     {
         _cache.Data.FrameJitterOffsets[i] = defaultOffset;
@@ -219,7 +219,7 @@ bool VolumetricFogPass::Init(RenderContext& renderContext, GPUContext* context, 
         for (int32 i = 0; i < _cache.MissedHistorySamplesCount; i++)
         {
             const uint64 frameNumber = renderContext.Task->LastUsedFrame - i;
-            _cache.Data.FrameJitterOffsets[i] = Vector4(
+            _cache.Data.FrameJitterOffsets[i] = Float4(
                 RendererUtils::TemporalHalton(frameNumber & 1023, 2),
                 RendererUtils::TemporalHalton(frameNumber & 1023, 3),
                 RendererUtils::TemporalHalton(frameNumber & 1023, 5),
@@ -234,7 +234,7 @@ bool VolumetricFogPass::Init(RenderContext& renderContext, GPUContext* context, 
     // Clear local lights scattering table if was used and will be probably reused later
     if (renderContext.Buffers->LocalShadowedLightScattering)
     {
-        if (Vector3::NearEqual(renderContext.Buffers->LocalShadowedLightScattering->Size3(), _cache.GridSize))
+        if (Float3::NearEqual(renderContext.Buffers->LocalShadowedLightScattering->Size3(), _cache.GridSize))
         {
             context->Clear(renderContext.Buffers->LocalShadowedLightScattering->ViewVolume(), Color::Transparent);
         }
@@ -274,15 +274,16 @@ void VolumetricFogPass::RenderRadialLight(RenderContext& renderContext, GPUConte
     auto& view = renderContext.View;
 
     // Calculate light volume bounds in camera frustum depth range (min and max)
-    BoundingSphere bounds(light.Position, light.Radius);
-    Vector3 viewSpaceLightBoundsOrigin = Vector3::Transform(bounds.Center, view.View);
-    float furthestSliceIndexUnclamped = ComputeZSliceFromDepth(viewSpaceLightBoundsOrigin.Z + bounds.Radius, options, _cache.GridSizeZ);
-    float closestSliceIndexUnclamped = ComputeZSliceFromDepth(viewSpaceLightBoundsOrigin.Z - bounds.Radius, options, _cache.GridSizeZ);
+    const Float3 center = light.Position;
+    const float radius = light.Radius;
+    Float3 viewSpaceLightBoundsOrigin = Float3::Transform(center, view.View);
+    float furthestSliceIndexUnclamped = ComputeZSliceFromDepth(viewSpaceLightBoundsOrigin.Z + radius, options, _cache.GridSizeZ);
+    float closestSliceIndexUnclamped = ComputeZSliceFromDepth(viewSpaceLightBoundsOrigin.Z - radius, options, _cache.GridSizeZ);
     int32 volumeZBoundsMin = (int32)Math::Clamp(closestSliceIndexUnclamped, 0.0f, _cache.GridSize.Z - 1.0f);
     int32 volumeZBoundsMax = (int32)Math::Clamp(furthestSliceIndexUnclamped, 0.0f, _cache.GridSize.Z - 1.0f);
 
     // Cull light
-    if ((view.Position - bounds.Center).LengthSquared() >= (options.Distance + bounds.Radius) * (options.Distance + bounds.Radius) || volumeZBoundsMin >= volumeZBoundsMax)
+    if ((view.Position - center).LengthSquared() >= (options.Distance + radius) * (options.Distance + radius) || volumeZBoundsMin >= volumeZBoundsMax)
         return;
 
     PROFILE_GPU_CPU("Volumetric Fog Light");
@@ -304,7 +305,7 @@ void VolumetricFogPass::RenderRadialLight(RenderContext& renderContext, GPUConte
     perLight.SliceToDepth.Y = _cache.Data.VolumetricFogMaxDistance;
     perLight.MinZ = volumeZBoundsMin;
     perLight.LocalLightScatteringIntensity = light.VolumetricScatteringIntensity;
-    perLight.ViewSpaceBoundingSphere = Vector4(viewSpaceLightBoundsOrigin, bounds.Radius);
+    perLight.ViewSpaceBoundingSphere = Float4(viewSpaceLightBoundsOrigin, radius);
     Matrix::Transpose(view.Projection, perLight.ViewToVolumeClip);
     light.SetupLightData(&perLight.LocalLight, true);
     perLight.LocalLightShadow = shadow;
@@ -343,13 +344,15 @@ void VolumetricFogPass::RenderRadialLight(RenderContext& renderContext, GPUConte
 template<typename T>
 void VolumetricFogPass::RenderRadialLight(RenderContext& renderContext, GPUContext* context, RenderView& view, VolumetricFogOptions& options, T& light, PerLight& perLight, GPUConstantBuffer* cb1)
 {
-    const BoundingSphere bounds(light.Position, light.Radius);
+    const Float3 center = light.Position;
+    const float radius = light.Radius;
+    ASSERT(!center.IsNanOrInfinity() && !isnan(radius) && !isinf(radius));
     auto& cache = _cache;
 
     // Calculate light volume bounds in camera frustum depth range (min and max)
-    const Vector3 viewSpaceLightBoundsOrigin = Vector3::Transform(bounds.Center, view.View);
-    const float furthestSliceIndexUnclamped = ComputeZSliceFromDepth(viewSpaceLightBoundsOrigin.Z + bounds.Radius, options, cache.GridSizeZ);
-    const float closestSliceIndexUnclamped = ComputeZSliceFromDepth(viewSpaceLightBoundsOrigin.Z - bounds.Radius, options, cache.GridSizeZ);
+    const Float3 viewSpaceLightBoundsOrigin = Float3::Transform(center, view.View);
+    const float furthestSliceIndexUnclamped = ComputeZSliceFromDepth(viewSpaceLightBoundsOrigin.Z + radius, options, cache.GridSizeZ);
+    const float closestSliceIndexUnclamped = ComputeZSliceFromDepth(viewSpaceLightBoundsOrigin.Z - radius, options, cache.GridSizeZ);
     const int32 volumeZBoundsMin = (int32)Math::Clamp(closestSliceIndexUnclamped, 0.0f, cache.GridSize.Z - 1.0f);
     const int32 volumeZBoundsMax = (int32)Math::Clamp(furthestSliceIndexUnclamped, 0.0f, cache.GridSize.Z - 1.0f);
 
@@ -363,7 +366,7 @@ void VolumetricFogPass::RenderRadialLight(RenderContext& renderContext, GPUConte
         perLight.SliceToDepth.Y = cache.Data.VolumetricFogMaxDistance;
         perLight.MinZ = volumeZBoundsMin;
         perLight.LocalLightScatteringIntensity = light.VolumetricScatteringIntensity;
-        perLight.ViewSpaceBoundingSphere = Vector4(viewSpaceLightBoundsOrigin, bounds.Radius);
+        perLight.ViewSpaceBoundingSphere = Float4(viewSpaceLightBoundsOrigin, radius);
         Matrix::Transpose(renderContext.View.Projection, perLight.ViewToVolumeClip);
         light.SetupLightData(&perLight.LocalLight, withShadow);
 
@@ -480,7 +483,7 @@ void VolumetricFogPass::Render(RenderContext& renderContext)
     const bool temporalHistoryIsValid = cache.TemporalReprojection
             && renderContext.Buffers->VolumetricFogHistory
             && !renderContext.Task->IsCameraCut
-            && Vector3::NearEqual(renderContext.Buffers->VolumetricFogHistory->Size3(), cache.GridSize);
+            && Float3::NearEqual(renderContext.Buffers->VolumetricFogHistory->Size3(), cache.GridSize);
 
     // Allocate buffers
     const GPUTextureDescription volumeDesc = GPUTextureDescription::New3D(cache.GridSize, PixelFormat::R16G16B16A16_Float, GPUTextureFlags::RenderTarget | GPUTextureFlags::ShaderResource | GPUTextureFlags::UnorderedAccess);
@@ -530,18 +533,19 @@ void VolumetricFogPass::Render(RenderContext& renderContext)
 
         for (auto& drawCall : renderContext.List->VolumetricFogParticles)
         {
-            const BoundingSphere bounds(drawCall.Particle.VolumetricFog.Position, drawCall.Particle.VolumetricFog.Radius);
-            ASSERT(!bounds.Center.IsNanOrInfinity() && !isnan(bounds.Radius) && !isinf(bounds.Radius));
+            const Float3 center = drawCall.Particle.VolumetricFog.Position;
+            const float radius = drawCall.Particle.VolumetricFog.Radius;
+            ASSERT(!center.IsNanOrInfinity() && !isnan(radius) && !isinf(radius));
 
             // Calculate light volume bounds in camera frustum depth range (min and max)
-            const Vector3 viewSpaceLightBoundsOrigin = Vector3::Transform(bounds.Center, view.View);
-            const float furthestSliceIndexUnclamped = ComputeZSliceFromDepth(viewSpaceLightBoundsOrigin.Z + bounds.Radius, options, cache.GridSizeZ);
-            const float closestSliceIndexUnclamped = ComputeZSliceFromDepth(viewSpaceLightBoundsOrigin.Z - bounds.Radius, options, cache.GridSizeZ);
+            const Float3 viewSpaceLightBoundsOrigin = Float3::Transform(center, view.View);
+            const float furthestSliceIndexUnclamped = ComputeZSliceFromDepth(viewSpaceLightBoundsOrigin.Z + radius, options, cache.GridSizeZ);
+            const float closestSliceIndexUnclamped = ComputeZSliceFromDepth(viewSpaceLightBoundsOrigin.Z - radius, options, cache.GridSizeZ);
             const int32 volumeZBoundsMin = (int32)Math::Clamp(closestSliceIndexUnclamped, 0.0f, cache.GridSize.Z - 1.0f);
             const int32 volumeZBoundsMax = (int32)Math::Clamp(furthestSliceIndexUnclamped, 0.0f, cache.GridSize.Z - 1.0f);
 
             // Culling
-            if ((view.Position - bounds.Center).LengthSquared() >= (options.Distance + bounds.Radius) * (options.Distance + bounds.Radius) || volumeZBoundsMin >= volumeZBoundsMax)
+            if ((view.Position - center).LengthSquared() >= (options.Distance + radius) * (options.Distance + radius) || volumeZBoundsMin >= volumeZBoundsMax)
                 continue;
 
             // Setup material shader data
@@ -555,7 +559,7 @@ void VolumetricFogPass::Render(RenderContext& renderContext)
             perLight.SliceToDepth.X = cache.Data.GridSize.Z;
             perLight.SliceToDepth.Y = cache.Data.VolumetricFogMaxDistance;
             perLight.MinZ = volumeZBoundsMin;
-            perLight.ViewSpaceBoundingSphere = Vector4(viewSpaceLightBoundsOrigin, bounds.Radius);
+            perLight.ViewSpaceBoundingSphere = Float4(viewSpaceLightBoundsOrigin, radius);
             Matrix::Transpose(renderContext.View.Projection, perLight.ViewToVolumeClip);
 
             // Upload data
@@ -672,7 +676,7 @@ void VolumetricFogPass::Render(RenderContext& renderContext)
 
     // Get buffer for the integrated light scattering (try to reuse the previous frame if it's valid)
     GPUTexture* integratedLightScattering = renderContext.Buffers->VolumetricFog;
-    if (integratedLightScattering == nullptr || !Vector3::NearEqual(integratedLightScattering->Size3(), cache.GridSize))
+    if (integratedLightScattering == nullptr || !Float3::NearEqual(integratedLightScattering->Size3(), cache.GridSize))
     {
         if (integratedLightScattering)
         {
@@ -710,14 +714,14 @@ void VolumetricFogPass::InitCircleBuffer()
     const int32 triangles = vertices - 2;
     const int32 rings = vertices;
     const float radiansPerRingSegment = PI / (float)rings;
-    Vector2 vbData[vertices];
+    Float2 vbData[vertices];
     uint16 ibData[triangles * 3];
 
     const float radiusScale = 1.0f / Math::Cos(radiansPerRingSegment);
     for (int32 vertexIndex = 0; vertexIndex < vertices; vertexIndex++)
     {
         const float angle = vertexIndex / static_cast<float>(vertices - 1) * 2 * PI;
-        vbData[vertexIndex] = Vector2(radiusScale * Math::Cos(angle) * 0.5f + 0.5f, radiusScale * Math::Sin(angle) * 0.5f + 0.5f);
+        vbData[vertexIndex] = Float2(radiusScale * Math::Cos(angle) * 0.5f + 0.5f, radiusScale * Math::Sin(angle) * 0.5f + 0.5f);
     }
     int32 ibIndex = 0;
     for (int32 triangleIndex = 0; triangleIndex < triangles; triangleIndex++)
@@ -732,7 +736,7 @@ void VolumetricFogPass::InitCircleBuffer()
     ASSERT(_vbCircleRasterize == nullptr && _ibCircleRasterize == nullptr);
     _vbCircleRasterize = GPUDevice::Instance->CreateBuffer(TEXT("VolumetricFog.CircleRasterize.VB"));
     _ibCircleRasterize = GPUDevice::Instance->CreateBuffer(TEXT("VolumetricFog.CircleRasterize.IB"));
-    if (_vbCircleRasterize->Init(GPUBufferDescription::Vertex(sizeof(Vector2), vertices, vbData))
+    if (_vbCircleRasterize->Init(GPUBufferDescription::Vertex(sizeof(Float2), vertices, vbData))
         || _ibCircleRasterize->Init(GPUBufferDescription::Index(sizeof(uint16), triangles * 3, ibData)))
     {
         LOG(Fatal, "Failed to setup volumetric fog buffers.");

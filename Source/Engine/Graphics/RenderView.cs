@@ -53,7 +53,7 @@ namespace FlaxEngine
         /// <param name="direction">Camera's direction vector</param>
         /// <param name="up">Camera's up vector</param>
         /// <param name="angle">Camera's FOV angle (in degrees)</param>
-        public void SetProjector(float nearPlane, float farPlane, Vector3 position, Vector3 direction, Vector3 up, float angle)
+        public void SetProjector(float nearPlane, float farPlane, Float3 position, Float3 direction, Float3 up, float angle)
         {
             // Copy data
             Near = nearPlane;
@@ -63,11 +63,11 @@ namespace FlaxEngine
             // Create projection matrix
             Matrix.PerspectiveFov(angle * Mathf.DegreesToRadians, 1.0f, nearPlane, farPlane, out Projection);
             NonJitteredProjection = Projection;
-            TemporalAAJitter = Vector4.Zero;
+            TemporalAAJitter = Float4.Zero;
 
             // Create view matrix
             Direction = direction;
-            Vector3 target = Position + Direction;
+            var target = Position + Direction;
             Matrix.LookAt(ref Position, ref target, ref up, out View);
 
             UpdateCachedData();
@@ -86,7 +86,7 @@ namespace FlaxEngine
             View = camera.View;
             Projection = camera.Projection;
             NonJitteredProjection = Projection;
-            TemporalAAJitter = Vector4.Zero;
+            TemporalAAJitter = Float4.Zero;
             RenderLayersMask = camera.RenderLayersMask;
 
             UpdateCachedData();
@@ -105,7 +105,7 @@ namespace FlaxEngine
             Far = camera.FarPlane;
             camera.GetMatrices(out View, out Projection, ref customViewport);
             NonJitteredProjection = Projection;
-            TemporalAAJitter = Vector4.Zero;
+            TemporalAAJitter = Float4.Zero;
             RenderLayersMask = camera.RenderLayersMask;
 
             UpdateCachedData();

@@ -6,7 +6,7 @@
 #include "MeshAccelerationStructure.h"
 #include "Engine/Core/Log.h"
 #include "Engine/Core/RandomStream.h"
-#include "Engine/Core/Math/Int3.h"
+#include "Engine/Core/Math/Vector3.h"
 #include "Engine/Core/Math/Ray.h"
 #include "Engine/Profiler/ProfilerCPU.h"
 #include "Engine/Threading/JobSystem.h"
@@ -79,13 +79,13 @@ bool ModelTool::GenerateModelSDF(Model* inputModel, ModelData* modelData, float 
         bounds = modelData->LODs[lodIndex].GetBox();
     else
         return true;
-    Vector3 size = bounds.GetSize();
+    Float3 size = bounds.GetSize();
     ModelBase::SDFData sdf;
     sdf.WorldUnitsPerVoxel = 10 / Math::Max(resolutionScale, 0.0001f);
-    Int3 resolution(Vector3::Ceil(Vector3::Clamp(size / sdf.WorldUnitsPerVoxel, 4, 256)));
-    Vector3 uvwToLocalMul = size;
-    Vector3 uvwToLocalAdd = bounds.Minimum;
-    sdf.LocalToUVWMul = Vector3::One / uvwToLocalMul;
+    Int3 resolution(Float3::Ceil(Float3::Clamp(size / sdf.WorldUnitsPerVoxel, 4, 256)));
+    Float3 uvwToLocalMul = size;
+    Float3 uvwToLocalAdd = bounds.Minimum;
+    sdf.LocalToUVWMul = Float3::One / uvwToLocalMul;
     sdf.LocalToUVWAdd = -uvwToLocalAdd / uvwToLocalMul;
     sdf.MaxDistance = size.MaxValue();
     sdf.LocalBoundsMin = bounds.Minimum;
@@ -149,10 +149,10 @@ bool ModelTool::GenerateModelSDF(Model* inputModel, ModelData* modelData, float 
     // Allocate memory for the distant field
     const int32 voxelsSize = resolution.X * resolution.Y * resolution.Z * formatStride;
     void* voxels = Allocator::Allocate(voxelsSize);
-    Vector3 xyzToLocalMul = uvwToLocalMul / Vector3(resolution);
-    Vector3 xyzToLocalAdd = uvwToLocalAdd;
-    const Vector2 encodeMAD(0.5f / sdf.MaxDistance * formatMaxValue, 0.5f * formatMaxValue);
-    const Vector2 decodeMAD(2.0f * sdf.MaxDistance / formatMaxValue, -sdf.MaxDistance);
+    Float3 xyzToLocalMul = uvwToLocalMul / Float3(resolution);
+    Float3 xyzToLocalAdd = uvwToLocalAdd;
+    const Float2 encodeMAD(0.5f / sdf.MaxDistance * formatMaxValue, 0.5f * formatMaxValue);
+    const Float2 decodeMAD(2.0f * sdf.MaxDistance / formatMaxValue, -sdf.MaxDistance);
     int32 voxelSizeSum = voxelsSize;
 
     // TODO: use optimized sparse storage for SDF data as hierarchical bricks as in papers below:
@@ -163,23 +163,23 @@ bool ModelTool::GenerateModelSDF(Model* inputModel, ModelData* modelData, float 
 
     // Brute-force for each voxel to calculate distance to the closest triangle with point query and distance sign by raycasting around the voxel
     const int32 sampleCount = 12;
-    Array<Vector3> sampleDirections;
+    Array<Float3> sampleDirections;
     sampleDirections.Resize(sampleCount);
     {
         RandomStream rand;
-        sampleDirections.Get()[0] = Vector3::Up;
-        sampleDirections.Get()[1] = Vector3::Down;
-        sampleDirections.Get()[2] = Vector3::Left;
-        sampleDirections.Get()[3] = Vector3::Right;
-        sampleDirections.Get()[4] = Vector3::Forward;
-        sampleDirections.Get()[5] = Vector3::Backward;
+        sampleDirections.Get()[0] = Float3::Up;
+        sampleDirections.Get()[1] = Float3::Down;
+        sampleDirections.Get()[2] = Float3::Left;
+        sampleDirections.Get()[3] = Float3::Right;
+        sampleDirections.Get()[4] = Float3::Forward;
+        sampleDirections.Get()[5] = Float3::Backward;
         for (int32 i = 6; i < sampleCount; i++)
             sampleDirections.Get()[i] = rand.GetUnitVector();
     }
     Function<void(int32)> sdfJob = [&sdf, &resolution, &backfacesThreshold, &sampleDirections, &scene, &voxels, &xyzToLocalMul, &xyzToLocalAdd, &encodeMAD, &formatStride, &formatWrite](int32 z)
     {
         PROFILE_CPU_NAMED("Model SDF Job");
-        float hitDistance;
+        Real hitDistance;
         Vector3 hitNormal, hitPoint;
         Triangle hitTriangle;
         const int32 zAddress = resolution.Y * resolution.X * z;
@@ -188,8 +188,8 @@ bool ModelTool::GenerateModelSDF(Model* inputModel, ModelData* modelData, float 
             const int32 yAddress = resolution.X * y + zAddress;
             for (int32 x = 0; x < resolution.X; x++)
             {
-                float minDistance = sdf.MaxDistance;
-                Vector3 voxelPos = Vector3((float)x, (float)y, (float)z) * xyzToLocalMul + xyzToLocalAdd;
+                Real minDistance = sdf.MaxDistance;
+                Vector3 voxelPos = Float3((float)x, (float)y, (float)z) * xyzToLocalMul + xyzToLocalAdd;
 
                 // Point query to find the distance to the closest surface
                 scene.PointQuery(voxelPos, minDistance, hitPoint, hitTriangle);
@@ -202,13 +202,13 @@ bool ModelTool::GenerateModelSDF(Model* inputModel, ModelData* modelData, float 
                     if (scene.RayCast(sampleRay, hitDistance, hitNormal, hitTriangle))
                     {
                         hitCount++;
-                        const bool backHit = Vector3::Dot(sampleRay.Direction, hitTriangle.GetNormal()) > 0;
+                        const bool backHit = Float3::Dot(sampleRay.Direction, hitTriangle.GetNormal()) > 0;
                         if (backHit)
                             hitBackCount++;
                     }
                 }
 
-                float distance = minDistance;
+                float distance = (float)minDistance;
                 // TODO: surface thickness threshold? shift reduce distance for all voxels by something like 0.01 to enlarge thin geometry
                 // if ((float)hitBackCount > (float)hitCount * 0.3f && hitCount != 0)
                 if ((float)hitBackCount > (float)sampleDirections.Count() * backfacesThreshold && hitCount != 0)
@@ -724,7 +724,7 @@ bool ModelTool::ImportModel(const String& path, ModelData& meshData, Options& op
                 LOG(Warning, "Imported mesh \'{0}\' has missing skinning data. It may result in invalid rendering.", mesh->Name);
 
                 auto indices = Int4::Zero;
-                auto weights = Vector4::UnitX;
+                auto weights = Float4::UnitX;
 
                 // Check if use a single bone for skinning
                 auto nodeIndex = data.Skeleton.FindNode(mesh->Name);
@@ -876,7 +876,7 @@ bool ModelTool::ImportModel(const String& path, ModelData& meshData, Options& op
     }
 
     // Prepare import transformation
-    Transform importTransform(options.Translation, options.Rotation, Vector3(options.Scale));
+    Transform importTransform(options.Translation, options.Rotation, Float3(options.Scale));
     if (options.CenterGeometry && data.LODs.HasItems() && data.LODs[0].Meshes.HasItems())
     {
         // Calculate the bounding box (use LOD0 as a reference)
@@ -1031,8 +1031,8 @@ bool ModelTool::ImportModel(const String& path, ModelData& meshData, Options& op
                         const float atlasSizeInv = 1.0f / atlasSize;
                         for (const auto& entry : entries)
                         {
-                            Vector2 uvOffset(entry.Slot->X * atlasSizeInv, entry.Slot->Y * atlasSizeInv);
-                            Vector2 uvScale((entry.Slot->Width - chartsPadding) * atlasSizeInv, (entry.Slot->Height - chartsPadding) * atlasSizeInv);
+                            Float2 uvOffset(entry.Slot->X * atlasSizeInv, entry.Slot->Y * atlasSizeInv);
+                            Float2 uvScale((entry.Slot->Width - chartsPadding) * atlasSizeInv, (entry.Slot->Height - chartsPadding) * atlasSizeInv);
                             // TODO: SIMD
                             for (auto& uv : entry.Mesh->LightmapUVs)
                             {
@@ -1407,7 +1407,7 @@ bool ModelTool::ImportModel(const String& path, ModelData& meshData, Options& op
                 int32 dstMeshIndexCountTarget = int32(srcMeshIndexCount * triangleReduction) / 3 * 3;
                 Array<unsigned int> indices;
                 indices.Resize(dstMeshIndexCountTarget);
-                int32 dstMeshIndexCount = (int32)meshopt_simplifySloppy(indices.Get(), srcMesh->Indices.Get(), srcMeshIndexCount, (const float*)srcMesh->Positions.Get(), srcMeshVertexCount, sizeof(Vector3), dstMeshIndexCountTarget);
+                int32 dstMeshIndexCount = (int32)meshopt_simplifySloppy(indices.Get(), srcMesh->Indices.Get(), srcMeshIndexCount, (const float*)srcMesh->Positions.Get(), srcMeshVertexCount, sizeof(Float3), dstMeshIndexCountTarget);
                 indices.Resize(dstMeshIndexCount);
                 if (dstMeshIndexCount == 0)
                     continue;
@@ -1429,15 +1429,15 @@ bool ModelTool::ImportModel(const String& path, ModelData& meshData, Options& op
         dstMesh->name.Resize(dstMeshVertexCount); \
         meshopt_remapVertexBuffer(dstMesh->name.Get(), srcMesh->name.Get(), srcMeshVertexCount, sizeof(type), remap.Get()); \
     }
-                REMAP_VERTEX_BUFFER(Positions, Vector3);
-                REMAP_VERTEX_BUFFER(UVs, Vector2);
-                REMAP_VERTEX_BUFFER(Normals, Vector3);
-                REMAP_VERTEX_BUFFER(Tangents, Vector3);
-                REMAP_VERTEX_BUFFER(Tangents, Vector3);
-                REMAP_VERTEX_BUFFER(LightmapUVs, Vector2);
+                REMAP_VERTEX_BUFFER(Positions, Float3);
+                REMAP_VERTEX_BUFFER(UVs, Float2);
+                REMAP_VERTEX_BUFFER(Normals, Float3);
+                REMAP_VERTEX_BUFFER(Tangents, Float3);
+                REMAP_VERTEX_BUFFER(Tangents, Float3);
+                REMAP_VERTEX_BUFFER(LightmapUVs, Float2);
                 REMAP_VERTEX_BUFFER(Colors, Color);
                 REMAP_VERTEX_BUFFER(BlendIndices, Int4);
-                REMAP_VERTEX_BUFFER(BlendWeights, Vector4);
+                REMAP_VERTEX_BUFFER(BlendWeights, Float4);
 #undef REMAP_VERTEX_BUFFER
 
                 // Remap blend shapes
@@ -1470,7 +1470,7 @@ bool ModelTool::ImportModel(const String& path, ModelData& meshData, Options& op
 
                 // Optimize generated LOD
                 meshopt_optimizeVertexCache(dstMesh->Indices.Get(), dstMesh->Indices.Get(), dstMeshIndexCount, dstMeshVertexCount);
-                meshopt_optimizeOverdraw(dstMesh->Indices.Get(), dstMesh->Indices.Get(), dstMeshIndexCount, (const float*)dstMesh->Positions.Get(), dstMeshVertexCount, sizeof(Vector3), 1.05f);
+                meshopt_optimizeOverdraw(dstMesh->Indices.Get(), dstMesh->Indices.Get(), dstMeshIndexCount, (const float*)dstMesh->Positions.Get(), dstMeshVertexCount, sizeof(Float3), 1.05f);
 
                 lodTriangleCount += dstMeshIndexCount / 3;
                 lodVertexCount += dstMeshVertexCount;

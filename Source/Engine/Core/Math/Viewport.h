@@ -24,7 +24,7 @@ public:
         };
 
         // Upper left corner location.
-        Vector2 Location;
+        Float2 Location;
     };
 
     union
@@ -39,7 +39,7 @@ public:
         };
 
         // Size
-        Vector2 Size;
+        Float2 Size;
     };
 
     // Minimum depth of the clip volume.
@@ -92,7 +92,7 @@ public:
     /// Initializes a new instance of the <see cref="Viewport"/> struct.
     /// </summary>
     /// <param name="size">The viewport size.</param>
-    explicit Viewport(const Vector2& size)
+    explicit Viewport(const Float2& size)
         : X(0)
         , Y(0)
         , Width(size.X)

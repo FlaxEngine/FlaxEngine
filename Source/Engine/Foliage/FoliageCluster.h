@@ -71,5 +71,5 @@ public:
     /// <param name="normal">When the method completes, contains the intersection surface normal vector (if any valid).</param>
     /// <param name="instance">When the method completes, contains pointer of the foliage instance that is the closest to the ray.</param>
     /// <returns>True whether the two objects intersected, otherwise false.</returns>
-    bool Intersects(Foliage* foliage, const Ray& ray, float& distance, Vector3& normal, FoliageInstance*& instance);
+    bool Intersects(Foliage* foliage, const Ray& ray, Real& distance, Vector3& normal, FoliageInstance*& instance);
 };

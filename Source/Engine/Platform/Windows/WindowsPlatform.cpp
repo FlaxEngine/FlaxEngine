@@ -827,12 +827,12 @@ void WindowsPlatform::OpenUrl(const StringView& url)
 
 struct GetMonitorBoundsData
 {
-    Vector2 Pos;
+    Float2 Pos;
     Rectangle Result;
 
-    GetMonitorBoundsData(const Vector2& pos)
+    GetMonitorBoundsData(const Float2& pos)
         : Pos(pos)
-        , Result(Vector2::Zero, WindowsPlatform::GetDesktopSize())
+        , Result(Float2::Zero, WindowsPlatform::GetDesktopSize())
     {
     }
 };
@@ -853,16 +853,16 @@ BOOL CALLBACK EnumMonitorSize(HMONITOR hMonitor, HDC hdcMonitor, LPRECT lprcMoni
     return TRUE;
 }
 
-Rectangle WindowsPlatform::GetMonitorBounds(const Vector2& screenPos)
+Rectangle WindowsPlatform::GetMonitorBounds(const Float2& screenPos)
 {
     GetMonitorBoundsData data(screenPos);
     EnumDisplayMonitors(nullptr, nullptr, EnumMonitorSize, reinterpret_cast<LPARAM>(&data));
     return data.Result;
 }
 
-Vector2 WindowsPlatform::GetDesktopSize()
+Float2 WindowsPlatform::GetDesktopSize()
 {
-    return Vector2(
+    return Float2(
         static_cast<float>(GetSystemMetrics(SM_CXSCREEN)),
         static_cast<float>(GetSystemMetrics(SM_CYSCREEN))
     );

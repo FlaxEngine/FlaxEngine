@@ -82,7 +82,7 @@ bool Skybox::HasContentLoaded() const
     return true;
 }
 
-bool Skybox::IntersectsItself(const Ray& ray, float& distance, Vector3& normal)
+bool Skybox::IntersectsItself(const Ray& ray, Real& distance, Vector3& normal)
 {
     return false;
 }

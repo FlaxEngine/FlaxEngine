@@ -73,7 +73,7 @@ namespace FlaxEditor.GUI.Timeline.Tracks
                 {
                     MemberName = value.Name;
                     MemberTypeName = type?.FullName ?? string.Empty;
-                    ValueSize = GetValueDataSize(value, type);
+                    ValueSize = GetValueDataSize(type);
                 }
                 else
                 {
@@ -174,7 +174,7 @@ namespace FlaxEditor.GUI.Timeline.Tracks
                     AnchorPreset = AnchorPresets.MiddleRight,
                     Offsets = new Margin(-previewWidth - 2 + uiLeft, previewWidth, TextBox.DefaultHeight * -0.5f, TextBox.DefaultHeight),
                     IsScrollable = false,
-                    AutoFitTextRange = new Vector2(0.01f, 1.0f),
+                    AutoFitTextRange = new Float2(0.01f, 1.0f),
                     AutoFitText = true,
                     TextColor = Style.Current.ForegroundGrey,
                     Margin = new Margin(1),
@@ -275,10 +275,9 @@ namespace FlaxEditor.GUI.Timeline.Tracks
         /// <summary>
         /// Gets the size of the value data type.
         /// </summary>
-        /// <param name="member">The member.</param>
         /// <param name="type">The type.</param>
         /// <returns>The value data size (in bytes).</returns>
-        protected virtual int GetValueDataSize(MemberInfo member, Type type)
+        protected virtual int GetValueDataSize(Type type)
         {
             return type != null && type.IsValueType ? (Marshal.SizeOf(type.IsEnum ? Enum.GetUnderlyingType(type) : type)) : 0;
         }

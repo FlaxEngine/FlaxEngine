@@ -120,8 +120,8 @@ struct ParticleEmitterGraphCPUContext
     ParticleEmitter* Emitter;
     ParticleEffect* Effect;
     class SceneRenderTask* ViewTask;
-    Array<VisjectExecutor::Graph*, FixedAllocation<32>> GraphStack;
-    Dictionary<VisjectExecutor::Node*, VisjectExecutor::Graph*> Functions;
+    Array<ParticleEmitterGraphCPU*, FixedAllocation<32>> GraphStack;
+    Dictionary<VisjectExecutor::Node*, ParticleEmitterGraphCPU*> Functions;
     int32 CallStackSize = 0;
     VisjectExecutor::Node* CallStack[PARTICLE_EMITTER_MAX_CALL_STACK];
 };

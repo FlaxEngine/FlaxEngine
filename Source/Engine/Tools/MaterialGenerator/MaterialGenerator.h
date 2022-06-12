@@ -190,9 +190,9 @@ private:
     enum class ParticleAttributeValueTypes
     {
         Float,
-        Vector2,
-        Vector3,
-        Vector4,
+        Float2,
+        Float3,
+        Float4,
         Int,
         Uint,
     };

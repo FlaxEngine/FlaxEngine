@@ -22,7 +22,7 @@ PACK_STRUCT(struct Data{
     LightShadowData LightShadow;
     Matrix WVP;
     Matrix ViewProjectionMatrix;
-    Vector2 Dummy0;
+    Float2 Dummy0;
     float ContactShadowsDistance;
     float ContactShadowsLength;
     });
@@ -206,8 +206,8 @@ void ShadowsPass::Dispose()
 
 bool ShadowsPass::CanRenderShadow(RenderContext& renderContext, const RendererPointLightData& light)
 {
-    const Vector3 lightPosition = light.Position;
-    const float dstLightToView = Vector3::Distance(lightPosition, renderContext.View.Position);
+    const Float3 lightPosition = light.Position;
+    const float dstLightToView = Float3::Distance(lightPosition, renderContext.View.Position);
 
     // Fade shadow on distance
     const float fadeDistance = Math::Max(light.ShadowsFadeDistance, 0.1f);
@@ -218,8 +218,8 @@ bool ShadowsPass::CanRenderShadow(RenderContext& renderContext, const RendererPo
 
 bool ShadowsPass::CanRenderShadow(RenderContext& renderContext, const RendererSpotLightData& light)
 {
-    const Vector3 lightPosition = light.Position;
-    const float dstLightToView = Vector3::Distance(lightPosition, renderContext.View.Position);
+    const Float3 lightPosition = light.Position;
+    const float dstLightToView = Float3::Distance(lightPosition, renderContext.View.Position);
 
     // Fade shadow on distance
     const float fadeDistance = Math::Max(light.ShadowsFadeDistance, 0.1f);
@@ -273,9 +273,9 @@ void ShadowsPass::RenderShadow(RenderContext& renderContext, RendererPointLightD
     auto shader = _shader->GetShader();
     Data sperLight;
     float lightRadius = light.Radius;
-    Vector3 lightPosition = light.Position;
-    Vector3 lightDirection = light.Direction;
-    float dstLightToView = Vector3::Distance(lightPosition, view.Position);
+    Float3 lightPosition = light.Position;
+    Float3 lightDirection = light.Direction;
+    float dstLightToView = Float3::Distance(lightPosition, view.Position);
 
     // TODO: here we can use lower shadows quality based on light distance to view (LOD switching) and per light setting for max quality
     int32 shadowQuality = maxShadowsQuality;
@@ -288,7 +288,7 @@ void ShadowsPass::RenderShadow(RenderContext& renderContext, RendererPointLightD
     const auto shadowMapsSizeCube = (float)_shadowMapsSizeCube;
     context->SetViewportAndScissors(shadowMapsSizeCube, shadowMapsSizeCube);
     _shadowContext.View.SetUpCube(PointLight_NearPlane, lightRadius, lightPosition);
-    _shadowContext.View.PrepareCache(_shadowContext, shadowMapsSizeCube, shadowMapsSizeCube, Vector2::Zero);
+    _shadowContext.View.PrepareCache(_shadowContext, shadowMapsSizeCube, shadowMapsSizeCube, Float2::Zero);
 
     // Render depth to all 6 faces of the cube map
     for (int32 faceIndex = 0; faceIndex < 6; faceIndex++)
@@ -333,7 +333,7 @@ void ShadowsPass::RenderShadow(RenderContext& renderContext, RendererPointLightD
     sperLight.LightShadow.Bias = light.ShadowsDepthBias;
     sperLight.LightShadow.FadeDistance = Math::Max(light.ShadowsFadeDistance, 0.1f);
     sperLight.LightShadow.NumCascades = 1;
-    sperLight.LightShadow.CascadeSplits = Vector4::Zero;
+    sperLight.LightShadow.CascadeSplits = Float4::Zero;
     Matrix::Transpose(view.ViewProjection(), sperLight.ViewProjectionMatrix);
     sperLight.ContactShadowsDistance = light.ShadowsDistance;
     sperLight.ContactShadowsLength = view.Flags & ViewFlags::ContactShadows ? light.ContactShadowsLength : 0.0f;
@@ -376,9 +376,9 @@ void ShadowsPass::RenderShadow(RenderContext& renderContext, RendererSpotLightDa
     auto shader = _shader->GetShader();
     Data sperLight;
     float lightRadius = light.Radius;
-    Vector3 lightPosition = light.Position;
-    Vector3 lightDirection = light.Direction;
-    float dstLightToView = Vector3::Distance(lightPosition, view.Position);
+    Float3 lightPosition = light.Position;
+    Float3 lightDirection = light.Direction;
+    float dstLightToView = Float3::Distance(lightPosition, view.Position);
 
     // TODO: here we can use lower shadows quality based on light distance to view (LOD switching) and per light setting for max quality
     int32 shadowQuality = maxShadowsQuality;
@@ -391,7 +391,7 @@ void ShadowsPass::RenderShadow(RenderContext& renderContext, RendererSpotLightDa
     const auto shadowMapsSizeCube = (float)_shadowMapsSizeCube;
     context->SetViewportAndScissors(shadowMapsSizeCube, shadowMapsSizeCube);
     _shadowContext.View.SetProjector(SpotLight_NearPlane, lightRadius, lightPosition, lightDirection, light.UpVector, light.OuterConeAngle * 2.0f);
-    _shadowContext.View.PrepareCache(_shadowContext, shadowMapsSizeCube, shadowMapsSizeCube, Vector2::Zero);
+    _shadowContext.View.PrepareCache(_shadowContext, shadowMapsSizeCube, shadowMapsSizeCube, Float2::Zero);
 
     // Render depth to all 1 face of the cube map
     const int32 cubeFaceIndex = 0;
@@ -435,7 +435,7 @@ void ShadowsPass::RenderShadow(RenderContext& renderContext, RendererSpotLightDa
     sperLight.LightShadow.Bias = light.ShadowsDepthBias;
     sperLight.LightShadow.FadeDistance = Math::Max(light.ShadowsFadeDistance, 0.1f);
     sperLight.LightShadow.NumCascades = 1;
-    sperLight.LightShadow.CascadeSplits = Vector4::Zero;
+    sperLight.LightShadow.CascadeSplits = Float4::Zero;
     Matrix::Transpose(view.ViewProjection(), sperLight.ViewProjectionMatrix);
     sperLight.ContactShadowsDistance = light.ShadowsDistance;
     sperLight.ContactShadowsLength = view.Flags & ViewFlags::ContactShadows ? light.ContactShadowsLength : 0.0f;
@@ -476,7 +476,7 @@ void ShadowsPass::RenderShadow(RenderContext& renderContext, RendererDirectional
     auto mainCache = renderContext.List;
     auto shader = _shader->GetShader();
     Data sperLight;
-    Vector3 lightDirection = light.Direction;
+    Float3 lightDirection = light.Direction;
     float shadowsDistance = Math::Min(view.Far, light.ShadowsDistance);
     int32 csmCount = Math::Clamp(light.CascadeCount, 0, MAX_CSM_CASCADES);
     bool blendCSM = Graphics::AllowCSMBlending;
@@ -566,28 +566,28 @@ void ShadowsPass::RenderShadow(RenderContext& renderContext, RendererDirectional
     }
 
     // Select best Up vector
-    Vector3 side = Vector3::UnitX;
-    Vector3 upDirection = Vector3::UnitX;
-    Vector3 VectorUps[] = { Vector3::UnitY, Vector3::UnitX, Vector3::UnitZ };
-    for (int32 i = 0; i < ARRAY_COUNT(VectorUps); i++)
+    Float3 side = Float3::UnitX;
+    Float3 upDirection = Float3::UnitX;
+    Float3 vectorUps[] = { Float3::UnitY, Float3::UnitX, Float3::UnitZ };
+    for (int32 i = 0; i < ARRAY_COUNT(vectorUps); i++)
     {
-        const Vector3 vectorUp = VectorUps[i];
-        if (Math::Abs(Vector3::Dot(lightDirection, vectorUp)) < (1.0f - 0.0001f))
+        const Float3 vectorUp = vectorUps[i];
+        if (Math::Abs(Float3::Dot(lightDirection, vectorUp)) < (1.0f - 0.0001f))
         {
-            side = Vector3::Normalize(Vector3::Cross(vectorUp, lightDirection));
-            upDirection = Vector3::Normalize(Vector3::Cross(lightDirection, side));
+            side = Float3::Normalize(Float3::Cross(vectorUp, lightDirection));
+            upDirection = Float3::Normalize(Float3::Cross(lightDirection, side));
             break;
         }
     }
 
     // Temporary data
-    Vector3 frustumCorners[8];
+    Float3 frustumCorners[8];
     Matrix shadowView, shadowProjection, shadowVP;
 
     // Set up GPU context and render view
     const auto shadowMapsSizeCSM = (float)_shadowMapsSizeCSM;
     context->SetViewportAndScissors(shadowMapsSizeCSM, shadowMapsSizeCSM);
-    _shadowContext.View.PrepareCache(_shadowContext, shadowMapsSizeCSM, shadowMapsSizeCSM, Vector2::Zero);
+    _shadowContext.View.PrepareCache(_shadowContext, shadowMapsSizeCSM, shadowMapsSizeCSM, Float2::Zero);
 
     // Create the different view and projection matrices for each split
     float splitMinRatio = 0;
@@ -618,26 +618,27 @@ void ShadowsPass::RenderShadow(RenderContext& renderContext, RendererDirectional
             ViewSnapping,
         };
         const StabilizationMode stabilization = ViewSnapping; // TODO: expose to graphics settings maybe
-        Vector3 cascadeMinBoundLS;
-        Vector3 cascadeMaxBoundLS;
-        Vector3 target;
+        Float3 cascadeMinBoundLS;
+        Float3 cascadeMaxBoundLS;
+        Float3 target;
         {
             // Make sure we are using the same direction when stabilizing
             BoundingSphere boundingVS;
             BoundingSphere::FromPoints(frustumCorners, ARRAY_COUNT(frustumCorners), boundingVS);
 
             // Compute bounding box center
-            Vector3::TransformCoordinate(boundingVS.Center, view.IV, target);
-            cascadeMaxBoundLS = Vector3(boundingVS.Radius);
+            Float3::TransformCoordinate(boundingVS.Center, view.IV, target);
+            float boundingVSRadius = (float)boundingVS.Radius;
+            cascadeMaxBoundLS = Float3(boundingVSRadius);
             cascadeMinBoundLS = -cascadeMaxBoundLS;
 
             if (stabilization == ViewSnapping)
             {
                 // Snap the target to the texel units (reference: ShaderX7 - Practical Cascaded Shadows Maps)
                 float shadowMapHalfSize = shadowMapsSizeCSM * 0.5f;
-                float x = Math::Ceil(Vector3::Dot(target, upDirection) * shadowMapHalfSize / boundingVS.Radius) * boundingVS.Radius / shadowMapHalfSize;
-                float y = Math::Ceil(Vector3::Dot(target, side) * shadowMapHalfSize / boundingVS.Radius) * boundingVS.Radius / shadowMapHalfSize;
-                float z = Vector3::Dot(target, lightDirection);
+                float x = Math::Ceil(Float3::Dot(target, upDirection) * shadowMapHalfSize / boundingVSRadius) * boundingVSRadius / shadowMapHalfSize;
+                float y = Math::Ceil(Float3::Dot(target, side) * shadowMapHalfSize / boundingVSRadius) * boundingVSRadius / shadowMapHalfSize;
+                float z = Float3::Dot(target, lightDirection);
                 target = upDirection * x + side * y + lightDirection * z;
             }
         }
@@ -665,10 +666,10 @@ void ShadowsPass::RenderShadow(RenderContext& renderContext, RendererDirectional
         // Stabilize the shadow matrix on the projection
         if (stabilization == ProjectionSnapping)
         {
-            Vector3 shadowPixelPosition = shadowVP.GetTranslation() * (shadowMapsSizeCSM * 0.5f);
+            Float3 shadowPixelPosition = shadowVP.GetTranslation() * (shadowMapsSizeCSM * 0.5f);
             shadowPixelPosition.Z = 0;
-            const Vector3 shadowPixelPositionRounded(Math::Round(shadowPixelPosition.X), Math::Round(shadowPixelPosition.Y), 0.0f);
-            const Vector4 shadowPixelOffset((shadowPixelPositionRounded - shadowPixelPosition) * (2.0f / shadowMapsSizeCSM), 0.0f);
+            const Float3 shadowPixelPositionRounded(Math::Round(shadowPixelPosition.X), Math::Round(shadowPixelPosition.Y), 0.0f);
+            const Float4 shadowPixelOffset((shadowPixelPositionRounded - shadowPixelPosition) * (2.0f / shadowMapsSizeCSM), 0.0f);
             shadowProjection.SetRow4(shadowProjection.GetRow4() + shadowPixelOffset);
             Matrix::Multiply(shadowView, shadowProjection, shadowVP);
         }
@@ -727,7 +728,7 @@ void ShadowsPass::RenderShadow(RenderContext& renderContext, RendererDirectional
     sperLight.LightShadow.Bias = light.ShadowsDepthBias;
     sperLight.LightShadow.FadeDistance = Math::Max(light.ShadowsFadeDistance, 0.1f);
     sperLight.LightShadow.NumCascades = csmCount;
-    sperLight.LightShadow.CascadeSplits = view.Near + Vector4(cascadeSplits) * cameraRange;
+    sperLight.LightShadow.CascadeSplits = view.Near + Float4(cascadeSplits) * cameraRange;
     Matrix::Transpose(view.ViewProjection(), sperLight.ViewProjectionMatrix);
     sperLight.ContactShadowsDistance = light.ShadowsDistance;
     sperLight.ContactShadowsLength = view.Flags & ViewFlags::ContactShadows ? light.ContactShadowsLength : 0.0f;

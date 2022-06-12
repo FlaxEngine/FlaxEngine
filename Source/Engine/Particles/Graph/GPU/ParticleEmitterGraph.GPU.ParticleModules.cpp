@@ -23,7 +23,7 @@ void ParticleEmitterGPUGenerator::ProcessModule(Node* node)
             (ParticleSpriteFacingMode)spriteFacingMode == ParticleSpriteFacingMode::FixedAxis)
         {
             auto attribute = AccessParticleAttribute(node, nodeGpu->Attributes[1], AccessMode::Write);
-            auto vector = GetValue(node->GetBox(0), 3).AsVector3();
+            auto vector = GetValue(node->GetBox(0), 3).AsFloat3();
             SET_ATTRIBUTE(attribute, vector.Value);
         }
         break;
@@ -51,7 +51,7 @@ void ParticleEmitterGPUGenerator::ProcessModule(Node* node)
     case 304:
     {
         auto attribute = AccessParticleAttribute(node, nodeGpu->Attributes[0], AccessMode::ReadWrite);
-        auto force = GetValue(node->GetBox(0), 2).AsVector3();
+        auto force = GetValue(node->GetBox(0), 2).AsFloat3();
         _writer.Write(TEXT("\t{0} += {1} * DeltaTime;\n"), attribute.Value, force.Value);
         break;
     }
@@ -69,7 +69,7 @@ void ParticleEmitterGPUGenerator::ProcessModule(Node* node)
         auto stickDistanceBox = node->GetBox(4);
         auto stickForceBox = node->GetBox(5);
 
-        const Value sphereCenter = GetValue(sphereCenterBox, 2).AsVector3();
+        const Value sphereCenter = GetValue(sphereCenterBox, 2).AsFloat3();
         const Value sphereRadius = GetValue(sphereRadiusBox, 3).AsFloat();
         const Value attractionSpeed = GetValue(attractionSpeedBox, 4).AsFloat();
         const Value attractionForce = GetValue(attractionForceBox, 5).AsFloat();
@@ -104,7 +104,7 @@ void ParticleEmitterGPUGenerator::ProcessModule(Node* node)
         auto sphereRadiusBox = node->GetBox(1);
         auto sign = (bool)node->Values[4] ? -1.0f : 1.0f;
 
-        const Value sphereCenter = GetValue(sphereCenterBox, 2).AsVector3();
+        const Value sphereCenter = GetValue(sphereCenterBox, 2).AsFloat3();
         const Value sphereRadius = GetValue(sphereRadiusBox, 3).AsFloat();
 
         _writer.Write(
@@ -129,8 +129,8 @@ void ParticleEmitterGPUGenerator::ProcessModule(Node* node)
         auto boxSizeBox = node->GetBox(1);
         auto invert = (bool)node->Values[4];
 
-        const Value boxCenter = GetValue(boxCenterBox, 2).AsVector3();
-        const Value boxSize = GetValue(boxSizeBox, 3).AsVector3();
+        const Value boxCenter = GetValue(boxCenterBox, 2).AsFloat3();
+        const Value boxSize = GetValue(boxSizeBox, 3).AsFloat3();
 
         _writer.Write(
             TEXT(
@@ -201,9 +201,9 @@ void ParticleEmitterGPUGenerator::ProcessModule(Node* node)
         auto position = AccessParticleAttribute(node, nodeGpu->Attributes[0], AccessMode::Read);
         auto velocity = AccessParticleAttribute(node, nodeGpu->Attributes[1], AccessMode::ReadWrite);
         auto mass = AccessParticleAttribute(node, nodeGpu->Attributes[2], AccessMode::Read);
-        auto fieldPosition = tryGetValue(node->GetBox(0), 2, Value::Zero).AsVector3();
-        auto fieldRotation = tryGetValue(node->GetBox(1), 3, Value::Zero).AsVector3();
-        auto fieldScale = tryGetValue(node->GetBox(2), 4, Value::One).AsVector3();
+        auto fieldPosition = tryGetValue(node->GetBox(0), 2, Value::Zero).AsFloat3();
+        auto fieldRotation = tryGetValue(node->GetBox(1), 3, Value::Zero).AsFloat3();
+        auto fieldScale = tryGetValue(node->GetBox(2), 4, Value::One).AsFloat3();
         auto roughness = tryGetValue(node->GetBox(3), 5, Value::Zero).AsFloat();
         auto intensity = tryGetValue(node->GetBox(4), 6, Value::Zero).AsFloat();
         auto octavesCount = tryGetValue(node->GetBox(5), 7, Value::Zero).AsInt();
@@ -280,7 +280,7 @@ void ParticleEmitterGPUGenerator::ProcessModule(Node* node)
         auto radiusBox = node->GetBox(1);
         auto arcBox = node->GetBox(2);
 
-        const Value center = GetValue(centerBox, 2).AsVector3();
+        const Value center = GetValue(centerBox, 2).AsFloat3();
         const Value radius = GetValue(radiusBox, 3).AsFloat();
         const Value arc = GetValue(arcBox, 4).AsFloat();
 
@@ -306,8 +306,8 @@ void ParticleEmitterGPUGenerator::ProcessModule(Node* node)
         auto centerBox = node->GetBox(0);
         auto sizeBox = node->GetBox(1);
 
-        const Value center = GetValue(centerBox, 2).AsVector3();
-        const Value size = GetValue(sizeBox, 3).AsVector2();
+        const Value center = GetValue(centerBox, 2).AsFloat3();
+        const Value size = GetValue(sizeBox, 3).AsFloat2();
 
         _writer.Write(
             TEXT(
@@ -327,7 +327,7 @@ void ParticleEmitterGPUGenerator::ProcessModule(Node* node)
         auto radiusBox = node->GetBox(1);
         auto arcBox = node->GetBox(2);
 
-        const Value center = GetValue(centerBox, 2).AsVector3();
+        const Value center = GetValue(centerBox, 2).AsFloat3();
         const Value radius = GetValue(radiusBox, 3).AsFloat();
         const Value arc = GetValue(arcBox, 4).AsFloat();
 
@@ -352,7 +352,7 @@ void ParticleEmitterGPUGenerator::ProcessModule(Node* node)
         auto radiusBox = node->GetBox(1);
         auto arcBox = node->GetBox(2);
 
-        const Value center = GetValue(centerBox, 2).AsVector3();
+        const Value center = GetValue(centerBox, 2).AsFloat3();
         const Value radius = GetValue(radiusBox, 3).AsFloat();
         const Value arc = GetValue(arcBox, 4).AsFloat();
 
@@ -376,8 +376,8 @@ void ParticleEmitterGPUGenerator::ProcessModule(Node* node)
         auto centerBox = node->GetBox(0);
         auto sizeBox = node->GetBox(1);
 
-        const Value center = GetValue(centerBox, 2).AsVector3();
-        const Value size = GetValue(sizeBox, 3).AsVector3();
+        const Value center = GetValue(centerBox, 2).AsFloat3();
+        const Value size = GetValue(sizeBox, 3).AsFloat3();
 
         _writer.Write(
             TEXT(
@@ -408,8 +408,8 @@ void ParticleEmitterGPUGenerator::ProcessModule(Node* node)
         auto centerBox = node->GetBox(0);
         auto sizeBox = node->GetBox(1);
 
-        const Value center = GetValue(centerBox, 2).AsVector3();
-        const Value size = GetValue(sizeBox, 3).AsVector3();
+        const Value center = GetValue(centerBox, 2).AsFloat3();
+        const Value size = GetValue(sizeBox, 3).AsFloat3();
 
         _writer.Write(
             TEXT(
@@ -430,7 +430,7 @@ void ParticleEmitterGPUGenerator::ProcessModule(Node* node)
         auto heightBox = node->GetBox(2);
         auto arcBox = node->GetBox(3);
 
-        const Value center = GetValue(centerBox, 2).AsVector3();
+        const Value center = GetValue(centerBox, 2).AsFloat3();
         const Value radius = GetValue(radiusBox, 3).AsFloat();
         const Value height = GetValue(heightBox, 4).AsFloat();
         const Value arc = GetValue(arcBox, 5).AsFloat();
@@ -455,8 +455,8 @@ void ParticleEmitterGPUGenerator::ProcessModule(Node* node)
         auto startBox = node->GetBox(0);
         auto endBox = node->GetBox(1);
 
-        const Value start = GetValue(startBox, 2).AsVector3();
-        const Value end = GetValue(endBox, 3).AsVector3();
+        const Value start = GetValue(startBox, 2).AsFloat3();
+        const Value end = GetValue(endBox, 3).AsFloat3();
 
         _writer.Write(
             TEXT(
@@ -477,7 +477,7 @@ void ParticleEmitterGPUGenerator::ProcessModule(Node* node)
         auto thicknessBox = node->GetBox(2);
         auto arcBox = node->GetBox(3);
 
-        const Value center = GetValue(centerBox, 2).AsVector3();
+        const Value center = GetValue(centerBox, 2).AsFloat3();
         const Value radius = GetValue(radiusBox, 3).AsFloat();
         const Value thickness = GetValue(thicknessBox, 4).AsFloat();
         const Value arc = GetValue(arcBox, 5).AsFloat();
@@ -522,7 +522,7 @@ void ParticleEmitterGPUGenerator::ProcessModule(Node* node)
         auto radiusBox = node->GetBox(1);
         auto arcBox = node->GetBox(2);
 
-        const Value center = GetValue(centerBox, 2).AsVector3();
+        const Value center = GetValue(centerBox, 2).AsFloat3();
         const Value radius = GetValue(radiusBox, 3).AsFloat();
         const Value arc = GetValue(arcBox, 4).AsFloat();
 
@@ -550,8 +550,8 @@ void ParticleEmitterGPUGenerator::ProcessModule(Node* node)
         auto depthCullRangeBox = node->GetBox(1);
         auto depthOffsetBox = node->GetBox(2);
 
-        const Value uv = GetValue(uvBox).AsVector2();
-        const Value depthCullRange = GetValue(depthCullRangeBox, 2).AsVector2();
+        const Value uv = GetValue(uvBox).AsFloat2();
+        const Value depthCullRange = GetValue(depthCullRangeBox, 2).AsFloat2();
         const Value depthOffset = GetValue(depthOffsetBox, 3).AsFloat();
 
         const auto sceneDepthTexture = findOrAddSceneTexture(MaterialSceneTextures::SceneDepth);
@@ -584,7 +584,7 @@ void ParticleEmitterGPUGenerator::ProcessModule(Node* node)
         auto rotationSpeedBox = node->GetBox(1);
         auto velocityScaleBox = node->GetBox(2);
 
-        const Value center = GetValue(centerBox, 2).AsVector3();
+        const Value center = GetValue(centerBox, 2).AsFloat3();
         const Value rotationSpeed = GetValue(rotationSpeedBox, 3).AsFloat();
         const Value velocityScale = GetValue(velocityScaleBox, 4).AsFloat();
 
@@ -666,8 +666,8 @@ void ParticleEmitterGPUGenerator::ProcessModule(Node* node)
     case 330:
     {
         COLLISION_BEGIN();
-        const Value planePosition = GetValue(node->GetBox(5), 8).AsVector3();
-        const Value planeNormal = GetValue(node->GetBox(6), 9).AsVector3();
+        const Value planePosition = GetValue(node->GetBox(5), 8).AsFloat3();
+        const Value planeNormal = GetValue(node->GetBox(6), 9).AsFloat3();
         _writer.Write(
             TEXT(
                 "	{{\n"
@@ -694,7 +694,7 @@ void ParticleEmitterGPUGenerator::ProcessModule(Node* node)
     case 331:
     {
         COLLISION_BEGIN();
-        const Value spherePosition = GetValue(node->GetBox(5), 8).AsVector3();
+        const Value spherePosition = GetValue(node->GetBox(5), 8).AsFloat3();
         const Value sphereRadius = GetValue(node->GetBox(6), 9).AsFloat();
         _writer.Write(
             TEXT(
@@ -725,8 +725,8 @@ void ParticleEmitterGPUGenerator::ProcessModule(Node* node)
     case 332:
     {
         COLLISION_BEGIN();
-        const Value boxPosition = GetValue(node->GetBox(5), 8).AsVector3();
-        const Value boxSize = GetValue(node->GetBox(6), 9).AsVector3();
+        const Value boxPosition = GetValue(node->GetBox(5), 8).AsFloat3();
+        const Value boxSize = GetValue(node->GetBox(6), 9).AsFloat3();
         _writer.Write(
             TEXT(
                 "	{{\n"
@@ -771,7 +771,7 @@ void ParticleEmitterGPUGenerator::ProcessModule(Node* node)
     case 333:
     {
         COLLISION_BEGIN();
-        const Value cylinderPosition = GetValue(node->GetBox(5), 8).AsVector3();
+        const Value cylinderPosition = GetValue(node->GetBox(5), 8).AsFloat3();
         const Value cylinderHeight = GetValue(node->GetBox(6), 9).AsFloat();
         const Value cylinderRadius = GetValue(node->GetBox(7), 10).AsFloat();
         _writer.Write(

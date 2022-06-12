@@ -10,14 +10,14 @@ namespace FlaxEditor.Surface
         [StructLayout(LayoutKind.Sequential)]
         internal struct Meta10 // TypeID: 10, for surface
         {
-            public Vector2 ViewCenterPosition;
+            public Float2 ViewCenterPosition;
             public float Scale;
         }
 
         [StructLayout(LayoutKind.Sequential)]
         internal struct Meta11 // TypeID: 11, for nodes
         {
-            public Vector2 Position;
+            public Float2 Position;
             public bool Selected;
         }
 

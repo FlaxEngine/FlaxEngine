@@ -339,7 +339,7 @@ bool AudioSource::HasContentLoaded() const
     return Clip == nullptr || Clip->IsLoaded();
 }
 
-bool AudioSource::IntersectsItself(const Ray& ray, float& distance, Vector3& normal)
+bool AudioSource::IntersectsItself(const Ray& ray, Real& distance, Vector3& normal)
 {
     return false;
 }

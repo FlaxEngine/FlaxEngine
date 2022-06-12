@@ -334,9 +334,9 @@ bool CSGBuilderImpl::buildInner(Scene* scene, BuildData& data)
                         auto lod = &modelData.LODs[lodIndex];
                         for (int32 meshIndex = 0; meshIndex < lod->Meshes.Count(); meshIndex++)
                         {
-                            const auto v = &lod->Meshes[meshIndex]->Positions;
-                            for (int32 i = 0; i < v->Count(); i++)
-                                Vector3::Transform(v->Get()[i], m2, v->Get()[i]);
+                            Array<Float3>& v = lod->Meshes[meshIndex]->Positions;
+                            for (int32 i = 0; i < v.Count(); i++)
+                                Float3::Transform(v[i], m2, v[i]);
                         }
                     }
                 }
@@ -411,7 +411,7 @@ bool CSGBuilderImpl::generateRawDataAsset(Scene* scene, RawData& meshData, Guid&
             int32 brushDataSize = 0;
             for (int32 i = 0; i < surfaces.Count(); i++)
             {
-                brushDataSize += sizeof(int32) + sizeof(Triangle) * surfaces[i].Triangles.Count();
+                brushDataSize += sizeof(int32) + sizeof(RawData::SurfaceTriangle) * surfaces[i].Triangles.Count();
             }
             surfacesDataOffset += brushDataSize;
         }

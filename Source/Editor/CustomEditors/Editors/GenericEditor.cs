@@ -498,7 +498,7 @@ namespace FlaxEditor.CustomEditors.Editors
             return false;
         }
 
-        private void OnGroupPanelMouseButtonRightClicked(DropPanel groupPanel, Vector2 location)
+        private void OnGroupPanelMouseButtonRightClicked(DropPanel groupPanel, Float2 location)
         {
             var group = (GroupElement)groupPanel.Tag;
             bool canRevertReference = false, canRevertDefault = false;
@@ -637,10 +637,10 @@ namespace FlaxEditor.CustomEditors.Editors
                         {
                             Text = "+",
                             TooltipText = "Create a new instance of the object",
-                            Size = new Vector2(ButtonSize, ButtonSize),
+                            Size = new Float2(ButtonSize, ButtonSize),
                             AnchorPreset = AnchorPresets.MiddleRight,
                             Parent = layout.ContainerControl,
-                            Location = new Vector2(layout.ContainerControl.Width - ButtonSize - 4, (layout.ContainerControl.Height - ButtonSize) * 0.5f),
+                            Location = new Float2(layout.ContainerControl.Width - ButtonSize - 4, (layout.ContainerControl.Height - ButtonSize) * 0.5f),
                         };
                         button.Clicked += () => SetValue(Values.Type.CreateInstance());
                     }

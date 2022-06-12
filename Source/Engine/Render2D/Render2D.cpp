@@ -56,11 +56,11 @@ PACK_STRUCT(struct Data {
     });
 
 PACK_STRUCT(struct BlurData {
-    Vector2 InvBufferSize;
+    Float2 InvBufferSize;
     uint32 SampleCount;
     float Dummy0;
-    Vector4 Bounds;
-    Vector4 WeightAndOffsets[RENDER2D_BLUR_MAX_SAMPLES / 2];
+    Float4 Bounds;
+    Float4 WeightAndOffsets[RENDER2D_BLUR_MAX_SAMPLES / 2];
     });
 
 enum class DrawCallType : byte
@@ -139,10 +139,10 @@ struct Render2DDrawCall
 
 struct Render2DVertex
 {
-    Vector2 Position;
+    Float2 Position;
     Half2 TexCoord;
     Color Color;
-    Vector2 CustomData;
+    Float2 CustomData;
     RotatedRectangle ClipMask;
 };
 
@@ -191,7 +191,7 @@ namespace
     // Drawing
     Array<Render2DDrawCall> DrawCalls;
     Array<FontLineCache> Lines;
-    Array<Vector2> Lines2;
+    Array<Float2> Lines2;
     bool IsScissorsRectEmpty;
     bool IsScissorsRectEnabled;
 
@@ -228,7 +228,7 @@ namespace
     indices[5] = VBIndex + 0; \
     IB.Write(indices, sizeof(indices))
 
-FORCE_INLINE void ApplyTransform(const Vector2& value, Vector2& result)
+FORCE_INLINE void ApplyTransform(const Float2& value, Float2& result)
 {
     Matrix3x3::Transform2DPoint(value, TransformCached, result);
 }
@@ -241,9 +241,9 @@ void ApplyTransform(const Rectangle& value, RotatedRectangle& result)
     Matrix3x3::Transform2DVector(rotated.ExtentY, TransformCached, result.ExtentY);
 }
 
-FORCE_INLINE Render2DVertex MakeVertex(const Vector2& pos, const Vector2& uv, const Color& color)
+FORCE_INLINE Render2DVertex MakeVertex(const Float2& pos, const Float2& uv, const Color& color)
 {
-    Vector2 point;
+    Float2 point;
     ApplyTransform(pos, point);
 
     return
@@ -256,7 +256,7 @@ FORCE_INLINE Render2DVertex MakeVertex(const Vector2& pos, const Vector2& uv, co
     };
 }
 
-FORCE_INLINE Render2DVertex MakeVertex(const Vector2& point, const Vector2& uv, const Color& color, const RotatedRectangle& mask, const Vector2& customData)
+FORCE_INLINE Render2DVertex MakeVertex(const Float2& point, const Float2& uv, const Color& color, const RotatedRectangle& mask, const Float2& customData)
 {
     return
     {
@@ -268,7 +268,7 @@ FORCE_INLINE Render2DVertex MakeVertex(const Vector2& point, const Vector2& uv, 
     };
 }
 
-FORCE_INLINE Render2DVertex MakeVertex(const Vector2& point, const Vector2& uv, const Color& color, const RotatedRectangle& mask, const Vector2& customData, const Color& tint)
+FORCE_INLINE Render2DVertex MakeVertex(const Float2& point, const Float2& uv, const Color& color, const RotatedRectangle& mask, const Float2& customData, const Color& tint)
 {
     return
     {
@@ -280,7 +280,7 @@ FORCE_INLINE Render2DVertex MakeVertex(const Vector2& point, const Vector2& uv, 
     };
 }
 
-void WriteTri(const Vector2& p0, const Vector2& p1, const Vector2& p2, const Vector2& uv0, const Vector2& uv1, const Vector2& uv2, const Color& color0, const Color& color1, const Color& color2)
+void WriteTri(const Float2& p0, const Float2& p1, const Float2& p2, const Float2& uv0, const Float2& uv1, const Float2& uv2, const Color& color0, const Color& color1, const Color& color2)
 {
     Render2DVertex tris[3];
     tris[0] = MakeVertex(p0, uv0, color0);
@@ -298,26 +298,26 @@ void WriteTri(const Vector2& p0, const Vector2& p1, const Vector2& p2, const Vec
     IBIndex += 3;
 }
 
-void WriteTri(const Vector2& p0, const Vector2& p1, const Vector2& p2, const Color& color0, const Color& color1, const Color& color2)
+void WriteTri(const Float2& p0, const Float2& p1, const Float2& p2, const Color& color0, const Color& color1, const Color& color2)
 {
-    WriteTri(p0, p1, p2, Vector2::Zero, Vector2::Zero, Vector2::Zero, color0, color1, color2);
+    WriteTri(p0, p1, p2, Float2::Zero, Float2::Zero, Float2::Zero, color0, color1, color2);
 }
 
-void WriteTri(const Vector2& p0, const Vector2& p1, const Vector2& p2, const Vector2& uv0, const Vector2& uv1, const Vector2& uv2)
+void WriteTri(const Float2& p0, const Float2& p1, const Float2& p2, const Float2& uv0, const Float2& uv1, const Float2& uv2)
 {
     WriteTri(p0, p1, p2, uv0, uv1, uv2, Color::Black, Color::Black, Color::Black);
 }
 
 void WriteRect(const Rectangle& rect, const Color& color1, const Color& color2, const Color& color3, const Color& color4)
 {
-    const Vector2 uvUpperLeft = Vector2::Zero;
-    const Vector2 uvBottomRight = Vector2::One;
+    const Float2 uvUpperLeft = Float2::Zero;
+    const Float2 uvBottomRight = Float2::One;
 
     Render2DVertex quad[4];
     quad[0] = MakeVertex(rect.GetBottomRight(), uvBottomRight, color3);
-    quad[1] = MakeVertex(rect.GetBottomLeft(), Vector2(uvUpperLeft.X, uvBottomRight.Y), color4);
+    quad[1] = MakeVertex(rect.GetBottomLeft(), Float2(uvUpperLeft.X, uvBottomRight.Y), color4);
     quad[2] = MakeVertex(rect.GetUpperLeft(), uvUpperLeft, color1);
-    quad[3] = MakeVertex(rect.GetUpperRight(), Vector2(uvBottomRight.X, uvUpperLeft.Y), color2);
+    quad[3] = MakeVertex(rect.GetUpperRight(), Float2(uvBottomRight.X, uvUpperLeft.Y), color2);
     VB.Write(quad, sizeof(quad));
 
     uint32 indices[6];
@@ -327,13 +327,13 @@ void WriteRect(const Rectangle& rect, const Color& color1, const Color& color2, 
     IBIndex += 6;
 }
 
-void WriteRect(const Rectangle& rect, const Color& color, const Vector2& uvUpperLeft, const Vector2& uvBottomRight)
+void WriteRect(const Rectangle& rect, const Color& color, const Float2& uvUpperLeft, const Float2& uvBottomRight)
 {
     Render2DVertex quad[4];
     quad[0] = MakeVertex(rect.GetBottomRight(), uvBottomRight, color);
-    quad[1] = MakeVertex(rect.GetBottomLeft(), Vector2(uvUpperLeft.X, uvBottomRight.Y), color);
+    quad[1] = MakeVertex(rect.GetBottomLeft(), Float2(uvUpperLeft.X, uvBottomRight.Y), color);
     quad[2] = MakeVertex(rect.GetUpperLeft(), uvUpperLeft, color);
-    quad[3] = MakeVertex(rect.GetUpperRight(), Vector2(uvBottomRight.X, uvUpperLeft.Y), color);
+    quad[3] = MakeVertex(rect.GetUpperRight(), Float2(uvBottomRight.X, uvUpperLeft.Y), color);
     VB.Write(quad, sizeof(quad));
 
     uint32 indices[6];
@@ -345,56 +345,56 @@ void WriteRect(const Rectangle& rect, const Color& color, const Vector2& uvUpper
 
 FORCE_INLINE void WriteRect(const Rectangle& rect, const Color& color)
 {
-    WriteRect(rect, color, Vector2::Zero, Vector2::One);
+    WriteRect(rect, color, Float2::Zero, Float2::One);
 }
 
-void Write9SlicingRect(const Rectangle& rect, const Color& color, const Vector4& border, const Vector4& borderUVs)
+void Write9SlicingRect(const Rectangle& rect, const Color& color, const Float4& border, const Float4& borderUVs)
 {
     const Rectangle upperLeft(rect.Location.X, rect.Location.Y, border.X, border.Z);
     const Rectangle upperRight(rect.Location.X + rect.Size.X - border.Y, rect.Location.Y, border.Y, border.Z);
     const Rectangle bottomLeft(rect.Location.X, rect.Location.Y + rect.Size.Y - border.W, border.X, border.W);
     const Rectangle bottomRight(rect.Location.X + rect.Size.X - border.Y, rect.Location.Y + rect.Size.Y - border.W, border.Y, border.W);
 
-    const Vector2 upperLeftUV(borderUVs.X, borderUVs.Z);
-    const Vector2 upperRightUV(1.0f - borderUVs.Y, borderUVs.Z);
-    const Vector2 bottomLeftUV(borderUVs.X, 1.0f - borderUVs.W);
-    const Vector2 bottomRightUV(1.0f - borderUVs.Y, 1.0f - borderUVs.W);
+    const Float2 upperLeftUV(borderUVs.X, borderUVs.Z);
+    const Float2 upperRightUV(1.0f - borderUVs.Y, borderUVs.Z);
+    const Float2 bottomLeftUV(borderUVs.X, 1.0f - borderUVs.W);
+    const Float2 bottomRightUV(1.0f - borderUVs.Y, 1.0f - borderUVs.W);
 
-    WriteRect(upperLeft, color, Vector2::Zero, upperLeftUV);
-    WriteRect(upperRight, color, Vector2(upperRightUV.X, 0), Vector2(1, upperLeftUV.Y));
-    WriteRect(bottomLeft, color, Vector2(0, bottomLeftUV.Y), Vector2(bottomLeftUV.X, 1));
-    WriteRect(bottomRight, color, bottomRightUV, Vector2::One);
+    WriteRect(upperLeft, color, Float2::Zero, upperLeftUV);
+    WriteRect(upperRight, color, Float2(upperRightUV.X, 0), Float2(1, upperLeftUV.Y));
+    WriteRect(bottomLeft, color, Float2(0, bottomLeftUV.Y), Float2(bottomLeftUV.X, 1));
+    WriteRect(bottomRight, color, bottomRightUV, Float2::One);
 
-    WriteRect(Rectangle(upperLeft.GetUpperRight(), upperRight.GetBottomLeft() - upperLeft.GetUpperRight()), color, Vector2(upperLeftUV.X, 0), upperRightUV);
-    WriteRect(Rectangle(upperLeft.GetBottomLeft(), bottomLeft.GetUpperRight() - upperLeft.GetBottomLeft()), color, Vector2(0, upperLeftUV.Y), bottomLeftUV);
-    WriteRect(Rectangle(bottomLeft.GetUpperRight(), bottomRight.GetBottomLeft() - bottomLeft.GetUpperRight()), color, bottomLeftUV, Vector2(bottomRightUV.X, 1));
-    WriteRect(Rectangle(upperRight.GetBottomLeft(), bottomRight.GetUpperRight() - upperRight.GetBottomLeft()), color, upperRightUV, Vector2(1, bottomRightUV.Y));
+    WriteRect(Rectangle(upperLeft.GetUpperRight(), upperRight.GetBottomLeft() - upperLeft.GetUpperRight()), color, Float2(upperLeftUV.X, 0), upperRightUV);
+    WriteRect(Rectangle(upperLeft.GetBottomLeft(), bottomLeft.GetUpperRight() - upperLeft.GetBottomLeft()), color, Float2(0, upperLeftUV.Y), bottomLeftUV);
+    WriteRect(Rectangle(bottomLeft.GetUpperRight(), bottomRight.GetBottomLeft() - bottomLeft.GetUpperRight()), color, bottomLeftUV, Float2(bottomRightUV.X, 1));
+    WriteRect(Rectangle(upperRight.GetBottomLeft(), bottomRight.GetUpperRight() - upperRight.GetBottomLeft()), color, upperRightUV, Float2(1, bottomRightUV.Y));
 
     WriteRect(Rectangle(upperLeft.GetBottomRight(), bottomRight.GetUpperLeft() - upperLeft.GetBottomRight()), color, upperRightUV, bottomRightUV);
 }
 
-void Write9SlicingRect(const Rectangle& rect, const Color& color, const Vector4& border, const Vector4& borderUVs, const Vector2& uvLocation, const Vector2& uvSize)
+void Write9SlicingRect(const Rectangle& rect, const Color& color, const Float4& border, const Float4& borderUVs, const Float2& uvLocation, const Float2& uvSize)
 {
     const Rectangle upperLeft(rect.Location.X, rect.Location.Y, border.X, border.Z);
     const Rectangle upperRight(rect.Location.X + rect.Size.X - border.Y, rect.Location.Y, border.Y, border.Z);
     const Rectangle bottomLeft(rect.Location.X, rect.Location.Y + rect.Size.Y - border.W, border.X, border.W);
     const Rectangle bottomRight(rect.Location.X + rect.Size.X - border.Y, rect.Location.Y + rect.Size.Y - border.W, border.Y, border.W);
 
-    const Vector2 upperLeftUV = Vector2(borderUVs.X, borderUVs.Z) * uvSize + uvLocation;
-    const Vector2 upperRightUV = Vector2(1.0f - borderUVs.Y, borderUVs.Z) * uvSize + uvLocation;
-    const Vector2 bottomLeftUV = Vector2(borderUVs.X, 1.0f - borderUVs.W) * uvSize + uvLocation;
-    const Vector2 bottomRightUV = Vector2(1.0f - borderUVs.Y, 1.0f - borderUVs.W) * uvSize + uvLocation;
-    const Vector2 uvEnd = uvLocation + uvSize;
+    const Float2 upperLeftUV = Float2(borderUVs.X, borderUVs.Z) * uvSize + uvLocation;
+    const Float2 upperRightUV = Float2(1.0f - borderUVs.Y, borderUVs.Z) * uvSize + uvLocation;
+    const Float2 bottomLeftUV = Float2(borderUVs.X, 1.0f - borderUVs.W) * uvSize + uvLocation;
+    const Float2 bottomRightUV = Float2(1.0f - borderUVs.Y, 1.0f - borderUVs.W) * uvSize + uvLocation;
+    const Float2 uvEnd = uvLocation + uvSize;
 
     WriteRect(upperLeft, color, uvLocation, upperLeftUV);
-    WriteRect(upperRight, color, Vector2(upperRightUV.X, uvLocation.Y), Vector2(uvEnd.X, upperLeftUV.Y));
-    WriteRect(bottomLeft, color, Vector2(uvLocation.X, bottomLeftUV.Y), Vector2(bottomLeftUV.X, uvEnd.Y));
+    WriteRect(upperRight, color, Float2(upperRightUV.X, uvLocation.Y), Float2(uvEnd.X, upperLeftUV.Y));
+    WriteRect(bottomLeft, color, Float2(uvLocation.X, bottomLeftUV.Y), Float2(bottomLeftUV.X, uvEnd.Y));
     WriteRect(bottomRight, color, bottomRightUV, uvEnd);
 
-    WriteRect(Rectangle(upperLeft.GetUpperRight(), upperRight.GetBottomLeft() - upperLeft.GetUpperRight()), color, Vector2(upperLeftUV.X, uvLocation.Y), upperRightUV);
-    WriteRect(Rectangle(upperLeft.GetBottomLeft(), bottomLeft.GetUpperRight() - upperLeft.GetBottomLeft()), color, Vector2(uvLocation.X, upperLeftUV.Y), bottomLeftUV);
-    WriteRect(Rectangle(bottomLeft.GetUpperRight(), bottomRight.GetBottomLeft() - bottomLeft.GetUpperRight()), color, bottomLeftUV, Vector2(bottomRightUV.X, uvEnd.Y));
-    WriteRect(Rectangle(upperRight.GetBottomLeft(), bottomRight.GetUpperRight() - upperRight.GetBottomLeft()), color, upperRightUV, Vector2(uvEnd.X, bottomRightUV.Y));
+    WriteRect(Rectangle(upperLeft.GetUpperRight(), upperRight.GetBottomLeft() - upperLeft.GetUpperRight()), color, Float2(upperLeftUV.X, uvLocation.Y), upperRightUV);
+    WriteRect(Rectangle(upperLeft.GetBottomLeft(), bottomLeft.GetUpperRight() - upperLeft.GetBottomLeft()), color, Float2(uvLocation.X, upperLeftUV.Y), bottomLeftUV);
+    WriteRect(Rectangle(bottomLeft.GetUpperRight(), bottomRight.GetBottomLeft() - bottomLeft.GetUpperRight()), color, bottomLeftUV, Float2(bottomRightUV.X, uvEnd.Y));
+    WriteRect(Rectangle(upperRight.GetBottomLeft(), bottomRight.GetUpperRight() - upperRight.GetBottomLeft()), color, upperRightUV, Float2(uvEnd.X, bottomRightUV.Y));
 
     WriteRect(Rectangle(upperLeft.GetBottomRight(), bottomRight.GetUpperLeft() - upperLeft.GetBottomRight()), color, upperRightUV, bottomRightUV);
 }
@@ -904,7 +904,7 @@ static float GetWeight(float dist, float strength)
     return (1.0f / Math::Sqrt(2 * PI * strength2)) * Math::Exp(-(dist * dist) / (2 * strength2));
 }
 
-static Vector2 GetWeightAndOffset(float dist, float sigma)
+static Float2 GetWeightAndOffset(float dist, float sigma)
 {
     float offset1 = dist;
     float weight1 = GetWeight(offset1, sigma);
@@ -920,17 +920,17 @@ static Vector2 GetWeightAndOffset(float dist, float sigma)
         offset = (weight1 * offset1 + weight2 * offset2) / totalWeight;
     }
 
-    return Vector2(totalWeight, offset);
+    return Float2(totalWeight, offset);
 }
 
-static uint32 ComputeBlurWeights(int32 kernelSize, float sigma, Vector4* outWeightsAndOffsets)
+static uint32 ComputeBlurWeights(int32 kernelSize, float sigma, Float4* outWeightsAndOffsets)
 {
     const uint32 numSamples = Math::DivideAndRoundUp((uint32)kernelSize, 2u);
-    outWeightsAndOffsets[0] = Vector4(Vector2(GetWeight(0, sigma), 0), GetWeightAndOffset(1, sigma));
+    outWeightsAndOffsets[0] = Float4(Float2(GetWeight(0, sigma), 0), GetWeightAndOffset(1, sigma));
     uint32 sampleIndex = 1;
     for (int32 x = 3; x < kernelSize; x += 4)
     {
-        outWeightsAndOffsets[sampleIndex] = Vector4(GetWeightAndOffset((float)x, sigma), GetWeightAndOffset((float)(x + 2), sigma));
+        outWeightsAndOffsets[sampleIndex] = Float4(GetWeightAndOffset((float)x, sigma), GetWeightAndOffset((float)(x + 2), sigma));
         sampleIndex++;
     }
     return numSamples;
@@ -1037,9 +1037,9 @@ void DrawBatch(int32 startIndex, int32 count)
     {
         PROFILE_GPU("Blur");
 
-        const Vector4 bounds(d.AsBlur.UpperLeftX, d.AsBlur.UpperLeftY, d.AsBlur.BottomRightX, d.AsBlur.BottomRightY);
+        const Float4 bounds(d.AsBlur.UpperLeftX, d.AsBlur.UpperLeftY, d.AsBlur.BottomRightX, d.AsBlur.BottomRightY);
         float blurStrength = Math::Max(d.AsBlur.Strength, 1.0f);
-        auto& limits = GPUDevice::Instance->Limits;
+        const auto& limits = GPUDevice::Instance->Limits;
         int32 renderTargetWidth = Math::Min(Math::RoundToInt(d.AsBlur.Width), limits.MaximumTexture2DSize);
         int32 renderTargetHeight = Math::Min(Math::RoundToInt(d.AsBlur.Height), limits.MaximumTexture2DSize);
 
@@ -1132,7 +1132,7 @@ void DrawBatch(int32 startIndex, int32 count)
     Context->DrawIndexed(countIb, 0, d.StartIB);
 }
 
-void Render2D::DrawText(Font* font, const StringView& text, const Color& color, const Vector2& location, MaterialBase* customMaterial)
+void Render2D::DrawText(Font* font, const StringView& text, const Color& color, const Float2& location, MaterialBase* customMaterial)
 {
     RENDER2D_CHECK_RENDERING_STATE;
 
@@ -1145,7 +1145,7 @@ void Render2D::DrawText(Font* font, const StringView& text, const Color& color, 
     // Temporary data
     uint32 fontAtlasIndex = 0;
     FontTextureAtlas* fontAtlas = nullptr;
-    Vector2 invAtlasSize = Vector2::One;
+    Float2 invAtlasSize = Float2::One;
     FontCharacterEntry previous;
     int32 kerning;
     float scale = 1.0f / FontManager::FontScale;
@@ -1163,7 +1163,7 @@ void Render2D::DrawText(Font* font, const StringView& text, const Color& color, 
         drawCall.Type = DrawCallType::DrawChar;
         drawCall.AsChar.Mat = nullptr;
     }
-    Vector2 pointer = location;
+    Float2 pointer = location;
     for (int32 currentIndex = 0; currentIndex <= text.Length(); currentIndex++)
     {
         // Cache current character
@@ -1218,8 +1218,8 @@ void Render2D::DrawText(Font* font, const StringView& text, const Color& color, 
 
                 Rectangle charRect(x, y, entry.UVSize.X * scale, entry.UVSize.Y * scale);
 
-                Vector2 upperLeftUV = entry.UV * invAtlasSize;
-                Vector2 rightBottomUV = (entry.UV + entry.UVSize) * invAtlasSize;
+                Float2 upperLeftUV = entry.UV * invAtlasSize;
+                Float2 rightBottomUV = (entry.UV + entry.UVSize) * invAtlasSize;
 
                 // Add draw call
                 drawCall.StartIB = IBIndex;
@@ -1240,7 +1240,7 @@ void Render2D::DrawText(Font* font, const StringView& text, const Color& color, 
     }
 }
 
-void Render2D::DrawText(Font* font, const StringView& text, const TextRange& textRange, const Color& color, const Vector2& location, MaterialBase* customMaterial)
+void Render2D::DrawText(Font* font, const StringView& text, const TextRange& textRange, const Color& color, const Float2& location, MaterialBase* customMaterial)
 {
     DrawText(font, StringView(text.Get() + textRange.StartIndex, textRange.Length()), color, location, customMaterial);
 }
@@ -1259,7 +1259,7 @@ void Render2D::DrawText(Font* font, const StringView& text, const Color& color, 
     // Temporary data
     uint32 fontAtlasIndex = 0;
     FontTextureAtlas* fontAtlas = nullptr;
-    Vector2 invAtlasSize = Vector2::One;
+    Float2 invAtlasSize = Float2::One;
     FontCharacterEntry previous;
     int32 kerning;
     float scale = layout.Scale / FontManager::FontScale;
@@ -1284,7 +1284,7 @@ void Render2D::DrawText(Font* font, const StringView& text, const Color& color, 
     for (int32 lineIndex = 0; lineIndex < Lines.Count(); lineIndex++)
     {
         const FontLineCache& line = Lines[lineIndex];
-        Vector2 pointer = line.Location;
+        Float2 pointer = line.Location;
 
         // Render all characters from the line
         for (int32 charIndex = line.FirstCharIndex; charIndex <= line.LastCharIndex; charIndex++)
@@ -1336,8 +1336,8 @@ void Render2D::DrawText(Font* font, const StringView& text, const Color& color, 
                     Rectangle charRect(x, y, entry.UVSize.X * scale, entry.UVSize.Y * scale);
                     charRect.Offset(layout.Bounds.Location);
 
-                    Vector2 upperLeftUV = entry.UV * invAtlasSize;
-                    Vector2 rightBottomUV = (entry.UV + entry.UVSize) * invAtlasSize;
+                    Float2 upperLeftUV = entry.UV * invAtlasSize;
+                    Float2 rightBottomUV = (entry.UV + entry.UVSize) * invAtlasSize;
 
                     // Add draw call
                     drawCall.StartIB = IBIndex;
@@ -1407,7 +1407,7 @@ void Render2D::DrawRectangle(const Rectangle& rect, const Color& color1, const C
     const auto& mask = ClipLayersStack.Peek().Mask;
     thickness *= (TransformCached.M11 + TransformCached.M22 + TransformCached.M33) * 0.3333333f;
 
-    Vector2 points[5];
+    Float2 points[5];
     ApplyTransform(rect.GetUpperLeft(), points[0]);
     ApplyTransform(rect.GetUpperRight(), points[1]);
     ApplyTransform(rect.GetBottomRight(), points[2]);
@@ -1423,7 +1423,7 @@ void Render2D::DrawRectangle(const Rectangle& rect, const Color& color1, const C
 
     Render2DVertex v[4];
     uint32 indices[6];
-    Vector2 p1t, p2t;
+    Float2 p1t, p2t;
     Color c1t, c2t;
 
     p1t = points[0];
@@ -1444,16 +1444,16 @@ void Render2D::DrawRectangle(const Rectangle& rect, const Color& color1, const C
         p2t = points[i];
         c2t = colors[i];
 
-        Vector2 line = p2t - p1t;
-        Vector2 up = thicknessHalf * Vector2::Normalize(Vector2(-line.Y, line.X));
-        Vector2 right = thicknessHalf * Vector2::Normalize(line);
+        Float2 line = p2t - p1t;
+        Float2 up = thicknessHalf * Float2::Normalize(Float2(-line.Y, line.X));
+        Float2 right = thicknessHalf * Float2::Normalize(line);
 
         // Line
 
-        v[0] = MakeVertex(p2t + up, Vector2::UnitX, c2t, mask, { thickness, (float)Features });
-        v[1] = MakeVertex(p1t + up, Vector2::UnitX, c1t, mask, { thickness, (float)Features });
-        v[2] = MakeVertex(p1t - up, Vector2::Zero, c1t, mask, { thickness, (float)Features });
-        v[3] = MakeVertex(p2t - up, Vector2::Zero, c2t, mask, { thickness, (float)Features });
+        v[0] = MakeVertex(p2t + up, Float2::UnitX, c2t, mask, { thickness, (float)Features });
+        v[1] = MakeVertex(p1t + up, Float2::UnitX, c1t, mask, { thickness, (float)Features });
+        v[2] = MakeVertex(p1t - up, Float2::Zero, c1t, mask, { thickness, (float)Features });
+        v[3] = MakeVertex(p2t - up, Float2::Zero, c2t, mask, { thickness, (float)Features });
         VB.Write(v, sizeof(Render2DVertex) * 4);
 
         indices[0] = VBIndex + 0;
@@ -1470,9 +1470,9 @@ void Render2D::DrawRectangle(const Rectangle& rect, const Color& color1, const C
         // Corner cap
 
         const float tmp = thickness * 0.69f;
-        v[0] = MakeVertex(p2t - up, Vector2::Zero, c2t, mask, { tmp, (float)Features });
-        v[1] = MakeVertex(p2t + right, Vector2::Zero, c2t, mask, { tmp, (float)Features });
-        v[2] = MakeVertex(p2t, Vector2(0.5f, 0.0f), c2t, mask, { tmp, (float)Features });
+        v[0] = MakeVertex(p2t - up, Float2::Zero, c2t, mask, { tmp, (float)Features });
+        v[1] = MakeVertex(p2t + right, Float2::Zero, c2t, mask, { tmp, (float)Features });
+        v[2] = MakeVertex(p2t, Float2(0.5f, 0.0f), c2t, mask, { tmp, (float)Features });
         VB.Write(v, sizeof(Render2DVertex) * 4);
 
         indices[0] = VBIndex + 1;
@@ -1500,16 +1500,16 @@ void Render2D::DrawRectangle(const Rectangle& rect, const Color& color1, const C
         p2t = points[i];
         c2t = colors[i];
 
-        Vector2 line = p2t - p1t;
-        Vector2 up = thicknessHalf * Vector2::Normalize(Vector2(-line.Y, line.X));
-        Vector2 right = thicknessHalf * Vector2::Normalize(line);
+        Float2 line = p2t - p1t;
+        Float2 up = thicknessHalf * Float2::Normalize(Float2(-line.Y, line.X));
+        Float2 right = thicknessHalf * Float2::Normalize(line);
 
         // Line
 
-        v[0] = MakeVertex(p2t + up, Vector2::UnitX, c2t, mask, { 0.0f, (float)Features });
-        v[1] = MakeVertex(p1t + up, Vector2::UnitX, c1t, mask, { 0.0f, (float)Features });
-        v[2] = MakeVertex(p1t - up, Vector2::Zero, c1t, mask, { 0.0f, (float)Features });
-        v[3] = MakeVertex(p2t - up, Vector2::Zero, c2t, mask, { 0.0f, (float)Features });
+        v[0] = MakeVertex(p2t + up, Float2::UnitX, c2t, mask, { 0.0f, (float)Features });
+        v[1] = MakeVertex(p1t + up, Float2::UnitX, c1t, mask, { 0.0f, (float)Features });
+        v[2] = MakeVertex(p1t - up, Float2::Zero, c1t, mask, { 0.0f, (float)Features });
+        v[3] = MakeVertex(p2t - up, Float2::Zero, c2t, mask, { 0.0f, (float)Features });
         VB.Write(v, sizeof(Render2DVertex) * 4);
 
         indices[0] = VBIndex + 0;
@@ -1525,9 +1525,9 @@ void Render2D::DrawRectangle(const Rectangle& rect, const Color& color1, const C
 
         // Corner cap
 
-        v[0] = MakeVertex(p2t - up, Vector2::Zero, c2t, mask, { 0.0f, (float)Features });
-        v[1] = MakeVertex(p2t + right, Vector2::Zero, c2t, mask, { 0.0f, (float)Features });
-        v[2] = MakeVertex(p2t, Vector2(0.5f, 0.0f), c2t, mask, { 0.0f, (float)Features });
+        v[0] = MakeVertex(p2t - up, Float2::Zero, c2t, mask, { 0.0f, (float)Features });
+        v[1] = MakeVertex(p2t + right, Float2::Zero, c2t, mask, { 0.0f, (float)Features });
+        v[2] = MakeVertex(p2t, Float2(0.5f, 0.0f), c2t, mask, { 0.0f, (float)Features });
         VB.Write(v, sizeof(Render2DVertex) * 4);
 
         indices[0] = VBIndex + 1;
@@ -1625,7 +1625,7 @@ void Render2D::DrawSpritePoint(const SpriteHandle& spriteHandle, const Rectangle
     WriteRect(rect, color, sprite->Area.GetUpperLeft(), sprite->Area.GetBottomRight());
 }
 
-void Render2D::Draw9SlicingTexture(TextureBase* t, const Rectangle& rect, const Vector4& border, const Vector4& borderUVs, const Color& color)
+void Render2D::Draw9SlicingTexture(TextureBase* t, const Rectangle& rect, const Float4& border, const Float4& borderUVs, const Color& color)
 {
     RENDER2D_CHECK_RENDERING_STATE;
 
@@ -1638,7 +1638,7 @@ void Render2D::Draw9SlicingTexture(TextureBase* t, const Rectangle& rect, const 
     Write9SlicingRect(rect, color, border, borderUVs);
 }
 
-void Render2D::Draw9SlicingTexturePoint(TextureBase* t, const Rectangle& rect, const Vector4& border, const Vector4& borderUVs, const Color& color)
+void Render2D::Draw9SlicingTexturePoint(TextureBase* t, const Rectangle& rect, const Float4& border, const Float4& borderUVs, const Color& color)
 {
     RENDER2D_CHECK_RENDERING_STATE;
 
@@ -1651,7 +1651,7 @@ void Render2D::Draw9SlicingTexturePoint(TextureBase* t, const Rectangle& rect, c
     Write9SlicingRect(rect, color, border, borderUVs);
 }
 
-void Render2D::Draw9SlicingSprite(const SpriteHandle& spriteHandle, const Rectangle& rect, const Vector4& border, const Vector4& borderUVs, const Color& color)
+void Render2D::Draw9SlicingSprite(const SpriteHandle& spriteHandle, const Rectangle& rect, const Float4& border, const Float4& borderUVs, const Color& color)
 {
     RENDER2D_CHECK_RENDERING_STATE;
     if (spriteHandle.Index == INVALID_INDEX || !spriteHandle.Atlas || !spriteHandle.Atlas->GetTexture()->HasResidentMip())
@@ -1666,7 +1666,7 @@ void Render2D::Draw9SlicingSprite(const SpriteHandle& spriteHandle, const Rectan
     Write9SlicingRect(rect, color, border, borderUVs, sprite->Area.Location, sprite->Area.Size);
 }
 
-void Render2D::Draw9SlicingSpritePoint(const SpriteHandle& spriteHandle, const Rectangle& rect, const Vector4& border, const Vector4& borderUVs, const Color& color)
+void Render2D::Draw9SlicingSpritePoint(const SpriteHandle& spriteHandle, const Rectangle& rect, const Float4& border, const Float4& borderUVs, const Color& color)
 {
     RENDER2D_CHECK_RENDERING_STATE;
     if (spriteHandle.Index == INVALID_INDEX || !spriteHandle.Atlas || !spriteHandle.Atlas->GetTexture()->HasResidentMip())
@@ -1698,16 +1698,16 @@ void Render2D::DrawCustom(GPUTexture* t, const Rectangle& rect, GPUPipelineState
 
 #if RENDER2D_USE_LINE_AA
 
-void DrawLineCap(const Vector2& capOrigin, const Vector2& capDirection, const Vector2& up, const Color& color, float thickness)
+void DrawLineCap(const Float2& capOrigin, const Float2& capDirection, const Float2& up, const Color& color, float thickness)
 {
     const auto& mask = ClipLayersStack.Peek().Mask;
 
     Render2DVertex v[5];
-    v[0] = MakeVertex(capOrigin, Vector2(0.5f, 0.0f), color, mask, { thickness, (float)Render2D::Features });
-    v[1] = MakeVertex(capOrigin + capDirection + up, Vector2::Zero, color, mask, { thickness, (float)Render2D::Features });
-    v[2] = MakeVertex(capOrigin + capDirection - up, Vector2::Zero, color, mask, { thickness, (float)Render2D::Features });
-    v[3] = MakeVertex(capOrigin + up, Vector2::Zero, color, mask, { thickness, (float)Render2D::Features });
-    v[4] = MakeVertex(capOrigin - up, Vector2::Zero, color, mask, { thickness, (float)Render2D::Features });
+    v[0] = MakeVertex(capOrigin, Float2(0.5f, 0.0f), color, mask, { thickness, (float)Render2D::Features });
+    v[1] = MakeVertex(capOrigin + capDirection + up, Float2::Zero, color, mask, { thickness, (float)Render2D::Features });
+    v[2] = MakeVertex(capOrigin + capDirection - up, Float2::Zero, color, mask, { thickness, (float)Render2D::Features });
+    v[3] = MakeVertex(capOrigin + up, Float2::Zero, color, mask, { thickness, (float)Render2D::Features });
+    v[4] = MakeVertex(capOrigin - up, Float2::Zero, color, mask, { thickness, (float)Render2D::Features });
     VB.Write(v, sizeof(v));
 
     uint32 indices[9];
@@ -1728,7 +1728,7 @@ void DrawLineCap(const Vector2& capOrigin, const Vector2& capDirection, const Ve
 
 #endif
 
-void DrawLines(const Vector2* points, int32 pointsCount, const Color& color1, const Color& color2, float thickness)
+void DrawLines(const Float2* points, int32 pointsCount, const Color& color1, const Color& color2, float thickness)
 {
     ASSERT(points && pointsCount >= 2);
     const auto& mask = ClipLayersStack.Peek().Mask;
@@ -1740,7 +1740,7 @@ void DrawLines(const Vector2* points, int32 pointsCount, const Color& color1, co
 
     Render2DVertex v[4];
     uint32 indices[6];
-    Vector2 p1t, p2t;
+    Float2 p1t, p2t;
 
 #if RENDER2D_USE_LINE_AA
     // This must be the same as in HLSL code
@@ -1750,9 +1750,9 @@ void DrawLines(const Vector2* points, int32 pointsCount, const Color& color1, co
     drawCall.Type = DrawCallType::LineAA;
     drawCall.CountIB = 9 + 9;
 
-    Vector2 line;
-    Vector2 normal;
-    Vector2 up;
+    Float2 line;
+    Float2 normal;
+    Float2 up;
     ApplyTransform(points[0], p1t);
 
     // Starting cap
@@ -1760,9 +1760,9 @@ void DrawLines(const Vector2* points, int32 pointsCount, const Color& color1, co
         ApplyTransform(points[1], p2t);
 
         line = p2t - p1t;
-        normal = Vector2::Normalize(Vector2(-line.Y, line.X));
+        normal = Float2::Normalize(Float2(-line.Y, line.X));
         up = normal * thicknessHalf;
-        const Vector2 capDirection = thicknessHalf * Vector2::Normalize(p1t - p2t);
+        const Float2 capDirection = thicknessHalf * Float2::Normalize(p1t - p2t);
 
         DrawLineCap(p1t, capDirection, up, color1, thickness);
     }
@@ -1773,13 +1773,13 @@ void DrawLines(const Vector2* points, int32 pointsCount, const Color& color1, co
         ApplyTransform(points[i], p2t);
 
         line = p2t - p1t;
-        normal = Vector2::Normalize(Vector2(-line.Y, line.X));
+        normal = Float2::Normalize(Float2(-line.Y, line.X));
         up = normal * thicknessHalf;
 
-        v[0] = MakeVertex(p2t + up, Vector2::UnitX, color2, mask, { thickness, (float)Render2D::Features });
-        v[1] = MakeVertex(p1t + up, Vector2::UnitX, color1, mask, { thickness, (float)Render2D::Features });
-        v[2] = MakeVertex(p1t - up, Vector2::Zero, color1, mask, { thickness, (float)Render2D::Features });
-        v[3] = MakeVertex(p2t - up, Vector2::Zero, color2, mask, { thickness, (float)Render2D::Features });
+        v[0] = MakeVertex(p2t + up, Float2::UnitX, color2, mask, { thickness, (float)Render2D::Features });
+        v[1] = MakeVertex(p1t + up, Float2::UnitX, color1, mask, { thickness, (float)Render2D::Features });
+        v[2] = MakeVertex(p1t - up, Float2::Zero, color1, mask, { thickness, (float)Render2D::Features });
+        v[3] = MakeVertex(p2t - up, Float2::Zero, color2, mask, { thickness, (float)Render2D::Features });
         VB.Write(v, sizeof(Render2DVertex) * 4);
 
         indices[0] = VBIndex + 0;
@@ -1802,7 +1802,7 @@ void DrawLines(const Vector2* points, int32 pointsCount, const Color& color1, co
         ApplyTransform(points[0], p1t);
         ApplyTransform(points[1], p2t);
 
-        const Vector2 capDirection = thicknessHalf * Vector2::Normalize(p2t - p1t);
+        const Float2 capDirection = thicknessHalf * Float2::Normalize(p2t - p1t);
 
         DrawLineCap(p2t, capDirection, up, color2, thickness);
     }
@@ -1817,14 +1817,14 @@ void DrawLines(const Vector2* points, int32 pointsCount, const Color& color1, co
     {
         ApplyTransform(points[i], p2t);
 
-        const Vector2 line = p2t - p1t;
-        const Vector2 direction = thicknessHalf * Vector2::Normalize(p2t - p1t);
-        const Vector2 normal = Vector2::Normalize(Vector2(-line.Y, line.X));
+        const Float2 line = p2t - p1t;
+        const Float2 direction = thicknessHalf * Float2::Normalize(p2t - p1t);
+        const Float2 normal = Float2::Normalize(Float2(-line.Y, line.X));
 
-        v[0] = MakeVertex(p2t + thicknessHalf * normal + direction, Vector2::Zero, color2, mask, { 0.0f, (float)Render2D::Features });
-        v[1] = MakeVertex(p1t + thicknessHalf * normal - direction, Vector2::Zero, color1, mask, { 0.0f, (float)Render2D::Features });
-        v[2] = MakeVertex(p1t - thicknessHalf * normal - direction, Vector2::Zero, color1, mask, { 0.0f, (float)Render2D::Features });
-        v[3] = MakeVertex(p2t - thicknessHalf * normal + direction, Vector2::Zero, color2, mask, { 0.0f, (float)Render2D::Features });
+        v[0] = MakeVertex(p2t + thicknessHalf * normal + direction, Float2::Zero, color2, mask, { 0.0f, (float)Render2D::Features });
+        v[1] = MakeVertex(p1t + thicknessHalf * normal - direction, Float2::Zero, color1, mask, { 0.0f, (float)Render2D::Features });
+        v[2] = MakeVertex(p1t - thicknessHalf * normal - direction, Float2::Zero, color1, mask, { 0.0f, (float)Render2D::Features });
+        v[3] = MakeVertex(p2t - thicknessHalf * normal + direction, Float2::Zero, color2, mask, { 0.0f, (float)Render2D::Features });
         VB.Write(v, sizeof(Render2DVertex) * 4);
 
         indices[0] = VBIndex + 0;
@@ -1844,31 +1844,31 @@ void DrawLines(const Vector2* points, int32 pointsCount, const Color& color1, co
 #endif
 }
 
-void Render2D::DrawLine(const Vector2& p1, const Vector2& p2, const Color& color1, const Color& color2, float thickness)
+void Render2D::DrawLine(const Float2& p1, const Float2& p2, const Color& color1, const Color& color2, float thickness)
 {
     RENDER2D_CHECK_RENDERING_STATE;
 
-    Vector2 points[2];
+    Float2 points[2];
     points[0] = p1;
     points[1] = p2;
 
     DrawLines(points, 2, color1, color2, thickness);
 }
 
-void Render2D::DrawBezier(const Vector2& p1, const Vector2& p2, const Vector2& p3, const Vector2& p4, const Color& color, float thickness)
+void Render2D::DrawBezier(const Float2& p1, const Float2& p2, const Float2& p3, const Float2& p4, const Color& color, float thickness)
 {
     RENDER2D_CHECK_RENDERING_STATE;
 
     // Find amount of segments to use
-    const Vector2 d1 = p2 - p1;
-    const Vector2 d2 = p3 - p2;
-    const Vector2 d3 = p4 - p3;
+    const Float2 d1 = p2 - p1;
+    const Float2 d2 = p3 - p2;
+    const Float2 d3 = p4 - p3;
     const float len = d1.Length() + d2.Length() + d3.Length();
     const int32 segmentCount = Math::Clamp(Math::CeilToInt(len * 0.05f), 1, 100);
     const float segmentCountInv = 1.0f / segmentCount;
 
     // Draw segmented curve
-    Vector2 p;
+    Float2 p;
     AnimationUtils::Bezier(p1, p2, p3, p4, 0, p);
     Lines2.Clear();
     Lines2.Add(p);
@@ -1899,7 +1899,7 @@ void Render2D::DrawBlur(const Rectangle& rect, float blurStrength)
 {
     RENDER2D_CHECK_RENDERING_STATE;
 
-    Vector2 p;
+    Float2 p;
     Render2DDrawCall& drawCall = DrawCalls.AddOne();
     drawCall.Type = DrawCallType::Blur;
     drawCall.StartIB = IBIndex;
@@ -1916,7 +1916,7 @@ void Render2D::DrawBlur(const Rectangle& rect, float blurStrength)
     WriteRect(rect, Color::White);
 }
 
-void Render2D::DrawTexturedTriangles(GPUTexture* t, const Span<Vector2>& vertices, const Span<Vector2>& uvs)
+void Render2D::DrawTexturedTriangles(GPUTexture* t, const Span<Float2>& vertices, const Span<Float2>& uvs)
 {
     RENDER2D_CHECK_RENDERING_STATE;
     CHECK(vertices.Length() == uvs.Length())
@@ -1931,14 +1931,14 @@ void Render2D::DrawTexturedTriangles(GPUTexture* t, const Span<Vector2>& vertice
         WriteTri(vertices[i], vertices[i + 1], vertices[i + 2], uvs[i], uvs[i + 1], uvs[i + 2]);
 }
 
-void Render2D::DrawTexturedTriangles(GPUTexture* t, const Span<Vector2>& vertices, const Span<Vector2>& uvs, const Color& color)
+void Render2D::DrawTexturedTriangles(GPUTexture* t, const Span<Float2>& vertices, const Span<Float2>& uvs, const Color& color)
 {
     Color colors[3] = { (Color)color, (Color)color, (Color)color };
     Span<Color> spancolor(colors, 3);
     DrawTexturedTriangles(t, vertices, uvs, spancolor);
 }
 
-void Render2D::DrawTexturedTriangles(GPUTexture* t, const Span<Vector2>& vertices, const Span<Vector2>& uvs, const Span<Color>& colors)
+void Render2D::DrawTexturedTriangles(GPUTexture* t, const Span<Float2>& vertices, const Span<Float2>& uvs, const Span<Color>& colors)
 {
     RENDER2D_CHECK_RENDERING_STATE;
     CHECK(vertices.Length() == uvs.Length());
@@ -1954,7 +1954,7 @@ void Render2D::DrawTexturedTriangles(GPUTexture* t, const Span<Vector2>& vertice
         WriteTri(vertices[i], vertices[i + 1], vertices[i + 2], uvs[i], uvs[i + 1], uvs[i + 2], colors[i], colors[i + 1], colors[i + 2]);
 }
 
-void Render2D::FillTriangles(const Span<Vector2>& vertices, const Span<Color>& colors, bool useAlpha)
+void Render2D::FillTriangles(const Span<Float2>& vertices, const Span<Color>& colors, bool useAlpha)
 {
     CHECK(vertices.Length() == colors.Length());
     RENDER2D_CHECK_RENDERING_STATE;
@@ -1968,7 +1968,7 @@ void Render2D::FillTriangles(const Span<Vector2>& vertices, const Span<Color>& c
         WriteTri(vertices[i], vertices[i + 1], vertices[i + 2], colors[i], colors[i + 1], colors[i + 2]);
 }
 
-void Render2D::FillTriangle(const Vector2& p0, const Vector2& p1, const Vector2& p2, const Color& color)
+void Render2D::FillTriangle(const Float2& p0, const Float2& p1, const Float2& p2, const Color& color)
 {
     RENDER2D_CHECK_RENDERING_STATE;
 

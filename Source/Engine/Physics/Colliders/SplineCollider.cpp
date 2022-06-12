@@ -34,7 +34,7 @@ void SplineCollider::SetPreTransform(const Transform& value)
     UpdateGeometry();
 }
 
-void SplineCollider::ExtractGeometry(Array<Vector3>& vertexBuffer, Array<int32>& indexBuffer) const
+void SplineCollider::ExtractGeometry(Array<Float3>& vertexBuffer, Array<int32>& indexBuffer) const
 {
     vertexBuffer.Add(_vertexBuffer);
     indexBuffer.Add(_indexBuffer);
@@ -106,7 +106,7 @@ void SplineCollider::OnDebugDrawSelected()
 
 #endif
 
-bool SplineCollider::IntersectsItself(const Ray& ray, float& distance, Vector3& normal)
+bool SplineCollider::IntersectsItself(const Ray& ray, Real& distance, Vector3& normal)
 {
     // Use detailed hit
     if (_shape)
@@ -195,7 +195,7 @@ void SplineCollider::GetGeometry(CollisionShape& collision)
 
     // Extract collision geometry
     // TODO: cache memory allocation for dynamic colliders
-    Array<Vector3> collisionVertices;
+    Array<Float3> collisionVertices;
     Array<int32> collisionIndices;
     CollisionData->ExtractGeometry(collisionVertices, collisionIndices);
     if (collisionIndices.IsEmpty())
@@ -244,15 +244,15 @@ void SplineCollider::GetGeometry(CollisionShape& collision)
         for (int32 i = 0; i < collisionVertices.Count(); i++)
         {
             Vector3 v = srcVertices[i];
-            const float alpha = Math::Saturate((v.Z - localModelBounds.Minimum.Z) / localModelBoundsSize.Z);
+            const Real alpha = Math::Saturate((v.Z - localModelBounds.Minimum.Z) / localModelBoundsSize.Z);
             v.Z = alpha;
 
             // Evaluate transformation at the curve
-            AnimationUtils::Bezier(start.Value, leftTangent, rightTangent, end.Value, alpha, curveTransform);
+            AnimationUtils::Bezier(start.Value, leftTangent, rightTangent, end.Value, (float)alpha, curveTransform);
 
             // Apply spline direction (from position 1st derivative)
             Vector3 direction;
-            AnimationUtils::BezierFirstDerivative(start.Value.Translation, leftTangent.Translation, rightTangent.Translation, end.Value.Translation, alpha, direction);
+            AnimationUtils::BezierFirstDerivative(start.Value.Translation, leftTangent.Translation, rightTangent.Translation, end.Value.Translation, (float)alpha, direction);
             direction.Normalize();
             Quaternion orientation;
             if (direction.IsZero())
@@ -279,8 +279,8 @@ void SplineCollider::GetGeometry(CollisionShape& collision)
     }
 
     // Prepare scale
-    Vector3 scale = _cachedScale;
-    scale = Vector3::Max(scale.GetAbsolute(), minSize);
+    Float3 scale = _cachedScale;
+    scale = Float3::Max(scale.GetAbsolute(), minSize);
 
     // TODO: add support for cooking collision for static splines in editor and reusing it in game
 
@@ -311,6 +311,7 @@ void SplineCollider::GetGeometry(CollisionShape& collision)
         }
 
         // Transform vertices back to world space for debug shapes drawing and navmesh building
+        // TODO: large-worlds (keep data in local-space and transform on-the-fly)
         for (int32 i = 0; i < _vertexBuffer.Count(); i++)
             _vertexBuffer[i] = colliderTransform.LocalToWorld(_vertexBuffer[i]);
 

@@ -2,7 +2,7 @@
 
 #pragma once
 
-#include "../../Platform/Platform.h"
+#include "Engine/Platform/Platform.h"
 #include "Vector3.h"
 
 /// <summary>
@@ -98,7 +98,7 @@ public:
         Add(inCoordinate.X, inCoordinate.Y, inCoordinate.Z);
     }
 
-    void Add(float inX, float inY, float inZ)
+    void Add(Real inX, Real inY, Real inZ)
     {
         ASSERT(!isinf(inX) && !isnan(inX));
         ASSERT(!isinf(inY) && !isnan(inY));
@@ -159,13 +159,9 @@ public:
 
     AABB Translated(const Vector3& translation) const
     {
-        return AABB(MinX + translation.X,
-                    MinY + translation.Y,
-                    MinZ + translation.Z,
-
-                    MaxX + translation.X,
-                    MaxY + translation.Y,
-                    MaxZ + translation.Z);
+        AABB result;
+        result.Translate(translation);
+        return result;
     }
 
     void Set(const AABB& other, const Vector3& translation)

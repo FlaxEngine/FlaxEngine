@@ -1,3 +1,9 @@
+#if USE_LARGE_WORLDS
+using Real = System.Double;
+#else
+using Real = System.Single;
+#endif
+
 // Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 using System;
@@ -213,7 +219,7 @@ namespace FlaxEditor.SceneGraph
         /// <param name="distance">The result distance.</param>
         /// <param name="normal">The result intersection surface normal vector.</param>
         /// <returns>Hit object or null if there is no intersection at all.</returns>
-        public virtual SceneGraphNode RayCastChildren(ref RayCastData ray, out float distance, out Vector3 normal)
+        public virtual SceneGraphNode RayCastChildren(ref RayCastData ray, out Real distance, out Vector3 normal)
         {
             if (!IsActive)
             {
@@ -223,7 +229,7 @@ namespace FlaxEditor.SceneGraph
             }
 
             SceneGraphNode minTarget = null;
-            float minDistance = float.MaxValue;
+            Real minDistance = Real.MaxValue;
             Vector3 minDistanceNormal = Vector3.Up;
 
             // Check all children
@@ -251,7 +257,7 @@ namespace FlaxEditor.SceneGraph
         /// <param name="distance">The result distance.</param>
         /// <param name="normal">The result intersection surface normal vector.</param>
         /// <returns>Hit object or null if there is no intersection at all.</returns>
-        public virtual SceneGraphNode RayCast(ref RayCastData ray, out float distance, out Vector3 normal)
+        public virtual SceneGraphNode RayCast(ref RayCastData ray, out Real distance, out Vector3 normal)
         {
             if (!IsActive)
             {
@@ -262,7 +268,7 @@ namespace FlaxEditor.SceneGraph
 
             // Check itself
             SceneGraphNode minTarget = null;
-            float minDistance = float.MaxValue;
+            Real minDistance = Real.MaxValue;
             Vector3 minDistanceNormal = Vector3.Up;
             if (RayCastSelf(ref ray, out distance, out normal))
             {
@@ -296,7 +302,7 @@ namespace FlaxEditor.SceneGraph
         /// <param name="distance">The distance.</param>
         /// <param name="normal">The result intersection surface normal vector.</param>
         /// <returns>True ray hits this node, otherwise false.</returns>
-        public virtual bool RayCastSelf(ref RayCastData ray, out float distance, out Vector3 normal)
+        public virtual bool RayCastSelf(ref RayCastData ray, out Real distance, out Vector3 normal)
         {
             distance = 0;
             normal = Vector3.Up;

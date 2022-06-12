@@ -152,7 +152,7 @@ namespace FlaxEditor.CustomEditors.Editors
                 tree.UnlockChildrenRecursive();
                 menu.PerformLayout();
             };
-            menu.Show(button, new Vector2(0, button.Height));
+            menu.Show(button, new Float2(0, button.Height));
             Profiler.EndEvent();
         }
 

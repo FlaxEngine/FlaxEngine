@@ -26,7 +26,7 @@ namespace FlaxEngine.GUI
         /// <summary>
         /// The control offset.
         /// </summary>
-        protected Vector2 _offset;
+        protected Float2 _offset;
 
         /// <summary>
         /// Gets or sets the left margin.
@@ -117,12 +117,12 @@ namespace FlaxEngine.GUI
         /// Gets or sets the child controls offset (additive).
         /// </summary>
         [EditorOrder(20), Tooltip("The child controls offset (additive).")]
-        public Vector2 Offset
+        public Float2 Offset
         {
             get => _offset;
             set
             {
-                if (!Vector2.NearEqual(ref _offset, ref value))
+                if (!Float2.NearEqual(ref _offset, ref value))
                 {
                     _offset = value;
                     PerformLayout();

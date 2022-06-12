@@ -108,8 +108,8 @@ public:
     /// </summary>
     FORCE_INLINE void WriteVector2(const Vector2& value)
     {
-        WriteSingle(value.X);
-        WriteSingle(value.Y);
+        WriteSingle((float)value.X);
+        WriteSingle((float)value.Y);
     }
 
     /// <summary>
@@ -125,9 +125,9 @@ public:
     /// </summary>
     FORCE_INLINE void WriteVector3(const Vector3& value)
     {
-        WriteSingle(value.X);
-        WriteSingle(value.Y);
-        WriteSingle(value.Z);
+        WriteSingle((float)value.X);
+        WriteSingle((float)value.Y);
+        WriteSingle((float)value.Z);
     }
 
     /// <summary>
@@ -143,10 +143,10 @@ public:
     /// </summary>
     FORCE_INLINE void WriteVector4(const Vector4& value)
     {
-        WriteSingle(value.X);
-        WriteSingle(value.Y);
-        WriteSingle(value.Z);
-        WriteSingle(value.W);
+        WriteSingle((float)value.X);
+        WriteSingle((float)value.Y);
+        WriteSingle((float)value.Z);
+        WriteSingle((float)value.W);
     }
 
     /// <summary>

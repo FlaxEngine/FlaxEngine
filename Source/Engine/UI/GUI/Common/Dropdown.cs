@@ -50,7 +50,7 @@ namespace FlaxEngine.GUI
             }
 
             /// <inheritdoc />
-            public override Control OnNavigate(NavDirection direction, Vector2 location, Control caller, List<Control> visited)
+            public override Control OnNavigate(NavDirection direction, Float2 location, Control caller, List<Control> visited)
             {
                 if (IsFocused)
                 {
@@ -91,7 +91,7 @@ namespace FlaxEngine.GUI
         {
             public Action<Label> ItemClicked;
 
-            public override bool OnMouseDown(Vector2 location, MouseButton button)
+            public override bool OnMouseDown(Float2 location, MouseButton button)
             {
                 if (base.OnMouseDown(location, button))
                     return true;
@@ -99,7 +99,7 @@ namespace FlaxEngine.GUI
                 return true;
             }
 
-            public override bool OnTouchDown(Vector2 location, int pointerId)
+            public override bool OnTouchDown(Float2 location, int pointerId)
             {
                 if (base.OnTouchDown(location, pointerId))
                     return true;
@@ -410,7 +410,7 @@ namespace FlaxEngine.GUI
                 {
                     AutoFocus = true,
                     X = itemsMargin,
-                    Size = new Vector2(itemsWidth - itemsMargin, itemsHeight),
+                    Size = new Float2(itemsWidth - itemsMargin, itemsHeight),
                     Font = Font,
                     TextColor = Color.White * 0.9f,
                     TextColorHighlighted = Color.White,
@@ -433,7 +433,7 @@ namespace FlaxEngine.GUI
                     var icon = new Image
                     {
                         Brush = CheckedImage,
-                        Size = new Vector2(itemsMargin, itemsHeight),
+                        Size = new Float2(itemsMargin, itemsHeight),
                         Margin = new Margin(4.0f, 6.0f, 4.0f, 4.0f),
                         //AnchorPreset = AnchorPresets.VerticalStretchLeft,
                         Parent = item,
@@ -441,7 +441,7 @@ namespace FlaxEngine.GUI
                 }
             }
 
-            popup.Size = new Vector2(itemsWidth, height);
+            popup.Size = new Float2(itemsWidth, height);
 
             return popup;
         }
@@ -495,7 +495,7 @@ namespace FlaxEngine.GUI
             _popup.LostFocus += DestroyPopup;
 
             // Show dropdown popup
-            Vector2 locationRootSpace = Location + new Vector2(0, Height);
+            var locationRootSpace = Location + new Float2(0, Height);
             var parent = Parent;
             while (parent != null && parent != Root)
             {
@@ -528,7 +528,7 @@ namespace FlaxEngine.GUI
         public override void DrawSelf()
         {
             // Cache data
-            var clientRect = new Rectangle(Vector2.Zero, Size);
+            var clientRect = new Rectangle(Float2.Zero, Size);
             float margin = clientRect.Height * 0.2f;
             float boxSize = clientRect.Height - margin * 2;
             bool isOpened = IsPopupOpened;
@@ -590,7 +590,7 @@ namespace FlaxEngine.GUI
         }
 
         /// <inheritdoc />
-        public override bool OnMouseDown(Vector2 location, MouseButton button)
+        public override bool OnMouseDown(Float2 location, MouseButton button)
         {
             if (base.OnMouseDown(location, button))
                 return true;
@@ -605,7 +605,7 @@ namespace FlaxEngine.GUI
         }
 
         /// <inheritdoc />
-        public override bool OnMouseUp(Vector2 location, MouseButton button)
+        public override bool OnMouseUp(Float2 location, MouseButton button)
         {
             if (base.OnMouseUp(location, button))
                 return true;
@@ -620,7 +620,7 @@ namespace FlaxEngine.GUI
         }
 
         /// <inheritdoc />
-        public override bool OnTouchDown(Vector2 location, int pointerId)
+        public override bool OnTouchDown(Float2 location, int pointerId)
         {
             if (base.OnTouchDown(location, pointerId))
                 return true;
@@ -630,7 +630,7 @@ namespace FlaxEngine.GUI
         }
 
         /// <inheritdoc />
-        public override bool OnTouchUp(Vector2 location, int pointerId)
+        public override bool OnTouchUp(Float2 location, int pointerId)
         {
             if (base.OnTouchUp(location, pointerId))
                 return true;

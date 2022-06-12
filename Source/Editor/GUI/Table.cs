@@ -17,7 +17,7 @@ namespace FlaxEditor.GUI
         private ColumnDefinition[] _columns;
         private float[] _splits;
         private int _movingSplit = -1;
-        private Vector2 _mousePos;
+        private Float2 _mousePos;
 
         /// <summary>
         /// Gets or sets the height of the table column headers.
@@ -140,7 +140,7 @@ namespace FlaxEditor.GUI
         }
 
         /// <inheritdoc />
-        public override bool OnMouseDown(Vector2 location, MouseButton button)
+        public override bool OnMouseDown(Float2 location, MouseButton button)
         {
             if (button == MouseButton.Left)
             {
@@ -170,7 +170,7 @@ namespace FlaxEditor.GUI
         }
 
         /// <inheritdoc />
-        public override void OnMouseMove(Vector2 location)
+        public override void OnMouseMove(Float2 location)
         {
             _mousePos = location;
 
@@ -198,7 +198,7 @@ namespace FlaxEditor.GUI
         }
 
         /// <inheritdoc />
-        public override bool OnMouseUp(Vector2 location, MouseButton button)
+        public override bool OnMouseUp(Float2 location, MouseButton button)
         {
             if (button == MouseButton.Left && _movingSplit != -1)
             {

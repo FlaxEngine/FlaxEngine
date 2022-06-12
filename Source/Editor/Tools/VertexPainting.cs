@@ -501,7 +501,7 @@ namespace FlaxEditor.Tools
                         var dst = Vector3.Distance(ref pos, ref brushSphere.Center);
                         if (dst > brushSphere.Radius)
                             continue;
-                        float strength = _gizmoMode.BrushStrength * Mathf.Lerp(1.0f, 1.0f - dst / brushSphere.Radius, _gizmoMode.BrushFalloff);
+                        float strength = _gizmoMode.BrushStrength * Mathf.Lerp(1.0f, 1.0f - (float)dst / (float)brushSphere.Radius, _gizmoMode.BrushFalloff);
                         if (strength > Mathf.Epsilon)
                         {
                             // Paint the vertex
@@ -650,7 +650,8 @@ namespace FlaxEditor.Tools
                     var instanceTransform = _selectedModel.Transform;
                     var modelScaleMatrix = Matrix.Scaling(_gizmoMode.PreviewVertexSize * 0.01f);
                     var brushSphere = new BoundingSphere(_hitLocation, _gizmoMode.BrushSize);
-                    var lodIndex = _gizmoMode.ModelLOD == -1 ? RenderTools.ComputeModelLOD(_selectedModel.Model, ref renderContext.View.Position, _selectedModel.Sphere.Radius, ref renderContext) : _gizmoMode.ModelLOD;
+                    // TODO: large-worlds
+                    var lodIndex = _gizmoMode.ModelLOD == -1 ? RenderTools.ComputeModelLOD(_selectedModel.Model, ref renderContext.View.Position, (float)_selectedModel.Sphere.Radius, ref renderContext) : _gizmoMode.ModelLOD;
                     lodIndex = Mathf.Clamp(lodIndex, 0, meshDatas.Length - 1);
                     var lodData = meshDatas[lodIndex];
                     if (lodData != null)

@@ -84,12 +84,12 @@ DECLARE_SCRIPTING_TYPE_MINIMAL(FontLineCache);
     /// <summary>
     /// The root position of the line (upper left corner).
     /// </summary>
-    API_FIELD() Vector2 Location;
+    API_FIELD() Float2 Location;
 
     /// <summary>
     /// The line bounds (width and height).
     /// </summary>
-    API_FIELD() Vector2 Size;
+    API_FIELD() Float2 Size;
 
     /// <summary>
     /// The first character index (from the input text).
@@ -188,12 +188,12 @@ DECLARE_SCRIPTING_TYPE_MINIMAL(FontCharacterEntry);
     /// <summary>
     /// The start location of the character in the texture (in texture coordinates space).
     /// </summary>
-    API_FIELD() Vector2 UV;
+    API_FIELD() Float2 UV;
 
     /// <summary>
     /// The size the character in the texture (in texture coordinates space).
     /// </summary>
-    API_FIELD() Vector2 UVSize;
+    API_FIELD() Float2 UVSize;
 };
 
 template<>
@@ -352,14 +352,14 @@ public:
     /// <param name="text">The input text to test.</param>
     /// <param name="layout">The layout properties.</param>
     /// <returns>The minimum size for that text and fot to render properly.</returns>
-    API_FUNCTION() Vector2 MeasureText(const StringView& text, API_PARAM(Ref) const TextLayoutOptions& layout);
+    API_FUNCTION() Float2 MeasureText(const StringView& text, API_PARAM(Ref) const TextLayoutOptions& layout);
 
     /// <summary>
     /// Measures minimum size of the rectangle that will be needed to draw given text
     /// </summary>.
     /// <param name="text">The input text to test.</param>
     /// <returns>The minimum size for that text and fot to render properly.</returns>
-    API_FUNCTION() FORCE_INLINE Vector2 MeasureText(const StringView& text)
+    API_FUNCTION() FORCE_INLINE Float2 MeasureText(const StringView& text)
     {
         return MeasureText(text, TextLayoutOptions());
     }
@@ -372,7 +372,7 @@ public:
     /// <param name="location">The input location to test.</param>
     /// <param name="layout">The text layout properties.</param>
     /// <returns>The selected character position index (can be equal to text length if location is outside of the layout rectangle).</returns>
-    API_FUNCTION() int32 HitTestText(const StringView& text, API_PARAM(Ref) const TextRange& textRange, const Vector2& location, API_PARAM(Ref) const TextLayoutOptions& layout)
+    API_FUNCTION() int32 HitTestText(const StringView& text, API_PARAM(Ref) const TextRange& textRange, const Float2& location, API_PARAM(Ref) const TextLayoutOptions& layout)
     {
         return HitTestText(StringView(text.Get() + textRange.StartIndex, textRange.Length()), location, layout);
     }
@@ -384,7 +384,7 @@ public:
     /// <param name="location">The input location to test.</param>
     /// <param name="layout">The text layout properties.</param>
     /// <returns>The selected character position index (can be equal to text length if location is outside of the layout rectangle).</returns>
-    API_FUNCTION() int32 HitTestText(const StringView& text, const Vector2& location, API_PARAM(Ref) const TextLayoutOptions& layout);
+    API_FUNCTION() int32 HitTestText(const StringView& text, const Float2& location, API_PARAM(Ref) const TextLayoutOptions& layout);
 
     /// <summary>
     /// Calculates hit character index at given location.
@@ -392,7 +392,7 @@ public:
     /// <param name="text">The input text to test.</param>
     /// <param name="location">The input location to test.</param>
     /// <returns>The selected character position index (can be equal to text length if location is outside of the layout rectangle).</returns>
-    API_FUNCTION() FORCE_INLINE int32 HitTestText(const StringView& text, const Vector2& location)
+    API_FUNCTION() FORCE_INLINE int32 HitTestText(const StringView& text, const Float2& location)
     {
         return HitTestText(text, location, TextLayoutOptions());
     }
@@ -404,7 +404,7 @@ public:
     /// <param name="textRange">The input text range (substring range of the input text parameter).</param>
     /// <param name="location">The input location to test.</param>
     /// <returns>The selected character position index (can be equal to text length if location is outside of the layout rectangle).</returns>
-    API_FUNCTION() FORCE_INLINE int32 HitTestText(const StringView& text, API_PARAM(Ref) const TextRange& textRange, const Vector2& location)
+    API_FUNCTION() FORCE_INLINE int32 HitTestText(const StringView& text, API_PARAM(Ref) const TextRange& textRange, const Float2& location)
     {
         return HitTestText(StringView(text.Get() + textRange.StartIndex, textRange.Length()), location, TextLayoutOptions());
     }
@@ -416,7 +416,7 @@ public:
     /// <param name="index">The text position to get coordinates of.</param>
     /// <param name="layout">The text layout properties.</param>
     /// <returns>The character position (upper left corner which can be used for a caret position).</returns>
-    API_FUNCTION() Vector2 GetCharPosition(const StringView& text, int32 index, API_PARAM(Ref) const TextLayoutOptions& layout);
+    API_FUNCTION() Float2 GetCharPosition(const StringView& text, int32 index, API_PARAM(Ref) const TextLayoutOptions& layout);
 
     /// <summary>
     /// Calculates character position for given text and character index.
@@ -426,7 +426,7 @@ public:
     /// <param name="index">The text position to get coordinates of.</param>
     /// <param name="layout">The text layout properties.</param>
     /// <returns>The character position (upper left corner which can be used for a caret position).</returns>
-    API_FUNCTION() Vector2 GetCharPosition(const StringView& text, API_PARAM(Ref) const TextRange& textRange, int32 index, API_PARAM(Ref) const TextLayoutOptions& layout)
+    API_FUNCTION() Float2 GetCharPosition(const StringView& text, API_PARAM(Ref) const TextRange& textRange, int32 index, API_PARAM(Ref) const TextLayoutOptions& layout)
     {
         return GetCharPosition(StringView(text.Get() + textRange.StartIndex, textRange.Length()), index, layout);
     }
@@ -437,7 +437,7 @@ public:
     /// <param name="text">The input text to test.</param>
     /// <param name="index">The text position to get coordinates of.</param>
     /// <returns>The character position (upper left corner which can be used for a caret position).</returns>
-    API_FUNCTION() FORCE_INLINE Vector2 GetCharPosition(const StringView& text, int32 index)
+    API_FUNCTION() FORCE_INLINE Float2 GetCharPosition(const StringView& text, int32 index)
     {
         return GetCharPosition(text, index, TextLayoutOptions());
     }
@@ -449,7 +449,7 @@ public:
     /// <param name="textRange">The input text range (substring range of the input text parameter).</param>
     /// <param name="index">The text position to get coordinates of.</param>
     /// <returns>The character position (upper left corner which can be used for a caret position).</returns>
-    API_FUNCTION() FORCE_INLINE Vector2 GetCharPosition(const StringView& text, API_PARAM(Ref) const TextRange& textRange, int32 index)
+    API_FUNCTION() FORCE_INLINE Float2 GetCharPosition(const StringView& text, API_PARAM(Ref) const TextRange& textRange, int32 index)
     {
         return GetCharPosition(StringView(text.Get() + textRange.StartIndex, textRange.Length()), index, TextLayoutOptions());
     }

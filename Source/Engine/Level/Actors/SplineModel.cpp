@@ -171,8 +171,8 @@ void SplineModel::OnSplineUpdated()
             }
         }
     }
-    _meshMinZ = localModelBounds.Minimum.Z;
-    _meshMaxZ = localModelBounds.Maximum.Z;
+    _meshMinZ = (float)localModelBounds.Minimum.Z;
+    _meshMaxZ = (float)localModelBounds.Maximum.Z;
     Transform chunkLocal, chunkWorld, leftTangent, rightTangent;
     Array<Vector3> segmentPoints;
     segmentPoints.Resize(chunksPerSegment);
@@ -225,7 +225,7 @@ void SplineModel::UpdateDeformationBuffer()
     const int32 segments = keyframes.Count() - 1;
     const int32 chunksPerSegment = Math::Clamp(Math::CeilToInt(SPLINE_RESOLUTION * _quality), 2, 1024);
     const int32 count = (chunksPerSegment * segments + 1) * 3;
-    const uint32 size = count * sizeof(Vector4);
+    const uint32 size = count * sizeof(Float4);
     if (_deformationBuffer->GetSize() != size)
     {
         if (_deformationBufferData)
@@ -390,7 +390,7 @@ void SplineModel::Draw(RenderContext& renderContext)
         }
         else
         {
-            lodIndex = RenderTools::ComputeModelLOD(model, instance.Sphere.Center, instance.Sphere.Radius, renderContext);
+            lodIndex = RenderTools::ComputeModelLOD(model, instance.Sphere.Center, (float)instance.Sphere.Radius, renderContext);
             if (lodIndex == -1)
                 continue;
         }
@@ -435,7 +435,7 @@ void SplineModel::Draw(RenderContext& renderContext)
     }
 }
 
-bool SplineModel::IntersectsItself(const Ray& ray, float& distance, Vector3& normal)
+bool SplineModel::IntersectsItself(const Ray& ray, Real& distance, Vector3& normal)
 {
     return false;
 }

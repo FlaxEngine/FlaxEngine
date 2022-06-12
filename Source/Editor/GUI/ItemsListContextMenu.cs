@@ -118,7 +118,7 @@ namespace FlaxEditor.GUI
 
                 // Overlay
                 if (IsMouseOver || IsFocused)
-                    Render2D.FillRectangle(new Rectangle(Vector2.Zero, Size), style.BackgroundHighlighted);
+                    Render2D.FillRectangle(new Rectangle(Float2.Zero, Size), style.BackgroundHighlighted);
 
                 // Draw all highlights
                 if (_highlights != null)
@@ -138,7 +138,7 @@ namespace FlaxEditor.GUI
             }
 
             /// <inheritdoc />
-            public override bool OnMouseDown(Vector2 location, MouseButton button)
+            public override bool OnMouseDown(Float2 location, MouseButton button)
             {
                 if (button == MouseButton.Left)
                 {
@@ -149,7 +149,7 @@ namespace FlaxEditor.GUI
             }
 
             /// <inheritdoc />
-            public override bool OnMouseUp(Vector2 location, MouseButton button)
+            public override bool OnMouseUp(Float2 location, MouseButton button)
             {
                 if (button == MouseButton.Left && _isMouseDown)
                 {
@@ -200,7 +200,7 @@ namespace FlaxEditor.GUI
         public ItemsListContextMenu(float width = 320, float height = 220)
         {
             // Context menu dimensions
-            Size = new Vector2(width, height);
+            Size = new Float2(width, height);
 
             // Search box
             _searchBox = new TextBox(false, 1, 1)

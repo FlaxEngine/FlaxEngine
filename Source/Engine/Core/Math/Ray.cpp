@@ -12,7 +12,7 @@ String Ray::ToString() const
     return String::Format(TEXT("{}"), *this);
 }
 
-Vector3 Ray::GetPoint(float distance) const
+Vector3 Ray::GetPoint(Real distance) const
 {
     return Position + Direction * distance;
 }

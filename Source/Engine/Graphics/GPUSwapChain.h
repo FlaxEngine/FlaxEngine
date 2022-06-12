@@ -66,9 +66,9 @@ public:
     /// <summary>
     /// The output backbuffer width and height (in pixels).
     /// </summary>
-    FORCE_INLINE Vector2 GetSize() const
+    FORCE_INLINE Float2 GetSize() const
     {
-        return Vector2(static_cast<float>(_width), static_cast<float>(_height));
+        return Float2(static_cast<float>(_width), static_cast<float>(_height));
     }
 
     /// <summary>

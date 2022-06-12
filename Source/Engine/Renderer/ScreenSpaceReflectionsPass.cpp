@@ -32,7 +32,7 @@ PACK_STRUCT(struct Data
     float MaxTraceSamples;
     float RoughnessFade;
 
-    Vector2 SSRtexelSize;
+    Float2 SSRtexelSize;
     float TemporalTime;
     float BRDFBias;
 

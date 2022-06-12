@@ -13,7 +13,7 @@ namespace FlaxEditor.Content.GUI
         private DragActors _dragActors;
 
         /// <inheritdoc />
-        public override DragDropEffect OnDragEnter(ref Vector2 location, DragData data)
+        public override DragDropEffect OnDragEnter(ref Float2 location, DragData data)
         {
             var result = base.OnDragEnter(ref location, data);
             if (result != DragDropEffect.None)
@@ -50,7 +50,7 @@ namespace FlaxEditor.Content.GUI
         }
 
         /// <inheritdoc />
-        public override DragDropEffect OnDragMove(ref Vector2 location, DragData data)
+        public override DragDropEffect OnDragMove(ref Float2 location, DragData data)
         {
             _validDragOver = false;
             var result = base.OnDragMove(ref location, data);
@@ -72,7 +72,7 @@ namespace FlaxEditor.Content.GUI
         }
 
         /// <inheritdoc />
-        public override DragDropEffect OnDragDrop(ref Vector2 location, DragData data)
+        public override DragDropEffect OnDragDrop(ref Float2 location, DragData data)
         {
             var result = base.OnDragDrop(ref location, data);
             if (result != DragDropEffect.None)

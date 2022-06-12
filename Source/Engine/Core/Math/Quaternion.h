@@ -74,18 +74,6 @@ public:
     /// <summary>
     /// Init
     /// </summary>
-    /// <param name="xyzw">Value to assign to the all components.</param>
-    Quaternion(const float xyzw)
-        : X(xyzw)
-        , Y(xyzw)
-        , Z(xyzw)
-        , W(xyzw)
-    {
-    }
-
-    /// <summary>
-    /// Init
-    /// </summary>
     /// <param name="x">X component value.</param>
     /// <param name="y">Y component value.</param>
     /// <param name="z">Z component value.</param>
@@ -102,7 +90,7 @@ public:
     /// Init
     /// </summary>
     /// <param name="value">Vector to set value.</param>
-    explicit Quaternion(const Vector4& value);
+    explicit Quaternion(const Float4& value);
 
 public:
     String ToString() const;
@@ -111,7 +99,6 @@ public:
     /// <summary>
     /// Gets a value indicating whether this instance is equivalent to the identity quaternion.
     /// </summary>
-    /// <returns>True if quaternion is the identity quaternion, otherwise false.</returns>
     bool IsIdentity() const
     {
         return Math::IsZero(X) && Math::IsZero(Y) && Math::IsZero(Z) && Math::IsOne(W);
@@ -120,7 +107,6 @@ public:
     /// <summary>
     /// Gets a value indicting whether this instance is normalized.
     /// </summary>
-    /// <returns>True if is normalized, otherwise false.</returns>
     bool IsNormalized() const
     {
         return Math::IsOne(X * X + Y * Y + Z * Z + W * W);
@@ -129,7 +115,6 @@ public:
     /// <summary>
     /// Returns true if quaternion has one or more components is not a number (NaN).
     /// </summary>
-    /// <returns>True if one or more components is not a number (NaN).</returns>
     bool IsNaN() const
     {
         return isnan(X) || isnan(Y) || isnan(Z) || isnan(W);
@@ -138,7 +123,6 @@ public:
     /// <summary>
     /// Returns true if quaternion has one or more components equal to +/- infinity.
     /// </summary>
-    /// <returns>True if one or more components equal to +/- infinity.</returns>
     bool IsInfinity() const
     {
         return isinf(X) || isinf(Y) || isinf(Z) || isinf(W);
@@ -147,7 +131,6 @@ public:
     /// <summary>
     /// Returns true if quaternion has one or more components equal to +/- infinity or NaN.
     /// </summary>
-    /// <returns>True if one or more components equal to +/- infinity or NaN.</returns>
     bool IsNanOrInfinity() const
     {
         return IsInfinity() || IsNaN();
@@ -156,25 +139,16 @@ public:
     /// <summary>
     /// Gets the angle of the quaternion.
     /// </summary>
-    /// <returns>The angle.</returns>
-    float GetAngle() const
-    {
-        const float length = X * X + Y * Y + Z * Z;
-        if (Math::IsZero(length))
-            return 0.0f;
-        return 2.0f * acosf(Math::Clamp(W, -1.0f, 1.0f));
-    }
+    float GetAngle() const;
 
     /// <summary>
     /// Gets the axis components of the quaternion.
     /// </summary>
-    /// <returns>The axis.</returns>
-    Vector3 GetAxis() const;
+    Float3 GetAxis() const;
 
     /// <summary>
     /// Calculates the length of the quaternion.
     /// </summary>
-    /// <returns>The length of the quaternion.</returns>
     float Length() const
     {
         return Math::Sqrt(X * X + Y * Y + Z * Z + W * W);
@@ -183,7 +157,6 @@ public:
     /// <summary>
     /// Calculates the squared length of the quaternion.
     /// </summary>
-    /// <returns>The squared length of the quaternion.</returns>
     float LengthSquared() const
     {
         return X * X + Y * Y + Z * Z + W * W;
@@ -192,8 +165,7 @@ public:
     /// <summary>
     /// Gets the euler angle (pitch, yaw, roll) in degrees.
     /// </summary>
-    /// <returns>The euler angle</returns>
-    Vector3 GetEuler() const;
+    Float3 GetEuler() const;
 
     /// <summary>
     /// Conjugates the quaternion
@@ -218,7 +190,7 @@ public:
     /// </summary>
     void Invert()
     {
-        float lengthSq = LengthSquared();
+        float lengthSq = Math::Sqrt(X * X + Y * Y + Z * Z + W * W);
         if (!Math::IsZero(lengthSq))
         {
             lengthSq = 1.0f / lengthSq;
@@ -234,7 +206,7 @@ public:
     /// </summary>
     void Normalize()
     {
-        const float length = Length();
+        const float length = Math::Sqrt(X * X + Y * Y + Z * Z + W * W);
         if (!Math::IsZero(length))
         {
             const float inv = 1.0f / length;
@@ -352,7 +324,7 @@ public:
     /// </summary>
     /// <param name="vector">The vector to transform.</param>
     /// <returns>The scaled vector.</returns>
-    Vector3 operator*(const Vector3& vector) const;
+    Float3 operator*(const Float3& vector) const;
 
     /// <summary>
     /// Scales a quaternion by the given value.
@@ -532,13 +504,13 @@ public:
     // @param axis The axis of rotation
     // @param angle The angle of rotation (in radians).
     // @param result When the method completes, contains the newly created quaternion
-    static void RotationAxis(const Vector3& axis, float angle, Quaternion& result);
+    static void RotationAxis(const Float3& axis, float angle, Quaternion& result);
 
     // Creates a quaternion given a angle cosine and an axis
     // @param axis The axis of rotation
     // @param cos The angle cosine, it must be within [-1,1] range (in radians).
     // @param result When the method completes, contains the newly created quaternion
-    static void RotationCosAxis(const Vector3& axis, float cos, Quaternion& result);
+    static void RotationCosAxis(const Float3& axis, float cos, Quaternion& result);
 
     // Creates a quaternion given a rotation matrix
     // @param matrix The rotation matrix
@@ -555,28 +527,28 @@ public:
     // @param target The camera look-at target
     // @param up The camera's up vector
     // @param result When the method completes, contains the created look-at quaternion
-    static void LookAt(const Vector3& eye, const Vector3& target, const Vector3& up, Quaternion& result);
+    static void LookAt(const Float3& eye, const Float3& target, const Float3& up, Quaternion& result);
 
     // Creates a left-handed, look-at quaternion
     // @param forward The camera's forward direction
     // @param up The camera's up vector
     // @param result When the method completes, contains the created look-at quaternion
-    static void RotationLookAt(const Vector3& forward, const Vector3& up, Quaternion& result);
+    static void RotationLookAt(const Float3& forward, const Float3& up, Quaternion& result);
 
     // Creates a left-handed spherical billboard that rotates around a specified object position
     // @param objectPosition The position of the object around which the billboard will rotate
     // @param cameraPosition The position of the camera
-    // @param cameraUpVector The up vector of the camera
-    // @param cameraForwardVector The forward vector of the camera
+    // @param cameraUpFloat The up vector of the camera
+    // @param cameraForwardFloat The forward vector of the camera
     // @param result When the method completes, contains the created billboard quaternion
-    static void Billboard(const Vector3& objectPosition, const Vector3& cameraPosition, const Vector3& cameraUpVector, const Vector3& cameraForwardVector, Quaternion& result);
+    static void Billboard(const Float3& objectPosition, const Float3& cameraPosition, const Float3& cameraUpFloat, const Float3& cameraForwardFloat, Quaternion& result);
 
     /// <summary>
     /// Calculates the orientation from the direction vector.
     /// </summary>
     /// <param name="direction">The direction vector (normalized).</param>
     /// <returns>The orientation.</returns>
-    static Quaternion FromDirection(const Vector3& direction);
+    static Quaternion FromDirection(const Float3& direction);
 
     /// <summary>
     /// Creates a rotation with the specified forward and upwards directions.
@@ -584,7 +556,7 @@ public:
     /// <param name="forward">The forward direction. Direction to orient towards.</param>
     /// <param name="up">The up direction. Constrains y axis orientation to a plane this vector lies on. This rule might be broken if forward and up direction are nearly parallel.</param>
     /// <param name="result">The calculated quaternion.</param>
-    static void LookRotation(const Vector3& forward, const Vector3& up, Quaternion& result);
+    static void LookRotation(const Float3& forward, const Float3& up, Quaternion& result);
 
     /// <summary>
     /// Creates a rotation with the specified forward and upwards directions.
@@ -592,7 +564,7 @@ public:
     /// <param name="forward">The forward direction. Direction to orient towards.</param>
     /// <param name="up">Up direction. Constrains y axis orientation to a plane this vector lies on. This rule might be broken if forward and up direction are nearly parallel.</param>
     /// <returns>The calculated quaternion.</returns>
-    static Quaternion LookRotation(const Vector3& forward, const Vector3& up)
+    static Quaternion LookRotation(const Float3& forward, const Float3& up)
     {
         Quaternion result;
         LookRotation(forward, up, result);
@@ -606,7 +578,7 @@ public:
     /// <param name="to">The destination vector.</param>
     /// <param name="result">The result.</param>
     /// <param name="fallbackAxis">The fallback axis.</param>
-    static void GetRotationFromTo(const Vector3& from, const Vector3& to, Quaternion& result, const Vector3& fallbackAxis);
+    static void GetRotationFromTo(const Float3& from, const Float3& to, Quaternion& result, const Float3& fallbackAxis);
 
     /// <summary>
     /// Gets the shortest arc quaternion to rotate this vector to the destination vector.
@@ -615,7 +587,7 @@ public:
     /// <param name="to">The destination vector.</param>
     /// <param name="fallbackAxis">The fallback axis.</param>
     /// <returns>The rotation.</returns>
-    static Quaternion GetRotationFromTo(const Vector3& from, const Vector3& to, const Vector3& fallbackAxis)
+    static Quaternion GetRotationFromTo(const Float3& from, const Float3& to, const Float3& fallbackAxis)
     {
         Quaternion result;
         GetRotationFromTo(from, to, result, fallbackAxis);
@@ -628,7 +600,7 @@ public:
     /// <param name="from">The source vector.</param>
     /// <param name="to">The destination vector.</param>
     /// <param name="result">The result.</param>
-    static void FindBetween(const Vector3& from, const Vector3& to, Quaternion& result);
+    static void FindBetween(const Float3& from, const Float3& to, Quaternion& result);
 
     /// <summary>
     /// Gets the quaternion that will rotate vector from into vector to, around their plan perpendicular axis.The input vectors don't need to be normalized.
@@ -636,7 +608,7 @@ public:
     /// <param name="from">The source vector.</param>
     /// <param name="to">The destination vector.</param>
     /// <returns>The rotation.</returns>
-    static Quaternion FindBetween(const Vector3& from, const Vector3& to)
+    static Quaternion FindBetween(const Float3& from, const Float3& to)
     {
         Quaternion result;
         FindBetween(from, to, result);
@@ -670,7 +642,7 @@ public:
     // Creates a quaternion given a yaw, pitch, and roll value (is using degrees)
     // @param euler Euler angle rotation with values in order: X:roll, Y:pitch, Z:yaw (in degrees)
     // @returns Result rotation
-    static Quaternion Euler(const Vector3& euler);
+    static Quaternion Euler(const Float3& euler);
 
     // Creates a quaternion given a yaw, pitch, and roll value (is using radians)
     // @param yaw The yaw of rotation (in radians)

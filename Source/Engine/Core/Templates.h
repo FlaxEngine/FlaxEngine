@@ -438,4 +438,13 @@ template<> struct TIsBitwiseConstructible<int64, uint64> { enum { Value = true }
 
 // @formatter:on
 
+////////////////////////////////////////////////////////////////////////////////////
+
+// Utility to select double for float type or float otherwise
+
+template<typename T>
+struct TOtherFloat { typedef float Type; };
+template<>
+struct TOtherFloat<float> { typedef double Type; };
+
 #endif

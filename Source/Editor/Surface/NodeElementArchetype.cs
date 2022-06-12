@@ -23,12 +23,12 @@ namespace FlaxEditor.Surface
         /// <summary>
         /// Default element position in node that has default size.
         /// </summary>
-        public Vector2 Position;
+        public Float2 Position;
 
         /// <summary>
         /// The element size for some types.
         /// </summary>
-        public Vector2 Size;
+        public Float2 Size;
 
         /// <summary>
         /// Custom text value.
@@ -83,7 +83,7 @@ namespace FlaxEditor.Surface
         /// <summary>
         /// Gets the actual element position.
         /// </summary>
-        public Vector2 ActualPosition => new Vector2(Position.X + Constants.NodeMarginX, Position.Y + Constants.NodeMarginY + Constants.NodeHeaderSize);
+        public Float2 ActualPosition => new Float2(Position.X + Constants.NodeMarginX, Position.Y + Constants.NodeMarginY + Constants.NodeHeaderSize);
 
         /// <summary>
         /// Node element archetypes factory object. Helps to build surface nodes archetypes.
@@ -105,9 +105,9 @@ namespace FlaxEditor.Surface
                 return new NodeElementArchetype
                 {
                     Type = NodeElementType.Input,
-                    Position = new Vector2(
-                                           Constants.NodeMarginX - Constants.BoxOffsetX,
-                                           Constants.NodeMarginY + Constants.NodeHeaderSize + yLevel * Constants.LayoutOffsetY),
+                    Position = new Float2(
+                                          Constants.NodeMarginX - Constants.BoxOffsetX,
+                                          Constants.NodeMarginY + Constants.NodeHeaderSize + yLevel * Constants.LayoutOffsetY),
                     Text = text,
                     Single = single,
                     ValueIndex = valueIndex,
@@ -131,9 +131,9 @@ namespace FlaxEditor.Surface
                 return new NodeElementArchetype
                 {
                     Type = NodeElementType.Input,
-                    Position = new Vector2(
-                                           Constants.NodeMarginX - Constants.BoxOffsetX,
-                                           Constants.NodeMarginY + Constants.NodeHeaderSize + yLevel * Constants.LayoutOffsetY),
+                    Position = new Float2(
+                                          Constants.NodeMarginX - Constants.BoxOffsetX,
+                                          Constants.NodeMarginY + Constants.NodeHeaderSize + yLevel * Constants.LayoutOffsetY),
                     Text = text,
                     Single = single,
                     ValueIndex = valueIndex,
@@ -156,9 +156,9 @@ namespace FlaxEditor.Surface
                 return new NodeElementArchetype
                 {
                     Type = NodeElementType.Output,
-                    Position = new Vector2(
-                                           Constants.NodeMarginX - Constants.BoxSize + Constants.BoxOffsetX,
-                                           Constants.NodeMarginY + Constants.NodeHeaderSize + yLevel * Constants.LayoutOffsetY),
+                    Position = new Float2(
+                                          Constants.NodeMarginX - Constants.BoxSize + Constants.BoxOffsetX,
+                                          Constants.NodeMarginY + Constants.NodeHeaderSize + yLevel * Constants.LayoutOffsetY),
                     Text = text,
                     Single = single,
                     ValueIndex = -1,
@@ -181,9 +181,9 @@ namespace FlaxEditor.Surface
                 return new NodeElementArchetype
                 {
                     Type = NodeElementType.Output,
-                    Position = new Vector2(
-                                           Constants.NodeMarginX - Constants.BoxSize + Constants.BoxOffsetX,
-                                           Constants.NodeMarginY + Constants.NodeHeaderSize + yLevel * Constants.LayoutOffsetY),
+                    Position = new Float2(
+                                          Constants.NodeMarginX - Constants.BoxSize + Constants.BoxOffsetX,
+                                          Constants.NodeMarginY + Constants.NodeHeaderSize + yLevel * Constants.LayoutOffsetY),
                     Text = text,
                     Single = single,
                     ValueIndex = -1,
@@ -204,7 +204,7 @@ namespace FlaxEditor.Surface
                 return new NodeElementArchetype
                 {
                     Type = NodeElementType.BoolValue,
-                    Position = new Vector2(x, y),
+                    Position = new Float2(x, y),
                     Text = null,
                     Single = false,
                     ValueIndex = valueIndex,
@@ -228,7 +228,7 @@ namespace FlaxEditor.Surface
                 return new NodeElementArchetype
                 {
                     Type = NodeElementType.IntegerValue,
-                    Position = new Vector2(Constants.NodeMarginX + x, Constants.NodeMarginY + Constants.NodeHeaderSize + y),
+                    Position = new Float2(Constants.NodeMarginX + x, Constants.NodeMarginY + Constants.NodeHeaderSize + y),
                     Text = null,
                     Single = false,
                     ValueIndex = valueIndex,
@@ -254,7 +254,7 @@ namespace FlaxEditor.Surface
                 return new NodeElementArchetype
                 {
                     Type = NodeElementType.UnsignedIntegerValue,
-                    Position = new Vector2(Constants.NodeMarginX + x, Constants.NodeMarginY + Constants.NodeHeaderSize + y),
+                    Position = new Float2(Constants.NodeMarginX + x, Constants.NodeMarginY + Constants.NodeHeaderSize + y),
                     Text = null,
                     Single = false,
                     ValueIndex = valueIndex,
@@ -280,7 +280,7 @@ namespace FlaxEditor.Surface
                 return new NodeElementArchetype
                 {
                     Type = NodeElementType.FloatValue,
-                    Position = new Vector2(Constants.NodeMarginX + x, Constants.NodeMarginY + Constants.NodeHeaderSize + y),
+                    Position = new Float2(Constants.NodeMarginX + x, Constants.NodeMarginY + Constants.NodeHeaderSize + y),
                     Text = null,
                     Single = false,
                     ValueIndex = valueIndex,
@@ -292,7 +292,7 @@ namespace FlaxEditor.Surface
             }
 
             /// <summary>
-            /// Creates new Vector2 value element description to edit X component.
+            /// Creates new Float2 value element description to edit X component.
             /// </summary>
             /// <param name="x">The x location (in node area space).</param>
             /// <param name="y">The y location (in node area space).</param>
@@ -359,7 +359,7 @@ namespace FlaxEditor.Surface
                 return new NodeElementArchetype
                 {
                     Type = NodeElementType.ColorValue,
-                    Position = new Vector2(Constants.NodeMarginX + x, Constants.NodeMarginY + Constants.NodeHeaderSize + y),
+                    Position = new Float2(Constants.NodeMarginX + x, Constants.NodeMarginY + Constants.NodeHeaderSize + y),
                     Text = null,
                     Single = false,
                     ValueIndex = valueIndex,
@@ -381,7 +381,7 @@ namespace FlaxEditor.Surface
                 return new NodeElementArchetype
                 {
                     Type = NodeElementType.Asset,
-                    Position = new Vector2(x, y),
+                    Position = new Float2(x, y),
                     Text = type.FullName,
                     Single = false,
                     ValueIndex = valueIndex,
@@ -403,8 +403,8 @@ namespace FlaxEditor.Surface
                 return new NodeElementArchetype
                 {
                     Type = NodeElementType.Actor,
-                    Position = new Vector2(x, y),
-                    Size = new Vector2(width, 16),
+                    Position = new Float2(x, y),
+                    Size = new Float2(width, 16),
                     Text = type.FullName,
                     Single = false,
                     ValueIndex = valueIndex,
@@ -426,8 +426,8 @@ namespace FlaxEditor.Surface
                 return new NodeElementArchetype
                 {
                     Type = NodeElementType.ComboBox,
-                    Position = new Vector2(x, y),
-                    Size = new Vector2(width, 0),
+                    Position = new Float2(x, y),
+                    Size = new Float2(width, 0),
                     Text = values != null ? string.Join("\n", values) : null, // Pack all values to string separated with new line characters
                     Single = false,
                     ValueIndex = valueIndex,
@@ -480,8 +480,8 @@ namespace FlaxEditor.Surface
                 return new NodeElementArchetype
                 {
                     Type = NodeElementType.EnumValue,
-                    Position = new Vector2(x, y),
-                    Size = new Vector2(width, 0),
+                    Position = new Float2(x, y),
+                    Size = new Float2(width, 0),
                     Text = enumType.FullName,
                     Single = false,
                     ValueIndex = valueIndex,
@@ -504,8 +504,8 @@ namespace FlaxEditor.Surface
                 return new NodeElementArchetype
                 {
                     Type = NodeElementType.Text,
-                    Position = new Vector2(x, y),
-                    Size = new Vector2(width, height),
+                    Position = new Float2(x, y),
+                    Size = new Float2(width, height),
                     Text = text,
                     Tooltip = tooltip,
                     Single = false,
@@ -530,8 +530,8 @@ namespace FlaxEditor.Surface
                 return new NodeElementArchetype
                 {
                     Type = NodeElementType.TextBox,
-                    Position = new Vector2(Constants.NodeMarginX + x, Constants.NodeMarginY + Constants.NodeHeaderSize + y),
-                    Size = new Vector2(width, height),
+                    Position = new Float2(Constants.NodeMarginX + x, Constants.NodeMarginY + Constants.NodeHeaderSize + y),
+                    Size = new Float2(width, height),
                     Single = false,
                     ValueIndex = valueIndex,
                     BoxID = isMultiline ? 1 : 0,
@@ -552,8 +552,8 @@ namespace FlaxEditor.Surface
                 return new NodeElementArchetype
                 {
                     Type = NodeElementType.SkeletonBoneIndexSelect,
-                    Position = new Vector2(x, y),
-                    Size = new Vector2(width, 0),
+                    Position = new Float2(x, y),
+                    Size = new Float2(width, 0),
                     Text = null,
                     Single = false,
                     ValueIndex = valueIndex,
@@ -574,8 +574,8 @@ namespace FlaxEditor.Surface
                 return new NodeElementArchetype
                 {
                     Type = NodeElementType.SkeletonNodeNameSelect,
-                    Position = new Vector2(x, y),
-                    Size = new Vector2(width, 0),
+                    Position = new Float2(x, y),
+                    Size = new Float2(width, 0),
                     Text = null,
                     Single = false,
                     ValueIndex = valueIndex,
@@ -595,7 +595,7 @@ namespace FlaxEditor.Surface
                 return new NodeElementArchetype
                 {
                     Type = NodeElementType.BoxValue,
-                    Position = new Vector2(Constants.NodeMarginX + x, Constants.NodeMarginY + Constants.NodeHeaderSize + y),
+                    Position = new Float2(Constants.NodeMarginX + x, Constants.NodeMarginY + Constants.NodeHeaderSize + y),
                     Text = null,
                     Single = false,
                     ValueIndex = valueIndex,

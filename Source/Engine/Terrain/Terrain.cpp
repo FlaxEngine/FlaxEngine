@@ -186,7 +186,7 @@ bool Terrain::RayCast(const Vector3& origin, const Vector3& direction, RayCastHi
 
 void Terrain::ClosestPoint(const Vector3& position, Vector3& result) const
 {
-    float minDistance = MAX_float;
+    Real minDistance = MAX_Real;
     Vector3 tmp;
     for (int32 pathIndex = 0; pathIndex < _patches.Count(); pathIndex++)
     {
@@ -511,7 +511,7 @@ void Terrain::Draw(RenderContext& renderContext)
     {
         const float chunkSize = TERRAIN_UNITS_PER_VERTEX * (float)_chunkSize;
         const float posToUV = 0.25f / chunkSize;
-        Vector4 localToUV(posToUV, posToUV, 0.0f, 0.0f);
+        Float4 localToUV(posToUV, posToUV, 0.0f, 0.0f);
         Matrix localToWorld;
         for (const TerrainPatch* patch : _patches)
         {
@@ -520,7 +520,7 @@ void Terrain::Draw(RenderContext& renderContext)
             Transform patchTransform;
             patchTransform.Translation = patch->_offset + Vector3(0, patch->_yOffset, 0);
             patchTransform.Orientation = Quaternion::Identity;
-            patchTransform.Scale = Vector3(1.0f, patch->_yHeight, 1.0f);
+            patchTransform.Scale = Float3(1.0f, patch->_yHeight, 1.0f);
             patchTransform = _transform.LocalToWorld(patchTransform);
             patchTransform.GetWorld(localToWorld);
             GlobalSignDistanceFieldPass::Instance()->RasterizeHeightfield(this, patch->Heightmap->GetTexture(), localToWorld, patch->_bounds, localToUV);
@@ -623,7 +623,7 @@ void Terrain::OnDebugDrawSelected()
 
 #endif
 
-bool Terrain::IntersectsItself(const Ray& ray, float& distance, Vector3& normal)
+bool Terrain::IntersectsItself(const Ray& ray, Real& distance, Vector3& normal)
 {
     float minDistance = MAX_float;
     Vector3 minDistanceNormal = Vector3::Up;
@@ -816,7 +816,7 @@ void Terrain::OnTransformChanged()
         auto patch = _patches[i];
         patch->UpdateTransform();
     }
-    if (!Vector3::NearEqual(_cachedScale, _transform.Scale))
+    if (!Float3::NearEqual(_cachedScale, _transform.Scale))
     {
         _cachedScale = _transform.Scale;
         for (int32 i = 0; i < _patches.Count(); i++)

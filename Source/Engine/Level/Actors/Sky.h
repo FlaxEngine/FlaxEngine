@@ -68,7 +68,7 @@ public:
     void Serialize(SerializeStream& stream, const void* otherObj) override;
     void Deserialize(DeserializeStream& stream, ISerializeModifier* modifier) override;
     bool HasContentLoaded() const override;
-    bool IntersectsItself(const Ray& ray, float& distance, Vector3& normal) override;
+    bool IntersectsItself(const Ray& ray, Real& distance, Vector3& normal) override;
 
     // [IAtmosphericFogRenderer]
     void DrawFog(GPUContext* context, RenderContext& renderContext, GPUTextureView* output) override;

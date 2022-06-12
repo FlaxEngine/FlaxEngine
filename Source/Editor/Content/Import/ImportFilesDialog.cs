@@ -131,10 +131,10 @@ namespace FlaxEditor.Content.Import
             // Select the first item
             tree.Select(_rootNode.Children[0] as TreeNode);
 
-            _dialogSize = new Vector2(TotalWidth, EditorHeight + splitPanel.Offsets.Height);
+            _dialogSize = new Float2(TotalWidth, EditorHeight + splitPanel.Offsets.Height);
         }
 
-        private void OnTreeRightClick(TreeNode node, Vector2 location)
+        private void OnTreeRightClick(TreeNode node, Float2 location)
         {
             var menu = new ContextMenu();
             menu.AddButton("Rename", OnRenameClicked);
@@ -183,7 +183,7 @@ namespace FlaxEditor.Content.Import
             }
 
             /// <inheritdoc />
-            protected override bool OnMouseDoubleClickHeader(ref Vector2 location, MouseButton button)
+            protected override bool OnMouseDoubleClickHeader(ref Float2 location, MouseButton button)
             {
                 StartRenaming();
                 return true;
@@ -254,7 +254,7 @@ namespace FlaxEditor.Content.Import
         {
             base.SetupWindowSettings(ref settings);
 
-            settings.MinimumSize = new Vector2(300, 400);
+            settings.MinimumSize = new Float2(300, 400);
             settings.HasSizingFrame = true;
         }
     }

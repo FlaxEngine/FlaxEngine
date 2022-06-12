@@ -17,7 +17,7 @@ private:
 
     PACK_STRUCT(struct Data
         {
-        Vector4 RtSize;
+        Float4 RtSize;
         });
 
     AssetReference<Shader> _shader;

@@ -102,8 +102,8 @@ namespace FlaxEditor.Tools.Terrain.Sculpt
                 var brushBoundsPatchLocalMax = (brushBoundsLocal.Maximum - patchPositionLocal) * unitsPerVertexInv;
 
                 // Calculate patch heightmap area to modify by brush
-                var brushPatchMin = new Int2(Mathf.FloorToInt(brushBoundsPatchLocalMin.X), Mathf.FloorToInt(brushBoundsPatchLocalMin.Z));
-                var brushPatchMax = new Int2(Mathf.CeilToInt(brushBoundsPatchLocalMax.X), Mathf.FloorToInt(brushBoundsPatchLocalMax.Z));
+                var brushPatchMin = new Int2((int)Math.Floor(brushBoundsPatchLocalMin.X), (int)Math.Floor(brushBoundsPatchLocalMin.Z));
+                var brushPatchMax = new Int2((int)Math.Ceiling(brushBoundsPatchLocalMax.X), (int)Math.Ceiling(brushBoundsPatchLocalMax.Z));
                 var modifiedOffset = brushPatchMin;
                 var modifiedSize = brushPatchMax - brushPatchMin;
 

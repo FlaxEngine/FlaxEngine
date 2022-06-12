@@ -49,8 +49,8 @@ namespace FlaxEditor.CustomEditors.Editors
                     // Use float value editor with limit
                     var floatValue = layout.FloatValue();
                     floatValue.SetLimits((LimitAttribute)limit);
-                    floatValue.FloatValue.ValueChanged += OnValueChanged;
-                    floatValue.FloatValue.SlidingEnd += ClearToken;
+                    floatValue.ValueBox.ValueChanged += OnValueChanged;
+                    floatValue.ValueBox.SlidingEnd += ClearToken;
                     _element = floatValue;
                     return;
                 }
@@ -59,8 +59,8 @@ namespace FlaxEditor.CustomEditors.Editors
             {
                 // Use float value editor
                 var floatValue = layout.FloatValue();
-                floatValue.FloatValue.ValueChanged += OnValueChanged;
-                floatValue.FloatValue.SlidingEnd += ClearToken;
+                floatValue.ValueBox.ValueChanged += OnValueChanged;
+                floatValue.ValueBox.SlidingEnd += ClearToken;
                 _element = floatValue;
             }
         }

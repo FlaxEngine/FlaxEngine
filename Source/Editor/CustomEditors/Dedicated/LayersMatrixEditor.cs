@@ -45,8 +45,8 @@ namespace FlaxEditor.CustomEditors.Dedicated
             var upperRightCell = new VerticalPanel
             {
                 ClipChildren = false,
-                Pivot = new Vector2(0.0f, 0.0f),
-                Offset = new Vector2(-labelsWidth, 0),
+                Pivot = new Float2(0.0f, 0.0f),
+                Offset = new Float2(-labelsWidth, 0),
                 Rotation = -90,
                 Spacing = 0,
                 TopMargin = 0,
@@ -116,7 +116,7 @@ namespace FlaxEditor.CustomEditors.Dedicated
                 {
                     var box = new CheckBox(0, 0, true)
                     {
-                        Tag = new Vector2(_layersCount - column - 1, row),
+                        Tag = new Float2(_layersCount - column - 1, row),
                         Parent = grid,
                         Checked = GetBit(column, row),
                     };
@@ -132,8 +132,8 @@ namespace FlaxEditor.CustomEditors.Dedicated
 
         private void OnCheckBoxChanged(CheckBox box)
         {
-            int column = (int)((Vector2)box.Tag).X;
-            int row = (int)((Vector2)box.Tag).Y;
+            int column = (int)((Float2)box.Tag).X;
+            int row = (int)((Float2)box.Tag).Y;
             SetBit(column, row, box.Checked);
         }
 
@@ -144,8 +144,8 @@ namespace FlaxEditor.CustomEditors.Dedicated
             for (int i = 0; i < _checkBoxes.Count; i++)
             {
                 var box = _checkBoxes[i];
-                int column = (int)((Vector2)box.Tag).X;
-                int row = (int)((Vector2)box.Tag).Y;
+                int column = (int)((Float2)box.Tag).X;
+                int row = (int)((Float2)box.Tag).Y;
                 box.Checked = GetBit(column, row);
             }
         }

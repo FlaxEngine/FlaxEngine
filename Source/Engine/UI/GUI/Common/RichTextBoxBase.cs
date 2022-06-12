@@ -91,21 +91,21 @@ namespace FlaxEngine.GUI
         }
 
         /// <inheritdoc />
-        public override Vector2 GetTextSize()
+        public override Float2 GetTextSize()
         {
             var count = _textBlocks.Count;
             var textBlocks = Utils.ExtractArrayFromList(_textBlocks);
-            var max = Vector2.Zero;
+            var max = Float2.Zero;
             for (int i = 0; i < count; i++)
             {
                 ref TextBlock textBlock = ref textBlocks[i];
-                max = Vector2.Max(max, textBlock.Bounds.BottomRight);
+                max = Float2.Max(max, textBlock.Bounds.BottomRight);
             }
             return max;
         }
 
         /// <inheritdoc />
-        public override Vector2 GetCharPosition(int index, out float height)
+        public override Float2 GetCharPosition(int index, out float height)
         {
             var count = _textBlocks.Count;
             var textBlocks = Utils.ExtractArrayFromList(_textBlocks);
@@ -114,7 +114,7 @@ namespace FlaxEngine.GUI
             if (count == 0)
             {
                 height = 0;
-                return Vector2.Zero;
+                return Float2.Zero;
             }
 
             // Check if get first character position
@@ -172,13 +172,13 @@ namespace FlaxEngine.GUI
             }
 
             height = 0;
-            return Vector2.Zero;
+            return Float2.Zero;
         }
 
         /// <inheritdoc />
-        public override int HitTestText(Vector2 location)
+        public override int HitTestText(Float2 location)
         {
-            location = Vector2.Clamp(location, Vector2.Zero, _textSize);
+            location = Float2.Clamp(location, Float2.Zero, _textSize);
 
             var textBlocks = Utils.ExtractArrayFromList(_textBlocks);
             var count = _textBlocks.Count;
@@ -202,7 +202,7 @@ namespace FlaxEngine.GUI
         }
 
         /// <inheritdoc />
-        public override bool OnMouseDoubleClick(Vector2 location, MouseButton button)
+        public override bool OnMouseDoubleClick(Float2 location, MouseButton button)
         {
             // Select the word under the mouse
             int textLength = TextLength;
@@ -223,7 +223,7 @@ namespace FlaxEngine.GUI
         public override void DrawSelf()
         {
             // Cache data
-            var rect = new Rectangle(Vector2.Zero, Size);
+            var rect = new Rectangle(Float2.Zero, Size);
             bool enabled = EnabledInHierarchy;
 
             // Background
@@ -279,8 +279,8 @@ namespace FlaxEngine.GUI
                 // Selection
                 if (hasSelection && textBlock.Style.BackgroundSelectedBrush != null && textBlock.Range.Intersect(ref selection))
                 {
-                    Vector2 leftEdge = selection.StartIndex <= textBlock.Range.StartIndex ? textBlock.Bounds.UpperLeft : font.GetCharPosition(_text, selection.StartIndex);
-                    Vector2 rightEdge = selection.EndIndex >= textBlock.Range.EndIndex ? textBlock.Bounds.UpperRight : font.GetCharPosition(_text, selection.EndIndex);
+                    var leftEdge = selection.StartIndex <= textBlock.Range.StartIndex ? textBlock.Bounds.UpperLeft : font.GetCharPosition(_text, selection.StartIndex);
+                    var rightEdge = selection.EndIndex >= textBlock.Range.EndIndex ? textBlock.Bounds.UpperRight : font.GetCharPosition(_text, selection.EndIndex);
                     float height = font.Height / DpiScale;
                     float alpha = Mathf.Min(1.0f, Mathf.Cos(_animateTime * BackgroundSelectedFlashSpeed) * 0.5f + 1.3f);
                     alpha *= alpha;

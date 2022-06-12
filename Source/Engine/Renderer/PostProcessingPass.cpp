@@ -148,8 +148,8 @@ void PostProcessingPass::GB_ComputeKernel(float sigma, float width, float height
         // Calculate total weights sum
         total += weight;
 
-        GaussianBlurCacheH[index] = Vector4(weight, i * xOffset, 0, 0);
-        GaussianBlurCacheV[index] = Vector4(weight, i * yOffset, 0, 0);
+        GaussianBlurCacheH[index] = Float4(weight, i * xOffset, 0, 0);
+        GaussianBlurCacheV[index] = Float4(weight, i * yOffset, 0, 0);
     }
 
     // Normalize weights
@@ -160,7 +160,7 @@ void PostProcessingPass::GB_ComputeKernel(float sigma, float width, float height
     }
 
     // Assign size
-    _gbData.Size = Vector2(width, height);
+    _gbData.Size = Float2(width, height);
 }
 
 void PostProcessingPass::Dispose()
@@ -279,12 +279,12 @@ void PostProcessingPass::Render(RenderContext& renderContext, GPUTexture* input,
 
         data.LensBias = settings.LensFlares.ThresholdBias;
         data.LensScale = settings.LensFlares.ThresholdScale;
-        data.LensInputDistortion = Vector2(-(1.0f / w4) * settings.LensFlares.Distortion, (1.0f / w4) * settings.LensFlares.Distortion);
+        data.LensInputDistortion = Float2(-(1.0f / w4) * settings.LensFlares.Distortion, (1.0f / w4) * settings.LensFlares.Distortion);
 
         // Calculate star texture rotation matrix
-        Vector3 camX = renderContext.View.View.GetRight();
-        Vector3 camZ = renderContext.View.View.GetForward();
-        float camRot = Vector3::Dot(camX, Vector3::Forward) + Vector3::Dot(camZ, Vector3::Up);
+        Float3 camX = renderContext.View.View.GetRight();
+        Float3 camZ = renderContext.View.View.GetForward();
+        float camRot = Float3::Dot(camX, Float3::Forward) + Float3::Dot(camZ, Float3::Up);
         float camRotCos = Math::Cos(camRot) * 0.8f;
         float camRotSin = Math::Sin(camRot) * 0.8f;
         Matrix rotation(
@@ -301,8 +301,8 @@ void PostProcessingPass::Render(RenderContext& renderContext, GPUTexture* input,
         data.LensDirtIntensity = 0;
     }
     data.PostExposure = Math::Exp2(settings.EyeAdaptation.PostExposure);
-    data.InputSize = Vector2(static_cast<float>(w1), static_cast<float>(h1));
-    data.InvInputSize = Vector2(1.0f / static_cast<float>(w1), 1.0f / static_cast<float>(h1));
+    data.InputSize = Float2(static_cast<float>(w1), static_cast<float>(h1));
+    data.InvInputSize = Float2(1.0f / static_cast<float>(w1), 1.0f / static_cast<float>(h1));
     data.InputAspect = static_cast<float>(w1) / h1;
     context->UpdateCB(cb0, &data);
     context->BindCB(0, cb0);

@@ -8,7 +8,7 @@
 
 static_assert(sizeof(Color) == 16, "Invalid Color type size.");
 
-Color::Color(const Vector3& rgb, float a)
+Color::Color(const Float3& rgb, float a)
     : R(rgb.X)
     , G(rgb.Y)
     , B(rgb.Z)
@@ -16,7 +16,7 @@ Color::Color(const Vector3& rgb, float a)
 {
 }
 
-Color::Color(const Vector4& rgba)
+Color::Color(const Float4& rgba)
     : R(rgba.X)
     , G(rgba.Y)
     , B(rgba.Z)
@@ -100,7 +100,7 @@ Color Color::FromHSV(float hue, float saturation, float value, float alpha)
                  alpha);
 }
 
-Color Color::FromHSV(const Vector3& hsv, float alpha)
+Color Color::FromHSV(const Float3& hsv, float alpha)
 {
     return FromHSV(hsv.X, hsv.Y, hsv.Z, alpha);
 }
@@ -157,17 +157,17 @@ bool Color::NearEqual(const Color& a, const Color& b, float epsilon)
     return Math::NearEqual(a.R, b.R, epsilon) && Math::NearEqual(a.G, b.G, epsilon) && Math::NearEqual(a.B, b.B, epsilon) && Math::NearEqual(a.A, b.A, epsilon);
 }
 
-Vector3 Color::ToVector3() const
+Float3 Color::ToFloat3() const
 {
-    return Vector3(R, G, B);
+    return Float3(R, G, B);
 }
 
-Vector4 Color::ToVector4() const
+Float4 Color::ToFloat4() const
 {
-    return Vector4(R, G, B, A);
+    return Float4(R, G, B, A);
 }
 
-Vector3 Color::ToHSV() const
+Float3 Color::ToHSV() const
 {
     const float rgbMin = Math::Min(R, G, B);
     const float rgbMax = Math::Max(R, G, B);
@@ -175,7 +175,7 @@ Vector3 Color::ToHSV() const
     const float hue = rgbMax == rgbMin ? 0.0f : rgbMax == R ? Math::Mod((G - B) / rgbRange * 60.0f + 360.0f, 360.0f) : rgbMax == G ? (B - R) / rgbRange * 60.0f + 120.0f : rgbMax == B ? (R - G) / rgbRange * 60.0f + 240.0f : 0.0f;
     const float saturation = rgbMax == 0.0f ? 0.0f : rgbRange / rgbMax;
     const float value = rgbMax;
-    return Vector3(hue, saturation, value);
+    return Float3(hue, saturation, value);
 }
 
 void Color::Lerp(const Color& start, const Color& end, float amount, Color& result)

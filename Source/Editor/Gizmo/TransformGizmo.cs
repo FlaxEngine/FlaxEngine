@@ -1,3 +1,9 @@
+#if USE_LARGE_WORLDS
+using Real = System.Double;
+#else
+using Real = System.Single;
+#endif
+
 // Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 using System;
@@ -111,7 +117,7 @@ namespace FlaxEditor.Gizmo
 
                     // Include objects bounds into target snap location
                     var editorBounds = BoundingBox.Empty;
-                    var bottomToCenter = 100000.0f;
+                    Real bottomToCenter = 100000.0f;
                     for (int i = 0; i < _selectionParents.Count; i++)
                     {
                         if (_selectionParents[i] is ActorNode actorNode)

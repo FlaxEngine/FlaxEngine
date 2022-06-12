@@ -1,3 +1,9 @@
+#if USE_LARGE_WORLDS
+using Real = System.Double;
+#else
+using Real = System.Single;
+#endif
+
 // Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 // -----------------------------------------------------------------------------
@@ -48,41 +54,15 @@
 * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 * THE SOFTWARE.
 */
-
 using System;
 using System.Globalization;
 using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
 
 namespace FlaxEngine
 {
     [Serializable]
     partial struct Plane : IEquatable<Plane>, IFormattable
     {
-        /// <summary>
-        /// Initializes a new instance of the <see cref="Plane" /> struct.
-        /// </summary>
-        /// <param name="value">The value that will be assigned to all components.</param>
-        public Plane(float value)
-        {
-            Normal.X = Normal.Y = Normal.Z = D = value;
-        }
-
-        /// <summary>
-        /// Initializes a new instance of the <see cref="Plane" /> struct.
-        /// </summary>
-        /// <param name="a">The X component of the normal.</param>
-        /// <param name="b">The Y component of the normal.</param>
-        /// <param name="c">The Z component of the normal.</param>
-        /// <param name="d">The distance of the plane along its normal from the origin.</param>
-        public Plane(float a, float b, float c, float d)
-        {
-            Normal.X = a;
-            Normal.Y = b;
-            Normal.Z = c;
-            D = d;
-        }
-
         /// <summary>
         /// Initializes a new instance of the <see cref="T:FlaxEngine.Plane" /> class.
         /// </summary>
@@ -99,7 +79,7 @@ namespace FlaxEngine
         /// </summary>
         /// <param name="value">The normal of the plane.</param>
         /// <param name="d">The distance of the plane along its normal from the origin</param>
-        public Plane(Vector3 value, float d)
+        public Plane(Vector3 value, Real d)
         {
             Normal = value;
             D = d;
@@ -113,16 +93,16 @@ namespace FlaxEngine
         /// <param name="point3">Third point of a triangle defining the plane.</param>
         public Plane(Vector3 point1, Vector3 point2, Vector3 point3)
         {
-            float x1 = point2.X - point1.X;
-            float y1 = point2.Y - point1.Y;
-            float z1 = point2.Z - point1.Z;
-            float x2 = point3.X - point1.X;
-            float y2 = point3.Y - point1.Y;
-            float z2 = point3.Z - point1.Z;
-            float yz = y1 * z2 - z1 * y2;
-            float xz = z1 * x2 - x1 * z2;
-            float xy = x1 * y2 - y1 * x2;
-            float invPyth = 1.0f / (float)Math.Sqrt(yz * yz + xz * xz + xy * xy);
+            Real x1 = point2.X - point1.X;
+            Real y1 = point2.Y - point1.Y;
+            Real z1 = point2.Z - point1.Z;
+            Real x2 = point3.X - point1.X;
+            Real y2 = point3.Y - point1.Y;
+            Real z2 = point3.Z - point1.Z;
+            Real yz = y1 * z2 - z1 * y2;
+            Real xz = z1 * x2 - x1 * z2;
+            Real xy = x1 * y2 - y1 * x2;
+            Real invPyth = 1.0f / (Real)Math.Sqrt(yz * yz + xz * xz + xy * xy);
 
             Normal.X = yz * invPyth;
             Normal.Y = xz * invPyth;
@@ -133,22 +113,15 @@ namespace FlaxEngine
         /// <summary>
         /// Initializes a new instance of the <see cref="Plane" /> struct.
         /// </summary>
-        /// <param name="values">
-        /// The values to assign to the A, B, C, and D components of the plane. This must be an array with
-        /// four elements.
-        /// </param>
+        /// <param name="values">The values to assign to the A, B, C, and D components of the plane. This must be an array with four elements.</param>
         /// <exception cref="ArgumentNullException">Thrown when <paramref name="values" /> is <c>null</c>.</exception>
-        /// <exception cref="ArgumentOutOfRangeException">
-        /// Thrown when <paramref name="values" /> contains more or less than four
-        /// elements.
-        /// </exception>
-        public Plane(float[] values)
+        /// <exception cref="ArgumentOutOfRangeException">Thrown when <paramref name="values" /> contains more or less than four elements.</exception>
+        public Plane(Real[] values)
         {
             if (values == null)
                 throw new ArgumentNullException(nameof(values));
             if (values.Length != 4)
                 throw new ArgumentOutOfRangeException(nameof(values), "There must be four and only four input values for Plane.");
-
             Normal.X = values[0];
             Normal.Y = values[1];
             Normal.Z = values[2];
@@ -159,34 +132,22 @@ namespace FlaxEngine
         /// Gets or sets the component at the specified index.
         /// </summary>
         /// <value>The value of the A, B, C, or D component, depending on the index.</value>
-        /// <param name="index">
-        /// The index of the component to access. Use 0 for the A component, 1 for the B component, 2 for the C
-        /// component, and 3 for the D component.
-        /// </param>
+        /// <param name="index">The index of the component to access. Use 0 for the A component, 1 for the B component, 2 for the C component, and 3 for the D component.</param>
         /// <returns>The value of the component at the specified index.</returns>
-        /// <exception cref="System.ArgumentOutOfRangeException">
-        /// Thrown when the <paramref name="index" /> is out of the range [0,
-        /// 3].
-        /// </exception>
-        public float this[int index]
+        /// <exception cref="System.ArgumentOutOfRangeException">Thrown when the <paramref name="index" /> is out of the range [0,3].</exception>
+        public Real this[int index]
         {
             get
             {
                 switch (index)
                 {
-                case 0:
-                    return Normal.X;
-                case 1:
-                    return Normal.Y;
-                case 2:
-                    return Normal.Z;
-                case 3:
-                    return D;
+                case 0: return Normal.X;
+                case 1: return Normal.Y;
+                case 2: return Normal.Z;
+                case 3: return D;
                 }
-
                 throw new ArgumentOutOfRangeException(nameof(index), "Indices for Plane run from 0 to 3, inclusive.");
             }
-
             set
             {
                 switch (index)
@@ -203,8 +164,7 @@ namespace FlaxEngine
                 case 3:
                     D = value;
                     break;
-                default:
-                    throw new ArgumentOutOfRangeException(nameof(index), "Indices for Plane run from 0 to 3, inclusive.");
+                default: throw new ArgumentOutOfRangeException(nameof(index), "Indices for Plane run from 0 to 3, inclusive.");
                 }
             }
         }
@@ -214,10 +174,10 @@ namespace FlaxEngine
         /// </summary>
         public void Normalize()
         {
-            float length = (float)Math.Sqrt(Normal.X * Normal.X + Normal.Y * Normal.Y + Normal.Z * Normal.Z);
+            Real length = Normal.Length;
             if (!Mathf.IsZero(length))
             {
-                float rcp = 1.0f / length;
+                Real rcp = 1.0f / length;
                 Normal.X *= rcp;
                 Normal.Y *= rcp;
                 Normal.Z *= rcp;
@@ -229,15 +189,9 @@ namespace FlaxEngine
         /// Creates an array containing the elements of the plane.
         /// </summary>
         /// <returns>A four-element array containing the components of the plane.</returns>
-        public float[] ToArray()
+        public Real[] ToArray()
         {
-            return new[]
-            {
-                Normal.X,
-                Normal.Y,
-                Normal.Z,
-                D
-            };
+            return new[] { Normal.X, Normal.Y, Normal.Z, D };
         }
 
         /// <summary>
@@ -257,19 +211,16 @@ namespace FlaxEngine
         /// <returns>Whether the two objects intersected.</returns>
         public bool Intersects(ref Ray ray)
         {
-            return CollisionsHelper.RayIntersectsPlane(ref ray, ref this, out float _);
+            return CollisionsHelper.RayIntersectsPlane(ref ray, ref this, out Real _);
         }
 
         /// <summary>
         /// Determines if there is an intersection between the current object and a <see cref="Ray" />.
         /// </summary>
         /// <param name="ray">The ray to test.</param>
-        /// <param name="distance">
-        /// When the method completes, contains the distance of the intersection,
-        /// or 0 if there was no intersection.
-        /// </param>
+        /// <param name="distance">When the method completes, contains the distance of the intersection, or 0 if there was no intersection.</param>
         /// <returns>Whether the two objects intersected.</returns>
-        public bool Intersects(ref Ray ray, out float distance)
+        public bool Intersects(ref Ray ray, out Real distance)
         {
             return CollisionsHelper.RayIntersectsPlane(ref ray, ref this, out distance);
         }
@@ -278,10 +229,7 @@ namespace FlaxEngine
         /// Determines if there is an intersection between the current object and a <see cref="Ray" />.
         /// </summary>
         /// <param name="ray">The ray to test.</param>
-        /// <param name="point">
-        /// When the method completes, contains the point of intersection,
-        /// or <see cref="Vector3.Zero" /> if there was no intersection.
-        /// </param>
+        /// <param name="point">When the method completes, contains the point of intersection, or <see cref="Vector3.Zero" /> if there was no intersection.</param>
         /// <returns>Whether the two objects intersected.</returns>
         public bool Intersects(ref Ray ray, out Vector3 point)
         {
@@ -302,10 +250,7 @@ namespace FlaxEngine
         /// Determines if there is an intersection between the current object and a <see cref="Plane" />.
         /// </summary>
         /// <param name="plane">The plane to test.</param>
-        /// <param name="line">
-        /// When the method completes, contains the line of intersection
-        /// as a <see cref="Ray" />, or a zero ray if there was no intersection.
-        /// </param>
+        /// <param name="line">When the method completes, contains the line of intersection as a <see cref="Ray" />, or a zero ray if there was no intersection.</param>
         /// <returns>Whether the two objects intersected.</returns>
         public bool Intersects(ref Plane plane, out Ray line)
         {
@@ -345,189 +290,12 @@ namespace FlaxEngine
         }
 
         /// <summary>
-        /// Builds a matrix that can be used to reflect vectors about a plane.
-        /// </summary>
-        /// <param name="result">When the method completes, contains the reflection matrix.</param>
-        public void Reflection(out Matrix result)
-        {
-            float x = Normal.X;
-            float y = Normal.Y;
-            float z = Normal.Z;
-            float x2 = -2.0f * x;
-            float y2 = -2.0f * y;
-            float z2 = -2.0f * z;
-
-            result.M11 = x2 * x + 1.0f;
-            result.M12 = y2 * x;
-            result.M13 = z2 * x;
-            result.M14 = 0.0f;
-            result.M21 = x2 * y;
-            result.M22 = y2 * y + 1.0f;
-            result.M23 = z2 * y;
-            result.M24 = 0.0f;
-            result.M31 = x2 * z;
-            result.M32 = y2 * z;
-            result.M33 = z2 * z + 1.0f;
-            result.M34 = 0.0f;
-            result.M41 = x2 * D;
-            result.M42 = y2 * D;
-            result.M43 = z2 * D;
-            result.M44 = 1.0f;
-        }
-
-        /// <summary>
-        /// Builds a matrix that can be used to reflect vectors about a plane.
-        /// </summary>
-        /// <returns>The reflection matrix.</returns>
-        public Matrix Reflection()
-        {
-            Reflection(out Matrix result);
-            return result;
-        }
-
-        /// <summary>
-        /// Creates a matrix that flattens geometry into a shadow from this the plane onto which to project the geometry as a
-        /// shadow.
-        /// This plane  is assumed to be normalized
-        /// </summary>
-        /// <param name="light">
-        /// The light direction. If the W component is 0, the light is directional light; if the
-        /// W component is 1, the light is a point light.
-        /// </param>
-        /// <param name="result">When the method completes, contains the shadow matrix.</param>
-        public void Shadow(ref Vector4 light, out Matrix result)
-        {
-            float dot = Normal.X * light.X + Normal.Y * light.Y + Normal.Z * light.Z + D * light.W;
-            float x = -Normal.X;
-            float y = -Normal.Y;
-            float z = -Normal.Z;
-            float d = -D;
-
-            result.M11 = x * light.X + dot;
-            result.M21 = y * light.X;
-            result.M31 = z * light.X;
-            result.M41 = d * light.X;
-            result.M12 = x * light.Y;
-            result.M22 = y * light.Y + dot;
-            result.M32 = z * light.Y;
-            result.M42 = d * light.Y;
-            result.M13 = x * light.Z;
-            result.M23 = y * light.Z;
-            result.M33 = z * light.Z + dot;
-            result.M43 = d * light.Z;
-            result.M14 = x * light.W;
-            result.M24 = y * light.W;
-            result.M34 = z * light.W;
-            result.M44 = d * light.W + dot;
-        }
-
-        /// <summary>
-        /// Creates a matrix that flattens geometry into a shadow from this the plane onto which to project the geometry as a
-        /// shadow.
-        /// This plane  is assumed to be normalized
-        /// </summary>
-        /// <param name="light">
-        /// The light direction. If the W component is 0, the light is directional light; if the
-        /// W component is 1, the light is a point light.
-        /// </param>
-        /// <returns>The shadow matrix.</returns>
-        public Matrix Shadow(Vector4 light)
-        {
-            Shadow(ref light, out Matrix result);
-            return result;
-        }
-
-        /// <summary>
-        /// Builds a Matrix3x3 that can be used to reflect vectors about a plane for which the reflection occurs.
-        /// This plane is assumed to be normalized
-        /// </summary>
-        /// <param name="result">When the method completes, contains the reflection Matrix3x3.</param>
-        public void Reflection(out Matrix3x3 result)
-        {
-            float x = Normal.X;
-            float y = Normal.Y;
-            float z = Normal.Z;
-            float x2 = -2.0f * x;
-            float y2 = -2.0f * y;
-            float z2 = -2.0f * z;
-
-            result.M11 = x2 * x + 1.0f;
-            result.M12 = y2 * x;
-            result.M13 = z2 * x;
-            result.M21 = x2 * y;
-            result.M22 = y2 * y + 1.0f;
-            result.M23 = z2 * y;
-            result.M31 = x2 * z;
-            result.M32 = y2 * z;
-            result.M33 = z2 * z + 1.0f;
-        }
-
-        /// <summary>
-        /// Builds a Matrix3x3 that can be used to reflect vectors about a plane for which the reflection occurs.
-        /// This plane is assumed to be normalized
-        /// </summary>
-        /// <returns>The reflection Matrix3x3.</returns>
-        public Matrix3x3 Reflection3x3()
-        {
-            Reflection(out Matrix3x3 result);
-            return result;
-        }
-
-        /// <summary>
-        /// Creates a Matrix3x3 that flattens geometry into a shadow.
-        /// </summary>
-        /// <param name="light">
-        /// The light direction. If the W component is 0, the light is directional light; if the
-        /// W component is 1, the light is a point light.
-        /// </param>
-        /// <param name="plane">
-        /// The plane onto which to project the geometry as a shadow. This parameter is assumed to be
-        /// normalized.
-        /// </param>
-        /// <param name="result">When the method completes, contains the shadow Matrix3x3.</param>
-        public static void Shadow(ref Vector4 light, ref Plane plane, out Matrix3x3 result)
-        {
-            float dot = plane.Normal.X * light.X + plane.Normal.Y * light.Y + plane.Normal.Z * light.Z + plane.D * light.W;
-            float x = -plane.Normal.X;
-            float y = -plane.Normal.Y;
-            float z = -plane.Normal.Z;
-
-            result.M11 = x * light.X + dot;
-            result.M21 = y * light.X;
-            result.M31 = z * light.X;
-            result.M12 = x * light.Y;
-            result.M22 = y * light.Y + dot;
-            result.M32 = z * light.Y;
-            result.M13 = x * light.Z;
-            result.M23 = y * light.Z;
-            result.M33 = z * light.Z + dot;
-        }
-
-        /// <summary>
-        /// Creates a Matrix3x3 that flattens geometry into a shadow.
-        /// </summary>
-        /// <param name="light">
-        /// The light direction. If the W component is 0, the light is directional light; if the
-        /// W component is 1, the light is a point light.
-        /// </param>
-        /// <param name="plane">
-        /// The plane onto which to project the geometry as a shadow. This parameter is assumed to be
-        /// normalized.
-        /// </param>
-        /// <returns>The shadow Matrix3x3.</returns>
-        public static Matrix3x3 Shadow(Vector4 light, Plane plane)
-        {
-            Shadow(ref light, ref plane, out Matrix3x3 result);
-            return result;
-        }
-
-        /// <summary>
         /// Scales the plane by the given scaling factor.
         /// </summary>
         /// <param name="value">The plane to scale.</param>
         /// <param name="scale">The amount by which to scale the plane.</param>
         /// <param name="result">When the method completes, contains the scaled plane.</param>
-        public static void Multiply(ref Plane value, float scale, out Plane result)
+        public static void Multiply(ref Plane value, Real scale, out Plane result)
         {
             result.Normal.X = value.Normal.X * scale;
             result.Normal.Y = value.Normal.Y * scale;
@@ -541,9 +309,9 @@ namespace FlaxEngine
         /// <param name="value">The plane to scale.</param>
         /// <param name="scale">The amount by which to scale the plane.</param>
         /// <returns>The scaled plane.</returns>
-        public static Plane Multiply(Plane value, float scale)
+        public static Plane Multiply(Plane value, Real scale)
         {
-            return new Plane(value.Normal.X * scale, value.Normal.Y * scale, value.Normal.Z * scale, value.D * scale);
+            return new Plane(value.Normal * scale, value.D * scale);
         }
 
         /// <summary>
@@ -552,7 +320,7 @@ namespace FlaxEngine
         /// <param name="left">The source plane.</param>
         /// <param name="right">The source vector.</param>
         /// <param name="result">When the method completes, contains the dot product of the specified plane and vector.</param>
-        public static void Dot(ref Plane left, ref Vector4 right, out float result)
+        public static void Dot(ref Plane left, ref Vector4 right, out Real result)
         {
             result = left.Normal.X * right.X + left.Normal.Y * right.Y + left.Normal.Z * right.Z + left.D * right.W;
         }
@@ -563,7 +331,7 @@ namespace FlaxEngine
         /// <param name="left">The source plane.</param>
         /// <param name="right">The source vector.</param>
         /// <returns>The dot product of the specified plane and vector.</returns>
-        public static float Dot(Plane left, Vector4 right)
+        public static Real Dot(Plane left, Vector4 right)
         {
             return left.Normal.X * right.X + left.Normal.Y * right.Y + left.Normal.Z * right.Z + left.D * right.W;
         }
@@ -573,11 +341,8 @@ namespace FlaxEngine
         /// </summary>
         /// <param name="left">The source plane.</param>
         /// <param name="right">The source vector.</param>
-        /// <param name="result">
-        /// When the method completes, contains the dot product of a specified vector and the normal of the
-        /// Plane plus the distance value of the plane.
-        /// </param>
-        public static void DotCoordinate(ref Plane left, ref Vector3 right, out float result)
+        /// <param name="result">When the method completes, contains the dot product of a specified vector and the normal of the Plane plus the distance value of the plane.</param>
+        public static void DotCoordinate(ref Plane left, ref Vector3 right, out Real result)
         {
             result = left.Normal.X * right.X + left.Normal.Y * right.Y + left.Normal.Z * right.Z + left.D;
         }
@@ -588,7 +353,7 @@ namespace FlaxEngine
         /// <param name="left">The source plane.</param>
         /// <param name="right">The source vector.</param>
         /// <returns>The dot product of a specified vector and the normal of the Plane plus the distance value of the plane.</returns>
-        public static float DotCoordinate(Plane left, Vector3 right)
+        public static Real DotCoordinate(Plane left, Vector3 right)
         {
             return left.Normal.X * right.X + left.Normal.Y * right.Y + left.Normal.Z * right.Z + left.D;
         }
@@ -598,11 +363,8 @@ namespace FlaxEngine
         /// </summary>
         /// <param name="left">The source plane.</param>
         /// <param name="right">The source vector.</param>
-        /// <param name="result">
-        /// When the method completes, contains the dot product of the specified vector and the normal of the
-        /// plane.
-        /// </param>
-        public static void DotNormal(ref Plane left, ref Vector3 right, out float result)
+        /// <param name="result">When the method completes, contains the dot product of the specified vector and the normal of the plane.</param>
+        public static void DotNormal(ref Plane left, ref Vector3 right, out Real result)
         {
             result = left.Normal.X * right.X + left.Normal.Y * right.Y + left.Normal.Z * right.Z;
         }
@@ -613,7 +375,7 @@ namespace FlaxEngine
         /// <param name="left">The source plane.</param>
         /// <param name="right">The source vector.</param>
         /// <returns>The dot product of the specified vector and the normal of the plane.</returns>
-        public static float DotNormal(Plane left, Vector3 right)
+        public static Real DotNormal(Plane left, Vector3 right)
         {
             return left.Normal.X * right.X + left.Normal.Y * right.Y + left.Normal.Z * right.Z;
         }
@@ -625,8 +387,7 @@ namespace FlaxEngine
         /// <param name="result">When the method completes, contains the normalized plane.</param>
         public static void Normalize(ref Plane plane, out Plane result)
         {
-            float magnitude = 1.0f / (float)Math.Sqrt(plane.Normal.X * plane.Normal.X + plane.Normal.Y * plane.Normal.Y + plane.Normal.Z * plane.Normal.Z);
-
+            Real magnitude = 1.0f / (Real)Math.Sqrt(plane.Normal.X * plane.Normal.X + plane.Normal.Y * plane.Normal.Y + plane.Normal.Z * plane.Normal.Z);
             result.Normal.X = plane.Normal.X * magnitude;
             result.Normal.Y = plane.Normal.Y * magnitude;
             result.Normal.Z = plane.Normal.Z * magnitude;
@@ -640,8 +401,8 @@ namespace FlaxEngine
         /// <returns>The normalized plane.</returns>
         public static Plane Normalize(Plane plane)
         {
-            float magnitude = 1.0f / (float)Math.Sqrt(plane.Normal.X * plane.Normal.X + plane.Normal.Y * plane.Normal.Y + plane.Normal.Z * plane.Normal.Z);
-            return new Plane(plane.Normal.X * magnitude, plane.Normal.Y * magnitude, plane.Normal.Z * magnitude, plane.D * magnitude);
+            Real magnitude = 1.0f / (Real)Math.Sqrt(plane.Normal.X * plane.Normal.X + plane.Normal.Y * plane.Normal.Y + plane.Normal.Z * plane.Normal.Z);
+            return new Plane(plane.Normal * magnitude, plane.D * magnitude);
         }
 
         /// <summary>
@@ -652,22 +413,22 @@ namespace FlaxEngine
         /// <param name="result">When the method completes, contains the transformed plane.</param>
         public static void Transform(ref Plane plane, ref Quaternion rotation, out Plane result)
         {
-            float x2 = rotation.X + rotation.X;
-            float y2 = rotation.Y + rotation.Y;
-            float z2 = rotation.Z + rotation.Z;
-            float wx = rotation.W * x2;
-            float wy = rotation.W * y2;
-            float wz = rotation.W * z2;
-            float xx = rotation.X * x2;
-            float xy = rotation.X * y2;
-            float xz = rotation.X * z2;
-            float yy = rotation.Y * y2;
-            float yz = rotation.Y * z2;
-            float zz = rotation.Z * z2;
+            Real x2 = rotation.X + rotation.X;
+            Real y2 = rotation.Y + rotation.Y;
+            Real z2 = rotation.Z + rotation.Z;
+            Real wx = rotation.W * x2;
+            Real wy = rotation.W * y2;
+            Real wz = rotation.W * z2;
+            Real xx = rotation.X * x2;
+            Real xy = rotation.X * y2;
+            Real xz = rotation.X * z2;
+            Real yy = rotation.Y * y2;
+            Real yz = rotation.Y * z2;
+            Real zz = rotation.Z * z2;
 
-            float x = plane.Normal.X;
-            float y = plane.Normal.Y;
-            float z = plane.Normal.Z;
+            Real x = plane.Normal.X;
+            Real y = plane.Normal.Y;
+            Real z = plane.Normal.Z;
 
             result.Normal.X = x * (1.0f - yy - zz) + y * (xy - wz) + z * (xz + wy);
             result.Normal.Y = x * (xy + wz) + y * (1.0f - xx - zz) + z * (yz - wx);
@@ -683,70 +444,8 @@ namespace FlaxEngine
         /// <returns>The transformed plane.</returns>
         public static Plane Transform(Plane plane, Quaternion rotation)
         {
-            Plane result;
-            float x2 = rotation.X + rotation.X;
-            float y2 = rotation.Y + rotation.Y;
-            float z2 = rotation.Z + rotation.Z;
-            float wx = rotation.W * x2;
-            float wy = rotation.W * y2;
-            float wz = rotation.W * z2;
-            float xx = rotation.X * x2;
-            float xy = rotation.X * y2;
-            float xz = rotation.X * z2;
-            float yy = rotation.Y * y2;
-            float yz = rotation.Y * z2;
-            float zz = rotation.Z * z2;
-
-            float x = plane.Normal.X;
-            float y = plane.Normal.Y;
-            float z = plane.Normal.Z;
-
-            result.Normal.X = x * (1.0f - yy - zz) + y * (xy - wz) + z * (xz + wy);
-            result.Normal.Y = x * (xy + wz) + y * (1.0f - xx - zz) + z * (yz - wx);
-            result.Normal.Z = x * (xz - wy) + y * (yz + wx) + z * (1.0f - xx - yy);
-            result.D = plane.D;
-
+            Transform(ref plane, ref rotation, out var result);
             return result;
-        }
-
-        /// <summary>
-        /// Transforms an array of normalized planes by a quaternion rotation.
-        /// </summary>
-        /// <param name="planes">The array of normalized planes to transform.</param>
-        /// <param name="rotation">The quaternion rotation.</param>
-        /// <exception cref="ArgumentNullException">Thrown when <paramref name="planes" /> is <c>null</c>.</exception>
-        public static void Transform(Plane[] planes, ref Quaternion rotation)
-        {
-            if (planes == null)
-                throw new ArgumentNullException(nameof(planes));
-
-            float x2 = rotation.X + rotation.X;
-            float y2 = rotation.Y + rotation.Y;
-            float z2 = rotation.Z + rotation.Z;
-            float wx = rotation.W * x2;
-            float wy = rotation.W * y2;
-            float wz = rotation.W * z2;
-            float xx = rotation.X * x2;
-            float xy = rotation.X * y2;
-            float xz = rotation.X * z2;
-            float yy = rotation.Y * y2;
-            float yz = rotation.Y * z2;
-            float zz = rotation.Z * z2;
-
-            for (var i = 0; i < planes.Length; ++i)
-            {
-                float x = planes[i].Normal.X;
-                float y = planes[i].Normal.Y;
-                float z = planes[i].Normal.Z;
-
-                /*
-                 * Note:
-                 * Factor common arithmetic out of loop.
-                */
-                planes[i].Normal.X = x * (1.0f - yy - zz) + y * (xy - wz) + z * (xz + wy);
-                planes[i].Normal.Y = x * (xy + wz) + y * (1.0f - xx - zz) + z * (yz - wx);
-                planes[i].Normal.Z = x * (xz - wy) + y * (yz + wx) + z * (1.0f - xx - yy);
-            }
         }
 
         /// <summary>
@@ -757,13 +456,11 @@ namespace FlaxEngine
         /// <param name="result">When the method completes, contains the transformed plane.</param>
         public static void Transform(ref Plane plane, ref Matrix transformation, out Plane result)
         {
-            float x = plane.Normal.X;
-            float y = plane.Normal.Y;
-            float z = plane.Normal.Z;
-            float d = plane.D;
-
+            Real x = plane.Normal.X;
+            Real y = plane.Normal.Y;
+            Real z = plane.Normal.Z;
+            Real d = plane.D;
             Matrix.Invert(ref transformation, out Matrix inverse);
-
             result.Normal.X = x * inverse.M11 + y * inverse.M12 + z * inverse.M13 + d * inverse.M14;
             result.Normal.Y = x * inverse.M21 + y * inverse.M22 + z * inverse.M23 + d * inverse.M24;
             result.Normal.Z = x * inverse.M31 + y * inverse.M32 + z * inverse.M33 + d * inverse.M34;
@@ -778,47 +475,19 @@ namespace FlaxEngine
         /// <returns>When the method completes, contains the transformed plane.</returns>
         public static Plane Transform(Plane plane, Matrix transformation)
         {
-            Plane result;
-            float x = plane.Normal.X;
-            float y = plane.Normal.Y;
-            float z = plane.Normal.Z;
-            float d = plane.D;
-
-            transformation.Invert();
-            result.Normal.X = x * transformation.M11 + y * transformation.M12 + z * transformation.M13 + d * transformation.M14;
-            result.Normal.Y = x * transformation.M21 + y * transformation.M22 + z * transformation.M23 + d * transformation.M24;
-            result.Normal.Z = x * transformation.M31 + y * transformation.M32 + z * transformation.M33 + d * transformation.M34;
-            result.D = x * transformation.M41 + y * transformation.M42 + z * transformation.M43 + d * transformation.M44;
-
+            Transform(ref plane, ref transformation, out var result);
             return result;
         }
 
         /// <summary>
-        /// Transforms an array of normalized planes by a matrix.
-        /// </summary>
-        /// <param name="planes">The array of normalized planes to transform.</param>
-        /// <param name="transformation">The transformation matrix.</param>
-        /// <exception cref="ArgumentNullException">Thrown when <paramref name="planes" /> is <c>null</c>.</exception>
-        public static void Transform(Plane[] planes, ref Matrix transformation)
-        {
-            if (planes == null)
-                throw new ArgumentNullException(nameof(planes));
-
-            Matrix.Invert(ref transformation, out _);
-
-            for (var i = 0; i < planes.Length; ++i)
-                Transform(ref planes[i], ref transformation, out planes[i]);
-        }
-
-        /// <summary>
         /// Scales a plane by the given value.
         /// </summary>
         /// <param name="scale">The amount by which to scale the plane.</param>
         /// <param name="plane">The plane to scale.</param>
         /// <returns>The scaled plane.</returns>
-        public static Plane operator *(float scale, Plane plane)
+        public static Plane operator *(Real scale, Plane plane)
         {
-            return new Plane(plane.Normal.X * scale, plane.Normal.Y * scale, plane.Normal.Z * scale, plane.D * scale);
+            return new Plane(plane.Normal * scale, plane.D * scale);
         }
 
         /// <summary>
@@ -827,9 +496,9 @@ namespace FlaxEngine
         /// <param name="plane">The plane to scale.</param>
         /// <param name="scale">The amount by which to scale the plane.</param>
         /// <returns>The scaled plane.</returns>
-        public static Plane operator *(Plane plane, float scale)
+        public static Plane operator *(Plane plane, Real scale)
         {
-            return new Plane(plane.Normal.X * scale, plane.Normal.Y * scale, plane.Normal.Z * scale, plane.D * scale);
+            return new Plane(plane.Normal * scale, plane.D * scale);
         }
 
         /// <summary>
@@ -837,10 +506,7 @@ namespace FlaxEngine
         /// </summary>
         /// <param name="left">The first value to compare.</param>
         /// <param name="right">The second value to compare.</param>
-        /// <returns>
-        /// <c>true</c> if <paramref name="left" /> has the same value as <paramref name="right" />; otherwise,
-        /// <c>false</c>.
-        /// </returns>
+        /// <returns><c>true</c> if <paramref name="left" /> has the same value as <paramref name="right" />; otherwise, <c>false</c>.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool operator ==(Plane left, Plane right)
         {
@@ -852,10 +518,7 @@ namespace FlaxEngine
         /// </summary>
         /// <param name="left">The first value to compare.</param>
         /// <param name="right">The second value to compare.</param>
-        /// <returns>
-        /// <c>true</c> if <paramref name="left" /> has a different value than <paramref name="right" />; otherwise,
-        /// <c>false</c>.
-        /// </returns>
+        /// <returns><c>true</c> if <paramref name="left" /> has a different value than <paramref name="right" />; otherwise, <c>false</c>.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool operator !=(Plane left, Plane right)
         {
@@ -865,9 +528,7 @@ namespace FlaxEngine
         /// <summary>
         /// Returns a <see cref="System.String" /> that represents this instance.
         /// </summary>
-        /// <returns>
-        /// A <see cref="System.String" /> that represents this instance.
-        /// </returns>
+        /// <returns>A <see cref="System.String" /> that represents this instance.</returns>
         public override string ToString()
         {
             return string.Format(CultureInfo.CurrentCulture, "A:{0} B:{1} C:{2} D:{3}", Normal.X, Normal.Y, Normal.Z, D);
@@ -877,22 +538,17 @@ namespace FlaxEngine
         /// Returns a <see cref="System.String" /> that represents this instance.
         /// </summary>
         /// <param name="format">The format.</param>
-        /// <returns>
-        /// A <see cref="System.String" /> that represents this instance.
-        /// </returns>
+        /// <returns>A <see cref="System.String" /> that represents this instance.</returns>
         public string ToString(string format)
         {
-            return string.Format(CultureInfo.CurrentCulture, "A:{0} B:{1} C:{2} D:{3}", Normal.X.ToString(format, CultureInfo.CurrentCulture),
-                                 Normal.Y.ToString(format, CultureInfo.CurrentCulture), Normal.Z.ToString(format, CultureInfo.CurrentCulture), D.ToString(format, CultureInfo.CurrentCulture));
+            return string.Format(CultureInfo.CurrentCulture, "A:{0} B:{1} C:{2} D:{3}", Normal.X.ToString(format, CultureInfo.CurrentCulture), Normal.Y.ToString(format, CultureInfo.CurrentCulture), Normal.Z.ToString(format, CultureInfo.CurrentCulture), D.ToString(format, CultureInfo.CurrentCulture));
         }
 
         /// <summary>
         /// Returns a <see cref="System.String" /> that represents this instance.
         /// </summary>
         /// <param name="formatProvider">The format provider.</param>
-        /// <returns>
-        /// A <see cref="System.String" /> that represents this instance.
-        /// </returns>
+        /// <returns>A <see cref="System.String" /> that represents this instance.</returns>
         public string ToString(IFormatProvider formatProvider)
         {
             return string.Format(formatProvider, "A:{0} B:{1} C:{2} D:{3}", Normal.X, Normal.Y, Normal.Z, D);
@@ -903,21 +559,16 @@ namespace FlaxEngine
         /// </summary>
         /// <param name="format">The format.</param>
         /// <param name="formatProvider">The format provider.</param>
-        /// <returns>
-        /// A <see cref="System.String" /> that represents this instance.
-        /// </returns>
+        /// <returns>A <see cref="System.String" /> that represents this instance.</returns>
         public string ToString(string format, IFormatProvider formatProvider)
         {
-            return string.Format(formatProvider, "A:{0} B:{1} C:{2} D:{3}", Normal.X.ToString(format, formatProvider),
-                                 Normal.Y.ToString(format, formatProvider), Normal.Z.ToString(format, formatProvider), D.ToString(format, formatProvider));
+            return string.Format(formatProvider, "A:{0} B:{1} C:{2} D:{3}", Normal.X.ToString(format, formatProvider), Normal.Y.ToString(format, formatProvider), Normal.Z.ToString(format, formatProvider), D.ToString(format, formatProvider));
         }
 
         /// <summary>
         /// Returns a hash code for this instance.
         /// </summary>
-        /// <returns>
-        /// A hash code for this instance, suitable for use in hashing algorithms and data structures like a hash table.
-        /// </returns>
+        /// <returns>A hash code for this instance, suitable for use in hashing algorithms and data structures like a hash table.</returns>
         public override int GetHashCode()
         {
             unchecked
@@ -930,22 +581,18 @@ namespace FlaxEngine
         /// Determines whether the specified <see cref="Vector4" /> is equal to this instance.
         /// </summary>
         /// <param name="value">The <see cref="Vector4" /> to compare with this instance.</param>
-        /// <returns>
-        /// <c>true</c> if the specified <see cref="Vector4" /> is equal to this instance; otherwise, <c>false</c>.
-        /// </returns>
+        /// <returns><c>true</c> if the specified <see cref="Vector4" /> is equal to this instance; otherwise, <c>false</c>.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool Equals(ref Plane value)
         {
-            return (Normal == value.Normal) && (D == value.D);
+            return Normal == value.Normal && D == value.D;
         }
 
         /// <summary>
         /// Determines whether the specified <see cref="Vector4" /> is equal to this instance.
         /// </summary>
         /// <param name="value">The <see cref="Vector4" /> to compare with this instance.</param>
-        /// <returns>
-        /// <c>true</c> if the specified <see cref="Vector4" /> is equal to this instance; otherwise, <c>false</c>.
-        /// </returns>
+        /// <returns><c>true</c> if the specified <see cref="Vector4" /> is equal to this instance; otherwise, <c>false</c>.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool Equals(Plane value)
         {
@@ -956,14 +603,11 @@ namespace FlaxEngine
         /// Determines whether the specified <see cref="System.Object" /> is equal to this instance.
         /// </summary>
         /// <param name="value">The <see cref="System.Object" /> to compare with this instance.</param>
-        /// <returns>
-        /// <c>true</c> if the specified <see cref="System.Object" /> is equal to this instance; otherwise, <c>false</c>.
-        /// </returns>
+        /// <returns><c>true</c> if the specified <see cref="System.Object" /> is equal to this instance; otherwise, <c>false</c>.</returns>
         public override bool Equals(object value)
         {
             if (!(value is Plane))
                 return false;
-
             var strongValue = (Plane)value;
             return Equals(ref strongValue);
         }

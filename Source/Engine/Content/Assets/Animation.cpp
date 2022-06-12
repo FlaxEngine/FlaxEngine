@@ -52,9 +52,9 @@ Animation::InfoData Animation::GetInfo() const
         for (auto& e : Data.Channels)
         {
             info.MemoryUsage += (e.NodeName.Length() + 1) * sizeof(Char);
-            info.MemoryUsage += e.Position.GetKeyframes().Capacity() * sizeof(LinearCurveKeyframe<Vector3>);
+            info.MemoryUsage += e.Position.GetKeyframes().Capacity() * sizeof(LinearCurveKeyframe<Float3>);
             info.MemoryUsage += e.Rotation.GetKeyframes().Capacity() * sizeof(LinearCurveKeyframe<Quaternion>);
-            info.MemoryUsage += e.Scale.GetKeyframes().Capacity() * sizeof(LinearCurveKeyframe<Vector3>);
+            info.MemoryUsage += e.Scale.GetKeyframes().Capacity() * sizeof(LinearCurveKeyframe<Float3>);
         }
     }
     else
@@ -333,7 +333,7 @@ bool Animation::SaveTimeline(BytesContainer& data)
                     channel.Position.Resize(keyframesCount);
                     for (int32 i = 0; i < keyframesCount; i++)
                     {
-                        LinearCurveKeyframe<Vector3>& k = channel.Position.GetKeyframes()[i];
+                        LinearCurveKeyframe<Float3>& k = channel.Position.GetKeyframes()[i];
                         stream.ReadFloat(&k.Time);
                         k.Time *= fps;
                         stream.Read(&k.Value);
@@ -353,7 +353,7 @@ bool Animation::SaveTimeline(BytesContainer& data)
                     channel.Scale.Resize(keyframesCount);
                     for (int32 i = 0; i < keyframesCount; i++)
                     {
-                        LinearCurveKeyframe<Vector3>& k = channel.Scale.GetKeyframes()[i];
+                        LinearCurveKeyframe<Float3>& k = channel.Scale.GetKeyframes()[i];
                         stream.ReadFloat(&k.Time);
                         k.Time *= fps;
                         stream.Read(&k.Value);

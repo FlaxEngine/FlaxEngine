@@ -18,7 +18,7 @@ namespace FlaxEditor.Surface
         private ContextMenuButton _cmFormatNodesConnectionButton;
         private ContextMenuButton _cmRemoveNodeConnectionsButton;
         private ContextMenuButton _cmRemoveBoxConnectionsButton;
-        private readonly Vector2 ContextMenuOffset = new Vector2(5);
+        private readonly Float2 ContextMenuOffset = new Float2(5);
 
         /// <summary>
         /// Gets a value indicating whether the primary surface context menu is being opened (eg. user is adding nodes).
@@ -75,7 +75,7 @@ namespace FlaxEditor.Surface
         /// <param name="activeCM">The active context menu to show.</param>
         /// <param name="location">The display location on the surface control.</param>
         /// <param name="startBox">The start box.</param>
-        protected virtual void OnShowPrimaryMenu(VisjectCM activeCM, Vector2 location, Box startBox)
+        protected virtual void OnShowPrimaryMenu(VisjectCM activeCM, Float2 location, Box startBox)
         {
             activeCM.Show(this, location, startBox);
         }
@@ -86,7 +86,7 @@ namespace FlaxEditor.Surface
         /// <param name="location">The location in the Surface Space.</param>
         /// <param name="moveSurface">If the surface should be moved to accommodate for the menu.</param>
         /// <param name="input">The user text input for nodes search.</param>
-        public virtual void ShowPrimaryMenu(Vector2 location, bool moveSurface = false, string input = null)
+        public virtual void ShowPrimaryMenu(Float2 location, bool moveSurface = false, string input = null)
         {
             if (!CanEdit)
                 return;
@@ -103,8 +103,7 @@ namespace FlaxEditor.Surface
             if (moveSurface)
             {
                 const float leftPadding = 20;
-                Vector2 delta = Vector2.Min(location - leftPadding, Vector2.Zero) +
-                                Vector2.Max((location + _activeVisjectCM.Size) - Size, Vector2.Zero);
+                var delta = Float2.Min(location - leftPadding, Float2.Zero) + Float2.Max((location + _activeVisjectCM.Size) - Size, Float2.Zero);
 
                 location -= delta;
                 _rootControl.Location -= delta;
@@ -132,7 +131,7 @@ namespace FlaxEditor.Surface
         /// </summary>
         /// <param name="location">The location in the Surface Space.</param>
         /// <param name="controlUnderMouse">The Surface Control that is under the cursor. Used to customize the menu.</param>
-        public virtual void ShowSecondaryCM(Vector2 location, SurfaceControl controlUnderMouse)
+        public virtual void ShowSecondaryCM(Float2 location, SurfaceControl controlUnderMouse)
         {
             var selection = SelectedNodes;
             if (selection.Count == 0)
@@ -421,9 +420,8 @@ namespace FlaxEditor.Surface
                 Select(nextBox.ParentNode);
                 nextBox.ParentNode.SelectBox(nextBox);
 
-                Vector2 padding = new Vector2(20);
-                Vector2 delta = Vector2.Min(_rootControl.PointToParent(nextBox.ParentNode.Location) - padding, Vector2.Zero) +
-                                Vector2.Max((_rootControl.PointToParent(nextBox.ParentNode.BottomRight) + padding) - Size, Vector2.Zero);
+                var padding = new Float2(20);
+                var delta = Float2.Min(_rootControl.PointToParent(nextBox.ParentNode.Location) - padding, Float2.Zero) + Float2.Max((_rootControl.PointToParent(nextBox.ParentNode.BottomRight) + padding) - Size, Float2.Zero);
 
                 _rootControl.Location -= delta;
             }

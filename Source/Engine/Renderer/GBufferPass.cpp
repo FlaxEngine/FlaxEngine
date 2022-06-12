@@ -21,7 +21,7 @@
 
 PACK_STRUCT(struct GBufferPassData{
     GBufferData GBuffer;
-    Vector3 Dummy0;
+    Float3 Dummy0;
     int32 ViewMode;
     });
 
@@ -229,8 +229,8 @@ void GBufferPass::Fill(RenderContext& renderContext, GPUTextureView* lightBuffer
 
         // Calculate sphere model transform to cover far plane
         Matrix m1, m2;
-        Matrix::Scaling(view.Far / (box.GetSize().Y * 0.5f) * 0.95f, m1); // Scale to fit whole view frustum
-        Matrix::CreateWorld(view.Position, Vector3::Up, Vector3::Backward, m2); // Rotate sphere model
+        Matrix::Scaling(view.Far / ((float)box.GetSize().Y * 0.5f) * 0.95f, m1); // Scale to fit whole view frustum
+        Matrix::CreateWorld(view.Position, Float3::Up, Float3::Backward, m2); // Rotate sphere model
         m1 *= m2;
 
         // Draw sky

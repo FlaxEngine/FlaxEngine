@@ -159,11 +159,11 @@ namespace FlaxEngine
         public float M44;
 
         /// <summary>
-        /// Gets or sets the up <see cref="Vector3" /> of the matrix; that is M21, M22, and M23.
+        /// Gets or sets the up <see cref="Float3" /> of the matrix; that is M21, M22, and M23.
         /// </summary>
-        public Vector3 Up
+        public Float3 Up
         {
-            get => new Vector3(M21, M22, M23);
+            get => new Float3(M21, M22, M23);
             set
             {
                 M21 = value.X;
@@ -173,11 +173,11 @@ namespace FlaxEngine
         }
 
         /// <summary>
-        /// Gets or sets the down <see cref="Vector3" /> of the matrix; that is -M21, -M22, and -M23.
+        /// Gets or sets the down <see cref="Float3" /> of the matrix; that is -M21, -M22, and -M23.
         /// </summary>
-        public Vector3 Down
+        public Float3 Down
         {
-            get => new Vector3(-M21, -M22, -M23);
+            get => new Float3(-M21, -M22, -M23);
             set
             {
                 M21 = -value.X;
@@ -187,11 +187,11 @@ namespace FlaxEngine
         }
 
         /// <summary>
-        /// Gets or sets the right <see cref="Vector3" /> of the matrix; that is M11, M12, and M13.
+        /// Gets or sets the right <see cref="Float3" /> of the matrix; that is M11, M12, and M13.
         /// </summary>
-        public Vector3 Right
+        public Float3 Right
         {
-            get => new Vector3(M11, M12, M13);
+            get => new Float3(M11, M12, M13);
             set
             {
                 M11 = value.X;
@@ -201,11 +201,11 @@ namespace FlaxEngine
         }
 
         /// <summary>
-        /// Gets or sets the left <see cref="Vector3" /> of the matrix; that is -M11, -M12, and -M13.
+        /// Gets or sets the left <see cref="Float3" /> of the matrix; that is -M11, -M12, and -M13.
         /// </summary>
-        public Vector3 Left
+        public Float3 Left
         {
-            get => new Vector3(-M11, -M12, -M13);
+            get => new Float3(-M11, -M12, -M13);
             set
             {
                 M11 = -value.X;
@@ -215,11 +215,11 @@ namespace FlaxEngine
         }
 
         /// <summary>
-        /// Gets or sets the forward <see cref="Vector3" /> of the matrix; that is -M31, -M32, and -M33.
+        /// Gets or sets the forward <see cref="Float3" /> of the matrix; that is -M31, -M32, and -M33.
         /// </summary>
-        public Vector3 Forward
+        public Float3 Forward
         {
-            get => new Vector3(-M31, -M32, -M33);
+            get => new Float3(-M31, -M32, -M33);
             set
             {
                 M31 = -value.X;
@@ -229,11 +229,11 @@ namespace FlaxEngine
         }
 
         /// <summary>
-        /// Gets or sets the backward <see cref="Vector3" /> of the matrix; that is M31, M32, and M33.
+        /// Gets or sets the backward <see cref="Float3" /> of the matrix; that is M31, M32, and M33.
         /// </summary>
-        public Vector3 Backward
+        public Float3 Backward
         {
-            get => new Vector3(M31, M32, M33);
+            get => new Float3(M31, M32, M33);
             set
             {
                 M31 = value.X;
@@ -333,9 +333,9 @@ namespace FlaxEngine
         /// <summary>
         /// Gets or sets the first row in the matrix; that is M11, M12, M13, and M14.
         /// </summary>
-        public Vector4 Row1
+        public Float4 Row1
         {
-            get => new Vector4(M11, M12, M13, M14);
+            get => new Float4(M11, M12, M13, M14);
             set
             {
                 M11 = value.X;
@@ -348,9 +348,9 @@ namespace FlaxEngine
         /// <summary>
         /// Gets or sets the second row in the matrix; that is M21, M22, M23, and M24.
         /// </summary>
-        public Vector4 Row2
+        public Float4 Row2
         {
-            get => new Vector4(M21, M22, M23, M24);
+            get => new Float4(M21, M22, M23, M24);
             set
             {
                 M21 = value.X;
@@ -363,9 +363,9 @@ namespace FlaxEngine
         /// <summary>
         /// Gets or sets the third row in the matrix; that is M31, M32, M33, and M34.
         /// </summary>
-        public Vector4 Row3
+        public Float4 Row3
         {
-            get => new Vector4(M31, M32, M33, M34);
+            get => new Float4(M31, M32, M33, M34);
             set
             {
                 M31 = value.X;
@@ -378,9 +378,9 @@ namespace FlaxEngine
         /// <summary>
         /// Gets or sets the fourth row in the matrix; that is M41, M42, M43, and M44.
         /// </summary>
-        public Vector4 Row4
+        public Float4 Row4
         {
-            get => new Vector4(M41, M42, M43, M44);
+            get => new Float4(M41, M42, M43, M44);
             set
             {
                 M41 = value.X;
@@ -393,9 +393,9 @@ namespace FlaxEngine
         /// <summary>
         /// Gets or sets the first column in the matrix; that is M11, M21, M31, and M41.
         /// </summary>
-        public Vector4 Column1
+        public Float4 Column1
         {
-            get => new Vector4(M11, M21, M31, M41);
+            get => new Float4(M11, M21, M31, M41);
             set
             {
                 M11 = value.X;
@@ -408,9 +408,9 @@ namespace FlaxEngine
         /// <summary>
         /// Gets or sets the second column in the matrix; that is M12, M22, M32, and M42.
         /// </summary>
-        public Vector4 Column2
+        public Float4 Column2
         {
-            get => new Vector4(M12, M22, M32, M42);
+            get => new Float4(M12, M22, M32, M42);
             set
             {
                 M12 = value.X;
@@ -423,9 +423,9 @@ namespace FlaxEngine
         /// <summary>
         /// Gets or sets the third column in the matrix; that is M13, M23, M33, and M43.
         /// </summary>
-        public Vector4 Column3
+        public Float4 Column3
         {
-            get => new Vector4(M13, M23, M33, M43);
+            get => new Float4(M13, M23, M33, M43);
             set
             {
                 M13 = value.X;
@@ -438,9 +438,9 @@ namespace FlaxEngine
         /// <summary>
         /// Gets or sets the fourth column in the matrix; that is M14, M24, M34, and M44.
         /// </summary>
-        public Vector4 Column4
+        public Float4 Column4
         {
-            get => new Vector4(M14, M24, M34, M44);
+            get => new Float4(M14, M24, M34, M44);
             set
             {
                 M14 = value.X;
@@ -453,9 +453,9 @@ namespace FlaxEngine
         /// <summary>
         /// Gets or sets the translation of the matrix; that is M41, M42, and M43.
         /// </summary>
-        public Vector3 TranslationVector
+        public Float3 TranslationVector
         {
-            get => new Vector3(M41, M42, M43);
+            get => new Float3(M41, M42, M43);
             set
             {
                 M41 = value.X;
@@ -467,9 +467,9 @@ namespace FlaxEngine
         /// <summary>
         /// Gets or sets the scale of the matrix; that is M11, M22, and M33.
         /// </summary>
-        public Vector3 ScaleVector
+        public Float3 ScaleVector
         {
-            get => new Vector3(M11, M22, M33);
+            get => new Float3(M11, M22, M33);
             set
             {
                 M11 = value.X;
@@ -697,19 +697,19 @@ namespace FlaxEngine
 
             R = new Matrix
             {
-                M11 = Vector4.Dot(Q.Column1, Column1),
-                M12 = Vector4.Dot(Q.Column1, Column2),
-                M13 = Vector4.Dot(Q.Column1, Column3),
-                M14 = Vector4.Dot(Q.Column1, Column4),
+                M11 = Float4.Dot(Q.Column1, Column1),
+                M12 = Float4.Dot(Q.Column1, Column2),
+                M13 = Float4.Dot(Q.Column1, Column3),
+                M14 = Float4.Dot(Q.Column1, Column4),
 
-                M22 = Vector4.Dot(Q.Column2, Column2),
-                M23 = Vector4.Dot(Q.Column2, Column3),
-                M24 = Vector4.Dot(Q.Column2, Column4),
+                M22 = Float4.Dot(Q.Column2, Column2),
+                M23 = Float4.Dot(Q.Column2, Column3),
+                M24 = Float4.Dot(Q.Column2, Column4),
 
-                M33 = Vector4.Dot(Q.Column3, Column3),
-                M34 = Vector4.Dot(Q.Column3, Column4),
+                M33 = Float4.Dot(Q.Column3, Column3),
+                M34 = Float4.Dot(Q.Column3, Column4),
 
-                M44 = Vector4.Dot(Q.Column4, Column4)
+                M44 = Float4.Dot(Q.Column4, Column4)
             };
         }
 
@@ -724,19 +724,19 @@ namespace FlaxEngine
 
             L = new Matrix
             {
-                M11 = Vector4.Dot(Q.Row1, Row1),
+                M11 = Float4.Dot(Q.Row1, Row1),
 
-                M21 = Vector4.Dot(Q.Row1, Row2),
-                M22 = Vector4.Dot(Q.Row2, Row2),
+                M21 = Float4.Dot(Q.Row1, Row2),
+                M22 = Float4.Dot(Q.Row2, Row2),
 
-                M31 = Vector4.Dot(Q.Row1, Row3),
-                M32 = Vector4.Dot(Q.Row2, Row3),
-                M33 = Vector4.Dot(Q.Row3, Row3),
+                M31 = Float4.Dot(Q.Row1, Row3),
+                M32 = Float4.Dot(Q.Row2, Row3),
+                M33 = Float4.Dot(Q.Row3, Row3),
 
-                M41 = Vector4.Dot(Q.Row1, Row4),
-                M42 = Vector4.Dot(Q.Row2, Row4),
-                M43 = Vector4.Dot(Q.Row3, Row4),
-                M44 = Vector4.Dot(Q.Row4, Row4)
+                M41 = Float4.Dot(Q.Row1, Row4),
+                M42 = Float4.Dot(Q.Row2, Row4),
+                M43 = Float4.Dot(Q.Row3, Row4),
+                M44 = Float4.Dot(Q.Row4, Row4)
             };
         }
 
@@ -747,8 +747,9 @@ namespace FlaxEngine
         /// <remarks>This method is designed to decompose an SRT transformation matrix only.</remarks>
         public void Decompose(out Transform transform)
         {
-            Decompose(out transform.Scale, out Matrix rotationMatrix, out transform.Translation);
+            Decompose(out transform.Scale, out Matrix rotationMatrix, out Float3 translation);
             Quaternion.RotationMatrix(ref rotationMatrix, out transform.Orientation);
+            transform.Translation = translation;
         }
 
         /// <summary>
@@ -758,7 +759,7 @@ namespace FlaxEngine
         /// <param name="rotation">When the method completes, contains the rotation component of the decomposed matrix.</param>
         /// <param name="translation">When the method completes, contains the translation component of the decomposed matrix.</param>
         /// <remarks>This method is designed to decompose an SRT transformation matrix only.</remarks>
-        public void Decompose(out Vector3 scale, out Matrix rotation, out Vector3 translation)
+        public void Decompose(out Float3 scale, out Matrix rotation, out Float3 translation)
         {
             // Get the translation
             translation.X = M41;
@@ -771,9 +772,7 @@ namespace FlaxEngine
             scale.Z = (float)Math.Sqrt(M31 * M31 + M32 * M32 + M33 * M33);
 
             // If any of the scaling factors are zero, than the rotation matrix can not exist
-            if (Mathf.IsZero(scale.X) ||
-                Mathf.IsZero(scale.Y) ||
-                Mathf.IsZero(scale.Z))
+            if (Mathf.IsZero(scale.X) || Mathf.IsZero(scale.Y) || Mathf.IsZero(scale.Z))
             {
                 rotation = Identity;
                 return;
@@ -802,7 +801,7 @@ namespace FlaxEngine
         /// <param name="rotation">When the method completes, contains the rotation component of the decomposed matrix.</param>
         /// <param name="translation">When the method completes, contains the translation component of the decomposed matrix.</param>
         /// <remarks>This method is designed to decompose an SRT transformation matrix only.</remarks>
-        public void Decompose(out Vector3 scale, out Quaternion rotation, out Vector3 translation)
+        public void Decompose(out Float3 scale, out Quaternion rotation, out Float3 translation)
         {
             Decompose(out scale, out Matrix rotationMatrix, out translation);
             Quaternion.RotationMatrix(ref rotationMatrix, out rotation);
@@ -816,7 +815,7 @@ namespace FlaxEngine
         /// <param name="rotation">When the method completes, contains the rotation component of the decomposed matrix.</param>
         /// <param name="translation">When the method completes, contains the translation component of the decomposed matrix.</param>
         /// <remarks>This method is designed to decompose an SRT transformation matrix only.</remarks>
-        public void DecomposeUniformScale(out float scale, out Quaternion rotation, out Vector3 translation)
+        public void DecomposeUniformScale(out float scale, out Quaternion rotation, out Float3 translation)
         {
             // Get the translation
             translation.X = M41;
@@ -1521,14 +1520,14 @@ namespace FlaxEngine
             //By separating the above algorithm into multiple lines, we actually increase accuracy.
             result = value;
 
-            result.Row2 -= Vector4.Dot(result.Row1, result.Row2) / Vector4.Dot(result.Row1, result.Row1) * result.Row1;
+            result.Row2 -= Float4.Dot(result.Row1, result.Row2) / Float4.Dot(result.Row1, result.Row1) * result.Row1;
 
-            result.Row3 -= Vector4.Dot(result.Row1, result.Row3) / Vector4.Dot(result.Row1, result.Row1) * result.Row1;
-            result.Row3 -= Vector4.Dot(result.Row2, result.Row3) / Vector4.Dot(result.Row2, result.Row2) * result.Row2;
+            result.Row3 -= Float4.Dot(result.Row1, result.Row3) / Float4.Dot(result.Row1, result.Row1) * result.Row1;
+            result.Row3 -= Float4.Dot(result.Row2, result.Row3) / Float4.Dot(result.Row2, result.Row2) * result.Row2;
 
-            result.Row4 -= Vector4.Dot(result.Row1, result.Row4) / Vector4.Dot(result.Row1, result.Row1) * result.Row1;
-            result.Row4 -= Vector4.Dot(result.Row2, result.Row4) / Vector4.Dot(result.Row2, result.Row2) * result.Row2;
-            result.Row4 -= Vector4.Dot(result.Row3, result.Row4) / Vector4.Dot(result.Row3, result.Row3) * result.Row3;
+            result.Row4 -= Float4.Dot(result.Row1, result.Row4) / Float4.Dot(result.Row1, result.Row1) * result.Row1;
+            result.Row4 -= Float4.Dot(result.Row2, result.Row4) / Float4.Dot(result.Row2, result.Row2) * result.Row2;
+            result.Row4 -= Float4.Dot(result.Row3, result.Row4) / Float4.Dot(result.Row3, result.Row3) * result.Row3;
         }
 
         /// <summary>
@@ -1596,19 +1595,19 @@ namespace FlaxEngine
             //By separating the above algorithm into multiple lines, we actually increase accuracy.
             result = value;
 
-            result.Row1 = Vector4.Normalize(result.Row1);
+            result.Row1 = Float4.Normalize(result.Row1);
 
-            result.Row2 -= Vector4.Dot(result.Row1, result.Row2) * result.Row1;
-            result.Row2 = Vector4.Normalize(result.Row2);
+            result.Row2 -= Float4.Dot(result.Row1, result.Row2) * result.Row1;
+            result.Row2 = Float4.Normalize(result.Row2);
 
-            result.Row3 -= Vector4.Dot(result.Row1, result.Row3) * result.Row1;
-            result.Row3 -= Vector4.Dot(result.Row2, result.Row3) * result.Row2;
-            result.Row3 = Vector4.Normalize(result.Row3);
+            result.Row3 -= Float4.Dot(result.Row1, result.Row3) * result.Row1;
+            result.Row3 -= Float4.Dot(result.Row2, result.Row3) * result.Row2;
+            result.Row3 = Float4.Normalize(result.Row3);
 
-            result.Row4 -= Vector4.Dot(result.Row1, result.Row4) * result.Row1;
-            result.Row4 -= Vector4.Dot(result.Row2, result.Row4) * result.Row2;
-            result.Row4 -= Vector4.Dot(result.Row3, result.Row4) * result.Row3;
-            result.Row4 = Vector4.Normalize(result.Row4);
+            result.Row4 -= Float4.Dot(result.Row1, result.Row4) * result.Row1;
+            result.Row4 -= Float4.Dot(result.Row2, result.Row4) * result.Row2;
+            result.Row4 -= Float4.Dot(result.Row3, result.Row4) * result.Row3;
+            result.Row4 = Float4.Normalize(result.Row4);
         }
 
         /// <summary>
@@ -1887,7 +1886,7 @@ namespace FlaxEngine
         ///   to analyze both the input and the result to determine if a solution really exists.
         /// </para>
         /// </remarks>
-        public static void ReducedRowEchelonForm(ref Matrix value, ref Vector4 augment, out Matrix result, out Vector4 augmentResult)
+        public static void ReducedRowEchelonForm(ref Matrix value, ref Float4 augment, out Matrix result, out Float4 augmentResult)
         {
             // Source: http://rosettacode.org
             // Reference: http://rosettacode.org/wiki/Reduced_row_echelon_form
@@ -1997,22 +1996,22 @@ namespace FlaxEngine
         /// </summary>
         /// <param name="objectPosition">The position of the object around which the billboard will rotate.</param>
         /// <param name="cameraPosition">The position of the camera.</param>
-        /// <param name="cameraUpVector">The up vector of the camera.</param>
-        /// <param name="cameraForwardVector">The forward vector of the camera.</param>
+        /// <param name="cameraUpFloat">The up vector of the camera.</param>
+        /// <param name="cameraForwardFloat">The forward vector of the camera.</param>
         /// <param name="result">When the method completes, contains the created billboard matrix.</param>
-        public static void Billboard(ref Vector3 objectPosition, ref Vector3 cameraPosition, ref Vector3 cameraUpVector, ref Vector3 cameraForwardVector, out Matrix result)
+        public static void Billboard(ref Float3 objectPosition, ref Float3 cameraPosition, ref Float3 cameraUpFloat, ref Float3 cameraForwardFloat, out Matrix result)
         {
-            Vector3 difference = cameraPosition - objectPosition;
+            Float3 difference = cameraPosition - objectPosition;
 
             float lengthSq = difference.LengthSquared;
             if (Mathf.IsZero(lengthSq))
-                difference = -cameraForwardVector;
+                difference = -cameraForwardFloat;
             else
                 difference *= (float)(1.0 / Math.Sqrt(lengthSq));
 
-            Vector3.Cross(ref cameraUpVector, ref difference, out var crossed);
+            Float3.Cross(ref cameraUpFloat, ref difference, out var crossed);
             crossed.Normalize();
-            Vector3.Cross(ref difference, ref crossed, out var final);
+            Float3.Cross(ref difference, ref crossed, out var final);
 
             result.M11 = crossed.X;
             result.M12 = crossed.Y;
@@ -2037,12 +2036,12 @@ namespace FlaxEngine
         /// </summary>
         /// <param name="objectPosition">The position of the object around which the billboard will rotate.</param>
         /// <param name="cameraPosition">The position of the camera.</param>
-        /// <param name="cameraUpVector">The up vector of the camera.</param>
-        /// <param name="cameraForwardVector">The forward vector of the camera.</param>
+        /// <param name="cameraUpFloat">The up vector of the camera.</param>
+        /// <param name="cameraForwardFloat">The forward vector of the camera.</param>
         /// <returns>The created billboard matrix.</returns>
-        public static Matrix Billboard(Vector3 objectPosition, Vector3 cameraPosition, Vector3 cameraUpVector, Vector3 cameraForwardVector)
+        public static Matrix Billboard(Float3 objectPosition, Float3 cameraPosition, Float3 cameraUpFloat, Float3 cameraForwardFloat)
         {
-            Billboard(ref objectPosition, ref cameraPosition, ref cameraUpVector, ref cameraForwardVector, out var result);
+            Billboard(ref objectPosition, ref cameraPosition, ref cameraUpFloat, ref cameraForwardFloat, out var result);
             return result;
         }
 
@@ -2053,13 +2052,13 @@ namespace FlaxEngine
         /// <param name="target">The camera look-at target.</param>
         /// <param name="up">The camera's up vector.</param>
         /// <param name="result">When the method completes, contains the created look-at matrix.</param>
-        public static void LookAt(ref Vector3 eye, ref Vector3 target, ref Vector3 up, out Matrix result)
+        public static void LookAt(ref Float3 eye, ref Float3 target, ref Float3 up, out Matrix result)
         {
-            Vector3.Subtract(ref target, ref eye, out var zaxis);
+            Float3.Subtract(ref target, ref eye, out var zaxis);
             zaxis.Normalize();
-            Vector3.Cross(ref up, ref zaxis, out var xaxis);
+            Float3.Cross(ref up, ref zaxis, out var xaxis);
             xaxis.Normalize();
-            Vector3.Cross(ref zaxis, ref xaxis, out var yaxis);
+            Float3.Cross(ref zaxis, ref xaxis, out var yaxis);
 
             result = Identity;
             result.M11 = xaxis.X;
@@ -2072,9 +2071,9 @@ namespace FlaxEngine
             result.M23 = zaxis.Y;
             result.M33 = zaxis.Z;
 
-            Vector3.Dot(ref xaxis, ref eye, out result.M41);
-            Vector3.Dot(ref yaxis, ref eye, out result.M42);
-            Vector3.Dot(ref zaxis, ref eye, out result.M43);
+            Float3.Dot(ref xaxis, ref eye, out result.M41);
+            Float3.Dot(ref yaxis, ref eye, out result.M42);
+            Float3.Dot(ref zaxis, ref eye, out result.M43);
 
             result.M41 = -result.M41;
             result.M42 = -result.M42;
@@ -2088,7 +2087,7 @@ namespace FlaxEngine
         /// <param name="target">The camera look-at target.</param>
         /// <param name="up">The camera's up vector.</param>
         /// <returns>The created look-at matrix.</returns>
-        public static Matrix LookAt(Vector3 eye, Vector3 target, Vector3 up)
+        public static Matrix LookAt(Float3 eye, Float3 target, Float3 up)
         {
             LookAt(ref eye, ref target, ref up, out var result);
             return result;
@@ -2272,7 +2271,7 @@ namespace FlaxEngine
         /// </summary>
         /// <param name="scale">Scaling factor for all three axes.</param>
         /// <param name="result">When the method completes, contains the created scaling matrix.</param>
-        public static void Scaling(ref Vector3 scale, out Matrix result)
+        public static void Scaling(ref Float3 scale, out Matrix result)
         {
             Scaling(scale.X, scale.Y, scale.Z, out result);
         }
@@ -2282,7 +2281,7 @@ namespace FlaxEngine
         /// </summary>
         /// <param name="scale">Scaling factor for all three axes.</param>
         /// <returns>The created scaling matrix.</returns>
-        public static Matrix Scaling(Vector3 scale)
+        public static Matrix Scaling(Float3 scale)
         {
             Scaling(ref scale, out var result);
             return result;
@@ -2443,7 +2442,7 @@ namespace FlaxEngine
         /// <param name="axis">The axis around which to rotate. This parameter is assumed to be normalized.</param>
         /// <param name="angle">Angle of rotation in radians. Angles are measured clockwise when looking along the rotation axis toward the origin.</param>
         /// <param name="result">When the method completes, contains the created rotation matrix.</param>
-        public static void RotationAxis(ref Vector3 axis, float angle, out Matrix result)
+        public static void RotationAxis(ref Float3 axis, float angle, out Matrix result)
         {
             float x = axis.X;
             float y = axis.Y;
@@ -2475,7 +2474,7 @@ namespace FlaxEngine
         /// <param name="axis">The axis around which to rotate. This parameter is assumed to be normalized.</param>
         /// <param name="angle">Angle of rotation in radians. Angles are measured clockwise when looking along the rotation axis toward the origin.</param>
         /// <returns>The created rotation matrix.</returns>
-        public static Matrix RotationAxis(Vector3 axis, float angle)
+        public static Matrix RotationAxis(Float3 axis, float angle)
         {
             RotationAxis(ref axis, angle, out var result);
             return result;
@@ -2552,7 +2551,7 @@ namespace FlaxEngine
         /// </summary>
         /// <param name="value">The offset for all three coordinate planes.</param>
         /// <param name="result">When the method completes, contains the created translation matrix.</param>
-        public static void Translation(ref Vector3 value, out Matrix result)
+        public static void Translation(ref Float3 value, out Matrix result)
         {
             Translation(value.X, value.Y, value.Z, out result);
         }
@@ -2562,7 +2561,7 @@ namespace FlaxEngine
         /// </summary>
         /// <param name="value">The offset for all three coordinate planes.</param>
         /// <returns>The created translation matrix.</returns>
-        public static Matrix Translation(Vector3 value)
+        public static Matrix Translation(Float3 value)
         {
             Translation(ref value, out var result);
             return result;
@@ -2606,15 +2605,15 @@ namespace FlaxEngine
         /// <param name="rotationVec">The rotation vector</param>
         /// <param name="transVec">The translation vector</param>
         /// <param name="matrix">Contains the created skew/shear matrix. </param>
-        public static void Skew(float angle, ref Vector3 rotationVec, ref Vector3 transVec, out Matrix matrix)
+        public static void Skew(float angle, ref Float3 rotationVec, ref Float3 transVec, out Matrix matrix)
         {
             // http://elckerlyc.ewi.utwente.nl/browser/Elckerlyc/Hmi/HmiMath/src/hmi/math/Mat3f.java
             var MINIMAL_SKEW_ANGLE = 0.000001f;
-            Vector3 e0 = rotationVec;
-            Vector3 e1 = Vector3.Normalize(transVec);
-            Vector3.Dot(ref rotationVec, ref e1, out var rv1);
+            Float3 e0 = rotationVec;
+            Float3 e1 = Float3.Normalize(transVec);
+            Float3.Dot(ref rotationVec, ref e1, out var rv1);
             e0 += rv1 * e1;
-            Vector3.Dot(ref rotationVec, ref e0, out var rv0);
+            Float3.Dot(ref rotationVec, ref e0, out var rv0);
             var cosA = (float)Math.Cos(angle);
             var sinA = (float)Math.Sin(angle);
             float rr0 = rv0 * cosA - rv1 * sinA;
@@ -2641,7 +2640,7 @@ namespace FlaxEngine
         /// <param name="rotation">The rotation of the transformation.</param>
         /// <param name="translation">The translation factor of the transformation.</param>
         /// <param name="result">When the method completes, contains the created affine transformation matrix.</param>
-        public static void AffineTransformation(float scaling, ref Quaternion rotation, ref Vector3 translation, out Matrix result)
+        public static void AffineTransformation(float scaling, ref Quaternion rotation, ref Float3 translation, out Matrix result)
         {
             result = Scaling(scaling) * RotationQuaternion(rotation) * Translation(translation);
         }
@@ -2653,7 +2652,7 @@ namespace FlaxEngine
         /// <param name="rotation">The rotation of the transformation.</param>
         /// <param name="translation">The translation factor of the transformation.</param>
         /// <returns>The created affine transformation matrix.</returns>
-        public static Matrix AffineTransformation(float scaling, Quaternion rotation, Vector3 translation)
+        public static Matrix AffineTransformation(float scaling, Quaternion rotation, Float3 translation)
         {
             AffineTransformation(scaling, ref rotation, ref translation, out var result);
             return result;
@@ -2667,7 +2666,7 @@ namespace FlaxEngine
         /// <param name="rotation">The rotation of the transformation.</param>
         /// <param name="translation">The translation factor of the transformation.</param>
         /// <param name="result">When the method completes, contains the created affine transformation matrix.</param>
-        public static void AffineTransformation(float scaling, ref Vector3 rotationCenter, ref Quaternion rotation, ref Vector3 translation, out Matrix result)
+        public static void AffineTransformation(float scaling, ref Float3 rotationCenter, ref Quaternion rotation, ref Float3 translation, out Matrix result)
         {
             result = Scaling(scaling) * Translation(-rotationCenter) * RotationQuaternion(rotation) *
                      Translation(rotationCenter) * Translation(translation);
@@ -2681,7 +2680,7 @@ namespace FlaxEngine
         /// <param name="rotation">The rotation of the transformation.</param>
         /// <param name="translation">The translation factor of the transformation.</param>
         /// <returns>The created affine transformation matrix.</returns>
-        public static Matrix AffineTransformation(float scaling, Vector3 rotationCenter, Quaternion rotation, Vector3 translation)
+        public static Matrix AffineTransformation(float scaling, Float3 rotationCenter, Quaternion rotation, Float3 translation)
         {
             AffineTransformation(scaling, ref rotationCenter, ref rotation, ref translation, out var result);
             return result;
@@ -2694,9 +2693,9 @@ namespace FlaxEngine
         /// <param name="rotation">The rotation of the transformation.</param>
         /// <param name="translation">The translation factor of the transformation.</param>
         /// <param name="result">When the method completes, contains the created affine transformation matrix.</param>
-        public static void AffineTransformation2D(float scaling, float rotation, ref Vector2 translation, out Matrix result)
+        public static void AffineTransformation2D(float scaling, float rotation, ref Float2 translation, out Matrix result)
         {
-            result = Scaling(scaling, scaling, 1.0f) * RotationZ(rotation) * Translation((Vector3)translation);
+            result = Scaling(scaling, scaling, 1.0f) * RotationZ(rotation) * Translation((Float3)translation);
         }
 
         /// <summary>
@@ -2706,7 +2705,7 @@ namespace FlaxEngine
         /// <param name="rotation">The rotation of the transformation.</param>
         /// <param name="translation">The translation factor of the transformation.</param>
         /// <returns>The created affine transformation matrix.</returns>
-        public static Matrix AffineTransformation2D(float scaling, float rotation, Vector2 translation)
+        public static Matrix AffineTransformation2D(float scaling, float rotation, Float2 translation)
         {
             AffineTransformation2D(scaling, rotation, ref translation, out var result);
             return result;
@@ -2720,9 +2719,9 @@ namespace FlaxEngine
         /// <param name="rotation">The rotation of the transformation.</param>
         /// <param name="translation">The translation factor of the transformation.</param>
         /// <param name="result">When the method completes, contains the created affine transformation matrix.</param>
-        public static void AffineTransformation2D(float scaling, ref Vector2 rotationCenter, float rotation, ref Vector2 translation, out Matrix result)
+        public static void AffineTransformation2D(float scaling, ref Float2 rotationCenter, float rotation, ref Float2 translation, out Matrix result)
         {
-            result = Scaling(scaling, scaling, 1.0f) * Translation((Vector3)(-rotationCenter)) * RotationZ(rotation) * Translation((Vector3)rotationCenter) * Translation((Vector3)translation);
+            result = Scaling(scaling, scaling, 1.0f) * Translation((Float3)(-rotationCenter)) * RotationZ(rotation) * Translation((Float3)rotationCenter) * Translation((Float3)translation);
         }
 
         /// <summary>
@@ -2733,7 +2732,7 @@ namespace FlaxEngine
         /// <param name="rotation">The rotation of the transformation.</param>
         /// <param name="translation">The translation factor of the transformation.</param>
         /// <returns>The created affine transformation matrix.</returns>
-        public static Matrix AffineTransformation2D(float scaling, Vector2 rotationCenter, float rotation, Vector2 translation)
+        public static Matrix AffineTransformation2D(float scaling, Float2 rotationCenter, float rotation, Float2 translation)
         {
             AffineTransformation2D(scaling, ref rotationCenter, rotation, ref translation, out var result);
             return result;
@@ -2746,7 +2745,7 @@ namespace FlaxEngine
         /// <param name="rotation">Angle of rotation in radians. Angles are measured clockwise when looking along the rotation axis toward the origin.</param>
         /// <param name="scaling">The scaling.</param>
         /// <returns>The created transformation matrix.</returns>
-        public static Matrix Transformation(Vector3 scaling, Quaternion rotation, Vector3 translation)
+        public static Matrix Transformation(Float3 scaling, Quaternion rotation, Float3 translation)
         {
             Transformation(ref scaling, ref rotation, ref translation, out var result);
             return result;
@@ -2759,7 +2758,7 @@ namespace FlaxEngine
         /// <param name="rotation">Angle of rotation in radians. Angles are measured clockwise when looking along the rotation axis toward the origin.</param>
         /// <param name="scaling">The scaling.</param>
         /// <param name="result">When the method completes, contains the created transformation matrix.</param>
-        public static void Transformation(ref Vector3 scaling, ref Quaternion rotation, ref Vector3 translation, out Matrix result)
+        public static void Transformation(ref Float3 scaling, ref Quaternion rotation, ref Float3 translation, out Matrix result)
         {
             // Equivalent to:
             //result =
@@ -2821,7 +2820,7 @@ namespace FlaxEngine
         /// <param name="rotation">The rotation of the transformation.</param>
         /// <param name="translation">The translation factor of the transformation.</param>
         /// <param name="result">When the method completes, contains the created transformation matrix.</param>
-        public static void Transformation(ref Vector3 scalingCenter, ref Quaternion scalingRotation, ref Vector3 scaling, ref Vector3 rotationCenter, ref Quaternion rotation, ref Vector3 translation, out Matrix result)
+        public static void Transformation(ref Float3 scalingCenter, ref Quaternion scalingRotation, ref Float3 scaling, ref Float3 rotationCenter, ref Quaternion rotation, ref Float3 translation, out Matrix result)
         {
             Matrix sr = RotationQuaternion(scalingRotation);
             result = Translation(-scalingCenter) * Transpose(sr) * Scaling(scaling) * sr * Translation(scalingCenter) * Translation(-rotationCenter) * RotationQuaternion(rotation) * Translation(rotationCenter) * Translation(translation);
@@ -2837,7 +2836,7 @@ namespace FlaxEngine
         /// <param name="rotation">The rotation of the transformation.</param>
         /// <param name="translation">The translation factor of the transformation.</param>
         /// <returns>The created transformation matrix.</returns>
-        public static Matrix Transformation(Vector3 scalingCenter, Quaternion scalingRotation, Vector3 scaling, Vector3 rotationCenter, Quaternion rotation, Vector3 translation)
+        public static Matrix Transformation(Float3 scalingCenter, Quaternion scalingRotation, Float3 scaling, Float3 rotationCenter, Quaternion rotation, Float3 translation)
         {
             Transformation(ref scalingCenter, ref scalingRotation, ref scaling, ref rotationCenter, ref rotation, ref translation, out var result);
             return result;
@@ -2853,9 +2852,9 @@ namespace FlaxEngine
         /// <param name="rotation">The rotation of the transformation.</param>
         /// <param name="translation">The translation factor of the transformation.</param>
         /// <param name="result">When the method completes, contains the created transformation matrix.</param>
-        public static void Transformation2D(ref Vector2 scalingCenter, float scalingRotation, ref Vector2 scaling, ref Vector2 rotationCenter, float rotation, ref Vector2 translation, out Matrix result)
+        public static void Transformation2D(ref Float2 scalingCenter, float scalingRotation, ref Float2 scaling, ref Float2 rotationCenter, float rotation, ref Float2 translation, out Matrix result)
         {
-            result = Translation((Vector3)(-scalingCenter)) * RotationZ(-scalingRotation) * Scaling((Vector3)scaling) * RotationZ(scalingRotation) * Translation((Vector3)scalingCenter) * Translation((Vector3)(-rotationCenter)) * RotationZ(rotation) * Translation((Vector3)rotationCenter) * Translation((Vector3)translation);
+            result = Translation((Float3)(-scalingCenter)) * RotationZ(-scalingRotation) * Scaling((Float3)scaling) * RotationZ(scalingRotation) * Translation((Float3)scalingCenter) * Translation((Float3)(-rotationCenter)) * RotationZ(rotation) * Translation((Float3)rotationCenter) * Translation((Float3)translation);
             result.M33 = 1f;
             result.M44 = 1f;
         }
@@ -2870,7 +2869,7 @@ namespace FlaxEngine
         /// <param name="rotation">The rotation of the transformation.</param>
         /// <param name="translation">The translation factor of the transformation.</param>
         /// <returns>The created transformation matrix.</returns>
-        public static Matrix Transformation2D(Vector2 scalingCenter, float scalingRotation, Vector2 scaling, Vector2 rotationCenter, float rotation, Vector2 translation)
+        public static Matrix Transformation2D(Float2 scalingCenter, float scalingRotation, Float2 scaling, Float2 rotationCenter, float rotation, Float2 translation)
         {
             Transformation2D(ref scalingCenter, scalingRotation, ref scaling, ref rotationCenter, rotation, ref translation, out var result);
             return result;
@@ -2883,7 +2882,7 @@ namespace FlaxEngine
         /// <param name="forward">The forward direction of the object.</param>
         /// <param name="up">The upward direction of the object; usually [0, 1, 0].</param>
         /// <returns>The created world matrix of given transformation world</returns>
-        public static Matrix CreateWorld(Vector3 position, Vector3 forward, Vector3 up)
+        public static Matrix CreateWorld(Float3 position, Float3 forward, Float3 up)
         {
             CreateWorld(ref position, ref forward, ref up, out var result);
             return result;
@@ -2896,13 +2895,13 @@ namespace FlaxEngine
         /// <param name="forward">The forward direction of the object.</param>
         /// <param name="up">The upward direction of the object; usually [0, 1, 0].</param>
         /// <param name="result">>When the method completes, contains the created world matrix of given transformation world.</param>
-        public static void CreateWorld(ref Vector3 position, ref Vector3 forward, ref Vector3 up, out Matrix result)
+        public static void CreateWorld(ref Float3 position, ref Float3 forward, ref Float3 up, out Matrix result)
         {
-            Vector3.Normalize(ref forward, out var vector3);
+            Float3.Normalize(ref forward, out var vector3);
             vector3 = vector3.Negative;
-            Vector3 vector31 = Vector3.Cross(up, vector3);
+            Float3 vector31 = Float3.Cross(up, vector3);
             vector31.Normalize();
-            Vector3.Cross(ref vector3, ref vector31, out var vector32);
+            Float3.Cross(ref vector3, ref vector31, out var vector32);
             result = new Matrix
             (
              vector31.X,
@@ -2930,7 +2929,7 @@ namespace FlaxEngine
         /// <param name="axis">The axis to rotate around.</param>
         /// <param name="angle">The angle to rotate around the vector.</param>
         /// <returns>The created rotation matrix.</returns>
-        public static Matrix CreateFromAxisAngle(Vector3 axis, float angle)
+        public static Matrix CreateFromAxisAngle(Float3 axis, float angle)
         {
             CreateFromAxisAngle(ref axis, angle, out var result);
             return result;
@@ -2942,7 +2941,7 @@ namespace FlaxEngine
         /// <param name="axis">The axis to rotate around.</param>
         /// <param name="angle">The angle to rotate around the vector.</param>
         /// <param name="result">When the method completes, contains the created rotation matrix.</param>
-        public static void CreateFromAxisAngle(ref Vector3 axis, float angle, out Matrix result)
+        public static void CreateFromAxisAngle(ref Float3 axis, float angle, out Matrix result)
         {
             float x = axis.X;
             float y = axis.Y;

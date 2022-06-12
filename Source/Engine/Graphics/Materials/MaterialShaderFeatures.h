@@ -31,7 +31,7 @@ struct ForwardShadingFeature : MaterialShaderFeature
         LightData SkyLight;
         ProbeData EnvironmentProbe;
         ExponentialHeightFogData ExponentialHeightFog;
-        Vector3 Dummy2;
+        Float3 Dummy2;
         uint32 LocalLightsCount;
         LightData LocalLights[MaxLocalLights];
         });

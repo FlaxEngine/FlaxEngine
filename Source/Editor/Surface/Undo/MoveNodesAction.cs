@@ -14,9 +14,9 @@ namespace FlaxEditor.Surface.Undo
         private VisjectSurface _surface;
         private ContextHandle _context;
         private uint[] _nodeIds;
-        private readonly Vector2 _locationDelta;
+        private readonly Float2 _locationDelta;
 
-        public MoveNodesAction(VisjectSurfaceContext context, uint[] nodeIds, Vector2 locationDelta)
+        public MoveNodesAction(VisjectSurfaceContext context, uint[] nodeIds, Float2 locationDelta)
         {
             _surface = context.Surface;
             _context = new ContextHandle(context);
@@ -39,7 +39,7 @@ namespace FlaxEditor.Surface.Undo
             Apply(-_locationDelta);
         }
 
-        private void Apply(Vector2 delta)
+        private void Apply(Float2 delta)
         {
             var context = _context.Get(_surface);
             foreach (var nodeId in _nodeIds)

@@ -172,7 +172,7 @@ struct InternalModelOptions
     // Transform
     float Scale;
     Quaternion Rotation;
-    Vector3 Translation;
+    Float3 Translation;
     byte CenterGeometry;
 
     // Animation
@@ -769,13 +769,13 @@ public:
         const auto& debugLines = collisionData->GetDebugLines();
 
         const int32 linesCount = debugLines.Count() / 2;
-        mono_gc_wbarrier_generic_store(triangles, (MonoObject*)mono_array_new(mono_domain_get(), StdTypesContainer::Instance()->Vector3Class->GetNative(), debugLines.Count()));
+        mono_gc_wbarrier_generic_store(triangles, (MonoObject*)mono_array_new(mono_domain_get(), Float3::TypeInitializer.GetMonoClass(), debugLines.Count()));
         mono_gc_wbarrier_generic_store(indices, (MonoObject*)mono_array_new(mono_domain_get(), mono_get_int32_class(), linesCount * 3));
 
         // Use one triangle per debug line
         for (int32 i = 0; i < debugLines.Count(); i++)
         {
-            mono_array_set(*triangles, Vector3, i, debugLines[i]);
+            mono_array_set(*triangles, Float3, i, debugLines[i]);
         }
         int32 iI = 0;
         for (int32 i = 0; i < debugLines.Count(); i += 2)

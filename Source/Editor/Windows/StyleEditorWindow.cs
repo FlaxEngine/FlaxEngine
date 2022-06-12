@@ -115,7 +115,7 @@ namespace FlaxEditor.Windows
             {
                 Text = "Example Label",
                 Parent = preview,
-                Location = new Vector2(PreviewX, 50),
+                Location = new Float2(PreviewX, 50),
                 TooltipText = "Example Tooltip"
             };
 

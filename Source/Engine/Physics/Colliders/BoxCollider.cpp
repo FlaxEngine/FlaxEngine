@@ -10,11 +10,10 @@ BoxCollider::BoxCollider(const SpawnParams& params)
 {
 }
 
-void BoxCollider::SetSize(const Vector3& value)
+void BoxCollider::SetSize(const Float3& value)
 {
-    if (Vector3::NearEqual(value, _size))
+    if (Float3::NearEqual(value, _size))
         return;
-
     _size = value;
 
     UpdateGeometry();
@@ -54,12 +53,12 @@ namespace
     {
         OrientedBoundingBox box;
         const Vector3 vec = max - min;
-        const Vector3 dir = Vector3::Normalize(vec);
+        const Vector3 dir = Float3::Normalize(vec);
         Quaternion orientation;
-        if (Vector3::Dot(dir, Vector3::Up) >= 0.999f)
-            Quaternion::RotationAxis(Vector3::Left, PI_HALF, orientation);
+        if (Vector3::Dot(dir, Float3::Up) >= 0.999f)
+            Quaternion::RotationAxis(Float3::Left, PI_HALF, orientation);
         else
-            Quaternion::LookRotation(dir, Vector3::Cross(Vector3::Cross(dir, Vector3::Up), dir), orientation);
+            Quaternion::LookRotation(dir, Float3::Cross(Float3::Cross(dir, Float3::Up), dir), orientation);
         const Vector3 up = orientation * Vector3::Up;
         Matrix::CreateWorld(min + vec * 0.5f, dir, up, box.Transformation);
         Matrix inv;
@@ -101,7 +100,7 @@ void BoxCollider::OnDebugDrawSelected()
 
 #endif
 
-bool BoxCollider::IntersectsItself(const Ray& ray, float& distance, Vector3& normal)
+bool BoxCollider::IntersectsItself(const Ray& ray, Real& distance, Vector3& normal)
 {
     return _bounds.Intersects(ray, distance, normal);
 }
@@ -135,8 +134,8 @@ void BoxCollider::UpdateBounds()
 
 void BoxCollider::GetGeometry(CollisionShape& collision)
 {
-    Vector3 size = _size * _cachedScale;
+    Float3 size = _size * _cachedScale;
     const float minSize = 0.001f;
-    size = Vector3::Max(size.GetAbsolute() * 0.5f, Vector3(minSize));
+    size = Float3::Max(size.GetAbsolute() * 0.5f, Float3(minSize));
     collision.SetBox(size.Raw);
 }

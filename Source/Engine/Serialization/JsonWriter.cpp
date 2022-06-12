@@ -4,12 +4,6 @@
 #include "Engine/Core/Log.h"
 #include "Engine/Core/Types/CommonValue.h"
 #include "Engine/Content/Content.h"
-#include "Engine/Core/Math/Double2.h"
-#include "Engine/Core/Math/Double3.h"
-#include "Engine/Core/Math/Double4.h"
-#include "Engine/Core/Math/Int2.h"
-#include "Engine/Core/Math/Int3.h"
-#include "Engine/Core/Math/Int4.h"
 #include "Engine/Core/Math/Color.h"
 #include "Engine/Core/Math/Plane.h"
 #include "Engine/Core/Types/DateTime.h"
@@ -34,13 +28,49 @@ void JsonWriter::Vector2(const ::Vector2& value)
 {
     StartObject();
     JKEY("X");
-    Float(value.X);
+    Real(value.X);
+    JKEY("Y");
+    Real(value.Y);
+    EndObject();
+}
+
+void JsonWriter::Vector3(const ::Vector3& value)
+{
+    StartObject();
+    JKEY("X");
+    Real(value.X);
+    JKEY("Y");
+    Real(value.Y);
+    JKEY("Z");
+    Real(value.Z);
+    EndObject();
+}
+
+void JsonWriter::Vector4(const ::Vector4& value)
+{
+    StartObject();
+    JKEY("X");
+    Real(value.X);
+    JKEY("Y");
+    Real(value.Y);
+    JKEY("Z");
+    Real(value.Z);
+    JKEY("W");
+    Real(value.W);
+    EndObject();
+}
+
+void JsonWriter::Float2(const ::Float2& value)
+{
+    StartObject();
+    JKEY("X");
+    Real(value.X);
     JKEY("Y");
     Float(value.Y);
     EndObject();
 }
 
-void JsonWriter::Vector3(const ::Vector3& value)
+void JsonWriter::Float3(const ::Float3& value)
 {
     StartObject();
     JKEY("X");
@@ -52,7 +82,7 @@ void JsonWriter::Vector3(const ::Vector3& value)
     EndObject();
 }
 
-void JsonWriter::Vector4(const ::Vector4& value)
+void JsonWriter::Float4(const ::Float4& value)
 {
     StartObject();
     JKEY("X");
@@ -310,7 +340,7 @@ void JsonWriter::Transform(const ::Transform& value)
     if (!value.Scale.IsOne())
     {
         JKEY("Scale");
-        Vector3(value.Scale);
+        Float3(value.Scale);
     }
     EndObject();
 }
@@ -328,10 +358,10 @@ void JsonWriter::Transform(const ::Transform& value, const ::Transform* other)
         JKEY("Orientation");
         Quaternion(value.Orientation);
     }
-    if (!other || !Vector3::NearEqual(value.Scale, other->Scale))
+    if (!other || !Float3::NearEqual(value.Scale, other->Scale))
     {
         JKEY("Scale");
-        Vector3(value.Scale);
+        Float3(value.Scale);
     }
     EndObject();
 }
@@ -342,7 +372,7 @@ void JsonWriter::Plane(const ::Plane& value)
     JKEY("Normal");
     Vector3(value.Normal);
     JKEY("D");
-    Float(value.D);
+    Real(value.D);
     EndObject();
 }
 
@@ -350,9 +380,9 @@ void JsonWriter::Rectangle(const ::Rectangle& value)
 {
     StartObject();
     JKEY("Location");
-    Vector2(value.Location);
+    Float2(value.Location);
     JKEY("Size");
-    Vector2(value.Size);
+    Float2(value.Size);
     EndObject();
 }
 
@@ -362,7 +392,7 @@ void JsonWriter::BoundingSphere(const ::BoundingSphere& value)
     JKEY("Center");
     Vector3(value.Center);
     JKEY("Radius");
-    Float(value.Radius);
+    Real(value.Radius);
     EndObject();
 }
 

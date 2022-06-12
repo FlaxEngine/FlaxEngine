@@ -16,7 +16,7 @@ RigidBody::RigidBody(const SpawnParams& params)
     , _angularDamping(0.05f)
     , _maxAngularVelocity(7.0f)
     , _massScale(1.0f)
-    , _centerOfMassOffset(Vector3::Zero)
+    , _centerOfMassOffset(Float3::Zero)
     , _constraints(RigidbodyConstraints::None)
     , _enableSimulation(true)
     , _isKinematic(false)
@@ -151,9 +151,9 @@ void RigidBody::SetMassScale(float value)
     UpdateMass();
 }
 
-void RigidBody::SetCenterOfMassOffset(const Vector3& value)
+void RigidBody::SetCenterOfMassOffset(const Float3& value)
 {
-    if (Vector3::NearEqual(value, _centerOfMassOffset))
+    if (Float3::NearEqual(value, _centerOfMassOffset))
         return;
     _centerOfMassOffset = value;
     if (_actor)
@@ -278,7 +278,7 @@ void RigidBody::SetSolverIterationCounts(int32 minPositionIters, int32 minVeloci
 void RigidBody::ClosestPoint(const Vector3& position, Vector3& result) const
 {
     Vector3 tmp;
-    float minDistanceSqr = MAX_float;
+    Real minDistanceSqr = MAX_Real;
     result = Vector3::Maximum;
     for (int32 i = 0; i < Children.Count(); i++)
     {
@@ -286,7 +286,7 @@ void RigidBody::ClosestPoint(const Vector3& position, Vector3& result) const
         if (collider && collider->GetAttachedRigidBody() == this)
         {
             collider->ClosestPoint(position, tmp);
-            const auto dstSqr = Vector3::DistanceSquared(position, tmp);
+            const Real dstSqr = Vector3::DistanceSquared(position, tmp);
             if (dstSqr < minDistanceSqr)
             {
                 minDistanceSqr = dstSqr;
@@ -337,10 +337,9 @@ void RigidBody::UpdateBounds()
 
 void RigidBody::UpdateScale()
 {
-    const Vector3 scale = GetScale();
-    if (Vector3::NearEqual(_cachedScale, scale))
+    const Float3 scale = GetScale();
+    if (Float3::NearEqual(_cachedScale, scale))
         return;
-
     _cachedScale = scale;
 
     // Check if update mass

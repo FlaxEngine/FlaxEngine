@@ -191,11 +191,11 @@ public:
     // [ModelInstanceActor]
     bool HasContentLoaded() const override;
     void Draw(RenderContext& renderContext) override;
-    bool IntersectsItself(const Ray& ray, float& distance, Vector3& normal) override;
+    bool IntersectsItself(const Ray& ray, Real& distance, Vector3& normal) override;
     void Serialize(SerializeStream& stream, const void* otherObj) override;
     void Deserialize(DeserializeStream& stream, ISerializeModifier* modifier) override;
-    bool IntersectsEntry(int32 entryIndex, const Ray& ray, float& distance, Vector3& normal) override;
-    bool IntersectsEntry(const Ray& ray, float& distance, Vector3& normal, int32& entryIndex) override;
+    bool IntersectsEntry(int32 entryIndex, const Ray& ray, Real& distance, Vector3& normal) override;
+    bool IntersectsEntry(const Ray& ray, Real& distance, Vector3& normal, int32& entryIndex) override;
 
 protected:
 

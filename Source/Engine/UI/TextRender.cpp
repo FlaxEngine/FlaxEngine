@@ -153,7 +153,7 @@ void TextRender::UpdateLayout()
 
     // Prepare
     FontTextureAtlas* fontAtlas = nullptr;
-    Vector2 invAtlasSize = Vector2::One;
+    Float2 invAtlasSize = Float2::One;
     FontCharacterEntry previous;
     int32 kerning;
 
@@ -183,7 +183,7 @@ void TextRender::UpdateLayout()
     for (int32 lineIndex = 0; lineIndex < lines.Count(); lineIndex++)
     {
         const FontLineCache& line = lines[lineIndex];
-        Vector2 pointer = line.Location;
+        Float2 pointer = line.Location;
 
         // Render all characters from the line
         for (int32 charIndex = line.FirstCharIndex; charIndex <= line.LastCharIndex; charIndex++)
@@ -259,12 +259,12 @@ void TextRender::UpdateLayout()
                     Rectangle charRect(x, y, entry.UVSize.X * scale, entry.UVSize.Y * scale);
                     charRect.Offset(_layoutOptions.Bounds.Location);
 
-                    Vector2 upperLeftUV = entry.UV * invAtlasSize;
-                    Vector2 rightBottomUV = (entry.UV + entry.UVSize) * invAtlasSize;
+                    Float2 upperLeftUV = entry.UV * invAtlasSize;
+                    Float2 rightBottomUV = (entry.UV + entry.UVSize) * invAtlasSize;
 
                     // Calculate bitangent sign
-                    Vector3 normal = Vector3::UnitZ;
-                    Vector3 tangent = Vector3::UnitX;
+                    Float3 normal = Float3::UnitZ;
+                    Float3 tangent = Float3::UnitX;
                     byte sign = 0;
 
                     // Write vertices
@@ -272,7 +272,7 @@ void TextRender::UpdateLayout()
                     VB1ElementType vb1;
                     VB2ElementType vb2;
 #define WRITE_VB(pos, uv) \
-					vb0.Position = Vector3(-pos, 0.0f); \
+					vb0.Position = Float3(-pos, 0.0f); \
 					box.Merge(vb0.Position); \
 					_vb0.Write(vb0); \
 					vb1.TexCoord = Half2(uv); \
@@ -284,9 +284,9 @@ void TextRender::UpdateLayout()
 					_vb2.Write(vb2)
                     //
                     WRITE_VB(charRect.GetBottomRight(), rightBottomUV);
-                    WRITE_VB(charRect.GetBottomLeft(), Vector2(upperLeftUV.X, rightBottomUV.Y));
+                    WRITE_VB(charRect.GetBottomLeft(), Float2(upperLeftUV.X, rightBottomUV.Y));
                     WRITE_VB(charRect.GetUpperLeft(), upperLeftUV);
-                    WRITE_VB(charRect.GetUpperRight(), Vector2(rightBottomUV.X, upperLeftUV.Y));
+                    WRITE_VB(charRect.GetUpperRight(), Float2(rightBottomUV.X, upperLeftUV.Y));
                     //
 #undef WRITE_VB
 
@@ -317,7 +317,7 @@ void TextRender::UpdateLayout()
 #if USE_PRECISE_MESH_INTERSECTS
     // Setup collision proxy for detailed collision detection for triangles
     const int32 totalIndicesCount = _ib.Data.Count() / sizeof(uint16);
-    _collisionProxy.Init(_vb0.Data.Count() / sizeof(Vector3), totalIndicesCount / 3, (Vector3*)_vb0.Data.Get(), (uint16*)_ib.Data.Get());
+    _collisionProxy.Init(_vb0.Data.Count() / sizeof(Float3), totalIndicesCount / 3, (Float3*)_vb0.Data.Get(), (uint16*)_ib.Data.Get());
 #endif
 
     // Update text bounds (from build vertex positions)
@@ -428,7 +428,7 @@ void TextRender::OnLayerChanged()
         GetSceneRendering()->UpdateActor(this, _sceneRenderingKey);
 }
 
-bool TextRender::IntersectsItself(const Ray& ray, float& distance, Vector3& normal)
+bool TextRender::IntersectsItself(const Ray& ray, Real& distance, Vector3& normal)
 {
 #if USE_PRECISE_MESH_INTERSECTS
     if (_box.Intersects(ray))

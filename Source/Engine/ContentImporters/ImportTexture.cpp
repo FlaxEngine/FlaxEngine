@@ -111,7 +111,7 @@ void ImportTexture::InitOptions(CreateAssetContext& context, Options& options)
 
         // Add default tile if has no sprites
         if (options.Sprites.IsEmpty())
-            options.Sprites.Add({ Rectangle(Vector2::Zero, Vector2::One), TEXT("Default") });
+            options.Sprites.Add({ Rectangle(Float2::Zero, Float2::One), TEXT("Default") });
     }
     options.MaxSize = Math::Min(options.MaxSize, GPU_MAX_TEXTURE_SIZE);
 }

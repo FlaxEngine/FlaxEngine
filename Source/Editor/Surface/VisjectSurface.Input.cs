@@ -18,7 +18,7 @@ namespace FlaxEditor.Surface
         public readonly InputActionsContainer InputActions;
 
         private string _currentInputText = string.Empty;
-        private Vector2 _movingNodesDelta;
+        private Float2 _movingNodesDelta;
         private HashSet<SurfaceNode> _movingNodes;
         private readonly Stack<InputBracket> _inputBrackets = new Stack<InputBracket>();
 
@@ -28,14 +28,14 @@ namespace FlaxEditor.Surface
             private readonly Margin _padding = new Margin(10f);
 
             public Box Box { get; }
-            public Vector2 EndBracketPosition { get; }
+            public Float2 EndBracketPosition { get; }
             public List<SurfaceNode> Nodes { get; } = new List<SurfaceNode>();
             public Rectangle Area { get; private set; }
 
-            public InputBracket(Box box, Vector2 nodePosition)
+            public InputBracket(Box box, Float2 nodePosition)
             {
                 Box = box;
-                EndBracketPosition = nodePosition + new Vector2(DefaultWidth, 0);
+                EndBracketPosition = nodePosition + new Float2(DefaultWidth, 0);
                 Update();
             }
 
@@ -49,10 +49,10 @@ namespace FlaxEditor.Surface
                 }
                 else
                 {
-                    area = new Rectangle(EndBracketPosition, new Vector2(DefaultWidth, 80f));
+                    area = new Rectangle(EndBracketPosition, new Float2(DefaultWidth, 80f));
                 }
                 _padding.ExpandRectangle(ref area);
-                Vector2 offset = EndBracketPosition - area.UpperRight;
+                var offset = EndBracketPosition - area.UpperRight;
                 area.Location += offset;
                 Area = area;
                 if (!offset.IsZero)
@@ -177,7 +177,7 @@ namespace FlaxEditor.Surface
         }
 
         /// <inheritdoc />
-        public override void OnMouseEnter(Vector2 location)
+        public override void OnMouseEnter(Float2 location)
         {
             _lastInstigatorUnderMouse = null;
 
@@ -188,7 +188,7 @@ namespace FlaxEditor.Surface
         }
 
         /// <inheritdoc />
-        public override void OnMouseMove(Vector2 location)
+        public override void OnMouseMove(Float2 location)
         {
             _lastInstigatorUnderMouse = null;
 
@@ -199,7 +199,7 @@ namespace FlaxEditor.Surface
             if (_rightMouseDown)
             {
                 // Calculate delta
-                Vector2 delta = location - _rightMouseDownPos;
+                var delta = location - _rightMouseDownPos;
                 if (delta.LengthSquared > 0.01f)
                 {
                     // Move view
@@ -224,9 +224,9 @@ namespace FlaxEditor.Surface
                 else if (_isMovingSelection)
                 {
                     // Calculate delta (apply view offset)
-                    Vector2 viewDelta = _rootControl.Location - _movingSelectionViewPos;
+                    var viewDelta = _rootControl.Location - _movingSelectionViewPos;
                     _movingSelectionViewPos = _rootControl.Location;
-                    Vector2 delta = location - _leftMouseDownPos - viewDelta;
+                    var delta = location - _leftMouseDownPos - viewDelta;
                     if (delta.LengthSquared > 0.01f)
                     {
                         // Move selected nodes
@@ -276,7 +276,7 @@ namespace FlaxEditor.Surface
         }
 
         /// <inheritdoc />
-        public override bool OnMouseWheel(Vector2 location, float delta)
+        public override bool OnMouseWheel(Float2 location, float delta)
         {
             // Base
             bool handled = base.OnMouseWheel(location, delta);
@@ -300,7 +300,7 @@ namespace FlaxEditor.Surface
         }
 
         /// <inheritdoc />
-        public override bool OnMouseDoubleClick(Vector2 location, MouseButton button)
+        public override bool OnMouseDoubleClick(Float2 location, MouseButton button)
         {
             // Base
             bool handled = base.OnMouseDoubleClick(location, button);
@@ -349,7 +349,7 @@ namespace FlaxEditor.Surface
         }
 
         /// <inheritdoc />
-        public override bool OnMouseDown(Vector2 location, MouseButton button)
+        public override bool OnMouseDown(Float2 location, MouseButton button)
         {
             // Check if user is connecting boxes
             if (_connectionInstigator != null)
@@ -387,7 +387,7 @@ namespace FlaxEditor.Surface
 
             // Check if any node is under the mouse
             SurfaceControl controlUnderMouse = GetControlUnderMouse();
-            Vector2 cLocation = _rootControl.PointFromParent(ref location);
+            var cLocation = _rootControl.PointFromParent(ref location);
             if (controlUnderMouse != null)
             {
                 // Check if mouse is over header and user is pressing mouse left button
@@ -412,7 +412,7 @@ namespace FlaxEditor.Surface
                     // Start moving selected nodes
                     StartMouseCapture();
                     _movingSelectionViewPos = _rootControl.Location;
-                    _movingNodesDelta = Vector2.Zero;
+                    _movingNodesDelta = Float2.Zero;
                     OnGetNodesToMove();
                     Focus();
                     return true;
@@ -443,7 +443,7 @@ namespace FlaxEditor.Surface
         }
 
         /// <inheritdoc />
-        public override bool OnMouseUp(Vector2 location, MouseButton button)
+        public override bool OnMouseUp(Float2 location, MouseButton button)
         {
             // Cache mouse location
             _mousePos = location;
@@ -467,7 +467,7 @@ namespace FlaxEditor.Surface
                             Undo.AddAction(new MoveNodesAction(Context, _movingNodes.Select(x => x.ID).ToArray(), _movingNodesDelta));
                         _movingNodes.Clear();
                     }
-                    _movingNodesDelta = Vector2.Zero;
+                    _movingNodesDelta = Float2.Zero;
                 }
                 // Connecting
                 else if (_connectionInstigator != null)
@@ -533,7 +533,7 @@ namespace FlaxEditor.Surface
             return true;
         }
 
-        private void MoveSelectedNodes(Vector2 delta)
+        private void MoveSelectedNodes(Float2 delta)
         {
             // TODO: undo
             delta /= _targetScale;
@@ -593,7 +593,7 @@ namespace FlaxEditor.Surface
                     else if (!IsMovingSelection && CanEdit)
                     {
                         // Move selected nodes
-                        var delta = new Vector2(0, key == KeyboardKeys.ArrowUp ? -keyMoveRange : keyMoveRange);
+                        var delta = new Float2(0, key == KeyboardKeys.ArrowUp ? -keyMoveRange : keyMoveRange);
                         MoveSelectedNodes(delta);
                     }
                     return true;
@@ -639,7 +639,7 @@ namespace FlaxEditor.Surface
                     else if (!IsMovingSelection && CanEdit)
                     {
                         // Move selected nodes
-                        var delta = new Vector2(key == KeyboardKeys.ArrowLeft ? -keyMoveRange : keyMoveRange, 0);
+                        var delta = new Float2(key == KeyboardKeys.ArrowLeft ? -keyMoveRange : keyMoveRange, 0);
                         MoveSelectedNodes(delta);
                     }
                     return true;
@@ -823,9 +823,9 @@ namespace FlaxEditor.Surface
             return selectedBox;
         }
 
-        private Vector2 FindEmptySpace(Box box)
+        private Float2 FindEmptySpace(Box box)
         {
-            Vector2 distanceBetweenNodes = new Vector2(30, 30);
+            var distanceBetweenNodes = new Float2(30, 30);
 
             var node = box.ParentNode;
 
@@ -853,10 +853,10 @@ namespace FlaxEditor.Surface
                 xLocation += -120 - distanceBetweenNodes.X;
             }
 
-            return new Vector2(xLocation, yLocation);
+            return new Float2(xLocation, yLocation);
         }
 
-        private bool IntersectsConnection(Vector2 mousePosition, out InputBox inputBox, out OutputBox outputBox)
+        private bool IntersectsConnection(Float2 mousePosition, out InputBox inputBox, out OutputBox outputBox)
         {
             for (int i = 0; i < Nodes.Count; i++)
             {

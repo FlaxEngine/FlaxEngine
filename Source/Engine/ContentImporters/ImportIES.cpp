@@ -254,7 +254,7 @@ float ImportIES::ExtractInR16(Array<byte>& output)
         double sum = 0;
         for (uint32 i = 0; i < count; i++)
         {
-            const Vector3 v = randomStream.GetUnitVector();
+            const Float3 v = randomStream.GetUnitVector();
             const float hAngle = Math::Acos(v.Z) / PI * 180;
             const float vAngle = Math::Atan2(v.Y, v.X) / PI * 180 + 180;
             sum += InterpolateBilinear(ComputeFilterPos(hAngle, _hAngles), ComputeFilterPos(vAngle, _vAngles));

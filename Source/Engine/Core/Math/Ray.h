@@ -69,7 +69,7 @@ public:
         return Vector3::NearEqual(a.Position, b.Position) && Vector3::NearEqual(a.Direction, b.Direction);
     }
 
-    static bool NearEqual(const Ray& a, const Ray& b, float epsilon)
+    static bool NearEqual(const Ray& a, const Ray& b, Real epsilon)
     {
         return Vector3::NearEqual(a.Position, b.Position, epsilon) && Vector3::NearEqual(a.Direction, b.Direction, epsilon);
     }
@@ -80,7 +80,7 @@ public:
     /// </summary>
     /// <param name="distance">The distance from ray origin.</param>
     /// <returns>The calculated point.</returns>
-    Vector3 GetPoint(float distance) const;
+    Vector3 GetPoint(Real distance) const;
 
     /// <summary>
     /// Determines if there is an intersection between the current object and a point.
@@ -122,7 +122,7 @@ public:
     /// <returns>Whether the two objects intersected.</returns>
     bool Intersects(const Plane& plane) const
     {
-        float distance;
+        Real distance;
         return CollisionsHelper::RayIntersectsPlane(*this, plane, distance);
     }
 
@@ -132,7 +132,7 @@ public:
     /// <param name="plane">The plane to test.</param>
     /// <param name="distance">When the method completes, contains the distance of the intersection, or 0 if there was no intersection.</param>
     /// <returns>Whether the two objects intersected.</returns>
-    bool Intersects(const Plane& plane, float& distance) const
+    bool Intersects(const Plane& plane, Real& distance) const
     {
         return CollisionsHelper::RayIntersectsPlane(*this, plane, distance);
     }
@@ -157,7 +157,7 @@ public:
     /// <returns>Whether the two objects intersected.</returns>
     bool Intersects(const Vector3& vertex1, const Vector3& vertex2, const Vector3& vertex3) const
     {
-        float distance;
+        Real distance;
         return CollisionsHelper::RayIntersectsTriangle(*this, vertex1, vertex2, vertex3, distance);
     }
 
@@ -169,7 +169,7 @@ public:
     /// <param name="vertex3">The third vertex of the triangle to test.</param>
     /// <param name="distance">When the method completes, contains the distance of the intersection, or 0 if there was no intersection.</param>
     /// <returns>Whether the two objects intersected.</returns>
-    bool Intersects(const Vector3& vertex1, const Vector3& vertex2, const Vector3& vertex3, float& distance) const
+    bool Intersects(const Vector3& vertex1, const Vector3& vertex2, const Vector3& vertex3, Real& distance) const
     {
         return CollisionsHelper::RayIntersectsTriangle(*this, vertex1, vertex2, vertex3, distance);
     }
@@ -194,7 +194,7 @@ public:
     /// <returns>Whether the two objects intersected.</returns>
     bool Intersects(const BoundingBox& box) const
     {
-        float distance;
+        Real distance;
         return CollisionsHelper::RayIntersectsBox(*this, box, distance);
     }
 
@@ -204,7 +204,7 @@ public:
     /// <param name="box">The box to test.</param>
     /// <param name="distance">When the method completes, contains the distance of the intersection, or 0 if there was no intersection.</param>
     /// <returns>Whether the two objects intersected.</returns>
-    bool Intersects(const BoundingBox& box, float& distance) const
+    bool Intersects(const BoundingBox& box, Real& distance) const
     {
         return CollisionsHelper::RayIntersectsBox(*this, box, distance);
     }
@@ -227,7 +227,7 @@ public:
     /// <returns>Whether the two objects intersected.</returns>
     bool Intersects(const BoundingSphere& sphere) const
     {
-        float distance;
+        Real distance;
         return CollisionsHelper::RayIntersectsSphere(*this, sphere, distance);
     }
 
@@ -237,7 +237,7 @@ public:
     /// <param name="sphere">The sphere to test.</param>
     /// <param name="distance">When the method completes, contains the distance of the intersection, or 0 if there was no intersection.</param>
     /// <returns>Whether the two objects intersected.</returns>
-    bool Intersects(const BoundingSphere& sphere, float& distance) const
+    bool Intersects(const BoundingSphere& sphere, Real& distance) const
     {
         return CollisionsHelper::RayIntersectsSphere(*this, sphere, distance);
     }

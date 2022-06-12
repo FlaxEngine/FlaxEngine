@@ -125,10 +125,10 @@ namespace FlaxEngine.Windows.Search
             }
 
             /// <inheritdoc />
-            public override bool OnShowTooltip(out string text, out Vector2 location, out Rectangle area)
+            public override bool OnShowTooltip(out string text, out Float2 location, out Rectangle area)
             {
                 var result = base.OnShowTooltip(out text, out location, out area);
-                location = new Vector2(ChildrenIndent, HeaderHeight);
+                location = new Float2(ChildrenIndent, HeaderHeight);
                 return result;
             }
 
@@ -152,7 +152,7 @@ namespace FlaxEngine.Windows.Search
             }
 
             /// <inheritdoc />
-            protected override bool OnMouseDoubleClickHeader(ref Vector2 location, MouseButton button)
+            protected override bool OnMouseDoubleClickHeader(ref Float2 location, MouseButton button)
             {
                 if (Navigate != null)
                 {

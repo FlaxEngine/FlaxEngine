@@ -135,9 +135,9 @@ public:
     /// <summary>
     /// Gets the buffers width and height (in pixels).
     /// </summary>
-    API_PROPERTY() FORCE_INLINE Vector2 GetSize() const
+    API_PROPERTY() FORCE_INLINE Float2 GetSize() const
     {
-        return Vector2((float)_width, (float)_height);
+        return Float2((float)_width, (float)_height);
     }
 
     /// <summary>

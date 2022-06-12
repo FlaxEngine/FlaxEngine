@@ -31,18 +31,18 @@ bool ParticleEmitterGPUGenerator::loadTexture(Node* caller, Box* box, const Seri
 
     // Get the location to load
     Box* locationBox = parent->GetBox(2);
-    Value location = tryGetValue(locationBox, Value::InitForZero(VariantType::Vector2));
+    Value location = tryGetValue(locationBox, Value::InitForZero(VariantType::Float2));
 
     // Convert into a proper type
     if (isCubemap || isVolume || isArray)
-        location = Value::Cast(location, VariantType::Vector4);
+        location = Value::Cast(location, VariantType::Float3);
     else
-        location = Value::Cast(location, VariantType::Vector3);
+        location = Value::Cast(location, VariantType::Float3);
 
     // Load texture
     const Char* format = TEXT("{0}.Load({1})");
     const String sampledValue = String::Format(format, texture.ShaderName, location.Value);
-    result = writeLocal(VariantType::Vector4, sampledValue, parent);
+    result = writeLocal(VariantType::Float4, sampledValue, parent);
 
     return false;
 }
@@ -83,15 +83,15 @@ bool ParticleEmitterGPUGenerator::sampleSceneTexture(Node* caller, Box* box, con
     {
         // Get the UVs to sample
         Box* uvsBox = parent->GetBox(0);
-        Value uvs = tryGetValue(uvsBox, Value::InitForZero(VariantType::Vector2));
+        Value uvs = tryGetValue(uvsBox, Value::InitForZero(VariantType::Float2));
 
         // Convert into a proper type
-        uvs = Value::Cast(uvs, VariantType::Vector2);
+        uvs = Value::Cast(uvs, VariantType::Float2);
 
         // Load texture
         const Char* format = TEXT("{0}.Load(uint3({1} * ScreenSize.xy, 0))");
         const String sampledValue = String::Format(format, texture.ShaderName, uvs.Value);
-        valueBox->Cache = writeLocal(VariantType::Vector4, sampledValue, parent);
+        valueBox->Cache = writeLocal(VariantType::Float4, sampledValue, parent);
     }
 
     // Check if reuse cached value
@@ -175,7 +175,7 @@ void ParticleEmitterGPUGenerator::ProcessGroupTextures(Box* box, Node* node, Val
             Value gBuffer2Sample;
             if (sampleSceneTexture(node, box, gBuffer2Param, gBuffer2Sample))
                 break;
-            value = writeLocal(VariantType::Vector3, String::Format(TEXT("GetDiffuseColor({0}.rgb, {1}.g)"), gBuffer0Sample.Value, gBuffer2Sample.Value), node);
+            value = writeLocal(VariantType::Float3, String::Format(TEXT("GetDiffuseColor({0}.rgb, {1}.g)"), gBuffer0Sample.Value, gBuffer2Sample.Value), node);
             break;
         }
         case MaterialSceneTextures::SpecularColor:
@@ -188,7 +188,7 @@ void ParticleEmitterGPUGenerator::ProcessGroupTextures(Box* box, Node* node, Val
             Value gBuffer2Sample;
             if (sampleSceneTexture(node, box, gBuffer2Param, gBuffer2Sample))
                 break;
-            value = writeLocal(VariantType::Vector3, String::Format(TEXT("GetSpecularColor({0}.rgb, {1}.b, {1}.g)"), gBuffer0Sample.Value, gBuffer2Sample.Value), node);
+            value = writeLocal(VariantType::Float3, String::Format(TEXT("GetSpecularColor({0}.rgb, {1}.b, {1}.g)"), gBuffer0Sample.Value, gBuffer2Sample.Value), node);
             break;
         }
         case MaterialSceneTextures::WorldNormal:
@@ -197,7 +197,7 @@ void ParticleEmitterGPUGenerator::ProcessGroupTextures(Box* box, Node* node, Val
             Value gBuffer1Sample;
             if (sampleSceneTexture(node, box, gBuffer1Param, gBuffer1Sample))
                 break;
-            value = writeLocal(VariantType::Vector3, String::Format(TEXT("DecodeNormal({0}.rgb)"), gBuffer1Sample.Value), node);
+            value = writeLocal(VariantType::Float3, String::Format(TEXT("DecodeNormal({0}.rgb)"), gBuffer1Sample.Value), node);
             break;
         }
         case MaterialSceneTextures::AmbientOcclusion:
@@ -307,7 +307,7 @@ void ParticleEmitterGPUGenerator::ProcessGroupTextures(Box* box, Node* node, Val
     case 14:
     {
         auto param = findOrAddGlobalSDF();
-        Value worldPosition = tryGetValue(node->GetBox(1), Value(VariantType::Vector3, TEXT("input.WorldPosition.xyz"))).Cast(VariantType::Vector3);
+        Value worldPosition = tryGetValue(node->GetBox(1), Value(VariantType::Float3, TEXT("input.WorldPosition.xyz"))).Cast(VariantType::Float3);
         value = writeLocal(VariantType::Float, String::Format(TEXT("SampleGlobalSDF({0}, {0}_Tex, {1})"), param.ShaderName, worldPosition.Value), node);
         _includes.Add(TEXT("./Flax/GlobalSignDistanceField.hlsl"));
         break;

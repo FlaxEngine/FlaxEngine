@@ -51,7 +51,7 @@ namespace FlaxEngine
                         containerControl.UnlockChildrenRecursive();
                     _control.Parent = GetParent();
                     _control.IndexInParent = OrderInParent;
-                    _control.Location = new Vector2(LocalPosition);
+                    _control.Location = new Float2(LocalPosition);
                     _control.LocationChanged += OnControlLocationChanged;
 
                     // Link children UI controls
@@ -96,10 +96,10 @@ namespace FlaxEngine
                     return new OrientedBoundingBox();
 
                 // Find control bounds limit points in canvas-space
-                Vector2 p1 = Vector2.Zero;
-                Vector2 p2 = new Vector2(0, Control.Height);
-                Vector2 p3 = new Vector2(Control.Width, 0);
-                Vector2 p4 = Control.Size;
+                var p1 = Float2.Zero;
+                var p2 = new Float2(0, Control.Height);
+                var p3 = new Float2(Control.Width, 0);
+                var p4 = Control.Size;
                 Control c = Control;
                 while (c != canvasRoot)
                 {
@@ -110,12 +110,12 @@ namespace FlaxEngine
 
                     c = c.Parent;
                 }
-                Vector2 min = Vector2.Min(Vector2.Min(p1, p2), Vector2.Min(p3, p4));
-                Vector2 max = Vector2.Max(Vector2.Max(p1, p2), Vector2.Max(p3, p4));
-                Vector2 size = max - min;
+                var min = Float2.Min(Float2.Min(p1, p2), Float2.Min(p3, p4));
+                var max = Float2.Max(Float2.Max(p1, p2), Float2.Max(p3, p4));
+                var size = max - min;
 
                 // Calculate bounds
-                OrientedBoundingBox bounds = new OrientedBoundingBox
+                var bounds = new OrientedBoundingBox
                 {
                     Extents = new Vector3(size * 0.5f, Mathf.Epsilon)
                 };
@@ -419,7 +419,7 @@ namespace FlaxEngine
         {
             if (_control != null && !_blockEvents)
             {
-                _control.Location = new Vector2(LocalPosition);
+                _control.Location = new Float2(LocalPosition);
             }
         }
 

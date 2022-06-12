@@ -10,17 +10,11 @@
 #include "Engine/Core/Math/Vector2.h"
 #include "Engine/Core/Math/Vector3.h"
 #include "Engine/Core/Math/Vector4.h"
-#include "Engine/Core/Math/Double2.h"
-#include "Engine/Core/Math/Double3.h"
-#include "Engine/Core/Math/Double4.h"
 #include "Engine/Core/Math/Quaternion.h"
 #include "Engine/Core/Math/BoundingBox.h"
 #include "Engine/Core/Math/BoundingSphere.h"
 #include "Engine/Core/Math/Rectangle.h"
 #include "Engine/Core/Math/Transform.h"
-#include "Engine/Core/Math/Int2.h"
-#include "Engine/Core/Math/Int3.h"
-#include "Engine/Core/Math/Int4.h"
 #include "Engine/Core/Math/Color.h"
 #include "Engine/Core/Math/Color32.h"
 #include "Engine/Core/Math/Matrix.h"
@@ -153,14 +147,14 @@ void Serialization::Serialize(ISerializable::SerializeStream& stream, const Vari
     case VariantType::Asset:
         stream.Guid(v.AsAsset ? v.AsAsset->GetID() : Guid::Empty);
         break;
-    case VariantType::Vector2:
-        stream.Vector2(*(Vector2*)v.AsData);
+    case VariantType::Float2:
+        stream.Float2(*(Float2*)v.AsData);
         break;
-    case VariantType::Vector3:
-        stream.Vector3(*(Vector3*)v.AsData);
+    case VariantType::Float3:
+        stream.Float3(*(Float3*)v.AsData);
         break;
-    case VariantType::Vector4:
-        stream.Vector4(*(Vector4*)v.AsData);
+    case VariantType::Float4:
+        stream.Float4(*(Float4*)v.AsData);
         break;
     case VariantType::Double2:
         stream.Double2(v.AsDouble2());
@@ -304,14 +298,14 @@ void Serialization::Deserialize(ISerializable::DeserializeStream& stream, Varian
         v.SetBlob(id.A);
         Encryption::Base64Decode(value.GetString(), id.A, (byte*)v.AsBlob.Data);
         break;
-    case VariantType::Vector2:
-        Deserialize(value, *(Vector2*)v.AsData, modifier);
+    case VariantType::Float2:
+        Deserialize(value, *(Float2*)v.AsData, modifier);
         break;
-    case VariantType::Vector3:
-        Deserialize(value, *(Vector3*)v.AsData, modifier);
+    case VariantType::Float3:
+        Deserialize(value, *(Float3*)v.AsData, modifier);
         break;
-    case VariantType::Vector4:
-        Deserialize(value, *(Vector4*)v.AsData, modifier);
+    case VariantType::Float4:
+        Deserialize(value, *(Float4*)v.AsData, modifier);
         break;
     case VariantType::Double2:
         Deserialize(value, *(Double2*)v.AsData, modifier);
@@ -338,7 +332,7 @@ void Serialization::Deserialize(ISerializable::DeserializeStream& stream, Varian
         Deserialize(value, *(Guid*)v.AsData, modifier);
         break;
     case VariantType::BoundingSphere:
-        Deserialize(value, *(BoundingSphere*)v.AsData, modifier);
+        Deserialize(value, v.AsBoundingSphere(), modifier);
         break;
     case VariantType::Quaternion:
         Deserialize(value, *(Quaternion*)v.AsData, modifier);
@@ -347,13 +341,13 @@ void Serialization::Deserialize(ISerializable::DeserializeStream& stream, Varian
         Deserialize(value, *(Rectangle*)v.AsData, modifier);
         break;
     case VariantType::BoundingBox:
-        Deserialize(value, *(BoundingBox*)v.AsData, modifier);
+        Deserialize(value, v.AsBoundingBox(), modifier);
         break;
     case VariantType::Transform:
         Deserialize(value, *(Transform*)v.AsBlob.Data, modifier);
         break;
     case VariantType::Ray:
-        Deserialize(value, *(Ray*)v.AsData, modifier);
+        Deserialize(value, v.AsRay(), modifier);
         break;
     case VariantType::Matrix:
         Deserialize(value, *(Matrix*)v.AsBlob.Data, modifier);
@@ -504,12 +498,12 @@ void Serialization::Deserialize(ISerializable::DeserializeStream& stream, Versio
     }
 }
 
-bool Serialization::ShouldSerialize(const Vector2& v, const void* otherObj)
+bool Serialization::ShouldSerialize(const Float2& v, const void* otherObj)
 {
-    return !otherObj || !Vector2::NearEqual(v, *(Vector2*)otherObj, SERIALIZE_EPSILON);
+    return !otherObj || !Float2::NearEqual(v, *(Float2*)otherObj, SERIALIZE_EPSILON);
 }
 
-void Serialization::Deserialize(ISerializable::DeserializeStream& stream, Vector2& v, ISerializeModifier* modifier)
+void Serialization::Deserialize(ISerializable::DeserializeStream& stream, Float2& v, ISerializeModifier* modifier)
 {
     const auto mX = SERIALIZE_FIND_MEMBER(stream, "X");
     const auto mY = SERIALIZE_FIND_MEMBER(stream, "Y");
@@ -517,12 +511,12 @@ void Serialization::Deserialize(ISerializable::DeserializeStream& stream, Vector
     v.Y = mY != stream.MemberEnd() ? mY->value.GetFloat() : 0.0f;
 }
 
-bool Serialization::ShouldSerialize(const Vector3& v, const void* otherObj)
+bool Serialization::ShouldSerialize(const Float3& v, const void* otherObj)
 {
-    return !otherObj || !Vector3::NearEqual(v, *(Vector3*)otherObj, SERIALIZE_EPSILON);
+    return !otherObj || !Float3::NearEqual(v, *(Float3*)otherObj, SERIALIZE_EPSILON);
 }
 
-void Serialization::Deserialize(ISerializable::DeserializeStream& stream, Vector3& v, ISerializeModifier* modifier)
+void Serialization::Deserialize(ISerializable::DeserializeStream& stream, Float3& v, ISerializeModifier* modifier)
 {
     const auto mX = SERIALIZE_FIND_MEMBER(stream, "X");
     const auto mY = SERIALIZE_FIND_MEMBER(stream, "Y");
@@ -532,12 +526,12 @@ void Serialization::Deserialize(ISerializable::DeserializeStream& stream, Vector
     v.Z = mZ != stream.MemberEnd() ? mZ->value.GetFloat() : 0.0f;
 }
 
-bool Serialization::ShouldSerialize(const Vector4& v, const void* otherObj)
+bool Serialization::ShouldSerialize(const Float4& v, const void* otherObj)
 {
-    return !otherObj || !Vector4::NearEqual(v, *(Vector4*)otherObj, SERIALIZE_EPSILON);
+    return !otherObj || !Float4::NearEqual(v, *(Float4*)otherObj, SERIALIZE_EPSILON);
 }
 
-void Serialization::Deserialize(ISerializable::DeserializeStream& stream, Vector4& v, ISerializeModifier* modifier)
+void Serialization::Deserialize(ISerializable::DeserializeStream& stream, Float4& v, ISerializeModifier* modifier)
 {
     const auto mX = SERIALIZE_FIND_MEMBER(stream, "X");
     const auto mY = SERIALIZE_FIND_MEMBER(stream, "Y");

@@ -176,7 +176,7 @@ public:
     /// <param name="color">The text color.</param>
     /// <param name="location">The text location.</param>
     /// <param name="customMaterial">The custom material for font characters rendering. It must contain texture parameter named Font used to sample font texture.</param>
-    API_FUNCTION() static void DrawText(Font* font, const StringView& text, const Color& color, const Vector2& location, MaterialBase* customMaterial = nullptr);
+    API_FUNCTION() static void DrawText(Font* font, const StringView& text, const Color& color, const Float2& location, MaterialBase* customMaterial = nullptr);
 
     /// <summary>
     /// Draws a text.
@@ -187,7 +187,7 @@ public:
     /// <param name="color">The text color.</param>
     /// <param name="location">The text location.</param>
     /// <param name="customMaterial">The custom material for font characters rendering. It must contain texture parameter named Font used to sample font texture.</param>
-    API_FUNCTION() static void DrawText(Font* font, const StringView& text, API_PARAM(Ref) const TextRange& textRange, const Color& color, const Vector2& location, MaterialBase* customMaterial = nullptr);
+    API_FUNCTION() static void DrawText(Font* font, const StringView& text, API_PARAM(Ref) const TextRange& textRange, const Color& color, const Float2& location, MaterialBase* customMaterial = nullptr);
 
     /// <summary>
     /// Draws a text with formatting.
@@ -305,7 +305,7 @@ public:
     /// <param name="border">The borders for 9-slicing (inside rectangle, ordered: left, right, top, bottom).</param>
     /// <param name="borderUVs">The borders UVs for 9-slicing (inside rectangle UVs, ordered: left, right, top, bottom).</param>
     /// <param name="color">The color to multiply all texture pixels.</param>
-    API_FUNCTION() static void Draw9SlicingTexture(TextureBase* t, const Rectangle& rect, const Vector4& border, const Vector4& borderUVs, const Color& color = Color::White);
+    API_FUNCTION() static void Draw9SlicingTexture(TextureBase* t, const Rectangle& rect, const Float4& border, const Float4& borderUVs, const Color& color = Color::White);
 
     /// <summary>
     /// Draws the texture using 9-slicing (uses point sampler).
@@ -315,7 +315,7 @@ public:
     /// <param name="border">The borders for 9-slicing (inside rectangle, ordered: left, right, top, bottom).</param>
     /// <param name="borderUVs">The borders UVs for 9-slicing (inside rectangle UVs, ordered: left, right, top, bottom).</param>
     /// <param name="color">The color to multiply all texture pixels.</param>
-    API_FUNCTION() static void Draw9SlicingTexturePoint(TextureBase* t, const Rectangle& rect, const Vector4& border, const Vector4& borderUVs, const Color& color = Color::White);
+    API_FUNCTION() static void Draw9SlicingTexturePoint(TextureBase* t, const Rectangle& rect, const Float4& border, const Float4& borderUVs, const Color& color = Color::White);
 
     /// <summary>
     /// Draws a sprite using 9-slicing.
@@ -325,7 +325,7 @@ public:
     /// <param name="border">The borders for 9-slicing (inside rectangle, ordered: left, right, top, bottom).</param>
     /// <param name="borderUVs">The borders UVs for 9-slicing (inside rectangle UVs, ordered: left, right, top, bottom).</param>
     /// <param name="color">The color to multiply all texture pixels.</param>
-    API_FUNCTION() static void Draw9SlicingSprite(const SpriteHandle& spriteHandle, const Rectangle& rect, const Vector4& border, const Vector4& borderUVs, const Color& color = Color::White);
+    API_FUNCTION() static void Draw9SlicingSprite(const SpriteHandle& spriteHandle, const Rectangle& rect, const Float4& border, const Float4& borderUVs, const Color& color = Color::White);
 
     /// <summary>
     /// Draws a sprite using 9-slicing (uses point sampler).
@@ -335,7 +335,7 @@ public:
     /// <param name="border">The borders for 9-slicing (inside rectangle, ordered: left, right, top, bottom).</param>
     /// <param name="borderUVs">The borders UVs for 9-slicing (inside rectangle UVs, ordered: left, right, top, bottom).</param>
     /// <param name="color">The color to multiply all texture pixels.</param>
-    API_FUNCTION() static void Draw9SlicingSpritePoint(const SpriteHandle& spriteHandle, const Rectangle& rect, const Vector4& border, const Vector4& borderUVs, const Color& color = Color::White);
+    API_FUNCTION() static void Draw9SlicingSpritePoint(const SpriteHandle& spriteHandle, const Rectangle& rect, const Float4& border, const Float4& borderUVs, const Color& color = Color::White);
 
     /// <summary>
     /// Performs custom rendering.
@@ -353,7 +353,7 @@ public:
     /// <param name="p2">The end point.</param>
     /// <param name="color">The line color.</param>
     /// <param name="thickness">The line thickness.</param>
-    API_FUNCTION() FORCE_INLINE static void DrawLine(const Vector2& p1, const Vector2& p2, const Color& color, float thickness = 1.0f)
+    API_FUNCTION() FORCE_INLINE static void DrawLine(const Float2& p1, const Float2& p2, const Color& color, float thickness = 1.0f)
     {
         DrawLine(p1, p2, color, color, thickness);
     }
@@ -366,7 +366,7 @@ public:
     /// <param name="color1">The line start color.</param>
     /// <param name="color2">The line end color.</param>
     /// <param name="thickness">The line thickness.</param>
-    API_FUNCTION() static void DrawLine(const Vector2& p1, const Vector2& p2, const Color& color1, const Color& color2, float thickness = 1.0f);
+    API_FUNCTION() static void DrawLine(const Float2& p1, const Float2& p2, const Color& color1, const Color& color2, float thickness = 1.0f);
 
     /// <summary>
     /// Draws a Bezier curve.
@@ -377,7 +377,7 @@ public:
     /// <param name="p4">The end point.</param>
     /// <param name="color">The line color</param>
     /// <param name="thickness">The line thickness.</param>
-    API_FUNCTION() static void DrawBezier(const Vector2& p1, const Vector2& p2, const Vector2& p3, const Vector2& p4, const Color& color, float thickness = 1.0f);
+    API_FUNCTION() static void DrawBezier(const Float2& p1, const Float2& p2, const Float2& p3, const Float2& p4, const Color& color, float thickness = 1.0f);
 
     /// <summary>
     /// Draws the GUI material.
@@ -400,7 +400,7 @@ public:
     /// <param name="t">The texture.</param>
     /// <param name="vertices">The vertices array.</param>
     /// <param name="uvs">The uvs array.</param>
-    API_FUNCTION() static void DrawTexturedTriangles(GPUTexture* t, const Span<Vector2>& vertices, const Span<Vector2>& uvs);
+    API_FUNCTION() static void DrawTexturedTriangles(GPUTexture* t, const Span<Float2>& vertices, const Span<Float2>& uvs);
 
     /// <summary>
     /// Draws vertices array.
@@ -409,7 +409,7 @@ public:
     /// <param name="vertices">The vertices array.</param>
     /// <param name="uvs">The uvs array.</param>
     /// <param name="color">The color.</param>
-    API_FUNCTION() static void DrawTexturedTriangles(GPUTexture* t, const Span<Vector2>& vertices, const Span<Vector2>& uvs, const Color& color);
+    API_FUNCTION() static void DrawTexturedTriangles(GPUTexture* t, const Span<Float2>& vertices, const Span<Float2>& uvs, const Color& color);
 
     /// <summary>
     /// Draws vertices array.
@@ -418,7 +418,7 @@ public:
     /// <param name="vertices">The vertices array.</param>
     /// <param name="uvs">The uvs array.</param>
     /// <param name="colors">The colors array.</param>
-    API_FUNCTION() static void DrawTexturedTriangles(GPUTexture* t, const Span<Vector2>& vertices, const Span<Vector2>& uvs, const Span<Color>& colors);
+    API_FUNCTION() static void DrawTexturedTriangles(GPUTexture* t, const Span<Float2>& vertices, const Span<Float2>& uvs, const Span<Color>& colors);
 
     /// <summary>
     /// Draws vertices array.
@@ -426,7 +426,7 @@ public:
     /// <param name="vertices">The vertices array.</param>
     /// <param name="colors">The colors array.</param>
     /// <param name="useAlpha">If true alpha blending will be enabled.</param>
-    API_FUNCTION() static void FillTriangles(const Span<Vector2>& vertices, const Span<Color>& colors, bool useAlpha);
+    API_FUNCTION() static void FillTriangles(const Span<Float2>& vertices, const Span<Color>& colors, bool useAlpha);
 
     /// <summary>
     /// Fills a triangular area.
@@ -435,5 +435,5 @@ public:
     /// <param name="p1">The second point.</param>
     /// <param name="p2">The third point.</param>
     /// <param name="color">The color.</param>
-    API_FUNCTION() static void FillTriangle(const Vector2& p0, const Vector2& p1, const Vector2& p2, const Color& color);
+    API_FUNCTION() static void FillTriangle(const Float2& p0, const Float2& p1, const Float2& p2, const Color& color);
 };

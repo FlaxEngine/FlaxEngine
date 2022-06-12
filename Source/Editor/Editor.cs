@@ -1292,43 +1292,43 @@ namespace FlaxEditor
             return false;
         }
 
-        internal void Internal_ScreenToGameViewport(ref Vector2 pos)
+        internal void Internal_ScreenToGameViewport(ref Float2 pos)
         {
             if (Windows.GameWin != null && Windows.GameWin.ContainsFocus)
             {
                 var win = Windows.GameWin.Root;
                 if (win?.RootWindow is WindowRootControl root && root.Window && root.Window.IsFocused)
                 {
-                    pos = Vector2.Round(Windows.GameWin.Viewport.PointFromScreen(pos) * root.DpiScale);
+                    pos = Float2.Round(Windows.GameWin.Viewport.PointFromScreen(pos) * root.DpiScale);
                 }
                 else
                 {
-                    pos = Vector2.Minimum;
+                    pos = Float2.Minimum;
                 }
             }
             else
             {
-                pos = Vector2.Minimum;
+                pos = Float2.Minimum;
             }
         }
 
-        internal void Internal_GameViewportToScreen(ref Vector2 pos)
+        internal void Internal_GameViewportToScreen(ref Float2 pos)
         {
             if (Windows.GameWin != null && Windows.GameWin.ContainsFocus)
             {
                 var win = Windows.GameWin.Root;
                 if (win?.RootWindow is WindowRootControl root && root.Window && root.Window.IsFocused)
                 {
-                    pos = Vector2.Round(Windows.GameWin.Viewport.PointToScreen(pos / root.DpiScale));
+                    pos = Float2.Round(Windows.GameWin.Viewport.PointToScreen(pos / root.DpiScale));
                 }
                 else
                 {
-                    pos = Vector2.Minimum;
+                    pos = Float2.Minimum;
                 }
             }
             else
             {
-                pos = Vector2.Minimum;
+                pos = Float2.Minimum;
             }
         }
 
@@ -1343,9 +1343,9 @@ namespace FlaxEditor
             }
         }
 
-        internal void Internal_GetGameWindowSize(out Vector2 resultAsRef)
+        internal void Internal_GetGameWindowSize(out Float2 resultAsRef)
         {
-            resultAsRef = Vector2.Zero;
+            resultAsRef = Float2.Zero;
             var gameWin = Windows.GameWin;
             if (gameWin != null)
             {
@@ -1359,7 +1359,7 @@ namespace FlaxEditor
                     else
                         resultAsRef = gameWin.Size * root.DpiScale;
 
-                    resultAsRef = Vector2.Round(resultAsRef);
+                    resultAsRef = Float2.Round(resultAsRef);
                 }
             }
         }
@@ -1448,7 +1448,7 @@ namespace FlaxEditor
         internal static extern bool Internal_CookMeshCollision(string path, CollisionDataType type, IntPtr model, int modelLodIndex, uint materialSlotsMask, ConvexMeshGenerationFlags convexFlags, int convexVertexLimit);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern void Internal_GetCollisionWires(IntPtr collisionData, out Vector3[] triangles, out int[] indices);
+        internal static extern void Internal_GetCollisionWires(IntPtr collisionData, out Float3[] triangles, out int[] indices);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern void Internal_GetEditorBoxWithChildren(IntPtr obj, out BoundingBox resultAsRef);

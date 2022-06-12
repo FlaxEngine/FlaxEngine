@@ -47,7 +47,7 @@ namespace FlaxEditor.Windows.Assets
                 var asset = _window.Asset;
                 if (asset == null || !asset.IsLoaded)
                 {
-                    Render2D.DrawText(style.FontLarge, "Loading...", new Rectangle(Vector2.Zero, Size), style.ForegroundDisabled, TextAlignment.Center, TextAlignment.Center);
+                    Render2D.DrawText(style.FontLarge, "Loading...", new Rectangle(Float2.Zero, Size), style.ForegroundDisabled, TextAlignment.Center, TextAlignment.Center);
                 }
             }
         }
@@ -171,10 +171,10 @@ namespace FlaxEditor.Windows.Assets
                         var group = layout.Group("General");
 
                         var minScreenSize = group.FloatValue("Min Screen Size", "The minimum screen size to draw model (the bottom limit). Used to cull small models. Set to 0 to disable this feature.");
-                        minScreenSize.FloatValue.MinValue = 0.0f;
-                        minScreenSize.FloatValue.MaxValue = 1.0f;
-                        minScreenSize.FloatValue.Value = proxy.Asset.MinScreenSize;
-                        minScreenSize.FloatValue.BoxValueChanged += b =>
+                        minScreenSize.ValueBox.MinValue = 0.0f;
+                        minScreenSize.ValueBox.MaxValue = 1.0f;
+                        minScreenSize.ValueBox.Value = proxy.Asset.MinScreenSize;
+                        minScreenSize.ValueBox.BoxValueChanged += b =>
                         {
                             proxy.Asset.MinScreenSize = b.Value;
                             proxy.Window.MarkAsEdited();
@@ -197,17 +197,17 @@ namespace FlaxEditor.Windows.Assets
                         }
 
                         var resolution = group.FloatValue("Resolution Scale", proxy.Window.Editor.CodeDocs.GetTooltip(typeof(ModelImportSettings), nameof(ModelImportSettings.SDFResolution)));
-                        resolution.FloatValue.MinValue = 0.0001f;
-                        resolution.FloatValue.MaxValue = 100.0f;
-                        resolution.FloatValue.Value = sdf.Texture != null ? sdf.ResolutionScale : 1.0f;
-                        resolution.FloatValue.BoxValueChanged += b => { proxy.Window._importSettings.SDFResolution = b.Value; };
+                        resolution.ValueBox.MinValue = 0.0001f;
+                        resolution.ValueBox.MaxValue = 100.0f;
+                        resolution.ValueBox.Value = sdf.Texture != null ? sdf.ResolutionScale : 1.0f;
+                        resolution.ValueBox.BoxValueChanged += b => { proxy.Window._importSettings.SDFResolution = b.Value; };
                         proxy.Window._importSettings.SDFResolution = sdf.ResolutionScale;
 
                         var backfacesThreshold = group.FloatValue("Backfaces Threshold", "Custom threshold (in range 0-1) for adjusting mesh internals detection based on the percentage of test rays hit triangle backfaces. Use lower value for more dense mesh.");
-                        backfacesThreshold.FloatValue.MinValue = 0.001f;
-                        backfacesThreshold.FloatValue.MaxValue = 1.0f;
-                        backfacesThreshold.FloatValue.Value = proxy.Window._backfacesThreshold;
-                        backfacesThreshold.FloatValue.BoxValueChanged += b => { proxy.Window._backfacesThreshold = b.Value; };
+                        backfacesThreshold.ValueBox.MinValue = 0.001f;
+                        backfacesThreshold.ValueBox.MaxValue = 1.0f;
+                        backfacesThreshold.ValueBox.Value = proxy.Window._backfacesThreshold;
+                        backfacesThreshold.ValueBox.BoxValueChanged += b => { proxy.Window._backfacesThreshold = b.Value; };
 
                         var lodIndex = group.IntegerValue("LOD Index", "Index of the model Level of Detail to use for SDF data building. By default uses the lowest quality LOD for fast building.");
                         lodIndex.IntValue.MinValue = 0;
@@ -251,10 +251,10 @@ namespace FlaxEditor.Windows.Assets
                         group.Label(string.Format("Triangles: {0:N0}   Vertices: {1:N0}", triangleCount, vertexCount)).AddCopyContextMenu();
                         group.Label("Size: " + lod.Box.Size).AddCopyContextMenu();
                         var screenSize = group.FloatValue("Screen Size", "The screen size to switch LODs. Bottom limit of the model screen size to render this LOD.");
-                        screenSize.FloatValue.MinValue = 0.0f;
-                        screenSize.FloatValue.MaxValue = 10.0f;
-                        screenSize.FloatValue.Value = lod.ScreenSize;
-                        screenSize.FloatValue.BoxValueChanged += b =>
+                        screenSize.ValueBox.MinValue = 0.0f;
+                        screenSize.ValueBox.MaxValue = 10.0f;
+                        screenSize.ValueBox.Value = lod.ScreenSize;
+                        screenSize.ValueBox.BoxValueChanged += b =>
                         {
                             lod.ScreenSize = b.Value;
                             proxy.Window.MarkAsEdited();
@@ -589,12 +589,12 @@ namespace FlaxEditor.Windows.Assets
                             uint i2 = meshData.IndexBuffer[i + 2];
 
                             // Cache triangle uvs positions and transform positions to output target
-                            Vector2 uv0 = meshData.VertexBuffer[i0].TexCoord * uvScale;
-                            Vector2 uv1 = meshData.VertexBuffer[i1].TexCoord * uvScale;
-                            Vector2 uv2 = meshData.VertexBuffer[i2].TexCoord * uvScale;
+                            Float2 uv0 = meshData.VertexBuffer[i0].TexCoord * uvScale;
+                            Float2 uv1 = meshData.VertexBuffer[i1].TexCoord * uvScale;
+                            Float2 uv2 = meshData.VertexBuffer[i2].TexCoord * uvScale;
 
                             // Don't draw too small triangles
-                            float area = Vector2.TriangleArea(ref uv0, ref uv1, ref uv2);
+                            float area = Float2.TriangleArea(ref uv0, ref uv1, ref uv2);
                             if (area > 10.0f)
                             {
                                 // Draw triangle
@@ -613,12 +613,12 @@ namespace FlaxEditor.Windows.Assets
                             uint i2 = meshData.IndexBuffer[i + 2];
 
                             // Cache triangle uvs positions and transform positions to output target
-                            Vector2 uv0 = meshData.VertexBuffer[i0].LightmapUVs * uvScale;
-                            Vector2 uv1 = meshData.VertexBuffer[i1].LightmapUVs * uvScale;
-                            Vector2 uv2 = meshData.VertexBuffer[i2].LightmapUVs * uvScale;
+                            Float2 uv0 = meshData.VertexBuffer[i0].LightmapUVs * uvScale;
+                            Float2 uv1 = meshData.VertexBuffer[i1].LightmapUVs * uvScale;
+                            Float2 uv2 = meshData.VertexBuffer[i2].LightmapUVs * uvScale;
 
                             // Don't draw too small triangles
-                            float area = Vector2.TriangleArea(ref uv0, ref uv1, ref uv2);
+                            float area = Float2.TriangleArea(ref uv0, ref uv1, ref uv2);
                             if (area > 3.0f)
                             {
                                 // Draw triangle
@@ -644,11 +644,11 @@ namespace FlaxEditor.Windows.Assets
                     if (!Proxy.Window._meshData.RequestMeshData(Proxy.Window._asset))
                     {
                         Invalidate();
-                        Render2D.DrawText(Style.Current.FontMedium, "Loading...", new Rectangle(Vector2.Zero, size), Color.White, TextAlignment.Center, TextAlignment.Center);
+                        Render2D.DrawText(Style.Current.FontMedium, "Loading...", new Rectangle(Float2.Zero, size), Color.White, TextAlignment.Center, TextAlignment.Center);
                         return;
                     }
 
-                    Render2D.PushClip(new Rectangle(Vector2.Zero, size));
+                    Render2D.PushClip(new Rectangle(Float2.Zero, size));
 
                     var meshDatas = Proxy.Window._meshData.MeshDatas;
                     var lodIndex = Mathf.Clamp(_lod, 0, meshDatas.Length - 1);

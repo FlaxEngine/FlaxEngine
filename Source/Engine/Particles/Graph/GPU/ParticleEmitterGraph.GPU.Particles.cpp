@@ -15,14 +15,14 @@ namespace
         case ParticleAttribute::ValueTypes::Float:
             type = VariantType::Float;
             break;
-        case ParticleAttribute::ValueTypes::Vector2:
-            type = VariantType::Vector2;
+        case ParticleAttribute::ValueTypes::Float2:
+            type = VariantType::Float2;
             break;
-        case ParticleAttribute::ValueTypes::Vector3:
-            type = VariantType::Vector3;
+        case ParticleAttribute::ValueTypes::Float3:
+            type = VariantType::Float3;
             break;
-        case ParticleAttribute::ValueTypes::Vector4:
-            type = VariantType::Vector4;
+        case ParticleAttribute::ValueTypes::Float4:
+            type = VariantType::Float4;
             break;
         case ParticleAttribute::ValueTypes::Int:
             type = VariantType::Int;
@@ -89,13 +89,13 @@ ParticleEmitterGPUGenerator::Value ParticleEmitterGPUGenerator::AccessParticleAt
         case ParticleAttribute::ValueTypes::Float:
             format = TEXT("GetParticleFloat(context.ParticleIndex, {0})");
             break;
-        case ParticleAttribute::ValueTypes::Vector2:
+        case ParticleAttribute::ValueTypes::Float2:
             format = TEXT("GetParticleVec2(context.ParticleIndex, {0})");
             break;
-        case ParticleAttribute::ValueTypes::Vector3:
+        case ParticleAttribute::ValueTypes::Float3:
             format = TEXT("GetParticleVec3(context.ParticleIndex, {0})");
             break;
-        case ParticleAttribute::ValueTypes::Vector4:
+        case ParticleAttribute::ValueTypes::Float4:
             format = TEXT("GetParticleVec4(context.ParticleIndex, {0})");
             break;
         case ParticleAttribute::ValueTypes::Int:
@@ -225,11 +225,11 @@ void ParticleEmitterGPUGenerator::ProcessGroupTools(Box* box, Node* node, Value&
     // Transform Position To Screen UV
     case 9:
     {
-        const Value position = tryGetValue(node->GetBox(0), Value::Zero).AsVector3();
-        const Value projPos = writeLocal(VariantType::Vector4, String::Format(TEXT("mul(float4({0}, 1.0f), ViewProjectionMatrix)"), position.Value), node);
+        const Value position = tryGetValue(node->GetBox(0), Value::Zero).AsFloat3();
+        const Value projPos = writeLocal(VariantType::Float4, String::Format(TEXT("mul(float4({0}, 1.0f), ViewProjectionMatrix)"), position.Value), node);
         _writer.Write(TEXT("\t{0}.xy /= {0}.w;\n"), projPos.Value);
         _writer.Write(TEXT("\t{0}.xy = {0}.xy * 0.5f + 0.5f;\n"), projPos.Value);
-        value = Value(VariantType::Vector2, projPos.Value + TEXT(".xy"));
+        value = Value(VariantType::Float2, projPos.Value + TEXT(".xy"));
         break;
     }
     default:
@@ -261,13 +261,13 @@ void ParticleEmitterGPUGenerator::ProcessGroupParticles(Box* box, Node* node, Va
         case ParticleAttribute::ValueTypes::Float:
             format = TEXT("GetParticleFloat({1}, {0})");
             break;
-        case ParticleAttribute::ValueTypes::Vector2:
+        case ParticleAttribute::ValueTypes::Float2:
             format = TEXT("GetParticleVec2({1}, {0})");
             break;
-        case ParticleAttribute::ValueTypes::Vector3:
+        case ParticleAttribute::ValueTypes::Float3:
             format = TEXT("GetParticleVec3({1}, {0})");
             break;
-        case ParticleAttribute::ValueTypes::Vector4:
+        case ParticleAttribute::ValueTypes::Float4:
             format = TEXT("GetParticleVec4({1}, {0})");
             break;
         case ParticleAttribute::ValueTypes::Int:
@@ -285,7 +285,7 @@ void ParticleEmitterGPUGenerator::ProcessGroupParticles(Box* box, Node* node, Va
     }
     // Particle Position
     case 101:
-        value = AccessParticleAttribute(node, TEXT("Position"), ParticleAttribute::ValueTypes::Vector3, AccessMode::Read);
+        value = AccessParticleAttribute(node, TEXT("Position"), ParticleAttribute::ValueTypes::Float3, AccessMode::Read);
         break;
     // Particle Lifetime
     case 102:
@@ -297,15 +297,15 @@ void ParticleEmitterGPUGenerator::ProcessGroupParticles(Box* box, Node* node, Va
         break;
     // Particle Color
     case 104:
-        value = AccessParticleAttribute(node, TEXT("Color"), ParticleAttribute::ValueTypes::Vector4, AccessMode::Read);
+        value = AccessParticleAttribute(node, TEXT("Color"), ParticleAttribute::ValueTypes::Float4, AccessMode::Read);
         break;
     // Particle Velocity
     case 105:
-        value = AccessParticleAttribute(node, TEXT("Velocity"), ParticleAttribute::ValueTypes::Vector3, AccessMode::Read);
+        value = AccessParticleAttribute(node, TEXT("Velocity"), ParticleAttribute::ValueTypes::Float3, AccessMode::Read);
         break;
     // Particle Sprite Size
     case 106:
-        value = AccessParticleAttribute(node, TEXT("SpriteSize"), ParticleAttribute::ValueTypes::Vector2, AccessMode::Read);
+        value = AccessParticleAttribute(node, TEXT("SpriteSize"), ParticleAttribute::ValueTypes::Float2, AccessMode::Read);
         break;
     // Particle Mass
     case 107:
@@ -313,11 +313,11 @@ void ParticleEmitterGPUGenerator::ProcessGroupParticles(Box* box, Node* node, Va
         break;
     // Particle Rotation
     case 108:
-        value = AccessParticleAttribute(node, TEXT("Rotation"), ParticleAttribute::ValueTypes::Vector3, AccessMode::Read);
+        value = AccessParticleAttribute(node, TEXT("Rotation"), ParticleAttribute::ValueTypes::Float3, AccessMode::Read);
         break;
     // Particle Angular Velocity
     case 109:
-        value = AccessParticleAttribute(node, TEXT("AngularVelocity"), ParticleAttribute::ValueTypes::Vector3, AccessMode::Read);
+        value = AccessParticleAttribute(node, TEXT("AngularVelocity"), ParticleAttribute::ValueTypes::Float3, AccessMode::Read);
         break;
     // Particle Normalized Age
     case 110:
@@ -333,7 +333,7 @@ void ParticleEmitterGPUGenerator::ProcessGroupParticles(Box* box, Node* node, Va
         break;
     // Effect Position
     case 200:
-        value = Value(VariantType::Vector3, TEXT("EffectPosition"));
+        value = Value(VariantType::Float3, TEXT("EffectPosition"));
         break;
     // Effect Rotation
     case 201:
@@ -341,7 +341,7 @@ void ParticleEmitterGPUGenerator::ProcessGroupParticles(Box* box, Node* node, Va
         break;
     // Effect Scale
     case 202:
-        value = Value(VariantType::Vector3, TEXT("EffectScale"));
+        value = Value(VariantType::Float3, TEXT("EffectScale"));
         break;
     // Simulation Mode
     case 203:
@@ -349,11 +349,11 @@ void ParticleEmitterGPUGenerator::ProcessGroupParticles(Box* box, Node* node, Va
         break;
     // View Position
     case 204:
-        value = Value(VariantType::Vector3, TEXT("ViewPos"));
+        value = Value(VariantType::Float3, TEXT("ViewPos"));
         break;
     // View Direction
     case 205:
-        value = Value(VariantType::Vector3, TEXT("ViewDir"));
+        value = Value(VariantType::Float3, TEXT("ViewDir"));
         break;
     // View Far Plane
     case 206:
@@ -361,7 +361,7 @@ void ParticleEmitterGPUGenerator::ProcessGroupParticles(Box* box, Node* node, Va
         break;
     // Screen Size
     case 207:
-        value = Value(VariantType::Vector2, box->ID == 0 ? TEXT("ScreenSize.xy") : TEXT("ScreenSize.zw"));
+        value = Value(VariantType::Float2, box->ID == 0 ? TEXT("ScreenSize.xy") : TEXT("ScreenSize.zw"));
         break;
     // Random Float
     case 208:
@@ -369,21 +369,21 @@ void ParticleEmitterGPUGenerator::ProcessGroupParticles(Box* box, Node* node, Va
         break;
     // Random Vector2
     case 209:
-        value = writeLocal(VariantType::Vector2, TEXT("RAND2"), node);
+        value = writeLocal(VariantType::Float2, TEXT("RAND2"), node);
         break;
     // Random Vector3
     case 210:
-        value = writeLocal(VariantType::Vector3, TEXT("RAND3"), node);
+        value = writeLocal(VariantType::Float3, TEXT("RAND3"), node);
         break;
     // Random Vector4
     case 211:
-        value = writeLocal(VariantType::Vector4, TEXT("RAND4"), node);
+        value = writeLocal(VariantType::Float4, TEXT("RAND4"), node);
         break;
     // Particle Position (world space)
     case 212:
-        value = AccessParticleAttribute(node, TEXT("Position"), ParticleAttribute::ValueTypes::Vector3, AccessMode::Read);
+        value = AccessParticleAttribute(node, TEXT("Position"), ParticleAttribute::ValueTypes::Float3, AccessMode::Read);
         if (IsLocalSimulationSpace())
-            value = writeLocal(VariantType::Vector3, String::Format(TEXT("mul(float4({0}, 1), WorldMatrix).xyz"), value.Value), node);
+            value = writeLocal(VariantType::Float3, String::Format(TEXT("mul(float4({0}, 1), WorldMatrix).xyz"), value.Value), node);
         break;
     // Random Float Range
     case 213:
@@ -396,25 +396,25 @@ void ParticleEmitterGPUGenerator::ProcessGroupParticles(Box* box, Node* node, Va
     // Random Vector2 Range
     case 214:
     {
-        auto& a = node->Values[0].AsVector2();
-        auto& b = node->Values[1].AsVector2();
-        value = writeLocal(VariantType::Vector2, String::Format(TEXT("float2(lerp({0}, {1}, RAND), lerp({2}, {3}, RAND))"), a.X, b.X, a.Y, b.Y), node);
+        auto& a = node->Values[0].AsFloat2();
+        auto& b = node->Values[1].AsFloat2();
+        value = writeLocal(VariantType::Float2, String::Format(TEXT("float2(lerp({0}, {1}, RAND), lerp({2}, {3}, RAND))"), a.X, b.X, a.Y, b.Y), node);
         break;
     }
     // Random Vector3 Range
     case 215:
     {
-        auto& a = node->Values[0].AsVector3();
-        auto& b = node->Values[1].AsVector3();
-        value = writeLocal(VariantType::Vector3, String::Format(TEXT("float3(lerp({0}, {1}, RAND), lerp({2}, {3}, RAND), lerp({4}, {5}, RAND))"), a.X, b.X, a.Y, b.Y, a.Z, b.Z), node);
+        auto& a = node->Values[0].AsFloat3();
+        auto& b = node->Values[1].AsFloat3();
+        value = writeLocal(VariantType::Float3, String::Format(TEXT("float3(lerp({0}, {1}, RAND), lerp({2}, {3}, RAND), lerp({4}, {5}, RAND))"), a.X, b.X, a.Y, b.Y, a.Z, b.Z), node);
         break;
     }
     // Random Vector4 Range
     case 216:
     {
-        auto& a = node->Values[0].AsVector4();
-        auto& b = node->Values[1].AsVector4();
-        value = writeLocal(VariantType::Vector4, String::Format(TEXT("float4(lerp({0}, {1}, RAND), lerp({2}, {3}, RAND), lerp({4}, {5}, RAND), lerp({6}, {7}, RAND))"), a.X, b.X, a.Y, b.Y, a.Z, b.Z, a.W, b.W), node);
+        auto& a = node->Values[0].AsFloat4();
+        auto& b = node->Values[1].AsFloat4();
+        value = writeLocal(VariantType::Float4, String::Format(TEXT("float4(lerp({0}, {1}, RAND), lerp({2}, {3}, RAND), lerp({4}, {5}, RAND), lerp({6}, {7}, RAND))"), a.X, b.X, a.Y, b.Y, a.Z, b.Z, a.W, b.W), node);
         break;
     }
     // Particle Emitter Function

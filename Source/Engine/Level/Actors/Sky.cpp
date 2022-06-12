@@ -67,12 +67,12 @@ void Sky::InitConfig(AtmosphericFogData& config) const
     if (SunLight)
     {
         config.AtmosphericFogSunDirection = -SunLight->GetDirection();
-        config.AtmosphericFogSunColor = SunLight->Color.ToVector3();
+        config.AtmosphericFogSunColor = SunLight->Color.ToFloat3();
     }
     else
     {
-        config.AtmosphericFogSunDirection = Vector3::UnitY;
-        config.AtmosphericFogSunColor = Vector3::One;
+        config.AtmosphericFogSunDirection = Float3::UnitY;
+        config.AtmosphericFogSunColor = Float3::One;
     }
 }
 
@@ -154,7 +154,7 @@ bool Sky::HasContentLoaded() const
     return _shader && _shader->IsLoaded() && AtmospherePreCompute::GetCache(nullptr);
 }
 
-bool Sky::IntersectsItself(const Ray& ray, float& distance, Vector3& normal)
+bool Sky::IntersectsItself(const Ray& ray, Real& distance, Vector3& normal)
 {
     return false;
 }

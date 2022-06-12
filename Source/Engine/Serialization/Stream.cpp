@@ -7,9 +7,6 @@
 #include "MemoryReadStream.h"
 #include "Engine/Core/Types/CommonValue.h"
 #include "Engine/Core/Types/Variant.h"
-#include "Engine/Core/Math/Double2.h"
-#include "Engine/Core/Math/Double3.h"
-#include "Engine/Core/Math/Double4.h"
 #include "Engine/Core/Collections/Dictionary.h"
 #include "Engine/Content/Asset.h"
 #include "Engine/Core/Cache.h"
@@ -133,21 +130,21 @@ void ReadStream::ReadCommonValue(CommonValue* data)
     break;
     case CommonType::Vector2:
     {
-        Vector2 v;
+        Float2 v;
         Read(&v);
         data->Set(v);
     }
     break;
     case CommonType::Vector3:
     {
-        Vector3 v;
+        Float3 v;
         Read(&v);
         data->Set(v);
     }
     break;
     case CommonType::Vector4:
     {
-        Vector4 v;
+        Float4 v;
         Read(&v);
         data->Set(v);
     }
@@ -176,7 +173,7 @@ void ReadStream::ReadCommonValue(CommonValue* data)
     case CommonType::Box:
     {
         BoundingBox v;
-        Read(&v);
+        ReadBoundingBox(&v);
         data->Set(v);
     }
     break;
@@ -190,14 +187,14 @@ void ReadStream::ReadCommonValue(CommonValue* data)
     case CommonType::Transform:
     {
         Transform v;
-        Read(&v);
+        ReadTransform(&v);
         data->Set(v);
     }
     break;
     case CommonType::Sphere:
     {
         BoundingSphere v;
-        Read(&v);
+        ReadBoundingSphere(&v);
         data->Set(v);
     }
     break;
@@ -210,7 +207,7 @@ void ReadStream::ReadCommonValue(CommonValue* data)
     case CommonType::Ray:
     {
         Ray v;
-        Read(&v);
+        ReadRay(&v);
         data->Set(v);
     }
     break;
@@ -407,14 +404,14 @@ void ReadStream::ReadVariant(Variant* data)
         data->SetAsset(LoadAsset(id, Asset::TypeInitializer));
         break;
     }
-    case VariantType::Vector2:
-        ReadBytes(&data->AsData, sizeof(Vector2));
+    case VariantType::Float2:
+        ReadBytes(&data->AsData, sizeof(Float2));
         break;
-    case VariantType::Vector3:
-        ReadBytes(&data->AsData, sizeof(Vector3));
+    case VariantType::Float3:
+        ReadBytes(&data->AsData, sizeof(Float3));
         break;
-    case VariantType::Vector4:
-        ReadBytes(&data->AsData, sizeof(Vector4));
+    case VariantType::Float4:
+        ReadBytes(&data->AsData, sizeof(Float4));
         break;
     case VariantType::Double2:
         ReadBytes(&data->AsData, sizeof(Double2));
@@ -432,22 +429,22 @@ void ReadStream::ReadVariant(Variant* data)
         ReadBytes(&data->AsData, sizeof(Guid));
         break;
     case VariantType::BoundingBox:
-        ReadBytes(&data->AsData, sizeof(BoundingBox));
+        ReadBoundingBox(&data->AsBoundingBox());
         break;
     case VariantType::BoundingSphere:
-        ReadBytes(&data->AsData, sizeof(BoundingSphere));
+        ReadBoundingSphere(&data->AsBoundingSphere());
         break;
     case VariantType::Quaternion:
         ReadBytes(&data->AsData, sizeof(Quaternion));
         break;
     case VariantType::Transform:
-        ReadBytes(data->AsBlob.Data, sizeof(Transform));
+        ReadTransform((Transform*)&data->AsData);
         break;
     case VariantType::Rectangle:
         ReadBytes(&data->AsData, sizeof(Rectangle));
         break;
     case VariantType::Ray:
-        ReadBytes(&data->AsData, sizeof(Ray));
+        ReadRay(&data->AsRay());
         break;
     case VariantType::Matrix:
         ReadBytes(data->AsBlob.Data, sizeof(Matrix));
@@ -500,7 +497,7 @@ void ReadStream::ReadVariant(Variant* data)
         break;
     }
     default:
-    CRASH;
+        CRASH;
     }
 }
 
@@ -525,6 +522,116 @@ void ReadStream::ReadJson(ISerializable* obj)
     }
     else
         SetPosition(GetPosition() + size);
+}
+
+void ReadStream::ReadBoundingBox(BoundingBox* box, bool useDouble)
+{
+#if USE_LARGE_WORLDS
+    if (useDouble)
+        Read(box);
+    else
+    {
+        Float3 min, max;
+        Read(&min);
+        Read(&max);
+        box->Minimum = min;
+        box->Maximum = max;
+    }
+#else
+    if (useDouble)
+    {
+        Double3 min, max;
+        Read(&min);
+        Read(&max);
+        box->Minimum = min;
+        box->Maximum = max;
+    }
+    else
+        Read(box);
+#endif
+}
+
+void ReadStream::ReadBoundingSphere(BoundingSphere* sphere, bool useDouble)
+{
+#if USE_LARGE_WORLDS
+    if (useDouble)
+        Read(sphere);
+    else
+    {
+        Float3 center;
+        float radius;
+        Read(&center);
+        Read(&radius);
+        sphere->Center = center;
+        sphere->Radius = radius;
+    }
+#else
+    if (useDouble)
+    {
+        Double3 center;
+        double radius;
+        Read(&center);
+        Read(&radius);
+        sphere->Center = center;
+        sphere->Radius = (float)radius;
+    }
+    else
+        Read(sphere);
+#endif
+}
+
+void ReadStream::ReadTransform(Transform* transform, bool useDouble)
+{
+#if USE_LARGE_WORLDS
+    if (useDouble)
+        Read(transform);
+    else
+    {
+        Float3 translation;
+        Read(&translation);
+        Read(&transform->Orientation);
+        Read(&transform->Scale);
+        transform->Translation = translation;
+    }
+#else
+    if (useDouble)
+    {
+        Double3 translation;
+        Read(&translation);
+        Read(&transform->Orientation);
+        Read(&transform->Scale);
+        transform->Translation = translation;
+    }
+    else
+        Read(transform);
+#endif
+}
+
+void ReadStream::ReadRay(Ray* ray, bool useDouble)
+{
+#if USE_LARGE_WORLDS
+    if (useDouble)
+        Read(ray);
+    else
+    {
+        Float3 position, direction;
+        Read(&position);
+        Read(&direction);
+        ray->Position = position;
+        ray->Direction = direction;
+    }
+#else
+    if (useDouble)
+    {
+        Double3 position, direction;
+        Read(&position);
+        Read(&direction);
+        ray->Position = position;
+        ray->Direction = direction;
+    }
+    else
+        Read(ray);
+#endif
 }
 
 void WriteStream::WriteText(const StringView& text)
@@ -603,22 +710,22 @@ void WriteStream::WriteCommonValue(const CommonValue& data)
         WriteString(data.AsString, 953);
         break;
     case CommonType::Box:
-        Write(&data.AsBox);
+        WriteBoundingBox(data.AsBox);
         break;
     case CommonType::Rotation:
         Write(&data.AsRotation);
         break;
     case CommonType::Transform:
-        Write(&data.AsTransform);
+        WriteTransform(data.AsTransform);
         break;
     case CommonType::Sphere:
-        Write(&data.AsSphere);
+        WriteBoundingSphere(data.AsSphere);
         break;
     case CommonType::Rectangle:
         Write(&data.AsRectangle);
         break;
     case CommonType::Ray:
-        Write(&data.AsRay);
+        WriteRay(data.AsRay);
         break;
     case CommonType::Matrix:
         Write(&data.AsMatrix);
@@ -691,13 +798,13 @@ void WriteStream::WriteVariant(const Variant& data)
         WriteBytes(data.AsBlob.Data, data.AsBlob.Length);
         break;
     case VariantType::BoundingBox:
-        WriteBytes(data.AsData, sizeof(BoundingBox));
+        WriteBoundingBox(data.AsBoundingBox());
         break;
     case VariantType::Transform:
-        WriteBytes(data.AsBlob.Data, sizeof(Transform));
+        WriteTransform(data.AsTransform());
         break;
     case VariantType::Ray:
-        WriteBytes(data.AsData, sizeof(Ray));
+        WriteRay(data.AsRay());
         break;
     case VariantType::Matrix:
         WriteBytes(data.AsBlob.Data, sizeof(Matrix));
@@ -706,14 +813,14 @@ void WriteStream::WriteVariant(const Variant& data)
         id = data.AsAsset ? data.AsAsset->GetID() : Guid::Empty;
         Write(&id);
         break;
-    case VariantType::Vector2:
-        WriteBytes(data.AsData, sizeof(Vector2));
+    case VariantType::Float2:
+        WriteBytes(data.AsData, sizeof(Float2));
         break;
-    case VariantType::Vector3:
-        WriteBytes(data.AsData, sizeof(Vector3));
+    case VariantType::Float3:
+        WriteBytes(data.AsData, sizeof(Float3));
         break;
-    case VariantType::Vector4:
-        WriteBytes(data.AsData, sizeof(Vector4));
+    case VariantType::Float4:
+        WriteBytes(data.AsData, sizeof(Float4));
         break;
     case VariantType::Double2:
         WriteBytes(data.AsData, sizeof(Double2));
@@ -737,7 +844,7 @@ void WriteStream::WriteVariant(const Variant& data)
         WriteBytes(data.AsData, sizeof(Rectangle));
         break;
     case VariantType::BoundingSphere:
-        WriteBytes(data.AsData, sizeof(BoundingSphere));
+        WriteBoundingSphere(data.AsBoundingSphere());
         break;
     case VariantType::Array:
         id.A = ((Array<Variant>*)data.AsData)->Count();
@@ -782,7 +889,7 @@ void WriteStream::WriteVariant(const Variant& data)
         break;
     }
     default:
-    CRASH;
+        CRASH;
     }
 }
 
@@ -802,6 +909,102 @@ void WriteStream::WriteJson(ISerializable* obj, const void* otherObj)
     }
     else
         WriteInt32(0);
+}
+
+void WriteStream::WriteBoundingBox(const BoundingBox& box, bool useDouble)
+{
+#if USE_LARGE_WORLDS
+    if (useDouble)
+        Write(&box);
+    else
+    {
+        Float3 min = box.Minimum, max = box.Maximum;
+        Write(&min);
+        Write(&max);
+    }
+#else
+    if (useDouble)
+    {
+        Double3 min = box.Minimum, max = box.Maximum;
+        Write(&min);
+        Write(&max);
+    }
+    else
+        Write(&box);
+#endif
+}
+
+void WriteStream::WriteBoundingSphere(const BoundingSphere& sphere, bool useDouble)
+{
+#if USE_LARGE_WORLDS
+    if (useDouble)
+        Write(&sphere);
+    else
+    {
+        Float3 center = sphere.Center;
+        float radius = (float)sphere.Radius;
+        Write(&center);
+        Write(&radius);
+    }
+#else
+    if (useDouble)
+    {
+        Double3 center = sphere.Center;
+        float radius = (float)sphere.Radius;
+        Write(&center);
+        Write(&radius);
+    }
+    else
+        Write(&sphere);
+#endif
+}
+
+void WriteStream::WriteTransform(const Transform& transform, bool useDouble)
+{
+#if USE_LARGE_WORLDS
+    if (useDouble)
+        Write(&transform);
+    else
+    {
+        Float3 translation = transform.Translation;
+        Write(&translation);
+        Write(&transform.Orientation);
+        Write(&transform.Scale);
+    }
+#else
+    if (useDouble)
+    {
+        Double3 translation = transform.Translation;
+        Write(&translation);
+        Write(&transform.Orientation);
+        Write(&transform.Scale);
+    }
+    else
+        Write(&transform);
+#endif
+}
+
+void WriteStream::WriteRay(const Ray& ray, bool useDouble)
+{
+#if USE_LARGE_WORLDS
+    if (useDouble)
+        Write(&ray);
+    else
+    {
+        Float3 position = ray.Position, direction = ray.Direction;
+        Write(&position);
+        Write(&direction);
+    }
+#else
+    if (useDouble)
+    {
+        Double3 position = ray.Position, direction = ray.Direction;
+        Write(&position);
+        Write(&direction);
+    }
+    else
+        Write(&ray);
+#endif
 }
 
 Array<byte> JsonSerializer::SaveToBytes(ISerializable* obj)

@@ -106,12 +106,12 @@ void SkyLight::Draw(RenderContext& renderContext)
         && (ViewDistance < ZeroTolerance || Vector3::DistanceSquared(renderContext.View.Position, GetPosition()) < ViewDistance * ViewDistance))
     {
         RendererSkyLightData data;
-        data.Position = GetPosition();
-        data.Color = Color.ToVector3() * (Color.A * brightness);
+        data.Position = GetPosition(); // TODO: large-worlds
+        data.Color = Color.ToFloat3() * (Color.A * brightness);
         data.VolumetricScatteringIntensity = VolumetricScatteringIntensity;
         data.CastVolumetricShadow = CastVolumetricShadow;
         data.RenderedVolumetricFog = 0;
-        data.AdditiveColor = AdditiveColor.ToVector3() * (AdditiveColor.A * brightness);
+        data.AdditiveColor = AdditiveColor.ToFloat3() * (AdditiveColor.A * brightness);
         data.Radius = GetScaledRadius();
         data.Image = GetSource();
         renderContext.List->SkyLights.Add(data);

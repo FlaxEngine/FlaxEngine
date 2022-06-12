@@ -45,7 +45,7 @@ namespace FlaxEditor.GUI
 
                 if (_selected != null && _selected.ContextMenu.HasChildren)
                 {
-                    _selected.ContextMenu.Show(_selected, new Vector2(0, _selected.Height));
+                    _selected.ContextMenu.Show(_selected, new Float2(0, _selected.Height));
                     _selected.ContextMenu.VisibleChanged += OnSelectedContextMenuVisibleChanged;
                 }
             }
@@ -187,7 +187,7 @@ namespace FlaxEditor.GUI
             }
         }
 
-        private WindowHitCodes OnHitTest(ref Vector2 mouse)
+        private WindowHitCodes OnHitTest(ref Float2 mouse)
         {
             var dpiScale = _window.DpiScale;
 
@@ -286,7 +286,7 @@ namespace FlaxEditor.GUI
         }
 
         /// <inheritdoc />
-        public override bool OnMouseDoubleClick(Vector2 location, MouseButton button)
+        public override bool OnMouseDoubleClick(Float2 location, MouseButton button)
         {
             if (base.OnMouseDoubleClick(location, button))
                 return true;
@@ -314,7 +314,7 @@ namespace FlaxEditor.GUI
             {
                 // Icon
                 _icon.X = x;
-                _icon.Size = new Vector2(Height);
+                _icon.Size = new Float2(Height);
                 x += _icon.Width;
             }
 #endif

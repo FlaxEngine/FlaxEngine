@@ -606,13 +606,13 @@ void Actor::SetOrientation(const Quaternion& value)
     }
 }
 
-void Actor::SetScale(const Vector3& value)
+void Actor::SetScale(const Float3& value)
 {
     CHECK(!value.IsNanOrInfinity());
-    if (!Vector3::NearEqual(_transform.Scale, value))
+    if (!Float3::NearEqual(_transform.Scale, value))
     {
         if (_parent)
-            Vector3::Divide(value, _parent->GetScale(), _localTransform.Scale);
+            Float3::Divide(value, _parent->GetScale(), _localTransform.Scale);
         else
             _localTransform.Scale = value;
         OnTransformChanged();
@@ -633,18 +633,18 @@ void Actor::SetRotation(const Matrix& value)
     SetOrientation(orientation);
 }
 
-void Actor::SetDirection(const Vector3& value)
+void Actor::SetDirection(const Float3& value)
 {
     CHECK(!value.IsNanOrInfinity());
     Quaternion orientation;
-    if (Vector3::Dot(value, Vector3::Up) >= 0.999f)
+    if (Float3::Dot(value, Float3::Up) >= 0.999f)
     {
-        Quaternion::RotationAxis(Vector3::Left, PI_HALF, orientation);
+        Quaternion::RotationAxis(Float3::Left, PI_HALF, orientation);
     }
     else
     {
-        const Vector3 right = Vector3::Cross(value, Vector3::Up);
-        const Vector3 up = Vector3::Cross(right, value);
+        const Float3 right = Float3::Cross(value, Float3::Up);
+        const Float3 up = Float3::Cross(right, value);
         Quaternion::LookRotation(value, up, orientation);
     }
     SetOrientation(orientation);
@@ -688,10 +688,10 @@ void Actor::SetLocalOrientation(const Quaternion& value)
     }
 }
 
-void Actor::SetLocalScale(const Vector3& value)
+void Actor::SetLocalScale(const Float3& value)
 {
     CHECK(!value.IsNanOrInfinity());
-    if (!Vector3::NearEqual(_localTransform.Scale, value))
+    if (!Float3::NearEqual(_localTransform.Scale, value))
     {
         _localTransform.Scale = value;
         OnTransformChanged();
@@ -1367,12 +1367,12 @@ bool Actor::HasActorInChildren(Actor* a) const
     return Children.Contains(a);
 }
 
-bool Actor::IntersectsItself(const Ray& ray, float& distance, Vector3& normal)
+bool Actor::IntersectsItself(const Ray& ray, Real& distance, Vector3& normal)
 {
     return _box.Intersects(ray, distance, normal);
 }
 
-Actor* Actor::Intersects(const Ray& ray, float& distance, Vector3& normal)
+Actor* Actor::Intersects(const Ray& ray, Real& distance, Vector3& normal)
 {
     if (!_isActive)
         return nullptr;
@@ -1380,7 +1380,7 @@ Actor* Actor::Intersects(const Ray& ray, float& distance, Vector3& normal)
     // Check itself
     bool result = IntersectsItself(ray, distance, normal);
     Actor* minTarget = result ? (Actor*)this : nullptr;
-    float minDistance = result ? distance : MAX_float;
+    Real minDistance = result ? distance : MAX_Real;
     Vector3 minDistanceNormal = result ? normal : Vector3::Up;
 
     // Check all children
@@ -1419,8 +1419,8 @@ Quaternion Actor::LookingAt(const Vector3& worldPos) const
     if (direction.LengthSquared() < ZeroTolerance)
         return _parent->GetOrientation();
 
-    const Vector3 newForward = Vector3::Normalize(direction);
-    const Vector3 oldForward = _transform.Orientation * Vector3::Forward;
+    const Float3 newForward = Vector3::Normalize(direction);
+    const Float3 oldForward = _transform.Orientation * Vector3::Forward;
 
     Quaternion orientation;
     if ((newForward + oldForward).LengthSquared() < 0.00005f)
@@ -1433,7 +1433,7 @@ Quaternion Actor::LookingAt(const Vector3& worldPos) const
     {
         // Derive shortest arc to new direction
         Quaternion rotQuat;
-        Quaternion::GetRotationFromTo(oldForward, newForward, rotQuat, Vector3::Zero);
+        Quaternion::GetRotationFromTo(oldForward, newForward, rotQuat, Float3::Zero);
         orientation = rotQuat * _transform.Orientation;
     }
 
@@ -1445,10 +1445,9 @@ Quaternion Actor::LookingAt(const Vector3& worldPos, const Vector3& worldUp) con
     const Vector3 direction = worldPos - _transform.Translation;
     if (direction.LengthSquared() < ZeroTolerance)
         return _parent->GetOrientation();
-    const Vector3 forward = Vector3::Normalize(direction);
-    const Vector3 up = Vector3::Normalize(worldUp);
-
-    if (Math::IsOne(Vector3::Dot(forward, up)))
+    const Float3 forward = Vector3::Normalize(direction);
+    const Float3 up = Vector3::Normalize(worldUp);
+    if (Math::IsOne(Float3::Dot(forward, up)))
     {
         return LookingAt(worldPos);
     }

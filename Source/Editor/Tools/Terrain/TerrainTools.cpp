@@ -3,7 +3,6 @@
 #include "TerrainTools.h"
 #include "Engine/Core/Log.h"
 #include "Engine/Core/Cache.h"
-#include "Engine/Core/Math/Int2.h"
 #include "Engine/Core/Math/Color32.h"
 #include "Engine/Core/Collections/CollectionPoolCache.h"
 #include "Engine/Terrain/TerrainPatch.h"

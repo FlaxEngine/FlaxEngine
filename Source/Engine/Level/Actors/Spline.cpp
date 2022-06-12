@@ -171,7 +171,7 @@ float Spline::GetSplineLength() const
             Vector3 pos;
             AnimationUtils::Bezier(a.Value.Translation, leftTangent, rightTangent, b.Value.Translation, t, pos);
             pos *= _transform.Scale;
-            sum += Vector3::DistanceSquared(pos, prevPoint);
+            sum += (float)Vector3::DistanceSquared(pos, prevPoint);
             prevPoint = pos;
         }
     }
@@ -197,7 +197,7 @@ namespace
             const float t = (float)i * step;
             Transform result;
             Spline::Keyframe::Interpolate(start, end, t, length, result);
-            const float distanceSquared = Vector3::DistanceSquared(point, result.Translation);
+            const float distanceSquared = (float)Vector3::DistanceSquared(point, result.Translation);
             if (distanceSquared < bestDistanceSquared)
             {
                 bestDistanceSquared = distanceSquared;

@@ -178,9 +178,9 @@ TextureBase::TextureBase(const SpawnParams& params, const AssetInfo* info)
 {
 }
 
-Vector2 TextureBase::Size() const
+Float2 TextureBase::Size() const
 {
-    return Vector2(static_cast<float>(_texture.TotalWidth()), static_cast<float>(_texture.TotalHeight()));
+    return Float2(static_cast<float>(_texture.TotalWidth()), static_cast<float>(_texture.TotalHeight()));
 }
 
 int32 TextureBase::GetArraySize() const

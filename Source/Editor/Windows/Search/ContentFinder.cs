@@ -73,7 +73,7 @@ namespace FlaxEditor.Windows.Search
         /// <param name="width">The finder width.</param>
         public ContentFinder(float width = 440.0f)
         {
-            Size = new Vector2(width, TextBox.DefaultHeight + 2.0f);
+            Size = new Float2(width, TextBox.DefaultHeight + 2.0f);
 
             _searchBox = new TextBox
             {
@@ -87,8 +87,8 @@ namespace FlaxEditor.Windows.Search
 
             _resultPanel = new Panel
             {
-                Location = new Vector2(1, _searchBox.Height + 1),
-                Size = new Vector2(width - 2.0f, Height - (_searchBox.Height + 1 + 1)),
+                Location = new Float2(1, _searchBox.Height + 1),
+                Size = new Float2(width - 2.0f, Height - (_searchBox.Height + 1 + 1)),
                 Parent = this
             };
         }
@@ -114,7 +114,7 @@ namespace FlaxEditor.Windows.Search
             {
                 Height = _searchBox.Height + 1;
                 _resultPanel.ScrollBars = ScrollBars.None;
-                window.ClientSize = new Vector2(window.ClientSize.X, Height * dpiScale);
+                window.ClientSize = new Float2(window.ClientSize.X, Height * dpiScale);
                 UnlockChildrenRecursive();
                 PerformLayout();
                 return;
@@ -150,19 +150,19 @@ namespace FlaxEditor.Windows.Search
                 _matchedItems.Add(searchItem);
             }
 
-            window.ClientSize = new Vector2(window.ClientSize.X, Height * dpiScale);
+            window.ClientSize = new Float2(window.ClientSize.X, Height * dpiScale);
 
             UnlockChildrenRecursive();
             PerformLayout();
         }
 
         /// <inheritdoc />
-        public override void Show(Control parent, Vector2 location)
+        public override void Show(Control parent, Float2 location)
         {
             base.Show(parent, location);
 
             // Setup
-            _resultPanel.ScrollViewTo(Vector2.Zero);
+            _resultPanel.ScrollViewTo(Float2.Zero);
             _searchBox.Text = string.Empty;
             _searchBox.Focus();
         }

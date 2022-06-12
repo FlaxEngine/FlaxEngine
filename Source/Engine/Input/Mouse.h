@@ -23,7 +23,7 @@ public:
         /// <summary>
         /// The mouse position.
         /// </summary>
-        Vector2 MousePosition;
+        Float2 MousePosition;
 
         /// <summary>
         /// The mouse wheel delta.
@@ -62,7 +62,7 @@ public:
     /// Gets the position of the mouse in the screen-space coordinates.
     /// </summary>
     /// <returns>The mouse position</returns>
-    API_PROPERTY() FORCE_INLINE Vector2 GetPosition() const
+    API_PROPERTY() FORCE_INLINE Float2 GetPosition() const
     {
         return _state.MousePosition;
     }
@@ -71,7 +71,7 @@ public:
     /// Gets the delta position of the mouse in the screen-space coordinates.
     /// </summary>
     /// <returns>The mouse position delta</returns>
-    API_PROPERTY() FORCE_INLINE Vector2 GetPositionDelta() const
+    API_PROPERTY() FORCE_INLINE Float2 GetPositionDelta() const
     {
         return _state.MousePosition - _prevState.MousePosition;
     }
@@ -121,13 +121,13 @@ public:
     /// Sets the mouse position.
     /// </summary>
     /// <param name="newPosition">The new position.</param>
-    virtual void SetMousePosition(const Vector2& newPosition) = 0;
+    virtual void SetMousePosition(const Float2& newPosition) = 0;
 
     /// <summary>
     /// Called when mouse cursor gets moved by the application. Invalidates the previous cached mouse position to prevent mouse jitter when locking the cursor programmatically.
     /// </summary>
     /// <param name="newPosition">The new mouse position.</param>
-    void OnMouseMoved(const Vector2& newPosition);
+    void OnMouseMoved(const Float2& newPosition);
 
     /// <summary>
     /// Called when mouse button goes down.
@@ -135,7 +135,7 @@ public:
     /// <param name="position">The mouse position.</param>
     /// <param name="button">The button.</param>
     /// <param name="target">The target window to receive this event, otherwise input system will pick the window automatically.</param>
-    void OnMouseDown(const Vector2& position, const MouseButton button, Window* target = nullptr);
+    void OnMouseDown(const Float2& position, const MouseButton button, Window* target = nullptr);
 
     /// <summary>
     /// Called when mouse button goes up.
@@ -143,7 +143,7 @@ public:
     /// <param name="position">The mouse position.</param>
     /// <param name="button">The button.</param>
     /// <param name="target">The target window to receive this event, otherwise input system will pick the window automatically.</param>
-    void OnMouseUp(const Vector2& position, const MouseButton button, Window* target = nullptr);
+    void OnMouseUp(const Float2& position, const MouseButton button, Window* target = nullptr);
 
     /// <summary>
     /// Called when mouse double clicks.
@@ -151,14 +151,14 @@ public:
     /// <param name="position">The mouse position.</param>
     /// <param name="button">The button.</param>
     /// <param name="target">The target window to receive this event, otherwise input system will pick the window automatically.</param>
-    void OnMouseDoubleClick(const Vector2& position, const MouseButton button, Window* target = nullptr);
+    void OnMouseDoubleClick(const Float2& position, const MouseButton button, Window* target = nullptr);
 
     /// <summary>
     /// Called when mouse moves.
     /// </summary>
     /// <param name="position">The mouse position.</param>
     /// <param name="target">The target window to receive this event, otherwise input system will pick the window automatically.</param>
-    void OnMouseMove(const Vector2& position, Window* target = nullptr);
+    void OnMouseMove(const Float2& position, Window* target = nullptr);
 
     /// <summary>
     /// Called when mouse leaves the input source area.
@@ -172,7 +172,7 @@ public:
     /// <param name="position">The mouse position.</param>
     /// <param name="delta">The normalized delta (range [-1;1]).</param>
     /// <param name="target">The target window to receive this event, otherwise input system will pick the window automatically.</param>
-    void OnMouseWheel(const Vector2& position, float delta, Window* target = nullptr);
+    void OnMouseWheel(const Float2& position, float delta, Window* target = nullptr);
 
 public:
 

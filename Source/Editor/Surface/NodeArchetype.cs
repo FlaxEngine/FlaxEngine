@@ -102,7 +102,7 @@ namespace FlaxEditor.Surface
         /// <summary>
         /// Default initial size of the node.
         /// </summary>
-        public Vector2 Size;
+        public Float2 Size;
 
         /// <summary>
         /// Custom set of flags.

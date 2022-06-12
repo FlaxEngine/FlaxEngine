@@ -415,7 +415,7 @@ void ReflectionsPass::Render(RenderContext& renderContext, GPUTextureView* light
             if (!probe->HasProbeLoaded())
                 continue;
             float probeRadius = probe->GetScaledRadius();
-            Vector3 probePosition = probe->GetPosition();
+            Vector3 probePosition = probe->GetPosition(); // TODO: large-worlds
 
             // Get distance from view center to light center less radius (check if view is inside a sphere)
             const float sphereModelScale = 2.0f;

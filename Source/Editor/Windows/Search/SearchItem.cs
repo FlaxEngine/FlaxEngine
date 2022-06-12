@@ -46,7 +46,7 @@ namespace FlaxEditor.Windows.Search
         /// <param name="height">The item height.</param>
         public SearchItem(string name, string type, object item, ContentFinder finder, float width, float height)
         {
-            Size = new Vector2(width, height);
+            Size = new Float2(width, height);
             Name = name;
             Type = type;
             Item = item;
@@ -55,27 +55,27 @@ namespace FlaxEditor.Windows.Search
             var logoSize = 15.0f;
             var icon = new Image
             {
-                Size = new Vector2(logoSize),
-                Location = new Vector2(5, (height - logoSize) / 2)
+                Size = new Float2(logoSize),
+                Location = new Float2(5, (height - logoSize) / 2)
             };
             _icon = icon;
 
             var nameLabel = AddChild<Label>();
             nameLabel.Height = 25;
-            nameLabel.Location = new Vector2(icon.X + icon.Width + 5, (height - nameLabel.Height) / 2);
+            nameLabel.Location = new Float2(icon.X + icon.Width + 5, (height - nameLabel.Height) / 2);
             nameLabel.Text = Name;
             nameLabel.HorizontalAlignment = TextAlignment.Near;
 
             var typeLabel = AddChild<Label>();
             typeLabel.Height = 25;
-            typeLabel.Location = new Vector2((height - nameLabel.Height) / 2, X + width - typeLabel.Width - 17);
+            typeLabel.Location = new Float2((height - nameLabel.Height) / 2, X + width - typeLabel.Width - 17);
             typeLabel.HorizontalAlignment = TextAlignment.Far;
             typeLabel.Text = Type;
             typeLabel.TextColor = Style.Current.ForegroundGrey;
         }
 
         /// <inheritdoc />
-        public override bool OnMouseUp(Vector2 location, MouseButton button)
+        public override bool OnMouseUp(Float2 location, MouseButton button)
         {
             if (button == MouseButton.Left)
             {
@@ -87,7 +87,7 @@ namespace FlaxEditor.Windows.Search
         }
 
         /// <inheritdoc />
-        public override void OnMouseEnter(Vector2 location)
+        public override void OnMouseEnter(Float2 location)
         {
             base.OnMouseEnter(location);
 
@@ -134,7 +134,7 @@ namespace FlaxEditor.Windows.Search
         protected override bool ShowTooltip => true;
 
         /// <inheritdoc />
-        public override bool OnShowTooltip(out string text, out Vector2 location, out Rectangle area)
+        public override bool OnShowTooltip(out string text, out Float2 location, out Rectangle area)
         {
             if (string.IsNullOrEmpty(TooltipText) && Item is AssetItem assetItem)
             {
@@ -145,7 +145,7 @@ namespace FlaxEditor.Windows.Search
         }
 
         /// <inheritdoc />
-        public override bool OnMouseUp(Vector2 location, MouseButton button)
+        public override bool OnMouseUp(Float2 location, MouseButton button)
         {
             if (base.OnMouseUp(location, button))
                 return true;
@@ -192,7 +192,7 @@ namespace FlaxEditor.Windows.Search
         {
             // Draw context menu hint
             if (_cm != null && _cm.Visible)
-                Render2D.FillRectangle(new Rectangle(Vector2.Zero, Size), Color.Gray);
+                Render2D.FillRectangle(new Rectangle(Float2.Zero, Size), Color.Gray);
 
             base.Draw();
 

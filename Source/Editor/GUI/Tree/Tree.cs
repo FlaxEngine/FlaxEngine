@@ -33,7 +33,7 @@ namespace FlaxEditor.GUI.Tree
         /// </summary>
         /// <param name="node">The node.</param>
         /// <param name="location">The location.</param>
-        public delegate void NodeClickDelegate(TreeNode node, Vector2 location);
+        public delegate void NodeClickDelegate(TreeNode node, Float2 location);
 
         private float _keyUpdateTime;
         private readonly bool _supportMultiSelect;
@@ -111,7 +111,7 @@ namespace FlaxEditor.GUI.Tree
             _keyUpdateTime = KeyUpdateTimeout * 10;
         }
 
-        internal void OnRightClickInternal(TreeNode node, ref Vector2 location)
+        internal void OnRightClickInternal(TreeNode node, ref Float2 location)
         {
             RightClick?.Invoke(node, location);
         }
@@ -233,7 +233,7 @@ namespace FlaxEditor.GUI.Tree
             {
                 if (node.GetChild(i) is TreeNode child && child.Visible)
                 {
-                    Vector2 pos = child.PointToParent(this, Vector2.One);
+                    var pos = child.PointToParent(this, Float2.One);
                     if (range.Contains(pos))
                     {
                         selection.Add(child);
@@ -248,8 +248,8 @@ namespace FlaxEditor.GUI.Tree
 
         private Rectangle CalcNodeRangeRect(TreeNode node)
         {
-            Vector2 pos = node.PointToParent(this, Vector2.One);
-            return new Rectangle(pos, new Vector2(10000, 4));
+            var pos = node.PointToParent(this, Float2.One);
+            return new Rectangle(pos, new Float2(10000, 4));
         }
 
         /// <summary>
@@ -530,7 +530,7 @@ namespace FlaxEditor.GUI.Tree
             {
                 if (_children[i] is TreeNode node && node.Visible)
                 {
-                    node.Location = new Vector2(_margin.Left, y);
+                    node.Location = new Float2(_margin.Left, y);
                     y += node.Height + TreeNode.DefaultNodeOffsetY;
                 }
             }

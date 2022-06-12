@@ -199,9 +199,9 @@ namespace FlaxEditor.Content.Import
         /// <summary>
         /// Custom import geometry offset.
         /// </summary>
-        [DefaultValue(typeof(Vector3), "0,0,0")]
+        [DefaultValue(typeof(Float3), "0,0,0")]
         [EditorOrder(520), EditorDisplay("Transform")]
-        public Vector3 Translation { get; set; } = Vector3.Zero;
+        public Float3 Translation { get; set; } = Float3.Zero;
 
         /// <summary>
         /// If checked, the imported geometry will be shifted to the center of mass.
@@ -376,7 +376,7 @@ namespace FlaxEditor.Content.Import
             // Transform
             public float Scale;
             public Quaternion Rotation;
-            public Vector3 Translation;
+            public Float3 Translation;
             public byte CenterGeometry;
 
             // Animation

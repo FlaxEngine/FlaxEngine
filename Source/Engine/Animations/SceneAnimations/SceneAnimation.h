@@ -300,9 +300,12 @@ public:
             Unknown,
             Float,
             Double,
-            Vector2,
-            Vector3,
-            Vector4,
+            Float2,
+            Float3,
+            Float4,
+            Double2,
+            Double3,
+            Double4,
             Quaternion,
             Color,
             Color32,
@@ -316,6 +319,7 @@ public:
         struct Runtime : PropertyTrack::Runtime
         {
             DataTypes DataType;
+            DataTypes ValueType;
             int32 KeyframesCount;
 
             /// <summary>

@@ -56,7 +56,7 @@ void MaterialGenerator::ProcessGroupLayers(Box* box, Node* node, Value& value)
                 // TODO: better idea would to be to use variable for current UVs, by default=input.TexCoord.xy could be modified when sampling layers
 
                 // Cache original pixel UVs
-                orginalUVs = writeLocal(VariantType::Vector2, TEXT("input.TexCoord.xy"), node).Value;
+                orginalUVs = writeLocal(VariantType::Float2, TEXT("input.TexCoord.xy"), node).Value;
 
                 // Modify current pixel UVs
                 _writer.Write(*String::Format(TEXT("\tinput.TexCoord.xy = {0};\n"), customUVs));

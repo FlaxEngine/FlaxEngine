@@ -169,7 +169,7 @@ namespace FlaxEditor.Modules
             //
             var floor = scene.AddChild<StaticModel>();
             floor.Name = "Floor";
-            floor.Scale = new Vector3(4, 0.5f, 4);
+            floor.Scale = new Float3(4, 0.5f, 4);
             floor.Model = FlaxEngine.Content.LoadAsync<Model>(StringUtils.CombinePaths(Globals.EngineContentFolder, "Editor/Primitives/Cube.flax"));
             if (floor.Model)
             {

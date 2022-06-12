@@ -26,7 +26,7 @@ namespace FlaxEditor.Surface
             Title = "Missing Node :(",
             Description = ":(",
             Flags = NodeFlags.AllGraphs,
-            Size = new Vector2(200, 70),
+            Size = new Float2(200, 70),
             Elements = new NodeElementArchetype[0],
             DefaultValues = new object[32],
         }, new GroupArchetype
@@ -111,7 +111,7 @@ namespace FlaxEditor.Surface
                 else
                 {
                     // Reset view
-                    CachedSurfaceMeta.ViewCenterPosition = Vector2.Zero;
+                    CachedSurfaceMeta.ViewCenterPosition = Float2.Zero;
                     CachedSurfaceMeta.Scale = 1.0f;
                 }
 
@@ -310,9 +310,9 @@ namespace FlaxEditor.Surface
             case GraphParamType_Deprecated.Bool: return typeof(bool);
             case GraphParamType_Deprecated.Integer: return typeof(int);
             case GraphParamType_Deprecated.Float: return typeof(float);
-            case GraphParamType_Deprecated.Vector2: return typeof(Vector2);
-            case GraphParamType_Deprecated.Vector3: return typeof(Vector3);
-            case GraphParamType_Deprecated.Vector4: return typeof(Vector4);
+            case GraphParamType_Deprecated.Vector2: return typeof(Float2);
+            case GraphParamType_Deprecated.Vector3: return typeof(Float3);
+            case GraphParamType_Deprecated.Vector4: return typeof(Float4);
             case GraphParamType_Deprecated.Color: return typeof(Color);
             case GraphParamType_Deprecated.Texture: return typeof(Texture);
             case GraphParamType_Deprecated.NormalMap: return typeof(Texture);
@@ -344,9 +344,9 @@ namespace FlaxEditor.Surface
             case GraphConnectionType_Deprecated.Bool: return typeof(bool);
             case GraphConnectionType_Deprecated.Integer: return typeof(int);
             case GraphConnectionType_Deprecated.Float: return typeof(float);
-            case GraphConnectionType_Deprecated.Vector2: return typeof(Vector2);
-            case GraphConnectionType_Deprecated.Vector3: return typeof(Vector3);
-            case GraphConnectionType_Deprecated.Vector4: return typeof(Vector4);
+            case GraphConnectionType_Deprecated.Vector2: return typeof(Float2);
+            case GraphConnectionType_Deprecated.Vector3: return typeof(Float3);
+            case GraphConnectionType_Deprecated.Vector4: return typeof(Float4);
             case GraphConnectionType_Deprecated.String: return typeof(string);
             case GraphConnectionType_Deprecated.Object: return typeof(FlaxEngine.Object);
             case GraphConnectionType_Deprecated.Rotation: return typeof(Quaternion);

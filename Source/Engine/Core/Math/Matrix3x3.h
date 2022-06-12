@@ -121,13 +121,13 @@ public:
 
 public:
     // Gets the first row in the matrix; that is M11, M12 and M13.
-    Vector3 GetRow1() const
+    Float3 GetRow1() const
     {
-        return Vector3(M11, M12, M13);
+        return Float3(M11, M12, M13);
     }
 
     // Sets the first row in the matrix; that is M11, M12 and M13.
-    void SetRow1(const Vector3& value)
+    void SetRow1(const Float3& value)
     {
         M11 = value.X;
         M12 = value.Y;
@@ -135,13 +135,13 @@ public:
     }
 
     // Gets the second row in the matrix; that is M21, M22 and M23.
-    Vector3 GetRow2() const
+    Float3 GetRow2() const
     {
-        return Vector3(M21, M22, M23);
+        return Float3(M21, M22, M23);
     }
 
     // Sets the second row in the matrix; that is M21, M22 and M23.
-    void SetRow2(const Vector3& value)
+    void SetRow2(const Float3& value)
     {
         M21 = value.X;
         M22 = value.Y;
@@ -149,13 +149,13 @@ public:
     }
 
     // Gets the third row in the matrix; that is M31, M32 and M33.
-    Vector3 GetRow3() const
+    Float3 GetRow3() const
     {
-        return Vector3(M31, M32, M33);
+        return Float3(M31, M32, M33);
     }
 
     // Sets the third row in the matrix; that is M31, M32 and M33.
-    void SetRow3(const Vector3& value)
+    void SetRow3(const Float3& value)
     {
         M31 = value.X;
         M32 = value.Y;
@@ -163,13 +163,13 @@ public:
     }
 
     // Gets the first column in the matrix; that is M11, M21 and M31.
-    Vector3 GetColumn1() const
+    Float3 GetColumn1() const
     {
-        return Vector3(M11, M21, M31);
+        return Float3(M11, M21, M31);
     }
 
     // Sets the first column in the matrix; that is M11, M21 and M31.
-    void SetColumn1(const Vector3& value)
+    void SetColumn1(const Float3& value)
     {
         M11 = value.X;
         M21 = value.Y;
@@ -177,13 +177,13 @@ public:
     }
 
     // Gets the second column in the matrix; that is M12, M22 and M32.
-    Vector3 GetColumn2() const
+    Float3 GetColumn2() const
     {
-        return Vector3(M12, M22, M32);
+        return Float3(M12, M22, M32);
     }
 
     // Sets the second column in the matrix; that is M12, M22 and M32.
-    void SetColumn2(const Vector3& value)
+    void SetColumn2(const Float3& value)
     {
         M12 = value.X;
         M22 = value.Y;
@@ -191,13 +191,13 @@ public:
     }
 
     // Gets the third column in the matrix; that is M13, M23 and M33.
-    Vector3 GetColumn3() const
+    Float3 GetColumn3() const
     {
-        return Vector3(M13, M23, M33);
+        return Float3(M13, M23, M33);
     }
 
     // Sets the third column in the matrix; that is M13, M23 and M33.
-    void SetColumn3(const Vector3& value)
+    void SetColumn3(const Float3& value)
     {
         M13 = value.X;
         M23 = value.Y;
@@ -205,13 +205,13 @@ public:
     }
 
     // Gets the scale of the matrix; that is M11, M22, and M33.
-    Vector3 GetScaleVector() const
+    Float3 GetScaleVector() const
     {
-        return Vector3(M11, M22, M33);
+        return Float3(M11, M22, M33);
     }
 
     // Sets the scale of the matrix; that is M11, M22, and M33.
-    void SetScaleVector(const Vector3& value)
+    void SetScaleVector(const Float3& value)
     {
         M11 = value.X;
         M22 = value.Y;
@@ -221,9 +221,6 @@ public:
     /// <summary>
     /// Gets a value indicating whether this instance is an identity Matrix3x3.
     /// </summary>
-    /// <value>
-    /// <c>true</c> if this instance is an identity Matrix3x3; otherwise, <c>false</c>.
-    /// </value>
     bool IsIdentity() const
     {
         return *this == Identity;
@@ -232,7 +229,6 @@ public:
     /// <summary>
     /// Calculates the determinant of the Matrix3x3.
     /// </summary>
-    /// <returns>The determinant of the Matrix3x3.</returns>
     float GetDeterminant() const
     {
         return M11 * M22 * M33 + M12 * M23 * M31 + M13 * M21 * M32 - M13 * M22 * M31 - M12 * M21 * M33 - M11 * M23 * M32;
@@ -432,7 +428,7 @@ public:
     /// </summary>
     /// <param name="translation">The translation vector.</param>
     /// <param name="result">The result.</param>
-    static void Translation2D(const Vector2& translation, Matrix3x3& result)
+    static void Translation2D(const Float2& translation, Matrix3x3& result)
     {
         result = Matrix3x3(
             1, 0, 0,
@@ -446,7 +442,7 @@ public:
     /// </summary>
     /// <param name="translation">The translation vector.</param>
     /// <returns>The result.</returns>
-    static Matrix3x3 Translation2D(const Vector2& translation)
+    static Matrix3x3 Translation2D(const Float2& translation)
     {
         Matrix3x3 result;
         Translation2D(translation, result);
@@ -460,9 +456,9 @@ public:
     /// <param name="point">The point.</param>
     /// <param name="transform">The transform.</param>
     /// <param name="result">The result.</param>
-    static void Transform2DPoint(const Vector2& point, const Matrix3x3& transform, Vector2& result)
+    static void Transform2DPoint(const Float2& point, const Matrix3x3& transform, Float2& result)
     {
-        result = Vector2(
+        result = Float2(
             point.X * transform.M11 + point.Y * transform.M21 + transform.M31,
             point.X * transform.M12 + point.Y * transform.M22 + transform.M32);
     }
@@ -474,9 +470,9 @@ public:
     /// <param name="vector">The vector.</param>
     /// <param name="transform">The transform.</param>
     /// <param name="result">The result.</param>
-    static void Transform2DVector(const Vector2& vector, const Matrix3x3& transform, Vector2& result)
+    static void Transform2DVector(const Float2& vector, const Matrix3x3& transform, Float2& result)
     {
-        result = Vector2(
+        result = Float2(
             vector.X * transform.M11 + vector.Y * transform.M21,
             vector.X * transform.M12 + vector.Y * transform.M22);
     }

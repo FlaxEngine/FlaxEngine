@@ -60,7 +60,8 @@ public:
 
 public:
     // Gets the eight corners of the bounding box.
-    void GetCorners(Vector3 corners[8]) const;
+    void GetCorners(Float3 corners[8]) const;
+    void GetCorners(Double3 corners[8]) const;
 
     // The size of the OBB if no scaling is applied to the transformation matrix.
     Vector3 GetSizeUnscaled() const
@@ -109,7 +110,7 @@ public:
     // Scales the OBB by scaling its Extents without affecting the Transformation matrix.
     // By keeping Transformation matrix scaling-free, the collision detection methods will be more accurate.
     // @param scaling Scale to apply to the box.
-    void Scale(float scaling)
+    void Scale(Real scaling)
     {
         Extents *= scaling;
     }
@@ -178,7 +179,7 @@ public:
     // Determines whether a OBB contains a point.
     // @param point The point to test.
     // @returns The type of containment the two objects have.
-    ContainmentType Contains(const Vector3& point, float* distance = nullptr) const;
+    ContainmentType Contains(const Vector3& point, Real* distance = nullptr) const;
 
     // Determines whether a OBB contains an array of points.
     // @param pointsCnt Amount of points to test.
@@ -202,14 +203,14 @@ public:
     // @param ray The ray to test.
     // @param distance When the method completes, contains the distance of the intersection, or 0 if there was no intersection.
     // @returns Whether the two objects intersected.
-    bool Intersects(const Ray& ray, float& distance) const;
+    bool Intersects(const Ray& ray, Real& distance) const;
 
     // Determines if there is an intersection between the current object and a Ray.
     // @param ray The ray to test.
     // @param distance When the method completes, contains the distance of the intersection, or 0 if there was no intersection.
     // @param normal When the method completes, contains the intersection surface normal vector, or Vector3::Up if there was no intersection.
     // @returns Whether the two objects intersected.
-    bool Intersects(const Ray& ray, float& distance, Vector3& normal) const;
+    bool Intersects(const Ray& ray, Real& distance, Vector3& normal) const;
 
     // Determines whether there is an intersection between a Ray and a OBB.
     // @param ray The ray to test.

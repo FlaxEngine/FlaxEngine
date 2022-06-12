@@ -87,21 +87,25 @@ void ShaderGraphUtilities::GenerateShaderConstantBuffer(TextWriterUnicode& write
                 format = TEXT("uint {0};");
                 break;
             case VariantType::Float:
+            case VariantType::Double:
                 size = 4;
                 alignment = 4;
                 format = TEXT("float {0};");
                 break;
-            case VariantType::Vector2:
+            case VariantType::Float2:
+            case VariantType::Double2:
                 size = 8;
                 alignment = 8;
                 format = TEXT("float2 {0};");
                 break;
-            case VariantType::Vector3:
+            case VariantType::Float3:
+            case VariantType::Double3:
                 size = 12;
                 alignment = 16;
                 format = TEXT("float3 {0};");
                 break;
-            case VariantType::Vector4:
+            case VariantType::Float4:
+            case VariantType::Double4:
             case VariantType::Color:
                 size = 16;
                 alignment = 16;
@@ -230,19 +234,19 @@ const Char* GetTypename<float>()
 }
 
 template<>
-const Char* GetTypename<Vector2>()
+const Char* GetTypename<Float2>()
 {
     return TEXT("float2");
 }
 
 template<>
-const Char* GetTypename<Vector3>()
+const Char* GetTypename<Float3>()
 {
     return TEXT("float3");
 }
 
 template<>
-const Char* GetTypename<Vector4>()
+const Char* GetTypename<Float4>()
 {
     return TEXT("float4");
 }
@@ -403,8 +407,8 @@ void ShaderGraphUtilities::SampleCurve(TextWriterUnicode& writer, const BezierCu
 }
 
 template void ShaderGraphUtilities::SampleCurve(TextWriterUnicode& writer, const BezierCurve<float>& curve, const String& time, const String& value);
-template void ShaderGraphUtilities::SampleCurve(TextWriterUnicode& writer, const BezierCurve<Vector2>& curve, const String& time, const String& value);
-template void ShaderGraphUtilities::SampleCurve(TextWriterUnicode& writer, const BezierCurve<Vector3>& curve, const String& time, const String& value);
-template void ShaderGraphUtilities::SampleCurve(TextWriterUnicode& writer, const BezierCurve<Vector4>& curve, const String& time, const String& value);
+template void ShaderGraphUtilities::SampleCurve(TextWriterUnicode& writer, const BezierCurve<Float2>& curve, const String& time, const String& value);
+template void ShaderGraphUtilities::SampleCurve(TextWriterUnicode& writer, const BezierCurve<Float3>& curve, const String& time, const String& value);
+template void ShaderGraphUtilities::SampleCurve(TextWriterUnicode& writer, const BezierCurve<Float4>& curve, const String& time, const String& value);
 
 #endif

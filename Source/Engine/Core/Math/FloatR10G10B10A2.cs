@@ -1,7 +1,6 @@
 // Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 using System;
-using System.Globalization;
 using System.Runtime.InteropServices;
 
 namespace FlaxEngine
@@ -32,7 +31,7 @@ namespace FlaxEngine
         /// </summary>
         /// <param name="value">The floating point value that should be stored in 10 bit format.</param>
         /// <param name="w">The floating point value that should be stored in alpha component (2 bit format).</param>
-        public FloatR10G10B10A2(Vector3 value, float w = 0)
+        public FloatR10G10B10A2(Float3 value, float w = 0)
         {
             this.value = Pack(value.X, value.Y, value.Z, w);
         }
@@ -41,7 +40,7 @@ namespace FlaxEngine
         /// Initializes a new instance of the <see cref = "T:FlaxEngine.FloatR10G10B10A2" /> structure.
         /// </summary>
         /// <param name = "value">The floating point value that should be stored in 10 bit format.</param>
-        public FloatR10G10B10A2(Vector4 value)
+        public FloatR10G10B10A2(Float4 value)
         {
             this.value = Pack(value.X, value.Y, value.Z, value.W);
         }
@@ -76,23 +75,23 @@ namespace FlaxEngine
         public float A => (value >> 30) / 3.0f;
 
         /// <summary>
-        /// Performs an explicit conversion from <see cref = "T:FlaxEngine.Vector4" /> to <see cref = "T:FlaxEngine.FloatR10G10B10A2" />.
+        /// Performs an explicit conversion from <see cref = "T:FlaxEngine.Float4" /> to <see cref = "T:FlaxEngine.FloatR10G10B10A2" />.
         /// </summary>
         /// <param name="value">The value to be converted.</param>
         /// <returns>The converted value.</returns>
-        public static explicit operator FloatR10G10B10A2(Vector4 value)
+        public static explicit operator FloatR10G10B10A2(Float4 value)
         {
             return new FloatR10G10B10A2(value);
         }
 
         /// <summary>
-        /// Performs an implicit conversion from <see cref = "T:FlaxEngine.FloatR10G10B10A2" /> to <see cref = "T:FlaxEngine.Vector4" />.
+        /// Performs an implicit conversion from <see cref = "T:FlaxEngine.FloatR10G10B10A2" /> to <see cref = "T:FlaxEngine.Float4" />.
         /// </summary>
         /// <param name="value">The value to be converted.</param>
         /// <returns>The converted value.</returns>
-        public static implicit operator Vector4(FloatR10G10B10A2 value)
+        public static implicit operator Float4(FloatR10G10B10A2 value)
         {
-            return value.ToVector4();
+            return value.ToFloat4();
         }
 
         /// <summary>
@@ -123,7 +122,7 @@ namespace FlaxEngine
         /// <returns>A <see cref="System.String" /> that represents this instance.</returns>
         public override string ToString()
         {
-            return ToVector4().ToString();
+            return ToFloat4().ToString();
         }
 
         /// <summary>
@@ -163,12 +162,7 @@ namespace FlaxEngine
         /// <returns><c>true</c> if the current instance is equal to the specified object; <c>false</c> otherwise.</returns>
         public override bool Equals(object obj)
         {
-            if (obj == null || obj.GetType() != GetType())
-            {
-                return false;
-            }
-            var v = (FloatR10G10B10A2)obj;
-            return v.value == value;
+            return obj is FloatR10G10B10A2 other && value == other.value;
         }
 
         private static uint Pack(float x, float y, float z, float w)
@@ -190,12 +184,12 @@ namespace FlaxEngine
         }
 
         /// <summary>
-        /// Unpacks vector to Vector3.
+        /// Unpacks vector to Float3.
         /// </summary>
-        /// <returns>Vector3 value</returns>
-        public Vector3 ToVector3()
+        /// <returns>Float3 value</returns>
+        public Float3 ToFloat3()
         {
-            Vector3 vectorOut;
+            Float3 vectorOut;
 
             uint tmp = value & 0x3FF;
             vectorOut.X = tmp / 1023.0f;
@@ -208,12 +202,12 @@ namespace FlaxEngine
         }
 
         /// <summary>
-        /// Unpacks vector to Vector4.
+        /// Unpacks vector to Float4.
         /// </summary>
-        /// <returns>Vector4 value</returns>
-        public Vector4 ToVector4()
+        /// <returns>Float4 value</returns>
+        public Float4 ToFloat4()
         {
-            Vector4 vectorOut;
+            Float4 vectorOut;
 
             uint tmp = value & 0x3FF;
             vectorOut.X = tmp / 1023.0f;

@@ -171,9 +171,9 @@ namespace FlaxEditor.Options
         /// <summary>
         /// Gets or sets the output log text shadow offset. Set to 0 to disable this feature.
         /// </summary>
-        [DefaultValue(typeof(Vector2), "1,1")]
+        [DefaultValue(typeof(Float2), "1,1")]
         [EditorDisplay("Output Log", "Text Shadow Offset"), EditorOrder(340), Tooltip("The output log text shadow offset. Set to 0 to disable this feature.")]
-        public Vector2 OutputLogTextShadowOffset { get; set; } = new Vector2(1);
+        public Float2 OutputLogTextShadowOffset { get; set; } = new Float2(1);
 
         /// <summary>
         /// Gets or sets a value indicating whether auto-focus output log window on code compilation error.

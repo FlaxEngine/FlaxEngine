@@ -47,7 +47,7 @@ namespace FlaxEditor.Surface.Elements
 
             // Draw border
             if (!IsFocused)
-                Render2D.DrawRectangle(new Rectangle(Vector2.Zero, Size), Style.Current.BorderNormal);
+                Render2D.DrawRectangle(new Rectangle(Float2.Zero, Size), Style.Current.BorderNormal);
         }
 
         /// <inheritdoc />
@@ -74,29 +74,41 @@ namespace FlaxEditor.Surface.Elements
 
             // Note: this value box may edit on component of the vector like Vector3.Y, BoxID from Archetype tells which component pick
 
-            if (value is int valueInt)
+            if (value is int asInt)
             {
-                result = (float)valueInt;
+                result = (float)asInt;
             }
-            else if (value is float valueFloat)
+            else if (value is float asFloat)
             {
-                result = valueFloat;
+                result = asFloat;
             }
-            else if (value is double valueDouble)
+            else if (value is double asDouble)
             {
-                result = (float)valueDouble;
+                result = (float)asDouble;
             }
-            else if (value is Vector2 valueVec2)
+            else if (value is Vector2 asVector2)
             {
-                result = (arch.BoxID == 0 ? valueVec2.X : valueVec2.Y);
+                result = (float)(arch.BoxID == 0 ? asVector2.X : asVector2.Y);
             }
-            else if (value is Vector3 valueVec3)
+            else if (value is Vector3 asVector3)
             {
-                result = (arch.BoxID == 0 ? valueVec3.X : arch.BoxID == 1 ? valueVec3.Y : valueVec3.Z);
+                result = (float)(arch.BoxID == 0 ? asVector3.X : arch.BoxID == 1 ? asVector3.Y : asVector3.Z);
             }
-            else if (value is Vector4 valueVec4)
+            else if (value is Vector4 asVector4)
             {
-                result = (arch.BoxID == 0 ? valueVec4.X : arch.BoxID == 1 ? valueVec4.Y : arch.BoxID == 2 ? valueVec4.Z : valueVec4.W);
+                result = (float)(arch.BoxID == 0 ? asVector4.X : arch.BoxID == 1 ? asVector4.Y : arch.BoxID == 2 ? asVector4.Z : asVector4.W);
+            }
+            else if (value is Float2 asFloat2)
+            {
+                result = (arch.BoxID == 0 ? asFloat2.X : asFloat2.Y);
+            }
+            else if (value is Float3 asFloat3)
+            {
+                result = (arch.BoxID == 0 ? asFloat3.X : arch.BoxID == 1 ? asFloat3.Y : asFloat3.Z);
+            }
+            else if (value is Float4 asFloat4)
+            {
+                result = (arch.BoxID == 0 ? asFloat4.X : arch.BoxID == 1 ? asFloat4.Y : arch.BoxID == 2 ? asFloat4.Z : asFloat4.W);
             }
             else
             {
@@ -131,35 +143,65 @@ namespace FlaxEditor.Surface.Elements
             {
                 value = (double)toSet;
             }
-            else if (value is Vector2 valueVec2)
+            else if (value is Vector2 asVector2)
             {
                 if (arch.BoxID == 0)
-                    valueVec2.X = toSet;
+                    asVector2.X = toSet;
                 else
-                    valueVec2.Y = toSet;
-                value = valueVec2;
+                    asVector2.Y = toSet;
+                value = asVector2;
             }
-            else if (value is Vector3 valueVec3)
+            else if (value is Vector3 asVector3)
             {
                 if (arch.BoxID == 0)
-                    valueVec3.X = toSet;
+                    asVector3.X = toSet;
                 else if (arch.BoxID == 1)
-                    valueVec3.Y = toSet;
+                    asVector3.Y = toSet;
                 else
-                    valueVec3.Z = toSet;
-                value = valueVec3;
+                    asVector3.Z = toSet;
+                value = asVector3;
             }
-            else if (value is Vector4 valueVec4)
+            else if (value is Vector4 asVector4)
             {
                 if (arch.BoxID == 0)
-                    valueVec4.X = toSet;
+                    asVector4.X = toSet;
                 else if (arch.BoxID == 1)
-                    valueVec4.Y = toSet;
+                    asVector4.Y = toSet;
                 else if (arch.BoxID == 2)
-                    valueVec4.Z = toSet;
+                    asVector4.Z = toSet;
                 else
-                    valueVec4.W = toSet;
-                value = valueVec4;
+                    asVector4.W = toSet;
+                value = asVector4;
+            }
+            else if (value is Float2 asFloat2)
+            {
+                if (arch.BoxID == 0)
+                    asFloat2.X = toSet;
+                else
+                    asFloat2.Y = toSet;
+                value = asFloat2;
+            }
+            else if (value is Float3 asFloat3)
+            {
+                if (arch.BoxID == 0)
+                    asFloat3.X = toSet;
+                else if (arch.BoxID == 1)
+                    asFloat3.Y = toSet;
+                else
+                    asFloat3.Z = toSet;
+                value = asFloat3;
+            }
+            else if (value is Float4 asFloat4)
+            {
+                if (arch.BoxID == 0)
+                    asFloat4.X = toSet;
+                else if (arch.BoxID == 1)
+                    asFloat4.Y = toSet;
+                else if (arch.BoxID == 2)
+                    asFloat4.Z = toSet;
+                else
+                    asFloat4.W = toSet;
+                value = asFloat4;
             }
             else
             {
@@ -205,6 +247,18 @@ namespace FlaxEditor.Surface.Elements
             else if (value is Vector4)
             {
                 value = new Vector4(toSet);
+            }
+            else if (value is Float2)
+            {
+                value = new Float2(toSet);
+            }
+            else if (value is Float3)
+            {
+                value = new Float3(toSet);
+            }
+            else if (value is Float4)
+            {
+                value = new Float4(toSet);
             }
             else
             {

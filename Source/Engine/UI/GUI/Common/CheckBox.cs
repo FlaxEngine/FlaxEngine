@@ -242,7 +242,7 @@ namespace FlaxEngine.GUI
         }
 
         /// <inheritdoc />
-        public override void OnMouseMove(Vector2 location)
+        public override void OnMouseMove(Float2 location)
         {
             base.OnMouseMove(location);
 
@@ -250,7 +250,7 @@ namespace FlaxEngine.GUI
         }
 
         /// <inheritdoc />
-        public override bool OnMouseDown(Vector2 location, MouseButton button)
+        public override bool OnMouseDown(Float2 location, MouseButton button)
         {
             if (button == MouseButton.Left && !_isPressed)
             {
@@ -262,7 +262,7 @@ namespace FlaxEngine.GUI
         }
 
         /// <inheritdoc />
-        public override bool OnMouseUp(Vector2 location, MouseButton button)
+        public override bool OnMouseUp(Float2 location, MouseButton button)
         {
             if (button == MouseButton.Left && _isPressed)
             {
@@ -288,7 +288,7 @@ namespace FlaxEngine.GUI
         }
 
         /// <inheritdoc />
-        public override bool OnTouchDown(Vector2 location, int pointerId)
+        public override bool OnTouchDown(Float2 location, int pointerId)
         {
             if (!_isPressed)
             {
@@ -300,7 +300,7 @@ namespace FlaxEngine.GUI
         }
 
         /// <inheritdoc />
-        public override bool OnTouchUp(Vector2 location, int pointerId)
+        public override bool OnTouchUp(Float2 location, int pointerId)
         {
             if (_isPressed)
             {

@@ -504,7 +504,7 @@ void ComputeMultiBlendLength(float& length, AnimGraphNode* node)
             else
             {
                 const auto anim = node->Assets[i].As<Animation>();
-                const auto aData = node->Values[4 + i * 2].AsVector4();
+                const auto aData = node->Values[4 + i * 2].AsFloat4();
                 length = Math::Max(length, anim->GetLength() * Math::Abs(aData.W));
             }
         }
@@ -527,26 +527,26 @@ void AnimGraphExecutor::ProcessGroupParameters(Box* box, Node* node, Value& valu
             value = context.Data->Parameters[paramIndex].Value;
             switch (param->Type.Type)
             {
-            case VariantType::Vector2:
+            case VariantType::Float2:
                 switch (box->ID)
                 {
                 case 1:
                 case 2:
-                    value = value.AsVector2().Raw[box->ID - 1];
+                    value = value.AsFloat2().Raw[box->ID - 1];
                     break;
                 }
                 break;
-            case VariantType::Vector3:
+            case VariantType::Float3:
                 switch (box->ID)
                 {
                 case 1:
                 case 2:
                 case 3:
-                    value = value.AsVector3().Raw[box->ID - 1];
+                    value = value.AsFloat3().Raw[box->ID - 1];
                     break;
                 }
                 break;
-            case VariantType::Vector4:
+            case VariantType::Float4:
             case VariantType::Color:
                 switch (box->ID)
                 {
@@ -554,7 +554,37 @@ void AnimGraphExecutor::ProcessGroupParameters(Box* box, Node* node, Value& valu
                 case 2:
                 case 3:
                 case 4:
-                    value = value.AsVector4().Raw[box->ID - 1];
+                    value = value.AsFloat4().Raw[box->ID - 1];
+                    break;
+                }
+                break;
+            case VariantType::Double2:
+                switch (box->ID)
+                {
+                case 1:
+                case 2:
+                    value = value.AsDouble2().Raw[box->ID - 1];
+                    break;
+                }
+                break;
+            case VariantType::Double3:
+                switch (box->ID)
+                {
+                case 1:
+                case 2:
+                case 3:
+                    value = value.AsDouble3().Raw[box->ID - 1];
+                    break;
+                }
+                break;
+            case VariantType::Double4:
+                switch (box->ID)
+                {
+                case 1:
+                case 2:
+                case 3:
+                case 4:
+                    value = value.AsDouble4().Raw[box->ID - 1];
                     break;
                 }
                 break;
@@ -695,7 +725,7 @@ void AnimGraphExecutor::ProcessGroupAnimation(Box* boxBase, Node* nodeBase, Valu
         Transform transform;
         transform.Translation = (Vector3)tryGetValue(node->GetBox(2), Vector3::Zero);
         transform.Orientation = (Quaternion)tryGetValue(node->GetBox(3), Quaternion::Identity);
-        transform.Scale = (Vector3)tryGetValue(node->GetBox(4), Vector3::One);
+        transform.Scale = (Float3)tryGetValue(node->GetBox(4), Float3::One);
 
         // Skip if no change will be performed
         auto& skeleton = _graph.BaseModel->Skeleton;
@@ -1010,17 +1040,17 @@ void AnimGraphExecutor::ProcessGroupAnimation(Box* boxBase, Node* nodeBase, Valu
         value = Value::Null;
 
         // Note data layout:
-        // [0]: Vector4 Range (minX, maxX, 0, 0)
+        // [0]: Float4 Range (minX, maxX, 0, 0)
         // [1]: float Speed
         // [2]: bool Loop
         // [3]: float StartPosition
         // Per Blend Sample data layout:
-        // [0]: Vector4 Info (x=posX, y=0, z=0, w=Speed)
+        // [0]: Float4 Info (x=posX, y=0, z=0, w=Speed)
         // [1]: Guid Animation
 
         // Prepare
         auto& bucket = context.Data->State[node->BucketIndex].MultiBlend;
-        const auto range = node->Values[0].AsVector4();
+        const auto range = node->Values[0].AsFloat4();
         const auto speed = (float)tryGetValue(node->GetBox(1), node->Values[1]);
         const auto loop = (bool)tryGetValue(node->GetBox(2), node->Values[2]);
         const auto startTimePos = (float)tryGetValue(node->GetBox(3), node->Values[3]);
@@ -1058,7 +1088,7 @@ void AnimGraphExecutor::ProcessGroupAnimation(Box* boxBase, Node* nodeBase, Valu
 
             // Get A animation data
             const auto aAnim = node->Assets[a].As<Animation>();
-            auto aData = node->Values[4 + a * 2].AsVector4();
+            auto aData = node->Values[4 + a * 2].AsFloat4();
 
             // Check single A case or the last valid animation
             if (x <= aData.X + ANIM_GRAPH_BLEND_THRESHOLD || b == ANIM_GRAPH_MULTI_BLEND_MAX_ANIMS)
@@ -1070,7 +1100,7 @@ void AnimGraphExecutor::ProcessGroupAnimation(Box* boxBase, Node* nodeBase, Valu
             // Get B animation data
             ASSERT(b != ANIM_GRAPH_MULTI_BLEND_MAX_ANIMS);
             const auto bAnim = node->Assets[b].As<Animation>();
-            auto bData = node->Values[4 + b * 2].AsVector4();
+            auto bData = node->Values[4 + b * 2].AsFloat4();
 
             // Check single B edge case
             if (Math::NearEqual(bData.X, x, ANIM_GRAPH_BLEND_THRESHOLD))
@@ -1099,17 +1129,17 @@ void AnimGraphExecutor::ProcessGroupAnimation(Box* boxBase, Node* nodeBase, Valu
         value = Value::Null;
 
         // Note data layout:
-        // [0]: Vector4 Range (minX, maxX, minY, maxY)
+        // [0]: Float4 Range (minX, maxX, minY, maxY)
         // [1]: float Speed
         // [2]: bool Loop
         // [3]: float StartPosition
         // Per Blend Sample data layout:
-        // [0]: Vector4 Info (x=posX, y=posY, z=0, w=Speed)
+        // [0]: Float4 Info (x=posX, y=posY, z=0, w=Speed)
         // [1]: Guid Animation
 
         // Prepare
         auto& bucket = context.Data->State[node->BucketIndex].MultiBlend;
-        const auto range = node->Values[0].AsVector4();
+        const auto range = node->Values[0].AsFloat4();
         const auto speed = (float)tryGetValue(node->GetBox(1), node->Values[1]);
         const auto loop = (bool)tryGetValue(node->GetBox(2), node->Values[2]);
         const auto startTimePos = (float)tryGetValue(node->GetBox(3), node->Values[3]);
@@ -1144,9 +1174,9 @@ void AnimGraphExecutor::ProcessGroupAnimation(Box* boxBase, Node* nodeBase, Valu
         ANIM_GRAPH_PROFILE_EVENT("Multi Blend 2D");
 
         // Find 3 animations to blend (triangle)
-        Vector2 p(x, y);
+        Float2 p(x, y);
         bool hasBest = false;
-        Vector2 bestPoint;
+        Float2 bestPoint;
         float bestWeight = 0.0f;
         byte bestAnims[2];
         for (int32 i = 0; i < ANIM_GRAPH_MULTI_BLEND_2D_MAX_TRIS && data.TrianglesP0[i] != ANIM_GRAPH_MULTI_BLEND_MAX_ANIMS; i++)
@@ -1154,56 +1184,56 @@ void AnimGraphExecutor::ProcessGroupAnimation(Box* boxBase, Node* nodeBase, Valu
             // Get A animation data
             const auto a = data.TrianglesP0[i];
             const auto aAnim = node->Assets[a].As<Animation>();
-            const auto aData = node->Values[4 + a * 2].AsVector4();
+            const auto aData = node->Values[4 + a * 2].AsFloat4();
 
             // Get B animation data
             const auto b = data.TrianglesP1[i];
             const auto bAnim = node->Assets[b].As<Animation>();
-            const auto bData = node->Values[4 + b * 2].AsVector4();
+            const auto bData = node->Values[4 + b * 2].AsFloat4();
 
             // Get C animation data
             const auto c = data.TrianglesP2[i];
             const auto cAnim = node->Assets[c].As<Animation>();
-            const auto cData = node->Values[4 + c * 2].AsVector4();
+            const auto cData = node->Values[4 + c * 2].AsFloat4();
 
             // Get triangle coords
-            Vector2 points[3] = {
-                Vector2(aData.X, aData.Y),
-                Vector2(bData.X, bData.Y),
-                Vector2(cData.X, cData.Y)
+            Float2 points[3] = {
+                Float2(aData.X, aData.Y),
+                Float2(bData.X, bData.Y),
+                Float2(cData.X, cData.Y)
             };
 
             // Check if blend using this triangle
             if (CollisionsHelper::IsPointInTriangle(p, points[0], points[1], points[2]))
             {
-                if (Vector2::DistanceSquared(p, points[0]) < ANIM_GRAPH_BLEND_THRESHOLD2)
+                if (Float2::DistanceSquared(p, points[0]) < ANIM_GRAPH_BLEND_THRESHOLD2)
                 {
                     // Use only vertex A
                     value = SampleAnimation(node, loop, data.Length, startTimePos, bucket.TimePosition, newTimePos, aAnim, aData.W);
                     break;
                 }
-                if (Vector2::DistanceSquared(p, points[1]) < ANIM_GRAPH_BLEND_THRESHOLD2)
+                if (Float2::DistanceSquared(p, points[1]) < ANIM_GRAPH_BLEND_THRESHOLD2)
                 {
                     // Use only vertex B
                     value = SampleAnimation(node, loop, data.Length, startTimePos, bucket.TimePosition, newTimePos, bAnim, bData.W);
                     break;
                 }
-                if (Vector2::DistanceSquared(p, points[2]) < ANIM_GRAPH_BLEND_THRESHOLD2)
+                if (Float2::DistanceSquared(p, points[2]) < ANIM_GRAPH_BLEND_THRESHOLD2)
                 {
                     // Use only vertex C
                     value = SampleAnimation(node, loop, data.Length, startTimePos, bucket.TimePosition, newTimePos, cAnim, cData.W);
                     break;
                 }
 
-                const Vector2 v0 = points[1] - points[0];
-                const Vector2 v1 = points[2] - points[0];
-                const Vector2 v2 = p - points[0];
+                const auto v0 = points[1] - points[0];
+                const auto v1 = points[2] - points[0];
+                const auto v2 = p - points[0];
 
-                const float d00 = Vector2::Dot(v0, v0);
-                const float d01 = Vector2::Dot(v0, v1);
-                const float d11 = Vector2::Dot(v1, v1);
-                const float d20 = Vector2::Dot(v2, v0);
-                const float d21 = Vector2::Dot(v2, v1);
+                const float d00 = Float2::Dot(v0, v0);
+                const float d01 = Float2::Dot(v0, v1);
+                const float d11 = Float2::Dot(v1, v1);
+                const float d20 = Float2::Dot(v2, v0);
+                const float d21 = Float2::Dot(v2, v1);
                 const float coeff = (d00 * d11 - d01 * d01);
                 if (Math::IsZero(coeff))
                 {
@@ -1223,25 +1253,25 @@ void AnimGraphExecutor::ProcessGroupAnimation(Box* boxBase, Node* nodeBase, Valu
             // Try to find the best blend weights for blend position being outside the all triangles (edge case)
             for (int j = 0; j < 3; j++)
             {
-                Vector2 s[2] = {
+                Float2 s[2] = {
                     points[j],
                     points[(j + 1) % 3]
                 };
-                Vector2 closest;
+                Float2 closest;
                 CollisionsHelper::ClosestPointPointLine(p, s[0], s[1], closest);
-                if (!hasBest || Vector2::DistanceSquared(closest, p) < Vector2::DistanceSquared(bestPoint, p))
+                if (!hasBest || Float2::DistanceSquared(closest, p) < Float2::DistanceSquared(bestPoint, p))
                 {
                     bestPoint = closest;
                     hasBest = true;
 
-                    float d = Vector2::Distance(s[0], s[1]);
+                    float d = Float2::Distance(s[0], s[1]);
                     if (Math::IsZero(d))
                     {
                         bestWeight = 0;
                     }
                     else
                     {
-                        bestWeight = Vector2::Distance(s[0], closest) / d;
+                        bestWeight = Float2::Distance(s[0], closest) / d;
                     }
 
                     bestAnims[0] = j;
@@ -1254,7 +1284,7 @@ void AnimGraphExecutor::ProcessGroupAnimation(Box* boxBase, Node* nodeBase, Valu
         if ((void*)value == nullptr && hasBest)
         {
             const auto aAnim = node->Assets[bestAnims[0]].As<Animation>();
-            const auto aData = node->Values[4 + bestAnims[0] * 2].AsVector4();
+            const auto aData = node->Values[4 + bestAnims[0] * 2].AsFloat4();
 
             // Check if use only one sample
             if (bestWeight < ANIM_GRAPH_BLEND_THRESHOLD)
@@ -1264,7 +1294,7 @@ void AnimGraphExecutor::ProcessGroupAnimation(Box* boxBase, Node* nodeBase, Valu
             else
             {
                 const auto bAnim = node->Assets[bestAnims[1]].As<Animation>();
-                const auto bData = node->Values[4 + bestAnims[1] * 2].AsVector4();
+                const auto bData = node->Values[4 + bestAnims[1] * 2].AsFloat4();
                 value = SampleAnimationsWithBlend(node, loop, data.Length, startTimePos, bucket.TimePosition, newTimePos, aAnim, bAnim, aData.W, bData.W, bestWeight);
             }
         }
@@ -1665,7 +1695,7 @@ void AnimGraphExecutor::ProcessGroupAnimation(Box* boxBase, Node* nodeBase, Valu
         Transform transform;
         transform.Translation = (Vector3)tryGetValue(node->GetBox(2), Vector3::Zero);
         transform.Orientation = (Quaternion)tryGetValue(node->GetBox(3), Quaternion::Identity);
-        transform.Scale = (Vector3)tryGetValue(node->GetBox(4), Vector3::One);
+        transform.Scale = (Float3)tryGetValue(node->GetBox(4), Float3::One);
 
         // Skip if no change will be performed
         if (nodeIndex < 0 || nodeIndex >= _skeletonNodesCount || transformMode == BoneTransformMode::None || (transformMode == BoneTransformMode::Add && transform.IsIdentity()))

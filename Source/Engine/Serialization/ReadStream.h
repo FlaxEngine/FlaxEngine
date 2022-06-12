@@ -16,7 +16,6 @@ class ISerializable;
 class FLAXENGINE_API ReadStream : public Stream
 {
 public:
-
     /// <summary>
     /// Reads bytes from the stream
     /// </summary>
@@ -37,7 +36,6 @@ public:
     }
 
 public:
-
     // Reads byte from the stream
     // @returns Single byte
     byte ReadByte()
@@ -147,7 +145,6 @@ public:
     }
 
 public:
-
     // Reads StringAnsi from the stream
     // @param data Data to read
     void ReadStringAnsi(StringAnsi* data);
@@ -166,7 +163,6 @@ public:
     void ReadString(String* data, int16 lock);
 
 public:
-
     // Reads CommonValue from the stream
     // @param data Data to read
     void ReadCommonValue(CommonValue* data);
@@ -202,7 +198,14 @@ public:
     void ReadJson(ISerializable* obj);
 
 public:
+    // Deserialization of math types with float or double depending on the context (must match serialization)
+    // Set useDouble=true to explicitly use 64-bit precision for serialized data
+    void ReadBoundingBox(BoundingBox* box, bool useDouble = false);
+    void ReadBoundingSphere(BoundingSphere* sphere, bool useDouble = false);
+    void ReadTransform(Transform* transform, bool useDouble = false);
+    void ReadRay(Ray* ray, bool useDouble = false);
 
+public:
     // [Stream]
     bool CanRead() override
     {

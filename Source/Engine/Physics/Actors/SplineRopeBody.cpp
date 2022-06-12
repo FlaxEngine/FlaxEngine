@@ -95,8 +95,8 @@ void SplineRopeBody::Tick()
             auto& massA = _masses[i - 1];
             auto& massB = _masses[i];
             Vector3 offset = massB.Position - massA.Position;
-            const float distance = offset.Length();
-            const float scale = (distance - massB.SegmentLength) / Math::Max(distance, ZeroTolerance);
+            const Real distance = offset.Length();
+            const Real scale = (distance - massB.SegmentLength) / Math::Max<Real>(distance, ZeroTolerance);
             if (massA.Unconstrained && massB.Unconstrained)
             {
                 offset *= scale * 0.5f;
@@ -121,8 +121,8 @@ void SplineRopeBody::Tick()
                 auto& massA = _masses[i - 2];
                 auto& massB = _masses[i];
                 Vector3 offset = massB.Position - massA.Position;
-                const float distance = offset.Length();
-                const float scale = (distance - massB.SegmentLength * 2.0f) / Math::Max(distance, ZeroTolerance);
+                const Real distance = offset.Length();
+                const Real scale = (distance - massB.SegmentLength * 2.0f) / Math::Max<Real>(distance, ZeroTolerance);
                 if (massA.Unconstrained && massB.Unconstrained)
                 {
                     offset *= scale * 0.5f;

@@ -76,7 +76,7 @@ namespace FlaxEditor.Windows.Profiler
                 base.Draw();
 
                 var style = Style.Current;
-                var bounds = new Rectangle(Vector2.Zero, Size);
+                var bounds = new Rectangle(Float2.Zero, Size);
                 Color color = _color;
                 if (IsMouseOver)
                     color *= 1.1f;
@@ -113,7 +113,7 @@ namespace FlaxEditor.Windows.Profiler
                 base.Draw();
 
                 var style = Style.Current;
-                var rect = new Rectangle(Vector2.Zero, Size);
+                var rect = new Rectangle(Float2.Zero, Size);
                 Render2D.PushClip(rect);
                 Render2D.DrawText(style.FontMedium, Name, rect, Color.White, TextAlignment.Center, TextAlignment.Center, TextWrapping.WrapChars);
                 Render2D.PopClip();

@@ -63,7 +63,7 @@ namespace FlaxEditor.GUI
         /// <param name="value">The value.</param>
         /// <param name="size">The size.</param>
         /// <param name="isMultiline">Enable/disable multiline text input support</param>
-        public RenamePopup(string value, Vector2 size, bool isMultiline)
+        public RenamePopup(string value, Float2 size, bool isMultiline)
         {
             if (!isMultiline)
                 size.Y = TextBox.DefaultHeight;
@@ -117,7 +117,7 @@ namespace FlaxEditor.GUI
             var size = bottomRight - upperLeft;
 
             var rename = new RenamePopup(value, size, isMultiline);
-            rename.Show(control, area.Location + new Vector2(0, (size.Y - rename.Height) * 0.5f));
+            rename.Show(control, area.Location + new Float2(0, (size.Y - rename.Height) * 0.5f));
             return rename;
         }
 

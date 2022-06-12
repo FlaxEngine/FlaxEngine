@@ -372,9 +372,9 @@ bool ManagedEditor::HasGameViewportFocus() const
     return result;
 }
 
-Vector2 ManagedEditor::ScreenToGameViewport(const Vector2& screenPos) const
+Float2 ManagedEditor::ScreenToGameViewport(const Float2& screenPos) const
 {
-    Vector2 result = screenPos;
+    Float2 result = screenPos;
     if (HasManagedInstance())
     {
         if (Internal_ScreenToGameViewport == nullptr)
@@ -389,9 +389,9 @@ Vector2 ManagedEditor::ScreenToGameViewport(const Vector2& screenPos) const
     return result;
 }
 
-Vector2 ManagedEditor::GameViewportToScreen(const Vector2& viewportPos) const
+Float2 ManagedEditor::GameViewportToScreen(const Float2& viewportPos) const
 {
-    Vector2 result = viewportPos;
+    Float2 result = viewportPos;
     if (HasManagedInstance())
     {
         if (Internal_GameViewportToScreen == nullptr)
@@ -425,7 +425,7 @@ Window* ManagedEditor::GetGameWindow(bool forceGet)
     return nullptr;
 }
 
-Vector2 ManagedEditor::GetGameWindowSize()
+Float2 ManagedEditor::GetGameWindowSize()
 {
     if (HasManagedInstance())
     {
@@ -434,13 +434,13 @@ Vector2 ManagedEditor::GetGameWindowSize()
             Internal_GetGameWindowSize = GetClass()->GetMethod("Internal_GetGameWindowSize", 1);
             ASSERT(Internal_GetGameWindowSize);
         }
-        Vector2 size;
+        Float2 size;
         void* params[1];
         params[0] = &size;
         Internal_GetGameWindowSize->Invoke(GetManagedInstance(), params, nullptr);
         return size;
     }
-    return Vector2::Zero;
+    return Float2::Zero;
 }
 
 bool ManagedEditor::OnAppExit()

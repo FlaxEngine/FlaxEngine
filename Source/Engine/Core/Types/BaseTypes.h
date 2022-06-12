@@ -90,15 +90,16 @@ class Delegate;
 
 // @formatter:off
 
-// TODO: move it to Engine configuration
-#define USE_LARGE_WORLDS 0
-
 #if USE_LARGE_WORLDS
 // 64-bit precision for world coordinates
 API_TYPEDEF(Alias) typedef double Real;
+#define MIN_Real MIN_double
+#define MAX_Real MAX_double
 #else
 // 32-bit precision for world coordinates
 API_TYPEDEF(Alias) typedef float Real;
+#define MIN_Real MIN_float
+#define MAX_Real MAX_float
 #endif
 
 // Vector2
@@ -132,6 +133,7 @@ struct Quaternion;
 struct BoundingSphere;
 struct BoundingFrustum;
 struct OrientedBoundingBox;
+struct Transform;
 struct Color;
 struct Color32;
 

@@ -14,7 +14,7 @@ namespace FlaxEngine
         /// <summary>
         /// The value for which all absolute numbers smaller than are considered equal to zero.
         /// </summary>
-        public const double Epsilon = 1e-300;
+        public const double Epsilon = 1e-16;
 
         /// <summary>
         /// A value specifying the approximation of π which is 180 degrees.

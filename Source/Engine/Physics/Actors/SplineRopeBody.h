@@ -20,7 +20,7 @@ private:
     struct Mass
     {
         Vector3 Position;
-        float SegmentLength;
+        Real SegmentLength;
         Vector3 PrevPosition;
         bool Unconstrained;
     };

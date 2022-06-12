@@ -55,7 +55,7 @@ Transform Transform::Add(const Transform& other) const
     Transform result;
     Quaternion::Multiply(Orientation, other.Orientation, result.Orientation);
     result.Orientation.Normalize();
-    Vector3::Multiply(Scale, other.Scale, result.Scale);
+    Float3::Multiply(Scale, other.Scale, result.Scale);
     Vector3::Add(Translation, other.Translation, result.Translation);
     return result;
 }
@@ -67,7 +67,7 @@ Transform Transform::Subtract(const Transform& other) const
     const Quaternion invRotation = other.Orientation.Conjugated();
     Quaternion::Multiply(Orientation, invRotation, result.Orientation);
     result.Orientation.Normalize();
-    Vector3::Divide(Scale, other.Scale, result.Scale);
+    Float3::Divide(Scale, other.Scale, result.Scale);
     return result;
 }
 
@@ -95,7 +95,7 @@ void Transform::LocalToWorld(const Transform& other, Transform& result) const
     }
 
     //Vector3::Multiply(Scale, other.Scale, result.Scale);
-    result.Scale = Vector3(Scale.X * other.Scale.X, Scale.Y * other.Scale.Y, Scale.Z * other.Scale.Z);
+    result.Scale = Float3(Scale.X * other.Scale.X, Scale.Y * other.Scale.Y, Scale.Z * other.Scale.Z);
 
     //Vector3 tmp; Vector3::Multiply(other.Translation, Scale, tmp);
     Vector3 tmp = Vector3(other.Translation.X * Scale.X, other.Translation.Y * Scale.Y, other.Translation.Z * Scale.Z);
@@ -150,7 +150,7 @@ void Transform::WorldToLocal(const Transform& other, Transform& result) const
 
     Quaternion::Multiply(invRotation, other.Orientation, result.Orientation);
     result.Orientation.Normalize();
-    Vector3::Multiply(other.Scale, invScale, result.Scale);
+    Float3::Multiply(other.Scale, invScale, result.Scale);
     const Vector3 tmp = other.Translation - Translation;
     Vector3::Transform(tmp, invRotation, result.Translation);
     Vector3::Multiply(result.Translation, invScale, result.Translation);
@@ -173,7 +173,7 @@ void Transform::WorldToLocal(const Vector3& point, Vector3& result) const
 
 Vector3 Transform::WorldToLocalVector(const Vector3& vector) const
 {
-    Vector3 invScale = Scale;
+    Float3 invScale = Scale;
     if (invScale.X != 0.0f)
         invScale.X = 1.0f / invScale.X;
     if (invScale.Y != 0.0f)
@@ -194,7 +194,7 @@ Transform Transform::Lerp(const Transform& t1, const Transform& t2, float amount
     Transform result;
     Vector3::Lerp(t1.Translation, t2.Translation, amount, result.Translation);
     Quaternion::Slerp(t1.Orientation, t2.Orientation, amount, result.Orientation);
-    Vector3::Lerp(t1.Scale, t2.Scale, amount, result.Scale);
+    Float3::Lerp(t1.Scale, t2.Scale, amount, result.Scale);
     return result;
 }
 
@@ -202,5 +202,5 @@ void Transform::Lerp(const Transform& t1, const Transform& t2, float amount, Tra
 {
     Vector3::Lerp(t1.Translation, t2.Translation, amount, result.Translation);
     Quaternion::Slerp(t1.Orientation, t2.Orientation, amount, result.Orientation);
-    Vector3::Lerp(t1.Scale, t2.Scale, amount, result.Scale);
+    Float3::Lerp(t1.Scale, t2.Scale, amount, result.Scale);
 }

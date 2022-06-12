@@ -21,7 +21,7 @@ void TerrainChunk::Init(TerrainPatch* patch, uint16 x, uint16 z)
     _z = z;
     _yOffset = 0;
     _yHeight = 1;
-    _heightmapUVScaleBias = Vector4(1.0f, 1.0f, _x, _z) * (1.0f / TerrainPatch::CHUNKS_COUNT_EDGE);
+    _heightmapUVScaleBias = Float4(1.0f, 1.0f, _x, _z) * (1.0f / TerrainPatch::CHUNKS_COUNT_EDGE);
     _perInstanceRandom = (_patch->_terrain->_id.C ^ _x ^ _z) * (1.0f / (float)MAX_uint32);
     OverrideMaterial = nullptr;
 }
@@ -45,7 +45,7 @@ bool TerrainChunk::PrepareDraw(const RenderContext& renderContext)
 
         // Calculate chunk distance to view
         const auto lodView = (renderContext.LodProxyView ? renderContext.LodProxyView : &renderContext.View);
-        const float distance = Vector3::Distance(_boundsCenter, lodView->Position);
+        const float distance = Float3::Distance(_boundsCenter, lodView->Position); // TODO: large-worlds
         lod = (int32)Math::Pow(distance / chunkEdgeSize, lodDistribution);
         lod += lodBias;
 
@@ -178,7 +178,7 @@ void TerrainChunk::Draw(const RenderContext& renderContext, MaterialBase* materi
     renderContext.List->AddDrawCall(_patch->_terrain->DrawModes, flags, drawCall, true);
 }
 
-bool TerrainChunk::Intersects(const Ray& ray, float& distance)
+bool TerrainChunk::Intersects(const Ray& ray, Real& distance)
 {
     return _bounds.Intersects(ray, distance);
 }

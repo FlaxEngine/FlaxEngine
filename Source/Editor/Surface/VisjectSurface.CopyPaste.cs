@@ -234,7 +234,7 @@ namespace FlaxEditor.Surface
                 }
 
                 // Find controls upper left location
-                Vector2 upperLeft = new Vector2(model.Nodes[0].X, model.Nodes[0].Y);
+                var upperLeft = new Float2(model.Nodes[0].X, model.Nodes[0].Y);
                 for (int i = 1; i < model.Nodes.Length; i++)
                 {
                     upperLeft.X = Mathf.Min(upperLeft.X, model.Nodes[i].X);
@@ -387,7 +387,7 @@ namespace FlaxEditor.Surface
                 {
                     var node = e.Value;
                     var nodeData = nodesData[e.Key];
-                    var pos = new Vector2(nodeData.X, nodeData.Y) - upperLeft;
+                    var pos = new Float2(nodeData.X, nodeData.Y) - upperLeft;
                     node.Location = ViewPosition + pos + _mousePos / ViewScale;
                 }
 

@@ -15,7 +15,7 @@ namespace FlaxEditor.Surface
         /// <summary>
         /// The mouse position in local control space. Updates by auto.
         /// </summary>
-        protected Vector2 _mousePosition = Vector2.Minimum;
+        protected Float2 _mousePosition = Float2.Minimum;
 
         /// <summary>
         /// The is selected flag for element.
@@ -48,7 +48,7 @@ namespace FlaxEditor.Surface
         /// <summary>
         /// Gets the mouse position (in local control space).
         /// </summary>
-        public Vector2 MousePosition => _mousePosition;
+        public Float2 MousePosition => _mousePosition;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="SurfaceControl"/> class.
@@ -83,7 +83,7 @@ namespace FlaxEditor.Surface
         /// </summary>
         /// <param name="location">The mouse location (in surface space).</param>
         /// <returns><c>true</c> if this instance can be selected by mouse at the specified location; otherwise, <c>false</c>.</returns>
-        public abstract bool CanSelect(ref Vector2 location);
+        public abstract bool CanSelect(ref Float2 location);
 
         /// <summary>
         /// Determines whether selection rectangle is intersecting with the surface control area that can be selected.
@@ -108,7 +108,7 @@ namespace FlaxEditor.Surface
         /// </summary>
         /// <param name="menu">The menu.</param>
         /// <param name="location">The show location (in control space).</param>
-        public virtual void OnShowSecondaryContextMenu(FlaxEditor.GUI.ContextMenu.ContextMenu menu, Vector2 location)
+        public virtual void OnShowSecondaryContextMenu(FlaxEditor.GUI.ContextMenu.ContextMenu menu, Float2 location)
         {
         }
 
@@ -155,7 +155,7 @@ namespace FlaxEditor.Surface
         protected abstract void UpdateRectangles();
 
         /// <inheritdoc />
-        public override void OnMouseEnter(Vector2 location)
+        public override void OnMouseEnter(Float2 location)
         {
             _mousePosition = location;
 
@@ -163,7 +163,7 @@ namespace FlaxEditor.Surface
         }
 
         /// <inheritdoc />
-        public override void OnMouseMove(Vector2 location)
+        public override void OnMouseMove(Float2 location)
         {
             _mousePosition = location;
 
@@ -173,13 +173,13 @@ namespace FlaxEditor.Surface
         /// <inheritdoc />
         public override void OnMouseLeave()
         {
-            _mousePosition = Vector2.Minimum;
+            _mousePosition = Float2.Minimum;
 
             base.OnMouseLeave();
         }
 
         /// <inheritdoc />
-        protected override void SetScaleInternal(ref Vector2 scale)
+        protected override void SetScaleInternal(ref Float2 scale)
         {
             base.SetScaleInternal(ref scale);
 

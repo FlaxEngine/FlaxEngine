@@ -17,19 +17,19 @@
 #include <ThirdParty/OpenFBX/ofbx.h>
 #include <memory>
 
-Vector2 ToVector2(const ofbx::Vec2& v)
+Float2 ToFloat2(const ofbx::Vec2& v)
 {
-    return Vector2((float)v.x, (float)v.y);
+    return Float2((float)v.x, (float)v.y);
 }
 
-Vector2 ToVector2(const ofbx::Vec3& v)
+Float2 ToFloat2(const ofbx::Vec3& v)
 {
-    return Vector2((float)v.x, (float)v.y);
+    return Float2((float)v.x, (float)v.y);
 }
 
-Vector3 ToVector3(const ofbx::Vec3& v)
+Float3 ToFloat3(const ofbx::Vec3& v)
 {
-    return Vector3((float)v.x, (float)v.y, (float)v.z);
+    return Float3((float)v.x, (float)v.y, (float)v.z);
 }
 
 Color ToColor(const ofbx::Vec4& v)
@@ -85,9 +85,9 @@ struct OpenFbxImporterData
     const ModelTool::Options& Options;
 
     ofbx::GlobalSettings GlobalSettings;
-    Vector3 Up;
-    Vector3 Front;
-    Vector3 Right;
+    Float3 Up;
+    Float3 Front;
+    Float3 Right;
     bool ConvertRH;
     float FrameRate;
     Quaternion RootConvertRotation = Quaternion::Identity;
@@ -118,52 +118,52 @@ struct OpenFbxImporterData
         switch (GlobalSettings.UpAxis)
         {
         case ofbx::UpVector_AxisX:
-            Up = Vector3((float)GlobalSettings.UpAxisSign, 0, 0);
+            Up = Float3((float)GlobalSettings.UpAxisSign, 0, 0);
             switch (GlobalSettings.FrontAxis)
             {
             case ofbx::FrontVector_ParityEven:
                 // Up: X, Front: Y, Right: Z
-                Front = Vector3(0, (float)GlobalSettings.FrontAxisSign, 0);
-                Right = Vector3(0, 0, coordAxisSign);
+                Front = Float3(0, (float)GlobalSettings.FrontAxisSign, 0);
+                Right = Float3(0, 0, coordAxisSign);
                 break;
             case ofbx::FrontVector_ParityOdd:
                 // Up: X, Front: Z, Right: Y
-                Front = Vector3(0, 0, (float)GlobalSettings.FrontAxisSign);
-                Right = Vector3(0, coordAxisSign, 0);
+                Front = Float3(0, 0, (float)GlobalSettings.FrontAxisSign);
+                Right = Float3(0, coordAxisSign, 0);
                 break;
             default: ;
             }
             break;
         case ofbx::UpVector_AxisY:
-            Up = Vector3(0, (float)GlobalSettings.UpAxisSign, 0);
+            Up = Float3(0, (float)GlobalSettings.UpAxisSign, 0);
             switch (GlobalSettings.FrontAxis)
             {
             case ofbx::FrontVector_ParityEven:
                 // Up: Y, Front: X, Right: Z
-                Front = Vector3((float)GlobalSettings.FrontAxisSign, 0, 0);
-                Right = Vector3(0, 0, coordAxisSign);
+                Front = Float3((float)GlobalSettings.FrontAxisSign, 0, 0);
+                Right = Float3(0, 0, coordAxisSign);
                 break;
             case ofbx::FrontVector_ParityOdd:
                 // Up: Y, Front: Z, Right: X
-                Front = Vector3(0, 0, (float)GlobalSettings.FrontAxisSign);
-                Right = Vector3(coordAxisSign, 0, 0);
+                Front = Float3(0, 0, (float)GlobalSettings.FrontAxisSign);
+                Right = Float3(coordAxisSign, 0, 0);
                 break;
             default: ;
             }
             break;
         case ofbx::UpVector_AxisZ:
-            Up = Vector3(0, 0, (float)GlobalSettings.UpAxisSign);
+            Up = Float3(0, 0, (float)GlobalSettings.UpAxisSign);
             switch (GlobalSettings.FrontAxis)
             {
             case ofbx::FrontVector_ParityEven:
                 // Up: Z, Front: X, Right: Y
-                Front = Vector3((float)GlobalSettings.FrontAxisSign, 0, 0);
-                Right = Vector3(0, coordAxisSign, 0);
+                Front = Float3((float)GlobalSettings.FrontAxisSign, 0, 0);
+                Right = Float3(0, coordAxisSign, 0);
                 break;
             case ofbx::FrontVector_ParityOdd:
                 // Up: Z, Front: Y, Right: X
-                Front = Vector3((float)GlobalSettings.FrontAxisSign, 0, 0);
-                Right = Vector3(coordAxisSign, 0, 0);
+                Front = Float3((float)GlobalSettings.FrontAxisSign, 0, 0);
+                Right = Float3(coordAxisSign, 0, 0);
                 break;
             default: ;
             }
@@ -491,7 +491,7 @@ bool ProcessMesh(ImportedModelData& result, OpenFbxImporterData& data, const ofb
     mesh.Positions.Resize(vertexCount, false);
     for (int i = 0; i < vertexCount; i++)
     {
-        mesh.Positions.Get()[i] = ToVector3(vertices[i + firstVertexOffset]);
+        mesh.Positions.Get()[i] = ToFloat3(vertices[i + firstVertexOffset]);
     }
 
     // Indices (dummy index buffer)
@@ -512,7 +512,7 @@ bool ProcessMesh(ImportedModelData& result, OpenFbxImporterData& data, const ofb
         mesh.UVs.Resize(vertexCount, false);
         for (int i = 0; i < vertexCount; i++)
         {
-            mesh.UVs.Get()[i] = ToVector2(uvs[i + firstVertexOffset]);
+            mesh.UVs.Get()[i] = ToFloat2(uvs[i + firstVertexOffset]);
         }
         if (data.ConvertRH)
         {
@@ -537,7 +537,7 @@ bool ProcessMesh(ImportedModelData& result, OpenFbxImporterData& data, const ofb
         mesh.Normals.Resize(vertexCount, false);
         for (int i = 0; i < vertexCount; i++)
         {
-            mesh.Normals.Get()[i] = ToVector3(normals[i + firstVertexOffset]);
+            mesh.Normals.Get()[i] = ToFloat3(normals[i + firstVertexOffset]);
         }
         if (data.ConvertRH)
         {
@@ -559,7 +559,7 @@ bool ProcessMesh(ImportedModelData& result, OpenFbxImporterData& data, const ofb
         mesh.Tangents.Resize(vertexCount, false);
         for (int i = 0; i < vertexCount; i++)
         {
-            mesh.Tangents.Get()[i] = ToVector3(tangents[i + firstVertexOffset]);
+            mesh.Tangents.Get()[i] = ToFloat3(tangents[i + firstVertexOffset]);
         }
         if (data.ConvertRH)
         {
@@ -614,7 +614,7 @@ bool ProcessMesh(ImportedModelData& result, OpenFbxImporterData& data, const ofb
             mesh.LightmapUVs.Resize(vertexCount, false);
             for (int i = 0; i < vertexCount; i++)
             {
-                mesh.LightmapUVs.Get()[i] = ToVector2(lightmapUVs[i + firstVertexOffset]);
+                mesh.LightmapUVs.Get()[i] = ToFloat2(lightmapUVs[i + firstVertexOffset]);
             }
             if (data.ConvertRH)
             {
@@ -646,7 +646,7 @@ bool ProcessMesh(ImportedModelData& result, OpenFbxImporterData& data, const ofb
         mesh.BlendIndices.Resize(vertexCount);
         mesh.BlendWeights.Resize(vertexCount);
         mesh.BlendIndices.SetAll(Int4::Zero);
-        mesh.BlendWeights.SetAll(Vector4::Zero);
+        mesh.BlendWeights.SetAll(Float4::Zero);
 
         for (int clusterIndex = 0, c = skin->getClusterCount(); clusterIndex < c; clusterIndex++)
         {
@@ -737,18 +737,18 @@ bool ProcessMesh(ImportedModelData& result, OpenFbxImporterData& data, const ofb
             auto shapeVertices = shape->getVertices();
             for (int32 i = 0; i < blendShapeData.Vertices.Count(); i++)
             {
-                auto delta = ToVector3(shapeVertices[i + firstVertexOffset]) - mesh.Positions.Get()[i];
+                auto delta = ToFloat3(shapeVertices[i + firstVertexOffset]) - mesh.Positions.Get()[i];
                 blendShapeData.Vertices.Get()[i].PositionDelta = delta;
             }
 
             auto shapeNormals = shape->getNormals();
             for (int32 i = 0; i < blendShapeData.Vertices.Count(); i++)
             {
-                /*auto delta = ToVector3(shapeNormals[i + firstVertexOffset]) - mesh.Normals[i];
+                /*auto delta = ToFloat3(shapeNormals[i + firstVertexOffset]) - mesh.Normals[i];
                 auto length = delta.Length();
                 if (length > ZeroTolerance)
                     delta /= length;*/
-                auto delta = Vector3::Zero; // TODO: blend shape normals deltas fix when importing from fbx
+                auto delta = Float3::Zero; // TODO: blend shape normals deltas fix when importing from fbx
                 blendShapeData.Vertices.Get()[i].NormalDelta = delta;
             }
         }
@@ -917,7 +917,7 @@ struct Frame
     ofbx::Vec3 Scaling;
 };
 
-void ExtractKeyframePosition(const ofbx::Object* bone, ofbx::Vec3& trans, const Frame& localFrame, Vector3& keyframe)
+void ExtractKeyframePosition(const ofbx::Object* bone, ofbx::Vec3& trans, const Frame& localFrame, Float3& keyframe)
 {
     const Matrix frameTrans = ToMatrix(bone->evalLocal(trans, localFrame.Rotation, localFrame.Scaling));
     keyframe = frameTrans.GetTranslation();
@@ -929,7 +929,7 @@ void ExtractKeyframeRotation(const ofbx::Object* bone, ofbx::Vec3& trans, const 
     Quaternion::RotationMatrix(frameTrans, keyframe);
 }
 
-void ExtractKeyframeScale(const ofbx::Object* bone, ofbx::Vec3& trans, const Frame& localFrame, Vector3& keyframe)
+void ExtractKeyframeScale(const ofbx::Object* bone, ofbx::Vec3& trans, const Frame& localFrame, Float3& keyframe)
 {
     // Fix empty scale case
     if (Math::IsZero(trans.x) && Math::IsZero(trans.y) && Math::IsZero(trans.z))
@@ -1045,7 +1045,7 @@ bool ImportAnimation(int32 index, ImportedModelData& data, OpenFbxImporterData& 
     return false;
 }
 
-static Vector3 FbxVectorFromAxisAndSign(int axis, int sign)
+static Float3 FbxVectorFromAxisAndSign(int axis, int sign)
 {
     switch (axis)
     {
@@ -1131,20 +1131,20 @@ bool ModelTool::ImportDataOpenFBX(const char* path, ImportedModelData& data, Opt
         }
 
         // Transform nodes to match the engine coordinates system - DirectX (UpVector = +Y, FrontVector = +Z, CoordSystem = -X (LeftHanded))
-        if (context->Up == Vector3(1, 0, 0) && context->Front == Vector3(0, 0, 1) && context->Right == Vector3(0, 1, 0))
+        if (context->Up == Float3(1, 0, 0) && context->Front == Float3(0, 0, 1) && context->Right == Float3(0, 1, 0))
         {
             context->RootConvertRotation = Quaternion::Euler(0, 180, 0);
         }
-        else if (context->Up == Vector3(0, 1, 0) && context->Front == Vector3(-1, 0, 0) && context->Right == Vector3(0, 0, 1))
+        else if (context->Up == Float3(0, 1, 0) && context->Front == Float3(-1, 0, 0) && context->Right == Float3(0, 0, 1))
         {
             context->RootConvertRotation = Quaternion::Euler(90, -90, 0);
         }
-        /*Vector3 engineUp(0, 1, 0);
-        Vector3 engineFront(0, 0, 1);
-        Vector3 engineRight(-1, 0, 0);*/
-        /*Vector3 engineUp(1, 0, 0);
-        Vector3 engineFront(0, 0, 1);
-        Vector3 engineRight(0, 1, 0);
+        /*Float3 engineUp(0, 1, 0);
+        Float3 engineFront(0, 0, 1);
+        Float3 engineRight(-1, 0, 0);*/
+        /*Float3 engineUp(1, 0, 0);
+        Float3 engineFront(0, 0, 1);
+        Float3 engineRight(0, 1, 0);
         if (context->Up != engineUp || context->Front != engineFront || context->Right != engineRight)
         {
             LOG(Info, "Converting imported scene nodes to match engine coordinates system");
@@ -1152,10 +1152,10 @@ bool ModelTool::ImportDataOpenFBX(const char* path, ImportedModelData& data, Opt
             //context->RootConvertRotation *= Quaternion::GetRotationFromTo(rotation * context->Right, engineRight, engineRight);
             //context->RootConvertRotation *= Quaternion::GetRotationFromTo(rotation * context->Front, engineFront, engineFront);
         }*/
-        /*Vector3 hackUp = FbxVectorFromAxisAndSign(globalSettings.UpAxis, globalSettings.UpAxisSign);
-        if (hackUp == Vector3::UnitX)
+        /*Float3 hackUp = FbxVectorFromAxisAndSign(globalSettings.UpAxis, globalSettings.UpAxisSign);
+        if (hackUp == Float3::UnitX)
             context->RootConvertRotation = Quaternion::Euler(-90, 0, 0);
-        else if (hackUp == Vector3::UnitZ)
+        else if (hackUp == Float3::UnitZ)
             context->RootConvertRotation = Quaternion::Euler(90, 0, 0);*/
         if (!context->RootConvertRotation.IsIdentity())
         {

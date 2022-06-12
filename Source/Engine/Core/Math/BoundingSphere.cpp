@@ -15,16 +15,16 @@ String BoundingSphere::ToString() const
 
 bool BoundingSphere::Intersects(const Ray& ray) const
 {
-    float distance;
+    Real distance;
     return CollisionsHelper::RayIntersectsSphere(ray, *this, distance);
 }
 
-bool BoundingSphere::Intersects(const Ray& ray, float& distance) const
+bool BoundingSphere::Intersects(const Ray& ray, Real& distance) const
 {
     return CollisionsHelper::RayIntersectsSphere(ray, *this, distance);
 }
 
-bool BoundingSphere::Intersects(const Ray& ray, float& distance, Vector3& normal) const
+bool BoundingSphere::Intersects(const Ray& ray, Real& distance, Vector3& normal) const
 {
     return CollisionsHelper::RayIntersectsSphere(ray, *this, distance, normal);
 }
@@ -86,45 +86,60 @@ void BoundingSphere::GetBoundingBox(BoundingBox& result) const
     BoundingBox::FromSphere(*this, result);
 }
 
-void BoundingSphere::FromPoints(const Vector3* points, int32 pointsCount, BoundingSphere& result)
+void BoundingSphere::FromPoints(const Float3* points, int32 pointsCount, BoundingSphere& result)
 {
     ASSERT(points && pointsCount > 0);
 
     // Find the center of all points
-    Vector3 center = Vector3::Zero;
+    Float3 center = Float3::Zero;
     for (int32 i = 0; i < pointsCount; i++)
-    {
-        Vector3::Add(points[i], center, center);
-    }
-
-    // This is the center of our sphere
-    center /= static_cast<float>(pointsCount);
+        Float3::Add(points[i], center, center);
+    center /= (float)pointsCount;
 
     // Find the radius of the sphere
     float radius = 0.0f;
     for (int32 i = 0; i < pointsCount; i++)
     {
-        // We are doing a relative distance comparison to find the maximum distance from the center of our sphere
-        const float distance = Vector3::DistanceSquared(center, points[i]);
-
+        const float distance = Float3::DistanceSquared(center, points[i]);
         if (distance > radius)
             radius = distance;
     }
 
-    // Find the real distance from the DistanceSquared
-    radius = Math::Sqrt(radius);
+    // Construct the sphere
+    result.Center = center;
+    result.Radius = Math::Sqrt(radius);
+}
+
+void BoundingSphere::FromPoints(const Double3* points, int32 pointsCount, BoundingSphere& result)
+{
+    ASSERT(points && pointsCount > 0);
+
+    // Find the center of all points
+    Double3 center = Double3::Zero;
+    for (int32 i = 0; i < pointsCount; i++)
+        Double3::Add(points[i], center, center);
+    center /= (double)pointsCount;
+
+    // Find the radius of the sphere
+    double radius = 0.0;
+    for (int32 i = 0; i < pointsCount; i++)
+    {
+        const double distance = Double3::DistanceSquared(center, points[i]);
+        if (distance > radius)
+            radius = distance;
+    }
 
     // Construct the sphere
     result.Center = center;
-    result.Radius = radius;
+    result.Radius = (Real)Math::Sqrt(radius);
 }
 
 void BoundingSphere::FromBox(const BoundingBox& box, BoundingSphere& result)
 {
     ASSERT(!box.Minimum.IsNanOrInfinity() && !box.Maximum.IsNanOrInfinity());
-    const float x = box.Maximum.X - box.Minimum.X;
-    const float y = box.Maximum.Y - box.Minimum.Y;
-    const float z = box.Maximum.Z - box.Minimum.Z;
+    const Real x = box.Maximum.X - box.Minimum.X;
+    const Real y = box.Maximum.Y - box.Minimum.Y;
+    const Real z = box.Maximum.Z - box.Minimum.Z;
     result.Center.X = box.Minimum.X + x * 0.5f;
     result.Center.Y = box.Minimum.Y + y * 0.5f;
     result.Center.Z = box.Minimum.Z + z * 0.5f;
@@ -146,10 +161,9 @@ void BoundingSphere::Merge(const BoundingSphere& value1, const BoundingSphere& v
     }
 
     const Vector3 difference = value2.Center - value1.Center;
-
-    const float length = difference.Length();
-    const float radius = value1.Radius;
-    const float radius2 = value2.Radius;
+    const Real length = difference.Length();
+    const Real radius = value1.Radius;
+    const Real radius2 = value2.Radius;
 
     if (radius + radius2 >= length)
     {
@@ -167,8 +181,8 @@ void BoundingSphere::Merge(const BoundingSphere& value1, const BoundingSphere& v
     }
 
     const Vector3 vector = difference * (1.0f / length);
-    const float min = Math::Min(-radius, length - radius2);
-    const float max = (Math::Max(radius, length + radius2) - min) * 0.5f;
+    const Real min = Math::Min(-radius, length - radius2);
+    const Real max = (Math::Max(radius, length + radius2) - min) * 0.5f;
 
     result.Center = value1.Center + vector * (max + min);
     result.Radius = max;
@@ -177,9 +191,8 @@ void BoundingSphere::Merge(const BoundingSphere& value1, const BoundingSphere& v
 void BoundingSphere::Merge(const BoundingSphere& value1, const Vector3& value2, BoundingSphere& result)
 {
     const Vector3 difference = value2 - value1.Center;
-    const float length = difference.Length();
-    const float radius = value1.Radius;
-
+    const Real length = difference.Length();
+    const Real radius = value1.Radius;
     if (radius >= length)
     {
         result = value1;
@@ -187,8 +200,8 @@ void BoundingSphere::Merge(const BoundingSphere& value1, const Vector3& value2, 
     }
 
     const Vector3 vector = difference * (1.0f / length);
-    const float min = Math::Min(-radius, length);
-    const float max = (Math::Max(radius, length) - min) * 0.5f;
+    const Real min = Math::Min(-radius, length);
+    const Real max = (Math::Max(radius, length) - min) * 0.5f;
 
     result.Center = value1.Center + vector * (max + min);
     result.Radius = max;

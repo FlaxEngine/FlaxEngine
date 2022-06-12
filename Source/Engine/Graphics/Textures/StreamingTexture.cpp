@@ -65,7 +65,7 @@ StreamingTexture::~StreamingTexture()
     ASSERT(_streamingTasksCount == 0);
 }
 
-Vector2 StreamingTexture::Size() const
+Float2 StreamingTexture::Size() const
 {
     return _texture->Size();
 }

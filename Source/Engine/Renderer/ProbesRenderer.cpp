@@ -88,14 +88,14 @@ protected:
 
 PACK_STRUCT(struct Data
     {
-    Vector2 Dummy0;
+    Float2 Dummy0;
     int32 CubeFace;
     int32 SourceMipIndex;
-    Vector4 Sample01;
-    Vector4 Sample23;
-    Vector4 CoefficientMask0;
-    Vector4 CoefficientMask1;
-    Vector3 Dummy1;
+    Float4 Sample01;
+    Float4 Sample23;
+    Float4 CoefficientMask0;
+    Float4 CoefficientMask1;
+    Float3 Dummy1;
     float CoefficientMask2;
     });
 
@@ -429,10 +429,10 @@ bool fixFarPlaneTreeExecute(Actor* actor, const Vector3& position, float& farPla
 {
     if (auto* pointLight = dynamic_cast<PointLight*>(actor))
     {
-        const float dst = Vector3::Distance(pointLight->GetPosition(), position) + pointLight->GetScaledRadius();
+        const Real dst = Vector3::Distance(pointLight->GetPosition(), position) + pointLight->GetScaledRadius();
         if (dst > farPlane)
         {
-            farPlane = dst;
+            farPlane = (float)dst;
         }
     }
 

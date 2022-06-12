@@ -169,13 +169,13 @@ void InputSettings::Deserialize(DeserializeStream& stream, ISerializeModifier* m
     }
 }
 
-void Mouse::OnMouseMoved(const Vector2& newPosition)
+void Mouse::OnMouseMoved(const Float2& newPosition)
 {
     _prevState.MousePosition = newPosition;
     _state.MousePosition = newPosition;
 }
 
-void Mouse::OnMouseDown(const Vector2& position, const MouseButton button, Window* target)
+void Mouse::OnMouseDown(const Float2& position, const MouseButton button, Window* target)
 {
     Event& e = _queue.AddOne();
     e.Type = EventType::MouseDown;
@@ -184,7 +184,7 @@ void Mouse::OnMouseDown(const Vector2& position, const MouseButton button, Windo
     e.MouseData.Position = position;
 }
 
-void Mouse::OnMouseUp(const Vector2& position, const MouseButton button, Window* target)
+void Mouse::OnMouseUp(const Float2& position, const MouseButton button, Window* target)
 {
     Event& e = _queue.AddOne();
     e.Type = EventType::MouseUp;
@@ -193,7 +193,7 @@ void Mouse::OnMouseUp(const Vector2& position, const MouseButton button, Window*
     e.MouseData.Position = position;
 }
 
-void Mouse::OnMouseDoubleClick(const Vector2& position, const MouseButton button, Window* target)
+void Mouse::OnMouseDoubleClick(const Float2& position, const MouseButton button, Window* target)
 {
     Event& e = _queue.AddOne();
     e.Type = EventType::MouseDoubleClick;
@@ -202,7 +202,7 @@ void Mouse::OnMouseDoubleClick(const Vector2& position, const MouseButton button
     e.MouseData.Position = position;
 }
 
-void Mouse::OnMouseMove(const Vector2& position, Window* target)
+void Mouse::OnMouseMove(const Float2& position, Window* target)
 {
     Event& e = _queue.AddOne();
     e.Type = EventType::MouseMove;
@@ -217,7 +217,7 @@ void Mouse::OnMouseLeave(Window* target)
     e.Target = target;
 }
 
-void Mouse::OnMouseWheel(const Vector2& position, float delta, Window* target)
+void Mouse::OnMouseWheel(const Float2& position, float delta, Window* target)
 {
     Event& e = _queue.AddOne();
     e.Type = EventType::MouseWheel;
@@ -423,27 +423,27 @@ bool Input::GetKeyUp(const KeyboardKeys key)
     return Keyboard ? Keyboard->GetKeyUp(key) : false;
 }
 
-Vector2 Input::GetMousePosition()
+Float2 Input::GetMousePosition()
 {
-    return Mouse ? Screen::ScreenToGameViewport(Mouse->GetPosition()) : Vector2::Minimum;
+    return Mouse ? Screen::ScreenToGameViewport(Mouse->GetPosition()) : Float2::Minimum;
 }
 
-void Input::SetMousePosition(const Vector2& position)
+void Input::SetMousePosition(const Float2& position)
 {
     if (Mouse && Engine::HasGameViewportFocus())
     {
         const auto pos = Screen::GameViewportToScreen(position);
-        if (pos > Vector2::Minimum)
+        if (pos > Float2::Minimum)
             Mouse->SetMousePosition(pos);
     }
 }
 
-Vector2 Input::GetMouseScreenPosition()
+Float2 Input::GetMouseScreenPosition()
 {
-    return Mouse ? Mouse->GetPosition() : Vector2::Minimum;
+    return Mouse ? Mouse->GetPosition() : Float2::Minimum;
 }
 
-void Input::SetMouseScreenPosition(const Vector2& position)
+void Input::SetMouseScreenPosition(const Float2& position)
 {
     if (Mouse && Engine::HasFocus)
     {
@@ -451,9 +451,9 @@ void Input::SetMouseScreenPosition(const Vector2& position)
     }
 }
 
-Vector2 Input::GetMousePositionDelta()
+Float2 Input::GetMousePositionDelta()
 {
-    return Mouse ? Mouse->GetPositionDelta() : Vector2::Zero;
+    return Mouse ? Mouse->GetPositionDelta() : Float2::Zero;
 }
 
 float Input::GetMouseScrollDelta()

@@ -154,8 +154,8 @@ struct SerializedMaterialParam
         bool AsBool;
         int32 AsInteger;
         float AsFloat;
-        Vector2 AsVector2;
-        Vector3 AsVector3;
+        Float2 AsFloat2;
+        Float3 AsFloat3;
         Color AsColor;
         Guid AsGuid;
         byte AsData[16 * 4];
@@ -191,8 +191,8 @@ private:
         bool _asBool;
         int32 _asInteger;
         float _asFloat;
-        Vector2 _asVector2;
-        Vector3 _asVector3;
+        Float2 _asVector2;
+        Float3 _asVector3;
         Color _asColor;
         byte AsData[16 * 4];
     };

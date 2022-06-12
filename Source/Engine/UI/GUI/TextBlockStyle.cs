@@ -35,7 +35,7 @@ namespace FlaxEngine.GUI
         /// The text shadow offset from the text location. Set to zero to disable shadow drawing.
         /// </summary>
         [EditorOrder(40), Tooltip("The text shadow offset from the text location. Set to zero to disable shadow drawing.")]
-        public Vector2 ShadowOffset;
+        public Float2 ShadowOffset;
 
         /// <summary>
         /// The background brush for the selected text range.

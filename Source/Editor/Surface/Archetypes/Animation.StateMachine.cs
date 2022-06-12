@@ -210,7 +210,7 @@ namespace FlaxEditor.Surface.Archetypes
             }
 
             /// <inheritdoc />
-            public override bool OnMouseDoubleClick(Vector2 location, MouseButton button)
+            public override bool OnMouseDoubleClick(Float2 location, MouseButton button)
             {
                 if (base.OnMouseDoubleClick(location, button))
                     return true;
@@ -268,7 +268,7 @@ namespace FlaxEditor.Surface.Archetypes
                         Surface.Undo.Enabled = false;
                     }
 
-                    context.SpawnNode(9, 19, new Vector2(100.0f));
+                    context.SpawnNode(9, 19, new Float2(100.0f));
 
                     if (Surface.Undo != null)
                     {
@@ -329,7 +329,7 @@ namespace FlaxEditor.Surface.Archetypes
             {
                 base.UpdateRectangles();
 
-                _textRect = new Rectangle(Vector2.Zero, Size);
+                _textRect = new Rectangle(Float2.Zero, Size);
 
                 var style = Style.Current;
                 var titleSize = style.FontLarge.MeasureText(Title);
@@ -370,13 +370,13 @@ namespace FlaxEditor.Surface.Archetypes
             }
 
             /// <inheritdoc />
-            public override bool CanSelect(ref Vector2 location)
+            public override bool CanSelect(ref Float2 location)
             {
                 return _dragAreaRect.MakeOffsetted(Location).Contains(ref location);
             }
 
             /// <inheritdoc />
-            public override bool OnMouseDown(Vector2 location, MouseButton button)
+            public override bool OnMouseDown(Float2 location, MouseButton button)
             {
                 if (button == MouseButton.Left && !_dragAreaRect.Contains(ref location))
                 {
@@ -393,7 +393,7 @@ namespace FlaxEditor.Surface.Archetypes
             }
 
             /// <inheritdoc />
-            public override bool OnMouseUp(Vector2 location, MouseButton button)
+            public override bool OnMouseUp(Float2 location, MouseButton button)
             {
                 if (button == MouseButton.Left)
                 {
@@ -409,7 +409,7 @@ namespace FlaxEditor.Surface.Archetypes
             }
 
             /// <inheritdoc />
-            public override void OnMouseMove(Vector2 location)
+            public override void OnMouseMove(Float2 location)
             {
                 Surface.ConnectingOver(this);
                 base.OnMouseMove(location);
@@ -430,7 +430,7 @@ namespace FlaxEditor.Surface.Archetypes
             }
 
             /// <inheritdoc />
-            public override void DrawConnections(ref Vector2 mousePosition)
+            public override void DrawConnections(ref Float2 mousePosition)
             {
                 var style = Style.Current;
                 var targetState = FirstState;
@@ -454,7 +454,7 @@ namespace FlaxEditor.Surface.Archetypes
             }
 
             /// <inheritdoc />
-            public Vector2 ConnectionOrigin => Center;
+            public Float2 ConnectionOrigin => Center;
 
             /// <inheritdoc />
             public bool AreConnected(IConnectionInstigator other)
@@ -469,7 +469,7 @@ namespace FlaxEditor.Surface.Archetypes
             }
 
             /// <inheritdoc />
-            public void DrawConnectingLine(ref Vector2 startPos, ref Vector2 endPos, ref Color color)
+            public void DrawConnectingLine(ref Float2 startPos, ref Float2 endPos, ref Color color)
             {
                 StateMachineState.DrawConnection(Surface, ref startPos, ref endPos, ref color);
             }
@@ -655,7 +655,7 @@ namespace FlaxEditor.Surface.Archetypes
             /// <param name="startPos">The start position.</param>
             /// <param name="endPos">The end position.</param>
             /// <param name="color">The line color.</param>
-            public static void DrawConnection(VisjectSurface surface, ref Vector2 startPos, ref Vector2 endPos, ref Color color)
+            public static void DrawConnection(VisjectSurface surface, ref Float2 startPos, ref Float2 endPos, ref Color color)
             {
                 var sub = endPos - startPos;
                 var length = sub.Length;
@@ -663,11 +663,11 @@ namespace FlaxEditor.Surface.Archetypes
                 {
                     var dir = sub / length;
                     var arrowRect = new Rectangle(0, 0, 16.0f, 16.0f);
-                    float rotation = Vector2.Dot(dir, Vector2.UnitY);
+                    float rotation = Float2.Dot(dir, Float2.UnitY);
                     if (endPos.X < startPos.X)
                         rotation = 2 - rotation;
                     // TODO: make it look better (fix the math)
-                    var arrowTransform = Matrix3x3.Translation2D(new Vector2(-16.0f, -8.0f)) * Matrix3x3.RotationZ(rotation * Mathf.PiOverTwo) * Matrix3x3.Translation2D(endPos);
+                    var arrowTransform = Matrix3x3.Translation2D(new Float2(-16.0f, -8.0f)) * Matrix3x3.RotationZ(rotation * Mathf.PiOverTwo) * Matrix3x3.Translation2D(endPos);
 
                     Render2D.PushTransform(ref arrowTransform);
                     Render2D.DrawSprite(Editor.Instance.Icons.VisjectArrowClosed32, arrowRect, color);
@@ -683,9 +683,9 @@ namespace FlaxEditor.Surface.Archetypes
             /// </summary>
             /// <param name="startPos">The start position (in surface space).</param>
             /// <param name="endPos">The end position (in surface space).</param>
-            public void GetConnectionEndPoint(ref Vector2 startPos, out Vector2 endPos)
+            public void GetConnectionEndPoint(ref Float2 startPos, out Float2 endPos)
             {
-                var bounds = new Rectangle(Vector2.Zero, Size);
+                var bounds = new Rectangle(Float2.Zero, Size);
                 bounds.Expand(4.0f);
                 var upperLeft = bounds.UpperLeft;
                 var bottomRight = bounds.BottomRight;
@@ -722,7 +722,7 @@ namespace FlaxEditor.Surface.Archetypes
                 const float buttonMargin = FlaxEditor.Surface.Constants.NodeCloseButtonMargin;
                 const float buttonSize = FlaxEditor.Surface.Constants.NodeCloseButtonSize;
                 _renameButtonRect = new Rectangle(_closeButtonRect.Left - buttonSize - buttonMargin, buttonMargin, buttonSize, buttonSize);
-                _textRect = new Rectangle(Vector2.Zero, Size);
+                _textRect = new Rectangle(Float2.Zero, Size);
                 _dragAreaRect = _headerRect;
             }
 
@@ -739,7 +739,7 @@ namespace FlaxEditor.Surface.Archetypes
                 Surface.CustomMouseDoubleClick += OnSurfaceMouseDoubleClick;
             }
 
-            private void OnSurfaceMouseUp(ref Vector2 mouse, MouseButton buttons, ref bool handled)
+            private void OnSurfaceMouseUp(ref Float2 mouse, MouseButton buttons, ref bool handled)
             {
                 if (handled)
                     return;
@@ -754,7 +754,7 @@ namespace FlaxEditor.Surface.Archetypes
                     if (t.Bounds.Contains(ref mousePosition))
                     {
                         CollisionsHelper.ClosestPointPointLine(ref mousePosition, ref t.StartPos, ref t.EndPos, out var point);
-                        if (Vector2.DistanceSquared(ref mousePosition, ref point) < 25.0f)
+                        if (Float2.DistanceSquared(ref mousePosition, ref point) < 25.0f)
                         {
                             OnTransitionClicked(t, ref mouse, ref mousePosition, buttons);
                             handled = true;
@@ -764,7 +764,7 @@ namespace FlaxEditor.Surface.Archetypes
                 }
             }
 
-            private void OnSurfaceMouseDoubleClick(ref Vector2 mouse, MouseButton buttons, ref bool handled)
+            private void OnSurfaceMouseDoubleClick(ref Float2 mouse, MouseButton buttons, ref bool handled)
             {
                 if (handled)
                     return;
@@ -779,7 +779,7 @@ namespace FlaxEditor.Surface.Archetypes
                     if (t.Bounds.Contains(ref mousePosition))
                     {
                         CollisionsHelper.ClosestPointPointLine(ref mousePosition, ref t.StartPos, ref t.EndPos, out var point);
-                        if (Vector2.DistanceSquared(ref mousePosition, ref point) < 25.0f)
+                        if (Float2.DistanceSquared(ref mousePosition, ref point) < 25.0f)
                         {
                             t.EditRule();
                             handled = true;
@@ -789,7 +789,7 @@ namespace FlaxEditor.Surface.Archetypes
                 }
             }
 
-            private void OnTransitionClicked(StateMachineTransition transition, ref Vector2 mouse, ref Vector2 mousePosition, MouseButton button)
+            private void OnTransitionClicked(StateMachineTransition transition, ref Float2 mouse, ref Float2 mousePosition, MouseButton button)
             {
                 switch (button)
                 {
@@ -1033,7 +1033,7 @@ namespace FlaxEditor.Surface.Archetypes
                     var targetState = t.DestinationState;
                     var isBothDirection = targetState.Transitions.Any(x => x.DestinationState == this);
 
-                    Vector2 startPos, endPos;
+                    Float2 startPos, endPos;
                     if (isBothDirection)
                     {
                         bool diff = string.Compare(sourceState.Title, targetState.Title, StringComparison.Ordinal) > 0;
@@ -1050,7 +1050,7 @@ namespace FlaxEditor.Surface.Archetypes
                         var offset = diff ? -6.0f : 6.0f;
                         var dir = startPos - endPos;
                         dir.Normalize();
-                        Vector2.Perpendicular(ref dir, out var nrm);
+                        Float2.Perpendicular(ref dir, out var nrm);
                         nrm *= offset;
                         startPos += nrm;
                         endPos += nrm;
@@ -1169,13 +1169,13 @@ namespace FlaxEditor.Surface.Archetypes
             }
 
             /// <inheritdoc />
-            public override bool CanSelect(ref Vector2 location)
+            public override bool CanSelect(ref Float2 location)
             {
                 return _dragAreaRect.MakeOffsetted(Location).Contains(ref location);
             }
 
             /// <inheritdoc />
-            public override bool OnMouseDoubleClick(Vector2 location, MouseButton button)
+            public override bool OnMouseDoubleClick(Float2 location, MouseButton button)
             {
                 if (base.OnMouseDoubleClick(location, button))
                     return true;
@@ -1188,7 +1188,7 @@ namespace FlaxEditor.Surface.Archetypes
             }
 
             /// <inheritdoc />
-            public override bool OnMouseDown(Vector2 location, MouseButton button)
+            public override bool OnMouseDown(Float2 location, MouseButton button)
             {
                 if (button == MouseButton.Left && !_dragAreaRect.Contains(ref location))
                 {
@@ -1205,7 +1205,7 @@ namespace FlaxEditor.Surface.Archetypes
             }
 
             /// <inheritdoc />
-            public override bool OnMouseUp(Vector2 location, MouseButton button)
+            public override bool OnMouseUp(Float2 location, MouseButton button)
             {
                 if (button == MouseButton.Left)
                 {
@@ -1228,7 +1228,7 @@ namespace FlaxEditor.Surface.Archetypes
             }
 
             /// <inheritdoc />
-            public override void OnMouseMove(Vector2 location)
+            public override void OnMouseMove(Float2 location)
             {
                 Surface.ConnectingOver(this);
                 base.OnMouseMove(location);
@@ -1329,7 +1329,7 @@ namespace FlaxEditor.Surface.Archetypes
                         Surface.Undo.Enabled = false;
                     }
 
-                    context.SpawnNode(9, 21, new Vector2(100.0f));
+                    context.SpawnNode(9, 21, new Float2(100.0f));
 
                     if (Surface.Undo != null)
                     {
@@ -1339,7 +1339,7 @@ namespace FlaxEditor.Surface.Archetypes
             }
 
             /// <inheritdoc />
-            public override void DrawConnections(ref Vector2 mousePosition)
+            public override void DrawConnections(ref Float2 mousePosition)
             {
                 for (int i = 0; i < Transitions.Count; i++)
                 {
@@ -1348,7 +1348,7 @@ namespace FlaxEditor.Surface.Archetypes
                     if (isMouseOver)
                     {
                         CollisionsHelper.ClosestPointPointLine(ref mousePosition, ref t.StartPos, ref t.EndPos, out var point);
-                        isMouseOver = Vector2.DistanceSquared(ref mousePosition, ref point) < 25.0f;
+                        isMouseOver = Float2.DistanceSquared(ref mousePosition, ref point) < 25.0f;
                     }
                     var color = isMouseOver ? Color.Wheat : t.LineColor;
                     DrawConnection(Surface, ref t.StartPos, ref t.EndPos, ref color);
@@ -1356,7 +1356,7 @@ namespace FlaxEditor.Surface.Archetypes
             }
 
             /// <inheritdoc />
-            public Vector2 ConnectionOrigin => Center;
+            public Float2 ConnectionOrigin => Center;
 
             /// <inheritdoc />
             public bool AreConnected(IConnectionInstigator other)
@@ -1378,7 +1378,7 @@ namespace FlaxEditor.Surface.Archetypes
             }
 
             /// <inheritdoc />
-            public void DrawConnectingLine(ref Vector2 startPos, ref Vector2 endPos, ref Color color)
+            public void DrawConnectingLine(ref Float2 startPos, ref Float2 endPos, ref Color color)
             {
                 DrawConnection(Surface, ref startPos, ref endPos, ref color);
             }
@@ -1623,13 +1623,13 @@ namespace FlaxEditor.Surface.Archetypes
             /// The start position (cached).
             /// </summary>
             [HideInEditor]
-            public Vector2 StartPos;
+            public Float2 StartPos;
 
             /// <summary>
             /// The end position (cached).
             /// </summary>
             [HideInEditor]
-            public Vector2 EndPos;
+            public Float2 EndPos;
 
             /// <summary>
             /// The bounds of the transition connection line (cached).
@@ -1701,7 +1701,7 @@ namespace FlaxEditor.Surface.Archetypes
                         undo.Enabled = false;
                     }
 
-                    context.SpawnNode(9, 22, new Vector2(100.0f));
+                    context.SpawnNode(9, 22, new Float2(100.0f));
 
                     // TODO: add default rule nodes for easier usage
 
@@ -1744,7 +1744,7 @@ namespace FlaxEditor.Surface.Archetypes
             public void Edit()
             {
                 var surface = SourceState.Surface;
-                var center = Bounds.Center + new Vector2(3.0f);
+                var center = Bounds.Center + new Float2(3.0f);
                 var editor = new TransitionEditor(this);
                 editor.Show(surface, surface.SurfaceRoot.PointToParent(ref center));
             }

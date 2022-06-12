@@ -13,7 +13,7 @@ namespace FlaxEditor.Surface
             var currentScale = _rootControl.Scale.X;
             if (Mathf.Abs(_targetScale - currentScale) > 0.001f)
             {
-                var scale = new Vector2(Mathf.Lerp(currentScale, _targetScale, deltaTime * 10.0f));
+                var scale = new Float2(Mathf.Lerp(currentScale, _targetScale, deltaTime * 10.0f));
                 _rootControl.Scale = scale;
             }
 
@@ -21,7 +21,7 @@ namespace FlaxEditor.Surface
             bool isMovingWithMouse = false;
             if (IsMovingSelection || (IsConnecting && !IsPrimaryMenuOpened))
             {
-                Vector2 moveVector = Vector2.Zero;
+                var moveVector = Float2.Zero;
                 float edgeDetectDistance = 22.0f;
                 if (_mousePos.X < edgeDetectDistance)
                 {
@@ -62,7 +62,7 @@ namespace FlaxEditor.Surface
                 var bSize = background.Size;
                 float bw = bSize.X;
                 float bh = bSize.Y;
-                Vector2 pos = Vector2.Mod(bSize);
+                var pos = Float2.Mod(bSize);
 
                 if (pos.X > 0)
                     pos.X -= bw;
@@ -97,7 +97,7 @@ namespace FlaxEditor.Surface
         /// Draws all the connections between surface nodes.
         /// </summary>
         /// <param name="mousePosition">The current mouse position (in surface-space).</param>
-        protected virtual void DrawConnections(ref Vector2 mousePosition)
+        protected virtual void DrawConnections(ref Float2 mousePosition)
         {
             // Draw all connections at once to boost batching process
             for (int i = 0; i < Nodes.Count; i++)
@@ -114,11 +114,11 @@ namespace FlaxEditor.Surface
         protected virtual void DrawConnectingLine()
         {
             // Get start position
-            Vector2 startPos = _connectionInstigator.ConnectionOrigin;
+            var startPos = _connectionInstigator.ConnectionOrigin;
 
             // Check if mouse is over any of box
             var cmVisible = _activeVisjectCM != null && _activeVisjectCM.Visible;
-            Vector2 endPos = cmVisible ? _rootControl.PointFromParent(ref _cmStartPos) : _rootControl.PointFromParent(ref _mousePos);
+            var endPos = cmVisible ? _rootControl.PointFromParent(ref _cmStartPos) : _rootControl.PointFromParent(ref _mousePos);
             Color lineColor = Style.Colors.Connecting;
             if (_lastInstigatorUnderMouse != null && !cmVisible)
             {
@@ -142,32 +142,32 @@ namespace FlaxEditor.Surface
             foreach (var inputBracket in _inputBrackets)
             {
                 // Draw brackets
-                Vector2 upperLeft = _rootControl.PointToParent(inputBracket.Area.UpperLeft);
-                Vector2 bottomRight = _rootControl.PointToParent(inputBracket.Area.BottomRight);
+                var upperLeft = _rootControl.PointToParent(inputBracket.Area.UpperLeft);
+                var bottomRight = _rootControl.PointToParent(inputBracket.Area.BottomRight);
 
-                Vector2 upperRight = new Vector2(bottomRight.X, upperLeft.Y);
-                Vector2 bottomLeft = new Vector2(upperLeft.X, bottomRight.Y);
+                var upperRight = new Float2(bottomRight.X, upperLeft.Y);
+                var bottomLeft = new Float2(upperLeft.X, bottomRight.Y);
 
                 // Calculate control points
                 float height = bottomLeft.Y - upperLeft.Y;
                 float offsetX = height / 10f;
-                Vector2 leftControl1 = new Vector2(bottomLeft.X - offsetX, bottomLeft.Y);
-                Vector2 leftControl2 = new Vector2(upperLeft.X - offsetX, upperLeft.Y);
+                var leftControl1 = new Float2(bottomLeft.X - offsetX, bottomLeft.Y);
+                var leftControl2 = new Float2(upperLeft.X - offsetX, upperLeft.Y);
 
                 // Draw left bracket
                 Render2D.DrawBezier(bottomLeft, leftControl1, leftControl2, upperLeft, style.Foreground, 2.2f);
 
                 // Calculate control points
-                Vector2 rightControl1 = new Vector2(bottomRight.X + offsetX, bottomRight.Y);
-                Vector2 rightControl2 = new Vector2(upperRight.X + offsetX, upperRight.Y);
+                var rightControl1 = new Float2(bottomRight.X + offsetX, bottomRight.Y);
+                var rightControl2 = new Float2(upperRight.X + offsetX, upperRight.Y);
 
                 // Draw right bracket
                 Render2D.DrawBezier(bottomRight, rightControl1, rightControl2, upperRight, fadedColor, 2.2f);
 
                 // Draw connection bezier
                 // X-offset at 75%
-                Vector2 bezierStartPoint = new Vector2(upperRight.X + offsetX * 0.75f, (upperRight.Y + bottomRight.Y) * 0.5f);
-                Vector2 bezierEndPoint = inputBracket.Box.ParentNode.PointToParent(_rootControl.Parent, inputBracket.Box.Center);
+                var bezierStartPoint = new Float2(upperRight.X + offsetX * 0.75f, (upperRight.Y + bottomRight.Y) * 0.5f);
+                var bezierEndPoint = inputBracket.Box.ParentNode.PointToParent(_rootControl.Parent, inputBracket.Box.Center);
 
                 Elements.OutputBox.DrawConnection(ref bezierStartPoint, ref bezierEndPoint, ref fadedColor);
 
@@ -189,7 +189,7 @@ namespace FlaxEditor.Surface
         public override void Draw()
         {
             var style = FlaxEngine.GUI.Style.Current;
-            var rect = new Rectangle(Vector2.Zero, Size);
+            var rect = new Rectangle(Float2.Zero, Size);
 
             DrawBackground();
 

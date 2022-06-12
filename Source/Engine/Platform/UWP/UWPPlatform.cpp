@@ -14,7 +14,7 @@
 namespace
 {
     String UserLocale, ComputerName;
-    Vector2 VirtualScreenSize = Vector2(0.0f);
+    Float2 VirtualScreenSize = Float2(0.0f);
     int32 SystemDpi = 96;
 }
 
@@ -158,7 +158,7 @@ void UWPPlatform::OpenUrl(const StringView& url)
     // TODO: add support for OpenUrl on UWP
 }
 
-Vector2 UWPPlatform::GetMousePosition()
+Float2 UWPPlatform::GetMousePosition()
 {
     // Use the main window
     auto win = Engine::MainWindow;
@@ -166,10 +166,10 @@ Vector2 UWPPlatform::GetMousePosition()
     {
         return win->ClientToScreen(win->GetMousePosition());
     }
-    return Vector2::Minimum;
+    return Float2::Minimum;
 }
 
-void UWPPlatform::SetMousePosition(const Vector2& pos)
+void UWPPlatform::SetMousePosition(const Float2& pos)
 {
     // Use the main window
     auto win = Engine::MainWindow;
@@ -179,23 +179,23 @@ void UWPPlatform::SetMousePosition(const Vector2& pos)
     }
 }
 
-Vector2 UWPPlatform::GetDesktopSize()
+Float2 UWPPlatform::GetDesktopSize()
 {
-    Vector2 result;
+    Float2 result;
     CUWPPlatform->GetDisplaySize(&result.X, &result.Y);
     return result;
 }
 
-Rectangle UWPPlatform::GetMonitorBounds(const Vector2& screenPos)
+Rectangle UWPPlatform::GetMonitorBounds(const Float2& screenPos)
 {
     // TODO: do it in a proper way
-    return Rectangle(Vector2::Zero, GetDesktopSize());
+    return Rectangle(Float2::Zero, GetDesktopSize());
 }
 
 Rectangle UWPPlatform::GetVirtualDesktopBounds()
 {
     // TODO: do it in a proper way
-    return Rectangle(Vector2::Zero, GetDesktopSize());
+    return Rectangle(Float2::Zero, GetDesktopSize());
 }
 
 Window* UWPPlatform::CreateWindow(const CreateWindowSettings& settings)

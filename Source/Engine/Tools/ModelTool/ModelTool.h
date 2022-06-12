@@ -147,13 +147,13 @@ public:
 
 struct ModelSDFHeader
 {
-    Vector3 LocalToUVWMul;
+    Float3 LocalToUVWMul;
     float WorldUnitsPerVoxel;
-    Vector3 LocalToUVWAdd;
+    Float3 LocalToUVWAdd;
     float MaxDistance;
-    Vector3 LocalBoundsMin;
+    Float3 LocalBoundsMin;
     int32 MipLevels;
-    Vector3 LocalBoundsMax;
+    Float3 LocalBoundsMax;
     int32 Width;
     int32 Height;
     int32 Depth;
@@ -228,7 +228,7 @@ public:
 
         // Animation
         AnimationDuration Duration = AnimationDuration::Imported;
-        Vector2 FramesRange = Vector2::Zero;
+        Float2 FramesRange = Float2::Zero;
         float DefaultFrameRate = 0.0f;
         float SamplingRate = 0.0f;
         bool SkipEmptyCurves = true;

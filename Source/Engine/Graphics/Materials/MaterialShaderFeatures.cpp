@@ -54,7 +54,7 @@ void ForwardShadingFeature::Bind(MaterialShader::BindParameters& params, Span<by
     }
     else
     {
-        data.DirectionalLight.Color = Vector3::Zero;
+        data.DirectionalLight.Color = Float3::Zero;
         data.DirectionalLight.CastShadows = 0.0f;
         context->UnBindSR(dirLightShaderRegisterIndex);
     }
@@ -93,7 +93,7 @@ void ForwardShadingFeature::Bind(MaterialShader::BindParameters& params, Span<by
     }
     else
     {
-        data.EnvironmentProbe.Data1 = Vector4::Zero;
+        data.EnvironmentProbe.Data1 = Float4::Zero;
         context->UnBindSR(envProbeShaderRegisterIndex);
     }
 

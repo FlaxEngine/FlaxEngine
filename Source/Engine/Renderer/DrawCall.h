@@ -55,7 +55,7 @@ struct VolumetricFogOptions
     Color Emissive;
     float ExtinctionScale;
     float Distance;
-    Vector4 FogParameters;
+    Float4 FogParameters;
 
     bool UseVolumetricFog() const
     {
@@ -184,7 +184,7 @@ struct DrawCall
             const Lightmap* Lightmap;
             Rectangle LightmapUVsArea;
             SkinnedMeshDrawData* Skinning;
-            Vector3 GeometrySize; // Object geometry size in the world (unscaled).
+            Float3 GeometrySize; // Object geometry size in the world (unscaled).
             float LODDitherFactor; // The model LOD transition dither progress.
             Matrix PrevWorld;
         } Surface;
@@ -193,9 +193,9 @@ struct DrawCall
         {
             const Lightmap* Lightmap;
             Rectangle LightmapUVsArea;
-            Vector4 HeightmapUVScaleBias;
-            Vector4 NeighborLOD;
-            Vector2 OffsetUV;
+            Float4 HeightmapUVScaleBias;
+            Float4 NeighborLOD;
+            Float2 OffsetUV;
             float CurrentLOD;
             float ChunkSizeNextLOD;
             float TerrainChunkSizeLOD0;
@@ -221,7 +221,7 @@ struct DrawCall
 
             struct
             {
-                Vector3 Position;
+                Float3 Position;
                 float Radius;
                 int32 ParticleIndex;
             } VolumetricFog;
@@ -231,7 +231,7 @@ struct DrawCall
         {
             GPUBuffer* SplineDeformation;
             Matrix LocalMatrix; // Geometry transformation applied before deformation.
-            Vector3 GeometrySize; // Object geometry size in the world (unscaled).
+            Float3 GeometrySize; // Object geometry size in the world (unscaled).
             float Segment;
             float ChunksPerSegment;
             float MeshMinZ;
@@ -252,7 +252,7 @@ struct DrawCall
     /// <summary>
     /// Object location in the world used for draw calls sorting.
     /// </summary>
-    Vector3 ObjectPosition;
+    Float3 ObjectPosition;
 
     /// <summary>
     /// The world matrix determinant sign (used for geometry that is two sided or has inverse scale - needs to flip normal vectors and change triangles culling).

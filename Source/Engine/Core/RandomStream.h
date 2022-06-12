@@ -131,9 +131,9 @@ public:
     /// Returns a random vector of unit size.
     /// </summary>
     /// <returns>Random unit length vector</returns>
-    Vector3 GetUnitVector() const
+    Float3 GetUnitVector() const
     {
-        Vector3 result;
+        Float3 result;
         float l;
         do
         {
@@ -142,7 +142,7 @@ public:
             result.Z = GetFraction() * 2.0f - 1.0f;
             l = result.LengthSquared();
         } while (l > 1.0f || l < ZeroTolerance);
-        return Vector3::Normalize(result);
+        return Float3::Normalize(result);
     }
     
     /// <summary>

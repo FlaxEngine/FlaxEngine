@@ -15,8 +15,8 @@ namespace FlaxEditor
         private readonly List<IntPtr> _actors;
         private readonly List<HighlightData> _highlights;
         private MaterialBase _highlightMaterial;
-        private readonly List<Vector3> _highlightTriangles = new List<Vector3>(64);
-        private Vector3[] _highlightTrianglesSet;
+        private readonly List<Float3> _highlightTriangles = new List<Float3>(64);
+        private Float3[] _highlightTrianglesSet;
         private int[] _highlightIndicesSet;
         private Model _highlightTrianglesModel;
 
@@ -82,7 +82,8 @@ namespace FlaxEditor
             surface.Brush.GetVertices(surface.Index, out var vertices);
             if (vertices.Length > 0)
             {
-                _highlightTriangles.AddRange(vertices);
+                for (int i = 0; i < vertices.Length; i++)
+                    _highlightTriangles.Add(vertices[i]);
             }
         }
 
@@ -112,7 +113,8 @@ namespace FlaxEditor
                     var bounds = BoundingSphere.FromBox(staticModel.Box);
 
                     // Pick a proper LOD
-                    int lodIndex = RenderTools.ComputeModelLOD(model, ref bounds.Center, bounds.Radius, ref renderContext);
+                    var center = (Float3)bounds.Center; // TODO: large-worlds
+                    int lodIndex = RenderTools.ComputeModelLOD(model, ref center, (float)bounds.Radius, ref renderContext);
                     var lods = model.LODs;
                     if (lods == null || lods.Length < lodIndex || lodIndex < 0)
                         continue;

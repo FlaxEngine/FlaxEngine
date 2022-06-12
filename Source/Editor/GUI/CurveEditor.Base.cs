@@ -58,7 +58,7 @@ namespace FlaxEditor.GUI
         /// <summary>
         /// The function for custom view panning. Gets input movement delta (in curve control space) and returns the renaming input delta to process by curve editor itself.
         /// </summary>
-        public Func<Vector2, Vector2> CustomViewPanning;
+        public Func<Float2, Float2> CustomViewPanning;
 
         /// <summary>
         /// The maximum amount of keyframes to use in a single curve.
@@ -113,12 +113,12 @@ namespace FlaxEditor.GUI
         /// <summary>
         /// Gets or sets the view offset (via scroll bars).
         /// </summary>
-        public abstract Vector2 ViewOffset { get; set; }
+        public abstract Float2 ViewOffset { get; set; }
 
         /// <summary>
         /// Gets or sets the view scale.
         /// </summary>
-        public abstract Vector2 ViewScale { get; set; }
+        public abstract Float2 ViewScale { get; set; }
 
         /// <summary>
         /// Gets the amount of keyframes added to the curve.
@@ -174,8 +174,8 @@ namespace FlaxEditor.GUI
         /// </summary>
         public void ResetView()
         {
-            ViewScale = ApplyUseModeMask(EnableZoom, Vector2.One, ViewScale);
-            ViewOffset = ApplyUseModeMask(EnablePanning, Vector2.Zero, ViewOffset);
+            ViewScale = ApplyUseModeMask(EnableZoom, Float2.One, ViewScale);
+            ViewOffset = ApplyUseModeMask(EnablePanning, Float2.Zero, ViewOffset);
             UpdateKeyframes();
         }
 
@@ -247,16 +247,16 @@ namespace FlaxEditor.GUI
         /// <param name="index">The keyframe index.</param>
         /// <param name="component">The keyframe value component index.</param>
         /// <returns>The point in time/value space.</returns>
-        public abstract Vector2 GetKeyframePoint(int index, int component);
+        public abstract Float2 GetKeyframePoint(int index, int component);
 
         /// <summary>
-        /// Converts the <see cref="UseMode"/> into the <see cref="Vector2"/> mask.
+        /// Converts the <see cref="UseMode"/> into the <see cref="Float2"/> mask.
         /// </summary>
         /// <param name="mode">The mode.</param>
         /// <returns>The mask.</returns>
-        protected static Vector2 GetUseModeMask(UseMode mode)
+        protected static Float2 GetUseModeMask(UseMode mode)
         {
-            return new Vector2((mode & UseMode.Horizontal) == UseMode.Horizontal ? 1.0f : 0.0f, (mode & UseMode.Vertical) == UseMode.Vertical ? 1.0f : 0.0f);
+            return new Float2((mode & UseMode.Horizontal) == UseMode.Horizontal ? 1.0f : 0.0f, (mode & UseMode.Vertical) == UseMode.Vertical ? 1.0f : 0.0f);
         }
 
         /// <summary>
@@ -266,12 +266,12 @@ namespace FlaxEditor.GUI
         /// <param name="value">The value to process.</param>
         /// <param name="defaultValue">The default value.</param>
         /// <returns>The combined value.</returns>
-        protected static Vector2 ApplyUseModeMask(UseMode mode, Vector2 value, Vector2 defaultValue)
+        protected static Float2 ApplyUseModeMask(UseMode mode, Float2 value, Float2 defaultValue)
         {
-            return new Vector2(
-                               (mode & UseMode.Horizontal) == UseMode.Horizontal ? value.X : defaultValue.X,
-                               (mode & UseMode.Vertical) == UseMode.Vertical ? value.Y : defaultValue.Y
-                              );
+            return new Float2(
+                              (mode & UseMode.Horizontal) == UseMode.Horizontal ? value.X : defaultValue.X,
+                              (mode & UseMode.Vertical) == UseMode.Vertical ? value.Y : defaultValue.Y
+                             );
         }
 
         /// <inheritdoc />
@@ -290,7 +290,7 @@ namespace FlaxEditor.GUI
         public abstract void OnKeyframesDelete(IKeyframesEditor editor);
 
         /// <inheritdoc />
-        public abstract void OnKeyframesMove(IKeyframesEditor editor, ContainerControl control, Vector2 location, bool start, bool end);
+        public abstract void OnKeyframesMove(IKeyframesEditor editor, ContainerControl control, Float2 location, bool start, bool end);
 
         /// <inheritdoc />
         public abstract void OnKeyframesCopy(IKeyframesEditor editor, float? timeOffset, System.Text.StringBuilder data);

@@ -61,7 +61,7 @@ WindowsWindow::WindowsWindow(const CreateWindowSettings& settings)
     int32 clientHeight = Math::TruncToInt(settings.Size.Y);
     int32 windowWidth = clientWidth;
     int32 windowHeight = clientHeight;
-    _clientSize = Vector2((float)clientWidth, (float)clientHeight);
+    _clientSize = Float2((float)clientWidth, (float)clientHeight);
 
     // Setup window style
     uint32 style = WS_POPUP, exStyle = 0;
@@ -316,8 +316,8 @@ void WindowsWindow::SetClientBounds(const Rectangle& clientArea)
 
     // Check if position or/and size will change
     const auto rect = GetClientBounds();
-    const bool changeLocation = !Vector2::NearEqual(rect.Location, clientArea.Location);
-    const bool changeSize = !Vector2::NearEqual(rect.Size, clientArea.Size);
+    const bool changeLocation = !Float2::NearEqual(rect.Location, clientArea.Location);
+    const bool changeSize = !Float2::NearEqual(rect.Size, clientArea.Size);
     if (!changeLocation && !changeSize)
         return;
 
@@ -366,7 +366,7 @@ void WindowsWindow::SetClientBounds(const Rectangle& clientArea)
     }
 }
 
-void WindowsWindow::SetPosition(const Vector2& position)
+void WindowsWindow::SetPosition(const Float2& position)
 {
     ASSERT(HasHWND());
 
@@ -378,7 +378,7 @@ void WindowsWindow::SetPosition(const Vector2& position)
     SetWindowPos(_handle, nullptr, x, y, 0, 0, SWP_NOZORDER | SWP_NOSIZE | SWP_NOACTIVATE | SWP_NOOWNERZORDER);
 }
 
-void WindowsWindow::SetClientPosition(const Vector2& position)
+void WindowsWindow::SetClientPosition(const Float2& position)
 {
     ASSERT(HasHWND());
 
@@ -426,30 +426,30 @@ void WindowsWindow::SetIsFullscreen(bool isFullscreen)
     _isSwitchingFullScreen = false;
 }
 
-Vector2 WindowsWindow::GetPosition() const
+Float2 WindowsWindow::GetPosition() const
 {
     ASSERT(HasHWND());
 
     RECT rect;
     GetWindowRect(_handle, &rect);
-    return Vector2(static_cast<float>(rect.left), static_cast<float>(rect.top));
+    return Float2(static_cast<float>(rect.left), static_cast<float>(rect.top));
 }
 
-Vector2 WindowsWindow::GetSize() const
+Float2 WindowsWindow::GetSize() const
 {
     ASSERT(HasHWND());
 
     RECT rect;
     GetWindowRect(_handle, &rect);
-    return Vector2(static_cast<float>(rect.right - rect.left), static_cast<float>(rect.bottom - rect.top));
+    return Float2(static_cast<float>(rect.right - rect.left), static_cast<float>(rect.bottom - rect.top));
 }
 
-Vector2 WindowsWindow::GetClientSize() const
+Float2 WindowsWindow::GetClientSize() const
 {
     return _clientSize;
 }
 
-Vector2 WindowsWindow::ScreenToClient(const Vector2& screenPos) const
+Float2 WindowsWindow::ScreenToClient(const Float2& screenPos) const
 {
     ASSERT(HasHWND());
 
@@ -457,10 +457,10 @@ Vector2 WindowsWindow::ScreenToClient(const Vector2& screenPos) const
     p.x = static_cast<LONG>(screenPos.X);
     p.y = static_cast<LONG>(screenPos.Y);
     ::ScreenToClient(_handle, &p);
-    return Vector2(static_cast<float>(p.x), static_cast<float>(p.y));
+    return Float2(static_cast<float>(p.x), static_cast<float>(p.y));
 }
 
-Vector2 WindowsWindow::ClientToScreen(const Vector2& clientPos) const
+Float2 WindowsWindow::ClientToScreen(const Float2& clientPos) const
 {
     ASSERT(HasHWND());
 
@@ -468,7 +468,7 @@ Vector2 WindowsWindow::ClientToScreen(const Vector2& clientPos) const
     p.x = static_cast<LONG>(clientPos.X);
     p.y = static_cast<LONG>(clientPos.Y);
     ::ClientToScreen(_handle, &p);
-    return Vector2(static_cast<float>(p.x), static_cast<float>(p.y));
+    return Float2(static_cast<float>(p.x), static_cast<float>(p.y));
 }
 
 void WindowsWindow::FlashWindow()
@@ -543,7 +543,7 @@ void WindowsWindow::StartTrackingMouse(bool useMouseScreenOffset)
     if (!_isTrackingMouse)
     {
         _isTrackingMouse = true;
-        _trackingMouseOffset = Vector2::Zero;
+        _trackingMouseOffset = Float2::Zero;
         _isUsingMouseOffset = useMouseScreenOffset;
 
         int32 x = 0, y = 0, width = 0, height = 0;
@@ -615,7 +615,7 @@ void WindowsWindow::CheckForWindowResize()
     GetClientRect(_handle, &rect);
     const int32 width = Math::Max(rect.right - rect.left, 0L);
     const int32 height = Math::Max(rect.bottom - rect.top, 0L);
-    _clientSize = Vector2(static_cast<float>(width), static_cast<float>(height));
+    _clientSize = Float2(static_cast<float>(width), static_cast<float>(height));
 
     // Check if window size has been changed
     if (width > 0 && height > 0 && (_swapChain == nullptr || width != _swapChain->GetWidth() || height != _swapChain->GetHeight()))
@@ -793,12 +793,12 @@ LRESULT WindowsWindow::WndProc(UINT msg, WPARAM wParam, LPARAM lParam)
         if (_isTrackingMouse && _isUsingMouseOffset)
         {
             // Check if move mouse to another edge of the desktop
-            Vector2 desktopLocation = _mouseOffsetScreenSize.Location;
-            Vector2 desktopSize = _mouseOffsetScreenSize.GetBottomRight();
+            Float2 desktopLocation = _mouseOffsetScreenSize.Location;
+            Float2 desktopSize = _mouseOffsetScreenSize.GetBottomRight();
 
-            const Vector2 mousePos(static_cast<float>(WINDOWS_GET_X_LPARAM(lParam)), static_cast<float>(WINDOWS_GET_Y_LPARAM(lParam)));
-            Vector2 mousePosition = ClientToScreen(mousePos);
-            Vector2 newMousePosition = mousePosition;
+            const Float2 mousePos(static_cast<float>(WINDOWS_GET_X_LPARAM(lParam)), static_cast<float>(WINDOWS_GET_Y_LPARAM(lParam)));
+            Float2 mousePosition = ClientToScreen(mousePos);
+            Float2 newMousePosition = mousePosition;
             if (mousePosition.X <= desktopLocation.X + 2)
                 newMousePosition.X = desktopSize.X - 2;
             else if (mousePosition.X >= desktopSize.X - 1)
@@ -807,7 +807,7 @@ LRESULT WindowsWindow::WndProc(UINT msg, WPARAM wParam, LPARAM lParam)
                 newMousePosition.Y = desktopSize.Y - 2;
             else if (mousePosition.Y >= desktopSize.Y - 1)
                 newMousePosition.Y = desktopLocation.Y + 2;
-            if (!Vector2::NearEqual(mousePosition, newMousePosition))
+            if (!Float2::NearEqual(mousePosition, newMousePosition))
             {
                 _trackingMouseOffset -= newMousePosition - mousePosition;
                 SetMousePosition(ScreenToClient(newMousePosition));
@@ -887,7 +887,7 @@ LRESULT WindowsWindow::WndProc(UINT msg, WPARAM wParam, LPARAM lParam)
         if (IsFullscreen())
             return static_cast<int32>(WindowHitCodes::Client);
 
-        const Vector2 mouse(static_cast<float>(WINDOWS_GET_X_LPARAM(lParam)), static_cast<float>(WINDOWS_GET_Y_LPARAM(lParam)));
+        const Float2 mouse(static_cast<float>(WINDOWS_GET_X_LPARAM(lParam)), static_cast<float>(WINDOWS_GET_Y_LPARAM(lParam)));
         WindowHitCodes hit = WindowHitCodes::Client;
         bool handled = false;
         OnHitTest(mouse, hit, handled);

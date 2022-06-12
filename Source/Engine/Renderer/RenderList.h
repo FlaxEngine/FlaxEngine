@@ -20,13 +20,13 @@ struct RenderContext;
 
 struct RendererDirectionalLightData
 {
-    Vector3 Position;
+    Float3 Position;
     float MinRoughness;
 
-    Vector3 Color;
+    Float3 Color;
     float ShadowsStrength;
 
-    Vector3 Direction;
+    Float3 Direction;
     float ShadowsFadeDistance;
 
     float ShadowsNormalOffsetScale;
@@ -47,13 +47,13 @@ struct RendererDirectionalLightData
 
 struct RendererSpotLightData
 {
-    Vector3 Position;
+    Float3 Position;
     float MinRoughness;
 
-    Vector3 Color;
+    Float3 Color;
     float ShadowsStrength;
 
-    Vector3 Direction;
+    Float3 Direction;
     float ShadowsFadeDistance;
 
     float ShadowsNormalOffsetScale;
@@ -66,7 +66,7 @@ struct RendererSpotLightData
     float FallOffExponent;
     float SourceRadius;
 
-    Vector3 UpVector;
+    Float3 UpVector;
     float OuterConeAngle;
 
     float CosOuterCone;
@@ -85,13 +85,13 @@ struct RendererSpotLightData
 
 struct RendererPointLightData
 {
-    Vector3 Position;
+    Float3 Position;
     float MinRoughness;
 
-    Vector3 Color;
+    Float3 Color;
     float ShadowsStrength;
 
-    Vector3 Direction;
+    Float3 Direction;
     float ShadowsFadeDistance;
 
     float ShadowsNormalOffsetScale;
@@ -119,13 +119,13 @@ struct RendererPointLightData
 
 struct RendererSkyLightData
 {
-    Vector3 Position;
+    Float3 Position;
     float VolumetricScatteringIntensity;
 
-    Vector3 Color;
+    Float3 Color;
     float Radius;
 
-    Vector3 AdditiveColor;
+    Float3 AdditiveColor;
 
     int8 CastVolumetricShadow : 1;
     int8 RenderedVolumetricFog : 1;
@@ -446,12 +446,12 @@ public:
     /// <summary>
     /// Camera frustum corners in World Space
     /// </summary>
-    Vector3 FrustumCornersWs[8];
+    Float3 FrustumCornersWs[8];
 
     /// <summary>
     /// Camera frustum corners in View Space
     /// </summary>
-    Vector3 FrustumCornersVs[8];
+    Float3 FrustumCornersVs[8];
 
 private:
 
@@ -590,12 +590,12 @@ public:
 /// </summary>
 struct FLAXENGINE_API InstanceData
 {
-    Vector3 InstanceOrigin;
+    Float3 InstanceOrigin;
     float PerInstanceRandom;
-    Vector3 InstanceTransform1;
+    Float3 InstanceTransform1;
     float LODDitherFactor;
-    Vector3 InstanceTransform2;
-    Vector3 InstanceTransform3;
+    Float3 InstanceTransform2;
+    Float3 InstanceTransform3;
     Half4 InstanceLightmapArea;
 };
 

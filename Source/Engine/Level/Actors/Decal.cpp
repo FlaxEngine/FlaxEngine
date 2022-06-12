@@ -81,7 +81,7 @@ void Decal::Draw(RenderContext& renderContext)
         Material->IsDecal())
     {
         const auto lodView = (renderContext.LodProxyView ? renderContext.LodProxyView : &renderContext.View);
-        const float screenRadiusSquared = RenderTools::ComputeBoundsScreenRadiusSquared(_sphere.Center, _sphere.Radius, *lodView) * renderContext.View.ModelLODDistanceFactorSqrt;
+        const float screenRadiusSquared = RenderTools::ComputeBoundsScreenRadiusSquared(_sphere.Center, (float)_sphere.Radius, *lodView) * renderContext.View.ModelLODDistanceFactorSqrt;
 
         // Check if decal is being culled
         if (Math::Square(DrawMinScreenSize * 0.5f) > screenRadiusSquared)
@@ -115,7 +115,7 @@ void Decal::Deserialize(DeserializeStream& stream, ISerializeModifier* modifier)
     DESERIALIZE(DrawMinScreenSize);
 }
 
-bool Decal::IntersectsItself(const Ray& ray, float& distance, Vector3& normal)
+bool Decal::IntersectsItself(const Ray& ray, Real& distance, Vector3& normal)
 {
     return _bounds.Intersects(ray, distance, normal);
 }

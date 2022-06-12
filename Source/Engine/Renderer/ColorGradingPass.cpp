@@ -9,30 +9,30 @@
 #include "Engine/Graphics/RenderTask.h"
 
 PACK_STRUCT(struct Data {
-    Vector4 ColorSaturationShadows;
-    Vector4 ColorContrastShadows;
-    Vector4 ColorGammaShadows;
-    Vector4 ColorGainShadows;
-    Vector4 ColorOffsetShadows;
+    Float4 ColorSaturationShadows;
+    Float4 ColorContrastShadows;
+    Float4 ColorGammaShadows;
+    Float4 ColorGainShadows;
+    Float4 ColorOffsetShadows;
 
-    Vector4 ColorSaturationMidtones;
-    Vector4 ColorContrastMidtones;
-    Vector4 ColorGammaMidtones;
-    Vector4 ColorGainMidtones;
-    Vector4 ColorOffsetMidtones;
+    Float4 ColorSaturationMidtones;
+    Float4 ColorContrastMidtones;
+    Float4 ColorGammaMidtones;
+    Float4 ColorGainMidtones;
+    Float4 ColorOffsetMidtones;
 
-    Vector4 ColorSaturationHighlights;
-    Vector4 ColorContrastHighlights;
-    Vector4 ColorGammaHighlights;
-    Vector4 ColorGainHighlights;
-    Vector4 ColorOffsetHighlights;
+    Float4 ColorSaturationHighlights;
+    Float4 ColorContrastHighlights;
+    Float4 ColorGammaHighlights;
+    Float4 ColorGainHighlights;
+    Float4 ColorOffsetHighlights;
 
     float ColorCorrectionShadowsMax;
     float ColorCorrectionHighlightsMin;
     float WhiteTemp;
     float WhiteTint;
 
-    Vector3 Dummy;
+    Float3 Dummy;
     float LutWeight;
     });
 

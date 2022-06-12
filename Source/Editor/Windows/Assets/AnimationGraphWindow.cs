@@ -51,7 +51,7 @@ namespace FlaxEditor.Windows.Assets
                 var style = Style.Current;
                 if (_window.Asset == null || !_window.Asset.IsLoaded)
                 {
-                    Render2D.DrawText(style.FontLarge, "Loading...", new Rectangle(Vector2.Zero, Size), style.ForegroundDisabled, TextAlignment.Center, TextAlignment.Center);
+                    Render2D.DrawText(style.FontLarge, "Loading...", new Rectangle(Float2.Zero, Size), style.ForegroundDisabled, TextAlignment.Center, TextAlignment.Center);
                 }
             }
         }
@@ -217,19 +217,19 @@ namespace FlaxEditor.Windows.Assets
                 VerticalAlignment = TextAlignment.Center,
                 HorizontalAlignment = TextAlignment.Far,
                 Parent = debugPickerContainer,
-                Size = new Vector2(50.0f, _toolstrip.Height),
+                Size = new Float2(50.0f, _toolstrip.Height),
                 Text = "Debug:",
                 TooltipText = "The current animated model actor to preview. Pick the player to debug it's playback. Leave empty to debug the model from the preview panel.",
             };
             _debugPicker = new FlaxObjectRefPickerControl
             {
-                Location = new Vector2(debugPickerLabel.Right + 4.0f, 8.0f),
+                Location = new Float2(debugPickerLabel.Right + 4.0f, 8.0f),
                 Width = 120.0f,
                 Type = new ScriptType(typeof(AnimatedModel)),
                 Parent = debugPickerContainer,
             };
             debugPickerContainer.Width = _debugPicker.Right + 2.0f;
-            debugPickerContainer.Size = new Vector2(_debugPicker.Right + 2.0f, _toolstrip.Height);
+            debugPickerContainer.Size = new Float2(_debugPicker.Right + 2.0f, _toolstrip.Height);
             debugPickerContainer.Parent = _toolstrip;
             _debugPicker.CheckValid = OnCheckValid;
 
@@ -388,8 +388,8 @@ namespace FlaxEditor.Windows.Assets
             {
                 _navigationBar.Bounds = new Rectangle
                 (
-                 new Vector2(_debugPicker.Parent.Right + 8.0f, 0),
-                 new Vector2(Parent.Width - X - 8.0f, 32)
+                 new Float2(_debugPicker.Parent.Right + 8.0f, 0),
+                 new Float2(Parent.Width - X - 8.0f, 32)
                 );
             }
         }

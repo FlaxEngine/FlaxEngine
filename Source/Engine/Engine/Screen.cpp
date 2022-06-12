@@ -13,7 +13,7 @@
 #endif
 
 Nullable<bool> Fullscreen;
-Nullable<Vector2> Size;
+Nullable<Float2> Size;
 static CursorLockMode CursorLock = CursorLockMode::None;
 
 class ScreenService : public EngineService
@@ -45,17 +45,17 @@ void Screen::SetIsFullscreen(bool value)
     Fullscreen = value;
 }
 
-Vector2 Screen::GetSize()
+Float2 Screen::GetSize()
 {
 #if USE_EDITOR
     return Editor::Managed->GetGameWindowSize();
 #else
 	auto win = Engine::MainWindow;
-	return win ? win->GetClientSize() : Vector2::Zero;
+	return win ? win->GetClientSize() : Float2::Zero;
 #endif
 }
 
-void Screen::SetSize(const Vector2& value)
+void Screen::SetSize(const Float2& value)
 {
     if (value.X <= 0 || value.Y <= 0)
     {
@@ -66,23 +66,23 @@ void Screen::SetSize(const Vector2& value)
     Size = value;
 }
 
-Vector2 Screen::ScreenToGameViewport(const Vector2& screenPos)
+Float2 Screen::ScreenToGameViewport(const Float2& screenPos)
 {
 #if USE_EDITOR
     return Editor::Managed->ScreenToGameViewport(screenPos);
 #else
     auto win = Engine::MainWindow;
-    return win ? win->ScreenToClient(screenPos) : Vector2::Minimum;
+    return win ? win->ScreenToClient(screenPos) : Float2::Minimum;
 #endif
 }
 
-Vector2 Screen::GameViewportToScreen(const Vector2& viewportPos)
+Float2 Screen::GameViewportToScreen(const Float2& viewportPos)
 {
 #if USE_EDITOR
     return Editor::Managed->GameViewportToScreen(viewportPos);
 #else
     auto win = Engine::MainWindow;
-    return win ? win->ClientToScreen(viewportPos) : Vector2::Minimum;
+    return win ? win->ClientToScreen(viewportPos) : Float2::Minimum;
 #endif
 }
 

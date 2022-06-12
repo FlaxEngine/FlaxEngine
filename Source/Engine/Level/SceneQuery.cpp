@@ -14,9 +14,9 @@ Actor* SceneQuery::RaycastScene(const Ray& ray)
 
     Actor* target;
     Actor* minTarget = nullptr;
-    float distance;
+    Real distance;
     Vector3 normal;
-    float minDistance = MAX_float;
+    Real minDistance = MAX_Real;
 
     for (int32 i = 0; i < Level::Scenes.Count(); i++)
     {

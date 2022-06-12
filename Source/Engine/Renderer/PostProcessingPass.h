@@ -21,10 +21,10 @@ private:
         float BloomMagnitude;
         float BloomBlurSigma;
 
-        Vector3 VignetteColor;
+        Float3 VignetteColor;
         float VignetteShapeFactor;
 
-        Vector2 InputSize;
+        Float2 InputSize;
         float InputAspect;
         float GrainAmount;
 
@@ -38,11 +38,11 @@ private:
         float GhostDispersal;
         float LensFlareIntensity;
 
-        Vector2 LensInputDistortion;
+        Float2 LensInputDistortion;
         float LensScale;
         float LensBias;
 
-        Vector2 InvInputSize;
+        Float2 InvInputSize;
         float ChromaticDistortion;
         float Time;
 
@@ -57,10 +57,10 @@ private:
         });
 
     PACK_STRUCT(struct GaussianBlurData {
-        Vector2 Size;
+        Float2 Size;
         float Dummy3;
         float Dummy4;
-        Vector4 GaussianBlurCache[GB_KERNEL_SIZE]; // x-weight, y-offset
+        Float4 GaussianBlurCache[GB_KERNEL_SIZE]; // x-weight, y-offset
         });
 
     // Post Processing
@@ -73,8 +73,8 @@ private:
     GPUPipelineStatePermutationsPs<3> _psComposite;
 
     GaussianBlurData _gbData;
-    Vector4 GaussianBlurCacheH[GB_KERNEL_SIZE];
-    Vector4 GaussianBlurCacheV[GB_KERNEL_SIZE];
+    Float4 GaussianBlurCacheH[GB_KERNEL_SIZE];
+    Float4 GaussianBlurCacheV[GB_KERNEL_SIZE];
 
     AssetReference<Texture> _defaultLensColor;
     AssetReference<Texture> _defaultLensStar;

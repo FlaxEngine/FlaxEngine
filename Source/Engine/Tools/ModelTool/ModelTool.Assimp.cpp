@@ -47,19 +47,19 @@ public:
     }
 };
 
-Vector2 ToVector2(const aiVector2D& v)
+Float2 ToFloat2(const aiVector2D& v)
 {
-    return Vector2(v.x, v.y);
+    return Float2(v.x, v.y);
 }
 
-Vector2 ToVector2(const aiVector3D& v)
+Float2 ToFloat2(const aiVector3D& v)
 {
-    return Vector2(v.x, v.y);
+    return Float2(v.x, v.y);
 }
 
-Vector3 ToVector3(const aiVector3D& v)
+Float3 ToFloat3(const aiVector3D& v)
 {
-    return Vector3(v.x, v.y, v.z);
+    return Float3(v.x, v.y, v.z);
 }
 
 Color ToColor(const aiColor3D& v)
@@ -234,7 +234,7 @@ bool ProcessMesh(ImportedModelData& result, AssimpImporterData& data, const aiMe
     mesh.MaterialSlotIndex = aMesh->mMaterialIndex;
 
     // Vertex positions
-    mesh.Positions.Set((const Vector3*)aMesh->mVertices, aMesh->mNumVertices);
+    mesh.Positions.Set((const Float3*)aMesh->mVertices, aMesh->mNumVertices);
 
     // Texture coordinates
     if (aMesh->mTextureCoords[0])
@@ -243,7 +243,7 @@ bool ProcessMesh(ImportedModelData& result, AssimpImporterData& data, const aiMe
         aiVector3D* a = aMesh->mTextureCoords[0];
         for (uint32 v = 0; v < aMesh->mNumVertices; v++)
         {
-            mesh.UVs[v] = *(Vector2*)a;
+            mesh.UVs[v] = *(Float2*)a;
             a++;
         }
     }
@@ -251,13 +251,13 @@ bool ProcessMesh(ImportedModelData& result, AssimpImporterData& data, const aiMe
     // Normals
     if (aMesh->mNormals)
     {
-        mesh.Normals.Set((const Vector3*)aMesh->mNormals, aMesh->mNumVertices);
+        mesh.Normals.Set((const Float3*)aMesh->mNormals, aMesh->mNumVertices);
     }
 
     // Tangents
     if (aMesh->mTangents)
     {
-        mesh.Tangents.Set((const Vector3*)aMesh->mTangents, aMesh->mNumVertices);
+        mesh.Tangents.Set((const Float3*)aMesh->mTangents, aMesh->mNumVertices);
     }
 
     // Indices
@@ -320,7 +320,7 @@ bool ProcessMesh(ImportedModelData& result, AssimpImporterData& data, const aiMe
             aiVector3D* a = aMesh->mTextureCoords[inputChannelIndex];
             for (uint32 v = 0; v < aMesh->mNumVertices; v++)
             {
-                mesh.LightmapUVs[v] = *(Vector2*)a;
+                mesh.LightmapUVs[v] = *(Float2*)a;
                 a++;
             }
         }
@@ -349,7 +349,7 @@ bool ProcessMesh(ImportedModelData& result, AssimpImporterData& data, const aiMe
         mesh.BlendIndices.Resize(vertexCount);
         mesh.BlendWeights.Resize(vertexCount);
         mesh.BlendIndices.SetAll(Int4::Zero);
-        mesh.BlendWeights.SetAll(Vector4::Zero);
+        mesh.BlendWeights.SetAll(Float4::Zero);
 
         // Build skinning clusters and fill controls points data structure
         for (unsigned boneId = 0; boneId < aMesh->mNumBones; boneId++)
@@ -444,24 +444,24 @@ bool ProcessMesh(ImportedModelData& result, AssimpImporterData& data, const aiMe
             if (shapeVertices)
             {
                 for (int32 i = 0; i < blendShapeData.Vertices.Count(); i++)
-                    blendShapeData.Vertices[i].PositionDelta = ToVector3(shapeVertices[i]) - mesh.Positions[i];
+                    blendShapeData.Vertices[i].PositionDelta = ToFloat3(shapeVertices[i]) - mesh.Positions[i];
             }
             else
             {
                 for (int32 i = 0; i < blendShapeData.Vertices.Count(); i++)
-                    blendShapeData.Vertices[i].PositionDelta = Vector3::Zero;
+                    blendShapeData.Vertices[i].PositionDelta = Float3::Zero;
             }
 
             const aiVector3D* shapeNormals = aAnimMesh->mNormals;
             if (shapeNormals)
             {
                 for (int32 i = 0; i < blendShapeData.Vertices.Count(); i++)
-                    blendShapeData.Vertices[i].NormalDelta = ToVector3(shapeNormals[i]) - mesh.Normals[i];
+                    blendShapeData.Vertices[i].NormalDelta = ToFloat3(shapeNormals[i]) - mesh.Normals[i];
             }
             else
             {
                 for (int32 i = 0; i < blendShapeData.Vertices.Count(); i++)
-                    blendShapeData.Vertices[i].NormalDelta = Vector3::Zero;
+                    blendShapeData.Vertices[i].NormalDelta = Float3::Zero;
             }
         }
     }
@@ -587,7 +587,7 @@ bool ImportMesh(int32 i, ImportedModelData& result, AssimpImporterData& data, St
     return false;
 }
 
-void ImportCurve(aiVectorKey* keys, uint32 keysCount, LinearCurve<Vector3>& curve)
+void ImportCurve(aiVectorKey* keys, uint32 keysCount, LinearCurve<Float3>& curve)
 {
     if (keys == nullptr || keysCount == 0)
         return;
@@ -600,7 +600,7 @@ void ImportCurve(aiVectorKey* keys, uint32 keysCount, LinearCurve<Vector3>& curv
         auto& key = keyframes[i];
 
         key.Time = (float)aKey.mTime;
-        key.Value = ToVector3(aKey.mValue);
+        key.Value = ToFloat3(aKey.mValue);
     }
 }
 

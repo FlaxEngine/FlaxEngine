@@ -104,7 +104,7 @@ namespace FlaxEditor.GUI.Timeline.Tracks
             Proxy.KeyframesEditorContext = Timeline;
             Proxy.CustomViewPanning = Timeline.OnKeyframesViewPanning;
             Proxy.Bounds = new Rectangle(Timeline.StartOffset, Y + 1.0f, Timeline.Duration * Timeline.UnitsPerSecond * Timeline.Zoom, Height - 2.0f);
-            Proxy.ViewScale = new Vector2(Timeline.Zoom, 1.0f);
+            Proxy.ViewScale = new Float2(Timeline.Zoom, 1.0f);
             if (!wasVisible)
                 LoadProxy();
             else
@@ -318,7 +318,7 @@ namespace FlaxEditor.GUI.Timeline.Tracks
         }
 
         /// <inheritdoc />
-        public void OnKeyframesMove(IKeyframesEditor editor, ContainerControl control, Vector2 location, bool start, bool end)
+        public void OnKeyframesMove(IKeyframesEditor editor, ContainerControl control, Float2 location, bool start, bool end)
         {
             if (Proxy != null && Proxy.Visible)
                 Proxy.OnKeyframesMove(editor, control, location, start, end);

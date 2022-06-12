@@ -180,7 +180,7 @@ public:
     /// </summary>
     /// <param name="worldSpaceLocation">The input world-space location (XYZ in world).</param>
     /// <param name="gameWindowSpaceLocation">The output game window coordinates (XY in screen pixels).</param>
-    API_FUNCTION() void ProjectPoint(const Vector3& worldSpaceLocation, API_PARAM(Out) Vector2& gameWindowSpaceLocation) const;
+    API_FUNCTION() void ProjectPoint(const Vector3& worldSpaceLocation, API_PARAM(Out) Float2& gameWindowSpaceLocation) const;
 
     /// <summary>
     /// Projects the point from 3D world-space to the camera viewport-space (in screen pixels for given viewport).
@@ -188,14 +188,14 @@ public:
     /// <param name="worldSpaceLocation">The input world-space location (XYZ in world).</param>
     /// <param name="cameraViewportSpaceLocation">The output camera viewport-space location (XY in screen pixels).</param>
     /// <param name="viewport">The viewport.</param>
-    API_FUNCTION() void ProjectPoint(const Vector3& worldSpaceLocation, API_PARAM(Out) Vector2& cameraViewportSpaceLocation, API_PARAM(Ref) const Viewport& viewport) const;
+    API_FUNCTION() void ProjectPoint(const Vector3& worldSpaceLocation, API_PARAM(Out) Float2& cameraViewportSpaceLocation, API_PARAM(Ref) const Viewport& viewport) const;
 
     /// <summary>
     /// Converts the mouse position to 3D ray.
     /// </summary>
     /// <param name="mousePosition">The mouse position.</param>
     /// <returns>Mouse ray</returns>
-    API_FUNCTION() Ray ConvertMouseToRay(const Vector2& mousePosition) const;
+    API_FUNCTION() Ray ConvertMouseToRay(const Float2& mousePosition) const;
 
     /// <summary>
     /// Converts the mouse position to 3D ray.
@@ -203,7 +203,7 @@ public:
     /// <param name="mousePosition">The mouse position.</param>
     /// <param name="viewport">The viewport.</param>
     /// <returns>Mouse ray</returns>
-    API_FUNCTION() Ray ConvertMouseToRay(const Vector2& mousePosition, API_PARAM(Ref) const Viewport& viewport) const;
+    API_FUNCTION() Ray ConvertMouseToRay(const Float2& mousePosition, API_PARAM(Ref) const Viewport& viewport) const;
 
     /// <summary>
     /// Gets the camera viewport.
@@ -227,7 +227,7 @@ public:
 
 #if USE_EDITOR
     // Intersection check for editor picking the camera
-    API_FUNCTION() bool IntersectsItselfEditor(API_PARAM(Ref) const Ray& ray, API_PARAM(Out) float& distance);
+    API_FUNCTION() bool IntersectsItselfEditor(API_PARAM(Ref) const Ray& ray, API_PARAM(Out) Real& distance);
 #endif
 
 private:

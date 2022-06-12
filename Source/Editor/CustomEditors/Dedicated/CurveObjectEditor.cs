@@ -80,6 +80,21 @@ namespace FlaxEditor.CustomEditors.Dedicated
     {
     }
 
+    [CustomEditor(typeof(BezierCurve<Float2>)), DefaultEditor]
+    sealed class Float2BezierCurveObjectEditor : BezierCurveObjectEditor<Float2>
+    {
+    }
+
+    [CustomEditor(typeof(BezierCurve<Float3>)), DefaultEditor]
+    sealed class Float3BezierCurveObjectEditor : BezierCurveObjectEditor<Float3>
+    {
+    }
+
+    [CustomEditor(typeof(BezierCurve<Float4>)), DefaultEditor]
+    sealed class Float4BezierCurveObjectEditor : BezierCurveObjectEditor<Float4>
+    {
+    }
+
     [CustomEditor(typeof(BezierCurve<Quaternion>)), DefaultEditor]
     sealed class QuaternionBezierCurveObjectEditor : BezierCurveObjectEditor<Quaternion>
     {
@@ -162,6 +177,21 @@ namespace FlaxEditor.CustomEditors.Dedicated
 
     [CustomEditor(typeof(LinearCurve<Vector4>)), DefaultEditor]
     sealed class Vector4LinearCurveObjectEditor : LinearCurveObjectEditor<Vector4>
+    {
+    }
+
+    [CustomEditor(typeof(LinearCurve<Float2>)), DefaultEditor]
+    sealed class Float2LinearCurveObjectEditor : LinearCurveObjectEditor<Float2>
+    {
+    }
+
+    [CustomEditor(typeof(LinearCurve<Float3>)), DefaultEditor]
+    sealed class Float3LinearCurveObjectEditor : LinearCurveObjectEditor<Float3>
+    {
+    }
+
+    [CustomEditor(typeof(LinearCurve<Float4>)), DefaultEditor]
+    sealed class Float4LinearCurveObjectEditor : LinearCurveObjectEditor<Float4>
     {
     }
 

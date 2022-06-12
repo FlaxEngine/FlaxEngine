@@ -197,7 +197,7 @@ void DrawEmitterCPU(RenderContext& renderContext, ParticleBuffer* buffer, DrawCa
                     for (int32 i = 0; i < buffer->CPU.Count; i++)
                     {
                         // TODO: use SIMD
-                        sortedKeys[i] = RenderTools::ComputeDistanceSortKey(Matrix::TransformPosition(viewProjection, Matrix::TransformPosition(drawCall.World, *(Vector3*)positionPtr)).W) ^ sortKeyXor;
+                        sortedKeys[i] = RenderTools::ComputeDistanceSortKey(Matrix::TransformPosition(viewProjection, Matrix::TransformPosition(drawCall.World, *(Float3*)positionPtr)).W) ^ sortKeyXor;
                         positionPtr += stride;
                     }
                 }
@@ -205,7 +205,7 @@ void DrawEmitterCPU(RenderContext& renderContext, ParticleBuffer* buffer, DrawCa
                 {
                     for (int32 i = 0; i < buffer->CPU.Count; i++)
                     {
-                        sortedKeys[i] = RenderTools::ComputeDistanceSortKey(Matrix::TransformPosition(viewProjection, *(Vector3*)positionPtr).W) ^ sortKeyXor;
+                        sortedKeys[i] = RenderTools::ComputeDistanceSortKey(Matrix::TransformPosition(viewProjection, *(Float3*)positionPtr).W) ^ sortKeyXor;
                         positionPtr += stride;
                     }
                 }
@@ -213,14 +213,14 @@ void DrawEmitterCPU(RenderContext& renderContext, ParticleBuffer* buffer, DrawCa
             }
             case ParticleSortMode::ViewDistance:
             {
-                const Vector3 viewPosition = renderContext.View.Position;
+                const Float3 viewPosition = renderContext.View.Position;
                 byte* positionPtr = buffer->CPU.Buffer.Get() + emitter->Graph.GetPositionAttributeOffset();
                 if (emitter->SimulationSpace == ParticlesSimulationSpace::Local)
                 {
                     for (int32 i = 0; i < buffer->CPU.Count; i++)
                     {
                         // TODO: use SIMD
-                        sortedKeys[i] = RenderTools::ComputeDistanceSortKey((viewPosition - Vector3::Transform(*(Vector3*)positionPtr, drawCall.World)).LengthSquared()) ^ sortKeyXor;
+                        sortedKeys[i] = RenderTools::ComputeDistanceSortKey((viewPosition - Float3::Transform(*(Float3*)positionPtr, drawCall.World)).LengthSquared()) ^ sortKeyXor;
                         positionPtr += stride;
                     }
                 }
@@ -229,7 +229,7 @@ void DrawEmitterCPU(RenderContext& renderContext, ParticleBuffer* buffer, DrawCa
                     for (int32 i = 0; i < buffer->CPU.Count; i++)
                     {
                         // TODO: use SIMD
-                        sortedKeys[i] = RenderTools::ComputeDistanceSortKey((viewPosition - *(Vector3*)positionPtr).LengthSquared()) ^ sortKeyXor;
+                        sortedKeys[i] = RenderTools::ComputeDistanceSortKey((viewPosition - *(Float3*)positionPtr).LengthSquared()) ^ sortKeyXor;
                         positionPtr += stride;
                     }
                 }
@@ -316,7 +316,7 @@ void DrawEmitterCPU(RenderContext& renderContext, ParticleBuffer* buffer, DrawCa
             ASSERT(buffer->CPU.RibbonOrder.Count() == emitter->Graph.RibbonRenderingModules.Count() * buffer->Capacity);
             int32* ribbonOrderData = buffer->CPU.RibbonOrder.Get() + module->RibbonOrderOffset;
 
-            ParticleBufferCPUDataAccessor<Vector3> positionData(buffer, emitter->Graph.Layout.GetAttributeOffset(module->Attributes[0]));
+            ParticleBufferCPUDataAccessor<Float3> positionData(buffer, emitter->Graph.Layout.GetAttributeOffset(module->Attributes[0]));
 
             int32 indices = 0;
 
@@ -327,7 +327,7 @@ void DrawEmitterCPU(RenderContext& renderContext, ParticleBuffer* buffer, DrawCa
                 bool isNotLast = i != count - 1;
                 uint32 idx0 = ribbonOrderData[i];
                 uint32 idx1 = 0;
-                Vector3 direction;
+                Float3 direction;
                 if (isNotLast)
                 {
                     idx1 = ribbonOrderData[i + 1];
@@ -457,8 +457,8 @@ void DrawEmitterCPU(RenderContext& renderContext, ParticleBuffer* buffer, DrawCa
 
             // Node properties
             float uvTilingDistance = module->Values[3].AsFloat;
-            Vector2 uvScale = module->Values[4].AsVector2();
-            Vector2 uvOffset = module->Values[5].AsVector2();
+            Float2 uvScale = module->Values[4].AsFloat2();
+            Float2 uvOffset = module->Values[5].AsFloat2();
 
             ParticleBufferCPUDataAccessor<float> sortKeyData(buffer, emitter->Graph.Layout.GetAttributeOffset(module->Attributes[1]));
             int32* ribbonOrderData = buffer->CPU.RibbonOrder.Get() + module->RibbonOrderOffset;
@@ -516,7 +516,7 @@ void DrawEmitterCPU(RenderContext& renderContext, ParticleBuffer* buffer, DrawCa
             if (positionOffset == -1 || count < 0)
                 break;
             auto radiusOffset = emitter->Graph.Layout.GetAttributeOffset(module->Attributes[1]);
-            ParticleBufferCPUDataAccessor<Vector3> positionData(buffer, positionOffset);
+            ParticleBufferCPUDataAccessor<Float3> positionData(buffer, positionOffset);
             ParticleBufferCPUDataAccessor<float> radiusData(buffer, radiusOffset);
             const bool hasRadius = radiusOffset != -1;
             for (int32 i = 0; i < count; i++)
@@ -525,7 +525,7 @@ void DrawEmitterCPU(RenderContext& renderContext, ParticleBuffer* buffer, DrawCa
                 // TODO: use instancing for volumetric fog particles (combine it with instanced circle rasterization into 3d texture)
                 drawCall.Particle.VolumetricFog.Position = positionData[i];
                 if (emitter->SimulationSpace == ParticlesSimulationSpace::Local)
-                    Vector3::Transform(drawCall.Particle.VolumetricFog.Position, drawCall.World, drawCall.Particle.VolumetricFog.Position);
+                    Float3::Transform(drawCall.Particle.VolumetricFog.Position, drawCall.World, drawCall.Particle.VolumetricFog.Position);
                 drawCall.Particle.VolumetricFog.Radius = hasRadius ? radiusData[i] : 100.0f;
                 drawCall.Particle.VolumetricFog.ParticleIndex = i;
                 renderContext.List->VolumetricFogParticles.Add(drawCall);
@@ -539,7 +539,7 @@ void DrawEmitterCPU(RenderContext& renderContext, ParticleBuffer* buffer, DrawCa
 #if COMPILE_WITH_GPU_PARTICLES
 
 PACK_STRUCT(struct GPUParticlesSortingData {
-    Vector3 ViewPosition;
+    Float3 ViewPosition;
     uint32 ParticleCounterOffset;
     uint32 ParticleStride;
     uint32 ParticleCapacity;

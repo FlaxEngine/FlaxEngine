@@ -13,7 +13,7 @@ public:
     // Constant buffer data for Global Surface Atlas access on a GPU.
     PACK_STRUCT(struct ConstantsData
         {
-        Vector3 ViewPos;
+        Float3 ViewPos;
         float Padding0;
         float Padding1;
         float Resolution;

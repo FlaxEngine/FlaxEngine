@@ -23,7 +23,7 @@ namespace FlaxEditor.Surface
             /// <summary>
             /// The surface location.
             /// </summary>
-            public Vector2 SurfaceLocation;
+            public Float2 SurfaceLocation;
         }
 
         /// <summary>
@@ -32,7 +32,7 @@ namespace FlaxEditor.Surface
         public readonly DragHandlers DragHandlers = new DragHandlers();
 
         /// <inheritdoc />
-        public override DragDropEffect OnDragEnter(ref Vector2 location, DragData data)
+        public override DragDropEffect OnDragEnter(ref Float2 location, DragData data)
         {
             var result = base.OnDragEnter(ref location, data);
             if (result != DragDropEffect.None)
@@ -42,7 +42,7 @@ namespace FlaxEditor.Surface
         }
 
         /// <inheritdoc />
-        public override DragDropEffect OnDragMove(ref Vector2 location, DragData data)
+        public override DragDropEffect OnDragMove(ref Float2 location, DragData data)
         {
             var result = base.OnDragMove(ref location, data);
             if (result != DragDropEffect.None)
@@ -60,7 +60,7 @@ namespace FlaxEditor.Surface
         }
 
         /// <inheritdoc />
-        public override DragDropEffect OnDragDrop(ref Vector2 location, DragData data)
+        public override DragDropEffect OnDragDrop(ref Float2 location, DragData data)
         {
             var result = base.OnDragDrop(ref location, data);
             if (result != DragDropEffect.None)

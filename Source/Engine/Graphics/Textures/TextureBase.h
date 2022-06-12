@@ -96,9 +96,9 @@ public:
     }
 
     /// <summary>
-    /// Gets the total size of the texture. Actual resident size may be different due to dynamic content streaming. Returns Vector2::Zero if texture is not loaded.
+    /// Gets the total size of the texture. Actual resident size may be different due to dynamic content streaming. Returns Float2::Zero if texture is not loaded.
     /// </summary>
-    API_PROPERTY() Vector2 Size() const;
+    API_PROPERTY() Float2 Size() const;
 
     /// <summary>
     /// Gets the total array size of the texture.

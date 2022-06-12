@@ -37,7 +37,7 @@ namespace FlaxEditor.GUI.Tree
         private bool _textChanged;
         private bool _isMouseDown;
         private float _mouseDownTime;
-        private Vector2 _mouseDownPos;
+        private Float2 _mouseDownPos;
         private Color _cachedTextColor;
 
         private DragItemPositioning _dragOverMode;
@@ -484,7 +484,7 @@ namespace FlaxEditor.GUI.Tree
         /// <param name="location">The mouse location.</param>
         /// <param name="button">The button.</param>
         /// <returns>True if event has been handled.</returns>
-        protected virtual bool OnMouseDoubleClickHeader(ref Vector2 location, MouseButton button)
+        protected virtual bool OnMouseDoubleClickHeader(ref Float2 location, MouseButton button)
         {
             // Toggle open state
             if (_opened)
@@ -528,7 +528,7 @@ namespace FlaxEditor.GUI.Tree
         /// </summary>
         /// <param name="location">The location.</param>
         /// <returns>True if hits it.</returns>
-        protected virtual bool TestHeaderHit(ref Vector2 location)
+        protected virtual bool TestHeaderHit(ref Float2 location)
         {
             return _headerRect.Contains(ref location);
         }
@@ -537,7 +537,7 @@ namespace FlaxEditor.GUI.Tree
         /// Updates the drag over mode based on the given mouse location.
         /// </summary>
         /// <param name="location">The location.</param>
-        private void UpdateDrawPositioning(ref Vector2 location)
+        private void UpdateDrawPositioning(ref Float2 location)
         {
             if (new Rectangle(_headerRect.X, _headerRect.Y - DefaultDragInsertPositionMargin - DefaultNodeOffsetY, _headerRect.Width, DefaultDragInsertPositionMargin * 2.0f).Contains(location))
                 _dragOverMode = DragItemPositioning.Above;
@@ -689,7 +689,7 @@ namespace FlaxEditor.GUI.Tree
         }
 
         /// <inheritdoc />
-        public override bool OnMouseDown(Vector2 location, MouseButton button)
+        public override bool OnMouseDown(Float2 location, MouseButton button)
         {
             // Check if mouse hits bar and node isn't a root
             if (_mouseOverHeader)
@@ -717,7 +717,7 @@ namespace FlaxEditor.GUI.Tree
         }
 
         /// <inheritdoc />
-        public override bool OnMouseUp(Vector2 location, MouseButton button)
+        public override bool OnMouseUp(Float2 location, MouseButton button)
         {
             // Clear flag for left button
             if (button == MouseButton.Left)
@@ -785,7 +785,7 @@ namespace FlaxEditor.GUI.Tree
         }
 
         /// <inheritdoc />
-        public override bool OnMouseDoubleClick(Vector2 location, MouseButton button)
+        public override bool OnMouseDoubleClick(Float2 location, MouseButton button)
         {
             // Check if mouse hits bar
             if (TestHeaderHit(ref location))
@@ -804,7 +804,7 @@ namespace FlaxEditor.GUI.Tree
         }
 
         /// <inheritdoc />
-        public override void OnMouseMove(Vector2 location)
+        public override void OnMouseMove(Float2 location)
         {
             // Cache flags
             _mouseOverArrow = HasAnyVisibleChild && ArrowRect.Contains(location);
@@ -823,7 +823,7 @@ namespace FlaxEditor.GUI.Tree
             }
 
             // Check if start drag and drop
-            if (_isMouseDown && Vector2.Distance(_mouseDownPos, location) > 10.0f)
+            if (_isMouseDown && Float2.Distance(_mouseDownPos, location) > 10.0f)
             {
                 // Clear flag
                 _isMouseDown = false;
@@ -895,7 +895,7 @@ namespace FlaxEditor.GUI.Tree
         }
 
         /// <inheritdoc />
-        public override DragDropEffect OnDragEnter(ref Vector2 location, DragData data)
+        public override DragDropEffect OnDragEnter(ref Float2 location, DragData data)
         {
             var result = base.OnDragEnter(ref location, data);
 
@@ -927,7 +927,7 @@ namespace FlaxEditor.GUI.Tree
         }
 
         /// <inheritdoc />
-        public override DragDropEffect OnDragMove(ref Vector2 location, DragData data)
+        public override DragDropEffect OnDragMove(ref Float2 location, DragData data)
         {
             var result = base.OnDragMove(ref location, data);
 
@@ -962,7 +962,7 @@ namespace FlaxEditor.GUI.Tree
         }
 
         /// <inheritdoc />
-        public override DragDropEffect OnDragDrop(ref Vector2 location, DragData data)
+        public override DragDropEffect OnDragDrop(ref Float2 location, DragData data)
         {
             var result = base.OnDragDrop(ref location, data);
 
@@ -1000,17 +1000,17 @@ namespace FlaxEditor.GUI.Tree
         }
 
         /// <inheritdoc />
-        public override bool OnTestTooltipOverControl(ref Vector2 location)
+        public override bool OnTestTooltipOverControl(ref Float2 location)
         {
             return TestHeaderHit(ref location) && ShowTooltip;
         }
 
         /// <inheritdoc />
-        public override bool OnShowTooltip(out string text, out Vector2 location, out Rectangle area)
+        public override bool OnShowTooltip(out string text, out Float2 location, out Rectangle area)
         {
             text = TooltipText;
-            location = _headerRect.Size * new Vector2(0.5f, 1.0f);
-            area = new Rectangle(Vector2.Zero, _headerRect.Size);
+            location = _headerRect.Size * new Float2(0.5f, 1.0f);
+            area = new Rectangle(Float2.Zero, _headerRect.Size);
             return ShowTooltip;
         }
 
@@ -1050,7 +1050,7 @@ namespace FlaxEditor.GUI.Tree
                 // TODO: perform layout for any non-TreeNode controls
                 _cachedHeight = _headerHeight;
                 _cachedTextColor = CacheTextColor();
-                Size = new Vector2(width, _headerHeight);
+                Size = new Float2(width, _headerHeight);
             }
 
             if (!wasLocked)
@@ -1090,7 +1090,7 @@ namespace FlaxEditor.GUI.Tree
                     if (_children[i] is TreeNode node && node.Visible)
                     {
                         node._xOffset = xOffset;
-                        node.Location = new Vector2(0, y);
+                        node.Location = new Float2(0, y);
                         float nodeHeight = node.Height + DefaultNodeOffsetY;
                         y += nodeHeight;
                         height += nodeHeight;

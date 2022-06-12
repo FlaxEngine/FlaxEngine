@@ -371,7 +371,7 @@ namespace FlaxEditor.Windows.Assets
                 var cm = new ContextMenu();
                 cm.AddButton("Copy typename", () => Clipboard.Text = ((VisualScriptWindow)Values[0]).Asset.ScriptTypeName);
                 cm.AddButton("Edit attributes...", OnEditAttributes);
-                cm.Show(image, new Vector2(0, image.Height));
+                cm.Show(image, new Float2(0, image.Height));
             }
 
             private void OnEditAttributes(ContextMenuButton button)
@@ -455,16 +455,16 @@ namespace FlaxEditor.Windows.Assets
                 var cm = new ContextMenu();
                 cm.AddButton("Show", () => ((VisualScriptWindow)Values[0]).Surface.FocusNode(node)).Icon = Editor.Instance.Icons.Search12;
                 cm.AddButton("Delete", () => ((VisualScriptWindow)Values[0]).Surface.Delete(node)).Icon = Editor.Instance.Icons.Cross12;
-                node.OnShowSecondaryContextMenu(cm, Vector2.Zero);
-                cm.Show(label, new Vector2(0, label.Height));
+                node.OnShowSecondaryContextMenu(cm, Float2.Zero);
+                cm.Show(label, new Float2(0, label.Height));
             }
 
             private void OnAddNewFunctionClicked()
             {
                 var surface = ((VisualScriptWindow)Values[0]).Surface;
                 var surfaceBounds = surface.AllNodesBounds;
-                surface.ShowArea(new Rectangle(surfaceBounds.BottomLeft, new Vector2(200, 150)).MakeExpanded(400.0f));
-                var node = surface.Context.SpawnNode(16, 6, surfaceBounds.BottomLeft + new Vector2(0, 50));
+                surface.ShowArea(new Rectangle(surfaceBounds.BottomLeft, new Float2(200, 150)).MakeExpanded(400.0f));
+                var node = surface.Context.SpawnNode(16, 6, surfaceBounds.BottomLeft + new Float2(0, 50));
                 surface.Select(node);
             }
 
@@ -504,8 +504,8 @@ namespace FlaxEditor.Windows.Assets
                         {
                             var surface = ((VisualScriptWindow)Values[0]).Surface;
                             var surfaceBounds = surface.AllNodesBounds;
-                            surface.ShowArea(new Rectangle(surfaceBounds.BottomLeft, new Vector2(200, 150)).MakeExpanded(400.0f));
-                            var node = surface.Context.SpawnNode(16, 3, surfaceBounds.BottomLeft + new Vector2(0, 50), new object[]
+                            surface.ShowArea(new Rectangle(surfaceBounds.BottomLeft, new Float2(200, 150)).MakeExpanded(400.0f));
+                            var node = surface.Context.SpawnNode(16, 3, surfaceBounds.BottomLeft + new Float2(0, 50), new object[]
                             {
                                 name,
                                 parameters.Length,
@@ -519,7 +519,7 @@ namespace FlaxEditor.Windows.Assets
                 {
                     cm.AddButton("Nothing to override");
                 }
-                cm.Show(_overrideButton, new Vector2(0, _overrideButton.Height));
+                cm.Show(_overrideButton, new Float2(0, _overrideButton.Height));
             }
         }
 
@@ -625,19 +625,19 @@ namespace FlaxEditor.Windows.Assets
                 VerticalAlignment = TextAlignment.Center,
                 HorizontalAlignment = TextAlignment.Far,
                 Parent = debugObjectPickerContainer,
-                Size = new Vector2(60.0f, _toolstrip.Height),
+                Size = new Float2(60.0f, _toolstrip.Height),
                 Text = "Debug:",
                 TooltipText = "The Visual Script object instance to debug. Can be used to filter the logic to debug a specific instance.",
             };
             _debugObjectPicker = new FlaxObjectRefPickerControl
             {
-                Location = new Vector2(debugObjectPickerLabel.Right + 4.0f, 8.0f),
+                Location = new Float2(debugObjectPickerLabel.Right + 4.0f, 8.0f),
                 Width = 140.0f,
                 Type = item.ScriptType,
                 Parent = debugObjectPickerContainer,
             };
             debugObjectPickerContainer.Enabled = debugObjectPickerContainer.Visible = isPlayMode;
-            debugObjectPickerContainer.Size = new Vector2(_debugObjectPicker.Right + 2.0f, _toolstrip.Height);
+            debugObjectPickerContainer.Size = new Float2(_debugObjectPicker.Right + 2.0f, _toolstrip.Height);
             debugObjectPickerContainer.Parent = _toolstrip;
 
             // Setup input actions

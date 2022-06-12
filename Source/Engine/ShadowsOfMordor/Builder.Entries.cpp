@@ -36,7 +36,7 @@ bool cacheStaticGeometryTree(Actor* actor, ShadowsOfMordor::Builder::SceneBuildC
         if (model && !model->WaitForLoaded())
         {
             entry.Type = ShadowsOfMordor::Builder::GeometryType::StaticModel;
-            entry.UVsBox = Rectangle(Vector2::Zero, Vector2::One);
+            entry.UVsBox = Rectangle(Float2::Zero, Float2::One);
             entry.AsStaticModel.Actor = staticModel;
             entry.Scale = Math::Clamp(staticModel->GetScaleInLightmap(), 0.0f, LIGHTMAP_SCALE_MAX);
 
@@ -85,7 +85,7 @@ bool cacheStaticGeometryTree(Actor* actor, ShadowsOfMordor::Builder::SceneBuildC
     {
         entry.AsTerrain.Actor = terrain;
         entry.Type = ShadowsOfMordor::Builder::GeometryType::Terrain;
-        entry.UVsBox = Rectangle(Vector2::Zero, Vector2::One);
+        entry.UVsBox = Rectangle(Float2::Zero, Float2::One);
         entry.Scale = Math::Clamp(terrain->GetScaleInLightmap(), 0.0f, LIGHTMAP_SCALE_MAX);
         for (int32 patchIndex = 0; patchIndex < terrain->GetPatchesCount(); patchIndex++)
         {
@@ -115,7 +115,7 @@ bool cacheStaticGeometryTree(Actor* actor, ShadowsOfMordor::Builder::SceneBuildC
     {
         entry.AsFoliage.Actor = foliage;
         entry.Type = ShadowsOfMordor::Builder::GeometryType::Foliage;
-        entry.UVsBox = Rectangle(Vector2::Zero, Vector2::One);
+        entry.UVsBox = Rectangle(Float2::Zero, Float2::One);
         for (auto i = foliage->Instances.Begin(); i.IsNotEnd(); ++i)
         {
             auto& instance = *i;

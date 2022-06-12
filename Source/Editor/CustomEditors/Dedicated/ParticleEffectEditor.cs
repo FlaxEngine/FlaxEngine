@@ -28,14 +28,14 @@ namespace FlaxEditor.CustomEditors.Dedicated
 
         private object ParameterGet(object instance, GraphParameter parameter, object tag)
         {
-            if (instance is ParticleEffect particleEffect && particleEffect && parameter && tag is ParticleEffectParameter effectParameter)
+            if (instance is ParticleEffect particleEffect && particleEffect && parameter && tag is ParticleEffectParameter effectParameter && effectParameter)
                 return particleEffect.GetParameterValue(effectParameter.TrackName, parameter.Name);
             return null;
         }
 
         private void ParameterSet(object instance, object value, GraphParameter parameter, object tag)
         {
-            if (instance is ParticleEffect particleEffect && particleEffect && parameter && tag is ParticleEffectParameter effectParameter)
+            if (instance is ParticleEffect particleEffect && particleEffect && parameter && tag is ParticleEffectParameter effectParameter && effectParameter)
                 particleEffect.SetParameterValue(effectParameter.TrackName, parameter.Name, value);
         }
 

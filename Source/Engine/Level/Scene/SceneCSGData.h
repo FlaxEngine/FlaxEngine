@@ -82,7 +82,7 @@ namespace CSG
         {
             Array<Triangle> Triangles;
 
-            bool Intersects(const Ray& ray, float& distance, Vector3& normal);
+            bool Intersects(const Ray& ray, Real& distance, Vector3& normal);
         };
 
         /// <summary>

@@ -325,7 +325,7 @@ namespace FlaxEditor.Viewport
         public bool SnapToGround => false;
 
         /// <inheritdoc />
-        public Vector2 MouseDelta => _mouseDelta * 1000;
+        public Float2 MouseDelta => _mouseDelta * 1000;
 
         /// <inheritdoc />
         public bool UseSnapping => Root.GetKey(KeyboardKeys.Control);
@@ -551,7 +551,7 @@ namespace FlaxEditor.Viewport
 
                 // Apply scale
                 const float scaleLimit = 99_999_999.0f;
-                trans.Scale = Vector3.Clamp(trans.Scale + scaleDelta, new Vector3(-scaleLimit), new Vector3(scaleLimit));
+                trans.Scale = Float3.Clamp(trans.Scale + scaleDelta, new Float3(-scaleLimit), new Float3(scaleLimit));
 
                 // Apply translation
                 trans.Translation += translationDelta;
@@ -571,7 +571,7 @@ namespace FlaxEditor.Viewport
                 if (_window.Selection[i]?.EditableObject is UIControl controlActor && controlActor && controlActor.Control != null)
                 {
                     var control = controlActor.Control;
-                    var bounds = Rectangle.FromPoints(control.PointToParent(this, Vector2.Zero), control.PointToParent(this, control.Size));
+                    var bounds = Rectangle.FromPoints(control.PointToParent(this, Float2.Zero), control.PointToParent(this, control.Size));
                     Render2D.DrawRectangle(bounds, Editor.Instance.Options.Options.Visual.SelectionOutlineColor0, Editor.Instance.Options.Options.Visual.UISelectionOutlineSize);
                 }
             }
@@ -655,7 +655,7 @@ namespace FlaxEditor.Viewport
         }
 
         /// <inheritdoc />
-        public override DragDropEffect OnDragEnter(ref Vector2 location, DragData data)
+        public override DragDropEffect OnDragEnter(ref Float2 location, DragData data)
         {
             var result = base.OnDragEnter(ref location, data);
             if (result != DragDropEffect.None)
@@ -683,7 +683,7 @@ namespace FlaxEditor.Viewport
         }
 
         /// <inheritdoc />
-        public override DragDropEffect OnDragMove(ref Vector2 location, DragData data)
+        public override DragDropEffect OnDragMove(ref Float2 location, DragData data)
         {
             var result = base.OnDragMove(ref location, data);
             if (result != DragDropEffect.None)
@@ -719,7 +719,7 @@ namespace FlaxEditor.Viewport
             return location;
         }
 
-        private void Spawn(AssetItem item, SceneGraphNode hit, ref Vector2 location, ref Vector3 hitLocation)
+        private void Spawn(AssetItem item, SceneGraphNode hit, ref Float2 location, ref Vector3 hitLocation)
         {
             if (item is BinaryAssetItem binaryAssetItem)
             {
@@ -800,7 +800,7 @@ namespace FlaxEditor.Viewport
         }
 
         /// <inheritdoc />
-        public override DragDropEffect OnDragDrop(ref Vector2 location, DragData data)
+        public override DragDropEffect OnDragDrop(ref Float2 location, DragData data)
         {
             var result = base.OnDragDrop(ref location, data);
             if (result != DragDropEffect.None)

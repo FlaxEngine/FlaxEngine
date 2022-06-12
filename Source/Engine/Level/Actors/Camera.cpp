@@ -104,12 +104,12 @@ void Camera::SetOrthographicScale(float value)
     }
 }
 
-void Camera::ProjectPoint(const Vector3& worldSpaceLocation, Vector2& gameWindowSpaceLocation) const
+void Camera::ProjectPoint(const Vector3& worldSpaceLocation, Float2& gameWindowSpaceLocation) const
 {
     ProjectPoint(worldSpaceLocation, gameWindowSpaceLocation, GetViewport());
 }
 
-void Camera::ProjectPoint(const Vector3& worldSpaceLocation, Vector2& cameraViewportSpaceLocation, const Viewport& viewport) const
+void Camera::ProjectPoint(const Vector3& worldSpaceLocation, Float2& cameraViewportSpaceLocation, const Viewport& viewport) const
 {
     Matrix v, p, vp;
     GetMatrices(v, p, viewport);
@@ -117,15 +117,15 @@ void Camera::ProjectPoint(const Vector3& worldSpaceLocation, Vector2& cameraView
     Vector3 clipSpaceLocation;
     Vector3::Transform(worldSpaceLocation, vp, clipSpaceLocation);
     viewport.Project(worldSpaceLocation, vp, clipSpaceLocation);
-    cameraViewportSpaceLocation = Vector2(clipSpaceLocation);
+    cameraViewportSpaceLocation = Float2(clipSpaceLocation);
 }
 
-Ray Camera::ConvertMouseToRay(const Vector2& mousePosition) const
+Ray Camera::ConvertMouseToRay(const Float2& mousePosition) const
 {
     return ConvertMouseToRay(mousePosition, GetViewport());
 }
 
-Ray Camera::ConvertMouseToRay(const Vector2& mousePosition, const Viewport& viewport) const
+Ray Camera::ConvertMouseToRay(const Float2& mousePosition, const Viewport& viewport) const
 {
 #if 1
     // Gather camera properties
@@ -164,7 +164,7 @@ Ray Camera::ConvertMouseToRay(const Vector2& mousePosition, const Viewport& view
 
 Viewport Camera::GetViewport() const
 {
-    Viewport result = Viewport(Vector2::Zero);
+    Viewport result = Viewport(Float2::Zero);
 
 #if USE_EDITOR
     // Editor
@@ -182,7 +182,7 @@ Viewport Camera::GetViewport() const
 
     // Fallback to the default value
     if (result.Width <= ZeroTolerance)
-        result.Size = Vector2(1280, 720);
+        result.Size = Float2(1280, 720);
 
     return result;
 }
@@ -206,7 +206,7 @@ void Camera::GetMatrices(Matrix& view, Matrix& projection, const Viewport& viewp
     }
 
     // Create view matrix
-    const Vector3 direction = GetDirection();
+    const Float3 direction = GetDirection();
     const Vector3 target = _transform.Translation + direction;
     Vector3 up;
     Vector3::Transform(Vector3::Up, GetOrientation(), up);
@@ -237,7 +237,7 @@ BoundingBox Camera::GetEditorBox() const
     return BoundingBox(pos - size, pos + size);
 }
 
-bool Camera::IntersectsItselfEditor(const Ray& ray, float& distance)
+bool Camera::IntersectsItselfEditor(const Ray& ray, Real& distance)
 {
     return _previewModelBox.Intersects(ray, distance);
 }

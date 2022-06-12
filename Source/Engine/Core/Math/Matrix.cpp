@@ -18,9 +18,9 @@ const Matrix Matrix::Identity(
 
 Matrix::Matrix(const Matrix3x3& matrix)
 {
-    Platform::MemoryCopy(&M11, &matrix.M11, sizeof(Vector3));
-    Platform::MemoryCopy(&M21, &matrix.M21, sizeof(Vector3));
-    Platform::MemoryCopy(&M31, &matrix.M31, sizeof(Vector3));
+    Platform::MemoryCopy(&M11, &matrix.M11, sizeof(Float3));
+    Platform::MemoryCopy(&M21, &matrix.M21, sizeof(Float3));
+    Platform::MemoryCopy(&M31, &matrix.M31, sizeof(Float3));
     M14 = 0.0f;
     M24 = 0.0f;
     M34 = 0.0f;
@@ -55,9 +55,9 @@ float Matrix::RotDeterminant() const
 
 void Matrix::NormalizeScale()
 {
-    const float scaleX = 1.0f / Vector3(M11, M21, M31).Length();
-    const float scaleY = 1.0f / Vector3(M12, M22, M32).Length();
-    const float scaleZ = 1.0f / Vector3(M13, M23, M33).Length();
+    const float scaleX = 1.0f / Float3(M11, M21, M31).Length();
+    const float scaleY = 1.0f / Float3(M12, M22, M32).Length();
+    const float scaleZ = 1.0f / Float3(M13, M23, M33).Length();
 
     M11 *= scaleX;
     M21 *= scaleX;
@@ -87,13 +87,13 @@ void Matrix::Decompose(float& yaw, float& pitch, float& roll) const
     }
 }
 
-void Matrix::Decompose(Vector3& scale, Vector3& translation) const
+void Matrix::Decompose(Float3& scale, Float3& translation) const
 {
     // Get the translation
-    translation = Vector3(M41, M42, M43);
+    translation = Float3(M41, M42, M43);
 
     // Scaling is the length of the rows
-    scale = Vector3(
+    scale = Float3(
         Math::Sqrt(M11 * M11 + M12 * M12 + M13 * M13),
         Math::Sqrt(M21 * M21 + M22 * M22 + M23 * M23),
         Math::Sqrt(M31 * M31 + M32 * M32 + M33 * M33));
@@ -102,24 +102,26 @@ void Matrix::Decompose(Vector3& scale, Vector3& translation) const
 void Matrix::Decompose(Transform& transform) const
 {
     Matrix rotationMatrix;
-    Decompose(transform.Scale, rotationMatrix, transform.Translation);
+    Float3 translation;
+    Decompose(transform.Scale, rotationMatrix, translation);
+    transform.Translation = translation;
     Quaternion::RotationMatrix(rotationMatrix, transform.Orientation);
 }
 
-void Matrix::Decompose(Vector3& scale, Quaternion& rotation, Vector3& translation) const
+void Matrix::Decompose(Float3& scale, Quaternion& rotation, Float3& translation) const
 {
     Matrix rotationMatrix;
     Decompose(scale, rotationMatrix, translation);
     Quaternion::RotationMatrix(rotationMatrix, rotation);
 }
 
-void Matrix::Decompose(Vector3& scale, Matrix& rotation, Vector3& translation) const
+void Matrix::Decompose(Float3& scale, Matrix& rotation, Float3& translation) const
 {
     // Get the translation
-    translation = Vector3(M41, M42, M43);
+    translation = Float3(M41, M42, M43);
 
     // Scaling is the length of the rows
-    scale = Vector3(
+    scale = Float3(
         Math::Sqrt(M11 * M11 + M12 * M12 + M13 * M13),
         Math::Sqrt(M21 * M21 + M22 * M22 + M23 * M23),
         Math::Sqrt(M31 * M31 + M32 * M32 + M33 * M33));
@@ -130,17 +132,17 @@ void Matrix::Decompose(Vector3& scale, Matrix& rotation, Vector3& translation) c
         return;
 
     // Calculate an perfect orthonormal matrix (no reflections)
-    const auto at = Vector3(M31 / scale.Z, M32 / scale.Z, M33 / scale.Z);
-    const auto up = Vector3::Cross(at, Vector3(M11 / scale.X, M12 / scale.X, M13 / scale.X));
-    const auto right = Vector3::Cross(up, at);
+    const auto at = Float3(M31 / scale.Z, M32 / scale.Z, M33 / scale.Z);
+    const auto up = Float3::Cross(at, Float3(M11 / scale.X, M12 / scale.X, M13 / scale.X));
+    const auto right = Float3::Cross(up, at);
     rotation.SetRight(right);
     rotation.SetUp(up);
     rotation.SetBackward(at);
 
     // In case of reflexions
-    scale.X = Vector3::Dot(right, GetRight()) > 0.0f ? scale.X : -scale.X;
-    scale.Y = Vector3::Dot(up, GetUp()) > 0.0f ? scale.Y : -scale.Y;
-    scale.Z = Vector3::Dot(at, GetBackward()) > 0.0f ? scale.Z : -scale.Z;
+    scale.X = Float3::Dot(right, GetRight()) > 0.0f ? scale.X : -scale.X;
+    scale.Y = Float3::Dot(up, GetUp()) > 0.0f ? scale.Y : -scale.Y;
+    scale.Z = Float3::Dot(at, GetBackward()) > 0.0f ? scale.Z : -scale.Z;
 }
 
 Matrix Matrix::Transpose(const Matrix& value)
@@ -250,21 +252,21 @@ void Matrix::Invert(const Matrix& value, Matrix& result)
     result.M44 = +d44 * det;
 }
 
-void Matrix::Billboard(const Vector3& objectPosition, const Vector3& cameraPosition, const Vector3& cameraUpVector, const Vector3& cameraForwardVector, Matrix& result)
+void Matrix::Billboard(const Float3& objectPosition, const Float3& cameraPosition, const Float3& cameraUpFloat, const Float3& cameraForwardFloat, Matrix& result)
 {
-    Vector3 crossed;
-    Vector3 final;
-    Vector3 difference = cameraPosition - objectPosition;
+    Float3 crossed;
+    Float3 final;
+    Float3 difference = cameraPosition - objectPosition;
 
     const float lengthSq = difference.LengthSquared();
     if (Math::IsZero(lengthSq))
-        difference = -cameraForwardVector;
+        difference = -cameraForwardFloat;
     else
         difference *= 1.0f / Math::Sqrt(lengthSq);
 
-    Vector3::Cross(cameraUpVector, difference, crossed);
+    Float3::Cross(cameraUpFloat, difference, crossed);
     crossed.Normalize();
-    Vector3::Cross(difference, crossed, final);
+    Float3::Cross(difference, crossed, final);
 
     result.M11 = crossed.X;
     result.M12 = crossed.Y;
@@ -287,14 +289,14 @@ void Matrix::Billboard(const Vector3& objectPosition, const Vector3& cameraPosit
     result.M44 = 1.0f;
 }
 
-void Matrix::LookAt(const Vector3& eye, const Vector3& target, const Vector3& up, Matrix& result)
+void Matrix::LookAt(const Float3& eye, const Float3& target, const Float3& up, Matrix& result)
 {
-    Vector3 xaxis, yaxis, zaxis;
-    Vector3::Subtract(target, eye, zaxis);
+    Float3 xaxis, yaxis, zaxis;
+    Float3::Subtract(target, eye, zaxis);
     zaxis.Normalize();
-    Vector3::Cross(up, zaxis, xaxis);
+    Float3::Cross(up, zaxis, xaxis);
     xaxis.Normalize();
-    Vector3::Cross(zaxis, xaxis, yaxis);
+    Float3::Cross(zaxis, xaxis, yaxis);
 
     result.M11 = xaxis.X;
     result.M21 = xaxis.Y;
@@ -312,9 +314,9 @@ void Matrix::LookAt(const Vector3& eye, const Vector3& target, const Vector3& up
     result.M24 = 0.0f;
     result.M34 = 0.0f;
 
-    result.M41 = -Vector3::Dot(xaxis, eye);
-    result.M42 = -Vector3::Dot(yaxis, eye);
-    result.M43 = -Vector3::Dot(zaxis, eye);
+    result.M41 = -Float3::Dot(xaxis, eye);
+    result.M42 = -Float3::Dot(yaxis, eye);
+    result.M43 = -Float3::Dot(zaxis, eye);
     result.M44 = 1.0f;
 }
 
@@ -389,7 +391,7 @@ void Matrix::RotationZ(float angle, Matrix& result)
     result.M22 = cosA;
 }
 
-void Matrix::RotationAxis(const Vector3& axis, float angle, Matrix& result)
+void Matrix::RotationAxis(const Float3& axis, float angle, Matrix& result)
 {
     const float x = axis.X;
     const float y = axis.Y;
@@ -455,7 +457,7 @@ void Matrix::RotationYawPitchRoll(float yaw, float pitch, float roll, Matrix& re
     RotationQuaternion(quaternion, result);
 }
 
-Matrix Matrix::Translation(const Vector3& value)
+Matrix Matrix::Translation(const Float3& value)
 {
     Matrix result = Identity;
     result.M41 = value.X;
@@ -464,7 +466,7 @@ Matrix Matrix::Translation(const Vector3& value)
     return result;
 }
 
-void Matrix::Translation(const Vector3& value, Matrix& result)
+void Matrix::Translation(const Float3& value, Matrix& result)
 {
     result = Identity;
     result.M41 = value.X;
@@ -480,18 +482,18 @@ void Matrix::Translation(float x, float y, float z, Matrix& result)
     result.M43 = z;
 }
 
-void Matrix::Skew(float angle, const Vector3& rotationVec, const Vector3& transVec, Matrix& matrix)
+void Matrix::Skew(float angle, const Float3& rotationVec, const Float3& transVec, Matrix& matrix)
 {
     // http://elckerlyc.ewi.utwente.nl/browser/Elckerlyc/Hmi/HmiMath/src/hmi/math/Mat3f.java
     const float MINIMAL_SKEW_ANGLE = 0.000001f;
 
-    Vector3 e0 = rotationVec;
-    Vector3 e1;
-    Vector3::Normalize(transVec, e1);
+    Float3 e0 = rotationVec;
+    Float3 e1;
+    Float3::Normalize(transVec, e1);
 
-    const float rv1 = Vector3::Dot(rotationVec, e1);
+    const float rv1 = Float3::Dot(rotationVec, e1);
     e0 += rv1 * e1;
-    const float rv0 = Vector3::Dot(rotationVec, e0);
+    const float rv0 = Float3::Dot(rotationVec, e0);
     const float cosa = Math::Cos(angle);
     const float sina = Math::Sin(angle);
     const float rr0 = rv0 * cosa - rv1 * sina;
@@ -513,7 +515,7 @@ void Matrix::Skew(float angle, const Vector3& rotationVec, const Vector3& transV
     matrix.M33 = d * e1.Z * e0.Z + 1.0f;
 }
 
-void Matrix::Transformation(const Vector3& scaling, const Quaternion& rotation, const Vector3& translation, Matrix& result)
+void Matrix::Transformation(const Float3& scaling, const Quaternion& rotation, const Float3& translation, Matrix& result)
 {
     // Equivalent to:
     //result =
@@ -565,55 +567,55 @@ void Matrix::Transformation(const Vector3& scaling, const Quaternion& rotation, 
     result.M44 = 1.0f;
 }
 
-void Matrix::AffineTransformation(float scaling, const Quaternion& rotation, const Vector3& translation, Matrix& result)
+void Matrix::AffineTransformation(float scaling, const Quaternion& rotation, const Float3& translation, Matrix& result)
 {
     result = Scaling(scaling) * RotationQuaternion(rotation) * Translation(translation);
 }
 
-void Matrix::AffineTransformation(float scaling, const Vector3& rotationCenter, const Quaternion& rotation, const Vector3& translation, Matrix& result)
+void Matrix::AffineTransformation(float scaling, const Float3& rotationCenter, const Quaternion& rotation, const Float3& translation, Matrix& result)
 {
     result = Scaling(scaling) * Translation(-rotationCenter) * RotationQuaternion(rotation) * Translation(rotationCenter) * Translation(translation);
 }
 
-void Matrix::AffineTransformation2D(float scaling, float rotation, const Vector2& translation, Matrix& result)
+void Matrix::AffineTransformation2D(float scaling, float rotation, const Float2& translation, Matrix& result)
 {
-    result = Scaling(scaling, scaling, 1.0f) * RotationZ(rotation) * Translation((Vector3)translation);
+    result = Scaling(scaling, scaling, 1.0f) * RotationZ(rotation) * Translation((Float3)translation);
 }
 
-void Matrix::AffineTransformation2D(float scaling, const Vector2& rotationCenter, float rotation, const Vector2& translation, Matrix& result)
+void Matrix::AffineTransformation2D(float scaling, const Float2& rotationCenter, float rotation, const Float2& translation, Matrix& result)
 {
-    result = Scaling(scaling, scaling, 1.0f) * Translation((Vector3)-rotationCenter) * RotationZ(rotation) * Translation((Vector3)rotationCenter) * Translation((Vector3)translation);
+    result = Scaling(scaling, scaling, 1.0f) * Translation((Float3)-rotationCenter) * RotationZ(rotation) * Translation((Float3)rotationCenter) * Translation((Float3)translation);
 }
 
-void Matrix::Transformation(const Vector3& scalingCenter, const Quaternion& scalingRotation, const Vector3& scaling, const Vector3& rotationCenter, const Quaternion& rotation, const Vector3& translation, Matrix& result)
+void Matrix::Transformation(const Float3& scalingCenter, const Quaternion& scalingRotation, const Float3& scaling, const Float3& rotationCenter, const Quaternion& rotation, const Float3& translation, Matrix& result)
 {
     Matrix sr;
     RotationQuaternion(scalingRotation, sr);
     result = Translation(-scalingCenter) * Transpose(sr) * Scaling(scaling) * sr * Translation(scalingCenter) * Translation(-rotationCenter) * RotationQuaternion(rotation) * Translation(rotationCenter) * Translation(translation);
 }
 
-void Matrix::Transformation2D(Vector2& scalingCenter, float scalingRotation, const Vector2& scaling, const Vector2& rotationCenter, float rotation, const Vector2& translation, Matrix& result)
+void Matrix::Transformation2D(Float2& scalingCenter, float scalingRotation, const Float2& scaling, const Float2& rotationCenter, float rotation, const Float2& translation, Matrix& result)
 {
-    result = Translation((Vector3)-scalingCenter) * RotationZ(-scalingRotation) * Scaling((Vector3)scaling) * RotationZ(scalingRotation) * Translation((Vector3)scalingCenter) * Translation((Vector3)-rotationCenter) * RotationZ(rotation) * Translation((Vector3)rotationCenter) * Translation((Vector3)translation);
+    result = Translation((Float3)-scalingCenter) * RotationZ(-scalingRotation) * Scaling((Float3)scaling) * RotationZ(scalingRotation) * Translation((Float3)scalingCenter) * Translation((Float3)-rotationCenter) * RotationZ(rotation) * Translation((Float3)rotationCenter) * Translation((Float3)translation);
     result.M33 = 1.0f;
     result.M44 = 1.0f;
 }
 
-Matrix Matrix::CreateWorld(const Vector3& position, const Vector3& forward, const Vector3& up)
+Matrix Matrix::CreateWorld(const Float3& position, const Float3& forward, const Float3& up)
 {
     Matrix result;
     CreateWorld(position, forward, up, result);
     return result;
 }
 
-void Matrix::CreateWorld(const Vector3& position, const Vector3& forward, const Vector3& up, Matrix& result)
+void Matrix::CreateWorld(const Float3& position, const Float3& forward, const Float3& up, Matrix& result)
 {
-    Vector3 vector3, vector31, vector32;
+    Float3 vector3, vector31, vector32;
 
-    Vector3::Normalize(forward, vector3);
+    Float3::Normalize(forward, vector3);
     vector3 = vector3.GetNegative();
-    Vector3::Normalize(Vector3::Cross(up, vector3), vector31);
-    Vector3::Cross(vector3, vector31, vector32);
+    Float3::Normalize(Float3::Cross(up, vector3), vector31);
+    Float3::Cross(vector3, vector31, vector32);
 
     result.M11 = vector31.X;
     result.M12 = vector31.Y;
@@ -636,14 +638,14 @@ void Matrix::CreateWorld(const Vector3& position, const Vector3& forward, const 
     result.M44 = 1.0f;
 }
 
-Matrix Matrix::CreateFromAxisAngle(const Vector3& axis, float angle)
+Matrix Matrix::CreateFromAxisAngle(const Float3& axis, float angle)
 {
     Matrix result;
     CreateFromAxisAngle(axis, angle, result);
     return result;
 }
 
-void Matrix::CreateFromAxisAngle(const Vector3& axis, float angle, Matrix& result)
+void Matrix::CreateFromAxisAngle(const Float3& axis, float angle, Matrix& result)
 {
     const float x = axis.X;
     const float y = axis.Y;
@@ -678,9 +680,9 @@ void Matrix::CreateFromAxisAngle(const Vector3& axis, float angle, Matrix& resul
     result.M44 = 1.0f;
 }
 
-Vector4 Matrix::TransformPosition(const Matrix& m, const Vector3& v)
+Float4 Matrix::TransformPosition(const Matrix& m, const Float3& v)
 {
-    return Vector4(
+    return Float4(
         m.Values[0][0] * v.Raw[0] + m.Values[1][0] * v.Raw[1] + m.Values[2][0] * v.Raw[2] + m.Values[3][0],
         m.Values[0][1] * v.Raw[0] + m.Values[1][1] * v.Raw[1] + m.Values[2][1] * v.Raw[2] + m.Values[3][1],
         m.Values[0][2] * v.Raw[0] + m.Values[1][2] * v.Raw[1] + m.Values[2][2] * v.Raw[2] + m.Values[3][2],
@@ -688,9 +690,9 @@ Vector4 Matrix::TransformPosition(const Matrix& m, const Vector3& v)
     );
 }
 
-Vector4 Matrix::TransformPosition(const Matrix& m, const Vector4& v)
+Float4 Matrix::TransformPosition(const Matrix& m, const Float4& v)
 {
-    return Vector4(
+    return Float4(
         m.Values[0][0] * v.Raw[0] + m.Values[1][0] * v.Raw[1] + m.Values[2][0] * v.Raw[2] + m.Values[3][0] * v.Raw[3],
         m.Values[0][1] * v.Raw[0] + m.Values[1][1] * v.Raw[1] + m.Values[2][1] * v.Raw[2] + m.Values[3][1] * v.Raw[3],
         m.Values[0][2] * v.Raw[0] + m.Values[1][2] * v.Raw[1] + m.Values[2][2] * v.Raw[2] + m.Values[3][2] * v.Raw[3],

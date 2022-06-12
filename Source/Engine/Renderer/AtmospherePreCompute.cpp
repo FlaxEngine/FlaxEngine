@@ -67,7 +67,7 @@ PACK_STRUCT(struct Data
     float AtmosphereR;
     int AtmosphereLayer;
     float Dummy0;
-    Vector4 dhdh;
+    Float4 dhdh;
     });
 
 namespace AtmospherePreComputeImpl
@@ -367,7 +367,7 @@ void AtmospherePreComputeService::Dispose()
     release();
 }
 
-void GetLayerValue(int32 layer, float& atmosphereR, Vector4& dhdh)
+void GetLayerValue(int32 layer, float& atmosphereR, Float4& dhdh)
 {
     float r = layer / Math::Max<float>(InscatterAltitudeSampleNum - 1.0f, 1.0f);
     r = r * r;
@@ -377,7 +377,7 @@ void GetLayerValue(int32 layer, float& atmosphereR, Vector4& dhdh)
     const float dMinP = r - RadiusGround;
     const float dMaxP = Math::Sqrt(r * r - RadiusGround * RadiusGround);
     atmosphereR = r;
-    dhdh = Vector4(dMin, dMax, dMinP, dMaxP);
+    dhdh = Float4(dMin, dMax, dMinP, dMaxP);
 }
 
 void AtmospherePreComputeImpl::onRender(RenderTask* task, GPUContext* context)
@@ -597,7 +597,7 @@ bool DownloadJob::Run()
         {
             for (int x = 0; x < TransmittanceTexWidth; x++)
             {
-                Vector4 t = ((Half4*)&in->Data[y * in->RowPitch + x * sizeof(Half4)])->ToVector4();
+                Float4 t = ((Half4*)&in->Data[y * in->RowPitch + x * sizeof(Half4)])->ToFloat4();
                 *p++ = Math::Saturate(t.Z) * 255;
                 *p++ = Math::Saturate(t.Y) * 255;
                 *p++ = Math::Saturate(t.X) * 255;
@@ -630,7 +630,7 @@ bool DownloadJob::Run()
         {
             for (int x = 0; x < IrradianceTexWidth; x++)
             {
-                Vector4 t = ((Half4*)&in->Data[y * in->RowPitch + x * sizeof(Half4)])->ToVector4();
+                Float4 t = ((Half4*)&in->Data[y * in->RowPitch + x * sizeof(Half4)])->ToFloat4();
                 *p++ = Math::Saturate(t.Z) * 255;
                 *p++ = Math::Saturate(t.Y) * 255;
                 *p++ = Math::Saturate(t.X) * 255;
@@ -667,7 +667,7 @@ bool DownloadJob::Run()
             {
                 for (int x = 0; x < InscatterWidth; x++)
                 {
-                    Vector4 t = ((Half4*)&s[y * in->RowPitch + x * sizeof(Half4)])->ToVector4();
+                    Float4 t = ((Half4*)&s[y * in->RowPitch + x * sizeof(Half4)])->ToFloat4();
                     *p++ = Math::Saturate(t.Z) * 255;
                     *p++ = Math::Saturate(t.Y) * 255;
                     *p++ = Math::Saturate(t.X) * 255;

@@ -48,7 +48,7 @@ namespace FlaxEditor.Gizmo
         /// <summary>
         /// Gets the view forward direction.
         /// </summary>
-        Vector3 ViewDirection { get; }
+        Float3 ViewDirection { get; }
 
         /// <summary>
         /// Gets the view position.
@@ -73,7 +73,7 @@ namespace FlaxEditor.Gizmo
         /// <summary>
         /// Gets the mouse movement delta.
         /// </summary>
-        Vector2 MouseDelta { get; }
+        Float2 MouseDelta { get; }
 
         /// <summary>
         /// Gets a value indicating whether use grid snapping during gizmo operations.

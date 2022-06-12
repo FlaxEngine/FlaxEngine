@@ -9,22 +9,22 @@
 
 namespace
 {
-    void SampleCache(ShadowsOfMordor::GenerateHemispheresData& data, int32 texelX, int32 texelY, Vector3& outPosition, Vector3& outNormal)
+    void SampleCache(ShadowsOfMordor::GenerateHemispheresData& data, int32 texelX, int32 texelY, Float3& outPosition, Float3& outNormal)
     {
         const auto mipDataPositions = data.PositionsData.GetData(0, 0);
 #if CACHE_POSITIONS_FORMAT == HEMISPHERES_FORMAT_R32G32B32A32
-        outPosition = Vector3(mipDataPositions->Get<Vector4>(texelX, texelY));
+        outPosition = Float3(mipDataPositions->Get<Float4>(texelX, texelY));
 #elif CACHE_POSITIONS_FORMAT == HEMISPHERES_FORMAT_R16G16B16A16
-        outPosition = mipDataPositions->Get<Half4>(texelX, texelY).ToVector3();
+        outPosition = mipDataPositions->Get<Half4>(texelX, texelY).ToFloat3();
 #else
 #error "Unknown format."
 #endif
 
         const auto mipDataNormals = data.NormalsData.GetData(0, 0);
 #if CACHE_NORMALS_FORMAT == HEMISPHERES_FORMAT_R32G32B32A32
-        outNormal = Vector3(mipDataNormals->Get<Vector4>(texelX, texelY));
+        outNormal = Float3(mipDataNormals->Get<Float4>(texelX, texelY));
 #elif CACHE_NORMALS_FORMAT == HEMISPHERES_FORMAT_R16G16B16A16
-        outNormal = mipDataNormals->Get<Half4>(texelX, texelY).ToVector3();
+        outNormal = mipDataNormals->Get<Half4>(texelX, texelY).ToFloat3();
 #else
 #error "Unknown format."
 #endif
@@ -34,7 +34,7 @@ namespace
     {
         const auto mipDataNormals = data.NormalsData.GetData(0, 0);
 #if CACHE_NORMALS_FORMAT == HEMISPHERES_FORMAT_R32G32B32A32
-        mipDataNormals->Get<Vector4>(texelX, texelY) = Vector4::Zero;
+        mipDataNormals->Get<Float4>(texelX, texelY) = Float4::Zero;
 #elif CACHE_NORMALS_FORMAT == HEMISPHERES_FORMAT_R16G16B16A16
         mipDataNormals->Get<Half4>(texelX, texelY) = Half4::Zero;
 #else
@@ -74,7 +74,7 @@ void ShadowsOfMordor::Builder::generateHemispheres()
         auto& lightmapEntry = scene->Lightmaps[_workerStagePosition0];
         lightmapEntry.Hemispheres.Clear();
         lightmapEntry.Hemispheres.EnsureCapacity(Math::Square(atlasSize / 2));
-        Vector3 position, normal;
+        Float3 position, normal;
 
         // Fill cache
         if (runStage(RenderCache))
@@ -122,7 +122,7 @@ void ShadowsOfMordor::Builder::generateHemispheres()
 
                 // Try to merge similar hemispheres (threshold values are controlled by the quality slider)
                 int32 mergedCount = 1;
-                Vector3 mergedSumPos = position, mergedSumNorm = normal;
+                Float3 mergedSumPos = position, mergedSumNorm = normal;
                 for (int32 x = -maxTexelsDistance; x <= maxTexelsDistance; x++)
                 {
                     for (int32 y = -maxTexelsDistance; y <= maxTexelsDistance; y++)
@@ -135,12 +135,12 @@ void ShadowsOfMordor::Builder::generateHemispheres()
                             continue;
 
                         // Sample cache for possible to use texel
-                        Vector3 pp, nn;
+                        Float3 pp, nn;
                         SampleCache(cacheData, xx, yy, pp, nn);
                         nn.Normalize();
 
-                        if (Vector3::Distance(position, pp) <= maxMergeRadius
-                            && Vector3::Dot(normal, nn) >= normalSimilarityMin)
+                        if (Float3::Distance(position, pp) <= maxMergeRadius
+                            && Float3::Dot(normal, nn) >= normalSimilarityMin)
                         {
                             // Merge them!
                             mergedCount++;

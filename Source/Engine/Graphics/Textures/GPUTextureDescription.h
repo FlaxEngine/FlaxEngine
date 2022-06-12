@@ -318,7 +318,7 @@ public:
     /// <param name="format">Describes the format to use.</param>
     /// <param name="textureFlags">true if the texture needs to support unordered read write.</param>
     /// <returns>A new instance of <see cref="GPUTextureDescription" /> class.</returns>
-    static GPUTextureDescription New3D(const Vector3& size, PixelFormat format, GPUTextureFlags textureFlags = GPUTextureFlags::ShaderResource | GPUTextureFlags::RenderTarget);
+    static GPUTextureDescription New3D(const Float3& size, PixelFormat format, GPUTextureFlags textureFlags = GPUTextureFlags::ShaderResource | GPUTextureFlags::RenderTarget);
 
     /// <summary>
     /// Creates a new <see cref="GPUTextureDescription" /> with a single mipmap.

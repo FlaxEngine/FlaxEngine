@@ -20,7 +20,7 @@
 
 #define ALC_MULTIPLE_LISTENERS 0
 
-#define FLAX_POS_TO_OAL(vec) -vec.X * 0.01f,  vec.Y *  0.01f, -vec.Z * 0.01f
+#define FLAX_POS_TO_OAL(vec) ((ALfloat)vec.X * -0.01f), ((ALfloat)vec.Y * 0.01f), ((ALfloat)vec.Z * -0.01f)
 #if BUILD_RELEASE
 #define ALC_CHECK_ERROR(method)
 #else

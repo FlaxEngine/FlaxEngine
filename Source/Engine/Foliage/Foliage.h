@@ -191,13 +191,13 @@ public:
     /// <param name="normal">When the method completes, contains the intersection surface normal vector (if any valid).</param>
     /// <param name="instanceIndex">When the method completes, contains zero-based index of the foliage instance that is the closest to the ray.</param>
     /// <returns>True whether the two objects intersected, otherwise false.</returns>
-    API_FUNCTION() bool Intersects(API_PARAM(Ref) const Ray& ray, API_PARAM(Out) float& distance, API_PARAM(Out) Vector3& normal, API_PARAM(Out) int32& instanceIndex);
+    API_FUNCTION() bool Intersects(API_PARAM(Ref) const Ray& ray, API_PARAM(Out) Real& distance, API_PARAM(Out) Vector3& normal, API_PARAM(Out) int32& instanceIndex);
 
 public:
 
     // [Actor]
     void Draw(RenderContext& renderContext) override;
-    bool IntersectsItself(const Ray& ray, float& distance, Vector3& normal) override;
+    bool IntersectsItself(const Ray& ray, Real& distance, Vector3& normal) override;
     void Serialize(SerializeStream& stream, const void* otherObj) override;
     void Deserialize(DeserializeStream& stream, ISerializeModifier* modifier) override;
     void OnLayerChanged() override;

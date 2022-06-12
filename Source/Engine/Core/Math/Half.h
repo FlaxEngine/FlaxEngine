@@ -151,14 +151,10 @@ public:
     /// Init
     /// </summary>
     /// <param name="v">X and Y components</param>
-    Half2(const Vector2& v);
+    Half2(const Float2& v);
 
 public:
-    /// <summary>
-    /// Convert to Vector2
-    /// </summary>
-    /// <returns>Vector2</returns>
-    Vector2 ToVector2() const;
+    Float2 ToFloat2() const;
 };
 
 /// <summary>
@@ -207,10 +203,10 @@ public:
         Z = Float16Compressor::Compress(z);
     }
 
-    Half3(const Vector3& v);
+    Half3(const Float3& v);
 
 public:
-    Vector3 ToVector3() const;
+    Float3 ToFloat3() const;
 };
 
 /// <summary>
@@ -274,12 +270,12 @@ public:
         W = Float16Compressor::Compress(w);
     }
 
-    explicit Half4(const Vector4& v);
+    explicit Half4(const Float4& v);
     explicit Half4(const Color& c);
     explicit Half4(const Rectangle& rect);
 
 public:
-    Vector2 ToVector2() const;
-    Vector3 ToVector3() const;
-    Vector4 ToVector4() const;
+    Float2 ToFloat2() const;
+    Float3 ToFloat3() const;
+    Float4 ToFloat4() const;
 };

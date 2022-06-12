@@ -552,7 +552,7 @@ bool CollisionCooking::CookConvexMesh(CookingInput& input, BytesContainer& outpu
     // Init options
     PxConvexMeshDesc desc;
     desc.points.count = input.VertexCount;
-    desc.points.stride = sizeof(Vector3);
+    desc.points.stride = sizeof(Float3);
     desc.points.data = input.VertexData;
     desc.flags = PxConvexFlag::eCOMPUTE_CONVEX;
     if (input.ConvexVertexLimit == 0)
@@ -595,7 +595,7 @@ bool CollisionCooking::CookTriangleMesh(CookingInput& input, BytesContainer& out
     // Init options
     PxTriangleMeshDesc desc;
     desc.points.count = input.VertexCount;
-    desc.points.stride = sizeof(Vector3);
+    desc.points.stride = sizeof(Float3);
     desc.points.data = input.VertexData;
     desc.triangles.count = input.IndexCount / 3;
     desc.triangles.stride = 3 * (input.Is16bitIndexData ? sizeof(uint16) : sizeof(uint32));
@@ -1740,7 +1740,7 @@ Vector3 PhysicsBackend::GetRigidDynamicActorCenterOfMass(void* actor)
     return P2C(actorPhysX->getCMassLocalPose().p);
 }
 
-void PhysicsBackend::SetRigidDynamicActorCenterOfMassOffset(void* actor, const Vector3& value)
+void PhysicsBackend::SetRigidDynamicActorCenterOfMassOffset(void* actor, const Float3& value)
 {
     auto actorPhysX = (PxRigidDynamic*)actor;
     auto pose = actorPhysX->getCMassLocalPose();
@@ -2860,7 +2860,7 @@ void* PhysicsBackend::CreateHeightField(byte* data, int32 dataSize)
     return heightField;
 }
 
-void PhysicsBackend::GetConvexMeshTriangles(void* contextMesh, Array<Vector3, HeapAllocation>& vertexBuffer, Array<int, HeapAllocation>& indexBuffer)
+void PhysicsBackend::GetConvexMeshTriangles(void* contextMesh, Array<Float3, HeapAllocation>& vertexBuffer, Array<int, HeapAllocation>& indexBuffer)
 {
     auto contextMeshPhysX = (PxConvexMesh*)contextMesh;
     uint32 numIndices = 0;
@@ -2899,7 +2899,7 @@ void PhysicsBackend::GetConvexMeshTriangles(void* contextMesh, Array<Vector3, He
     }
 }
 
-void PhysicsBackend::GetTriangleMeshTriangles(void* triangleMesh, Array<Vector3>& vertexBuffer, Array<int32, HeapAllocation>& indexBuffer)
+void PhysicsBackend::GetTriangleMeshTriangles(void* triangleMesh, Array<Float3>& vertexBuffer, Array<int32, HeapAllocation>& indexBuffer)
 {
     auto triangleMeshPhysX = (PxTriangleMesh*)triangleMesh;
     uint32 numVertices = triangleMeshPhysX->getNbVertices();

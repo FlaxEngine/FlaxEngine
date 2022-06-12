@@ -58,7 +58,7 @@ namespace FlaxEditor.Viewport.Previews
         /// <inheritdoc />
         protected override void CalculateTextureRect(out Rectangle rect)
         {
-            CalculateTextureRect(new Vector2(256), Size, out rect);
+            CalculateTextureRect(new Float2(256), Size, out rect);
         }
 
         /// <inheritdoc />

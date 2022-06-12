@@ -20,7 +20,7 @@ namespace FlaxEditor.Surface.Archetypes
                 Title = title,
                 Description = desc,
                 Flags = NodeFlags.AllGraphs,
-                Size = new Vector2(110, 20),
+                Size = new Float2(110, 20),
                 DefaultType = new ScriptType(type),
                 ConnectionsHints = hints,
                 IndependentBoxes = new[] { 0 },
@@ -47,7 +47,7 @@ namespace FlaxEditor.Surface.Archetypes
                 Description = desc,
                 Flags = NodeFlags.AllGraphs,
                 AlternativeTitles = altTitles,
-                Size = new Vector2(110, 40),
+                Size = new Float2(110, 40),
                 DefaultType = new ScriptType(inputType),
                 ConnectionsHints = hints,
                 IndependentBoxes = new[]
@@ -98,7 +98,7 @@ namespace FlaxEditor.Surface.Archetypes
                 Title = "Length",
                 Description = "Returns the length of A vector",
                 Flags = NodeFlags.AllGraphs,
-                Size = new Vector2(110, 20),
+                Size = new Float2(110, 20),
                 ConnectionsHints = ConnectionsHint.Vector,
                 IndependentBoxes = new[] { 0 },
                 Elements = new[]
@@ -113,7 +113,7 @@ namespace FlaxEditor.Surface.Archetypes
             Op1(15, "Sine", "Returns sine of A"),
             Op1(16, "Sqrt", "Returns square root of A"),
             Op1(17, "Tangent", "Returns tangent of A"),
-            Op2(18, "Cross", "Returns the cross product of A and B", ConnectionsHint.None, typeof(Vector3)),
+            Op2(18, "Cross", "Returns the cross product of A and B", ConnectionsHint.None, typeof(Float3)),
             Op2(19, "Distance", "Returns a distance scalar between A and B", ConnectionsHint.Vector, null, typeof(float), false),
             Op2(20, "Dot", "Returns the dot product of A and B", ConnectionsHint.Vector, null, typeof(float), false),
             Op2(21, "Max", "Selects the greater of A and B"),
@@ -130,7 +130,7 @@ namespace FlaxEditor.Surface.Archetypes
                 Title = "Clamp",
                 Description = "Clamps value to the specified range",
                 Flags = NodeFlags.AllGraphs,
-                Size = new Vector2(110, 60),
+                Size = new Float2(110, 60),
                 ConnectionsHints = ConnectionsHint.Numeric,
                 IndependentBoxes = new[] { 0 },
                 DependentBoxes = new[]
@@ -158,7 +158,7 @@ namespace FlaxEditor.Surface.Archetypes
                 Title = "Lerp",
                 Description = "Performs a linear interpolation",
                 Flags = NodeFlags.AllGraphs,
-                Size = new Vector2(110, 60),
+                Size = new Float2(110, 60),
                 ConnectionsHints = ConnectionsHint.Numeric,
                 IndependentBoxes = new[]
                 {
@@ -186,7 +186,7 @@ namespace FlaxEditor.Surface.Archetypes
                 Title = "Reflect",
                 Description = "Returns reflected vector over the normal",
                 Flags = NodeFlags.AllGraphs,
-                Size = new Vector2(110, 40),
+                Size = new Float2(110, 40),
                 ConnectionsHints = ConnectionsHint.Vector,
                 IndependentBoxes = new[]
                 {
@@ -211,11 +211,11 @@ namespace FlaxEditor.Surface.Archetypes
                 Title = "Derive Normal Z",
                 Description = "Derives the Z component of a tangent space normal given the X and Y components and outputs the resulting three-channel tangent space normal",
                 Flags = NodeFlags.MaterialGraph,
-                Size = new Vector2(170, 30),
+                Size = new Float2(170, 30),
                 Elements = new[]
                 {
-                    NodeElementArchetype.Factory.Input(0, "XY", true, typeof(Vector2), 0),
-                    NodeElementArchetype.Factory.Output(0, "XYZ", typeof(Vector3), 1)
+                    NodeElementArchetype.Factory.Input(0, "XY", true, typeof(Float2), 0),
+                    NodeElementArchetype.Factory.Output(0, "XYZ", typeof(Float3), 1)
                 }
             },
             new NodeArchetype
@@ -224,7 +224,7 @@ namespace FlaxEditor.Surface.Archetypes
                 Title = "Vector Transform",
                 Description = "Transform vector from source space to destination space",
                 Flags = NodeFlags.MaterialGraph,
-                Size = new Vector2(170, 40),
+                Size = new Float2(170, 40),
                 DefaultValues = new object[]
                 {
                     (int)TransformCoordinateSystem.World,
@@ -232,8 +232,8 @@ namespace FlaxEditor.Surface.Archetypes
                 },
                 Elements = new[]
                 {
-                    NodeElementArchetype.Factory.Input(0, "Input", true, typeof(Vector3), 0),
-                    NodeElementArchetype.Factory.Output(0, "Output", typeof(Vector3), 1),
+                    NodeElementArchetype.Factory.Input(0, "Input", true, typeof(Float3), 0),
+                    NodeElementArchetype.Factory.Output(0, "Output", typeof(Float3), 1),
                     NodeElementArchetype.Factory.ComboBox(0, 22, 70, 0, VectorTransformSpaces),
                     NodeElementArchetype.Factory.ComboBox(100, 22, 70, 1, VectorTransformSpaces),
                 }
@@ -244,7 +244,7 @@ namespace FlaxEditor.Surface.Archetypes
                 Title = "Mad",
                 Description = "Performs value multiplication and addition at once",
                 Flags = NodeFlags.AllGraphs,
-                Size = new Vector2(160, 60),
+                Size = new Float2(160, 60),
                 ConnectionsHints = ConnectionsHint.Numeric,
                 IndependentBoxes = new[]
                 {
@@ -272,11 +272,11 @@ namespace FlaxEditor.Surface.Archetypes
                 Title = "Largest Component Mask",
                 Description = "Gets the largest component mask from the input vector",
                 Flags = NodeFlags.AllGraphs,
-                Size = new Vector2(220, 30),
+                Size = new Float2(220, 30),
                 Elements = new[]
                 {
-                    NodeElementArchetype.Factory.Input(0, "Value", true, typeof(Vector3), 0),
-                    NodeElementArchetype.Factory.Output(0, "Mask", typeof(Vector3), 1)
+                    NodeElementArchetype.Factory.Input(0, "Value", true, typeof(Float3), 0),
+                    NodeElementArchetype.Factory.Output(0, "Mask", typeof(Float3), 1)
                 }
             },
             Op1(33, "Asin", "Returns arcus sine of A"),
@@ -288,7 +288,7 @@ namespace FlaxEditor.Surface.Archetypes
                 Title = "Bias and Scale",
                 Description = "Adds a constant to input and scales it",
                 Flags = NodeFlags.AllGraphs,
-                Size = new Vector2(200, 60),
+                Size = new Float2(200, 60),
                 IndependentBoxes = new[] { 0 },
                 DependentBoxes = new[] { 1 },
                 ConnectionsHints = ConnectionsHint.Numeric,
@@ -313,14 +313,14 @@ namespace FlaxEditor.Surface.Archetypes
                 Title = "Rotate About Axis",
                 Description = "Rotates given vector using the rotation axis, a point on the axis, and the angle to rotate",
                 Flags = NodeFlags.AllGraphs,
-                Size = new Vector2(200, 80),
+                Size = new Float2(200, 80),
                 Elements = new[]
                 {
-                    NodeElementArchetype.Factory.Input(0, "Normalized Rotation Axis", true, typeof(Vector3), 0),
+                    NodeElementArchetype.Factory.Input(0, "Normalized Rotation Axis", true, typeof(Float3), 0),
                     NodeElementArchetype.Factory.Input(1, "Rotation Angle", true, typeof(float), 1),
-                    NodeElementArchetype.Factory.Input(2, "Pivot Point", true, typeof(Vector3), 2),
-                    NodeElementArchetype.Factory.Input(3, "Position", true, typeof(Vector3), 3),
-                    NodeElementArchetype.Factory.Output(0, "", typeof(Vector3), 4),
+                    NodeElementArchetype.Factory.Input(2, "Pivot Point", true, typeof(Float3), 2),
+                    NodeElementArchetype.Factory.Input(3, "Position", true, typeof(Float3), 3),
+                    NodeElementArchetype.Factory.Output(0, "", typeof(Float3), 4),
                 }
             },
             Op1(38, "Trunc", "Truncates a floating-point value to the integer component"),
@@ -333,7 +333,7 @@ namespace FlaxEditor.Surface.Archetypes
                 Title = "Near Equal",
                 Description = "Determines if two values are nearly equal within a given epsilon",
                 Flags = NodeFlags.AnimGraph | NodeFlags.ParticleEmitterGraph,
-                Size = new Vector2(200, 80),
+                Size = new Float2(200, 80),
                 IndependentBoxes = new[]
                 {
                     0,
@@ -362,7 +362,7 @@ namespace FlaxEditor.Surface.Archetypes
                 Title = "Enum Value",
                 Description = "Unpacks the enum into underlying Uint64 value.",
                 Flags = NodeFlags.VisualScriptGraph | NodeFlags.AnimGraph,
-                Size = new Vector2(120, 20),
+                Size = new Float2(120, 20),
                 ConnectionsHints = ConnectionsHint.Enum,
                 Elements = new[]
                 {
@@ -376,7 +376,7 @@ namespace FlaxEditor.Surface.Archetypes
                 Title = "Enum AND",
                 Description = "Performs a conjunction on two enum values (returns the shared part for flag enums).",
                 Flags = NodeFlags.VisualScriptGraph | NodeFlags.AnimGraph,
-                Size = new Vector2(120, 40),
+                Size = new Float2(120, 40),
                 ConnectionsHints = ConnectionsHint.Enum,
                 IndependentBoxes = new[] { 0, 1 },
                 DependentBoxes = new[] { 2 },
@@ -393,7 +393,7 @@ namespace FlaxEditor.Surface.Archetypes
                 Title = "Enum OR",
                 Description = "Performs a disjunction on two enum values (returns the sum for flag enums).",
                 Flags = NodeFlags.VisualScriptGraph | NodeFlags.AnimGraph,
-                Size = new Vector2(120, 40),
+                Size = new Float2(120, 40),
                 ConnectionsHints = ConnectionsHint.Enum,
                 IndependentBoxes = new[] { 0, 1 },
                 DependentBoxes = new[] { 2 },
@@ -410,19 +410,19 @@ namespace FlaxEditor.Surface.Archetypes
                 Title = "Remap",
                 Description = "Remaps a value from one range to another, so for example having 25 in a range of 0 to 100 being remapped to 0 to 1 would return 0.25",
                 Flags = NodeFlags.AllGraphs,
-                Size = new Vector2(175, 75),
+                Size = new Float2(175, 75),
                 DefaultValues = new object[]
                 {
                     25.0f,
-                    new Vector2(0.0f, 100.0f),
-                    new Vector2(0.0f, 1.0f),
+                    new Float2(0.0f, 100.0f),
+                    new Float2(0.0f, 1.0f),
                     false
                 },
                 Elements = new[]
                 {
                     NodeElementArchetype.Factory.Input(0, "Value", true, typeof(float), 0, 0),
-                    NodeElementArchetype.Factory.Input(1, "In Range", true, typeof(Vector2), 1, 1),
-                    NodeElementArchetype.Factory.Input(2, "Out Range", true, typeof(Vector2), 2, 2),
+                    NodeElementArchetype.Factory.Input(1, "In Range", true, typeof(Float2), 1, 1),
+                    NodeElementArchetype.Factory.Input(2, "Out Range", true, typeof(Float2), 2, 2),
                     NodeElementArchetype.Factory.Input(3, "Clamp", true, typeof(bool), 3, 3),
                     NodeElementArchetype.Factory.Output(0, string.Empty, typeof(float), 4),
                 }
@@ -433,12 +433,12 @@ namespace FlaxEditor.Surface.Archetypes
                 Title = "Rotate Vector",
                 Description = "Rotates given vector using the Quaternion",
                 Flags = NodeFlags.AllGraphs,
-                Size = new Vector2(200, 40),
+                Size = new Float2(200, 40),
                 Elements = new[]
                 {
                     NodeElementArchetype.Factory.Input(0, "Quaternion", true, typeof(Quaternion), 0),
-                    NodeElementArchetype.Factory.Input(1, "Vector", true, typeof(Vector3), 1),
-                    NodeElementArchetype.Factory.Output(0, string.Empty, typeof(Vector3), 2),
+                    NodeElementArchetype.Factory.Input(1, "Vector", true, typeof(Float3), 1),
+                    NodeElementArchetype.Factory.Output(0, string.Empty, typeof(Float3), 2),
                 }
             },
         };

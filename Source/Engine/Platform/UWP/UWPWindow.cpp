@@ -103,8 +103,8 @@ inline float ConvertPixelsToDips(float pixels, float dpi)
 
 void UWPWindow::UWPMouse::onMouseMoved(float x, float y)
 {
-    const Vector2 mousePos(x, y);
-    if (!Vector2::NearEqual(mousePos, MousePosition))
+    const Float2 mousePos(x, y);
+    if (!Float2::NearEqual(mousePos, MousePosition))
     {
         MousePosition = mousePos;
         OnMouseMove(mousePos);
@@ -113,7 +113,7 @@ void UWPWindow::UWPMouse::onMouseMoved(float x, float y)
 
 void UWPWindow::UWPMouse::onPointerPressed(UWPWindowImpl::PointerData* pointer)
 {
-    const Vector2 mousePos(pointer->PositionX, pointer->PositionY);
+    const Float2 mousePos(pointer->PositionX, pointer->PositionY);
 
 #define CHECK_MOUSE_BUTTON(button, val1) \
 		if (!val1 && pointer->val1) \
@@ -136,7 +136,7 @@ void UWPWindow::UWPMouse::onPointerMoved(UWPWindowImpl::PointerData* pointer)
     // Note: UWP reports pointer pressed event for the first mouse button clicked and pointer released event for the last button released but other buttons are reported using pointer moved event.
     // Reference: https://docs.microsoft.com/en-us/windows/uwp/design/input/handle-pointer-input
 
-    const Vector2 mousePos(pointer->PositionX, pointer->PositionY);
+    const Float2 mousePos(pointer->PositionX, pointer->PositionY);
 
 #define CHECK_MOUSE_BUTTON(button, val1) \
 		if (val1 != pointer->val1) \
@@ -156,7 +156,7 @@ void UWPWindow::UWPMouse::onPointerMoved(UWPWindowImpl::PointerData* pointer)
 
 #undef CHECK_MOUSE_BUTTON
 
-    if (!Vector2::NearEqual(mousePos, MousePosition))
+    if (!Float2::NearEqual(mousePos, MousePosition))
     {
         MousePosition = mousePos;
         OnMouseMove(mousePos);
@@ -175,7 +175,7 @@ void UWPWindow::UWPMouse::onPointerWheelChanged(UWPWindowImpl::PointerData* poin
 
 void UWPWindow::UWPMouse::onPointerReleased(UWPWindowImpl::PointerData* pointer)
 {
-    Vector2 mousePos = Vector2(pointer->PositionX, pointer->PositionY);
+    Float2 mousePos = Float2(pointer->PositionX, pointer->PositionY);
 
 #define CHECK_MOUSE_BUTTON(button, val1) \
 		if (!val1 && pointer->val1) \
@@ -195,11 +195,11 @@ void UWPWindow::UWPMouse::onPointerReleased(UWPWindowImpl::PointerData* pointer)
 
 void UWPWindow::UWPMouse::onPointerExited(UWPWindowImpl::PointerData* pointer)
 {
-    MousePosition = Vector2(pointer->PositionX, pointer->PositionY);
+    MousePosition = Float2(pointer->PositionX, pointer->PositionY);
     OnMouseLeave();
 }
 
-void UWPWindow::UWPMouse::SetMousePosition(const Vector2& newPosition)
+void UWPWindow::UWPMouse::SetMousePosition(const Float2& newPosition)
 {
     const float dpiScale = Impl::Window->_dpiScale;
     Impl::Window->GetImpl()->SetMousePosition(newPosition.X / dpiScale, newPosition.Y / dpiScale);
@@ -295,7 +295,7 @@ bool UWPWindow::UWPGamepad::UpdateState()
 UWPWindow::UWPWindow(const CreateWindowSettings& settings, UWPWindowImpl* impl)
     : WindowBase(settings)
     , _impl(impl)
-    , _logicalSize(Vector2::Zero)
+    , _logicalSize(Float2::Zero)
 {
     ASSERT(Impl::Window == nullptr);
     Impl::Window = this;
@@ -379,39 +379,39 @@ void UWPWindow::SetClientBounds(const Rectangle& clientArea)
     // Not supported
 }
 
-void UWPWindow::SetPosition(const Vector2& position)
+void UWPWindow::SetPosition(const Float2& position)
 {
     // Not supported
 }
 
-void UWPWindow::SetClientPosition(const Vector2& position)
+void UWPWindow::SetClientPosition(const Float2& position)
 {
     SetClientPosition(position);
 }
 
-Vector2 UWPWindow::GetPosition() const
+Float2 UWPWindow::GetPosition() const
 {
     float x, y, width, height;
     _impl->GetBounds(&x, &y, &width, &height);
-    return Vector2(x, y);
+    return Float2(x, y);
 }
 
-Vector2 UWPWindow::GetSize() const
+Float2 UWPWindow::GetSize() const
 {
     return _clientSize;
 }
 
-Vector2 UWPWindow::GetClientSize() const
+Float2 UWPWindow::GetClientSize() const
 {
     return GetSize();
 }
 
-Vector2 UWPWindow::ScreenToClient(const Vector2& screenPos) const
+Float2 UWPWindow::ScreenToClient(const Float2& screenPos) const
 {
     return screenPos - GetPosition();
 }
 
-Vector2 UWPWindow::ClientToScreen(const Vector2& clientPos) const
+Float2 UWPWindow::ClientToScreen(const Float2& clientPos) const
 {
     return clientPos + GetPosition();
 }
@@ -437,7 +437,7 @@ void UWPWindow::StartTrackingMouse(bool useMouseScreenOffset)
     if (!_isTrackingMouse)
     {
         _isTrackingMouse = true;
-        _trackingMouseOffset = Vector2::Zero;
+        _trackingMouseOffset = Float2::Zero;
         _isUsingMouseOffset = useMouseScreenOffset;
     }
 }

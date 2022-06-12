@@ -68,11 +68,10 @@ void FoliageType::SetMaterials(const Array<MaterialBase*>& value)
         Entries[i].Material = value[i];
 }
 
-Vector3 FoliageType::GetRandomScale() const
+Float3 FoliageType::GetRandomScale() const
 {
-    Vector3 result;
+    Float3 result;
     float tmp;
-
     switch (PaintScaling)
     {
     case FoliageScalingModes::Uniform:
@@ -104,7 +103,6 @@ Vector3 FoliageType::GetRandomScale() const
         result.Z = Math::Lerp(PaintScaleMin.Z, PaintScaleMax.Z, tmp);
         break;
     }
-
     return result;
 }
 

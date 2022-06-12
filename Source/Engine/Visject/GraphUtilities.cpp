@@ -1,9 +1,6 @@
 // Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 #include "GraphUtilities.h"
-#include "Engine/Core/Math/Double2.h"
-#include "Engine/Core/Math/Double3.h"
-#include "Engine/Core/Math/Double4.h"
 
 // [Deprecated on 31.07.2020, expires on 31.07.2022]
 enum class GraphParamType_Deprecated
@@ -85,15 +82,15 @@ FLAXENGINE_API void ReadOldGraphParamValue_Deprecated(byte graphParamType, ReadS
         param->Value = value.GetFloat();
         break;
     case GraphParamType_Deprecated::Vector2:
-        param->Type = VariantType(VariantType::Vector2);
+        param->Type = VariantType(VariantType::Float2);
         param->Value = value.GetVector2();
         break;
     case GraphParamType_Deprecated::Vector3:
-        param->Type = VariantType(VariantType::Vector3);
+        param->Type = VariantType(VariantType::Float3);
         param->Value = value.GetVector3();
         break;
     case GraphParamType_Deprecated::Vector4:
-        param->Type = VariantType(VariantType::Vector4);
+        param->Type = VariantType(VariantType::Float4);
         param->Value = value.GetVector4();
         break;
     case GraphParamType_Deprecated::Color:
@@ -200,13 +197,13 @@ FLAXENGINE_API void ReadOldGraphBoxType_Deprecated(uint32 connectionType, Varian
         type = VariantType(VariantType::Float);
         break;
     case GraphConnectionType_Deprecated::Vector2:
-        type = VariantType(VariantType::Vector2);
+        type = VariantType(VariantType::Float2);
         break;
     case GraphConnectionType_Deprecated::Vector3:
-        type = VariantType(VariantType::Vector3);
+        type = VariantType(VariantType::Float3);
         break;
     case GraphConnectionType_Deprecated::Vector4:
-        type = VariantType(VariantType::Vector4);
+        type = VariantType(VariantType::Float4);
         break;
     case GraphConnectionType_Deprecated::String:
         type = VariantType(VariantType::String);
@@ -270,12 +267,12 @@ FLAXENGINE_API StringView GetGraphFunctionTypeName_Deprecated(const Variant& v)
         case GraphConnectionType_Deprecated::Scalar:
             return TEXT("System.Single");
         case GraphConnectionType_Deprecated::Vector2:
-            return TEXT("FlaxEngine.Vector2");
+            return TEXT("FlaxEngine.Float2");
         case GraphConnectionType_Deprecated::Vector3:
-            return TEXT("FlaxEngine.Vector3");
+            return TEXT("FlaxEngine.Float3");
         case GraphConnectionType_Deprecated::Vector4:
         case GraphConnectionType_Deprecated::Vector:
-            return TEXT("FlaxEngine.Vector4");
+            return TEXT("FlaxEngine.Float4");
         case GraphConnectionType_Deprecated::String:
             return TEXT("System.String");
         case GraphConnectionType_Deprecated::Object:
@@ -311,28 +308,28 @@ void GraphUtilities::ApplySomeMathHere(Variant& v, Variant& a, MathOp1 op)
     case VariantType::Float:
         v.AsFloat = op(a.AsFloat);
         break;
-    case VariantType::Vector2:
+    case VariantType::Float2:
     {
-        Vector2& vv = *(Vector2*)v.AsData;
-        const Vector2& aa = *(const Vector2*)a.AsData;
+        Float2& vv = *(Float2*)v.AsData;
+        const Float2& aa = *(const Float2*)a.AsData;
         vv.X = op(aa.X);
         vv.Y = op(aa.Y);
         break;
     }
-    case VariantType::Vector3:
+    case VariantType::Float3:
     {
-        Vector3& vv = *(Vector3*)v.AsData;
-        const Vector3& aa = *(const Vector3*)a.AsData;
+        Float3& vv = *(Float3*)v.AsData;
+        const Float3& aa = *(const Float3*)a.AsData;
         vv.X = op(aa.X);
         vv.Y = op(aa.Y);
         vv.Z = op(aa.Z);
         break;
     }
-    case VariantType::Vector4:
+    case VariantType::Float4:
     case VariantType::Color:
     {
-        Vector4& vv = *(Vector4*)v.AsData;
-        const Vector4& aa = *(const Vector4*)a.AsData;
+        Float4& vv = *(Float4*)v.AsData;
+        const Float4& aa = *(const Float4*)a.AsData;
         vv.X = op(aa.X);
         vv.Y = op(aa.Y);
         vv.Z = op(aa.Z);
@@ -380,9 +377,9 @@ void GraphUtilities::ApplySomeMathHere(Variant& v, Variant& a, MathOp1 op)
     {
         Transform& vv = *(Transform*)v.AsBlob.Data;
         const Transform& aa = *(const Transform*)a.AsBlob.Data;
-        vv.Translation.X = op(aa.Translation.X);
-        vv.Translation.Y = op(aa.Translation.Y);
-        vv.Translation.Z = op(aa.Translation.Z);
+        vv.Translation.X = op((float)aa.Translation.X);
+        vv.Translation.Y = op((float)aa.Translation.Y);
+        vv.Translation.Z = op((float)aa.Translation.Z);
         vv.Orientation.X = op(aa.Orientation.X);
         vv.Orientation.Y = op(aa.Orientation.Y);
         vv.Orientation.Z = op(aa.Orientation.Z);
@@ -415,34 +412,34 @@ void GraphUtilities::ApplySomeMathHere(Variant& v, Variant& a, Variant& b, MathO
     case VariantType::Float:
         v.AsFloat = op(a.AsFloat, b.AsFloat);
         break;
-    case VariantType::Vector2:
+    case VariantType::Float2:
     {
-        Vector2& vv = *(Vector2*)v.AsData;
-        const Vector2& aa = *(const Vector2*)a.AsData;
-        const Vector2& bb = *(const Vector2*)b.AsData;
+        Float2& vv = *(Float2*)v.AsData;
+        const Float2& aa = *(const Float2*)a.AsData;
+        const Float2& bb = *(const Float2*)b.AsData;
         vv.X = op(aa.X, bb.X);
         vv.Y = op(aa.Y, bb.Y);
         break;
     }
-    case VariantType::Vector3:
+    case VariantType::Float3:
     {
-        Vector3& vv = *(Vector3*)v.AsData;
-        const Vector3& aa = *(const Vector3*)a.AsData;
-        const Vector3& bb = *(const Vector3*)b.AsData;
+        Float3& vv = *(Float3*)v.AsData;
+        const Float3& aa = *(const Float3*)a.AsData;
+        const Float3& bb = *(const Float3*)b.AsData;
         vv.X = op(aa.X, bb.X);
         vv.Y = op(aa.Y, bb.Y);
         vv.Z = op(aa.Z, bb.Z);
         break;
     }
-    case VariantType::Vector4:
+    case VariantType::Float4:
     case VariantType::Color:
     {
-        Vector4& vv = *(Vector4*)v.AsData;
-        const Vector4& aa = *(const Vector4*)a.AsData;
-        const Vector4& bb = *(const Vector4*)b.AsData;
+        Float4& vv = *(Float4*)v.AsData;
+        const Float4& aa = *(const Float4*)a.AsData;
+        const Float4& bb = *(const Float4*)b.AsData;
         vv.X = op(aa.X, bb.X);
         vv.Y = op(aa.Y, bb.Y);
-        vv.W = op(aa.Z, bb.Z);
+        vv.Z = op(aa.Z, bb.Z);
         vv.W = op(aa.W, bb.W);
         break;
     }
@@ -472,7 +469,7 @@ void GraphUtilities::ApplySomeMathHere(Variant& v, Variant& a, Variant& b, MathO
         const Double4& bb = *(const Double4*)b.AsBlob.Data;
         vv.X = (double)op((float)aa.X, (float)bb.X);
         vv.Y = (double)op((float)aa.Y, (float)bb.Y);
-        vv.W = (double)op((float)aa.Z, (float)bb.Z);
+        vv.Z = (double)op((float)aa.Z, (float)bb.Z);
         vv.W = (double)op((float)aa.W, (float)bb.W);
         break;
     }
@@ -483,7 +480,7 @@ void GraphUtilities::ApplySomeMathHere(Variant& v, Variant& a, Variant& b, MathO
         const Quaternion& bb = *(const Quaternion*)b.AsData;
         vv.X = op(aa.X, bb.X);
         vv.Y = op(aa.Y, bb.Y);
-        vv.W = op(aa.Z, bb.Z);
+        vv.Z = op(aa.Z, bb.Z);
         vv.W = op(aa.W, bb.W);
         break;
     }
@@ -492,9 +489,9 @@ void GraphUtilities::ApplySomeMathHere(Variant& v, Variant& a, Variant& b, MathO
         Transform& vv = *(Transform*)v.AsBlob.Data;
         const Transform& aa = *(const Transform*)a.AsBlob.Data;
         const Transform& bb = *(const Transform*)b.AsBlob.Data;
-        vv.Translation.X = op(aa.Translation.X, bb.Translation.X);
-        vv.Translation.Y = op(aa.Translation.Y, bb.Translation.Y);
-        vv.Translation.Z = op(aa.Translation.Z, bb.Translation.Z);
+        vv.Translation.X = op((float)aa.Translation.X, (float)bb.Translation.X);
+        vv.Translation.Y = op((float)aa.Translation.Y, (float)bb.Translation.Y);
+        vv.Translation.Z = op((float)aa.Translation.Z, (float)bb.Translation.Z);
         vv.Orientation.X = op(aa.Orientation.X, bb.Orientation.X);
         vv.Orientation.Y = op(aa.Orientation.Y, bb.Orientation.Y);
         vv.Orientation.Z = op(aa.Orientation.Z, bb.Orientation.Z);
@@ -527,34 +524,34 @@ void GraphUtilities::ApplySomeMathHere(Variant& v, Variant& a, Variant& b, Varia
     case VariantType::Float:
         v.AsFloat = op(a.AsFloat, b.AsFloat, c.AsFloat);
         break;
-    case VariantType::Vector2:
+    case VariantType::Float2:
     {
-        Vector2& vv = *(Vector2*)v.AsData;
-        const Vector2& aa = *(const Vector2*)a.AsData;
-        const Vector2& bb = *(const Vector2*)b.AsData;
-        const Vector2& cc = *(const Vector2*)b.AsData;
+        Float2& vv = *(Float2*)v.AsData;
+        const Float2& aa = *(const Float2*)a.AsData;
+        const Float2& bb = *(const Float2*)b.AsData;
+        const Float2& cc = *(const Float2*)b.AsData;
         vv.X = op(aa.X, bb.X, cc.X);
         vv.Y = op(aa.Y, bb.Y, cc.Y);
         break;
     }
-    case VariantType::Vector3:
+    case VariantType::Float3:
     {
-        Vector3& vv = *(Vector3*)v.AsData;
-        const Vector3& aa = *(const Vector3*)a.AsData;
-        const Vector3& bb = *(const Vector3*)b.AsData;
-        const Vector3& cc = *(const Vector3*)b.AsData;
+        Float3& vv = *(Float3*)v.AsData;
+        const Float3& aa = *(const Float3*)a.AsData;
+        const Float3& bb = *(const Float3*)b.AsData;
+        const Float3& cc = *(const Float3*)b.AsData;
         vv.X = op(aa.X, bb.X, cc.X);
         vv.Y = op(aa.Y, bb.Y, cc.Y);
         vv.Z = op(aa.Z, bb.Z, cc.Z);
         break;
     }
-    case VariantType::Vector4:
+    case VariantType::Float4:
     case VariantType::Color:
     {
-        Vector4& vv = *(Vector4*)v.AsData;
-        const Vector4& aa = *(const Vector4*)a.AsData;
-        const Vector4& bb = *(const Vector4*)b.AsData;
-        const Vector4& cc = *(const Vector4*)b.AsData;
+        Float4& vv = *(Float4*)v.AsData;
+        const Float4& aa = *(const Float4*)a.AsData;
+        const Float4& bb = *(const Float4*)b.AsData;
+        const Float4& cc = *(const Float4*)b.AsData;
         vv.X = op(aa.X, bb.X, cc.X);
         vv.Y = op(aa.Y, bb.Y, cc.Y);
         vv.Z = op(aa.Z, bb.Z, cc.Z);
@@ -612,9 +609,9 @@ void GraphUtilities::ApplySomeMathHere(Variant& v, Variant& a, Variant& b, Varia
         const Transform& aa = *(const Transform*)a.AsBlob.Data;
         const Transform& bb = *(const Transform*)b.AsBlob.Data;
         const Transform& cc = *(const Transform*)c.AsBlob.Data;
-        vv.Translation.X = op(aa.Translation.X, bb.Translation.X, cc.Translation.X);
-        vv.Translation.Y = op(aa.Translation.Y, bb.Translation.Y, cc.Translation.Y);
-        vv.Translation.Z = op(aa.Translation.Z, bb.Translation.Z, cc.Translation.Z);
+        vv.Translation.X = op((float)aa.Translation.X, (float)bb.Translation.X, (float)cc.Translation.X);
+        vv.Translation.Y = op((float)aa.Translation.Y, (float)bb.Translation.Y, (float)cc.Translation.Y);
+        vv.Translation.Z = op((float)aa.Translation.Z, (float)bb.Translation.Z, (float)cc.Translation.Z);
         vv.Orientation.X = op(aa.Orientation.X, bb.Orientation.X, cc.Orientation.X);
         vv.Orientation.Y = op(aa.Orientation.Y, bb.Orientation.Y, cc.Orientation.Y);
         vv.Orientation.Z = op(aa.Orientation.Z, bb.Orientation.Z, cc.Orientation.Z);
@@ -845,15 +842,15 @@ int32 GraphUtilities::CountComponents(VariantType::Types type)
     case VariantType::Double:
     case VariantType::Pointer:
         return 1;
-    case VariantType::Vector2:
+    case VariantType::Float2:
     case VariantType::Double2:
     case VariantType::Int2:
         return 2;
-    case VariantType::Vector3:
+    case VariantType::Float3:
     case VariantType::Double3:
     case VariantType::Int3:
         return 3;
-    case VariantType::Vector4:
+    case VariantType::Float4:
     case VariantType::Double4:
     case VariantType::Int4:
     case VariantType::Color:

@@ -34,7 +34,7 @@ namespace FlaxEditor.GUI.Timeline.GUI
             var m2 = Matrix3x3.Translation2D(0, timeAxisHeaderOffset);
             Matrix3x3.Multiply(ref m1, ref m2, out var m3);
             Render2D.PushTransform(ref m3);
-            Render2D.DrawSprite(icon, new Rectangle(new Vector2(4, -Width), Size), _timeline.IsMovingPositionHandle ? style.ProgressNormal : style.Foreground);
+            Render2D.DrawSprite(icon, new Rectangle(new Float2(4, -Width), Size), _timeline.IsMovingPositionHandle ? style.ProgressNormal : style.Foreground);
             Render2D.PopTransform();
 
             Render2D.FillRectangle(new Rectangle(Width * 0.5f, Height + timeAxisHeaderOffset, 1, _timeline.MediaPanel.Height - timeAxisHeaderOffset - timeAxisOverlap), _timeline.IsMovingPositionHandle ? style.ProgressNormal : style.Foreground.RGBMultiplied(0.8f));

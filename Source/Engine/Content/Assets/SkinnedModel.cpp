@@ -152,7 +152,7 @@ void SkinnedModel::GetLODData(int32 lodIndex, BytesContainer& data) const
     GetChunkData(chunkIndex, data);
 }
 
-bool SkinnedModel::Intersects(const Ray& ray, const Matrix& world, float& distance, Vector3& normal, SkinnedMesh** mesh, int32 lodIndex)
+bool SkinnedModel::Intersects(const Ray& ray, const Matrix& world, Real& distance, Vector3& normal, SkinnedMesh** mesh, int32 lodIndex)
 {
     return LODs[lodIndex].Intersects(ray, world, distance, normal, mesh);
 }
@@ -184,7 +184,7 @@ void SkinnedModel::Draw(RenderContext& renderContext, const SkinnedMesh::DrawInf
     }
     else
     {
-        lodIndex = RenderTools::ComputeSkinnedModelLOD(this, info.Bounds.Center, info.Bounds.Radius, renderContext);
+        lodIndex = RenderTools::ComputeSkinnedModelLOD(this, info.Bounds.Center, (float)info.Bounds.Radius, renderContext);
         if (lodIndex == -1)
         {
             // Handling model fade-out transition
@@ -439,11 +439,11 @@ bool SkinnedModel::Save(bool withMeshDataFromGpu, const StringView& path)
 
                 // Box
                 const auto box = mesh.GetBox();
-                stream->Write(&box);
+                stream->WriteBoundingBox(box);
 
                 // Sphere
                 const auto sphere = mesh.GetSphere();
-                stream->Write(&sphere);
+                stream->WriteBoundingSphere(sphere);
 
                 // Blend Shapes
                 stream->WriteUint16(mesh.BlendShapes.Count());
@@ -466,7 +466,7 @@ bool SkinnedModel::Save(bool withMeshDataFromGpu, const StringView& path)
                 auto& node = Skeleton.Nodes[nodeIndex];
 
                 stream->Write(&node.ParentIndex);
-                stream->Write(&node.LocalTransform);
+                stream->WriteTransform(node.LocalTransform);
                 stream->WriteString(node.Name, 71);
             }
 
@@ -479,7 +479,7 @@ bool SkinnedModel::Save(bool withMeshDataFromGpu, const StringView& path)
 
                 stream->Write(&bone.ParentIndex);
                 stream->Write(&bone.NodeIndex);
-                stream->Write(&bone.LocalTransform);
+                stream->WriteTransform(bone.LocalTransform);
                 stream->Write(&bone.OffsetMatrix);
             }
         }
@@ -913,11 +913,11 @@ Asset::LoadResult SkinnedModel::load()
 
             // Box
             BoundingBox box;
-            stream->Read(&box);
+            stream->ReadBoundingBox(&box);
 
             // Sphere
             BoundingSphere sphere;
-            stream->Read(&sphere);
+            stream->ReadBoundingSphere(&sphere);
 
             // Create mesh object
             mesh.Init(this, lodIndex, meshIndex, materialSlotIndex, box, sphere);
@@ -949,7 +949,7 @@ Asset::LoadResult SkinnedModel::load()
             auto& node = Skeleton.Nodes[nodeIndex];
 
             stream->Read(&node.ParentIndex);
-            stream->Read(&node.LocalTransform);
+            stream->ReadTransform(&node.LocalTransform);
             stream->ReadString(&node.Name, 71);
         }
 
@@ -966,7 +966,7 @@ Asset::LoadResult SkinnedModel::load()
 
             stream->Read(&bone.ParentIndex);
             stream->Read(&bone.NodeIndex);
-            stream->Read(&bone.LocalTransform);
+            stream->ReadTransform(&bone.LocalTransform);
             stream->Read(&bone.OffsetMatrix);
         }
     }

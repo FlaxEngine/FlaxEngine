@@ -90,7 +90,7 @@ namespace FlaxEditor.SceneGraph.Actors
                 for (int j = 0; j < meshData.Length; j++)
                 {
                     ref var v = ref meshData[j];
-                    var weights = (Vector4)v.BlendWeights;
+                    var weights = (Float4)v.BlendWeights;
                     var indices = Int4.Min((Int4)v.BlendIndices, indicesLimit);
 
                     // Find the bone with the highest influence on the vertex
@@ -103,10 +103,10 @@ namespace FlaxEditor.SceneGraph.Actors
                     var maxWeightBone = indices[maxWeightIndex];
 
                     // Skin vertex position with the current pose
-                    Vector3.Transform(ref v.Position, ref skinningMatrices[indices[0]], out Vector3 pos0);
-                    Vector3.Transform(ref v.Position, ref skinningMatrices[indices[1]], out Vector3 pos1);
-                    Vector3.Transform(ref v.Position, ref skinningMatrices[indices[2]], out Vector3 pos2);
-                    Vector3.Transform(ref v.Position, ref skinningMatrices[indices[3]], out Vector3 pos3);
+                    Float3.Transform(ref v.Position, ref skinningMatrices[indices[0]], out Float3 pos0);
+                    Float3.Transform(ref v.Position, ref skinningMatrices[indices[1]], out Float3 pos1);
+                    Float3.Transform(ref v.Position, ref skinningMatrices[indices[2]], out Float3 pos2);
+                    Float3.Transform(ref v.Position, ref skinningMatrices[indices[3]], out Float3 pos3);
                     v.Position = pos0 * weights[0] + pos1 * weights[1] + pos2 * weights[2] + pos3 * weights[3];
 
                     // Add vertex to the bone list
@@ -127,14 +127,14 @@ namespace FlaxEditor.SceneGraph.Actors
                     continue; // Skip not used bones
 
                 // Compute bounds of the vertices using this bone (in local space of the actor)
-                var boneBounds = new BoundingBox(boneVertices[0].Position, boneVertices[0].Position);
+                Float3 boneBoundsMin = boneVertices[0].Position, boneBoundsMax = boneVertices[0].Position;
                 for (int i = 1; i < boneVertices.Count; i++)
                 {
                     var pos = boneVertices[i].Position;
-                    Vector3.Min(ref boneBounds.Minimum, ref pos, out boneBounds.Minimum);
-                    Vector3.Max(ref boneBounds.Maximum, ref pos, out boneBounds.Maximum);
+                    boneBoundsMin = Float3.Min(boneBoundsMin, pos);
+                    boneBoundsMax = Float3.Max(boneBoundsMax, pos);
                 }
-                var boneBoxSize = (boneBounds.Size * 0.5f).Length;
+                var boneBoxSize = ((boneBoundsMax - boneBoundsMin) * 0.5f).Length;
                 var boneMergedSize = bonesMergedSizes[boneIndex] += boneBoxSize;
                 if (boneMergedSize < options.MinBoneSize && boneMergedSize >= options.MinValidSize)
                 {
@@ -168,8 +168,8 @@ namespace FlaxEditor.SceneGraph.Actors
                     for (int i = 1; i < boneVertices.Count; i++)
                     {
                         var pos = boneVertices[i].Position;
-                        Vector3.Min(ref boneBounds.Minimum, ref pos, out boneBounds.Minimum);
-                        Vector3.Max(ref boneBounds.Maximum, ref pos, out boneBounds.Maximum);
+                        boneBounds.Minimum = Float3.Min(boneBounds.Minimum, pos);
+                        boneBounds.Minimum = Float3.Max(boneBounds.Maximum, pos);
                     }
                 }
                 bonesBounds[boneIndex] = boneBounds;
@@ -268,7 +268,7 @@ namespace FlaxEditor.SceneGraph.Actors
                 }
 
                 // Add collision shape
-                var boneLocalBoundsSize = boneLocalBounds.Size;
+                Float3 boneLocalBoundsSize = boneLocalBounds.Size;
 #if false
                 var collider = new BoxCollider
                 {
@@ -342,13 +342,13 @@ namespace FlaxEditor.SceneGraph.Actors
                     joint.Name = "Joint";
                     joint.Target = parentBody;
                     joint.Parent = body;
-                    //joint.Orientation = Quaternion.FromDirection(Vector3.Normalize(parentBody.Position - body.Position));
+                    //joint.Orientation = Quaternion.FromDirection(Float3.Normalize(parentBody.Position - body.Position));
 #else
                     // Parent -> Child
                     joint.Name = "Joint to " + body.Name;
                     joint.Target = body;
                     joint.Parent = parentBody;
-                    //joint.Orientation = Quaternion.FromDirection(Vector3.Normalize(body.Position - parentBody.Position));
+                    //joint.Orientation = Quaternion.FromDirection(Float3.Normalize(body.Position - parentBody.Position));
 #endif
                     joint.SetJointLocation(actor.Transform.LocalToWorld(jointPose.TranslationVector));
                     joint.SetJointOrientation(actor.Transform.Orientation * Quaternion.RotationMatrix(jointPose));
@@ -364,13 +364,13 @@ namespace FlaxEditor.SceneGraph.Actors
             // [Reference: https://en.wikipedia.org/wiki/Covariance_matrix]
 
             // Calculate average point
-            var avg = Vector3.Zero;
+            var avg = Float3.Zero;
             for (int i = 0; i < vertices.Count; i++)
                 avg += vertices[i].Position;
             avg /= vertices.Count;
 
             // Calculate distance to average for every point
-            var errors = new Vector3[vertices.Count];
+            var errors = new Float3[vertices.Count];
             for (int i = 0; i < vertices.Count; i++)
                 errors[i] = vertices[i].Position - avg;
 
@@ -389,7 +389,7 @@ namespace FlaxEditor.SceneGraph.Actors
                     cj[k] /= vertices.Count;
                 }
 
-                var row = new Vector4(cj[0], cj[1], cj[2], 0.0f);
+                var row = new Float4(cj[0], cj[1], cj[2], 0.0f);
                 switch (j)
                 {
                 case 0:
@@ -406,16 +406,16 @@ namespace FlaxEditor.SceneGraph.Actors
             return covariance;
         }
 
-        private static Vector3 ComputeEigenVector(ref Matrix matrix)
+        private static Float3 ComputeEigenVector(ref Matrix matrix)
         {
             // [Reference: http://en.wikipedia.org/wiki/Power_iteration]
-            var bk = new Vector3(0, 0, 1);
+            var bk = new Float3(0, 0, 1);
             for (int i = 0; i < 32; ++i)
             {
                 float bkLength = bk.Length;
                 if (bkLength > 0.0f)
                 {
-                    Vector3.Transform(ref bk, ref matrix, out Vector3 bkA);
+                    Float3.Transform(ref bk, ref matrix, out Float3 bkA);
                     bk = bkA / bkLength;
                 }
             }

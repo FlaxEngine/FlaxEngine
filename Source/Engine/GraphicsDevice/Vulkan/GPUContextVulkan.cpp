@@ -833,7 +833,7 @@ void GPUContextVulkan::ClearDepth(GPUTextureView* depthBuffer, float depthValue)
     }
 }
 
-void GPUContextVulkan::ClearUA(GPUBuffer* buf, const Vector4& value)
+void GPUContextVulkan::ClearUA(GPUBuffer* buf, const Float4& value)
 {
     const auto bufVulkan = static_cast<GPUBufferVulkan*>(buf);
     if (bufVulkan)
@@ -879,7 +879,7 @@ void GPUContextVulkan::ClearUA(GPUTexture* texture, const uint32 value[4])
     }
 }
 
-void GPUContextVulkan::ClearUA(GPUTexture* texture, const Vector4& value)
+void GPUContextVulkan::ClearUA(GPUTexture* texture, const Float4& value)
 {
     const auto texVulkan = static_cast<GPUTextureVulkan*>(texture);
     if (texVulkan)

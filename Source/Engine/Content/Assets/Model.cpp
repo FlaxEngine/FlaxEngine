@@ -167,7 +167,7 @@ Model::~Model()
     ASSERT(_streamingTask == nullptr);
 }
 
-bool Model::Intersects(const Ray& ray, const Matrix& world, float& distance, Vector3& normal, Mesh** mesh, int32 lodIndex)
+bool Model::Intersects(const Ray& ray, const Matrix& world, Real& distance, Vector3& normal, Mesh** mesh, int32 lodIndex)
 {
     return LODs[lodIndex].Intersects(ray, world, distance, normal, mesh);
 }
@@ -191,7 +191,7 @@ void Model::Draw(const RenderContext& renderContext, MaterialBase* material, con
     const BoundingBox box = GetBox(world);
     BoundingSphere sphere;
     BoundingSphere::FromBox(box, sphere);
-    int32 lodIndex = RenderTools::ComputeModelLOD(this, sphere.Center, sphere.Radius, renderContext);
+    int32 lodIndex = RenderTools::ComputeModelLOD(this, sphere.Center, (float)sphere.Radius, renderContext); // TODO: large-worlds
     if (lodIndex == -1)
         return;
     lodIndex += renderContext.View.ModelLODBias;
@@ -218,7 +218,7 @@ void Model::Draw(const RenderContext& renderContext, const Mesh::DrawInfo& info)
     }
     else
     {
-        lodIndex = RenderTools::ComputeModelLOD(this, info.Bounds.Center, info.Bounds.Radius, renderContext);
+        lodIndex = RenderTools::ComputeModelLOD(this, info.Bounds.Center, (float)info.Bounds.Radius, renderContext);
         if (lodIndex == -1)
         {
             // Handling model fade-out transition
@@ -387,11 +387,11 @@ bool Model::Save(bool withMeshDataFromGpu, const StringView& path)
 
                 // Box
                 const auto box = mesh.GetBox();
-                stream->Write(&box);
+                stream->WriteBoundingBox(box);
 
                 // Sphere
                 const auto sphere = mesh.GetSphere();
-                stream->Write(&sphere);
+                stream->WriteBoundingSphere(sphere);
 
                 // Has Lightmap UVs
                 stream->WriteBool(mesh.HasLightmapUVs());
@@ -920,11 +920,11 @@ Asset::LoadResult Model::load()
 
             // Box
             BoundingBox box;
-            stream->Read(&box);
+            stream->ReadBoundingBox(&box);
 
             // Sphere
             BoundingSphere sphere;
-            stream->Read(&sphere);
+            stream->ReadBoundingSphere(&sphere);
 
             // Has Lightmap UVs
             bool hasLightmapUVs = stream->ReadBool();

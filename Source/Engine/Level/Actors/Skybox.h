@@ -65,7 +65,7 @@ public:
     void Serialize(SerializeStream& stream, const void* otherObj) override;
     void Deserialize(DeserializeStream& stream, ISerializeModifier* modifier) override;
     bool HasContentLoaded() const override;
-    bool IntersectsItself(const Ray& ray, float& distance, Vector3& normal) override;
+    bool IntersectsItself(const Ray& ray, Real& distance, Vector3& normal) override;
 
     // [ISkyRenderer]
     void ApplySky(GPUContext* context, RenderContext& renderContext, const Matrix& world) override;

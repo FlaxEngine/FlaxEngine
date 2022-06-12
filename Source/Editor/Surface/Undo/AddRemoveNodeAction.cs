@@ -17,7 +17,7 @@ namespace FlaxEditor.Surface.Undo
         private uint _nodeId;
         private ushort _groupId;
         private ushort _typeId;
-        private Vector2 _nodeLocation;
+        private Float2 _nodeLocation;
         private object[] _nodeValues;
 
         public AddRemoveNodeAction(SurfaceNode node, bool isAdd)

@@ -124,7 +124,7 @@ namespace FlaxEditor.Viewport.Widgets
         }
 
         /// <inheritdoc />
-        public override bool OnMouseDown(Vector2 location, MouseButton button)
+        public override bool OnMouseDown(Float2 location, MouseButton button)
         {
             if (button == MouseButton.Left)
             {
@@ -137,13 +137,13 @@ namespace FlaxEditor.Viewport.Widgets
                 Toggled?.Invoke(this);
             }
 
-            _cm?.Show(this, new Vector2(-1, Height + 2));
+            _cm?.Show(this, new Float2(-1, Height + 2));
 
             return base.OnMouseDown(location, button);
         }
 
         /// <inheritdoc />
-        public override bool OnMouseUp(Vector2 location, MouseButton button)
+        public override bool OnMouseUp(Float2 location, MouseButton button)
         {
             if (button == MouseButton.Left && _isMosueDown)
             {

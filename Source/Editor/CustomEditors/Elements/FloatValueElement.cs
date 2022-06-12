@@ -17,14 +17,20 @@ namespace FlaxEditor.CustomEditors.Elements
         /// <summary>
         /// The float value box.
         /// </summary>
-        public readonly FloatValueBox FloatValue;
+        public readonly FloatValueBox ValueBox;
+
+        /// <summary>
+        /// [Deprecated on 26.05.2022, expires on 26.05.2024]
+        /// </summary>
+        [System.Obsolete("Deprecated in 1.4")]
+        public FloatValueBox FloatValue => ValueBox;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="FloatValueElement"/> class.
         /// </summary>
         public FloatValueElement()
         {
-            FloatValue = new FloatValueBox(0);
+            ValueBox = new FloatValueBox(0);
         }
 
         /// <summary>
@@ -40,7 +46,7 @@ namespace FlaxEditor.CustomEditors.Elements
                 var limit = attributes.FirstOrDefault(x => x is LimitAttribute);
                 if (limit != null)
                 {
-                    FloatValue.SetLimits((LimitAttribute)limit);
+                    ValueBox.SetLimits((LimitAttribute)limit);
                 }
             }
         }
@@ -53,7 +59,7 @@ namespace FlaxEditor.CustomEditors.Elements
         {
             if (limit != null)
             {
-                FloatValue.SetLimits(limit);
+                ValueBox.SetLimits(limit);
             }
         }
 
@@ -65,21 +71,21 @@ namespace FlaxEditor.CustomEditors.Elements
         {
             if (other != null)
             {
-                FloatValue.SetLimits(other.FloatValue);
+                ValueBox.SetLimits(other.ValueBox);
             }
         }
 
         /// <inheritdoc />
-        public override Control Control => FloatValue;
+        public override Control Control => ValueBox;
 
         /// <inheritdoc />
         public float Value
         {
-            get => FloatValue.Value;
-            set => FloatValue.Value = value;
+            get => ValueBox.Value;
+            set => ValueBox.Value = value;
         }
 
         /// <inheritdoc />
-        public bool IsSliding => FloatValue.IsSliding;
+        public bool IsSliding => ValueBox.IsSliding;
     }
 }

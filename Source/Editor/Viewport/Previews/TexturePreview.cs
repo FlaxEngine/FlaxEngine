@@ -17,8 +17,7 @@ namespace FlaxEditor.Viewport.Previews
     public abstract class TexturePreviewBase : ContainerControl
     {
         private Rectangle _textureRect;
-        private Vector2 _lastMosuePos;
-        private Vector2 _viewPos;
+        private Float2 _lastMousePos, _viewPos;
         private float _viewScale = 1.0f;
         private bool _isMouseDown;
 
@@ -35,7 +34,7 @@ namespace FlaxEditor.Viewport.Previews
         public void CenterView()
         {
             _viewScale = 1.0f;
-            _viewPos = Vector2.Zero;
+            _viewPos = Float2.Zero;
         }
 
         /// <summary>
@@ -58,9 +57,9 @@ namespace FlaxEditor.Viewport.Previews
         /// <param name="textureSize">Size of the texture.</param>
         /// <param name="viewSize">Size of the view.</param>
         /// <param name="result">The result.</param>
-        protected static void CalculateTextureRect(Vector2 textureSize, Vector2 viewSize, out Rectangle result)
+        protected static void CalculateTextureRect(Float2 textureSize, Float2 viewSize, out Rectangle result)
         {
-            Vector2 size = Vector2.Max(textureSize, Vector2.One);
+            Float2 size = Float2.Max(textureSize, Float2.One);
             float aspectRatio = size.X / size.Y;
             float h = viewSize.X / aspectRatio;
             float w = viewSize.Y * aspectRatio;
@@ -90,7 +89,7 @@ namespace FlaxEditor.Viewport.Previews
         /// <inheritdoc />
         public override void Draw()
         {
-            Render2D.PushClip(new Rectangle(Vector2.Zero, Size));
+            Render2D.PushClip(new Rectangle(Float2.Zero, Size));
 
             // Calculate texture view rectangle
             UpdateTextureRect();
@@ -102,7 +101,7 @@ namespace FlaxEditor.Viewport.Previews
             // Add overlay during debugger breakpoint hang
             if (Editor.Instance.Simulation.IsDuringBreakpointHang)
             {
-                var bounds = new Rectangle(Vector2.Zero, Size);
+                var bounds = new Rectangle(Float2.Zero, Size);
                 Render2D.FillRectangle(bounds, new Color(0.0f, 0.0f, 0.0f, 0.2f));
                 Render2D.DrawText(Style.Current.FontLarge, "Debugger breakpoint hit...", bounds, Color.White, TextAlignment.Center, TextAlignment.Center);
             }
@@ -113,29 +112,29 @@ namespace FlaxEditor.Viewport.Previews
         }
 
         /// <inheritdoc />
-        public override void OnMouseEnter(Vector2 location)
+        public override void OnMouseEnter(Float2 location)
         {
             // Store mouse position
-            _lastMosuePos = location;
+            _lastMousePos = location;
 
             base.OnMouseEnter(location);
         }
 
         /// <inheritdoc />
-        public override void OnMouseMove(Vector2 location)
+        public override void OnMouseMove(Float2 location)
         {
             // Check if mouse is down
             if (_isMouseDown)
             {
                 // Calculate mouse delta
-                Vector2 delta = location - _lastMosuePos;
+                var delta = location - _lastMousePos;
 
                 // Move view
                 _viewPos += delta;
             }
 
             // Store mouse position
-            _lastMosuePos = location;
+            _lastMousePos = location;
 
             base.OnMouseMove(location);
         }
@@ -151,7 +150,7 @@ namespace FlaxEditor.Viewport.Previews
         }
 
         /// <inheritdoc />
-        public override bool OnMouseWheel(Vector2 location, float delta)
+        public override bool OnMouseWheel(Float2 location, float delta)
         {
             if (base.OnMouseWheel(location, delta))
                 return true;
@@ -161,32 +160,32 @@ namespace FlaxEditor.Viewport.Previews
             _viewScale = Mathf.Clamp(_viewScale + delta * 0.24f, 0.001f, 20.0f);
 
             // Compensate for the Rectangle.MakeScaled
-            Vector2 sizeDelta = (_viewScale - prevScale) * _textureRect.Size * 0.5f;
+            var sizeDelta = (_viewScale - prevScale) * _textureRect.Size * 0.5f;
             _viewPos += sizeDelta * 0.5f;
 
             // Move to zoom position
-            Vector2 locationOnTexture = (location - _textureRect.Location) / _textureRect.Size;
+            var locationOnTexture = (location - _textureRect.Location) / _textureRect.Size;
             _viewPos -= sizeDelta * locationOnTexture;
 
             return true;
         }
 
         /// <inheritdoc />
-        public override bool OnMouseDown(Vector2 location, MouseButton button)
+        public override bool OnMouseDown(Float2 location, MouseButton button)
         {
             if (base.OnMouseDown(location, button))
                 return true;
 
             // Set flag
             _isMouseDown = true;
-            _lastMosuePos = location;
+            _lastMousePos = location;
             Cursor = CursorType.SizeAll;
 
             return true;
         }
 
         /// <inheritdoc />
-        public override bool OnMouseUp(Vector2 location, MouseButton button)
+        public override bool OnMouseUp(Float2 location, MouseButton button)
         {
             if (base.OnMouseUp(location, button))
                 return true;
@@ -501,7 +500,7 @@ namespace FlaxEditor.Viewport.Previews
         /// <inheritdoc />
         protected override void CalculateTextureRect(out Rectangle rect)
         {
-            CalculateTextureRect(_asset?.Size ?? new Vector2(100), Size, out rect);
+            CalculateTextureRect(_asset?.Size ?? new Float2(100), Size, out rect);
         }
 
         /// <inheritdoc />
@@ -550,7 +549,7 @@ namespace FlaxEditor.Viewport.Previews
         /// <inheritdoc />
         protected override void CalculateTextureRect(out Rectangle rect)
         {
-            CalculateTextureRect(_asset?.Size ?? new Vector2(100), Size, out rect);
+            CalculateTextureRect(_asset?.Size ?? new Float2(100), Size, out rect);
         }
 
         /// <inheritdoc />
@@ -605,7 +604,7 @@ namespace FlaxEditor.Viewport.Previews
         /// <inheritdoc />
         protected override void CalculateTextureRect(out Rectangle rect)
         {
-            CalculateTextureRect(_asset?.Size ?? new Vector2(100), Size, out rect);
+            CalculateTextureRect(_asset?.Size ?? new Float2(100), Size, out rect);
         }
 
         /// <inheritdoc />
@@ -660,7 +659,7 @@ namespace FlaxEditor.Viewport.Previews
         /// <inheritdoc />
         protected override void CalculateTextureRect(out Rectangle rect)
         {
-            CalculateTextureRect(_asset?.Size ?? new Vector2(100), Size, out rect);
+            CalculateTextureRect(_asset?.Size ?? new Float2(100), Size, out rect);
         }
 
         /// <inheritdoc />

@@ -19,20 +19,20 @@ PACK_STRUCT(struct DeformableMaterialShaderData {
     Matrix WorldMatrix;
     Matrix LocalMatrix;
     Matrix ViewMatrix;
-    Vector3 ViewPos;
+    Float3 ViewPos;
     float ViewFar;
-    Vector3 ViewDir;
+    Float3 ViewDir;
     float TimeParam;
-    Vector4 ViewInfo;
-    Vector4 ScreenSize;
-    Vector3 Dummy0;
+    Float4 ViewInfo;
+    Float4 ScreenSize;
+    Float3 Dummy0;
     float WorldDeterminantSign;
     float MeshMinZ;
     float Segment;
     float ChunksPerSegment;
     float PerInstanceRandom;
-    Vector4 TemporalAAJitter;
-    Vector3 GeometrySize;
+    Float4 TemporalAAJitter;
+    Float3 GeometrySize;
     float MeshMaxZ;
     });
 

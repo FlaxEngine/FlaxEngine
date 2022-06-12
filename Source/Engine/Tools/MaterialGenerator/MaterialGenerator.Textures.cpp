@@ -91,7 +91,7 @@ void MaterialGenerator::ProcessGroupTextures(Box* box, Node* node, Value& value)
             //OnError("No Variable Entry for height texture.", node);
             break;
         }
-        Value uvs = tryGetValue(node->GetBox(0), getUVs).AsVector2();
+        Value uvs = tryGetValue(node->GetBox(0), getUVs).AsFloat2();
         if (_treeType != MaterialTreeType::PixelShader)
         {
             // Required ddx/ddy instructions are only supported in Pixel Shader
@@ -101,12 +101,12 @@ void MaterialGenerator::ProcessGroupTextures(Box* box, Node* node, Value& value)
         Value scale = tryGetValue(node->GetBox(1), node->Values[0]);
         Value minSteps = tryGetValue(node->GetBox(2), node->Values[1]);
         Value maxSteps = tryGetValue(node->GetBox(3), node->Values[2]);
-        Value result = writeLocal(VariantType::Vector2, uvs.Value, node);
+        Value result = writeLocal(VariantType::Float2, uvs.Value, node);
         createGradients(node);
         ASSERT(node->Values[3].Type == VariantType::Int && Math::IsInRange(node->Values[3].AsInt, 0, 3));
         auto channel = _subs[node->Values[3].AsInt];
         Value cameraVectorWS = getCameraVector(node);
-        Value cameraVectorTS = writeLocal(VariantType::Vector3, String::Format(TEXT("TransformWorldVectorToTangent(input, {0})"), cameraVectorWS.Value), node);
+        Value cameraVectorTS = writeLocal(VariantType::Float3, String::Format(TEXT("TransformWorldVectorToTangent(input, {0})"), cameraVectorWS.Value), node);
         auto code = String::Format(TEXT(
             "	{{\n"
             "	float vLength = length({8}.rg);\n"
@@ -187,7 +187,7 @@ void MaterialGenerator::ProcessGroupTextures(Box* box, Node* node, Value& value)
             auto gBuffer2Sample = sampleTextureRaw(node, value, box, &gBuffer2Param);
             if (gBuffer2Sample == nullptr)
                 break;
-            value = writeLocal(VariantType::Vector3, String::Format(TEXT("GetDiffuseColor({0}.rgb, {1}.g)"), gBuffer0Sample->Value, gBuffer2Sample->Value), node);
+            value = writeLocal(VariantType::Float3, String::Format(TEXT("GetDiffuseColor({0}.rgb, {1}.g)"), gBuffer0Sample->Value, gBuffer2Sample->Value), node);
             break;
         }
         case MaterialSceneTextures::SpecularColor:
@@ -200,7 +200,7 @@ void MaterialGenerator::ProcessGroupTextures(Box* box, Node* node, Value& value)
             auto gBuffer2Sample = sampleTextureRaw(node, value, box, &gBuffer2Param);
             if (gBuffer2Sample == nullptr)
                 break;
-            value = writeLocal(VariantType::Vector3, String::Format(TEXT("GetSpecularColor({0}.rgb, {1}.b, {1}.g)"), gBuffer0Sample->Value, gBuffer2Sample->Value), node);
+            value = writeLocal(VariantType::Float3, String::Format(TEXT("GetSpecularColor({0}.rgb, {1}.b, {1}.g)"), gBuffer0Sample->Value, gBuffer2Sample->Value), node);
             break;
         }
         case MaterialSceneTextures::WorldNormal:
@@ -209,7 +209,7 @@ void MaterialGenerator::ProcessGroupTextures(Box* box, Node* node, Value& value)
             auto gBuffer1Sample = sampleTextureRaw(node, value, box, &gBuffer1Param);
             if (gBuffer1Sample == nullptr)
                 break;
-            value = writeLocal(VariantType::Vector3, String::Format(TEXT("DecodeNormal({0}.rgb)"), gBuffer1Sample->Value), node);
+            value = writeLocal(VariantType::Float3, String::Format(TEXT("DecodeNormal({0}.rgb)"), gBuffer1Sample->Value), node);
             break;
         }
         case MaterialSceneTextures::AmbientOcclusion:
@@ -339,7 +339,7 @@ void MaterialGenerator::ProcessGroupTextures(Box* box, Node* node, Value& value)
         const bool isVolume = textureParam->Type == MaterialParameterType::GPUTextureVolume;
         const bool isNormalMap = textureParam->Type == MaterialParameterType::NormalMap;
         const bool use3dUVs = isCubemap || isArray || isVolume;
-        uvs = Value::Cast(uvs, use3dUVs ? VariantType::Vector3 : VariantType::Vector2);
+        uvs = Value::Cast(uvs, use3dUVs ? VariantType::Float3 : VariantType::Float2);
 
         // Get other inputs
         const auto level = tryGetValue(levelBox, node->Values[1]);
@@ -388,7 +388,7 @@ void MaterialGenerator::ProcessGroupTextures(Box* box, Node* node, Value& value)
                                                    level.Value, // {3}
                                                    offset.Value // {4}
         );
-        textureBox->Cache = writeLocal(VariantType::Vector4, sampledValue, node);
+        textureBox->Cache = writeLocal(VariantType::Float4, sampledValue, node);
 
         // Decode normal map vector
         if (isNormalMap)
@@ -405,9 +405,9 @@ void MaterialGenerator::ProcessGroupTextures(Box* box, Node* node, Value& value)
     case 10:
     {
         // Get input values
-        auto uv = Value::Cast(tryGetValue(node->GetBox(0), getUVs), VariantType::Vector2);
+        auto uv = Value::Cast(tryGetValue(node->GetBox(0), getUVs), VariantType::Float2);
         auto frame = Value::Cast(tryGetValue(node->GetBox(1), node->Values[0]), VariantType::Float);
-        auto framesXY = Value::Cast(tryGetValue(node->GetBox(2), node->Values[1]), VariantType::Vector2);
+        auto framesXY = Value::Cast(tryGetValue(node->GetBox(2), node->Values[1]), VariantType::Float2);
         auto invertX = Value::Cast(tryGetValue(node->GetBox(3), node->Values[2]), VariantType::Float);
         auto invertY = Value::Cast(tryGetValue(node->GetBox(4), node->Values[3]), VariantType::Float);
 
@@ -417,14 +417,14 @@ void MaterialGenerator::ProcessGroupTextures(Box* box, Node* node, Value& value)
         auto framesXYInv = writeOperation2(node, Value::One, framesXY, '/');
         auto frameY = writeLocal(VariantType::Float, String::Format(TEXT("abs({0} * {1}.y - (floor({2} * {3}.x) + {0} * 1))"), invertY.Value, framesXY.Value, frame.Value, framesXYInv.Value), node);
         auto frameX = writeLocal(VariantType::Float, String::Format(TEXT("abs({0} * {1}.x - (({2} - {1}.x * floor({2} * {3}.x)) + {0} * 1))"), invertX.Value, framesXY.Value, frame.Value, framesXYInv.Value), node);
-        value = writeLocal(VariantType::Vector2, String::Format(TEXT("({3} + float2({0}, {1})) * {2}"), frameX.Value, frameY.Value, framesXYInv.Value, uv.Value), node);
+        value = writeLocal(VariantType::Float2, String::Format(TEXT("({3} + float2({0}, {1})) * {2}"), frameX.Value, frameY.Value, framesXYInv.Value, uv.Value), node);
         break;
     }
     // Sample Global SDF
     case 14:
     {
         auto param = findOrAddGlobalSDF();
-        Value worldPosition = tryGetValue(node->GetBox(1), Value(VariantType::Vector3, TEXT("input.WorldPosition.xyz"))).Cast(VariantType::Vector3);
+        Value worldPosition = tryGetValue(node->GetBox(1), Value(VariantType::Float3, TEXT("input.WorldPosition.xyz"))).Cast(VariantType::Float3);
         value = writeLocal(VariantType::Float, String::Format(TEXT("SampleGlobalSDF({0}, {0}_Tex, {1})"), param.ShaderName, worldPosition.Value), node);
         _includes.Add(TEXT("./Flax/GlobalSignDistanceField.hlsl"));
         break;
@@ -435,9 +435,9 @@ void MaterialGenerator::ProcessGroupTextures(Box* box, Node* node, Value& value)
         auto gradientBox = node->GetBox(0);
         auto distanceBox = node->GetBox(2);
         auto param = findOrAddGlobalSDF();
-        Value worldPosition = tryGetValue(node->GetBox(1), Value(VariantType::Vector3, TEXT("input.WorldPosition.xyz"))).Cast(VariantType::Vector3);
+        Value worldPosition = tryGetValue(node->GetBox(1), Value(VariantType::Float3, TEXT("input.WorldPosition.xyz"))).Cast(VariantType::Float3);
         auto distance = writeLocal(VariantType::Float, node);
-        auto gradient = writeLocal(VariantType::Vector3, String::Format(TEXT("SampleGlobalSDFGradient({0}, {0}_Tex, {1}, {2})"), param.ShaderName, worldPosition.Value, distance.Value), node);
+        auto gradient = writeLocal(VariantType::Float3, String::Format(TEXT("SampleGlobalSDFGradient({0}, {0}_Tex, {1}, {2})"), param.ShaderName, worldPosition.Value, distance.Value), node);
         _includes.Add(TEXT("./Flax/GlobalSignDistanceField.hlsl"));
         gradientBox->Cache = gradient;
         distanceBox->Cache = distance;

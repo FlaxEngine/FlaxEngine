@@ -58,16 +58,16 @@ void ModelLOD::Dispose()
     Meshes.Resize(0);
 }
 
-bool ModelLOD::Intersects(const Ray& ray, const Matrix& world, float& distance, Vector3& normal, Mesh** mesh)
+bool ModelLOD::Intersects(const Ray& ray, const Matrix& world, Real& distance, Vector3& normal, Mesh** mesh)
 {
     // Check all meshes
     bool result = false;
-    float closest = MAX_float;
+    Real closest = MAX_Real;
     Vector3 closestNormal = Vector3::Up;
     for (int32 i = 0; i < Meshes.Count(); i++)
     {
         // Test intersection with mesh and check if is closer than previous
-        float dst;
+        Real dst;
         Vector3 nrm;
         if (Meshes[i].Intersects(ray, world, dst, nrm) && dst < closest)
         {

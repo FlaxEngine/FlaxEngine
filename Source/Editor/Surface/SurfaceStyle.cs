@@ -168,6 +168,12 @@ namespace FlaxEditor.Surface
                 color = Colors.Float;
             else if (type.Type == typeof(Vector2) || type.Type == typeof(Vector3) || type.Type == typeof(Vector4) || type.Type == typeof(Color))
                 color = Colors.Vector;
+            else if (type.Type == typeof(Float2) || type.Type == typeof(Float3) || type.Type == typeof(Float4))
+                color = Colors.Vector;
+            else if (type.Type == typeof(Double2) || type.Type == typeof(Double3) || type.Type == typeof(Double4))
+                color = Colors.Vector;
+            else if (type.Type == typeof(Int2) || type.Type == typeof(Int3) || type.Type == typeof(Int4))
+                color = Colors.Vector;
             else if (type.Type == typeof(string))
                 color = Colors.String;
             else if (type.Type == typeof(Quaternion))

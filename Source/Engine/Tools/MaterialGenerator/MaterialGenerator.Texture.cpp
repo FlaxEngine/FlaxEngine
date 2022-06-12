@@ -54,7 +54,7 @@ MaterialValue* MaterialGenerator::sampleTextureRaw(Node* caller, Value& value, B
             auto textureParamId = texture->ID;
             ASSERT(textureParamId.IsValid());
             MaterialValue v = tryGetValue(uvBox, getUVs);
-            uv = MaterialValue::Cast(v, use3dUVs ? VariantType::Vector3 : VariantType::Vector2).Value;
+            uv = MaterialValue::Cast(v, use3dUVs ? VariantType::Float3 : VariantType::Float2).Value;
 
             // Restore texture (during tryGetValue pointer could go invalid)
             texture = findParam(textureParamId);
@@ -78,7 +78,7 @@ MaterialValue* MaterialGenerator::sampleTextureRaw(Node* caller, Value& value, B
 
             // Sample encoded normal map
             const String sampledValue = String::Format(format, texture->ShaderName, sampler, uv);
-            const auto normalVector = writeLocal(VariantType::Vector3, sampledValue, parent);
+            const auto normalVector = writeLocal(VariantType::Float3, sampledValue, parent);
 
             // Decode normal vector
             _writer.Write(TEXT("\t{0}.xy = {0}.xy * 2.0 - 1.0;\n"), normalVector.Value);
@@ -109,7 +109,7 @@ MaterialValue* MaterialGenerator::sampleTextureRaw(Node* caller, Value& value, B
 
             // Sample texture
             String sampledValue = String::Format(format, texture->ShaderName, sampler, uv, _ddx.Value, _ddy.Value);
-            valueBox->Cache = writeLocal(VariantType::Vector4, sampledValue, parent);
+            valueBox->Cache = writeLocal(VariantType::Float4, sampledValue, parent);
         }
     }
 

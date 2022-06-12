@@ -47,7 +47,7 @@ namespace FlaxEditor.GUI.ContextMenu
         }
 
         /// <inheritdoc />
-        public override void OnMouseEnter(Vector2 location)
+        public override void OnMouseEnter(Float2 location)
         {
             base.OnMouseEnter(location);
 
@@ -61,7 +61,7 @@ namespace FlaxEditor.GUI.ContextMenu
                 return;
 
             // Hide parent CM popups and set itself as child
-            parentContextMenu.ShowChild(ContextMenu, PointToParent(ParentContextMenu, new Vector2(Width, 0)));
+            parentContextMenu.ShowChild(ContextMenu, PointToParent(ParentContextMenu, new Float2(Width, 0)));
         }
     }
 }

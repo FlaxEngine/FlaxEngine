@@ -14,7 +14,7 @@ namespace FlaxEditor.GUI.Timeline.GUI
     {
         private Timeline _timeline;
         private bool _isMoving;
-        private Vector2 _startMoveLocation;
+        private Float2 _startMoveLocation;
         private int _startMoveDuration;
         private bool _isStart;
         private bool _canEdit;
@@ -47,7 +47,7 @@ namespace FlaxEditor.GUI.Timeline.GUI
         }
 
         /// <inheritdoc />
-        public override bool OnMouseDown(Vector2 location, MouseButton button)
+        public override bool OnMouseDown(Float2 location, MouseButton button)
         {
             if (base.OnMouseDown(location, button))
                 return true;
@@ -67,7 +67,7 @@ namespace FlaxEditor.GUI.Timeline.GUI
         }
 
         /// <inheritdoc />
-        public override void OnMouseMove(Vector2 location)
+        public override void OnMouseMove(Float2 location)
         {
             if (_isMoving)
             {
@@ -97,7 +97,7 @@ namespace FlaxEditor.GUI.Timeline.GUI
         }
 
         /// <inheritdoc />
-        public override bool OnMouseUp(Vector2 location, MouseButton button)
+        public override bool OnMouseUp(Float2 location, MouseButton button)
         {
             if (button == MouseButton.Left && _isMoving)
             {

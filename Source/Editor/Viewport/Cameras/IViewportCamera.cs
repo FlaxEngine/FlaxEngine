@@ -23,6 +23,6 @@ namespace FlaxEditor.Viewport.Cameras
         /// <param name="moveDelta">The move delta (scaled).</param>
         /// <param name="mouseDelta">The mouse delta (scaled).</param>
         /// <param name="centerMouse">True if center mouse after the update.</param>
-        void UpdateView(float dt, ref Vector3 moveDelta, ref Vector2 mouseDelta, out bool centerMouse);
+        void UpdateView(float dt, ref Vector3 moveDelta, ref Float2 mouseDelta, out bool centerMouse);
     }
 }

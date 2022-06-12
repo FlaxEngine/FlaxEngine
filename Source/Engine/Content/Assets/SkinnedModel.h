@@ -181,7 +181,7 @@ public:
     /// <param name="mesh">Mesh, or null</param>
     /// <param name="lodIndex">Level Of Detail index</param>
     /// <returns>True whether the two objects intersected</returns>
-    bool Intersects(const Ray& ray, const Matrix& world, float& distance, Vector3& normal, SkinnedMesh** mesh, int32 lodIndex = 0);
+    bool Intersects(const Ray& ray, const Matrix& world, Real& distance, Vector3& normal, SkinnedMesh** mesh, int32 lodIndex = 0);
 
     /// <summary>
     /// Gets the model bounding box in custom matrix world space (rig pose transformed by matrix, not animated).

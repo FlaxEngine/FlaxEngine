@@ -187,7 +187,7 @@ Variant MaterialParameter::GetValue() const
     case MaterialParameterType::Vector3:
         return _asVector3;
     case MaterialParameterType::Vector4:
-        return *(Vector4*)&AsData;
+        return *(Float4*)&AsData;
     case MaterialParameterType::Color:
         return _asColor;
     case MaterialParameterType::Matrix:
@@ -225,13 +225,13 @@ void MaterialParameter::SetValue(const Variant& value)
         _asFloat = (float)value;
         break;
     case MaterialParameterType::Vector2:
-        _asVector2 = (Vector2)value;
+        _asVector2 = (Float2)value;
         break;
     case MaterialParameterType::Vector3:
-        _asVector3 = (Vector3)value;
+        _asVector3 = (Float3)value;
         break;
     case MaterialParameterType::Vector4:
-        *(Vector4*)&AsData = (Vector4)value;
+        *(Float4*)&AsData = (Float4)value;
         break;
     case MaterialParameterType::Color:
         _asColor = (Color)value;
@@ -335,19 +335,19 @@ void MaterialParameter::Bind(BindMeta& meta) const
         *((float*)(meta.Constants.Get() + _offset)) = _asFloat;
         break;
     case MaterialParameterType::Vector2:
-        ASSERT_LOW_LAYER(meta.Constants.Get() && meta.Constants.Length() >= (int32)_offset + sizeof(Vector2));
-        *((Vector2*)(meta.Constants.Get() + _offset)) = _asVector2;
+        ASSERT_LOW_LAYER(meta.Constants.Get() && meta.Constants.Length() >= (int32)_offset + sizeof(Float2));
+        *((Float2*)(meta.Constants.Get() + _offset)) = _asVector2;
         break;
     case MaterialParameterType::Vector3:
-        ASSERT_LOW_LAYER(meta.Constants.Get() && meta.Constants.Length() >= (int32)_offset + sizeof(Vector3));
-        *((Vector3*)(meta.Constants.Get() + _offset)) = _asVector3;
+        ASSERT_LOW_LAYER(meta.Constants.Get() && meta.Constants.Length() >= (int32)_offset + sizeof(Float3));
+        *((Float3*)(meta.Constants.Get() + _offset)) = _asVector3;
         break;
     case MaterialParameterType::Vector4:
-        ASSERT_LOW_LAYER(meta.Constants.Get() && meta.Constants.Length() >= (int32)_offset + sizeof(Vector4));
-        *((Vector4*)(meta.Constants.Get() + _offset)) = *(Vector4*)&AsData;
+        ASSERT_LOW_LAYER(meta.Constants.Get() && meta.Constants.Length() >= (int32)_offset + sizeof(Float4));
+        *((Float4*)(meta.Constants.Get() + _offset)) = *(Float4*)&AsData;
         break;
     case MaterialParameterType::Color:
-        ASSERT_LOW_LAYER(meta.Constants.Get() && meta.Constants.Length() >= (int32)_offset + sizeof(Vector4));
+        ASSERT_LOW_LAYER(meta.Constants.Get() && meta.Constants.Length() >= (int32)_offset + sizeof(Float4));
         *((Color*)(meta.Constants.Get() + _offset)) = _asColor;
         break;
     case MaterialParameterType::Matrix:
@@ -436,7 +436,7 @@ void MaterialParameter::Bind(BindMeta& meta) const
     }
     case MaterialParameterType::ChannelMask:
         ASSERT_LOW_LAYER(meta.Constants.Get() && meta.Constants.Length() >= (int32)_offset + sizeof(int32));
-        *((Vector4*)(meta.Constants.Get() + _offset)) = Vector4(_asInteger == 0, _asInteger == 1, _asInteger == 2, _asInteger == 3);
+        *((Float4*)(meta.Constants.Get() + _offset)) = Float4(_asInteger == 0, _asInteger == 1, _asInteger == 2, _asInteger == 3);
         break;
     case MaterialParameterType::GameplayGlobal:
         if (_asAsset)
@@ -462,18 +462,30 @@ void MaterialParameter::Bind(BindMeta& meta) const
                     ASSERT_LOW_LAYER(meta.Constants.Get() && meta.Constants.Length() >= (int32)_offset + sizeof(float));
                     *((float*)(meta.Constants.Get() + _offset)) = e->Value.AsFloat;
                     break;
-                case VariantType::Vector2:
-                    ASSERT_LOW_LAYER(meta.Constants.Get() && meta.Constants.Length() >= (int32)_offset + sizeof(Vector2));
-                    *((Vector2*)(meta.Constants.Get() + _offset)) = e->Value.AsVector2();
+                case VariantType::Float2:
+                    ASSERT_LOW_LAYER(meta.Constants.Get() && meta.Constants.Length() >= (int32)_offset + sizeof(Float2));
+                    *((Float2*)(meta.Constants.Get() + _offset)) = e->Value.AsFloat2();
                     break;
-                case VariantType::Vector3:
-                    ASSERT_LOW_LAYER(meta.Constants.Get() && meta.Constants.Length() >= (int32)_offset + sizeof(Vector3));
-                    *((Vector3*)(meta.Constants.Get() + _offset)) = e->Value.AsVector3();
+                case VariantType::Float3:
+                    ASSERT_LOW_LAYER(meta.Constants.Get() && meta.Constants.Length() >= (int32)_offset + sizeof(Float3));
+                    *((Float3*)(meta.Constants.Get() + _offset)) = e->Value.AsFloat3();
                     break;
-                case VariantType::Vector4:
+                case VariantType::Float4:
                 case VariantType::Color:
-                    ASSERT_LOW_LAYER(meta.Constants.Get() && meta.Constants.Length() >= (int32)_offset + sizeof(Vector4));
-                    *((Vector4*)(meta.Constants.Get() + _offset)) = e->Value.AsVector4();
+                    ASSERT_LOW_LAYER(meta.Constants.Get() && meta.Constants.Length() >= (int32)_offset + sizeof(Float4));
+                    *((Float4*)(meta.Constants.Get() + _offset)) = e->Value.AsFloat4();
+                    break;
+                case VariantType::Double2:
+                    ASSERT_LOW_LAYER(meta.Constants.Get() && meta.Constants.Length() >= (int32)_offset + sizeof(Float2));
+                    *((Float2*)(meta.Constants.Get() + _offset)) = (Float2)e->Value.AsDouble2();
+                    break;
+                case VariantType::Double3:
+                    ASSERT_LOW_LAYER(meta.Constants.Get() && meta.Constants.Length() >= (int32)_offset + sizeof(Float3));
+                    *((Float3*)(meta.Constants.Get() + _offset)) = (Float3)e->Value.AsDouble3();
+                    break;
+                case VariantType::Double4:
+                    ASSERT_LOW_LAYER(meta.Constants.Get() && meta.Constants.Length() >= (int32)_offset + sizeof(Float4));
+                    *((Float4*)(meta.Constants.Get() + _offset)) = (Float4)e->Value.AsDouble4();
                     break;
                 default: ;
                 }
@@ -535,7 +547,7 @@ void MaterialParameter::clone(const MaterialParameter* param)
         _asVector3 = param->_asVector3;
         break;
     case MaterialParameterType::Vector4:
-        *(Vector4*)&AsData = *(Vector4*)&param->AsData;
+        *(Float4*)&AsData = *(Float4*)&param->AsData;
         break;
     case MaterialParameterType::Color:
         _asColor = param->_asColor;
@@ -715,7 +727,7 @@ bool MaterialParams::Load(ReadStream* stream)
                     stream->Read(&param->_asVector3);
                     break;
                 case MaterialParameterType::Vector4:
-                    stream->Read((Vector4*)&param->AsData);
+                    stream->Read((Float4*)&param->AsData);
                     break;
                 case MaterialParameterType::Color:
                     stream->Read(&param->_asColor);
@@ -789,7 +801,7 @@ bool MaterialParams::Load(ReadStream* stream)
                     stream->Read(&param->_asVector3);
                     break;
                 case MaterialParameterType::Vector4:
-                    stream->Read((Vector4*)&param->AsData);
+                    stream->Read((Float4*)&param->AsData);
                     break;
                 case MaterialParameterType::Color:
                     stream->Read(&param->_asColor);
@@ -864,7 +876,7 @@ bool MaterialParams::Load(ReadStream* stream)
                     stream->Read(&param->_asVector3);
                     break;
                 case MaterialParameterType::Vector4:
-                    stream->Read((Vector4*)&param->AsData);
+                    stream->Read((Float4*)&param->AsData);
                     break;
                 case MaterialParameterType::Color:
                     stream->Read(&param->_asColor);
@@ -957,7 +969,7 @@ void MaterialParams::Save(WriteStream* stream)
             stream->Write(&param->_asVector3);
             break;
         case MaterialParameterType::Vector4:
-            stream->Write((Vector4*)&param->AsData);
+            stream->Write((Float4*)&param->AsData);
             break;
         case MaterialParameterType::Color:
             stream->Write(&param->_asColor);
@@ -1026,13 +1038,13 @@ void MaterialParams::Save(WriteStream* stream, const Array<SerializedMaterialPar
                 stream->WriteFloat(param.AsFloat);
                 break;
             case MaterialParameterType::Vector2:
-                stream->Write(&param.AsVector2);
+                stream->Write(&param.AsFloat2);
                 break;
             case MaterialParameterType::Vector3:
-                stream->Write(&param.AsVector3);
+                stream->Write(&param.AsFloat3);
                 break;
             case MaterialParameterType::Vector4:
-                stream->Write((Vector4*)&param.AsData);
+                stream->Write((Float4*)&param.AsData);
                 break;
             case MaterialParameterType::Color:
                 stream->Write(&param.AsColor);

@@ -113,7 +113,7 @@ namespace FlaxEditor.CustomEditors.Editors
             }
 
             /// <inheritdoc />
-            public override bool OnMouseDoubleClick(Vector2 location, MouseButton button)
+            public override bool OnMouseDoubleClick(Float2 location, MouseButton button)
             {
                 if (button == MouseButton.Left)
                 {

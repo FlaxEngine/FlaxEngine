@@ -131,7 +131,6 @@ template<class NodeType = VisjectGraphNode<>, class BoxType = VisjectGraphBox, c
 class VisjectGraph : public Graph<NodeType, BoxType, ParameterType>
 {
 public:
-
     typedef Variant Value;
     typedef VariantType::Types ValueType;
     typedef Graph<NodeType, BoxType, ParameterType> Base;
@@ -144,19 +143,19 @@ public:
     Array<BezierCurve<float>> FloatCurves;
 
     /// <summary>
-    /// The float curves used by the graph.
+    /// The Float2 curves used by the graph.
     /// </summary>
-    Array<BezierCurve<Vector2>> Vector2Curves;
+    Array<BezierCurve<Float2>> Float2Curves;
 
     /// <summary>
-    /// The float curves used by the graph.
+    /// The Float3 curves used by the graph.
     /// </summary>
-    Array<BezierCurve<Vector3>> Vector3Curves;
+    Array<BezierCurve<Float3>> Float3Curves;
 
     /// <summary>
-    /// The float curves used by the graph.
+    /// The Float4 curves used by the graph.
     /// </summary>
-    Array<BezierCurve<Vector4>> Vector4Curves;
+    Array<BezierCurve<Float4>> Float4Curves;
 
 public:
 
@@ -190,9 +189,9 @@ public:
 				break; \
 			}
             SETUP_CURVE(12, FloatCurves, AsFloat)
-            SETUP_CURVE(13, Vector2Curves, AsVector2())
-            SETUP_CURVE(14, Vector3Curves, AsVector3())
-            SETUP_CURVE(15, Vector4Curves, AsVector4())
+            SETUP_CURVE(13, Float2Curves, AsFloat2())
+            SETUP_CURVE(14, Float3Curves, AsFloat3())
+            SETUP_CURVE(15, Float4Curves, AsFloat4())
 #undef SETUP_CURVE
                 // Get Gameplay Global
             case 16:
@@ -214,7 +213,6 @@ public:
 class VisjectExecutor
 {
 public:
-
     typedef VisjectGraph<> Graph;
     typedef VisjectGraph<>::Node Node;
     typedef VisjectGraph<>::Box Box;

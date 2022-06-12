@@ -39,7 +39,7 @@ namespace FlaxEditor.GUI
         {
             // Cache data
             var style = Style.Current;
-            var clientRect = new Rectangle(Vector2.Zero, Size);
+            var clientRect = new Rectangle(Float2.Zero, Size);
             var textRect = new Rectangle(4, 0, clientRect.Width - 4, clientRect.Height);
 
             // Draw background

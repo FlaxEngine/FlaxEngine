@@ -46,7 +46,7 @@ namespace FlaxEditor.Windows
                 Orientation = Orientation.Vertical,
                 AnchorPreset = AnchorPresets.StretchAll,
                 Offsets = new Margin(0, 0, toolstrip.Bottom, 0),
-                TabsSize = new Vector2(120, 32),
+                TabsSize = new Float2(120, 32),
                 UseScroll = true,
                 Parent = this
             };

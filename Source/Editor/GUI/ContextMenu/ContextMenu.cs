@@ -341,12 +341,12 @@ namespace FlaxEditor.GUI.ContextMenu
         }
 
         /// <inheritdoc />
-        public override bool ContainsPoint(ref Vector2 location)
+        public override bool ContainsPoint(ref Float2 location)
         {
             if (base.ContainsPoint(ref location))
                 return true;
 
-            Vector2 cLocation = location - Location;
+            var cLocation = location - Location;
             for (int i = 0; i < _panel.Children.Count; i++)
             {
                 if (_panel.Children[i].ContainsPoint(ref cLocation))
@@ -380,10 +380,10 @@ namespace FlaxEditor.GUI.ContextMenu
             maxWidth = Mathf.Max(maxWidth + 20, MinimumWidth);
 
             // Resize container
-            Size = new Vector2(Mathf.Ceil(maxWidth), Mathf.Ceil(height));
+            Size = new Float2(Mathf.Ceil(maxWidth), Mathf.Ceil(height));
 
             // Arrange items view panel
-            var panelBounds = new Rectangle(Vector2.Zero, Size);
+            var panelBounds = new Rectangle(Float2.Zero, Size);
             _itemsAreaMargin.ShrinkRectangle(ref panelBounds);
             _panel.Bounds = panelBounds;
 

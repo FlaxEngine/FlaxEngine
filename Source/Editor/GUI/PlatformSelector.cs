@@ -95,7 +95,7 @@ namespace FlaxEditor.GUI
             };
 
             const float IconSize = 64.0f;
-            TileSize = new Vector2(IconSize);
+            TileSize = new Float2(IconSize);
             AutoResize = true;
             Offsets = new Margin(0, 0, 0, IconSize);
 

@@ -27,7 +27,7 @@ namespace FlaxEditor.GUI.Timeline.Tracks
             {
                 var style = Style.Current;
                 if (IsMouseOver || _clicked)
-                    Render2D.FillRectangle(new Rectangle(Vector2.Zero, Size), _clicked ? style.BackgroundSelected : style.BackgroundHighlighted);
+                    Render2D.FillRectangle(new Rectangle(Float2.Zero, Size), _clicked ? style.BackgroundSelected : style.BackgroundHighlighted);
             }
 
             public override void OnEndMouseCapture()
@@ -44,7 +44,7 @@ namespace FlaxEditor.GUI.Timeline.Tracks
                 _clicked = false;
             }
 
-            public override void OnMouseEnter(Vector2 location)
+            public override void OnMouseEnter(Float2 location)
             {
                 base.OnMouseEnter(location);
 
@@ -58,7 +58,7 @@ namespace FlaxEditor.GUI.Timeline.Tracks
                 base.OnMouseLeave();
             }
 
-            public override bool OnMouseDown(Vector2 location, MouseButton button)
+            public override bool OnMouseDown(Float2 location, MouseButton button)
             {
                 if (button == MouseButton.Left)
                 {
@@ -71,7 +71,7 @@ namespace FlaxEditor.GUI.Timeline.Tracks
                 return base.OnMouseDown(location, button);
             }
 
-            public override void OnMouseMove(Vector2 location)
+            public override void OnMouseMove(Float2 location)
             {
                 base.OnMouseMove(location);
 
@@ -86,7 +86,7 @@ namespace FlaxEditor.GUI.Timeline.Tracks
                 }
             }
 
-            public override bool OnMouseUp(Vector2 location, MouseButton button)
+            public override bool OnMouseUp(Float2 location, MouseButton button)
             {
                 if (button == MouseButton.Left && _clicked)
                 {
@@ -237,7 +237,7 @@ namespace FlaxEditor.GUI.Timeline.Tracks
             Curve.KeyframesEditorContext = Timeline;
             Curve.CustomViewPanning = Timeline.OnKeyframesViewPanning;
             Curve.Bounds = new Rectangle(Timeline.StartOffset, Y + 1.0f, Timeline.Duration * Timeline.UnitsPerSecond * Timeline.Zoom, Height - 2.0f);
-            Curve.ViewScale = new Vector2(Timeline.Zoom, Curve.ViewScale.Y);
+            Curve.ViewScale = new Float2(Timeline.Zoom, Curve.ViewScale.Y);
             Curve.ShowCollapsed = !expanded;
             Curve.ShowAxes = expanded ? CurveEditorBase.UseMode.Horizontal : CurveEditorBase.UseMode.Off;
             Curve.EnableZoom = expanded ? CurveEditorBase.UseMode.Vertical : CurveEditorBase.UseMode.Off;
@@ -462,7 +462,7 @@ namespace FlaxEditor.GUI.Timeline.Tracks
         }
 
         /// <inheritdoc />
-        public new void OnKeyframesMove(IKeyframesEditor editor, ContainerControl control, Vector2 location, bool start, bool end)
+        public new void OnKeyframesMove(IKeyframesEditor editor, ContainerControl control, Float2 location, bool start, bool end)
         {
             if (Curve != null && Curve.Visible)
                 Curve.OnKeyframesMove(editor, control, location, start, end);
@@ -523,7 +523,7 @@ namespace FlaxEditor.GUI.Timeline.Tracks
         {
             var e = (CurvePropertyTrack)track;
 
-            e.ValueSize = stream.ReadInt32();
+            int valueSize = stream.ReadInt32();
             int propertyNameLength = stream.ReadInt32();
             int propertyTypeNameLength = stream.ReadInt32();
             int keyframesCount = stream.ReadInt32();
@@ -539,29 +539,24 @@ namespace FlaxEditor.GUI.Timeline.Tracks
                 throw new Exception("Invalid track data.");
 
             var keyframes = new object[keyframesCount];
-            var dataBuffer = new byte[e.ValueSize];
             var propertyType = Scripting.TypeUtils.GetType(e.MemberTypeName).Type;
             if (propertyType == null)
             {
-                stream.ReadBytes(keyframesCount * (sizeof(float) + e.ValueSize * 3));
+                stream.ReadBytes(keyframesCount * (sizeof(float) + valueSize * 3));
                 if (!string.IsNullOrEmpty(e.MemberTypeName))
                     Editor.LogError("Cannot load track " + e.MemberName + " of type " + e.MemberTypeName + ". Failed to find the value type information.");
                 return;
             }
 
+            e.ValueSize = e.GetValueDataSize(propertyType);
+            var dataBuffer = new byte[valueSize];
             GCHandle handle = GCHandle.Alloc(dataBuffer, GCHandleType.Pinned);
             for (int i = 0; i < keyframesCount; i++)
             {
                 var time = stream.ReadSingle();
-
-                stream.Read(dataBuffer, 0, e.ValueSize);
-                var value = Marshal.PtrToStructure(handle.AddrOfPinnedObject(), propertyType);
-
-                stream.Read(dataBuffer, 0, e.ValueSize);
-                var tangentIn = Marshal.PtrToStructure(handle.AddrOfPinnedObject(), propertyType);
-
-                stream.Read(dataBuffer, 0, e.ValueSize);
-                var tangentOut = Marshal.PtrToStructure(handle.AddrOfPinnedObject(), propertyType);
+                var value = ReadValue(stream, ref handle, dataBuffer, e.ValueSize, propertyType);
+                var tangentIn = ReadValue(stream, ref handle, dataBuffer, e.ValueSize, propertyType);
+                var tangentOut = ReadValue(stream, ref handle, dataBuffer, e.ValueSize, propertyType);
 
                 keyframes[i] = new BezierCurve<object>.Keyframe
                 {
@@ -583,6 +578,34 @@ namespace FlaxEditor.GUI.Timeline.Tracks
                 e.CreateCurve(propertyType, typeof(BezierCurveEditor<>));
             }
             e.Curve.SetKeyframes(keyframes);
+        }
+
+        private static object ReadValue(BinaryReader stream, ref GCHandle handle, byte[] dataBuffer, int valueSize, Type propertyType)
+        {
+            stream.Read(dataBuffer, 0, dataBuffer.Length);
+            if (valueSize != dataBuffer.Length)
+            {
+                // Convert curve data into the runtime type (eg. when using animation saved with Vector3=Double3 and playing it in a build with Vector3=Float3)
+                if (propertyType == typeof(Vector2))
+                {
+                    if (dataBuffer.Length == Double2.SizeInBytes)
+                        return (Vector2)(Double2)Marshal.PtrToStructure(handle.AddrOfPinnedObject(), typeof(Double2));
+                    return (Vector2)(Float2)Marshal.PtrToStructure(handle.AddrOfPinnedObject(), typeof(Float2));
+                }
+                if (propertyType == typeof(Vector3))
+                {
+                    if (dataBuffer.Length == Double3.SizeInBytes)
+                        return (Vector3)(Double3)Marshal.PtrToStructure(handle.AddrOfPinnedObject(), typeof(Double3));
+                    return (Vector3)(Float3)Marshal.PtrToStructure(handle.AddrOfPinnedObject(), typeof(Float3));
+                }
+                if (propertyType == typeof(Vector4))
+                {
+                    if (dataBuffer.Length == Double4.SizeInBytes)
+                        return (Vector4)(Double4)Marshal.PtrToStructure(handle.AddrOfPinnedObject(), typeof(Double4));
+                    return (Vector4)(Float4)Marshal.PtrToStructure(handle.AddrOfPinnedObject(), typeof(Float4));
+                }
+            }
+            return Marshal.PtrToStructure(handle.AddrOfPinnedObject(), propertyType);
         }
 
         private static void SaveTrack(Track track, BinaryWriter stream)

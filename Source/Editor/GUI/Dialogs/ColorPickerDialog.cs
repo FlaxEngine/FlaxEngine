@@ -111,7 +111,7 @@ namespace FlaxEditor.GUI.Dialogs
             // Selector
             _cSelector = new ColorSelectorWithSliders(180, 18)
             {
-                Location = new Vector2(PickerMargin, PickerMargin),
+                Location = new Float2(PickerMargin, PickerMargin),
                 Parent = this
             };
             _cSelector.ColorChanged += x => SelectedColor = x;
@@ -166,7 +166,7 @@ namespace FlaxEditor.GUI.Dialogs
             _cValue.ValueChanged += OnHSVChanged;
 
             // Set valid dialog size based on UI content
-            _dialogSize = Size = new Vector2(_cRed.Right + PickerMargin, 300);
+            _dialogSize = Size = new Float2(_cRed.Right + PickerMargin, 300);
 
             // Hex
             const float hexTextBoxWidth = 80;

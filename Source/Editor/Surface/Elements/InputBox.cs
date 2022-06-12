@@ -1,3 +1,11 @@
+#if USE_LARGE_WORLDS
+using Real = System.Double;
+using RealValueBox = FlaxEditor.GUI.Input.DoubleValueBox;
+#else
+using Real = System.Single;
+using RealValueBox = FlaxEditor.GUI.Input.FloatValueBox;
+#endif
+
 // Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 using System;
@@ -117,7 +125,7 @@ namespace FlaxEditor.Surface.Elements
                 Parent = box.Parent,
                 Tag = box,
             };
-            control.BoxValueChanged += OnIntValueBoxChanged;
+            control.BoxValueChanged += OnValueChanged;
             return control;
         }
 
@@ -136,7 +144,7 @@ namespace FlaxEditor.Surface.Elements
         {
         }
 
-        private void OnIntValueBoxChanged(ValueBox<int> control)
+        private void OnValueChanged(ValueBox<int> control)
         {
             var box = (InputBox)control.Tag;
             if (box.HasCustomValueAccess)
@@ -162,7 +170,7 @@ namespace FlaxEditor.Surface.Elements
                 Parent = box.Parent,
                 Tag = box,
             };
-            control.BoxValueChanged += OnValueBoxChanged;
+            control.BoxValueChanged += OnValueChanged;
             return control;
         }
 
@@ -181,7 +189,7 @@ namespace FlaxEditor.Surface.Elements
         {
         }
 
-        private void OnValueBoxChanged(ValueBox<uint> control)
+        private void OnValueChanged(ValueBox<uint> control)
         {
             var box = (InputBox)control.Tag;
             if (box.HasCustomValueAccess)
@@ -207,7 +215,7 @@ namespace FlaxEditor.Surface.Elements
                 Parent = box.Parent,
                 Tag = box,
             };
-            control.BoxValueChanged += OnFloatValueBoxChanged;
+            control.BoxValueChanged += OnValueChanged;
             return control;
         }
 
@@ -226,7 +234,7 @@ namespace FlaxEditor.Surface.Elements
         {
         }
 
-        private void OnFloatValueBoxChanged(ValueBox<float> control)
+        private void OnValueChanged(ValueBox<float> control)
         {
             var box = (InputBox)control.Tag;
             if (box.HasCustomValueAccess)
@@ -298,18 +306,18 @@ namespace FlaxEditor.Surface.Elements
                 Parent = box.Parent,
                 Tag = box,
             };
-            var floatX = new FloatValueBox(value.X, 0, 0, 20, float.MinValue, float.MaxValue, 0.0f)
+            var floatX = new RealValueBox(value.X, 0, 0, 20, float.MinValue, float.MaxValue, 0.0f)
             {
                 Height = bounds.Height,
                 Parent = control,
             };
-            floatX.BoxValueChanged += OnVector2ValueChanged;
-            var floatY = new FloatValueBox(value.Y, 22, 0, 20, float.MinValue, float.MaxValue, 0.0f)
+            floatX.BoxValueChanged += OnValueChanged;
+            var floatY = new RealValueBox(value.Y, 22, 0, 20, float.MinValue, float.MaxValue, 0.0f)
             {
                 Height = bounds.Height,
                 Parent = control,
             };
-            floatY.BoxValueChanged += OnVector2ValueChanged;
+            floatY.BoxValueChanged += OnValueChanged;
             return control;
         }
 
@@ -317,8 +325,8 @@ namespace FlaxEditor.Surface.Elements
         {
             return control is ContainerControl vec2
                    && vec2.ChildrenCount == 2
-                   && vec2.Children[0] is FloatValueBox
-                   && vec2.Children[1] is FloatValueBox;
+                   && vec2.Children[0] is RealValueBox
+                   && vec2.Children[1] is RealValueBox;
         }
 
         public void UpdateDefaultValue(InputBox box, Control control)
@@ -326,8 +334,8 @@ namespace FlaxEditor.Surface.Elements
             if (control is ContainerControl vec2
                 && vec2.Tag as Type == typeof(Vector2)
                 && vec2.ChildrenCount == 2
-                && vec2.Children[0] is FloatValueBox x
-                && vec2.Children[1] is FloatValueBox y)
+                && vec2.Children[0] is RealValueBox x
+                && vec2.Children[1] is RealValueBox y)
             {
                 var value = GetValue(box);
                 x.Value = value.X;
@@ -341,29 +349,15 @@ namespace FlaxEditor.Surface.Elements
 
         private Vector2 GetValue(InputBox box)
         {
-            var value = Vector2.Zero;
-            var v = box.Value;
-            if (v is Vector2 vec2)
-                value = vec2;
-            else if (v is Vector3 vec3)
-                value = new Vector2(vec3);
-            else if (v is Vector4 vec4)
-                value = new Vector2(vec4);
-            else if (v is Color col)
-                value = new Vector2(col.R, col.G);
-            else if (v is float f)
-                value = new Vector2(f);
-            else if (v is int i)
-                value = new Vector2(i);
-            return value;
+            return new Vector2(SurfaceUtils.GetDouble4(box.Value));
         }
 
-        private void OnVector2ValueChanged(ValueBox<float> valueBox)
+        private void OnValueChanged(ValueBox<Real> valueBox)
         {
             var control = valueBox.Parent;
             var box = (InputBox)control.Tag;
-            var x = ((FloatValueBox)control.Children[0]).Value;
-            var y = ((FloatValueBox)control.Children[1]).Value;
+            var x = ((RealValueBox)control.Children[0]).Value;
+            var y = ((RealValueBox)control.Children[1]).Value;
             box.Value = new Vector2(x, y);
         }
     }
@@ -385,24 +379,271 @@ namespace FlaxEditor.Surface.Elements
                 Parent = box.Parent,
                 Tag = box,
             };
+            var floatX = new RealValueBox(value.X, 0, 0, 20, float.MinValue, float.MaxValue, 0.0f)
+            {
+                Height = bounds.Height,
+                Parent = control,
+            };
+            floatX.BoxValueChanged += OnValueChanged;
+            var floatY = new RealValueBox(value.Y, 22, 0, 20, float.MinValue, float.MaxValue, 0.0f)
+            {
+                Height = bounds.Height,
+                Parent = control,
+            };
+            floatY.BoxValueChanged += OnValueChanged;
+            var floatZ = new RealValueBox(value.Z, 44, 0, 20, float.MinValue, float.MaxValue, 0.0f)
+            {
+                Height = bounds.Height,
+                Parent = control,
+            };
+            floatZ.BoxValueChanged += OnValueChanged;
+            return control;
+        }
+
+        public bool IsValid(InputBox box, Control control)
+        {
+            return control is ContainerControl vec3
+                   && vec3.ChildrenCount == 3
+                   && vec3.Children[0] is RealValueBox
+                   && vec3.Children[1] is RealValueBox
+                   && vec3.Children[2] is RealValueBox;
+        }
+
+        public void UpdateDefaultValue(InputBox box, Control control)
+        {
+            if (control is ContainerControl vec3
+                && vec3.ChildrenCount == 3
+                && vec3.Children[0] is RealValueBox x
+                && vec3.Children[1] is RealValueBox y
+                && vec3.Children[2] is RealValueBox z)
+            {
+                var value = GetValue(box);
+                x.Value = value.X;
+                y.Value = value.Y;
+                z.Value = value.Z;
+            }
+        }
+
+        public void UpdateAttributes(InputBox box, object[] attributes, Control control)
+        {
+        }
+
+        private Vector3 GetValue(InputBox box)
+        {
+            return new Vector3(SurfaceUtils.GetDouble4(box.Value));
+        }
+
+        private void OnValueChanged(ValueBox<Real> valueBox)
+        {
+            var control = valueBox.Parent;
+            var box = (InputBox)control.Tag;
+            var x = ((RealValueBox)control.Children[0]).Value;
+            var y = ((RealValueBox)control.Children[1]).Value;
+            var z = ((RealValueBox)control.Children[2]).Value;
+            box.Value = new Vector3(x, y, z);
+        }
+    }
+
+    class Vector4DefaultValueEditor : IDefaultValueEditor
+    {
+        public bool CanUse(InputBox box, ref ScriptType type)
+        {
+            return type.Type == typeof(Vector4);
+        }
+
+        public Control Create(InputBox box, ref Rectangle bounds)
+        {
+            var value = GetValue(box);
+            var control = new ContainerControl(bounds.X, bounds.Y, 22 * 4 - 2, bounds.Height)
+            {
+                ClipChildren = false,
+                AutoFocus = false,
+                Parent = box.Parent,
+                Tag = box,
+            };
+            var floatX = new RealValueBox(value.X, 0, 0, 20, float.MinValue, float.MaxValue, 0.0f)
+            {
+                Height = bounds.Height,
+                Parent = control,
+            };
+            floatX.BoxValueChanged += OnValueChanged;
+            var floatY = new RealValueBox(value.Y, 22, 0, 20, float.MinValue, float.MaxValue, 0.0f)
+            {
+                Height = bounds.Height,
+                Parent = control,
+            };
+            floatY.BoxValueChanged += OnValueChanged;
+            var floatZ = new RealValueBox(value.Z, 44, 0, 20, float.MinValue, float.MaxValue, 0.0f)
+            {
+                Height = bounds.Height,
+                Parent = control,
+            };
+            floatZ.BoxValueChanged += OnValueChanged;
+            var floatW = new RealValueBox(value.W, 66, 0, 20, float.MinValue, float.MaxValue, 0.0f)
+            {
+                Height = bounds.Height,
+                Parent = control,
+            };
+            floatW.BoxValueChanged += OnValueChanged;
+            return control;
+        }
+
+        public bool IsValid(InputBox box, Control control)
+        {
+            return control is ContainerControl vec4
+                   && vec4.ChildrenCount == 4
+                   && vec4.Children[0] is RealValueBox
+                   && vec4.Children[1] is RealValueBox
+                   && vec4.Children[2] is RealValueBox
+                   && vec4.Children[3] is RealValueBox;
+        }
+
+        public void UpdateDefaultValue(InputBox box, Control control)
+        {
+            if (control is ContainerControl vec4
+                && vec4.ChildrenCount == 4
+                && vec4.Children[0] is RealValueBox x
+                && vec4.Children[1] is RealValueBox y
+                && vec4.Children[2] is RealValueBox z
+                && vec4.Children[3] is RealValueBox w)
+            {
+                var value = GetValue(box);
+                x.Value = value.X;
+                y.Value = value.Y;
+                z.Value = value.Z;
+                w.Value = value.W;
+            }
+        }
+
+        public void UpdateAttributes(InputBox box, object[] attributes, Control control)
+        {
+        }
+
+        private Vector4 GetValue(InputBox box)
+        {
+            return (Vector4)SurfaceUtils.GetDouble4(box.Value);
+        }
+
+        private void OnValueChanged(ValueBox<Real> valueBox)
+        {
+            var control = valueBox.Parent;
+            var box = (InputBox)control.Tag;
+            var x = ((RealValueBox)control.Children[0]).Value;
+            var y = ((RealValueBox)control.Children[1]).Value;
+            var z = ((RealValueBox)control.Children[2]).Value;
+            var w = ((RealValueBox)control.Children[3]).Value;
+            box.Value = new Vector4(x, y, z, w);
+        }
+    }
+
+    class Float2DefaultValueEditor : IDefaultValueEditor
+    {
+        public bool CanUse(InputBox box, ref ScriptType type)
+        {
+            return type.Type == typeof(Float2);
+        }
+
+        public Control Create(InputBox box, ref Rectangle bounds)
+        {
+            var value = GetValue(box);
+            var control = new ContainerControl(bounds.X, bounds.Y, 22 * 2 - 2, bounds.Height)
+            {
+                ClipChildren = false,
+                AutoFocus = false,
+                Parent = box.Parent,
+                Tag = box,
+            };
             var floatX = new FloatValueBox(value.X, 0, 0, 20, float.MinValue, float.MaxValue, 0.0f)
             {
                 Height = bounds.Height,
                 Parent = control,
             };
-            floatX.BoxValueChanged += OnVector3ValueChanged;
+            floatX.BoxValueChanged += OnValueChanged;
             var floatY = new FloatValueBox(value.Y, 22, 0, 20, float.MinValue, float.MaxValue, 0.0f)
             {
                 Height = bounds.Height,
                 Parent = control,
             };
-            floatY.BoxValueChanged += OnVector3ValueChanged;
+            floatY.BoxValueChanged += OnValueChanged;
+            return control;
+        }
+
+        public bool IsValid(InputBox box, Control control)
+        {
+            return control is ContainerControl vec2
+                   && vec2.ChildrenCount == 2
+                   && vec2.Children[0] is FloatValueBox
+                   && vec2.Children[1] is FloatValueBox;
+        }
+
+        public void UpdateDefaultValue(InputBox box, Control control)
+        {
+            if (control is ContainerControl vec2
+                && vec2.Tag as Type == typeof(Float2)
+                && vec2.ChildrenCount == 2
+                && vec2.Children[0] is FloatValueBox x
+                && vec2.Children[1] is FloatValueBox y)
+            {
+                var value = GetValue(box);
+                x.Value = value.X;
+                y.Value = value.Y;
+            }
+        }
+
+        public void UpdateAttributes(InputBox box, object[] attributes, Control control)
+        {
+        }
+
+        private Float2 GetValue(InputBox box)
+        {
+            return new Float2(SurfaceUtils.GetDouble4(box.Value));
+        }
+
+        private void OnValueChanged(ValueBox<float> valueBox)
+        {
+            var control = valueBox.Parent;
+            var box = (InputBox)control.Tag;
+            var x = ((FloatValueBox)control.Children[0]).Value;
+            var y = ((FloatValueBox)control.Children[1]).Value;
+            box.Value = new Float2(x, y);
+        }
+    }
+
+    class Float3DefaultValueEditor : IDefaultValueEditor
+    {
+        public bool CanUse(InputBox box, ref ScriptType type)
+        {
+            return type.Type == typeof(Float3);
+        }
+
+        public Control Create(InputBox box, ref Rectangle bounds)
+        {
+            var value = GetValue(box);
+            var control = new ContainerControl(bounds.X, bounds.Y, 22 * 3 - 2, bounds.Height)
+            {
+                ClipChildren = false,
+                AutoFocus = false,
+                Parent = box.Parent,
+                Tag = box,
+            };
+            var floatX = new FloatValueBox(value.X, 0, 0, 20, float.MinValue, float.MaxValue, 0.0f)
+            {
+                Height = bounds.Height,
+                Parent = control,
+            };
+            floatX.BoxValueChanged += OnValueChanged;
+            var floatY = new FloatValueBox(value.Y, 22, 0, 20, float.MinValue, float.MaxValue, 0.0f)
+            {
+                Height = bounds.Height,
+                Parent = control,
+            };
+            floatY.BoxValueChanged += OnValueChanged;
             var floatZ = new FloatValueBox(value.Z, 44, 0, 20, float.MinValue, float.MaxValue, 0.0f)
             {
                 Height = bounds.Height,
                 Parent = control,
             };
-            floatZ.BoxValueChanged += OnVector3ValueChanged;
+            floatZ.BoxValueChanged += OnValueChanged;
             return control;
         }
 
@@ -434,41 +675,27 @@ namespace FlaxEditor.Surface.Elements
         {
         }
 
-        private Vector3 GetValue(InputBox box)
+        private Float3 GetValue(InputBox box)
         {
-            var value = Vector3.Zero;
-            var v = box.Value;
-            if (v is Vector2 vec2)
-                value = new Vector3(vec2, 0.0f);
-            else if (v is Vector3 vec3)
-                value = vec3;
-            else if (v is Vector4 vec4)
-                value = new Vector3(vec4);
-            else if (v is Color col)
-                value = col;
-            else if (v is float f)
-                value = new Vector3(f);
-            else if (v is int i)
-                value = new Vector3(i);
-            return value;
+            return new Float3(SurfaceUtils.GetDouble4(box.Value));
         }
 
-        private void OnVector3ValueChanged(ValueBox<float> valueBox)
+        private void OnValueChanged(ValueBox<float> valueBox)
         {
             var control = valueBox.Parent;
             var box = (InputBox)control.Tag;
             var x = ((FloatValueBox)control.Children[0]).Value;
             var y = ((FloatValueBox)control.Children[1]).Value;
             var z = ((FloatValueBox)control.Children[2]).Value;
-            box.Value = new Vector3(x, y, z);
+            box.Value = new Float3(x, y, z);
         }
     }
 
-    class Vector4DefaultValueEditor : IDefaultValueEditor
+    class Float4DefaultValueEditor : IDefaultValueEditor
     {
         public bool CanUse(InputBox box, ref ScriptType type)
         {
-            return type.Type == typeof(Vector4);
+            return type.Type == typeof(Float4);
         }
 
         public Control Create(InputBox box, ref Rectangle bounds)
@@ -486,25 +713,25 @@ namespace FlaxEditor.Surface.Elements
                 Height = bounds.Height,
                 Parent = control,
             };
-            floatX.BoxValueChanged += OnVector4ValueChanged;
+            floatX.BoxValueChanged += OnValueChanged;
             var floatY = new FloatValueBox(value.Y, 22, 0, 20, float.MinValue, float.MaxValue, 0.0f)
             {
                 Height = bounds.Height,
                 Parent = control,
             };
-            floatY.BoxValueChanged += OnVector4ValueChanged;
+            floatY.BoxValueChanged += OnValueChanged;
             var floatZ = new FloatValueBox(value.Z, 44, 0, 20, float.MinValue, float.MaxValue, 0.0f)
             {
                 Height = bounds.Height,
                 Parent = control,
             };
-            floatZ.BoxValueChanged += OnVector4ValueChanged;
+            floatZ.BoxValueChanged += OnValueChanged;
             var floatW = new FloatValueBox(value.W, 66, 0, 20, float.MinValue, float.MaxValue, 0.0f)
             {
                 Height = bounds.Height,
                 Parent = control,
             };
-            floatW.BoxValueChanged += OnVector4ValueChanged;
+            floatW.BoxValueChanged += OnValueChanged;
             return control;
         }
 
@@ -539,26 +766,12 @@ namespace FlaxEditor.Surface.Elements
         {
         }
 
-        private Vector4 GetValue(InputBox box)
+        private Float4 GetValue(InputBox box)
         {
-            var value = Vector4.Zero;
-            var v = box.Value;
-            if (v is Vector2 vec2)
-                value = new Vector4(vec2, 0.0f, 0.0f);
-            else if (v is Vector3 vec3)
-                value = new Vector4(vec3, 0.0f);
-            else if (v is Vector4 vec4)
-                value = vec4;
-            else if (v is Color col)
-                value = col;
-            else if (v is float f)
-                value = new Vector4(f);
-            else if (v is int i)
-                value = new Vector4(i);
-            return value;
+            return (Float4)SurfaceUtils.GetDouble4(box.Value);
         }
 
-        private void OnVector4ValueChanged(ValueBox<float> valueBox)
+        private void OnValueChanged(ValueBox<float> valueBox)
         {
             var control = valueBox.Parent;
             var box = (InputBox)control.Tag;
@@ -566,7 +779,254 @@ namespace FlaxEditor.Surface.Elements
             var y = ((FloatValueBox)control.Children[1]).Value;
             var z = ((FloatValueBox)control.Children[2]).Value;
             var w = ((FloatValueBox)control.Children[3]).Value;
-            box.Value = new Vector4(x, y, z, w);
+            box.Value = new Float4(x, y, z, w);
+        }
+    }
+
+    class Double2DefaultValueEditor : IDefaultValueEditor
+    {
+        public bool CanUse(InputBox box, ref ScriptType type)
+        {
+            return type.Type == typeof(Double2);
+        }
+
+        public Control Create(InputBox box, ref Rectangle bounds)
+        {
+            var value = GetValue(box);
+            var control = new ContainerControl(bounds.X, bounds.Y, 22 * 2 - 2, bounds.Height)
+            {
+                ClipChildren = false,
+                AutoFocus = false,
+                Parent = box.Parent,
+                Tag = box,
+            };
+            var floatX = new DoubleValueBox(value.X, 0, 0, 20, float.MinValue, float.MaxValue, 0.0f)
+            {
+                Height = bounds.Height,
+                Parent = control,
+            };
+            floatX.BoxValueChanged += OnValueChanged;
+            var floatY = new DoubleValueBox(value.Y, 22, 0, 20, float.MinValue, float.MaxValue, 0.0f)
+            {
+                Height = bounds.Height,
+                Parent = control,
+            };
+            floatY.BoxValueChanged += OnValueChanged;
+            return control;
+        }
+
+        public bool IsValid(InputBox box, Control control)
+        {
+            return control is ContainerControl vec2
+                   && vec2.ChildrenCount == 2
+                   && vec2.Children[0] is DoubleValueBox
+                   && vec2.Children[1] is DoubleValueBox;
+        }
+
+        public void UpdateDefaultValue(InputBox box, Control control)
+        {
+            if (control is ContainerControl vec2
+                && vec2.Tag as Type == typeof(Double2)
+                && vec2.ChildrenCount == 2
+                && vec2.Children[0] is DoubleValueBox x
+                && vec2.Children[1] is DoubleValueBox y)
+            {
+                var value = GetValue(box);
+                x.Value = value.X;
+                y.Value = value.Y;
+            }
+        }
+
+        public void UpdateAttributes(InputBox box, object[] attributes, Control control)
+        {
+        }
+
+        private Double2 GetValue(InputBox box)
+        {
+            return new Double2(SurfaceUtils.GetDouble4(box.Value));
+        }
+
+        private void OnValueChanged(ValueBox<double> valueBox)
+        {
+            var control = valueBox.Parent;
+            var box = (InputBox)control.Tag;
+            var x = ((DoubleValueBox)control.Children[0]).Value;
+            var y = ((DoubleValueBox)control.Children[1]).Value;
+            box.Value = new Double2(x, y);
+        }
+    }
+
+    class Double3DefaultValueEditor : IDefaultValueEditor
+    {
+        public bool CanUse(InputBox box, ref ScriptType type)
+        {
+            return type.Type == typeof(Double3);
+        }
+
+        public Control Create(InputBox box, ref Rectangle bounds)
+        {
+            var value = GetValue(box);
+            var control = new ContainerControl(bounds.X, bounds.Y, 22 * 3 - 2, bounds.Height)
+            {
+                ClipChildren = false,
+                AutoFocus = false,
+                Parent = box.Parent,
+                Tag = box,
+            };
+            var floatX = new DoubleValueBox(value.X, 0, 0, 20, float.MinValue, float.MaxValue, 0.0f)
+            {
+                Height = bounds.Height,
+                Parent = control,
+            };
+            floatX.BoxValueChanged += OnValueChanged;
+            var floatY = new DoubleValueBox(value.Y, 22, 0, 20, float.MinValue, float.MaxValue, 0.0f)
+            {
+                Height = bounds.Height,
+                Parent = control,
+            };
+            floatY.BoxValueChanged += OnValueChanged;
+            var floatZ = new DoubleValueBox(value.Z, 44, 0, 20, float.MinValue, float.MaxValue, 0.0f)
+            {
+                Height = bounds.Height,
+                Parent = control,
+            };
+            floatZ.BoxValueChanged += OnValueChanged;
+            return control;
+        }
+
+        public bool IsValid(InputBox box, Control control)
+        {
+            return control is ContainerControl vec3
+                   && vec3.ChildrenCount == 3
+                   && vec3.Children[0] is DoubleValueBox
+                   && vec3.Children[1] is DoubleValueBox
+                   && vec3.Children[2] is DoubleValueBox;
+        }
+
+        public void UpdateDefaultValue(InputBox box, Control control)
+        {
+            if (control is ContainerControl vec3
+                && vec3.ChildrenCount == 3
+                && vec3.Children[0] is DoubleValueBox x
+                && vec3.Children[1] is DoubleValueBox y
+                && vec3.Children[2] is DoubleValueBox z)
+            {
+                var value = GetValue(box);
+                x.Value = value.X;
+                y.Value = value.Y;
+                z.Value = value.Z;
+            }
+        }
+
+        public void UpdateAttributes(InputBox box, object[] attributes, Control control)
+        {
+        }
+
+        private Double3 GetValue(InputBox box)
+        {
+            return new Double3(SurfaceUtils.GetDouble4(box.Value));
+        }
+
+        private void OnValueChanged(ValueBox<double> valueBox)
+        {
+            var control = valueBox.Parent;
+            var box = (InputBox)control.Tag;
+            var x = ((FloatValueBox)control.Children[0]).Value;
+            var y = ((FloatValueBox)control.Children[1]).Value;
+            var z = ((FloatValueBox)control.Children[2]).Value;
+            box.Value = new Double3(x, y, z);
+        }
+    }
+
+    class Double4DefaultValueEditor : IDefaultValueEditor
+    {
+        public bool CanUse(InputBox box, ref ScriptType type)
+        {
+            return type.Type == typeof(Double4);
+        }
+
+        public Control Create(InputBox box, ref Rectangle bounds)
+        {
+            var value = GetValue(box);
+            var control = new ContainerControl(bounds.X, bounds.Y, 22 * 4 - 2, bounds.Height)
+            {
+                ClipChildren = false,
+                AutoFocus = false,
+                Parent = box.Parent,
+                Tag = box,
+            };
+            var floatX = new DoubleValueBox(value.X, 0, 0, 20, float.MinValue, float.MaxValue, 0.0f)
+            {
+                Height = bounds.Height,
+                Parent = control,
+            };
+            floatX.BoxValueChanged += OnValueChanged;
+            var floatY = new DoubleValueBox(value.Y, 22, 0, 20, float.MinValue, float.MaxValue, 0.0f)
+            {
+                Height = bounds.Height,
+                Parent = control,
+            };
+            floatY.BoxValueChanged += OnValueChanged;
+            var floatZ = new DoubleValueBox(value.Z, 44, 0, 20, float.MinValue, float.MaxValue, 0.0f)
+            {
+                Height = bounds.Height,
+                Parent = control,
+            };
+            floatZ.BoxValueChanged += OnValueChanged;
+            var floatW = new DoubleValueBox(value.W, 66, 0, 20, float.MinValue, float.MaxValue, 0.0f)
+            {
+                Height = bounds.Height,
+                Parent = control,
+            };
+            floatW.BoxValueChanged += OnValueChanged;
+            return control;
+        }
+
+        public bool IsValid(InputBox box, Control control)
+        {
+            return control is ContainerControl vec4
+                   && vec4.ChildrenCount == 4
+                   && vec4.Children[0] is DoubleValueBox
+                   && vec4.Children[1] is DoubleValueBox
+                   && vec4.Children[2] is DoubleValueBox
+                   && vec4.Children[3] is DoubleValueBox;
+        }
+
+        public void UpdateDefaultValue(InputBox box, Control control)
+        {
+            if (control is ContainerControl vec4
+                && vec4.ChildrenCount == 4
+                && vec4.Children[0] is DoubleValueBox x
+                && vec4.Children[1] is DoubleValueBox y
+                && vec4.Children[2] is DoubleValueBox z
+                && vec4.Children[3] is DoubleValueBox w)
+            {
+                var value = GetValue(box);
+                x.Value = value.X;
+                y.Value = value.Y;
+                z.Value = value.Z;
+                w.Value = value.W;
+            }
+        }
+
+        public void UpdateAttributes(InputBox box, object[] attributes, Control control)
+        {
+        }
+
+        private Double4 GetValue(InputBox box)
+        {
+            return SurfaceUtils.GetDouble4(box.Value);
+        }
+
+        private void OnValueChanged(ValueBox<double> valueBox)
+        {
+            var control = valueBox.Parent;
+            var box = (InputBox)control.Tag;
+            var x = ((DoubleValueBox)control.Children[0]).Value;
+            var y = ((DoubleValueBox)control.Children[1]).Value;
+            var z = ((DoubleValueBox)control.Children[2]).Value;
+            var w = ((DoubleValueBox)control.Children[3]).Value;
+            box.Value = new Double4(x, y, z, w);
         }
     }
 
@@ -592,19 +1052,19 @@ namespace FlaxEditor.Surface.Elements
                 Height = bounds.Height,
                 Parent = control,
             };
-            floatX.BoxValueChanged += OnQuaternionValueChanged;
+            floatX.BoxValueChanged += OnValueChanged;
             var floatY = new FloatValueBox(value.Y, 22, 0, 20, float.MinValue, float.MaxValue, 0.0f)
             {
                 Height = bounds.Height,
                 Parent = control,
             };
-            floatY.BoxValueChanged += OnQuaternionValueChanged;
+            floatY.BoxValueChanged += OnValueChanged;
             var floatZ = new FloatValueBox(value.Z, 44, 0, 20, float.MinValue, float.MaxValue, 0.0f)
             {
                 Height = bounds.Height,
                 Parent = control,
             };
-            floatZ.BoxValueChanged += OnQuaternionValueChanged;
+            floatZ.BoxValueChanged += OnValueChanged;
             return control;
         }
 
@@ -647,7 +1107,7 @@ namespace FlaxEditor.Surface.Elements
             return value;
         }
 
-        private void OnQuaternionValueChanged(ValueBox<float> valueBox)
+        private void OnValueChanged(ValueBox<float> valueBox)
         {
             var control = valueBox.Parent;
             var box = (InputBox)control.Tag;
@@ -674,7 +1134,7 @@ namespace FlaxEditor.Surface.Elements
                 Parent = box.Parent,
                 Tag = box,
             };
-            control.ColorValueChanged += OnColorValueChanged;
+            control.ColorValueChanged += OnValueChanged;
             return control;
         }
 
@@ -697,24 +1157,10 @@ namespace FlaxEditor.Surface.Elements
 
         private Vector4 GetValue(InputBox box)
         {
-            var value = Color.Black;
-            var v = box.Value;
-            if (v is Vector2 vec2)
-                value = new Color(vec2.X, vec2.Y, 0.0f, 1.0f);
-            else if (v is Vector3 vec3)
-                value = new Color(vec3.X, vec3.Y, vec3.Z, 1.0f);
-            else if (v is Vector4 vec4)
-                value = new Color(vec4.X, vec4.Y, vec4.Z, vec4.W);
-            else if (v is Color col)
-                value = col;
-            else if (v is float f)
-                value = new Color(f);
-            else if (v is int i)
-                value = new Color(i);
-            return value;
+            return (Color)(Float4)SurfaceUtils.GetDouble4(box.Value, 1.0f);
         }
 
-        private void OnColorValueChanged(ColorValueBox control)
+        private void OnValueChanged(ColorValueBox control)
         {
             var box = (InputBox)control.Tag;
             box.Value = control.Value;
@@ -733,17 +1179,17 @@ namespace FlaxEditor.Surface.Elements
             var value = GetValue(box);
             var control = new EnumComboBox(box.CurrentType.Type)
             {
-                Location = new Vector2(bounds.X, bounds.Y),
-                Size = new Vector2(60.0f, bounds.Height),
+                Location = new Float2(bounds.X, bounds.Y),
+                Size = new Float2(60.0f, bounds.Height),
                 EnumTypeValue = value ?? box.CurrentType.CreateInstance(),
                 Parent = box.Parent,
                 Tag = box,
             };
-            control.EnumValueChanged += OnEnumValueChanged;
+            control.EnumValueChanged += OnValueChanged;
             return control;
         }
 
-        private void OnEnumValueChanged(EnumComboBox control)
+        private void OnValueChanged(EnumComboBox control)
         {
             var box = (InputBox)control.Tag;
             box.Value = control.EnumTypeValue;
@@ -790,19 +1236,19 @@ namespace FlaxEditor.Surface.Elements
             var value = GetValue(box);
             var control = new TypePickerControl
             {
-                Location = new Vector2(bounds.X, bounds.Y),
-                Size = new Vector2(60.0f, bounds.Height),
+                Location = new Float2(bounds.X, bounds.Y),
+                Size = new Float2(60.0f, bounds.Height),
                 ValueTypeName = value,
                 Parent = box.Parent,
                 Tag = box,
             };
             if (box.CurrentType.Type == typeof(Type))
                 control.CheckValid = type => type.Type != null;
-            control.TypePickerValueChanged += OnTypeValueChanged;
+            control.TypePickerValueChanged += OnValueChanged;
             return control;
         }
 
-        private void OnTypeValueChanged(TypePickerControl control)
+        private void OnValueChanged(TypePickerControl control)
         {
             var box = (InputBox)control.Tag;
             var v = box.Value;
@@ -874,6 +1320,12 @@ namespace FlaxEditor.Surface.Elements
             new Vector2DefaultValueEditor(),
             new Vector3DefaultValueEditor(),
             new Vector4DefaultValueEditor(),
+            new Float2DefaultValueEditor(),
+            new Float3DefaultValueEditor(),
+            new Float4DefaultValueEditor(),
+            new Double2DefaultValueEditor(),
+            new Double3DefaultValueEditor(),
+            new Double4DefaultValueEditor(),
             new QuaternionDefaultValueEditor(),
             new ColorDefaultValueEditor(),
             new EnumDefaultValueEditor(),
@@ -962,7 +1414,7 @@ namespace FlaxEditor.Surface.Elements
 
             if (_defaultValueEditor != null)
             {
-                _defaultValueEditor.Location = new Vector2(X + Width + 8 + Style.Current.FontSmall.MeasureText(Text).X, Y);
+                _defaultValueEditor.Location = new Float2(X + Width + 8 + Style.Current.FontSmall.MeasureText(Text).X, Y);
             }
         }
 
@@ -1033,7 +1485,7 @@ namespace FlaxEditor.Surface.Elements
         }
 
         /// <inheritdoc />
-        public override bool OnMouseUp(Vector2 location, MouseButton button)
+        public override bool OnMouseUp(Float2 location, MouseButton button)
         {
             if (button == MouseButton.Right && HasValue)
             {
@@ -1055,7 +1507,7 @@ namespace FlaxEditor.Surface.Elements
 
             return base.OnMouseUp(location, button);
         }
-        
+
         /// <inheritdoc />
         public override void OnDestroy()
         {

@@ -43,17 +43,39 @@ String OrientedBoundingBox::ToString() const
     return String::Format(TEXT("{}"), *this);
 }
 
-void OrientedBoundingBox::GetCorners(Vector3 corners[8]) const
+void OrientedBoundingBox::GetCorners(Float3 corners[8]) const
 {
-    Vector3 xv = Vector3(Extents.X, 0, 0);
-    Vector3 yv = Vector3(0, Extents.Y, 0);
-    Vector3 zv = Vector3(0, 0, Extents.Z);
+    Float3 xv((float)Extents.X, 0, 0);
+    Float3 yv(0, (float)Extents.Y, 0);
+    Float3 zv(0, 0, (float)Extents.Z);
 
-    Vector3::TransformNormal(xv, Transformation, xv);
-    Vector3::TransformNormal(yv, Transformation, yv);
-    Vector3::TransformNormal(zv, Transformation, zv);
+    Float3::TransformNormal(xv, Transformation, xv);
+    Float3::TransformNormal(yv, Transformation, yv);
+    Float3::TransformNormal(zv, Transformation, zv);
 
-    const Vector3 center = Transformation.GetTranslation();
+    const Float3 center = Transformation.GetTranslation();
+
+    corners[0] = center + xv + yv + zv;
+    corners[1] = center + xv + yv - zv;
+    corners[2] = center - xv + yv - zv;
+    corners[3] = center - xv + yv + zv;
+    corners[4] = center + xv - yv + zv;
+    corners[5] = center + xv - yv - zv;
+    corners[6] = center - xv - yv - zv;
+    corners[7] = center - xv - yv + zv;
+}
+
+void OrientedBoundingBox::GetCorners(Double3 corners[8]) const
+{
+    Double3 xv(Extents.X, 0, 0);
+    Double3 yv(0, Extents.Y, 0);
+    Double3 zv(0, 0, Extents.Z);
+
+    Double3::TransformNormal(xv, Transformation, xv);
+    Double3::TransformNormal(yv, Transformation, yv);
+    Double3::TransformNormal(zv, Transformation, zv);
+
+    const Double3 center = Transformation.GetTranslation();
 
     corners[0] = center + xv + yv + zv;
     corners[1] = center + xv + yv - zv;
@@ -117,7 +139,7 @@ void OrientedBoundingBox::Transform(const Matrix& matrix)
     Matrix::Multiply(tmp, matrix, Transformation);
 }
 
-ContainmentType OrientedBoundingBox::Contains(const Vector3& point, float* distance) const
+ContainmentType OrientedBoundingBox::Contains(const Vector3& point, Real* distance) const
 {
     // Transform the point into the obb coordinates
     Matrix invTrans;
@@ -135,7 +157,7 @@ ContainmentType OrientedBoundingBox::Contains(const Vector3& point, float* dista
         // Get minimum distance to edge in local space
         Vector3 tmp;
         Vector3::Subtract(Extents, locPoint, tmp);
-        const float minDstToEdgeLocal = tmp.GetAbsolute().MinValue();
+        const Real minDstToEdgeLocal = tmp.GetAbsolute().MinValue();
 
         // Transform distance to world space
         Vector3 dstVec = Vector3::UnitX * minDstToEdgeLocal;
@@ -195,7 +217,7 @@ ContainmentType OrientedBoundingBox::Contains(const BoundingSphere& sphere, bool
     Vector3 locCenter;
     Vector3::TransformCoordinate(sphere.Center, invTrans, locCenter);
 
-    float locRadius;
+    Real locRadius;
     if (ignoreScale)
     {
         locRadius = sphere.Radius;
@@ -212,7 +234,7 @@ ContainmentType OrientedBoundingBox::Contains(const BoundingSphere& sphere, bool
     const Vector3 minusExtents = -Extents;
     Vector3 vector;
     Vector3::Clamp(locCenter, minusExtents, Extents, vector);
-    const float distance = Vector3::DistanceSquared(locCenter, vector);
+    const Real distance = Vector3::DistanceSquared(locCenter, vector);
 
     if (distance > locRadius * locRadius)
         return ContainmentType::Disjoint;
@@ -252,7 +274,7 @@ ContainmentType OrientedBoundingBox::Contains(const BoundingSphere& sphere, bool
 	Matrix R = Matrix::Identity;       // Rotation from B to A
 	Matrix AR = Matrix::Identity;      // absolute values of R matrix, to use with box extents
 
-	float ExtentA, ExtentB, Separation;
+	Real ExtentA, ExtentB, Separation;
 	int i, k;
 
 	// Calculate B to A rotation matrix
@@ -333,7 +355,7 @@ bool OrientedBoundingBox::Intersects(const Ray& ray, Vector3& point) const
     return intersects;
 }
 
-bool OrientedBoundingBox::Intersects(const Ray& ray, float& distance) const
+bool OrientedBoundingBox::Intersects(const Ray& ray, Real& distance) const
 {
     Vector3 point;
     const bool result = Intersects(ray, point);
@@ -341,7 +363,7 @@ bool OrientedBoundingBox::Intersects(const Ray& ray, float& distance) const
     return result;
 }
 
-bool OrientedBoundingBox::Intersects(const Ray& ray, float& distance, Vector3& normal) const
+bool OrientedBoundingBox::Intersects(const Ray& ray, Real& distance, Vector3& normal) const
 {
     // Put ray in box space
     Matrix invTrans;
