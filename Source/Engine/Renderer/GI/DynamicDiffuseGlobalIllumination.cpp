@@ -46,7 +46,7 @@ PACK_STRUCT(struct Data0
     GlobalSignDistanceFieldPass::ConstantsData GlobalSDF;
     GlobalSurfaceAtlasPass::ConstantsData GlobalSurfaceAtlas;
     GBufferData GBuffer;
-    Vector2 Padding0;
+    Float2 Padding0;
     float ResetBlend;
     float TemporalTime;
     });
@@ -54,7 +54,7 @@ PACK_STRUCT(struct Data0
 PACK_STRUCT(struct Data1
     {
     // TODO: use push constants on Vulkan or root signature data on DX12 to reduce overhead of changing single DWORD
-    Vector2 Padding1;
+    Float2 Padding1;
     uint32 CascadeIndex;
     uint32 ProbeIndexOffset;
     });
@@ -64,7 +64,7 @@ class DDGICustomBuffer : public RenderBuffers::CustomBuffer
 public:
     struct
     {
-        Vector3 ProbesOrigin;
+        Float3 ProbesOrigin;
         float ProbesSpacing = 0.0f;
         Int3 ProbeScrollOffsets;
         Int3 ProbeScrollDirections;
@@ -72,7 +72,7 @@ public:
 
         void Clear()
         {
-            ProbesOrigin = Vector3::Zero;
+            ProbesOrigin = Float3::Zero;
             ProbeScrollOffsets = Int3::Zero;
             ProbeScrollDirections = Int3::Zero;
             ProbeScrollClear[0] = false;
@@ -303,7 +303,7 @@ bool DynamicDiffuseGlobalIlluminationPass::Render(RenderContext& renderContext, 
     const float cascadesDistanceScales[] = { 1.0f, 3.0f, 6.0f, 10.0f }; // Scales each cascade further away from the camera origin
     const float distanceExtent = distance / cascadesDistanceScales[cascadesCount - 1];
     const float verticalRangeScale = 0.8f; // Scales the probes volume size at Y axis (horizontal aspect ratio makes the DDGI use less probes vertically to cover whole screen)
-    Int3 probesCounts(Vector3::Ceil(Vector3(distanceExtent, distanceExtent * verticalRangeScale, distanceExtent) / probesSpacing));
+    Int3 probesCounts(Float3::Ceil(Float3(distanceExtent, distanceExtent * verticalRangeScale, distanceExtent) / probesSpacing));
     const int32 maxProbeSize = Math::Max(DDGI_PROBE_RESOLUTION_IRRADIANCE, DDGI_PROBE_RESOLUTION_DISTANCE) + 2;
     const int32 maxTextureSize = Math::Min(GPUDevice::Instance->Limits.MaximumTexture2DSize, GPU_MAX_TEXTURE_SIZE);
     while (probesCounts.X * probesCounts.Y * maxProbeSize > maxTextureSize
@@ -315,7 +315,7 @@ bool DynamicDiffuseGlobalIlluminationPass::Render(RenderContext& renderContext, 
 
     // Initialize cascades
     float probesSpacings[4];
-    Vector3 viewOrigins[4];
+    Float3 viewOrigins[4];
     for (int32 cascadeIndex = 0; cascadeIndex < cascadesCount; cascadeIndex++)
     {
         // Each cascade has higher spacing between probes
@@ -324,16 +324,16 @@ bool DynamicDiffuseGlobalIlluminationPass::Render(RenderContext& renderContext, 
         probesSpacings[cascadeIndex] = cascadeProbesSpacing;
 
         // Calculate view origin for cascade by shifting it towards the view direction to account for better view frustum coverage
-        Vector3 viewOrigin = renderContext.View.Position;
-        Vector3 viewDirection = renderContext.View.Direction;
-        const Vector3 probesDistance = Vector3(probesCounts) * cascadeProbesSpacing;
+        Float3 viewOrigin = renderContext.View.Position;
+        Float3 viewDirection = renderContext.View.Direction;
+        const Float3 probesDistance = Float3(probesCounts) * cascadeProbesSpacing;
         const float probesDistanceMax = probesDistance.MaxValue();
-        const Vector2 viewRayHit = CollisionsHelper::LineHitsBox(viewOrigin, viewOrigin + viewDirection * (probesDistanceMax * 2.0f), viewOrigin - probesDistance, viewOrigin + probesDistance);
+        const Float3 viewRayHit = CollisionsHelper::LineHitsBox(viewOrigin, viewOrigin + viewDirection * (probesDistanceMax * 2.0f), viewOrigin - probesDistance, viewOrigin + probesDistance);
         const float viewOriginOffset = viewRayHit.Y * probesDistanceMax * 0.6f;
         viewOrigin += viewDirection * viewOriginOffset;
         const float viewOriginSnapping = cascadeProbesSpacing;
-        viewOrigin = Vector3::Floor(viewOrigin / viewOriginSnapping) * viewOriginSnapping;
-        //viewOrigin = Vector3::Zero;
+        viewOrigin = Float3::Floor(viewOrigin / viewOriginSnapping) * viewOriginSnapping;
+        //viewOrigin = Float3::Zero;
         viewOrigins[cascadeIndex] = viewOrigin;
     }
 
@@ -383,9 +383,9 @@ bool DynamicDiffuseGlobalIlluminationPass::Render(RenderContext& renderContext, 
     {
         // Clear probes
         PROFILE_GPU("Clear");
-        context->ClearUA(ddgiData.ProbesState, Vector4::Zero);
-        context->ClearUA(ddgiData.ProbesIrradiance, Vector4::Zero);
-        context->ClearUA(ddgiData.ProbesDistance, Vector4::Zero);
+        context->ClearUA(ddgiData.ProbesState, Float4::Zero);
+        context->ClearUA(ddgiData.ProbesIrradiance, Float4::Zero);
+        context->ClearUA(ddgiData.ProbesDistance, Float4::Zero);
     }
 
     // Calculate which cascades should be updated this frame
@@ -416,8 +416,8 @@ bool DynamicDiffuseGlobalIlluminationPass::Render(RenderContext& renderContext, 
         }
 
         // Calculate the count of grid cells between the view origin and the scroll anchor
-        const Vector3 volumeOrigin = cascade.ProbesOrigin + Vector3(cascade.ProbeScrollOffsets) * cascade.ProbesSpacing;
-        const Vector3 translation = viewOrigins[cascadeIndex] - volumeOrigin;
+        const Float3 volumeOrigin = cascade.ProbesOrigin + Float3(cascade.ProbeScrollOffsets) * cascade.ProbesSpacing;
+        const Float3 translation = viewOrigins[cascadeIndex] - volumeOrigin;
         for (int32 axis = 0; axis < 3; axis++)
         {
             const float value = translation.Raw[axis] / cascade.ProbesSpacing;
@@ -438,7 +438,7 @@ bool DynamicDiffuseGlobalIlluminationPass::Render(RenderContext& renderContext, 
         {
             auto& cascade = ddgiData.Cascades[cascadeIndex];
             int32 probeScrollClear = cascade.ProbeScrollClear[0] + cascade.ProbeScrollClear[1] * 2 + cascade.ProbeScrollClear[2] * 4; // Pack clear flags into bits
-            ddgiData.Result.Constants.ProbesOriginAndSpacing[cascadeIndex] = Vector4(cascade.ProbesOrigin, cascade.ProbesSpacing);
+            ddgiData.Result.Constants.ProbesOriginAndSpacing[cascadeIndex] = Float4(cascade.ProbesOrigin, cascade.ProbesSpacing);
             ddgiData.Result.Constants.ProbesScrollOffsets[cascadeIndex] = Int4(cascade.ProbeScrollOffsets, probeScrollClear);
             ddgiData.Result.Constants.ProbeScrollDirections[cascadeIndex] = Int4(cascade.ProbeScrollDirections, 0);
         }
@@ -448,7 +448,7 @@ bool DynamicDiffuseGlobalIlluminationPass::Render(RenderContext& renderContext, 
         ddgiData.Result.Constants.ProbeHistoryWeight = probeHistoryWeight;
         ddgiData.Result.Constants.IrradianceGamma = 5.0f;
         ddgiData.Result.Constants.IndirectLightingIntensity = indirectLightingIntensity;
-        ddgiData.Result.Constants.FallbackIrradiance = fallbackIrradiance.ToVector3() * fallbackIrradiance.A;
+        ddgiData.Result.Constants.FallbackIrradiance = fallbackIrradiance.ToFloat3() * fallbackIrradiance.A;
         ddgiData.Result.ProbesState = ddgiData.ProbesState->View();
         ddgiData.Result.ProbesDistance = ddgiData.ProbesDistance->View();
         ddgiData.Result.ProbesIrradiance = ddgiData.ProbesIrradiance->View();
@@ -627,7 +627,7 @@ bool DynamicDiffuseGlobalIlluminationPass::Render(RenderContext& renderContext, 
             debugRenderContext.View.Pass = DrawPass::GBuffer;
             debugRenderContext.View.Prepare(debugRenderContext);
             Matrix world;
-            Matrix::Scaling(Vector3(0.2f), world);
+            Matrix::Scaling(Float3(0.2f), world);
             const Mesh& debugMesh = _debugModel->LODs[0].Meshes[0];
             for (int32 probeIndex = 0; probeIndex < probesCountTotal; probeIndex++)
                 debugMesh.Draw(debugRenderContext, _debugMaterial, world, StaticFlags::None, true, DrawPass::GBuffer, (float)probeIndex);

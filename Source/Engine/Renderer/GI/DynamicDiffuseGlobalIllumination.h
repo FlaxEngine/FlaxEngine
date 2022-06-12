@@ -15,7 +15,7 @@ public:
     // Constant buffer data for DDGI access on a GPU.
     PACK_STRUCT(struct ConstantsData
         {
-        Vector4 ProbesOriginAndSpacing[4];
+        Float4 ProbesOriginAndSpacing[4];
         Int4 ProbesScrollOffsets[4];
         Int4 ProbeScrollDirections[4];
         uint32 ProbesCounts[3];
@@ -24,10 +24,10 @@ public:
         float ProbeHistoryWeight;
         float RayMaxDistance;
         float IndirectLightingIntensity;
-        Vector4 RaysRotation;
-        Vector3 ViewDir;
+        Float4 RaysRotation;
+        Float3 ViewDir;
         uint32 RaysCount;
-        Vector3 FallbackIrradiance;
+        Float3 FallbackIrradiance;
         float Padding0;
         });
 
