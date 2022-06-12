@@ -433,10 +433,13 @@ namespace FlaxEditor.Surface
                 };
                 if (!p.IsPublic)
                     propertyLabel.TextColor = propertyLabel.TextColor.RGBMultiplied(0.7f);
+                var tooltipText = "Type: " + window.VisjectSurface.GetTypeName(p.Type);
                 var tooltip = (TooltipAttribute)attributes.FirstOrDefault(x => x is TooltipAttribute);
+                if (tooltip != null)
+                    tooltipText += '\n' + tooltip.Text;
                 propertyLabel.MouseLeftDoubleClick += (label, location) => StartParameterRenaming(pIndex, label);
                 propertyLabel.SetupContextMenu += OnPropertyLabelSetupContextMenu;
-                var property = itemLayout.AddPropertyItem(propertyLabel, tooltip?.Text);
+                var property = itemLayout.AddPropertyItem(propertyLabel, tooltipText);
                 property.Object(propertyValue);
             }
 
