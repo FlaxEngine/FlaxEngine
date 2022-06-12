@@ -97,7 +97,7 @@ namespace
     bool JobStartingOnDispatch = true;
     volatile int64 ExitFlag = 0;
     volatile int64 JobLabel = 0;
-    Dictionary<int64, JobContext> JobContexts;
+    Dictionary<int64, JobContext*> JobContexts;
     CriticalSection JobContextMutex;
     ConditionVariable JobsSignal;
     CriticalSection JobsMutex;
@@ -203,14 +203,12 @@ int32 JobSystemThread::Run()
 
             // Move forward with the job queue
             JobContextMutex.Lock();
-            JobContext& context = JobContexts.At(data.JobKey);
-            Platform::InterlockedDecrement(&context.JobsLeft);
-            ASSERT(Platform::AtomicRead(&context.JobsLeft) >= 0)
-            if (context.JobsLeft <= 0)
-            {
-                if (Platform::AtomicRead(&context.RefCount) == 0)
-                    JobContexts.Remove(data.JobKey);
-            }
+            JobContext* context = JobContexts.At(data.JobKey);
+            Platform::InterlockedDecrement(&context->JobsLeft);
+            Platform::InterlockedDecrement(&context->RefCount);
+            if (context->JobsLeft <= 0 && Platform::AtomicRead(&context->RefCount) == 0)
+                JobContexts.Remove(data.JobKey);
+
             JobContextMutex.Unlock();
 
             WaitSignal.NotifyAll();
@@ -245,8 +243,10 @@ int64 JobSystem::Dispatch(const Function<void(int32)>& job, int32 jobCount)
     data.Job = job;
     data.JobKey = label;
 
-    JobContext context;
-    context.JobsLeft = jobCount;
+    // Allocate dynamically in case the dictionary gets reallocated
+    JobContext* context = New<JobContext>();
+    context->JobsLeft = jobCount;
+    Platform::InterlockedIncrement(&context->RefCount);
 
     JobContextMutex.Lock();
     JobContexts.Add(label, context);
@@ -308,7 +308,7 @@ void JobSystem::Wait(int64 label)
     PROFILE_CPU();
 
     JobContextMutex.Lock();
-    JobContext* context = JobContexts.TryGet(label);
+    JobContext* context = JobContexts.At(label);
     if (context)
         Platform::InterlockedIncrement(&context->RefCount);
     JobContextMutex.Unlock();
