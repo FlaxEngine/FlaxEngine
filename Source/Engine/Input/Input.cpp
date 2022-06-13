@@ -5,7 +5,6 @@
 #include "Keyboard.h"
 #include "Mouse.h"
 #include "Gamepad.h"
-#include "FlaxEngine.Gen.h"
 #include "Engine/Platform/Window.h"
 #include "Engine/Engine/Engine.h"
 #include "Engine/Engine/EngineService.h"
@@ -223,7 +222,7 @@ void Mouse::OnMouseMove(const Float2& position, Window* target)
     e.MouseData.Position = position;
 }
 
-void Mouse::OnMouseMoveDelta(const Vector2& delta, Window* target)
+void Mouse::OnMouseMoveDelta(const Float2& delta, Window* target)
 {
     Event& e = _queue.AddOne();
     e.Type = EventType::MouseMoveDelta;
@@ -267,7 +266,7 @@ bool Mouse::Update(EventQueue& queue)
 
     // Handle events
     _state.MouseWheelDelta = 0;
-    _state.MouseDelta = Vector2::Zero;
+    _state.MouseDelta = Float2::Zero;
     for (int32 i = 0; i < _queue.Count(); i++)
     {
         const Event& e = _queue[i];

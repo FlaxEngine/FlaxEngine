@@ -180,7 +180,7 @@ bool WindowsInput::WndProc(Window* window, Windows::UINT msg, Windows::WPARAM wP
     return false;
 }
 
-bool OnRawInput(Vector2 mousePosition, Window* window, HRAWINPUT input)
+bool OnRawInput(Float2 mousePosition, Window* window, HRAWINPUT input)
 {
     // TODO: use GetRawInputBuffer to avoid filling the message queue with high polling rate mice
 
@@ -220,13 +220,13 @@ bool OnRawInput(Vector2 mousePosition, Window* window, HRAWINPUT input)
     if (rawInput->header.dwType == RIM_TYPEMOUSE)
     {
         const RAWMOUSE rawMouse = rawInput->data.mouse;
-        Vector2 mousePos;
+        Float2 mousePos;
         if ((rawMouse.usFlags & MOUSE_MOVE_ABSOLUTE) != 0)
         {
             const bool virtualDesktop = (rawMouse.usFlags & MOUSE_VIRTUAL_DESKTOP) != 0;
             const int width = GetSystemMetrics(virtualDesktop ? SM_CXVIRTUALSCREEN : SM_CXSCREEN);
             const int height = GetSystemMetrics(virtualDesktop ? SM_CYVIRTUALSCREEN : SM_CYSCREEN);
-            mousePos = Vector2(Int2(
+            mousePos = Float2(Int2(
                 static_cast<int>((rawMouse.lLastX / 65535.0f) * width),
                 static_cast<int>((rawMouse.lLastY / 65535.0f) * height)));
 
@@ -238,7 +238,7 @@ bool OnRawInput(Vector2 mousePosition, Window* window, HRAWINPUT input)
             // delta movement accumulated during this frame.
             mousePos = mousePosition;
 
-            const Vector2 mouseDelta(Int2(rawMouse.lLastX, rawMouse.lLastY));
+            const Float2 mouseDelta(Int2(rawMouse.lLastX, rawMouse.lLastY));
             mousePos += mouseDelta;
 
             if (!mouseDelta.IsZero())
@@ -356,14 +356,14 @@ bool WindowsMouse::WndProc(Window* window, const UINT msg, WPARAM wParam, LPARAM
         if (!WindowsRawInputImpl::UseRawInput)
         {
             // Calculate mouse deltas since last message
-            static Vector2 lastPos = mousePos;
+            static Float2 lastPos = mousePos;
             if (_state.MouseWasReset)
             {
                 lastPos = _state.MousePosition;
                 _state.MouseWasReset = false;
             }
 
-            Vector2 deltaPos = mousePos - lastPos;
+            Float2 deltaPos = mousePos - lastPos;
             if (!deltaPos.IsZero())
                 OnMouseMoveDelta(deltaPos, window);
             lastPos = mousePos;
