@@ -264,6 +264,7 @@ void CS_UpdateProbes(uint3 GroupThreadId : SV_GroupThreadID, uint3 GroupId : SV_
     int3 probesScrollOffsets = DDGI.ProbesScrollOffsets[CascadeIndex].xyz;
     int probeScrollClear = DDGI.ProbesScrollOffsets[CascadeIndex].w;
     int3 probeScrollDirections = DDGI.ProbeScrollDirections[CascadeIndex].xyz;
+    bool scrolled = false;
     UNROLL
     for (uint planeIndex = 0; planeIndex < 3; planeIndex++)
     {
@@ -274,11 +275,12 @@ void CS_UpdateProbes(uint3 GroupThreadId : SV_GroupThreadID, uint3 GroupId : SV_
             uint probeCount = DDGI.ProbesCounts[planeIndex];
             uint coord = (probeCount + (scrollDirection ? (scrollOffset - 1) : (scrollOffset % probeCount))) % probeCount;
             if (probeCoords[planeIndex] == coord)
-            {
-                RWOutput[outputCoords] = float4(0, 0, 0, 0);
-                break;
-            }
+                scrolled = true;
         }
+    }
+    if (scrolled)
+    {
+        RWOutput[outputCoords] = float4(0, 0, 0, 0);
     }
 
     // Calculate octahedral projection for probe (unwraps spherical projection into a square)
@@ -336,7 +338,7 @@ void CS_UpdateProbes(uint3 GroupThreadId : SV_GroupThreadID, uint3 GroupId : SV_
     float3 previous = RWOutput[outputCoords].rgb;
     float historyWeight = DDGI.ProbeHistoryWeight;
     //historyWeight = 0.0f;
-    if (ResetBlend || dot(previous, previous) == 0)
+    if (ResetBlend || scrolled || dot(previous, previous) == 0)
         historyWeight = 0.0f;
 #if DDGI_PROBE_UPDATE_MODE == 0
     result *= DDGI.IndirectLightingIntensity;

@@ -389,9 +389,9 @@ bool DynamicDiffuseGlobalIlluminationPass::Render(RenderContext& renderContext, 
     }
 
     // Calculate which cascades should be updated this frame
-    //const uint64 cascadeFrequencies[] = { 1, 2, 3, 5 };
+    const uint64 cascadeFrequencies[] = { 1, 2, 3, 5 };
     // TODO: prevent updating 2 cascades at once on Low quality
-    const uint64 cascadeFrequencies[] = { 1, 1, 1, 1 };
+    //const uint64 cascadeFrequencies[] = { 1, 1, 1, 1 };
     bool cascadeSkipUpdate[4];
     for (int32 cascadeIndex = 0; cascadeIndex < cascadesCount; cascadeIndex++)
     {
