@@ -61,6 +61,7 @@ float3 GetProbeRayDirection(DDGIData data, uint rayIndex)
 RWTexture2D<float4> RWProbesState : register(u0);
 
 Texture3D<float> GlobalSDFTex[4] : register(t0);
+Texture3D<float> GlobalSDFMip[4] : register(t4);
 
 // Compute shader for updating probes state between active and inactive.
 META_CS(true, FEATURE_LEVEL_SM5)
@@ -84,10 +85,10 @@ void CS_Classify(uint3 DispatchThreadId : SV_DispatchThreadID)
 
     // Use Global SDF to quickly get distance and direction to the scene geometry
     float sdf;
-    float3 sdfNormal = normalize(SampleGlobalSDFGradient(GlobalSDF, GlobalSDFTex, probePosition.xyz, sdf));
+    float3 sdfNormal = normalize(SampleGlobalSDFGradient(GlobalSDF, GlobalSDFTex, GlobalSDFMip, probePosition.xyz, sdf));
     float sdfDst = abs(sdf);
     float threshold = GlobalSDF.CascadeVoxelSize[CascadeIndex];
-    float distanceLimit = length(probesSpacing) * 2.0f;
+    float distanceLimit = length(probesSpacing) * 1.5f;
     float relocateLimit = length(probesSpacing) * 0.6f;
     if (sdfDst > distanceLimit) // Probe is too far from geometry
     {

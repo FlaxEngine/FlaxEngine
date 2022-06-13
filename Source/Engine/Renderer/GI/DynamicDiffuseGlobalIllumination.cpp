@@ -487,6 +487,7 @@ bool DynamicDiffuseGlobalIlluminationPass::Render(RenderContext& renderContext, 
         PROFILE_GPU_CPU("Probes Classification");
         uint32 threadGroups = Math::DivideAndRoundUp(probesCountCascade, DDGI_PROBE_CLASSIFY_GROUP_SIZE);
         bindingDataSDF.BindCascades(context, 0);
+        bindingDataSDF.BindCascadeMips(context, 4);
         context->BindUA(0, ddgiData.Result.ProbesState);
         for (int32 cascadeIndex = 0; cascadeIndex < cascadesCount; cascadeIndex++)
         {

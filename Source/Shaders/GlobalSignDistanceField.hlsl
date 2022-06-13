@@ -114,6 +114,45 @@ float3 SampleGlobalSDFGradient(const GlobalSDFData data, Texture3D<float> tex[4]
 	return gradient;
 }
 
+// Samples the Global SDF and returns the gradient vector (derivative) at the given world location. Normalize it to get normal vector.
+float3 SampleGlobalSDFGradient(const GlobalSDFData data, Texture3D<float> tex[4], Texture3D<float> mips[4], float3 worldPosition, out float distance)
+{
+	float3 gradient = float3(0, 0.00001f, 0);
+	distance = GLOBAL_SDF_WORLD_SIZE;
+	if (data.CascadePosDistance[3].w <= 0.0f)
+		return gradient;
+	float chunkSizeDistance = (float)GLOBAL_SDF_RASTERIZE_CHUNK_SIZE / data.Resolution; // Size of the chunk in SDF distance (0-1)
+	float chunkMarginDistance = (float)GLOBAL_SDF_RASTERIZE_CHUNK_MARGIN / data.Resolution; // Size of the chunk margin in SDF distance (0-1)
+	UNROLL
+	for (uint cascade = 0; cascade < data.CascadesCount; cascade++)
+	{
+		float4 cascadePosDistance = data.CascadePosDistance[cascade];
+		float cascadeMaxDistance = cascadePosDistance.w * 2;
+		float3 posInCascade = worldPosition - cascadePosDistance.xyz;
+		float3 cascadeUV = posInCascade / cascadeMaxDistance + 0.5f;
+	    float cascadeDistance = mips[cascade].SampleLevel(SamplerLinearClamp, cascadeUV, 0);
+	    if (cascadeDistance < chunkSizeDistance && !any(cascadeUV < 0) && !any(cascadeUV > 1))
+	    {
+	        float cascadeDistanceTex = tex[cascade].SampleLevel(SamplerLinearClamp, cascadeUV, 0);
+	        if (cascadeDistanceTex < chunkMarginDistance * 2)
+	        {
+	            cascadeDistance = cascadeDistanceTex;
+	        }
+	        float texelOffset = 1.0f / data.Resolution;
+	        float xp = tex[cascade].SampleLevel(SamplerLinearClamp, float3(cascadeUV.x + texelOffset, cascadeUV.y, cascadeUV.z), 0).x;
+	        float xn = tex[cascade].SampleLevel(SamplerLinearClamp, float3(cascadeUV.x - texelOffset, cascadeUV.y, cascadeUV.z), 0).x;
+	        float yp = tex[cascade].SampleLevel(SamplerLinearClamp, float3(cascadeUV.x, cascadeUV.y + texelOffset, cascadeUV.z), 0).x;
+	        float yn = tex[cascade].SampleLevel(SamplerLinearClamp, float3(cascadeUV.x, cascadeUV.y - texelOffset, cascadeUV.z), 0).x;
+	        float zp = tex[cascade].SampleLevel(SamplerLinearClamp, float3(cascadeUV.x, cascadeUV.y, cascadeUV.z + texelOffset), 0).x;
+	        float zn = tex[cascade].SampleLevel(SamplerLinearClamp, float3(cascadeUV.x, cascadeUV.y, cascadeUV.z - texelOffset), 0).x;
+	        gradient = float3(xp - xn, yp - yn, zp - zn) * cascadeMaxDistance;
+	        distance = cascadeDistance * cascadeMaxDistance;
+	        break;
+	    }
+	}
+	return gradient;
+}
+
 // Ray traces the Global SDF.
 GlobalSDFHit RayTraceGlobalSDF(const GlobalSDFData data, Texture3D<float> tex[4], Texture3D<float> mips[4], const GlobalSDFTrace trace)
 {
