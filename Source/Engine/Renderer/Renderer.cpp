@@ -345,7 +345,7 @@ void RenderInner(SceneRenderTask* task, RenderContext& renderContext)
 #endif
 
     // Global SDF rendering (can be used by materials later on)
-    if (graphicsSettings->EnableGlobalSDF)
+    if (graphicsSettings->EnableGlobalSDF && view.Flags & ViewFlags::GlobalSDF)
     {
         GlobalSignDistanceFieldPass::BindingData bindingData;
         GlobalSignDistanceFieldPass::Instance()->Render(renderContext, context, bindingData);
