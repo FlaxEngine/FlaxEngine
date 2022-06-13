@@ -75,6 +75,11 @@ namespace Flax.Build.Bindings
             "Rectangle",
         };
 
+        private static bool GenerateCppIsTemplateInstantiationType(ApiTypeInfo typeInfo)
+        {
+            return typeInfo.Instigator != null && typeInfo.Instigator.TypeInfo is ClassStructInfo classStructInfo && classStructInfo.IsTemplate;
+        }
+
         private static string GenerateCppWrapperNativeToVariantMethodName(TypeInfo typeInfo)
         {
             var sb = new StringBuilder();
@@ -1786,6 +1791,8 @@ namespace Flax.Build.Bindings
             var interfacesTable = GenerateCppInterfaceInheritanceTable(buildData, contents, moduleInfo, classInfo, classTypeNameNative);
 
             // Type initializer
+            if (GenerateCppIsTemplateInstantiationType(classInfo))
+                contents.Append("template<> ");
             contents.Append($"ScriptingTypeInitializer {classTypeNameNative}::TypeInitializer((BinaryModule*)GetBinaryModule{moduleInfo.Name}(), ");
             contents.Append($"StringAnsiView(\"{classTypeNameManaged}\", {classTypeNameManaged.Length}), ");
             contents.Append($"sizeof({classTypeNameNative}), ");
@@ -2010,6 +2017,8 @@ namespace Flax.Build.Bindings
             contents.Append('}').Append(';').AppendLine();
             contents.AppendLine();
 
+            if (GenerateCppIsTemplateInstantiationType(structureInfo))
+                contents.Append("template<> ");
             contents.Append($"ScriptingTypeInitializer {structureTypeNameNative}::TypeInitializer((BinaryModule*)GetBinaryModule{moduleInfo.Name}(), ");
             contents.Append($"StringAnsiView(\"{structureTypeNameManaged}\", {structureTypeNameManaged.Length}), ");
             contents.Append($"sizeof({structureTypeNameNative}), ");

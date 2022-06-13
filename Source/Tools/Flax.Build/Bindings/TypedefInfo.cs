@@ -12,6 +12,7 @@ namespace Flax.Build.Bindings
     {
         public bool IsAlias;
         public TypeInfo Type;
+        public ApiTypeInfo TypeInfo; // Cached info of Type
         public ApiTypeInfo Typedef;
 
         // Guards to prevent looped initialization for typedefs that are recursive
@@ -48,6 +49,7 @@ namespace Flax.Build.Bindings
             if (apiTypeInfo == null)
                 throw new Exception(string.Format("Unknown type '{0}' for typedef '{1}'.", Type, Name));
             apiTypeInfo.EnsureInited(buildData);
+            TypeInfo = apiTypeInfo;
 
             // Alias type without introducing any new type
             if (IsAlias || apiTypeInfo is LangType)
@@ -60,6 +62,7 @@ namespace Flax.Build.Bindings
             {
                 // Duplicate type
                 var typedef = (ApiTypeInfo)apiTypeInfo.Clone();
+                typedef.Instigator = this;
                 typedef.NativeName = NativeName ?? Name;
                 typedef.Name = Name;
                 typedef.Namespace = Namespace;

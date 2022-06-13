@@ -932,3 +932,54 @@ struct TIsPODType<Int3>
 };
 
 DEFINE_DEFAULT_FORMATTING(Int3, "X:{0} Y:{1} Z:{2}", v.X, v.Y, v.Z);
+
+#if !defined(_MSC_VER) || defined(__clang__)
+// Forward specializations for Clang
+template<> FLAXENGINE_API const Float3 Float3::Zero;
+template<> FLAXENGINE_API const Float3 Float3::One;
+template<> FLAXENGINE_API const Float3 Float3::Half;
+template<> FLAXENGINE_API const Float3 Float3::UnitX;
+template<> FLAXENGINE_API const Float3 Float3::UnitY;
+template<> FLAXENGINE_API const Float3 Float3::UnitZ;
+template<> FLAXENGINE_API const Float3 Float3::Up;
+template<> FLAXENGINE_API const Float3 Float3::Down;
+template<> FLAXENGINE_API const Float3 Float3::Left;
+template<> FLAXENGINE_API const Float3 Float3::Right;
+template<> FLAXENGINE_API const Float3 Float3::Forward;
+template<> FLAXENGINE_API const Float3 Float3::Backward;
+template<> FLAXENGINE_API const Float3 Float3::Minimum;
+template<> FLAXENGINE_API const Float3 Float3::Maximum;
+template<> FLAXENGINE_API ScriptingTypeInitializer Float3::TypeInitializer;
+
+template<> FLAXENGINE_API const Double3 Double3::Zero;
+template<> FLAXENGINE_API const Double3 Double3::One;
+template<> FLAXENGINE_API const Double3 Double3::Half;
+template<> FLAXENGINE_API const Double3 Double3::UnitX;
+template<> FLAXENGINE_API const Double3 Double3::UnitY;
+template<> FLAXENGINE_API const Double3 Double3::UnitZ;
+template<> FLAXENGINE_API const Double3 Double3::Up;
+template<> FLAXENGINE_API const Double3 Double3::Down;
+template<> FLAXENGINE_API const Double3 Double3::Left;
+template<> FLAXENGINE_API const Double3 Double3::Right;
+template<> FLAXENGINE_API const Double3 Double3::Forward;
+template<> FLAXENGINE_API const Double3 Double3::Backward;
+template<> FLAXENGINE_API const Double3 Double3::Minimum;
+template<> FLAXENGINE_API const Double3 Double3::Maximum;
+template<> FLAXENGINE_API ScriptingTypeInitializer Double3::TypeInitializer;
+
+template<> FLAXENGINE_API const Int3 Int3::Zero;
+template<> FLAXENGINE_API const Int3 Int3::One;
+template<> FLAXENGINE_API const Int3 Int3::Half;
+template<> FLAXENGINE_API const Int3 Int3::UnitX;
+template<> FLAXENGINE_API const Int3 Int3::UnitY;
+template<> FLAXENGINE_API const Int3 Int3::UnitZ;
+template<> FLAXENGINE_API const Int3 Int3::Up;
+template<> FLAXENGINE_API const Int3 Int3::Down;
+template<> FLAXENGINE_API const Int3 Int3::Left;
+template<> FLAXENGINE_API const Int3 Int3::Right;
+template<> FLAXENGINE_API const Int3 Int3::Forward;
+template<> FLAXENGINE_API const Int3 Int3::Backward;
+template<> FLAXENGINE_API const Int3 Int3::Minimum;
+template<> FLAXENGINE_API const Int3 Int3::Maximum;
+template<> FLAXENGINE_API ScriptingTypeInitializer Int3::TypeInitializer;
+#endif

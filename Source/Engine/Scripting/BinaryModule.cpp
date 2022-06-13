@@ -784,11 +784,11 @@ namespace
         {
             // Hack for Vector2/3/4 which alias with Float2/3/4 or Double2/3/4 (depending on USE_LARGE_WORLDS)
             const auto& stdTypes = *StdTypesContainer::Instance();
-            if (monoClass == stdTypes.Vector2Class->GetNative() && type.Type == VariantType::Float2 || type.Type == VariantType::Double2)
+            if (monoClass == stdTypes.Vector2Class->GetNative() && (type.Type == VariantType::Float2 || type.Type == VariantType::Double2))
                 return true;
-            if (monoClass == stdTypes.Vector3Class->GetNative() && type.Type == VariantType::Float3 || type.Type == VariantType::Double3)
+            if (monoClass == stdTypes.Vector3Class->GetNative() && (type.Type == VariantType::Float3 || type.Type == VariantType::Double3))
                 return true;
-            if (monoClass == stdTypes.Vector4Class->GetNative() && type.Type == VariantType::Float4 || type.Type == VariantType::Double4)
+            if (monoClass == stdTypes.Vector4Class->GetNative() && (type.Type == VariantType::Float4 || type.Type == VariantType::Double4))
                 return true;
 
             return false;
