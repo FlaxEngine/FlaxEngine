@@ -236,33 +236,8 @@ void CS_UpdateProbes(uint3 GroupThreadId : SV_GroupThreadID, uint3 GroupId : SV_
     probeCoords = GetDDGIProbeCoords(DDGI, probeIndex);
     uint2 outputCoords = GetDDGIProbeTexelCoords(DDGI, CascadeIndex, probeIndex) * (DDGI_PROBE_RESOLUTION + 2) + 1 + GroupThreadId.xy;
 
-    // Clear probes that have been scrolled to a new positions (blending with current irradiance will happen the next frame)
-    int3 probesScrollOffsets = DDGI.ProbesScrollOffsets[CascadeIndex].xyz;
-    int probeScrollClear = DDGI.ProbesScrollOffsets[CascadeIndex].w;
-    int3 probeScrollDirections = DDGI.ProbeScrollDirections[CascadeIndex].xyz;
-    bool skip = false;
-    UNROLL
-    for (uint planeIndex = 0; planeIndex < 3; planeIndex++)
-    {
-        if (probeScrollClear & (1 << planeIndex))
-        {
-            int scrollOffset = probesScrollOffsets[planeIndex];
-            int scrollDirection = probeScrollDirections[planeIndex];
-            uint probeCount = DDGI.ProbesCounts[planeIndex];
-            uint coord = (probeCount + (scrollDirection ? (scrollOffset - 1) : (scrollOffset % probeCount))) % probeCount;
-            if (probeCoords[planeIndex] == coord)
-            {
-                skip = true;
-            }
-        }
-    }
-    if (skip)
-    {
-        // Clear scrolled probe
-        RWOutput[outputCoords] = float4(0, 0, 0, 0);
-    }
-
     // Skip disabled probes
+    bool skip = false;
     float probeState = LoadDDGIProbeState(DDGI, ProbesState, CascadeIndex, probeIndex);
     if (probeState == DDGI_PROBE_STATE_INACTIVE)
         skip = true;
@@ -283,6 +258,27 @@ void CS_UpdateProbes(uint3 GroupThreadId : SV_GroupThreadID, uint3 GroupId : SV_
     GroupMemoryBarrierWithGroupSync();
     if (skip)
         return;
+
+    // Clear probes that have been scrolled to a new positions
+    int3 probesScrollOffsets = DDGI.ProbesScrollOffsets[CascadeIndex].xyz;
+    int probeScrollClear = DDGI.ProbesScrollOffsets[CascadeIndex].w;
+    int3 probeScrollDirections = DDGI.ProbeScrollDirections[CascadeIndex].xyz;
+    UNROLL
+    for (uint planeIndex = 0; planeIndex < 3; planeIndex++)
+    {
+        if (probeScrollClear & (1 << planeIndex))
+        {
+            int scrollOffset = probesScrollOffsets[planeIndex];
+            int scrollDirection = probeScrollDirections[planeIndex];
+            uint probeCount = DDGI.ProbesCounts[planeIndex];
+            uint coord = (probeCount + (scrollDirection ? (scrollOffset - 1) : (scrollOffset % probeCount))) % probeCount;
+            if (probeCoords[planeIndex] == coord)
+            {
+                RWOutput[outputCoords] = float4(0, 0, 0, 0);
+                break;
+            }
+        }
+    }
 
     // Calculate octahedral projection for probe (unwraps spherical projection into a square)
     float2 octahedralCoords = GetOctahedralCoords(GroupThreadId.xy, DDGI_PROBE_RESOLUTION);
