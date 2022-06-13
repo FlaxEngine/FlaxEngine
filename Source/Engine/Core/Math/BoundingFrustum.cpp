@@ -63,23 +63,9 @@ void BoundingFrustum::SetMatrix(const Matrix& matrix)
 
 Plane BoundingFrustum::GetPlane(int32 index) const
 {
-    switch (index)
-    {
-    case 0:
-        return _pLeft;
-    case 1:
-        return _pRight;
-    case 2:
-        return _pTop;
-    case 3:
-        return _pBottom;
-    case 4:
-        return _pNear;
-    case 5:
-        return _pFar;
-    default:
+    if (index > 5)
         return Plane();
-    }
+    return _planes[index];
 }
 
 static Vector3 Get3PlanesInterPoint(const Plane& p1, const Plane& p2, const Plane& p3)
@@ -151,27 +137,7 @@ ContainmentType BoundingFrustum::Contains(const Vector3& point) const
     PlaneIntersectionType planeResult = PlaneIntersectionType::Front;
     for (int i = 0; i < 6; i++)
     {
-        switch (i)
-        {
-        case 0:
-            planeResult = _pNear.Intersects(point);
-            break;
-        case 1:
-            planeResult = _pFar.Intersects(point);
-            break;
-        case 2:
-            planeResult = _pLeft.Intersects(point);
-            break;
-        case 3:
-            planeResult = _pRight.Intersects(point);
-            break;
-        case 4:
-            planeResult = _pTop.Intersects(point);
-            break;
-        case 5:
-            planeResult = _pBottom.Intersects(point);
-            break;
-        }
+        const PlaneIntersectionType planeResult = _planes[i].Intersects(point);
         switch (planeResult)
         {
         case PlaneIntersectionType::Back:
@@ -193,30 +159,9 @@ ContainmentType BoundingFrustum::Contains(const Vector3& point) const
 ContainmentType BoundingFrustum::Contains(const BoundingSphere& sphere) const
 {
     auto result = PlaneIntersectionType::Front;
-    auto planeResult = PlaneIntersectionType::Front;
     for (int i = 0; i < 6; i++)
     {
-        switch (i)
-        {
-        case 0:
-            planeResult = _pNear.Intersects(sphere);
-            break;
-        case 1:
-            planeResult = _pFar.Intersects(sphere);
-            break;
-        case 2:
-            planeResult = _pLeft.Intersects(sphere);
-            break;
-        case 3:
-            planeResult = _pRight.Intersects(sphere);
-            break;
-        case 4:
-            planeResult = _pTop.Intersects(sphere);
-            break;
-        case 5:
-            planeResult = _pBottom.Intersects(sphere);
-            break;
-        }
+        const PlaneIntersectionType planeResult = _planes[i].Intersects(sphere);
         switch (planeResult)
         {
         case PlaneIntersectionType::Back:

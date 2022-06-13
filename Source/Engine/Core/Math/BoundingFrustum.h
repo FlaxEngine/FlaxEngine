@@ -14,12 +14,20 @@ API_STRUCT(InBuild) struct FLAXENGINE_API BoundingFrustum
 {
 private:
     Matrix _matrix;
-    Plane _pNear;
-    Plane _pFar;
-    Plane _pLeft;
-    Plane _pRight;
-    Plane _pTop;
-    Plane _pBottom;
+
+    union
+    {
+        struct
+        {
+            Plane _pNear;
+            Plane _pFar;
+            Plane _pLeft;
+            Plane _pRight;
+            Plane _pTop;
+            Plane _pBottom;
+        };
+        Plane _planes[6];
+    };
 
 public:
     /// <summary>
