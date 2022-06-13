@@ -206,6 +206,26 @@ namespace Flax.Build
         }
 
         /// <summary>
+        /// Gets the options for the given configuration (key=value pairs).
+        /// </summary>
+        /// <param name="configuration">The configuration (key=value pairs).</param>
+        /// <returns>The options.</returns>
+        public static Option[] GetOptions(Dictionary<string, string> configuration)
+        {
+            var options = new Option[configuration.Count];
+            int i = 0;
+            foreach (var e in configuration)
+            {
+                options[i] = new Option
+                {
+                    Name = e.Key,
+                    Value = e.Value,
+                };
+            }
+            return options;
+        }
+
+        /// <summary>
         /// Parses the specified command line.
         /// </summary>
         /// <param name="commandLine">The command line.</param>
@@ -347,14 +367,45 @@ namespace Flax.Build
             Configure(GetMembers(obj), obj, commandLine);
         }
 
+        /// <summary>
+        /// Configures the members of the specified object using the command line options.
+        /// </summary>
+        /// <param name="type">The type.</param>
+        /// <param name="configuration">The configuration (key=value pairs).</param>
+        public static void Configure(Type type, Dictionary<string, string> configuration)
+        {
+            Configure(GetMembers(type), null, configuration);
+        }
+
+        /// <summary>
+        /// Configures the members of the specified object using the command line options.
+        /// </summary>
+        /// <param name="obj">The object.</param>
+        /// <param name="configuration">The configuration (key=value pairs).</param>
+        public static void Configure(object obj, Dictionary<string, string> configuration)
+        {
+            Configure(GetMembers(obj), obj, configuration);
+        }
+
         private static void Configure(Dictionary<CommandLineAttribute, MemberInfo> members, object instance, string commandLine)
         {
             if (commandLine == null)
                 throw new ArgumentNullException();
-
-            // Process command line
             var options = GetOptions(commandLine);
+            Configure(members, instance, options);
+        }
 
+
+        private static void Configure(Dictionary<CommandLineAttribute, MemberInfo> members, object instance, Dictionary<string, string> configuration)
+        {
+            if (configuration == null)
+                throw new ArgumentNullException();
+            var options = GetOptions(configuration);
+            Configure(members, instance, options);
+        }
+
+        private static void Configure(Dictionary<CommandLineAttribute, MemberInfo> members, object instance, Option[] options)
+        {
             foreach (var e in members)
             {
                 // Get option from command line
