@@ -11,6 +11,7 @@
 #include "Engine/Engine/Engine.h"
 #include "Engine/Content/Content.h"
 #include "Engine/Graphics/GPUDevice.h"
+#include "Engine/Graphics/Graphics.h"
 #include "Engine/Graphics/RenderTask.h"
 #include "Engine/Graphics/RenderBuffers.h"
 #include "Engine/Graphics/RenderTargetPool.h"
@@ -344,8 +345,7 @@ bool GlobalSurfaceAtlasPass::Render(RenderContext& renderContext, GPUContext* co
     PROFILE_GPU_CPU("Global Surface Atlas");
 
     // Setup options
-    // TODO: configurable via graphics settings
-    const int32 resolution = 2048;
+    const int32 resolution = Math::Clamp(Graphics::GlobalSurfaceAtlasResolution, 256, GPU_MAX_TEXTURE_SIZE);
     const float resolutionInv = 1.0f / resolution;
     auto& giSettings = renderContext.List->Settings.GlobalIllumination;
     const float distance = giSettings.Distance;
@@ -524,7 +524,7 @@ bool GlobalSurfaceAtlasPass::Render(RenderContext& renderContext, GPUContext* co
                     }
                 }
                 context->SetState(_psClear);
-                context->SetViewportAndScissors(Viewport(0, 0, resolution, resolution));
+                context->SetViewportAndScissors(Viewport(0, 0, (float)resolution, (float)resolution));
                 VB_DRAW();
             }
         }
@@ -747,7 +747,7 @@ bool GlobalSurfaceAtlasPass::Render(RenderContext& renderContext, GPUContext* co
             context->CopyTexture(surfaceAtlasData.AtlasLighting, 0, 0, 0, 0, surfaceAtlasData.AtlasEmissive, 0);
         }
 
-        context->SetViewportAndScissors(Viewport(0, 0, resolution, resolution));
+        context->SetViewportAndScissors(Viewport(0, 0, (float)resolution, (float)resolution));
         context->SetRenderTarget(surfaceAtlasData.AtlasLighting->View());
         context->BindSR(0, surfaceAtlasData.AtlasGBuffer0->View());
         context->BindSR(1, surfaceAtlasData.AtlasGBuffer1->View());

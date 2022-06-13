@@ -71,7 +71,7 @@ public:
     /// <summary>
     /// The Global SDF quality. Controls the volume texture resolution and amount of cascades to use.
     /// </summary>
-    API_FIELD(Attributes="EditorOrder(2005), DefaultValue(Quality.High), EditorDisplay(\"Quality\")")
+    API_FIELD(Attributes="EditorOrder(2005), DefaultValue(Quality.High), EditorDisplay(\"Global SDF\")")
     Quality GlobalSDFQuality = Quality::High;
 
 #if USE_EDITOR
@@ -85,8 +85,14 @@ public:
     /// <summary>
     /// The Global Illumination quality. Controls the quality of the GI effect.
     /// </summary>
-    API_FIELD(Attributes="EditorOrder(2100), DefaultValue(Quality.High), EditorDisplay(\"Quality\")")
+    API_FIELD(Attributes="EditorOrder(2100), DefaultValue(Quality.High), EditorDisplay(\"Global Illumination\")")
     Quality GIQuality = Quality::High;
+
+    /// <summary>
+    /// The Global Surface Atlas resolution. Adjust it if atlas `flickers` due to overflow (eg. to 4096).
+    /// </summary>
+    API_FIELD(Attributes="EditorOrder(2130), Limit(256, 8192), EditorDisplay(\"Global Illumination\")")
+    int32 GlobalSurfaceAtlasResolution = 2048;
 
 public:
     /// <summary>
