@@ -156,7 +156,7 @@ float Spline::GetSplineLength() const
     Vector3 prevPoint = Vector3::Zero;
     for (int32 i = 1; i < Curve.GetKeyframes().Count(); i++)
     {
-        const auto& a = Curve[i = 1];
+        const auto& a = Curve[i - 1];
         const auto& b = Curve[i];
 
         const float length = Math::Abs(b.Time - a.Time);
