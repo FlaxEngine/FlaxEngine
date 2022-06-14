@@ -216,15 +216,17 @@ bool AnimGraphBase::onNodeLoaded(Node* n)
             Delaunay2D::Triangulate(vertices, triangles);
             if (triangles.Count() == 0)
             {
-                switch (vertices.Count())
+                // Insert dummy triangles to have something working (eg. blend points are on the same axis)
+                int32 verticesLeft = vertices.Count();
+                while (verticesLeft >= 3)
                 {
-                case 1:
-                    triangles.Add(Delaunay2D::Triangle(0, 0, 0));
-                    break;
-                case 2:
-                    triangles.Add(Delaunay2D::Triangle(0, 1, 0));
-                    break;
+                    verticesLeft -= 3;
+                    triangles.Add(Delaunay2D::Triangle(verticesLeft, verticesLeft + 1, verticesLeft + 2));
                 }
+                if (verticesLeft == 1)
+                    triangles.Add(Delaunay2D::Triangle(0, 0, 0));
+                else if (verticesLeft == 2)
+                    triangles.Add(Delaunay2D::Triangle(0, 1, 0));
             }
 
             // Store triangles vertices indices (map the back to the anim node slots)

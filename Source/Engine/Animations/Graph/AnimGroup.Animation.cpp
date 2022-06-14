@@ -1225,9 +1225,9 @@ void AnimGraphExecutor::ProcessGroupAnimation(Box* boxBase, Node* nodeBase, Valu
                     break;
                 }
 
-                const auto v0 = points[1] - points[0];
-                const auto v1 = points[2] - points[0];
-                const auto v2 = p - points[0];
+                auto v0 = points[1] - points[0];
+                auto v1 = points[2] - points[0];
+                auto v2 = p - points[0];
 
                 const float d00 = Float2::Dot(v0, v0);
                 const float d01 = Float2::Dot(v0, v1);
@@ -1237,8 +1237,53 @@ void AnimGraphExecutor::ProcessGroupAnimation(Box* boxBase, Node* nodeBase, Valu
                 const float coeff = (d00 * d11 - d01 * d01);
                 if (Math::IsZero(coeff))
                 {
-                    // Use only vertex A for invalid triangle
-                    value = SampleAnimation(node, loop, data.Length, startTimePos, bucket.TimePosition, newTimePos, aAnim, aData.W);
+                    const bool xAxis = Math::IsZero(v0.X) && Math::IsZero(v1.X);
+                    const bool yAxis = Math::IsZero(v0.Y) && Math::IsZero(v1.Y);
+                    if (xAxis || yAxis)
+                    {
+                        if (yAxis)
+                        {
+                            // Use code for X-axis case so swap coordinates
+                            Swap(v0.X, v0.Y);
+                            Swap(v1.X, v1.Y);
+                            Swap(v2.X, v2.Y);
+                            Swap(p.X, p.Y);
+                        }
+
+                        // Use 1D blend if points are on the same line (degenerated triangle)
+                        // TODO: simplify this code
+                        if (v1.Y >= v0.Y)
+                        {
+                            if (p.Y < v0.Y && v1.Y >= v0.Y)
+                            {
+                                const float alpha = p.Y / v0.Y;
+                                value = SampleAnimationsWithBlend(node, loop, data.Length, startTimePos, bucket.TimePosition, newTimePos, aAnim, bAnim, aData.W, bData.W, alpha);
+                            }
+                            else
+                            {
+                                const float alpha = (p.Y - v0.Y) / (v1.Y - v0.Y);
+                                value = SampleAnimationsWithBlend(node, loop, data.Length, startTimePos, bucket.TimePosition, newTimePos, bAnim, cAnim, bData.W, cData.W, alpha);
+                            }
+                        }
+                        else
+                        {
+                            if (p.Y < v1.Y)
+                            {
+                                const float alpha = p.Y / v1.Y;
+                                value = SampleAnimationsWithBlend(node, loop, data.Length, startTimePos, bucket.TimePosition, newTimePos, aAnim, cAnim, aData.W, cData.W, alpha);
+                            }
+                            else
+                            {
+                                const float alpha = (p.Y - v1.Y) / (v0.Y - v1.Y);
+                                value = SampleAnimationsWithBlend(node, loop, data.Length, startTimePos, bucket.TimePosition, newTimePos, cAnim, bAnim, cData.W, bData.W, alpha);
+                            }
+                        }
+                    }
+                    else
+                    {
+                        // Use only vertex A for invalid triangle
+                        value = SampleAnimation(node, loop, data.Length, startTimePos, bucket.TimePosition, newTimePos, aAnim, aData.W);
+                    }
                     break;
                 }
                 const float v = (d11 * d20 - d01 * d21) / coeff;
@@ -1280,7 +1325,7 @@ void AnimGraphExecutor::ProcessGroupAnimation(Box* boxBase, Node* nodeBase, Valu
             }
         }
 
-        // Check if use the closes sample
+        // Check if use the closest sample
         if ((void*)value == nullptr && hasBest)
         {
             const auto aAnim = node->Assets[bestAnims[0]].As<Animation>();
