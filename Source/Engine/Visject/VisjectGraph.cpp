@@ -56,46 +56,26 @@ void VisjectExecutor::ProcessGroupConstants(Box* box, Node* node, Value& value)
     case 2:
     case 3:
     case 12:
+    case 15:
         value = node->Values[0];
         break;
+    // Float2/3/4, Color
     case 4:
-    {
-        const Value& cv = node->Values[0];
-        if (box->ID == 0)
-            value = cv;
-        else if (box->ID == 1)
-            value = cv.AsFloat2().X;
-        else if (box->ID == 2)
-            value = cv.AsFloat2().Y;
-        break;
-    }
     case 5:
-    {
-        const Value& cv = node->Values[0];
-        if (box->ID == 0)
-            value = cv;
-        else if (box->ID == 1)
-            value = cv.AsFloat3().X;
-        else if (box->ID == 2)
-            value = cv.AsFloat3().Y;
-        else if (box->ID == 3)
-            value = cv.AsFloat3().Z;
-        break;
-    }
     case 6:
     case 7:
     {
-        const Value& cv = node->Values[0];
+        const Float4 cv = (Float4)node->Values[0];
         if (box->ID == 0)
             value = cv;
         else if (box->ID == 1)
-            value = cv.AsFloat4().X;
+            value = cv.X;
         else if (box->ID == 2)
-            value = cv.AsFloat4().Y;
+            value = cv.Y;
         else if (box->ID == 3)
-            value = cv.AsFloat4().Z;
+            value = cv.Z;
         else if (box->ID == 4)
-            value = cv.AsFloat4().W;
+            value = cv.W;
         break;
     }
     case 8:
@@ -143,6 +123,24 @@ void VisjectExecutor::ProcessGroupConstants(Box* box, Node* node, Value& value)
         typeName += (StringView)node->Values[1];
         typeName += ']';
         value.Type.SetTypeName(typeName);
+        break;
+    }
+    // Vector2/3/4
+    case 16:
+    case 17:
+    case 18:
+    {
+        const Vector4 cv = (Vector4)node->Values[0];
+        if (box->ID == 0)
+            value = cv;
+        else if (box->ID == 1)
+            value = cv.X;
+        else if (box->ID == 2)
+            value = cv.Y;
+        else if (box->ID == 3)
+            value = cv.Z;
+        else if (box->ID == 4)
+            value = cv.W;
         break;
     }
     default:

@@ -69,60 +69,26 @@ void ShaderGenerator::ProcessGroupConstants(Box* box, Node* node, Value& value)
     case 2:
     case 3:
     case 12:
+    case 15:
         value = Value(node->Values[0]);
         break;
+    // Float2/3/4, Color
     case 4:
-    {
-        const Variant& cv = node->Values[0];
-        if (box->ID == 0)
-            value = Value(cv);
-        else if (box->ID == 1)
-            value = Value(cv.AsFloat2().X);
-        else if (box->ID == 2)
-            value = Value(cv.AsFloat2().Y);
-        break;
-    }
     case 5:
-    {
-        const Variant& cv = node->Values[0];
-        if (box->ID == 0)
-            value = Value(cv);
-        else if (box->ID == 1)
-            value = Value(cv.AsFloat3().X);
-        else if (box->ID == 2)
-            value = Value(cv.AsFloat3().Y);
-        else if (box->ID == 3)
-            value = Value(cv.AsFloat3().Z);
-        break;
-    }
     case 6:
-    {
-        const Variant& cv = node->Values[0];
-        if (box->ID == 0)
-            value = Value(cv);
-        else if (box->ID == 1)
-            value = Value(cv.AsFloat4().X);
-        else if (box->ID == 2)
-            value = Value(cv.AsFloat4().Y);
-        else if (box->ID == 3)
-            value = Value(cv.AsFloat4().Z);
-        else if (box->ID == 4)
-            value = Value(cv.AsFloat4().W);
-        break;
-    }
     case 7:
     {
-        const Variant& cv = node->Values[0];
+        const Float4 cv = (Float4)node->Values[0];
         if (box->ID == 0)
             value = Value(cv);
         else if (box->ID == 1)
-            value = Value(cv.AsColor().R);
+            value = Value(cv.X);
         else if (box->ID == 2)
-            value = Value(cv.AsColor().G);
+            value = Value(cv.Y);
         else if (box->ID == 3)
-            value = Value(cv.AsColor().B);
+            value = Value(cv.Z);
         else if (box->ID == 4)
-            value = Value(cv.AsColor().A);
+            value = Value(cv.W);
         break;
     }
     case 8:
@@ -134,6 +100,24 @@ void ShaderGenerator::ProcessGroupConstants(Box* box, Node* node, Value& value)
     case 10:
     {
         value = Value(PI);
+        break;
+    }
+    // Vector2/3/4
+    case 16:
+    case 17:
+    case 18:
+    {
+        const Vector4 cv = (Vector4)node->Values[0];
+        if (box->ID == 0)
+            value = Value(cv);
+        else if (box->ID == 1)
+            value = Value(cv.X);
+        else if (box->ID == 2)
+            value = Value(cv.Y);
+        else if (box->ID == 3)
+            value = Value(cv.Z);
+        else if (box->ID == 4)
+            value = Value(cv.W);
         break;
     }
     default:
