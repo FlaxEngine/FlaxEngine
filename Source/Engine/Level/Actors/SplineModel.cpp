@@ -351,9 +351,9 @@ void SplineModel::Draw(RenderContext& renderContext)
         return;
     auto model = Model.Get();
     if (renderContext.View.Pass == DrawPass::GlobalSDF)
-        return;  // TODO: Spline Model rendering to Global SDF
+        return; // TODO: Spline Model rendering to Global SDF
     if (renderContext.View.Pass == DrawPass::GlobalSurfaceAtlas)
-        return;  // TODO: Spline Model rendering to Global Surface Atlas
+        return; // TODO: Spline Model rendering to Global Surface Atlas
     if (!Entries.IsValidFor(model))
         Entries.Setup(model);
 

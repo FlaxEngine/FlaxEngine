@@ -11,12 +11,10 @@ template<typename T>
 class Span
 {
 protected:
-
     T* _data;
     int32 _length;
 
 public:
-
     /// <summary>
     /// Initializes a new instance of the <see cref="Span"/> class.
     /// </summary>
@@ -38,7 +36,6 @@ public:
     }
 
 public:
-
     /// <summary>
     /// Returns true if data is valid.
     /// </summary>
@@ -95,7 +92,6 @@ public:
     }
 
 public:
-
     /// <summary>
     /// Gets or sets the element by index
     /// </summary>

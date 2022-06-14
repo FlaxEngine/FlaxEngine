@@ -9,16 +9,14 @@
 /// </summary>
 API_CLASS() class FLAXENGINE_API BoneSocket : public Actor
 {
-DECLARE_SCENE_OBJECT(BoneSocket);
+    DECLARE_SCENE_OBJECT(BoneSocket);
 
 private:
-
     String _node;
     int32 _index;
     bool _useScale;
 
 public:
-
     /// <summary>
     /// Gets the target node name to link to it.
     /// </summary>
@@ -54,7 +52,6 @@ public:
     void SetUseScale(bool value);
 
 public:
-
     /// <summary>
     /// Updates the actor transformation based on a skeleton node.
     /// </summary>
@@ -62,7 +59,6 @@ public:
     void UpdateTransformation();
 
 public:
-
     // [Actor]
 #if USE_EDITOR
     void OnDebugDrawSelected() override;
@@ -71,7 +67,6 @@ public:
     void Deserialize(DeserializeStream& stream, ISerializeModifier* modifier) override;
 
 protected:
-
     // [Actor]
     void OnTransformChanged() override;
     void OnParentChanged() override;

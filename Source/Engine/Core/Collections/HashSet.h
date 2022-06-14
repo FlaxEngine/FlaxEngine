@@ -17,7 +17,6 @@ API_CLASS(InBuild) class HashSet
 {
     friend HashSet;
 public:
-
     /// <summary>
     /// Describes single portion of space for the item in a hash map.
     /// </summary>
@@ -31,7 +30,7 @@ public:
             Deleted,
             Occupied,
         };
-        
+
         /// <summary>The item.</summary>
         T Item;
 
@@ -78,18 +77,16 @@ public:
             return _state != Occupied;
         }
     };
-    
+
     typedef typename AllocationType::template Data<Bucket> AllocationData;
 
 private:
-
     int32 _elementsCount = 0;
     int32 _deletedCount = 0;
     int32 _size = 0;
     AllocationData _allocation;
 
 public:
-
     /// <summary>
     /// Initializes a new instance of the <see cref="HashSet"/> class.
     /// </summary>
@@ -176,7 +173,6 @@ public:
     }
 
 public:
-
     /// <summary>
     /// Gets the amount of the elements in the collection.
     /// </summary>
@@ -210,7 +206,6 @@ public:
     }
 
 public:
-
     /// <summary>
     /// The hash set collection iterator.
     /// </summary>
@@ -234,7 +229,6 @@ public:
         }
 
     public:
-
         Iterator(const Iterator& i)
             : _collection(i._collection)
             , _index(i._index)
@@ -248,7 +242,6 @@ public:
         }
 
     public:
-
         FORCE_INLINE bool IsEnd() const
         {
             return _index == _collection.Capacity();
@@ -332,7 +325,6 @@ public:
     };
 
 public:
-
     /// <summary>
     /// Removes all elements from the collection.
     /// </summary>
@@ -431,7 +423,6 @@ public:
     }
 
 public:
-
     /// <summary>
     /// Add element to the collection.
     /// </summary>
@@ -513,7 +504,6 @@ public:
     }
 
 public:
-
     /// <summary>
     /// Find element with given item in the collection
     /// </summary>
@@ -545,7 +535,6 @@ public:
     }
 
 public:
-
     /// <summary>
     /// Clones other collection into this
     /// </summary>
@@ -561,7 +550,6 @@ public:
     }
 
 public:
-
     Iterator Begin() const
     {
         Iterator i(*this, -1);
@@ -599,7 +587,6 @@ public:
     }
 
 protected:
-
     /// <summary>
     /// The result container of the set item lookup searching.
     /// </summary>
@@ -646,7 +633,7 @@ protected:
                 if (insertPos == -1)
                     insertPos = bucketIndex;
             }
-                // Occupied bucket by target item
+            // Occupied bucket by target item
             else if (bucket.Item == item)
             {
                 // Found item

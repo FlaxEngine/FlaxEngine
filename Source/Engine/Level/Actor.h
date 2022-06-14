@@ -26,7 +26,7 @@ class SceneRenderTask;
 /// </summary>
 API_CLASS(Abstract) class FLAXENGINE_API Actor : public SceneObject
 {
-DECLARE_SCENE_OBJECT(Actor);
+    DECLARE_SCENE_OBJECT(Actor);
     friend Level;
     friend PrefabManager;
     friend Scene;
@@ -35,7 +35,6 @@ DECLARE_SCENE_OBJECT(Actor);
     friend PrefabInstanceData;
 
 protected:
-
     int8 _isActive : 1;
     int8 _isActiveInHierarchy : 1;
     int8 _isPrefabRoot : 1;
@@ -53,13 +52,11 @@ protected:
     PhysicsScene* _physicsScene;
 
 private:
-
     // Disable copying
     Actor(Actor const&) = delete;
     Actor& operator=(Actor const&) = delete;
 
 public:
-
     /// <summary>
     /// List with all child actors attached to the actor (readonly). All items are valid (not null).
     /// </summary>
@@ -79,7 +76,6 @@ public:
     HideFlags HideFlags;
 
 public:
-
     /// <summary>
     /// Gets the object layer (index). Can be used for selective rendering or ignoring raycasts.
     /// </summary>
@@ -164,7 +160,6 @@ public:
     API_PROPERTY() void SetName(const StringView& value);
 
 public:
-
     /// <summary>
     /// Gets the scene object which contains this actor.
     /// </summary>
@@ -251,7 +246,6 @@ public:
     API_FUNCTION(Attributes="NoAnimate") void DestroyChildren(float timeLeft = 0.0f);
 
 public:
-
     /// <summary>
     /// Gets amount of scripts.
     /// </summary>
@@ -308,7 +302,6 @@ public:
     }
 
 public:
-
     /// <summary>
     /// Gets value indicating if actor is active in the scene.
     /// </summary>
@@ -401,7 +394,6 @@ public:
     }
 
 public:
-
     /// <summary>
     /// Gets the actor's world transformation.
     /// </summary>
@@ -475,7 +467,6 @@ public:
     API_PROPERTY() void SetRotation(const Matrix& value);
 
 public:
-
     /// <summary>
     /// Gets the random per-instance value (normalized to range 0-1).
     /// </summary>
@@ -501,7 +492,6 @@ public:
     API_PROPERTY() void SetDirection(const Float3& value);
 
 public:
-
     /// <summary>
     /// Resets the actor local transform.
     /// </summary>
@@ -599,7 +589,6 @@ public:
     }
 
 public:
-
     /// <summary>
     /// Gets actor bounding sphere that defines 3D space intersecting with the actor (for determination of the visibility for actor).
     /// </summary>
@@ -646,7 +635,6 @@ public:
     void UnregisterObjectHierarchy();
 
 public:
-
     /// <summary>
     /// Draws this actor. Called by Scene Rendering service. This call is more optimized than generic Draw (eg. geometry is rendered during all pass types but other actors are drawn only during GBufferFill pass).
     /// </summary>
@@ -668,7 +656,6 @@ public:
 #endif
 
 public:
-
     /// <summary>
     /// Changes the script order.
     /// </summary>
@@ -689,7 +676,6 @@ public:
     API_PROPERTY() bool IsPrefabRoot() const;
 
 public:
-
     /// <summary>
     /// Tries to find the actor with the given name in this actor hierarchy (checks this actor and all children hierarchy).
     /// </summary>
@@ -790,7 +776,6 @@ public:
     API_FUNCTION() Quaternion LookingAt(const Vector3& worldPos, const Vector3& worldUp) const;
 
 public:
-
     /// <summary>
     /// Execute custom action on actors tree.
     /// Action should returns false to stop calling deeper.
@@ -827,7 +812,6 @@ public:
     }
 
 public:
-
     /// <summary>
     /// Performs actors serialization to the raw bytes.
     /// </summary>
@@ -887,7 +871,6 @@ public:
     API_FUNCTION() void FromJson(const StringAnsiView& json);
 
 public:
-
     /// <summary>
     /// Called when actor gets added to game systems. Occurs on BeginPlay event or when actor gets activated in hierarchy. Use this event to register object to other game system (eg. audio).
     /// </summary>
@@ -969,10 +952,11 @@ public:
     API_PROPERTY(Attributes="HideInEditor") PhysicsScene* GetPhysicsScene() const;
 
 protected:
-    virtual void OnPhysicsSceneChanged(PhysicsScene* previous) {}
+    virtual void OnPhysicsSceneChanged(PhysicsScene* previous)
+    {
+    }
 
 private:
-
     void SetSceneInHierarchy(Scene* scene);
     void OnEnableInHierarchy();
     void OnDisableInHierarchy();
@@ -982,7 +966,6 @@ private:
     static bool IsSubClassOf(const Script* object, const MClass* klass);
 
 public:
-
     // [ScriptingObject]
     String ToString() const override;
     void OnDeleteObject() override;

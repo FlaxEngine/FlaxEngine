@@ -21,9 +21,8 @@
 /// </summary>
 API_CLASS() class FLAXENGINE_API TextRender : public Actor
 {
-DECLARE_SCENE_OBJECT(TextRender);
+    DECLARE_SCENE_OBJECT(TextRender);
 private:
-
     struct DrawChunk
     {
         TextRender* Actor;
@@ -55,7 +54,6 @@ private:
     Array<DrawChunk, InlinedAllocation<8>> _drawChunks;
 
 public:
-
     /// <summary>
     /// Gets the text.
     /// </summary>
@@ -154,7 +152,6 @@ public:
 #endif
 
 private:
-
     void Invalidate()
     {
         // Invalidate data
@@ -162,7 +159,6 @@ private:
     }
 
 public:
-
     // [Actor]
     bool HasContentLoaded() const override;
     void Draw(RenderContext& renderContext) override;
@@ -175,7 +171,6 @@ public:
     void Deserialize(DeserializeStream& stream, ISerializeModifier* modifier) override;
 
 protected:
-
     // [Actor]
     void OnEnable() override;
     void OnDisable() override;

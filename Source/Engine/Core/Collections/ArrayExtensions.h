@@ -17,11 +17,9 @@ class IGrouping : public Array<TSource>
     friend ArrayExtensions;
 
 protected:
-
     TKey _key;
 
 public:
-
     /// <summary>
     /// Gets the common key.
     /// </summary>
@@ -47,7 +45,6 @@ public:
 class ArrayExtensions
 {
 public:
-
     /// <summary>
     /// Searches for the specified object using a custom query and returns the zero-based index of the first occurrence within the entire collection.
     /// </summary>

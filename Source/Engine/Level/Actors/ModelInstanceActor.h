@@ -11,13 +11,11 @@
 /// <seealso cref="Actor" />
 API_CLASS(Abstract) class FLAXENGINE_API ModelInstanceActor : public Actor
 {
-DECLARE_SCENE_OBJECT_ABSTRACT(ModelInstanceActor);
+    DECLARE_SCENE_OBJECT_ABSTRACT(ModelInstanceActor);
 protected:
-
     int32 _sceneRenderingKey = -1;
 
 public:
-
     /// <summary>
     /// The model instance buffer.
     /// </summary>
@@ -84,12 +82,10 @@ public:
     }
 
 public:
-
     // [Actor]
     void OnLayerChanged() override;
 
 protected:
-
     // [Actor]
     void OnEnable() override;
     void OnDisable() override;

@@ -13,12 +13,10 @@ template<typename T>
 class StringBase
 {
 protected:
-
     T* _data = nullptr;
     int32 _length = 0;
 
 public:
-
     /// <summary>
     /// Finalizes an instance of the <see cref="StringBase"/> class.
     /// </summary>
@@ -28,7 +26,6 @@ public:
     }
 
 public:
-
     /// <summary>
     /// Clears this instance. Frees the memory and sets the string to empty.
     /// </summary>
@@ -40,7 +37,6 @@ public:
     }
 
 public:
-
     /// <summary>
     /// Gets the character at the specific index.
     /// </summary>
@@ -64,7 +60,6 @@ public:
     }
 
 public:
-
     /// <summary>
     /// Lexicographically tests how this string compares to the other given string.
     /// In case sensitive mode 'A' is less than 'a'.
@@ -80,7 +75,6 @@ public:
     }
 
 public:
-
     /// <summary>
     /// Returns true if string is empty.
     /// </summary>
@@ -154,7 +148,6 @@ public:
     }
 
 public:
-
     /// <summary>
     /// Checks whether this string contains the specified substring.
     /// </summary>
@@ -353,7 +346,6 @@ public:
     }
 
 public:
-
     bool StartsWith(T c, StringSearchCase searchCase = StringSearchCase::CaseSensitive) const
     {
         const int32 length = Length();
@@ -551,14 +543,12 @@ public:
 API_CLASS(InBuild) class FLAXENGINE_API String : public StringBase<Char>
 {
 public:
-
     /// <summary>
     /// Instance of the empty string.
     /// </summary>
     static String Empty;
 
 public:
-
     /// <summary>
     /// Initializes a new instance of the <see cref="String"/> class.
     /// </summary>
@@ -646,7 +636,6 @@ public:
     explicit String(const StringAnsiView& str);
 
 public:
-
     /// <summary>
     /// Sets an array of characters to the string.
     /// </summary>
@@ -775,7 +764,6 @@ public:
     }
 
 public:
-
     /// <summary>
     /// Sets the text value.
     /// </summary>
@@ -848,7 +836,6 @@ public:
     }
 
 public:
-
     // @formatter:off
     FORCE_INLINE friend String operator+(const String& a, const String& b)
     {
@@ -941,7 +928,6 @@ public:
     // @formatter:on
 
 public:
-
     /// <summary>
     /// Checks if string contains only ANSI characters.
     /// </summary>
@@ -949,7 +935,6 @@ public:
     bool IsANSI() const;
 
 public:
-
     using StringBase::StartsWith;
     bool StartsWith(const StringView& prefix, StringSearchCase searchCase = StringSearchCase::CaseSensitive) const;
 
@@ -1060,7 +1045,6 @@ public:
     String TrimTrailing() const;
 
 public:
-
     /// <summary>
     /// Formats the message and gets it as a string.
     /// </summary>
@@ -1077,7 +1061,6 @@ public:
     }
 
 public:
-
     /// <summary>
     /// Concatenates this path with given path ensuring the '/' character is used between them.
     /// </summary>
@@ -1167,7 +1150,6 @@ public:
     }
 
 public:
-
     String ToString() const
     {
         return *this;
@@ -1176,7 +1158,6 @@ public:
     StringAnsi ToStringAnsi() const;
 
 private:
-
     template<typename T1, typename T2>
     static String ConcatStrings(T1 left, T2 right)
     {
@@ -1267,14 +1248,12 @@ namespace fmt
 API_CLASS(InBuild) class FLAXENGINE_API StringAnsi : public StringBase<char>
 {
 public:
-
     /// <summary>
     /// Instance of the empty string.
     /// </summary>
     static StringAnsi Empty;
 
 public:
-
     /// <summary>
     /// Initializes a new instance of the <see cref="StringAnsi"/> class.
     /// </summary>
@@ -1361,7 +1340,6 @@ public:
     explicit StringAnsi(const StringAnsiView& str);
 
 public:
-
     /// <summary>
     /// Sets an array of characters to the string.
     /// </summary>
@@ -1483,7 +1461,6 @@ public:
     }
 
 public:
-
     /// <summary>
     /// Sets the text value.
     /// </summary>
@@ -1556,7 +1533,6 @@ public:
     }
 
 public:
-
     // @formatter:off
     FORCE_INLINE friend StringAnsi operator+(const StringAnsi& a, const StringAnsi& b)
     {
@@ -1641,7 +1617,6 @@ public:
     // @formatter:on
 
 public:
-
     using StringBase::StartsWith;
     bool StartsWith(const StringAnsiView& prefix, StringSearchCase searchCase = StringSearchCase::CaseSensitive) const;
 
@@ -1727,7 +1702,6 @@ public:
     void Split(char c, Array<StringAnsi, HeapAllocation>& results) const;
 
 public:
-
     /// <summary>
     /// Formats the message and gets it as a string.
     /// </summary>
@@ -1744,7 +1718,6 @@ public:
     }
 
 public:
-
     String ToString() const
     {
         return String(Get(), Length());
@@ -1756,7 +1729,6 @@ public:
     }
 
 private:
-
     template<typename T1, typename T2>
     static StringAnsi ConcatStrings(T1 left, T2 right)
     {

@@ -21,7 +21,7 @@ struct RenderContext;
 /// </summary>
 API_CLASS(Static) class FLAXENGINE_API Level
 {
-DECLARE_SCRIPTING_TYPE_NO_SPAWN(Level);
+    DECLARE_SCRIPTING_TYPE_NO_SPAWN(Level);
     friend Engine;
     friend Actor;
     friend PrefabManager;
@@ -33,7 +33,6 @@ DECLARE_SCRIPTING_TYPE_NO_SPAWN(Level);
 #endif
 
 public:
-
     /// <summary>
     /// The scenes collection lock.
     /// </summary>
@@ -45,7 +44,6 @@ public:
     API_FIELD(ReadOnly) static Array<Scene*> Scenes;
 
 public:
-
     /// <summary>
     /// Occurs when new actor gets spawned to the game.
     /// </summary>
@@ -77,7 +75,6 @@ public:
     API_EVENT() static Delegate<Actor*> ActorActiveChanged;
 
 public:
-
     /// <summary>
     /// Checks if any scene has been loaded. Loaded scene means deserialized and added to the scenes collection.
     /// </summary>
@@ -124,7 +121,6 @@ public:
     }
 
 public:
-
     /// <summary>
     /// Spawn actor on the scene
     /// </summary>
@@ -160,7 +156,6 @@ public:
     static void CallBeginPlay(Actor* obj);
 
 public:
-
     /// <summary>
     /// Draws all the actors.
     /// </summary>
@@ -174,7 +169,6 @@ public:
     static void CollectPostFxVolumes(RenderContext& renderContext);
 
 public:
-
     /// <summary>
     /// Fired when scene starts saving.
     /// </summary>
@@ -246,7 +240,6 @@ public:
 #endif
 
 public:
-
     /// <summary>
     /// Saves scene to the asset.
     /// </summary>
@@ -342,7 +335,6 @@ public:
 #endif
 
 public:
-
     /// <summary>
     /// Tries to find actor with the given ID. It's very fast O(1) lookup.
     /// </summary>
@@ -413,7 +405,6 @@ public:
     API_FUNCTION() static Scene* FindScene(const Guid& id);
 
 public:
-
     /// <summary>
     /// Gets the scenes.
     /// </summary>
@@ -433,7 +424,6 @@ public:
     static void GetScenes(Array<Guid>& scenes);
 
 public:
-
     /// <summary>
     /// Construct valid and solid list with actors from input list with whole tree for them (valid for fast serialization)
     /// </summary>
@@ -449,7 +439,6 @@ public:
     static void ConstructParentActorsTreeList(const Array<Actor*>& input, Array<Actor*>& output);
 
 public:
-
     /// <summary>
     /// The tags names.
     /// </summary>
@@ -479,7 +468,6 @@ public:
     API_FUNCTION() static int32 GetLayerIndex(const StringView& layer);
 
 private:
-
     // Actor API
     enum class ActorEventType
     {

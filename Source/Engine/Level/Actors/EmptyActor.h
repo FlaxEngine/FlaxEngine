@@ -9,16 +9,14 @@
 /// </summary>
 API_CLASS() class FLAXENGINE_API EmptyActor : public Actor
 {
-DECLARE_SCENE_OBJECT(EmptyActor);
+    DECLARE_SCENE_OBJECT(EmptyActor);
 public:
-
     // [Actor]
 #if USE_EDITOR
     BoundingBox GetEditorBox() const override;
 #endif
 
 protected:
-
     // [Actor]
     void OnTransformChanged() override;
 };

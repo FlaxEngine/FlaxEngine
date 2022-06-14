@@ -12,7 +12,7 @@
 /// </summary>
 API_STRUCT() struct BrushSurface : ISerializable
 {
-DECLARE_SCRIPTING_TYPE_NO_SPAWN(BrushSurface);
+    DECLARE_SCRIPTING_TYPE_NO_SPAWN(BrushSurface);
 
     /// <summary>
     /// The parent brush.
@@ -57,7 +57,6 @@ DECLARE_SCRIPTING_TYPE_NO_SPAWN(BrushSurface);
     float ScaleInLightmap = 1.0f;
 
 public:
-
     // [ISerializable]
     void Serialize(SerializeStream& stream, const void* otherObj) override;
     void Deserialize(DeserializeStream& stream, ISerializeModifier* modifier) override;
@@ -68,16 +67,14 @@ public:
 /// </summary>
 API_CLASS() class FLAXENGINE_API BoxBrush : public Actor, public CSG::Brush
 {
-DECLARE_SCENE_OBJECT(BoxBrush);
+    DECLARE_SCENE_OBJECT(BoxBrush);
 private:
-
     Vector3 _center;
     Vector3 _size;
     OrientedBoundingBox _bounds;
     BrushMode _mode;
 
 public:
-
     /// <summary>
     /// Brush surfaces scale in lightmap
     /// </summary>
@@ -161,7 +158,6 @@ public:
     API_FUNCTION() void SetMaterial(int32 surfaceIndex, MaterialBase* material);
 
 public:
-
     /// <summary>
     /// Gets the volume bounding box (oriented).
     /// </summary>
@@ -191,7 +187,6 @@ public:
     API_FUNCTION() void GetVertices(int32 surfaceIndex, API_PARAM(Out) Array<Vector3>& outputData) const;
 
 private:
-
     FORCE_INLINE void UpdateBounds()
     {
         OrientedBoundingBox::CreateCentered(_center, _size, _bounds);
@@ -201,7 +196,6 @@ private:
     }
 
 public:
-
     // [Actor]
     void Serialize(SerializeStream& stream, const void* otherObj) override;
     void Deserialize(DeserializeStream& stream, ISerializeModifier* modifier) override;
@@ -219,7 +213,6 @@ public:
     int32 GetSurfacesCount() override;
 
 protected:
-
     // [Actor]
     void OnTransformChanged() override;
     void OnActiveInTreeChanged() override;

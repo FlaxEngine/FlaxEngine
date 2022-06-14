@@ -9,20 +9,17 @@ template<typename CharType, int InlinedSize = 128>
 class StringAsBase
 {
 protected:
-
     const CharType* _static = nullptr;
     CharType* _dynamic = nullptr;
     CharType _inlined[InlinedSize];
 
 public:
-
     ~StringAsBase()
     {
         Allocator::Free(_dynamic);
     }
 
 public:
-
     const CharType* Get() const
     {
         return _static ? _static : (_dynamic ? _dynamic : _inlined);
@@ -38,12 +35,10 @@ template<int InlinedSize = 128>
 class StringAsANSI : public StringAsBase<char, InlinedSize>
 {
 public:
-
     typedef char CharType;
     typedef StringAsBase<CharType, InlinedSize> Base;
 
 public:
-
     StringAsANSI(const char* text)
     {
         this->_static = text;
@@ -74,12 +69,10 @@ template<int InlinedSize = 128>
 class StringAsUTF8 : public StringAsBase<char, InlinedSize>
 {
 public:
-
     typedef char CharType;
     typedef StringAsBase<CharType, InlinedSize> Base;
 
 public:
-
     StringAsUTF8(const char* text)
     {
         this->_static = text;
@@ -110,12 +103,10 @@ template<int InlinedSize = 128>
 class StringAsUTF16 : public StringAsBase<Char, InlinedSize>
 {
 public:
-
     typedef Char CharType;
     typedef StringAsBase<CharType, InlinedSize> Base;
 
 public:
-
     StringAsUTF16(const char* text)
         : StringAsUTF16(text, StringUtils::Length(text))
     {

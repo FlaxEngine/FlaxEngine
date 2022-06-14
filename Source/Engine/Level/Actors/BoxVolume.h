@@ -10,14 +10,12 @@
 /// </summary>
 API_CLASS(Abstract) class FLAXENGINE_API BoxVolume : public Actor
 {
-DECLARE_SCENE_OBJECT(BoxVolume);
+    DECLARE_SCENE_OBJECT(BoxVolume);
 protected:
-
     Vector3 _size;
     OrientedBoundingBox _bounds;
 
 public:
-
     /// <summary>
     /// Gets the size of the volume (in local space).
     /// </summary>
@@ -41,7 +39,6 @@ public:
     }
 
 protected:
-
     virtual void OnBoundsChanged(const BoundingBox& prevBounds)
     {
     }
@@ -51,7 +48,6 @@ protected:
 #endif
 
 public:
-
     // [Actor]
 #if USE_EDITOR
     void OnDebugDraw() override;
@@ -61,7 +57,6 @@ public:
     void Deserialize(DeserializeStream& stream, ISerializeModifier* modifier) override;
 
 protected:
-
     // [Actor]
     void OnTransformChanged() override;
 };

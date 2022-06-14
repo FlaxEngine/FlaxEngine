@@ -51,7 +51,6 @@ class ScriptingObject;
 struct FLAXENGINE_API CommonValue
 {
 public:
-
     /// <summary>
     /// Type
     /// </summary>
@@ -86,7 +85,6 @@ public:
     };
 
 public:
-
     // 0.0f (floating-point value type)
     static const CommonValue Zero;
 
@@ -103,7 +101,6 @@ public:
     static const CommonValue True;
 
 public:
-
     /// <summary>
     /// Default constructor (bool)
     /// </summary>
@@ -365,7 +362,6 @@ public:
     }
 
 public:
-
     /// <summary>
     /// Assignment operator
     /// </summary>
@@ -426,7 +422,6 @@ public:
     }
 
 public:
-
     /// <summary>
     /// Gets value as boolean (if can convert it)
     /// </summary>
@@ -742,7 +737,6 @@ public:
     }
 
 public:
-
     /// <summary>
     /// Set new value and change type to Bool
     /// </summary>
@@ -944,7 +938,6 @@ public:
     }
 
 public:
-
     /// <summary>
     /// Change common value type
     /// </summary>
@@ -975,7 +968,6 @@ public:
     }
 
 public:
-
     /// <summary>
     /// Casts value from its type to another
     /// </summary>
@@ -1027,7 +1019,6 @@ public:
     }
 
 public:
-
     friend bool operator==(const CommonValue& a, const CommonValue& b)
     {
         ASSERT(a.Type == b.Type);
@@ -1097,20 +1088,20 @@ public:
             return a.AsVector3 > b.AsVector3;
         case CommonType::Vector4:
             return a.AsVector4 > b.AsVector4;
-            //case CommonType::Color: return a.AsColor > b.AsColor;
-            //case CommonType::Guid: return a.AsGuid > b.AsGuid;
+        //case CommonType::Color: return a.AsColor > b.AsColor;
+        //case CommonType::Guid: return a.AsGuid > b.AsGuid;
         case CommonType::String:
             return StringUtils::Compare(a.AsString, b.AsString) > 0;
-            //case CommonType::Box: return a.AsBox > b.AsBox;
-            //case CommonType::Rotation: return a.AsRotation > b.AsRotation;
-            //case CommonType::Transform: return a.AsTransform > b.AsTransform;
-            //case CommonType::Sphere: return a.AsSphere > b.AsSphere;
-            //case CommonType::Rectangle: return a.AsRectangle > b.AsRectangle;
-            //case CommonType::Ray: return a.AsRay > b.AsRay;
+        //case CommonType::Box: return a.AsBox > b.AsBox;
+        //case CommonType::Rotation: return a.AsRotation > b.AsRotation;
+        //case CommonType::Transform: return a.AsTransform > b.AsTransform;
+        //case CommonType::Sphere: return a.AsSphere > b.AsSphere;
+        //case CommonType::Rectangle: return a.AsRectangle > b.AsRectangle;
+        //case CommonType::Ray: return a.AsRay > b.AsRay;
         case CommonType::Pointer:
         case CommonType::Object:
             return a.AsPointer > b.AsPointer;
-            //case CommonType::Matrix: return a.AsMatrix > b.AsMatrix;
+        //case CommonType::Matrix: return a.AsMatrix > b.AsMatrix;
         case CommonType::Blob:
             return a.AsBlob.Length > b.AsBlob.Length;
         default: CRASH;
@@ -1134,7 +1125,6 @@ public:
     }
 
 public:
-
     static bool NearEqual(const CommonValue& a, const CommonValue& b, float epsilon);
 
     static CommonValue Lerp(const CommonValue& a, const CommonValue& b, float alpha);
@@ -1143,7 +1133,6 @@ public:
     Guid GetObjectId() const;
 
 private:
-
     void OnObjectDeleted(ScriptingObject* obj)
     {
         AsObject = nullptr;

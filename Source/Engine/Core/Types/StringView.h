@@ -13,7 +13,6 @@ template<typename T>
 class StringViewBase
 {
 protected:
-
     const T* _data;
     int32 _length;
 
@@ -30,7 +29,6 @@ protected:
     }
 
 public:
-
     /// <summary>
     /// Gets the specific const character from this string.
     /// </summary>
@@ -41,7 +39,7 @@ public:
         ASSERT(index >= 0 && index <= _length);
         return _data[index];
     }
-   
+
     FORCE_INLINE StringViewBase& operator=(const StringViewBase& other)
     {
         if (this != &other)
@@ -53,8 +51,7 @@ public:
     }
 
     /// <summary>
-    /// Lexicographically tests how this string compares to the other given string.
-    /// In case sensitive mode 'A' is less than 'a'.
+    /// Lexicographically tests how this string compares to the other given string. In case sensitive mode 'A' is less than 'a'.
     /// </summary>
     /// <param name="str">The another string test against.</param>
     /// <param name="searchCase">The case sensitivity mode.</param>
@@ -63,9 +60,7 @@ public:
     {
         const bool thisIsShorter = Length() < str.Length();
         const int32 minLength = thisIsShorter ? Length() : str.Length();
-        const int32 prefixCompare = (searchCase == StringSearchCase::CaseSensitive)
-                                    ? StringUtils::Compare(this->GetNonTerminatedText(), str.GetNonTerminatedText(), minLength)
-                                    : StringUtils::CompareIgnoreCase(this->GetNonTerminatedText(), str.GetNonTerminatedText(), minLength);
+        const int32 prefixCompare = searchCase == StringSearchCase::CaseSensitive ? StringUtils::Compare(GetNonTerminatedText(), str.GetNonTerminatedText(), minLength) : StringUtils::CompareIgnoreCase(GetNonTerminatedText(), str.GetNonTerminatedText(), minLength);
         if (prefixCompare != 0)
             return prefixCompare;
         if (Length() == str.Length())
@@ -74,7 +69,6 @@ public:
     }
 
 public:
-
     /// <summary>
     /// Returns true if string is empty.
     /// </summary>
@@ -124,7 +118,6 @@ public:
     }
 
 public:
-
     /// <summary>
     /// Searches the string for the occurrence of a character.
     /// </summary>
@@ -205,14 +198,12 @@ public:
 API_CLASS(InBuild) class FLAXENGINE_API StringView : public StringViewBase<Char>
 {
 public:
-
     /// <summary>
     /// Instance of the empty string.
     /// </summary>
     static StringView Empty;
 
 public:
-
     /// <summary>
     /// Initializes a new instance of the <see cref="StringView"/> class.
     /// </summary>
@@ -257,7 +248,6 @@ public:
     }
 
 public:
-
     /// <summary>
     /// Assigns the static string.
     /// </summary>
@@ -325,7 +315,6 @@ public:
     bool operator!=(const String& other) const;
 
 public:
-
     /// <summary>
     /// Gets the left most given number of characters.
     /// </summary>
@@ -356,7 +345,6 @@ public:
     StringView Substring(int32 startIndex, int32 count) const;
 
 public:
-
     String ToString() const;
     StringAnsi ToStringAnsi() const;
 };
@@ -394,14 +382,12 @@ namespace fmt
 API_CLASS(InBuild) class FLAXENGINE_API StringAnsiView : public StringViewBase<char>
 {
 public:
-
     /// <summary>
     /// Instance of the empty string.
     /// </summary>
     static StringAnsiView Empty;
 
 public:
-
     /// <summary>
     /// Initializes a new instance of the <see cref="StringView"/> class.
     /// </summary>
@@ -446,7 +432,6 @@ public:
     }
 
 public:
-
     /// <summary>
     /// Assigns the static string.
     /// </summary>
@@ -514,7 +499,6 @@ public:
     bool operator!=(const StringAnsi& other) const;
 
 public:
-
     /// <summary>
     /// Retrieves substring created from characters starting from startIndex to the String end.
     /// </summary>
@@ -531,7 +515,6 @@ public:
     StringAnsi Substring(int32 startIndex, int32 count) const;
 
 public:
-
     String ToString() const;
     StringAnsi ToStringAnsi() const;
 };

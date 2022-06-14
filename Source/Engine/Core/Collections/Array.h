@@ -17,18 +17,15 @@ API_CLASS(InBuild) class Array
 {
     friend Array;
 public:
-
     typedef T ItemType;
     typedef typename AllocationType::template Data<T> AllocationData;
 
 private:
-
     int32 _count;
     int32 _capacity;
     AllocationData _allocation;
 
 public:
-
     /// <summary>
     /// Initializes a new instance of the <see cref="Array"/> class.
     /// </summary>
@@ -208,7 +205,6 @@ public:
     }
 
 public:
-
     /// <summary>
     /// Gets the amount of the items in the collection.
     /// </summary>
@@ -334,7 +330,6 @@ public:
     }
 
 public:
-
     FORCE_INLINE T* begin()
     {
         return &_allocation.Get()[0];
@@ -356,7 +351,6 @@ public:
     }
 
 public:
-
     /// <summary>
     /// Clear the collection without changing its capacity.
     /// </summary>
@@ -738,7 +732,6 @@ public:
     }
 
 public:
-
     /// <summary>
     /// Performs push on stack operation (stack grows at the end of the collection).
     /// </summary>
@@ -777,7 +770,6 @@ public:
     }
 
 public:
-
     /// <summary>
     /// Performs enqueue to queue operation (queue head is in the beginning of queue).
     /// </summary>
@@ -800,7 +792,6 @@ public:
     }
 
 public:
-
     /// <summary>
     /// Searches for the given item within the entire collection.
     /// </summary>
@@ -869,7 +860,6 @@ public:
     }
 
 public:
-
     bool operator==(const Array& other) const
     {
         if (_count == other._count)
@@ -891,7 +881,6 @@ public:
     }
 
 public:
-
     /// <summary>
     /// The collection iterator.
     /// </summary>
@@ -915,7 +904,6 @@ public:
         }
 
     public:
-
         Iterator()
             : _array(nullptr)
             , _index(-1)
@@ -935,7 +923,6 @@ public:
         }
 
     public:
-
         FORCE_INLINE Array* GetArray() const
         {
             return _array;
@@ -1008,7 +995,6 @@ public:
     };
 
 public:
-
     /// <summary>
     /// Gets iterator for beginning of the collection.
     /// </summary>

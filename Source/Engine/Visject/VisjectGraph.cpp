@@ -51,7 +51,7 @@ void VisjectExecutor::ProcessGroupConstants(Box* box, Node* node, Value& value)
 {
     switch (node->TypeID)
     {
-        // Constant value
+    // Constant value
     case 1:
     case 2:
     case 3:
@@ -89,15 +89,15 @@ void VisjectExecutor::ProcessGroupConstants(Box* box, Node* node, Value& value)
     case 9:
         value = node->Values[0];
         break;
-        // PI
+    // PI
     case 10:
         value = PI;
         break;
-        // Enum
+    // Enum
     case 11:
         value = node->Values[0];
         break;
-        // Array
+    // Array
     case 13:
         value = node->Values[0];
         if (value.Type.Type == VariantType::Array)
@@ -152,7 +152,7 @@ void VisjectExecutor::ProcessGroupMath(Box* box, Node* node, Value& value)
 {
     switch (node->TypeID)
     {
-        // Add, Subtract, Multiply, Divide, Modulo, Max, Min, Pow, Fmod, Atan2
+    // Add, Subtract, Multiply, Divide, Modulo, Max, Min, Pow, Fmod, Atan2
     case 1:
     case 2:
     case 3:
@@ -174,7 +174,7 @@ void VisjectExecutor::ProcessGroupMath(Box* box, Node* node, Value& value)
         GraphUtilities::ApplySomeMathHere(node->TypeID, value, v1, v2);
         break;
     }
-        // Absolute Value, Ceil, Cosine, Floor, Round, Saturate, Sine, Sqrt, Tangent, Negate, 1 - Value, Asine, Acosine, Atan, Trunc, Frac, Degrees, Radians
+    // Absolute Value, Ceil, Cosine, Floor, Round, Saturate, Sine, Sqrt, Tangent, Negate, 1 - Value, Asine, Acosine, Atan, Trunc, Frac, Degrees, Radians
     case 7:
     case 8:
     case 9:
@@ -198,7 +198,7 @@ void VisjectExecutor::ProcessGroupMath(Box* box, Node* node, Value& value)
         GraphUtilities::ApplySomeMathHere(node->TypeID, value, v1);
         break;
     }
-        // Length, Normalize
+    // Length, Normalize
     case 11:
     case 12:
     {
@@ -269,7 +269,7 @@ void VisjectExecutor::ProcessGroupMath(Box* box, Node* node, Value& value)
         }
         break;
     }
-        // Cross, Distance, Dot
+    // Cross, Distance, Dot
     case 18:
     case 19:
     case 20:
@@ -346,7 +346,7 @@ void VisjectExecutor::ProcessGroupMath(Box* box, Node* node, Value& value)
         }
         break;
     }
-        // Clamp
+    // Clamp
     case 24:
     {
         Value v1 = tryGetValue(node->GetBox(0), Value::Zero);
@@ -358,7 +358,7 @@ void VisjectExecutor::ProcessGroupMath(Box* box, Node* node, Value& value)
         });
         break;
     }
-        // Lerp
+    // Lerp
     case 25:
     {
         Value a = tryGetValue(node->GetBox(0), 0, Value::Zero);
@@ -367,7 +367,7 @@ void VisjectExecutor::ProcessGroupMath(Box* box, Node* node, Value& value)
         value = Value::Lerp(a, b, alpha.AsFloat);
         break;
     }
-        // Reflect
+    // Reflect
     case 26:
     {
         Value v1 = tryGetValue(node->GetBox(0), Value::Zero);
@@ -388,7 +388,7 @@ void VisjectExecutor::ProcessGroupMath(Box* box, Node* node, Value& value)
         }
         break;
     }
-        // Mad
+    // Mad
     case 31:
     {
         Value v1 = tryGetValue(node->GetBox(0), Value::Zero);
@@ -400,14 +400,14 @@ void VisjectExecutor::ProcessGroupMath(Box* box, Node* node, Value& value)
         });
         break;
     }
-        // Extract Largest Component
+    // Extract Largest Component
     case 32:
     {
         const auto v1 = (Float3)tryGetValue(node->GetBox(0), Value::Zero);
         value = Math::ExtractLargestComponent(v1);
         break;
     }
-        // Bias and Scale
+    // Bias and Scale
     case 36:
     {
         ASSERT(node->Values.Count() == 2 && node->Values[0].Type == VariantType::Float && node->Values[1].Type == VariantType::Float);
@@ -417,7 +417,7 @@ void VisjectExecutor::ProcessGroupMath(Box* box, Node* node, Value& value)
         value = (input + bias) * scale;
         break;
     }
-        // Rotate About Axis
+    // Rotate About Axis
     case 37:
     {
         const auto normalizedRotationAxis = (Float3)tryGetValue(node->GetBox(0), Value::Zero);
@@ -427,7 +427,7 @@ void VisjectExecutor::ProcessGroupMath(Box* box, Node* node, Value& value)
         value = Math::RotateAboutAxis(normalizedRotationAxis, rotationAngle, pivotPoint, position);
         break;
     }
-        // Near Equal
+    // Near Equal
     case 42:
     {
         const Value a = tryGetValue(node->GetBox(0), node->Values[0]);
@@ -436,23 +436,23 @@ void VisjectExecutor::ProcessGroupMath(Box* box, Node* node, Value& value)
         value = Value::NearEqual(a, b, epsilon);
         break;
     }
-        // Enum Value
+    // Enum Value
     case 45:
         value = (uint64)tryGetValue(node->GetBox(0), Value::Zero);
         break;
-        // Enum AND
+    // Enum AND
     case 46:
         value = tryGetValue(node->GetBox(0), Value::Zero);
         if (value.Type.Type == VariantType::Enum)
             value.AsUint64 = value.AsUint64 & (uint64)tryGetValue(node->GetBox(1), Value::Zero);
         break;
-        // Enum OR
+    // Enum OR
     case 47:
         value = tryGetValue(node->GetBox(0), Value::Zero);
         if (value.Type.Type == VariantType::Enum)
             value.AsUint64 = value.AsUint64 | (uint64)tryGetValue(node->GetBox(1), Value::Zero);
         break;
-        // Remap
+    // Remap
     case 48:
     {
         const float inVal = tryGetValue(node->GetBox(0), node->Values[0]).AsFloat;
@@ -463,7 +463,7 @@ void VisjectExecutor::ProcessGroupMath(Box* box, Node* node, Value& value)
         value = clamp ? Math::Clamp(mapFunc, rangeB.X, rangeB.Y) : mapFunc;
         break;
     }
-        // Rotate Vector
+    // Rotate Vector
     case 49:
     {
         const Quaternion quaternion = (Quaternion)tryGetValue(node->GetBox(0), Quaternion::Identity);
@@ -480,7 +480,7 @@ void VisjectExecutor::ProcessGroupPacking(Box* box, Node* node, Value& value)
 {
     switch (node->TypeID)
     {
-        // Pack
+    // Pack
     case 20:
     {
         float vX = (float)tryGetValue(node->GetBox(1), node->Values[0]);
@@ -528,7 +528,7 @@ void VisjectExecutor::ProcessGroupPacking(Box* box, Node* node, Value& value)
         value = Variant(BoundingBox(vX, vY));
         break;
     }
-        // Unpack
+    // Unpack
     case 30:
     {
         Float2 v = (Float2)tryGetValue(node->GetBox(0), Float2::Zero);
@@ -592,7 +592,7 @@ void VisjectExecutor::ProcessGroupPacking(Box* box, Node* node, Value& value)
         }
         break;
     }
-        // Pack Structure
+    // Pack Structure
     case 26:
     {
         // Find type
@@ -675,7 +675,7 @@ void VisjectExecutor::ProcessGroupPacking(Box* box, Node* node, Value& value)
         }
         break;
     }
-        // Unpack Structure
+    // Unpack Structure
     case 36:
     {
         // Get value with structure data
@@ -765,7 +765,7 @@ void VisjectExecutor::ProcessGroupPacking(Box* box, Node* node, Value& value)
         }
         break;
     }
-        // Mask X, Y, Z, W
+    // Mask X, Y, Z, W
     case 40:
     case 41:
     case 42:
@@ -775,7 +775,7 @@ void VisjectExecutor::ProcessGroupPacking(Box* box, Node* node, Value& value)
         value = v.Raw[node->TypeID - 40];
         break;
     }
-        // Mask XY, YZ, XZ,...
+    // Mask XY, YZ, XZ,...
     case 44:
     {
         value = (Float2)tryGetValue(node->GetBox(0), Float2::Zero);
@@ -799,13 +799,13 @@ void VisjectExecutor::ProcessGroupPacking(Box* box, Node* node, Value& value)
         value = Float2(v.Z, v.W);
         break;
     }
-        // Mask XYZ
+    // Mask XYZ
     case 70:
     {
         value = (Float3)tryGetValue(node->GetBox(0), Float3::Zero);
         break;
     }
-        // Append
+    // Append
     case 100:
     {
         auto in0 = node->GetBox(0);
@@ -860,7 +860,7 @@ void VisjectExecutor::ProcessGroupTools(Box* box, Node* node, Value& value)
 {
     switch (node->TypeID)
     {
-        // Color Gradient
+    // Color Gradient
     case 10:
     {
         float time, prevTime, curTime;
@@ -916,7 +916,7 @@ void VisjectExecutor::ProcessGroupTools(Box* box, Node* node, Value& value)
         }
         break;
     }
-        // Curve
+    // Curve
 #define SAMPLE_CURVE(id, curves, type, graphType) \
 		case id: \
 		{ \
@@ -931,7 +931,7 @@ void VisjectExecutor::ProcessGroupTools(Box* box, Node* node, Value& value)
     SAMPLE_CURVE(14, Float3Curves, Float3, Float3)
     SAMPLE_CURVE(15, Float4Curves, Float4, Float4)
 #undef SETUP_CURVE
-        // Get Gameplay Global
+    // Get Gameplay Global
     case 16:
         if (const auto asset = node->Assets[0].As<GameplayGlobals>())
         {
@@ -944,7 +944,7 @@ void VisjectExecutor::ProcessGroupTools(Box* box, Node* node, Value& value)
             value = Value::Zero;
         }
         break;
-        // Platform Switch
+    // Platform Switch
     case 17:
     {
         int32 boxId = 1;
@@ -985,19 +985,19 @@ void VisjectExecutor::ProcessGroupTools(Box* box, Node* node, Value& value)
         value = tryGetValue(node->GetBox(node->GetBox(boxId)->HasConnection() ? boxId : 1), Value::Zero);
         break;
     }
-        // Asset Reference
+    // Asset Reference
     case 18:
         value = ::LoadAsset((Guid)node->Values[0], Asset::TypeInitializer);
         break;
-        // To String
+    // To String
     case 20:
         value.SetString(tryGetValue(node->GetBox(1), Value(StringView::Empty)).ToString());
         break;
-        // Actor Reference
+    // Actor Reference
     case 21:
         value = Scripting::FindObject<Actor>((Guid)node->Values[0]);
         break;
-        // As
+    // As
     case 22:
     {
         value = Value::Null;
@@ -1013,7 +1013,7 @@ void VisjectExecutor::ProcessGroupTools(Box* box, Node* node, Value& value)
         }
         break;
     }
-        // Type Reference node
+    // Type Reference node
     case 23:
     {
         const StringView typeName(node->Values[0]);
@@ -1023,7 +1023,7 @@ void VisjectExecutor::ProcessGroupTools(Box* box, Node* node, Value& value)
             value = typeName;
         break;
     }
-        // Is
+    // Is
     case 24:
     {
         value = Value::False;
@@ -1038,15 +1038,15 @@ void VisjectExecutor::ProcessGroupTools(Box* box, Node* node, Value& value)
         }
         break;
     }
-        // Is Null
+    // Is Null
     case 27:
         value = (void*)tryGetValue(node->GetBox(1), Value::Null) == nullptr;
         break;
-        // Is Valid
+    // Is Valid
     case 28:
         value = (void*)tryGetValue(node->GetBox(1), Value::Null) != nullptr;
         break;
-        // Reroute
+    // Reroute
     case 29:
         value = tryGetValue(node->GetBox(0), Value::Zero);
         break;
@@ -1059,14 +1059,14 @@ void VisjectExecutor::ProcessGroupBoolean(Box* box, Node* node, Value& value)
 {
     switch (node->TypeID)
     {
-        // NOT
+    // NOT
     case 1:
     {
         const bool a = (bool)tryGetValue(node->GetBox(0), Value::False);
         value = !a;
         break;
     }
-        // AND, OR, XOR, NOR, NAND
+    // AND, OR, XOR, NOR, NAND
     case 2:
     case 3:
     case 4:
@@ -1078,23 +1078,23 @@ void VisjectExecutor::ProcessGroupBoolean(Box* box, Node* node, Value& value)
         bool result = false;
         switch (node->TypeID)
         {
-            // AND
+        // AND
         case 2:
             result = a && b;
             break;
-            // OR
+        // OR
         case 3:
             result = a || b;
             break;
-            // XOR
+        // XOR
         case 4:
             result = !a != !b;
             break;
-            // NOR
+        // NOR
         case 5:
             result = !(a || b);
             break;
-            // NAND
+        // NAND
         case 6:
             result = !(a && b);
             break;
@@ -1111,14 +1111,14 @@ void VisjectExecutor::ProcessGroupBitwise(Box* box, Node* node, Value& value)
 {
     switch (node->TypeID)
     {
-        // NOT
+    // NOT
     case 1:
     {
         const int32 a = (int32)tryGetValue(node->GetBox(0), Value(0));
         value = !a;
         break;
     }
-        // AND, OR, XOR
+    // AND, OR, XOR
     case 2:
     case 3:
     case 4:
@@ -1128,15 +1128,15 @@ void VisjectExecutor::ProcessGroupBitwise(Box* box, Node* node, Value& value)
         int32 result = 0;
         switch (node->TypeID)
         {
-            // AND
+        // AND
         case 2:
             result = a & b;
             break;
-            // OR
+        // OR
         case 3:
             result = a | b;
             break;
-            // XOR
+        // XOR
         case 4:
             result = a ^ b;
             break;
@@ -1153,7 +1153,7 @@ void VisjectExecutor::ProcessGroupComparisons(Box* box, Node* node, Value& value
 {
     switch (node->TypeID)
     {
-        // ==, !=, >, <=, >=
+    // ==, !=, >, <=, >=
     case 1:
     case 2:
     case 3:
@@ -1188,7 +1188,7 @@ void VisjectExecutor::ProcessGroupComparisons(Box* box, Node* node, Value& value
         value = result;
         break;
     }
-        // Switch On Bool
+    // Switch On Bool
     case 7:
     {
         const Value condition = tryGetValue(node->GetBox(0), Value::False);
@@ -1198,7 +1198,7 @@ void VisjectExecutor::ProcessGroupComparisons(Box* box, Node* node, Value& value
             value = tryGetValue(node->GetBox(1), 0, Value::Zero);
         break;
     }
-        // Switch On Enum
+    // Switch On Enum
     case 8:
     {
         const Value v = tryGetValue(node->GetBox(0), Value::Null);
@@ -1227,31 +1227,31 @@ void VisjectExecutor::ProcessGroupParticles(Box* box, Node* node, Value& value)
 {
     switch (node->TypeID)
     {
-        // Random Float
+    // Random Float
     case 208:
     {
         value = RAND;
         break;
     }
-        // Random Vector2
+    // Random Vector2
     case 209:
     {
         value = Float2(RAND, RAND);
         break;
     }
-        // Random Vector3
+    // Random Vector3
     case 210:
     {
         value = Float3(RAND, RAND, RAND);
         break;
     }
-        // Random Vector4
+    // Random Vector4
     case 211:
     {
         value = Float4(RAND, RAND, RAND, RAND);
         break;
     }
-        // Random Float Range
+    // Random Float Range
     case 213:
     {
         auto& a = node->Values[0].AsFloat;
@@ -1259,7 +1259,7 @@ void VisjectExecutor::ProcessGroupParticles(Box* box, Node* node, Value& value)
         value = Math::Lerp(a, b, RAND);
         break;
     }
-        // Random Vector2 Range
+    // Random Vector2 Range
     case 214:
     {
         auto a = (Float2)node->Values[0];
@@ -1270,7 +1270,7 @@ void VisjectExecutor::ProcessGroupParticles(Box* box, Node* node, Value& value)
         );
         break;
     }
-        // Random Vector3 Range
+    // Random Vector3 Range
     case 215:
     {
         auto a = (Float3)node->Values[0];
@@ -1282,7 +1282,7 @@ void VisjectExecutor::ProcessGroupParticles(Box* box, Node* node, Value& value)
         );
         break;
     }
-        // Random Vector4 Range
+    // Random Vector4 Range
     case 216:
     {
         auto a = (Float4)node->Values[0];
@@ -1313,39 +1313,39 @@ void VisjectExecutor::ProcessGroupCollections(Box* box, Node* node, Value& value
         Box* b;
         switch (node->TypeID)
         {
-            // Count
+        // Count
         case 1:
             value = array.Count();
             break;
-            // Contains
+        // Contains
         case 2:
             value = array.Contains(tryGetValue(node->GetBox(1), Value::Null));
             break;
-            // Find
+        // Find
         case 3:
             b = node->GetBox(1);
             ENSURE(b->HasConnection(), TEXT("Missing value to find."));
             value = array.Find(eatBox(b->GetParent<Node>(), b->FirstConnection()));
             break;
-            // Find Last
+        // Find Last
         case 4:
             b = node->GetBox(1);
             ENSURE(b->HasConnection(), TEXT("Missing value to find."));
             value = array.FindLast(eatBox(b->GetParent<Node>(), b->FirstConnection()));
             break;
-            // Clear
+        // Clear
         case 5:
             array.Clear();
             value = MoveTemp(v);
             break;
-            // Remove
+        // Remove
         case 6:
             b = node->GetBox(1);
             ENSURE(b->HasConnection(), TEXT("Missing value to remove."));
             array.Remove(eatBox(b->GetParent<Node>(), b->FirstConnection()));
             value = MoveTemp(v);
             break;
-            // Remove At
+        // Remove At
         case 7:
         {
             const int32 index = (int32)tryGetValue(node->GetBox(1), 0, Value::Null);
@@ -1354,14 +1354,14 @@ void VisjectExecutor::ProcessGroupCollections(Box* box, Node* node, Value& value
             value = MoveTemp(v);
             break;
         }
-            // Add
+        // Add
         case 8:
             b = node->GetBox(1);
             ENSURE(b->HasConnection(), TEXT("Missing value to add."));
             array.Add(eatBox(b->GetParent<Node>(), b->FirstConnection()));
             value = MoveTemp(v);
             break;
-            // Insert
+        // Insert
         case 9:
         {
             b = node->GetBox(1);
@@ -1372,7 +1372,7 @@ void VisjectExecutor::ProcessGroupCollections(Box* box, Node* node, Value& value
             value = MoveTemp(v);
             break;
         }
-            // Get
+        // Get
         case 10:
         {
             const int32 index = (int32)tryGetValue(node->GetBox(1), 0, Value::Null);
@@ -1380,7 +1380,7 @@ void VisjectExecutor::ProcessGroupCollections(Box* box, Node* node, Value& value
             value = MoveTemp(array[index]);
             break;
         }
-            // Set
+        // Set
         case 11:
         {
             b = node->GetBox(2);
@@ -1391,17 +1391,17 @@ void VisjectExecutor::ProcessGroupCollections(Box* box, Node* node, Value& value
             value = MoveTemp(v);
             break;
         }
-            // Sort
+        // Sort
         case 12:
             Sorting::QuickSort(array.Get(), array.Count());
             value = MoveTemp(v);
             break;
-            // Reverse
+        // Reverse
         case 13:
             array.Reverse();
             value = MoveTemp(v);
             break;
-            // Add Unique
+        // Add Unique
         case 14:
             b = node->GetBox(1);
             ENSURE(b->HasConnection(), TEXT("Missing value to add."));

@@ -64,7 +64,7 @@ void ShaderGenerator::ProcessGroupConstants(Box* box, Node* node, Value& value)
 {
     switch (node->TypeID)
     {
-        // Constant value
+    // Constant value
     case 1:
     case 2:
     case 3:
@@ -96,7 +96,7 @@ void ShaderGenerator::ProcessGroupConstants(Box* box, Node* node, Value& value)
         value = Value::Zero;
         break;
     }
-        // PI
+    // PI
     case 10:
     {
         value = Value(PI);
@@ -129,7 +129,7 @@ void ShaderGenerator::ProcessGroupMath(Box* box, Node* node, Value& value)
 {
     switch (node->TypeID)
     {
-        // Add, Subtract, Multiply, Divide, Modulo
+    // Add, Subtract, Multiply, Divide, Modulo
     case 1:
     case 2:
     case 3:
@@ -175,7 +175,7 @@ void ShaderGenerator::ProcessGroupMath(Box* box, Node* node, Value& value)
         value = writeOperation2(node, v1, v2, op);
         break;
     }
-        // Absolute Value, Ceil, Cosine, Floor, Normalize, Round, Saturate, Sine, Sqrt, Tangent
+    // Absolute Value, Ceil, Cosine, Floor, Normalize, Round, Saturate, Sine, Sqrt, Tangent
     case 7:
     case 8:
     case 9:
@@ -193,14 +193,14 @@ void ShaderGenerator::ProcessGroupMath(Box* box, Node* node, Value& value)
         value = writeFunction1(node, v1, function);
         break;
     }
-        // Length
+    // Length
     case 11:
     {
         String text = String::Format(TEXT("length({0})"), tryGetValue(node->GetBox(0), Value::Zero).Value);
         value = writeLocal(ValueType::Float, text, node);
         break;
     }
-        // Cross, Max, Min, Pow
+    // Cross, Max, Min, Pow
     case 18:
     case 21:
     case 22:
@@ -214,7 +214,7 @@ void ShaderGenerator::ProcessGroupMath(Box* box, Node* node, Value& value)
         value = writeFunction2(node, v1, v2, function);
         break;
     }
-        // Distance, Dot
+    // Distance, Dot
     case 19:
     case 20:
     {
@@ -226,7 +226,7 @@ void ShaderGenerator::ProcessGroupMath(Box* box, Node* node, Value& value)
         value = writeFunction2(node, v1, v2, function, ValueType::Float);
         break;
     }
-        // Clamp
+    // Clamp
     case 24:
     {
         Box* b1 = node->GetBox(0);
@@ -238,7 +238,7 @@ void ShaderGenerator::ProcessGroupMath(Box* box, Node* node, Value& value)
         value = writeFunction3(node, v1, v2, v3, TEXT("clamp"), v1.Type);
         break;
     }
-        // Lerp
+    // Lerp
     case 25:
     {
         Value a = tryGetValue(node->GetBox(0), 0, Value::Zero);
@@ -248,7 +248,7 @@ void ShaderGenerator::ProcessGroupMath(Box* box, Node* node, Value& value)
         value = writeLocal(a.Type, text, node);
         break;
     }
-        // Reflect
+    // Reflect
     case 26:
     {
         Box* b1 = node->GetBox(0);
@@ -259,7 +259,7 @@ void ShaderGenerator::ProcessGroupMath(Box* box, Node* node, Value& value)
         value = writeFunction2(node, v1, v2, function);
         break;
     }
-        // Negate
+    // Negate
     case 27:
     {
         Box* b1 = node->GetBox(0);
@@ -267,21 +267,21 @@ void ShaderGenerator::ProcessGroupMath(Box* box, Node* node, Value& value)
         value = writeLocal(v1.Type, String(TEXT("-")) + v1.Value, node);
         break;
     }
-        // 1 - Value
+    // 1 - Value
     case 28:
     {
         Value v1 = tryGetValue(node->GetBox(0), Value::Zero);
         value = writeOperation2(node, Value::InitForOne(v1.Type), v1, '-');
         break;
     }
-        // Derive Normal Z
+    // Derive Normal Z
     case 29:
     {
         Value inXY = tryGetValue(node->GetBox(0), Value::Zero).AsFloat2();
         value = writeLocal(ValueType::Float3, String::Format(TEXT("float3({0}, sqrt(saturate(1.0 - dot({0}.xy, {0}.xy))))"), inXY.Value), node);
         break;
     }
-        // Mad
+    // Mad
     case 31:
     {
         Value v1 = tryGetValue(node->GetBox(0), Value::Zero);
@@ -291,7 +291,7 @@ void ShaderGenerator::ProcessGroupMath(Box* box, Node* node, Value& value)
         value = writeLocal(v1.Type, text, node);
         break;
     }
-        // Extract Largest Component
+    // Extract Largest Component
     case 32:
     {
         Value v1 = tryGetValue(node->GetBox(0), Value::Zero);
@@ -300,25 +300,25 @@ void ShaderGenerator::ProcessGroupMath(Box* box, Node* node, Value& value)
         _includes.Add(TEXT("./Flax/Math.hlsl"));
         break;
     }
-        // Asine
+    // Asine
     case 33:
     {
         value = writeFunction1(node, tryGetValue(node->GetBox(0), Value::Zero), TEXT("asin"));
         break;
     }
-        // Acosine
+    // Acosine
     case 34:
     {
         value = writeFunction1(node, tryGetValue(node->GetBox(0), Value::Zero), TEXT("acos"));
         break;
     }
-        // Atan
+    // Atan
     case 35:
     {
         value = writeFunction1(node, tryGetValue(node->GetBox(0), Value::Zero), TEXT("atan"));
         break;
     }
-        // Bias and Scale
+    // Bias and Scale
     case 36:
     {
         ASSERT(node->Values.Count() == 2 && node->Values[0].Type == VariantType::Float && node->Values[1].Type == VariantType::Float);
@@ -329,7 +329,7 @@ void ShaderGenerator::ProcessGroupMath(Box* box, Node* node, Value& value)
         value = writeLocal(input.Type, text, node);
         break;
     }
-        // Rotate About Axis
+    // Rotate About Axis
     case 37:
     {
         const auto normalizedRotationAxis = tryGetValue(node->GetBox(0), Value::Zero).AsFloat3();
@@ -341,19 +341,19 @@ void ShaderGenerator::ProcessGroupMath(Box* box, Node* node, Value& value)
         value = writeLocal(ValueType::Float3, text, node);
         break;
     }
-        // Trunc
+    // Trunc
     case 38:
     {
         value = writeFunction1(node, tryGetValue(node->GetBox(0), Value::Zero), TEXT("trunc"));
         break;
     }
-        // Frac
+    // Frac
     case 39:
     {
         value = writeFunction1(node, tryGetValue(node->GetBox(0), Value::Zero), TEXT("frac"));
         break;
     }
-        // Fmod
+    // Fmod
     case 40:
     {
         Value v1 = tryGetValue(node->GetBox(0), Value::Zero);
@@ -361,7 +361,7 @@ void ShaderGenerator::ProcessGroupMath(Box* box, Node* node, Value& value)
         value = writeFunction2(node, v1, v2, TEXT("fmod"));
         break;
     }
-        // Atan2
+    // Atan2
     case 41:
     {
         Value v1 = tryGetValue(node->GetBox(0), Value::Zero);
@@ -369,7 +369,7 @@ void ShaderGenerator::ProcessGroupMath(Box* box, Node* node, Value& value)
         value = writeFunction2(node, v1, v2, TEXT("atan2"));
         break;
     }
-        // Near Equal
+    // Near Equal
     case 42:
     {
         Value v1 = tryGetValue(node->GetBox(0), Value::Zero);
@@ -378,30 +378,30 @@ void ShaderGenerator::ProcessGroupMath(Box* box, Node* node, Value& value)
         value = writeLocal(ValueType::Bool, String::Format(TEXT("distance({0},{1}) < {2}"), v1.Value, v2.Value, epsilon.Value), node);
         break;
     }
-        // Degrees
+    // Degrees
     case 43:
     {
         value = writeFunction1(node, tryGetValue(node->GetBox(0), Value::Zero), TEXT("degrees"));
         break;
     }
-        // Radians
+    // Radians
     case 44:
     {
         value = writeFunction1(node, tryGetValue(node->GetBox(0), Value::Zero), TEXT("radians"));
         break;
     }
-        // Remap
+    // Remap
     case 48:
     {
-        const auto inVal  = tryGetValue(node->GetBox(0), node->Values[0].AsFloat);
+        const auto inVal = tryGetValue(node->GetBox(0), node->Values[0].AsFloat);
         const auto rangeA = tryGetValue(node->GetBox(1), node->Values[1].AsFloat2());
         const auto rangeB = tryGetValue(node->GetBox(2), node->Values[2].AsFloat2());
-        const auto clamp  = tryGetValue(node->GetBox(3), node->Values[3]).AsBool();
+        const auto clamp = tryGetValue(node->GetBox(3), node->Values[3]).AsBool();
         const auto mapFunc = String::Format(TEXT("{2}.x + ({0} - {1}.x) * ({2}.y - {2}.x) / ({1}.y - {1}.x)"), inVal.Value, rangeA.Value, rangeB.Value);
         value = writeLocal(ValueType::Float, String::Format(TEXT("{2} ? clamp({0}, {1}.x, {1}.y) : {0}"), mapFunc, rangeB.Value, clamp.Value), node);
         break;
     }
-        // Rotate Vector
+    // Rotate Vector
     case 49:
     {
         const Value quaternion = tryGetValue(node->GetBox(0), Value::InitForZero(VariantType::Quaternion)).Cast(VariantType::Quaternion);
@@ -418,7 +418,7 @@ void ShaderGenerator::ProcessGroupPacking(Box* box, Node* node, Value& value)
 {
     switch (node->TypeID)
     {
-        // Pack
+    // Pack
     case 20:
     {
         Box* bX = node->GetBox(1);
@@ -460,7 +460,7 @@ void ShaderGenerator::ProcessGroupPacking(Box* box, Node* node, Value& value)
         value = Value::Zero;
         break;
     }
-        // Unpack
+    // Unpack
     case 30:
     {
         Box* b = node->GetBox(0);
@@ -502,7 +502,7 @@ void ShaderGenerator::ProcessGroupPacking(Box* box, Node* node, Value& value)
         value = Value::Zero;
         break;
     }
-        // Mask X, Y, Z, W
+    // Mask X, Y, Z, W
     case 40:
     case 41:
     case 42:
@@ -512,7 +512,7 @@ void ShaderGenerator::ProcessGroupPacking(Box* box, Node* node, Value& value)
         value = Value(ValueType::Float, v.Value + _subs[node->TypeID - 40]);
         break;
     }
-        // Mask XY, YZ, XZ,...
+    // Mask XY, YZ, XZ,...
     case 44:
     {
         value = tryGetValue(node->GetBox(0), Float2::Zero).AsFloat2();
@@ -536,13 +536,13 @@ void ShaderGenerator::ProcessGroupPacking(Box* box, Node* node, Value& value)
         value = Value(ValueType::Float2, v.Value + TEXT(".zw"));
         break;
     }
-        // Mask XYZ
+    // Mask XYZ
     case 70:
     {
         value = tryGetValue(node->GetBox(0), Float4::Zero).AsFloat3();
         break;
     }
-        // Append
+    // Append
     case 100:
     {
         auto in0 = node->GetBox(0);
@@ -586,7 +586,7 @@ void ShaderGenerator::ProcessGroupTools(Box* box, Node* node, Value& value)
 {
     switch (node->TypeID)
     {
-        // Desaturation
+    // Desaturation
     case 2:
     {
         Value input = tryGetValue(node->GetBox(0), Value::Zero).AsFloat3();
@@ -596,7 +596,7 @@ void ShaderGenerator::ProcessGroupTools(Box* box, Node* node, Value& value)
         value = writeFunction3(node, input, dot, scale, TEXT("lerp"), ValueType::Float3);
         break;
     }
-        // Color Gradient
+    // Color Gradient
     case 10:
     {
         Value time, prevTime, curTime;
@@ -661,7 +661,7 @@ void ShaderGenerator::ProcessGroupTools(Box* box, Node* node, Value& value)
         }
         break;
     }
-        // Curve
+    // Curve
 #define SAMPLE_CURVE(id, curves, type, graphType) \
 		case id: \
 		{ \
@@ -675,7 +675,7 @@ void ShaderGenerator::ProcessGroupTools(Box* box, Node* node, Value& value)
     SAMPLE_CURVE(14, Float3Curves, AsFloat3, Float3)
     SAMPLE_CURVE(15, Float4Curves, AsFloat4, Float4)
 #undef SETUP_CURVE
-        // Get Gameplay Global
+    // Get Gameplay Global
     case 16:
     {
         // Get the variable type
@@ -723,7 +723,7 @@ void ShaderGenerator::ProcessGroupTools(Box* box, Node* node, Value& value)
         value.Value = param->ShaderName;
         break;
     }
-        // Platform Switch
+    // Platform Switch
     case 17:
     {
         bool usesAnyPlatformSpecificInput = false;
@@ -768,7 +768,7 @@ void ShaderGenerator::ProcessGroupTools(Box* box, Node* node, Value& value)
 #undef PLATFORM_CASE
         break;
     }
-        // Reroute
+    // Reroute
     case 29:
         value = tryGetValue(node->GetBox(0), Value::Zero);
         break;
@@ -781,7 +781,7 @@ void ShaderGenerator::ProcessGroupBoolean(Box* box, Node* node, Value& value)
 {
     switch (node->TypeID)
     {
-        // NOT
+    // NOT
     case 1:
     {
         // Get A value
@@ -791,7 +791,7 @@ void ShaderGenerator::ProcessGroupBoolean(Box* box, Node* node, Value& value)
         value = writeLocal(ValueType::Bool, String::Format(TEXT("!{0}"), a.Value), node);
         break;
     }
-        // AND, OR, XOR, NOR, NAND
+    // AND, OR, XOR, NOR, NAND
     case 2:
     case 3:
     case 4:
@@ -806,28 +806,28 @@ void ShaderGenerator::ProcessGroupBoolean(Box* box, Node* node, Value& value)
         const Char* op;
         switch (node->TypeID)
         {
-            // AND
+        // AND
         case 2:
             op = TEXT("{0} && {1}");
             break;
-            // OR
+        // OR
         case 3:
             op = TEXT("{0} || {1}");
             break;
-            // XOR
+        // XOR
         case 4:
             op = TEXT("!{0} != !{1}");
             break;
-            // NOR
+        // NOR
         case 5:
             op = TEXT("!({0} || {1})");
             break;
-            // NAND
+        // NAND
         case 6:
             op = TEXT("!({0} && {1})");
             break;
         default:
-        CRASH;
+            CRASH;
             return;
         }
         value = writeLocal(ValueType::Bool, String::Format(op, a.Value, b.Value), node);
@@ -842,7 +842,7 @@ void ShaderGenerator::ProcessGroupBitwise(Box* box, Node* node, Value& value)
 {
     switch (node->TypeID)
     {
-        // NOT
+    // NOT
     case 1:
     {
         // Get A value
@@ -852,7 +852,7 @@ void ShaderGenerator::ProcessGroupBitwise(Box* box, Node* node, Value& value)
         value = writeLocal(ValueType::Int, String::Format(TEXT("!{0}"), a.Value), node);
         break;
     }
-        // AND, OR, XOR
+    // AND, OR, XOR
     case 2:
     case 3:
     case 4:
@@ -865,20 +865,20 @@ void ShaderGenerator::ProcessGroupBitwise(Box* box, Node* node, Value& value)
         const Char* op;
         switch (node->TypeID)
         {
-            // AND
+        // AND
         case 2:
             op = TEXT("{0} & {1}");
             break;
-            // OR
+        // OR
         case 3:
             op = TEXT("{0} | {1}");
             break;
-            // XOR
+        // XOR
         case 4:
             op = TEXT("{0} ^ {1}");
             break;
         default:
-        CRASH;
+            CRASH;
             return;
         }
         value = writeLocal(ValueType::Int, String::Format(op, a.Value, b.Value), node);
@@ -893,7 +893,7 @@ void ShaderGenerator::ProcessGroupComparisons(Box* box, Node* node, Value& value
 {
     switch (node->TypeID)
     {
-        // ==, !=, >, <=, >=
+    // ==, !=, >, <=, >=
     case 1:
     case 2:
     case 3:
@@ -928,13 +928,13 @@ void ShaderGenerator::ProcessGroupComparisons(Box* box, Node* node, Value& value
             op = TEXT("{0} >= {1}");
             break;
         default:
-        CRASH;
+            CRASH;
             return;
         }
         value = writeLocal(ValueType::Bool, String::Format(op, a.Value, b.Value), node);
         break;
     }
-        // Switch On Bool
+    // Switch On Bool
     case 7:
     {
         const Value condition = tryGetValue(node->GetBox(0), Value::False).AsBool();
@@ -1114,7 +1114,7 @@ ShaderGenerator::Value ShaderGenerator::writeLocal(ValueType type, const String&
 
 ShaderGenerator::Value ShaderGenerator::writeOperation2(Node* caller, const Value& valueA, const Value& valueB, Char op1)
 {
-    const Char op1Str[2] = { op1, 0};
+    const Char op1Str[2] = { op1, 0 };
     const String value = String::Format(TEXT("{0} {1} {2}"), valueA.Value, op1Str, Value::Cast(valueB, valueA.Type).Value);
     return writeLocal(valueA.Type, value, caller);
 }

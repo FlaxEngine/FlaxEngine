@@ -9,9 +9,8 @@
 /// </summary>
 API_CLASS(Sealed, NoConstructor) class FLAXENGINE_API UICanvas : public Actor
 {
-DECLARE_SCENE_OBJECT(UICanvas);
+    DECLARE_SCENE_OBJECT(UICanvas);
 public:
-
     // [Actor]
 #if USE_EDITOR
     BoundingBox GetEditorBox() const override;
@@ -20,7 +19,6 @@ public:
     void Deserialize(DeserializeStream& stream, ISerializeModifier* modifier) override;
 
 protected:
-
     // [Actor]
     void BeginPlay(SceneBeginData* data) final override;
     void EndPlay() final override;

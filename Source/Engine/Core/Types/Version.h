@@ -12,14 +12,12 @@
 struct FLAXENGINE_API Version
 {
 private:
-
     int32 _major;
     int32 _minor;
     int32 _build;
     int32 _revision;
 
 public:
-
     /// <summary>
     /// Initializes a new instance of the Version class with the specified major, minor, build, and revision numbers.
     /// </summary>
@@ -74,7 +72,6 @@ public:
     }
 
 public:
-
     /// <summary>
     /// Gets the value of the build component of the version number for the current Version object.
     /// </summary>
@@ -130,7 +127,6 @@ public:
     }
 
 public:
-
     /// <summary>
     /// Compares the current Version object to a specified Version object and returns an indication of their relative values.
     /// </summary>
@@ -209,7 +205,6 @@ public:
     }
 
 public:
-
     /// <summary>
     /// Converts the value of the current Version object to its equivalent <see cref="T:String" /> representation.
     /// A specified count indicates the number of components to return.
@@ -221,7 +216,6 @@ public:
     String ToString() const;
 
 public:
-
     /// <summary>
     /// Try to parse Version from string.
     /// </summary>

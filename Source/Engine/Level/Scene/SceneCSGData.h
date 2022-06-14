@@ -20,11 +20,9 @@ namespace CSG
     class SceneCSGData : public ISerializable
     {
     private:
-
         Scene* _scene;
 
     public:
-
         /// <summary>
         /// Initializes a new instance of the <see cref="SceneCSGData"/> class.
         /// </summary>
@@ -32,7 +30,6 @@ namespace CSG
         SceneCSGData(Scene* scene);
 
     public:
-
         /// <summary>
         /// CSG mesh building action time (registered by CSG::Builder, in UTC format). Invalid if not build by active engine instance.
         /// </summary>
@@ -64,7 +61,6 @@ namespace CSG
         Action PostCSGBuild;
 
     public:
-
         /// <summary>
         /// Build CSG geometry for the given scene.
         /// </summary>
@@ -77,7 +73,6 @@ namespace CSG
         bool HasData() const;
 
     public:
-
         struct SurfaceData
         {
             Array<Triangle> Triangles;
@@ -95,11 +90,9 @@ namespace CSG
         bool TryGetSurfaceData(const Guid& brushId, int32 brushSurfaceIndex, SurfaceData& outData);
 
     private:
-
         void OnDataChanged();
 
     public:
-
         // [ISerializable]
         void Serialize(SerializeStream& stream, const void* otherObj) override;
         void Deserialize(DeserializeStream& stream, ISerializeModifier* modifier) override;

@@ -24,7 +24,6 @@ class Level;
 class SceneBeginData
 {
 public:
-
     /// <summary>
     /// The joints to create after setup.
     /// </summary>
@@ -57,7 +56,7 @@ typedef Dictionary<Guid, Actor*, HeapAllocation> ActorsLookup;
 /// </summary>
 API_CLASS(Abstract, NoSpawn) class FLAXENGINE_API SceneObject : public ScriptingObject, public ISerializable
 {
-DECLARE_SCRIPTING_TYPE_NO_SPAWN(SceneObject);
+    DECLARE_SCRIPTING_TYPE_NO_SPAWN(SceneObject);
     friend PrefabInstanceData;
     friend Actor;
     friend Level;
@@ -78,7 +77,6 @@ public:
     // - Destroy
 
 protected:
-
     Actor* _parent;
     Guid _prefabID;
     Guid _prefabObjectID;
@@ -90,14 +88,12 @@ protected:
     SceneObject(const SpawnParams& params);
 
 public:
-
     /// <summary>
     /// Finalizes an instance of the <see cref="SceneObject"/> class.
     /// </summary>
     ~SceneObject();
 
 public:
-
     /// <summary>
     /// Determines whether object is during play (spawned/loaded and fully initialized).
     /// </summary>
@@ -162,7 +158,6 @@ public:
     API_PROPERTY() virtual void SetOrderInParent(int32 index) = 0;
 
 public:
-
     /// <summary>
     /// Gets a value indicating whether this object has a valid linkage to the prefab asset.
     /// </summary>
@@ -211,7 +206,6 @@ public:
     API_FUNCTION() String GetNamePath(Char separatorChar = '/') const;
 
 public:
-
     /// <summary>
     /// Called after whole scene or local group of scene objects deserialization.
     /// </summary>
@@ -234,7 +228,6 @@ public:
     virtual void EndPlay() = 0;
 
 public:
-
     // [ISerializable]
     void Serialize(SerializeStream& stream, const void* otherObj) override;
     void Deserialize(DeserializeStream& stream, ISerializeModifier* modifier) override;

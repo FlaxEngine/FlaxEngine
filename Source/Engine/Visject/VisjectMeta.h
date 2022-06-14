@@ -11,7 +11,6 @@
 class VisjectMeta
 {
 public:
-
     /// <summary>
     /// Metadata entry
     /// </summary>
@@ -23,14 +22,12 @@ public:
     };
 
 public:
-
     /// <summary>
     /// All meta entries
     /// </summary>
     Array<Entry, FixedAllocation<8>> Entries;
 
 public:
-
     /// <summary>
     /// Initializes a new instance of the <see cref="VisjectMeta"/> class.
     /// </summary>
@@ -44,7 +41,6 @@ public:
     }
 
 public:
-
     /// <summary>
     /// Load from the stream
     /// </summary>

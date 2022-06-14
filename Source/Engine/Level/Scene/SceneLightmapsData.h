@@ -13,12 +13,10 @@ class Lightmap;
 class SceneLightmapsData
 {
 private:
-
     Array<Lightmap*> _lightmaps;
     Scene* _scene;
 
 public:
-
     /// <summary>
     /// Initializes a new instance of the <see cref="StaticLightManager"/> class.
     /// </summary>
@@ -31,7 +29,6 @@ public:
     ~SceneLightmapsData();
 
 public:
-
     FORCE_INLINE Scene* GetScene() const
     {
         return _scene;
@@ -64,7 +61,6 @@ public:
     }
 
 public:
-
 #if USE_EDITOR
 
     /// <summary>
@@ -84,7 +80,6 @@ public:
 #endif
 
 public:
-
     /// <summary>
     /// Clear baked lightmaps data
     /// </summary>

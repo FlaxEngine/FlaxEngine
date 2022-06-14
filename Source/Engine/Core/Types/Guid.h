@@ -15,7 +15,6 @@ class String;
 API_STRUCT(InBuild, Namespace="System") struct FLAXENGINE_API Guid
 {
 public:
-
     /// <summary>
     /// Accepted format specifiers for the format parameter
     /// </summary>
@@ -39,7 +38,6 @@ public:
     };
 
 public:
-
     union
     {
         struct
@@ -65,12 +63,10 @@ public:
     };
 
 public:
-
     // Empty Guid (considered as invalid ID)
     static Guid Empty;
 
 public:
-
     /// <summary>
     /// Empty constructor.
     /// </summary>
@@ -92,7 +88,6 @@ public:
     }
 
 public:
-
     // Compares two Guids for equality
     // @param left The first Guid to compare
     // @param right The second Guid to compare
@@ -152,14 +147,12 @@ public:
     }
 
 public:
-
     String ToString() const;
     String ToString(FormatType format) const;
     void ToString(char* buffer, FormatType format) const;
     void ToString(Char* buffer, FormatType format) const;
 
 public:
-
     /// <summary>
     /// Try to parse Guid from string
     /// </summary>

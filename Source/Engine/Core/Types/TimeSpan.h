@@ -33,14 +33,12 @@ namespace Constants
 API_STRUCT(InBuild, Namespace="System") struct FLAXENGINE_API TimeSpan
 {
 public:
-
     /// <summary>
     /// Time span in 100 nanoseconds resolution.
     /// </summary>
     int64 Ticks;
 
 public:
-
     /// <summary>
     /// Empty constructor.
     /// </summary>
@@ -88,7 +86,6 @@ public:
     }
 
 public:
-
     // Get string
     String ToString() const;
 
@@ -99,7 +96,6 @@ public:
     String ToString(const char option) const;
 
 public:
-
     FORCE_INLINE TimeSpan operator+(const TimeSpan& other) const
     {
         return TimeSpan(Ticks + other.Ticks);
@@ -169,7 +165,6 @@ public:
     }
 
 public:
-
     /// <summary>
     /// Gets the days component of this time span.
     /// </summary>
@@ -259,7 +254,6 @@ public:
     }
 
 public:
-
     /// <summary>
     /// Creates a time span that represents the specified number of days.
     /// </summary>
@@ -296,7 +290,6 @@ public:
     static TimeSpan FromSeconds(double seconds);
 
 public:
-
     /// <summary>
     /// Returns the maximum time span value.
     /// </summary>
@@ -325,7 +318,6 @@ public:
     }
 
 private:
-
     void Set(int32 days, int32 hours, int32 minutes, int32 seconds, int32 milliseconds);
 };
 

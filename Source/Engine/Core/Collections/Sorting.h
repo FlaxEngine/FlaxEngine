@@ -11,14 +11,12 @@
 class FLAXENGINE_API Sorting
 {
 public:
-
     /// <summary>
     /// Helper collection used by the sorting algorithms. Implements stack using single linear allocation with variable capacity.
     /// </summary>
     class FLAXENGINE_API SortingStack
     {
     public:
-
         static SortingStack& Get();
 
         int32 Count = 0;
@@ -47,7 +45,6 @@ public:
     };
 
 public:
-
     /// <summary>
     /// Sorts the linear data array using Quick Sort algorithm (non recursive version, uses temporary stack collection).
     /// </summary>

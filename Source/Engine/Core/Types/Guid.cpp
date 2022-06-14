@@ -63,7 +63,7 @@ FORCE_INLINE void GuidToString(const CharType* cachedGuidDigits, CharType* buffe
         break;
     }
     case Guid::FormatType::B:
-        // TODO: impl GuidToString for FormatType::B:
+    // TODO: impl GuidToString for FormatType::B:
     case Guid::FormatType::P:
         // TODO: impl GuidToString for FormatType::P:
     default:
@@ -89,7 +89,7 @@ FORCE_INLINE bool GuidParse(const StringViewType& text, Guid& value)
 {
     switch (text.Length())
     {
-        // FormatType::N
+    // FormatType::N
     case 32:
     {
         return
@@ -98,7 +98,7 @@ FORCE_INLINE bool GuidParse(const StringViewType& text, Guid& value)
                 StringUtils::ParseHex(*text + 16, 8, &value.C) ||
                 StringUtils::ParseHex(*text + 24, 8, &value.D);
     }
-        // FormatType::D
+    // FormatType::D
     case 36:
     {
         StringType b = StringType(text.Substring(9, 4)) + text.Substring(14, 4);
@@ -109,8 +109,8 @@ FORCE_INLINE bool GuidParse(const StringViewType& text, Guid& value)
                 StringUtils::ParseHex(*c, &value.C) ||
                 StringUtils::ParseHex(*text + 28, 8, &value.D);
     }
-        // FormatType::B
-        // FormatType::P
+    // FormatType::B
+    // FormatType::P
     case 38:
     {
         StringType b = StringType(text.Substring(10, 4)) + text.Substring(15, 4);

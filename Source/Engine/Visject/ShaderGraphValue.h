@@ -12,11 +12,9 @@
 struct ShaderGraphValue : Object
 {
 private:
-
     static const Char* _subs[];
 
 public:
-
     /// <summary>
     /// The value type.
     /// </summary>
@@ -28,7 +26,6 @@ public:
     String Value;
 
 public:
-
     /// <summary>
     /// Zero value (as float).
     /// </summary>
@@ -55,7 +52,6 @@ public:
     static const ShaderGraphValue False;
 
 public:
-
     /// <summary>
     /// Initializes a new instance of the <see cref="ShaderGraphValue"/> struct.
     /// </summary>
@@ -134,7 +130,6 @@ public:
     explicit ShaderGraphValue(const Variant& v);
 
 public:
-
     /// <summary>
     /// Returns true if value is valid.
     /// </summary>
@@ -175,7 +170,6 @@ public:
     }
 
 public:
-
     /// <summary>
     /// Formats thw value.
     /// </summary>
@@ -227,7 +221,6 @@ public:
     }
 
 public:
-
     /// <summary>
     /// Initializes the shader variable for given connection type Zero.
     /// </summary>
@@ -301,7 +294,6 @@ public:
     }
 
 public:
-
     /// <summary>
     /// Gets the X component of the value. Valid only for single or vector types.
     /// </summary>
@@ -339,7 +331,6 @@ public:
     }
 
 public:
-
     /// <summary>
     /// Casts the value to the bool type.
     /// </summary>
@@ -422,7 +413,6 @@ public:
     static ShaderGraphValue Cast(const ShaderGraphValue& v, VariantType::Types to);
 
 public:
-
     // [Object]
     String ToString() const override
     {

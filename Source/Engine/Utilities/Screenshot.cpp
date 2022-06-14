@@ -24,7 +24,6 @@ class CaptureScreenshot : public ThreadPoolTask
 {
     friend Screenshot;
 private:
-
     TextureData _data;
     GPUTextureReference _texture;
     ScriptingObjectReference<RenderTask> _renderTask;
@@ -32,7 +31,6 @@ private:
     DateTime _startTime;
 
 public:
-
     /// <summary>
     /// Initializes a new instance of the <see cref="CaptureScreenshot"/> class.
     /// </summary>
@@ -60,7 +58,6 @@ public:
     }
 
 public:
-
     /// <summary>
     /// Gets the texture data container.
     /// </summary>
@@ -71,7 +68,6 @@ public:
     }
 
 protected:
-
     // [ThreadPoolTask]
     bool Run() override;
     void OnFail() override;

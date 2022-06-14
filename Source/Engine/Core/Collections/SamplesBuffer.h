@@ -12,12 +12,10 @@ template<typename T, int32 Size>
 class SamplesBuffer
 {
 protected:
-
     int32 _count = 0;
     T _data[Size];
 
 public:
-
     /// <summary>
     /// Gets amount of elements in the collection.
     /// </summary>
@@ -110,7 +108,6 @@ public:
     }
 
 public:
-
     /// <summary>
     /// Adds the specified value to the buffer.
     /// </summary>
@@ -146,7 +143,6 @@ public:
     }
 
 public:
-
     /// <summary>
     /// Gets the minimum value in the buffer.
     /// </summary>
