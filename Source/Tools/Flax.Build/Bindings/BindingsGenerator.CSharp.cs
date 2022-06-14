@@ -1383,6 +1383,17 @@ namespace Flax.Build.Bindings
                     GenerateCSharpEnum(buildData, contents, indent, enumInfo);
                 else if (type is InterfaceInfo interfaceInfo)
                     GenerateCSharpInterface(buildData, contents, indent, interfaceInfo);
+                else if (type is InjectCodeInfo injectCodeInfo && string.Equals(injectCodeInfo.Lang, "csharp", StringComparison.OrdinalIgnoreCase))
+                {
+                    // `using` directives needs to go above the generated code
+                    foreach(var code in injectCodeInfo.Code.Split(';'))
+                    {
+                        if (code.StartsWith("using"))
+                            CSharpUsedNamespaces.Add(code.Substring(6));
+                        else if (code.Length > 0)
+                            contents.Append(injectCodeInfo.Code).AppendLine(";");
+                    }
+                }
                 else
                     return false;
             }

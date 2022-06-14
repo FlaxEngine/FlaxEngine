@@ -35,7 +35,7 @@ enum class SpecialFolder
     Temporary,
 };
 
-API_INJECT_CPP_CODE("#include \"Engine/Platform/FileSystem.h\"");
+API_INJECT_CODE(cpp, "#include \"Engine/Platform/FileSystem.h\"");
 
 /// <summary>
 /// Platform implementation of filesystem service.

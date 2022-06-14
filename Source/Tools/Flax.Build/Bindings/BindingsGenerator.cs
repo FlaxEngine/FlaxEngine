@@ -302,10 +302,10 @@ namespace Flax.Build.Bindings
                             var typeInfo = ParseTypedef(ref context);
                             fileInfo.AddChild(typeInfo);
                         }
-                        else if (string.Equals(token.Value, ApiTokens.InjectCppCode, StringComparison.Ordinal))
+                        else if (string.Equals(token.Value, ApiTokens.InjectCode, StringComparison.Ordinal))
                         {
-                            var injectCppCodeInfo = ParseInjectCppCode(ref context);
-                            fileInfo.AddChild(injectCppCodeInfo);
+                            var injectCodeInfo = ParseInjectCode(ref context);
+                            fileInfo.AddChild(injectCodeInfo);
                         }
                         else if (string.Equals(token.Value, ApiTokens.Interface, StringComparison.Ordinal))
                         {
@@ -560,7 +560,7 @@ namespace Flax.Build.Bindings
             return type is ClassInfo ||
                    type is StructureInfo ||
                    type is InterfaceInfo ||
-                   type is InjectCppCodeInfo;
+                   type is InjectCodeInfo;
         }
 
         /// <summary>

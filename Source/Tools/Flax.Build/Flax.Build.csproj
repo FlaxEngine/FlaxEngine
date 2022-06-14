@@ -76,7 +76,7 @@
     <Compile Include="Bindings\FieldInfo.cs" />
     <Compile Include="Bindings\FileInfo.cs" />
     <Compile Include="Bindings\InheritanceInfo.cs" />
-    <Compile Include="Bindings\InjectCppCodeInfo.cs" />
+    <Compile Include="Bindings\InjectCodeInfo.cs" />
     <Compile Include="Bindings\InterfaceInfo.cs" />
     <Compile Include="Bindings\LangType.cs" />
     <Compile Include="Bindings\MemberInfo.cs" />

@@ -5,7 +5,7 @@
 #include "Engine/Core/Types/BaseTypes.h"
 #include "Engine/Core/Types/String.h"
 
-API_INJECT_CPP_CODE("#include \"Engine/Platform/Network.h\"");
+API_INJECT_CODE(cpp, "#include \"Engine/Platform/Network.h\"");
 
 /// <summary>
 /// Network connection protocol type.

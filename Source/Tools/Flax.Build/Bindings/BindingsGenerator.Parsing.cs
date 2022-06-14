@@ -1310,13 +1310,12 @@ namespace Flax.Build.Bindings
             return desc;
         }
 
-        private static InjectCppCodeInfo ParseInjectCppCode(ref ParsingContext context)
+        private static InjectCodeInfo ParseInjectCode(ref ParsingContext context)
         {
             context.Tokenizer.ExpectToken(TokenType.LeftParent);
-            var desc = new InjectCppCodeInfo
-            {
-                Code = context.Tokenizer.ExpectToken(TokenType.String).Value.Replace("\\\"", "\""),
-            };
+            var desc = new InjectCodeInfo();
+            context.Tokenizer.SkipUntil(TokenType.Comma, out desc.Lang);
+            desc.Code = context.Tokenizer.ExpectToken(TokenType.String).Value.Replace("\\\"", "\"");
             desc.Code = desc.Code.Substring(1, desc.Code.Length - 2);
             context.Tokenizer.ExpectToken(TokenType.RightParent);
             return desc;

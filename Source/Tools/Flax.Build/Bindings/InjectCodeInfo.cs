@@ -5,14 +5,16 @@ using System.IO;
 namespace Flax.Build.Bindings
 {
     /// <summary>
-    /// The custom C++ code injection information for bindings generator.
+    /// The custom C++/C# code injection information for bindings generator.
     /// </summary>
-    public class InjectCppCodeInfo : ApiTypeInfo
+    public class InjectCodeInfo : ApiTypeInfo
     {
+        public string Lang;
         public string Code;
 
         public override void Write(BinaryWriter writer)
         {
+            writer.Write(Lang);
             writer.Write(Code);
 
             base.Write(writer);
@@ -20,6 +22,7 @@ namespace Flax.Build.Bindings
 
         public override void Read(BinaryReader reader)
         {
+            Lang = reader.ReadString();
             Code = reader.ReadString();
 
             base.Read(reader);

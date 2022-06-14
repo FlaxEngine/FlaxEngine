@@ -263,7 +263,7 @@ API_ENUM() enum class WindowHitCodes
     Help = 21,
 };
 
-API_INJECT_CPP_CODE("#include \"Engine/Platform/Window.h\"");
+API_INJECT_CODE(cpp, "#include \"Engine/Platform/Window.h\"");
 
 /// <summary>
 /// Native platform window object.

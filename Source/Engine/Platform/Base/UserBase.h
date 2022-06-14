@@ -5,7 +5,7 @@
 #include "Engine/Core/Types/String.h"
 #include "Engine/Scripting/ScriptingObject.h"
 
-API_INJECT_CPP_CODE("#include \"Engine/Platform/User.h\"");
+API_INJECT_CODE(cpp, "#include \"Engine/Platform/User.h\"");
 
 /// <summary>
 /// Native platform user object.

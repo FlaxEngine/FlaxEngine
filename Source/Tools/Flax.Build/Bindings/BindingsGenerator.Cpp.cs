@@ -2178,8 +2178,8 @@ namespace Flax.Build.Bindings
                     GenerateCppEnum(buildData, contents, moduleInfo, enumInfo);
                 else if (type is InterfaceInfo interfaceInfo)
                     GenerateCppInterface(buildData, contents, moduleInfo, interfaceInfo);
-                else if (type is InjectCppCodeInfo injectCppCodeInfo)
-                    contents.AppendLine(injectCppCodeInfo.Code);
+                else if (type is InjectCodeInfo injectCodeInfo && string.Equals(injectCodeInfo.Lang, "cpp", StringComparison.OrdinalIgnoreCase))
+                    contents.AppendLine(injectCodeInfo.Code);
             }
             catch
             {

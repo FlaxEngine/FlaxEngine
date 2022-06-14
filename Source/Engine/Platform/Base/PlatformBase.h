@@ -124,7 +124,7 @@ enum class ThreadPriority
 
 extern FLAXENGINE_API const Char* ToString(ThreadPriority value);
 
-API_INJECT_CPP_CODE("#include \"Engine/Platform/Platform.h\"");
+API_INJECT_CODE(cpp, "#include \"Engine/Platform/Platform.h\"");
 
 /// <summary>
 /// Runtime platform service.

@@ -21,7 +21,7 @@ namespace Flax.Build.Bindings
             public const string Event = "API_EVENT";
             public const string Param = "API_PARAM";
             public const string Typedef = "API_TYPEDEF";
-            public const string InjectCppCode = "API_INJECT_CPP_CODE";
+            public const string InjectCode = "API_INJECT_CODE";
             public const string AutoSerialization = "API_AUTO_SERIALIZATION";
 
             public static readonly string[] SearchTags =
