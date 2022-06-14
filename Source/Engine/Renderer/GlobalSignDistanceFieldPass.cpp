@@ -506,7 +506,7 @@ bool GlobalSignDistanceFieldPass::Render(RenderContext& renderContext, GPUContex
         auto& cascade = sdfData.Cascades[cascadeIndex];
         const float cascadeDistance = distanceExtent * cascadesDistanceScales[cascadeIndex];
         const float cascadeMaxDistance = cascadeDistance * 2;
-        const float cascadeVoxelSize = cascadeMaxDistance / resolution;
+        const float cascadeVoxelSize = cascadeMaxDistance / (float)resolution;
         const float cascadeChunkSize = cascadeVoxelSize * GLOBAL_SDF_RASTERIZE_CHUNK_SIZE;
         static_assert(GLOBAL_SDF_RASTERIZE_CHUNK_SIZE % GLOBAL_SDF_RASTERIZE_MIP_FACTOR == 0, "Adjust chunk size to match the mip factor scale.");
         const Vector3 center = Vector3::Floor(viewOrigin / cascadeChunkSize) * cascadeChunkSize;

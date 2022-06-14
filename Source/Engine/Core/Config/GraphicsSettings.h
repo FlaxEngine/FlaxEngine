@@ -5,11 +5,12 @@
 #include "Engine/Core/Config/Settings.h"
 #include "Engine/Serialization/Serialization.h"
 #include "Engine/Graphics/Enums.h"
+#include "Engine/Graphics/PostProcessSettings.h"
 
 /// <summary>
 /// Graphics rendering settings.
 /// </summary>
-API_CLASS(sealed, Namespace="FlaxEditor.Content.Settings") class FLAXENGINE_API GraphicsSettings : public SettingsBase
+API_CLASS(sealed, Namespace="FlaxEditor.Content.Settings", NoConstructor) class FLAXENGINE_API GraphicsSettings : public SettingsBase
 {
     API_AUTO_SERIALIZATION();
     DECLARE_SCRIPTING_TYPE_MINIMAL(GraphicsSettings);
@@ -93,6 +94,12 @@ public:
     /// </summary>
     API_FIELD(Attributes="EditorOrder(2130), Limit(256, 8192), EditorDisplay(\"Global Illumination\")")
     int32 GlobalSurfaceAtlasResolution = 2048;
+
+    /// <summary>
+    /// The default Post Process settings. Can be overriden by PostFxVolume on a level locally, per camera or for a whole map.
+    /// </summary>
+    API_FIELD(Attributes="EditorOrder(10000), EditorDisplay(\"Post Process Settings\", EditorDisplayAttribute.InlineStyle)")
+    PostProcessSettings PostProcessSettings;
 
 public:
     /// <summary>

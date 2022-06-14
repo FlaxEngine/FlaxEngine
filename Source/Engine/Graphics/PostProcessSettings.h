@@ -9,6 +9,8 @@
 #include "Engine/Content/Assets/Texture.h"
 #include "Engine/Content/Assets/MaterialBase.h"
 
+API_INJECT_CODE(csharp, "using Newtonsoft.Json;");
+
 /// <summary>
 /// Global Illumination effect rendering modes.
 /// </summary>
@@ -1910,79 +1912,79 @@ API_STRUCT() struct FLAXENGINE_API PostProcessSettings : ISerializable
     /// <summary>
     /// The ambient occlusion effect settings.
     /// </summary>
-    API_FIELD()
+    API_FIELD(Attributes="EditorDisplay(\"Ambient Occlusion\"), EditorOrder(100), JsonProperty(\"AO\")")
     AmbientOcclusionSettings AmbientOcclusion;
 
     /// <summary>
     /// The global illumination effect settings.
     /// </summary>
-    API_FIELD()
+    API_FIELD(Attributes="EditorDisplay(\"Global Illumination\"), EditorOrder(150), JsonProperty(\"GI\")")
     GlobalIlluminationSettings GlobalIllumination;
 
     /// <summary>
     /// The bloom effect settings.
     /// </summary>
-    API_FIELD()
+    API_FIELD(Attributes="EditorDisplay(\"Bloom\"), EditorOrder(200)")
     BloomSettings Bloom;
 
     /// <summary>
     /// The tone mapping effect settings.
     /// </summary>
-    API_FIELD()
+    API_FIELD(Attributes="EditorDisplay(\"Tone Mapping\"), EditorOrder(300)")
     ToneMappingSettings ToneMapping;
 
     /// <summary>
     /// The color grading effect settings.
     /// </summary>
-    API_FIELD()
+    API_FIELD(Attributes="EditorDisplay(\"Color Grading\"), EditorOrder(400)")
     ColorGradingSettings ColorGrading;
 
     /// <summary>
     /// The eye adaptation effect settings.
     /// </summary>
-    API_FIELD()
+    API_FIELD(Attributes="EditorDisplay(\"Eye Adaptation\"), EditorOrder(500)")
     EyeAdaptationSettings EyeAdaptation;
 
     /// <summary>
     /// The camera artifacts effect settings.
     /// </summary>
-    API_FIELD()
+    API_FIELD(Attributes="EditorDisplay(\"Camera Artifacts\"), EditorOrder(600)")
     CameraArtifactsSettings CameraArtifacts;
 
     /// <summary>
     /// The lens flares effect settings.
     /// </summary>
-    API_FIELD()
+    API_FIELD(Attributes="EditorDisplay(\"Lens Flares\"), EditorOrder(700)")
     LensFlaresSettings LensFlares;
 
     /// <summary>
     /// The depth of field effect settings.
     /// </summary>
-    API_FIELD()
+    API_FIELD(Attributes="EditorDisplay(\"Depth Of Field\"), EditorOrder(800)")
     DepthOfFieldSettings DepthOfField;
 
     /// <summary>
     /// The motion blur effect settings.
     /// </summary>
-    API_FIELD()
+    API_FIELD(Attributes="EditorDisplay(\"Motion Blur\"), EditorOrder(900)")
     MotionBlurSettings MotionBlur;
 
     /// <summary>
     /// The screen space reflections effect settings.
     /// </summary>
-    API_FIELD()
+    API_FIELD(Attributes="EditorDisplay(\"Screen Space Reflections\"), EditorOrder(1000), JsonProperty(\"SSR\")")
     ScreenSpaceReflectionsSettings ScreenSpaceReflections;
 
     /// <summary>
     /// The anti-aliasing effect settings.
     /// </summary>
-    API_FIELD()
+    API_FIELD(Attributes="EditorDisplay(\"Anti Aliasing\"), EditorOrder(1100), JsonProperty(\"AA\")")
     AntiAliasingSettings AntiAliasing;
 
     /// <summary>
     /// The PostFx materials rendering settings.
     /// </summary>
-    API_FIELD()
+    API_FIELD(Attributes="EditorDisplay(\"PostFx Materials\"), NoAnimate, EditorOrder(1200)")
     PostFxMaterialsSettings PostFxMaterials;
 
 public:

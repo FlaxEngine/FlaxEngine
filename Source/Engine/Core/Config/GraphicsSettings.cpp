@@ -16,4 +16,5 @@ void GraphicsSettings::Apply()
     Graphics::GlobalSDFQuality = GlobalSDFQuality;
     Graphics::GIQuality = GIQuality;
     Graphics::GlobalSurfaceAtlasResolution = GlobalSurfaceAtlasResolution;
+    Graphics::PostProcessSettings = PostProcessSettings;
 }

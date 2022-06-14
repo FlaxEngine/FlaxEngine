@@ -12,6 +12,7 @@
 #include "Engine/Graphics/RenderTools.h"
 #include "Engine/Profiler/Profiler.h"
 #include "Engine/Content/Assets/CubeTexture.h"
+#include "Engine/Graphics/Graphics.h"
 #include "Engine/Level/Scene/Lightmap.h"
 #include "Engine/Level/Actors/PostFxVolume.h"
 
@@ -192,9 +193,8 @@ void RenderList::AddSettingsBlend(IPostFxSettingsProvider* provider, float weigh
 void RenderList::BlendSettings()
 {
     PROFILE_CPU();
-
     Sorting::QuickSort(Blendable.Get(), Blendable.Count());
-
+    Settings = Graphics::PostProcessSettings;
     for (auto& b : Blendable)
     {
         b.Provider->Blend(Settings, b.Weight);
