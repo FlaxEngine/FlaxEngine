@@ -219,37 +219,37 @@ API_STRUCT() struct FLAXENGINE_API AmbientOcclusionSettings : ISerializable
     /// <summary>
     /// Enable/disable ambient occlusion effect.
     /// </summary>
-    API_FIELD(Attributes="DefaultValue(true), EditorOrder(0), PostProcessSetting((int)AmbientOcclusionSettingsOverride.Enabled)")
+    API_FIELD(Attributes="EditorOrder(0), PostProcessSetting((int)AmbientOcclusionSettingsOverride.Enabled)")
     bool Enabled = true;
 
     /// <summary>
     /// Ambient occlusion intensity.
     /// </summary>
-    API_FIELD(Attributes="DefaultValue(0.8f), Limit(0, 10.0f, 0.01f), EditorOrder(1), PostProcessSetting((int)AmbientOcclusionSettingsOverride.Intensity)")
+    API_FIELD(Attributes="Limit(0, 10.0f, 0.01f), EditorOrder(1), PostProcessSetting((int)AmbientOcclusionSettingsOverride.Intensity)")
     float Intensity = 0.8f;
 
     /// <summary>
     /// Ambient occlusion power.
     /// </summary>
-    API_FIELD(Attributes="DefaultValue(0.75f), Limit(0, 10.0f, 0.01f), EditorOrder(2), PostProcessSetting((int)AmbientOcclusionSettingsOverride.Power)")
+    API_FIELD(Attributes="Limit(0, 10.0f, 0.01f), EditorOrder(2), PostProcessSetting((int)AmbientOcclusionSettingsOverride.Power)")
     float Power = 0.75f;
 
     /// <summary>
     /// Ambient occlusion check range radius.
     /// </summary>
-    API_FIELD(Attributes="DefaultValue(0.7f), Limit(0, 100.0f, 0.01f), EditorOrder(3), PostProcessSetting((int)AmbientOcclusionSettingsOverride.Radius)")
+    API_FIELD(Attributes="Limit(0, 100.0f, 0.01f), EditorOrder(3), PostProcessSetting((int)AmbientOcclusionSettingsOverride.Radius)")
     float Radius = 0.7f;
 
     /// <summary>
     /// Ambient occlusion fade out end distance from camera (in world units).
     /// </summary>
-    API_FIELD(Attributes="DefaultValue(5000.0f), Limit(0.0f), EditorOrder(4), PostProcessSetting((int)AmbientOcclusionSettingsOverride.FadeOutDistance)")
+    API_FIELD(Attributes="Limit(0.0f), EditorOrder(4), PostProcessSetting((int)AmbientOcclusionSettingsOverride.FadeOutDistance)")
     float FadeOutDistance = 5000.0f;
 
     /// <summary>
     /// Ambient occlusion fade distance (in world units). Defines the size of the effect fade from fully visible to fully invisible at FadeOutDistance.
     /// </summary>
-    API_FIELD(Attributes="DefaultValue(500.0f), Limit(0.0f), EditorOrder(5), PostProcessSetting((int)AmbientOcclusionSettingsOverride.FadeDistance)")
+    API_FIELD(Attributes="Limit(0.0f), EditorOrder(5), PostProcessSetting((int)AmbientOcclusionSettingsOverride.FadeDistance)")
     float FadeDistance = 500.0f;
 
 public:
@@ -415,31 +415,31 @@ API_STRUCT() struct FLAXENGINE_API BloomSettings : ISerializable
     /// <summary>
     /// If checked, bloom effect will be rendered.
     /// </summary>
-    API_FIELD(Attributes="DefaultValue(true), EditorOrder(0), PostProcessSetting((int)BloomSettingsOverride.Enabled)")
+    API_FIELD(Attributes="EditorOrder(0), PostProcessSetting((int)BloomSettingsOverride.Enabled)")
     bool Enabled = true;
 
     /// <summary>
     /// Bloom effect strength. Value 0 disabled is, while higher values increase the effect.
     /// </summary>
-    API_FIELD(Attributes="DefaultValue(1.0f), Limit(0, 20.0f, 0.01f), EditorOrder(1), PostProcessSetting((int)BloomSettingsOverride.Intensity)")
+    API_FIELD(Attributes="Limit(0, 20.0f, 0.01f), EditorOrder(1), PostProcessSetting((int)BloomSettingsOverride.Intensity)")
     float Intensity = 1.0f;
 
     /// <summary>
     /// Minimum pixel brightness value to start blowing. Values below the threshold are skipped.
     /// </summary>
-    API_FIELD(Attributes="DefaultValue(3.0f), Limit(0, 15.0f, 0.01f), EditorOrder(2), PostProcessSetting((int)BloomSettingsOverride.Threshold)")
+    API_FIELD(Attributes="Limit(0, 15.0f, 0.01f), EditorOrder(2), PostProcessSetting((int)BloomSettingsOverride.Threshold)")
     float Threshold = 3.0f;
 
     /// <summary>
     /// This affects the fall-off of the bloom. It's the standard deviation (sigma) used in the Gaussian blur formula when calculating the kernel of the bloom.
     /// </summary>
-    API_FIELD(Attributes="DefaultValue(4.0f), Limit(0, 20.0f, 0.01f), EditorOrder(3), PostProcessSetting((int)BloomSettingsOverride.BlurSigma)")
+    API_FIELD(Attributes="Limit(0, 20.0f, 0.01f), EditorOrder(3), PostProcessSetting((int)BloomSettingsOverride.BlurSigma)")
     float BlurSigma = 4.0f;
 
     /// <summary>
     /// Bloom effect brightness limit. Pixels with higher luminance will be capped to this brightness level.
     /// </summary>
-    API_FIELD(Attributes="DefaultValue(10.0f), Limit(0, 100.0f, 0.01f), EditorOrder(4), PostProcessSetting((int)BloomSettingsOverride.Limit)")
+    API_FIELD(Attributes="Limit(0, 100.0f, 0.01f), EditorOrder(4), PostProcessSetting((int)BloomSettingsOverride.Limit)")
     float Limit = 10.0f;
 
 public:
@@ -500,19 +500,19 @@ API_STRUCT() struct FLAXENGINE_API ToneMappingSettings : ISerializable
     /// <summary>
     /// Adjusts the white balance in relation to the temperature of the light in the scene. When the light temperature and this one match the light will appear white. When a value is used that is higher than the light in the scene it will yield a "warm" or yellow color, and, conversely, if the value is lower, it would yield a "cool" or blue color. The default value is `6500`.
     /// </summary>
-    API_FIELD(Attributes="DefaultValue(6500.0f), Limit(1500, 15000), EditorOrder(0), PostProcessSetting((int)ToneMappingSettingsOverride.WhiteTemperature)")
+    API_FIELD(Attributes="Limit(1500, 15000), EditorOrder(0), PostProcessSetting((int)ToneMappingSettingsOverride.WhiteTemperature)")
     float WhiteTemperature = 6500.0f;
 
     /// <summary>
     /// Adjusts the white balance temperature tint for the scene by adjusting the cyan and magenta color ranges. Ideally, this setting should be used once you've adjusted the white balance temperature to get accurate colors. Under some light temperatures, the colors may appear to be more yellow or blue. This can be used to balance the resulting color to look more natural. The default value is `0`.
     /// </summary>
-    API_FIELD(Attributes="DefaultValue(0.0f), Limit(-1, 1, 0.001f), EditorOrder(1), PostProcessSetting((int)ToneMappingSettingsOverride.WhiteTint)")
+    API_FIELD(Attributes="Limit(-1, 1, 0.001f), EditorOrder(1), PostProcessSetting((int)ToneMappingSettingsOverride.WhiteTint)")
     float WhiteTint = 0.0f;
 
     /// <summary>
     /// The tone mapping mode to use for the color grading process.
     /// </summary>
-    API_FIELD(Attributes="DefaultValue(ToneMappingMode.ACES), EditorOrder(2), PostProcessSetting((int)ToneMappingSettingsOverride.Mode)")
+    API_FIELD(Attributes="EditorOrder(2), PostProcessSetting((int)ToneMappingSettingsOverride.Mode)")
     ToneMappingMode Mode = ToneMappingMode::ACES;
 
 public:
@@ -808,13 +808,13 @@ API_STRUCT() struct FLAXENGINE_API ColorGradingSettings : ISerializable
     /// <summary>
     /// The shadows maximum value. Default is 0.09.
     /// </summary>
-    API_FIELD(Attributes="DefaultValue(0.09f), Limit(-1, 1, 0.01f), EditorOrder(20), PostProcessSetting((int)ColorGradingSettingsOverride.ShadowsMax)")
+    API_FIELD(Attributes="Limit(-1, 1, 0.01f), EditorOrder(20), PostProcessSetting((int)ColorGradingSettingsOverride.ShadowsMax)")
     float ShadowsMax = 0.09f;
 
     /// <summary>
     /// The highlights minimum value. Default is 0.5.
     /// </summary>
-    API_FIELD(Attributes="DefaultValue(0.5f), Limit(-1, 1, 0.01f), EditorOrder(21), PostProcessSetting((int)ColorGradingSettingsOverride.HighlightsMin)")
+    API_FIELD(Attributes="Limit(-1, 1, 0.01f), EditorOrder(21), PostProcessSetting((int)ColorGradingSettingsOverride.HighlightsMin)")
     float HighlightsMin = 0.5f;
 
     //
@@ -828,7 +828,7 @@ API_STRUCT() struct FLAXENGINE_API ColorGradingSettings : ISerializable
     /// <summary>
     /// The LUT blending weight (normalized to range 0-1). Default is 1.0.
     /// </summary>
-    API_FIELD(Attributes="DefaultValue(1.0f), Limit(0, 1, 0.01f), EditorOrder(23), PostProcessSetting((int)ColorGradingSettingsOverride.LutWeight)")
+    API_FIELD(Attributes="Limit(0, 1, 0.01f), EditorOrder(23), PostProcessSetting((int)ColorGradingSettingsOverride.LutWeight)")
     float LutWeight = 1.0f;
 
 public:
@@ -919,55 +919,55 @@ API_STRUCT() struct FLAXENGINE_API EyeAdaptationSettings : ISerializable
     /// <summary>
     /// The effect rendering mode used for the exposure processing.
     /// </summary>
-    API_FIELD(Attributes="DefaultValue(EyeAdaptationMode.AutomaticHistogram), EditorOrder(0), PostProcessSetting((int)EyeAdaptationSettingsOverride.Mode)")
+    API_FIELD(Attributes="EditorOrder(0), PostProcessSetting((int)EyeAdaptationSettingsOverride.Mode)")
     EyeAdaptationMode Mode = EyeAdaptationMode::AutomaticHistogram;
 
     /// <summary>
     /// The speed at which the exposure changes when the scene brightness moves from a dark area to a bright area (brightness goes up).
     /// </summary>
-    API_FIELD(Attributes="DefaultValue(3.0f), Limit(0, 100.0f, 0.01f), EditorOrder(1), PostProcessSetting((int)EyeAdaptationSettingsOverride.SpeedUp)")
+    API_FIELD(Attributes="Limit(0, 100.0f, 0.01f), EditorOrder(1), PostProcessSetting((int)EyeAdaptationSettingsOverride.SpeedUp)")
     float SpeedUp = 3.0f;
 
     /// <summary>
     /// The speed at which the exposure changes when the scene brightness moves from a bright area to a dark area (brightness goes down).
     /// </summary>
-    API_FIELD(Attributes="DefaultValue(1.0f), Limit(0, 100.0f, 0.01f), EditorOrder(2), PostProcessSetting((int)EyeAdaptationSettingsOverride.SpeedDown)")
+    API_FIELD(Attributes="Limit(0, 100.0f, 0.01f), EditorOrder(2), PostProcessSetting((int)EyeAdaptationSettingsOverride.SpeedDown)")
     float SpeedDown = 1.0f;
 
     /// <summary>
     /// The pre-exposure value applied to the scene color before performing post-processing (such as bloom, lens flares, etc.).
     /// </summary>
-    API_FIELD(Attributes="DefaultValue(0.0f), Limit(-100, 100, 0.01f), EditorOrder(3), PostProcessSetting((int)EyeAdaptationSettingsOverride.PreExposure)")
+    API_FIELD(Attributes="Limit(-100, 100, 0.01f), EditorOrder(3), PostProcessSetting((int)EyeAdaptationSettingsOverride.PreExposure)")
     float PreExposure = 0.0f;
 
     /// <summary>
     /// The post-exposure value applied to the scene color after performing post-processing (such as bloom, lens flares, etc.) but before color grading and tone mapping.
     /// </summary>
-    API_FIELD(Attributes="DefaultValue(0.0f), Limit(-100, 100, 0.01f), EditorOrder(3), PostProcessSetting((int)EyeAdaptationSettingsOverride.PostExposure)")
+    API_FIELD(Attributes="Limit(-100, 100, 0.01f), EditorOrder(3), PostProcessSetting((int)EyeAdaptationSettingsOverride.PostExposure)")
     float PostExposure = 0.0f;
 
     /// <summary>
     /// The minimum brightness for the auto exposure which limits the lower brightness the eye can adapt within.
     /// </summary>
-    API_FIELD(Attributes="DefaultValue(0.03f), Limit(0, 20.0f, 0.01f), EditorOrder(5), PostProcessSetting((int)EyeAdaptationSettingsOverride.MinBrightness), EditorDisplay(null, \"Minimum Brightness\")")
+    API_FIELD(Attributes="Limit(0, 20.0f, 0.01f), EditorOrder(5), PostProcessSetting((int)EyeAdaptationSettingsOverride.MinBrightness), EditorDisplay(null, \"Minimum Brightness\")")
     float MinBrightness = 0.03f;
 
     /// <summary>
     /// The maximum brightness for the auto exposure which limits the upper brightness the eye can adapt within.
     /// </summary>
-    API_FIELD(Attributes="DefaultValue(2.0f), Limit(0, 100.0f, 0.01f), EditorOrder(6), PostProcessSetting((int)EyeAdaptationSettingsOverride.MaxBrightness), EditorDisplay(null, \"Maximum Brightness\")")
+    API_FIELD(Attributes="Limit(0, 100.0f, 0.01f), EditorOrder(6), PostProcessSetting((int)EyeAdaptationSettingsOverride.MaxBrightness), EditorDisplay(null, \"Maximum Brightness\")")
     float MaxBrightness = 2.0f;
 
     /// <summary>
     /// The lower bound for the luminance histogram of the scene color. Value is in percent and limits the pixels below this brightness. Use values from range 60-80. Used only in AutomaticHistogram mode.
     /// </summary>
-    API_FIELD(Attributes="DefaultValue(70.0f), Limit(1, 99, 0.001f), EditorOrder(3), PostProcessSetting((int)EyeAdaptationSettingsOverride.HistogramLowPercent)")
+    API_FIELD(Attributes="Limit(1, 99, 0.001f), EditorOrder(3), PostProcessSetting((int)EyeAdaptationSettingsOverride.HistogramLowPercent)")
     float HistogramLowPercent = 70.0f;
 
     /// <summary>
     /// The upper bound for the luminance histogram of the scene color. Value is in percent and limits the pixels above this brightness. Use values from range 80-95. Used only in AutomaticHistogram mode.
     /// </summary>
-    API_FIELD(Attributes="DefaultValue(98.0f), Limit(1, 99, 0.001f), EditorOrder(3), PostProcessSetting((int)EyeAdaptationSettingsOverride.HistogramHighPercent)")
+    API_FIELD(Attributes="Limit(1, 99, 0.001f), EditorOrder(3), PostProcessSetting((int)EyeAdaptationSettingsOverride.HistogramHighPercent)")
     float HistogramHighPercent = 98.0f;
 
 public:
@@ -1053,7 +1053,7 @@ API_STRUCT() struct FLAXENGINE_API CameraArtifactsSettings : ISerializable
     /// <summary>
     /// Strength of the vignette effect. Value 0 hides it. The default value is 0.8.
     /// </summary>
-    API_FIELD(Attributes="DefaultValue(0.8f), Limit(0, 2, 0.001f), EditorOrder(0), PostProcessSetting((int)CameraArtifactsSettingsOverride.VignetteIntensity)")
+    API_FIELD(Attributes="Limit(0, 2, 0.001f), EditorOrder(0), PostProcessSetting((int)CameraArtifactsSettingsOverride.VignetteIntensity)")
     float VignetteIntensity = 0.8f;
 
     /// <summary>
@@ -1065,31 +1065,31 @@ API_STRUCT() struct FLAXENGINE_API CameraArtifactsSettings : ISerializable
     /// <summary>
     /// Controls shape of the vignette. Values near 0 produce rectangle shape. Higher values result in round shape. The default value is 0.125.
     /// </summary>
-    API_FIELD(Attributes="DefaultValue(0.125f), Limit(0.0001f, 2.0f, 0.001f), EditorOrder(2), PostProcessSetting((int)CameraArtifactsSettingsOverride.VignetteShapeFactor)")
+    API_FIELD(Attributes="Limit(0.0001f, 2.0f, 0.001f), EditorOrder(2), PostProcessSetting((int)CameraArtifactsSettingsOverride.VignetteShapeFactor)")
     float VignetteShapeFactor = 0.125f;
 
     /// <summary>
     /// Intensity of the grain filter. Value 0 hides it. The default value is 0.005.
     /// </summary>
-    API_FIELD(Attributes="DefaultValue(0.006f), Limit(0.0f, 2.0f, 0.005f), EditorOrder(3), PostProcessSetting((int)CameraArtifactsSettingsOverride.GrainAmount)")
+    API_FIELD(Attributes="Limit(0.0f, 2.0f, 0.005f), EditorOrder(3), PostProcessSetting((int)CameraArtifactsSettingsOverride.GrainAmount)")
     float GrainAmount = 0.006f;
 
     /// <summary>
     /// Size of the grain particles. The default value is 1.6.
     /// </summary>
-    API_FIELD(Attributes="DefaultValue(1.6f), Limit(1.0f, 3.0f, 0.01f), EditorOrder(4), PostProcessSetting((int)CameraArtifactsSettingsOverride.GrainParticleSize)")
+    API_FIELD(Attributes="Limit(1.0f, 3.0f, 0.01f), EditorOrder(4), PostProcessSetting((int)CameraArtifactsSettingsOverride.GrainParticleSize)")
     float GrainParticleSize = 1.6f;
 
     /// <summary>
     /// Speed of the grain particles animation.
     /// </summary>
-    API_FIELD(Attributes="DefaultValue(1.0f), Limit(0.0f, 10.0f, 0.01f), EditorOrder(5), PostProcessSetting((int)CameraArtifactsSettingsOverride.GrainSpeed)")
+    API_FIELD(Attributes="Limit(0.0f, 10.0f, 0.01f), EditorOrder(5), PostProcessSetting((int)CameraArtifactsSettingsOverride.GrainSpeed)")
     float GrainSpeed = 1.0f;
 
     /// <summary>
     /// Controls chromatic aberration effect strength. Value 0 hides it.
     /// </summary>
-    API_FIELD(Attributes="DefaultValue(0.0f), Limit(0.0f, 1.0f, 0.01f), EditorOrder(6), PostProcessSetting((int)CameraArtifactsSettingsOverride.ChromaticDistortion)")
+    API_FIELD(Attributes="Limit(0.0f, 1.0f, 0.01f), EditorOrder(6), PostProcessSetting((int)CameraArtifactsSettingsOverride.ChromaticDistortion)")
     float ChromaticDistortion = 0.0f;
 
     /// <summary>
@@ -1201,49 +1201,49 @@ API_STRUCT() struct FLAXENGINE_API LensFlaresSettings : ISerializable
     /// <summary>
     /// Strength of the effect. Value 0 disabled it.
     /// </summary>
-    API_FIELD(Attributes="DefaultValue(1.0f), Limit(0, 10.0f, 0.01f), EditorOrder(0), PostProcessSetting((int)LensFlaresSettingsOverride.Intensity)")
+    API_FIELD(Attributes="Limit(0, 10.0f, 0.01f), EditorOrder(0), PostProcessSetting((int)LensFlaresSettingsOverride.Intensity)")
     float Intensity = 1.0f;
 
     /// <summary>
     /// Amount of lens flares ghosts.
     /// </summary>
-    API_FIELD(Attributes="DefaultValue(8), Limit(0, 16), EditorOrder(1), PostProcessSetting((int)LensFlaresSettingsOverride.Ghosts)")
+    API_FIELD(Attributes="Limit(0, 16), EditorOrder(1), PostProcessSetting((int)LensFlaresSettingsOverride.Ghosts)")
     int32 Ghosts = 8;
 
     /// <summary>
     /// Lens flares halo width.
     /// </summary>
-    API_FIELD(Attributes="DefaultValue(0.16f), EditorOrder(2), PostProcessSetting((int)LensFlaresSettingsOverride.HaloWidth)")
+    API_FIELD(Attributes="EditorOrder(2), PostProcessSetting((int)LensFlaresSettingsOverride.HaloWidth)")
     float HaloWidth = 0.16f;
 
     /// <summary>
     /// Lens flares halo intensity.
     /// </summary>
-    API_FIELD(Attributes="DefaultValue(0.666f), Limit(0, 10.0f, 0.01f), EditorOrder(3), PostProcessSetting((int)LensFlaresSettingsOverride.HaloIntensity)")
+    API_FIELD(Attributes="Limit(0, 10.0f, 0.01f), EditorOrder(3), PostProcessSetting((int)LensFlaresSettingsOverride.HaloIntensity)")
     float HaloIntensity = 0.666f;
 
     /// <summary>
     /// Ghost samples dispersal parameter.
     /// </summary>
-    API_FIELD(Attributes="DefaultValue(0.3f), EditorOrder(4), PostProcessSetting((int)LensFlaresSettingsOverride.GhostDispersal)")
+    API_FIELD(Attributes="EditorOrder(4), PostProcessSetting((int)LensFlaresSettingsOverride.GhostDispersal)")
     float GhostDispersal = 0.3f;
 
     /// <summary>
     /// Lens flares color distortion parameter.
     /// </summary>
-    API_FIELD(Attributes="DefaultValue(1.5f), EditorOrder(5), PostProcessSetting((int)LensFlaresSettingsOverride.Distortion)")
+    API_FIELD(Attributes="EditorOrder(5), PostProcessSetting((int)LensFlaresSettingsOverride.Distortion)")
     float Distortion = 1.5f;
 
     /// <summary>
     /// Input image brightness threshold. Added to input pixels.
     /// </summary>
-    API_FIELD(Attributes="DefaultValue(-0.5f), EditorOrder(6), PostProcessSetting((int)LensFlaresSettingsOverride.ThresholdBias)")
+    API_FIELD(Attributes="EditorOrder(6), PostProcessSetting((int)LensFlaresSettingsOverride.ThresholdBias)")
     float ThresholdBias = -0.5f;
 
     /// <summary>
     /// Input image brightness threshold scale. Used to multiply input pixels.
     /// </summary>
-    API_FIELD(Attributes="DefaultValue(0.22f), EditorOrder(7), PostProcessSetting((int)LensFlaresSettingsOverride.ThresholdScale)")
+    API_FIELD(Attributes="EditorOrder(7), PostProcessSetting((int)LensFlaresSettingsOverride.ThresholdScale)")
     float ThresholdScale = 0.22f;
 
     /// <summary>
@@ -1255,7 +1255,7 @@ API_STRUCT() struct FLAXENGINE_API LensFlaresSettings : ISerializable
     /// <summary>
     /// Fullscreen lens dirt intensity parameter. Allows to tune dirt visibility.
     /// </summary>
-    API_FIELD(Attributes="DefaultValue(1.0f), Limit(0, 100, 0.01f), EditorOrder(9), PostProcessSetting((int)LensFlaresSettingsOverride.LensDirtIntensity)")
+    API_FIELD(Attributes="Limit(0, 100, 0.01f), EditorOrder(9), PostProcessSetting((int)LensFlaresSettingsOverride.LensDirtIntensity)")
     float LensDirtIntensity = 1.0f;
 
     /// <summary>
@@ -1393,67 +1393,67 @@ API_STRUCT() struct FLAXENGINE_API DepthOfFieldSettings : ISerializable
     /// <summary>
     /// If checked, depth of field effect will be visible.
     /// </summary>
-    API_FIELD(Attributes="DefaultValue(false), EditorOrder(0), PostProcessSetting((int)DepthOfFieldSettingsOverride.Enabled)")
+    API_FIELD(Attributes="EditorOrder(0), PostProcessSetting((int)DepthOfFieldSettingsOverride.Enabled)")
     bool Enabled = false;
 
     /// <summary>
     /// The blur intensity in the out-of-focus areas. Allows reducing blur amount by scaling down the Gaussian Blur radius. Normalized to range 0-1.
     /// </summary>
-    API_FIELD(Attributes="DefaultValue(1.0f), Limit(0, 1, 0.01f), EditorOrder(1), PostProcessSetting((int)DepthOfFieldSettingsOverride.BlurStrength)")
+    API_FIELD(Attributes="Limit(0, 1, 0.01f), EditorOrder(1), PostProcessSetting((int)DepthOfFieldSettingsOverride.BlurStrength)")
     float BlurStrength = 1.0f;
 
     /// <summary>
     /// The distance in World Units from the camera that acts as the center of the region where the scene is perfectly in focus and no blurring occurs.
     /// </summary>
-    API_FIELD(Attributes="DefaultValue(1700.0f), Limit(0), EditorOrder(2), PostProcessSetting((int)DepthOfFieldSettingsOverride.FocalDistance)")
+    API_FIELD(Attributes="Limit(0), EditorOrder(2), PostProcessSetting((int)DepthOfFieldSettingsOverride.FocalDistance)")
     float FocalDistance = 1700.0f;
 
     /// <summary>
     /// The distance in World Units beyond the focal distance where the scene is perfectly in focus and no blurring occurs.
     /// </summary>
-    API_FIELD(Attributes="DefaultValue(3000.0f), Limit(0), EditorOrder(3), PostProcessSetting((int)DepthOfFieldSettingsOverride.FocalRegion)")
+    API_FIELD(Attributes="Limit(0), EditorOrder(3), PostProcessSetting((int)DepthOfFieldSettingsOverride.FocalRegion)")
     float FocalRegion = 3000.0f;
 
     /// <summary>
     /// The distance in World Units from the focal region on the side nearer to the camera over which the scene transitions from focused to blurred.
     /// </summary>
-    API_FIELD(Attributes="DefaultValue(300.0f), Limit(0), EditorOrder(4), PostProcessSetting((int)DepthOfFieldSettingsOverride.NearTransitionRange)")
+    API_FIELD(Attributes="Limit(0), EditorOrder(4), PostProcessSetting((int)DepthOfFieldSettingsOverride.NearTransitionRange)")
     float NearTransitionRange = 300.0f;
 
     /// <summary>
     /// The distance in World Units from the focal region on the side farther from the camera over which the scene transitions from focused to blurred.
     /// </summary>
-    API_FIELD(Attributes="DefaultValue(500.0f), Limit(0), EditorOrder(5), PostProcessSetting((int)DepthOfFieldSettingsOverride.FarTransitionRange)")
+    API_FIELD(Attributes="Limit(0), EditorOrder(5), PostProcessSetting((int)DepthOfFieldSettingsOverride.FarTransitionRange)")
     float FarTransitionRange = 500.0f;
 
     /// <summary>
     /// The distance in World Units which describes border after that there is no blur (useful to disable DoF on sky). Use 0 to disable that feature.
     /// </summary>
-    API_FIELD(Attributes="DefaultValue(0.0f), Limit(0, float.MaxValue, 2), EditorOrder(6), PostProcessSetting((int)DepthOfFieldSettingsOverride.DepthLimit)")
+    API_FIELD(Attributes="Limit(0, float.MaxValue, 2), EditorOrder(6), PostProcessSetting((int)DepthOfFieldSettingsOverride.DepthLimit)")
     float DepthLimit = 0.0f;
 
     /// <summary>
     /// If checked, bokeh shapes will be rendered.
     /// </summary>
-    API_FIELD(Attributes="DefaultValue(true), EditorOrder(7), PostProcessSetting((int)DepthOfFieldSettingsOverride.BokehEnabled)")
+    API_FIELD(Attributes="EditorOrder(7), PostProcessSetting((int)DepthOfFieldSettingsOverride.BokehEnabled)")
     bool BokehEnabled = true;
 
     /// <summary>
     /// Controls size of the bokeh shapes.
     /// </summary>
-    API_FIELD(Attributes="DefaultValue(25.0f), Limit(0, 200.0f, 0.1f), EditorOrder(8), PostProcessSetting((int)DepthOfFieldSettingsOverride.BokehSize)")
+    API_FIELD(Attributes="Limit(0, 200.0f, 0.1f), EditorOrder(8), PostProcessSetting((int)DepthOfFieldSettingsOverride.BokehSize)")
     float BokehSize = 25.0f;
 
     /// <summary>
     /// Controls brightness of the bokeh shapes. Can be used to fade them or make more intense.
     /// </summary>
-    API_FIELD(Attributes="DefaultValue(1.0f), Limit(0, 10.0f, 0.01f), EditorOrder(9), PostProcessSetting((int)DepthOfFieldSettingsOverride.BokehBrightness)")
+    API_FIELD(Attributes="Limit(0, 10.0f, 0.01f), EditorOrder(9), PostProcessSetting((int)DepthOfFieldSettingsOverride.BokehBrightness)")
     float BokehBrightness = 1.0f;
 
     /// <summary>
     /// Defines bokeh shapes type.
     /// </summary>
-    API_FIELD(Attributes="DefaultValue(BokehShapeType.Octagon), EditorOrder(10), PostProcessSetting((int)DepthOfFieldSettingsOverride.BokehShape)")
+    API_FIELD(Attributes="EditorOrder(10), PostProcessSetting((int)DepthOfFieldSettingsOverride.BokehShape)")
     BokehShapeType BokehShape = BokehShapeType::Octagon;
 
     /// <summary>
@@ -1465,25 +1465,25 @@ API_STRUCT() struct FLAXENGINE_API DepthOfFieldSettings : ISerializable
     /// <summary>
     /// The minimum pixel brightness to create bokeh. Pixels with lower brightness will be skipped.
     /// </summary>
-    API_FIELD(Attributes="DefaultValue(3.0f), Limit(0, 10000.0f, 0.01f), EditorOrder(12), PostProcessSetting((int)DepthOfFieldSettingsOverride.BokehBrightnessThreshold)")
+    API_FIELD(Attributes="Limit(0, 10000.0f, 0.01f), EditorOrder(12), PostProcessSetting((int)DepthOfFieldSettingsOverride.BokehBrightnessThreshold)")
     float BokehBrightnessThreshold = 3.0f;
 
     /// <summary>
     /// Depth of Field bokeh shapes blur threshold.
     /// </summary>
-    API_FIELD(Attributes="DefaultValue(0.05f), Limit(0, 1.0f, 0.001f), EditorOrder(13), PostProcessSetting((int)DepthOfFieldSettingsOverride.BokehBlurThreshold)")
+    API_FIELD(Attributes="Limit(0, 1.0f, 0.001f), EditorOrder(13), PostProcessSetting((int)DepthOfFieldSettingsOverride.BokehBlurThreshold)")
     float BokehBlurThreshold = 0.05f;
 
     /// <summary>
     /// Controls bokeh shapes brightness falloff. Higher values reduce bokeh visibility.
     /// </summary>
-    API_FIELD(Attributes="DefaultValue(0.5f), Limit(0, 2.0f, 0.001f), EditorOrder(14), PostProcessSetting((int)DepthOfFieldSettingsOverride.BokehFalloff)")
+    API_FIELD(Attributes="Limit(0, 2.0f, 0.001f), EditorOrder(14), PostProcessSetting((int)DepthOfFieldSettingsOverride.BokehFalloff)")
     float BokehFalloff = 0.5f;
 
     /// <summary>
     /// Controls bokeh shape generation for depth discontinuities.
     /// </summary>
-    API_FIELD(Attributes="DefaultValue(1.5f), Limit(0, 5.0f, 0.001f), EditorOrder(15), PostProcessSetting((int)DepthOfFieldSettingsOverride.BokehDepthCutoff)")
+    API_FIELD(Attributes="Limit(0, 5.0f, 0.001f), EditorOrder(15), PostProcessSetting((int)DepthOfFieldSettingsOverride.BokehDepthCutoff)")
     float BokehDepthCutoff = 1.5f;
 
 public:
@@ -1549,25 +1549,25 @@ API_STRUCT() struct FLAXENGINE_API MotionBlurSettings : ISerializable
     /// <summary>
     /// If checked, motion blur effect will be rendered.
     /// </summary>
-    API_FIELD(Attributes="DefaultValue(true), EditorOrder(0), PostProcessSetting((int)MotionBlurSettingsOverride.Enabled)")
+    API_FIELD(Attributes="EditorOrder(0), PostProcessSetting((int)MotionBlurSettingsOverride.Enabled)")
     bool Enabled = true;
 
     /// <summary>
     /// The blur effect strength. Value 0 disabled is, while higher values increase the effect.
     /// </summary>
-    API_FIELD(Attributes="DefaultValue(1.0f), Limit(0, 5, 0.01f), EditorOrder(1), PostProcessSetting((int)MotionBlurSettingsOverride.Scale)")
+    API_FIELD(Attributes="Limit(0, 5, 0.01f), EditorOrder(1), PostProcessSetting((int)MotionBlurSettingsOverride.Scale)")
     float Scale = 1.0f;
 
     /// <summary>
     /// The amount of sample points used during motion blur rendering. It affects quality and performance.
     /// </summary>
-    API_FIELD(Attributes="DefaultValue(10), Limit(4, 32, 0.1f), EditorOrder(2), PostProcessSetting((int)MotionBlurSettingsOverride.SampleCount)")
+    API_FIELD(Attributes="Limit(4, 32, 0.1f), EditorOrder(2), PostProcessSetting((int)MotionBlurSettingsOverride.SampleCount)")
     int32 SampleCount = 10;
 
     /// <summary>
     /// The motion vectors texture resolution. Motion blur uses per-pixel motion vectors buffer that contains objects movement information. Use lower resolution to improve performance.
     /// </summary>
-    API_FIELD(Attributes="DefaultValue(ResolutionMode.Half), EditorOrder(3), PostProcessSetting((int)MotionBlurSettingsOverride.MotionVectorsResolution)")
+    API_FIELD(Attributes="EditorOrder(3), PostProcessSetting((int)MotionBlurSettingsOverride.MotionVectorsResolution)")
     ResolutionMode MotionVectorsResolution = ResolutionMode::Half;
 
 public:
@@ -1688,91 +1688,91 @@ API_STRUCT() struct FLAXENGINE_API ScreenSpaceReflectionsSettings : ISerializabl
     /// <summary>
     /// The effect intensity (normalized to range [0;1]). Use 0 to disable it.
     /// </summary>
-    API_FIELD(Attributes="DefaultValue(1.0f), Limit(0, 5.0f, 0.01f), EditorOrder(0), PostProcessSetting((int)ScreenSpaceReflectionsSettingsOverride.Intensity)")
+    API_FIELD(Attributes="Limit(0, 5.0f, 0.01f), EditorOrder(0), PostProcessSetting((int)ScreenSpaceReflectionsSettingsOverride.Intensity)")
     float Intensity = 1.0f;
 
     /// <summary>
     /// The depth buffer downscale option to optimize raycast performance. Full gives better quality, but half improves performance. The default value is half.
     /// </summary>
-    API_FIELD(Attributes="DefaultValue(ResolutionMode.Half), EditorOrder(1), PostProcessSetting((int)ScreenSpaceReflectionsSettingsOverride.DepthResolution)")
+    API_FIELD(Attributes="EditorOrder(1), PostProcessSetting((int)ScreenSpaceReflectionsSettingsOverride.DepthResolution)")
     ResolutionMode DepthResolution = ResolutionMode::Half;
 
     /// <summary>
     /// The raycast resolution. Full gives better quality, but half improves performance. The default value is half.
     /// </summary>
-    API_FIELD(Attributes="DefaultValue(ResolutionMode.Half), EditorOrder(2), PostProcessSetting((int)ScreenSpaceReflectionsSettingsOverride.RayTracePassResolution)")
+    API_FIELD(Attributes="EditorOrder(2), PostProcessSetting((int)ScreenSpaceReflectionsSettingsOverride.RayTracePassResolution)")
     ResolutionMode RayTracePassResolution = ResolutionMode::Half;
 
     /// <summary>
     /// The reflection spread parameter. This value controls source roughness effect on reflections blur. Smaller values produce wider reflections spread but also introduce more noise. Higher values provide more mirror-like reflections. Default value is 0.82.
     /// </summary>
-    API_FIELD(Attributes="DefaultValue(0.82f), Limit(0, 1.0f, 0.01f), EditorOrder(3), PostProcessSetting((int)ScreenSpaceReflectionsSettingsOverride.BRDFBias), EditorDisplay(null, \"BRDF Bias\")")
+    API_FIELD(Attributes="Limit(0, 1.0f, 0.01f), EditorOrder(3), PostProcessSetting((int)ScreenSpaceReflectionsSettingsOverride.BRDFBias), EditorDisplay(null, \"BRDF Bias\")")
     float BRDFBias = 0.82f;
 
     /// <summary>
     /// The maximum amount of roughness a material must have to reflect the scene. For example, if this value is set to 0.4, only materials with a roughness value of 0.4 or below reflect the scene. The default value is 0.45.
     /// </summary>
-    API_FIELD(Attributes="DefaultValue(0.45f), Limit(0, 1.0f, 0.01f), EditorOrder(4), PostProcessSetting((int)ScreenSpaceReflectionsSettingsOverride.RoughnessThreshold)")
+    API_FIELD(Attributes="Limit(0, 1.0f, 0.01f), EditorOrder(4), PostProcessSetting((int)ScreenSpaceReflectionsSettingsOverride.RoughnessThreshold)")
     float RoughnessThreshold = 0.45f;
 
     /// <summary>
     /// The offset of the raycast origin. Lower values produce more correct reflection placement, but produce more artifacts. We recommend values of 0.3 or lower. The default value is 0.1.
     /// </summary>
-    API_FIELD(Attributes="DefaultValue(0.1f), Limit(0, 10.0f, 0.01f), EditorOrder(5), PostProcessSetting((int)ScreenSpaceReflectionsSettingsOverride.WorldAntiSelfOcclusionBias)")
+    API_FIELD(Attributes="Limit(0, 10.0f, 0.01f), EditorOrder(5), PostProcessSetting((int)ScreenSpaceReflectionsSettingsOverride.WorldAntiSelfOcclusionBias)")
     float WorldAntiSelfOcclusionBias = 0.1f;
 
     /// <summary>
     /// The raycast resolution. Full gives better quality, but half improves performance. The default value is half.
     /// </summary>
-    API_FIELD(Attributes="DefaultValue(ResolutionMode.Full), EditorOrder(6), PostProcessSetting((int)ScreenSpaceReflectionsSettingsOverride.ResolvePassResolution)")
+    API_FIELD(Attributes="EditorOrder(6), PostProcessSetting((int)ScreenSpaceReflectionsSettingsOverride.ResolvePassResolution)")
     ResolutionMode ResolvePassResolution = ResolutionMode::Full;
 
     /// <summary>
     /// The number of rays used to resolve the reflection color. Higher values provide better quality but reduce effect performance. Default value is 4. Use 1 for the highest speed.
     /// </summary>
-    API_FIELD(Attributes="DefaultValue(4), Limit(1, 8), EditorOrder(7), PostProcessSetting((int)ScreenSpaceReflectionsSettingsOverride.ResolveSamples)")
+    API_FIELD(Attributes="Limit(1, 8), EditorOrder(7), PostProcessSetting((int)ScreenSpaceReflectionsSettingsOverride.ResolveSamples)")
     int32 ResolveSamples = 4;
 
     /// <summary>
     /// The point at which the far edges of the reflection begin to fade. Has no effect on performance. The default value is 0.1.
     /// </summary>
-    API_FIELD(Attributes="DefaultValue(0.1f), Limit(0, 1.0f, 0.02f), EditorOrder(8), PostProcessSetting((int)ScreenSpaceReflectionsSettingsOverride.EdgeFadeFactor)")
+    API_FIELD(Attributes="Limit(0, 1.0f, 0.02f), EditorOrder(8), PostProcessSetting((int)ScreenSpaceReflectionsSettingsOverride.EdgeFadeFactor)")
     float EdgeFadeFactor = 0.1f;
 
     /// <summary>
     /// The effect fade out end distance from camera (in world units).
     /// </summary>
-    API_FIELD(Attributes="DefaultValue(5000.0f), Limit(0), EditorOrder(9), PostProcessSetting((int)ScreenSpaceReflectionsSettingsOverride.FadeOutDistance)")
+    API_FIELD(Attributes="Limit(0), EditorOrder(9), PostProcessSetting((int)ScreenSpaceReflectionsSettingsOverride.FadeOutDistance)")
     float FadeOutDistance = 5000.0f;
 
     /// <summary>
     /// The effect fade distance (in world units). Defines the size of the effect fade from fully visible to fully invisible at FadeOutDistance.
     /// </summary>
-    API_FIELD(Attributes="DefaultValue(500.0f), Limit(0), EditorOrder(10), PostProcessSetting((int)ScreenSpaceReflectionsSettingsOverride.FadeDistance)")
+    API_FIELD(Attributes="Limit(0), EditorOrder(10), PostProcessSetting((int)ScreenSpaceReflectionsSettingsOverride.FadeDistance)")
     float FadeDistance = 500.0f;
 
     /// <summary>
     /// "The input color buffer downscale mode that uses blurred mipmaps when resolving the reflection color. Produces more realistic results by blurring distant parts of reflections in rough (low-gloss) materials. It also improves performance on most platforms but uses more memory.
     /// </summary>
-    API_FIELD(Attributes="DefaultValue(true), EditorOrder(11), PostProcessSetting((int)ScreenSpaceReflectionsSettingsOverride.UseColorBufferMips), EditorDisplay(null, \"Use Color Buffer Mips\")")
+    API_FIELD(Attributes="EditorOrder(11), PostProcessSetting((int)ScreenSpaceReflectionsSettingsOverride.UseColorBufferMips), EditorDisplay(null, \"Use Color Buffer Mips\")")
     bool UseColorBufferMips = true;
 
     /// <summary>
     /// If checked, enables the temporal pass. Reduces noise, but produces an animated "jittering" effect that's sometimes noticeable. If disabled, the properties below have no effect.
     /// </summary>
-    API_FIELD(Attributes="DefaultValue(true), EditorOrder(12), PostProcessSetting((int)ScreenSpaceReflectionsSettingsOverride.TemporalEffect), EditorDisplay(null, \"Enable Temporal Effect\")")
+    API_FIELD(Attributes="EditorOrder(12), PostProcessSetting((int)ScreenSpaceReflectionsSettingsOverride.TemporalEffect), EditorDisplay(null, \"Enable Temporal Effect\")")
     bool TemporalEffect = true;
 
     /// <summary>
     /// The intensity of the temporal effect. Lower values produce reflections faster, but more noise. The default value is 8.
     /// </summary>
-    API_FIELD(Attributes="DefaultValue(8.0f), Limit(0, 20.0f, 0.5f), EditorOrder(13), PostProcessSetting((int)ScreenSpaceReflectionsSettingsOverride.TemporalScale)")
+    API_FIELD(Attributes="Limit(0, 20.0f, 0.5f), EditorOrder(13), PostProcessSetting((int)ScreenSpaceReflectionsSettingsOverride.TemporalScale)")
     float TemporalScale = 8.0f;
 
     /// <summary>
     /// Defines how quickly reflections blend between the reflection in the current frame and the history buffer. Lower values produce reflections faster, but with more jittering. If the camera in your game doesn't move much, we recommend values closer to 1. The default value is 0.8.
     /// </summary>
-    API_FIELD(Attributes="DefaultValue(0.8f), Limit(0.05f, 1.0f, 0.01f), EditorOrder(14), PostProcessSetting((int)ScreenSpaceReflectionsSettingsOverride.TemporalResponse)")
+    API_FIELD(Attributes="Limit(0.05f, 1.0f, 0.01f), EditorOrder(14), PostProcessSetting((int)ScreenSpaceReflectionsSettingsOverride.TemporalResponse)")
     float TemporalResponse = 0.8f;
 
 public:
@@ -1843,31 +1843,31 @@ API_STRUCT() struct FLAXENGINE_API AntiAliasingSettings : ISerializable
     /// <summary>
     /// The anti-aliasing effect mode.
     /// </summary>
-    API_FIELD(Attributes="DefaultValue(AntialiasingMode.FastApproximateAntialiasing), EditorOrder(0), PostProcessSetting((int)AntiAliasingSettingsOverride.Mode)")
+    API_FIELD(Attributes="EditorOrder(0), PostProcessSetting((int)AntiAliasingSettingsOverride.Mode)")
     AntialiasingMode Mode = AntialiasingMode::FastApproximateAntialiasing;
 
     /// <summary>
     /// The diameter (in texels) inside which jitter samples are spread. Smaller values result in crisper but more aliased output, while larger values result in more stable but blurrier output.
     /// </summary>
-    API_FIELD(Attributes="DefaultValue(0.75f), Limit(0.1f, 1f, 0.001f), EditorOrder(1), PostProcessSetting((int)AntiAliasingSettingsOverride.TAA_JitterSpread), EditorDisplay(null, \"TAA Jitter Spread\")")
+    API_FIELD(Attributes="Limit(0.1f, 1f, 0.001f), EditorOrder(1), PostProcessSetting((int)AntiAliasingSettingsOverride.TAA_JitterSpread), EditorDisplay(null, \"TAA Jitter Spread\")")
     float TAA_JitterSpread = 0.75f;
 
     /// <summary>
     /// Controls the amount of sharpening applied to the color buffer. TAA can induce a slight loss of details in high frequency regions. Sharpening alleviates this issue. High values may introduce dark-border artifacts.
     /// </summary>
-    API_FIELD(Attributes="DefaultValue(0f), Limit(0, 3f, 0.001f), EditorOrder(2), PostProcessSetting((int)AntiAliasingSettingsOverride.TAA_Sharpness), EditorDisplay(null, \"TAA Sharpness\")")
+    API_FIELD(Attributes="Limit(0, 3f, 0.001f), EditorOrder(2), PostProcessSetting((int)AntiAliasingSettingsOverride.TAA_Sharpness), EditorDisplay(null, \"TAA Sharpness\")")
     float TAA_Sharpness = 0.0f;
 
     /// <summary>
     /// The blend coefficient for stationary fragments. Controls the percentage of history sample blended into final color for fragments with minimal active motion.
     /// </summary>
-    API_FIELD(Attributes="DefaultValue(0.95f), Limit(0, 0.99f, 0.001f), EditorOrder(3), PostProcessSetting((int)AntiAliasingSettingsOverride.TAA_StationaryBlending), EditorDisplay(null, \"TAA Stationary Blending\")")
+    API_FIELD(Attributes="Limit(0, 0.99f, 0.001f), EditorOrder(3), PostProcessSetting((int)AntiAliasingSettingsOverride.TAA_StationaryBlending), EditorDisplay(null, \"TAA Stationary Blending\")")
     float TAA_StationaryBlending = 0.95f;
 
     /// <summary>
     /// The blending coefficient for moving fragments. Controls the percentage of history sample blended into the final color for fragments with significant active motion.
     /// </summary>
-    API_FIELD(Attributes="DefaultValue(0.4f), Limit(0, 0.99f, 0.001f), EditorOrder(4), PostProcessSetting((int)AntiAliasingSettingsOverride.TAA_MotionBlending), EditorDisplay(null, \"TAA Motion Blending\")")
+    API_FIELD(Attributes="Limit(0, 0.99f, 0.001f), EditorOrder(4), PostProcessSetting((int)AntiAliasingSettingsOverride.TAA_MotionBlending), EditorDisplay(null, \"TAA Motion Blending\")")
     float TAA_MotionBlending = 0.4f;
 
 public:
