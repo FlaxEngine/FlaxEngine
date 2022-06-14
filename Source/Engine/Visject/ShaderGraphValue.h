@@ -117,6 +117,16 @@ public:
     /// Initializes a new instance of the <see cref="ShaderGraphValue"/> struct.
     /// </summary>
     /// <param name="value">The value.</param>
+    explicit ShaderGraphValue(const double value)
+        : Type(VariantType::Types::Float)
+        , Value(StringUtils::ToString(value))
+    {
+    }
+
+    /// <summary>
+    /// Initializes a new instance of the <see cref="ShaderGraphValue"/> struct.
+    /// </summary>
+    /// <param name="value">The value.</param>
     explicit ShaderGraphValue(const int32 value)
         : Type(VariantType::Types::Int)
         , Value(StringUtils::ToString(value))
