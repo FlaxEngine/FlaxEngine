@@ -9,7 +9,7 @@
 /// </summary>
 API_STRUCT(Namespace="FlaxEngine.Networking") struct FLAXENGINE_API NetworkConnection
 {
-DECLARE_SCRIPTING_TYPE_MINIMAL(NetworkConnection);
+    DECLARE_SCRIPTING_TYPE_MINIMAL(NetworkConnection);
 public:
     /// <summary>
     /// The identifier of the connection.

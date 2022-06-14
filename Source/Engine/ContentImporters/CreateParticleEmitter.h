@@ -14,7 +14,6 @@
 class CreateParticleEmitter
 {
 public:
-
     /// <summary>
     /// Creates the asset.
     /// </summary>

@@ -31,9 +31,8 @@ class MaterialBase;
 /// </summary>
 API_CLASS(Sealed, NoSpawn) class FLAXENGINE_API GPUDevice : public ScriptingObject
 {
-DECLARE_SCRIPTING_TYPE_NO_SPAWN(GPUDevice);
+    DECLARE_SCRIPTING_TYPE_NO_SPAWN(GPUDevice);
 public:
-
     /// <summary>
     /// Graphics Device states that describe its lifetime.
     /// </summary>
@@ -44,7 +43,7 @@ public:
     /// </summary>
     API_STRUCT() struct VideoOutputMode
     {
-    DECLARE_SCRIPTING_TYPE_NO_SPAWN(VideoOutputMode);
+        DECLARE_SCRIPTING_TYPE_NO_SPAWN(VideoOutputMode);
 
         /// <summary>
         /// The resolution width (in pixel).
@@ -68,7 +67,6 @@ public:
     API_FIELD(ReadOnly) static GPUDevice* Instance;
 
 protected:
-
     // State
     DeviceState _state;
     bool _isRendering;
@@ -83,7 +81,6 @@ protected:
     PrivateData* _res;
 
 protected:
-
     /// <summary>
     /// Initializes a new instance of the <see cref="GPUDevice"/> class.
     /// </summary>
@@ -92,14 +89,12 @@ protected:
     GPUDevice(RendererType type, ShaderProfile profile);
 
 public:
-
     /// <summary>
     /// Finalizes an instance of the <see cref="GPUDevice"/> class.
     /// </summary>
     virtual ~GPUDevice();
 
 public:
-
     /// <summary>
     /// The graphics device locking mutex.
     /// </summary>
@@ -116,7 +111,6 @@ public:
     GPUTasksManager TasksManager;
 
 public:
-
     /// <summary>
     /// The total amount of graphics memory in bytes.
     /// </summary>
@@ -158,7 +152,6 @@ public:
     }
 
 public:
-
     /// <summary>
     /// Gets current device state.
     /// </summary>
@@ -268,7 +261,6 @@ public:
     GPUBuffer* GetFullscreenTriangleVB() const;
 
 public:
-
     /// <summary>
     /// Init device resources
     /// </summary>
@@ -303,7 +295,6 @@ public:
     virtual void WaitForGPU() = 0;
 
 protected:
-
     virtual void preDispose();
 
     /// <summary>
@@ -327,7 +318,6 @@ protected:
     virtual void RenderEnd();
 
 public:
-
     /// <summary>
     /// Creates the texture.
     /// </summary>

@@ -15,12 +15,10 @@ class StringBuilder;
 class GPUResourcesCollection
 {
 private:
-
     CriticalSection _locker;
     Array<GPUResource*> _collection;
 
 public:
-
     /// <summary>
     /// Initializes a new instance of the <see cref="GPUResourcesCollection"/> class.
     /// </summary>
@@ -37,7 +35,6 @@ public:
     }
 
 public:
-
     /// <summary>
     /// Gets the total memory usage (in bytes).
     /// </summary>
@@ -60,7 +57,6 @@ public:
     void DumpToLog(StringBuilder& output) const;
 
 public:
-
     /// <summary>
     /// Adds the specified resource to the collection.
     /// </summary>

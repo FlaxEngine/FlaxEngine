@@ -10,11 +10,9 @@
 class FLAXENGINE_API GPUConstantBuffer : public GPUResource
 {
 protected:
-
     uint32 _size = 0;
 
 public:
-
     /// <summary>
     /// Gets the buffer size (in bytes).
     /// </summary>
@@ -25,7 +23,6 @@ public:
     }
 
 public:
-
     // [GPUResource]
     ResourceType GetResourceType() const override
     {

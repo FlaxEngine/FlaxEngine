@@ -578,7 +578,7 @@ bool AssetsCache::IsEntryValid(Entry& e)
                 return isValid;
             }
         }
-            // Check for json resource
+        // Check for json resource
         else if (JsonStorageProxy::IsValidExtension(extension))
         {
             // Check Json storage layer

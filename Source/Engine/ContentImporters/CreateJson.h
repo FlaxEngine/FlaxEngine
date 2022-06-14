@@ -14,7 +14,6 @@
 class CreateJson
 {
 public:
-
     static bool Create(const StringView& path, rapidjson_flax::StringBuffer& data, const String& dataTypename);
     static bool Create(const StringView& path, rapidjson_flax::StringBuffer& data, const char* dataTypename);
     static bool Create(const StringView& path, StringAnsiView& data, StringAnsiView& dataTypename);

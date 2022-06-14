@@ -263,7 +263,7 @@ void PostProcessSettings::Serialize(SerializeStream& stream, const void* otherOb
 
     stream.JKEY("AO");
     stream.Object(&AmbientOcclusion, other ? &other->AmbientOcclusion : nullptr);
-    
+
     stream.JKEY("GI");
     stream.Object(&GlobalIllumination, other ? &other->GlobalIllumination : nullptr);
 

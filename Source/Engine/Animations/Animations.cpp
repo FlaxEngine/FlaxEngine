@@ -11,7 +11,6 @@
 class AnimationsService : public EngineService
 {
 public:
-
     AnimationsService()
         : EngineService(TEXT("Animations"), -10)
     {

@@ -15,14 +15,12 @@ class GPUTask;
 class GPUTasksContext
 {
 protected:
-
     CriticalSection _locker;
     GPUSyncPoint _currentSyncPoint;
     Array<GPUTask*> _tasksDone;
     int32 _totalTasksDoneCount;
 
 public:
-
     /// <summary>
     /// Initializes a new instance of the <see cref="GPUTasksContext"/> class.
     /// </summary>
@@ -35,14 +33,12 @@ public:
     ~GPUTasksContext();
 
 public:
-
     /// <summary>
     /// The GPU commands context used for tasks execution (can be only copy/upload without graphics capabilities on some platforms).
     /// </summary>
     GPUContext* GPU;
 
 public:
-
     /// <summary>
     /// Gets graphics device handle
     /// </summary>
@@ -79,7 +75,6 @@ public:
     void OnCancelSync(GPUTask* task);
 
 public:
-
     void OnFrameBegin();
 
     void OnFrameEnd();

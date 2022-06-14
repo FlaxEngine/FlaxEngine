@@ -40,7 +40,6 @@ DECLARE_ENUM_OPERATORS(AssetsCacheFlags);
 class FLAXENGINE_API AssetsCache
 {
 public:
-
     /// <summary>
     /// The registry entry structure.
     /// </summary>
@@ -75,7 +74,6 @@ public:
     typedef Dictionary<String, Guid> PathsMapping;
 
 private:
-
     bool _isDirty;
     CriticalSection _locker;
     Registry _registry;
@@ -83,14 +81,12 @@ private:
     String _path;
 
 public:
-
     /// <summary>
     /// Initializes a new instance of the <see cref="AssetsCache"/> class.
     /// </summary>
     AssetsCache();
 
 public:
-
     /// <summary>
     /// Gets amount of registered assets
     /// </summary>
@@ -104,7 +100,6 @@ public:
     }
 
 public:
-
     /// <summary>
     /// Init registry
     /// </summary>
@@ -127,7 +122,6 @@ public:
     static bool Save(const StringView& path, const Registry& entries, const PathsMapping& pathsMapping, const AssetsCacheFlags flags = AssetsCacheFlags::None);
 
 public:
-
     /// <summary>
     /// Finds the asset path by id. In editor it returns the actual asset path, at runtime it returns the mapped asset path.
     /// </summary>

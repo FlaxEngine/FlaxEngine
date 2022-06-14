@@ -10,7 +10,6 @@ class GPUSwapChainDownloadTask : public Task
     friend GPUSwapChain;
 
 public:
-
     GPUSwapChain* SwapChain;
     GPUTexture* Texture;
 

@@ -12,7 +12,6 @@
 class ImportShader
 {
 public:
-
     /// <summary>
     /// Imports the shader file.
     /// </summary>

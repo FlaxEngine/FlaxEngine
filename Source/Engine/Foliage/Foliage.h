@@ -14,14 +14,12 @@
 /// <seealso cref="Actor" />
 API_CLASS() class FLAXENGINE_API Foliage final : public Actor
 {
-DECLARE_SCENE_OBJECT(Foliage);
+    DECLARE_SCENE_OBJECT(Foliage);
 private:
-
     bool _disableFoliageTypeEvents;
     int32 _sceneRenderingKey = -1;
 
 public:
-
     /// <summary>
     /// The allocated foliage instances. It's read-only.
     /// </summary>
@@ -46,7 +44,6 @@ public:
     Array<FoliageType> FoliageTypes;
 
 public:
-
     /// <summary>
     /// Gets the total amount of the instanced of foliage.
     /// </summary>
@@ -138,7 +135,6 @@ public:
     API_FUNCTION() void UpdateCullDistance();
 
 public:
-
     /// <summary>
     /// Gets the global density scale for all foliage instances. The default value is 1. Use values from range 0-1. Lower values decrease amount of foliage instances in-game. Use it to tweak game performance for slower devices.
     /// </summary>
@@ -150,7 +146,6 @@ public:
     API_PROPERTY() static void SetGlobalDensityScale(float value);
 
 private:
-
     void AddToCluster(ChunkedArray<FoliageCluster, FOLIAGE_CLUSTER_CHUNKS_SIZE>& clusters, FoliageCluster* cluster, FoliageInstance& instance);
 #if !FOLIAGE_USE_SINGLE_QUAD_TREE && FOLIAGE_USE_DRAW_CALLS_BATCHING
     struct DrawKey
@@ -182,7 +177,6 @@ private:
 #endif
 
 public:
-
     /// <summary>
     /// Determines if there is an intersection between the current object or any it's child and a ray.
     /// </summary>
@@ -194,7 +188,6 @@ public:
     API_FUNCTION() bool Intersects(API_PARAM(Ref) const Ray& ray, API_PARAM(Out) Real& distance, API_PARAM(Out) Vector3& normal, API_PARAM(Out) int32& instanceIndex);
 
 public:
-
     // [Actor]
     void Draw(RenderContext& renderContext) override;
     bool IntersectsItself(const Ray& ray, Real& distance, Vector3& normal) override;
@@ -203,7 +196,6 @@ public:
     void OnLayerChanged() override;
 
 protected:
-
     // [Actor]
     void OnEnable() override;
     void OnDisable() override;

@@ -784,7 +784,7 @@ bool TextureBase::InitData::GenerateMip(int32 mipIndex, bool linear)
     {
         switch (Format)
         {
-            // 4 component, 32 bit with 8 bits per component - use Color32 type
+        // 4 component, 32 bit with 8 bits per component - use Color32 type
         case PixelFormat::R8G8B8A8_SInt:
         case PixelFormat::R8G8B8A8_Typeless:
         case PixelFormat::R8G8B8A8_SNorm:

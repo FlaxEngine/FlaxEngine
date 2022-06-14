@@ -9,13 +9,11 @@
 /// </summary>
 API_CLASS(NoSpawn) class FLAXENGINE_API MaterialInstance : public MaterialBase
 {
-DECLARE_BINARY_ASSET_HEADER(MaterialInstance, 4);
+    DECLARE_BINARY_ASSET_HEADER(MaterialInstance, 4);
 private:
-
     MaterialBase* _baseMaterial = nullptr;
 
 public:
-
     /// <summary>
     /// Gets the base material. If value gets changed parameters collection is restored to the default values of the new material.
     /// </summary>
@@ -43,14 +41,12 @@ public:
 #endif
 
 private:
-
     void OnBaseSet();
     void OnBaseUnset();
     void OnBaseUnloaded(Asset* p);
     void OnBaseParamsChanged();
 
 public:
-
     // [MaterialBase]
     bool IsMaterialInstance() const override;
 #if USE_EDITOR
@@ -67,7 +63,6 @@ public:
     void Bind(BindParameters& params) override;
 
 protected:
-
     // [MaterialBase]
     LoadResult load() override;
     void unload(bool isReloading) override;

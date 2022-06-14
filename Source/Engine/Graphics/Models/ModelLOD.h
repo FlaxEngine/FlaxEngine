@@ -12,16 +12,14 @@ class MemoryReadStream;
 /// </summary>
 API_CLASS(NoSpawn) class FLAXENGINE_API ModelLOD : public ScriptingObject
 {
-DECLARE_SCRIPTING_TYPE_WITH_CONSTRUCTOR_IMPL(ModelLOD, ScriptingObject);
+    DECLARE_SCRIPTING_TYPE_WITH_CONSTRUCTOR_IMPL(ModelLOD, ScriptingObject);
     friend Model;
     friend Mesh;
 private:
-
     Model* _model = nullptr;
     uint32 _verticesCount;
 
 public:
-
     /// <summary>
     /// The screen size to switch LODs. Bottom limit of the model screen size to render this LOD.
     /// </summary>
@@ -51,7 +49,6 @@ public:
     }
 
 public:
-
     /// <summary>
     /// Initializes the LOD from the data stream.
     /// </summary>
@@ -70,7 +67,6 @@ public:
     void Dispose();
 
 public:
-
     /// <summary>
     /// Determines if there is an intersection between the Model and a Ray in given world using given instance
     /// </summary>

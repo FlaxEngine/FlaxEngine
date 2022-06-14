@@ -67,7 +67,6 @@ using namespace InputImpl;
 class InputService : public EngineService
 {
 public:
-
     InputService()
         : EngineService(TEXT("Input"), -60)
     {
@@ -692,7 +691,7 @@ void InputService::Update()
             continue;
         switch (e.Type)
         {
-            // Keyboard events
+        // Keyboard events
         case InputDevice::EventType::Char:
             window->OnCharInput(e.CharData.Char);
             break;
@@ -702,7 +701,7 @@ void InputService::Update()
         case InputDevice::EventType::KeyUp:
             window->OnKeyUp(e.KeyData.Key);
             break;
-            // Mouse events
+        // Mouse events
         case InputDevice::EventType::MouseDown:
             window->OnMouseDown(window->ScreenToClient(e.MouseData.Position), e.MouseData.Button);
             break;
@@ -721,7 +720,7 @@ void InputService::Update()
         case InputDevice::EventType::MouseLeave:
             window->OnMouseLeave();
             break;
-            // Touch events
+        // Touch events
         case InputDevice::EventType::TouchDown:
             window->OnTouchDown(window->ScreenToClient(e.TouchData.Position), e.TouchData.PointerId);
             break;
@@ -748,7 +747,7 @@ void InputService::Update()
     {
         switch (e.Type)
         {
-            // Keyboard events
+        // Keyboard events
         case InputDevice::EventType::Char:
             Input::CharInput(e.CharData.Char);
             break;
@@ -758,7 +757,7 @@ void InputService::Update()
         case InputDevice::EventType::KeyUp:
             Input::KeyUp(e.KeyData.Key);
             break;
-            // Mouse events
+        // Mouse events
         case InputDevice::EventType::MouseDown:
             Input::MouseDown(e.MouseData.Position, e.MouseData.Button);
             break;
@@ -777,7 +776,7 @@ void InputService::Update()
         case InputDevice::EventType::MouseLeave:
             Input::MouseLeave();
             break;
-            // Touch events
+        // Touch events
         case InputDevice::EventType::TouchDown:
             Input::TouchDown(e.TouchData.Position, e.TouchData.PointerId);
             break;

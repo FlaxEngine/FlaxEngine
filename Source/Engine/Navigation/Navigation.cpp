@@ -152,7 +152,6 @@ bool NavMeshProperties::operator==(const NavMeshProperties& other) const
 class NavigationService : public EngineService
 {
 public:
-
     NavigationService()
         : EngineService(TEXT("Navigation"), 60)
     {

@@ -31,7 +31,6 @@ using namespace ContentLoadingManagerImpl;
 class ContentLoadingManagerService : public EngineService
 {
 public:
-
     ContentLoadingManagerService()
         : EngineService(TEXT("Content Loading Manager"), -500)
     {

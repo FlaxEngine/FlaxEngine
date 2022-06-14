@@ -10,9 +10,8 @@
 /// </summary>
 API_CLASS(NoSpawn) class FLAXENGINE_API MaterialFunction : public BinaryAsset
 {
-DECLARE_BINARY_ASSET_HEADER(MaterialFunction, 1);
+    DECLARE_BINARY_ASSET_HEADER(MaterialFunction, 1);
 public:
-
 #if COMPILE_WITH_MATERIAL_GRAPH
 
     /// <summary>
@@ -60,7 +59,6 @@ public:
 #endif
 
 protected:
-
     // [BinaryAsset]
     LoadResult load() override;
     void unload(bool isReloading) override;

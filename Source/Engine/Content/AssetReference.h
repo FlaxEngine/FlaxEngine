@@ -10,15 +10,12 @@
 class FLAXENGINE_API AssetReferenceBase
 {
 public:
-
     typedef Delegate<> EventType;
 
 protected:
-
     Asset* _asset = nullptr;
 
 public:
-
     /// <summary>
     /// The asset loaded event (fired when asset gets loaded or is already loaded after change).
     /// </summary>
@@ -48,7 +45,6 @@ public:
     ~AssetReferenceBase();
 
 public:
-
     /// <summary>
     /// Gets the asset ID or Guid::Empty if not set.
     /// </summary>
@@ -71,7 +67,6 @@ public:
     String ToString() const;
 
 protected:
-
     void OnSet(Asset* asset);
     void OnLoaded(Asset* asset);
     void OnUnloaded(Asset* asset);
@@ -84,12 +79,10 @@ template<typename T>
 API_CLASS(InBuild) class AssetReference : public AssetReferenceBase
 {
 public:
-
     typedef T AssetType;
     typedef AssetReference<T> Type;
 
 public:
-
     /// <summary>
     /// Initializes a new instance of the <see cref="AssetReference"/> class.
     /// </summary>
@@ -139,7 +132,6 @@ public:
     }
 
 public:
-
     FORCE_INLINE AssetReference& operator=(const AssetReference& other)
     {
         OnSet(other.Get());
@@ -220,7 +212,6 @@ public:
     }
 
 public:
-
     /// <summary>
     /// Sets the asset reference.
     /// </summary>

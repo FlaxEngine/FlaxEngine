@@ -10,9 +10,8 @@
 /// </summary>
 API_CLASS(NoSpawn) class FLAXENGINE_API AnimationGraph : public BinaryAsset
 {
-DECLARE_BINARY_ASSET_HEADER(AnimationGraph, 1);
+    DECLARE_BINARY_ASSET_HEADER(AnimationGraph, 1);
 public:
-
     /// <summary>
     /// The animation graph.
     /// </summary>
@@ -24,7 +23,6 @@ public:
     AnimGraphExecutor GraphExecutor;
 
 public:
-
     /// <summary>
     /// Gets the base model asset used for the animation preview and the skeleton layout source.
     /// </summary>
@@ -58,20 +56,17 @@ public:
     API_FUNCTION() bool SaveSurface(BytesContainer& data);
 
 private:
-
     void FindDependencies(AnimGraphBase* graph);
 
 #endif
 
 public:
-
     // [BinaryAsset]
 #if USE_EDITOR
     void GetReferences(Array<Guid>& output) const override;
 #endif
 
 protected:
-
     // [BinaryAsset]
     LoadResult load() override;
     void unload(bool isReloading) override;

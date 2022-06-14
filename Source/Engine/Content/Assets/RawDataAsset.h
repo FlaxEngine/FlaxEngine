@@ -9,16 +9,14 @@
 /// </summary>
 API_CLASS(NoSpawn) class FLAXENGINE_API RawDataAsset : public BinaryAsset
 {
-DECLARE_BINARY_ASSET_HEADER(RawDataAsset, 1);
+    DECLARE_BINARY_ASSET_HEADER(RawDataAsset, 1);
 public:
-
     /// <summary>
     /// The bytes array stored in the asset.
     /// </summary>
     API_FIELD() Array<byte> Data;
 
 public:
-
 #if USE_EDITOR
 
     /// <summary>
@@ -31,7 +29,6 @@ public:
 #endif
 
 protected:
-
     // [BinaryAsset]
     LoadResult load() override;
     void unload(bool isReloading) override;

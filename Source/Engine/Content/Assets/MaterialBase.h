@@ -12,9 +12,8 @@
 /// <seealso cref="FlaxEngine.BinaryAsset" />
 API_CLASS(Abstract, NoSpawn) class FLAXENGINE_API MaterialBase : public BinaryAsset, public IMaterial
 {
-DECLARE_ASSET_HEADER(MaterialBase);
+    DECLARE_ASSET_HEADER(MaterialBase);
 public:
-
     /// <summary>
     /// The material parameters collection.
     /// </summary>
@@ -32,7 +31,6 @@ public:
     virtual bool IsMaterialInstance() const = 0;
 
 public:
-
     /// <summary>
     /// Gets the material parameters collection.
     /// </summary>
@@ -78,7 +76,6 @@ public:
     API_FUNCTION() MaterialInstance* CreateVirtualInstance();
 
 public:
-
     // [BinaryAsset]
 #if USE_EDITOR
     void GetReferences(Array<Guid>& output) const override

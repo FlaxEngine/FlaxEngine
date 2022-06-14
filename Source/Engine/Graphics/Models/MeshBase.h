@@ -16,9 +16,8 @@ class ModelBase;
 /// </summary>
 API_CLASS(Abstract, NoSpawn) class FLAXENGINE_API MeshBase : public ScriptingObject
 {
-DECLARE_SCRIPTING_TYPE_MINIMAL(MeshBase);
+    DECLARE_SCRIPTING_TYPE_MINIMAL(MeshBase);
 protected:
-
     ModelBase* _model;
     BoundingBox _box;
     BoundingSphere _sphere;
@@ -35,7 +34,6 @@ protected:
     }
 
 public:
-
     /// <summary>
     /// Gets the model owning this mesh.
     /// </summary>
@@ -120,7 +118,6 @@ public:
     void SetBounds(const BoundingBox& box);
 
 public:
-
     /// <summary>
     /// Extract mesh buffer data from GPU. Cannot be called from the main thread.
     /// </summary>

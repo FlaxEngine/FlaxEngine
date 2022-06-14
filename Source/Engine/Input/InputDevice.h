@@ -13,9 +13,8 @@
 /// </summary>
 API_CLASS(Abstract, NoSpawn) class FLAXENGINE_API InputDevice : public ScriptingObject
 {
-DECLARE_SCRIPTING_TYPE_NO_SPAWN(InputDevice);
+    DECLARE_SCRIPTING_TYPE_NO_SPAWN(InputDevice);
 public:
-
     enum class EventType
     {
         Char,
@@ -81,7 +80,6 @@ public:
     typedef Array<Event, InlinedAllocation<32>> EventQueue;
 
 protected:
-
     String _name;
     EventQueue _queue;
 
@@ -92,7 +90,6 @@ protected:
     }
 
 public:
-
     /// <summary>
     /// Gets the name.
     /// </summary>

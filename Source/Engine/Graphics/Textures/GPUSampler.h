@@ -11,18 +11,16 @@
 /// <seealso cref="GPUResource" />
 API_CLASS(Sealed) class FLAXENGINE_API GPUSampler : public GPUResource
 {
-DECLARE_SCRIPTING_TYPE_NO_SPAWN(GPUSampler);
+    DECLARE_SCRIPTING_TYPE_NO_SPAWN(GPUSampler);
     static GPUSampler* Spawn(const SpawnParams& params);
     static GPUSampler* New();
 
 protected:
-
     GPUSamplerDescription _desc;
 
     GPUSampler();
 
 public:
-
     /// <summary>
     /// Gets sampler description structure.
     /// </summary>
@@ -32,7 +30,6 @@ public:
     }
 
 public:
-
     /// <summary>
     /// Creates new sampler.
     /// </summary>
@@ -41,18 +38,15 @@ public:
     API_FUNCTION() bool Init(API_PARAM(Ref) const GPUSamplerDescription& desc);
 
 protected:
-
     virtual bool OnInit() = 0;
 
 public:
-
     // [GPUResource]
     String ToString() const override;
     ResourceType GetResourceType() const final override;
     ObjectType GetObjectType() const final override;
 
 protected:
-
     // [GPUResource]
     void OnReleaseGPU() override;
 };

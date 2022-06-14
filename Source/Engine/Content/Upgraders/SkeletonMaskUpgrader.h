@@ -17,7 +17,6 @@
 class SkeletonMaskUpgrader : public BinaryAssetUpgrader
 {
 public:
-
     /// <summary>
     /// Initializes a new instance of the <see cref="SkeletonMaskUpgrader"/> class.
     /// </summary>
@@ -31,7 +30,6 @@ public:
     }
 
 private:
-
     static bool Upgrade_1_To_2(AssetMigrationContext& context)
     {
         ASSERT(context.Input.SerializedVersion == 1 && context.Output.SerializedVersion == 2);
@@ -85,7 +83,7 @@ private:
             if (context.AllocateChunk(0))
                 return true;
             MemoryWriteStream stream(4096);
-            
+
             const Guid skeletonId = skeleton.GetID();
             stream.Write(&skeletonId);
             stream.WriteInt32(nodesMask.Count());

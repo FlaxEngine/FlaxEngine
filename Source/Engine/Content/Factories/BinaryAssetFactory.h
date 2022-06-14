@@ -19,7 +19,6 @@ class FlaxStorage;
 class FLAXENGINE_API BinaryAssetFactoryBase : public IAssetFactory
 {
 public:
-
     /// <summary>
     /// Initializes the specified asset. It's called in background before actual asset loading.
     /// </summary>
@@ -28,7 +27,6 @@ public:
     bool Init(BinaryAsset* asset);
 
 protected:
-
     virtual BinaryAsset* Create(const AssetInfo& info) = 0;
     virtual bool IsVersionSupported(uint32 serializedVersion) const = 0;
 #if USE_EDITOR
@@ -36,7 +34,6 @@ protected:
 #endif
 
 public:
-
     // [IAssetFactory]
     Asset* New(const AssetInfo& info) override;
     Asset* NewVirtual(const AssetInfo& info) override;
@@ -50,7 +47,6 @@ template<typename T>
 class BinaryAssetFactory : public BinaryAssetFactoryBase
 {
 public:
-
     // [BinaryAssetFactoryBase]
     bool IsVersionSupported(uint32 serializedVersion) const override
     {
@@ -58,7 +54,6 @@ public:
     }
 
 protected:
-
     // [BinaryAssetFactoryBase]
     BinaryAsset* Create(const AssetInfo& info) override
     {

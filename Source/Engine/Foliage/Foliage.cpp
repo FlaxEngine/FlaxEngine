@@ -200,7 +200,7 @@ void Foliage::DrawCluster(RenderContext& renderContext, FoliageCluster* cluster,
                         instance.DrawState.PrevLOD = lodIndex;
                     }
                 }
-                    // Check if there was a gap between frames in drawing this model instance
+                // Check if there was a gap between frames in drawing this model instance
                 else if (modelFrame < frame || instance.DrawState.PrevLOD == -1)
                 {
                     // Reset state
@@ -846,7 +846,7 @@ bool Foliage::Intersects(const Ray& ray, Real& distance, Vector3& normal, int32&
 void Foliage::Draw(RenderContext& renderContext)
 {
     if (renderContext.View.Pass == DrawPass::GlobalSDF)
-        return;  // TODO: Foliage rendering to Global SDF
+        return; // TODO: Foliage rendering to Global SDF
     if (renderContext.View.Pass == DrawPass::GlobalSurfaceAtlas)
         return; // Not supported
     if (Instances.IsEmpty())

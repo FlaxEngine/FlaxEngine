@@ -66,7 +66,6 @@ bool findAsset(const Guid& id, const String& directory, Array<String>& tmpCache,
 class ContentService : public EngineService
 {
 public:
-
     ContentService()
         : EngineService(TEXT("Content"), -600)
     {
@@ -294,7 +293,7 @@ bool Content::GetAssetInfo(const StringView& path, AssetInfo& info)
             return Cache.FindAsset(path, info);
         }
     }
-        // Check for json resource
+    // Check for json resource
     else if (JsonStorageProxy::IsValidExtension(extension))
     {
         // Check Json storage layer
@@ -1081,7 +1080,7 @@ bool findAsset(const Guid& id, const String& directory, Array<String>& tmpCache,
                     LOG(Error, "Cannot open file '{0}' error code: {1}", path, 0);
                 }
             }
-                // Check for json resource
+            // Check for json resource
             else if (JsonStorageProxy::IsValidExtension(extension))
             {
                 // Check Json storage layer

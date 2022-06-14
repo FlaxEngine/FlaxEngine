@@ -16,8 +16,8 @@
 /// </summary>
 API_STRUCT() struct FLAXENGINE_API NavAgentProperties : ISerializable
 {
-API_AUTO_SERIALIZATION();
-DECLARE_SCRIPTING_TYPE_MINIMAL(NavAgentProperties);
+    API_AUTO_SERIALIZATION();
+    DECLARE_SCRIPTING_TYPE_MINIMAL(NavAgentProperties);
 
     /// <summary>
 	/// The radius of the agent used for navigation. Agents can't pass through gaps of less than twice the radius.
@@ -56,8 +56,8 @@ DECLARE_SCRIPTING_TYPE_MINIMAL(NavAgentProperties);
 /// </summary>
 API_STRUCT() struct FLAXENGINE_API NavMeshProperties : ISerializable
 {
-API_AUTO_SERIALIZATION();
-DECLARE_SCRIPTING_TYPE_MINIMAL(NavMeshProperties);
+    API_AUTO_SERIALIZATION();
+    DECLARE_SCRIPTING_TYPE_MINIMAL(NavMeshProperties);
 
     /// <summary>
     /// The navmesh type name. Identifies different types of the navmeshes, used to sync navmesh properties with settings asset.
@@ -102,7 +102,7 @@ DECLARE_SCRIPTING_TYPE_MINIMAL(NavMeshProperties);
 /// </summary>
 API_STRUCT() struct FLAXENGINE_API NavAgentMask
 {
-DECLARE_SCRIPTING_TYPE_MINIMAL(NavAgentMask);
+    DECLARE_SCRIPTING_TYPE_MINIMAL(NavAgentMask);
 
     /// <summary>
     /// The agents selection mask.
@@ -126,7 +126,7 @@ DECLARE_SCRIPTING_TYPE_MINIMAL(NavAgentMask);
 /// </summary>
 API_STRUCT() struct FLAXENGINE_API NavMeshHit
 {
-DECLARE_SCRIPTING_TYPE_MINIMAL(NavMeshHit);
+    DECLARE_SCRIPTING_TYPE_MINIMAL(NavMeshHit);
 
     /// <summary>
     /// The hit point position.
@@ -149,8 +149,8 @@ DECLARE_SCRIPTING_TYPE_MINIMAL(NavMeshHit);
 /// </summary>
 API_STRUCT() struct FLAXENGINE_API NavAreaProperties : ISerializable
 {
-API_AUTO_SERIALIZATION();
-DECLARE_SCRIPTING_TYPE_MINIMAL(NavAreaProperties);
+    API_AUTO_SERIALIZATION();
+    DECLARE_SCRIPTING_TYPE_MINIMAL(NavAreaProperties);
 
     /// <summary>
     /// The area type name. Identifies different types of the areas.

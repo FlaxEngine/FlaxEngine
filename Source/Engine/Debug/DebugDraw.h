@@ -21,7 +21,7 @@ struct Transform;
 /// </summary>
 API_CLASS(Static) class FLAXENGINE_API DebugDraw
 {
-DECLARE_SCRIPTING_TYPE_NO_SPAWN(DebugDraw);
+    DECLARE_SCRIPTING_TYPE_NO_SPAWN(DebugDraw);
 
 #if USE_EDITOR
 

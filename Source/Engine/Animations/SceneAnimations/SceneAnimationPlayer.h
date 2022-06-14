@@ -13,7 +13,7 @@
 /// </summary>
 API_CLASS() class FLAXENGINE_API SceneAnimationPlayer : public Actor, public IPostFxSettingsProvider
 {
-DECLARE_SCENE_OBJECT(SceneAnimationPlayer);
+    DECLARE_SCENE_OBJECT(SceneAnimationPlayer);
 
     /// <summary>
     /// Describes the scene animation updates frequency.
@@ -32,7 +32,6 @@ DECLARE_SCENE_OBJECT(SceneAnimationPlayer);
     };
 
 private:
-
     enum class PlayState
     {
         Stopped,
@@ -74,7 +73,6 @@ private:
     } _postFxSettings;
 
 public:
-
     /// <summary>
     /// The scene animation to play.
     /// </summary>
@@ -136,7 +134,6 @@ public:
     bool UsePrefabObjects = false;
 
 public:
-
     /// <summary>
     /// Gets the value that determines whether the scene animation is playing.
     /// </summary>
@@ -209,7 +206,6 @@ public:
     API_FUNCTION() void MapTrack(const StringView& from, const Guid& to);
 
 private:
-
     void Restore(SceneAnimation* anim, int32 stateIndexOffset);
     bool TickPropertyTrack(int32 trackIndex, int32 stateIndexOffset, SceneAnimation* anim, float time, const SceneAnimation::Track& track, TrackInstance& state, void* target);
     typedef Array<SceneAnimation*, FixedAllocation<8>> CallStack;
@@ -219,7 +215,6 @@ private:
     void ResetState();
 
 public:
-
     // [Actor]
     bool HasContentLoaded() const override;
     void Serialize(SerializeStream& stream, const void* otherObj) override;
@@ -237,7 +232,6 @@ public:
     void Blend(PostProcessSettings& other, float weight) override;
 
 protected:
-
     // [Actor]
     void BeginPlay(SceneBeginData* data) override;
     void EndPlay() override;

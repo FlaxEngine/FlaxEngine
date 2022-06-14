@@ -12,7 +12,6 @@
 class FLAXENGINE_API GPUTimerQuery : public GPUResource
 {
 public:
-
     /// <summary>
     /// Finalizes an instance of the <see cref="GPUTimerQuery"/> class.
     /// </summary>
@@ -21,7 +20,6 @@ public:
     }
 
 public:
-
     /// <summary>
     /// Starts the counter.
     /// </summary>
@@ -45,7 +43,6 @@ public:
     virtual float GetResult() = 0;
 
 public:
-
     // [GPUResource]
     String ToString() const override
     {

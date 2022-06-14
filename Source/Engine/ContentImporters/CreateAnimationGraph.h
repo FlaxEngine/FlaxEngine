@@ -12,7 +12,6 @@
 class CreateAnimationGraph
 {
 public:
-
     /// <summary>
     /// Creates the asset.
     /// </summary>

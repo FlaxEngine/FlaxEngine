@@ -16,7 +16,6 @@
 class AudioClipUpgrader : public BinaryAssetUpgrader
 {
 public:
-
     /// <summary>
     /// Initializes a new instance of the <see cref="AudioClipUpgrader"/> class.
     /// </summary>
@@ -30,7 +29,6 @@ public:
     }
 
 private:
-
     // ============================================
     //                  Version 1:
     // Designed: 26.02.2018
@@ -88,32 +86,32 @@ private:
             int32 numSamples;
             switch (oldHeader.Format)
             {
-                case AudioFormat::Raw:
-                {
-                    numSamples = chunk->Size() / (oldHeader.Info.BitDepth / 8);
-                    break;
-                }
-                case AudioFormat::Vorbis:
-                {
+            case AudioFormat::Raw:
+            {
+                numSamples = chunk->Size() / (oldHeader.Info.BitDepth / 8);
+                break;
+            }
+            case AudioFormat::Vorbis:
+            {
 #if COMPILE_WITH_OGG_VORBIS
-                    OggVorbisDecoder decoder;
-                    MemoryReadStream stream(chunk->Get(), chunk->Size());
-                    AudioDataInfo outInfo;
-                    if (!decoder.Open(&stream, outInfo, 0))
-                    {
-                        LOG(Warning, "Audio data open failed (OggVorbisDecoder).");
-                        return true;
-                    }
-                    numSamples = outInfo.NumSamples;
+                OggVorbisDecoder decoder;
+                MemoryReadStream stream(chunk->Get(), chunk->Size());
+                AudioDataInfo outInfo;
+                if (!decoder.Open(&stream, outInfo, 0))
+                {
+                    LOG(Warning, "Audio data open failed (OggVorbisDecoder).");
+                    return true;
+                }
+                numSamples = outInfo.NumSamples;
 #else
 		            LOG(Warning, "OggVorbisDecoder is disabled.");
 		            return true;
 #endif
-                    break;
-                }
-                default:
-                    LOG(Warning, "Unknown audio data format.");
-                    return true;
+                break;
+            }
+            default:
+                LOG(Warning, "Unknown audio data format.");
+                return true;
             }
             newHeader.SamplesPerChunk[chunkIndex] = numSamples;
         }

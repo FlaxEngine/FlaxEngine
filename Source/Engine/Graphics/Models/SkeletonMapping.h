@@ -12,11 +12,9 @@ template<typename T>
 class SkeletonMapping
 {
 public:
-
     typedef Array<T> Items;
 
 public:
-
     /// <summary>
     /// The amount of the nodes (from the source skeleton).
     /// </summary>
@@ -33,7 +31,6 @@ public:
     Array<int32> SourceToSource;
 
 public:
-
     /// <summary>
     /// Initializes a new instance of the <see cref="SkeletonMapping"/> class.
     /// </summary>

@@ -10,18 +10,15 @@
 class DefaultGPUTasksExecutor : public GPUTasksExecutor
 {
 protected:
-
     GPUTasksContext* _context;
 
 public:
-
     /// <summary>
     /// Init
     /// </summary>
     DefaultGPUTasksExecutor();
 
 public:
-
     // [GPUTasksExecutor]
     String ToString() const override;
     void FrameBegin() override;

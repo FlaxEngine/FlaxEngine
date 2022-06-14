@@ -135,21 +135,21 @@ bool AnimGraphBase::onNodeLoaded(Node* n)
     // Check if this node needs a state container
     switch (n->GroupID)
     {
-        // Tools
+    // Tools
     case 7:
         switch (n->TypeID)
         {
-            // Time
+        // Time
         case 5:
             ADD_BUCKET(AnimationBucketInit);
             break;
         }
         break;
-        // Animation
+    // Animation
     case 9:
         switch (n->TypeID)
         {
-            // Output
+        // Output
         case 1:
             _rootNode = n;
             if (_rootNode->Values.Count() < 1)
@@ -158,16 +158,16 @@ bool AnimGraphBase::onNodeLoaded(Node* n)
                 _rootNode->Values[0] = (int32)RootMotionMode::NoExtraction;
             }
             break;
-            // Animation
+        // Animation
         case 2:
             ADD_BUCKET(AnimationBucketInit);
             n->Assets[0] = (Asset*)Content::LoadAsync<Animation>((Guid)n->Values[0]);
             break;
-            // Blend with Mask
+        // Blend with Mask
         case 11:
             n->Assets[0] = (Asset*)Content::LoadAsync<SkeletonMask>((Guid)n->Values[1]);
             break;
-            // Multi Blend 1D
+        // Multi Blend 1D
         case 12:
         {
             ADD_BUCKET(MultiBlendBucketInit);
@@ -183,7 +183,7 @@ bool AnimGraphBase::onNodeLoaded(Node* n)
             Sorting::SortArray(n->Data.MultiBlend1D.IndicesSorted, ANIM_GRAPH_MULTI_BLEND_MAX_ANIMS, &SortMultiBlend1D, n);
             break;
         }
-            // Multi Blend 2D
+        // Multi Blend 2D
         case 13:
         {
             ADD_BUCKET(MultiBlendBucketInit);
@@ -239,13 +239,13 @@ bool AnimGraphBase::onNodeLoaded(Node* n)
 
             break;
         }
-            // Blend Pose
+        // Blend Pose
         case 14:
         {
             ADD_BUCKET(BlendPoseBucketInit);
             break;
         }
-            // State Machine
+        // State Machine
         case 18:
         {
             ADD_BUCKET(StateMachineBucketInit);
@@ -261,7 +261,7 @@ bool AnimGraphBase::onNodeLoaded(Node* n)
 
             break;
         }
-            // Entry
+        // Entry
         case 19:
         {
             const auto entryTargetId = (int32)n->Values[0];
@@ -273,7 +273,7 @@ bool AnimGraphBase::onNodeLoaded(Node* n)
             _rootNode = entryTarget;
             break;
         }
-            // State
+        // State
         case 20:
         {
             // Load the graph
@@ -370,19 +370,19 @@ bool AnimGraphBase::onNodeLoaded(Node* n)
 
             break;
         }
-            // State Output
+        // State Output
         case 21:
         {
             _rootNode = n;
             break;
         }
-            // Rule Output
+        // Rule Output
         case 22:
         {
             _rootNode = n;
             break;
         }
-            // Animation Graph Function
+        // Animation Graph Function
         case 24:
         {
             auto& data = n->Data.AnimationGraphFunction;
@@ -401,9 +401,9 @@ bool AnimGraphBase::onNodeLoaded(Node* n)
             data.Graph = LoadSubGraph(graphData.Get(), graphData.Length(), TEXT("Animation Graph Function"));
             break;
         }
-            // Transform Node (local/model space)
-            // Get Node Transform (local/model space)
-            // IK Aim, Two Bone IK
+        // Transform Node (local/model space)
+        // Get Node Transform (local/model space)
+        // IK Aim, Two Bone IK
         case 25:
         case 26:
         case 28:
@@ -418,7 +418,7 @@ bool AnimGraphBase::onNodeLoaded(Node* n)
                 data.NodeIndex = -1;
             break;
         }
-            // Copy Node
+        // Copy Node
         case 27:
         {
             auto& data = n->Data.CopyNode;
@@ -442,7 +442,7 @@ bool AnimGraphBase::onNodeLoaded(Node* n)
         }
         }
         break;
-        // Custom
+    // Custom
     case 13:
     {
         // Clear data

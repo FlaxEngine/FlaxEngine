@@ -20,7 +20,7 @@ class InputDevice;
 /// </summary>
 API_CLASS(Static) class FLAXENGINE_API Input
 {
-DECLARE_SCRIPTING_TYPE_NO_SPAWN(Input);
+    DECLARE_SCRIPTING_TYPE_NO_SPAWN(Input);
 
     /// <summary>
     /// Gets the mouse (null if platform does not support mouse or it is not connected).
@@ -66,7 +66,6 @@ DECLARE_SCRIPTING_TYPE_NO_SPAWN(Input);
     static Array<InputDevice*, InlinedAllocation<16>> CustomDevices;
 
 public:
-
     typedef Delegate<Char> CharDelegate;
     typedef Delegate<KeyboardKeys> KeyboardDelegate;
     typedef Delegate<const Float2&> MouseDelegate;
@@ -135,7 +134,6 @@ public:
     static TouchDelegate TouchUp;
 
 public:
-
     /// <summary>
     /// Gets the text entered during the current frame (Unicode).
     /// </summary>
@@ -164,7 +162,6 @@ public:
     API_FUNCTION() static bool GetKeyUp(KeyboardKeys key);
 
 public:
-
     /// <summary>
     /// Gets the mouse position in game window coordinates.
     /// </summary>
@@ -223,7 +220,6 @@ public:
     API_FUNCTION() static bool GetMouseButtonUp(MouseButton button);
 
 public:
-
     /// <summary>
     /// Gets the gamepad axis value.
     /// </summary>
@@ -289,7 +285,6 @@ public:
     API_FUNCTION() static bool GetGamepadButtonUp(InputGamepadIndex gamepad, GamepadButton button);
 
 public:
-
     /// <summary>
     /// Maps a discrete button or key press events to a "friendly name" that will later be bound to event-driven behavior. The end effect is that pressing (and/or releasing) a key, mouse button, or keypad button.
     /// </summary>

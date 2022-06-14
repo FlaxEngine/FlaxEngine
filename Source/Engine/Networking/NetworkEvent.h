@@ -42,7 +42,7 @@ API_ENUM(Namespace="FlaxEngine.Networking") enum class NetworkEventType
 /// </summary>
 API_STRUCT(Namespace="FlaxEngine.Networking") struct FLAXENGINE_API NetworkEvent
 {
-DECLARE_SCRIPTING_TYPE_MINIMAL(NetworkEvent);
+    DECLARE_SCRIPTING_TYPE_MINIMAL(NetworkEvent);
 public:
     /// <summary>
     /// The type of the received event.

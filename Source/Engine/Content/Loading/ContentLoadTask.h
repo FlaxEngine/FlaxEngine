@@ -16,7 +16,6 @@ class ContentLoadTask : public Task
     friend LoadingThread;
 
 public:
-
     /// <summary>
     /// Describes work type
     /// </summary>
@@ -28,14 +27,12 @@ public:
     DECLARE_ENUM_5(Result, Ok, AssetLoadError, MissingReferences, LoadDataError, TaskFailed);
 
 private:
-
     /// <summary>
     /// Task type
     /// </summary>
     Type _type;
 
 protected:
-
     /// <summary>
     /// Initializes a new instance of the <see cref="ContentLoadTask"/> class.
     /// </summary>
@@ -46,7 +43,6 @@ protected:
     }
 
 public:
-
     /// <summary>
     /// Gets a task type.
     /// </summary>
@@ -57,7 +53,6 @@ public:
     }
 
 public:
-
     /// <summary>
     /// Checks if async task is loading given asset resource
     /// </summary>
@@ -69,11 +64,9 @@ public:
     }
 
 protected:
-
     virtual Result run() = 0;
 
 public:
-
     // [Task]
     String ToString() const override
     {
@@ -84,7 +77,6 @@ public:
     }
 
 protected:
-
     // [Task]
     void Enqueue() override;
     bool Run() override;

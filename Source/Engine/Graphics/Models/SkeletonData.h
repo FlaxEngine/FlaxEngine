@@ -13,7 +13,7 @@
 /// </summary>
 API_STRUCT() struct SkeletonNode
 {
-DECLARE_SCRIPTING_TYPE_MINIMAL(SkeletonNode);
+    DECLARE_SCRIPTING_TYPE_MINIMAL(SkeletonNode);
 
     /// <summary>
     /// The parent node index. The root node uses value -1.
@@ -36,7 +36,7 @@ DECLARE_SCRIPTING_TYPE_MINIMAL(SkeletonNode);
 /// </summary>
 API_STRUCT() struct SkeletonBone
 {
-DECLARE_SCRIPTING_TYPE_MINIMAL(SkeletonBone);
+    DECLARE_SCRIPTING_TYPE_MINIMAL(SkeletonBone);
 
     /// <summary>
     /// The parent bone index. The root bone uses value -1.
@@ -74,7 +74,6 @@ struct TIsPODType<SkeletonBone>
 class SkeletonData
 {
 public:
-
     /// <summary>
     /// The nodes in this hierarchy. The root node is always at the index 0.
     /// </summary>
@@ -86,7 +85,6 @@ public:
     Array<SkeletonBone> Bones;
 
 public:
-
     /// <summary>
     /// Gets the root node reference.
     /// </summary>

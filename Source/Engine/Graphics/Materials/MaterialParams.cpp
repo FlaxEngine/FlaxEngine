@@ -406,7 +406,9 @@ void MaterialParameter::Bind(BindMeta& meta) const
             {
             case MaterialSceneTextures::SceneDepth:
                 view = meta.CanSampleDepth
-                           ? meta.Buffers->DepthBuffer->GetDescription().Flags & GPUTextureFlags::ReadOnlyDepthView ? meta.Buffers->DepthBuffer->ViewReadOnlyDepth() : meta.Buffers->DepthBuffer->View()
+                           ? meta.Buffers->DepthBuffer->GetDescription().Flags & GPUTextureFlags::ReadOnlyDepthView
+                                 ? meta.Buffers->DepthBuffer->ViewReadOnlyDepth()
+                                 : meta.Buffers->DepthBuffer->View()
                            : GPUDevice::Instance->GetDefaultWhiteTexture()->View();
                 break;
             case MaterialSceneTextures::AmbientOcclusion:

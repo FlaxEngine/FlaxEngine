@@ -11,7 +11,6 @@
 class TextureUtils
 {
 public:
-
     static PixelFormat ToPixelFormat(const TextureFormatType format, int32 width, int32 height, bool canCompress)
     {
         const bool canUseBlockCompression = width % 4 == 0 && height % 4 == 0;

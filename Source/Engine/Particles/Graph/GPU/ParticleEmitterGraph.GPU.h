@@ -18,7 +18,6 @@ typedef ShaderGraphBox ParticleEmitterGraphGPUBox;
 class ParticleEmitterGraphGPUNode : public ParticleEmitterGraphNode<ShaderGraphNode<>>
 {
 public:
-
     ParticleEmitterGraphGPUNode()
         : ParticleEmitterGraphNode<ShaderGraphNode<>>()
     {
@@ -37,7 +36,6 @@ public:
 class ParticleEmitterGraphGPU : public ParticleEmitterGraph<ShaderGraph<ParticleEmitterGraphGPUNode, ParticleEmitterGraphGPUBox, ParticleSystemParameter>, ParticleEmitterGraphGPUNode, ShaderGraphValue>
 {
 public:
-
     /// <summary>
     /// Clears all the cached values.
     /// </summary>
@@ -56,7 +54,6 @@ public:
 class ParticleEmitterGPUGenerator : public ShaderGenerator
 {
 private:
-
     enum class ParticleContextType
     {
         Initialize,
@@ -84,7 +81,6 @@ private:
     Array<ParticleEmitterGraphGPU*, InlinedAllocation<16>> _graphs;
 
 public:
-
     /// <summary>
     /// Initializes a new instance of the <see cref="ParticleEmitterGPUGenerator"/> class.
     /// </summary>
@@ -120,7 +116,6 @@ public:
     bool Generate(WriteStream& source, BytesContainer& parametersData, int32& customDataSize);
 
 private:
-
     void clearCache();
 
     void ProcessModule(Node* node);

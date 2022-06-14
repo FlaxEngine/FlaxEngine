@@ -54,15 +54,15 @@ bool VisualScriptGraph::onNodeLoaded(Node* n)
 {
     switch (n->GroupID)
     {
-        // Function
+    // Function
     case 16:
         switch (n->TypeID)
         {
-            // Invoke Method
+        // Invoke Method
         case 4:
             n->Data.InvokeMethod.Method = nullptr;
             break;
-            // Get/Set Field
+        // Get/Set Field
         case 7:
         case 8:
             n->Data.GetSetField.Field = nullptr;
@@ -176,7 +176,7 @@ void VisualScriptExecutor::ProcessGroupParameters(Box* box, Node* node, Value& v
 {
     switch (node->TypeID)
     {
-        // Get
+    // Get
     case 3:
     {
         int32 paramIndex;
@@ -200,7 +200,7 @@ void VisualScriptExecutor::ProcessGroupParameters(Box* box, Node* node, Value& v
         }
         break;
     }
-        // Set
+    // Set
     case 4:
     {
         int32 paramIndex;
@@ -235,11 +235,11 @@ void VisualScriptExecutor::ProcessGroupTools(Box* box, Node* node, Value& value)
 {
     switch (node->TypeID)
     {
-        // This Instance
+    // This Instance
     case 19:
         value = ThreadStacks.Get().Stack->Instance;
         break;
-        // Cast
+    // Cast
     case 25:
     {
         if (box->ID == 0)
@@ -297,7 +297,7 @@ void VisualScriptExecutor::ProcessGroupTools(Box* box, Node* node, Value& value)
         }
         break;
     }
-        // Cast Value
+    // Cast Value
     case 26:
     {
         if (box->ID == 0)
@@ -375,7 +375,7 @@ void VisualScriptExecutor::ProcessGroupFunction(Box* boxBase, Node* node, Value&
 {
     switch (node->TypeID)
     {
-        // Method Override
+    // Method Override
     case 3:
     {
         if (boxBase->ID == 0)
@@ -392,7 +392,7 @@ void VisualScriptExecutor::ProcessGroupFunction(Box* boxBase, Node* node, Value&
         }
         break;
     }
-        // Invoke Method
+    // Invoke Method
     case 4:
     {
         // Call Impulse or Pure Method
@@ -604,14 +604,14 @@ void VisualScriptExecutor::ProcessGroupFunction(Box* boxBase, Node* node, Value&
         }
         break;
     }
-        // Return
+    // Return
     case 5:
     {
         auto& scope = ThreadStacks.Get().Stack->Scope;
         scope->FunctionReturn = tryGetValue(node->GetBox(1), Value::Zero);
         break;
     }
-        // Function
+    // Function
     case 6:
     {
         if (boxBase->ID == 0)
@@ -630,7 +630,7 @@ void VisualScriptExecutor::ProcessGroupFunction(Box* boxBase, Node* node, Value&
         }
         break;
     }
-        // Get Field
+    // Get Field
     case 7:
     {
         auto& cache = node->Data.GetSetField;
@@ -716,7 +716,7 @@ void VisualScriptExecutor::ProcessGroupFunction(Box* boxBase, Node* node, Value&
         }
         break;
     }
-        // Get Field
+    // Get Field
     case 8:
     {
         auto& cache = node->Data.GetSetField;
@@ -809,7 +809,7 @@ void VisualScriptExecutor::ProcessGroupFunction(Box* boxBase, Node* node, Value&
             eatBox(node, returnedImpulse->FirstConnection());
         break;
     }
-        // Bind/Unbind
+    // Bind/Unbind
     case 9:
     case 10:
     {
@@ -937,7 +937,7 @@ void VisualScriptExecutor::ProcessGroupFlow(Box* boxBase, Node* node, Value& val
 {
     switch (node->TypeID)
     {
-        // If
+    // If
     case 1:
     {
         const bool condition = (bool)tryGetValue(node->GetBox(1), Value::Zero);
@@ -946,7 +946,7 @@ void VisualScriptExecutor::ProcessGroupFlow(Box* boxBase, Node* node, Value& val
             eatBox(node, boxBase->FirstConnection());
         break;
     }
-        // For Loop
+    // For Loop
     case 2:
     {
         const auto scope = ThreadStacks.Get().Stack->Scope;
@@ -959,7 +959,7 @@ void VisualScriptExecutor::ProcessGroupFlow(Box* boxBase, Node* node, Value& val
         }
         switch (boxBase->ID)
         {
-            // Loop
+        // Loop
         case 0:
         {
             if (iteratorIndex == scope->ReturnedValues.Count())
@@ -980,13 +980,13 @@ void VisualScriptExecutor::ProcessGroupFlow(Box* boxBase, Node* node, Value& val
                 eatBox(node, boxBase->FirstConnection());
             break;
         }
-            // Break
+        // Break
         case 3:
             // Reset loop iterator
             if (iteratorIndex != scope->ReturnedValues.Count())
                 scope->ReturnedValues[iteratorIndex].Value.AsInt = MAX_int32 - 1;
             break;
-            // Index
+        // Index
         case 5:
             if (iteratorIndex != scope->ReturnedValues.Count())
                 value = scope->ReturnedValues[iteratorIndex].Value;
@@ -994,7 +994,7 @@ void VisualScriptExecutor::ProcessGroupFlow(Box* boxBase, Node* node, Value& val
         }
         break;
     }
-        // While Loop
+    // While Loop
     case 3:
     {
         const auto scope = ThreadStacks.Get().Stack->Scope;
@@ -1007,7 +1007,7 @@ void VisualScriptExecutor::ProcessGroupFlow(Box* boxBase, Node* node, Value& val
         }
         switch (boxBase->ID)
         {
-            // Loop
+        // Loop
         case 0:
         {
             if (iteratorIndex == scope->ReturnedValues.Count())
@@ -1027,13 +1027,13 @@ void VisualScriptExecutor::ProcessGroupFlow(Box* boxBase, Node* node, Value& val
                 eatBox(node, boxBase->FirstConnection());
             break;
         }
-            // Break
+        // Break
         case 2:
             // Reset loop iterator
             if (iteratorIndex != scope->ReturnedValues.Count())
                 scope->ReturnedValues[iteratorIndex].Value.AsInt = -1;
             break;
-            // Index
+        // Index
         case 4:
             if (iteratorIndex != scope->ReturnedValues.Count())
                 value = scope->ReturnedValues[iteratorIndex].Value;
@@ -1041,7 +1041,7 @@ void VisualScriptExecutor::ProcessGroupFlow(Box* boxBase, Node* node, Value& val
         }
         break;
     }
-        // Sequence
+    // Sequence
     case 4:
     {
         const int32 count = (int32)node->Values[0];
@@ -1053,7 +1053,7 @@ void VisualScriptExecutor::ProcessGroupFlow(Box* boxBase, Node* node, Value& val
         }
         break;
     }
-        // Branch On Enum
+    // Branch On Enum
     case 5:
     {
         const Value v = tryGetValue(node->GetBox(1), Value::Null);
@@ -1075,7 +1075,7 @@ void VisualScriptExecutor::ProcessGroupFlow(Box* boxBase, Node* node, Value& val
         }
         break;
     }
-        // Delay
+    // Delay
     case 6:
     {
         boxBase = node->GetBox(2);
@@ -1115,7 +1115,7 @@ void VisualScriptExecutor::ProcessGroupFlow(Box* boxBase, Node* node, Value& val
         }
         break;
     }
-        // Array For Each
+    // Array For Each
     case 7:
     {
         const auto scope = ThreadStacks.Get().Stack->Scope;
@@ -1135,7 +1135,7 @@ void VisualScriptExecutor::ProcessGroupFlow(Box* boxBase, Node* node, Value& val
         }
         switch (boxBase->ID)
         {
-            // Loop
+        // Loop
         case 0:
         {
             if (iteratorIndex == scope->ReturnedValues.Count())
@@ -1173,18 +1173,18 @@ void VisualScriptExecutor::ProcessGroupFlow(Box* boxBase, Node* node, Value& val
                 eatBox(node, boxBase->FirstConnection());
             break;
         }
-            // Break
+        // Break
         case 2:
             // Reset loop iterator
             if (iteratorIndex != scope->ReturnedValues.Count())
                 scope->ReturnedValues[iteratorIndex].Value.AsInt = MAX_int32 - 1;
             break;
-            // Item
+        // Item
         case 4:
             if (iteratorIndex != scope->ReturnedValues.Count() && arrayIndex != scope->ReturnedValues.Count())
                 value = scope->ReturnedValues[arrayIndex].Value.AsArray()[(int32)scope->ReturnedValues[iteratorIndex].Value];
             break;
-            // Index
+        // Index
         case 5:
             if (iteratorIndex != scope->ReturnedValues.Count())
                 value = (int32)scope->ReturnedValues[iteratorIndex].Value;
@@ -1702,13 +1702,13 @@ void VisualScriptingBinaryModule::OnScriptsReloading()
         {
             switch (node.Type)
             {
-                // Invoke Method
+            // Invoke Method
             case GRAPH_NODE_MAKE_TYPE(16, 4):
             {
                 node.Data.InvokeMethod.Method = nullptr;
                 break;
             }
-                // Get/Set Field
+            // Get/Set Field
             case GRAPH_NODE_MAKE_TYPE(16, 7):
             case GRAPH_NODE_MAKE_TYPE(16, 8):
             {
@@ -2224,7 +2224,7 @@ String VisualScripting::GetStackTrace()
         String node;
         switch (frame->Node->Type)
         {
-            // Get/Set Parameter
+        // Get/Set Parameter
         case GRAPH_NODE_MAKE_TYPE(6, 3):
         case GRAPH_NODE_MAKE_TYPE(6, 4):
         {
@@ -2233,19 +2233,19 @@ String VisualScripting::GetStackTrace()
             node += param ? param->Name : ((Guid)frame->Node->Values[0]).ToString();
             break;
         }
-            // Method Override
+        // Method Override
         case GRAPH_NODE_MAKE_TYPE(16, 3):
             node = (StringView)frame->Node->Values[0];
             node += TEXT("()");
             break;
-            // Invoke Method
+        // Invoke Method
         case GRAPH_NODE_MAKE_TYPE(16, 4):
             node = (StringView)frame->Node->Values[0];
             node += TEXT(".");
             node += (StringView)frame->Node->Values[1];
             node += TEXT("()");
             break;
-            // Function
+        // Function
         case GRAPH_NODE_MAKE_TYPE(16, 6):
             node = String(frame->Script->GetScriptTypeName());
             for (int32 i = 0; i < frame->Script->_methods.Count(); i++)

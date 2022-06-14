@@ -362,7 +362,7 @@ API_ENUM() enum class CullMode : byte
 /// </summary>
 API_STRUCT() struct BlendingMode
 {
-DECLARE_SCRIPTING_TYPE_MINIMAL(BlendingMode);
+    DECLARE_SCRIPTING_TYPE_MINIMAL(BlendingMode);
 
     /// <summary>
     /// Blending mode.
@@ -454,7 +454,6 @@ DECLARE_SCRIPTING_TYPE_MINIMAL(BlendingMode);
     };
 
 public:
-
     /// <summary>
     /// Render target blending mode descriptor.
     /// </summary>
@@ -501,11 +500,9 @@ public:
     API_FIELD() ColorWrite RenderTargetWriteMask;
 
 public:
-
     bool operator==(const BlendingMode& other) const;
 
 public:
-
     /// <summary>
     /// Gets the opaque rendering (default). No blending is being performed.
     /// </summary>

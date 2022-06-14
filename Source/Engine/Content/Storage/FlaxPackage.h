@@ -11,11 +11,9 @@
 class FLAXENGINE_API FlaxPackage : public FlaxStorage
 {
 protected:
-
     Dictionary<Guid, Entry> _entries;
 
 public:
-
     /// <summary>
     /// Initializes a new instance of the <see cref="FlaxPackage"/> class.
     /// </summary>
@@ -23,7 +21,6 @@ public:
     FlaxPackage(const StringView& path);
 
 public:
-
     // [FlaxStorage]
     String ToString() const override;
     bool IsPackage() const override;
@@ -36,7 +33,6 @@ public:
     void Dispose() override;
 
 protected:
-
     // [FlaxStorage]
     bool GetEntry(const Guid& id, Entry& e) override;
     void AddEntry(Entry& e) override;

@@ -10,9 +10,8 @@
 /// </summary>
 API_CLASS(NoSpawn) class FLAXENGINE_API AnimationGraphFunction : public BinaryAsset
 {
-DECLARE_BINARY_ASSET_HEADER(AnimationGraphFunction, 1);
+    DECLARE_BINARY_ASSET_HEADER(AnimationGraphFunction, 1);
 public:
-
     /// <summary>
     /// The loaded anim graph function graph data (serialized anim graph).
     /// </summary>
@@ -59,11 +58,9 @@ public:
 #endif
 
 private:
-
     void ProcessGraphForSignature(AnimGraphBase* graph, bool canUseOutputs);
 
 protected:
-
     // [BinaryAsset]
     LoadResult load() override;
     void unload(bool isReloading) override;

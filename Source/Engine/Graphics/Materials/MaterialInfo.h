@@ -446,7 +446,7 @@ struct MaterialInfo8
 /// </summary>
 API_STRUCT() struct FLAXENGINE_API MaterialInfo
 {
-DECLARE_SCRIPTING_TYPE_MINIMAL(MaterialInfo);
+    DECLARE_SCRIPTING_TYPE_MINIMAL(MaterialInfo);
 
     /// <summary>
     /// The material shader domain.

@@ -21,7 +21,6 @@
 class SkinnedModelAssetUpgrader : public BinaryAssetUpgrader
 {
 public:
-
     /// <summary>
     /// Initializes a new instance of the <see cref="SkinnedModelAssetUpgrader"/> class.
     /// </summary>
@@ -37,7 +36,6 @@ public:
     }
 
 private:
-
     static bool Upgrade_1_To_2(AssetMigrationContext& context)
     {
         ASSERT(context.Input.SerializedVersion == 1 && context.Output.SerializedVersion == 2);

@@ -12,7 +12,6 @@ template<typename StateType, StateType InvalidState>
 class GPUResourceState
 {
 private:
-
     /// <summary>
     /// The whole resource state (used only if _allSubresourcesSame is 1).
     /// </summary>
@@ -30,7 +29,6 @@ private:
     Array<StateType> _subresourceState;
 
 public:
-
     /// <summary>
     /// Initializes a new instance of the <see cref="GPUResourceState"/> class.
     /// </summary>
@@ -41,7 +39,6 @@ public:
     }
 
 public:
-
     void Initialize(uint32 subresourceCount, StateType initialState, bool usePerSubresourceTracking)
     {
         ASSERT(_subresourceState.IsEmpty() && subresourceCount > 0);

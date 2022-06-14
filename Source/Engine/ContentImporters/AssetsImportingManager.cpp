@@ -56,7 +56,6 @@ const String AssetsImportingManager::CreateVisualScriptTag(TEXT("VisualScript"))
 class AssetsImportingManagerService : public EngineService
 {
 public:
-
     AssetsImportingManagerService()
         : EngineService(TEXT("AssetsImportingManager"), -400)
     {

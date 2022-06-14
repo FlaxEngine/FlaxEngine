@@ -10,16 +10,14 @@
 /// </summary>
 API_CLASS(Static) class FLAXENGINE_API PixelFormatExtensions
 {
-DECLARE_SCRIPTING_TYPE_NO_SPAWN(PixelFormatExtensions);
+    DECLARE_SCRIPTING_TYPE_NO_SPAWN(PixelFormatExtensions);
 public:
-
     /// <summary>
     /// Initializes cache.
     /// </summary>
     static void Init();
 
 public:
-
     /// <summary>
     /// Calculates the size of a <see cref="PixelFormat"/> in bytes.
     /// </summary>
@@ -211,7 +209,6 @@ public:
     API_FUNCTION() static PixelFormat MakeTypelessUNorm(PixelFormat format);
 
 public:
-
     static PixelFormat FindShaderResourceFormat(PixelFormat format, bool bSRGB);
     static PixelFormat FindUnorderedAccessFormat(PixelFormat format);
     static PixelFormat FindDepthStencilFormat(PixelFormat format);

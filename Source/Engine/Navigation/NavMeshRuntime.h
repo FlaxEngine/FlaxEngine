@@ -17,7 +17,6 @@ class NavMesh;
 class FLAXENGINE_API NavMeshTile
 {
 public:
-
     int32 X;
     int32 Y;
     int32 Layer;
@@ -31,7 +30,6 @@ public:
 class FLAXENGINE_API NavMeshRuntime
 {
 public:
-
     // Gets the navigation mesh runtime for a given navmesh name. Return null if missing.
     static NavMeshRuntime* Get(const StringView& navMeshName);
 
@@ -48,19 +46,16 @@ public:
 #endif
 
 private:
-
     dtNavMesh* _navMesh;
     dtNavMeshQuery* _navMeshQuery;
     float _tileSize;
     Array<NavMeshTile> _tiles;
 
 public:
-
     NavMeshRuntime(const NavMeshProperties& properties);
     ~NavMeshRuntime();
 
 public:
-
     /// <summary>
     /// The object locker.
     /// </summary>
@@ -92,7 +87,6 @@ public:
     int32 GetTilesCapacity() const;
 
 public:
-
     /// <summary>
     /// Finds the distance from the specified start position to the nearest polygon wall.
     /// </summary>
@@ -153,7 +147,6 @@ public:
     bool RayCast(const Vector3& startPosition, const Vector3& endPosition, NavMeshHit& hitInfo) const;
 
 public:
-
     /// <summary>
     /// Sets the size of the tile (if not assigned). Disposes the mesh if added tiles have different size.
     /// </summary>
@@ -210,6 +203,5 @@ public:
     void Dispose();
 
 private:
-
     void AddTileInternal(NavMesh* navMesh, NavMeshTileData& tileData);
 };

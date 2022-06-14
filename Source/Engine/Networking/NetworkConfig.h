@@ -28,7 +28,7 @@ API_ENUM(Namespace="FlaxEngine.Networking") enum class DEPRECATED NetworkDriverT
 /// </summary>
 API_STRUCT(Namespace="FlaxEngine.Networking") struct FLAXENGINE_API NetworkConfig
 {
-DECLARE_SCRIPTING_TYPE_MINIMAL(NetworkConfig);
+    DECLARE_SCRIPTING_TYPE_MINIMAL(NetworkConfig);
 
     /// <summary>
     /// The network driver that will be used to create the peer.

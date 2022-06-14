@@ -29,7 +29,6 @@ typedef Function<ExportAssetResult(ExportAssetContext&)> ExportAssetFunction;
 class ExportAssetContext : public NonCopyable
 {
 public:
-
     /// <summary>
     /// The asset reference (prepared by the context to be used by callback).
     /// </summary>
@@ -56,7 +55,6 @@ public:
     void* CustomArg;
 
 public:
-
     /// <summary>
     /// Initializes a new instance of the <see cref="ExportAssetContext"/> class.
     /// </summary>
@@ -73,7 +71,6 @@ public:
     }
 
 public:
-
     /// <summary>
     /// Runs the specified callback.
     /// </summary>

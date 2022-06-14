@@ -286,15 +286,12 @@ template<class T, typename KeyFrame = LinearCurveKeyframe<T>>
 class CurveBase
 {
 public:
-
     typedef Span<KeyFrame> KeyFrameData;
 
 protected:
-
     T _default;
 
 public:
-
     /// <summary>
     /// Initializes a new instance of the <see cref="Curve"/> class.
     /// </summary>
@@ -320,7 +317,6 @@ public:
     }
 
 public:
-
     /// <summary>
     /// Gets the default value for the keyframes.
     /// </summary>
@@ -338,7 +334,6 @@ public:
     }
 
 public:
-
     /// <summary>
     /// Evaluates the animation curve value at the specified time.
     /// </summary>
@@ -466,7 +461,6 @@ public:
     }
 
 protected:
-
     /// <summary>
     /// Returns a pair of keys that can be used for interpolating to field the value at the provided time.
     /// </summary>
@@ -507,16 +501,13 @@ template<class T, typename KeyFrame = LinearCurveKeyframe<T>>
 class Curve : public CurveBase<T, KeyFrame>
 {
 public:
-
     typedef CurveBase<T, KeyFrame> Base;
     using KeyFrameCollection = Array<KeyFrame>;
 
 private:
-
     KeyFrameCollection _keyframes;
 
 public:
-
     /// <summary>
     /// Initializes a new instance of the <see cref="Curve"/> class.
     /// </summary>
@@ -552,7 +543,6 @@ public:
     }
 
 public:
-
     /// <summary>
     /// Gets the length of the animation curve, from time zero to last keyframe.
     /// </summary>
@@ -627,7 +617,6 @@ public:
     }
 
 public:
-
     /// <summary>
     /// Evaluates the animation curve value at the specified time.
     /// </summary>
@@ -745,7 +734,6 @@ public:
     }
 
 public:
-
     FORCE_INLINE KeyFrame& operator[](int32 index)
     {
         return _keyframes[index];

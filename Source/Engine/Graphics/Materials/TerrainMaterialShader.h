@@ -10,7 +10,6 @@
 class TerrainMaterialShader : public MaterialShader
 {
 private:
-
     struct Cache
     {
         PipelineStateCache Default;
@@ -49,11 +48,9 @@ private:
     };
 
 private:
-
     Cache _cache;
 
 public:
-
     /// <summary>
     /// Init
     /// </summary>
@@ -64,7 +61,6 @@ public:
     }
 
 public:
-
     // [MaterialShader]
     DrawPass GetDrawModes() const override;
     bool CanUseLightmap() const override;
@@ -72,7 +68,6 @@ public:
     void Unload() override;
 
 protected:
-
     // [MaterialShader]
     bool Load() override;
 };

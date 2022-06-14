@@ -14,18 +14,15 @@ class GPUTask;
 class GPUTasksExecutor : public Object
 {
 protected:
-
     Array<GPUTasksContext*> _contextList;
 
 public:
-
     /// <summary>
     /// Destructor
     /// </summary>
     virtual ~GPUTasksExecutor();
 
 public:
-
     /// <summary>
     /// Sync point event called on begin of the frame
     /// </summary>
@@ -37,7 +34,6 @@ public:
     virtual void FrameEnd() = 0;
 
 public:
-
     /// <summary>
     /// Gets the context list.
     /// </summary>
@@ -48,6 +44,5 @@ public:
     }
 
 protected:
-
     GPUTasksContext* createContext();
 };

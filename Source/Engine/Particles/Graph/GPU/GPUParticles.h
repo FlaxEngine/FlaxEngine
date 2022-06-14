@@ -23,14 +23,12 @@ class GPUShaderProgramCS;
 class GPUParticles
 {
 private:
-
     GPUShader* _shader = nullptr;
     GPUShaderProgramCS* _mainCS = nullptr;
     Array<byte> _cbData;
     MaterialParams _params;
 
 public:
-
     /// <summary>
     /// The custom data size (in bytes) required by the nodes to store the additional global state for the simulation in the particles buffer on a GPU.
     /// </summary>

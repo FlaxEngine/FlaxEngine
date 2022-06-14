@@ -20,7 +20,6 @@ struct DrawCall;
 class FLAXENGINE_API IMaterial
 {
 public:
-
     /// <summary>
     /// Gets the material info, structure which describes material surface.
     /// </summary>
@@ -134,7 +133,6 @@ public:
     }
 
 public:
-
     /// <summary>
     /// Settings for the material binding to the graphics pipeline.
     /// </summary>

@@ -13,10 +13,9 @@
 /// </summary>
 API_CLASS(sealed, NoSpawn, Namespace = "FlaxEngine.Networking") class FLAXENGINE_API NetworkPeer final : public ScriptingObject
 {
-DECLARE_SCRIPTING_TYPE_NO_SPAWN(NetworkPeer);
+    DECLARE_SCRIPTING_TYPE_NO_SPAWN(NetworkPeer);
     friend class NetworkManager;
 public:
-
     int HostId = -1;
     NetworkConfig Config;
     INetworkDriver* NetworkDriver = nullptr;
@@ -25,7 +24,6 @@ public:
     Array<uint32, HeapAllocation> MessagePool;
 
 public:
-
     /// <summary>
     /// Initializes a new instance of the <see cref="NetworkPeer"/> class.
     /// </summary>
@@ -35,7 +33,6 @@ public:
     }
 
 public:
-
     /// <summary>
     /// Starts listening for incoming connections.
     /// Once this is called, this peer becomes a server.
@@ -163,7 +160,6 @@ public:
     static void ShutdownPeer(NetworkPeer* peer);
 
 public:
-
     bool IsValid() const
     {
         return NetworkDriver != nullptr && HostId >= 0;
@@ -176,7 +172,6 @@ public:
     }
 
 public:
-
     FORCE_INLINE bool operator==(const NetworkPeer& other) const
     {
         return HostId == other.HostId;
@@ -188,7 +183,6 @@ public:
     }
 
 private:
-
     bool Initialize(const NetworkConfig& config);
     void Shutdown();
     void CreateMessageBuffers();

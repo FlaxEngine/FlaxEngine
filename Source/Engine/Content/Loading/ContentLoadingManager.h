@@ -14,13 +14,11 @@ class ContentLoadTask;
 class LoadingThread : public IRunnable
 {
 protected:
-
     volatile int64 _exitFlag;
     Thread* _thread;
     int32 _totalTasksDoneCount;
 
 public:
-
     /// <summary>
     /// Init
     /// </summary>
@@ -32,7 +30,6 @@ public:
     ~LoadingThread();
 
 public:
-
     /// <summary>
     /// Gets the thread identifier.
     /// </summary>
@@ -40,7 +37,6 @@ public:
     uint64 GetID() const;
 
 public:
-
     /// <summary>
     /// Returns true if thread has empty exit flag, so it can continue it's work
     /// </summary>
@@ -61,7 +57,6 @@ public:
     void Join();
 
 public:
-
     /// <summary>
     /// Starts thread execution.
     /// </summary>
@@ -76,7 +71,6 @@ public:
     void Run(ContentLoadTask* task);
 
 public:
-
     // [IRunnable]
     String ToString() const override;
     int32 Run() override;
@@ -93,7 +87,6 @@ class ContentLoadingManager
     friend Asset;
 
 public:
-
     /// <summary>
     /// Checks if current execution context is thread used to load assets.
     /// </summary>
@@ -110,7 +103,6 @@ public:
     static LoadingThread* GetCurrentLoadThread();
 
 public:
-
     /// <summary>
     /// Gets amount of enqueued tasks to perform.
     /// </summary>

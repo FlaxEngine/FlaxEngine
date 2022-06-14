@@ -10,15 +10,12 @@
 API_CLASS(InBuild) class WeakAssetReferenceBase
 {
 public:
-
     typedef Delegate<> EventType;
 
 protected:
-
     Asset* _asset = nullptr;
 
 public:
-
     /// <summary>
     /// The asset unloading event (should cleanup refs to it).
     /// </summary>
@@ -38,7 +35,6 @@ public:
     ~WeakAssetReferenceBase();
 
 public:
-
     /// <summary>
     /// Gets the asset ID or Guid::Empty if not set.
     /// </summary>
@@ -61,7 +57,6 @@ public:
     String ToString() const;
 
 protected:
-
     void OnSet(Asset* asset);
     void OnUnloaded(Asset* asset);
 };
@@ -73,7 +68,6 @@ template<typename T>
 API_CLASS(InBuild) class WeakAssetReference : public WeakAssetReferenceBase
 {
 public:
-
     /// <summary>
     /// Initializes a new instance of the <see cref="WeakAssetReference"/> class.
     /// </summary>
@@ -125,7 +119,6 @@ public:
     }
 
 public:
-
     FORCE_INLINE WeakAssetReference& operator=(const WeakAssetReference& other)
     {
         OnSet(other.Get());
@@ -196,7 +189,6 @@ public:
     }
 
 public:
-
     /// <summary>
     /// Sets the asset reference.
     /// </summary>

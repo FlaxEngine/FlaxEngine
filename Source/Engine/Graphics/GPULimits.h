@@ -184,7 +184,7 @@ DECLARE_ENUM_OPERATORS(FormatSupport);
 /// </summary>
 API_STRUCT() struct FormatFeatures
 {
-DECLARE_SCRIPTING_TYPE_MINIMAL(FormatFeatures);
+    DECLARE_SCRIPTING_TYPE_MINIMAL(FormatFeatures);
 
     /// <summary>
     /// Gets the maximum MSAA sample count for a particular <see cref="PixelFormat"/>.
@@ -218,7 +218,7 @@ DECLARE_SCRIPTING_TYPE_MINIMAL(FormatFeatures);
 /// </summary>
 API_STRUCT() struct GPULimits
 {
-DECLARE_SCRIPTING_TYPE_MINIMAL(GPULimits);
+    DECLARE_SCRIPTING_TYPE_MINIMAL(GPULimits);
 
     /// <summary>
     /// True if device supports Compute shaders.

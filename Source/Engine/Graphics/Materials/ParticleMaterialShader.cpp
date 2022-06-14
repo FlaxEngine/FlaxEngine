@@ -136,19 +136,19 @@ void ParticleMaterialShader::Bind(BindParameters& params)
     PipelineStateCache* psCache = nullptr;
     switch (drawCall.Particle.Module->TypeID)
     {
-        // Sprite Rendering
+    // Sprite Rendering
     case 400:
     {
         psCache = _cacheSprite.GetPS(view.Pass);
         break;
     }
-        // Model Rendering
+    // Model Rendering
     case 403:
     {
         psCache = _cacheModel.GetPS(view.Pass);
         break;
     }
-        // Ribbon Rendering
+    // Ribbon Rendering
     case 404:
     {
         psCache = _cacheRibbon.GetPS(view.Pass);

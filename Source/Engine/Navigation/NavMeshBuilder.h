@@ -14,7 +14,6 @@ class Scene;
 class FLAXENGINE_API NavMeshBuilder
 {
 public:
-
     static void Init();
     static bool IsBuildingNavMesh();
     static float GetNavMeshBuildingProgress();

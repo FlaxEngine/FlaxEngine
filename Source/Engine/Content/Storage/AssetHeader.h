@@ -39,7 +39,6 @@ struct FLAXENGINE_API AssetHeader
     FlaxChunk* Chunks[ASSET_FILE_DATA_CHUNKS];
 
 public:
-
     /// <summary>
     /// Initializes a new instance of the <see cref="AssetHeader"/> struct.
     /// </summary>
@@ -51,7 +50,6 @@ public:
     }
 
 public:
-
     /// <summary>
     /// Gets the chunks.
     /// </summary>
@@ -154,7 +152,6 @@ struct FLAXENGINE_API AssetInitData
 #endif
 
 public:
-
     /// <summary>
     /// Gets the hash code.
     /// </summary>

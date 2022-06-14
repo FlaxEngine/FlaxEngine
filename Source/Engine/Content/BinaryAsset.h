@@ -21,23 +21,20 @@
 /// <seealso cref="Asset" />
 API_CLASS(Abstract, NoSpawn) class FLAXENGINE_API BinaryAsset : public Asset
 {
-DECLARE_ASSET_HEADER(BinaryAsset);
+    DECLARE_ASSET_HEADER(BinaryAsset);
 protected:
-
     AssetHeader _header;
     FlaxStorageReference _storageRef; // Allow asset to have missing storage reference but only before asset is loaded or if it's virtual
     bool _isSaving;
     Array<BinaryAsset*> _dependantAssets;
 
 public:
-
     /// <summary>
     /// Finalizes an instance of the <see cref="BinaryAsset"/> class.
     /// </summary>
     ~BinaryAsset();
 
 public:
-
     /// <summary>
     /// The asset storage container.
     /// </summary>
@@ -58,7 +55,6 @@ public:
 #endif
 
 public:
-
     /// <summary>
     /// Gets the asset serialized version.
     /// </summary>
@@ -87,7 +83,6 @@ public:
     bool InitVirtual(AssetInitData& initData);
 
 public:
-
 #if USE_EDITOR
 
 #if COMPILE_WITH_ASSETS_IMPORTER
@@ -128,7 +123,6 @@ public:
     bool HasDependenciesModified() const;
 
 protected:
-
     /// <summary>
     /// Called when one of the asset dependencies gets modified (it was saved or reloaded or reimported).
     /// </summary>
@@ -140,7 +134,6 @@ protected:
 #endif
 
 protected:
-
     /// <summary>
     /// Initializes the specified asset.
     /// </summary>
@@ -161,7 +154,6 @@ protected:
     }
 
 public:
-
     /// <summary>
     /// Gets the asset chunk.
     /// </summary>
@@ -293,7 +285,6 @@ public:
 #endif
 
 protected:
-
     /// <summary>
     /// Load data from the chunks
     /// </summary>
@@ -301,13 +292,11 @@ protected:
     virtual LoadResult load() = 0;
 
 private:
-
 #if USE_EDITOR
     void OnStorageReloaded(FlaxStorage* storage, bool failed);
 #endif
 
 public:
-
     // [Asset]
 #if USE_EDITOR
     void OnDeleteObject() override;
@@ -315,7 +304,6 @@ public:
     const String& GetPath() const final override;
 
 protected:
-
     // [Asset]
     ContentLoadTask* createLoadingTask() override;
     LoadResult loadAsset() override;

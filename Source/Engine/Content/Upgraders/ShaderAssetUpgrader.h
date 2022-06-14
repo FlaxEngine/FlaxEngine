@@ -15,7 +15,6 @@
 class ShaderAssetUpgrader : public BinaryAssetUpgrader
 {
 public:
-
     /// <summary>
     /// Initializes a new instance of the <see cref="ShaderAssetUpgrader"/> class.
     /// </summary>
@@ -29,7 +28,6 @@ public:
     }
 
 private:
-
     // ============================================
     //                  Version 18:
     // Designed: 7/24/2019

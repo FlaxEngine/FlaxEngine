@@ -14,7 +14,6 @@
 class CreateParticleSystem
 {
 public:
-
     /// <summary>
     /// Creates the asset.
     /// </summary>

@@ -54,29 +54,29 @@ enum class MeshBufferType
 // Vertex structure for all models (versioned)
 PACK_STRUCT(struct ModelVertex15
     {
-        Float3 Position;
-        Half2 TexCoord;
-        Float1010102 Normal;
-        Float1010102 Tangent;
+    Float3 Position;
+    Half2 TexCoord;
+    Float1010102 Normal;
+    Float1010102 Tangent;
     });
 
 PACK_STRUCT(struct ModelVertex18
     {
-        Float3 Position;
-        Half2 TexCoord;
-        Float1010102 Normal;
-        Float1010102 Tangent;
-        Half2 LightmapUVs;
+    Float3 Position;
+    Half2 TexCoord;
+    Float1010102 Normal;
+    Float1010102 Tangent;
+    Half2 LightmapUVs;
     });
 
 PACK_STRUCT(struct ModelVertex19
     {
-        Float3 Position;
-        Half2 TexCoord;
-        Float1010102 Normal;
-        Float1010102 Tangent;
-        Half2 LightmapUVs;
-        Color32 Color;
+    Float3 Position;
+    Half2 TexCoord;
+    Float1010102 Normal;
+    Float1010102 Tangent;
+    Half2 LightmapUVs;
+    Color32 Color;
     });
 
 typedef ModelVertex19 ModelVertex;
@@ -96,32 +96,32 @@ struct RawModelVertex
 // For vertex data we use three buffers: one with positions, one with other attributes, and one with colors
 PACK_STRUCT(struct VB0ElementType15
     {
-        Float3 Position;
+    Float3 Position;
     });
 
 PACK_STRUCT(struct VB1ElementType15
     {
-        Half2 TexCoord;
-        Float1010102 Normal;
-        Float1010102 Tangent;
+    Half2 TexCoord;
+    Float1010102 Normal;
+    Float1010102 Tangent;
     });
 
 PACK_STRUCT(struct VB0ElementType18
     {
-        Float3 Position;
+    Float3 Position;
     });
 
 PACK_STRUCT(struct VB1ElementType18
     {
-        Half2 TexCoord;
-        Float1010102 Normal;
-        Float1010102 Tangent;
-        Half2 LightmapUVs;
+    Half2 TexCoord;
+    Float1010102 Normal;
+    Float1010102 Tangent;
+    Half2 LightmapUVs;
     });
 
 PACK_STRUCT(struct VB2ElementType18
     {
-        Color32 Color;
+    Color32 Color;
     });
 
 typedef VB0ElementType18 VB0ElementType;
@@ -132,12 +132,12 @@ typedef VB2ElementType18 VB2ElementType;
 // Vertex structure for all skinned models (versioned)
 PACK_STRUCT(struct SkinnedModelVertex1
     {
-        Float3 Position;
-        Half2 TexCoord;
-        Float1010102 Normal;
-        Float1010102 Tangent;
-        Color32 BlendIndices;
-        Color32 BlendWeights;
+    Float3 Position;
+    Half2 TexCoord;
+    Float1010102 Normal;
+    Float1010102 Tangent;
+    Color32 BlendIndices;
+    Color32 BlendWeights;
     });
 
 typedef SkinnedModelVertex1 SkinnedModelVertex;
@@ -156,22 +156,22 @@ struct RawSkinnedModelVertex
 
 PACK_STRUCT(struct VB0SkinnedElementType1
     {
-        Float3 Position;
-        Half2 TexCoord;
-        Float1010102 Normal;
-        Float1010102 Tangent;
-        Color32 BlendIndices;
-        Color32 BlendWeights;
+    Float3 Position;
+    Half2 TexCoord;
+    Float1010102 Normal;
+    Float1010102 Tangent;
+    Color32 BlendIndices;
+    Color32 BlendWeights;
     });
 
 PACK_STRUCT(struct VB0SkinnedElementType2
     {
-        Float3 Position;
-        Half2 TexCoord;
-        Float1010102 Normal;
-        Float1010102 Tangent;
-        Color32 BlendIndices;
-        Half4 BlendWeights;
+    Float3 Position;
+    Half2 TexCoord;
+    Float1010102 Normal;
+    Float1010102 Tangent;
+    Color32 BlendIndices;
+    Half4 BlendWeights;
     });
 
 typedef VB0SkinnedElementType2 VB0SkinnedElementType;

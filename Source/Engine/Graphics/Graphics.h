@@ -10,9 +10,8 @@
 /// </summary>
 API_CLASS(Static) class FLAXENGINE_API Graphics
 {
-DECLARE_SCRIPTING_TYPE_NO_SPAWN(Graphics);
+    DECLARE_SCRIPTING_TYPE_NO_SPAWN(Graphics);
 public:
-
     /// <summary>
     /// Enables rendering synchronization with the refresh rate of the display device to avoid "tearing" artifacts.
     /// </summary>
@@ -64,7 +63,6 @@ public:
     API_FIELD() static Quality GIQuality;
 
 public:
-
     /// <summary>
     /// Disposes the device.
     /// </summary>

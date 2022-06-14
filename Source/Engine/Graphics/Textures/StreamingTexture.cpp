@@ -179,13 +179,11 @@ bool StreamingTexture::CanBeUpdated() const
 class StreamTextureResizeTask : public GPUTask
 {
 private:
-
     StreamingTexture* _streamingTexture;
     GPUTexture* _newTexture;
     int32 _uploadedMipCount;
 
 public:
-
     StreamTextureResizeTask(StreamingTexture* texture, GPUTexture* newTexture)
         : GPUTask(Type::CopyResource)
         , _streamingTexture(texture)
@@ -200,7 +198,6 @@ public:
     }
 
 protected:
-
     // [GPUTask]
     Result run(GPUTasksContext* context) override
     {
@@ -222,6 +219,7 @@ protected:
 
         return Result::Ok;
     }
+
     void OnEnd() override
     {
         Platform::InterlockedDecrement(&_streamingTexture->_streamingTasksCount);
@@ -229,6 +227,7 @@ protected:
         // Base
         GPUTask::OnEnd();
     }
+
     void OnSync() override
     {
         Swap(_streamingTexture->_texture, _newTexture);
@@ -310,12 +309,10 @@ Task* StreamingTexture::UpdateAllocation(int32 residency)
 class StreamTextureMipTask : public GPUUploadTextureMipTask
 {
 private:
-
     StreamingTexture* _streamingTexture;
     FlaxStorage::LockData _dataLock;
 
 public:
-
     StreamTextureMipTask(StreamingTexture* texture, int32 mipIndex)
         : GPUUploadTextureMipTask(texture->GetTexture(), mipIndex, Span<byte>(nullptr, 0), 0, 0, false)
         , _streamingTexture(texture)
@@ -326,7 +323,6 @@ public:
     }
 
 private:
-
     void onResourceUnload2(GPUTextureReference* ref)
     {
         // Unlink texture
@@ -338,7 +334,6 @@ private:
     }
 
 protected:
-
     // [GPUTask]
     Result run(GPUTasksContext* context) override
     {
@@ -378,6 +373,7 @@ protected:
 
         return Result::Ok;
     }
+
     void OnEnd() override
     {
         _dataLock.Release();
@@ -390,6 +386,7 @@ protected:
         // Base
         GPUUploadTextureMipTask::OnEnd();
     }
+
     void OnFail() override
     {
         if (_streamingTexture)

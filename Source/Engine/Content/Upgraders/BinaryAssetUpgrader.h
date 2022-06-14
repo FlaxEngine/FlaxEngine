@@ -24,7 +24,6 @@ struct FLAXENGINE_API AssetMigrationContext
     AssetInitData Output;
 
 public:
-
     /// <summary>
     /// Allocates the chunk in the output data so upgrader can write to it.
     /// </summary>
@@ -68,7 +67,6 @@ typedef bool (*UpgradeHandler)(AssetMigrationContext& context);
 class FLAXENGINE_API BinaryAssetUpgrader : public IAssetUpgrader
 {
 public:
-
     struct Upgrader
     {
         uint32 CurrentVersion;
@@ -77,12 +75,10 @@ public:
     };
 
 private:
-
     Upgrader const* _upgraders;
     int32 _upgradersCount;
 
 public:
-
     /// <summary>
     /// Upgrades the specified asset data serialized version.
     /// </summary>
@@ -114,7 +110,6 @@ public:
     }
 
 public:
-
     /// <summary>
     /// Copies all the chunks from the input data to the output container.
     /// </summary>
@@ -179,7 +174,6 @@ public:
     }
 
 protected:
-
     BinaryAssetUpgrader()
     {
         _upgraders = nullptr;
@@ -193,7 +187,6 @@ protected:
     }
 
 public:
-
     // [IAssetUpgrader]
     bool ShouldUpgrade(uint32 serializedVersion) const override
     {

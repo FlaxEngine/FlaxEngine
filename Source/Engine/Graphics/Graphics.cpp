@@ -39,7 +39,6 @@ extern GPUDevice* CreateGPUDevicePS5();
 class GraphicsService : public EngineService
 {
 public:
-
     GraphicsService()
         : EngineService(TEXT("Graphics"), -40)
     {

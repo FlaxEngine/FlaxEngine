@@ -13,7 +13,6 @@
 class CreateRawData
 {
 public:
-
     /// <summary>
     /// Creates the raw data asset.
     /// </summary>

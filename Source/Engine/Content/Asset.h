@@ -23,19 +23,17 @@
 /// </summary>
 API_CLASS(Abstract, NoSpawn) class FLAXENGINE_API Asset : public ManagedScriptingObject
 {
-DECLARE_SCRIPTING_TYPE_NO_SPAWN(Asset);
+    DECLARE_SCRIPTING_TYPE_NO_SPAWN(Asset);
     friend Content;
     friend LoadAssetTask;
     friend class ContentService;
 public:
-
     /// <summary>
     /// The asset loading result.
     /// </summary>
     DECLARE_ENUM_7(LoadResult, Ok, Failed, MissingDataChunk, CannotLoadData, CannotLoadStorage, CannotLoadInitData, InvalidData);
 
 protected:
-
     volatile int64 _refCount;
     ContentLoadTask* _loadingTask;
 
@@ -45,7 +43,6 @@ protected:
     int8 _isVirtual : 1; // Indicates that asset is pure virtual (generated or temporary, has no storage so won't be saved)
 
 public:
-
     /// <summary>
     /// Initializes a new instance of the <see cref="Asset"/> class.
     /// </summary>
@@ -54,7 +51,6 @@ public:
     explicit Asset(const SpawnParams& params, const AssetInfo* info);
 
 public:
-
     typedef Delegate<Asset*> EventType;
 
     /// <summary>
@@ -78,7 +74,6 @@ public:
     CriticalSection Locker;
 
 public:
-
     /// <summary>
     /// Gets asset's reference count. Asset will be automatically unloaded when this reaches zero.
     /// </summary>
@@ -101,7 +96,6 @@ public:
     }
 
 public:
-
     /// <summary>
     /// Gets the path to the asset storage file. In Editor it reflects the actual file, in cooked Game, it fakes the Editor path to be informative for developers.
     /// </summary>
@@ -143,7 +137,6 @@ public:
 #endif
 
 public:
-
     /// <summary>
     /// Reloads the asset.
     /// </summary>
@@ -195,7 +188,6 @@ public:
     void DeleteManaged();
 
 protected:
-
     /// <summary>
     /// Creates the loading tasks sequence (allows to inject custom tasks to asset loading logic).
     /// </summary>
@@ -225,7 +217,6 @@ protected:
     virtual void unload(bool isReloading) = 0;
 
 protected:
-
     virtual bool IsInternalType() const;
 
     bool onLoad(LoadAssetTask* task);
@@ -237,7 +228,6 @@ protected:
 #endif
 
 public:
-
     // [ManagedScriptingObject]
     String ToString() const override;
     void OnDeleteObject() override;

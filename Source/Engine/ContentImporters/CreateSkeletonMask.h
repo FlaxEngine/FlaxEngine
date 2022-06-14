@@ -14,7 +14,6 @@
 class CreateSkeletonMask
 {
 public:
-
     /// <summary>
     /// Creates the asset.
     /// </summary>

@@ -14,7 +14,6 @@
 class CreateMaterial
 {
 public:
-
     struct Options
     {
         MaterialInfo Info;

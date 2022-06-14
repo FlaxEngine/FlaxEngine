@@ -85,7 +85,7 @@ API_ENUM() enum class TextureDimensions
 /// </summary>
 API_STRUCT() struct FLAXENGINE_API GPUTextureDescription
 {
-DECLARE_SCRIPTING_TYPE_MINIMAL(GPUTextureDescription);
+    DECLARE_SCRIPTING_TYPE_MINIMAL(GPUTextureDescription);
 
     /// <summary>
     /// The dimensions of the texture.
@@ -143,7 +143,6 @@ DECLARE_SCRIPTING_TYPE_MINIMAL(GPUTextureDescription);
     API_FIELD() Color DefaultClearColor;
 
 public:
-
     /// <summary>
     /// Gets a value indicating whether this instance is a render target.
     /// </summary>
@@ -225,7 +224,6 @@ public:
     }
 
 public:
-
     /// <summary>
     /// Creates a new 1D <see cref="GPUTextureDescription" /> with a single mipmap.
     /// </summary>
@@ -265,7 +263,6 @@ public:
     static GPUTextureDescription New1D(int32 width, PixelFormat format, GPUTextureFlags textureFlags, int32 mipCount, int32 arraySize);
 
 public:
-
     /// <summary>
     /// Creates a new <see cref="GPUTextureDescription" /> with a single mipmap.
     /// </summary>
@@ -310,7 +307,6 @@ public:
     static GPUTextureDescription New2D(int32 width, int32 height, PixelFormat format, GPUTextureFlags textureFlags, int32 mipCount, int32 arraySize, MSAALevel msaaLevel = MSAALevel::None);
 
 public:
-
     /// <summary>
     /// Creates a new <see cref="GPUTextureDescription" /> with a single mipmap.
     /// </summary>
@@ -362,7 +358,6 @@ public:
     static GPUTextureDescription New3D(int32 width, int32 height, int32 depth, PixelFormat format, GPUTextureFlags textureFlags, int32 mipCount);
 
 public:
-
     /// <summary>
     /// Creates a new Cube <see cref="GPUTextureDescription" />.
     /// </summary>
@@ -399,7 +394,6 @@ public:
     static GPUTextureDescription NewCube(int32 size, PixelFormat format, GPUTextureFlags textureFlags, int32 mipCount);
 
 public:
-    
     void Clear();
     GPUTextureDescription ToStagingUpload() const;
     GPUTextureDescription ToStagingReadback() const;
@@ -407,7 +401,6 @@ public:
     String ToString() const;
 
 public:
-
     FORCE_INLINE bool operator==(const GPUTextureDescription& other) const
     {
         return Equals(other);
