@@ -47,8 +47,7 @@ void GUIMaterialShader::Bind(BindParameters& params)
 
     // Setup material constants
     {
-        const auto viewProjectionMatrix = customData->ViewProjection;
-        Matrix::Transpose(viewProjectionMatrix, materialData->ViewProjectionMatrix);
+        Matrix::Transpose(customData->ViewProjection, materialData->ViewProjectionMatrix);
         Matrix::Transpose(Matrix::Identity, materialData->WorldMatrix);
         Matrix::Transpose(Matrix::Identity, materialData->ViewMatrix);
         materialData->ViewPos = Float3::Zero;

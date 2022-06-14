@@ -28,7 +28,7 @@ class TextureBase;
 /// </summary>
 API_CLASS(Static) class FLAXENGINE_API Render2D
 {
-DECLARE_SCRIPTING_TYPE_NO_SPAWN(Render2D);
+    DECLARE_SCRIPTING_TYPE_NO_SPAWN(Render2D);
 
     /// <summary>
     /// The rendering features and options flags.
@@ -46,7 +46,6 @@ DECLARE_SCRIPTING_TYPE_NO_SPAWN(Render2D);
         VertexSnapping = 1,
     };
 
-public:
     struct CustomData
     {
         Matrix ViewProjection;
@@ -54,7 +53,6 @@ public:
     };
 
 public:
-
     /// <summary>
     /// Checks if interface is during rendering phrase (Draw calls may be performed without failing).
     /// </summary>
@@ -122,7 +120,6 @@ public:
     static void EndFrame();
 
 public:
-
     /// <summary>
     /// Pushes transformation layer.
     /// </summary>
@@ -176,7 +173,6 @@ public:
     API_FUNCTION() static void PopTint();
 
 public:
-
     /// <summary>
     /// Draws a text.
     /// </summary>

@@ -867,7 +867,7 @@ namespace FlaxEditor.Surface.Archetypes
             {
                 TypeID = 39,
                 Title = "View Size",
-                Description = "The size of the view.",
+                Description = "The size of the view. The draw rectangle size in GUI materials.",
                 Flags = NodeFlags.MaterialGraph,
                 Size = new Float2(150, 40),
                 Elements = new[]

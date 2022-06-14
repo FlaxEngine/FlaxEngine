@@ -562,7 +562,6 @@ void CachedPSO::Dispose()
 class Render2DService : public EngineService
 {
 public:
-
     Render2DService()
         : EngineService(TEXT("Render2D"), 10)
     {
@@ -1130,7 +1129,7 @@ void DrawBatch(int32 startIndex, int32 count)
         break;
 #if !BUILD_RELEASE
     default:
-    CRASH;
+        CRASH;
 #endif
     }
 

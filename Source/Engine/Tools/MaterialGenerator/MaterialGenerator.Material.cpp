@@ -488,6 +488,11 @@ void MaterialGenerator::ProcessGroupMaterial(Box* box, Node* node, Value& value)
         {
             value = Value(VariantType::Float2, box->ID == 0 ? TEXT("ViewSize.xy") : TEXT("ViewSize.zw"));
         }
+        else
+        {
+            // Fallback to Screen Size
+            value = Value(VariantType::Float2, box->ID == 0 ? TEXT("ScreenSize.xy") : TEXT("ScreenSize.zw"));
+        }
         break;
     }
     default:
