@@ -185,10 +185,8 @@ float ComputeVolumeShadowing(float3 worldPosition, bool isSpotLight)
 #endif
 
 META_PS(true, FEATURE_LEVEL_SM5)
-META_PERMUTATION_2(USE_TEMPORAL_REPROJECTION=0, USE_SHADOW=0)
-META_PERMUTATION_2(USE_TEMPORAL_REPROJECTION=1, USE_SHADOW=0)
-META_PERMUTATION_2(USE_TEMPORAL_REPROJECTION=0, USE_SHADOW=1)
-META_PERMUTATION_2(USE_TEMPORAL_REPROJECTION=1, USE_SHADOW=1)
+META_PERMUTATION_1(USE_SHADOW=0)
+META_PERMUTATION_1(USE_SHADOW=1)
 float4 PS_InjectLight(Quad_GS2PS input) : SV_Target0
 {
 	uint3 gridCoordinate = uint3(input.Vertex.Position.xy, input.LayerIndex);
@@ -197,18 +195,12 @@ float4 PS_InjectLight(Quad_GS2PS input) : SV_Target0
 	if (!all(gridCoordinate < GridSizeInt))
 		return 0;
 
-#if USE_TEMPORAL_REPROJECTION
 	float3 historyUV = GetVolumeUV(GetCellPositionWS(gridCoordinate, 0.5f), PrevWorldToClip);
 	float historyAlpha = HistoryWeight;
 	FLATTEN
 	if (any(historyUV < 0) || any(historyUV > 1))
-	{
 		historyAlpha = 0;
-	}
 	uint samplesCount = historyAlpha < 0.001f ? MissedHistorySamplesCount : 1;
-#else
-	uint samplesCount = 1;
-#endif
 
 	float NoL = 0;
 	float distanceAttenuation = 1;
@@ -298,28 +290,19 @@ TextureCube SkyLightImage : register(t5);
 #define THREADGROUP_SIZE 4
 
 META_CS(true, FEATURE_LEVEL_SM5)
-META_PERMUTATION_1(USE_TEMPORAL_REPROJECTION=0)
-META_PERMUTATION_1(USE_TEMPORAL_REPROJECTION=1)
 [numthreads(THREADGROUP_SIZE, THREADGROUP_SIZE, THREADGROUP_SIZE)]
 void CS_LightScattering(uint3 GroupId : SV_GroupID, uint3 DispatchThreadId : SV_DispatchThreadID, uint3 GroupThreadId : SV_GroupThreadID)
 {
 	uint3 gridCoordinate = DispatchThreadId;
 	float3 lightScattering = 0;
 	uint samplesCount = 1;
-	
-#if USE_TEMPORAL_REPROJECTION
+
 	float3 historyUV = GetVolumeUV(GetCellPositionWS(gridCoordinate, 0.5f), PrevWorldToClip);
 	float historyAlpha = HistoryWeight;
-	
-	// Discard history if it lays outside the current view
 	FLATTEN
 	if (any(historyUV < 0) || any(historyUV > 1))
-	{
 		historyAlpha = 0;
-	}
-
 	samplesCount = historyAlpha < 0.001f && all(gridCoordinate < GridSizeInt) ? MissedHistorySamplesCount : 1;
-#endif
 
 	for (uint sampleIndex = 0; sampleIndex < samplesCount; sampleIndex++)
 	{
@@ -363,15 +346,13 @@ void CS_LightScattering(uint3 GroupId : SV_GroupID, uint3 DispatchThreadId : SV_
 	float extinction = materialScatteringAndAbsorption.w + Luminance(materialScatteringAndAbsorption.xyz);
 	float3 materialEmissive = VBufferB[gridCoordinate].xyz;
 	float4 scatteringAndExtinction = float4(lightScattering * materialScatteringAndAbsorption.xyz + materialEmissive, extinction);
-	
-#if USE_TEMPORAL_REPROJECTION
+
 	BRANCH
 	if (historyAlpha > 0)
 	{
 		float4 historyScatteringAndExtinction = LightScatteringHistory.SampleLevel(SamplerLinearClamp, historyUV, 0);
 		scatteringAndExtinction = lerp(scatteringAndExtinction, historyScatteringAndExtinction, historyAlpha);
 	}
-#endif
 	
 	if (all(gridCoordinate < GridSizeInt))
 	{

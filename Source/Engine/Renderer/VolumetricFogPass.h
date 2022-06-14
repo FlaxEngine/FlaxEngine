@@ -81,9 +81,9 @@ private:
     // Shader stuff
     AssetReference<Shader> _shader;
     GPUShaderProgramCS* _csInitialize = nullptr;
-    ComputeShaderPermutation<2> _csLightScattering;
+    ComputeShaderPermutation<1> _csLightScattering;
     GPUShaderProgramCS* _csFinalIntegration = nullptr;
-    GPUPipelineStatePermutationsPs<4> _psInjectLight;
+    GPUPipelineStatePermutationsPs<2> _psInjectLight;
 
     GPUBuffer* _vbCircleRasterize = nullptr;
     GPUBuffer* _ibCircleRasterize = nullptr;
@@ -107,11 +107,6 @@ private:
         ///  Whether to apply jitter to each frame's volumetric fog. Should be used with temporal reprojection to improve the quality.
         /// </summary>
         bool FogJitter;
-
-        /// <summary>
-        /// Whether to use temporal reprojection on volumetric fog.
-        /// </summary>
-        bool TemporalReprojection;
 
         /// <summary>
         /// How much the history value should be weighted each frame. This is a tradeoff between visible jittering and responsiveness.

@@ -146,7 +146,6 @@ bool VolumetricFogPass::Init(RenderContext& renderContext, GPUContext* context, 
         _cache.GridPixelSize = 16;
         _cache.GridSizeZ = 64;
         _cache.FogJitter = false;
-        _cache.TemporalReprojection = false;
         _cache.MissedHistorySamplesCount = 1;
         break;
     }
@@ -155,7 +154,6 @@ bool VolumetricFogPass::Init(RenderContext& renderContext, GPUContext* context, 
         _cache.GridPixelSize = 16;
         _cache.GridSizeZ = 64;
         _cache.FogJitter = true;
-        _cache.TemporalReprojection = true;
         _cache.MissedHistorySamplesCount = 4;
         break;
     }
@@ -164,7 +162,6 @@ bool VolumetricFogPass::Init(RenderContext& renderContext, GPUContext* context, 
         _cache.GridPixelSize = 16;
         _cache.GridSizeZ = 128;
         _cache.FogJitter = true;
-        _cache.TemporalReprojection = true;
         _cache.MissedHistorySamplesCount = 4;
         break;
     }
@@ -173,7 +170,6 @@ bool VolumetricFogPass::Init(RenderContext& renderContext, GPUContext* context, 
         _cache.GridPixelSize = 8;
         _cache.GridSizeZ = 256;
         _cache.FogJitter = true;
-        _cache.TemporalReprojection = true;
         _cache.MissedHistorySamplesCount = 8;
         break;
     }
@@ -214,7 +210,7 @@ bool VolumetricFogPass::Init(RenderContext& renderContext, GPUContext* context, 
     {
         _cache.Data.FrameJitterOffsets[i] = defaultOffset;
     }
-    if (_cache.FogJitter && _cache.TemporalReprojection)
+    if (_cache.FogJitter)
     {
         for (int32 i = 0; i < _cache.MissedHistorySamplesCount; i++)
         {
@@ -320,7 +316,7 @@ void VolumetricFogPass::RenderRadialLight(RenderContext& renderContext, GPUConte
         InitCircleBuffer();
 
     // Call rendering to the volume
-    const int32 psIndex = (_cache.TemporalReprojection ? 1 : 0) + 2;
+    const int32 psIndex = 1;
     context->SetState(_psInjectLight.Get(psIndex));
     const int32 instanceCount = volumeZBoundsMax - volumeZBoundsMin;
     const int32 indexCount = _ibCircleRasterize->GetElementsCount();
@@ -379,7 +375,7 @@ void VolumetricFogPass::RenderRadialLight(RenderContext& renderContext, GPUConte
             InitCircleBuffer();
 
         // Call rendering to the volume
-        const int32 psIndex = (cache.TemporalReprojection ? 1 : 0) + (withShadow ? 2 : 0);
+        const int32 psIndex = withShadow ? 1 : 0;
         context->SetState(_psInjectLight.Get(psIndex));
         const int32 instanceCount = volumeZBoundsMax - volumeZBoundsMin;
         const int32 indexCount = _ibCircleRasterize->GetElementsCount();
@@ -478,12 +474,6 @@ void VolumetricFogPass::Render(RenderContext& renderContext)
     auto cb0 = _shader->GetShader()->GetCB(0);
     context->UpdateCB(cb0, &_cache.Data);
     context->BindCB(0, cb0);
-
-    // Peek flags
-    const bool temporalHistoryIsValid = cache.TemporalReprojection
-            && renderContext.Buffers->VolumetricFogHistory
-            && !renderContext.Task->IsCameraCut
-            && Float3::NearEqual(renderContext.Buffers->VolumetricFogHistory->Size3(), cache.GridSize);
 
     // Allocate buffers
     const GPUTextureDescription volumeDesc = GPUTextureDescription::New3D(cache.GridSize, PixelFormat::R16G16B16A16_Float, GPUTextureFlags::RenderTarget | GPUTextureFlags::ShaderResource | GPUTextureFlags::UnorderedAccess);
@@ -646,6 +636,7 @@ void VolumetricFogPass::Render(RenderContext& renderContext)
     {
         PROFILE_GPU("Light Scattering");
 
+        const bool temporalHistoryIsValid = renderContext.Buffers->VolumetricFogHistory && !renderContext.Task->IsCameraCut && Float3::NearEqual(renderContext.Buffers->VolumetricFogHistory->Size3(), cache.GridSize);
         const auto lightScatteringHistory = temporalHistoryIsValid ? renderContext.Buffers->VolumetricFogHistory : nullptr;
 
         context->BindUA(0, lightScattering->ViewVolume());
@@ -656,7 +647,7 @@ void VolumetricFogPass::Render(RenderContext& renderContext)
         context->BindSR(4, dirLightShadowMap);
         context->BindSR(5, skyLightImage);
 
-        const int32 csIndex = cache.TemporalReprojection ? 1 : 0;
+        const int32 csIndex = 0;
         context->Dispatch(_csLightScattering.Get(csIndex), groupCountX, groupCountY, groupCountZ);
 
         context->ResetSR();
