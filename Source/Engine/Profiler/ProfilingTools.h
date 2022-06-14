@@ -14,15 +14,14 @@
 /// </summary>
 API_CLASS(Static) class ProfilingTools
 {
-DECLARE_SCRIPTING_TYPE_NO_SPAWN(ProfilingTools);
+    DECLARE_SCRIPTING_TYPE_NO_SPAWN(ProfilingTools);
 public:
-
     /// <summary>
     /// The GPU memory stats.
     /// </summary>
     API_STRUCT() struct MemoryStatsGPU
     {
-    DECLARE_SCRIPTING_TYPE_MINIMAL(MemoryStatsGPU);
+        DECLARE_SCRIPTING_TYPE_MINIMAL(MemoryStatsGPU);
 
         /// <summary>
         /// The total amount of memory in bytes (as reported by the driver).
@@ -40,7 +39,7 @@ public:
     /// </summary>
     API_STRUCT() struct MainStats
     {
-    DECLARE_SCRIPTING_TYPE_MINIMAL(MainStats);
+        DECLARE_SCRIPTING_TYPE_MINIMAL(MainStats);
 
         /// <summary>
         /// The process memory stats.
@@ -93,7 +92,7 @@ public:
     /// </summary>
     API_STRUCT() struct ThreadStats
     {
-    DECLARE_SCRIPTING_TYPE_MINIMAL(ThreadStats);
+        DECLARE_SCRIPTING_TYPE_MINIMAL(ThreadStats);
 
         /// <summary>
         /// The thread name.
@@ -107,7 +106,6 @@ public:
     };
 
 public:
-
     /// <summary>
     /// The current collected main stats by the profiler from the local session. Updated every frame.
     /// </summary>
