@@ -581,3 +581,36 @@ struct TIsPODType<Int4>
 };
 
 DEFINE_DEFAULT_FORMATTING(Int4, "X:{0} Y:{1} Z:{2} W:{3}", v.X, v.Y, v.Z, v.W);
+
+#if !defined(_MSC_VER) || defined(__clang__)
+// Forward specializations for Clang
+template<> FLAXENGINE_API const Float4 Float4::Zero;
+template<> FLAXENGINE_API const Float4 Float4::One;
+template<> FLAXENGINE_API const Float4 Float4::UnitX;
+template<> FLAXENGINE_API const Float4 Float4::UnitY;
+template<> FLAXENGINE_API const Float4 Float4::UnitZ;
+template<> FLAXENGINE_API const Float4 Float4::UnitW;
+template<> FLAXENGINE_API const Float4 Float4::Minimum;
+template<> FLAXENGINE_API const Float4 Float4::Maximum;
+template<> FLAXENGINE_API ScriptingTypeInitializer Float4::TypeInitializer;
+
+template<> FLAXENGINE_API const Double4 Double4::Zero;
+template<> FLAXENGINE_API const Double4 Double4::One;
+template<> FLAXENGINE_API const Double4 Double4::UnitX;
+template<> FLAXENGINE_API const Double4 Double4::UnitY;
+template<> FLAXENGINE_API const Double4 Double4::UnitZ;
+template<> FLAXENGINE_API const Double4 Double4::UnitW;
+template<> FLAXENGINE_API const Double4 Double4::Minimum;
+template<> FLAXENGINE_API const Double4 Double4::Maximum;
+template<> FLAXENGINE_API ScriptingTypeInitializer Double4::TypeInitializer;
+
+template<> FLAXENGINE_API const Int4 Int4::Zero;
+template<> FLAXENGINE_API const Int4 Int4::One;
+template<> FLAXENGINE_API const Int4 Int4::UnitX;
+template<> FLAXENGINE_API const Int4 Int4::UnitY;
+template<> FLAXENGINE_API const Int4 Int4::UnitZ;
+template<> FLAXENGINE_API const Int4 Int4::UnitW;
+template<> FLAXENGINE_API const Int4 Int4::Minimum;
+template<> FLAXENGINE_API const Int4 Int4::Maximum;
+template<> FLAXENGINE_API ScriptingTypeInitializer Int4::TypeInitializer;
+#endif

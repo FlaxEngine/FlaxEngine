@@ -632,7 +632,7 @@ public:
     /// Gets value as Vector4 (if can convert it)
     /// </summary>
     /// <returns>Value</returns>
-    FORCE_INLINE Vector4 GetVector4() const
+    FORCE_INLINE Float4 GetVector4() const
     {
         bool isValid;
         return GetVector4(isValid);

@@ -146,7 +146,7 @@ float3 SampleDDGIIrradiance(DDGIData data, Texture2D<float4> probesState, Textur
     float3 biasedWorldPosition = worldPosition + surfaceBias;
 
     // Get the grid coordinates of the probe nearest the biased world position
-    uint3 baseProbeCoords = clamp(uint3((worldPosition - probesOrigin + probesExtent) / probesSpacing), 0, data.ProbesCounts - 1);
+    uint3 baseProbeCoords = clamp(uint3((worldPosition - probesOrigin + probesExtent) / probesSpacing), uint3(0, 0, 0), data.ProbesCounts - uint3(1, 1, 1));
     float3 baseProbeWorldPosition = GetDDGIProbeWorldPosition(data, cascadeIndex, baseProbeCoords);
     float3 biasAlpha = saturate((biasedWorldPosition - baseProbeWorldPosition) / probesSpacing);
 
@@ -155,7 +155,7 @@ float3 SampleDDGIIrradiance(DDGIData data, Texture2D<float4> probesState, Textur
     for (uint i = 0; i < 8; i++)
     {
         uint3 probeCoordsOffset = uint3(i, i >> 1, i >> 2) & 1;
-        uint3 probeCoords = clamp(baseProbeCoords + probeCoordsOffset, 0, data.ProbesCounts - 1);
+        uint3 probeCoords = clamp(baseProbeCoords + probeCoordsOffset, uint3(0, 0, 0), data.ProbesCounts - uint3(1, 1, 1));
         uint probeIndex = GetDDGIScrollingProbeIndex(data, cascadeIndex, probeCoords);
 
         // Load probe position and state

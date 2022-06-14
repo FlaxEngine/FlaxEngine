@@ -22,6 +22,7 @@ namespace Flax.Build.Bindings
         public bool IsInBuild;
         public bool IsDeprecated;
         internal bool IsInited;
+        internal TypedefInfo Instigator;
 
         public virtual bool IsClass => false;
         public virtual bool IsStruct => false;

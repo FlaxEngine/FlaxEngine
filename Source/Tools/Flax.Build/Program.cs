@@ -38,7 +38,6 @@ namespace Flax.Build
             {
                 // Setup
                 CommandLine.Configure(typeof(Configuration));
-                CommandLine.Configure(typeof(EngineConfiguration));
                 foreach (var option in CommandLine.GetOptions())
                 {
                     if (option.Name.Length > 1 && option.Name[0] == 'D')
@@ -76,6 +75,14 @@ namespace Flax.Build
                         throw new Exception("Too many project files. Don't know which to pick.");
                     else
                         Log.Warning("Missing project file.");
+                }
+
+                // Configure engine
+                {
+                    var engineProject = EngineTarget.EngineProject;
+                    if (engineProject != null && engineProject.Configuration != null && engineProject.Configuration.Count != 0)
+                        CommandLine.Configure(typeof(EngineConfiguration), engineProject.Configuration);
+                    CommandLine.Configure(typeof(EngineConfiguration));
                 }
 
                 // Use mutex if required

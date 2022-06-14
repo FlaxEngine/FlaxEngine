@@ -665,3 +665,30 @@ struct TIsPODType<Int2>
 };
 
 DEFINE_DEFAULT_FORMATTING(Int2, "X:{0} Y:{1}", v.X, v.Y);
+
+#if !defined(_MSC_VER) || defined(__clang__)
+// Forward specializations for Clang
+template<> FLAXENGINE_API const Float2 Float2::Zero;
+template<> FLAXENGINE_API const Float2 Float2::One;
+template<> FLAXENGINE_API const Float2 Float2::UnitX;
+template<> FLAXENGINE_API const Float2 Float2::UnitY;
+template<> FLAXENGINE_API const Float2 Float2::Minimum;
+template<> FLAXENGINE_API const Float2 Float2::Maximum;
+template<> FLAXENGINE_API ScriptingTypeInitializer Float2::TypeInitializer;
+
+template<> FLAXENGINE_API const Double2 Double2::Zero;
+template<> FLAXENGINE_API const Double2 Double2::One;
+template<> FLAXENGINE_API const Double2 Double2::UnitX;
+template<> FLAXENGINE_API const Double2 Double2::UnitY;
+template<> FLAXENGINE_API const Double2 Double2::Minimum;
+template<> FLAXENGINE_API const Double2 Double2::Maximum;
+template<> FLAXENGINE_API ScriptingTypeInitializer Double2::TypeInitializer;
+
+template<> FLAXENGINE_API const Int2 Int2::Zero;
+template<> FLAXENGINE_API const Int2 Int2::One;
+template<> FLAXENGINE_API const Int2 Int2::UnitX;
+template<> FLAXENGINE_API const Int2 Int2::UnitY;
+template<> FLAXENGINE_API const Int2 Int2::Minimum;
+template<> FLAXENGINE_API const Int2 Int2::Maximum;
+template<> FLAXENGINE_API ScriptingTypeInitializer Int2::TypeInitializer;
+#endif

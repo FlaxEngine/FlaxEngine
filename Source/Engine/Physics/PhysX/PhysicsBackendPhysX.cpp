@@ -1999,7 +1999,10 @@ bool PhysicsBackend::ComputeShapesPenetration(void* shapeA, void* shapeB, const 
     auto shapeBPhysX = (PxShape*)shapeB;
     const PxTransform poseA(C2P(positionA), C2P(orientationA));
     const PxTransform poseB(C2P(positionB), C2P(orientationB));
-    return PxGeometryQuery::computePenetration(C2P(direction), distance, shapeAPhysX->getGeometry().any(), poseA, shapeBPhysX->getGeometry().any(), poseB);
+    PxVec3 dir = C2P(direction);
+    const bool result = PxGeometryQuery::computePenetration(dir, distance, shapeAPhysX->getGeometry().any(), poseA, shapeBPhysX->getGeometry().any(), poseB);
+    direction = P2C(dir);
+    return result;
 }
 
 float PhysicsBackend::ComputeShapeSqrDistanceToPoint(void* shape, const Vector3& position, const Quaternion& orientation, const Vector3& point, Vector3* closestPoint)
@@ -2063,7 +2066,12 @@ void PhysicsBackend::GetJointForce(void* joint, Vector3& linear, Vector3& angula
 {
     auto jointPhysX = (PxJoint*)joint;
     if (jointPhysX->getConstraint())
-        jointPhysX->getConstraint()->getForce(*(PxVec3*)&linear, *(PxVec3*)&angular);
+    {
+        PxVec3 linearPhysX = C2P(linear), angularPhysX = C2P(angular);
+        jointPhysX->getConstraint()->getForce(linearPhysX, angularPhysX);
+        linear = P2C(linearPhysX);
+        angular = P2C(angularPhysX);
+    }
 }
 
 void* PhysicsBackend::CreateFixedJoint(const PhysicsJointDesc& desc)
