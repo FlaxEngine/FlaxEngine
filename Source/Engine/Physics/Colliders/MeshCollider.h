@@ -12,9 +12,8 @@
 /// <seealso cref="Collider" />
 API_CLASS() class FLAXENGINE_API MeshCollider : public Collider
 {
-DECLARE_SCENE_OBJECT(MeshCollider);
+    DECLARE_SCENE_OBJECT(MeshCollider);
 public:
-
     /// <summary>
     /// Linked collision data asset that contains convex mesh or triangle mesh used to represent a mesh collider shape.
     /// </summary>
@@ -22,12 +21,10 @@ public:
     AssetReference<CollisionData> CollisionData;
 
 private:
-
     void OnCollisionDataChanged();
     void OnCollisionDataLoaded();
 
 public:
-
     // [Collider]
     bool CanAttach(RigidBody* rigidBody) const override;
     bool CanBeTrigger() const override;
@@ -39,7 +36,6 @@ public:
     void Deserialize(DeserializeStream& stream, ISerializeModifier* modifier) override;
 
 protected:
-
     // [Collider]
 #if USE_EDITOR
     void DrawPhysicsDebug(RenderView& view) override;

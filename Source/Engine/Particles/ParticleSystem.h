@@ -12,9 +12,8 @@
 /// </summary>
 API_CLASS(NoSpawn) class FLAXENGINE_API ParticleSystem : public BinaryAsset
 {
-DECLARE_BINARY_ASSET_HEADER(ParticleSystem, 1);
+    DECLARE_BINARY_ASSET_HEADER(ParticleSystem, 1);
 public:
-
     /// <summary>
     /// The particle system timeline track data.
     /// </summary>
@@ -100,7 +99,6 @@ public:
     typedef Pair<int32, Guid> EmitterParameterOverrideKey;
 
 public:
-
     /// <summary>
     /// The asset data version number. Used to sync the  data with the instances state. Incremented each time asset gets loaded.
     /// </summary>
@@ -140,7 +138,6 @@ public:
     Array<Track> Tracks;
 
 public:
-
     /// <summary>
     /// Initializes the particle system that plays a single particles emitter. This can be used only for virtual assets.
     /// </summary>
@@ -167,7 +164,6 @@ public:
 #endif
 
 public:
-
     /// <summary>
     /// Spawns the particles at the given location.
     /// </summary>
@@ -237,7 +233,6 @@ public:
     API_FUNCTION() ParticleEffect* Spawn(Actor* parent, const Transform& transform, bool autoDestroy = false);
 
 public:
-
     // [BinaryAsset]
     void InitAsVirtual() override;
 #if USE_EDITOR
@@ -245,7 +240,6 @@ public:
 #endif
 
 protected:
-
     // [ParticleSystemBase]
     LoadResult load() override;
     void unload(bool isReloading) override;

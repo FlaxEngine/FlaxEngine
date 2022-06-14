@@ -16,9 +16,8 @@ class Collider;
 /// <seealso cref="Actor" />
 API_CLASS() class FLAXENGINE_API RigidBody : public Actor, public IPhysicsActor
 {
-DECLARE_SCENE_OBJECT(RigidBody);
+    DECLARE_SCENE_OBJECT(RigidBody);
 protected:
-
     void* _actor;
     Float3 _cachedScale;
 
@@ -40,7 +39,6 @@ protected:
     int32 _isUpdatingTransform : 1;
 
 public:
-
     /// <summary>
     /// Enables kinematic mode for the rigidbody.
     /// </summary>
@@ -286,7 +284,6 @@ public:
     API_PROPERTY() void SetConstraints(const RigidbodyConstraints value);
 
 public:
-
     /// <summary>
     /// Gets the linear velocity of the rigidbody.
     /// </summary>
@@ -374,7 +371,6 @@ public:
     API_PROPERTY() bool IsSleeping() const;
 
 public:
-
     /// <summary>
     /// Forces a rigidbody to sleep (for at least one frame).
     /// </summary>
@@ -508,7 +504,6 @@ public:
     API_FUNCTION() void ClosestPoint(const Vector3& position, API_PARAM(Out) Vector3& result) const;
 
 public:
-
     /// <summary>
     /// Occurs when a collision start gets registered for this rigidbody (it collides with something).
     /// </summary>
@@ -530,7 +525,6 @@ public:
     API_EVENT() Delegate<PhysicsColliderActor*> TriggerExit;
 
 public:
-
     void OnCollisionEnter(const Collision& c);
     void OnCollisionExit(const Collision& c);
 
@@ -551,7 +545,6 @@ public:
     void UpdateScale();
 
 public:
-
     // [Actor]
     void Serialize(SerializeStream& stream, const void* otherObj) override;
     void Deserialize(DeserializeStream& stream, ISerializeModifier* modifier) override;
@@ -561,7 +554,6 @@ public:
     void OnActiveTransformChanged() override;
 
 protected:
-
     // [Actor]
     void BeginPlay(SceneBeginData* data) override;
     void EndPlay() override;

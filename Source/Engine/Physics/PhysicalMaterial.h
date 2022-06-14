@@ -10,14 +10,12 @@
 /// </summary>
 API_CLASS() class FLAXENGINE_API PhysicalMaterial final : public ISerializable
 {
-API_AUTO_SERIALIZATION();
-DECLARE_SCRIPTING_TYPE_MINIMAL(PhysicalMaterial);
+    API_AUTO_SERIALIZATION();
+    DECLARE_SCRIPTING_TYPE_MINIMAL(PhysicalMaterial);
 private:
-
     void* _material;
 
 public:
-
     /// <summary>
     /// Initializes a new instance of the <see cref="PhysicalMaterial"/> class.
     /// </summary>
@@ -29,7 +27,6 @@ public:
     ~PhysicalMaterial();
 
 public:
-
     /// <summary>
     /// The friction value of surface, controls how easily things can slide on this surface.
     /// </summary>
@@ -73,7 +70,6 @@ public:
     float Density = 1000.0f;
 
 public:
-
     /// <summary>
     /// Gets the PhysX material.
     /// </summary>

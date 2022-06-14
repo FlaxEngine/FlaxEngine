@@ -71,7 +71,7 @@ bool ParticleBuffer::Init(ParticleEmitter* emitter)
     }
 #endif
     default:
-    CRASH;
+        CRASH;
     }
 
     return false;
@@ -107,7 +107,7 @@ bool ParticleBuffer::AllocateSortBuffer()
     }
 #endif
     default:
-    CRASH;
+        CRASH;
         return true;
     }
 
@@ -133,6 +133,6 @@ void ParticleBuffer::Clear()
     }
 #endif
     default:
-    CRASH;
+        CRASH;
     }
 }

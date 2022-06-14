@@ -14,7 +14,6 @@ class MultiThreadStepper;
 class PhysicsStepper
 {
 public:
-
     PhysicsStepper()
     {
     }
@@ -24,7 +23,6 @@ public:
     }
 
 public:
-
     virtual bool advance(PxScene* scene, PxReal dt, void* scratchBlock, PxU32 scratchBlockSize) = 0;
     virtual void wait(PxScene* scene) = 0;
     virtual void substepStrategy(const PxReal stepSize, PxU32& substepCount, PxReal& substepSize) = 0;
@@ -41,7 +39,6 @@ public:
 class StepperTask : public PxLightCpuTask
 {
 public:
-
     void setStepper(MultiThreadStepper* stepper)
     {
         mStepper = stepper;
@@ -58,7 +55,6 @@ public:
     }
 
 public:
-
     // [PxLightCpuTask]
     const char* getName() const override
     {
@@ -68,7 +64,6 @@ public:
     void run() override;
 
 protected:
-
     MultiThreadStepper* mStepper = nullptr;
 };
 
@@ -79,7 +74,6 @@ protected:
 class StepperTaskSimulate : public StepperTask
 {
 public:
-
     /// <summary>
     /// Initializes a new instance of the <see cref="StepperTaskSimulate"/> class.
     /// </summary>
@@ -88,7 +82,6 @@ public:
     }
 
 public:
-
     // [StepperTask]
     void run() override;
 };
@@ -96,7 +89,6 @@ public:
 class MultiThreadStepper : public PhysicsStepper
 {
 public:
-
     MultiThreadStepper()
         : mFirstCompletionPending(false)
         , mScene(nullptr)
@@ -135,7 +127,6 @@ public:
     }
 
 protected:
-
     void substep(StepperTask& completionTask);
 
     // we need two completion tasks because when multistepping we can't submit completion0 from the
@@ -170,13 +161,11 @@ protected:
 class FixedStepper : public MultiThreadStepper
 {
 protected:
-
     PxReal mAccumulator;
     PxReal mFixedSubStepSize;
     PxU32 mMaxSubSteps;
 
 public:
-
     /// <summary>
     /// Initializes a new instance of the <see cref="FixedStepper"/> class.
     /// </summary>
@@ -189,7 +178,6 @@ public:
     }
 
 public:
-
     /// <summary>
     /// Setups the specified step size and the maximum amount of them.
     /// </summary>
@@ -202,7 +190,6 @@ public:
     }
 
 public:
-
     // [MultiThreadStepper]
     void substepStrategy(const PxReal stepSize, PxU32& substepCount, PxReal& substepSize) override;
 

@@ -13,9 +13,8 @@ struct Collision;
 /// <seealso cref="Actor" />
 API_CLASS(Abstract) class FLAXENGINE_API PhysicsColliderActor : public Actor
 {
-DECLARE_SCENE_OBJECT_ABSTRACT(PhysicsColliderActor);
+    DECLARE_SCENE_OBJECT_ABSTRACT(PhysicsColliderActor);
 public:
-
     /// <summary>
     /// Occurs when a collision start gets registered for this collider (it collides with something).
     /// </summary>
@@ -37,7 +36,6 @@ public:
     API_EVENT() Delegate<PhysicsColliderActor*> TriggerExit;
 
 public:
-
     /// <summary>
     /// Gets the attached rigid body.
     /// </summary>
@@ -45,7 +43,6 @@ public:
     API_PROPERTY() virtual RigidBody* GetAttachedRigidBody() const = 0;
 
 public:
-
     /// <summary>
     /// Called when a collision start gets registered for this collider (it collides with something).
     /// </summary>

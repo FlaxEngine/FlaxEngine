@@ -31,14 +31,12 @@ DECLARE_ENUM_OPERATORS(SphericalJointFlag);
 /// <seealso cref="Joint" />
 API_CLASS() class FLAXENGINE_API SphericalJoint : public Joint
 {
-DECLARE_SCENE_OBJECT(SphericalJoint);
+    DECLARE_SCENE_OBJECT(SphericalJoint);
 private:
-
     SphericalJointFlag _flags;
     LimitConeRange _limit;
 
 public:
-
     /// <summary>
     /// Gets the joint mode flags. Controls joint behaviour.
     /// </summary>
@@ -74,7 +72,6 @@ public:
     API_PROPERTY() void SetLimit(const LimitConeRange& value);
 
 public:
-
     // [Joint]
 #if USE_EDITOR
     void OnDebugDrawSelected() override;
@@ -83,7 +80,6 @@ public:
     void Deserialize(DeserializeStream& stream, ISerializeModifier* modifier) override;
 
 protected:
-
     // [Joint]
     void* CreateJoint(const PhysicsJointDesc& desc) override;
 };

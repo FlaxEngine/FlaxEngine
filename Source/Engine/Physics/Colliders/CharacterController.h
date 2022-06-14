@@ -11,9 +11,8 @@
 /// <seealso cref="Collider" />
 API_CLASS() class FLAXENGINE_API CharacterController : public Collider, public IPhysicsActor
 {
-DECLARE_SCENE_OBJECT(CharacterController);
+    DECLARE_SCENE_OBJECT(CharacterController);
 public:
-
     /// <summary>
     /// Specifies which sides a character is colliding with.
     /// </summary>
@@ -57,7 +56,6 @@ public:
     };
 
 private:
-
     void* _controller;
     float _stepOffset;
     float _slopeLimit;
@@ -148,7 +146,6 @@ public:
     API_PROPERTY() void SetMinMoveDistance(float value);
 
 public:
-
     /// <summary>
     /// Gets the linear velocity of the Character Controller. This allows tracking how fast the character is actually moving, for instance when it is stuck at a wall this value will be the near zero vector.
     /// </summary>
@@ -165,7 +162,6 @@ public:
     API_PROPERTY() CollisionFlags GetFlags() const;
 
 public:
-
     /// <summary>
     /// Moves the character with the given speed. Gravity is automatically applied. It will slide along colliders. Result collision flags is the summary of collisions that occurred during the Move.
     /// </summary>
@@ -181,7 +177,6 @@ public:
     API_FUNCTION() CollisionFlags Move(const Vector3& displacement);
 
 protected:
-
     /// <summary>
     /// Creates the physics actor.
     /// </summary>
@@ -198,7 +193,6 @@ protected:
     void UpdateSize() const;
 
 public:
-
     // [Collider]
 #if USE_EDITOR
     void OnDebugDrawSelected() override;
@@ -216,7 +210,6 @@ public:
     void* GetPhysicsActor() const override;
 
 protected:
-
     // [PhysicsActor]
     void UpdateGeometry() override;
     void GetGeometry(CollisionShape& collision) override;

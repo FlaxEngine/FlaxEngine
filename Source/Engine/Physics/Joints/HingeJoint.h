@@ -33,7 +33,7 @@ DECLARE_ENUM_OPERATORS(HingeJointFlag);
 /// </summary>
 API_STRUCT() struct HingeJointDrive
 {
-DECLARE_SCRIPTING_TYPE_MINIMAL(HingeJointDrive);
+    DECLARE_SCRIPTING_TYPE_MINIMAL(HingeJointDrive);
 
     /// <summary>
     /// Target velocity of the joint.
@@ -57,7 +57,6 @@ DECLARE_SCRIPTING_TYPE_MINIMAL(HingeJointDrive);
     API_FIELD() bool FreeSpin = false;
 
 public:
-
     /// <summary>
     /// Compares two objects.
     /// </summary>
@@ -78,15 +77,13 @@ public:
 /// <seealso cref="Joint" />
 API_CLASS() class FLAXENGINE_API HingeJoint : public Joint
 {
-DECLARE_SCENE_OBJECT(HingeJoint);
+    DECLARE_SCENE_OBJECT(HingeJoint);
 private:
-
     HingeJointFlag _flags;
     LimitAngularRange _limit;
     HingeJointDrive _drive;
 
 public:
-
     /// <summary>
     /// Gets the joint mode flags. Controls joint behaviour.
     /// </summary>
@@ -142,7 +139,6 @@ public:
     API_PROPERTY() void SetDrive(const HingeJointDrive& value);
 
 public:
-
     /// <summary>
     /// Gets the current angle of the joint (in radians, in the range (-Pi, Pi]).
     /// </summary>
@@ -154,7 +150,6 @@ public:
     API_PROPERTY() float GetCurrentVelocity() const;
 
 public:
-
     // [Joint]
 #if USE_EDITOR
     void OnDebugDrawSelected() override;
@@ -163,7 +158,6 @@ public:
     void Deserialize(DeserializeStream& stream, ISerializeModifier* modifier) override;
 
 protected:
-
     // [Joint]
     void* CreateJoint(const PhysicsJointDesc& desc) override;
 };

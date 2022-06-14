@@ -124,7 +124,7 @@ API_ENUM() enum class D6JointDriveType
 /// </summary>
 API_STRUCT() struct D6JointDrive
 {
-DECLARE_SCRIPTING_TYPE_MINIMAL(D6JointDrive);
+    DECLARE_SCRIPTING_TYPE_MINIMAL(D6JointDrive);
 
     /// <summary>
     /// The spring strength. Force proportional to the position error.
@@ -147,7 +147,6 @@ DECLARE_SCRIPTING_TYPE_MINIMAL(D6JointDrive);
     API_FIELD() bool Acceleration = false;
 
 public:
-
     bool operator==(const D6JointDrive& other) const
     {
         return Stiffness == other.Stiffness && Damping == other.Damping && ForceLimit == other.ForceLimit && Acceleration == other.Acceleration;
@@ -163,9 +162,8 @@ public:
 /// <seealso cref="Joint" />
 API_CLASS() class FLAXENGINE_API D6Joint : public Joint
 {
-DECLARE_SCENE_OBJECT(D6Joint);
+    DECLARE_SCENE_OBJECT(D6Joint);
 private:
-
     D6JointMotion _motion[static_cast<int32>(D6JointAxis::MAX)];
     D6JointDrive _drive[static_cast<int32>(D6JointDriveType::MAX)];
     LimitLinear _limitLinear;
@@ -173,7 +171,6 @@ private:
     LimitConeRange _limitSwing;
 
 public:
-
     /// <summary>
     /// Gets the motion type around the specified axis.
     /// </summary>
@@ -215,7 +212,6 @@ public:
     API_FUNCTION() void SetDrive(const D6JointDriveType index, const D6JointDrive& value);
 
 public:
-
     /// <summary>
     /// Determines the linear limit used for constraining translation degrees of freedom.
     /// </summary>
@@ -259,7 +255,6 @@ public:
     API_PROPERTY() void SetLimitSwing(const LimitConeRange& value);
 
 public:
-
     /// <summary>
     /// Gets the drive's target position relative to the joint's first body.
     /// </summary>
@@ -301,7 +296,6 @@ public:
     API_PROPERTY() void SetDriveAngularVelocity(const Vector3& value);
 
 public:
-
     /// <summary>
     /// Gets the twist angle of the joint (in the range (-2*Pi, 2*Pi]).
     /// </summary>
@@ -318,7 +312,6 @@ public:
     API_PROPERTY() float GetCurrentSwingZ() const;
 
 public:
-
     // [Joint]
 #if USE_EDITOR
     void OnDebugDrawSelected() override;
@@ -327,7 +320,6 @@ public:
     void Deserialize(DeserializeStream& stream, ISerializeModifier* modifier) override;
 
 protected:
-
     // [Joint]
     void* CreateJoint(const PhysicsJointDesc& desc) override;
 };

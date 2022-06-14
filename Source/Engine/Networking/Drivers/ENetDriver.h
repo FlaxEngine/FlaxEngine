@@ -15,11 +15,14 @@
 /// </summary>
 API_CLASS(Namespace="FlaxEngine.Networking", Sealed) class FLAXENGINE_API ENetDriver : public ScriptingObject, public INetworkDriver
 {
-DECLARE_SCRIPTING_TYPE(ENetDriver);
+    DECLARE_SCRIPTING_TYPE(ENetDriver);
 public:
-
     // [INetworkDriver]
-    String DriverName() override { return String("ENetDriver"); }
+    String DriverName() override
+    {
+        return String("ENetDriver");
+    }
+
     bool Initialize(NetworkPeer* host, const NetworkConfig& config) override;
     void Dispose() override;
     bool Listen() override;
@@ -32,14 +35,12 @@ public:
     void SendMessage(NetworkChannelType channelType, const NetworkMessage& message, const Array<NetworkConnection, HeapAllocation>& targets) override;
 
 private:
-
     bool IsServer() const
     {
         return _host != nullptr && _peer == nullptr;
     }
 
 private:
-
     NetworkConfig _config;
     NetworkPeer* _networkHost;
     void* _host = nullptr;

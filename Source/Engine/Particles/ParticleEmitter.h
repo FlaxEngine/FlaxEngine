@@ -18,9 +18,8 @@ class ParticleEmitterInstance;
 /// </summary>
 API_CLASS(NoSpawn) class FLAXENGINE_API ParticleEmitter : public ShaderAssetTypeBase<BinaryAsset>
 {
-DECLARE_BINARY_ASSET_HEADER(ParticleEmitter, ShadersSerializedVersion);
+    DECLARE_BINARY_ASSET_HEADER(ParticleEmitter, ShadersSerializedVersion);
 public:
-
     /// <summary>
     /// The loaded particle graph.
     /// </summary>
@@ -76,7 +75,6 @@ public:
 #endif
 
 public:
-
     /// <summary>
     /// Tries to load surface graph from the asset.
     /// </summary>
@@ -96,7 +94,6 @@ public:
 #endif
 
 public:
-
     /// <summary>
     /// Spawns the particles at the given location.
     /// </summary>
@@ -172,7 +169,6 @@ public:
     API_FUNCTION() ParticleEffect* Spawn(Actor* parent, const Transform& transform, float duration = MAX_float, bool autoDestroy = false);
 
 public:
-
     // [BinaryAsset]
 #if USE_EDITOR
     void GetReferences(Array<Guid>& output) const override
@@ -185,7 +181,6 @@ public:
 #endif
 
 protected:
-
     // [ParticleEmitterBase]
     LoadResult load() override;
     void unload(bool isReloading) override;

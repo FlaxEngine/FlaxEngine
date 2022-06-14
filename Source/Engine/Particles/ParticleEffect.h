@@ -14,10 +14,9 @@
 /// </summary>
 API_CLASS(NoSpawn) class ParticleEffectParameter : public ScriptingObject
 {
-DECLARE_SCRIPTING_TYPE_NO_SPAWN(ParticleEffectParameter);
+    DECLARE_SCRIPTING_TYPE_NO_SPAWN(ParticleEffectParameter);
     friend ParticleEffect;
 private:
-
     ParticleEffect* _effect = nullptr;
     int32 _emitterIndex;
     int32 _paramIndex;
@@ -25,7 +24,6 @@ private:
     void Init(ParticleEffect* effect, int32 emitterIndex, int32 paramIndex);
 
 public:
-
     /// <summary>
     /// Initializes a new instance of the <see cref="ParticleEffectParameter"/> class.
     /// </summary>
@@ -137,9 +135,8 @@ public:
 /// </summary>
 API_CLASS() class FLAXENGINE_API ParticleEffect : public Actor
 {
-DECLARE_SCENE_OBJECT(ParticleEffect);
+    DECLARE_SCENE_OBJECT(ParticleEffect);
 public:
-
     /// <summary>
     /// The particles simulation update modes.
     /// </summary>
@@ -161,7 +158,7 @@ public:
     /// </summary>
     API_STRUCT() struct ParameterOverride
     {
-    DECLARE_SCRIPTING_TYPE_NO_SPAWN(ParameterOverride);
+        DECLARE_SCRIPTING_TYPE_NO_SPAWN(ParameterOverride);
 
         /// <summary>
         /// The name of the track that has overriden parameter.
@@ -180,7 +177,6 @@ public:
     };
 
 private:
-
     uint64 _lastUpdateFrame;
     Real _lastMinDstSqr;
     Matrix _world;
@@ -190,7 +186,6 @@ private:
     Array<ParameterOverride> _parametersOverrides; // Cached parameter modifications to be applied to the parameters
 
 public:
-
     /// <summary>
     /// The particle system to play.
     /// </summary>
@@ -209,7 +204,6 @@ public:
     ScriptingObjectReference<SceneRenderTask> CustomViewRenderTask;
 
 public:
-
     /// <summary>
     /// The particles simulation update mode. Defines how to update particles emitter.
     /// </summary>
@@ -262,7 +256,6 @@ public:
     }
 
 public:
-
     /// <summary>
     /// Gets the effect parameters collection. Those parameters are instanced from the <see cref="ParticleSystem"/> that contains a linear list of emitters and every emitter has a list of own parameters.
     /// </summary>
@@ -311,7 +304,6 @@ public:
     API_FUNCTION() void ResetParameters();
 
 public:
-
     /// <summary>
     /// Gets the current time position of the particle system timeline animation playback (in seconds).
     /// </summary>
@@ -370,7 +362,6 @@ protected:
 #endif
 
 private:
-
     void Update();
 #if USE_EDITOR
     void UpdateExecuteInEditor();
@@ -381,7 +372,6 @@ private:
     void OnParticleSystemLoaded();
 
 public:
-
     // [Actor]
     bool HasContentLoaded() const override;
     void Draw(RenderContext& renderContext) override;
@@ -400,7 +390,6 @@ public:
 #endif
 
 protected:
-
     // [Actor]
     void EndPlay() override;
     void OnEnable() override;
