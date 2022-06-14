@@ -164,16 +164,16 @@ namespace FlaxEditor.Options
             var editorAnalyticsTrackingFile = Path.Combine(Editor.LocalCachePath, "noTracking");
             if (Options.General.EnableEditorAnalytics)
             {
-                if (!File.Exists(editorAnalyticsTrackingFile))
+                if (File.Exists(editorAnalyticsTrackingFile))
                 {
-                    File.WriteAllText(editorAnalyticsTrackingFile, "Don't track me, please.");
+                    File.Delete(editorAnalyticsTrackingFile);
                 }
             }
             else
             {
-                if (File.Exists(editorAnalyticsTrackingFile))
+                if (!File.Exists(editorAnalyticsTrackingFile))
                 {
-                    File.Delete(editorAnalyticsTrackingFile);
+                    File.WriteAllText(editorAnalyticsTrackingFile, "Don't track me, please.");
                 }
             }
         }
