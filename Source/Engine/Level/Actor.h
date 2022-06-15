@@ -223,6 +223,22 @@ public:
     }
 
     /// <summary>
+    /// Finds the child actor of the given type or creates a new one.
+    /// </summary>
+    /// <returns>The child actor.</returns>
+    template<typename T>
+    T* GetOrAddChild()
+    {
+        T* result = (T*)GetChild(T::GetStaticClass());
+        if (!result)
+        {
+            result = New<T>();
+            result->SetParent(this, false, false);
+        }
+        return result;
+    }
+
+    /// <summary>
     /// Gets the child actors of the given type.
     /// </summary>
     /// <param name="type">Type of the actor to search for. Includes any actors derived from the type.</param>
