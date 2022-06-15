@@ -28,7 +28,6 @@ class MemoryReadStream;
 class ShaderStorage
 {
 public:
-
     /// <summary>
     /// Different shader cache storage modes (disabled, inside asset and in project cache)
     /// </summary>
@@ -46,14 +45,12 @@ public:
     static CachingMode GetCachingMode();
 
 public:
-
     /// <summary>
     /// Packed version of the Magic Code for shader files
     /// </summary>
     static const int32 MagicCode;
 
 public:
-
     /// <summary>
     /// File header, version 18
     /// [Deprecated on 24.07.2019, expires on 10.05.2021]

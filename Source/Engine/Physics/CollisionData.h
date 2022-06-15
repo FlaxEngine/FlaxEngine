@@ -94,7 +94,7 @@ DECLARE_ENUM_OPERATORS(ConvexMeshGenerationFlags);
 /// </summary>
 API_STRUCT() struct CollisionDataOptions
 {
-DECLARE_SCRIPTING_TYPE_NO_SPAWN(CollisionDataOptions);
+    DECLARE_SCRIPTING_TYPE_NO_SPAWN(CollisionDataOptions);
 
     /// <summary>
     /// The data type.
@@ -137,9 +137,8 @@ DECLARE_SCRIPTING_TYPE_NO_SPAWN(CollisionDataOptions);
 /// </summary>
 API_CLASS(NoSpawn) class FLAXENGINE_API CollisionData : public BinaryAsset
 {
-DECLARE_BINARY_ASSET_HEADER(CollisionData, 1);
+    DECLARE_BINARY_ASSET_HEADER(CollisionData, 1);
 public:
-
     /// <summary>
     /// A raw structure stored in the binary asset. It has fixed size so it's easier to add new parameters to it. It's loaded and changed into Options structure used at runtime.
     /// </summary>
@@ -157,13 +156,11 @@ public:
     static_assert(sizeof(SerializedOptions) == 128, "Invalid collision data options size. Change the padding.");
 
 private:
-
     CollisionDataOptions _options;
     void* _convexMesh;
     void* _triangleMesh;
 
 public:
-
     /// <summary>
     /// Gets the options.
     /// </summary>
@@ -189,7 +186,6 @@ public:
     }
 
 public:
-
 #if COMPILE_WITH_PHYSICS_COOKING
 
     /// <summary>
@@ -268,7 +264,6 @@ public:
     API_FUNCTION() void ExtractGeometry(API_PARAM(Out) Array<Float3>& vertexBuffer, API_PARAM(Out) Array<int32>& indexBuffer) const;
 
 public:
-
     // MeshCollider is drawing debug view of the collision data, allow to share it across instances
 #if USE_EDITOR
 private:
@@ -282,11 +277,9 @@ public:
 #endif
 
 private:
-
     LoadResult load(const SerializedOptions* options, byte* dataPtr, int32 dataSize);
 
 protected:
-
     // [BinaryAsset]
     LoadResult load() override;
     void unload(bool isReloading) override;

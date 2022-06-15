@@ -41,9 +41,8 @@ API_ENUM() enum class ChannelMask
 /// </summary>
 API_CLASS() class FLAXENGINE_API GraphParameter : public ScriptingObject
 {
-DECLARE_SCRIPTING_TYPE_WITH_CONSTRUCTOR_IMPL(GraphParameter, ScriptingObject);
+    DECLARE_SCRIPTING_TYPE_WITH_CONSTRUCTOR_IMPL(GraphParameter, ScriptingObject);
 public:
-
     /// <summary>
     /// Parameter type
     /// </summary>
@@ -75,7 +74,6 @@ public:
     VisjectMeta Meta;
 
 public:
-
     /// <summary>
     /// Gets the typename of the parameter type (excluding in-build types).
     /// </summary>

@@ -17,7 +17,6 @@ class Task;
 class FLAXENGINE_API GPUSwapChain : public GPUResource
 {
 protected:
-
     int32 _width = 0;
     int32 _height = 0;
     uint64 _presentCount = 0;
@@ -30,7 +29,6 @@ protected:
     }
 
 public:
-
     /// <summary>
     /// Gets the linked window.
     /// </summary>
@@ -123,7 +121,6 @@ public:
     }
 
 public:
-
     /// <summary>
     /// Creates GPU async task that will gather render target data from the GPU.
     /// </summary>
@@ -132,7 +129,6 @@ public:
     virtual Task* DownloadDataAsync(TextureData& result);
 
 public:
-
     /// <summary>
     /// Begin task rendering.
     /// </summary>
@@ -162,7 +158,6 @@ public:
     virtual bool Resize(int32 width, int32 height) = 0;
 
 public:
-
     // [GPUResource]
     ResourceType GetResourceType() const final override
     {

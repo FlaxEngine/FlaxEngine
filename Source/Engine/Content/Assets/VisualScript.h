@@ -33,7 +33,6 @@ class VisualScriptExecutor : public VisjectExecutor
 {
     friend VisualScripting;
 public:
-
     /// <summary>
     /// Initializes a new instance of the <see cref="VisualScriptExecutor"/> class.
     /// </summary>
@@ -58,12 +57,11 @@ private:
 /// <seealso cref="BinaryAsset" />
 API_CLASS(NoSpawn, Sealed) class FLAXENGINE_API VisualScript : public BinaryAsset
 {
-DECLARE_BINARY_ASSET_HEADER(VisualScript, 1);
+    DECLARE_BINARY_ASSET_HEADER(VisualScript, 1);
     friend VisualScripting;
     friend VisualScriptExecutor;
     friend VisualScriptingBinaryModule;
 public:
-
     /// <summary>
     /// Visual Script flag types.
     /// </summary>
@@ -90,7 +88,7 @@ public:
     /// </summary>
     API_STRUCT() struct Metadata
     {
-    DECLARE_SCRIPTING_TYPE_MINIMAL(Metadata);
+        DECLARE_SCRIPTING_TYPE_MINIMAL(Metadata);
 
         /// <summary>
         /// The base class typename.
@@ -147,7 +145,6 @@ public:
     };
 
 private:
-
     Dictionary<Guid, Instance> _instances;
     ScriptingTypeHandle _scriptingTypeHandle;
     ScriptingTypeHandle _scriptingTypeHandleCached;
@@ -160,7 +157,6 @@ private:
 #endif
 
 public:
-
     /// <summary>
     /// The Visual Script graph.
     /// </summary>
@@ -172,7 +168,6 @@ public:
     API_FIELD(ReadOnly) Metadata Meta;
 
 public:
-
     /// <summary>
     /// Gets the typename of the Visual Script. Identifies it's scripting type.
     /// </summary>
@@ -280,7 +275,6 @@ public:
 #endif
 
 public:
-
     // [BinaryAsset]
 #if USE_EDITOR
     void GetReferences(Array<Guid>& output) const override
@@ -293,14 +287,12 @@ public:
 #endif
 
 protected:
-
     // [BinaryAsset]
     LoadResult load() override;
     void unload(bool isReloading) override;
     AssetChunksFlag getChunksToPreload() const override;
 
 private:
-
     void CacheScriptingType();
 };
 
@@ -312,25 +304,21 @@ class FLAXENGINE_API VisualScriptingBinaryModule : public BinaryModule
 {
     friend VisualScript;
 private:
-
     StringAnsi _name;
 
 public:
-
     /// <summary>
     /// Initializes a new instance of the <see cref="VisualScriptingBinaryModule"/> class.
     /// </summary>
     VisualScriptingBinaryModule();
 
 public:
-
     /// <summary>
     /// The visual script assets loaded into the module with exposes scripting types. Order matches the Types array.
     /// </summary>
     Array<AssetReference<VisualScript>> Scripts;
 
 private:
-
     static ScriptingObject* VisualScriptObjectSpawn(const ScriptingObjectSpawnParams& params);
 #if USE_EDITOR
     void OnScriptsReloading();
@@ -338,7 +326,6 @@ private:
     static void OnEvent(ScriptingObject* object, Span<Variant> parameters, ScriptingTypeHandle eventType, StringView eventName);
 
 public:
-
     // [BinaryModule]
     const StringAnsi& GetName() const override;
     bool IsLoaded() const override;
@@ -363,7 +350,6 @@ public:
 class FLAXENGINE_API VisualScripting
 {
 public:
-
     struct NodeBoxValue
     {
         uint32 NodeId;

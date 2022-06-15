@@ -10,15 +10,13 @@
 /// </summary>
 API_CLASS() class FLAXENGINE_API Ragdoll : public Actor
 {
-DECLARE_SCENE_OBJECT(Ragdoll);
-API_AUTO_SERIALIZATION();
+    DECLARE_SCENE_OBJECT(Ragdoll);
+    API_AUTO_SERIALIZATION();
 private:
-
     AnimatedModel* _animatedModel = nullptr;
     Dictionary<RigidBody*, Transform> _bonesOffsets;
 
 public:
-
     /// <summary>
     /// The default bones weight where 0 means fully animated bone and 1 means fully simulate bones. Can be used to control all bones simulation mode but is overriden by per-bone BonesWeights.
     /// </summary>
@@ -53,7 +51,6 @@ public:
     float MaxDepenetrationVelocity = MAX_float;
 
 public:
-
     /// <summary>
     /// Calculates the total mass of all ragdoll bodies.
     /// </summary>
@@ -70,13 +67,11 @@ public:
     API_FUNCTION() void SetAngularVelocity(const Vector3& value) const;
 
 private:
-
     float InitBone(RigidBody* rigidBody, int32& nodeIndex, Transform& localPose);
     void OnFixedUpdate();
     void OnAnimationUpdating(struct AnimGraphImpulse* localPose);
 
 public:
-
     // [Actor]
     void OnEnable() override;
     void OnDisable() override;

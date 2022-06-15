@@ -26,7 +26,6 @@
 class TextureAssetUpgrader : public BinaryAssetUpgrader
 {
 public:
-
     /// <summary>
     /// Initializes a new instance of the <see cref="TextureAssetUpgrader"/> class.
     /// </summary>
@@ -40,7 +39,6 @@ public:
     }
 
 private:
-
     // ============================================
     //             Versions 1, 2 and 3:
     // Designed: long time ago in a galaxy far far away
@@ -178,10 +176,10 @@ private:
         case PixelFormat::R32G32B32A32_UInt:
         case PixelFormat::R32G32B32A32_SInt:
             return PixelFormatOld::PF_R32G32B32A32;
-            //case PixelFormat::R32G32B32_Typeless: 
-            //case PixelFormat::R32G32B32_Float: 
-            //case PixelFormat::R32G32B32_UInt:
-            //case PixelFormat::R32G32B32_SInt:
+        //case PixelFormat::R32G32B32_Typeless: 
+        //case PixelFormat::R32G32B32_Float: 
+        //case PixelFormat::R32G32B32_UInt:
+        //case PixelFormat::R32G32B32_SInt:
         case PixelFormat::R16G16B16A16_Typeless:
         case PixelFormat::R16G16B16A16_Float:
         case PixelFormat::R16G16B16A16_UNorm:
@@ -231,7 +229,7 @@ private:
         case PixelFormat::D24_UNorm_S8_UInt:
         case PixelFormat::R24_UNorm_X8_Typeless:
             return PixelFormatOld::PF_DepthStencil;
-            //case PixelFormat::X24_Typeless_G8_UInt:
+        //case PixelFormat::X24_Typeless_G8_UInt:
         case PixelFormat::R8G8_Typeless:
         case PixelFormat::R8G8_UNorm:
         case PixelFormat::R8G8_UInt:
@@ -256,9 +254,9 @@ private:
         case PixelFormat::A8_UNorm:
             return PixelFormatOld::PF_A8;
         case PixelFormat::R1_UNorm:
-            //case PixelFormat::R9G9B9E5_Sharedexp:
-            //case PixelFormat::R8G8_B8G8_UNorm:
-            //case PixelFormat::G8R8_G8B8_UNorm:
+        //case PixelFormat::R9G9B9E5_Sharedexp:
+        //case PixelFormat::R8G8_B8G8_UNorm:
+        //case PixelFormat::G8R8_G8B8_UNorm:
         case PixelFormat::BC1_Typeless:
         case PixelFormat::BC1_UNorm:
         case PixelFormat::BC1_UNorm_sRGB:
@@ -281,20 +279,20 @@ private:
             return PixelFormatOld::PF_BC5;
         case PixelFormat::B5G6R5_UNorm:
             return PixelFormatOld::PF_B5G6R5;
-            //case PixelFormat::B5G5R5A1_UNorm:
-            //case PixelFormat::B8G8R8A8_UNorm:
-            //case PixelFormat::B8G8R8X8_UNorm:
-            //case PixelFormat::R10G10B10_Xr_Bias_A2_UNorm:
-            //case PixelFormat::B8G8R8A8_Typeless:
-            //case PixelFormat::B8G8R8A8_UNorm_sRGB:
-            //case PixelFormat::B8G8R8X8_Typeless:
-            //case PixelFormat::B8G8R8X8_UNorm_sRGB:
-            //case PixelFormat::BC6H_Typeless:
-            //case PixelFormat::BC6H_Uf16:
-            //case PixelFormat::BC6H_Sf16:
-            //case PixelFormat::BC7_Typeless:
-            //case PixelFormat::BC7_UNorm:
-            //case PixelFormat::BC7_UNorm_sRGB: 
+        //case PixelFormat::B5G5R5A1_UNorm:
+        //case PixelFormat::B8G8R8A8_UNorm:
+        //case PixelFormat::B8G8R8X8_UNorm:
+        //case PixelFormat::R10G10B10_Xr_Bias_A2_UNorm:
+        //case PixelFormat::B8G8R8A8_Typeless:
+        //case PixelFormat::B8G8R8A8_UNorm_sRGB:
+        //case PixelFormat::B8G8R8X8_Typeless:
+        //case PixelFormat::B8G8R8X8_UNorm_sRGB:
+        //case PixelFormat::BC6H_Typeless:
+        //case PixelFormat::BC6H_Uf16:
+        //case PixelFormat::BC6H_Sf16:
+        //case PixelFormat::BC7_Typeless:
+        //case PixelFormat::BC7_UNorm:
+        //case PixelFormat::BC7_UNorm_sRGB: 
         default:
             break;
         }

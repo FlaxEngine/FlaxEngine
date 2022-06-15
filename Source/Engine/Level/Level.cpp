@@ -59,7 +59,6 @@ enum class SceneEventType
 class SceneAction
 {
 public:
-
     virtual ~SceneAction()
     {
     }
@@ -113,7 +112,6 @@ using namespace LevelImpl;
 class LevelService : public EngineService
 {
 public:
-
     LevelService()
         : EngineService(TEXT("Scene Manager"), 30)
     {
@@ -401,7 +399,6 @@ void Level::CollectPostFxVolumes(RenderContext& renderContext)
 class LoadSceneAction : public SceneAction
 {
 public:
-
     Guid SceneId;
     AssetReference<JsonAsset> SceneAsset;
 
@@ -444,7 +441,6 @@ public:
 class UnloadSceneAction : public SceneAction
 {
 public:
-
     Guid TargetScene;
 
     UnloadSceneAction(Scene* scene)
@@ -464,7 +460,6 @@ public:
 class UnloadScenesAction : public SceneAction
 {
 public:
-
     UnloadScenesAction()
     {
     }
@@ -478,7 +473,6 @@ public:
 class SaveSceneAction : public SceneAction
 {
 public:
-
     Scene* TargetScene;
     bool PrettyJson;
 
@@ -504,7 +498,6 @@ public:
 class ReloadScriptsAction : public SceneAction
 {
 public:
-
     ReloadScriptsAction()
     {
     }
@@ -655,7 +648,6 @@ void Level::ScriptsReloadRegisterObject(ScriptingObject*& obj)
 class SpawnActorAction : public SceneAction
 {
 public:
-
     ScriptingObjectReference<Actor> TargetActor;
     ScriptingObjectReference<Actor> ParentActor;
 
@@ -674,7 +666,6 @@ public:
 class DeleteActorAction : public SceneAction
 {
 public:
-
     ScriptingObjectReference<Actor> TargetActor;
 
     DeleteActorAction(Actor* actor)

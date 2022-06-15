@@ -12,16 +12,14 @@
 /// </summary>
 API_CLASS() class FLAXENGINE_API Decal : public Actor
 {
-DECLARE_SCENE_OBJECT(Decal);
+    DECLARE_SCENE_OBJECT(Decal);
 private:
-
     Vector3 _size;
     OrientedBoundingBox _bounds;
     Matrix _world;
     int32 _sceneRenderingKey = -1;
 
 public:
-
     /// <summary>
     /// The decal material. Must have domain mode to Decal type.
     /// </summary>
@@ -56,7 +54,6 @@ public:
     API_PROPERTY() void SetSize(const Vector3& value);
 
 public:
-
     /// <summary>
     /// Utility to crate a new virtual Material Instance asset, set its parent to the currently applied material, and assign it to the decal. Can be used to modify the decal material parameters from code.
     /// </summary>
@@ -73,7 +70,6 @@ public:
     }
 
 public:
-
     // [Actor]
 #if USE_EDITOR
     void OnDebugDrawSelected() override;
@@ -86,7 +82,6 @@ public:
     bool IntersectsItself(const Ray& ray, Real& distance, Vector3& normal) override;
 
 protected:
-
     // [Actor]
     void OnEnable() override;
     void OnDisable() override;

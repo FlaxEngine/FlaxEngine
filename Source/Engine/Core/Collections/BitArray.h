@@ -15,18 +15,15 @@ API_CLASS(InBuild) class BitArray
     friend BitArray;
 
 public:
-
     typedef uint64 ItemType;
     typedef typename AllocationType::template Data<ItemType> AllocationData;
 
 private:
-
     int32 _count;
     int32 _capacity;
     AllocationData _allocation;
 
 public:
-
     /// <summary>
     /// Initializes a new instance of the <see cref="BitArray"/> class.
     /// </summary>
@@ -119,7 +116,6 @@ public:
     }
 
 public:
-
     /// <summary>
     /// Gets the pointer to the bits storage data (linear allocation).
     /// </summary>
@@ -216,7 +212,6 @@ public:
     }
 
 public:
-
     /// <summary>
     /// Clear the collection without changing its capacity.
     /// </summary>

@@ -33,7 +33,6 @@ struct NavMeshDataHeader
 class NavMeshData
 {
 public:
-
     /// <summary>
     /// The size of the navmesh tile (in world units).
     /// </summary>
@@ -45,7 +44,6 @@ public:
     Array<NavMeshTileData> Tiles;
 
 public:
-
     /// <summary>
     /// Saves the navmesh tiles to the specified stream.
     /// </summary>

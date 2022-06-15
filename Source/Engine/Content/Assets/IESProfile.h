@@ -9,10 +9,9 @@
 /// </summary>
 API_CLASS(NoSpawn) class FLAXENGINE_API IESProfile : public TextureBase
 {
-DECLARE_BINARY_ASSET_HEADER(IESProfile, TexturesSerializedVersion);
+    DECLARE_BINARY_ASSET_HEADER(IESProfile, TexturesSerializedVersion);
 
 public:
-
     struct CustomDataLayout
     {
         float Brightness;
@@ -20,7 +19,6 @@ public:
     };
 
 public:
-
     /// <summary>
     /// The light brightness in Lumens, imported from IES profile.
     /// </summary>
@@ -32,7 +30,6 @@ public:
     API_FIELD() float TextureMultiplier;
 
 protected:
-
     // [BinaryAsset]
     bool init(AssetInitData& initData) override;
 };

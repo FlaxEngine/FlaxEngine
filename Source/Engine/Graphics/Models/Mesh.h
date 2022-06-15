@@ -20,9 +20,8 @@ class GPUBuffer;
 /// </summary>
 API_CLASS(NoSpawn) class FLAXENGINE_API Mesh : public MeshBase
 {
-DECLARE_SCRIPTING_TYPE_WITH_CONSTRUCTOR_IMPL(Mesh, MeshBase);
+    DECLARE_SCRIPTING_TYPE_WITH_CONSTRUCTOR_IMPL(Mesh, MeshBase);
 protected:
-
     bool _hasLightmapUVs;
     GPUBuffer* _vertexBuffers[3] = {};
     GPUBuffer* _indexBuffer = nullptr;
@@ -34,7 +33,6 @@ protected:
     mutable int32 _cachedIndexBufferCount;
 
 public:
-
     Mesh(const Mesh& other)
         : Mesh()
     {
@@ -49,7 +47,6 @@ public:
     ~Mesh();
 
 public:
-
     /// <summary>
     /// Gets the model owning this mesh.
     /// </summary>
@@ -110,7 +107,6 @@ public:
 #endif
 
 public:
-
     /// <summary>
     /// Updates the model mesh (used by the virtual models created with Init rather than Load).
     /// </summary>
@@ -189,7 +185,6 @@ public:
     bool UpdateMesh(uint32 vertexCount, uint32 triangleCount, Float3* vertices, uint32* triangles, Float3* normals = nullptr, Float3* tangents = nullptr, Float2* uvs = nullptr, Color32* colors = nullptr);
 
 public:
-
     /// <summary>
     /// Updates the model mesh index buffer (used by the virtual models created with Init rather than Load).
     /// </summary>
@@ -222,7 +217,6 @@ public:
     bool UpdateTriangles(uint32 triangleCount, void* ib, bool use16BitIndices);
 
 public:
-
     /// <summary>
     /// Initializes instance of the <see cref="Mesh"/> class.
     /// </summary>
@@ -254,7 +248,6 @@ public:
     void Unload();
 
 public:
-
     /// <summary>
     /// Determines if there is an intersection between the mesh and a ray in given world
     /// </summary>
@@ -275,7 +268,6 @@ public:
     }
 
 public:
-
     /// <summary>
     /// Gets the draw call geometry for this mesh. Sets the index and vertex buffers.
     /// </summary>
@@ -375,14 +367,12 @@ public:
     void Draw(const RenderContext& renderContext, const DrawInfo& info, float lodDitherFactor) const;
 
 public:
-
     // [MeshBase]
     bool DownloadDataGPU(MeshBufferType type, BytesContainer& result) const override;
     Task* DownloadDataGPUAsync(MeshBufferType type, BytesContainer& result) const override;
     bool DownloadDataCPU(MeshBufferType type, BytesContainer& result, int32& count) const override;
 
 private:
-
     // Internal bindings
     API_FUNCTION(NoProxy) ScriptingObject* GetParentModel();
 #if !COMPILE_WITHOUT_CSHARP

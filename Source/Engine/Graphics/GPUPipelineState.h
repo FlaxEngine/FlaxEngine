@@ -12,18 +12,17 @@
 /// </summary>
 API_CLASS(Sealed) class FLAXENGINE_API GPUPipelineState : public GPUResource
 {
-DECLARE_SCRIPTING_TYPE_NO_SPAWN(GPUPipelineState);
+    DECLARE_SCRIPTING_TYPE_NO_SPAWN(GPUPipelineState);
     static GPUPipelineState* Spawn(const SpawnParams& params);
     static GPUPipelineState* New();
 
 public:
-
     /// <summary>
     /// Pipeline state description
     /// </summary>
     API_STRUCT() struct Description
     {
-    DECLARE_SCRIPTING_TYPE_NO_SPAWN(Description);
+        DECLARE_SCRIPTING_TYPE_NO_SPAWN(Description);
 
         /// <summary>
         /// Enable/disable depth write
@@ -91,7 +90,6 @@ public:
         API_FIELD() BlendingMode BlendMode;
 
     public:
-
         /// <summary>
         /// Default description
         /// </summary>
@@ -109,11 +107,9 @@ public:
     };
 
 protected:
-
     ShaderBindings _meta;
 
 public:
-
 #if BUILD_DEBUG
     /// <summary>
     /// The description of the pipeline state cached on creation in debug builds. Can be used to help with rendering crashes or issues and validation.
@@ -125,7 +121,6 @@ public:
 #endif
 
 public:
-
     /// <summary>
     /// Gets constant buffers usage mask (each set bit marks usage of the constant buffer at the bit index slot). Combined from all the used shader stages.
     /// </summary>
@@ -151,7 +146,6 @@ public:
     }
 
 public:
-
     /// <summary>
     /// Returns true if pipeline state is valid and ready to use
     /// </summary>

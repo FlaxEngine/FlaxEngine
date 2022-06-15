@@ -322,13 +322,13 @@ API_STRUCT() struct FLAXENGINE_API GlobalIlluminationSettings : ISerializable
     /// </summary>
     API_FIELD(Attributes="EditorOrder(0), PostProcessSetting((int)GlobalIlluminationSettingsOverride.Mode)")
     GlobalIlluminationMode Mode = GlobalIlluminationMode::None;
-    
+
     /// <summary>
     /// Global Illumination indirect lighting intensity scale. Can be used to boost or reduce GI effect.
     /// </summary>
     API_FIELD(Attributes="EditorOrder(10), Limit(0, 10, 0.01f), PostProcessSetting((int)GlobalIlluminationSettingsOverride.Intensity)")
     float Intensity = 1.0f;
-    
+
     /// <summary>
     /// Defines how quickly GI blends between the the current frame and the history buffer. Lower values update GI faster, but with more jittering and noise. If the camera in your game doesn't move much, we recommend values closer to 1.
     /// </summary>

@@ -11,14 +11,12 @@
 /// <seealso cref="Collider" />
 API_CLASS() class FLAXENGINE_API BoxCollider : public Collider
 {
-DECLARE_SCENE_OBJECT(BoxCollider);
+    DECLARE_SCENE_OBJECT(BoxCollider);
 private:
-
     Float3 _size;
     OrientedBoundingBox _bounds;
 
 public:
-
     /// <summary>
     /// Gets the size of the box, measured in the object's local space.
     /// </summary>
@@ -48,7 +46,6 @@ public:
     }
 
 public:
-
     // [Collider]
 #if USE_EDITOR
     void OnDebugDraw() override;
@@ -59,7 +56,6 @@ public:
     void Deserialize(DeserializeStream& stream, ISerializeModifier* modifier) override;
 
 protected:
-
     // [Collider]
     void UpdateBounds() override;
     void GetGeometry(CollisionShape& collision) override;

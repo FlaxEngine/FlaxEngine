@@ -19,9 +19,8 @@ class Task;
 /// </summary>
 API_CLASS(Sealed, NoSpawn) class FLAXENGINE_API GPUTextureView : public GPUResourceView
 {
-DECLARE_SCRIPTING_TYPE_NO_SPAWN(GPUTextureView);
+    DECLARE_SCRIPTING_TYPE_NO_SPAWN(GPUTextureView);
 protected:
-
     GPUResource* _parent = nullptr;
     PixelFormat _format = PixelFormat::Unknown;
     MSAALevel _msaa = MSAALevel::None;
@@ -41,7 +40,6 @@ protected:
     }
 
 public:
-
     /// <summary>
     /// Gets parent GPU resource owning that view.
     /// </summary>
@@ -72,12 +70,11 @@ public:
 /// </summary>
 API_CLASS(Sealed) class FLAXENGINE_API GPUTexture : public GPUResource
 {
-DECLARE_SCRIPTING_TYPE_NO_SPAWN(GPUTexture);
+    DECLARE_SCRIPTING_TYPE_NO_SPAWN(GPUTexture);
     static GPUTexture* Spawn(const SpawnParams& params);
     static GPUTexture* New();
 
 protected:
-
     int32 _residentMipLevels;
     bool _sRGB, _isBlockCompressed;
     GPUTextureDescription _desc;
@@ -88,7 +85,6 @@ protected:
     GPUTexture();
 
 public:
-
     /// <summary>
     /// Gets a value indicating whether this texture has any resided mip (data already uploaded to the GPU).
     /// </summary>
@@ -202,7 +198,6 @@ public:
     }
 
 public:
-
     /// <summary>
     /// Gets a value indicating whether this texture is a render target.
     /// </summary>
@@ -316,7 +311,6 @@ public:
     }
 
 public:
-
     /// <summary>
     /// Gets the texture total size in pixels.
     /// </summary>
@@ -366,7 +360,6 @@ public:
     void GetResidentSize(int32& width, int32& height, int32& depth) const;
 
 public:
-
     /// <summary>
     /// Calculates mip map row pitch (in bytes).
     /// </summary>
@@ -398,7 +391,6 @@ public:
     int32 CalculateMipSize(int32 size, int32 mipLevel) const;
 
 public:
-
     int32 ComputeSubresourceSize(int32 subresource, int32 rowAlign, int32 sliceAlign) const;
     int32 ComputeBufferOffset(int32 subresource, int32 rowAlign, int32 sliceAlign) const;
     int32 ComputeBufferTotalSize(int32 rowAlign, int32 sliceAlign) const;
@@ -406,7 +398,6 @@ public:
     int32 ComputeRowPitch(int32 mipLevel, int32 rowAlign) const;
 
 public:
-
     /// <summary>
     /// Gets the view to the first surface (only for 2D textures).
     /// </summary>
@@ -471,7 +462,6 @@ public:
     }
 
 public:
-
     /// <summary>
     /// Initializes a texture resource (allocates the GPU memory and performs the resource setup).
     /// </summary>
@@ -513,7 +503,6 @@ public:
     API_FUNCTION() bool Resize(int32 width, int32 height, int32 depth);
 
 public:
-
     /// <summary>
     /// Gets the native pointer to the underlying resource. It's a low-level platform-specific handle.
     /// </summary>
@@ -568,27 +557,24 @@ public:
     /// Sets the number of resident mipmap levels in the texture (already uploaded to the GPU).
     /// </summary>
     API_PROPERTY() void SetResidentMipLevels(int32 count);
-    
+
     /// <summary>
     /// Event called when texture residency gets changed. Texture Mip gets loaded into GPU memory and is ready to use.
     /// </summary>
     Delegate<GPUTexture*> ResidentMipsChanged;
 
 protected:
-
     virtual bool OnInit() = 0;
     uint64 calculateMemoryUsage() const;
     virtual void OnResidentMipsChanged() = 0;
 
 public:
-
     // [GPUResource]
     String ToString() const override;
     ResourceType GetResourceType() const final override;
     ObjectType GetObjectType() const final override;
 
 protected:
-
     // [GPUResource]
     void OnReleaseGPU() override;
 };

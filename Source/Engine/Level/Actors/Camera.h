@@ -20,7 +20,7 @@
 /// </summary>
 API_CLASS(Sealed) class FLAXENGINE_API Camera : public Actor
 {
-DECLARE_SCENE_OBJECT(Camera);
+    DECLARE_SCENE_OBJECT(Camera);
 
     // List with all created cameras actors on the scene
     static Array<Camera*> Cameras;
@@ -35,7 +35,6 @@ DECLARE_SCENE_OBJECT(Camera);
     API_PROPERTY() static Camera* GetMainCamera();
 
 private:
-
     Matrix _view, _projection;
     BoundingFrustum _frustum;
 
@@ -56,7 +55,6 @@ private:
 #endif
 
 public:
-
     /// <summary>
     /// Gets the view matrix.
     /// </summary>
@@ -82,7 +80,6 @@ public:
     }
 
 public:
-
     /// <summary>
     /// Gets the value indicating if camera should use perspective rendering mode, otherwise it will use orthographic projection.
     /// </summary>
@@ -174,7 +171,6 @@ public:
     LayersMask RenderLayersMask;
 
 public:
-
     /// <summary>
     /// Projects the point from 3D world-space to game window coordinates (in screen pixels for default viewport calculated from <see cref="Viewport"/>).
     /// </summary>
@@ -231,14 +227,12 @@ public:
 #endif
 
 private:
-
 #if USE_EDITOR
     void OnPreviewModelLoaded();
 #endif
     void UpdateCache();
 
 public:
-
     // [Actor]
 #if USE_EDITOR
     BoundingBox GetEditorBox() const override;
@@ -250,7 +244,6 @@ public:
     void Deserialize(DeserializeStream& stream, ISerializeModifier* modifier) override;
 
 protected:
-
     // [Actor]
     void OnEnable() override;
     void OnDisable() override;

@@ -170,7 +170,6 @@ public:
     }
 
 public:
-    
     /// <summary>
     /// Gets the asset (or null if unassigned).
     /// </summary>

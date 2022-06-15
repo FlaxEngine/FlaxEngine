@@ -86,7 +86,6 @@ API_ENUM() enum class AlphaBlendMode : byte
 class AlphaBlend
 {
 public:
-
     /// <summary>
     /// Converts the input alpha value from a linear 0-1 value into the output alpha described by blend mode.
     /// </summary>

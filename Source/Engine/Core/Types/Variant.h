@@ -78,7 +78,6 @@ API_STRUCT(InBuild) struct FLAXENGINE_API VariantType
     };
 
 public:
-
     /// <summary>
     /// The type of the variant.
     /// </summary>
@@ -90,7 +89,6 @@ public:
     char* TypeName;
 
 public:
-
     FORCE_INLINE VariantType()
     {
         Type = Null;
@@ -116,7 +114,6 @@ public:
     }
 
 public:
-
     VariantType& operator=(const Types& type);
     VariantType& operator=(VariantType&& other);
     VariantType& operator=(const VariantType& other);
@@ -129,7 +126,6 @@ public:
     }
 
 public:
-
     void SetTypeName(const StringView& typeName);
     void SetTypeName(const StringAnsiView& typeName);
     const char* GetTypeName() const;
@@ -179,7 +175,6 @@ API_STRUCT(InBuild) struct FLAXENGINE_API Variant
     };
 
 public:
-
     // 0.0f (floating-point value type)
     static const Variant Zero;
 
@@ -196,7 +191,6 @@ public:
     static const Variant True;
 
 public:
-
     FORCE_INLINE Variant()
     {
     }
@@ -252,7 +246,6 @@ public:
     ~Variant();
 
 public:
-
     Variant& operator=(Variant&& other);
     Variant& operator=(const Variant& other);
     bool operator==(const Variant& other) const;
@@ -279,7 +272,6 @@ public:
     }
 
 public:
-
     explicit operator bool() const;
     explicit operator Char() const;
     explicit operator int8() const;
@@ -293,8 +285,8 @@ public:
     explicit operator float() const;
     explicit operator double() const;
     explicit operator void*() const;
-    explicit operator StringView() const;       // Returned StringView, if not empty, is guaranteed to point to a null terminated buffer.
-    explicit operator StringAnsiView() const;   // Returned StringView, if not empty, is guaranteed to point to a null terminated buffer.
+    explicit operator StringView() const; // Returned StringView, if not empty, is guaranteed to point to a null terminated buffer.
+    explicit operator StringAnsiView() const; // Returned StringView, if not empty, is guaranteed to point to a null terminated buffer.
     explicit operator ScriptingObject*() const;
     explicit operator struct _MonoObject*() const;
     explicit operator Asset*() const;
@@ -346,7 +338,6 @@ public:
     const Array<Variant, HeapAllocation>& AsArray() const;
 
 public:
-
     void SetType(const VariantType& type);
     void SetType(VariantType&& type);
     void SetString(const StringView& str);
@@ -366,7 +357,6 @@ public:
     }
 
 public:
-
     template<typename T>
     static typename TEnableIf<TIsEnum<T>::Value, Variant>::Type Enum(VariantType&& type, const T value)
     {
@@ -393,7 +383,6 @@ public:
     static Variant Lerp(const Variant& a, const Variant& b, float alpha);
 
 private:
-
     void OnObjectDeleted(ScriptingObject* obj)
     {
         AsObject = nullptr;

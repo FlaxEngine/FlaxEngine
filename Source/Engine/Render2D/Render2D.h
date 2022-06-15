@@ -5,6 +5,8 @@
 #include "Engine/Core/Math/Color.h"
 #include "Engine/Scripting/ScriptingType.h"
 #include "Engine/Core/Types/Span.h"
+#include "Engine/Core/Math/Vector2.h"
+#include "Engine/Core/Math/Matrix.h"
 
 struct SpriteHandle;
 struct TextLayoutOptions;
@@ -26,7 +28,7 @@ class TextureBase;
 /// </summary>
 API_CLASS(Static) class FLAXENGINE_API Render2D
 {
-DECLARE_SCRIPTING_TYPE_NO_SPAWN(Render2D);
+    DECLARE_SCRIPTING_TYPE_NO_SPAWN(Render2D);
 
     /// <summary>
     /// The rendering features and options flags.
@@ -44,8 +46,13 @@ DECLARE_SCRIPTING_TYPE_NO_SPAWN(Render2D);
         VertexSnapping = 1,
     };
 
-public:
+    struct CustomData
+    {
+        Matrix ViewProjection;
+        Float2 ViewSize;
+    };
 
+public:
     /// <summary>
     /// Checks if interface is during rendering phrase (Draw calls may be performed without failing).
     /// </summary>
@@ -113,7 +120,6 @@ public:
     static void EndFrame();
 
 public:
-
     /// <summary>
     /// Pushes transformation layer.
     /// </summary>
@@ -167,7 +173,6 @@ public:
     API_FUNCTION() static void PopTint();
 
 public:
-
     /// <summary>
     /// Draws a text.
     /// </summary>

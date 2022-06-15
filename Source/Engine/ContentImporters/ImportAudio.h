@@ -20,7 +20,6 @@
 class ImportAudio
 {
 public:
-
     /// <summary>
     /// Importing audio options
     /// </summary>
@@ -44,14 +43,12 @@ public:
         String ToString() const;
 
     public:
-
         // [ISerializable]
         void Serialize(SerializeStream& stream, const void* otherObj) override;
         void Deserialize(DeserializeStream& stream, ISerializeModifier* modifier) override;
     };
 
 public:
-
     /// <summary>
     /// Tries the get audio import options from the target location asset.
     /// </summary>

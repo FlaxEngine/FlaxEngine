@@ -271,13 +271,11 @@ bool GPUBuffer::DownloadData(BytesContainer& result)
 class BufferDownloadDataTask : public ThreadPoolTask
 {
 private:
-
     BufferReference _buffer;
     GPUBuffer* _staging;
     BytesContainer& _data;
 
 public:
-
     BufferDownloadDataTask(GPUBuffer* buffer, GPUBuffer* staging, BytesContainer& data)
         : _buffer(buffer)
         , _staging(staging)
@@ -291,7 +289,6 @@ public:
     }
 
 public:
-
     // [ThreadPoolTask]
     bool HasReference(Object* resource) const override
     {
@@ -299,7 +296,6 @@ public:
     }
 
 protected:
-
     // [ThreadPoolTask]
     bool Run() override
     {

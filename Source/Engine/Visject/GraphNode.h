@@ -19,7 +19,6 @@ class GraphNode;
 class GraphBox
 {
 public:
-
     /// <summary>
     /// The parent node
     /// </summary>
@@ -41,7 +40,6 @@ public:
     Array<GraphBox*, InlinedAllocation<4>> Connections;
 
 public:
-
     GraphBox()
         : Parent(nullptr)
         , ID(0)
@@ -75,7 +73,6 @@ public:
     }
 
 public:
-
     /// <summary>
     /// Gets the parent node.
     /// </summary>
@@ -101,12 +98,10 @@ template<class BoxType>
 class GraphNode
 {
 public:
-
     typedef BoxType Box;
     typedef GraphNode<BoxType> Node;
 
 public:
-
     /// <summary>
     /// Unique node ID (within a graph).
     /// </summary>
@@ -139,7 +134,6 @@ public:
     VisjectMeta Meta;
 
 public:
-
     GraphNode()
         : ID(0)
         , Type(0)
@@ -154,7 +148,6 @@ public:
     }
 
 public:
-
     /// <summary>
     /// Gets all the valid boxes.
     /// </summary>

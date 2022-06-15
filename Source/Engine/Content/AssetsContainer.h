@@ -12,7 +12,6 @@
 class AssetsContainer : public Array<AssetReference<Asset>>
 {
 public:
-
     /// <summary>
     /// Loads an asset.
     /// </summary>

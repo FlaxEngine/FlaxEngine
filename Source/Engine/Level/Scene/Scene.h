@@ -19,7 +19,7 @@ API_CLASS() class FLAXENGINE_API Scene : public Actor
 {
     friend class Level;
     friend class ReloadScriptsAction;
-DECLARE_SCENE_OBJECT(Scene);
+    DECLARE_SCENE_OBJECT(Scene);
 
     /// <summary>
     /// Finalizes an instance of the <see cref="Scene"/> class.
@@ -27,7 +27,6 @@ DECLARE_SCENE_OBJECT(Scene);
     ~Scene();
 
 public:
-
     /// <summary>
     /// The scene metadata.
     /// </summary>
@@ -80,7 +79,6 @@ public:
     API_PROPERTY() void SetLightmapSettings(const LightmapSettings& value);
 
 public:
-
     /// <summary>
     /// Removes all baked lightmap textures from the scene.
     /// </summary>
@@ -120,7 +118,6 @@ public:
 #endif
 
 private:
-
     MeshCollider* TryGetCsgCollider();
     StaticModel* TryGetCsgModel();
     void CreateCsgCollider();
@@ -132,7 +129,6 @@ private:
 #endif
 
 public:
-
     // [Actor]
     void Serialize(SerializeStream& stream, const void* otherObj) override;
     void Deserialize(DeserializeStream& stream, ISerializeModifier* modifier) override;
@@ -140,7 +136,6 @@ public:
     void EndPlay() override;
 
 protected:
-
     // [Actor]
     void PostLoad() override;
     void PostSpawn() override;

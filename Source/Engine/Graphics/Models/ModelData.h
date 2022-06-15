@@ -18,7 +18,6 @@
 class FLAXENGINE_API MeshData
 {
 public:
-
     /// <summary>
     /// The slot index in the model materials to use during rendering.
     /// </summary>
@@ -92,7 +91,6 @@ public:
     Array<BlendShape> BlendShapes;
 
 public:
-
     /// <summary>
     /// Determines whether this instance has any mesh data.
     /// </summary>
@@ -102,7 +100,6 @@ public:
     }
 
 public:
-
     /// <summary>
     /// Clear arrays
     /// </summary>
@@ -130,7 +127,6 @@ public:
     void Release();
 
 public:
-
     /// <summary>
     /// Init from model vertices array
     /// </summary>
@@ -185,7 +181,6 @@ public:
     void SetIndexBuffer(void* data, uint32 indicesCount);
 
 public:
-
     /// <summary>
     /// Pack mesh data to the stream
     /// </summary>
@@ -213,7 +208,6 @@ public:
     void CalculateSphere(BoundingSphere& result) const;
 
 public:
-
 #if COMPILE_WITH_MODEL_TOOL
 
     /// <summary>
@@ -363,7 +357,6 @@ struct FLAXENGINE_API MaterialSlotEntry
 class FLAXENGINE_API ModelLodData
 {
 public:
-
     /// <summary>
     /// The screen size to switch LODs. Bottom limit of the model screen size to render this LOD.
     /// </summary>
@@ -375,7 +368,6 @@ public:
     Array<MeshData*> Meshes;
 
 public:
-
     /// <summary>
     /// Initializes a new instance of the <see cref="ModelLodData"/> class.
     /// </summary>
@@ -403,7 +395,6 @@ public:
 class FLAXENGINE_API ModelData
 {
 public:
-
     /// <summary>
     /// The minimum screen size to draw model (the bottom limit).
     /// </summary>
@@ -435,7 +426,6 @@ public:
     AnimationData Animation;
 
 public:
-
     /// <summary>
     /// Initializes a new instance of the <see cref="ModelData"/> class.
     /// </summary>
@@ -444,7 +434,6 @@ public:
     }
 
 public:
-
     /// <summary>
     /// Gets the valid level of details count.
     /// </summary>
@@ -464,7 +453,6 @@ public:
     }
 
 public:
-
     /// <summary>
     /// Automatically calculates the screen size for every model LOD for a proper transitions.
     /// </summary>
@@ -477,7 +465,6 @@ public:
     void TransformBuffer(const Matrix& matrix);
 
 public:
-
     /// <summary>
     /// Pack mesh data to the header stream
     /// </summary>

@@ -20,7 +20,7 @@ class Actor;
 /// </summary>
 API_CLASS(Static) class FLAXENGINE_API Particles
 {
-DECLARE_SCRIPTING_TYPE_NO_SPAWN(Particles);
+    DECLARE_SCRIPTING_TYPE_NO_SPAWN(Particles);
 
     /// <summary>
     /// The system for Particles update.
@@ -28,7 +28,6 @@ DECLARE_SCRIPTING_TYPE_NO_SPAWN(Particles);
     API_FIELD(ReadOnly) static TaskGraphSystem* System;
 
 public:
-
     /// <summary>
     /// Updates the effect during next particles simulation tick.
     /// </summary>
@@ -42,7 +41,6 @@ public:
     static void OnEffectDestroy(ParticleEffect* effect);
 
 public:
-
     /// <summary>
     /// Draws the particles.
     /// </summary>
@@ -51,7 +49,6 @@ public:
     static void DrawParticles(RenderContext& renderContext, ParticleEffect* effect);
 
 public:
-
     /// <summary>
     /// Enables or disables particle buffer pooling.
     /// </summary>

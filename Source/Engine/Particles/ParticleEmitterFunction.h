@@ -13,9 +13,8 @@
 /// </summary>
 API_CLASS(NoSpawn) class FLAXENGINE_API ParticleEmitterFunction : public BinaryAsset
 {
-DECLARE_BINARY_ASSET_HEADER(ParticleEmitterFunction, 1);
+    DECLARE_BINARY_ASSET_HEADER(ParticleEmitterFunction, 1);
 public:
-
     /// <summary>
     /// The loaded CPU particle function graph.
     /// </summary>
@@ -79,7 +78,6 @@ public:
 #endif
 
 protected:
-
     // [BinaryAsset]
     LoadResult load() override;
     void unload(bool isReloading) override;

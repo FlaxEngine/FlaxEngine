@@ -15,7 +15,6 @@ struct RenderContext;
 class PostProcessBase
 {
 protected:
-
     bool _isEnabled;
     bool _useSingleTarget;
     PostProcessEffectLocation _location;
@@ -28,7 +27,6 @@ protected:
     }
 
 public:
-
     /// <summary>
     /// Destructor
     /// </summary>
@@ -37,7 +35,6 @@ public:
     }
 
 public:
-
     /// <summary>
     /// Returns true if effect is enabled
     /// </summary>
@@ -101,7 +98,6 @@ public:
     }
 
 public:
-
     /// <summary>
     /// Perform rendering
     /// </summary>
@@ -111,7 +107,6 @@ public:
     virtual void Render(RenderContext& renderContext, GPUTexture* input, GPUTexture* output) = 0;
 
 protected:
-
     virtual void onEnable()
     {
     }

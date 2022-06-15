@@ -16,7 +16,6 @@ class FLAXENGINE_API StreamingTexture : public Object, public StreamableResource
     friend class StreamTextureMipTask;
     friend class StreamTextureResizeTask;
 protected:
-
     ITextureOwner* _owner;
     GPUTexture* _texture;
     TextureHeader _header;
@@ -25,12 +24,10 @@ protected:
     bool _isBlockCompressed;
 
 public:
-
     StreamingTexture(ITextureOwner* owner, const String& name);
     ~StreamingTexture();
 
 public:
-
     /// <summary>
     /// Gets the owner.
     /// </summary>
@@ -125,7 +122,6 @@ public:
     }
 
 public:
-
     /// <summary>
     /// Converts allocated texture mip index to the absolute mip map index.
     /// </summary>
@@ -141,7 +137,6 @@ public:
     int32 TotalIndexToTextureMipIndex(int32 mipIndex) const;
 
 public:
-
     /// <summary>
     /// Creates new texture
     /// </summary>
@@ -162,14 +157,12 @@ public:
     uint64 GetTotalMemoryUsage() const;
 
 public:
-
     FORCE_INLINE GPUTexture* operator->() const
     {
         return _texture;
     }
 
 public:
-
     // [Object]
     String ToString() const override;
 

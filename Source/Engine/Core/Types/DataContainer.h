@@ -15,15 +15,12 @@ template<typename T>
 class DataContainer : public Span<T>
 {
 public:
-
     typedef Span<T> Base;
 
 private:
-
     bool _isAllocated;
 
 public:
-
     /// <summary>
     /// Initializes a new instance of the <see cref="DataContainer"/> class.
     /// </summary>
@@ -129,7 +126,6 @@ public:
     }
 
 public:
-
     /// <summary>
     /// Returns true if data is allocated by container itself, otherwise it's just linked.
     /// </summary>
@@ -339,7 +335,6 @@ public:
     }
 
 public:
-
     template<typename ReadStream>
     void Read(ReadStream* stream, int32 length)
     {

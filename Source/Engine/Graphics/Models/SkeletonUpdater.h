@@ -12,7 +12,6 @@ template<typename T>
 class SkeletonUpdater
 {
 public:
-
     typedef Array<T> Items;
 
     /// <summary>
@@ -43,14 +42,12 @@ public:
     };
 
 public:
-
     /// <summary>
     /// The cached node transformations.
     /// </summary>
     Array<Node> NodeTransformations;
 
 public:
-
     /// <summary>
     /// Initializes a new instance of the <see cref="SkeletonUpdater" /> class.
     /// </summary>
@@ -133,7 +130,6 @@ public:
     }
 
 public:
-
     /// <summary>
     /// Gets the default root node.
     /// </summary>
@@ -149,7 +145,6 @@ public:
     }
 
 private:
-
     void UpdateNode(Node& node)
     {
         // Compute local matrix

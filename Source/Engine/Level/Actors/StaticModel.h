@@ -12,9 +12,8 @@
 /// </summary>
 API_CLASS() class FLAXENGINE_API StaticModel : public ModelInstanceActor
 {
-DECLARE_SCENE_OBJECT(StaticModel);
+    DECLARE_SCENE_OBJECT(StaticModel);
 private:
-
     Matrix _world;
     GeometryDrawStateData _drawState;
     float _scaleInLightmap;
@@ -28,7 +27,6 @@ private:
     Model* _residencyChangedModel = nullptr;
 
 public:
-
     /// <summary>
     /// Finalizes an instance of the <see cref="StaticModel"/> class.
     /// </summary>
@@ -52,7 +50,6 @@ public:
     LightmapEntry Lightmap;
 
 public:
-
     /// <summary>
     /// Gets the model world matrix transform.
     /// </summary>
@@ -180,14 +177,12 @@ public:
     API_FUNCTION() void RemoveVertexColors();
 
 private:
-
     void OnModelChanged();
     void OnModelLoaded();
     void OnModelResidencyChanged();
     void UpdateBounds();
 
 public:
-
     // [ModelInstanceActor]
     bool HasContentLoaded() const override;
     void Draw(RenderContext& renderContext) override;
@@ -198,7 +193,6 @@ public:
     bool IntersectsEntry(const Ray& ray, Real& distance, Vector3& normal, int32& entryIndex) override;
 
 protected:
-
     // [ModelInstanceActor]
     void OnTransformChanged() override;
     void OnEnable() override;

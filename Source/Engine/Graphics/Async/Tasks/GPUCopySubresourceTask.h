@@ -12,13 +12,11 @@
 class GPUCopySubresourceTask : public GPUTask
 {
 private:
-
     GPUResourceReference _srcResource;
     GPUResourceReference _dstResource;
     uint32 _srcSubresource, _dstSubresource;
 
 public:
-
     /// <summary>
     /// Init
     /// </summary>
@@ -38,14 +36,12 @@ public:
     }
 
 private:
-
     void OnResourceUnload(GPUResourceReference* ref)
     {
         Cancel();
     }
 
 public:
-
     // [GPUTask]
     bool HasReference(Object* resource) const override
     {
@@ -53,7 +49,6 @@ public:
     }
 
 protected:
-
     // [GPUTask]
     Result run(GPUTasksContext* context) override
     {

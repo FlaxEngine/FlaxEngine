@@ -480,6 +480,21 @@ void MaterialGenerator::ProcessGroupMaterial(Box* box, Node* node, Value& value)
         value = writeLocal(ValueType::Float3, String::Format(TEXT("float3({0}.x * 360.0f, {0}.y / ({0}.z + {1}), {0}.z)"), hcv.Value, epsilon.Value), node);
         break;
     }
+    // View Size
+    case 39:
+    {
+        const auto layer = GetRootLayer();
+        if (layer && layer->Domain == MaterialDomain::GUI)
+        {
+            value = Value(VariantType::Float2, box->ID == 0 ? TEXT("ViewSize.xy") : TEXT("ViewSize.zw"));
+        }
+        else
+        {
+            // Fallback to Screen Size
+            value = Value(VariantType::Float2, box->ID == 0 ? TEXT("ScreenSize.xy") : TEXT("ScreenSize.zw"));
+        }
+        break;
+    }
     default:
         break;
     }

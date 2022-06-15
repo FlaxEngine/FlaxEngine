@@ -14,14 +14,14 @@ class AnimEvent;
 /// </summary>
 API_CLASS(NoSpawn) class FLAXENGINE_API Animation : public BinaryAsset
 {
-DECLARE_BINARY_ASSET_HEADER(Animation, 1);
+    DECLARE_BINARY_ASSET_HEADER(Animation, 1);
 
     /// <summary>
     /// Contains basic information about the animation asset contents.
     /// </summary>
     API_STRUCT() struct FLAXENGINE_API InfoData
     {
-    DECLARE_SCRIPTING_TYPE_NO_SPAWN(InfoData);
+        DECLARE_SCRIPTING_TYPE_NO_SPAWN(InfoData);
 
         /// <summary>
         /// Length of the animation in seconds.
@@ -62,14 +62,12 @@ DECLARE_BINARY_ASSET_HEADER(Animation, 1);
     };
 
 private:
-    
 #if USE_EDITOR
     bool _registeredForScriptingReload = false;
     void OnScriptsReloadStart();
 #endif
 
 public:
-
     /// <summary>
     /// The animation data.
     /// </summary>
@@ -92,7 +90,6 @@ public:
     Dictionary<SkinnedModel*, NodeToChannel> MappingCache;
 
 public:
-
     /// <summary>
     /// Gets the length of the animation (in seconds).
     /// </summary>
@@ -160,16 +157,13 @@ public:
 #endif
 
 private:
-
     void OnSkinnedModelUnloaded(Asset* obj);
 
 public:
-
     // [BinaryAsset]
     void OnScriptingDispose() override;
 
 protected:
-
     // [BinaryAsset]
     LoadResult load() override;
     void unload(bool isReloading) override;

@@ -12,7 +12,6 @@
 class ImportFont
 {
 public:
-
     /// <summary>
     /// Imports the font file.
     /// </summary>

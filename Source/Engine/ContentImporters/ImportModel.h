@@ -19,11 +19,9 @@
 class ImportModelFile
 {
 public:
-
     typedef ModelTool::Options Options;
 
 public:
-
     /// <summary>
     /// Tries the get model import options from the target location asset.
     /// </summary>
@@ -47,7 +45,6 @@ public:
     static CreateAssetResult Create(CreateAssetContext& context);
 
 private:
-
     static CreateAssetResult ImportModel(CreateAssetContext& context, ModelData& modelData, const Options* options = nullptr);
     static CreateAssetResult ImportSkinnedModel(CreateAssetContext& context, ModelData& modelData, const Options* options = nullptr);
     static CreateAssetResult ImportAnimation(CreateAssetContext& context, ModelData& modelData, const Options* options = nullptr);

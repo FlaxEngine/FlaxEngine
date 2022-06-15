@@ -14,11 +14,9 @@ class FLAXENGINE_API State
     friend StateMachine;
 
 protected:
-
     StateMachine* _parent;
 
 protected:
-
     /// <summary>
     /// Init
     /// </summary>
@@ -31,7 +29,6 @@ protected:
     ~State();
 
 public:
-
     /// <summary>
     /// State's activity
     /// </summary>
@@ -58,7 +55,6 @@ public:
     }
 
 protected:
-
     virtual void enterState()
     {
     }
@@ -76,12 +72,10 @@ class FLAXENGINE_API StateMachine
     friend State;
 
 protected:
-
     State* _currentState;
     Array<State*> _states;
 
 public:
-
     /// <summary>
     /// Init
     /// </summary>
@@ -93,7 +87,6 @@ public:
     virtual ~StateMachine();
 
 public:
-
     /// <summary>
     /// Gets current state
     /// </summary>
@@ -113,7 +106,6 @@ public:
     }
 
 public:
-
     /// <summary>
     /// Go to state
     /// </summary>
@@ -130,6 +122,5 @@ public:
     virtual void GoToState(State* state);
 
 protected:
-
     virtual void switchState(State* nextState);
 };

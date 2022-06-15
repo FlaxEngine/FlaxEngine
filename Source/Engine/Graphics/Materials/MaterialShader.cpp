@@ -112,21 +112,18 @@ MaterialShader* MaterialShader::Create(const StringView& name, MemoryReadStream&
 class DummyMaterial : public MaterialShader
 {
 public:
-
     DummyMaterial()
         : MaterialShader(String::Empty)
     {
     }
 
 public:
-
     // [Material]
     void Bind(BindParameters& params) override
     {
     }
 
 protected:
-
     // [Material]
     bool Load() override
     {

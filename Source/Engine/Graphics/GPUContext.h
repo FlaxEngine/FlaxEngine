@@ -29,7 +29,7 @@ class GPUBufferView;
 /// </summary>
 API_STRUCT() struct GPUDispatchIndirectArgs
 {
-DECLARE_SCRIPTING_TYPE_NO_SPAWN(GPUDispatchIndirectArgs);
+    DECLARE_SCRIPTING_TYPE_NO_SPAWN(GPUDispatchIndirectArgs);
 
     /// <summary>
     /// The X dimension of dispatch size.
@@ -52,7 +52,7 @@ DECLARE_SCRIPTING_TYPE_NO_SPAWN(GPUDispatchIndirectArgs);
 /// </summary>
 API_STRUCT() struct GPUDrawIndirectArgs
 {
-DECLARE_SCRIPTING_TYPE_NO_SPAWN(GPUDrawIndirectArgs);
+    DECLARE_SCRIPTING_TYPE_NO_SPAWN(GPUDrawIndirectArgs);
 
     /// <summary>
     /// The number of vertices to draw for each instance.
@@ -80,7 +80,7 @@ DECLARE_SCRIPTING_TYPE_NO_SPAWN(GPUDrawIndirectArgs);
 /// </summary>
 API_STRUCT() struct GPUDrawIndexedIndirectArgs
 {
-DECLARE_SCRIPTING_TYPE_NO_SPAWN(GPUDrawIndexedIndirectArgs);
+    DECLARE_SCRIPTING_TYPE_NO_SPAWN(GPUDrawIndexedIndirectArgs);
 
     /// <summary>
     /// The number of indices to draw for each instance.
@@ -113,18 +113,15 @@ DECLARE_SCRIPTING_TYPE_NO_SPAWN(GPUDrawIndexedIndirectArgs);
 /// </summary>
 API_CLASS(Sealed, NoSpawn) class FLAXENGINE_API GPUContext : public ScriptingObject
 {
-DECLARE_SCRIPTING_TYPE_NO_SPAWN(GPUContext);
+    DECLARE_SCRIPTING_TYPE_NO_SPAWN(GPUContext);
 private:
-
     GPUDevice* _device;
 
 protected:
-
     double _lastRenderTime = -1;
     GPUContext(GPUDevice* device);
 
 public:
-
     /// <summary>
     /// Gets the graphics device.
     /// </summary>
@@ -134,7 +131,6 @@ public:
     }
 
 public:
-
     /// <summary>
     /// Begins new frame and enters commands collecting mode.
     /// </summary>
@@ -146,7 +142,6 @@ public:
     virtual void FrameEnd();
 
 public:
-
 #if GPU_ALLOW_PROFILE_EVENTS
 
     /// <summary>
@@ -167,7 +162,6 @@ public:
 #endif
 
 public:
-
     /// <summary>
     /// Gets the native pointer to the underlying graphics device context. It's a low-level platform-specific handle.
     /// </summary>
@@ -180,7 +174,6 @@ public:
     virtual bool IsDepthBufferBinded() = 0;
 
 public:
-
     /// <summary>
     /// Clears texture surface with a color. Supports volumetric textures and texture arrays (including cube textures).
     /// </summary>
@@ -224,7 +217,6 @@ public:
     virtual void ClearUA(GPUTexture* texture, const Float4& value) = 0;
 
 public:
-
     /// <summary>
     /// Updates the buffer data.
     /// </summary>
@@ -298,7 +290,6 @@ public:
     API_FUNCTION() virtual void CopySubresource(GPUResource* dstResource, uint32 dstSubresource, GPUResource* srcResource, uint32 srcSubresource) = 0;
 
 public:
-
     /// <summary>
     /// Unbinds all the render targets and flushes the change with the driver (used to prevent driver detection of resource hazards, eg. when down-scaling the texture).
     /// </summary>
@@ -325,7 +316,6 @@ public:
     API_FUNCTION() virtual void SetRenderTarget(GPUTextureView* depthBuffer, const Span<GPUTextureView*>& rts) = 0;
 
 public:
-
     /// <summary>
     /// Unbinds all shader resource slots and flushes the change with the driver (used to prevent driver detection of resource hazards, eg. when down-scaling the texture).
     /// </summary>
@@ -417,7 +407,6 @@ public:
     API_FUNCTION() virtual void BindSampler(int32 slot, GPUSampler* sampler) = 0;
 
 public:
-
     /// <summary>
     /// Updates the constant buffer data.
     /// </summary>
@@ -426,7 +415,6 @@ public:
     API_FUNCTION() virtual void UpdateCB(GPUConstantBuffer* cb, const void* data) = 0;
 
 public:
-
     /// <summary>
     /// Executes a command list from a thread group.
     /// </summary>
@@ -534,7 +522,6 @@ public:
     API_FUNCTION() virtual void DrawIndexedInstancedIndirect(GPUBuffer* bufferForArgs, uint32 offsetForArgs) = 0;
 
 public:
-
     /// <summary>
     /// Sets the rendering viewport and scissor rectangle.
     /// </summary>
@@ -583,7 +570,6 @@ public:
     API_FUNCTION() virtual void SetScissor(API_PARAM(Ref) const Rectangle& scissorRect) = 0;
 
 public:
-
     /// <summary>
     /// Sets the graphics pipeline state.
     /// </summary>

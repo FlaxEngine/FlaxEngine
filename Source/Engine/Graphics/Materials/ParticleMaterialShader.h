@@ -10,7 +10,6 @@
 class ParticleMaterialShader : public MaterialShader
 {
 private:
-
     struct Cache
     {
         PipelineStateCache Default;
@@ -51,7 +50,6 @@ private:
     };
 
 private:
-
     Cache _cacheSprite;
     Cache _cacheModel;
     Cache _cacheRibbon;
@@ -59,7 +57,6 @@ private:
     DrawPass _drawModes = DrawPass::None;
 
 public:
-
     /// <summary>
     /// Init
     /// </summary>
@@ -70,14 +67,12 @@ public:
     }
 
 public:
-
     // [MaterialShader]
     DrawPass GetDrawModes() const override;
     void Bind(BindParameters& params) override;
     void Unload() override;
 
 protected:
-
     // [MaterialShader]
     bool Load() override;
 };

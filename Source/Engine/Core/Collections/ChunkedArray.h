@@ -17,7 +17,6 @@ class ChunkedArray
     friend ChunkedArray;
 
 private:
-
     // TODO: don't use Array but small struct and don't InlinedArray or Chunk* but Chunk (less dynamic allocations)
     typedef Array<T> Chunk;
 
@@ -25,7 +24,6 @@ private:
     Array<Chunk*, InlinedAllocation<32>> _chunks;
 
 public:
-
     ChunkedArray()
     {
     }
@@ -36,7 +34,6 @@ public:
     }
 
 public:
-
     /// <summary>
     /// Gets the amount of the elements in the collection.
     /// </summary>
@@ -70,7 +67,6 @@ public:
     }
 
 public:
-
     // Gets element by index
     FORCE_INLINE T& At(int32 index) const
     {
@@ -93,7 +89,6 @@ public:
     }
 
 public:
-
     /// <summary>
     /// Chunked array iterator.
     /// </summary>
@@ -102,7 +97,6 @@ public:
         friend ChunkedArray;
 
     private:
-
         ChunkedArray* _collection;
         int32 _chunkIndex;
         int32 _index;
@@ -115,7 +109,6 @@ public:
         }
 
     public:
-
         Iterator()
             : _collection(nullptr)
             , _chunkIndex(INVALID_INDEX)
@@ -131,7 +124,6 @@ public:
         }
 
     public:
-
         FORCE_INLINE ChunkedArray* GetChunkedArray() const
         {
             return _collection;
@@ -143,7 +135,6 @@ public:
         }
 
     public:
-
         bool IsEnd() const
         {
             ASSERT(_collection);
@@ -157,7 +148,6 @@ public:
         }
 
     public:
-
         FORCE_INLINE T& operator*() const
         {
             return _collection->_chunks[_chunkIndex]->At(_index);
@@ -169,7 +159,6 @@ public:
         }
 
     public:
-
         FORCE_INLINE bool operator==(const Iterator& v) const
         {
             return _collection == v._collection && _chunkIndex == v._chunkIndex && _index == v._index;
@@ -181,7 +170,6 @@ public:
         }
 
     public:
-
         Iterator& operator++()
         {
             ASSERT(_collection);
@@ -280,7 +268,6 @@ public:
     };
 
 public:
-
     /// <summary>
     /// Adds the specified item to the collection.
     /// </summary>
@@ -482,7 +469,6 @@ public:
     }
 
 public:
-
     Iterator Begin() const
     {
         return Iterator(this, 0);

@@ -17,7 +17,6 @@
 class SimulationEventCallback : public PxSimulationEventCallback
 {
 public:
-
     typedef Pair<PhysicsColliderActor*, PhysicsColliderActor*> CollidersPair;
     typedef Dictionary<CollidersPair, Collision> CollisionsPool;
 
@@ -57,7 +56,6 @@ public:
     Array<Joint*> BrokenJoints;
 
 public:
-
     /// <summary>
     /// Clears the data.
     /// </summary>
@@ -98,7 +96,6 @@ public:
     void OnJointRemoved(Joint* joint);
 
 public:
-
     // [PxSimulationEventCallback]
     void onConstraintBreak(PxConstraintInfo* constraints, PxU32 count) override;
     void onWake(PxActor** actors, PxU32 count) override;

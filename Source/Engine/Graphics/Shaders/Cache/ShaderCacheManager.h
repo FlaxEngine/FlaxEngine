@@ -18,7 +18,6 @@
 class ShaderCacheManager
 {
 public:
-
     struct CachedEntryHandle
     {
         Guid ID = Guid::Empty;
@@ -30,7 +29,6 @@ public:
     };
 
 public:
-
     /// <summary>
     /// Tries to get cached shader entry for a given shader
     /// </summary>

@@ -15,7 +15,7 @@ class Spline;
 /// <seealso cref="Spline" />
 API_CLASS() class FLAXENGINE_API SplineCollider : public Collider
 {
-DECLARE_SCENE_OBJECT(SplineCollider);
+    DECLARE_SCENE_OBJECT(SplineCollider);
 private:
     Spline* _spline = nullptr;
     void* _triangleMesh = nullptr;
@@ -24,7 +24,6 @@ private:
     Transform _preTransform = Transform::Identity;
 
 public:
-
     /// <summary>
     /// Linked collision data asset that contains convex mesh or triangle mesh used to represent a spline collider shape.
     /// </summary>
@@ -50,13 +49,11 @@ public:
     void ExtractGeometry(Array<Float3>& vertexBuffer, Array<int32>& indexBuffer) const;
 
 private:
-
     void OnCollisionDataChanged();
     void OnCollisionDataLoaded();
     void OnSplineUpdated();
 
 public:
-
     // [Collider]
     bool CanAttach(RigidBody* rigidBody) const override;
     bool CanBeTrigger() const override;
@@ -70,7 +67,6 @@ public:
     void EndPlay() override;
 
 protected:
-
     // [Collider]
 #if USE_EDITOR
     void DrawPhysicsDebug(RenderView& view) override;

@@ -12,9 +12,8 @@
 /// </summary>
 API_CLASS() class FLAXENGINE_API SpriteRender : public Actor
 {
-DECLARE_SCENE_OBJECT(SpriteRender);
+    DECLARE_SCENE_OBJECT(SpriteRender);
 private:
-
     Color _color;
     Float2 _size;
     SpriteHandle _sprite;
@@ -26,7 +25,6 @@ private:
     int32 _sceneRenderingKey = -1;
 
 public:
-
     /// <summary>
     /// Gets the size of the sprite.
     /// </summary>
@@ -86,12 +84,10 @@ public:
     DrawPass DrawModes = DrawPass::Default;
 
 private:
-
     void OnMaterialLoaded();
     void SetImage();
 
 public:
-
     // [Actor]
     bool HasContentLoaded() const override;
     void Draw(RenderContext& renderContext) override;
@@ -101,7 +97,6 @@ public:
     void OnEndPlay() override;
 
 protected:
-
     // [Actor]
     void OnEnable() override;
     void OnDisable() override;

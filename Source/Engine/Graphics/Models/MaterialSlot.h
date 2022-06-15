@@ -12,7 +12,7 @@
 /// </summary>
 API_CLASS(NoSpawn) class FLAXENGINE_API MaterialSlot : public ScriptingObject
 {
-DECLARE_SCRIPTING_TYPE_WITH_CONSTRUCTOR_IMPL(MaterialSlot, ScriptingObject);
+    DECLARE_SCRIPTING_TYPE_WITH_CONSTRUCTOR_IMPL(MaterialSlot, ScriptingObject);
 
     /// <summary>
     /// The material to use for rendering.
@@ -30,7 +30,6 @@ DECLARE_SCRIPTING_TYPE_WITH_CONSTRUCTOR_IMPL(MaterialSlot, ScriptingObject);
     API_FIELD() String Name;
 
 public:
-
     MaterialSlot(const MaterialSlot& other)
         : MaterialSlot()
     {

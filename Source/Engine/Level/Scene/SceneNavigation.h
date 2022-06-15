@@ -13,7 +13,6 @@ class NavMeshBoundsVolume;
 class FLAXENGINE_API SceneNavigation
 {
 public:
-
     /// <summary>
     /// The list of registered navigation bounds volumes (on the scene).
     /// </summary>

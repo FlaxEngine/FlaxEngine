@@ -11,9 +11,8 @@
 /// </summary>
 API_INTERFACE(Namespace="FlaxEngine.Networking") class FLAXENGINE_API INetworkDriver
 {
-DECLARE_SCRIPTING_TYPE_MINIMAL(INetworkDriver);
+    DECLARE_SCRIPTING_TYPE_MINIMAL(INetworkDriver);
 public:
-
     /// <summary>
     /// Finalizes an instance of the <see cref="INetworkDriver"/> class.
     /// </summary>
@@ -26,7 +25,7 @@ public:
     {
         return String("Unknown");
     }
-    
+
     /// <summary>
     /// Initializes the instance of this network driver using given configuration.
     /// </summary>
@@ -84,7 +83,7 @@ public:
     /// Do not recycle the message after calling this.
     /// This function automatically recycles the message.
     /// </remarks>
-   API_FUNCTION()  virtual void SendMessage(NetworkChannelType channelType, const NetworkMessage& message) = 0;
+    API_FUNCTION() virtual void SendMessage(NetworkChannelType channelType, const NetworkMessage& message) = 0;
 
     /// <summary>
     /// Sends given message over specified channel to the given client connection (target).

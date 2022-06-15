@@ -10,9 +10,8 @@
 /// </summary>
 API_CLASS() class FLAXENGINE_API NavLink : public Actor
 {
-DECLARE_SCENE_OBJECT(NavLink);
+    DECLARE_SCENE_OBJECT(NavLink);
 public:
-
     /// <summary>
     /// The start location which transform is representing link start position. It is defined in local-space of the actor.
     /// </summary>
@@ -38,11 +37,9 @@ public:
     bool BiDirectional;
 
 private:
-
     void UpdateBounds();
 
 public:
-
     // [Actor]
 #if USE_EDITOR
     void OnDebugDrawSelected() override;
@@ -51,7 +48,6 @@ public:
     void Deserialize(DeserializeStream& stream, ISerializeModifier* modifier) override;
 
 protected:
-
     // [Actor]
     void OnTransformChanged() override;
 };

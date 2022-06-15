@@ -12,9 +12,8 @@
 /// </remarks>
 API_CLASS(NoSpawn) class FLAXENGINE_API Mouse : public InputDevice
 {
-DECLARE_SCRIPTING_TYPE_NO_SPAWN(Mouse);
+    DECLARE_SCRIPTING_TYPE_NO_SPAWN(Mouse);
 public:
-
     /// <summary>
     /// The mouse state.
     /// </summary>
@@ -45,7 +44,6 @@ public:
     };
 
 protected:
-
     State _state;
     State _prevState;
 
@@ -57,7 +55,6 @@ protected:
     }
 
 public:
-
     /// <summary>
     /// Gets the position of the mouse in the screen-space coordinates.
     /// </summary>
@@ -116,7 +113,6 @@ public:
     }
 
 public:
-
     /// <summary>
     /// Sets the mouse position.
     /// </summary>
@@ -175,7 +171,6 @@ public:
     void OnMouseWheel(const Float2& position, float delta, Window* target = nullptr);
 
 public:
-
     // [InputDevice]
     void ResetState() override;
     bool Update(EventQueue& queue) final override;

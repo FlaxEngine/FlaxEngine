@@ -11,7 +11,6 @@
 class FLAXENGINE_API SceneObjectsFactory
 {
 public:
-
     struct PrefabInstance
     {
         Guid RootId;
@@ -60,7 +59,6 @@ public:
     static Actor* CreateActor(int32 typeId, const Guid& id);
 
 public:
-
     struct PrefabSyncData
     {
         friend SceneObjectsFactory;
@@ -117,6 +115,5 @@ public:
     static void SynchronizePrefabInstances(Context& context, PrefabSyncData& data);
 
 private:
-
     static void SynchronizeNewPrefabInstance(Context& context, PrefabSyncData& data, Prefab* prefab, Actor* actor, const Guid& prefabObjectId);
 };

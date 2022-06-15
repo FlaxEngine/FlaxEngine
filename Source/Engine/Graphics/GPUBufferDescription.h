@@ -78,7 +78,7 @@ DECLARE_ENUM_OPERATORS(GPUBufferFlags);
 /// </summary>
 API_STRUCT() struct FLAXENGINE_API GPUBufferDescription
 {
-DECLARE_SCRIPTING_TYPE_MINIMAL(GPUBufferDescription);
+    DECLARE_SCRIPTING_TYPE_MINIMAL(GPUBufferDescription);
 
     /// <summary>
     /// The buffer total size.
@@ -111,7 +111,6 @@ DECLARE_SCRIPTING_TYPE_MINIMAL(GPUBufferDescription);
     API_FIELD() GPUResourceUsage Usage;
 
 public:
-
     /// <summary>
     /// Gets the number elements in the buffer.
     /// </summary>
@@ -137,7 +136,6 @@ public:
     }
 
 public:
-
     /// <summary>
     /// Creates the buffer description.
     /// </summary>
@@ -334,7 +332,6 @@ public:
     }
 
 public:
-
     void Clear();
     GPUBufferDescription ToStagingUpload() const;
     GPUBufferDescription ToStagingReadback() const;
@@ -342,7 +339,6 @@ public:
     String ToString() const;
 
 public:
-
     FORCE_INLINE bool operator==(const GPUBufferDescription& other) const
     {
         return Equals(other);

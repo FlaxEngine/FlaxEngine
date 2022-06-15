@@ -11,7 +11,6 @@
 class FLAXENGINE_API DynamicBuffer
 {
 protected:
-
     GPUBuffer* _buffer;
     String _name;
     uint32 _stride;
@@ -33,7 +32,6 @@ public:
     virtual ~DynamicBuffer();
 
 public:
-
     /// <summary>
     /// The data container (raw bytes storage).
     /// </summary>
@@ -85,7 +83,7 @@ public:
         Data.AddUninitialized(size);
         return Data.Get() + start;
     }
-    
+
     /// <summary>
     /// Allocates bytes in the buffer by resizing the buffer for new memory and returns the pointer to the start of the allocated space.
     /// </summary>
@@ -113,7 +111,6 @@ public:
     void Dispose();
 
 protected:
-
     virtual void InitDesc(GPUBufferDescription& desc, int32 numElements) = 0;
 };
 
@@ -123,7 +120,6 @@ protected:
 class FLAXENGINE_API DynamicVertexBuffer : public DynamicBuffer
 {
 public:
-
     /// <summary>
     /// Init
     /// </summary>
@@ -136,7 +132,6 @@ public:
     }
 
 protected:
-
     // [DynamicBuffer]
     void InitDesc(GPUBufferDescription& desc, int32 numElements) override
     {
@@ -150,7 +145,6 @@ protected:
 class FLAXENGINE_API DynamicIndexBuffer : public DynamicBuffer
 {
 public:
-
     /// <summary>
     /// Init
     /// </summary>
@@ -163,7 +157,6 @@ public:
     }
 
 protected:
-
     // [DynamicBuffer]
     void InitDesc(GPUBufferDescription& desc, int32 numElements) override
     {
@@ -180,7 +173,6 @@ private:
     bool _isUnorderedAccess;
 
 public:
-
     /// <summary>
     /// Init
     /// </summary>
@@ -195,7 +187,6 @@ public:
     }
 
 protected:
-
     // [DynamicBuffer]
     void InitDesc(GPUBufferDescription& desc, int32 numElements) override;
 };
@@ -210,7 +201,6 @@ private:
     bool _isUnorderedAccess;
 
 public:
-
     /// <summary>
     /// Init
     /// </summary>
@@ -221,7 +211,6 @@ public:
     DynamicTypedBuffer(uint32 initialCapacity, PixelFormat format, bool isUnorderedAccess = false, const String& name = String::Empty);
 
 protected:
-
     // [DynamicBuffer]
     void InitDesc(GPUBufferDescription& desc, int32 numElements) override;
 };

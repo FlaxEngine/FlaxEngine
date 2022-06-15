@@ -14,7 +14,6 @@ struct AssetInfo;
 class FLAXENGINE_API JsonStorageProxy
 {
 public:
-
     /// <summary>
     /// Determines whether the specified extension can be a json resource file.
     /// </summary>

@@ -11,9 +11,8 @@
 /// </summary>
 API_CLASS() class FLAXENGINE_API SpotLight : public LightWithShadow
 {
-DECLARE_SCENE_OBJECT(SpotLight);
+    DECLARE_SCENE_OBJECT(SpotLight);
 private:
-
     Vector3 _direction;
     float _radius;
     float _outerConeAngle;
@@ -24,7 +23,6 @@ private:
     int32 _sceneRenderingKey = -1;
 
 public:
-
     /// <summary>
     /// Light source bulb radius
     /// </summary>
@@ -62,7 +60,6 @@ public:
     float IESBrightnessScale = 1.0f;
 
 public:
-
     /// <summary>
     /// Computes light brightness value
     /// </summary>
@@ -122,11 +119,9 @@ public:
     API_PROPERTY() void SetInnerConeAngle(float value);
 
 private:
-
     void UpdateBounds();
 
 public:
-
     // [LightWithShadow]
     void Draw(RenderContext& renderContext) override;
 #if USE_EDITOR
@@ -138,7 +133,6 @@ public:
     bool IntersectsItself(const Ray& ray, Real& distance, Vector3& normal) override;
 
 protected:
-
     // [LightWithShadow]
     void OnEnable() override;
     void OnDisable() override;

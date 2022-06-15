@@ -10,9 +10,8 @@
 /// </summary>
 API_CLASS() class FLAXENGINE_API NavModifierVolume : public BoxVolume
 {
-DECLARE_SCENE_OBJECT(NavModifierVolume);
+    DECLARE_SCENE_OBJECT(NavModifierVolume);
 public:
-
     /// <summary>
     /// The agent types used by this navmesh modifier volume (from navigation settings). Can be used to adjust navmesh for a certain set of agents.
     /// </summary>
@@ -26,20 +25,17 @@ public:
     String AreaName;
 
 public:
-
     /// <summary>
     /// Gets the properties of the nav area used by this volume. Null if missing or invalid area name.
     /// </summary>
     NavAreaProperties* GetNavArea() const;
 
 public:
-
     // [BoxVolume]
     void Serialize(SerializeStream& stream, const void* otherObj) override;
     void Deserialize(DeserializeStream& stream, ISerializeModifier* modifier) override;
 
 protected:
-
     // [BoxVolume]
     void OnBoundsChanged(const BoundingBox& prevBounds) override;
 #if USE_EDITOR

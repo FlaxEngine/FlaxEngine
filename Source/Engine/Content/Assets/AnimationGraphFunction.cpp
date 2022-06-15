@@ -147,7 +147,6 @@ void AnimationGraphFunction::ProcessGraphForSignature(AnimGraphBase* graph, bool
                 p.Type = GetGraphFunctionTypeName_Deprecated(node.Values[0]);
 #endif
                 p.Name = name;
-
             }
         }
         else if (node.Type == GRAPH_NODE_MAKE_TYPE(16, 2)) // Function Output

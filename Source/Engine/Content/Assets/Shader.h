@@ -12,20 +12,17 @@ class GPUShader;
 /// </summary>
 API_CLASS(NoSpawn) class FLAXENGINE_API Shader : public ShaderAssetTypeBase<BinaryAsset>
 {
-DECLARE_BINARY_ASSET_HEADER(Shader, ShadersSerializedVersion);
+    DECLARE_BINARY_ASSET_HEADER(Shader, ShadersSerializedVersion);
 private:
-
     GPUShader* _shader;
 
 public:
-
     /// <summary>
     /// Finalizes an instance of the <see cref="Shader"/> class.
     /// </summary>
     ~Shader();
 
 public:
-
     /// <summary>
     /// The GPU shader object (not null).
     /// </summary>
@@ -40,7 +37,6 @@ public:
     }
 
 protected:
-
     // [BinaryAsset]
     LoadResult load() override;
     void unload(bool isReloading) override;

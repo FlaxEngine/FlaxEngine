@@ -9,7 +9,7 @@
 /// </summary>
 API_CLASS(NoSpawn) class SceneAsset : public JsonAsset
 {
-DECLARE_ASSET_HEADER(SceneAsset);
+    DECLARE_ASSET_HEADER(SceneAsset);
 protected:
     bool IsInternalType() const override;
 };

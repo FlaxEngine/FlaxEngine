@@ -21,7 +21,7 @@ class SceneRenderTask;
 /// </summary>
 API_STRUCT() struct FLAXENGINE_API RenderView
 {
-DECLARE_SCRIPTING_TYPE_MINIMAL(RenderView);
+    DECLARE_SCRIPTING_TYPE_MINIMAL(RenderView);
 
     /// <summary>
     /// The position of the view.
@@ -86,7 +86,6 @@ DECLARE_SCRIPTING_TYPE_MINIMAL(RenderView);
     API_FIELD() BoundingFrustum CullingFrustum;
 
 public:
-
     /// <summary>
     /// The draw passes mask for the current view rendering.
     /// </summary>
@@ -158,7 +157,6 @@ public:
     API_FIELD() LayersMask RenderLayersMask;
 
 public:
-
     /// <summary>
     /// The view information vector with packed components to reconstruct linear depth and view position from the hardware depth buffer. Cached before rendering.
     /// </summary>
@@ -226,7 +224,6 @@ public:
     }
 
 public:
-
     // Set up view with custom params
     // @param viewProjection View * Projection matrix
     void SetUp(const Matrix& viewProjection)
@@ -277,11 +274,9 @@ public:
     void CopyFrom(Camera* camera, Viewport* viewport);
 
 public:
-
     DrawPass GetShadowsDrawPassMask(ShadowsCastingMode shadowsMode) const;
 
 public:
-
     // Camera's View * Projection matrix
     FORCE_INLINE const Matrix& ViewProjection() const
     {

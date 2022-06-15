@@ -14,14 +14,12 @@ class MemoryWriteStream;
 /// </summary>
 API_CLASS(NoSpawn) class FLAXENGINE_API SkeletonMask : public BinaryAsset
 {
-DECLARE_BINARY_ASSET_HEADER(SkeletonMask, 2);
+    DECLARE_BINARY_ASSET_HEADER(SkeletonMask, 2);
 private:
-
     Array<String> _maskedNodes;
     BitArray<> _mask;
 
 public:
-
     /// <summary>
     /// The referenced skinned model skeleton that defines the masked nodes hierarchy.
     /// </summary>
@@ -47,7 +45,6 @@ public:
     }
 
 public:
-
     /// <summary>
     /// Gets the per-skeleton-node boolean mask (read-only).
     /// </summary>
@@ -66,11 +63,9 @@ public:
 #endif
 
 private:
-
     void OnSkeletonUnload();
 
 public:
-
     // [BinaryAsset]
 #if USE_EDITOR
     void GetReferences(Array<Guid>& output) const override
@@ -83,7 +78,6 @@ public:
 #endif
 
 protected:
-
     // [BinaryAsset]
     LoadResult load() override;
     void unload(bool isReloading) override;

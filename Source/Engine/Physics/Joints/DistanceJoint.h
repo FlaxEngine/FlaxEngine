@@ -39,9 +39,8 @@ DECLARE_ENUM_OPERATORS(DistanceJointFlag);
 /// <seealso cref="Joint" />
 API_CLASS() class FLAXENGINE_API DistanceJoint : public Joint
 {
-DECLARE_SCENE_OBJECT(DistanceJoint);
+    DECLARE_SCENE_OBJECT(DistanceJoint);
 private:
-
     DistanceJointFlag _flags;
     float _minDistance;
     float _maxDistance;
@@ -49,7 +48,6 @@ private:
     SpringParameters _spring;
 
 public:
-
     /// <summary>
     /// Gets the joint mode flags. Controls joint behaviour.
     /// </summary>
@@ -139,14 +137,12 @@ public:
     API_PROPERTY() void SetSpringParameters(const SpringParameters& value);
 
 public:
-
     /// <summary>
     /// Gets the current distance of the joint.
     /// </summary>
     API_PROPERTY() float GetCurrentDistance() const;
 
 public:
-
     // [Joint]
 #if USE_EDITOR
     void OnDebugDrawSelected() override;
@@ -155,7 +151,6 @@ public:
     void Deserialize(DeserializeStream& stream, ISerializeModifier* modifier) override;
 
 protected:
-
     // [Joint]
     void* CreateJoint(const PhysicsJointDesc& desc) override;
 };

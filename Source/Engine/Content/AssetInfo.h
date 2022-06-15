@@ -10,7 +10,7 @@
 /// </summary>
 API_STRUCT() struct AssetInfo
 {
-DECLARE_SCRIPTING_TYPE_MINIMAL(AssetInfo);
+    DECLARE_SCRIPTING_TYPE_MINIMAL(AssetInfo);
 
     /// <summary>
     /// Unique ID.
@@ -28,7 +28,6 @@ DECLARE_SCRIPTING_TYPE_MINIMAL(AssetInfo);
     API_FIELD() String Path;
 
 public:
-
     /// <summary>
     /// Initializes a new instance of the <see cref="AssetInfo"/> struct.
     /// </summary>
@@ -51,7 +50,6 @@ public:
     }
 
 public:
-
     /// <summary>
     /// Gets the string.
     /// </summary>

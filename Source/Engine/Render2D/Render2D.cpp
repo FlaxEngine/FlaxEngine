@@ -114,6 +114,8 @@ struct Render2DDrawCall
         struct
         {
             MaterialBase* Mat;
+            float Width;
+            float Height;
         } AsMaterial;
 
         struct
@@ -560,7 +562,6 @@ void CachedPSO::Dispose()
 class Render2DService : public EngineService
 {
 public:
-
     Render2DService()
         : EngineService(TEXT("Render2D"), 10)
     {
@@ -984,7 +985,10 @@ void DrawBatch(int32 startIndex, int32 count)
         // Apply and bind material
         auto material = d.AsChar.Mat;
         MaterialBase::BindParameters bindParams(Context, *(RenderContext*)nullptr);
-        bindParams.CustomData = &ViewProjection;
+        Render2D::CustomData customData;
+        customData.ViewProjection = ViewProjection;
+        customData.ViewSize = Float2(d.AsMaterial.Width, d.AsMaterial.Height);
+        bindParams.CustomData = &customData;
         material->Bind(bindParams);
 
         // Bind font atlas as a material parameter
@@ -1017,7 +1021,10 @@ void DrawBatch(int32 startIndex, int32 count)
         // Bind material
         auto material = (MaterialBase*)d.AsMaterial.Mat;
         MaterialBase::BindParameters bindParams(Context, *(RenderContext*)nullptr);
-        bindParams.CustomData = &ViewProjection;
+        Render2D::CustomData customData;
+        customData.ViewProjection = ViewProjection;
+        customData.ViewSize = Float2(d.AsMaterial.Width, d.AsMaterial.Height);
+        bindParams.CustomData = &customData;
         material->Bind(bindParams);
 
         // Bind index and vertex buffers
@@ -1122,7 +1129,7 @@ void DrawBatch(int32 startIndex, int32 count)
         break;
 #if !BUILD_RELEASE
     default:
-    CRASH;
+        CRASH;
 #endif
     }
 
@@ -1892,6 +1899,8 @@ void Render2D::DrawMaterial(MaterialBase* material, const Rectangle& rect, const
     drawCall.StartIB = IBIndex;
     drawCall.CountIB = 6;
     drawCall.AsMaterial.Mat = material;
+    drawCall.AsMaterial.Width = rect.GetWidth();
+    drawCall.AsMaterial.Height = rect.GetHeight();
     WriteRect(rect, color);
 }
 

@@ -18,7 +18,6 @@ class GPUBuffer;
 class FLAXENGINE_API ParticleSystemParameter : public GraphParameter
 {
 public:
-
     ParticleSystemParameter()
         : GraphParameter(SpawnParams(Guid::New(), TypeInitializer))
     {
@@ -47,7 +46,6 @@ public:
 class FLAXENGINE_API ParticleEmitterInstance
 {
 public:
-
     struct SpawnerData
     {
         /// <summary>
@@ -62,7 +60,6 @@ public:
     };
 
 public:
-
     /// <summary>
     /// The instance data version number. Used to sync the Particle Emitter Graph data with the instance state. Handles Particle Emitter reloads to enure data is valid.
     /// </summary>
@@ -107,7 +104,6 @@ public:
     ParticleBuffer* Buffer = nullptr;
 
 public:
-
     /// <summary>
     /// Initializes a new instance of the <see cref="ParticleEmitterInstance"/> class.
     /// </summary>
@@ -138,7 +134,6 @@ public:
 class FLAXENGINE_API ParticleSystemInstance
 {
 public:
-
     /// <summary>
     /// The instance data version number. Used to sync the Particle System data with the instance state. Handles Particle System reloads to enure data is valid.
     /// </summary>
@@ -170,7 +165,6 @@ public:
     mutable GPUBuffer* GPUParticlesCountReadback = nullptr;
 
 public:
-
     /// <summary>
     /// Finalizes an instance of the <see cref="ParticleSystemInstance"/> class.
     /// </summary>

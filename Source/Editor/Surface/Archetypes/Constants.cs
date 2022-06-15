@@ -1,3 +1,9 @@
+#if USE_LARGE_WORLDS
+using Real = System.Double;
+#else
+using Real = System.Single;
+#endif
+
 // Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 using System;
@@ -682,6 +688,89 @@ namespace FlaxEditor.Surface.Archetypes
                 Size = new Float2(150, 40),
                 DefaultValues = new object[] { typeof(int).FullName, typeof(string).FullName },
                 Elements = new[] { NodeElementArchetype.Factory.Output(0, string.Empty, null, 0) }
+            },
+            new NodeArchetype
+            {
+                TypeID = 15,
+                Title = "Double",
+                Description = "Constant floating point",
+                Flags = NodeFlags.AllGraphs,
+                Size = new Float2(110, 20),
+                DefaultValues = new object[]
+                {
+                    0.0d
+                },
+                Elements = new[]
+                {
+                    NodeElementArchetype.Factory.Output(0, "Value", typeof(double), 0),
+                    NodeElementArchetype.Factory.Float(0, 0, 0)
+                },
+            },
+            new NodeArchetype
+            {
+                TypeID = 16,
+                Title = "Vector2",
+                Description = "Constant Vector2",
+                Flags = NodeFlags.AllGraphs,
+                Size = new Float2(130, 60),
+                DefaultValues = new object[]
+                {
+                    Vector2.Zero
+                },
+                Elements = new[]
+                {
+                    NodeElementArchetype.Factory.Output(0, "Value", typeof(Vector2), 0),
+                    NodeElementArchetype.Factory.Output(1, "X", typeof(Real), 1),
+                    NodeElementArchetype.Factory.Output(2, "Y", typeof(Real), 2),
+                    NodeElementArchetype.Factory.Vector_X(0, 1 * Surface.Constants.LayoutOffsetY, 0),
+                    NodeElementArchetype.Factory.Vector_Y(0, 2 * Surface.Constants.LayoutOffsetY, 0)
+                }
+            },
+            new NodeArchetype
+            {
+                TypeID = 17,
+                Title = "Vector3",
+                Description = "Constant Vector3",
+                Flags = NodeFlags.AllGraphs,
+                Size = new Float2(130, 80),
+                DefaultValues = new object[]
+                {
+                    Vector3.Zero
+                },
+                Elements = new[]
+                {
+                    NodeElementArchetype.Factory.Output(0, "Value", typeof(Vector3), 0),
+                    NodeElementArchetype.Factory.Output(1, "X", typeof(Real), 1),
+                    NodeElementArchetype.Factory.Output(2, "Y", typeof(Real), 2),
+                    NodeElementArchetype.Factory.Output(3, "Z", typeof(Real), 3),
+                    NodeElementArchetype.Factory.Vector_X(0, 1 * Surface.Constants.LayoutOffsetY, 0),
+                    NodeElementArchetype.Factory.Vector_Y(0, 2 * Surface.Constants.LayoutOffsetY, 0),
+                    NodeElementArchetype.Factory.Vector_Z(0, 3 * Surface.Constants.LayoutOffsetY, 0)
+                }
+            },
+            new NodeArchetype
+            {
+                TypeID = 18,
+                Title = "Vector4",
+                Description = "Constant Vector4",
+                Flags = NodeFlags.AllGraphs,
+                Size = new Float2(130, 100),
+                DefaultValues = new object[]
+                {
+                    Vector4.Zero
+                },
+                Elements = new[]
+                {
+                    NodeElementArchetype.Factory.Output(0, "Value", typeof(Vector4), 0),
+                    NodeElementArchetype.Factory.Output(1, "X", typeof(Real), 1),
+                    NodeElementArchetype.Factory.Output(2, "Y", typeof(Real), 2),
+                    NodeElementArchetype.Factory.Output(3, "Z", typeof(Real), 3),
+                    NodeElementArchetype.Factory.Output(4, "W", typeof(Real), 4),
+                    NodeElementArchetype.Factory.Vector_X(0, 1 * Surface.Constants.LayoutOffsetY, 0),
+                    NodeElementArchetype.Factory.Vector_Y(0, 2 * Surface.Constants.LayoutOffsetY, 0),
+                    NodeElementArchetype.Factory.Vector_Z(0, 3 * Surface.Constants.LayoutOffsetY, 0),
+                    NodeElementArchetype.Factory.Vector_W(0, 4 * Surface.Constants.LayoutOffsetY, 0)
+                }
             },
         };
 

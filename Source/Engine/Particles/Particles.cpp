@@ -38,14 +38,12 @@ struct SpriteParticleVertex
 class SpriteParticleRenderer
 {
 public:
-
     GPUBuffer* VB = nullptr;
     GPUBuffer* IB = nullptr;
     const static int32 VertexCount = 4;
     const static int32 IndexCount = 6;
 
 public:
-
     bool Init()
     {
         if (VB)
@@ -120,7 +118,6 @@ namespace ParticlesDrawCPU
 class ParticleManagerService : public EngineService
 {
 public:
-
     ParticleManagerService()
         : EngineService(TEXT("Particle Manager"), 65)
     {
@@ -251,7 +248,7 @@ void DrawEmitterCPU(RenderContext& renderContext, ParticleBuffer* buffer, DrawCa
             }
 #if !BUILD_RELEASE
             default:
-            CRASH;
+                CRASH;
 #endif
             }
 
@@ -406,7 +403,7 @@ void DrawEmitterCPU(RenderContext& renderContext, ParticleBuffer* buffer, DrawCa
 
         switch (module->TypeID)
         {
-            // Sprite Rendering
+        // Sprite Rendering
         case 400:
         {
             const auto material = (MaterialBase*)module->Assets[0].Get();
@@ -420,7 +417,7 @@ void DrawEmitterCPU(RenderContext& renderContext, ParticleBuffer* buffer, DrawCa
 
             break;
         }
-            // Model Rendering
+        // Model Rendering
         case 403:
         {
             const auto model = (Model*)module->Assets[0].Get();
@@ -446,7 +443,7 @@ void DrawEmitterCPU(RenderContext& renderContext, ParticleBuffer* buffer, DrawCa
 
             break;
         }
-            // Ribbon Rendering
+        // Ribbon Rendering
         case 404:
         {
             if (ribbonModulesDrawIndicesCount[ribbonModuleIndex] == 0)
@@ -504,7 +501,7 @@ void DrawEmitterCPU(RenderContext& renderContext, ParticleBuffer* buffer, DrawCa
 
             break;
         }
-            // Volumetric Fog Rendering
+        // Volumetric Fog Rendering
         case 405:
         {
             const auto material = (MaterialBase*)module->Assets[0].Get();
@@ -666,7 +663,7 @@ void DrawEmitterGPU(RenderContext& renderContext, ParticleBuffer* buffer, DrawCa
             }
 #if !BUILD_RELEASE
             default:
-            CRASH;
+                CRASH;
                 return;
 #endif
             }
@@ -691,13 +688,13 @@ void DrawEmitterGPU(RenderContext& renderContext, ParticleBuffer* buffer, DrawCa
         auto module = emitter->Graph.RenderModules[moduleIndex];
         switch (module->TypeID)
         {
-            // Sprite Rendering
+        // Sprite Rendering
         case 400:
         {
             drawCalls++;
             break;
         }
-            // Model Rendering
+        // Model Rendering
         case 403:
         {
             const auto model = (Model*)module->Assets[0].Get();
@@ -717,13 +714,13 @@ void DrawEmitterGPU(RenderContext& renderContext, ParticleBuffer* buffer, DrawCa
 
             break;
         }
-            // Ribbon Rendering
+        // Ribbon Rendering
         case 404:
         {
             // Not supported
             break;
         }
-            // Volumetric Fog Rendering
+        // Volumetric Fog Rendering
         case 405:
         {
             // Not supported
@@ -749,7 +746,7 @@ void DrawEmitterGPU(RenderContext& renderContext, ParticleBuffer* buffer, DrawCa
         auto module = emitter->Graph.RenderModules[moduleIndex];
         switch (module->TypeID)
         {
-            // Sprite Rendering
+        // Sprite Rendering
         case 400:
         {
             GPUDrawIndexedIndirectArgs indirectArgsBufferInitData{ SpriteParticleRenderer::IndexCount, 1, 0, 0, 0 };
@@ -760,7 +757,7 @@ void DrawEmitterGPU(RenderContext& renderContext, ParticleBuffer* buffer, DrawCa
             indirectDrawCallIndex++;
             break;
         }
-            // Model Rendering
+        // Model Rendering
         case 403:
         {
             const auto model = (Model*)module->Assets[0].Get();
@@ -784,13 +781,13 @@ void DrawEmitterGPU(RenderContext& renderContext, ParticleBuffer* buffer, DrawCa
 
             break;
         }
-            // Ribbon Rendering
+        // Ribbon Rendering
         case 404:
         {
             // Not supported
             break;
         }
-            // Volumetric Fog Rendering
+        // Volumetric Fog Rendering
         case 405:
         {
             // Not supported
@@ -809,7 +806,7 @@ void DrawEmitterGPU(RenderContext& renderContext, ParticleBuffer* buffer, DrawCa
 
         switch (module->TypeID)
         {
-            // Sprite Rendering
+        // Sprite Rendering
         case 400:
         {
             const auto material = (MaterialBase*)module->Assets[0].Get();
@@ -826,7 +823,7 @@ void DrawEmitterGPU(RenderContext& renderContext, ParticleBuffer* buffer, DrawCa
 
             break;
         }
-            // Model Rendering
+        // Model Rendering
         case 403:
         {
             const auto model = (Model*)module->Assets[0].Get();
@@ -855,13 +852,13 @@ void DrawEmitterGPU(RenderContext& renderContext, ParticleBuffer* buffer, DrawCa
 
             break;
         }
-            // Ribbon Rendering
+        // Ribbon Rendering
         case 404:
         {
             // Not supported
             break;
         }
-            // Volumetric Fog Rendering
+        // Volumetric Fog Rendering
         case 405:
         {
             // Not supported
@@ -921,7 +918,7 @@ void Particles::DrawParticles(RenderContext& renderContext, ParticleEffect* effe
 
             switch (module->TypeID)
             {
-                // Sprite Rendering
+            // Sprite Rendering
             case 400:
             {
                 const auto material = (MaterialBase*)module->Assets[0].Get();
@@ -935,7 +932,7 @@ void Particles::DrawParticles(RenderContext& renderContext, ParticleEffect* effe
                 renderModulesIndices.Add(moduleIndex);
                 break;
             }
-                // Model Rendering
+            // Model Rendering
             case 403:
             {
                 const auto model = (Model*)module->Assets[0].Get();
@@ -954,7 +951,7 @@ void Particles::DrawParticles(RenderContext& renderContext, ParticleEffect* effe
                 renderModulesIndices.Add(moduleIndex);
                 break;
             }
-                // Ribbon Rendering
+            // Ribbon Rendering
             case 404:
             {
                 const auto material = (MaterialBase*)module->Assets[0].Get();
@@ -968,7 +965,7 @@ void Particles::DrawParticles(RenderContext& renderContext, ParticleEffect* effe
                 renderModulesIndices.Add(moduleIndex);
                 break;
             }
-                // Volumetric Fog Rendering
+            // Volumetric Fog Rendering
             case 405:
             {
                 const auto material = (MaterialBase*)module->Assets[0].Get();

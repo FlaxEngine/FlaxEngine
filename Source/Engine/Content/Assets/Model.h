@@ -13,16 +13,14 @@ class StreamModelLODTask;
 /// </summary>
 API_CLASS(NoSpawn) class FLAXENGINE_API Model : public ModelBase
 {
-DECLARE_BINARY_ASSET_HEADER(Model, 25);
+    DECLARE_BINARY_ASSET_HEADER(Model, 25);
     friend Mesh;
     friend StreamModelLODTask;
 private:
-
     int32 _loadedLODs = 0;
     StreamModelLODTask* _streamingTask = nullptr;
 
 public:
-
     /// <summary>
     /// Model level of details. The first entry is the highest quality LOD0 followed by more optimized versions.
     /// </summary>
@@ -34,14 +32,12 @@ public:
     API_FIELD(ReadOnly) SDFData SDF;
 
 public:
-
     /// <summary>
     /// Finalizes an instance of the <see cref="Model"/> class.
     /// </summary>
     ~Model();
 
 public:
-
     /// <summary>
     /// Gets a value indicating whether this instance is initialized. 
     /// </summary>
@@ -103,7 +99,6 @@ public:
     }
 
 public:
-
     /// <summary>
     /// Requests the LOD data asynchronously (creates task that will gather chunk data or null if already here).
     /// </summary>
@@ -127,7 +122,6 @@ public:
     }
 
 public:
-
     /// <summary>
     /// Determines if there is an intersection between the Model and a Ray in given world using given instance.
     /// </summary>
@@ -156,7 +150,6 @@ public:
     API_FUNCTION() BoundingBox GetBox(int32 lodIndex = 0) const;
 
 public:
-
     /// <summary>
     /// Draws the meshes. Binds vertex and index buffers and invokes the draw calls.
     /// </summary>
@@ -185,7 +178,6 @@ public:
     void Draw(const RenderContext& renderContext, const Mesh::DrawInfo& info);
 
 public:
-
     /// <summary>
     /// Setups the model LODs collection including meshes creation.
     /// </summary>
@@ -205,7 +197,7 @@ public:
     API_FUNCTION() bool Save(bool withMeshDataFromGpu = false, const StringView& path = StringView::Empty);
 
 #endif
-    
+
     /// <summary>
     /// Generates the Sign Distant Field for this model.
     /// </summary>
@@ -223,7 +215,6 @@ public:
     API_FUNCTION() void SetSDF(const SDFData& sdf);
 
 private:
-
     /// <summary>
     /// Initializes this model to an empty collection of LODs with meshes.
     /// </summary>
@@ -232,7 +223,6 @@ private:
     bool Init(const Span<int32>& meshesCountPerLod);
 
 public:
-
     // [ModelBase]
     void SetupMaterialSlots(int32 slotsCount) override;
     int32 GetLODsCount() const override;
@@ -251,7 +241,6 @@ public:
     Task* CreateStreamingTask(int32 residency) override;
 
 protected:
-
     // [ModelBase]
     LoadResult load() override;
     void unload(bool isReloading) override;

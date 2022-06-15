@@ -11,7 +11,7 @@
 /// </summary>
 API_STRUCT() struct RenderStatsData
 {
-DECLARE_SCRIPTING_TYPE_MINIMAL(RenderStatsData);
+    DECLARE_SCRIPTING_TYPE_MINIMAL(RenderStatsData);
 
     /// <summary>
     /// The draw calls count.

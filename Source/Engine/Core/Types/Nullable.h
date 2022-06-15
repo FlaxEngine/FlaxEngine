@@ -11,12 +11,10 @@ template<typename T>
 struct NullableBase
 {
 protected:
-
     bool _hasValue;
     T _value;
 
 public:
-
     /// <summary>
     /// Initializes a new instance of the <see cref="NullableBase{T}"/> struct.
     /// </summary>
@@ -46,7 +44,6 @@ public:
     }
 
 public:
-
     /// <summary>
     /// Gets a value indicating whether the current NullableBase{T} object has a valid value of its underlying type.
     /// </summary>
@@ -95,7 +92,6 @@ public:
     }
 
 public:
-
     /// <summary>
     /// Indicates whether the current NullableBase{T} object is equal to a specified object.
     /// </summary>
@@ -129,7 +125,6 @@ template<typename T>
 struct Nullable : NullableBase<T>
 {
 public:
-
     /// <summary>
     /// Initializes a new instance of the <see cref="Nullable{T}"/> struct.
     /// </summary>
@@ -164,7 +159,6 @@ template<>
 struct Nullable<bool> : NullableBase<bool>
 {
 public:
-
     /// <summary>
     /// Initializes a new instance of the <see cref="Nullable{T}"/> struct.
     /// </summary>
@@ -192,7 +186,6 @@ public:
     }
 
 public:
-
     /// <summary>
     /// Gets a value indicating whether the current Nullable{T} object has a valid value and it's set to true.
     /// </summary>

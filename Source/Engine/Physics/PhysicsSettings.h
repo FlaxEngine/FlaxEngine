@@ -11,9 +11,8 @@
 /// </summary>
 API_CLASS(sealed, Namespace="FlaxEditor.Content.Settings", NoConstructor) class FLAXENGINE_API PhysicsSettings : public SettingsBase
 {
-DECLARE_SCRIPTING_TYPE_MINIMAL(PhysicsSettings);
+    DECLARE_SCRIPTING_TYPE_MINIMAL(PhysicsSettings);
 public:
-
     /// <summary>
     /// The default gravity force value (in cm^2/s).
     /// </summary>
@@ -93,14 +92,12 @@ public:
     bool SupportCookingAtRuntime = false;
 
 public:
-
     /// <summary>
     /// The collision layers masks. Used to define layer-based collision detection.
     /// </summary>
     uint32 LayerMasks[32];
 
 public:
-
     /// <summary>
     /// Initializes a new instance of the <see cref="PhysicsSettings"/> class.
     /// </summary>

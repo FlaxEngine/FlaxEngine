@@ -17,15 +17,14 @@
 /// </summary>
 API_CLASS(Static) class FLAXENGINE_API ProfilerCPU
 {
-DECLARE_SCRIPTING_TYPE_NO_SPAWN(ProfilerCPU);
+    DECLARE_SCRIPTING_TYPE_NO_SPAWN(ProfilerCPU);
 public:
-
     /// <summary>
     /// Represents single CPU profiling event data.
     /// </summary>
     API_STRUCT() struct Event
     {
-    DECLARE_SCRIPTING_TYPE_MINIMAL(Event);
+        DECLARE_SCRIPTING_TYPE_MINIMAL(Event);
 
         /// <summary>
         /// The start time (in milliseconds).
@@ -61,7 +60,6 @@ public:
     class EventBuffer : public NonCopyable
     {
     private:
-
         Event* _data;
         int32 _capacity;
         int32 _capacityMask;
@@ -69,12 +67,10 @@ public:
         int32 _count;
 
     public:
-
         EventBuffer();
         ~EventBuffer();
 
     public:
-
         /// <summary>
         /// Gets the amount of the events in the buffer.
         /// </summary>
@@ -90,7 +86,7 @@ public:
         /// <returns>The event</returns>
         Event& Get(int32 index) const
         {
-            ASSERT(index >= 0 && index < _capacity);
+            ASSERT_LOW_LAYER(index >= 0 && index < _capacity);
             return _data[index];
         }
 
@@ -114,7 +110,6 @@ public:
         void Extract(Array<Event, HeapAllocation>& data, bool withRemove);
 
     public:
-
         /// <summary>
         /// Ring buffer iterator
         /// </summary>
@@ -123,7 +118,6 @@ public:
             friend EventBuffer;
 
         private:
-
             EventBuffer* _buffer;
             int32 _index;
 
@@ -136,7 +130,6 @@ public:
             Iterator(const Iterator& i) = default;
 
         public:
-
             FORCE_INLINE int32 Index() const
             {
                 return _index;
@@ -144,31 +137,21 @@ public:
 
             FORCE_INLINE Event& Event() const
             {
-                ASSERT(_buffer && _index >= 0 && _index < _buffer->_capacity);
+                ASSERT_LOW_LAYER(_buffer && _index >= 0 && _index < _buffer->_capacity);
                 return _buffer->Get(_index);
             }
 
-        public:
-
-            /// <summary>
-            /// Checks if iterator is in the end of the collection.
-            /// </summary>
             bool IsEnd() const
             {
-                ASSERT(_buffer);
+                ASSERT_LOW_LAYER(_buffer);
                 return _index == _buffer->_head;
             }
 
-            /// <summary>
-            /// Checks if iterator is not in the end of the collection.
-            /// </summary>
             bool IsNotEnd() const
             {
-                ASSERT(_buffer);
+                ASSERT_LOW_LAYER(_buffer);
                 return _index != _buffer->_head;
             }
-
-        public:
 
             FORCE_INLINE bool operator==(const Iterator& v) const
             {
@@ -181,7 +164,6 @@ public:
             }
 
         public:
-
             Iterator& operator++()
             {
                 ASSERT(_buffer);
@@ -214,7 +196,6 @@ public:
         };
 
     public:
-
         FORCE_INLINE Iterator Begin()
         {
             return Iterator(this, (_head - _count) & _capacityMask);
@@ -238,12 +219,10 @@ public:
     class Thread
     {
     private:
-
         String _name;
         int32 _depth = 0;
 
     public:
-
         Thread(const Char* name)
         {
             _name = name;
@@ -255,14 +234,12 @@ public:
         }
 
     public:
-
         /// <summary>
         /// The current thread.
         /// </summary>
         static THREADLOCAL Thread* Current;
 
     public:
-
         /// <summary>
         /// Gets the name.
         /// </summary>
@@ -277,7 +254,6 @@ public:
         EventBuffer Buffer;
 
     public:
-
         /// <summary>
         /// Begins the event running on a this thread. Call EndEvent with index parameter equal to the returned value by BeginEvent function.
         /// </summary>
@@ -297,7 +273,6 @@ public:
     };
 
 public:
-
     /// <summary>
     /// The registered threads.
     /// </summary>
@@ -309,7 +284,6 @@ public:
     static bool Enabled;
 
 public:
-
     /// <summary>
     /// Determines whether the current (calling) thread is being profiled by the service (it may has no active profile block but is registered).
     /// </summary>

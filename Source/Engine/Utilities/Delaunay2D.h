@@ -12,7 +12,6 @@
 class Delaunay2D
 {
 public:
-
     struct Triangle
     {
         int32 Indices[3];
@@ -125,7 +124,6 @@ public:
     }
 
 private:
-
     struct Edge
     {
         int32 Indices[2];

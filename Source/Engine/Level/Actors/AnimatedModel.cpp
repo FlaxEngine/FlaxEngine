@@ -693,9 +693,9 @@ void AnimatedModel::Update()
 void AnimatedModel::Draw(RenderContext& renderContext)
 {
     if (renderContext.View.Pass == DrawPass::GlobalSDF)
-        return;  // TODO: Animated Model rendering to Global SDF
+        return; // TODO: Animated Model rendering to Global SDF
     if (renderContext.View.Pass == DrawPass::GlobalSurfaceAtlas)
-        return;  // No supported
+        return; // No supported
     GEOMETRY_DRAW_STATE_EVENT_BEGIN(_drawState, _world);
 
     const DrawPass drawModes = (DrawPass)(DrawModes & renderContext.View.Pass & (int32)renderContext.View.GetShadowsDrawPassMask(ShadowsMode));

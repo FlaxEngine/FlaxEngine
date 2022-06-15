@@ -376,7 +376,7 @@ bool DynamicDiffuseGlobalIlluminationPass::Render(RenderContext& renderContext, 
         LOG(Info, "Dynamic Diffuse Global Illumination memory usage: {0} MB, probes: {1}", memUsage / 1024 / 1024, probesCountTotal);
         clear = true;
     }
-#if USE_EDITOR
+#if COMPILE_WITH_DEV_ENV
     clear |= ddgiData.LastFrameUsed <= LastFrameShaderReload;
 #endif
     if (clear)

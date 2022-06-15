@@ -23,14 +23,12 @@ template<class NodeType, class BoxType, class ParameterType>
 class Graph
 {
 public:
-
     typedef Graph<NodeType, BoxType, ParameterType> GraphType;
     typedef NodeType Node;
     typedef BoxType Box;
     typedef ParameterType Parameter;
 
 private:
-
     struct TmpConnectionHint
     {
         Node* Node;
@@ -56,7 +54,6 @@ public:
     VisjectMeta Meta;
 
 public:
-
     /// <summary>
     /// Initializes a new instance of the <see cref="Graph"/> class.
     /// </summary>
@@ -72,7 +69,6 @@ public:
     }
 
 public:
-
     /// <summary>
     /// Save graph to the stream
     /// </summary>
@@ -456,7 +452,6 @@ public:
     }
 
 public:
-
     /// <summary>
     /// Find node by ID
     /// </summary>
@@ -528,7 +523,6 @@ public:
     }
 
 public:
-
 #if USE_EDITOR
 
     /// <summary>
@@ -561,7 +555,6 @@ public:
 #endif
 
 protected:
-
     virtual bool onNodeCreated(Node* n)
     {
         return false;

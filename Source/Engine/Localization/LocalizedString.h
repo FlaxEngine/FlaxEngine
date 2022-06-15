@@ -10,7 +10,7 @@
 /// </summary>
 API_CLASS(Sealed) class FLAXENGINE_API LocalizedString
 {
-DECLARE_SCRIPTING_TYPE_MINIMAL(LocalizedString);
+    DECLARE_SCRIPTING_TYPE_MINIMAL(LocalizedString);
 public:
     /// <summary>
     /// The localized string identifier. Used to lookup text value for a current language (via <see cref="Localization::GetString"/>).

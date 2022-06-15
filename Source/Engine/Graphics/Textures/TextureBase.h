@@ -14,7 +14,7 @@ class TextureMipData;
 /// <seealso cref="FlaxEngine.BinaryAsset" />
 API_CLASS(Abstract, NoSpawn) class FLAXENGINE_API TextureBase : public BinaryAsset, public ITextureOwner
 {
-DECLARE_ASSET_HEADER(TextureBase);
+    DECLARE_ASSET_HEADER(TextureBase);
     static const uint32 TexturesSerializedVersion = 4;
 
     /// <summary>
@@ -48,13 +48,11 @@ DECLARE_ASSET_HEADER(TextureBase);
     };
 
 protected:
-
     StreamingTexture _texture;
     InitData* _customData;
     BinaryAsset* _parent;
 
 public:
-
     /// <summary>
     /// Gets the streaming texture object handle.
     /// </summary>
@@ -124,7 +122,7 @@ public:
     /// Gets the total memory usage that texture may have in use (if loaded to the maximum quality). Exact value may differ due to memory alignment and resource allocation policy.
     /// </summary>
     API_PROPERTY() uint64 GetTotalMemoryUsage() const;
-    
+
     /// <summary>
     /// Gets the index of the texture group used by this texture.
     /// </summary>
@@ -136,7 +134,6 @@ public:
     API_PROPERTY() void SetTextureGroup(int32 textureGroup);
 
 public:
-
     /// <summary>
     /// Gets the mip data.
     /// </summary>
@@ -214,16 +211,13 @@ public:
     bool Init(InitData* initData);
 
 protected:
-
     virtual int32 CalculateChunkIndex(int32 mipIndex) const;
 
 private:
-
     // Internal bindings
     API_FUNCTION(NoProxy) bool Init(void* ptr);
 
 public:
-
     // [ITextureOwner]
     CriticalSection& GetOwnerLocker() const override;
     Task* RequestMipDataAsync(int32 mipIndex) override;
@@ -233,7 +227,6 @@ public:
     bool GetMipDataCustomPitch(int32 mipIndex, uint32& rowPitch, uint32& slicePitch) const override;
 
 protected:
-
     // [BinaryAsset]
     bool init(AssetInitData& initData) override;
     LoadResult load() override;

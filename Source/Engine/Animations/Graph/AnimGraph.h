@@ -167,7 +167,6 @@ enum class RootMotionMode
 class AnimGraphStateTransition
 {
 public:
-
     /// <summary>
     /// The transition flag types.
     /// </summary>
@@ -195,7 +194,6 @@ public:
     };
 
 public:
-
     /// <summary>
     /// The destination state node.
     /// </summary>
@@ -230,9 +228,8 @@ DECLARE_ENUM_OPERATORS(AnimGraphStateTransition::FlagTypes);
 /// <seealso cref="GraphParameter" />
 API_CLASS() class AnimGraphParameter : public VisjectGraphParameter
 {
-DECLARE_SCRIPTING_TYPE_WITH_CONSTRUCTOR_IMPL(AnimGraphParameter, VisjectGraphParameter);
+    DECLARE_SCRIPTING_TYPE_WITH_CONSTRUCTOR_IMPL(AnimGraphParameter, VisjectGraphParameter);
 public:
-
     AnimGraphParameter(const AnimGraphParameter& other)
         : AnimGraphParameter()
     {
@@ -271,7 +268,6 @@ class FLAXENGINE_API AnimGraphInstanceData
 {
     friend AnimGraphExecutor;
 public:
-
     // ---- Quick documentation ----
     // AnimGraphInstanceData holds a single animation graph instance playback data.
     // It has parameters (the same layout as graph) that can be modified per instance (eg. by game scripts).
@@ -335,7 +331,6 @@ public:
     };
 
 public:
-
     /// <summary>
     /// The instance data version number. Used to sync the Anim Graph data with the instance state. Handles Anim Graph reloads to ensure data is valid.
     /// </summary>
@@ -392,7 +387,6 @@ public:
     Array<AnimGraphSlot, InlinedAllocation<4>> Slots;
 
 public:
-
     /// <summary>
     /// Clears this container data.
     /// </summary>
@@ -409,7 +403,6 @@ public:
     void Invalidate();
 
 private:
-
     struct Event
     {
         AnimEvent* Instance;
@@ -433,7 +426,6 @@ struct AnimGraphTransitionData
 class AnimGraphBox : public VisjectGraphBox
 {
 public:
-
     AnimGraphBox()
     {
     }
@@ -452,7 +444,6 @@ public:
 class AnimGraphNode : public VisjectGraphNode<AnimGraphBox>
 {
 public:
-
     struct MultiBlend1DData
     {
         /// <summary>
@@ -575,7 +566,6 @@ public:
     };
 
 public:
-
     /// <summary>
     /// The animation graph.
     /// </summary>
@@ -592,13 +582,11 @@ public:
     AdditionalData Data;
 
 public:
-
     AnimGraphNode()
     {
     }
 
 public:
-
     /// <summary>
     /// Gets the per-node node transformations cache (cached).
     /// </summary>
@@ -614,7 +602,6 @@ public:
 class AnimGraphBase : public VisjectGraph<AnimGraphNode, AnimGraphBox, AnimGraphParameter>
 {
 protected:
-
     AnimGraph* _graph;
     Node* _rootNode = nullptr;
 
@@ -624,7 +611,6 @@ protected:
     }
 
 public:
-
     /// <summary>
     /// The sub graphs nested in this graph.
     /// </summary>
@@ -651,7 +637,6 @@ public:
     int32 BucketsCountTotal;
 
 public:
-
     /// <summary>
     /// Finalizes an instance of the <see cref="AnimGraphBase"/> class.
     /// </summary>
@@ -661,7 +646,6 @@ public:
     }
 
 public:
-
     /// <summary>
     /// Gets the root node of the graph (cache don load).
     /// </summary>
@@ -680,7 +664,6 @@ public:
     AnimSubGraph* LoadSubGraph(const void* data, int32 dataLength, const Char* name);
 
 public:
-
     // [Graph]
     bool Load(ReadStream* stream, bool loadMeta) override;
     void Clear() override;
@@ -689,7 +672,6 @@ public:
 #endif
 
 protected:
-
     // [Graph]
     bool onNodeLoaded(Node* n) override;
 };
@@ -707,7 +689,6 @@ class AnimSubGraph : public AnimGraphBase
     friend AnimGraphParameter;
 
 public:
-
     /// <summary>
     /// Initializes a new instance of the <see cref="AnimSubGraph" /> class.
     /// </summary>
@@ -730,7 +711,6 @@ class AnimGraph : public AnimGraphBase
     friend AnimGraphExecutor;
 
 private:
-
     typedef void (*InitBucketHandler)(AnimGraphInstanceData::Bucket&);
 
     bool _isFunction, _isRegisteredForScriptingEvents;
@@ -740,7 +720,6 @@ private:
     Asset* _owner;
 
 public:
-
     /// <summary>
     /// Initializes a new instance of the <see cref="AnimGraph"/> class.
     /// </summary>
@@ -758,7 +737,6 @@ public:
     ~AnimGraph();
 
 public:
-
     /// <summary>
     /// The Anim Graph data version number. Used to sync the Anim Graph data with the instances state. Handles Anim Graph reloads to ensure data is valid.
     /// </summary>
@@ -773,7 +751,6 @@ public:
     AssetReference<SkinnedModel> BaseModel;
 
 public:
-
     /// <summary>
     /// Determines whether this graph is ready for the animation evaluation.
     /// </summary>
@@ -787,7 +764,6 @@ public:
     bool CanUseWithSkeleton(SkinnedModel* other) const;
 
 private:
-
     void ClearCustomNode(Node* node);
     bool InitCustomNode(Node* node);
 
@@ -798,7 +774,6 @@ private:
     void OnScriptsLoaded();
 
 public:
-
     // [Graph]
     bool Load(ReadStream* stream, bool loadMeta) override;
     bool onParamCreated(Parameter* p) override;
@@ -829,7 +804,6 @@ class AnimGraphExecutor : public VisjectExecutor
 {
     friend AnimGraphNode;
 private:
-
     AnimGraph& _graph;
     RootMotionMode _rootMotionMode = RootMotionMode::NoExtraction;
     int32 _skeletonNodesCount = 0;
@@ -838,7 +812,6 @@ private:
     static ThreadLocal<AnimGraphContext> Context;
 
 public:
-
     /// <summary>
     /// Initializes the managed runtime calls.
     /// </summary>
@@ -851,7 +824,6 @@ public:
     explicit AnimGraphExecutor(AnimGraph& graph);
 
 public:
-
     /// <summary>
     /// Updates the graph animation.
     /// </summary>
@@ -891,7 +863,6 @@ public:
     void ResetBuckets(AnimGraphContext& context, AnimGraphBase* graph);
 
 private:
-
     Value eatBox(Node* caller, Box* box) override;
     Graph* GetCurrentGraph() const override;
 

@@ -205,7 +205,7 @@ bool ENetDriver::PopEvent(NetworkEvent* eventPtr)
         case ENET_EVENT_TYPE_RECEIVE:
             eventPtr->EventType = NetworkEventType::Message;
 
-            // Acquire message and copy message data
+        // Acquire message and copy message data
             eventPtr->Message = _networkHost->CreateMessage();
             eventPtr->Message.Length = event.packet->dataLength;
             Memory::CopyItems(eventPtr->Message.Buffer, event.packet->data, event.packet->dataLength);

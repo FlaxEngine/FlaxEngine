@@ -13,7 +13,6 @@
 class FLAXENGINE_API FoliageCluster
 {
 public:
-
     /// <summary>
     /// The cluster bounds (in world space). Made of subdivided parent node in quad-tree.
     /// </summary>
@@ -45,7 +44,6 @@ public:
     Array<FoliageInstance*, FixedAllocation<FOLIAGE_CLUSTER_CAPACITY>> Instances;
 
 public:
-
     /// <summary>
     /// Initializes this instance.
     /// </summary>

@@ -10,7 +10,6 @@
 class DeferredMaterialShader : public MaterialShader
 {
 private:
-
     struct Cache
     {
         PipelineStateCache Default;
@@ -62,19 +61,16 @@ private:
     };
 
 private:
-
     Cache _cache;
     Cache _cacheInstanced;
 
 public:
-
     DeferredMaterialShader(const StringView& name)
         : MaterialShader(name)
     {
     }
 
 public:
-
     // [MaterialShader]
     DrawPass GetDrawModes() const override;
     bool CanUseLightmap() const override;
@@ -83,7 +79,6 @@ public:
     void Unload() override;
 
 protected:
-
     // [MaterialShader]
     bool Load() override;
 };

@@ -16,7 +16,6 @@
 class CreateMaterialInstance
 {
 public:
-
     /// <summary>
     /// Creates the asset.
     /// </summary>

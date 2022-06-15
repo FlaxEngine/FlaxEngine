@@ -16,9 +16,8 @@
 /// </summary>
 API_CLASS(NoSpawn, Attributes="HideInEditor") class FLAXENGINE_API GPUAdapter : public ScriptingObject
 {
-DECLARE_SCRIPTING_TYPE_NO_SPAWN(GPUDevice);
+    DECLARE_SCRIPTING_TYPE_NO_SPAWN(GPUDevice);
 public:
-
     GPUAdapter()
         : ScriptingObject(SpawnParams(Guid::New(), TypeInitializer))
     {
@@ -36,7 +35,6 @@ public:
     }
 
 public:
-
     /// <summary>
     /// Checks if adapter is valid and returns true if it is.
     /// </summary>
@@ -54,7 +52,6 @@ public:
     API_PROPERTY() virtual String GetDescription() const = 0;
 
 public:
-
     // Returns true if adapter's vendor is AMD.
     API_PROPERTY() FORCE_INLINE bool IsAMD() const
     {

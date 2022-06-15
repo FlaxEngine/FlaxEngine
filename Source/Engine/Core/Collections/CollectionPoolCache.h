@@ -39,7 +39,6 @@ template<typename T, CollectionPoolCacheUtils::ClearCallback<T> ClearCallback = 
 class CollectionPoolCache
 {
 public:
-
     /// <summary>
     /// Helper object used to access the pooled collection and return it to the pool after usage (on code scope execution end).
     /// </summary>
@@ -48,7 +47,6 @@ public:
         friend CollectionPoolCache;
 
     private:
-
         CollectionPoolCache* _pool;
 
         ScopeCache(CollectionPoolCache* pool, T* value)
@@ -58,7 +56,6 @@ public:
         }
 
     public:
-
         T* Value;
 
         ScopeCache() = delete;
@@ -99,7 +96,6 @@ public:
     };
 
 private:
-
     CriticalSection _locker;
     Array<T*, InlinedAllocation<64>> _pool;
 
@@ -111,7 +107,6 @@ private:
     }
 
 public:
-
     /// <summary>
     /// Finalizes an instance of the <see cref="CollectionPoolCache"/> class.
     /// </summary>
@@ -121,7 +116,6 @@ public:
     }
 
 public:
-
     /// <summary>
     /// Gets the collection instance from the pool. Can reuse the object from the pool or create a new one. Returns collection is always cleared and ready to use.
     /// </summary>

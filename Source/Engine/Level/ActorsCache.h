@@ -12,13 +12,11 @@
 class ActorsCache
 {
 public:
-
     typedef ActorsLookup ActorsLookupType;
     typedef Array<Actor*> ActorsListType;
     typedef Array<SceneObject*> SceneObjectsListType;
 
 public:
-
     /// <summary>
     /// Gets the actors lookup cached. Safe allocation, per thread, uses caching.
     /// </summary>

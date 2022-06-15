@@ -13,7 +13,6 @@
 class FLAXENGINE_API CollisionProxy
 {
 public:
-
     struct CollisionTriangle
     {
         Float3 V0, V1, V2;
@@ -25,7 +24,6 @@ public:
     Array<CollisionTriangle> Triangles;
 
 public:
-
     FORCE_INLINE bool HasData() const
     {
         return Triangles.HasItems();

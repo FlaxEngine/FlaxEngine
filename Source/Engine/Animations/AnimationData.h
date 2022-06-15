@@ -12,7 +12,6 @@
 struct NodeAnimationData
 {
 public:
-
     /// <summary>
     /// The target node name.
     /// </summary>
@@ -34,7 +33,6 @@ public:
     LinearCurve<Float3> Scale;
 
 public:
-
     /// <summary>
     /// Initializes a new instance of the <see cref="NodeAnimationData"/> class.
     /// </summary>
@@ -46,7 +44,6 @@ public:
     }
 
 public:
-
     /// <summary>
     /// Evaluates the animation transformation at the specified time (only for the curves with non-empty data).
     /// </summary>
@@ -98,7 +95,6 @@ public:
 struct AnimationData
 {
 public:
-
     /// <summary>
     /// The duration of the animation (in frames).
     /// </summary>
@@ -125,7 +121,6 @@ public:
     Array<NodeAnimationData> Channels;
 
 public:
-
     /// <summary>
     /// Gets the length of the animation (in seconds).
     /// </summary>

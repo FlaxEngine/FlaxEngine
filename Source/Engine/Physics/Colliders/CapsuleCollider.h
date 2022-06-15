@@ -14,15 +14,13 @@
 /// <seealso cref="Collider" />
 API_CLASS() class FLAXENGINE_API CapsuleCollider : public Collider
 {
-DECLARE_SCENE_OBJECT(CapsuleCollider);
+    DECLARE_SCENE_OBJECT(CapsuleCollider);
 private:
-
     float _radius;
     float _height;
     OrientedBoundingBox _orientedBox;
 
 public:
-
     /// <summary>
     /// Gets the radius of the sphere, measured in the object's local space.
     /// </summary>
@@ -64,7 +62,6 @@ public:
     API_PROPERTY() void SetHeight(float value);
 
 public:
-
     // [Collider]
 #if USE_EDITOR
     void OnDebugDrawSelected() override;
@@ -74,7 +71,6 @@ public:
     void Deserialize(DeserializeStream& stream, ISerializeModifier* modifier) override;
 
 protected:
-
     // [Collider]
     void UpdateBounds() override;
     void GetGeometry(CollisionShape& collision) override;

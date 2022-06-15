@@ -18,7 +18,6 @@ API_CLASS(InBuild) class Dictionary
 {
     friend Dictionary;
 public:
-
     /// <summary>
     /// Describes single portion of space for the key and value pair in a hash map.
     /// </summary>
@@ -106,14 +105,12 @@ public:
     typedef typename AllocationType::template Data<Bucket> AllocationData;
 
 private:
-
     int32 _elementsCount = 0;
     int32 _deletedCount = 0;
     int32 _size = 0;
     AllocationData _allocation;
 
 public:
-
     /// <summary>
     /// Initializes a new instance of the <see cref="Dictionary"/> class.
     /// </summary>
@@ -200,7 +197,6 @@ public:
     }
 
 public:
-
     /// <summary>
     /// Gets the amount of the elements in the collection.
     /// </summary>
@@ -234,7 +230,6 @@ public:
     }
 
 public:
-
     /// <summary>
     /// The Dictionary collection iterator.
     /// </summary>
@@ -359,7 +354,6 @@ public:
     };
 
 public:
-
     /// <summary>
     /// Gets element by the key (will add default ValueType element if key not found).
     /// </summary>
@@ -460,7 +454,6 @@ public:
     }
 
 public:
-
     /// <summary>
     /// Clears the collection but without changing its capacity (all inserted elements: keys and values will be removed).
     /// </summary>
@@ -571,7 +564,6 @@ public:
     }
 
 public:
-
     /// <summary>
     /// Add pair element to the collection.
     /// </summary>
@@ -700,7 +692,6 @@ public:
     }
 
 public:
-
     /// <summary>
     /// Finds the element with given key in the collection.
     /// </summary>
@@ -775,7 +766,6 @@ public:
     }
 
 public:
-
     /// <summary>
     /// Clones other collection into this.
     /// </summary>
@@ -813,7 +803,6 @@ public:
     }
 
 public:
-
     Iterator Begin() const
     {
         Iterator i(*this, -1);
@@ -851,7 +840,6 @@ public:
     }
 
 protected:
-
     /// <summary>
     /// The result container of the dictionary item lookup searching.
     /// </summary>
@@ -898,7 +886,7 @@ protected:
                 if (insertPos == -1)
                     insertPos = bucketIndex;
             }
-                // Occupied bucket by target key
+            // Occupied bucket by target key
             else if (bucket.Key == key)
             {
                 // Found key

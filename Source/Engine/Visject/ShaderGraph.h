@@ -23,14 +23,12 @@ class ShaderGraphNode;
 class ShaderGraphBox : public GraphBox
 {
 public:
-
     /// <summary>
     /// The cached value.
     /// </summary>
     ShaderGraphValue Cache;
 
 public:
-
     ShaderGraphBox()
         : GraphBox()
     {
@@ -47,7 +45,6 @@ public:
     }
 
 public:
-
     FORCE_INLINE ShaderGraphBox* FirstConnection() const
     {
         return (ShaderGraphBox*)Connections[0];
@@ -58,7 +55,6 @@ template<class BoxType = ShaderGraphBox>
 class ShaderGraphNode : public GraphNode<BoxType>
 {
 public:
-
     struct CurveData
     {
         /// <summary>
@@ -79,14 +75,12 @@ public:
     };
 
 public:
-
     ShaderGraphNode()
         : GraphNode<ShaderGraphBox>()
     {
     }
 
 public:
-
     /// <summary>
     /// The custom data (depends on node type). Used to cache data for faster usage at runtime.
     /// </summary>
@@ -96,7 +90,6 @@ public:
 class ShaderGraphParameter : public GraphParameter
 {
 public:
-
     ShaderGraphParameter()
         : GraphParameter(SpawnParams(Guid::New(), TypeInitializer))
     {
@@ -123,12 +116,10 @@ template<class NodeType = ShaderGraphNode<>, class BoxType = ShaderGraphBox, cla
 class ShaderGraph : public Graph<NodeType, BoxType, ParameterType>
 {
 public:
-
     typedef ShaderGraphValue Value;
     typedef Graph<NodeType, BoxType, ParameterType> Base;
 
 public:
-
     /// <summary>
     /// The float curves used by the graph.
     /// </summary>
@@ -150,18 +141,17 @@ public:
     Array<BezierCurve<Float4>> Float4Curves;
 
 public:
-
     // [Graph]
     bool onNodeLoaded(NodeType* n) override
     {
         // Check if this node needs a state or data cache
         switch (n->GroupID)
         {
-            // Tools
+        // Tools
         case 7:
             switch (n->TypeID)
             {
-                // Curves
+            // Curves
 #define SETUP_CURVE(id, curves, access) \
 			case id: \
 			{ \
@@ -201,7 +191,6 @@ public:
 class ShaderGenerator
 {
 public:
-
     typedef ShaderGraph<> Graph;
     typedef ShaderGraph<>::Node Node;
     typedef ShaderGraph<>::Box Box;
@@ -212,7 +201,6 @@ public:
     typedef Function<void(Box*, Node*, Value&)> ProcessBoxHandler;
 
 protected:
-
     int32 _localIndex;
     Dictionary<Node*, Graph*> _functions;
     Array<SerializedMaterialParam> _parameters;
@@ -223,7 +211,6 @@ protected:
     Array<Graph*, FixedAllocation<32>> _graphStack;
 
 public:
-
     /// <summary>
     /// Initializes a new instance of the <see cref="ShaderGenerator"/> class.
     /// </summary>
@@ -235,7 +222,6 @@ public:
     ~ShaderGenerator();
 
 public:
-
     ErrorHandler Error;
 
     /// <summary>
@@ -244,7 +230,6 @@ public:
     AssetsContainer Assets;
 
 public:
-
     void OnError(Node* node, Box* box, const StringView& message);
 
     void ProcessGroupConstants(Box* box, Node* node, Value& value);
@@ -256,12 +241,10 @@ public:
     void ProcessGroupComparisons(Box* box, Node* node, Value& value);
 
 protected:
-
     static const Char* _mathFunctions[];
     static const Char* _subs[];
 
 protected:
-
     Value eatBox(Node* caller, Box* box);
     Value tryGetValue(Box* box, int32 defaultValueBoxIndex, const Value& defaultValue);
     Value tryGetValue(Box* box, const Value& defaultValue);

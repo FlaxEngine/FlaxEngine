@@ -19,7 +19,6 @@ class VisjectGraphNode;
 class VisjectGraphBox : public GraphBox
 {
 public:
-
     VisjectGraphBox()
         : GraphBox()
     {
@@ -45,7 +44,6 @@ template<class BoxType = VisjectGraphBox>
 class VisjectGraphNode : public GraphNode<BoxType>
 {
 public:
-
     struct CurveData
     {
         /// <summary>
@@ -82,14 +80,12 @@ public:
     };
 
 public:
-
     VisjectGraphNode()
         : GraphNode<BoxType>()
     {
     }
 
 public:
-
     /// <summary>
     /// The custom data (depends on node type). Used to cache data for faster usage at runtime.
     /// </summary>
@@ -107,9 +103,8 @@ public:
 /// <seealso cref="GraphParameter" />
 API_CLASS() class VisjectGraphParameter : public GraphParameter
 {
-DECLARE_SCRIPTING_TYPE_WITH_CONSTRUCTOR_IMPL(VisjectGraphParameter, GraphParameter);
+    DECLARE_SCRIPTING_TYPE_WITH_CONSTRUCTOR_IMPL(VisjectGraphParameter, GraphParameter);
 public:
-
     VisjectGraphParameter(const VisjectGraphParameter& other)
         : VisjectGraphParameter()
     {
@@ -136,7 +131,6 @@ public:
     typedef Graph<NodeType, BoxType, ParameterType> Base;
 
 public:
-
     /// <summary>
     /// The float curves used by the graph.
     /// </summary>
@@ -158,17 +152,16 @@ public:
     Array<BezierCurve<Float4>> Float4Curves;
 
 public:
-
     // [Graph]
     bool onNodeLoaded(NodeType* n) override
     {
         switch (n->GroupID)
         {
-            // Tools
+        // Tools
         case 7:
             switch (n->TypeID)
             {
-                // Curves
+            // Curves
 #define SETUP_CURVE(id, curves, access) \
 			case id: \
 			{ \
@@ -193,7 +186,7 @@ public:
             SETUP_CURVE(14, Float3Curves, AsFloat3())
             SETUP_CURVE(15, Float4Curves, AsFloat4())
 #undef SETUP_CURVE
-                // Get Gameplay Global
+            // Get Gameplay Global
             case 16:
             {
                 n->Assets[0] = ::LoadAsset((Guid)n->Values[0], Asset::TypeInitializer);
@@ -223,11 +216,9 @@ public:
     typedef void (VisjectExecutor::*ProcessBoxHandler)(Box*, Node*, Value&);
 
 protected:
-
     ProcessBoxHandler _perGroupProcessCall[19];
 
 public:
-
     /// <summary>
     /// Initializes a new instance of the <see cref="VisjectExecutor"/> class.
     /// </summary>
@@ -239,11 +230,9 @@ public:
     ~VisjectExecutor();
 
 public:
-
     ErrorHandler Error;
 
 public:
-
     virtual void OnError(Node* node, Box* box, const StringView& message);
 
     void ProcessGroupConstants(Box* box, Node* node, Value& value);
@@ -257,7 +246,6 @@ public:
     void ProcessGroupCollections(Box* box, Node* node, Value& value);
 
 protected:
-
     virtual Value eatBox(Node* caller, Box* box) = 0;
     virtual Graph* GetCurrentGraph() const = 0;
 

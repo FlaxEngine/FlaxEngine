@@ -13,7 +13,7 @@
 API_CLASS() class FLAXENGINE_API WheeledVehicle : public RigidBody
 {
     friend class PhysicsBackend;
-DECLARE_SCENE_OBJECT(WheeledVehicle);
+    DECLARE_SCENE_OBJECT(WheeledVehicle);
 
     /// <summary>
     /// Vehicle driving mode types.
@@ -33,8 +33,8 @@ DECLARE_SCENE_OBJECT(WheeledVehicle);
     /// </summary>
     API_STRUCT() struct EngineSettings : ISerializable
     {
-    DECLARE_SCRIPTING_TYPE_MINIMAL(EngineSettings);
-    API_AUTO_SERIALIZATION();
+        DECLARE_SCRIPTING_TYPE_MINIMAL(EngineSettings);
+        API_AUTO_SERIALIZATION();
 
         /// <summary>
         /// Moment of inertia of the engine around the axis of rotation. Specified in kilograms metres-squared (kg m^2).
@@ -76,8 +76,8 @@ DECLARE_SCENE_OBJECT(WheeledVehicle);
     /// </summary>
     API_STRUCT() struct DifferentialSettings : ISerializable
     {
-    DECLARE_SCRIPTING_TYPE_MINIMAL(DifferentialSettings);
-    API_AUTO_SERIALIZATION();
+        DECLARE_SCRIPTING_TYPE_MINIMAL(DifferentialSettings);
+        API_AUTO_SERIALIZATION();
 
         /// <summary>
         /// Type of differential.
@@ -120,8 +120,8 @@ DECLARE_SCENE_OBJECT(WheeledVehicle);
     /// </summary>
     API_STRUCT() struct GearboxSettings : ISerializable
     {
-    DECLARE_SCRIPTING_TYPE_MINIMAL(GearboxSettings);
-    API_AUTO_SERIALIZATION();
+        DECLARE_SCRIPTING_TYPE_MINIMAL(GearboxSettings);
+        API_AUTO_SERIALIZATION();
 
         /// <summary>
         /// If enabled the vehicle gears will be changes automatically, otherwise it's fully manual.
@@ -163,8 +163,8 @@ DECLARE_SCENE_OBJECT(WheeledVehicle);
     /// </summary>
     API_STRUCT() struct Wheel : ISerializable
     {
-    DECLARE_SCRIPTING_TYPE_MINIMAL(Wheel);
-    API_AUTO_SERIALIZATION();
+        DECLARE_SCRIPTING_TYPE_MINIMAL(Wheel);
+        API_AUTO_SERIALIZATION();
 
         /// <summary>
         /// Wheel placement type.
@@ -257,7 +257,7 @@ DECLARE_SCENE_OBJECT(WheeledVehicle);
     /// </summary>
     API_STRUCT() struct WheelState
     {
-    DECLARE_SCRIPTING_TYPE_MINIMAL(WheelState);
+        DECLARE_SCRIPTING_TYPE_MINIMAL(WheelState);
 
         /// <summary>
         /// True if suspension travel limits forbid the wheel from touching the drivable surface.
@@ -313,7 +313,6 @@ DECLARE_SCENE_OBJECT(WheeledVehicle);
     };
 
 private:
-
     struct WheelData
     {
         Collider* Collider;
@@ -331,7 +330,6 @@ private:
     GearboxSettings _gearbox;
 
 public:
-
     /// <summary>
     /// If checked, the negative throttle value will be used as brake and reverse to behave in a more arcade style where holding reverse also functions as brake. Disable it for more realistic driving controls.
     /// </summary>
@@ -395,7 +393,6 @@ public:
     API_PROPERTY() void SetGearbox(const GearboxSettings& value);
 
 public:
-
     /// <summary>
     /// Sets the input for vehicle throttle. It is the analog accelerator pedal value in range (0,1) where 1 represents the pedal fully pressed and 0 represents the pedal in its rest state.
     /// </summary>
@@ -426,7 +423,6 @@ public:
     API_FUNCTION() void ClearInput();
 
 public:
-
     /// <summary>
     /// Gets the current forward vehicle movement speed (along forward vector of the actor transform).
     /// </summary>
@@ -475,13 +471,11 @@ public:
     API_FUNCTION() void Setup();
 
 private:
-
 #if USE_EDITOR
     void DrawPhysicsDebug(RenderView& view);
 #endif
 
 public:
-
     // [Vehicle]
 #if USE_EDITOR
     void OnDebugDrawSelected() override;

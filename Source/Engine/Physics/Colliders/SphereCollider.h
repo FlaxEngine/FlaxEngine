@@ -10,13 +10,11 @@
 /// <seealso cref="Collider" />
 API_CLASS() class FLAXENGINE_API SphereCollider : public Collider
 {
-DECLARE_SCENE_OBJECT(SphereCollider);
+    DECLARE_SCENE_OBJECT(SphereCollider);
 private:
-
     float _radius;
 
 public:
-
     /// <summary>
     /// Gets the radius of the sphere, measured in the object's local space.
     /// </summary>
@@ -38,7 +36,6 @@ public:
     API_PROPERTY() void SetRadius(float value);
 
 public:
-
     // [Collider]
 #if USE_EDITOR
     void OnDebugDrawSelected() override;
@@ -48,7 +45,6 @@ public:
     void Deserialize(DeserializeStream& stream, ISerializeModifier* modifier) override;
 
 protected:
-
     // [Collider]
 #if USE_EDITOR
     void DrawPhysicsDebug(RenderView& view) override;

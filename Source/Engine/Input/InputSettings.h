@@ -11,9 +11,8 @@
 /// </summary>
 API_CLASS(sealed, Namespace="FlaxEditor.Content.Settings") class FLAXENGINE_API InputSettings : public SettingsBase
 {
-DECLARE_SCRIPTING_TYPE_MINIMAL(InputSettings);
+    DECLARE_SCRIPTING_TYPE_MINIMAL(InputSettings);
 public:
-
     /// <summary>
     /// Maps a discrete button or key press events to a "friendly name" that will later be bound to event-driven behavior. The end effect is that pressing (and/or releasing) a key, mouse button, or keypad button.
     /// </summary>
@@ -25,7 +24,6 @@ public:
     Array<AxisConfig> AxisMappings;
 
 public:
-
     /// <summary>
     /// Gets the instance of the settings asset (default value if missing). Object returned by this method is always loaded with valid data to use.
     /// </summary>

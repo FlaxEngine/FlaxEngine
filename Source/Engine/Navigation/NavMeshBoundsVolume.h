@@ -10,9 +10,8 @@
 /// </summary>
 API_CLASS() class FLAXENGINE_API NavMeshBoundsVolume : public BoxVolume
 {
-DECLARE_SCENE_OBJECT(NavMeshBoundsVolume);
+    DECLARE_SCENE_OBJECT(NavMeshBoundsVolume);
 public:
-
     /// <summary>
     /// The agent types used by this navmesh bounds volume (from navigation settings). Can be used to generate navmesh for a certain set of agents.
     /// </summary>
@@ -20,13 +19,11 @@ public:
     NavAgentMask AgentsMask;
 
 public:
-
     // [BoxVolume]
     void Serialize(SerializeStream& stream, const void* otherObj) override;
     void Deserialize(DeserializeStream& stream, ISerializeModifier* modifier) override;
 
 protected:
-
     // [BoxVolume]
     void OnEnable() override;
     void OnDisable() override;

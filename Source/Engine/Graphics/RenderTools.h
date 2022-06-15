@@ -20,9 +20,8 @@ PACK_STRUCT(struct QuadShaderData
 /// </summary>
 API_CLASS(Static) class FLAXENGINE_API RenderTools
 {
-DECLARE_SCRIPTING_TYPE_NO_SPAWN(RenderTools);
+    DECLARE_SCRIPTING_TYPE_NO_SPAWN(RenderTools);
 public:
-
     // Calculate a subresource index for a texture
     FORCE_INLINE static int32 CalcSubresourceIndex(uint32 mipSlice, int32 arraySlice, int32 mipLevels)
     {
@@ -54,7 +53,6 @@ public:
     static void ComputePitch(PixelFormat format, int32 width, int32 height, uint32& rowPitch, uint32& slicePitch);
 
 public:
-
     static void UpdateModelLODTransition(byte& lodTransition);
     static uint64 CalculateTextureMemoryUsage(PixelFormat format, int32 width, int32 height, int32 mipLevels);
     static uint64 CalculateTextureMemoryUsage(PixelFormat format, int32 width, int32 height, int32 depth, int32 mipLevels);

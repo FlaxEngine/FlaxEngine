@@ -11,16 +11,14 @@
 /// </summary>
 API_CLASS() class FLAXENGINE_API PostFxVolume : public BoxVolume, public IPostFxSettingsProvider
 {
-DECLARE_SCENE_OBJECT(PostFxVolume);
+    DECLARE_SCENE_OBJECT(PostFxVolume);
 private:
-
     int32 _priority;
     float _blendRadius;
     float _blendWeight;
     bool _isBounded;
 
 public:
-
     /// <summary>
     /// The ambient occlusion effect settings.
     /// </summary>
@@ -100,7 +98,6 @@ public:
     PostFxMaterialsSettings PostFxMaterials;
 
 public:
-
     /// <summary>
     /// Gets the order in which multiple volumes are blended together.
     /// The volume with the highest priority takes precedence over all other overlapping volumes.
@@ -184,7 +181,6 @@ public:
     }
 
 public:
-
     /// <summary>
     /// Adds the post fx material to the settings.
     /// </summary>
@@ -198,7 +194,6 @@ public:
     API_FUNCTION() void RemovePostFxMaterial(MaterialBase* material);
 
 public:
-
     // [BoxVolume]
     bool HasContentLoaded() const override;
     void Serialize(SerializeStream& stream, const void* otherObj) override;
@@ -209,7 +204,6 @@ public:
     void Blend(PostProcessSettings& other, float weight) override;
 
 protected:
-
     // [BoxVolume]
     void OnEnable() override;
     void OnDisable() override;

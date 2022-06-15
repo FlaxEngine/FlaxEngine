@@ -50,7 +50,6 @@ struct GPUShaderProgramInitializer
 class FLAXENGINE_API GPUShaderProgram
 {
 protected:
-
     StringAnsi _name;
     ShaderBindings _bindings;
     ShaderFlags _flags;
@@ -69,7 +68,6 @@ protected:
     }
 
 public:
-
     /// <summary>
     /// Finalizes an instance of the <see cref="GPUShaderProgram"/> class.
     /// </summary>
@@ -78,7 +76,6 @@ public:
     }
 
 public:
-
     /// <summary>
     /// Gets name of the shader program.
     /// </summary>
@@ -104,7 +101,6 @@ public:
     }
 
 public:
-
     /// <summary>
     /// Gets shader program stage type.
     /// </summary>
@@ -127,7 +123,6 @@ public:
 class GPUShaderProgramVS : public GPUShaderProgram
 {
 public:
-
     /// <summary>
     /// Gets input layout description handle (platform dependent).
     /// </summary>
@@ -139,7 +134,6 @@ public:
     virtual byte GetInputLayoutSize() const = 0;
 
 public:
-
     // [GPUShaderProgram]
     ShaderStage GetStage() const override
     {
@@ -153,7 +147,6 @@ public:
 class GPUShaderProgramGS : public GPUShaderProgram
 {
 public:
-
     // [GPUShaderProgram]
     ShaderStage GetStage() const override
     {
@@ -167,11 +160,9 @@ public:
 class GPUShaderProgramHS : public GPUShaderProgram
 {
 protected:
-
     int32 _controlPointsCount;
 
 public:
-
     /// <summary>
     /// Gets the input control points count (valid range: 1-32).
     /// </summary>
@@ -181,7 +172,6 @@ public:
     }
 
 public:
-
     // [GPUShaderProgram]
     ShaderStage GetStage() const override
     {
@@ -195,7 +185,6 @@ public:
 class GPUShaderProgramDS : public GPUShaderProgram
 {
 public:
-
     // [GPUShaderProgram]
     ShaderStage GetStage() const override
     {
@@ -209,7 +198,6 @@ public:
 class GPUShaderProgramPS : public GPUShaderProgram
 {
 public:
-
     // [GPUShaderProgram]
     ShaderStage GetStage() const override
     {
@@ -223,7 +211,6 @@ public:
 class GPUShaderProgramCS : public GPUShaderProgram
 {
 public:
-
     // [GPUShaderProgram]
     ShaderStage GetStage() const override
     {

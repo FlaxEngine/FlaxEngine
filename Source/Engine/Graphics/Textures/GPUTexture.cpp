@@ -629,14 +629,12 @@ GPUTask* GPUTexture::UploadMipMapAsync(const BytesContainer& data, int32 mipInde
 class TextureDownloadDataTask : public ThreadPoolTask
 {
 private:
-
     GPUTextureReference _texture;
     GPUTexture* _staging;
     TextureData* _data;
     bool _deleteStaging;
 
 public:
-
     TextureDownloadDataTask(GPUTexture* texture, GPUTexture* staging, TextureData& data)
         : _texture(texture)
         , _staging(staging)
@@ -652,7 +650,6 @@ public:
     }
 
 public:
-
     // [ThreadPoolTask]
     bool HasReference(Object* resource) const override
     {
@@ -660,7 +657,6 @@ public:
     }
 
 protected:
-
     // [ThreadPoolTask]
     bool Run() override
     {

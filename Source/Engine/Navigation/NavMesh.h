@@ -16,9 +16,8 @@ class NavMeshRuntime;
 /// </summary>
 API_CLASS() class FLAXENGINE_API NavMesh : public Actor
 {
-DECLARE_SCENE_OBJECT(NavMesh);
+    DECLARE_SCENE_OBJECT(NavMesh);
 public:
-
     /// <summary>
     /// The flag used to mark that navigation data has been modified since load. Used to save runtime data to the file on scene serialization.
     /// </summary>
@@ -49,7 +48,6 @@ public:
     API_FIELD(Attributes="EditorOrder(10), EditorDisplay(\"Nav Mesh\")") NavMeshProperties Properties;
 
 public:
-
     /// <summary>
     /// Saves the nav mesh tiles data to the asset. Supported only in builds with assets saving enabled (eg. editor) and not during gameplay (eg. design time).
     /// </summary>
@@ -66,19 +64,16 @@ public:
     NavMeshRuntime* GetRuntime(bool createIfMissing = true) const;
 
 private:
-
     void AddTiles();
     void RemoveTiles();
     void OnDataAssetLoaded();
 
 public:
-
     // [Actor]
     void Serialize(SerializeStream& stream, const void* otherObj) override;
     void Deserialize(DeserializeStream& stream, ISerializeModifier* modifier) override;
 
 protected:
-
     // [Actor]
     void OnEnable() override;
     void OnDisable() override;

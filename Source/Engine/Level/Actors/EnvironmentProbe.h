@@ -11,16 +11,14 @@
 /// </summary>
 API_CLASS() class FLAXENGINE_API EnvironmentProbe : public Actor
 {
-DECLARE_SCENE_OBJECT(EnvironmentProbe);
+    DECLARE_SCENE_OBJECT(EnvironmentProbe);
 private:
-
     float _radius;
     bool _isUsingCustomProbe;
     int32 _sceneRenderingKey = -1;
     AssetReference<CubeTexture> _probe;
 
 public:
-
     /// <summary>
     /// The reflections brightness.
     /// </summary>
@@ -40,7 +38,6 @@ public:
     float CaptureNearPlane = 10.0f;
 
 public:
-
     /// <summary>
     /// Gets the probe radius.
     /// </summary>
@@ -108,7 +105,6 @@ public:
     API_PROPERTY() void SetCustomProbe(CubeTexture* probe);
 
 public:
-
     /// <summary>
     /// Bakes that probe. It won't be performed now but on async graphics rendering task.
     /// </summary>
@@ -122,11 +118,9 @@ public:
     void SetProbeData(TextureData& data);
 
 private:
-
     void UpdateBounds();
 
 public:
-
     // [Actor]
 #if USE_EDITOR
     BoundingBox GetEditorBox() const override
@@ -146,7 +140,6 @@ public:
     bool IntersectsItself(const Ray& ray, Real& distance, Vector3& normal) override;
 
 protected:
-
     // [Actor]
     void OnEnable() override;
     void OnDisable() override;

@@ -14,10 +14,9 @@
 /// </summary>
 API_CLASS() class FLAXENGINE_API AnimatedModel : public ModelInstanceActor
 {
-DECLARE_SCENE_OBJECT(AnimatedModel);
+    DECLARE_SCENE_OBJECT(AnimatedModel);
     friend class AnimationsSystem;
 public:
-
     /// <summary>
     /// Describes the animation graph updates frequency for the animated model.
     /// </summary>
@@ -55,7 +54,6 @@ public:
     };
 
 private:
-
     BoundingBox _boxLocal;
     Matrix _world;
     GeometryDrawStateData _drawState;
@@ -68,7 +66,6 @@ private:
     ScriptingObjectReference<AnimatedModel> _masterPose;
 
 public:
-
     /// <summary>
     /// The skinned model asset used for rendering.
     /// </summary>
@@ -154,7 +151,6 @@ public:
     ScriptingObjectReference<Actor> RootMotionTarget;
 
 public:
-
     /// <summary>
     /// The graph instance data container. For dynamic usage only at runtime, not serialized.
     /// </summary>
@@ -238,7 +234,6 @@ public:
     API_FUNCTION() void SetMasterPoseModel(AnimatedModel* masterPose);
 
 public:
-
     /// <summary>
     /// Gets the anim graph instance parameters collection.
     /// </summary>
@@ -283,7 +278,6 @@ public:
     API_FUNCTION() void SetParameterValue(const Guid& id, const Variant& value);
 
 public:
-
     /// <summary>
     /// Gets the weight of the blend shape.
     /// </summary>
@@ -304,7 +298,6 @@ public:
     API_FUNCTION() void ClearBlendShapeWeights();
 
 public:
-
     /// <summary>
     /// Plays the animation on the slot in Anim Graph.
     /// </summary>
@@ -353,7 +346,6 @@ public:
     API_FUNCTION() bool IsPlayingSlotAnimation(const StringView& slotName, Animation* anim);
 
 private:
-
     void ApplyRootMotion(const RootMotionData& rootMotionDelta);
     void SyncParameters();
 
@@ -372,7 +364,6 @@ private:
     void OnGraphLoaded();
 
 public:
-
     // [ModelInstanceActor]
     bool HasContentLoaded() const override;
     void Draw(RenderContext& renderContext) override;
@@ -387,7 +378,6 @@ public:
     bool IntersectsEntry(const Ray& ray, Real& distance, Vector3& normal, int32& entryIndex) override;
 
 protected:
-
     // [ModelInstanceActor]
     void BeginPlay(SceneBeginData* data) override;
     void EndPlay() override;

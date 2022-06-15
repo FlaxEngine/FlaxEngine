@@ -13,14 +13,12 @@
 class AssetsExportingManager
 {
 public:
-
     /// <summary>
     /// The asset exporting callbacks. Identified by the asset typename.
     /// </summary>
     static Dictionary<String, ExportAssetFunction> Exporters;
 
 public:
-
     /// <summary>
     /// Gets the asset export for thee given asset typename.
     /// </summary>
@@ -36,7 +34,6 @@ public:
     static bool CanExport(const String& inputPath);
 
 public:
-
     /// <summary>
     /// Exports the asset.
     /// </summary>
