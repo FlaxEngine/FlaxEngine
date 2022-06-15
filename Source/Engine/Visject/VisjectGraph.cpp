@@ -65,9 +65,10 @@ void VisjectExecutor::ProcessGroupConstants(Box* box, Node* node, Value& value)
     case 6:
     case 7:
     {
-        const Float4 cv = (Float4)node->Values[0];
+        const Variant& v = node->Values[0];
+        const Float4 cv = (Float4)v;
         if (box->ID == 0)
-            value = cv;
+            value = v;
         else if (box->ID == 1)
             value = cv.X;
         else if (box->ID == 2)
@@ -130,9 +131,10 @@ void VisjectExecutor::ProcessGroupConstants(Box* box, Node* node, Value& value)
     case 17:
     case 18:
     {
-        const Vector4 cv = (Vector4)node->Values[0];
+        const Variant& v = node->Values[0];
+        const Vector4 cv = (Vector4)v;
         if (box->ID == 0)
-            value = cv;
+            value = v;
         else if (box->ID == 1)
             value = cv.X;
         else if (box->ID == 2)
