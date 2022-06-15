@@ -454,12 +454,28 @@ void VolumetricFogPass::Render(RenderContext& renderContext)
         }
     }
 
+    // Init GI data
+    bool useDDGI = false;
+    DynamicDiffuseGlobalIlluminationPass::BindingData bindingDataDDGI;
+    if (renderContext.View.Flags & ViewFlags::GI)
+    {
+        switch (renderContext.List->Settings.GlobalIllumination.Mode)
+        {
+        case GlobalIlluminationMode::DDGI:
+            if (!DynamicDiffuseGlobalIlluminationPass::Instance()->Get(renderContext.Buffers, bindingDataDDGI))
+            {
+                _cache.Data.DDGI = bindingDataDDGI.Constants;
+                useDDGI = true;
+            }
+            break;
+        }
+    }
+
     // Init sky light data
     GPUTexture* skyLightImage = nullptr;
-    if (renderContext.List->SkyLights.HasItems())
+    if (renderContext.List->SkyLights.HasItems() && !useDDGI)
     {
         const auto& skyLight = renderContext.List->SkyLights.Last();
-
         if (skyLight.VolumetricScatteringIntensity > ZeroTolerance)
         {
             _cache.Data.SkyLight.MultiplyColor = skyLight.Color;
@@ -645,9 +661,20 @@ void VolumetricFogPass::Render(RenderContext& renderContext)
         context->BindSR(2, lightScatteringHistory ? lightScatteringHistory->ViewVolume() : nullptr);
         context->BindSR(3, localShadowedLightScattering);
         context->BindSR(4, dirLightShadowMap);
-        context->BindSR(5, skyLightImage);
 
-        const int32 csIndex = 0;
+        int32 csIndex;
+        if (useDDGI)
+        {
+            context->BindSR(5, bindingDataDDGI.ProbesState);
+            context->BindSR(6, bindingDataDDGI.ProbesDistance);
+            context->BindSR(7, bindingDataDDGI.ProbesIrradiance);
+            csIndex = 1;
+        }
+        else
+        {
+            context->BindSR(5, skyLightImage);
+            csIndex = 0;
+        }
         context->Dispatch(_csLightScattering.Get(csIndex), groupCountX, groupCountY, groupCountZ);
 
         context->ResetSR();

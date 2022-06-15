@@ -17,6 +17,7 @@
 #include "./Flax/LightingCommon.hlsl"
 #include "./Flax/ShadowsSampling.hlsl"
 #include "./Flax/GBuffer.hlsl"
+#include "./Flax/GI/DDGI.hlsl"
 
 struct SkyLightData
 {
@@ -55,6 +56,7 @@ float4 FrameJitterOffsets[8];
 LightData DirectionalLight;
 LightShadowData DirectionalLightShadow;
 SkyLightData SkyLight;
+DDGIData DDGI;
 
 META_CB_END
 
@@ -246,10 +248,8 @@ float4 PS_InjectLight(Quad_GS2PS input) : SV_Target0
 RWTexture3D<float4> RWVBufferA : register(u0);
 RWTexture3D<float4> RWVBufferB : register(u1);
 
-#define THREADGROUP_SIZE 4
-
 META_CS(true, FEATURE_LEVEL_SM5)
-[numthreads(THREADGROUP_SIZE, THREADGROUP_SIZE, THREADGROUP_SIZE)]
+[numthreads(4, 4, 4)]
 void CS_Initialize(uint3 GroupId : SV_GroupID, uint3 DispatchThreadId : SV_DispatchThreadID, uint3 GroupThreadId : SV_GroupThreadID)
 {
 	uint3 gridCoordinate = DispatchThreadId;
@@ -285,12 +285,18 @@ Texture3D<float4> VBufferB : register(t1);
 Texture3D<float4> LightScatteringHistory : register(t2);
 Texture3D<float4> LocalShadowedLightScattering : register(t3);
 Texture2DArray ShadowMapCSM : register(t4);
+#if USE_DDGI
+Texture2D<float4> ProbesState : register(t5);
+Texture2D<float4> ProbesDistance : register(t6);
+Texture2D<float4> ProbesIrradiance : register(t7);
+#else
 TextureCube SkyLightImage : register(t5);
-
-#define THREADGROUP_SIZE 4
+#endif
 
 META_CS(true, FEATURE_LEVEL_SM5)
-[numthreads(THREADGROUP_SIZE, THREADGROUP_SIZE, THREADGROUP_SIZE)]
+META_PERMUTATION_1(USE_DDGI=0)
+META_PERMUTATION_1(USE_DDGI=1)
+[numthreads(4, 4, 4)]
 void CS_LightScattering(uint3 GroupId : SV_GroupID, uint3 DispatchThreadId : SV_DispatchThreadID, uint3 GroupThreadId : SV_GroupThreadID)
 {
 	uint3 gridCoordinate = DispatchThreadId;
@@ -329,6 +335,11 @@ void CS_LightScattering(uint3 GroupId : SV_GroupID, uint3 DispatchThreadId : SV_
 			lightScattering += DirectionalLight.Color * (8 * shadow * GetPhase(PhaseG, dot(DirectionalLight.Direction, cameraVectorNormalized)));
 		}
 
+#if USE_DDGI
+        // Dynamic Diffuse Global Illumination
+        float3 irradiance = SampleDDGIIrradiance(DDGI, ProbesState, ProbesDistance, ProbesIrradiance, positionWS, cameraVectorNormalized, 1.0f);
+        lightScattering += float4(irradiance, 1);
+#else
 		// Sky light
 		if (SkyLight.VolumetricScatteringIntensity > 0)
 		{
@@ -336,6 +347,7 @@ void CS_LightScattering(uint3 GroupId : SV_GroupID, uint3 DispatchThreadId : SV_
 			skyLighting = skyLighting * SkyLight.MultiplyColor + SkyLight.AdditiveColor;
 			lightScattering += skyLighting * SkyLight.VolumetricScatteringIntensity;
 		}
+#endif
 	}
 	lightScattering /= (float)samplesCount;
 
@@ -367,10 +379,8 @@ RWTexture3D<float4> RWIntegratedLightScattering : register(u0);
 
 Texture3D<float4> LightScattering : register(t0);
 
-#define THREADGROUP_SIZE 8
-
 META_CS(true, FEATURE_LEVEL_SM5)
-[numthreads(THREADGROUP_SIZE, THREADGROUP_SIZE, 1)]
+[numthreads(8, 8, 1)]
 void CS_FinalIntegration(uint3 GroupId : SV_GroupID, uint3 DispatchThreadId : SV_DispatchThreadID, uint3 GroupThreadId : SV_GroupThreadID)
 {
 	uint3 gridCoordinate = DispatchThreadId;

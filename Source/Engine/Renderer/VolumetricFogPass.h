@@ -5,6 +5,7 @@
 #include "Engine/Graphics/RenderView.h"
 #include "Engine/Graphics/GPUPipelineStatePermutations.h"
 #include "RendererPass.h"
+#include "GI/DynamicDiffuseGlobalIllumination.h"
 
 struct VolumetricFogOptions;
 struct RendererSpotLightData;
@@ -64,6 +65,7 @@ private:
         LightData DirectionalLight;
         LightShadowData DirectionalLightShadow;
         SkyLightData SkyLight;
+        DynamicDiffuseGlobalIlluminationPass::ConstantsData DDGI;
         });
 
     PACK_STRUCT(struct PerLight {
@@ -81,7 +83,7 @@ private:
     // Shader stuff
     AssetReference<Shader> _shader;
     GPUShaderProgramCS* _csInitialize = nullptr;
-    ComputeShaderPermutation<1> _csLightScattering;
+    ComputeShaderPermutation<2> _csLightScattering;
     GPUShaderProgramCS* _csFinalIntegration = nullptr;
     GPUPipelineStatePermutationsPs<2> _psInjectLight;
 
