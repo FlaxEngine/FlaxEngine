@@ -200,16 +200,22 @@ void ShaderGenerator::ProcessGroupMath(Box* box, Node* node, Value& value)
         value = writeLocal(ValueType::Float, text, node);
         break;
     }
-    // Cross, Max, Min, Pow
+    // Cross
     case 18:
+    {
+        Value v1 = tryGetValue(node->GetBox(0), 0, Value::Zero).Cast(VariantType::Float3);
+        Value v2 = tryGetValue(node->GetBox(1), 1, Value::Zero).Cast(VariantType::Float3);
+        const Char* function = _mathFunctions[node->TypeID - 7];
+        value = writeFunction2(node, v1, v2, function);
+        break;
+    }
+    // Max, Min, Pow
     case 21:
     case 22:
     case 23:
     {
-        Box* b1 = node->GetBox(0);
-        Box* b2 = node->GetBox(1);
-        Value v1 = tryGetValue(b1, 0, Value::Zero);
-        Value v2 = tryGetValue(b2, 1, Value::Zero);
+        Value v1 = tryGetValue(node->GetBox(0), 0, Value::Zero);
+        Value v2 = tryGetValue(node->GetBox(1), 1, Value::Zero);
         const Char* function = _mathFunctions[node->TypeID - 7];
         value = writeFunction2(node, v1, v2, function);
         break;
