@@ -124,6 +124,7 @@ float3 SampleDDGIIrradiance(DDGIData data, Texture2D<float4> probesState, Textur
 {
     // Select the highest cascade that contains the sample location
     uint cascadeIndex = 0;
+    float4 probeStates[8];
     for (; cascadeIndex < data.CascadesCount; cascadeIndex++)
     {
         float probesSpacing = data.ProbesOriginAndSpacing[cascadeIndex].w;
@@ -132,7 +133,26 @@ float3 SampleDDGIIrradiance(DDGIData data, Texture2D<float4> probesState, Textur
         float fadeDistance = probesSpacing * 0.5f;
         float cascadeWeight = saturate(Min3(probesExtent - abs(worldPosition - probesOrigin)) / fadeDistance);
         if (cascadeWeight > dither) // Use dither to make transition smoother
-            break;
+        {
+            // Load probes state for this cascade
+            uint activeCount = 0;
+            uint3 baseProbeCoords = clamp(uint3((worldPosition - probesOrigin + probesExtent) / probesSpacing), uint3(0, 0, 0), data.ProbesCounts - uint3(1, 1, 1));
+            UNROLL
+            for (uint i = 0; i < 8; i++)
+            {
+                uint3 probeCoordsOffset = uint3(i, i >> 1, i >> 2) & 1;
+                uint3 probeCoords = clamp(baseProbeCoords + probeCoordsOffset, uint3(0, 0, 0), data.ProbesCounts - uint3(1, 1, 1));
+                uint probeIndex = GetDDGIScrollingProbeIndex(data, cascadeIndex, probeCoords);
+                float4 probeState = probesState.Load(int3(GetDDGIProbeTexelCoords(data, cascadeIndex, probeIndex), 0));
+                probeStates[i] = probeState;
+                if (probeState.w == DDGI_PROBE_STATE_ACTIVE)
+                    activeCount++;
+            }
+
+            // Ensure there are some valid probes in this cascade
+            if (activeCount >= 3)
+                break;
+        }
     }
     if (cascadeIndex == data.CascadesCount)
         return data.FallbackIrradiance;
@@ -159,7 +179,7 @@ float3 SampleDDGIIrradiance(DDGIData data, Texture2D<float4> probesState, Textur
         uint probeIndex = GetDDGIScrollingProbeIndex(data, cascadeIndex, probeCoords);
 
         // Load probe position and state
-        float4 probeState = probesState.Load(int3(GetDDGIProbeTexelCoords(data, cascadeIndex, probeIndex), 0));
+        float4 probeState = probeStates[i];
         if (probeState.w == DDGI_PROBE_STATE_INACTIVE)
             continue;
         float3 probeBasePosition = baseProbeWorldPosition + ((probeCoords - baseProbeCoords) * probesSpacing);
