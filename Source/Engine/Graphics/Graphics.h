@@ -54,6 +54,11 @@ public:
     API_FIELD() static bool AllowCSMBlending;
 
     /// <summary>
+    /// Default probes cubemap resolution.
+    /// </summary>
+    API_FIELD() static int32 DefaultProbeResolution;
+
+    /// <summary>
     /// The Global SDF quality. Controls the volume texture resolution and amount of cascades to use.
     /// </summary>
     API_FIELD() static Quality GlobalSDFQuality;

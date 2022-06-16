@@ -22,6 +22,7 @@
 #include "Engine/Graphics/Textures/TextureData.h"
 #include "Engine/Graphics/RenderTask.h"
 #include "Engine/Engine/Engine.h"
+#include "Engine/Graphics/Graphics.h"
 
 /// <summary>
 /// Custom task called after downloading probe texture data to save it.
@@ -278,7 +279,15 @@ bool ProbesRenderer::Init()
 
     // Init rendering pipeline
     _output = GPUDevice::Instance->CreateTexture(TEXT("Output"));
-    if (_output->Init(GPUTextureDescription::New2D(ENV_PROBES_RESOLUTION, ENV_PROBES_RESOLUTION, ENV_PROBES_FORMAT)))
+    int32 probeResolution = ENV_PROBES_RESOLUTION;
+    if (_current.Type == EntryType::EnvProbe)
+    {
+        auto envProbe = (EnvironmentProbe*)_current.Actor.Get();
+        probeResolution = (int32)envProbe->CubemapResolution;
+        // if Use Graphics Settings
+        if (probeResolution == 0) probeResolution = Graphics::DefaultProbeResolution;
+    }
+    if (_output->Init(GPUTextureDescription::New2D(probeResolution, probeResolution, ENV_PROBES_FORMAT)))
         return true;
     _task = New<SceneRenderTask>();
     auto task = _task;
@@ -300,15 +309,15 @@ bool ProbesRenderer::Init()
     view.StaticFlagsMask = StaticFlags::ReflectionProbe;
     view.MaxShadowsQuality = Quality::Low;
     task->IsCameraCut = true;
-    task->Resize(ENV_PROBES_RESOLUTION, ENV_PROBES_RESOLUTION);
+    task->Resize(probeResolution, probeResolution);
     task->Render.Bind(onRender);
 
     // Init render targets
     _probe = GPUDevice::Instance->CreateTexture(TEXT("ProbesUpdate.Probe"));
-    if (_probe->Init(GPUTextureDescription::NewCube(ENV_PROBES_RESOLUTION, ENV_PROBES_FORMAT, GPUTextureFlags::ShaderResource | GPUTextureFlags::RenderTarget | GPUTextureFlags::PerMipViews, 0)))
+    if (_probe->Init(GPUTextureDescription::NewCube(probeResolution, ENV_PROBES_FORMAT, GPUTextureFlags::ShaderResource | GPUTextureFlags::RenderTarget | GPUTextureFlags::PerMipViews, 0)))
         return true;
     _tmpFace = GPUDevice::Instance->CreateTexture(TEXT("ProbesUpdate.TmpFae"));
-    if (_tmpFace->Init(GPUTextureDescription::New2D(ENV_PROBES_RESOLUTION, ENV_PROBES_RESOLUTION, 0, ENV_PROBES_FORMAT, GPUTextureFlags::ShaderResource | GPUTextureFlags::RenderTarget | GPUTextureFlags::PerMipViews)))
+    if (_tmpFace->Init(GPUTextureDescription::New2D(probeResolution, probeResolution, 0, ENV_PROBES_FORMAT, GPUTextureFlags::ShaderResource | GPUTextureFlags::RenderTarget | GPUTextureFlags::PerMipViews)))
         return true;
 
     // Mark as ready
@@ -465,9 +474,13 @@ void ProbesRenderer::onRender(RenderTask* task, GPUContext* context)
 
     // Init
     float customCullingNear = -1;
+    int32 probeResolution = ENV_PROBES_RESOLUTION;
     if (_current.Type == EntryType::EnvProbe)
     {
         auto envProbe = (EnvironmentProbe*)_current.Actor.Get();
+        probeResolution = (int32)envProbe->CubemapResolution;
+        // if Use Graphics Settings
+        if (probeResolution == 0) probeResolution = Graphics::DefaultProbeResolution;
         LOG(Info, "Updating Env probe '{0}'...", envProbe->ToString());
         Vector3 position = envProbe->GetPosition();
         float radius = envProbe->GetScaledRadius();
@@ -523,7 +536,7 @@ void ProbesRenderer::onRender(RenderTask* task, GPUContext* context)
         {
             PROFILE_GPU("Copy Face");
             context->SetRenderTarget(_probe->View(faceIndex));
-            context->SetViewportAndScissors(ENV_PROBES_RESOLUTION, ENV_PROBES_RESOLUTION);
+            context->SetViewportAndScissors(probeResolution, probeResolution);
             auto probeFrame = _output->View();
             if (setLowerHemisphereToBlack && faceIndex != 2)
             {
