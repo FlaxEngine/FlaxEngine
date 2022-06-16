@@ -39,7 +39,8 @@ namespace FlaxEngine.GUI
 
             child.Canvas.GetWorldMatrix(out var world);
             Matrix.Translation((float)bounds.Extents.X, (float)bounds.Extents.Y, 0, out var offset);
-            Matrix.Multiply(ref offset, ref world, out bounds.Transformation);
+            Matrix.Multiply(ref offset, ref world, out var boxWorld);
+            boxWorld.Decompose(out bounds.Transformation);
 
             // Hit test
             if (bounds.Intersects(ref ray, out Vector3 hitPoint))

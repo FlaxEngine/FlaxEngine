@@ -1074,8 +1074,10 @@ void GlobalSurfaceAtlasPass::RasterizeActor(Actor* actor, void* actorObject, con
     }
 
     // Write to objects buffer (this must match unpacking logic in HLSL)
+    Matrix localToWorldBounds;
+    object->Bounds.Transformation.GetWorld(localToWorldBounds);
     Matrix worldToLocalBounds;
-    Matrix::Invert(object->Bounds.Transformation, worldToLocalBounds);
+    Matrix::Invert(localToWorldBounds, worldToLocalBounds);
     uint32 objectAddress = _objectsBuffer->Data.Count() / sizeof(Float4);
     auto* objectData = _objectsBuffer->WriteReserve<Float4>(GLOBAL_SURFACE_ATLAS_OBJECT_DATA_STRIDE);
     objectData[0] = *(Float4*)&actorObjectBounds;
@@ -1103,13 +1105,13 @@ void GlobalSurfaceAtlasPass::RasterizeActor(Actor* actor, void* actorObject, con
         yAxis = tileIndex == 2 || tileIndex == 3 ? Float3::Right : Float3::Up;
         Float3::Cross(yAxis, zAxis, xAxis);
         Float3 localSpaceOffset = -zAxis * object->Bounds.Extents;
-        Float3::TransformNormal(xAxis, object->Bounds.Transformation, xAxis);
-        Float3::TransformNormal(yAxis, object->Bounds.Transformation, yAxis);
-        Float3::TransformNormal(zAxis, object->Bounds.Transformation, zAxis);
+        xAxis = object->Bounds.Transformation.LocalToWorldVector(xAxis);
+        yAxis = object->Bounds.Transformation.LocalToWorldVector(yAxis);
+        zAxis = object->Bounds.Transformation.LocalToWorldVector(zAxis);
         xAxis.NormalizeFast();
         yAxis.NormalizeFast();
         zAxis.NormalizeFast();
-        Float3::Transform(localSpaceOffset, object->Bounds.Transformation, tile->ViewPosition);
+        object->Bounds.Transformation.LocalToWorld(localSpaceOffset, tile->ViewPosition);
         tile->ViewDirection = zAxis;
 
         // Create view matrix
@@ -1122,7 +1124,7 @@ void GlobalSurfaceAtlasPass::RasterizeActor(Actor* actor, void* actorObject, con
         OrientedBoundingBox viewBounds(object->Bounds);
         viewBounds.Transform(tile->ViewMatrix);
         Float3 viewExtent;
-        Float3::TransformNormal(viewBounds.Extents, viewBounds.Transformation, viewExtent);
+        viewExtent = viewBounds.Transformation.LocalToWorldVector(viewBounds.Extents);
         tile->ViewBoundsSize = viewExtent.GetAbsolute() * 2.0f;
 
         // Per-tile data

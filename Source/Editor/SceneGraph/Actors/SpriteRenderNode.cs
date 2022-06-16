@@ -50,7 +50,7 @@ namespace FlaxEditor.SceneGraph.Actors
 
             OrientedBoundingBox bounds;
             bounds.Extents = Vector3.Half;
-            bounds.Transformation = world;
+            world.Decompose(out bounds.Transformation);
 
             normal = -ray.Ray.Direction;
             return bounds.Intersects(ref ray.Ray, out distance);

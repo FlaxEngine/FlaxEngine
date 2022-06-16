@@ -190,7 +190,7 @@ private:
     FORCE_INLINE void UpdateBounds()
     {
         OrientedBoundingBox::CreateCentered(_center, _size, _bounds);
-        _bounds.Transform(_transform.GetWorld());
+        _bounds.Transform(_transform);
         _bounds.GetBoundingBox(_box);
         BoundingSphere::FromBox(_box, _sphere);
     }

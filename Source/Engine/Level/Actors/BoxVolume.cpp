@@ -1,6 +1,7 @@
 // Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 #include "BoxVolume.h"
+#include "Engine/Core/Math/Matrix.h"
 #include "Engine/Serialization/Serialization.h"
 
 BoxVolume::BoxVolume(const SpawnParams& params)
@@ -54,11 +55,13 @@ namespace
         else
             Quaternion::LookRotation(dir, Vector3::Cross(Vector3::Cross(dir, Vector3::Up), dir), orientation);
         const Vector3 up = orientation * Vector3::Up;
-        Matrix::CreateWorld(min + vec * 0.5f, dir, up, box.Transformation);
-        Matrix inv;
-        Matrix::Invert(box.Transformation, inv);
+        Matrix world;
+        Matrix::CreateWorld(min + vec * 0.5f, dir, up, world);
+        world.Decompose(box.Transformation);
+        Matrix invWorld;
+        Matrix::Invert(world, invWorld);
         Vector3 vecLocal;
-        Vector3::TransformNormal(vec * 0.5f, inv, vecLocal);
+        Vector3::TransformNormal(vec * 0.5f, invWorld, vecLocal);
         box.Extents.X = margin;
         box.Extents.Y = margin;
         box.Extents.Z = vecLocal.Z;

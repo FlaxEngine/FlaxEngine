@@ -7,8 +7,6 @@
 #include "Engine/Utilities/StringConverter.h"
 
 struct CommonValue;
-struct Matrix;
-struct Transform;
 class ISerializable;
 
 // Helper macro for JSON serialization keys (reduces allocations count)
