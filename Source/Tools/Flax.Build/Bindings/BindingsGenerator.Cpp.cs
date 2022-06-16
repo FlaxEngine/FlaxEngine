@@ -1384,7 +1384,7 @@ namespace Flax.Build.Bindings
 
         private static bool GenerateCppAutoSerializationSkip(BuildData buildData, ApiTypeInfo caller, MemberInfo memberInfo, TypeInfo typeInfo)
         {
-            if (memberInfo.IsStatic)
+            if (memberInfo.IsStatic || memberInfo.IsConstexpr)
                 return true;
             if (memberInfo.Access != AccessLevel.Public && !memberInfo.HasAttribute("Serialize"))
                 return true;
@@ -1691,7 +1691,7 @@ namespace Flax.Build.Bindings
             // Fields
             foreach (var fieldInfo in classInfo.Fields)
             {
-                if (!useScripting || !useCSharp || fieldInfo.IsHidden)
+                if (!useScripting || !useCSharp || fieldInfo.IsHidden || fieldInfo.IsConstexpr)
                     continue;
                 if (fieldInfo.Getter != null)
                     GenerateCppWrapperFunction(buildData, contents, classInfo, fieldInfo.Getter, "{0}");
@@ -1853,6 +1853,9 @@ namespace Flax.Build.Bindings
             // Fields
             foreach (var fieldInfo in structureInfo.Fields)
             {
+                if (fieldInfo.IsConstexpr)
+                    continue;
+
                 // Static fields are using C++ static value accessed via getter function binding
                 if (fieldInfo.IsStatic)
                 {
@@ -1977,7 +1980,7 @@ namespace Flax.Build.Bindings
             for (var i = 0; i < structureInfo.Fields.Count; i++)
             {
                 var fieldInfo = structureInfo.Fields[i];
-                if (fieldInfo.IsReadOnly || fieldInfo.IsStatic || fieldInfo.Access == AccessLevel.Private)
+                if (fieldInfo.IsReadOnly || fieldInfo.IsStatic || fieldInfo.IsConstexpr || fieldInfo.Access == AccessLevel.Private)
                     continue;
                 if (i == 0)
                     contents.AppendLine($"        if (name == TEXT(\"{fieldInfo.Name}\"))");
@@ -1993,7 +1996,7 @@ namespace Flax.Build.Bindings
             for (var i = 0; i < structureInfo.Fields.Count; i++)
             {
                 var fieldInfo = structureInfo.Fields[i];
-                if (fieldInfo.IsReadOnly || fieldInfo.IsStatic || fieldInfo.Access == AccessLevel.Private)
+                if (fieldInfo.IsReadOnly || fieldInfo.IsStatic || fieldInfo.IsConstexpr || fieldInfo.Access == AccessLevel.Private)
                     continue;
                 if (i == 0)
                     contents.AppendLine($"        if (name == TEXT(\"{fieldInfo.Name}\"))");
@@ -2205,7 +2208,7 @@ namespace Flax.Build.Bindings
                 for (var i = 0; i < structureInfo.Fields.Count; i++)
                 {
                     var fieldInfo = structureInfo.Fields[i];
-                    if (fieldInfo.IsStatic)
+                    if (fieldInfo.IsStatic || fieldInfo.IsConstexpr)
                         continue;
                     var fieldType = fieldInfo.Type;
                     var fieldApiType = FindApiTypeInfo(buildData, fieldType, structureInfo);
@@ -2450,7 +2453,7 @@ namespace Flax.Build.Bindings
                         for (var i = 0; i < fields.Count; i++)
                         {
                             var fieldInfo = fields[i];
-                            if (fieldInfo.IsStatic)
+                            if (fieldInfo.IsStatic || fieldInfo.IsConstexpr)
                                 continue;
 
                             if (fieldInfo.NoArray && fieldInfo.Type.IsArray)
@@ -2482,7 +2485,7 @@ namespace Flax.Build.Bindings
                         for (var i = 0; i < fields.Count; i++)
                         {
                             var fieldInfo = fields[i];
-                            if (fieldInfo.IsStatic)
+                            if (fieldInfo.IsStatic || fieldInfo.IsConstexpr)
                                 continue;
 
                             CppNonPodTypesConvertingGeneration = true;
@@ -2531,7 +2534,7 @@ namespace Flax.Build.Bindings
                         for (var i = 0; i < fields.Count; i++)
                         {
                             var fieldInfo = fields[i];
-                            if (fieldInfo.IsStatic)
+                            if (fieldInfo.IsStatic || fieldInfo.IsConstexpr)
                                 continue;
 
                             if (fieldInfo.NoArray && fieldInfo.Type.IsArray)
@@ -2566,7 +2569,7 @@ namespace Flax.Build.Bindings
                         for (var i = 0; i < fields.Count; i++)
                         {
                             var fieldInfo = fields[i];
-                            if (fieldInfo.IsStatic)
+                            if (fieldInfo.IsStatic || fieldInfo.IsConstexpr)
                                 continue;
 
                             CppNonPodTypesConvertingGeneration = true;

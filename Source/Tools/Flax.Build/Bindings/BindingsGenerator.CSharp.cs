@@ -878,11 +878,15 @@ namespace Flax.Build.Bindings
                     contents.Append("protected ");
                 else if (fieldInfo.Access == AccessLevel.Private)
                     contents.Append("private ");
-                if (fieldInfo.IsStatic)
+                if (fieldInfo.IsConstexpr)
+                    contents.Append("const ");
+                else if (fieldInfo.IsStatic)
                     contents.Append("static ");
+
                 var returnValueType = GenerateCSharpNativeToManaged(buildData, fieldInfo.Type, classInfo);
                 contents.Append(returnValueType).Append(' ').Append(fieldInfo.Name);
-                if (!useUnmanaged)
+
+                if (!useUnmanaged || fieldInfo.IsConstexpr)
                 {
                     var defaultValue = GenerateCSharpDefaultValueNativeToManaged(buildData, fieldInfo.DefaultValue, classInfo, fieldInfo.Type);
                     if (!string.IsNullOrEmpty(defaultValue))
@@ -1156,7 +1160,9 @@ namespace Flax.Build.Bindings
                     contents.Append("protected ");
                 else if (fieldInfo.Access == AccessLevel.Private)
                     contents.Append("private ");
-                if (fieldInfo.IsStatic)
+                if (fieldInfo.IsConstexpr)
+                    contents.Append("const ");
+                else if (fieldInfo.IsStatic)
                     contents.Append("static ");
                 string type;
 
@@ -1189,9 +1195,17 @@ namespace Flax.Build.Bindings
                 type = GenerateCSharpNativeToManaged(buildData, fieldInfo.Type, structureInfo);
                 contents.Append(type).Append(' ').Append(fieldInfo.Name);
 
-                // Static fields are using C++ static value accessed via getter function binding
-                if (fieldInfo.IsStatic)
+                if (fieldInfo.IsConstexpr)
                 {
+                    // Compile-time constant
+                    var defaultValue = GenerateCSharpDefaultValueNativeToManaged(buildData, fieldInfo.DefaultValue, structureInfo, fieldInfo.Type);
+                    if (!string.IsNullOrEmpty(defaultValue))
+                        contents.Append(" = ").Append(defaultValue);
+                    contents.AppendLine(";");
+                }
+                else if (fieldInfo.IsStatic)
+                {
+                    // Static fields are using C++ static value accessed via getter function binding
                     contents.AppendLine();
                     contents.AppendLine(indent + "{");
                     indent += "    ";
@@ -1386,7 +1400,7 @@ namespace Flax.Build.Bindings
                 else if (type is InjectCodeInfo injectCodeInfo && string.Equals(injectCodeInfo.Lang, "csharp", StringComparison.OrdinalIgnoreCase))
                 {
                     // `using` directives needs to go above the generated code
-                    foreach(var code in injectCodeInfo.Code.Split(';'))
+                    foreach (var code in injectCodeInfo.Code.Split(';'))
                     {
                         if (code.StartsWith("using"))
                             CSharpUsedNamespaces.Add(code.Substring(6));
