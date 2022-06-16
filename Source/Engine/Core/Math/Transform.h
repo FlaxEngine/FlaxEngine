@@ -80,6 +80,8 @@ public:
     {
     }
 
+    Transform(const Vector3& position, const Matrix3x3& rotationScale);
+
 public:
     String ToString() const;
 
@@ -196,8 +198,20 @@ public:
     /// Performs transformation of the given vector in local space to the world space of this transform.
     /// </summary>
     /// <param name="vector">The local space vector.</param>
+    /// <param name="result">The world space vector.</param>
+    void LocalToWorldVector(const Vector3& vector, Vector3& result) const;
+
+    /// <summary>
+    /// Performs transformation of the given vector in local space to the world space of this transform.
+    /// </summary>
+    /// <param name="vector">The local space vector.</param>
     /// <returns>The world space vector.</returns>
-    Vector3 LocalToWorldVector(const Vector3& vector) const;
+    Vector3 LocalToWorldVector(const Vector3& vector) const
+    {
+        Vector3 result;
+        LocalToWorldVector(vector, result);
+        return result;
+    }
 
     /// <summary>
     /// Performs transformation of the given point in local space to the world space of this transform.
@@ -248,8 +262,20 @@ public:
     /// Performs transformation of the given vector in world space to the local space of this transform.
     /// </summary>
     /// <param name="vector">The world space vector.</param>
+    /// <param name="result">The local space vector.</param>
+    void WorldToLocalVector(const Vector3& vector, Vector3& result) const;
+
+    /// <summary>
+    /// Performs transformation of the given vector in world space to the local space of this transform.
+    /// </summary>
+    /// <param name="vector">The world space vector.</param>
     /// <returns>The local space vector.</returns>
-    Vector3 WorldToLocalVector(const Vector3& vector) const;
+    Vector3 WorldToLocalVector(const Vector3& vector) const
+    {
+        Vector3 result;
+        WorldToLocalVector(vector, result);
+        return result;
+    }
 
 public:
     FORCE_INLINE Transform operator*(const Transform& other) const
