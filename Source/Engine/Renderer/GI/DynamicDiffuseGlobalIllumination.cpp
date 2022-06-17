@@ -269,7 +269,7 @@ bool DynamicDiffuseGlobalIlluminationPass::Render(RenderContext& renderContext, 
     // Setup options
     auto& settings = renderContext.List->Settings.GlobalIllumination;
     const float probesSpacing = 100.0f; // GI probes placement spacing nearby camera (for closest cascade; gets automatically reduced for further cascades)
-    int32 probeRaysCount;
+    int32 probeRaysCount; // Amount of rays to trace randomly around each probe
     switch (Graphics::GIQuality)
     {
     case Quality::Low:
@@ -287,7 +287,7 @@ bool DynamicDiffuseGlobalIlluminationPass::Render(RenderContext& renderContext, 
         break;
     }
     ASSERT_LOW_LAYER(Math::Min(Math::AlignUp(probeRaysCount, DDGI_TRACE_RAYS_GROUP_SIZE_X), DDGI_TRACE_RAYS_LIMIT) == probeRaysCount);
-    bool debugProbes = false; // TODO: add debug option to draw probes locations -> in Graphics window - Editor-only
+    bool debugProbes = renderContext.View.Mode == ViewMode::GlobalIllumination;
     const float indirectLightingIntensity = settings.Intensity;
     const float probeHistoryWeight = Math::Clamp(settings.TemporalResponse, 0.0f, 0.98f);
     const float distance = settings.Distance;
