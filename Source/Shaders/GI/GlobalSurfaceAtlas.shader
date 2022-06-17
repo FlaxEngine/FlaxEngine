@@ -75,8 +75,8 @@ Texture2D<float4> ProbesState : register(t5);
 Texture2D<float4> ProbesDistance : register(t6);
 Texture2D<float4> ProbesIrradiance : register(t7);
 #else
-Texture3D<float> GlobalSDFTex[4] : register(t5);
-Texture3D<float> GlobalSDFMip[4] : register(t9);
+Texture3D<float> GlobalSDFTex : register(t5);
+Texture3D<float> GlobalSDFMip : register(t6);
 #endif
 
 // Pixel shader for Global Surface Atlas shading with direct light contribution
@@ -265,13 +265,13 @@ void CS_CullObjects(uint3 GroupId : SV_GroupID, uint3 DispatchThreadId : SV_Disp
 
 #ifdef _PS_Debug
 
-Texture3D<float> GlobalSDFTex[4] : register(t0);
-Texture3D<float> GlobalSDFMip[4] : register(t4);
-ByteAddressBuffer GlobalSurfaceAtlasChunks : register(t8);
-Buffer<float4> GlobalSurfaceAtlasCulledObjects : register(t9);
-Texture2D GlobalSurfaceAtlasDepth : register(t10);
-Texture2D GlobalSurfaceAtlasTex : register(t11);
-TextureCube Skybox : register(t12);
+Texture3D<float> GlobalSDFTex : register(t0);
+Texture3D<float> GlobalSDFMip : register(t1);
+ByteAddressBuffer GlobalSurfaceAtlasChunks : register(t2);
+Buffer<float4> GlobalSurfaceAtlasCulledObjects : register(t3);
+Texture2D GlobalSurfaceAtlasDepth : register(t4);
+Texture2D GlobalSurfaceAtlasTex : register(t5);
+TextureCube Skybox : register(t6);
 
 // Pixel shader for Global Surface Atlas debug drawing
 META_PS(true, FEATURE_LEVEL_SM5)

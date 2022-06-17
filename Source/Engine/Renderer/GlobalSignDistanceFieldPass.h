@@ -23,12 +23,9 @@ public:
     // Binding data for the GPU.
     struct BindingData
     {
-        GPUTexture* Cascades[4];
-        GPUTexture* CascadeMips[4];
+        GPUTexture* Texture;
+        GPUTexture* TextureMip;
         ConstantsData Constants;
-
-        void BindCascades(GPUContext* context, int32 srvSlot);
-        void BindCascadeMips(GPUContext* context, int32 srvSlot);
     };
 
 private:
@@ -39,8 +36,7 @@ private:
     GPUShaderProgramCS* _csRasterizeModel1 = nullptr;
     GPUShaderProgramCS* _csRasterizeHeightfield = nullptr;
     GPUShaderProgramCS* _csClearChunk = nullptr;
-    GPUShaderProgramCS* _csGenerateMip0 = nullptr;
-    GPUShaderProgramCS* _csGenerateMip1 = nullptr;
+    GPUShaderProgramCS* _csGenerateMip = nullptr;
     GPUConstantBuffer* _cb0 = nullptr;
     GPUConstantBuffer* _cb1 = nullptr;
 

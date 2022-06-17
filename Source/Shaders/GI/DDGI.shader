@@ -60,8 +60,8 @@ float3 GetProbeRayDirection(DDGIData data, uint rayIndex)
 
 RWTexture2D<float4> RWProbesState : register(u0);
 
-Texture3D<float> GlobalSDFTex[4] : register(t0);
-Texture3D<float> GlobalSDFMip[4] : register(t4);
+Texture3D<float> GlobalSDFTex : register(t0);
+Texture3D<float> GlobalSDFMip : register(t1);
 
 // Compute shader for updating probes state between active and inactive.
 META_CS(true, FEATURE_LEVEL_SM5)
@@ -138,14 +138,14 @@ void CS_Classify(uint3 DispatchThreadId : SV_DispatchThreadID)
 
 RWTexture2D<float4> RWProbesTrace : register(u0);
 
-Texture3D<float> GlobalSDFTex[4] : register(t0);
-Texture3D<float> GlobalSDFMip[4] : register(t4);
-ByteAddressBuffer GlobalSurfaceAtlasChunks : register(t8);
-Buffer<float4> GlobalSurfaceAtlasCulledObjects : register(t9);
-Texture2D GlobalSurfaceAtlasDepth : register(t10);
-Texture2D GlobalSurfaceAtlasTex : register(t11);
-Texture2D<float4> ProbesState : register(t12);
-TextureCube Skybox : register(t13);
+Texture3D<float> GlobalSDFTex : register(t0);
+Texture3D<float> GlobalSDFMip : register(t1);
+ByteAddressBuffer GlobalSurfaceAtlasChunks : register(t2);
+Buffer<float4> GlobalSurfaceAtlasCulledObjects : register(t3);
+Texture2D GlobalSurfaceAtlasDepth : register(t4);
+Texture2D GlobalSurfaceAtlasTex : register(t5);
+Texture2D<float4> ProbesState : register(t6);
+TextureCube Skybox : register(t7);
 
 // Compute shader for tracing rays for probes using Global SDF and Global Surface Atlas.
 META_CS(true, FEATURE_LEVEL_SM5)

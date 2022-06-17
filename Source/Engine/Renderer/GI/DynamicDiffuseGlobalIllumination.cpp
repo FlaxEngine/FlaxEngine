@@ -486,8 +486,8 @@ bool DynamicDiffuseGlobalIlluminationPass::Render(RenderContext& renderContext, 
     {
         PROFILE_GPU_CPU("Probes Classification");
         uint32 threadGroups = Math::DivideAndRoundUp(probesCountCascade, DDGI_PROBE_CLASSIFY_GROUP_SIZE);
-        bindingDataSDF.BindCascades(context, 0);
-        bindingDataSDF.BindCascadeMips(context, 4);
+        context->BindSR(0, bindingDataSDF.Texture ? bindingDataSDF.Texture->ViewVolume() : nullptr);
+        context->BindSR(1, bindingDataSDF.TextureMip ? bindingDataSDF.TextureMip->ViewVolume() : nullptr);
         context->BindUA(0, ddgiData.Result.ProbesState);
         for (int32 cascadeIndex = 0; cascadeIndex < cascadesCount; cascadeIndex++)
         {
@@ -529,14 +529,14 @@ bool DynamicDiffuseGlobalIlluminationPass::Render(RenderContext& renderContext, 
 
                     // Global SDF with Global Surface Atlas software raytracing (thread X - per probe ray, thread Y - per probe)
                     ASSERT_LOW_LAYER((probeRaysCount % DDGI_TRACE_RAYS_GROUP_SIZE_X) == 0);
-                    bindingDataSDF.BindCascades(context, 0);
-                    bindingDataSDF.BindCascadeMips(context, 4);
-                    context->BindSR(8, bindingDataSurfaceAtlas.Chunks ? bindingDataSurfaceAtlas.Chunks->View() : nullptr);
-                    context->BindSR(9, bindingDataSurfaceAtlas.CulledObjects ? bindingDataSurfaceAtlas.CulledObjects->View() : nullptr);
-                    context->BindSR(10, bindingDataSurfaceAtlas.AtlasDepth->View());
-                    context->BindSR(11, bindingDataSurfaceAtlas.AtlasLighting->View());
-                    context->BindSR(12, ddgiData.Result.ProbesState);
-                    context->BindSR(13, skybox);
+                    context->BindSR(0, bindingDataSDF.Texture ? bindingDataSDF.Texture->ViewVolume() : nullptr);
+                    context->BindSR(1, bindingDataSDF.TextureMip ? bindingDataSDF.TextureMip->ViewVolume() : nullptr);
+                    context->BindSR(2, bindingDataSurfaceAtlas.Chunks ? bindingDataSurfaceAtlas.Chunks->View() : nullptr);
+                    context->BindSR(3, bindingDataSurfaceAtlas.CulledObjects ? bindingDataSurfaceAtlas.CulledObjects->View() : nullptr);
+                    context->BindSR(4, bindingDataSurfaceAtlas.AtlasDepth->View());
+                    context->BindSR(5, bindingDataSurfaceAtlas.AtlasLighting->View());
+                    context->BindSR(6, ddgiData.Result.ProbesState);
+                    context->BindSR(7, skybox);
                     context->BindUA(0, ddgiData.ProbesTrace->View());
                     context->Dispatch(_csTraceRays, probeRaysCount / DDGI_TRACE_RAYS_GROUP_SIZE_X, probesBatchSize, 1);
                     context->ResetUA();

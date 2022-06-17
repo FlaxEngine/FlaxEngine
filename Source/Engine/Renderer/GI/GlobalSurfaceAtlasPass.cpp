@@ -754,8 +754,8 @@ bool GlobalSurfaceAtlasPass::Render(RenderContext& renderContext, GPUContext* co
         context->BindSR(2, surfaceAtlasData.AtlasGBuffer2->View());
         context->BindSR(3, surfaceAtlasData.AtlasDepth->View());
         context->BindSR(4, _objectsBuffer->GetBuffer()->View());
-        bindingDataSDF.BindCascades(context, 5);
-        bindingDataSDF.BindCascadeMips(context, 9);
+        context->BindSR(5, bindingDataSDF.Texture ? bindingDataSDF.Texture->ViewVolume() : nullptr);
+        context->BindSR(6, bindingDataSDF.TextureMip ? bindingDataSDF.TextureMip->ViewVolume() : nullptr);
         context->BindCB(0, _cb0);
         Data0 data;
         data.ViewWorldPos = renderContext.View.Position;
@@ -927,12 +927,12 @@ void GlobalSurfaceAtlasPass::RenderDebug(RenderContext& renderContext, GPUContex
         context->UpdateCB(_cb0, &data);
         context->BindCB(0, _cb0);
     }
-    bindingDataSDF.BindCascades(context, 0);
-    bindingDataSDF.BindCascadeMips(context, 4);
-    context->BindSR(8, bindingData.Chunks ? bindingData.Chunks->View() : nullptr);
-    context->BindSR(9, bindingData.CulledObjects ? bindingData.CulledObjects->View() : nullptr);
-    context->BindSR(10, bindingData.AtlasDepth->View());
-    context->BindSR(12, skybox);
+    context->BindSR(0, bindingDataSDF.Texture ? bindingDataSDF.Texture->ViewVolume() : nullptr);
+    context->BindSR(1, bindingDataSDF.TextureMip ? bindingDataSDF.TextureMip->ViewVolume() : nullptr);
+    context->BindSR(2, bindingData.Chunks ? bindingData.Chunks->View() : nullptr);
+    context->BindSR(3, bindingData.CulledObjects ? bindingData.CulledObjects->View() : nullptr);
+    context->BindSR(4, bindingData.AtlasDepth->View());
+    context->BindSR(6, skybox);
     context->SetState(_psDebug);
     {
         Float2 outputSizeThird = outputSize * 0.333f;
@@ -943,7 +943,7 @@ void GlobalSurfaceAtlasPass::RenderDebug(RenderContext& renderContext, GPUContex
         context->SetRenderTarget(tempBuffer->View());
 
         // Full screen - direct light
-        context->BindSR(11, bindingData.AtlasLighting->View());
+        context->BindSR(5, bindingData.AtlasLighting->View());
         context->SetViewport(outputSize.X, outputSize.Y);
         context->SetScissor(Rectangle(0, 0, outputSizeTwoThird.X, outputSize.Y));
         context->DrawFullscreenTriangle();
@@ -957,12 +957,12 @@ void GlobalSurfaceAtlasPass::RenderDebug(RenderContext& renderContext, GPUContex
         context->ResetRenderTarget();
 
         // Rebind resources
-        bindingDataSDF.BindCascades(context, 0);
-        bindingDataSDF.BindCascadeMips(context, 4);
-        context->BindSR(8, bindingData.Chunks ? bindingData.Chunks->View() : nullptr);
-        context->BindSR(9, bindingData.CulledObjects ? bindingData.CulledObjects->View() : nullptr);
-        context->BindSR(10, bindingData.AtlasDepth->View());
-        context->BindSR(12, skybox);
+        context->BindSR(0, bindingDataSDF.Texture ? bindingDataSDF.Texture->ViewVolume() : nullptr);
+        context->BindSR(1, bindingDataSDF.TextureMip ? bindingDataSDF.TextureMip->ViewVolume() : nullptr);
+        context->BindSR(2, bindingData.Chunks ? bindingData.Chunks->View() : nullptr);
+        context->BindSR(3, bindingData.CulledObjects ? bindingData.CulledObjects->View() : nullptr);
+        context->BindSR(4, bindingData.AtlasDepth->View());
+        context->BindSR(6, skybox);
         context->BindCB(0, _cb0);
         context->SetState(_psDebug);
         context->SetRenderTarget(output->View());
@@ -972,17 +972,17 @@ void GlobalSurfaceAtlasPass::RenderDebug(RenderContext& renderContext, GPUContex
         context->UpdateCB(_cb0, &data);
 
         // Bottom left - diffuse
-        context->BindSR(11, bindingData.AtlasGBuffer0->View());
+        context->BindSR(5, bindingData.AtlasGBuffer0->View());
         context->SetViewportAndScissors(Viewport(outputSizeTwoThird.X, 0, outputSizeThird.X, outputSizeThird.Y));
         context->DrawFullscreenTriangle();
 
         // Bottom middle - normals
-        context->BindSR(11, bindingData.AtlasGBuffer1->View());
+        context->BindSR(5, bindingData.AtlasGBuffer1->View());
         context->SetViewportAndScissors(Viewport(outputSizeTwoThird.X, outputSizeThird.Y, outputSizeThird.X, outputSizeThird.Y));
         context->DrawFullscreenTriangle();
 
         // Bottom right - roughness/metalness/ao
-        context->BindSR(11, bindingData.AtlasGBuffer2->View());
+        context->BindSR(5, bindingData.AtlasGBuffer2->View());
         context->SetViewportAndScissors(Viewport(outputSizeTwoThird.X, outputSizeTwoThird.Y, outputSizeThird.X, outputSizeThird.Y));
         context->DrawFullscreenTriangle();
     }

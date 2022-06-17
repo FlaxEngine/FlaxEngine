@@ -502,7 +502,7 @@ void MaterialParameter::Bind(BindMeta& meta) const
         GlobalSignDistanceFieldPass::BindingData bindingData;
         if (GlobalSignDistanceFieldPass::Instance()->Get(meta.Buffers, bindingData))
             Platform::MemoryClear(&bindingData, sizeof(bindingData));
-        bindingData.BindCascades(meta.Context, _registerIndex);
+        meta.Context->BindSR(_registerIndex, bindingData.Texture ? bindingData.Texture->ViewVolume() : nullptr);
         *((GlobalSignDistanceFieldPass::ConstantsData*)(meta.Constants.Get() + _offset)) = bindingData.Constants;
         break;
     }
