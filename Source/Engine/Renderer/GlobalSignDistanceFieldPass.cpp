@@ -546,11 +546,8 @@ bool GlobalSignDistanceFieldPass::Render(RenderContext& renderContext, GPUContex
         }
 
         // Perform batched chunks rasterization
-        if (!anyDraw)
-        {
-            anyDraw = true;
-            context->ResetSR();
-        }
+        anyDraw = true;
+        context->ResetSR();
         ModelsRasterizeData data;
         data.CascadeCoordToPosMul = (Float3)cascadeBounds.GetSize() / (float)resolution;
         data.CascadeCoordToPosAdd = (Float3)cascadeBounds.Minimum + cascadeVoxelSize * 0.5f;

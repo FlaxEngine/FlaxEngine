@@ -34,7 +34,7 @@
 // This must match HLSL
 #define DDGI_TRACE_RAYS_PROBES_COUNT_LIMIT 4096 // Maximum amount of probes to update at once during rays tracing and blending
 #define DDGI_TRACE_RAYS_GROUP_SIZE_X 32
-#define DDGI_TRACE_RAYS_LIMIT 512 // Limit of rays per-probe (runtime value can be smaller)
+#define DDGI_TRACE_RAYS_LIMIT 256 // Limit of rays per-probe (runtime value can be smaller)
 #define DDGI_PROBE_RESOLUTION_IRRADIANCE 6 // Resolution (in texels) for probe irradiance data (excluding 1px padding on each side)
 #define DDGI_PROBE_RESOLUTION_DISTANCE 14 // Resolution (in texels) for probe distance data (excluding 1px padding on each side)
 #define DDGI_PROBE_UPDATE_BORDERS_GROUP_SIZE 8
@@ -268,26 +268,30 @@ bool DynamicDiffuseGlobalIlluminationPass::Render(RenderContext& renderContext, 
 
     // Setup options
     auto& settings = renderContext.List->Settings.GlobalIllumination;
-    // TODO: implement GI Quality to affect cascades update rate, probes spacing and rays count per probe
     const float probesSpacing = 100.0f; // GI probes placement spacing nearby camera (for closest cascade; gets automatically reduced for further cascades)
+    int32 probeRaysCount;
     switch (Graphics::GIQuality)
     {
     case Quality::Low:
+        probeRaysCount = 96;
         break;
     case Quality::Medium:
+        probeRaysCount = 128;
         break;
     case Quality::High:
+        probeRaysCount = 192;
         break;
     case Quality::Ultra:
     default:
+        probeRaysCount = 256;
         break;
     }
+    ASSERT_LOW_LAYER(Math::Min(Math::AlignUp(probeRaysCount, DDGI_TRACE_RAYS_GROUP_SIZE_X), DDGI_TRACE_RAYS_LIMIT) == probeRaysCount);
     bool debugProbes = false; // TODO: add debug option to draw probes locations -> in Graphics window - Editor-only
     const float indirectLightingIntensity = settings.Intensity;
     const float probeHistoryWeight = Math::Clamp(settings.TemporalResponse, 0.0f, 0.98f);
     const float distance = settings.Distance;
     const Color fallbackIrradiance = settings.FallbackIrradiance;
-    const int32 probeRaysCount = Math::Min(Math::AlignUp(256, DDGI_TRACE_RAYS_GROUP_SIZE_X), DDGI_TRACE_RAYS_LIMIT); // TODO: make it based on the GI Quality
 
     // Automatically calculate amount of cascades to cover the GI distance at the current probes spacing
     const int32 idealProbesCount = 20; // Ideal amount of probes per-cascade to try to fit in order to cover whole distance

@@ -333,7 +333,7 @@ API_STRUCT() struct FLAXENGINE_API GlobalIlluminationSettings : ISerializable
     /// Defines how quickly GI blends between the the current frame and the history buffer. Lower values update GI faster, but with more jittering and noise. If the camera in your game doesn't move much, we recommend values closer to 1.
     /// </summary>
     API_FIELD(Attributes="EditorOrder(20), Limit(0, 1), PostProcessSetting((int)GlobalIlluminationSettingsOverride.TemporalResponse)")
-    float TemporalResponse = 0.8f;
+    float TemporalResponse = 0.9f;
 
     /// <summary>
     /// Draw distance of the Global Illumination effect. Scene outside the range will use fallback irradiance.

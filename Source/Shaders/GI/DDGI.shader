@@ -17,7 +17,7 @@
 #include "./Flax/GI/DDGI.hlsl"
 
 // This must match C++
-#define DDGI_TRACE_RAYS_LIMIT 512 // Limit of rays per-probe (runtime value can be smaller)
+#define DDGI_TRACE_RAYS_LIMIT 256 // Limit of rays per-probe (runtime value can be smaller)
 #define DDGI_TRACE_RAYS_GROUP_SIZE_X 32
 #define DDGI_PROBE_UPDATE_BORDERS_GROUP_SIZE 8
 #define DDGI_PROBE_CLASSIFY_GROUP_SIZE 32
@@ -207,12 +207,13 @@ void CS_TraceRays(uint3 DispatchThreadId : SV_DispatchThreadID)
 #if DDGI_PROBE_UPDATE_MODE == 0
 // Update irradiance
 #define DDGI_PROBE_RESOLUTION DDGI_PROBE_RESOLUTION_IRRADIANCE
+groupshared float4 CachedProbesTraceRadiance[DDGI_TRACE_RAYS_LIMIT];
 #else
 // Update distance
 #define DDGI_PROBE_RESOLUTION DDGI_PROBE_RESOLUTION_DISTANCE
+groupshared float CachedProbesTraceDistance[DDGI_TRACE_RAYS_LIMIT];
 #endif
 
-groupshared float4 CachedProbesTraceRadiance[DDGI_TRACE_RAYS_LIMIT];
 groupshared float3 CachedProbesTraceDirection[DDGI_TRACE_RAYS_LIMIT];
 
 RWTexture2D<float4> RWOutput : register(u0);
@@ -243,6 +244,15 @@ void CS_UpdateProbes(uint3 GroupThreadId : SV_GroupThreadID, uint3 GroupId : SV_
     if (probeState == DDGI_PROBE_STATE_INACTIVE)
         skip = true;
 
+#if DDGI_PROBE_UPDATE_MODE == 0
+    uint backfacesCount = 0;
+    uint backfacesLimit = uint(DDGI.RaysCount * 0.1f);
+#else
+    float probesSpacing = DDGI.ProbesOriginAndSpacing[CascadeIndex].w;
+    float distanceLimit = length(probesSpacing) * 1.5f;
+#endif
+
+    BRANCH
     if (!skip)
     {
         // Load trace rays results into shared memory to reuse across whole thread group (raysCount per thread)
@@ -252,7 +262,12 @@ void CS_UpdateProbes(uint3 GroupThreadId : SV_GroupThreadID, uint3 GroupId : SV_
         for (uint i = 0; i < raysCount; i++)
         {
             uint rayIndex = raysStart + i;
+#if DDGI_PROBE_UPDATE_MODE == 0
             CachedProbesTraceRadiance[rayIndex] = ProbesTrace[uint2(rayIndex, GroupId.x)];
+#else
+            float rayDistance = ProbesTrace[uint2(rayIndex, GroupId.x)].w;
+            CachedProbesTraceDistance[rayIndex] = min(abs(rayDistance), distanceLimit);
+#endif
             CachedProbesTraceDirection[rayIndex] = GetProbeRayDirection(DDGI, rayIndex);
         }
     }
@@ -289,21 +304,14 @@ void CS_UpdateProbes(uint3 GroupThreadId : SV_GroupThreadID, uint3 GroupId : SV_
 
     // Loop over rays
     float4 result = float4(0, 0, 0, 0);
-#if DDGI_PROBE_UPDATE_MODE == 0
-    uint backfacesCount = 0;
-    uint backfacesLimit = uint(DDGI.RaysCount * 0.1f);
-#else
-    float probesSpacing = DDGI.ProbesOriginAndSpacing[CascadeIndex].w;
-    float distanceLimit = length(probesSpacing) * 1.5f;
-#endif
     LOOP
     for (uint rayIndex = 0; rayIndex < DDGI.RaysCount; rayIndex++)
     {
         float3 rayDirection = CachedProbesTraceDirection[rayIndex];
         float rayWeight = max(dot(octahedralDirection, rayDirection), 0.0f);
-        float4 rayRadiance = CachedProbesTraceRadiance[rayIndex];
 
 #if DDGI_PROBE_UPDATE_MODE == 0
+        float4 rayRadiance = CachedProbesTraceRadiance[rayIndex];
         if (rayRadiance.w < 0.0f)
         {
             // Count backface hits
@@ -325,7 +333,7 @@ void CS_UpdateProbes(uint3 GroupThreadId : SV_GroupThreadID, uint3 GroupId : SV_
         rayWeight = pow(rayWeight, 10.0f);
 
         // Add distance (R), distance^2 (G) and weight (A)
-        float rayDistance = min(abs(rayRadiance.w), distanceLimit);
+        float rayDistance = CachedProbesTraceDistance[rayIndex];
         result += float4(rayDistance * rayWeight, (rayDistance * rayDistance) * rayWeight, 0.0f, rayWeight);
 #endif
     }
@@ -351,18 +359,18 @@ void CS_UpdateProbes(uint3 GroupThreadId : SV_GroupThreadID, uint3 GroupId : SV_
     if (irradianceDeltaMax > 0.2f)
     {
         // Reduce history weight after significant lighting change
-        historyWeight = max(historyWeight - 0.7f, 0.0f);
+        historyWeight = max(historyWeight - 0.9f, 0.0f);
     }
     if (irradianceDeltaLen > 2.0f)
     {
         // Reduce flickering during rapid brightness changes
-        result.rgb = previous + (irradianceDelta * 0.25f);
+        //result.rgb = previous + (irradianceDelta * 0.25f);
     }
     float3 resultDelta = (1.0f - historyWeight) * irradianceDelta;
     if (Max3(result.rgb) < Max3(previous))
         resultDelta = min(max(abs(resultDelta), 1.0f / 1024.0f), abs(irradianceDelta)) * sign(resultDelta);
-    result = float4(previous + resultDelta, 1.0f);
-    //result = float4(lerp(result.rgb, previous.rgb, historyWeight), 1.0f);
+    //result = float4(previous + resultDelta, 1.0f);
+    result = float4(lerp(result.rgb, previous.rgb, historyWeight), 1.0f);
 #else
     result = float4(lerp(result.rg, previous.rg, historyWeight), 0.0f, 1.0f);
 #endif
