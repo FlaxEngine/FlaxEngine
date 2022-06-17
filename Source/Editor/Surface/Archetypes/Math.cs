@@ -441,6 +441,60 @@ namespace FlaxEditor.Surface.Archetypes
                     NodeElementArchetype.Factory.Output(0, string.Empty, typeof(Float3), 2),
                 }
             },
+            new NodeArchetype
+            {
+                TypeID = 50,
+                Title = "Smoothstep",
+                Description = "Returns a smooth Hermite interpolation between 0 and 1, if value is in the range [min, max].",
+                Flags = NodeFlags.MaterialGraph,
+                Size = new Float2(110, 60),
+                ConnectionsHints = ConnectionsHint.Numeric,
+                IndependentBoxes = new[]
+                {
+                    0,
+                    1,
+                    2
+                },
+                DependentBoxes = new[] { 3 },
+                DefaultValues = new object[]
+                {
+                    0.0f,
+                    1.0f,
+                },
+                Elements = new[]
+                {
+                    NodeElementArchetype.Factory.Input(0, "Min", true, null, 0),
+                    NodeElementArchetype.Factory.Input(1, "Max", true, null, 1),
+                    NodeElementArchetype.Factory.Input(2, "Value", true, null, 2, 1),
+                    NodeElementArchetype.Factory.Output(0, "Result", null, 3)
+                },               
+            },
+            new NodeArchetype
+            {
+                TypeID = 51,
+                Title = "Step",
+                Description = "Compares two values, returning 0 or 1 based on which value is greater.",
+                Flags = NodeFlags.MaterialGraph,
+                Size = new Float2(110, 40),
+                ConnectionsHints = ConnectionsHint.Numeric,
+                IndependentBoxes = new[]
+                {
+                    0,
+                    1,
+                },
+                DependentBoxes = new[] { 2 },
+                DefaultValues = new object[]
+                {
+                    0.0f,
+                    1.0f,
+                },
+                Elements = new[]
+                {
+                    NodeElementArchetype.Factory.Input(0, "Min", true, null, 0),
+                    NodeElementArchetype.Factory.Input(1, "Max", true, null, 1),
+                    NodeElementArchetype.Factory.Output(0, "Result", null, 2)
+                },
+            },
         };
     }
 }
