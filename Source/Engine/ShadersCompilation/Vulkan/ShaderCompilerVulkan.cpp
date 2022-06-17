@@ -7,6 +7,7 @@
 #include "Engine/Platform/Platform.h"
 #include "Engine/Threading/Threading.h"
 #include "Engine/Serialization/MemoryWriteStream.h"
+#include "Engine/Graphics/Config.h"
 #include "Engine/GraphicsDevice/Vulkan/Types.h"
 
 // Use glslang for HLSL to SPIR-V translation
@@ -682,6 +683,10 @@ bool ShaderCompilerVulkan::CompileShader(ShaderFunctionMeta& meta, WritePermutat
             {
                 auto& descriptor = descriptorsCollector.Descriptors[i];
 
+                // Skip cases (eg. AppendStructuredBuffer counter buffer)
+                if (descriptor.Slot == MAX_uint16)
+                    continue;
+
                 auto& d = header.DescriptorInfo.DescriptorTypes[header.DescriptorInfo.DescriptorTypesCount++];
                 d.Binding = descriptor.Binding;
                 d.Set = stageSet;
@@ -694,12 +699,15 @@ bool ShaderCompilerVulkan::CompileShader(ShaderFunctionMeta& meta, WritePermutat
                 switch (descriptor.BindingType)
                 {
                 case SpirvShaderResourceBindingType::CB:
+                    ASSERT_LOW_LAYER(descriptor.Slot >= 0 && descriptor.Slot < GPU_MAX_CB_BINDED);
                     bindings.UsedCBsMask |= 1 << descriptor.Slot;
                     break;
                 case SpirvShaderResourceBindingType::SRV:
+                    ASSERT_LOW_LAYER(descriptor.Slot >= 0 && descriptor.Slot < GPU_MAX_SR_BINDED);
                     bindings.UsedSRsMask |= 1 << descriptor.Slot;
                     break;
                 case SpirvShaderResourceBindingType::UAV:
+                    ASSERT_LOW_LAYER(descriptor.Slot >= 0 && descriptor.Slot < GPU_MAX_UA_BINDED);
                     bindings.UsedUAsMask |= 1 << descriptor.Slot;
                     break;
                 }
