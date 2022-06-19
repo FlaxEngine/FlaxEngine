@@ -12,7 +12,7 @@ enum class ContainmentType;
 /// </summary>
 API_STRUCT() struct FLAXENGINE_API OrientedBoundingBox
 {
-    DECLARE_SCRIPTING_TYPE_MINIMAL(Rectangle);
+    DECLARE_SCRIPTING_TYPE_MINIMAL(OrientedBoundingBox);
 
     /// <summary>
     /// Half lengths of the box along each axis.
