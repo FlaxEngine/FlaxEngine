@@ -127,9 +127,15 @@ namespace FlaxEditor.Scripting
                 return ChannelMask.Red;
             if (type.Type == typeof(MaterialSceneTextures))
                 return MaterialSceneTextures.BaseColor;
+            if (type.IsValueType)
+            {
+                var value = type.CreateInstance();
+                Utilities.Utils.InitDefaultValues(value);
+                return value;
+            }
             if (ScriptType.Object.IsAssignableFrom(type))
                 return null;
-            if (type.IsValueType || type.CanCreateInstance)
+            if (type.CanCreateInstance)
             {
                 var value = type.CreateInstance();
                 Utilities.Utils.InitDefaultValues(value);
