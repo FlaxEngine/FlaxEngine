@@ -107,16 +107,6 @@ float4 LoadDDGIProbePositionAndState(DDGIData data, Texture2D<snorm float4> prob
     return probeState;
 }
 
-// Loads probe world-space position (XYZ) and probe state (W)
-float4 LoadDDGIProbePositionAndState(DDGIData data, Texture2D<float4> probesState, uint cascadeIndex, uint probeIndex, uint3 probeCoords)
-{
-    int2 probeDataCoords = GetDDGIProbeTexelCoords(data, cascadeIndex, probeIndex);
-    float4 probeState = probesState.Load(int3(probeDataCoords, 0));
-    probeState.xyz *= data.ProbesOriginAndSpacing[cascadeIndex].w; // Probe offset is [-1;1] within probes spacing
-    probeState.xyz += GetDDGIProbeWorldPosition(data, cascadeIndex, probeCoords); // Place probe on a grid
-    return probeState;
-}
-
 // Calculates texture UVs for sampling probes atlas texture (irradiance or distance)
 float2 GetDDGIProbeUV(DDGIData data, uint cascadeIndex, uint probeIndex, float2 octahedralCoords, uint resolution)
 {
