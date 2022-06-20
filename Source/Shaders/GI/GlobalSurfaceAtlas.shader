@@ -71,7 +71,7 @@ void PS_Clear(out float4 Light : SV_Target0, out float4 RT0 : SV_Target1, out fl
 // GBuffer+Depth at 0-3 slots
 Buffer<float4> GlobalSurfaceAtlasObjects : register(t4);
 #if INDIRECT_LIGHT
-Texture2D<float4> ProbesState : register(t5);
+Texture2D<snorm float4> ProbesState : register(t5);
 Texture2D<float4> ProbesDistance : register(t6);
 Texture2D<float4> ProbesIrradiance : register(t7);
 #else

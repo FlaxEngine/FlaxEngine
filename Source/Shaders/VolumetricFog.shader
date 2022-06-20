@@ -286,7 +286,7 @@ Texture3D<float4> LightScatteringHistory : register(t2);
 Texture3D<float4> LocalShadowedLightScattering : register(t3);
 Texture2DArray ShadowMapCSM : register(t4);
 #if USE_DDGI
-Texture2D<float4> ProbesState : register(t5);
+Texture2D<snorm float4> ProbesState : register(t5);
 Texture2D<float4> ProbesDistance : register(t6);
 Texture2D<float4> ProbesIrradiance : register(t7);
 #else

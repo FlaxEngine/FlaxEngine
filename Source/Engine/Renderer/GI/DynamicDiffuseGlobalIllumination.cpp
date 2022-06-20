@@ -373,7 +373,7 @@ bool DynamicDiffuseGlobalIlluminationPass::Render(RenderContext& renderContext, 
 #define INIT_TEXTURE(texture, format, width, height) desc.Format = format; desc.Width = width; desc.Height = height; ddgiData.texture = RenderTargetPool::Get(desc); if (!ddgiData.texture) return true; memUsage += ddgiData.texture->GetMemoryUsage()
         desc.Flags = GPUTextureFlags::ShaderResource | GPUTextureFlags::UnorderedAccess;
         INIT_TEXTURE(ProbesTrace, PixelFormat::R16G16B16A16_Float, probeRaysCount, Math::Min(probesCountCascade, DDGI_TRACE_RAYS_PROBES_COUNT_LIMIT));
-        INIT_TEXTURE(ProbesState, PixelFormat::R16G16B16A16_Float, probesCountTotalX, probesCountTotalY); // TODO: optimize to a RGBA32 (pos offset can be normalized to [0-0.5] range of ProbesSpacing and packed with state flag)
+        INIT_TEXTURE(ProbesState, PixelFormat::R8G8B8A8_SNorm, probesCountTotalX, probesCountTotalY);
         INIT_TEXTURE(ProbesIrradiance, PixelFormat::R11G11B10_Float, probesCountTotalX * (DDGI_PROBE_RESOLUTION_IRRADIANCE + 2), probesCountTotalY * (DDGI_PROBE_RESOLUTION_IRRADIANCE + 2));
         INIT_TEXTURE(ProbesDistance, PixelFormat::R16G16_Float, probesCountTotalX * (DDGI_PROBE_RESOLUTION_DISTANCE + 2), probesCountTotalY * (DDGI_PROBE_RESOLUTION_DISTANCE + 2));
 #undef INIT_TEXTURE

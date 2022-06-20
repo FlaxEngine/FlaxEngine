@@ -58,7 +58,7 @@ float3 GetProbeRayDirection(DDGIData data, uint rayIndex)
 
 #ifdef _CS_Classify
 
-RWTexture2D<float4> RWProbesState : register(u0);
+RWTexture2D<snorm float4> RWProbesState : register(u0);
 
 Texture3D<float> GlobalSDFTex : register(t0);
 Texture3D<float> GlobalSDFMip : register(t1);
@@ -79,6 +79,7 @@ void CS_Classify(uint3 DispatchThreadId : SV_DispatchThreadID)
 
     // Load probe state and position
     float4 probeState = RWProbesState[probeDataCoords];
+    probeState.xyz *= probesSpacing; // Probe offset is [-1;1] within probes spacing
     float3 probeBasePosition = GetDDGIProbeWorldPosition(DDGI, CascadeIndex, probeCoords);
     float3 probePosition = probeBasePosition + probeState.xyz;
     probeState.w = DDGI_PROBE_STATE_ACTIVE;
@@ -128,7 +129,8 @@ void CS_Classify(uint3 DispatchThreadId : SV_DispatchThreadID)
             probeState.xyz = float3(0, 0, 0);
         }
     }
-	
+
+    probeState.xyz /= probesSpacing;
     RWProbesState[probeDataCoords] = probeState;
 }
 
@@ -144,7 +146,7 @@ ByteAddressBuffer GlobalSurfaceAtlasChunks : register(t2);
 Buffer<float4> GlobalSurfaceAtlasCulledObjects : register(t3);
 Texture2D GlobalSurfaceAtlasDepth : register(t4);
 Texture2D GlobalSurfaceAtlasTex : register(t5);
-Texture2D<float4> ProbesState : register(t6);
+Texture2D<snorm float4> ProbesState : register(t6);
 TextureCube Skybox : register(t7);
 
 // Compute shader for tracing rays for probes using Global SDF and Global Surface Atlas.
@@ -217,7 +219,7 @@ groupshared float CachedProbesTraceDistance[DDGI_TRACE_RAYS_LIMIT];
 groupshared float3 CachedProbesTraceDirection[DDGI_TRACE_RAYS_LIMIT];
 
 RWTexture2D<float4> RWOutput : register(u0);
-Texture2D<float4> ProbesState : register(t0);
+Texture2D<snorm float4> ProbesState : register(t0);
 Texture2D<float4> ProbesTrace : register(t1);
 
 // Compute shader for updating probes irradiance or distance texture.
@@ -453,7 +455,7 @@ void CS_UpdateBorders(uint3 DispatchThreadId : SV_DispatchThreadID)
 #include "./Flax/Random.hlsl"
 #include "./Flax/LightingCommon.hlsl"
 
-Texture2D<float4> ProbesState : register(t4);
+Texture2D<snorm float4> ProbesState : register(t4);
 Texture2D<float4> ProbesDistance : register(t5);
 Texture2D<float4> ProbesIrradiance : register(t6);
 
