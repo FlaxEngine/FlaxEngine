@@ -774,9 +774,10 @@ namespace FlaxEditor.Utilities
             else
                 orientation = Quaternion.LookRotation(dir, Vector3.Cross(Vector3.Cross(dir, Vector3.Up), dir));
             Vector3 up = Vector3.Up * orientation;
-            box.Transformation = Matrix.CreateWorld(min + vec * 0.5f, dir, up);
-            Matrix.Invert(ref box.Transformation, out Matrix inv);
-            Vector3 vecLocal = Vector3.TransformNormal(vec * 0.5f, inv);
+            Matrix world = Matrix.CreateWorld(min + vec * 0.5f, dir, up);
+            world.Decompose(out box.Transformation);
+            Matrix.Invert(ref world, out Matrix invWorld);
+            Vector3 vecLocal = Vector3.TransformNormal(vec * 0.5f, invWorld);
             box.Extents.X = margin;
             box.Extents.Y = margin;
             box.Extents.Z = vecLocal.Z;

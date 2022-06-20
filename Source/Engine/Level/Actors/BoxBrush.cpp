@@ -1,6 +1,7 @@
 // Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 #include "BoxBrush.h"
+#include "Engine/Core/Math/Matrix.h"
 #include "Engine/Content/Content.h"
 #include "Engine/Serialization/Serialization.h"
 #include "Engine/Level/Scene/Scene.h"

@@ -15,7 +15,7 @@ Decal::Decal(const SpawnParams& params)
 {
     _world = Matrix::Scaling(_size);
     _bounds.Extents = Vector3::Half;
-    _bounds.Transformation = _world;
+    _world.Decompose(_bounds.Transformation);
     _bounds.GetBoundingBox(_box);
     BoundingSphere::FromBox(_box, _sphere);
 }
@@ -30,8 +30,8 @@ void Decal::SetSize(const Vector3& value)
         Transform t = _transform;
         t.Scale *= _size;
         t.GetWorld(_world);
-        _bounds.Extents = Vector3::Half;
-        _bounds.Transformation = _world;
+
+        _bounds.Transformation = t;
         _bounds.GetBoundingBox(_box);
         BoundingSphere::FromBox(_box, _sphere);
     }
@@ -152,7 +152,7 @@ void Decal::OnTransformChanged()
     t.GetWorld(_world);
 
     _bounds.Extents = Vector3::Half;
-    _bounds.Transformation = _world;
+    _bounds.Transformation = t;
     _bounds.GetBoundingBox(_box);
     BoundingSphere::FromBox(_box, _sphere);
 

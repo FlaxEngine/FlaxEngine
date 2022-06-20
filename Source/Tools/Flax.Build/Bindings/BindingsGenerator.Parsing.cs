@@ -1155,6 +1155,11 @@ namespace Flax.Build.Bindings
                     desc.IsStatic = true;
                     context.Tokenizer.NextToken();
                 }
+                else if (!desc.IsConstexpr && token.Value == "constexpr")
+                {
+                    desc.IsConstexpr = true;
+                    context.Tokenizer.NextToken();
+                }
                 else if (!isMutable && token.Value == "mutable")
                 {
                     isMutable = true;

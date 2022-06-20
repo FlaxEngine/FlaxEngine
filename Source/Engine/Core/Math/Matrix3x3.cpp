@@ -201,6 +201,40 @@ void Matrix3x3::RotationQuaternion(const Quaternion& rotation, Matrix3x3& result
     result.M33 = 1.0f - 2.0f * (yy + xx);
 }
 
+void Matrix3x3::Decompose(Float3& scale, Matrix3x3& rotation) const
+{
+    // Scaling is the length of the rows
+    scale = Float3(
+        Math::Sqrt(M11 * M11 + M12 * M12 + M13 * M13),
+        Math::Sqrt(M21 * M21 + M22 * M22 + M23 * M23),
+        Math::Sqrt(M31 * M31 + M32 * M32 + M33 * M33));
+
+    // If any of the scaling factors are zero, than the rotation matrix can not exist
+    rotation = Identity;
+    if (scale.IsAnyZero())
+        return;
+
+    // Calculate an perfect orthonormal matrix (no reflections)
+    const auto at = Float3(M31 / scale.Z, M32 / scale.Z, M33 / scale.Z);
+    const auto up = Float3::Cross(at, Float3(M11 / scale.X, M12 / scale.X, M13 / scale.X));
+    const auto right = Float3::Cross(up, at);
+    rotation.SetRight(right);
+    rotation.SetUp(up);
+    rotation.SetBackward(at);
+
+    // In case of reflexions
+    scale.X = Float3::Dot(right, GetRight()) > 0.0f ? scale.X : -scale.X;
+    scale.Y = Float3::Dot(up, GetUp()) > 0.0f ? scale.Y : -scale.Y;
+    scale.Z = Float3::Dot(at, GetBackward()) > 0.0f ? scale.Z : -scale.Z;
+}
+
+void Matrix3x3::Decompose(Float3& scale, Quaternion& rotation) const
+{
+    Matrix3x3 rotationMatrix;
+    Decompose(scale, rotationMatrix);
+    Quaternion::RotationMatrix(rotationMatrix, rotation);
+}
+
 bool Matrix3x3::operator==(const Matrix3x3& other) const
 {
     return

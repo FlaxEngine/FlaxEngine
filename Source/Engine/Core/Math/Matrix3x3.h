@@ -120,6 +120,90 @@ public:
     String ToString() const;
 
 public:
+    // Gets the up Float3 of the matrix; that is M21, M22, and M23.
+    Float3 GetUp() const
+    {
+        return Float3(M21, M22, M23);
+    }
+
+    // Sets Float3 of the matrix; that is M21, M22, and M23.
+    void SetUp(const Float3& value)
+    {
+        M21 = value.X;
+        M22 = value.Y;
+        M23 = value.Z;
+    }
+
+    // Gets the down Float3 of the matrix; that is -M21, -M22, and -M23.
+    Float3 GetDown() const
+    {
+        return -Float3(M21, M22, M23);
+    }
+
+    // Sets the down Float3 of the matrix; that is -M21, -M22, and -M23.
+    void SetDown(const Float3& value)
+    {
+        M21 = -value.X;
+        M22 = -value.Y;
+        M23 = -value.Z;
+    }
+
+    // Gets the right Float3 of the matrix; that is M11, M12, and M13.
+    Float3 GetRight() const
+    {
+        return Float3(M11, M12, M13);
+    }
+
+    // Sets the right Float3 of the matrix; that is M11, M12, and M13.
+    void SetRight(const Float3& value)
+    {
+        M11 = value.X;
+        M12 = value.Y;
+        M13 = value.Z;
+    }
+
+    // Gets the left Float3 of the matrix; that is -M11, -M12, and -M13.
+    Float3 GetLeft() const
+    {
+        return -Float3(M11, M12, M13);
+    }
+
+    // Sets the left Float3 of the matrix; that is -M11, -M12, and -M13.
+    void SetLeft(const Float3& value)
+    {
+        M11 = -value.X;
+        M12 = -value.Y;
+        M13 = -value.Z;
+    }
+
+    // Gets the forward Float3 of the matrix; that is -M31, -M32, and -M33.
+    Float3 GetForward() const
+    {
+        return -Float3(M31, M32, M33);
+    }
+
+    // Sets the forward Float3 of the matrix; that is -M31, -M32, and -M33.
+    void SetForward(const Float3& value)
+    {
+        M31 = -value.X;
+        M32 = -value.Y;
+        M33 = -value.Z;
+    }
+
+    // Gets the backward Float3 of the matrix; that is M31, M32, and M33.
+    Float3 GetBackward() const
+    {
+        return Float3(M31, M32, M33);
+    }
+
+    // Sets the backward Float3 of the matrix; that is M31, M32, and M33.
+    void SetBackward(const Float3& value)
+    {
+        M31 = value.X;
+        M32 = value.Y;
+        M33 = value.Z;
+    }
+
     // Gets the first row in the matrix; that is M11, M12 and M13.
     Float3 GetRow1() const
     {
@@ -496,6 +580,22 @@ public:
     /// <param name="rotation">The quaternion to use to build the matrix.</param>
     /// <param name="result">The created rotation matrix.</param>
     static void RotationQuaternion(const Quaternion& rotation, Matrix3x3& result);
+
+    /// <summary>
+    /// Decomposes a matrix into a scale and rotation.
+    /// </summary>
+    /// <param name="scale">When the method completes, contains the scaling component of the decomposed matrix.</param>
+    /// <param name="rotation">When the method completes, contains the rotation component of the decomposed matrix.</param>
+    /// <remarks>This method is designed to decompose an scale-rotation transformation matrix only.</remarks>
+    void Decompose(Float3& scale, Matrix3x3& rotation) const;
+
+    /// <summary>
+    /// Decomposes a matrix into a scale and rotation.
+    /// </summary>
+    /// <param name="scale">When the method completes, contains the scaling component of the decomposed matrix.</param>
+    /// <param name="rotation">When the method completes, contains the rotation component of the decomposed matrix.</param>
+    /// <remarks>This method is designed to decompose an scale-rotation transformation matrix only.</remarks>
+    void Decompose(Float3& scale, Quaternion& rotation) const;
 
 public:
     /// <summary>

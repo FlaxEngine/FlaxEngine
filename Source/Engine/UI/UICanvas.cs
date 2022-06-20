@@ -330,7 +330,8 @@ namespace FlaxEngine
                 };
                 GetWorldMatrix(out Matrix world);
                 Matrix.Translation((float)bounds.Extents.X, (float)bounds.Extents.Y, 0, out Matrix offset);
-                Matrix.Multiply(ref offset, ref world, out bounds.Transformation);
+                Matrix.Multiply(ref offset, ref world, out var boxWorld);
+                boxWorld.Decompose(out bounds.Transformation);
                 return bounds;
             }
         }

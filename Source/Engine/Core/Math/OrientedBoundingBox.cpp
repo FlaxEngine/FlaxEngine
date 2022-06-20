@@ -3,6 +3,7 @@
 #include "OrientedBoundingBox.h"
 #include "BoundingSphere.h"
 #include "BoundingBox.h"
+#include "Matrix.h"
 #include "Ray.h"
 #include "../Types/String.h"
 
@@ -10,32 +11,41 @@ OrientedBoundingBox::OrientedBoundingBox(const BoundingBox& bb)
 {
     const Vector3 center = bb.Minimum + (bb.Maximum - bb.Minimum) * 0.5f;
     Extents = bb.Maximum - center;
-    Matrix::Translation(center, Transformation);
+    Transformation = ::Transform(center);
+}
+
+OrientedBoundingBox::OrientedBoundingBox(const Vector3& extents, const Matrix& transformation)
+    : Extents(extents)
+{
+    transformation.Decompose(Transformation);
 }
 
 OrientedBoundingBox::OrientedBoundingBox(const Vector3& extents, const Matrix3x3& rotationScale, const Vector3& translation)
     : Extents(extents)
-    , Transformation(rotationScale)
+    , Transformation(translation, rotationScale)
 {
-    Transformation.SetTranslation(translation);
+}
+
+OrientedBoundingBox::OrientedBoundingBox(const Vector3& minimum, const Vector3& maximum)
+{
+    const Vector3 center = minimum + (maximum - minimum) * 0.5f;
+    Extents = maximum - center;
+    Transformation = ::Transform(center);
 }
 
 OrientedBoundingBox::OrientedBoundingBox(Vector3 points[], int32 pointCount)
 {
     ASSERT(points && pointCount > 0);
-
     Vector3 minimum = points[0];
     Vector3 maximum = points[0];
-
     for (int32 i = 1; i < pointCount; i++)
     {
         Vector3::Min(minimum, points[i], minimum);
         Vector3::Max(maximum, points[i], maximum);
     }
-
-    const Vector3 center = minimum + (maximum - minimum) / 2.0f;
+    const Vector3 center = minimum + (maximum - minimum) * 0.5f;
     Extents = maximum - center;
-    Matrix::Translation(center, Transformation);
+    Transformation = ::Transform(center);
 }
 
 String OrientedBoundingBox::ToString() const
@@ -45,15 +55,11 @@ String OrientedBoundingBox::ToString() const
 
 void OrientedBoundingBox::GetCorners(Float3 corners[8]) const
 {
-    Float3 xv((float)Extents.X, 0, 0);
-    Float3 yv(0, (float)Extents.Y, 0);
-    Float3 zv(0, 0, (float)Extents.Z);
+    const Float3 xv = Transformation.LocalToWorldVector(Vector3((float)Extents.X, 0, 0));
+    const Float3 yv = Transformation.LocalToWorldVector(Vector3(0, (float)Extents.Y, 0));
+    const Float3 zv = Transformation.LocalToWorldVector(Vector3(0, 0, (float)Extents.Z));
 
-    Float3::TransformNormal(xv, Transformation, xv);
-    Float3::TransformNormal(yv, Transformation, yv);
-    Float3::TransformNormal(zv, Transformation, zv);
-
-    const Float3 center = Transformation.GetTranslation();
+    const Float3 center = Transformation.Translation;
 
     corners[0] = center + xv + yv + zv;
     corners[1] = center + xv + yv - zv;
@@ -67,15 +73,11 @@ void OrientedBoundingBox::GetCorners(Float3 corners[8]) const
 
 void OrientedBoundingBox::GetCorners(Double3 corners[8]) const
 {
-    Double3 xv(Extents.X, 0, 0);
-    Double3 yv(0, Extents.Y, 0);
-    Double3 zv(0, 0, Extents.Z);
+    const Double3 xv = Transformation.LocalToWorldVector(Vector3((float)Extents.X, 0, 0));
+    const Double3 yv = Transformation.LocalToWorldVector(Vector3(0, (float)Extents.Y, 0));
+    const Double3 zv = Transformation.LocalToWorldVector(Vector3(0, 0, (float)Extents.Z));
 
-    Double3::TransformNormal(xv, Transformation, xv);
-    Double3::TransformNormal(yv, Transformation, yv);
-    Double3::TransformNormal(zv, Transformation, zv);
-
-    const Double3 center = Transformation.GetTranslation();
+    const Double3 center = Transformation.Translation;
 
     corners[0] = center + xv + yv + zv;
     corners[1] = center + xv + yv - zv;
@@ -89,39 +91,26 @@ void OrientedBoundingBox::GetCorners(Double3 corners[8]) const
 
 Vector3 OrientedBoundingBox::GetSize() const
 {
-    Vector3 xv = Vector3(Extents.X * 2, 0, 0);
-    Vector3 yv = Vector3(0, Extents.Y * 2, 0);
-    Vector3 zv = Vector3(0, 0, Extents.Z * 2);
-
-    Vector3::TransformNormal(xv, Transformation, xv);
-    Vector3::TransformNormal(yv, Transformation, yv);
-    Vector3::TransformNormal(zv, Transformation, zv);
-
+    const Vector3 xv = Transformation.LocalToWorldVector(Vector3(Extents.X * 2, 0, 0));
+    const Vector3 yv = Transformation.LocalToWorldVector(Vector3(0, Extents.Y * 2, 0));
+    const Vector3 zv = Transformation.LocalToWorldVector(Vector3(0, 0, Extents.Z * 2));
     return Vector3(xv.Length(), yv.Length(), zv.Length());
 }
 
 Vector3 OrientedBoundingBox::GetSizeSquared() const
 {
-    Vector3 xv = Vector3(Extents.X * 2, 0, 0);
-    Vector3 yv = Vector3(0, Extents.Y * 2, 0);
-    Vector3 zv = Vector3(0, 0, Extents.Z * 2);
-
-    Vector3::TransformNormal(xv, Transformation, xv);
-    Vector3::TransformNormal(yv, Transformation, yv);
-    Vector3::TransformNormal(zv, Transformation, zv);
-
+    const Vector3 xv = Transformation.LocalToWorldVector(Vector3(Extents.X * 2, 0, 0));
+    const Vector3 yv = Transformation.LocalToWorldVector(Vector3(0, Extents.Y * 2, 0));
+    const Vector3 zv = Transformation.LocalToWorldVector(Vector3(0, 0, Extents.Z * 2));
     return Vector3(xv.LengthSquared(), yv.LengthSquared(), zv.LengthSquared());
 }
 
 BoundingBox OrientedBoundingBox::GetBoundingBox() const
 {
     BoundingBox result;
-
     Vector3 corners[8];
     GetCorners(corners);
-
     BoundingBox::FromPoints(corners, 8, result);
-
     return result;
 }
 
@@ -135,19 +124,21 @@ void OrientedBoundingBox::GetBoundingBox(BoundingBox& result) const
 
 void OrientedBoundingBox::Transform(const Matrix& matrix)
 {
-    const Matrix tmp = Transformation;
-    Matrix::Multiply(tmp, matrix, Transformation);
+    ::Transform transform;
+    matrix.Decompose(transform);
+    Transformation = transform.LocalToWorld(Transformation);
+}
+
+void OrientedBoundingBox::Transform(const ::Transform& transform)
+{
+    Transformation = transform.LocalToWorld(Transformation);
 }
 
 ContainmentType OrientedBoundingBox::Contains(const Vector3& point, Real* distance) const
 {
     // Transform the point into the obb coordinates
-    Matrix invTrans;
-    Matrix::Invert(Transformation, invTrans);
-
     Vector3 locPoint;
-    Vector3::TransformCoordinate(point, invTrans, locPoint);
-
+    Transformation.WorldToLocal(point, locPoint);
     locPoint.X = Math::Abs(locPoint.X);
     locPoint.Y = Math::Abs(locPoint.Y);
     locPoint.Z = Math::Abs(locPoint.Z);
@@ -161,7 +152,7 @@ ContainmentType OrientedBoundingBox::Contains(const Vector3& point, Real* distan
 
         // Transform distance to world space
         Vector3 dstVec = Vector3::UnitX * minDstToEdgeLocal;
-        Vector3::TransformNormal(dstVec, Transformation, dstVec);
+        Transformation.LocalToWorldVector(dstVec, dstVec);
         *distance = dstVec.Length();
     }
 
@@ -173,49 +164,11 @@ ContainmentType OrientedBoundingBox::Contains(const Vector3& point, Real* distan
     return ContainmentType::Disjoint;
 }
 
-ContainmentType OrientedBoundingBox::Contains(int32 pointsCnt, Vector3 points[]) const
-{
-    ASSERT(pointsCnt > 0);
-
-    Matrix invTrans;
-    Matrix::Invert(Transformation, invTrans);
-
-    bool containsAll = true;
-    bool containsAny = false;
-
-    for (int32 i = 0; i < pointsCnt; i++)
-    {
-        Vector3 locPoint;
-        Vector3::TransformCoordinate(points[i], invTrans, locPoint);
-
-        locPoint.X = Math::Abs(locPoint.X);
-        locPoint.Y = Math::Abs(locPoint.Y);
-        locPoint.Z = Math::Abs(locPoint.Z);
-
-        // Simple axes-aligned BB check
-        if (Vector3::NearEqual(locPoint, Extents))
-            containsAny = true;
-        if (locPoint.X < Extents.X && locPoint.Y < Extents.Y && locPoint.Z < Extents.Z)
-            containsAny = true;
-        else
-            containsAll = false;
-    }
-
-    if (containsAll)
-        return ContainmentType::Contains;
-    if (containsAny)
-        return ContainmentType::Intersects;
-    return ContainmentType::Disjoint;
-}
-
 ContainmentType OrientedBoundingBox::Contains(const BoundingSphere& sphere, bool ignoreScale) const
 {
-    Matrix invTrans;
-    Matrix::Invert(Transformation, invTrans);
-
     // Transform sphere center into the obb coordinates
     Vector3 locCenter;
-    Vector3::TransformCoordinate(sphere.Center, invTrans, locCenter);
+    Transformation.WorldToLocal(sphere.Center, locCenter);
 
     Real locRadius;
     if (ignoreScale)
@@ -226,7 +179,7 @@ ContainmentType OrientedBoundingBox::Contains(const BoundingSphere& sphere, bool
     {
         // Transform sphere radius into the obb coordinates
         Vector3 vRadius = Vector3::UnitX * sphere.Radius;
-        Vector3::TransformNormal(vRadius, invTrans, vRadius);
+        Transformation.LocalToWorldVector(vRadius, vRadius);
         locRadius = vRadius.Length();
     }
 
@@ -238,119 +191,25 @@ ContainmentType OrientedBoundingBox::Contains(const BoundingSphere& sphere, bool
 
     if (distance > locRadius * locRadius)
         return ContainmentType::Disjoint;
-
-    if (minusExtents.X + locRadius <= locCenter.X
-        && locCenter.X <= Extents.X - locRadius
-        && (Extents.X - minusExtents.X > locRadius
-            && minusExtents.Y + locRadius <= locCenter.Y)
-        && (locCenter.Y <= Extents.Y - locRadius
-            && Extents.Y - minusExtents.Y > locRadius
-            && (minusExtents.Z + locRadius <= locCenter.Z
-                && locCenter.Z <= Extents.Z - locRadius
-                && Extents.Z - minusExtents.Z > locRadius)))
-    {
+    if (minusExtents.X + locRadius <= locCenter.X && locCenter.X <= Extents.X - locRadius && (Extents.X - minusExtents.X > locRadius && minusExtents.Y + locRadius <= locCenter.Y) && (locCenter.Y <= Extents.Y - locRadius && Extents.Y - minusExtents.Y > locRadius && (minusExtents.Z + locRadius <= locCenter.Z && locCenter.Z <= Extents.Z - locRadius && Extents.Z - minusExtents.Z > locRadius)))
         return ContainmentType::Contains;
-    }
-
     return ContainmentType::Intersects;
 }
-
-/*ContainmentType OrientedBoundingBox::Contains(const OrientedBoundingBox& obb)
-{
-	Vector3 obbCorners[8];
-	obb.GetCorners(obbCorners);
-	auto cornersCheck = Contains(8, obbCorners);
-	if (cornersCheck != ContainmentType::Disjoint)
-		return cornersCheck;
-
-	// http://www.3dkingdoms.com/weekly/bbox.cpp
-	Vector3 SizeA = Extents;
-	Vector3 SizeB = obb.Extents;
-	Vector3 RotA[3];
-	Vector3 RotB[3];
-	GetRows(Transformation, RotA);
-	GetRows(obb.Transformation, RotB);
-
-	Matrix R = Matrix::Identity;       // Rotation from B to A
-	Matrix AR = Matrix::Identity;      // absolute values of R matrix, to use with box extents
-
-	Real ExtentA, ExtentB, Separation;
-	int i, k;
-
-	// Calculate B to A rotation matrix
-	for (i = 0; i < 3; i++)
-	{
-		for (k = 0; k < 3; k++)
-		{
-			R[i, k] = Vector3::Dot(RotA[i], RotB[k]);
-			AR[i, k] = Math::Abs(R[i, k]);
-		}
-	}
-
-	// Vector separating the centers of Box B and of Box A	
-	Vector3 vSepWS = obb.GetCenter() - GetCenter();
-
-	// Rotated into Box A's coordinates
-	Vector3 vSepA = Vector3(Vector3::Dot(vSepWS, RotA[0]), Vector3::Dot(vSepWS, RotA[1]), Vector3::Dot(vSepWS, RotA[2]));
-
-	// Test if any of A's basis vectors separate the box
-	for (i = 0; i < 3; i++)
-	{
-		ExtentA = SizeA[i];
-		ExtentB = Vector3::Dot(SizeB, Vector3(AR[i, 0], AR[i, 1], AR[i, 2]));
-		Separation = Math::Abs(vSepA[i]);
-
-		if (Separation > ExtentA + ExtentB)
-			return ContainmentType::Disjoint;
-	}
-
-	// Test if any of B's basis vectors separate the box
-	for (k = 0; k < 3; k++)
-	{
-		ExtentA = Vector3::Dot(SizeA, Vector3(AR[0, k], AR[1, k], AR[2, k]));
-		ExtentB = SizeB[k];
-		Separation = Math::Abs(Vector3::Dot(vSepA, Vector3(R[0, k], R[1, k], R[2, k])));
-
-		if (Separation > ExtentA + ExtentB)
-			return ContainmentType::Disjoint;
-	}
-
-	// Now test Cross Products of each basis vector combination ( A[i], B[k] )
-	for (i = 0; i < 3; i++)
-	{
-		for (k = 0; k < 3; k++)
-		{
-			int i1 = (i + 1) % 3, i2 = (i + 2) % 3;
-			int k1 = (k + 1) % 3, k2 = (k + 2) % 3;
-			ExtentA = SizeA[i1] * AR[i2, k] + SizeA[i2] * AR[i1, k];
-			ExtentB = SizeB[k1] * AR[i, k2] + SizeB[k2] * AR[i, k1];
-			Separation = Math::Abs(vSepA[i2] * R[i1, k] - vSepA[i1] * R[i2, k]);
-			if (Separation > ExtentA + ExtentB)
-				return ContainmentType::Disjoint;
-		}
-	}
-
-	// No separating axis found, the boxes overlap	
-	return ContainmentType::Intersects;
-}*/
 
 bool OrientedBoundingBox::Intersects(const Ray& ray, Vector3& point) const
 {
     // Put ray in box space
-    Matrix invTrans;
-    Matrix::Invert(Transformation, invTrans);
-
     Ray bRay;
-    Vector3::TransformNormal(ray.Direction, invTrans, bRay.Direction);
-    Vector3::TransformCoordinate(ray.Position, invTrans, bRay.Position);
+    Transformation.WorldToLocalVector(ray.Direction, bRay.Direction);
+    Transformation.WorldToLocal(ray.Position, bRay.Position);
 
     // Perform a regular ray to BoundingBox check
-    const BoundingBox bb = BoundingBox(-Extents, Extents);
+    const BoundingBox bb(-Extents, Extents);
     const bool intersects = CollisionsHelper::RayIntersectsBox(bRay, bb, point);
 
     // Put the result intersection back to world
     if (intersects)
-        Vector3::TransformCoordinate(point, Transformation, point);
+        Transformation.LocalToWorld(point, point);
 
     return intersects;
 }
@@ -366,19 +225,16 @@ bool OrientedBoundingBox::Intersects(const Ray& ray, Real& distance) const
 bool OrientedBoundingBox::Intersects(const Ray& ray, Real& distance, Vector3& normal) const
 {
     // Put ray in box space
-    Matrix invTrans;
-    Matrix::Invert(Transformation, invTrans);
-
     Ray bRay;
-    Vector3::TransformNormal(ray.Direction, invTrans, bRay.Direction);
-    Vector3::TransformCoordinate(ray.Position, invTrans, bRay.Position);
+    Transformation.WorldToLocalVector(ray.Direction, bRay.Direction);
+    Transformation.WorldToLocal(ray.Position, bRay.Position);
 
     // Perform a regular ray to BoundingBox check
     const BoundingBox bb(-Extents, Extents);
     if (CollisionsHelper::RayIntersectsBox(bRay, bb, distance, normal))
     {
         // Put the result intersection back to world
-        Vector3::TransformNormal(normal, Transformation, normal);
+        Transformation.LocalToWorldVector(normal, normal);
         normal.Normalize();
         return true;
     }

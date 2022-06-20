@@ -3,6 +3,7 @@
 #pragma once
 
 #include "../Actor.h"
+#include "Engine/Core/Math/Matrix.h"
 #include "Engine/Core/Math/OrientedBoundingBox.h"
 #include "Engine/Content/Assets/MaterialBase.h"
 #include "Engine/Content/AssetReference.h"
