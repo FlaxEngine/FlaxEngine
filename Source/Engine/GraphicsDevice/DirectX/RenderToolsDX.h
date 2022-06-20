@@ -388,8 +388,9 @@ inline void SetDebugObjectName(T* resource, const Char* data, UINT size)
     if (data && size > 0)
         resource->SetName(data);
 #else
-    char* ansi = (char*)Allocator::Allocate(size);
+    char* ansi = (char*)Allocator::Allocate(size + 1);
     StringUtils::ConvertUTF162ANSI(data, ansi, size);
+    ansi[size] ='\0';
     SetDebugObjectName(resource, ansi, size);
     Allocator::Free(ansi);
 #endif
