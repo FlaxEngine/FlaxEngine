@@ -51,7 +51,8 @@ private:
     int32 _isCompute : 1;
     int32 _rtDirtyFlag : 1;
     int32 _psDirtyFlag : 1;
-    int32 _cbDirtyFlag : 1;
+    int32 _cbGraphicsDirtyFlag : 1;
+    int32 _cbComputeDirtyFlag : 1;
     int32 _samplersDirtyFlag : 1;
 
     GPUTextureViewDX12* _rtDepth;

@@ -74,7 +74,8 @@ GPUContextDX12::GPUContextDX12(GPUDeviceDX12* device, D3D12_COMMAND_LIST_TYPE ty
     , _isCompute(0)
     , _rtDirtyFlag(0)
     , _psDirtyFlag(0)
-    , _cbDirtyFlag(0)
+    , _cbGraphicsDirtyFlag(0)
+    , _cbComputeDirtyFlag(0)
     , _samplersDirtyFlag(0)
     , _rtDepth(nullptr)
     , _ibHandle(nullptr)
@@ -214,7 +215,8 @@ void GPUContextDX12::Reset()
     // Setup initial state
     _currentState = nullptr;
     _rtDirtyFlag = false;
-    _cbDirtyFlag = false;
+    _cbGraphicsDirtyFlag = false;
+    _cbComputeDirtyFlag = false;
     _samplersDirtyFlag = false;
     _rtCount = 0;
     _rtDepth = nullptr;
@@ -453,19 +455,30 @@ void GPUContextDX12::flushUAVs()
 
 void GPUContextDX12::flushCBs()
 {
-    if (!_cbDirtyFlag)
-        return;
-    _cbDirtyFlag = false;
-    for (uint32 slotIndex = 0; slotIndex < ARRAY_COUNT(_cbHandles); slotIndex++)
+    if (_cbGraphicsDirtyFlag && !_isCompute)
     {
-        auto cb = _cbHandles[slotIndex];
-        if (cb)
+        _cbGraphicsDirtyFlag = false;
+        for (uint32 i = 0; i < ARRAY_COUNT(_cbHandles); i++)
         {
-            ASSERT(cb->GPUAddress != 0);
-            if (_isCompute)
-                _commandList->SetComputeRootConstantBufferView(slotIndex, cb->GPUAddress);
-            else
-                _commandList->SetGraphicsRootConstantBufferView(slotIndex, cb->GPUAddress);
+            const auto cb = _cbHandles[i];
+            if (cb)
+            {
+                ASSERT(cb->GPUAddress != 0);
+                _commandList->SetGraphicsRootConstantBufferView(i, cb->GPUAddress);
+            }
+        }
+    }
+    else if (_cbComputeDirtyFlag && _isCompute)
+    {
+        _cbComputeDirtyFlag = false;
+        for (uint32 i = 0; i < ARRAY_COUNT(_cbHandles); i++)
+        {
+            const auto cb = _cbHandles[i];
+            if (cb)
+            {
+                ASSERT(cb->GPUAddress != 0);
+                _commandList->SetComputeRootConstantBufferView(i, cb->GPUAddress);
+            }
         }
     }
 }
@@ -762,7 +775,7 @@ void GPUContextDX12::ClearUA(GPUTexture* texture, const Float4& value)
 
     SetResourceState(texDX12, D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
     flushRBs();
-    
+
     auto uav = ((GPUTextureViewDX12*)(texDX12->IsVolume() ? texDX12->ViewVolume() : texDX12->View(0)))->UAV();
     Descriptor desc;
     GetActiveHeapDescriptor(uav, desc);
@@ -867,7 +880,8 @@ void GPUContextDX12::ResetUA()
 
 void GPUContextDX12::ResetCB()
 {
-    _cbDirtyFlag = false;
+    _cbGraphicsDirtyFlag = false;
+    _cbComputeDirtyFlag = false;
     Platform::MemoryClear(_cbHandles, sizeof(_cbHandles));
 }
 
@@ -877,7 +891,8 @@ void GPUContextDX12::BindCB(int32 slot, GPUConstantBuffer* cb)
     auto cbDX12 = static_cast<GPUConstantBufferDX12*>(cb);
     if (_cbHandles[slot] != cbDX12)
     {
-        _cbDirtyFlag = true;
+        _cbGraphicsDirtyFlag = true;
+        _cbComputeDirtyFlag = true;
         _cbHandles[slot] = cbDX12;
     }
 }
@@ -988,7 +1003,8 @@ void GPUContextDX12::UpdateCB(GPUConstantBuffer* cb, const void* data)
     {
         if (_cbHandles[i] == cbDX12)
         {
-            _cbDirtyFlag = true;
+            _cbGraphicsDirtyFlag = true;
+            _cbComputeDirtyFlag = true;
             break;
         }
     }
@@ -1296,7 +1312,7 @@ void GPUContextDX12::CopyResource(GPUResource* dstResource, GPUResource* srcReso
     {
         _commandList->CopyResource(dstResourceDX12->GetResource(), srcResourceDX12->GetResource());
     }
-        // Texture -> Texture
+    // Texture -> Texture
     else if (srcType == GPUResource::ObjectType::Texture && dstType == GPUResource::ObjectType::Texture)
     {
         auto dstTextureDX12 = static_cast<GPUTextureDX12*>(dstResource);
@@ -1388,7 +1404,7 @@ void GPUContextDX12::CopySubresource(GPUResource* dstResource, uint32 dstSubreso
         uint64 bytesCount = srcResource->GetMemoryUsage();
         _commandList->CopyBufferRegion(dstBufferDX12->GetResource(), 0, srcBufferDX12->GetResource(), 0, bytesCount);
     }
-        // Texture -> Texture
+    // Texture -> Texture
     else if (srcType == GPUResource::ObjectType::Texture && dstType == GPUResource::ObjectType::Texture)
     {
         auto dstTextureDX12 = static_cast<GPUTextureDX12*>(dstResource);
