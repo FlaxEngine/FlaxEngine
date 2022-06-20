@@ -16,7 +16,6 @@ Quality Graphics::ShadowMapsQuality = Quality::Medium;
 bool Graphics::AllowCSMBlending = false;
 Quality Graphics::GlobalSDFQuality = Quality::High;
 Quality Graphics::GIQuality = Quality::High;
-int32 Graphics::GlobalSurfaceAtlasResolution = 2048;
 PostProcessSettings Graphics::PostProcessSettings;
 
 #if GRAPHICS_API_NULL

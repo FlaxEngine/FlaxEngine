@@ -9,6 +9,7 @@
 #include "Engine/Core/Math/Int3.h"
 #include "Engine/Core/Math/Matrix3x3.h"
 #include "Engine/Core/Math/Quaternion.h"
+#include "Engine/Core/Config/GraphicsSettings.h"
 #include "Engine/Engine/Engine.h"
 #include "Engine/Content/Content.h"
 #include "Engine/Debug/DebugDraw.h"
@@ -268,7 +269,8 @@ bool DynamicDiffuseGlobalIlluminationPass::Render(RenderContext& renderContext, 
 
     // Setup options
     auto& settings = renderContext.List->Settings.GlobalIllumination;
-    const float probesSpacing = 100.0f; // GI probes placement spacing nearby camera (for closest cascade; gets automatically reduced for further cascades)
+    auto* graphicsSettings = GraphicsSettings::Get();
+    const float probesSpacing = Math::Clamp(graphicsSettings->GIProbesSpacing, 10.0f, 1000.0f); // GI probes placement spacing nearby camera (for closest cascade; gets automatically reduced for further cascades)
     int32 probeRaysCount; // Amount of rays to trace randomly around each probe
     switch (Graphics::GIQuality)
     {

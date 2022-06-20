@@ -64,11 +64,6 @@ public:
     API_FIELD() static Quality GIQuality;
 
     /// <summary>
-    /// The Global Surface Atlas resolution. Adjust it if atlas `flickers` due to overflow.
-    /// </summary>
-    API_FIELD() static int32 GlobalSurfaceAtlasResolution;
-
-    /// <summary>
     /// The default Post Process settings. Can be overriden by PostFxVolume on a level locally, per camera or for a whole map.
     /// </summary>
     API_FIELD() static PostProcessSettings PostProcessSettings;

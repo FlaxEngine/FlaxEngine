@@ -10,8 +10,8 @@
 #include "Engine/Core/Math/OrientedBoundingBox.h"
 #include "Engine/Engine/Engine.h"
 #include "Engine/Content/Content.h"
+#include "Engine/Core/Config/GraphicsSettings.h"
 #include "Engine/Graphics/GPUDevice.h"
-#include "Engine/Graphics/Graphics.h"
 #include "Engine/Graphics/RenderTask.h"
 #include "Engine/Graphics/RenderBuffers.h"
 #include "Engine/Graphics/RenderTargetPool.h"
@@ -345,8 +345,9 @@ bool GlobalSurfaceAtlasPass::Render(RenderContext& renderContext, GPUContext* co
     PROFILE_GPU_CPU("Global Surface Atlas");
 
     // Setup options
-    const int32 resolution = Math::Clamp(Graphics::GlobalSurfaceAtlasResolution, 256, GPU_MAX_TEXTURE_SIZE);
-    const float resolutionInv = 1.0f / resolution;
+    auto* graphicsSettings = GraphicsSettings::Get();
+    const int32 resolution = Math::Clamp(graphicsSettings->GlobalSurfaceAtlasResolution, 256, GPU_MAX_TEXTURE_SIZE);
+    const float resolutionInv = 1.0f / (float)resolution;
     auto& giSettings = renderContext.List->Settings.GlobalIllumination;
     const float distance = giSettings.Distance;
 
