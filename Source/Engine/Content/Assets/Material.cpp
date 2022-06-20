@@ -481,7 +481,7 @@ void Material::InitCompilationOptions(ShaderCompilationOptions& options)
 BytesContainer Material::LoadSurface(bool createDefaultIfMissing)
 {
     BytesContainer result;
-    if (WaitForLoaded())
+    if (WaitForLoaded() && !LastLoadFailed())
         return result;
     ScopeLock lock(Locker);
 

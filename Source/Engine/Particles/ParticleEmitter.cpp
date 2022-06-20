@@ -335,7 +335,7 @@ void ParticleEmitter::InitCompilationOptions(ShaderCompilationOptions& options)
 BytesContainer ParticleEmitter::LoadSurface(bool createDefaultIfMissing)
 {
     BytesContainer result;
-    if (WaitForLoaded())
+    if (WaitForLoaded() && !LastLoadFailed())
         return result;
     ScopeLock lock(Locker);
 
