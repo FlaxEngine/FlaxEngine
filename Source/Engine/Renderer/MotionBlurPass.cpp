@@ -61,7 +61,7 @@ bool MotionBlurPass::Init()
 #endif
 
     // Prepare formats for the buffers
-    auto format = MOTION_VECTORS_PIXEL_FORMAT;
+    auto format = PixelFormat::R16G16_Float;
     if (FORMAT_FEATURES_ARE_NOT_SUPPORTED(GPUDevice::Instance->GetFormatFeatures(format).Support, FormatSupport::RenderTarget | FormatSupport::ShaderSample | FormatSupport::Texture2D))
     {
         if (FORMAT_FEATURES_ARE_NOT_SUPPORTED(GPUDevice::Instance->GetFormatFeatures(PixelFormat::R32G32_Float).Support, FormatSupport::RenderTarget | FormatSupport::ShaderSample | FormatSupport::Texture2D))

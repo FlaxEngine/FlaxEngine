@@ -1111,7 +1111,7 @@ void GlobalSurfaceAtlasPass::RasterizeActor(Actor* actor, void* actorObject, con
         xAxis.NormalizeFast();
         yAxis.NormalizeFast();
         zAxis.NormalizeFast();
-        object->Bounds.Transformation.LocalToWorld(localSpaceOffset, tile->ViewPosition);
+        tile->ViewPosition = object->Bounds.Transformation.LocalToWorld(localSpaceOffset);
         tile->ViewDirection = zAxis;
 
         // Create view matrix

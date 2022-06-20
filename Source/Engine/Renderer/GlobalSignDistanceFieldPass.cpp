@@ -127,7 +127,7 @@ struct CascadeData
 {
     GPUTexture* Texture = nullptr;
     GPUTexture* Mip = nullptr;
-    Vector3 Position;
+    Float3 Position;
     float VoxelSize;
     BoundingBox Bounds;
     HashSet<RasterizeChunkKey> NonEmptyChunks;
@@ -478,12 +478,12 @@ bool GlobalSignDistanceFieldPass::Render(RenderContext& renderContext, GPUContex
         sdfData.ListenSceneRendering(scene);
 
     // Calculate origin for Global SDF by shifting it towards the view direction to account for better view frustum coverage
-    Vector3 viewOrigin = renderContext.View.Position;
+    Float3 viewOrigin = renderContext.View.Position;
     {
-        Vector3 viewDirection = renderContext.View.Direction;
+        Float3 viewDirection = renderContext.View.Direction;
         const float cascade0Distance = distanceExtent * cascadesDistanceScales[0];
         const Vector2 viewRayHit = CollisionsHelper::LineHitsBox(viewOrigin, viewOrigin + viewDirection * (cascade0Distance * 2.0f), viewOrigin - cascade0Distance, viewOrigin + cascade0Distance);
-        const float viewOriginOffset = viewRayHit.Y * cascade0Distance * 0.6f;
+        const float viewOriginOffset = (float)viewRayHit.Y * cascade0Distance * 0.6f;
         viewOrigin += viewDirection * viewOriginOffset;
     }
 
@@ -509,8 +509,8 @@ bool GlobalSignDistanceFieldPass::Render(RenderContext& renderContext, GPUContex
         const float cascadeVoxelSize = cascadeMaxDistance / (float)resolution;
         const float cascadeChunkSize = cascadeVoxelSize * GLOBAL_SDF_RASTERIZE_CHUNK_SIZE;
         static_assert(GLOBAL_SDF_RASTERIZE_CHUNK_SIZE % GLOBAL_SDF_RASTERIZE_MIP_FACTOR == 0, "Adjust chunk size to match the mip factor scale.");
-        const Vector3 center = Vector3::Floor(viewOrigin / cascadeChunkSize) * cascadeChunkSize;
-        //const Vector3 center = Vector3::Zero;
+        const Float3 center = Float3::Floor(viewOrigin / cascadeChunkSize) * cascadeChunkSize;
+        //const Float3 center = Float3::Zero;
         BoundingBox cascadeBounds(center - cascadeDistance, center + cascadeDistance);
         // TODO: add scene detail scale factor to PostFx settings (eg. to increase or decrease scene details and quality)
         const float minObjectRadius = Math::Max(20.0f, cascadeVoxelSize * 0.5f); // Skip too small objects for this cascade
@@ -526,7 +526,7 @@ bool GlobalSignDistanceFieldPass::Render(RenderContext& renderContext, GPUContex
         }
 
         // Check if cascade center has been moved
-        if (!(useCache && Vector3::NearEqual(cascade.Position, center, cascadeVoxelSize)))
+        if (!(useCache && Float3::NearEqual(cascade.Position, center, cascadeVoxelSize)))
         {
             // TODO: optimize for moving camera (copy sdf for cached chunks)
             cascade.StaticChunks.Clear();
@@ -683,7 +683,7 @@ bool GlobalSignDistanceFieldPass::Render(RenderContext& renderContext, GPUContex
                         count += chunks[tmp].ModelsCount + chunks[tmp].HeightfieldsCount;
                         tmp.NextLayer();
                     }
-                    Vector3 chunkMin = cascadeBounds.Minimum + Vector3(e.Key.Coord) * chunkSize;
+                    Float3 chunkMin = cascadeBounds.Minimum + Float3(e.Key.Coord) * chunkSize;
                     BoundingBox chunkBounds(chunkMin, chunkMin + chunkSize);
                     DebugDraw::DrawWireBox(chunkBounds, Color::Red, 0, false);
                     DebugDraw::DrawText(StringUtils::ToString(count), chunkBounds.GetCenter(), Color::Red);
@@ -779,8 +779,8 @@ bool GlobalSignDistanceFieldPass::Render(RenderContext& renderContext, GPUContex
         const float cascadeDistance = distanceExtent * cascadesDistanceScales[cascadeIndex];
         const float cascadeMaxDistance = cascadeDistance * 2;
         const float cascadeVoxelSize = cascadeMaxDistance / resolution;
-        const Vector3 center = cascade.Position;
-        result.Constants.CascadePosDistance[cascadeIndex] = Vector4(center, cascadeDistance);
+        const Float3 center = cascade.Position;
+        result.Constants.CascadePosDistance[cascadeIndex] = Float4(center, cascadeDistance);
         result.Constants.CascadeVoxelSize.Raw[cascadeIndex] = cascadeVoxelSize;
         result.Cascades[cascadeIndex] = cascade.Texture;
         result.CascadeMips[cascadeIndex] = cascade.Mip;
@@ -815,7 +815,7 @@ void GlobalSignDistanceFieldPass::RenderDebug(RenderContext& renderContext, GPUC
         data.ViewNearPlane = renderContext.View.Near;
         data.ViewFarPlane = renderContext.View.Far;
         for (int32 i = 0; i < 4; i++)
-            data.ViewFrustumWorldRays[i] = Vector4(renderContext.List->FrustumCornersWs[i + 4], 0);
+            data.ViewFrustumWorldRays[i] = Float4(renderContext.List->FrustumCornersWs[i + 4], 0);
         data.GlobalSDF = bindingData.Constants;
         context->UpdateCB(_cb0, &data);
         context->BindCB(0, _cb0);
@@ -846,7 +846,7 @@ void GlobalSignDistanceFieldPass::RasterizeModelSDF(Actor* actor, const ModelBas
     Matrix worldToLocal, volumeToWorld;
     Matrix::Invert(localToWorld, worldToLocal);
     BoundingBox localVolumeBounds(sdf.LocalBoundsMin, sdf.LocalBoundsMax);
-    Vector3 volumeLocalBoundsExtent = localVolumeBounds.GetSize() * 0.5f;
+    Float3 volumeLocalBoundsExtent = localVolumeBounds.GetSize() * 0.5f;
     Matrix worldToVolume = worldToLocal * Matrix::Translation(-(localVolumeBounds.Minimum + volumeLocalBoundsExtent));
     Matrix::Invert(worldToVolume, volumeToWorld);
 

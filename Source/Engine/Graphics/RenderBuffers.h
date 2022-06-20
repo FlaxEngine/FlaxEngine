@@ -7,9 +7,6 @@
 #include "Engine/Scripting/ScriptingObject.h"
 #include "Engine/Graphics/Textures/GPUTexture.h"
 
-// Default motion vectors buffer pixel format (can fallback to other format if not supported)
-#define MOTION_VECTORS_PIXEL_FORMAT PixelFormat::R16G16_Float
-
 // GBuffer render targets formats
 #define GBUFFER0_FORMAT PixelFormat::R8G8B8A8_UNorm
 #define GBUFFER1_FORMAT PixelFormat::R10G10B10A2_UNorm
@@ -29,7 +26,7 @@ API_CLASS() class FLAXENGINE_API RenderBuffers : public ScriptingObject
     /// <summary>
     /// The custom rendering state.
     /// </summary>
-    class CustomBuffer : public Object
+    class FLAXENGINE_API CustomBuffer : public Object
     {
     public:
         String Name;
