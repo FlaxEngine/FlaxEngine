@@ -80,9 +80,10 @@ struct GeometryLookup
             PROFILE_CPU_NAMED("StaticModel");
 
             // Check model meshes
-            Matrix world;
-            staticModel->GetWorld(&world);
-            const bool isDeterminantPositive = staticModel->GetTransform().GetDeterminant() >= 0.0f;
+            Transform transform = staticModel->GetTransform();
+            Matrix worldMatrix;
+            transform.GetWorld(worldMatrix);
+            const bool isDeterminantPositive = transform.GetDeterminant() >= 0.0f;
             auto& lod = staticModel->Model->LODs[0];
             for (int32 meshIndex = 0; meshIndex < lod.Meshes.Count(); meshIndex++)
             {
@@ -96,9 +97,9 @@ struct GeometryLookup
 
                     // Transform triangle vertices from mesh space to world space
                     Vector3 t0, t1, t2;
-                    Vector3::Transform(t.V0, world, t0);
-                    Vector3::Transform(t.V1, world, t1);
-                    Vector3::Transform(t.V2, world, t2);
+                    Vector3::Transform(t.V0, worldMatrix, t0);
+                    Vector3::Transform(t.V1, worldMatrix, t1);
+                    Vector3::Transform(t.V2, worldMatrix, t2);
 
                     // Check if triangles intersects with the brush
                     if (CollisionsHelper::SphereIntersectsTriangle(brush, t0, t1, t2))

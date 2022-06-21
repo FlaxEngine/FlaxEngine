@@ -3,6 +3,7 @@
 #pragma once
 
 #include "Engine/Core/Math/Vector3.h"
+#include "Engine/Core/Math/Transform.h"
 #include "Engine/Core/Math/Ray.h"
 #include "Engine/Core/Math/CollisionsHelper.h"
 #include "Engine/Core/Collections/Array.h"
@@ -62,6 +63,28 @@ public:
             Float3::Transform(triangle.V0, world, triangle.V0);
             Float3::Transform(triangle.V1, world, triangle.V1);
             Float3::Transform(triangle.V2, world, triangle.V2);
+
+            // TODO: use 32-bit precision for intersection
+            Real d;
+            if (CollisionsHelper::RayIntersectsTriangle(ray, triangle.V0, triangle.V1, triangle.V2, d))
+            {
+                normal = Vector3::Normalize((triangle.V1 - triangle.V0) ^ (triangle.V2 - triangle.V0));
+                distance = d;
+                return true;
+            }
+        }
+        return false;
+    }
+
+    bool Intersects(const Ray& ray, const Transform& transform, Real& distance, Vector3& normal) const
+    {
+        for (int32 i = 0; i < Triangles.Count(); i++)
+        {
+            CollisionTriangle triangle = Triangles[i];
+            Vector3 v0, v1, v2;
+            transform.LocalToWorld(triangle.V0, v0);
+            transform.LocalToWorld(triangle.V1, v1);
+            transform.LocalToWorld(triangle.V2, v2);
 
             // TODO: use 32-bit precision for intersection
             Real d;

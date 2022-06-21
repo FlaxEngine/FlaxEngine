@@ -189,7 +189,7 @@ void TerrainChunk::UpdateBounds()
 {
     const Vector3 boundsExtent = _patch->_terrain->_boundsExtent;
     const float size = (float)_patch->_terrain->_chunkSize * TERRAIN_UNITS_PER_VERTEX;
-    Transform terrainTransform = _patch->_terrain->_transform;
+    const Transform terrainTransform = _patch->_terrain->_transform;
 
     Transform localTransform;
     localTransform.Translation = _patch->_offset + Vector3(_x * size, _yOffset, _z * size);
@@ -197,11 +197,8 @@ void TerrainChunk::UpdateBounds()
     localTransform.Scale = Vector3(size, _yHeight, size);
     localTransform = terrainTransform.LocalToWorld(localTransform);
 
-    Matrix world;
-    localTransform.GetWorld(world);
-
     OrientedBoundingBox obb(Vector3::Zero, Vector3::One);
-    obb.Transform(world);
+    obb.Transform(localTransform);
     obb.GetBoundingBox(_bounds);
     _boundsCenter = _bounds.GetCenter();
 

@@ -2,6 +2,7 @@
 
 #include "Level.h"
 #include "ActorsCache.h"
+#include "LargeWorlds.h"
 #include "SceneQuery.h"
 #include "SceneObjectsFactory.h"
 #include "Scene/Scene.h"
@@ -38,6 +39,19 @@
 #include "Engine/Engine/CommandLine.h"
 #include "Engine/Serialization/JsonSerializer.h"
 #endif
+
+#if USE_LARGE_WORLDS
+bool LargeWorlds::Enable = true;
+#else
+bool LargeWorlds::Enable = false;
+#endif
+
+void LargeWorlds::UpdateOrigin(Vector3& origin, const Vector3& position)
+{
+    if (Enable)
+    {
+    }
+}
 
 bool LayersMask::HasLayer(const StringView& layerName) const
 {

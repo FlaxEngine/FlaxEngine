@@ -134,8 +134,7 @@ float BoundingFrustum::GetHeightAtDepth(float depth) const
 ContainmentType BoundingFrustum::Contains(const Vector3& point) const
 {
     PlaneIntersectionType result = PlaneIntersectionType::Front;
-    PlaneIntersectionType planeResult = PlaneIntersectionType::Front;
-    for (int i = 0; i < 6; i++)
+    for (int32 i = 0; i < 6; i++)
     {
         const PlaneIntersectionType planeResult = _planes[i].Intersects(point);
         switch (planeResult)
@@ -159,7 +158,7 @@ ContainmentType BoundingFrustum::Contains(const Vector3& point) const
 ContainmentType BoundingFrustum::Contains(const BoundingSphere& sphere) const
 {
     auto result = PlaneIntersectionType::Front;
-    for (int i = 0; i < 6; i++)
+    for (int32 i = 0; i < 6; i++)
     {
         const PlaneIntersectionType planeResult = _planes[i].Intersects(sphere);
         switch (planeResult)

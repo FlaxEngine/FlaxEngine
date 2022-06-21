@@ -136,7 +136,7 @@ void SplineModel::OnSplineUpdated()
         for (int32 j = 0; j < meshes.Count(); j++)
         {
             const auto& mesh = meshes[j];
-            mesh.GetCorners(corners);
+            mesh.GetBox().GetCorners(corners);
 
             for (int32 i = 0; i < 8; i++)
             {

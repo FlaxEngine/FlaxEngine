@@ -255,6 +255,9 @@ void SceneRenderTask::ClearCustomActors()
 
 void SceneRenderTask::CollectPostFxVolumes(RenderContext& renderContext)
 {
+    // Cache WorldPosition used for PostFx volumes blending (RenderView caches it later on)
+    renderContext.View.WorldPosition = renderContext.View.Origin + renderContext.View.Position;
+
     if ((ActorsSource & ActorsSources::Scenes) != 0)
     {
         Level::CollectPostFxVolumes(renderContext);

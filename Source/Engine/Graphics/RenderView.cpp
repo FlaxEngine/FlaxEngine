@@ -1,6 +1,7 @@
 // Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 #include "RenderView.h"
+#include "Engine/Level/LargeWorlds.h"
 #include "Engine/Level/Actors/Camera.h"
 #include "Engine/Renderer/RenderList.h"
 #include "Engine/Renderer/RendererPass.h"
@@ -69,6 +70,8 @@ void RenderView::PrepareCache(RenderContext& renderContext, float width, float h
     TemporalAAJitter.W = TemporalAAJitter.Y;
     TemporalAAJitter.X = temporalAAJitter.X;
     TemporalAAJitter.Y = temporalAAJitter.Y;
+
+    WorldPosition = Origin + Position;
 
     // Ortho views have issues with screen size LOD culling
     const float modelLODDistanceFactor = (renderContext.LodProxyView ? renderContext.LodProxyView->IsOrthographicProjection() : IsOrthographicProjection()) ? 100.0f : ModelLODDistanceFactor;
@@ -161,31 +164,15 @@ void RenderView::SetProjector(float nearPlane, float farPlane, const Float3& pos
     CullingFrustum = Frustum;
 }
 
-void RenderView::CopyFrom(Camera* camera)
-{
-    Position = camera->GetPosition();
-    Direction = camera->GetDirection();
-    Near = camera->GetNearPlane();
-    Far = camera->GetFarPlane();
-    View = camera->GetView();
-    Projection = camera->GetProjection();
-    NonJitteredProjection = Projection;
-    Frustum = camera->GetFrustum();
-    Matrix::Invert(View, IV);
-    Matrix::Invert(Projection, IP);
-    Frustum.GetInvMatrix(IVP);
-    CullingFrustum = Frustum;
-    RenderLayersMask = camera->RenderLayersMask;
-}
-
 void RenderView::CopyFrom(Camera* camera, Viewport* viewport)
 {
-    Position = camera->GetPosition();
+    const Vector3 cameraPos = camera->GetPosition();
+    LargeWorlds::UpdateOrigin(Origin, cameraPos);
+    Position = cameraPos - Origin;
     Direction = camera->GetDirection();
     Near = camera->GetNearPlane();
     Far = camera->GetFarPlane();
-    View = camera->GetView();
-    camera->GetMatrices(View, Projection, *viewport);
+    camera->GetMatrices(View, Projection, viewport ? *viewport : camera->GetViewport(), Origin);
     Frustum.SetMatrix(View, Projection);
     NonJitteredProjection = Projection;
     Matrix::Invert(View, IV);
@@ -210,4 +197,10 @@ DrawPass RenderView::GetShadowsDrawPassMask(ShadowsCastingMode shadowsMode) cons
     default:
         return DrawPass::All;
     }
+}
+
+void RenderView::GetWorldMatrix(const Transform& transform, Matrix& world) const
+{
+    const Vector3 translation = transform.Translation - Origin;
+    Matrix::Transformation(transform.Scale, transform.Orientation, translation, world);
 }

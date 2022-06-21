@@ -100,13 +100,14 @@ void SkyLight::Draw(RenderContext& renderContext)
 {
     float brightness = Brightness;
     AdjustBrightness(renderContext.View, brightness);
+    const Float3 position = GetPosition() - renderContext.View.Origin;
     if ((renderContext.View.Flags & ViewFlags::SkyLights) != 0
         && renderContext.View.Pass & DrawPass::GBuffer
         && brightness > ZeroTolerance
-        && (ViewDistance < ZeroTolerance || Vector3::DistanceSquared(renderContext.View.Position, GetPosition()) < ViewDistance * ViewDistance))
+        && (ViewDistance < ZeroTolerance || Vector3::DistanceSquared(renderContext.View.Position, position) < ViewDistance * ViewDistance))
     {
         RendererSkyLightData data;
-        data.Position = GetPosition(); // TODO: large-worlds
+        data.Position = position;
         data.Color = Color.ToFloat3() * (Color.A * brightness);
         data.VolumetricScatteringIntensity = VolumetricScatteringIntensity;
         data.CastVolumetricShadow = CastVolumetricShadow;

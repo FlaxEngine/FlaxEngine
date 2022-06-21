@@ -17,7 +17,7 @@ void BoxVolume::SetSize(const Vector3& value)
         const auto prevBounds = _box;
         _size = value;
         OrientedBoundingBox::CreateCentered(Vector3::Zero, _size, _bounds);
-        _bounds.Transform(_transform.GetWorld());
+        _bounds.Transform(_transform);
         _bounds.GetBoundingBox(_box);
         BoundingSphere::FromBox(_box, _sphere);
         OnBoundsChanged(prevBounds);
@@ -142,7 +142,7 @@ void BoxVolume::OnTransformChanged()
 
     const auto prevBounds = _box;
     OrientedBoundingBox::CreateCentered(Vector3::Zero, _size, _bounds);
-    _bounds.Transform(_transform.GetWorld());
+    _bounds.Transform(_transform);
     _bounds.GetBoundingBox(_box);
     BoundingSphere::FromBox(_box, _sphere);
     OnBoundsChanged(prevBounds);

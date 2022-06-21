@@ -99,7 +99,7 @@ void CapsuleCollider::UpdateBounds()
     // Cache bounds
     const float radiusTwice = _radius * 2.0f;
     OrientedBoundingBox::CreateCentered(_center, Vector3(_height + radiusTwice, radiusTwice, radiusTwice), _orientedBox);
-    _orientedBox.Transform(_transform.GetWorld());
+    _orientedBox.Transform(_transform);
     _orientedBox.GetBoundingBox(_box);
     BoundingSphere::FromBox(_box, _sphere);
 }

@@ -18,13 +18,14 @@ void DirectionalLight::Draw(RenderContext& renderContext)
 {
     float brightness = Brightness;
     AdjustBrightness(renderContext.View, brightness);
+    const Float3 position = GetPosition() - renderContext.View.Origin;
     if (Brightness > ZeroTolerance
         && (renderContext.View.Flags & ViewFlags::DirectionalLights) != 0
         && renderContext.View.Pass & DrawPass::GBuffer
-        && (ViewDistance < ZeroTolerance || Vector3::DistanceSquared(renderContext.View.Position, GetPosition()) < ViewDistance * ViewDistance))
+        && (ViewDistance < ZeroTolerance || Float3::DistanceSquared(renderContext.View.Position, position) < ViewDistance * ViewDistance))
     {
         RendererDirectionalLightData data;
-        data.Position = GetPosition(); // TODO: large-worlds
+        data.Position = position;
         data.MinRoughness = MinRoughness;
         data.ShadowsDistance = ShadowsDistance;
         data.Color = Color.ToFloat3() * (Color.A * brightness);

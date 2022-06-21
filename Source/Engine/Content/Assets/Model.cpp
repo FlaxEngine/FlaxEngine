@@ -172,6 +172,11 @@ bool Model::Intersects(const Ray& ray, const Matrix& world, Real& distance, Vect
     return LODs[lodIndex].Intersects(ray, world, distance, normal, mesh);
 }
 
+bool Model::Intersects(const Ray& ray, const Transform& transform, Real& distance, Vector3& normal, Mesh** mesh, int32 lodIndex)
+{
+    return LODs[lodIndex].Intersects(ray, transform, distance, normal, mesh);
+}
+
 BoundingBox Model::GetBox(const Matrix& world, int32 lodIndex) const
 {
     return LODs[lodIndex].GetBox(world);

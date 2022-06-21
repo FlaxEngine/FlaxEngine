@@ -135,12 +135,35 @@ public:
     bool Intersects(const Ray& ray, const Matrix& world, Real& distance, Vector3& normal, Mesh** mesh, int32 lodIndex = 0);
 
     /// <summary>
+    /// Determines if there is an intersection between the Model and a Ray in given world using given instance.
+    /// </summary>
+    /// <param name="ray">The ray to test</param>
+    /// <param name="transform">The instance transformation.</param>
+    /// <param name="distance">When the method completes, contains the distance of the intersection (if any valid).</param>
+    /// <param name="normal">When the method completes, contains the intersection surface normal vector (if any valid).</param>
+    /// <param name="mesh">Mesh, or null</param>
+    /// <param name="lodIndex">Level Of Detail index</param>
+    /// <returns>True whether the two objects intersected</returns>
+    bool Intersects(const Ray& ray, const Transform& transform, Real& distance, Vector3& normal, Mesh** mesh, int32 lodIndex = 0);
+
+    /// <summary>
     /// Gets the model bounding box in custom matrix world space.
     /// </summary>
     /// <param name="world">The transformation matrix.</param>
     /// <param name="lodIndex">The Level Of Detail index.</param>
     /// <returns>The bounding box.</returns>
     API_FUNCTION() BoundingBox GetBox(const Matrix& world, int32 lodIndex = 0) const;
+
+    /// <summary>
+    /// Gets the model bounding box in custom transformation.
+    /// </summary>
+    /// <param name="transform">The instance transformation.</param>
+    /// <param name="lodIndex">The Level Of Detail index.</param>
+    /// <returns>The bounding box.</returns>
+    API_FUNCTION() BoundingBox GetBox(const Transform& transform, int32 lodIndex = 0) const
+    {
+        return LODs[lodIndex].GetBox(transform);
+    }
 
     /// <summary>
     /// Gets the model bounding box in local space.

@@ -777,15 +777,15 @@ namespace FlaxEditor.Viewport
         /// <param name="view">The view.</param>
         public void CopyViewData(ref RenderView view)
         {
-            // Create matrices
-            CreateProjectionMatrix(out view.Projection);
-            CreateViewMatrix(out view.View);
-
-            // Copy data
-            view.Position = ViewPosition;
+            Vector3 position = ViewPosition;
+            LargeWorlds.UpdateOrigin(ref view.Origin, position);
+            view.Position = position - view.Origin;
             view.Direction = ViewDirection;
             view.Near = _nearPlane;
             view.Far = _farPlane;
+
+            CreateProjectionMatrix(out view.Projection);
+            CreateViewMatrix(view.Position, out view.View);
 
             view.UpdateCachedData();
         }
@@ -828,10 +828,10 @@ namespace FlaxEditor.Viewport
         /// <summary>
         /// Creates the view matrix.
         /// </summary>
+        /// <param name="position">The view position.</param>
         /// <param name="result">The result.</param>
-        protected virtual void CreateViewMatrix(out Matrix result)
+        protected virtual void CreateViewMatrix(Float3 position, out Matrix result)
         {
-            var position = (Float3)ViewPosition; // TODO: large-worlds
             var direction = ViewDirection;
             var target = position + direction;
             var right = Float3.Normalize(Float3.Cross(Float3.Up, direction));
@@ -862,7 +862,7 @@ namespace FlaxEditor.Viewport
             // Prepare
             var viewport = new FlaxEngine.Viewport(0, 0, Width, Height);
             CreateProjectionMatrix(out var p);
-            CreateViewMatrix(out var v);
+            CreateViewMatrix(Float3.Zero, out var v); // TODO: large-worlds
             Matrix.Multiply(ref v, ref p, out var ivp);
             ivp.Invert();
 

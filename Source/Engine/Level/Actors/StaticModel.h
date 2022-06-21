@@ -14,7 +14,6 @@ API_CLASS() class FLAXENGINE_API StaticModel : public ModelInstanceActor
 {
     DECLARE_SCENE_OBJECT(StaticModel);
 private:
-    Matrix _world;
     GeometryDrawStateData _drawState;
     float _scaleInLightmap;
     float _boundsScale;
@@ -50,15 +49,6 @@ public:
     LightmapEntry Lightmap;
 
 public:
-    /// <summary>
-    /// Gets the model world matrix transform.
-    /// </summary>
-    /// <param name="world">The result world matrix.</param>
-    FORCE_INLINE void GetWorld(Matrix* world) const
-    {
-        *world = _world;
-    }
-
     /// <summary>
     /// Gets the model scale in lightmap (applied to all the meshes).
     /// </summary>

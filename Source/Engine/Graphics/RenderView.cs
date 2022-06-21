@@ -79,31 +79,24 @@ namespace FlaxEngine
         /// <param name="camera">The camera.</param>
         public void CopyFrom(Camera camera)
         {
-            Position = camera.Position;
-            Direction = camera.Direction;
-            Near = camera.NearPlane;
-            Far = camera.FarPlane;
-            View = camera.View;
-            Projection = camera.Projection;
-            NonJitteredProjection = Projection;
-            TemporalAAJitter = Float4.Zero;
-            RenderLayersMask = camera.RenderLayersMask;
-
-            UpdateCachedData();
+            var viewport = camera.Viewport;
+            CopyFrom(camera, ref viewport);
         }
 
         /// <summary>
         /// Copies render view data from the camera.
         /// </summary>
         /// <param name="camera">The camera.</param>
-        /// <param name="customViewport">The custom viewport to use for view/projeection matrices override.</param>
-        public void CopyFrom(Camera camera, ref Viewport customViewport)
+        /// <param name="viewport">The custom viewport to use for view/projeection matrices override.</param>
+        public void CopyFrom(Camera camera, ref Viewport viewport)
         {
-            Position = camera.Position;
+            Vector3 cameraPos = camera.Position;
+            LargeWorlds.UpdateOrigin(ref Origin, cameraPos);
+            Position = cameraPos - Origin;
             Direction = camera.Direction;
             Near = camera.NearPlane;
             Far = camera.FarPlane;
-            camera.GetMatrices(out View, out Projection, ref customViewport);
+            camera.GetMatrices(out View, out Projection, ref viewport, ref Origin);
             NonJitteredProjection = Projection;
             TemporalAAJitter = Float4.Zero;
             RenderLayersMask = camera.RenderLayersMask;

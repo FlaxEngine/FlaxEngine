@@ -124,7 +124,7 @@ void ShadowsOfMordor::Builder::onJobRender(GPUContext* context)
                 auto& lod = staticModel->Model->LODs[0];
 
                 Matrix worldMatrix;
-                staticModel->GetWorld(&worldMatrix);
+                staticModel->GetTransform().GetWorld(worldMatrix);
                 Matrix::Transpose(worldMatrix, shaderData.WorldMatrix);
                 shaderData.LightmapArea = staticModel->Lightmap.UVsArea;
 

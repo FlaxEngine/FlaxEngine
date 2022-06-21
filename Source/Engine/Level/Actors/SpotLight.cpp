@@ -151,6 +151,7 @@ void SpotLight::Draw(RenderContext& renderContext)
 {
     float brightness = ComputeBrightness();
     AdjustBrightness(renderContext.View, brightness);
+    const Float3 position = GetPosition() - renderContext.View.Origin;
     const float radius = GetScaledRadius();
     const float outerConeAngle = GetOuterConeAngle();
     if ((renderContext.View.Flags & ViewFlags::SpotLights) != 0
@@ -158,10 +159,10 @@ void SpotLight::Draw(RenderContext& renderContext)
         && brightness > ZeroTolerance
         && radius > ZeroTolerance
         && outerConeAngle > ZeroTolerance
-        && (ViewDistance < ZeroTolerance || Vector3::DistanceSquared(renderContext.View.Position, GetPosition()) < ViewDistance * ViewDistance))
+        && (ViewDistance < ZeroTolerance || Vector3::DistanceSquared(renderContext.View.Position, position) < ViewDistance * ViewDistance))
     {
         RendererSpotLightData data;
-        data.Position = GetPosition(); // TODO: large-worlds
+        data.Position = position;
         data.MinRoughness = MinRoughness;
         data.ShadowsDistance = ShadowsDistance;
         data.Color = Color.ToFloat3() * (Color.A * brightness);

@@ -35,7 +35,6 @@ API_CLASS(Sealed) class FLAXENGINE_API Camera : public Actor
     API_PROPERTY() static Camera* GetMainCamera();
 
 private:
-    Matrix _view, _projection;
     BoundingFrustum _frustum;
 
     // Camera Settings
@@ -50,27 +49,10 @@ private:
     AssetReference<Model> _previewModel;
     ModelInstanceEntries _previewModelBuffer;
     BoundingBox _previewModelBox;
-    Matrix _previewModelWorld;
     int32 _sceneRenderingKey = -1;
 #endif
 
 public:
-    /// <summary>
-    /// Gets the view matrix.
-    /// </summary>
-    API_PROPERTY() FORCE_INLINE Matrix GetView() const
-    {
-        return _view;
-    }
-
-    /// <summary>
-    /// Gets the projection matrix.
-    /// </summary>
-    API_PROPERTY() FORCE_INLINE Matrix GetProjection() const
-    {
-        return _projection;
-    }
-
     /// <summary>
     /// Gets the frustum.
     /// </summary>
@@ -218,8 +200,17 @@ public:
     /// </summary>
     /// <param name="view">The result camera view matrix.</param>
     /// <param name="projection">The result camera projection matrix.</param>
-    /// <param name="viewport">The custom output viewport. Use null to skip it.</param>
-    API_FUNCTION() virtual void GetMatrices(API_PARAM(Out) Matrix& view, API_PARAM(Out) Matrix& projection, API_PARAM(Ref) const Viewport& viewport) const;
+    /// <param name="viewport">The custom output viewport.</param>
+    API_FUNCTION() void GetMatrices(API_PARAM(Out) Matrix& view, API_PARAM(Out) Matrix& projection, API_PARAM(Ref) const Viewport& viewport) const;
+
+    /// <summary>
+    /// Calculates the view and the projection matrices for the camera. Support using custom viewport and view origin.
+    /// </summary>
+    /// <param name="view">The result camera view matrix.</param>
+    /// <param name="projection">The result camera projection matrix.</param>
+    /// <param name="viewport">The custom output viewport.</param>
+    /// <param name="origin">The rendering view origin (for relative-to-camera rendering).</param>
+    API_FUNCTION() void GetMatrices(API_PARAM(Out) Matrix& view, API_PARAM(Out) Matrix& projection, API_PARAM(Ref) const Viewport& viewport, API_PARAM(Ref) const Vector3& origin) const;
 
 #if USE_EDITOR
     // Intersection check for editor picking the camera

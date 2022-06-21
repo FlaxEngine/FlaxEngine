@@ -33,6 +33,7 @@ void SceneRendering::Draw(RenderContext& renderContext)
     ScopeLock lock(Locker);
     auto& view = renderContext.View;
     const BoundingFrustum frustum = view.CullingFrustum;
+    const Vector3 origin = view.Origin;
     renderContext.List->Scenes.Add(this);
 
     // Draw all visual components
@@ -40,7 +41,8 @@ void SceneRendering::Draw(RenderContext& renderContext)
     {
         for (int32 i = 0; i < Actors.Count(); i++)
         {
-            auto& e = Actors[i];
+            auto e = Actors[i];
+            e.Bounds.Center -= origin;
             if (view.RenderLayersMask.Mask & e.LayerMask && (e.NoCulling || frustum.Intersects(e.Bounds)) && e.Actor->GetStaticFlags() & view.StaticFlagsMask)
             {
 #if SCENE_RENDERING_USE_PROFILER
@@ -54,7 +56,8 @@ void SceneRendering::Draw(RenderContext& renderContext)
     {
         for (int32 i = 0; i < Actors.Count(); i++)
         {
-            auto& e = Actors[i];
+            auto e = Actors[i];
+            e.Bounds.Center -= origin;
             if (view.RenderLayersMask.Mask & e.LayerMask && (e.NoCulling || frustum.Intersects(e.Bounds)))
             {
 #if SCENE_RENDERING_USE_PROFILER

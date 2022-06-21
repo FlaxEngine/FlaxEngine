@@ -18,7 +18,6 @@
 
 StaticModel::StaticModel(const SpawnParams& params)
     : ModelInstanceActor(params)
-    , _world(Matrix::Identity)
     , _scaleInLightmap(1.0f)
     , _boundsScale(1.0f)
     , _lodBias(0)
@@ -210,16 +209,9 @@ void StaticModel::UpdateBounds()
 {
     if (Model && Model->IsLoaded())
     {
-        Matrix world;
-        if (Math::IsOne(_boundsScale))
-            world = _world;
-        else
-        {
-            Transform t = _transform;
-            t.Scale *= _boundsScale;
-            t.GetWorld(world);
-        }
-        _box = Model->GetBox(world);
+        Transform transform = _transform;
+        transform.Scale *= _boundsScale;
+        _box = Model->GetBox(transform);
     }
     else
     {
@@ -240,17 +232,21 @@ void StaticModel::Draw(RenderContext& renderContext)
     const DrawPass drawModes = (DrawPass)(DrawModes & renderContext.View.Pass);
     if (!Model || !Model->IsLoaded() || !Model->CanBeRendered() || drawModes == DrawPass::None)
         return;
+
+    Matrix world;
+    renderContext.View.GetWorldMatrix(_transform, world);
+
     if (renderContext.View.Pass == DrawPass::GlobalSDF)
     {
-        GlobalSignDistanceFieldPass::Instance()->RasterizeModelSDF(this, Model->SDF, _world, _box);
+        GlobalSignDistanceFieldPass::Instance()->RasterizeModelSDF(this, Model->SDF, world, _box);
         return;
     }
     if (renderContext.View.Pass == DrawPass::GlobalSurfaceAtlas)
     {
-        GlobalSurfaceAtlasPass::Instance()->RasterizeActor(this, this, _sphere, _world, Model->LODs.Last().GetBox());
+        GlobalSurfaceAtlasPass::Instance()->RasterizeActor(this, this, _sphere, world, Model->LODs.Last().GetBox());
         return;
     }
-    GEOMETRY_DRAW_STATE_EVENT_BEGIN(_drawState, _world);
+    GEOMETRY_DRAW_STATE_EVENT_BEGIN(_drawState, world);
 
     // Flush vertex colors if need to
     if (_vertexColorsDirty)
@@ -282,18 +278,19 @@ void StaticModel::Draw(RenderContext& renderContext)
 #if USE_EDITOR
     // Disable motion blur effects in editor without play mode enabled to hide minor artifacts on objects moving
     if (!Editor::IsPlayMode)
-        _drawState.PrevWorld = _world;
+        _drawState.PrevWorld = world;
 #endif
 
     Mesh::DrawInfo draw;
     draw.Buffer = &Entries;
-    draw.World = &_world;
+    draw.World = &world;
     draw.DrawState = &_drawState;
     draw.Lightmap = _scene->LightmapsData.GetReadyLightmap(Lightmap.TextureIndex);
     draw.LightmapUVs = &Lightmap.UVsArea;
     draw.Flags = _staticFlags;
     draw.DrawModes = drawModes;
     draw.Bounds = _sphere;
+    draw.Bounds.Center -= renderContext.View.Origin;
     draw.PerInstanceRandom = GetPerInstanceRandom();
     draw.LODBias = _lodBias;
     draw.ForcedLOD = _forcedLod;
@@ -301,7 +298,7 @@ void StaticModel::Draw(RenderContext& renderContext)
 
     Model->Draw(renderContext, draw);
 
-    GEOMETRY_DRAW_STATE_EVENT_END(_drawState, _world);
+    GEOMETRY_DRAW_STATE_EVENT_END(_drawState, world);
 }
 
 bool StaticModel::IntersectsItself(const Ray& ray, Real& distance, Vector3& normal)
@@ -311,7 +308,7 @@ bool StaticModel::IntersectsItself(const Ray& ray, Real& distance, Vector3& norm
     if (Model != nullptr && Model->IsLoaded())
     {
         Mesh* mesh;
-        result = Model->Intersects(ray, _world, distance, normal, &mesh);
+        result = Model->Intersects(ray, _transform, distance, normal, &mesh);
     }
 
     return result;
@@ -473,7 +470,7 @@ bool StaticModel::IntersectsEntry(int32 entryIndex, const Ray& ray, Real& distan
     for (int32 i = 0; i < meshes.Count(); i++)
     {
         const auto& mesh = meshes[i];
-        if (mesh.GetMaterialSlotIndex() == entryIndex && mesh.Intersects(ray, _world, distance, normal))
+        if (mesh.GetMaterialSlotIndex() == entryIndex && mesh.Intersects(ray, _transform, distance, normal))
             return true;
     }
 
@@ -500,7 +497,7 @@ bool StaticModel::IntersectsEntry(const Ray& ray, Real& distance, Vector3& norma
         const auto& mesh = meshes[i];
         Real dst;
         Vector3 nrm;
-        if (mesh.Intersects(ray, _world, dst, nrm) && dst < closest)
+        if (mesh.Intersects(ray, _transform, dst, nrm) && dst < closest)
         {
             result = true;
             closest = dst;
@@ -520,7 +517,6 @@ void StaticModel::OnTransformChanged()
     // Base
     ModelInstanceActor::OnTransformChanged();
 
-    _transform.GetWorld(_world);
     UpdateBounds();
 }
 

@@ -79,19 +79,29 @@ public:
     bool Intersects(const Ray& ray, const Matrix& world, Real& distance, Vector3& normal, Mesh** mesh);
 
     /// <summary>
-    /// Get model bounding box in transformed world for given instance buffer
+    /// Determines if there is an intersection between the Model and a Ray in given world using given instance
+    /// </summary>
+    /// <param name="ray">The ray to test</param>
+    /// <param name="transform">The instance transformation.</param>
+    /// <param name="distance">When the method completes, contains the distance of the intersection (if any valid).</param>
+    /// <param name="normal">When the method completes, contains the intersection surface normal vector (if any valid).</param>
+    /// <param name="mesh">Mesh, or null</param>
+    /// <returns>True whether the two objects intersected</returns>
+    bool Intersects(const Ray& ray, const Transform& transform, Real& distance, Vector3& normal, Mesh** mesh);
+
+    /// <summary>
+    /// Get model bounding box in transformed world matrix.
     /// </summary>
     /// <param name="world">World matrix</param>
     /// <returns>Bounding box</returns>
     BoundingBox GetBox(const Matrix& world) const;
 
     /// <summary>
-    /// Get model bounding box in transformed world for given instance buffer for only one mesh
+    /// Get model bounding box in transformed world.
     /// </summary>
-    /// <param name="world">World matrix</param>
-    /// <param name="meshIndex">esh index</param>
+    /// <param name="transform">The instance transformation.</param>
     /// <returns>Bounding box</returns>
-    BoundingBox GetBox(const Matrix& world, int32 meshIndex) const;
+    BoundingBox GetBox(const Transform& transform) const;
 
     /// <summary>
     /// Gets the bounding box combined for all meshes in this model LOD.

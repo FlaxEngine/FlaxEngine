@@ -24,7 +24,17 @@ API_STRUCT() struct FLAXENGINE_API RenderView
     DECLARE_SCRIPTING_TYPE_MINIMAL(RenderView);
 
     /// <summary>
-    /// The position of the view.
+    /// The position of the view origin (in world-units). Used for camera-relative rendering to achieve large worlds support with keeping 32-bit precision for coordinates in scene rendering.
+    /// </summary>
+    API_FIELD() Vector3 Origin = Vector3::Zero;
+
+    /// <summary>
+    /// The global position of the view (Origin+Position).
+    /// </summary>
+    API_FIELD() Vector3 WorldPosition;
+
+    /// <summary>
+    /// The position of the view (relative to the origin).
     /// </summary>
     API_FIELD() Float3 Position;
 
@@ -266,12 +276,8 @@ public:
 
     // Copy view data from camera
     // @param camera Camera to copy its data
-    void CopyFrom(Camera* camera);
-
-    // Copy view data from camera
-    // @param camera Camera to copy its data
     // @param camera The custom viewport to use for view/projection matrices override.
-    void CopyFrom(Camera* camera, Viewport* viewport);
+    void CopyFrom(Camera* camera, Viewport* viewport = nullptr);
 
 public:
     DrawPass GetShadowsDrawPassMask(ShadowsCastingMode shadowsMode) const;
@@ -288,4 +294,7 @@ public:
     {
         return Frustum.GetMatrix();
     }
+
+    // Calculates the world matrix for the given transformation instance rendering.
+    void GetWorldMatrix(const Transform& transform, Matrix& world) const;
 };

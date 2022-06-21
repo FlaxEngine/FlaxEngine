@@ -427,7 +427,7 @@ void Foliage::AddInstance(const FoliageInstance& instance)
     auto& meshes = type->Model->LODs[0].Meshes;
     for (int32 j = 0; j < meshes.Count(); j++)
     {
-        meshes[j].GetCorners(corners);
+        meshes[j].GetBox().GetCorners(corners);
 
         for (int32 k = 0; k < 8; k++)
         {
@@ -469,7 +469,7 @@ void Foliage::SetInstanceTransform(int32 index, const Transform& value)
     auto& meshes = type->Model->LODs[0].Meshes;
     for (int32 j = 0; j < meshes.Count(); j++)
     {
-        meshes[j].GetCorners(corners);
+        meshes[j].GetBox().GetCorners(corners);
 
         for (int32 k = 0; k < 8; k++)
         {
@@ -512,7 +512,7 @@ void Foliage::OnFoliageTypeModelLoaded(int32 index)
             for (int32 j = 0; j < meshes.Count(); j++)
             {
                 // TODO: cache bounds for all model meshes and reuse later
-                meshes[j].GetCorners(corners);
+                meshes[j].GetBox().GetCorners(corners);
 
                 // TODO: use SIMD
                 for (int32 k = 0; k < 8; k++)
@@ -1282,7 +1282,7 @@ void Foliage::OnTransformChanged()
         auto& meshes = type->Model->LODs[0].Meshes;
         for (int32 j = 0; j < meshes.Count(); j++)
         {
-            meshes[j].GetCorners(corners);
+            meshes[j].GetBox().GetCorners(corners);
 
             for (int32 k = 0; k < 8; k++)
             {

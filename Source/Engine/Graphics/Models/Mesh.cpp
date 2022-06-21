@@ -4,6 +4,7 @@
 #include "ModelInstanceEntry.h"
 #include "Engine/Content/Assets/Material.h"
 #include "Engine/Content/Assets/Model.h"
+#include "Engine/Core/Math/Transform.h"
 #include "Engine/Graphics/GPUContext.h"
 #include "Engine/Graphics/GPUDevice.h"
 #include "Engine/Graphics/RenderTask.h"
@@ -319,7 +320,7 @@ bool Mesh::Intersects(const Ray& ray, const Matrix& world, Real& distance, Vecto
 {
     // Get bounding box of the mesh bounds transformed by the instance world matrix
     Vector3 corners[8];
-    GetCorners(corners);
+    _box.GetCorners(corners);
     Vector3 tmp;
     Vector3::Transform(corners[0], world, tmp);
     Vector3 min = tmp;
@@ -339,7 +340,38 @@ bool Mesh::Intersects(const Ray& ray, const Matrix& world, Real& distance, Vecto
         // Use exact test on raw geometry
         return _collisionProxy.Intersects(ray, world, distance, normal);
     }
+    distance = 0;
+    normal = Vector3::Up;
+    return false;
+#else
+	return transformedBox.Intersects(ray, distance, normal);
+#endif
+}
 
+bool Mesh::Intersects(const Ray& ray, const Transform& transform, Real& distance, Vector3& normal) const
+{
+    // Get bounding box of the mesh bounds transformed by the instance world matrix
+    Vector3 corners[8];
+    _box.GetCorners(corners);
+    Vector3 tmp;
+    transform.LocalToWorld(corners[0], tmp);
+    Vector3 min = tmp;
+    Vector3 max = tmp;
+    for (int32 i = 1; i < 8; i++)
+    {
+        transform.LocalToWorld(corners[i], tmp);
+        min = Vector3::Min(min, tmp);
+        max = Vector3::Max(max, tmp);
+    }
+    const BoundingBox transformedBox(min, max);
+
+    // Test ray on box
+#if USE_PRECISE_MESH_INTERSECTS
+    if (transformedBox.Intersects(ray, distance))
+    {
+        // Use exact test on raw geometry
+        return _collisionProxy.Intersects(ray, transform, distance, normal);
+    }
     distance = 0;
     normal = Vector3::Up;
     return false;

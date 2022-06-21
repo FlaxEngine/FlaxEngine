@@ -189,10 +189,15 @@ Viewport Camera::GetViewport() const
 
 void Camera::GetMatrices(Matrix& view, Matrix& projection) const
 {
-    GetMatrices(view, projection, GetViewport());
+    GetMatrices(view, projection, GetViewport(), Vector3::Zero);
 }
 
 void Camera::GetMatrices(Matrix& view, Matrix& projection, const Viewport& viewport) const
+{
+    GetMatrices(view, projection, viewport, Vector3::Zero);
+}
+
+void Camera::GetMatrices(Matrix& view, Matrix& projection, const Viewport& viewport, const Vector3& origin) const
 {
     // Create projection matrix
     if (_usePerspective)
@@ -207,10 +212,11 @@ void Camera::GetMatrices(Matrix& view, Matrix& projection, const Viewport& viewp
 
     // Create view matrix
     const Float3 direction = GetDirection();
-    const Vector3 target = _transform.Translation + direction;
-    Vector3 up;
-    Vector3::Transform(Vector3::Up, GetOrientation(), up);
-    Matrix::LookAt(_transform.Translation, target, up, view);
+    const Float3 position = _transform.Translation - origin;
+    const Float3 target = position + direction;
+    Float3 up;
+    Float3::Transform(Float3::Up, GetOrientation(), up);
+    Matrix::LookAt(position, target, up, view);
 }
 
 #if USE_EDITOR
@@ -253,16 +259,19 @@ void Camera::Draw(RenderContext& renderContext)
         && _previewModel
         && _previewModel->IsLoaded())
     {
+        Matrix world;
+        renderContext.View.GetWorldMatrix(_transform, world);
         GeometryDrawStateData drawState;
         Mesh::DrawInfo draw;
         draw.Buffer = &_previewModelBuffer;
-        draw.World = &_previewModelWorld;
+        draw.World = &world;
         draw.DrawState = &drawState;
         draw.Lightmap = nullptr;
         draw.LightmapUVs = nullptr;
         draw.Flags = StaticFlags::Transform;
         draw.DrawModes = (DrawPass)((DrawPass::Depth | DrawPass::GBuffer | DrawPass::Forward) & renderContext.View.Pass);
         BoundingSphere::FromBox(_previewModelBox, draw.Bounds);
+        draw.Bounds.Center -= renderContext.View.Origin;
         draw.PerInstanceRandom = GetPerInstanceRandom();
         draw.LODBias = 0;
         draw.ForcedLOD = -1;
@@ -288,32 +297,33 @@ void Camera::OnDebugDrawSelected()
 
 void Camera::UpdateCache()
 {
-    // Update view and projection matrix
-    GetMatrices(_view, _projection);
+    // Calculate view and projection matrices
+    Matrix view, projection;
+    GetMatrices(view, projection);
 
     // Update frustum and bounding box
-    _frustum.SetMatrix(_view, _projection);
+    _frustum.SetMatrix(view, projection);
     _frustum.GetBox(_box);
     BoundingSphere::FromBox(_box, _sphere);
 
 #if USE_EDITOR
 
     // Update editor preview model cache
-    Matrix rot, world;
-    _transform.GetWorld(world);
+    Matrix rot, tmp, world;
+    _transform.GetWorld(tmp);
     Matrix::RotationY(PI * -0.5f, rot);
-    Matrix::Multiply(rot, world, _previewModelWorld);
+    Matrix::Multiply(rot, tmp, world);
 
     // Calculate snap box for preview model
     if (_previewModel && _previewModel->IsLoaded())
     {
-        _previewModelBox = _previewModel->GetBox(_previewModelWorld);
+        _previewModelBox = _previewModel->GetBox(world);
     }
     else
     {
         Vector3 min(-10.0f), max(10.0f);
-        min = Vector3::Transform(min, _previewModelWorld);
-        max = Vector3::Transform(max, _previewModelWorld);
+        min = Vector3::Transform(min, world);
+        max = Vector3::Transform(max, world);
         _previewModelBox = BoundingBox(min, max);
     }
 
