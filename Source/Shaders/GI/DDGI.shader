@@ -18,7 +18,6 @@
 
 // This must match C++
 #define DDGI_TRACE_RAYS_LIMIT 256 // Limit of rays per-probe (runtime value can be smaller)
-#define DDGI_TRACE_RAYS_GROUP_SIZE_X 32
 #define DDGI_PROBE_UPDATE_BORDERS_GROUP_SIZE 8
 #define DDGI_PROBE_CLASSIFY_GROUP_SIZE 32
 
@@ -151,7 +150,11 @@ TextureCube Skybox : register(t7);
 
 // Compute shader for tracing rays for probes using Global SDF and Global Surface Atlas.
 META_CS(true, FEATURE_LEVEL_SM5)
-[numthreads(DDGI_TRACE_RAYS_GROUP_SIZE_X, 1, 1)]
+META_PERMUTATION_1(DDGI_TRACE_RAYS_COUNT=96)
+META_PERMUTATION_1(DDGI_TRACE_RAYS_COUNT=128)
+META_PERMUTATION_1(DDGI_TRACE_RAYS_COUNT=192)
+META_PERMUTATION_1(DDGI_TRACE_RAYS_COUNT=256)
+[numthreads(DDGI_TRACE_RAYS_COUNT, 1, 1)]
 void CS_TraceRays(uint3 DispatchThreadId : SV_DispatchThreadID)
 {
     uint rayIndex = DispatchThreadId.x;

@@ -34,7 +34,6 @@
 
 // This must match HLSL
 #define DDGI_TRACE_RAYS_PROBES_COUNT_LIMIT 4096 // Maximum amount of probes to update at once during rays tracing and blending
-#define DDGI_TRACE_RAYS_GROUP_SIZE_X 32
 #define DDGI_TRACE_RAYS_LIMIT 256 // Limit of rays per-probe (runtime value can be smaller)
 #define DDGI_PROBE_RESOLUTION_IRRADIANCE 6 // Resolution (in texels) for probe irradiance data (excluding 1px padding on each side)
 #define DDGI_PROBE_RESOLUTION_DISTANCE 14 // Resolution (in texels) for probe distance data (excluding 1px padding on each side)
@@ -175,7 +174,10 @@ bool DynamicDiffuseGlobalIlluminationPass::setupResources()
     if (!_cb0 || !_cb1)
         return true;
     _csClassify = shader->GetCS("CS_Classify");
-    _csTraceRays = shader->GetCS("CS_TraceRays");
+    _csTraceRays[0] = shader->GetCS("CS_TraceRays", 0);
+    _csTraceRays[1] = shader->GetCS("CS_TraceRays", 1);
+    _csTraceRays[2] = shader->GetCS("CS_TraceRays", 2);
+    _csTraceRays[3] = shader->GetCS("CS_TraceRays", 3);
     _csUpdateProbesIrradiance = shader->GetCS("CS_UpdateProbes", 0);
     _csUpdateProbesDistance = shader->GetCS("CS_UpdateProbes", 1);
     _csUpdateBordersIrradianceRow = shader->GetCS("CS_UpdateBorders", 0);
@@ -202,7 +204,10 @@ void DynamicDiffuseGlobalIlluminationPass::OnShaderReloading(Asset* obj)
 {
     LastFrameShaderReload = Engine::FrameCount;
     _csClassify = nullptr;
-    _csTraceRays = nullptr;
+    _csTraceRays[0] = nullptr;
+    _csTraceRays[1] = nullptr;
+    _csTraceRays[2] = nullptr;
+    _csTraceRays[3] = nullptr;
     _csUpdateProbesIrradiance = nullptr;
     _csUpdateProbesDistance = nullptr;
     _csUpdateBordersIrradianceRow = nullptr;
@@ -222,7 +227,6 @@ void DynamicDiffuseGlobalIlluminationPass::Dispose()
     // Cleanup
     _cb0 = nullptr;
     _cb1 = nullptr;
-    _csTraceRays = nullptr;
     _shader = nullptr;
     SAFE_DELETE_GPU_RESOURCE(_psIndirectLighting);
 #if USE_EDITOR
@@ -272,7 +276,7 @@ bool DynamicDiffuseGlobalIlluminationPass::Render(RenderContext& renderContext, 
     auto* graphicsSettings = GraphicsSettings::Get();
     const float probesSpacing = Math::Clamp(graphicsSettings->GIProbesSpacing, 10.0f, 1000.0f); // GI probes placement spacing nearby camera (for closest cascade; gets automatically reduced for further cascades)
     int32 probeRaysCount; // Amount of rays to trace randomly around each probe
-    switch (Graphics::GIQuality)
+    switch (Graphics::GIQuality) // Ensure to match CS_TraceRays permutations
     {
     case Quality::Low:
         probeRaysCount = 96;
@@ -284,11 +288,12 @@ bool DynamicDiffuseGlobalIlluminationPass::Render(RenderContext& renderContext, 
         probeRaysCount = 192;
         break;
     case Quality::Ultra:
-    default:
         probeRaysCount = 256;
         break;
+    default:
+        return true;
     }
-    ASSERT_LOW_LAYER(Math::Min(Math::AlignUp(probeRaysCount, DDGI_TRACE_RAYS_GROUP_SIZE_X), DDGI_TRACE_RAYS_LIMIT) == probeRaysCount);
+    ASSERT_LOW_LAYER(probeRaysCount <= DDGI_TRACE_RAYS_LIMIT);
     bool debugProbes = renderContext.View.Mode == ViewMode::GlobalIllumination;
     const float indirectLightingIntensity = settings.Intensity;
     const float probeHistoryWeight = Math::Clamp(settings.TemporalResponse, 0.0f, 0.98f);
@@ -534,7 +539,6 @@ bool DynamicDiffuseGlobalIlluminationPass::Render(RenderContext& renderContext, 
                     PROFILE_GPU_CPU("Trace Rays");
 
                     // Global SDF with Global Surface Atlas software raytracing (thread X - per probe ray, thread Y - per probe)
-                    ASSERT_LOW_LAYER((probeRaysCount % DDGI_TRACE_RAYS_GROUP_SIZE_X) == 0);
                     context->BindSR(0, bindingDataSDF.Texture ? bindingDataSDF.Texture->ViewVolume() : nullptr);
                     context->BindSR(1, bindingDataSDF.TextureMip ? bindingDataSDF.TextureMip->ViewVolume() : nullptr);
                     context->BindSR(2, bindingDataSurfaceAtlas.Chunks ? bindingDataSurfaceAtlas.Chunks->View() : nullptr);
@@ -544,7 +548,7 @@ bool DynamicDiffuseGlobalIlluminationPass::Render(RenderContext& renderContext, 
                     context->BindSR(6, ddgiData.Result.ProbesState);
                     context->BindSR(7, skybox);
                     context->BindUA(0, ddgiData.ProbesTrace->View());
-                    context->Dispatch(_csTraceRays, probeRaysCount / DDGI_TRACE_RAYS_GROUP_SIZE_X, probesBatchSize, 1);
+                    context->Dispatch(_csTraceRays[(int32)Graphics::GIQuality], 1, probesBatchSize, 1);
                     context->ResetUA();
                     context->ResetSR();
 #if 0
