@@ -226,10 +226,8 @@ void ShaderGenerator::ProcessGroupMath(Box* box, Node* node, Value& value)
     case 19:
     case 20:
     {
-        Box* b1 = node->GetBox(0);
-        Box* b2 = node->GetBox(1);
-        Value v1 = tryGetValue(b1, Value::Zero);
-        Value v2 = tryGetValue(b2, Value::Zero);
+        Value v1 = tryGetValue(node->GetBox(0), 0, Value::Zero);
+        Value v2 = tryGetValue(node->GetBox(1), 1, Value::Zero);
         const Char* function = _mathFunctions[node->TypeID - 7];
         value = writeFunction2(node, v1, v2, function, ValueType::Float);
         break;
@@ -259,10 +257,8 @@ void ShaderGenerator::ProcessGroupMath(Box* box, Node* node, Value& value)
     // Reflect
     case 26:
     {
-        Box* b1 = node->GetBox(0);
-        Box* b2 = node->GetBox(1);
-        Value v1 = tryGetValue(b1, Value::Zero);
-        Value v2 = tryGetValue(b2, Value::Zero);
+        Value v1 = tryGetValue(node->GetBox(0), Value::Zero);
+        Value v2 = tryGetValue(node->GetBox(1), Value::Zero);
         const Char* function = _mathFunctions[17];
         value = writeFunction2(node, v1, v2, function);
         break;

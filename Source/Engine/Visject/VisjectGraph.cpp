@@ -276,8 +276,8 @@ void VisjectExecutor::ProcessGroupMath(Box* box, Node* node, Value& value)
     case 19:
     case 20:
     {
-        Value v1 = tryGetValue(node->GetBox(0), Value::Zero);
-        Value v2 = tryGetValue(node->GetBox(1), Value::Zero).Cast(v1.Type);
+        Value v1 = tryGetValue(node->GetBox(0), 0, Value::Zero);
+        Value v2 = tryGetValue(node->GetBox(1), 1, Value::Zero).Cast(v1.Type);
         switch (node->TypeID)
         {
         case 18:
