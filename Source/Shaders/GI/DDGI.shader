@@ -17,6 +17,7 @@
 #include "./Flax/GI/DDGI.hlsl"
 
 // This must match C++
+#define DDGI_TRACE_RAYS_PROBES_COUNT_LIMIT 4096 // Maximum amount of probes to update at once during rays tracing and blending
 #define DDGI_TRACE_RAYS_LIMIT 256 // Limit of rays per-probe (runtime value can be smaller)
 #define DDGI_PROBE_UPDATE_BORDERS_GROUP_SIZE 8
 #define DDGI_PROBE_CLASSIFY_GROUP_SIZE 32
@@ -58,6 +59,7 @@ float3 GetProbeRayDirection(DDGIData data, uint rayIndex)
 #ifdef _CS_Classify
 
 RWTexture2D<snorm float4> RWProbesState : register(u0);
+RWByteAddressBuffer RWActiveProbes : register(u1);
 
 Texture3D<float> GlobalSDFTex : register(t0);
 Texture3D<float> GlobalSDFMip : register(t1);
@@ -131,6 +133,38 @@ void CS_Classify(uint3 DispatchThreadId : SV_DispatchThreadID)
 
     probeState.xyz /= probesSpacing;
     RWProbesState[probeDataCoords] = probeState;
+
+    // Collect active probes
+    if (probeState.w == DDGI_PROBE_STATE_ACTIVE)
+    {
+        uint activeProbeIndex;
+        RWActiveProbes.InterlockedAdd(0, 1, activeProbeIndex); // Counter at 0
+        RWActiveProbes.Store(activeProbeIndex * 4 + 4, DispatchThreadId.x);
+    }
+}
+
+#endif
+
+#ifdef _CS_UpdateProbesInitArgs
+
+RWBuffer<uint> UpdateProbesInitArgs : register(u0);
+ByteAddressBuffer ActiveProbes : register(t0);
+
+// Compute shader for building indirect dispatch arguments for CS_TraceRays and CS_UpdateProbes.
+META_CS(true, FEATURE_LEVEL_SM5)
+[numthreads(1, 1, 1)]
+void CS_UpdateProbesInitArgs()
+{
+    uint probesCount = DDGI.ProbesCounts.x * DDGI.ProbesCounts.y * DDGI.ProbesCounts.z;
+    uint activeProbesCount = ActiveProbes.Load(0);
+    uint arg = 0;
+    for (uint probesOffset = 0; probesOffset < activeProbesCount; probesOffset += DDGI_TRACE_RAYS_PROBES_COUNT_LIMIT)
+    {
+        uint probesBatchSize = min(activeProbesCount - probesOffset, DDGI_TRACE_RAYS_PROBES_COUNT_LIMIT);
+        UpdateProbesInitArgs[arg++] = probesBatchSize;
+        UpdateProbesInitArgs[arg++] = 1;
+        UpdateProbesInitArgs[arg++] = 1;
+    }
 }
 
 #endif
@@ -147,6 +181,7 @@ Texture2D GlobalSurfaceAtlasDepth : register(t4);
 Texture2D GlobalSurfaceAtlasTex : register(t5);
 Texture2D<snorm float4> ProbesState : register(t6);
 TextureCube Skybox : register(t7);
+ByteAddressBuffer ActiveProbes : register(t8);
 
 // Compute shader for tracing rays for probes using Global SDF and Global Surface Atlas.
 META_CS(true, FEATURE_LEVEL_SM5)
@@ -154,11 +189,11 @@ META_PERMUTATION_1(DDGI_TRACE_RAYS_COUNT=96)
 META_PERMUTATION_1(DDGI_TRACE_RAYS_COUNT=128)
 META_PERMUTATION_1(DDGI_TRACE_RAYS_COUNT=192)
 META_PERMUTATION_1(DDGI_TRACE_RAYS_COUNT=256)
-[numthreads(DDGI_TRACE_RAYS_COUNT, 1, 1)]
+[numthreads(1, DDGI_TRACE_RAYS_COUNT, 1)]
 void CS_TraceRays(uint3 DispatchThreadId : SV_DispatchThreadID)
 {
-    uint rayIndex = DispatchThreadId.x;
-    uint probeIndex = DispatchThreadId.y + ProbeIndexOffset;
+    uint rayIndex = DispatchThreadId.y;
+    uint probeIndex = ActiveProbes.Load((DispatchThreadId.x + ProbeIndexOffset + 1) * 4);
     uint3 probeCoords = GetDDGIProbeCoords(DDGI, probeIndex);
     probeIndex = GetDDGIScrollingProbeIndex(DDGI, CascadeIndex, probeCoords);
 
@@ -202,7 +237,7 @@ void CS_TraceRays(uint3 DispatchThreadId : SV_DispatchThreadID)
     }
 
     // Write into probes trace results
-    RWProbesTrace[uint2(rayIndex, DispatchThreadId.y)] = radiance;
+    RWProbesTrace[uint2(rayIndex, DispatchThreadId.x)] = radiance;
 }
 
 #endif
@@ -224,6 +259,7 @@ groupshared float3 CachedProbesTraceDirection[DDGI_TRACE_RAYS_LIMIT];
 RWTexture2D<float4> RWOutput : register(u0);
 Texture2D<snorm float4> ProbesState : register(t0);
 Texture2D<float4> ProbesTrace : register(t1);
+ByteAddressBuffer ActiveProbes : register(t2);
 
 // Compute shader for updating probes irradiance or distance texture.
 META_CS(true, FEATURE_LEVEL_SM5)
@@ -235,13 +271,9 @@ void CS_UpdateProbes(uint3 GroupThreadId : SV_GroupThreadID, uint3 GroupId : SV_
     // GroupThreadId.xy - coordinates of the probe texel: [0; DDGI_PROBE_RESOLUTION)
     // GroupId.x - index of the thread group which is probe index within a batch: [0; batchSize)
     // GroupIndex.x - index of the thread within a thread group: [0; DDGI_PROBE_RESOLUTION * DDGI_PROBE_RESOLUTION)
-
-    // Get probe index and atlas location in the atlas
-    uint probeIndex = GroupId.x + ProbeIndexOffset;
+    uint probeIndex = ActiveProbes.Load((GroupId.x + ProbeIndexOffset + 1) * 4);
     uint3 probeCoords = GetDDGIProbeCoords(DDGI, probeIndex);
     probeIndex = GetDDGIScrollingProbeIndex(DDGI, CascadeIndex, probeCoords);
-    probeCoords = GetDDGIProbeCoords(DDGI, probeIndex);
-    uint2 outputCoords = GetDDGIProbeTexelCoords(DDGI, CascadeIndex, probeIndex) * (DDGI_PROBE_RESOLUTION + 2) + 1 + GroupThreadId.xy;
 
     // Skip disabled probes
     bool skip = false;
@@ -279,7 +311,9 @@ void CS_UpdateProbes(uint3 GroupThreadId : SV_GroupThreadID, uint3 GroupId : SV_
     GroupMemoryBarrierWithGroupSync();
     if (skip)
         return;
-
+    probeCoords = GetDDGIProbeCoords(DDGI, probeIndex);
+    uint2 outputCoords = GetDDGIProbeTexelCoords(DDGI, CascadeIndex, probeIndex) * (DDGI_PROBE_RESOLUTION + 2) + 1 + GroupThreadId.xy;
+    
     // Clear probes that have been scrolled to a new positions
     int3 probesScrollOffsets = DDGI.ProbesScrollOffsets[CascadeIndex].xyz;
     int probeScrollClear = DDGI.ProbesScrollOffsets[CascadeIndex].w;

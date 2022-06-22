@@ -88,6 +88,8 @@ public:
     GPUTexture* ProbesState = nullptr; // Probes state: (RGB: world-space offset, A: state)
     GPUTexture* ProbesIrradiance = nullptr; // Probes irradiance (RGB: sRGB color)
     GPUTexture* ProbesDistance = nullptr; // Probes distance (R: mean distance, G: mean distance^2)
+    GPUBuffer* ActiveProbes = nullptr; // List with indices of the active probes (built during probes classification to use indirect dispatches for probes updating), counter at 0
+    GPUBuffer* UpdateProbesInitArgs = nullptr; // Indirect dispatch buffer for active-only probes updating (trace+blend)
     DynamicDiffuseGlobalIlluminationPass::BindingData Result;
 
     FORCE_INLINE void Release()
@@ -96,6 +98,8 @@ public:
         RenderTargetPool::Release(ProbesState);
         RenderTargetPool::Release(ProbesIrradiance);
         RenderTargetPool::Release(ProbesDistance);
+        SAFE_DELETE_GPU_RESOURCE(ActiveProbes);
+        SAFE_DELETE_GPU_RESOURCE(UpdateProbesInitArgs);
     }
 
     ~DDGICustomBuffer()
@@ -174,6 +178,7 @@ bool DynamicDiffuseGlobalIlluminationPass::setupResources()
     if (!_cb0 || !_cb1)
         return true;
     _csClassify = shader->GetCS("CS_Classify");
+    _csUpdateProbesInitArgs = shader->GetCS("CS_UpdateProbesInitArgs");
     _csTraceRays[0] = shader->GetCS("CS_TraceRays", 0);
     _csTraceRays[1] = shader->GetCS("CS_TraceRays", 1);
     _csTraceRays[2] = shader->GetCS("CS_TraceRays", 2);
@@ -204,6 +209,7 @@ void DynamicDiffuseGlobalIlluminationPass::OnShaderReloading(Asset* obj)
 {
     LastFrameShaderReload = Engine::FrameCount;
     _csClassify = nullptr;
+    _csUpdateProbesInitArgs = nullptr;
     _csTraceRays[0] = nullptr;
     _csTraceRays[1] = nullptr;
     _csTraceRays[2] = nullptr;
@@ -376,7 +382,6 @@ bool DynamicDiffuseGlobalIlluminationPass::Render(RenderContext& renderContext, 
         // Allocate probes textures
         uint64 memUsage = 0;
         auto desc = GPUTextureDescription::New2D(probesCountTotalX, probesCountTotalY, PixelFormat::Unknown);
-        // TODO rethink probes data placement in memory -> what if we get [50x50x30] resolution? That's 75000 probes! Use sparse storage with active-only probes
 #define INIT_TEXTURE(texture, format, width, height) desc.Format = format; desc.Width = width; desc.Height = height; ddgiData.texture = RenderTargetPool::Get(desc); if (!ddgiData.texture) return true; memUsage += ddgiData.texture->GetMemoryUsage()
         desc.Flags = GPUTextureFlags::ShaderResource | GPUTextureFlags::UnorderedAccess;
         INIT_TEXTURE(ProbesTrace, PixelFormat::R16G16B16A16_Float, probeRaysCount, Math::Min(probesCountCascade, DDGI_TRACE_RAYS_PROBES_COUNT_LIMIT));
@@ -384,6 +389,12 @@ bool DynamicDiffuseGlobalIlluminationPass::Render(RenderContext& renderContext, 
         INIT_TEXTURE(ProbesIrradiance, PixelFormat::R11G11B10_Float, probesCountTotalX * (DDGI_PROBE_RESOLUTION_IRRADIANCE + 2), probesCountTotalY * (DDGI_PROBE_RESOLUTION_IRRADIANCE + 2));
         INIT_TEXTURE(ProbesDistance, PixelFormat::R16G16_Float, probesCountTotalX * (DDGI_PROBE_RESOLUTION_DISTANCE + 2), probesCountTotalY * (DDGI_PROBE_RESOLUTION_DISTANCE + 2));
 #undef INIT_TEXTURE
+#define INIT_BUFFER(buffer, name) ddgiData.buffer = GPUDevice::Instance->CreateBuffer(TEXT(name)); if (!ddgiData.buffer || ddgiData.buffer->Init(desc2)) return true; memUsage += ddgiData.buffer->GetMemoryUsage();
+        GPUBufferDescription desc2 = GPUBufferDescription::Raw((probesCountCascade + 1) * sizeof(uint32), GPUBufferFlags::ShaderResource | GPUBufferFlags::UnorderedAccess);
+        INIT_BUFFER(ActiveProbes, "DDGI.ActiveProbes");
+        desc2 = GPUBufferDescription::Buffer(sizeof(GPUDispatchIndirectArgs) * Math::DivideAndRoundUp(probesCountCascade, DDGI_TRACE_RAYS_PROBES_COUNT_LIMIT), GPUBufferFlags::Argument | GPUBufferFlags::UnorderedAccess, PixelFormat::R32_UInt, nullptr, sizeof(uint32));
+        INIT_BUFFER(UpdateProbesInitArgs, "DDGI.UpdateProbesInitArgs");
+#undef INIT_BUFFER
         LOG(Info, "Dynamic Diffuse Global Illumination memory usage: {0} MB, probes: {1}", memUsage / 1024 / 1024, probesCountTotal);
         clear = true;
     }
@@ -493,26 +504,6 @@ bool DynamicDiffuseGlobalIlluminationPass::Render(RenderContext& renderContext, 
         context->BindCB(0, _cb0);
     }
 
-    // Classify probes (activation/deactivation and relocation)
-    {
-        PROFILE_GPU_CPU("Probes Classification");
-        uint32 threadGroups = Math::DivideAndRoundUp(probesCountCascade, DDGI_PROBE_CLASSIFY_GROUP_SIZE);
-        context->BindSR(0, bindingDataSDF.Texture ? bindingDataSDF.Texture->ViewVolume() : nullptr);
-        context->BindSR(1, bindingDataSDF.TextureMip ? bindingDataSDF.TextureMip->ViewVolume() : nullptr);
-        context->BindUA(0, ddgiData.Result.ProbesState);
-        for (int32 cascadeIndex = 0; cascadeIndex < cascadesCount; cascadeIndex++)
-        {
-            if (cascadeSkipUpdate[cascadeIndex])
-                continue;
-            Data1 data;
-            data.CascadeIndex = cascadeIndex;
-            context->UpdateCB(_cb1, &data);
-            context->BindCB(1, _cb1);
-            context->Dispatch(_csClassify, threadGroups, 1, 1);
-        }
-        context->ResetUA();
-    }
-
     // Update probes
     {
         PROFILE_GPU_CPU("Probes Update");
@@ -524,10 +515,38 @@ bool DynamicDiffuseGlobalIlluminationPass::Render(RenderContext& renderContext, 
                 continue;
             anyDirty = true;
 
+            // Classify probes (activation/deactivation and relocation)
+            {
+                PROFILE_GPU_CPU("Classify Probes");
+                uint32 activeProbesCount = 0;
+                context->UpdateBuffer(ddgiData.ActiveProbes, &activeProbesCount, sizeof(uint32), 0);
+                threadGroupsX = Math::DivideAndRoundUp(probesCountCascade, DDGI_PROBE_CLASSIFY_GROUP_SIZE);
+                context->BindSR(0, bindingDataSDF.Texture ? bindingDataSDF.Texture->ViewVolume() : nullptr);
+                context->BindSR(1, bindingDataSDF.TextureMip ? bindingDataSDF.TextureMip->ViewVolume() : nullptr);
+                context->BindUA(0, ddgiData.Result.ProbesState);
+                context->BindUA(1, ddgiData.ActiveProbes->View());
+                Data1 data;
+                data.CascadeIndex = cascadeIndex;
+                context->UpdateCB(_cb1, &data);
+                context->BindCB(1, _cb1);
+                context->Dispatch(_csClassify, threadGroupsX, 1, 1);
+                context->ResetUA();
+                context->ResetSR();
+            }
+
+            // Build indirect args for probes updating (loop over active-only probes)
+            {
+                PROFILE_GPU_CPU("Init Args");
+                context->BindSR(0, ddgiData.ActiveProbes->View());
+                context->BindUA(0, ddgiData.UpdateProbesInitArgs->View());
+                context->Dispatch(_csUpdateProbesInitArgs, 1, 1, 1);
+                context->ResetUA();
+            }
+
             // Update probes in batches so ProbesTrace texture can be smaller
+            uint32 arg = 0;
             for (int32 probesOffset = 0; probesOffset < probesCountCascade; probesOffset += DDGI_TRACE_RAYS_PROBES_COUNT_LIMIT)
             {
-                uint32 probesBatchSize = Math::Min(probesCountCascade - probesOffset, DDGI_TRACE_RAYS_PROBES_COUNT_LIMIT);
                 Data1 data;
                 data.CascadeIndex = cascadeIndex;
                 data.ProbeIndexOffset = probesOffset;
@@ -547,17 +566,11 @@ bool DynamicDiffuseGlobalIlluminationPass::Render(RenderContext& renderContext, 
                     context->BindSR(5, bindingDataSurfaceAtlas.AtlasLighting->View());
                     context->BindSR(6, ddgiData.Result.ProbesState);
                     context->BindSR(7, skybox);
+                    context->BindSR(8, ddgiData.ActiveProbes->View());
                     context->BindUA(0, ddgiData.ProbesTrace->View());
-                    context->Dispatch(_csTraceRays[(int32)Graphics::GIQuality], 1, probesBatchSize, 1);
+                    context->DispatchIndirect(_csTraceRays[(int32)Graphics::GIQuality], ddgiData.UpdateProbesInitArgs, arg);
                     context->ResetUA();
                     context->ResetSR();
-#if 0
-                    // Probes trace debug preview
-                    context->SetViewportAndScissors(renderContext.View.ScreenSize.X, renderContext.View.ScreenSize.Y);
-                    context->SetRenderTarget(lightBuffer);
-                    context->Draw(ddgiData.ProbesTrace);
-                    return false;
-#endif
                 }
 
                 // Update probes irradiance and distance textures (one thread-group per probe)
@@ -565,11 +578,16 @@ bool DynamicDiffuseGlobalIlluminationPass::Render(RenderContext& renderContext, 
                     PROFILE_GPU_CPU("Update Probes");
                     context->BindSR(0, ddgiData.Result.ProbesState);
                     context->BindSR(1, ddgiData.ProbesTrace->View());
+                    context->BindSR(2, ddgiData.ActiveProbes->View());
                     context->BindUA(0, ddgiData.Result.ProbesIrradiance);
-                    context->Dispatch(_csUpdateProbesIrradiance, probesBatchSize, 1, 1);
+                    context->DispatchIndirect(_csUpdateProbesIrradiance, ddgiData.UpdateProbesInitArgs, arg);
                     context->BindUA(0, ddgiData.Result.ProbesDistance);
-                    context->Dispatch(_csUpdateProbesDistance, probesBatchSize, 1, 1);
+                    context->DispatchIndirect(_csUpdateProbesDistance, ddgiData.UpdateProbesInitArgs, arg);
+                    context->ResetUA();
+                    context->ResetSR();
                 }
+
+                arg += sizeof(GPUDispatchIndirectArgs);
             }
         }
 
