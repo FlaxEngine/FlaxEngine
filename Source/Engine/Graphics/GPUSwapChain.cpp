@@ -42,7 +42,7 @@ Task* GPUSwapChain::DownloadDataAsync(TextureData& result)
         return nullptr;
     }
 
-    auto texture = GPUDevice::Instance->CreateTexture(String::Empty);
+    auto texture = GPUDevice::Instance->CreateTexture();
     if (texture->Init(GPUTextureDescription::New2D(GetWidth(), GetHeight(), GetFormat(), GPUTextureFlags::None, 1).ToStagingReadback()))
     {
         LOG(Warning, "Failed to create staging texture for the window swapchain backuffer download.");
@@ -83,4 +83,18 @@ void GPUSwapChain::Present(bool vsync)
 
     // Count amount of present calls
     _presentCount++;
+}
+
+String GPUSwapChain::ToString() const
+{
+#if GPU_ENABLE_RESOURCE_NAMING
+    return String::Format(TEXT("SwapChain {0}x{1}, {2}"), GetWidth(), GetHeight(), GetName());
+#else
+	return TEXT("SwapChain");
+#endif
+}
+
+GPUResource::ResourceType GPUSwapChain::GetResourceType() const
+{
+    return ResourceType::Texture;
 }

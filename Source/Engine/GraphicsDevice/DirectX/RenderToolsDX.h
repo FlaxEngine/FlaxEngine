@@ -213,18 +213,19 @@ namespace RenderToolsDX
         {
             HRESULT reason = S_OK;
             const RendererType rendererType = GPUDevice::Instance ? GPUDevice::Instance->GetRendererType() : RendererType::Unknown;
+            void* nativePtr = GPUDevice::Instance ? GPUDevice::Instance->GetNativePtr() : nullptr;
 #if GRAPHICS_API_DIRECTX12
-            if (rendererType == RendererType::DirectX12)
+            if (rendererType == RendererType::DirectX12 && nativePtr)
             {
-                reason = ((ID3D12Device*)GPUDevice::Instance->GetNativePtr())->GetDeviceRemovedReason();
+                reason = ((ID3D12Device*)nativePtr)->GetDeviceRemovedReason();
             }
 #endif
 #if GRAPHICS_API_DIRECTX11
-            if (rendererType == RendererType::DirectX11 ||
+            if ((rendererType == RendererType::DirectX11 ||
                 rendererType == RendererType::DirectX10_1 ||
-                rendererType == RendererType::DirectX10)
+                rendererType == RendererType::DirectX10) && nativePtr)
             {
-                reason = ((ID3D11Device*)GPUDevice::Instance->GetNativePtr())->GetDeviceRemovedReason();
+                reason = ((ID3D11Device*)nativePtr)->GetDeviceRemovedReason();
             }
 #endif
             const Char* reasonStr = nullptr;

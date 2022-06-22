@@ -159,14 +159,6 @@ public:
 
 public:
     // [GPUResource]
-    ResourceType GetResourceType() const final override
-    {
-        return ResourceType::Texture;
-    }
-#if GPU_ENABLE_RESOURCE_NAMING
-    String GetName() const override
-    {
-        return String::Format(TEXT("RenderOutput {0}x{1}"), GetWidth(), GetHeight());
-    }
-#endif
+    String ToString() const override;
+    ResourceType GetResourceType() const final override;
 };

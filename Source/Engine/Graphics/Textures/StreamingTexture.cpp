@@ -267,7 +267,7 @@ Task* StreamingTexture::UpdateAllocation(int32 residency)
 #if GPU_ENABLE_RESOURCE_NAMING
             texture = GPUDevice::Instance->CreateTexture(_texture->GetName());
 #else
-            texture = GPUDevice::Instance->CreateTexture(String::Empty);
+            texture = GPUDevice::Instance->CreateTexture();
 #endif
         }
 

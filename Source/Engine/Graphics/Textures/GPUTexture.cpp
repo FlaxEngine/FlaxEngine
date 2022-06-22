@@ -211,12 +211,12 @@ uint32 GetHash(const GPUTextureDescription& key)
 
 GPUTexture* GPUTexture::Spawn(const SpawnParams& params)
 {
-    return GPUDevice::Instance->CreateTexture(String::Empty);
+    return GPUDevice::Instance->CreateTexture();
 }
 
 GPUTexture* GPUTexture::New()
 {
-    return GPUDevice::Instance->CreateTexture(String::Empty);
+    return GPUDevice::Instance->CreateTexture();
 }
 
 GPUTexture::GPUTexture()

@@ -31,6 +31,9 @@ public:
 
 protected:
     uint64 _memoryUsage = 0;
+#if GPU_ENABLE_RESOURCE_NAMING
+    String _name;
+#endif
 
 public:
     NON_COPYABLE(GPUResource);
@@ -77,12 +80,15 @@ public:
     API_PROPERTY() uint64 GetMemoryUsage() const;
 
 #if GPU_ENABLE_RESOURCE_NAMING
-
     /// <summary>
     /// Gets the resource name.
     /// </summary>
-    virtual String GetName() const;
+    API_PROPERTY() String GetName() const;
 
+    /// <summary>
+    /// Sets the resource name.
+    /// </summary>
+    API_PROPERTY() void SetName(const StringView& name);
 #endif
 
     /// <summary>
@@ -119,11 +125,6 @@ class GPUResourceBase : public BaseType
 protected:
     DeviceType* _device;
 
-private:
-#if GPU_ENABLE_RESOURCE_NAMING
-    String _name;
-#endif
-
 public:
     /// <summary>
     /// Initializes a new instance of the <see cref="GPUResourceBase"/> class.
@@ -132,10 +133,10 @@ public:
     /// <param name="name">The resource name.</param>
     GPUResourceBase(DeviceType* device, const StringView& name) noexcept
         : _device(device)
-#if GPU_ENABLE_RESOURCE_NAMING
-        , _name(name.Get(), name.Length())
-#endif
     {
+#if GPU_ENABLE_RESOURCE_NAMING
+        GPUResource::_name = name;
+#endif
         device->Resources.Add(this);
     }
 
@@ -159,12 +160,6 @@ public:
 
 public:
     // [GPUResource]
-#if GPU_ENABLE_RESOURCE_NAMING
-    String GetName() const override
-    {
-        return _name;
-    }
-#endif
     void OnDeviceDispose() override
     {
         GPUResource::OnDeviceDispose();

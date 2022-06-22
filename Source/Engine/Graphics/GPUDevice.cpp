@@ -184,8 +184,9 @@ GPUResource::GPUResource(const SpawnParams& params)
 
 GPUResource::~GPUResource()
 {
-#if !BUILD_RELEASE
-    ASSERT(_memoryUsage == 0);
+#if !BUILD_RELEASE && GPU_ENABLE_RESOURCE_NAMING
+    if (_memoryUsage != 0)
+        LOG(Error, "{0} '{1}' has not been disposed before destruction", ScriptingObject::ToString(), _name);
 #endif
 }
 
@@ -203,7 +204,12 @@ uint64 GPUResource::GetMemoryUsage() const
 
 String GPUResource::GetName() const
 {
-    return String::Empty;
+    return _name;
+}
+
+void GPUResource::SetName(const StringView& name)
+{
+    _name = name;
 }
 
 #endif
@@ -231,10 +237,10 @@ void GPUResource::OnReleaseGPU()
 String GPUResource::ToString() const
 {
 #if GPU_ENABLE_RESOURCE_NAMING
-    return GetName();
-#else
-    return TEXT("GPU Resource");
+    if (_name.HasChars())
+        return _name;
 #endif
+    return ScriptingObject::ToString();
 }
 
 void GPUResource::OnDeleteObject()
