@@ -862,7 +862,7 @@ namespace FlaxEditor.Viewport
             // Prepare
             var viewport = new FlaxEngine.Viewport(0, 0, Width, Height);
             CreateProjectionMatrix(out var p);
-            CreateViewMatrix(Float3.Zero, out var v); // TODO: large-worlds
+            CreateViewMatrix(ViewPosition, out var v); // TODO: large-worlds
             Matrix.Multiply(ref v, ref p, out var ivp);
             ivp.Invert();
 
