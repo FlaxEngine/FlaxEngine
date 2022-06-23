@@ -13,8 +13,9 @@
 #include "./Flax/Math.hlsl"
 #include "./Flax/Octahedral.hlsl"
 
-#define DDGI_PROBE_STATE_ACTIVE 0
-#define DDGI_PROBE_STATE_INACTIVE 1
+#define DDGI_PROBE_STATE_INACTIVE 0.0f
+#define DDGI_PROBE_STATE_ACTIVATED 0.2f
+#define DDGI_PROBE_STATE_ACTIVE 1.0f
 #define DDGI_PROBE_RESOLUTION_IRRADIANCE 6 // Resolution (in texels) for probe irradiance data (excluding 1px padding on each side)
 #define DDGI_PROBE_RESOLUTION_DISTANCE 14 // Resolution (in texels) for probe distance data (excluding 1px padding on each side)
 #define DDGI_SRGB_BLENDING 1 // Enables blending in sRGB color space, otherwise irradiance blending is done in linear space
@@ -23,8 +24,7 @@
 struct DDGIData
 {
     float4 ProbesOriginAndSpacing[4];
-    int4 ProbesScrollOffsets[4];
-    int4 ProbeScrollDirections[4];
+    int4 ProbesScrollOffsets[4]; // w unused
     uint3 ProbesCounts;
     uint CascadesCount;
     float IrradianceGamma;
@@ -77,7 +77,7 @@ uint2 GetDDGIProbeTexelCoords(DDGIData data, uint cascadeIndex, uint probeIndex)
 uint GetDDGIScrollingProbeIndex(DDGIData data, uint cascadeIndex, uint3 probeCoords)
 {
     // Probes are scrolled on edges to stabilize GI when camera moves
-    return GetDDGIProbeIndex(data, (probeCoords + data.ProbesScrollOffsets[cascadeIndex].xyz + data.ProbesCounts) % data.ProbesCounts);
+    return GetDDGIProbeIndex(data, ((int3)probeCoords + data.ProbesScrollOffsets[cascadeIndex].xyz + (int3)data.ProbesCounts) % (int3)data.ProbesCounts);
 }
 
 float3 GetDDGIProbeWorldPosition(DDGIData data, uint cascadeIndex, uint3 probeCoords)
@@ -146,7 +146,7 @@ float3 SampleDDGIIrradiance(DDGIData data, Texture2D<snorm float4> probesState, 
                 uint probeIndex = GetDDGIScrollingProbeIndex(data, cascadeIndex, probeCoords);
                 float4 probeState = probesState.Load(int3(GetDDGIProbeTexelCoords(data, cascadeIndex, probeIndex), 0));
                 probeStates[i] = probeState;
-                if (probeState.w == DDGI_PROBE_STATE_ACTIVE)
+                if (probeState.w != DDGI_PROBE_STATE_INACTIVE)
                     activeCount++;
             }
 

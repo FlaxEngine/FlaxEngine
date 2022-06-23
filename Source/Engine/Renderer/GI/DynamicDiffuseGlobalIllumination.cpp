@@ -49,6 +49,7 @@ PACK_STRUCT(struct Data0
     Float2 Padding0;
     float ResetBlend;
     float TemporalTime;
+    Int4 ProbeScrollClears[4];
     });
 
 PACK_STRUCT(struct Data1
@@ -68,16 +69,14 @@ public:
         float ProbesSpacing = 0.0f;
         Int3 ProbeScrollOffsets;
         Int3 ProbeScrollDirections;
-        bool ProbeScrollClear[3];
+        Int3 ProbeScrollClears;
 
         void Clear()
         {
             ProbesOrigin = Float3::Zero;
             ProbeScrollOffsets = Int3::Zero;
             ProbeScrollDirections = Int3::Zero;
-            ProbeScrollClear[0] = false;
-            ProbeScrollClear[1] = false;
-            ProbeScrollClear[2] = false;
+            ProbeScrollClears = Int3::Zero;
         }
     } Cascades[4];
 
@@ -315,7 +314,7 @@ bool DynamicDiffuseGlobalIlluminationPass::Render(RenderContext& renderContext, 
         idealDistance *= 2;
         cascadesCount++;
     }
-
+    
     // Calculate the probes count based on the amount of cascades and the distance to cover
     const float cascadesDistanceScales[] = { 1.0f, 3.0f, 6.0f, 10.0f }; // Scales each cascade further away from the camera origin
     const float distanceExtent = distance / cascadesDistanceScales[cascadesCount - 1];
@@ -427,7 +426,7 @@ bool DynamicDiffuseGlobalIlluminationPass::Render(RenderContext& renderContext, 
             continue;
         auto& cascade = ddgiData.Cascades[cascadeIndex];
 
-        // Reset the volume origin and scroll offsets for each axis
+        // Reset the volume origin and scroll offsets for each axis once it overflows
         for (int32 axis = 0; axis < 3; axis++)
         {
             if (cascade.ProbeScrollOffsets.Raw[axis] != 0 && (cascade.ProbeScrollOffsets.Raw[axis] % ddgiData.ProbeCounts.Raw[axis] == 0))
@@ -445,7 +444,7 @@ bool DynamicDiffuseGlobalIlluminationPass::Render(RenderContext& renderContext, 
             const float value = translation.Raw[axis] / cascade.ProbesSpacing;
             const int32 scroll = value >= 0.0f ? (int32)Math::Floor(value) : (int32)Math::Ceil(value);
             cascade.ProbeScrollOffsets.Raw[axis] += scroll;
-            cascade.ProbeScrollClear[axis] = scroll != 0;
+            cascade.ProbeScrollClears.Raw[axis] = scroll;
             cascade.ProbeScrollDirections.Raw[axis] = translation.Raw[axis] >= 0.0f ? 1 : -1;
         }
     }
@@ -459,10 +458,8 @@ bool DynamicDiffuseGlobalIlluminationPass::Render(RenderContext& renderContext, 
         for (int32 cascadeIndex = 0; cascadeIndex < cascadesCount; cascadeIndex++)
         {
             auto& cascade = ddgiData.Cascades[cascadeIndex];
-            int32 probeScrollClear = cascade.ProbeScrollClear[0] + cascade.ProbeScrollClear[1] * 2 + cascade.ProbeScrollClear[2] * 4; // Pack clear flags into bits
             ddgiData.Result.Constants.ProbesOriginAndSpacing[cascadeIndex] = Float4(cascade.ProbesOrigin, cascade.ProbesSpacing);
-            ddgiData.Result.Constants.ProbesScrollOffsets[cascadeIndex] = Int4(cascade.ProbeScrollOffsets, probeScrollClear);
-            ddgiData.Result.Constants.ProbeScrollDirections[cascadeIndex] = Int4(cascade.ProbeScrollDirections, 0);
+            ddgiData.Result.Constants.ProbesScrollOffsets[cascadeIndex] = Int4(cascade.ProbeScrollOffsets, 0);
         }
         ddgiData.Result.Constants.RayMaxDistance = 10000.0f; // TODO: adjust to match perf/quality ratio (make it based on Global SDF and Global Surface Atlas distance)
         ddgiData.Result.Constants.ViewDir = renderContext.View.Direction;
@@ -487,6 +484,11 @@ bool DynamicDiffuseGlobalIlluminationPass::Render(RenderContext& renderContext, 
         data.GlobalSDF = bindingDataSDF.Constants;
         data.GlobalSurfaceAtlas = bindingDataSurfaceAtlas.Constants;
         data.ResetBlend = clear ? 1.0f : 0.0f;
+        for (int32 cascadeIndex = 0; cascadeIndex < cascadesCount; cascadeIndex++)
+        {
+            auto& cascade = ddgiData.Cascades[cascadeIndex];
+            data.ProbeScrollClears[cascadeIndex] = Int4(cascade.ProbeScrollClears, 0);
+        }
         if (renderContext.List->Settings.AntiAliasing.Mode == AntialiasingMode::TemporalAntialiasing)
         {
             // Use temporal offset in the dithering factor (gets cleaned out by TAA)

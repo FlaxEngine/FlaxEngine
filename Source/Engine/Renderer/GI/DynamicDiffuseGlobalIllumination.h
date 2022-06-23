@@ -17,7 +17,6 @@ public:
         {
         Float4 ProbesOriginAndSpacing[4];
         Int4 ProbesScrollOffsets[4];
-        Int4 ProbeScrollDirections[4];
         uint32 ProbesCounts[3];
         uint32 CascadesCount;
         float IrradianceGamma;

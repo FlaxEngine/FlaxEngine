@@ -30,6 +30,7 @@ GBufferData GBuffer;
 float2 Padding0;
 float ResetBlend;
 float TemporalTime;
+int4 ProbeScrollClears[4];
 META_CB_END
 
 META_CB_BEGIN(1, Data1)
@@ -54,6 +55,12 @@ float3 GetProbeRayDirection(DDGIData data, uint rayIndex)
 {
     float3 direction = GetSphericalFibonacci(rayIndex, data.RaysCount);
     return normalize(QuaternionRotate(data.RaysRotation, direction));
+}
+
+// Checks if the probe states are equal
+bool GetProbeState(float a, float b)
+{
+    return abs(a - b) < 0.05f;
 }
 
 #ifdef _CS_Classify
@@ -83,7 +90,7 @@ void CS_Classify(uint3 DispatchThreadId : SV_DispatchThreadID)
     probeState.xyz *= probesSpacing; // Probe offset is [-1;1] within probes spacing
     float3 probeBasePosition = GetDDGIProbeWorldPosition(DDGI, CascadeIndex, probeCoords);
     float3 probePosition = probeBasePosition + probeState.xyz;
-    probeState.w = DDGI_PROBE_STATE_ACTIVE;
+    float4 probeStateOld = probeState;
 
     // Use Global SDF to quickly get distance and direction to the scene geometry
     float sdf;
@@ -129,13 +136,32 @@ void CS_Classify(uint3 DispatchThreadId : SV_DispatchThreadID)
             // Reset relocation
             probeState.xyz = float3(0, 0, 0);
         }
+
+        // Check if probe was scrolled
+        int3 probeScrollClears = ProbeScrollClears[CascadeIndex].xyz;
+        bool wasScrolled = false;
+        UNROLL
+        for (uint planeIndex = 0; planeIndex < 3; planeIndex++)
+        {
+            int probeCount = (int)DDGI.ProbesCounts[planeIndex];
+            int newCord = (int)probeCoords[planeIndex] + probeScrollClears[planeIndex];
+            if (newCord < 0 || newCord >= probeCount)
+            {
+                wasScrolled = true;
+            }
+        }
+
+        // If probe was in different location or was inactive last frame then mark it as activated
+        bool wasInactive = probeStateOld.w == DDGI_PROBE_STATE_INACTIVE;
+        bool wasRelocated = distance(probeState.xyz, probeStateOld.xyz) > 1.0f;
+        probeState.w = wasInactive || wasScrolled || wasRelocated ? DDGI_PROBE_STATE_ACTIVATED : DDGI_PROBE_STATE_ACTIVE;
     }
 
     probeState.xyz /= probesSpacing;
     RWProbesState[probeDataCoords] = probeState;
 
     // Collect active probes
-    if (probeState.w == DDGI_PROBE_STATE_ACTIVE)
+    if (probeState.w != DDGI_PROBE_STATE_INACTIVE)
     {
         uint activeProbeIndex;
         RWActiveProbes.InterlockedAdd(0, 1, activeProbeIndex); // Counter at 0
@@ -313,29 +339,6 @@ void CS_UpdateProbes(uint3 GroupThreadId : SV_GroupThreadID, uint3 GroupId : SV_
         return;
     probeCoords = GetDDGIProbeCoords(DDGI, probeIndex);
     uint2 outputCoords = GetDDGIProbeTexelCoords(DDGI, CascadeIndex, probeIndex) * (DDGI_PROBE_RESOLUTION + 2) + 1 + GroupThreadId.xy;
-    
-    // Clear probes that have been scrolled to a new positions
-    int3 probesScrollOffsets = DDGI.ProbesScrollOffsets[CascadeIndex].xyz;
-    int probeScrollClear = DDGI.ProbesScrollOffsets[CascadeIndex].w;
-    int3 probeScrollDirections = DDGI.ProbeScrollDirections[CascadeIndex].xyz;
-    bool scrolled = false;
-    UNROLL
-    for (uint planeIndex = 0; planeIndex < 3; planeIndex++)
-    {
-        if (probeScrollClear & (1 << planeIndex))
-        {
-            int scrollOffset = probesScrollOffsets[planeIndex];
-            int scrollDirection = probeScrollDirections[planeIndex];
-            uint probeCount = DDGI.ProbesCounts[planeIndex];
-            uint coord = (probeCount + (scrollDirection ? (scrollOffset - 1) : (scrollOffset % probeCount))) % probeCount;
-            if (probeCoords[planeIndex] == coord)
-                scrolled = true;
-        }
-    }
-    if (scrolled)
-    {
-        RWOutput[outputCoords] = float4(0, 0, 0, 0);
-    }
 
     // Calculate octahedral projection for probe (unwraps spherical projection into a square)
     float2 octahedralCoords = GetOctahedralCoords(GroupThreadId.xy, DDGI_PROBE_RESOLUTION);
@@ -381,11 +384,16 @@ void CS_UpdateProbes(uint3 GroupThreadId : SV_GroupThreadID, uint3 GroupId : SV_
     float epsilon = (float)DDGI.RaysCount * 1e-9f;
     result.rgb *= 1.0f / (2.0f * max(result.a, epsilon));
 
-    // Blend current value with the previous probe data
+    // Load current probe value
     float3 previous = RWOutput[outputCoords].rgb;
+    bool wasActivated = GetProbeState(probeState, DDGI_PROBE_STATE_ACTIVATED);
+    if (wasActivated)
+        previous = float3(0, 0, 0);
+
+    // Blend current value with the previous probe data
     float historyWeight = DDGI.ProbeHistoryWeight;
     //historyWeight = 0.0f;
-    if (ResetBlend || scrolled || dot(previous, previous) == 0)
+    if (ResetBlend || wasActivated || dot(previous, previous) == 0)
         historyWeight = 0.0f;
 #if DDGI_PROBE_UPDATE_MODE == 0
     result *= DDGI.IndirectLightingIntensity;
