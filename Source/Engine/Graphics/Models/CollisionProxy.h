@@ -88,9 +88,9 @@ public:
 
             // TODO: use 32-bit precision for intersection
             Real d;
-            if (CollisionsHelper::RayIntersectsTriangle(ray, triangle.V0, triangle.V1, triangle.V2, d))
+            if (CollisionsHelper::RayIntersectsTriangle(ray, v0, v1, v2, d))
             {
-                normal = Vector3::Normalize((triangle.V1 - triangle.V0) ^ (triangle.V2 - triangle.V0));
+                normal = Vector3::Normalize((v1 - v0) ^ (v2 - v0));
                 distance = d;
                 return true;
             }
