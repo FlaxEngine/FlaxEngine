@@ -259,8 +259,10 @@ void Camera::Draw(RenderContext& renderContext)
         && _previewModel
         && _previewModel->IsLoaded())
     {
-        Matrix world;
-        renderContext.View.GetWorldMatrix(_transform, world);
+        Matrix rot, tmp, world;
+        renderContext.View.GetWorldMatrix(_transform, tmp);
+        Matrix::RotationY(PI * -0.5f, rot);
+        Matrix::Multiply(rot, tmp, world);
         GeometryDrawStateData drawState;
         Mesh::DrawInfo draw;
         draw.Buffer = &_previewModelBuffer;
