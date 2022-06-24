@@ -387,7 +387,7 @@ void CS_UpdateProbes(uint3 GroupThreadId : SV_GroupThreadID, uint3 GroupId : SV_
     // Load current probe value
     float3 previous = RWOutput[outputCoords].rgb;
     bool wasActivated = GetProbeState(probeState, DDGI_PROBE_STATE_ACTIVATED);
-    if (wasActivated)
+    if (ResetBlend || wasActivated)
         previous = float3(0, 0, 0);
 
     // Blend current value with the previous probe data
@@ -522,7 +522,7 @@ void PS_IndirectLighting(Quad_VS2PS input, out float4 output : SV_Target0)
     }
 
     // Sample irradiance
-    float bias = 1.0f;
+    float bias = 0.2f;
     float dither = RandN2(input.TexCoord + TemporalTime).x;
     float3 irradiance = SampleDDGIIrradiance(DDGI, ProbesState, ProbesDistance, ProbesIrradiance, gBuffer.WorldPos, gBuffer.Normal, bias, dither);
     

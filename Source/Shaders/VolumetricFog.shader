@@ -337,7 +337,7 @@ void CS_LightScattering(uint3 GroupId : SV_GroupID, uint3 DispatchThreadId : SV_
 
 #if USE_DDGI
         // Dynamic Diffuse Global Illumination
-        float3 irradiance = SampleDDGIIrradiance(DDGI, ProbesState, ProbesDistance, ProbesIrradiance, positionWS, cameraVectorNormalized, 1.0f);
+        float3 irradiance = SampleDDGIIrradiance(DDGI, ProbesState, ProbesDistance, ProbesIrradiance, positionWS, cameraVectorNormalized, 0.0f, cellOffset.x);
         lightScattering += float4(irradiance, 1);
 #else
 		// Sky light

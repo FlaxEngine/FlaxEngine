@@ -32,7 +32,7 @@ struct DDGIData
     float RayMaxDistance;
     float IndirectLightingIntensity;
     float4 RaysRotation;
-    float3 ViewDir;
+    float3 ViewPos;
     uint RaysCount;
     float3 FallbackIrradiance;
     float Padding0;
@@ -120,8 +120,9 @@ float2 GetDDGIProbeUV(DDGIData data, uint cascadeIndex, uint probeIndex, float2 
 }
 
 // Samples DDGI probes volume at the given world-space position and returns the irradiance.
-// rand - randomized per-pixel value in range 0-1, used to smooth dithering for cascades blending
-float3 SampleDDGIIrradiance(DDGIData data, Texture2D<snorm float4> probesState, Texture2D<float4> probesDistance, Texture2D<float4> probesIrradiance, float3 worldPosition, float3 worldNormal, float bias, float dither = 0.0f)
+// bias - scales the bias vector to the initial sample point to reduce self-shading artifacts
+// dither - randomized per-pixel value in range 0-1, used to smooth dithering for cascades blending
+float3 SampleDDGIIrradiance(DDGIData data, Texture2D<snorm float4> probesState, Texture2D<float4> probesDistance, Texture2D<float4> probesIrradiance, float3 worldPosition, float3 worldNormal, float bias = 0.2f, float dither = 0.0f)
 {
     // Select the highest cascade that contains the sample location
     uint cascadeIndex = 0;
@@ -163,7 +164,8 @@ float3 SampleDDGIIrradiance(DDGIData data, Texture2D<snorm float4> probesState, 
     float3 probesExtent = (data.ProbesCounts - 1) * (probesSpacing * 0.5f);
 
     // Bias the world-space position to reduce artifacts
-    float3 surfaceBias = (worldNormal * bias) + (data.ViewDir * (bias * -4.0f));
+    float3 viewDir = normalize(data.ViewPos - worldPosition);
+    float3 surfaceBias = (worldNormal * 0.2f + viewDir * 0.8f) * (0.75f * probesSpacing * bias);
     float3 biasedWorldPosition = worldPosition + surfaceBias;
 
     // Get the grid coordinates of the probe nearest the biased world position
@@ -190,7 +192,7 @@ float3 SampleDDGIIrradiance(DDGIData data, Texture2D<snorm float4> probesState, 
         // Calculate the distance and direction from the (biased and non-biased) shading point and the probe
         float3 worldPosToProbe = normalize(probePosition - worldPosition);
         float3 biasedPosToProbe = normalize(probePosition - biasedWorldPosition);
-        float biasedPosToProbeDist = length(probePosition - biasedWorldPosition);
+        float biasedPosToProbeDist = length(probePosition - biasedWorldPosition) * 0.95f;
 
         // Smooth backface test
         float weight = Square(dot(worldPosToProbe, worldNormal) * 0.5f + 0.5f);
