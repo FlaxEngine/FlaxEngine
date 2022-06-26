@@ -23,6 +23,12 @@ bool NavCrowd::Init(float maxAgentRadius, int32 maxAgents, NavMesh* navMesh)
     return Init(maxAgentRadius, maxAgents, navMeshRuntime);
 }
 
+bool NavCrowd::Init(const NavAgentProperties& agentProperties, int32 maxAgents)
+{
+    NavMeshRuntime* navMeshRuntime = NavMeshRuntime::Get(agentProperties);
+    return Init(agentProperties.Radius * 3.0f, maxAgents, navMeshRuntime);
+}
+
 bool NavCrowd::Init(float maxAgentRadius, int32 maxAgents, NavMeshRuntime* navMesh)
 {
     if (!_crowd || !navMesh)

@@ -34,6 +34,14 @@ public:
     /// <summary>
     /// Initializes the crowd.
     /// </summary>
+    /// <param name="agentProperties">The properties of the agents that will be added to the crowd.</param>
+    /// <param name="maxAgents"> maximum number of agents the crowd can manage.</param>
+    /// <returns>True if failed, otherwise false.</returns>
+    API_FUNCTION() bool Init(const NavAgentProperties& agentProperties, int32 maxAgents = 25);
+
+    /// <summary>
+    /// Initializes the crowd.
+    /// </summary>
     /// <param name="maxAgentRadius">The maximum radius of any agent that will be added to the crowd.</param>
     /// <param name="maxAgents"> maximum number of agents the crowd can manage.</param>
     /// <param name="navMesh">The navigation mesh to use for crowd movement planning.</param>
