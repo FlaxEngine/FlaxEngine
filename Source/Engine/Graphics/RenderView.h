@@ -183,6 +183,11 @@ public:
     API_FIELD() Float4 TemporalAAJitter;
 
     /// <summary>
+    /// The previous frame rendering view origin.
+    /// </summary>
+    API_FIELD() Vector3 PrevOrigin;
+
+    /// <summary>
     /// The previous frame view matrix.
     /// </summary>
     API_FIELD() Matrix PrevView;

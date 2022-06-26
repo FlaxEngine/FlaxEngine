@@ -416,7 +416,8 @@ void SceneRenderTask::OnEnd(GPUContext* context)
 
     RenderTask::OnEnd(context);
 
-    // Swap matrices
+    // Swap data
+    View.PrevOrigin = View.Origin;
     View.PrevView = View.View;
     View.PrevProjection = View.Projection;
     View.PrevViewProjection = View.ViewProjection();

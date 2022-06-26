@@ -308,6 +308,8 @@ void RenderInner(SceneRenderTask* task, RenderContext& renderContext)
 
     // Prepare
     renderContext.View.Prepare(renderContext);
+    if (renderContext.View.Origin != renderContext.View.PrevOrigin)
+        renderContext.Task->CameraCut(); // Cut any temporal effects on rendering origin change
     renderContext.Buffers->Prepare();
     for (auto& postFx : task->CustomPostFx)
     {
