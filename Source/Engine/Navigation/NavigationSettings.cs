@@ -23,6 +23,8 @@ namespace FlaxEditor.Content.Settings
             navMesh.Agent.Height = 144.0f;
             navMesh.Agent.StepHeight = 35.0f;
             navMesh.Agent.MaxSlopeAngle = 60.0f;
+            navMesh.Agent.MaxSpeed = 500.0f;
+            navMesh.Agent.CrowdSeparationWeight = 2.0f;
             navMesh.DefaultQueryExtent = new Vector3(50.0f, 250.0f, 50.0f);
 
             // Init nav areas
@@ -53,6 +55,8 @@ namespace FlaxEditor.Content.Settings
             navMesh.Agent.Height = 144.0f;
             navMesh.Agent.StepHeight = 35.0f;
             navMesh.Agent.MaxSlopeAngle = 60.0f;
+            navMesh.Agent.MaxSpeed = 500.0f;
+            navMesh.Agent.CrowdSeparationWeight = 2.0f;
             navMesh.DefaultQueryExtent = new Vector3(50.0f, 250.0f, 50.0f);
         }
 
@@ -130,7 +134,7 @@ namespace FlaxEngine
         /// <inheritdoc />
         public override string ToString()
         {
-            return $"Radius: {Radius}, Height: {Height}, StepHeight: {StepHeight}, MaxSlopeAngle: {MaxSlopeAngle}";
+            return $"Radius: {Radius}, Height: {Height}, StepHeight: {StepHeight}, MaxSlopeAngle: {MaxSlopeAngle}, MaxSpeed: {MaxSpeed}";
         }
     }
 }

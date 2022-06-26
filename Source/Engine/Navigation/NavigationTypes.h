@@ -43,6 +43,18 @@ API_STRUCT() struct FLAXENGINE_API NavAgentProperties : ISerializable
     API_FIELD(Attributes="EditorOrder(30)")
     float MaxSlopeAngle = 60.0f;
 
+    /// <summary>
+    /// The maximum movement speed (units/s).
+    /// </summary>
+    API_FIELD(Attributes="EditorOrder(40)")
+    float MaxSpeed = 500.0f;
+
+    /// <summary>
+    /// The crowd agent separation weight that defines how aggressive the agent manager should be at avoiding collisions with this agent.
+    /// </summary>
+    API_FIELD(Attributes="EditorOrder(100)")
+    float CrowdSeparationWeight = 2.0f;
+
     bool operator==(const NavAgentProperties& other) const;
 
     bool operator!=(const NavAgentProperties& other) const

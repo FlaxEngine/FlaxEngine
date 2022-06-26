@@ -30,6 +30,9 @@ public:
 class FLAXENGINE_API NavMeshRuntime
 {
 public:
+    // Gets the first valid navigation mesh runtime. Return null if none created.
+    static NavMeshRuntime* Get();
+
     // Gets the navigation mesh runtime for a given navmesh name. Return null if missing.
     static NavMeshRuntime* Get(const StringView& navMeshName);
 
