@@ -564,11 +564,12 @@ bool DynamicDiffuseGlobalIlluminationPass::Render(RenderContext& renderContext, 
                     context->BindSR(1, bindingDataSDF.TextureMip ? bindingDataSDF.TextureMip->ViewVolume() : nullptr);
                     context->BindSR(2, bindingDataSurfaceAtlas.Chunks ? bindingDataSurfaceAtlas.Chunks->View() : nullptr);
                     context->BindSR(3, bindingDataSurfaceAtlas.CulledObjects ? bindingDataSurfaceAtlas.CulledObjects->View() : nullptr);
-                    context->BindSR(4, bindingDataSurfaceAtlas.AtlasDepth->View());
-                    context->BindSR(5, bindingDataSurfaceAtlas.AtlasLighting->View());
-                    context->BindSR(6, ddgiData.Result.ProbesState);
-                    context->BindSR(7, skybox);
-                    context->BindSR(8, ddgiData.ActiveProbes->View());
+                    context->BindSR(4, bindingDataSurfaceAtlas.Objects ? bindingDataSurfaceAtlas.Objects->View() : nullptr);
+                    context->BindSR(5, bindingDataSurfaceAtlas.AtlasDepth->View());
+                    context->BindSR(6, bindingDataSurfaceAtlas.AtlasLighting->View());
+                    context->BindSR(7, ddgiData.Result.ProbesState);
+                    context->BindSR(8, skybox);
+                    context->BindSR(9, ddgiData.ActiveProbes->View());
                     context->BindUA(0, ddgiData.ProbesTrace->View());
                     context->DispatchIndirect(_csTraceRays[(int32)Graphics::GIQuality], ddgiData.UpdateProbesInitArgs, arg);
                     context->ResetUA();

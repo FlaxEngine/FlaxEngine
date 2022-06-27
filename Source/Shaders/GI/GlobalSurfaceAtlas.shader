@@ -187,24 +187,23 @@ float4 PS_Lighting(AtlasVertexOutput input) : SV_Target
 #include "./Flax/Collisions.hlsl"
 
 RWByteAddressBuffer RWGlobalSurfaceAtlasChunks : register(u0);
-RWBuffer<float4> RWGlobalSurfaceAtlasCulledObjects : register(u1);
+RWByteAddressBuffer RWGlobalSurfaceAtlasCulledObjects : register(u1);
 Buffer<float4> GlobalSurfaceAtlasObjects : register(t0);
 
 // Compute shader for culling objects into chunks
 META_CS(true, FEATURE_LEVEL_SM5)
 [numthreads(GLOBAL_SURFACE_ATLAS_CHUNKS_GROUP_SIZE, GLOBAL_SURFACE_ATLAS_CHUNKS_GROUP_SIZE, GLOBAL_SURFACE_ATLAS_CHUNKS_GROUP_SIZE)]
-void CS_CullObjects(uint3 GroupId : SV_GroupID, uint3 DispatchThreadId : SV_DispatchThreadID, uint3 GroupThreadId : SV_GroupThreadID)
+void CS_CullObjects(uint3 DispatchThreadId : SV_DispatchThreadID)
 {
 	uint3 chunkCoord = DispatchThreadId;
 	uint chunkAddress = (chunkCoord.z * (GLOBAL_SURFACE_ATLAS_CHUNKS_RESOLUTION * GLOBAL_SURFACE_ATLAS_CHUNKS_RESOLUTION) + chunkCoord.y * GLOBAL_SURFACE_ATLAS_CHUNKS_RESOLUTION + chunkCoord.x) * 4;
-	if (chunkAddress == 0)
-		return; // Skip chunk at 0,0,0 (used for counter)
 	float3 chunkMin = GlobalSurfaceAtlas.ViewPos + (chunkCoord - (GLOBAL_SURFACE_ATLAS_CHUNKS_RESOLUTION * 0.5f)) * GlobalSurfaceAtlas.ChunkSize;
 	float3 chunkMax = chunkMin + GlobalSurfaceAtlas.ChunkSize;
 
-	// Count objects data size in this chunk (amount of float4s)
-	uint objectsSize = 0, objectAddress = 0, objectsCount = 0;
-	// TODO: maybe cache 20-30 culled object indices in thread memory to skip culling them again when copying data (maybe reude chunk size to get smaller objects count per chunk)?
+	// Count objects in this chunk
+	uint objectAddress = 0, objectsCount = 0;
+    // TODO: pre-cull objects within a thread group
+	// TODO: maybe cache 20-30 culled object indices in thread memory to skip culling them again when copying data (maybe reuse chunk size to get smaller objects count per chunk)?
 	LOOP
 	for (uint objectIndex = 0; objectIndex < GlobalSurfaceAtlas.ObjectsCount; objectIndex++)
 	{
@@ -212,22 +211,21 @@ void CS_CullObjects(uint3 GroupId : SV_GroupID, uint3 DispatchThreadId : SV_Disp
 		uint objectSize = LoadGlobalSurfaceAtlasObjectDataSize(GlobalSurfaceAtlasObjects, objectAddress);
 		if (BoxIntersectsSphere(chunkMin, chunkMax, objectBounds.xyz, objectBounds.w))
 		{
-			objectsSize += objectSize;
 			objectsCount++;
 		}
 		objectAddress += objectSize;
 	}
-	if (objectsSize == 0)
+	if (objectsCount == 0)
 	{
 		// Empty chunk
 		RWGlobalSurfaceAtlasChunks.Store(chunkAddress, 0);
 		return;
 	}
-	objectsSize++; // Include objects count before actual objects data
 
 	// Allocate object data size in the buffer
 	uint objectsStart;
-	RWGlobalSurfaceAtlasChunks.InterlockedAdd(0, objectsSize, objectsStart);
+	uint objectsSize = objectsCount + 1; // Include objects count before actual objects data
+	RWGlobalSurfaceAtlasCulledObjects.InterlockedAdd(0, objectsSize, objectsStart); // Counter at 0
 	if (objectsStart + objectsSize > CulledObjectsCapacity)
 	{
 		// Not enough space in the buffer
@@ -238,9 +236,8 @@ void CS_CullObjects(uint3 GroupId : SV_GroupID, uint3 DispatchThreadId : SV_Disp
 	// Write object data start
 	RWGlobalSurfaceAtlasChunks.Store(chunkAddress, objectsStart);
 
-	// Write objects count before actual objects data
-	RWGlobalSurfaceAtlasCulledObjects[objectsStart] = float4(asfloat(objectsCount), 0, 0, 0);
-	objectsStart++;
+	// Write objects count before actual objects indices
+	RWGlobalSurfaceAtlasCulledObjects.Store(objectsStart * 4, objectsCount);
 
 	// Copy objects data in this chunk
 	objectAddress = 0;
@@ -251,11 +248,8 @@ void CS_CullObjects(uint3 GroupId : SV_GroupID, uint3 DispatchThreadId : SV_Disp
 		uint objectSize = LoadGlobalSurfaceAtlasObjectDataSize(GlobalSurfaceAtlasObjects, objectAddress);
 		if (BoxIntersectsSphere(chunkMin, chunkMax, objectBounds.xyz, objectBounds.w))
 		{
-			for (uint i = 0; i < objectSize; i++)
-			{
-				RWGlobalSurfaceAtlasCulledObjects[objectsStart + i] = GlobalSurfaceAtlasObjects[objectAddress + i];
-			}
-			objectsStart += objectSize;
+	        objectsStart++;
+	        RWGlobalSurfaceAtlasCulledObjects.Store(objectsStart * 4, objectAddress);
 		}
 		objectAddress += objectSize;
 	}
@@ -268,10 +262,11 @@ void CS_CullObjects(uint3 GroupId : SV_GroupID, uint3 DispatchThreadId : SV_Disp
 Texture3D<float> GlobalSDFTex : register(t0);
 Texture3D<float> GlobalSDFMip : register(t1);
 ByteAddressBuffer GlobalSurfaceAtlasChunks : register(t2);
-Buffer<float4> GlobalSurfaceAtlasCulledObjects : register(t3);
-Texture2D GlobalSurfaceAtlasDepth : register(t4);
+ByteAddressBuffer GlobalSurfaceAtlasCulledObjects : register(t3);
+Buffer<float4> GlobalSurfaceAtlasObjects : register(t4);
 Texture2D GlobalSurfaceAtlasTex : register(t5);
-TextureCube Skybox : register(t6);
+Texture2D GlobalSurfaceAtlasDepth : register(t6);
+TextureCube Skybox : register(t7);
 
 // Pixel shader for Global Surface Atlas debug drawing
 META_PS(true, FEATURE_LEVEL_SM5)
@@ -295,7 +290,7 @@ float4 PS_Debug(Quad_VS2PS input) : SV_Target
 	{
         // Sample Global Surface Atlas at the hit location
         float surfaceThreshold = GetGlobalSurfaceAtlasThreshold(GlobalSDF, hit);
-        color = SampleGlobalSurfaceAtlas(GlobalSurfaceAtlas, GlobalSurfaceAtlasChunks, GlobalSurfaceAtlasCulledObjects, GlobalSurfaceAtlasDepth, GlobalSurfaceAtlasTex, hit.GetHitPosition(trace), -viewRay, surfaceThreshold).rgb;
+        color = SampleGlobalSurfaceAtlas(GlobalSurfaceAtlas, GlobalSurfaceAtlasChunks, GlobalSurfaceAtlasCulledObjects, GlobalSurfaceAtlasObjects, GlobalSurfaceAtlasDepth, GlobalSurfaceAtlasTex, hit.GetHitPosition(trace), -viewRay, surfaceThreshold).rgb;
 	    //color = hit.HitNormal * 0.5f + 0.5f;
     }
     else

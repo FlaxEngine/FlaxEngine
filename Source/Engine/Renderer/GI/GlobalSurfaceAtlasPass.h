@@ -38,6 +38,7 @@ public:
         };
         GPUBuffer* Chunks;
         GPUBuffer* CulledObjects;
+        GPUBuffer* Objects;
         ConstantsData Constants;
     };
 
@@ -54,7 +55,6 @@ private:
 
     // Cache
     class GPUBuffer* _culledObjectsSizeBuffer = nullptr;
-    class DynamicTypedBuffer* _objectsBuffer = nullptr;
     class DynamicVertexBuffer* _vertexBuffer = nullptr;
     class GlobalSurfaceAtlasCustomBuffer* _surfaceAtlasData;
     Array<void*> _dirtyObjectsBuffer;

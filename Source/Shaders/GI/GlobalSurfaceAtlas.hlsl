@@ -163,7 +163,7 @@ float4 SampleGlobalSurfaceAtlasTile(const GlobalSurfaceAtlasData data, GlobalSur
 
 // Samples the Global Surface Atlas and returns the lighting (with opacity) at the given world location (and direction).
 // surfaceThreshold - Additional threshold (in world-units) between object or tile size compared with input data (error due to SDF or LOD incorrect appearance)
-float4 SampleGlobalSurfaceAtlas(const GlobalSurfaceAtlasData data, ByteAddressBuffer chunks, Buffer<float4> culledObjects, Texture2D depth, Texture2D atlas, float3 worldPosition, float3 worldNormal, float surfaceThreshold = 20.0f)
+float4 SampleGlobalSurfaceAtlas(const GlobalSurfaceAtlasData data, ByteAddressBuffer chunks, ByteAddressBuffer culledObjects, Buffer<float4> objects, Texture2D depth, Texture2D atlas, float3 worldPosition, float3 worldNormal, float surfaceThreshold = 20.0f)
 {
 	float4 result = float4(0, 0, 0, 0);
 
@@ -178,24 +178,22 @@ float4 SampleGlobalSurfaceAtlas(const GlobalSurfaceAtlasData data, ByteAddressBu
 	}
 
 	// Read objects counter
-	float4 chunkHeader = culledObjects[objectsStart];
-	objectsStart++;
-	uint objectsCount = asuint(chunkHeader.x);
+	uint objectsCount = culledObjects.Load(objectsStart * 4);
 	if (objectsCount > data.ObjectsCount) // Prevents crashing - don't know why the data is invalid here (rare issue when moving fast though scene with terrain)
 		return result;
+	objectsStart++;
 
 	// Loop over culled objects inside the chunk
 	LOOP
 	for (uint objectIndex = 0; objectIndex < objectsCount; objectIndex++)
 	{
 		// Cull point vs sphere
-		uint objectAddress = objectsStart;
-		float4 objectBounds = LoadGlobalSurfaceAtlasObjectBounds(culledObjects, objectAddress);
-		uint objectSize = LoadGlobalSurfaceAtlasObjectDataSize(culledObjects, objectAddress);
-		objectsStart += objectSize;
+		uint objectAddress = culledObjects.Load(objectsStart * 4);
+	    objectsStart++;
+		float4 objectBounds = LoadGlobalSurfaceAtlasObjectBounds(objects, objectAddress);
 		if (distance(objectBounds.xyz, worldPosition) > objectBounds.w)
 			continue;
-		GlobalSurfaceObject object = LoadGlobalSurfaceAtlasObject(culledObjects, objectAddress);
+		GlobalSurfaceObject object = LoadGlobalSurfaceAtlasObject(objects, objectAddress);
 		float3 localPosition = mul(float4(worldPosition, 1), object.WorldToLocal).xyz;
 		float3 localExtent = object.Extent + surfaceThreshold;
 		if (any(localPosition > localExtent) || any(localPosition < -localExtent))
@@ -221,56 +219,56 @@ float4 SampleGlobalSurfaceAtlas(const GlobalSurfaceAtlasData data, ByteAddressBu
 	    uint tileOffset = object.TileOffsets[localNormal.x > 0.0f ? 0 : 1];
 	    if (localNormalSq.x > GLOBAL_SURFACE_ATLAS_TILE_NORMAL_THRESHOLD * GLOBAL_SURFACE_ATLAS_TILE_NORMAL_THRESHOLD && tileOffset != 0)
 	    {
-	        GlobalSurfaceTile tile = LoadGlobalSurfaceAtlasTile(culledObjects, objectAddress + tileOffset);
+	        GlobalSurfaceTile tile = LoadGlobalSurfaceAtlasTile(objects, objectAddress + tileOffset);
 	        result += SampleGlobalSurfaceAtlasTile(data, tile, depth, atlas, worldPosition, worldNormal, surfaceThreshold);
 	    }
 	    tileOffset = object.TileOffsets[localNormal.y > 0.0f ? 2 : 3];
 	    if (localNormalSq.y > GLOBAL_SURFACE_ATLAS_TILE_NORMAL_THRESHOLD * GLOBAL_SURFACE_ATLAS_TILE_NORMAL_THRESHOLD && tileOffset != 0)
 	    {
-	        GlobalSurfaceTile tile = LoadGlobalSurfaceAtlasTile(culledObjects, objectAddress + tileOffset);
+	        GlobalSurfaceTile tile = LoadGlobalSurfaceAtlasTile(objects, objectAddress + tileOffset);
 	        result += SampleGlobalSurfaceAtlasTile(data, tile, depth, atlas, worldPosition, worldNormal, surfaceThreshold);
 	    }
 	    tileOffset = object.TileOffsets[localNormal.z > 0.0f ? 4 : 5];
 	    if (localNormalSq.z > GLOBAL_SURFACE_ATLAS_TILE_NORMAL_THRESHOLD * GLOBAL_SURFACE_ATLAS_TILE_NORMAL_THRESHOLD && tileOffset != 0)
 	    {
-	        GlobalSurfaceTile tile = LoadGlobalSurfaceAtlasTile(culledObjects, objectAddress + tileOffset);
+	        GlobalSurfaceTile tile = LoadGlobalSurfaceAtlasTile(objects, objectAddress + tileOffset);
 	        result += SampleGlobalSurfaceAtlasTile(data, tile, depth, atlas, worldPosition, worldNormal, surfaceThreshold);
 	    }
 #else
 	    uint tileOffset = object.TileOffsets[0];
 	    if (tileOffset != 0)
 		{
-			GlobalSurfaceTile tile = LoadGlobalSurfaceAtlasTile(culledObjects, objectAddress + tileOffset);
+			GlobalSurfaceTile tile = LoadGlobalSurfaceAtlasTile(objects, objectAddress + tileOffset);
 			result += SampleGlobalSurfaceAtlasTile(data, tile, depth, atlas, worldPosition, worldNormal, surfaceThreshold);
 		}
 	    tileOffset = object.TileOffsets[1];
 		if (tileOffset != 0)
 		{
-			GlobalSurfaceTile tile = LoadGlobalSurfaceAtlasTile(culledObjects, objectAddress + tileOffset);
+			GlobalSurfaceTile tile = LoadGlobalSurfaceAtlasTile(objects, objectAddress + tileOffset);
 			result += SampleGlobalSurfaceAtlasTile(data, tile, depth, atlas, worldPosition, worldNormal, surfaceThreshold);
 		}
 	    tileOffset = object.TileOffsets[2];
 		if (tileOffset != 0)
 		{
-			GlobalSurfaceTile tile = LoadGlobalSurfaceAtlasTile(culledObjects, objectAddress + tileOffset);
+			GlobalSurfaceTile tile = LoadGlobalSurfaceAtlasTile(objects, objectAddress + tileOffset);
 			result += SampleGlobalSurfaceAtlasTile(data, tile, depth, atlas, worldPosition, worldNormal, surfaceThreshold);
 		}
 	    tileOffset = object.TileOffsets[3];
 		if (tileOffset != 0)
 		{
-			GlobalSurfaceTile tile = LoadGlobalSurfaceAtlasTile(culledObjects, objectAddress + tileOffset);
+			GlobalSurfaceTile tile = LoadGlobalSurfaceAtlasTile(objects, objectAddress + tileOffset);
 			result += SampleGlobalSurfaceAtlasTile(data, tile, depth, atlas, worldPosition, worldNormal, surfaceThreshold);
 		}
 	    tileOffset = object.TileOffsets[4];
 		if (tileOffset != 0)
 		{
-			GlobalSurfaceTile tile = LoadGlobalSurfaceAtlasTile(culledObjects, objectAddress + tileOffset);
+			GlobalSurfaceTile tile = LoadGlobalSurfaceAtlasTile(objects, objectAddress + tileOffset);
 			result += SampleGlobalSurfaceAtlasTile(data, tile, depth, atlas, worldPosition, worldNormal, surfaceThreshold);
 		}
 	    tileOffset = object.TileOffsets[5];
 		if (tileOffset != 0)
 		{
-		    GlobalSurfaceTile tile = LoadGlobalSurfaceAtlasTile(culledObjects, objectAddress + tileOffset);
+		    GlobalSurfaceTile tile = LoadGlobalSurfaceAtlasTile(objects, objectAddress + tileOffset);
 		    result += SampleGlobalSurfaceAtlasTile(data, tile, depth, atlas, worldPosition, worldNormal, surfaceThreshold);
 		}
 #endif

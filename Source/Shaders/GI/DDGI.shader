@@ -202,12 +202,13 @@ RWTexture2D<float4> RWProbesTrace : register(u0);
 Texture3D<float> GlobalSDFTex : register(t0);
 Texture3D<float> GlobalSDFMip : register(t1);
 ByteAddressBuffer GlobalSurfaceAtlasChunks : register(t2);
-Buffer<float4> GlobalSurfaceAtlasCulledObjects : register(t3);
-Texture2D GlobalSurfaceAtlasDepth : register(t4);
-Texture2D GlobalSurfaceAtlasTex : register(t5);
-Texture2D<snorm float4> ProbesState : register(t6);
-TextureCube Skybox : register(t7);
-ByteAddressBuffer ActiveProbes : register(t8);
+ByteAddressBuffer RWGlobalSurfaceAtlasCulledObjects : register(t3);
+Buffer<float4> GlobalSurfaceAtlasObjects : register(t4);
+Texture2D GlobalSurfaceAtlasDepth : register(t5);
+Texture2D GlobalSurfaceAtlasTex : register(t6);
+Texture2D<snorm float4> ProbesState : register(t7);
+TextureCube Skybox : register(t8);
+ByteAddressBuffer ActiveProbes : register(t9);
 
 // Compute shader for tracing rays for probes using Global SDF and Global Surface Atlas.
 META_CS(true, FEATURE_LEVEL_SM5)
@@ -248,7 +249,7 @@ void CS_TraceRays(uint3 DispatchThreadId : SV_DispatchThreadID)
             // Sample Global Surface Atlas to get the lighting at the hit location
             float3 hitPosition = hit.GetHitPosition(trace);
             float surfaceThreshold = GetGlobalSurfaceAtlasThreshold(GlobalSDF, hit);
-            float4 surfaceColor = SampleGlobalSurfaceAtlas(GlobalSurfaceAtlas, GlobalSurfaceAtlasChunks, GlobalSurfaceAtlasCulledObjects, GlobalSurfaceAtlasDepth, GlobalSurfaceAtlasTex, hitPosition, -probeRayDirection, surfaceThreshold);
+            float4 surfaceColor = SampleGlobalSurfaceAtlas(GlobalSurfaceAtlas, GlobalSurfaceAtlasChunks, RWGlobalSurfaceAtlasCulledObjects, GlobalSurfaceAtlasObjects, GlobalSurfaceAtlasDepth, GlobalSurfaceAtlasTex, hitPosition, -probeRayDirection, surfaceThreshold);
             radiance = float4(surfaceColor.rgb, hit.HitTime);
 
             // Add some bias to prevent self occlusion artifacts in Chebyshev due to Global SDF being very incorrect in small scale
