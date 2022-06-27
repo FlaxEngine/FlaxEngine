@@ -50,6 +50,9 @@ void LargeWorlds::UpdateOrigin(Vector3& origin, const Vector3& position)
 {
     if (Enable)
     {
+        constexpr Real chunkSizeInv = 1.0 / ChunkSize;
+        constexpr Real chunkSizeHalf = ChunkSize * 0.5;
+        origin = Vector3(Int3((position - chunkSizeHalf) * chunkSizeInv)) * ChunkSize;
     }
 }
 
