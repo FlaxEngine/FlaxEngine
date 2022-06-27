@@ -190,6 +190,8 @@ RWByteAddressBuffer RWGlobalSurfaceAtlasChunks : register(u0);
 RWByteAddressBuffer RWGlobalSurfaceAtlasCulledObjects : register(u1);
 Buffer<float4> GlobalSurfaceAtlasObjects : register(t0);
 
+#define GLOBAL_SURFACE_ATLAS_CULL_LOCAL_SIZE 32 // Amount of objects to cache locally per-thread for culling
+
 // Compute shader for culling objects into chunks
 META_CS(true, FEATURE_LEVEL_SM5)
 [numthreads(GLOBAL_SURFACE_ATLAS_CHUNKS_GROUP_SIZE, GLOBAL_SURFACE_ATLAS_CHUNKS_GROUP_SIZE, GLOBAL_SURFACE_ATLAS_CHUNKS_GROUP_SIZE)]
@@ -203,7 +205,7 @@ void CS_CullObjects(uint3 DispatchThreadId : SV_DispatchThreadID)
 	// Count objects in this chunk
 	uint objectAddress = 0, objectsCount = 0;
     // TODO: pre-cull objects within a thread group
-	// TODO: maybe cache 20-30 culled object indices in thread memory to skip culling them again when copying data (maybe reuse chunk size to get smaller objects count per chunk)?
+	uint localCulledObjects[GLOBAL_SURFACE_ATLAS_CULL_LOCAL_SIZE];
 	LOOP
 	for (uint objectIndex = 0; objectIndex < GlobalSurfaceAtlas.ObjectsCount; objectIndex++)
 	{
@@ -211,6 +213,7 @@ void CS_CullObjects(uint3 DispatchThreadId : SV_DispatchThreadID)
 		uint objectSize = LoadGlobalSurfaceAtlasObjectDataSize(GlobalSurfaceAtlasObjects, objectAddress);
 		if (BoxIntersectsSphere(chunkMin, chunkMax, objectBounds.xyz, objectBounds.w))
 		{
+		    localCulledObjects[objectsCount % GLOBAL_SURFACE_ATLAS_CULL_LOCAL_SIZE] = objectAddress;
 			objectsCount++;
 		}
 		objectAddress += objectSize;
@@ -240,19 +243,34 @@ void CS_CullObjects(uint3 DispatchThreadId : SV_DispatchThreadID)
 	RWGlobalSurfaceAtlasCulledObjects.Store(objectsStart * 4, objectsCount);
 
 	// Copy objects data in this chunk
-	objectAddress = 0;
-	LOOP
-	for (uint objectIndex = 0; objectIndex < GlobalSurfaceAtlas.ObjectsCount; objectIndex++)
+	if (objectsCount <= GLOBAL_SURFACE_ATLAS_CULL_LOCAL_SIZE)
 	{
-		float4 objectBounds = LoadGlobalSurfaceAtlasObjectBounds(GlobalSurfaceAtlasObjects, objectAddress);
-		uint objectSize = LoadGlobalSurfaceAtlasObjectDataSize(GlobalSurfaceAtlasObjects, objectAddress);
-		if (BoxIntersectsSphere(chunkMin, chunkMax, objectBounds.xyz, objectBounds.w))
-		{
-	        objectsStart++;
-	        RWGlobalSurfaceAtlasCulledObjects.Store(objectsStart * 4, objectAddress);
-		}
-		objectAddress += objectSize;
+	    // Reuse locally cached objects
+        LOOP
+        for (uint objectIndex = 0; objectIndex < objectsCount; objectIndex++)
+        {
+            objectAddress = localCulledObjects[objectIndex];
+            objectsStart++;
+            RWGlobalSurfaceAtlasCulledObjects.Store(objectsStart * 4, objectAddress);
+        }
 	}
+	else
+	{
+	    // Brute-force culling
+        objectAddress = 0;
+        LOOP
+        for (uint objectIndex = 0; objectIndex < GlobalSurfaceAtlas.ObjectsCount; objectIndex++)
+        {
+            float4 objectBounds = LoadGlobalSurfaceAtlasObjectBounds(GlobalSurfaceAtlasObjects, objectAddress);
+            uint objectSize = LoadGlobalSurfaceAtlasObjectDataSize(GlobalSurfaceAtlasObjects, objectAddress);
+            if (BoxIntersectsSphere(chunkMin, chunkMax, objectBounds.xyz, objectBounds.w))
+            {
+                objectsStart++;
+                RWGlobalSurfaceAtlasCulledObjects.Store(objectsStart * 4, objectAddress);
+            }
+            objectAddress += objectSize;
+        }
+    }
 }
 
 #endif
