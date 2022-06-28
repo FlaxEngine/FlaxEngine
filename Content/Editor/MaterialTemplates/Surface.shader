@@ -617,14 +617,14 @@ void PS_Depth(PixelInput input)
 
 #if _PS_QuadOverdraw
 
-#include "./Flax/Editor/QuadOverdraw.hlsl"
+//#include "./Flax/Editor/QuadOverdraw.hlsl"
 
 // Pixel Shader function for Quad Overdraw Pass (editor-only)
 [earlydepthstencil]
 META_PS(USE_EDITOR, FEATURE_LEVEL_SM5)
 void PS_QuadOverdraw(float4 svPos : SV_Position, uint primId : SV_PrimitiveID)
 {
-	DoQuadOverdraw(svPos, primId);
+	//DoQuadOverdraw(svPos, primId);
 }
 
 #endif

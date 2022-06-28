@@ -17,7 +17,6 @@ public:
         {
         Float4 ProbesOriginAndSpacing[4];
         Int4 ProbesScrollOffsets[4];
-        Int4 ProbeScrollDirections[4];
         uint32 ProbesCounts[3];
         uint32 CascadesCount;
         float IrradianceGamma;
@@ -25,7 +24,7 @@ public:
         float RayMaxDistance;
         float IndirectLightingIntensity;
         Float4 RaysRotation;
-        Float3 ViewDir;
+        Float3 ViewPos;
         uint32 RaysCount;
         Float3 FallbackIrradiance;
         float Padding0;
@@ -46,7 +45,8 @@ private:
     GPUConstantBuffer* _cb0 = nullptr;
     GPUConstantBuffer* _cb1 = nullptr;
     GPUShaderProgramCS* _csClassify;
-    GPUShaderProgramCS* _csTraceRays;
+    GPUShaderProgramCS* _csUpdateProbesInitArgs;
+    GPUShaderProgramCS* _csTraceRays[4];
     GPUShaderProgramCS* _csUpdateProbesIrradiance;
     GPUShaderProgramCS* _csUpdateProbesDistance;
     GPUShaderProgramCS* _csUpdateBordersIrradianceRow;

@@ -61,14 +61,18 @@ PACK_STRUCT(struct ModelsRasterizeData
     Int3 ChunkCoord;
     float MaxDistance;
     Float3 CascadeCoordToPosMul;
-    int ObjectsCount;
+    int32 ObjectsCount;
     Float3 CascadeCoordToPosAdd;
     int32 CascadeResolution;
-    float Padding0;
+    int32 CascadeIndex;
     float CascadeVoxelSize;
     int32 CascadeMipResolution;
     int32 CascadeMipFactor;
     uint32 Objects[GLOBAL_SDF_RASTERIZE_MODEL_MAX_COUNT];
+    uint32 GenerateMipTexResolution;
+    uint32 GenerateMipCoordScale;
+    uint32 GenerateMipTexOffsetX;
+    uint32 GenerateMipMipOffsetX;
     });
 
 struct RasterizeModel
@@ -125,8 +129,6 @@ uint32 GetHash(const RasterizeChunkKey& key)
 
 struct CascadeData
 {
-    GPUTexture* Texture = nullptr;
-    GPUTexture* Mip = nullptr;
     Float3 Position;
     float VoxelSize;
     BoundingBox Bounds;
@@ -163,18 +165,14 @@ struct CascadeData
             }
         }
     }
-
-    ~CascadeData()
-    {
-        RenderTargetPool::Release(Texture);
-        RenderTargetPool::Release(Mip);
-    }
 };
 
 class GlobalSignDistanceFieldCustomBuffer : public RenderBuffers::CustomBuffer, public ISceneRenderingListener
 {
 public:
     int32 Resolution = 0;
+    GPUTexture* Texture = nullptr;
+    GPUTexture* TextureMip = nullptr;
     Array<CascadeData, FixedAllocation<4>> Cascades;
     HashSet<ScriptingTypeHandle> ObjectTypes;
     HashSet<GPUTexture*> SDFTextures;
@@ -187,6 +185,8 @@ public:
             e.Item->Deleted.Unbind<GlobalSignDistanceFieldCustomBuffer, &GlobalSignDistanceFieldCustomBuffer::OnSDFTextureDeleted>(this);
             e.Item->ResidentMipsChanged.Unbind<GlobalSignDistanceFieldCustomBuffer, &GlobalSignDistanceFieldCustomBuffer::OnSDFTextureResidentMipsChanged>(this);
         }
+        RenderTargetPool::Release(Texture);
+        RenderTargetPool::Release(TextureMip);
     }
 
     void OnSDFTextureDeleted(ScriptingObject* object)
@@ -300,8 +300,7 @@ bool GlobalSignDistanceFieldPass::setupResources()
     _csRasterizeModel1 = shader->GetCS("CS_RasterizeModel", 1);
     _csRasterizeHeightfield = shader->GetCS("CS_RasterizeHeightfield");
     _csClearChunk = shader->GetCS("CS_ClearChunk");
-    _csGenerateMip0 = shader->GetCS("CS_GenerateMip", 0);
-    _csGenerateMip1 = shader->GetCS("CS_GenerateMip", 1);
+    _csGenerateMip = shader->GetCS("CS_GenerateMip");
 
     // Init buffer
     if (!_objectsBuffer)
@@ -329,8 +328,7 @@ void GlobalSignDistanceFieldPass::OnShaderReloading(Asset* obj)
     _csRasterizeModel1 = nullptr;
     _csRasterizeHeightfield = nullptr;
     _csClearChunk = nullptr;
-    _csGenerateMip0 = nullptr;
-    _csGenerateMip1 = nullptr;
+    _csGenerateMip = nullptr;
     _cb0 = nullptr;
     _cb1 = nullptr;
     invalidateResources();
@@ -349,18 +347,6 @@ void GlobalSignDistanceFieldPass::Dispose()
     _shader = nullptr;
     ChunksCache.Clear();
     ChunksCache.SetCapacity(0);
-}
-
-void GlobalSignDistanceFieldPass::BindingData::BindCascades(GPUContext* context, int32 srvSlot)
-{
-    for (int32 i = 0; i < 4; i++)
-        context->BindSR(srvSlot + i, Cascades[i] ? Cascades[i]->ViewVolume() : nullptr);
-}
-
-void GlobalSignDistanceFieldPass::BindingData::BindCascadeMips(GPUContext* context, int32 srvSlot)
-{
-    for (int32 i = 0; i < 4; i++)
-        context->BindSR(srvSlot + i, CascadeMips[i] ? CascadeMips[i]->ViewVolume() : nullptr);
 }
 
 bool GlobalSignDistanceFieldPass::Get(const RenderBuffers* buffers, BindingData& result)
@@ -428,14 +414,13 @@ bool GlobalSignDistanceFieldPass::Render(RenderContext& renderContext, GPUContex
         sdfData.Cascades.Resize(cascadesCount);
         sdfData.Resolution = resolution;
         updated = true;
-        auto desc = GPUTextureDescription::New3D(resolution, resolution, resolution, GLOBAL_SDF_FORMAT, GPUTextureFlags::ShaderResource | GPUTextureFlags::UnorderedAccess, 1);
-        for (auto& cascade : sdfData.Cascades)
+        auto desc = GPUTextureDescription::New3D(resolution * cascadesCount, resolution, resolution, GLOBAL_SDF_FORMAT, GPUTextureFlags::ShaderResource | GPUTextureFlags::UnorderedAccess, 1);
         {
-            GPUTexture*& texture = cascade.Texture;
+            GPUTexture*& texture = sdfData.Texture;
             if (texture && texture->Width() != desc.Width)
             {
                 RenderTargetPool::Release(texture);
-                texture = nullptr;
+                sdfData.Texture = nullptr;
             }
             if (!texture)
             {
@@ -444,10 +429,11 @@ bool GlobalSignDistanceFieldPass::Render(RenderContext& renderContext, GPUContex
                     return true;
             }
         }
-        desc.Width = desc.Height = desc.Depth = resolutionMip;
+        desc.Width = resolutionMip * cascadesCount;
+        desc.Height = desc.Depth = resolutionMip;
         for (auto& cascade : sdfData.Cascades)
         {
-            GPUTexture*& texture = cascade.Mip;
+            GPUTexture*& texture = sdfData.TextureMip;
             if (texture && texture->Width() != desc.Width)
             {
                 RenderTargetPool::Release(texture);
@@ -469,10 +455,12 @@ bool GlobalSignDistanceFieldPass::Render(RenderContext& renderContext, GPUContex
         {
             cascade.NonEmptyChunks.Clear();
             cascade.StaticChunks.Clear();
-            context->ClearUA(cascade.Texture, Float4::One);
-            context->ClearUA(cascade.Mip, Float4::One);
         }
-        LOG(Info, "Global SDF memory usage: {0} MB", (sdfData.Cascades[0].Texture->GetMemoryUsage() + sdfData.Cascades[0].Mip->GetMemoryUsage()) * ARRAY_COUNT(sdfData.Cascades) / 1024 / 1024);
+        uint64 memoryUsage = sdfData.Texture->GetMemoryUsage();
+        context->ClearUA(sdfData.Texture, Float4::One);
+        memoryUsage += sdfData.TextureMip->GetMemoryUsage();
+        context->ClearUA(sdfData.TextureMip, Float4::One);
+        LOG(Info, "Global SDF memory usage: {0} MB", memoryUsage / 1024 / 1024);
     }
     for (SceneRendering* scene : renderContext.List->Scenes)
         sdfData.ListenSceneRendering(scene);
@@ -498,6 +486,8 @@ bool GlobalSignDistanceFieldPass::Render(RenderContext& renderContext, GPUContex
     bool anyDraw = false;
     const uint64 cascadeFrequencies[] = { 2, 3, 5, 11 };
     //const uint64 cascadeFrequencies[] = { 1, 1, 1, 1 };
+    GPUTextureView* textureView = sdfData.Texture->ViewVolume();
+    GPUTextureView* textureMipView = sdfData.TextureMip->ViewVolume();
     for (int32 cascadeIndex = 0; cascadeIndex < cascadesCount; cascadeIndex++)
     {
         // Reduce frequency of the updates
@@ -514,8 +504,6 @@ bool GlobalSignDistanceFieldPass::Render(RenderContext& renderContext, GPUContex
         BoundingBox cascadeBounds(center - cascadeDistance, center + cascadeDistance);
         // TODO: add scene detail scale factor to PostFx settings (eg. to increase or decrease scene details and quality)
         const float minObjectRadius = Math::Max(20.0f, cascadeVoxelSize * 0.5f); // Skip too small objects for this cascade
-        GPUTextureView* cascadeView = cascade.Texture->ViewVolume();
-        GPUTextureView* cascadeMipView = cascade.Mip->ViewVolume();
 
         // Clear cascade before rasterization
         {
@@ -539,6 +527,8 @@ bool GlobalSignDistanceFieldPass::Render(RenderContext& renderContext, GPUContex
         _objectsBufferCount = 0;
         _voxelSize = cascadeVoxelSize;
         _cascadeBounds = cascadeBounds;
+        _cascadeBounds.Minimum += 0.1f; // Adjust to prevent overflowing chunk keys (cascade bounds are used for clamping object bounds)
+        _cascadeBounds.Maximum -= 0.1f; // Adjust to prevent overflowing chunk keys (cascade bounds are used for clamping object bounds)
         _cascadeIndex = cascadeIndex;
         _sdfData = &sdfData;
         {
@@ -556,24 +546,18 @@ bool GlobalSignDistanceFieldPass::Render(RenderContext& renderContext, GPUContex
         }
 
         // Perform batched chunks rasterization
-        if (!anyDraw)
-        {
-            anyDraw = true;
-            context->ResetSR();
-            auto desc = GPUTextureDescription::New3D(resolution, resolution, resolution, GLOBAL_SDF_FORMAT, GPUTextureFlags::ShaderResource | GPUTextureFlags::UnorderedAccess, 1);
-            tmpMip = RenderTargetPool::Get(desc);
-            if (!tmpMip)
-                return true;
-        }
+        anyDraw = true;
+        context->ResetSR();
         ModelsRasterizeData data;
         data.CascadeCoordToPosMul = (Float3)cascadeBounds.GetSize() / (float)resolution;
         data.CascadeCoordToPosAdd = (Float3)cascadeBounds.Minimum + cascadeVoxelSize * 0.5f;
         data.MaxDistance = cascadeMaxDistance;
         data.CascadeResolution = resolution;
         data.CascadeMipResolution = resolutionMip;
+        data.CascadeIndex = cascadeIndex;
         data.CascadeMipFactor = GLOBAL_SDF_RASTERIZE_MIP_FACTOR;
         data.CascadeVoxelSize = cascadeVoxelSize;
-        context->BindUA(0, cascadeView);
+        context->BindUA(0, textureView);
         context->BindCB(1, _cb1);
         const int32 chunkDispatchGroups = GLOBAL_SDF_RASTERIZE_CHUNK_SIZE / GLOBAL_SDF_RASTERIZE_GROUP_SIZE;
         bool anyChunkDispatch = false;
@@ -738,25 +722,55 @@ bool GlobalSignDistanceFieldPass::Render(RenderContext& renderContext, GPUContex
         if (updated || anyChunkDispatch)
         {
             PROFILE_GPU_CPU("Generate Mip");
-            context->UpdateCB(_cb1, &data);
             context->ResetUA();
-            context->BindSR(0, cascadeView);
-            context->BindUA(0, cascadeMipView);
             const int32 mipDispatchGroups = Math::DivideAndRoundUp(resolutionMip, GLOBAL_SDF_MIP_GROUP_SIZE);
+            static_assert((GLOBAL_SDF_MIP_FLOODS % 2) == 1, "Invalid Global SDF mip flood iterations count.");
             int32 floodFillIterations = chunks.Count() == 0 ? 1 : GLOBAL_SDF_MIP_FLOODS;
-            context->Dispatch(_csGenerateMip0, mipDispatchGroups, mipDispatchGroups, mipDispatchGroups);
-            context->UnBindSR(0);
+            if (!tmpMip)
+            {
+                // Use temporary texture to flood fill mip
+                auto desc = GPUTextureDescription::New3D(resolutionMip, resolutionMip, resolutionMip, GLOBAL_SDF_FORMAT, GPUTextureFlags::ShaderResource | GPUTextureFlags::UnorderedAccess, 1);
+                tmpMip = RenderTargetPool::Get(desc);
+                if (!tmpMip)
+                    return true;
+            }
             GPUTextureView* tmpMipView = tmpMip->ViewVolume();
+
+            // Tex -> Mip
+            // TODO: use push constants on DX12/Vulkan to provide those 4 uints to the shader
+            data.GenerateMipTexResolution = data.CascadeResolution;
+            data.GenerateMipCoordScale = data.CascadeMipFactor;
+            data.GenerateMipTexOffsetX = data.CascadeIndex * data.CascadeResolution;
+            data.GenerateMipMipOffsetX = data.CascadeIndex * data.CascadeMipResolution;
+            context->UpdateCB(_cb1, &data);
+            context->BindSR(0, textureView);
+            context->BindUA(0, textureMipView);
+            context->Dispatch(_csGenerateMip, mipDispatchGroups, mipDispatchGroups, mipDispatchGroups);
+
+            data.GenerateMipTexResolution = data.CascadeMipResolution;
+            data.GenerateMipCoordScale = 1;
             for (int32 i = 1; i < floodFillIterations; i++)
             {
                 context->ResetUA();
-                context->BindSR(0, cascadeMipView);
-                context->BindUA(0, tmpMipView);
-                context->Dispatch(_csGenerateMip1, mipDispatchGroups, mipDispatchGroups, mipDispatchGroups);
-                Swap(tmpMipView, cascadeMipView);
+                if ((i & 1) == 1)
+                {
+                    // Mip -> Tmp
+                    context->BindSR(0, textureMipView);
+                    context->BindUA(0, tmpMipView);
+                    data.GenerateMipTexOffsetX = data.CascadeIndex * data.CascadeMipResolution;
+                    data.GenerateMipMipOffsetX = 0;
+                }
+                else
+                {
+                    // Tmp -> Mip
+                    context->BindSR(0, tmpMipView);
+                    context->BindUA(0, textureMipView);
+                    data.GenerateMipTexOffsetX = 0;
+                    data.GenerateMipMipOffsetX = data.CascadeIndex * data.CascadeMipResolution;
+                }
+                context->UpdateCB(_cb1, &data);
+                context->Dispatch(_csGenerateMip, mipDispatchGroups, mipDispatchGroups, mipDispatchGroups);
             }
-            if (floodFillIterations % 2 == 0)
-                Swap(tmpMipView, cascadeMipView);
         }
     }
 
@@ -771,26 +785,22 @@ bool GlobalSignDistanceFieldPass::Render(RenderContext& renderContext, GPUContex
     }
 
     // Copy results
-    static_assert(ARRAY_COUNT(result.Cascades) == ARRAY_COUNT(sdfData.Cascades), "Invalid cascades count.");
-    static_assert(ARRAY_COUNT(result.CascadeMips) == ARRAY_COUNT(sdfData.Cascades), "Invalid cascades count.");
+    result.Texture = sdfData.Texture;
+    result.TextureMip = sdfData.TextureMip;
     for (int32 cascadeIndex = 0; cascadeIndex < cascadesCount; cascadeIndex++)
     {
         auto& cascade = sdfData.Cascades[cascadeIndex];
         const float cascadeDistance = distanceExtent * cascadesDistanceScales[cascadeIndex];
         const float cascadeMaxDistance = cascadeDistance * 2;
-        const float cascadeVoxelSize = cascadeMaxDistance / resolution;
+        const float cascadeVoxelSize = cascadeMaxDistance / (float)resolution;
         const Float3 center = cascade.Position;
-        result.Constants.CascadePosDistance[cascadeIndex] = Float4(center, cascadeDistance);
+        result.Constants.CascadePosDistance[cascadeIndex] = Vector4(center, cascadeDistance);
         result.Constants.CascadeVoxelSize.Raw[cascadeIndex] = cascadeVoxelSize;
-        result.Cascades[cascadeIndex] = cascade.Texture;
-        result.CascadeMips[cascadeIndex] = cascade.Mip;
     }
     for (int32 cascadeIndex = cascadesCount; cascadeIndex < 4; cascadeIndex++)
     {
         result.Constants.CascadePosDistance[cascadeIndex] = result.Constants.CascadePosDistance[cascadesCount - 1];
         result.Constants.CascadeVoxelSize.Raw[cascadeIndex] = result.Constants.CascadeVoxelSize.Raw[cascadesCount - 1];
-        result.Cascades[cascadeIndex] = nullptr;
-        result.CascadeMips[cascadeIndex] = nullptr;
     }
     result.Constants.Resolution = (float)resolution;
     result.Constants.CascadesCount = cascadesCount;
@@ -820,8 +830,8 @@ void GlobalSignDistanceFieldPass::RenderDebug(RenderContext& renderContext, GPUC
         context->UpdateCB(_cb0, &data);
         context->BindCB(0, _cb0);
     }
-    bindingData.BindCascades(context, 0);
-    bindingData.BindCascadeMips(context, 4);
+    context->BindSR(0, bindingData.Texture ? bindingData.Texture->ViewVolume() : nullptr);
+    context->BindSR(1, bindingData.TextureMip ? bindingData.TextureMip->ViewVolume() : nullptr);
     context->SetState(_psDebug);
     context->SetRenderTarget(output->View());
     context->SetViewportAndScissors(outputSize.X, outputSize.Y);

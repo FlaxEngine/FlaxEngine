@@ -452,6 +452,7 @@ void GPUContextVulkan::UpdateDescriptorSets(const SpirvShaderDescriptorInfo& des
             case VK_DESCRIPTOR_TYPE_SAMPLER:
             {
                 // Sampler
+                ASSERT_LOW_LAYER(slot < GPU_MAX_SAMPLER_BINDED);
                 const VkSampler sampler = _samplerHandles[slot];
                 ASSERT(sampler);
                 needsWrite |= dsWriter.WriteSampler(descriptorIndex, sampler, index);
@@ -460,6 +461,7 @@ void GPUContextVulkan::UpdateDescriptorSets(const SpirvShaderDescriptorInfo& des
             case VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE:
             {
                 // Shader Resource (Texture)
+                ASSERT_LOW_LAYER(slot < GPU_MAX_SR_BINDED);
                 auto handle = (GPUTextureViewVulkan*)handles[slot];
                 if (!handle)
                 {
@@ -490,6 +492,7 @@ void GPUContextVulkan::UpdateDescriptorSets(const SpirvShaderDescriptorInfo& des
             case VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER:
             {
                 // Shader Resource (Buffer)
+                ASSERT_LOW_LAYER(slot < GPU_MAX_SR_BINDED);
                 auto sr = handles[slot];
                 if (!sr)
                 {
@@ -505,6 +508,7 @@ void GPUContextVulkan::UpdateDescriptorSets(const SpirvShaderDescriptorInfo& des
             case VK_DESCRIPTOR_TYPE_STORAGE_IMAGE:
             {
                 // Unordered Access (Texture)
+                ASSERT_LOW_LAYER(slot < GPU_MAX_UA_BINDED);
                 auto ua = handles[slot];
                 ASSERT(ua);
                 VkImageView imageView;
@@ -516,6 +520,7 @@ void GPUContextVulkan::UpdateDescriptorSets(const SpirvShaderDescriptorInfo& des
             case VK_DESCRIPTOR_TYPE_STORAGE_BUFFER:
             {
                 // Unordered Access (Buffer)
+                ASSERT_LOW_LAYER(slot < GPU_MAX_UA_BINDED);
                 auto ua = handles[slot];
                 if (!ua)
                 {
@@ -531,6 +536,7 @@ void GPUContextVulkan::UpdateDescriptorSets(const SpirvShaderDescriptorInfo& des
             case VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER:
             {
                 // Unordered Access (Buffer)
+                ASSERT_LOW_LAYER(slot < GPU_MAX_UA_BINDED);
                 auto ua = handles[slot];
                 if (!ua)
                 {
@@ -546,6 +552,7 @@ void GPUContextVulkan::UpdateDescriptorSets(const SpirvShaderDescriptorInfo& des
             case VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC:
             {
                 // Constant Buffer
+                ASSERT_LOW_LAYER(slot < GPU_MAX_CB_BINDED);
                 auto cb = handles[slot];
                 ASSERT(cb);
                 VkBuffer buffer;

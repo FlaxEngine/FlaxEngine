@@ -286,7 +286,7 @@ Texture3D<float4> LightScatteringHistory : register(t2);
 Texture3D<float4> LocalShadowedLightScattering : register(t3);
 Texture2DArray ShadowMapCSM : register(t4);
 #if USE_DDGI
-Texture2D<float4> ProbesState : register(t5);
+Texture2D<snorm float4> ProbesState : register(t5);
 Texture2D<float4> ProbesDistance : register(t6);
 Texture2D<float4> ProbesIrradiance : register(t7);
 #else
@@ -337,7 +337,7 @@ void CS_LightScattering(uint3 GroupId : SV_GroupID, uint3 DispatchThreadId : SV_
 
 #if USE_DDGI
         // Dynamic Diffuse Global Illumination
-        float3 irradiance = SampleDDGIIrradiance(DDGI, ProbesState, ProbesDistance, ProbesIrradiance, positionWS, cameraVectorNormalized, 1.0f);
+        float3 irradiance = SampleDDGIIrradiance(DDGI, ProbesState, ProbesDistance, ProbesIrradiance, positionWS, cameraVectorNormalized, 0.0f, cellOffset.x);
         lightScattering += float4(irradiance, 1);
 #else
 		// Sky light

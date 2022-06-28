@@ -187,6 +187,8 @@ void SpotLight::Draw(RenderContext& renderContext)
         data.IESTexture = IESTexture ? IESTexture->GetTexture() : nullptr;
         Float3::Transform(Float3::Up, GetOrientation(), data.UpVector);
         data.OuterConeAngle = outerConeAngle;
+        data.StaticFlags = GetStaticFlags();
+        data.ID = GetID();
         renderContext.List->SpotLights.Add(data);
     }
 }

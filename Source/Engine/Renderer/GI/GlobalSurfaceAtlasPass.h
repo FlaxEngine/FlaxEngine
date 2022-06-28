@@ -38,6 +38,7 @@ public:
         };
         GPUBuffer* Chunks;
         GPUBuffer* CulledObjects;
+        GPUBuffer* Objects;
         ConstantsData Constants;
     };
 
@@ -45,6 +46,7 @@ private:
     bool _supported = false;
     AssetReference<Shader> _shader;
     GPUPipelineState* _psClear = nullptr;
+    GPUPipelineState* _psClearLighting = nullptr;
     GPUPipelineState* _psDirectLighting0 = nullptr;
     GPUPipelineState* _psDirectLighting1 = nullptr;
     GPUPipelineState* _psIndirectLighting = nullptr;
@@ -54,7 +56,6 @@ private:
 
     // Cache
     class GPUBuffer* _culledObjectsSizeBuffer = nullptr;
-    class DynamicTypedBuffer* _objectsBuffer = nullptr;
     class DynamicVertexBuffer* _vertexBuffer = nullptr;
     class GlobalSurfaceAtlasCustomBuffer* _surfaceAtlasData;
     Array<void*> _dirtyObjectsBuffer;
@@ -79,7 +80,7 @@ public:
     void RenderDebug(RenderContext& renderContext, GPUContext* context, GPUTexture* output);
 
     // Rasterize actor into the Global Surface Atlas. Call it from actor Draw() method during DrawPass::GlobalSurfaceAtlas.
-    void RasterizeActor(Actor* actor, void* actorObject, const BoundingSphere& actorObjectBounds, const Matrix& localToWorld, const BoundingBox& localBounds, uint32 tilesMask = MAX_uint32);
+    void RasterizeActor(Actor* actor, void* actorObject, const BoundingSphere& actorObjectBounds, const Matrix& localToWorld, const BoundingBox& localBounds, uint32 tilesMask = MAX_uint32, bool useVisibility = true);
 
 private:
 #if COMPILE_WITH_DEV_ENV

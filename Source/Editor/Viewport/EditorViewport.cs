@@ -1409,6 +1409,7 @@ namespace FlaxEditor.Viewport
             new ViewModeOptions(ViewMode.QuadOverdraw, "Quad Overdraw"),
             new ViewModeOptions(ViewMode.GlobalSDF, "Global SDF"),
             new ViewModeOptions(ViewMode.GlobalSurfaceAtlas, "Global Surface Atlas"),
+            new ViewModeOptions(ViewMode.GlobalIllumination, "Global Illumination"),
         };
 
         private void WidgetCamSpeedShowHide(Control cm)

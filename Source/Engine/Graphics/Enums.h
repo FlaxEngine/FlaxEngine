@@ -864,6 +864,11 @@ API_ENUM() enum class ViewMode
     /// Draw Global Surface Atlas preview.
     /// </summary>
     GlobalSurfaceAtlas = 25,
+
+    /// <summary>
+    /// Draw Global Illumination debug preview (eg. irradiance probes).
+    /// </summary>
+    GlobalIllumination = 26,
 };
 
 /// <summary>

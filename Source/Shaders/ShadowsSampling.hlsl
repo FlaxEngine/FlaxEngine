@@ -14,10 +14,10 @@
 // Spot: 2, 5, 12, 29
 #if SHADOWS_QUALITY == 0
 
-	#define FilterSizeCSM 2
-	#define FilterSizeCube 2
-	#define FilterSizeSpot 2
-	
+#define FilterSizeCSM 2
+#define FilterSizeCube 2
+#define FilterSizeSpot 2
+
 #elif SHADOWS_QUALITY == 1
 
 	#define FilterSizeCSM 3
@@ -46,16 +46,16 @@
 // Where: direction = normalize(worldPosition - lightPosition)
 int GetCubeFaceIndex(float3 direction)
 {
-	int cubeFaceIndex;
-	float3 absDirection = abs(direction);
-	float maxDirection = max(absDirection.x, max(absDirection.y, absDirection.z));
-	if (maxDirection == absDirection.x)
-		cubeFaceIndex = absDirection.x == direction.x ? 0 : 1;
-	else if (maxDirection == absDirection.y)
-		cubeFaceIndex = absDirection.y == direction.y ? 2 : 3;
-	else
-		cubeFaceIndex = absDirection.z == direction.z ? 4 : 5;
-	return cubeFaceIndex;
+    int cubeFaceIndex;
+    float3 absDirection = abs(direction);
+    float maxDirection = max(absDirection.x, max(absDirection.y, absDirection.z));
+    if (maxDirection == absDirection.x)
+        cubeFaceIndex = absDirection.x == direction.x ? 0 : 1;
+    else if (maxDirection == absDirection.y)
+        cubeFaceIndex = absDirection.y == direction.y ? 2 : 3;
+    else
+        cubeFaceIndex = absDirection.z == direction.z ? 4 : 5;
+    return cubeFaceIndex;
 }
 
 // Samples the shadow map with a fixed-size PCF kernel optimized with GatherCmpRed.
@@ -64,15 +64,15 @@ float SampleShadowMapFixedSizePCF(Texture2DArray shadowMap, float2 shadowMapSize
 {
 #if FilterSizeCSM == 2
 
-	#if FEATURE_LEVEL >= FEATURE_LEVEL_SM5
+#if FEATURE_LEVEL >= FEATURE_LEVEL_SM5
 
-		return shadowMap.SampleCmpLevelZero(ShadowSamplerPCF, float3(shadowPos.xy, cascadeIndex), sceneDepth);
+    return shadowMap.SampleCmpLevelZero(ShadowSamplerPCF, float3(shadowPos.xy, cascadeIndex), sceneDepth);
 
-	#else
+#else
 
 		return sceneDepth < shadowMap.SampleLevel(SamplerLinearClamp, float3(shadowPos.xy, cascadeIndex), 0).r;
 
-	#endif
+#endif
 
 #else
 
@@ -120,11 +120,11 @@ float SampleShadowMapFixedSizePCF(Texture2DArray shadowMap, float2 shadowMapSize
 			if (value != 0.0f)
 			{
 				// Gather returns xyzw which is counter clockwise order starting with the sample to the lower left of the queried location
-				#if CAN_USE_GATHER
+#if CAN_USE_GATHER
 				
 					v1[(col + FS_2) / 2] = shadowMap.GatherCmp(ShadowSampler, baseUV, sceneDepth, int2(col, row));
 				
-				#else
+#else
 				
 					float4 gather;
 					
@@ -135,7 +135,7 @@ float SampleShadowMapFixedSizePCF(Texture2DArray shadowMap, float2 shadowMapSize
 					
 					v1[(col + FS_2) / 2] = gather;
 				
-				#endif
+#endif
 			}
 			else
 				v1[(col + FS_2) / 2] = 0.0f;
@@ -242,7 +242,7 @@ float SampleShadowMapOptimizedPCF(Texture2DArray shadowMap, float2 shadowMapSize
 
 #if FilterSizeCSM == 2
 
-	return shadowMap.SampleCmpLevelZero(ShadowSamplerPCF, float3(shadowPos.xy, cascadeIndex), sceneDepth);
+    return shadowMap.SampleCmpLevelZero(ShadowSamplerPCF, float3(shadowPos.xy, cascadeIndex), sceneDepth);
 
 #elif FilterSizeCSM == 3
 
@@ -265,7 +265,7 @@ float SampleShadowMapOptimizedPCF(Texture2DArray shadowMap, float2 shadowMapSize
 
 	return sum * 1.0f / 16;
 
-	#elif FilterSizeCSM == 5
+#elif FilterSizeCSM == 5
 
 	float uw0 = (4 - 3 * s);
 	float uw1 = 7;
@@ -347,41 +347,41 @@ float SampleShadowMapOptimizedPCF(Texture2DArray shadowMap, float2 shadowMapSize
 // Samples the shadow from the shadow map cascade
 float SampleShadowCascade(Texture2DArray shadowMap, float2 shadowMapSize, float sceneDepth, float2 shadowPosition, uint cascadeIndex)
 {
-	float shadow = SampleShadowMapFixedSizePCF(shadowMap, shadowMapSize, sceneDepth, shadowPosition, cascadeIndex);
-	//float shadow = SampleShadowMapOptimizedPCF(shadowMap, shadowMapSize, sceneDepth, shadowPosition, cascadeIndex);
-	return shadow;
+    float shadow = SampleShadowMapFixedSizePCF(shadowMap, shadowMapSize, sceneDepth, shadowPosition, cascadeIndex);
+    //float shadow = SampleShadowMapOptimizedPCF(shadowMap, shadowMapSize, sceneDepth, shadowPosition, cascadeIndex);
+    return shadow;
 }
 
 // Samples the shadow for the given directional light (cascaded shadow map sampling)
 float SampleShadow(LightData light, LightShadowData shadow, Texture2DArray shadowMap, float3 worldPosition, float viewDepth)
 {
-	// Create a blend factor which is one before and at the fade plane
-	float fade = saturate((viewDepth - shadow.CascadeSplits[shadow.NumCascades - 1] + shadow.FadeDistance) / shadow.FadeDistance);
-	BRANCH
-	if (fade >= 1.0)
-	{
-		return 1;
-	}
+    // Create a blend factor which is one before and at the fade plane
+    float fade = saturate((viewDepth - shadow.CascadeSplits[shadow.NumCascades - 1] + shadow.FadeDistance) / shadow.FadeDistance);
+    BRANCH
+    if (fade >= 1.0)
+    {
+        return 1;
+    }
 
-	// Figure out which cascade to sample from
-	uint cascadeIndex = 0;
-	for (uint i = 0; i < shadow.NumCascades - 1; i++)
-	{
-		if (viewDepth > shadow.CascadeSplits[i])
-			cascadeIndex = i + 1;
-	}
+    // Figure out which cascade to sample from
+    uint cascadeIndex = 0;
+    for (uint i = 0; i < shadow.NumCascades - 1; i++)
+    {
+        if (viewDepth > shadow.CascadeSplits[i])
+            cascadeIndex = i + 1;
+    }
 
     // Project into shadow space
-	float4 shadowPosition = mul(float4(worldPosition, 1.0f), shadow.ShadowVP[cascadeIndex]);
-	shadowPosition.xy /= shadowPosition.w;
-	shadowPosition.z -= shadow.Bias;
+    float4 shadowPosition = mul(float4(worldPosition, 1.0f), shadow.ShadowVP[cascadeIndex]);
+    shadowPosition.xy /= shadowPosition.w;
+    shadowPosition.z -= shadow.Bias;
 
-	// Sample shadow
-	float result = SampleShadowCascade(shadowMap, shadow.ShadowMapSize, shadowPosition.z, shadowPosition.xy, cascadeIndex);
+    // Sample shadow
+    float result = SampleShadowCascade(shadowMap, shadow.ShadowMapSize, shadowPosition.z, shadowPosition.xy, cascadeIndex);
 
-	// Increase the sharpness for higher cascades to match the filter radius
-	const float SharpnessScale[MaxNumCascades] = { 1.0f, 1.5f, 3.0f, 3.5f };
-	float sharpness = shadow.Sharpness * SharpnessScale[cascadeIndex];
+    // Increase the sharpness for higher cascades to match the filter radius
+    const float SharpnessScale[MaxNumCascades] = { 1.0f, 1.5f, 3.0f, 3.5f };
+    float sharpness = shadow.Sharpness * SharpnessScale[cascadeIndex];
 
 #if CSM_BLENDING
 	// Sample the next cascade, and blend between the two results to smooth the transition
@@ -408,33 +408,33 @@ float SampleShadow(LightData light, LightShadowData shadow, Texture2DArray shado
 	}
 #endif
 
-	// Apply shadow fade and sharpness
-	result = saturate((result - 0.5) * sharpness + 0.5);
-	result = lerp(1.0f, result, (1 - fade) * shadow.Fade);
-	return result;
+    // Apply shadow fade and sharpness
+    result = saturate((result - 0.5) * sharpness + 0.5);
+    result = lerp(1.0f, result, (1 - fade) * shadow.Fade);
+    return result;
 }
 
 // Samples the shadow for the given directional light (cascaded shadow map sampling) for the material surface (supports subsurface shadowing)
 float SampleShadow(LightData light, LightShadowData shadow, Texture2DArray shadowMap, GBufferSample gBuffer, out float subsurfaceShadow)
 {
-	subsurfaceShadow = 1;
+    subsurfaceShadow = 1;
 
-	// Create a blend factor which is one before and at the fade plane
-	float viewDepth = gBuffer.ViewPos.z;
-	float fade = saturate((viewDepth - shadow.CascadeSplits[shadow.NumCascades - 1] + shadow.FadeDistance) / shadow.FadeDistance);
-	BRANCH
-	if (fade >= 1.0)
-	{
-		return 1;
-	}
+    // Create a blend factor which is one before and at the fade plane
+    float viewDepth = gBuffer.ViewPos.z;
+    float fade = saturate((viewDepth - shadow.CascadeSplits[shadow.NumCascades - 1] + shadow.FadeDistance) / shadow.FadeDistance);
+    BRANCH
+    if (fade >= 1.0)
+    {
+        return 1;
+    }
 
-	// Figure out which cascade to sample from
-	uint cascadeIndex = 0;
-	for (uint i = 0; i < shadow.NumCascades - 1; i++)
-	{
-		if (viewDepth > shadow.CascadeSplits[i])
-			cascadeIndex = i + 1;
-	}
+    // Figure out which cascade to sample from
+    uint cascadeIndex = 0;
+    for (uint i = 0; i < shadow.NumCascades - 1; i++)
+    {
+        if (viewDepth > shadow.CascadeSplits[i])
+            cascadeIndex = i + 1;
+    }
 
 #if defined(USE_GBUFFER_CUSTOM_DATA)
 	// Subsurface shadowing
@@ -458,51 +458,51 @@ float SampleShadow(LightData light, LightShadowData shadow, Texture2DArray shado
 	}
 #endif
 
-	// Skip if surface is in a full shadow
-	float NoL = dot(gBuffer.Normal, light.Direction);
-	BRANCH
-	if (NoL <= 0)
-	{
-		return 0;
-	}
+    // Skip if surface is in a full shadow
+    float NoL = dot(gBuffer.Normal, light.Direction);
+    BRANCH
+    if (NoL <= 0)
+    {
+        return 0;
+    }
 
-	// Apply normal offset bias
-	float3 samplePosWS = gBuffer.WorldPos;
-	samplePosWS += GetShadowPositionOffset(shadow.NormalOffsetScale, NoL, gBuffer.Normal);
+    // Apply normal offset bias
+    float3 samplePosWS = gBuffer.WorldPos;
+    samplePosWS += GetShadowPositionOffset(shadow.NormalOffsetScale, NoL, gBuffer.Normal);
 
-	// Sample shadow
-	return SampleShadow(light, shadow, shadowMap, samplePosWS, viewDepth);
+    // Sample shadow
+    return SampleShadow(light, shadow, shadowMap, samplePosWS, viewDepth);
 }
 
 // Samples the shadow for the given spot light (PCF shadow map sampling)
 float SampleShadow(LightData light, LightShadowData shadow, Texture2D shadowMap, float3 worldPosition)
 {
-	float3 toLight = light.Position - worldPosition;
-	float toLightLength = length(toLight);
-	float3 L = toLight / toLightLength;
-	float dirCheck = dot(-light.Direction, L);
+    float3 toLight = light.Position - worldPosition;
+    float toLightLength = length(toLight);
+    float3 L = toLight / toLightLength;
+    float dirCheck = dot(-light.Direction, L);
 
-	// Skip pixels outside of the light influence
-	BRANCH
-	if (toLightLength > light.Radius || dirCheck < 0)
-	{
-		return 1;
-	}
+    // Skip pixels outside of the light influence
+    BRANCH
+    if (toLightLength > light.Radius || dirCheck < 0)
+    {
+        return 1;
+    }
 
-	// Negate direction and use normalized value
-	toLight = -L;
+    // Negate direction and use normalized value
+    toLight = -L;
 
-	// Project into shadow space
-	float4 shadowPosition = mul(float4(worldPosition, 1.0f), shadow.ShadowVP[0]);
-	shadowPosition.z -= shadow.Bias;
-	shadowPosition.xyz /= shadowPosition.w;
+    // Project into shadow space
+    float4 shadowPosition = mul(float4(worldPosition, 1.0f), shadow.ShadowVP[0]);
+    shadowPosition.z -= shadow.Bias;
+    shadowPosition.xyz /= shadowPosition.w;
 
-	float2 shadowMapUVs = shadowPosition.xy * float2(0.5f, -0.5f) + float2(0.5f, 0.5f);
+    float2 shadowMapUVs = shadowPosition.xy * float2(0.5f, -0.5f) + float2(0.5f, 0.5f);
 
-#if FilterSizeSpot == 2 
+#if FilterSizeSpot == 2
 
-	// Use single hardware sample with filtering
-	float result = shadowMap.SampleCmpLevelZero(ShadowSamplerPCF, shadowMapUVs, shadowPosition.z);
+    // Use single hardware sample with filtering
+    float result = shadowMap.SampleCmpLevelZero(ShadowSamplerPCF, shadowMapUVs, shadowPosition.z);
 
 #else
 
@@ -525,28 +525,28 @@ float SampleShadow(LightData light, LightShadowData shadow, Texture2D shadowMap,
 
 #endif
 
-	// Apply shadow fade and sharpness
-	result = saturate((result - 0.5) * shadow.Sharpness + 0.5);
-	result = lerp(1.0f, result, shadow.Fade);
+    // Apply shadow fade and sharpness
+    result = saturate((result - 0.5) * shadow.Sharpness + 0.5);
+    result = lerp(1.0f, result, shadow.Fade);
 
-	return result;
+    return result;
 }
 
 // Samples the shadow for the given spot light (PCF shadow map sampling) for the material surface (supports subsurface shadowing)
 float SampleShadow(LightData light, LightShadowData shadow, Texture2D shadowMap, GBufferSample gBuffer, out float subsurfaceShadow)
 {
-	subsurfaceShadow = 1;
-	float3 toLight = light.Position - gBuffer.WorldPos;
-	float toLightLength = length(toLight);
-	float3 L = toLight / toLightLength;
-	float dirCheck = dot(-light.Direction, L);
+    subsurfaceShadow = 1;
+    float3 toLight = light.Position - gBuffer.WorldPos;
+    float toLightLength = length(toLight);
+    float3 L = toLight / toLightLength;
+    float dirCheck = dot(-light.Direction, L);
 
-	// Skip pixels outside of the light influence
-	BRANCH
-	if (toLightLength > light.Radius || dirCheck < 0)
-	{
-		return 1;
-	}
+    // Skip pixels outside of the light influence
+    BRANCH
+    if (toLightLength > light.Radius || dirCheck < 0)
+    {
+        return 1;
+    }
 
 #if defined(USE_GBUFFER_CUSTOM_DATA)
 	// Subsurface shadowing
@@ -570,51 +570,51 @@ float SampleShadow(LightData light, LightShadowData shadow, Texture2D shadowMap,
 	}
 #endif
 
-	// Skip if surface is in a full shadow
-	float NoL = dot(gBuffer.Normal, L);
-	BRANCH
-	if (NoL <= 0)
-	{
-		return 0;
-	}
+    // Skip if surface is in a full shadow
+    float NoL = dot(gBuffer.Normal, L);
+    BRANCH
+    if (NoL <= 0)
+    {
+        return 0;
+    }
 
-	// Apply normal offset bias
-	float3 samplePosWS = gBuffer.WorldPos;
-	samplePosWS += GetShadowPositionOffset(shadow.NormalOffsetScale, NoL, gBuffer.Normal);
+    // Apply normal offset bias
+    float3 samplePosWS = gBuffer.WorldPos;
+    samplePosWS += GetShadowPositionOffset(shadow.NormalOffsetScale, NoL, gBuffer.Normal);
 
-	// Sample shadow
-	return SampleShadow(light, shadow, shadowMap, samplePosWS);
+    // Sample shadow
+    return SampleShadow(light, shadow, shadowMap, samplePosWS);
 }
 
 // Samples the shadow for the given point light (PCF shadow map sampling)
 float SampleShadow(LightData light, LightShadowData shadow, TextureCube<float> shadowMap, float3 worldPosition)
 {
-	float3 toLight = light.Position - worldPosition;
-	float toLightLength = length(toLight);
-	float3 L = toLight / toLightLength;
+    float3 toLight = light.Position - worldPosition;
+    float toLightLength = length(toLight);
+    float3 L = toLight / toLightLength;
 
-	// Skip pixels outside of the light influence
-	BRANCH
-	if (toLightLength > light.Radius)
-	{
-		return 1;
-	}
+    // Skip pixels outside of the light influence
+    BRANCH
+    if (toLightLength > light.Radius)
+    {
+        return 1;
+    }
 
-	// Negate direction and use normalized value
-	toLight = -L;
+    // Negate direction and use normalized value
+    toLight = -L;
 
-	// Figure out which cube face we're sampling from
-	int cubeFaceIndex = GetCubeFaceIndex(toLight);
+    // Figure out which cube face we're sampling from
+    int cubeFaceIndex = GetCubeFaceIndex(toLight);
 
-	// Project into shadow space
-	float4 shadowPosition = mul(float4(worldPosition, 1.0f), shadow.ShadowVP[cubeFaceIndex]);
-	shadowPosition.z -= shadow.Bias;
-	shadowPosition.xyz /= shadowPosition.w;
+    // Project into shadow space
+    float4 shadowPosition = mul(float4(worldPosition, 1.0f), shadow.ShadowVP[cubeFaceIndex]);
+    shadowPosition.z -= shadow.Bias;
+    shadowPosition.xyz /= shadowPosition.w;
 
-#if FilterSizeCube == 2 
+#if FilterSizeCube == 2
 
-	// Use single hardware sample with filtering
-	float result = shadowMap.SampleCmpLevelZero(ShadowSamplerPCF, toLight, shadowPosition.z);
+    // Use single hardware sample with filtering
+    float result = shadowMap.SampleCmpLevelZero(ShadowSamplerPCF, toLight, shadowPosition.z);
 
 #else
 
@@ -637,33 +637,33 @@ float SampleShadow(LightData light, LightShadowData shadow, TextureCube<float> s
 
 #endif
 
-	// Apply shadow fade and sharpness
-	result = saturate((result - 0.5) * shadow.Sharpness + 0.5);
-	result = lerp(1.0f, result, shadow.Fade);
+    // Apply shadow fade and sharpness
+    result = saturate((result - 0.5) * shadow.Sharpness + 0.5);
+    result = lerp(1.0f, result, shadow.Fade);
 
-	return result;
+    return result;
 }
 
 // Samples the shadow for the given point light (PCF shadow map sampling) for the material surface (supports subsurface shadowing)
 float SampleShadow(LightData light, LightShadowData shadow, TextureCube<float> shadowMap, GBufferSample gBuffer, out float subsurfaceShadow)
 {
-	subsurfaceShadow = 1;
-	float3 toLight = light.Position - gBuffer.WorldPos;
-	float toLightLength = length(toLight);
-	float3 L = toLight / toLightLength;
+    subsurfaceShadow = 1;
+    float3 toLight = light.Position - gBuffer.WorldPos;
+    float toLightLength = length(toLight);
+    float3 L = toLight / toLightLength;
 
-	// Skip pixels outside of the light influence
-	BRANCH
-	if (toLightLength > light.Radius)
-	{
-		return 1;
-	}
+    // Skip pixels outside of the light influence
+    BRANCH
+    if (toLightLength > light.Radius)
+    {
+        return 1;
+    }
 
-	// Negate direction and use normalized value
-	toLight = -L;
+    // Negate direction and use normalized value
+    toLight = -L;
 
-	// Figure out which cube face we're sampling from
-	int cubeFaceIndex = GetCubeFaceIndex(toLight);
+    // Figure out which cube face we're sampling from
+    int cubeFaceIndex = GetCubeFaceIndex(toLight);
 
 #if defined(USE_GBUFFER_CUSTOM_DATA)
 	// Subsurface shadowing
@@ -688,19 +688,19 @@ float SampleShadow(LightData light, LightShadowData shadow, TextureCube<float> s
 #endif
 
     // Skip if surface is in a full shadow
-	float NoL = dot(gBuffer.Normal, L);
-	BRANCH
-	if (NoL <= 0)
-	{
-		return 0;
-	}
+    float NoL = dot(gBuffer.Normal, L);
+    BRANCH
+    if (NoL <= 0)
+    {
+        return 0;
+    }
 
-	// Apply normal offset bias
-	float3 samplePosWS = gBuffer.WorldPos;
-	samplePosWS += GetShadowPositionOffset(shadow.NormalOffsetScale, NoL, gBuffer.Normal);
+    // Apply normal offset bias
+    float3 samplePosWS = gBuffer.WorldPos;
+    samplePosWS += GetShadowPositionOffset(shadow.NormalOffsetScale, NoL, gBuffer.Normal);
 
-	// Sample shadow
-	return SampleShadow(light, shadow, shadowMap, samplePosWS);
+    // Sample shadow
+    return SampleShadow(light, shadow, shadowMap, samplePosWS);
 }
 
 #endif

@@ -170,8 +170,7 @@ const Char* ShaderGraphUtilities::GenerateShaderResources(TextWriterUnicode& wri
             format = TEXT("Texture3D {0} : register(t{1});");
             break;
         case MaterialParameterType::GlobalSDF:
-            format = TEXT("Texture3D<float> {0}_Tex[4] : register(t{1});");
-            registers = 4;
+            format = TEXT("Texture3D<float> {0}_Tex : register(t{1});");
             zeroOffset = false;
             break;
         }

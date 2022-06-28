@@ -10,8 +10,8 @@
 #include "Engine/Core/Math/OrientedBoundingBox.h"
 #include "Engine/Engine/Engine.h"
 #include "Engine/Content/Content.h"
+#include "Engine/Core/Config/GraphicsSettings.h"
 #include "Engine/Graphics/GPUDevice.h"
-#include "Engine/Graphics/Graphics.h"
 #include "Engine/Graphics/RenderTask.h"
 #include "Engine/Graphics/RenderBuffers.h"
 #include "Engine/Graphics/RenderTargetPool.h"
@@ -34,7 +34,7 @@
 #define GLOBAL_SURFACE_ATLAS_TILE_PROJ_PLANE_OFFSET 0.1f // Small offset to prevent clipping with the closest triangles (shifts near and far planes)
 #define GLOBAL_SURFACE_ATLAS_DEBUG_FORCE_REDRAW_TILES 0 // Forces to redraw all object tiles every frame
 #define GLOBAL_SURFACE_ATLAS_DEBUG_DRAW_OBJECTS 0 // Debug draws object bounds on redraw (and tile draw projection locations)
-#define GLOBAL_SURFACE_ATLAS_DEBUG_DRAW_CHUNKS 0 // Debug draws culled chunks bounds (non-empty
+#define GLOBAL_SURFACE_ATLAS_DEBUG_DRAW_CHUNKS 0 // Debug draws culled chunks bounds (non-empty)
 
 #if GLOBAL_SURFACE_ATLAS_DEBUG_DRAW_OBJECTS || GLOBAL_SURFACE_ATLAS_DEBUG_DRAW_CHUNKS
 #include "Engine/Debug/DebugDraw.h"
@@ -86,7 +86,8 @@ struct GlobalSurfaceAtlasTile : RectPack<GlobalSurfaceAtlasTile, uint16>
 struct GlobalSurfaceAtlasObject
 {
     uint64 LastFrameUsed;
-    uint64 LastFrameDirty;
+    uint64 LastFrameUpdated;
+    uint64 LightingUpdateFrame; // Index of the frame to update lighting for this object (calculated when object gets dirty or overriden by dynamic lights)
     Actor* Actor;
     GlobalSurfaceAtlasTile* Tiles[6];
     float Radius;
@@ -120,6 +121,12 @@ struct GlobalSurfaceAtlasObject
     }
 };
 
+struct GlobalSurfaceAtlasLight
+{
+    uint64 LastFrameUsed = 0;
+    uint64 LastFrameUpdated = 0;
+};
+
 class GlobalSurfaceAtlasCustomBuffer : public RenderBuffers::CustomBuffer, public ISceneRenderingListener
 {
 public:
@@ -134,10 +141,12 @@ public:
     GPUTexture* AtlasLighting = nullptr;
     GPUBuffer* ChunksBuffer = nullptr;
     GPUBuffer* CulledObjectsBuffer = nullptr;
+    DynamicTypedBuffer ObjectsBuffer;
     int32 CulledObjectsCounterIndex = -1;
     GlobalSurfaceAtlasPass::BindingData Result;
     GlobalSurfaceAtlasTile* AtlasTiles = nullptr; // TODO: optimize with a single allocation for atlas tiles
     Dictionary<void*, GlobalSurfaceAtlasObject> Objects;
+    Dictionary<Guid, GlobalSurfaceAtlasLight> Lights;
 
     // Cached data to be reused during RasterizeActor
     uint64 CurrentFrame;
@@ -148,12 +157,18 @@ public:
     float DistanceScalingEnd;
     float DistanceScaling;
 
+    GlobalSurfaceAtlasCustomBuffer()
+        : ObjectsBuffer(256 * (GLOBAL_SURFACE_ATLAS_OBJECT_DATA_STRIDE + GLOBAL_SURFACE_ATLAS_TILE_DATA_STRIDE * 3 / 4), PixelFormat::R32G32B32A32_Float, false, TEXT("GlobalSurfaceAtlas.ObjectsBuffer"))
+    {
+    }
+
     FORCE_INLINE void ClearObjects()
     {
         CulledObjectsCounterIndex = -1;
         LastFrameAtlasDefragmentation = Engine::FrameCount;
         SAFE_DELETE(AtlasTiles);
         Objects.Clear();
+        Lights.Clear();
     }
 
     FORCE_INLINE void Clear()
@@ -188,7 +203,13 @@ public:
             if (object)
             {
                 // Dirty object to redraw
-                object->LastFrameDirty = 0;
+                object->LastFrameUpdated = 0;
+            }
+            GlobalSurfaceAtlasLight* light = Lights.TryGet(a->GetID());
+            if (light)
+            {
+                // Dirty light to redraw
+                light->LastFrameUpdated = 0;
             }
         }
     }
@@ -265,12 +286,20 @@ bool GlobalSurfaceAtlasPass::setupResources()
         if (_psClear->Init(psDesc))
             return true;
     }
+    psDesc.DepthTestEnable = false;
+    psDesc.DepthWriteEnable = false;
+    psDesc.DepthFunc = ComparisonFunc::Never;
+    if (!_psClearLighting)
+    {
+        _psClearLighting = device->CreatePipelineState();
+        psDesc.VS = shader->GetVS("VS_Atlas");
+        psDesc.PS = shader->GetPS("PS_ClearLighting");
+        if (_psClearLighting->Init(psDesc))
+            return true;
+    }
     if (!_psDirectLighting0)
     {
         _psDirectLighting0 = device->CreatePipelineState();
-        psDesc.DepthTestEnable = false;
-        psDesc.DepthWriteEnable = false;
-        psDesc.DepthFunc = ComparisonFunc::Never;
         psDesc.BlendMode = BlendingMode::Add;
         psDesc.BlendMode.RenderTargetWriteMask = BlendingMode::ColorWrite::RGB;
         psDesc.PS = shader->GetPS("PS_Lighting", 0);
@@ -294,6 +323,7 @@ bool GlobalSurfaceAtlasPass::setupResources()
 void GlobalSurfaceAtlasPass::OnShaderReloading(Asset* obj)
 {
     SAFE_DELETE_GPU_RESOURCE(_psClear);
+    SAFE_DELETE_GPU_RESOURCE(_psClearLighting);
     SAFE_DELETE_GPU_RESOURCE(_psDirectLighting0);
     SAFE_DELETE_GPU_RESOURCE(_psDirectLighting1);
     SAFE_DELETE_GPU_RESOURCE(_psIndirectLighting);
@@ -309,9 +339,9 @@ void GlobalSurfaceAtlasPass::Dispose()
 
     // Cleanup
     SAFE_DELETE(_vertexBuffer);
-    SAFE_DELETE(_objectsBuffer);
     SAFE_DELETE_GPU_RESOURCE(_culledObjectsSizeBuffer);
     SAFE_DELETE_GPU_RESOURCE(_psClear);
+    SAFE_DELETE_GPU_RESOURCE(_psClearLighting);
     SAFE_DELETE_GPU_RESOURCE(_psDirectLighting0);
     SAFE_DELETE_GPU_RESOURCE(_psDirectLighting1);
     SAFE_DELETE_GPU_RESOURCE(_psIndirectLighting);
@@ -345,8 +375,9 @@ bool GlobalSurfaceAtlasPass::Render(RenderContext& renderContext, GPUContext* co
     PROFILE_GPU_CPU("Global Surface Atlas");
 
     // Setup options
-    const int32 resolution = Math::Clamp(Graphics::GlobalSurfaceAtlasResolution, 256, GPU_MAX_TEXTURE_SIZE);
-    const float resolutionInv = 1.0f / resolution;
+    auto* graphicsSettings = GraphicsSettings::Get();
+    const int32 resolution = Math::Clamp(graphicsSettings->GlobalSurfaceAtlasResolution, 256, GPU_MAX_TEXTURE_SIZE);
+    const float resolutionInv = 1.0f / (float)resolution;
     auto& giSettings = renderContext.List->Settings.GlobalIllumination;
     const float distance = giSettings.Distance;
 
@@ -394,8 +425,6 @@ bool GlobalSurfaceAtlasPass::Render(RenderContext& renderContext, GPUContext* co
         surfaceAtlasData.AtlasTiles = New<GlobalSurfaceAtlasTile>(0, 0, resolution, resolution);
     if (!_vertexBuffer)
         _vertexBuffer = New<DynamicVertexBuffer>(0u, (uint32)sizeof(AtlasTileVertex), TEXT("GlobalSurfaceAtlas.VertexBuffer"));
-    if (!_objectsBuffer)
-        _objectsBuffer = New<DynamicTypedBuffer>(256 * (GLOBAL_SURFACE_ATLAS_OBJECT_DATA_STRIDE + GLOBAL_SURFACE_ATLAS_TILE_DATA_STRIDE * 3 / 4), PixelFormat::R32G32B32A32_Float, false, TEXT("GlobalSurfaceAtlas.ObjectsBuffer"));
 
     // Utility for writing into tiles vertex buffer
     const Float2 posToClipMul(2.0f * resolutionInv, -2.0f * resolutionInv);
@@ -430,7 +459,7 @@ bool GlobalSurfaceAtlasPass::Render(RenderContext& renderContext, GPUContext* co
     // Add objects into the atlas
     {
         PROFILE_CPU_NAMED("Draw");
-        _objectsBuffer->Clear();
+        surfaceAtlasData.ObjectsBuffer.Clear();
         _dirtyObjectsBuffer.Clear();
         _surfaceAtlasData = &surfaceAtlasData;
         renderContext.View.Pass = DrawPass::GlobalSurfaceAtlas;
@@ -589,7 +618,7 @@ bool GlobalSurfaceAtlasPass::Render(RenderContext& renderContext, GPUContext* co
     // Send objects data to the GPU
     {
         PROFILE_GPU_CPU("Update Objects");
-        _objectsBuffer->Flush(context);
+        surfaceAtlasData.ObjectsBuffer.Flush(context);
     }
 
     // Init constants
@@ -607,10 +636,10 @@ bool GlobalSurfaceAtlasPass::Render(RenderContext& renderContext, GPUContext* co
         // Each chunk (ChunksBuffer) contains uint with address of the culled objects data start in CulledObjectsBuffer.
         // If chunk has address=0 then it's unused/empty.
         // Chunk [0,0,0] is unused and it's address=0 is used for atomic counter for writing into CulledObjectsBuffer.
-        // Each chunk data contains objects count + all objects with tiles copied into buffer.
-        // This allows to quickly convert world-space position into chunk, then read chunk data start and loop over culled objects (less objects and data already in place).
+        // Each chunk data contains objects count + all objects addresses.
+        // This allows to quickly convert world-space position into chunk, then read chunk data start and loop over culled objects.
         PROFILE_GPU_CPU("Cull Objects");
-        uint32 objectsBufferCapacity = (uint32)((float)_objectsBuffer->Data.Count() * 1.3f);
+        uint32 objectsBufferCapacity = (uint32)((float)surfaceAtlasData.Objects.Count() * 1.3f);
 
         // Copy counter from ChunksBuffer into staging buffer to access current chunks memory usage to adapt dynamically to the scene complexity
         if (surfaceAtlasData.ChunksBuffer)
@@ -634,7 +663,7 @@ bool GlobalSurfaceAtlasPass::Render(RenderContext& renderContext, GPUContext* co
                     _culledObjectsSizeBuffer->Unmap();
                     if (counter > 0)
                     {
-                        objectsBufferCapacity = counter * sizeof(Float4);
+                        objectsBufferCapacity = counter;
                         notReady = false;
                     }
                 }
@@ -652,28 +681,28 @@ bool GlobalSurfaceAtlasPass::Render(RenderContext& renderContext, GPUContext* co
                     }
                 }
             }
-            if (surfaceAtlasData.CulledObjectsCounterIndex != -1)
+            if (surfaceAtlasData.CulledObjectsCounterIndex != -1 && surfaceAtlasData.CulledObjectsBuffer)
             {
                 // Copy current counter value
                 _culledObjectsSizeFrames[surfaceAtlasData.CulledObjectsCounterIndex] = currentFrame;
-                context->CopyBuffer(_culledObjectsSizeBuffer, surfaceAtlasData.ChunksBuffer, sizeof(uint32), surfaceAtlasData.CulledObjectsCounterIndex * sizeof(uint32), 0);
+                context->CopyBuffer(_culledObjectsSizeBuffer, surfaceAtlasData.CulledObjectsBuffer, sizeof(uint32), surfaceAtlasData.CulledObjectsCounterIndex * sizeof(uint32), 0);
             }
         }
 
         // Allocate buffer for culled objects (estimated size)
-        objectsBufferCapacity = Math::Min(Math::AlignUp(objectsBufferCapacity, 4096u), (uint32)MAX_int32);
+        objectsBufferCapacity = Math::Min(Math::AlignUp<uint32>(objectsBufferCapacity * sizeof(uint32), 4096u), (uint32)MAX_int32);
         if (!surfaceAtlasData.CulledObjectsBuffer)
             surfaceAtlasData.CulledObjectsBuffer = GPUDevice::Instance->CreateBuffer(TEXT("GlobalSurfaceAtlas.CulledObjectsBuffer"));
         if (surfaceAtlasData.CulledObjectsBuffer->GetSize() < objectsBufferCapacity)
         {
-            const GPUBufferDescription desc = GPUBufferDescription::Buffer(objectsBufferCapacity, GPUBufferFlags::UnorderedAccess | GPUBufferFlags::ShaderResource, PixelFormat::R32G32B32A32_Float, nullptr, sizeof(Float4));
+            const auto desc = GPUBufferDescription::Raw(objectsBufferCapacity, GPUBufferFlags::UnorderedAccess | GPUBufferFlags::ShaderResource);
             if (surfaceAtlasData.CulledObjectsBuffer->Init(desc))
                 return true;
         }
 
-        // Clear chunks counter (chunk at 0 is used for a counter so chunks buffer is aligned)
-        uint32 counter = 1; // Indicate that 1st float4 is used so value 0 can be used as invalid chunk address
-        context->UpdateBuffer(surfaceAtlasData.ChunksBuffer, &counter, sizeof(counter), 0);
+        // Clear chunks counter (uint at 0 is used for a counter)
+        uint32 counter = 1; // Move write location for culled objects after counter
+        context->UpdateBuffer(surfaceAtlasData.CulledObjectsBuffer, &counter, sizeof(counter), 0);
 
         // Cull objects into chunks (1 thread per chunk)
         Data0 data;
@@ -686,7 +715,7 @@ bool GlobalSurfaceAtlasPass::Render(RenderContext& renderContext, GPUContext* co
         context->BindCB(0, _cb0);
         static_assert(GLOBAL_SURFACE_ATLAS_CHUNKS_RESOLUTION % GLOBAL_SURFACE_ATLAS_CHUNKS_GROUP_SIZE == 0, "Invalid chunks resolution/groups setting.");
         const int32 chunkDispatchGroups = GLOBAL_SURFACE_ATLAS_CHUNKS_RESOLUTION / GLOBAL_SURFACE_ATLAS_CHUNKS_GROUP_SIZE;
-        context->BindSR(0, _objectsBuffer->GetBuffer()->View());
+        context->BindSR(0, surfaceAtlasData.ObjectsBuffer.GetBuffer()->View());
         context->BindUA(0, surfaceAtlasData.ChunksBuffer->View());
         context->BindUA(1, surfaceAtlasData.CulledObjectsBuffer->View());
         context->Dispatch(_csCullObjects, chunkDispatchGroups, chunkDispatchGroups, chunkDispatchGroups);
@@ -700,11 +729,11 @@ bool GlobalSurfaceAtlasPass::Render(RenderContext& renderContext, GPUContext* co
             {
                 for (int32 x = 0; x < GLOBAL_SURFACE_ATLAS_CHUNKS_RESOLUTION; x++)
                 {
-                    Float3 chunkCoord(x, y, z);
-                    Float3 chunkMin = result.GlobalSurfaceAtlas.ViewPos + (chunkCoord - (GLOBAL_SURFACE_ATLAS_CHUNKS_RESOLUTION * 0.5f)) * result.GlobalSurfaceAtlas.ChunkSize;
-                    Float3 chunkMax = chunkMin + result.GlobalSurfaceAtlas.ChunkSize;
+                    Float3 chunkCoord((float)x, (float)y, (float)z);
+                    Float3 chunkMin = result.Constants.ViewPos + (chunkCoord - (GLOBAL_SURFACE_ATLAS_CHUNKS_RESOLUTION * 0.5f)) * result.Constants.ChunkSize;
+                    Float3 chunkMax = chunkMin + result.Constants.ChunkSize;
                     BoundingBox chunkBounds(chunkMin, chunkMax);
-                    if (Float3::Distance(chunkBounds.GetCenter(), result.GlobalSurfaceAtlas.ViewPos) >= 2000.0f)
+                    if (Float3::Distance(chunkBounds.GetCenter(), result.Constants.ViewPos) >= 2000.0f)
                         continue;
 
                     int32 count = 0;
@@ -733,37 +762,136 @@ bool GlobalSurfaceAtlasPass::Render(RenderContext& renderContext, GPUContext* co
     result.Atlas[4] = surfaceAtlasData.AtlasLighting;
     result.Chunks = surfaceAtlasData.ChunksBuffer;
     result.CulledObjects = surfaceAtlasData.CulledObjectsBuffer;
+    result.Objects = surfaceAtlasData.ObjectsBuffer.GetBuffer();
     surfaceAtlasData.Result = result;
 
     // Render direct lighting into atlas
     if (surfaceAtlasData.Objects.Count() != 0)
     {
         PROFILE_GPU_CPU("Direct Lighting");
-
-        // Copy emissive light into the final direct lighting atlas
-        // TODO: test perf diff when manually copying only dirty object tiles and dirty light tiles together with indirect lighting
-        {
-            PROFILE_GPU_CPU("Copy Emissive");
-            context->CopyTexture(surfaceAtlasData.AtlasLighting, 0, 0, 0, 0, surfaceAtlasData.AtlasEmissive, 0);
-        }
-
         context->SetViewportAndScissors(Viewport(0, 0, (float)resolution, (float)resolution));
         context->SetRenderTarget(surfaceAtlasData.AtlasLighting->View());
         context->BindSR(0, surfaceAtlasData.AtlasGBuffer0->View());
         context->BindSR(1, surfaceAtlasData.AtlasGBuffer1->View());
         context->BindSR(2, surfaceAtlasData.AtlasGBuffer2->View());
         context->BindSR(3, surfaceAtlasData.AtlasDepth->View());
-        context->BindSR(4, _objectsBuffer->GetBuffer()->View());
-        bindingDataSDF.BindCascades(context, 5);
-        bindingDataSDF.BindCascadeMips(context, 9);
+        context->BindSR(4, surfaceAtlasData.ObjectsBuffer.GetBuffer()->View());
+        context->BindSR(5, bindingDataSDF.Texture ? bindingDataSDF.Texture->ViewVolume() : nullptr);
+        context->BindSR(6, bindingDataSDF.TextureMip ? bindingDataSDF.TextureMip->ViewVolume() : nullptr);
         context->BindCB(0, _cb0);
         Data0 data;
         data.ViewWorldPos = renderContext.View.Position;
         data.GlobalSDF = bindingDataSDF.Constants;
         data.GlobalSurfaceAtlas = result.Constants;
 
+        // Collect objects to update lighting this frame (dirty objects and dirty lights)
+        bool allLightingDirty = false;
+        for (auto& light : renderContext.List->DirectionalLights)
+        {
+            GlobalSurfaceAtlasLight& lightData = surfaceAtlasData.Lights[light.ID];
+            lightData.LastFrameUsed = currentFrame;
+            uint32 redrawFramesCount = (light.StaticFlags & StaticFlags::Lightmap) ? 120 : 4;
+            if (surfaceAtlasData.CurrentFrame - lightData.LastFrameUpdated < (redrawFramesCount + (light.ID.D & redrawFramesCount)))
+                continue;
+            lightData.LastFrameUpdated = currentFrame;
+
+            // Mark all objects to shade
+            allLightingDirty = true;
+        }
+        if (renderContext.View.Flags & ViewFlags::GI && (renderContext.List->DirectionalLights.Count() != 1 || renderContext.List->DirectionalLights[0].StaticFlags & StaticFlags::Lightmap))
+        {
+            switch (renderContext.List->Settings.GlobalIllumination.Mode)
+            {
+            case GlobalIlluminationMode::DDGI:
+            {
+                DynamicDiffuseGlobalIlluminationPass::BindingData bindingDataDDGI;
+                if (!DynamicDiffuseGlobalIlluminationPass::Instance()->Get(renderContext.Buffers, bindingDataDDGI))
+                {
+                    GlobalSurfaceAtlasLight& lightData = surfaceAtlasData.Lights[Guid(0, 0, 0, 1)];
+                    lightData.LastFrameUsed = currentFrame;
+                    uint32 redrawFramesCount = 4; // GI Bounce redraw minimum frequency
+                    if (surfaceAtlasData.CurrentFrame - lightData.LastFrameUpdated < redrawFramesCount)
+                        break;
+                    lightData.LastFrameUpdated = currentFrame;
+
+                    // Mark all objects to shade
+                    allLightingDirty = true;
+                }
+                break;
+            }
+            }
+        }
+        for (auto& light : renderContext.List->PointLights)
+        {
+            GlobalSurfaceAtlasLight& lightData = surfaceAtlasData.Lights[light.ID];
+            lightData.LastFrameUsed = currentFrame;
+            uint32 redrawFramesCount = (light.StaticFlags & StaticFlags::Lightmap) ? 120 : 4;
+            if (surfaceAtlasData.CurrentFrame - lightData.LastFrameUpdated < (redrawFramesCount + (light.ID.D & redrawFramesCount)))
+                continue;
+            lightData.LastFrameUpdated = currentFrame;
+
+            if (!allLightingDirty)
+            {
+                // Mark objects to shade
+                for (auto& e : surfaceAtlasData.Objects)
+                {
+                    auto& object = e.Value;
+                    Float3 lightToObject = object.Bounds.GetCenter() - light.Position;
+                    if (lightToObject.LengthSquared() >= Math::Square(object.Radius + light.Radius))
+                        continue;
+                    object.LightingUpdateFrame = currentFrame;
+                }
+            }
+        }
+        for (auto& light : renderContext.List->SpotLights)
+        {
+            GlobalSurfaceAtlasLight& lightData = surfaceAtlasData.Lights[light.ID];
+            lightData.LastFrameUsed = currentFrame;
+            uint32 redrawFramesCount = (light.StaticFlags & StaticFlags::Lightmap) ? 120 : 4;
+            if (surfaceAtlasData.CurrentFrame - lightData.LastFrameUpdated < (redrawFramesCount + (light.ID.D & redrawFramesCount)))
+                continue;
+            lightData.LastFrameUpdated = currentFrame;
+
+            if (!allLightingDirty)
+            {
+                // Mark objects to shade
+                for (auto& e : surfaceAtlasData.Objects)
+                {
+                    auto& object = e.Value;
+                    Float3 lightToObject = object.Bounds.GetCenter() - light.Position;
+                    if (lightToObject.LengthSquared() >= Math::Square(object.Radius + light.Radius))
+                        continue;
+                    object.LightingUpdateFrame = currentFrame;
+                }
+            }
+        }
+
+        // Copy emissive light into the final direct lighting atlas
+        {
+            PROFILE_GPU_CPU("Copy Emissive");
+            _vertexBuffer->Clear();
+            for (const auto& e : surfaceAtlasData.Objects)
+            {
+                const auto& object = e.Value;
+                if (!allLightingDirty && object.LightingUpdateFrame != currentFrame)
+                    continue;
+                for (int32 tileIndex = 0; tileIndex < 6; tileIndex++)
+                {
+                    auto* tile = object.Tiles[tileIndex];
+                    if (!tile)
+                        continue;
+                    VB_WRITE_TILE(tile);
+                }
+            }
+            if (_vertexBuffer->Data.Count() != 0)
+            {
+                context->BindSR(7, surfaceAtlasData.AtlasEmissive);
+                context->SetState(_psClearLighting);
+                VB_DRAW();
+            }
+        }
+
         // Shade object tiles influenced by lights to calculate direct lighting
-        // TODO: reduce redraw frequency for static lights (StaticFlags::Lightmap)
         for (auto& light : renderContext.List->DirectionalLights)
         {
             // Collect tiles to shade
@@ -771,6 +899,8 @@ bool GlobalSurfaceAtlasPass::Render(RenderContext& renderContext, GPUContext* co
             for (const auto& e : surfaceAtlasData.Objects)
             {
                 const auto& object = e.Value;
+                if (!allLightingDirty && object.LightingUpdateFrame != currentFrame)
+                    continue;
                 for (int32 tileIndex = 0; tileIndex < 6; tileIndex++)
                 {
                     auto* tile = object.Tiles[tileIndex];
@@ -779,8 +909,11 @@ bool GlobalSurfaceAtlasPass::Render(RenderContext& renderContext, GPUContext* co
                     VB_WRITE_TILE(tile);
                 }
             }
+            if (_vertexBuffer->Data.Count() == 0)
+                continue;
 
             // Draw draw light
+            PROFILE_GPU_CPU("Directional Light");
             const bool useShadow = CanRenderShadow(renderContext.View, light);
             // TODO: test perf/quality when using Shadow Map for directional light (ShadowsPass::Instance()->LastDirLightShadowMap) instead of Global SDF trace
             light.SetupLightData(&data.Light, useShadow);
@@ -797,6 +930,8 @@ bool GlobalSurfaceAtlasPass::Render(RenderContext& renderContext, GPUContext* co
             for (const auto& e : surfaceAtlasData.Objects)
             {
                 const auto& object = e.Value;
+                if (!allLightingDirty && object.LightingUpdateFrame != currentFrame)
+                    continue;
                 Float3 lightToObject = object.Bounds.GetCenter() - light.Position;
                 if (lightToObject.LengthSquared() >= Math::Square(object.Radius + light.Radius))
                     continue;
@@ -808,8 +943,11 @@ bool GlobalSurfaceAtlasPass::Render(RenderContext& renderContext, GPUContext* co
                     VB_WRITE_TILE(tile);
                 }
             }
+            if (_vertexBuffer->Data.Count() == 0)
+                continue;
 
             // Draw draw light
+            PROFILE_GPU_CPU("Point Light");
             const bool useShadow = CanRenderShadow(renderContext.View, light);
             light.SetupLightData(&data.Light, useShadow);
             data.Light.Color *= light.IndirectLightingIntensity;
@@ -825,6 +963,8 @@ bool GlobalSurfaceAtlasPass::Render(RenderContext& renderContext, GPUContext* co
             for (const auto& e : surfaceAtlasData.Objects)
             {
                 const auto& object = e.Value;
+                if (!allLightingDirty && object.LightingUpdateFrame != currentFrame)
+                    continue;
                 Float3 lightToObject = object.Bounds.GetCenter() - light.Position;
                 if (lightToObject.LengthSquared() >= Math::Square(object.Radius + light.Radius))
                     continue;
@@ -836,8 +976,11 @@ bool GlobalSurfaceAtlasPass::Render(RenderContext& renderContext, GPUContext* co
                     VB_WRITE_TILE(tile);
                 }
             }
+            if (_vertexBuffer->Data.Count() == 0)
+                continue;
 
             // Draw draw light
+            PROFILE_GPU_CPU("Spot Light");
             const bool useShadow = CanRenderShadow(renderContext.View, light);
             light.SetupLightData(&data.Light, useShadow);
             data.Light.Color *= light.IndirectLightingIntensity;
@@ -846,9 +989,17 @@ bool GlobalSurfaceAtlasPass::Render(RenderContext& renderContext, GPUContext* co
             context->SetState(_psDirectLighting1);
             VB_DRAW();
         }
+
+        // Remove unused lights
+        for (auto it = surfaceAtlasData.Lights.Begin(); it.IsNotEnd(); ++it)
+        {
+            if (it->Value.LastFrameUsed != currentFrame)
+                surfaceAtlasData.Lights.Remove(it);
+        }
+
+        // Draw draw indirect light from Global Illumination
         if (renderContext.View.Flags & ViewFlags::GI)
         {
-            // Draw draw indirect light from Global Illumination
             switch (renderContext.List->Settings.GlobalIllumination.Mode)
             {
             case GlobalIlluminationMode::DDGI:
@@ -860,6 +1011,8 @@ bool GlobalSurfaceAtlasPass::Render(RenderContext& renderContext, GPUContext* co
                     for (const auto& e : surfaceAtlasData.Objects)
                     {
                         const auto& object = e.Value;
+                        if (!allLightingDirty && object.LightingUpdateFrame != currentFrame)
+                            continue;
                         for (int32 tileIndex = 0; tileIndex < 6; tileIndex++)
                         {
                             auto* tile = object.Tiles[tileIndex];
@@ -868,6 +1021,9 @@ bool GlobalSurfaceAtlasPass::Render(RenderContext& renderContext, GPUContext* co
                             VB_WRITE_TILE(tile);
                         }
                     }
+                    if (_vertexBuffer->Data.Count() == 0)
+                        break;
+                    PROFILE_GPU_CPU("DDGI");
                     data.DDGI = bindingDataDDGI.Constants;
                     context->BindSR(5, bindingDataDDGI.ProbesState);
                     context->BindSR(6, bindingDataDDGI.ProbesDistance);
@@ -927,12 +1083,13 @@ void GlobalSurfaceAtlasPass::RenderDebug(RenderContext& renderContext, GPUContex
         context->UpdateCB(_cb0, &data);
         context->BindCB(0, _cb0);
     }
-    bindingDataSDF.BindCascades(context, 0);
-    bindingDataSDF.BindCascadeMips(context, 4);
-    context->BindSR(8, bindingData.Chunks ? bindingData.Chunks->View() : nullptr);
-    context->BindSR(9, bindingData.CulledObjects ? bindingData.CulledObjects->View() : nullptr);
-    context->BindSR(10, bindingData.AtlasDepth->View());
-    context->BindSR(12, skybox);
+    context->BindSR(0, bindingDataSDF.Texture ? bindingDataSDF.Texture->ViewVolume() : nullptr);
+    context->BindSR(1, bindingDataSDF.TextureMip ? bindingDataSDF.TextureMip->ViewVolume() : nullptr);
+    context->BindSR(2, bindingData.Chunks ? bindingData.Chunks->View() : nullptr);
+    context->BindSR(3, bindingData.CulledObjects ? bindingData.CulledObjects->View() : nullptr);
+    context->BindSR(4, bindingData.Objects ? bindingData.Objects->View() : nullptr);
+    context->BindSR(6, bindingData.AtlasDepth->View());
+    context->BindSR(7, skybox);
     context->SetState(_psDebug);
     {
         Float2 outputSizeThird = outputSize * 0.333f;
@@ -943,7 +1100,7 @@ void GlobalSurfaceAtlasPass::RenderDebug(RenderContext& renderContext, GPUContex
         context->SetRenderTarget(tempBuffer->View());
 
         // Full screen - direct light
-        context->BindSR(11, bindingData.AtlasLighting->View());
+        context->BindSR(5, bindingData.AtlasLighting->View());
         context->SetViewport(outputSize.X, outputSize.Y);
         context->SetScissor(Rectangle(0, 0, outputSizeTwoThird.X, outputSize.Y));
         context->DrawFullscreenTriangle();
@@ -957,12 +1114,13 @@ void GlobalSurfaceAtlasPass::RenderDebug(RenderContext& renderContext, GPUContex
         context->ResetRenderTarget();
 
         // Rebind resources
-        bindingDataSDF.BindCascades(context, 0);
-        bindingDataSDF.BindCascadeMips(context, 4);
-        context->BindSR(8, bindingData.Chunks ? bindingData.Chunks->View() : nullptr);
-        context->BindSR(9, bindingData.CulledObjects ? bindingData.CulledObjects->View() : nullptr);
-        context->BindSR(10, bindingData.AtlasDepth->View());
-        context->BindSR(12, skybox);
+        context->BindSR(0, bindingDataSDF.Texture ? bindingDataSDF.Texture->ViewVolume() : nullptr);
+        context->BindSR(1, bindingDataSDF.TextureMip ? bindingDataSDF.TextureMip->ViewVolume() : nullptr);
+        context->BindSR(2, bindingData.Chunks ? bindingData.Chunks->View() : nullptr);
+        context->BindSR(3, bindingData.CulledObjects ? bindingData.CulledObjects->View() : nullptr);
+        context->BindSR(4, bindingData.Objects ? bindingData.Objects->View() : nullptr);
+        context->BindSR(6, bindingData.AtlasDepth->View());
+        context->BindSR(7, skybox);
         context->BindCB(0, _cb0);
         context->SetState(_psDebug);
         context->SetRenderTarget(output->View());
@@ -972,23 +1130,23 @@ void GlobalSurfaceAtlasPass::RenderDebug(RenderContext& renderContext, GPUContex
         context->UpdateCB(_cb0, &data);
 
         // Bottom left - diffuse
-        context->BindSR(11, bindingData.AtlasGBuffer0->View());
+        context->BindSR(5, bindingData.AtlasGBuffer0->View());
         context->SetViewportAndScissors(Viewport(outputSizeTwoThird.X, 0, outputSizeThird.X, outputSizeThird.Y));
         context->DrawFullscreenTriangle();
 
         // Bottom middle - normals
-        context->BindSR(11, bindingData.AtlasGBuffer1->View());
+        context->BindSR(5, bindingData.AtlasGBuffer1->View());
         context->SetViewportAndScissors(Viewport(outputSizeTwoThird.X, outputSizeThird.Y, outputSizeThird.X, outputSizeThird.Y));
         context->DrawFullscreenTriangle();
 
         // Bottom right - roughness/metalness/ao
-        context->BindSR(11, bindingData.AtlasGBuffer2->View());
+        context->BindSR(5, bindingData.AtlasGBuffer2->View());
         context->SetViewportAndScissors(Viewport(outputSizeTwoThird.X, outputSizeTwoThird.Y, outputSizeThird.X, outputSizeThird.Y));
         context->DrawFullscreenTriangle();
     }
 }
 
-void GlobalSurfaceAtlasPass::RasterizeActor(Actor* actor, void* actorObject, const BoundingSphere& actorObjectBounds, const Matrix& localToWorld, const BoundingBox& localBounds, uint32 tilesMask)
+void GlobalSurfaceAtlasPass::RasterizeActor(Actor* actor, void* actorObject, const BoundingSphere& actorObjectBounds, const Matrix& localToWorld, const BoundingBox& localBounds, uint32 tilesMask, bool useVisibility)
 {
     GlobalSurfaceAtlasCustomBuffer& surfaceAtlasData = *_surfaceAtlasData;
     Float3 boundsSize = localBounds.GetSize() * actor->GetScale();
@@ -1058,7 +1216,7 @@ void GlobalSurfaceAtlasPass::RasterizeActor(Actor* actor, void* actorObject, con
 
     // Redraw objects from time-to-time (dynamic objects can be animated, static objects can have textures streamed)
     uint32 redrawFramesCount = actor->HasStaticFlag(StaticFlags::Lightmap) ? 120 : 4;
-    if (surfaceAtlasData.CurrentFrame - object->LastFrameDirty >= (redrawFramesCount + (actor->GetID().D & redrawFramesCount)))
+    if (surfaceAtlasData.CurrentFrame - object->LastFrameUpdated >= (redrawFramesCount + (actor->GetID().D & redrawFramesCount)))
         dirty = true;
 
     // Mark object as used
@@ -1069,7 +1227,8 @@ void GlobalSurfaceAtlasPass::RasterizeActor(Actor* actor, void* actorObject, con
     object->Radius = (float)actorObjectBounds.Radius;
     if (dirty || GLOBAL_SURFACE_ATLAS_DEBUG_FORCE_REDRAW_TILES)
     {
-        object->LastFrameDirty = surfaceAtlasData.CurrentFrame;
+        object->LastFrameUpdated = surfaceAtlasData.CurrentFrame;
+        object->LightingUpdateFrame = surfaceAtlasData.CurrentFrame;
         _dirtyObjectsBuffer.Add(actorObject);
     }
 
@@ -1078,14 +1237,14 @@ void GlobalSurfaceAtlasPass::RasterizeActor(Actor* actor, void* actorObject, con
     object->Bounds.Transformation.GetWorld(localToWorldBounds);
     Matrix worldToLocalBounds;
     Matrix::Invert(localToWorldBounds, worldToLocalBounds);
-    uint32 objectAddress = _objectsBuffer->Data.Count() / sizeof(Float4);
-    auto* objectData = _objectsBuffer->WriteReserve<Float4>(GLOBAL_SURFACE_ATLAS_OBJECT_DATA_STRIDE);
+    uint32 objectAddress = surfaceAtlasData.ObjectsBuffer.Data.Count() / sizeof(Float4);
+    auto* objectData = surfaceAtlasData.ObjectsBuffer.WriteReserve<Float4>(GLOBAL_SURFACE_ATLAS_OBJECT_DATA_STRIDE);
     objectData[0] = *(Float4*)&actorObjectBounds;
-    objectData[1] = Float4::Zero; // w unused
+    objectData[1] = Float4::Zero;
     objectData[2] = Float4(worldToLocalBounds.M11, worldToLocalBounds.M12, worldToLocalBounds.M13, worldToLocalBounds.M41);
     objectData[3] = Float4(worldToLocalBounds.M21, worldToLocalBounds.M22, worldToLocalBounds.M23, worldToLocalBounds.M42);
     objectData[4] = Float4(worldToLocalBounds.M31, worldToLocalBounds.M32, worldToLocalBounds.M33, worldToLocalBounds.M43);
-    objectData[5] = Float4(object->Bounds.Extents, 0.0f); // w unused
+    objectData[5] = Float4(object->Bounds.Extents, useVisibility ? 1.0f : 0.0f);
     auto tileOffsets = reinterpret_cast<uint16*>(&objectData[1]); // xyz used for tile offsets packed into uint16
     auto objectDataSize = reinterpret_cast<uint32*>(&objectData[1].W); // w used for object size (count of Float4s for object+tiles)
     *objectDataSize = GLOBAL_SURFACE_ATLAS_OBJECT_DATA_STRIDE;
@@ -1130,7 +1289,7 @@ void GlobalSurfaceAtlasPass::RasterizeActor(Actor* actor, void* actorObject, con
         // Per-tile data
         const float tileWidth = (float)tile->Width - GLOBAL_SURFACE_ATLAS_TILE_PADDING;
         const float tileHeight = (float)tile->Height - GLOBAL_SURFACE_ATLAS_TILE_PADDING;
-        auto* tileData = _objectsBuffer->WriteReserve<Float4>(GLOBAL_SURFACE_ATLAS_TILE_DATA_STRIDE);
+        auto* tileData = surfaceAtlasData.ObjectsBuffer.WriteReserve<Float4>(GLOBAL_SURFACE_ATLAS_TILE_DATA_STRIDE);
         tileData[0] = Float4(tile->X, tile->Y, tileWidth, tileHeight) * surfaceAtlasData.ResolutionInv;
         tileData[1] = Float4(tile->ViewMatrix.M11, tile->ViewMatrix.M12, tile->ViewMatrix.M13, tile->ViewMatrix.M41);
         tileData[2] = Float4(tile->ViewMatrix.M21, tile->ViewMatrix.M22, tile->ViewMatrix.M23, tile->ViewMatrix.M42);

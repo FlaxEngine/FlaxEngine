@@ -10,26 +10,26 @@
 
 // Set default macros if not provided
 #ifndef SHADOWS_QUALITY
-	#define SHADOWS_QUALITY 0
+#define SHADOWS_QUALITY 0
 #endif
 #ifndef CSM_BLENDING
-	#define CSM_BLENDING 0
+#define CSM_BLENDING 0
 #endif
 
 // Structure that contains information about light
 struct LightShadowData
 {
-	float2 ShadowMapSize;
-	float Sharpness;
-	float Fade;
+    float2 ShadowMapSize;
+    float Sharpness;
+    float Fade;
 
-	float NormalOffsetScale;
-	float Bias;
-	float FadeDistance;
-	uint NumCascades;
+    float NormalOffsetScale;
+    float Bias;
+    float FadeDistance;
+    uint NumCascades;
 
-	float4 CascadeSplits;
-	float4x4 ShadowVP[6];
+    float4 CascadeSplits;
+    float4x4 ShadowVP[6];
 };
 
 #ifdef PLATFORM_ANDROID
@@ -41,15 +41,15 @@ struct LightShadowData
 
 float3 GetShadowPositionOffset(float offsetScale, float NoL, float3 normal)
 {
-	float normalOffsetScale = saturate(1.0f - NoL);
-	return normal * (offsetScale * normalOffsetScale);
+    float normalOffsetScale = saturate(1.0f - NoL);
+    return normal * (offsetScale * normalOffsetScale);
 }
 
 float CalculateSubsurfaceOcclusion(float opacity, float sceneDepth, float shadowMapDepth)
 {
-	float thickness = max(sceneDepth - shadowMapDepth, 0);
-	float occlusion = 1 - thickness * lerp(1.0f, 100.0f, opacity);
-	return shadowMapDepth > 0.99f ? 1 : occlusion;
+    float thickness = max(sceneDepth - shadowMapDepth, 0);
+    float occlusion = 1 - thickness * lerp(1.0f, 100.0f, opacity);
+    return shadowMapDepth > 0.99f ? 1 : occlusion;
 }
 
 #endif

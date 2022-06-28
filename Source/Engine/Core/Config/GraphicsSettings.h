@@ -90,6 +90,12 @@ public:
     Quality GIQuality = Quality::High;
 
     /// <summary>
+    /// The Global Illumination probes spacing distance (in world units). Defines the quality of the GI resolution. Adjust to 200-500 to improve performance and lower frequency GI data.
+    /// </summary>
+    API_FIELD(Attributes="EditorOrder(2120), Limit(50, 1000), EditorDisplay(\"Global Illumination\")")
+    float GIProbesSpacing = 100;
+
+    /// <summary>
     /// The Global Surface Atlas resolution. Adjust it if atlas `flickers` due to overflow (eg. to 4096).
     /// </summary>
     API_FIELD(Attributes="EditorOrder(2130), Limit(256, 8192), EditorDisplay(\"Global Illumination\")")
