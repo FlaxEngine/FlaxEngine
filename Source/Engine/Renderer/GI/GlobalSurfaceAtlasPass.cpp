@@ -1240,7 +1240,7 @@ void GlobalSurfaceAtlasPass::RasterizeActor(Actor* actor, void* actorObject, con
     uint32 objectAddress = surfaceAtlasData.ObjectsBuffer.Data.Count() / sizeof(Float4);
     auto* objectData = surfaceAtlasData.ObjectsBuffer.WriteReserve<Float4>(GLOBAL_SURFACE_ATLAS_OBJECT_DATA_STRIDE);
     objectData[0] = *(Float4*)&actorObjectBounds;
-    objectData[1] = Float4::Zero; // w unused
+    objectData[1] = Float4::Zero;
     objectData[2] = Float4(worldToLocalBounds.M11, worldToLocalBounds.M12, worldToLocalBounds.M13, worldToLocalBounds.M41);
     objectData[3] = Float4(worldToLocalBounds.M21, worldToLocalBounds.M22, worldToLocalBounds.M23, worldToLocalBounds.M42);
     objectData[4] = Float4(worldToLocalBounds.M31, worldToLocalBounds.M32, worldToLocalBounds.M33, worldToLocalBounds.M43);
