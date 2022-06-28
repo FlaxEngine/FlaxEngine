@@ -63,7 +63,6 @@ public:
     /// <summary>
     /// Gets the radius.
     /// </summary>
-    /// <returns>The value.</returns>
     API_PROPERTY(Attributes="EditorOrder(29), DefaultValue(1000000.0f), Limit(0), EditorDisplay(\"Light\")")
     FORCE_INLINE float GetRadius() const
     {
@@ -73,8 +72,7 @@ public:
     /// <summary>
     /// Sets the radius.
     /// </summary>
-    /// <param name="value">The value.</param>
-    void SetRadius(float value);
+    API_PROPERTY() void SetRadius(float value);
 
     /// <summary>
     /// Gets the scaled radius of the sky light.
@@ -84,15 +82,7 @@ public:
     /// <summary>
     /// Gets the light source texture.
     /// </summary>
-    /// <returns>The cube texture.</returns>
-    CubeTexture* GetSource() const
-    {
-        if (Mode == Modes::CaptureScene)
-            return _bakedProbe;
-        if (Mode == Modes::CustomTexture)
-            return CustomTexture.Get();
-        return nullptr;
-    }
+    CubeTexture* GetSource() const;
 
 public:
     /// <summary>

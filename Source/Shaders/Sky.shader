@@ -8,6 +8,8 @@
 
 META_CB_BEGIN(0, Data)
 float4x4 WVP;
+float3 ViewOffset;
+float Padding;
 GBufferData GBuffer;
 AtmosphericFogData AtmosphericFog;
 META_CB_END
@@ -51,8 +53,7 @@ GBufferOutput PS_Sky(MaterialInput input)
 	float3 vsPos = GetViewPos(gBufferData, uv, LinearZ2DeviceDepth(gBufferData, 1));
 	float3 wsPos = mul(float4(vsPos, 1), gBufferData.InvViewMatrix).xyz;
 	float3 viewVector = wsPos - gBufferData.ViewPos;
-	float sceneDepth = length(viewVector);
-	float4 color = GetAtmosphericFog(AtmosphericFog, gBufferData.ViewFar, gBufferData.ViewPos, viewVector, sceneDepth, float3(0, 0, 0));
+	float4 color = GetAtmosphericFog(AtmosphericFog, gBufferData.ViewFar, wsPos + ViewOffset, gBufferData.ViewPos + ViewOffset);
 
 	// Pack GBuffer
 	output.Light = color;

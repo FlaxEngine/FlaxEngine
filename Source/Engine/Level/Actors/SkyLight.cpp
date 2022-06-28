@@ -37,6 +37,15 @@ float SkyLight::GetScaledRadius() const
     return _radius * _transform.Scale.MaxValue();
 }
 
+CubeTexture* SkyLight::GetSource() const
+{
+    if (Mode == Modes::CaptureScene)
+        return _bakedProbe;
+    if (Mode == Modes::CustomTexture)
+        return CustomTexture.Get();
+    return nullptr;
+}
+
 void SkyLight::Bake(float timeout)
 {
 #if COMPILE_WITH_PROBES_BAKING

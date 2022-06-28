@@ -232,20 +232,18 @@ void StaticModel::Draw(RenderContext& renderContext)
     const DrawPass drawModes = (DrawPass)(DrawModes & renderContext.View.Pass);
     if (!Model || !Model->IsLoaded() || !Model->CanBeRendered() || drawModes == DrawPass::None)
         return;
-
-    Matrix world;
-    renderContext.View.GetWorldMatrix(_transform, world);
-
     if (renderContext.View.Pass == DrawPass::GlobalSDF)
     {
-        GlobalSignDistanceFieldPass::Instance()->RasterizeModelSDF(this, Model->SDF, world, _box);
+        GlobalSignDistanceFieldPass::Instance()->RasterizeModelSDF(this, Model->SDF, _transform, _box);
         return;
     }
     if (renderContext.View.Pass == DrawPass::GlobalSurfaceAtlas)
     {
-        GlobalSurfaceAtlasPass::Instance()->RasterizeActor(this, this, _sphere, world, Model->LODs.Last().GetBox());
+        GlobalSurfaceAtlasPass::Instance()->RasterizeActor(this, this, _sphere, _transform, Model->LODs.Last().GetBox());
         return;
     }
+    Matrix world;
+    renderContext.View.GetWorldMatrix(_transform, world);
     GEOMETRY_DRAW_STATE_EVENT_BEGIN(_drawState, world);
 
     // Flush vertex colors if need to

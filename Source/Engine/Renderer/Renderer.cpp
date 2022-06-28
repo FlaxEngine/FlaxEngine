@@ -512,7 +512,7 @@ void RenderInner(SceneRenderTask* task, RenderContext& renderContext)
     context->ResetRenderTarget();
     context->ResetSR();
     context->FlushState();
-    
+
     // Custom Post Processing
     renderContext.List->RunMaterialPostFxPass(context, renderContext, MaterialPostFxLocation::AfterPostProcessingPass, frameBuffer, tempBuffer);
     renderContext.List->RunCustomPostFxPass(context, renderContext, PostProcessEffectLocation::Default, frameBuffer, tempBuffer);

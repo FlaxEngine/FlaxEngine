@@ -238,9 +238,9 @@ float4 PS_Debug(Quad_VS2PS input) : SV_Target
 	float zSlice = 0.6f;
 	float mip = 0;
 	uint cascade = 0;
-	float distance01 = GlobalSDFTex[cascade].SampleLevel(SamplerLinearClamp, float3(input.TexCoord, zSlice), mip).x;
-	//float distance01 = GlobalSDFTex[cascade].SampleLevel(SamplerLinearClamp, float3((input.TexCoord.x + cascade) / (float)GlobalSDF.CascadesCount, input.TexCoord.y, zSlice), mip).x;
-	//float distance01 = GlobalSDFMip[cascade].SampleLevel(SamplerLinearClamp, float3(input.TexCoord, zSlice), mip).x;
+	float distance01 = GlobalSDFTex.SampleLevel(SamplerLinearClamp, float3(input.TexCoord, zSlice), mip).x;
+	//float distance01 = GlobalSDFTex.SampleLevel(SamplerLinearClamp, float3((input.TexCoord.x + cascade) / (float)GlobalSDF.CascadesCount, input.TexCoord.y, zSlice), mip).x;
+	//float distance01 = GlobalSDFMip.SampleLevel(SamplerLinearClamp, float3(input.TexCoord, zSlice), mip).x;
 	float distance = distance01 * GlobalSDF.CascadePosDistance[cascade].w;
 	if (abs(distance) < 1)
 		return float4(1, 0, 0, 1);

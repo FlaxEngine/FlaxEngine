@@ -257,6 +257,7 @@ void ShadowsPass::Prepare(RenderContext& renderContext, GPUContext* context)
     shadowView.ModelLODBias = view.ModelLODBias + view.ShadowModelLODBias;
     shadowView.ModelLODDistanceFactor = view.ModelLODDistanceFactor * view.ShadowModelLODDistanceFactor;
     shadowView.Pass = DrawPass::Depth;
+    shadowView.Origin = view.Origin;
     _shadowContext.List = &_shadowCache;
 }
 

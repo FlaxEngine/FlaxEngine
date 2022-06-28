@@ -86,7 +86,7 @@ void TerrainChunk::Draw(const RenderContext& renderContext) const
         return;
     drawCall.InstanceCount = 1;
     drawCall.Material = _cachedDrawMaterial;
-    drawCall.World = _world;
+    renderContext.View.GetWorldMatrix(_transform, drawCall.World);
     drawCall.ObjectPosition = drawCall.World.GetTranslation();
     drawCall.Terrain.Patch = _patch;
     drawCall.Terrain.HeightmapUVScaleBias = _heightmapUVScaleBias;
@@ -142,7 +142,7 @@ void TerrainChunk::Draw(const RenderContext& renderContext, MaterialBase* materi
         return;
     drawCall.InstanceCount = 1;
     drawCall.Material = material;
-    drawCall.World = _world;
+    renderContext.View.GetWorldMatrix(_transform, drawCall.World);
     drawCall.ObjectPosition = drawCall.World.GetTranslation();
     drawCall.Terrain.Patch = _patch;
     drawCall.Terrain.HeightmapUVScaleBias = _heightmapUVScaleBias;
@@ -214,8 +214,7 @@ void TerrainChunk::UpdateTransform()
     localTransform.Translation = _patch->_offset + Vector3(_x * size, _patch->_yOffset, _z * size);
     localTransform.Orientation = Quaternion::Identity;
     localTransform.Scale = Vector3(1.0f, _patch->_yHeight, 1.0f);
-    localTransform = terrainTransform.LocalToWorld(localTransform);
-    localTransform.GetWorld(_world);
+    _transform = terrainTransform.LocalToWorld(localTransform);
 }
 
 void TerrainChunk::CacheNeighbors()

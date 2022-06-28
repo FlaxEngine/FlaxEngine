@@ -1282,8 +1282,7 @@ void GlobalSurfaceAtlasPass::RasterizeActor(Actor* actor, void* actorObject, con
         // Calculate object bounds size in the view
         OrientedBoundingBox viewBounds(object->Bounds);
         viewBounds.Transform(tile->ViewMatrix);
-        Float3 viewExtent;
-        viewExtent = viewBounds.Transformation.LocalToWorldVector(viewBounds.Extents);
+        Float3 viewExtent = viewBounds.Transformation.LocalToWorldVector(viewBounds.Extents);
         tile->ViewBoundsSize = viewExtent.GetAbsolute() * 2.0f;
 
         // Per-tile data

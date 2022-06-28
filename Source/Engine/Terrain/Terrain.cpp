@@ -512,7 +512,6 @@ void Terrain::Draw(RenderContext& renderContext)
         const float chunkSize = TERRAIN_UNITS_PER_VERTEX * (float)_chunkSize;
         const float posToUV = 0.25f / chunkSize;
         Float4 localToUV(posToUV, posToUV, 0.0f, 0.0f);
-        Matrix localToWorld;
         for (const TerrainPatch* patch : _patches)
         {
             if (!patch->Heightmap)
@@ -522,8 +521,7 @@ void Terrain::Draw(RenderContext& renderContext)
             patchTransform.Orientation = Quaternion::Identity;
             patchTransform.Scale = Float3(1.0f, patch->_yHeight, 1.0f);
             patchTransform = _transform.LocalToWorld(patchTransform);
-            patchTransform.GetWorld(localToWorld);
-            GlobalSignDistanceFieldPass::Instance()->RasterizeHeightfield(this, patch->Heightmap->GetTexture(), localToWorld, patch->_bounds, localToUV);
+            GlobalSignDistanceFieldPass::Instance()->RasterizeHeightfield(this, patch->Heightmap->GetTexture(), patchTransform, patch->_bounds, localToUV);
         }
         return;
     }
@@ -533,16 +531,17 @@ void Terrain::Draw(RenderContext& renderContext)
         {
             if (!patch->Heightmap)
                 continue;
-            Matrix worldToLocal;
+            Matrix localToWorld, worldToLocal;
             BoundingSphere chunkSphere;
             BoundingBox localBounds;
             for (int32 chunkIndex = 0; chunkIndex < TerrainPatch::CHUNKS_COUNT; chunkIndex++)
             {
                 TerrainChunk* chunk = &patch->Chunks[chunkIndex];
-                Matrix::Invert(chunk->GetWorld(), worldToLocal);
+                chunk->GetTransform().GetWorld(localToWorld); // TODO: large-worlds
+                Matrix::Invert(localToWorld, worldToLocal);
                 BoundingBox::Transform(chunk->GetBounds(), worldToLocal, localBounds);
                 BoundingSphere::FromBox(chunk->GetBounds(), chunkSphere);
-                GlobalSurfaceAtlasPass::Instance()->RasterizeActor(this, chunk, chunkSphere, chunk->GetWorld(), localBounds, 1 << 2, false);
+                GlobalSurfaceAtlasPass::Instance()->RasterizeActor(this, chunk, chunkSphere, chunk->GetTransform(), localBounds, 1 << 2, false);
             }
         }
         return;

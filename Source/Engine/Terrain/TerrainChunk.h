@@ -4,6 +4,7 @@
 
 #include "Engine/Core/Math/BoundingBox.h"
 #include "Engine/Core/Math/Matrix.h"
+#include "Engine/Core/Math/Transform.h"
 #include "Engine/Serialization/ISerializable.h"
 #include "Engine/Content/Assets/MaterialBase.h"
 #include "Engine/Level/Scene/Lightmap.h"
@@ -26,7 +27,7 @@ private:
     TerrainPatch* _patch;
     uint16 _x, _z;
     Float4 _heightmapUVScaleBias;
-    Matrix _world;
+    Transform _transform;
     BoundingBox _bounds;
     Vector3 _boundsCenter;
     float _perInstanceRandom;
@@ -85,11 +86,11 @@ public:
     }
 
     /// <summary>
-    /// Gets the chunk world matrix transform.
+    /// Gets the chunk transformation (world to local).
     /// </summary>
-    FORCE_INLINE const Matrix& GetWorld() const
+    FORCE_INLINE const Transform& GetTransform() const
     {
-        return _world;
+        return _transform;
     }
 
     /// <summary>

@@ -19,6 +19,8 @@
 
 PACK_STRUCT(struct Data {
     Matrix WVP;
+    Float3 ViewOffset;
+    float Padding;
     GBufferData GBuffer;
     AtmosphericFogData Fog;
     });
@@ -178,6 +180,7 @@ void Sky::DrawFog(GPUContext* context, RenderContext& renderContext, GPUTextureV
     // Setup constants data
     Data data;
     GBufferPass::SetInputs(renderContext.View, data.GBuffer);
+    data.ViewOffset = renderContext.View.Origin + GetPosition();
     InitConfig(data.Fog);
     data.Fog.AtmosphericFogSunPower *= SunLight ? SunLight->Brightness : 1.0f;
     bool useSpecularLight = (renderContext.View.Flags & ViewFlags::SpecularLight) != 0;
@@ -216,6 +219,7 @@ void Sky::ApplySky(GPUContext* context, RenderContext& renderContext, const Matr
     Matrix::Multiply(world, renderContext.View.Frustum.GetMatrix(), m);
     Matrix::Transpose(m, data.WVP);
     GBufferPass::SetInputs(renderContext.View, data.GBuffer);
+    data.ViewOffset = renderContext.View.Origin + GetPosition();
     InitConfig(data.Fog);
     //data.Fog.AtmosphericFogSunPower *= SunLight ? SunLight->Brightness : 1.0f;
     bool useSpecularLight = (renderContext.View.Flags & ViewFlags::SpecularLight) != 0;
