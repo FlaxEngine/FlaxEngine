@@ -41,6 +41,8 @@ void DirectionalLight::Draw(RenderContext& renderContext)
         data.ShadowsMode = ShadowsMode;
         data.CascadeCount = CascadeCount;
         data.ContactShadowsLength = ContactShadowsLength;
+        data.StaticFlags = GetStaticFlags();
+        data.ID = GetID();
         renderContext.List->DirectionalLights.Add(data);
     }
 }

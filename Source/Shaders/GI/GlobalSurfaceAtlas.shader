@@ -62,6 +62,22 @@ void PS_Clear(out float4 Light : SV_Target0, out float4 RT0 : SV_Target1, out fl
 	RT2 = float4(1, 0, 0, 0);
 }
 
+#ifdef _PS_ClearLighting
+
+Buffer<float4> GlobalSurfaceAtlasObjects : register(t4);
+Texture2D Texture : register(t7);
+
+// Pixel shader for Global Surface Atlas clearing
+META_PS(true, FEATURE_LEVEL_SM5)
+float4 PS_ClearLighting(AtlasVertexOutput input) : SV_Target
+{
+	GlobalSurfaceTile tile = LoadGlobalSurfaceAtlasTile(GlobalSurfaceAtlasObjects, input.TileAddress);
+	float2 atlasUV = input.TileUV * tile.AtlasRectUV.zw + tile.AtlasRectUV.xy;
+	return Texture.Sample(SamplerPointClamp, atlasUV);
+}
+
+#endif
+
 #ifdef _PS_Lighting
 
 #include "./Flax/GBuffer.hlsl"
@@ -79,7 +95,7 @@ Texture3D<float> GlobalSDFTex : register(t5);
 Texture3D<float> GlobalSDFMip : register(t6);
 #endif
 
-// Pixel shader for Global Surface Atlas shading with direct light contribution
+// Pixel shader for Global Surface Atlas shading
 META_PS(true, FEATURE_LEVEL_SM5)
 META_PERMUTATION_1(RADIAL_LIGHT=0)
 META_PERMUTATION_1(RADIAL_LIGHT=1)

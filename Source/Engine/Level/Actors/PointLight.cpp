@@ -133,6 +133,8 @@ void PointLight::Draw(RenderContext& renderContext)
         data.ContactShadowsLength = ContactShadowsLength;
         data.IndirectLightingIntensity = IndirectLightingIntensity;
         data.IESTexture = IESTexture ? IESTexture->GetTexture() : nullptr;
+        data.StaticFlags = GetStaticFlags();
+        data.ID = GetID();
         renderContext.List->PointLights.Add(data);
     }
 }

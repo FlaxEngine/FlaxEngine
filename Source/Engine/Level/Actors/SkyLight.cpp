@@ -115,6 +115,8 @@ void SkyLight::Draw(RenderContext& renderContext)
         data.IndirectLightingIntensity = IndirectLightingIntensity;
         data.Radius = GetScaledRadius();
         data.Image = GetSource();
+        data.StaticFlags = GetStaticFlags();
+        data.ID = GetID();
         renderContext.List->SkyLights.Add(data);
     }
 }

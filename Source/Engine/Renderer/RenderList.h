@@ -34,6 +34,7 @@ struct RendererDirectionalLightData
     float ShadowsSharpness;
     float VolumetricScatteringIntensity;
 
+    StaticFlags StaticFlags;
     float IndirectLightingIntensity;
     int8 CastVolumetricShadow : 1;
     int8 RenderedVolumetricFog : 1;
@@ -42,6 +43,8 @@ struct RendererDirectionalLightData
     int32 CascadeCount;
     float ContactShadowsLength;
     ShadowsCastingMode ShadowsMode;
+
+    Guid ID;
 
     void SetupLightData(LightData* data, bool useShadow) const;
 };
@@ -76,11 +79,13 @@ struct RendererSpotLightData
     float IndirectLightingIntensity;
     ShadowsCastingMode ShadowsMode;
 
+    StaticFlags StaticFlags;
     int8 CastVolumetricShadow : 1;
     int8 RenderedVolumetricFog : 1;
     int8 UseInverseSquaredFalloff : 1;
 
     GPUTexture* IESTexture;
+    Guid ID;
 
     void SetupLightData(LightData* data, bool useShadow) const;
 };
@@ -111,11 +116,13 @@ struct RendererPointLightData
     float IndirectLightingIntensity;
     ShadowsCastingMode ShadowsMode;
 
+    StaticFlags StaticFlags;
     int8 CastVolumetricShadow : 1;
     int8 RenderedVolumetricFog : 1;
     int8 UseInverseSquaredFalloff : 1;
 
     GPUTexture* IESTexture;
+    Guid ID;
 
     void SetupLightData(LightData* data, bool useShadow) const;
 };
@@ -131,10 +138,12 @@ struct RendererSkyLightData
     Float3 AdditiveColor;
     float IndirectLightingIntensity;
 
+    StaticFlags StaticFlags;
     int8 CastVolumetricShadow : 1;
     int8 RenderedVolumetricFog : 1;
 
     CubeTexture* Image;
+    Guid ID;
 
     void SetupLightData(LightData* data, bool useShadow) const;
 };
@@ -211,7 +220,6 @@ struct DrawBatch
 class RenderListAllocation
 {
 public:
-
     static FLAXENGINE_API void* Allocate(uintptr size);
     static FLAXENGINE_API void Free(void* ptr, uintptr size);
 
@@ -222,7 +230,6 @@ public:
         uintptr _size;
 
     public:
-
         FORCE_INLINE Data()
         {
         }
@@ -329,7 +336,7 @@ struct DrawCallsList
 /// </summary>
 API_CLASS(Sealed) class FLAXENGINE_API RenderList : public ScriptingObject
 {
-DECLARE_SCRIPTING_TYPE(RenderList);
+    DECLARE_SCRIPTING_TYPE(RenderList);
 
     /// <summary>
     /// Allocates the new renderer list object or reuses already allocated one.
@@ -349,7 +356,6 @@ DECLARE_SCRIPTING_TYPE(RenderList);
     static void CleanupCache();
 
 public:
-
     /// <summary>
     /// All scenes for rendering.
     /// </summary>
@@ -458,11 +464,9 @@ public:
     Float3 FrustumCornersVs[8];
 
 private:
-
     DynamicVertexBuffer _instanceBuffer;
 
 public:
-
     /// <summary>
     /// Blends the postprocessing settings into the final options.
     /// </summary>
@@ -527,7 +531,6 @@ public:
     }
 
 public:
-
     /// <summary>
     /// Init cache for given task
     /// </summary>
@@ -540,7 +543,6 @@ public:
     void Clear();
 
 public:
-
     /// <summary>
     /// Adds the draw call to the draw lists.
     /// </summary>
