@@ -49,26 +49,26 @@ float3x3 EulerMatrix(float3 angles)
 {
     float3 s, c;
     sincos(angles, s, c);
-    return float3x3(c.y * c.z + s.x * s.y * s.z,   c.z * s.x * s.y - c.y * s.z,   c.x * s.y,
-                    c.x * s.z,                     c.x * c.z,                     -s.x,
-                    -c.z * s.y + c.y * s.x * s.z,  c.y * c.z * s.x + s.y * s.z,   c.x * c.y);
+    return float3x3(c.y * c.z + s.x * s.y * s.z, c.z * s.x * s.y - c.y * s.z, c.x * s.y, c.x * s.z, c.x * c.z, -s.x, -c.z * s.y + c.y * s.x * s.z, c.y * c.z * s.x + s.y * s.z, c.x * c.y);
 }
 
 float4x4 QuaternionToMatrix(float4 q)
 {
-	float x2 = q.x + q.x; float y2 = q.y + q.y; float z2 = q.z + q.z;
-	float xx = q.x * x2;  float xy = q.x * y2;  float xz = q.x * z2;
-	float yy = q.y * y2;  float yz = q.y * z2;  float zz = q.z * z2;
-	float wx = q.w * x2;  float wy = q.w * y2;  float wz = q.w * z2;
-	
-	float4x4 result =
-	{
-		1.0f - (yy + zz),	xy - wz,			xz + wy,			0.0f,
-		xy + wz,			1.0f - (xx + zz),	yz - wx,			0.0f,
-		xz - wy,			yz + wx,			1.0f - (xx + yy),	0.0f,
-		0.0f,				0.0f,				0.0f,				1.0f
-	};
-	return result;
+    // @formatter:off
+    float x2 = q.x + q.x; float y2 = q.y + q.y; float z2 = q.z + q.z;
+    float xx = q.x * x2;  float xy = q.x * y2;  float xz = q.x * z2;
+    float yy = q.y * y2;  float yz = q.y * z2;  float zz = q.z * z2;
+    float wx = q.w * x2;  float wy = q.w * y2;  float wz = q.w * z2;
+
+    float4x4 result =
+    {
+        1.0f - (yy + zz),	xy - wz,			xz + wy,			0.0f,
+        xy + wz,			1.0f - (xx + zz),	yz - wx,			0.0f,
+        xz - wy,			yz + wx,			1.0f - (xx + yy),	0.0f,
+        0.0f,				0.0f,				0.0f,				1.0f
+    };
+    return result;
+    // @formatter:on
 }
 
 #endif

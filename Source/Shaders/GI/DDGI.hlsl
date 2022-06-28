@@ -158,7 +158,7 @@ float3 SampleDDGIIrradiance(DDGIData data, Texture2D<snorm float4> probesState, 
     }
     if (cascadeIndex == data.CascadesCount)
         return data.FallbackIrradiance;
- 
+
     float probesSpacing = data.ProbesOriginAndSpacing[cascadeIndex].w;
     float3 probesOrigin = data.ProbesScrollOffsets[cascadeIndex].xyz * probesSpacing + data.ProbesOriginAndSpacing[cascadeIndex].xyz;
     float3 probesExtent = (data.ProbesCounts - 1) * (probesSpacing * 0.5f);
@@ -196,7 +196,7 @@ float3 SampleDDGIIrradiance(DDGIData data, Texture2D<snorm float4> probesState, 
 
         // Smooth backface test
         float weight = Square(dot(worldPosToProbe, worldNormal) * 0.5f + 0.5f);
-        
+
         // Sample distance texture
         float2 octahedralCoords = GetOctahedralCoords(-biasedPosToProbe);
         float2 uv = GetDDGIProbeUV(data, cascadeIndex, probeIndex, octahedralCoords, DDGI_PROBE_RESOLUTION_DISTANCE);

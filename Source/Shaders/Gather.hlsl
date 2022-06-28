@@ -10,11 +10,11 @@ float4 TextureGatherRed(Texture2D tex, SamplerState sam, float2 uv)
 #if CAN_USE_GATHER
 	return tex.GatherRed(sam, uv);
 #else
-	float x = tex.Sample(sam, uv, int2(0, 1)).x;
-	float y = tex.Sample(sam, uv, int2(1, 1)).x;
-	float z = tex.Sample(sam, uv, int2(1, 0)).x;
-	float w = tex.Sample(sam, uv, int2(0, 0)).x;
-	return float4(x, y, z, w);
+    float x = tex.Sample(sam, uv, int2(0, 1)).x;
+    float y = tex.Sample(sam, uv, int2(1, 1)).x;
+    float z = tex.Sample(sam, uv, int2(1, 0)).x;
+    float w = tex.Sample(sam, uv, int2(0, 0)).x;
+    return float4(x, y, z, w);
 #endif
 }
 
@@ -23,11 +23,11 @@ float4 TextureGatherRed(Texture2DArray tex, SamplerState sam, float3 uv)
 #if CAN_USE_GATHER
 	return tex.GatherRed(sam, uv);
 #else
-	float x = tex.Sample(sam, uv, int2(0, 1)).x;
-	float y = tex.Sample(sam, uv, int2(1, 1)).x;
-	float z = tex.Sample(sam, uv, int2(1, 0)).x;
-	float w = tex.Sample(sam, uv, int2(0, 0)).x;
-	return float4(x, y, z, w);
+    float x = tex.Sample(sam, uv, int2(0, 1)).x;
+    float y = tex.Sample(sam, uv, int2(1, 1)).x;
+    float z = tex.Sample(sam, uv, int2(1, 0)).x;
+    float w = tex.Sample(sam, uv, int2(0, 0)).x;
+    return float4(x, y, z, w);
 #endif
 }
 
@@ -36,11 +36,11 @@ float4 TextureGatherRed(Texture2D tex, SamplerState sam, float2 uv, int2 offset)
 #if CAN_USE_GATHER
 	return tex.GatherRed(sam, uv, offset);
 #else
-	float x = tex.Sample(sam, uv, offset + int2(0, 1)).x;
-	float y = tex.Sample(sam, uv, offset + int2(1, 1)).x;
-	float z = tex.Sample(sam, uv, offset + int2(1, 0)).x;
-	float w = tex.Sample(sam, uv, offset + int2(0, 0)).x;
-	return float4(x, y, z, w);
+    float x = tex.Sample(sam, uv, offset + int2(0, 1)).x;
+    float y = tex.Sample(sam, uv, offset + int2(1, 1)).x;
+    float z = tex.Sample(sam, uv, offset + int2(1, 0)).x;
+    float w = tex.Sample(sam, uv, offset + int2(0, 0)).x;
+    return float4(x, y, z, w);
 #endif
 }
 
@@ -49,11 +49,11 @@ float4 TextureGatherRed(Texture2D<float> tex, SamplerState sam, float2 uv)
 #if CAN_USE_GATHER
 	return tex.GatherRed(sam, uv);
 #else
-	float x = tex.Sample(sam, uv, int2(0, 1)).x;
-	float y = tex.Sample(sam, uv, int2(1, 1)).x;
-	float z = tex.Sample(sam, uv, int2(1, 0)).x;
-	float w = tex.Sample(sam, uv, int2(0, 0)).x;
-	return float4(x, y, z, w);
+    float x = tex.Sample(sam, uv, int2(0, 1)).x;
+    float y = tex.Sample(sam, uv, int2(1, 1)).x;
+    float z = tex.Sample(sam, uv, int2(1, 0)).x;
+    float w = tex.Sample(sam, uv, int2(0, 0)).x;
+    return float4(x, y, z, w);
 #endif
 }
 
@@ -62,11 +62,11 @@ float4 TextureGatherRed(Texture2D<float> tex, SamplerState sam, float2 uv, int2 
 #if CAN_USE_GATHER
 	return tex.GatherRed(sam, uv, offset);
 #else
-	float x = tex.Sample(sam, uv, offset + int2(0, 1)).x;
-	float y = tex.Sample(sam, uv, offset + int2(1, 1)).x;
-	float z = tex.Sample(sam, uv, offset + int2(1, 0)).x;
-	float w = tex.Sample(sam, uv, offset + int2(0, 0)).x;
-	return float4(x, y, z, w);
+    float x = tex.Sample(sam, uv, offset + int2(0, 1)).x;
+    float y = tex.Sample(sam, uv, offset + int2(1, 1)).x;
+    float z = tex.Sample(sam, uv, offset + int2(1, 0)).x;
+    float w = tex.Sample(sam, uv, offset + int2(0, 0)).x;
+    return float4(x, y, z, w);
 #endif
 }
 
