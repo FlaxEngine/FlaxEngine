@@ -175,7 +175,7 @@ float4 PS_Lighting(AtlasVertexOutput input) : SV_Target
 			// Shot a ray from texel into the light to see if there is any occluder
 			GlobalSDFTrace trace;
 			trace.Init(gBuffer.WorldPos + gBuffer.Normal * shadowBias, L, bias, toLightDst - bias);
-			GlobalSDFHit hit = RayTraceGlobalSDF(GlobalSDF, GlobalSDFTex, GlobalSDFMip, trace);
+			GlobalSDFHit hit = RayTraceGlobalSDF(GlobalSDF, GlobalSDFTex, GlobalSDFMip, trace, 2.0f);
 			shadowMask = hit.IsHit() ? LightShadowsStrength : 1;
 		}
 		else

@@ -542,7 +542,7 @@ void Terrain::Draw(RenderContext& renderContext)
                 Matrix::Invert(chunk->GetWorld(), worldToLocal);
                 BoundingBox::Transform(chunk->GetBounds(), worldToLocal, localBounds);
                 BoundingSphere::FromBox(chunk->GetBounds(), chunkSphere);
-                GlobalSurfaceAtlasPass::Instance()->RasterizeActor(this, chunk, chunkSphere, chunk->GetWorld(), localBounds, 1 << 2);
+                GlobalSurfaceAtlasPass::Instance()->RasterizeActor(this, chunk, chunkSphere, chunk->GetWorld(), localBounds, 1 << 2, false);
             }
         }
         return;

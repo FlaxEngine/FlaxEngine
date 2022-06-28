@@ -157,7 +157,8 @@ float3 SampleGlobalSDFGradient(const GlobalSDFData data, Texture3D<float> tex, T
 }
 
 // Ray traces the Global SDF.
-GlobalSDFHit RayTraceGlobalSDF(const GlobalSDFData data, Texture3D<float> tex, Texture3D<float> mip, const GlobalSDFTrace trace)
+// cascadeTraceStartBias - scales the trace start position offset (along the trace direction) by cascade voxel size (reduces artifacts on far cascades). Use it for shadow rays to prevent self-occlusion when tracing from object surface that looses quality in far cascades.
+GlobalSDFHit RayTraceGlobalSDF(const GlobalSDFData data, Texture3D<float> tex, Texture3D<float> mip, const GlobalSDFTrace trace, float cascadeTraceStartBias = 0.0f)
 {
 	GlobalSDFHit hit = (GlobalSDFHit)0;
 	hit.HitTime = -1.0f;
@@ -169,13 +170,13 @@ GlobalSDFHit RayTraceGlobalSDF(const GlobalSDFData data, Texture3D<float> tex, T
 	for (uint cascade = 0; cascade < data.CascadesCount && hit.HitTime < 0.0f; cascade++)
 	{
 		float4 cascadePosDistance = data.CascadePosDistance[cascade];
-		float cascadeMaxDistance = cascadePosDistance.w * 2;
 		float voxelSize = data.CascadeVoxelSize[cascade];
 		float voxelExtent = voxelSize * 0.5f;
 		float cascadeMinStep = voxelSize;
+	    float3 worldPosition = trace.WorldPosition + trace.WorldDirection * (voxelSize * cascadeTraceStartBias);
 
 		// Hit the cascade bounds to find the intersection points
-		float2 intersections = LineHitBox(trace.WorldPosition, traceEndPosition, cascadePosDistance.xyz - cascadePosDistance.www, cascadePosDistance.xyz + cascadePosDistance.www);
+		float2 intersections = LineHitBox(worldPosition, traceEndPosition, cascadePosDistance.xyz - cascadePosDistance.www, cascadePosDistance.xyz + cascadePosDistance.www);
 		intersections.xy *= traceMaxDistance;
 		intersections.x = max(intersections.x, nextIntersectionStart);
 		float stepTime = intersections.x;
@@ -195,7 +196,7 @@ GlobalSDFHit RayTraceGlobalSDF(const GlobalSDFData data, Texture3D<float> tex, T
 		LOOP
 		for (; step < 250 && stepTime < intersections.y; step++)
 		{
-			float3 stepPosition = trace.WorldPosition + trace.WorldDirection * stepTime;
+			float3 stepPosition = worldPosition + trace.WorldDirection * stepTime;
 
 		    // Sample SDF
 		    float cascadeMaxDistance;

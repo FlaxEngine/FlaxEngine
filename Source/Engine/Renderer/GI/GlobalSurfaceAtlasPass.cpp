@@ -1146,7 +1146,7 @@ void GlobalSurfaceAtlasPass::RenderDebug(RenderContext& renderContext, GPUContex
     }
 }
 
-void GlobalSurfaceAtlasPass::RasterizeActor(Actor* actor, void* actorObject, const BoundingSphere& actorObjectBounds, const Matrix& localToWorld, const BoundingBox& localBounds, uint32 tilesMask)
+void GlobalSurfaceAtlasPass::RasterizeActor(Actor* actor, void* actorObject, const BoundingSphere& actorObjectBounds, const Matrix& localToWorld, const BoundingBox& localBounds, uint32 tilesMask, bool useVisibility)
 {
     GlobalSurfaceAtlasCustomBuffer& surfaceAtlasData = *_surfaceAtlasData;
     Float3 boundsSize = localBounds.GetSize() * actor->GetScale();
@@ -1244,7 +1244,7 @@ void GlobalSurfaceAtlasPass::RasterizeActor(Actor* actor, void* actorObject, con
     objectData[2] = Float4(worldToLocalBounds.M11, worldToLocalBounds.M12, worldToLocalBounds.M13, worldToLocalBounds.M41);
     objectData[3] = Float4(worldToLocalBounds.M21, worldToLocalBounds.M22, worldToLocalBounds.M23, worldToLocalBounds.M42);
     objectData[4] = Float4(worldToLocalBounds.M31, worldToLocalBounds.M32, worldToLocalBounds.M33, worldToLocalBounds.M43);
-    objectData[5] = Float4(object->Bounds.Extents, 0.0f); // w unused
+    objectData[5] = Float4(object->Bounds.Extents, useVisibility ? 1.0f : 0.0f);
     auto tileOffsets = reinterpret_cast<uint16*>(&objectData[1]); // xyz used for tile offsets packed into uint16
     auto objectDataSize = reinterpret_cast<uint32*>(&objectData[1].W); // w used for object size (count of Float4s for object+tiles)
     *objectDataSize = GLOBAL_SURFACE_ATLAS_OBJECT_DATA_STRIDE;
