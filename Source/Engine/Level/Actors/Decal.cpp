@@ -13,9 +13,8 @@ Decal::Decal(const SpawnParams& params)
     : Actor(params)
     , _size(100.0f)
 {
-    _world = Matrix::Scaling(_size);
-    _bounds.Extents = Vector3::Half;
-    _world.Decompose(_bounds.Transformation);
+    _bounds.Extents = _size * 0.5f;
+    _bounds.Transformation = _transform;
     _bounds.GetBoundingBox(_box);
     BoundingSphere::FromBox(_box, _sphere);
 }
@@ -26,12 +25,7 @@ void Decal::SetSize(const Vector3& value)
     if (v != _size)
     {
         _size = v;
-
-        Transform t = _transform;
-        t.Scale *= _size;
-        t.GetWorld(_world);
-
-        _bounds.Transformation = t;
+        _bounds.Extents = v * 0.5f;
         _bounds.GetBoundingBox(_box);
         BoundingSphere::FromBox(_box, _sphere);
     }
@@ -81,7 +75,7 @@ void Decal::Draw(RenderContext& renderContext)
         Material->IsDecal())
     {
         const auto lodView = (renderContext.LodProxyView ? renderContext.LodProxyView : &renderContext.View);
-        const float screenRadiusSquared = RenderTools::ComputeBoundsScreenRadiusSquared(_sphere.Center, (float)_sphere.Radius, *lodView) * renderContext.View.ModelLODDistanceFactorSqrt;
+        const float screenRadiusSquared = RenderTools::ComputeBoundsScreenRadiusSquared(_sphere.Center - renderContext.View.Origin, (float)_sphere.Radius, *lodView) * renderContext.View.ModelLODDistanceFactorSqrt;
 
         // Check if decal is being culled
         if (Math::Square(DrawMinScreenSize * 0.5f) > screenRadiusSquared)
@@ -113,6 +107,8 @@ void Decal::Deserialize(DeserializeStream& stream, ISerializeModifier* modifier)
     DESERIALIZE_MEMBER(Size, _size);
     DESERIALIZE(SortOrder);
     DESERIALIZE(DrawMinScreenSize);
+
+    _bounds.Extents = _size * 0.5f;
 }
 
 bool Decal::IntersectsItself(const Ray& ray, Real& distance, Vector3& normal)
@@ -147,12 +143,7 @@ void Decal::OnTransformChanged()
     // Base
     Actor::OnTransformChanged();
 
-    Transform t = _transform;
-    t.Scale *= _size;
-    t.GetWorld(_world);
-
-    _bounds.Extents = Vector3::Half;
-    _bounds.Transformation = t;
+    _bounds.Transformation = _transform;
     _bounds.GetBoundingBox(_box);
     BoundingSphere::FromBox(_box, _sphere);
 

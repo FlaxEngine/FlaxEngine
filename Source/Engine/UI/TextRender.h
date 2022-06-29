@@ -42,7 +42,6 @@ private:
     int32 _sceneRenderingKey = -1;
 
     BoundingBox _localBox;
-    Matrix _world;
     GeometryDrawStateData _drawState;
     DynamicIndexBuffer _ib;
     DynamicVertexBuffer _vb0;

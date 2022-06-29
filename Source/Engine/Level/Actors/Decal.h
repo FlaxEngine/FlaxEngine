@@ -17,7 +17,6 @@ API_CLASS() class FLAXENGINE_API Decal : public Actor
 private:
     Vector3 _size;
     OrientedBoundingBox _bounds;
-    Matrix _world;
     int32 _sceneRenderingKey = -1;
 
 public:
@@ -60,15 +59,6 @@ public:
     /// </summary>
     /// <returns>The created virtual material instance.</returns>
     API_FUNCTION() MaterialInstance* CreateAndSetVirtualMaterialInstance();
-
-    /// <summary>
-    /// Gets the decal world matrix used to transform the 1x1x1 cube from the mesh space to world space.
-    /// </summary>
-    /// <param name="result">The result value container.</param>
-    FORCE_INLINE void GetWorld(Matrix* result) const
-    {
-        *result = _world;
-    }
 
 public:
     // [Actor]

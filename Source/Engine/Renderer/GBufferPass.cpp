@@ -401,7 +401,7 @@ void GBufferPass::DrawDecals(RenderContext& renderContext, GPUTextureView* light
 
     // Cache data
     auto device = GPUDevice::Instance;
-    auto gpuContext = device->GetMainContext();
+    auto context = device->GetMainContext();
     auto& view = renderContext.View;
     auto model = _boxModel.Get();
     auto buffers = renderContext.Buffers;
@@ -415,7 +415,7 @@ void GBufferPass::DrawDecals(RenderContext& renderContext, GPUTextureView* light
 
     // Prepare
     DrawCall drawCall;
-    MaterialBase::BindParameters bindParams(gpuContext, renderContext, drawCall);
+    MaterialBase::BindParameters bindParams(context, renderContext, drawCall);
     drawCall.Material = nullptr;
     drawCall.WorldDeterminantSign = 1.0f;
 
@@ -424,10 +424,12 @@ void GBufferPass::DrawDecals(RenderContext& renderContext, GPUTextureView* light
     {
         const auto decal = decals[i];
         ASSERT(decal && decal->Material);
-        decal->GetWorld(&drawCall.World);
+        Transform transform = decal->GetTransform();
+        transform.Scale *= decal->GetSize();
+        renderContext.View.GetWorldMatrix(transform, drawCall.World);
         drawCall.ObjectPosition = drawCall.World.GetTranslation();
 
-        gpuContext->ResetRenderTarget();
+        context->ResetRenderTarget();
 
         // Bind output
         const MaterialInfo& info = decal->Material->GetInfo();
@@ -455,22 +457,22 @@ void GBufferPass::DrawDecals(RenderContext& renderContext, GPUTextureView* light
                 count++;
                 targetBuffers[2] = buffers->GBuffer1->View();
             }
-            gpuContext->SetRenderTarget(nullptr, ToSpan(targetBuffers, count));
+            context->SetRenderTarget(nullptr, ToSpan(targetBuffers, count));
             break;
         }
         case MaterialDecalBlendingMode::Stain:
         {
-            gpuContext->SetRenderTarget(buffers->GBuffer0->View());
+            context->SetRenderTarget(buffers->GBuffer0->View());
             break;
         }
         case MaterialDecalBlendingMode::Normal:
         {
-            gpuContext->SetRenderTarget(buffers->GBuffer1->View());
+            context->SetRenderTarget(buffers->GBuffer1->View());
             break;
         }
         case MaterialDecalBlendingMode::Emissive:
         {
-            gpuContext->SetRenderTarget(lightBuffer);
+            context->SetRenderTarget(lightBuffer);
             break;
         }
         }
@@ -478,8 +480,8 @@ void GBufferPass::DrawDecals(RenderContext& renderContext, GPUTextureView* light
         // Draw decal
         drawCall.PerInstanceRandom = decal->GetPerInstanceRandom();
         decal->Material->Bind(bindParams);
-        model->Render(gpuContext);
+        model->Render(context);
     }
 
-    gpuContext->ResetSR();
+    context->ResetSR();
 }

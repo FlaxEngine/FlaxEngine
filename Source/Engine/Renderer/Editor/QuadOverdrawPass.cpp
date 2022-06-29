@@ -60,7 +60,9 @@ void QuadOverdrawPass::Render(RenderContext& renderContext, GPUContext* context,
         {
             const auto decal = renderContext.List->Decals[i];
             ASSERT(decal && decal->Material);
-            decal->GetWorld(&drawCall.World);
+            Transform transform = decal->GetTransform();
+            transform.Scale *= decal->GetSize();
+            renderContext.View.GetWorldMatrix(transform, drawCall.World);
             drawCall.ObjectPosition = drawCall.World.GetTranslation();
             drawCall.PerInstanceRandom = decal->GetPerInstanceRandom();
             defaultMaterial->Bind(bindParams);

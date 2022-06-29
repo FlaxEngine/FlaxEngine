@@ -3,6 +3,7 @@
 #include "BoundingBox.h"
 #include "BoundingSphere.h"
 #include "Matrix.h"
+#include "Transform.h"
 #include "../Types/String.h"
 
 const BoundingBox BoundingBox::Empty(Vector3(MAX_float), Vector3(MIN_float));
@@ -146,4 +147,12 @@ void BoundingBox::Transform(const BoundingBox& box, const Matrix& matrix, Boundi
     // Construct box from the points
     result = FromPoints(corners, 8);
     */
+}
+
+void BoundingBox::Transform(const BoundingBox& box, const ::Transform& transform, BoundingBox& result)
+{
+    // TODO: optimize it and support large worlds without using Matrix
+    Matrix matrix;
+    transform.GetWorld(matrix);
+    Transform(box, matrix, result);
 }

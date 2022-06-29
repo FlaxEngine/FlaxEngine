@@ -296,6 +296,14 @@ public:
     /// <param name="result">The result transformed box.</param>
     static void Transform(const BoundingBox& box, const Matrix& matrix, BoundingBox& result);
 
+    /// <summary>
+    /// Transforms the bounding box using the specified transformation.
+    /// </summary>
+    /// <param name="box">The box.</param>
+    /// <param name="transform">The transformation.</param>
+    /// <param name="result">The result transformed box.</param>
+    static void Transform(const BoundingBox& box, const ::Transform& transform, BoundingBox& result);
+
 public:
     /// <summary>
     /// Determines if there is an intersection between the current object and a Ray.

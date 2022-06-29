@@ -30,7 +30,6 @@ TextRender::TextRender(const SpawnParams& params)
     , _vb1(0, sizeof(VB1ElementType))
     , _vb2(0, sizeof(VB2ElementType))
 {
-    _world = Matrix::Identity;
     _color = Color::White;
     _localBox = BoundingBox(Vector3::Zero);
     _layoutOptions.Bounds = Rectangle(-100, -100, 200, 200);
@@ -106,7 +105,7 @@ void TextRender::UpdateLayout()
     _vb1.Clear();
     _vb2.Clear();
     _localBox = BoundingBox(Vector3::Zero);
-    BoundingBox::Transform(_localBox, _world, _box);
+    BoundingBox::Transform(_localBox, _transform, _box);
     BoundingSphere::FromBox(_box, _sphere);
 #if USE_PRECISE_MESH_INTERSECTS
     _collisionProxy.Clear();
@@ -327,7 +326,7 @@ void TextRender::UpdateLayout()
         box = BoundingBox(_transform.Translation);
     }
     _localBox = box;
-    BoundingBox::Transform(_localBox, _world, _box);
+    BoundingBox::Transform(_localBox, _transform, _box);
     BoundingSphere::FromBox(_box, _sphere);
     if (_sceneRenderingKey != -1)
         GetSceneRendering()->UpdateActor(this, _sceneRenderingKey);
@@ -348,8 +347,9 @@ void TextRender::Draw(RenderContext& renderContext)
     {
         UpdateLayout();
     }
-
-    GEOMETRY_DRAW_STATE_EVENT_BEGIN(_drawState, _world);
+    Matrix world;
+    renderContext.View.GetWorldMatrix(_transform, world);
+    GEOMETRY_DRAW_STATE_EVENT_BEGIN(_drawState, world);
 
     const DrawPass drawModes = (DrawPass)(DrawModes & renderContext.View.Pass & (int32)renderContext.View.GetShadowsDrawPassMask(ShadowsMode));
     if (_vb0.Data.Count() > 0 && drawModes != DrawPass::None)
@@ -357,7 +357,7 @@ void TextRender::Draw(RenderContext& renderContext)
 #if USE_EDITOR
         // Disable motion blur effects in editor without play mode enabled to hide minor artifacts on objects moving
         if (!Editor::IsPlayMode)
-            _drawState.PrevWorld = _world;
+            _drawState.PrevWorld = world;
 #endif
 
         // Flush buffers
@@ -372,7 +372,7 @@ void TextRender::Draw(RenderContext& renderContext)
 
         // Setup draw call
         DrawCall drawCall;
-        drawCall.World = _world;
+        drawCall.World = world;
         drawCall.ObjectPosition = drawCall.World.GetTranslation();
         drawCall.Surface.GeometrySize = _localBox.GetSize();
         drawCall.Surface.PrevWorld = _drawState.PrevWorld;
@@ -380,7 +380,7 @@ void TextRender::Draw(RenderContext& renderContext)
         drawCall.Surface.LightmapUVsArea = Rectangle::Empty;
         drawCall.Surface.Skinning = nullptr;
         drawCall.Surface.LODDitherFactor = 0.0f;
-        drawCall.WorldDeterminantSign = Math::FloatSelect(_world.RotDeterminant(), 1, -1);
+        drawCall.WorldDeterminantSign = Math::FloatSelect(world.RotDeterminant(), 1, -1);
         drawCall.PerInstanceRandom = GetPerInstanceRandom();
         drawCall.Geometry.IndexBuffer = _ib.GetBuffer();
         drawCall.Geometry.VertexBuffers[0] = _vb0.GetBuffer();
@@ -401,7 +401,7 @@ void TextRender::Draw(RenderContext& renderContext)
         }
     }
 
-    GEOMETRY_DRAW_STATE_EVENT_END(_drawState, _world);
+    GEOMETRY_DRAW_STATE_EVENT_END(_drawState, world);
 }
 
 #if USE_EDITOR
@@ -413,7 +413,7 @@ void TextRender::OnDebugDrawSelected()
     // Draw text bounds and layout bounds
     DEBUG_DRAW_WIRE_BOX(_box, Color::Orange, 0, true);
     OrientedBoundingBox layoutBox(Vector3(-_layoutOptions.Bounds.GetUpperLeft(), 0), Vector3(-_layoutOptions.Bounds.GetBottomRight(), 0));
-    layoutBox.Transform(_world);
+    layoutBox.Transform(_transform);
     DEBUG_DRAW_WIRE_BOX(layoutBox, Color::BlueViolet, 0, true);
 
     // Base
@@ -433,7 +433,7 @@ bool TextRender::IntersectsItself(const Ray& ray, Real& distance, Vector3& norma
 #if USE_PRECISE_MESH_INTERSECTS
     if (_box.Intersects(ray))
     {
-        return _collisionProxy.Intersects(ray, _world, distance, normal);
+        return _collisionProxy.Intersects(ray, _transform, distance, normal);
     }
     return false;
 #else
@@ -522,8 +522,7 @@ void TextRender::OnTransformChanged()
     // Base
     Actor::OnTransformChanged();
 
-    _transform.GetWorld(_world);
-    BoundingBox::Transform(_localBox, _world, _box);
+    BoundingBox::Transform(_localBox, _transform, _box);
     BoundingSphere::FromBox(_box, _sphere);
     if (_sceneRenderingKey != -1)
         GetSceneRendering()->UpdateActor(this, _sceneRenderingKey);
