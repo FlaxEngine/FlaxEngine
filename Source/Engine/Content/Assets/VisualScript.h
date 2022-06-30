@@ -415,7 +415,7 @@ public:
     /// <param name="nodeId">The ID of the node in the script graph to evaluate it's box.</param>
     /// <param name="boxId">The ID of the box in the node to evaluate it's value.</param>
     /// <param name="result">The output value. Valid only if method returned true.</param>
-    /// <returns>True if could fetch teh value, otherwise false.</returns>
+    /// <returns>True if could fetch the value, otherwise false.</returns>
     static bool Evaluate(VisualScript* script, ScriptingObject* instance, uint32 nodeId, uint32 boxId, Variant& result);
 
 #endif

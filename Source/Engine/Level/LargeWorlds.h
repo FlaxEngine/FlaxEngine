@@ -24,7 +24,7 @@ API_CLASS(Static) class FLAXENGINE_API LargeWorlds
     /// <summary>
     /// Updates the large world origin to match the input position. The origin is snapped to the best matching chunk location.
     /// </summary>
-    /// <param name="origin">The current origin of teh large world. Gets updated with the input position.</param>
+    /// <param name="origin">The current origin of the large world. Gets updated with the input position.</param>
     /// <param name="position">The current input position (eg. render view location or auto listener position).</param>
     /// <remarks>Used only if LargeWorlds::Enabled is true.</remarks>
     API_FUNCTION() static void UpdateOrigin(API_PARAM(Ref) Vector3& origin, const Vector3& position);
