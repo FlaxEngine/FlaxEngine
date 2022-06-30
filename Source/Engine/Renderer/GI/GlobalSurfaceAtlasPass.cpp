@@ -1232,19 +1232,20 @@ void GlobalSurfaceAtlasPass::RasterizeActor(Actor* actor, void* actorObject, con
         _dirtyObjectsBuffer.Add(actorObject);
     }
 
+    Matrix3x3 worldToLocalRotation;
+    Matrix3x3::RotationQuaternion(object->Bounds.Transformation.Orientation.Conjugated(), worldToLocalRotation);
+    Float3 worldPosition = object->Bounds.Transformation.Translation;
+    Float3 worldExtents = object->Bounds.Extents * object->Bounds.Transformation.Scale;
+
     // Write to objects buffer (this must match unpacking logic in HLSL)
-    Matrix localToWorldBounds;
-    object->Bounds.Transformation.GetWorld(localToWorldBounds);
-    Matrix worldToLocalBounds;
-    Matrix::Invert(localToWorldBounds, worldToLocalBounds);
     uint32 objectAddress = surfaceAtlasData.ObjectsBuffer.Data.Count() / sizeof(Float4);
     auto* objectData = surfaceAtlasData.ObjectsBuffer.WriteReserve<Float4>(GLOBAL_SURFACE_ATLAS_OBJECT_DATA_STRIDE);
     objectData[0] = *(Float4*)&actorObjectBounds;
     objectData[1] = Float4::Zero;
-    objectData[2] = Float4(worldToLocalBounds.M11, worldToLocalBounds.M12, worldToLocalBounds.M13, worldToLocalBounds.M41);
-    objectData[3] = Float4(worldToLocalBounds.M21, worldToLocalBounds.M22, worldToLocalBounds.M23, worldToLocalBounds.M42);
-    objectData[4] = Float4(worldToLocalBounds.M31, worldToLocalBounds.M32, worldToLocalBounds.M33, worldToLocalBounds.M43);
-    objectData[5] = Float4(object->Bounds.Extents, useVisibility ? 1.0f : 0.0f);
+    objectData[2] = Float4(worldToLocalRotation.M11, worldToLocalRotation.M12, worldToLocalRotation.M13, worldPosition.X);
+    objectData[3] = Float4(worldToLocalRotation.M21, worldToLocalRotation.M22, worldToLocalRotation.M23, worldPosition.Y);
+    objectData[4] = Float4(worldToLocalRotation.M31, worldToLocalRotation.M32, worldToLocalRotation.M33, worldPosition.Z);
+    objectData[5] = Float4(worldExtents, useVisibility ? 1.0f : 0.0f);
     auto tileOffsets = reinterpret_cast<uint16*>(&objectData[1]); // xyz used for tile offsets packed into uint16
     auto objectDataSize = reinterpret_cast<uint32*>(&objectData[1].W); // w used for object size (count of Float4s for object+tiles)
     *objectDataSize = GLOBAL_SURFACE_ATLAS_OBJECT_DATA_STRIDE;

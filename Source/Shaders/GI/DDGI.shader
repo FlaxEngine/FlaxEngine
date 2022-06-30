@@ -414,10 +414,6 @@ void CS_UpdateProbes(uint3 GroupThreadId : SV_GroupThreadID, uint3 GroupId : SV_
         // Reduce flickering during rapid brightness changes
         //result.rgb = previous + (irradianceDelta * 0.25f);
     }
-    float3 resultDelta = (1.0f - historyWeight) * irradianceDelta;
-    if (Max3(result.rgb) < Max3(previous))
-        resultDelta = min(max(abs(resultDelta), 1.0f / 1024.0f), abs(irradianceDelta)) * sign(resultDelta);
-    //result = float4(previous + resultDelta, 1.0f);
     result = float4(lerp(result.rgb, previous.rgb, historyWeight), 1.0f);
 #else
     result = float4(lerp(result.rg, previous.rg, historyWeight), 0.0f, 1.0f);
