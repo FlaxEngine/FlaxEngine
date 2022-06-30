@@ -400,10 +400,14 @@ bool MaterialGenerator::Generate(WriteStream& source, MaterialInfo& materialInfo
         graphs.Add(&layer->Graph);
     for (Graph* graph : graphs)
     {
-        for (const MaterialGraph::Node& node : graph->Nodes)
+        for (MaterialGraph::Node& node : graph->Nodes)
         {
             if (node.Type == GRAPH_NODE_MAKE_TYPE(1, 38) && (bool)node.Values[1])
+            {
+                if (node.Values.Count() == 2)
+                    node.Values.Add(In_Utilities); // Upgrade old node data
                 customGlobalCodeNodes.Add(&node);
+            }
         }
     }
 
