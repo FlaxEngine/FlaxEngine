@@ -130,18 +130,16 @@ float4 PS_Lighting(AtlasVertexOutput input) : SV_Target
 	gBuffer.WorldPos = mul(float4(gBufferTilePos, 1), tileLocalToWorld).xyz;
 
 	// Boost material diffuse color to improve GI
-	gBuffer.Color *= 1.1f;
+	//gBuffer.Color *= 1.1f;
 
 #if INDIRECT_LIGHT
     // Sample irradiance
-    float bias = 1.0f;
-    float3 irradiance = SampleDDGIIrradiance(DDGI, ProbesState, ProbesDistance, ProbesIrradiance, gBuffer.WorldPos, gBuffer.Normal, bias);
-    irradiance /= DDGI.IndirectLightingIntensity;
-    //irradiance = 0;
+    float3 irradiance = SampleDDGIIrradiance(DDGI, ProbesState, ProbesDistance, ProbesIrradiance, gBuffer.WorldPos, gBuffer.Normal);
+    irradiance *= Light.Radius; // Cached BounceIntensity / IndirectLightingIntensity
 
     // Calculate lighting
     float3 diffuseColor = GetDiffuseColor(gBuffer);
-    diffuseColor = min(diffuseColor, 0.98f); // Nothing reflects diffuse like perfectly in the real world (ensure to have energy loss at each light bounce)
+    diffuseColor = min(diffuseColor, 0.9f); // Nothing reflects diffuse like perfectly in the real world (ensure to have energy loss at each light bounce)
     float3 diffuse = Diffuse_Lambert(diffuseColor);
     float4 light = float4(diffuse * irradiance * gBuffer.AO, 1);
 #else

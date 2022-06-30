@@ -29,6 +29,7 @@ void GlobalIlluminationSettings::BlendWith(GlobalIlluminationSettings& other, fl
     const bool isHalf = weight >= 0.5f;
     BLEND_BOOL(Mode);
     BLEND_FLOAT(Intensity);
+    BLEND_FLOAT(BounceIntensity);
     BLEND_FLOAT(TemporalResponse);
     BLEND_FLOAT(Distance);
     BLEND_COL(FallbackIrradiance);

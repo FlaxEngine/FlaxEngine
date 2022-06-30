@@ -297,9 +297,14 @@ API_ENUM(Attributes="Flags") enum class GlobalIlluminationSettingsOverride : int
     FallbackIrradiance = 1 << 4,
 
     /// <summary>
+    /// Overrides <see cref="GlobalIlluminationSettings.BounceIntensity"/> property.
+    /// </summary>
+    BounceIntensity = 1 << 5,
+
+    /// <summary>
     /// All properties.
     /// </summary>
-    All = Mode | Intensity | TemporalResponse | Distance | FallbackIrradiance,
+    All = Mode | Intensity | TemporalResponse | Distance | FallbackIrradiance | BounceIntensity,
 };
 
 /// <summary>
@@ -328,6 +333,12 @@ API_STRUCT() struct FLAXENGINE_API GlobalIlluminationSettings : ISerializable
     /// </summary>
     API_FIELD(Attributes="EditorOrder(10), Limit(0, 10, 0.01f), PostProcessSetting((int)GlobalIlluminationSettingsOverride.Intensity)")
     float Intensity = 1.0f;
+
+    /// <summary>
+    /// Global Illumination infinite indirect lighting bounce intensity scale. Can be used to boost or reduce GI effect for the light bouncing on the surfaces.
+    /// </summary>
+    API_FIELD(Attributes="EditorOrder(11), Limit(0, 10, 0.01f), PostProcessSetting((int)GlobalIlluminationSettingsOverride.BounceIntensity)")
+    float BounceIntensity = 1.0f;
 
     /// <summary>
     /// Defines how quickly GI blends between the the current frame and the history buffer. Lower values update GI faster, but with more jittering and noise. If the camera in your game doesn't move much, we recommend values closer to 1.
