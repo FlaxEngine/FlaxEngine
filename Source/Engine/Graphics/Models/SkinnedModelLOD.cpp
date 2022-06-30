@@ -100,6 +100,31 @@ bool SkinnedModelLOD::Intersects(const Ray& ray, const Matrix& world, Real& dist
     return result;
 }
 
+bool SkinnedModelLOD::Intersects(const Ray& ray, const Transform& transform, Real& distance, Vector3& normal, SkinnedMesh** mesh)
+{
+    // Check all meshes
+    bool result = false;
+    Real closest = MAX_float;
+    Vector3 closestNormal = Vector3::Up;
+    for (int32 i = 0; i < Meshes.Count(); i++)
+    {
+        // Test intersection with mesh and check if is closer than previous
+        Real dst;
+        Vector3 nrm;
+        if (Meshes[i].Intersects(ray, transform, dst, nrm) && dst < closest)
+        {
+            result = true;
+            *mesh = &Meshes[i];
+            closest = dst;
+            closestNormal = nrm;
+        }
+    }
+
+    distance = closest;
+    normal = closestNormal;
+    return result;
+}
+
 BoundingBox SkinnedModelLOD::GetBox(const Matrix& world) const
 {
     // Find minimum and maximum points of all the meshes

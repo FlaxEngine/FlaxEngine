@@ -178,6 +178,18 @@ public:
     bool Intersects(const Ray& ray, const Matrix& world, Real& distance, Vector3& normal, SkinnedMesh** mesh, int32 lodIndex = 0);
 
     /// <summary>
+    /// Determines if there is an intersection between the SkinnedModel and a Ray in given world using given instance.
+    /// </summary>
+    /// <param name="ray">The ray to test</param>
+    /// <param name="transform">Instance transformation</param>
+    /// <param name="distance">When the method completes, contains the distance of the intersection (if any valid).</param>
+    /// <param name="normal">When the method completes, contains the intersection surface normal vector (if any valid).</param>
+    /// <param name="mesh">Mesh, or null</param>
+    /// <param name="lodIndex">Level Of Detail index</param>
+    /// <returns>True whether the two objects intersected</returns>
+    bool Intersects(const Ray& ray, const Transform& transform, Real& distance, Vector3& normal, SkinnedMesh** mesh, int32 lodIndex = 0);
+
+    /// <summary>
     /// Gets the model bounding box in custom matrix world space (rig pose transformed by matrix, not animated).
     /// </summary>
     /// <param name="world">The transformation matrix.</param>

@@ -372,13 +372,14 @@ void SplineModel::Draw(RenderContext& renderContext)
     drawCall.PerInstanceRandom = GetPerInstanceRandom();
     _preTransform.GetWorld(drawCall.Deformable.LocalMatrix);
     const Transform splineTransform = GetTransform();
-    splineTransform.GetWorld(drawCall.World);
+    renderContext.View.GetWorldMatrix(splineTransform, drawCall.World);
     drawCall.ObjectPosition = drawCall.World.GetTranslation() + drawCall.Deformable.LocalMatrix.GetTranslation();
     const float worldDeterminantSign = drawCall.World.RotDeterminant() * drawCall.Deformable.LocalMatrix.RotDeterminant();
     for (int32 segment = 0; segment < _instances.Count(); segment++)
     {
         auto& instance = _instances[segment];
-        if (!(renderContext.View.IsCullingDisabled || renderContext.View.CullingFrustum.Intersects(instance.Sphere)))
+        BoundingSphere instanceSphere(instance.Sphere.Center - renderContext.View.Origin, instance.Sphere.Radius);
+        if (!(renderContext.View.IsCullingDisabled || renderContext.View.CullingFrustum.Intersects(instanceSphere)))
             continue;
         drawCall.Deformable.Segment = (float)segment;
 
@@ -390,7 +391,7 @@ void SplineModel::Draw(RenderContext& renderContext)
         }
         else
         {
-            lodIndex = RenderTools::ComputeModelLOD(model, instance.Sphere.Center, (float)instance.Sphere.Radius, renderContext);
+            lodIndex = RenderTools::ComputeModelLOD(model, instanceSphere.Center, (float)instanceSphere.Radius, renderContext);
             if (lodIndex == -1)
                 continue;
         }

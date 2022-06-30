@@ -127,6 +127,20 @@ bool SkinnedMesh::Intersects(const Ray& ray, const Matrix& world, Real& distance
     return transformedBox.Intersects(ray, distance, normal);
 }
 
+bool SkinnedMesh::Intersects(const Ray& ray, const Transform& transform, Real& distance, Vector3& normal) const
+{
+    // Transform points
+    Vector3 min, max;
+    transform.LocalToWorld(_box.Minimum, min);
+    transform.LocalToWorld(_box.Maximum, max);
+
+    // Get transformed box
+    BoundingBox transformedBox(min, max);
+
+    // Test ray on a box
+    return transformedBox.Intersects(ray, distance, normal);
+}
+
 void SkinnedMesh::Render(GPUContext* context) const
 {
     ASSERT(IsInitialized());

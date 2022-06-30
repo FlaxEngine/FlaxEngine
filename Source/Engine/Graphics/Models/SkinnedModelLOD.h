@@ -64,6 +64,17 @@ public:
     bool Intersects(const Ray& ray, const Matrix& world, Real& distance, Vector3& normal, SkinnedMesh** mesh);
 
     /// <summary>
+    /// Determines if there is an intersection between the Model and a Ray in given world using given instance
+    /// </summary>
+    /// <param name="ray">The ray to test</param>
+    /// <param name="transform">Instance transformation</param>
+    /// <param name="distance">When the method completes, contains the distance of the intersection (if any valid).</param>
+    /// <param name="normal">When the method completes, contains the intersection surface normal vector (if any valid).</param>
+    /// <param name="mesh">Mesh, or null</param>
+    /// <returns>True whether the two objects intersected</returns>
+    bool Intersects(const Ray& ray, const Transform& transform, Real& distance, Vector3& normal, SkinnedMesh** mesh);
+
+    /// <summary>
     /// Get model bounding box in transformed world for given instance buffer
     /// </summary>
     /// <param name="world">World matrix</param>

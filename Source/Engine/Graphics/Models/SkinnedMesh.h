@@ -151,6 +151,16 @@ public:
     bool Intersects(const Ray& ray, const Matrix& world, Real& distance, Vector3& normal) const;
 
     /// <summary>
+    /// Determines if there is an intersection between the mesh and a ray in given world
+    /// </summary>
+    /// <param name="ray">The ray to test</param>
+    /// <param name="transform">Instance transformation</param>
+    /// <param name="distance">When the method completes and returns true, contains the distance of the intersection (if any valid).</param>
+    /// <param name="normal">When the method completes, contains the intersection surface normal vector (if any valid).</param>
+    /// <returns>True whether the two objects intersected</returns>
+    bool Intersects(const Ray& ray, const Transform& transform, Real& distance, Vector3& normal) const;
+
+    /// <summary>
     /// Retrieves the eight corners of the bounding box.
     /// </summary>
     /// <param name="corners">An array of points representing the eight corners of the bounding box.</param>

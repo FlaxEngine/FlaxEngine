@@ -23,7 +23,6 @@ AnimatedModel::AnimatedModel(const SpawnParams& params)
     , _lastUpdateFrame(0)
 {
     GraphInstance.Object = this;
-    _world = Matrix::Identity;
     UpdateBounds();
 
     SkinnedModel.Changed.Bind<AnimatedModel, &AnimatedModel::OnSkinnedModelChanged>(this);
@@ -122,7 +121,8 @@ void AnimatedModel::GetCurrentPose(Array<Matrix>& nodesTransformation, bool worl
     nodesTransformation = GraphInstance.NodesPose;
     if (worldSpace)
     {
-        const auto world = _world;
+        Matrix world;
+        _transform.GetWorld(world);
         for (auto& m : nodesTransformation)
             m = m * world;
     }
@@ -136,8 +136,10 @@ void AnimatedModel::SetCurrentPose(const Array<Matrix>& nodesTransformation, boo
     GraphInstance.NodesPose = nodesTransformation;
     if (worldSpace)
     {
+        Matrix world;
+        _transform.GetWorld(world);
         Matrix invWorld;
-        Matrix::Invert(_world, invWorld);
+        Matrix::Invert(world, invWorld);
         for (auto& m : GraphInstance.NodesPose)
             m = invWorld * m;
     }
@@ -153,7 +155,11 @@ void AnimatedModel::GetNodeTransformation(int32 nodeIndex, Matrix& nodeTransform
     else
         nodeTransformation = Matrix::Identity;
     if (worldSpace)
-        nodeTransformation = nodeTransformation * _world;
+    {
+        Matrix world;
+        _transform.GetWorld(world);
+        nodeTransformation = nodeTransformation * world;
+    }
 }
 
 void AnimatedModel::GetNodeTransformation(const StringView& nodeName, Matrix& nodeTransformation, bool worldSpace) const
@@ -545,7 +551,7 @@ void AnimatedModel::UpdateBounds()
 {
     UpdateLocalBounds();
 
-    BoundingBox::Transform(_boxLocal, _world, _box);
+    BoundingBox::Transform(_boxLocal, _transform, _box);
     BoundingSphere::FromBox(_box, _sphere);
     if (_sceneRenderingKey != -1)
         GetSceneRendering()->UpdateActor(this, _sceneRenderingKey);
@@ -696,7 +702,9 @@ void AnimatedModel::Draw(RenderContext& renderContext)
         return; // TODO: Animated Model rendering to Global SDF
     if (renderContext.View.Pass == DrawPass::GlobalSurfaceAtlas)
         return; // No supported
-    GEOMETRY_DRAW_STATE_EVENT_BEGIN(_drawState, _world);
+    Matrix world;
+    renderContext.View.GetWorldMatrix(_transform, world);
+    GEOMETRY_DRAW_STATE_EVENT_BEGIN(_drawState, world);
 
     const DrawPass drawModes = (DrawPass)(DrawModes & renderContext.View.Pass & (int32)renderContext.View.GetShadowsDrawPassMask(ShadowsMode));
     if (SkinnedModel && SkinnedModel->IsLoaded() && drawModes != DrawPass::None)
@@ -708,7 +716,7 @@ void AnimatedModel::Draw(RenderContext& renderContext)
 #if USE_EDITOR
             // Disable motion blur effects in editor without play mode enabled to hide minor artifacts on objects moving
             if (!Editor::IsPlayMode)
-                _drawState.PrevWorld = _world;
+                _drawState.PrevWorld = world;
 #endif
 
             _skinningData.Flush(GPUDevice::Instance->GetMainContext());
@@ -717,7 +725,7 @@ void AnimatedModel::Draw(RenderContext& renderContext)
             draw.Buffer = &Entries;
             draw.Skinning = &_skinningData;
             draw.BlendShapes = &_blendShapes;
-            draw.World = &_world;
+            draw.World = &world;
             draw.DrawState = &_drawState;
             draw.DrawModes = drawModes;
             draw.Bounds = _sphere;
@@ -729,7 +737,7 @@ void AnimatedModel::Draw(RenderContext& renderContext)
         }
     }
 
-    GEOMETRY_DRAW_STATE_EVENT_END(_drawState, _world);
+    GEOMETRY_DRAW_STATE_EVENT_END(_drawState, world);
 }
 
 #if USE_EDITOR
@@ -760,7 +768,7 @@ bool AnimatedModel::IntersectsItself(const Ray& ray, Real& distance, Vector3& no
     if (SkinnedModel != nullptr && SkinnedModel->IsLoaded())
     {
         SkinnedMesh* mesh;
-        result |= SkinnedModel->Intersects(ray, _world, distance, normal, &mesh);
+        result |= SkinnedModel->Intersects(ray, _transform, distance, normal, &mesh);
     }
 
     return result;
@@ -833,7 +841,7 @@ bool AnimatedModel::IntersectsEntry(int32 entryIndex, const Ray& ray, Real& dist
     for (int32 i = 0; i < meshes.Count(); i++)
     {
         const auto& mesh = meshes[i];
-        if (mesh.GetMaterialSlotIndex() == entryIndex && mesh.Intersects(ray, _world, distance, normal))
+        if (mesh.GetMaterialSlotIndex() == entryIndex && mesh.Intersects(ray, _transform, distance, normal))
             return true;
     }
 
@@ -860,7 +868,7 @@ bool AnimatedModel::IntersectsEntry(const Ray& ray, Real& distance, Vector3& nor
         const auto& mesh = meshes[i];
         Real dst;
         Vector3 nrm;
-        if (mesh.Intersects(ray, _world, dst, nrm) && dst < closest)
+        if (mesh.Intersects(ray, _transform, dst, nrm) && dst < closest)
         {
             result = true;
             closest = dst;
@@ -880,8 +888,7 @@ void AnimatedModel::OnTransformChanged()
     // Base
     ModelInstanceActor::OnTransformChanged();
 
-    _transform.GetWorld(_world);
-    BoundingBox::Transform(_boxLocal, _world, _box);
+    BoundingBox::Transform(_boxLocal, _transform, _box);
     BoundingSphere::FromBox(_box, _sphere);
     if (_sceneRenderingKey != -1)
         GetSceneRendering()->UpdateActor(this, _sceneRenderingKey);

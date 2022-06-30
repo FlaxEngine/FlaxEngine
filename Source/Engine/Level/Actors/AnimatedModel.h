@@ -55,7 +55,6 @@ public:
 
 private:
     BoundingBox _boxLocal;
-    Matrix _world;
     GeometryDrawStateData _drawState;
     SkinnedMeshDrawData _skinningData;
     AnimationUpdateMode _actualMode;
@@ -155,14 +154,6 @@ public:
     /// The graph instance data container. For dynamic usage only at runtime, not serialized.
     /// </summary>
     AnimGraphInstanceData GraphInstance;
-
-    /// <summary>
-    /// Gets the model world matrix transform.
-    /// </summary>
-    FORCE_INLINE void GetWorld(Matrix* world) const
-    {
-        *world = _world;
-    }
 
     /// <summary>
     /// Resets the animation state (clears the instance state data but preserves the instance parameters values).

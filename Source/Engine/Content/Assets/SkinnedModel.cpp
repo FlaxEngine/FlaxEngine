@@ -157,6 +157,11 @@ bool SkinnedModel::Intersects(const Ray& ray, const Matrix& world, Real& distanc
     return LODs[lodIndex].Intersects(ray, world, distance, normal, mesh);
 }
 
+bool SkinnedModel::Intersects(const Ray& ray, const Transform& transform, Real& distance, Vector3& normal, SkinnedMesh** mesh, int32 lodIndex)
+{
+    return LODs[lodIndex].Intersects(ray, transform, distance, normal, mesh);
+}
+
 BoundingBox SkinnedModel::GetBox(const Matrix& world, int32 lodIndex) const
 {
     return LODs[lodIndex].GetBox(world);
