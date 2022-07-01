@@ -65,11 +65,18 @@ bool GetProbeState(float a, float b)
 
 #ifdef _CS_Classify
 
+#define DDGI_PROBE_RELOCATE_ITERATIVE 0 // If true, probes relocation algorithm tries to move them in additive way, otherwise all nearby locations are checked to find the best position
+
 RWTexture2D<snorm float4> RWProbesState : register(u0);
 RWByteAddressBuffer RWActiveProbes : register(u1);
 
 Texture3D<float> GlobalSDFTex : register(t0);
 Texture3D<float> GlobalSDFMip : register(t1);
+
+float3 Remap(float3 value, float3 fromMin, float3 fromMax, float3 toMin, float3 toMax)
+{
+    return (value - fromMin) / (fromMax - fromMin) * (toMax - toMin) + toMin;
+}
 
 // Compute shader for updating probes state between active and inactive.
 META_CS(true, FEATURE_LEVEL_SM5)
@@ -89,12 +96,15 @@ void CS_Classify(uint3 DispatchThreadId : SV_DispatchThreadID)
     float4 probeState = RWProbesState[probeDataCoords];
     probeState.xyz *= probesSpacing; // Probe offset is [-1;1] within probes spacing
     float3 probeBasePosition = GetDDGIProbeWorldPosition(DDGI, CascadeIndex, probeCoords);
-    float3 probePosition = probeBasePosition + probeState.xyz;
+    float3 probePosition = probeBasePosition;
+#if DDGI_PROBE_RELOCATE_ITERATIVE
+    probePosition += probeState.xyz;
+#endif
     float4 probeStateOld = probeState;
 
     // Use Global SDF to quickly get distance and direction to the scene geometry
     float sdf;
-    float3 sdfNormal = normalize(SampleGlobalSDFGradient(GlobalSDF, GlobalSDFTex, GlobalSDFMip, probePosition.xyz, sdf));
+    float3 sdfNormal = normalize(SampleGlobalSDFGradient(GlobalSDF, GlobalSDFTex, GlobalSDFMip, probePosition, sdf));
     float sdfDst = abs(sdf);
     float threshold = GlobalSDF.CascadeVoxelSize[CascadeIndex];
     float distanceLimit = length(probesSpacing) * 1.5f;
@@ -106,6 +116,7 @@ void CS_Classify(uint3 DispatchThreadId : SV_DispatchThreadID)
     }
     else
     {
+#if DDGI_PROBE_RELOCATE_ITERATIVE
         if (sdf < threshold) // Probe is inside geometry
         {
             if (sdfDst < relocateLimit)
@@ -123,7 +134,7 @@ void CS_Classify(uint3 DispatchThreadId : SV_DispatchThreadID)
                 probeState.xyz = float3(0, 0, 0);
             }
         }
-        else if (sdf > threshold * 4.0f) // Probe is far enough any geometry
+        else if (sdf > threshold * 4.0f) // Probe is far enough from any geometry
         {
             // Reset relocation
             probeState.xyz = float3(0, 0, 0);
@@ -136,6 +147,33 @@ void CS_Classify(uint3 DispatchThreadId : SV_DispatchThreadID)
             // Reset relocation
             probeState.xyz = float3(0, 0, 0);
         }
+#else
+        // Sample Global SDF around the probe location
+        uint sdfCascade = GetGlobalSDFCascade(GlobalSDF, probePosition);
+        float4 CachedProbeOffsets[64];
+        // TODO: test performance diff when using shared memory and larger thread group (is it worth it?)
+        for(uint x = 0; x < 4; x++)
+        for(uint y = 0; y < 4; y++)
+        for(uint z = 0; z < 4; z++)
+        {
+            float3 offset = Remap(float3(x, y, z), 0, 3, -0.5f, 0.5f) * relocateLimit;
+            float offsetSdf = SampleGlobalSDFCascade(GlobalSDF, GlobalSDFTex, probeBasePosition + offset, sdfCascade);
+            CachedProbeOffsets[x * 16 + y * 4 + z] = float4(offset, offsetSdf);
+        }
+
+        // Select the best probe location around the base position
+        float4 bestOffset = CachedProbeOffsets[0];
+        for (uint i = 1; i < 64; i++)
+        {
+            if (CachedProbeOffsets[i].w > bestOffset.w)
+                bestOffset = CachedProbeOffsets[i];
+        }
+
+        // Relocate the probe to the best found location (or zero if nothing good found)
+        if (bestOffset.w <= threshold)
+            bestOffset.xyz = float3(0, 0, 0);
+        probeState.xyz = bestOffset.xyz;
+#endif
 
         // Check if probe was scrolled
         int3 probeScrollClears = ProbeScrollClears[CascadeIndex].xyz;
@@ -153,10 +191,11 @@ void CS_Classify(uint3 DispatchThreadId : SV_DispatchThreadID)
 
         // If probe was in different location or was inactive last frame then mark it as activated
         bool wasInactive = probeStateOld.w == DDGI_PROBE_STATE_INACTIVE;
-        bool wasRelocated = distance(probeState.xyz, probeStateOld.xyz) > 1.0f;
+        bool wasRelocated = distance(probeState.xyz, probeStateOld.xyz) > 2.0f;
         probeState.w = wasInactive || wasScrolled || wasRelocated ? DDGI_PROBE_STATE_ACTIVATED : DDGI_PROBE_STATE_ACTIVE;
     }
 
+    // Save probe state
     probeState.xyz /= probesSpacing;
     RWProbesState[probeDataCoords] = probeState;
 

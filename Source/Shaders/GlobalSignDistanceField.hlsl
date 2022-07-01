@@ -68,6 +68,33 @@ void GetGlobalSDFCascadeUV(const GlobalSDFData data, uint cascade, float3 worldP
     textureUV = float3(((float)cascade + cascadeUV.x) / (float)data.CascadesCount, cascadeUV.y, cascadeUV.z); // cascades are placed next to each other on X axis
 }
 
+// Gets the Global SDF cascade index for the given world location.
+uint GetGlobalSDFCascade(const GlobalSDFData data, float3 worldPosition)
+{
+    for (uint cascade = 0; cascade < data.CascadesCount; cascade++)
+    {
+        float cascadeMaxDistance;
+        float3 cascadeUV, textureUV;
+        GetGlobalSDFCascadeUV(data, cascade, worldPosition, cascadeMaxDistance, cascadeUV, textureUV);
+        if (all(cascadeUV > 0) && all(cascadeUV < 1))
+            return cascade;
+    }
+    return 0;
+}
+
+// Samples the Global SDF cascade and returns the distance to the closest surface (in world units) at the given world location.
+float SampleGlobalSDFCascade(const GlobalSDFData data, Texture3D<float> tex, float3 worldPosition, uint cascade)
+{
+    float distance = GLOBAL_SDF_WORLD_SIZE;
+    float cascadeMaxDistance;
+    float3 cascadeUV, textureUV;
+    GetGlobalSDFCascadeUV(data, cascade, worldPosition, cascadeMaxDistance, cascadeUV, textureUV);
+    float cascadeDistance = tex.SampleLevel(SamplerLinearClamp, textureUV, 0);
+    if (cascadeDistance < 1.0f && !any(cascadeUV < 0) && !any(cascadeUV > 1))
+        distance = cascadeDistance * cascadeMaxDistance;
+    return distance;
+}
+
 // Samples the Global SDF and returns the distance to the closest surface (in world units) at the given world location.
 float SampleGlobalSDF(const GlobalSDFData data, Texture3D<float> tex, float3 worldPosition)
 {

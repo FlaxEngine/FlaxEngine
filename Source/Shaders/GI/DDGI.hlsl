@@ -77,7 +77,7 @@ uint2 GetDDGIProbeTexelCoords(DDGIData data, uint cascadeIndex, uint probeIndex)
 uint GetDDGIScrollingProbeIndex(DDGIData data, uint cascadeIndex, uint3 probeCoords)
 {
     // Probes are scrolled on edges to stabilize GI when camera moves
-    return GetDDGIProbeIndex(data, ((int3)probeCoords + data.ProbesScrollOffsets[cascadeIndex].xyz + (int3)data.ProbesCounts) % (int3)data.ProbesCounts);
+    return GetDDGIProbeIndex(data, (probeCoords + data.ProbesCounts + data.ProbesScrollOffsets[cascadeIndex].xyz) % data.ProbesCounts);
 }
 
 float3 GetDDGIProbeWorldPosition(DDGIData data, uint cascadeIndex, uint3 probeCoords)
