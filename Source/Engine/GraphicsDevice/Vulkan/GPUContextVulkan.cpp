@@ -453,7 +453,7 @@ void GPUContextVulkan::UpdateDescriptorSets(const SpirvShaderDescriptorInfo& des
         DescriptorOwnerResourceVulkan** handles = _handles[(int32)descriptor.BindingType];
         for (uint32 index = 0; index < descriptor.Count; index++)
         {
-            const int32 slot = descriptor.Slot + index;
+            const uint32 slot = descriptor.Slot + index;
             ASSERT(slot < _handlesSizes[(int32)descriptor.BindingType]);
             switch (descriptor.DescriptorType)
             {
