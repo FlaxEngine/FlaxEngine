@@ -346,9 +346,9 @@ void GPUContextDX12::flushSRVs()
 
     // Flush SRV descriptors table
     if (_isCompute)
-        _commandList->SetComputeRootDescriptorTable(2, allocation.GPU);
+        _commandList->SetComputeRootDescriptorTable(DX12_ROOT_SIGNATURE_SR, allocation.GPU);
     else
-        _commandList->SetGraphicsRootDescriptorTable(2, allocation.GPU);
+        _commandList->SetGraphicsRootDescriptorTable(DX12_ROOT_SIGNATURE_SR, allocation.GPU);
 }
 
 void GPUContextDX12::flushRTVs()
@@ -448,9 +448,9 @@ void GPUContextDX12::flushUAVs()
 
     // Flush UAV descriptors table
     if (_isCompute)
-        _commandList->SetComputeRootDescriptorTable(3, allocation.GPU);
+        _commandList->SetComputeRootDescriptorTable(DX12_ROOT_SIGNATURE_UA, allocation.GPU);
     else
-        _commandList->SetGraphicsRootDescriptorTable(3, allocation.GPU);
+        _commandList->SetGraphicsRootDescriptorTable(DX12_ROOT_SIGNATURE_UA, allocation.GPU);
 }
 
 void GPUContextDX12::flushCBs()
@@ -464,7 +464,7 @@ void GPUContextDX12::flushCBs()
             if (cb)
             {
                 ASSERT(cb->GPUAddress != 0);
-                _commandList->SetGraphicsRootConstantBufferView(i, cb->GPUAddress);
+                _commandList->SetGraphicsRootConstantBufferView(DX12_ROOT_SIGNATURE_CB + i, cb->GPUAddress);
             }
         }
     }
@@ -477,7 +477,7 @@ void GPUContextDX12::flushCBs()
             if (cb)
             {
                 ASSERT(cb->GPUAddress != 0);
-                _commandList->SetComputeRootConstantBufferView(i, cb->GPUAddress);
+                _commandList->SetComputeRootConstantBufferView(DX12_ROOT_SIGNATURE_CB + i, cb->GPUAddress);
             }
         }
     }
@@ -513,9 +513,9 @@ void GPUContextDX12::flushSamplers()
     auto allocation = _device->RingHeap_Sampler.AllocateTable(samplersCount);
     _device->GetDevice()->CopyDescriptors(1, &allocation.CPU, &samplersCount, samplersCount, srcDescriptorRangeStarts, nullptr, D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER);
     if (_isCompute)
-        _commandList->SetComputeRootDescriptorTable(4, allocation.GPU);
+        _commandList->SetComputeRootDescriptorTable(DX12_ROOT_SIGNATURE_SAMPLER, allocation.GPU);
     else
-        _commandList->SetGraphicsRootDescriptorTable(4, allocation.GPU);
+        _commandList->SetGraphicsRootDescriptorTable(DX12_ROOT_SIGNATURE_SAMPLER, allocation.GPU);
 }
 
 void GPUContextDX12::flushRBs()

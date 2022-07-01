@@ -463,8 +463,7 @@ bool GPUDeviceDX12::Init()
     // TODO: maybe create set of different root signatures? for UAVs, for compute, for simple drawing, for post fx?
     {
         // Descriptor tables
-        D3D12_DESCRIPTOR_RANGE r[3];
-        // TODO: separate ranges for pixel/vertex visibility and one shared for all?
+        D3D12_DESCRIPTOR_RANGE r[3]; // SRV+UAV+Sampler
         {
             D3D12_DESCRIPTOR_RANGE& range = r[0];
             range.RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_SRV;
@@ -491,37 +490,35 @@ bool GPUDeviceDX12::Init()
         }
 
         // Root parameters
-        D3D12_ROOT_PARAMETER rootParameters[5];
+        D3D12_ROOT_PARAMETER rootParameters[GPU_MAX_CB_BINDED + 3];
+        for (int32 i = 0; i < GPU_MAX_CB_BINDED; i++)
         {
-            D3D12_ROOT_PARAMETER& rootParam = rootParameters[0];
+            // CB
+            D3D12_ROOT_PARAMETER& rootParam = rootParameters[DX12_ROOT_SIGNATURE_CB + i];
             rootParam.ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV;
             rootParam.ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL;
-            rootParam.Descriptor.ShaderRegister = 0;
+            rootParam.Descriptor.ShaderRegister = i;
             rootParam.Descriptor.RegisterSpace = 0;
         }
         {
-            D3D12_ROOT_PARAMETER& rootParam = rootParameters[1];
-            rootParam.ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV;
-            rootParam.ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL;
-            rootParam.Descriptor.ShaderRegister = 1;
-            rootParam.Descriptor.RegisterSpace = 0;
-        }
-        {
-            D3D12_ROOT_PARAMETER& rootParam = rootParameters[2];
+            // SRVs
+            D3D12_ROOT_PARAMETER& rootParam = rootParameters[DX12_ROOT_SIGNATURE_SR];
             rootParam.ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE;
             rootParam.ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL;
             rootParam.DescriptorTable.NumDescriptorRanges = 1;
             rootParam.DescriptorTable.pDescriptorRanges = &r[0];
         }
         {
-            D3D12_ROOT_PARAMETER& rootParam = rootParameters[3];
+            // UAVs
+            D3D12_ROOT_PARAMETER& rootParam = rootParameters[DX12_ROOT_SIGNATURE_UA];
             rootParam.ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE;
             rootParam.ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL;
             rootParam.DescriptorTable.NumDescriptorRanges = 1;
             rootParam.DescriptorTable.pDescriptorRanges = &r[1];
         }
         {
-            D3D12_ROOT_PARAMETER& rootParam = rootParameters[4];
+            // Samplers
+            D3D12_ROOT_PARAMETER& rootParam = rootParameters[DX12_ROOT_SIGNATURE_SAMPLER];
             rootParam.ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE;
             rootParam.ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL;
             rootParam.DescriptorTable.NumDescriptorRanges = 1;
