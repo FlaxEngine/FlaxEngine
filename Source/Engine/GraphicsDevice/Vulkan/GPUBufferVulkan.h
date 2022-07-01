@@ -35,7 +35,7 @@ public:
 
 public:
 
-    void Init(GPUDeviceVulkan* device, GPUBufferVulkan* owner, VkBuffer buffer, VkDeviceSize size, PixelFormat format);
+    void Init(GPUDeviceVulkan* device, GPUBufferVulkan* owner, VkBuffer buffer, VkDeviceSize size, VkBufferUsageFlags usage, PixelFormat format);
 
     void Release();
 

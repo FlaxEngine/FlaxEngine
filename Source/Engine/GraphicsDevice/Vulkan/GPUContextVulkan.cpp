@@ -135,6 +135,13 @@ GPUContextVulkan::GPUContextVulkan(GPUDeviceVulkan* device, QueueVulkan* queue)
     _handles[(int32)SpirvShaderResourceBindingType::SAMPLER] = nullptr;
     _handles[(int32)SpirvShaderResourceBindingType::SRV] = _srHandles;
     _handles[(int32)SpirvShaderResourceBindingType::UAV] = _uaHandles;
+#if ENABLE_ASSERTION
+    _handlesSizes[(int32)SpirvShaderResourceBindingType::INVALID] = 0;
+    _handlesSizes[(int32)SpirvShaderResourceBindingType::CB] = GPU_MAX_CB_BINDED;
+    _handlesSizes[(int32)SpirvShaderResourceBindingType::SAMPLER] = GPU_MAX_SAMPLER_BINDED;
+    _handlesSizes[(int32)SpirvShaderResourceBindingType::SRV] = GPU_MAX_SR_BINDED;
+    _handlesSizes[(int32)SpirvShaderResourceBindingType::UAV] = GPU_MAX_UA_BINDED;
+#endif
 }
 
 GPUContextVulkan::~GPUContextVulkan()
@@ -447,12 +454,11 @@ void GPUContextVulkan::UpdateDescriptorSets(const SpirvShaderDescriptorInfo& des
         for (uint32 index = 0; index < descriptor.Count; index++)
         {
             const int32 slot = descriptor.Slot + index;
+            ASSERT(slot < _handlesSizes[(int32)descriptor.BindingType]);
             switch (descriptor.DescriptorType)
             {
             case VK_DESCRIPTOR_TYPE_SAMPLER:
             {
-                // Sampler
-                ASSERT_LOW_LAYER(slot < GPU_MAX_SAMPLER_BINDED);
                 const VkSampler sampler = _samplerHandles[slot];
                 ASSERT(sampler);
                 needsWrite |= dsWriter.WriteSampler(descriptorIndex, sampler, index);
@@ -460,8 +466,6 @@ void GPUContextVulkan::UpdateDescriptorSets(const SpirvShaderDescriptorInfo& des
             }
             case VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE:
             {
-                // Shader Resource (Texture)
-                ASSERT_LOW_LAYER(slot < GPU_MAX_SR_BINDED);
                 auto handle = (GPUTextureViewVulkan*)handles[slot];
                 if (!handle)
                 {
@@ -491,68 +495,58 @@ void GPUContextVulkan::UpdateDescriptorSets(const SpirvShaderDescriptorInfo& des
             }
             case VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER:
             {
-                // Shader Resource (Buffer)
-                ASSERT_LOW_LAYER(slot < GPU_MAX_SR_BINDED);
-                auto sr = handles[slot];
-                if (!sr)
+                auto handle = handles[slot];
+                if (!handle)
                 {
                     const auto dummy = _device->HelperResources.GetDummyBuffer();
-                    sr = (DescriptorOwnerResourceVulkan*)dummy->View()->GetNativePtr();
+                    handle = (DescriptorOwnerResourceVulkan*)dummy->View()->GetNativePtr();
                 }
                 VkBufferView bufferView;
-                sr->DescriptorAsUniformTexelBuffer(this, bufferView);
+                handle->DescriptorAsUniformTexelBuffer(this, bufferView);
                 ASSERT(bufferView != VK_NULL_HANDLE);
                 needsWrite |= dsWriter.WriteUniformTexelBuffer(descriptorIndex, bufferView, index);
                 break;
             }
             case VK_DESCRIPTOR_TYPE_STORAGE_IMAGE:
             {
-                // Unordered Access (Texture)
-                ASSERT_LOW_LAYER(slot < GPU_MAX_UA_BINDED);
-                auto ua = handles[slot];
-                ASSERT(ua);
+                auto handle = handles[slot];
+                ASSERT(handle);
                 VkImageView imageView;
                 VkImageLayout layout;
-                ua->DescriptorAsStorageImage(this, imageView, layout);
+                handle->DescriptorAsStorageImage(this, imageView, layout);
                 needsWrite |= dsWriter.WriteStorageImage(descriptorIndex, imageView, layout, index);
                 break;
             }
             case VK_DESCRIPTOR_TYPE_STORAGE_BUFFER:
             {
-                // Unordered Access (Buffer)
-                ASSERT_LOW_LAYER(slot < GPU_MAX_UA_BINDED);
-                auto ua = handles[slot];
-                if (!ua)
+                auto handle = handles[slot];
+                if (!handle)
                 {
                     const auto dummy = _device->HelperResources.GetDummyBuffer();
-                    ua = (DescriptorOwnerResourceVulkan*)dummy->View()->GetNativePtr();
+                    handle = (DescriptorOwnerResourceVulkan*)dummy->View()->GetNativePtr();
                 }
                 VkBuffer buffer;
                 VkDeviceSize offset, range;
-                ua->DescriptorAsStorageBuffer(this, buffer, offset, range);
+                handle->DescriptorAsStorageBuffer(this, buffer, offset, range);
                 needsWrite |= dsWriter.WriteStorageBuffer(descriptorIndex, buffer, offset, range, index);
                 break;
             }
             case VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER:
             {
-                // Unordered Access (Buffer)
-                ASSERT_LOW_LAYER(slot < GPU_MAX_UA_BINDED);
-                auto ua = handles[slot];
-                if (!ua)
+                auto handle = handles[slot];
+                if (!handle)
                 {
                     const auto dummy = _device->HelperResources.GetDummyBuffer();
-                    ua = (DescriptorOwnerResourceVulkan*)dummy->View()->GetNativePtr();
+                    handle = (DescriptorOwnerResourceVulkan*)dummy->View()->GetNativePtr();
                 }
                 VkBufferView bufferView;
-                ua->DescriptorAsStorageTexelBuffer(this, bufferView);
+                handle->DescriptorAsStorageTexelBuffer(this, bufferView);
                 ASSERT(bufferView != VK_NULL_HANDLE);
                 needsWrite |= dsWriter.WriteStorageTexelBuffer(descriptorIndex, bufferView, index);
                 break;
             }
             case VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC:
             {
-                // Constant Buffer
-                ASSERT_LOW_LAYER(slot < GPU_MAX_CB_BINDED);
                 auto cb = handles[slot];
                 ASSERT(cb);
                 VkBuffer buffer;

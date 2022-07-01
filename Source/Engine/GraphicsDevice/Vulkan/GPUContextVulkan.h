@@ -107,6 +107,9 @@ private:
     DescriptorOwnerResourceVulkan* _uaHandles[GPU_MAX_UA_BINDED];
     VkSampler _samplerHandles[GPU_MAX_SAMPLER_BINDED];
     DescriptorOwnerResourceVulkan** _handles[(int32)SpirvShaderResourceBindingType::MAX];
+#if ENABLE_ASSERTION
+    uint32 _handlesSizes[(int32)SpirvShaderResourceBindingType::MAX];
+#endif
 
     typedef Array<DescriptorPoolVulkan*> DescriptorPoolArray;
     Dictionary<uint32, DescriptorPoolArray> _descriptorPools;
