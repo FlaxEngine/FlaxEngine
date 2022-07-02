@@ -201,6 +201,6 @@ DrawPass RenderView::GetShadowsDrawPassMask(ShadowsCastingMode shadowsMode) cons
 
 void RenderView::GetWorldMatrix(const Transform& transform, Matrix& world) const
 {
-    const Vector3 translation = transform.Translation - Origin;
+    const Float3 translation = transform.Translation - Origin;
     Matrix::Transformation(transform.Scale, transform.Orientation, translation, world);
 }

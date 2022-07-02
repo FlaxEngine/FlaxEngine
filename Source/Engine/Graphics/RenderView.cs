@@ -103,5 +103,16 @@ namespace FlaxEngine
 
             UpdateCachedData();
         }
+
+        /// <summary>
+        /// Calculates the world matrix for the given transformation instance rendering.
+        /// </summary>
+        /// <param name="transform">The object transformation.</param>
+        /// <param name="world">The output matrix.</param>
+        public void GetWorldMatrix(ref Transform transform, out Matrix world)
+        {
+            Float3 translation = transform.Translation - Origin;
+            Matrix.Transformation(ref transform.Scale, ref transform.Orientation, ref translation, out world);
+        }
     }
 }

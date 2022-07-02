@@ -27,7 +27,8 @@ void BoxCollider::SetSize(const Float3& value)
 
 void BoxCollider::DrawPhysicsDebug(RenderView& view)
 {
-    if (!view.CullingFrustum.Intersects(_sphere))
+    const BoundingSphere sphere(_sphere.Center - view.Origin, _sphere.Radius);
+    if (!view.CullingFrustum.Intersects(sphere))
         return;
     if (view.Mode == ViewMode::PhysicsColliders && !GetIsTrigger())
         DebugDraw::DrawBox(_bounds, _staticActor ? Color::CornflowerBlue : Color::Orchid, 0, true);

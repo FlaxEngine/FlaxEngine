@@ -712,11 +712,23 @@ public:
     // @param result When the method completes, contains the transformed Vector3
     static FLAXENGINE_API void Transform(const Vector3Base& vector, const Matrix3x3& transform, Vector3Base& result);
 
+    // Transforms a 3D vector by the given transformation
+    // @param vector The source vector
+    // @param transform The transformation
+    // @param result When the method completes, contains the transformed Vector3
+    static FLAXENGINE_API void Transform(const Vector3Base& vector, const ::Transform& transform, Vector3Base& result);
+
     // Transforms a 3D vector by the given matrix
     // @param vector The source vector
     // @param transform The transformation matrix
     // @returns Transformed Vector3
     static FLAXENGINE_API Vector3Base Transform(const Vector3Base& vector, const Matrix& transform);
+
+    // Transforms a 3D vector by the given transformation
+    // @param vector The source vector
+    // @param transform The transformation
+    // @returns Transformed Vector3
+    static FLAXENGINE_API Vector3Base Transform(const Vector3Base& vector, const ::Transform& transform);
 
     // Transforms a 3D vector by the given matrix
     // @param vector The source vector

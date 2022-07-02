@@ -1433,12 +1433,35 @@ namespace FlaxEngine
         }
 
         /// <summary>
+        /// Transforms a 3D vector by the given <see cref="FlaxEngine.Transform" />.
+        /// </summary>
+        /// <param name="vector">The source vector.</param>
+        /// <param name="transform">The transformation <see cref="FlaxEngine.Transform" />.</param>
+        /// <param name="result">When the method completes, contains the transformed <see cref="Vector3" />.</param>
+        public static void Transform(ref Vector3 vector, ref Transform transform, out Vector3 result)
+        {
+            transform.LocalToWorld(ref vector, out result);
+        }
+
+        /// <summary>
         /// Transforms a 3D vector by the given <see cref="Matrix" />.
         /// </summary>
         /// <param name="vector">The source vector.</param>
         /// <param name="transform">The transformation <see cref="Matrix" />.</param>
         /// <returns>The transformed <see cref="Vector4" />.</returns>
         public static Vector3 Transform(Vector3 vector, Matrix transform)
+        {
+            Transform(ref vector, ref transform, out Vector3 result);
+            return result;
+        }
+
+        /// <summary>
+        /// Transforms a 3D vector by the given <see cref="FlaxEngine.Transform" />.
+        /// </summary>
+        /// <param name="vector">The source vector.</param>
+        /// <param name="transform">The transformation <see cref="FlaxEngine.Transform" />.</param>
+        /// <returns>The transformed <see cref="Vector4" />.</returns>
+        public static Vector3 Transform(Vector3 vector, Transform transform)
         {
             Transform(ref vector, ref transform, out Vector3 result);
             return result;

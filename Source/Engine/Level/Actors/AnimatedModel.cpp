@@ -23,7 +23,8 @@ AnimatedModel::AnimatedModel(const SpawnParams& params)
     , _lastUpdateFrame(0)
 {
     GraphInstance.Object = this;
-    UpdateBounds();
+    _box = _boxLocal = BoundingBox(Vector3::Zero);
+    _sphere = BoundingSphere(Vector3::Zero, 0.0f);
 
     SkinnedModel.Changed.Bind<AnimatedModel, &AnimatedModel::OnSkinnedModelChanged>(this);
     SkinnedModel.Loaded.Bind<AnimatedModel, &AnimatedModel::OnSkinnedModelLoaded>(this);
@@ -709,7 +710,7 @@ void AnimatedModel::Draw(RenderContext& renderContext)
     const DrawPass drawModes = (DrawPass)(DrawModes & renderContext.View.Pass & (int32)renderContext.View.GetShadowsDrawPassMask(ShadowsMode));
     if (SkinnedModel && SkinnedModel->IsLoaded() && drawModes != DrawPass::None)
     {
-        _lastMinDstSqr = Math::Min(_lastMinDstSqr, Vector3::DistanceSquared(GetPosition(), renderContext.View.Position));
+        _lastMinDstSqr = Math::Min(_lastMinDstSqr, Vector3::DistanceSquared(_transform.Translation, renderContext.View.Position + renderContext.View.Origin));
 
         if (_skinningData.IsReady())
         {
@@ -729,6 +730,7 @@ void AnimatedModel::Draw(RenderContext& renderContext)
             draw.DrawState = &_drawState;
             draw.DrawModes = drawModes;
             draw.Bounds = _sphere;
+            draw.Bounds.Center -= renderContext.View.Origin;
             draw.PerInstanceRandom = GetPerInstanceRandom();
             draw.LODBias = LODBias;
             draw.ForcedLOD = ForcedLOD;

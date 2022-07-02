@@ -7,6 +7,7 @@
 #include "Quaternion.h"
 #include "Matrix.h"
 #include "Matrix3x3.h"
+#include "Transform.h"
 #include "../Types/String.h"
 
 // Float
@@ -212,6 +213,14 @@ Float3 Float3::Transform(const Float3& vector, const Matrix& transform)
         vector.X * transform.M11 + vector.Y * transform.M21 + vector.Z * transform.M31 + transform.M41,
         vector.X * transform.M12 + vector.Y * transform.M22 + vector.Z * transform.M32 + transform.M42,
         vector.X * transform.M13 + vector.Y * transform.M23 + vector.Z * transform.M33 + transform.M43);
+}
+
+template<>
+Float3 Float3::Transform(const Float3& vector, const ::Transform& transform)
+{
+    Vector3 result;
+    transform.LocalToWorld(vector, result);
+    return result;
 }
 
 template<>
@@ -509,6 +518,14 @@ Double3 Double3::Transform(const Double3& vector, const Matrix& transform)
 }
 
 template<>
+Double3 Double3::Transform(const Double3& vector, const ::Transform& transform)
+{
+    Vector3 result;
+    transform.LocalToWorld(vector, result);
+    return result;
+}
+
+template<>
 void Double3::TransformCoordinate(const Double3& coordinate, const Matrix& transform, Double3& result)
 {
     Double4 v;
@@ -744,6 +761,12 @@ void Int3::Transform(const Int3& vector, const Matrix3x3& transform, Int3& resul
 
 template<>
 Int3 Int3::Transform(const Int3& vector, const Matrix& transform)
+{
+    return vector;
+}
+
+template<>
+Int3 Int3::Transform(const Int3& vector, const ::Transform& transform)
 {
     return vector;
 }

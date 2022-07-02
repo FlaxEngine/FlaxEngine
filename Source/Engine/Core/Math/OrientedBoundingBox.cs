@@ -152,6 +152,16 @@ namespace FlaxEngine
         }
 
         /// <summary>
+        /// Transforms this box using a transformation.
+        /// </summary>
+        /// <param name="transform">The transformation.</param>
+        /// <remarks>While any kind of transformation can be applied, it is recommended to apply scaling using scale method instead, which scales the Extents and keeps the Transformation for rotation only, and that preserves collision detection accuracy.</remarks>
+        public void Transform(ref Transform transform)
+        {
+            Transformation = transform.LocalToWorld(Transformation);
+        }
+
+        /// <summary>
         /// Transforms this box using a transformation matrix.
         /// </summary>
         /// <param name="mat">The transformation matrix.</param>
@@ -422,6 +432,20 @@ namespace FlaxEngine
         {
             OrientedBoundingBox result = box;
             result.Transform(ref transform);
+            return result;
+        }
+
+        /// <summary>
+        /// Transforms bounding box using the given transformation.
+        /// </summary>
+        /// <param name="box">The bounding box to transform.</param>
+        /// <param name="transform">The transformation.</param>
+        /// <returns>The result of the transformation.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static OrientedBoundingBox operator *(OrientedBoundingBox box, Transform transform)
+        {
+            OrientedBoundingBox result = box;
+            result.Transformation = transform.LocalToWorld(result.Transformation);
             return result;
         }
 

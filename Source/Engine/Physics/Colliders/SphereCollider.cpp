@@ -27,7 +27,8 @@ void SphereCollider::SetRadius(const float value)
 
 void SphereCollider::DrawPhysicsDebug(RenderView& view)
 {
-    if (!view.CullingFrustum.Intersects(_sphere))
+    const BoundingSphere sphere(_sphere.Center - view.Origin, _sphere.Radius);
+    if (!view.CullingFrustum.Intersects(sphere))
         return;
     if (view.Mode == ViewMode::PhysicsColliders && !GetIsTrigger())
         DebugDraw::DrawSphere(_sphere, _staticActor ? Color::CornflowerBlue : Color::Orchid, 0, true);

@@ -52,9 +52,8 @@ namespace FlaxEditor.Gizmo
 
             // Transform ray into local space of the gizmo
             Ray localRay;
-            Matrix.Invert(ref _gizmoWorld, out Matrix invGizmoWorld);
-            Vector3.TransformNormal(ref ray.Direction, ref invGizmoWorld, out localRay.Direction);
-            Vector3.Transform(ref ray.Position, ref invGizmoWorld, out localRay.Position);
+            _gizmoWorld.WorldToLocalVector(ref ray.Direction, out localRay.Direction);
+            _gizmoWorld.WorldToLocal(ref ray.Position, out localRay.Position);
 
             // Find gizmo collisions with mouse
             Real closestIntersection = Real.MaxValue;

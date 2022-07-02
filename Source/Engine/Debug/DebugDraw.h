@@ -140,7 +140,7 @@ API_CLASS(Static) class FLAXENGINE_API DebugDraw
     /// <param name="color">The color.</param>
     /// <param name="duration">The duration (in seconds). Use 0 to draw it only once.</param>
     /// <param name="depthTest">If set to <c>true</c> depth test will be performed, otherwise depth will be ignored.</param>
-    API_FUNCTION() static void DrawCircle(const Vector3& position, const Vector3& normal, float radius, const Color& color, float duration = 0.0f, bool depthTest = true);
+    API_FUNCTION() static void DrawCircle(const Vector3& position, const Float3& normal, float radius, const Color& color, float duration = 0.0f, bool depthTest = true);
 
     /// <summary>
     /// Draws the wireframe triangle.
