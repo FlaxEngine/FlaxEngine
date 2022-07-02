@@ -862,7 +862,9 @@ namespace FlaxEditor.Viewport
             // Prepare
             var viewport = new FlaxEngine.Viewport(0, 0, Width, Height);
             CreateProjectionMatrix(out var p);
-            CreateViewMatrix(ViewPosition, out var v); // TODO: large-worlds
+            Vector3 viewOrigin = Task.View.Origin;
+            Float3 position = ViewPosition - viewOrigin;
+            CreateViewMatrix(position, out var v);
             Matrix.Multiply(ref v, ref p, out var ivp);
             ivp.Invert();
 
@@ -876,7 +878,7 @@ namespace FlaxEditor.Viewport
             Vector3 direction = farPoint - nearPoint;
             direction.Normalize();
 
-            return new Ray(nearPoint, direction);
+            return new Ray(nearPoint + viewOrigin, direction);
         }
 
         /// <summary>
