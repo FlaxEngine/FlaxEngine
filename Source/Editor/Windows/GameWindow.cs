@@ -67,6 +67,7 @@ namespace FlaxEditor.Windows
                 if (_isMaximized == value)
                     return;
                 _isMaximized = value;
+                var rootWindow = RootWindow;
                 if (value)
                 {
                     // Maximize
@@ -77,13 +78,14 @@ namespace FlaxEditor.Windows
                         var monitorBounds = Platform.GetMonitorBounds(PointToScreen(Size * 0.5f));
                         ShowFloating(monitorBounds.Location + new Float2(200, 200), Float2.Zero, WindowStartPosition.Manual);
                     }
-                    if (!RootWindow.IsMaximized)
-                        RootWindow.Maximize();
+                    if (rootWindow != null && !rootWindow.IsMaximized)
+                        rootWindow.Maximize();
                 }
                 else
                 {
                     // Restore
-                    RootWindow.Restore();
+                    if (rootWindow != null)
+                        rootWindow.Restore();
                     if (_maximizeRestoreDockTo != null && _maximizeRestoreDockTo.IsDisposing)
                         _maximizeRestoreDockTo = null;
                     Show(_maximizeRestoreDockState, _maximizeRestoreDockTo);
