@@ -556,10 +556,12 @@ void Terrain::Draw(RenderContext& renderContext)
 
     // Frustum vs Box culling for patches
     const BoundingFrustum frustum = renderContext.View.CullingFrustum;
+    const Vector3 origin = renderContext.View.Origin;
     for (int32 patchIndex = 0; patchIndex < _patches.Count(); patchIndex++)
     {
         const auto patch = _patches[patchIndex];
-        if (renderContext.View.IsCullingDisabled || frustum.Intersects(patch->_bounds))
+        BoundingBox bounds(patch->_bounds.Minimum - origin, patch->_bounds.Maximum - origin);
+        if (renderContext.View.IsCullingDisabled || frustum.Intersects(bounds))
         {
             // Skip if has no heightmap or it's not loaded
             if (patch->Heightmap == nullptr || patch->Heightmap->GetTexture()->ResidentMipLevels() == 0)
@@ -570,7 +572,8 @@ void Terrain::Draw(RenderContext& renderContext)
             {
                 auto chunk = &patch->Chunks[chunkIndex];
                 chunk->_cachedDrawLOD = 0;
-                if (renderContext.View.IsCullingDisabled || frustum.Intersects(chunk->_bounds))
+                bounds = BoundingBox(chunk->_bounds.Minimum - origin, chunk->_bounds.Maximum - origin);
+                if (renderContext.View.IsCullingDisabled || frustum.Intersects(bounds))
                 {
                     if (chunk->PrepareDraw(renderContext))
                     {

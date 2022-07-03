@@ -74,7 +74,7 @@ namespace FlaxEditor.Tools.Terrain
             {
                 var brushPosition = Mode.CursorPosition;
                 var brushColor = new Color(1.0f, 0.85f, 0.0f); // TODO: expose to editor options
-                var brushMaterial = Mode.CurrentBrush.GetBrushMaterial(ref brushPosition, ref brushColor);
+                var brushMaterial = Mode.CurrentBrush.GetBrushMaterial(ref renderContext, ref brushPosition, ref brushColor);
                 if (!brushMaterial)
                     return;
 

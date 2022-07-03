@@ -2244,7 +2244,8 @@ void TerrainPatch::CacheDebugLines()
 
 void TerrainPatch::DrawPhysicsDebug(RenderView& view)
 {
-    if (!_physicsShape || !view.CullingFrustum.Intersects(_bounds))
+    const BoundingBox bounds(_bounds.Minimum - view.Origin, _bounds.Maximum - view.Origin);
+    if (!_physicsShape || !view.CullingFrustum.Intersects(bounds))
         return;
 
     const Transform terrainTransform = _terrain->_transform;
@@ -2258,7 +2259,7 @@ void TerrainPatch::DrawPhysicsDebug(RenderView& view)
     else
     {
         BoundingSphere sphere;
-        BoundingSphere::FromBox(_bounds, sphere);
+        BoundingSphere::FromBox(bounds, sphere);
         if (Vector3::Distance(sphere.Center, view.Position) - sphere.Radius < 4000.0f)
         {
             if (_debugLines.IsEmpty())

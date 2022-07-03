@@ -67,6 +67,7 @@ namespace FlaxEditor.Gizmo
             var renderList = RenderList.GetFromPool();
             var prevList = renderContext.List;
             renderContext.List = renderList;
+            renderContext.View.Pass = DrawPass.GBuffer | DrawPass.Forward;
             try
             {
                 Viewport.DrawEditorPrimitives(context, ref renderContext, target, targetDepth);

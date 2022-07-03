@@ -45,7 +45,7 @@ bool TerrainChunk::PrepareDraw(const RenderContext& renderContext)
 
         // Calculate chunk distance to view
         const auto lodView = (renderContext.LodProxyView ? renderContext.LodProxyView : &renderContext.View);
-        const float distance = Float3::Distance(_boundsCenter, lodView->Position); // TODO: large-worlds
+        const float distance = Float3::Distance(_boundsCenter - lodView->Origin, lodView->Position);
         lod = (int32)Math::Pow(distance / chunkEdgeSize, lodDistribution);
         lod += lodBias;
 

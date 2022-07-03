@@ -97,7 +97,7 @@ namespace FlaxEditor.Tools.Terrain.Brushes
         }
 
         /// <inheritdoc />
-        public override MaterialInstance GetBrushMaterial(ref Vector3 position, ref Color color)
+        public override MaterialInstance GetBrushMaterial(ref RenderContext renderContext, ref Vector3 position, ref Color color)
         {
             var material = CacheMaterial(EditorAssets.TerrainCircleBrushMaterial);
             if (material)
@@ -108,7 +108,7 @@ namespace FlaxEditor.Tools.Terrain.Brushes
                 float falloff = halfSize * Falloff;
                 float radius = halfSize - falloff;
                 material.SetParameterValue("Color", color);
-                material.SetParameterValue("BrushData0", new Float4(position, radius));
+                material.SetParameterValue("BrushData0", new Float4(position - renderContext.View.Origin, radius));
                 material.SetParameterValue("BrushData1", new Float4(falloff, (float)FalloffType, 0, 0));
             }
             return material;
