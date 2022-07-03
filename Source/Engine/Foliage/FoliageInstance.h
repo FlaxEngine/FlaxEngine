@@ -20,11 +20,6 @@ API_STRUCT(NoPod) struct FLAXENGINE_API FoliageInstance
     API_FIELD() Transform Transform;
 
     /// <summary>
-    /// The cached world transformation matrix of this instance.
-    /// </summary>
-    API_FIELD() Matrix World;
-
-    /// <summary>
     /// The model drawing state.
     /// </summary>
     GeometryDrawStateData DrawState;

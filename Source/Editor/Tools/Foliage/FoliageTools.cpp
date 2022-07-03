@@ -250,11 +250,13 @@ void FoliageTools::Paint(Foliage* foliage, Span<int32> foliageTypesIndices, cons
                     {
                         // Skip if any places instance is close that placement location
                         bool isInvalid = false;
+                        const Transform foliageTransform = foliage->GetTransform();
                         // TODO: use quad tree to boost this logic
                         for (auto i = foliage->Instances.Begin(); i.IsNotEnd(); ++i)
                         {
                             const auto& instance = *i;
-                            if (Vector3::DistanceSquared(instance.World.GetTranslation(), placement.Location) <= paintRadiusSqr)
+                            const Vector3 instancePosition = foliageTransform.LocalToWorld(instance.Transform.Translation);
+                            if (Vector3::DistanceSquared(instancePosition, placement.Location) <= paintRadiusSqr)
                             {
                                 isInvalid = true;
                                 break;
@@ -339,11 +341,6 @@ void FoliageTools::Paint(Foliage* foliage, Span<int32> foliageTypesIndices, cons
             // Convert instance transformation into the local-space of the foliage actor
             foliage->GetTransform().WorldToLocal(instance.Transform, instance.Transform);
 
-            // Calculate foliage instance geometry transformation matrix
-            instance.Transform.GetWorld(matrix);
-            Matrix::Multiply(matrix, world, instance.World);
-            instance.DrawState.PrevWorld = instance.World;
-
             // Add foliage instance
             foliage->AddInstance(instance);
         }
@@ -361,12 +358,14 @@ void FoliageTools::Remove(Foliage* foliage, Span<int32> foliageTypesIndices, con
 
     // For each selected foliage instance type try to remove something
     const BoundingSphere brush(brushPosition, brushRadius);
+    const Transform foliageTransform = foliage->GetTransform();
     for (auto i = foliage->Instances.Begin(); i.IsNotEnd(); ++i)
     {
         auto& instance = *i;
 
         // Skip instances outside the brush
-        if (CollisionsHelper::SphereContainsPoint(brush, instance.World.GetTranslation()) == ContainmentType::Disjoint)
+        const Vector3 instancePosition = foliageTransform.LocalToWorld(instance.Transform.Translation);
+        if (CollisionsHelper::SphereContainsPoint(brush, instancePosition) == ContainmentType::Disjoint)
             continue;
 
         // Skip instances not existing in a filter

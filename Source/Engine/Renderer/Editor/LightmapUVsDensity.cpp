@@ -72,6 +72,7 @@ namespace
 {
     Actor* FindActorByDrawCall(Actor* actor, const DrawCall& drawCall, float& scaleInLightmap)
     {
+        // TODO: large-worlds
         const auto asStaticModel = ScriptingObject::Cast<StaticModel>(actor);
         if (asStaticModel && asStaticModel->GetPerInstanceRandom() == drawCall.PerInstanceRandom && asStaticModel->GetPosition() == drawCall.ObjectPosition)
         {

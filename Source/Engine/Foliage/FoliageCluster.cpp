@@ -118,7 +118,8 @@ bool FoliageCluster::Intersects(Foliage* foliage, const Ray& ray, Real& distance
         {
             auto& ii = *Instances[i];
             auto& type = foliage->FoliageTypes[ii.Type];
-            if (type.IsReady() && ii.Bounds.Intersects(ray) && type.Model->Intersects(ray, ii.World, distance, normal, &mesh) && minDistance > distance)
+            const Transform transform = foliage->GetTransform().LocalToWorld(ii.Transform);
+            if (type.IsReady() && ii.Bounds.Intersects(ray) && type.Model->Intersects(ray, transform, distance, normal, &mesh) && minDistance > distance)
             {
                 minDistanceNormal = normal;
                 minDistance = distance;

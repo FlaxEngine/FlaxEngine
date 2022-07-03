@@ -104,12 +104,15 @@ void Foliage::DrawInstance(RenderContext& renderContext, FoliageInstance& instan
 
         // Add instance to the draw batch
         auto& instanceData = e->Instances.AddOne();
-        instanceData.InstanceOrigin = Float3(instance.World.M41, instance.World.M42, instance.World.M43);
+        Matrix world;
+        const Transform transform = _transform.LocalToWorld(instance.Transform);
+        renderContext.View.GetWorldMatrix(transform, world);
+        instanceData.InstanceOrigin = Float3(world.M41, world.M42, world.M43);
         instanceData.PerInstanceRandom = instance.Random;
-        instanceData.InstanceTransform1 = Float3(instance.World.M11, instance.World.M12, instance.World.M13);
+        instanceData.InstanceTransform1 = Float3(world.M11, world.M12, world.M13);
         instanceData.LODDitherFactor = lodDitherFactor;
-        instanceData.InstanceTransform2 = Float3(instance.World.M21, instance.World.M22, instance.World.M23);
-        instanceData.InstanceTransform3 = Float3(instance.World.M31, instance.World.M32, instance.World.M33);
+        instanceData.InstanceTransform2 = Float3(world.M21, world.M22, world.M23);
+        instanceData.InstanceTransform3 = Float3(world.M31, world.M32, world.M33);
         instanceData.InstanceLightmapArea = Half4(instance.Lightmap.UVsArea);
     }
 }
@@ -117,7 +120,8 @@ void Foliage::DrawInstance(RenderContext& renderContext, FoliageInstance& instan
 void Foliage::DrawCluster(RenderContext& renderContext, FoliageCluster* cluster, FoliageType& type, DrawCallsList* drawCallsLists, BatchedDrawCalls& result) const
 {
     // Skip clusters that around too far from view
-    if (Vector3::Distance(renderContext.View.Position, cluster->TotalBoundsSphere.Center) - cluster->TotalBoundsSphere.Radius > cluster->MaxCullDistance)
+    const Vector3 viewOrigin = renderContext.View.Origin;
+    if (Float3::Distance(renderContext.View.Position, cluster->TotalBoundsSphere.Center - viewOrigin) - (float)cluster->TotalBoundsSphere.Radius > cluster->MaxCullDistance)
         return;
 
     //DebugDraw::DrawBox(cluster->Bounds, Color::Red);
@@ -128,8 +132,12 @@ void Foliage::DrawCluster(RenderContext& renderContext, FoliageCluster* cluster,
         // Don't store instances in non-leaf nodes
         ASSERT_LOW_LAYER(cluster->Instances.IsEmpty());
 
+        BoundingBox box;
 #define DRAW_CLUSTER(idx) \
-		if (renderContext.View.CullingFrustum.Intersects(cluster->Children[idx]->TotalBounds)) \
+        box = cluster->Children[idx]->TotalBounds; \
+        box.Minimum -= viewOrigin; \
+        box.Maximum -= viewOrigin; \
+		if (renderContext.View.CullingFrustum.Intersects(box)) \
 			DrawCluster(renderContext, cluster->Children[idx], type, drawCallsLists, result)
         DRAW_CLUSTER(0);
         DRAW_CLUSTER(1);
@@ -145,13 +153,15 @@ void Foliage::DrawCluster(RenderContext& renderContext, FoliageCluster* cluster,
         for (int32 i = 0; i < cluster->Instances.Count(); i++)
         {
             auto& instance = *cluster->Instances[i];
-            if (Vector3::Distance(renderContext.View.Position, instance.Bounds.Center) - instance.Bounds.Radius < instance.CullDistance &&
-                renderContext.View.CullingFrustum.Intersects(instance.Bounds))
+            BoundingSphere sphere = instance.Bounds;
+            sphere.Center -= viewOrigin;
+            if (Float3::Distance(renderContext.View.Position, sphere.Center) - (float)sphere.Radius < instance.CullDistance &&
+                renderContext.View.CullingFrustum.Intersects(sphere))
             {
                 const auto modelFrame = instance.DrawState.PrevFrame + 1;
 
                 // Select a proper LOD index (model may be culled)
-                int32 lodIndex = RenderTools::ComputeModelLOD(model, instance.Bounds.Center, (float)instance.Bounds.Radius, renderContext); // TODO: large-worlds
+                int32 lodIndex = RenderTools::ComputeModelLOD(model, sphere.Center, (float)sphere.Radius, renderContext);
                 if (lodIndex == -1)
                 {
                     // Handling model fade-out transition
@@ -239,7 +249,8 @@ void Foliage::DrawCluster(RenderContext& renderContext, FoliageCluster* cluster,
 void Foliage::DrawCluster(RenderContext& renderContext, FoliageCluster* cluster, Mesh::DrawInfo& draw)
 {
     // Skip clusters that around too far from view
-    if (Vector3::Distance(renderContext.View.Position, cluster->TotalBoundsSphere.Center) - cluster->TotalBoundsSphere.Radius > cluster->MaxCullDistance)
+    const Vector3 viewOrigin = renderContext.View.Origin;
+    if (Float3::Distance(renderContext.View.Position, cluster->TotalBoundsSphere.Center - viewOrigin) - (float)cluster->TotalBoundsSphere.Radius > cluster->MaxCullDistance)
         return;
 
     //DebugDraw::DrawBox(cluster->Bounds, Color::Red);
@@ -250,8 +261,12 @@ void Foliage::DrawCluster(RenderContext& renderContext, FoliageCluster* cluster,
         // Don't store instances in non-leaf nodes
         ASSERT_LOW_LAYER(cluster->Instances.IsEmpty());
 
+        BoundingBox box;
 #define DRAW_CLUSTER(idx) \
-		if (renderContext.View.CullingFrustum.Intersects(cluster->Children[idx]->TotalBounds)) \
+        box = cluster->Children[idx]->TotalBounds; \
+        box.Minimum -= viewOrigin; \
+        box.Maximum -= viewOrigin; \
+		if (renderContext.View.CullingFrustum.Intersects(box)) \
 			DrawCluster(renderContext, cluster->Children[idx], draw)
         DRAW_CLUSTER(0);
         DRAW_CLUSTER(1);
@@ -267,22 +282,28 @@ void Foliage::DrawCluster(RenderContext& renderContext, FoliageCluster* cluster,
         {
             auto& instance = *cluster->Instances[i];
             auto& type = FoliageTypes[instance.Type];
+            BoundingSphere sphere = instance.Bounds;
+            sphere.Center -= viewOrigin;
 
             // Check if can draw this instance
             if (type._canDraw &&
-                Vector3::Distance(renderContext.View.Position, instance.Bounds.Center) - instance.Bounds.Radius < instance.CullDistance &&
-                renderContext.View.CullingFrustum.Intersects(instance.Bounds))
+                Float3::Distance(renderContext.View.Position, sphere.Center) - (float)sphere.Radius < instance.CullDistance &&
+                renderContext.View.CullingFrustum.Intersects(sphere))
             {
+                Matrix world;
+                const Transform transform = _transform.LocalToWorld(instance.Transform);
+                renderContext.View.GetWorldMatrix(transform, world);
+
                 // Disable motion blur
-                instance.DrawState.PrevWorld = instance.World;
+                instance.DrawState.PrevWorld = world;
 
                 // Draw model
                 draw.Lightmap = _scene->LightmapsData.GetReadyLightmap(instance.Lightmap.TextureIndex);
                 draw.LightmapUVs = &instance.Lightmap.UVsArea;
                 draw.Buffer = &type.Entries;
-                draw.World = &instance.World;
+                draw.World = &world;
                 draw.DrawState = &instance.DrawState;
-                draw.Bounds = instance.Bounds;
+                draw.Bounds = sphere;
                 draw.PerInstanceRandom = instance.Random;
                 draw.DrawModes = type._drawModes;
                 type.Model->Draw(renderContext, draw);
@@ -411,13 +432,6 @@ void Foliage::AddInstance(const FoliageInstance& instance)
     data->Random = Random::Rand();
     data->CullDistance = type->CullDistance + type->CullDistanceRandomRange * data->Random;
 
-    // Calculate foliage instance geometry transformation matrix
-    Matrix matrix, world;
-    GetLocalToWorldMatrix(world);
-    data->Transform.GetWorld(matrix);
-    Matrix::Multiply(matrix, world, data->World);
-    data->DrawState.PrevWorld = data->World;
-
     // Validate foliage type model
     if (!type->IsReady())
         return;
@@ -425,13 +439,14 @@ void Foliage::AddInstance(const FoliageInstance& instance)
     // Update bounds
     Vector3 corners[8];
     auto& meshes = type->Model->LODs[0].Meshes;
+    const Transform transform = _transform.LocalToWorld(data->Transform);
     for (int32 j = 0; j < meshes.Count(); j++)
     {
         meshes[j].GetBox().GetCorners(corners);
 
         for (int32 k = 0; k < 8; k++)
         {
-            Vector3::Transform(corners[k], data->World, corners[k]);
+            Vector3::Transform(corners[k], transform, corners[k]);
         }
         BoundingSphere meshBounds;
         BoundingSphere::FromPoints(corners, 8, meshBounds);
@@ -455,25 +470,20 @@ void Foliage::SetInstanceTransform(int32 index, const Transform& value)
     // Change transform
     instance.Transform = value;
 
-    // Update world matrix
-    Matrix matrix, world;
-    GetLocalToWorldMatrix(world);
-    instance.Transform.GetWorld(matrix);
-    Matrix::Multiply(matrix, world, instance.World);
-
     // Update bounds
     instance.Bounds = BoundingSphere::Empty;
     if (!type->IsReady())
         return;
     Vector3 corners[8];
     auto& meshes = type->Model->LODs[0].Meshes;
+    const Transform transform = _transform.LocalToWorld(instance.Transform);
     for (int32 j = 0; j < meshes.Count(); j++)
     {
         meshes[j].GetBox().GetCorners(corners);
 
         for (int32 k = 0; k < 8; k++)
         {
-            Vector3::Transform(corners[k], instance.World, corners[k]);
+            Vector3::Transform(corners[k], transform, corners[k]);
         }
         BoundingSphere meshBounds;
         BoundingSphere::FromPoints(corners, 8, meshBounds);
@@ -507,6 +517,7 @@ void Foliage::OnFoliageTypeModelLoaded(int32 index)
             if (instance.Type != index)
                 continue;
             instance.Bounds = BoundingSphere::Empty;
+            const Transform transform = _transform.LocalToWorld(instance.Transform);
 
             // Include all meshes
             for (int32 j = 0; j < meshes.Count(); j++)
@@ -517,7 +528,7 @@ void Foliage::OnFoliageTypeModelLoaded(int32 index)
                 // TODO: use SIMD
                 for (int32 k = 0; k < 8; k++)
                 {
-                    Vector3::Transform(corners[k], instance.World, corners[k]);
+                    Vector3::Transform(corners[k], transform, corners[k]);
                 }
                 BoundingSphere meshBounds;
                 BoundingSphere::FromPoints(corners, 8, meshBounds);
@@ -1271,22 +1282,19 @@ void Foliage::OnTransformChanged()
         auto& instance = *i;
         auto type = &FoliageTypes[instance.Type];
 
-        // Update world matrix
-        instance.Transform.GetWorld(matrix);
-        Matrix::Multiply(matrix, world, instance.World);
-
         // Update bounds
         instance.Bounds = BoundingSphere::Empty;
         if (!type->IsReady())
             continue;
         auto& meshes = type->Model->LODs[0].Meshes;
+        const Transform transform = _transform.LocalToWorld(instance.Transform);
         for (int32 j = 0; j < meshes.Count(); j++)
         {
             meshes[j].GetBox().GetCorners(corners);
 
             for (int32 k = 0; k < 8; k++)
             {
-                Vector3::Transform(corners[k], instance.World, corners[k]);
+                Vector3::Transform(corners[k], transform, corners[k]);
             }
             BoundingSphere meshBounds;
             BoundingSphere::FromPoints(corners, 8, meshBounds);

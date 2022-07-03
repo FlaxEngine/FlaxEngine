@@ -216,10 +216,9 @@ namespace FlaxEditor.Tools.Foliage
             var model = foliage.GetFoliageType(instance.Type).Model;
             if (model)
             {
-                foliage.GetLocalToWorldMatrix(out var world);
-                instance.Transform.GetWorld(out var matrix);
-                Matrix.Multiply(ref matrix, ref world, out var instanceWorld);
-                model.Draw(ref renderContext, _highlightMaterial, ref instanceWorld, StaticFlags.None, false);
+                var transform = foliage.Transform.LocalToWorld(instance.Transform);
+                renderContext.View.GetWorldMatrix(ref transform, out var world);
+                model.Draw(ref renderContext, _highlightMaterial, ref world, StaticFlags.None, false);
             }
         }
 

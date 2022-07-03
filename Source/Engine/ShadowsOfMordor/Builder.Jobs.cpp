@@ -188,7 +188,9 @@ void ShadowsOfMordor::Builder::onJobRender(GPUContext* context)
                 auto& instance = foliage->Instances[entry.AsFoliage.InstanceIndex];
                 auto& type = foliage->FoliageTypes[entry.AsFoliage.TypeIndex];
 
-                Matrix::Transpose(instance.World, shaderData.WorldMatrix);
+                Matrix world;
+                foliage->GetTransform().LocalToWorld(instance.Transform).GetWorld(world);
+                Matrix::Transpose(world, shaderData.WorldMatrix);
                 shaderData.LightmapArea = instance.Lightmap.UVsArea;
 
                 context->UpdateCB(cb, &shaderData);
