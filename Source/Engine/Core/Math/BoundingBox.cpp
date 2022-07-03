@@ -129,30 +129,28 @@ void BoundingBox::Transform(const BoundingBox& box, const Matrix& matrix, Boundi
     const auto zb = backward * box.Maximum.Z;
 
     const auto translation = matrix.GetTranslation();
-    result = BoundingBox(
-        Vector3::Min(xa, xb) + Vector3::Min(ya, yb) + Vector3::Min(za, zb) + translation,
-        Vector3::Max(xa, xb) + Vector3::Max(ya, yb) + Vector3::Max(za, zb) + translation);
-
-    /*
-    // Get box corners
-    Vector3 corners[8];
-    box.GetCorners(corners);
-
-    // Transform them
-    for (int32 i = 0; i < 8; i++)
-    {
-        corners[i] = Vector3::Transform(corners[i], matrix);
-    }
-
-    // Construct box from the points
-    result = FromPoints(corners, 8);
-    */
+    const auto min = Vector3::Min(xa, xb) + Vector3::Min(ya, yb) + Vector3::Min(za, zb) + translation;
+    const auto max = Vector3::Max(xa, xb) + Vector3::Max(ya, yb) + Vector3::Max(za, zb) + translation;
+    result = BoundingBox(min, max);
 }
 
 void BoundingBox::Transform(const BoundingBox& box, const ::Transform& transform, BoundingBox& result)
 {
-    // TODO: optimize it and support large worlds without using Matrix
-    Matrix matrix;
-    transform.GetWorld(matrix);
-    Transform(box, matrix, result);
+    // Reference: http://dev.theomader.com/transform-bounding-boxes/
+
+    const auto right = transform.GetRight();
+    const auto xa = right * box.Minimum.X;
+    const auto xb = right * box.Maximum.X;
+
+    const auto up = transform.GetUp();
+    const auto ya = up * box.Minimum.Y;
+    const auto yb = up * box.Maximum.Y;
+
+    const auto backward = transform.GetBackward();
+    const auto za = backward * box.Minimum.Z;
+    const auto zb = backward * box.Maximum.Z;
+
+    const auto min = Vector3::Min(xa, xb) + Vector3::Min(ya, yb) + Vector3::Min(za, zb) + transform.Translation;
+    const auto max = Vector3::Max(xa, xb) + Vector3::Max(ya, yb) + Vector3::Max(za, zb) + transform.Translation;
+    result = BoundingBox(min, max);
 }
