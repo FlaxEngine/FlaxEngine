@@ -319,35 +319,12 @@ public:
     }
 
 public:
-    FORCE_INLINE Float3 GetRight() const
-    {
-        return Float3::Transform(Float3::Right, Orientation);
-    }
-
-    FORCE_INLINE Float3 GetLeft() const
-    {
-        return Float3::Transform(Float3::Left, Orientation);
-    }
-
-    FORCE_INLINE Float3 GetUp() const
-    {
-        return Float3::Transform(Float3::Up, Orientation);
-    }
-
-    FORCE_INLINE Float3 GetDown() const
-    {
-        return Float3::Transform(Float3::Down, Orientation);
-    }
-
-    FORCE_INLINE Float3 GetForward() const
-    {
-        return Float3::Transform(Float3::Forward, Orientation);
-    }
-
-    FORCE_INLINE Float3 GetBackward() const
-    {
-        return Float3::Transform(Float3::Backward, Orientation);
-    }
+    Float3 GetRight() const;
+    Float3 GetLeft() const;
+    Float3 GetUp() const;
+    Float3 GetDown() const;
+    Float3 GetForward() const;
+    Float3 GetBackward() const;
 
 public:
     static Transform Lerp(const Transform& t1, const Transform& t2, float amount);

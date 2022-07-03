@@ -188,6 +188,36 @@ void Transform::WorldToLocalVector(const Vector3& vector, Vector3& result) const
     result *= invScale;
 }
 
+Float3 Transform::GetRight() const
+{
+    return Float3::Transform(Float3::Right, Orientation);
+}
+
+Float3 Transform::GetLeft() const
+{
+    return Float3::Transform(Float3::Left, Orientation);
+}
+
+Float3 Transform::GetUp() const
+{
+    return Float3::Transform(Float3::Up, Orientation);
+}
+
+Float3 Transform::GetDown() const
+{
+    return Float3::Transform(Float3::Down, Orientation);
+}
+
+Float3 Transform::GetForward() const
+{
+    return Float3::Transform(Float3::Forward, Orientation);
+}
+
+Float3 Transform::GetBackward() const
+{
+    return Float3::Transform(Float3::Backward, Orientation);
+}
+
 Transform Transform::Lerp(const Transform& t1, const Transform& t2, float amount)
 {
     Transform result;
