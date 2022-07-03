@@ -877,8 +877,9 @@ void Particles::DrawParticles(RenderContext& renderContext, ParticleEffect* effe
     const auto drawModes = static_cast<DrawPass>(view.Pass & effect->DrawModes);
     if (drawModes == DrawPass::None || SpriteRenderer.Init())
         return;
-    Matrix world;
-    effect->GetWorld(&world);
+    Matrix worlds[2];
+    Matrix::Translation(-renderContext.View.Origin, worlds[0]); // World
+    renderContext.View.GetWorldMatrix(effect->GetTransform(), worlds[1]); // Local
     const auto staticFlags = effect->GetStaticFlags();
 
     // Draw lights
@@ -888,14 +889,15 @@ void Particles::DrawParticles(RenderContext& renderContext, ParticleEffect* effe
         const auto buffer = emitterData.Buffer;
         if (!buffer || (buffer->Mode == ParticlesSimulationMode::CPU && buffer->CPU.Count == 0))
             continue;
+        auto emitter = buffer->Emitter;
 
-        buffer->Emitter->GraphExecutorCPU.Draw(buffer->Emitter, effect, emitterData, renderContext, world);
+        buffer->Emitter->GraphExecutorCPU.Draw(buffer->Emitter, effect, emitterData, renderContext, worlds[(int32)emitter->SimulationSpace]);
     }
 
     // Setup a draw call common data
     DrawCall drawCall;
     drawCall.PerInstanceRandom = effect->GetPerInstanceRandom();
-    drawCall.ObjectPosition = world.GetTranslation();
+    drawCall.ObjectPosition = effect->GetPosition();
 
     // Draw all emitters
     for (int32 emitterIndex = 0; emitterIndex < effect->Instance.Emitters.Count(); emitterIndex++)
@@ -906,7 +908,7 @@ void Particles::DrawParticles(RenderContext& renderContext, ParticleEffect* effe
             continue;
         auto emitter = buffer->Emitter;
 
-        drawCall.World = emitter->SimulationSpace == ParticlesSimulationSpace::World ? Matrix::Identity : world;
+        drawCall.World = worlds[(int32)emitter->SimulationSpace];
         drawCall.WorldDeterminantSign = Math::FloatSelect(drawCall.World.RotDeterminant(), 1, -1);
         drawCall.Particle.Particles = buffer;
 

@@ -179,7 +179,6 @@ public:
 private:
     uint64 _lastUpdateFrame;
     Real _lastMinDstSqr;
-    Matrix _world;
     int32 _sceneRenderingKey = -1;
     uint32 _parametersVersion = 0; // Version number for _parameters to be in sync with Instance.ParametersVersion
     Array<ParticleEffectParameter> _parameters; // Cached for scripting API
@@ -245,15 +244,6 @@ public:
     /// </summary>
     API_FIELD(Attributes="EditorDisplay(\"Particle Effect\"), EditorOrder(75), DefaultValue(DrawPass.Default)")
     DrawPass DrawModes = DrawPass::Default;
-
-    /// <summary>
-    /// Gets the actor world matrix transform.
-    /// </summary>
-    /// <param name="world">Result world matrix</param>
-    FORCE_INLINE void GetWorld(Matrix* world) const
-    {
-        *world = _world;
-    }
 
 public:
     /// <summary>
