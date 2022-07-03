@@ -207,6 +207,18 @@ void Float3::Transform(const Float3& vector, const Matrix3x3& transform, Float3&
 }
 
 template<>
+void Float3::Transform(const Float3& vector, const ::Transform& transform, Float3& result)
+{
+#if USE_LARGE_WORLDS
+    Vector3 tmp;
+    transform.LocalToWorld(vector, tmp);
+    result = tmp;
+#else
+    transform.LocalToWorld(vector, result);
+#endif
+}
+
+template<>
 Float3 Float3::Transform(const Float3& vector, const Matrix& transform)
 {
     return Float3(
@@ -509,6 +521,18 @@ void Double3::Transform(const Double3& vector, const Matrix3x3& transform, Doubl
 }
 
 template<>
+void Double3::Transform(const Double3& vector, const ::Transform& transform, Double3& result)
+{
+#if USE_LARGE_WORLDS
+    transform.LocalToWorld(vector, result);
+#else
+    Vector3 tmp;
+    transform.LocalToWorld(vector, tmp);
+    result = tmp;
+#endif
+}
+
+template<>
 Double3 Double3::Transform(const Double3& vector, const Matrix& transform)
 {
     return Double3(
@@ -755,6 +779,12 @@ void Int3::Transform(const Int3& vector, const Matrix& transform, Int3& result)
 
 template<>
 void Int3::Transform(const Int3& vector, const Matrix3x3& transform, Int3& result)
+{
+    result = vector;
+}
+
+template<>
+void Int3::Transform(const Int3& vector, const ::Transform& transform, Int3& result)
 {
     result = vector;
 }

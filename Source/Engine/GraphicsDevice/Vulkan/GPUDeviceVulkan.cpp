@@ -215,7 +215,10 @@ static VKAPI_ATTR VkBool32 VKAPI_PTR DebugUtilsCallback(VkDebugUtilsMessageSever
     while (handleStart != nullptr)
     {
         while (*handleStart != ' ' && *handleStart != 0)
-            *handleStart++ = Math::Clamp<char>(*handleStart, '0', 'z');
+        {
+            *handleStart = Math::Clamp<char>(*handleStart, '0', 'z');
+            handleStart++;
+        }
         if (*handleStart == 0)
             break;
         handleStart = (char*)StringUtils::FindIgnoreCase(handleStart, "0x");
