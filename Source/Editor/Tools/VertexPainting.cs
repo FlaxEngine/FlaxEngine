@@ -620,6 +620,8 @@ namespace FlaxEditor.Tools
 
             if (_hasHit)
             {
+                var viewOrigin = renderContext.View.Origin;
+
                 // Draw paint brush
                 if (!_brushModel)
                 {
@@ -635,7 +637,7 @@ namespace FlaxEditor.Tools
                     _brushMaterial.SetParameterValue("Color", new Color(1.0f, 0.85f, 0.0f)); // TODO: expose to editor options
                     _brushMaterial.SetParameterValue("DepthBuffer", Owner.RenderTask.Buffers.DepthBuffer);
                     Quaternion rotation = RootNode.RaycastNormalRotation(ref _hitNormal);
-                    Matrix transform = Matrix.Scaling(_gizmoMode.BrushSize * 0.01f) * Matrix.RotationQuaternion(rotation) * Matrix.Translation(_hitLocation);
+                    Matrix transform = Matrix.Scaling(_gizmoMode.BrushSize * 0.01f) * Matrix.RotationQuaternion(rotation) * Matrix.Translation(_hitLocation - viewOrigin);
                     _brushModel.Draw(ref renderContext, _brushMaterial, ref transform);
                 }
 
@@ -650,7 +652,6 @@ namespace FlaxEditor.Tools
                     var instanceTransform = _selectedModel.Transform;
                     var modelScaleMatrix = Matrix.Scaling(_gizmoMode.PreviewVertexSize * 0.01f);
                     var brushSphere = new BoundingSphere(_hitLocation, _gizmoMode.BrushSize);
-                    // TODO: large-worlds
                     var lodIndex = _gizmoMode.ModelLOD == -1 ? RenderTools.ComputeModelLOD(_selectedModel.Model, ref renderContext.View.Position, (float)_selectedModel.Sphere.Radius, ref renderContext) : _gizmoMode.ModelLOD;
                     lodIndex = Mathf.Clamp(lodIndex, 0, meshDatas.Length - 1);
                     var lodData = meshDatas[lodIndex];
@@ -667,7 +668,7 @@ namespace FlaxEditor.Tools
                                 var pos = instanceTransform.LocalToWorld(v.Position);
                                 if (brushSphere.Contains(ref pos) == ContainmentType.Disjoint)
                                     continue;
-                                Matrix transform = modelScaleMatrix * Matrix.Translation(pos);
+                                Matrix transform = modelScaleMatrix * Matrix.Translation(pos - viewOrigin);
                                 _brushModel.Draw(ref renderContext, _verticesPreviewMaterial, ref transform);
                             }
                         }
@@ -690,11 +691,11 @@ namespace FlaxEditor.Tools
                 _vertexColorsPreviewMaterial = FlaxEngine.Content.LoadAsyncInternal<MaterialBase>(EditorAssets.VertexColorsPreviewMaterial).CreateVirtualInstance();
             if (!_vertexColorsPreviewMaterial)
                 return;
-            var channelMask = new Vector4();
+            var channelMask = new Float4();
             switch (previewMode)
             {
             case VertexPaintingGizmoMode.VertexColorsPreviewMode.RGB:
-                channelMask = new Vector4(1, 1, 1, 0);
+                channelMask = new Float4(1, 1, 1, 0);
                 break;
             case VertexPaintingGizmoMode.VertexColorsPreviewMode.Red:
                 channelMask.X = 1.0f;
