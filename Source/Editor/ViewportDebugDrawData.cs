@@ -113,7 +113,7 @@ namespace FlaxEditor
                     var bounds = BoundingSphere.FromBox(staticModel.Box);
 
                     // Pick a proper LOD
-                    var center = (Float3)bounds.Center; // TODO: large-worlds
+                    Float3 center = bounds.Center - renderContext.View.Origin;
                     int lodIndex = RenderTools.ComputeModelLOD(model, ref center, (float)bounds.Radius, ref renderContext);
                     var lods = model.LODs;
                     if (lods == null || lods.Length < lodIndex || lodIndex < 0)
