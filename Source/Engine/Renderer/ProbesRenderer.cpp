@@ -12,6 +12,7 @@
 #include "Engine/Level/Actors/EnvironmentProbe.h"
 #include "Engine/Level/Actors/SkyLight.h"
 #include "Engine/Level/SceneQuery.h"
+#include "Engine/Level/LargeWorlds.h"
 #include "Engine/ContentExporters/AssetExporters.h"
 #include "Engine/Serialization/FileWriteStream.h"
 #include "Engine/Engine/Time.h"
@@ -430,12 +431,11 @@ bool fixFarPlaneTreeExecute(Actor* actor, const Vector3& position, float& farPla
     if (auto* pointLight = dynamic_cast<PointLight*>(actor))
     {
         const Real dst = Vector3::Distance(pointLight->GetPosition(), position) + pointLight->GetScaledRadius();
-        if (dst > farPlane)
+        if (dst > farPlane && dst * 0.5f < farPlane)
         {
             farPlane = (float)dst;
         }
     }
-
     return true;
 }
 
@@ -480,7 +480,8 @@ void ProbesRenderer::onRender(RenderTask* task, GPUContext* context)
         SceneQuery::TreeExecute<const Vector3&, float&>(f, position, farPlane);
 
         // Setup view
-        _task->View.SetUpCube(nearPlane, farPlane, position);
+        LargeWorlds::UpdateOrigin(_task->View.Origin, position);
+        _task->View.SetUpCube(nearPlane, farPlane, position - _task->View.Origin);
     }
     else if (_current.Type == EntryType::SkyLight)
     {
@@ -494,7 +495,8 @@ void ProbesRenderer::onRender(RenderTask* task, GPUContext* context)
         // TODO: use setLowerHemisphereToBlack feature for SkyLight?
 
         // Setup view
-        _task->View.SetUpCube(nearPlane, farPlane, position);
+        LargeWorlds::UpdateOrigin(_task->View.Origin, position);
+        _task->View.SetUpCube(nearPlane, farPlane, position - _task->View.Origin);
     }
 
     // Disable actor during baking (it cannot influence own results)
