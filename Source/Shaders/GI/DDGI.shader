@@ -103,8 +103,12 @@ void CS_Classify(uint3 DispatchThreadId : SV_DispatchThreadID)
     float4 probeStateOld = probeState;
 
     // Use Global SDF to quickly get distance and direction to the scene geometry
+#if DDGI_PROBE_RELOCATE_ITERATIVE
     float sdf;
     float3 sdfNormal = normalize(SampleGlobalSDFGradient(GlobalSDF, GlobalSDFTex, GlobalSDFMip, probePosition, sdf));
+#else
+    float sdf = SampleGlobalSDF(GlobalSDF, GlobalSDFTex, GlobalSDFMip, probePosition);
+#endif
     float sdfDst = abs(sdf);
     float threshold = GlobalSDF.CascadeVoxelSize[CascadeIndex];
     float distanceLimit = length(probesSpacing) * 1.5f;

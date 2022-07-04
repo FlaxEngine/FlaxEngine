@@ -107,8 +107,34 @@ float SampleGlobalSDF(const GlobalSDFData data, Texture3D<float> tex, float3 wor
         float3 cascadeUV, textureUV;
         GetGlobalSDFCascadeUV(data, cascade, worldPosition, cascadeMaxDistance, cascadeUV, textureUV);
         float cascadeDistance = tex.SampleLevel(SamplerLinearClamp, textureUV, 0);
-        if (cascadeDistance < 1.0f && !any(cascadeUV < 0) && !any(cascadeUV > 1))
+        if (cascadeDistance < 0.9f && !any(cascadeUV < 0) && !any(cascadeUV > 1))
         {
+            distance = cascadeDistance * cascadeMaxDistance;
+            break;
+        }
+    }
+    return distance;
+}
+
+// Samples the Global SDF and returns the distance to the closest surface (in world units) at the given world location.
+float SampleGlobalSDF(const GlobalSDFData data, Texture3D<float> tex, Texture3D<float> mip, float3 worldPosition)
+{
+    float distance = data.CascadePosDistance[3].w * 2.0f;
+    if (distance <= 0.0f)
+        return GLOBAL_SDF_WORLD_SIZE;
+    float chunkSizeDistance = (float)GLOBAL_SDF_RASTERIZE_CHUNK_SIZE / data.Resolution; // Size of the chunk in SDF distance (0-1)
+    float chunkMarginDistance = (float)GLOBAL_SDF_RASTERIZE_CHUNK_MARGIN / data.Resolution; // Size of the chunk margin in SDF distance (0-1)
+    for (uint cascade = 0; cascade < data.CascadesCount; cascade++)
+    {
+        float cascadeMaxDistance;
+        float3 cascadeUV, textureUV;
+        GetGlobalSDFCascadeUV(data, cascade, worldPosition, cascadeMaxDistance, cascadeUV, textureUV);
+        float cascadeDistance = mip.SampleLevel(SamplerLinearClamp, textureUV, 0);
+        if (cascadeDistance < chunkSizeDistance && !any(cascadeUV < 0) && !any(cascadeUV > 1))
+        {
+            float cascadeDistanceTex = tex.SampleLevel(SamplerLinearClamp, textureUV, 0);
+            if (cascadeDistanceTex < chunkMarginDistance * 2)
+                cascadeDistance = cascadeDistanceTex;
             distance = cascadeDistance * cascadeMaxDistance;
             break;
         }
@@ -165,9 +191,7 @@ float3 SampleGlobalSDFGradient(const GlobalSDFData data, Texture3D<float> tex, T
         {
             float cascadeDistanceTex = tex.SampleLevel(SamplerLinearClamp, textureUV, 0);
             if (cascadeDistanceTex < chunkMarginDistance * 2)
-            {
                 cascadeDistance = cascadeDistanceTex;
-            }
             float texelOffset = 1.0f / data.Resolution;
             float xp = tex.SampleLevel(SamplerLinearClamp, float3(textureUV.x + texelOffset, textureUV.y, textureUV.z), 0).x;
             float xn = tex.SampleLevel(SamplerLinearClamp, float3(textureUV.x - texelOffset, textureUV.y, textureUV.z), 0).x;
