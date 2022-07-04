@@ -62,6 +62,11 @@ namespace Flax.Build.Platforms
         protected string LdPath;
 
         /// <summary>
+        /// The type of the linker.
+        /// </summary>
+        protected string LdKind;
+
+        /// <summary>
         /// The clang tool version.
         /// </summary>
         protected Version ClangVersion;
@@ -91,7 +96,19 @@ namespace Flax.Build.Platforms
                 RanlibPath = UnixPlatform.Which("ranlib");
                 StripPath = UnixPlatform.Which("strip");
                 ObjcopyPath = UnixPlatform.Which("objcopy");
-                LdPath = UnixPlatform.Which("ld");
+
+                LdPath = UnixPlatform.Which("ld.lld");
+                LdKind = "lld";
+                if (LdPath == null)
+                {
+                    LdPath = UnixPlatform.Which("ld.gold");
+                    LdKind = "gold";
+                }
+                if (LdPath == null)
+                {
+                    LdPath = UnixPlatform.Which("ld");
+                    LdKind = null;
+                }
             }
             else
             {
@@ -478,6 +495,9 @@ namespace Flax.Build.Platforms
                 // TODO: linkEnvironment.LinkTimeCodeGeneration
                 // TODO: linkEnvironment.Optimization
                 // TODO: linkEnvironment.UseIncrementalLinking
+
+                if (!string.IsNullOrEmpty(LdKind))
+                    args.Add(string.Format("-fuse-ld={0}", LdKind));
             }
             SetupLinkFilesArgs(graph, options, args, outputFilePath);
 
