@@ -94,6 +94,7 @@ public:
     static void SetSceneEnableCCD(void* scene, bool value);
     static float GetSceneBounceThresholdVelocity(void* scene);
     static void SetSceneBounceThresholdVelocity(void* scene, float value);
+    static void SetSceneOrigin(void* scene, const Vector3& oldOrigin, const Vector3& newOrigin);
     static void AddSceneActor(void* scene, void* actor);
     static void RemoveSceneActor(void* scene, void* actor);
     static void AddSceneActorAction(void* scene, void* actor, ActionType action);
@@ -132,8 +133,8 @@ public:
     static void SetActorFlags(void* actor, ActorFlags value);
     static void GetActorBounds(void* actor, BoundingBox& bounds);
     static int32 GetRigidActorShapesCount(void* actor);
-    static void* CreateRigidDynamicActor(IPhysicsActor* actor, const Vector3& position, const Quaternion& orientation);
-    static void* CreateRigidStaticActor(IPhysicsActor* actor, const Vector3& position, const Quaternion& orientation);
+    static void* CreateRigidDynamicActor(IPhysicsActor* actor, const Vector3& position, const Quaternion& orientation, void* scene);
+    static void* CreateRigidStaticActor(IPhysicsActor* actor, const Vector3& position, const Quaternion& orientation, void* scene);
     static RigidDynamicFlags GetRigidDynamicActorFlags(void* actor);
     static void SetRigidDynamicActorFlags(void* actor, RigidDynamicFlags value);
     static void GetRigidActorPose(void* actor, Vector3& position, Quaternion& orientation);

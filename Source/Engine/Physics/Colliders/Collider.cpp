@@ -258,13 +258,13 @@ void Collider::UpdateGeometry()
 void Collider::CreateStaticActor()
 {
     ASSERT(_staticActor == nullptr);
-    _staticActor = PhysicsBackend::CreateRigidStaticActor(nullptr, _transform.Translation, _transform.Orientation);
+    void* scene = GetPhysicsScene()->GetPhysicsScene();
+    _staticActor = PhysicsBackend::CreateRigidStaticActor(nullptr, _transform.Translation, _transform.Orientation, scene);
 
     // Reset local pos of the shape and link it to the actor
     PhysicsBackend::SetShapeLocalPose(_shape, _center, Quaternion::Identity);
     PhysicsBackend::AttachShape(_shape, _staticActor);
 
-    void* scene = GetPhysicsScene()->GetPhysicsScene();
     PhysicsBackend::AddSceneActor(scene, _staticActor);
 }
 
