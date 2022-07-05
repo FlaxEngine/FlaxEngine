@@ -372,8 +372,7 @@ namespace FlaxEditor.Surface
                 return;
             }
             var parameters = window.VisjectSurface.Parameters;
-            GroupElement lastGroup = null;
-
+            CustomEditors.Editors.GenericEditor.OnGroupUsage();
             for (int i = 0; i < parameters.Count; i++)
             {
                 var p = parameters[i];
@@ -385,25 +384,13 @@ namespace FlaxEditor.Surface
                 var attributes = p.Meta.GetAttributes();
                 if (attributes == null || attributes.Length == 0)
                     attributes = DefaultAttributes;
-                var itemLayout = layout;
                 var name = p.Name;
 
                 // Editor Display
                 var editorDisplay = (EditorDisplayAttribute)attributes.FirstOrDefault(x => x is EditorDisplayAttribute);
-                if (editorDisplay?.Group != null)
-                {
-                    if (lastGroup == null || lastGroup.Panel.HeaderText != editorDisplay.Group)
-                    {
-                        lastGroup = layout.Group(editorDisplay.Group);
-                        lastGroup.Panel.Open(false);
-                    }
-                    itemLayout = lastGroup;
-                }
-                else
-                {
-                    lastGroup = null;
-                    itemLayout = layout;
-                }
+                var itemLayout = CustomEditors.Editors.GenericEditor.OnGroup(layout, editorDisplay);
+                if (itemLayout is GroupElement groupElement)
+                    groupElement.Panel.Open(false);
                 if (editorDisplay?.Name != null)
                     name = editorDisplay.Name;
 
@@ -442,6 +429,7 @@ namespace FlaxEditor.Surface
                 var property = itemLayout.AddPropertyItem(propertyLabel, tooltipText);
                 property.Object(propertyValue);
             }
+            CustomEditors.Editors.GenericEditor.OnGroupUsage();
 
             // Parameters creating
             var newParameterTypes = window.NewParameterTypes;

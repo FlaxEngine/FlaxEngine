@@ -85,11 +85,6 @@ namespace FlaxEditor.CustomEditors.Editors
             public string DisplayName { get; }
 
             /// <summary>
-            /// Gets a value indicating whether use dedicated group.
-            /// </summary>
-            public bool UseGroup => Display?.Group != null;
-
-            /// <summary>
             /// Gets the overridden custom editor for item editing.
             /// </summary>
             public CustomEditor OverrideEditor
@@ -230,6 +225,7 @@ namespace FlaxEditor.CustomEditors.Editors
         }
 
         private static HashSet<PropertiesList> _visibleIfPropertiesListsCache;
+        private static Dictionary<string, GroupElement> _groups;
         private VisibleIfCache[] _visibleIfCaches;
         private bool _isNull;
 
@@ -335,7 +331,7 @@ namespace FlaxEditor.CustomEditors.Editors
             return ScriptMemberInfo.Null;
         }
 
-        private void GroupPanelCheckIfCanRevert(LayoutElementsContainer layout, ref bool canRevertReference, ref bool canRevertDefault)
+        private static void GroupPanelCheckIfCanRevert(LayoutElementsContainer layout, ref bool canRevertReference, ref bool canRevertDefault)
         {
             if (layout == null || canRevertReference && canRevertDefault)
                 return;
@@ -350,7 +346,7 @@ namespace FlaxEditor.CustomEditors.Editors
                 GroupPanelCheckIfCanRevert(child as LayoutElementsContainer, ref canRevertReference, ref canRevertDefault);
         }
 
-        private void OnGroupPanelRevert(LayoutElementsContainer layout, bool toDefault)
+        private static void OnGroupPanelRevert(LayoutElementsContainer layout, bool toDefault)
         {
             if (layout == null)
                 return;
@@ -367,7 +363,7 @@ namespace FlaxEditor.CustomEditors.Editors
                 OnGroupPanelRevert(child as LayoutElementsContainer, toDefault);
         }
 
-        private void OnGroupPanelCopy(LayoutElementsContainer layout)
+        private static void OnGroupPanelCopy(LayoutElementsContainer layout)
         {
             if (layout.Editors.Count == 1)
             {
@@ -403,12 +399,12 @@ namespace FlaxEditor.CustomEditors.Editors
             }
         }
 
-        private bool OnGroupPanelCanCopy(LayoutElementsContainer layout)
+        private static bool OnGroupPanelCanCopy(LayoutElementsContainer layout)
         {
             return layout.Editors.Count != 0 || layout.Children.Any(x => x is LayoutElementsContainer);
         }
 
-        private void OnGroupPanelPaste(LayoutElementsContainer layout)
+        private static void OnGroupPanelPaste(LayoutElementsContainer layout)
         {
             if (layout.Editors.Count == 1)
             {
@@ -452,7 +448,7 @@ namespace FlaxEditor.CustomEditors.Editors
             }
         }
 
-        private bool OnGroupPanelCanPaste(LayoutElementsContainer layout)
+        private static bool OnGroupPanelCanPaste(LayoutElementsContainer layout)
         {
             if (layout.Editors.Count == 1)
             {
@@ -498,7 +494,7 @@ namespace FlaxEditor.CustomEditors.Editors
             return false;
         }
 
-        private void OnGroupPanelMouseButtonRightClicked(DropPanel groupPanel, Float2 location)
+        private static void OnGroupPanelMouseButtonRightClicked(DropPanel groupPanel, Float2 location)
         {
             var group = (GroupElement)groupPanel.Tag;
             bool canRevertReference = false, canRevertDefault = false;
@@ -516,6 +512,36 @@ namespace FlaxEditor.CustomEditors.Editors
             paste.Enabled = OnGroupPanelCanPaste(group);
 
             menu.Show(groupPanel, location);
+        }
+
+        internal static void OnGroupUsage()
+        {
+            if (_groups != null)
+                _groups.Clear();
+        }
+        
+        internal static LayoutElementsContainer OnGroup(LayoutElementsContainer layout, EditorDisplayAttribute display)
+        {
+            if (display?.Group != null)
+            {
+                if (_groups != null && _groups.TryGetValue(display.Group, out var group))
+                {
+                    // Reuse group
+                    layout = group;
+                }
+                else
+                {
+                    // Add new group
+                    if (_groups == null)
+                        _groups = new Dictionary<string, GroupElement>();
+                    group = layout.Group(display.Group);
+                    group.Panel.Tag = group;
+                    group.Panel.MouseButtonRightClicked += OnGroupPanelMouseButtonRightClicked;
+                    _groups.Add(display.Group, group);
+                    layout = group;
+                }
+            }
+            return layout;
         }
 
         /// <summary>
@@ -687,28 +713,13 @@ namespace FlaxEditor.CustomEditors.Editors
             items.Sort();
 
             // Add items
-            GroupElement lastGroup = null;
+            OnGroupUsage();
             for (int i = 0; i < items.Count; i++)
             {
                 var item = items[i];
 
-                // Check if use group
-                LayoutElementsContainer itemLayout;
-                if (item.UseGroup)
-                {
-                    if (lastGroup == null || lastGroup.Panel.HeaderText != item.Display.Group)
-                    {
-                        lastGroup = layout.Group(item.Display.Group);
-                        lastGroup.Panel.Tag = lastGroup;
-                        lastGroup.Panel.MouseButtonRightClicked += OnGroupPanelMouseButtonRightClicked;
-                    }
-                    itemLayout = lastGroup;
-                }
-                else
-                {
-                    lastGroup = null;
-                    itemLayout = layout;
-                }
+                // Group
+                var itemLayout = OnGroup(layout, item.Display);
 
                 // Space
                 if (item.Space != null)
@@ -748,6 +759,7 @@ namespace FlaxEditor.CustomEditors.Editors
                     } while (c != null);
                 }
             }
+            OnGroupUsage();
         }
 
         /// <inheritdoc />
