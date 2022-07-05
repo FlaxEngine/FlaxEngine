@@ -409,13 +409,11 @@ void ParticleEmitterGraphCPUExecutor::Draw(ParticleEmitter* emitter, ParticleEff
             const float radius = (float)GetValue(module->GetBox(1), 3);
             const float fallOffExponent = (float)GetValue(module->GetBox(2), 4);
 
-            lightData.Position = *(Float3*)positionPtr;
             lightData.Color = Float3(color) * color.W;
             lightData.Radius = radius;
             lightData.FallOffExponent = fallOffExponent;
 
-            if (emitter->SimulationSpace == ParticlesSimulationSpace::Local)
-                Float3::Transform(lightData.Position, transform, lightData.Position);
+            Float3::Transform(*(Float3*)positionPtr, transform, lightData.Position);
 
             renderContext.List->PointLights.Add(lightData);
 

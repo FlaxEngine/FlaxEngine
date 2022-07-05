@@ -454,24 +454,48 @@ namespace FlaxEngine
             var zb = backward * box.Maximum.Z;
 
             var translation = transform.TranslationVector;
-            result = new BoundingBox(
-                                     Vector3.Min(xa, xb) + Vector3.Min(ya, yb) + Vector3.Min(za, zb) + translation,
-                                     Vector3.Max(xa, xb) + Vector3.Max(ya, yb) + Vector3.Max(za, zb) + translation);
+            var min = Vector3.Min(xa, xb) + Vector3.Min(ya, yb) + Vector3.Min(za, zb) + translation;
+            var max = Vector3.Max(xa, xb) + Vector3.Max(ya, yb) + Vector3.Max(za, zb) + translation;
+            result = new BoundingBox(min, max);
+        }
 
-            /*
-            // Get box corners
-            var corners = new Vector3[8];
-            box.GetCorners(corners);
+        /// <summary>
+        /// Transforms bounding box using the given transformation matrix.
+        /// </summary>
+        /// <param name="box">The bounding box to transform.</param>
+        /// <param name="transform">The transformation matrix.</param>
+        /// <returns>The result of the transformation.</returns>
+        public static BoundingBox Transform(BoundingBox box, Transform transform)
+        {
+            Transform(ref box, ref transform, out BoundingBox result);
+            return result;
+        }
 
-            // Transform them
-            for (int i = 0; i < 8; i++)
-            {
-                Vector3.Transform(ref corners[i], ref transform, out corners[i]);
-            }
+        /// <summary>
+        /// Transforms bounding box using the given transformation.
+        /// </summary>
+        /// <param name="box">The bounding box to transform.</param>
+        /// <param name="transform">The transformation.</param>
+        /// <param name="result">The result of the transformation.</param>
+        public static void Transform(ref BoundingBox box, ref Transform transform, out BoundingBox result)
+        {
+            // Reference: http://dev.theomader.com/transform-bounding-boxes/
 
-            // Construct box from the points
-            FromPoints(corners, out result);
-            */
+            Double3 right = transform.Right;
+            var xa = right * box.Minimum.X;
+            var xb = right * box.Maximum.X;
+
+            Double3 up = transform.Up;
+            var ya = up * box.Minimum.Y;
+            var yb = up * box.Maximum.Y;
+
+            Double3 backward = transform.Backward;
+            var za = backward * box.Minimum.Z;
+            var zb = backward * box.Maximum.Z;
+
+            var min = Vector3.Min(xa, xb) + Vector3.Min(ya, yb) + Vector3.Min(za, zb) + transform.Translation;
+            var max = Vector3.Max(xa, xb) + Vector3.Max(ya, yb) + Vector3.Max(za, zb) + transform.Translation;
+            result = new BoundingBox(min, max);
         }
 
         /// <summary>

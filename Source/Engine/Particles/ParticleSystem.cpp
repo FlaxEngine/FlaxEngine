@@ -362,7 +362,7 @@ Asset::LoadResult ParticleSystem::load()
                     continue;
 #endif
 
-                EmittersParametersOverrides.Add(key, Variant(value));
+                EmittersParametersOverrides[key] = Variant(value);
             }
         }
 
@@ -441,7 +441,7 @@ Asset::LoadResult ParticleSystem::load()
                     continue;
 #endif
 
-                EmittersParametersOverrides.Add(key, value);
+                EmittersParametersOverrides[key] = value;
             }
         }
 

@@ -113,22 +113,21 @@ void SpriteRender::Draw(RenderContext& renderContext)
     auto model = _quadModel.As<Model>();
     if (model->GetLoadedLODs() == 0)
         return;
-    auto& view = renderContext.View;
+    const auto& view = renderContext.View;
     Matrix m1, m2, m3, world;
     Matrix::Scaling(_size.X, _size.Y, 1.0f, m2);
     Matrix::RotationY(PI, m3);
     Matrix::Multiply(m2, m3, m1);
-    // TODO: large-worlds
     if (FaceCamera)
     {
-        Matrix::Billboard(_transform.Translation, view.Position, Vector3::Up, view.Direction, m2);
+        Matrix::Billboard(_transform.Translation - view.Origin, view.Position, Vector3::Up, view.Direction, m2);
         Matrix::Multiply(m1, m2, m3);
         Matrix::Scaling(_transform.Scale, m1);
         Matrix::Multiply(m1, m3, world);
     }
     else
     {
-        _transform.GetWorld(m2);
+        view.GetWorldMatrix(_transform, m2);
         Matrix::Multiply(m1, m2, world);
     }
     model->LODs[0].Draw(renderContext, _materialInstance, world, GetStaticFlags(), false, DrawModes, GetPerInstanceRandom());

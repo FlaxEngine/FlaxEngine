@@ -2113,9 +2113,9 @@ void TerrainPatch::CreateCollision()
     PhysicsBackend::SetShapeLocalPose(_physicsShape, Vector3(0, _yOffset * terrainTransform.Scale.Y, 0), Quaternion::Identity);
 
     // Create static actor
-    _physicsActor = PhysicsBackend::CreateRigidStaticActor(nullptr, terrainTransform.LocalToWorld(_offset), terrainTransform.Orientation);
-    PhysicsBackend::AttachShape(_physicsShape, _physicsActor);
     void* scene = _terrain->GetPhysicsScene()->GetPhysicsScene();
+    _physicsActor = PhysicsBackend::CreateRigidStaticActor(nullptr, terrainTransform.LocalToWorld(_offset), terrainTransform.Orientation, scene);
+    PhysicsBackend::AttachShape(_physicsShape, _physicsActor);
     PhysicsBackend::AddSceneActor(scene, _physicsActor);
 }
 

@@ -415,7 +415,7 @@ void ReflectionsPass::Render(RenderContext& renderContext, GPUTextureView* light
             if (!probe->HasProbeLoaded())
                 continue;
             float probeRadius = probe->GetScaledRadius();
-            Vector3 probePosition = probe->GetPosition(); // TODO: large-worlds
+            Float3 probePosition = probe->GetPosition() - renderContext.View.Origin;
 
             // Get distance from view center to light center less radius (check if view is inside a sphere)
             const float sphereModelScale = 2.0f;
@@ -430,7 +430,7 @@ void ReflectionsPass::Render(RenderContext& renderContext, GPUTextureView* light
             Matrix::Multiply(world, view.ViewProjection(), wvp);
 
             // Pack probe properties buffer
-            probe->SetupProbeData(&data.PData);
+            probe->SetupProbeData(renderContext, &data.PData);
             Matrix::Transpose(wvp, data.WVP);
 
             // Render reflections

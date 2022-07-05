@@ -56,7 +56,7 @@ public:
     /// <summary>
     /// Gets the text.
     /// </summary>
-    API_PROPERTY(Attributes="EditorOrder(0), EditorDisplay(\"Text\")")
+    API_PROPERTY(Attributes="EditorOrder(0), MultilineText, EditorDisplay(\"Text\")")
     const LocalizedString& GetText() const;
 
     /// <summary>

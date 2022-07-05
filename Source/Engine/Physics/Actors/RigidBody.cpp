@@ -327,7 +327,7 @@ void RigidBody::OnColliderChanged(Collider* c)
 
 void RigidBody::UpdateBounds()
 {
-    void* actor = GetPhysicsActor();
+    void* actor = _actor;
     if (actor && PhysicsBackend::GetRigidActorShapesCount(actor) != 0)
         PhysicsBackend::GetActorBounds(actor, _box);
     else
@@ -406,7 +406,7 @@ void RigidBody::OnActiveTransformChanged()
     ASSERT(!_isUpdatingTransform);
     _isUpdatingTransform = true;
     Transform transform;
-    PhysicsBackend::GetRigidActorPose(GetPhysicsActor(), transform.Translation, transform.Orientation);
+    PhysicsBackend::GetRigidActorPose(_actor, transform.Translation, transform.Orientation);
     transform.Scale = _transform.Scale;
     if (_parent)
     {
@@ -424,7 +424,8 @@ void RigidBody::BeginPlay(SceneBeginData* data)
 {
     // Create rigid body
     ASSERT(_actor == nullptr);
-    _actor = PhysicsBackend::CreateRigidDynamicActor(this, _transform.Translation, _transform.Orientation);
+    void* scene = GetPhysicsScene()->GetPhysicsScene();
+    _actor = PhysicsBackend::CreateRigidDynamicActor(this, _transform.Translation, _transform.Orientation, scene);
 
     // Apply properties
     auto actorFlags = PhysicsBackend::ActorFlags::None;
@@ -462,7 +463,6 @@ void RigidBody::BeginPlay(SceneBeginData* data)
         PhysicsBackend::SetRigidDynamicActorCenterOfMassOffset(_actor, _centerOfMassOffset);
 
     // Register actor
-    void* scene = GetPhysicsScene()->GetPhysicsScene();
     PhysicsBackend::AddSceneActor(scene, _actor);
     const bool putToSleep = !_startAwake && GetEnableSimulation() && !GetIsKinematic() && IsActiveInHierarchy();
     if (putToSleep)

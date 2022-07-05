@@ -17,25 +17,21 @@ namespace FlaxEngine
         /// <summary>
         /// The screen space rendering mode that places UI elements on the screen rendered on top of the scene. If the screen is resized or changes resolution, the Canvas will automatically change size to match this.
         /// </summary>
-        [Tooltip("The screen space rendering mode that places UI elements on the screen rendered on top of the scene. If the screen is resized or changes resolution, the Canvas will automatically change size to match this.")]
         ScreenSpace = 0,
 
         /// <summary>
         /// The camera space rendering mode that places Canvas in a given distance in front of a specified Camera. The UI elements are rendered by this camera, which means that the Camera settings affect the appearance of the UI. If the Camera is set to Perspective, the UI elements will be rendered with perspective, and the amount of perspective distortion can be controlled by the Camera Field of View. If the screen is resized, changes resolution, or the camera frustum changes, the Canvas will automatically change size to match as well.
         /// </summary>
-        [Tooltip("The camera space rendering mode that places Canvas in a given distance in front of a specified Camera. The UI elements are rendered by this camera, which means that the Camera settings affect the appearance of the UI. If the Camera is set to Perspective, the UI elements will be rendered with perspective, and the amount of perspective distortion can be controlled by the Camera Field of View. If the screen is resized, changes resolution, or the camera frustum changes, the Canvas will automatically change size to match as well.")]
         CameraSpace = 1,
 
         /// <summary>
         /// The world space rendering mode that places Canvas as any other object in the scene. The size of the Canvas can be set manually using its Transform, and UI elements will render in front of or behind other objects in the scene based on 3D placement. This is useful for UIs that are meant to be a part of the world. This is also known as a 'diegetic interface'.
         /// </summary>
-        [Tooltip("The world space rendering mode that places Canvas as any other object in the scene. The size of the Canvas can be set manually using its Transform, and UI elements will render in front of or behind other objects in the scene based on 3D placement. This is useful for UIs that are meant to be a part of the world. This is also known as a 'diegetic interface'.")]
         WorldSpace = 2,
 
         /// <summary>
         /// The world space rendering mode that places Canvas as any other object in the scene and orients it to face the camera. The size of the Canvas can be set manually using its Transform, and UI elements will render in front of or behind other objects in the scene based on 3D placement. This is useful for UIs that are meant to be a part of the world. This is also known as a 'diegetic interface'.
         /// </summary>
-        [Tooltip("The world space rendering mode that places Canvas as any other object in the scene and orients canvas to face the camera. The size of the Canvas can be set manually using its Transform, and UI elements will render in front of or behind other objects in the scene based on 3D placement. This is useful for UIs that are meant to be a part of the world. This is also known as a 'diegetic interface'.")]
         WorldSpaceFaceCamera = 3,
     }
 
@@ -63,13 +59,15 @@ namespace FlaxEngine
         /// <inheritdoc />
         public override void Render(GPUContext context, ref RenderContext renderContext, GPUTexture input, GPUTexture output)
         {
-            if (renderContext.View.Frustum.Contains(Canvas.Bounds.GetBoundingBox()) == ContainmentType.Disjoint)
+            var bounds = Canvas.Bounds;
+            bounds.Transformation.Translation -= renderContext.View.Origin;
+            if (renderContext.View.Frustum.Contains(bounds.GetBoundingBox()) == ContainmentType.Disjoint)
                 return;
 
             Profiler.BeginEventGPU("UI Canvas");
 
             // Calculate rendering matrix (world*view*projection)
-            Canvas.GetWorldMatrix(out Matrix worldMatrix);
+            Canvas.GetWorldMatrix(renderContext.View.Origin, out Matrix worldMatrix);
             Matrix.Multiply(ref worldMatrix, ref renderContext.View.View, out Matrix viewMatrix);
             Matrix.Multiply(ref viewMatrix, ref renderContext.View.Projection, out Matrix viewProjectionMatrix);
 
@@ -352,25 +350,37 @@ namespace FlaxEngine
         /// <param name="world">The world.</param>
         public void GetWorldMatrix(out Matrix world)
         {
+            GetWorldMatrix(Vector3.Zero, out world);
+        }
+
+        /// <summary>
+        /// Gets the world matrix used to transform the GUI from the local space to the world space. Handles canvas rendering mode
+        /// </summary>
+        /// <param name="viewOrigin">The view origin (when using relative-to-camera rendering).</param>
+        /// <param name="world">The world.</param>
+        public void GetWorldMatrix(Vector3 viewOrigin, out Matrix world)
+        {
+            var transform = Transform;
+            Float3 translation = transform.Translation - viewOrigin;
+
 #if FLAX_EDITOR
             // Override projection for editor preview
             if (_editorTask)
             {
                 if (_renderMode == CanvasRenderMode.WorldSpace)
                 {
-                    GetLocalToWorldMatrix(out world);
+                    Matrix.Transformation(ref transform.Scale, ref transform.Orientation, ref translation, out world);
                 }
                 else if (_renderMode == CanvasRenderMode.WorldSpaceFaceCamera)
                 {
                     var view = _editorTask.View;
-                    var transform = Transform;
                     Matrix.Translation(_guiRoot.Width * -0.5f, _guiRoot.Height * -0.5f, 0, out var m1);
                     Matrix.Scaling(ref transform.Scale, out var m2);
                     Matrix.Multiply(ref m1, ref m2, out var m3);
                     Quaternion.Euler(180, 180, 0, out var quat);
                     Matrix.RotationQuaternion(ref quat, out m2);
                     Matrix.Multiply(ref m3, ref m2, out m1);
-                    m2 = Matrix.Transformation(Float3.One, Quaternion.FromDirection(-view.Direction), transform.Translation);
+                    m2 = Matrix.Transformation(Float3.One, Quaternion.FromDirection(-view.Direction), translation);
                     Matrix.Multiply(ref m1, ref m2, out world);
                 }
                 else if (_renderMode == CanvasRenderMode.CameraSpace)
@@ -384,7 +394,7 @@ namespace FlaxEngine
                     Matrix.Translation(_guiRoot.Width / -2.0f, _guiRoot.Height / -2.0f, 0, out world);
                     Matrix.RotationYawPitchRoll(Mathf.Pi, Mathf.Pi, 0, out var tmp2);
                     Matrix.Multiply(ref world, ref tmp2, out var tmp1);
-                    var viewPos = (Float3)view.Position; // TODO: large-worlds
+                    Float3 viewPos = view.Position - viewOrigin;
                     var viewRot = view.Direction != Float3.Up ? Quaternion.LookRotation(view.Direction, Float3.Up) : Quaternion.LookRotation(view.Direction, Float3.Right);
                     var viewUp = Float3.Up * viewRot;
                     var viewForward = view.Direction;
@@ -407,19 +417,18 @@ namespace FlaxEngine
             if (_renderMode == CanvasRenderMode.WorldSpace || (_renderMode == CanvasRenderMode.WorldSpaceFaceCamera && !camera))
             {
                 // In 3D world
-                GetLocalToWorldMatrix(out world);
+                Matrix.Transformation(ref transform.Scale, ref transform.Orientation, ref translation, out world);
             }
             else if (_renderMode == CanvasRenderMode.WorldSpaceFaceCamera)
             {
                 // In 3D world face camera
-                var transform = Transform;
                 Matrix.Translation(_guiRoot.Width * -0.5f, _guiRoot.Height * -0.5f, 0, out var m1);
                 Matrix.Scaling(ref transform.Scale, out var m2);
                 Matrix.Multiply(ref m1, ref m2, out var m3);
                 Quaternion.Euler(180, 180, 0, out var quat);
                 Matrix.RotationQuaternion(ref quat, out m2);
                 Matrix.Multiply(ref m3, ref m2, out m1);
-                m2 = Matrix.Transformation(Vector3.One, Quaternion.FromDirection(-camera.Direction), transform.Translation);
+                m2 = Matrix.Transformation(Vector3.One, Quaternion.FromDirection(-camera.Direction), translation);
                 Matrix.Multiply(ref m1, ref m2, out world);
             }
             else if (_renderMode == CanvasRenderMode.CameraSpace && camera)
@@ -446,7 +455,7 @@ namespace FlaxEngine
                 Matrix.Multiply(ref world, ref tmp2, out tmp1);
 
                 // In front of the camera
-                var viewPos = (Float3)camera.Position; // TODO: large-worlds
+                Float3 viewPos = camera.Position - viewOrigin;
                 var viewRot = camera.Orientation;
                 var viewUp = Float3.Up * viewRot;
                 var viewForward = Float3.Forward * viewRot;

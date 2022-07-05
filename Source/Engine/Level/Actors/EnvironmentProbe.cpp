@@ -44,10 +44,10 @@ float EnvironmentProbe::GetScaledRadius() const
     return _radius * _transform.Scale.MaxValue();
 }
 
-void EnvironmentProbe::SetupProbeData(ProbeData* data) const
+void EnvironmentProbe::SetupProbeData(const RenderContext& renderContext, ProbeData* data) const
 {
     const float radius = GetScaledRadius();
-    data->Data0 = Float4(GetPosition(), 0); // TODO: large-worlds
+    data->Data0 = Float4(GetPosition() - renderContext.View.Origin, 0);
     data->Data1 = Float4(radius, 1.0f / radius, Brightness, 0);
 }
 

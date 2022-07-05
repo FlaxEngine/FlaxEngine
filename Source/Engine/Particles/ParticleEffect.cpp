@@ -14,8 +14,8 @@ ParticleEffect::ParticleEffect(const SpawnParams& params)
     , _lastUpdateFrame(0)
     , _lastMinDstSqr(MAX_Real)
 {
-    _world = Matrix::Identity;
-    UpdateBounds();
+    _box = BoundingBox(_transform.Translation);
+    BoundingSphere::FromBox(_box, _sphere);
 
     ParticleSystem.Changed.Bind<ParticleEffect, &ParticleEffect::OnParticleSystemModified>(this);
     ParticleSystem.Loaded.Bind<ParticleEffect, &ParticleEffect::OnParticleSystemLoaded>(this);
@@ -295,7 +295,7 @@ void ParticleEffect::UpdateBounds()
 
                 if (emitter->SimulationSpace == ParticlesSimulationSpace::Local)
                 {
-                    BoundingBox::Transform(emitterBounds, _world, emitterBounds);
+                    BoundingBox::Transform(emitterBounds, _transform, emitterBounds);
                 }
 
                 BoundingBox::Merge(emitterBounds, bounds, bounds);
@@ -737,6 +737,5 @@ void ParticleEffect::OnTransformChanged()
     // Base
     Actor::OnTransformChanged();
 
-    _transform.GetWorld(_world);
     UpdateBounds();
 }

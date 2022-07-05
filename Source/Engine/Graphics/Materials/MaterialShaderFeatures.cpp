@@ -76,10 +76,11 @@ void ForwardShadingFeature::Bind(MaterialShader::BindParameters& params, Span<by
     // Set reflection probe data
     EnvironmentProbe* probe = nullptr;
     // TODO: optimize env probe searching for a transparent material - use spatial cache for renderer to find it
+    const Vector3 drawCallOrigin = drawCall.World.GetTranslation() + view.Origin;
     for (int32 i = 0; i < cache->EnvironmentProbes.Count(); i++)
     {
         const auto p = cache->EnvironmentProbes[i];
-        if (p->GetSphere().Contains(drawCall.World.GetTranslation()) != ContainmentType::Disjoint)
+        if (p->GetSphere().Contains(drawCallOrigin) != ContainmentType::Disjoint)
         {
             probe = p;
             break;
@@ -87,7 +88,7 @@ void ForwardShadingFeature::Bind(MaterialShader::BindParameters& params, Span<by
     }
     if (probe && probe->GetProbe())
     {
-        probe->SetupProbeData(&data.EnvironmentProbe);
+        probe->SetupProbeData(params.RenderContext, &data.EnvironmentProbe);
         const auto texture = probe->GetProbe()->GetTexture();
         context->BindSR(envProbeShaderRegisterIndex, GET_TEXTURE_VIEW_SAFE(texture));
     }
