@@ -285,7 +285,7 @@ namespace FlaxEditor.Surface
 
         internal static void DisplayGraphParameters(LayoutElementsContainer layout, GraphParameterData[] data, GetGraphParameterDelegate getter, SetGraphParameterDelegate setter, ValueContainer values, GetGraphParameterDelegate defaultValueGetter = null, CustomPropertySpawnDelegate propertySpawn = null)
         {
-            GroupElement lastGroup = null;
+            CustomEditors.Editors.GenericEditor.OnGroupUsage();
             for (int i = 0; i < data.Length; i++)
             {
                 ref var e = ref data[i];
@@ -293,23 +293,11 @@ namespace FlaxEditor.Surface
                     continue;
                 var tag = e.Tag;
                 var parameter = e.Parameter;
-                LayoutElementsContainer itemLayout;
 
                 // Editor Display
-                if (e.Display?.Group != null)
-                {
-                    if (lastGroup == null || lastGroup.Panel.HeaderText != e.Display.Group)
-                    {
-                        lastGroup = layout.Group(e.Display.Group);
-                        lastGroup.Panel.Open(false);
-                    }
-                    itemLayout = lastGroup;
-                }
-                else
-                {
-                    lastGroup = null;
-                    itemLayout = layout;
-                }
+                var itemLayout = CustomEditors.Editors.GenericEditor.OnGroup(layout, e.Display);
+                if (itemLayout is GroupElement groupElement)
+                    groupElement.Panel.Open(false);
 
                 // Space
                 if (e.Space != null)
@@ -344,6 +332,7 @@ namespace FlaxEditor.Surface
                 else
                     propertySpawn(itemLayout, valueContainer, ref e);
             }
+            CustomEditors.Editors.GenericEditor.OnGroupUsage();
         }
 
         internal static string GetMethodDisplayName(string methodName)
