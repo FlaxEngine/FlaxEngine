@@ -4,6 +4,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Linq;
 using System.Text.RegularExpressions;
 using Flax.Build.Graph;
 using Flax.Build.NativeCpp;
@@ -556,9 +557,10 @@ namespace Flax.Build.Platforms
                 }
             }
 
-            // Input files
+            // Input files (link static libraries last)
             task.PrerequisiteFiles.AddRange(linkEnvironment.InputFiles);
-            foreach (var file in linkEnvironment.InputFiles)
+            foreach (var file in linkEnvironment.InputFiles.Where(x => !x.EndsWith(".a"))
+                                                .Concat(linkEnvironment.InputFiles.Where(x => x.EndsWith(".a"))))
             {
                 args.Add(string.Format("\"{0}\"", file.Replace('\\', '/')));
             }
