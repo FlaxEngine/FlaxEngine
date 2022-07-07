@@ -87,7 +87,7 @@ namespace Flax.Build.Graph
             else
             {
                 task.CommandPath = "cp";
-                task.CommandArguments = string.Format("\'{0}\' \'{1}\'", srcFile, outputPath);
+                task.CommandArguments = string.Format("\"{0}\" \"{1}\"", srcFile, outputPath);
             }
 
             Tasks.Add(task);
