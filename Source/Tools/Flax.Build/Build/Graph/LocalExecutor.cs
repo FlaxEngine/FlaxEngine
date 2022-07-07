@@ -6,6 +6,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Threading;
 using Flax.Build.Graph;
+using Task = Flax.Build.Graph.Task;
 
 namespace Flax.Build.BuildSystem.Graph
 {

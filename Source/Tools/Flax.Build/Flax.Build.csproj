@@ -161,6 +161,7 @@
     <Compile Include="Projects\VisualStudioCode\VisualStudioCodeInstance.cs" />
     <Compile Include="Projects\VisualStudioCode\VisualStudioCodeProjectGenerator.cs" />
     <Compile Include="Projects\VisualStudio\CSProjectGenerator.cs" />
+    <Compile Include="Projects\VisualStudio\CSSDKProjectGenerator.cs" />
     <Compile Include="Projects\VisualStudio\IVisualStudioProjectCustomizer.cs" />
     <Compile Include="Projects\VisualStudio\VCProjectGenerator.cs" />
     <Compile Include="Projects\VisualStudio\VisualStudioInstance.cs" />

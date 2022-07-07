@@ -6,6 +6,7 @@ using System.IO;
 using System.Linq;
 using Flax.Build.Graph;
 using Flax.Deploy;
+using Task = Flax.Build.Graph.Task;
 
 namespace Flax.Build
 {

@@ -196,7 +196,7 @@ namespace Flax.Build
                 var workspaceRoot = rootProject.ProjectFolderPath;
                 var projectsRoot = Path.Combine(workspaceRoot, "Cache", "Projects");
                 var projects = new List<Project>();
-                var dotNetProjectGenerator = ProjectGenerator.Create(projectFormat, TargetType.DotNet);
+                var dotNetProjectGenerator = ProjectGenerator.Create(projectFormat, TargetType.DotNetCore);
                 var projectToBinaryModule = new Dictionary<Project, KeyValuePair<string, HashSet<Module>>>();
                 var projectToModulesBuildOptions = new Dictionary<Project, Dictionary<Module, BuildOptions>>();
                 Project mainSolutionProject = null;
@@ -367,7 +367,7 @@ namespace Flax.Build
 
                                 // Create project description
                                 var project = dotNetProjectGenerator.CreateProject();
-                                project.Type = TargetType.DotNet;
+                                project.Type = TargetType.DotNetCore;
                                 project.Name = project.BaseName = binaryModuleName;
                                 if (mainSolutionProject != null && projectInfo == rootProject)
                                     project.Name += ".CSharp"; // Prevent overlapping name with native code project
@@ -480,7 +480,7 @@ namespace Flax.Build
                     using (new ProfileEventScope("CreateProject"))
                     {
                         project = dotNetProjectGenerator.CreateProject();
-                        project.Type = TargetType.DotNet;
+                        project.Type = TargetType.DotNetCore;
                         project.Name = project.BaseName = rulesProjectName;
                         project.Targets = new[] { target };
                         project.SearchPaths = new string[0];
