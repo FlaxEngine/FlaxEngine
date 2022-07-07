@@ -347,6 +347,8 @@ namespace FlaxEditor.Windows.Assets
                         Before = !isOverride,
                     });
                 }
+                if (undoActions.Count == 0)
+                    return;
                 proxy.Window._undo.AddAction(new MultiUndoAction(undoActions));
                 proxy.Window.MarkAsEdited();
                 Presenter.BuildLayoutOnUpdate();

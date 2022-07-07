@@ -402,7 +402,6 @@ void GBufferPass::DrawDecals(RenderContext& renderContext, GPUTextureView* light
     // Cache data
     auto device = GPUDevice::Instance;
     auto context = device->GetMainContext();
-    auto& view = renderContext.View;
     auto model = _boxModel.Get();
     auto buffers = renderContext.Buffers;
 

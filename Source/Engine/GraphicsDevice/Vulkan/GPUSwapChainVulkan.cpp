@@ -362,6 +362,11 @@ bool GPUSwapChainVulkan::CreateSwapChain(int32 width, int32 height)
     VALIDATE_VULKAN_RESULT(vkGetPhysicalDeviceSurfaceCapabilitiesKHR(gpu, _surface, &surfProperties));
     width = Math::Clamp<int32>(width, surfProperties.minImageExtent.width, surfProperties.maxImageExtent.width);
     height = Math::Clamp<int32>(height, surfProperties.minImageExtent.height, surfProperties.maxImageExtent.height);
+    if (width <= 0 || height <= 0)
+    {
+        LOG(Error, "Vulkan SwapChain dimensions are invalid {}x{} (minImageExtent={}x{}, maxImageExtent={}x{})", width, height, surfProperties.minImageExtent.width, surfProperties.minImageExtent.height, surfProperties.maxImageExtent.width, surfProperties.maxImageExtent.height);
+        return true;
+    }
     VkSwapchainCreateInfoKHR swapChainInfo;
     RenderToolsVulkan::ZeroStruct(swapChainInfo, VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR);
     swapChainInfo.surface = _surface;
