@@ -19,6 +19,7 @@ namespace FlaxEditor.GUI
         /// The single list item control.
         /// </summary>
         /// <seealso cref="FlaxEngine.GUI.Control" />
+        [HideInEditor]
         public class Item : Control
         {
             /// <summary>
