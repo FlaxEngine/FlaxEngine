@@ -268,11 +268,15 @@ bool GlobalSurfaceAtlasPass::setupResources()
 
     // Create pipeline state
     GPUPipelineState::Description psDesc = GPUPipelineState::Description::DefaultFullscreenTriangle;
-    if (!_psDebug)
+    if (!_psDebug0)
     {
-        _psDebug = device->CreatePipelineState();
-        psDesc.PS = shader->GetPS("PS_Debug");
-        if (_psDebug->Init(psDesc))
+        _psDebug0 = device->CreatePipelineState();
+        _psDebug1 = device->CreatePipelineState();
+        psDesc.PS = shader->GetPS("PS_Debug", 0);
+        if (_psDebug0->Init(psDesc))
+            return true;
+        psDesc.PS = shader->GetPS("PS_Debug", 1);
+        if (_psDebug1->Init(psDesc))
             return true;
     }
     if (!_psClear)
@@ -327,7 +331,8 @@ void GlobalSurfaceAtlasPass::OnShaderReloading(Asset* obj)
     SAFE_DELETE_GPU_RESOURCE(_psDirectLighting0);
     SAFE_DELETE_GPU_RESOURCE(_psDirectLighting1);
     SAFE_DELETE_GPU_RESOURCE(_psIndirectLighting);
-    SAFE_DELETE_GPU_RESOURCE(_psDebug);
+    SAFE_DELETE_GPU_RESOURCE(_psDebug0);
+    SAFE_DELETE_GPU_RESOURCE(_psDebug1);
     invalidateResources();
 }
 
@@ -345,7 +350,8 @@ void GlobalSurfaceAtlasPass::Dispose()
     SAFE_DELETE_GPU_RESOURCE(_psDirectLighting0);
     SAFE_DELETE_GPU_RESOURCE(_psDirectLighting1);
     SAFE_DELETE_GPU_RESOURCE(_psIndirectLighting);
-    SAFE_DELETE_GPU_RESOURCE(_psDebug);
+    SAFE_DELETE_GPU_RESOURCE(_psDebug0);
+    SAFE_DELETE_GPU_RESOURCE(_psDebug1);
     _cb0 = nullptr;
     _shader = nullptr;
 }
@@ -1091,7 +1097,7 @@ void GlobalSurfaceAtlasPass::RenderDebug(RenderContext& renderContext, GPUContex
     context->BindSR(4, bindingData.Objects ? bindingData.Objects->View() : nullptr);
     context->BindSR(6, bindingData.AtlasDepth->View());
     context->BindSR(7, skybox);
-    context->SetState(_psDebug);
+    context->SetState(_psDebug0);
     {
         Float2 outputSizeThird = outputSize * 0.333f;
         Float2 outputSizeTwoThird = outputSize * 0.666f;
@@ -1123,19 +1129,20 @@ void GlobalSurfaceAtlasPass::RenderDebug(RenderContext& renderContext, GPUContex
         context->BindSR(6, bindingData.AtlasDepth->View());
         context->BindSR(7, skybox);
         context->BindCB(0, _cb0);
-        context->SetState(_psDebug);
         context->SetRenderTarget(output->View());
 
         // Disable skybox
         data.SkyboxIntensity = 0.0f;
         context->UpdateCB(_cb0, &data);
 
-        // Bottom left - diffuse
+        // Bottom left - diffuse (with missing surface coverage debug)
+        context->SetState(_psDebug1);
         context->BindSR(5, bindingData.AtlasGBuffer0->View());
         context->SetViewportAndScissors(Viewport(outputSizeTwoThird.X, 0, outputSizeThird.X, outputSizeThird.Y));
         context->DrawFullscreenTriangle();
 
         // Bottom middle - normals
+        context->SetState(_psDebug0);
         context->BindSR(5, bindingData.AtlasGBuffer1->View());
         context->SetViewportAndScissors(Viewport(outputSizeTwoThird.X, outputSizeThird.Y, outputSizeThird.X, outputSizeThird.Y));
         context->DrawFullscreenTriangle();

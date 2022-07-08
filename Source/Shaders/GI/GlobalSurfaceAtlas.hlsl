@@ -11,6 +11,14 @@
 #define GLOBAL_SURFACE_ATLAS_TILE_NORMAL_THRESHOLD_ENABLED 0 // Enables using tile normal threshold to prevent sampling pixels behind the view point (but might cause back artifacts)
 #define GLOBAL_SURFACE_ATLAS_TILE_NORMAL_THRESHOLD 0.05f // Cut-off value for tiles transitions blending during sampling
 #define GLOBAL_SURFACE_ATLAS_TILE_PROJ_PLANE_OFFSET 0.1f // Small offset to prevent clipping with the closest triangles (shifts near and far planes)
+#ifndef GLOBAL_SURFACE_ATLAS_DEBUG_MODE
+// 0 - disabled
+// 1 - atlas coverage (pink for missing surface data)
+#define GLOBAL_SURFACE_ATLAS_DEBUG_MODE 0
+#elif GLOBAL_SURFACE_ATLAS_DEBUG_MODE == 1
+#define GLOBAL_SURFACE_ATLAS_TILE_NORMAL_WEIGHT_ENABLED 0
+#define GLOBAL_SURFACE_ATLAS_TILE_NORMAL_THRESHOLD 0
+#endif
 
 struct GlobalSurfaceTile
 {
@@ -268,6 +276,11 @@ float4 SampleGlobalSurfaceAtlas(const GlobalSurfaceAtlasData data, ByteAddressBu
         }
 #endif
     }
+ 
+#if GLOBAL_SURFACE_ATLAS_DEBUG_MODE
+    if (result.a < 0.05f)
+        result = float4(1, 0, 1, 1);
+#endif
 
     // Normalize result
     result.rgb /= max(result.a, 0.0001f);

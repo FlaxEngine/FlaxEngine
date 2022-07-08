@@ -302,6 +302,8 @@ TextureCube Skybox : register(t7);
 
 // Pixel shader for Global Surface Atlas debug drawing
 META_PS(true, FEATURE_LEVEL_SM5)
+META_PERMUTATION_1(GLOBAL_SURFACE_ATLAS_DEBUG_MODE=0)
+META_PERMUTATION_1(GLOBAL_SURFACE_ATLAS_DEBUG_MODE=1)
 float4 PS_Debug(Quad_VS2PS input) : SV_Target
 {
 #if 0
