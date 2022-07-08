@@ -207,12 +207,21 @@ namespace FlaxEditor.Viewport.Cameras
                 }
 
                 // Animate camera
-                float a = Mathf.Saturate(progress);
-                a = a * a * a;
-                Transform targetTransform = Transform.Lerp(_startMove, _endMove, a);
-                targetTransform.Scale = Vector3.Zero;
-                Viewport.ViewPosition = targetTransform.Translation;
-                Viewport.ViewOrientation = targetTransform.Orientation;
+                try
+                {
+                    float a = Mathf.Saturate(progress);
+                    a = a * a * a;
+                    var targetTransform = Transform.Lerp(_startMove, _endMove, a);
+                    targetTransform.Scale = Vector3.Zero;
+                    Viewport.ViewPosition = targetTransform.Translation;
+                    Viewport.ViewOrientation = targetTransform.Orientation;
+                }
+                catch
+                {
+                    // Fix camera if lerp failed (eg. large world with NaNs inside)
+                    Viewport.ViewPosition = Vector3.Zero;
+                    Viewport.ViewOrientation = Quaternion.Identity;
+                }
             }
         }
 
