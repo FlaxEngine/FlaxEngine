@@ -157,6 +157,11 @@ namespace Flax.Build.NativeCpp
             public HashSet<string> FileReferences;
 
             /// <summary>
+            /// The .Net libraries references (dll or exe files paths).
+            /// </summary>
+            public HashSet<string> SystemAnalyzers;
+
+            /// <summary>
             /// True if ignore compilation warnings due to missing code documentation comments.
             /// </summary>
             public bool IgnoreMissingDocumentationWarnings;
@@ -182,9 +187,53 @@ namespace Flax.Build.NativeCpp
             Defines = new HashSet<string>(),
             SystemReferences = new HashSet<string>
             {
+                "Microsoft.CSharp",
                 "System",
-                "System.Xml",
+
+                "System.Collections",
+                "System.Collections.Concurrent",
+                "System.Collections.NonGeneric",
+                "System.Collections.Specialized",
+                "System.Collections.Immutable",
+                "System.ComponentModel",
+                "System.ComponentModel.DataAnnotations",
+                "System.ComponentModel.Primitives",
+                "System.ComponentModel.TypeConverter",
+                "System.Console",
                 "System.Core",
+                "System.Globalization",
+                "System.IO",
+                "System.IO.Compression",
+                "System.IO.FileSystem.Watcher",
+                "System.Linq",
+                "System.Linq.Expressions",
+                "System.Net.Http",
+                "System.Net.Primitives",
+                "System.ObjectModel",
+                "System.Private.CoreLib",
+                "System.Private.Uri",
+                "System.Private.Xml",
+                
+                "System.Reflection",
+                "System.Runtime",
+                "System.Runtime.CompilerServices.Unsafe",
+                "System.Runtime.InteropServices",
+                "System.Runtime.InteropServices.RuntimeInformation",
+                "System.Runtime.Serialization.Formatters", // BinaryFormatter
+                "System.Security.Cryptography",
+                "System.Security.Cryptography.Algorithms",
+                "System.Security.Cryptography.Primitives",
+                "System.Text.RegularExpressions",
+                "System.Threading.Tasks.Parallel",
+                "System.Xml",
+
+                "System.Reflection.Metadata",
+                "netstandard",
+            },
+            SystemAnalyzers = new HashSet<string>
+            {
+                @"Microsoft.Interop.LibraryImportGenerator",
+                @"Microsoft.Interop.SourceGeneration",
             },
             FileReferences = new HashSet<string>(),
         };

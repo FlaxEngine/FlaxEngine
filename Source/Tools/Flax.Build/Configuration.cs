@@ -242,6 +242,12 @@ namespace Flax.Build
         [CommandLine("useCSharp", "0 to disable C# support in build")]
         public static bool UseCSharp = true;
 
+        /// <summary>
+        /// True if .NET support should be enabled.
+        /// </summary>
+        [CommandLine("useDotNet", "1 to enable .NET support in build, 0 to enable Mono support in build")]
+        public static bool UseDotNet = true;
+
         public static bool WithCSharp(NativeCpp.BuildOptions options)
         {
             if (options.Platform.Target == TargetPlatform.PS5)
@@ -253,6 +259,11 @@ namespace Flax.Build
         {
             // This can be used to selectively control 64-bit coordinates per-platform or build configuration
             return UseLargeWorlds;
+        }
+
+        public static bool WithDotNet(NativeCpp.BuildOptions options)
+        {
+            return UseDotNet;
         }
     }
 }
