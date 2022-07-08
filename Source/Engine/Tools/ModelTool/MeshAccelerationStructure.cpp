@@ -4,6 +4,7 @@
 
 #include "MeshAccelerationStructure.h"
 #include "Engine/Core/Math/Math.h"
+#include "Engine/Content/Content.h"
 #include "Engine/Content/Assets/Model.h"
 #include "Engine/Graphics/Models/ModelData.h"
 #include "Engine/Profiler/ProfilerCPU.h"
@@ -292,13 +293,20 @@ void MeshAccelerationStructure::Add(Model* model, int32 lodIndex)
     PROFILE_CPU();
     lodIndex = Math::Clamp(lodIndex, model->HighestResidentLODIndex(), model->LODs.Count() - 1);
     ModelLOD& lod = model->LODs[lodIndex];
-    const int32 meshesStart = _meshes.Count();
-    _meshes.AddDefault(lod.Meshes.Count());
+    _meshes.EnsureCapacity(_meshes.Count() + lod.Meshes.Count());
     bool failed = false;
     for (int32 i = 0; i < lod.Meshes.Count(); i++)
     {
         auto& mesh = lod.Meshes[i];
-        auto& meshData = _meshes[meshesStart + i];
+        const MaterialSlot& materialSlot = model->MaterialSlots[mesh.GetMaterialSlotIndex()];
+        if (materialSlot.Material && !materialSlot.Material->WaitForLoaded())
+        {
+            // Skip transparent materials
+            if (materialSlot.Material->GetInfo().BlendMode != MaterialBlendMode::Opaque)
+                continue;
+        }
+
+        auto& meshData = _meshes.AddOne();
         if (model->IsVirtual())
         {
             meshData.Indices = mesh.GetTriangleCount() * 3;
@@ -312,10 +320,7 @@ void MeshAccelerationStructure::Add(Model* model, int32 lodIndex)
             failed |= mesh.DownloadDataCPU(MeshBufferType::Vertex0, meshData.VertexBuffer, meshData.Vertices);
         }
         if (failed)
-        {
-            _meshes.Resize(meshesStart);
             return;
-        }
         if (!meshData.IndexBuffer.IsAllocated() && meshData.IndexBuffer.Length() != 0)
         {
             // BVH nodes modifies index buffer (sorts data in-place) so clone it
@@ -331,12 +336,20 @@ void MeshAccelerationStructure::Add(ModelData* modelData, int32 lodIndex, bool c
     PROFILE_CPU();
     lodIndex = Math::Clamp(lodIndex, 0, modelData->LODs.Count() - 1);
     ModelLodData& lod = modelData->LODs[lodIndex];
-    const int32 meshesStart = _meshes.Count();
-    _meshes.AddDefault(lod.Meshes.Count());
+    _meshes.EnsureCapacity(_meshes.Count() + lod.Meshes.Count());
     for (int32 i = 0; i < lod.Meshes.Count(); i++)
     {
         MeshData* mesh = lod.Meshes[i];
-        auto& meshData = _meshes[meshesStart + i];
+        const MaterialSlotEntry& materialSlot = modelData->Materials[mesh->MaterialSlotIndex];
+        auto material = Content::LoadAsync<MaterialBase>(materialSlot.AssetID);
+        if (material && !material->WaitForLoaded())
+        {
+            // Skip transparent materials
+            if (material->GetInfo().BlendMode != MaterialBlendMode::Opaque)
+                continue;
+        }
+
+        auto& meshData = _meshes.AddOne();
         meshData.Indices = mesh->Indices.Count();
         meshData.Vertices = mesh->Positions.Count();
         if (copy)
