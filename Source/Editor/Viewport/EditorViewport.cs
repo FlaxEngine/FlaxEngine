@@ -995,6 +995,8 @@ namespace FlaxEditor.Viewport
             _viewMousePos = PointFromWindow(win.MousePosition);
 
             // Update input
+            var window = win.Window;
+            if (window != null && window.IsFocused && window.IsForegroundWindow)
             {
                 // Get input buttons and keys (skip if viewport has no focus or mouse is over a child control)
                 var isViewportControllingMouse = IsControllingMouse;
