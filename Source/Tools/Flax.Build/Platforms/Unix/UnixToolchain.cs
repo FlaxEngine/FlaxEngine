@@ -110,6 +110,10 @@ namespace Flax.Build.Platforms
                 StripPath = Path.Combine(Path.Combine(ToolsetRoot, string.Format("bin/{0}-{1}", ArchitectureName, "strip"))) + exeExtension;
                 ObjcopyPath = Path.Combine(Path.Combine(ToolsetRoot, string.Format("bin/{0}-{1}", ArchitectureName, "objcopy"))) + exeExtension;
                 LdPath = Path.Combine(Path.Combine(ToolsetRoot, string.Format("bin/{0}-{1}", ArchitectureName, "ld"))) + exeExtension;
+
+                // Fix possibly invalid path
+                if (!File.Exists(StripPath))
+                    StripPath = Path.Combine(Path.Combine(ToolsetRoot, "bin/llvm-strip")) + exeExtension;
             }
 
             // Determinate compiler version
