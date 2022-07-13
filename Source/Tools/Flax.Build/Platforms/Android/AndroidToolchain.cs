@@ -137,6 +137,7 @@ namespace Flax.Build.Platforms
 
             if (options.LinkEnv.Output == LinkerOutput.Executable)
             {
+                // Prevent linker from stripping the entry point for the Android Native Activity
                 args.Add("-u ANativeActivity_onCreate");
             }
 
