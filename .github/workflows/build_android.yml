@@ -1,0 +1,21 @@
+name: Build Android
+on: [push, pull_request]
+
+jobs:
+
+  # Game
+  game-windows:
+    name: Game (Android, Release ARM64)
+    runs-on: "windows-2019"
+    steps:
+    - name: Checkout repo
+      uses: actions/checkout@v2
+    - name: Setup Vulkan
+      uses: ./.github/actions/vulkan
+    - name: Checkout LFS
+      run: |
+        git lfs version
+        git lfs pull
+    - name: Build
+      run: |
+        .\Development\Scripts\Windows\CallBuildTool.bat -build -log -arch=ARM64 -platform=Android -configuration=Release -buildtargets=FlaxGame
