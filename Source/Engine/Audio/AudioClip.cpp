@@ -434,7 +434,7 @@ Asset::LoadResult AudioClip::load()
             LOG(Warning, "Audio data decode failed (OggVorbisDecoder).");
             return LoadResult::InvalidData;
         }
-        AudioBackend::Buffer::Write(bufferId, outTmp.Get(), AudioHeader.Info);
+        AudioBackend::Buffer::Write(bufferId, outTmp.Get(), outInfo);
 #endif
         break;
     }
