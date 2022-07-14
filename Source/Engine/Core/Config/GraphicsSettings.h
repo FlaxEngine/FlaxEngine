@@ -64,6 +64,22 @@ public:
     bool AllowCSMBlending = false;
 
     /// <summary>
+    /// Default probes cubemap resolution.
+    /// </summary>
+    API_ENUM() enum class DefaultProbeResolutions
+    {
+        _64 = 64,
+        _128 = 128,
+        _256 = 256,
+        _512 = 512,
+        _1024 = 1024,
+        _2048 = 2048,
+        _4096 = 4096,
+    };
+    API_FIELD(Attributes = "EditorOrder(1500), DefaultValue(DefaultProbeResolutions._512), EditorDisplay(\"Quality\", \"Default Probe Resolution\")")
+    DefaultProbeResolutions DefaultProbeResolution = DefaultProbeResolutions::_512;
+
+    /// <summary>
     /// If checked, enables Global SDF rendering. This can be used in materials, shaders, and particles.
     /// </summary>
     API_FIELD(Attributes="EditorOrder(2000), EditorDisplay(\"Global SDF\")")
