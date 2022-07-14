@@ -45,6 +45,26 @@ float EnvironmentProbe::GetScaledRadius() const
     return _radius * _transform.Scale.MaxValue();
 }
 
+bool EnvironmentProbe::HasProbe() const
+{
+    return _probe != nullptr;
+}
+
+bool EnvironmentProbe::HasProbeLoaded() const
+{
+    return _probe != nullptr && _probe->IsLoaded();
+}
+
+CubeTexture* EnvironmentProbe::GetProbe() const
+{
+    return _probe;
+}
+
+bool EnvironmentProbe::IsUsingCustomProbe() const
+{
+    return _isUsingCustomProbe;
+}
+
 void EnvironmentProbe::SetupProbeData(const RenderContext& renderContext, ProbeData* data) const
 {
     const float radius = GetScaledRadius();
@@ -81,17 +101,9 @@ void EnvironmentProbe::Bake(float timeout)
 
 void EnvironmentProbe::SetProbeData(TextureData& data)
 {
-    int32 probeResolution = (int32)CubemapResolution;
-    // if Use Graphics Settings
-    if (probeResolution == 0) probeResolution = Graphics::DefaultProbeResolution;
-
-    // Validate input data
-    ASSERT(data.GetArraySize() == 6 && data.Height == probeResolution && data.Width == probeResolution);  
-
-    // Check if was using custom probe
+    // Remove custom probe (if used)
     if (_isUsingCustomProbe)
     {
-        // Set
         _isUsingCustomProbe = false;
         _probe = nullptr;
     }

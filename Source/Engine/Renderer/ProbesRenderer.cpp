@@ -5,6 +5,7 @@
 #include "ProbesRenderer.h"
 #include "Renderer.h"
 #include "ReflectionsPass.h"
+#include "Engine/Core/Config/GraphicsSettings.h"
 #include "Engine/Threading/ThreadPoolTask.h"
 #include "Engine/Content/Content.h"
 #include "Engine/Engine/EngineService.h"
@@ -32,13 +33,11 @@
 class DownloadProbeTask : public ThreadPoolTask
 {
 private:
-
     GPUTexture* _texture;
     TextureData _data;
     ProbesRenderer::Entry _entry;
 
 public:
-
     /// <summary>
     /// Initializes a new instance of the <see cref="DownloadProbeTask"/> class.
     /// </summary>
@@ -51,7 +50,6 @@ public:
     }
 
 public:
-
     /// <summary>
     /// Gets the texture data container.
     /// </summary>
@@ -61,7 +59,6 @@ public:
     }
 
 protected:
-
     // [ThreadPoolTask]
     bool Run() override
     {
@@ -134,7 +131,6 @@ using namespace ProbesRendererImpl;
 class ProbesRendererService : public EngineService
 {
 public:
-
     ProbesRendererService()
         : EngineService(TEXT("Probes Renderer"), 70)
     {
@@ -202,6 +198,20 @@ void ProbesRenderer::Bake(SkyLight* probe, float timeout)
 
     // Fire event
     OnRegisterBake(e);
+}
+
+int32 ProbesRenderer::Entry::GetResolution() const
+{
+    auto resolution = ProbeCubemapResolution::UseGraphicsSettings;
+    if (Type == EntryType::EnvProbe && Actor)
+        resolution = ((EnvironmentProbe*)Actor.Get())->CubemapResolution;
+    else if (Type == EntryType::SkyLight)
+        resolution = ProbeCubemapResolution::_128;
+    if (resolution == ProbeCubemapResolution::UseGraphicsSettings)
+        resolution = GraphicsSettings::Get()->DefaultProbeResolution;
+    if (resolution == ProbeCubemapResolution::UseGraphicsSettings)
+        resolution = ProbeCubemapResolution::_128;
+    return (int32)resolution;
 }
 
 int32 ProbesRenderer::GetBakeQueueSize()
@@ -280,15 +290,8 @@ bool ProbesRenderer::Init()
 
     // Init rendering pipeline
     _output = GPUDevice::Instance->CreateTexture(TEXT("Output"));
-    int32 probeResolution = ENV_PROBES_RESOLUTION;
-    if (_current.Type == EntryType::EnvProbe)
-    {
-        auto envProbe = (EnvironmentProbe*)_current.Actor.Get();
-        probeResolution = (int32)envProbe->CubemapResolution;
-        // if Use Graphics Settings
-        if (probeResolution == 0) probeResolution = Graphics::DefaultProbeResolution;
-    }
-    if (_output->Init(GPUTextureDescription::New2D(probeResolution, probeResolution, ENV_PROBES_FORMAT)))
+    const int32 probeResolution = _current.GetResolution();
+    if (_output->Init(GPUTextureDescription::New2D(probeResolution, probeResolution, PixelFormat::R8G8B8A8_UNorm)))
         return true;
     _task = New<SceneRenderTask>();
     auto task = _task;
@@ -315,10 +318,10 @@ bool ProbesRenderer::Init()
 
     // Init render targets
     _probe = GPUDevice::Instance->CreateTexture(TEXT("ProbesUpdate.Probe"));
-    if (_probe->Init(GPUTextureDescription::NewCube(probeResolution, ENV_PROBES_FORMAT, GPUTextureFlags::ShaderResource | GPUTextureFlags::RenderTarget | GPUTextureFlags::PerMipViews, 0)))
+    if (_probe->Init(GPUTextureDescription::NewCube(probeResolution, _output->Format(), GPUTextureFlags::ShaderResource | GPUTextureFlags::RenderTarget | GPUTextureFlags::PerMipViews, 0)))
         return true;
     _tmpFace = GPUDevice::Instance->CreateTexture(TEXT("ProbesUpdate.TmpFae"));
-    if (_tmpFace->Init(GPUTextureDescription::New2D(probeResolution, probeResolution, 0, ENV_PROBES_FORMAT, GPUTextureFlags::ShaderResource | GPUTextureFlags::RenderTarget | GPUTextureFlags::PerMipViews)))
+    if (_tmpFace->Init(GPUTextureDescription::New2D(probeResolution, probeResolution, 0, _output->Format(), GPUTextureFlags::ShaderResource | GPUTextureFlags::RenderTarget | GPUTextureFlags::PerMipViews)))
         return true;
 
     // Mark as ready
@@ -421,7 +424,7 @@ void ProbesRendererService::Update()
             // Store time of the last probe update
             _lastProbeUpdate = timeNow;
         }
-            // Check if need to release data
+        // Check if need to release data
         else if (_isReady && timeSinceUpdate > ProbesRenderer::ProbesReleaseDataTime)
         {
             // Release service
@@ -474,14 +477,11 @@ void ProbesRenderer::onRender(RenderTask* task, GPUContext* context)
 
     // Init
     float customCullingNear = -1;
-    int32 probeResolution = ENV_PROBES_RESOLUTION;
+    const int32 probeResolution = _current.GetResolution();
     if (_current.Type == EntryType::EnvProbe)
     {
         auto envProbe = (EnvironmentProbe*)_current.Actor.Get();
-        probeResolution = (int32)envProbe->CubemapResolution;
-        // if Use Graphics Settings
-        if (probeResolution == 0) probeResolution = Graphics::DefaultProbeResolution;
-        LOG(Info, "Updating Env probe '{0}'...", envProbe->ToString());
+        LOG(Info, "Updating Env probe '{0}' (resolution: {1})...", envProbe->ToString(), probeResolution);
         Vector3 position = envProbe->GetPosition();
         float radius = envProbe->GetScaledRadius();
         float nearPlane = Math::Max(0.1f, envProbe->CaptureNearPlane);
@@ -499,7 +499,7 @@ void ProbesRenderer::onRender(RenderTask* task, GPUContext* context)
     else if (_current.Type == EntryType::SkyLight)
     {
         auto skyLight = (SkyLight*)_current.Actor.Get();
-        LOG(Info, "Updating sky light '{0}'...", skyLight->ToString());
+        LOG(Info, "Updating sky light '{0}' (resolution: {1})...", skyLight->ToString(), probeResolution);
         Vector3 position = skyLight->GetPosition();
         float nearPlane = 10.0f;
         float farPlane = Math::Max(nearPlane + 1000.0f, skyLight->SkyDistanceThreshold * 2.0f);
@@ -511,6 +511,14 @@ void ProbesRenderer::onRender(RenderTask* task, GPUContext* context)
         LargeWorlds::UpdateOrigin(_task->View.Origin, position);
         _task->View.SetUpCube(nearPlane, farPlane, position - _task->View.Origin);
     }
+
+    // Resize buffers
+    bool resizeFailed = _output->Resize(probeResolution, probeResolution);
+    resizeFailed |= _task->Resize(probeResolution, probeResolution);
+    resizeFailed |= _probe->Resize(probeResolution, probeResolution);
+    resizeFailed |= _tmpFace->Resize(probeResolution, probeResolution);
+    if (resizeFailed)
+        LOG(Error, "Failed to resize probe");
 
     // Disable actor during baking (it cannot influence own results)
     const bool isActorActive = _current.Actor->GetIsActive();
@@ -538,7 +546,7 @@ void ProbesRenderer::onRender(RenderTask* task, GPUContext* context)
         {
             PROFILE_GPU("Copy Face");
             context->SetRenderTarget(_probe->View(faceIndex));
-            context->SetViewportAndScissors(probeResolution, probeResolution);
+            context->SetViewportAndScissors((float)probeResolution, (float)probeResolution);
             auto probeFrame = _output->View();
             if (setLowerHemisphereToBlack && faceIndex != 2)
             {

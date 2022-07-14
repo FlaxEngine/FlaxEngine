@@ -45,6 +45,8 @@ public:
             Actor = other.Actor;
             Timeout = other.Timeout;
         }
+
+        int32 GetResolution() const;
     };
 
 public:

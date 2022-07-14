@@ -551,6 +551,8 @@ bool GPUTexture::Resize(int32 width, int32 height, int32 depth)
     desc.Width = width;
     desc.Height = height;
     desc.Depth = depth;
+    if (desc.MipLevels > 1)
+        desc.MipLevels = CalculateMipMapCount(0, Math::Max(width, height));
 
     // Recreate
     return Init(desc);

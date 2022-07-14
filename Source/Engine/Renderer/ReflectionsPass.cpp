@@ -390,7 +390,7 @@ void ReflectionsPass::Render(RenderContext& renderContext, GPUTextureView* light
     context->BindSR(2, renderContext.Buffers->GBuffer2);
     context->BindSR(3, renderContext.Buffers->DepthBuffer);
 
-    auto tempDesc = GPUTextureDescription::New2D(renderContext.Buffers->GetWidth(), renderContext.Buffers->GetHeight(), REFLECTIONS_PASS_OUTPUT_FORMAT);
+    auto tempDesc = GPUTextureDescription::New2D(renderContext.Buffers->GetWidth(), renderContext.Buffers->GetHeight(), PixelFormat::R11G11B10_Float);
     auto reflectionsBuffer = RenderTargetPool::Get(tempDesc);
 
     context->Clear(*reflectionsBuffer, Color::Black);

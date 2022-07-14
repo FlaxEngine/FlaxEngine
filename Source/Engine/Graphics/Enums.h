@@ -1082,3 +1082,26 @@ enum class ShaderFlags : uint32
 };
 
 DECLARE_ENUM_OPERATORS(ShaderFlags);
+
+/// <summary>
+/// The environment probes cubemap texture resolutions.
+/// </summary>
+API_ENUM() enum class ProbeCubemapResolution
+{
+    // Graphics Settings default option.
+    UseGraphicsSettings = 0,
+    // Cubemap with 32x32.
+    _32 = 32,
+    // Cubemap with 64x64.
+    _64 = 64,
+    // Cubemap with 128x128.
+    _128 = 128,
+    // Cubemap with 256x256.
+    _256 = 256,
+    // Cubemap with 512x512.
+    _512 = 512,
+    // Cubemap with 1024x1024.
+    _1024 = 1024,
+    // Cubemap with 2048x2048.
+    _2048 = 2048,
+};

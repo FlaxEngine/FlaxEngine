@@ -5,6 +5,7 @@
 #include "../Actor.h"
 #include "Engine/Content/Assets/CubeTexture.h"
 #include "Engine/Content/AssetReference.h"
+#include "Engine/Graphics/Enums.h"
 
 /// <summary>
 /// Environment Probe can capture space around the objects to provide reflections.
@@ -22,36 +23,25 @@ public:
     /// <summary>
     /// The reflections texture resolution.
     /// </summary>
-    API_ENUM() enum class CubemapResolutions
-    {
-        UseGraphicsSettings = 0,
-        _64 = 64,
-        _128 = 128,
-        _256 = 256,
-        _512 = 512,
-        _1024 = 1024,
-        _2048 = 2048,
-        _4096 = 4096,
-    };
-    API_FIELD(Attributes = "EditorOrder(0), DefaultValue(CubemapResolutions.UseGraphicsSettings), EditorDisplay(\"Probe\")")
-    CubemapResolutions CubemapResolution = CubemapResolutions::UseGraphicsSettings;
+    API_FIELD(Attributes = "EditorOrder(0), EditorDisplay(\"Probe\")")
+    ProbeCubemapResolution CubemapResolution = ProbeCubemapResolution::UseGraphicsSettings;
 
     /// <summary>
     /// The reflections brightness.
     /// </summary>
-    API_FIELD(Attributes="EditorOrder(10), DefaultValue(1.0f), Limit(0, 1000, 0.01f), EditorDisplay(\"Probe\")")
+    API_FIELD(Attributes="EditorOrder(10), Limit(0, 1000, 0.01f), EditorDisplay(\"Probe\")")
     float Brightness = 1.0f;
 
     /// <summary>
     /// Value indicating if probe should be updated automatically on change.
     /// </summary>
-    API_FIELD(Attributes="EditorOrder(30), DefaultValue(false), EditorDisplay(\"Probe\")")
+    API_FIELD(Attributes="EditorOrder(30), EditorDisplay(\"Probe\")")
     bool AutoUpdate = false;
 
     /// <summary>
     /// The probe capture camera near plane distance.
     /// </summary>
-    API_FIELD(Attributes="EditorOrder(30), DefaultValue(10.0f), Limit(0, float.MaxValue, 0.01f), EditorDisplay(\"Probe\")")
+    API_FIELD(Attributes="EditorOrder(30), Limit(0, float.MaxValue, 0.01f), EditorDisplay(\"Probe\")")
     float CaptureNearPlane = 10.0f;
 
 public:
@@ -74,39 +64,27 @@ public:
     /// <summary>
     /// Returns true if env probe has cube texture assigned.
     /// </summary>
-    API_PROPERTY() bool HasProbe() const
-    {
-        return _probe != nullptr;
-    }
+    API_PROPERTY() bool HasProbe() const;
 
     /// <summary>
     /// Returns true if env probe has cube texture assigned.
     /// </summary>
-    API_PROPERTY() bool HasProbeLoaded() const
-    {
-        return _probe != nullptr && _probe->IsLoaded();
-    }
+    API_PROPERTY() bool HasProbeLoaded() const;
 
     /// <summary>
     /// Gets the probe texture used during rendering (baked or custom one).
     /// </summary>
-    API_PROPERTY() CubeTexture* GetProbe() const
-    {
-        return _probe;
-    }
+    API_PROPERTY() CubeTexture* GetProbe() const;
 
     /// <summary>
     /// True if probe is using custom cube texture (not baked).
     /// </summary>
-    API_PROPERTY() bool IsUsingCustomProbe() const
-    {
-        return _isUsingCustomProbe;
-    }
+    API_PROPERTY() bool IsUsingCustomProbe() const;
 
     /// <summary>
     /// Setup probe data structure
     /// </summary>
-    /// <param name="data">Rendering context</param>
+    /// <param name="renderContext">Rendering context</param>
     /// <param name="data">Packed probe data to set</param>
     void SetupProbeData(const RenderContext& renderContext, struct ProbeData* data) const;
 
