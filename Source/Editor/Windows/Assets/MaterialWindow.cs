@@ -78,7 +78,10 @@ namespace FlaxEditor.Windows.Assets
 
             // Transparency
 
-            [EditorOrder(200), DefaultValue(true), EditorDisplay("Transparency"), Tooltip("Enables reflections when rendering material.")]
+            [EditorOrder(200), DefaultValue(MaterialTransparentLightingMode.Surface), EditorDisplay("Transparency"), Tooltip("Transparent material lighting mode.")]
+            public MaterialTransparentLightingMode TransparentLightingMode;
+
+            [EditorOrder(205), DefaultValue(true), EditorDisplay("Transparency"), Tooltip("Enables reflections when rendering material.")]
             public bool EnableReflections;
 
             [VisibleIf(nameof(EnableReflections))]
@@ -161,6 +164,7 @@ namespace FlaxEditor.Windows.Assets
                 MaxTessellationFactor = info.MaxTessellationFactor;
                 MaskThreshold = info.MaskThreshold;
                 DecalBlendingMode = info.DecalBlendingMode;
+                TransparentLightingMode = info.TransparentLightingMode;
                 PostFxLocation = info.PostFxLocation;
                 BlendMode = info.BlendMode;
                 ShadingModel = info.ShadingModel;
@@ -203,6 +207,7 @@ namespace FlaxEditor.Windows.Assets
                 info.MaxTessellationFactor = MaxTessellationFactor;
                 info.MaskThreshold = MaskThreshold;
                 info.DecalBlendingMode = DecalBlendingMode;
+                info.TransparentLightingMode = TransparentLightingMode;
                 info.PostFxLocation = PostFxLocation;
                 info.BlendMode = BlendMode;
                 info.ShadingModel = ShadingModel;

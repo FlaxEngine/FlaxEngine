@@ -107,10 +107,10 @@ CreateMaterial::Options::Options()
 CreateAssetResult CreateMaterial::Create(CreateAssetContext& context)
 {
     // Base
-    IMPORT_SETUP(Material, 19);
+    IMPORT_SETUP(Material, 20);
     context.SkipMetadata = true;
 
-    ShaderStorage::Header19 shaderHeader;
+    ShaderStorage::Header20 shaderHeader;
     Platform::MemoryClear(&shaderHeader, sizeof(shaderHeader));
     if (context.CustomArg)
     {

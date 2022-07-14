@@ -76,7 +76,7 @@ void ForwardShadingFeature::Bind(MaterialShader::BindParameters& params, Span<by
     // Set reflection probe data
     EnvironmentProbe* probe = nullptr;
     // TODO: optimize env probe searching for a transparent material - use spatial cache for renderer to find it
-    const Vector3 drawCallOrigin = drawCall.World.GetTranslation() + view.Origin;
+    const Vector3 drawCallOrigin = drawCall.ObjectPosition + view.Origin;
     for (int32 i = 0; i < cache->EnvironmentProbes.Count(); i++)
     {
         const auto p = cache->EnvironmentProbes[i];
@@ -103,7 +103,7 @@ void ForwardShadingFeature::Bind(MaterialShader::BindParameters& params, Span<by
     for (int32 i = 0; i < cache->PointLights.Count() && data.LocalLightsCount < MaxLocalLights; i++)
     {
         const auto& light = cache->PointLights[i];
-        if (BoundingSphere(light.Position, light.Radius).Contains(drawCall.World.GetTranslation()) != ContainmentType::Disjoint)
+        if (BoundingSphere(light.Position, light.Radius).Contains(drawCall.ObjectPosition) != ContainmentType::Disjoint)
         {
             light.SetupLightData(&data.LocalLights[data.LocalLightsCount], false);
             data.LocalLightsCount++;
@@ -112,7 +112,7 @@ void ForwardShadingFeature::Bind(MaterialShader::BindParameters& params, Span<by
     for (int32 i = 0; i < cache->SpotLights.Count() && data.LocalLightsCount < MaxLocalLights; i++)
     {
         const auto& light = cache->SpotLights[i];
-        if (BoundingSphere(light.Position, light.Radius).Contains(drawCall.World.GetTranslation()) != ContainmentType::Disjoint)
+        if (BoundingSphere(light.Position, light.Radius).Contains(drawCall.ObjectPosition) != ContainmentType::Disjoint)
         {
             light.SetupLightData(&data.LocalLights[data.LocalLightsCount], false);
             data.LocalLightsCount++;

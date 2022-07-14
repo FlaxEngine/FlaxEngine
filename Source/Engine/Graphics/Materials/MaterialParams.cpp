@@ -30,7 +30,7 @@ bool MaterialInfo8::operator==(const MaterialInfo8& other) const
             && MaxTessellationFactor == other.MaxTessellationFactor;
 }
 
-MaterialInfo::MaterialInfo(const MaterialInfo8& other)
+MaterialInfo9::MaterialInfo9(const MaterialInfo8& other)
 {
     Domain = other.Domain;
     BlendMode = other.BlendMode;
@@ -78,6 +78,39 @@ MaterialInfo::MaterialInfo(const MaterialInfo8& other)
     MaxTessellationFactor = other.MaxTessellationFactor;
 }
 
+bool MaterialInfo9::operator==(const MaterialInfo9& other) const
+{
+    return Domain == other.Domain
+            && BlendMode == other.BlendMode
+            && ShadingModel == other.ShadingModel
+            && UsageFlags == other.UsageFlags
+            && FeaturesFlags == other.FeaturesFlags
+            && DecalBlendingMode == other.DecalBlendingMode
+            && PostFxLocation == other.PostFxLocation
+            && CullMode == other.CullMode
+            && Math::NearEqual(MaskThreshold, other.MaskThreshold)
+            && Math::NearEqual(OpacityThreshold, other.OpacityThreshold)
+            && TessellationMode == other.TessellationMode
+            && MaxTessellationFactor == other.MaxTessellationFactor;
+}
+
+MaterialInfo::MaterialInfo(const MaterialInfo9& other)
+{
+    Domain = other.Domain;
+    BlendMode = other.BlendMode;
+    ShadingModel = other.ShadingModel;
+    UsageFlags = other.UsageFlags;
+    FeaturesFlags = other.FeaturesFlags;
+    DecalBlendingMode = other.DecalBlendingMode;
+    TransparentLightingMode = MaterialTransparentLightingMode::Surface;
+    PostFxLocation = other.PostFxLocation;
+    CullMode = other.CullMode;
+    MaskThreshold = other.MaskThreshold;
+    OpacityThreshold = other.OpacityThreshold;
+    TessellationMode = other.TessellationMode;
+    MaxTessellationFactor = other.MaxTessellationFactor;
+}
+
 bool MaterialInfo::operator==(const MaterialInfo& other) const
 {
     return Domain == other.Domain
@@ -86,6 +119,7 @@ bool MaterialInfo::operator==(const MaterialInfo& other) const
             && UsageFlags == other.UsageFlags
             && FeaturesFlags == other.FeaturesFlags
             && DecalBlendingMode == other.DecalBlendingMode
+            && TransparentLightingMode == other.TransparentLightingMode
             && PostFxLocation == other.PostFxLocation
             && CullMode == other.CullMode
             && Math::NearEqual(MaskThreshold, other.MaskThreshold)

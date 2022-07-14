@@ -439,7 +439,17 @@ void Material::InitCompilationOptions(ShaderCompilationOptions& options)
         options.Macros.Add({ "MATERIAL_REFLECTIONS", Numbers[1] });
     options.Macros.Add({ "USE_FOG", Numbers[info.FeaturesFlags & MaterialFeaturesFlags::DisableFog ? 0 : 1] });
     if (useForward)
+    {
         options.Macros.Add({ "USE_PIXEL_NORMAL_OFFSET_REFRACTION", Numbers[info.FeaturesFlags & MaterialFeaturesFlags::PixelNormalOffsetRefraction ? 1 : 0] });
+        switch (info.TransparentLightingMode)
+        {
+        case MaterialTransparentLightingMode::Surface:
+            break;
+        case MaterialTransparentLightingMode::SurfaceNonDirectional:
+            options.Macros.Add({ "LIGHTING_NO_DIRECTIONAL", "1" });
+            break;
+        }
+    }
 
     // TODO: don't compile VS_Depth for deferred/forward materials if material doesn't use position offset or masking
 

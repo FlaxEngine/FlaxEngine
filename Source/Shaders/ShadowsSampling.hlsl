@@ -458,6 +458,9 @@ float SampleShadow(LightData light, LightShadowData shadow, Texture2DArray shado
 	}
 #endif
 
+    float3 samplePosWS = gBuffer.WorldPos;
+
+#if !LIGHTING_NO_DIRECTIONAL
     // Skip if surface is in a full shadow
     float NoL = dot(gBuffer.Normal, light.Direction);
     BRANCH
@@ -467,8 +470,8 @@ float SampleShadow(LightData light, LightShadowData shadow, Texture2DArray shado
     }
 
     // Apply normal offset bias
-    float3 samplePosWS = gBuffer.WorldPos;
     samplePosWS += GetShadowPositionOffset(shadow.NormalOffsetScale, NoL, gBuffer.Normal);
+#endif
 
     // Sample shadow
     return SampleShadow(light, shadow, shadowMap, samplePosWS, viewDepth);
@@ -480,7 +483,11 @@ float SampleShadow(LightData light, LightShadowData shadow, Texture2D shadowMap,
     float3 toLight = light.Position - worldPosition;
     float toLightLength = length(toLight);
     float3 L = toLight / toLightLength;
+#if LIGHTING_NO_DIRECTIONAL
+    float dirCheck = 1.0f;
+#else
     float dirCheck = dot(-light.Direction, L);
+#endif
 
     // Skip pixels outside of the light influence
     BRANCH
@@ -539,7 +546,11 @@ float SampleShadow(LightData light, LightShadowData shadow, Texture2D shadowMap,
     float3 toLight = light.Position - gBuffer.WorldPos;
     float toLightLength = length(toLight);
     float3 L = toLight / toLightLength;
+#if LIGHTING_NO_DIRECTIONAL
+    float dirCheck = 1.0f;
+#else
     float dirCheck = dot(-light.Direction, L);
+#endif
 
     // Skip pixels outside of the light influence
     BRANCH
@@ -569,7 +580,10 @@ float SampleShadow(LightData light, LightShadowData shadow, Texture2D shadowMap,
 		subsurfaceShadow = lerp(1.0f, subsurfaceShadow, shadow.Fade);
 	}
 #endif
+    
+    float3 samplePosWS = gBuffer.WorldPos;
 
+#if !LIGHTING_NO_DIRECTIONAL
     // Skip if surface is in a full shadow
     float NoL = dot(gBuffer.Normal, L);
     BRANCH
@@ -579,8 +593,8 @@ float SampleShadow(LightData light, LightShadowData shadow, Texture2D shadowMap,
     }
 
     // Apply normal offset bias
-    float3 samplePosWS = gBuffer.WorldPos;
     samplePosWS += GetShadowPositionOffset(shadow.NormalOffsetScale, NoL, gBuffer.Normal);
+#endif
 
     // Sample shadow
     return SampleShadow(light, shadow, shadowMap, samplePosWS);
@@ -686,7 +700,10 @@ float SampleShadow(LightData light, LightShadowData shadow, TextureCube<float> s
 		subsurfaceShadow = lerp(1.0f, subsurfaceShadow, shadow.Fade);
 	}
 #endif
+    
+    float3 samplePosWS = gBuffer.WorldPos;
 
+#if !LIGHTING_NO_DIRECTIONAL
     // Skip if surface is in a full shadow
     float NoL = dot(gBuffer.Normal, L);
     BRANCH
@@ -696,8 +713,8 @@ float SampleShadow(LightData light, LightShadowData shadow, TextureCube<float> s
     }
 
     // Apply normal offset bias
-    float3 samplePosWS = gBuffer.WorldPos;
     samplePosWS += GetShadowPositionOffset(shadow.NormalOffsetScale, NoL, gBuffer.Normal);
+#endif
 
     // Sample shadow
     return SampleShadow(light, shadow, shadowMap, samplePosWS);

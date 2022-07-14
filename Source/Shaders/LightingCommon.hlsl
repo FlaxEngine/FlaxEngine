@@ -6,6 +6,16 @@
 #include "./Flax/BRDF.hlsl"
 #include "./Flax/GBufferCommon.hlsl"
 
+// Disables directional lighting (no shadowing with dot(N, L), eg. for smoke particles)
+#ifndef LIGHTING_NO_DIRECTIONAL
+#define LIGHTING_NO_DIRECTIONAL 0
+#endif
+
+// Disables specular lighting (diffuse-only)
+#ifndef LIGHTING_NO_SPECULAR
+#define LIGHTING_NO_SPECULAR 0
+#endif
+
 // Structure that contains information about light
 struct LightData
 {

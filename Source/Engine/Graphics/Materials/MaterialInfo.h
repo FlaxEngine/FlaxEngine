@@ -356,6 +356,22 @@ API_ENUM() enum class MaterialDecalBlendingMode : byte
 };
 
 /// <summary>
+/// Transparent material lighting modes.
+/// </summary>
+API_ENUM() enum class MaterialTransparentLightingMode : byte
+{
+    /// <summary>
+    /// Default directional lighting evaluated per-pixel at the material surface. Use it for semi-transparent surfaces - with both diffuse and specular lighting component active.
+    /// </summary>
+    Surface = 0,
+
+    /// <summary>
+    /// Non-directional lighting evaluated per-pixel at material surface. Use it for volumetric objects such as smoke, rain or dust - only diffuse lighting term is active (no specular highlights).
+    /// </summary>
+    SurfaceNonDirectional = 1,
+};
+
+/// <summary>
 /// Material input scene textures. Special inputs from the graphics pipeline.
 /// </summary>
 API_ENUM() enum class MaterialSceneTextures
@@ -442,6 +458,33 @@ struct MaterialInfo8
 };
 
 /// <summary>
+/// Material info structure - version 9
+/// [Deprecated on 13.07.2022, expires on 13.07.2024]
+/// </summary>
+struct MaterialInfo9
+{
+    MaterialDomain Domain;
+    MaterialBlendMode BlendMode;
+    MaterialShadingModel ShadingModel;
+    MaterialUsageFlags UsageFlags;
+    MaterialFeaturesFlags FeaturesFlags;
+    MaterialDecalBlendingMode DecalBlendingMode;
+    MaterialPostFxLocation PostFxLocation;
+    CullMode CullMode;
+    float MaskThreshold;
+    float OpacityThreshold;
+    TessellationMethod TessellationMode;
+    int32 MaxTessellationFactor;
+
+    MaterialInfo9()
+    {
+    }
+
+    MaterialInfo9(const MaterialInfo8& other);
+    bool operator==(const MaterialInfo9& other) const;
+};
+
+/// <summary>
 /// Structure with basic information about the material surface. It describes how material is reacting on light and which graphical features of it requires to render.
 /// </summary>
 API_STRUCT() struct FLAXENGINE_API MaterialInfo
@@ -479,6 +522,11 @@ API_STRUCT() struct FLAXENGINE_API MaterialInfo
     API_FIELD() MaterialDecalBlendingMode DecalBlendingMode;
 
     /// <summary>
+    /// The transparent material lighting mode.
+    /// </summary>
+    API_FIELD() MaterialTransparentLightingMode TransparentLightingMode;
+
+    /// <summary>
     /// The post fx material rendering location.
     /// </summary>
     API_FIELD() MaterialPostFxLocation PostFxLocation;
@@ -512,10 +560,10 @@ API_STRUCT() struct FLAXENGINE_API MaterialInfo
     {
     }
 
-    MaterialInfo(const MaterialInfo8& other);
+    MaterialInfo(const MaterialInfo9& other);
     bool operator==(const MaterialInfo& other) const;
 };
 
 // The current material info descriptor version used by the material pipeline
-typedef MaterialInfo MaterialInfo9;
-#define MaterialInfo_Version 9
+typedef MaterialInfo MaterialInfo10;
+#define MaterialInfo_Version 10

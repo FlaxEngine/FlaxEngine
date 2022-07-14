@@ -5,10 +5,6 @@
 
 #include "./Flax/LightingCommon.hlsl"
 
-#ifndef NO_SPECULAR
-#define NO_SPECULAR 0
-#endif
-
 ShadowData GetShadow(LightData lightData, GBufferSample gBuffer, float4 shadowMask)
 {
     ShadowData shadow;
@@ -28,7 +24,7 @@ LightingData StandardShading(GBufferSample gBuffer, float energy, float3 L, floa
 
     LightingData lighting;
     lighting.Diffuse = Diffuse_Lambert(diffuseColor);
-#if NO_SPECULAR
+#if LIGHTING_NO_SPECULAR
     lighting.Specular = 0;
 #else
     float3 specularColor = GetSpecularColor(gBuffer);
@@ -95,7 +91,12 @@ float4 GetSkyLightLighting(LightData lightData, GBufferSample gBuffer, TextureCu
     // Compute the preconvolved incoming lighting with the normal direction (apply ambient color)
     // Some data is packed, see C++ RendererSkyLightData::SetupLightData
     float mip = lightData.SourceLength;
-    float3 diffuseLookup = ibl.SampleLevel(SamplerLinearClamp, gBuffer.Normal, mip).rgb * lightData.Color.rgb;
+#if LIGHTING_NO_DIRECTIONAL
+    float3 uvw = float3(0, 0, 0);
+#else
+    float3 uvw = gBuffer.Normal;
+#endif
+    float3 diffuseLookup = ibl.SampleLevel(SamplerLinearClamp, uvw, mip).rgb * lightData.Color.rgb;
     diffuseLookup += float3(lightData.SpotAngles.rg, lightData.SourceRadius);
 
     // Fade out based on distance to capture
@@ -117,10 +118,10 @@ float4 GetLighting(float3 viewPos, LightData lightData, GBufferSample gBuffer, f
     float3 N = gBuffer.Normal;
     float3 L = lightData.Direction; // no need to normalize
     float NoL = saturate(dot(N, L));
-    float distanceAttenuation = 1;
-    float lightRadiusMask = 1;
-    float spotAttenuation = 1;
     float3 toLight = lightData.Direction;
+
+    // Calculate shadow
+    ShadowData shadow = GetShadow(lightData, gBuffer, shadowMask);
 
     // Calculate attenuation
     if (isRadial)
@@ -128,15 +129,17 @@ float4 GetLighting(float3 viewPos, LightData lightData, GBufferSample gBuffer, f
         toLight = lightData.Position - gBuffer.WorldPos;
         float distanceSqr = dot(toLight, toLight);
         L = toLight * rsqrt(distanceSqr);
+        float distanceAttenuation = 1, lightRadiusMask = 1, spotAttenuation = 1;
         GetRadialLightAttenuation(lightData, isSpotLight, N, distanceSqr, 1, toLight, L, NoL, distanceAttenuation, lightRadiusMask, spotAttenuation);
+        float attenuation = distanceAttenuation * lightRadiusMask * spotAttenuation;
+        shadow.SurfaceShadow *= attenuation;
+        shadow.TransmissionShadow *= attenuation;
     }
-    float attenuation = distanceAttenuation * lightRadiusMask * spotAttenuation;
 
-    // Calculate shadow
-    ShadowData shadow = GetShadow(lightData, gBuffer, shadowMask);
-
+#if !LIGHTING_NO_DIRECTIONAL
     // Reduce shadow mapping artifacts
-    shadow.SurfaceShadow *= saturate(NoL * 6.0f - 0.2f);
+    shadow.SurfaceShadow *= saturate(NoL * 6.0f - 0.2f) * NoL;
+#endif
 
     BRANCH
     if (shadow.SurfaceShadow + shadow.TransmissionShadow > 0)
@@ -148,8 +151,8 @@ float4 GetLighting(float3 viewPos, LightData lightData, GBufferSample gBuffer, f
         LightingData lighting = SurfaceShading(gBuffer, energy, L, V, N);
 
         // Calculate final light color
-        float3 surfaceLight = (lighting.Diffuse + lighting.Specular) * (NoL * attenuation * shadow.SurfaceShadow);
-        float3 subsurfaceLight = lighting.Transmission * (attenuation * shadow.TransmissionShadow);
+        float3 surfaceLight = (lighting.Diffuse + lighting.Specular) * shadow.SurfaceShadow;
+        float3 subsurfaceLight = lighting.Transmission * shadow.TransmissionShadow;
         result.rgb = lightData.Color * (surfaceLight + subsurfaceLight);
         result.a = 1;
     }
