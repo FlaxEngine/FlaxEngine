@@ -97,6 +97,11 @@ float4 PS_Forward(PixelInput input) : SV_Target0
 		light += GetLighting(ViewPos, localLight, gBuffer, shadowMask, true, isSpotLight);
 	}
 
+	// Calculate lighting from Global Illumination
+#if USE_GI
+	light += GetGlobalIlluminationLighting(gBuffer);
+#endif
+
 	// Calculate reflections
 #if USE_REFLECTIONS
 	float3 reflections = SampleReflectionProbe(ViewPos, EnvProbe, EnvironmentProbe, gBuffer.WorldPos, gBuffer.Normal, gBuffer.Roughness).rgb;

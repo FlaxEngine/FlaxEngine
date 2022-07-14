@@ -197,6 +197,8 @@ bool MaterialGenerator::Generate(WriteStream& source, MaterialInfo& materialInfo
         ADD_FEATURE(DeferredShadingFeature);
         if (materialInfo.BlendMode != MaterialBlendMode::Opaque && (materialInfo.FeaturesFlags & MaterialFeaturesFlags::DisableDistortion) == 0)
         ADD_FEATURE(DistortionFeature);
+        if (materialInfo.BlendMode != MaterialBlendMode::Opaque && (materialInfo.FeaturesFlags & MaterialFeaturesFlags::GlobalIllumination) != 0)
+        ADD_FEATURE(GlobalIlluminationFeature);
         if (materialInfo.BlendMode != MaterialBlendMode::Opaque)
         ADD_FEATURE(ForwardShadingFeature);
         break;
@@ -209,6 +211,8 @@ bool MaterialGenerator::Generate(WriteStream& source, MaterialInfo& materialInfo
     case MaterialDomain::Particle:
         if (materialInfo.BlendMode != MaterialBlendMode::Opaque && (materialInfo.FeaturesFlags & MaterialFeaturesFlags::DisableDistortion) == 0)
         ADD_FEATURE(DistortionFeature);
+        if (materialInfo.BlendMode != MaterialBlendMode::Opaque && (materialInfo.FeaturesFlags & MaterialFeaturesFlags::GlobalIllumination) != 0)
+        ADD_FEATURE(GlobalIlluminationFeature);
         ADD_FEATURE(ForwardShadingFeature);
         break;
     case MaterialDomain::Deformable:

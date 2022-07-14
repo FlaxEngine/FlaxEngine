@@ -64,6 +64,8 @@ void ForwardMaterialShader::Bind(BindParameters& params)
     int32 srv = 2;
 
     // Setup features
+    if (_info.FeaturesFlags & MaterialFeaturesFlags::GlobalIllumination)
+        GlobalIlluminationFeature::Bind(params, cb, srv);
     ForwardShadingFeature::Bind(params, cb, srv);
 
     // Setup parameters

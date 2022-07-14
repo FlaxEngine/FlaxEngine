@@ -154,6 +154,48 @@ bool LightmapFeature::Bind(MaterialShader::BindParameters& params, Span<byte>& c
     return useLightmap;
 }
 
+bool GlobalIlluminationFeature::Bind(MaterialShader::BindParameters& params, Span<byte>& cb, int32& srv)
+{
+    auto& data = *(Data*)cb.Get();
+    ASSERT_LOW_LAYER(cb.Length() >= sizeof(Data));
+
+    bool useGI = false;
+    if (params.RenderContext.View.Flags & ViewFlags::GI)
+    {
+        switch (params.RenderContext.List->Settings.GlobalIllumination.Mode)
+        {
+        case GlobalIlluminationMode::DDGI:
+        {
+            DynamicDiffuseGlobalIlluminationPass::BindingData bindingDataDDGI;
+            if (!DynamicDiffuseGlobalIlluminationPass::Instance()->Get(params.RenderContext.Buffers, bindingDataDDGI))
+            {
+                useGI = true;
+
+                // Bind DDGI data
+                data.DDGI = bindingDataDDGI.Constants;
+                params.GPUContext->BindSR(srv + 0, bindingDataDDGI.ProbesState);
+                params.GPUContext->BindSR(srv + 1, bindingDataDDGI.ProbesDistance);
+                params.GPUContext->BindSR(srv + 2, bindingDataDDGI.ProbesIrradiance);
+            }
+            break;
+        }
+        }
+    }
+    if (!useGI)
+    {
+        // Unbind SRVs to prevent issues
+        data.DDGI.CascadesCount = 0;
+        data.DDGI.FallbackIrradiance = Float3::Zero;
+        params.GPUContext->UnBindSR(srv + 0);
+        params.GPUContext->UnBindSR(srv + 1);
+        params.GPUContext->UnBindSR(srv + 2);
+    }
+
+    cb = Span<byte>(cb.Get() + sizeof(Data), cb.Length() - sizeof(Data));
+    srv += SRVs;
+    return useGI;
+}
+
 #if USE_EDITOR
 
 void ForwardShadingFeature::Generate(GeneratorData& data)
@@ -174,6 +216,11 @@ void TessellationFeature::Generate(GeneratorData& data)
 void LightmapFeature::Generate(GeneratorData& data)
 {
     data.Template = TEXT("Features/Lightmap.hlsl");
+}
+
+void GlobalIlluminationFeature::Generate(GeneratorData& data)
+{
+    data.Template = TEXT("Features/GlobalIllumination.hlsl");
 }
 
 void DistortionFeature::Generate(GeneratorData& data)

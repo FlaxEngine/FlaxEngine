@@ -277,6 +277,11 @@ API_ENUM(Attributes="Flags") enum class MaterialFeaturesFlags : uint32
     /// The flag used to enable high-quality reflections based on the screen space raytracing. Useful for large water-like surfaces. The Forward Pass materials option.
     /// </summary>
     ScreenSpaceReflections = 1 << 10,
+
+    /// <summary>
+    /// The flag used to enable sampling Global Illumination in material (eg. light probes or volumetric lightmap). The Forward Pass materials option.
+    /// </summary>
+    GlobalIllumination = 1 << 11,
 };
 
 DECLARE_ENUM_OPERATORS(MaterialFeaturesFlags);

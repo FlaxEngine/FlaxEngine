@@ -94,6 +94,9 @@ namespace FlaxEditor.Windows.Assets
             [EditorOrder(220), DefaultValue(true), EditorDisplay("Transparency"), Tooltip("Enables distortion effect when rendering.")]
             public bool EnableDistortion;
 
+            [EditorOrder(224), DefaultValue(false), EditorDisplay("Transparency"), Tooltip("Enables sampling Global Illumination in material (eg. light probes or volumetric lightmap).")]
+            public bool EnableGlobalIllumination;
+
             [EditorOrder(225), DefaultValue(false), EditorDisplay("Transparency"), Tooltip("Enables refraction offset based on the difference between the per-pixel normal and the per-vertex normal. Useful for large water-like surfaces.")]
             public bool PixelNormalOffsetRefraction;
 
@@ -156,6 +159,7 @@ namespace FlaxEditor.Windows.Assets
                 EnableScreenSpaceReflections = (info.FeaturesFlags & MaterialFeaturesFlags.ScreenSpaceReflections) != 0;
                 EnableFog = (info.FeaturesFlags & MaterialFeaturesFlags.DisableFog) == 0;
                 EnableDistortion = (info.FeaturesFlags & MaterialFeaturesFlags.DisableDistortion) == 0;
+                EnableGlobalIllumination = (info.FeaturesFlags & MaterialFeaturesFlags.GlobalIllumination) != 0;
                 PixelNormalOffsetRefraction = (info.FeaturesFlags & MaterialFeaturesFlags.PixelNormalOffsetRefraction) != 0;
                 InputWorldSpaceNormal = (info.FeaturesFlags & MaterialFeaturesFlags.InputWorldSpaceNormal) != 0;
                 DitheredLODTransition = (info.FeaturesFlags & MaterialFeaturesFlags.DitheredLODTransition) != 0;
@@ -196,6 +200,8 @@ namespace FlaxEditor.Windows.Assets
                     info.FeaturesFlags |= MaterialFeaturesFlags.DisableFog;
                 if (!EnableDistortion)
                     info.FeaturesFlags |= MaterialFeaturesFlags.DisableDistortion;
+                if (EnableGlobalIllumination)
+                    info.FeaturesFlags |= MaterialFeaturesFlags.GlobalIllumination;
                 if (PixelNormalOffsetRefraction)
                     info.FeaturesFlags |= MaterialFeaturesFlags.PixelNormalOffsetRefraction;
                 if (InputWorldSpaceNormal)
