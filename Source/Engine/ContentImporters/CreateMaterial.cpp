@@ -96,6 +96,7 @@ CreateMaterial::Options::Options()
     Info.UsageFlags = MaterialUsageFlags::None;
     Info.FeaturesFlags = MaterialFeaturesFlags::None;
     Info.DecalBlendingMode = MaterialDecalBlendingMode::Translucent;
+    Info.TransparentLightingMode = MaterialTransparentLightingMode::Surface;
     Info.PostFxLocation = MaterialPostFxLocation::AfterPostProcessingPass;
     Info.CullMode = CullMode::Normal;
     Info.MaskThreshold = 0.3f;
