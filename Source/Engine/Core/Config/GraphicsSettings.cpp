@@ -13,6 +13,7 @@ void GraphicsSettings::Apply()
     Graphics::ShadowsQuality = ShadowsQuality;
     Graphics::ShadowMapsQuality = ShadowMapsQuality;
     Graphics::AllowCSMBlending = AllowCSMBlending;
+    Graphics::DefaultProbeResolution = (int32)DefaultProbeResolution;
     Graphics::GlobalSDFQuality = GlobalSDFQuality;
     Graphics::GIQuality = GIQuality;
     Graphics::PostProcessSettings = PostProcessSettings;

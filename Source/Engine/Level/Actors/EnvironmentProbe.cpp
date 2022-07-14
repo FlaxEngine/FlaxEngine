@@ -13,6 +13,7 @@
 #include "Engine/ContentImporters/AssetsImportingManager.h"
 #include "Engine/Serialization/Serialization.h"
 #include "Engine/Level/Scene/Scene.h"
+#include "Engine/Graphics/Graphics.h"
 
 EnvironmentProbe::EnvironmentProbe(const SpawnParams& params)
     : Actor(params)
@@ -80,8 +81,12 @@ void EnvironmentProbe::Bake(float timeout)
 
 void EnvironmentProbe::SetProbeData(TextureData& data)
 {
+    int32 probeResolution = (int32)CubemapResolution;
+    // if Use Graphics Settings
+    if (probeResolution == 0) probeResolution = Graphics::DefaultProbeResolution;
+
     // Validate input data
-    ASSERT(data.GetArraySize() == 6 && data.Height == ENV_PROBES_RESOLUTION && data.Width == ENV_PROBES_RESOLUTION);
+    ASSERT(data.GetArraySize() == 6 && data.Height == probeResolution && data.Width == probeResolution);  
 
     // Check if was using custom probe
     if (_isUsingCustomProbe)
@@ -170,6 +175,7 @@ void EnvironmentProbe::Serialize(SerializeStream& stream, const void* otherObj)
     SERIALIZE_GET_OTHER_OBJ(EnvironmentProbe);
 
     SERIALIZE_MEMBER(Radius, _radius);
+    SERIALIZE(CubemapResolution);
     SERIALIZE(Brightness);
     SERIALIZE(AutoUpdate);
     SERIALIZE(CaptureNearPlane);
@@ -183,6 +189,7 @@ void EnvironmentProbe::Deserialize(DeserializeStream& stream, ISerializeModifier
     Actor::Deserialize(stream, modifier);
 
     DESERIALIZE_MEMBER(Radius, _radius);
+    DESERIALIZE(CubemapResolution);
     DESERIALIZE(Brightness);
     DESERIALIZE(AutoUpdate);
     DESERIALIZE(CaptureNearPlane);

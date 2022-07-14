@@ -20,6 +20,23 @@ private:
 
 public:
     /// <summary>
+    /// The reflections texture resolution.
+    /// </summary>
+    API_ENUM() enum class CubemapResolutions
+    {
+        UseGraphicsSettings = 0,
+        _64 = 64,
+        _128 = 128,
+        _256 = 256,
+        _512 = 512,
+        _1024 = 1024,
+        _2048 = 2048,
+        _4096 = 4096,
+    };
+    API_FIELD(Attributes = "EditorOrder(0), DefaultValue(CubemapResolutions.UseGraphicsSettings), EditorDisplay(\"Probe\")")
+    CubemapResolutions CubemapResolution = CubemapResolutions::UseGraphicsSettings;
+
+    /// <summary>
     /// The reflections brightness.
     /// </summary>
     API_FIELD(Attributes="EditorOrder(10), DefaultValue(1.0f), Limit(0, 1000, 0.01f), EditorDisplay(\"Probe\")")
