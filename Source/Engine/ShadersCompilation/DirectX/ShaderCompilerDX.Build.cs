@@ -22,7 +22,7 @@ public class ShaderCompilerDX : ShaderCompiler
         options.PublicDefinitions.Add("COMPILE_WITH_DX_SHADER_COMPILER");
 
         var depsRoot = options.DepsFolder;
-        options.OutputFiles.Add("dxcompiler.lib");
+        options.OutputFiles.Add(Path.Combine(depsRoot, "dxcompiler.lib"));
         options.DependencyFiles.Add(Path.Combine(depsRoot, "dxcompiler.dll"));
         options.DependencyFiles.Add(Path.Combine(depsRoot, "dxil.dll"));
         options.DelayLoadLibraries.Add("dxcompiler.dll");
