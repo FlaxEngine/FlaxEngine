@@ -112,4 +112,4 @@ class RendererPass : public Singleton<T>, public RendererPassBase
 {
 };
 
-#define REPORT_INVALID_SHADER_PASS_CB_SIZE(shader, index, dataType) LOG(Fatal, "Shader {0} has incorrect constant buffer {1} size: {2} bytes. Expected: {3} bytes", ToString(), index, shader->GetCB(index)->GetSize(), sizeof(dataType));
+#define REPORT_INVALID_SHADER_PASS_CB_SIZE(shader, index, dataType) LOG(Fatal, "Shader {0} has incorrect constant buffer {1} size: {2} bytes. Expected: {3} bytes", shader->ToString(), index, shader->GetCB(index)->GetSize(), sizeof(dataType));

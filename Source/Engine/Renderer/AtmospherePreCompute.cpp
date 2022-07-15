@@ -88,7 +88,7 @@ namespace AtmospherePreComputeImpl
     GPUPipelineState* _psCopyInscatterNAdd = nullptr;
     GPUPipelineState* _psInscatterS = nullptr;
     GPUPipelineState* _psInscatterN = nullptr;
-    RenderTask* _task = nullptr;
+    SceneRenderTask* _task = nullptr;
 
     //
     GPUTexture* AtmosphereTransmittance = nullptr;
@@ -166,12 +166,10 @@ bool init()
         return true;
     }
     auto shader = _shader->GetShader();
-
-    // Validate shader constant buffers sizes
     ASSERT(shader->GetCB(0) != nullptr);
     if (shader->GetCB(0)->GetSize() != sizeof(Data))
     {
-        LOG(Fatal, "Shader {0} has incorrect constant buffer {1} size: {2} bytes. Expected: {3} bytes", _shader->ToString(), 0, shader->GetCB(0)->GetSize(), sizeof(Data));
+        REPORT_INVALID_SHADER_PASS_CB_SIZE(shader, 0, Data);
         return true;
     }
 
@@ -252,6 +250,7 @@ bool init()
     // Init rendering pipeline
     _task = New<SceneRenderTask>();
     _task->Enabled = false;
+    _task->IsCustomRendering = true;
     _task->Render.Bind(onRender);
 
     // Init render targets

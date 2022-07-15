@@ -29,7 +29,6 @@
 /// <summary>
 /// Custom task called after downloading probe texture data to save it.
 /// </summary>
-/// <seealso cref="ThreadPoolTask" />
 class DownloadProbeTask : public ThreadPoolTask
 {
 private:
@@ -38,31 +37,19 @@ private:
     ProbesRenderer::Entry _entry;
 
 public:
-    /// <summary>
-    /// Initializes a new instance of the <see cref="DownloadProbeTask"/> class.
-    /// </summary>
-    /// <param name="target">The target.</param>
-    /// <param name="entry">The entry.</param>
     DownloadProbeTask(GPUTexture* target, const ProbesRenderer::Entry& entry)
         : _texture(target)
         , _entry(entry)
     {
     }
 
-public:
-    /// <summary>
-    /// Gets the texture data container.
-    /// </summary>
     FORCE_INLINE TextureData& GetData()
     {
         return _data;
     }
 
-protected:
-    // [ThreadPoolTask]
     bool Run() override
     {
-        // Switch type
         if (_entry.Type == ProbesRenderer::EntryType::EnvProbe)
         {
             if (_entry.Actor)
@@ -78,7 +65,6 @@ protected:
             return true;
         }
 
-        // Fire event
         ProbesRenderer::OnFinishBake(_entry);
 
         return false;
@@ -239,13 +225,9 @@ bool ProbesRenderer::Init()
     if (!_shader->IsLoaded())
         return false;
     const auto shader = _shader->GetShader();
-
-    LOG(Info, "Starting Probes Renderer service");
-
-    // Validate shader constant buffers sizes
     if (shader->GetCB(0)->GetSize() != sizeof(Data))
     {
-        LOG(Fatal, "Shader {0} has incorrect constant buffer {1} size: {2} bytes. Expected: {3} bytes", _shader.ToString(), 0, shader->GetCB(0)->GetSize(), sizeof(Data));
+        REPORT_INVALID_SHADER_PASS_CB_SIZE(shader, 0, Data);
         return true;
     }
 
@@ -296,6 +278,7 @@ bool ProbesRenderer::Init()
     _task = New<SceneRenderTask>();
     auto task = _task;
     task->Enabled = false;
+    task->IsCustomRendering = true;
     task->Output = _output;
     auto& view = task->View;
     view.Flags =
@@ -310,6 +293,7 @@ bool ProbesRenderer::Init()
             ViewFlags::Fog;
     view.Mode = ViewMode::NoPostFx;
     view.IsOfflinePass = true;
+    view.IsSingleFrame = true;
     view.StaticFlagsMask = StaticFlags::ReflectionProbe;
     view.MaxShadowsQuality = Quality::Low;
     task->IsCameraCut = true;
@@ -320,7 +304,7 @@ bool ProbesRenderer::Init()
     _probe = GPUDevice::Instance->CreateTexture(TEXT("ProbesUpdate.Probe"));
     if (_probe->Init(GPUTextureDescription::NewCube(probeResolution, _output->Format(), GPUTextureFlags::ShaderResource | GPUTextureFlags::RenderTarget | GPUTextureFlags::PerMipViews, 0)))
         return true;
-    _tmpFace = GPUDevice::Instance->CreateTexture(TEXT("ProbesUpdate.TmpFae"));
+    _tmpFace = GPUDevice::Instance->CreateTexture(TEXT("ProbesUpdate.TmpFace"));
     if (_tmpFace->Init(GPUTextureDescription::New2D(probeResolution, probeResolution, 0, _output->Format(), GPUTextureFlags::ShaderResource | GPUTextureFlags::RenderTarget | GPUTextureFlags::PerMipViews)))
         return true;
 
@@ -334,8 +318,6 @@ void ProbesRenderer::Release()
     if (!_isReady)
         return;
     ASSERT(_updateFrameNumber == 0);
-
-    LOG(Info, "Disposing Probes Renderer service");
 
     // Release GPU data
     if (_output)
@@ -471,7 +453,6 @@ void ProbesRenderer::onRender(RenderTask* task, GPUContext* context)
         return;
     }
 
-    bool setLowerHemisphereToBlack = false;
     auto shader = _shader->GetShader();
     PROFILE_GPU("Render Probe");
 
@@ -487,7 +468,6 @@ void ProbesRenderer::onRender(RenderTask* task, GPUContext* context)
         float nearPlane = Math::Max(0.1f, envProbe->CaptureNearPlane);
 
         // Fix far plane distance
-        // TODO: investigate performance of this action, maybe we could skip it?
         float farPlane = Math::Max(radius, nearPlane + 100.0f);
         Function<bool(Actor*, const Vector3&, float&)> f(&fixFarPlaneTreeExecute);
         SceneQuery::TreeExecute<const Vector3&, float&>(f, position, farPlane);
@@ -505,12 +485,11 @@ void ProbesRenderer::onRender(RenderTask* task, GPUContext* context)
         float farPlane = Math::Max(nearPlane + 1000.0f, skyLight->SkyDistanceThreshold * 2.0f);
         customCullingNear = skyLight->SkyDistanceThreshold;
 
-        // TODO: use setLowerHemisphereToBlack feature for SkyLight?
-
         // Setup view
         LargeWorlds::UpdateOrigin(_task->View.Origin, position);
         _task->View.SetUpCube(nearPlane, farPlane, position - _task->View.Origin);
     }
+    _task->CameraCut();
 
     // Resize buffers
     bool resizeFailed = _output->Resize(probeResolution, probeResolution);
@@ -527,7 +506,6 @@ void ProbesRenderer::onRender(RenderTask* task, GPUContext* context)
     // Render scene for all faces
     for (int32 faceIndex = 0; faceIndex < 6; faceIndex++)
     {
-        // Set view
         _task->View.SetFace(faceIndex);
 
         // Handle custom frustum for the culling (used to skip objects near the camera)
@@ -547,21 +525,7 @@ void ProbesRenderer::onRender(RenderTask* task, GPUContext* context)
             PROFILE_GPU("Copy Face");
             context->SetRenderTarget(_probe->View(faceIndex));
             context->SetViewportAndScissors((float)probeResolution, (float)probeResolution);
-            auto probeFrame = _output->View();
-            if (setLowerHemisphereToBlack && faceIndex != 2)
-            {
-                MISSING_CODE("set lower hemisphere of the probe to black");
-                /*
-                ProbesFilter_Tmp.Set(_core.Rendering.Pool.RT2_FloatRGB.Handle);
-                ProbesFilter_CoefficientMask2.Set(f != 3 ? 1.0f : 0.0f);
-                ProbesFilter_Shader.Apply(5);
-                _device.DrawFullscreenTriangle();
-                */
-            }
-            else
-            {
-                context->Draw(probeFrame);
-            }
+            context->Draw(_output->View());
             context->ResetRenderTarget();
         }
     }
@@ -577,16 +541,9 @@ void ProbesRenderer::onRender(RenderTask* task, GPUContext* context)
         auto cb = shader->GetCB(0);
         for (int32 mipIndex = 1; mipIndex < mipLevels; mipIndex++)
         {
-            // Cache data
-            int32 srcMipIndex = mipIndex - 1;
             int32 mipSize = 1 << (mipLevels - mipIndex - 1);
-            data.SourceMipIndex = srcMipIndex;
-
-            // Set viewport
-            float mipSizeFloat = (float)mipSize;
-            context->SetViewportAndScissors(mipSizeFloat, mipSizeFloat);
-
-            // Filter all faces
+            data.SourceMipIndex = mipIndex - 1;
+            context->SetViewportAndScissors((float)mipSize, (float)mipSize);
             for (int32 faceIndex = 0; faceIndex < 6; faceIndex++)
             {
                 context->ResetSR();
@@ -600,12 +557,14 @@ void ProbesRenderer::onRender(RenderTask* task, GPUContext* context)
                 context->SetRenderTarget(_tmpFace->View(0, mipIndex));
                 context->SetState(_psFilterFace);
                 context->DrawFullscreenTriangle();
-
                 context->ResetSR();
                 context->ResetRenderTarget();
 
                 // Copy face back to the cubemap
-                copyTmpToFace(context, mipIndex, faceIndex);
+                context->SetRenderTarget(_probe->View(faceIndex, mipIndex));
+                context->BindSR(1, _tmpFace->View(0, mipIndex));
+                context->SetState(_psCopyFace);
+                context->DrawFullscreenTriangle();
             }
         }
     }
@@ -616,19 +575,6 @@ void ProbesRenderer::onRender(RenderTask* task, GPUContext* context)
     // Mark as rendered
     _updateFrameNumber = Engine::FrameCount;
     _task->Enabled = false;
-}
-
-void ProbesRenderer::copyTmpToFace(GPUContext* context, int32 mipIndex, int32 faceIndex)
-{
-    // Set destination render target
-    context->SetRenderTarget(_probe->View(faceIndex, mipIndex));
-
-    // Setup shader constants
-    context->BindSR(1, _tmpFace->View(0, mipIndex));
-
-    // Copy pixels
-    context->SetState(_psCopyFace);
-    context->DrawFullscreenTriangle();
 }
 
 #endif

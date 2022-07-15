@@ -229,6 +229,11 @@ public:
     bool IsCameraCut = true;
 
     /// <summary>
+    /// True if the task is used for custom scene rendering and default scene drawing into output should be skipped. Enable it if you use Render event and draw scene manually.
+    /// </summary>
+    API_FIELD() bool IsCustomRendering = false;
+
+    /// <summary>
     /// Marks the next rendered frame as camera cut. Used to clear the temporal effects history and prevent visual artifacts blended from the previous frames.
     /// </summary>
     API_FUNCTION() void CameraCut();

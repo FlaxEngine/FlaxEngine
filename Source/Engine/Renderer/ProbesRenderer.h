@@ -105,7 +105,6 @@ public:
 private:
 
     static void onRender(RenderTask* task, GPUContext* context);
-    static void copyTmpToFace(GPUContext* context, int32 mipIndex, int32 faceIndex);
 };
 
 #endif

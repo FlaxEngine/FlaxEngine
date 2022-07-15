@@ -82,6 +82,7 @@ private:
     uint64 LastFrameShaderReload = 0;
     void OnShaderReloading(Asset* obj);
 #endif
+    bool RenderInner(RenderContext& renderContext, GPUContext* context, class DDGICustomBuffer& ddgiData);
 
 public:
     // [RendererPass]

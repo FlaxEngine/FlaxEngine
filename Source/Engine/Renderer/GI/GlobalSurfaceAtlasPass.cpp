@@ -1043,14 +1043,14 @@ bool GlobalSurfaceAtlasPass::Render(RenderContext& renderContext, GPUContext* co
             }
             }
         }
-
-        context->ResetSR();
-        context->ResetRenderTarget();
     }
 
     // TODO: explore atlas tiles optimization with feedback from renderer (eg. when tile is sampled by GI/Reflections mark it as used, then sort tiles by importance and prioritize updates for ones frequently used)
 
 #undef WRITE_TILE
+    context->ResetSR();
+    context->ResetRenderTarget();
+    context->SetViewportAndScissors(renderContext.View.ScreenSize.X, renderContext.View.ScreenSize.Y);
     return notReady;
 }
 

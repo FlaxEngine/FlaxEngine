@@ -403,7 +403,7 @@ void SceneRenderTask::OnBegin(GPUContext* context)
 
 void SceneRenderTask::OnRender(GPUContext* context)
 {
-    if (Buffers && Buffers->GetWidth() > 0)
+    if (!IsCustomRendering && Buffers && Buffers->GetWidth() > 0)
         Renderer::Render(this);
 
     RenderTask::OnRender(context);
