@@ -281,6 +281,7 @@ namespace Flax.Build.Platforms
             case WindowsPlatformSDK.v10_0_19041_0:
             case WindowsPlatformSDK.v10_0_20348_0:
             case WindowsPlatformSDK.v10_0_22000_0:
+            case WindowsPlatformSDK.v10_0_22621_0:
             {
                 var sdkVersionName = WindowsPlatformBase.GetSDKVersion(SDK).ToString();
                 string includeRootDir = Path.Combine(windowsSdkDir, "include", sdkVersionName);
