@@ -416,17 +416,17 @@ void ShaderGenerator::ProcessGroupMath(Box* box, Node* node, Value& value)
     // Smoothstep
     case 50:
     {
-        Value v1 = tryGetValue(node->GetBox(0), Value::Zero);
-        Value v2 = tryGetValue(node->GetBox(1), Value::Zero);
-        Value v3 = tryGetValue(node->GetBox(2), Value::Zero);
+        Value v1 = tryGetValue(node->GetBox(0), 0, Value::Zero);
+        Value v2 = tryGetValue(node->GetBox(1), 1, Value::Zero);
+        Value v3 = tryGetValue(node->GetBox(2), 2, Value::Zero);
         value = writeFunction3(node, v1, v2, v3, TEXT("smoothstep"), v1.Type);
         break;
     }
     // Step
     case 51:
     {
-        Value v1 = tryGetValue(node->GetBox(0), Value::Zero);
-        Value v2 = tryGetValue(node->GetBox(1), Value::Zero);
+        Value v1 = tryGetValue(node->GetBox(0), 0, Value::Zero);
+        Value v2 = tryGetValue(node->GetBox(1), 1, Value::Zero);
         value = writeFunction2(node, v1, v2, TEXT("step"));
         break;
     }

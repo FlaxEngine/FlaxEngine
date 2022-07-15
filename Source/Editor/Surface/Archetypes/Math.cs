@@ -50,11 +50,7 @@ namespace FlaxEditor.Surface.Archetypes
                 Size = new Float2(110, 40),
                 DefaultType = new ScriptType(inputType),
                 ConnectionsHints = hints,
-                IndependentBoxes = new[]
-                {
-                    0,
-                    1
-                },
+                IndependentBoxes = new[] { 0, 1 },
                 DependentBoxes = isOutputDependant ? new[] { 2 } : null,
                 DefaultValues = defaultValues ?? new object[]
                 {
@@ -65,7 +61,7 @@ namespace FlaxEditor.Surface.Archetypes
                 {
                     NodeElementArchetype.Factory.Input(0, "A", true, inputType, 0, 0),
                     NodeElementArchetype.Factory.Input(1, "B", true, inputType, 1, 1),
-                    NodeElementArchetype.Factory.Output(0, "Result", outputType, 2)
+                    NodeElementArchetype.Factory.Output(0, string.Empty, outputType, 2)
                 }
             };
         }
@@ -104,7 +100,7 @@ namespace FlaxEditor.Surface.Archetypes
                 Elements = new[]
                 {
                     NodeElementArchetype.Factory.Input(0, "A", true, null, 0),
-                    NodeElementArchetype.Factory.Output(0, "Result", typeof(float), 1)
+                    NodeElementArchetype.Factory.Output(0, string.Empty, typeof(float), 1)
                 }
             },
             Op1(12, "Normalize", "Returns normalized A vector", ConnectionsHint.Vector),
@@ -133,12 +129,7 @@ namespace FlaxEditor.Surface.Archetypes
                 Size = new Float2(110, 60),
                 ConnectionsHints = ConnectionsHint.Numeric,
                 IndependentBoxes = new[] { 0 },
-                DependentBoxes = new[]
-                {
-                    1,
-                    2,
-                    3
-                },
+                DependentBoxes = new[] { 1, 2, 3 },
                 DefaultValues = new object[]
                 {
                     0.0f,
@@ -149,7 +140,7 @@ namespace FlaxEditor.Surface.Archetypes
                     NodeElementArchetype.Factory.Input(0, "Input", true, null, 0),
                     NodeElementArchetype.Factory.Input(1, "Min", true, null, 1, 0),
                     NodeElementArchetype.Factory.Input(2, "Max", true, null, 2, 1),
-                    NodeElementArchetype.Factory.Output(0, "Result", null, 3)
+                    NodeElementArchetype.Factory.Output(0, string.Empty, null, 3)
                 }
             },
             new NodeArchetype
@@ -160,11 +151,7 @@ namespace FlaxEditor.Surface.Archetypes
                 Flags = NodeFlags.AllGraphs,
                 Size = new Float2(110, 60),
                 ConnectionsHints = ConnectionsHint.Numeric,
-                IndependentBoxes = new[]
-                {
-                    0,
-                    1
-                },
+                IndependentBoxes = new[] { 0, 1 },
                 DependentBoxes = new[] { 3 },
                 DefaultValues = new object[]
                 {
@@ -177,7 +164,7 @@ namespace FlaxEditor.Surface.Archetypes
                     NodeElementArchetype.Factory.Input(0, "A", true, null, 0, 0),
                     NodeElementArchetype.Factory.Input(1, "B", true, null, 1, 1),
                     NodeElementArchetype.Factory.Input(2, "Alpha", true, typeof(float), 2, 2),
-                    NodeElementArchetype.Factory.Output(0, "Result", null, 3)
+                    NodeElementArchetype.Factory.Output(0, string.Empty, null, 3)
                 }
             },
             new NodeArchetype
@@ -188,17 +175,13 @@ namespace FlaxEditor.Surface.Archetypes
                 Flags = NodeFlags.AllGraphs,
                 Size = new Float2(110, 40),
                 ConnectionsHints = ConnectionsHint.Vector,
-                IndependentBoxes = new[]
-                {
-                    0,
-                    1
-                },
+                IndependentBoxes = new[] { 0, 1 },
                 DependentBoxes = new[] { 2 },
                 Elements = new[]
                 {
                     NodeElementArchetype.Factory.Input(0, "Vector", true, null, 0),
                     NodeElementArchetype.Factory.Input(1, "Normal", true, null, 1),
-                    NodeElementArchetype.Factory.Output(0, "Result", null, 2)
+                    NodeElementArchetype.Factory.Output(0, string.Empty, null, 2)
                 }
             },
             //
@@ -246,12 +229,7 @@ namespace FlaxEditor.Surface.Archetypes
                 Flags = NodeFlags.AllGraphs,
                 Size = new Float2(160, 60),
                 ConnectionsHints = ConnectionsHint.Numeric,
-                IndependentBoxes = new[]
-                {
-                    0,
-                    1,
-                    2
-                },
+                IndependentBoxes = new[] { 0, 1, 2 },
                 DependentBoxes = new[] { 3 },
                 DefaultValues = new object[]
                 {
@@ -263,7 +241,7 @@ namespace FlaxEditor.Surface.Archetypes
                     NodeElementArchetype.Factory.Input(0, "Value", true, null, 0),
                     NodeElementArchetype.Factory.Input(1, "Multiply", true, null, 1, 0),
                     NodeElementArchetype.Factory.Input(2, "Add", true, null, 2, 1),
-                    NodeElementArchetype.Factory.Output(0, "Result", null, 3)
+                    NodeElementArchetype.Factory.Output(0, string.Empty, null, 3)
                 }
             },
             new NodeArchetype
@@ -334,11 +312,7 @@ namespace FlaxEditor.Surface.Archetypes
                 Description = "Determines if two values are nearly equal within a given epsilon",
                 Flags = NodeFlags.AnimGraph | NodeFlags.ParticleEmitterGraph,
                 Size = new Float2(200, 80),
-                IndependentBoxes = new[]
-                {
-                    0,
-                    1,
-                },
+                IndependentBoxes = new[] { 0, 1, },
                 ConnectionsHints = ConnectionsHint.Numeric,
                 DefaultValues = new object[]
                 {
@@ -447,26 +421,22 @@ namespace FlaxEditor.Surface.Archetypes
                 Title = "Smoothstep",
                 Description = "Returns a smooth Hermite interpolation between 0 and 1, if value is in the range [min, max].",
                 Flags = NodeFlags.MaterialGraph,
-                Size = new Float2(110, 60),
+                Size = new Float2(120, 60),
                 ConnectionsHints = ConnectionsHint.Numeric,
-                IndependentBoxes = new[]
-                {
-                    0,
-                    1,
-                    2
-                },
+                IndependentBoxes = new[] { 0, 1, 2 },
                 DependentBoxes = new[] { 3 },
                 DefaultValues = new object[]
                 {
                     0.0f,
                     1.0f,
+                    0.0f,
                 },
                 Elements = new[]
                 {
-                    NodeElementArchetype.Factory.Input(0, "Min", true, null, 0),
-                    NodeElementArchetype.Factory.Input(1, "Max", true, null, 1),
-                    NodeElementArchetype.Factory.Input(2, "Value", true, null, 2, 1),
-                    NodeElementArchetype.Factory.Output(0, "Result", null, 3)
+                    NodeElementArchetype.Factory.Input(0, "Min", true, null, 0, 0),
+                    NodeElementArchetype.Factory.Input(1, "Max", true, null, 1, 1),
+                    NodeElementArchetype.Factory.Input(2, "Value", true, null, 2, 2),
+                    NodeElementArchetype.Factory.Output(0, string.Empty, null, 3)
                 },
             },
             Op2(51, "Step", "Compares two values, returning 0 or 1 based on which value is greater."),
