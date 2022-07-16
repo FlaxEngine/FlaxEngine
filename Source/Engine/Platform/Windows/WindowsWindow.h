@@ -120,6 +120,8 @@ public:
     DragDropEffect DoDragDrop(const StringView& data) override;
     void StartTrackingMouse(bool useMouseScreenOffset) override;
     void EndTrackingMouse() override;
+    void StartClippingCursor(const Rectangle& bounds) override;
+    void EndClippingCursor() override;
     void SetCursor(CursorType type) override;
 
 #if USE_EDITOR
