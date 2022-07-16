@@ -19,7 +19,6 @@ static CursorLockMode CursorLock = CursorLockMode::None;
 class ScreenService : public EngineService
 {
 public:
-
     ScreenService()
         : EngineService(TEXT("Screen"), 120)
     {
@@ -89,7 +88,7 @@ Float2 Screen::GameViewportToScreen(const Float2& viewportPos)
 bool Screen::GetCursorVisible()
 {
 #if USE_EDITOR
-    const auto win = Editor::Managed->GetGameWindow();
+    const auto win = Editor::Managed->GetGameWindow(true);
 #else
 	const auto win = Engine::MainWindow;
 #endif
@@ -99,7 +98,7 @@ bool Screen::GetCursorVisible()
 void Screen::SetCursorVisible(const bool value)
 {
 #if USE_EDITOR
-    const auto win = Editor::Managed->GetGameWindow();
+    const auto win = Editor::Managed->GetGameWindow(true);
 #else
 	const auto win = Engine::MainWindow;
 #endif
@@ -117,13 +116,18 @@ CursorLockMode Screen::GetCursorLock()
 void Screen::SetCursorLock(CursorLockMode mode)
 {
 #if USE_EDITOR
-    const auto win = Editor::Managed->GetGameWindow();
+    const auto win = Editor::Managed->GetGameWindow(true);
 #else
     const auto win = Engine::MainWindow;
 #endif
     if (win && mode == CursorLockMode::Clipped)
     {
-        win->StartClippingCursor(win->GetClientBounds());
+#if USE_EDITOR
+        Rectangle bounds(Editor::Managed->GameViewportToScreen(Float2::Zero), Editor::Managed->GetGameWindowSize());
+#else
+        Rectangle bounds = win->GetClientBounds();
+#endif
+        win->StartClippingCursor(bounds);
     }
     else if (win && CursorLock == CursorLockMode::Clipped)
     {

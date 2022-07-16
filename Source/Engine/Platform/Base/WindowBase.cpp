@@ -537,6 +537,8 @@ void WindowBase::Hide()
 {
     if (!_visible)
         return;
+    EndClippingCursor();
+    EndTrackingMouse();
     _visible = false;
     _showAfterFirstPaint = _settings.ShowAfterFirstPaint;
     Hidden();
@@ -560,7 +562,6 @@ void WindowBase::Close(ClosingReason reason)
     }
 
     // Close
-    EndTrackingMouse();
     Hide();
     OnClosed();
 }

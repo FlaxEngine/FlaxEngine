@@ -1292,43 +1292,29 @@ namespace FlaxEditor
             return false;
         }
 
-        internal void Internal_ScreenToGameViewport(ref Float2 pos)
+        internal void Internal_ScreenToGameViewport(out Float2 pos)
         {
-            if (Windows.GameWin != null && Windows.GameWin.ContainsFocus)
+            pos = Float2.Zero;
+            //if (Windows.GameWin != null && Windows.GameWin.ContainsFocus)
             {
-                var win = Windows.GameWin.Root;
+                var win = Windows.GameWin?.Root;
                 if (win?.RootWindow is WindowRootControl root && root.Window && root.Window.IsFocused)
                 {
                     pos = Float2.Round(Windows.GameWin.Viewport.PointFromScreen(pos) * root.DpiScale);
                 }
-                else
-                {
-                    pos = Float2.Minimum;
-                }
-            }
-            else
-            {
-                pos = Float2.Minimum;
             }
         }
 
-        internal void Internal_GameViewportToScreen(ref Float2 pos)
+        internal void Internal_GameViewportToScreen(out Float2 pos)
         {
-            if (Windows.GameWin != null && Windows.GameWin.ContainsFocus)
+            pos = Float2.Zero;
+            //if (Windows.GameWin != null && Windows.GameWin.ContainsFocus)
             {
-                var win = Windows.GameWin.Root;
+                var win = Windows.GameWin?.Root;
                 if (win?.RootWindow is WindowRootControl root && root.Window && root.Window.IsFocused)
                 {
                     pos = Float2.Round(Windows.GameWin.Viewport.PointToScreen(pos / root.DpiScale));
                 }
-                else
-                {
-                    pos = Float2.Minimum;
-                }
-            }
-            else
-            {
-                pos = Float2.Minimum;
             }
         }
 
@@ -1345,7 +1331,7 @@ namespace FlaxEditor
 
         internal void Internal_GetGameWindowSize(out Float2 resultAsRef)
         {
-            resultAsRef = Float2.Zero;
+            resultAsRef = new Float2(1280, 720);
             var gameWin = Windows.GameWin;
             if (gameWin != null)
             {

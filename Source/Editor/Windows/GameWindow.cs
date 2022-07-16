@@ -25,6 +25,7 @@ namespace FlaxEditor.Windows
         private float _gameStartTime;
         private GUI.Docking.DockState _maximizeRestoreDockState;
         private GUI.Docking.DockPanel _maximizeRestoreDockTo;
+        private CursorLockMode _cursorLockMode = CursorLockMode.None;
 
         /// <summary>
         /// Gets the viewport.
@@ -464,6 +465,8 @@ namespace FlaxEditor.Windows
                 if (Editor.Windows.PropertiesWin.IsDocked)
                     Editor.Windows.PropertiesWin.Focus();
                 Screen.CursorVisible = true;
+                if (Screen.CursorLock == CursorLockMode.Clipped)
+                    Screen.CursorLock = CursorLockMode.None;
             }
         }
 
@@ -522,11 +525,18 @@ namespace FlaxEditor.Windows
         {
             base.OnStartContainsFocus();
 
-            // Center mouse in play mode
-            if (CenterMouseOnFocus && Editor.StateMachine.IsPlayMode && !Editor.StateMachine.PlayingState.IsPaused)
+            if (Editor.StateMachine.IsPlayMode && !Editor.StateMachine.PlayingState.IsPaused)
             {
-                var center = PointToWindow(Size * 0.5f);
-                Root.MousePosition = center;
+                // Center mouse in play mode
+                if (CenterMouseOnFocus)
+                {
+                    var center = PointToWindow(Size * 0.5f);
+                    Root.MousePosition = center;
+                }
+
+                // Restore lock mode
+                if (_cursorLockMode != CursorLockMode.None)
+                    Screen.CursorLock = _cursorLockMode;
             }
         }
 
@@ -537,6 +547,9 @@ namespace FlaxEditor.Windows
 
             // Restore cursor visibility (could be hidden by the game)
             Screen.CursorVisible = true;
+
+            // Cache lock mode
+            _cursorLockMode = Screen.CursorLock;
         }
 
         /// <inheritdoc />

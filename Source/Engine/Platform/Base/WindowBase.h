@@ -271,10 +271,9 @@ API_INJECT_CODE(cpp, "#include \"Engine/Platform/Window.h\"");
 API_CLASS(NoSpawn, NoConstructor, Sealed, Name="Window")
 class FLAXENGINE_API WindowBase : public ScriptingObject
 {
-DECLARE_SCRIPTING_TYPE_NO_SPAWN(WindowBase);
+    DECLARE_SCRIPTING_TYPE_NO_SPAWN(WindowBase);
     friend GPUSwapChain;
 protected:
-
     bool _visible, _minimized, _maximized, _isClosing, _showAfterFirstPaint, _focused;
     GPUSwapChain* _swapChain;
     CreateWindowSettings _settings;
@@ -294,7 +293,6 @@ protected:
     virtual ~WindowBase();
 
 public:
-
     /// <summary>
     /// The rendering task for that window.
     /// </summary>
@@ -336,7 +334,6 @@ public:
     Action Draw;
 
 public:
-
     // Returns true if that window is the main Engine window (works in both editor and game mode)
     bool IsMain() const;
 
@@ -405,7 +402,6 @@ public:
     API_PROPERTY() virtual void* GetNativePtr() const = 0;
 
 public:
-
     /// <summary>
     /// Performs the UI update.
     /// </summary>
@@ -471,11 +467,9 @@ public:
     /// <summary>
     /// Checks if window is foreground (the window with which the user is currently working).
     /// </summary>
-    /// <returns>True if window is foreground, otherwise false.</returns>
     API_PROPERTY() virtual bool IsForegroundWindow() const;
 
 public:
-
     /// <summary>
     /// Gets the client bounds of the window (client area not including border).
     /// </summary>
@@ -585,8 +579,8 @@ public:
     {
         return Platform::CustomDpiScale * _dpiScale;
     }
-public:
 
+public:
     /// <summary>
     /// Gets the window title.
     /// </summary>
@@ -652,7 +646,6 @@ public:
     }
 
 public:
-
     /// <summary>
     /// Starts drag and drop operation
     /// </summary>
@@ -674,7 +667,6 @@ public:
     /// <summary>
     /// Gets the mouse tracking offset.
     /// </summary>
-    /// <returns>The mouse screen offset.</returns>
     API_PROPERTY() Float2 GetTrackingMouseOffset() const
     {
         return _trackingMouseOffset;
@@ -698,7 +690,7 @@ public:
     /// <summary>
     /// Starts the cursor clipping.
     /// </summary>
-    /// <param name="bounds">The bounds that the cursor will be confined to.</param>
+    /// <param name="bounds">The screen-space bounds that the cursor will be confined to.</param>
     API_FUNCTION() virtual void StartClippingCursor(const Rectangle& bounds)
     {
     }
@@ -721,7 +713,6 @@ public:
     /// <summary>
     /// Gets the mouse cursor.
     /// </summary>
-    /// <returns>The cursor type</returns>
     API_PROPERTY() FORCE_INLINE CursorType GetCursor() const
     {
         return _cursor;
@@ -755,7 +746,6 @@ public:
     API_PROPERTY() void SetRenderingEnabled(bool value);
 
 public:
-
     typedef Delegate<Char> CharDelegate;
     typedef Delegate<KeyboardKeys> KeyboardDelegate;
     typedef Delegate<const Float2&> MouseDelegate;
@@ -882,7 +872,6 @@ public:
     void OnClosing(ClosingReason reason, bool& cancel);
 
 public:
-
     /// <summary>
     /// Gets the text entered during the current frame (Unicode).
     /// </summary>
@@ -911,11 +900,9 @@ public:
     API_FUNCTION() bool GetKeyUp(KeyboardKeys key) const;
 
 public:
-
     /// <summary>
     /// Gets the mouse position in window coordinates.
     /// </summary>
-    /// <returns>Mouse cursor coordinates</returns>
     API_PROPERTY() Float2 GetMousePosition() const;
 
     /// <summary>
@@ -933,7 +920,6 @@ public:
     /// <summary>
     /// Gets the mouse wheel change during the last frame.
     /// </summary>
-    /// <returns>Mouse wheel value delta</returns>
     API_PROPERTY() float GetMouseScrollDelta() const;
 
     /// <summary>
@@ -958,7 +944,6 @@ public:
     API_FUNCTION() bool GetMouseButtonUp(MouseButton button) const;
 
 public:
-
     void OnShow();
     void OnResize(int32 width, int32 height);
     void OnClosed();
@@ -966,14 +951,12 @@ public:
     void OnLostFocus();
 
 private:
-
     void OnMainRenderTaskDelete(class ScriptingObject* obj)
     {
         RenderTask = nullptr;
     }
 
 public:
-
     // [ScriptingObject]
     String ToString() const override;
     void OnDeleteObject() override;

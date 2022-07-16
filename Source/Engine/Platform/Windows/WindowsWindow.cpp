@@ -519,7 +519,6 @@ void WindowsWindow::SetOpacity(const float opacity)
 void WindowsWindow::Focus()
 {
     ASSERT(HasHWND());
-
     if (GetFocus() != _handle)
     {
         SetFocus(_handle);
@@ -566,20 +565,18 @@ void WindowsWindow::EndTrackingMouse()
 
 void WindowsWindow::StartClippingCursor(const Rectangle& bounds)
 {
-    ASSERT(HasHWND());
-
-    if (!_isClippingCursor)
-    {
-        _isClippingCursor = true;
-    }
-
-    const RECT lpRect = { 
-        bounds.GetUpperLeft().X,
-        bounds.GetUpperLeft().Y,
-        bounds.GetBottomRight().X,
-        bounds.GetBottomRight().Y
+    _isClippingCursor = true;
+    *(RECT*)_clipCursorRect = {
+        (LONG)bounds.GetUpperLeft().X,
+        (LONG)bounds.GetUpperLeft().Y,
+        (LONG)bounds.GetBottomRight().X,
+        (LONG)bounds.GetBottomRight().Y
     };
-    ClipCursor(&lpRect);
+    if (IsFocused())
+    {
+        _clipCursorSet = true;
+        ClipCursor((RECT*)_clipCursorRect);
+    }
 }
 
 void WindowsWindow::EndClippingCursor()
@@ -587,8 +584,8 @@ void WindowsWindow::EndClippingCursor()
     if (_isClippingCursor)
     {
         _isClippingCursor = false;
-
-        ClipCursor(NULL);
+        _clipCursorSet = false;
+        ClipCursor(nullptr);
     }
 }
 
@@ -1094,8 +1091,18 @@ LRESULT WindowsWindow::WndProc(UINT msg, WPARAM wParam, LPARAM lParam)
         break;
     case WM_SETFOCUS:
         OnGotFocus();
+        if (_isClippingCursor && !_clipCursorSet)
+        {
+            _clipCursorSet = true;
+            ClipCursor((RECT*)_clipCursorRect);
+        }
         break;
     case WM_KILLFOCUS:
+        if (_clipCursorSet)
+        {
+            _clipCursorSet = false;
+            ClipCursor(nullptr);
+        }
         OnLostFocus();
         break;
     case WM_ACTIVATEAPP:

@@ -27,9 +27,11 @@ private:
     bool _isResizing = false;
     bool _isSwitchingFullScreen = false;
     bool _trackingMouse = false;
+    bool _clipCursorSet = false;
     bool _isDuringMaximize = false;
     Windows::HANDLE _monitor = nullptr;
     Float2 _clientSize;
+    Windows::LONG _clipCursorRect[4];
     int32 _regionWidth = 0, _regionHeight = 0;
 
 public:
