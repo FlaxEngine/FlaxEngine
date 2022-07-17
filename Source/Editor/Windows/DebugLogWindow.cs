@@ -86,6 +86,7 @@ namespace FlaxEditor.Windows
             {
                 AnchorPreset = AnchorPresets.HorizontalStretchTop;
                 IsScrollable = true;
+                AutoFocus = true;
 
                 _window = window;
                 Desc = desc;
@@ -231,6 +232,11 @@ namespace FlaxEditor.Windows
                 if (base.OnMouseDown(location, button))
                     return true;
 
+                if (button == MouseButton.Left)
+                {
+                    Focus();
+                    return true;
+                }
                 if (button == MouseButton.Right)
                 {
                     Focus();
