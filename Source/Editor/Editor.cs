@@ -1292,29 +1292,29 @@ namespace FlaxEditor
             return false;
         }
 
-        internal void Internal_ScreenToGameViewport(out Float2 pos)
+        internal void Internal_ScreenToGameViewport(ref Float2 pos)
         {
-            pos = Float2.Zero;
-            //if (Windows.GameWin != null && Windows.GameWin.ContainsFocus)
+            var win = Windows.GameWin?.Root;
+            if (win?.RootWindow is WindowRootControl root)
             {
-                var win = Windows.GameWin?.Root;
-                if (win?.RootWindow is WindowRootControl root && root.Window && root.Window.IsFocused)
-                {
-                    pos = Float2.Round(Windows.GameWin.Viewport.PointFromScreen(pos) * root.DpiScale);
-                }
+                pos = Float2.Round(Windows.GameWin.Viewport.PointFromScreen(pos) * root.DpiScale);
+            }
+            else
+            {
+                pos = Float2.Minimum;
             }
         }
 
-        internal void Internal_GameViewportToScreen(out Float2 pos)
+        internal void Internal_GameViewportToScreen(ref Float2 pos)
         {
-            pos = Float2.Zero;
-            //if (Windows.GameWin != null && Windows.GameWin.ContainsFocus)
+            var win = Windows.GameWin?.Root;
+            if (win?.RootWindow is WindowRootControl root)
             {
-                var win = Windows.GameWin?.Root;
-                if (win?.RootWindow is WindowRootControl root && root.Window && root.Window.IsFocused)
-                {
-                    pos = Float2.Round(Windows.GameWin.Viewport.PointToScreen(pos / root.DpiScale));
-                }
+                pos = Float2.Round(Windows.GameWin.Viewport.PointToScreen(pos / root.DpiScale));
+            }
+            else
+            {
+                pos = Float2.Minimum;
             }
         }
 
@@ -1329,24 +1329,20 @@ namespace FlaxEditor
             }
         }
 
-        internal void Internal_GetGameWindowSize(out Float2 resultAsRef)
+        internal void Internal_GetGameWindowSize(out Float2 result)
         {
-            resultAsRef = new Float2(1280, 720);
+            result = new Float2(1280, 720);
             var gameWin = Windows.GameWin;
-            if (gameWin != null)
+            if (gameWin?.Root?.RootWindow is WindowRootControl root)
             {
-                var win = gameWin.Root;
-                if (win != null && win.RootWindow is WindowRootControl root)
-                {
-                    // Handle case when Game window is not selected in tab view
-                    var dockedTo = gameWin.ParentDockPanel;
-                    if (dockedTo != null && dockedTo.SelectedTab != gameWin && dockedTo.SelectedTab != null)
-                        resultAsRef = dockedTo.SelectedTab.Size * root.DpiScale;
-                    else
-                        resultAsRef = gameWin.Size * root.DpiScale;
+                // Handle case when Game window is not selected in tab view
+                var dockedTo = gameWin.ParentDockPanel;
+                if (dockedTo != null && dockedTo.SelectedTab != gameWin && dockedTo.SelectedTab != null)
+                    result = dockedTo.SelectedTab.Size * root.DpiScale;
+                else
+                    result = gameWin.Size * root.DpiScale;
 
-                    resultAsRef = Float2.Round(resultAsRef);
-                }
+                result = Float2.Round(result);
             }
         }
 
