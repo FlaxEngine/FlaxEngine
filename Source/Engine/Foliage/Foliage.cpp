@@ -1275,7 +1275,7 @@ void Foliage::OnTransformChanged()
 
     // Update instances matrices and cached world bounds
     Vector3 corners[8];
-    Matrix world, matrix;
+    Matrix world;
     GetLocalToWorldMatrix(world);
     for (auto i = Instances.Begin(); i.IsNotEnd(); ++i)
     {

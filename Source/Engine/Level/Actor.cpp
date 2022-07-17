@@ -331,7 +331,7 @@ void Actor::SetParent(Actor* value, bool worldPositionsStays, bool canBreakPrefa
         ASSERT(_parent != nullptr && GetScene() != nullptr);
 
         // Fire events
-        PostSpawn();
+        InitializeHierarchy();
         {
             SceneBeginData beginData;
             BeginPlay(&beginData);
@@ -778,44 +778,18 @@ void Actor::BreakPrefabLink()
     }
 }
 
-void Actor::PostLoad()
+void Actor::Initialize()
 {
-    // Cache scene
+    ASSERT(!IsDuringPlay());
+
+    // Cache
     if (_parent)
         _scene = _parent->GetScene();
-
-    // Cache flag
     _isActiveInHierarchy = _isActive && (_parent == nullptr || _parent->IsActiveInHierarchy());
 
     // Use lazy creation for the managed instance, just register the object
     if (!IsRegistered())
         RegisterObject();
-}
-
-void Actor::PostSpawn()
-{
-    // Cache scene
-    if (_parent)
-        _scene = _parent->GetScene();
-
-    // Cache flag
-    _isActiveInHierarchy = _isActive && (_parent == nullptr || _parent->IsActiveInHierarchy());
-
-    // Create managed object
-    if (!HasManagedInstance())
-        CreateManaged();
-
-    // Init scripts
-    for (int32 i = 0; i < Scripts.Count(); i++)
-    {
-        Scripts[i]->PostSpawn();
-    }
-
-    // Init children
-    for (int32 i = 0; i < Children.Count(); i++)
-    {
-        Children[i]->PostSpawn();
-    }
 }
 
 void Actor::BeginPlay(SceneBeginData* data)
@@ -853,13 +827,6 @@ void Actor::BeginPlay(SceneBeginData* data)
     }
 
     // Fire events for scripting
-    for (auto* script : Scripts)
-    {
-        CHECK_EXECUTE_IN_EDITOR
-        {
-            script->OnAwake();
-        }
-    }
     if (IsActiveInHierarchy() && GetScene() && !_isEnabled)
     {
         OnEnable();
@@ -1227,6 +1194,17 @@ void Actor::UnregisterObjectHierarchy()
     {
         Children[i]->UnregisterObjectHierarchy();
     }
+}
+
+void Actor::InitializeHierarchy()
+{
+    Initialize();
+
+    for (int32 i = 0; i < Scripts.Count(); i++)
+        Scripts[i]->Initialize();
+
+    for (int32 i = 0; i < Children.Count(); i++)
+        Children[i]->InitializeHierarchy();
 }
 
 void Actor::Draw(RenderContext& renderContext)
@@ -1685,7 +1663,7 @@ bool Actor::FromBytes(const Span<byte>& data, Array<Actor*>& output, ISerializeM
     }
     for (int32 i = 0; i < parents->Count(); i++)
     {
-        parents->At(i)->PostSpawn();
+        parents->At(i)->InitializeHierarchy();
     }
     for (int32 i = 0; i < parents->Count(); i++)
     {

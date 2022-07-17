@@ -178,7 +178,7 @@ bool LevelImpl::spawnActor(Actor* actor, Actor* parent)
     if (actor->Is<Scene>())
     {
         // Spawn scene
-        actor->PostSpawn();
+        actor->InitializeHierarchy();
         actor->OnTransformChanged();
         {
             SceneBeginData beginData;
@@ -1052,26 +1052,24 @@ bool Level::loadScene(rapidjson_flax::Value& data, int32 engineBuild, Scene** ou
     // TODO: resave and force sync scenes during game cooking so this step could be skipped in game
     SceneObjectsFactory::SynchronizePrefabInstances(context, prefabSyncData);
 
-    // Call post load event to connect all scene actors
+    // Initialize scene objects
     {
-        PROFILE_CPU_NAMED("Post Load");
+        PROFILE_CPU_NAMED("Initialize");
 
         for (int32 i = 0; i < sceneObjects->Count(); i++)
         {
             SceneObject* obj = sceneObjects->At(i);
             if (obj)
-                obj->PostLoad();
-        }
-    }
+            {
+                obj->Initialize();
 
-    // Delete objects without parent
-    for (int32 i = 1; i < objectsCount; i++)
-    {
-        SceneObject* obj = sceneObjects->At(i);
-        if (obj && obj->GetParent() == nullptr)
-        {
-            LOG(Warning, "Scene object {0} {1} has missing parent object after load. Removing it.", obj->GetID(), obj->ToString());
-            obj->DeleteObject();
+                // Delete objects without parent
+                if (i != 0 && obj->GetParent() == nullptr)
+                {
+                    LOG(Warning, "Scene object {0} {1} has missing parent object after load. Removing it.", obj->GetID(), obj->ToString());
+                    obj->DeleteObject();
+                }
+            }
         }
     }
 

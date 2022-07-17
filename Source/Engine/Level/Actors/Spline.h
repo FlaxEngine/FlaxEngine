@@ -373,7 +373,7 @@ public:
     void OnDebugDrawSelected() override;
 #endif
     void OnTransformChanged() override;
-    void PostLoad() override;
+    void Initialize() override;
     void Serialize(SerializeStream& stream, const void* otherObj) override;
     void Deserialize(DeserializeStream& stream, ISerializeModifier* modifier) override;
 };

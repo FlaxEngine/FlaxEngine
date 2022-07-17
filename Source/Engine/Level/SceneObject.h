@@ -97,7 +97,6 @@ public:
     /// <summary>
     /// Determines whether object is during play (spawned/loaded and fully initialized).
     /// </summary>
-    /// <returns><c>true</c> if object is during play; otherwise, <c>false</c>.</returns>
     FORCE_INLINE bool IsDuringPlay() const
     {
         return (Flags & ObjectFlags::IsDuringPlay) != 0;
@@ -207,14 +206,9 @@ public:
 
 public:
     /// <summary>
-    /// Called after whole scene or local group of scene objects deserialization.
+    /// Called after object loading or spawning to initialize the object (eg. call OnAwake for scripts) but before BeginPlay. Initialization should be performed only within a single SceneObject (use BeginPlay to initialize with a scene).
     /// </summary>
-    virtual void PostLoad() = 0;
-
-    /// <summary>
-    /// Called after spawning scene object to the level (similar to the PostLoad but only for spawned objects at runtime).
-    /// </summary>
-    virtual void PostSpawn() = 0;
+    virtual void Initialize() = 0;
 
     /// <summary>
     /// Called when adding object to the game.

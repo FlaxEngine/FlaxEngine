@@ -650,6 +650,11 @@ public:
     /// </summary>
     void UnregisterObjectHierarchy();
 
+    /// <summary>
+    /// Calls Initialize for all objects in the actor hierarchy.
+    /// </summary>
+    void InitializeHierarchy();
+
 public:
     /// <summary>
     /// Draws this actor. Called by Scene Rendering service. This call is more optimized than generic Draw (eg. geometry is rendered during all pass types but other actors are drawn only during GBufferFill pass).
@@ -993,8 +998,7 @@ public:
     void SetOrderInParent(int32 index) override;
     void LinkPrefab(const Guid& prefabId, const Guid& prefabObjectId) override;
     void BreakPrefabLink() override;
-    void PostLoad() override;
-    void PostSpawn() override;
+    void Initialize() override;
     void BeginPlay(SceneBeginData* data) override;
     void EndPlay() override;
     void Serialize(SerializeStream& stream, const void* otherObj) override;

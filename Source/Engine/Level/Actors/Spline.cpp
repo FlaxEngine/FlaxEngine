@@ -514,10 +514,10 @@ void Spline::OnTransformChanged()
     BoundingSphere::FromBox(_box, _sphere);
 }
 
-void Spline::PostLoad()
+void Spline::Initialize()
 {
     // Base
-    Actor::PostLoad();
+    Actor::Initialize();
 
     auto& keyframes = Curve.GetKeyframes();
     const int32 count = keyframes.Count();

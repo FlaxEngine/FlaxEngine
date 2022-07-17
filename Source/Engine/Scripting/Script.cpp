@@ -114,7 +114,7 @@ void Script::SetParent(Actor* value, bool canBreakPrefabLink)
     if (value && value->IsDuringPlay() && !IsDuringPlay())
     {
         // Prepare for gameplay
-        PostSpawn();
+        Initialize();
         {
             SceneBeginData beginData;
             BeginPlay(&beginData);
@@ -122,10 +122,6 @@ void Script::SetParent(Actor* value, bool canBreakPrefabLink)
         }
 
         // Fire events for scripting
-        CHECK_EXECUTE_IN_EDITOR
-        {
-            OnAwake();
-        }
         if (GetEnabled())
         {
             Start();
@@ -265,24 +261,21 @@ const Guid& Script::GetSceneObjectId() const
     return GetID();
 }
 
-void Script::PostLoad()
+void Script::Initialize()
 {
+    ASSERT(!IsDuringPlay());
+
     if (Flags & ObjectFlags::IsManagedType || Flags & ObjectFlags::IsCustomScriptingType)
         SetupType();
 
     // Use lazy creation for the managed instance, just register the object
     if (!IsRegistered())
         RegisterObject();
-}
 
-void Script::PostSpawn()
-{
-    if (Flags & ObjectFlags::IsManagedType || Flags & ObjectFlags::IsCustomScriptingType)
-        SetupType();
-
-    // Create managed object
-    if (!HasManagedInstance())
-        CreateManaged();
+    CHECK_EXECUTE_IN_EDITOR
+    {
+        OnAwake();
+    }
 }
 
 void Script::BeginPlay(SceneBeginData* data)

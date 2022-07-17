@@ -430,7 +430,7 @@ bool PrefabInstanceData::SynchronizePrefabInstances(Array<PrefabInstanceData>& p
         for (int32 i = existingObjectsCount; i < sceneObjects->Count(); i++)
         {
             SceneObject* obj = sceneObjects.Value->At(i);
-            obj->PostLoad();
+            obj->Initialize();
         }
 
         // Synchronize existing objects logic with deserialized state (fire events)
@@ -470,8 +470,6 @@ bool PrefabInstanceData::SynchronizePrefabInstances(Array<PrefabInstanceData>& p
 
                     if (Script* script = dynamic_cast<Script*>(obj))
                     {
-                        if (Editor::IsPlayMode || script->_executeInEditor)
-                            script->OnAwake();
                         if (script->GetParent() && !script->_wasEnableCalled && script->GetParent()->IsActiveInHierarchy() && script->GetParent()->GetScene())
                             script->Enable();
                     }
@@ -1010,7 +1008,7 @@ bool Prefab::ApplyAllInternal(Actor* targetActor, bool linkTargetActorObjectToPr
             auto obj = sceneObjects.Value->At(i);
             if (obj)
             {
-                obj->PostLoad();
+                obj->Initialize();
             }
         }
 

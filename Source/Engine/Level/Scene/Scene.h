@@ -137,8 +137,7 @@ public:
 
 protected:
     // [Actor]
-    void PostLoad() override;
-    void PostSpawn() override;
+    void Initialize() override;
     void BeginPlay(SceneBeginData* data) override;
     void OnTransformChanged() override;
 };

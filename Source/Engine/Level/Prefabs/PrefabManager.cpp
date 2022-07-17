@@ -190,9 +190,7 @@ Actor* PrefabManager::SpawnPrefab(Prefab* prefab, Actor* parent, Dictionary<Guid
     {
         auto obj = sceneObjects->At(i);
         if (obj)
-        {
-            obj->PostLoad();
-        }
+            obj->Initialize();
     }
 
     // Synchronize prefab instances (prefab may have new objects added or some removed so deserialized instances need to synchronize with it)
