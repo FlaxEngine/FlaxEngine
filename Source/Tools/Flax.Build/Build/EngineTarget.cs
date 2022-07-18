@@ -175,12 +175,9 @@ namespace Flax.Build
 
             // Link executable
             exeBuildOptions.LinkEnv.InputLibraries.Add(Path.Combine(buildOptions.OutputFolder, buildOptions.Platform.GetLinkOutputFileName(OutputName, LinkerOutput.SharedLibrary)));
-            foreach (var e in mainModuleOptions.OutputFiles)
-                exeBuildOptions.LinkEnv.InputFiles.Add(e);
-            foreach (var e in mainModuleOptions.DependencyFiles)
-                exeBuildOptions.DependencyFiles.Add(e);
-            foreach (var e in mainModuleOptions.OptionalDependencyFiles)
-                exeBuildOptions.OptionalDependencyFiles.Add(e);
+            exeBuildOptions.LinkEnv.InputFiles.AddRange(mainModuleOptions.OutputFiles);
+            exeBuildOptions.DependencyFiles.AddRange(mainModuleOptions.DependencyFiles);
+            exeBuildOptions.OptionalDependencyFiles.AddRange(mainModuleOptions.OptionalDependencyFiles);
             exeBuildOptions.Libraries.AddRange(mainModuleOptions.Libraries);
             exeBuildOptions.DelayLoadLibraries.AddRange(mainModuleOptions.DelayLoadLibraries);
             exeBuildOptions.ScriptingAPI.Add(mainModuleOptions.ScriptingAPI);

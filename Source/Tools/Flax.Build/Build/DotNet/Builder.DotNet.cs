@@ -97,12 +97,9 @@ namespace Flax.Build
                         sourceFiles.AddRange(moduleOptions.SourceFiles.Where(x => x.EndsWith(".cs")));
 
                         // Merge module into target environment
-                        foreach (var e in moduleOptions.OutputFiles)
-                            buildData.TargetOptions.LinkEnv.InputFiles.Add(e);
-                        foreach (var e in moduleOptions.DependencyFiles)
-                            buildData.TargetOptions.DependencyFiles.Add(e);
-                        foreach (var e in moduleOptions.OptionalDependencyFiles)
-                            buildData.TargetOptions.OptionalDependencyFiles.Add(e);
+                        buildData.TargetOptions.LinkEnv.InputFiles.AddRange(moduleOptions.OutputFiles);
+                        buildData.TargetOptions.DependencyFiles.AddRange(moduleOptions.DependencyFiles);
+                        buildData.TargetOptions.OptionalDependencyFiles.AddRange(moduleOptions.OptionalDependencyFiles);
                         buildData.TargetOptions.Libraries.AddRange(moduleOptions.Libraries);
                         buildData.TargetOptions.DelayLoadLibraries.AddRange(moduleOptions.DelayLoadLibraries);
                         buildData.TargetOptions.ScriptingAPI.Add(moduleOptions.ScriptingAPI);

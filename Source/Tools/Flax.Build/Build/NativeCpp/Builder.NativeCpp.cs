@@ -358,14 +358,10 @@ namespace Flax.Build
                 var dependencyModule = buildData.Rules.GetModule(moduleName);
                 if (dependencyModule != null && buildData.Modules.TryGetValue(dependencyModule, out var dependencyOptions))
                 {
-                    foreach (var e in dependencyOptions.OutputFiles)
-                        moduleOptions.LinkEnv.InputFiles.Add(e);
-                    foreach (var e in dependencyOptions.DependencyFiles)
-                        moduleOptions.DependencyFiles.Add(e);
-                    foreach (var e in dependencyOptions.OptionalDependencyFiles)
-                        moduleOptions.OptionalDependencyFiles.Add(e);
-                    foreach (var e in dependencyOptions.PublicIncludePaths)
-                        moduleOptions.PrivateIncludePaths.Add(e);
+                    moduleOptions.LinkEnv.InputFiles.AddRange(dependencyOptions.OutputFiles);
+                    moduleOptions.DependencyFiles.AddRange(dependencyOptions.DependencyFiles);
+                    moduleOptions.OptionalDependencyFiles.AddRange(dependencyOptions.OptionalDependencyFiles);
+                    moduleOptions.PrivateIncludePaths.AddRange(dependencyOptions.PublicIncludePaths);
                     moduleOptions.Libraries.AddRange(dependencyOptions.Libraries);
                     moduleOptions.DelayLoadLibraries.AddRange(dependencyOptions.DelayLoadLibraries);
                     moduleOptions.ScriptingAPI.Add(dependencyOptions.ScriptingAPI);
@@ -377,14 +373,10 @@ namespace Flax.Build
                 var dependencyModule = buildData.Rules.GetModule(moduleName);
                 if (dependencyModule != null && buildData.Modules.TryGetValue(dependencyModule, out var dependencyOptions))
                 {
-                    foreach (var e in dependencyOptions.OutputFiles)
-                        moduleOptions.LinkEnv.InputFiles.Add(e);
-                    foreach (var e in dependencyOptions.DependencyFiles)
-                        moduleOptions.DependencyFiles.Add(e);
-                    foreach (var e in dependencyOptions.OptionalDependencyFiles)
-                        moduleOptions.OptionalDependencyFiles.Add(e);
-                    foreach (var e in dependencyOptions.PublicIncludePaths)
-                        moduleOptions.PublicIncludePaths.Add(e);
+                    moduleOptions.LinkEnv.InputFiles.AddRange(dependencyOptions.OutputFiles);
+                    moduleOptions.DependencyFiles.AddRange(dependencyOptions.DependencyFiles);
+                    moduleOptions.OptionalDependencyFiles.AddRange(dependencyOptions.OptionalDependencyFiles);
+                    moduleOptions.PublicIncludePaths.AddRange(dependencyOptions.PublicIncludePaths);
                     moduleOptions.Libraries.AddRange(dependencyOptions.Libraries);
                     moduleOptions.DelayLoadLibraries.AddRange(dependencyOptions.DelayLoadLibraries);
                     moduleOptions.ScriptingAPI.Add(dependencyOptions.ScriptingAPI);
@@ -855,12 +847,9 @@ namespace Flax.Build
                         var moduleOptions = BuildModule(buildData, module);
 
                         // Merge module into target environment
-                        foreach (var e in moduleOptions.OutputFiles)
-                            buildData.TargetOptions.LinkEnv.InputFiles.Add(e);
-                        foreach (var e in moduleOptions.DependencyFiles)
-                            buildData.TargetOptions.DependencyFiles.Add(e);
-                        foreach (var e in moduleOptions.OptionalDependencyFiles)
-                            buildData.TargetOptions.OptionalDependencyFiles.Add(e);
+                        buildData.TargetOptions.LinkEnv.InputFiles.AddRange(moduleOptions.OutputFiles);
+                        buildData.TargetOptions.DependencyFiles.AddRange(moduleOptions.DependencyFiles);
+                        buildData.TargetOptions.OptionalDependencyFiles.AddRange(moduleOptions.OptionalDependencyFiles);
                         buildData.TargetOptions.Libraries.AddRange(moduleOptions.Libraries);
                         buildData.TargetOptions.DelayLoadLibraries.AddRange(moduleOptions.DelayLoadLibraries);
                         buildData.TargetOptions.ScriptingAPI.Add(moduleOptions.ScriptingAPI);
@@ -1117,10 +1106,8 @@ namespace Flax.Build
                             // Merge module into target environment
                             buildData.TargetOptions.ScriptingAPI.Add(moduleOptions.ScriptingAPI);
                             buildData.TargetOptions.ExternalModules.AddRange(moduleOptions.ExternalModules);
-                            foreach (var e in moduleOptions.DependencyFiles)
-                                buildData.TargetOptions.DependencyFiles.Add(e);
-                            foreach (var e in moduleOptions.OptionalDependencyFiles)
-                                buildData.TargetOptions.OptionalDependencyFiles.Add(e);
+                            buildData.TargetOptions.DependencyFiles.AddRange(moduleOptions.DependencyFiles);
+                            buildData.TargetOptions.OptionalDependencyFiles.AddRange(moduleOptions.OptionalDependencyFiles);
                         }
                     }
                 }
