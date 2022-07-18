@@ -74,12 +74,6 @@ PACK_STRUCT(struct Data
     Float2 Dummy0;
     int32 CubeFace;
     int32 SourceMipIndex;
-    Float4 Sample01;
-    Float4 Sample23;
-    Float4 CoefficientMask0;
-    Float4 CoefficientMask1;
-    Float3 Dummy1;
-    float CoefficientMask2;
     });
 
 namespace ProbesRendererImpl
@@ -92,11 +86,6 @@ namespace ProbesRendererImpl
     bool _isReady = false;
     AssetReference<Shader> _shader;
     GPUPipelineState* _psFilterFace = nullptr;
-    GPUPipelineState* _psCopyFace = nullptr;
-    GPUPipelineState* _psCalcDiffuseIrradiance = nullptr;
-    GPUPipelineState* _psAccDiffuseIrradiance = nullptr;
-    GPUPipelineState* _psAccumulateCubeFaces = nullptr;
-    GPUPipelineState* _psCopyFrameLHB = nullptr;
     SceneRenderTask* _task = nullptr;
     GPUTexture* _output = nullptr;
     GPUTexture* _probe = nullptr;
@@ -246,40 +235,10 @@ bool ProbesRenderer::Init()
 
     // Create pipeline stages
     _psFilterFace = GPUDevice::Instance->CreatePipelineState();
-    _psCopyFace = GPUDevice::Instance->CreatePipelineState();
-    _psCalcDiffuseIrradiance = GPUDevice::Instance->CreatePipelineState();
-    _psAccDiffuseIrradiance = GPUDevice::Instance->CreatePipelineState();
-    _psAccumulateCubeFaces = GPUDevice::Instance->CreatePipelineState();
-    _psCopyFrameLHB = GPUDevice::Instance->CreatePipelineState();
     GPUPipelineState::Description psDesc = GPUPipelineState::Description::DefaultFullscreenTriangle;
     {
         psDesc.PS = shader->GetPS("PS_FilterFace");
         if (_psFilterFace->Init(psDesc))
-            return true;
-    }
-    {
-        psDesc.PS = shader->GetPS("PS_CopyFace");
-        if (_psCopyFace->Init(psDesc))
-            return true;
-    }
-    {
-        psDesc.PS = shader->GetPS("PS_CalcDiffuseIrradiance");
-        if (_psCalcDiffuseIrradiance->Init(psDesc))
-            return true;
-    }
-    {
-        psDesc.PS = shader->GetPS("PS_AccDiffuseIrradiance");
-        if (_psAccDiffuseIrradiance->Init(psDesc))
-            return true;
-    }
-    {
-        psDesc.PS = shader->GetPS("PS_AccumulateCubeFaces");
-        if (_psAccumulateCubeFaces->Init(psDesc))
-            return true;
-    }
-    {
-        psDesc.PS = shader->GetPS("PS_CopyFrameLHB");
-        if (_psCopyFrameLHB->Init(psDesc))
             return true;
     }
 
@@ -338,11 +297,6 @@ void ProbesRenderer::Release()
 
     // Release data
     SAFE_DELETE_GPU_RESOURCE(_psFilterFace);
-    SAFE_DELETE_GPU_RESOURCE(_psCopyFace);
-    SAFE_DELETE_GPU_RESOURCE(_psCalcDiffuseIrradiance);
-    SAFE_DELETE_GPU_RESOURCE(_psAccDiffuseIrradiance);
-    SAFE_DELETE_GPU_RESOURCE(_psAccumulateCubeFaces);
-    SAFE_DELETE_GPU_RESOURCE(_psCopyFrameLHB);
     _shader = nullptr;
     SAFE_DELETE_GPU_RESOURCE(_output);
     SAFE_DELETE(_task);
@@ -573,9 +527,7 @@ void ProbesRenderer::onRender(RenderTask* task, GPUContext* context)
 
                 // Copy face back to the cubemap
                 context->SetRenderTarget(_probe->View(faceIndex, mipIndex));
-                context->BindSR(1, _tmpFace->View(0, mipIndex));
-                context->SetState(_psCopyFace);
-                context->DrawFullscreenTriangle();
+                context->Draw(_tmpFace->View(0, mipIndex));
             }
         }
     }
