@@ -1,3 +1,5 @@
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
+
 #if USE_LARGE_WORLDS
 using Real = System.Double;
 using RealValueBox = FlaxEditor.GUI.Input.DoubleValueBox;
@@ -5,8 +7,6 @@ using RealValueBox = FlaxEditor.GUI.Input.DoubleValueBox;
 using Real = System.Single;
 using RealValueBox = FlaxEditor.GUI.Input.FloatValueBox;
 #endif
-
-// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 using System;
 using System.Collections.Generic;

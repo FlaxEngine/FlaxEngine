@@ -1,10 +1,11 @@
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
+
 #if USE_LARGE_WORLDS
 using Real = System.Double;
 #else
 using Real = System.Single;
 #endif
 
-// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 using FlaxEngine;
 
 // ReSharper disable RedundantAssignment
