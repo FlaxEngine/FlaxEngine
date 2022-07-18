@@ -250,10 +250,12 @@ namespace FlaxEditor.Tools.Foliage
             if (Physics.RayCast(Position, Vector3.Down, out var hit, float.MaxValue, uint.MaxValue, false))
             {
                 // Snap
-                StartTransforming();
                 var translationDelta = hit.Point - Position;
                 var rotationDelta = Quaternion.Identity;
                 var scaleDelta = Vector3.Zero;
+                if (translationDelta.IsZero)
+                    return;
+                StartTransforming();
                 OnApplyTransformation(ref translationDelta, ref rotationDelta, ref scaleDelta);
                 EndTransforming();
             }

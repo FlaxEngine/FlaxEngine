@@ -100,7 +100,7 @@ namespace FlaxEditor.Gizmo
             while (true)
             {
                 var view = new Ray(Owner.ViewPosition, Owner.ViewDirection);
-                var rayCastFlags = SceneGraphNode.RayCastData.FlagTypes.SkipEditorPrimitives;
+                var rayCastFlags = SceneGraphNode.RayCastData.FlagTypes.SkipEditorPrimitives | SceneGraphNode.RayCastData.FlagTypes.SkipTriggers;
                 var hit = Owner.SceneGraphRoot.RayCast(ref ray, ref view, out var distance, out _, rayCastFlags);
                 if (hit != null)
                 {
@@ -130,10 +130,12 @@ namespace FlaxEditor.Gizmo
                     var newPosition = ray.GetPoint(distance) + new Vector3(0, bottomToCenter, 0);
 
                     // Snap
-                    StartTransforming();
                     var translationDelta = newPosition - Position;
                     var rotationDelta = Quaternion.Identity;
                     var scaleDelta = Vector3.Zero;
+                    if (translationDelta.IsZero)
+                        break;
+                    StartTransforming();
                     OnApplyTransformation(ref translationDelta, ref rotationDelta, ref scaleDelta);
                     EndTransforming();
                 }

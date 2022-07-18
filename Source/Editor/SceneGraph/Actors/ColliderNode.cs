@@ -31,7 +31,8 @@ namespace FlaxEditor.SceneGraph
         public override bool RayCastSelf(ref RayCastData ray, out Real distance, out Vector3 normal)
         {
             // Check if skip raycasts
-            if ((ray.Flags & RayCastData.FlagTypes.SkipColliders) == RayCastData.FlagTypes.SkipColliders)
+            if (((ray.Flags & RayCastData.FlagTypes.SkipColliders) == RayCastData.FlagTypes.SkipColliders) ||
+                (((ray.Flags & RayCastData.FlagTypes.SkipTriggers) == RayCastData.FlagTypes.SkipTriggers) && ((Collider)Actor).IsTrigger))
             {
                 distance = 0;
                 normal = Vector3.Up;

@@ -194,6 +194,11 @@ namespace FlaxEditor.SceneGraph
                 /// The skip editor primitives. Use it to ignore editor icons and primitives intersections detection.
                 /// </summary>
                 SkipEditorPrimitives = 2,
+
+                /// <summary>
+                /// The skip trigger colliders flag. Use it to ignore physics trigger colliders intersections detection.
+                /// </summary>
+                SkipTriggers = 4,
             }
 
             /// <summary>
