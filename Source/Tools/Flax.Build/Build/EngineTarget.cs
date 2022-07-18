@@ -184,6 +184,7 @@ namespace Flax.Build
             exeBuildOptions.Libraries.AddRange(mainModuleOptions.Libraries);
             exeBuildOptions.DelayLoadLibraries.AddRange(mainModuleOptions.DelayLoadLibraries);
             exeBuildOptions.ScriptingAPI.Add(mainModuleOptions.ScriptingAPI);
+            exeBuildOptions.ExternalModules.AddRange(mainModuleOptions.ExternalModules);
             buildOptions.Toolchain.LinkFiles(graph, exeBuildOptions, outputPath);
         }
     }

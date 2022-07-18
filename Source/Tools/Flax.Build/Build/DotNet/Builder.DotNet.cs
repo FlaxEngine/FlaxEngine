@@ -106,6 +106,7 @@ namespace Flax.Build
                         buildData.TargetOptions.Libraries.AddRange(moduleOptions.Libraries);
                         buildData.TargetOptions.DelayLoadLibraries.AddRange(moduleOptions.DelayLoadLibraries);
                         buildData.TargetOptions.ScriptingAPI.Add(moduleOptions.ScriptingAPI);
+                        buildData.TargetOptions.ExternalModules.AddRange(moduleOptions.ExternalModules);
                     }
                 }
             }
