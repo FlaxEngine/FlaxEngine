@@ -48,11 +48,7 @@ CubeTexture* SkyLight::GetSource() const
 
 void SkyLight::Bake(float timeout)
 {
-#if COMPILE_WITH_PROBES_BAKING
     ProbesRenderer::Bake(this, timeout);
-#else
-    LOG(Warning, "Baking probes is not supported.");
-#endif
 }
 
 void SkyLight::SetProbeData(TextureData& data)

@@ -64,6 +64,7 @@ bool DeployDataStep::Perform(CookingData& data)
     data.AddRootEngineAsset(TEXT("Shaders/Histogram"));
     data.AddRootEngineAsset(TEXT("Shaders/Lights"));
     data.AddRootEngineAsset(TEXT("Shaders/MultiScaler"));
+    data.AddRootEngineAsset(TEXT("Shaders/ProbesFilter"));
     data.AddRootEngineAsset(TEXT("Shaders/PostProcessing"));
     data.AddRootEngineAsset(TEXT("Shaders/MotionBlur"));
     data.AddRootEngineAsset(TEXT("Shaders/BitonicSort"));

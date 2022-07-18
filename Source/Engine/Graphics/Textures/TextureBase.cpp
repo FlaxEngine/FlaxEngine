@@ -886,3 +886,43 @@ bool TextureBase::InitData::GenerateMip(int32 mipIndex, bool linear)
 
     return false;
 }
+
+void TextureBase::InitData::FromTextureData(const TextureData& textureData, bool generateMips)
+{
+    Format = textureData.Format;
+    Width = textureData.Width;
+    Height = textureData.Height;
+    ArraySize = textureData.GetArraySize();
+    if (generateMips)
+        Mips.Resize(MipLevelsCount(textureData.Width, textureData.Height));
+    else
+        Mips.Resize(textureData.GetMipLevels());
+
+    for (int32 mipIndex = 0; mipIndex < textureData.GetMipLevels(); mipIndex++)
+    {
+        auto& mip = Mips[mipIndex];
+        auto& data = *textureData.GetData(0, mipIndex);
+        mip.Data.Allocate(data.Data.Length() * ArraySize);
+        mip.RowPitch = data.RowPitch;
+        mip.SlicePitch = data.Data.Length();
+
+        byte* dst = mip.Data.Get();
+        for (int32 arrayIndex = 0; arrayIndex < ArraySize; arrayIndex++)
+        {
+            auto& d = *textureData.GetData(arrayIndex, mipIndex);
+            ASSERT(data.RowPitch == d.RowPitch);
+            ASSERT(data.Data.Length() == d.Data.Length());
+            Platform::MemoryCopy(dst, d.Data.Get(), d.Data.Length());
+            dst += data.Data.Length();
+            ASSERT((int32)(dst - mip.Data.Get()) <= mip.Data.Length());
+        }
+    }
+
+    if (generateMips)
+    {
+        for (int32 mipIndex = textureData.GetMipLevels(); mipIndex < Mips.Count(); mipIndex++)
+        {
+            GenerateMip(mipIndex, true);
+        }
+    }
+}

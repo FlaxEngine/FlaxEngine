@@ -2,8 +2,6 @@
 
 #pragma once
 
-#if COMPILE_WITH_PROBES_BAKING
-
 #include "Engine/Scripting/ScriptingObjectReference.h"
 #include "Engine/Level/Actor.h"
 
@@ -107,5 +105,3 @@ private:
 
     static void onRender(RenderTask* task, GPUContext* context);
 };
-
-#endif

@@ -84,16 +84,12 @@ void EnvironmentProbe::SetCustomProbe(CubeTexture* probe)
 
 void EnvironmentProbe::Bake(float timeout)
 {
-#if COMPILE_WITH_PROBES_BAKING
     ProbesRenderer::Bake(this, timeout);
-#else
-    LOG(Warning, "Baking probes is not supported.");
-#endif
 }
 
 void EnvironmentProbe::SetProbeData(GPUContext* context, GPUTexture* data)
 {
-    // Remove any probe asset
+    // Remove probe asset (if used)
     _isUsingCustomProbe = false;
     _probe = nullptr;
 
@@ -128,11 +124,14 @@ void EnvironmentProbe::SetProbeData(TextureData& data)
         _probe = nullptr;
     }
 
-    Guid id = Guid::New();
+    // Remove probe texture (if used)
+    SAFE_DELETE_GPU_RESOURCE(_probeTexture);
+
 #if COMPILE_WITH_ASSETS_IMPORTER
     // Create asset file
     const String path = GetScene()->GetDataFolderPath() / TEXT("EnvProbes/") / GetID().ToString(Guid::FormatType::N) + ASSET_FILES_EXTENSION_WITH_DOT;
     AssetInfo info;
+    Guid id = Guid::New();
     if (FileSystem::FileExists(path) && Content::GetAssetInfo(path, info))
         id = info.ID;
     if (AssetsImportingManager::Create(AssetsImportingManager::CreateCubeTextureTag, path, id, &data))
@@ -140,14 +139,6 @@ void EnvironmentProbe::SetProbeData(TextureData& data)
         LOG(Error, "Cannot import generated env probe!");
         return;
     }
-
-    // Remove probe texture
-    SAFE_DELETE_GPU_RESOURCE(_probeTexture);
-#else
-    // TODO: create or reuse virtual texture and use it
-    LOG(Error, "Changing probes at runtime in game is not supported.");
-    return;
-#endif
 
     // Check if has loaded probe and it has different ID
     if (_probe && _probe->GetID() != id)
@@ -159,6 +150,19 @@ void EnvironmentProbe::SetProbeData(TextureData& data)
 
     // Link probe texture
     _probe = Content::LoadAsync<CubeTexture>(id);
+#else
+    // Create virtual asset
+    if (!_probe || !_probe->IsVirtual())
+        _probe = Content::CreateVirtualAsset<CubeTexture>();
+    auto initData = New<TextureBase::InitData>();
+    initData->FromTextureData(data);
+    if (_probe->Init(initData))
+    {
+        Delete(initData);
+        LOG(Error, "Cannot load generated env probe!");
+        return;
+    }
+#endif
 }
 
 void EnvironmentProbe::UpdateBounds()
@@ -175,10 +179,8 @@ void EnvironmentProbe::Draw(RenderContext& renderContext)
         (renderContext.View.Flags & ViewFlags::Reflections) != 0 &&
         renderContext.View.Pass & DrawPass::GBuffer)
     {
-#if COMPILE_WITH_PROBES_BAKING
         if (UpdateMode == ProbeUpdateMode::Realtime)
             ProbesRenderer::Bake(this, 0.0f);
-#endif
         if ((_probe != nullptr && _probe->IsLoaded()) || _probeTexture != nullptr)
         {
             renderContext.List->EnvironmentProbes.Add(this);

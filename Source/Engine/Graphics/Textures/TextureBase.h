@@ -45,6 +45,8 @@ API_CLASS(Abstract, NoSpawn) class FLAXENGINE_API TextureBase : public BinaryAss
         /// <param name="linear">True if use linear filer, otherwise point filtering.</param>
         /// <returns>True if failed, otherwise false.</returns>
         bool GenerateMip(int32 mipIndex, bool linear = false);
+
+        void FromTextureData(const TextureData& textureData, bool generateMips = false);
     };
 
 protected:

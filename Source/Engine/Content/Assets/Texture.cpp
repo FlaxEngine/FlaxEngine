@@ -176,33 +176,7 @@ bool Texture::LoadFile(const StringView& path, bool generateMips)
     }
 
     auto initData = New<InitData>();
-
-    initData->Format = textureData.Format;
-    initData->Width = textureData.Width;
-    initData->Height = textureData.Height;
-    initData->ArraySize = 1;
-    if (generateMips)
-        initData->Mips.Resize(MipLevelsCount(textureData.Width, textureData.Height));
-    else
-        initData->Mips.Resize(textureData.GetMipLevels());
-
-    for (int32 mipIndex = 0; mipIndex < textureData.GetMipLevels(); mipIndex++)
-    {
-        auto& mip = initData->Mips[mipIndex];
-        auto& data = *textureData.GetData(0, mipIndex);
-
-        mip.Data.Copy(data.Data);
-        mip.RowPitch = data.RowPitch;
-        mip.SlicePitch = data.DepthPitch;
-    }
-
-    if (generateMips)
-    {
-        for (int32 mipIndex = textureData.GetMipLevels(); mipIndex < initData->Mips.Count(); mipIndex++)
-        {
-            initData->GenerateMip(mipIndex, true);
-        }
-    }
+    initData->FromTextureData(textureData, generateMips);
 
     return Init(initData);
 }

@@ -1,7 +1,5 @@
 // Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
-#if COMPILE_WITH_PROBES_BAKING
-
 #include "ProbesRenderer.h"
 #include "Renderer.h"
 #include "ReflectionsPass.h"
@@ -602,5 +600,3 @@ void ProbesRenderer::onRender(RenderTask* task, GPUContext* context)
         _current.Type = EntryType::Invalid;
     }
 }
-
-#endif
