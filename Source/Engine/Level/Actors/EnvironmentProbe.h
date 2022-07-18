@@ -13,11 +13,29 @@
 API_CLASS() class FLAXENGINE_API EnvironmentProbe : public Actor
 {
     DECLARE_SCENE_OBJECT(EnvironmentProbe);
+public:
+    /// <summary>
+    /// The environment probe update mode.
+    /// </summary>
+    API_ENUM() enum class ProbeUpdateMode
+    {
+        // Probe can be updated manually (eg. in Editor or from script).
+        Manual = 0,
+        // Probe will be automatically updated when is moved.
+        WhenMoved = 1,
+        // Probe will be automatically updated in real-time (only if in view and frequency depending on distance to the camera).
+        Realtime = 2,
+    };
+
 private:
     float _radius;
     bool _isUsingCustomProbe;
     int32 _sceneRenderingKey = -1;
     AssetReference<CubeTexture> _probe;
+    GPUTexture* _probeTexture = nullptr;
+
+public:
+    ~EnvironmentProbe();
 
 public:
     /// <summary>
@@ -33,10 +51,10 @@ public:
     float Brightness = 1.0f;
 
     /// <summary>
-    /// Value indicating if probe should be updated automatically on change.
+    /// The probe update mode.
     /// </summary>
     API_FIELD(Attributes="EditorOrder(30), EditorDisplay(\"Probe\")")
-    bool AutoUpdate = false;
+    ProbeUpdateMode UpdateMode = ProbeUpdateMode::Manual;
 
     /// <summary>
     /// The probe capture camera near plane distance.
@@ -62,19 +80,9 @@ public:
     API_PROPERTY() float GetScaledRadius() const;
 
     /// <summary>
-    /// Returns true if env probe has cube texture assigned.
-    /// </summary>
-    API_PROPERTY() bool HasProbe() const;
-
-    /// <summary>
-    /// Returns true if env probe has cube texture assigned.
-    /// </summary>
-    API_PROPERTY() bool HasProbeLoaded() const;
-
-    /// <summary>
     /// Gets the probe texture used during rendering (baked or custom one).
     /// </summary>
-    API_PROPERTY() CubeTexture* GetProbe() const;
+    API_PROPERTY() GPUTexture* GetProbe() const;
 
     /// <summary>
     /// True if probe is using custom cube texture (not baked).
@@ -108,7 +116,14 @@ public:
     API_FUNCTION() void Bake(float timeout = 0);
 
     /// <summary>
-    /// Action fired when probe has been baked.
+    /// Action fired when probe has been baked. Copies data to the texture memory (GPU-only for real-time probes).
+    /// </summary>
+    /// <param name="context">The GPU context to use for probe data copying.</param>
+    /// <param name="data">The new probe data (GPU texture).</param>
+    void SetProbeData(GPUContext* context, GPUTexture* data);
+
+    /// <summary>
+    /// Action fired when probe has been baked. Imports data to the texture asset (virtual if running in game).
     /// </summary>
     /// <param name="data">The new probe data.</param>
     void SetProbeData(TextureData& data);

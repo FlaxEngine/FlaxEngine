@@ -412,8 +412,6 @@ void ReflectionsPass::Render(RenderContext& renderContext, GPUTextureView* light
         {
             // Cache data
             auto probe = renderContext.List->EnvironmentProbes[probeIndex];
-            if (!probe->HasProbeLoaded())
-                continue;
             float probeRadius = probe->GetScaledRadius();
             Float3 probePosition = probe->GetPosition() - renderContext.View.Origin;
 
@@ -436,7 +434,7 @@ void ReflectionsPass::Render(RenderContext& renderContext, GPUTextureView* light
             // Render reflections
             context->UpdateCB(cb, &data);
             context->BindCB(0, cb);
-            context->BindSR(4, probe->GetProbe()->GetTexture());
+            context->BindSR(4, probe->GetProbe());
 
             context->SetState(isViewInside ? _psProbeInverted : _psProbeNormal);
             _sphereModel->Render(context);

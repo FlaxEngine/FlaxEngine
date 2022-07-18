@@ -46,6 +46,7 @@ public:
             Timeout = other.Timeout;
         }
 
+        bool UseTextureData() const;
         int32 GetResolution() const;
     };
 

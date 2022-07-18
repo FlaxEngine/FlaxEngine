@@ -157,7 +157,8 @@ void ProbesRenderer::Bake(EnvironmentProbe* probe, float timeout)
     _probesToBake.Add(e);
 
     // Fire event
-    OnRegisterBake(e);
+    if (e.UseTextureData())
+        OnRegisterBake(e);
 }
 
 void ProbesRenderer::Bake(SkyLight* probe, float timeout)
@@ -183,7 +184,21 @@ void ProbesRenderer::Bake(SkyLight* probe, float timeout)
     _probesToBake.Add(e);
 
     // Fire event
-    OnRegisterBake(e);
+    if (e.UseTextureData())
+        OnRegisterBake(e);
+}
+
+bool ProbesRenderer::Entry::UseTextureData() const
+{
+    if (Type == EntryType::EnvProbe && Actor)
+    {
+        switch (Actor.As<EnvironmentProbe>()->UpdateMode)
+        {
+        case EnvironmentProbe::ProbeUpdateMode::Realtime:
+            return false;
+        }
+    }
+    return true;
 }
 
 int32 ProbesRenderer::Entry::GetResolution() const
@@ -358,7 +373,7 @@ void ProbesRendererService::Update()
             texture = _probe;
             break;
         }
-        ASSERT(texture);
+        ASSERT(texture && _current.UseTextureData());
         auto taskB = New<DownloadProbeTask>(texture, _current);
         auto taskA = texture->DownloadDataAsync(taskB->GetData());
         if (taskA == nullptr)
@@ -462,7 +477,6 @@ void ProbesRenderer::onRender(RenderTask* task, GPUContext* context)
     if (_current.Type == EntryType::EnvProbe)
     {
         auto envProbe = (EnvironmentProbe*)_current.Actor.Get();
-        LOG(Info, "Updating Env probe '{0}' (resolution: {1})...", envProbe->ToString(), probeResolution);
         Vector3 position = envProbe->GetPosition();
         float radius = envProbe->GetScaledRadius();
         float nearPlane = Math::Max(0.1f, envProbe->CaptureNearPlane);
@@ -479,7 +493,6 @@ void ProbesRenderer::onRender(RenderTask* task, GPUContext* context)
     else if (_current.Type == EntryType::SkyLight)
     {
         auto skyLight = (SkyLight*)_current.Actor.Get();
-        LOG(Info, "Updating sky light '{0}' (resolution: {1})...", skyLight->ToString(), probeResolution);
         Vector3 position = skyLight->GetPosition();
         float nearPlane = 10.0f;
         float farPlane = Math::Max(nearPlane + 1000.0f, skyLight->SkyDistanceThreshold * 2.0f);
@@ -575,6 +588,19 @@ void ProbesRenderer::onRender(RenderTask* task, GPUContext* context)
     // Mark as rendered
     _updateFrameNumber = Engine::FrameCount;
     _task->Enabled = false;
+
+    // Real-time probes don't use TextureData (for streaming) but copy generated probe directly to GPU memory
+    if (!_current.UseTextureData())
+    {
+        if (_current.Type == EntryType::EnvProbe && _current.Actor)
+        {
+            _current.Actor.As<EnvironmentProbe>()->SetProbeData(context, _probe);
+        }
+
+        // Clear flag
+        _updateFrameNumber = 0;
+        _current.Type = EntryType::Invalid;
+    }
 }
 
 #endif

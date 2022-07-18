@@ -4,6 +4,7 @@
 #include "Engine/Platform/FileSystem.h"
 #include "Engine/Graphics/RenderView.h"
 #include "Engine/Graphics/RenderTask.h"
+#include "Engine/Graphics/Textures/GPUTexture.h"
 #include "Engine/Graphics/Textures/TextureData.h"
 #include "Engine/Renderer/RenderList.h"
 #include "Engine/Renderer/ProbesRenderer.h"
@@ -13,16 +14,19 @@
 #include "Engine/ContentImporters/AssetsImportingManager.h"
 #include "Engine/Serialization/Serialization.h"
 #include "Engine/Level/Scene/Scene.h"
-#include "Engine/Graphics/Graphics.h"
 
 EnvironmentProbe::EnvironmentProbe(const SpawnParams& params)
     : Actor(params)
     , _radius(3000.0f)
     , _isUsingCustomProbe(false)
-    , _probe(nullptr)
 {
     _sphere = BoundingSphere(Vector3::Zero, _radius);
     BoundingBox::FromSphere(_sphere, _box);
+}
+
+EnvironmentProbe::~EnvironmentProbe()
+{
+    SAFE_DELETE_GPU_RESOURCE(_probeTexture);
 }
 
 float EnvironmentProbe::GetRadius() const
@@ -45,19 +49,9 @@ float EnvironmentProbe::GetScaledRadius() const
     return _radius * _transform.Scale.MaxValue();
 }
 
-bool EnvironmentProbe::HasProbe() const
+GPUTexture* EnvironmentProbe::GetProbe() const
 {
-    return _probe != nullptr;
-}
-
-bool EnvironmentProbe::HasProbeLoaded() const
-{
-    return _probe != nullptr && _probe->IsLoaded();
-}
-
-CubeTexture* EnvironmentProbe::GetProbe() const
-{
-    return _probe;
+    return _probe ? _probe->GetTexture() : _probeTexture;
 }
 
 bool EnvironmentProbe::IsUsingCustomProbe() const
@@ -74,9 +68,7 @@ void EnvironmentProbe::SetupProbeData(const RenderContext& renderContext, ProbeD
 
 CubeTexture* EnvironmentProbe::GetCustomProbe() const
 {
-    if (IsUsingCustomProbe())
-        return GetProbe();
-    return nullptr;
+    return _isUsingCustomProbe ? _probe : nullptr;
 }
 
 void EnvironmentProbe::SetCustomProbe(CubeTexture* probe)
@@ -99,6 +91,34 @@ void EnvironmentProbe::Bake(float timeout)
 #endif
 }
 
+void EnvironmentProbe::SetProbeData(GPUContext* context, GPUTexture* data)
+{
+    // Remove any probe asset
+    _isUsingCustomProbe = false;
+    _probe = nullptr;
+
+    // Allocate probe texture manually
+    if (!_probeTexture)
+    {
+        _probeTexture = GPUTexture::New();
+#if !BUILD_RELEASE
+        _probeTexture->SetName(GetNamePath());
+#endif
+    }
+    if (_probeTexture->Width() != data->Width() || _probeTexture->Format() != data->Format())
+    {
+        auto desc = data->GetDescription();
+        desc.Usage = GPUResourceUsage::Default;
+        desc.Flags = GPUTextureFlags::ShaderResource;
+        if (_probeTexture->Init(desc))
+            return;
+        _probeTexture->SetResidentMipLevels(_probeTexture->MipLevels());
+    }
+
+    // Copy probe texture data
+    context->CopyResource(_probeTexture, data);
+}
+
 void EnvironmentProbe::SetProbeData(TextureData& data)
 {
     // Remove custom probe (if used)
@@ -109,7 +129,6 @@ void EnvironmentProbe::SetProbeData(TextureData& data)
     }
 
     Guid id = Guid::New();
-
 #if COMPILE_WITH_ASSETS_IMPORTER
     // Create asset file
     const String path = GetScene()->GetDataFolderPath() / TEXT("EnvProbes/") / GetID().ToString(Guid::FormatType::N) + ASSET_FILES_EXTENSION_WITH_DOT;
@@ -121,6 +140,9 @@ void EnvironmentProbe::SetProbeData(TextureData& data)
         LOG(Error, "Cannot import generated env probe!");
         return;
     }
+
+    // Remove probe texture
+    SAFE_DELETE_GPU_RESOURCE(_probeTexture);
 #else
     // TODO: create or reuse virtual texture and use it
     LOG(Error, "Changing probes at runtime in game is not supported.");
@@ -151,10 +173,16 @@ void EnvironmentProbe::Draw(RenderContext& renderContext)
 {
     if (Brightness > ZeroTolerance &&
         (renderContext.View.Flags & ViewFlags::Reflections) != 0 &&
-        renderContext.View.Pass & DrawPass::GBuffer &&
-        HasProbeLoaded())
+        renderContext.View.Pass & DrawPass::GBuffer)
     {
-        renderContext.List->EnvironmentProbes.Add(this);
+#if COMPILE_WITH_PROBES_BAKING
+        if (UpdateMode == ProbeUpdateMode::Realtime)
+            ProbesRenderer::Bake(this, 0.0f);
+#endif
+        if ((_probe != nullptr && _probe->IsLoaded()) || _probeTexture != nullptr)
+        {
+            renderContext.List->EnvironmentProbes.Add(this);
+        }
     }
 }
 
@@ -189,7 +217,7 @@ void EnvironmentProbe::Serialize(SerializeStream& stream, const void* otherObj)
     SERIALIZE_MEMBER(Radius, _radius);
     SERIALIZE(CubemapResolution);
     SERIALIZE(Brightness);
-    SERIALIZE(AutoUpdate);
+    SERIALIZE(UpdateMode);
     SERIALIZE(CaptureNearPlane);
     SERIALIZE_MEMBER(IsCustomProbe, _isUsingCustomProbe);
     SERIALIZE_MEMBER(ProbeID, _probe);
@@ -203,10 +231,18 @@ void EnvironmentProbe::Deserialize(DeserializeStream& stream, ISerializeModifier
     DESERIALIZE_MEMBER(Radius, _radius);
     DESERIALIZE(CubemapResolution);
     DESERIALIZE(Brightness);
-    DESERIALIZE(AutoUpdate);
+    DESERIALIZE(UpdateMode);
     DESERIALIZE(CaptureNearPlane);
     DESERIALIZE_MEMBER(IsCustomProbe, _isUsingCustomProbe);
     DESERIALIZE_MEMBER(ProbeID, _probe);
+
+    // [Deprecated on 18.07.2022, expires on 18.07.2022]
+    if (modifier->EngineBuild <= 6332)
+    {
+        const auto member = stream.FindMember("AutoUpdate");
+        if (member != stream.MemberEnd() && member->value.IsBool() && member->value.GetBool())
+            UpdateMode = ProbeUpdateMode::WhenMoved;
+    }
 }
 
 bool EnvironmentProbe::HasContentLoaded() const
@@ -248,7 +284,7 @@ void EnvironmentProbe::OnTransformChanged()
 
     UpdateBounds();
 
-    if (AutoUpdate && IsDuringPlay())
+    if (IsDuringPlay() && UpdateMode == ProbeUpdateMode::WhenMoved)
     {
         Bake(1.0f);
     }

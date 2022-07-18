@@ -171,7 +171,6 @@ namespace FlaxEditor.Viewport.Previews
             //
             EnvProbe = new EnvironmentProbe
             {
-                AutoUpdate = false,
                 CustomProbe = FlaxEngine.Content.LoadAsyncInternal<CubeTexture>(EditorAssets.DefaultSkyCubeTexture)
             };
             //
@@ -222,7 +221,7 @@ namespace FlaxEditor.Viewport.Previews
         }
 
         /// <inheritdoc />
-        public override bool HasLoadedAssets => base.HasLoadedAssets && Sky.HasContentLoaded && EnvProbe.Probe.IsLoaded && PostFxVolume.HasContentLoaded;
+        public override bool HasLoadedAssets => base.HasLoadedAssets && Sky.HasContentLoaded && EnvProbe.HasContentLoaded && PostFxVolume.HasContentLoaded;
 
         /// <inheritdoc />
         public override void OnDestroy()

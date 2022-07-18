@@ -89,8 +89,7 @@ void ForwardShadingFeature::Bind(MaterialShader::BindParameters& params, Span<by
     if (probe && probe->GetProbe())
     {
         probe->SetupProbeData(params.RenderContext, &data.EnvironmentProbe);
-        const auto texture = probe->GetProbe()->GetTexture();
-        context->BindSR(envProbeShaderRegisterIndex, GET_TEXTURE_VIEW_SAFE(texture));
+        context->BindSR(envProbeShaderRegisterIndex, probe->GetProbe());
     }
     else
     {
