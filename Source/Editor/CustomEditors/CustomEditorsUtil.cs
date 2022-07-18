@@ -63,6 +63,8 @@ namespace FlaxEditor.CustomEditors
                 return new GenericEditor();
             if (targetType.IsArray)
             {
+                if (targetType.Type.GetArrayRank() != 1)
+                    return new GenericEditor(); // Not-supported multidimensional array
                 return new ArrayEditor();
             }
             var targetTypeType = TypeUtils.GetType(targetType);
