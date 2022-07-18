@@ -636,6 +636,11 @@ bool TextureBase::Init(void* ptr)
     return Init(initData);
 }
 
+void TextureBase::CancelStreaming()
+{
+    _texture.CancelStreamingTasks();
+}
+
 int32 TextureBase::CalculateChunkIndex(int32 mipIndex) const
 {
     // Mips are in 0-13 chunks

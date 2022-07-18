@@ -154,6 +154,11 @@ public:
     /// </summary>
     virtual void InitAsVirtual();
 
+    /// <summary>
+    /// Cancels any asynchronous content streaming by this asset (eg. mesh data streaming into GPU memory). Will release any locks for asset storage container.
+    /// </summary>
+    virtual void CancelStreaming();
+
 #if USE_EDITOR
 
     /// <summary>

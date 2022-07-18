@@ -19,9 +19,9 @@ protected:
     ITextureOwner* _owner;
     GPUTexture* _texture;
     TextureHeader _header;
-    volatile mutable int64 _streamingTasksCount;
     int32 _minMipCountBlockCompressed;
     bool _isBlockCompressed;
+    Array<Task*, FixedAllocation<16>> _streamingTasks;
 
 public:
     StreamingTexture(ITextureOwner* owner, const String& name);
@@ -173,4 +173,5 @@ public:
     bool CanBeUpdated() const override;
     Task* UpdateAllocation(int32 residency) override;
     Task* CreateStreamingTask(int32 residency) override;
+    void CancelStreamingTasks() override;
 };

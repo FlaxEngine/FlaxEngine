@@ -769,6 +769,11 @@ void Model::InitAsVirtual()
     BinaryAsset::InitAsVirtual();
 }
 
+void Model::CancelStreaming()
+{
+    CancelStreamingTasks();
+}
+
 #if USE_EDITOR
 
 void Model::GetReferences(Array<Guid>& output) const
@@ -847,6 +852,15 @@ Task* Model::CreateStreamingTask(int32 residency)
     }
 
     return result;
+}
+
+void Model::CancelStreamingTasks()
+{
+    if (_streamingTask)
+    {
+        _streamingTask->Cancel();
+        ASSERT_LOW_LAYER(_streamingTask == nullptr);
+    }
 }
 
 Asset::LoadResult Model::load()

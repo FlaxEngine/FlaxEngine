@@ -101,6 +101,11 @@ public:
     /// <returns>Async task or tasks that update resource residency level. Must be preceded with UpdateAllocation call.</returns>
     virtual Task* CreateStreamingTask(int32 residency) = 0;
 
+    /// <summary>
+    /// Cancels any streaming task (or tasks sequence) started for this resource.
+    /// </summary>
+    virtual void CancelStreamingTasks() = 0;
+
 public:
 
     struct StreamingCache

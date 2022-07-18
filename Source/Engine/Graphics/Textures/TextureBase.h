@@ -218,6 +218,9 @@ private:
     API_FUNCTION(NoProxy) bool Init(void* ptr);
 
 public:
+    // [BinaryAsset]
+    void CancelStreaming() override;
+
     // [ITextureOwner]
     CriticalSection& GetOwnerLocker() const override;
     Task* RequestMipDataAsync(int32 mipIndex) override;

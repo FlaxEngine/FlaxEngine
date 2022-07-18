@@ -273,6 +273,7 @@ public:
     int32 GetLODsCount() const override;
     void GetMeshes(Array<MeshBase*>& meshes, int32 lodIndex = 0) override;
     void InitAsVirtual() override;
+    void CancelStreaming() override;
 #if USE_EDITOR
     void GetReferences(Array<Guid>& output) const override;
 #endif
@@ -284,6 +285,7 @@ public:
     bool CanBeUpdated() const override;
     Task* UpdateAllocation(int32 residency) override;
     Task* CreateStreamingTask(int32 residency) override;
+    void CancelStreamingTasks() override;
 
 protected:
     // [ModelBase]

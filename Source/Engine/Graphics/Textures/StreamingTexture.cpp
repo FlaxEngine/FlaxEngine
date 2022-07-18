@@ -45,7 +45,6 @@ StreamingTexture::StreamingTexture(ITextureOwner* parent, const String& name)
     : StreamableResource(StreamingGroups::Instance()->Textures())
     , _owner(parent)
     , _texture(nullptr)
-    , _streamingTasksCount(0)
     , _isBlockCompressed(false)
 {
     ASSERT(_owner != nullptr);
@@ -62,7 +61,7 @@ StreamingTexture::~StreamingTexture()
 {
     UnloadTexture();
     SAFE_DELETE(_texture);
-    ASSERT(_streamingTasksCount == 0);
+    ASSERT(_streamingTasks.Count() == 0);
 }
 
 Float2 StreamingTexture::Size() const
@@ -138,7 +137,7 @@ void StreamingTexture::UnloadTexture()
     _texture->ReleaseGPU();
     _header.MipLevels = 0;
 
-    ASSERT(_streamingTasksCount == 0);
+    ASSERT(_streamingTasks.Count() == 0);
 }
 
 uint64 StreamingTexture::GetTotalMemoryUsage() const
@@ -173,7 +172,12 @@ bool StreamingTexture::CanBeUpdated() const
     // - is not initialized
     // - mip data uploading job running
     // - resize texture job running
-    return IsInitialized() && Platform::AtomicRead(&_streamingTasksCount) == 0;
+    if (IsInitialized())
+    {
+        ScopeLock lock(_owner->GetOwnerLocker());
+        return _streamingTasks.Count() == 0;
+    }
+    return false;
 }
 
 class StreamTextureResizeTask : public GPUTask
@@ -189,7 +193,7 @@ public:
         , _streamingTexture(texture)
         , _newTexture(newTexture)
     {
-        Platform::InterlockedIncrement(&_streamingTexture->_streamingTasksCount);
+        _streamingTexture->_streamingTasks.Add(this);
     }
 
     ~StreamTextureResizeTask()
@@ -222,7 +226,11 @@ protected:
 
     void OnEnd() override
     {
-        Platform::InterlockedDecrement(&_streamingTexture->_streamingTasksCount);
+        if (_streamingTexture)
+        {
+            ScopeLock lock(_streamingTexture->GetOwner()->GetOwnerLocker());
+            _streamingTexture->_streamingTasks.Remove(this);
+        }
 
         // Base
         GPUTask::OnEnd();
@@ -318,7 +326,7 @@ public:
         , _streamingTexture(texture)
         , _dataLock(_streamingTexture->GetOwner()->LockData())
     {
-        Platform::InterlockedIncrement(&_streamingTexture->_streamingTasksCount);
+        _streamingTexture->_streamingTasks.Add(this);
         _texture.OnUnload.Bind<StreamTextureMipTask, &StreamTextureMipTask::onResourceUnload2>(this);
     }
 
@@ -328,7 +336,8 @@ private:
         // Unlink texture
         if (_streamingTexture)
         {
-            Platform::InterlockedDecrement(&_streamingTexture->_streamingTasksCount);
+            ScopeLock lock(_streamingTexture->GetOwner()->GetOwnerLocker());
+            _streamingTexture->_streamingTasks.Remove(this);
             _streamingTexture = nullptr;
         }
     }
@@ -379,7 +388,8 @@ protected:
         _dataLock.Release();
         if (_streamingTexture)
         {
-            Platform::InterlockedDecrement(&_streamingTexture->_streamingTasksCount);
+            ScopeLock lock(_streamingTexture->GetOwner()->GetOwnerLocker());
+            _streamingTexture->_streamingTasks.Remove(this);
             _streamingTexture = nullptr;
         }
 
@@ -455,4 +465,12 @@ Task* StreamingTexture::CreateStreamingTask(int32 residency)
     }
 
     return result;
+}
+
+void StreamingTexture::CancelStreamingTasks()
+{
+    ScopeLock lock(_owner->GetOwnerLocker());
+    auto tasks = _streamingTasks;
+    for (auto task : tasks)
+        task->Cancel();
 }

@@ -760,6 +760,11 @@ void SkinnedModel::InitAsVirtual()
     BinaryAsset::InitAsVirtual();
 }
 
+void SkinnedModel::CancelStreaming()
+{
+    CancelStreamingTasks();
+}
+
 #if USE_EDITOR
 
 void SkinnedModel::GetReferences(Array<Guid>& output) const
@@ -838,6 +843,15 @@ Task* SkinnedModel::CreateStreamingTask(int32 residency)
     }
 
     return result;
+}
+
+void SkinnedModel::CancelStreamingTasks()
+{
+    if (_streamingTask)
+    {
+        _streamingTask->Cancel();
+        ASSERT_LOW_LAYER(_streamingTask == nullptr);
+    }
 }
 
 Asset::LoadResult SkinnedModel::load()

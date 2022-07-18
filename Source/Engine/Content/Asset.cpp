@@ -481,6 +481,10 @@ void Asset::InitAsVirtual()
     _isLoaded = true;
 }
 
+void Asset::CancelStreaming()
+{
+}
+
 #if USE_EDITOR
 
 void Asset::GetReferences(Array<Guid>& output) const
