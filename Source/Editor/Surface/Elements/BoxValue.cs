@@ -1,10 +1,10 @@
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
+
 #if USE_LARGE_WORLDS
 using RealValueBox = FlaxEditor.GUI.Input.DoubleValueBox;
 #else
 using RealValueBox = FlaxEditor.GUI.Input.FloatValueBox;
 #endif
-
-// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 using FlaxEngine;
 using FlaxEngine.GUI;

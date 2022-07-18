@@ -37,7 +37,7 @@ namespace FlaxEditor.Options
             /// </summary>
             TimeSinceStartup,
         }
-    
+
         /// <summary>
         /// A proxy DockState for window open method.
         /// </summary>
@@ -47,27 +47,27 @@ namespace FlaxEditor.Options
             /// The floating window.
             /// </summary>
             Float = DockState.Float,
-            
+
             /// <summary>
             /// The dock fill as a tab.
             /// </summary>
             DockFill = DockState.DockFill,
-            
+
             /// <summary>
             /// The dock left.
             /// </summary>
             DockLeft = DockState.DockLeft,
-            
+
             /// <summary>
             /// The dock right.
             /// </summary>
             DockRight = DockState.DockRight,
-            
+
             /// <summary>
             /// The dock top.
             /// </summary>
             DockTop = DockState.DockTop,
-            
+
             /// <summary>
             /// The dock bottom.
             /// </summary>
@@ -112,14 +112,14 @@ namespace FlaxEditor.Options
         [DefaultValue(DockStateProxy.Float)]
         [EditorDisplay("Interface", "New Window Location"), EditorOrder(150), Tooltip("Define the opening method for new windows, open in a new tab by default.")]
         public DockStateProxy NewWindowLocation { get; set; } = DockStateProxy.Float;
-        
+
         /// <summary>
         /// Gets or sets the timestamps prefix mode for debug log messages.
         /// </summary>
         [DefaultValue(TimestampsFormats.None)]
         [EditorDisplay("Interface"), EditorOrder(210), Tooltip("The timestamps prefix mode for debug log messages.")]
         public TimestampsFormats DebugLogTimestampsFormat { get; set; } = TimestampsFormats.None;
-        
+
         /// <summary>
         /// Gets or sets the editor icons scale. Editor restart required.
         /// </summary>

@@ -242,27 +242,27 @@ namespace FlaxEditor.Surface.Archetypes
             /// Constant buffers.
             /// </summary>
             Constants = 1,
-            
+
             /// <summary>
             /// Shader resources such as textures and buffers.
             /// </summary>
             ShaderResources = 2,
-            
+
             /// <summary>
             /// Pre-processor definitions.
             /// </summary>
             Defines = 3,
-            
+
             /// <summary>
             /// Included files.
             /// </summary>
             Includes = 7,
-            
+
             /// <summary>
             /// Default location after all shader resources and methods but before actual material code.
             /// </summary>
             Utilities = 8,
-            
+
             /// <summary>
             /// Shader functions location after all material shaders.
             /// </summary>

@@ -43,7 +43,7 @@ namespace FlaxEditor.Surface.Elements
             {
                 var items = Archetype.Text.Split('\n');
                 AddItems(items);
-                
+
                 OnNodeValuesChanged();
                 ParentNode.ValuesChanged += OnNodeValuesChanged;
             }

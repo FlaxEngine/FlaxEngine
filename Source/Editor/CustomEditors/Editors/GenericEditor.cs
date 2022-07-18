@@ -519,7 +519,7 @@ namespace FlaxEditor.CustomEditors.Editors
             if (_groups != null)
                 _groups.Clear();
         }
-        
+
         internal static LayoutElementsContainer OnGroup(LayoutElementsContainer layout, EditorDisplayAttribute display)
         {
             if (display?.Group != null)

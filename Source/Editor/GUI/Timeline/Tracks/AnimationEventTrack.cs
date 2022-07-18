@@ -140,7 +140,7 @@ namespace FlaxEditor.GUI.Timeline.Tracks
             _instanceTypeName = typeName;
             _instanceData = data;
         }
-        
+
         internal void Load(BinaryReader stream)
         {
             StartFrame = (int)stream.ReadSingle();

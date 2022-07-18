@@ -507,7 +507,7 @@ namespace FlaxEditor.Utilities
                 break;
             case 13: // CommonType::Rect:
             {
-                value = new Rectangle(stream.ReadSingle(), stream.ReadSingle(),stream.ReadSingle(), stream.ReadSingle());
+                value = new Rectangle(stream.ReadSingle(), stream.ReadSingle(), stream.ReadSingle(), stream.ReadSingle());
             }
                 break;
             case 15: // CommonType::Matrix

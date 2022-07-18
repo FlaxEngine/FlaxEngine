@@ -264,7 +264,7 @@ namespace FlaxEditor.GUI
             PerformLayout(true);
             _searchBox.Focus();
         }
-        
+
         /// <summary>
         /// Sorts the items list (by item name by default).
         /// </summary>
@@ -459,7 +459,7 @@ namespace FlaxEditor.GUI
                 }
                 break;
             }
-            
+
             if (_waitingForInput)
             {
                 _waitingForInput = false;

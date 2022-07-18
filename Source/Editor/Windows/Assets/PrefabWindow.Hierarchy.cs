@@ -73,7 +73,7 @@ namespace FlaxEditor.Windows.Assets
                 Offsets = Margin.Zero;
                 AnchorPreset = AnchorPresets.StretchAll;
             }
-            
+
             private bool ValidateDragAsset(AssetItem assetItem)
             {
                 return assetItem.OnEditorDrag(this);
