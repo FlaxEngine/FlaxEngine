@@ -1007,10 +1007,13 @@ namespace FlaxEditor.Surface.Archetypes
             }
         }
 
-        private class RerouteNode : SurfaceNode
+        internal class RerouteNode : SurfaceNode, IConnectionInstigator
         {
             internal static readonly Float2 DefaultSize = new Float2(FlaxEditor.Surface.Constants.BoxSize);
             private Rectangle _localBounds;
+            private InputBox _input;
+            private OutputBox _output;
+            private bool _isMouseDown, _isConnecting;
 
             /// <inheritdoc />
             public RerouteNode(uint id, VisjectSurfaceContext context, NodeArchetype nodeArch, GroupArchetype groupArch)
@@ -1023,7 +1026,7 @@ namespace FlaxEditor.Surface.Archetypes
             }
 
             /// <inheritdoc />
-            protected override bool ShowTooltip => _localBounds.Contains(ref _mousePosition) && !Surface.IsLeftMouseButtonDown && !Surface.IsRightMouseButtonDown && !Surface.IsPrimaryMenuOpened;
+            protected override bool ShowTooltip => !string.IsNullOrEmpty(TooltipText) && _localBounds.Contains(ref _mousePosition) && !Surface.IsLeftMouseButtonDown && !Surface.IsRightMouseButtonDown && !Surface.IsPrimaryMenuOpened;
 
             /// <inheritdoc />
             public override bool OnTestTooltipOverControl(ref Float2 location)
@@ -1047,11 +1050,21 @@ namespace FlaxEditor.Surface.Archetypes
             {
                 base.OnSurfaceLoaded();
 
-                var inputBox = GetBox(0);
-                var outputBox = GetBox(1);
-                inputBox.Location = Float2.Zero;
-                outputBox.Location = Float2.Zero;
+                _input = (InputBox)GetBox(0);
+                _output = (OutputBox)GetBox(1);
 
+                _input.Location = Float2.Zero;
+                _output.Location = Float2.Zero;
+                _input.Visible = false;
+                _output.Visible = false;
+
+                _input.CurrentTypeChanged += OnInputBoxTypeChanged;
+
+                UpdateBoxes();
+            }
+
+            private void OnInputBoxTypeChanged(Box inputBox)
+            {
                 UpdateBoxes();
             }
 
@@ -1065,15 +1078,23 @@ namespace FlaxEditor.Surface.Archetypes
 
             private void UpdateBoxes()
             {
-                var inputBox = GetBox(0);
-                var outputBox = GetBox(1);
+                if (Surface == null)
+                    return;
 
-                inputBox.Visible = !inputBox.HasAnyConnection;
-                outputBox.Visible = !outputBox.HasAnyConnection;
-                if (Surface != null)
+                var type = _input.CurrentType;
+                if (_input.TooltipText != null)
                 {
-                    TooltipText = Surface.GetTypeName(inputBox.HasAnyConnection ? inputBox.CurrentType : outputBox.CurrentType);
+                    TooltipText = _input.TooltipText;
                 }
+                else
+                {
+                    type = _input.HasAnyConnection ? _input.CurrentType : _output.CurrentType;
+                    TooltipText = Surface.GetTypeName(type);
+                }
+
+                var isImpulse = type.IsVoid;
+                _input.IsSingle = !isImpulse;
+                _output.IsSingle = isImpulse;
             }
 
             /// <inheritdoc />
@@ -1090,41 +1111,152 @@ namespace FlaxEditor.Surface.Archetypes
                 _footerRect = Rectangle.Empty;
             }
 
+            /// <inheritdoc />
             public override void Draw()
             {
                 var style = Surface.Style;
-                var inputBox = GetBox(0);
-                var outputBox = GetBox(1);
                 var connectionColor = style.Colors.Default;
+                var type = ScriptType.Null;
                 float barHorizontalOffset = -2;
                 float barHeight = 3;
 
-                if (inputBox.HasAnyConnection)
+                if (_input.HasAnyConnection)
                 {
-                    var hints = inputBox.Connections[0].ParentNode.Archetype.ConnectionsHints;
-                    Surface.Style.GetConnectionColor(inputBox.Connections[0].CurrentType, hints, out connectionColor);
-                }
-
-                if (!inputBox.HasAnyConnection)
-                {
-                    Render2D.FillRectangle(new Rectangle(-barHorizontalOffset - barHeight * 2, (DefaultSize.Y - barHeight) / 2, barHeight * 2, barHeight), connectionColor);
-                }
-
-                if (!outputBox.HasAnyConnection)
-                {
-                    Render2D.FillRectangle(new Rectangle(DefaultSize.X + barHorizontalOffset, (DefaultSize.Y - barHeight) / 2, barHeight * 2, barHeight), connectionColor);
-                }
-
-                if (inputBox.HasAnyConnection && outputBox.HasAnyConnection)
-                {
-                    var type = inputBox.Connections[0].CurrentType;
-                    var hints = inputBox.Connections[0].ParentNode.Archetype.ConnectionsHints;
+                    type = _input.Connections[0].CurrentType;
+                    var hints = _input.Connections[0].ParentNode.Archetype.ConnectionsHints;
                     Surface.Style.GetConnectionColor(type, hints, out connectionColor);
-                    var icon = type.IsVoid ? style.Icons.ArrowClose : style.Icons.BoxClose;
-                    Render2D.DrawSprite(icon, _localBounds, connectionColor);
                 }
+
+                if (!_input.HasAnyConnection)
+                    Render2D.FillRectangle(new Rectangle(-barHorizontalOffset - barHeight * 2, (DefaultSize.Y - barHeight) / 2, barHeight * 2, barHeight), connectionColor);
+                if (!_output.HasAnyConnection)
+                    Render2D.FillRectangle(new Rectangle(DefaultSize.X + barHorizontalOffset, (DefaultSize.Y - barHeight) / 2, barHeight * 2, barHeight), connectionColor);
+
+                SpriteHandle icon;
+                if (_input.HasAnyConnection && _output.HasAnyConnection)
+                    icon = type.IsVoid ? style.Icons.ArrowClose : style.Icons.BoxClose;
+                else
+                    icon = type.IsVoid ? style.Icons.ArrowOpen : style.Icons.BoxOpen;
+                Render2D.DrawSprite(icon, _localBounds, connectionColor);
 
                 base.Draw();
+            }
+
+            /// <inheritdoc />
+            public override bool OnMouseDown(Float2 location, MouseButton button)
+            {
+                if (base.OnMouseDown(location, button))
+                    return true;
+
+                if (button == MouseButton.Left)
+                {
+                    _isMouseDown = true;
+                    _isConnecting = _localBounds.MakeExpanded(-10.0f).Contains(ref location); // Inner area for connecting, outer area for moving
+                    if (_isConnecting)
+                    {
+                        Focus();
+                        return true;
+                    }
+                }
+                return false;
+            }
+
+            /// <inheritdoc />
+            public override void OnMouseLeave()
+            {
+                if (_isMouseDown)
+                {
+                    _isMouseDown = false;
+                    if (Surface.CanEdit && _isConnecting)
+                        Surface.ConnectingStart(this);
+                }
+                base.OnMouseLeave();
+            }
+
+            /// <inheritdoc />
+            public override void OnMouseMove(Float2 location)
+            {
+                Surface.ConnectingOver(this);
+                base.OnMouseMove(location);
+            }
+
+            /// <inheritdoc />
+            public override bool OnMouseUp(Float2 location, MouseButton button)
+            {
+                if (base.OnMouseUp(location, button))
+                    return true;
+
+                if (button == MouseButton.Left)
+                {
+                    _isMouseDown = false;
+                    if (Surface.IsConnecting)
+                        Surface.ConnectingEnd(this);
+                    return true;
+                }
+
+                return false;
+            }
+
+            /// <inheritdoc />
+            public Float2 ConnectionOrigin
+            {
+                get
+                {
+                    var center = _localBounds.Center;
+                    return PointToParent(ref center);
+                }
+            }
+
+            /// <inheritdoc />
+            public bool AreConnected(IConnectionInstigator other)
+            {
+                return _input.AreConnected(other) || _output.AreConnected(other);
+            }
+
+            /// <inheritdoc />
+            public bool CanConnectWith(IConnectionInstigator other)
+            {
+                if (other is InputBox otherInput)
+                {
+                    return _output.CanConnectWith(otherInput);
+                }
+                if (other is OutputBox otherOutput)
+                {
+                    return _input.CanConnectWith(otherOutput);
+                }
+                if (other is RerouteNode otherReroute)
+                {
+                    if (_output.CurrentType.IsVoid)
+                        return otherReroute._input.CanConnectWith(_output);
+                    return otherReroute._output.CanConnectWith(_input);
+                }
+                return false;
+            }
+
+            /// <inheritdoc />
+            public void DrawConnectingLine(ref Float2 startPos, ref Float2 endPos, ref Color color)
+            {
+                OutputBox.DrawConnection(ref startPos, ref endPos, ref color, 2);
+            }
+
+            /// <inheritdoc />
+            public void Connect(IConnectionInstigator other)
+            {
+                if (other is InputBox otherInput)
+                {
+                    _output.Connect(otherInput);
+                }
+                if (other is OutputBox otherOutput)
+                {
+                    _input.Connect(otherOutput);
+                }
+                if (other is RerouteNode otherReroute)
+                {
+                    if (_output.CurrentType.IsVoid)
+                        otherReroute._input.Connect(_output);
+                    else
+                        otherReroute._output.Connect(_input);
+                }
             }
         }
 

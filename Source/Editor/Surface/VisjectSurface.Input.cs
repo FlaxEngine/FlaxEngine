@@ -312,6 +312,7 @@ namespace FlaxEditor.Surface
                 var mousePos = _rootControl.PointFromParent(ref _mousePos);
                 if (IntersectsConnection(mousePos, out InputBox inputBox, out OutputBox outputBox) && GetControlUnderMouse() == null)
                 {
+                    // Insert reroute node
                     if (Undo != null)
                     {
                         bool undoEnabled = Undo.Enabled;

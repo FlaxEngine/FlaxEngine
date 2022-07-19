@@ -17,7 +17,7 @@ namespace FlaxEditor.Surface.Elements
     [HideInEditor]
     public abstract class Box : SurfaceNodeElementControl, IConnectionInstigator
     {
-        private bool _isMouseDown;
+        private bool _isMouseDown, _isSingle;
         private DateTime _lastHighlightConnectionsTime = DateTime.MinValue;
         private string _originalTooltipText;
 
@@ -180,6 +180,7 @@ namespace FlaxEditor.Surface.Elements
         : base(parentNode, archetype, location, new Float2(Constants.BoxSize), false)
         {
             _currentType = DefaultType;
+            _isSingle = Archetype.Single;
             Text = Archetype.Text;
             if (Surface != null)
             {
@@ -317,18 +318,18 @@ namespace FlaxEditor.Surface.Elements
         /// <summary>
         /// Removes all existing connections of that box.
         /// </summary>
-        public void RemoveConnections()
+        /// <param name="skipCount">Amount of connection to skip from removing.</param>
+        public void RemoveConnections(int skipCount = 0)
         {
-            // Check if sth is connected
-            if (HasAnyConnection)
+            if (Connections.Count > skipCount)
             {
                 // Remove all connections
-                var toUpdate = new List<Box>(1 + Connections.Count)
+                var toUpdate = new List<Box>(1 + skipCount)
                 {
                     this
                 };
 
-                for (int i = 0; i < Connections.Count; i++)
+                for (int i = skipCount; i < Connections.Count; i++)
                 {
                     var targetBox = Connections[i];
                     targetBox.Connections.Remove(this);
@@ -419,7 +420,34 @@ namespace FlaxEditor.Surface.Elements
         /// <summary>
         /// True if box can use only single connection.
         /// </summary>
-        public bool IsSingle => Archetype.Single;
+        public bool IsSingle
+        {
+            get => _isSingle;
+            set
+            {
+                if (_isSingle != value)
+                {
+                    _isSingle = value;
+
+                    // Limit connections COUNT
+                    if (_isSingle && Connections.Count > 0)
+                    {
+                        if (Surface.Undo != null)
+                        {
+                            var action = new EditNodeConnections(ParentNode.Context, ParentNode);
+                            RemoveConnections(1);
+                            action.End();
+                            Surface.Undo.AddAction(action);
+                        }
+                        else
+                        {
+                            RemoveConnections(1);
+                        }
+                        Surface.MarkAsEdited();
+                    }
+                }
+            }
+        }
 
         /// <summary>
         /// True if box type depends on other boxes types of the node.
@@ -710,6 +738,9 @@ namespace FlaxEditor.Surface.Elements
         /// <inheritdoc />
         public bool CanConnectWith(IConnectionInstigator other)
         {
+            if (other is Archetypes.Tools.RerouteNode reroute)
+                return reroute.CanConnectWith(this);
+
             var start = this;
             var end = other as Box;
 
@@ -788,6 +819,12 @@ namespace FlaxEditor.Surface.Elements
         /// <inheritdoc />
         public void Connect(IConnectionInstigator other)
         {
+            if (other is Archetypes.Tools.RerouteNode reroute)
+            {
+                reroute.Connect(this);
+                return;
+            }
+
             var start = this;
             var end = (Box)other;
             var areConnected = start.AreConnected(end);
