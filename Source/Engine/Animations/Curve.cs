@@ -558,7 +558,7 @@ namespace FlaxEngine
                 return;
             }
 
-            float start = 0;
+            float start = Mathf.Min(Keyframes.First().Time, 0.0f);
             float end = Keyframes.Last().Time;
             WrapTime(ref time, start, end, loop);
 
@@ -589,7 +589,7 @@ namespace FlaxEngine
                 return;
             }
 
-            float start = 0;
+            float start = Mathf.Min(Keyframes.First().Time, 0.0f);
             float end = Keyframes.Last().Time;
             WrapTime(ref time, start, end, loop);
 
@@ -841,7 +841,7 @@ namespace FlaxEngine
                 return;
             }
 
-            float start = 0;
+            float start = Mathf.Min(Keyframes.First().Time, 0.0f);
             float end = Keyframes.Last().Time;
             WrapTime(ref time, start, end, loop);
 
@@ -877,7 +877,7 @@ namespace FlaxEngine
                 return;
             }
 
-            float start = 0;
+            float start = Mathf.Min(Keyframes.First().Time, 0.0f);
             float end = Keyframes.Last().Time;
             WrapTime(ref time, start, end, loop);
 

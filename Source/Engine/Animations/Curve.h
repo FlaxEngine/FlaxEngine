@@ -350,7 +350,7 @@ public:
             return;
         }
 
-        const float start = 0;
+        const float start = Math::Min(data[0].Time, 0.0f);
         const float end = data[count - 1].Time;
         AnimationUtils::WrapTime(time, start, end, loop);
 
@@ -392,7 +392,7 @@ public:
             return;
         }
 
-        const float start = 0;
+        const float start = Math::Min(data[0].Time, 0.0f);
         const float end = data[count - 1].Time;
         AnimationUtils::WrapTime(time, start, end, loop);
 
@@ -434,7 +434,7 @@ public:
             return;
         }
 
-        const float start = 0;
+        const float start = Math::Min(data[0].Time, 0.0f);
         const float end = data[count - 1].Time;
         AnimationUtils::WrapTime(time, start, end, loop);
 
