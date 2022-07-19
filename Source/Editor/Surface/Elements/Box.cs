@@ -437,7 +437,7 @@ namespace FlaxEditor.Surface.Elements
                             var action = new EditNodeConnections(ParentNode.Context, ParentNode);
                             RemoveConnections(1);
                             action.End();
-                            Surface.Undo.AddAction(action);
+                            Surface.AddBatchedUndoAction(action);
                         }
                         else
                         {
@@ -629,7 +629,7 @@ namespace FlaxEditor.Surface.Elements
                             var action = new ConnectBoxesAction((InputBox)this, (OutputBox)connectedBox, false);
                             BreakConnection(connectedBox);
                             action.End();
-                            Surface.Undo.AddAction(action);
+                            Surface.AddBatchedUndoAction(action);
                             Surface.MarkAsEdited();
                         }
                         else
@@ -678,7 +678,7 @@ namespace FlaxEditor.Surface.Elements
                             var action = new EditNodeConnections(ParentNode.Context, ParentNode);
                             RemoveConnections();
                             action.End();
-                            Surface.Undo.AddAction(action);
+                            Surface.AddBatchedUndoAction(action);
                         }
                         else
                         {
@@ -856,7 +856,7 @@ namespace FlaxEditor.Surface.Elements
                     var action = new ConnectBoxesAction(iB, oB, false);
                     start.BreakConnection(end);
                     action.End();
-                    Surface.Undo.AddAction(action);
+                    Surface.AddBatchedUndoAction(action);
                 }
                 else
                 {
@@ -892,7 +892,7 @@ namespace FlaxEditor.Surface.Elements
                     var action = new ConnectBoxesAction(iB, oB, true);
                     iB.CreateConnection(oB);
                     action.End();
-                    Surface.Undo?.AddAction(action);
+                    Surface.AddBatchedUndoAction(action);
                 }
                 else
                 {

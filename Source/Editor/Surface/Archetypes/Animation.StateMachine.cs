@@ -1389,7 +1389,7 @@ namespace FlaxEditor.Surface.Archetypes
                 var state = (StateMachineState)other;
 
                 var action = new AddRemoveTransitionAction(this, state);
-                Surface?.Undo.AddAction(action);
+                Surface?.AddBatchedUndoAction(action);
                 action.Do();
                 Surface?.OnNodesConnected(this, other);
             }
@@ -1718,7 +1718,7 @@ namespace FlaxEditor.Surface.Archetypes
             public void Delete()
             {
                 var action = new StateMachineState.AddRemoveTransitionAction(this);
-                SourceState.Surface?.Undo.AddAction(action);
+                SourceState.Surface?.AddBatchedUndoAction(action);
                 action.Do();
             }
 

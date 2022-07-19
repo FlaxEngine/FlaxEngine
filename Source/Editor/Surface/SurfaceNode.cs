@@ -926,7 +926,8 @@ namespace FlaxEditor.Surface
             OnValuesChanged();
             Surface?.MarkAsEdited(graphEdited);
 
-            Surface?.Undo?.AddAction(new EditNodeValuesAction(this, before, graphEdited));
+            if (Surface?.Undo != null)
+                Surface.AddBatchedUndoAction(new EditNodeValuesAction(this, before, graphEdited));
 
             _isDuringValuesEditing = false;
         }
@@ -952,7 +953,8 @@ namespace FlaxEditor.Surface
             OnValuesChanged();
             Surface.MarkAsEdited(graphEdited);
 
-            Surface.Undo?.AddAction(new EditNodeValuesAction(this, before, graphEdited));
+            if (Surface?.Undo != null)
+                Surface.AddBatchedUndoAction(new EditNodeValuesAction(this, before, graphEdited));
 
             _isDuringValuesEditing = false;
         }

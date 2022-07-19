@@ -38,6 +38,7 @@ namespace FlaxEditor.Surface
         private VisjectCM _activeVisjectCM;
         private GroupArchetype _customNodesGroup;
         private List<NodeArchetype> _customNodes;
+        private List<IUndoAction> _batchedUndoActions;
         private Action _onSave;
         private int _selectedConnectionIndex;
 
@@ -900,6 +901,19 @@ namespace FlaxEditor.Surface
         public SurfaceNode FindNode(uint id)
         {
             return _context.FindNode(id);
+        }
+        
+        /// <summary>
+        /// Adds the undo action to be batched (eg. if multiple undo actions is performed in a sequence during single update).
+        /// </summary>
+        /// <param name="action">The action.</param>
+        public void AddBatchedUndoAction(IUndoAction action)
+        {
+            if (Undo == null || !Undo.Enabled)
+                return;
+            if (_batchedUndoActions == null)
+                _batchedUndoActions = new List<IUndoAction>();
+            _batchedUndoActions.Add(action);
         }
 
         /// <summary>

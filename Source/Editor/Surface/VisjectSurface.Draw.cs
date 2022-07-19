@@ -49,6 +49,13 @@ namespace FlaxEditor.Surface
             _moveViewWithMouseDragSpeed = isMovingWithMouse ? Mathf.Clamp(_moveViewWithMouseDragSpeed + deltaTime * 20.0f, 1.0f, 8.0f) : 1.0f;
 
             base.Update(deltaTime);
+
+            // Batch undo actions
+            if (_batchedUndoActions != null && _batchedUndoActions.Count != 0)
+            {
+                Undo.AddAction(_batchedUndoActions.Count == 1 ? _batchedUndoActions[0] : new MultiUndoAction(_batchedUndoActions));
+                _batchedUndoActions.Clear();
+            }
         }
 
         /// <summary>
