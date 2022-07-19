@@ -365,6 +365,18 @@ void VisualScriptExecutor::ProcessGroupTools(Box* box, Node* node, Value& value)
         }
         break;
     }
+    // Reroute
+    case 29:
+        if (node->GetBox(0) == box)
+        {
+            // Impulse flow
+            box = node->GetBox(1);
+            if (box->HasConnection())
+                eatBox(node, box->FirstConnection());
+        }
+        else
+            value = tryGetValue(node->GetBox(0), Value::Zero);
+        break;
     default:
         VisjectExecutor::ProcessGroupTools(box, node, value);
         break;
