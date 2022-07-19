@@ -69,7 +69,7 @@ void Sky::InitConfig(AtmosphericFogData& config) const
     if (SunLight)
     {
         config.AtmosphericFogSunDirection = -SunLight->GetDirection();
-        config.AtmosphericFogSunColor = SunLight->Color.ToFloat3();
+        config.AtmosphericFogSunColor = SunLight->Color.ToFloat3() * SunLight->Color.A;
     }
     else
     {
