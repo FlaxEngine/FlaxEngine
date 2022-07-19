@@ -1278,7 +1278,7 @@ namespace FlaxEngine.GUI
             }
             }
 
-            return false;
+            return true;
         }
     }
 }
