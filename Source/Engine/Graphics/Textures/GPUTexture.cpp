@@ -533,7 +533,7 @@ GPUTexture* GPUTexture::ToStagingUpload() const
     return staging;
 }
 
-bool GPUTexture::Resize(int32 width, int32 height, int32 depth)
+bool GPUTexture::Resize(int32 width, int32 height, int32 depth, PixelFormat format)
 {
     // Validate texture is created
     if (!IsAllocated())
@@ -543,11 +543,14 @@ bool GPUTexture::Resize(int32 width, int32 height, int32 depth)
     }
 
     auto desc = GetDescription();
+    if (format == PixelFormat::Unknown)
+        format = desc.Format;
 
     // Skip if size won't change
-    if (desc.Width == width && desc.Height == height && desc.Depth == depth)
+    if (desc.Width == width && desc.Height == height && desc.Depth == depth && desc.Format == format)
         return false;
 
+    desc.Format = format;
     desc.Width = width;
     desc.Height = height;
     desc.Depth = depth;

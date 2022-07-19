@@ -486,11 +486,12 @@ public:
     /// </summary>
     /// <param name="width">The width.</param>
     /// <param name="height">The height.</param>
+    /// <param name="format">The new texture format. Use Unknown to remain texture format unchanged.</param>
     /// <returns>True if fails, otherwise false.</returns>
-    API_FUNCTION() bool Resize(int32 width, int32 height)
+    API_FUNCTION() bool Resize(int32 width, int32 height, PixelFormat format = PixelFormat::Unknown)
     {
         const auto depth = IsAllocated() ? Depth() : 1;
-        return Resize(width, height, depth);
+        return Resize(width, height, depth, format);
     }
 
     /// <summary>
@@ -499,8 +500,9 @@ public:
     /// <param name="width">The width.</param>
     /// <param name="height">The height.</param>
     /// <param name="depth">The depth.</param>
+    /// <param name="format">The new texture format. Use Unknown to remain texture format unchanged.</param>
     /// <returns>True if fails, otherwise false.</returns>
-    API_FUNCTION() bool Resize(int32 width, int32 height, int32 depth);
+    API_FUNCTION() bool Resize(int32 width, int32 height, int32 depth, PixelFormat format = PixelFormat::Unknown);
 
 public:
     /// <summary>

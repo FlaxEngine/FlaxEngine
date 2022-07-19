@@ -70,6 +70,12 @@ public:
     ProbeCubemapResolution DefaultProbeResolution = ProbeCubemapResolution::_128;
 
     /// <summary>
+    /// If checked, Environment Probes will use HDR texture format. Improves quality in very bright scenes at cost of higher memory usage.
+    /// </summary>
+    API_FIELD(Attributes = "EditorOrder(1502), EditorDisplay(\"Quality\")")
+    bool UeeHDRProbes = false;
+
+    /// <summary>
     /// If checked, enables Global SDF rendering. This can be used in materials, shaders, and particles.
     /// </summary>
     API_FIELD(Attributes="EditorOrder(2000), EditorDisplay(\"Global SDF\")")

@@ -2,6 +2,7 @@
 
 #pragma once
 
+#include "Engine/Graphics/PixelFormat.h"
 #include "Engine/Scripting/ScriptingObjectReference.h"
 #include "Engine/Level/Actor.h"
 
@@ -18,7 +19,6 @@ class RenderTask;
 class ProbesRenderer
 {
 public:
-
     enum class EntryType
     {
         Invalid = 0,
@@ -46,10 +46,10 @@ public:
 
         bool UseTextureData() const;
         int32 GetResolution() const;
+        PixelFormat GetFormat() const;
     };
 
 public:
-
     /// <summary>
     /// Minimum amount of time between two updated of probes
     /// </summary>
@@ -67,7 +67,6 @@ public:
     static Delegate<const Entry&> OnFinishBake;
 
 public:
-
     /// <summary>
     /// Checks if resources are ready to render probes (shaders or textures may be during loading).
     /// </summary>
@@ -86,7 +85,6 @@ public:
     static void Release();
 
 public:
-
     /// <summary>
     /// Register probe to baking service.
     /// </summary>
@@ -102,6 +100,5 @@ public:
     static void Bake(SkyLight* probe, float timeout = 0);
 
 private:
-
-    static void onRender(RenderTask* task, GPUContext* context);
+    static void OnRender(RenderTask* task, GPUContext* context);
 };

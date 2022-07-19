@@ -17,12 +17,12 @@
 #include "Engine/Engine/Time.h"
 #include "Engine/Content/Assets/Shader.h"
 #include "Engine/Content/AssetReference.h"
+#include "Engine/Graphics/Graphics.h"
 #include "Engine/Graphics/GPUContext.h"
 #include "Engine/Graphics/Textures/GPUTexture.h"
 #include "Engine/Graphics/Textures/TextureData.h"
 #include "Engine/Graphics/RenderTask.h"
 #include "Engine/Engine/Engine.h"
-#include "Engine/Graphics/Graphics.h"
 
 /// <summary>
 /// Custom task called after downloading probe texture data to save it.
@@ -202,6 +202,11 @@ int32 ProbesRenderer::Entry::GetResolution() const
     return (int32)resolution;
 }
 
+PixelFormat ProbesRenderer::Entry::GetFormat() const
+{
+    return GraphicsSettings::Get()->UeeHDRProbes ? PixelFormat::R11G11B10_Float : PixelFormat::R8G8B8A8_UNorm;
+}
+
 int32 ProbesRenderer::GetBakeQueueSize()
 {
     return _probesToBake.Count();
@@ -245,7 +250,8 @@ bool ProbesRenderer::Init()
     // Init rendering pipeline
     _output = GPUDevice::Instance->CreateTexture(TEXT("Output"));
     const int32 probeResolution = _current.GetResolution();
-    if (_output->Init(GPUTextureDescription::New2D(probeResolution, probeResolution, PixelFormat::R8G8B8A8_UNorm)))
+    const PixelFormat probeFormat = _current.GetFormat();
+    if (_output->Init(GPUTextureDescription::New2D(probeResolution, probeResolution, probeFormat)))
         return true;
     _task = New<SceneRenderTask>();
     auto task = _task;
@@ -270,14 +276,14 @@ bool ProbesRenderer::Init()
     view.MaxShadowsQuality = Quality::Low;
     task->IsCameraCut = true;
     task->Resize(probeResolution, probeResolution);
-    task->Render.Bind(onRender);
+    task->Render.Bind(OnRender);
 
     // Init render targets
     _probe = GPUDevice::Instance->CreateTexture(TEXT("ProbesUpdate.Probe"));
-    if (_probe->Init(GPUTextureDescription::NewCube(probeResolution, _output->Format(), GPUTextureFlags::ShaderResource | GPUTextureFlags::RenderTarget | GPUTextureFlags::PerMipViews, 0)))
+    if (_probe->Init(GPUTextureDescription::NewCube(probeResolution, probeFormat, GPUTextureFlags::ShaderResource | GPUTextureFlags::RenderTarget | GPUTextureFlags::PerMipViews, 0)))
         return true;
     _tmpFace = GPUDevice::Instance->CreateTexture(TEXT("ProbesUpdate.TmpFace"));
-    if (_tmpFace->Init(GPUTextureDescription::New2D(probeResolution, probeResolution, 0, _output->Format(), GPUTextureFlags::ShaderResource | GPUTextureFlags::RenderTarget | GPUTextureFlags::PerMipViews)))
+    if (_tmpFace->Init(GPUTextureDescription::New2D(probeResolution, probeResolution, 0, probeFormat, GPUTextureFlags::ShaderResource | GPUTextureFlags::RenderTarget | GPUTextureFlags::PerMipViews)))
         return true;
 
     // Mark as ready
@@ -400,7 +406,7 @@ bool fixFarPlaneTreeExecute(Actor* actor, const Vector3& position, float& farPla
     return true;
 }
 
-void ProbesRenderer::onRender(RenderTask* task, GPUContext* context)
+void ProbesRenderer::OnRender(RenderTask* task, GPUContext* context)
 {
     ASSERT(_current.Type != EntryType::Invalid && _updateFrameNumber == 0);
     switch (_current.Type)
@@ -426,6 +432,7 @@ void ProbesRenderer::onRender(RenderTask* task, GPUContext* context)
     // Init
     float customCullingNear = -1;
     const int32 probeResolution = _current.GetResolution();
+    const PixelFormat probeFormat = _current.GetFormat();
     if (_current.Type == EntryType::EnvProbe)
     {
         auto envProbe = (EnvironmentProbe*)_current.Actor.Get();
@@ -433,8 +440,9 @@ void ProbesRenderer::onRender(RenderTask* task, GPUContext* context)
         float radius = envProbe->GetScaledRadius();
         float nearPlane = Math::Max(0.1f, envProbe->CaptureNearPlane);
 
-        // Fix far plane distance
+        // Adjust far plane distance
         float farPlane = Math::Max(radius, nearPlane + 100.0f);
+        farPlane *= farPlane < 10000 ? 10 : 4;
         Function<bool(Actor*, const Vector3&, float&)> f(&fixFarPlaneTreeExecute);
         SceneQuery::TreeExecute<const Vector3&, float&>(f, position, farPlane);
 
@@ -457,10 +465,10 @@ void ProbesRenderer::onRender(RenderTask* task, GPUContext* context)
     _task->CameraCut();
 
     // Resize buffers
-    bool resizeFailed = _output->Resize(probeResolution, probeResolution);
+    bool resizeFailed = _output->Resize(probeResolution, probeResolution, probeFormat);
+    resizeFailed |= _probe->Resize(probeResolution, probeResolution, probeFormat);
+    resizeFailed |= _tmpFace->Resize(probeResolution, probeResolution, probeFormat);
     resizeFailed |= _task->Resize(probeResolution, probeResolution);
-    resizeFailed |= _probe->Resize(probeResolution, probeResolution);
-    resizeFailed |= _tmpFace->Resize(probeResolution, probeResolution);
     if (resizeFailed)
         LOG(Error, "Failed to resize probe");
 
