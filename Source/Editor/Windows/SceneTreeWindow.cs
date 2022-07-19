@@ -151,9 +151,9 @@ namespace FlaxEditor.Windows
             var headerPanel = new ContainerControl
             {
                 AnchorPreset = AnchorPresets.HorizontalStretchTop,
-                IsScrollable = true,
+                BackgroundColor = Style.Current.Background,
+                IsScrollable = false,
                 Offsets = new Margin(0, 0, 0, 18 + 6),
-                Parent = this,
             };
             _searchBox = new TextBox
             {
@@ -177,6 +177,7 @@ namespace FlaxEditor.Windows
             _tree.SelectedChanged += Tree_OnSelectedChanged;
             _tree.RightClick += OnTreeRightClick;
             _tree.Parent = this;
+            headerPanel.Parent = this;
 
             // Setup input actions
             InputActions.Add(options => options.TranslateMode, () => Editor.MainTransformGizmo.ActiveMode = TransformGizmoBase.Mode.Translate);

@@ -119,9 +119,9 @@ namespace FlaxEditor.Windows.Assets
             var headerPanel = new ContainerControl
             {
                 AnchorPreset = AnchorPresets.HorizontalStretchTop,
-                IsScrollable = true,
+                BackgroundColor = Style.Current.Background,
+                IsScrollable = false,
                 Offsets = new Margin(0, 0, 0, 18 + 6),
-                Parent = sceneTreePanel,
             };
             _searchBox = new TextBox
             {
@@ -143,6 +143,7 @@ namespace FlaxEditor.Windows.Assets
             _tree.SelectedChanged += OnTreeSelectedChanged;
             _tree.RightClick += OnTreeRightClick;
             _tree.Parent = sceneTreePanel;
+            headerPanel.Parent = sceneTreePanel;
 
             // Prefab viewport
             _viewport = new PrefabWindowViewport(this)

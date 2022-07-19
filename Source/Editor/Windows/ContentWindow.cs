@@ -107,9 +107,9 @@ namespace FlaxEditor.Windows
             var headerPanel = new ContainerControl
             {
                 AnchorPreset = AnchorPresets.HorizontalStretchTop,
-                IsScrollable = true,
+                BackgroundColor = Style.Current.Background,
+                IsScrollable = false,
                 Offsets = new Margin(0, 0, 0, 18 + 6),
-                Parent = _split.Panel1,
             };
             _foldersSearchBox = new TextBox
             {
@@ -127,6 +127,7 @@ namespace FlaxEditor.Windows
                 Parent = _split.Panel1,
             };
             _tree.SelectedChanged += OnTreeSelectionChanged;
+            headerPanel.Parent = _split.Panel1;
 
             // Content items searching query input box and filters selector
             var contentItemsSearchPanel = new ContainerControl
