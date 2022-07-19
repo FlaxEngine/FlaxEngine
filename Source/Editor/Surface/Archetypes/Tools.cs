@@ -1009,18 +1009,37 @@ namespace FlaxEditor.Surface.Archetypes
 
         private class RerouteNode : SurfaceNode
         {
-            public static readonly Float2 DefaultSize = new Float2(16);
-
-            /// <inheritdoc />
-            protected override bool ShowTooltip => false;
+            internal static readonly Float2 DefaultSize = new Float2(FlaxEditor.Surface.Constants.BoxSize);
+            private Rectangle _localBounds;
 
             /// <inheritdoc />
             public RerouteNode(uint id, VisjectSurfaceContext context, NodeArchetype nodeArch, GroupArchetype groupArch)
             : base(id, context, nodeArch, groupArch)
             {
                 Size = DefaultSize;
+                _localBounds = new Rectangle(Float2.Zero, DefaultSize);
                 Title = string.Empty;
                 BackgroundColor = Color.Transparent;
+            }
+
+            /// <inheritdoc />
+            protected override bool ShowTooltip => _localBounds.Contains(ref _mousePosition) && !Surface.IsLeftMouseButtonDown && !Surface.IsRightMouseButtonDown && !Surface.IsPrimaryMenuOpened;
+
+            /// <inheritdoc />
+            public override bool OnTestTooltipOverControl(ref Float2 location)
+            {
+                return _localBounds.Contains(ref location) && ShowTooltip;
+            }
+
+            /// <inheritdoc />
+            public override bool OnShowTooltip(out string text, out Float2 location, out Rectangle area)
+            {
+                var result = base.OnShowTooltip(out text, out _, out area);
+
+                // Change the position
+                location = new Float2(Width * 0.5f, Height);
+
+                return result;
             }
 
             /// <inheritdoc />
@@ -1051,6 +1070,10 @@ namespace FlaxEditor.Surface.Archetypes
 
                 inputBox.Visible = !inputBox.HasAnyConnection;
                 outputBox.Visible = !outputBox.HasAnyConnection;
+                if (Surface != null)
+                {
+                    TooltipText = Surface.GetTypeName(inputBox.HasAnyConnection ? inputBox.CurrentType : outputBox.CurrentType);
+                }
             }
 
             /// <inheritdoc />
@@ -1094,10 +1117,11 @@ namespace FlaxEditor.Surface.Archetypes
 
                 if (inputBox.HasAnyConnection && outputBox.HasAnyConnection)
                 {
+                    var type = inputBox.Connections[0].CurrentType;
                     var hints = inputBox.Connections[0].ParentNode.Archetype.ConnectionsHints;
-                    Surface.Style.GetConnectionColor(inputBox.Connections[0].CurrentType, hints, out connectionColor);
-                    SpriteHandle icon = style.Icons.BoxClose;
-                    Render2D.DrawSprite(icon, new Rectangle(Float2.Zero, DefaultSize), connectionColor);
+                    Surface.Style.GetConnectionColor(type, hints, out connectionColor);
+                    var icon = type.IsVoid ? style.Icons.ArrowClose : style.Icons.BoxClose;
+                    Render2D.DrawSprite(icon, _localBounds, connectionColor);
                 }
 
                 base.Draw();
