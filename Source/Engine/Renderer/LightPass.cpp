@@ -20,14 +20,6 @@ PACK_STRUCT(struct PerFrame{
     GBufferData GBuffer;
     });
 
-LightPass::LightPass()
-    : _shader(nullptr)
-    , _psLightSkyNormal(nullptr)
-    , _psLightSkyInverted(nullptr)
-    , _sphereModel(nullptr)
-{
-}
-
 String LightPass::ToString() const
 {
     return TEXT("LightPass");
@@ -154,6 +146,7 @@ void LightPass::Dispose()
     _psLightSpotInverted.Delete();
     SAFE_DELETE_GPU_RESOURCE(_psLightSkyNormal);
     SAFE_DELETE_GPU_RESOURCE(_psLightSkyInverted);
+    SAFE_DELETE_GPU_RESOURCE(_psClearDiffuse);
     _sphereModel = nullptr;
 }
 
@@ -178,6 +171,36 @@ void LightPass::RenderLight(RenderContext& renderContext, GPUTextureView* lightB
     const auto lightShader = _shader->GetShader();
     const bool useShadows = ShadowsPass::Instance()->IsReady() && ((view.Flags & ViewFlags::Shadows) != 0);
     const bool disableSpecular = (view.Flags & ViewFlags::SpecularLight) == 0;
+
+    // Check if debug lights
+    if (renderContext.View.Mode == ViewMode::LightBuffer)
+    {
+        // Clear diffuse
+        if (!_psClearDiffuse)
+            _psClearDiffuse = GPUDevice::Instance->CreatePipelineState();
+        auto quadShader = Content::LoadAsyncInternal<Shader>(TEXT("Shaders/Quad"));
+        if (!_psClearDiffuse->IsValid() && quadShader)
+        {
+            auto psDesc = GPUPipelineState::Description::DefaultFullscreenTriangle;
+            psDesc.BlendMode.RenderTargetWriteMask = BlendingMode::ColorWrite::RGB; // Leave AO in Alpha channel unmodified
+            psDesc.PS = quadShader->GetShader()->GetPS("PS_Clear");
+            _psClearDiffuse->Init(psDesc);
+        }
+        if (_psClearDiffuse->IsValid())
+        {
+            context->SetRenderTarget(renderContext.Buffers->GBuffer0->View());
+            auto cb = quadShader->GetShader()->GetCB(0);
+            context->UpdateCB(cb, &Color::White);
+            context->BindCB(0, cb);
+            context->SetState(_psClearDiffuse);
+            context->DrawFullscreenTriangle();
+            context->ResetRenderTarget();
+        }
+        else
+        {
+            context->Clear(renderContext.Buffers->GBuffer0->View(), Color::White);
+        }
+    }
 
     // Temporary data
     PerLight perLight;
@@ -208,13 +231,6 @@ void LightPass::RenderLight(RenderContext& renderContext, GPUTextureView* lightB
     context->BindSR(2, renderContext.Buffers->GBuffer2);
     context->BindSR(3, depthBufferSRV);
     context->BindSR(4, renderContext.Buffers->GBuffer3);
-
-    // Check if debug lights
-    if (renderContext.View.Mode == ViewMode::LightBuffer)
-    {
-        // Clear diffuse
-        context->Clear(renderContext.Buffers->GBuffer0->View(), Color::White);
-    }
 
     // Fullscreen shadow mask buffer
     GPUTexture* shadowMask = nullptr;
