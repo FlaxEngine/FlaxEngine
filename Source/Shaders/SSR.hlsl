@@ -42,7 +42,21 @@ float RayAttenBorder(float2 pos, float value)
 
 // Screen Space Reflection ray tracing utility.
 // Returns: xy: hitUV, z: hitMask, where hitUV is the result UV of hit pixel, hitMask is the normalized sample weight (0 if no hit).
-float3 TraceSceenSpaceReflection(float2 uv, GBufferSample gBuffer, Texture2D depthBuffer, float3 viewPos, float4x4 viewMatrix, float4x4 viewProjectionMatrix, float stepSize, float maxSamples = 20, bool temporal = false, float temporalTime = 0.0f, float worldAntiSelfOcclusionBias = 0.1f, float brdfBias = 0.82f, float drawDistance = 5000.0f, float roughnessThreshold = 0.4f, float edgeFade = 0.1f)
+float3 ScreenSpaceReflectionDirection(float2 uv, GBufferSample gBuffer, float3 viewPos,  bool temporal = false, float temporalTime = 0.0f, float brdfBias = 0.82f)
+{
+    // Randomize it a little
+    float2 jitter = RandN2(uv + temporalTime);
+    float2 Xi = jitter;
+    Xi.y = lerp(Xi.y, 0.0, brdfBias);
+    float3 H = temporal ? TangentToWorld(gBuffer.Normal, ImportanceSampleGGX(Xi, gBuffer.Roughness)) : gBuffer.Normal;
+
+    float3 viewWS = normalize(gBuffer.WorldPos - viewPos);
+    return reflect(viewWS, H.xyz);
+}
+
+// Screen Space Reflection ray tracing utility.
+// Returns: xy: hitUV, z: hitMask, where hitUV is the result UV of hit pixel, hitMask is the normalized sample weight (0 if no hit).
+float3 TraceScreenSpaceReflection(float2 uv, GBufferSample gBuffer, Texture2D depthBuffer, float3 viewPos, float4x4 viewMatrix, float4x4 viewProjectionMatrix, float stepSize, float maxSamples = 20, bool temporal = false, float temporalTime = 0.0f, float worldAntiSelfOcclusionBias = 0.1f, float brdfBias = 0.82f, float drawDistance = 5000.0f, float roughnessThreshold = 0.4f, float edgeFade = 0.1f)
 {
     // Reject invalid pixels
     if (gBuffer.ShadingModel == SHADING_MODEL_UNLIT || gBuffer.Roughness > roughnessThreshold || gBuffer.ViewPos.z > drawDistance)
@@ -50,21 +64,11 @@ float3 TraceSceenSpaceReflection(float2 uv, GBufferSample gBuffer, Texture2D dep
 
     // Calculate view space normal vector
     float3 normalVS = mul(gBuffer.Normal, (float3x3)viewMatrix);
-
-    // Randomize it a little
-    float2 jitter = RandN2(uv + temporalTime);
-    float2 Xi = jitter;
-    Xi.y = lerp(Xi.y, 0.0, brdfBias);
-    float3 H = temporal ? TangentToWorld(gBuffer.Normal, ImportanceSampleGGX(Xi, gBuffer.Roughness)) : gBuffer.Normal;
-
-    // Calculate normalized view space reflection vector
     float3 reflectVS = normalize(reflect(gBuffer.ViewPos, normalVS));
     if (gBuffer.ViewPos.z < 1.0 && reflectVS.z < 0.4)
         return 0;
 
-    float3 viewWS = normalize(gBuffer.WorldPos - viewPos);
-    float3 reflectWS = reflect(viewWS, H.xyz);
-
+    float3 reflectWS = ScreenSpaceReflectionDirection(uv, gBuffer, viewPos, temporal, temporalTime, brdfBias);
     float3 startWS = gBuffer.WorldPos + gBuffer.Normal * worldAntiSelfOcclusionBias;
     float3 startUV = ProjectWorldToUv(startWS, viewProjectionMatrix);
     float3 endUV = ProjectWorldToUv(startWS + reflectWS, viewProjectionMatrix);

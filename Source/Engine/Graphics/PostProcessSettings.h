@@ -156,6 +156,22 @@ API_ENUM() enum class ResolutionMode : int32
 };
 
 /// <summary>
+/// The screen space reflections modes.
+/// </summary>
+API_ENUM() enum class ReflectionsTraceMode : int32
+{
+    /// <summary>
+    /// Screen-space depth buffer tracing with scene color sampling. Only visible on-screen pixels can be used in reflections.
+    /// </summary>
+    ScreenTracing = 0,
+
+    /// <summary>
+    /// Software raytracing using Global SDF and Global Surface Atlas that supports full-scene raytracing (off-screen).
+    /// </summary>
+    SoftwareTracing = 1,
+};
+
+/// <summary>
 /// The <see cref="AmbientOcclusionSettings"/> structure members override flags.
 /// </summary>
 API_ENUM(Attributes="Flags") enum class AmbientOcclusionSettingsOverride : int32
@@ -1676,9 +1692,14 @@ API_ENUM(Attributes="Flags") enum class ScreenSpaceReflectionsSettingsOverride :
     FadeDistance = 1 << 14,
 
     /// <summary>
+    /// Overrides <see cref="ScreenSpaceReflectionsSettings.TraceMode"/> property.
+    /// </summary>
+    TraceMode = 1 << 15,
+
+    /// <summary>
     /// All properties.
     /// </summary>
-    All = Intensity | DepthResolution | RayTracePassResolution | BRDFBias | RoughnessThreshold | WorldAntiSelfOcclusionBias | ResolvePassResolution | ResolveSamples | EdgeFadeFactor | UseColorBufferMips | TemporalEffect | TemporalScale | TemporalResponse | FadeOutDistance | FadeDistance,
+    All = Intensity | DepthResolution | RayTracePassResolution | BRDFBias | RoughnessThreshold | WorldAntiSelfOcclusionBias | ResolvePassResolution | ResolveSamples | EdgeFadeFactor | UseColorBufferMips | TemporalEffect | TemporalScale | TemporalResponse | FadeOutDistance | FadeDistance | TraceMode,
 };
 
 /// <summary>
@@ -1703,87 +1724,93 @@ API_STRUCT() struct FLAXENGINE_API ScreenSpaceReflectionsSettings : ISerializabl
     float Intensity = 1.0f;
 
     /// <summary>
+    /// The reflections tracing mode.
+    /// </summary>
+    API_FIELD(Attributes="EditorOrder(1), PostProcessSetting((int)ScreenSpaceReflectionsSettingsOverride.TraceMode)")
+    ReflectionsTraceMode TraceMode = ReflectionsTraceMode::ScreenTracing;
+
+    /// <summary>
     /// The depth buffer downscale option to optimize raycast performance. Full gives better quality, but half improves performance. The default value is half.
     /// </summary>
-    API_FIELD(Attributes="EditorOrder(1), PostProcessSetting((int)ScreenSpaceReflectionsSettingsOverride.DepthResolution)")
+    API_FIELD(Attributes="EditorOrder(2), PostProcessSetting((int)ScreenSpaceReflectionsSettingsOverride.DepthResolution)")
     ResolutionMode DepthResolution = ResolutionMode::Half;
 
     /// <summary>
     /// The raycast resolution. Full gives better quality, but half improves performance. The default value is half.
     /// </summary>
-    API_FIELD(Attributes="EditorOrder(2), PostProcessSetting((int)ScreenSpaceReflectionsSettingsOverride.RayTracePassResolution)")
+    API_FIELD(Attributes="EditorOrder(3), PostProcessSetting((int)ScreenSpaceReflectionsSettingsOverride.RayTracePassResolution)")
     ResolutionMode RayTracePassResolution = ResolutionMode::Half;
 
     /// <summary>
     /// The reflection spread parameter. This value controls source roughness effect on reflections blur. Smaller values produce wider reflections spread but also introduce more noise. Higher values provide more mirror-like reflections. Default value is 0.82.
     /// </summary>
-    API_FIELD(Attributes="Limit(0, 1.0f, 0.01f), EditorOrder(3), PostProcessSetting((int)ScreenSpaceReflectionsSettingsOverride.BRDFBias), EditorDisplay(null, \"BRDF Bias\")")
+    API_FIELD(Attributes="Limit(0, 1.0f, 0.01f), EditorOrder(10), PostProcessSetting((int)ScreenSpaceReflectionsSettingsOverride.BRDFBias), EditorDisplay(null, \"BRDF Bias\")")
     float BRDFBias = 0.82f;
 
     /// <summary>
     /// The maximum amount of roughness a material must have to reflect the scene. For example, if this value is set to 0.4, only materials with a roughness value of 0.4 or below reflect the scene. The default value is 0.45.
     /// </summary>
-    API_FIELD(Attributes="Limit(0, 1.0f, 0.01f), EditorOrder(4), PostProcessSetting((int)ScreenSpaceReflectionsSettingsOverride.RoughnessThreshold)")
+    API_FIELD(Attributes="Limit(0, 1.0f, 0.01f), EditorOrder(15), PostProcessSetting((int)ScreenSpaceReflectionsSettingsOverride.RoughnessThreshold)")
     float RoughnessThreshold = 0.45f;
 
     /// <summary>
     /// The offset of the raycast origin. Lower values produce more correct reflection placement, but produce more artifacts. We recommend values of 0.3 or lower. The default value is 0.1.
     /// </summary>
-    API_FIELD(Attributes="Limit(0, 10.0f, 0.01f), EditorOrder(5), PostProcessSetting((int)ScreenSpaceReflectionsSettingsOverride.WorldAntiSelfOcclusionBias)")
+    API_FIELD(Attributes="Limit(0, 10.0f, 0.01f), EditorOrder(20), PostProcessSetting((int)ScreenSpaceReflectionsSettingsOverride.WorldAntiSelfOcclusionBias)")
     float WorldAntiSelfOcclusionBias = 0.1f;
 
     /// <summary>
     /// The raycast resolution. Full gives better quality, but half improves performance. The default value is half.
     /// </summary>
-    API_FIELD(Attributes="EditorOrder(6), PostProcessSetting((int)ScreenSpaceReflectionsSettingsOverride.ResolvePassResolution)")
+    API_FIELD(Attributes="EditorOrder(25), PostProcessSetting((int)ScreenSpaceReflectionsSettingsOverride.ResolvePassResolution)")
     ResolutionMode ResolvePassResolution = ResolutionMode::Full;
 
     /// <summary>
     /// The number of rays used to resolve the reflection color. Higher values provide better quality but reduce effect performance. Default value is 4. Use 1 for the highest speed.
     /// </summary>
-    API_FIELD(Attributes="Limit(1, 8), EditorOrder(7), PostProcessSetting((int)ScreenSpaceReflectionsSettingsOverride.ResolveSamples)")
+    API_FIELD(Attributes="Limit(1, 8), EditorOrder(26), PostProcessSetting((int)ScreenSpaceReflectionsSettingsOverride.ResolveSamples)")
     int32 ResolveSamples = 4;
 
     /// <summary>
     /// The point at which the far edges of the reflection begin to fade. Has no effect on performance. The default value is 0.1.
     /// </summary>
-    API_FIELD(Attributes="Limit(0, 1.0f, 0.02f), EditorOrder(8), PostProcessSetting((int)ScreenSpaceReflectionsSettingsOverride.EdgeFadeFactor)")
+    API_FIELD(Attributes="Limit(0, 1.0f, 0.02f), EditorOrder(30), PostProcessSetting((int)ScreenSpaceReflectionsSettingsOverride.EdgeFadeFactor)")
     float EdgeFadeFactor = 0.1f;
 
     /// <summary>
     /// The effect fade out end distance from camera (in world units).
     /// </summary>
-    API_FIELD(Attributes="Limit(0), EditorOrder(9), PostProcessSetting((int)ScreenSpaceReflectionsSettingsOverride.FadeOutDistance)")
+    API_FIELD(Attributes="Limit(0), EditorOrder(31), PostProcessSetting((int)ScreenSpaceReflectionsSettingsOverride.FadeOutDistance)")
     float FadeOutDistance = 5000.0f;
 
     /// <summary>
     /// The effect fade distance (in world units). Defines the size of the effect fade from fully visible to fully invisible at FadeOutDistance.
     /// </summary>
-    API_FIELD(Attributes="Limit(0), EditorOrder(10), PostProcessSetting((int)ScreenSpaceReflectionsSettingsOverride.FadeDistance)")
+    API_FIELD(Attributes="Limit(0), EditorOrder(32), PostProcessSetting((int)ScreenSpaceReflectionsSettingsOverride.FadeDistance)")
     float FadeDistance = 500.0f;
 
     /// <summary>
     /// "The input color buffer downscale mode that uses blurred mipmaps when resolving the reflection color. Produces more realistic results by blurring distant parts of reflections in rough (low-gloss) materials. It also improves performance on most platforms but uses more memory.
     /// </summary>
-    API_FIELD(Attributes="EditorOrder(11), PostProcessSetting((int)ScreenSpaceReflectionsSettingsOverride.UseColorBufferMips), EditorDisplay(null, \"Use Color Buffer Mips\")")
+    API_FIELD(Attributes="EditorOrder(40), PostProcessSetting((int)ScreenSpaceReflectionsSettingsOverride.UseColorBufferMips), EditorDisplay(null, \"Use Color Buffer Mips\")")
     bool UseColorBufferMips = true;
 
     /// <summary>
     /// If checked, enables the temporal pass. Reduces noise, but produces an animated "jittering" effect that's sometimes noticeable. If disabled, the properties below have no effect.
     /// </summary>
-    API_FIELD(Attributes="EditorOrder(12), PostProcessSetting((int)ScreenSpaceReflectionsSettingsOverride.TemporalEffect), EditorDisplay(null, \"Enable Temporal Effect\")")
+    API_FIELD(Attributes="EditorOrder(50), PostProcessSetting((int)ScreenSpaceReflectionsSettingsOverride.TemporalEffect), EditorDisplay(null, \"Enable Temporal Effect\")")
     bool TemporalEffect = true;
 
     /// <summary>
     /// The intensity of the temporal effect. Lower values produce reflections faster, but more noise. The default value is 8.
     /// </summary>
-    API_FIELD(Attributes="Limit(0, 20.0f, 0.5f), EditorOrder(13), PostProcessSetting((int)ScreenSpaceReflectionsSettingsOverride.TemporalScale)")
+    API_FIELD(Attributes="Limit(0, 20.0f, 0.5f), EditorOrder(55), PostProcessSetting((int)ScreenSpaceReflectionsSettingsOverride.TemporalScale)")
     float TemporalScale = 8.0f;
 
     /// <summary>
     /// Defines how quickly reflections blend between the reflection in the current frame and the history buffer. Lower values produce reflections faster, but with more jittering. If the camera in your game doesn't move much, we recommend values closer to 1. The default value is 0.8.
     /// </summary>
-    API_FIELD(Attributes="Limit(0.05f, 1.0f, 0.01f), EditorOrder(14), PostProcessSetting((int)ScreenSpaceReflectionsSettingsOverride.TemporalResponse)")
+    API_FIELD(Attributes="Limit(0.05f, 1.0f, 0.01f), EditorOrder(60), PostProcessSetting((int)ScreenSpaceReflectionsSettingsOverride.TemporalResponse)")
     float TemporalResponse = 0.8f;
 
 public:

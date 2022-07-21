@@ -5,6 +5,8 @@
 #include "./Flax/ReflectionsCommon.hlsl"
 #include "./Flax/SSR.hlsl"
 #include "./Flax/GBuffer.hlsl"
+#include "./Flax/GlobalSignDistanceField.hlsl"
+#include "./Flax/GI/GlobalSurfaceAtlas.hlsl"
 
 // Enable/disable luminance filter to reduce reflections highlights
 #define SSR_REDUCE_HIGHLIGHTS 1
@@ -38,6 +40,9 @@ float FadeOutDistance;
 float4x4 ViewMatrix;
 float4x4 ViewProjectionMatrix;
 
+GlobalSDFData GlobalSDF;
+GlobalSurfaceAtlasData GlobalSurfaceAtlas;
+
 META_CB_END
 
 DECLARE_GBUFFERDATA_ACCESS(GBuffer)
@@ -45,6 +50,15 @@ DECLARE_GBUFFERDATA_ACCESS(GBuffer)
 Texture2D Texture0 : register(t4);
 Texture2D Texture1 : register(t5);
 Texture2D Texture2 : register(t6);
+#if USE_GLOBAL_SURFACE_ATLAS
+Texture3D<float> GlobalSDFTex : register(t7);
+Texture3D<float> GlobalSDFMip : register(t8);
+ByteAddressBuffer GlobalSurfaceAtlasChunks : register(t9);
+ByteAddressBuffer RWGlobalSurfaceAtlasCulledObjects : register(t10);
+Buffer<float4> GlobalSurfaceAtlasObjects : register(t11);
+Texture2D GlobalSurfaceAtlasDepth : register(t12);
+Texture2D GlobalSurfaceAtlasTex : register(t13);
+#endif
 
 // Pixel Shader for screen space reflections rendering - combine pass
 META_PS(true, FEATURE_LEVEL_ES2)
@@ -83,17 +97,59 @@ float4 PS_CombinePass(Quad_VS2PS input) : SV_Target0
 
 // Pixel Shader for screen space reflections rendering - ray trace pass
 META_PS(true, FEATURE_LEVEL_ES2)
+META_PERMUTATION_1(USE_GLOBAL_SURFACE_ATLAS=0)
+META_PERMUTATION_1(USE_GLOBAL_SURFACE_ATLAS=1)
 float4 PS_RayTracePass(Quad_VS2PS input) : SV_Target0
 {
+	// Inputs:
+	// Texture0 - color buffer (rgb color, with mip maps chain or without)
+    // SRV 7-8 Global SDF
+    // SRV 9-13 Global Surface Atlas
+
 	// Sample GBuffer
 	GBufferData gBufferData = GetGBufferData();
 	GBufferSample gBuffer = SampleGBuffer(gBufferData, input.TexCoord);
 
-	// Trace depth buffer to find intersection
-	float3 hit = TraceSceenSpaceReflection(input.TexCoord, gBuffer, Depth, gBufferData.ViewPos, ViewMatrix, ViewProjectionMatrix, RayTraceStep, MaxTraceSamples, TemporalEffect, TemporalTime, WorldAntiSelfOcclusionBias, BRDFBias, FadeOutDistance, RoughnessFade, EdgeFadeFactor);
+    // Reject invalid pixels
+    if (gBuffer.ShadingModel == SHADING_MODEL_UNLIT || gBuffer.Roughness > RoughnessFade || gBuffer.ViewPos.z > FadeOutDistance)
+        return 0;
 
-	// Output: xy: hitUV, z: hitMask, w: unused
-	return float4(hit.xy, hit.z * Intensity, 0);
+	// Trace depth buffer to find intersection
+	float3 screenHit = TraceScreenSpaceReflection(input.TexCoord, gBuffer, Depth, gBufferData.ViewPos, ViewMatrix, ViewProjectionMatrix, RayTraceStep, MaxTraceSamples, TemporalEffect, TemporalTime, WorldAntiSelfOcclusionBias, BRDFBias, FadeOutDistance, RoughnessFade, EdgeFadeFactor);
+	float4 result = 0;
+	if (screenHit.z > 0)
+	{
+	    float3 viewVector = normalize(gBufferData.ViewPos - gBuffer.WorldPos);
+        float NdotV = saturate(dot(gBuffer.Normal, viewVector));
+        float coneTangent = lerp(0.0, gBuffer.Roughness * 5 * (1.0 - BRDFBias), pow(NdotV, 1.5) * sqrt(gBuffer.Roughness));
+        float intersectionCircleRadius = coneTangent * length(screenHit.xy - input.TexCoord);
+        float mip = clamp(log2(intersectionCircleRadius * TraceSizeMax), 0.0, MaxColorMiplevel);
+        float3 sampleColor = Texture0.SampleLevel(SamplerLinearClamp, screenHit.xy, mip).rgb;
+        result = float4(sampleColor, screenHit.z);
+        if (screenHit.z >= 0.9f)
+            return result;
+	}
+
+    // Calculate reflection direction (the same TraceScreenSpaceReflection)
+    float3 reflectWS = ScreenSpaceReflectionDirection(input.TexCoord, gBuffer, gBufferData.ViewPos, TemporalEffect, TemporalTime, BRDFBias);
+
+    // Fallback to Global SDF and Global Surface Atlas tracing
+#if USE_GLOBAL_SURFACE_ATLAS
+    GlobalSDFTrace sdfTrace;
+    float maxDistance = 100000;
+    float selfOcclusionBias = GlobalSDF.CascadeVoxelSize[0];
+    sdfTrace.Init(gBuffer.WorldPos + gBuffer.Normal * selfOcclusionBias, reflectWS, 0.0f, maxDistance);
+    GlobalSDFHit sdfHit = RayTraceGlobalSDF(GlobalSDF, GlobalSDFTex, GlobalSDFMip, sdfTrace);
+    if (sdfHit.IsHit())
+    {
+        float3 hitPosition = sdfHit.GetHitPosition(sdfTrace);
+        float surfaceThreshold = GetGlobalSurfaceAtlasThreshold(GlobalSDF, sdfHit);
+        float4 surfaceAtlas = SampleGlobalSurfaceAtlas(GlobalSurfaceAtlas, GlobalSurfaceAtlasChunks, RWGlobalSurfaceAtlasCulledObjects, GlobalSurfaceAtlasObjects, GlobalSurfaceAtlasDepth, GlobalSurfaceAtlasTex, hitPosition, -reflectWS, surfaceThreshold);
+        result = lerp(surfaceAtlas, float4(result.rgb, 1), result.a);
+    }
+#endif
+
+	return result;
 }
 
 #ifndef RESOLVE_SAMPLES
@@ -123,27 +179,18 @@ float4 PS_ResolvePass(Quad_VS2PS input) : SV_Target0
 	float2 uv = input.TexCoord;
 
 	// Inputs:
-	// Texture0 - color buffer (rgb color, with mip maps chain or without)
-	// Texture1 - ray trace buffer (xy: hitUV, z: hitMask)
-
-	// Early out for pixels with no hit result
-	if (Texture1.SampleLevel(SamplerLinearClamp, uv, 0).z <= 0.001)
-		return 0;
+	// Texture0 - ray trace buffer (xy: HDR color, z: weight)
 
 	// Sample GBuffer
 	GBufferData gBufferData = GetGBufferData();
 	GBufferSample gBuffer = SampleGBuffer(gBufferData, uv);
-
-	// Calculate view vector
-	float3 viewVector = normalize(gBufferData.ViewPos - gBuffer.WorldPos);
+    if (gBuffer.ShadingModel == SHADING_MODEL_UNLIT)
+        return 0;
 
 	// Randomize it a little
 	float2 random = RandN2(uv + TemporalTime);
 	float2 blueNoise = random.xy * 2.0 - 1.0;
 	float2x2 offsetRotationMatrix = float2x2(blueNoise.x, blueNoise.y, -blueNoise.y, blueNoise.x);
-
-	float NdotV = saturate(dot(gBuffer.Normal, viewVector));
-	float coneTangent = lerp(0.0, gBuffer.Roughness * 5 * (1.0 - BRDFBias), pow(NdotV, 1.5) * sqrt(gBuffer.Roughness));
 
 	// Resolve samples
 	float4 result = 0.0;
@@ -152,30 +199,16 @@ float4 PS_ResolvePass(Quad_VS2PS input) : SV_Target0
 	{
 		float2 offsetUV = Offsets[i] * SSRtexelSize;
 		offsetUV =  mul(offsetRotationMatrix, offsetUV);
-
-		// "uv" is the location of the current (or "local") pixel. We want to resolve the local pixel using
-		// intersections spawned from neighbouring pixels. The neighbouring pixel is this one:
-		float2 neighborUv = uv + offsetUV;
-
-		// Now we fetch the intersection point
-		float4 hitPacked = Texture1.SampleLevel(SamplerLinearClamp, neighborUv, 0);
-		float2 hitUv = hitPacked.xy;
-		float hitMask = hitPacked.z;
-
-		float intersectionCircleRadius = coneTangent * length(hitUv - uv);
-		float mip = clamp(log2(intersectionCircleRadius * TraceSizeMax), 0.0, MaxColorMiplevel);
-
-		float3 sampleColor = Texture0.SampleLevel(SamplerLinearClamp, hitUv, mip).rgb;
+		float4 sample = Texture0.SampleLevel(SamplerLinearClamp, uv + offsetUV, 0);
 #if SSR_REDUCE_HIGHLIGHTS
-		sampleColor /= 1 + Luminance(sampleColor);
+		sample.rgb /= 1 + Luminance(sample.rgb);
 #endif
-
-		result.rgb += sampleColor;
-		result.a += hitMask;
+		result += sample;
 	}
 
 	// Calculate final result value
 	result /= RESOLVE_SAMPLES;
+	result.a *= Intensity;
 #if SSR_REDUCE_HIGHLIGHTS
 	result.rgb /= 1 - Luminance(result.rgb);
 #endif

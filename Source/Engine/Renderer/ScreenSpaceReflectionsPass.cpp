@@ -4,6 +4,8 @@
 #include "ReflectionsPass.h"
 #include "GBufferPass.h"
 #include "RenderList.h"
+#include "GlobalSignDistanceFieldPass.h"
+#include "GI/GlobalSurfaceAtlasPass.h"
 #include "Engine/Content/Content.h"
 #include "Engine/Graphics/Graphics.h"
 #include "Engine/Graphics/RenderTools.h"
@@ -15,7 +17,6 @@
 #include "Engine/Engine/Engine.h"
 #include "Engine/Graphics/RenderTask.h"
 
-#define REFLECTIONS_FORMAT PixelFormat::R11G11B10_Float
 #define RESOLVE_PASS_OUTPUT_FORMAT PixelFormat::R16G16B16A16_Float
 
 // Shader input texture slots mapping
@@ -48,15 +49,10 @@ PACK_STRUCT(struct Data
 
     Matrix ViewMatrix;
     Matrix ViewProjectionMatrix;
-    });
 
-ScreenSpaceReflectionsPass::ScreenSpaceReflectionsPass()
-    : _psRayTracePass(nullptr)
-    , _psCombinePass(nullptr)
-    , _psTemporalPass(nullptr)
-    , _psMixPass(nullptr)
-{
-}
+    GlobalSignDistanceFieldPass::ConstantsData GlobalSDF;
+    GlobalSurfaceAtlasPass::ConstantsData GlobalSurfaceAtlas;
+    });
 
 bool ScreenSpaceReflectionsPass::NeedMotionVectors(RenderContext& renderContext)
 {
@@ -72,9 +68,9 @@ String ScreenSpaceReflectionsPass::ToString() const
 bool ScreenSpaceReflectionsPass::Init()
 {
     // Create pipeline states
-    _psRayTracePass = GPUDevice::Instance->CreatePipelineState();
-    _psCombinePass = GPUDevice::Instance->CreatePipelineState();
+    _psRayTracePass.CreatePipelineStates();
     _psResolvePass.CreatePipelineStates();
+    _psCombinePass = GPUDevice::Instance->CreatePipelineState();
     _psTemporalPass = GPUDevice::Instance->CreatePipelineState();
     _psMixPass = GPUDevice::Instance->CreatePipelineState();
 
@@ -112,10 +108,9 @@ bool ScreenSpaceReflectionsPass::setupResources()
 
     // Create pipeline stages
     GPUPipelineState::Description psDesc = GPUPipelineState::Description::DefaultFullscreenTriangle;
-    if (!_psRayTracePass->IsValid())
+    if (!_psRayTracePass.IsValid())
     {
-        psDesc.PS = shader->GetPS("PS_RayTracePass");
-        if (_psRayTracePass->Init(psDesc))
+        if (_psRayTracePass.Create(psDesc, shader, "PS_RayTracePass"))
             return true;
     }
     if (!_psCombinePass->IsValid())
@@ -152,10 +147,10 @@ void ScreenSpaceReflectionsPass::Dispose()
     RendererPass::Dispose();
 
     // Cleanup
-    SAFE_DELETE_GPU_RESOURCE(_psRayTracePass);
     SAFE_DELETE_GPU_RESOURCE(_psCombinePass);
     SAFE_DELETE_GPU_RESOURCE(_psTemporalPass);
     SAFE_DELETE_GPU_RESOURCE(_psMixPass);
+    _psRayTracePass.Delete();
     _psResolvePass.Delete();
     _shader = nullptr;
     _preIntegratedGF = nullptr;
@@ -201,7 +196,7 @@ void ScreenSpaceReflectionsPass::Render(RenderContext& renderContext, GPUTexture
     auto colorBuffer0 = RenderTargetPool::Get(tempDesc);
     // TODO: maybe allocate colorBuffer1 smaller because mip0 is not used (the same as PostProcessingPass for Bloom), keep in sync to use the same buffer in frame
     auto colorBuffer1 = RenderTargetPool::Get(tempDesc);
-    tempDesc = GPUTextureDescription::New2D(traceWidth, traceHeight, REFLECTIONS_FORMAT);
+    tempDesc = GPUTextureDescription::New2D(traceWidth, traceHeight, PixelFormat::R16G16B16A16_Float);
     auto traceBuffer = RenderTargetPool::Get(tempDesc);
     tempDesc = GPUTextureDescription::New2D(resolveWidth, resolveHeight, RESOLVE_PASS_OUTPUT_FORMAT);
     auto resolveBuffer = RenderTargetPool::Get(tempDesc);
@@ -259,16 +254,11 @@ void ScreenSpaceReflectionsPass::Render(RenderContext& renderContext, GPUTexture
         data.TemporalTime = static_cast<float>(time - integral);
 
         buffers->LastFrameTemporalSSR = Engine::FrameCount;
-        if (buffers->TemporalSSR == nullptr)
-        {
-            // Missing temporal buffer
-            tempDesc = GPUTextureDescription::New2D(temporalWidth, temporalHeight, RESOLVE_PASS_OUTPUT_FORMAT);
-            buffers->TemporalSSR = RenderTargetPool::Get(tempDesc);
-        }
-        else if (buffers->TemporalSSR->Width() != temporalWidth || buffers->TemporalSSR->Height() != temporalHeight)
+        if (!buffers->TemporalSSR || buffers->TemporalSSR->Width() != temporalWidth || buffers->TemporalSSR->Height() != temporalHeight)
         {
             // Wrong size temporal buffer
-            RenderTargetPool::Release(buffers->TemporalSSR);
+            if (buffers->TemporalSSR)
+                RenderTargetPool::Release(buffers->TemporalSSR);
             tempDesc = GPUTextureDescription::New2D(temporalWidth, temporalHeight, RESOLVE_PASS_OUTPUT_FORMAT);
             buffers->TemporalSSR = RenderTargetPool::Get(tempDesc);
         }
@@ -279,6 +269,23 @@ void ScreenSpaceReflectionsPass::Render(RenderContext& renderContext, GPUTexture
     }
     Matrix::Transpose(view.View, data.ViewMatrix);
     Matrix::Transpose(view.ViewProjection(), data.ViewProjectionMatrix);
+
+    // Try to use Global Surface Atlas (with rendered GI) to perform full-scene tracing (not only screen-space)
+    bool useGlobalSurfaceAtlas = false;
+    GlobalSignDistanceFieldPass::BindingData bindingDataSDF;
+    GlobalSurfaceAtlasPass::BindingData bindingDataSurfaceAtlas;
+    if (settings.TraceMode == ReflectionsTraceMode::SoftwareTracing &&
+        renderContext.View.Flags & ViewFlags::GI &&
+        renderContext.List->Settings.GlobalIllumination.Mode == GlobalIlluminationMode::DDGI)
+    {
+        if (!GlobalSignDistanceFieldPass::Instance()->Render(renderContext, context, bindingDataSDF) &&
+            !GlobalSurfaceAtlasPass::Instance()->Render(renderContext, context, bindingDataSurfaceAtlas))
+        {
+            useGlobalSurfaceAtlas = true;
+            data.GlobalSDF = bindingDataSDF.Constants;
+            data.GlobalSurfaceAtlas = bindingDataSurfaceAtlas.Constants;
+        }
+    }
 
     // Check if resize depth
     GPUTexture* originalDepthBuffer = buffers->DepthBuffer;
@@ -350,14 +357,24 @@ void ScreenSpaceReflectionsPass::Render(RenderContext& renderContext, GPUTexture
     // Ray Trace Pass
     context->SetViewportAndScissors((float)traceWidth, (float)traceHeight);
     context->SetRenderTarget(*traceBuffer);
-    context->SetState(_psRayTracePass);
+    context->BindSR(TEXTURE0, blurPassBuffer->View());
+    if (useGlobalSurfaceAtlas)
+    {
+        context->BindSR(7, bindingDataSDF.Texture ? bindingDataSDF.Texture->ViewVolume() : nullptr);
+        context->BindSR(8, bindingDataSDF.TextureMip ? bindingDataSDF.TextureMip->ViewVolume() : nullptr);
+        context->BindSR(9, bindingDataSurfaceAtlas.Chunks ? bindingDataSurfaceAtlas.Chunks->View() : nullptr);
+        context->BindSR(10, bindingDataSurfaceAtlas.CulledObjects ? bindingDataSurfaceAtlas.CulledObjects->View() : nullptr);
+        context->BindSR(11, bindingDataSurfaceAtlas.Objects ? bindingDataSurfaceAtlas.Objects->View() : nullptr);
+        context->BindSR(12, bindingDataSurfaceAtlas.AtlasDepth->View());
+        context->BindSR(13, bindingDataSurfaceAtlas.AtlasLighting->View());
+    }
+    context->SetState(_psRayTracePass.Get(useGlobalSurfaceAtlas ? 1 : 0));
     context->DrawFullscreenTriangle();
     context->ResetRenderTarget();
 
     // Resolve Pass
     context->SetRenderTarget(resolveBuffer->View());
-    context->BindSR(TEXTURE0, blurPassBuffer->View());
-    context->BindSR(TEXTURE1, traceBuffer->View());
+    context->BindSR(TEXTURE0, traceBuffer->View());
     context->SetState(_psResolvePass.Get(resolvePassIndex));
     context->DrawFullscreenTriangle();
     context->ResetRenderTarget();
@@ -405,3 +422,17 @@ void ScreenSpaceReflectionsPass::Render(RenderContext& renderContext, GPUTexture
     RenderTargetPool::Release(traceBuffer);
     RenderTargetPool::Release(resolveBuffer);
 }
+
+#if COMPILE_WITH_DEV_ENV
+
+void ScreenSpaceReflectionsPass::OnShaderReloading(Asset* obj)
+{
+    _psCombinePass->ReleaseGPU();
+    _psTemporalPass->ReleaseGPU();
+    _psMixPass->ReleaseGPU();
+    _psRayTracePass.Release();
+    _psResolvePass.Release();
+    invalidateResources();
+}
+
+#endif
