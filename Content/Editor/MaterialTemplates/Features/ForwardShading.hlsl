@@ -116,7 +116,7 @@ float4 PS_Forward(PixelInput input) : SV_Target0
 	float worldAntiSelfOcclusionBias = 0.1f;
 	float brdfBias = 0.82f;
 	float drawDistance = 5000.0f;
-	float3 hit = TraceSceenSpaceReflection(screenUV, gBuffer, sceneDepthTexture, ViewPos, ViewMatrix, ViewProjectionMatrix, stepSize, maxSamples, false, 0.0f, worldAntiSelfOcclusionBias, brdfBias, drawDistance);
+	float3 hit = TraceScreenSpaceReflection(screenUV, gBuffer, sceneDepthTexture, ViewPos, ViewMatrix, ViewProjectionMatrix, stepSize, maxSamples, false, 0.0f, worldAntiSelfOcclusionBias, brdfBias, drawDistance);
 	if (hit.z > 0)
 	{
 		float3 screenColor = sceneColorTexture.SampleLevel(SamplerPointClamp, hit.xy, 0).rgb;
