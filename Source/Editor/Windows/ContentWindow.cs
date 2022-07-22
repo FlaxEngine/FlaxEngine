@@ -598,25 +598,29 @@ namespace FlaxEditor.Windows
         /// <param name="proxy">The new item proxy.</param>
         /// <param name="argument">The argument passed to the proxy for the item creation. In most cases it is null.</param>
         /// <param name="created">The event called when the item is crated by the user. The argument is the new item.</param>
-        public void NewItem(ContentProxy proxy, object argument = null, Action<ContentItem> created = null)
+        /// <param name="initialName">The initial item name.</param>
+        public void NewItem(ContentProxy proxy, object argument = null, Action<ContentItem> created = null, string initialName = null)
         {
             Assert.IsNull(_newElement);
             if (proxy == null)
                 throw new ArgumentNullException(nameof(proxy));
 
-            string name = proxy.NewItemName;
+            string name = initialName ?? proxy.NewItemName;
             ContentFolder parentFolder = CurrentViewFolder;
             string parentFolderPath = parentFolder.Path;
 
             // Create asset name
-            string path;
             string extension = '.' + proxy.FileExtension;
-            int i = 0;
-            do
+            string path  = StringUtils.CombinePaths(parentFolderPath, name + extension);
+            if (parentFolder.FindChild(path) != null)
             {
-                path = StringUtils.CombinePaths(parentFolderPath, string.Format("{0} {1}", name, i++) + extension);
-            } while (parentFolder.FindChild(path) != null);
-
+                int i = 0;
+                do
+                {
+                    path = StringUtils.CombinePaths(parentFolderPath, string.Format("{0} {1}", name, i++) + extension);
+                } while (parentFolder.FindChild(path) != null);
+            }
+            
             // Create new asset proxy, add to view and rename it
             _newElement = new NewItem(path, proxy, argument)
             {

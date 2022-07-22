@@ -1,6 +1,7 @@
 // Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 using System;
+using System.IO;
 using System.Threading.Tasks;
 using FlaxEditor.Windows;
 using FlaxEditor.Windows.Assets;
@@ -137,7 +138,8 @@ namespace FlaxEditor.Content
                         FlaxEngine.Scripting.InvokeOnUpdate(() => created(collisionData));
                 });
             };
-            Editor.Instance.Windows.ContentWin.NewItem(this, null, create);
+            var initialName = (modelItem?.ShortName ?? Path.GetFileNameWithoutExtension(model.Path)) + " Collision";
+            Editor.Instance.Windows.ContentWin.NewItem(this, null, create, initialName);
         }
     }
 }
