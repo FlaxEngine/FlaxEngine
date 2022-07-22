@@ -12,6 +12,7 @@ namespace FlaxEditor.Utilities
     /// <summary>
     /// The Shunting-Yard algorithm parsing utilities.
     /// </summary>
+    [HideInEditor]
     public static class ShuntingYard
     {
         /// <summary>
@@ -33,6 +34,7 @@ namespace FlaxEditor.Utilities
         /// <summary>
         /// Types of possible tokens used in Shunting-Yard parser.
         /// </summary>
+        [HideInEditor]
         public enum TokenType
         {
             /// <summary>

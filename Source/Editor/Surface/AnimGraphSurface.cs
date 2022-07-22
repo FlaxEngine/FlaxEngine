@@ -113,9 +113,9 @@ namespace FlaxEditor.Surface
                     if (_cache.Count != 0)
                     {
                         // Check if context menu doesn't have the recent cached groups
-                        if (!contextMenu.Groups.Any(g => g.Archetype.Tag is int asInt && asInt == _version))
+                        if (!contextMenu.Groups.Any(g => g.Archetypes[0].Tag is int asInt && asInt == _version))
                         {
-                            var groups = contextMenu.Groups.Where(g => g.Archetype.Tag is int).ToArray();
+                            var groups = contextMenu.Groups.Where(g => g.Archetypes[0].Tag is int).ToArray();
                             foreach (var g in groups)
                                 contextMenu.RemoveGroup(g);
                             foreach (var g in _cache.Values)
@@ -125,7 +125,7 @@ namespace FlaxEditor.Surface
                     else
                     {
                         // Remove any old groups from context menu
-                        var groups = contextMenu.Groups.Where(g => g.Archetype.Tag is int).ToArray();
+                        var groups = contextMenu.Groups.Where(g => g.Archetypes[0].Tag is int).ToArray();
                         foreach (var g in groups)
                             contextMenu.RemoveGroup(g);
 
@@ -340,7 +340,7 @@ namespace FlaxEditor.Surface
                         ParametersGetter = null,
                         CustomNodesGroup = GetCustomNodes(),
                     });
-                    _cmStateMachineTransitionMenu.AddGroup(StateMachineTransitionGroupArchetype);
+                    _cmStateMachineTransitionMenu.AddGroup(StateMachineTransitionGroupArchetype, false);
                 }
                 menu = _cmStateMachineTransitionMenu;
             }

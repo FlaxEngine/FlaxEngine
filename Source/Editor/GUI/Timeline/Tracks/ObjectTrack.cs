@@ -113,6 +113,7 @@ namespace FlaxEditor.GUI.Timeline.Tracks
         /// <summary>
         /// The data for add property track buttons tag.
         /// </summary>
+        [HideInEditor]
         public struct AddMemberTag
         {
             /// <summary>
