@@ -256,7 +256,7 @@ public:
     /// <summary>
     /// Gets the user specified offset for the center of mass of this object, from the calculated location.
     /// </summary>
-    API_PROPERTY(Attributes="EditorOrder(140), DefaultValue(typeof(Vector3), \"0,0,0\"), EditorDisplay(\"Rigid Body\", \"Center Of Mass Offset\")")
+    API_PROPERTY(Attributes="EditorOrder(140), DefaultValue(typeof(Float3), \"0,0,0\"), EditorDisplay(\"Rigid Body\", \"Center Of Mass Offset\")")
     FORCE_INLINE Float3 GetCenterOfMassOffset() const
     {
         return _centerOfMassOffset;
