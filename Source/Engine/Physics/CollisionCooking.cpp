@@ -116,6 +116,8 @@ bool CollisionCooking::CookCollision(const Argument& arg, CollisionData::Seriali
         vertexCounts.Resize(meshesCount);
         indexBuffers.Resize(needIndexBuffer ? meshesCount : 0);
         indexCounts.Resize(needIndexBuffer ? meshesCount : 0);
+        vertexCounts.SetAll(0);
+        indexCounts.SetAll(0);
         bool useCpuData = IsInMainThread() && !arg.Model->IsVirtual();
         if (!useCpuData)
         {
@@ -156,7 +158,7 @@ bool CollisionCooking::CookCollision(const Argument& arg, CollisionData::Seriali
             // It's easier than reading internal, versioned mesh storage format.
             // Also it works with virtual assets that have no dedicated storage.
             // Note: request all meshes data at once and wait for the tasks to be done.
-            Array<Task*> tasks(meshesCount + meshesCount);
+            Array<Task*> tasks(meshesCount + 2);
             for (int32 i = 0; i < meshesCount; i++)
             {
                 const auto& mesh = *meshes[i];
