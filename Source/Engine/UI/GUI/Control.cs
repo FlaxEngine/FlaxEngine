@@ -558,7 +558,7 @@ namespace FlaxEngine.GUI
         public void StartMouseCapture(bool useMouseScreenOffset = false)
         {
             var parent = Root;
-            parent.StartTrackingMouse(this, useMouseScreenOffset);
+            parent?.StartTrackingMouse(this, useMouseScreenOffset);
         }
 
         /// <summary>
@@ -568,7 +568,7 @@ namespace FlaxEngine.GUI
         public void EndMouseCapture()
         {
             var parent = Root;
-            parent.EndTrackingMouse();
+            parent?.EndTrackingMouse();
         }
 
         /// <summary>

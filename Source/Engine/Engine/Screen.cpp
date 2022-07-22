@@ -1,6 +1,7 @@
 // Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 #include "Screen.h"
+#include "Engine.h"
 #include "Engine/Core/Log.h"
 #include "Engine/Core/Types/Nullable.h"
 #include "Engine/Platform/Window.h"
@@ -102,7 +103,7 @@ void Screen::SetCursorVisible(const bool value)
 #else
 	const auto win = Engine::MainWindow;
 #endif
-    if (win)
+    if (win && Engine::HasGameViewportFocus())
     {
         win->SetCursor(value ? CursorType::Default : CursorType::Hidden);
     }
