@@ -1137,7 +1137,11 @@ namespace FlaxEditor
         /// </summary>
         public void BuildScenesOrCancel()
         {
-            if (StateMachine.BuildingScenesState.IsActive)
+            var isActive = StateMachine.BuildingScenesState.IsActive;
+            var msg = isActive ? "Cancel baking scenes data?" : "Start baking scenes data?";
+            if (MessageBox.Show(msg, "Scene Data building", MessageBoxButtons.OKCancel, MessageBoxIcon.Question) != DialogResult.OK)
+                return;
+            if (isActive)
                 StateMachine.BuildingScenesState.Cancel();
             else
                 StateMachine.GoToState<BuildingScenesState>();
