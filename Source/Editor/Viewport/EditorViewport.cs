@@ -996,10 +996,10 @@ namespace FlaxEditor.Viewport
 
             // Update input
             var window = win.Window;
-            if (window != null && window.IsFocused && window.IsForegroundWindow)
+            var canUseInput = window != null && window.IsFocused && window.IsForegroundWindow;
             {
                 // Get input buttons and keys (skip if viewport has no focus or mouse is over a child control)
-                var isViewportControllingMouse = IsControllingMouse;
+                var isViewportControllingMouse = canUseInput && IsControllingMouse;
                 if (isViewportControllingMouse != _isViewportControllingMouse)
                 {
                     _isViewportControllingMouse = isViewportControllingMouse;
@@ -1011,7 +1011,7 @@ namespace FlaxEditor.Viewport
                 bool useMouse = IsControllingMouse || (Mathf.IsInRange(_viewMousePos.X, 0, Width) && Mathf.IsInRange(_viewMousePos.Y, 0, Height));
                 _prevInput = _input;
                 var hit = GetChildAt(_viewMousePos, c => c.Visible && !(c is CanvasRootControl));
-                if (ContainsFocus && hit == null)
+                if (canUseInput && ContainsFocus && hit == null)
                     _input.Gather(win.Window, useMouse);
                 else
                     _input.Clear();
