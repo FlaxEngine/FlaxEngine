@@ -264,6 +264,20 @@ void MaterialInstance::SetBaseMaterial(MaterialBase* baseMaterial)
     if (baseMaterial == _baseMaterial)
         return;
 
+#if !BUILD_RELEASE
+    // Prevent recursion
+    auto mi = Cast<MaterialInstance>(baseMaterial);
+    while (mi)
+    {
+        if (mi == this)
+        {
+            LOG(Error, "Cannot set base material of {0} to {1} because it's recursive.", ToString(), baseMaterial->ToString());
+            return;
+        }
+        mi = Cast<MaterialInstance>(mi->GetBaseMaterial());
+    }
+#endif
+
     // Release previous parameters
     Params.Dispose();
 
