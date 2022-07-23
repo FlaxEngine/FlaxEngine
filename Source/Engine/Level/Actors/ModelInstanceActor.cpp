@@ -11,6 +11,7 @@ ModelInstanceActor::ModelInstanceActor(const SpawnParams& params)
 
 void ModelInstanceActor::SetEntries(const Array<ModelInstanceEntry>& value)
 {
+    WaitForModelLoad();
     bool anyChanged = false;
     Entries.Resize(value.Count());
     for (int32 i = 0; i < value.Count(); i++)
@@ -24,6 +25,7 @@ void ModelInstanceActor::SetEntries(const Array<ModelInstanceEntry>& value)
 
 void ModelInstanceActor::SetMaterial(int32 entryIndex, MaterialBase* material)
 {
+    WaitForModelLoad();
     CHECK(entryIndex >= 0 && entryIndex < Entries.Count());
     if (Entries[entryIndex].Material == material)
         return;
@@ -34,6 +36,8 @@ void ModelInstanceActor::SetMaterial(int32 entryIndex, MaterialBase* material)
 
 MaterialInstance* ModelInstanceActor::CreateAndSetVirtualMaterialInstance(int32 entryIndex)
 {
+    WaitForModelLoad();
+    CHECK_RETURN(entryIndex >= 0 && entryIndex < Entries.Count(), nullptr);
     auto material = Entries[entryIndex].Material.Get();
     CHECK_RETURN(material && !material->WaitForLoaded(), nullptr);
     const auto result = material->CreateVirtualInstance();
@@ -41,6 +45,10 @@ MaterialInstance* ModelInstanceActor::CreateAndSetVirtualMaterialInstance(int32 
     if (_sceneRenderingKey != -1)
         GetSceneRendering()->UpdateActor(this, _sceneRenderingKey);
     return result;
+}
+
+void ModelInstanceActor::WaitForModelLoad()
+{
 }
 
 void ModelInstanceActor::OnLayerChanged()

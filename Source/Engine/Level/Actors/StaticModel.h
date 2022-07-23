@@ -187,4 +187,5 @@ protected:
     void OnTransformChanged() override;
     void OnEnable() override;
     void OnDisable() override;
+    void WaitForModelLoad() override;
 };

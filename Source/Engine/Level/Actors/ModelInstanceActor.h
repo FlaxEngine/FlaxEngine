@@ -81,6 +81,9 @@ public:
         return false;
     }
 
+protected:
+    virtual void WaitForModelLoad();
+
 public:
     // [Actor]
     void OnLayerChanged() override;

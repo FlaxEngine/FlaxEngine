@@ -376,4 +376,5 @@ protected:
     void OnDisable() override;
     void OnActiveInTreeChanged() override;
     void OnTransformChanged() override;
+    void WaitForModelLoad() override;
 };

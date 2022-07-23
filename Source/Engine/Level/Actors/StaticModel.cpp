@@ -544,3 +544,9 @@ void StaticModel::OnDisable()
         _residencyChangedModel = nullptr;
     }
 }
+
+void StaticModel::WaitForModelLoad()
+{
+    if (Model)
+        Model->WaitForLoaded();
+}

@@ -895,3 +895,9 @@ void AnimatedModel::OnTransformChanged()
     if (_sceneRenderingKey != -1)
         GetSceneRendering()->UpdateActor(this, _sceneRenderingKey);
 }
+
+void AnimatedModel::WaitForModelLoad()
+{
+    if (SkinnedModel)
+        SkinnedModel->WaitForLoaded();
+}
