@@ -43,7 +43,7 @@ ParticleEffect* ParticleEmitter::Spawn(Actor* parent, const Transform& transform
     CHECK_RETURN(!WaitForLoaded(), nullptr);
     auto system = Content::CreateVirtualAsset<ParticleSystem>();
     CHECK_RETURN(system, nullptr);
-    system->Init(this, duration);
+    system->Init(this, duration < MAX_float ? duration : 3600.0f);
 
     auto effect = New<ParticleEffect>();
     effect->SetTransform(transform);
