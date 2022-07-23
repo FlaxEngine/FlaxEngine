@@ -184,7 +184,7 @@ namespace FlaxEditor.CustomEditors.Editors
                         var overrideEditor = overrideEditorType != null ? (CustomEditor)Activator.CreateInstance(overrideEditorType) : null;
                         var property = panel.AddPropertyItem(new CollectionItemLabel(this, i));
                         var itemLayout = useSharedLayout ? (LayoutElementsContainer)property : property.VerticalPanel();
-                        itemLayout.Object(new ListValueContainer(elementType, i, Values), overrideEditor);
+                        itemLayout.Object(new ListValueContainer(elementType, i, Values, attributes), overrideEditor);
                     }
                 }
                 else
@@ -202,7 +202,7 @@ namespace FlaxEditor.CustomEditors.Editors
                         var overrideEditor = overrideEditorType != null ? (CustomEditor)Activator.CreateInstance(overrideEditorType) : null;
                         var property = panel.AddPropertyItem("Element " + i);
                         var itemLayout = useSharedLayout ? (LayoutElementsContainer)property : property.VerticalPanel();
-                        itemLayout.Object(new ListValueContainer(elementType, i, Values), overrideEditor);
+                        itemLayout.Object(new ListValueContainer(elementType, i, Values, attributes), overrideEditor);
                     }
                 }
             }
