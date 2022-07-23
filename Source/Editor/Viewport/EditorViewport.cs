@@ -491,12 +491,17 @@ namespace FlaxEditor.Viewport
                     {
                         var v = EditorViewportViewFlagsValues[i];
                         var button = viewFlags.AddButton(v.Name);
+                        button.CloseMenuOnClick = false;
                         button.Tag = v.Mode;
                     }
                     viewFlags.ButtonClicked += button =>
                     {
                         if (button.Tag != null)
-                            Task.ViewFlags ^= (ViewFlags)button.Tag;
+                        {
+                            var v = (ViewFlags)button.Tag;
+                            Task.ViewFlags ^= v;
+                            button.Icon = (Task.View.Flags & v) != 0 ? Style.Current.CheckBoxTick : SpriteHandle.Invalid;
+                        }
                     };
                     viewFlags.VisibleChanged += WidgetViewFlagsShowHide;
                 }

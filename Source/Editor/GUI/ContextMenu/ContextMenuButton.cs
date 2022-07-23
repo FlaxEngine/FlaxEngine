@@ -51,6 +51,11 @@ namespace FlaxEditor.GUI.ContextMenu
         public bool AutoCheck;
 
         /// <summary>
+        /// Closes the context menu after clicking the button, otherwise menu will stay open.
+        /// </summary>
+        public bool CloseMenuOnClick = true;
+
+        /// <summary>
         /// Initializes a new instance of the <see cref="ContextMenuButton"/> class.
         /// </summary>
         /// <param name="parent">The parent context menu.</param>
@@ -90,14 +95,15 @@ namespace FlaxEditor.GUI.ContextMenu
         /// </summary>
         public void Click()
         {
-            // Close topmost context menu
-            ParentContextMenu?.TopmostCM.Hide();
+            if (CloseMenuOnClick)
+            {
+                // Close topmost context menu
+                ParentContextMenu?.TopmostCM.Hide();
+            }
 
             // Auto check logic
             if (AutoCheck)
-            {
                 Checked = !Checked;
-            }
 
             // Fire event
             Clicked?.Invoke();
