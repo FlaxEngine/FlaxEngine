@@ -266,13 +266,7 @@ bool AnimGraphBase::onNodeLoaded(Node* n)
         // Entry
         case 19:
         {
-            const auto entryTargetId = (int32)n->Values[0];
-            const auto entryTarget = GetNode(entryTargetId);
-            if (entryTarget == nullptr)
-            {
-                LOG(Warning, "Missing Entry node in animation state machine graph.");
-            }
-            _rootNode = entryTarget;
+            _rootNode = GetNode((int32)n->Values[0]);
             break;
         }
         // State
