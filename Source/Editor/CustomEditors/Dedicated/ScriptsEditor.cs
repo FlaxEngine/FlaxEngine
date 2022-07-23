@@ -241,7 +241,12 @@ namespace FlaxEditor.CustomEditors.Dedicated
 
             var multiAction = new MultiUndoAction(actions);
             multiAction.Do();
-            ScriptsEditor.Presenter?.Undo.AddAction(multiAction);
+            var presenter = ScriptsEditor.Presenter;
+            if (presenter != null)
+            {
+                presenter.Undo.AddAction(multiAction);
+                presenter.Control.Focus();
+            }
         }
     }
 
