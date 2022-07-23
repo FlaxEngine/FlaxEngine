@@ -11,9 +11,8 @@
 /// </summary>
 API_CLASS(NoSpawn) class FLAXENGINE_API GameplayGlobals : public BinaryAsset
 {
-DECLARE_BINARY_ASSET_HEADER(GameplayGlobals, 2);
+    DECLARE_BINARY_ASSET_HEADER(GameplayGlobals, 2);
 public:
-
     /// <summary>
     /// The variable data.
     /// </summary>
@@ -31,14 +30,12 @@ public:
     };
 
 public:
-
     /// <summary>
     /// The collection of gameplay global variables identified by the name.
     /// </summary>
     Dictionary<String, Variable> Variables;
 
 public:
-
     /// <summary>
     /// Gets the values (run-time).
     /// </summary>
@@ -64,7 +61,6 @@ public:
     API_PROPERTY() void SetDefaultValues(const Dictionary<String, Variant>& values);
 
 public:
-
     /// <summary>
     /// Gets the value of the global variable (it must be added first).
     /// </summary>
@@ -96,12 +92,10 @@ public:
 #endif
 
 public:
-
     // [BinaryAsset]
     void InitAsVirtual() override;
 
 protected:
-
     // [BinaryAsset]
     LoadResult load() override;
     void unload(bool isReloading) override;
