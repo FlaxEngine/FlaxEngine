@@ -78,6 +78,50 @@ namespace FlaxEngine.GUI
             }
 
             /// <inheritdoc />
+            public override bool OnKeyDown(KeyboardKeys key)
+            {
+                if (key == KeyboardKeys.Escape)
+                {
+                    Defocus();
+                    return true;
+                }
+
+                return base.OnKeyDown(key);
+            }
+
+            /// <inheritdoc />
+            public override bool OnMouseDown(Float2 location, MouseButton button)
+            {
+                if (base.OnMouseDown(location, button))
+                    return true;
+
+                // Close on click outside the popup
+                if (!new Rectangle(Float2.Zero, Size).Contains(ref location))
+                {
+                    Defocus();
+                    return true;
+                }
+
+                return false;
+            }
+
+            /// <inheritdoc />
+            public override bool OnTouchDown(Float2 location, int pointerId)
+            {
+                if (base.OnTouchDown(location, pointerId))
+                    return true;
+
+                // Close on touch outside the popup
+                if (!new Rectangle(Float2.Zero, Size).Contains(ref location))
+                {
+                    Defocus();
+                    return true;
+                }
+
+                return false;
+            }
+
+            /// <inheritdoc />
             public override void OnDestroy()
             {
                 LostFocus = null;
@@ -468,6 +512,7 @@ namespace FlaxEngine.GUI
             if (_popup != null)
             {
                 OnPopupHide();
+                _popup.EndMouseCapture();
                 _popup.Dispose();
                 _popup = null;
                 if (_hadNavFocus)
@@ -505,6 +550,7 @@ namespace FlaxEngine.GUI
             _popup.Location = locationRootSpace;
             _popup.Parent = root;
             _popup.Focus();
+            _popup.StartMouseCapture();
             OnPopupShow();
         }
 
@@ -598,7 +644,8 @@ namespace FlaxEngine.GUI
             if (button == MouseButton.Left)
             {
                 _touchDown = true;
-                Focus();
+                if (!IsPopupOpened)
+                    Focus();
                 return true;
             }
             return false;

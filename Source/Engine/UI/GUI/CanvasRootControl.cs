@@ -71,13 +71,15 @@ namespace FlaxEngine.GUI
         /// <inheritdoc />
         public override void StartTrackingMouse(Control control, bool useMouseScreenOffset)
         {
-            // Not used in games (editor-only feature)
+            var parent = Parent?.Root;
+            parent?.StartTrackingMouse(control, useMouseScreenOffset);
         }
 
         /// <inheritdoc />
         public override void EndTrackingMouse()
         {
-            // Not used in games (editor-only feature)
+            var parent = Parent?.Root;
+            parent?.EndTrackingMouse();
         }
 
         /// <inheritdoc />
