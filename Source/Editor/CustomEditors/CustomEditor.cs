@@ -241,7 +241,7 @@ namespace FlaxEditor.CustomEditors
             }
         }
 
-        internal void RefreshRootChild()
+        internal virtual void RefreshRootChild()
         {
             Refresh();
 

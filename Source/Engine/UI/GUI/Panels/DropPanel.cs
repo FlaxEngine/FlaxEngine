@@ -241,7 +241,7 @@ namespace FlaxEngine.GUI
         /// Opens the group.
         /// </summary>
         /// <param name="animate">Enable/disable animation feature.</param>
-        public void Open(bool animate = true)
+        public void Open(bool animate = false)
         {
             // Check if state will change
             if (_isClosed)
@@ -265,7 +265,7 @@ namespace FlaxEngine.GUI
         /// Closes the group.
         /// </summary>
         /// <param name="animate">Enable/disable animation feature.</param>
-        public void Close(bool animate = true)
+        public void Close(bool animate = false)
         {
             // Check if state will change
             if (!_isClosed)
@@ -291,9 +291,9 @@ namespace FlaxEngine.GUI
         public void Toggle()
         {
             if (_isClosed)
-                Open();
+                Open(true);
             else
-                Close();
+                Close(true);
         }
 
         /// <inheritdoc />

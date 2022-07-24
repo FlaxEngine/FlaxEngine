@@ -14,6 +14,8 @@ namespace FlaxEditor.CustomEditors.Dedicated
     public class ParticleEffectEditor : ActorEditor
     {
         private bool _isValid;
+        private bool _isActive;
+        private uint _parametersVersion;
 
         private bool IsValid
         {
@@ -54,18 +56,20 @@ namespace FlaxEditor.CustomEditors.Dedicated
             _isValid = IsValid;
             if (!_isValid)
                 return;
+            var effect = (ParticleEffect)Values[0];
+            _parametersVersion = effect.ParametersVersion;
+            _isActive = effect.IsActive;
 
             // Show all effect parameters grouped by the emitter track name
-            var effect = (ParticleEffect)Values[0];
             var groups = layout.Group("Parameters");
-            groups.Panel.Open(false);
+            groups.Panel.Open();
             var parameters = effect.Parameters;
             var parametersGroups = parameters.GroupBy(x => x.EmitterIndex);
             foreach (var parametersGroup in parametersGroups)
             {
                 var trackName = parametersGroup.First().TrackName;
                 var group = groups.Group(trackName);
-                group.Panel.Open(false);
+                group.Panel.Open();
 
                 var data = SurfaceUtils.InitGraphParameters(parametersGroup);
                 SurfaceUtils.DisplayGraphParameters(group, data, ParameterGet, ParameterSet, Values, ParameterDefaultValue);
@@ -73,15 +77,32 @@ namespace FlaxEditor.CustomEditors.Dedicated
         }
 
         /// <inheritdoc />
-        public override void Refresh()
+        internal override void RefreshRootChild()
         {
+            var effect = (ParticleEffect)Values[0];
+            if (effect == null)
+            {
+                base.RefreshRootChild();
+                return;
+            }
+
+            // Custom refreshing that handles particle effect parameters list editing during refresh (eg. effect gets disabled)
             if (_isValid != IsValid)
             {
                 RebuildLayout();
                 return;
             }
-
-            base.Refresh();
+            Refresh();
+            var parameters = effect.Parameters;
+            for (int i = 0; i < ChildrenEditors.Count; i++)
+            {
+                if (_isActive != effect.IsActive || _parametersVersion != effect.ParametersVersion)
+                {
+                    RebuildLayout();
+                    return;
+                }
+                ChildrenEditors[i].RefreshInternal();
+            }
         }
     }
 }
