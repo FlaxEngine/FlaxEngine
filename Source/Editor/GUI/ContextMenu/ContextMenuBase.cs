@@ -1,5 +1,6 @@
 // Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
+using System.Collections.Generic;
 using FlaxEngine;
 using FlaxEngine.Assertions;
 using FlaxEngine.GUI;
@@ -87,6 +88,11 @@ namespace FlaxEditor.GUI.ContextMenu
         /// Gets a value indicating whether this context menu is a sub-menu. Sub menus are treated like child context menus of the other menu (eg. hierarchy).
         /// </summary>
         public bool IsSubMenu => _isSubMenu;
+
+        /// <summary>
+        /// External dialog popups opened within the context window (eg. color picker) that should preserve context menu visibility (prevent from closing context menu).
+        /// </summary>
+        public List<Window> ExternalPopups = new List<Window>();
 
         /// <summary>
         /// Initializes a new instance of the <see cref="ContextMenuBase"/> class.
@@ -311,6 +317,34 @@ namespace FlaxEditor.GUI.ContextMenu
             // Nothing to do
         }
 
+        /// <summary>
+        /// Returns true if context menu is in foreground (eg. context window or any child window has user focus or user opened additional popup within this context).
+        /// </summary>
+        protected virtual bool IsForeground
+        {
+            get
+            {
+                // Any external popup is focused
+                foreach (var externalPopup in ExternalPopups)
+                {
+                    if (externalPopup && externalPopup.IsForegroundWindow)
+                        return true;
+                }
+
+                // Any context menu window is focused
+                var anyForeground = false;
+                var c = this;
+                while (!anyForeground && c != null)
+                {
+                    if (c._window != null && c._window.IsForegroundWindow)
+                        anyForeground = true;
+                    c = c._childCM;
+                }
+
+                return anyForeground;
+            }
+        }
+
         private void OnWindowLostFocus()
         {
             // Skip for parent menus (child should handle lost of focus)
@@ -354,20 +388,9 @@ namespace FlaxEditor.GUI.ContextMenu
             base.Update(deltaTime);
 
             // Let root context menu to check if none of the popup windows
-            if (_parentCM == null)
+            if (_parentCM == null && !IsForeground)
             {
-                var anyForeground = false;
-                var c = this;
-                while (!anyForeground && c != null)
-                {
-                    if (c._window != null && c._window.IsForegroundWindow)
-                        anyForeground = true;
-                    c = c._childCM;
-                }
-                if (!anyForeground)
-                {
-                    Hide();
-                }
+                Hide();
             }
         }
 

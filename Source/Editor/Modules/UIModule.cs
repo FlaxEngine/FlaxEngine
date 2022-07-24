@@ -398,9 +398,9 @@ namespace FlaxEditor.Modules
             var dialog = new ColorPickerDialog(initialValue, colorChanged, pickerClosed, useDynamicEditing);
             dialog.Show(targetControl);
 
-            // Place dialog nearby the target control
             if (targetControl != null)
             {
+                // Place dialog nearby the target control
                 var targetControlDesktopCenter = targetControl.PointToScreen(targetControl.Size * 0.5f);
                 var desktopSize = Platform.GetMonitorBounds(targetControlDesktopCenter);
                 var pos = targetControlDesktopCenter + new Float2(10.0f, -dialog.Height * 0.5f);
@@ -411,6 +411,18 @@ namespace FlaxEditor.Modules
                 var desktopBounds = Platform.VirtualDesktopBounds;
                 pos = Float2.Clamp(pos, desktopBounds.UpperLeft, desktopBounds.BottomRight - dialog.Size);
                 dialog.RootWindow.Window.Position = pos;
+
+                // Register for context menu (prevent auto-closing context menu when selecting color)
+                var c = targetControl;
+                while (c != null)
+                {
+                    if (c is ContextMenuBase cm)
+                    {
+                        cm.ExternalPopups.Add(dialog.RootWindow?.Window);
+                        break;
+                    }
+                    c = c.Parent;
+                }
             }
 
             return dialog;
