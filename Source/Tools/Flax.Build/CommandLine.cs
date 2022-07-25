@@ -216,7 +216,7 @@ namespace Flax.Build
             int i = 0;
             foreach (var e in configuration)
             {
-                options[i] = new Option
+                options[i++] = new Option
                 {
                     Name = e.Key,
                     Value = e.Value,
@@ -410,7 +410,7 @@ namespace Flax.Build
             {
                 // Get option from command line
                 var member = e.Value;
-                var option = options.FirstOrDefault(x => string.Equals(x.Name, e.Key.Name, StringComparison.OrdinalIgnoreCase));
+                var option = options.FirstOrDefault(x => x != null && string.Equals(x.Name, e.Key.Name, StringComparison.OrdinalIgnoreCase));
                 if (option == null)
                     continue;
 

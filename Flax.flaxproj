@@ -10,6 +10,7 @@
   "GameTarget": "FlaxGame",
   "EditorTarget": "FlaxEditor",
   "Configuration": {
+    "UseCSharp": true,
     "UseLargeWorlds": false
   }
 }
