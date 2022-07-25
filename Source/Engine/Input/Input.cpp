@@ -862,7 +862,7 @@ void InputService::Update()
         }
 
         // Get axis raw value
-        float axisRawValue;
+        float axisRawValue = 0.0f;
         switch (config.Axis)
         {
         case InputAxisType::MouseX:
@@ -892,8 +892,17 @@ void InputService::Update()
         case InputAxisType::GamepadRightTrigger:
             axisRawValue = Input::GetGamepadAxis(config.Gamepad, GamepadAxis::RightTrigger);
             break;
-        default:
-            axisRawValue = 0.0f;
+        case InputAxisType::GamepadDPadX:
+            if (Input::GetGamepadButton(config.Gamepad, GamepadButton::DPadRight))
+                axisRawValue = 1;
+            else if (Input::GetGamepadButton(config.Gamepad, GamepadButton::DPadLeft))
+                axisRawValue = -1;
+            break;
+        case InputAxisType::GamepadDPadY:
+            if (Input::GetGamepadButton(config.Gamepad, GamepadButton::DPadUp))
+                axisRawValue = 1;
+            else if (Input::GetGamepadButton(config.Gamepad, GamepadButton::DPadDown))
+                axisRawValue = -1;
             break;
         }
 

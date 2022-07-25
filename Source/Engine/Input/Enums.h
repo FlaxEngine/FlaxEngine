@@ -358,4 +358,14 @@ API_ENUM() enum class InputAxisType
     /// The keyboard only mode. For key inputs.
     /// </summary>
     KeyboardOnly = 9,
+
+    /// <summary>
+    /// Pad X axis - left/right (DPad / Directional Pad).
+    /// </summary>
+    GamepadDPadX = 10,
+
+    /// <summary>
+    /// Pad Y axis - up/down (DPad / Directional Pad).
+    /// </summary>
+    GamepadDPadY = 11,
 };
