@@ -1253,6 +1253,8 @@ namespace FlaxEditor.Viewport
                     }
                     moveDelta.Normalize();
                     moveDelta *= _movementSpeed;
+                    if (FlaxEngine.Input.GamepadsCount > 0)
+                        moveDelta *= Mathf.Remap(GetGamepadAxis(GamepadAxis.RightTrigger), 0, 1, 1, 4.0f);
 
                     // Update
                     moveDelta *= dt * (60.0f * 4.0f);
