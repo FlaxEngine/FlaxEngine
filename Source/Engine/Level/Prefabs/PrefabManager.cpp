@@ -39,10 +39,8 @@ PrefabManagerService PrefabManagerServiceInstance;
 
 Actor* PrefabManager::SpawnPrefab(Prefab* prefab)
 {
-    auto scene = Level::GetScene(0);
-    if (!scene)
-        return nullptr;
-    return SpawnPrefab(prefab, scene, nullptr);
+    Actor* parent = Level::Scenes.Count() != 0 ? Level::Scenes[0] : nullptr;
+    return SpawnPrefab(prefab, parent, nullptr);
 }
 
 Actor* PrefabManager::SpawnPrefab(Prefab* prefab, const Vector3& position)
