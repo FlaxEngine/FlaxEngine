@@ -31,9 +31,9 @@ void SphereCollider::DrawPhysicsDebug(RenderView& view)
     if (!view.CullingFrustum.Intersects(sphere))
         return;
     if (view.Mode == ViewMode::PhysicsColliders && !GetIsTrigger())
-        DebugDraw::DrawSphere(_sphere, _staticActor ? Color::CornflowerBlue : Color::Orchid, 0, true);
+        DEBUG_DRAW_SPHERE(_sphere, _staticActor ? Color::CornflowerBlue : Color::Orchid, 0, true);
     else
-        DebugDraw::DrawWireSphere(_sphere, Color::GreenYellow * 0.8f, 0, true);
+        DEBUG_DRAW_WIRE_SPHERE(_sphere, Color::GreenYellow * 0.8f, 0, true);
 }
 
 void SphereCollider::OnDebugDrawSelected()

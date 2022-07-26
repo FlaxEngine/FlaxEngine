@@ -838,7 +838,7 @@ bool TerrainPatch::SetupHeightMap(int32 heightMapLength, const float* heightMap,
             return true;
         }
     }
-#if USE_EDITOR
+#if COMPILE_WITH_ASSETS_IMPORTER
     else
     {
         // Import data to the asset file
@@ -897,7 +897,7 @@ bool TerrainPatch::SetupHeightMap(int32 heightMapLength, const float* heightMap,
         return true;
     }
 
-#if USE_EDITOR
+#if COMPILE_WITH_ASSETS_IMPORTER
     if (!useVirtualStorage)
     {
         // Import data to the asset file
@@ -1072,7 +1072,7 @@ bool TerrainPatch::SetupSplatMap(int32 index, int32 splatMapLength, const Color3
             return true;
         }
     }
-#if USE_EDITOR
+#if COMPILE_WITH_ASSETS_IMPORTER
     else
     {
         // Import data to the asset file
@@ -1659,7 +1659,7 @@ bool TerrainPatch::ModifySplatMap(int32 index, const Color32* samples, const Int
                 return true;
             }
         }
-#if USE_EDITOR
+#if COMPILE_WITH_ASSETS_IMPORTER
         else
         {
             // Prepare asset path for the non-virtual asset
@@ -2254,7 +2254,7 @@ void TerrainPatch::DrawPhysicsDebug(RenderView& view)
 
     if (view.Mode == ViewMode::PhysicsColliders)
     {
-        DebugDraw::DrawTriangles(GetCollisionTriangles(), Color::DarkOliveGreen, 0, true);
+        DEBUG_DRAW_TRIANGLES(GetCollisionTriangles(), Color::DarkOliveGreen, 0, true);
     }
     else
     {
@@ -2264,7 +2264,7 @@ void TerrainPatch::DrawPhysicsDebug(RenderView& view)
         {
             if (_debugLines.IsEmpty())
                 CacheDebugLines();
-            DebugDraw::DrawLines(_debugLines, world, Color::GreenYellow * 0.8f, 0, true);
+            DEBUG_DRAW_LINES(_debugLines, world, Color::GreenYellow * 0.8f, 0, true);
         }
     }
 }

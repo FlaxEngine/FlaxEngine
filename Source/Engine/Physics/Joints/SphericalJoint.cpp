@@ -31,6 +31,7 @@ void SphericalJoint::SetLimit(const LimitConeRange& value)
 #if USE_EDITOR
 
 #include "Engine/Debug/DebugDraw.h"
+#include "Engine/Core/Math/Color.h"
 
 void SphericalJoint::OnDebugDrawSelected()
 {
@@ -38,7 +39,7 @@ void SphericalJoint::OnDebugDrawSelected()
     const Vector3 target = GetTargetPosition();
     const float size = 15.0f;
     const Color color = Color::Green.AlphaMultiplied(0.6f);
-    DebugDraw::DrawWireArrow(source, GetOrientation(), size / 100.0f * 0.5f, Color::Red, 0, false);
+    DEBUG_DRAW_WIRE_ARROW(source, GetOrientation(), size / 100.0f * 0.5f, Color::Red, 0, false);
     if (_flags & SphericalJointFlag::Limit)
     {
         DEBUG_DRAW_CONE(source, GetOrientation(), size, _limit.YLimitAngle * DegreesToRadians, _limit.ZLimitAngle * DegreesToRadians, color, 0, false);

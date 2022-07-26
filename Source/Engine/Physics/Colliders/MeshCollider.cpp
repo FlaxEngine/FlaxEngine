@@ -77,11 +77,11 @@ void MeshCollider::DrawPhysicsDebug(RenderView& view)
             Array<Float3>* vertexBuffer;
             Array<int32>* indexBuffer;
             CollisionData->GetDebugTriangles(vertexBuffer, indexBuffer);
-            DebugDraw::DrawTriangles(*vertexBuffer, *indexBuffer, _transform.GetWorld(), _staticActor ? Color::CornflowerBlue : Color::Orchid, 0, true);
+            DEBUG_DRAW_TRIANGLES_EX2(*vertexBuffer, *indexBuffer, _transform.GetWorld(), _staticActor ? Color::CornflowerBlue : Color::Orchid, 0, true);
         }
         else
         {
-            DebugDraw::DrawLines(CollisionData->GetDebugLines(), _transform.GetWorld(), Color::GreenYellow * 0.8f, 0, true);
+            DEBUG_DRAW_LINES(CollisionData->GetDebugLines(), _transform.GetWorld(), Color::GreenYellow * 0.8f, 0, true);
         }
     }
 }

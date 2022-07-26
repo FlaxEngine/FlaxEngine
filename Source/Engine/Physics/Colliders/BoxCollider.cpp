@@ -23,6 +23,7 @@ void BoxCollider::SetSize(const Float3& value)
 #if USE_EDITOR
 
 #include "Engine/Debug/DebugDraw.h"
+#include "Engine/Core/Math/Color.h"
 #include "Engine/Graphics/RenderView.h"
 
 void BoxCollider::DrawPhysicsDebug(RenderView& view)
@@ -31,9 +32,9 @@ void BoxCollider::DrawPhysicsDebug(RenderView& view)
     if (!view.CullingFrustum.Intersects(sphere))
         return;
     if (view.Mode == ViewMode::PhysicsColliders && !GetIsTrigger())
-        DebugDraw::DrawBox(_bounds, _staticActor ? Color::CornflowerBlue : Color::Orchid, 0, true);
+        DEBUG_DRAW_BOX(_bounds, _staticActor ? Color::CornflowerBlue : Color::Orchid, 0, true);
     else
-        DebugDraw::DrawWireBox(_bounds, Color::GreenYellow * 0.8f, 0, true);
+        DEBUG_DRAW_WIRE_BOX(_bounds, Color::GreenYellow * 0.8f, 0, true);
 }
 
 void BoxCollider::OnDebugDraw()

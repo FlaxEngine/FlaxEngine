@@ -52,6 +52,7 @@ float HingeJoint::GetCurrentVelocity() const
 #if USE_EDITOR
 
 #include "Engine/Debug/DebugDraw.h"
+#include "Engine/Core/Math/Color.h"
 
 void HingeJoint::OnDebugDrawSelected()
 {
@@ -62,8 +63,8 @@ void HingeJoint::OnDebugDrawSelected()
     const Quaternion targetRotation = GetTargetOrientation() * xRotation;
     const float size = 15.0f;
     const Color color = Color::Green.AlphaMultiplied(0.6f);
-    DebugDraw::DrawWireArrow(source, sourceRotation, size / 100.0f * 0.5f, Color::Red, 0, false);
-    DebugDraw::DrawWireArrow(target, targetRotation, size / 100.0f * 0.5f, Color::Blue, 0, false);
+    DEBUG_DRAW_WIRE_ARROW(source, sourceRotation, size / 100.0f * 0.5f, Color::Red, 0, false);
+    DEBUG_DRAW_WIRE_ARROW(target, targetRotation, size / 100.0f * 0.5f, Color::Blue, 0, false);
     if (_flags & HingeJointFlag::Limit)
     {
         const float upper = Math::Max(_limit.Upper, _limit.Lower);

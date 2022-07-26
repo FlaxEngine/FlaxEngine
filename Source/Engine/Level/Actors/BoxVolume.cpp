@@ -27,6 +27,7 @@ void BoxVolume::SetSize(const Vector3& value)
 #if USE_EDITOR
 
 #include "Engine/Debug/DebugDraw.h"
+#include "Engine/Core/Math/Color.h"
 
 Color BoxVolume::GetWiresColor()
 {

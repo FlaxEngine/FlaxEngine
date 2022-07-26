@@ -215,7 +215,7 @@ void NavigationSettings::Apply()
         if (area.Id < DT_MAX_AREAS)
         {
             NavMeshRuntime::NavAreasCosts[area.Id] = area.Cost;
-#if USE_EDITOR
+#if COMPILE_WITH_DEBUG_DRAW
             NavMeshRuntime::NavAreasColors[area.Id] = area.Color;
 #endif
         }

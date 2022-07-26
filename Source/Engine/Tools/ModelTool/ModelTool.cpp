@@ -390,7 +390,8 @@ bool ModelTool::ImportData(const String& path, ImportedModelData& data, Options&
 	if (ImportDataOpenFBX(importPath.Get(), data, options, errorMsg))
 		return true;
 #else
-#error Cannot use Model Tool without any importing backend!
+    LOG(Error, "Compiled without model importing backend.");
+    return true;
 #endif
 
     // Remove temporary file
@@ -809,6 +810,7 @@ bool ModelTool::ImportModel(const String& path, ModelData& meshData, Options& op
             } while (importedFileNames.Contains(filename));
         }
         importedFileNames.Add(filename);
+#if COMPILE_WITH_ASSETS_IMPORTER
         auto assetPath = autoImportOutput / filename + ASSET_FILES_EXTENSION_WITH_DOT;
         TextureTool::Options textureOptions;
         switch (texture.Type)
@@ -825,6 +827,7 @@ bool ModelTool::ImportModel(const String& path, ModelData& meshData, Options& op
         default: ;
         }
         AssetsImportingManager::ImportIfEdited(texture.FilePath, assetPath, texture.AssetID, &textureOptions);
+#endif
     }
 
     // Prepare material
@@ -854,6 +857,7 @@ bool ModelTool::ImportModel(const String& path, ModelData& meshData, Options& op
             } while (importedFileNames.Contains(filename));
         }
         importedFileNames.Add(filename);
+#if COMPILE_WITH_ASSETS_IMPORTER
         auto assetPath = autoImportOutput / filename + ASSET_FILES_EXTENSION_WITH_DOT;
         CreateMaterial::Options materialOptions;
         materialOptions.Diffuse.Color = material.Diffuse.Color;
@@ -873,6 +877,7 @@ bool ModelTool::ImportModel(const String& path, ModelData& meshData, Options& op
         if (!Math::IsOne(material.Opacity.Value) || material.Opacity.TextureIndex != -1)
             materialOptions.Info.BlendMode = MaterialBlendMode::Transparent;
         AssetsImportingManager::Create(AssetsImportingManager::CreateMaterialTag, assetPath, material.AssetID, &materialOptions);
+#endif
     }
 
     // Prepare import transformation
@@ -953,6 +958,7 @@ bool ModelTool::ImportModel(const String& path, ModelData& meshData, Options& op
             }
             if (collisionModel.LODs.HasItems())
             {
+#if COMPILE_WITH_PHYSICS_COOKING
                 // Create collision
                 CollisionCooking::Argument arg;
                 arg.Type = CollisionDataType::TriangleMesh;
@@ -962,6 +968,7 @@ bool ModelTool::ImportModel(const String& path, ModelData& meshData, Options& op
                 {
                     LOG(Error, "Failed to create collision mesh.");
                 }
+#endif
             }
         }
 

@@ -16,6 +16,7 @@
 #if USE_EDITOR
 #include "ParticleEmitterFunction.h"
 #include "Engine/ShadersCompilation/Config.h"
+#include "Engine/Particles/Graph/GPU/ParticleEmitterGraph.GPU.h"
 #if BUILD_DEBUG
 #include "Engine/Engine/Globals.h"
 #endif
@@ -26,7 +27,6 @@
 #include "Engine/Graphics/Shaders/Cache/ShaderStorage.h"
 #endif
 #if COMPILE_WITH_PARTICLE_GPU_GRAPH && COMPILE_WITH_SHADER_COMPILER
-#include "Engine/Particles/Graph/GPU/ParticleEmitterGraph.GPU.h"
 #include "Engine/Utilities/Encryption.h"
 #endif
 
