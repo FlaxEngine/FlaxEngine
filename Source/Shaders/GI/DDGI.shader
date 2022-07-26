@@ -447,10 +447,10 @@ void CS_UpdateProbes(uint3 GroupThreadId : SV_GroupThreadID, uint3 GroupId : SV_
     float3 irradianceDelta = result.rgb - previous;
     float irradianceDeltaMax = Max3(abs(irradianceDelta));
     float irradianceDeltaLen = length(irradianceDelta);
-    if (irradianceDeltaMax > 0.2f)
+    if (irradianceDeltaMax > 0.5f)
     {
         // Reduce history weight after significant lighting change
-        historyWeight = max(historyWeight - 0.9f, 0.0f);
+        historyWeight = historyWeight * 0.5f;
     }
     if (irradianceDeltaLen > 2.0f)
     {
