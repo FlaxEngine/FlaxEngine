@@ -21,11 +21,13 @@
 #include "Engine/Engine/Globals.h"
 #include "Engine/Profiler/ProfilerCPU.h"
 #include "Engine/Streaming/StreamingSettings.h"
+#if FLAX_TESTS
+#include "Engine/Platform/FileSystem.h"
+#endif
 
 class GameSettingsService : public EngineService
 {
 public:
-
     GameSettingsService()
         : EngineService(TEXT("GameSettings"), -70)
     {
@@ -49,7 +51,7 @@ IMPLEMENT_ENGINE_SETTINGS_GETTER(StreamingSettings, Streaming);
 #if !USE_EDITOR
 #if PLATFORM_WINDOWS
 IMPLEMENT_ENGINE_SETTINGS_GETTER(WindowsPlatformSettings, WindowsPlatform);
-#elif PLATFORM_UWP 
+#elif PLATFORM_UWP
 IMPLEMENT_ENGINE_SETTINGS_GETTER(UWPPlatformSettings, UWPPlatform);
 #elif PLATFORM_LINUX
 IMPLEMENT_ENGINE_SETTINGS_GETTER(LinuxPlatformSettings, LinuxPlatform);
@@ -83,6 +85,11 @@ GameSettings* GameSettings::Get()
         // It may be missing in editor during dev but must be ready in the build game.
         PROFILE_CPU();
         const auto assetPath = Globals::ProjectContentFolder / TEXT("GameSettings.json");
+#if FLAX_TESTS
+        // Silence missing GameSettings during test run before Editor creates it (not important)
+        if (!FileSystem::FileExists(assetPath))
+            return nullptr;
+#endif
         GameSettingsAsset = Content::LoadAsync<JsonAsset>(assetPath);
         if (GameSettingsAsset == nullptr)
         {

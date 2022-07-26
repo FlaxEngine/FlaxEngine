@@ -84,6 +84,14 @@ int32 Engine::Main(const Char* cmdLine)
         return -1;
     }
 
+#if FLAX_TESTS
+    // Configure engine for test running environment
+    CommandLine::Options.Headless = true;
+    CommandLine::Options.Null = true;
+    CommandLine::Options.Mute = true;
+    CommandLine::Options.Std = true;
+#endif
+
     if (Platform::Init())
     {
         Platform::Fatal(TEXT("Cannot init platform."));
@@ -101,6 +109,11 @@ int32 Engine::Main(const Char* cmdLine)
 #endif
     StringUtils::PathRemoveRelativeParts(Globals::StartupFolder);
     FileSystem::NormalizePath(Globals::BinariesFolder);
+
+    FileSystem::GetSpecialFolderPath(SpecialFolder::Temporary, Globals::TemporaryFolder);
+    if (Globals::TemporaryFolder.IsEmpty())
+        Platform::Fatal(TEXT("Failed to gather temporary folder directory."));
+    Globals::TemporaryFolder /= Guid::New().ToString(Guid::FormatType::D);
 
     // Load game info or project info
     {
@@ -512,12 +525,6 @@ void EngineImpl::InitLog()
 
 void EngineImpl::InitPaths()
 {
-    // Prepare temp folder path
-    FileSystem::GetSpecialFolderPath(SpecialFolder::Temporary, Globals::TemporaryFolder);
-    if (Globals::TemporaryFolder.IsEmpty())
-        Platform::Fatal(TEXT("Failed to gather temporary folder directory."));
-    Globals::TemporaryFolder /= Guid::New().ToString(Guid::FormatType::D);
-
     // Cache other global paths
     FileSystem::GetSpecialFolderPath(SpecialFolder::LocalAppData, Globals::ProductLocalFolder);
     if (Globals::ProductLocalFolder.IsEmpty())
@@ -551,7 +558,7 @@ void EngineImpl::InitPaths()
     if (!Globals::StartupFolder.IsANSI())
         Platform::Fatal(TEXT("Cannot start application in directory which name contains non-ANSI characters."));
 
-#if !PLATFORM_SWITCH
+#if !PLATFORM_SWITCH && !FLAX_TESTS
     // Setup directories
     if (FileSystem::DirectoryExists(Globals::TemporaryFolder))
         FileSystem::DeleteDirectory(Globals::TemporaryFolder);

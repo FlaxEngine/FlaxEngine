@@ -2,13 +2,46 @@
 
 #if PLATFORM_WINDOWS || PLATFORM_LINUX || PLATFORM_MAC
 
+#include "Engine/Core/Log.h"
+#include "Engine/Engine/Engine.h"
+#include "Engine/Engine/EngineService.h"
+#include "Engine/Scripting/Scripting.h"
+#include "Editor/Scripting/ScriptsBuilder.h"
+
 #define CATCH_CONFIG_RUNNER
 #include <ThirdParty/catch2/catch.hpp>
 
-int main(int argc, char* argv[])
+class TestsRunnerService : public EngineService
 {
-    int result = Catch::Session().run(argc, argv);
-    return result;
+public:
+    TestsRunnerService()
+        : EngineService(TEXT("TestsRunnerService"), 10000)
+    {
+    }
+
+    void Update() override;
+};
+
+TestsRunnerService TestsRunnerServiceInstance;
+
+void TestsRunnerService::Update()
+{
+    // Wait for Editor to be ready for running tests (eg. scripting loaded)
+    if (!ScriptsBuilder::IsReady() ||
+        !Scripting::IsEveryAssemblyLoaded() ||
+        !Scripting::HasGameModulesLoaded())
+        return;
+
+    // Runs tests
+    Log::Logger::WriteFloor();
+    LOG(Info, "Running Flax Tests...");
+    const int result = Catch::Session().run();
+    if (result == 0)
+        LOG(Info, "Result: {0}", result);
+    else
+        LOG(Error, "Result: {0}", result);
+    Log::Logger::WriteFloor();
+    Engine::RequestExit(result);
 }
 
 #endif

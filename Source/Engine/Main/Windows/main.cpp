@@ -27,8 +27,17 @@ __declspec(dllexport) int32 AmdPowerXpressRequestHighPerformance = 1;
 
 extern LONG CALLBACK SehExceptionHandler(EXCEPTION_POINTERS* ep);
 
+#if FLAX_TESTS
+int main(int argc, char* argv[])
+#else
 int APIENTRY wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPTSTR lpCmdLine, int nCmdShow)
+#endif
 {
+#if FLAX_TESTS
+    HINSTANCE hInstance = GetModuleHandle(NULL);
+    LPTSTR lpCmdLine = GetCommandLineW();
+#endif
+
 #ifdef USE_VS_MEM_LEAKS_CHECK
     // Memory leaks detect inside VS
     int flag = _CrtSetDbgFlag(_CRTDBG_REPORT_FLAG);

@@ -35,4 +35,4 @@ jobs:
     - name: Test UseLargeWorlds
       run: |
         ./Development/Scripts/Linux/CallBuildTool.sh -build -log -arch=x64 -platform=Linux -configuration=Development -buildtargets=FlaxTestsTarget -UseLargeWorlds=true
-        Binaries/Tests/Linux/x64/Development/FlaxTests
+        Binaries/Editor/Development/Linux/FlaxTests

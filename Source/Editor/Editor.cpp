@@ -53,6 +53,7 @@ bool Editor::CheckProjectUpgrade()
     int32 lastMajor = FLAXENGINE_VERSION_MAJOR;
     int32 lastMinor = FLAXENGINE_VERSION_MINOR;
     int32 lastBuild = FLAXENGINE_VERSION_BUILD;
+    if (FileSystem::FileExists(versionFilePath))
     {
         auto file = FileReadStream::Open(versionFilePath);
         if (file)
@@ -77,10 +78,10 @@ bool Editor::CheckProjectUpgrade()
 
             Delete(file);
         }
-        else
-        {
-            LOG(Warning, "Missing version cache file");
-        }
+    }
+    else
+    {
+        LOG(Warning, "Missing version cache file");
     }
 
     // Check if project is in the old, deprecated layout
@@ -364,6 +365,12 @@ int32 Editor::LoadProduct()
     // Flax Editor product
     Globals::ProductName = TEXT("Flax Editor");
     Globals::CompanyName = TEXT("Flax");
+
+#if FLAX_TESTS
+    // Flax Tests use auto-generated temporary project
+    CommandLine::Options.Project = Globals::TemporaryFolder / TEXT("Project");
+    CommandLine::Options.NewProject = true;
+#endif
 
     // Gather project directory from the command line
     String projectPath = CommandLine::Options.Project.TrimTrailing();
