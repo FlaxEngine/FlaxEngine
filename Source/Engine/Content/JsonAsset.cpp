@@ -45,6 +45,29 @@ String JsonAssetBase::GetData() const
     return String((const char*)buffer.GetString(), (int32)buffer.GetSize());
 }
 
+bool JsonAssetBase::Init(const StringView& dataTypeName, const StringAnsiView& dataJson)
+{
+    CHECK_RETURN(IsVirtual(), true);
+    unload(true);
+    DataTypeName = dataTypeName;
+    DataEngineBuild = FLAXENGINE_VERSION_BUILD;
+
+    // Parse json document
+    {
+        PROFILE_CPU_NAMED("Json.Parse");
+        Document.Parse(dataJson.Get(), dataJson.Length());
+    }
+    if (Document.HasParseError())
+    {
+        Log::JsonParseException(Document.GetParseError(), Document.GetErrorOffset());
+        return true;
+    }
+    Data = &Document;
+
+    // Load asset-specific data
+    return loadAsset() != LoadResult::Ok;
+}
+
 const String& JsonAssetBase::GetPath() const
 {
 #if USE_EDITOR
@@ -114,6 +137,9 @@ void JsonAssetBase::GetReferences(Array<Guid>& output) const
 
 Asset::LoadResult JsonAssetBase::loadAsset()
 {
+    if (IsVirtual())
+        return LoadResult::Ok;
+
     // Load data (raw json file in editor, cooked asset in build game)
 #if USE_EDITOR
     BytesContainer data;

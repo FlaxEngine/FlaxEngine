@@ -50,6 +50,15 @@ public:
     /// </summary>
     API_PROPERTY() String GetData() const;
 
+    /// <summary>
+    /// Initializes the virtual Json asset with custom data.
+    /// </summary>
+    /// <remarks>Can be used only for virtual assets created at runtime.</remarks>
+    /// <param name="dataTypeName">The data type name from the header. Allows to recognize the data type.</param>
+    /// <param name="dataJson">The Json with serialized data.</param>
+    /// <returns>True if failed, otherwise false.</returns>
+    API_FUNCTION() bool Init(const StringView& dataTypeName, const StringAnsiView& dataJson);
+
 #if USE_EDITOR
     /// <summary>
     /// Parses Json string to find any object references inside it. It can produce list of references to assets and/or scene objects. Supported only in Editor.

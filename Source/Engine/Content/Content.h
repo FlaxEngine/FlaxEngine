@@ -358,6 +358,7 @@ private:
     static void tryCallOnLoaded(Asset* asset);
     static void onAssetLoaded(Asset* asset);
     static void onAssetUnload(Asset* asset);
+    static void onAssetChangeId(Asset* asset, const Guid& oldId, const Guid& newId);
     static Asset* load(const Guid& id, const ScriptingTypeHandle& type, AssetInfo& assetInfo);
 
 private:

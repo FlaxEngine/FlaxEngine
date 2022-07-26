@@ -661,10 +661,16 @@ bool Prefab::ApplyAll(Actor* targetActor)
 
         // Assign references to the prefabs
         allPrefabs.EnsureCapacity(Math::RoundUpToPowerOf2(Math::Max(30, nestedPrefabIds.Count())));
+        const Dictionary<Guid, Asset*, HeapAllocation>& assetsRaw = Content::GetAssetsRaw();
+        for (auto& e : assetsRaw)
+        {
+            if (e.Value->GetTypeHandle() == Prefab::TypeInitializer)
+                nestedPrefabIds.AddUnique(e.Key);
+        }
         for (int32 i = 0; i < nestedPrefabIds.Count(); i++)
         {
             const auto nestedPrefab = Content::LoadAsync<Prefab>(nestedPrefabIds[i]);
-            if (nestedPrefab && nestedPrefab != this)
+            if (nestedPrefab && nestedPrefab != this && (nestedPrefab->Flags & ObjectFlags::WasMarkedToDelete) == 0)
             {
                 allPrefabs.Add(nestedPrefab);
             }
@@ -1079,6 +1085,10 @@ bool Prefab::UpdateInternal(const Array<SceneObject*>& defaultInstanceObjects, r
     LOG(Info, "Updating prefab data");
 
     // Reload prefab data
+    if (IsVirtual())
+    {
+        return Init(TypeName, StringAnsiView(tmpBuffer.GetString(), (int32)tmpBuffer.GetSize()));
+    }
 #if 1 // Set to 0 to use memory-only reload that does not modifies the source file - useful for testing and debugging prefabs apply
 #if COMPILE_WITH_ASSETS_IMPORTER
     Locker.Unlock();

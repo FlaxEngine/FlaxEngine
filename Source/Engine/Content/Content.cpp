@@ -460,12 +460,16 @@ Asset* Content::LoadAsync(const StringView& path, const ScriptingTypeHandle& typ
 Array<Asset*> Content::GetAssets()
 {
     Array<Asset*> assets;
+    AssetsLocker.Lock();
     Assets.GetValues(assets);
+    AssetsLocker.Unlock();
     return assets;
 }
 
 const Dictionary<Guid, Asset*>& Content::GetAssetsRaw()
 {
+    AssetsLocker.Lock();
+    AssetsLocker.Unlock();
     return Assets;
 }
 
@@ -860,6 +864,13 @@ void Content::onAssetUnload(Asset* asset)
     Assets.Remove(asset->GetID());
     UnloadQueue.Remove(asset);
     LoadedAssetsToInvoke.Remove(asset);
+}
+
+void Content::onAssetChangeId(Asset* asset, const Guid& oldId, const Guid& newId)
+{
+    ScopeLock locker(AssetsLocker);
+    Assets.Remove(oldId);
+    Assets.Add(newId, asset);
 }
 
 bool Content::IsAssetTypeIdInvalid(const ScriptingTypeHandle& type, const ScriptingTypeHandle& assetType)

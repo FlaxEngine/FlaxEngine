@@ -230,7 +230,8 @@ void Asset::OnDeleteObject()
         Content::GetRegistry()->DeleteAsset(id, nullptr);
 
         // Delete file
-        Content::deleteFileSafety(path, id);
+        if (!IsVirtual())
+            Content::deleteFileSafety(path, id);
     }
 #endif
 }
@@ -288,8 +289,13 @@ void Asset::OnScriptingDispose()
 
 void Asset::ChangeID(const Guid& newId)
 {
-    // Don't allow to change asset ids
-    CRASH;
+    // Only virtual asset can change ID
+    if (!IsVirtual())
+        CRASH;
+
+    const Guid oldId = _id;
+    ManagedScriptingObject::ChangeID(newId);
+    Content::onAssetChangeId(this, oldId, newId);
 }
 
 bool Asset::LastLoadFailed() const
