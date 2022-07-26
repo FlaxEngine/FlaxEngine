@@ -57,14 +57,14 @@ void AssetReferenceBase::OnSet(Asset* asset)
 
 void AssetReferenceBase::OnLoaded(Asset* asset)
 {
-    if (this == nullptr || _asset != asset)
+    if (_asset != asset)
         return;
     Loaded();
 }
 
 void AssetReferenceBase::OnUnloaded(Asset* asset)
 {
-    if (this == nullptr || _asset != asset)
+    if (_asset != asset)
         return;
     Unload();
     OnSet(nullptr);
