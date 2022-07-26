@@ -90,7 +90,7 @@ public:
     /// Gets the spot light's outer cone angle (in degrees)
     /// </summary>
     /// <returns>Outer angle (in degrees)</returns>
-    API_PROPERTY(Attributes="EditorOrder(22), DefaultValue(43.0f), EditorDisplay(\"Light\"), Limit(1, 80, 0.1f)")
+    API_PROPERTY(Attributes="EditorOrder(22), DefaultValue(43.0f), EditorDisplay(\"Light\"), Limit(1, 89, 0.1f)")
     FORCE_INLINE float GetOuterConeAngle() const
     {
         return _outerConeAngle;
@@ -106,7 +106,7 @@ public:
     /// Sets the spot light's inner cone angle (in degrees)
     /// </summary>
     /// <returns>Inner angle (in degrees)</returns>
-    API_PROPERTY(Attributes="EditorOrder(21), DefaultValue(10.0f), EditorDisplay(\"Light\"), Limit(1, 80, 0.1f)")
+    API_PROPERTY(Attributes="EditorOrder(21), DefaultValue(10.0f), EditorDisplay(\"Light\"), Limit(1, 89, 0.1f)")
     FORCE_INLINE float GetInnerConeAngle() const
     {
         return _innerConeAngle;
