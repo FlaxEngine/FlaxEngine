@@ -230,6 +230,11 @@ bool AudioSource::Is3D() const
     return Clip->Is3D();
 }
 
+void AudioSource::RequestStreamingBuffersUpdate()
+{
+    _needToUpdateStreamingBuffers = true;
+}
+
 void AudioSource::Cleanup()
 {
     _savedState = GetState();
@@ -418,9 +423,8 @@ void AudioSource::Update()
                     _streamingFirstChunk = 0;
 
                     // Stop audio and request buffers re-sync and then play continue
-                    AudioBackend::Source::Stop(this);
-                    RequestStreamingBuffersUpdate();
-                    _isActuallyPlayingSth = false;
+                    Stop();
+                    Play();
                 }
                 else
                 {
