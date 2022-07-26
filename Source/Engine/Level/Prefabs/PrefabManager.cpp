@@ -29,7 +29,6 @@ CriticalSection PrefabManager::PrefabsReferencesLocker;
 class PrefabManagerService : public EngineService
 {
 public:
-
     PrefabManagerService()
         : EngineService(TEXT("Prefab Manager"), 110)
     {
@@ -180,6 +179,13 @@ Actor* PrefabManager::SpawnPrefab(Prefab* prefab, Actor* parent, Dictionary<Guid
         return nullptr;
     }
 
+    // Synchronize prefab instances (prefab may have new objects added or some removed so deserialized instances need to synchronize with it)
+    if (withSynchronization)
+    {
+        // TODO: resave and force sync scenes during game cooking so this step could be skipped in game
+        SceneObjectsFactory::SynchronizePrefabInstances(context, prefabSyncData);
+    }
+
     // Prepare parent linkage for prefab root actor
     root->_parent = parent;
     if (parent)
@@ -191,13 +197,6 @@ Actor* PrefabManager::SpawnPrefab(Prefab* prefab, Actor* parent, Dictionary<Guid
         auto obj = sceneObjects->At(i);
         if (obj)
             obj->Initialize();
-    }
-
-    // Synchronize prefab instances (prefab may have new objects added or some removed so deserialized instances need to synchronize with it)
-    if (withSynchronization)
-    {
-        // TODO: resave and force sync scenes during game cooking so this step could be skipped in game
-        SceneObjectsFactory::SynchronizePrefabInstances(context, prefabSyncData);
     }
 
     // Delete objects without parent or with invalid linkage to the prefab

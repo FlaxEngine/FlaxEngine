@@ -418,8 +418,8 @@ void SceneObjectsFactory::SynchronizeNewPrefabInstances(Context& context, Prefab
                 const Guid jParentId = JsonTools::GetGuid(jData, "ParentID");
                 //if (jParentId == actorParentId)
                 //    break;
-                if (jParentId != actorId)
-                    continue;
+                //if (jParentId != actorId)
+                //    continue;
                 const Guid jPrefabObjectId = JsonTools::GetGuid(jData, "PrefabObjectID");
                 if (jPrefabObjectId != prefabObjectId)
                     continue;
