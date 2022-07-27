@@ -328,7 +328,7 @@ void SceneObjectsFactory::SetupPrefabInstances(Context& context, PrefabSyncData&
         if (!JsonTools::GetGuidIfValid(prefabId, stream, "PrefabID"))
             continue;
         Guid parentId = JsonTools::GetGuid(stream, "ParentID");
-        for (int32 j = 0; j < i; j++)
+        for (int32 j = i - 1; j >= 0; j--)
         {
             // Find instance ID of the parent to this object (use data in json for relationship)
             if (parentId == JsonTools::GetGuid(data.Data[j], "ID") && data.SceneObjects[j])
