@@ -152,6 +152,7 @@ Actor* PrefabManager::SpawnPrefab(Prefab* prefab, Actor* parent, Dictionary<Guid
     {
         // Synchronize new prefab instances (prefab may have new objects added so deserialized instances need to synchronize with it)
         // TODO: resave and force sync prefabs during game cooking so this step could be skipped in game
+        SceneObjectsFactory::SetupPrefabInstances(context, prefabSyncData);
         SceneObjectsFactory::SynchronizeNewPrefabInstances(context, prefabSyncData);
         Scripting::ObjectsLookupIdMapping.Set(&modifier.Value->IdsMapping);
     }

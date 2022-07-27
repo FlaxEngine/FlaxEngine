@@ -26,6 +26,8 @@ public:
         Dictionary<Guid, int32> ObjectToInstance;
 
         Context(ISerializeModifier* modifier);
+
+        void SetupIdsMapping(const SceneObject* obj);
     };
 
     /// <summary>
