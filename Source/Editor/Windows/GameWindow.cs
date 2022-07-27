@@ -78,6 +78,7 @@ namespace FlaxEditor.Windows
                     {
                         var monitorBounds = Platform.GetMonitorBounds(PointToScreen(Size * 0.5f));
                         ShowFloating(monitorBounds.Location + new Float2(200, 200), Float2.Zero, WindowStartPosition.Manual);
+                        rootWindow = RootWindow;
                     }
                     if (rootWindow != null && !rootWindow.IsMaximized)
                         rootWindow.Maximize();
