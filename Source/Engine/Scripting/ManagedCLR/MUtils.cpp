@@ -5,6 +5,7 @@
 #include "MType.h"
 #include "Engine/Core/Log.h"
 #include "Engine/Core/Types/DataContainer.h"
+#include "Engine/Core/Types/Version.h"
 #include "Engine/Core/Math/BoundingBox.h"
 #include "Engine/Core/Math/BoundingSphere.h"
 #include "Engine/Core/Math/Rectangle.h"
@@ -1277,6 +1278,20 @@ void* MUtils::VariantToManagedArgPtr(Variant& value, const MType& type, bool& fa
     }
     failed = true;
     return nullptr;
+}
+
+MonoObject* MUtils::ToManaged(const Version& value)
+{
+    auto obj = mono_object_new(mono_domain_get(), Scripting::FindClassNative("System.Version"));
+    Platform::MemoryCopy((byte*)obj + sizeof(MonoObject), &value, sizeof(Version));
+    return obj;
+}
+
+Version MUtils::ToNative(MonoObject* value)
+{
+    if (value)
+        return *(Version*)((byte*)value + sizeof(MonoObject));
+    return Version();
 }
 
 #endif

@@ -12,6 +12,7 @@
 #include "Engine/Platform/File.h"
 #include "Engine/Debug/DebugLog.h"
 #if USE_EDITOR
+#include "Engine/Level/Level.h"
 #include "Editor/Scripting/ScriptsBuilder.h"
 #endif
 #include "ManagedCLR/MAssembly.h"
@@ -20,7 +21,6 @@
 #include "ManagedCLR/MDomain.h"
 #include "ManagedCLR/MCore.h"
 #include "MException.h"
-#include "Engine/Level/Level.h"
 #include "Engine/Core/ObjectsRemovalService.h"
 #include "Engine/Core/Types/TimeSpan.h"
 #include "Engine/Profiler/ProfilerCPU.h"
@@ -40,7 +40,6 @@ extern void registerFlaxEngineInternalCalls();
 class ScriptingService : public EngineService
 {
 public:
-
     ScriptingService()
         : EngineService(TEXT("Scripting"), -20)
     {
@@ -731,6 +730,48 @@ ScriptingTypeHandle Scripting::FindScriptingType(const StringAnsiView& fullname)
         }
     }
     return ScriptingTypeHandle();
+}
+
+ScriptingObject* Scripting::NewObject(const MClass* type)
+{
+    if (type == nullptr)
+    {
+        LOG(Error, "Invalid type.");
+        return nullptr;
+    }
+    MonoClass* typeClass = type->GetNative();
+
+#if USE_MONO
+    // Get the assembly with that class
+    auto module = ManagedBinaryModule::FindModule(typeClass);
+    if (module == nullptr)
+    {
+        LOG(Error, "Cannot find scripting assembly for type \'{0}.{1}\'.", String(mono_class_get_namespace(typeClass)), String(mono_class_get_name(typeClass)));
+        return nullptr;
+    }
+
+    // Try to find the scripting type for this class
+    int32 typeIndex;
+    if (!module->ClassToTypeIndex.TryGet(typeClass, typeIndex))
+    {
+        LOG(Error, "Cannot spawn objects of type \'{0}.{1}\'.", String(mono_class_get_namespace(typeClass)), String(mono_class_get_name(typeClass)));
+        return nullptr;
+    }
+    const ScriptingType& scriptingType = module->Types[typeIndex];
+
+    // Create unmanaged object
+    const ScriptingObjectSpawnParams params(Guid::New(), ScriptingTypeHandle(module, typeIndex));
+    ScriptingObject* obj = scriptingType.Script.Spawn(params);
+    if (obj == nullptr)
+    {
+        LOG(Error, "Failed to spawn object of type \'{0}.{1}\'.", String(mono_class_get_namespace(typeClass)), String(mono_class_get_name(typeClass)));
+        return nullptr;
+    }
+#else
+    LOG(Error, "Not supported object creation from Managed class.");
+#endif
+
+    return obj;
 }
 
 FLAXENGINE_API ScriptingObject* FindObject(const Guid& id, MClass* type)

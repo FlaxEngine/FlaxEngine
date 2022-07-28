@@ -319,6 +319,7 @@ struct FLAXENGINE_API ScriptingType
     void SetupScriptObjectVTable(void* object, ScriptingTypeHandle baseTypeHandle, int32 wrapperIndex);
     void HackObjectVTable(void* object, ScriptingTypeHandle baseTypeHandle, int32 wrapperIndex);
     String ToString() const;
+    StringAnsiView GetName() const;
 };
 
 /// <summary>

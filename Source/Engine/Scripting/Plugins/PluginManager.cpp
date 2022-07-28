@@ -2,22 +2,41 @@
 
 #include "PluginManager.h"
 #include "FlaxEngine.Gen.h"
+#include "GamePlugin.h"
 #include "Engine/Scripting/Scripting.h"
 #include "Engine/Scripting/ScriptingType.h"
 #include "Engine/Scripting/BinaryModule.h"
 #include "Engine/Scripting/ManagedCLR/MAssembly.h"
-#include "Engine/Scripting/ManagedCLR/MMethod.h"
 #include "Engine/Scripting/ManagedCLR/MClass.h"
 #include "Engine/Scripting/ManagedCLR/MUtils.h"
 #include "Engine/Platform/FileSystem.h"
-#include "Engine/Debug/DebugLog.h"
 #include "Engine/Profiler/ProfilerCPU.h"
 #include "Engine/Engine/EngineService.h"
 #include "Engine/Core/Log.h"
 
+Plugin::Plugin(const SpawnParams& params)
+    : ScriptingObject(params)
+{
+    _description.Name = String(GetType().GetName());
+    _description.Category = TEXT("Other");
+    _description.Version = Version(1, 0);
+}
+
+GamePlugin::GamePlugin(const SpawnParams& params)
+    : Plugin(params)
+{
+}
+
+Delegate<Plugin*> PluginManager::PluginLoading;
+Delegate<Plugin*> PluginManager::PluginLoaded;
+Delegate<Plugin*> PluginManager::PluginUnloading;
+Delegate<Plugin*> PluginManager::PluginUnloaded;
+Action PluginManager::PluginsChanged;
+
 namespace PluginManagerImpl
 {
-    MMethod* Internal_LoadPlugin = nullptr;
+    Array<GamePlugin*> GamePlugins;
+    Array<Plugin*> EditorPlugins;
 
     void LoadPlugin(MClass* klass, bool isEditor);
     void OnAssemblyLoaded(MAssembly* assembly);
@@ -30,7 +49,6 @@ using namespace PluginManagerImpl;
 class PluginManagerService : public EngineService
 {
 public:
-
     PluginManagerService()
         : EngineService(TEXT("Plugin Manager"), 130)
     {
@@ -38,50 +56,79 @@ public:
 
     bool Init() override;
     void Dispose() override;
+
+    static void InvokeInitialize(Plugin* plugin);
+    static void InvokeDeinitialize(Plugin* plugin);
 };
 
 PluginManagerService PluginManagerServiceInstance;
 
+void PluginManagerService::InvokeInitialize(Plugin* plugin)
+{
+    if (plugin->_initialized)
+        return;
+
+    LOG(Info, "Loading plugin {}", plugin->ToString());
+
+    PluginManager::PluginLoading(plugin);
+
+    plugin->Initialize();
+    plugin->_initialized = true;
+
+    PluginManager::PluginLoaded(plugin);
+}
+
+void PluginManagerService::InvokeDeinitialize(Plugin* plugin)
+{
+    if (!plugin->_initialized)
+        return;
+
+    LOG(Info, "Unloading plugin {}", plugin->ToString());
+
+    PluginManager::PluginUnloading(plugin);
+
+    plugin->Deinitialize();
+    plugin->_initialized = false;
+
+    PluginManager::PluginUnloaded(plugin);
+}
+
 void PluginManagerImpl::LoadPlugin(MClass* klass, bool isEditor)
 {
-#if !COMPILE_WITHOUT_CSHARP
-    if (Internal_LoadPlugin == nullptr)
-    {
-        Internal_LoadPlugin = PluginManager::GetStaticClass()->GetMethod("Internal_LoadPlugin", 2);
-        ASSERT(Internal_LoadPlugin);
-    }
+    // Create and check if use it
+    auto plugin = (Plugin*)Scripting::NewObject(klass);
+    if (!plugin)
+        return;
 
-    MObject* exception = nullptr;
-    void* params[2];
-    params[0] = MUtils::GetType(klass->GetNative());
-    params[1] = &isEditor;
-    Internal_LoadPlugin->Invoke(nullptr, params, &exception);
-    if (exception)
+    if (!isEditor)
     {
-        DebugLog::LogException(exception);
+        GamePlugins.Add((GamePlugin*)plugin);
+#if !USE_EDITOR
+        PluginManagerService::InvokeInitialize(plugin);
+#endif
+    }
+#if USE_EDITOR
+    else
+    {
+        EditorPlugins.Add(plugin);
+        PluginManagerService::InvokeInitialize(plugin);
     }
 #endif
+    PluginManager::PluginsChanged();
 }
 
 void PluginManagerImpl::OnAssemblyLoaded(MAssembly* assembly)
 {
     PROFILE_CPU_NAMED("Load Assembly Plugins");
 
-    // Prepare FlaxEngine
-    auto engineAssembly = ((NativeBinaryModule*)GetBinaryModuleFlaxEngine())->Assembly;
-    if (!engineAssembly->IsLoaded())
-    {
-        LOG(Warning, "Cannot find plugin class types for assembly {0} because FlaxEngine is not loaded.", assembly->ToString());
-        return;
-    }
-    const auto gamePluginClass = engineAssembly->GetClass("FlaxEngine.GamePlugin");
+    const auto gamePluginClass = GamePlugin::GetStaticClass();
     if (gamePluginClass == nullptr)
     {
         LOG(Warning, "Missing GamePlugin class.");
         return;
     }
 #if USE_EDITOR
-    const auto editorPluginClass = engineAssembly->GetClass("FlaxEditor.EditorPlugin");
+    const auto editorPluginClass = ((ManagedBinaryModule*)GetBinaryModuleFlaxEngine())->Assembly->GetClass("FlaxEditor.EditorPlugin");
     if (editorPluginClass == nullptr)
     {
         LOG(Warning, "Missing EditorPlugin class.");
@@ -115,19 +162,29 @@ void PluginManagerImpl::OnAssemblyLoaded(MAssembly* assembly)
 
 void PluginManagerImpl::OnAssemblyUnloading(MAssembly* assembly)
 {
-#if !COMPILE_WITHOUT_CSHARP
-    // Cleanup plugins from this assembly
-    const auto disposeMethod = PluginManager::GetStaticClass()->GetMethod("Internal_Dispose", 1);
-    ASSERT(disposeMethod);
-    MObject* exception = nullptr;
-    void* params[1];
-    params[0] = assembly->GetNative();
-    disposeMethod->Invoke(nullptr, params, &exception);
-    if (exception)
+    bool changed = false;
+    for (int32 i = EditorPlugins.Count() - 1; i >= 0 && EditorPlugins.Count() > 0; i--)
     {
-        DebugLog::LogException(exception);
+        auto plugin = EditorPlugins[i];
+        if (plugin->GetType().ManagedClass->GetAssembly() == assembly)
+        {
+            PluginManagerService::InvokeDeinitialize(plugin);
+            EditorPlugins.RemoveAtKeepOrder(i);
+            changed = true;
+        }
     }
-#endif
+    for (int32 i = GamePlugins.Count() - 1; i >= 0 && GamePlugins.Count() > 0; i--)
+    {
+        auto plugin = GamePlugins[i];
+        if (plugin->GetType().ManagedClass->GetAssembly() == assembly)
+        {
+            PluginManagerService::InvokeDeinitialize(plugin);
+            GamePlugins.RemoveAtKeepOrder(i);
+            changed = true;
+        }
+    }
+    if (changed)
+        PluginManager::PluginsChanged();
 }
 
 void PluginManagerImpl::OnBinaryModuleLoaded(BinaryModule* module)
@@ -138,6 +195,7 @@ void PluginManagerImpl::OnBinaryModuleLoaded(BinaryModule* module)
         return;
 
     // Skip non-managed modules
+    // TODO: search native-only modules too
     auto managedModule = dynamic_cast<ManagedBinaryModule*>(module);
     if (!managedModule)
         return;
@@ -171,17 +229,86 @@ void PluginManagerService::Dispose()
 {
     Scripting::BinaryModuleLoaded.Unbind(&OnBinaryModuleLoaded);
 
-    PROFILE_CPU_NAMED("Dispose Plugins");
-
-#if !COMPILE_WITHOUT_CSHARP
     // Cleanup all plugins
-    const auto disposeMethod = PluginManager::GetStaticClass()->GetMethod("Internal_Dispose");
-    ASSERT(disposeMethod);
-    MObject* exception = nullptr;
-    disposeMethod->Invoke(nullptr, nullptr, &exception);
-    if (exception)
+    PROFILE_CPU_NAMED("Dispose Plugins");
+    const int32 pluginsCount = EditorPlugins.Count() + GamePlugins.Count();
+    if (pluginsCount == 0)
+        return;
+    LOG(Info, "Unloading {0} plugins", pluginsCount);
+    for (int32 i = EditorPlugins.Count() - 1; i >= 0 && EditorPlugins.Count() > 0; i--)
     {
-        DebugLog::LogException(exception);
+        auto plugin = EditorPlugins[i];
+        InvokeDeinitialize(plugin);
+        EditorPlugins.RemoveAtKeepOrder(i);
     }
-#endif
+    for (int32 i = GamePlugins.Count() - 1; i >= 0 && GamePlugins.Count() > 0; i--)
+    {
+        auto plugin = GamePlugins[i];
+        InvokeDeinitialize(plugin);
+        GamePlugins.RemoveAtKeepOrder(i);
+    }
+    PluginManager::PluginsChanged();
 }
+
+const Array<GamePlugin*>& PluginManager::GetGamePlugins()
+{
+    return GamePlugins;
+}
+
+const Array<Plugin*>& PluginManager::GetEditorPlugins()
+{
+    return EditorPlugins;
+}
+
+Plugin* PluginManager::GetPlugin(const StringView& name)
+{
+    for (Plugin* p : EditorPlugins)
+    {
+        if (p->GetDescription().Name == name)
+            return p;
+    }
+    for (GamePlugin* gp : GamePlugins)
+    {
+        if (gp->GetDescription().Name == name)
+            return gp;
+    }
+    return nullptr;
+}
+
+Plugin* PluginManager::GetPlugin(const MClass* type)
+{
+    CHECK_RETURN(type, nullptr);
+    for (Plugin* p : EditorPlugins)
+    {
+        if (p->GetClass()->IsSubClassOf(type))
+            return p;
+    }
+    for (GamePlugin* gp : GamePlugins)
+    {
+        if (gp->GetClass()->IsSubClassOf(type))
+            return gp;
+    }
+    return nullptr;
+}
+
+#if USE_EDITOR
+
+void PluginManager::InitializeGamePlugins()
+{
+    PROFILE_CPU();
+    for (int32 i = 0; i < GamePlugins.Count(); i++)
+    {
+        PluginManagerService::InvokeInitialize(GamePlugins[i]);
+    }
+}
+
+void PluginManager::DeinitializeGamePlugins()
+{
+    PROFILE_CPU();
+    for (int32 i = GamePlugins.Count() - 1; i >= 0; i--)
+    {
+        PluginManagerService::InvokeDeinitialize(GamePlugins[i]);
+    }
+}
+
+#endif

@@ -144,7 +144,7 @@ namespace FlaxEditor.States
             _duplicateScenes.GatherSceneData();
             Editor.Internal_SetPlayMode(true);
             IsPaused = false;
-            PluginManager.InitializeGamePlugins();
+            PluginManager.Internal_InitializeGamePlugins();
             _duplicateScenes.CreateScenes();
             SceneDuplicated?.Invoke();
             RestoreSelection();
@@ -180,7 +180,7 @@ namespace FlaxEditor.States
             // Restore editor scene
             SceneRestoring?.Invoke();
             _duplicateScenes.DeletedScenes();
-            PluginManager.DeinitializeGamePlugins();
+            PluginManager.Internal_DeinitializeGamePlugins();
             Editor.Internal_SetPlayMode(false);
             _duplicateScenes.RestoreSceneData();
             SceneRestored?.Invoke();

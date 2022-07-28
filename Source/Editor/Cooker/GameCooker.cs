@@ -128,7 +128,9 @@ namespace FlaxEditor
             // Plugin assets
             foreach (var plugin in PluginManager.GamePlugins)
             {
-                plugin.OnCollectAssets(list);
+                var pluginRefs = plugin.GetReferences();
+                if (pluginRefs != null)
+                    list.AddRange(pluginRefs);
             }
 
             if (list.Count == 0)

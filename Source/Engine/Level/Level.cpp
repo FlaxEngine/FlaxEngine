@@ -38,6 +38,7 @@
 #include "Engine/Platform/MessageBox.h"
 #include "Engine/Engine/CommandLine.h"
 #include "Engine/Serialization/JsonSerializer.h"
+#include "Editor/Scripting/ScriptsBuilder.h"
 #endif
 
 #if USE_LARGE_WORLDS
@@ -950,7 +951,12 @@ bool Level::loadScene(rapidjson_flax::Value& data, int32 engineBuild, Scene** ou
         LOG(Error, "Cannot load scene without game modules loaded.");
 #if USE_EDITOR
         if (!CommandLine::Options.Headless.IsTrue())
-            MessageBox::Show(TEXT("Cannot load scene without game script modules. Please fix the compilation issues. See logs for more info."), TEXT("Missing game modules"), MessageBoxButtons::OK, MessageBoxIcon::Error);
+        {
+            if (ScriptsBuilder::LastCompilationFailed())
+                MessageBox::Show(TEXT("Scripts compilation failed. Cannot load scene without game script modules. Please fix the compilation issues. See logs for more info."), TEXT("Failed to compile scripts"), MessageBoxButtons::OK, MessageBoxIcon::Error);
+            else
+                MessageBox::Show(TEXT("Failed to load scripts. Cannot load scene without game script modules. See logs for more info."), TEXT("Missing game modules"), MessageBoxButtons::OK, MessageBoxIcon::Error);
+        }
 #endif
         return true;
     }

@@ -109,6 +109,13 @@ public:
     /// <returns>The scripting type or invalid type if missing.</returns>
     static ScriptingTypeHandle FindScriptingType(const StringAnsiView& fullname);
 
+    /// <summary>
+    /// Creates a new instance of the given class object (native construction).
+    /// </summary>
+    /// <param name="type">The Managed type class.</param>
+    /// <returns>The created object or null if failed.</returns>
+    static ScriptingObject* NewObject(const MClass* type);
+
 public:
 
     typedef Dictionary<Guid, Guid, HeapAllocation> IdsMappingTable;

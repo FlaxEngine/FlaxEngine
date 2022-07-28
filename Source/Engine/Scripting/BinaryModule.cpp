@@ -571,6 +571,17 @@ String ScriptingType::ToString() const
     return String(Fullname.Get(), Fullname.Length());
 }
 
+StringAnsiView ScriptingType::GetName() const
+{
+    int32 lastDotIndex = Fullname.FindLast('.');
+    if (lastDotIndex != -1)
+    {
+        lastDotIndex++;
+        return StringAnsiView(Fullname.Get() + lastDotIndex, Fullname.Length() - lastDotIndex);
+    }
+    return Fullname;
+}
+
 ScriptingTypeInitializer::ScriptingTypeInitializer(BinaryModule* module, const StringAnsiView& fullname, int32 size, ScriptingType::InitRuntimeHandler initRuntime, ScriptingType::SpawnHandler spawn, ScriptingTypeInitializer* baseType, ScriptingType::SetupScriptVTableHandler setupScriptVTable, ScriptingType::SetupScriptObjectVTableHandler setupScriptObjectVTable, const ScriptingType::InterfaceImplementation* interfaces)
     : ScriptingTypeHandle(module, module->Types.Count())
 {
@@ -686,7 +697,7 @@ ManagedBinaryModule::ManagedBinaryModule(MAssembly* assembly)
     // Bind for C# assembly events
     assembly->Loading.Bind<ManagedBinaryModule, &ManagedBinaryModule::OnLoading>(this);
     assembly->Loaded.Bind<ManagedBinaryModule, &ManagedBinaryModule::OnLoaded>(this);
-    assembly->Unloading.Bind<ManagedBinaryModule, &ManagedBinaryModule::OnUnloading>(this);
+    assembly->Unloaded.Bind<ManagedBinaryModule, &ManagedBinaryModule::OnUnloaded>(this);
 
     if (Assembly->IsLoaded())
     {
@@ -1084,7 +1095,7 @@ void ManagedBinaryModule::InitType(MClass* mclass)
 #endif
 }
 
-void ManagedBinaryModule::OnUnloading(MAssembly* assembly)
+void ManagedBinaryModule::OnUnloaded(MAssembly* assembly)
 {
     PROFILE_CPU();
 

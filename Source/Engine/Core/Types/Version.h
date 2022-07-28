@@ -9,7 +9,7 @@
 /// <summary>
 /// Represents the version number made of major, minor, build and revision numbers.
 /// </summary>
-struct FLAXENGINE_API Version
+API_STRUCT(InBuild) struct FLAXENGINE_API Version
 {
 private:
     int32 _major;
@@ -25,13 +25,7 @@ public:
     /// <param name="minor">The minor version number.</param>
     /// <param name="build">The build number.</param>
     /// <param name="revision">The revision number.</param>
-    Version(int32 major, int32 minor, int32 build, int32 revision)
-    {
-        _major = Math::Max(major, 0);
-        _minor = Math::Max(minor, 0);
-        _build = Math::Max(build, 0);
-        _revision = Math::Max(revision, 0);
-    }
+    Version(int32 major, int32 minor, int32 build, int32 revision);
 
     /// <summary>
     /// Initializes a new instance of the Version class using the specified major, minor, and build values.
@@ -39,26 +33,14 @@ public:
     /// <param name="major">The major version number.</param>
     /// <param name="minor">The minor version number.</param>
     /// <param name="build">The build number.</param>
-    Version(int32 major, int32 minor, int32 build)
-    {
-        _major = Math::Max(major, 0);
-        _minor = Math::Max(minor, 0);
-        _build = Math::Max(build, 0);
-        _revision = -1;
-    }
+    Version(int32 major, int32 minor, int32 build);
 
     /// <summary>
     /// Initializes a new instance of the Version class using the specified major and minor values.
     /// </summary>
     /// <param name="major">The major version number.</param>
     /// <param name="minor">The minor version number.</param>
-    Version(int32 major, int32 minor)
-    {
-        _major = Math::Max(major, 0);
-        _minor = Math::Max(minor, 0);
-        _build = -1;
-        _revision = -1;
-    }
+    Version(int32 major, int32 minor);
 
     /// <summary>
     /// Initializes a new instance of the Version class.
@@ -67,8 +49,8 @@ public:
     {
         _major = 0;
         _minor = 0;
-        _revision = 0;
-        _build = 0;
+        _revision = -1;
+        _build = -1;
     }
 
 public:

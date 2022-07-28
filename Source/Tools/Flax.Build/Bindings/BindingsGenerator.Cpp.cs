@@ -418,6 +418,9 @@ namespace Flax.Build.Bindings
             case "CultureInfo":
                 type = "void*";
                 return "MUtils::ToManaged({0})";
+            case "Version":
+                type = "MonoObject*";
+                return "MUtils::ToManaged({0})";
             default:
                 // Object reference property
                 if ((typeInfo.Type == "ScriptingObjectReference" ||
@@ -589,6 +592,9 @@ namespace Flax.Build.Bindings
                 return "MUtils::UnboxVariantType({0})";
             case "CultureInfo":
                 type = "void*";
+                return "MUtils::ToNative({0})";
+            case "Version":
+                type = "MonoObject*";
                 return "MUtils::ToNative({0})";
             default:
                 // Object reference property
