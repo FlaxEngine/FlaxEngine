@@ -22,6 +22,8 @@ PACK_STRUCT(struct DeferredMaterialShaderData {
     Matrix ViewMatrix;
     Matrix PrevViewProjectionMatrix;
     Matrix PrevWorldMatrix;
+    Matrix MainViewProjectionMatrix;
+    Float4 MainScreenSize;
     Float3 ViewPos;
     float ViewFar;
     Float3 ViewDir;
@@ -86,6 +88,8 @@ void DeferredMaterialShader::Bind(BindParameters& params)
         Matrix::Transpose(view.View, materialData->ViewMatrix);
         Matrix::Transpose(drawCall.Surface.PrevWorld, materialData->PrevWorldMatrix);
         Matrix::Transpose(view.PrevViewProjection, materialData->PrevViewProjectionMatrix);
+        Matrix::Transpose(view.MainViewProjection, materialData->MainViewProjectionMatrix);
+        materialData->MainScreenSize = view.MainScreenSize;
         materialData->ViewPos = view.Position;
         materialData->ViewFar = view.Far;
         materialData->ViewDir = view.Direction;

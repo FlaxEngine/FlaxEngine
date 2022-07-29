@@ -45,19 +45,43 @@ void MaterialGenerator::ProcessGroupMaterial(Box* box, Node* node, Value& value)
     // Screen Position
     case 6:
     {
-        // Position
-        if (box->ID == 0)
-            value = Value(VariantType::Float2, TEXT("input.SvPosition.xy"));
-            // Texcoord
-        else if (box->ID == 1)
-            value = writeLocal(VariantType::Float2, TEXT("input.SvPosition.xy * ScreenSize.zw"), node);
+        // Check if use main view position
+        const auto layer = GetRootLayer();
+        if (layer && layer->Domain == MaterialDomain::Surface && node->Values.Count() > 0 && node->Values[0].AsBool)
+        {
+            // Transform world position into main viewport texcoord space
+            Value clipPosition = writeLocal(VariantType::Float4, TEXT("mul(float4(input.WorldPosition.xyz, 1), MainViewProjectionMatrix)"), node);
+            Value uvPos = writeLocal(VariantType::Float2, String::Format(TEXT("(({0}.xy / {0}.w) * float2(0.5, -0.5) + float2(0.5, 0.5))"), clipPosition.Value), node);
 
+            // Position
+            if (box->ID == 0)
+                value = writeLocal(VariantType::Float2, String::Format(TEXT("{0} * MainScreenSize.xy"), uvPos.Value), node);
+                // Texcoord
+            else if (box->ID == 1)
+                value = uvPos;
+        }
+        else
+        {
+            // Position
+            if (box->ID == 0)
+                value = Value(VariantType::Float2, TEXT("input.SvPosition.xy"));
+                // Texcoord
+            else if (box->ID == 1)
+                value = writeLocal(VariantType::Float2, TEXT("input.SvPosition.xy * ScreenSize.zw"), node);
+        }
         break;
     }
     // Screen Size
     case 7:
-        value = Value(VariantType::Float2, box->ID == 0 ? TEXT("ScreenSize.xy") : TEXT("ScreenSize.zw"));
+    {
+        // Check if use main view position
+        const auto layer = GetRootLayer();
+        if (layer && layer->Domain == MaterialDomain::Surface && node->Values.Count() > 0 && node->Values[0].AsBool)
+            value = Value(VariantType::Float2, box->ID == 0 ? TEXT("MainScreenSize.xy") : TEXT("MainScreenSize.zw"));
+        else
+            value = Value(VariantType::Float2, box->ID == 0 ? TEXT("ScreenSize.xy") : TEXT("ScreenSize.zw"));
         break;
+    }
     // Custom code
     case 8:
     {

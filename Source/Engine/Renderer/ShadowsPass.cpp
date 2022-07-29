@@ -289,7 +289,7 @@ void ShadowsPass::RenderShadow(RenderContext& renderContext, RendererPointLightD
     const auto shadowMapsSizeCube = (float)_shadowMapsSizeCube;
     context->SetViewportAndScissors(shadowMapsSizeCube, shadowMapsSizeCube);
     _shadowContext.View.SetUpCube(PointLight_NearPlane, lightRadius, lightPosition);
-    _shadowContext.View.PrepareCache(_shadowContext, shadowMapsSizeCube, shadowMapsSizeCube, Float2::Zero);
+    _shadowContext.View.PrepareCache(_shadowContext, shadowMapsSizeCube, shadowMapsSizeCube, Float2::Zero, &view);
 
     // Render depth to all 6 faces of the cube map
     for (int32 faceIndex = 0; faceIndex < 6; faceIndex++)
@@ -392,7 +392,7 @@ void ShadowsPass::RenderShadow(RenderContext& renderContext, RendererSpotLightDa
     const auto shadowMapsSizeCube = (float)_shadowMapsSizeCube;
     context->SetViewportAndScissors(shadowMapsSizeCube, shadowMapsSizeCube);
     _shadowContext.View.SetProjector(SpotLight_NearPlane, lightRadius, lightPosition, lightDirection, light.UpVector, light.OuterConeAngle * 2.0f);
-    _shadowContext.View.PrepareCache(_shadowContext, shadowMapsSizeCube, shadowMapsSizeCube, Float2::Zero);
+    _shadowContext.View.PrepareCache(_shadowContext, shadowMapsSizeCube, shadowMapsSizeCube, Float2::Zero, &view);
 
     // Render depth to all 1 face of the cube map
     const int32 cubeFaceIndex = 0;
@@ -588,7 +588,7 @@ void ShadowsPass::RenderShadow(RenderContext& renderContext, RendererDirectional
     // Set up GPU context and render view
     const auto shadowMapsSizeCSM = (float)_shadowMapsSizeCSM;
     context->SetViewportAndScissors(shadowMapsSizeCSM, shadowMapsSizeCSM);
-    _shadowContext.View.PrepareCache(_shadowContext, shadowMapsSizeCSM, shadowMapsSizeCSM, Float2::Zero);
+    _shadowContext.View.PrepareCache(_shadowContext, shadowMapsSizeCSM, shadowMapsSizeCSM, Float2::Zero, &view);
 
     // Create the different view and projection matrices for each split
     float splitMinRatio = 0;

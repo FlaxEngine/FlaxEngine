@@ -14,6 +14,8 @@ float4x4 WorldMatrix;
 float4x4 ViewMatrix;
 float4x4 PrevViewProjectionMatrix;
 float4x4 PrevWorldMatrix;
+float4x4 MainViewProjectionMatrix;
+float4 MainScreenSize;
 float3 ViewPos;
 float ViewFar;
 float3 ViewDir;

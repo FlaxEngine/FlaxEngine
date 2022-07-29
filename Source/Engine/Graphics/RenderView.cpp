@@ -60,7 +60,7 @@ void RenderView::Prepare(RenderContext& renderContext)
     PrepareCache(renderContext, width, height, taaJitter);
 }
 
-void RenderView::PrepareCache(RenderContext& renderContext, float width, float height, const Float2& temporalAAJitter)
+void RenderView::PrepareCache(RenderContext& renderContext, float width, float height, const Float2& temporalAAJitter, RenderView* mainView)
 {
     // The same format used by the Flax common shaders and postFx materials
     ViewInfo = Float4(1.0f / Projection.M11, 1.0f / Projection.M22, Far / (Far - Near), (-Far * Near) / (Far - Near) / Far);
@@ -76,6 +76,12 @@ void RenderView::PrepareCache(RenderContext& renderContext, float width, float h
     // Ortho views have issues with screen size LOD culling
     const float modelLODDistanceFactor = (renderContext.LodProxyView ? renderContext.LodProxyView->IsOrthographicProjection() : IsOrthographicProjection()) ? 100.0f : ModelLODDistanceFactor;
     ModelLODDistanceFactorSqrt = modelLODDistanceFactor * modelLODDistanceFactor;
+
+    // Setup main view render info
+    if (!mainView)
+        mainView = this;
+    MainViewProjection = mainView->ViewProjection();
+    MainScreenSize = mainView->ScreenSize;
 }
 
 void RenderView::SetUp(const Matrix& view, const Matrix& projection)

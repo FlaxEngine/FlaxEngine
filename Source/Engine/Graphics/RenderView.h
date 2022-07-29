@@ -203,6 +203,16 @@ public:
     API_FIELD() Matrix PrevViewProjection;
 
     /// <summary>
+    /// The main viewport view * projection matrix.
+    /// </summary>
+    API_FIELD() Matrix MainViewProjection;
+
+    /// <summary>
+    /// The main viewport screen size packed (x - width, y - height, zw - inv width, w - inv height).
+    /// </summary>
+    API_FIELD() Float4 MainScreenSize;
+
+    /// <summary>
     /// Square of <see cref="ModelLODDistanceFactor"/>. Cached by rendering backend.
     /// </summary>
     API_FIELD() float ModelLODDistanceFactorSqrt;
@@ -220,7 +230,8 @@ public:
     /// <param name="width">The rendering width.</param>
     /// <param name="height">The rendering height.</param>
     /// <param name="temporalAAJitter">The temporal jitter for this frame.</param>
-    void PrepareCache(RenderContext& renderContext, float width, float height, const Float2& temporalAAJitter);
+    /// <param name="mainView">The main rendering viewport. Use null if it's top level view; pass pointer to main view for sub-passes like shadow depths.</param>
+    void PrepareCache(RenderContext& renderContext, float width, float height, const Float2& temporalAAJitter, RenderView* mainView = nullptr);
 
     /// <summary>
     /// Determines whether view is perspective projection or orthographic.
