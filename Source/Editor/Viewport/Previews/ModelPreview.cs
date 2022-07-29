@@ -310,7 +310,7 @@ namespace FlaxEditor.Viewport.Previews
             var viewOrigin = ViewPosition;
             var distSqr = Vector3.DistanceSquared(ref sphere.Center, ref viewOrigin);
             var screenRadiusSquared = Mathf.Square(screenMultiple * sphere.Radius) / Mathf.Max(1.0f, distSqr);
-            screenSize = Mathf.Sqrt(screenRadiusSquared) * 2.0f;
+            screenSize = Mathf.Sqrt((float)screenRadiusSquared) * 2.0f;
             
             // Check if model is being culled
             if (Mathf.Square(model.MinScreenSize * 0.5f) > screenRadiusSquared)
