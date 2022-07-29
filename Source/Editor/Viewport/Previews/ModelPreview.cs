@@ -248,7 +248,7 @@ namespace FlaxEditor.Viewport.Previews
             if (_showNormals && _meshDatas.RequestMeshData(Model))
             {
                 var meshDatas = _meshDatas.MeshDatas;
-                var lodIndex = ComputeLODIndex(Model);
+                var lodIndex = ComputeLODIndex(Model, out _);
                 var lod = meshDatas[lodIndex];
                 for (int meshIndex = 0; meshIndex < lod.Length; meshIndex++)
                 {
@@ -265,7 +265,7 @@ namespace FlaxEditor.Viewport.Previews
             if (_showTangents && _meshDatas.RequestMeshData(Model))
             {
                 var meshDatas = _meshDatas.MeshDatas;
-                var lodIndex = ComputeLODIndex(Model);
+                var lodIndex = ComputeLODIndex(Model, out _);
                 var lod = meshDatas[lodIndex];
                 for (int meshIndex = 0; meshIndex < lod.Length; meshIndex++)
                 {
@@ -282,7 +282,7 @@ namespace FlaxEditor.Viewport.Previews
             if (_showBitangents && _meshDatas.RequestMeshData(Model))
             {
                 var meshDatas = _meshDatas.MeshDatas;
-                var lodIndex = ComputeLODIndex(Model);
+                var lodIndex = ComputeLODIndex(Model, out _);
                 var lod = meshDatas[lodIndex];
                 for (int meshIndex = 0; meshIndex < lod.Length; meshIndex++)
                 {
@@ -297,8 +297,9 @@ namespace FlaxEditor.Viewport.Previews
         }
 
 
-        private int ComputeLODIndex(Model model)
+        private int ComputeLODIndex(Model model, out float screenSize)
         {
+            screenSize = 1.0f;
             if (PreviewActor.ForcedLOD != -1)
                 return PreviewActor.ForcedLOD;
 
@@ -309,7 +310,8 @@ namespace FlaxEditor.Viewport.Previews
             var viewOrigin = ViewPosition;
             var distSqr = Vector3.DistanceSquared(ref sphere.Center, ref viewOrigin);
             var screenRadiusSquared = Mathf.Square(screenMultiple * sphere.Radius) / Mathf.Max(1.0f, distSqr);
-
+            screenSize = Mathf.Sqrt(screenRadiusSquared) * 2.0f;
+            
             // Check if model is being culled
             if (Mathf.Square(model.MinScreenSize * 0.5f) > screenRadiusSquared)
                 return -1;
@@ -343,8 +345,8 @@ namespace FlaxEditor.Viewport.Previews
             if (_showCurrentLOD)
             {
                 var asset = Model;
-                var lodIndex = ComputeLODIndex(asset);
-                string text = string.Format("Current LOD: {0}", lodIndex);
+                var lodIndex = ComputeLODIndex(asset, out  var screenSize);
+                string text = string.Format("Current LOD: {0}\nScreen Size: {1:F2}", lodIndex, screenSize);
                 if (lodIndex != -1)
                 {
                     var lods = asset.LODs;
