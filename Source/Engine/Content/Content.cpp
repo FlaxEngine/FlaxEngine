@@ -166,6 +166,9 @@ void ContentService::Dispose()
     // Save assets registry before engine closing
     Cache.Save();
 
+    // Flush objects (some asset-related objects/references may be pending to delete)
+    ObjectsRemovalService::Flush();
+
     // Unload all remaining assets
     {
         ScopeLock lock(AssetsLocker);

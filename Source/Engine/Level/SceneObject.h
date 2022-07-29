@@ -97,7 +97,7 @@ public:
     /// <summary>
     /// Determines whether object is during play (spawned/loaded and fully initialized).
     /// </summary>
-    FORCE_INLINE bool IsDuringPlay() const
+    API_PROPERTY() FORCE_INLINE bool IsDuringPlay() const
     {
         return (Flags & ObjectFlags::IsDuringPlay) != 0;
     }
