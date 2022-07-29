@@ -530,7 +530,7 @@ void ShadowsPass::RenderShadow(RenderContext& renderContext, RendererDirectional
             }
             else if (csmCount == 3)
             {
-                cascadeSplits[0] = minDistance + splitDistance0 * maxDistance;
+                cascadeSplits[0] = minDistance + splitDistance1 * maxDistance;
                 cascadeSplits[1] = minDistance + splitDistance2 * maxDistance;
                 cascadeSplits[2] = minDistance + splitDistance3 * maxDistance;
             }
