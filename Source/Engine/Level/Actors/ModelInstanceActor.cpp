@@ -26,6 +26,8 @@ void ModelInstanceActor::SetEntries(const Array<ModelInstanceEntry>& value)
 void ModelInstanceActor::SetMaterial(int32 entryIndex, MaterialBase* material)
 {
     WaitForModelLoad();
+    if (Entries.Count() == 0 && !material)
+        return;
     CHECK(entryIndex >= 0 && entryIndex < Entries.Count());
     if (Entries[entryIndex].Material == material)
         return;
