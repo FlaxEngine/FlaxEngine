@@ -82,7 +82,6 @@ public:
     /// <summary>
     /// Gets the total amount of keyframes in the animation curves.
     /// </summary>
-    /// <returns>The total keyframes count.</returns>
     int32 GetKeyframesCount() const
     {
         return Position.GetKeyframes().Count() + Rotation.GetKeyframes().Count() + Scale.GetKeyframes().Count();
@@ -124,7 +123,6 @@ public:
     /// <summary>
     /// Gets the length of the animation (in seconds).
     /// </summary>
-    /// <returns>The length in seconds.</returns>
     FORCE_INLINE float GetLength() const
     {
 #if BUILD_DEBUG
@@ -136,7 +134,6 @@ public:
     /// <summary>
     /// Gets the total amount of keyframes in the all animation channels.
     /// </summary>
-    /// <returns>The total keyframes count.</returns>
     int32 GetKeyframesCount() const
     {
         int32 result = 0;

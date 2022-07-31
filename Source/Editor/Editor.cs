@@ -789,6 +789,11 @@ namespace FlaxEditor
             /// The <see cref="FlaxEngine.AnimationGraphFunction"/>.
             /// </summary>
             AnimationGraphFunction = 10,
+
+            /// <summary>
+            /// The <see cref="FlaxEngine.Animation"/>.
+            /// </summary>
+            Animation = 11,
         }
 
         /// <summary>

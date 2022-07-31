@@ -31,6 +31,7 @@
 #include "CreateParticleEmitterFunction.h"
 #include "CreateAnimationGraphFunction.h"
 #include "CreateVisualScript.h"
+#include "CreateAnimation.h"
 #include "CreateJson.h"
 
 // Tags used to detect asset creation mode
@@ -51,6 +52,7 @@ const String AssetsImportingManager::CreateSceneAnimationTag(TEXT("SceneAnimatio
 const String AssetsImportingManager::CreateMaterialFunctionTag(TEXT("MaterialFunction"));
 const String AssetsImportingManager::CreateParticleEmitterFunctionTag(TEXT("ParticleEmitterFunction"));
 const String AssetsImportingManager::CreateAnimationGraphFunctionTag(TEXT("AnimationGraphFunction"));
+const String AssetsImportingManager::CreateAnimationTag(TEXT("Animation"));
 const String AssetsImportingManager::CreateVisualScriptTag(TEXT("VisualScript"));
 
 class AssetsImportingManagerService : public EngineService
@@ -467,6 +469,7 @@ bool AssetsImportingManagerService::Init()
         { AssetsImportingManager::CreateMaterialFunctionTag, CreateMaterialFunction::Create },
         { AssetsImportingManager::CreateParticleEmitterFunctionTag, CreateParticleEmitterFunction::Create },
         { AssetsImportingManager::CreateAnimationGraphFunctionTag, CreateAnimationGraphFunction::Create },
+        { AssetsImportingManager::CreateAnimationTag, CreateAnimation::Create },
         { AssetsImportingManager::CreateVisualScriptTag, CreateVisualScript::Create },
     };
     AssetsImportingManager::Creators.Add(InBuildCreators, ARRAY_COUNT(InBuildCreators));

@@ -872,9 +872,17 @@ private:
     void ProcessGroupCustom(Box* boxBase, Node* nodeBase, Value& value);
     void ProcessGroupFunction(Box* boxBase, Node* node, Value& value);
 
+    enum class ProcessAnimationMode
+    {
+        Override,
+        Add,
+        BlendAdditive,
+    };
+
     int32 GetRootNodeIndex(Animation* anim);
     void ExtractRootMotion(const Animation::NodeToChannel* mapping, int32 rootNodeIndex, Animation* anim, float pos, float prevPos, Transform& rootNode, RootMotionData& rootMotion);
-    void ProcessAnimEvents(AnimGraphNode* node, bool loop, float length, float startTimePos, float oldTimePos, float animPos, float animPrevPos, Animation* anim, float speed);
+    void ProcessAnimEvents(AnimGraphNode* node, bool loop, float length, float animPos, float animPrevPos, Animation* anim, float speed);
+    void ProcessAnimation(AnimGraphImpulse* nodes, AnimGraphNode* node, bool loop, float length, float pos, float prevPos, Animation* anim, float speed, float weight = 1.0f, ProcessAnimationMode mode = ProcessAnimationMode::Override);
     Variant SampleAnimation(AnimGraphNode* node, bool loop, float length, float startTimePos, float prevTimePos, float& newTimePos, Animation* anim, float speed);
     Variant SampleAnimationsWithBlend(AnimGraphNode* node, bool loop, float length, float startTimePos, float prevTimePos, float& newTimePos, Animation* animA, Animation* animB, float speedA, float speedB, float alpha);
     Variant SampleAnimationsWithBlend(AnimGraphNode* node, bool loop, float length, float startTimePos, float prevTimePos, float& newTimePos, Animation* animA, Animation* animB, Animation* animC, float speedA, float speedB, float speedC, float alphaA, float alphaB, float alphaC);

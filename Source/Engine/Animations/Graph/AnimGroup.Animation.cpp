@@ -88,7 +88,7 @@ void AnimGraphExecutor::ExtractRootMotion(const Animation::NodeToChannel* mappin
     rootNode = refPose;
 }
 
-void AnimGraphExecutor::ProcessAnimEvents(AnimGraphNode* node, bool loop, float length, float startTimePos, float oldTimePos, float animPos, float animPrevPos, Animation* anim, float speed)
+void AnimGraphExecutor::ProcessAnimEvents(AnimGraphNode* node, bool loop, float length, float animPos, float animPrevPos, Animation* anim, float speed)
 {
     if (anim->Events.Count() == 0)
         return;
@@ -96,17 +96,16 @@ void AnimGraphExecutor::ProcessAnimEvents(AnimGraphNode* node, bool loop, float 
     auto& context = Context.Get();
     float eventTimeMin = animPrevPos;
     float eventTimeMax = animPos;
-    if (loop)
+    if (loop && context.DeltaTime * speed < 0)
     {
-        // Check if animation looped
-        const float posNotLooped = startTimePos + oldTimePos;
-        if (posNotLooped < 0.0f || posNotLooped > length)
+        // Check if animation looped (for anim events shooting during backwards playback)
+        //const float posNotLooped = startTimePos + oldTimePos;
+        //if (posNotLooped < 0.0f || posNotLooped > length)
+        //const int32 animPosCycle = Math::CeilToInt(animPos / anim->GetDuration());
+        //const int32 animPrevPosCycle = Math::CeilToInt(animPrevPos / anim->GetDuration());
+        //if (animPosCycle != animPrevPosCycle)
         {
-            if (context.DeltaTime * speed < 0)
-            {
-                // Playback backwards
-                Swap(eventTimeMin, eventTimeMax);
-            }
+            Swap(eventTimeMin, eventTimeMax);
         }
     }
     const float eventTime = animPos / static_cast<float>(anim->Data.FramesPerSecond);
@@ -218,49 +217,140 @@ float GetAnimSamplePos(float length, Animation* anim, float pos, float speed)
     return animPos;
 }
 
-Variant AnimGraphExecutor::SampleAnimation(AnimGraphNode* node, bool loop, float length, float startTimePos, float prevTimePos, float& newTimePos, Animation* anim, float speed)
+FORCE_INLINE void GetAnimSamplePos(bool loop, float length, float startTimePos, float prevTimePos, float& newTimePos, float& pos, float& prevPos)
 {
-    // Skip if animation is not ready to use
-    if (anim == nullptr || !anim->IsLoaded())
-        return Value::Null;
-    PROFILE_CPU_ASSET(anim);
-    const float oldTimePos = prevTimePos;
-
     // Calculate actual time position within the animation node (defined by length and loop mode)
-    const float pos = GetAnimPos(newTimePos, startTimePos, loop, length);
-    const float prevPos = GetAnimPos(prevTimePos, startTimePos, loop, length);
+    pos = GetAnimPos(newTimePos, startTimePos, loop, length);
+    prevPos = GetAnimPos(prevTimePos, startTimePos, loop, length);
+}
+
+void AnimGraphExecutor::ProcessAnimation(AnimGraphImpulse* nodes, AnimGraphNode* node, bool loop, float length, float pos, float prevPos, Animation* anim, float speed, float weight, ProcessAnimationMode mode)
+{
+    PROFILE_CPU_ASSET(anim);
 
     // Get animation position (animation track position for channels sampling)
     const float animPos = GetAnimSamplePos(length, anim, pos, speed);
     const float animPrevPos = GetAnimSamplePos(length, anim, prevPos, speed);
 
-    // Sample the animation
-    const auto nodes = node->GetNodes(this);
-    nodes->RootMotion = RootMotionData::Identity;
-    nodes->Position = pos;
-    nodes->Length = length;
+    // Evaluate nested animations
+    if (anim->NestedAnims.Count() != 0)
+    {
+        for (auto& e : anim->NestedAnims)
+        {
+            const auto& nestedAnim = e.Second;
+            float nestedAnimPos = animPos - nestedAnim.Time;
+            if (nestedAnimPos >= 0.0f &&
+                nestedAnimPos < nestedAnim.Duration &&
+                nestedAnim.Enabled &&
+                nestedAnim.Anim &&
+                nestedAnim.Anim->IsLoaded())
+            {
+                // Get nested animation time position
+                float nestedAnimPrevPos = animPrevPos - nestedAnim.Time;
+                const float nestedAnimLength = nestedAnim.Anim->GetLength();
+                const float nestedAnimDuration = nestedAnim.Anim->GetDuration();
+                const float nestedAnimSpeed = nestedAnim.Speed * speed;
+                nestedAnimPos = nestedAnimPos / nestedAnimDuration * nestedAnimSpeed;
+                nestedAnimPrevPos = nestedAnimPrevPos / nestedAnimDuration * nestedAnimSpeed;
+                GetAnimSamplePos(nestedAnim.Loop, nestedAnimLength, nestedAnim.StartTime, nestedAnimPrevPos, nestedAnimPos, nestedAnimPos, nestedAnimPrevPos);
+
+                ProcessAnimation(nodes, node, true, nestedAnimLength, nestedAnimPos, nestedAnimPrevPos, nestedAnim.Anim, 1.0f, weight, mode);
+            }
+        }
+    }
+
+    // Evaluate nodes animations
     const auto mapping = anim->GetMapping(_graph.BaseModel);
+    const bool weighted = weight < 1.0f;
     const auto emptyNodes = GetEmptyNodes();
     for (int32 i = 0; i < nodes->Nodes.Count(); i++)
     {
         const int32 nodeToChannel = mapping->At(i);
-        nodes->Nodes[i] = emptyNodes->Nodes[i];
+        Transform& dstNode = nodes->Nodes[i];
+        Transform srcNode = emptyNodes->Nodes[i];
         if (nodeToChannel != -1)
         {
             // Calculate the animated node transformation
-            anim->Data.Channels[nodeToChannel].Evaluate(animPos, &nodes->Nodes[i], false);
+            anim->Data.Channels[nodeToChannel].Evaluate(animPos, &srcNode, false);
+        }
+
+        // Blend node
+        if (mode == ProcessAnimationMode::BlendAdditive)
+        {
+            dstNode.Translation += srcNode.Translation * weight;
+            dstNode.Scale += srcNode.Scale * weight;
+            BlendAdditiveWeightedRotation(dstNode.Orientation, srcNode.Orientation, weight);
+        }
+        else if (mode == ProcessAnimationMode::Add)
+        {
+            dstNode.Translation += srcNode.Translation * weight;
+            dstNode.Scale += srcNode.Scale * weight;
+            dstNode.Orientation += srcNode.Orientation * weight;
+        }
+        else if (weighted)
+        {
+            dstNode.Translation = srcNode.Translation * weight;
+            dstNode.Scale = srcNode.Scale * weight;
+            dstNode.Orientation = srcNode.Orientation * weight;
+        }
+        else
+        {
+            dstNode = srcNode;
         }
     }
 
     // Handle root motion
     if (_rootMotionMode != RootMotionMode::NoExtraction && anim->Data.EnableRootMotion)
     {
+        // Calculate the root motion node transformation
         const int32 rootNodeIndex = GetRootNodeIndex(anim);
-        ExtractRootMotion(mapping, rootNodeIndex, anim, animPos, animPrevPos, nodes->Nodes[rootNodeIndex], nodes->RootMotion);
+        Transform rootNode = emptyNodes->Nodes[rootNodeIndex];
+        RootMotionData& dstNode = nodes->RootMotion;
+        RootMotionData srcNode(rootNode);
+        ExtractRootMotion(mapping, rootNodeIndex, anim, animPos, animPrevPos, rootNode, srcNode);
+
+        // Blend root motion
+        if (mode == ProcessAnimationMode::BlendAdditive)
+        {
+            dstNode.Translation += srcNode.Translation * weight;
+            BlendAdditiveWeightedRotation(dstNode.Rotation, srcNode.Rotation, weight);
+        }
+        else if (mode == ProcessAnimationMode::Add)
+        {
+            dstNode.Translation += srcNode.Translation * weight;
+            dstNode.Rotation += srcNode.Rotation * weight;
+        }
+        else if (weighted)
+        {
+            dstNode.Translation = srcNode.Translation * weight;
+            dstNode.Rotation = srcNode.Rotation * weight;
+        }
+        else
+        {
+            dstNode = srcNode;
+        }
     }
 
     // Collect events
-    ProcessAnimEvents(node, loop, length, startTimePos, oldTimePos, animPos, animPrevPos, anim, speed);
+    if (weight > 0.5f)
+    {
+        ProcessAnimEvents(node, loop, length, animPos, animPrevPos, anim, speed);
+    }
+}
+
+Variant AnimGraphExecutor::SampleAnimation(AnimGraphNode* node, bool loop, float length, float startTimePos, float prevTimePos, float& newTimePos, Animation* anim, float speed)
+{
+    if (anim == nullptr || !anim->IsLoaded())
+        return Value::Null;
+
+    float pos, prevPos;
+    GetAnimSamplePos(loop, length, startTimePos, prevTimePos, newTimePos, pos, prevPos);
+
+    const auto nodes = node->GetNodes(this);
+    InitNodes(nodes);
+    nodes->Position = pos;
+    nodes->Length = length;
+    ProcessAnimation(nodes, node, loop, length, pos, prevPos, anim, speed);
 
     return nodes;
 }
@@ -271,72 +361,27 @@ Variant AnimGraphExecutor::SampleAnimationsWithBlend(AnimGraphNode* node, bool l
     if (animA == nullptr || !animA->IsLoaded() ||
         animB == nullptr || !animB->IsLoaded())
         return Value::Null;
-    const float oldTimePos = prevTimePos;
 
-    // Calculate actual time position within the animation node (defined by length and loop mode)
-    const float pos = GetAnimPos(newTimePos, startTimePos, loop, length);
-    const float prevPos = GetAnimPos(prevTimePos, startTimePos, loop, length);
-
-    // Get animation position (animation track position for channels sampling)
-    const float animPosA = GetAnimSamplePos(length, animA, pos, speedA);
-    const float animPrevPosA = GetAnimSamplePos(length, animA, prevPos, speedA);
-    const float animPosB = GetAnimSamplePos(length, animB, pos, speedB);
-    const float animPrevPosB = GetAnimSamplePos(length, animB, prevPos, speedB);
+    float pos, prevPos;
+    GetAnimSamplePos(loop, length, startTimePos, prevTimePos, newTimePos, pos, prevPos);
 
     // Sample the animations with blending
     const auto nodes = node->GetNodes(this);
-    nodes->RootMotion = RootMotionData::Identity;
+    InitNodes(nodes);
     nodes->Position = pos;
     nodes->Length = length;
-    const auto mappingA = animA->GetMapping(_graph.BaseModel);
-    const auto mappingB = animB->GetMapping(_graph.BaseModel);
-    const auto emptyNodes = GetEmptyNodes();
-    RootMotionData rootMotionA, rootMotionB;
-    int32 rootNodeIndexA = -1, rootNodeIndexB = -1;
-    if (_rootMotionMode != RootMotionMode::NoExtraction)
-    {
-        rootMotionA = rootMotionB = RootMotionData::Identity;
-        if (animA->Data.EnableRootMotion)
-            rootNodeIndexA = GetRootNodeIndex(animA);
-        if (animB->Data.EnableRootMotion)
-            rootNodeIndexB = GetRootNodeIndex(animB);
-    }
+    ProcessAnimation(nodes, node, loop, length, pos, prevPos, animA, speedA, 1.0f - alpha, ProcessAnimationMode::Override);
+    ProcessAnimation(nodes, node, loop, length, pos, prevPos, animB, speedB, alpha, ProcessAnimationMode::BlendAdditive);
+
+    // Normalize rotations
     for (int32 i = 0; i < nodes->Nodes.Count(); i++)
     {
-        const int32 nodeToChannelA = mappingA->At(i);
-        const int32 nodeToChannelB = mappingB->At(i);
-        Transform nodeA = emptyNodes->Nodes[i];
-        Transform nodeB = nodeA;
-
-        // Calculate the animated node transformations
-        if (nodeToChannelA != -1)
-        {
-            animA->Data.Channels[nodeToChannelA].Evaluate(animPosA, &nodeA, false);
-            if (rootNodeIndexA == i)
-                ExtractRootMotion(mappingA, rootNodeIndexA, animA, animPosA, animPrevPosA, nodeA, rootMotionA);
-        }
-        if (nodeToChannelB != -1)
-        {
-            animB->Data.Channels[nodeToChannelB].Evaluate(animPosB, &nodeB, false);
-            if (rootNodeIndexB == i)
-                ExtractRootMotion(mappingB, rootNodeIndexB, animB, animPosB, animPrevPosB, nodeB, rootMotionB);
-        }
-
-        // Blend
-        Transform::Lerp(nodeA, nodeB, alpha, nodes->Nodes[i]);
+        nodes->Nodes[i].Orientation.Normalize();
     }
-
-    // Handle root motion
     if (_rootMotionMode != RootMotionMode::NoExtraction)
     {
-        RootMotionData::Lerp(rootMotionA, rootMotionB, alpha, nodes->RootMotion);
+        nodes->RootMotion.Rotation.Normalize();
     }
-
-    // Collect events
-    if (alpha > 0.5f)
-        ProcessAnimEvents(node, loop, length, startTimePos, oldTimePos, animPosB, animPrevPosB, animB, speedB);
-    else
-        ProcessAnimEvents(node, loop, length, startTimePos, oldTimePos, animPosA, animPrevPosA, animA, speedA);
 
     return nodes;
 }
@@ -348,113 +393,29 @@ Variant AnimGraphExecutor::SampleAnimationsWithBlend(AnimGraphNode* node, bool l
         animB == nullptr || !animB->IsLoaded() ||
         animC == nullptr || !animC->IsLoaded())
         return Value::Null;
-    const float oldTimePos = prevTimePos;
 
-    // Calculate actual time position within the animation node (defined by length and loop mode)
-    const float pos = GetAnimPos(newTimePos, startTimePos, loop, length);
-    const float prevPos = GetAnimPos(prevTimePos, startTimePos, loop, length);
-
-    // Get animation position (animation track position for channels sampling)
-    const float animPosA = GetAnimSamplePos(length, animA, pos, speedA);
-    const float animPrevPosA = GetAnimSamplePos(length, animA, prevPos, speedA);
-    const float animPosB = GetAnimSamplePos(length, animB, pos, speedB);
-    const float animPrevPosB = GetAnimSamplePos(length, animB, prevPos, speedB);
-    const float animPosC = GetAnimSamplePos(length, animC, pos, speedC);
-    const float animPrevPosC = GetAnimSamplePos(length, animC, prevPos, speedC);
+    float pos, prevPos;
+    GetAnimSamplePos(loop, length, startTimePos, prevTimePos, newTimePos, pos, prevPos);
 
     // Sample the animations with blending
     const auto nodes = node->GetNodes(this);
-    nodes->RootMotion = RootMotionData::Identity;
+    InitNodes(nodes);
     nodes->Position = pos;
     nodes->Length = length;
-    const auto mappingA = animA->GetMapping(_graph.BaseModel);
-    const auto mappingB = animB->GetMapping(_graph.BaseModel);
-    const auto mappingC = animC->GetMapping(_graph.BaseModel);
-    Transform tmp, t;
-    const auto emptyNodes = GetEmptyNodes();
-    RootMotionData rootMotionA, rootMotionB, rootMotionC;
-    int32 rootNodeIndexA = -1, rootNodeIndexB = -1, rootNodeIndexC = -1;
-    if (_rootMotionMode != RootMotionMode::NoExtraction)
-    {
-        rootMotionA = rootMotionB = rootMotionC = RootMotionData::Identity;
-        if (animA->Data.EnableRootMotion)
-            rootNodeIndexA = GetRootNodeIndex(animA);
-        if (animB->Data.EnableRootMotion)
-            rootNodeIndexB = GetRootNodeIndex(animB);
-        if (animC->Data.EnableRootMotion)
-            rootNodeIndexC = GetRootNodeIndex(animC);
-    }
     ASSERT(Math::Abs(alphaA + alphaB + alphaC - 1.0f) <= ANIM_GRAPH_BLEND_THRESHOLD); // Assumes weights are normalized
-    for (int32 i = 0; i < nodes->Nodes.Count(); i++)
-    {
-        const int32 nodeToChannelA = mappingA->At(i);
-        t = emptyNodes->Nodes[i];
-        if (nodeToChannelA != -1)
-        {
-            // Override
-            tmp = t;
-            animA->Data.Channels[nodeToChannelA].Evaluate(animPosA, &tmp, false);
-            if (rootNodeIndexA == i)
-                ExtractRootMotion(mappingA, rootNodeIndexA, animA, animPosA, animPrevPosA, tmp, rootMotionA);
-            t.Translation = tmp.Translation * alphaA;
-            t.Orientation = tmp.Orientation * alphaA;
-            t.Scale = tmp.Scale * alphaA;
-        }
-        nodes->Nodes[i] = t;
-    }
-    for (int32 i = 0; i < nodes->Nodes.Count(); i++)
-    {
-        const int32 nodeToChannelB = mappingB->At(i);
-        const int32 nodeToChannelC = mappingC->At(i);
-        t = nodes->Nodes[i];
-        if (nodeToChannelB != -1)
-        {
-            // Additive
-            tmp = emptyNodes->Nodes[i];
-            animB->Data.Channels[nodeToChannelB].Evaluate(animPosB, &tmp, false);
-            if (rootNodeIndexB == i)
-                ExtractRootMotion(mappingB, rootNodeIndexB, animB, animPosB, animPrevPosB, tmp, rootMotionB);
-            t.Translation += tmp.Translation * alphaB;
-            t.Scale += tmp.Scale * alphaB;
-            BlendAdditiveWeightedRotation(t.Orientation, tmp.Orientation, alphaB);
-        }
-        if (nodeToChannelC != -1)
-        {
-            // Additive
-            tmp = emptyNodes->Nodes[i];
-            animC->Data.Channels[nodeToChannelC].Evaluate(animPosC, &tmp, false);
-            if (rootNodeIndexC == i)
-                ExtractRootMotion(mappingC, rootNodeIndexC, animC, animPosC, animPrevPosC, tmp, rootMotionC);
-            t.Translation += tmp.Translation * alphaC;
-            t.Scale += tmp.Scale * alphaC;
-            BlendAdditiveWeightedRotation(t.Orientation, tmp.Orientation, alphaC);
-        }
-        t.Orientation.Normalize();
-        nodes->Nodes[i] = t;
-    }
+    ProcessAnimation(nodes, node, loop, length, pos, prevPos, animA, speedA, alphaA, ProcessAnimationMode::Override);
+    ProcessAnimation(nodes, node, loop, length, pos, prevPos, animB, speedB, alphaB, ProcessAnimationMode::BlendAdditive);
+    ProcessAnimation(nodes, node, loop, length, pos, prevPos, animC, speedC, alphaC, ProcessAnimationMode::BlendAdditive);
 
-    // Handle root motion
+    // Normalize rotations
+    for (int32 i = 0; i < nodes->Nodes.Count(); i++)
+    {
+        nodes->Nodes[i].Orientation.Normalize();
+    }
     if (_rootMotionMode != RootMotionMode::NoExtraction)
     {
-        nodes->RootMotion.Translation = rootMotionA.Translation * alphaA;
-        nodes->RootMotion.Rotation = rootMotionA.Rotation * alphaA;
-
-        nodes->RootMotion.Translation += rootMotionB.Translation * alphaB;
-        nodes->RootMotion.Rotation += rootMotionB.Rotation * alphaB;
-        BlendAdditiveWeightedRotation(nodes->RootMotion.Rotation, rootMotionB.Rotation, alphaB);
-
-        nodes->RootMotion.Translation = rootMotionC.Translation * alphaC;
-        nodes->RootMotion.Rotation = rootMotionC.Rotation * alphaC;
-        BlendAdditiveWeightedRotation(nodes->RootMotion.Rotation, rootMotionB.Rotation, alphaC);
+        nodes->RootMotion.Rotation.Normalize();
     }
-
-    // Collect events
-    if (alphaC > 0.5f)
-        ProcessAnimEvents(node, loop, length, startTimePos, oldTimePos, animPosC, animPrevPosC, animC, speedC);
-    else if (alphaB > 0.5f)
-        ProcessAnimEvents(node, loop, length, startTimePos, oldTimePos, animPosB, animPrevPosB, animB, speedB);
-    else
-        ProcessAnimEvents(node, loop, length, startTimePos, oldTimePos, animPosA, animPrevPosA, animA, speedA);
 
     return nodes;
 }
@@ -693,6 +654,7 @@ void AnimGraphExecutor::ProcessGroupAnimation(Box* boxBase, Node* nodeBase, Valu
         // Animation
         case 0:
         {
+            ANIM_GRAPH_PROFILE_EVENT("Animation");
             const float length = anim ? anim->GetLength() : 0.0f;
 
             // Calculate new time position

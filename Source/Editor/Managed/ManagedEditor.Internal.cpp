@@ -484,6 +484,7 @@ public:
         MaterialFunction = 8,
         ParticleEmitterFunction = 9,
         AnimationGraphFunction = 10,
+        Animation = 11,
     };
 
     static bool CreateAsset(NewAssetType type, MonoString* outputPathObj)
@@ -523,6 +524,9 @@ public:
             break;
         case NewAssetType::AnimationGraphFunction:
             tag = AssetsImportingManager::CreateAnimationGraphFunctionTag;
+            break;
+        case NewAssetType::Animation:
+            tag = AssetsImportingManager::CreateAnimationTag;
             break;
         default:
             return true;

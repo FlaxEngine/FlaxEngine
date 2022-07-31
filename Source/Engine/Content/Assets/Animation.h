@@ -5,6 +5,7 @@
 #include "../BinaryAsset.h"
 #include "Engine/Core/Collections/Dictionary.h"
 #include "Engine/Animations/AnimationData.h"
+#include "Engine/Content/AssetReference.h"
 
 class SkinnedModel;
 class AnimEvent;
@@ -61,6 +62,20 @@ API_CLASS(NoSpawn) class FLAXENGINE_API Animation : public BinaryAsset
 #endif
     };
 
+    /// <summary>
+    /// Contains <see cref="AnimEvent"/> instance.
+    /// </summary>
+    struct FLAXENGINE_API NestedAnimData
+    {
+        float Time = 0.0f;
+        float Duration = 0.0f;
+        float Speed = 1.0f;
+        float StartTime = 0.0f;
+        bool Enabled = false;
+        bool Loop = false;
+        AssetReference<Animation> Anim;
+    };
+
 private:
 #if USE_EDITOR
     bool _registeredForScriptingReload = false;
@@ -77,6 +92,11 @@ public:
     /// The animation events (keyframes per named track).
     /// </summary>
     Array<Pair<String, StepCurve<AnimEventData>>> Events;
+
+    /// <summary>
+    /// The nested animations (animation per named track).
+    /// </summary>
+    Array<Pair<String, NestedAnimData>> NestedAnims;
 
     /// <summary>
     /// Contains the mapping for every skeleton node to the animation data channels.

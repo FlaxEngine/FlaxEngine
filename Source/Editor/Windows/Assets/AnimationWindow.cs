@@ -359,6 +359,7 @@ namespace FlaxEditor.Windows.Assets
             if (_isWaitingForTimelineLoad && _asset.IsLoaded)
             {
                 _isWaitingForTimelineLoad = false;
+                _timeline._id = _asset.ID;
                 _timeline.Load(_asset);
                 _undo.Clear();
                 _timeline.Enabled = true;

@@ -42,8 +42,11 @@ namespace FlaxEditor.GUI.Timeline.Undo
                 track.Flags = (TrackFlags)stream.ReadByte();
                 track.Archetype.Load(Timeline.FormatVersion, track, stream);
             }
-            _timeline.ArrangeTracks();
-            _timeline.MarkAsEdited();
+            if (_timeline != null)
+            {
+                _timeline.ArrangeTracks();
+                _timeline.MarkAsEdited();
+            }
             track.OnUndo();
         }
 

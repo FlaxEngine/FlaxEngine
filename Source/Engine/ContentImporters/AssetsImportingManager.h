@@ -109,6 +109,11 @@ public:
     static const String CreateAnimationGraphFunctionTag;
 
     /// <summary>
+    /// The create animation asset tag.
+    /// </summary>
+    static const String CreateAnimationTag;
+
+    /// <summary>
     /// The create visual script asset tag.
     /// </summary>
     static const String CreateVisualScriptTag;
