@@ -115,7 +115,7 @@ namespace FlaxEditor.Surface
                         // Check if context menu doesn't have the recent cached groups
                         if (!contextMenu.Groups.Any(g => g.Archetypes[0].Tag is int asInt && asInt == _version))
                         {
-                            var groups = contextMenu.Groups.Where(g => g.Archetypes[0].Tag is int).ToArray();
+                            var groups = contextMenu.Groups.Where(g => g.Archetypes.Count != 0 && g.Archetypes[0].Tag is int).ToArray();
                             foreach (var g in groups)
                                 contextMenu.RemoveGroup(g);
                             foreach (var g in _cache.Values)
@@ -125,7 +125,7 @@ namespace FlaxEditor.Surface
                     else
                     {
                         // Remove any old groups from context menu
-                        var groups = contextMenu.Groups.Where(g => g.Archetypes[0].Tag is int).ToArray();
+                        var groups = contextMenu.Groups.Where(g => g.Archetypes.Count != 0 && g.Archetypes[0].Tag is int).ToArray();
                         foreach (var g in groups)
                             contextMenu.RemoveGroup(g);
 
