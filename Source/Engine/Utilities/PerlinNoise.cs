@@ -13,22 +13,29 @@ namespace FlaxEngine.Utilities
         /// <summary>
         /// The base value.
         /// </summary>
-        private float Base;
+        public float Base = 0.0f;
 
         /// <summary>
         /// The noise scale parameter.
         /// </summary>
-        public float NoiseScale;
+        public float NoiseScale = 1.0f;
 
         /// <summary>
         /// The noise amount parameter.
         /// </summary>
-        public float NoiseAmount;
+        public float NoiseAmount = 1.0f;
 
         /// <summary>
         /// The noise octaves count.
         /// </summary>
-        public int Octaves;
+        public int Octaves = 4;
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="PerlinNoise"/> class.
+        /// </summary>
+        public PerlinNoise()
+        {
+        }
 
         /// <summary>
         /// Initializes a new instance of the <see cref="PerlinNoise"/> class.

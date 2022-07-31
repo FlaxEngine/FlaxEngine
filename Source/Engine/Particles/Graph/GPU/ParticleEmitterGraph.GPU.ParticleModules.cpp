@@ -207,6 +207,7 @@ void ParticleEmitterGPUGenerator::ProcessModule(Node* node)
         auto roughness = tryGetValue(node->GetBox(3), 5, Value::Zero).AsFloat();
         auto intensity = tryGetValue(node->GetBox(4), 6, Value::Zero).AsFloat();
         auto octavesCount = tryGetValue(node->GetBox(5), 7, Value::Zero).AsInt();
+        _includes.Add(TEXT("./Flax/Noise.hlsl"));
         // TODO: build fieldTransformMatrix and invFieldTransformMatrix on CPU and pass in constant buffer - no need to support field transform per particle
         _writer.Write(
             TEXT(
@@ -218,7 +219,7 @@ void ParticleEmitterGPUGenerator::ProcessModule(Node* node)
                 "		fieldTransformMatrix = mul(fieldTransformMatrix, scaleMatrix);\n"
                 "		float4x4 invFieldTransformMatrix = Inverse(fieldTransformMatrix);\n"
                 "		float3 vectorFieldUVW = mul(invFieldTransformMatrix, float4({0}, 1.0f)).xyz;\n"
-                "		float3 force = Noise3D(vectorFieldUVW + 0.5f, {8}, {6});\n"
+                "		float3 force = CustomNoise3D(vectorFieldUVW + 0.5f, {8}, {6});\n"
                 "		force = mul(fieldTransformMatrix, float4(force, 0.0f)).xyz * {7};\n"
                 "		{1} += force * (DeltaTime / max({2}, PARTICLE_THRESHOLD));\n"
                 "	}}\n"

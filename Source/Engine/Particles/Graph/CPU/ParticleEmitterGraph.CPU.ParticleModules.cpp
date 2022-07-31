@@ -2,6 +2,7 @@
 
 #include "ParticleEmitterGraph.CPU.h"
 #include "Engine/Core/Random.h"
+#include "Engine/Utilities/Noise.h"
 
 // ReSharper disable CppCStyleCast
 // ReSharper disable CppClangTidyClangDiagnosticCastAlign
@@ -25,68 +26,6 @@
 
 namespace
 {
-    FORCE_INLINE Float4 Mod289(Float4 x)
-    {
-        return x - Float4::Floor(x * (1.0f / 289.0f)) * 289.0f;
-    }
-
-    FORCE_INLINE Float4 Perm(Float4 x)
-    {
-        return Mod289((x * 34.0f + 1.0f) * x);
-    }
-
-    float Noise(Float3 p)
-    {
-        Float3 a = Float3::Floor(p);
-        Float3 d = p - a;
-        d = d * d * (3.0f - 2.0f * d);
-
-        Float4 b(a.X, a.X + 1.0f, a.Y, a.Y + 1.0f);
-        Float4 k1 = Perm(Float4(b.X, b.Y, b.X, b.Y));
-        Float4 k2 = Perm(Float4(k1.X + b.Z, k1.Y + b.Z, k1.X + b.W, k1.Y + b.W));
-
-        Float4 c = k2 + Float4(a.Z);
-        Float4 k3 = Perm(c);
-        Float4 k4 = Perm(c + 1.0f);
-
-        Float4 o1 = Float4::Frac(k3 * (1.0f / 41.0f));
-        Float4 o2 = Float4::Frac(k4 * (1.0f / 41.0f));
-
-        Float4 o3 = o2 * d.Z + o1 * (1.0f - d.Z);
-        Float2 o4 = Float2(o3.Y, o3.W) * d.X + Float2(o3.X, o3.Z) * (1.0f - d.X);
-
-        return o4.Y * d.Y + o4.X * (1.0f - d.Y);
-    }
-
-    Float3 Noise3D(Float3 p)
-    {
-        const float o = Noise(p);
-        const float a = Noise(p + Float3(0.0001f, 0.0f, 0.0f));
-        const float b = Noise(p + Float3(0.0f, 0.0001f, 0.0f));
-        const float c = Noise(p + Float3(0.0f, 0.0f, 0.0001f));
-
-        const Float3 grad(o - a, o - b, o - c);
-        const Float3 other = Float3::Abs(Float3(grad.Z, grad.X, grad.Y));
-        return Float3::Normalize(Float3::Cross(grad, other));
-    }
-
-    Float3 Noise3D(Float3 position, int32 octaves, float roughness)
-    {
-        float weight = 0.0f;
-        Float3 noise = Float3::Zero;
-        float scale = 1.0f;
-        for (int32 i = 0; i < octaves; i++)
-        {
-            const float curWeight = Math::Pow(1.0f - ((float)i / (float)octaves), Math::Lerp(2.0f, 0.2f, roughness));
-
-            noise += Noise3D(position * scale) * curWeight;
-            weight += curWeight;
-
-            scale *= 1.72531f;
-        }
-        return noise / Math::Max(weight, ZeroTolerance);
-    }
-
     VariantType::Types GetVariantType(ParticleAttribute::ValueTypes type)
     {
         switch (type)
@@ -570,7 +509,7 @@ void ParticleEmitterGraphCPUExecutor::ProcessModule(ParticleEmitterGraphCPUNode*
 	const int32 octavesCount = (int)GetValue(octavesCountBox, 7)
 #define LOGIC() \
 	Float3 vectorFieldUVW = Float3::Transform(*((Float3*)positionPtr), invFieldTransformMatrix); \
-	Float3 force = Noise3D(vectorFieldUVW + 0.5f, octavesCount, roughness); \
+	Float3 force = Noise::CustomNoise3D(vectorFieldUVW + 0.5f, octavesCount, roughness); \
     force = Float3::Transform(force, fieldTransformMatrix) * intensity; \
     *((Float3*)velocityPtr) += force * (context.DeltaTime / Math::Max(*(float*)massPtr, ZeroTolerance)); \
     positionPtr += stride; \

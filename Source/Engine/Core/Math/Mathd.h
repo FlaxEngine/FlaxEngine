@@ -130,6 +130,11 @@ namespace Math
         return modf(a, b);
     }
 
+    static FORCE_INLINE double Frac(double value)
+    {
+        return value - Floor(value);
+    }
+
     /// <summary>
     /// Returns signed fractional part of a double.
     /// </summary>

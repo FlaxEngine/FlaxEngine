@@ -172,6 +172,11 @@ namespace Math
         return modff(a, b);
     }
 
+    static FORCE_INLINE float Frac(float value)
+    {
+        return value - Floor(value);
+    }
+
     /// <summary>
     /// Returns signed fractional part of a float.
     /// </summary>

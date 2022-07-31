@@ -469,7 +469,7 @@ public:
 
     static Vector2Base Frac(const Vector2Base& v)
     {
-        return Vector3(v.X - (int32)v.X, v.Y - (int32)v.Y);
+        return Vector2Base(v.X - (int32)v.X, v.Y - (int32)v.Y);
     }
 
     static Vector2Base Round(const Vector2Base& v)
