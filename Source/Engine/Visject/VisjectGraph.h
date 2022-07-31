@@ -259,6 +259,11 @@ protected:
         return defaultValue;
     }
 
+    FORCE_INLINE Value tryGetValue(Box* box)
+    {
+        return box && box->HasConnection() ? eatBox(box->GetParent<Node>(), box->FirstConnection()) : Value::Zero;
+    }
+
     FORCE_INLINE Value tryGetValue(Box* box, const Value& defaultValue)
     {
         return box && box->HasConnection() ? eatBox(box->GetParent<Node>(), box->FirstConnection()) : defaultValue;

@@ -15,6 +15,7 @@
 #include "Engine/Scripting/ManagedCLR/MUtils.h"
 #include "Engine/Serialization/MemoryReadStream.h"
 #include "Engine/Utilities/StringConverter.h"
+#include "Engine/Utilities/Noise.h"
 
 #define RAND Random::Rand()
 #define ENSURE(condition, errorMsg)  if (!(condition)) { OnError(node, box, errorMsg); return; }
@@ -1051,6 +1052,22 @@ void VisjectExecutor::ProcessGroupTools(Box* box, Node* node, Value& value)
     // Reroute
     case 29:
         value = tryGetValue(node->GetBox(0), Value::Zero);
+        break;
+    // Noises
+    case 30:
+        value = Noise::PerlinNoise((Float2)tryGetValue(node->GetBox(0)));
+        break;
+    case 31:
+        value = Noise::SimplexNoise((Float2)tryGetValue(node->GetBox(0)));
+        break;
+    case 32:
+        value = Noise::WorleyNoise((Float2)tryGetValue(node->GetBox(0)));
+        break;
+    case 33:
+        value = Noise::VoronoiNoise((Float2)tryGetValue(node->GetBox(0)));
+        break;
+    case 34:
+        value = Noise::CustomNoise((Float3)tryGetValue(node->GetBox(0)));
         break;
     default:
         break;

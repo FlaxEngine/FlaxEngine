@@ -793,6 +793,41 @@ void ShaderGenerator::ProcessGroupTools(Box* box, Node* node, Value& value)
     case 29:
         value = tryGetValue(node->GetBox(0), Value::Zero);
         break;
+    // Noises
+    case 30:
+    case 31:
+    case 32:
+    case 33:
+    case 34:
+    {
+        _includes.Add(TEXT("./Flax/Noise.hlsl"));
+        const Char* format;
+        ValueType pointType = VariantType::Float2;
+        ValueType resultType = VariantType::Float;
+        switch (node->TypeID)
+        {
+        case 30:
+            format = TEXT("PerlinNoise({0})");
+            break;
+        case 31:
+            format = TEXT("SimplexNoise({0})");
+            break;
+        case 32:
+            format = TEXT("WorleyNoise({0})");
+            resultType = VariantType::Float2;
+            break;
+        case 33:
+            format = TEXT("VoronoiNoise({0})");
+            resultType = VariantType::Float3;
+            break;
+        case 34:
+            format = TEXT("CustomNoise({0})");
+            pointType = VariantType::Float3;
+            break;
+        }
+        value = writeLocal(resultType, String::Format(format, tryGetValue(node->GetBox(0), Value::Zero).Cast(pointType).Value), node);
+        break;
+    }
     default:
         break;
     }

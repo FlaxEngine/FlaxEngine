@@ -42,7 +42,7 @@ public:
     API_FUNCTION() static Float2 WorleyNoise(const Float2& p);
 
     /// <summary>
-    /// Voronoi noise.
+    /// Voronoi noise (X=minDistToCell, Y=randomColor, Z=minEdgeDistance).
     /// </summary>
     /// <param name="p">Point on a 2D grid to sample noise at.</param>
     /// <returns>Noise result with: X=minDistToCell, Y=randomColor, Z=minEdgeDistance.</returns>

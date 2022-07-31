@@ -1260,6 +1260,23 @@ namespace FlaxEditor.Surface.Archetypes
             }
         }
 
+        private static NodeArchetype Noise(ushort id, string name, Type resultType, Type pointType, string desc)
+        {
+            return new NodeArchetype
+            {
+                TypeID = id,
+                Title = name,
+                Description = desc,
+                Flags = NodeFlags.MaterialGraph | NodeFlags.ParticleEmitterGraph | NodeFlags.AnimGraph,
+                Size = new Float2(150, 20),
+                Elements = new[]
+                {
+                    NodeElementArchetype.Factory.Input(0, "Point", true, pointType, 0),
+                    NodeElementArchetype.Factory.Output(0, string.Empty, resultType, 1),
+                }
+            };
+        }
+
         /// <summary>
         /// The nodes for that group.
         /// </summary>
@@ -1736,6 +1753,11 @@ namespace FlaxEditor.Surface.Archetypes
                     NodeElementArchetype.Factory.Output(0, string.Empty, null, 1, true),
                 }
             },
+            Noise(30, "Perlin Noise", typeof(float), typeof(Float2), "Classic Perlin noise (normalized to 0-1)."),
+            Noise(31, "Simplex Noise", typeof(float), typeof(Float2), "Simplex noise (normalized to 0-1)."),
+            Noise(32, "Worley Noise", typeof(Float2), typeof(Float2), "Worley noise (cellar noise with standard 3x3 search window for F1 and F2 values)."),
+            Noise(33, "Voronoi Noise", typeof(Float3), typeof(Float2), "Voronoi noise (X=minDistToCell, Y=randomColor, Z=minEdgeDistance)."),
+            Noise(34, "Custom Noise", typeof(float), typeof(Float3), "Custom noise function (3D -> 1D)."),
         };
     }
 }
