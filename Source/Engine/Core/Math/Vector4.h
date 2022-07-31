@@ -423,6 +423,11 @@ public:
     }
 
 public:
+    static Vector4Base Mod(const Vector4Base& a, const Vector4Base& b)
+    {
+        return Vector4Base(Math::Mod(a.X, b.X), Math::Mod(a.Y, b.Y), Math::Mod(a.Z, b.Z), Math::Mod(a.W, b.W));
+    }
+
     static Vector4Base Floor(const Vector4Base& v)
     {
         return Vector4Base(Math::Floor(v.X), Math::Floor(v.Y), Math::Floor(v.Z), Math::Floor(v.W));

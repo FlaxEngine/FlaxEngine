@@ -157,6 +157,11 @@ namespace Math
         return value < 0 ? -value : value;
     }
 
+    static FORCE_INLINE int32 Mod(const int32 a, const int32 b)
+    {
+        return (int32)fmodf((float)a, (float)b);
+    }
+
     static FORCE_INLINE float Mod(const float a, const float b)
     {
         return fmodf(a, b);

@@ -457,6 +457,11 @@ public:
         return Vector2Base(a.X > b.X ? a.X : b.X, a.Y > b.Y ? a.Y : b.Y);
     }
 
+    static Vector2Base Mod(const Vector2Base& a, const Vector2Base& b)
+    {
+        return Vector2Base(Math::Mod(a.X, b.X), Math::Mod(a.Y, b.Y));
+    }
+
     static Vector2Base Floor(const Vector2Base& v)
     {
         return Vector2Base(Math::Floor(v.X), Math::Floor(v.Y));

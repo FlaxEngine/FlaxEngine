@@ -512,6 +512,11 @@ public:
         return Vector3Base(a.X > b.X ? a.X : b.X, a.Y > b.Y ? a.Y : b.Y, a.Z > b.Z ? a.Z : b.Z);
     }
 
+    static Vector3Base Mod(const Vector3Base& a, const Vector3Base& b)
+    {
+        return Vector3Base(Math::Mod(a.X, b.X), Math::Mod(a.Y, b.Y), Math::Mod(a.Z, b.Z));
+    }
+
     static Vector3Base Floor(const Vector3Base& v)
     {
         return Vector3Base(Math::Floor(v.X), Math::Floor(v.Y), Math::Floor(v.Z));
