@@ -294,25 +294,12 @@ namespace FlaxEngine
         public static bool TryParseHex(string hexString, out Color value)
         {
             value = Black;
-
             if (string.IsNullOrEmpty(hexString))
                 return false;
 
             int r, g, b, a = 255;
-
             int startIndex = hexString[0] == '#' ? 1 : 0;
-
-            if (hexString.Length == 3 + startIndex)
-            {
-                r = StringUtils.HexDigit(hexString[startIndex++]);
-                g = StringUtils.HexDigit(hexString[startIndex++]);
-                b = StringUtils.HexDigit(hexString[startIndex]);
-
-                r = (r << 4) + r;
-                g = (g << 4) + g;
-                b = (b << 4) + b;
-            }
-            else if (hexString.Length == 6 + startIndex)
+            if (hexString.Length == 6 + startIndex)
             {
                 r = (StringUtils.HexDigit(hexString[startIndex + 0]) << 4) + StringUtils.HexDigit(hexString[startIndex + 1]);
                 g = (StringUtils.HexDigit(hexString[startIndex + 2]) << 4) + StringUtils.HexDigit(hexString[startIndex + 3]);
