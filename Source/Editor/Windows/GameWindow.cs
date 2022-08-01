@@ -326,7 +326,7 @@ namespace FlaxEditor.Windows
         }
 
         /// <inheritdoc />
-        protected override bool CanOpenContentFinder => false;
+        protected override bool CanOpenContentFinder => !Editor.IsPlayMode;
 
         /// <inheritdoc />
         protected override bool CanUseNavigation => false;
