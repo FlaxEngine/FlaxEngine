@@ -156,10 +156,10 @@ void CS_DepthOfFieldH(uint3 groupID : SV_GroupID, uint3 groupThreadID : SV_Group
 	float2 sampleCoord = saturate(samplePos / float2(textureSize));
 #endif
 #if USE_CS_LINEAR_SAMPLING
-	float3 color = Input0.SampleLevel(SamplerLinearClamp, sampleCoord, 0.0f).xyz;
+	float4 color = Input0.SampleLevel(SamplerLinearClamp, sampleCoord, 0.0f).rgba;
 	float2 depthBlur = Input1.SampleLevel(SamplerLinearClamp, sampleCoord, 0.0f).xy;
 #else
-	float3 color = Input0.SampleLevel(SamplerPointClamp, sampleCoord, 0.0f).xyz;
+	float4 color = Input0.SampleLevel(SamplerPointClamp, sampleCoord, 0.0f).rgba;
 	float2 depthBlur = Input1.SampleLevel(SamplerPointClamp, sampleCoord, 0.0f).xy;
 #endif
 	float depth = depthBlur.x;
@@ -167,7 +167,7 @@ void CS_DepthOfFieldH(uint3 groupID : SV_GroupID, uint3 groupThreadID : SV_Group
 	float cocSize = blur * DOF_MAX_SAMPLE_RADIUS;
 
 	// Store in shared memory
-	Samples[groupThreadID.x].Color = color;
+	Samples[groupThreadID.x].Color = color.rgb;
 	Samples[groupThreadID.x].Depth = depth;
 	Samples[groupThreadID.x].Blur = blur;
 
@@ -203,11 +203,11 @@ void CS_DepthOfFieldH(uint3 groupID : SV_GroupID, uint3 groupThreadID : SV_Group
 
 			// Write out the result
 			outputColor /= totalContribution;
-			OutputTexture[samplePos] = float4(max(outputColor, 0), 1.0f);
+			OutputTexture[samplePos] = float4(max(outputColor, 0), color.a);
 		}
 		else
 		{
-			OutputTexture[samplePos] = float4(color, 1.0f);
+			OutputTexture[samplePos] = color;
 		}
 	}
 }
@@ -237,10 +237,10 @@ void CS_DepthOfFieldV(uint3 groupID : SV_GroupID, uint3 groupThreadID : SV_Group
 	float2 sampleCoord = saturate(samplePos / float2(textureSize));
 #endif
 #if USE_CS_LINEAR_SAMPLING
-	float3 color = Input0.SampleLevel(SamplerLinearClamp, sampleCoord, 0.0f).xyz;
+	float4 color = Input0.SampleLevel(SamplerLinearClamp, sampleCoord, 0.0f).rgba;
 	float2 depthBlur = Input1.SampleLevel(SamplerLinearClamp, sampleCoord, 0.0f).xy;
 #else
-	float3 color = Input0.SampleLevel(SamplerPointClamp, sampleCoord, 0.0f).xyz;
+	float4 color = Input0.SampleLevel(SamplerPointClamp, sampleCoord, 0.0f).rgba;
 	float2 depthBlur = Input1.SampleLevel(SamplerPointClamp, sampleCoord, 0.0f).xy;
 #endif
 	float depth = depthBlur.x;
@@ -248,7 +248,7 @@ void CS_DepthOfFieldV(uint3 groupID : SV_GroupID, uint3 groupThreadID : SV_Group
 	float cocSize = blur * DOF_MAX_SAMPLE_RADIUS;
 
 	// Store in shared memory
-	Samples[groupThreadID.y].Color = color;
+	Samples[groupThreadID.y].Color = color.rgb;
 	Samples[groupThreadID.y].Depth = depth;
 	Samples[groupThreadID.y].Blur = blur;
 
@@ -284,11 +284,11 @@ void CS_DepthOfFieldV(uint3 groupID : SV_GroupID, uint3 groupThreadID : SV_Group
 
 			// Write out the result
 			outputColor /= totalContribution;
-			OutputTexture[samplePos] = float4(max(outputColor, 0), 1.0f);
+			OutputTexture[samplePos] = float4(max(outputColor, 0), color.a);
 		}
 		else
 		{
-			OutputTexture[samplePos] = float4(color, 1.0f);
+			OutputTexture[samplePos] = color;
 		}
 	}
 }
@@ -456,11 +456,10 @@ META_PS(true, FEATURE_LEVEL_SM5)
 float4 PS_GenerateBokeh(Quad_VS2PS input) : SV_Target
 {
 #if FEATURE_LEVEL >= FEATURE_LEVEL_SM5
-	
-	float2 centerCoord = input.TexCoord;
-
 	// Start with center sample color
-	float3 centerColor = Input0.Sample(SamplerPointClamp, centerCoord).rgb;
+	float2 centerCoord = input.TexCoord;
+	float4 centerSample = Input0.Sample(SamplerPointClamp, centerCoord);
+	float3 centerColor = centerSample.rgb;
 	float3 colorSum = centerColor;
 	float totalContribution = 1.0f;
 
@@ -505,12 +504,9 @@ float4 PS_GenerateBokeh(Quad_VS2PS input) : SV_Target
 		centerColor = 0.0f;
 	}
 
-	return float4(centerColor, 1.0f);
-	
+	return float4(centerColor, centerSample.a);
 #else
-
 	return float4(0, 0, 0, 1.0f);
-
 #endif
 }
 
@@ -520,10 +516,10 @@ float4 PS_GenerateBokeh(Quad_VS2PS input) : SV_Target
 META_PS(true, FEATURE_LEVEL_SM5)
 float4 PS_DoNotGenerateBokeh(Quad_VS2PS input) : SV_Target
 {
-	float2 centerCoord = input.TexCoord;
-
 	// Start with center sample color
-	float3 centerColor = Input0.Sample(SamplerPointClamp, centerCoord).rgb;
+	float2 centerCoord = input.TexCoord;
+	float4 centerSample = Input0.Sample(SamplerPointClamp, centerCoord);
+	float3 centerColor = centerSample.rgb;
 	float3 colorSum = centerColor;
 	float totalContribution = 1.0f;
 
@@ -561,7 +557,7 @@ float4 PS_DoNotGenerateBokeh(Quad_VS2PS input) : SV_Target
 		centerColor = 0.0f;
 	}
 
-	return float4(centerColor, 1.0f);
+	return float4(centerColor, centerSample.a);
 }
 
 #else
@@ -642,10 +638,8 @@ float4 PS_BokehComposite(in Quad_VS2PS input) : SV_Target
 {
     float4 bokehSample = Input0.Sample(SamplerLinearClamp, input.TexCoord);
 	float4 dofSample = Input1.Sample(SamplerPointClamp, input.TexCoord);
-
 	float3 composite = bokehSample.rgb + dofSample.rgb;
-
-	return float4(composite, 1.0f);
+	return float4(composite, dofSample.a);
 }
 
 #endif

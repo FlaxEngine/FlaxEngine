@@ -5,9 +5,6 @@
 #include "RendererPass.h"
 #include "Engine/Graphics/PostProcessSettings.h"
 
-#define DOF_DEPTH_BLUR_FORMAT PixelFormat::R16G16_Float
-#define DOF_RT_FORMAT PixelFormat::R11G11B10_Float
-
 /// <summary>
 /// Depth of Field rendering
 /// </summary>

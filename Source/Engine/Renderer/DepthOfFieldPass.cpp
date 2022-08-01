@@ -20,6 +20,7 @@
 #define DOF_GRID_SIZE 450
 #define DOF_APRON_SIZE DOF_MAX_SAMPLE_RADIUS
 #define DOF_THREAD_GROUP_SIZE (DOF_GRID_SIZE + (DOF_APRON_SIZE * 2))
+#define DOF_DEPTH_BLUR_FORMAT PixelFormat::R16G16_Float
 
 DepthOfFieldPass::DepthOfFieldPass()
 {
@@ -320,7 +321,8 @@ GPUTexture* DepthOfFieldPass::Render(RenderContext& renderContext, GPUTexture* i
     }
 
     // Peek temporary render target for dof pass
-    tempDesc = GPUTextureDescription::New2D(dofWidth, dofHeight, DOF_RT_FORMAT);
+    auto dofFormat = renderContext.Buffers->GetOutputFormat();
+    tempDesc = GPUTextureDescription::New2D(dofWidth, dofHeight, dofFormat);
     GPUTexture* dofInput = RenderTargetPool::Get(tempDesc);
 
     // Do the bokeh point generation, or just do a copy if disabled
@@ -374,7 +376,7 @@ GPUTexture* DepthOfFieldPass::Render(RenderContext& renderContext, GPUTexture* i
     context->FlushState();
     {
         // Peek temporary targets for two blur passes
-        tempDesc = GPUTextureDescription::New2D(dofWidth, dofHeight, DOF_RT_FORMAT, GPUTextureFlags::ShaderResource | GPUTextureFlags::RenderTarget | GPUTextureFlags::UnorderedAccess);
+        tempDesc = GPUTextureDescription::New2D(dofWidth, dofHeight, dofFormat, GPUTextureFlags::ShaderResource | GPUTextureFlags::RenderTarget | GPUTextureFlags::UnorderedAccess);
         auto dofTargetH = RenderTargetPool::Get(tempDesc);
         auto dofTargetV = RenderTargetPool::Get(tempDesc);
 
@@ -421,7 +423,7 @@ GPUTexture* DepthOfFieldPass::Render(RenderContext& renderContext, GPUTexture* i
     // Render the bokeh points
     if (isBokehGenerationEnabled)
     {
-        tempDesc = GPUTextureDescription::New2D(bokehTargetWidth, bokehTargetHeight, DOF_RT_FORMAT);
+        tempDesc = GPUTextureDescription::New2D(bokehTargetWidth, bokehTargetHeight, dofFormat);
         auto bokehTarget = RenderTargetPool::Get(tempDesc);
         context->Clear(*bokehTarget, Color::Black);
 
@@ -444,7 +446,7 @@ GPUTexture* DepthOfFieldPass::Render(RenderContext& renderContext, GPUTexture* i
         }
 
         // Composite the bokeh rendering results with the depth of field result
-        tempDesc = GPUTextureDescription::New2D(dofWidth, dofHeight, DOF_RT_FORMAT);
+        tempDesc = GPUTextureDescription::New2D(dofWidth, dofHeight, dofFormat);
         auto compositeTarget = RenderTargetPool::Get(tempDesc);
         context->BindSR(0, bokehTarget);
         context->BindSR(1, dofOutput);

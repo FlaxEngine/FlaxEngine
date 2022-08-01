@@ -11,17 +11,10 @@
 class FXAA : public RendererPass<FXAA>
 {
 private:
-
-    PACK_STRUCT(struct Data
-        {
-            Float4 ScreenSize;
-        });
-
     AssetReference<Shader> _shader;
     GPUPipelineStatePermutationsPs<static_cast<int32>(Quality::MAX)> _psFXAA;
 
 public:
-
     /// <summary>
     /// Performs AA pass rendering for the input task.
     /// </summary>
@@ -31,7 +24,6 @@ public:
     void Render(RenderContext& renderContext, GPUTexture* input, GPUTextureView* output);
 
 private:
-
 #if COMPILE_WITH_DEV_ENV
     void OnShaderReloading(Asset* obj)
     {
@@ -41,18 +33,12 @@ private:
 #endif
 
 public:
-
     // [RendererPass]
-    String ToString() const override
-    {
-        return TEXT("FXAA");
-    }
-
+    String ToString() const override;
     bool Init() override;
     void Dispose() override;
 
 protected:
-
     // [RendererPass]
     bool setupResources() override;
 };

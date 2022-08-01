@@ -90,7 +90,7 @@ float4 PS_ApplyLuminance(Quad_VS2PS input) : SV_Target
 {
 	float averageLuminance = AverageLuminance.Load(int3(0, 0, 0)).x;
 	float exposure = 1.0f / averageLuminance;
-	return (PreExposure * exposure).xxxx;
+	return float4((PreExposure * exposure).xxx, 1);
 }
 
 #endif

@@ -13,9 +13,6 @@
 #define GBUFFER2_FORMAT PixelFormat::R8G8B8A8_UNorm
 #define GBUFFER3_FORMAT PixelFormat::R8G8B8A8_UNorm
 
-// Light accumulation buffer format (direct+indirect light, materials emissive)
-#define LIGHT_BUFFER_FORMAT PixelFormat::R11G11B10_Float
-
 /// <summary>
 /// The scene rendering buffers container.
 /// </summary>
@@ -39,6 +36,7 @@ protected:
     int32 _width = 0;
     int32 _height = 0;
     float _aspectRatio = 0.0f;
+    bool _useAlpha = false;
     Viewport _viewport;
     Array<GPUTexture*, FixedAllocation<32>> _resources;
 
@@ -152,6 +150,21 @@ public:
     {
         return _viewport;
     }
+
+    /// <summary>
+    /// Gets the output buffers format (R11G11B10 or R16G16B16A16 depending on UseAlpha property).
+    /// </summary>
+    API_PROPERTY() PixelFormat GetOutputFormat() const;
+
+    /// <summary>
+    /// True if support alpha output in the rendering buffers and pass-though alpha mask of the scene during rendering (at cost of reduced performance).
+    /// </summary>
+    API_PROPERTY() bool GetUseAlpha() const;
+
+    /// <summary>
+    /// True if support alpha output in the rendering buffers and pass-though alpha mask of the scene during rendering (at cost of reduced performance).
+    /// </summary>
+    API_PROPERTY() void SetUseAlpha(bool value);
 
     const CustomBuffer* FindCustomBuffer(const StringView& name) const;
 

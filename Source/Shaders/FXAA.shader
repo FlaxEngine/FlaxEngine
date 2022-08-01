@@ -18,6 +18,8 @@
 
 #include "./Flax/Common.hlsl"
 
+#define FXAA_ALPHA_PASSTHROUGH 1
+
 Texture2D Source : register(t0);
 
 #define SAMPLE_TEXTURE_LEVEL(texture, uv, level) texture.SampleLevel(SamplerLinearClamp, uv, level)
@@ -67,6 +69,9 @@ FXAA_DEBUG_OFFSET      - Red/blue for -/+ x, gold/skyblue for -/+ y.
 #ifndef     FXAA_DEBUG_OFFSET
     #define FXAA_DEBUG_OFFSET      0
 #endif    
+#ifndef     FXAA_ALPHA_PASSTHROUGH
+    #define FXAA_ALPHA_PASSTHROUGH 0
+#endif
 
 #if FXAA_DEBUG_PASSTHROUGH || FXAA_DEBUG_HORZVERT || FXAA_DEBUG_PAIR
     #define FXAA_DEBUG 1
@@ -232,14 +237,18 @@ float FxaaLuma(float3 rgb)
 } 
 
 // Support any extra filtering before returning color
-float4 FxaaFilterReturn(float3 rgb)
+float4 FxaaFilterReturn(float3 rgb, float4 source)
 {
     #if FXAA_SRGB_ROP
         // Do sRGB encoded value to linear conversion
 		float3 b = rgb > FxaaToFloat3(0.04045);
 		rgb = rgb * FxaaToFloat3(1.0/12.92) * !b + pow(rgb * FxaaToFloat3(1.0/1.055) + FxaaToFloat3(0.055/1.055), FxaaToFloat3(2.4)) * b; 
     #endif
+#if FXAA_ALPHA_PASSTHROUGH
+	return float4(rgb, source.a);
+#else
 	return float4(rgb, 1);
+#endif
 }
 
 META_CB_BEGIN(0, Data)
@@ -277,9 +286,10 @@ then the shader early exits (no visible aliasing).
 This threshold is clamped at a minimum value ("FXAA_EDGE_THRESHOLD_MIN")
 to avoid processing in really dark areas.    
 */
+    float4 source = SAMPLE_TEXTURE_OFFSET(Source, input.TexCoord, 0.0, int2( 0, 0));
     float3 rgbN = SAMPLE_TEXTURE_OFFSET(Source, input.TexCoord, 0.0, int2( 0,-1)).xyz;
     float3 rgbW = SAMPLE_TEXTURE_OFFSET(Source, input.TexCoord, 0.0, int2(-1, 0)).xyz;
-    float3 rgbM = SAMPLE_TEXTURE_OFFSET(Source, input.TexCoord, 0.0, int2( 0, 0)).xyz;
+    float3 rgbM = source.xyz;
     float3 rgbE = SAMPLE_TEXTURE_OFFSET(Source, input.TexCoord, 0.0, int2( 1, 0)).xyz;
     float3 rgbS = SAMPLE_TEXTURE_OFFSET(Source, input.TexCoord, 0.0, int2( 0, 1)).xyz;
     float lumaN = FxaaLuma(rgbN);
@@ -295,9 +305,9 @@ to avoid processing in really dark areas.
     #endif        
     if(range < max(FXAA_EDGE_THRESHOLD_MIN, rangeMax * FXAA_EDGE_THRESHOLD)) {
         #if FXAA_DEBUG
-            return FxaaFilterReturn(FxaaToFloat3(lumaO));
+            return FxaaFilterReturn(FxaaToFloat3(lumaO), source);
         #endif
-        return FxaaFilterReturn(rgbM); }
+        return FxaaFilterReturn(rgbM, source); }
     #if FXAA_SUBPIX > 0
         #if FXAA_SUBPIX_FASTER
             float3 rgbL = (rgbN + rgbW + rgbE + rgbS + rgbM) * FxaaToFloat3(1.0/5.0);
@@ -334,7 +344,7 @@ of a lowpass value (computed in the next section) to the final result.
         #if FXAA_SUBPIX == 0
             float blendL = 0.0;
         #endif
-        return FxaaFilterReturn(float3(1.0, blendL/FXAA_SUBPIX_CAP, 0.0));
+        return FxaaFilterReturn(float3(1.0, blendL/FXAA_SUBPIX_CAP, 0.0), source);
     #endif
 /* 
                     CHOOSE VERTICAL OR HORIZONTAL SEARCH
@@ -379,8 +389,8 @@ flow in parallel (reusing the horizontal variables).
         abs((0.25 * lumaNE) + (-0.5 * lumaE) + (0.25 * lumaSE));
     bool horzSpan = edgeHorz >= edgeVert;
     #if FXAA_DEBUG_HORZVERT
-        if(horzSpan) return FxaaFilterReturn(float3(1.0, 0.75, 0.0));
-        else         return FxaaFilterReturn(float3(0.0, 0.50, 1.0));
+        if(horzSpan) return FxaaFilterReturn(float3(1.0, 0.75, 0.0), source);
+        else         return FxaaFilterReturn(float3(0.0, 0.50, 1.0), source);
     #endif
     float lengthSign = horzSpan ? -ScreenHeightInv : -ScreenWidthInv;
     if(!horzSpan) lumaN = lumaW;
@@ -410,8 +420,8 @@ until edge status changes
 */    
     bool pairN = gradientN >= gradientS;
     #if FXAA_DEBUG_PAIR
-        if(pairN) return FxaaFilterReturn(float3(0.0, 0.0, 1.0));
-        else      return FxaaFilterReturn(float3(0.0, 1.0, 0.0));
+        if(pairN) return FxaaFilterReturn(float3(0.0, 0.0, 1.0), source);
+        else      return FxaaFilterReturn(float3(0.0, 1.0, 0.0), source);
     #endif
     if(!pairN) lumaN = lumaS;
     if(!pairN) gradientN = gradientS;
@@ -498,8 +508,8 @@ On negative side if dstN < dstP,
     float dstP = horzSpan ? posP.x - input.TexCoord.x : posP.y - input.TexCoord.y;
     bool directionN = dstN < dstP;
     #if FXAA_DEBUG_NEGPOS
-        if(directionN) return FxaaFilterReturn(float3(1.0, 0.0, 0.0));
-        else           return FxaaFilterReturn(float3(0.0, 0.0, 1.0));
+        if(directionN) return FxaaFilterReturn(float3(1.0, 0.0, 0.0), source);
+        else           return FxaaFilterReturn(float3(0.0, 0.0, 1.0), source);
     #endif
     lumaEndN = directionN ? lumaEndN : lumaEndP;
     
@@ -627,19 +637,19 @@ Position on span is used to compute sub-pixel filter offset using simple ramp,
         float ox = horzSpan ? 0.0 : subPixelOffset * 2.0 / ScreenWidthInv;
         float oy = horzSpan ? subPixelOffset * 2.0 / ScreenHeightInv : 0.0;
         if(ox < 0.0)
-			return FxaaFilterReturn(lerp(float3(1.0, 0.0, 0.0), FxaaToFloat3(lumaO), -ox));
+			return FxaaFilterReturn(lerp(float3(1.0, 0.0, 0.0), FxaaToFloat3(lumaO), -ox), source);
         if(ox > 0.0)
-			return FxaaFilterReturn(lerp(float3(0.0, 0.0, 1.0), FxaaToFloat3(lumaO),  ox));
+			return FxaaFilterReturn(lerp(float3(0.0, 0.0, 1.0), FxaaToFloat3(lumaO),  ox), source);
         if(oy < 0.0)
-			return FxaaFilterReturn(lerp(float3(1.0, 0.6, 0.2), FxaaToFloat3(lumaO), -oy));
+			return FxaaFilterReturn(lerp(float3(1.0, 0.6, 0.2), FxaaToFloat3(lumaO), -oy), source);
         if(oy > 0.0)
-			return FxaaFilterReturn(lerp(float3(0.2, 0.6, 1.0), FxaaToFloat3(lumaO),  oy));
-        return FxaaFilterReturn(float3(lumaO, lumaO, lumaO));
+			return FxaaFilterReturn(lerp(float3(0.2, 0.6, 1.0), FxaaToFloat3(lumaO),  oy), source);
+        return FxaaFilterReturn(float3(lumaO, lumaO, lumaO), source);
     #endif
     float3 rgbF = SAMPLE_TEXTURE_LEVEL(Source, input.TexCoord + float2(horzSpan ? 0.0 : subPixelOffset, horzSpan ? subPixelOffset : 0.0), 0.0).xyz;
     #if FXAA_SUBPIX == 0
-        return FxaaFilterReturn(rgbF); 
+        return FxaaFilterReturn(rgbF, source); 
     #else        
-        return FxaaFilterReturn(lerp(rgbF, rgbL, blendL)); 
+        return FxaaFilterReturn(lerp(rgbF, rgbL, blendL), source); 
     #endif
 }
