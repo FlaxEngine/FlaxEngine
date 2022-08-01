@@ -16,33 +16,8 @@ namespace FlaxEditor.Content.Settings
         /// </summary>
         public GraphicsSettings()
         {
-            // Initialize PostFx settings with default options (C# structs doesn't support it)
+            // Initialize PostFx settings with default options (C# structs don't support it)
             PostProcessSettings = FlaxEngine.PostProcessSettings.Default;
-        }
-    }
-}
-
-namespace FlaxEngine
-{
-    partial struct PostProcessSettings
-    {
-        private static PostProcessSettings _default;
-
-        /// <summary>
-        /// The default <see cref="PostProcessSettings"/>.
-        /// </summary>
-        public static PostProcessSettings Default
-        {
-            get
-            {
-                if (!_default.AmbientOcclusion.Enabled)
-                {
-                    object obj = _default;
-                    Utils.InitStructure(obj, typeof(PostProcessSettings));
-                    _default = (PostProcessSettings)obj;
-                }
-                return _default;
-            }
         }
     }
 }

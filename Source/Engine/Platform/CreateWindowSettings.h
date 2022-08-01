@@ -29,7 +29,7 @@ API_ENUM() enum class WindowStartPosition
 /// <summary>
 /// Settings for new window.
 /// </summary>
-API_STRUCT() struct CreateWindowSettings
+API_STRUCT(NoDefault) struct CreateWindowSettings
 {
 DECLARE_SCRIPTING_TYPE_MINIMAL(CreateWindowSettings);
 

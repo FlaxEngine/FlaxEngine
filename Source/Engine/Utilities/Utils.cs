@@ -928,7 +928,12 @@ namespace FlaxEngine
                 stream.Write(0);
         }
 
-        internal static void InitStructure(object obj, Type type)
+        /// <summary>
+        /// Initializes the structure (value type) by inflating it with values from <see cref="System.ComponentModel.DefaultValueAttribute"/> (recursive).
+        /// </summary>
+        /// <param name="obj">The object to initialize.</param>
+        /// <param name="type">The structure type.</param>
+        public static void InitStructure(object obj, Type type)
         {
             var fields = type.GetFields(BindingFlags.Default | BindingFlags.Instance | BindingFlags.Public);
             for (var i = 0; i < fields.Length; i++)

@@ -49,7 +49,7 @@ API_ENUM() enum class TextWrapping
 /// <summary>
 /// Structure which describes text layout properties.
 /// </summary>
-API_STRUCT() struct TextLayoutOptions
+API_STRUCT(NoDefault) struct TextLayoutOptions
 {
 DECLARE_SCRIPTING_TYPE_MINIMAL(TextLayoutOptions);
 

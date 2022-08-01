@@ -1113,6 +1113,9 @@ namespace Flax.Build.Bindings
                 case "nopod":
                     desc.ForceNoPod = true;
                     break;
+                case "nodefault":
+                    desc.NoDefault = true;
+                    break;
                 case "attributes":
                     desc.Attributes = tag.Value;
                     break;
