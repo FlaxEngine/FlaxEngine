@@ -10,6 +10,8 @@ Source/*.csproj
 /Package_*/
 !Source/Engine/Debug
 /Source/Platforms/Editor/Linux/Mono/etc/mono/registry
+PackageEditor_Cert.bat
+PackagePlatforms_Cert.bat
 
 # User-specific files
 *.suo
