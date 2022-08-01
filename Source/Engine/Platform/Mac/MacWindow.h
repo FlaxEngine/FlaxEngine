@@ -37,7 +37,7 @@ public:
     void Restore() override;
     bool IsClosed() const override;
     bool IsForegroundWindow() const override;
-    void BringToFront(bool force) override;
+    void BringToFront(bool force = false) override;
 	void SetClientBounds(const Rectangle& clientArea) override;
 	void SetPosition(const Float2& position) override;
 	Float2 GetPosition() const override;
