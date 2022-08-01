@@ -472,6 +472,23 @@ namespace FlaxEditor.Windows
         }
 
         /// <summary>
+        /// Focuses the game viewport. Shows the window if hidden or unselected.
+        /// </summary>
+        public void FocusGameViewport()
+        {
+            if (!IsDocked)
+            {
+                ShowFloating();
+            }
+            else if (!IsSelected)
+            {
+                SelectTab(false);
+                RootWindow?.Window?.Focus();
+            }
+            Focus();
+        }
+
+        /// <summary>
         /// Takes the screenshot of the current viewport.
         /// </summary>
         public void TakeScreenshot()

@@ -409,6 +409,19 @@ JsonAsset* Engine::GetCustomSettings(const StringView& key)
     return Content::LoadAsync<JsonAsset>(assetId);
 }
 
+void Engine::FocusGameViewport()
+{
+#if USE_EDITOR
+    Editor::Managed->FocusGameViewport();
+#else
+    if (MainWindow)
+    {
+        MainWindow->BringToFront();
+        MainWindow->Focus();
+    }
+#endif
+}
+
 bool Engine::HasGameViewportFocus()
 {
 #if USE_EDITOR

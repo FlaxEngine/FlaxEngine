@@ -101,6 +101,11 @@ public:
     bool HasGameViewportFocus() const;
 
     /// <summary>
+    /// Gives focus to the game viewport (game can receive input).
+    /// </summary>
+    void FocusGameViewport() const;
+
+    /// <summary>
     /// Converts the screen-space position to the game viewport position.
     /// </summary>
     /// <param name="screenPos">The screen-space position.</param>

@@ -1301,6 +1301,17 @@ namespace FlaxEditor
             return false;
         }
 
+        internal void Internal_FocusGameViewport()
+        {
+            if (Windows.GameWin != null)
+            {
+                if (StateMachine.IsPlayMode && !StateMachine.PlayingState.IsPaused)
+                {
+                    Windows.GameWin.FocusGameViewport();
+                }
+            }
+        }
+
         internal void Internal_ScreenToGameViewport(ref Float2 pos)
         {
             var win = Windows.GameWin?.Root;

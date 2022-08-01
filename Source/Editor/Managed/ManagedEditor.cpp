@@ -27,6 +27,7 @@ MMethod* Internal_LightmapsBake = nullptr;
 MMethod* Internal_CanReloadScripts = nullptr;
 MMethod* Internal_CanAutoBuildCSG = nullptr;
 MMethod* Internal_CanAutoBuildNavMesh = nullptr;
+MMethod* Internal_FocusGameViewport = nullptr;
 MMethod* Internal_HasGameViewportFocus = nullptr;
 MMethod* Internal_ScreenToGameViewport = nullptr;
 MMethod* Internal_GameViewportToScreen = nullptr;
@@ -370,6 +371,19 @@ bool ManagedEditor::HasGameViewportFocus() const
         result = MUtils::Unbox<bool>(Internal_HasGameViewportFocus->Invoke(GetManagedInstance(), nullptr, nullptr));
     }
     return result;
+}
+
+void ManagedEditor::FocusGameViewport() const
+{
+    if (HasManagedInstance())
+    {
+        if (Internal_FocusGameViewport == nullptr)
+        {
+            Internal_FocusGameViewport = GetClass()->GetMethod("Internal_FocusGameViewport");
+            ASSERT(Internal_FocusGameViewport);
+        }
+        Internal_FocusGameViewport->Invoke(GetManagedInstance(), nullptr, nullptr);
+    }
 }
 
 Float2 ManagedEditor::ScreenToGameViewport(const Float2& screenPos) const

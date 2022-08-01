@@ -191,16 +191,7 @@ namespace FlaxEditor.Modules
             // Show Game widow if hidden
             if (gameWin != null && gameWin.FocusOnPlay)
             {
-                if (!gameWin.IsDocked)
-                {
-                    gameWin.ShowFloating();
-                }
-                else if (!gameWin.IsSelected)
-                {
-                    gameWin.SelectTab(false);
-                    gameWin.RootWindow?.Window?.Focus();
-                    FlaxEngine.GUI.RootControl.GameRoot.Focus();
-                }
+                gameWin.FocusGameViewport();
             }
 
             Editor.Log("[PlayMode] Enter");
