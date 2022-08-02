@@ -231,7 +231,7 @@ void Font::ProcessText(const StringView& text, Array<FontLineCache>& outputLines
         lastMoveLine = moveLine;
     }
 
-    if (tmpLine.LastCharIndex >= tmpLine.FirstCharIndex || text[textLength - 1] == '\n')
+    if (textLength != 0 && (tmpLine.LastCharIndex >= tmpLine.FirstCharIndex || text[textLength - 1] == '\n'))
     {
         // Add line
         tmpLine.Size.X = cursorX;

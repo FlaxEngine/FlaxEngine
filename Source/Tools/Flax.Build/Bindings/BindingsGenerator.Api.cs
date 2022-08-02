@@ -238,7 +238,7 @@ namespace Flax.Build.Bindings
                 result = FindApiTypeInfoInner(buildData, typeInfo, e.Value);
                 if (result != null)
                 {
-                    buildData.TypeCache.Add(typeInfo, result);
+                    buildData.TypeCache[typeInfo] = result;
                     return result;
                 }
             }
