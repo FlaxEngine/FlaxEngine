@@ -66,6 +66,16 @@ DECLARE_SCRIPTING_TYPE_MINIMAL(TextRange);
     {
         return Math::Min(EndIndex, other.EndIndex) > Math::Max(StartIndex, other.StartIndex);
     }
+
+    /// <summary>
+    /// Gets the substring from the source text.
+    /// </summary>
+    /// <param name="other">The text.</param>
+    /// <returns>The substring of the original text of the defined range.</returns>
+    StringView Substring(const StringView& text) const
+    {
+        return StringView(text.Get() + StartIndex, EndIndex - StartIndex);
+    }
 };
 
 template<>
@@ -340,10 +350,35 @@ public:
     /// Processes text to get cached lines for rendering.
     /// </summary>
     /// <param name="text">The input text.</param>
+    /// <param name="textRange">The input text range (substring range of the input text parameter).</param>
+    /// <param name="layout">The layout properties.</param>
+    /// <returns>The output lines list.</returns>
+    API_FUNCTION() Array<FontLineCache> ProcessText(const StringView& text, API_PARAM(Ref) const TextRange& textRange, API_PARAM(Ref) const TextLayoutOptions& layout)
+    {
+        Array<FontLineCache> lines;
+        ProcessText(textRange.Substring(text), lines, layout);
+        return lines;
+    }
+
+    /// <summary>
+    /// Processes text to get cached lines for rendering.
+    /// </summary>
+    /// <param name="text">The input text.</param>
     /// <returns>The output lines list.</returns>
     API_FUNCTION() FORCE_INLINE Array<FontLineCache> ProcessText(const StringView& text)
     {
         return ProcessText(text, TextLayoutOptions());
+    }
+
+    /// <summary>
+    /// Processes text to get cached lines for rendering.
+    /// </summary>
+    /// <param name="text">The input text.</param>
+    /// <param name="textRange">The input text range (substring range of the input text parameter).</param>
+    /// <returns>The output lines list.</returns>
+    API_FUNCTION() FORCE_INLINE Array<FontLineCache> ProcessText(const StringView& text, API_PARAM(Ref) const TextRange& textRange)
+    {
+        return ProcessText(textRange.Substring(text), TextLayoutOptions());
     }
 
     /// <summary>
@@ -353,6 +388,18 @@ public:
     /// <param name="layout">The layout properties.</param>
     /// <returns>The minimum size for that text and fot to render properly.</returns>
     API_FUNCTION() Float2 MeasureText(const StringView& text, API_PARAM(Ref) const TextLayoutOptions& layout);
+
+    /// <summary>
+    /// Measures minimum size of the rectangle that will be needed to draw given text.
+    /// </summary>
+    /// <param name="text">The input text to test.</param>
+    /// <param name="textRange">The input text range (substring range of the input text parameter).</param>
+    /// <param name="layout">The layout properties.</param>
+    /// <returns>The minimum size for that text and fot to render properly.</returns>
+    API_FUNCTION() Float2 MeasureText(const StringView& text, API_PARAM(Ref) const TextRange& textRange, API_PARAM(Ref) const TextLayoutOptions& layout)
+    {
+        return MeasureText(textRange.Substring(text), layout);
+    }
 
     /// <summary>
     /// Measures minimum size of the rectangle that will be needed to draw given text
@@ -365,6 +412,17 @@ public:
     }
 
     /// <summary>
+    /// Measures minimum size of the rectangle that will be needed to draw given text
+    /// </summary>.
+    /// <param name="text">The input text to test.</param>
+    /// <param name="textRange">The input text range (substring range of the input text parameter).</param>
+    /// <returns>The minimum size for that text and fot to render properly.</returns>
+    API_FUNCTION() FORCE_INLINE Float2 MeasureText(const StringView& text, API_PARAM(Ref) const TextRange& textRange)
+    {
+        return MeasureText(textRange.Substring(text), TextLayoutOptions());
+    }
+
+    /// <summary>
     /// Calculates hit character index at given location.
     /// </summary>
     /// <param name="text">The input text to test.</param>
@@ -374,7 +432,7 @@ public:
     /// <returns>The selected character position index (can be equal to text length if location is outside of the layout rectangle).</returns>
     API_FUNCTION() int32 HitTestText(const StringView& text, API_PARAM(Ref) const TextRange& textRange, const Float2& location, API_PARAM(Ref) const TextLayoutOptions& layout)
     {
-        return HitTestText(StringView(text.Get() + textRange.StartIndex, textRange.Length()), location, layout);
+        return HitTestText(textRange.Substring(text), location, layout);
     }
 
     /// <summary>
@@ -406,7 +464,7 @@ public:
     /// <returns>The selected character position index (can be equal to text length if location is outside of the layout rectangle).</returns>
     API_FUNCTION() FORCE_INLINE int32 HitTestText(const StringView& text, API_PARAM(Ref) const TextRange& textRange, const Float2& location)
     {
-        return HitTestText(StringView(text.Get() + textRange.StartIndex, textRange.Length()), location, TextLayoutOptions());
+        return HitTestText(textRange.Substring(text), location, TextLayoutOptions());
     }
 
     /// <summary>
@@ -428,7 +486,7 @@ public:
     /// <returns>The character position (upper left corner which can be used for a caret position).</returns>
     API_FUNCTION() Float2 GetCharPosition(const StringView& text, API_PARAM(Ref) const TextRange& textRange, int32 index, API_PARAM(Ref) const TextLayoutOptions& layout)
     {
-        return GetCharPosition(StringView(text.Get() + textRange.StartIndex, textRange.Length()), index, layout);
+        return GetCharPosition(textRange.Substring(text), index, layout);
     }
 
     /// <summary>
@@ -451,7 +509,7 @@ public:
     /// <returns>The character position (upper left corner which can be used for a caret position).</returns>
     API_FUNCTION() FORCE_INLINE Float2 GetCharPosition(const StringView& text, API_PARAM(Ref) const TextRange& textRange, int32 index)
     {
-        return GetCharPosition(StringView(text.Get() + textRange.StartIndex, textRange.Length()), index, TextLayoutOptions());
+        return GetCharPosition(textRange.Substring(text), index, TextLayoutOptions());
     }
 
     /// <summary>

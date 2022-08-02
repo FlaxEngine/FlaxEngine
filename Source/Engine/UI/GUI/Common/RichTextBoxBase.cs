@@ -14,7 +14,7 @@ namespace FlaxEngine.GUI
         /// The delegate for text blocks processing.
         /// </summary>
         /// <param name="text">The text.</param>
-        /// <param name="textBlocks">The output text blocks. Given list is not-nul and cleared before.</param>
+        /// <param name="textBlocks">The output text blocks. Given list is not-null and cleared before.</param>
         public delegate void ParseTextBlocksDelegate(string text, List<TextBlock> textBlocks);
 
         /// <summary>
