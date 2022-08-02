@@ -555,24 +555,13 @@ namespace FlaxEditor.Surface.Archetypes
                 },
                 TryParseText = (string filterText, out object[] data) =>
                 {
-                    data = null;
-                    if (filterText.StartsWith("#") && Color.TryParseHex(filterText, out var color))
+                    if (Color.TryParse(filterText, out var color))
                     {
                         // Color constant from hex
                         data = new object[] { color };
                         return true;
                     }
-                    if (filterText.Length > 2)
-                    {
-                        var fieldName = char.ToUpperInvariant(filterText[0]) + filterText.Substring(1).ToLowerInvariant();
-                        var field = typeof(Color).GetField(fieldName, BindingFlags.Public | BindingFlags.Static);
-                        if (field != null && fieldName != "Zero")
-                        {
-                            // Color constant in-built
-                            data = new object[] { field.GetValue(null) };
-                            return true;
-                        }
-                    }
+                    data = null;
                     return false;
                 }
             },

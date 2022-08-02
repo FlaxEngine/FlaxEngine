@@ -2,6 +2,7 @@
 
 using System;
 using System.ComponentModel;
+using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
@@ -269,6 +270,46 @@ namespace FlaxEngine
             result[7] = digits[(a) & 0x0f];
 
             return new string(result);
+        }
+        
+        /// <summary>
+        /// Creates <see cref="Color"/> from the text string (hex or color name).
+        /// </summary>
+        /// <param name="text">The color string (hex or color name).</param>
+        /// <returns>The color.</returns>
+        public static Color Parse(string text)
+        {
+            if (TryParse(text, out Color value))
+                return value;
+            throw new FormatException();
+        }
+
+        /// <summary>
+        /// Creates <see cref="Color"/> from the string (hex or color name).
+        /// </summary>
+        /// <param name="text">The color string (hex or color name).</param>
+        /// <param name="value">Output value.</param>
+        /// <returns>True if value has been parsed, otherwise false.</returns>
+        public static bool TryParse(string text, out Color value)
+        {
+            // Try hexadecimal
+            if (text.StartsWith("#") && TryParseHex(text, out value))
+                return true;
+
+            // Try named color
+            if (text.Length > 2)
+            {
+                var fieldName = char.ToUpperInvariant(text[0]) + text.Substring(1).ToLowerInvariant();
+                var field = typeof(Color).GetField(fieldName, BindingFlags.Public | BindingFlags.Static);
+                if (field != null && fieldName != "Zero")
+                {
+                    value = (Color)field.GetValue(null);
+                    return true;
+                }
+            }
+
+            value = Black;
+            return false;
         }
 
         /// <summary>
