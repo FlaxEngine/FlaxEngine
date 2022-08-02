@@ -49,6 +49,7 @@
   <ItemGroup>
     <Compile Include="CircularBufferTests.cs" />
     <Compile Include="TestEditorUtils.cs" />
+    <Compile Include="TestHtmlParser.cs" />
     <Compile Include="TestModulusOperator.cs" />
     <Compile Include="TestPropertyNameUI.cs" />
     <Compile Include="TestQuaternion.cs" />
