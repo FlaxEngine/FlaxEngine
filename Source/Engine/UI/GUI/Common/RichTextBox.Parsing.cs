@@ -28,6 +28,16 @@ namespace FlaxEngine.GUI
             public Float2 Caret;
             
             /// <summary>
+            /// Index of the current line start character.
+            /// </summary>
+            public int LineStartCharacterIndex;
+            
+            /// <summary>
+            /// Index of the current line start text block.
+            /// </summary>
+            public int LineStartTextBlockIndex;
+
+            /// <summary>
             /// Text styles stack (new tags push modified style and pop on tag end).
             /// </summary>
             public Stack<TextBlockStyle> StyleStack;
@@ -86,6 +96,9 @@ namespace FlaxEngine.GUI
             {
                 Control = this,
                 Parser = _parser,
+                Caret = Float2.Zero,
+                LineStartCharacterIndex = 0,
+                LineStartTextBlockIndex = 0,
                 StyleStack = _styleStack,
             };
 
@@ -155,15 +168,19 @@ namespace FlaxEngine.GUI
                 return;
             for (int i = 0; i < lines.Length; i++)
             {
-                if (i != 0)
-                    context.Caret.X = 0;
                 ref var line = ref lines[i];
                 textBlock.Range = new TextRange
                 {
                     StartIndex = start + line.FirstCharIndex,
                     EndIndex = start + line.LastCharIndex,
                 };
-                textBlock.Bounds = new Rectangle(context.Caret + line.Location, line.Size);
+                if (i != 0)
+                {
+                    context.Caret.X = 0;
+                    OnLineAdded(ref context, textBlock.Range.StartIndex - 1);
+                }
+                textBlock.Bounds = new Rectangle(context.Caret, line.Size);
+                textBlock.Bounds.X += line.Location.X;
 
                 // Post-processing
                 PostProcessBlock?.Invoke(ref context, ref textBlock);
@@ -181,8 +198,41 @@ namespace FlaxEngine.GUI
             else
             {
                 context.Caret.X = lastLine.Size.X;
-                context.Caret.Y += lastLine.Location.Y;
             }
+        }
+
+        private void OnLineAdded(ref ParsingContext context, int lineEnd)
+        {
+            // Calculate size of the line
+            var textBlocks = Utils.ExtractArrayFromList(_textBlocks);
+            var lineOrigin = textBlocks[context.LineStartTextBlockIndex].Bounds.Location;
+            var lineSize = Float2.Zero;
+            var lineAscender = 0.0f;
+            for(int i = context.LineStartTextBlockIndex; i < _textBlocks.Count; i++)
+            {
+                ref TextBlock textBlock = ref textBlocks[i];
+                var textBlockSize = textBlock.Bounds.BottomRight - lineOrigin;
+                var textBlockFont = textBlock.Style.Font.GetFont();
+                if (textBlockFont)
+                    lineAscender = Mathf.Max(lineAscender, textBlockFont.Ascender);
+                lineSize = Float2.Max(lineSize, textBlockSize);
+            }
+
+            // Organize text blocks to match the baseline of the line (use ascender)
+            for(int i = context.LineStartTextBlockIndex; i < _textBlocks.Count; i++)
+            {
+                ref TextBlock textBlock = ref textBlocks[i];
+                var offset = lineSize.Y - textBlock.Bounds.Height;
+                var textBlockFont = textBlock.Style.Font.GetFont();
+                if (textBlockFont)
+                    offset = lineAscender - textBlockFont.Ascender;
+                textBlock.Bounds.Location.Y += offset;
+            }
+
+            // Move to the next line
+            context.LineStartCharacterIndex = lineEnd + 1;
+            context.LineStartTextBlockIndex = _textBlocks.Count;
+            context.Caret.Y += lineSize.Y;
         }
     }
 }
