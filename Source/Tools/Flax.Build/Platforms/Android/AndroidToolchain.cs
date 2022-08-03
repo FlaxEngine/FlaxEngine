@@ -1,5 +1,6 @@
 // Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
+using System;
 using System.Collections.Generic;
 using System.IO;
 using Flax.Build.Graph;
@@ -188,7 +189,16 @@ namespace Flax.Build.Platforms
             // Bundle STL library for the executable files for runtime
             if (options.LinkEnv.Output == LinkerOutput.Executable)
             {
-                graph.AddCopyFile(Path.Combine(Path.GetDirectoryName(outputFilePath), "libc++_shared.so"), Path.Combine(AndroidNdk.Instance.RootPath, "sources/cxx-stl/llvm-libc++/libs/", GetAbiName(Architecture), "libc++_shared.so"));
+                // https://android.googlesource.com/platform/ndk/+/master/docs/BuildSystemMaintainers.md#libc
+                var ndkPath = AndroidNdk.Instance.RootPath;
+                var libCppSharedPath = Path.Combine(ndkPath, "sources/cxx-stl/llvm-libc++/libs/", GetAbiName(Architecture), "libc++_shared.so"); // NDK24 (and older) location
+                if (!File.Exists(libCppSharedPath))
+                {
+                    libCppSharedPath = Path.Combine(ndkPath, "toolchains/llvm/prebuilt", AndroidSdk.GetHostName(), "sysroot/usr/lib/", GetToolchainName(TargetPlatform.Android, Architecture), "libc++_shared.so"); // NDK25+ location
+                    if (!File.Exists(libCppSharedPath))
+                        throw new Exception($"Missing Android NDK `libc++_shared.so` for architecture {Architecture}.");
+                }
+                graph.AddCopyFile(Path.Combine(Path.GetDirectoryName(outputFilePath), "libc++_shared.so"), libCppSharedPath);
             }
 
             var task = base.CreateBinary(graph, options, outputFilePath);
