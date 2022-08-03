@@ -81,6 +81,35 @@ namespace FlaxEngine.GUI
             }
         }
 
+        private static void ProcessFont(ref ParsingContext context, ref HtmlTag tag)
+        {
+            if (tag.IsSlash)
+            {
+                context.StyleStack.Pop();
+            }
+            else
+            {
+                var style = context.StyleStack.Peek();
+                style.Font = new FontReference(style.Font);
+                if (tag.Attributes.TryGetValue(string.Empty, out var fontName))
+                {
+                    var ids = Content.GetAllAssetsByType(typeof(FontAsset));
+                    foreach (var id in ids)
+                    {
+                        if (Content.GetAssetInfo(id, out var info) && string.Equals(fontName, System.IO.Path.GetFileNameWithoutExtension(info.Path), System.StringComparison.OrdinalIgnoreCase))
+                        {
+                            var font = Content.LoadAsync<FontAsset>(id);
+                            if (font != null)
+                                style.Font.Font = font;
+                        }
+                    }
+                }
+                if (tag.Attributes.TryGetValue("size", out var sizeText) && int.TryParse(sizeText, out var size))
+                    style.Font.Size = size;
+                context.StyleStack.Push(style);
+            }
+        }
+
         private static void ProcessBold(ref ParsingContext context, ref HtmlTag tag)
         {
             if (tag.IsSlash)

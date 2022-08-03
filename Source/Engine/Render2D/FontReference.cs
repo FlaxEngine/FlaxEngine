@@ -43,6 +43,17 @@ namespace FlaxEngine
         /// <summary>
         /// Initializes a new instance of the <see cref="FontReference"/> struct.
         /// </summary>
+        /// <param name="other">The other font reference.</param>
+        public FontReference(FontReference other)
+        {
+            _font = other._font;
+            _size = other._size;
+            _cachedFont = other._cachedFont;
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="FontReference"/> struct.
+        /// </summary>
         /// <param name="font">The font.</param>
         public FontReference(Font font)
         {

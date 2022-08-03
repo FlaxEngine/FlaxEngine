@@ -72,6 +72,7 @@ namespace FlaxEngine.GUI
             { "color", ProcessColor },
             { "alpha", ProcessAlpha },
             { "style", ProcessStyle },
+            { "font", ProcessFont },
             { "b", ProcessBold },
             { "i", ProcessItalic },
         };
