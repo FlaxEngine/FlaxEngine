@@ -34,9 +34,19 @@ namespace FlaxEngine.Utilities
         public Dictionary<string, string> Attributes;
 
         /// <summary>
+        /// True if this tag contained a leading forward slash (begin of the tag).
+        /// </summary>
+        public bool IsLeadingSlash;
+
+        /// <summary>
         /// True if this tag contained a trailing forward slash (end of the tag).
         /// </summary>
-        public bool IsTrailingSlash;
+        public bool IsEndingSlash;
+
+        /// <summary>
+        /// True if this tag contained a leading or trailing forward slash.
+        /// </summary>
+        public bool IsSlash => IsLeadingSlash || IsEndingSlash;
     };
 
     /// <summary>
@@ -102,7 +112,6 @@ namespace FlaxEngine.Utilities
                 // Skip opening '<'
                 Move();
 
-                // Examine first tag character
                 char c = Peek();
                 if (c == '!' && Peek(1) == '-' && Peek(2) == '-')
                 {
@@ -112,15 +121,13 @@ namespace FlaxEngine.Utilities
                     NormalizePosition();
                     Move(endComment.Length);
                 }
-                else if (c == '/')
-                {
-                    // Skip over closing tags
-                    _pos = _html.IndexOf('>', _pos);
-                    NormalizePosition();
-                    Move();
-                }
                 else
                 {
+                    // Skip leading slash
+                    bool isLeadingSlash = c == '/';
+                    if (isLeadingSlash)
+                        Move();
+
                     // Parse tag
                     bool result = ParseTag(ref tag, name);
 
@@ -136,9 +143,16 @@ namespace FlaxEngine.Utilities
                             Move();
                     }
 
-                    // Return true if requested tag was found
                     if (result)
+                    {
+                        if (isLeadingSlash)
+                        {
+                            // Tag starts with '/'
+                            tag.StartPosition--;
+                            tag.IsLeadingSlash = true;
+                        }
                         return true;
+                    }
                 }
             }
 
@@ -188,7 +202,7 @@ namespace FlaxEngine.Utilities
                 {
                     // Handle trailing forward slash
                     if (requested)
-                        tag.IsTrailingSlash = true;
+                        tag.IsEndingSlash = true;
                     Move();
                     SkipWhitespace();
 
@@ -250,7 +264,7 @@ namespace FlaxEngine.Utilities
         private string ParseAttributeName()
         {
             int start = _pos;
-            while (!EOF && !char.IsWhiteSpace(Peek()) && Peek() != '>' && Peek() != '=')
+            while (!EOF && char.IsLetterOrDigit(Peek()))
                 Move();
             return _html.Substring(start, _pos - start);
         }
@@ -284,7 +298,7 @@ namespace FlaxEngine.Utilities
             {
                 // Parse unquoted value
                 start = _pos;
-                while (!EOF && !char.IsWhiteSpace(c) && c != '>')
+                while (!EOF && !char.IsWhiteSpace(c) && c != '>' && c != '/')
                 {
                     Move();
                     c = Peek();

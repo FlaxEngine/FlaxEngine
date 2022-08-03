@@ -68,8 +68,27 @@ namespace FlaxEngine.Tests
             return result;
         }
 
+        [TestCase("b<a>", ExpectedResult = false)]
+        [TestCase("b<a/>", ExpectedResult = true)]
+        [TestCase("b<a />", ExpectedResult = true)]
+        [TestCase("b<a  />", ExpectedResult = true)]
+        [TestCase("b<a size=50>", ExpectedResult = false)]
+        [TestCase("b<a size=50/>", ExpectedResult = true)]
+        [TestCase("b</a>", ExpectedResult = true)]
+        public bool TestEnding(string html)
+        {
+            var parser = new HtmlParser(html);
+            while (parser.ParseNext(out var tag))
+            {
+                return tag.IsSlash;
+            }
+            throw new System.Exception();
+        }
+
         [TestCase("b<a size=50>", ExpectedResult = 1)]
         [TestCase("sd b <a>", ExpectedResult = 5)]
+        [TestCase("sd b </a>", ExpectedResult = 5)]
+        [TestCase("sd b <a/>", ExpectedResult = 5)]
         public int TestStartPosition(string html)
         {
             var parser = new HtmlParser(html);
