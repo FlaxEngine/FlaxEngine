@@ -274,7 +274,7 @@ public:
     /// <summary>
     /// Gets the largest vertical distance above the baseline for any character in the font.
     /// </summary>
-    FORCE_INLINE int32 GetAscender() const
+    API_PROPERTY() FORCE_INLINE int32 GetAscender() const
     {
         return _ascender;
     }

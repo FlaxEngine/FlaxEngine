@@ -62,7 +62,7 @@ namespace FlaxEngine.GUI
         /// <summary>
         /// Updates the text blocks.
         /// </summary>
-        protected virtual void UpdateTextBlocks()
+        public virtual void UpdateTextBlocks()
         {
             Profiler.BeginEvent("RichTextBoxBase.UpdateTextBlocks");
 

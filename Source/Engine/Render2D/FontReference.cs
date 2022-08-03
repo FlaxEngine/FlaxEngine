@@ -107,6 +107,24 @@ namespace FlaxEngine
         }
 
         /// <summary>
+        /// Gets the bold font object described by the structure.
+        /// </summary>
+        /// <returns>The bold font asset.</returns>
+        public FontReference GetBold()
+        {
+            return new FontReference(_font?.GetBold(), _size);
+        }
+
+        /// <summary>
+        /// Gets the italic font object described by the structure.
+        /// </summary>
+        /// <returns>The bold font asset.</returns>
+        public FontReference GetItalic()
+        {
+            return new FontReference(_font?.GetItalic(), _size);
+        }
+
+        /// <summary>
         /// Determines whether the specified <see cref="FontReference" /> is equal to this instance.
         /// </summary>
         /// <param name="other">The <see cref="FontReference" /> to compare with this instance.</param>

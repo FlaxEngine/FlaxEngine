@@ -13,6 +13,11 @@ namespace FlaxEngine.GUI
         public struct ParsingContext
         {
             /// <summary>
+            /// Text box control.
+            /// </summary>
+            public RichTextBox Control;
+
+            /// <summary>
             /// HTML tags parser.
             /// </summary>
             public HtmlParser Parser;
@@ -55,6 +60,10 @@ namespace FlaxEngine.GUI
         {
             { "br", ProcessBr },
             { "color", ProcessColor },
+            { "alpha", ProcessAlpha },
+            { "style", ProcessStyle },
+            { "b", ProcessBold },
+            { "i", ProcessItalic },
         };
 
         private HtmlParser _parser = new HtmlParser();
@@ -75,6 +84,7 @@ namespace FlaxEngine.GUI
             _styleStack.Push(_textStyle);
             var context = new ParsingContext
             {
+                Control = this,
                 Parser = _parser,
                 StyleStack = _styleStack,
             };

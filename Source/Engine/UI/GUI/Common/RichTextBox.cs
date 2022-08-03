@@ -1,5 +1,7 @@
 // Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
+using System.Collections.Generic;
+
 namespace FlaxEngine.GUI
 {
     /// <summary>
@@ -22,6 +24,12 @@ namespace FlaxEngine.GUI
                 UpdateTextBlocks();
             }
         }
+
+        /// <summary>
+        /// The collection of custom text styles to apply (named).
+        /// </summary>
+        [EditorOrder(30)]
+        public Dictionary<string, TextBlockStyle> Styles = new Dictionary<string, TextBlockStyle>();
 
         /// <summary>
         /// Initializes a new instance of the <see cref="RichTextBox"/> class.

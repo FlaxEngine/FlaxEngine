@@ -141,7 +141,7 @@ namespace FlaxEditor.Scripting
                 Utilities.Utils.InitDefaultValues(value);
                 return value;
             }
-            throw new NotSupportedException("Cannot create default value for type " + type);
+            return null;
         }
 
         /// <summary>
