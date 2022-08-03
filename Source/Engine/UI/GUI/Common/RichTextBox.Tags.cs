@@ -137,5 +137,26 @@ namespace FlaxEngine.GUI
                 context.StyleStack.Push(style);
             }
         }
+
+        private static void ProcessSize(ref ParsingContext context, ref HtmlTag tag)
+        {
+            if (tag.IsSlash)
+            {
+                context.StyleStack.Pop();
+            }
+            else
+            {
+                var style = context.StyleStack.Peek();
+                style.Font = new FontReference(style.Font);
+                if (tag.Attributes.TryGetValue(string.Empty, out var sizeText))
+                {
+                    if (int.TryParse(sizeText, out var sizeInt))
+                        style.Font.Size = sizeInt;
+                    if (sizeText.Length > 1 && sizeText[sizeText.Length - 1] == '%')
+                       style.Font.Size = (int)(style.Font.Size * float.Parse(sizeText.Substring(0, sizeText.Length - 1)) / 100.0f);
+                }
+                context.StyleStack.Push(style);
+            }
+        }
     }
 }

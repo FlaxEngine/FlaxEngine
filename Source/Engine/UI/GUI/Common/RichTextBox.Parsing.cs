@@ -75,6 +75,7 @@ namespace FlaxEngine.GUI
             { "font", ProcessFont },
             { "b", ProcessBold },
             { "i", ProcessItalic },
+            { "size", ProcessSize },
         };
 
         private HtmlParser _parser = new HtmlParser();
