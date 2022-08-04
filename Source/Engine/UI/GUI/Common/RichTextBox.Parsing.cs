@@ -90,6 +90,7 @@ namespace FlaxEngine.GUI
             { "i", ProcessItalic },
             { "size", ProcessSize },
             { "img", ProcessImage },
+            { "valign", ProcessVAlign },
         };
 
         private HtmlParser _parser = new HtmlParser();
@@ -132,8 +133,13 @@ namespace FlaxEngine.GUI
                 OnParseTag(ref context, ref tag);
             }
 
-            // Insert remaining text
+            // Insert remaining text (and line)
             OnAddTextBlock(ref context, testStartPos, _text.Length);
+            if (context.LineStartTextBlockIndex != _textBlocks.Count)
+            {
+                context.Caret.X = 0;
+                OnLineAdded(ref context, _text.Length - 1);
+            }
         }
 
         /// <summary>
@@ -224,21 +230,54 @@ namespace FlaxEngine.GUI
             {
                 ref TextBlock textBlock = ref textBlocks[i];
                 var textBlockSize = textBlock.Bounds.BottomRight - lineOrigin;
-                var textBlockFont = textBlock.Style.Font.GetFont();
-                if (textBlockFont)
-                    lineAscender = Mathf.Max(lineAscender, textBlockFont.Ascender);
+                var ascender = textBlock.Ascender;
+                //if (ascender <= 0)
+                {
+                    var textBlockFont = textBlock.Style.Font.GetFont();
+                    if (textBlockFont)
+                        ascender = textBlockFont.Ascender;
+                }
+                lineAscender = Mathf.Max(lineAscender, ascender);
                 lineSize = Float2.Max(lineSize, textBlockSize);
             }
 
-            // Organize text blocks to match the baseline of the line (use ascender)
+            // Organize text blocks within line
             for(int i = context.LineStartTextBlockIndex; i < _textBlocks.Count; i++)
             {
                 ref TextBlock textBlock = ref textBlocks[i];
-                var offset = lineSize.Y - textBlock.Bounds.Height;
-                var textBlockFont = textBlock.Style.Font.GetFont();
-                if (textBlockFont)
-                    offset = lineAscender - textBlockFont.Ascender;
-                textBlock.Bounds.Location.Y += offset;
+                var vOffset = lineSize.Y - textBlock.Bounds.Height;
+                switch (textBlock.Style.Alignment & TextBlockStyle.Alignments.VerticalMask)
+                {
+                case TextBlockStyle.Alignments.Baseline:
+                {
+                    // Match the baseline of the line (use ascender)
+                    var ascender = textBlock.Ascender;
+                    if (ascender <= 0)
+                    {
+                        var textBlockFont = textBlock.Style.Font.GetFont();
+                        if (textBlockFont)
+                            ascender = textBlockFont.Ascender;
+                    }
+                    vOffset = lineAscender - ascender;
+                    textBlock.Bounds.Location.Y += vOffset;
+                    break;
+                }
+                case TextBlockStyle.Alignments.Top:
+                {
+                    textBlock.Bounds.Location.Y = lineOrigin.Y;
+                    break;
+                }
+                case TextBlockStyle.Alignments.Middle:
+                {
+                    textBlock.Bounds.Location.Y = lineOrigin.Y + vOffset * 0.5f;
+                    break;
+                }
+                case TextBlockStyle.Alignments.Bottom:
+                {
+                    textBlock.Bounds.Location.Y = lineOrigin.Y + vOffset;
+                    break;
+                }
+                }
             }
 
             // Move to the next line

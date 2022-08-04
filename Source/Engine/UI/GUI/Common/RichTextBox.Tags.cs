@@ -176,16 +176,59 @@ namespace FlaxEngine.GUI
             var font = imageBlock.Style.Font.GetFont();
             if (font)
                 imageBlock.Bounds.Size = new Float2(font.Height);
-            imageBlock.Bounds.Size.X *= image.Size.X / image.Size.Y; // Keep aspect ration
-            TryParseNumberTag(ref tag, "width", imageBlock.Bounds.Width, out var width);
+            imageBlock.Bounds.Size.X *= image.Size.X / image.Size.Y; // Keep original aspect ratio
+            bool hasWidth = TryParseNumberTag(ref tag, "width", imageBlock.Bounds.Width, out var width);
             imageBlock.Bounds.Width = width;
-            TryParseNumberTag(ref tag, "height", imageBlock.Bounds.Height, out var height);
+            bool hasHeight = TryParseNumberTag(ref tag, "height", imageBlock.Bounds.Height, out var height);
             imageBlock.Bounds.Height = height;
+            if ((hasHeight || hasWidth) && (hasWidth != hasHeight))
+            {
+                // Maintain aspect ratio after scaling by just width or height
+                if (hasHeight)
+                    imageBlock.Bounds.Size.X = imageBlock.Bounds.Size.Y * image.Size.X / image.Size.Y;
+                else
+                    imageBlock.Bounds.Size.Y = imageBlock.Bounds.Size.X * image.Size.Y / image.Size.X;
+            }
             TryParseNumberTag(ref tag, "scale", 1.0f, out var scale);
             imageBlock.Bounds.Size *= scale;
-            
+
+            // Image height defines the ascender so it's placed on the baseline by default
+            imageBlock.Ascender = imageBlock.Bounds.Size.Y;
+
             context.AddTextBlock(ref imageBlock);
             context.Caret.X += imageBlock.Bounds.Size.X;
+        }
+        
+        private static void ProcessVAlign(ref ParsingContext context, ref HtmlTag tag)
+        {
+            if (tag.IsSlash)
+            {
+                context.StyleStack.Pop();
+            }
+            else
+            {
+                var style = context.StyleStack.Peek();
+                if (tag.Attributes.TryGetValue(string.Empty, out var valign))
+                {
+                    style.Alignment &= ~TextBlockStyle.Alignments.VerticalMask;
+                    switch(valign)
+                    {
+                    case "top":
+                        style.Alignment = TextBlockStyle.Alignments.Top;
+                        break;
+                    case "bottom":
+                        style.Alignment = TextBlockStyle.Alignments.Bottom;
+                        break;
+                    case "middle":
+                        style.Alignment = TextBlockStyle.Alignments.Middle;
+                        break;
+                    case "baseline":
+                        style.Alignment = TextBlockStyle.Alignments.Baseline;
+                        break;
+                    }
+                }
+                context.StyleStack.Push(style);
+            }
         }
 
         private static Asset FindAsset(string name, System.Type type)
@@ -201,16 +244,19 @@ namespace FlaxEngine.GUI
             return null;
         }
 
-        private static void TryParseNumberTag(ref HtmlTag tag, string name, float input, out float output)
+        private static bool TryParseNumberTag(ref HtmlTag tag, string name, float input, out float output)
         {
             output = input;
+            bool used = false;
             if (tag.Attributes.TryGetValue(name, out var text))
             {
                 if (float.TryParse(text, out var width))
                     output = width;
                 if (text.Length > 1 && text[text.Length - 1] == '%')
                     output = input * float.Parse(text.Substring(0, text.Length - 1)) / 100.0f;
+                used = true;
             }
+            return used;
         }
     }
 }
