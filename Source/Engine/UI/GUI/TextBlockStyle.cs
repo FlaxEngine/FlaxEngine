@@ -38,6 +38,12 @@ namespace FlaxEngine.GUI
         public Float2 ShadowOffset;
 
         /// <summary>
+        /// The background brush for the text range.
+        /// </summary>
+        [EditorOrder(45), Tooltip("The background brush for the text range.")]
+        public IBrush BackgroundBrush;
+
+        /// <summary>
         /// The background brush for the selected text range.
         /// </summary>
         [EditorOrder(50), Tooltip("The background brush for the selected text range.")]

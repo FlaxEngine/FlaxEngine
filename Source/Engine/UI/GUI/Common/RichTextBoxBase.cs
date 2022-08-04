@@ -267,10 +267,16 @@ namespace FlaxEngine.GUI
                 }
             }
 
-            // Draw selection background
+            // Draw background
             for (int i = firstTextBlock; i < endTextBlock; i++)
             {
                 ref TextBlock textBlock = ref textBlocks[i];
+
+                // Background
+                if (textBlock.Style.BackgroundBrush != null)
+                {
+                    textBlock.Style.BackgroundBrush.Draw(textBlock.Bounds, textBlock.Style.Color);
+                }
 
                 // Pick font
                 var font = textBlock.Style.Font.GetFont();

@@ -41,6 +41,19 @@ namespace FlaxEngine.GUI
             /// Text styles stack (new tags push modified style and pop on tag end).
             /// </summary>
             public Stack<TextBlockStyle> StyleStack;
+
+            /// <summary>
+            /// Adds the text block to the control
+            /// </summary>
+            /// <param name="textBlock">The text block to add.</param>
+            public void AddTextBlock(ref TextBlock textBlock)
+            {
+                // Post-processing
+                Control.PostProcessBlock?.Invoke(ref this, ref textBlock);
+            
+                // Add to the text blocks
+                Control._textBlocks.Add(textBlock);
+            }
         }
         
         /// <summary>
@@ -76,6 +89,7 @@ namespace FlaxEngine.GUI
             { "b", ProcessBold },
             { "i", ProcessItalic },
             { "size", ProcessSize },
+            { "img", ProcessImage },
         };
 
         private HtmlParser _parser = new HtmlParser();
@@ -184,11 +198,7 @@ namespace FlaxEngine.GUI
                 textBlock.Bounds = new Rectangle(context.Caret, line.Size);
                 textBlock.Bounds.X += line.Location.X;
 
-                // Post-processing
-                PostProcessBlock?.Invoke(ref context, ref textBlock);
-            
-                // Add to the text blocks
-                _textBlocks.Add(textBlock);
+                context.AddTextBlock(ref textBlock);
             }
             
             // Update the caret location

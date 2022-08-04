@@ -32,6 +32,12 @@ namespace FlaxEngine.GUI
         public Dictionary<string, TextBlockStyle> Styles = new Dictionary<string, TextBlockStyle>();
 
         /// <summary>
+        /// The collection of custom images/sprites that can be inlined in text (named).
+        /// </summary>
+        [EditorOrder(40)]
+        public Dictionary<string, IBrush> Images = new Dictionary<string, IBrush>();
+
+        /// <summary>
         /// Initializes a new instance of the <see cref="RichTextBox"/> class.
         /// </summary>
         public RichTextBox()
