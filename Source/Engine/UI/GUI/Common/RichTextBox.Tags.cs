@@ -165,7 +165,7 @@ namespace FlaxEngine.GUI
                 Range = new TextRange
                 {
                     StartIndex = tag.StartPosition,
-                    EndIndex = tag.StartPosition,
+                    EndIndex = tag.StartPosition - 1,
                 },
                 Style = context.StyleStack.Peek(),
                 Bounds = new Rectangle(context.Caret, new Float2(64.0f)),

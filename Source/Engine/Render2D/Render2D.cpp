@@ -1145,7 +1145,7 @@ void Render2D::DrawText(Font* font, const StringView& text, const Color& color, 
 
     // Check if there is no need to do anything
     if (font == nullptr ||
-        text.IsEmpty() ||
+        text.Length() < 0 ||
         (customMaterial && (!customMaterial->IsReady() || !customMaterial->IsGUI())))
         return;
 
@@ -1249,7 +1249,7 @@ void Render2D::DrawText(Font* font, const StringView& text, const Color& color, 
 
 void Render2D::DrawText(Font* font, const StringView& text, const TextRange& textRange, const Color& color, const Float2& location, MaterialBase* customMaterial)
 {
-    DrawText(font, StringView(text.Get() + textRange.StartIndex, textRange.Length()), color, location, customMaterial);
+    DrawText(font, textRange.Substring(text), color, location, customMaterial);
 }
 
 void Render2D::DrawText(Font* font, const StringView& text, const Color& color, const TextLayoutOptions& layout, MaterialBase* customMaterial)
@@ -1362,7 +1362,7 @@ void Render2D::DrawText(Font* font, const StringView& text, const Color& color, 
 
 void Render2D::DrawText(Font* font, const StringView& text, const TextRange& textRange, const Color& color, const TextLayoutOptions& layout, MaterialBase* customMaterial)
 {
-    DrawText(font, StringView(text.Get() + textRange.StartIndex, textRange.Length()), color, layout, customMaterial);
+    DrawText(font, textRange.Substring(text), color, layout, customMaterial);
 }
 
 FORCE_INLINE bool NeedAlphaWithTint(const Color& color)
