@@ -14,7 +14,7 @@ namespace FlaxEngine.GUI
             if (font)
                 context.Caret.Y += font.Height;
         }
-        
+
         private static void ProcessColor(ref ParsingContext context, ref HtmlTag tag)
         {
             if (tag.IsSlash)
@@ -198,7 +198,7 @@ namespace FlaxEngine.GUI
             context.AddTextBlock(ref imageBlock);
             context.Caret.X += imageBlock.Bounds.Size.X;
         }
-        
+
         private static void ProcessVAlign(ref ParsingContext context, ref HtmlTag tag)
         {
             if (tag.IsSlash)
@@ -211,7 +211,7 @@ namespace FlaxEngine.GUI
                 if (tag.Attributes.TryGetValue(string.Empty, out var valign))
                 {
                     style.Alignment &= ~TextBlockStyle.Alignments.VerticalMask;
-                    switch(valign)
+                    switch (valign)
                     {
                     case "top":
                         style.Alignment = TextBlockStyle.Alignments.Top;
@@ -227,6 +227,49 @@ namespace FlaxEngine.GUI
                         break;
                     }
                 }
+                context.StyleStack.Push(style);
+            }
+        }
+
+        private static void ProcessAlign(ref ParsingContext context, ref HtmlTag tag)
+        {
+            if (tag.IsSlash)
+            {
+                context.StyleStack.Pop();
+            }
+            else
+            {
+                var style = context.StyleStack.Peek();
+                if (tag.Attributes.TryGetValue(string.Empty, out var valign))
+                {
+                    style.Alignment &= ~TextBlockStyle.Alignments.VerticalMask;
+                    switch (valign)
+                    {
+                    case "left":
+                        style.Alignment = TextBlockStyle.Alignments.Left;
+                        break;
+                    case "right":
+                        style.Alignment = TextBlockStyle.Alignments.Right;
+                        break;
+                    case "center":
+                        style.Alignment = TextBlockStyle.Alignments.Center;
+                        break;
+                    }
+                }
+                context.StyleStack.Push(style);
+            }
+        }
+
+        private static void ProcessCenter(ref ParsingContext context, ref HtmlTag tag)
+        {
+            if (tag.IsSlash)
+            {
+                context.StyleStack.Pop();
+            }
+            else
+            {
+                var style = context.StyleStack.Peek();
+                style.Alignment = TextBlockStyle.Alignments.Center;
                 context.StyleStack.Push(style);
             }
         }

@@ -50,5 +50,14 @@ namespace FlaxEngine.GUI
                 BackgroundSelectedBrush = new SolidColorBrush(style.BackgroundSelected),
             };
         }
+
+        /// <inheritdoc />
+        protected override void OnSizeChanged()
+        {
+            base.OnSizeChanged();
+
+            // Refresh textblocks since thos emight depend on control size (eg. align right)
+            UpdateTextBlocks();
+        }
     }
 }

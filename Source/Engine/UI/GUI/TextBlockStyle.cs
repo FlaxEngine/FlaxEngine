@@ -33,10 +33,31 @@ namespace FlaxEngine.GUI
             Bottom = 4,
 
             /// <summary>
+            /// Block will be aligned to the left edge of the layout (horizontally).
+            /// </summary>
+            Left = 8,
+            
+            /// <summary>
+            /// Block will be aligned to center of the layout (horizontally).
+            /// </summary>
+            Center = 16,
+            
+            /// <summary>
+            /// Block will be aligned to the right edge of the layout (horizontally).
+            /// </summary>
+            Right = 32,
+
+            /// <summary>
             /// Mask with vertical alignment flags.
             /// </summary>
             [HideInEditor]
             VerticalMask = Top | Middle | Bottom,
+
+            /// <summary>
+            /// Mask with horizontal alignment flags.
+            /// </summary>
+            [HideInEditor]
+            HorizontalMask = Left | Center | Right,
         }
 
         /// <summary>

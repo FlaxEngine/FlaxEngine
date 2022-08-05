@@ -26,12 +26,12 @@ namespace FlaxEngine.GUI
             /// Current caret location for the new text blocks origin.
             /// </summary>
             public Float2 Caret;
-            
+
             /// <summary>
             /// Index of the current line start character.
             /// </summary>
             public int LineStartCharacterIndex;
-            
+
             /// <summary>
             /// Index of the current line start text block.
             /// </summary>
@@ -50,12 +50,12 @@ namespace FlaxEngine.GUI
             {
                 // Post-processing
                 Control.PostProcessBlock?.Invoke(ref this, ref textBlock);
-            
+
                 // Add to the text blocks
                 Control._textBlocks.Add(textBlock);
             }
         }
-        
+
         /// <summary>
         /// The delegate for text blocks post-processing.
         /// </summary>
@@ -68,7 +68,7 @@ namespace FlaxEngine.GUI
         /// </summary>
         [HideInEditor]
         public PostProcessBlockDelegate PostProcessBlock;
-        
+
         /// <summary>
         /// The delegate for HTML tag processing.
         /// </summary>
@@ -91,6 +91,8 @@ namespace FlaxEngine.GUI
             { "size", ProcessSize },
             { "img", ProcessImage },
             { "valign", ProcessVAlign },
+            { "align", ProcessAlign },
+            { "center", ProcessCenter },
         };
 
         private HtmlParser _parser = new HtmlParser();
@@ -104,7 +106,7 @@ namespace FlaxEngine.GUI
                 ParseTextBlocks(_text, _textBlocks);
                 return;
             }
-            
+
             // Setup parsing
             _parser.Reset(_text);
             _styleStack.Clear();
@@ -206,7 +208,7 @@ namespace FlaxEngine.GUI
 
                 context.AddTextBlock(ref textBlock);
             }
-            
+
             // Update the caret location
             ref var lastLine = ref lines[lines.Length - 1];
             if (lines.Length == 1)
@@ -226,7 +228,7 @@ namespace FlaxEngine.GUI
             var lineOrigin = textBlocks[context.LineStartTextBlockIndex].Bounds.Location;
             var lineSize = Float2.Zero;
             var lineAscender = 0.0f;
-            for(int i = context.LineStartTextBlockIndex; i < _textBlocks.Count; i++)
+            for (int i = context.LineStartTextBlockIndex; i < _textBlocks.Count; i++)
             {
                 ref TextBlock textBlock = ref textBlocks[i];
                 var textBlockSize = textBlock.Bounds.BottomRight - lineOrigin;
@@ -242,10 +244,12 @@ namespace FlaxEngine.GUI
             }
 
             // Organize text blocks within line
-            for(int i = context.LineStartTextBlockIndex; i < _textBlocks.Count; i++)
+            var horizontalAlignments = TextBlockStyle.Alignments.Baseline;
+            for (int i = context.LineStartTextBlockIndex; i < _textBlocks.Count; i++)
             {
                 ref TextBlock textBlock = ref textBlocks[i];
                 var vOffset = lineSize.Y - textBlock.Bounds.Height;
+                horizontalAlignments |= textBlock.Style.Alignment & TextBlockStyle.Alignments.HorizontalMask;
                 switch (textBlock.Style.Alignment & TextBlockStyle.Alignments.VerticalMask)
                 {
                 case TextBlockStyle.Alignments.Baseline:
@@ -277,6 +281,24 @@ namespace FlaxEngine.GUI
                     textBlock.Bounds.Location.Y = lineOrigin.Y + vOffset;
                     break;
                 }
+                }
+            }
+            var hOffset = Width - lineSize.X;
+            if ((horizontalAlignments & TextBlockStyle.Alignments.Center) == TextBlockStyle.Alignments.Center)
+            {
+                hOffset *= 0.5f;
+                for (int i = context.LineStartTextBlockIndex; i < _textBlocks.Count; i++)
+                {
+                    ref TextBlock textBlock = ref textBlocks[i];
+                    textBlock.Bounds.Location.X += hOffset;
+                }
+            }
+            else if ((horizontalAlignments & TextBlockStyle.Alignments.Right) == TextBlockStyle.Alignments.Right)
+            {
+                for (int i = context.LineStartTextBlockIndex; i < _textBlocks.Count; i++)
+                {
+                    ref TextBlock textBlock = ref textBlocks[i];
+                    textBlock.Bounds.Location.X += hOffset;
                 }
             }
 
