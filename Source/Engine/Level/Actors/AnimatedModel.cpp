@@ -885,6 +885,14 @@ bool AnimatedModel::IntersectsEntry(const Ray& ray, Real& distance, Vector3& nor
     return result;
 }
 
+void AnimatedModel::OnDeleteObject()
+{
+    // Ensure this object is no longer referenced for anim update
+    Animations::RemoveFromUpdate(this);
+    
+    ModelInstanceActor::OnDeleteObject();
+}
+
 void AnimatedModel::OnTransformChanged()
 {
     // Base

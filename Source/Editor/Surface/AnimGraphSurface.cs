@@ -269,8 +269,6 @@ namespace FlaxEditor.Surface
         /// </summary>
         protected VisjectCM _cmStateMachineTransitionMenu;
 
-        private bool _isRegisteredForScriptsReload;
-
         /// <inheritdoc />
         public AnimGraphSurface(IVisjectSurfaceOwner owner, Action onSave, FlaxEditor.Undo undo)
         : base(owner, onSave, undo, CreateStyle())
@@ -280,14 +278,9 @@ namespace FlaxEditor.Surface
             if (customNodes != null && customNodes.Count > 0)
             {
                 AddCustomNodes(customNodes);
-
-                // Check if any of the nodes comes from the game scripts - those can be reloaded at runtime so prevent crashes
-                if (Editor.Instance.CodeEditing.AnimGraphNodes.HasTypeFromGameScripts)
-                {
-                    _isRegisteredForScriptsReload = true;
-                    ScriptsBuilder.ScriptsReloadBegin += OnScriptsReloadBegin;
-                }
             }
+
+            ScriptsBuilder.ScriptsReloadBegin += OnScriptsReloadBegin;
         }
 
         private static SurfaceStyle CreateStyle()
@@ -301,8 +294,26 @@ namespace FlaxEditor.Surface
 
         private void OnScriptsReloadBegin()
         {
-            Owner.OnSurfaceClose();
+            // Check if any of the nodes comes from the game scripts - those can be reloaded at runtime so prevent crashes
+            bool hasTypeFromGameScripts = Editor.Instance.CodeEditing.AnimGraphNodes.HasTypeFromGameScripts;
 
+            // Check any surface parameter comes from Game scripts module to handle scripts reloads in Editor
+            if (!hasTypeFromGameScripts)
+            {
+                foreach (var param in Parameters)
+                {
+                    if (FlaxEngine.Scripting.IsTypeFromGameScripts(param.Type.Type))
+                    {
+                        hasTypeFromGameScripts = true;
+                        break;
+                    }
+                }
+            }
+
+            if (!hasTypeFromGameScripts)
+                return;
+
+            Owner.OnSurfaceClose();
             // TODO: make reload soft: dispose default primary context menu, update existing custom nodes to new ones or remove if invalid
         }
 
@@ -463,11 +474,7 @@ namespace FlaxEditor.Surface
                 _cmStateMachineTransitionMenu.Dispose();
                 _cmStateMachineTransitionMenu = null;
             }
-            if (_isRegisteredForScriptsReload)
-            {
-                _isRegisteredForScriptsReload = false;
-                ScriptsBuilder.ScriptsReloadBegin -= OnScriptsReloadBegin;
-            }
+            ScriptsBuilder.ScriptsReloadBegin -= OnScriptsReloadBegin;
             NodesCache.Wait();
 
             base.OnDestroy();

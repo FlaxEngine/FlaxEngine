@@ -28,7 +28,7 @@ namespace FlaxEditor.Surface
         /// The method calls the <see cref="ISurfaceContext.SurfaceData"/> getter to load the surface data bytes.
         /// </remarks>
         /// <returns>True if failed, otherwise false.</returns>
-        public bool Load()
+        public virtual bool Load()
         {
             Enabled = false;
 
@@ -62,7 +62,7 @@ namespace FlaxEditor.Surface
         /// <remarks>
         /// The method calls the <see cref="ISurfaceContext.SurfaceData"/> setter to assign the result bytes. Sets null value if failed.
         /// </remarks>
-        public void Save()
+        public virtual void Save()
         {
             var wasEdited = IsEdited;
 

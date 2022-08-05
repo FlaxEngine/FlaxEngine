@@ -367,6 +367,7 @@ public:
     void Deserialize(DeserializeStream& stream, ISerializeModifier* modifier) override;
     bool IntersectsEntry(int32 entryIndex, const Ray& ray, Real& distance, Vector3& normal) override;
     bool IntersectsEntry(const Ray& ray, Real& distance, Vector3& normal, int32& entryIndex) override;
+    void OnDeleteObject() override;
 
 protected:
     // [ModelInstanceActor]
