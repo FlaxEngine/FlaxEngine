@@ -193,6 +193,12 @@ namespace FlaxEngine.GUI
         }
 
         /// <summary>
+        /// Gets or sets a value indicating whether apply clipping mask on text during rendering.
+        /// </summary>
+        [EditorOrder(529)]
+        public bool ClipText { get; set; } = true;
+
+        /// <summary>
         /// Gets or sets textbox background color when the control is selected (has focus).
         /// </summary>
         [EditorDisplay("Style"), EditorOrder(2000), Tooltip("The textbox background color when the control is selected (has focus).")]

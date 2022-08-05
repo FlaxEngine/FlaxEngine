@@ -235,7 +235,8 @@ namespace FlaxEngine.GUI
             Render2D.DrawRectangle(rect, IsFocused ? BorderSelectedColor : BorderColor);
 
             // Apply view offset and clip mask
-            Render2D.PushClip(TextClipRectangle);
+            if (ClipText)
+                Render2D.PushClip(TextClipRectangle);
             bool useViewOffset = !_viewOffset.IsZero;
             if (useViewOffset)
                 Render2D.PushTransform(Matrix3x3.Translation2D(-_viewOffset));
@@ -355,7 +356,8 @@ namespace FlaxEngine.GUI
             // Restore rendering state
             if (useViewOffset)
                 Render2D.PopTransform();
-            Render2D.PopClip();
+            if (ClipText)
+                Render2D.PopClip();
         }
 
         /// <inheritdoc />
