@@ -427,7 +427,7 @@ namespace FlaxEditor.Surface
                 propertyLabel.MouseLeftDoubleClick += (label, location) => StartParameterRenaming(pIndex, label);
                 propertyLabel.SetupContextMenu += OnPropertyLabelSetupContextMenu;
                 var property = itemLayout.AddPropertyItem(propertyLabel, tooltipText);
-                property.Object(propertyValue);
+                property.Property("Value", propertyValue);
             }
             CustomEditors.Editors.GenericEditor.OnGroupUsage();
 
