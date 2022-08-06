@@ -1282,6 +1282,9 @@ namespace FlaxEngine.GUI
                 SetSelection(TextLength);
                 return true;
             }
+            case KeyboardKeys.Tab:
+                // Don't process
+                return false;
             }
 
             return true;
