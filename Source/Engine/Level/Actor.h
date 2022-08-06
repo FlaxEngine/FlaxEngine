@@ -546,6 +546,7 @@ public:
     /// <summary>
     /// Gets local rotation of the actor in parent actor space.
     /// </summary>
+    /// <code>Actor.LocalOrientation *= Quaternion.Euler(0, 10 * Time.DeltaTime, 0)</code>
     API_PROPERTY(Attributes="EditorDisplay(\"Transform\", \"Rotation\"), DefaultValue(typeof(Quaternion), \"0,0,0,1\"), EditorOrder(-20), NoSerialize, CustomEditorAlias(\"FlaxEditor.CustomEditors.Editors.ActorTransformEditor+OrientationEditor\")")
     FORCE_INLINE Quaternion GetLocalOrientation() const
     {
