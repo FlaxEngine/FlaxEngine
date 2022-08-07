@@ -433,6 +433,23 @@ namespace Flax.Build.Platforms
                 // Compile Without Linking
                 commonArgs.Add("/c");
 
+                // C++ version
+                switch (compileEnvironment.CppVersion)
+                {
+                case CppVersion.Cpp14:
+                    commonArgs.Add("/std:c++14");
+                    break;
+                case CppVersion.Cpp17:
+                    commonArgs.Add("/std:c++17");
+                    break;
+                case CppVersion.Cpp20:
+                    commonArgs.Add("/std:c++20");
+                    break;
+                case CppVersion.Latest:
+                    commonArgs.Add("/std:c++latest");
+                    break;
+                }
+
                 // Generate Intrinsic Functions
                 if (compileEnvironment.IntrinsicFunctions)
                     commonArgs.Add("/Oi");

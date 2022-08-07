@@ -1,4 +1,4 @@
-﻿// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 using System;
 using System.Collections.Generic;
@@ -27,10 +27,41 @@ namespace Flax.Build.NativeCpp
     }
 
     /// <summary>
+    /// The compilation optimization hint.
+    /// </summary>
+    public enum CppVersion
+    {
+        /// <summary>
+        /// C++14
+        /// </summary>
+        Cpp14,
+
+        /// <summary>
+        /// C++17
+        /// </summary>
+        Cpp17,
+
+        /// <summary>
+        /// C++20
+        /// </summary>
+        Cpp20,
+
+        /// <summary>
+        /// The latest version supported by the compiler.
+        /// </summary>
+        Latest,
+    }
+
+    /// <summary>
     /// The C++ compilation environment required to build source files in the native modules.
     /// </summary>
     public class CompileEnvironment : ICloneable
     {
+        /// <summary>
+        /// C++ standard version to use for compilation.
+        /// </summary>
+        public CppVersion CppVersion = CppVersion.Cpp14;
+
         /// <summary>
         /// Selects a predefined set of options that affect the size and speed of generated code.
         /// </summary>
@@ -131,6 +162,7 @@ namespace Flax.Build.NativeCpp
         {
             var clone = new CompileEnvironment
             {
+                CppVersion = CppVersion,
                 FavorSizeOrSpeed = FavorSizeOrSpeed,
                 EnableExceptions = EnableExceptions,
                 RuntimeTypeInfo = RuntimeTypeInfo,
