@@ -739,10 +739,9 @@ ScriptingObject* Scripting::NewObject(const MClass* type)
         LOG(Error, "Invalid type.");
         return nullptr;
     }
-    MonoClass* typeClass = type->GetNative();
-
 #if USE_MONO
     // Get the assembly with that class
+    MonoClass* typeClass = type->GetNative();
     auto module = ManagedBinaryModule::FindModule(typeClass);
     if (module == nullptr)
     {
@@ -767,11 +766,11 @@ ScriptingObject* Scripting::NewObject(const MClass* type)
         LOG(Error, "Failed to spawn object of type \'{0}.{1}\'.", String(mono_class_get_namespace(typeClass)), String(mono_class_get_name(typeClass)));
         return nullptr;
     }
+    return obj;
 #else
     LOG(Error, "Not supported object creation from Managed class.");
+    return nullptr;
 #endif
-
-    return obj;
 }
 
 FLAXENGINE_API ScriptingObject* FindObject(const Guid& id, MClass* type)

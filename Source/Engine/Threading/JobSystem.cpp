@@ -5,6 +5,7 @@
 #include "Engine/Platform/CPUInfo.h"
 #include "Engine/Platform/Thread.h"
 #include "Engine/Platform/ConditionVariable.h"
+#include "Engine/Core/Collections/Dictionary.h"
 #include "Engine/Engine/EngineService.h"
 #include "Engine/Profiler/ProfilerCPU.h"
 #include "Engine/Scripting/ManagedCLR/MCore.h"
