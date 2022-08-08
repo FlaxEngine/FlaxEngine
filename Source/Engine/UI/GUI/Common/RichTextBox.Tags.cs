@@ -279,7 +279,9 @@ namespace FlaxEngine.GUI
             var ids = Content.GetAllAssetsByType(type);
             foreach (var id in ids)
             {
-                if (Content.GetAssetInfo(id, out var info) && string.Equals(name, System.IO.Path.GetFileNameWithoutExtension(info.Path), System.StringComparison.OrdinalIgnoreCase))
+                var path = Content.GetEditorAssetPath(id);
+                if (!string.IsNullOrEmpty(path) && 
+                    string.Equals(name, System.IO.Path.GetFileNameWithoutExtension(path), System.StringComparison.OrdinalIgnoreCase))
                 {
                     return Content.LoadAsync(id, type);
                 }
