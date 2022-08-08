@@ -234,7 +234,10 @@ namespace FlaxEngine.GUI
         /// <inheritdoc />
         public override bool OnMouseDoubleClick(Float2 location, MouseButton button)
         {
-            SelectAll();
+            if (IsSelectable)
+            {
+                SelectAll();
+            }
             return base.OnMouseDoubleClick(location, button);
         }
 

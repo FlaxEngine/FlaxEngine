@@ -207,7 +207,7 @@ namespace FlaxEngine.GUI
         {
             // Select the word under the mouse
             int textLength = TextLength;
-            if (textLength != 0)
+            if (textLength != 0 && IsSelectable)
             {
                 var hitPos = CharIndexAtPoint(ref location);
                 int spaceLoc = _text.LastIndexOfAny(Separators, hitPos - 2);
