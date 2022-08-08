@@ -85,6 +85,11 @@ namespace FlaxEngine.GUI
         protected bool _isReadOnly;
 
         /// <summary>
+        /// Flag used to indicate whenever text is selectable.
+        /// </summary>
+        protected bool _isSelectable = true;
+
+        /// <summary>
         /// The maximum length of the text.
         /// </summary>
         protected int _maxLength;
@@ -186,8 +191,24 @@ namespace FlaxEngine.GUI
                 if (_isReadOnly != value)
                 {
                     _isReadOnly = value;
-
                     OnIsReadOnlyChanged();
+                }
+            }
+        }
+
+        /// <summary>
+        /// Gets or sets a value indicating whether text can be selected in text box. 
+        /// </summary>
+        [EditorOrder(62), Tooltip("If checked, text can be selected in text box.")]
+        public bool IsSelectable
+        {
+            get => _isSelectable;
+            set
+            {
+                if (_isSelectable != value)
+                {
+                    _isSelectable = value;
+                    OnIsSelectableChanged();
                 }
             }
         }
@@ -907,6 +928,13 @@ namespace FlaxEngine.GUI
         }
 
         /// <summary>
+        /// Called when is selectable flag gets changed.
+        /// </summary>
+        protected virtual void OnIsSelectableChanged()
+        {
+        }
+
+        /// <summary>
         /// Action called when user starts text selecting
         /// </summary>
         protected virtual void OnSelectingBegin()
@@ -1064,7 +1092,7 @@ namespace FlaxEngine.GUI
             if (base.OnMouseDown(location, button))
                 return true;
 
-            if (button == MouseButton.Left && _text.Length > 0)
+            if (button == MouseButton.Left && _text.Length > 0 && _isSelectable)
             {
                 Focus();
                 OnSelectingBegin();
@@ -1103,7 +1131,7 @@ namespace FlaxEngine.GUI
             if (base.OnMouseUp(location, button))
                 return true;
 
-            if (button == MouseButton.Left)
+            if (button == MouseButton.Left && _isSelectable)
             {
                 OnSelectingEnd();
                 return true;
@@ -1134,6 +1162,8 @@ namespace FlaxEngine.GUI
         {
             if (base.OnCharInput(c))
                 return true;
+            if (IsReadOnly)
+                return false;
             Insert(c);
             return true;
         }
