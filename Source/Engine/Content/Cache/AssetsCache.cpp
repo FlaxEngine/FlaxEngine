@@ -235,6 +235,7 @@ bool AssetsCache::Save(const StringView& path, const Registry& entries, const Pa
 
 const String& AssetsCache::GetEditorAssetPath(const Guid& id) const
 {
+    ScopeLock lock(_locker);
 #if USE_EDITOR
     auto e = _registry.TryGet(id);
     return e ? e->Info.Path : String::Empty;

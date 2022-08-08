@@ -71,6 +71,13 @@ public:
     API_FUNCTION() static bool GetAssetInfo(const StringView& path, API_PARAM(Out) AssetInfo& info);
 
     /// <summary>
+    /// Finds the asset path by id. In editor it returns the actual asset path, at runtime it returns the mapped asset path.
+    /// </summary>
+    /// <param name="id">The asset id.</param>
+    /// <returns>The asset path, or empty if failed to find.</returns>
+    API_FUNCTION() static String GetEditorAssetPath(const Guid& id);
+
+    /// <summary>
     /// Finds all the asset IDs. Uses asset registry.
     /// </summary>
     /// <returns>The list of all asset IDs.</returns>

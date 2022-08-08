@@ -320,6 +320,11 @@ bool Content::GetAssetInfo(const StringView& path, AssetInfo& info)
 #endif
 }
 
+String Content::GetEditorAssetPath(const Guid& id)
+{
+    return Cache.GetEditorAssetPath(id);
+}
+
 Array<Guid> Content::GetAllAssets()
 {
     Array<Guid> result;
