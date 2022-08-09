@@ -545,7 +545,7 @@ namespace FlaxEditor.Surface
                 window.VisjectSurface.Undo.AddAction(action);
                 action.Do();
             };
-            editor.Show(label, label.Center);
+            editor.Show(label, label.Size * 0.5f);
         }
 
         private void DeleteParameter(int index)
