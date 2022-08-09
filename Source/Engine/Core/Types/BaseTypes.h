@@ -141,10 +141,10 @@ struct Color32;
 
 // Declares full set of operators for the enum type (using binary operation on integer values)
 #define DECLARE_ENUM_OPERATORS(T) \
-    inline T operator~ (T a) { return (T)~(int)a; } \
-    inline T operator| (T a, T b) { return (T)((int)a | (int)b); } \
-    inline int operator& (T a, T b) { return ((int)a & (int)b); } \
-    inline T operator^ (T a, T b) { return (T)((int)a ^ (int)b); } \
+    inline constexpr T operator~ (T a) { return (T)~(int)a; } \
+    inline constexpr T operator| (T a, T b) { return (T)((int)a | (int)b); } \
+    inline constexpr int operator& (T a, T b) { return ((int)a & (int)b); } \
+    inline constexpr T operator^ (T a, T b) { return (T)((int)a ^ (int)b); } \
     inline T& operator|= (T& a, T b) { return (T&)((int&)a |= (int)b); } \
     inline T& operator&= (T& a, T b) { return (T&)((int&)a &= (int)b); } \
     inline T& operator^= (T& a, T b) { return (T&)((int&)a ^= (int)b); }
