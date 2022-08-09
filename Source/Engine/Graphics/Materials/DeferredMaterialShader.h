@@ -32,6 +32,8 @@ private:
             case DrawPass::Depth:
                 return useSkinning ? &DepthSkinned : &Depth;
             case DrawPass::GBuffer:
+            case DrawPass::GBuffer | DrawPass::GlobalSurfaceAtlas:
+            case DrawPass::GlobalSurfaceAtlas:
                 return useLightmap ? &DefaultLightmap : (useSkinning ? &DefaultSkinned : &Default);
             case DrawPass::MotionVectors:
                 return useSkinning ? (perBoneMotionBlur ? &MotionVectorsSkinnedPerBone : &MotionVectorsSkinned) : &MotionVectors;

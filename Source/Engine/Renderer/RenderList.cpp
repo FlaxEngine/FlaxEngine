@@ -430,7 +430,7 @@ void RenderList::AddDrawCall(DrawPass drawModes, StaticFlags staticFlags, DrawCa
     {
         DrawCallsLists[(int32)DrawCallsListType::Depth].Indices.Add(index);
     }
-    if (mask & DrawPass::GBuffer)
+    if (mask & (DrawPass::GBuffer | DrawPass::GlobalSurfaceAtlas))
     {
         if (receivesDecals)
             DrawCallsLists[(int32)DrawCallsListType::GBuffer].Indices.Add(index);

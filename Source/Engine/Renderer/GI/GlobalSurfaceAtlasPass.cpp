@@ -513,7 +513,7 @@ bool GlobalSurfaceAtlasPass::Render(RenderContext& renderContext, GPUContext* co
 
         RenderContext renderContextTiles = renderContext;
         renderContextTiles.List = RenderList::GetFromPool();
-        renderContextTiles.View.Pass = DrawPass::GBuffer;
+        renderContextTiles.View.Pass = DrawPass::GBuffer | DrawPass::GlobalSurfaceAtlas;
         renderContextTiles.View.Mode = ViewMode::Default;
         renderContextTiles.View.ModelLODBias += 100000;
         renderContextTiles.View.ShadowModelLODBias += 100000;
@@ -582,7 +582,7 @@ bool GlobalSurfaceAtlasPass::Render(RenderContext& renderContext, GPUContext* co
 
             // Fake projection matrix to disable Screen Size culling based on RenderTools::ComputeBoundsScreenRadiusSquared
             renderContextTiles.View.Projection.Values[0][0] = 10000.0f;
-
+            
             // Collect draw calls for the object
             object.Actor->Draw(renderContextTiles);
 

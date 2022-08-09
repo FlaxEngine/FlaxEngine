@@ -39,7 +39,7 @@ PACK_STRUCT(struct TerrainMaterialShaderData {
 
 DrawPass TerrainMaterialShader::GetDrawModes() const
 {
-    return DrawPass::Depth | DrawPass::GBuffer;
+    return DrawPass::Depth | DrawPass::GBuffer | DrawPass::GlobalSurfaceAtlas;
 }
 
 bool TerrainMaterialShader::CanUseLightmap() const

@@ -153,7 +153,7 @@ bool DeformableMaterialShader::Load()
 
     if (_info.BlendMode == MaterialBlendMode::Opaque)
     {
-        _drawModes = DrawPass::GBuffer;
+        _drawModes |= DrawPass::GBuffer | DrawPass::GlobalSurfaceAtlas;
 
         // GBuffer Pass
         psDesc.VS = _shader->GetVS("VS_SplineModel");
@@ -162,7 +162,7 @@ bool DeformableMaterialShader::Load()
     }
     else
     {
-        _drawModes = DrawPass::Forward;
+        _drawModes |= DrawPass::Forward;
 
         // Forward Pass
         psDesc.VS = _shader->GetVS("VS_SplineModel");

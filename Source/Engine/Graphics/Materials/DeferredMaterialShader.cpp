@@ -42,7 +42,7 @@ PACK_STRUCT(struct DeferredMaterialShaderData {
 
 DrawPass DeferredMaterialShader::GetDrawModes() const
 {
-    return DrawPass::Depth | DrawPass::GBuffer | DrawPass::MotionVectors | DrawPass::QuadOverdraw;
+    return DrawPass::Depth | DrawPass::GBuffer | DrawPass::GlobalSurfaceAtlas | DrawPass::MotionVectors | DrawPass::QuadOverdraw;
 }
 
 bool DeferredMaterialShader::CanUseLightmap() const

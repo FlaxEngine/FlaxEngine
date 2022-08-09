@@ -26,6 +26,8 @@ private:
             case DrawPass::Depth:
                 return &Depth;
             case DrawPass::GBuffer:
+            case DrawPass::GBuffer | DrawPass::GlobalSurfaceAtlas:
+            case DrawPass::GlobalSurfaceAtlas:
                 return useLightmap ? &DefaultLightmap : &Default;
 #if USE_EDITOR
             case DrawPass::QuadOverdraw:

@@ -25,6 +25,8 @@ private:
             case DrawPass::Depth:
                 return &Depth;
             case DrawPass::GBuffer:
+            case DrawPass::GBuffer | DrawPass::GlobalSurfaceAtlas:
+            case DrawPass::GlobalSurfaceAtlas:
             case DrawPass::Forward:
                 return &Default;
 #if USE_EDITOR
