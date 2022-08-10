@@ -47,6 +47,7 @@ private:
     int32 _cascadeIndex;
     float _voxelSize;
     BoundingBox _cascadeBounds;
+    BoundingBox _cascadeCullingBounds;
     class GlobalSignDistanceFieldCustomBuffer* _sdfData;
 
 public:
@@ -74,6 +75,11 @@ public:
     /// <param name="context">The GPU context.</param>
     /// <param name="output">The output buffer.</param>
     void RenderDebug(RenderContext& renderContext, GPUContext* context, GPUTexture* output);
+
+    void GetCullingBounds(BoundingBox& bounds) const
+    {
+        bounds = _cascadeCullingBounds;
+    }
 
     // Rasterize Model SDF into the Global SDF. Call it from actor Draw() method during DrawPass::GlobalSDF.
     void RasterizeModelSDF(Actor* actor, const ModelBase::SDFData& sdf, const Transform& localToWorld, const BoundingBox& objectBounds);

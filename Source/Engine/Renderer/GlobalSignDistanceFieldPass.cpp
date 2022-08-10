@@ -537,9 +537,8 @@ bool GlobalSignDistanceFieldPass::Render(RenderContext& renderContext, GPUContex
         _sdfData = &sdfData;
         {
             PROFILE_CPU_NAMED("Draw");
-            BoundingBox cascadeBoundsWorld = cascadeBounds;
-            cascadeBoundsWorld.Minimum += sdfData.Origin;
-            cascadeBoundsWorld.Maximum += sdfData.Origin;
+            BoundingBox cascadeBoundsWorld = cascadeBounds.MakeOffsetted(sdfData.Origin);
+            _cascadeCullingBounds = cascadeBoundsWorld;
             for (SceneRendering* scene : renderContext.List->Scenes)
             {
                 for (const auto& e : scene->Actors)

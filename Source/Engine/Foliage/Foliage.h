@@ -175,6 +175,9 @@ private:
 #else
     void DrawCluster(RenderContext& renderContext, FoliageCluster* cluster, Mesh::DrawInfo& draw);
 #endif
+#if !FOLIAGE_USE_SINGLE_QUAD_TREE
+    void DrawClusterGlobalSDF(class GlobalSignDistanceFieldPass* globalSDF, const BoundingBox& globalSDFBounds, FoliageCluster* cluster, FoliageType& type);
+#endif
 
 public:
     /// <summary>
