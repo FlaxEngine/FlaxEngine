@@ -76,7 +76,7 @@ public:
     /// <param name="output">The output buffer.</param>
     void RenderDebug(RenderContext& renderContext, GPUContext* context, GPUTexture* output);
 
-    void GetCullingBounds(BoundingBox& bounds) const
+    void GetCullingData(BoundingBox& bounds) const
     {
         bounds = _cascadeCullingBounds;
     }

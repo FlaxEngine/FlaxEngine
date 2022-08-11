@@ -61,6 +61,8 @@ private:
     class GlobalSurfaceAtlasCustomBuffer* _surfaceAtlasData;
     Array<void*> _dirtyObjectsBuffer;
     uint64 _culledObjectsSizeFrames[8];
+    Vector4 _cullingPosDistance;
+    void* _currentActorObject;
 
 public:
     /// <summary>
@@ -80,8 +82,20 @@ public:
     /// <param name="output">The output buffer.</param>
     void RenderDebug(RenderContext& renderContext, GPUContext* context, GPUTexture* output);
 
+    // Gets the culling view position (xyz) and view distance (w)
+    void GetCullingData(Vector4& cullingPosDistance) const
+    {
+        cullingPosDistance = _cullingPosDistance;
+    }
+    
+    // Gets the current object of the actor that is drawn into atlas.
+    void* GetCurrentActorObject() const
+    {
+        return _currentActorObject;
+    }
+
     // Rasterize actor into the Global Surface Atlas. Call it from actor Draw() method during DrawPass::GlobalSurfaceAtlas.
-    void RasterizeActor(Actor* actor, void* actorObject, const BoundingSphere& actorObjectBounds, const Transform& localToWorld, const BoundingBox& localBounds, uint32 tilesMask = MAX_uint32, bool useVisibility = true);
+    void RasterizeActor(Actor* actor, void* actorObject, const BoundingSphere& actorObjectBounds, const Transform& localToWorld, const BoundingBox& localBounds, uint32 tilesMask = MAX_uint32, bool useVisibility = true, float qualityScale = 1.0f);
 
 private:
 #if COMPILE_WITH_DEV_ENV

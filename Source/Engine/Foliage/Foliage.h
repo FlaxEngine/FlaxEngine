@@ -177,6 +177,7 @@ private:
 #endif
 #if !FOLIAGE_USE_SINGLE_QUAD_TREE
     void DrawClusterGlobalSDF(class GlobalSignDistanceFieldPass* globalSDF, const BoundingBox& globalSDFBounds, FoliageCluster* cluster, FoliageType& type);
+    void DrawClusterGlobalSA(class GlobalSurfaceAtlasPass* globalSA, const Vector4& cullingPosDistance, FoliageCluster* cluster, FoliageType& type, const BoundingBox& localBounds);
 #endif
 
 public:

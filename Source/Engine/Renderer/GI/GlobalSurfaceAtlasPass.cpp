@@ -480,6 +480,7 @@ bool GlobalSurfaceAtlasPass::Render(RenderContext& renderContext, GPUContext* co
         const uint32 viewMask = renderContext.View.RenderLayersMask;
         const Float3 viewPosition = renderContext.View.Position;
         const float minObjectRadius = 20.0f; // Skip too small objects
+        _cullingPosDistance = Vector4(viewPosition, distance);
         for (auto* scene : renderContext.List->Scenes)
         {
             for (auto& e : scene->Actors)
@@ -582,8 +583,9 @@ bool GlobalSurfaceAtlasPass::Render(RenderContext& renderContext, GPUContext* co
 
             // Fake projection matrix to disable Screen Size culling based on RenderTools::ComputeBoundsScreenRadiusSquared
             renderContextTiles.View.Projection.Values[0][0] = 10000.0f;
-            
+
             // Collect draw calls for the object
+            _currentActorObject = actorObject;
             object.Actor->Draw(renderContextTiles);
 
             // Render all tiles into the atlas
@@ -1154,12 +1156,12 @@ void GlobalSurfaceAtlasPass::RenderDebug(RenderContext& renderContext, GPUContex
     }
 }
 
-void GlobalSurfaceAtlasPass::RasterizeActor(Actor* actor, void* actorObject, const BoundingSphere& actorObjectBounds, const Transform& localToWorld, const BoundingBox& localBounds, uint32 tilesMask, bool useVisibility)
+void GlobalSurfaceAtlasPass::RasterizeActor(Actor* actor, void* actorObject, const BoundingSphere& actorObjectBounds, const Transform& localToWorld, const BoundingBox& localBounds, uint32 tilesMask, bool useVisibility, float qualityScale)
 {
     GlobalSurfaceAtlasCustomBuffer& surfaceAtlasData = *_surfaceAtlasData;
     Float3 boundsSize = localBounds.GetSize() * actor->GetScale();
     const float distanceScale = Math::Lerp(1.0f, surfaceAtlasData.DistanceScaling, Math::InverseLerp(surfaceAtlasData.DistanceScalingStart, surfaceAtlasData.DistanceScalingEnd, (float)CollisionsHelper::DistanceSpherePoint(actorObjectBounds, surfaceAtlasData.ViewPosition)));
-    const float tilesScale = surfaceAtlasData.TileTexelsPerWorldUnit * distanceScale;
+    const float tilesScale = surfaceAtlasData.TileTexelsPerWorldUnit * distanceScale * qualityScale;
     GlobalSurfaceAtlasObject* object = surfaceAtlasData.Objects.TryGet(actorObject);
     bool anyTile = false, dirty = false;
     for (int32 tileIndex = 0; tileIndex < 6; tileIndex++)

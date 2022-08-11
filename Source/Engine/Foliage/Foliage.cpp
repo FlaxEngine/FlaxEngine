@@ -15,6 +15,7 @@
 #include "Engine/Level/SceneQuery.h"
 #include "Engine/Profiler/ProfilerCPU.h"
 #include "Engine/Renderer/GlobalSignDistanceFieldPass.h"
+#include "Engine/Renderer/GI/GlobalSurfaceAtlasPass.h"
 #include "Engine/Serialization/Serialization.h"
 #include "Engine/Utilities/Encryption.h"
 
@@ -347,6 +348,35 @@ void Foliage::DrawClusterGlobalSDF(class GlobalSignDistanceFieldPass* globalSDF,
                 BoundingBox bounds;
                 BoundingBox::FromSphere(instance.Bounds, bounds);
                 globalSDF->RasterizeModelSDF(this, type.Model->SDF, transform, bounds);
+            }
+        }
+    }
+}
+
+void Foliage::DrawClusterGlobalSA(GlobalSurfaceAtlasPass* globalSA, const Vector4& cullingPosDistance, FoliageCluster* cluster, FoliageType& type, const BoundingBox& localBounds)
+{
+    if (cluster->Children[0])
+    {
+        // Draw children recursive
+#define DRAW_CLUSTER(idx) \
+        if (CollisionsHelper::DistanceBoxPoint(cluster->Children[idx]->TotalBounds, Vector3(cullingPosDistance)) < cullingPosDistance.W) \
+            DrawClusterGlobalSA(globalSA, cullingPosDistance, cluster->Children[idx], type, localBounds)
+        DRAW_CLUSTER(0);
+        DRAW_CLUSTER(1);
+        DRAW_CLUSTER(2);
+        DRAW_CLUSTER(3);
+#undef 	DRAW_CLUSTER
+    }
+    else
+    {
+        // Draw visible instances
+        for (int32 i = 0; i < cluster->Instances.Count(); i++)
+        {
+            auto& instance = *cluster->Instances[i];
+            if (CollisionsHelper::DistanceSpherePoint(instance.Bounds, Vector3(cullingPosDistance)) < cullingPosDistance.W)
+            {
+                const Transform transform = _transform.LocalToWorld(instance.Transform);
+                globalSA->RasterizeActor(this, &instance, instance.Bounds, transform, localBounds, MAX_uint32, true, 0.5f);
             }
         }
     }
@@ -918,8 +948,7 @@ void Foliage::Draw(RenderContext& renderContext)
     {
         auto globalSDF = GlobalSignDistanceFieldPass::Instance();
         BoundingBox globalSDFBounds;
-        globalSDF->GetCullingBounds(globalSDFBounds);
-        //
+        globalSDF->GetCullingData(globalSDFBounds);
 #if FOLIAGE_USE_SINGLE_QUAD_TREE
         for (auto i = Instances.Begin(); i.IsNotEnd(); ++i)
         {
@@ -942,8 +971,67 @@ void Foliage::Draw(RenderContext& renderContext)
 #endif
         return;
     }
+
     if (renderContext.View.Pass == DrawPass::GlobalSurfaceAtlas)
-        return; // Not supported
+    {
+        // Draw foliage instances into Global Surface Atlas
+        auto globalSA = GlobalSurfaceAtlasPass::Instance();
+        Vector4 cullingPosDistance;
+        globalSA->GetCullingData(cullingPosDistance);
+#if FOLIAGE_USE_SINGLE_QUAD_TREE
+        for (auto i = Instances.Begin(); i.IsNotEnd(); ++i)
+        {
+            auto& instance = *i;
+            auto& type = FoliageTypes[instance.Type];
+            if (type._canDraw && CollisionsHelper::DistanceSpherePoint(instance.Bounds, Vector3(cullingPosDistance)) < cullingPosDistance.W)
+            {
+                const Transform transform = _transform.LocalToWorld(instance.Transform);
+                BoundingBox localBounds = type.Model->LODs.Last().GetBox();
+                globalSA->RasterizeActor(this, &instance, instance.Bounds, transform, localBounds, MAX_uint32, true, 0.5f);
+            }
+        }
+#else
+        for (auto& type : FoliageTypes)
+        {
+            if (type._canDraw && type.Root)
+            {
+                BoundingBox localBounds = type.Model->LODs.Last().GetBox();
+                DrawClusterGlobalSA(globalSA, cullingPosDistance, type.Root, type, localBounds);
+            }
+        }
+#endif
+        return;
+    }
+    if (renderContext.View.Pass & DrawPass::GlobalSurfaceAtlas)
+    {
+        // Draw single foliage instance projection into Global Surface Atlas
+        auto& instance = *(FoliageInstance*)GlobalSurfaceAtlasPass::Instance()->GetCurrentActorObject();
+        auto& type = FoliageTypes[instance.Type];
+        for (int32 i = 0; i < type.Entries.Count(); i++)
+        {
+            auto& e = type.Entries[i];
+            e.ReceiveDecals = type.ReceiveDecals != 0;
+            e.ShadowsMode = type.ShadowsMode;
+        }
+        Matrix world;
+        const Transform transform = _transform.LocalToWorld(instance.Transform);
+        renderContext.View.GetWorldMatrix(transform, world);
+        Mesh::DrawInfo draw;
+        draw.Flags = GetStaticFlags();
+        draw.LODBias = 0;
+        draw.ForcedLOD = -1;
+        draw.VertexColors = nullptr;
+        draw.Lightmap = _scene->LightmapsData.GetReadyLightmap(instance.Lightmap.TextureIndex);
+        draw.LightmapUVs = &instance.Lightmap.UVsArea;
+        draw.Buffer = &type.Entries;
+        draw.World = &world;
+        draw.DrawState = &instance.DrawState;
+        draw.Bounds = instance.Bounds;
+        draw.PerInstanceRandom = instance.Random;
+        draw.DrawModes = static_cast<DrawPass>(type.DrawModes & view.Pass & (int32)view.GetShadowsDrawPassMask(type.ShadowsMode));
+        type.Model->Draw(renderContext, draw);
+        return;
+    }
 
     // Draw visible clusters
 #if FOLIAGE_USE_SINGLE_QUAD_TREE || !FOLIAGE_USE_DRAW_CALLS_BATCHING
