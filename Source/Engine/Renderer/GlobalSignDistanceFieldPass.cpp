@@ -27,6 +27,7 @@
 #define GLOBAL_SDF_MIP_GROUP_SIZE 4
 #define GLOBAL_SDF_MIP_FLOODS 5 // Amount of flood fill passes for mip.
 #define GLOBAL_SDF_DEBUG_CHUNKS 0
+#define GLOBAL_SDF_DEBUG_FORCE_REDRAW 0 // Forces to redraw all SDF cascades every frame
 #define GLOBAL_SDF_ACTOR_IS_STATIC(actor) ((actor->GetStaticFlags() & (StaticFlags::Lightmap | StaticFlags::Transform)) == (int32)(StaticFlags::Lightmap | StaticFlags::Transform))
 
 static_assert(GLOBAL_SDF_RASTERIZE_MODEL_MAX_COUNT % 4 == 0, "Must be multiple of 4 due to data packing for GPU constant buffer.");
@@ -482,7 +483,7 @@ bool GlobalSignDistanceFieldPass::Render(RenderContext& renderContext, GPUContex
     // Rasterize world geometry into Global SDF
     renderContext.View.Pass = DrawPass::GlobalSDF;
     uint32 viewMask = renderContext.View.RenderLayersMask;
-    const bool useCache = !updated;
+    const bool useCache = !updated && !GLOBAL_SDF_DEBUG_FORCE_REDRAW;
     static_assert(GLOBAL_SDF_RASTERIZE_CHUNK_SIZE % GLOBAL_SDF_RASTERIZE_GROUP_SIZE == 0, "Invalid chunk size for Global SDF rasterization group size.");
     const int32 rasterizeChunks = Math::CeilToInt((float)resolution / (float)GLOBAL_SDF_RASTERIZE_CHUNK_SIZE);
     auto& chunks = ChunksCache;
