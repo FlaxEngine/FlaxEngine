@@ -27,7 +27,8 @@ DDGIData DDGI;
 GlobalSDFData GlobalSDF;
 GlobalSurfaceAtlasData GlobalSurfaceAtlas;
 GBufferData GBuffer;
-float2 Padding0;
+float Padding0;
+float ProbesDistanceLimit;
 float ResetBlend;
 float TemporalTime;
 int4 ProbeScrollClears[4];
@@ -111,7 +112,7 @@ void CS_Classify(uint3 DispatchThreadId : SV_DispatchThreadID)
 #endif
     float sdfDst = abs(sdf);
     float threshold = GlobalSDF.CascadeVoxelSize[CascadeIndex];
-    float distanceLimit = length(probesSpacing) * 1.5f;
+    float distanceLimit = length(probesSpacing) * ProbesDistanceLimit;
     float relocateLimit = length(probesSpacing) * 0.6f;
     if (sdfDst > distanceLimit) // Probe is too far from geometry
     {
