@@ -149,7 +149,7 @@ bool ModelTool::GenerateModelSDF(Model* inputModel, ModelData* modelData, float 
     // Allocate memory for the distant field
     const int32 voxelsSize = resolution.X * resolution.Y * resolution.Z * formatStride;
     void* voxels = Allocator::Allocate(voxelsSize);
-    Float3 xyzToLocalMul = uvwToLocalMul / Float3(resolution);
+    Float3 xyzToLocalMul = uvwToLocalMul / Float3(resolution - 1);
     Float3 xyzToLocalAdd = uvwToLocalAdd;
     const Float2 encodeMAD(0.5f / sdf.MaxDistance * formatMaxValue, 0.5f * formatMaxValue);
     const Float2 decodeMAD(2.0f * sdf.MaxDistance / formatMaxValue, -sdf.MaxDistance);
