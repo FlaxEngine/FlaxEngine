@@ -73,18 +73,26 @@ Texture3D<float> ObjectsTextures[GLOBAL_SDF_RASTERIZE_MODEL_MAX_COUNT] : registe
 
 float DistanceToModelSDF(float minDistance, ObjectRasterizeData modelData, Texture3D<float> modelSDFTex, float3 worldPos)
 {
+    // Object scaling is the length of the rows
+    float3 volumeToWorldScale = float3(length(modelData.VolumeToWorld[0]), length(modelData.VolumeToWorld[1]), length(modelData.VolumeToWorld[2]));
+    float volumeScale = min(volumeToWorldScale.x, min(volumeToWorldScale.y, volumeToWorldScale.z));
+
 	// Compute SDF volume UVs and distance in world-space to the volume bounds
 	float3 volumePos = mul(float4(worldPos, 1), modelData.WorldToVolume).xyz;
 	float3 volumeUV = volumePos * modelData.VolumeToUVWMul + modelData.VolumeToUVWAdd;
 	float3 volumePosClamped = clamp(volumePos, -modelData.VolumeLocalBoundsExtent, modelData.VolumeLocalBoundsExtent);
 	float3 worldPosClamped = mul(float4(volumePosClamped, 1), modelData.VolumeToWorld).xyz;
 	float distanceToVolume = distance(worldPos, worldPosClamped);
+	if (distanceToVolume < 0.01f)
+	    distanceToVolume = length((volumePos - volumePosClamped) * volumeToWorldScale);
+    distanceToVolume = max(distanceToVolume, 0);
 
 	// Skip sampling SDF if there is already a better result
 	BRANCH if (minDistance <= distanceToVolume) return distanceToVolume;
 
 	// Sample SDF
 	float volumeDistance = modelSDFTex.SampleLevel(SamplerLinearClamp, volumeUV, modelData.MipOffset).x * modelData.DecodeMul + modelData.DecodeAdd;
+	volumeDistance *= volumeScale; // Apply uniform instance scale (non-uniform is not supported)
 
 	// Combine distance to the volume with distance to the surface inside the model
 	float result = CombineDistanceToSDF(volumeDistance, distanceToVolume);
@@ -116,7 +124,7 @@ void CS_RasterizeModel(uint3 DispatchThreadId : SV_DispatchThreadID)
 		float objectDistance = DistanceToModelSDF(minDistance, objectData, ObjectsTextures[i], voxelWorldPos);
 		minDistance = min(minDistance, objectDistance);
 	}
-	GlobalSDFTex[voxelCoord] = saturate(minDistance / MaxDistance);
+	GlobalSDFTex[voxelCoord] = clamp(minDistance / MaxDistance, -1, 1);
 }
 
 #endif
@@ -161,7 +169,7 @@ void CS_RasterizeHeightfield(uint3 DispatchThreadId : SV_DispatchThreadID)
 			objectDistance = thickness - objectDistance;
 		minDistance = min(minDistance, objectDistance);
 	}
-	GlobalSDFTex[voxelCoord] = saturate(minDistance / MaxDistance);
+	GlobalSDFTex[voxelCoord] = clamp(minDistance / MaxDistance, -1, 1);
 }
 
 #endif
@@ -247,6 +255,13 @@ float4 PS_Debug(Quad_VS2PS input) : SV_Target
 	if (distance01 < 0)
 		return float4(0, 0, 1 - distance01, 1);
 	return float4(0, 1 - distance01, 0, 1);
+#endif
+
+#if 1
+    // Debug negative SDF (inside geometry)
+    float viewSDF = SampleGlobalSDF(GlobalSDF, GlobalSDFTex, GlobalSDFMip, ViewWorldPos);
+    if (viewSDF < 0)
+		return float4(float3(0.7, 0.4, 0.1) * saturate(viewSDF * -0.005f), 1);
 #endif
 
 	// Shot a ray from camera into the Global SDF
