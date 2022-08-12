@@ -21,6 +21,8 @@
 #include "Engine/Content/Asset.h"
 #include "Engine/Content/Content.h"
 #include "Engine/Content/Assets/Shader.h"
+#include "Engine/Content/Assets/Material.h"
+#include "Engine/Particles/ParticleEmitter.h"
 #if USE_EDITOR
 #define COMPILE_WITH_ASSETS_IMPORTER 1 // Hack to use shaders importing in this module
 #include "Engine/ContentImporters/AssetsImportingManager.h"
@@ -265,8 +267,11 @@ namespace
         // Add any shaders that failed to load (eg. due to error in included header)
         for (Asset* asset : Content::GetAssets())
         {
-            if (asset->LastLoadFailed() && asset->Is<Shader>() && !toReload.Contains(asset))
-                toReload.Add(asset);
+            if (asset->LastLoadFailed() && !toReload.Contains(asset))
+            {
+                if (asset->Is<Shader>() || asset->Is<Material>() || asset->Is<ParticleEmitter>())
+                    toReload.Add(asset);
+            }
         }
 
         LOG(Info, "Shader include \'{0}\' has been modified.", path);
