@@ -243,6 +243,7 @@ namespace FlaxEditor.Tools.Foliage
             if (currentIndex != -1)
             {
                 ((ContainerControl)_items.Children[currentIndex]).Children[1].BackgroundColor = Style.Current.BackgroundSelected;
+                _proxy.SyncOptions();
 
                 _presenter.Select(_proxy);
                 _presenter.BuildLayoutOnUpdate();

@@ -400,6 +400,7 @@ namespace FlaxEditor.Tools.Foliage
             if (currentIndex != -1)
             {
                 _items.Children[currentIndex].BackgroundColor = Style.Current.BackgroundSelected;
+                _proxy.SyncOptions();
 
                 _presenter.Select(_proxy);
                 _presenter.BuildLayoutOnUpdate();
