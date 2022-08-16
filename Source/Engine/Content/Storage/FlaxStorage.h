@@ -88,9 +88,9 @@ public:
 
 protected:
     // State
-    uint32 _refCount;
-    DateTime _lastRefLostTime;
+    int64 _refCount;
     int64 _chunksLock;
+    DateTime _lastRefLostTime;
     CriticalSection _loadLocker;
 
     // Storage
@@ -106,8 +106,18 @@ protected:
 
 private:
     // Used by FlaxStorageReference:
-    void AddRef();
-    void RemoveRef();
+    void AddRef()
+    {
+        Platform::InterlockedIncrement(&_refCount);
+    }
+    void RemoveRef()
+    {
+        Platform::InterlockedDecrement(&_refCount);
+        if (Platform::AtomicRead(&_refCount) == 0)
+        {
+            _lastRefLostTime = DateTime::NowUTC();
+        }
+    }
 
 public:
     /// <summary>
@@ -222,10 +232,7 @@ public:
     /// <summary>
     /// Gets the references count.
     /// </summary>
-    FORCE_INLINE uint32 GetRefCount() const
-    {
-        return _refCount;
-    }
+    uint32 GetRefCount() const;
 
     /// <summary>
     /// Checks if storage container should be disposed (it's not used anymore).

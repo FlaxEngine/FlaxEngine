@@ -201,23 +201,6 @@ FlaxStorage::FlaxStorage(const StringView& path)
 {
 }
 
-void FlaxStorage::AddRef()
-{
-    _refCount++;
-}
-
-void FlaxStorage::RemoveRef()
-{
-    if (_refCount > 0)
-    {
-        _refCount--;
-        if (_refCount == 0)
-        {
-            _lastRefLostTime = DateTime::NowUTC();
-        }
-    }
-}
-
 FlaxStorage::~FlaxStorage()
 {
     // Validate if has been disposed
@@ -237,9 +220,14 @@ FlaxStorage::LockData FlaxStorage::LockSafe()
     return lock;
 }
 
+uint32 FlaxStorage::GetRefCount() const
+{
+    return (uint32)Platform::AtomicRead((int64*)&_refCount);
+}
+
 bool FlaxStorage::ShouldDispose() const
 {
-    return _refCount == 0 && Platform::AtomicRead((int64*)&_chunksLock) == 0 && DateTime::NowUTC() - _lastRefLostTime >= TimeSpan::FromMilliseconds(500);
+    return Platform::AtomicRead((int64*)&_refCount) == 0 && Platform::AtomicRead((int64*)&_chunksLock) == 0 && DateTime::NowUTC() - _lastRefLostTime >= TimeSpan::FromMilliseconds(500);
 }
 
 uint32 FlaxStorage::GetMemoryUsage() const
