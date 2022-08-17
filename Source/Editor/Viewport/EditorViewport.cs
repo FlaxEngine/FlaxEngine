@@ -511,11 +511,26 @@ namespace FlaxEditor.Viewport
                     var debugView = ViewWidgetButtonMenu.AddChildMenu("Debug View").ContextMenu;
                     for (int i = 0; i < EditorViewportViewModeValues.Length; i++)
                     {
-                        var v = EditorViewportViewModeValues[i];
-                        var button = debugView.AddButton(v.Name);
-                        button.Tag = v.Mode;
+                        ref var v = ref EditorViewportViewModeValues[i];
+                        if (v.Options != null)
+                        {
+                            var childMenu = debugView.AddChildMenu(v.Name).ContextMenu;
+                            childMenu.ButtonClicked += WidgetViewModeShowHideClicked;
+                            childMenu.VisibleChanged += WidgetViewModeShowHide;
+                            for (int j = 0; j < v.Options.Length; j++)
+                            {
+                                ref var vv = ref v.Options[j];
+                                var button = childMenu.AddButton(vv.Name);
+                                button.Tag = vv.Mode;
+                            }
+                        }
+                        else
+                        {
+                            var button = debugView.AddButton(v.Name);
+                            button.Tag = v.Mode;
+                        }
                     }
-                    debugView.ButtonClicked += button => Task.ViewMode = (ViewMode)button.Tag;
+                    debugView.ButtonClicked += WidgetViewModeShowHideClicked;
                     debugView.VisibleChanged += WidgetViewModeShowHide;
                 }
 
@@ -1382,13 +1397,22 @@ namespace FlaxEditor.Viewport
 
         private struct ViewModeOptions
         {
-            public readonly ViewMode Mode;
             public readonly string Name;
+            public readonly ViewMode Mode;
+            public readonly ViewModeOptions[] Options;
 
             public ViewModeOptions(ViewMode mode, string name)
             {
                 Mode = mode;
                 Name = name;
+                Options = null;
+            }
+
+            public ViewModeOptions(string name, ViewModeOptions[] options)
+            {
+                Name = name;
+                Mode = ViewMode.Default;
+                Options = options;
             }
         }
 
@@ -1401,16 +1425,19 @@ namespace FlaxEditor.Viewport
             new ViewModeOptions(ViewMode.LightBuffer, "Light Buffer"),
             new ViewModeOptions(ViewMode.Reflections, "Reflections Buffer"),
             new ViewModeOptions(ViewMode.Depth, "Depth Buffer"),
-            new ViewModeOptions(ViewMode.Diffuse, "Diffuse"),
-            new ViewModeOptions(ViewMode.Metalness, "Metalness"),
-            new ViewModeOptions(ViewMode.Roughness, "Roughness"),
-            new ViewModeOptions(ViewMode.Specular, "Specular"),
-            new ViewModeOptions(ViewMode.SpecularColor, "Specular Color"),
-            new ViewModeOptions(ViewMode.SubsurfaceColor, "Subsurface Color"),
-            new ViewModeOptions(ViewMode.ShadingModel, "Shading Model"),
-            new ViewModeOptions(ViewMode.Emissive, "Emissive Light"),
-            new ViewModeOptions(ViewMode.Normals, "Normals"),
-            new ViewModeOptions(ViewMode.AmbientOcclusion, "Ambient Occlusion"),
+            new ViewModeOptions("GBuffer", new[]
+            {
+                new ViewModeOptions(ViewMode.Diffuse, "Diffuse"),
+                new ViewModeOptions(ViewMode.Metalness, "Metalness"),
+                new ViewModeOptions(ViewMode.Roughness, "Roughness"),
+                new ViewModeOptions(ViewMode.Specular, "Specular"),
+                new ViewModeOptions(ViewMode.SpecularColor, "Specular Color"),
+                new ViewModeOptions(ViewMode.SubsurfaceColor, "Subsurface Color"),
+                new ViewModeOptions(ViewMode.ShadingModel, "Shading Model"),
+                new ViewModeOptions(ViewMode.Emissive, "Emissive Light"),
+                new ViewModeOptions(ViewMode.Normals, "Normals"),
+                new ViewModeOptions(ViewMode.AmbientOcclusion, "Ambient Occlusion"),
+            }),
             new ViewModeOptions(ViewMode.MotionVectors, "Motion Vectors"),
             new ViewModeOptions(ViewMode.LightmapUVsDensity, "Lightmap UVs Density"),
             new ViewModeOptions(ViewMode.VertexColors, "Vertex Colors"),
@@ -1441,6 +1468,12 @@ namespace FlaxEditor.Viewport
             }
         }
 
+        private void WidgetViewModeShowHideClicked(ContextMenuButton button)
+        {
+            if (button.Tag is ViewMode v)
+                Task.ViewMode = v;
+        }
+
         private void WidgetViewModeShowHide(Control cm)
         {
             if (cm.Visible == false)
@@ -1449,13 +1482,8 @@ namespace FlaxEditor.Viewport
             var ccm = (ContextMenu)cm;
             foreach (var e in ccm.Items)
             {
-                if (e is ContextMenuButton b)
-                {
-                    var v = (ViewMode)b.Tag;
-                    b.Icon = Task.View.Mode == v
-                             ? Style.Current.CheckBoxTick
-                             : SpriteHandle.Invalid;
-                }
+                if (e is ContextMenuButton b && b.Tag is ViewMode v)
+                    b.Icon = Task.View.Mode == v ? Style.Current.CheckBoxTick : SpriteHandle.Invalid;
             }
         }
 
