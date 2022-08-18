@@ -383,16 +383,8 @@ public:
     static Variant Lerp(const Variant& a, const Variant& b, float alpha);
 
 private:
-    void OnObjectDeleted(ScriptingObject* obj)
-    {
-        AsObject = nullptr;
-    }
-
-    void OnAssetUnloaded(Asset* obj)
-    {
-        AsAsset = nullptr;
-    }
-
+    void OnObjectDeleted(ScriptingObject* obj);
+    void OnAssetUnloaded(Asset* obj);
     void AllocStructure();
     void CopyStructure(void* src);
     void FreeStructure();

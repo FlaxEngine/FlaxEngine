@@ -3621,6 +3621,16 @@ Variant Variant::Lerp(const Variant& a, const Variant& b, float alpha)
     }
 }
 
+void Variant::OnObjectDeleted(ScriptingObject* obj)
+{
+    AsObject = nullptr;
+}
+
+void Variant::OnAssetUnloaded(Asset* obj)
+{
+    AsAsset = nullptr;
+}
+
 void Variant::AllocStructure()
 {
     const StringAnsiView typeName(Type.TypeName);
