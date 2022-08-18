@@ -57,6 +57,7 @@ public:
 
     bool Intersects(const Ray& ray, const Matrix& world, Real& distance, Vector3& normal) const
     {
+        distance = MAX_Real;
         for (int32 i = 0; i < Triangles.Count(); i++)
         {
             CollisionTriangle triangle = Triangles[i];
@@ -66,18 +67,18 @@ public:
 
             // TODO: use 32-bit precision for intersection
             Real d;
-            if (CollisionsHelper::RayIntersectsTriangle(ray, triangle.V0, triangle.V1, triangle.V2, d))
+            if (CollisionsHelper::RayIntersectsTriangle(ray, triangle.V0, triangle.V1, triangle.V2, d) && d < distance)
             {
                 normal = Vector3::Normalize((triangle.V1 - triangle.V0) ^ (triangle.V2 - triangle.V0));
                 distance = d;
-                return true;
             }
         }
-        return false;
+        return distance < MAX_Real;
     }
 
     bool Intersects(const Ray& ray, const Transform& transform, Real& distance, Vector3& normal) const
     {
+        distance = MAX_Real;
         for (int32 i = 0; i < Triangles.Count(); i++)
         {
             CollisionTriangle triangle = Triangles[i];
@@ -88,13 +89,12 @@ public:
 
             // TODO: use 32-bit precision for intersection
             Real d;
-            if (CollisionsHelper::RayIntersectsTriangle(ray, v0, v1, v2, d))
+            if (CollisionsHelper::RayIntersectsTriangle(ray, v0, v1, v2, d) && d < distance)
             {
                 normal = Vector3::Normalize((v1 - v0) ^ (v2 - v0));
                 distance = d;
-                return true;
             }
         }
-        return false;
+        return distance < MAX_Real;
     }
 };
