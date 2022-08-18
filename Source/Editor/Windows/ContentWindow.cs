@@ -418,19 +418,18 @@ namespace FlaxEditor.Windows
             // Refresh database and view now
             Editor.ContentDatabase.RefreshFolder(itemFolder, true);
             RefreshView();
-
-            if (endEvent != null)
+            var newItem = itemFolder.FindChild(newPath);
+            if (newItem == null)
             {
-                var newItem = itemFolder.FindChild(newPath);
-                if (newItem != null)
-                {
-                    endEvent(newItem);
-                }
-                else
-                {
-                    Editor.LogWarning("Failed to find the created new item.");
-                }
+                Editor.LogWarning("Failed to find the created new item.");
+                return;
             }
+
+            // Auto-select item
+            Select(newItem, true);
+
+            // Custom post-action
+            endEvent?.Invoke(newItem);
         }
 
 
@@ -611,7 +610,7 @@ namespace FlaxEditor.Windows
 
             // Create asset name
             string extension = '.' + proxy.FileExtension;
-            string path  = StringUtils.CombinePaths(parentFolderPath, name + extension);
+            string path = StringUtils.CombinePaths(parentFolderPath, name + extension);
             if (parentFolder.FindChild(path) != null)
             {
                 int i = 0;
@@ -620,7 +619,7 @@ namespace FlaxEditor.Windows
                     path = StringUtils.CombinePaths(parentFolderPath, string.Format("{0} {1}", name, i++) + extension);
                 } while (parentFolder.FindChild(path) != null);
             }
-            
+
             // Create new asset proxy, add to view and rename it
             _newElement = new NewItem(path, proxy, argument)
             {
