@@ -3,7 +3,7 @@
 #include "Engine/Core/Types/String.h"
 #include "Engine/Core/Types/StringView.h"
 #include "Engine/Platform/StringUtils.h"
-#include "Engine/Platform/Windows/WindowsFileSystem.h"
+#include "Engine/Platform/FileSystem.h"
 #include <ThirdParty/catch2/catch.hpp>
 
 String TestNormalizePath(const StringView& input)
