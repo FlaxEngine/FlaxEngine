@@ -39,7 +39,7 @@
 #define ENABLE_ASSERTION 1
 
 // Enable/disable assertion for Engine low layers
-#define ENABLE_ASSERTION_LOW_LAYERS ENABLE_ASSERTION && (BUILD_DEBUG)
+#define ENABLE_ASSERTION_LOW_LAYERS ENABLE_ASSERTION && (BUILD_DEBUG || FLAX_TESTS)
 
 // Scripting API defines (see C++ scripting documentation for more info)
 #define API_ENUM(...)

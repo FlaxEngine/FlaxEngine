@@ -12,16 +12,13 @@ template<int Capacity>
 class FixedAllocation
 {
 public:
-
     template<typename T>
     class Data
     {
     private:
-
         byte _data[Capacity * sizeof(T)];
 
     public:
-
         FORCE_INLINE Data()
         {
         }
@@ -48,14 +45,14 @@ public:
 
         FORCE_INLINE void Allocate(uint64 capacity)
         {
-#if  BUILD_DEBUG
+#if ENABLE_ASSERTION_LOW_LAYERS
             ASSERT(capacity <= Capacity);
 #endif
         }
 
         FORCE_INLINE void Relocate(uint64 capacity, int32 oldCount, int32 newCount)
         {
-#if  BUILD_DEBUG
+#if ENABLE_ASSERTION_LOW_LAYERS
             ASSERT(capacity <= Capacity);
 #endif
         }
@@ -80,16 +77,13 @@ public:
 class HeapAllocation
 {
 public:
-
     template<typename T>
     class Data
     {
     private:
-
         T* _data = nullptr;
 
     public:
-
         FORCE_INLINE Data()
         {
         }
@@ -133,7 +127,7 @@ public:
 
         FORCE_INLINE void Allocate(uint64 capacity)
         {
-#if  BUILD_DEBUG
+#if  ENABLE_ASSERTION_LOW_LAYERS
             ASSERT(!_data);
 #endif
             _data = (T*)Allocator::Allocate(capacity * sizeof(T));
@@ -182,12 +176,10 @@ template<int Capacity, typename OtherAllocator = HeapAllocation>
 class InlinedAllocation
 {
 public:
-
     template<typename T>
     class Data
     {
     private:
-
         typedef typename OtherAllocator::template Data<T> OtherData;
 
         bool _useOther = false;
@@ -195,7 +187,6 @@ public:
         OtherData _other;
 
     public:
-
         FORCE_INLINE Data()
         {
         }
