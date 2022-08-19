@@ -2097,7 +2097,10 @@ namespace FlaxEditor.GUI.Timeline
                 }
                 break;
             case KeyboardKeys.S:
-                Split(CurrentFrame);
+                if (!Root.GetKey(KeyboardKeys.Control))
+                {
+                    Split(CurrentFrame);
+                }
                 return true;
             case KeyboardKeys.Delete:
                 OnKeyframesDelete(null);
