@@ -153,6 +153,11 @@ namespace FlaxEditor.Windows.Assets
             [Limit(0, 10)]
             public float WarmUpTime = 0.4f;
 
+            [EditorDisplay("Options"), EditorOrder(80)]
+            [Tooltip("The animation playback speed ratio. Can be used to slow down or speed up animation.")]
+            [Limit(0, 100)]
+            public float PlaybackSpeed = 1.0f;
+
             [EditorDisplay("Output"), EditorOrder(100)]
             [Tooltip("The output folder for the rendering process artifact files. Relative to the project folder or absolute path.")]
             public string OutputDirectory = "Output/Render";
@@ -494,7 +499,7 @@ namespace FlaxEditor.Windows.Assets
                     // Update scene animation with a fixed delta-time
                     if (!_player.IsStopped)
                     {
-                        var speed = _player.Speed * (_window?._timeline.Player?.Speed ?? 1.0f);
+                        var speed = _player.Speed * (_window?._timeline.Player?.Speed ?? 1.0f) * _options.PlaybackSpeed;
                         if (speed <= 0.001f)
                         {
                             Editor.LogError("Scene Animation Player speed was nearly zero. Cannot continue rendering.");
