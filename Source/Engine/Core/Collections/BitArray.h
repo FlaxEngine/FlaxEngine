@@ -13,7 +13,6 @@ template<typename AllocationType = HeapAllocation>
 API_CLASS(InBuild) class BitArray
 {
     friend BitArray;
-
 public:
     typedef uint64 ItemType;
     typedef typename AllocationType::template Data<ItemType> AllocationData;
@@ -49,11 +48,31 @@ public:
     /// Initializes a new instance of the <see cref="BitArray"/> class.
     /// </summary>
     /// <param name="other">The other collection to copy.</param>
-    BitArray(const BitArray& other)
+    BitArray(const BitArray& other) noexcept
     {
-        _count = _capacity = other._count;
+        _count = _capacity = other.Count();
         if (_capacity > 0)
-            _allocation.Allocate(Math::Max<ItemType>(_capacity / sizeof(ItemType), 1));
+        {
+            const uint64 itemsCapacity = Math::Max<ItemType>(_capacity / sizeof(ItemType), 1);
+            _allocation.Allocate(itemsCapacity);
+            Platform::MemoryCopy(Get(), other.Get(), itemsCapacity * sizeof(ItemType));
+        }
+    }
+
+    /// <summary>
+    /// Initializes a new instance of the <see cref="BitArray"/> class.
+    /// </summary>
+    /// <param name="other">The other collection to copy.</param>
+    template<typename OtherAllocationType = AllocationType>
+    explicit BitArray(const BitArray<OtherAllocationType>& other) noexcept
+    {
+        _count = _capacity = other.Count();
+        if (_capacity > 0)
+        {
+            const uint64 itemsCapacity = Math::Max<ItemType>(_capacity / sizeof(ItemType), 1);
+            _allocation.Allocate(itemsCapacity);
+            Platform::MemoryCopy(Get(), other.Get(), itemsCapacity * sizeof(ItemType));
+        }
     }
 
     /// <summary>
@@ -82,7 +101,9 @@ public:
             {
                 _allocation.Free();
                 _capacity = other._count;
-                _allocation.Allocate(Math::Max<ItemType>(_capacity / sizeof(ItemType), 1));
+                const uint64 itemsCapacity = Math::Max<ItemType>(_capacity / sizeof(ItemType), 1);
+                _allocation.Allocate(itemsCapacity);
+                Platform::MemoryCopy(Get(), other.Get(), itemsCapacity * sizeof(ItemType));
             }
             _count = other._count;
         }
@@ -119,7 +140,6 @@ public:
     /// <summary>
     /// Gets the pointer to the bits storage data (linear allocation).
     /// </summary>
-    /// <returns>The data pointer.</returns>
     FORCE_INLINE ItemType* Get()
     {
         return _allocation.Get();
@@ -128,7 +148,6 @@ public:
     /// <summary>
     /// Gets the pointer to the bits storage data (linear allocation).
     /// </summary>
-    /// <returns>The data pointer.</returns>
     FORCE_INLINE const ItemType* Get() const
     {
         return _allocation.Get();
@@ -137,7 +156,6 @@ public:
     /// <summary>
     /// Gets the amount of the items in the collection.
     /// </summary>
-    /// <returns>The amount of items.</returns>
     FORCE_INLINE int32 Count() const
     {
         return _count;
@@ -146,7 +164,6 @@ public:
     /// <summary>
     /// Gets the amount of the items that can be contained by collection without resizing.
     /// </summary>
-    /// <returns>The collection capacity.</returns>
     FORCE_INLINE int32 Capacity() const
     {
         return _capacity;
@@ -155,7 +172,6 @@ public:
     /// <summary>
     /// Returns true if collection isn't empty.
     /// </summary>
-    /// <returns>True if collection isn't empty, otherwise false.</returns>
     FORCE_INLINE bool HasItems() const
     {
         return _count != 0;
@@ -164,7 +180,6 @@ public:
     /// <summary>
     /// Returns true if collection is empty.
     /// </summary>
-    /// <returns>True if collection is empty, otherwise false.</returns>
     FORCE_INLINE bool IsEmpty() const
     {
         return _count == 0;
@@ -315,5 +330,26 @@ public:
         ::Swap(_count, other._count);
         ::Swap(_capacity, other._capacity);
         _allocation.Swap(other._allocation);
+    }
+
+public:
+    template<typename OtherAllocationType = AllocationType>
+    bool operator==(const BitArray<OtherAllocationType>& other) const
+    {
+        if (_count == other.Count())
+        {
+            for (int32 i = 0; i < _count; i++)
+            {
+                if (!(Get(i) == other.Get(i)))
+                    return false;
+            }
+        }
+        return true;
+    }
+
+    template<typename OtherAllocationType = AllocationType>
+    bool operator!=(const BitArray<OtherAllocationType>& other) const
+    {
+        return !operator==(other);
     }
 };

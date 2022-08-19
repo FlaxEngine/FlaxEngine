@@ -112,15 +112,15 @@ public:
     /// Initializes a new instance of the <see cref="Array"/> class.
     /// </summary>
     /// <param name="other">The other collection to copy.</param>
-    template<typename U>
-    explicit Array(const Array<U>& other) noexcept
+    template<typename OtherT = T, typename OtherAllocationType = AllocationType>
+    explicit Array(const Array<OtherT, OtherAllocationType>& other) noexcept
     {
-        _capacity = other._count;
-        _count = other._count;
+        _capacity = other.Capacity();
+        _count = other.Count();
         if (_capacity > 0)
         {
             _allocation.Allocate(_capacity);
-            Memory::ConstructItems(_allocation.Get(), other._data, other._count);
+            Memory::ConstructItems(_allocation.Get(), other.Get(), _count);
         }
     }
 
@@ -164,13 +164,13 @@ public:
         if (this != &other)
         {
             Memory::DestructItems(_allocation.Get(), _count);
-            if (_capacity < other._count)
+            if (_capacity < other.Count())
             {
                 _allocation.Free();
-                _capacity = other._count;
+                _capacity = other.Count();
                 _allocation.Allocate(_capacity);
             }
-            _count = other._count;
+            _count = other.Count();
             Memory::ConstructItems(_allocation.Get(), other.Get(), _count);
         }
         return *this;
@@ -489,7 +489,7 @@ public:
     /// Adds the other collection to the collection.
     /// </summary>
     /// <param name="other">The other collection to add.</param>
-    template<typename OtherT, typename OtherAllocationType = HeapAllocation>
+    template<typename OtherT, typename OtherAllocationType = AllocationType>
     FORCE_INLINE void Add(const Array<OtherT, OtherAllocationType>& other)
     {
         Add(other.Get(), other.Count());
@@ -860,9 +860,10 @@ public:
     }
 
 public:
-    bool operator==(const Array& other) const
+    template<typename OtherT = T, typename OtherAllocationType = AllocationType>
+    bool operator==(const Array<OtherT, OtherAllocationType>& other) const
     {
-        if (_count == other._count)
+        if (_count == other.Count())
         {
             const T* data = _allocation.Get();
             const T* otherData = other.Get();
@@ -875,7 +876,8 @@ public:
         return true;
     }
 
-    bool operator!=(const Array& other) const
+    template<typename OtherT = T, typename OtherAllocationType = AllocationType>
+    bool operator!=(const Array<OtherT, OtherAllocationType>& other) const
     {
         return !operator==(other);
     }
