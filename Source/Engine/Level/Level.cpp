@@ -145,6 +145,7 @@ LevelService LevelServiceInstanceService;
 
 CriticalSection Level::ScenesLock;
 Array<Scene*> Level::Scenes;
+bool Level::TickEnabled = true;
 Delegate<Actor*> Level::ActorSpawned;
 Delegate<Actor*> Level::ActorDeleted;
 Delegate<Actor*, Actor*> Level::ActorParentChanged;
@@ -245,7 +246,7 @@ void LevelService::Update()
     auto& scenes = Level::Scenes;
 
     // Update all actors
-    if (!Time::GetGamePaused())
+    if (!Time::GetGamePaused() && Level::TickEnabled)
     {
         for (int32 i = 0; i < scenes.Count(); i++)
         {
@@ -274,7 +275,7 @@ void LevelService::LateUpdate()
     auto& scenes = Level::Scenes;
 
     // Update all actors
-    if (!Time::GetGamePaused())
+    if (!Time::GetGamePaused() && Level::TickEnabled)
     {
         for (int32 i = 0; i < scenes.Count(); i++)
         {
@@ -306,7 +307,7 @@ void LevelService::FixedUpdate()
     auto& scenes = Level::Scenes;
 
     // Update all actors
-    if (!Time::GetGamePaused())
+    if (!Time::GetGamePaused() && Level::TickEnabled)
     {
         for (int32 i = 0; i < scenes.Count(); i++)
         {

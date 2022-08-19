@@ -43,6 +43,11 @@ public:
     /// </summary>
     API_FIELD(ReadOnly) static Array<Scene*> Scenes;
 
+    /// <summary>
+    /// True if game objects (actors and scripts) can receive a tick during engine Update/LateUpdate/FixedUpdate events. Can be used to temporarily disable gameplay logic updating.
+    /// </summary>
+    API_FIELD() static bool TickEnabled;
+
 public:
     /// <summary>
     /// Occurs when new actor gets spawned to the game.
@@ -104,7 +109,6 @@ public:
     /// <summary>
     /// Gets the scenes count.
     /// </summary>
-    /// <returns>The scenes count.</returns>
     API_PROPERTY() static int32 GetScenesCount()
     {
         return Scenes.Count();

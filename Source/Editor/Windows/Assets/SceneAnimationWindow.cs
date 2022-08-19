@@ -276,7 +276,7 @@ namespace FlaxEditor.Windows.Assets
             private float _warmUpTimeLeft;
             private float _dt;
             private int _animationFrame;
-            private bool _wasGamePaused;
+            private bool _wasGamePaused, _wasTickEnabled;
             private SceneAnimationPlayer _player;
             private States _state;
             private readonly StagingTexture[] _stagingTextures = new StagingTexture[FrameLatency + 1];
@@ -365,11 +365,16 @@ namespace FlaxEditor.Windows.Assets
                 };
                 FlaxEngine.Scripting.Update += Tick;
                 _wasGamePaused = Time.GamePaused;
+                _wasTickEnabled = Level.TickEnabled;
                 Time.GamePaused = false;
                 Time.SetFixedDeltaTime(true, _dt);
                 Time.UpdateFPS = Time.DrawFPS = _options.FrameRate;
                 if (!Editor.IsPlayMode)
+                {
+                    // Don't simulate physics and don't tick game when rendering at edit time
                     Time.PhysicsFPS = 0;
+                    Level.TickEnabled = false;
+                }
                 Level.SpawnActor(_player);
                 var gameWin = editor.Windows.GameWin;
                 var resolution = _options.GetResolution();
@@ -441,6 +446,7 @@ namespace FlaxEditor.Windows.Assets
                 FlaxEngine.Scripting.Update -= Tick;
                 Time.SetFixedDeltaTime(false, 0.0f);
                 Time.GamePaused = _wasGamePaused;
+                Level.TickEnabled = _wasTickEnabled;
                 if (_player)
                 {
                     _player.Stop();
