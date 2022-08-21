@@ -1382,6 +1382,7 @@ namespace FlaxEditor.Viewport
 
         private readonly float[] EditorViewportCameraSpeedValues =
         {
+            0.05f,
             0.1f,
             0.25f,
             0.5f,
