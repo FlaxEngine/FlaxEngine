@@ -9,7 +9,6 @@
 #include "Engine/Graphics/GPUContext.h"
 #include "Engine/Graphics/GPUDevice.h"
 #include "Engine/Graphics/GPULimits.h"
-#include "Engine/Graphics/PostProcessBase.h"
 #include "Engine/Graphics/RenderTargetPool.h"
 #include "Engine/Graphics/RenderBuffers.h"
 #include "Engine/Graphics/RenderTask.h"
@@ -300,7 +299,7 @@ GPUTexture* DepthOfFieldPass::Render(RenderContext& renderContext, GPUTexture* i
         uint32 groupCountX = (cocWidth / DOF_GRID_SIZE) + ((cocWidth % DOF_GRID_SIZE) > 0 ? 1 : 0);
         uint32 groupCountY = cocHeight;
         //
-        context->Dispatch(shader->GetCS("CS_CoCSpreadH"), groupCountX, groupCountY, 1);
+        context->Dispatch(shader->GetCS("CS_CoCSpread", 0), groupCountX, groupCountY, 1);
 
         // Vertical pass
         context->BindSR(0, tempTarget);
@@ -310,7 +309,7 @@ GPUTexture* DepthOfFieldPass::Render(RenderContext& renderContext, GPUTexture* i
         groupCountX = cocWidth;
         groupCountY = (cocHeight / DOF_GRID_SIZE) + (cocHeight % DOF_GRID_SIZE) > 0 ? 1 : 0;
         //
-        context->Dispatch(shader->GetCS("CS_CoCSpreadV"), groupCountX, groupCountY, 1);
+        context->Dispatch(shader->GetCS("CS_CoCSpread", 1), groupCountX, groupCountY, 1);
 
         // Cleanup
         context->ResetRenderTarget();
@@ -389,7 +388,7 @@ GPUTexture* DepthOfFieldPass::Render(RenderContext& renderContext, GPUTexture* i
         uint32 groupCountX = (dofWidth / DOF_GRID_SIZE) + ((dofWidth % DOF_GRID_SIZE) > 0 ? 1 : 0);
         uint32 groupCountY = dofHeight;
         //
-        context->Dispatch(shader->GetCS("CS_DepthOfFieldH"), groupCountX, groupCountY, 1);
+        context->Dispatch(shader->GetCS("CS_DepthOfField", 0), groupCountX, groupCountY, 1);
 
         // Cleanup
         context->ResetRenderTarget();
@@ -406,7 +405,7 @@ GPUTexture* DepthOfFieldPass::Render(RenderContext& renderContext, GPUTexture* i
         groupCountY = (dofHeight / DOF_GRID_SIZE) + ((dofHeight % DOF_GRID_SIZE) > 0 ? 1 : 0);
         //
         // TODO: cache Compute Shaders
-        context->Dispatch(shader->GetCS("CS_DepthOfFieldV"), groupCountX, groupCountY, 1);
+        context->Dispatch(shader->GetCS("CS_DepthOfField", 1), groupCountX, groupCountY, 1);
         context->ResetRenderTarget();
 
         // Cleanup
