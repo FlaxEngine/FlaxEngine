@@ -11,30 +11,6 @@
 class DepthOfFieldPass : public RendererPass<DepthOfFieldPass>
 {
 private:
-
-    PACK_STRUCT(struct Data {
-        Float2 ProjectionAB;
-        float BokehDepthCullThreshold;
-        float BokehDepthCutoff;
-
-        Float4 DOFDepths;
-
-        float MaxBokehSize;
-        float BokehBrightnessThreshold;
-        float BokehBlurThreshold;
-        float BokehFalloff;
-
-        Float2 BokehTargetSize;
-        Float2 DOFTargetSize;
-
-        Float2 InputSize;
-        float DepthLimit;
-        float BlurStrength;
-
-        Float3 Dummy;
-        float BokehBrightness;
-    });
-
     // Structure used for outputting bokeh points to an AppendStructuredBuffer
     struct BokehPoint
     {
@@ -59,11 +35,9 @@ private:
     AssetReference<Texture> _defaultBokehCross;
 
 public:
-
     DepthOfFieldPass();
 
 public:
-
     /// <summary>
     /// Perform Depth Of Field rendering for the input task
     /// </summary>
@@ -73,7 +47,6 @@ public:
     GPUTexture* Render(RenderContext& renderContext, GPUTexture* input);
 
 private:
-
     GPUTexture* getDofBokehShape(DepthOfFieldSettings& dofSettings);
 #if COMPILE_WITH_DEV_ENV
     void OnShaderReloading(Asset* obj)
@@ -87,14 +60,12 @@ private:
 #endif
 
 public:
-
     // [RendererPass]
     String ToString() const override;
     bool Init() override;
     void Dispose() override;
 
 protected:
-
     // [RendererPass]
     bool setupResources() override;
 };

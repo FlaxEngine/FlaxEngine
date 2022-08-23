@@ -8,7 +8,9 @@
 #include "./Flax/Common.hlsl"
 
 // This must match C++ defines
+#ifndef DOF_MAX_SAMPLE_RADIUS
 #define DOF_MAX_SAMPLE_RADIUS 10
+#endif
 #define DOF_GRID_SIZE 450
 #define DOF_APRON_SIZE DOF_MAX_SAMPLE_RADIUS
 #define DOF_THREAD_GROUP_SIZE (DOF_GRID_SIZE + (DOF_APRON_SIZE * 2))
@@ -18,7 +20,6 @@
 #define USE_CS_LINEAR_SAMPLING 0
 
 META_CB_BEGIN(0, DofData)
-
 float2 ProjectionAB;
 float BokehDepthCullThreshold;
 float BokehDepthCutoff;
@@ -98,23 +99,16 @@ float LinearDepth(in float zBufferDepth)
 	return ProjectionAB.y / (zBufferDepth - ProjectionAB.x);
 }
 
-// Computes the depth of field blur factor
-float BlurFactor(float depth)
-{
-    float f0 = 1.0f - saturate((depth - DOFDepths.x) / max(DOFDepths.y - DOFDepths.x, 0.01f));
-    float f1 = saturate((depth - DOFDepths.z) / max(DOFDepths.w - DOFDepths.z, 0.01f));
-    float blur = saturate(f0 + f1);
-	float fade = 1 - saturate((depth - DepthLimit) * 100);
-    return blur * fade * BlurStrength;
-}
-
 // Depth of Field depth blur generation (outputs linear depth + blur factor to R16G16 target)
 META_PS(true, FEATURE_LEVEL_ES2)
 float4 PS_DofDepthBlurGeneration(Quad_VS2PS input) : SV_Target
 {
-	float depth = LinearDepth(Input0.SampleLevel(SamplerPointClamp, input.TexCoord, 0).r);
-	float blur = BlurFactor(depth);
-	return float4(depth, blur, 1.0f, 1.0f);
+    float depth = LinearDepth(Input0.SampleLevel(SamplerPointClamp, input.TexCoord, 0).r);
+    float f0 = 1.0f - saturate((depth - DOFDepths.x) / max(DOFDepths.y - DOFDepths.x, 0.01f));
+    float f1 = saturate((depth - DOFDepths.z) / max(DOFDepths.w - DOFDepths.z, 0.01f));
+    float fade = 1 - saturate((depth - DepthLimit) * 100);
+    float blur = saturate(f0 + f1) * fade * BlurStrength;
+    return float4(depth, blur, 1.0f, 1.0f);
 }
 
 #if defined(_CS_DepthOfField)
@@ -145,24 +139,25 @@ groupshared DOFSample Samples[DOF_THREAD_GROUP_SIZE];
 META_CS(true, FEATURE_LEVEL_SM5)
 META_PERMUTATION_1(HORIZONTAL=1)
 META_PERMUTATION_1(HORIZONTAL=0)
+META_PERMUTATION_2(HORIZONTAL=1,DOF_MAX_SAMPLE_RADIUS=36)
+META_PERMUTATION_2(HORIZONTAL=0,DOF_MAX_SAMPLE_RADIUS=36)
 [numthreads(_CS_DepthOfField_X, _CS_DepthOfField_Y, 1)]
 void CS_DepthOfField(uint3 groupID : SV_GroupID, uint3 groupThreadID : SV_GroupThreadID)
 {
-	// These positions are relative to the "grid", AKA the horizontal group of pixels that this thread group is writing to
+	// These positions are relative to the "grid", AKA the horizontal/vertical group of pixels that this thread group is writing to
 	const int gridStart = groupID.DOF_COMP * DOF_GRID_SIZE;
 	const int grid = groupThreadID.DOF_COMP - DOF_APRON_SIZE;
 
 	// These positions are relative to the pixel coordinates
 #if HORIZONTAL
-	const uint2 samplePos = uint2(max(gridStart + grid, 0), groupID.y);
+	const uint2 samplePos = uint2(gridStart + grid, groupID.y);
 #else
-	const uint2 samplePos = uint2(groupID.x, max(gridStart + grid, 0));
+	const uint2 samplePos = uint2(groupID.x, gridStart + grid);
 #endif
 
+	// Sample the textures
 	uint2 textureSize;
 	Input0.GetDimensions(textureSize.x, textureSize.y);
-
-	// Sample the textures
 #if USE_CS_HALF_PIXEL_OFFSET
 	float2 sampleCoord = saturate(((float2)samplePos + 0.5f) / float2(textureSize));
 #else
@@ -180,141 +175,49 @@ void CS_DepthOfField(uint3 groupID : SV_GroupID, uint3 groupThreadID : SV_GroupT
 	float cocSize = blur * DOF_MAX_SAMPLE_RADIUS;
 
 	// Store in shared memory
-	Samples[groupThreadID.DOF_COMP].Color = color.rgb;
-	Samples[groupThreadID.DOF_COMP].Depth = depth;
-	Samples[groupThreadID.DOF_COMP].Blur = blur;
+    {
+		DOFSample tap;
+	    tap.Color = color.rgb;
+	    tap.Depth = depth;
+	    tap.Blur = blur;
+	    Samples[groupThreadID.DOF_COMP] = tap;
+    }
 	GroupMemoryBarrierWithGroupSync();
 
 	// Don't continue for threads in the apron, and threads outside the render target size
-	if (grid >= 0 && grid < DOF_GRID_SIZE && samplePos.DOF_COMP < textureSize.DOF_COMP)
+	if (grid >= 0 && grid < DOF_GRID_SIZE && samplePos.DOF_COMP >= 0 && samplePos.DOF_COMP < textureSize.DOF_COMP)
 	{
 		BRANCH
 		if (cocSize > 0.0f)
 		{
-			float3 outputColor = 0.0f;
-			float totalContribution = 0.0f;
+            float3 outputColor = 0.0f;
+            float totalContribution = 0.0f;
 
-			// Gather sample taps inside the radius
-			for (int i = -DOF_MAX_SAMPLE_RADIUS; i <= DOF_MAX_SAMPLE_RADIUS; i++)
-			{
-				// Grab the sample from shared memory
-				uint groupTap = groupThreadID.DOF_COMP + i;
-				DOFSample tap = Samples[groupTap];
+            // Gather sample taps inside the radius
+            float depthTest = depth + 100;
+            for (int i = -DOF_MAX_SAMPLE_RADIUS; i <= DOF_MAX_SAMPLE_RADIUS; i++)
+            {
+                // Grab the sample from shared memory
+                DOFSample tap = Samples[groupThreadID.DOF_COMP + i];
 
-				// Reject the sample if it's outside the CoC radius
-				float cocWeight = saturate(cocSize + 1.0f - abs(float(i)));
+                // Reject the sample if it's outside the CoC radius
+                float cocWeight = saturate(cocSize + 1.0f - abs(float(i)));
 
-				// Reject foreground samples, unless they're blurred as well
-				float depthWeight = tap.Depth >= depth;
-				float blurWeight = tap.Blur;
-				float tapWeight = cocWeight * saturate(depthWeight + blurWeight);
+                // Reject foreground samples, unless they're blurred as well
+                float depthWeight = tap.Depth > depthTest;
+                float blurWeight = tap.Blur;
+                float tapWeight = cocWeight * saturate(depthWeight + blurWeight);
 
-				outputColor += tap.Color * tapWeight;
-				totalContribution += tapWeight;
-			}
+                outputColor += tap.Color * tapWeight;
+                totalContribution += tapWeight;
+            }
 
-			// Write out the result
-			outputColor /= totalContribution;
-			OutputTexture[samplePos] = float4(max(outputColor, 0), color.a);
-		}
-		else
-		{
-			OutputTexture[samplePos] = color;
-		}
-	}
-}
-
-#elif defined(_CS_CoCSpread)
-
-struct CoCSample
-{
-	float Depth;
-	float Blur;
-};
-
-RWTexture2D<float2> OutputTexture : register(u0);
-
-groupshared CoCSample Samples[DOF_THREAD_GROUP_SIZE];
-
-#if HORIZONTAL
-#define _CS_CoCSpread_X DOF_THREAD_GROUP_SIZE
-#define _CS_CoCSpread_Y 1
-#define DOF_COMP x
-#else
-#define _CS_CoCSpread_X 1
-#define _CS_CoCSpread_Y DOF_THREAD_GROUP_SIZE
-#define DOF_COMP y
-#endif
-
-// Performs the CoC spread
-META_CS(true, FEATURE_LEVEL_SM5)
-META_PERMUTATION_1(HORIZONTAL=1)
-META_PERMUTATION_1(HORIZONTAL=0)
-[numthreads(_CS_CoCSpread_X, _CS_CoCSpread_Y, 1)]
-void CS_CoCSpread(uint3 groupID : SV_GroupID, uint3 groupThreadID : SV_GroupThreadID)
-{
-	// These positions are relative to the "grid", AKA the horizontal group of pixels that this thread group is writing to
-	const int gridStart = groupID.DOF_COMP * DOF_GRID_SIZE;
-	const int grid = groupThreadID.DOF_COMP - DOF_APRON_SIZE;
-
-	// These positions are relative to the pixel coordinates
-#if HORIZONTAL
-	const uint2 samplePos = uint2(max(gridStart + grid, 0), groupID.y);
-#else
-	const uint2 samplePos = uint2(groupID.x, max(gridStart + grid, 0));
-#endif
-
-	uint2 textureSize;
-	Input0.GetDimensions(textureSize.x, textureSize.y);
-
-	// Sample the textures
-#if USE_CS_HALF_PIXEL_OFFSET
-	float2 sampleCoord = saturate(((float2)samplePos + 0.5f) / float2(textureSize));
-#else
-	float2 sampleCoord = saturate(samplePos / float2(textureSize));
-#endif
-#if USE_CS_LINEAR_SAMPLING
-	float2 depthBlur = Input0.SampleLevel(SamplerLinearClamp, sampleCoord, 0.0f).xy;
-#else
-	float2 depthBlur = Input0.SampleLevel(SamplerPointClamp, sampleCoord, 0.0f).xy;
-#endif
-	float depth = depthBlur.x;
-	float blur = depthBlur.y;
-	float cocSize = blur * DOF_MAX_SAMPLE_RADIUS;
-
-	// Store in shared memory
-	Samples[groupThreadID.DOF_COMP].Depth = depth;
-	Samples[groupThreadID.DOF_COMP].Blur = blur;
-	GroupMemoryBarrierWithGroupSync();
-
-	// Don't continue for threads in the apron, and threads outside the render target size
-	if (grid >= 0 && grid < DOF_GRID_SIZE && samplePos.DOF_COMP < textureSize.DOF_COMP)
-	{
-		float outputBlur = 0.0f;
-		float totalContribution = 0.0f;
-
-		// Gather sample taps inside the radius
-		for (int i = -DOF_MAX_SAMPLE_RADIUS; i <= DOF_MAX_SAMPLE_RADIUS; i++)
-		{
-			// Grab the sample from shared memory
-			uint groupTap = groupThreadID.DOF_COMP + i;
-			CoCSample tap = Samples[groupTap];
-
-			// Only accept samples if they're from the foreground, and have a higher blur amount
-			float depthWeight = tap.Depth <= depth;
-			float blurWeight = saturate(tap.Blur - blur);
-			float tapWeight = depthWeight * blurWeight;
-
-			// If it's the center tap, set the weight to 1 so and don't reject it
-			float centerWeight = i == 0 ? 1.0 : 0.0f;
-			tapWeight = saturate(tapWeight + centerWeight);
-
-			outputBlur += tap.Blur * tapWeight;
-			totalContribution += tapWeight;
+            outputColor /= totalContribution;
+            color.rgb = max(outputColor, 0);
 		}
 
 		// Write out the result
-		OutputTexture[samplePos] = float2(depth, outputBlur / totalContribution);
+		OutputTexture[samplePos] = color;
 	}
 }
 
