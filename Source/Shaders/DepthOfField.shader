@@ -150,9 +150,9 @@ void CS_DepthOfField(uint3 groupID : SV_GroupID, uint3 groupThreadID : SV_GroupT
 
 	// These positions are relative to the pixel coordinates
 #if HORIZONTAL
-	const uint2 samplePos = uint2(gridStart + grid, groupID.y);
+	const int2 samplePos = int2(gridStart + grid, groupID.y);
 #else
-	const uint2 samplePos = uint2(groupID.x, gridStart + grid);
+	const int2 samplePos = int2(groupID.x, gridStart + grid);
 #endif
 
 	// Sample the textures
