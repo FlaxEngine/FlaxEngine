@@ -569,6 +569,10 @@ namespace FlaxEditor
         {
             Log("Editor exit");
 
+            // Deinitialize Editor Plugins
+            foreach (var plugin in PluginManager.EditorPlugins)
+                ((EditorPlugin)plugin).DeinitializeEditor();
+
             // Start exit
             StateMachine.GoToState<ClosingState>();
 

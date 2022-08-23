@@ -52,5 +52,12 @@ namespace FlaxEditor
         public virtual void InitializeEditor()
         {
         }
+
+        /// <summary>
+        /// Cleanup method called when this plugin is initialized and Editor is disposing (before plugin disposing). Use this method to remove any custom editor functionalities created within InitializeEditor.
+        /// </summary>
+        public virtual void DeinitializeEditor()
+        {
+        }
     }
 }
