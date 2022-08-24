@@ -33,6 +33,8 @@
 #define CHECK_EXECUTE_IN_EDITOR
 #endif
 
+#define ACTOR_ORIENTATION_EPSILON 0.000000001f
+
 namespace
 {
     Actor* GetChildByPrefabObjectId(Actor* a, const Guid& prefabObjectId)
@@ -563,7 +565,7 @@ void Actor::SetStaticFlags(StaticFlags value)
 void Actor::SetTransform(const Transform& value)
 {
     CHECK(!value.IsNanOrInfinity());
-    if (!Transform::NearEqual(_transform, value))
+    if (!(Vector3::NearEqual(_transform.Translation, value.Translation) && Quaternion::NearEqual(_transform.Orientation, value.Orientation, ACTOR_ORIENTATION_EPSILON) && Float3::NearEqual(_transform.Scale, value.Scale)))
     {
         if (_parent)
             _parent->GetTransform().WorldToLocal(value, _localTransform);
@@ -589,7 +591,7 @@ void Actor::SetPosition(const Vector3& value)
 void Actor::SetOrientation(const Quaternion& value)
 {
     CHECK(!value.IsNanOrInfinity());
-    if (!Quaternion::NearEqual(_transform.Orientation, value))
+    if (!Quaternion::NearEqual(_transform.Orientation, value, ACTOR_ORIENTATION_EPSILON))
     {
         if (_parent)
         {
@@ -658,7 +660,7 @@ void Actor::ResetLocalTransform()
 void Actor::SetLocalTransform(const Transform& value)
 {
     CHECK(!value.IsNanOrInfinity());
-    if (!Transform::NearEqual(_localTransform, value))
+    if (!(Vector3::NearEqual(_localTransform.Translation, value.Translation) && Quaternion::NearEqual(_localTransform.Orientation, value.Orientation, ACTOR_ORIENTATION_EPSILON) && Float3::NearEqual(_localTransform.Scale, value.Scale)))
     {
         _localTransform = value;
         OnTransformChanged();
@@ -680,8 +682,7 @@ void Actor::SetLocalOrientation(const Quaternion& value)
     CHECK(!value.IsNanOrInfinity());
     Quaternion v = value;
     v.Normalize();
-
-    if (!Quaternion::NearEqual(_localTransform.Orientation, v))
+    if (!Quaternion::NearEqual(_localTransform.Orientation, v, ACTOR_ORIENTATION_EPSILON))
     {
         _localTransform.Orientation = v;
         OnTransformChanged();
