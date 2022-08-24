@@ -385,6 +385,24 @@ namespace FlaxEditor.Surface.Archetypes
                     NodeElementArchetype.Factory.Input(0, "World Position", true, typeof(Float3), 1),
                 }
             },
+            new NodeArchetype
+            {
+                TypeID = 16,
+                Title = "World Triplanar Texture",
+                Description = "Projects a texture using world-space coordinates instead of UVs.",
+                Flags = NodeFlags.MaterialGraph,
+                Size = new Float2(240, 60),
+                DefaultValues = new object[]
+                {
+                    1.0f
+                },
+                Elements = new[]
+                {
+                    NodeElementArchetype.Factory.Input(0, "Texture", true, typeof(FlaxEngine.Object), 0),
+                    NodeElementArchetype.Factory.Input(1, "Scale", true, typeof(float), 1, 0),
+                    NodeElementArchetype.Factory.Output(0, "Color", typeof(Float3), 2)
+                }
+            },
         };
     }
 }
