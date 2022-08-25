@@ -12,6 +12,7 @@ using FlaxEditor.Scripting;
 using FlaxEditor.States;
 using FlaxEngine;
 using FlaxEngine.GUI;
+using static FlaxEditor.GUI.ItemsListContextMenu;
 
 namespace FlaxEditor.Windows
 {
@@ -330,6 +331,8 @@ namespace FlaxEditor.Windows
 
         private bool ValidateDragAsset(AssetItem assetItem)
         {
+            if (assetItem.IsOfType<SceneAsset>())
+                return true;
             return assetItem.OnEditorDrag(this);
         }
 
@@ -471,6 +474,11 @@ namespace FlaxEditor.Windows
                     for (int i = 0; i < _dragAssets.Objects.Count; i++)
                     {
                         var item = _dragAssets.Objects[i];
+                        if (item.IsOfType<SceneAsset>())
+                        {
+                            Editor.Instance.Scene.OpenScene(item.ID, true);
+                            continue;
+                        }
                         var actor = item.OnEditorDrop(this);
                         actor.Name = item.ShortName;
                         Level.SpawnActor(actor);
