@@ -103,22 +103,28 @@ void Actor::SetSceneInHierarchy(Scene* scene)
 
 void Actor::OnEnableInHierarchy()
 {
-    OnEnable();
-
-    for (int32 i = 0; i < Children.Count(); i++)
+    if (IsActiveInHierarchy() && GetScene() && !_isEnabled)
     {
-        Children[i]->OnEnableInHierarchy();
+        OnEnable();
+
+        for (int32 i = 0; i < Children.Count(); i++)
+        {
+            Children[i]->OnEnableInHierarchy();
+        }
     }
 }
 
 void Actor::OnDisableInHierarchy()
 {
-    for (int32 i = 0; i < Children.Count(); i++)
+    if (IsActiveInHierarchy() && GetScene() && _isEnabled)
     {
-        Children[i]->OnDisableInHierarchy();
-    }
+        for (int32 i = 0; i < Children.Count(); i++)
+        {
+            Children[i]->OnDisableInHierarchy();
+        }
 
-    OnDisable();
+        OnDisable();
+    }
 }
 
 bool Actor::IsSubClassOf(const Actor* object, const MClass* klass)
