@@ -391,7 +391,7 @@ namespace FlaxEditor.Surface.Archetypes
                 Title = "World Triplanar Texture",
                 Description = "Projects a texture using world-space coordinates instead of UVs.",
                 Flags = NodeFlags.MaterialGraph,
-                Size = new Float2(240, 80),
+                Size = new Float2(240, 60),
                 DefaultValues = new object[]
                 {
                     1.0f,

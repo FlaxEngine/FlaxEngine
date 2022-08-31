@@ -467,18 +467,22 @@ void MaterialGenerator::ProcessGroupTextures(Box* box, Node* node, Value& value)
         }
 
         const auto texture = eatBox(textureBox->GetParent<Node>(), textureBox->FirstConnection());
-        const auto scale = tryGetValue(scaleBox, node->Values[0]);
-        const auto blend = tryGetValue(blendBox, node->Values[1]);
+        const auto scale = tryGetValue(scaleBox, node->Values[0]).AsFloat();
+        const auto blend = tryGetValue(blendBox, node->Values[1]).AsFloat();
 
         auto result = writeLocal(Value::InitForZero(ValueType::Float4), node);
 
         const String triplanarTexture = String::Format(TEXT(
+            "	{{\n"
             "   float3 worldPos = input.WorldPosition.xyz * ({1} * 0.001f);\n"
-            "   float3 normal = input.TBN[2];\n"
+            "   float3 normal = abs(input.TBN[2]);\n"
+            "   normal = pow(normal, {2});\n"
+            "   normal = normal / (normal.x + normal.y + normal.z);\n"
 
-            "   {3} += {0}.Sample(SamplerLinearWrap, worldPos.yz) * pow(abs(dot(normal, float3(1,0,0))), {2});\n"
-            "   {3} += {0}.Sample(SamplerLinearWrap, worldPos.xz) * pow(abs(dot(normal, float3(0,1,0))), {2});\n"
-            "   {3} += {0}.Sample(SamplerLinearWrap, worldPos.xy) * pow(abs(dot(normal, float3(0,0,1))), {2});\n"
+            "   {3} += {0}.Sample(SamplerLinearWrap, worldPos.yz) * normal.x;\n"
+            "   {3} += {0}.Sample(SamplerLinearWrap, worldPos.xz) * normal.y;\n"
+            "   {3} += {0}.Sample(SamplerLinearWrap, worldPos.xy) * normal.z;\n"
+            "	}}\n"
         ),
                 texture.Value,  //  {0}
                 scale.Value,    //  {1}
