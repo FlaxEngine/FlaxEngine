@@ -134,7 +134,7 @@ float4 PS_RayTracePass(Quad_VS2PS input) : SV_Target0
     float3 reflectWS = ScreenSpaceReflectionDirection(input.TexCoord, gBuffer, gBufferData.ViewPos, TemporalEffect, TemporalTime, BRDFBias);
 
     // Fallback to Global SDF and Global Surface Atlas tracing
-#if USE_GLOBAL_SURFACE_ATLAS
+#if USE_GLOBAL_SURFACE_ATLAS && CAN_USE_GLOBAL_SURFACE_ATLAS
     GlobalSDFTrace sdfTrace;
     float maxDistance = 100000;
     float selfOcclusionBias = GlobalSDF.CascadeVoxelSize[0];
