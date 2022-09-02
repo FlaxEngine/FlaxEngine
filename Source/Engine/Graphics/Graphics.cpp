@@ -3,6 +3,7 @@
 #include "Graphics.h"
 #include "GPUDevice.h"
 #include "PixelFormatExtensions.h"
+#include "Engine/Core/Config/GraphicsSettings.h"
 #include "Engine/Engine/CommandLine.h"
 #include "Engine/Engine/EngineService.h"
 
@@ -51,6 +52,21 @@ public:
 };
 
 GraphicsService GraphicsServiceInstance;
+
+void GraphicsSettings::Apply()
+{
+    Graphics::UseVSync = UseVSync;
+    Graphics::AAQuality = AAQuality;
+    Graphics::SSRQuality = SSRQuality;
+    Graphics::SSAOQuality = SSAOQuality;
+    Graphics::VolumetricFogQuality = VolumetricFogQuality;
+    Graphics::ShadowsQuality = ShadowsQuality;
+    Graphics::ShadowMapsQuality = ShadowMapsQuality;
+    Graphics::AllowCSMBlending = AllowCSMBlending;
+    Graphics::GlobalSDFQuality = GlobalSDFQuality;
+    Graphics::GIQuality = GIQuality;
+    Graphics::PostProcessSettings = PostProcessSettings;
+}
 
 void Graphics::DisposeDevice()
 {
