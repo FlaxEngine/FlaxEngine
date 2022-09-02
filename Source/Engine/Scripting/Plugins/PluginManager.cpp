@@ -27,6 +27,45 @@ GamePlugin::GamePlugin(const SpawnParams& params)
 {
 }
 
+#if USE_EDITOR
+
+#include "EditorPlugin.h"
+#include "Engine/Scripting/MException.h"
+#include "Engine/Scripting/ManagedCLR/MMethod.h"
+
+EditorPlugin::EditorPlugin(const SpawnParams& params)
+    : Plugin(params)
+{
+}
+
+void EditorPlugin::Initialize()
+{
+    Plugin::Initialize();
+
+    MObject* exception = nullptr;
+    TypeInitializer.GetType().ManagedClass->GetMethod("Initialize_Internal")->Invoke(GetOrCreateManagedInstance(), nullptr, &exception);
+    if (exception)
+    {
+        MException ex(exception);
+        ex.Log(LogType::Error,TEXT("EditorPlugin"));
+    }
+}
+
+void EditorPlugin::Deinitialize()
+{
+    MObject* exception = nullptr;
+    TypeInitializer.GetType().ManagedClass->GetMethod("Deinitialize_Internal")->Invoke(GetOrCreateManagedInstance(), nullptr, &exception);
+    if (exception)
+    {
+        MException ex(exception);
+        ex.Log(LogType::Error,TEXT("EditorPlugin"));
+    }
+
+    Plugin::Deinitialize();
+}
+
+#endif
+
 Delegate<Plugin*> PluginManager::PluginLoading;
 Delegate<Plugin*> PluginManager::PluginLoaded;
 Delegate<Plugin*> PluginManager::PluginUnloading;
@@ -42,6 +81,7 @@ namespace PluginManagerImpl
     void OnAssemblyLoaded(MAssembly* assembly);
     void OnAssemblyUnloading(MAssembly* assembly);
     void OnBinaryModuleLoaded(BinaryModule* module);
+    void OnScriptsReloading();
 }
 
 using namespace PluginManagerImpl;
@@ -211,6 +251,32 @@ void PluginManagerImpl::OnBinaryModuleLoaded(BinaryModule* module)
     managedModule->Assembly->Unloading.Bind(OnAssemblyUnloading);
 }
 
+void PluginManagerImpl::OnScriptsReloading()
+{
+    // When scripting is reloading (eg. for hot-reload in Editor) we have to deinitialize plugins (Scripting service destroys C# objects later on)
+    bool changed = false;
+    for (int32 i = EditorPlugins.Count() - 1; i >= 0 && EditorPlugins.Count() > 0; i--)
+    {
+        auto plugin = EditorPlugins[i];
+        {
+            PluginManagerService::InvokeDeinitialize(plugin);
+            EditorPlugins.RemoveAtKeepOrder(i);
+            changed = true;
+        }
+    }
+    for (int32 i = GamePlugins.Count() - 1; i >= 0 && GamePlugins.Count() > 0; i--)
+    {
+        auto plugin = GamePlugins[i];
+        {
+            PluginManagerService::InvokeDeinitialize(plugin);
+            GamePlugins.RemoveAtKeepOrder(i);
+            changed = true;
+        }
+    }
+    if (changed)
+        PluginManager::PluginsChanged();
+}
+
 bool PluginManagerService::Init()
 {
     // Process already loaded modules
@@ -221,6 +287,7 @@ bool PluginManagerService::Init()
 
     // Register for new binary modules load actions
     Scripting::BinaryModuleLoaded.Bind(&OnBinaryModuleLoaded);
+    Scripting::ScriptsReloading.Bind(&OnScriptsReloading);
 
     return false;
 }
@@ -228,6 +295,7 @@ bool PluginManagerService::Init()
 void PluginManagerService::Dispose()
 {
     Scripting::BinaryModuleLoaded.Unbind(&OnBinaryModuleLoaded);
+    Scripting::ScriptsReloading.Unbind(&OnScriptsReloading);
 
     // Cleanup all plugins
     PROFILE_CPU_NAMED("Dispose Plugins");

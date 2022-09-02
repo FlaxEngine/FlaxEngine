@@ -571,7 +571,13 @@ namespace FlaxEditor
 
             // Deinitialize Editor Plugins
             foreach (var plugin in PluginManager.EditorPlugins)
-                ((EditorPlugin)plugin).DeinitializeEditor();
+            {
+                if (plugin is EditorPlugin editorPlugin && editorPlugin._isEditorInitialized)
+                {
+                    editorPlugin._isEditorInitialized = false;
+                    editorPlugin.DeinitializeEditor();
+                }
+            }
 
             // Start exit
             StateMachine.GoToState<ClosingState>();
