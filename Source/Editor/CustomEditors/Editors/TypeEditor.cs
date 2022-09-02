@@ -405,6 +405,7 @@ namespace FlaxEditor.CustomEditors.Editors
         public override void Refresh()
         {
             base.Refresh();
+
             if (!HasDifferentValues)
             {
                 _element.CustomControl.Value = new ScriptType(Values[0] as Type);
@@ -433,10 +434,41 @@ namespace FlaxEditor.CustomEditors.Editors
         public override void Refresh()
         {
             base.Refresh();
+
             if (!HasDifferentValues)
             {
                 _element.CustomControl.Value = (ScriptType)Values[0];
             }
+        }
+    }
+
+    /// <summary>
+    /// Custom Editor implementation of the inspector used to edit reference but saved as string or text instead of hard reference to the type.
+    /// </summary>
+    public class TypeNameEditor : TypeEditorBase
+    {
+        /// <inheritdoc />
+        public override void Initialize(LayoutElementsContainer layout)
+        {
+            base.Initialize(layout);
+
+            if (_element != null)
+                _element.CustomControl.ValueChanged += OnValueChanged;
+        }
+
+        private void OnValueChanged()
+        {
+            var type = _element.CustomControl.Value;
+            SetValue(type != ScriptType.Null ? type.TypeName : null);
+        }
+
+        /// <inheritdoc />
+        public override void Refresh()
+        {
+            base.Refresh();
+
+            if (!HasDifferentValues && Values[0] is string asTypename)
+                _element.CustomControl.Value = TypeUtils.GetType(asTypename);
         }
     }
 }
