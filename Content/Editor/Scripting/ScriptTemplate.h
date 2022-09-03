@@ -1,5 +1,4 @@
-%copyright%
-#pragma once
+%copyright%#pragma once
 
 #include "Engine/Scripting/Script.h"
 

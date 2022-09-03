@@ -1,5 +1,4 @@
-%copyright%
-#pragma once
+%copyright%#pragma once
 
 #include "Engine/Core/ISerializable.h"
 #include "Engine/Core/Types/BaseTypes.h"

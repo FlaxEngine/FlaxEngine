@@ -1,5 +1,4 @@
-%copyright%
-#include "%filename%.h"
+%copyright%#include "%filename%.h"
 #include "Engine/Core/Log.h"
 
 void %class%::RunNativeAction(Vector4 data)

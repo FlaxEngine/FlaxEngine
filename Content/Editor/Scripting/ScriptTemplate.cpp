@@ -1,5 +1,4 @@
-%copyright%
-#include "%filename%.h"
+%copyright%#include "%filename%.h"
 
 %class%::%class%(const SpawnParams& params)
     : Script(params)
