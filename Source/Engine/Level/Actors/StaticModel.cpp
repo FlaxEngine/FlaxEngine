@@ -520,9 +520,19 @@ void StaticModel::OnTransformChanged()
 
 void StaticModel::OnEnable()
 {
-    if (_scene && _sceneRenderingKey == -1 && !_residencyChangedModel && Model && Model->IsLoaded() && Model->GetLoadedLODs() != 0)
+    // If model is set and loaded but we still don't have residency registered do it here (eg. model is streaming LODs right now)
+    if (_scene && _sceneRenderingKey == -1 && !_residencyChangedModel && Model && Model->IsLoaded())
     {
-        GetSceneRendering()->AddActor(this, _sceneRenderingKey);
+        // Register for rendering but once the model has any LOD loaded
+        if (Model->GetLoadedLODs() == 0)
+        {
+            _residencyChangedModel = Model;
+            _residencyChangedModel->ResidencyChanged.Bind<StaticModel, &StaticModel::OnModelResidencyChanged>(this);
+        }
+        else
+        {
+            GetSceneRendering()->AddActor(this, _sceneRenderingKey);
+        }
     }
 
     // Skip ModelInstanceActor (add to SceneRendering manually)

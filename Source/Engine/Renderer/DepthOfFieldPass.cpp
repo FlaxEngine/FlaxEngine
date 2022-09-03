@@ -56,7 +56,7 @@ bool DepthOfFieldPass::Init()
     // (in future we should support it or faster solution using pixel shaders)
     auto& limits = GPUDevice::Instance->Limits;
     _platformSupportsDoF = limits.HasCompute;
-    _platformSupportsBokeh = false && _platformSupportsDoF && limits.HasGeometryShaders && limits.HasDrawIndirect && limits.HasAppendConsumeBuffers;
+    _platformSupportsBokeh = _platformSupportsDoF && limits.HasGeometryShaders && limits.HasDrawIndirect && limits.HasAppendConsumeBuffers;
 
     // Create pipeline states
     if (_platformSupportsDoF)

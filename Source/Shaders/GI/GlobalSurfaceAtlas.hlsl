@@ -3,6 +3,10 @@
 #include "./Flax/Common.hlsl"
 #include "./Flax/Collisions.hlsl"
 
+#if CAN_USE_GATHER
+#define CAN_USE_GLOBAL_SURFACE_ATLAS 1
+#endif
+
 // This must match C++
 #define GLOBAL_SURFACE_ATLAS_CHUNKS_RESOLUTION 40 // Amount of chunks (in each direction) to split atlas draw distance for objects culling
 #define GLOBAL_SURFACE_ATLAS_CHUNKS_GROUP_SIZE 4

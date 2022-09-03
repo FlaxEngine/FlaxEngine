@@ -444,6 +444,55 @@ void MaterialGenerator::ProcessGroupTextures(Box* box, Node* node, Value& value)
         value = box == gradientBox ? gradient : distance;
         break;
     }
+    // World Triplanar Texture
+    case 16:
+    {
+        // Get input boxes
+        auto textureBox = node->GetBox(0);
+        auto scaleBox = node->GetBox(1);
+        auto blendBox = node->GetBox(2);
+        
+        if (!textureBox->HasConnection())
+        {
+            // No texture to sample
+            value = Value::Zero;
+            break;
+        }
+
+        if (!CanUseSample(_treeType))
+        {
+            // Must sample texture in pixel shader
+            value = Value::Zero;
+            break;
+        }
+
+        const auto texture = eatBox(textureBox->GetParent<Node>(), textureBox->FirstConnection());
+        const auto scale = tryGetValue(scaleBox, node->Values[0]).AsFloat();
+        const auto blend = tryGetValue(blendBox, node->Values[1]).AsFloat();
+
+        auto result = writeLocal(Value::InitForZero(ValueType::Float4), node);
+
+        const String triplanarTexture = String::Format(TEXT(
+            "	{{\n"
+            "   float3 worldPos = input.WorldPosition.xyz * ({1} * 0.001f);\n"
+            "   float3 normal = abs(input.TBN[2]);\n"
+            "   normal = pow(normal, {2});\n"
+            "   normal = normal / (normal.x + normal.y + normal.z);\n"
+
+            "   {3} += {0}.Sample(SamplerLinearWrap, worldPos.yz) * normal.x;\n"
+            "   {3} += {0}.Sample(SamplerLinearWrap, worldPos.xz) * normal.y;\n"
+            "   {3} += {0}.Sample(SamplerLinearWrap, worldPos.xy) * normal.z;\n"
+            "	}}\n"
+        ),
+                texture.Value,  //  {0}
+                scale.Value,    //  {1}
+                blend.Value,    //  {2}
+                result.Value    //  {3}
+        );
+
+        _writer.Write(*triplanarTexture);
+        value = result;
+    }
     default:
         break;
     }

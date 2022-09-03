@@ -5,15 +5,10 @@ using FlaxEngine;
 
 namespace FlaxEditor
 {
-    /// <summary>
-    /// Base class for all plugins used in Editor.
-    /// </summary>
-    /// <remarks>
-    /// Plugins should have a public and parameter-less constructor.
-    /// </remarks>
-    /// <seealso cref="FlaxEngine.Plugin" />
-    public abstract class EditorPlugin : Plugin
+    partial class EditorPlugin
     {
+        internal bool _isEditorInitialized;
+
         /// <summary>
         /// Gets the type of the <see cref="GamePlugin"/> that is related to this plugin. Some plugins may be used only in editor while others want to gave a runtime representation. Use this property to link the related game plugin.
         /// </summary>
@@ -24,14 +19,12 @@ namespace FlaxEditor
         /// </summary>
         public Editor Editor { get; private set; }
 
-        /// <inheritdoc />
-        public override void Initialize()
+        internal void Initialize_Internal()
         {
-            base.Initialize();
-
             Editor = Editor.Instance;
             if (Editor.IsInitialized)
             {
+                _isEditorInitialized = true;
                 InitializeEditor();
             }
             else
@@ -40,9 +33,21 @@ namespace FlaxEditor
             }
         }
 
+        internal void Deinitialize_Internal()
+        {
+            if (_isEditorInitialized)
+            {
+                _isEditorInitialized = false;
+                DeinitializeEditor();
+            }
+        }
+
         private void OnEditorInitializationEnd()
         {
             Editor.InitializationEnd -= OnEditorInitializationEnd;
+            if (_isEditorInitialized)
+                return;
+            _isEditorInitialized = true;
             InitializeEditor();
         }
 

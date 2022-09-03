@@ -18,9 +18,9 @@ This repository contains full source code of the Flax Engine (excluding NDA-prot
 
 # Screenshots
 
+![pbr-rendering](Development/Images/flax-pic-2.jpg "PBR Rendering and Global Illumination")
 ![rendering](Development/Images/flax-pic-1.jpg "Rendering")
 ![performance](Development/Images/flax-pic-3.jpg "High Performance")
-![pbr-rendering](Development/Images/flax-pic-2.jpg "PBR Rendering")
 
 # Getting started
 
