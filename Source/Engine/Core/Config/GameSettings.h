@@ -67,6 +67,7 @@ public:
     Guid Physics;
     Guid Input;
     Guid Graphics;
+    Guid Network;
     Guid Navigation;
     Guid Localization;
     Guid GameCooking;

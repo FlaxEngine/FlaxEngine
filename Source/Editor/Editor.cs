@@ -529,6 +529,7 @@ namespace FlaxEditor
             GameSettings.Save(new LayersAndTagsSettings());
             GameSettings.Save(new InputSettings());
             GameSettings.Save(new GraphicsSettings());
+            GameSettings.Save(new NetworkSettings());
             GameSettings.Save(new NavigationSettings());
             GameSettings.Save(new LocalizationSettings());
             GameSettings.Save(new BuildSettings());

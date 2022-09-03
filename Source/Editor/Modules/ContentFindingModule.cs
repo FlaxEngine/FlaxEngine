@@ -400,6 +400,7 @@ namespace FlaxEditor.Modules
             { "FlaxEditor.Content.Settings.BuildSettings", "Settings" },
             { "FlaxEditor.Content.Settings.GameSettings", "Settings" },
             { "FlaxEditor.Content.Settings.GraphicsSettings", "Settings" },
+            { "FlaxEditor.Content.Settings.NetworkSettings", "Settings" },
             { "FlaxEditor.Content.Settings.InputSettings", "Settings" },
             { "FlaxEditor.Content.Settings.LayersAndTagsSettings", "Settings" },
             { "FlaxEditor.Content.Settings.NavigationSettings", "Settings" },

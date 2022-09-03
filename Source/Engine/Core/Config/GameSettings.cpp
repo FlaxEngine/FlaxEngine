@@ -12,6 +12,7 @@
 #include "BuildSettings.h"
 #include "Engine/Input/InputSettings.h"
 #include "Engine/Audio/AudioSettings.h"
+#include "Engine/Networking/NetworkSettings.h"
 #include "Engine/Navigation/NavigationSettings.h"
 #include "Engine/Localization/LocalizationSettings.h"
 #include "Engine/Content/Content.h"
@@ -41,6 +42,7 @@ public:
 
 IMPLEMENT_ENGINE_SETTINGS_GETTER(BuildSettings, GameCooking);
 IMPLEMENT_ENGINE_SETTINGS_GETTER(GraphicsSettings, Graphics);
+IMPLEMENT_ENGINE_SETTINGS_GETTER(NetworkSettings, Network);
 IMPLEMENT_ENGINE_SETTINGS_GETTER(LayersAndTagsSettings, LayersAndTags);
 IMPLEMENT_ENGINE_SETTINGS_GETTER(TimeSettings, Time);
 IMPLEMENT_ENGINE_SETTINGS_GETTER(AudioSettings, Audio);
@@ -146,6 +148,7 @@ bool GameSettings::Load()
     PRELOAD_SETTINGS(Physics);
     PRELOAD_SETTINGS(Input);
     PRELOAD_SETTINGS(Graphics);
+    PRELOAD_SETTINGS(Network);
     PRELOAD_SETTINGS(Navigation);
     PRELOAD_SETTINGS(Localization);
     PRELOAD_SETTINGS(GameCooking);
@@ -180,6 +183,7 @@ void GameSettings::Apply()
     APPLY_SETTINGS(StreamingSettings);
     APPLY_SETTINGS(InputSettings);
     APPLY_SETTINGS(GraphicsSettings);
+    APPLY_SETTINGS(NetworkSettings);
     APPLY_SETTINGS(NavigationSettings);
     APPLY_SETTINGS(LocalizationSettings);
     APPLY_SETTINGS(BuildSettings);
@@ -220,6 +224,7 @@ void GameSettings::Deserialize(DeserializeStream& stream, ISerializeModifier* mo
     DESERIALIZE(Physics);
     DESERIALIZE(Input);
     DESERIALIZE(Graphics);
+    DESERIALIZE(Network);
     DESERIALIZE(Navigation);
     DESERIALIZE(Localization);
     DESERIALIZE(GameCooking);

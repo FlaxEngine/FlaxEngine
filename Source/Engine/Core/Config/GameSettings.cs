@@ -76,6 +76,12 @@ namespace FlaxEditor.Content.Settings
         public JsonAsset Graphics;
 
         /// <summary>
+        /// Reference to <see cref="NetworkSettings"/> asset.
+        /// </summary>
+        [EditorOrder(1043), EditorDisplay("Other Settings"), AssetReference(typeof(NetworkSettings), true), Tooltip("Reference to Network Settings asset")]
+        public JsonAsset Network;
+
+        /// <summary>
         /// Reference to <see cref="NavigationSettings"/> asset.
         /// </summary>
         [EditorOrder(1045), EditorDisplay("Other Settings"), AssetReference(typeof(NavigationSettings), true), Tooltip("Reference to Navigation Settings asset")]
@@ -255,6 +261,8 @@ namespace FlaxEditor.Content.Settings
                 return LoadAsset<PhysicsSettings>(gameSettings.Physics) as T;
             if (type == typeof(GraphicsSettings))
                 return LoadAsset<GraphicsSettings>(gameSettings.Graphics) as T;
+            if (type == typeof(NetworkSettings))
+                return LoadAsset<NetworkSettings>(gameSettings.Network) as T;
             if (type == typeof(NavigationSettings))
                 return LoadAsset<NavigationSettings>(gameSettings.Navigation) as T;
             if (type == typeof(LocalizationSettings))
@@ -373,6 +381,8 @@ namespace FlaxEditor.Content.Settings
                 return SaveAsset(gameSettings, ref gameSettings.Physics, obj);
             if (type == typeof(GraphicsSettings))
                 return SaveAsset(gameSettings, ref gameSettings.Graphics, obj);
+            if (type == typeof(NetworkSettings))
+                return SaveAsset(gameSettings, ref gameSettings.Network, obj);
             if (type == typeof(NavigationSettings))
                 return SaveAsset(gameSettings, ref gameSettings.Navigation, obj);
             if (type == typeof(LocalizationSettings))
