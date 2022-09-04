@@ -6,7 +6,6 @@
 #include "Engine/Input/Input.h"
 #include "Engine/Input/Mouse.h"
 #include "Engine/Input/Keyboard.h"
-#include "Engine/Engine/Engine.h"
 #include "Engine/Core/Log.h"
 #include "Engine/Core/Math/Math.h"
 #include "Engine/Core/Math/Color32.h"
@@ -14,9 +13,7 @@
 #include "Engine/Core/Collections/Array.h"
 #include "Engine/Core/Collections/Dictionary.h"
 #include "Engine/Utilities/StringConverter.h"
-#include "Engine/Utilities/StringConverter.h"
 #include "Engine/Graphics/RenderTask.h"
-#include "Engine/Graphics/GPUSwapChain.h"
 #include "Engine/Graphics/Textures/TextureData.h"
 // hack using TextureTool in Platform module -> TODO: move texture data sampling to texture data itself
 #define COMPILE_WITH_TEXTURE_TOOL 1
@@ -207,7 +204,7 @@ LinuxWindow::LinuxWindow(const CreateWindowSettings& settings)
 	X11::Atom wmSateSkipTaskbar = X11::XInternAtom(display, "_NET_WM_STATE_SKIP_TASKBAR", 0);
 	X11::Atom wmStateSkipPager = X11::XInternAtom(display, "_NET_WM_STATE_SKIP_PAGER", 0);
 	X11::Atom wmStateFullscreen = X11::XInternAtom(display, "_NET_WM_STATE_FULLSCREEN", 0);
-	X11::Atom states[2];
+	X11::Atom states[4];
 	int32 statesCount = 0;
 	if (settings.IsTopmost)
 	{
