@@ -70,6 +70,16 @@ void VisualStudioCodeEditor::FindEditors(Array<CodeEditor*>* output)
             return;
         }
     }
+
+    // Detect Flatpak installations
+    {
+        if (Platform::RunProcess(TEXT("/bin/bash -c \"flatpak list --app --columns=application | grep com.visualstudio.code -c\""), String::Empty) == 0)
+        {
+            const String runPath(TEXT("flatpak run com.visualstudio.code"));
+            output->Add(New<VisualStudioCodeEditor>(runPath, false));
+            return;
+        }
+    }
 #endif
 }
 

@@ -7,13 +7,13 @@
 #include "Editor/ProjectInfo.h"
 #include "Editor/Scripting/ScriptsBuilder.h"
 #include "Engine/Engine/Globals.h"
-
-#if PLATFORM_WINDOWS
-
 #include "Engine/Core/Collections/Sorting.h"
 #include "Engine/Platform/File.h"
-#include "Engine/Platform/Win32/IncludeWindowsHeaders.h"
 #include "Engine/Serialization/Json.h"
+
+#if PLATFORM_WINDOWS
+#include "Engine/Platform/Win32/IncludeWindowsHeaders.h"
+#endif
 
 namespace
 {
@@ -28,22 +28,7 @@ namespace
         }
     };
 
-    bool FindRegistryKeyItems(HKEY hKey, Array<String>& results)
-    {
-        Char nameBuffer[256];
-        for (int32 i = 0;; i++)
-        {
-            const LONG result = RegEnumKeyW(hKey, i, nameBuffer, ARRAY_COUNT(nameBuffer));
-            if (result == ERROR_NO_MORE_ITEMS)
-                break;
-            if (result != ERROR_SUCCESS)
-                return false;
-            results.Add(nameBuffer);
-        }
-        return true;
-    }
-
-    void SearchDirectory(Array<RiderInstallation*>* installations, const String& directory)
+    void SearchDirectory(Array<RiderInstallation*>* installations, const String& directory, String launchOverridePath = String::Empty)
     {
         if (!FileSystem::DirectoryExists(directory))
             return;
@@ -77,7 +62,26 @@ namespace
         if (!launcherPath.HasChars() || !FileSystem::FileExists(exePath))
             return;
 
-        installations->Add(New<RiderInstallation>(exePath, versionMember->value.GetText()));
+        if (launchOverridePath != String::Empty)
+            installations->Add(New<RiderInstallation>(launchOverridePath, versionMember->value.GetText()));
+        else
+            installations->Add(New<RiderInstallation>(exePath, versionMember->value.GetText()));
+    }
+
+#if PLATFORM_WINDOWS
+    bool FindRegistryKeyItems(HKEY hKey, Array<String>& results)
+    {
+        Char nameBuffer[256];
+        for (int32 i = 0;; i++)
+        {
+            const LONG result = RegEnumKeyW(hKey, i, nameBuffer, ARRAY_COUNT(nameBuffer));
+            if (result == ERROR_NO_MORE_ITEMS)
+                break;
+            if (result != ERROR_SUCCESS)
+                return false;
+            results.Add(nameBuffer);
+        }
+        return true;
     }
 
     void SearchRegistry(Array<RiderInstallation*>* installations, HKEY root, const Char* key, const Char* valueName = TEXT(""))
@@ -123,6 +127,7 @@ namespace
 
         RegCloseKey(keyH);
     }
+#endif
 }
 
 bool sortInstallations(RiderInstallation* const& i1, RiderInstallation* const& i2)
@@ -155,8 +160,6 @@ bool sortInstallations(RiderInstallation* const& i1, RiderInstallation* const& i
     return version1[0] > version2[0];
 }
 
-#endif
-
 RiderCodeEditor::RiderCodeEditor(const String& execPath)
     : _execPath(execPath)
     , _solutionPath(Globals::ProjectFolder / Editor::Project->Name + TEXT(".sln"))
@@ -165,17 +168,13 @@ RiderCodeEditor::RiderCodeEditor(const String& execPath)
 
 void RiderCodeEditor::FindEditors(Array<CodeEditor*>* output)
 {
-#if PLATFORM_WINDOWS
     Array<RiderInstallation*> installations;
-
-    // Versions installed via JetBrains Toolbox
-    String localAppDataPath;
     Array<String> subDirectories;
-    FileSystem::GetSpecialFolderPath(SpecialFolder::LocalAppData, localAppDataPath);
-    FileSystem::GetChildDirectories(subDirectories, localAppDataPath / TEXT("JetBrains\\Toolbox\\apps\\Rider\\ch-0\\"));
-    for (auto directory : subDirectories)
-        SearchDirectory(&installations, directory);
 
+    String localAppDataPath;
+    FileSystem::GetSpecialFolderPath(SpecialFolder::LocalAppData, localAppDataPath);
+    
+#if PLATFORM_WINDOWS
     // Lookup from all known registry locations
     SearchRegistry(&installations, HKEY_CURRENT_USER, TEXT("SOFTWARE\\WOW6432Node\\JetBrains\\Rider for Unreal Engine"));
     SearchRegistry(&installations, HKEY_LOCAL_MACHINE, TEXT("SOFTWARE\\WOW6432Node\\JetBrains\\Rider for Unreal Engine"));
@@ -186,6 +185,32 @@ void RiderCodeEditor::FindEditors(Array<CodeEditor*>* output)
     SearchRegistry(&installations, HKEY_CURRENT_USER, TEXT("SOFTWARE\\WOW6432Node\\JetBrains\\JetBrains Rider"));
     SearchRegistry(&installations, HKEY_LOCAL_MACHINE, TEXT("SOFTWARE\\WOW6432Node\\JetBrains\\JetBrains Rider"));
 
+    // Versions installed via JetBrains Toolbox
+    FileSystem::GetChildDirectories(subDirectories, localAppDataPath / TEXT("JetBrains\\Toolbox\\apps\\Rider\\ch-0\\"));
+    FileSystem::GetChildDirectories(subDirectories, localAppDataPath / TEXT("JetBrains\\Toolbox\\apps\\Rider\\ch-1\\")); // Beta versions
+#endif
+#if PLATFORM_LINUX
+    // TODO: detect Snap installations
+    // TODO: detect by reading the jetbrains-rider.desktop file from ~/.local/share/applications and /usr/share/applications?
+
+    FileSystem::GetChildDirectories(subDirectories, TEXT("/usr/share/rider"));
+
+    // Default suggested location for standalone installations
+    FileSystem::GetChildDirectories(subDirectories, TEXT("/opt/"));
+    
+    // Versions installed via JetBrains Toolbox
+    FileSystem::GetChildDirectories(subDirectories, localAppDataPath / TEXT(".local/share/JetBrains/Toolbox/apps/Rider/ch-0"));
+    FileSystem::GetChildDirectories(subDirectories, localAppDataPath / TEXT(".local/share/JetBrains/Toolbox/apps/Rider/ch-1")); // Beta versions
+
+    // Detect Flatpak installations
+    SearchDirectory(&installations,
+        TEXT("/var/lib/flatpak/app/com.jetbrains.Rider/current/active/files/extra/rider/"),
+        TEXT("flatpak run com.jetbrains.Rider"));
+#endif
+
+    for (auto directory : subDirectories)
+        SearchDirectory(&installations, directory);
+
     // Sort found installations by version number
     Sorting::QuickSort(installations.Get(), installations.Count(), &sortInstallations);
 
@@ -194,7 +219,6 @@ void RiderCodeEditor::FindEditors(Array<CodeEditor*>* output)
         output->Add(New<RiderCodeEditor>(installation->path));
         Delete(installation);
     }
-#endif
 }
 
 CodeEditorTypes RiderCodeEditor::GetType() const
