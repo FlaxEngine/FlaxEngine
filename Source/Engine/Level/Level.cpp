@@ -831,12 +831,14 @@ bool LevelImpl::unloadScene(Scene* scene)
     if (scene->IsDuringPlay())
         scene->EndPlay();
 
-    // Simple enqueue scene root object to be deleted
+    // Remove from scenes list
     Level::Scenes.Remove(scene);
-    scene->DeleteObject();
 
     // Fire event
-    CallSceneEvent(SceneEventType::OnSceneUnloaded, nullptr, sceneId);
+    CallSceneEvent(SceneEventType::OnSceneUnloaded, scene, sceneId);
+
+    // Simple enqueue scene root object to be deleted
+    scene->DeleteObject();
 
     // Force flush deleted objects so we actually delete unloaded scene objects (prevent from reloading their managed objects, etc.)
     ObjectsRemovalService::Flush();
