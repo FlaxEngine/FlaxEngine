@@ -367,7 +367,7 @@ bool ScriptingObject::CanCast(const ScriptingTypeHandle& from, const ScriptingTy
     return CanCast(from.GetType().ManagedClass, to.GetType().ManagedClass);
 }
 
-bool ScriptingObject::CanCast(MClass* from, MClass* to)
+bool ScriptingObject::CanCast(const MClass* from, const MClass* to)
 {
     if (!from && !to)
         return true;
@@ -383,7 +383,7 @@ bool ScriptingObject::CanCast(MClass* from, MClass* to)
 
 #if USE_MONO
 
-bool ScriptingObject::CanCast(MClass* from, MonoClass* to)
+bool ScriptingObject::CanCast(const MClass* from, const MonoClass* to)
 {
     if (!from && !to)
         return true;

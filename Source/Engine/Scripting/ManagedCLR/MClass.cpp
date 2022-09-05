@@ -118,9 +118,9 @@ bool MClass::IsSubClassOf(const MClass* klass) const
 }
 
 #if USE_MONO
-bool MClass::IsSubClassOf(MonoClass* monoClass) const
+bool MClass::IsSubClassOf(const MonoClass* monoClass) const
 {
-    return monoClass && mono_class_is_subclass_of(_monoClass, monoClass, true) != 0;
+    return monoClass && mono_class_is_subclass_of(_monoClass, (MonoClass*)monoClass, true) != 0;
 }
 #endif
 

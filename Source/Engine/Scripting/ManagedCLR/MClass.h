@@ -151,7 +151,7 @@ public:
     /// </summary>
     /// <param name="monoClass">The Mono class.</param>
     /// <returns>True if this class is a sub class of the specified class.</returns>
-    bool IsSubClassOf(MonoClass* monoClass) const;
+    bool IsSubClassOf(const MonoClass* monoClass) const;
 #endif
 
     /// <summary>

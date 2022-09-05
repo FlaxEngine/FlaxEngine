@@ -147,9 +147,9 @@ public:
     /// <param name="from">The object class for the cast.</param>
     /// <param name="to">The destination class to the cast.</param>
     /// <returns>True if can, otherwise false.</returns>
-    static bool CanCast(MClass* from, MClass* to);
+    static bool CanCast(const MClass* from, const MClass* to);
 #if USE_MONO
-    static bool CanCast(MClass* from, MonoClass* to);
+    static bool CanCast(const MClass* from, const MonoClass* to);
 #endif
 
     template<typename T>
@@ -160,7 +160,7 @@ public:
 
     bool Is(const ScriptingTypeHandle& type) const;
 
-    bool Is(MClass* type) const
+    bool Is(const MClass* type) const
     {
         return CanCast(GetClass(), type);
     }
