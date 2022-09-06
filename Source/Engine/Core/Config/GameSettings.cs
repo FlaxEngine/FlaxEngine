@@ -202,35 +202,43 @@ namespace FlaxEditor.Content.Settings
         /// <summary>
         /// Loads the game settings asset.
         /// </summary>
+        /// <returns>The loaded game settings asset.</returns>
+        public static JsonAsset LoadAsset()
+        {
+            return FlaxEngine.Content.Load<JsonAsset>(GameSettingsAssetPath);
+        }
+
+        /// <summary>
+        /// Loads the game settings asset.
+        /// </summary>
         /// <returns>The loaded game settings.</returns>
         public static GameSettings Load()
         {
-            var asset = FlaxEngine.Content.LoadAsync<JsonAsset>(GameSettingsAssetPath);
-            if (asset && !asset.WaitForLoaded())
-            {
-                if (asset.Instance is GameSettings result)
-                    return result;
-            }
+            var asset = LoadAsset();
+            if (asset && asset.Instance is GameSettings result)
+                return result;
             return new GameSettings();
         }
 
-        private static T LoadAsset<T>(JsonAsset asset) where T : new()
+        private static T Load<T>(JsonAsset asset) where T : new()
         {
             if (asset && !asset.WaitForLoaded())
             {
                 if (asset.Instance is T result)
                     return result;
             }
+
             return new T();
         }
 
-        private static SettingsBase LoadAsset(JsonAsset asset, string typename)
+        private static SettingsBase Load(JsonAsset asset, string typename)
         {
             if (asset && !asset.WaitForLoaded() && asset.DataTypeName == typename)
             {
                 if (asset.Instance is SettingsBase result)
                     return result;
             }
+
             return null;
         }
 
@@ -249,71 +257,70 @@ namespace FlaxEditor.Content.Settings
         {
             var gameSettings = Load();
             var type = typeof(T);
-
             if (type == typeof(GameSettings))
                 return gameSettings as T;
 
             if (type == typeof(TimeSettings))
-                return LoadAsset<TimeSettings>(gameSettings.Time) as T;
+                return Load<TimeSettings>(gameSettings.Time) as T;
             if (type == typeof(LayersAndTagsSettings))
-                return LoadAsset<LayersAndTagsSettings>(gameSettings.LayersAndTags) as T;
+                return Load<LayersAndTagsSettings>(gameSettings.LayersAndTags) as T;
             if (type == typeof(PhysicsSettings))
-                return LoadAsset<PhysicsSettings>(gameSettings.Physics) as T;
+                return Load<PhysicsSettings>(gameSettings.Physics) as T;
             if (type == typeof(GraphicsSettings))
-                return LoadAsset<GraphicsSettings>(gameSettings.Graphics) as T;
+                return Load<GraphicsSettings>(gameSettings.Graphics) as T;
             if (type == typeof(NetworkSettings))
-                return LoadAsset<NetworkSettings>(gameSettings.Network) as T;
+                return Load<NetworkSettings>(gameSettings.Network) as T;
             if (type == typeof(NavigationSettings))
-                return LoadAsset<NavigationSettings>(gameSettings.Navigation) as T;
+                return Load<NavigationSettings>(gameSettings.Navigation) as T;
             if (type == typeof(LocalizationSettings))
-                return LoadAsset<LocalizationSettings>(gameSettings.Localization) as T;
+                return Load<LocalizationSettings>(gameSettings.Localization) as T;
             if (type == typeof(BuildSettings))
-                return LoadAsset<BuildSettings>(gameSettings.GameCooking) as T;
+                return Load<BuildSettings>(gameSettings.GameCooking) as T;
             if (type == typeof(StreamingSettings))
-                return LoadAsset<StreamingSettings>(gameSettings.Streaming) as T;
+                return Load<StreamingSettings>(gameSettings.Streaming) as T;
             if (type == typeof(InputSettings))
-                return LoadAsset<InputSettings>(gameSettings.Input) as T;
+                return Load<InputSettings>(gameSettings.Input) as T;
             if (type == typeof(AudioSettings))
-                return LoadAsset<AudioSettings>(gameSettings.Audio) as T;
+                return Load<AudioSettings>(gameSettings.Audio) as T;
 #if FLAX_EDITOR || PLATFORM_WINDOWS
             if (type == typeof(WindowsPlatformSettings))
-                return LoadAsset<WindowsPlatformSettings>(gameSettings.WindowsPlatform) as T;
+                return Load<WindowsPlatformSettings>(gameSettings.WindowsPlatform) as T;
 #endif
-#if FLAX_EDITOR || PLATFORM_UWP 
+#if FLAX_EDITOR || PLATFORM_UWP
             if (type == typeof(UWPPlatformSettings))
-                return LoadAsset<UWPPlatformSettings>(gameSettings.UWPPlatform) as T;
+                return Load<UWPPlatformSettings>(gameSettings.UWPPlatform) as T;
 #endif
 #if FLAX_EDITOR || PLATFORM_LINUX
             if (type == typeof(LinuxPlatformSettings))
-                return LoadAsset<LinuxPlatformSettings>(gameSettings.LinuxPlatform) as T;
+                return Load<LinuxPlatformSettings>(gameSettings.LinuxPlatform) as T;
 #endif
 #if FLAX_EDITOR || PLATFORM_PS4
             if (type.FullName == PS4PlatformSettingsTypename)
-                return LoadAsset(gameSettings.PS4Platform, PS4PlatformSettingsTypename) as T;
+                return Load(gameSettings.PS4Platform, PS4PlatformSettingsTypename) as T;
 #endif
 #if FLAX_EDITOR || PLATFORM_XBOX_ONE
             if (type.FullName == XboxOnePlatformSettingsTypename)
-                return LoadAsset(gameSettings.XboxOnePlatform, XboxOnePlatformSettingsTypename) as T;
+                return Load(gameSettings.XboxOnePlatform, XboxOnePlatformSettingsTypename) as T;
 #endif
 #if FLAX_EDITOR || PLATFORM_XBOX_SCARLETT
             if (type.FullName == XboxScarlettPlatformSettingsTypename)
-                return LoadAsset(gameSettings.XboxScarlettPlatform, XboxScarlettPlatformSettingsTypename) as T;
+                return Load(gameSettings.XboxScarlettPlatform, XboxScarlettPlatformSettingsTypename) as T;
 #endif
 #if FLAX_EDITOR || PLATFORM_ANDROID
             if (type == typeof(AndroidPlatformSettings))
-                return LoadAsset<AndroidPlatformSettings>(gameSettings.AndroidPlatform) as T;
+                return Load<AndroidPlatformSettings>(gameSettings.AndroidPlatform) as T;
 #endif
 #if FLAX_EDITOR || PLATFORM_SWITCH
             if (type.FullName == SwitchPlatformSettingsTypename)
-                return LoadAsset(gameSettings.SwitchPlatform, SwitchPlatformSettingsTypename) as T;
+                return Load(gameSettings.SwitchPlatform, SwitchPlatformSettingsTypename) as T;
 #endif
 #if FLAX_EDITOR || PLATFORM_PS5
             if (type.FullName == PS5PlatformSettingsTypename)
-                return LoadAsset(gameSettings.PS5Platform, PS5PlatformSettingsTypename) as T;
+                return Load(gameSettings.PS5Platform, PS5PlatformSettingsTypename) as T;
 #endif
 #if FLAX_EDITOR || PLATFORM_MAC
             if (type == typeof(MacPlatformSettings))
-                return LoadAsset<MacPlatformSettings>(gameSettings.MacPlatform) as T;
+                return Load<MacPlatformSettings>(gameSettings.MacPlatform) as T;
 #endif
 
             if (gameSettings.CustomSettings != null)
@@ -330,6 +337,112 @@ namespace FlaxEditor.Content.Settings
             }
 
             return null;
+        }
+
+        /// <summary>
+        /// Loads the settings asset of the given type.
+        /// </summary>
+        /// <remarks>
+        /// Supports loading game settings, any sub settings container (e.g. <see cref="PhysicsSettings"/>) and custom settings (see <see cref="CustomSettings"/>).
+        /// </remarks>
+        /// <param name="type">The game settings type (e.g. <see cref="TimeSettings"/>).</param>
+        /// <returns>Loaded settings asset or null if fails.</returns>
+        public static JsonAsset LoadAsset(Type type)
+        {
+            var gameSettingsAsset = LoadAsset();
+            if (type == typeof(GameSettings))
+                return gameSettingsAsset;
+            var gameSettings = (GameSettings)gameSettingsAsset.Instance;
+
+            if (type == typeof(TimeSettings))
+                return gameSettings.Time;
+            if (type == typeof(LayersAndTagsSettings))
+                return gameSettings.LayersAndTags;
+            if (type == typeof(PhysicsSettings))
+                return gameSettings.Physics;
+            if (type == typeof(GraphicsSettings))
+                return gameSettings.Graphics;
+            if (type == typeof(NetworkSettings))
+                return gameSettings.Network;
+            if (type == typeof(NavigationSettings))
+                return gameSettings.Navigation;
+            if (type == typeof(LocalizationSettings))
+                return gameSettings.Localization;
+            if (type == typeof(BuildSettings))
+                return gameSettings.GameCooking;
+            if (type == typeof(StreamingSettings))
+                return gameSettings.Streaming;
+            if (type == typeof(InputSettings))
+                return gameSettings.Input;
+            if (type == typeof(AudioSettings))
+                return gameSettings.Audio;
+#if FLAX_EDITOR || PLATFORM_WINDOWS
+            if (type == typeof(WindowsPlatformSettings))
+                return gameSettings.WindowsPlatform;
+#endif
+#if FLAX_EDITOR || PLATFORM_UWP
+            if (type == typeof(UWPPlatformSettings))
+                return gameSettings.UWPPlatform;
+#endif
+#if FLAX_EDITOR || PLATFORM_LINUX
+            if (type == typeof(LinuxPlatformSettings))
+                return gameSettings.LinuxPlatform;
+#endif
+#if FLAX_EDITOR || PLATFORM_PS4
+            if (type.FullName == PS4PlatformSettingsTypename)
+                return gameSettings.PS4Platform;
+#endif
+#if FLAX_EDITOR || PLATFORM_XBOX_ONE
+            if (type.FullName == XboxOnePlatformSettingsTypename)
+                return gameSettings.XboxOnePlatform;
+#endif
+#if FLAX_EDITOR || PLATFORM_XBOX_SCARLETT
+            if (type.FullName == XboxScarlettPlatformSettingsTypename)
+                return gameSettings.XboxScarlettPlatform;
+#endif
+#if FLAX_EDITOR || PLATFORM_ANDROID
+            if (type == typeof(AndroidPlatformSettings))
+                return gameSettings.AndroidPlatform;
+#endif
+#if FLAX_EDITOR || PLATFORM_SWITCH
+            if (type.FullName == SwitchPlatformSettingsTypename)
+                return gameSettings.SwitchPlatform;
+#endif
+#if FLAX_EDITOR || PLATFORM_PS5
+            if (type.FullName == PS5PlatformSettingsTypename)
+                return gameSettings.PS5Platform;
+#endif
+#if FLAX_EDITOR || PLATFORM_MAC
+            if (type == typeof(MacPlatformSettings))
+                return gameSettings.MacPlatform;
+#endif
+
+            if (gameSettings.CustomSettings != null)
+            {
+                foreach (var e in gameSettings.CustomSettings)
+                {
+                    if (e.Value && !e.Value.WaitForLoaded() && e.Value.DataTypeName == type.FullName)
+                        return e.Value;
+                }
+            }
+
+            return null;
+        }
+
+        /// <summary>
+        /// Loads the settings asset of the given type.
+        /// </summary>
+        /// <remarks>
+        /// Supports loading game settings, any sub settings container (e.g. <see cref="PhysicsSettings"/>) and custom settings (see <see cref="CustomSettings"/>).
+        /// </remarks>
+        /// <code>
+        /// var timeAsset = GameSettings.Load&amp;ltTimeSettings&amp;gt;();
+        /// </code>
+        /// <typeparam name="T">The game settings type (e.g. <see cref="TimeSettings"/>).</typeparam>
+        /// <returns>Loaded settings asset or null if fails.</returns>
+        public static JsonAsset LoadAsset<T>() where T : SettingsBase
+        {
+            return LoadAsset(typeof(T));
         }
 
 #if FLAX_EDITOR
