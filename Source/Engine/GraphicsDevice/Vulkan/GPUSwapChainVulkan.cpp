@@ -195,6 +195,7 @@ bool GPUSwapChainVulkan::CreateSwapChain(int32 width, int32 height)
         LOG(Warning, "Failed to create Vulkan surface.");
         return true;
     }
+    _memoryUsage = 1;
 
     const auto& gpu = _device->Adapter->Gpu;
 

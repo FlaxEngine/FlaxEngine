@@ -1309,6 +1309,11 @@ void GPUContextVulkan::UpdateBuffer(GPUBuffer* buffer, const void* data, uint32 
 
     const auto bufferVulkan = static_cast<GPUBufferVulkan*>(buffer);
 
+    // Memory transfer barrier
+    // TODO: batch pipeline barriers
+    const VkMemoryBarrier barrierBefore = { VK_STRUCTURE_TYPE_MEMORY_BARRIER, nullptr, VK_ACCESS_MEMORY_WRITE_BIT, VK_ACCESS_MEMORY_READ_BIT };
+    vkCmdPipelineBarrier(cmdBuffer->GetHandle(), VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, 0, 1, &barrierBefore, 0, nullptr, 0, nullptr);
+
     // Use direct update for small buffers
     if (size <= 16 * 1024)
     {
@@ -1331,6 +1336,11 @@ void GPUContextVulkan::UpdateBuffer(GPUBuffer* buffer, const void* data, uint32 
 
         _device->StagingManager.ReleaseBuffer(cmdBuffer, staging);
     }
+
+    // Memory transfer barrier
+    // TODO: batch pipeline barriers
+    const VkMemoryBarrier barrierAfter = { VK_STRUCTURE_TYPE_MEMORY_BARRIER, nullptr, VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_MEMORY_READ_BIT | VK_ACCESS_MEMORY_WRITE_BIT };
+    vkCmdPipelineBarrier(cmdBuffer->GetHandle(), VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, 0, 1, &barrierAfter, 0, nullptr, 0, nullptr);
 }
 
 void GPUContextVulkan::CopyBuffer(GPUBuffer* dstBuffer, GPUBuffer* srcBuffer, uint32 size, uint32 dstOffset, uint32 srcOffset)
