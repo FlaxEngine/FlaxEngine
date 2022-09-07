@@ -1,6 +1,7 @@
 // Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 using FlaxEngine;
+using System.Linq;
 
 namespace FlaxEditor.Content.Settings
 {
@@ -19,10 +20,7 @@ namespace FlaxEditor.Content.Settings
         /// </summary>
         public PhysicsSettings()
         {
-            for (int i = 0; i < 32; i++)
-            {
-                LayerMasks[i] = uint.MaxValue;
-            }
+            LayerMasks[i] = Enumerable.Repeat(uint.MaxValue, 32).ToArray();
         }
     }
 }
