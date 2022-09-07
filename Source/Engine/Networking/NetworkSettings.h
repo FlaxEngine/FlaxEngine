@@ -20,6 +20,12 @@ public:
     int32 MaxClients = 100;
 
     /// <summary>
+    /// Network protocol version of the game. Network clients and server can use only the same protocol version (verified upon client joining).
+    /// </summary>
+    API_FIELD(Attributes="EditorOrder(10), EditorDisplay(\"General\")")
+    uint32 ProtocolVersion = 1;
+
+    /// <summary>
     /// The target amount of the network system updates per second. Higher values provide better network synchronization (eg. 60 for shooters), lower values reduce network usage and performance impact (eg. 30 for strategy games). Can be used to tweak networking performance impact on game. Cannot be higher that UpdateFPS (from Time Settings). Use 0 to run every game update.
     /// </summary>
     API_FIELD(Attributes="EditorOrder(100), Limit(0, 1000), EditorDisplay(\"General\", \"Network FPS\")")

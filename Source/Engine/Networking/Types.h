@@ -4,9 +4,11 @@
 
 enum class NetworkChannelType;
 enum class NetworkEventType;
+enum class NetworkConnectionState;
 
 class INetworkDriver;
 class NetworkPeer;
+class NetworkClient;
 
 struct NetworkEvent;
 struct NetworkConnection;

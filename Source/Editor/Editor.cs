@@ -556,6 +556,7 @@ namespace FlaxEditor
 
         internal void OnPlayEnding()
         {
+            FlaxEngine.Networking.NetworkManager.Stop(); // Shutdown any multiplayer from playmode
             PlayModeEnding?.Invoke();
         }
 
