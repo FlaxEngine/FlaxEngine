@@ -20,7 +20,7 @@ namespace FlaxEditor.Content.Settings
         /// </summary>
         public PhysicsSettings()
         {
-            LayerMasks[i] = Enumerable.Repeat(uint.MaxValue, 32).ToArray();
+            LayerMasks = Enumerable.Repeat(uint.MaxValue, 32).ToArray();
         }
     }
 }
