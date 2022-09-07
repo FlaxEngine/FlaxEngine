@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using Flax.Build;
+using Flax.Build.Platforms;
 
 namespace Flax.Deploy
 {
@@ -129,18 +130,18 @@ namespace Flax.Deploy
                 Log.Info(string.Empty);
                 Log.Info("Compressing editor files...");
                 string editorPackageZipPath;
-                if (Platform.BuildTargetPlatform == TargetPlatform.Linux)
+                var unix = Platform.BuildTargetPlatform == TargetPlatform.Linux || Platform.BuildTargetPlatform == TargetPlatform.Mac;
+                if (unix)
                 {
-                    // Use system tool (preserves executable file attributes and link files)
-                    editorPackageZipPath = Path.Combine(Deployer.PackageOutputPath, "FlaxEditorLinux.zip");
-                    Utilities.FileDelete(editorPackageZipPath);
-                    Utilities.Run("zip", "Editor.zip -r .", null, OutputPath, Utilities.RunOptions.ThrowExceptionOnError);
-                    File.Move(Path.Combine(OutputPath, "Editor.zip"), editorPackageZipPath);
+                    var zipEofPath = UnixPlatform.Which("zip");
+                    unix = File.Exists(zipEofPath);
+                    if (!unix)
+                        Log.Verbose("Using .NET compressing");
                 }
-                else if (Platform.BuildTargetPlatform == TargetPlatform.Mac)
+                if (unix)
                 {
                     // Use system tool (preserves executable file attributes and link files)
-                    editorPackageZipPath = Path.Combine(Deployer.PackageOutputPath, "FlaxEditorMac.zip");
+                    editorPackageZipPath = Path.Combine(Deployer.PackageOutputPath, $"FlaxEditor{Enum.GetName(typeof(TargetPlatform), Platform.BuildTargetPlatform)}.zip");
                     Utilities.FileDelete(editorPackageZipPath);
                     Utilities.Run("zip", "Editor.zip -r .", null, OutputPath, Utilities.RunOptions.ThrowExceptionOnError);
                     File.Move(Path.Combine(OutputPath, "Editor.zip"), editorPackageZipPath);
