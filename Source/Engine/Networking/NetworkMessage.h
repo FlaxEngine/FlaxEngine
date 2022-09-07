@@ -90,6 +90,18 @@ public:
         Position += numBytes;
     }
 
+    template<typename T>
+    FORCE_INLINE void WriteStructure(const T& data)
+    {
+        WriteBytes((uint8*)&data, sizeof(data));
+    }
+
+    template<typename T>
+    FORCE_INLINE void ReadStructure(const T& data)
+    {
+        ReadBytes((uint8*)&data, sizeof(data));
+    }
+
 #define DECL_READWRITE(type, name) \
     FORCE_INLINE void Write##name(type value) { WriteBytes(reinterpret_cast<uint8*>(&value), sizeof(type)); } \
     FORCE_INLINE type Read##name() { type value = 0; ReadBytes(reinterpret_cast<uint8*>(&value), sizeof(type)); return value; }
