@@ -36,11 +36,10 @@ ArchitectureType WindowsPlatformTools::GetArchitecture() const
 bool WindowsPlatformTools::OnDeployBinaries(CookingData& data)
 {
     const auto platformSettings = WindowsPlatformSettings::Get();
-    const auto& outputPath = data.NativeCodeOutputPath;
 
     // Apply executable icon
     Array<String> files;
-    FileSystem::DirectoryGetFiles(files, outputPath, TEXT("*.exe"), DirectorySearchOption::TopDirectoryOnly);
+    FileSystem::DirectoryGetFiles(files, data.NativeCodeOutputPath, TEXT("*.exe"), DirectorySearchOption::TopDirectoryOnly);
     if (files.HasItems())
     {
         TextureData iconData;
@@ -55,6 +54,17 @@ bool WindowsPlatformTools::OnDeployBinaries(CookingData& data)
     }
 
     return false;
+}
+
+void WindowsPlatformTools::OnRun(CookingData& data, String& executableFile, String& commandLineFormat, String& workingDir)
+{
+    // Pick the first executable file
+    Array<String> files;
+    FileSystem::DirectoryGetFiles(files, data.NativeCodeOutputPath, TEXT("*.exe"), DirectorySearchOption::TopDirectoryOnly);
+    if (files.HasItems())
+    {
+        executableFile = files[0];
+    }
 }
 
 #endif

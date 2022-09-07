@@ -91,6 +91,11 @@ public:
     API_FUNCTION() static void Cancel(bool waitForEnd = false);
 
     /// <summary>
+    /// Gets the current Editor build info (platform, configuration, etc).
+    /// </summary>
+    API_FUNCTION() static void GetCurrentPlatform(API_PARAM(Out) PlatformType& platform, API_PARAM(Out) BuildPlatform& buildPlatform, API_PARAM(Out) BuildConfiguration& buildConfiguration);
+
+    /// <summary>
     /// Building event type.
     /// </summary>
     enum class EventType

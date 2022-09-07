@@ -35,7 +35,7 @@ namespace FlaxEditor.Windows
             public readonly GameCookerWindow GameCookerWin;
             public readonly PlatformSelector Selector;
 
-            private readonly Dictionary<PlatformType, Platform> PerPlatformOptions = new Dictionary<PlatformType, Platform>
+            internal readonly Dictionary<PlatformType, Platform> PerPlatformOptions = new Dictionary<PlatformType, Platform>
             {
                 { PlatformType.Windows, new Windows() },
                 { PlatformType.XboxOne, new XboxOne() },
@@ -67,7 +67,7 @@ namespace FlaxEditor.Windows
             }
 
             [HideInEditor]
-            abstract class Platform
+            internal abstract class Platform
             {
                 [HideInEditor]
                 public bool IsSupported;
@@ -490,10 +490,12 @@ namespace FlaxEditor.Windows
         {
             public string PresetName;
             public BuildTarget Target;
+            public BuildOptions Options;
         }
 
         private PresetsColumn _presets;
         private TargetsColumn _targets;
+        private BuildTabProxy _buildTabProxy;
         private int _selectedPresetIndex = -1;
         private int _selectedTargetIndex = -1;
         private CustomEditorPresenter _targetSettings;
@@ -614,6 +616,44 @@ namespace FlaxEditor.Windows
             {
                 PresetName = preset.Name,
                 Target = target.DeepClone(),
+            });
+        }
+
+        /// <summary>
+        /// Builds the target for this platform and runs it on this device.
+        /// </summary>
+        public void BuildAndRun()
+        {
+            Editor.Log("Building and running");
+            GameCooker.GetCurrentPlatform(out var platform, out var buildPlatform, out var buildConfiguration);
+            _buildingQueue.Enqueue(new QueueItem
+            {
+                Target = new BuildTarget
+                {
+                    Output = _buildTabProxy.PerPlatformOptions[platform].Output,
+                    Platform = buildPlatform,
+                    Mode = buildConfiguration,
+                },
+                Options = BuildOptions.AutoRun,
+            });
+        }
+
+        /// <summary>
+        /// Runs the cooked game for this platform on this device.
+        /// </summary>
+        public void RunCooked()
+        {
+            Editor.Log("Running cooked build");
+            GameCooker.GetCurrentPlatform(out var platform, out var buildPlatform, out var buildConfiguration);
+            _buildingQueue.Enqueue(new QueueItem
+            {
+                Target = new BuildTarget
+                {
+                    Output = _buildTabProxy.PerPlatformOptions[platform].Output,
+                    Platform = buildPlatform,
+                    Mode = buildConfiguration,
+                },
+                Options = BuildOptions.AutoRun | BuildOptions.NoCook,
             });
         }
 
@@ -829,7 +869,8 @@ namespace FlaxEditor.Windows
 
             var settings = new CustomEditorPresenter(null);
             settings.Panel.Parent = panel;
-            settings.Select(new BuildTabProxy(this, platformSelector));
+            _buildTabProxy = new BuildTabProxy(this, platformSelector);
+            settings.Select(_buildTabProxy);
         }
 
         private void OnPlatformSelectorSizeChanged(Control platformSelector)
@@ -894,7 +935,7 @@ namespace FlaxEditor.Windows
                     _preBuildAction = target.PreBuildAction;
                     _postBuildAction = target.PostBuildAction;
 
-                    GameCooker.Build(target.Platform, target.Mode, target.Output, BuildOptions.None, target.CustomDefines, item.PresetName, target.Name);
+                    GameCooker.Build(target.Platform, target.Mode, target.Output, item.Options, target.CustomDefines, item.PresetName, target.Name);
                 }
                 else if (_exitOnBuildEnd)
                 {
@@ -908,6 +949,7 @@ namespace FlaxEditor.Windows
         public override void OnDestroy()
         {
             GameCooker.Event -= OnGameCookerEvent;
+            _buildTabProxy = null;
 
             base.OnDestroy();
         }

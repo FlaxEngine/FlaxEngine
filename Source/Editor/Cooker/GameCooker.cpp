@@ -430,6 +430,52 @@ void GameCooker::Cancel(bool waitForEnd)
     }
 }
 
+void GameCooker::GetCurrentPlatform(PlatformType& platform, BuildPlatform& buildPlatform, BuildConfiguration& buildConfiguration)
+{
+    platform = PLATFORM_TYPE;
+#if BUILD_DEBUG
+    buildConfiguration = BuildConfiguration::Debug;
+#elif BUILD_DEVELOPMENT
+    buildConfiguration = BuildConfiguration::Development;
+#elif BUILD_RELEASE
+    buildConfiguration = BuildConfiguration::Release;
+#endif
+    switch (PLATFORM_TYPE)
+    {
+    case PlatformType::Windows:
+        buildPlatform = PLATFORM_64BITS ? BuildPlatform::Windows64 : BuildPlatform::Windows32;
+        break;
+    case PlatformType::XboxOne:
+        buildPlatform = BuildPlatform::XboxOne;
+        break;
+    case PlatformType::UWP:
+        buildPlatform = BuildPlatform::UWPx64;
+        break;
+    case PlatformType::Linux:
+        buildPlatform = BuildPlatform::LinuxX64;
+        break;
+    case PlatformType::PS4:
+        buildPlatform = BuildPlatform::PS4;
+        break;
+    case PlatformType::XboxScarlett:
+        buildPlatform = BuildPlatform::XboxScarlett;
+        break;
+    case PlatformType::Android:
+        buildPlatform = BuildPlatform::AndroidARM64;
+        break;
+    case PlatformType::Switch:
+        buildPlatform = BuildPlatform::Switch;
+        break;
+    case PlatformType::PS5:
+        buildPlatform = BuildPlatform::PS5;
+        break;
+    case PlatformType::Mac:
+        buildPlatform = BuildPlatform::MacOSx64;
+        break;
+    default: ;
+    }
+}
+
 void GameCookerImpl::CallEvent(GameCooker::EventType type)
 {
     if (Internal_OnEvent == nullptr)
@@ -492,7 +538,6 @@ bool GameCookerImpl::Build()
     // Late init feature
     if (Steps.IsEmpty())
     {
-        // Create steps
         Steps.Add(New<ValidateStep>());
         Steps.Add(New<CompileScriptsStep>());
         Steps.Add(New<DeployDataStep>());
@@ -517,6 +562,8 @@ bool GameCookerImpl::Build()
     {
         if (GameCooker::IsCancelRequested())
             break;
+        if (data.Options & BuildOptions::NoCook)
+            continue;
         auto step = Steps[stepIndex];
         data.NextStep();
 
@@ -543,6 +590,24 @@ bool GameCookerImpl::Build()
         if (data.Options & BuildOptions::ShowOutput)
         {
             FileSystem::ShowFileExplorer(data.OriginalOutputPath);
+        }
+
+        if (data.Options & BuildOptions::AutoRun)
+        {
+            String executableFile, commandLineFormat, workingDir;
+            data.Tools->OnRun(data, executableFile, commandLineFormat, workingDir);
+            if (executableFile.HasChars())
+            {
+                const String gameArgs; // TODO: pass custom game run args from Editor? eg. starting map? or client info?
+                const String commandLine = commandLineFormat.HasChars() ? String::Format(*commandLineFormat, gameArgs) : gameArgs;
+                if (workingDir.IsEmpty())
+                    workingDir = data.NativeCodeOutputPath;
+                Platform::StartProcess(executableFile, commandLine, workingDir);
+            }
+            else
+            {
+                LOG(Warning, "Missing executable to run or platform doesn't support build&run.");
+            }
         }
     }
     IsRunning = false;

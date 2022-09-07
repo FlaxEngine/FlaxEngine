@@ -26,6 +26,16 @@ API_ENUM(Attributes="Flags") enum class BuildOptions
     /// Shows the output directory folder on building end.
     /// </summary>
     ShowOutput = 1 << 0,
+
+    /// <summary>
+    /// Starts the cooked game build on building end.
+    /// </summary>
+    AutoRun = 1 << 1,
+
+    /// <summary>
+    /// Skips cooking logic and uses already cooked data (eg. to only use AutoRun or ShowOutput feature).
+    /// </summary>
+    NoCook = 1 << 2,
 };
 
 DECLARE_ENUM_OPERATORS(BuildOptions);

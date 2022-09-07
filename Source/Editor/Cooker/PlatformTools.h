@@ -203,4 +203,15 @@ public:
     {
         return false;
     }
+
+    /// <summary>
+    /// Called to run the cooked game build on device.
+    /// </summary>
+    /// <param name="data">The cooking data.</param>
+    /// <param name="executableFile">The game executable file path to run (or tool path to run if build should run on remote device). Empty if not supported.</param>
+    /// <param name="commandLineFormat">The command line for executable file. Use `{0}` to insert custom command line for passing to the cooked game.</param>
+    /// <param name="workingDir">Overriden custom working directory to use. Leave empty if use cooked data output folder.</param>
+    virtual void OnRun(CookingData& data, String& executableFile, String& commandLineFormat, String& workingDir)
+    {
+    }
 };
