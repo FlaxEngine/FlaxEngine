@@ -17,6 +17,7 @@
 
 // The value for which all absolute numbers smaller than are considered equal to zero.
 #define ZeroTolerance 1e-6f
+#define ZeroToleranceDouble 1e-16
 
 // Converts radians to degrees.
 #define RadiansToDegrees (180.0f / PI)
@@ -156,6 +157,11 @@ namespace Math
         return value < 0 ? -value : value;
     }
 
+    static FORCE_INLINE int32 Mod(const int32 a, const int32 b)
+    {
+        return (int32)fmodf((float)a, (float)b);
+    }
+
     static FORCE_INLINE float Mod(const float a, const float b)
     {
         return fmodf(a, b);
@@ -164,6 +170,11 @@ namespace Math
     static FORCE_INLINE float ModF(const float a, float* b)
     {
         return modff(a, b);
+    }
+
+    static FORCE_INLINE float Frac(float value)
+    {
+        return value - Floor(value);
     }
 
     /// <summary>
@@ -434,12 +445,28 @@ namespace Math
         return amount <= 0 ? 0 : amount >= 1 ? 1 : amount * amount * amount * (amount * (amount * 6 - 15) + 10);
     }
 
+    // Determines whether the specified value is close to zero (0.0)
+    // @param a The integer value
+    // @returns True if the specified value is close to zero (0.0). otherwise false
+    inline int32 IsZero(int32 a)
+    {
+        return a == 0;
+    }
+
     // Determines whether the specified value is close to zero (0.0f)
     // @param a The floating value
     // @returns True if the specified value is close to zero (0.0f). otherwise false
     inline bool IsZero(float a)
     {
         return Abs(a) < ZeroTolerance;
+    }
+
+    // Determines whether the specified value is close to one (1.0)
+    // @param a The integer value
+    // @returns True if the specified value is close to one (1.0). otherwise false
+    inline bool IsOne(int32 a)
+    {
+        return a == 1;
     }
 
     // Determines whether the specified value is close to one (1.0f)
@@ -630,7 +657,8 @@ namespace Math
     }
 
     // Given a heading which may be outside the +/- PI range, 'unwind' it back into that range
-    static float UnwindRadians(float a)
+    template<typename T>
+    static T UnwindRadians(T a)
     {
         while (a > PI)
             a -= TWO_PI;
@@ -640,12 +668,13 @@ namespace Math
     }
 
     // Utility to ensure angle is between +/- 180 degrees by unwinding
-    static float UnwindDegrees(float a)
+    template<typename T>
+    static T UnwindDegrees(T a)
     {
-        while (a > 180.f)
-            a -= 360.f;
-        while (a < -180.f)
-            a += 360.f;
+        while (a > 180)
+            a -= 360;
+        while (a < -180)
+            a += 360;
         return a;
     }
 

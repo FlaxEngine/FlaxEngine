@@ -17,9 +17,8 @@
 /// </summary>
 API_CLASS(Abstract, NoSpawn) class FLAXENGINE_API GPUResource : public ScriptingObject
 {
-DECLARE_SCRIPTING_TYPE_NO_SPAWN(GPUResource);
+    DECLARE_SCRIPTING_TYPE_NO_SPAWN(GPUResource);
 public:
-
     /// <summary>
     /// GPU Resources types.
     /// </summary>
@@ -31,8 +30,10 @@ public:
     DECLARE_ENUM_3(ObjectType, Texture, Buffer, Other);
 
 protected:
-
     uint64 _memoryUsage = 0;
+#if GPU_ENABLE_RESOURCE_NAMING
+    String _name;
+#endif
 
 public:
     NON_COPYABLE(GPUResource);
@@ -54,7 +55,6 @@ public:
     virtual ~GPUResource();
 
 public:
-
     // Points to the cache used by the resource for the resource visibility/usage detection. Written during rendering when resource is used.
     double LastRenderTime = -1;
 
@@ -64,7 +64,6 @@ public:
     Action Releasing;
 
 public:
-
     /// <summary>
     /// Gets the resource type.
     /// </summary>
@@ -81,12 +80,15 @@ public:
     API_PROPERTY() uint64 GetMemoryUsage() const;
 
 #if GPU_ENABLE_RESOURCE_NAMING
-
     /// <summary>
     /// Gets the resource name.
     /// </summary>
-    virtual String GetName() const;
+    API_PROPERTY() String GetName() const;
 
+    /// <summary>
+    /// Sets the resource name.
+    /// </summary>
+    API_PROPERTY() void SetName(const StringView& name);
 #endif
 
     /// <summary>
@@ -100,14 +102,12 @@ public:
     virtual void OnDeviceDispose();
 
 protected:
-
     /// <summary>
     /// Releases GPU resource data (implementation).
     /// </summary>
     virtual void OnReleaseGPU();
 
 public:
-
     // [ScriptingObject]
     String ToString() const override;
     void OnDeleteObject() override;
@@ -123,17 +123,9 @@ template<class DeviceType, class BaseType>
 class GPUResourceBase : public BaseType
 {
 protected:
-
     DeviceType* _device;
 
-private:
-
-#if GPU_ENABLE_RESOURCE_NAMING
-    String _name;
-#endif
-
 public:
-
     /// <summary>
     /// Initializes a new instance of the <see cref="GPUResourceBase"/> class.
     /// </summary>
@@ -141,10 +133,10 @@ public:
     /// <param name="name">The resource name.</param>
     GPUResourceBase(DeviceType* device, const StringView& name) noexcept
         : _device(device)
-#if GPU_ENABLE_RESOURCE_NAMING
-        , _name(name.Get(), name.Length())
-#endif
     {
+#if GPU_ENABLE_RESOURCE_NAMING
+        GPUResource::_name = name;
+#endif
         device->Resources.Add(this);
     }
 
@@ -158,7 +150,6 @@ public:
     }
 
 public:
-
     /// <summary>
     /// Gets the graphics device.
     /// </summary>
@@ -168,14 +159,7 @@ public:
     }
 
 public:
-
     // [GPUResource]
-#if GPU_ENABLE_RESOURCE_NAMING
-    String GetName() const override
-    {
-        return _name;
-    }
-#endif
     void OnDeviceDispose() override
     {
         GPUResource::OnDeviceDispose();
@@ -188,7 +172,7 @@ public:
 /// </summary>
 API_CLASS(Abstract, NoSpawn, Attributes="HideInEditor") class FLAXENGINE_API GPUResourceView : public ScriptingObject
 {
-DECLARE_SCRIPTING_TYPE_NO_SPAWN(GPUResourceView);
+    DECLARE_SCRIPTING_TYPE_NO_SPAWN(GPUResourceView);
 protected:
     static double DummyLastRenderTime;
 
@@ -199,7 +183,6 @@ protected:
     }
 
 public:
-
     // Points to the cache used by the resource for the resource visibility/usage detection. Written during rendering when resource view is used.
     double* LastRenderTime;
 

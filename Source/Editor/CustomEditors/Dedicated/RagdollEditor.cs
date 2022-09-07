@@ -76,7 +76,7 @@ namespace FlaxEditor.CustomEditors.Dedicated
 
                 const float width = 280.0f;
                 const float height = 220.0f;
-                Size = new Vector2(width, height);
+                Size = new Float2(width, height);
 
                 // Title
                 var title = new Label(2, 2, width - 4, 23.0f)
@@ -273,7 +273,7 @@ namespace FlaxEditor.CustomEditors.Dedicated
                 cm.AddItem(item);
             }
             cm.ItemClicked += item => action((string)item.Tag);
-            cm.SortChildren();
+            cm.SortItems();
             cm.Show(button.Parent, button.BottomLeft);
         }
 

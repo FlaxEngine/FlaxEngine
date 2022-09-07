@@ -74,7 +74,7 @@ namespace FlaxEditor.Content
                 return false;
             return true;
         }
-        
+
         /// <inheritdoc />
         public override void Create(string outputPath, object arg)
         {

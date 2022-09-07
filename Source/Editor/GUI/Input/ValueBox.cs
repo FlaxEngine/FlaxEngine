@@ -54,7 +54,7 @@ namespace FlaxEditor.GUI.Input
         /// </summary>
         protected string _startEditText;
 
-        private Vector2 _startSlideLocation;
+        private Float2 _startSlideLocation;
         private double _clickStartTime = -1;
 
         /// <summary>
@@ -192,7 +192,7 @@ namespace FlaxEditor.GUI.Input
                 {
                     // Draw overlay
                     // TODO: render nicer overlay with some glow from the borders (inside)
-                    Render2D.FillRectangle(new Rectangle(Vector2.Zero, Size), Color.Orange * 0.3f);
+                    Render2D.FillRectangle(new Rectangle(Float2.Zero, Size), Color.Orange * 0.3f);
                 }
             }
         }
@@ -227,7 +227,7 @@ namespace FlaxEditor.GUI.Input
         }
 
         /// <inheritdoc />
-        public override bool OnMouseDown(Vector2 location, MouseButton button)
+        public override bool OnMouseDown(Float2 location, MouseButton button)
         {
             if (button == MouseButton.Left && CanUseSliding && SlideRect.Contains(location))
             {
@@ -247,12 +247,12 @@ namespace FlaxEditor.GUI.Input
         }
 
         /// <inheritdoc />
-        public override void OnMouseMove(Vector2 location)
+        public override void OnMouseMove(Float2 location)
         {
             if (_isSliding)
             {
                 // Update sliding
-                Vector2 slideLocation = location + Root.TrackingMouseOffset;
+                var slideLocation = location + Root.TrackingMouseOffset;
                 ApplySliding(Mathf.RoundToInt(slideLocation.X - _startSlideLocation.X) * _slideSpeed);
                 return;
             }
@@ -261,7 +261,7 @@ namespace FlaxEditor.GUI.Input
         }
 
         /// <inheritdoc />
-        public override bool OnMouseUp(Vector2 location, MouseButton button)
+        public override bool OnMouseUp(Float2 location, MouseButton button)
         {
             if (button == MouseButton.Left && _isSliding)
             {

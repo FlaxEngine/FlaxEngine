@@ -26,25 +26,16 @@
 class ScreenSpaceReflectionsPass : public RendererPass<ScreenSpaceReflectionsPass>
 {
 private:
+    GPUPipelineStatePermutationsPs<2> _psRayTracePass;
+    GPUPipelineStatePermutationsPs<4> _psResolvePass;
+    GPUPipelineState* _psCombinePass = nullptr;
+    GPUPipelineState* _psTemporalPass = nullptr;
+    GPUPipelineState* _psMixPass = nullptr;
 
     AssetReference<Shader> _shader;
-    GPUPipelineState* _psRayTracePass;
-    GPUPipelineState* _psCombinePass;
-    GPUPipelineStatePermutationsPs<4> _psResolvePass;
-    GPUPipelineState* _psTemporalPass;
-    GPUPipelineState* _psMixPass;
-
     AssetReference<Texture> _preIntegratedGF;
 
 public:
-
-    /// <summary>
-    /// Init
-    /// </summary>
-    ScreenSpaceReflectionsPass();
-
-public:
-
     /// <summary>
     /// Determinates whenever this pass requires motion vectors rendering.
     /// </summary>
@@ -61,28 +52,17 @@ public:
     void Render(RenderContext& renderContext, GPUTextureView* reflectionsRT, GPUTextureView* lightBuffer);
 
 private:
-
 #if COMPILE_WITH_DEV_ENV
-    void OnShaderReloading(Asset* obj)
-    {
-        _psRayTracePass->ReleaseGPU();
-        _psCombinePass->ReleaseGPU();
-        _psResolvePass.Release();
-        _psTemporalPass->ReleaseGPU();
-        _psMixPass->ReleaseGPU();
-        invalidateResources();
-    }
+    void OnShaderReloading(Asset* obj);
 #endif
 
 public:
-
     // [RendererPass]
     String ToString() const override;
     bool Init() override;
     void Dispose() override;
 
 protected:
-
     // [RendererPass]
     bool setupResources() override;
 };

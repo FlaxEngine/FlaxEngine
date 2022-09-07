@@ -2754,7 +2754,7 @@ bool ShapeImpl::postprocess(GeometryImpl* geom, Allocator& allocator)
 		while (n)
 		{
 			vertices[n->index] = vertices[n->index] + vr[i];
-			normals[n->index] = vertices[n->index] + nr[i];
+			normals[n->index] = normals[n->index] + nr[i];
 			n = n->next;
 		}
 	}

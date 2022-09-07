@@ -228,7 +228,7 @@ namespace FlaxEditor.Content
 
             // Check if drag is over
             if (IsDragOver && _validDragOver)
-                Render2D.FillRectangle(new Rectangle(Vector2.Zero, Size), Style.Current.BackgroundSelected * 0.6f);
+                Render2D.FillRectangle(new Rectangle(Float2.Zero, Size), Style.Current.BackgroundSelected * 0.6f);
         }
 
         private bool ValidateDragItem(ContentItem item)
@@ -238,7 +238,7 @@ namespace FlaxEditor.Content
         }
 
         /// <inheritdoc />
-        public override DragDropEffect OnDragEnter(ref Vector2 location, DragData data)
+        public override DragDropEffect OnDragEnter(ref Float2 location, DragData data)
         {
             base.OnDragEnter(ref location, data);
 
@@ -258,7 +258,7 @@ namespace FlaxEditor.Content
         }
 
         /// <inheritdoc />
-        public override DragDropEffect OnDragMove(ref Vector2 location, DragData data)
+        public override DragDropEffect OnDragMove(ref Float2 location, DragData data)
         {
             base.OnDragMove(ref location, data);
 
@@ -268,7 +268,7 @@ namespace FlaxEditor.Content
         }
 
         /// <inheritdoc />
-        public override DragDropEffect OnDragDrop(ref Vector2 location, DragData data)
+        public override DragDropEffect OnDragDrop(ref Float2 location, DragData data)
         {
             var result = base.OnDragDrop(ref location, data);
 

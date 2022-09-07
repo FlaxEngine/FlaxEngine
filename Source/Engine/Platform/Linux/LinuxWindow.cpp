@@ -6,17 +6,14 @@
 #include "Engine/Input/Input.h"
 #include "Engine/Input/Mouse.h"
 #include "Engine/Input/Keyboard.h"
-#include "Engine/Engine/Engine.h"
 #include "Engine/Core/Log.h"
 #include "Engine/Core/Math/Math.h"
 #include "Engine/Core/Math/Color32.h"
-#include "Engine/Core/Math/Int2.h"
+#include "Engine/Core/Math/Vector2.h"
 #include "Engine/Core/Collections/Array.h"
 #include "Engine/Core/Collections/Dictionary.h"
 #include "Engine/Utilities/StringConverter.h"
-#include "Engine/Utilities/StringConverter.h"
 #include "Engine/Graphics/RenderTask.h"
-#include "Engine/Graphics/GPUSwapChain.h"
 #include "Engine/Graphics/Textures/TextureData.h"
 // hack using TextureTool in Platform module -> TODO: move texture data sampling to texture data itself
 #define COMPILE_WITH_TEXTURE_TOOL 1
@@ -53,7 +50,7 @@ LinuxWindow::LinuxWindow(const CreateWindowSettings& settings)
 	// Cache data
 	int32 width = Math::TruncToInt(settings.Size.X);
 	int32 height = Math::TruncToInt(settings.Size.Y);
-	_clientSize = Vector2((float)width, (float)height);
+	_clientSize = Float2((float)width, (float)height);
     int32 x = 0, y = 0;
 	switch (settings.StartPosition)
     {
@@ -67,7 +64,7 @@ LinuxWindow::LinuxWindow(const CreateWindowSettings& settings)
         break;
     case WindowStartPosition::CenterScreen:
         {
-            Vector2 desktopSize = Platform::GetDesktopSize();
+            Float2 desktopSize = Platform::GetDesktopSize();
             x = Math::TruncToInt((desktopSize.X - _clientSize.X) * 0.5f);
             y = Math::TruncToInt((desktopSize.Y - _clientSize.Y) * 0.5f);
         }
@@ -207,7 +204,7 @@ LinuxWindow::LinuxWindow(const CreateWindowSettings& settings)
 	X11::Atom wmSateSkipTaskbar = X11::XInternAtom(display, "_NET_WM_STATE_SKIP_TASKBAR", 0);
 	X11::Atom wmStateSkipPager = X11::XInternAtom(display, "_NET_WM_STATE_SKIP_PAGER", 0);
 	X11::Atom wmStateFullscreen = X11::XInternAtom(display, "_NET_WM_STATE_FULLSCREEN", 0);
-	X11::Atom states[2];
+	X11::Atom states[4];
 	int32 statesCount = 0;
 	if (settings.IsTopmost)
 	{
@@ -365,13 +362,13 @@ void LinuxWindow::SetClientBounds(const Rectangle& clientArea)
 		X11::XSetNormalHints(display, window, &hints);
 	}
 
-	_clientSize = Vector2((float)width, (float)height);
+	_clientSize = Float2((float)width, (float)height);
 	X11::XResizeWindow(display, window, width, height);
 	X11::XMoveWindow(display, window, x, y);
 	X11::XFlush(display);
 }
 
-void LinuxWindow::SetPosition(const Vector2& position)
+void LinuxWindow::SetPosition(const Float2& position)
 {
 	int32 x = Math::TruncToInt(position.X);
 	int32 y = Math::TruncToInt(position.Y);
@@ -382,7 +379,7 @@ void LinuxWindow::SetPosition(const Vector2& position)
 	X11::XFlush(display);
 }
 
-void LinuxWindow::SetClientPosition(const Vector2& position)
+void LinuxWindow::SetClientPosition(const Float2& position)
 {
 	int32 x = Math::TruncToInt(position.X);
 	int32 y = Math::TruncToInt(position.Y);
@@ -395,32 +392,32 @@ void LinuxWindow::SetClientPosition(const Vector2& position)
 	X11::XFlush(display);
 }
 
-Vector2 LinuxWindow::GetPosition() const
+Float2 LinuxWindow::GetPosition() const
 {
 	LINUX_WINDOW_PROLOG;
     if (!display)
-        return Vector2::Zero;
+        return Float2::Zero;
 	X11::XWindowAttributes xwa;
 	X11::XGetWindowAttributes(display, window, &xwa);
-	return Vector2((float)xwa.x, (float)xwa.y);
+	return Float2((float)xwa.x, (float)xwa.y);
 }
 
-Vector2 LinuxWindow::GetSize() const
+Float2 LinuxWindow::GetSize() const
 {
 	LINUX_WINDOW_PROLOG;
     if (!display)
         return _clientSize;
 	X11::XWindowAttributes xwa;
 	X11::XGetWindowAttributes(display, window, &xwa);
-	return Vector2((float)(xwa.width + xwa.border_width), (float)(xwa.height + xwa.border_width));
+	return Float2((float)(xwa.width + xwa.border_width), (float)(xwa.height + xwa.border_width));
 }
 
-Vector2 LinuxWindow::GetClientSize() const
+Float2 LinuxWindow::GetClientSize() const
 {
 	return _clientSize;
 }
 
-Vector2 LinuxWindow::ScreenToClient(const Vector2& screenPos) const
+Float2 LinuxWindow::ScreenToClient(const Float2& screenPos) const
 {
 	LINUX_WINDOW_PROLOG;
     if (!display)
@@ -428,10 +425,10 @@ Vector2 LinuxWindow::ScreenToClient(const Vector2& screenPos) const
 	int32 x, y;
 	X11::Window child;
 	X11::XTranslateCoordinates(display, X11_DefaultRootWindow(display), window, (int32)screenPos.X, (int32)screenPos.Y, &x, &y, &child);
-	return Vector2((float)x, (float)y);
+	return Float2((float)x, (float)y);
 }
 
-Vector2 LinuxWindow::ClientToScreen(const Vector2& clientPos) const
+Float2 LinuxWindow::ClientToScreen(const Float2& clientPos) const
 {
 	LINUX_WINDOW_PROLOG;
     if (!display)
@@ -439,7 +436,7 @@ Vector2 LinuxWindow::ClientToScreen(const Vector2& clientPos) const
 	int32 x, y;
 	X11::Window child;
 	X11::XTranslateCoordinates(display, window, X11_DefaultRootWindow(display), (int32)clientPos.X, (int32)clientPos.Y, &x, &y, &child);
-	return Vector2((float)x, (float)y);
+	return Float2((float)x, (float)y);
 }
 
 void LinuxWindow::FlashWindow()
@@ -513,7 +510,7 @@ void LinuxWindow::CheckForWindowResize()
 	X11::XGetWindowAttributes(display, window, &xwa);
 	const int32 width = xwa.width;
 	const int32 height = xwa.height;
-	const Vector2 clientSize((float)width, (float)height);
+	const Float2 clientSize((float)width, (float)height);
 
     // Check if window size has been changed
 	if (clientSize != _clientSize && width > 0 && height > 0)
@@ -564,7 +561,7 @@ void LinuxWindow::OnButtonPress(void* event)
 {
 	auto buttonEvent = (X11::XButtonPressedEvent*)event;
 
-	Vector2 mousePos((float)buttonEvent->x, (float)buttonEvent->y);
+	Float2 mousePos((float)buttonEvent->x, (float)buttonEvent->y);
 	MouseButton mouseButton;
 	switch (buttonEvent->button)
 	{
@@ -602,7 +599,7 @@ void LinuxWindow::OnButtonPress(void* event)
 void LinuxWindow::OnButtonRelease(void* event)
 {
 	auto buttonEvent = (X11::XButtonReleasedEvent*)event;
-	Vector2 mousePos((float)buttonEvent->x, (float)buttonEvent->y);
+	Float2 mousePos((float)buttonEvent->x, (float)buttonEvent->y);
 	switch (buttonEvent->button)
 	{
 	case Button1:
@@ -628,7 +625,7 @@ void LinuxWindow::OnButtonRelease(void* event)
 void LinuxWindow::OnMotionNotify(void* event)
 {
 	auto motionEvent = (X11::XMotionEvent*)event;
-	Vector2 mousePos((float)motionEvent->x, (float)motionEvent->y);
+	Float2 mousePos((float)motionEvent->x, (float)motionEvent->y);
 	Input::Mouse->OnMouseMove(ClientToScreen(mousePos), this);
 }
 
@@ -641,7 +638,7 @@ void LinuxWindow::OnLeaveNotify(void* event)
 void LinuxWindow::OnConfigureNotify(void* event)
 {
 	auto configureEvent = (X11::XConfigureEvent*)event;
-	const Vector2 clientSize((float)configureEvent->width, (float)configureEvent->height);
+	const Float2 clientSize((float)configureEvent->width, (float)configureEvent->height);
 	if (clientSize != _clientSize)
 	{
 		_clientSize = clientSize;
@@ -847,7 +844,7 @@ void LinuxWindow::SetIcon(TextureData& icon)
 			{
 				for (int32 x = 0; x < icon.Width; x++)
 				{
-					const Vector2 uv((float)x / icon.Width, (float)y / icon.Height);
+					const Float2 uv((float)x / icon.Width, (float)y / icon.Height);
 					Color color = TextureTool::SampleLinear(sampler, uv, iconData->Data.Get(), iconSize, iconData->RowPitch);
 					*(mipData + y * icon.Width + x) = Color32(color);
 				}
@@ -891,7 +888,7 @@ void LinuxWindow::SetIcon(TextureData& icon)
 				{
 					for (int32 x = 0; x < newWidth; x++)
 					{
-						const Vector2 uv((float)x / newWidth, (float)y / newHeight);
+						const Float2 uv((float)x / newWidth, (float)y / newHeight);
 						Color color = TextureTool::SampleLinear(sampler, uv, iconData->Data.Get(), iconSize, iconData->RowPitch);
 						*(mipData + y * newWidth + x) = Color32(color);
 					}

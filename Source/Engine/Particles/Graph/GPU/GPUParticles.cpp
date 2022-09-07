@@ -18,18 +18,18 @@ PACK_STRUCT(struct GPUParticlesData {
     Matrix ViewMatrix;
     Matrix WorldMatrix;
     Matrix InvWorldMatrix;
-    Vector3 ViewPos;
+    Float3 ViewPos;
     float ViewFar;
-    Vector3 ViewDir;
+    Float3 ViewDir;
     float Time;
-    Vector4 ViewInfo;
-    Vector4 ScreenSize;
-    Vector3 EffectPosition;
+    Float4 ViewInfo;
+    Float4 ScreenSize;
+    Float3 EffectPosition;
     float DeltaTime;
     Quaternion EffectRotation;
-    Vector3 EffectScale;
+    Float3 EffectScale;
     uint32 ParticleCounterOffset;
-    Vector3 Dummy0;
+    Float3 Dummy0;
     uint32 SpawnCount;
     });
 
@@ -216,11 +216,11 @@ void GPUParticles::Execute(GPUContext* context, ParticleEmitter* emitter, Partic
             Matrix::Transpose(Matrix::Identity, cbData->InvViewProjectionMatrix);
             Matrix::Transpose(Matrix::Identity, cbData->InvViewMatrix);
             Matrix::Transpose(Matrix::Identity, cbData->ViewMatrix);
-            cbData->ViewPos = Vector3::Zero;
+            cbData->ViewPos = Float3::Zero;
             cbData->ViewFar = 0.0f;
-            cbData->ViewDir = Vector3::Forward;
-            cbData->ViewInfo = Vector4::Zero;
-            cbData->ScreenSize = Vector4::Zero;
+            cbData->ViewDir = Float3::Forward;
+            cbData->ViewInfo = Float4::Zero;
+            cbData->ScreenSize = Float4::Zero;
         }
         cbData->Time = data.Time;
         if (emitter->SimulationSpace == ParticlesSimulationSpace::World)
@@ -231,7 +231,11 @@ void GPUParticles::Execute(GPUContext* context, ParticleEmitter* emitter, Partic
         else
         {
             Matrix worldMatrix;
-            effect->GetWorld(&worldMatrix);
+            const Transform transform = effect->GetTransform();
+            if (viewTask)
+                viewTask->View.GetWorldMatrix(transform, worldMatrix);
+            else
+                transform.GetWorld(worldMatrix);
             Matrix::Transpose(worldMatrix, cbData->WorldMatrix);
             worldMatrix.Invert();
             Matrix::Transpose(worldMatrix, cbData->InvWorldMatrix);

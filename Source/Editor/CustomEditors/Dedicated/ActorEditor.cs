@@ -75,7 +75,7 @@ namespace FlaxEditor.CustomEditors.Dedicated
 
                         // Viewing changes applied to this actor
                         var viewChanges = panel.Button("View Changes");
-                        viewChanges.Button.Clicked += () => ViewChanges(viewChanges.Button, new Vector2(0.0f, 20.0f));
+                        viewChanges.Button.Clicked += () => ViewChanges(viewChanges.Button, new Float2(0.0f, 20.0f));
 
                         // Link event to update editor on prefab apply
                         _linkedPrefabId = prefab.ID;
@@ -209,13 +209,13 @@ namespace FlaxEditor.CustomEditors.Dedicated
             if (editor is RemovedScriptDummy removed)
             {
                 node.TextColor = Color.OrangeRed;
-                node.Text = CustomEditorsUtil.GetPropertyNameUI(removed.PrefabObject.GetType().Name);
+                node.Text = Utilities.Utils.GetPropertyNameUI(removed.PrefabObject.GetType().Name);
             }
             // Actor or Script
             else if (editor.Values[0] is SceneObject sceneObject)
             {
                 node.TextColor = sceneObject.HasPrefabLink ? FlaxEngine.GUI.Style.Current.ProgressNormal : FlaxEngine.GUI.Style.Current.BackgroundSelected;
-                node.Text = CustomEditorsUtil.GetPropertyNameUI(sceneObject.GetType().Name);
+                node.Text = Utilities.Utils.GetPropertyNameUI(sceneObject.GetType().Name);
             }
             // Array Item
             else if (editor.ParentEditor?.Values?.Type.IsArray ?? false)
@@ -225,7 +225,7 @@ namespace FlaxEditor.CustomEditors.Dedicated
             // Common type
             else if (editor.Values.Info != ScriptMemberInfo.Null)
             {
-                node.Text = CustomEditorsUtil.GetPropertyNameUI(editor.Values.Info.Name);
+                node.Text = Utilities.Utils.GetPropertyNameUI(editor.Values.Info.Name);
             }
             // Custom type
             else if (editor.Values[0] != null)
@@ -319,7 +319,7 @@ namespace FlaxEditor.CustomEditors.Dedicated
             return result;
         }
 
-        private void ViewChanges(Control target, Vector2 targetLocation)
+        private void ViewChanges(Control target, Float2 targetLocation)
         {
             // Build a tree out of modified properties
             var rootNode = ProcessDiff(this, false);
@@ -343,7 +343,7 @@ namespace FlaxEditor.CustomEditors.Dedicated
             cm.Show(target, targetLocation);
         }
 
-        private void OnDiffNodeRightClick(TreeNode node, Vector2 location)
+        private void OnDiffNodeRightClick(TreeNode node, Float2 location)
         {
             var diffMenu = (PrefabDiffContextMenu)node.ParentTree.Tag;
 
@@ -353,7 +353,7 @@ namespace FlaxEditor.CustomEditors.Dedicated
             menu.AddButton("Revert All", OnDiffRevertAll);
             menu.AddButton("Apply All", OnDiffApplyAll);
 
-            diffMenu.ShowChild(menu, node.PointToParent(diffMenu, new Vector2(location.X, node.HeaderHeight)));
+            diffMenu.ShowChild(menu, node.PointToParent(diffMenu, new Float2(location.X, node.HeaderHeight)));
         }
 
         private void OnDiffRevertAll()

@@ -11,12 +11,10 @@
 class FLAXENGINE_API SkinnedMeshDrawData
 {
 private:
-
     bool _hasValidData = false;
     bool _isDirty = false;
 
 public:
-
     /// <summary>
     /// The bones count.
     /// </summary>
@@ -38,7 +36,6 @@ public:
     Array<byte> Data;
 
 public:
-
     /// <summary>
     /// Initializes a new instance of the <see cref="SkinnedMeshDrawData"/> class.
     /// </summary>
@@ -50,7 +47,6 @@ public:
     ~SkinnedMeshDrawData();
 
 public:
-
     /// <summary>
     /// Determines whether this instance is ready for rendering.
     /// </summary>

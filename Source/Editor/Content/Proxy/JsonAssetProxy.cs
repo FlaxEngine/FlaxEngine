@@ -163,7 +163,7 @@ namespace FlaxEditor.Content
     public sealed class SpawnableJsonAssetProxy<T> : JsonAssetProxy where T : new()
     {
         /// <inheritdoc />
-        public override string Name { get; } = CustomEditors.CustomEditorsUtil.GetPropertyNameUI(typeof(T).Name);
+        public override string Name { get; } = Utilities.Utils.GetPropertyNameUI(typeof(T).Name);
 
         /// <inheritdoc />
         public override bool CanCreate(ContentFolder targetLocation)

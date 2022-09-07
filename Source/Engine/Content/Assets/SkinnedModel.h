@@ -14,16 +14,14 @@ class StreamSkinnedModelLODTask;
 /// </summary>
 API_CLASS(NoSpawn) class FLAXENGINE_API SkinnedModel : public ModelBase
 {
-DECLARE_BINARY_ASSET_HEADER(SkinnedModel, 4);
+    DECLARE_BINARY_ASSET_HEADER(SkinnedModel, 4);
     friend SkinnedMesh;
     friend StreamSkinnedModelLODTask;
 private:
-
     int32 _loadedLODs = 0;
     StreamSkinnedModelLODTask* _streamingTask = nullptr;
 
 public:
-
     /// <summary>
     /// Model level of details. The first entry is the highest quality LOD0 followed by more optimized versions.
     /// </summary>
@@ -35,14 +33,12 @@ public:
     SkeletonData Skeleton;
 
 public:
-
     /// <summary>
     /// Finalizes an instance of the <see cref="SkinnedModel"/> class.
     /// </summary>
     ~SkinnedModel();
 
 public:
-
     /// <summary>
     /// Gets a value indicating whether this instance is initialized. 
     /// </summary>
@@ -154,7 +150,6 @@ public:
     API_PROPERTY() Array<String> GetBlendShapes();
 
 public:
-
     /// <summary>
     /// Requests the LOD data asynchronously (creates task that will gather chunk data or null if already here).
     /// </summary>
@@ -170,7 +165,6 @@ public:
     void GetLODData(int32 lodIndex, BytesContainer& data) const;
 
 public:
-
     /// <summary>
     /// Determines if there is an intersection between the SkinnedModel and a Ray in given world using given instance.
     /// </summary>
@@ -181,7 +175,19 @@ public:
     /// <param name="mesh">Mesh, or null</param>
     /// <param name="lodIndex">Level Of Detail index</param>
     /// <returns>True whether the two objects intersected</returns>
-    bool Intersects(const Ray& ray, const Matrix& world, float& distance, Vector3& normal, SkinnedMesh** mesh, int32 lodIndex = 0);
+    bool Intersects(const Ray& ray, const Matrix& world, Real& distance, Vector3& normal, SkinnedMesh** mesh, int32 lodIndex = 0);
+
+    /// <summary>
+    /// Determines if there is an intersection between the SkinnedModel and a Ray in given world using given instance.
+    /// </summary>
+    /// <param name="ray">The ray to test</param>
+    /// <param name="transform">Instance transformation</param>
+    /// <param name="distance">When the method completes, contains the distance of the intersection (if any valid).</param>
+    /// <param name="normal">When the method completes, contains the intersection surface normal vector (if any valid).</param>
+    /// <param name="mesh">Mesh, or null</param>
+    /// <param name="lodIndex">Level Of Detail index</param>
+    /// <returns>True whether the two objects intersected</returns>
+    bool Intersects(const Ray& ray, const Transform& transform, Real& distance, Vector3& normal, SkinnedMesh** mesh, int32 lodIndex = 0);
 
     /// <summary>
     /// Gets the model bounding box in custom matrix world space (rig pose transformed by matrix, not animated).
@@ -199,7 +205,6 @@ public:
     API_FUNCTION() BoundingBox GetBox(int32 lodIndex = 0) const;
 
 public:
-
     /// <summary>
     /// Draws the meshes. Binds vertex and index buffers and invokes the draw calls.
     /// </summary>
@@ -218,7 +223,6 @@ public:
     void Draw(RenderContext& renderContext, const SkinnedMesh::DrawInfo& info);
 
 public:
-
     /// <summary>
     /// Setups the model LODs collection including meshes creation.
     /// </summary>
@@ -256,7 +260,6 @@ public:
 #endif
 
 private:
-
     /// <summary>
     /// Initializes this skinned model to an empty collection of meshes. Ensure to init SkeletonData manually after the call.
     /// </summary>
@@ -265,12 +268,12 @@ private:
     bool Init(const Span<int32>& meshesCountPerLod);
 
 public:
-
     // [ModelBase]
     void SetupMaterialSlots(int32 slotsCount) override;
     int32 GetLODsCount() const override;
     void GetMeshes(Array<MeshBase*>& meshes, int32 lodIndex = 0) override;
     void InitAsVirtual() override;
+    void CancelStreaming() override;
 #if USE_EDITOR
     void GetReferences(Array<Guid>& output) const override;
 #endif
@@ -282,9 +285,9 @@ public:
     bool CanBeUpdated() const override;
     Task* UpdateAllocation(int32 residency) override;
     Task* CreateStreamingTask(int32 residency) override;
+    void CancelStreamingTasks() override;
 
 protected:
-
     // [ModelBase]
     LoadResult load() override;
     void unload(bool isReloading) override;

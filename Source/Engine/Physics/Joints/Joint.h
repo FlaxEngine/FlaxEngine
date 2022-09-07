@@ -18,9 +18,8 @@ class IPhysicsActor;
 /// <seealso cref="Actor" />
 API_CLASS(Abstract) class FLAXENGINE_API Joint : public Actor
 {
-DECLARE_SCENE_OBJECT_ABSTRACT(Joint);
+    DECLARE_SCENE_OBJECT_ABSTRACT(Joint);
 protected:
-
     void* _joint;
     float _breakForce;
     float _breakTorque;
@@ -30,7 +29,6 @@ protected:
     bool _enableAutoAnchor = false;
 
 public:
-
     /// <summary>
     /// The target actor for the joint. It has to be IPhysicsActor type (eg. RigidBody or CharacterController).
     /// </summary>
@@ -131,7 +129,6 @@ public:
     API_PROPERTY() void SetTargetAnchorRotation(const Quaternion& value);
 
 public:
-
     /// <summary>
     /// Gets the native physics backend object.
     /// </summary>
@@ -174,7 +171,6 @@ public:
     virtual void OnJointBreak();
 
 protected:
-
     Vector3 GetTargetPosition() const;
     Quaternion GetTargetOrientation() const;
     virtual void* CreateJoint(const struct PhysicsJointDesc& desc) = 0;
@@ -183,13 +179,11 @@ protected:
 #endif
 
 private:
-
     void Delete();
     void SetActors();
     void OnTargetChanged();
 
 public:
-
     // [Actor]
 #if USE_EDITOR
     void OnDebugDrawSelected() override;
@@ -198,7 +192,6 @@ public:
     void Deserialize(DeserializeStream& stream, ISerializeModifier* modifier) override;
 
 protected:
-
     // [Actor]
     void BeginPlay(SceneBeginData* data) override;
     void EndPlay() override;

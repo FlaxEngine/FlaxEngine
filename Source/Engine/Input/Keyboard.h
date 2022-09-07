@@ -9,9 +9,8 @@
 /// </summary>
 API_CLASS(NoSpawn) class FLAXENGINE_API Keyboard : public InputDevice
 {
-DECLARE_SCRIPTING_TYPE_NO_SPAWN(Keyboard);
+    DECLARE_SCRIPTING_TYPE_NO_SPAWN(Keyboard);
 protected:
-
     struct State
     {
         uint16 InputTextLength;
@@ -26,7 +25,6 @@ protected:
     explicit Keyboard();
 
 public:
-
     /// <summary>
     /// Gets the text entered during the current frame.
     /// </summary>
@@ -72,7 +70,6 @@ public:
     API_PROPERTY() bool IsAnyKeyDown() const;
 
 public:
-
     /// <summary>
     /// Called when keyboard enters input character.
     /// </summary>
@@ -95,7 +92,6 @@ public:
     void OnKeyDown(KeyboardKeys key, Window* target = nullptr);
 
 public:
-
     // [InputDevice]
     void ResetState() override;;
     bool Update(EventQueue& queue) final override;

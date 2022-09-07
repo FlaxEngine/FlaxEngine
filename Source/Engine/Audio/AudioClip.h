@@ -200,6 +200,9 @@ public:
 
 public:
 
+    // [BinaryAsset]
+    void CancelStreaming() override;
+    
     // [StreamableResource]
     int32 GetMaxResidency() const override;
     int32 GetCurrentResidency() const override;
@@ -207,6 +210,7 @@ public:
     bool CanBeUpdated() const override;
     Task* UpdateAllocation(int32 residency) override;
     Task* CreateStreamingTask(int32 residency) override;
+    void CancelStreamingTasks() override;
 
 protected:
 

@@ -19,12 +19,12 @@ AnimatedModel::AnimatedModel(const SpawnParams& params)
     : ModelInstanceActor(params)
     , _actualMode(AnimationUpdateMode::Never)
     , _counter(0)
-    , _lastMinDstSqr(MAX_float)
+    , _lastMinDstSqr(MAX_Real)
     , _lastUpdateFrame(0)
 {
     GraphInstance.Object = this;
-    _world = Matrix::Identity;
-    UpdateBounds();
+    _box = _boxLocal = BoundingBox(Vector3::Zero);
+    _sphere = BoundingSphere(Vector3::Zero, 0.0f);
 
     SkinnedModel.Changed.Bind<AnimatedModel, &AnimatedModel::OnSkinnedModelChanged>(this);
     SkinnedModel.Loaded.Bind<AnimatedModel, &AnimatedModel::OnSkinnedModelLoaded>(this);
@@ -76,7 +76,8 @@ void AnimatedModel::SetupSkinningData()
 
 void AnimatedModel::PreInitSkinningData()
 {
-    ASSERT(SkinnedModel && SkinnedModel->IsLoaded());
+    if (!SkinnedModel || !SkinnedModel->IsLoaded())
+        return;
 
     ScopeLock lock(SkinnedModel->Locker);
 
@@ -121,7 +122,8 @@ void AnimatedModel::GetCurrentPose(Array<Matrix>& nodesTransformation, bool worl
     nodesTransformation = GraphInstance.NodesPose;
     if (worldSpace)
     {
-        const auto world = _world;
+        Matrix world;
+        _transform.GetWorld(world);
         for (auto& m : nodesTransformation)
             m = m * world;
     }
@@ -135,8 +137,10 @@ void AnimatedModel::SetCurrentPose(const Array<Matrix>& nodesTransformation, boo
     GraphInstance.NodesPose = nodesTransformation;
     if (worldSpace)
     {
+        Matrix world;
+        _transform.GetWorld(world);
         Matrix invWorld;
-        Matrix::Invert(_world, invWorld);
+        Matrix::Invert(world, invWorld);
         for (auto& m : GraphInstance.NodesPose)
             m = invWorld * m;
     }
@@ -152,7 +156,11 @@ void AnimatedModel::GetNodeTransformation(int32 nodeIndex, Matrix& nodeTransform
     else
         nodeTransformation = Matrix::Identity;
     if (worldSpace)
-        nodeTransformation = nodeTransformation * _world;
+    {
+        Matrix world;
+        _transform.GetWorld(world);
+        nodeTransformation = nodeTransformation * world;
+    }
 }
 
 void AnimatedModel::GetNodeTransformation(const StringView& nodeName, Matrix& nodeTransformation, bool worldSpace) const
@@ -166,11 +174,11 @@ int32 AnimatedModel::FindClosestNode(const Vector3& location, bool worldSpace) c
         const_cast<AnimatedModel*>(this)->PreInitSkinningData(); // Ensure to have valid nodes pose to return
     const Vector3 pos = worldSpace ? _transform.WorldToLocal(location) : location;
     int32 result = -1;
-    float closest = MAX_float;
+    Real closest = MAX_Real;
     for (int32 nodeIndex = 0; nodeIndex < GraphInstance.NodesPose.Count(); nodeIndex++)
     {
         const Vector3 node = GraphInstance.NodesPose[nodeIndex].GetTranslation();
-        const float dst = Vector3::DistanceSquared(node, pos);
+        const Real dst = Vector3::DistanceSquared(node, pos);
         if (dst < closest)
         {
             closest = dst;
@@ -324,7 +332,7 @@ void AnimatedModel::ClearBlendShapeWeights()
     _blendShapes.Clear();
 }
 
-void AnimatedModel::PlaySlotAnimation(const StringView& slotName, Animation* anim, float speed, float blendInTime, float blendOutTime)
+void AnimatedModel::PlaySlotAnimation(const StringView& slotName, Animation* anim, float speed, float blendInTime, float blendOutTime, int32 loopCount)
 {
     CHECK(anim);
     for (auto& slot : GraphInstance.Slots)
@@ -333,6 +341,7 @@ void AnimatedModel::PlaySlotAnimation(const StringView& slotName, Animation* ani
         {
             slot.Pause = false;
             slot.BlendInTime = blendInTime;
+            slot.LoopCount = loopCount;
             return;
         }
     }
@@ -350,6 +359,7 @@ void AnimatedModel::PlaySlotAnimation(const StringView& slotName, Animation* ani
     slot.Speed = speed;
     slot.BlendInTime = blendInTime;
     slot.BlendOutTime = blendOutTime;
+    slot.LoopCount = loopCount;
 }
 
 void AnimatedModel::StopSlotAnimation()
@@ -542,10 +552,10 @@ void AnimatedModel::UpdateBounds()
 {
     UpdateLocalBounds();
 
-    BoundingBox::Transform(_boxLocal, _world, _box);
+    BoundingBox::Transform(_boxLocal, _transform, _box);
     BoundingSphere::FromBox(_box, _sphere);
     if (_sceneRenderingKey != -1)
-        GetSceneRendering()->UpdateGeometry(this, _sceneRenderingKey);
+        GetSceneRendering()->UpdateActor(this, _sceneRenderingKey);
 }
 
 void AnimatedModel::UpdateSockets()
@@ -681,27 +691,33 @@ void AnimatedModel::Update()
     default:
         break;
     }
-    if (updateAnim && (UpdateWhenOffscreen || _lastMinDstSqr < MAX_float))
+    if (updateAnim && (UpdateWhenOffscreen || _lastMinDstSqr < MAX_Real))
         UpdateAnimation();
 
-    _lastMinDstSqr = MAX_float;
+    _lastMinDstSqr = MAX_Real;
 }
 
 void AnimatedModel::Draw(RenderContext& renderContext)
 {
-    GEOMETRY_DRAW_STATE_EVENT_BEGIN(_drawState, _world);
+    if (renderContext.View.Pass == DrawPass::GlobalSDF)
+        return; // TODO: Animated Model rendering to Global SDF
+    if (renderContext.View.Pass == DrawPass::GlobalSurfaceAtlas)
+        return; // No supported
+    Matrix world;
+    renderContext.View.GetWorldMatrix(_transform, world);
+    GEOMETRY_DRAW_STATE_EVENT_BEGIN(_drawState, world);
 
     const DrawPass drawModes = (DrawPass)(DrawModes & renderContext.View.Pass & (int32)renderContext.View.GetShadowsDrawPassMask(ShadowsMode));
     if (SkinnedModel && SkinnedModel->IsLoaded() && drawModes != DrawPass::None)
     {
-        _lastMinDstSqr = Math::Min(_lastMinDstSqr, Vector3::DistanceSquared(GetPosition(), renderContext.View.Position));
+        _lastMinDstSqr = Math::Min(_lastMinDstSqr, Vector3::DistanceSquared(_transform.Translation, renderContext.View.Position + renderContext.View.Origin));
 
         if (_skinningData.IsReady())
         {
 #if USE_EDITOR
             // Disable motion blur effects in editor without play mode enabled to hide minor artifacts on objects moving
             if (!Editor::IsPlayMode)
-                _drawState.PrevWorld = _world;
+                _drawState.PrevWorld = world;
 #endif
 
             _skinningData.Flush(GPUDevice::Instance->GetMainContext());
@@ -710,10 +726,11 @@ void AnimatedModel::Draw(RenderContext& renderContext)
             draw.Buffer = &Entries;
             draw.Skinning = &_skinningData;
             draw.BlendShapes = &_blendShapes;
-            draw.World = &_world;
+            draw.World = &world;
             draw.DrawState = &_drawState;
             draw.DrawModes = drawModes;
             draw.Bounds = _sphere;
+            draw.Bounds.Center -= renderContext.View.Origin;
             draw.PerInstanceRandom = GetPerInstanceRandom();
             draw.LODBias = LODBias;
             draw.ForcedLOD = ForcedLOD;
@@ -722,15 +739,7 @@ void AnimatedModel::Draw(RenderContext& renderContext)
         }
     }
 
-    GEOMETRY_DRAW_STATE_EVENT_END(_drawState, _world);
-}
-
-void AnimatedModel::DrawGeneric(RenderContext& renderContext)
-{
-    if (renderContext.View.RenderLayersMask.Mask & GetLayerMask() && renderContext.View.CullingFrustum.Intersects(_box))
-    {
-        Draw(renderContext);
-    }
+    GEOMETRY_DRAW_STATE_EVENT_END(_drawState, world);
 }
 
 #if USE_EDITOR
@@ -754,14 +763,14 @@ BoundingBox AnimatedModel::GetEditorBox() const
 
 #endif
 
-bool AnimatedModel::IntersectsItself(const Ray& ray, float& distance, Vector3& normal)
+bool AnimatedModel::IntersectsItself(const Ray& ray, Real& distance, Vector3& normal)
 {
     bool result = false;
 
     if (SkinnedModel != nullptr && SkinnedModel->IsLoaded())
     {
         SkinnedMesh* mesh;
-        result |= SkinnedModel->Intersects(ray, _world, distance, normal, &mesh);
+        result |= SkinnedModel->Intersects(ray, _transform, distance, normal, &mesh);
     }
 
     return result;
@@ -814,9 +823,16 @@ void AnimatedModel::Deserialize(DeserializeStream& stream, ISerializeModifier* m
     DESERIALIZE(RootMotionTarget);
 
     Entries.DeserializeIfExists(stream, "Buffer", modifier);
+
+    // [Deprecated on 07.02.2022, expires on 07.02.2024]
+    if (modifier->EngineBuild <= 6330)
+        DrawModes |= DrawPass::GlobalSDF;
+    // [Deprecated on 27.04.2022, expires on 27.04.2024]
+    if (modifier->EngineBuild <= 6331)
+        DrawModes |= DrawPass::GlobalSurfaceAtlas;
 }
 
-bool AnimatedModel::IntersectsEntry(int32 entryIndex, const Ray& ray, float& distance, Vector3& normal)
+bool AnimatedModel::IntersectsEntry(int32 entryIndex, const Ray& ray, Real& distance, Vector3& normal)
 {
     auto model = SkinnedModel.Get();
     if (!model || !model->IsInitialized() || model->GetLoadedLODs() == 0)
@@ -827,7 +843,7 @@ bool AnimatedModel::IntersectsEntry(int32 entryIndex, const Ray& ray, float& dis
     for (int32 i = 0; i < meshes.Count(); i++)
     {
         const auto& mesh = meshes[i];
-        if (mesh.GetMaterialSlotIndex() == entryIndex && mesh.Intersects(ray, _world, distance, normal))
+        if (mesh.GetMaterialSlotIndex() == entryIndex && mesh.Intersects(ray, _transform, distance, normal))
             return true;
     }
 
@@ -836,7 +852,7 @@ bool AnimatedModel::IntersectsEntry(int32 entryIndex, const Ray& ray, float& dis
     return false;
 }
 
-bool AnimatedModel::IntersectsEntry(const Ray& ray, float& distance, Vector3& normal, int32& entryIndex)
+bool AnimatedModel::IntersectsEntry(const Ray& ray, Real& distance, Vector3& normal, int32& entryIndex)
 {
     auto model = SkinnedModel.Get();
     if (!model || !model->IsInitialized() || model->GetLoadedLODs() == 0)
@@ -844,7 +860,7 @@ bool AnimatedModel::IntersectsEntry(const Ray& ray, float& distance, Vector3& no
 
     // Find mesh in the highest loaded LOD that is using the given material slot index and ray hits it
     bool result = false;
-    float closest = MAX_float;
+    Real closest = MAX_Real;
     Vector3 closestNormal = Vector3::Up;
     int32 closestEntry = -1;
     auto& meshes = model->LODs[model->HighestResidentLODIndex()].Meshes;
@@ -852,9 +868,9 @@ bool AnimatedModel::IntersectsEntry(const Ray& ray, float& distance, Vector3& no
     {
         // Test intersection with mesh and check if is closer than previous
         const auto& mesh = meshes[i];
-        float dst;
+        Real dst;
         Vector3 nrm;
-        if (mesh.Intersects(ray, _world, dst, nrm) && dst < closest)
+        if (mesh.Intersects(ray, _transform, dst, nrm) && dst < closest)
         {
             result = true;
             closest = dst;
@@ -869,14 +885,27 @@ bool AnimatedModel::IntersectsEntry(const Ray& ray, float& distance, Vector3& no
     return result;
 }
 
+void AnimatedModel::OnDeleteObject()
+{
+    // Ensure this object is no longer referenced for anim update
+    Animations::RemoveFromUpdate(this);
+    
+    ModelInstanceActor::OnDeleteObject();
+}
+
 void AnimatedModel::OnTransformChanged()
 {
     // Base
     ModelInstanceActor::OnTransformChanged();
 
-    _transform.GetWorld(_world);
-    BoundingBox::Transform(_boxLocal, _world, _box);
+    BoundingBox::Transform(_boxLocal, _transform, _box);
     BoundingSphere::FromBox(_box, _sphere);
     if (_sceneRenderingKey != -1)
-        GetSceneRendering()->UpdateGeometry(this, _sceneRenderingKey);
+        GetSceneRendering()->UpdateActor(this, _sceneRenderingKey);
+}
+
+void AnimatedModel::WaitForModelLoad()
+{
+    if (SkinnedModel)
+        SkinnedModel->WaitForLoaded();
 }

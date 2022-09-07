@@ -1,7 +1,6 @@
 // Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 using System;
-using System.Collections;
 using FlaxEngine;
 using FlaxEngine.GUI;
 
@@ -42,7 +41,7 @@ namespace FlaxEditor.GUI.Tabs
             /// <param name="index">The tab index.</param>
             /// <param name="tab">The tab.</param>
             public TabHeader(Tabs tabs, int index, Tab tab)
-            : base(Vector2.Zero, tabs._tabsSize)
+            : base(Float2.Zero, tabs._tabsSize)
             {
                 Tabs = tabs;
                 Index = index;
@@ -50,7 +49,7 @@ namespace FlaxEditor.GUI.Tabs
             }
 
             /// <inheritdoc />
-            public override bool OnMouseUp(Vector2 location, MouseButton button)
+            public override bool OnMouseUp(Float2 location, MouseButton button)
             {
                 Tabs.SelectedTabIndex = Index;
                 Tabs.Focus();
@@ -64,7 +63,7 @@ namespace FlaxEditor.GUI.Tabs
 
                 // Cache data
                 var style = Style.Current;
-                var tabRect = new Rectangle(Vector2.Zero, Size);
+                var tabRect = new Rectangle(Float2.Zero, Size);
                 bool isTabSelected = Tabs._selectedIndex == Index;
                 bool isMouseOverTab = IsMouseOver;
                 var textOffset = Tabs._orientation == Orientation.Horizontal ? 0 : 8;
@@ -135,9 +134,9 @@ namespace FlaxEditor.GUI.Tabs
                 // Cache data
                 var tabsSize = Tabs._tabsSize;
                 var clientSize = GetClientArea();
-                tabsSize = Vector2.Min(tabsSize, clientSize.Size);
-                var tabRect = new Rectangle(Vector2.Zero, tabsSize);
-                var tabStripOffset = Tabs._orientation == Orientation.Horizontal ? new Vector2(tabsSize.X, 0) : new Vector2(0, tabsSize.Y);
+                tabsSize = Float2.Min(tabsSize, clientSize.Size);
+                var tabRect = new Rectangle(Float2.Zero, tabsSize);
+                var tabStripOffset = Tabs._orientation == Orientation.Horizontal ? new Float2(tabsSize.X, 0) : new Float2(0, tabsSize.Y);
 
                 // Arrange tab header controls
                 for (int i = 0; i < Children.Count; i++)
@@ -159,7 +158,7 @@ namespace FlaxEditor.GUI.Tabs
         /// <summary>
         /// The tabs size.
         /// </summary>
-        protected Vector2 _tabsSize;
+        protected Float2 _tabsSize;
 
         /// <summary>
         /// The orientation.
@@ -169,19 +168,17 @@ namespace FlaxEditor.GUI.Tabs
         /// <summary>
         /// Gets the size of the tabs.
         /// </summary>
-        public Vector2 TabsSize
+        public Float2 TabsSize
         {
             get => _tabsSize;
             set
             {
                 _tabsSize = value;
-
                 for (int i = 0; i < TabsPanel.ChildrenCount; i++)
                 {
                     if (TabsPanel.Children[i] is TabHeader tabHeader)
                         tabHeader.Size = value;
                 }
-
                 PerformLayout();
             }
         }
@@ -227,8 +224,8 @@ namespace FlaxEditor.GUI.Tabs
         /// </summary>
         public Tab SelectedTab
         {
-            get => _selectedIndex == -1 ? null : Children[_selectedIndex + 1] as Tab;
-            set => SelectedTabIndex = Children.IndexOf(value) - 1;
+            get => _selectedIndex == -1 && Children.Count > _selectedIndex + 1 ? null : Children[_selectedIndex + 1] as Tab;
+            set => SelectedTabIndex = value != null ? Children.IndexOf(value) - 1 : -1;
         }
 
         /// <summary>
@@ -293,7 +290,7 @@ namespace FlaxEditor.GUI.Tabs
             BackgroundColor = Style.Current.Background;
 
             _selectedIndex = -1;
-            _tabsSize = new Vector2(70, 16);
+            _tabsSize = new Float2(70, 16);
             _orientation = Orientation.Horizontal;
 
             TabsPanel = new TabsHeader(this);
@@ -375,7 +372,7 @@ namespace FlaxEditor.GUI.Tabs
         protected override void PerformLayoutBeforeChildren()
         {
             // Fit the tabs panel
-            TabsPanel.Size = _orientation == Orientation.Horizontal ? new Vector2(Width, _tabsSize.Y) : new Vector2(_tabsSize.X, Height);
+            TabsPanel.Size = _orientation == Orientation.Horizontal ? new Float2(Width, _tabsSize.Y) : new Float2(_tabsSize.X, Height);
 
             // Hide all pages except selected one
             var clientArea = _orientation == Orientation.Horizontal

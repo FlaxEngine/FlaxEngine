@@ -66,10 +66,15 @@ namespace Flax.Build
             options.CompileEnv.IncludePaths.Add(Path.Combine(Globals.EngineRoot, @"Source\ThirdParty"));
             options.LinkEnv.LibraryPaths.Add(depsRoot);
 
-            // Ensure to propagate no-C# scripting define to the whole codebase
+            // Ensure to propagate global configuration defines to the whole codebase
             if (!EngineConfiguration.WithCSharp(options))
             {
                 options.CompileEnv.PreprocessorDefinitions.Add("COMPILE_WITHOUT_CSHARP");
+            }
+            if (EngineConfiguration.WithLargeWorlds(options))
+            {
+                options.CompileEnv.PreprocessorDefinitions.Add("USE_LARGE_WORLDS");
+                options.ScriptingAPI.Defines.Add("USE_LARGE_WORLDS");
             }
 
             // Add include paths for this and all referenced projects sources

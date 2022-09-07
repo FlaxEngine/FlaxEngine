@@ -9,14 +9,14 @@ Actor* SceneQuery::RaycastScene(const Ray& ray)
     PROFILE_CPU();
 
 #if SCENE_QUERIES_WITH_LOCK
-	ScopeLock lock(Level::ScenesLock);
+    ScopeLock lock(Level::ScenesLock);
 #endif
 
     Actor* target;
     Actor* minTarget = nullptr;
-    float distance;
+    Real distance;
     Vector3 normal;
-    float minDistance = MAX_float;
+    Real minDistance = MAX_Real;
 
     for (int32 i = 0; i < Level::Scenes.Count(); i++)
     {
@@ -94,7 +94,7 @@ void SceneQuery::GetAllActors(Array<Actor*>& actors)
     PROFILE_CPU();
 
 #if SCENE_QUERIES_WITH_LOCK
-	ScopeLock lock(Level::ScenesLock);
+    ScopeLock lock(Level::ScenesLock);
 #endif
 
     for (int32 i = 0; i < Level::Scenes.Count(); i++)

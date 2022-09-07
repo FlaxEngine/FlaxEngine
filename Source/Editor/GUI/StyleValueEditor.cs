@@ -114,7 +114,7 @@ namespace FlaxEditor.GUI
                 -ProgressNormal
                 */
 
-                var size = new Vector2(r.Width / 7f, r.Height / 2f);
+                var size = new Float2(r.Width / 7f, r.Height / 2f);
                 float x = 2;
 
                 Render2D.FillRectangle(new Rectangle(x, 2, size), Value.Foreground);
@@ -162,7 +162,7 @@ namespace FlaxEditor.GUI
         }
 
         /// <inheritdoc />
-        public override bool OnMouseUp(Vector2 location, MouseButton button)
+        public override bool OnMouseUp(Float2 location, MouseButton button)
         {
             if (Value == null)
             {

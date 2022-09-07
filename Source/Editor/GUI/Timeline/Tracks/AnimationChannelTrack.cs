@@ -78,11 +78,11 @@ namespace FlaxEditor.GUI.Timeline.Tracks
 
             int type = stream.ReadByte();
             int keyframesCount = stream.ReadInt32();
-            var propertyType = type == 1 ? typeof(Quaternion) : typeof(Vector3);
+            var propertyType = type == 1 ? typeof(Quaternion) : typeof(Float3);
             e.Title = type == 0 ? "Position" : (type == 1 ? "Rotation" : "Scale");
             e._type = type;
             e.MemberTypeName = propertyType.FullName;
-            e.ValueSize = type == 1 ? Quaternion.SizeInBytes : Vector3.SizeInBytes;
+            e.ValueSize = type == 1 ? Quaternion.SizeInBytes : Float3.SizeInBytes;
 
             var keyframes = new object[keyframesCount];
             for (int i = 0; i < keyframesCount; i++)
@@ -92,7 +92,7 @@ namespace FlaxEditor.GUI.Timeline.Tracks
                 if (type == 1)
                     value = stream.ReadQuaternion();
                 else
-                    value = stream.ReadVector3();
+                    value = stream.ReadFloat3();
                 keyframes[i] = new LinearCurve<object>.Keyframe
                 {
                     Time = time,
@@ -130,7 +130,7 @@ namespace FlaxEditor.GUI.Timeline.Tracks
                 if (e._type == 1)
                     stream.Write((Quaternion)value);
                 else
-                    stream.Write((Vector3)value);
+                    stream.Write((Float3)value);
             }
         }
 

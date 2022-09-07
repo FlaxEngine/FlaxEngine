@@ -38,6 +38,7 @@ namespace FlaxEditor.Surface
         private VisjectCM _activeVisjectCM;
         private GroupArchetype _customNodesGroup;
         private List<NodeArchetype> _customNodes;
+        private List<IUndoAction> _batchedUndoActions;
         private Action _onSave;
         private int _selectedConnectionIndex;
 
@@ -61,17 +62,17 @@ namespace FlaxEditor.Surface
         /// <summary>
         /// The left mouse down position.
         /// </summary>
-        protected Vector2 _leftMouseDownPos = Vector2.Minimum;
+        protected Float2 _leftMouseDownPos = Float2.Minimum;
 
         /// <summary>
         /// The right mouse down position.
         /// </summary>
-        protected Vector2 _rightMouseDownPos = Vector2.Minimum;
+        protected Float2 _rightMouseDownPos = Float2.Minimum;
 
         /// <summary>
         /// The mouse position.
         /// </summary>
-        protected Vector2 _mousePos = Vector2.Minimum;
+        protected Float2 _mousePos = Float2.Minimum;
 
         /// <summary>
         /// The mouse movement amount.
@@ -86,7 +87,7 @@ namespace FlaxEditor.Surface
         /// <summary>
         /// The moving selection view position.
         /// </summary>
-        protected Vector2 _movingSelectionViewPos;
+        protected Float2 _movingSelectionViewPos;
 
         /// <summary>
         /// The connection start.
@@ -106,7 +107,7 @@ namespace FlaxEditor.Surface
         /// <summary>
         /// The context menu start position.
         /// </summary>
-        protected Vector2 _cmStartPos = Vector2.Minimum;
+        protected Float2 _cmStartPos = Float2.Minimum;
 
         /// <summary>
         /// Occurs when selection gets changed.
@@ -163,7 +164,7 @@ namespace FlaxEditor.Surface
         /// <summary>
         /// Gets or sets the view position (upper left corner of the view) in the surface space.
         /// </summary>
-        public Vector2 ViewPosition
+        public Float2 ViewPosition
         {
             get => _rootControl.Location / -ViewScale;
             set => _rootControl.Location = value * -ViewScale;
@@ -172,7 +173,7 @@ namespace FlaxEditor.Surface
         /// <summary>
         /// Gets or sets the view center position (middle point of the view) in the surface space.
         /// </summary>
-        public Vector2 ViewCenterPosition
+        public Float2 ViewCenterPosition
         {
             get => (_rootControl.Location - Size * 0.5f) / -ViewScale;
             set => _rootControl.Location = Size * 0.5f + value * -ViewScale;
@@ -197,7 +198,7 @@ namespace FlaxEditor.Surface
                 }
 
                 // disable view scale animation
-                _rootControl.Scale = new Vector2(_targetScale);
+                _rootControl.Scale = new Float2(_targetScale);
             }
         }
 
@@ -387,17 +388,7 @@ namespace FlaxEditor.Surface
         /// <returns>The display name (for UI).</returns>
         public virtual string GetTypeName(ScriptType type)
         {
-            if (type == ScriptType.Null)
-                return null;
-            if (type.Type == typeof(float))
-                return "Float";
-            if (type.Type == typeof(int))
-                return "Int";
-            if (type.Type == typeof(uint))
-                return "Uint";
-            if (type.Type == typeof(bool))
-                return "Bool";
-            return type.Name;
+            return type == ScriptType.Null ? null : type.Name;
         }
 
         /// <summary>
@@ -910,6 +901,19 @@ namespace FlaxEditor.Surface
         public SurfaceNode FindNode(uint id)
         {
             return _context.FindNode(id);
+        }
+        
+        /// <summary>
+        /// Adds the undo action to be batched (eg. if multiple undo actions is performed in a sequence during single update).
+        /// </summary>
+        /// <param name="action">The action.</param>
+        public void AddBatchedUndoAction(IUndoAction action)
+        {
+            if (Undo == null || !Undo.Enabled)
+                return;
+            if (_batchedUndoActions == null)
+                _batchedUndoActions = new List<IUndoAction>();
+            _batchedUndoActions.Add(action);
         }
 
         /// <summary>

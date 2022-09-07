@@ -107,9 +107,9 @@ namespace FlaxEditor.Windows
             var headerPanel = new ContainerControl
             {
                 AnchorPreset = AnchorPresets.HorizontalStretchTop,
-                IsScrollable = true,
+                BackgroundColor = Style.Current.Background,
+                IsScrollable = false,
                 Offsets = new Margin(0, 0, 0, 18 + 6),
-                Parent = _split.Panel1,
             };
             _foldersSearchBox = new TextBox
             {
@@ -127,6 +127,7 @@ namespace FlaxEditor.Windows
                 Parent = _split.Panel1,
             };
             _tree.SelectedChanged += OnTreeSelectionChanged;
+            headerPanel.Parent = _split.Panel1;
 
             // Content items searching query input box and filters selector
             var contentItemsSearchPanel = new ContainerControl
@@ -220,7 +221,7 @@ namespace FlaxEditor.Windows
                         filterButton.Checked = _viewDropdown.IsSelected(filterButton.Text);
                 }
             };
-            
+
             var sortBy = menu.AddChildMenu("Sort by");
             sortBy.ContextMenu.AddButton("Alphabetic Order", OnSortByButtonClicked).Tag = SortType.AlphabeticOrder;
             sortBy.ContextMenu.AddButton("Alphabetic Reverse", OnSortByButtonClicked).Tag = SortType.AlphabeticReverse;
@@ -260,10 +261,12 @@ namespace FlaxEditor.Windows
         {
             switch ((SortType)button.Tag)
             {
-                case SortType.AlphabeticOrder: _sortType = SortType.AlphabeticOrder;
-                    break;
-                case SortType.AlphabeticReverse: _sortType = SortType.AlphabeticReverse;
-                    break;
+            case SortType.AlphabeticOrder:
+                _sortType = SortType.AlphabeticOrder;
+                break;
+            case SortType.AlphabeticReverse:
+                _sortType = SortType.AlphabeticReverse;
+                break;
             }
             RefreshView(SelectedNode);
         }
@@ -415,19 +418,18 @@ namespace FlaxEditor.Windows
             // Refresh database and view now
             Editor.ContentDatabase.RefreshFolder(itemFolder, true);
             RefreshView();
-
-            if (endEvent != null)
+            var newItem = itemFolder.FindChild(newPath);
+            if (newItem == null)
             {
-                var newItem = itemFolder.FindChild(newPath);
-                if (newItem != null)
-                {
-                    endEvent(newItem);
-                }
-                else
-                {
-                    Editor.LogWarning("Failed to find the created new item.");
-                }
+                Editor.LogWarning("Failed to find the created new item.");
+                return;
             }
+
+            // Auto-select item
+            Select(newItem, true);
+
+            // Custom post-action
+            endEvent?.Invoke(newItem);
         }
 
 
@@ -446,14 +448,15 @@ namespace FlaxEditor.Windows
         /// <param name="items">The items to delete.</param>
         public void Delete(List<ContentItem> items)
         {
-            if (items.Count == 0) return;
+            if (items.Count == 0)
+                return;
 
             // TODO: remove items that depend on different items in the list: use wants to remove `folderA` and `folderA/asset.x`, we should just remove `folderA`
             var toDelete = new List<ContentItem>(items);
 
-            string msg = toDelete.Count == 1 ? 
-                  string.Format("Are you sure to delete \'{0}\'?\nThis action cannot be undone. Files will be deleted permanently.", items[0].Path)
-                : string.Format("Are you sure to delete {0} selected items?\nThis action cannot be undone. Files will be deleted permanently.", items.Count);
+            string msg = toDelete.Count == 1
+                         ? string.Format("Are you sure to delete \'{0}\'?\nThis action cannot be undone. Files will be deleted permanently.", items[0].Path)
+                         : string.Format("Are you sure to delete {0} selected items?\nThis action cannot be undone. Files will be deleted permanently.", items.Count);
 
             // Ask user
             if (MessageBox.Show(msg, "Delete asset(s)", MessageBoxButtons.OKCancel, MessageBoxIcon.Question) != DialogResult.OK)
@@ -594,24 +597,28 @@ namespace FlaxEditor.Windows
         /// <param name="proxy">The new item proxy.</param>
         /// <param name="argument">The argument passed to the proxy for the item creation. In most cases it is null.</param>
         /// <param name="created">The event called when the item is crated by the user. The argument is the new item.</param>
-        public void NewItem(ContentProxy proxy, object argument = null, Action<ContentItem> created = null)
+        /// <param name="initialName">The initial item name.</param>
+        public void NewItem(ContentProxy proxy, object argument = null, Action<ContentItem> created = null, string initialName = null)
         {
             Assert.IsNull(_newElement);
             if (proxy == null)
                 throw new ArgumentNullException(nameof(proxy));
 
-            string name = proxy.NewItemName;
+            string name = initialName ?? proxy.NewItemName;
             ContentFolder parentFolder = CurrentViewFolder;
             string parentFolderPath = parentFolder.Path;
 
             // Create asset name
-            string path;
             string extension = '.' + proxy.FileExtension;
-            int i = 0;
-            do
+            string path = StringUtils.CombinePaths(parentFolderPath, name + extension);
+            if (parentFolder.FindChild(path) != null)
             {
-                path = StringUtils.CombinePaths(parentFolderPath, string.Format("{0} {1}", name, i++) + extension);
-            } while (parentFolder.FindChild(path) != null);
+                int i = 0;
+                do
+                {
+                    path = StringUtils.CombinePaths(parentFolderPath, string.Format("{0} {1}", name, i++) + extension);
+                } while (parentFolder.FindChild(path) != null);
+            }
 
             // Create new asset proxy, add to view and rename it
             _newElement = new NewItem(path, proxy, argument)
@@ -767,12 +774,6 @@ namespace FlaxEditor.Windows
             _navigateUpButton.Enabled = folder != null && _tree.SelectedNode != _root;
         }
 
-        private void AddFolder2Root(ContentTreeNode node)
-        {
-            // Add to the root
-            _root.AddChild(node);
-        }
-
         private void RemoveFolder2Root(ContentTreeNode node)
         {
             // Remove from the root
@@ -790,7 +791,7 @@ namespace FlaxEditor.Windows
             _root.Expand(true);
 
             foreach (var project in Editor.ContentDatabase.Projects)
-                AddFolder2Root(project);
+                _root.AddChild(project);
 
             Editor.ContentDatabase.Game?.Expand(true);
             _tree.Margin = new Margin(0.0f, 0.0f, -16.0f, 2.0f); // Hide root node
@@ -842,13 +843,13 @@ namespace FlaxEditor.Windows
             {
                 while (_root.HasChildren)
                 {
-                    RemoveFolder2Root((ContentTreeNode)_root.GetChild(0));
+                    _root.RemoveChild((ContentTreeNode)_root.GetChild(0));
                 }
             }
         }
 
         /// <inheritdoc />
-        public override bool OnMouseUp(Vector2 location, MouseButton button)
+        public override bool OnMouseUp(Float2 location, MouseButton button)
         {
             // Check if it's a right mouse button
             if (button == MouseButton.Right)

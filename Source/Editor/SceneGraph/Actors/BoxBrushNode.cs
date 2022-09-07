@@ -1,5 +1,11 @@
 // Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
+#if USE_LARGE_WORLDS
+using Real = System.Double;
+#else
+using Real = System.Single;
+#endif
+
 using System;
 using FlaxEngine;
 
@@ -41,7 +47,7 @@ namespace FlaxEditor.SceneGraph.Actors
 
                 [EditorOrder(30), EditorDisplay("Brush", "UV Scale"), Limit(-1000, 1000, 0.01f)]
                 [Tooltip("The surface texture coordinates scale.")]
-                public Vector2 TexCoordScale
+                public Float2 TexCoordScale
                 {
                     get => Brush.Surfaces[Index].TexCoordScale;
                     set
@@ -54,7 +60,7 @@ namespace FlaxEditor.SceneGraph.Actors
 
                 [EditorOrder(40), EditorDisplay("Brush", "UV Offset"), Limit(-1000, 1000, 0.01f)]
                 [Tooltip("The surface texture coordinates offset.")]
-                public Vector2 TexCoordOffset
+                public Float2 TexCoordOffset
                 {
                     get => Brush.Surfaces[Index].TexCoordOffset;
                     set
@@ -176,7 +182,7 @@ namespace FlaxEditor.SceneGraph.Actors
             };
 
             /// <inheritdoc />
-            public override bool RayCastSelf(ref RayCastData ray, out float distance, out Vector3 normal)
+            public override bool RayCastSelf(ref RayCastData ray, out Real distance, out Vector3 normal)
             {
                 return Brush.Intersects(Index, ref ray.Ray, out distance, out normal);
             }
@@ -203,7 +209,7 @@ namespace FlaxEditor.SceneGraph.Actors
         }
 
         /// <inheritdoc />
-        public override bool RayCastSelf(ref RayCastData ray, out float distance, out Vector3 normal)
+        public override bool RayCastSelf(ref RayCastData ray, out Real distance, out Vector3 normal)
         {
             if (((BoxBrush)_actor).OrientedBox.Intersects(ref ray.Ray))
             {

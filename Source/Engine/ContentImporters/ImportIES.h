@@ -13,14 +13,12 @@
 class ImportIES
 {
 private:
-
     float _brightness = 0;
     Array<float> _hAngles;
     Array<float> _vAngles;
     Array<float> _candalaValues;
 
 public:
-
     /// <summary>
     /// Loads the IES file.
     /// </summary>
@@ -36,7 +34,6 @@ public:
     float ExtractInR16(Array<byte>& output);
 
 public:
-
     uint32 GetWidth() const
     {
         return 256;
@@ -53,7 +50,6 @@ public:
     }
 
 private:
-
     float InterpolatePoint(int32 x, int32 y) const;
     float InterpolateBilinear(float x, float y) const;
     static float ComputeFilterPos(float value, const Array<float>& sortedValues);

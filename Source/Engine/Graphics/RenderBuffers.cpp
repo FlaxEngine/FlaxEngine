@@ -25,6 +25,11 @@ RenderBuffers::RenderBuffers(const SpawnParams& params)
 #undef CREATE_TEXTURE
 }
 
+String RenderBuffers::CustomBuffer::ToString() const
+{
+    return Name;
+}
+
 RenderBuffers::~RenderBuffers()
 {
     Release();
@@ -61,6 +66,15 @@ void RenderBuffers::Prepare()
     UPDATE_LAZY_KEEP_RT(HalfResDepth);
     UPDATE_LAZY_KEEP_RT(LuminanceMap);
 #undef UPDATE_LAZY_KEEP_RT
+    for (int32 i = CustomBuffers.Count() - 1; i >= 0; i--)
+    {
+        CustomBuffer* e = CustomBuffers[i];
+        if (frameIndex - e->LastFrameUsed >= LAZY_FRAMES_COUNT)
+        {
+            Delete(e);
+            CustomBuffers.RemoveAt(i);
+        }
+    }
 }
 
 GPUTexture* RenderBuffers::RequestHalfResDepth(GPUContext* context)
@@ -95,6 +109,43 @@ GPUTexture* RenderBuffers::RequestHalfResDepth(GPUContext* context)
     MultiScaler::Instance()->DownscaleDepth(context, halfDepthWidth, halfDepthHeight, DepthBuffer, HalfResDepth->View());
 
     return HalfResDepth;
+}
+
+PixelFormat RenderBuffers::GetOutputFormat() const
+{
+    return _useAlpha ? PixelFormat::R16G16B16A16_Float : PixelFormat::R11G11B10_Float;
+}
+
+bool RenderBuffers::GetUseAlpha() const
+{
+    return _useAlpha;
+}
+
+void RenderBuffers::SetUseAlpha(bool value)
+{
+    if (_useAlpha != value)
+    {
+        _useAlpha = value;
+
+        // Reallocate buffers
+        if (_width != 0)
+        {
+            auto desc = GPUTextureDescription::New2D(_width, _height, GetOutputFormat(), GPUTextureFlags::ShaderResource | GPUTextureFlags::RenderTarget);
+            desc.DefaultClearColor = Color::Transparent;
+            RT1_FloatRGB->Init(desc);
+            RT2_FloatRGB->Init(desc);
+        }
+    }
+}
+
+const RenderBuffers::CustomBuffer* RenderBuffers::FindCustomBuffer(const StringView& name) const
+{
+    for (const CustomBuffer* e : CustomBuffers)
+    {
+        if (e->Name == name)
+            return e;
+    }
+    return nullptr;
 }
 
 uint64 RenderBuffers::GetMemoryUsage() const
@@ -145,7 +196,7 @@ bool RenderBuffers::Init(int32 width, int32 height)
     result |= GBuffer3->Init(desc);
 
     // Helper HDR buffers
-    desc.Format = PixelFormat::R11G11B10_Float;
+    desc.Format = GetOutputFormat();
     desc.DefaultClearColor = Color::Transparent;
     result |= RT1_FloatRGB->Init(desc);
     result |= RT2_FloatRGB->Init(desc);
@@ -184,4 +235,5 @@ void RenderBuffers::Release()
     UPDATE_LAZY_KEEP_RT(HalfResDepth);
     UPDATE_LAZY_KEEP_RT(LuminanceMap);
 #undef UPDATE_LAZY_KEEP_RT
+    CustomBuffers.ClearDelete();
 }

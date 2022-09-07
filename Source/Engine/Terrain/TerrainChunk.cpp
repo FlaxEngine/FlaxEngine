@@ -21,7 +21,7 @@ void TerrainChunk::Init(TerrainPatch* patch, uint16 x, uint16 z)
     _z = z;
     _yOffset = 0;
     _yHeight = 1;
-    _heightmapUVScaleBias = Vector4(1.0f, 1.0f, _x, _z) * (1.0f / TerrainPatch::CHUNKS_COUNT_EDGE);
+    _heightmapUVScaleBias = Float4(1.0f, 1.0f, _x, _z) * (1.0f / TerrainPatch::CHUNKS_COUNT_EDGE);
     _perInstanceRandom = (_patch->_terrain->_id.C ^ _x ^ _z) * (1.0f / (float)MAX_uint32);
     OverrideMaterial = nullptr;
 }
@@ -45,7 +45,7 @@ bool TerrainChunk::PrepareDraw(const RenderContext& renderContext)
 
         // Calculate chunk distance to view
         const auto lodView = (renderContext.LodProxyView ? renderContext.LodProxyView : &renderContext.View);
-        const float distance = Vector3::Distance(_boundsCenter, lodView->Position);
+        const float distance = Float3::Distance(_boundsCenter - lodView->Origin, lodView->Position);
         lod = (int32)Math::Pow(distance / chunkEdgeSize, lodDistribution);
         lod += lodBias;
 
@@ -86,7 +86,7 @@ void TerrainChunk::Draw(const RenderContext& renderContext) const
         return;
     drawCall.InstanceCount = 1;
     drawCall.Material = _cachedDrawMaterial;
-    drawCall.World = _world;
+    renderContext.View.GetWorldMatrix(_transform, drawCall.World);
     drawCall.ObjectPosition = drawCall.World.GetTranslation();
     drawCall.Terrain.Patch = _patch;
     drawCall.Terrain.HeightmapUVScaleBias = _heightmapUVScaleBias;
@@ -121,7 +121,8 @@ void TerrainChunk::Draw(const RenderContext& renderContext) const
     //drawCall.TerrainData.HeightmapUVScaleBias.W += halfTexelOffset;
 
     // Submit draw call
-    renderContext.List->AddDrawCall(_patch->_terrain->DrawModes, flags, drawCall, true);
+    auto drawModes = (DrawPass)(_patch->_terrain->DrawModes & renderContext.View.Pass);
+    renderContext.List->AddDrawCall(drawModes, flags, drawCall, true);
 }
 
 void TerrainChunk::Draw(const RenderContext& renderContext, MaterialBase* material, int32 lodIndex) const
@@ -141,7 +142,7 @@ void TerrainChunk::Draw(const RenderContext& renderContext, MaterialBase* materi
         return;
     drawCall.InstanceCount = 1;
     drawCall.Material = material;
-    drawCall.World = _world;
+    renderContext.View.GetWorldMatrix(_transform, drawCall.World);
     drawCall.ObjectPosition = drawCall.World.GetTranslation();
     drawCall.Terrain.Patch = _patch;
     drawCall.Terrain.HeightmapUVScaleBias = _heightmapUVScaleBias;
@@ -175,10 +176,11 @@ void TerrainChunk::Draw(const RenderContext& renderContext, MaterialBase* materi
     //drawCall.TerrainData.HeightmapUVScaleBias.W += halfTexelOffset;
 
     // Submit draw call
-    renderContext.List->AddDrawCall(_patch->_terrain->DrawModes, flags, drawCall, true);
+    auto drawModes = (DrawPass)(_patch->_terrain->DrawModes & renderContext.View.Pass);
+    renderContext.List->AddDrawCall(drawModes, flags, drawCall, true);
 }
 
-bool TerrainChunk::Intersects(const Ray& ray, float& distance)
+bool TerrainChunk::Intersects(const Ray& ray, Real& distance)
 {
     return _bounds.Intersects(ray, distance);
 }
@@ -187,7 +189,7 @@ void TerrainChunk::UpdateBounds()
 {
     const Vector3 boundsExtent = _patch->_terrain->_boundsExtent;
     const float size = (float)_patch->_terrain->_chunkSize * TERRAIN_UNITS_PER_VERTEX;
-    Transform terrainTransform = _patch->_terrain->_transform;
+    const Transform terrainTransform = _patch->_terrain->_transform;
 
     Transform localTransform;
     localTransform.Translation = _patch->_offset + Vector3(_x * size, _yOffset, _z * size);
@@ -195,11 +197,8 @@ void TerrainChunk::UpdateBounds()
     localTransform.Scale = Vector3(size, _yHeight, size);
     localTransform = terrainTransform.LocalToWorld(localTransform);
 
-    Matrix world;
-    localTransform.GetWorld(world);
-
     OrientedBoundingBox obb(Vector3::Zero, Vector3::One);
-    obb.Transform(world);
+    obb.Transform(localTransform);
     obb.GetBoundingBox(_bounds);
     _boundsCenter = _bounds.GetCenter();
 
@@ -215,8 +214,7 @@ void TerrainChunk::UpdateTransform()
     localTransform.Translation = _patch->_offset + Vector3(_x * size, _patch->_yOffset, _z * size);
     localTransform.Orientation = Quaternion::Identity;
     localTransform.Scale = Vector3(1.0f, _patch->_yHeight, 1.0f);
-    localTransform = terrainTransform.LocalToWorld(localTransform);
-    localTransform.GetWorld(_world);
+    _transform = terrainTransform.LocalToWorld(localTransform);
 }
 
 void TerrainChunk::CacheNeighbors()

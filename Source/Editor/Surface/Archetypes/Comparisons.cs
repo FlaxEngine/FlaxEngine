@@ -23,7 +23,7 @@ namespace FlaxEditor.Surface.Archetypes
                 Description = desc,
                 Flags = NodeFlags.AllGraphs,
                 ConnectionsHints = ConnectionsHint.Value,
-                Size = new Vector2(100, 40),
+                Size = new Float2(100, 40),
                 IndependentBoxes = new[]
                 {
                     0,
@@ -183,7 +183,7 @@ namespace FlaxEditor.Surface.Archetypes
                 AlternativeTitles = new[] { "if", "switch" },
                 Description = "Returns one of the input values based on the condition value",
                 Flags = NodeFlags.AllGraphs,
-                Size = new Vector2(160, 60),
+                Size = new Float2(160, 60),
                 ConnectionsHints = ConnectionsHint.Value,
                 IndependentBoxes = new[]
                 {
@@ -214,7 +214,7 @@ namespace FlaxEditor.Surface.Archetypes
                 Create = (id, context, arch, groupArch) => new SwitchOnEnumNode(id, context, arch, groupArch),
                 Description = "Returns one of the input values based on the enum value",
                 Flags = NodeFlags.VisualScriptGraph | NodeFlags.AnimGraph,
-                Size = new Vector2(160, 60),
+                Size = new Float2(160, 60),
                 DefaultValues = new object[] { Utils.GetEmptyArray<byte>() },
                 ConnectionsHints = ConnectionsHint.Enum,
                 Elements = new[]

@@ -13,30 +13,31 @@ class StreamModelLODTask;
 /// </summary>
 API_CLASS(NoSpawn) class FLAXENGINE_API Model : public ModelBase
 {
-DECLARE_BINARY_ASSET_HEADER(Model, 25);
+    DECLARE_BINARY_ASSET_HEADER(Model, 25);
     friend Mesh;
     friend StreamModelLODTask;
 private:
-
     int32 _loadedLODs = 0;
     StreamModelLODTask* _streamingTask = nullptr;
 
 public:
-
     /// <summary>
     /// Model level of details. The first entry is the highest quality LOD0 followed by more optimized versions.
     /// </summary>
     API_FIELD(ReadOnly) Array<ModelLOD, FixedAllocation<MODEL_MAX_LODS>> LODs;
 
-public:
+    /// <summary>
+    /// The generated Sign Distant Field (SDF) for this model (merged all meshes). Use GenerateSDF to update it.
+    /// </summary>
+    API_FIELD(ReadOnly) SDFData SDF;
 
+public:
     /// <summary>
     /// Finalizes an instance of the <see cref="Model"/> class.
     /// </summary>
     ~Model();
 
 public:
-
     /// <summary>
     /// Gets a value indicating whether this instance is initialized. 
     /// </summary>
@@ -98,7 +99,6 @@ public:
     }
 
 public:
-
     /// <summary>
     /// Requests the LOD data asynchronously (creates task that will gather chunk data or null if already here).
     /// </summary>
@@ -122,7 +122,6 @@ public:
     }
 
 public:
-
     /// <summary>
     /// Determines if there is an intersection between the Model and a Ray in given world using given instance.
     /// </summary>
@@ -133,7 +132,19 @@ public:
     /// <param name="mesh">Mesh, or null</param>
     /// <param name="lodIndex">Level Of Detail index</param>
     /// <returns>True whether the two objects intersected</returns>
-    bool Intersects(const Ray& ray, const Matrix& world, float& distance, Vector3& normal, Mesh** mesh, int32 lodIndex = 0);
+    bool Intersects(const Ray& ray, const Matrix& world, Real& distance, Vector3& normal, Mesh** mesh, int32 lodIndex = 0);
+
+    /// <summary>
+    /// Determines if there is an intersection between the Model and a Ray in given world using given instance.
+    /// </summary>
+    /// <param name="ray">The ray to test</param>
+    /// <param name="transform">The instance transformation.</param>
+    /// <param name="distance">When the method completes, contains the distance of the intersection (if any valid).</param>
+    /// <param name="normal">When the method completes, contains the intersection surface normal vector (if any valid).</param>
+    /// <param name="mesh">Mesh, or null</param>
+    /// <param name="lodIndex">Level Of Detail index</param>
+    /// <returns>True whether the two objects intersected</returns>
+    bool Intersects(const Ray& ray, const Transform& transform, Real& distance, Vector3& normal, Mesh** mesh, int32 lodIndex = 0);
 
     /// <summary>
     /// Gets the model bounding box in custom matrix world space.
@@ -144,6 +155,17 @@ public:
     API_FUNCTION() BoundingBox GetBox(const Matrix& world, int32 lodIndex = 0) const;
 
     /// <summary>
+    /// Gets the model bounding box in custom transformation.
+    /// </summary>
+    /// <param name="transform">The instance transformation.</param>
+    /// <param name="lodIndex">The Level Of Detail index.</param>
+    /// <returns>The bounding box.</returns>
+    API_FUNCTION() BoundingBox GetBox(const Transform& transform, int32 lodIndex = 0) const
+    {
+        return LODs[lodIndex].GetBox(transform);
+    }
+
+    /// <summary>
     /// Gets the model bounding box in local space.
     /// </summary>
     /// <param name="lodIndex">The Level Of Detail index.</param>
@@ -151,7 +173,6 @@ public:
     API_FUNCTION() BoundingBox GetBox(int32 lodIndex = 0) const;
 
 public:
-
     /// <summary>
     /// Draws the meshes. Binds vertex and index buffers and invokes the draw calls.
     /// </summary>
@@ -180,7 +201,6 @@ public:
     void Draw(const RenderContext& renderContext, const Mesh::DrawInfo& info);
 
 public:
-
     /// <summary>
     /// Setups the model LODs collection including meshes creation.
     /// </summary>
@@ -201,8 +221,23 @@ public:
 
 #endif
 
-private:
+    /// <summary>
+    /// Generates the Sign Distant Field for this model.
+    /// </summary>
+    /// <remarks>Can be called in async in case of SDF generation on a CPU (assuming model is not during rendering).</remarks>
+    /// <param name="resolutionScale">The SDF texture resolution scale. Use higher values for more precise data but with significant performance and memory overhead.</param>
+    /// <param name="lodIndex">The index of the LOD to use for the SDF building.</param>
+    /// <param name="cacheData">If true, the generated SDF texture data will be cached on CPU (in asset chunk storage) to allow saving it later, otherwise it will be runtime for GPU-only. Ignored for virtual assets or in build.</param>
+    /// <param name="backfacesThreshold">Custom threshold (in range 0-1) for adjusting mesh internals detection based on the percentage of test rays hit triangle backfaces. Use lower value for more dense mesh.</param>
+    /// <returns>True if failed, otherwise false.</returns>
+    API_FUNCTION() bool GenerateSDF(float resolutionScale = 1.0f, int32 lodIndex = 6, bool cacheData = true, float backfacesThreshold = 0.6f);
 
+    /// <summary>
+    /// Sets set SDF data (releases the current one).
+    /// </summary>
+    API_FUNCTION() void SetSDF(const SDFData& sdf);
+
+private:
     /// <summary>
     /// Initializes this model to an empty collection of LODs with meshes.
     /// </summary>
@@ -211,12 +246,12 @@ private:
     bool Init(const Span<int32>& meshesCountPerLod);
 
 public:
-
     // [ModelBase]
     void SetupMaterialSlots(int32 slotsCount) override;
     int32 GetLODsCount() const override;
     void GetMeshes(Array<MeshBase*>& meshes, int32 lodIndex = 0) override;
     void InitAsVirtual() override;
+    void CancelStreaming() override;
 #if USE_EDITOR
     void GetReferences(Array<Guid>& output) const override;
 #endif
@@ -228,9 +263,9 @@ public:
     bool CanBeUpdated() const override;
     Task* UpdateAllocation(int32 residency) override;
     Task* CreateStreamingTask(int32 residency) override;
+    void CancelStreamingTasks() override;
 
 protected:
-
     // [ModelBase]
     LoadResult load() override;
     void unload(bool isReloading) override;

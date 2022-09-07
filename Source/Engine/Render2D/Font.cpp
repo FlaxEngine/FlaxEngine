@@ -113,8 +113,8 @@ void Font::ProcessText(const StringView& text, Array<FontLineCache>& outputLines
     float scale = layout.Scale / FontManager::FontScale;
     float boundsWidth = layout.Bounds.GetWidth();
     float baseLinesDistance = static_cast<float>(_height) * layout.BaseLinesGapScale * scale;
-    tmpLine.Location = Vector2::Zero;
-    tmpLine.Size = Vector2::Zero;
+    tmpLine.Location = Float2::Zero;
+    tmpLine.Size = Float2::Zero;
     tmpLine.FirstCharIndex = 0;
     tmpLine.LastCharIndex = -1;
 
@@ -231,7 +231,7 @@ void Font::ProcessText(const StringView& text, Array<FontLineCache>& outputLines
         lastMoveLine = moveLine;
     }
 
-    if (tmpLine.LastCharIndex >= tmpLine.FirstCharIndex || text[textLength - 1] == '\n')
+    if (textLength != 0 && (tmpLine.LastCharIndex >= tmpLine.FirstCharIndex || text[textLength - 1] == '\n'))
     {
         // Add line
         tmpLine.Size.X = cursorX;
@@ -248,7 +248,7 @@ void Font::ProcessText(const StringView& text, Array<FontLineCache>& outputLines
 
     float totalHeight = tmpLine.Location.Y;
 
-    Vector2 offset = Vector2::Zero;
+    Float2 offset = Float2::Zero;
     if (layout.VerticalAlignment == TextAlignment::Center)
     {
         offset.Y += (layout.Bounds.GetHeight() - totalHeight) * 0.5f;
@@ -260,7 +260,7 @@ void Font::ProcessText(const StringView& text, Array<FontLineCache>& outputLines
     for (int32 i = 0; i < outputLines.Count(); i++)
     {
         FontLineCache& line = outputLines[i];
-        Vector2 rootPos = line.Location + offset;
+        Float2 rootPos = line.Location + offset;
 
         // Fix upper left line corner to match desire text alignment
         if (layout.HorizontalAlignment == TextAlignment::Center)
@@ -276,28 +276,28 @@ void Font::ProcessText(const StringView& text, Array<FontLineCache>& outputLines
     }
 }
 
-Vector2 Font::MeasureText(const StringView& text, const TextLayoutOptions& layout)
+Float2 Font::MeasureText(const StringView& text, const TextLayoutOptions& layout)
 {
     // Check if there is no need to do anything
     if (text.IsEmpty())
-        return Vector2::Zero;
+        return Float2::Zero;
 
     // Process text
     Array<FontLineCache> lines;
     ProcessText(text, lines, layout);
 
     // Calculate bounds
-    Vector2 max = Vector2::Zero;
+    Float2 max = Float2::Zero;
     for (int32 i = 0; i < lines.Count(); i++)
     {
         const FontLineCache& line = lines[i];
-        max = Vector2::Max(max, line.Location + line.Size);
+        max = Float2::Max(max, line.Location + line.Size);
     }
 
     return max;
 }
 
-int32 Font::HitTestText(const StringView& text, const Vector2& location, const TextLayoutOptions& layout)
+int32 Font::HitTestText(const StringView& text, const Float2& location, const TextLayoutOptions& layout)
 {
     // Check if there is no need to do anything
     if (text.Length() <= 0)
@@ -311,8 +311,8 @@ int32 Font::HitTestText(const StringView& text, const Vector2& location, const T
     float baseLinesDistance = static_cast<float>(_height) * layout.BaseLinesGapScale * scale;
 
     // Offset position to match lines origin space
-    Vector2 rootOffset = layout.Bounds.Location + lines.First().Location;
-    Vector2 testPoint = location - rootOffset;
+    Float2 rootOffset = layout.Bounds.Location + lines.First().Location;
+    Float2 testPoint = location - rootOffset;
 
     // Get line which may intersect with the position (it's possible because lines have fixed height)
     int32 lineIndex = Math::Clamp(Math::FloorToInt(testPoint.Y / baseLinesDistance), 0, lines.Count() - 1);
@@ -371,7 +371,7 @@ int32 Font::HitTestText(const StringView& text, const Vector2& location, const T
     return smallestIndex;
 }
 
-Vector2 Font::GetCharPosition(const StringView& text, int32 index, const TextLayoutOptions& layout)
+Float2 Font::GetCharPosition(const StringView& text, int32 index, const TextLayoutOptions& layout)
 {
     // Check if there is no need to do anything
     if (text.IsEmpty())
@@ -383,7 +383,7 @@ Vector2 Font::GetCharPosition(const StringView& text, int32 index, const TextLay
     ASSERT(lines.HasItems());
     float scale = layout.Scale / FontManager::FontScale;
     float baseLinesDistance = static_cast<float>(_height) * layout.BaseLinesGapScale * scale;
-    Vector2 rootOffset = layout.Bounds.Location + lines.First().Location;
+    Float2 rootOffset = layout.Bounds.Location + lines.First().Location;
 
     // Find line with that position
     FontCharacterEntry previous;
@@ -417,12 +417,12 @@ Vector2 Font::GetCharPosition(const StringView& text, int32 index, const TextLay
             }
 
             // Upper left corner of the character
-            return rootOffset + Vector2(x, static_cast<float>(lineIndex * baseLinesDistance));
+            return rootOffset + Float2(x, static_cast<float>(lineIndex * baseLinesDistance));
         }
     }
 
     // Position after last character in the last line
-    return rootOffset + Vector2(lines.Last().Size.X, static_cast<float>((lines.Count() - 1) * baseLinesDistance));
+    return rootOffset + Float2(lines.Last().Size.X, static_cast<float>((lines.Count() - 1) * baseLinesDistance));
 }
 
 void Font::FlushFaceSize() const

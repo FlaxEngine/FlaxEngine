@@ -1,5 +1,6 @@
 // Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
+using System;
 using System.Collections.Generic;
 
 namespace FlaxEngine.GUI
@@ -13,7 +14,7 @@ namespace FlaxEngine.GUI
         /// The delegate for text blocks processing.
         /// </summary>
         /// <param name="text">The text.</param>
-        /// <param name="textBlocks">The output text blocks. Given list is not-nul and cleared before.</param>
+        /// <param name="textBlocks">The output text blocks. Given list is not-null and cleared before.</param>
         public delegate void ParseTextBlocksDelegate(string text, List<TextBlock> textBlocks);
 
         /// <summary>
@@ -61,7 +62,7 @@ namespace FlaxEngine.GUI
         /// <summary>
         /// Updates the text blocks.
         /// </summary>
-        protected virtual void UpdateTextBlocks()
+        public virtual void UpdateTextBlocks()
         {
             Profiler.BeginEvent("RichTextBoxBase.UpdateTextBlocks");
 
@@ -91,21 +92,21 @@ namespace FlaxEngine.GUI
         }
 
         /// <inheritdoc />
-        public override Vector2 GetTextSize()
+        public override Float2 GetTextSize()
         {
             var count = _textBlocks.Count;
             var textBlocks = Utils.ExtractArrayFromList(_textBlocks);
-            var max = Vector2.Zero;
+            var max = Float2.Zero;
             for (int i = 0; i < count; i++)
             {
                 ref TextBlock textBlock = ref textBlocks[i];
-                max = Vector2.Max(max, textBlock.Bounds.BottomRight);
+                max = Float2.Max(max, textBlock.Bounds.BottomRight);
             }
             return max;
         }
 
         /// <inheritdoc />
-        public override Vector2 GetCharPosition(int index, out float height)
+        public override Float2 GetCharPosition(int index, out float height)
         {
             var count = _textBlocks.Count;
             var textBlocks = Utils.ExtractArrayFromList(_textBlocks);
@@ -114,7 +115,7 @@ namespace FlaxEngine.GUI
             if (count == 0)
             {
                 height = 0;
-                return Vector2.Zero;
+                return Float2.Zero;
             }
 
             // Check if get first character position
@@ -172,13 +173,13 @@ namespace FlaxEngine.GUI
             }
 
             height = 0;
-            return Vector2.Zero;
+            return Float2.Zero;
         }
 
         /// <inheritdoc />
-        public override int HitTestText(Vector2 location)
+        public override int HitTestText(Float2 location)
         {
-            location = Vector2.Clamp(location, Vector2.Zero, _textSize);
+            location = Float2.Clamp(location, Float2.Zero, _textSize);
 
             var textBlocks = Utils.ExtractArrayFromList(_textBlocks);
             var count = _textBlocks.Count;
@@ -202,16 +203,16 @@ namespace FlaxEngine.GUI
         }
 
         /// <inheritdoc />
-        public override bool OnMouseDoubleClick(Vector2 location, MouseButton button)
+        public override bool OnMouseDoubleClick(Float2 location, MouseButton button)
         {
             // Select the word under the mouse
             int textLength = TextLength;
-            if (textLength != 0)
+            if (textLength != 0 && IsSelectable)
             {
                 var hitPos = CharIndexAtPoint(ref location);
                 int spaceLoc = _text.LastIndexOfAny(Separators, hitPos - 2);
                 var left = spaceLoc == -1 ? 0 : spaceLoc + 1;
-                spaceLoc = _text.IndexOfAny(Separators, hitPos + 1);
+                spaceLoc = _text.IndexOfAny(Separators, Math.Min(hitPos + 1, _text.Length));
                 var right = spaceLoc == -1 ? textLength : spaceLoc;
                 SetSelection(left, right);
             }
@@ -223,7 +224,7 @@ namespace FlaxEngine.GUI
         public override void DrawSelf()
         {
             // Cache data
-            var rect = new Rectangle(Vector2.Zero, Size);
+            var rect = new Rectangle(Float2.Zero, Size);
             bool enabled = EnabledInHierarchy;
 
             // Background
@@ -234,7 +235,8 @@ namespace FlaxEngine.GUI
             Render2D.DrawRectangle(rect, IsFocused ? BorderSelectedColor : BorderColor);
 
             // Apply view offset and clip mask
-            Render2D.PushClip(TextClipRectangle);
+            if (ClipText)
+                Render2D.PushClip(TextClipRectangle);
             bool useViewOffset = !_viewOffset.IsZero;
             if (useViewOffset)
                 Render2D.PushTransform(Matrix3x3.Translation2D(-_viewOffset));
@@ -266,10 +268,16 @@ namespace FlaxEngine.GUI
                 }
             }
 
-            // Draw selection background
+            // Draw background
             for (int i = firstTextBlock; i < endTextBlock; i++)
             {
                 ref TextBlock textBlock = ref textBlocks[i];
+
+                // Background
+                if (textBlock.Style.BackgroundBrush != null)
+                {
+                    textBlock.Style.BackgroundBrush.Draw(textBlock.Bounds, textBlock.Style.Color);
+                }
 
                 // Pick font
                 var font = textBlock.Style.Font.GetFont();
@@ -279,8 +287,8 @@ namespace FlaxEngine.GUI
                 // Selection
                 if (hasSelection && textBlock.Style.BackgroundSelectedBrush != null && textBlock.Range.Intersect(ref selection))
                 {
-                    Vector2 leftEdge = selection.StartIndex <= textBlock.Range.StartIndex ? textBlock.Bounds.UpperLeft : font.GetCharPosition(_text, selection.StartIndex);
-                    Vector2 rightEdge = selection.EndIndex >= textBlock.Range.EndIndex ? textBlock.Bounds.UpperRight : font.GetCharPosition(_text, selection.EndIndex);
+                    var leftEdge = selection.StartIndex <= textBlock.Range.StartIndex ? textBlock.Bounds.UpperLeft : font.GetCharPosition(_text, selection.StartIndex);
+                    var rightEdge = selection.EndIndex >= textBlock.Range.EndIndex ? textBlock.Bounds.UpperRight : font.GetCharPosition(_text, selection.EndIndex);
                     float height = font.Height / DpiScale;
                     float alpha = Mathf.Min(1.0f, Mathf.Cos(_animateTime * BackgroundSelectedFlashSpeed) * 0.5f + 1.3f);
                     alpha *= alpha;
@@ -348,7 +356,8 @@ namespace FlaxEngine.GUI
             // Restore rendering state
             if (useViewOffset)
                 Render2D.PopTransform();
-            Render2D.PopClip();
+            if (ClipText)
+                Render2D.PopClip();
         }
 
         /// <inheritdoc />

@@ -1,6 +1,13 @@
 // Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
+#if USE_LARGE_WORLDS
+using Real = System.Double;
+#else
+using Real = System.Single;
+#endif
+
 using System;
+using System.Reflection;
 using FlaxEditor.CustomEditors.Editors;
 using FlaxEditor.GUI;
 using FlaxEditor.Scripting;
@@ -131,7 +138,7 @@ namespace FlaxEditor.Surface.Archetypes
                     Array.Copy(prev, next, Mathf.Min(prev.Length, next.Length));
                 SetValue(0, next);
             }
-            
+
             public override void OnSurfaceCanEditChanged(bool canEdit)
             {
                 base.OnSurfaceCanEditChanged(canEdit);
@@ -140,7 +147,7 @@ namespace FlaxEditor.Surface.Archetypes
                 _addButton.Enabled = canEdit;
                 _removeButton.Enabled = canEdit;
             }
-            
+
             public override void OnDestroy()
             {
                 _output = null;
@@ -178,7 +185,7 @@ namespace FlaxEditor.Surface.Archetypes
                         break;
                     RemoveElement(box);
                 }
-                
+
                 var canEdit = Surface.CanEdit;
                 _typePicker.Enabled = canEdit;
                 _addButton.Enabled = count < countMax && canEdit;
@@ -211,6 +218,134 @@ namespace FlaxEditor.Surface.Archetypes
             }
         }
 
+        private class DictionaryNode : SurfaceNode
+        {
+            private OutputBox _output;
+            private TypePickerControl _keyTypePicker;
+            private TypePickerControl _valueTypePicker;
+            private bool _isUpdatingUI;
+
+            public DictionaryNode(uint id, VisjectSurfaceContext context, NodeArchetype nodeArch, GroupArchetype groupArch)
+            : base(id, context, nodeArch, groupArch)
+            {
+            }
+
+            public override void OnValuesChanged()
+            {
+                UpdateUI();
+
+                base.OnValuesChanged();
+            }
+
+            public override void OnLoaded()
+            {
+                base.OnLoaded();
+
+                _output = (OutputBox)Elements[0];
+                _keyTypePicker = new TypePickerControl
+                {
+                    Bounds = new Rectangle(FlaxEditor.Surface.Constants.NodeMarginX, FlaxEditor.Surface.Constants.NodeMarginY + FlaxEditor.Surface.Constants.NodeHeaderSize, 160, 16),
+                    Parent = this,
+                };
+                _keyTypePicker.ValueChanged += OnKeyTypeChanged;
+                _valueTypePicker = new TypePickerControl
+                {
+                    Bounds = new Rectangle(_keyTypePicker.X, _keyTypePicker.Y + FlaxEditor.Surface.Constants.LayoutOffsetY, _keyTypePicker.Width, _keyTypePicker.Height),
+                    Parent = this,
+                };
+                _valueTypePicker.ValueChanged += OnValueTypeChanged;
+
+                UpdateUI();
+            }
+
+            private void OnKeyTypeChanged()
+            {
+                if (_isUpdatingUI)
+                    return;
+                SetValue(0, _keyTypePicker.ValueTypeName);
+            }
+
+            private void OnValueTypeChanged()
+            {
+                if (_isUpdatingUI)
+                    return;
+                SetValue(1, _valueTypePicker.ValueTypeName);
+            }
+
+            public override void OnSurfaceCanEditChanged(bool canEdit)
+            {
+                base.OnSurfaceCanEditChanged(canEdit);
+
+                _keyTypePicker.Enabled = canEdit;
+                _valueTypePicker.Enabled = canEdit;
+            }
+
+            public override void OnDestroy()
+            {
+                _output = null;
+                _keyTypePicker = null;
+                _valueTypePicker = null;
+
+                base.OnDestroy();
+            }
+
+            private void UpdateUI()
+            {
+                if (_isUpdatingUI)
+                    return;
+                var keyTypeName = (string)Values[0];
+                var valueTypeName = (string)Values[1];
+                var keyType = TypeUtils.GetType(keyTypeName);
+                var valueType = TypeUtils.GetType(valueTypeName);
+                if (keyType == ScriptType.Null)
+                {
+                    Editor.LogError("Missing type " + keyTypeName);
+                    keyType = ScriptType.Object;
+                }
+                if (valueType == ScriptType.Null)
+                {
+                    Editor.LogError("Missing type " + valueTypeName);
+                    valueType = ScriptType.Object;
+                }
+                var dictionaryType = ScriptType.MakeDictionaryType(keyType, valueType);
+
+                _isUpdatingUI = true;
+                _keyTypePicker.Value = keyType;
+                _valueTypePicker.Value = valueType;
+                _output.CurrentType = dictionaryType;
+                _isUpdatingUI = false;
+
+                if (Surface == null)
+                    return;
+                var canEdit = Surface.CanEdit;
+                _keyTypePicker.Enabled = canEdit;
+                _valueTypePicker.Enabled = canEdit;
+
+                Title = Surface.GetTypeName(dictionaryType);
+                _keyTypePicker.Width = 160.0f;
+                _valueTypePicker.Width = 160.0f;
+                ResizeAuto();
+                _keyTypePicker.Width = Width - 30;
+                _valueTypePicker.Width = Width - 30;
+            }
+
+            private object GetBoxValue(InputBox box)
+            {
+                var array = (Array)Values[0];
+                return array.GetValue(box.ID - 1);
+            }
+
+            private void SetBoxValue(InputBox box, object value)
+            {
+                if (_isDuringValuesEditing || !Surface.CanEdit)
+                    return;
+                var array = (Array)Values[0];
+                array = (Array)array.Clone();
+                array.SetValue(value, box.ID - 1);
+                SetValue(0, array);
+            }
+        }
+
         /// <summary>
         /// The nodes for that group.
         /// </summary>
@@ -222,7 +357,7 @@ namespace FlaxEditor.Surface.Archetypes
                 Title = "Bool",
                 Description = "Constant boolean value",
                 Flags = NodeFlags.AllGraphs,
-                Size = new Vector2(110, 20),
+                Size = new Float2(110, 20),
                 DefaultValues = new object[]
                 {
                     false
@@ -235,12 +370,12 @@ namespace FlaxEditor.Surface.Archetypes
                 TryParseText = (string filterText, out object[] data) =>
                 {
                     data = null;
-                    if (filterText == "true")
+                    if (string.Equals(filterText, bool.TrueString, StringComparison.OrdinalIgnoreCase))
                     {
                         data = new object[] { true };
                         return true;
                     }
-                    if (filterText == "false")
+                    if (string.Equals(filterText, bool.FalseString, StringComparison.OrdinalIgnoreCase))
                     {
                         data = new object[] { false };
                         return true;
@@ -254,7 +389,7 @@ namespace FlaxEditor.Surface.Archetypes
                 Title = "Integer",
                 Description = "Constant integer value",
                 Flags = NodeFlags.AllGraphs,
-                Size = new Vector2(110, 20),
+                Size = new Float2(110, 20),
                 DefaultValues = new object[]
                 {
                     0
@@ -281,7 +416,7 @@ namespace FlaxEditor.Surface.Archetypes
                 Title = "Float",
                 Description = "Constant floating point",
                 Flags = NodeFlags.AllGraphs,
-                Size = new Vector2(110, 20),
+                Size = new Float2(110, 20),
                 DefaultValues = new object[]
                 {
                     0.0f
@@ -305,17 +440,17 @@ namespace FlaxEditor.Surface.Archetypes
             new NodeArchetype
             {
                 TypeID = 4,
-                Title = "Vector2",
-                Description = "Constant Vector2",
+                Title = "Float2",
+                Description = "Constant Float2",
                 Flags = NodeFlags.AllGraphs,
-                Size = new Vector2(130, 60),
+                Size = new Float2(130, 60),
                 DefaultValues = new object[]
                 {
-                    Vector2.Zero
+                    Float2.Zero
                 },
                 Elements = new[]
                 {
-                    NodeElementArchetype.Factory.Output(0, "Value", typeof(Vector2), 0),
+                    NodeElementArchetype.Factory.Output(0, "Value", typeof(Float2), 0),
                     NodeElementArchetype.Factory.Output(1, "X", typeof(float), 1),
                     NodeElementArchetype.Factory.Output(2, "Y", typeof(float), 2),
                     NodeElementArchetype.Factory.Vector_X(0, 1 * Surface.Constants.LayoutOffsetY, 0),
@@ -326,7 +461,7 @@ namespace FlaxEditor.Surface.Archetypes
                     data = null;
                     if (TryParseValues(filterText, out var values) && values.Length < 3)
                     {
-                        data = new object[] { new Vector2(ValuesToVector4(values)) };
+                        data = new object[] { new Float2(ValuesToFloat4(values)) };
                         return true;
                     }
                     return false;
@@ -335,17 +470,17 @@ namespace FlaxEditor.Surface.Archetypes
             new NodeArchetype
             {
                 TypeID = 5,
-                Title = "Vector3",
-                Description = "Constant Vector3",
+                Title = "Float3",
+                Description = "Constant Float3",
                 Flags = NodeFlags.AllGraphs,
-                Size = new Vector2(130, 80),
+                Size = new Float2(130, 80),
                 DefaultValues = new object[]
                 {
-                    Vector3.Zero
+                    Float3.Zero
                 },
                 Elements = new[]
                 {
-                    NodeElementArchetype.Factory.Output(0, "Value", typeof(Vector3), 0),
+                    NodeElementArchetype.Factory.Output(0, "Value", typeof(Float3), 0),
                     NodeElementArchetype.Factory.Output(1, "X", typeof(float), 1),
                     NodeElementArchetype.Factory.Output(2, "Y", typeof(float), 2),
                     NodeElementArchetype.Factory.Output(3, "Z", typeof(float), 3),
@@ -358,7 +493,7 @@ namespace FlaxEditor.Surface.Archetypes
                     data = null;
                     if (TryParseValues(filterText, out var values) && values.Length < 4)
                     {
-                        data = new object[] { new Vector3(ValuesToVector4(values)) };
+                        data = new object[] { new Float3(ValuesToFloat4(values)) };
                         return true;
                     }
                     return false;
@@ -367,17 +502,17 @@ namespace FlaxEditor.Surface.Archetypes
             new NodeArchetype
             {
                 TypeID = 6,
-                Title = "Vector4",
-                Description = "Constant Vector4",
+                Title = "Float4",
+                Description = "Constant Float4",
                 Flags = NodeFlags.AllGraphs,
-                Size = new Vector2(130, 100),
+                Size = new Float2(130, 100),
                 DefaultValues = new object[]
                 {
-                    Vector4.Zero
+                    Float4.Zero
                 },
                 Elements = new[]
                 {
-                    NodeElementArchetype.Factory.Output(0, "Value", typeof(Vector4), 0),
+                    NodeElementArchetype.Factory.Output(0, "Value", typeof(Float4), 0),
                     NodeElementArchetype.Factory.Output(1, "X", typeof(float), 1),
                     NodeElementArchetype.Factory.Output(2, "Y", typeof(float), 2),
                     NodeElementArchetype.Factory.Output(3, "Z", typeof(float), 3),
@@ -392,7 +527,7 @@ namespace FlaxEditor.Surface.Archetypes
                     data = null;
                     if (TryParseValues(filterText, out var values))
                     {
-                        data = new object[] { ValuesToVector4(values) };
+                        data = new object[] { ValuesToFloat4(values) };
                         return true;
                     }
                     return false;
@@ -404,14 +539,14 @@ namespace FlaxEditor.Surface.Archetypes
                 Title = "Color",
                 Description = "RGBA color",
                 Flags = NodeFlags.AllGraphs,
-                Size = new Vector2(70, 100),
+                Size = new Float2(70, 100),
                 DefaultValues = new object[]
                 {
                     Color.White
                 },
                 Elements = new[]
                 {
-                    NodeElementArchetype.Factory.Output(0, string.Empty, typeof(Vector4), 0),
+                    NodeElementArchetype.Factory.Output(0, string.Empty, typeof(Float4), 0),
                     NodeElementArchetype.Factory.Output(1, "R", typeof(float), 1),
                     NodeElementArchetype.Factory.Output(2, "G", typeof(float), 2),
                     NodeElementArchetype.Factory.Output(3, "B", typeof(float), 3),
@@ -420,14 +555,13 @@ namespace FlaxEditor.Surface.Archetypes
                 },
                 TryParseText = (string filterText, out object[] data) =>
                 {
-                    data = null;
-                    if (!filterText.StartsWith("#"))
-                        return false;
-                    if (Color.TryParseHex(filterText, out var color))
+                    if (Color.TryParse(filterText, out var color))
                     {
+                        // Color constant from hex
                         data = new object[] { color };
                         return true;
                     }
+                    data = null;
                     return false;
                 }
             },
@@ -437,7 +571,7 @@ namespace FlaxEditor.Surface.Archetypes
                 Title = "Rotation",
                 Description = "Euler angle rotation",
                 Flags = NodeFlags.AnimGraph | NodeFlags.VisualScriptGraph | NodeFlags.ParticleEmitterGraph,
-                Size = new Vector2(110, 60),
+                Size = new Float2(110, 60),
                 DefaultValues = new object[]
                 {
                     0.0f,
@@ -461,7 +595,7 @@ namespace FlaxEditor.Surface.Archetypes
                 Title = "String",
                 Description = "Text",
                 Flags = NodeFlags.VisualScriptGraph | NodeFlags.AnimGraph,
-                Size = new Vector2(200, 20),
+                Size = new Float2(200, 20),
                 DefaultValues = new object[]
                 {
                     string.Empty,
@@ -482,7 +616,7 @@ namespace FlaxEditor.Surface.Archetypes
                 Title = "PI",
                 Description = "A value specifying the approximation of π which is 180 degrees",
                 Flags = NodeFlags.AllGraphs,
-                Size = new Vector2(50, 20),
+                Size = new Float2(50, 20),
                 Elements = new[]
                 {
                     NodeElementArchetype.Factory.Output(0, "π", typeof(float), 0),
@@ -495,7 +629,7 @@ namespace FlaxEditor.Surface.Archetypes
                 Create = (id, context, arch, groupArch) => new EnumNode(id, context, arch, groupArch),
                 Description = "Enum constant value.",
                 Flags = NodeFlags.VisualScriptGraph | NodeFlags.AnimGraph | NodeFlags.NoSpawnViaGUI,
-                Size = new Vector2(180, 20),
+                Size = new Float2(180, 20),
                 DefaultValues = new object[]
                 {
                     null, // Value
@@ -511,7 +645,7 @@ namespace FlaxEditor.Surface.Archetypes
                 Title = "Unsigned Integer",
                 Description = "Constant unsigned integer value",
                 Flags = NodeFlags.AllGraphs,
-                Size = new Vector2(170, 20),
+                Size = new Float2(170, 20),
                 DefaultValues = new object[]
                 {
                     0u
@@ -529,9 +663,103 @@ namespace FlaxEditor.Surface.Archetypes
                 Create = (id, context, arch, groupArch) => new ArrayNode(id, context, arch, groupArch),
                 Description = "Constant array value.",
                 Flags = NodeFlags.VisualScriptGraph | NodeFlags.AnimGraph,
-                Size = new Vector2(150, 20),
+                Size = new Float2(150, 20),
                 DefaultValues = new object[] { new int[] { 0, 1, 2 } },
                 Elements = new[] { NodeElementArchetype.Factory.Output(0, string.Empty, null, 0) }
+            },
+            new NodeArchetype
+            {
+                TypeID = 14,
+                Title = "Dictionary",
+                Create = (id, context, arch, groupArch) => new DictionaryNode(id, context, arch, groupArch),
+                Description = "Creates an empty dictionary.",
+                Flags = NodeFlags.VisualScriptGraph | NodeFlags.AnimGraph,
+                Size = new Float2(150, 40),
+                DefaultValues = new object[] { typeof(int).FullName, typeof(string).FullName },
+                Elements = new[] { NodeElementArchetype.Factory.Output(0, string.Empty, null, 0) }
+            },
+            new NodeArchetype
+            {
+                TypeID = 15,
+                Title = "Double",
+                Description = "Constant floating point",
+                Flags = NodeFlags.AllGraphs,
+                Size = new Float2(110, 20),
+                DefaultValues = new object[]
+                {
+                    0.0d
+                },
+                Elements = new[]
+                {
+                    NodeElementArchetype.Factory.Output(0, "Value", typeof(double), 0),
+                    NodeElementArchetype.Factory.Float(0, 0, 0)
+                },
+            },
+            new NodeArchetype
+            {
+                TypeID = 16,
+                Title = "Vector2",
+                Description = "Constant Vector2",
+                Flags = NodeFlags.AllGraphs,
+                Size = new Float2(130, 60),
+                DefaultValues = new object[]
+                {
+                    Vector2.Zero
+                },
+                Elements = new[]
+                {
+                    NodeElementArchetype.Factory.Output(0, "Value", typeof(Vector2), 0),
+                    NodeElementArchetype.Factory.Output(1, "X", typeof(Real), 1),
+                    NodeElementArchetype.Factory.Output(2, "Y", typeof(Real), 2),
+                    NodeElementArchetype.Factory.Vector_X(0, 1 * Surface.Constants.LayoutOffsetY, 0),
+                    NodeElementArchetype.Factory.Vector_Y(0, 2 * Surface.Constants.LayoutOffsetY, 0)
+                }
+            },
+            new NodeArchetype
+            {
+                TypeID = 17,
+                Title = "Vector3",
+                Description = "Constant Vector3",
+                Flags = NodeFlags.AllGraphs,
+                Size = new Float2(130, 80),
+                DefaultValues = new object[]
+                {
+                    Vector3.Zero
+                },
+                Elements = new[]
+                {
+                    NodeElementArchetype.Factory.Output(0, "Value", typeof(Vector3), 0),
+                    NodeElementArchetype.Factory.Output(1, "X", typeof(Real), 1),
+                    NodeElementArchetype.Factory.Output(2, "Y", typeof(Real), 2),
+                    NodeElementArchetype.Factory.Output(3, "Z", typeof(Real), 3),
+                    NodeElementArchetype.Factory.Vector_X(0, 1 * Surface.Constants.LayoutOffsetY, 0),
+                    NodeElementArchetype.Factory.Vector_Y(0, 2 * Surface.Constants.LayoutOffsetY, 0),
+                    NodeElementArchetype.Factory.Vector_Z(0, 3 * Surface.Constants.LayoutOffsetY, 0)
+                }
+            },
+            new NodeArchetype
+            {
+                TypeID = 18,
+                Title = "Vector4",
+                Description = "Constant Vector4",
+                Flags = NodeFlags.AllGraphs,
+                Size = new Float2(130, 100),
+                DefaultValues = new object[]
+                {
+                    Vector4.Zero
+                },
+                Elements = new[]
+                {
+                    NodeElementArchetype.Factory.Output(0, "Value", typeof(Vector4), 0),
+                    NodeElementArchetype.Factory.Output(1, "X", typeof(Real), 1),
+                    NodeElementArchetype.Factory.Output(2, "Y", typeof(Real), 2),
+                    NodeElementArchetype.Factory.Output(3, "Z", typeof(Real), 3),
+                    NodeElementArchetype.Factory.Output(4, "W", typeof(Real), 4),
+                    NodeElementArchetype.Factory.Vector_X(0, 1 * Surface.Constants.LayoutOffsetY, 0),
+                    NodeElementArchetype.Factory.Vector_Y(0, 2 * Surface.Constants.LayoutOffsetY, 0),
+                    NodeElementArchetype.Factory.Vector_Z(0, 3 * Surface.Constants.LayoutOffsetY, 0),
+                    NodeElementArchetype.Factory.Vector_W(0, 4 * Surface.Constants.LayoutOffsetY, 0)
+                }
             },
         };
 
@@ -603,18 +831,13 @@ namespace FlaxEditor.Surface.Archetypes
             return false;
         }
 
-        private static Vector4 ValuesToVector4(float[] values)
+        private static Float4 ValuesToFloat4(float[] values)
         {
             if (values.Length > 4)
-            {
                 throw new ArgumentException("Too many values");
-            }
-            Vector4 vector = new Vector4();
+            var vector = new Float4();
             for (int i = 0; i < values.Length; i++)
-            {
                 vector[i] = values[i];
-            }
-
             return vector;
         }
     }

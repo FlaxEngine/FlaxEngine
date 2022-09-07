@@ -12,7 +12,7 @@ namespace FlaxEngine.GUI
     public sealed class CanvasRootControl : RootControl
     {
         private UICanvas _canvas;
-        private Vector2 _mousePosition;
+        private Float2 _mousePosition;
         private float _navigationHeldTimeUp, _navigationHeldTimeDown, _navigationHeldTimeLeft, _navigationHeldTimeRight, _navigationHeldTimeSubmit;
         private float _navigationRateTimeUp, _navigationRateTimeDown, _navigationRateTimeLeft, _navigationRateTimeRight, _navigationRateTimeSubmit;
 
@@ -59,10 +59,10 @@ namespace FlaxEngine.GUI
         }
 
         /// <inheritdoc />
-        public override Vector2 TrackingMouseOffset => Vector2.Zero;
+        public override Float2 TrackingMouseOffset => Float2.Zero;
 
         /// <inheritdoc />
-        public override Vector2 MousePosition
+        public override Float2 MousePosition
         {
             get => _mousePosition;
             set { }
@@ -71,13 +71,15 @@ namespace FlaxEngine.GUI
         /// <inheritdoc />
         public override void StartTrackingMouse(Control control, bool useMouseScreenOffset)
         {
-            // Not used in games (editor-only feature)
+            var parent = Parent?.Root;
+            parent?.StartTrackingMouse(control, useMouseScreenOffset);
         }
 
         /// <inheritdoc />
         public override void EndTrackingMouse()
         {
-            // Not used in games (editor-only feature)
+            var parent = Parent?.Root;
+            parent?.EndTrackingMouse();
         }
 
         /// <inheritdoc />
@@ -117,7 +119,7 @@ namespace FlaxEngine.GUI
         }
 
         /// <inheritdoc />
-        public override Vector2 PointToParent(ref Vector2 location)
+        public override Float2 PointToParent(ref Float2 location)
         {
             if (Is2D)
                 return base.PointToParent(ref location);
@@ -135,7 +137,7 @@ namespace FlaxEngine.GUI
         }
 
         /// <inheritdoc />
-        public override bool ContainsPoint(ref Vector2 location)
+        public override bool ContainsPoint(ref Float2 location)
         {
             return base.ContainsPoint(ref location)
                    && (_canvas.TestCanvasIntersection == null || _canvas.TestCanvasIntersection(ref location));
@@ -222,7 +224,7 @@ namespace FlaxEngine.GUI
         }
 
         /// <inheritdoc />
-        public override DragDropEffect OnDragDrop(ref Vector2 location, DragData data)
+        public override DragDropEffect OnDragDrop(ref Float2 location, DragData data)
         {
             if (!_canvas.ReceivesEvents)
                 return DragDropEffect.None;
@@ -231,7 +233,7 @@ namespace FlaxEngine.GUI
         }
 
         /// <inheritdoc />
-        public override DragDropEffect OnDragEnter(ref Vector2 location, DragData data)
+        public override DragDropEffect OnDragEnter(ref Float2 location, DragData data)
         {
             if (!_canvas.ReceivesEvents)
                 return DragDropEffect.None;
@@ -249,7 +251,7 @@ namespace FlaxEngine.GUI
         }
 
         /// <inheritdoc />
-        public override DragDropEffect OnDragMove(ref Vector2 location, DragData data)
+        public override DragDropEffect OnDragMove(ref Float2 location, DragData data)
         {
             if (!_canvas.ReceivesEvents)
                 return DragDropEffect.None;
@@ -276,7 +278,7 @@ namespace FlaxEngine.GUI
         }
 
         /// <inheritdoc />
-        public override bool OnMouseDoubleClick(Vector2 location, MouseButton button)
+        public override bool OnMouseDoubleClick(Float2 location, MouseButton button)
         {
             if (!_canvas.ReceivesEvents)
                 return false;
@@ -285,7 +287,7 @@ namespace FlaxEngine.GUI
         }
 
         /// <inheritdoc />
-        public override bool OnMouseDown(Vector2 location, MouseButton button)
+        public override bool OnMouseDown(Float2 location, MouseButton button)
         {
             if (!_canvas.ReceivesEvents)
                 return false;
@@ -294,7 +296,7 @@ namespace FlaxEngine.GUI
         }
 
         /// <inheritdoc />
-        public override void OnMouseEnter(Vector2 location)
+        public override void OnMouseEnter(Float2 location)
         {
             if (!_canvas.ReceivesEvents)
                 return;
@@ -306,7 +308,7 @@ namespace FlaxEngine.GUI
         /// <inheritdoc />
         public override void OnMouseLeave()
         {
-            _mousePosition = Vector2.Zero;
+            _mousePosition = Float2.Zero;
 
             if (!_canvas.ReceivesEvents)
                 return;
@@ -315,7 +317,7 @@ namespace FlaxEngine.GUI
         }
 
         /// <inheritdoc />
-        public override void OnMouseMove(Vector2 location)
+        public override void OnMouseMove(Float2 location)
         {
             if (!_canvas.ReceivesEvents)
                 return;
@@ -325,7 +327,7 @@ namespace FlaxEngine.GUI
         }
 
         /// <inheritdoc />
-        public override bool OnMouseUp(Vector2 location, MouseButton button)
+        public override bool OnMouseUp(Float2 location, MouseButton button)
         {
             if (!_canvas.ReceivesEvents)
                 return false;
@@ -334,7 +336,7 @@ namespace FlaxEngine.GUI
         }
 
         /// <inheritdoc />
-        public override bool OnMouseWheel(Vector2 location, float delta)
+        public override bool OnMouseWheel(Float2 location, float delta)
         {
             if (!_canvas.ReceivesEvents)
                 return false;
@@ -343,7 +345,7 @@ namespace FlaxEngine.GUI
         }
 
         /// <inheritdoc />
-        public override void OnTouchEnter(Vector2 location, int pointerId)
+        public override void OnTouchEnter(Float2 location, int pointerId)
         {
             if (!_canvas.ReceivesEvents)
                 return;
@@ -352,7 +354,7 @@ namespace FlaxEngine.GUI
         }
 
         /// <inheritdoc />
-        public override bool OnTouchDown(Vector2 location, int pointerId)
+        public override bool OnTouchDown(Float2 location, int pointerId)
         {
             if (!_canvas.ReceivesEvents)
                 return false;
@@ -361,7 +363,7 @@ namespace FlaxEngine.GUI
         }
 
         /// <inheritdoc />
-        public override void OnTouchMove(Vector2 location, int pointerId)
+        public override void OnTouchMove(Float2 location, int pointerId)
         {
             if (!_canvas.ReceivesEvents)
                 return;
@@ -370,7 +372,7 @@ namespace FlaxEngine.GUI
         }
 
         /// <inheritdoc />
-        public override bool OnTouchUp(Vector2 location, int pointerId)
+        public override bool OnTouchUp(Float2 location, int pointerId)
         {
             if (!_canvas.ReceivesEvents)
                 return false;

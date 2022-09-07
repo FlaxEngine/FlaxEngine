@@ -14,27 +14,17 @@
 class LightPass : public RendererPass<LightPass>
 {
 private:
-
-    // Lights
     AssetReference<Shader> _shader;
     GPUPipelineStatePermutationsPs<2> _psLightDir;
     GPUPipelineStatePermutationsPs<4> _psLightPointNormal;
     GPUPipelineStatePermutationsPs<4> _psLightPointInverted;
     GPUPipelineStatePermutationsPs<4> _psLightSpotNormal;
     GPUPipelineStatePermutationsPs<4> _psLightSpotInverted;
-    GPUPipelineState* _psLightSkyNormal;
-    GPUPipelineState* _psLightSkyInverted;
-
-    // Msc
+    GPUPipelineState* _psLightSkyNormal = nullptr;
+    GPUPipelineState* _psLightSkyInverted = nullptr;
+    GPUPipelineState* _psClearDiffuse = nullptr;
     AssetReference<Model> _sphereModel;
     PixelFormat _shadowMaskFormat;
-
-public:
-
-    /// <summary>
-    /// Init
-    /// </summary>
-    LightPass();
 
 public:
 

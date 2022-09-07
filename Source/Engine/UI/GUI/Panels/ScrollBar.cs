@@ -343,11 +343,11 @@ namespace FlaxEngine.GUI
         }
 
         /// <inheritdoc />
-        public override void OnMouseMove(Vector2 location)
+        public override void OnMouseMove(Float2 location)
         {
             if (_thumbClicked)
             {
-                Vector2 slidePosition = location + Root.TrackingMouseOffset;
+                var slidePosition = location + Root.TrackingMouseOffset;
                 if (Parent is ScrollableControl panel)
                     slidePosition += panel.ViewOffset; // Hardcoded fix
                 float mousePosition = _orientation == Orientation.Vertical ? slidePosition.Y : slidePosition.X;
@@ -358,7 +358,7 @@ namespace FlaxEngine.GUI
         }
 
         /// <inheritdoc />
-        public override bool OnMouseWheel(Vector2 location, float delta)
+        public override bool OnMouseWheel(Float2 location, float delta)
         {
             if (ThumbEnabled)
             {
@@ -369,7 +369,7 @@ namespace FlaxEngine.GUI
         }
 
         /// <inheritdoc />
-        public override bool OnMouseDown(Vector2 location, MouseButton button)
+        public override bool OnMouseDown(Float2 location, MouseButton button)
         {
             if (button == MouseButton.Left && ThumbEnabled)
             {
@@ -399,7 +399,7 @@ namespace FlaxEngine.GUI
         }
 
         /// <inheritdoc />
-        public override bool OnMouseUp(Vector2 location, MouseButton button)
+        public override bool OnMouseUp(Float2 location, MouseButton button)
         {
             EndTracking();
 
@@ -421,7 +421,7 @@ namespace FlaxEngine.GUI
         }
 
         /// <inheritdoc />
-        public override void OnMouseEnter(Vector2 location)
+        public override void OnMouseEnter(Float2 location)
         {
             base.OnMouseEnter(location);
 

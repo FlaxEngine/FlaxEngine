@@ -118,7 +118,7 @@ namespace FlaxEditor.Windows.Assets
             {
                 AnchorPreset = AnchorPresets.StretchAll,
                 Offsets = Margin.Zero,
-                TabsSize = new Vector2(60, 20),
+                TabsSize = new Float2(60, 20),
                 TabsTextHorizontalAlignment = TextAlignment.Center,
                 UseScroll = true,
                 Parent = _split.Panel2

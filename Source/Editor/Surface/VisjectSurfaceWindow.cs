@@ -42,6 +42,11 @@ namespace FlaxEditor.Surface
         IEnumerable<ScriptType> NewParameterTypes { get; }
 
         /// <summary>
+        /// Event called when surface gets loaded (eg. after opening the window).
+        /// </summary>
+        event Action SurfaceLoaded;
+
+        /// <summary>
         /// Called when parameter rename undo action is performed.
         /// </summary>
         void OnParamRenameUndo();
@@ -367,8 +372,7 @@ namespace FlaxEditor.Surface
                 return;
             }
             var parameters = window.VisjectSurface.Parameters;
-            GroupElement lastGroup = null;
-
+            CustomEditors.Editors.GenericEditor.OnGroupUsage();
             for (int i = 0; i < parameters.Count; i++)
             {
                 var p = parameters[i];
@@ -380,25 +384,13 @@ namespace FlaxEditor.Surface
                 var attributes = p.Meta.GetAttributes();
                 if (attributes == null || attributes.Length == 0)
                     attributes = DefaultAttributes;
-                var itemLayout = layout;
                 var name = p.Name;
 
                 // Editor Display
                 var editorDisplay = (EditorDisplayAttribute)attributes.FirstOrDefault(x => x is EditorDisplayAttribute);
-                if (editorDisplay?.Group != null)
-                {
-                    if (lastGroup == null || lastGroup.Panel.HeaderText != editorDisplay.Group)
-                    {
-                        lastGroup = layout.Group(editorDisplay.Group);
-                        lastGroup.Panel.Open(false);
-                    }
-                    itemLayout = lastGroup;
-                }
-                else
-                {
-                    lastGroup = null;
-                    itemLayout = layout;
-                }
+                var itemLayout = CustomEditors.Editors.GenericEditor.OnGroup(layout, editorDisplay);
+                if (itemLayout is GroupElement groupElement)
+                    groupElement.Panel.Open(false);
                 if (editorDisplay?.Name != null)
                     name = editorDisplay.Name;
 
@@ -410,7 +402,7 @@ namespace FlaxEditor.Surface
                 // Header
                 var header = (HeaderAttribute)attributes.FirstOrDefault(x => x is HeaderAttribute);
                 if (header != null)
-                    itemLayout.Header(header.Text);
+                    itemLayout.Header(header);
 
                 var propertyValue = new CustomValueContainer
                 (
@@ -428,12 +420,16 @@ namespace FlaxEditor.Surface
                 };
                 if (!p.IsPublic)
                     propertyLabel.TextColor = propertyLabel.TextColor.RGBMultiplied(0.7f);
+                var tooltipText = "Type: " + window.VisjectSurface.GetTypeName(p.Type);
                 var tooltip = (TooltipAttribute)attributes.FirstOrDefault(x => x is TooltipAttribute);
+                if (tooltip != null)
+                    tooltipText += '\n' + tooltip.Text;
                 propertyLabel.MouseLeftDoubleClick += (label, location) => StartParameterRenaming(pIndex, label);
                 propertyLabel.SetupContextMenu += OnPropertyLabelSetupContextMenu;
-                var property = itemLayout.AddPropertyItem(propertyLabel, tooltip?.Text);
-                property.Object(propertyValue);
+                var property = itemLayout.AddPropertyItem(propertyLabel, tooltipText);
+                property.Property("Value", propertyValue);
             }
+            CustomEditors.Editors.GenericEditor.OnGroupUsage();
 
             // Parameters creating
             var newParameterTypes = window.NewParameterTypes;
@@ -461,7 +457,7 @@ namespace FlaxEditor.Surface
                 cm.AddItem(item);
             }
             cm.ItemClicked += OnAddParameterItemClicked;
-            cm.SortChildren();
+            cm.SortItems();
             cm.Show(button.Parent, button.BottomLeft);
         }
 
@@ -549,7 +545,7 @@ namespace FlaxEditor.Surface
                 window.VisjectSurface.Undo.AddAction(action);
                 action.Do();
             };
-            editor.Show(label, label.Center);
+            editor.Show(label, label.Size * 0.5f);
         }
 
         private void DeleteParameter(int index)
@@ -572,6 +568,15 @@ namespace FlaxEditor.Surface
         /// <param name="menu">The context menu.</param>
         protected virtual void OnParamContextMenu(int index, FlaxEditor.GUI.ContextMenu.ContextMenu menu)
         {
+            menu.AddSeparator();
+            menu.AddButton("Find references...", () => OnFindReferences(index));
+        }
+
+        private void OnFindReferences(int index)
+        {
+            var window = (IVisjectSurfaceWindow)Values[0];
+            var param = window.VisjectSurface.Parameters[index];
+            Editor.Instance.ContentFinding.ShowSearch(window.VisjectSurface, '\"' + FlaxEngine.Json.JsonSerializer.GetStringID(param.ID) + '\"');
         }
     }
 
@@ -751,7 +756,7 @@ namespace FlaxEditor.Surface
                 {
                     AnchorPreset = AnchorPresets.StretchAll,
                     Offsets = Margin.Zero,
-                    TabsSize = new Vector2(60, 20),
+                    TabsSize = new Float2(60, 20),
                     TabsTextHorizontalAlignment = TextAlignment.Center,
                     UseScroll = true,
                     Parent = _split2.Panel2
@@ -773,11 +778,13 @@ namespace FlaxEditor.Surface
             _undoButton = (ToolStripButton)_toolstrip.AddButton(Editor.Icons.Undo64, _undo.PerformUndo).LinkTooltip("Undo (Ctrl+Z)");
             _redoButton = (ToolStripButton)_toolstrip.AddButton(Editor.Icons.Redo64, _undo.PerformRedo).LinkTooltip("Redo (Ctrl+Y)");
             _toolstrip.AddSeparator();
+            _toolstrip.AddButton(Editor.Icons.Search64, Editor.ContentFinding.ShowSearch).LinkTooltip("Open content search tool (Ctrl+F)");
             _toolstrip.AddButton(editor.Icons.CenterView64, ShowWholeGraph).LinkTooltip("Show whole graph");
 
             // Setup input actions
             InputActions.Add(options => options.Undo, _undo.PerformUndo);
             InputActions.Add(options => options.Redo, _undo.PerformRedo);
+            InputActions.Add(options => options.Search, Editor.ContentFinding.ShowSearch);
         }
 
         private void OnUndoRedo(IUndoAction action)
@@ -884,6 +891,9 @@ namespace FlaxEditor.Surface
         }
 
         /// <inheritdoc />
+        public Asset SurfaceAsset => Asset;
+
+        /// <inheritdoc />
         public abstract string SurfaceName { get; }
 
         /// <inheritdoc />
@@ -974,6 +984,7 @@ namespace FlaxEditor.Surface
                     _showWholeGraphOnLoad = false;
                     _surface.ShowWholeGraph();
                 }
+                SurfaceLoaded?.Invoke();
             }
             else if (_refreshPropertiesOnLoad && _asset.IsLoaded)
             {
@@ -1022,6 +1033,9 @@ namespace FlaxEditor.Surface
 
         /// <inheritdoc />
         public abstract IEnumerable<ScriptType> NewParameterTypes { get; }
+
+        /// <inheritdoc />
+        public event Action SurfaceLoaded;
 
         /// <inheritdoc />
         public virtual void OnParamRenameUndo()

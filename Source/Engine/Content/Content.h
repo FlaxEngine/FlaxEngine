@@ -15,7 +15,7 @@ class AssetsCache;
 // Content and assets statistics container.
 API_STRUCT() struct FLAXENGINE_API ContentStats
 {
-DECLARE_SCRIPTING_TYPE_MINIMAL(ContentStats);
+    DECLARE_SCRIPTING_TYPE_MINIMAL(ContentStats);
 
     // Amount of asset objects in memory.
     API_FIELD() int32 AssetsCount = 0;
@@ -32,11 +32,10 @@ DECLARE_SCRIPTING_TYPE_MINIMAL(ContentStats);
 /// </summary>
 API_CLASS(Static) class FLAXENGINE_API Content
 {
-DECLARE_SCRIPTING_TYPE_NO_SPAWN(Content);
+    DECLARE_SCRIPTING_TYPE_NO_SPAWN(Content);
     friend Engine;
     friend Asset;
 public:
-
     /// <summary>
     /// The time between content pool updates.
     /// </summary>
@@ -48,7 +47,6 @@ public:
     static TimeSpan AssetsUnloadInterval;
 
 public:
-
     /// <summary>
     /// Gets the assets registry.
     /// </summary>
@@ -56,7 +54,6 @@ public:
     static AssetsCache* GetRegistry();
 
 public:
-
     /// <summary>
     /// Finds the asset info by id.
     /// </summary>
@@ -74,6 +71,13 @@ public:
     API_FUNCTION() static bool GetAssetInfo(const StringView& path, API_PARAM(Out) AssetInfo& info);
 
     /// <summary>
+    /// Finds the asset path by id. In editor it returns the actual asset path, at runtime it returns the mapped asset path.
+    /// </summary>
+    /// <param name="id">The asset id.</param>
+    /// <returns>The asset path, or empty if failed to find.</returns>
+    API_FUNCTION() static String GetEditorAssetPath(const Guid& id);
+
+    /// <summary>
     /// Finds all the asset IDs. Uses asset registry.
     /// </summary>
     /// <returns>The list of all asset IDs.</returns>
@@ -87,7 +91,6 @@ public:
     API_FUNCTION() static Array<Guid, HeapAllocation> GetAllAssetsByType(const MClass* type);
 
 public:
-
     /// <summary>
     /// Gets the asset factory used by the given asset type id.
     /// </summary>
@@ -103,7 +106,6 @@ public:
     static IAssetFactory* GetAssetFactory(const AssetInfo& assetInfo);
 
 public:
-
     /// <summary>
     /// Generates temporary asset path.
     /// </summary>
@@ -111,7 +113,6 @@ public:
     API_FUNCTION() static String CreateTemporaryAssetPath();
 
 public:
-
     /// <summary>
     /// Gets content statistics.
     /// </summary>
@@ -263,7 +264,6 @@ public:
     static bool IsAssetTypeIdInvalid(const ScriptingTypeHandle& type, const ScriptingTypeHandle& assetType);
 
 public:
-
     /// <summary>
     /// Finds the asset with at given path. Checks all loaded assets.
     /// </summary>
@@ -279,7 +279,6 @@ public:
     API_FUNCTION() static Asset* GetAsset(const Guid& id);
 
 public:
-
     /// <summary>
     /// Deletes the specified asset.
     /// </summary>
@@ -293,7 +292,6 @@ public:
     API_FUNCTION(Attributes="HideInEditor") static void DeleteAsset(const StringView& path);
 
 public:
-
 #if USE_EDITOR
 
     /// <summary>
@@ -364,13 +362,12 @@ public:
     API_EVENT() static Delegate<Asset*> AssetReloading;
 
 private:
-
     static void tryCallOnLoaded(Asset* asset);
     static void onAssetLoaded(Asset* asset);
     static void onAssetUnload(Asset* asset);
+    static void onAssetChangeId(Asset* asset, const Guid& oldId, const Guid& newId);
     static Asset* load(const Guid& id, const ScriptingTypeHandle& type, AssetInfo& assetInfo);
 
 private:
-
     static void deleteFileSafety(const StringView& path, const Guid& id);
 };

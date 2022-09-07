@@ -10,7 +10,6 @@
 class GUIMaterialShader : public MaterialShader
 {
 private:
-
     struct Cache
     {
         GPUPipelineState* Depth = nullptr;
@@ -24,11 +23,9 @@ private:
     };
 
 private:
-
     Cache _cache;
 
 public:
-
     /// <summary>
     /// Init
     /// </summary>
@@ -39,13 +36,11 @@ public:
     }
 
 public:
-
     // [MaterialShader]
     void Bind(BindParameters& params) override;
     void Unload() override;
 
 protected:
-
     // [MaterialShader]
     bool Load() override;
 };

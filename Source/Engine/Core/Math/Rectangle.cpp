@@ -10,7 +10,7 @@ String Rectangle::ToString() const
     return String::Format(TEXT("{}"), *this);
 }
 
-bool Rectangle::Contains(const Vector2& location) const
+bool Rectangle::Contains(const Float2& location) const
 {
     return location.X >= Location.X && location.Y >= Location.Y && (location.X <= Location.X + Size.X && location.Y <= Location.Y + Size.Y);
 }
@@ -31,12 +31,12 @@ void Rectangle::Offset(float x, float y)
     Location.Y += y;
 }
 
-void Rectangle::Offset(const Vector2& offset)
+void Rectangle::Offset(const Float2& offset)
 {
     Location += offset;
 }
 
-Rectangle Rectangle::MakeOffsetted(const Vector2& offset) const
+Rectangle Rectangle::MakeOffsetted(const Float2& offset) const
 {
     return Rectangle(Location + offset, Size);
 }
@@ -54,18 +54,18 @@ Rectangle Rectangle::MakeExpanded(float toExpand) const
 
 void Rectangle::Scale(float scale)
 {
-    const Vector2 toExpand = Size * (scale - 1.0f) * 0.5f;
+    const Float2 toExpand = Size * (scale - 1.0f) * 0.5f;
     Location -= toExpand * 0.5f;
     Size += toExpand;
 }
 
 Rectangle Rectangle::MakeScaled(float scale) const
 {
-    const Vector2 toExpand = Size * (scale - 1.0f) * 0.5f;
+    const Float2 toExpand = Size * (scale - 1.0f) * 0.5f;
     return Rectangle(Location - toExpand * 0.5f, Size + toExpand);
 }
 
-Rectangle Rectangle::Union(const Rectangle& a, const Vector2& b)
+Rectangle Rectangle::Union(const Rectangle& a, const Float2& b)
 {
     const float left = Math::Min(a.GetLeft(), b.X);
     const float right = Math::Max(a.GetRight(), b.X);
@@ -92,22 +92,22 @@ Rectangle Rectangle::Shared(const Rectangle& a, const Rectangle& b)
     return Rectangle(left, top, Math::Max(right - left, 0.0f), Math::Max(bottom - top, 0.0f));
 }
 
-Rectangle Rectangle::FromPoints(const Vector2& p1, const Vector2& p2)
+Rectangle Rectangle::FromPoints(const Float2& p1, const Float2& p2)
 {
-    const Vector2 upperLeft = Vector2::Min(p1, p2);
-    const Vector2 rightBottom = Vector2::Max(p1, p2);
-    return Rectangle(upperLeft, Math::Max(rightBottom - upperLeft, Vector2::Zero));
+    const Float2 upperLeft = Float2::Min(p1, p2);
+    const Float2 rightBottom = Float2::Max(p1, p2);
+    return Rectangle(upperLeft, Math::Max(rightBottom - upperLeft, Float2::Zero));
 }
 
-Rectangle Rectangle::FromPoints(Vector2* points, int32 pointsCount)
+Rectangle Rectangle::FromPoints(Float2* points, int32 pointsCount)
 {
     ASSERT(pointsCount > 0);
-    Vector2 upperLeft = points[0];
-    Vector2 rightBottom = points[0];
+    Float2 upperLeft = points[0];
+    Float2 rightBottom = points[0];
     for (int32 i = 1; i < pointsCount; i++)
     {
-        upperLeft = Vector2::Min(upperLeft, points[i]);
-        rightBottom = Vector2::Max(rightBottom, points[i]);
+        upperLeft = Float2::Min(upperLeft, points[i]);
+        rightBottom = Float2::Max(rightBottom, points[i]);
     }
-    return Rectangle(upperLeft, Math::Max(rightBottom - upperLeft, Vector2::Zero));
+    return Rectangle(upperLeft, Math::Max(rightBottom - upperLeft, Float2::Zero));
 }

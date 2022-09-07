@@ -26,7 +26,7 @@ class Actor;
 /// </summary>
 API_CLASS() class FLAXENGINE_API RenderTask : public ScriptingObject
 {
-DECLARE_SCRIPTING_TYPE(RenderTask);
+    DECLARE_SCRIPTING_TYPE(RenderTask);
 
     /// <summary>
     /// List with all registered tasks
@@ -49,18 +49,15 @@ DECLARE_SCRIPTING_TYPE(RenderTask);
     static void DrawAll();
 
 private:
-
     RenderTask* _prevTask = nullptr;
 
 public:
-
     /// <summary>
     /// Finalizes an instance of the <see cref="RenderTask"/> class.
     /// </summary>
     virtual ~RenderTask();
 
 public:
-
     /// <summary>
     /// Gets or sets a value indicating whether task is enabled.
     /// </summary>
@@ -150,7 +147,6 @@ public:
     API_FUNCTION() virtual bool Resize(int32 width, int32 height);
 
 public:
-
     bool operator<(const RenderTask& other) const
     {
         return Order < other.Order;
@@ -193,21 +189,18 @@ DECLARE_ENUM_OPERATORS(ActorsSources);
 class ManagedPostProcessEffect : public PostProcessBase
 {
 public:
-
     /// <summary>
     /// The script to use. Inherits from C# class 'PostProcessEffect'.
     /// </summary>
     Script* Target = nullptr;
 
 public:
-
     /// <summary>
     /// Fetches the information about the PostFx location from the managed object.
     /// </summary>
     void FetchInfo();
 
 public:
-
     // [PostProcessBase]
     bool IsLoaded() const override;
     void Render(RenderContext& renderContext, GPUTexture* input, GPUTexture* output) override;
@@ -219,19 +212,26 @@ public:
 /// <seealso cref="FlaxEngine.RenderTask" />
 API_CLASS() class FLAXENGINE_API SceneRenderTask : public RenderTask
 {
-DECLARE_SCRIPTING_TYPE(SceneRenderTask);
+    DECLARE_SCRIPTING_TYPE(SceneRenderTask);
+protected:
+    class SceneRendering* _customActorsScene = nullptr;
 
+public:
     /// <summary>
     /// Finalizes an instance of the <see cref="SceneRenderTask"/> class.
     /// </summary>
     ~SceneRenderTask();
 
 public:
-
     /// <summary>
     /// True if the current frame is after the camera cut. Used to clear the temporal effects history and prevent visual artifacts blended from the previous frames.
     /// </summary>
     bool IsCameraCut = true;
+
+    /// <summary>
+    /// True if the task is used for custom scene rendering and default scene drawing into output should be skipped. Enable it if you use Render event and draw scene manually.
+    /// </summary>
+    API_FIELD() bool IsCustomRendering = false;
 
     /// <summary>
     /// Marks the next rendered frame as camera cut. Used to clear the temporal effects history and prevent visual artifacts blended from the previous frames.
@@ -296,7 +296,6 @@ public:
     Array<ManagedPostProcessEffect> CustomPostFx;
 
 public:
-
     /// <summary>
     /// The action called on view rendering to collect draw calls. It allows to extend rendering pipeline and draw custom geometry non-existing in the scene or custom actors set.
     /// </summary>
@@ -339,7 +338,6 @@ public:
     virtual void OnPostRender(GPUContext* context, RenderContext& renderContext);
 
 public:
-
     /// <summary>
     /// Gets the rendering render task viewport (before upsampling).
     /// </summary>
@@ -356,7 +354,6 @@ public:
     API_PROPERTY() GPUTextureView* GetOutputView() const;
 
 public:
-
     // [RenderTask]
     bool Resize(int32 width, int32 height) override;
     bool CanDraw() const override;
@@ -376,7 +373,7 @@ public:
 /// <seealso cref="FlaxEngine.SceneRenderTask" />
 API_CLASS() class FLAXENGINE_API MainRenderTask : public SceneRenderTask
 {
-DECLARE_SCRIPTING_TYPE(MainRenderTask);
+    DECLARE_SCRIPTING_TYPE(MainRenderTask);
 
     /// <summary>
     /// Finalizes an instance of the <see cref="MainRenderTask"/> class.
@@ -384,14 +381,12 @@ DECLARE_SCRIPTING_TYPE(MainRenderTask);
     ~MainRenderTask();
 
 public:
-
     /// <summary>
     /// Gets the main game rendering task. Use it to plug custom rendering logic for your game.
     /// </summary>
     API_FIELD(ReadOnly) static MainRenderTask* Instance;
 
 public:
-
     // [SceneRenderTask]
     void OnBegin(GPUContext* context) override;
 };
@@ -401,7 +396,7 @@ public:
 /// </summary>
 API_STRUCT() struct RenderContext
 {
-DECLARE_SCRIPTING_TYPE_MINIMAL(RenderContext);
+    DECLARE_SCRIPTING_TYPE_MINIMAL(RenderContext);
 
     /// <summary>
     /// The render buffers.

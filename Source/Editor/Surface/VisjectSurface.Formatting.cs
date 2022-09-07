@@ -122,7 +122,7 @@ namespace FlaxEditor.Surface
                 }
             }
 
-            Vector2 minDistanceBetweenNodes = new Vector2(30, 30);
+            var minDistanceBetweenNodes = new Float2(30, 30);
 
             // Figure out the node positions (aligned to a grid)
             float[] nodeXPositions = new float[widths.Length];
@@ -146,8 +146,8 @@ namespace FlaxEditor.Surface
             {
                 if (nodeData.TryGetValue(nodes[i], out var data))
                 {
-                    Vector2 newLocation = new Vector2(-nodeXPositions[data.Layer], nodeYPositions[data.Offset]) + topRightPosition;
-                    Vector2 locationDelta = newLocation - nodes[i].Location;
+                    var newLocation = new Float2(-nodeXPositions[data.Layer], nodeYPositions[data.Offset]) + topRightPosition;
+                    var locationDelta = newLocation - nodes[i].Location;
                     nodes[i].Location = newLocation;
 
                     if (Undo != null)

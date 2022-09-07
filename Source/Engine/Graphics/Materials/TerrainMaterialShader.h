@@ -10,7 +10,6 @@
 class TerrainMaterialShader : public MaterialShader
 {
 private:
-
     struct Cache
     {
         PipelineStateCache Default;
@@ -27,6 +26,8 @@ private:
             case DrawPass::Depth:
                 return &Depth;
             case DrawPass::GBuffer:
+            case DrawPass::GBuffer | DrawPass::GlobalSurfaceAtlas:
+            case DrawPass::GlobalSurfaceAtlas:
                 return useLightmap ? &DefaultLightmap : &Default;
 #if USE_EDITOR
             case DrawPass::QuadOverdraw:
@@ -49,11 +50,9 @@ private:
     };
 
 private:
-
     Cache _cache;
 
 public:
-
     /// <summary>
     /// Init
     /// </summary>
@@ -64,7 +63,6 @@ public:
     }
 
 public:
-
     // [MaterialShader]
     DrawPass GetDrawModes() const override;
     bool CanUseLightmap() const override;
@@ -72,7 +70,6 @@ public:
     void Unload() override;
 
 protected:
-
     // [MaterialShader]
     bool Load() override;
 };

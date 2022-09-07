@@ -36,7 +36,7 @@ namespace FlaxEditor.Windows
                 // Init node UI
                 var picker = new AssetPicker
                 {
-                    Location = new Vector2(40, 2 * Constants.LayoutOffsetY),
+                    Location = new Float2(40, 2 * Constants.LayoutOffsetY),
                     Width = 100.0f,
                     CanEdit = false,
                     Parent = this,
@@ -98,7 +98,7 @@ namespace FlaxEditor.Windows
                 Title = "Asset",
                 Description = string.Empty,
                 Flags = NodeFlags.AllGraphs | NodeFlags.NoRemove | NodeFlags.NoSpawnViaGUI | NodeFlags.NoCloseButton,
-                Size = new Vector2(150, 200),
+                Size = new Float2(150, 200),
             },
         };
 
@@ -301,7 +301,7 @@ namespace FlaxEditor.Windows
                 return;
 
             // Place children relative to the node origin but account for the whole sub-tree layout
-            var origin = new Vector2(reverse ? node.Left : node.Right, node.Center.Y - node.LayoutHeight * 0.5f);
+            var origin = new Float2(reverse ? node.Left : node.Right, node.Center.Y - node.LayoutHeight * 0.5f);
             var layoutProgress = 0.0f;
             var maxWidth = MarginX;
             if (reverse)
@@ -316,9 +316,9 @@ namespace FlaxEditor.Windows
             {
                 var assetRefNode = (AssetNode)_nodes[node.FirstChild + i];
                 if (reverse)
-                    assetRefNode.Location = origin + new Vector2(-maxWidth, layoutProgress + assetRefNode.LayoutHeight * 0.5f - assetRefNode.Height * 0.5f);
+                    assetRefNode.Location = origin + new Float2(-maxWidth, layoutProgress + assetRefNode.LayoutHeight * 0.5f - assetRefNode.Height * 0.5f);
                 else
-                    assetRefNode.Location = origin + new Vector2(MarginX, layoutProgress + assetRefNode.LayoutHeight * 0.5f - assetRefNode.Height * 0.5f);
+                    assetRefNode.Location = origin + new Float2(MarginX, layoutProgress + assetRefNode.LayoutHeight * 0.5f - assetRefNode.Height * 0.5f);
                 ArrangeGraph(assetRefNode, reverse);
                 layoutProgress += assetRefNode.LayoutHeight + MarginY;
             }
@@ -398,6 +398,9 @@ namespace FlaxEditor.Windows
 
             base.OnDestroy();
         }
+
+        /// <inheritdoc />
+        public Asset SurfaceAsset => null;
 
         /// <inheritdoc />
         public string SurfaceName => "References";

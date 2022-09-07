@@ -9,9 +9,8 @@
 /// </summary>
 API_CLASS(Static) class FLAXENGINE_API RenderTargetPool
 {
-DECLARE_SCRIPTING_TYPE_NO_SPAWN(RenderTargetPool);
+    DECLARE_SCRIPTING_TYPE_NO_SPAWN(RenderTargetPool);
 public:
-
     /// <summary>
     /// Flushes the temporary render targets.
     /// </summary>

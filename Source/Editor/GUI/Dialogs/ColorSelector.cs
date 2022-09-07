@@ -84,11 +84,11 @@ namespace FlaxEditor.GUI.Dialogs
         /// Updates the color selected by the mouse.
         /// </summary>
         /// <param name="location">The location.</param>
-        protected virtual void UpdateMouse(ref Vector2 location)
+        protected virtual void UpdateMouse(ref Float2 location)
         {
             if (_isMouseDownWheel)
             {
-                Vector2 delta = location - _wheelRect.Center;
+                var delta = location - _wheelRect.Center;
                 float distance = delta.Length;
 
                 float degrees;
@@ -171,9 +171,9 @@ namespace FlaxEditor.GUI.Dialogs
             Render2D.DrawSprite(_colorWheelSprite, _wheelRect.MakeExpanded(boxExpand), enabled ? Color.White : Color.Gray);
             float hAngle = hsv.X * Mathf.DegreesToRadians;
             float hRadius = hsv.Y * _wheelRect.Width * 0.5f;
-            Vector2 hsPos = new Vector2(hRadius * Mathf.Cos(hAngle), -hRadius * Mathf.Sin(hAngle));
+            var hsPos = new Float2(hRadius * Mathf.Cos(hAngle), -hRadius * Mathf.Sin(hAngle));
             const float wheelBoxSize = 4.0f;
-            Render2D.DrawRectangle(new Rectangle(hsPos - (wheelBoxSize * 0.5f) + _wheelRect.Center, new Vector2(wheelBoxSize)), _isMouseDownWheel ? Color.Gray : Color.Black);
+            Render2D.DrawRectangle(new Rectangle(hsPos - (wheelBoxSize * 0.5f) + _wheelRect.Center, new Float2(wheelBoxSize)), _isMouseDownWheel ? Color.Gray : Color.Black);
         }
 
         /// <inheritdoc />
@@ -185,7 +185,7 @@ namespace FlaxEditor.GUI.Dialogs
         }
 
         /// <inheritdoc />
-        public override void OnMouseMove(Vector2 location)
+        public override void OnMouseMove(Float2 location)
         {
             UpdateMouse(ref location);
 
@@ -193,7 +193,7 @@ namespace FlaxEditor.GUI.Dialogs
         }
 
         /// <inheritdoc />
-        public override bool OnMouseDown(Vector2 location, MouseButton button)
+        public override bool OnMouseDown(Float2 location, MouseButton button)
         {
             if (button == MouseButton.Left && _wheelRect.Contains(location))
             {
@@ -211,7 +211,7 @@ namespace FlaxEditor.GUI.Dialogs
         }
 
         /// <inheritdoc />
-        public override bool OnMouseUp(Vector2 location, MouseButton button)
+        public override bool OnMouseUp(Float2 location, MouseButton button)
         {
             if (button == MouseButton.Left && _isMouseDownWheel)
             {
@@ -261,18 +261,18 @@ namespace FlaxEditor.GUI.Dialogs
             const float slidersMargin = 8.0f;
             _slider1Rect = new Rectangle(wheelSize + slidersMargin, 0, slidersThickness, wheelSize);
             _slider2Rect = new Rectangle(_slider1Rect.Right + slidersMargin, _slider1Rect.Y, slidersThickness, _slider1Rect.Height);
-            Size = new Vector2(_slider2Rect.Right, wheelSize);
+            Size = new Float2(_slider2Rect.Right, wheelSize);
         }
 
         /// <inheritdoc />
-        protected override void UpdateMouse(ref Vector2 location)
+        protected override void UpdateMouse(ref Float2 location)
         {
             if (_isMouseDownSlider1)
             {
                 var hsv = _color.ToHSV();
                 hsv.Z = 1.0f - Mathf.Saturate((location.Y - _slider1Rect.Y) / _slider1Rect.Height);
 
-                Color = Color.FromHSV(hsv);
+                Color = Color.FromHSV(hsv, _color.A);
             }
             else if (_isMouseDownSlider2)
             {
@@ -327,7 +327,7 @@ namespace FlaxEditor.GUI.Dialogs
         }
 
         /// <inheritdoc />
-        public override bool OnMouseDown(Vector2 location, MouseButton button)
+        public override bool OnMouseDown(Float2 location, MouseButton button)
         {
             if (button == MouseButton.Left && _slider1Rect.Contains(location))
             {
@@ -346,7 +346,7 @@ namespace FlaxEditor.GUI.Dialogs
         }
 
         /// <inheritdoc />
-        public override bool OnMouseUp(Vector2 location, MouseButton button)
+        public override bool OnMouseUp(Float2 location, MouseButton button)
         {
             if (button == MouseButton.Left && (_isMouseDownSlider1 || _isMouseDownSlider2))
             {

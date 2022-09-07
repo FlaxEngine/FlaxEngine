@@ -10,7 +10,6 @@
 class ForwardMaterialShader : public MaterialShader
 {
 private:
-
     struct Cache
     {
         PipelineStateCache Default;
@@ -55,13 +54,11 @@ private:
     };
 
 private:
-
     Cache _cache;
     Cache _cacheInstanced;
     DrawPass _drawModes = DrawPass::None;
 
 public:
-
     /// <summary>
     /// Init
     /// </summary>
@@ -72,7 +69,6 @@ public:
     }
 
 public:
-
     // [MaterialShader]
     DrawPass GetDrawModes() const override;
     bool CanUseInstancing(InstancingHandler& handler) const override;
@@ -80,7 +76,6 @@ public:
     void Unload() override;
 
 protected:
-
     // [MaterialShader]
     bool Load() override;
 };

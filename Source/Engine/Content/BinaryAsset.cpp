@@ -459,12 +459,10 @@ const String& BinaryAsset::GetPath() const
 class InitAssetTask : public ContentLoadTask
 {
 private:
-
     WeakAssetReference<BinaryAsset> _asset;
     FlaxStorage::LockData _dataLock;
 
 public:
-
     /// <summary>
     /// Initializes a new instance of the <see cref="InitAssetTask"/> class.
     /// </summary>
@@ -477,7 +475,6 @@ public:
     }
 
 public:
-
     // [ContentLoadTask]
     bool HasReference(Object* obj) const override
     {
@@ -485,7 +482,6 @@ public:
     }
 
 protected:
-
     // [ContentLoadTask]
     Result run() override
     {
@@ -507,6 +503,7 @@ protected:
 
         return Result::Ok;
     }
+
     void OnEnd() override
     {
         _dataLock.Release();

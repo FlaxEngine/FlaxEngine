@@ -13,7 +13,6 @@
 class FLAXENGINE_API TextureMipData
 {
 public:
-
     uint32 RowPitch;
     uint32 DepthPitch;
     uint32 Lines;
@@ -47,7 +46,6 @@ public:
 class FLAXENGINE_API TextureData
 {
 public:
-
     /// <summary>
     /// Single entry of the texture array. Contains collection of mip maps.
     /// </summary>
@@ -60,7 +58,6 @@ public:
     };
 
 public:
-
     /// <summary>
     /// Init
     /// </summary>
@@ -76,7 +73,6 @@ public:
     }
 
 public:
-
     /// <summary>
     /// Top level texture width (in pixels).
     /// </summary>
@@ -103,7 +99,6 @@ public:
     Array<ArrayEntry, InlinedAllocation<6>> Items;
 
 public:
-
     /// <summary>
     /// Gather texture data
     /// </summary>

@@ -58,11 +58,11 @@ namespace FlaxEditor.Surface.Archetypes
                     type == typeof(float) ||
                     type == typeof(double))
                     return 1;
-                if (type == typeof(Vector2))
+                if (type == typeof(Vector2) || type == typeof(Float2) || type == typeof(Double2))
                     return 2;
-                if (type == typeof(Vector3))
+                if (type == typeof(Vector3) || type == typeof(Float3) || type == typeof(Double3))
                     return 3;
-                if (type == typeof(Vector4) || type == typeof(Color))
+                if (type == typeof(Vector4) || type == typeof(Float4) || type == typeof(Double4) || type == typeof(Color))
                     return 4;
                 return 0;
             }
@@ -78,20 +78,20 @@ namespace FlaxEditor.Surface.Archetypes
                 var count0 = CountComponents(_in0.CurrentType.Type);
                 var count1 = CountComponents(_in1.CurrentType.Type);
                 var count = count0 + count1;
-                var outType = typeof(Vector4);
+                var outType = typeof(Float4);
                 switch (count)
                 {
                 case 1:
                     outType = typeof(float);
                     break;
                 case 2:
-                    outType = typeof(Vector2);
+                    outType = typeof(Float2);
                     break;
                 case 3:
-                    outType = typeof(Vector3);
+                    outType = typeof(Float3);
                     break;
                 case 4:
-                    outType = typeof(Vector4);
+                    outType = typeof(Float4);
                     break;
                 }
                 _out.CurrentType = new ScriptType(outType);
@@ -235,10 +235,10 @@ namespace FlaxEditor.Surface.Archetypes
             new NodeArchetype
             {
                 TypeID = 20,
-                Title = "Pack Vector2",
-                Description = "Pack components to Vector2",
+                Title = "Pack Float2",
+                Description = "Pack components to Float2",
                 Flags = NodeFlags.AllGraphs,
-                Size = new Vector2(150, 40),
+                Size = new Float2(150, 40),
                 DefaultValues = new object[]
                 {
                     0.0f,
@@ -246,7 +246,7 @@ namespace FlaxEditor.Surface.Archetypes
                 },
                 Elements = new[]
                 {
-                    NodeElementArchetype.Factory.Output(0, "Value", typeof(Vector2), 0),
+                    NodeElementArchetype.Factory.Output(0, "Value", typeof(Float2), 0),
                     NodeElementArchetype.Factory.Input(0, "X", true, typeof(float), 1, 0),
                     NodeElementArchetype.Factory.Input(1, "Y", true, typeof(float), 2, 1),
                 }
@@ -254,10 +254,10 @@ namespace FlaxEditor.Surface.Archetypes
             new NodeArchetype
             {
                 TypeID = 21,
-                Title = "Pack Vector3",
-                Description = "Pack components to Vector3",
+                Title = "Pack Float3",
+                Description = "Pack components to Float3",
                 Flags = NodeFlags.AllGraphs,
-                Size = new Vector2(150, 60),
+                Size = new Float2(150, 60),
                 DefaultValues = new object[]
                 {
                     0.0f,
@@ -266,7 +266,7 @@ namespace FlaxEditor.Surface.Archetypes
                 },
                 Elements = new[]
                 {
-                    NodeElementArchetype.Factory.Output(0, "Value", typeof(Vector3), 0),
+                    NodeElementArchetype.Factory.Output(0, "Value", typeof(Float3), 0),
                     NodeElementArchetype.Factory.Input(0, "X", true, typeof(float), 1, 0),
                     NodeElementArchetype.Factory.Input(1, "Y", true, typeof(float), 2, 1),
                     NodeElementArchetype.Factory.Input(2, "Z", true, typeof(float), 3, 2),
@@ -275,10 +275,10 @@ namespace FlaxEditor.Surface.Archetypes
             new NodeArchetype
             {
                 TypeID = 22,
-                Title = "Pack Vector4",
-                Description = "Pack components to Vector4",
+                Title = "Pack Float4",
+                Description = "Pack components to Float4",
                 Flags = NodeFlags.AllGraphs,
-                Size = new Vector2(150, 80),
+                Size = new Float2(150, 80),
                 DefaultValues = new object[]
                 {
                     0.0f,
@@ -288,7 +288,7 @@ namespace FlaxEditor.Surface.Archetypes
                 },
                 Elements = new[]
                 {
-                    NodeElementArchetype.Factory.Output(0, "Value", typeof(Vector4), 0),
+                    NodeElementArchetype.Factory.Output(0, "Value", typeof(Float4), 0),
                     NodeElementArchetype.Factory.Input(0, "X", true, typeof(float), 1, 0),
                     NodeElementArchetype.Factory.Input(1, "Y", true, typeof(float), 2, 1),
                     NodeElementArchetype.Factory.Input(2, "Z", true, typeof(float), 3, 2),
@@ -301,7 +301,7 @@ namespace FlaxEditor.Surface.Archetypes
                 Title = "Pack Rotation",
                 Description = "Pack components to Rotation",
                 Flags = NodeFlags.AllGraphs,
-                Size = new Vector2(150, 60),
+                Size = new Float2(150, 60),
                 DefaultValues = new object[]
                 {
                     0.0f,
@@ -322,13 +322,13 @@ namespace FlaxEditor.Surface.Archetypes
                 Title = "Pack Transform",
                 Description = "Pack components to Transform",
                 Flags = NodeFlags.AllGraphs,
-                Size = new Vector2(150, 80),
+                Size = new Float2(150, 80),
                 Elements = new[]
                 {
                     NodeElementArchetype.Factory.Output(0, "Value", typeof(Transform), 0),
                     NodeElementArchetype.Factory.Input(0, "Translation", true, typeof(Vector3), 1),
                     NodeElementArchetype.Factory.Input(1, "Orientation", true, typeof(Quaternion), 2),
-                    NodeElementArchetype.Factory.Input(2, "Scale", true, typeof(Vector3), 3),
+                    NodeElementArchetype.Factory.Input(2, "Scale", true, typeof(Float3), 3),
                 }
             },
             new NodeArchetype
@@ -337,7 +337,7 @@ namespace FlaxEditor.Surface.Archetypes
                 Title = "Pack Box",
                 Description = "Pack components to BoundingBox",
                 Flags = NodeFlags.AllGraphs,
-                Size = new Vector2(150, 40),
+                Size = new Float2(150, 40),
                 Elements = new[]
                 {
                     NodeElementArchetype.Factory.Output(0, "Value", typeof(BoundingBox), 0),
@@ -352,7 +352,7 @@ namespace FlaxEditor.Surface.Archetypes
                 Create = (id, context, arch, groupArch) => new PackStructureNode(id, context, arch, groupArch),
                 Description = "Makes the structure data to from the components.",
                 Flags = NodeFlags.VisualScriptGraph | NodeFlags.AnimGraph | NodeFlags.NoSpawnViaGUI,
-                Size = new Vector2(180, 20),
+                Size = new Float2(180, 20),
                 DefaultValues = new object[]
                 {
                     string.Empty, // Typename
@@ -369,13 +369,13 @@ namespace FlaxEditor.Surface.Archetypes
             new NodeArchetype
             {
                 TypeID = 30,
-                Title = "Unpack Vector2",
-                Description = "Unpack components from Vector2",
+                Title = "Unpack Float2",
+                Description = "Unpack components from Float2",
                 Flags = NodeFlags.AllGraphs,
-                Size = new Vector2(150, 40),
+                Size = new Float2(150, 40),
                 Elements = new[]
                 {
-                    NodeElementArchetype.Factory.Input(0, "Value", true, typeof(Vector2), 0),
+                    NodeElementArchetype.Factory.Input(0, "Value", true, typeof(Float2), 0),
                     NodeElementArchetype.Factory.Output(0, "X", typeof(float), 1),
                     NodeElementArchetype.Factory.Output(1, "Y", typeof(float), 2)
                 }
@@ -383,13 +383,13 @@ namespace FlaxEditor.Surface.Archetypes
             new NodeArchetype
             {
                 TypeID = 31,
-                Title = "Unpack Vector3",
-                Description = "Unpack components from Vector3",
+                Title = "Unpack Float3",
+                Description = "Unpack components from Float3",
                 Flags = NodeFlags.AllGraphs,
-                Size = new Vector2(150, 60),
+                Size = new Float2(150, 60),
                 Elements = new[]
                 {
-                    NodeElementArchetype.Factory.Input(0, "Value", true, typeof(Vector3), 0),
+                    NodeElementArchetype.Factory.Input(0, "Value", true, typeof(Float3), 0),
                     NodeElementArchetype.Factory.Output(0, "X", typeof(float), 1),
                     NodeElementArchetype.Factory.Output(1, "Y", typeof(float), 2),
                     NodeElementArchetype.Factory.Output(2, "Z", typeof(float), 3)
@@ -398,13 +398,13 @@ namespace FlaxEditor.Surface.Archetypes
             new NodeArchetype
             {
                 TypeID = 32,
-                Title = "Unpack Vector4",
-                Description = "Unpack components from Vector4",
+                Title = "Unpack Float4",
+                Description = "Unpack components from Float4",
                 Flags = NodeFlags.AllGraphs,
-                Size = new Vector2(150, 80),
+                Size = new Float2(150, 80),
                 Elements = new[]
                 {
-                    NodeElementArchetype.Factory.Input(0, "Value", true, typeof(Vector4), 0),
+                    NodeElementArchetype.Factory.Input(0, "Value", true, typeof(Float4), 0),
                     NodeElementArchetype.Factory.Output(0, "X", typeof(float), 1),
                     NodeElementArchetype.Factory.Output(1, "Y", typeof(float), 2),
                     NodeElementArchetype.Factory.Output(2, "Z", typeof(float), 3),
@@ -417,7 +417,7 @@ namespace FlaxEditor.Surface.Archetypes
                 Title = "Unpack Rotation",
                 Description = "Unpack components from Rotation",
                 Flags = NodeFlags.AllGraphs,
-                Size = new Vector2(170, 60),
+                Size = new Float2(170, 60),
                 Elements = new[]
                 {
                     NodeElementArchetype.Factory.Input(0, "Value", true, typeof(Quaternion), 0),
@@ -432,13 +432,13 @@ namespace FlaxEditor.Surface.Archetypes
                 Title = "Unpack Transform",
                 Description = "Unpack components from Transform",
                 Flags = NodeFlags.AllGraphs,
-                Size = new Vector2(170, 60),
+                Size = new Float2(170, 60),
                 Elements = new[]
                 {
                     NodeElementArchetype.Factory.Input(0, "Value", true, typeof(Transform), 0),
                     NodeElementArchetype.Factory.Output(0, "Translation", typeof(Vector3), 1),
                     NodeElementArchetype.Factory.Output(1, "Orientation", typeof(Quaternion), 2),
-                    NodeElementArchetype.Factory.Output(2, "Scale", typeof(Vector3), 3)
+                    NodeElementArchetype.Factory.Output(2, "Scale", typeof(Float3), 3)
                 }
             },
             new NodeArchetype
@@ -447,7 +447,7 @@ namespace FlaxEditor.Surface.Archetypes
                 Title = "Unpack Box",
                 Description = "Unpack components from BoundingBox",
                 Flags = NodeFlags.AllGraphs,
-                Size = new Vector2(170, 40),
+                Size = new Float2(170, 40),
                 Elements = new[]
                 {
                     NodeElementArchetype.Factory.Input(0, "Value", true, typeof(BoundingBox), 0),
@@ -462,7 +462,7 @@ namespace FlaxEditor.Surface.Archetypes
                 Create = (id, context, arch, groupArch) => new UnpackStructureNode(id, context, arch, groupArch),
                 Description = "Breaks the structure data to allow extracting components from it.",
                 Flags = NodeFlags.VisualScriptGraph | NodeFlags.AnimGraph | NodeFlags.NoSpawnViaGUI,
-                Size = new Vector2(180, 20),
+                Size = new Float2(180, 20),
                 DefaultValues = new object[]
                 {
                     string.Empty, // Typename
@@ -482,7 +482,7 @@ namespace FlaxEditor.Surface.Archetypes
                 Description = "Unpack X component from Vector",
                 Flags = NodeFlags.AllGraphs,
                 ConnectionsHints = ConnectionsHint.Vector,
-                Size = new Vector2(110, 30),
+                Size = new Float2(110, 30),
                 Elements = new[]
                 {
                     NodeElementArchetype.Factory.Input(0, "Value", true, null, 0),
@@ -496,7 +496,7 @@ namespace FlaxEditor.Surface.Archetypes
                 Description = "Unpack Y component from Vector",
                 Flags = NodeFlags.AllGraphs,
                 ConnectionsHints = ConnectionsHint.Vector,
-                Size = new Vector2(110, 30),
+                Size = new Float2(110, 30),
                 Elements = new[]
                 {
                     NodeElementArchetype.Factory.Input(0, "Value", true, null, 0),
@@ -510,7 +510,7 @@ namespace FlaxEditor.Surface.Archetypes
                 Description = "Unpack Z component from Vector",
                 Flags = NodeFlags.AllGraphs,
                 ConnectionsHints = ConnectionsHint.Vector,
-                Size = new Vector2(110, 30),
+                Size = new Float2(110, 30),
                 Elements = new[]
                 {
                     NodeElementArchetype.Factory.Input(0, "Value", true, null, 0),
@@ -524,7 +524,7 @@ namespace FlaxEditor.Surface.Archetypes
                 Description = "Unpack W component from Vector",
                 Flags = NodeFlags.AllGraphs,
                 ConnectionsHints = ConnectionsHint.Vector,
-                Size = new Vector2(110, 30),
+                Size = new Float2(110, 30),
                 Elements = new[]
                 {
                     NodeElementArchetype.Factory.Input(0, "Value", true, null, 0),
@@ -540,11 +540,11 @@ namespace FlaxEditor.Surface.Archetypes
                 Description = "Unpack XY components from Vector",
                 Flags = NodeFlags.AllGraphs,
                 ConnectionsHints = ConnectionsHint.Vector,
-                Size = new Vector2(110, 30),
+                Size = new Float2(110, 30),
                 Elements = new[]
                 {
                     NodeElementArchetype.Factory.Input(0, "Value", true, null, 0),
-                    NodeElementArchetype.Factory.Output(0, "XY", typeof(Vector2), 1)
+                    NodeElementArchetype.Factory.Output(0, "XY", typeof(Float2), 1)
                 }
             },
             new NodeArchetype
@@ -554,11 +554,11 @@ namespace FlaxEditor.Surface.Archetypes
                 Description = "Unpack XZ components from Vector",
                 Flags = NodeFlags.AllGraphs,
                 ConnectionsHints = ConnectionsHint.Vector,
-                Size = new Vector2(110, 30),
+                Size = new Float2(110, 30),
                 Elements = new[]
                 {
                     NodeElementArchetype.Factory.Input(0, "Value", true, null, 0),
-                    NodeElementArchetype.Factory.Output(0, "XZ", typeof(Vector2), 1)
+                    NodeElementArchetype.Factory.Output(0, "XZ", typeof(Float2), 1)
                 }
             },
             new NodeArchetype
@@ -568,11 +568,11 @@ namespace FlaxEditor.Surface.Archetypes
                 Description = "Unpack YZ components from Vector",
                 Flags = NodeFlags.AllGraphs,
                 ConnectionsHints = ConnectionsHint.Vector,
-                Size = new Vector2(110, 30),
+                Size = new Float2(110, 30),
                 Elements = new[]
                 {
                     NodeElementArchetype.Factory.Input(0, "Value", true, null, 0),
-                    NodeElementArchetype.Factory.Output(0, "YZ", typeof(Vector2), 1)
+                    NodeElementArchetype.Factory.Output(0, "YZ", typeof(Float2), 1)
                 }
             },
             new NodeArchetype
@@ -582,11 +582,11 @@ namespace FlaxEditor.Surface.Archetypes
                 Description = "Unpack ZW components from Vector",
                 Flags = NodeFlags.AllGraphs,
                 ConnectionsHints = ConnectionsHint.Vector,
-                Size = new Vector2(110, 30),
+                Size = new Float2(110, 30),
                 Elements = new[]
                 {
                     NodeElementArchetype.Factory.Input(0, "Value", true, null, 0),
-                    NodeElementArchetype.Factory.Output(0, "ZW", typeof(Vector2), 1)
+                    NodeElementArchetype.Factory.Output(0, "ZW", typeof(Float2), 1)
                 }
             },
 
@@ -598,11 +598,11 @@ namespace FlaxEditor.Surface.Archetypes
                 Description = "Unpack XYZ components from Vector",
                 Flags = NodeFlags.AllGraphs,
                 ConnectionsHints = ConnectionsHint.Vector,
-                Size = new Vector2(110, 30),
+                Size = new Float2(110, 30),
                 Elements = new[]
                 {
                     NodeElementArchetype.Factory.Input(0, "Value", true, null, 0),
-                    NodeElementArchetype.Factory.Output(0, "XYZ", typeof(Vector3), 1)
+                    NodeElementArchetype.Factory.Output(0, "XYZ", typeof(Float3), 1)
                 }
             },
 
@@ -614,12 +614,12 @@ namespace FlaxEditor.Surface.Archetypes
                 Create = (id, context, nodeArch, groupArch) => new AppendNode(id, context, nodeArch, groupArch),
                 Flags = NodeFlags.AllGraphs,
                 ConnectionsHints = ConnectionsHint.Numeric,
-                Size = new Vector2(140, 50),
+                Size = new Float2(140, 50),
                 Elements = new[]
                 {
                     NodeElementArchetype.Factory.Input(0, string.Empty, true, null, 0),
                     NodeElementArchetype.Factory.Input(1, string.Empty, true, null, 1),
-                    NodeElementArchetype.Factory.Output(0, string.Empty, typeof(Vector4), 2)
+                    NodeElementArchetype.Factory.Output(0, string.Empty, typeof(Float4), 2)
                 }
             },
         };

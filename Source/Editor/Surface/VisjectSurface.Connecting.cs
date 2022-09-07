@@ -14,7 +14,7 @@ namespace FlaxEditor.Surface
         /// <summary>
         /// Gets the connection origin point (in surface node space).
         /// </summary>
-        Vector2 ConnectionOrigin { get; }
+        Float2 ConnectionOrigin { get; }
 
         /// <summary>
         /// Determines whether this surface object is connected with the specified other object.
@@ -36,7 +36,7 @@ namespace FlaxEditor.Surface
         /// <param name="startPos">The start position.</param>
         /// <param name="endPos">The end position.</param>
         /// <param name="color">The color.</param>
-        void DrawConnectingLine(ref Vector2 startPos, ref Vector2 endPos, ref Color color);
+        void DrawConnectingLine(ref Float2 startPos, ref Float2 endPos, ref Color color);
 
         /// <summary>
         /// Created the new connection with the specified other object.
@@ -47,13 +47,7 @@ namespace FlaxEditor.Surface
 
     public partial class VisjectSurface
     {
-        /// <summary>
-        /// Checks if can use direct conversion from one type to another.
-        /// </summary>
-        /// <param name="from">Source type.</param>
-        /// <param name="to">Target type.</param>
-        /// <returns>True if can use direct conversion, otherwise false.</returns>
-        public bool CanUseDirectCast(ScriptType from, ScriptType to)
+        internal static bool CanUseDirectCastStatic(ScriptType from, ScriptType to, bool supportsImplicitCastFromObjectToBoolean = true)
         {
             if (from == ScriptType.Null || to == ScriptType.Null)
                 return false;
@@ -76,7 +70,7 @@ namespace FlaxEditor.Surface
 
                 // Implicit casting is supported for object reference to test whenever it is valid
                 var toType = to.Type;
-                if (_supportsImplicitCastFromObjectToBoolean && toType == typeof(bool) && new ScriptType(typeof(FlaxEngine.Object)).IsAssignableFrom(from))
+                if (supportsImplicitCastFromObjectToBoolean && toType == typeof(bool) && ScriptType.FlaxObject.IsAssignableFrom(from))
                 {
                     return true;
                 }
@@ -97,6 +91,15 @@ namespace FlaxEditor.Surface
                     fromType == typeof(Vector2) ||
                     fromType == typeof(Vector3) ||
                     fromType == typeof(Vector4) ||
+                    fromType == typeof(Float2) ||
+                    fromType == typeof(Float3) ||
+                    fromType == typeof(Float4) ||
+                    fromType == typeof(Double2) ||
+                    fromType == typeof(Double3) ||
+                    fromType == typeof(Double4) ||
+                    fromType == typeof(Int2) ||
+                    fromType == typeof(Int3) ||
+                    fromType == typeof(Int4) ||
                     fromType == typeof(Color) ||
                     fromType == typeof(Quaternion))
                 {
@@ -114,6 +117,15 @@ namespace FlaxEditor.Surface
                         toType == typeof(Vector2) ||
                         toType == typeof(Vector3) ||
                         toType == typeof(Vector4) ||
+                        toType == typeof(Float2) ||
+                        toType == typeof(Float3) ||
+                        toType == typeof(Float4) ||
+                        toType == typeof(Double2) ||
+                        toType == typeof(Double3) ||
+                        toType == typeof(Double4) ||
+                        toType == typeof(Int2) ||
+                        toType == typeof(Int3) ||
+                        toType == typeof(Int4) ||
                         toType == typeof(Color) ||
                         toType == typeof(Quaternion))
                     {
@@ -122,6 +134,17 @@ namespace FlaxEditor.Surface
                 }
             }
             return result;
+        }
+
+        /// <summary>
+        /// Checks if can use direct conversion from one type to another.
+        /// </summary>
+        /// <param name="from">Source type.</param>
+        /// <param name="to">Target type.</param>
+        /// <returns>True if can use direct conversion, otherwise false.</returns>
+        public bool CanUseDirectCast(ScriptType from, ScriptType to)
+        {
+            return CanUseDirectCastStatic(from, to, _supportsImplicitCastFromObjectToBoolean);
         }
 
         /// <summary>

@@ -3,7 +3,6 @@
 #include "TAA.h"
 #include "Engine/Content/Assets/Shader.h"
 #include "Engine/Content/Content.h"
-#include "Engine/Core/Config/GraphicsSettings.h"
 #include "Engine/Graphics/GPUContext.h"
 #include "Engine/Graphics/RenderTargetPool.h"
 #include "Engine/Graphics/RenderBuffers.h"
@@ -13,8 +12,8 @@
 
 PACK_STRUCT(struct Data
     {
-    Vector2 ScreenSizeInv;
-    Vector2 JitterInv;
+    Float2 ScreenSizeInv;
+    Float2 JitterInv;
     float Sharpness;
     float StationaryBlending;
     float MotionBlending;

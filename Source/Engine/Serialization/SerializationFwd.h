@@ -8,7 +8,8 @@
 #include "JsonWriter.h"
 
 // The floating-point values serialization epsilon for equality checks precision
-#define SERIALIZE_EPSILON 0.0000001f
+#define SERIALIZE_EPSILON 1e-7f
+#define SERIALIZE_EPSILON_DOUBLE 1e-17
 
 // Helper macro to cast object on diff serialization
 #define SERIALIZE_GET_OTHER_OBJ(type) const auto other = static_cast<const type*>(otherObj)

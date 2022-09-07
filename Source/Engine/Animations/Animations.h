@@ -14,7 +14,7 @@ class Asset;
 /// </summary>
 API_CLASS(Static) class FLAXENGINE_API Animations
 {
-DECLARE_SCRIPTING_TYPE_NO_SPAWN(Animations);
+    DECLARE_SCRIPTING_TYPE_NO_SPAWN(Animations);
 
     /// <summary>
     /// The system for Animations update.

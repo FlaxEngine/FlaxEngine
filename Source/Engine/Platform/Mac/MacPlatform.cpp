@@ -74,32 +74,32 @@ CFStringRef MacUtils::ToString(const StringView& str)
     return CFStringCreateWithBytes(nullptr, (const UInt8*)str.GetNonTerminatedText(), str.Length() * sizeof(Char), kCFStringEncodingUTF16LE, false);
 }
 
-Vector2 MacUtils::PosToCoca(const Vector2& pos)
+Float2 MacUtils::PosToCoca(const Float2& pos)
 {
     // MacOS uses y-coordinate starting at the bottom of the screen
-    Vector2 result = pos;
+    Float2 result = pos;
     result.Y *= -1;
     result += GetScreensOrigin();
     return result;
 }
 
-Vector2 MacUtils::CocaToPos(const Vector2& pos)
+Float2 MacUtils::CocaToPos(const Float2& pos)
 {
     // MacOS uses y-coordinate starting at the bottom of the screen
-    Vector2 result = pos;
+    Float2 result = pos;
     result -= GetScreensOrigin();
     result.Y *= -1;
     return result;
 }
 
-Vector2 MacUtils::GetScreensOrigin()
+Float2 MacUtils::GetScreensOrigin()
 {
-    Vector2 result = Vector2::Zero;
+    Float2 result = Float2::Zero;
     NSArray* screenArray = [NSScreen screens];
     for (NSUInteger i = 0; i < [screenArray count]; i++)
     {
         NSRect rect = [[screenArray objectAtIndex:i] frame];
-        Vector2 pos(rect.origin.x, rect.origin.y + rect.size.height);
+        Float2 pos(rect.origin.x, rect.origin.y + rect.size.height);
         if (pos.X < result.X)
             result.X = pos.X;
         if (pos.Y > result.Y)
@@ -206,7 +206,7 @@ public:
 public:
 
     // [Mouse]
-    void SetMousePosition(const Vector2& newPosition) final override
+    void SetMousePosition(const Float2& newPosition) final override
     {
         MacPlatform::SetMousePosition(newPosition);
 
@@ -532,15 +532,15 @@ void MacPlatform::OpenUrl(const StringView& url)
 {
 }
 
-Vector2 MacPlatform::GetMousePosition()
+Float2 MacPlatform::GetMousePosition()
 {
     CGEventRef event = CGEventCreate(nullptr);
     CGPoint cursor = CGEventGetLocation(event);
     CFRelease(event);
-    return Vector2((float)cursor.x, (float)cursor.y);
+    return Float2((float)cursor.x, (float)cursor.y);
 }
 
-void MacPlatform::SetMousePosition(const Vector2& pos)
+void MacPlatform::SetMousePosition(const Float2& pos)
 {
     CGPoint cursor;
     cursor.x = (CGFloat)pos.X;
@@ -548,10 +548,10 @@ void MacPlatform::SetMousePosition(const Vector2& pos)
     CGWarpMouseCursorPosition(cursor);
 }
 
-Vector2 MacPlatform::GetDesktopSize()
+Float2 MacPlatform::GetDesktopSize()
 {
     CGDirectDisplayID mainDisplay = CGMainDisplayID();
-    return Vector2((float)CGDisplayPixelsWide(mainDisplay), (float)CGDisplayPixelsHigh(mainDisplay));
+    return Float2((float)CGDisplayPixelsWide(mainDisplay), (float)CGDisplayPixelsHigh(mainDisplay));
 }
 
 Rectangle GetDisplayBounds(CGDirectDisplayID display)
@@ -560,7 +560,7 @@ Rectangle GetDisplayBounds(CGDirectDisplayID display)
     return Rectangle(rect.origin.x, rect.origin.y, rect.size.width, rect.size.height);
 }
 
-Rectangle MacPlatform::GetMonitorBounds(const Vector2& screenPos)
+Rectangle MacPlatform::GetMonitorBounds(const Float2& screenPos)
 {
     CGPoint point;
     point.x = screenPos.X;
@@ -570,7 +570,7 @@ Rectangle MacPlatform::GetMonitorBounds(const Vector2& screenPos)
     CGGetDisplaysWithPoint(point, 1, &display, &count);
     if (count == 1)
         return GetDisplayBounds(display);
-	return Rectangle(Vector2::Zero, GetDesktopSize());
+	return Rectangle(Float2::Zero, GetDesktopSize());
 }
 
 Rectangle MacPlatform::GetVirtualDesktopBounds()
@@ -579,7 +579,7 @@ Rectangle MacPlatform::GetVirtualDesktopBounds()
     uint32_t count = 0;
     CGGetOnlineDisplayList(ARRAY_COUNT(displays), displays, &count);
     if (count == 0)
-	    return Rectangle(Vector2::Zero, GetDesktopSize());
+	    return Rectangle(Float2::Zero, GetDesktopSize());
     Rectangle result = GetDisplayBounds(displays[0]);
     for (uint32_t i = 1; i < count; i++)
         result = Rectangle::Union(result, GetDisplayBounds(displays[i]));

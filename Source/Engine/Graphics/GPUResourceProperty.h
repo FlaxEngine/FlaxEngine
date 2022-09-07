@@ -12,23 +12,19 @@ template<typename T = GPUResource>
 class GPUResourceProperty
 {
 private:
-
     T* _resource;
 
 private:
-
     // Disable copy actions
     GPUResourceProperty(const GPUResourceProperty& other) = delete;
 
 public:
-
     /// <summary>
     /// Action fired when resource gets unloaded (reference gets cleared bu async tasks should stop execution).
     /// </summary>
     Delegate<GPUResourceProperty*> OnUnload;
 
 public:
-
     /// <summary>
     /// Initializes a new instance of the <see cref="GPUResourceProperty"/> class.
     /// </summary>
@@ -62,7 +58,6 @@ public:
     }
 
 public:
-
     FORCE_INLINE bool operator==(T* other) const
     {
         return Get() == other;
@@ -147,7 +142,6 @@ public:
     }
 
 public:
-
     /// <summary>
     /// Set resource
     /// </summary>
@@ -183,7 +177,6 @@ public:
     }
 
 private:
-
     void onResourceUnload()
     {
         if (_resource)

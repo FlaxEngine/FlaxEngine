@@ -50,10 +50,8 @@ namespace FlaxEditor.Windows.Assets
                     {
                         var sprite = Asset.GetSprite(i);
                         var area = sprite.Area;
-
-                        Vector2 position = area.Location * rect.Size + rect.Location;
-                        Vector2 size = area.Size * rect.Size;
-
+                        var position = area.Location * rect.Size + rect.Location;
+                        var size = area.Size * rect.Size;
                         Render2D.DrawRectangle(new Rectangle(position, size), style.BackgroundSelected);
                     }
                 }
@@ -86,14 +84,14 @@ namespace FlaxEditor.Windows.Assets
                 }
 
                 [EditorOrder(1), Limit(-4096, 4096)]
-                public Vector2 Location
+                public Float2 Location
                 {
                     get => Sprite.Location;
                     set => Sprite.Location = value;
                 }
 
                 [EditorOrder(3), Limit(0, 4096)]
-                public Vector2 Size
+                public Float2 Size
                 {
                     get => Sprite.Size;
                     set => Sprite.Size = value;
@@ -139,7 +137,7 @@ namespace FlaxEditor.Windows.Assets
                     }
                 }
 
-                private void OnGroupPanelMouseButtonRightClicked(DropPanel groupPanel, Vector2 location)
+                private void OnGroupPanelMouseButtonRightClicked(DropPanel groupPanel, Float2 location)
                 {
                     var menu = new ContextMenu();
 
@@ -272,7 +270,7 @@ namespace FlaxEditor.Windows.Assets
                 var sprite = new Sprite
                 {
                     Name = StringUtils.IncrementNameNumber("New Sprite", name => Asset.Sprites.All(s => s.Name != name)),
-                    Area = new Rectangle(Vector2.Zero, Vector2.One),
+                    Area = new Rectangle(Float2.Zero, Float2.One),
                 };
                 Asset.AddSprite(sprite);
                 MarkAsEdited();

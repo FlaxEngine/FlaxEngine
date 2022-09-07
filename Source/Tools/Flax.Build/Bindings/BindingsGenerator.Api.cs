@@ -20,7 +20,8 @@ namespace Flax.Build.Bindings
             public const string Field = "API_FIELD";
             public const string Event = "API_EVENT";
             public const string Param = "API_PARAM";
-            public const string InjectCppCode = "API_INJECT_CPP_CODE";
+            public const string Typedef = "API_TYPEDEF";
+            public const string InjectCode = "API_INJECT_CODE";
             public const string AutoSerialization = "API_AUTO_SERIALIZATION";
 
             public static readonly string[] SearchTags =
@@ -29,121 +30,74 @@ namespace Flax.Build.Bindings
                 Class,
                 Struct,
                 Interface,
+                Typedef,
             };
         }
 
         public static readonly Dictionary<TypeInfo, ApiTypeInfo> InBuildTypes = new Dictionary<TypeInfo, ApiTypeInfo>
         {
             {
-                new TypeInfo
-                {
-                    Type = "void",
-                },
+                new TypeInfo("void"),
                 new LangType("void")
             },
             {
-                new TypeInfo
-                {
-                    Type = "bool",
-                },
+                new TypeInfo("bool"),
                 new LangType("bool")
             },
             {
-                new TypeInfo
-                {
-                    Type = "byte",
-                },
+                new TypeInfo("byte"),
                 new LangType("byte")
             },
             {
-                new TypeInfo
-                {
-                    Type = "int8",
-                },
+                new TypeInfo("int8"),
                 new LangType("int8")
             },
             {
-                new TypeInfo
-                {
-                    Type = "int16",
-                },
+                new TypeInfo("int16"),
                 new LangType("int16")
             },
             {
-                new TypeInfo
-                {
-                    Type = "int32",
-                },
+                new TypeInfo("int32"),
                 new LangType("int32")
             },
             {
-                new TypeInfo
-                {
-                    Type = "int64",
-                },
+                new TypeInfo("int64"),
                 new LangType("int64")
             },
             {
-                new TypeInfo
-                {
-                    Type = "uint8",
-                },
+                new TypeInfo("uint8"),
                 new LangType("uint8")
             },
             {
-                new TypeInfo
-                {
-                    Type = "uint16",
-                },
+                new TypeInfo("uint16"),
                 new LangType("uint16")
             },
             {
-                new TypeInfo
-                {
-                    Type = "uint32",
-                },
+                new TypeInfo("uint32"),
                 new LangType("uint32")
             },
             {
-                new TypeInfo
-                {
-                    Type = "uint64",
-                },
+                new TypeInfo("uint64"),
                 new LangType("uint64")
             },
             {
-                new TypeInfo
-                {
-                    Type = "float",
-                },
+                new TypeInfo("float"),
                 new LangType("float")
             },
             {
-                new TypeInfo
-                {
-                    Type = "double",
-                },
+                new TypeInfo("double"),
                 new LangType("double")
             },
             {
-                new TypeInfo
-                {
-                    Type = "Char",
-                },
+                new TypeInfo("Char"),
                 new LangType("char")
             },
             {
-                new TypeInfo
-                {
-                    Type = "char",
-                },
+                new TypeInfo("char"),
                 new LangType("sbyte")
             },
             {
-                new TypeInfo
-                {
-                    Type = "void*",
-                },
+                new TypeInfo("void*"),
                 new LangType("IntPtr")
             },
         };
@@ -154,6 +108,15 @@ namespace Flax.Build.Bindings
             "Vector2",
             "Vector3",
             "Vector4",
+            "Float2",
+            "Float3",
+            "Float4",
+            "Double2",
+            "Double3",
+            "Double4",
+            "Int2",
+            "Int3",
+            "Int4",
             "Int2",
             "Int3",
             "Int4",
@@ -275,7 +238,7 @@ namespace Flax.Build.Bindings
                 result = FindApiTypeInfoInner(buildData, typeInfo, e.Value);
                 if (result != null)
                 {
-                    buildData.TypeCache.Add(typeInfo, result);
+                    buildData.TypeCache[typeInfo] = result;
                     return result;
                 }
             }
@@ -284,12 +247,12 @@ namespace Flax.Build.Bindings
             if (typeInfo.Type.Contains("::"))
             {
                 var nesting = typeInfo.Type.Split(new[] { "::" }, StringSplitOptions.None);
-                result = FindApiTypeInfo(buildData, new TypeInfo { Type = nesting[0], }, caller);
+                result = FindApiTypeInfo(buildData, new TypeInfo(nesting[0]), caller);
                 for (int i = 1; i < nesting.Length; i++)
                 {
                     if (result == null)
                         return null;
-                    result = FindApiTypeInfoInner(buildData, new TypeInfo { Type = nesting[i], }, result);
+                    result = FindApiTypeInfoInner(buildData, new TypeInfo(nesting[i]), result);
                 }
                 return result;
             }
@@ -301,20 +264,56 @@ namespace Flax.Build.Bindings
 
         private static ApiTypeInfo FindApiTypeInfoInner(BuildData buildData, TypeInfo typeInfo, ApiTypeInfo parent)
         {
+            ApiTypeInfo result = null;
             foreach (var child in parent.Children)
             {
                 if (child.Name == typeInfo.Type)
                 {
-                    child.EnsureInited(buildData);
-                    return child;
+                    result = child;
+
+                    // Special case when searching for template types (use instantiated template if input type has generic arguments)
+                    if (child is ClassStructInfo classStructInfo && classStructInfo.IsTemplate && typeInfo.GenericArgs != null)
+                    {
+                        // Support instantiated template type with instantiated arguments (eg. 'typedef Vector3Base<Real> Vector3' where 'typedef float Real')
+                        var inflatedType = typeInfo.Inflate(buildData, child);
+
+                        // Find any typedef which introduced this type (eg. 'typedef Vector3Base<float> Float3')
+                        result = FindTypedef(buildData, inflatedType, parent.ParentModule);
+                        if (result == TypedefInfo.Current)
+                            result = child; // Use template type for the current typedef
+                        else if (result == null)
+                            continue; // Invalid template match
+                    }
+
+                    result.EnsureInited(buildData);
+                    if (result is TypedefInfo typedef)
+                        result = typedef.Typedef;
+                    break;
                 }
 
-                var result = FindApiTypeInfoInner(buildData, typeInfo, child);
+                result = FindApiTypeInfoInner(buildData, typeInfo, child);
                 if (result != null)
-                    return result;
+                    break;
             }
+            return result;
+        }
 
-            return null;
+        private static ApiTypeInfo FindTypedef(BuildData buildData, TypeInfo typeInfo, ApiTypeInfo parent)
+        {
+            ApiTypeInfo result = null;
+            foreach (var child in parent.Children)
+            {
+                if (child is TypedefInfo typedef && typedef.Type.Equals(typeInfo))
+                {
+                    result = child;
+                    break;
+                }
+
+                result = FindTypedef(buildData, typeInfo, child);
+                if (result != null)
+                    break;
+            }
+            return result;
         }
     }
 }

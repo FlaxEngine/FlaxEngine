@@ -29,6 +29,11 @@ const MaterialInfo& MaterialComplexityMaterialShader::WrapperShader::GetInfo() c
     return Info;
 }
 
+GPUShader* MaterialComplexityMaterialShader::WrapperShader::GetShader() const
+{
+    return MaterialAsset->GetShader();
+}
+
 bool MaterialComplexityMaterialShader::WrapperShader::IsReady() const
 {
     return MaterialAsset && MaterialAsset->IsReady();
@@ -140,7 +145,9 @@ void MaterialComplexityMaterialShader::Draw(RenderContext& renderContext, GPUCon
         {
             const auto decal = decals[i];
             ASSERT(decal && decal->Material);
-            decal->GetWorld(&drawCall.World);
+            Transform transform = decal->GetTransform();
+            transform.Scale *= decal->GetSize();
+            renderContext.View.GetWorldMatrix(transform, drawCall.World);
             drawCall.ObjectPosition = drawCall.World.GetTranslation();
             drawCall.Material = decal->Material;
             drawCall.PerInstanceRandom = decal->GetPerInstanceRandom();

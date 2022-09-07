@@ -390,7 +390,7 @@ void ReflectionsPass::Render(RenderContext& renderContext, GPUTextureView* light
     context->BindSR(2, renderContext.Buffers->GBuffer2);
     context->BindSR(3, renderContext.Buffers->DepthBuffer);
 
-    auto tempDesc = GPUTextureDescription::New2D(renderContext.Buffers->GetWidth(), renderContext.Buffers->GetHeight(), REFLECTIONS_PASS_OUTPUT_FORMAT);
+    auto tempDesc = GPUTextureDescription::New2D(renderContext.Buffers->GetWidth(), renderContext.Buffers->GetHeight(), PixelFormat::R11G11B10_Float);
     auto reflectionsBuffer = RenderTargetPool::Get(tempDesc);
 
     context->Clear(*reflectionsBuffer, Color::Black);
@@ -412,10 +412,8 @@ void ReflectionsPass::Render(RenderContext& renderContext, GPUTextureView* light
         {
             // Cache data
             auto probe = renderContext.List->EnvironmentProbes[probeIndex];
-            if (!probe->HasProbeLoaded())
-                continue;
             float probeRadius = probe->GetScaledRadius();
-            Vector3 probePosition = probe->GetPosition();
+            Float3 probePosition = probe->GetPosition() - renderContext.View.Origin;
 
             // Get distance from view center to light center less radius (check if view is inside a sphere)
             const float sphereModelScale = 2.0f;
@@ -430,13 +428,13 @@ void ReflectionsPass::Render(RenderContext& renderContext, GPUTextureView* light
             Matrix::Multiply(world, view.ViewProjection(), wvp);
 
             // Pack probe properties buffer
-            probe->SetupProbeData(&data.PData);
+            probe->SetupProbeData(renderContext, &data.PData);
             Matrix::Transpose(wvp, data.WVP);
 
             // Render reflections
             context->UpdateCB(cb, &data);
             context->BindCB(0, cb);
-            context->BindSR(4, probe->GetProbe()->GetTexture());
+            context->BindSR(4, probe->GetProbe());
 
             context->SetState(isViewInside ? _psProbeInverted : _psProbeNormal);
             _sphereModel->Render(context);

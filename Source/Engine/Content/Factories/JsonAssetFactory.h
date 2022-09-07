@@ -13,16 +13,15 @@
 class FLAXENGINE_API JsonAssetFactoryBase : public IAssetFactory
 {
 protected:
-
     virtual JsonAssetBase* Create(const AssetInfo& info) = 0;
 
 public:
-
     // [IAssetFactory]
     Asset* New(const AssetInfo& info) override
     {
         return Create(info);
     }
+
     Asset* NewVirtual(const AssetInfo& info) override
     {
         return Create(info);
@@ -37,7 +36,6 @@ template<typename T>
 class JsonAssetFactory : public JsonAssetFactoryBase
 {
 protected:
-
     // [JsonAssetFactoryBase]
     JsonAssetBase* Create(const AssetInfo& info) override
     {

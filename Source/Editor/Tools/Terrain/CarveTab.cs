@@ -70,7 +70,7 @@ namespace FlaxEditor.Tools.Terrain
                 UseScroll = true,
                 Offsets = Margin.Zero,
                 AnchorPreset = AnchorPresets.StretchAll,
-                TabsSize = new Vector2(50, 32),
+                TabsSize = new Float2(50, 32),
                 Parent = this
             };
 

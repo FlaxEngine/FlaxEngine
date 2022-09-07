@@ -1,14 +1,16 @@
 // Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
+using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Text;
 
 namespace Flax.Build.Bindings
 {
     /// <summary>
     /// The native type information for bindings generator.
     /// </summary>
-    public class ApiTypeInfo : IBindingsCache
+    public class ApiTypeInfo : IBindingsCache, ICloneable
     {
         public ApiTypeInfo Parent;
         public List<ApiTypeInfo> Children = new List<ApiTypeInfo>();
@@ -20,6 +22,7 @@ namespace Flax.Build.Bindings
         public bool IsInBuild;
         public bool IsDeprecated;
         internal bool IsInited;
+        internal TypedefInfo Instigator;
 
         public virtual bool IsClass => false;
         public virtual bool IsStruct => false;
@@ -28,6 +31,7 @@ namespace Flax.Build.Bindings
         public virtual bool IsValueType => false;
         public virtual bool IsScriptingObject => false;
         public virtual bool IsPod => false;
+        public virtual bool SkipGeneration => IsInBuild;
 
         public FileInfo File
         {
@@ -37,6 +41,17 @@ namespace Flax.Build.Bindings
                 while (result != null && !(result is FileInfo))
                     result = result.Parent;
                 return result as FileInfo;
+            }
+        }
+
+        public ModuleInfo ParentModule
+        {
+            get
+            {
+                var result = this;
+                while (result != null && !(result is ModuleInfo))
+                    result = result.Parent;
+                return result as ModuleInfo;
             }
         }
 
@@ -134,6 +149,21 @@ namespace Flax.Build.Bindings
         public override string ToString()
         {
             return Name;
+        }
+
+        /// <inheritdoc />
+        public object Clone()
+        {
+            var clone = (ApiTypeInfo)Activator.CreateInstance(GetType());
+            using (var stream = new MemoryStream(1024))
+            {
+                using (var writer = new BinaryWriter(stream, Encoding.UTF8, true))
+                    Write(writer);
+                stream.Position = 0;
+                using (var reader = new BinaryReader(stream))
+                    clone.Read(reader);
+            }
+            return clone;
         }
     }
 }

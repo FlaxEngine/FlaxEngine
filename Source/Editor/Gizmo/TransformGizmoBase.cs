@@ -1,5 +1,11 @@
 // Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
+#if USE_LARGE_WORLDS
+using Real = System.Double;
+#else
+using Real = System.Single;
+#endif
+
 using System;
 using System.Collections.Generic;
 using FlaxEditor.SceneGraph;
@@ -30,9 +36,7 @@ namespace FlaxEditor.Gizmo
         protected BoundingBox _startBounds = BoundingBox.Empty;
 
         private Vector3 _accMoveDelta;
-        private Matrix _axisAlignedWorld = Matrix.Identity;
-
-        private Matrix _gizmoWorld = Matrix.Identity;
+        private Transform _gizmoWorld = Transform.Identity;
         private Vector3 _intersectPosition;
         private bool _isActive;
         private bool _isDuplicating;
@@ -40,19 +44,11 @@ namespace FlaxEditor.Gizmo
         private bool _isTransforming;
         private Vector3 _lastIntersectionPosition;
 
-        private Vector3 _localForward = Vector3.Forward;
-        private Vector3 _localRight = Vector3.Right;
-        private Vector3 _localUp = Vector3.Up;
-
-        private Matrix _objectOrientedWorld = Matrix.Identity;
-
         private Quaternion _rotationDelta = Quaternion.Identity;
-        private Matrix _rotationMatrix;
         private float _rotationSnapDelta;
         private Vector3 _scaleDelta;
         private float _screenScale;
 
-        private Matrix _screenScaleMatrix;
         private Vector3 _tDelta;
         private Vector3 _translationDelta;
         private Vector3 _translationScaleSnapDelta;
@@ -164,43 +160,17 @@ namespace FlaxEditor.Gizmo
             UpdateGizmoPosition();
 
             // Scale gizmo to fit on-screen
-            Vector3 vLength = Owner.ViewPosition - Position;
+            Vector3 position = Position;
+            Vector3 vLength = Owner.ViewPosition - position;
             float gizmoSize = Editor.Instance.Options.Options.Visual.GizmoSize;
-            _screenScale = vLength.Length / GizmoScaleFactor * gizmoSize;
-            Matrix.Scaling(_screenScale, out _screenScaleMatrix);
+            _screenScale = (float)(vLength.Length / GizmoScaleFactor * gizmoSize);
 
+            // Setup world
             Quaternion orientation = GetSelectedObject(0).Orientation;
-            Matrix.RotationQuaternion(ref orientation, out Matrix rotation);
-            _localForward = rotation.Forward;
-            _localUp = rotation.Up;
-
-            // Vector Rotation (Local/World)
-            _localForward.Normalize();
-            Vector3.Cross(ref _localForward, ref _localUp, out _localRight);
-            Vector3.Cross(ref _localRight, ref _localForward, out _localUp);
-            _localRight.Normalize();
-            _localUp.Normalize();
-
-            // Create both world matrices
-            _objectOrientedWorld = _screenScaleMatrix * Matrix.CreateWorld(Position, _localForward, _localUp);
-            _axisAlignedWorld = _screenScaleMatrix * Matrix.CreateWorld(Position, Vector3.Backward, Vector3.Up);
-
-            // Assign world
+            _gizmoWorld = new Transform(position, orientation, new Float3(_screenScale));
             if (_activeTransformSpace == TransformSpace.World && _activeMode != Mode.Scale)
             {
-                _gizmoWorld = _axisAlignedWorld;
-
-                // Align lines, boxes etc. with the grid-lines
-                _rotationMatrix = Matrix.Identity;
-            }
-            else
-            {
-                _gizmoWorld = _objectOrientedWorld;
-
-                // Align lines, boxes etc. with the selected object
-                _rotationMatrix.Forward = _localForward;
-                _rotationMatrix.Up = _localUp;
-                _rotationMatrix.Right = _localRight;
+                _gizmoWorld.Orientation = Quaternion.Identity;
             }
         }
 
@@ -210,7 +180,8 @@ namespace FlaxEditor.Gizmo
             Vector3 delta = Vector3.Zero;
             Ray ray = Owner.MouseRay;
 
-            Matrix.Invert(ref _rotationMatrix, out var invRotationMatrix);
+            Matrix.RotationQuaternion(ref _gizmoWorld.Orientation, out var rotationMatrix);
+            Matrix.Invert(ref rotationMatrix, out var invRotationMatrix);
             ray.Position = Vector3.Transform(ray.Position, invRotationMatrix);
             Vector3.TransformNormal(ref ray.Direction, ref invRotationMatrix, out ray.Direction);
 
@@ -222,12 +193,13 @@ namespace FlaxEditor.Gizmo
             var planeDotYZ = Mathf.Abs(Vector3.Dot(planeYZ.Normal, dir));
             var planeDotZX = Mathf.Abs(Vector3.Dot(planeZX.Normal, dir));
 
+            Real intersection;
             switch (_activeAxis)
             {
             case Axis.X:
             {
                 var plane = planeDotXY > planeDotZX ? planeXY : planeZX;
-                if (ray.Intersects(ref plane, out float intersection))
+                if (ray.Intersects(ref plane, out intersection))
                 {
                     _intersectPosition = ray.Position + ray.Direction * intersection;
                     if (_lastIntersectionPosition != Vector3.Zero)
@@ -239,7 +211,7 @@ namespace FlaxEditor.Gizmo
             case Axis.Y:
             {
                 var plane = planeDotXY > planeDotYZ ? planeXY : planeYZ;
-                if (ray.Intersects(ref plane, out float intersection))
+                if (ray.Intersects(ref plane, out intersection))
                 {
                     _intersectPosition = ray.Position + ray.Direction * intersection;
                     if (_lastIntersectionPosition != Vector3.Zero)
@@ -251,7 +223,7 @@ namespace FlaxEditor.Gizmo
             case Axis.Z:
             {
                 var plane = planeDotZX > planeDotYZ ? planeZX : planeYZ;
-                if (ray.Intersects(ref plane, out float intersection))
+                if (ray.Intersects(ref plane, out intersection))
                 {
                     _intersectPosition = ray.Position + ray.Direction * intersection;
                     if (_lastIntersectionPosition != Vector3.Zero)
@@ -262,7 +234,7 @@ namespace FlaxEditor.Gizmo
             }
             case Axis.YZ:
             {
-                if (ray.Intersects(ref planeYZ, out float intersection))
+                if (ray.Intersects(ref planeYZ, out intersection))
                 {
                     _intersectPosition = ray.Position + ray.Direction * intersection;
                     if (_lastIntersectionPosition != Vector3.Zero)
@@ -273,7 +245,7 @@ namespace FlaxEditor.Gizmo
             }
             case Axis.XY:
             {
-                if (ray.Intersects(ref planeXY, out float intersection))
+                if (ray.Intersects(ref planeXY, out intersection))
                 {
                     _intersectPosition = ray.Position + ray.Direction * intersection;
                     if (_lastIntersectionPosition != Vector3.Zero)
@@ -284,7 +256,7 @@ namespace FlaxEditor.Gizmo
             }
             case Axis.ZX:
             {
-                if (ray.Intersects(ref planeZX, out float intersection))
+                if (ray.Intersects(ref planeZX, out intersection))
                 {
                     _intersectPosition = ray.Position + ray.Direction * intersection;
                     if (_lastIntersectionPosition != Vector3.Zero)
@@ -297,7 +269,7 @@ namespace FlaxEditor.Gizmo
             {
                 var gizmoToView = Position - Owner.ViewPosition;
                 var plane = new Plane(-Vector3.Normalize(gizmoToView), gizmoToView.Length);
-                if (ray.Intersects(ref plane, out float intersection))
+                if (ray.Intersects(ref plane, out intersection))
                 {
                     _intersectPosition = ray.Position + ray.Direction * intersection;
                     if (_lastIntersectionPosition != Vector3.Zero)
@@ -327,7 +299,7 @@ namespace FlaxEditor.Gizmo
             if (_activeMode == Mode.Translate)
             {
                 // Transform (local or world)
-                delta = Vector3.Transform(delta, _rotationMatrix);
+                delta = Vector3.Transform(delta, rotationMatrix);
                 _translationDelta = delta;
             }
             else if (_activeMode == Mode.Scale)
@@ -360,16 +332,16 @@ namespace FlaxEditor.Gizmo
             case Axis.Y:
             case Axis.Z:
             {
-                Vector3 dir;
+                Float3 dir;
                 if (_activeAxis == Axis.X)
-                    dir = _rotationMatrix.Right;
+                    dir = Float3.Right * _gizmoWorld.Orientation;
                 else if (_activeAxis == Axis.Y)
-                    dir = _rotationMatrix.Up;
+                    dir = Float3.Up * _gizmoWorld.Orientation;
                 else
-                    dir = _rotationMatrix.Forward;
+                    dir = Float3.Forward * _gizmoWorld.Orientation;
 
-                Vector3 viewDir = Owner.ViewPosition - Position;
-                Vector3.Dot(ref viewDir, ref dir, out float dot);
+                Float3 viewDir = Owner.ViewPosition - Position;
+                Float3.Dot(ref viewDir, ref dir, out float dot);
                 if (dot < 0.0f)
                     delta *= -1;
 

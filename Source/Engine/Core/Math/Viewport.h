@@ -5,7 +5,6 @@
 
 #include "Vector2.h"
 
-struct Vector3;
 struct Matrix;
 struct Rectangle;
 
@@ -13,7 +12,6 @@ struct Rectangle;
 API_STRUCT(InBuild) struct FLAXENGINE_API Viewport
 {
 public:
-
     union
     {
         struct
@@ -26,7 +24,7 @@ public:
         };
 
         // Upper left corner location.
-        Vector2 Location;
+        Float2 Location;
     };
 
     union
@@ -41,7 +39,7 @@ public:
         };
 
         // Size
-        Vector2 Size;
+        Float2 Size;
     };
 
     // Minimum depth of the clip volume.
@@ -51,7 +49,6 @@ public:
     float MaxDepth;
 
 public:
-
     /// <summary>
     /// Empty constructor.
     /// </summary>
@@ -95,7 +92,7 @@ public:
     /// Initializes a new instance of the <see cref="Viewport"/> struct.
     /// </summary>
     /// <param name="size">The viewport size.</param>
-    explicit Viewport(const Vector2& size)
+    explicit Viewport(const Float2& size)
         : X(0)
         , Y(0)
         , Width(size.X)
@@ -110,11 +107,9 @@ public:
     Viewport(const Rectangle& bounds);
 
 public:
-
     String ToString() const;
 
 public:
-
     // Gets the aspect ratio used by the viewport
     // @returns The aspect ratio
     float GetAspectRatio() const
@@ -135,7 +130,6 @@ public:
     void SetBounds(const Rectangle& bounds);
 
 public:
-
     bool operator==(const Viewport& other) const
     {
         return X == other.X && Y == other.Y && Width == other.Width && Height == other.Height && MinDepth == other.MinDepth && MaxDepth == other.MaxDepth;
@@ -147,7 +141,6 @@ public:
     }
 
 public:
-
     // Projects a 3D vector from object space into screen space
     // @param source The vector to project
     // @param vp A combined WorldViewProjection matrix

@@ -85,7 +85,7 @@ namespace FlaxEditor.SceneGraph.Actors
         {
             Editor.Instance.Windows.ContentWin.Select(Editor.Instance.ContentDatabase.Find(Scene.Path));
         }
-        
+
         private void OnSave()
         {
             Editor.Instance.Scene.SaveScene(this);

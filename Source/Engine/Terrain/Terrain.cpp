@@ -13,6 +13,8 @@
 #include "Engine/Graphics/RenderTask.h"
 #include "Engine/Graphics/Textures/GPUTexture.h"
 #include "Engine/Profiler/ProfilerCPU.h"
+#include "Engine/Renderer/GlobalSignDistanceFieldPass.h"
+#include "Engine/Renderer/GI/GlobalSurfaceAtlasPass.h"
 
 Terrain::Terrain(const SpawnParams& params)
     : PhysicsColliderActor(params)
@@ -47,7 +49,7 @@ void Terrain::UpdateBounds()
     }
     BoundingSphere::FromBox(_box, _sphere);
     if (_sceneRenderingKey != -1)
-        GetSceneRendering()->UpdateGeometry(this, _sceneRenderingKey);
+        GetSceneRendering()->UpdateActor(this, _sceneRenderingKey);
 }
 
 void Terrain::CacheNeighbors()
@@ -184,7 +186,7 @@ bool Terrain::RayCast(const Vector3& origin, const Vector3& direction, RayCastHi
 
 void Terrain::ClosestPoint(const Vector3& position, Vector3& result) const
 {
-    float minDistance = MAX_float;
+    Real minDistance = MAX_Real;
     Vector3 tmp;
     for (int32 pathIndex = 0; pathIndex < _patches.Count(); pathIndex++)
     {
@@ -505,6 +507,45 @@ void Terrain::Draw(RenderContext& renderContext)
     DrawPass drawModes = (DrawPass)(DrawModes & renderContext.View.Pass);
     if (drawModes == DrawPass::None)
         return;
+    if (renderContext.View.Pass == DrawPass::GlobalSDF)
+    {
+        const float chunkSize = TERRAIN_UNITS_PER_VERTEX * (float)_chunkSize;
+        const float posToUV = 0.25f / chunkSize;
+        Float4 localToUV(posToUV, posToUV, 0.0f, 0.0f);
+        for (const TerrainPatch* patch : _patches)
+        {
+            if (!patch->Heightmap)
+                continue;
+            Transform patchTransform;
+            patchTransform.Translation = patch->_offset + Vector3(0, patch->_yOffset, 0);
+            patchTransform.Orientation = Quaternion::Identity;
+            patchTransform.Scale = Float3(1.0f, patch->_yHeight, 1.0f);
+            patchTransform = _transform.LocalToWorld(patchTransform);
+            GlobalSignDistanceFieldPass::Instance()->RasterizeHeightfield(this, patch->Heightmap->GetTexture(), patchTransform, patch->_bounds, localToUV);
+        }
+        return;
+    }
+    if (renderContext.View.Pass == DrawPass::GlobalSurfaceAtlas)
+    {
+        for (TerrainPatch* patch : _patches)
+        {
+            if (!patch->Heightmap)
+                continue;
+            Matrix localToWorld, worldToLocal;
+            BoundingSphere chunkSphere;
+            BoundingBox localBounds;
+            for (int32 chunkIndex = 0; chunkIndex < TerrainPatch::CHUNKS_COUNT; chunkIndex++)
+            {
+                TerrainChunk* chunk = &patch->Chunks[chunkIndex];
+                chunk->GetTransform().GetWorld(localToWorld); // TODO: large-worlds
+                Matrix::Invert(localToWorld, worldToLocal);
+                BoundingBox::Transform(chunk->GetBounds(), worldToLocal, localBounds);
+                BoundingSphere::FromBox(chunk->GetBounds(), chunkSphere);
+                GlobalSurfaceAtlasPass::Instance()->RasterizeActor(this, chunk, chunkSphere, chunk->GetTransform(), localBounds, 1 << 2, false);
+            }
+        }
+        return;
+    }
 
     PROFILE_CPU();
 
@@ -515,10 +556,12 @@ void Terrain::Draw(RenderContext& renderContext)
 
     // Frustum vs Box culling for patches
     const BoundingFrustum frustum = renderContext.View.CullingFrustum;
+    const Vector3 origin = renderContext.View.Origin;
     for (int32 patchIndex = 0; patchIndex < _patches.Count(); patchIndex++)
     {
         const auto patch = _patches[patchIndex];
-        if (frustum.Intersects(patch->_bounds))
+        BoundingBox bounds(patch->_bounds.Minimum - origin, patch->_bounds.Maximum - origin);
+        if (renderContext.View.IsCullingDisabled || frustum.Intersects(bounds))
         {
             // Skip if has no heightmap or it's not loaded
             if (patch->Heightmap == nullptr || patch->Heightmap->GetTexture()->ResidentMipLevels() == 0)
@@ -529,7 +572,8 @@ void Terrain::Draw(RenderContext& renderContext)
             {
                 auto chunk = &patch->Chunks[chunkIndex];
                 chunk->_cachedDrawLOD = 0;
-                if (frustum.Intersects(chunk->_bounds))
+                bounds = BoundingBox(chunk->_bounds.Minimum - origin, chunk->_bounds.Maximum - origin);
+                if (renderContext.View.IsCullingDisabled || frustum.Intersects(bounds))
                 {
                     if (chunk->PrepareDraw(renderContext))
                     {
@@ -557,11 +601,6 @@ void Terrain::Draw(RenderContext& renderContext)
     }
 }
 
-void Terrain::DrawGeneric(RenderContext& renderContext)
-{
-    Draw(renderContext);
-}
-
 #if USE_EDITOR
 
 //#include "Engine/Debug/DebugDraw.h"
@@ -586,7 +625,7 @@ void Terrain::OnDebugDrawSelected()
 
 #endif
 
-bool Terrain::IntersectsItself(const Ray& ray, float& distance, Vector3& normal)
+bool Terrain::IntersectsItself(const Ray& ray, Real& distance, Vector3& normal)
 {
     float minDistance = MAX_float;
     Vector3 minDistanceNormal = Vector3::Up;
@@ -732,6 +771,13 @@ void Terrain::Deserialize(DeserializeStream& stream, ISerializeModifier* modifie
         }
 #endif
     }
+
+    // [Deprecated on 07.02.2022, expires on 07.02.2024]
+    if (modifier->EngineBuild <= 6330)
+        DrawModes |= DrawPass::GlobalSDF;
+    // [Deprecated on 27.04.2022, expires on 27.04.2024]
+    if (modifier->EngineBuild <= 6331)
+        DrawModes |= DrawPass::GlobalSurfaceAtlas;
 }
 
 RigidBody* Terrain::GetAttachedRigidBody() const
@@ -742,7 +788,7 @@ RigidBody* Terrain::GetAttachedRigidBody() const
 
 void Terrain::OnEnable()
 {
-    _sceneRenderingKey = GetSceneRendering()->AddGeometry(this);
+    GetSceneRendering()->AddActor(this, _sceneRenderingKey);
 #if TERRAIN_USE_PHYSICS_DEBUG
     GetSceneRendering()->AddPhysicsDebug<Terrain, &Terrain::DrawPhysicsDebug>(this);
 #endif
@@ -753,7 +799,7 @@ void Terrain::OnEnable()
 
 void Terrain::OnDisable()
 {
-    GetSceneRendering()->RemoveGeometry(this, _sceneRenderingKey);
+    GetSceneRendering()->RemoveActor(this, _sceneRenderingKey);
 #if TERRAIN_USE_PHYSICS_DEBUG
     GetSceneRendering()->RemovePhysicsDebug<Terrain, &Terrain::DrawPhysicsDebug>(this);
 #endif
@@ -772,7 +818,7 @@ void Terrain::OnTransformChanged()
         auto patch = _patches[i];
         patch->UpdateTransform();
     }
-    if (!Vector3::NearEqual(_cachedScale, _transform.Scale))
+    if (!Float3::NearEqual(_cachedScale, _transform.Scale))
     {
         _cachedScale = _transform.Scale;
         for (int32 i = 0; i < _patches.Count(); i++)
@@ -794,7 +840,7 @@ void Terrain::OnLayerChanged()
 
     UpdateLayerBits();
     if (_sceneRenderingKey != -1)
-        GetSceneRendering()->UpdateGeometry(this, _sceneRenderingKey);
+        GetSceneRendering()->UpdateActor(this, _sceneRenderingKey);
 }
 
 void Terrain::OnActiveInTreeChanged()

@@ -125,7 +125,7 @@ namespace FlaxEditor.Surface.ContextMenu
                 _parameterSetNodeArchetype = info.ParameterSetNodeArchetype ?? Archetypes.Parameters.Nodes[3];
 
             // Context menu dimensions
-            Size = new Vector2(320, 220);
+            Size = new Float2(320, 220);
 
             // Search box
             _searchBox = new TextBox(false, 1, 1)
@@ -171,11 +171,7 @@ namespace FlaxEditor.Surface.ContextMenu
                 // Check if can create group for them
                 if (nodes.Count > 0)
                 {
-                    var group = new VisjectCMGroup(this, groupArchetype)
-                    {
-                        HeaderText = groupArchetype.Name
-                    };
-
+                    var group = CreateGroup(groupArchetype);
                     group.Close(false);
                     for (int i = 0; i < nodes.Count; i++)
                     {
@@ -205,7 +201,7 @@ namespace FlaxEditor.Surface.ContextMenu
                     VisjectCMGroup group = null;
                     for (int j = 0; j < _groups.Count; j++)
                     {
-                        if (string.Equals(_groups[j].Archetype.Name, groupName, StringComparison.OrdinalIgnoreCase))
+                        if (string.Equals(_groups[j].Name, groupName, StringComparison.OrdinalIgnoreCase))
                         {
                             group = _groups[j];
                             break;
@@ -215,11 +211,7 @@ namespace FlaxEditor.Surface.ContextMenu
                     // Create new group if name is unique
                     if (group == null)
                     {
-                        group = new VisjectCMGroup(this, info.CustomNodesGroup)
-                        {
-                            HeaderText = groupName
-                        };
-
+                        group = CreateGroup(info.CustomNodesGroup, true, groupName);
                         group.Close(false);
                         group.Parent = _groupsPanel;
                         _groups.Add(group);
@@ -241,18 +233,15 @@ namespace FlaxEditor.Surface.ContextMenu
         /// Adds the group archetype to add to the menu.
         /// </summary>
         /// <param name="groupArchetype">The group.</param>
-        public void AddGroup(GroupArchetype groupArchetype)
+        /// <param name="withGroupMerge">True if merge group items into any existing group of the same name.</param>
+        public void AddGroup(GroupArchetype groupArchetype, bool withGroupMerge = true)
         {
             // Check if can create group for them to be spawned via GUI
             if (groupArchetype.Archetypes.Any(x => (x.Flags & NodeFlags.NoSpawnViaGUI) == 0))
             {
                 Profiler.BeginEvent("VisjectCM.AddGroup");
 
-                var group = new VisjectCMGroup(this, groupArchetype)
-                {
-                    HeaderText = groupArchetype.Name
-                };
-
+                var group = CreateGroup(groupArchetype, withGroupMerge);
                 group.Close(false);
 
                 foreach (var nodeArchetype in groupArchetype.Archetypes)
@@ -286,7 +275,8 @@ namespace FlaxEditor.Surface.ContextMenu
         /// Adds the group archetypes to add to the menu.
         /// </summary>
         /// <param name="groupArchetypes">The groups.</param>
-        public void AddGroups(IEnumerable<GroupArchetype> groupArchetypes)
+        /// <param name="withGroupMerge">True if merge group items into any existing group of the same name.</param>
+        public void AddGroups(IEnumerable<GroupArchetype> groupArchetypes, bool withGroupMerge = true)
         {
             // Check if can create group for them to be spawned via GUI
             if (groupArchetypes.Any(g => g.Archetypes.Any(x => (x.Flags & NodeFlags.NoSpawnViaGUI) == 0)))
@@ -299,11 +289,7 @@ namespace FlaxEditor.Surface.ContextMenu
                 var groups = new List<VisjectCMGroup>();
                 foreach (var groupArchetype in groupArchetypes)
                 {
-                    var group = new VisjectCMGroup(this, groupArchetype)
-                    {
-                        HeaderText = groupArchetype.Name
-                    };
-
+                    var group = CreateGroup(groupArchetype, withGroupMerge);
                     group.Close(false);
 
                     foreach (var nodeArchetype in groupArchetype.Archetypes)
@@ -349,11 +335,25 @@ namespace FlaxEditor.Surface.ContextMenu
         {
             for (int i = 0; i < _groups.Count; i++)
             {
-                if (_groups[i].Archetype == groupArchetype)
+                var group = _groups[i];
+                if (group.Archetypes.Remove(groupArchetype))
                 {
                     Profiler.BeginEvent("VisjectCM.RemoveGroup");
-                    _groups[i].Dispose();
-                    _groups.RemoveAt(i);
+                    if (group.Archetypes.Count == 0)
+                    {
+                        Debug.Log("Remove");
+                        _groups.RemoveAt(i);
+                        group.Dispose();
+                    }
+                    else
+                    {
+                        var children = group.Children.ToArray();
+                        foreach (var child in children)
+                        {
+                            if (child is VisjectCMItem item && item.GroupArchetype == groupArchetype)
+                                item.Dispose();
+                        }
+                    }
                     Profiler.EndEvent();
                     break;
                 }
@@ -370,6 +370,24 @@ namespace FlaxEditor.Surface.ContextMenu
             group.Dispose();
             _groups.Remove(group);
             Profiler.EndEvent();
+        }
+
+        private VisjectCMGroup CreateGroup(GroupArchetype groupArchetype, bool withGroupMerge = true, string name = null)
+        {
+            if (name == null)
+                name = groupArchetype.Name;
+            if (withGroupMerge)
+            {
+                for (int i = 0; i < _groups.Count; i++)
+                {
+                    if (string.Equals(_groups[i].HeaderText, name, StringComparison.Ordinal))
+                        return _groups[i];
+                }
+            }
+            return new VisjectCMGroup(this, groupArchetype)
+            {
+                HeaderText = name
+            };
         }
 
         private void OnSearchFilterChanged()
@@ -522,11 +540,7 @@ namespace FlaxEditor.Surface.ContextMenu
                     Archetypes = archetypes
                 };
 
-                var group = new VisjectCMGroup(this, groupArchetype)
-                {
-                    HeaderText = groupArchetype.Name
-                };
-
+                var group = CreateGroup(groupArchetype);
                 group.Close(false);
                 archetypeIndex = 0;
                 for (int i = 0; i < parameters.Count; i++)
@@ -559,7 +573,7 @@ namespace FlaxEditor.Surface.ContextMenu
         }
 
         /// <inheritdoc />
-        public override void Show(Control parent, Vector2 location)
+        public override void Show(Control parent, Float2 location)
         {
             Show(parent, location, null);
         }
@@ -570,7 +584,7 @@ namespace FlaxEditor.Surface.ContextMenu
         /// <param name="parent">Parent control to attach to it.</param>
         /// <param name="location">Popup menu origin location in parent control coordinates.</param>
         /// <param name="startBox">The currently selected box that the new node will get connected to. Can be null</param>
-        public void Show(Control parent, Vector2 location, Elements.Box startBox)
+        public void Show(Control parent, Float2 location, Elements.Box startBox)
         {
             _selectedBox = startBox;
             base.Show(parent, location);

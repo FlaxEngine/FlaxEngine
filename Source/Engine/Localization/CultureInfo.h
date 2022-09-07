@@ -10,7 +10,7 @@
 /// </summary>
 API_CLASS(InBuild, Namespace="System.Globalization") class FLAXENGINE_API CultureInfo
 {
-DECLARE_SCRIPTING_TYPE_MINIMAL(CultureInfo);
+    DECLARE_SCRIPTING_TYPE_MINIMAL(CultureInfo);
 private:
     void* _data;
     int32 _lcid;

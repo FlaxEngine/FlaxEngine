@@ -96,6 +96,11 @@ namespace Flax.Build
         public string EngineNickname;
 
         /// <summary>
+        /// The custom build configuration entries loaded from project file.
+        /// </summary>
+        public Dictionary<string, string> Configuration;
+
+        /// <summary>
         /// True if project is using C#-only and no native toolsets is required to build and use scripts.
         /// </summary>
         public bool IsCSharpOnlyProject

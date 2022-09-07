@@ -185,6 +185,8 @@ bool GPUSwapChainVulkan::CreateSwapChain(int32 width, int32 height)
         // Flush removed resources
         _device->DeferredDeletionQueue.ReleaseResources(true);
     }
+    ASSERT(_surface == VK_NULL_HANDLE);
+    ASSERT_LOW_LAYER(_backBuffers.Count() == 0);
 
     // Create platform-dependent surface
     VulkanPlatform::CreateSurface(windowHandle, GPUDeviceVulkan::Instance, &_surface);
@@ -193,6 +195,7 @@ bool GPUSwapChainVulkan::CreateSwapChain(int32 width, int32 height)
         LOG(Warning, "Failed to create Vulkan surface.");
         return true;
     }
+    _memoryUsage = 1;
 
     const auto& gpu = _device->Adapter->Gpu;
 
@@ -205,7 +208,7 @@ bool GPUSwapChainVulkan::CreateSwapChain(int32 width, int32 height)
         VALIDATE_VULKAN_RESULT(vkGetPhysicalDeviceSurfaceFormatsKHR(gpu, _surface, &surfaceFormatsCount, nullptr));
         ASSERT(surfaceFormatsCount > 0);
 
-        Array<VkSurfaceFormatKHR> surfaceFormats;
+        Array<VkSurfaceFormatKHR, InlinedAllocation<16>> surfaceFormats;
         surfaceFormats.AddZeroed(surfaceFormatsCount);
         VALIDATE_VULKAN_RESULT(vkGetPhysicalDeviceSurfaceFormatsKHR(gpu, _surface, &surfaceFormatsCount, surfaceFormats.Get()));
 
@@ -360,6 +363,11 @@ bool GPUSwapChainVulkan::CreateSwapChain(int32 width, int32 height)
     VALIDATE_VULKAN_RESULT(vkGetPhysicalDeviceSurfaceCapabilitiesKHR(gpu, _surface, &surfProperties));
     width = Math::Clamp<int32>(width, surfProperties.minImageExtent.width, surfProperties.maxImageExtent.width);
     height = Math::Clamp<int32>(height, surfProperties.minImageExtent.height, surfProperties.maxImageExtent.height);
+    if (width <= 0 || height <= 0)
+    {
+        LOG(Error, "Vulkan SwapChain dimensions are invalid {}x{} (minImageExtent={}x{}, maxImageExtent={}x{})", width, height, surfProperties.minImageExtent.width, surfProperties.minImageExtent.height, surfProperties.maxImageExtent.width, surfProperties.maxImageExtent.height);
+        return true;
+    }
     VkSwapchainCreateInfoKHR swapChainInfo;
     RenderToolsVulkan::ZeroStruct(swapChainInfo, VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR);
     swapChainInfo.surface = _surface;
@@ -414,8 +422,8 @@ bool GPUSwapChainVulkan::CreateSwapChain(int32 width, int32 height)
         }
     }
 
-    // Calculate memory usage
-    _memoryUsage = RenderTools::CalculateTextureMemoryUsage(_format, _width, _height, 1) * _backBuffers.Count();
+    // Estimate memory usage
+    _memoryUsage = 1024 + RenderTools::CalculateTextureMemoryUsage(_format, _width, _height, 1) * _backBuffers.Count();
 
     return false;
 }

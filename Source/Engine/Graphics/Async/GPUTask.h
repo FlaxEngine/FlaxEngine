@@ -17,7 +17,6 @@ class GPUTask : public Task
     friend GPUTasksContext;
 
 public:
-
     /// <summary>
     /// Describes GPU work type
     /// </summary>
@@ -29,7 +28,6 @@ public:
     DECLARE_ENUM_4(Result, Ok, Failed, MissingResources, MissingData);
 
 private:
-
     /// <summary>
     /// Task type
     /// </summary>
@@ -46,7 +44,6 @@ private:
     GPUTasksContext* _context;
 
 protected:
-
     /// <summary>
     /// Initializes a new instance of the <see cref="GPUTask"/> class.
     /// </summary>
@@ -59,7 +56,6 @@ protected:
     }
 
 public:
-
     /// <summary>
     /// Gets a task type.
     /// </summary>
@@ -79,7 +75,6 @@ public:
     }
 
 public:
-
     /// <summary>
     /// Checks if operation is syncing
     /// </summary>
@@ -90,7 +85,6 @@ public:
     }
 
 public:
-
     /// <summary>
     /// Executes this task.
     /// </summary>
@@ -152,7 +146,6 @@ public:
     }
 
 protected:
-
     virtual Result run(GPUTasksContext* context) = 0;
 
     virtual void OnSync()
@@ -160,7 +153,6 @@ protected:
     }
 
 public:
-
     // [Task]
     String ToString() const override
     {
@@ -168,7 +160,6 @@ public:
     }
 
 protected:
-
     // [Task]
     void Enqueue() override;
 

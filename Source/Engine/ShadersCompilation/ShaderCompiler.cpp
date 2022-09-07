@@ -9,6 +9,7 @@
 #include "Engine/Platform/File.h"
 #include "Engine/Platform/FileSystem.h"
 #include "Engine/Graphics/RenderTools.h"
+#include "Engine/Graphics/Shaders/GPUShader.h"
 #include "Engine/Threading/Threading.h"
 #include "Engine/Profiler/ProfilerCPU.h"
 #include "Engine/Serialization/MemoryWriteStream.h"
@@ -24,7 +25,7 @@ namespace IncludedFiles
     {
         String Path;
         DateTime LastEditTime;
-        Array<byte> Source;
+        StringAnsi Source;
     };
 
     CriticalSection Locker;
@@ -80,7 +81,7 @@ bool ShaderCompiler::Compile(ShaderCompilationContext* context)
         _constantBuffers.Add({ meta->CB[i].Slot, false, 0 });
 
     // [Output] Version number
-    output->WriteInt32(8);
+    output->WriteInt32(GPU_SHADER_CACHE_VERSION);
 
     // [Output] Additional data start
     const int32 additionalDataStartPos = output->GetPosition();
@@ -221,7 +222,7 @@ bool ShaderCompiler::GetIncludedFileSource(ShaderCompilationContext* context, co
         result = New<IncludedFiles::File>();
         result->Path = path;
         result->LastEditTime = FileSystem::GetFileLastEditTime(path);
-        if (File::ReadAllBytes(result->Path, result->Source))
+        if (File::ReadAllText(result->Path, result->Source))
         {
             LOG(Error, "Failed to load shader source file '{0}' included in '{1}' (path: '{2}')", String(includedFile), String(sourceFile), path);
             Delete(result);
@@ -233,8 +234,8 @@ bool ShaderCompiler::GetIncludedFileSource(ShaderCompilationContext* context, co
     context->Includes.Add(path);
 
     // Copy to output
-    source = (const char*)result->Source.Get();
-    sourceLength = result->Source.Count() - 1;
+    source = result->Source.Get();
+    sourceLength = result->Source.Length();
     return false;
 }
 

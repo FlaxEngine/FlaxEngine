@@ -110,6 +110,10 @@ namespace Flax.Build.Platforms
                 StripPath = Path.Combine(Path.Combine(ToolsetRoot, string.Format("bin/{0}-{1}", ArchitectureName, "strip"))) + exeExtension;
                 ObjcopyPath = Path.Combine(Path.Combine(ToolsetRoot, string.Format("bin/{0}-{1}", ArchitectureName, "objcopy"))) + exeExtension;
                 LdPath = Path.Combine(Path.Combine(ToolsetRoot, string.Format("bin/{0}-{1}", ArchitectureName, "ld"))) + exeExtension;
+
+                // Fix possibly invalid path
+                if (!File.Exists(StripPath))
+                    StripPath = Path.Combine(Path.Combine(ToolsetRoot, "bin/llvm-strip")) + exeExtension;
             }
 
             // Determinate compiler version
@@ -280,7 +284,21 @@ namespace Flax.Build.Platforms
                 commonArgs.Add("-pipe");
                 commonArgs.Add("-x");
                 commonArgs.Add("c++");
-                commonArgs.Add("-std=c++14");
+
+                // C++ version
+                switch (compileEnvironment.CppVersion)
+                {
+                case CppVersion.Cpp14:
+                    commonArgs.Add("-std=c++14");
+                    break;
+                case CppVersion.Cpp17:
+                case CppVersion.Latest:
+                    commonArgs.Add("-std=c++17");
+                    break;
+                case CppVersion.Cpp20:
+                    commonArgs.Add("-std=c++20");
+                    break;
+                }
 
                 commonArgs.Add("-Wdelete-non-virtual-dtor");
                 commonArgs.Add("-fno-math-errno");

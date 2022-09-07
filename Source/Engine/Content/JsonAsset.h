@@ -12,13 +12,11 @@
 /// <seealso cref="Asset" />
 API_CLASS(Abstract, NoSpawn) class FLAXENGINE_API JsonAssetBase : public Asset
 {
-DECLARE_SCRIPTING_TYPE_NO_SPAWN(JsonAssetBase);
+    DECLARE_SCRIPTING_TYPE_NO_SPAWN(JsonAssetBase);
 protected:
-
     String _path;
 
 protected:
-
     /// <summary>
     /// Initializes a new instance of the <see cref="JsonAssetBase"/> class.
     /// </summary>
@@ -27,7 +25,6 @@ protected:
     explicit JsonAssetBase(const SpawnParams& params, const AssetInfo* info);
 
 public:
-
     /// <summary>
     /// The parsed json document.
     /// </summary>
@@ -53,6 +50,15 @@ public:
     /// </summary>
     API_PROPERTY() String GetData() const;
 
+    /// <summary>
+    /// Initializes the virtual Json asset with custom data.
+    /// </summary>
+    /// <remarks>Can be used only for virtual assets created at runtime.</remarks>
+    /// <param name="dataTypeName">The data type name from the header. Allows to recognize the data type.</param>
+    /// <param name="dataJson">The Json with serialized data.</param>
+    /// <returns>True if failed, otherwise false.</returns>
+    API_FUNCTION() bool Init(const StringView& dataTypeName, const StringAnsiView& dataJson);
+
 #if USE_EDITOR
     /// <summary>
     /// Parses Json string to find any object references inside it. It can produce list of references to assets and/or scene objects. Supported only in Editor.
@@ -63,7 +69,6 @@ public:
 #endif
 
 public:
-
     // [Asset]
     const String& GetPath() const override;
 #if USE_EDITOR
@@ -71,7 +76,6 @@ public:
 #endif
 
 protected:
-
     // [Asset]
     LoadResult loadAsset() override;
     void unload(bool isReloading) override;
@@ -86,12 +90,11 @@ protected:
 /// <seealso cref="JsonAssetBase" />
 API_CLASS(NoSpawn) class FLAXENGINE_API JsonAsset : public JsonAssetBase
 {
-DECLARE_ASSET_HEADER(JsonAsset);
+    DECLARE_ASSET_HEADER(JsonAsset);
 private:
     ScriptingType::Dtor _dtor;
 
 public:
-
     /// <summary>
     /// The scripting type of the deserialized unmanaged object instance (e.g. PhysicalMaterial).
     /// </summary>
@@ -113,7 +116,6 @@ public:
     }
 
 protected:
-
     // [JsonAssetBase]
     LoadResult loadAsset() override;
     void unload(bool isReloading) override;

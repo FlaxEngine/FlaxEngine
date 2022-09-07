@@ -17,7 +17,7 @@ struct GeometryTriangle
     Vector3 Vector1;
     Vector3 Vector2;
     Vector3 Normal;
-    float Area;
+    Real Area;
 
     GeometryTriangle(const bool isDeterminantPositive, const Vector3& v0, const Vector3& v1, const Vector3& v2)
     {
@@ -26,7 +26,7 @@ struct GeometryTriangle
         Vector2 = v2 - Vertex;
 
         Normal = isDeterminantPositive ? Vector1 ^ Vector2 : Vector2 ^ Vector1;
-        const float normalLength = Normal.Length();
+        const Real normalLength = Normal.Length();
         Area = normalLength * 0.5f;
         if (normalLength > ZeroTolerance)
         {
@@ -80,9 +80,10 @@ struct GeometryLookup
             PROFILE_CPU_NAMED("StaticModel");
 
             // Check model meshes
-            Matrix world;
-            staticModel->GetWorld(&world);
-            const bool isDeterminantPositive = staticModel->GetTransform().GetDeterminant() >= 0.0f;
+            Transform transform = staticModel->GetTransform();
+            Matrix worldMatrix;
+            transform.GetWorld(worldMatrix);
+            const bool isDeterminantPositive = transform.GetDeterminant() >= 0.0f;
             auto& lod = staticModel->Model->LODs[0];
             for (int32 meshIndex = 0; meshIndex < lod.Meshes.Count(); meshIndex++)
             {
@@ -96,9 +97,9 @@ struct GeometryLookup
 
                     // Transform triangle vertices from mesh space to world space
                     Vector3 t0, t1, t2;
-                    Vector3::Transform(t.V0, world, t0);
-                    Vector3::Transform(t.V1, world, t1);
-                    Vector3::Transform(t.V2, world, t2);
+                    Vector3::Transform(t.V0, worldMatrix, t0);
+                    Vector3::Transform(t.V1, worldMatrix, t1);
+                    Vector3::Transform(t.V2, worldMatrix, t2);
 
                     // Check if triangles intersects with the brush
                     if (CollisionsHelper::SphereIntersectsTriangle(brush, t0, t1, t2))
@@ -231,7 +232,7 @@ void FoliageTools::Paint(Foliage* foliage, Span<int32> foliageTypesIndices, cons
                 }
 
                 // Calculate amount of foliage instances to place
-                const float targetInstanceCountEst = triangle.Area * foliageType.PaintDensity * densityScale / (1000.0f * 1000.0f);
+                const float targetInstanceCountEst = (float)(triangle.Area * foliageType.PaintDensity * densityScale / (1000.0f * 1000.0f));
                 const int32 targetInstanceCount = targetInstanceCountEst > 1.0f ? Math::RoundToInt(targetInstanceCountEst) : Random::Rand() < targetInstanceCountEst ? 1 : 0;
 
                 // Try to add new instances
@@ -249,11 +250,13 @@ void FoliageTools::Paint(Foliage* foliage, Span<int32> foliageTypesIndices, cons
                     {
                         // Skip if any places instance is close that placement location
                         bool isInvalid = false;
+                        const Transform foliageTransform = foliage->GetTransform();
                         // TODO: use quad tree to boost this logic
                         for (auto i = foliage->Instances.Begin(); i.IsNotEnd(); ++i)
                         {
                             const auto& instance = *i;
-                            if (Vector3::DistanceSquared(instance.World.GetTranslation(), placement.Location) <= paintRadiusSqr)
+                            const Vector3 instancePosition = foliageTransform.LocalToWorld(instance.Transform.Translation);
+                            if (Vector3::DistanceSquared(instancePosition, placement.Location) <= paintRadiusSqr)
                             {
                                 isInvalid = true;
                                 break;
@@ -338,11 +341,6 @@ void FoliageTools::Paint(Foliage* foliage, Span<int32> foliageTypesIndices, cons
             // Convert instance transformation into the local-space of the foliage actor
             foliage->GetTransform().WorldToLocal(instance.Transform, instance.Transform);
 
-            // Calculate foliage instance geometry transformation matrix
-            instance.Transform.GetWorld(matrix);
-            Matrix::Multiply(matrix, world, instance.World);
-            instance.DrawState.PrevWorld = instance.World;
-
             // Add foliage instance
             foliage->AddInstance(instance);
         }
@@ -360,12 +358,14 @@ void FoliageTools::Remove(Foliage* foliage, Span<int32> foliageTypesIndices, con
 
     // For each selected foliage instance type try to remove something
     const BoundingSphere brush(brushPosition, brushRadius);
+    const Transform foliageTransform = foliage->GetTransform();
     for (auto i = foliage->Instances.Begin(); i.IsNotEnd(); ++i)
     {
         auto& instance = *i;
 
         // Skip instances outside the brush
-        if (CollisionsHelper::SphereContainsPoint(brush, instance.World.GetTranslation()) == ContainmentType::Disjoint)
+        const Vector3 instancePosition = foliageTransform.LocalToWorld(instance.Transform.Translation);
+        if (CollisionsHelper::SphereContainsPoint(brush, instancePosition) == ContainmentType::Disjoint)
             continue;
 
         // Skip instances not existing in a filter

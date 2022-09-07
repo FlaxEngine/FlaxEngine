@@ -12,17 +12,12 @@
 /// </summary>
 API_STRUCT(NoPod) struct FLAXENGINE_API FoliageInstance
 {
-DECLARE_SCRIPTING_TYPE_NO_SPAWN(FoliageInstance);
+    DECLARE_SCRIPTING_TYPE_NO_SPAWN(FoliageInstance);
 
     /// <summary>
     /// The local-space transformation of the mesh relative to the foliage actor.
     /// </summary>
     API_FIELD() Transform Transform;
-
-    /// <summary>
-    /// The cached world transformation matrix of this instance.
-    /// </summary>
-    API_FIELD() Matrix World;
 
     /// <summary>
     /// The model drawing state.
@@ -55,7 +50,6 @@ DECLARE_SCRIPTING_TYPE_NO_SPAWN(FoliageInstance);
     LightmapEntry Lightmap;
 
 public:
-
     bool operator==(const FoliageInstance& v) const
     {
         return Type == v.Type && Math::NearEqual(Random, v.Random) && Transform == v.Transform;

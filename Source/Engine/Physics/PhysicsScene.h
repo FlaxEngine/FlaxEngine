@@ -28,6 +28,7 @@ private:
     String _name;
     bool _autoSimulation = true;
     bool _isDuringSimulation = false;
+    Vector3 _origin = Vector3::Zero;
     void* _scene = nullptr;
 
 public:
@@ -59,7 +60,7 @@ public:
     /// <summary>
     /// Gets the current gravity force.
     /// </summary>
-    API_PROPERTY() Vector3 GetGravity();
+    API_PROPERTY() Vector3 GetGravity() const;
 
     /// <summary>
     /// Sets the current gravity force.
@@ -69,7 +70,7 @@ public:
     /// <summary>
     /// Gets the CCD feature enable flag.
     /// </summary>
-    API_PROPERTY() bool GetEnableCCD();
+    API_PROPERTY() bool GetEnableCCD() const;
 
     /// <summary>
     /// Sets the CCD feature enable flag.
@@ -85,6 +86,19 @@ public:
     /// Sets the minimum relative velocity required for an object to bounce.
     /// </summary>
     API_PROPERTY() void SetBounceThresholdVelocity(float value);
+
+    /// <summary>
+    /// Gets the current scene origin that defines the center of the simulation (in world). Can be used to run physics simulation relative to the camera.
+    /// </summary>
+    API_PROPERTY() FORCE_INLINE Vector3 GetOrigin() const
+    {
+        return _origin;
+    }
+
+    /// <summary>
+    /// Sets the current scene origin that defines the center of the simulation (in world). Can be used to run physics simulation relative to the camera.
+    /// </summary>
+    API_PROPERTY() void SetOrigin(const Vector3& value);
 
 public:
     /// <summary>

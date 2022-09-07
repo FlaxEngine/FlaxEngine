@@ -11,7 +11,7 @@ class PhysicsColliderActor;
 /// </summary>
 API_STRUCT() struct FLAXENGINE_API ContactPoint
 {
-DECLARE_SCRIPTING_TYPE_MINIMAL(ContactPoint);
+    DECLARE_SCRIPTING_TYPE_MINIMAL(ContactPoint);
 
     /// <summary>
     /// The contact point location in the world space.
@@ -43,7 +43,7 @@ struct TIsPODType<ContactPoint>
 /// </summary>
 API_STRUCT() struct FLAXENGINE_API Collision
 {
-DECLARE_SCRIPTING_TYPE_MINIMAL(Collision);
+    DECLARE_SCRIPTING_TYPE_MINIMAL(Collision);
 
     /// <summary>
     /// The first collider (this instance).
@@ -84,7 +84,6 @@ DECLARE_SCRIPTING_TYPE_MINIMAL(Collision);
     API_FIELD(Private, NoArray) ContactPoint Contacts[COLLISION_NAX_CONTACT_POINTS];
 
 public:
-
     /// <summary>
     /// Gets the relative linear velocity of the two colliding objects.
     /// </summary>

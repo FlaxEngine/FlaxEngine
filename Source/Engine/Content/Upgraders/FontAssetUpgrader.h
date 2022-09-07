@@ -14,7 +14,6 @@
 class FontAssetUpgrader : public BinaryAssetUpgrader
 {
 public:
-
     /// <summary>
     /// Initializes a new instance of the <see cref="FontAssetUpgrader"/> class.
     /// </summary>
@@ -29,7 +28,6 @@ public:
     }
 
 private:
-
     // ============================================
     //                  Version 1:
     // Designed: long time ago in a galaxy far far away

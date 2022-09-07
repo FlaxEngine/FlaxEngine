@@ -1,5 +1,6 @@
 // Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
+using System;
 using FlaxEngine;
 using Object = FlaxEngine.Object;
 
@@ -54,7 +55,7 @@ namespace FlaxEditor.Viewport.Previews
                     if (instance == null)
                     {
                         _prefab = null;
-                        throw new FlaxException("Failed to spawn a prefab for the preview.");
+                        throw new Exception("Failed to spawn a prefab for the preview.");
                     }
 
                     // Set instance

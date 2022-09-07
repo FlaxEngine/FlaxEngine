@@ -43,6 +43,17 @@ namespace FlaxEngine
         /// <summary>
         /// Initializes a new instance of the <see cref="FontReference"/> struct.
         /// </summary>
+        /// <param name="other">The other font reference.</param>
+        public FontReference(FontReference other)
+        {
+            _font = other._font;
+            _size = other._size;
+            _cachedFont = other._cachedFont;
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="FontReference"/> struct.
+        /// </summary>
         /// <param name="font">The font.</param>
         public FontReference(Font font)
         {
@@ -96,7 +107,7 @@ namespace FlaxEngine
         /// <summary>
         /// Gets the font object described by the structure.
         /// </summary>
-        /// <returns>Th font or null if descriptor is invalid.</returns>
+        /// <returns>The font or null if descriptor is invalid.</returns>
         public Font GetFont()
         {
             if (_cachedFont)
@@ -104,6 +115,24 @@ namespace FlaxEngine
             if (_font)
                 _cachedFont = _font.CreateFont(_size);
             return _cachedFont;
+        }
+
+        /// <summary>
+        /// Gets the bold font object described by the structure.
+        /// </summary>
+        /// <returns>The bold font asset.</returns>
+        public FontReference GetBold()
+        {
+            return new FontReference(_font?.GetBold(), _size);
+        }
+
+        /// <summary>
+        /// Gets the italic font object described by the structure.
+        /// </summary>
+        /// <returns>The bold font asset.</returns>
+        public FontReference GetItalic()
+        {
+            return new FontReference(_font?.GetItalic(), _size);
         }
 
         /// <summary>

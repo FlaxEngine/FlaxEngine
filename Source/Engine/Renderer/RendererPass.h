@@ -37,7 +37,7 @@ public:
 /// Each render pass supports proper resources initialization and disposing.
 /// </summary>
 /// <seealso cref="Object" />
-class RendererPassBase : public Object
+class FLAXENGINE_API RendererPassBase : public Object
 {
 protected:
 
@@ -112,4 +112,4 @@ class RendererPass : public Singleton<T>, public RendererPassBase
 {
 };
 
-#define REPORT_INVALID_SHADER_PASS_CB_SIZE(shader, index, dataType) LOG(Fatal, "Shader {0} has incorrect constant buffer {1} size: {2} bytes. Expected: {3} bytes", ToString(), index, shader->GetCB(index)->GetSize(), sizeof(dataType));
+#define REPORT_INVALID_SHADER_PASS_CB_SIZE(shader, index, dataType) LOG(Fatal, "Shader {0} has incorrect constant buffer {1} size: {2} bytes. Expected: {3} bytes", shader->ToString(), index, shader->GetCB(index)->GetSize(), sizeof(dataType));

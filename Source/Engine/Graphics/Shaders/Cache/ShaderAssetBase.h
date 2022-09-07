@@ -12,11 +12,9 @@
 class FLAXENGINE_API ShaderAssetBase
 {
 protected:
-
     ShaderStorage::Header _shaderHeader;
 
 public:
-
     static bool IsNullRenderer();
 
     /// <summary>
@@ -44,7 +42,6 @@ public:
 #endif
 
 protected:
-
     bool initBase(AssetInitData& initData);
 
     /// <summary>
@@ -114,23 +111,21 @@ template<typename BaseType>
 class ShaderAssetTypeBase : public BaseType, public ShaderAssetBase
 {
 public:
-
     static const uint32 ShadersSerializedVersion = ShaderStorage::Header::Version;
 
 protected:
-
     explicit ShaderAssetTypeBase(const ScriptingObjectSpawnParams& params, const AssetInfo* info)
         : BaseType(params, info)
     {
     }
 
 protected:
-
     // [BaseType]
     bool init(AssetInitData& initData) override
     {
         return initBase(initData);
     }
+
     AssetChunksFlag getChunksToPreload() const override
     {
         AssetChunksFlag result = 0;

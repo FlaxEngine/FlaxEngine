@@ -99,9 +99,9 @@ namespace FlaxEditor.GUI.Timeline
         private Timeline _timeline;
         private Track _tack;
         private int _startFrame, _durationFrames;
-        private Vector2 _mouseLocation = Vector2.Minimum;
+        private Float2 _mouseLocation = Float2.Minimum;
         private bool _isMoving;
-        private Vector2 _startMoveLocation;
+        private Float2 _startMoveLocation;
         private int _startMoveStartFrame;
         private int _startMoveDuration;
         private bool _startMoveLeftEdge;
@@ -340,7 +340,7 @@ namespace FlaxEditor.GUI.Timeline
         public override void Draw()
         {
             var style = Style.Current;
-            var bounds = new Rectangle(Vector2.Zero, Size);
+            var bounds = new Rectangle(Float2.Zero, Size);
 
             var fillColor = BackgroundColor.A > 0.0f ? BackgroundColor : style.Background * 1.5f;
             Render2D.FillRectangle(bounds, fillColor);
@@ -373,7 +373,7 @@ namespace FlaxEditor.GUI.Timeline
         }
 
         /// <inheritdoc />
-        public override bool OnMouseDown(Vector2 location, MouseButton button)
+        public override bool OnMouseDown(Float2 location, MouseButton button)
         {
             if (base.OnMouseDown(location, button))
                 return true;
@@ -413,7 +413,7 @@ namespace FlaxEditor.GUI.Timeline
         }
 
         /// <inheritdoc />
-        public override void OnMouseMove(Vector2 location)
+        public override void OnMouseMove(Float2 location)
         {
             _mouseLocation = location;
 
@@ -452,7 +452,7 @@ namespace FlaxEditor.GUI.Timeline
         }
 
         /// <inheritdoc />
-        public override bool OnMouseUp(Vector2 location, MouseButton button)
+        public override bool OnMouseUp(Float2 location, MouseButton button)
         {
             if (button == MouseButton.Left && _isMoving)
             {
@@ -473,7 +473,7 @@ namespace FlaxEditor.GUI.Timeline
         }
 
         /// <inheritdoc />
-        public override bool OnMouseDoubleClick(Vector2 location, MouseButton button)
+        public override bool OnMouseDoubleClick(Float2 location, MouseButton button)
         {
             if (base.OnMouseDoubleClick(location, button))
                 return true;
@@ -509,7 +509,7 @@ namespace FlaxEditor.GUI.Timeline
         }
 
         /// <inheritdoc />
-        public override void OnMouseEnter(Vector2 location)
+        public override void OnMouseEnter(Float2 location)
         {
             base.OnMouseEnter(location);
 
@@ -521,7 +521,7 @@ namespace FlaxEditor.GUI.Timeline
         {
             base.OnMouseLeave();
 
-            _mouseLocation = Vector2.Minimum;
+            _mouseLocation = Float2.Minimum;
         }
 
         private void EndMoving()

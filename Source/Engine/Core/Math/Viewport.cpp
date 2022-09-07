@@ -37,7 +37,7 @@ void Viewport::SetBounds(const Rectangle& bounds)
 void Viewport::Project(const Vector3& source, const Matrix& vp, Vector3& result) const
 {
     Vector3::Transform(source, vp, result);
-    const float a = source.X * vp.M14 + source.Y * vp.M24 + source.Z * vp.M34 + vp.M44;
+    const Real a = source.X * vp.M14 + source.Y * vp.M24 + source.Z * vp.M34 + vp.M44;
 
     if (!Math::IsOne(a))
     {
@@ -55,7 +55,7 @@ void Viewport::Unproject(const Vector3& source, const Matrix& ivp, Vector3& resu
     result.Y = -((source.Y - Y) / Height * 2.0f - 1.0f);
     result.Z = (source.Z - MinDepth) / (MaxDepth - MinDepth);
 
-    const float a = result.X * ivp.M14 + result.Y * ivp.M24 + result.Z * ivp.M34 + ivp.M44;
+    const Real a = result.X * ivp.M14 + result.Y * ivp.M24 + result.Z * ivp.M34 + ivp.M44;
     Vector3::Transform(result, ivp, result);
 
     if (!Math::IsOne(a))

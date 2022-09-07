@@ -17,12 +17,12 @@ PACK_STRUCT(struct DecalMaterialShaderData {
     Matrix ViewMatrix;
     Matrix InvWorld;
     Matrix SVPositionToWorld;
-    Vector3 ViewPos;
+    Float3 ViewPos;
     float ViewFar;
-    Vector3 ViewDir;
+    Float3 ViewDir;
     float TimeParam;
-    Vector4 ViewInfo;
-    Vector4 ScreenSize;
+    Float4 ViewInfo;
+    Float4 ScreenSize;
     });
 
 DrawPass DecalMaterialShader::GetDrawModes() const
@@ -48,7 +48,7 @@ void DecalMaterialShader::Bind(BindParameters& params)
     bindMeta.Context = context;
     bindMeta.Constants = cb;
     bindMeta.Input = nullptr;
-    bindMeta.Buffers = nullptr;
+    bindMeta.Buffers = params.RenderContext.Buffers;
     bindMeta.CanSampleDepth = true;
     bindMeta.CanSampleGBuffer = false;
     MaterialParams::Bind(params.ParamsLink, bindMeta);

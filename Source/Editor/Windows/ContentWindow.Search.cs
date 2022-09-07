@@ -22,7 +22,7 @@ namespace FlaxEditor.Windows
             public override void Draw()
             {
                 // Cache data
-                var clientRect = new Rectangle(Vector2.Zero, Size);
+                var clientRect = new Rectangle(Float2.Zero, Size);
                 float margin = clientRect.Height * 0.2f;
                 float boxSize = clientRect.Height - margin * 2;
                 bool isOpened = IsPopupOpened;
@@ -65,7 +65,7 @@ namespace FlaxEditor.Windows
             }
 
             /// <inheritdoc />
-            public override bool OnMouseUp(Vector2 location, MouseButton button)
+            public override bool OnMouseUp(Float2 location, MouseButton button)
             {
                 // Check flags
                 if (_mouseDown && !_blockPopup)
@@ -81,7 +81,7 @@ namespace FlaxEditor.Windows
                         _popupMenu.VisibleChanged += cm =>
                         {
                             var win = Root;
-                            _blockPopup = win != null && new Rectangle(Vector2.Zero, Size).Contains(PointFromWindow(win.MousePosition));
+                            _blockPopup = win != null && new Rectangle(Float2.Zero, Size).Contains(PointFromWindow(win.MousePosition));
                             if (!_blockPopup)
                                 Focus();
                         };
@@ -96,7 +96,7 @@ namespace FlaxEditor.Windows
                     }
 
                     // Show
-                    _popupMenu.Show(this, new Vector2(1, Height));
+                    _popupMenu.Show(this, new Float2(1, Height));
                 }
                 else
                 {

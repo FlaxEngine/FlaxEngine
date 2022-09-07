@@ -3,6 +3,7 @@
 #pragma once
 
 #include "Engine/Scripting/ScriptingType.h"
+#include "PostProcessSettings.h"
 #include "Enums.h"
 
 /// <summary>
@@ -10,9 +11,8 @@
 /// </summary>
 API_CLASS(Static) class FLAXENGINE_API Graphics
 {
-DECLARE_SCRIPTING_TYPE_NO_SPAWN(Graphics);
+    DECLARE_SCRIPTING_TYPE_NO_SPAWN(Graphics);
 public:
-
     /// <summary>
     /// Enables rendering synchronization with the refresh rate of the display device to avoid "tearing" artifacts.
     /// </summary>
@@ -53,8 +53,22 @@ public:
     /// </summary>
     API_FIELD() static bool AllowCSMBlending;
 
-public:
+    /// <summary>
+    /// The Global SDF quality. Controls the volume texture resolution and amount of cascades to use.
+    /// </summary>
+    API_FIELD() static Quality GlobalSDFQuality;
 
+    /// <summary>
+    /// The Global Illumination quality. Controls the quality of the GI effect.
+    /// </summary>
+    API_FIELD() static Quality GIQuality;
+
+    /// <summary>
+    /// The default Post Process settings. Can be overriden by PostFxVolume on a level locally, per camera or for a whole map.
+    /// </summary>
+    API_FIELD() static PostProcessSettings PostProcessSettings;
+
+public:
     /// <summary>
     /// Disposes the device.
     /// </summary>

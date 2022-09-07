@@ -61,7 +61,7 @@ bool CollisionData::CookCollision(CollisionDataType type, ModelBase* modelObj, i
     return false;
 }
 
-bool CollisionData::CookCollision(CollisionDataType type, const Span<Vector3>& vertices, const Span<uint32>& triangles, ConvexMeshGenerationFlags convexFlags, int32 convexVertexLimit)
+bool CollisionData::CookCollision(CollisionDataType type, const Span<Float3>& vertices, const Span<uint32>& triangles, ConvexMeshGenerationFlags convexFlags, int32 convexVertexLimit)
 {
     CHECK_RETURN(vertices.Length() != 0, true);
     CHECK_RETURN(triangles.Length() != 0 && triangles.Length() % 3 == 0, true);
@@ -74,7 +74,7 @@ bool CollisionData::CookCollision(CollisionDataType type, const Span<Vector3>& v
     return CookCollision(type, &modelData, convexFlags, convexVertexLimit);
 }
 
-bool CollisionData::CookCollision(CollisionDataType type, const Span<Vector3>& vertices, const Span<int32>& triangles, ConvexMeshGenerationFlags convexFlags, int32 convexVertexLimit)
+bool CollisionData::CookCollision(CollisionDataType type, const Span<Float3>& vertices, const Span<int32>& triangles, ConvexMeshGenerationFlags convexFlags, int32 convexVertexLimit)
 {
     CHECK_RETURN(vertices.Length() != 0, true);
     CHECK_RETURN(triangles.Length() != 0 && triangles.Length() % 3 == 0, true);
@@ -178,7 +178,7 @@ bool CollisionData::GetModelTriangle(uint32 faceIndex, MeshBase*& mesh, uint32& 
     return false;
 }
 
-void CollisionData::ExtractGeometry(Array<Vector3>& vertexBuffer, Array<int32>& indexBuffer) const
+void CollisionData::ExtractGeometry(Array<Float3>& vertexBuffer, Array<int32>& indexBuffer) const
 {
     vertexBuffer.Clear();
     indexBuffer.Clear();
@@ -192,7 +192,7 @@ void CollisionData::ExtractGeometry(Array<Vector3>& vertexBuffer, Array<int32>& 
 
 #if USE_EDITOR
 
-const Array<Vector3>& CollisionData::GetDebugLines()
+const Array<Float3>& CollisionData::GetDebugLines()
 {
     if (_hasMissingDebugLines && IsLoaded())
     {
@@ -225,7 +225,7 @@ const Array<Vector3>& CollisionData::GetDebugLines()
     return _debugLines;
 }
 
-void CollisionData::GetDebugTriangles(Array<Vector3>*& vertexBuffer, Array<int32>*& indexBuffer)
+void CollisionData::GetDebugTriangles(Array<Float3>*& vertexBuffer, Array<int32>*& indexBuffer)
 {
     GetDebugLines();
     vertexBuffer = &_debugVertexBuffer;

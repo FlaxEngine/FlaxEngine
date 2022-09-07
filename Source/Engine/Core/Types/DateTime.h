@@ -23,14 +23,12 @@ DECLARE_ENUM_EX_12(MonthOfYear, int32, 1, January, February, March, April, May, 
 API_STRUCT(InBuild, Namespace="System") struct FLAXENGINE_API DateTime
 {
 public:
-
     /// <summary>
     /// Ticks in 100 nanoseconds resolution since January 1, 0001 A.D.
     /// </summary>
     int64 Ticks;
 
 public:
-
     /// <summary>
     /// Empty constructor.
     /// </summary>
@@ -60,7 +58,6 @@ public:
     DateTime(int32 year, int32 month, int32 day, int32 hour = 0, int32 minute = 0, int32 second = 0, int32 millisecond = 0);
 
 public:
-
     /// <summary>
     /// Gets the string.
     /// </summary>
@@ -72,7 +69,6 @@ public:
     String ToFileNameString() const;
 
 public:
-
     DateTime operator+(const TimeSpan& other) const;
     DateTime& operator+=(const TimeSpan& other);
     TimeSpan operator-(const DateTime& other) const;
@@ -110,7 +106,6 @@ public:
     }
 
 public:
-
     /// <summary>
     /// Gets the date part of this date. The time part is truncated and becomes 00:00:00.000.
     /// </summary>
@@ -210,7 +205,6 @@ public:
     int32 ToUnixTimestamp() const;
 
 public:
-
     /// <summary>
     /// Gets the number of days in the year and month.
     /// </summary>

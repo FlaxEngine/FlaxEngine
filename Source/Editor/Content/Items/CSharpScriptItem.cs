@@ -18,7 +18,7 @@ namespace FlaxEditor.Content
         : base(path)
         {
         }
-        
+
         /// <inheritdoc />
         public override SpriteHandle DefaultThumbnail => Editor.Instance.Icons.CSharpScript128;
     }

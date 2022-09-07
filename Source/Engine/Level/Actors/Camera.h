@@ -20,7 +20,7 @@
 /// </summary>
 API_CLASS(Sealed) class FLAXENGINE_API Camera : public Actor
 {
-DECLARE_SCENE_OBJECT(Camera);
+    DECLARE_SCENE_OBJECT(Camera);
 
     // List with all created cameras actors on the scene
     static Array<Camera*> Cameras;
@@ -35,8 +35,6 @@ DECLARE_SCENE_OBJECT(Camera);
     API_PROPERTY() static Camera* GetMainCamera();
 
 private:
-
-    Matrix _view, _projection;
     BoundingFrustum _frustum;
 
     // Camera Settings
@@ -51,27 +49,10 @@ private:
     AssetReference<Model> _previewModel;
     ModelInstanceEntries _previewModelBuffer;
     BoundingBox _previewModelBox;
-    Matrix _previewModelWorld;
+    int32 _sceneRenderingKey = -1;
 #endif
 
 public:
-
-    /// <summary>
-    /// Gets the view matrix.
-    /// </summary>
-    API_PROPERTY() FORCE_INLINE Matrix GetView() const
-    {
-        return _view;
-    }
-
-    /// <summary>
-    /// Gets the projection matrix.
-    /// </summary>
-    API_PROPERTY() FORCE_INLINE Matrix GetProjection() const
-    {
-        return _projection;
-    }
-
     /// <summary>
     /// Gets the frustum.
     /// </summary>
@@ -81,7 +62,6 @@ public:
     }
 
 public:
-
     /// <summary>
     /// Gets the value indicating if camera should use perspective rendering mode, otherwise it will use orthographic projection.
     /// </summary>
@@ -173,13 +153,12 @@ public:
     LayersMask RenderLayersMask;
 
 public:
-
     /// <summary>
     /// Projects the point from 3D world-space to game window coordinates (in screen pixels for default viewport calculated from <see cref="Viewport"/>).
     /// </summary>
     /// <param name="worldSpaceLocation">The input world-space location (XYZ in world).</param>
     /// <param name="gameWindowSpaceLocation">The output game window coordinates (XY in screen pixels).</param>
-    API_FUNCTION() void ProjectPoint(const Vector3& worldSpaceLocation, API_PARAM(Out) Vector2& gameWindowSpaceLocation) const;
+    API_FUNCTION() void ProjectPoint(const Vector3& worldSpaceLocation, API_PARAM(Out) Float2& gameWindowSpaceLocation) const;
 
     /// <summary>
     /// Projects the point from 3D world-space to the camera viewport-space (in screen pixels for given viewport).
@@ -187,14 +166,14 @@ public:
     /// <param name="worldSpaceLocation">The input world-space location (XYZ in world).</param>
     /// <param name="cameraViewportSpaceLocation">The output camera viewport-space location (XY in screen pixels).</param>
     /// <param name="viewport">The viewport.</param>
-    API_FUNCTION() void ProjectPoint(const Vector3& worldSpaceLocation, API_PARAM(Out) Vector2& cameraViewportSpaceLocation, API_PARAM(Ref) const Viewport& viewport) const;
+    API_FUNCTION() void ProjectPoint(const Vector3& worldSpaceLocation, API_PARAM(Out) Float2& cameraViewportSpaceLocation, API_PARAM(Ref) const Viewport& viewport) const;
 
     /// <summary>
     /// Converts the mouse position to 3D ray.
     /// </summary>
     /// <param name="mousePosition">The mouse position.</param>
     /// <returns>Mouse ray</returns>
-    API_FUNCTION() Ray ConvertMouseToRay(const Vector2& mousePosition) const;
+    API_FUNCTION() Ray ConvertMouseToRay(const Float2& mousePosition) const;
 
     /// <summary>
     /// Converts the mouse position to 3D ray.
@@ -202,7 +181,7 @@ public:
     /// <param name="mousePosition">The mouse position.</param>
     /// <param name="viewport">The viewport.</param>
     /// <returns>Mouse ray</returns>
-    API_FUNCTION() Ray ConvertMouseToRay(const Vector2& mousePosition, API_PARAM(Ref) const Viewport& viewport) const;
+    API_FUNCTION() Ray ConvertMouseToRay(const Float2& mousePosition, API_PARAM(Ref) const Viewport& viewport) const;
 
     /// <summary>
     /// Gets the camera viewport.
@@ -221,23 +200,30 @@ public:
     /// </summary>
     /// <param name="view">The result camera view matrix.</param>
     /// <param name="projection">The result camera projection matrix.</param>
-    /// <param name="viewport">The custom output viewport. Use null to skip it.</param>
-    API_FUNCTION() virtual void GetMatrices(API_PARAM(Out) Matrix& view, API_PARAM(Out) Matrix& projection, API_PARAM(Ref) const Viewport& viewport) const;
+    /// <param name="viewport">The custom output viewport.</param>
+    API_FUNCTION() void GetMatrices(API_PARAM(Out) Matrix& view, API_PARAM(Out) Matrix& projection, API_PARAM(Ref) const Viewport& viewport) const;
+
+    /// <summary>
+    /// Calculates the view and the projection matrices for the camera. Support using custom viewport and view origin.
+    /// </summary>
+    /// <param name="view">The result camera view matrix.</param>
+    /// <param name="projection">The result camera projection matrix.</param>
+    /// <param name="viewport">The custom output viewport.</param>
+    /// <param name="origin">The rendering view origin (for relative-to-camera rendering).</param>
+    API_FUNCTION() void GetMatrices(API_PARAM(Out) Matrix& view, API_PARAM(Out) Matrix& projection, API_PARAM(Ref) const Viewport& viewport, API_PARAM(Ref) const Vector3& origin) const;
 
 #if USE_EDITOR
     // Intersection check for editor picking the camera
-    API_FUNCTION() bool IntersectsItselfEditor(API_PARAM(Ref) const Ray& ray, API_PARAM(Out) float& distance);
+    API_FUNCTION() bool IntersectsItselfEditor(API_PARAM(Ref) const Ray& ray, API_PARAM(Out) Real& distance);
 #endif
 
 private:
-
 #if USE_EDITOR
     void OnPreviewModelLoaded();
 #endif
     void UpdateCache();
 
 public:
-
     // [Actor]
 #if USE_EDITOR
     BoundingBox GetEditorBox() const override;
@@ -249,7 +235,6 @@ public:
     void Deserialize(DeserializeStream& stream, ISerializeModifier* modifier) override;
 
 protected:
-
     // [Actor]
     void OnEnable() override;
     void OnDisable() override;

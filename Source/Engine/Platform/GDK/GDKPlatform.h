@@ -68,8 +68,8 @@ public:
     static bool GetHasFocus();
     static bool CanOpenUrl(const StringView& url);
     static void OpenUrl(const StringView& url);
-    static Rectangle GetMonitorBounds(const Vector2& screenPos);
-    static Vector2 GetDesktopSize();
+    static Rectangle GetMonitorBounds(const Float2& screenPos);
+    static Float2 GetDesktopSize();
     static Rectangle GetVirtualDesktopBounds();
     static void GetEnvironmentVariables(Dictionary<String, String, HeapAllocation>& result);
     static bool GetEnvironmentVariable(const String& name, String& value);

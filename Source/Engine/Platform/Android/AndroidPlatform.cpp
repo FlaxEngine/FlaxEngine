@@ -308,11 +308,11 @@ namespace
         return orientation;
     }
 
-    Vector2 GetWindowSize()
+    Float2 GetWindowSize()
     {
         const float width = (float)ANativeWindow_getWidth(AppWindow);
         const float height = (float)ANativeWindow_getHeight(AppWindow);
-        return Vector2(width, height);
+        return Float2(width, height);
     }
 
     void UpdateOrientation()
@@ -982,28 +982,28 @@ void AndroidPlatform::OpenUrl(const StringView& url)
     App->activity->vm->DetachCurrentThread();
 }
 
-Vector2 AndroidPlatform::GetMousePosition()
+Float2 AndroidPlatform::GetMousePosition()
 {
-    return Vector2::Zero;
+    return Float2::Zero;
 }
 
-void AndroidPlatform::SetMousePosition(const Vector2& pos)
+void AndroidPlatform::SetMousePosition(const Float2& pos)
 {
 }
 
-Vector2 AndroidPlatform::GetDesktopSize()
+Float2 AndroidPlatform::GetDesktopSize()
 {
-    return Vector2((float)ScreenWidth, (float)ScreenHeight);
+    return Float2((float)ScreenWidth, (float)ScreenHeight);
 }
 
-Rectangle AndroidPlatform::GetMonitorBounds(const Vector2& screenPos)
+Rectangle AndroidPlatform::GetMonitorBounds(const Float2& screenPos)
 {
-    return Rectangle(Vector2::Zero, GetDesktopSize());
+    return Rectangle(Float2::Zero, GetDesktopSize());
 }
 
 Rectangle AndroidPlatform::GetVirtualDesktopBounds()
 {
-    return Rectangle(Vector2::Zero, GetDesktopSize());
+    return Rectangle(Float2::Zero, GetDesktopSize());
 }
 
 String AndroidPlatform::GetMainDirectory()

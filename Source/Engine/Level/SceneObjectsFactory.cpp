@@ -18,6 +18,19 @@ SceneObjectsFactory::Context::Context(ISerializeModifier* modifier)
 {
 }
 
+void SceneObjectsFactory::Context::SetupIdsMapping(const SceneObject* obj)
+{
+    int32 instanceIndex;
+    if (ObjectToInstance.TryGet(obj->GetID(), instanceIndex) && instanceIndex != CurrentInstance)
+    {
+        // Apply the current prefab instance objects ids table to resolve references inside a prefab properly
+        CurrentInstance = instanceIndex;
+        auto& instance = Instances[instanceIndex];
+        for (auto& e : instance.IdsMapping)
+            Modifier->IdsMapping[e.Key] = e.Value;
+    }
+}
+
 SceneObject* SceneObjectsFactory::Spawn(Context& context, ISerializable::DeserializeStream& stream)
 {
     // Get object id
@@ -302,7 +315,7 @@ void SceneObjectsFactory::SetupPrefabInstances(Context& context, PrefabSyncData&
 {
     PROFILE_CPU_NAMED("SetupPrefabInstances");
     const int32 count = data.Data.Size();
-    ASSERT(count <= data.SceneObjects.Count())
+    ASSERT(count <= data.SceneObjects.Count());
     for (int32 i = 0; i < count; i++)
     {
         SceneObject* obj = data.SceneObjects[i];
@@ -314,7 +327,16 @@ void SceneObjectsFactory::SetupPrefabInstances(Context& context, PrefabSyncData&
             continue;
         if (!JsonTools::GetGuidIfValid(prefabId, stream, "PrefabID"))
             continue;
-        const Guid parentId = JsonTools::GetGuid(stream, "ParentID");
+        Guid parentId = JsonTools::GetGuid(stream, "ParentID");
+        for (int32 j = i - 1; j >= 0; j--)
+        {
+            // Find instance ID of the parent to this object (use data in json for relationship)
+            if (parentId == JsonTools::GetGuid(data.Data[j], "ID") && data.SceneObjects[j])
+            {
+                parentId = data.SceneObjects[j]->GetID();
+                break;
+            }
+        }
         const Guid id = obj->GetID();
         auto prefab = Content::LoadAsync<Prefab>(prefabId);
 
@@ -418,8 +440,8 @@ void SceneObjectsFactory::SynchronizeNewPrefabInstances(Context& context, Prefab
                 const Guid jParentId = JsonTools::GetGuid(jData, "ParentID");
                 //if (jParentId == actorParentId)
                 //    break;
-                if (jParentId != actorId)
-                    continue;
+                //if (jParentId != actorId)
+                //    continue;
                 const Guid jPrefabObjectId = JsonTools::GetGuid(jData, "PrefabObjectID");
                 if (jPrefabObjectId != prefabObjectId)
                     continue;
@@ -483,6 +505,7 @@ void SceneObjectsFactory::SynchronizePrefabInstances(Context& context, PrefabSyn
             LOG(Info, "Object {0} has invalid parent object {4} -> {5} (PrefabObjectID: {1}, PrefabID: {2}, Path: {3})", obj->GetSceneObjectId(), prefabObjectId, prefab->GetID(), prefab->GetPath(), parentPrefabObjectId, actualParentPrefabId);
 
             // Map actual prefab object id to the current scene objects collection
+            context.SetupIdsMapping(obj);
             data.Modifier->IdsMapping.TryGet(actualParentPrefabId, actualParentPrefabId);
 
             // Find parent

@@ -217,8 +217,8 @@ bool ShadowsOfMordor::Builder::SceneBuildCache::onImportLightmap(TextureData& im
     mip.Data.Allocate(mip.DepthPitch);
 
 #if HEMISPHERES_IRRADIANCE_FORMAT == HEMISPHERES_FORMAT_R32G32B32A32
-    auto pos = (Vector4*)mip.Data.Get();
-    const auto textureData = ImportLightmapTextureData.Get<Vector4>();
+    auto pos = (Float4*)mip.Data.Get();
+    const auto textureData = ImportLightmapTextureData.Get<Float4>();
     for (int32 y = 0; y < image.Height; y++)
     {
         for (int32 x = 0; x < image.Width; x++)

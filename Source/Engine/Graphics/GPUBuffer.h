@@ -15,9 +15,8 @@ typedef DataContainer<byte> BytesContainer;
 /// </summary>
 API_CLASS(Sealed, NoSpawn) class FLAXENGINE_API GPUBufferView : public GPUResourceView
 {
-DECLARE_SCRIPTING_TYPE_NO_SPAWN(GPUBufferView);
+    DECLARE_SCRIPTING_TYPE_NO_SPAWN(GPUBufferView);
 protected:
-
     GPUBufferView();
 };
 
@@ -27,19 +26,17 @@ protected:
 /// <seealso cref="GPUResource" />
 API_CLASS(Sealed) class FLAXENGINE_API GPUBuffer : public GPUResource
 {
-DECLARE_SCRIPTING_TYPE_NO_SPAWN(GPUBuffer);
+    DECLARE_SCRIPTING_TYPE_NO_SPAWN(GPUBuffer);
     static GPUBuffer* Spawn(const SpawnParams& params);
     static GPUBuffer* New();
 
 protected:
-
     GPUBufferDescription _desc;
     bool _isLocked = false;
 
     GPUBuffer();
 
 public:
-
     /// <summary>
     /// Gets a value indicating whether this buffer has been allocated. 
     /// </summary>
@@ -135,7 +132,6 @@ public:
     API_FUNCTION() virtual GPUBufferView* View() const = 0;
 
 public:
-
     /// <summary>
     /// Creates new buffer.
     /// </summary>
@@ -163,7 +159,6 @@ public:
     API_FUNCTION() bool Resize(uint32 newSize);
 
 public:
-
     /// <summary>
     /// Stops current thread execution to gather buffer data from the GPU. Cannot be called from main thread if the buffer is not a dynamic nor staging readback.
     /// </summary>
@@ -205,18 +200,15 @@ public:
     API_FUNCTION() virtual void Unmap() = 0;
 
 protected:
-
     virtual bool OnInit() = 0;
 
 public:
-
     // [GPUResource]
     String ToString() const override;
     ResourceType GetResourceType() const final override;
     ObjectType GetObjectType() const final override;
 
 protected:
-
     // [GPUResource]
     void OnReleaseGPU() override;
 };

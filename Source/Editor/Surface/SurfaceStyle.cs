@@ -157,7 +157,7 @@ namespace FlaxEditor.Surface
                 GetConnectionColor(type, hint, out color);
             }
             else if (type.IsArray)
-                GetConnectionColor(new ScriptType(type.GetElementType()), hint, out color);
+                GetConnectionColor(type.GetElementType(), hint, out color);
             else if (type.Type == typeof(void))
                 color = Colors.Impulse;
             else if (type.Type == typeof(bool))
@@ -167,6 +167,12 @@ namespace FlaxEditor.Surface
             else if (type.Type == typeof(float) || type.Type == typeof(double) || hint == ConnectionsHint.Scalar)
                 color = Colors.Float;
             else if (type.Type == typeof(Vector2) || type.Type == typeof(Vector3) || type.Type == typeof(Vector4) || type.Type == typeof(Color))
+                color = Colors.Vector;
+            else if (type.Type == typeof(Float2) || type.Type == typeof(Float3) || type.Type == typeof(Float4))
+                color = Colors.Vector;
+            else if (type.Type == typeof(Double2) || type.Type == typeof(Double3) || type.Type == typeof(Double4))
+                color = Colors.Vector;
+            else if (type.Type == typeof(Int2) || type.Type == typeof(Int3) || type.Type == typeof(Int4))
                 color = Colors.Vector;
             else if (type.Type == typeof(string))
                 color = Colors.String;
@@ -180,7 +186,7 @@ namespace FlaxEditor.Surface
                 color = Colors.Enum;
             else if (type.IsValueType)
                 color = Colors.Structures;
-            else if (new ScriptType(typeof(FlaxEngine.Object)).IsAssignableFrom(type) || type.IsInterface)
+            else if (ScriptType.FlaxObject.IsAssignableFrom(type) || type.IsInterface)
                 color = Colors.Object;
             else if (hint == ConnectionsHint.Vector)
                 color = Colors.Vector;

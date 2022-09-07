@@ -217,9 +217,9 @@ namespace FlaxEditor.GUI.Timeline
         private ContainerControl _playbackButtonsArea;
         private PositionHandle _positionHandle;
         private bool _isRightMouseButtonDown;
-        private Vector2 _rightMouseButtonDownPos;
-        private Vector2 _rightMouseButtonMovePos;
-        private Vector2 _mediaMoveStartPos;
+        private Float2 _rightMouseButtonDownPos;
+        private Float2 _rightMouseButtonMovePos;
+        private Float2 _mediaMoveStartPos;
         private int[] _mediaMoveStartFrames;
         private List<Track> _mediaMoveStartTracks;
         private byte[][] _mediaMoveStartData;
@@ -1700,7 +1700,7 @@ namespace FlaxEditor.GUI.Timeline
         /// <seealso cref="CurveEditorBase.CustomViewPanning"/>
         /// <param name="delta">The input delta.</param>
         /// <returns>The result input delta.</returns>
-        public Vector2 OnKeyframesViewPanning(Vector2 delta)
+        public Float2 OnKeyframesViewPanning(Float2 delta)
         {
             var area = _backgroundArea;
             var hScroll = area.HScrollBar.Visible && area.HScrollBar.Enabled;
@@ -1897,7 +1897,7 @@ namespace FlaxEditor.GUI.Timeline
             _batchedUndoActions.Add(action);
         }
 
-        internal void ShowContextMenu(Vector2 location)
+        internal void ShowContextMenu(Float2 location)
         {
             if (!ContainsFocus)
                 Focus();
@@ -2016,7 +2016,7 @@ namespace FlaxEditor.GUI.Timeline
         }
 
         /// <inheritdoc />
-        public override bool OnMouseDown(Vector2 location, MouseButton button)
+        public override bool OnMouseDown(Float2 location, MouseButton button)
         {
             if (base.OnMouseDown(location, button))
                 return true;
@@ -2040,12 +2040,12 @@ namespace FlaxEditor.GUI.Timeline
         }
 
         /// <inheritdoc />
-        public override bool OnMouseUp(Vector2 location, MouseButton button)
+        public override bool OnMouseUp(Float2 location, MouseButton button)
         {
             if (button == MouseButton.Right && _isRightMouseButtonDown)
             {
                 _isRightMouseButtonDown = false;
-                if (Vector2.Distance(ref location, ref _rightMouseButtonDownPos) < 4.0f)
+                if (Float2.Distance(ref location, ref _rightMouseButtonDownPos) < 4.0f)
                     ShowContextMenu(location);
             }
 
@@ -2097,7 +2097,10 @@ namespace FlaxEditor.GUI.Timeline
                 }
                 break;
             case KeyboardKeys.S:
-                Split(CurrentFrame);
+                if (!Root.GetKey(KeyboardKeys.Control))
+                {
+                    Split(CurrentFrame);
+                }
                 return true;
             case KeyboardKeys.Delete:
                 OnKeyframesDelete(null);
@@ -2114,7 +2117,7 @@ namespace FlaxEditor.GUI.Timeline
         {
             var viewWidth = Width;
             var timelineWidth = Duration * UnitsPerSecond * Zoom + 8 * StartOffset;
-            _backgroundArea.ViewOffset = Vector2.Zero;
+            _backgroundArea.ViewOffset = Float2.Zero;
             Zoom = viewWidth / timelineWidth;
         }
 
@@ -2124,7 +2127,7 @@ namespace FlaxEditor.GUI.Timeline
         /// <param name="obj">The object.</param>
         /// <param name="location">The show location (in timeline space).</param>
         /// <param name="undoContext">The undo context object.</param>
-        public virtual void ShowEditPopup(object obj, Vector2 location, object undoContext = null)
+        public virtual void ShowEditPopup(object obj, Float2 location, object undoContext = null)
         {
             var popup = new PropertiesEditPopup(this, obj, undoContext);
             popup.Show(this, location);
@@ -2282,7 +2285,7 @@ namespace FlaxEditor.GUI.Timeline
         }
 
         /// <inheritdoc />
-        public void OnKeyframesMove(IKeyframesEditor editor, ContainerControl control, Vector2 location, bool start, bool end)
+        public void OnKeyframesMove(IKeyframesEditor editor, ContainerControl control, Float2 location, bool start, bool end)
         {
             location = control.PointToParent(_backgroundArea, location);
             for (int i = 0; i < _tracks.Count; i++)

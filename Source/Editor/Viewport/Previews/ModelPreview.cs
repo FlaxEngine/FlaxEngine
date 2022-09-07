@@ -149,7 +149,7 @@ namespace FlaxEditor.Viewport.Previews
                     _floorModel = new StaticModel
                     {
                         Position = new Vector3(0, -25, 0),
-                        Scale = new Vector3(5, 0.5f, 5),
+                        Scale = new Float3(5, 0.5f, 5),
                         Model = FlaxEngine.Content.LoadAsync<Model>(StringUtils.CombinePaths(Globals.EngineContentFolder, "Editor/Primitives/Cube.flax")),
                     };
                 }
@@ -215,7 +215,7 @@ namespace FlaxEditor.Viewport.Previews
         {
             if (!ScaleToFit)
             {
-                _previewModel.Scale = Vector3.One;
+                _previewModel.Scale = Float3.One;
                 _previewModel.Position = Vector3.Zero;
                 return;
             }
@@ -226,9 +226,9 @@ namespace FlaxEditor.Viewport.Previews
             {
                 float targetSize = 50.0f;
                 BoundingBox box = model.GetBox();
-                float maxSize = Mathf.Max(0.001f, box.Size.MaxValue);
+                float maxSize = Mathf.Max(0.001f, (float)box.Size.MaxValue);
                 float scale = targetSize / maxSize;
-                _previewModel.Scale = new Vector3(scale);
+                _previewModel.Scale = new Float3(scale);
                 _previewModel.Position = box.Center * (-0.5f * scale) + new Vector3(0, -10, 0);
             }
         }
@@ -248,7 +248,7 @@ namespace FlaxEditor.Viewport.Previews
             if (_showNormals && _meshDatas.RequestMeshData(Model))
             {
                 var meshDatas = _meshDatas.MeshDatas;
-                var lodIndex = ComputeLODIndex(Model);
+                var lodIndex = ComputeLODIndex(Model, out _);
                 var lod = meshDatas[lodIndex];
                 for (int meshIndex = 0; meshIndex < lod.Length; meshIndex++)
                 {
@@ -265,7 +265,7 @@ namespace FlaxEditor.Viewport.Previews
             if (_showTangents && _meshDatas.RequestMeshData(Model))
             {
                 var meshDatas = _meshDatas.MeshDatas;
-                var lodIndex = ComputeLODIndex(Model);
+                var lodIndex = ComputeLODIndex(Model, out _);
                 var lod = meshDatas[lodIndex];
                 for (int meshIndex = 0; meshIndex < lod.Length; meshIndex++)
                 {
@@ -282,7 +282,7 @@ namespace FlaxEditor.Viewport.Previews
             if (_showBitangents && _meshDatas.RequestMeshData(Model))
             {
                 var meshDatas = _meshDatas.MeshDatas;
-                var lodIndex = ComputeLODIndex(Model);
+                var lodIndex = ComputeLODIndex(Model, out _);
                 var lod = meshDatas[lodIndex];
                 for (int meshIndex = 0; meshIndex < lod.Length; meshIndex++)
                 {
@@ -297,8 +297,9 @@ namespace FlaxEditor.Viewport.Previews
         }
 
 
-        private int ComputeLODIndex(Model model)
+        private int ComputeLODIndex(Model model, out float screenSize)
         {
+            screenSize = 1.0f;
             if (PreviewActor.ForcedLOD != -1)
                 return PreviewActor.ForcedLOD;
 
@@ -307,9 +308,10 @@ namespace FlaxEditor.Viewport.Previews
             float screenMultiple = 0.5f * Mathf.Max(projectionMatrix.M11, projectionMatrix.M22);
             var sphere = PreviewActor.Sphere;
             var viewOrigin = ViewPosition;
-            float distSqr = Vector3.DistanceSquared(ref sphere.Center, ref viewOrigin);
+            var distSqr = Vector3.DistanceSquared(ref sphere.Center, ref viewOrigin);
             var screenRadiusSquared = Mathf.Square(screenMultiple * sphere.Radius) / Mathf.Max(1.0f, distSqr);
-
+            screenSize = Mathf.Sqrt((float)screenRadiusSquared) * 2.0f;
+            
             // Check if model is being culled
             if (Mathf.Square(model.MinScreenSize * 0.5f) > screenRadiusSquared)
                 return -1;
@@ -343,8 +345,8 @@ namespace FlaxEditor.Viewport.Previews
             if (_showCurrentLOD)
             {
                 var asset = Model;
-                var lodIndex = ComputeLODIndex(asset);
-                string text = string.Format("Current LOD: {0}", lodIndex);
+                var lodIndex = ComputeLODIndex(asset, out  var screenSize);
+                string text = string.Format("Current LOD: {0}\nScreen Size: {1:F2}", lodIndex, screenSize);
                 if (lodIndex != -1)
                 {
                     var lods = asset.LODs;
@@ -360,8 +362,8 @@ namespace FlaxEditor.Viewport.Previews
                     text += string.Format("\nTriangles: {0:N0}\nVertices: {1:N0}", triangleCount, vertexCount);
                 }
                 var font = Style.Current.FontMedium;
-                var pos = new Vector2(10, 50);
-                Render2D.DrawText(font, text, new Rectangle(pos + Vector2.One, Size), Color.Black);
+                var pos = new Float2(10, 50);
+                Render2D.DrawText(font, text, new Rectangle(pos + Float2.One, Size), Color.Black);
                 Render2D.DrawText(font, text, new Rectangle(pos, Size), Color.White);
             }
         }

@@ -5,45 +5,18 @@
 #include "RendererPass.h"
 #include "Engine/Graphics/PostProcessSettings.h"
 
-#define DOF_DEPTH_BLUR_FORMAT PixelFormat::R16G16_Float
-#define DOF_RT_FORMAT PixelFormat::R11G11B10_Float
-
 /// <summary>
 /// Depth of Field rendering
 /// </summary>
 class DepthOfFieldPass : public RendererPass<DepthOfFieldPass>
 {
 private:
-
-    PACK_STRUCT(struct Data {
-        Vector2 ProjectionAB;
-        float BokehDepthCullThreshold;
-        float BokehDepthCutoff;
-
-        Vector4 DOFDepths;
-
-        float MaxBokehSize;
-        float BokehBrightnessThreshold;
-        float BokehBlurThreshold;
-        float BokehFalloff;
-
-        Vector2 BokehTargetSize;
-        Vector2 DOFTargetSize;
-
-        Vector2 InputSize;
-        float DepthLimit;
-        float BlurStrength;
-
-        Vector3 Dummy;
-        float BokehBrightness;
-    });
-
     // Structure used for outputting bokeh points to an AppendStructuredBuffer
     struct BokehPoint
     {
-        Vector3 Position;
+        Float3 Position;
         float Blur;
-        Vector3 Color;
+        Float3 Color;
     };
 
     bool _platformSupportsDoF = false;
@@ -62,11 +35,9 @@ private:
     AssetReference<Texture> _defaultBokehCross;
 
 public:
-
     DepthOfFieldPass();
 
 public:
-
     /// <summary>
     /// Perform Depth Of Field rendering for the input task
     /// </summary>
@@ -76,7 +47,6 @@ public:
     GPUTexture* Render(RenderContext& renderContext, GPUTexture* input);
 
 private:
-
     GPUTexture* getDofBokehShape(DepthOfFieldSettings& dofSettings);
 #if COMPILE_WITH_DEV_ENV
     void OnShaderReloading(Asset* obj)
@@ -90,14 +60,12 @@ private:
 #endif
 
 public:
-
     // [RendererPass]
     String ToString() const override;
     bool Init() override;
     void Dispose() override;
 
 protected:
-
     // [RendererPass]
     bool setupResources() override;
 };

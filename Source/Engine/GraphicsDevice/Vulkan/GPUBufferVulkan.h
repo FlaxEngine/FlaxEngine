@@ -35,7 +35,7 @@ public:
 
 public:
 
-    void Init(GPUDeviceVulkan* device, GPUBufferVulkan* owner, VkBuffer buffer, VkDeviceSize size, PixelFormat format);
+    void Init(GPUDeviceVulkan* device, GPUBufferVulkan* owner, VkBuffer buffer, VkDeviceSize size, VkBufferUsageFlags usage, PixelFormat format);
 
     void Release();
 
@@ -48,9 +48,9 @@ public:
     }
 
     // [DescriptorOwnerResourceVulkan]
-    void DescriptorAsUniformTexelBuffer(GPUContextVulkan* context, const VkBufferView*& bufferView) override;
+    void DescriptorAsUniformTexelBuffer(GPUContextVulkan* context, VkBufferView& bufferView) override;
     void DescriptorAsStorageBuffer(GPUContextVulkan* context, VkBuffer& buffer, VkDeviceSize& offset, VkDeviceSize& range) override;
-    void DescriptorAsStorageTexelBuffer(GPUContextVulkan* context, const VkBufferView*& bufferView) override;
+    void DescriptorAsStorageTexelBuffer(GPUContextVulkan* context, VkBufferView& bufferView) override;
 };
 
 /// <summary>

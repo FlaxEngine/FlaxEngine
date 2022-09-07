@@ -52,7 +52,7 @@ public:
     {
     }
 
-    void ClearUA(GPUBuffer* buf, const Vector4& value) override
+    void ClearUA(GPUBuffer* buf, const Float4& value) override
     {
     }
 
@@ -64,7 +64,7 @@ public:
     {
     }
 
-    void ClearUA(GPUTexture* texture, const Vector4& value) override
+    void ClearUA(GPUTexture* texture, const Float4& value) override
     {
     }
 

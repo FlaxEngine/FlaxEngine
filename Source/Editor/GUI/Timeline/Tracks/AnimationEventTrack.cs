@@ -30,6 +30,8 @@ namespace FlaxEditor.GUI.Timeline.Tracks
                 base.Initialize(layout);
 
                 var instance = (AnimEvent)Values[0];
+                if (instance == null)
+                    return;
                 var scriptType = TypeUtils.GetObjectType(instance);
                 var editor = CustomEditorsUtil.CreateEditor(scriptType, false);
                 layout.Object(Values, editor);
@@ -125,6 +127,52 @@ namespace FlaxEditor.GUI.Timeline.Tracks
             }
         }
 
+        internal void InitMissing(string typeName, byte[] data)
+        {
+            Type = ScriptType.Null;
+            IsContinuous = false;
+            CanDelete = true;
+            CanSplit = false;
+            CanResize = false;
+            TooltipText = $"Missing Anim Event Type '{typeName}'";
+            Instance = null;
+            BackgroundColor = Color.Red;
+            _instanceTypeName = typeName;
+            _instanceData = data;
+        }
+
+        internal void Load(BinaryReader stream)
+        {
+            StartFrame = (int)stream.ReadSingle();
+            DurationFrames = (int)stream.ReadSingle();
+            var typeName = stream.ReadStrAnsi(13);
+            var type = TypeUtils.GetType(typeName);
+            if (type == ScriptType.Null)
+            {
+                InitMissing(typeName, stream.ReadJsonBytes());
+                return;
+            }
+            Init(type);
+            stream.ReadJson(Instance);
+        }
+
+        internal void Save(BinaryWriter stream)
+        {
+            stream.Write((float)StartFrame);
+            stream.Write((float)DurationFrames);
+            if (Type != ScriptType.Null)
+            {
+                stream.WriteStrAnsi(Type.TypeName, 13);
+                stream.WriteJson(Instance);
+            }
+            else
+            {
+                // Missing
+                stream.WriteStrAnsi(_instanceTypeName, 13);
+                stream.WriteJsonBytes(_instanceData);
+            }
+        }
+
         /// <inheritdoc />
         protected override void OnDurationFramesChanged()
         {
@@ -137,6 +185,8 @@ namespace FlaxEditor.GUI.Timeline.Tracks
         /// <inheritdoc />
         public override void OnDestroy()
         {
+            _instanceData = null;
+            _instanceTypeName = null;
             Type = ScriptType.Null;
             Object.Destroy(ref Instance);
             if (_isRegisteredForScriptsReload)
@@ -181,14 +231,7 @@ namespace FlaxEditor.GUI.Timeline.Tracks
             for (int i = 0; i < count; i++)
             {
                 var m = (AnimationEventMedia)e.Media[i];
-                m.StartFrame = (int)stream.ReadSingle();
-                m.DurationFrames = (int)stream.ReadSingle();
-                var typeName = stream.ReadStrAnsi(13);
-                var type = TypeUtils.GetType(typeName);
-                if (type == ScriptType.Null)
-                    throw new Exception($"Unknown type {typeName}.");
-                m.Init(type);
-                stream.ReadJson(m.Instance);
+                m.Load(stream);
             }
         }
 
@@ -200,10 +243,7 @@ namespace FlaxEditor.GUI.Timeline.Tracks
             for (int i = 0; i < count; i++)
             {
                 var m = (AnimationEventMedia)e.Media[i];
-                stream.Write((float)m.StartFrame);
-                stream.Write((float)m.DurationFrames);
-                stream.WriteStrAnsi(m.Type.TypeName, 13);
-                stream.WriteJson(m.Instance);
+                m.Save(stream);
             }
         }
 

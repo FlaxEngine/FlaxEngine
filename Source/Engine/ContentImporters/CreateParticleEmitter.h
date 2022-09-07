@@ -14,7 +14,6 @@
 class CreateParticleEmitter
 {
 public:
-
     /// <summary>
     /// Creates the asset.
     /// </summary>
@@ -23,11 +22,11 @@ public:
     static CreateAssetResult Create(CreateAssetContext& context)
     {
         // Base
-        IMPORT_SETUP(ParticleEmitter, 19);
+        IMPORT_SETUP(ParticleEmitter, 20);
         context.SkipMetadata = true;
 
         // Set Custom Data with Header
-        ShaderStorage::Header19 shaderHeader;
+        ShaderStorage::Header20 shaderHeader;
         Platform::MemoryClear(&shaderHeader, sizeof(shaderHeader));
         context.Data.CustomData.Copy(&shaderHeader);
 

@@ -18,6 +18,7 @@ public class Content : EngineModule
         options.PrivateDependencies.Add("lz4");
         options.PrivateDependencies.Add("AudioTool");
         options.PrivateDependencies.Add("TextureTool");
+        options.PrivateDependencies.Add("ModelTool");
         options.PrivateDependencies.Add("Particles");
 
         if (options.Target.IsEditor)

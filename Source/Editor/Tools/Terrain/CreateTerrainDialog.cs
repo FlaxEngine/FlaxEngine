@@ -61,14 +61,14 @@ namespace FlaxEditor.Tools.Terrain
             [EditorOrder(330), EditorDisplay("Import Data"), DefaultValue(null), Tooltip("Custom terrain splat map used as a source of the terrain layers weights. Each channel from RGBA is used as an independent layer weight for terrain layers compositing.")]
             public Texture Splatmap2;
 
-            [EditorOrder(400), EditorDisplay("Transform", "Position"), DefaultValue(typeof(Vector3), "0,0,0"), Tooltip("Position of the terrain (importer offset it on the Y axis.)")]
-            public Vector3 Position = new Vector3(0.0f, 0.0f, 0.0f);
+            [EditorOrder(400), EditorDisplay("Transform", "Position"), DefaultValue(typeof(Double3), "0,0,0"), Tooltip("Position of the terrain (importer offset it on the Y axis.)")]
+            public Double3 Position = new Double3(0.0f, 0.0f, 0.0f);
 
             [EditorOrder(410), EditorDisplay("Transform", "Rotation"), DefaultValue(typeof(Quaternion), "0,0,0,1"), Tooltip("Orientation of the terrain")]
             public Quaternion Orientation = Quaternion.Identity;
 
-            [EditorOrder(420), EditorDisplay("Transform", "Scale"), DefaultValue(typeof(Vector3), "1,1,1"), Limit(float.MinValue, float.MaxValue, 0.01f), Tooltip("Scale of the terrain")]
-            public Vector3 Scale = Vector3.One;
+            [EditorOrder(420), EditorDisplay("Transform", "Scale"), DefaultValue(typeof(Float3), "1,1,1"), Limit(float.MinValue, float.MaxValue, 0.01f), Tooltip("Scale of the terrain")]
+            public Float3 Scale = Float3.One;
         }
 
         private readonly Options _options = new Options();
@@ -134,7 +134,7 @@ namespace FlaxEditor.Tools.Terrain
             settingsEditor.Panel.Parent = this;
             _editor = settingsEditor;
 
-            _dialogSize = new Vector2(TotalWidth, settingsEditor.Panel.Bottom);
+            _dialogSize = new Float2(TotalWidth, settingsEditor.Panel.Bottom);
 
             settingsEditor.Select(_options);
         }

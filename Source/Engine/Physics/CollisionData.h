@@ -94,7 +94,7 @@ DECLARE_ENUM_OPERATORS(ConvexMeshGenerationFlags);
 /// </summary>
 API_STRUCT() struct CollisionDataOptions
 {
-DECLARE_SCRIPTING_TYPE_NO_SPAWN(CollisionDataOptions);
+    DECLARE_SCRIPTING_TYPE_NO_SPAWN(CollisionDataOptions);
 
     /// <summary>
     /// The data type.
@@ -137,9 +137,8 @@ DECLARE_SCRIPTING_TYPE_NO_SPAWN(CollisionDataOptions);
 /// </summary>
 API_CLASS(NoSpawn) class FLAXENGINE_API CollisionData : public BinaryAsset
 {
-DECLARE_BINARY_ASSET_HEADER(CollisionData, 1);
+    DECLARE_BINARY_ASSET_HEADER(CollisionData, 1);
 public:
-
     /// <summary>
     /// A raw structure stored in the binary asset. It has fixed size so it's easier to add new parameters to it. It's loaded and changed into Options structure used at runtime.
     /// </summary>
@@ -157,13 +156,11 @@ public:
     static_assert(sizeof(SerializedOptions) == 128, "Invalid collision data options size. Change the padding.");
 
 private:
-
     CollisionDataOptions _options;
     void* _convexMesh;
     void* _triangleMesh;
 
 public:
-
     /// <summary>
     /// Gets the options.
     /// </summary>
@@ -189,7 +186,6 @@ public:
     }
 
 public:
-
 #if COMPILE_WITH_PHYSICS_COOKING
 
     /// <summary>
@@ -219,7 +215,7 @@ public:
     /// <param name="convexFlags">The convex mesh generation flags.</param>
     /// <param name="convexVertexLimit">The convex mesh vertex limit. Use values in range [8;255]</param>
     /// <returns>True if failed, otherwise false.</returns>
-    API_FUNCTION() bool CookCollision(CollisionDataType type, const Span<Vector3>& vertices, const Span<uint32>& triangles, ConvexMeshGenerationFlags convexFlags = ConvexMeshGenerationFlags::None, int32 convexVertexLimit = 255);
+    API_FUNCTION() bool CookCollision(CollisionDataType type, const Span<Float3>& vertices, const Span<uint32>& triangles, ConvexMeshGenerationFlags convexFlags = ConvexMeshGenerationFlags::None, int32 convexVertexLimit = 255);
 
     /// <summary>
     /// Cooks the mesh collision data and updates the virtual asset. action cannot be performed on a main thread.
@@ -233,7 +229,7 @@ public:
     /// <param name="convexFlags">The convex mesh generation flags.</param>
     /// <param name="convexVertexLimit">The convex mesh vertex limit. Use values in range [8;255]</param>
     /// <returns>True if failed, otherwise false.</returns>
-    API_FUNCTION() bool CookCollision(CollisionDataType type, const Span<Vector3>& vertices, const Span<int32>& triangles, ConvexMeshGenerationFlags convexFlags = ConvexMeshGenerationFlags::None, int32 convexVertexLimit = 255);
+    API_FUNCTION() bool CookCollision(CollisionDataType type, const Span<Float3>& vertices, const Span<int32>& triangles, ConvexMeshGenerationFlags convexFlags = ConvexMeshGenerationFlags::None, int32 convexVertexLimit = 255);
 
     /// <summary>
     /// Cooks the mesh collision data and updates the virtual asset. action cannot be performed on a main thread.
@@ -265,28 +261,25 @@ public:
     /// </summary>
     /// <param name="vertexBuffer">The output vertex buffer.</param>
     /// <param name="indexBuffer">The output index buffer.</param>
-    API_FUNCTION() void ExtractGeometry(API_PARAM(Out) Array<Vector3>& vertexBuffer, API_PARAM(Out) Array<int32>& indexBuffer) const;
+    API_FUNCTION() void ExtractGeometry(API_PARAM(Out) Array<Float3>& vertexBuffer, API_PARAM(Out) Array<int32>& indexBuffer) const;
 
 public:
-
     // MeshCollider is drawing debug view of the collision data, allow to share it across instances
 #if USE_EDITOR
 private:
     bool _hasMissingDebugLines = true;
-    Array<Vector3> _debugLines;
-    Array<Vector3> _debugVertexBuffer;
+    Array<Float3> _debugLines;
+    Array<Float3> _debugVertexBuffer;
     Array<int32> _debugIndexBuffer;
 public:
-    const Array<Vector3>& GetDebugLines();
-    void GetDebugTriangles(Array<Vector3>*& vertexBuffer, Array<int32>*& indexBuffer);
+    const Array<Float3>& GetDebugLines();
+    void GetDebugTriangles(Array<Float3>*& vertexBuffer, Array<int32>*& indexBuffer);
 #endif
 
 private:
-
     LoadResult load(const SerializedOptions* options, byte* dataPtr, int32 dataSize);
 
 protected:
-
     // [BinaryAsset]
     LoadResult load() override;
     void unload(bool isReloading) override;

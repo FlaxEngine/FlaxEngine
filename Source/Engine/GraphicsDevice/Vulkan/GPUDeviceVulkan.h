@@ -782,7 +782,7 @@ public:
     /// </summary>
     /// <param name="context">The GPU context. Can be used to add memory barriers to the pipeline before binding the descriptor to the pipeline.</param>
     /// <param name="bufferView">The buffer view.</param>
-    virtual void DescriptorAsUniformTexelBuffer(GPUContextVulkan* context, const VkBufferView*& bufferView)
+    virtual void DescriptorAsUniformTexelBuffer(GPUContextVulkan* context, VkBufferView& bufferView)
     {
         CRASH;
     }
@@ -804,7 +804,7 @@ public:
     /// </summary>
     /// <param name="context">The GPU context. Can be used to add memory barriers to the pipeline before binding the descriptor to the pipeline.</param>
     /// <param name="bufferView">The buffer view.</param>
-    virtual void DescriptorAsStorageTexelBuffer(GPUContextVulkan* context, const VkBufferView*& bufferView)
+    virtual void DescriptorAsStorageTexelBuffer(GPUContextVulkan* context, VkBufferView& bufferView)
     {
         CRASH;
     }

@@ -5,6 +5,7 @@
 #include "MaterialInfo.h"
 
 struct MaterialParamsLink;
+class GPUShader;
 class GPUContext;
 class GPUTextureView;
 class RenderBuffers;
@@ -19,12 +20,17 @@ struct DrawCall;
 class FLAXENGINE_API IMaterial
 {
 public:
-
     /// <summary>
     /// Gets the material info, structure which describes material surface.
     /// </summary>
     /// <returns>The constant reference to the material descriptor.</returns>
     virtual const MaterialInfo& GetInfo() const = 0;
+
+    /// <summary>
+    /// Gets the shader resource.
+    /// </summary>
+    /// <returns>The material shader resource.</returns>
+    virtual GPUShader* GetShader() const = 0;
 
     /// <summary>
     /// Determines whether material is a surface shader.
@@ -127,7 +133,6 @@ public:
     }
 
 public:
-
     /// <summary>
     /// Settings for the material binding to the graphics pipeline.
     /// </summary>

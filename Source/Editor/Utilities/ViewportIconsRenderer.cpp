@@ -93,7 +93,7 @@ void ViewportIconsRendererService::DrawIcons(RenderContext& renderContext, Scene
     Matrix m1, m2, world;
     for (Actor* icon : icons)
     {
-        BoundingSphere sphere(icon->GetPosition(), ICON_RADIUS);
+        BoundingSphere sphere(icon->GetPosition() - renderContext.View.Origin, ICON_RADIUS);
         IconTypes iconType;
         if (frustum.Intersects(sphere) && ActorTypeToIconType.TryGet(icon->GetTypeHandle(), iconType))
         {
@@ -120,7 +120,7 @@ void ViewportIconsRendererService::DrawIcons(RenderContext& renderContext, Actor
     auto& view = renderContext.View;
     const BoundingFrustum frustum = view.Frustum;
     Matrix m1, m2, world;
-    BoundingSphere sphere(actor->GetPosition(), ICON_RADIUS);
+    BoundingSphere sphere(actor->GetPosition() - renderContext.View.Origin, ICON_RADIUS);
     IconTypes iconType;
     if (frustum.Intersects(sphere) && ActorTypeToIconType.TryGet(actor->GetTypeHandle(), iconType))
     {

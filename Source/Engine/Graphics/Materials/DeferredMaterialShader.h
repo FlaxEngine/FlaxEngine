@@ -10,7 +10,6 @@
 class DeferredMaterialShader : public MaterialShader
 {
 private:
-
     struct Cache
     {
         PipelineStateCache Default;
@@ -33,6 +32,8 @@ private:
             case DrawPass::Depth:
                 return useSkinning ? &DepthSkinned : &Depth;
             case DrawPass::GBuffer:
+            case DrawPass::GBuffer | DrawPass::GlobalSurfaceAtlas:
+            case DrawPass::GlobalSurfaceAtlas:
                 return useLightmap ? &DefaultLightmap : (useSkinning ? &DefaultSkinned : &Default);
             case DrawPass::MotionVectors:
                 return useSkinning ? (perBoneMotionBlur ? &MotionVectorsSkinnedPerBone : &MotionVectorsSkinned) : &MotionVectors;
@@ -62,19 +63,16 @@ private:
     };
 
 private:
-
     Cache _cache;
     Cache _cacheInstanced;
 
 public:
-
     DeferredMaterialShader(const StringView& name)
         : MaterialShader(name)
     {
     }
 
 public:
-
     // [MaterialShader]
     DrawPass GetDrawModes() const override;
     bool CanUseLightmap() const override;
@@ -83,7 +81,6 @@ public:
     void Unload() override;
 
 protected:
-
     // [MaterialShader]
     bool Load() override;
 };

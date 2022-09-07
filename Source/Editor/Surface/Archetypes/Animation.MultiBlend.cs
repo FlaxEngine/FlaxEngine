@@ -19,11 +19,11 @@ namespace FlaxEditor.Surface.Archetypes
     public abstract class BlendPointsEditor : ContainerControl
     {
         private readonly bool _is2D;
-        private Vector2 _rangeX;
-        private Vector2 _rangeY;
+        private Float2 _rangeX;
+        private Float2 _rangeY;
         private readonly BlendPoint[] _blendPoints = new BlendPoint[Animation.MultiBlend.MaxAnimationsCount];
         private readonly Guid[] _pointsAnims = new Guid[Animation.MultiBlend.MaxAnimationsCount];
-        private readonly Vector2[] _pointsLocations = new Vector2[Animation.MultiBlend.MaxAnimationsCount];
+        private readonly Float2[] _pointsLocations = new Float2[Animation.MultiBlend.MaxAnimationsCount];
 
         /// <summary>
         /// Represents single blend point.
@@ -74,7 +74,7 @@ namespace FlaxEditor.Surface.Archetypes
             }
 
             /// <inheritdoc />
-            public override bool OnMouseDown(Vector2 location, MouseButton button)
+            public override bool OnMouseDown(Float2 location, MouseButton button)
             {
                 if (button == MouseButton.Left)
                 {
@@ -88,7 +88,7 @@ namespace FlaxEditor.Surface.Archetypes
             }
 
             /// <inheritdoc />
-            public override bool OnMouseUp(Vector2 location, MouseButton button)
+            public override bool OnMouseUp(Float2 location, MouseButton button)
             {
                 if (button == MouseButton.Left && _isMouseDown)
                 {
@@ -101,7 +101,7 @@ namespace FlaxEditor.Surface.Archetypes
             }
 
             /// <inheritdoc />
-            public override void OnMouseMove(Vector2 location)
+            public override void OnMouseMove(Float2 location)
             {
                 if (_isMouseDown)
                 {
@@ -170,7 +170,7 @@ namespace FlaxEditor.Surface.Archetypes
         /// <param name="rangeY">The space range for Y axis (X-width, Y-height).</param>
         /// <param name="pointsAnims">The points anims (input array to fill of size equal 14).</param>
         /// <param name="pointsLocations">The points locations (input array to fill of size equal 14).</param>
-        public abstract void GetData(out Vector2 rangeX, out Vector2 rangeY, Guid[] pointsAnims, Vector2[] pointsLocations);
+        public abstract void GetData(out Float2 rangeX, out Float2 rangeY, Guid[] pointsAnims, Float2[] pointsLocations);
 
         /// <summary>
         /// Gets or sets the index of the selected blend point.
@@ -182,7 +182,7 @@ namespace FlaxEditor.Surface.Archetypes
         /// </summary>
         /// <param name="index">The index.</param>
         /// <param name="location">The location.</param>
-        public abstract void SetLocation(int index, Vector2 location);
+        public abstract void SetLocation(int index, Float2 location);
 
         /// <summary>
         /// Gets the blend points area.
@@ -190,7 +190,7 @@ namespace FlaxEditor.Surface.Archetypes
         /// <param name="pointsArea">The control-space area.</param>
         public void GetPointsArea(out Rectangle pointsArea)
         {
-            pointsArea = new Rectangle(Vector2.Zero, Size);
+            pointsArea = new Rectangle(Float2.Zero, Size);
             pointsArea.Expand(-10.0f);
         }
 
@@ -199,23 +199,23 @@ namespace FlaxEditor.Surface.Archetypes
         /// </summary>
         /// <param name="pos">The blend point control position.</param>
         /// <returns>The blend space position.</returns>
-        public Vector2 BlendPointPosToBlendSpacePos(Vector2 pos)
+        public Float2 BlendPointPosToBlendSpacePos(Float2 pos)
         {
             GetPointsArea(out var pointsArea);
-            pos += new Vector2(BlendPoint.DefaultSize * 0.5f);
+            pos += new Float2(BlendPoint.DefaultSize * 0.5f);
             if (_is2D)
             {
-                pos = new Vector2(
-                    Mathf.Map(pos.X, pointsArea.Left, pointsArea.Right, _rangeX.X, _rangeX.Y),
-                    Mathf.Map(pos.Y, pointsArea.Bottom, pointsArea.Top, _rangeY.X, _rangeY.Y)
-                );
+                pos = new Float2(
+                                 Mathf.Map(pos.X, pointsArea.Left, pointsArea.Right, _rangeX.X, _rangeX.Y),
+                                 Mathf.Map(pos.Y, pointsArea.Bottom, pointsArea.Top, _rangeY.X, _rangeY.Y)
+                                );
             }
             else
             {
-                pos = new Vector2(
-                    Mathf.Map(pos.X, pointsArea.Left, pointsArea.Right, _rangeX.X, _rangeX.Y),
-                    0
-                );
+                pos = new Float2(
+                                 Mathf.Map(pos.X, pointsArea.Left, pointsArea.Right, _rangeX.X, _rangeX.Y),
+                                 0
+                                );
             }
             return pos;
         }
@@ -225,24 +225,24 @@ namespace FlaxEditor.Surface.Archetypes
         /// </summary>
         /// <param name="pos">The blend space position.</param>
         /// <returns>The blend point control position.</returns>
-        public Vector2 BlendSpacePosToBlendPointPos(Vector2 pos)
+        public Float2 BlendSpacePosToBlendPointPos(Float2 pos)
         {
             GetPointsArea(out var pointsArea);
             if (_is2D)
             {
-                pos = new Vector2(
-                    Mathf.Map(pos.X, _rangeX.X, _rangeX.Y, pointsArea.Left, pointsArea.Right),
-                    Mathf.Map(pos.Y, _rangeY.X, _rangeY.Y, pointsArea.Bottom, pointsArea.Top)
-                );
+                pos = new Float2(
+                                 Mathf.Map(pos.X, _rangeX.X, _rangeX.Y, pointsArea.Left, pointsArea.Right),
+                                 Mathf.Map(pos.Y, _rangeY.X, _rangeY.Y, pointsArea.Bottom, pointsArea.Top)
+                                );
             }
             else
             {
-                pos = new Vector2(
-                    Mathf.Map(pos.X, _rangeX.X, _rangeX.Y, pointsArea.Left, pointsArea.Right),
-                    pointsArea.Center.Y
-                );
+                pos = new Float2(
+                                 Mathf.Map(pos.X, _rangeX.X, _rangeX.Y, pointsArea.Left, pointsArea.Right),
+                                 pointsArea.Center.Y
+                                );
             }
-            return pos - new Vector2(BlendPoint.DefaultSize * 0.5f);
+            return pos - new Float2(BlendPoint.DefaultSize * 0.5f);
         }
 
         /// <inheritdoc />
@@ -287,8 +287,8 @@ namespace FlaxEditor.Surface.Archetypes
         {
             get
             {
-                var upperLeft = BlendSpacePosToBlendPointPos(new Vector2(_rangeX.X, _rangeY.X));
-                var bottomRight = BlendSpacePosToBlendPointPos(new Vector2(_rangeX.Y, _rangeY.Y));
+                var upperLeft = BlendSpacePosToBlendPointPos(new Float2(_rangeX.X, _rangeY.X));
+                var bottomRight = BlendSpacePosToBlendPointPos(new Float2(_rangeX.Y, _rangeY.Y));
                 return new Rectangle(upperLeft, bottomRight - upperLeft);
             }
         }
@@ -298,7 +298,7 @@ namespace FlaxEditor.Surface.Archetypes
         {
             // Cache data
             var style = Style.Current;
-            var rect = new Rectangle(Vector2.Zero, Size);
+            var rect = new Rectangle(Float2.Zero, Size);
             var containsFocus = ContainsFocus;
             GetPointsArea(out var pointsArea);
 
@@ -314,20 +314,20 @@ namespace FlaxEditor.Surface.Archetypes
             for (int i = 0; i < splits; i++)
             {
                 float x = blendArea.Left + blendArea.Width * i / splits;
-                Render2D.DrawLine(new Vector2(x, 1), new Vector2(x, rect.Height - 2), gridColor);
+                Render2D.DrawLine(new Float2(x, 1), new Float2(x, rect.Height - 2), gridColor);
             }
             if (_is2D)
             {
                 for (int i = 0; i < splits; i++)
                 {
                     float y = blendArea.Top + blendArea.Height * i / splits;
-                    Render2D.DrawLine(new Vector2(1, y), new Vector2(rect.Width - 2, y), gridColor);
+                    Render2D.DrawLine(new Float2(1, y), new Float2(rect.Width - 2, y), gridColor);
                 }
             }
             else
             {
                 float y = blendArea.Center.Y;
-                Render2D.DrawLine(new Vector2(1, y), new Vector2(rect.Width - 2, y), gridColor);
+                Render2D.DrawLine(new Float2(1, y), new Float2(rect.Width - 2, y), gridColor);
             }
 
             // Base
@@ -416,7 +416,7 @@ namespace FlaxEditor.Surface.Archetypes
                     items.Add(string.Empty);
                 _selectedAnimation.Items = items;
 
-                _animationPicker = new AssetPicker(new ScriptType(typeof(FlaxEngine.Animation)), new Vector2(_selectedAnimation.Left, _selectedAnimation.Bottom + 4))
+                _animationPicker = new AssetPicker(new ScriptType(typeof(FlaxEngine.Animation)), new Float2(_selectedAnimation.Left, _selectedAnimation.Bottom + 4))
                 {
                     Parent = this
                 };
@@ -478,7 +478,7 @@ namespace FlaxEditor.Surface.Archetypes
                 if (selectedIndex != -1)
                 {
                     var index = 4 + selectedIndex * 2;
-                    var data0 = (Vector4)Values[index];
+                    var data0 = (Float4)Values[index];
                     data0.W = _animationSpeed.Value;
                     SetValue(index, data0);
                 }
@@ -491,7 +491,7 @@ namespace FlaxEditor.Surface.Archetypes
             /// <param name="isValid">if set to <c>true</c> is selection valid.</param>
             /// <param name="data0">The packed data 0.</param>
             /// <param name="data1">The packed data 1.</param>
-            protected virtual void UpdateUI(int selectedIndex, bool isValid, ref Vector4 data0, ref Guid data1)
+            protected virtual void UpdateUI(int selectedIndex, bool isValid, ref Float4 data0, ref Guid data1)
             {
                 if (isValid)
                 {
@@ -524,16 +524,16 @@ namespace FlaxEditor.Surface.Archetypes
 
                 var selectedIndex = _selectedAnimation.SelectedIndex;
                 var isValid = selectedIndex != -1;
-                Vector4 data0;
+                Float4 data0;
                 Guid data1;
                 if (isValid)
                 {
-                    data0 = (Vector4)Values[4 + selectedIndex * 2];
+                    data0 = (Float4)Values[4 + selectedIndex * 2];
                     data1 = (Guid)Values[5 + selectedIndex * 2];
                 }
                 else
                 {
-                    data0 = Vector4.Zero;
+                    data0 = Float4.Zero;
                     data1 = Guid.Empty;
                 }
                 UpdateUI(selectedIndex, isValid, ref data0, ref data1);
@@ -591,18 +591,18 @@ namespace FlaxEditor.Surface.Archetypes
                 }
 
                 /// <inheritdoc />
-                public override void GetData(out Vector2 rangeX, out Vector2 rangeY, Guid[] pointsAnims, Vector2[] pointsLocations)
+                public override void GetData(out Float2 rangeX, out Float2 rangeY, Guid[] pointsAnims, Float2[] pointsLocations)
                 {
-                    var data0 = (Vector4)_node.Values[0];
-                    rangeX = new Vector2(data0.X, data0.Y);
-                    rangeY = Vector2.Zero;
+                    var data0 = (Float4)_node.Values[0];
+                    rangeX = new Float2(data0.X, data0.Y);
+                    rangeY = Float2.Zero;
                     for (int i = 0; i < MaxAnimationsCount; i++)
                     {
-                        var dataA = (Vector4)_node.Values[4 + i * 2];
+                        var dataA = (Float4)_node.Values[4 + i * 2];
                         var dataB = (Guid)_node.Values[5 + i * 2];
 
                         pointsAnims[i] = dataB;
-                        pointsLocations[i] = new Vector2(dataA.X, 0.0f);
+                        pointsLocations[i] = new Float2(dataA.X, 0.0f);
                     }
                 }
 
@@ -614,9 +614,9 @@ namespace FlaxEditor.Surface.Archetypes
                 }
 
                 /// <inheritdoc />
-                public override void SetLocation(int index, Vector2 location)
+                public override void SetLocation(int index, Float2 location)
                 {
-                    var dataA = (Vector4)_node.Values[4 + index * 2];
+                    var dataA = (Float4)_node.Values[4 + index * 2];
 
                     dataA.X = location.X;
 
@@ -662,14 +662,14 @@ namespace FlaxEditor.Surface.Archetypes
                 if (selectedIndex != -1)
                 {
                     var index = 4 + selectedIndex * 2;
-                    var data0 = (Vector4)Values[index];
+                    var data0 = (Float4)Values[index];
                     data0.X = _animationX.Value;
                     SetValue(index, data0);
                 }
             }
 
             /// <inheritdoc />
-            protected override void UpdateUI(int selectedIndex, bool isValid, ref Vector4 data0, ref Guid data1)
+            protected override void UpdateUI(int selectedIndex, bool isValid, ref Float4 data0, ref Guid data1)
             {
                 base.UpdateUI(selectedIndex, isValid, ref data0, ref data1);
 
@@ -721,18 +721,18 @@ namespace FlaxEditor.Surface.Archetypes
                 }
 
                 /// <inheritdoc />
-                public override void GetData(out Vector2 rangeX, out Vector2 rangeY, Guid[] pointsAnims, Vector2[] pointsLocations)
+                public override void GetData(out Float2 rangeX, out Float2 rangeY, Guid[] pointsAnims, Float2[] pointsLocations)
                 {
-                    var data0 = (Vector4)_node.Values[0];
-                    rangeX = new Vector2(data0.X, data0.Y);
-                    rangeY = new Vector2(data0.Z, data0.W);
+                    var data0 = (Float4)_node.Values[0];
+                    rangeX = new Float2(data0.X, data0.Y);
+                    rangeY = new Float2(data0.Z, data0.W);
                     for (int i = 0; i < MaxAnimationsCount; i++)
                     {
-                        var dataA = (Vector4)_node.Values[4 + i * 2];
+                        var dataA = (Float4)_node.Values[4 + i * 2];
                         var dataB = (Guid)_node.Values[5 + i * 2];
 
                         pointsAnims[i] = dataB;
-                        pointsLocations[i] = new Vector2(dataA.X, dataA.Y);
+                        pointsLocations[i] = new Float2(dataA.X, dataA.Y);
                     }
                 }
 
@@ -744,9 +744,9 @@ namespace FlaxEditor.Surface.Archetypes
                 }
 
                 /// <inheritdoc />
-                public override void SetLocation(int index, Vector2 location)
+                public override void SetLocation(int index, Float2 location)
                 {
-                    var dataA = (Vector4)_node.Values[4 + index * 2];
+                    var dataA = (Float4)_node.Values[4 + index * 2];
 
                     dataA.X = location.X;
                     dataA.Y = location.Y;
@@ -807,7 +807,7 @@ namespace FlaxEditor.Surface.Archetypes
                 if (selectedIndex != -1)
                 {
                     var index = 4 + selectedIndex * 2;
-                    var data0 = (Vector4)Values[index];
+                    var data0 = (Float4)Values[index];
                     data0.X = _animationX.Value;
                     SetValue(index, data0);
                 }
@@ -822,14 +822,14 @@ namespace FlaxEditor.Surface.Archetypes
                 if (selectedIndex != -1)
                 {
                     var index = 4 + selectedIndex * 2;
-                    var data0 = (Vector4)Values[index];
+                    var data0 = (Float4)Values[index];
                     data0.Y = _animationY.Value;
                     SetValue(index, data0);
                 }
             }
 
             /// <inheritdoc />
-            protected override void UpdateUI(int selectedIndex, bool isValid, ref Vector4 data0, ref Guid data1)
+            protected override void UpdateUI(int selectedIndex, bool isValid, ref Float4 data0, ref Guid data1)
             {
                 base.UpdateUI(selectedIndex, isValid, ref data0, ref data1);
 

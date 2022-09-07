@@ -3,7 +3,7 @@
 #include "EyeAdaptationPass.h"
 #include "HistogramPass.h"
 #include "RenderList.h"
-#include "Engine/Core/Math/Int2.h"
+#include "Engine/Core/Math/Vector2.h"
 #include "Engine/Content/Assets/Shader.h"
 #include "Engine/Content/Content.h"
 #include "Engine/Graphics/GPUDevice.h"

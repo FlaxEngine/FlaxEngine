@@ -191,7 +191,7 @@ namespace FlaxEditor.Surface.ContextMenu
         public override void Draw()
         {
             var style = Style.Current;
-            var rect = new Rectangle(Vector2.Zero, Size);
+            var rect = new Rectangle(Float2.Zero, Size);
             var textRect = new Rectangle(2, 0, rect.Width - 4, rect.Height);
             var showScoreHit = SortScore > 0.1f;
 
@@ -234,7 +234,7 @@ namespace FlaxEditor.Surface.ContextMenu
         }
 
         /// <inheritdoc />
-        public override bool OnMouseDown(Vector2 location, MouseButton button)
+        public override bool OnMouseDown(Float2 location, MouseButton button)
         {
             if (button == MouseButton.Left)
             {
@@ -245,7 +245,7 @@ namespace FlaxEditor.Surface.ContextMenu
         }
 
         /// <inheritdoc />
-        public override bool OnMouseUp(Vector2 location, MouseButton button)
+        public override bool OnMouseUp(Float2 location, MouseButton button)
         {
             if (button == MouseButton.Left && _isMouseDown)
             {

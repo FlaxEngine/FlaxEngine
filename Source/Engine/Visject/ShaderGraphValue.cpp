@@ -2,6 +2,7 @@
 
 #include "ShaderGraphValue.h"
 #include "Engine/Core/Log.h"
+#include "Engine/Core/Math/Quaternion.h"
 #include "Engine/Core/Math/Vector2.h"
 #include "Engine/Core/Math/Vector3.h"
 #include "Engine/Core/Math/Vector4.h"
@@ -41,19 +42,60 @@ ShaderGraphValue::ShaderGraphValue(const Variant& v)
         Type = VariantType::Types::Float;
         Value = String::Format(TEXT("{0}"), v.AsFloat);
         break;
-    case VariantType::Vector2:
-        Type = VariantType::Types::Vector2;
-        Value = String::Format(TEXT("float2({0}, {1})"), (*(Vector2*)v.AsData).X, (*(Vector2*)v.AsData).Y);
+    case VariantType::Double:
+        Type = VariantType::Types::Float;
+        Value = String::Format(TEXT("{0}"), (float)v.AsDouble);
         break;
-    case VariantType::Vector3:
-        Type = VariantType::Types::Vector3;
-        Value = String::Format(TEXT("float3({0}, {1}, {2})"), (*(Vector3*)v.AsData).X, (*(Vector3*)v.AsData).Y, (*(Vector3*)v.AsData).Z);
+    case VariantType::Float2:
+    {
+        const auto vv = v.AsFloat2();
+        Type = VariantType::Types::Float2;
+        Value = String::Format(TEXT("float2({0}, {1})"), vv.X, vv.Y);
         break;
-    case VariantType::Vector4:
+    }
+    case VariantType::Float3:
+    {
+        const auto vv = v.AsFloat3();
+        Type = VariantType::Types::Float3;
+        Value = String::Format(TEXT("float3({0}, {1}, {2})"), vv.X, vv.Y, vv.Z);
+        break;
+    }
+    case VariantType::Float4:
     case VariantType::Color:
-        Type = VariantType::Types::Vector4;
-        Value = String::Format(TEXT("float4({0}, {1}, {2}, {3})"), (*(Vector4*)v.AsData).X, (*(Vector4*)v.AsData).Y, (*(Vector4*)v.AsData).Z, (*(Vector4*)v.AsData).W);
+    {
+        const auto vv = v.AsFloat4();
+        Type = VariantType::Types::Float4;
+        Value = String::Format(TEXT("float4({0}, {1}, {2}, {3})"), vv.X, vv.Y, vv.Z, vv.W);
         break;
+    }
+    case VariantType::Double2:
+    {
+        const auto vv = (::Float2)v.AsDouble2();
+        Type = VariantType::Types::Float2;
+        Value = String::Format(TEXT("float2({0}, {1})"), vv.X, vv.Y);
+        break;
+    }
+    case VariantType::Double3:
+    {
+        const auto vv = (::Float3)v.AsDouble3();
+        Type = VariantType::Types::Float3;
+        Value = String::Format(TEXT("float3({0}, {1}, {2})"), vv.X, vv.Y, vv.Z);
+        break;
+    }
+    case VariantType::Double4:
+    {
+        const auto vv = (::Float4)v.AsDouble4();
+        Type = VariantType::Types::Float4;
+        Value = String::Format(TEXT("float4({0}, {1}, {2}, {3})"), vv.X, vv.Y, vv.Z, vv.W);
+        break;
+    }
+    case VariantType::Quaternion:
+    {
+        const auto vv = v.AsQuaternion();
+        Type = VariantType::Types::Quaternion;
+        Value = String::Format(TEXT("float4({0}, {1}, {2}, {3})"), vv.X, vv.Y, vv.Z, vv.W);
+        break;
+    }
     case VariantType::String:
         Type = VariantType::Types::String;
         Value = (StringView)v;
@@ -98,6 +140,7 @@ ShaderGraphValue ShaderGraphValue::InitForZero(VariantType::Types type)
     switch (type)
     {
     case VariantType::Types::Float:
+    case VariantType::Types::Double:
         v = TEXT("0.0");
         break;
     case VariantType::Types::Bool:
@@ -105,24 +148,30 @@ ShaderGraphValue ShaderGraphValue::InitForZero(VariantType::Types type)
     case VariantType::Types::Uint:
         v = TEXT("0");
         break;
-    case VariantType::Types::Vector2:
+    case VariantType::Types::Float2:
+    case VariantType::Types::Double2:
         v = TEXT("float2(0, 0)");
         break;
-    case VariantType::Types::Vector3:
+    case VariantType::Types::Float3:
+    case VariantType::Types::Double3:
         v = TEXT("float3(0, 0, 0)");
         break;
-    case VariantType::Types::Vector4:
+    case VariantType::Types::Float4:
+    case VariantType::Types::Double4:
     case VariantType::Types::Color:
         v = TEXT("float4(0, 0, 0, 0)");
+        break;
+    case VariantType::Types::Quaternion:
+        v = TEXT("float4(0, 0, 0, 1)");
         break;
     case VariantType::Types::Void:
         v = TEXT("((Material)0)");
         break;
     default:
-    CRASH;
+        CRASH;
         v = nullptr;
     }
-    return ShaderGraphValue(type, String(v));
+    return ShaderGraphValue(type, v);
 }
 
 ShaderGraphValue ShaderGraphValue::InitForHalf(VariantType::Types type)
@@ -131,6 +180,7 @@ ShaderGraphValue ShaderGraphValue::InitForHalf(VariantType::Types type)
     switch (type)
     {
     case VariantType::Types::Float:
+    case VariantType::Types::Double:
         v = TEXT("0.5");
         break;
     case VariantType::Types::Bool:
@@ -138,18 +188,22 @@ ShaderGraphValue ShaderGraphValue::InitForHalf(VariantType::Types type)
     case VariantType::Types::Uint:
         v = TEXT("0");
         break;
-    case VariantType::Types::Vector2:
+    case VariantType::Types::Float2:
+    case VariantType::Types::Double2:
         v = TEXT("float2(0.5, 0.5)");
         break;
-    case VariantType::Types::Vector3:
+    case VariantType::Types::Float3:
+    case VariantType::Types::Double3:
         v = TEXT("float3(0.5, 0.5, 0.5)");
         break;
-    case VariantType::Types::Vector4:
+    case VariantType::Types::Float4:
+    case VariantType::Types::Double4:
+    case VariantType::Types::Quaternion:
     case VariantType::Types::Color:
         v = TEXT("float4(0.5, 0.5, 0.5, 0.5)");
         break;
     default:
-    CRASH;
+        CRASH;
         v = nullptr;
     }
     return ShaderGraphValue(type, String(v));
@@ -161,6 +215,7 @@ ShaderGraphValue ShaderGraphValue::InitForOne(VariantType::Types type)
     switch (type)
     {
     case VariantType::Types::Float:
+    case VariantType::Types::Double:
         v = TEXT("1.0");
         break;
     case VariantType::Types::Bool:
@@ -168,18 +223,22 @@ ShaderGraphValue ShaderGraphValue::InitForOne(VariantType::Types type)
     case VariantType::Types::Uint:
         v = TEXT("1");
         break;
-    case VariantType::Types::Vector2:
+    case VariantType::Types::Float2:
+    case VariantType::Types::Double2:
         v = TEXT("float2(1, 1)");
         break;
-    case VariantType::Types::Vector3:
+    case VariantType::Types::Float3:
+    case VariantType::Types::Double3:
         v = TEXT("float3(1, 1, 1)");
         break;
-    case VariantType::Types::Vector4:
+    case VariantType::Types::Float4:
+    case VariantType::Types::Double4:
+    case VariantType::Types::Quaternion:
     case VariantType::Types::Color:
         v = TEXT("float4(1, 1, 1, 1)");
         break;
     default:
-    CRASH;
+        CRASH;
         v = nullptr;
     }
     return ShaderGraphValue(type, String(v));
@@ -203,11 +262,16 @@ ShaderGraphValue ShaderGraphValue::Cast(const ShaderGraphValue& v, VariantType::
         case VariantType::Types::Int:
         case VariantType::Types::Uint:
         case VariantType::Types::Float:
+        case VariantType::Types::Double:
             format = TEXT("((bool){0})");
             break;
-        case VariantType::Types::Vector2:
-        case VariantType::Types::Vector3:
-        case VariantType::Types::Vector4:
+        case VariantType::Types::Float2:
+        case VariantType::Types::Float3:
+        case VariantType::Types::Float4:
+        case VariantType::Types::Double2:
+        case VariantType::Types::Double3:
+        case VariantType::Types::Double4:
+        case VariantType::Types::Quaternion:
         case VariantType::Types::Color:
             format = TEXT("((bool){0}.x)");
             break;
@@ -219,11 +283,16 @@ ShaderGraphValue ShaderGraphValue::Cast(const ShaderGraphValue& v, VariantType::
         case VariantType::Types::Bool:
         case VariantType::Types::Uint:
         case VariantType::Types::Float:
+        case VariantType::Types::Double:
             format = TEXT("((int){0})");
             break;
-        case VariantType::Types::Vector2:
-        case VariantType::Types::Vector3:
-        case VariantType::Types::Vector4:
+        case VariantType::Types::Float2:
+        case VariantType::Types::Float3:
+        case VariantType::Types::Float4:
+        case VariantType::Types::Double2:
+        case VariantType::Types::Double3:
+        case VariantType::Types::Double4:
+        case VariantType::Types::Quaternion:
         case VariantType::Types::Color:
             format = TEXT("((int){0}.x)");
             break;
@@ -235,17 +304,23 @@ ShaderGraphValue ShaderGraphValue::Cast(const ShaderGraphValue& v, VariantType::
         case VariantType::Types::Bool:
         case VariantType::Types::Int:
         case VariantType::Types::Float:
+        case VariantType::Types::Double:
             format = TEXT("((uint){0})");
             break;
-        case VariantType::Types::Vector2:
-        case VariantType::Types::Vector3:
-        case VariantType::Types::Vector4:
+        case VariantType::Types::Float2:
+        case VariantType::Types::Float3:
+        case VariantType::Types::Float4:
+        case VariantType::Types::Double2:
+        case VariantType::Types::Double3:
+        case VariantType::Types::Double4:
+        case VariantType::Types::Quaternion:
         case VariantType::Types::Color:
             format = TEXT("((uint){0}.x)");
             break;
         }
         break;
     case VariantType::Types::Float:
+    case VariantType::Types::Double:
         switch (v.Type)
         {
         case VariantType::Types::Bool:
@@ -253,49 +328,68 @@ ShaderGraphValue ShaderGraphValue::Cast(const ShaderGraphValue& v, VariantType::
         case VariantType::Types::Uint:
             format = TEXT("((float){0})");
             break;
-        case VariantType::Types::Vector2:
-        case VariantType::Types::Vector3:
-        case VariantType::Types::Vector4:
+        case VariantType::Types::Float2:
+        case VariantType::Types::Float3:
+        case VariantType::Types::Float4:
+        case VariantType::Types::Double2:
+        case VariantType::Types::Double3:
+        case VariantType::Types::Double4:
+        case VariantType::Types::Quaternion:
         case VariantType::Types::Color:
             format = TEXT("((float){0}.x)");
             break;
         }
         break;
-    case VariantType::Types::Vector2:
+    case VariantType::Types::Float2:
+    case VariantType::Types::Double2:
         switch (v.Type)
         {
         case VariantType::Types::Bool:
         case VariantType::Types::Int:
         case VariantType::Types::Uint:
         case VariantType::Types::Float:
+        case VariantType::Types::Double:
             format = TEXT("float2({0}, {0})");
             break;
-        case VariantType::Types::Vector3:
-        case VariantType::Types::Vector4:
+        case VariantType::Types::Float3:
+        case VariantType::Types::Float4:
+        case VariantType::Types::Double2:
+        case VariantType::Types::Double3:
+        case VariantType::Types::Double4:
+        case VariantType::Types::Quaternion:
         case VariantType::Types::Color:
             format = TEXT("{0}.xy");
             break;
         }
         break;
-    case VariantType::Types::Vector3:
+    case VariantType::Types::Float3:
+    case VariantType::Types::Double3:
         switch (v.Type)
         {
         case VariantType::Types::Bool:
         case VariantType::Types::Int:
         case VariantType::Types::Uint:
         case VariantType::Types::Float:
+        case VariantType::Types::Double:
             format = TEXT("float3({0}, {0}, {0})");
             break;
-        case VariantType::Types::Vector2:
+        case VariantType::Types::Float2:
+        case VariantType::Types::Double2:
             format = TEXT("float3({0}.xy, 0)");
             break;
-        case VariantType::Types::Vector4:
+        case VariantType::Types::Double3:
+        case VariantType::Types::Float4:
+        case VariantType::Types::Double4:
         case VariantType::Types::Color:
             format = TEXT("{0}.xyz");
             break;
+        case VariantType::Types::Quaternion:
+            format = TEXT("QuatRotateVector({0}, float3(0, 0, 1))"); // Returns direction vector
+            break;
         }
         break;
-    case VariantType::Types::Vector4:
+    case VariantType::Types::Float4:
+    case VariantType::Types::Double4:
     case VariantType::Types::Color:
         switch (v.Type)
         {
@@ -303,16 +397,31 @@ ShaderGraphValue ShaderGraphValue::Cast(const ShaderGraphValue& v, VariantType::
         case VariantType::Types::Int:
         case VariantType::Types::Uint:
         case VariantType::Types::Float:
+        case VariantType::Types::Double:
             format = TEXT("float4({0}, {0}, {0}, {0})");
             break;
-        case VariantType::Types::Vector2:
+        case VariantType::Types::Float2:
+        case VariantType::Types::Double2:
             format = TEXT("float4({0}.xy, 0, 0)");
             break;
-        case VariantType::Types::Vector3:
+        case VariantType::Types::Float3:
+        case VariantType::Types::Double3:
             format = TEXT("float4({0}.xyz, 0)");
             break;
         case VariantType::Types::Color:
-        case VariantType::Types::Vector4:
+        case VariantType::Types::Float4:
+        case VariantType::Types::Double4:
+        case VariantType::Types::Quaternion:
+            format = TEXT("{0}");
+            break;
+        }
+        break;
+    case VariantType::Types::Quaternion:
+        switch (v.Type)
+        {
+        case VariantType::Types::Color:
+        case VariantType::Types::Float4:
+        case VariantType::Types::Double4:
             format = TEXT("{0}");
             break;
         }

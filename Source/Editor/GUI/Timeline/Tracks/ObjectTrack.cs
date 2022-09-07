@@ -113,6 +113,7 @@ namespace FlaxEditor.GUI.Timeline.Tracks
         /// <summary>
         /// The data for add property track buttons tag.
         /// </summary>
+        [HideInEditor]
         public struct AddMemberTag
         {
             /// <summary>
@@ -411,6 +412,12 @@ namespace FlaxEditor.GUI.Timeline.Tracks
             { typeof(Vector2), CurvePropertyTrack.GetArchetype() },
             { typeof(Vector3), CurvePropertyTrack.GetArchetype() },
             { typeof(Vector4), CurvePropertyTrack.GetArchetype() },
+            { typeof(Float2), CurvePropertyTrack.GetArchetype() },
+            { typeof(Float3), CurvePropertyTrack.GetArchetype() },
+            { typeof(Float4), CurvePropertyTrack.GetArchetype() },
+            { typeof(Double2), CurvePropertyTrack.GetArchetype() },
+            { typeof(Double3), CurvePropertyTrack.GetArchetype() },
+            { typeof(Double4), CurvePropertyTrack.GetArchetype() },
             { typeof(Quaternion), CurvePropertyTrack.GetArchetype() },
             { typeof(Color), CurvePropertyTrack.GetArchetype() },
             { typeof(Color32), CurvePropertyTrack.GetArchetype() },

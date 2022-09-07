@@ -7,6 +7,7 @@
 #include "Engine/Platform/Platform.h"
 #include "Engine/Threading/Threading.h"
 #include "Engine/Serialization/MemoryWriteStream.h"
+#include "Engine/Graphics/Config.h"
 #include "Engine/GraphicsDevice/Vulkan/Types.h"
 
 // Use glslang for HLSL to SPIR-V translation
@@ -33,7 +34,6 @@ namespace
 class Includer : public glslang::TShader::Includer
 {
 private:
-
     ShaderCompilationContext* _context;
 
     IncludeResult* include(const char* headerName, const char* includerName, int depth) const
@@ -46,14 +46,12 @@ private:
     }
 
 public:
-
     Includer(ShaderCompilationContext* context)
     {
         _context = context;
     }
 
 public:
-
     // [glslang::TShader::Include]
     IncludeResult* includeLocal(const char* headerName, const char* includerName, size_t inclusionDepth) override
     {
@@ -210,6 +208,7 @@ struct Descriptor
     int32 Slot;
     int32 Binding;
     int32 Size;
+    int32 Count;
     SpirvShaderResourceBindingType BindingType;
     VkDescriptorType DescriptorType;
     SpirvShaderResourceType ResourceType;
@@ -229,7 +228,7 @@ SpirvShaderResourceType GetTextureType(const glslang::TSampler& sampler)
     case glslang::EsdCube:
         return SpirvShaderResourceType::TextureCube;
     default:
-    CRASH;
+        CRASH;
         return SpirvShaderResourceType::Unknown;
     }
 }
@@ -244,23 +243,13 @@ bool IsUavType(const glslang::TType& type)
 class DescriptorsCollector
 {
 public:
-
-    int32 Images;
-    int32 Buffers;
-    int32 DescriptorsCount;
+    int32 Images = 0;
+    int32 Buffers = 0;
+    int32 TexelBuffers = 0;
+    int32 DescriptorsCount = 0;
     Descriptor Descriptors[SpirvShaderDescriptorInfo::MaxDescriptors];
 
 public:
-
-    DescriptorsCollector()
-    {
-        Images = 0;
-        Buffers = 0;
-        DescriptorsCount = 0;
-    }
-
-public:
-
     Descriptor* Add(glslang::TVarEntryInfo& ent)
     {
         const glslang::TType& type = ent.symbol->getType();
@@ -374,28 +363,6 @@ public:
             }
         }
 
-        // Get the output info about shader uniforms usage
-        switch (descriptorType)
-        {
-        case VK_DESCRIPTOR_TYPE_SAMPLER:
-        case VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER:
-        case VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE:
-        case VK_DESCRIPTOR_TYPE_STORAGE_IMAGE:
-            Images++;
-            break;
-        case VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER:
-        case VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC:
-        case VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER:
-        case VK_DESCRIPTOR_TYPE_STORAGE_BUFFER:
-        case VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC:
-        case VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER:
-            Buffers++;
-            break;
-        default:
-            LOG(Warning, "Invalid descriptor type {0} for symbol {1}.", (int32)descriptorType, String(name));
-            return nullptr;
-        }
-
         const auto index = DescriptorsCount++;
         auto& descriptor = Descriptors[index];
         descriptor.Binding = index;
@@ -405,6 +372,32 @@ public:
         descriptor.DescriptorType = descriptorType;
         descriptor.ResourceType = resourceType;
         descriptor.Name = name;
+        descriptor.Count = type.isSizedArray() ? type.getCumulativeArraySize() : 1;
+
+        // Get the output info about shader uniforms usage
+        switch (descriptorType)
+        {
+        case VK_DESCRIPTOR_TYPE_SAMPLER:
+        case VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER:
+        case VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE:
+        case VK_DESCRIPTOR_TYPE_STORAGE_IMAGE:
+            Images += descriptor.Count;
+            break;
+        case VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER:
+        case VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC:
+        case VK_DESCRIPTOR_TYPE_STORAGE_BUFFER:
+        case VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC:
+            Buffers += descriptor.Count;
+            break;
+        case VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER:
+        case VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER:
+            TexelBuffers += descriptor.Count;
+            break;
+        default:
+            LOG(Warning, "Invalid descriptor type {0} for symbol {1}.", (int32)descriptorType, String(name));
+            return nullptr;
+        }
+
         return &descriptor;
     }
 };
@@ -412,12 +405,10 @@ public:
 class MyIoMapResolver : public glslang::TDefaultIoResolverBase
 {
 private:
-
     int32 _set;
     DescriptorsCollector* _collector;
 
 public:
-
     MyIoMapResolver(int32 set, DescriptorsCollector* collector, const glslang::TIntermediate& intermediate)
         : TDefaultIoResolverBase(intermediate)
         , _set(set)
@@ -426,7 +417,6 @@ public:
     }
 
 public:
-
     // [glslang::TDefaultIoResolverBase]
     bool validateBinding(EShLanguage stage, glslang::TVarEntryInfo& ent) override
     {
@@ -455,7 +445,9 @@ public:
         // Add resource
         const auto descriptor = _collector->Add(ent);
         if (descriptor)
-            return ent.newBinding = reserveSlot(_set, descriptor->Binding);
+        {
+            return ent.newBinding = reserveSlot(_set, descriptor->Binding, descriptor->Count);
+        }
         return ent.newBinding;
     }
 
@@ -686,9 +678,14 @@ bool ShaderCompilerVulkan::CompileShader(ShaderFunctionMeta& meta, WritePermutat
             // Process all descriptors
             header.DescriptorInfo.ImageInfosCount = descriptorsCollector.Images;
             header.DescriptorInfo.BufferInfosCount = descriptorsCollector.Buffers;
+            header.DescriptorInfo.TexelBufferViewsCount = descriptorsCollector.TexelBuffers;
             for (int32 i = 0; i < descriptorsCollector.DescriptorsCount; i++)
             {
                 auto& descriptor = descriptorsCollector.Descriptors[i];
+
+                // Skip cases (eg. AppendStructuredBuffer counter buffer)
+                if (descriptor.Slot == MAX_uint16)
+                    continue;
 
                 auto& d = header.DescriptorInfo.DescriptorTypes[header.DescriptorInfo.DescriptorTypesCount++];
                 d.Binding = descriptor.Binding;
@@ -697,16 +694,20 @@ bool ShaderCompilerVulkan::CompileShader(ShaderFunctionMeta& meta, WritePermutat
                 d.BindingType = descriptor.BindingType;
                 d.DescriptorType = descriptor.DescriptorType;
                 d.ResourceType = descriptor.ResourceType;
+                d.Count = descriptor.Count;
 
                 switch (descriptor.BindingType)
                 {
                 case SpirvShaderResourceBindingType::CB:
+                    ASSERT_LOW_LAYER(descriptor.Slot >= 0 && descriptor.Slot < GPU_MAX_CB_BINDED);
                     bindings.UsedCBsMask |= 1 << descriptor.Slot;
                     break;
                 case SpirvShaderResourceBindingType::SRV:
+                    ASSERT_LOW_LAYER(descriptor.Slot >= 0 && descriptor.Slot < GPU_MAX_SR_BINDED);
                     bindings.UsedSRsMask |= 1 << descriptor.Slot;
                     break;
                 case SpirvShaderResourceBindingType::UAV:
+                    ASSERT_LOW_LAYER(descriptor.Slot >= 0 && descriptor.Slot < GPU_MAX_UA_BINDED);
                     bindings.UsedUAsMask |= 1 << descriptor.Slot;
                     break;
                 }
@@ -732,6 +733,7 @@ bool ShaderCompilerVulkan::CompileShader(ShaderFunctionMeta& meta, WritePermutat
                             // Mark as used and cache some data
                             cc.IsUsed = true;
                             cc.Size = descriptor.Size;
+                            break;
                         }
                     }
                 }

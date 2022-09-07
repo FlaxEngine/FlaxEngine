@@ -302,16 +302,53 @@ Asset::LoadResult SceneAnimation::load()
                 trackRuntime->KeyframesCount = trackData->KeyframesCount;
                 trackRuntime->Keyframes = stream.Read(keyframesDataSize);
                 trackRuntime->DataType = CurvePropertyTrack::DataTypes::Unknown;
+                trackRuntime->ValueType = CurvePropertyTrack::DataTypes::Unknown;
                 if (StringUtils::Compare(trackRuntime->PropertyTypeName, "System.Single") == 0)
                     trackRuntime->DataType = CurvePropertyTrack::DataTypes::Float;
                 else if (StringUtils::Compare(trackRuntime->PropertyTypeName, "System.Double") == 0)
                     trackRuntime->DataType = CurvePropertyTrack::DataTypes::Double;
                 else if (StringUtils::Compare(trackRuntime->PropertyTypeName, "FlaxEngine.Vector2") == 0)
-                    trackRuntime->DataType = CurvePropertyTrack::DataTypes::Vector2;
+                {
+                    // Read Float or Double depending on serialized data but use value depending on the current build configuration
+                    trackRuntime->DataType = trackData->ValueSize == sizeof(Float2) ? CurvePropertyTrack::DataTypes::Float2 : CurvePropertyTrack::DataTypes::Double2;
+#if USE_LARGE_WORLDS
+                    trackRuntime->ValueType = CurvePropertyTrack::DataTypes::Double2;
+#else
+                    trackRuntime->ValueType = CurvePropertyTrack::DataTypes::Float2;
+#endif
+                }
                 else if (StringUtils::Compare(trackRuntime->PropertyTypeName, "FlaxEngine.Vector3") == 0)
-                    trackRuntime->DataType = CurvePropertyTrack::DataTypes::Vector3;
+                {
+                    // Read Float or Double depending on serialized data but use value depending on the current build configuration
+                    trackRuntime->DataType = trackData->ValueSize == sizeof(Float3) ? CurvePropertyTrack::DataTypes::Float3 : CurvePropertyTrack::DataTypes::Double3;
+#if USE_LARGE_WORLDS
+                    trackRuntime->ValueType = CurvePropertyTrack::DataTypes::Double3;
+#else
+                    trackRuntime->ValueType = CurvePropertyTrack::DataTypes::Float3;
+#endif
+                }
                 else if (StringUtils::Compare(trackRuntime->PropertyTypeName, "FlaxEngine.Vector4") == 0)
-                    trackRuntime->DataType = CurvePropertyTrack::DataTypes::Vector4;
+                {
+                    // Read Float or Double depending on serialized data but use value depending on the current build configuration
+                    trackRuntime->DataType = trackData->ValueSize == sizeof(Float4) ? CurvePropertyTrack::DataTypes::Float4 : CurvePropertyTrack::DataTypes::Double4;
+#if USE_LARGE_WORLDS
+                    trackRuntime->ValueType = CurvePropertyTrack::DataTypes::Double4;
+#else
+                    trackRuntime->ValueType = CurvePropertyTrack::DataTypes::Float4;
+#endif
+                }
+                else if (StringUtils::Compare(trackRuntime->PropertyTypeName, "FlaxEngine.Float2") == 0)
+                    trackRuntime->DataType = CurvePropertyTrack::DataTypes::Float2;
+                else if (StringUtils::Compare(trackRuntime->PropertyTypeName, "FlaxEngine.Float3") == 0)
+                    trackRuntime->DataType = CurvePropertyTrack::DataTypes::Float3;
+                else if (StringUtils::Compare(trackRuntime->PropertyTypeName, "FlaxEngine.Float4") == 0)
+                    trackRuntime->DataType = CurvePropertyTrack::DataTypes::Float4;
+                else if (StringUtils::Compare(trackRuntime->PropertyTypeName, "FlaxEngine.Double2") == 0)
+                    trackRuntime->DataType = CurvePropertyTrack::DataTypes::Double2;
+                else if (StringUtils::Compare(trackRuntime->PropertyTypeName, "FlaxEngine.Double3") == 0)
+                    trackRuntime->DataType = CurvePropertyTrack::DataTypes::Double3;
+                else if (StringUtils::Compare(trackRuntime->PropertyTypeName, "FlaxEngine.Double4") == 0)
+                    trackRuntime->DataType = CurvePropertyTrack::DataTypes::Double4;
                 else if (StringUtils::Compare(trackRuntime->PropertyTypeName, "FlaxEngine.Quaternion") == 0)
                     trackRuntime->DataType = CurvePropertyTrack::DataTypes::Quaternion;
                 else if (StringUtils::Compare(trackRuntime->PropertyTypeName, "FlaxEngine.Color") == 0)
@@ -323,6 +360,8 @@ Asset::LoadResult SceneAnimation::load()
                     LOG(Warning, "Unknown curve animation property type {2} for the track {1}, type {0}.", (int32)track.Type, track.Name, String(trackRuntime->PropertyTypeName));
                     track.Disabled = true;
                 }
+                if (trackRuntime->ValueType == CurvePropertyTrack::DataTypes::Unknown)
+                    trackRuntime->ValueType = trackRuntime->DataType;
                 needsParent = true;
                 break;
             }

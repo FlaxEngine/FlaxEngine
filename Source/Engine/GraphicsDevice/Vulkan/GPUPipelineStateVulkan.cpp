@@ -51,9 +51,11 @@ ComputePipelineStateVulkan* GPUShaderProgramCSVulkan::GetOrCreateState()
     uint32 dynamicOffsetsCount = 0;
     if (DescriptorInfo.DescriptorTypesCount != 0)
     {
+        // TODO: merge into a single allocation
         _pipelineState->DSWriteContainer.DescriptorWrites.AddZeroed(DescriptorInfo.DescriptorTypesCount);
         _pipelineState->DSWriteContainer.DescriptorImageInfo.AddZeroed(DescriptorInfo.ImageInfosCount);
         _pipelineState->DSWriteContainer.DescriptorBufferInfo.AddZeroed(DescriptorInfo.BufferInfosCount);
+        _pipelineState->DSWriteContainer.DescriptorTexelBufferView.AddZeroed(DescriptorInfo.TexelBufferViewsCount);
 
         ASSERT(DescriptorInfo.DescriptorTypesCount < 255);
         _pipelineState->DSWriteContainer.BindingToDynamicOffset.AddDefault(DescriptorInfo.DescriptorTypesCount);
@@ -62,9 +64,10 @@ ComputePipelineStateVulkan* GPUShaderProgramCSVulkan::GetOrCreateState()
         VkWriteDescriptorSet* currentDescriptorWrite = _pipelineState->DSWriteContainer.DescriptorWrites.Get();
         VkDescriptorImageInfo* currentImageInfo = _pipelineState->DSWriteContainer.DescriptorImageInfo.Get();
         VkDescriptorBufferInfo* currentBufferInfo = _pipelineState->DSWriteContainer.DescriptorBufferInfo.Get();
+        VkBufferView* currentTexelBufferView = _pipelineState->DSWriteContainer.DescriptorTexelBufferView.Get();
         uint8* currentBindingToDynamicOffsetMap = _pipelineState->DSWriteContainer.BindingToDynamicOffset.Get();
 
-        dynamicOffsetsCount = _pipelineState->DSWriter.SetupDescriptorWrites(DescriptorInfo, currentDescriptorWrite, currentImageInfo, currentBufferInfo, currentBindingToDynamicOffsetMap);
+        dynamicOffsetsCount = _pipelineState->DSWriter.SetupDescriptorWrites(DescriptorInfo, currentDescriptorWrite, currentImageInfo, currentBufferInfo, currentTexelBufferView, currentBindingToDynamicOffsetMap);
     }
 
     _pipelineState->DynamicOffsets.AddZeroed(dynamicOffsetsCount);
@@ -337,9 +340,11 @@ bool GPUPipelineStateVulkan::Init(const Description& desc)
         if (descriptor == nullptr || descriptor->DescriptorTypesCount == 0)
             continue;
 
+        // TODO: merge into a single allocation for a whole PSO
         DSWriteContainer.DescriptorWrites.AddZeroed(descriptor->DescriptorTypesCount);
         DSWriteContainer.DescriptorImageInfo.AddZeroed(descriptor->ImageInfosCount);
         DSWriteContainer.DescriptorBufferInfo.AddZeroed(descriptor->BufferInfosCount);
+        DSWriteContainer.DescriptorTexelBufferView.AddZeroed(descriptor->TexelBufferViewsCount);
 
         ASSERT(descriptor->DescriptorTypesCount < 255);
         DSWriteContainer.BindingToDynamicOffset.AddDefault(descriptor->DescriptorTypesCount);
@@ -349,6 +354,7 @@ bool GPUPipelineStateVulkan::Init(const Description& desc)
     VkWriteDescriptorSet* currentDescriptorWrite = DSWriteContainer.DescriptorWrites.Get();
     VkDescriptorImageInfo* currentImageInfo = DSWriteContainer.DescriptorImageInfo.Get();
     VkDescriptorBufferInfo* currentBufferInfo = DSWriteContainer.DescriptorBufferInfo.Get();
+    VkBufferView* currentTexelBufferView = DSWriteContainer.DescriptorTexelBufferView.Get();
     byte* currentBindingToDynamicOffsetMap = DSWriteContainer.BindingToDynamicOffset.Get();
     uint32 dynamicOffsetsStart[DescriptorSet::GraphicsStagesCount];
     uint32 dynamicOffsetsCount = 0;
@@ -360,12 +366,13 @@ bool GPUPipelineStateVulkan::Init(const Description& desc)
         if (descriptor == nullptr || descriptor->DescriptorTypesCount == 0)
             continue;
 
-        const uint32 numDynamicOffsets = DSWriter[stage].SetupDescriptorWrites(*descriptor, currentDescriptorWrite, currentImageInfo, currentBufferInfo, currentBindingToDynamicOffsetMap);
+        const uint32 numDynamicOffsets = DSWriter[stage].SetupDescriptorWrites(*descriptor, currentDescriptorWrite, currentImageInfo, currentBufferInfo, currentTexelBufferView, currentBindingToDynamicOffsetMap);
         dynamicOffsetsCount += numDynamicOffsets;
 
         currentDescriptorWrite += descriptor->DescriptorTypesCount;
         currentImageInfo += descriptor->ImageInfosCount;
         currentBufferInfo += descriptor->BufferInfosCount;
+        currentTexelBufferView += descriptor->TexelBufferViewsCount;
         currentBindingToDynamicOffsetMap += descriptor->DescriptorTypesCount;
     }
 

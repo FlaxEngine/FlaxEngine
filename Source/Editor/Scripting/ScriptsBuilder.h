@@ -63,7 +63,7 @@ public:
     /// </summary>
     /// <param name="timeout">Time to use for checking.</param>
     /// <returns>True if source code is dirty, otherwise false.</returns>
-    static bool IsSourceDirty(const TimeSpan& timeout);
+    static bool IsSourceDirtyFor(const TimeSpan& timeout);
 
     /// <summary>
     /// Returns true if scripts are being now compiled/reloaded.

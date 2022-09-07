@@ -14,9 +14,8 @@
 /// </summary>
 API_STRUCT(Namespace="FlaxEngine.Networking") struct FLAXENGINE_API NetworkMessage
 {
-DECLARE_SCRIPTING_TYPE_MINIMAL(NetworkMessage);
+    DECLARE_SCRIPTING_TYPE_MINIMAL(NetworkMessage);
 public:
-
     /// <summary>
     /// The raw message buffer.
     /// </summary>
@@ -43,7 +42,6 @@ public:
     API_FIELD() uint32 Position = 0;
 
 public:
-
     /// <summary>
     /// Initializes default values of the <seealso cref="NetworkMessage"/> structure.
     /// </summary>
@@ -53,13 +51,17 @@ public:
     /// Initializes values of the <seealso cref="NetworkMessage"/> structure.
     /// </summary>
     NetworkMessage(uint8* buffer, uint32 messageId, uint32 bufferSize, uint32 length, uint32 position)
-    : Buffer(buffer), MessageId(messageId), BufferSize(bufferSize), Length(length), Position(position)
-    { }
+        : Buffer(buffer)
+        , MessageId(messageId)
+        , BufferSize(bufferSize)
+        , Length(length)
+        , Position(position)
+    {
+    }
 
     ~NetworkMessage() = default;
-    
-public:
 
+public:
     /// <summary>
     /// Writes raw bytes into the message.
     /// </summary>
@@ -108,8 +110,8 @@ public:
     /// </summary>
     FORCE_INLINE void WriteVector2(const Vector2& value)
     {
-        WriteSingle(value.X);
-        WriteSingle(value.Y);
+        WriteSingle((float)value.X);
+        WriteSingle((float)value.Y);
     }
 
     /// <summary>
@@ -119,15 +121,15 @@ public:
     {
         return Vector2(ReadSingle(), ReadSingle());
     }
-    
+
     /// <summary>
     /// Writes data of type Vector3 into the message.
     /// </summary>
     FORCE_INLINE void WriteVector3(const Vector3& value)
     {
-        WriteSingle(value.X);
-        WriteSingle(value.Y);
-        WriteSingle(value.Z);
+        WriteSingle((float)value.X);
+        WriteSingle((float)value.Y);
+        WriteSingle((float)value.Z);
     }
 
     /// <summary>
@@ -143,10 +145,10 @@ public:
     /// </summary>
     FORCE_INLINE void WriteVector4(const Vector4& value)
     {
-        WriteSingle(value.X);
-        WriteSingle(value.Y);
-        WriteSingle(value.Z);
-        WriteSingle(value.W);
+        WriteSingle((float)value.X);
+        WriteSingle((float)value.Y);
+        WriteSingle((float)value.Z);
+        WriteSingle((float)value.W);
     }
 
     /// <summary>
@@ -156,7 +158,7 @@ public:
     {
         return Vector4(ReadSingle(), ReadSingle(), ReadSingle(), ReadSingle());
     }
-    
+
     /// <summary>
     /// Writes data of type Quaternion into the message.
     /// </summary>
@@ -196,7 +198,7 @@ public:
         ReadBytes((uint8*)value.Get(), length * sizeof(Char));
         return value;
     }
-    
+
     /// <summary>
     /// Writes data of type Guid into the message.
     /// </summary>
@@ -216,7 +218,6 @@ public:
     }
 
 public:
-
     /// <summary>
     /// Returns true if the message is valid for reading or writing.
     /// </summary>

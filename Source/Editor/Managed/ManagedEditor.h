@@ -101,18 +101,23 @@ public:
     bool HasGameViewportFocus() const;
 
     /// <summary>
+    /// Gives focus to the game viewport (game can receive input).
+    /// </summary>
+    void FocusGameViewport() const;
+
+    /// <summary>
     /// Converts the screen-space position to the game viewport position.
     /// </summary>
     /// <param name="screenPos">The screen-space position.</param>
     /// <returns>The game viewport position.</returns>
-    Vector2 ScreenToGameViewport(const Vector2& screenPos) const;
+    Float2 ScreenToGameViewport(const Float2& screenPos) const;
 
     /// <summary>
     /// Converts the game viewport position to the screen-space position.
     /// </summary>
     /// <param name="viewportPos">The game viewport position.</param>
     /// <returns>The screen-space position.</returns>
-    Vector2 GameViewportToScreen(const Vector2& viewportPos) const;
+    Float2 GameViewportToScreen(const Float2& viewportPos) const;
 
     /// <summary>
     /// Gets the game window used to simulate game in editor. Can be used to capture input for the game scripts.
@@ -125,7 +130,7 @@ public:
     /// Gets the size of the game window output.
     /// </summary>
     /// <returns>The size.</returns>
-    Vector2 GetGameWindowSize();
+    Float2 GetGameWindowSize();
 
     /// <summary>
     /// Called when application code calls exit. Editor may end play mode or exit normally.

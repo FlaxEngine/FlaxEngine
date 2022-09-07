@@ -43,16 +43,14 @@ API_ENUM() enum class FoliageScalingModes
 /// </summary>
 API_CLASS(Sealed, NoSpawn) class FLAXENGINE_API FoliageType : public ScriptingObject, public ISerializable
 {
-DECLARE_SCRIPTING_TYPE_NO_SPAWN(FoliageType);
+    DECLARE_SCRIPTING_TYPE_NO_SPAWN(FoliageType);
     friend Foliage;
 private:
-
     int8 _isReady : 1;
     int8 _canDraw : 1; // Cached and used internally by foliage actor
     DrawPass _drawModes; // Cached mask during rendering
 
 public:
-
     /// <summary>
     /// Initializes a new instance of the <see cref="FoliageType"/> class.
     /// </summary>
@@ -67,7 +65,6 @@ public:
     FoliageType& operator=(const FoliageType& other);
 
 public:
-
     /// <summary>
     /// The parent foliage actor.
     /// </summary>
@@ -87,7 +84,7 @@ public:
     /// The shared model instance entries.
     /// </summary>
     ModelInstanceEntries Entries;
-    
+
 #if !FOLIAGE_USE_SINGLE_QUAD_TREE
     /// <summary>
     /// The root cluster. Contains all the instances and it's the starting point of the quad-tree hierarchy. Null if no foliage added. It's read-only.
@@ -101,7 +98,6 @@ public:
 #endif
 
 public:
-
     /// <summary>
     /// Gets the foliage instance type materials buffer (overrides). 
     /// </summary>
@@ -113,7 +109,6 @@ public:
     API_PROPERTY() void SetMaterials(const Array<MaterialBase*>& value);
 
 public:
-
     /// <summary>
     /// The per-instance cull distance.
     /// </summary>
@@ -132,7 +127,7 @@ public:
     /// <summary>
     /// The draw passes to use for rendering this foliage type.
     /// </summary>
-    API_FIELD() DrawPass DrawModes = DrawPass::Default;
+    API_FIELD() DrawPass DrawModes = DrawPass::Depth | DrawPass::GBuffer | DrawPass::Forward;
 
     /// <summary>
     /// The shadows casting mode.
@@ -167,17 +162,17 @@ public:
     /// <summary>
     /// The scale minimum values per axis.
     /// </summary>
-    API_FIELD() Vector3 PaintScaleMin = Vector3::One;
+    API_FIELD() Float3 PaintScaleMin = Float3::One;
 
     /// <summary>
     /// The scale maximum values per axis.
     /// </summary>
-    API_FIELD() Vector3 PaintScaleMax = Vector3::One;
+    API_FIELD() Float3 PaintScaleMax = Float3::One;
 
     /// <summary>
     /// The per-instance random offset range on axis Y.
     /// </summary>
-    API_FIELD() Vector2 PlacementOffsetY = Vector2::Zero;
+    API_FIELD() Float2 PlacementOffsetY = Float2::Zero;
 
     /// <summary>
     /// The random pitch angle range (uniform in both ways around normal vector).
@@ -215,7 +210,6 @@ public:
     API_FIELD() int8 PlacementRandomYaw : 1;
 
 public:
-
     /// <summary>
     /// Determines whether this instance is ready (model is loaded).
     /// </summary>
@@ -227,15 +221,13 @@ public:
     /// <summary>
     /// Gets the random scale for the foliage instance of this type.
     /// </summary>
-    Vector3 GetRandomScale() const;
+    Float3 GetRandomScale() const;
 
 private:
-
     void OnModelChanged();
     void OnModelLoaded();
 
 public:
-
     // [ISerializable]
     void Serialize(SerializeStream& stream, const void* otherObj) override;
     void Deserialize(DeserializeStream& stream, ISerializeModifier* modifier) override;

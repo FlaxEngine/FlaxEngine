@@ -14,12 +14,13 @@ PACK_STRUCT(struct GUIMaterialShaderData {
     Matrix ViewProjectionMatrix;
     Matrix WorldMatrix;
     Matrix ViewMatrix;
-    Vector3 ViewPos;
+    Float3 ViewPos;
     float ViewFar;
-    Vector3 ViewDir;
+    Float3 ViewDir;
     float TimeParam;
-    Vector4 ViewInfo;
-    Vector4 ScreenSize;
+    Float4 ViewInfo;
+    Float4 ScreenSize;
+    Float4 ViewSize;
     });
 
 void GUIMaterialShader::Bind(BindParameters& params)
@@ -32,6 +33,7 @@ void GUIMaterialShader::Bind(BindParameters& params)
     cb = Span<byte>(cb.Get() + sizeof(GUIMaterialShaderData), cb.Length() - sizeof(GUIMaterialShaderData));
     int32 srv = 0;
     const auto ps = context->IsDepthBufferBinded() ? _cache.Depth : _cache.NoDepth;
+    auto customData = (Render2D::CustomData*)params.CustomData;
 
     // Setup parameters
     MaterialParameter::BindMeta bindMeta;
@@ -45,17 +47,17 @@ void GUIMaterialShader::Bind(BindParameters& params)
 
     // Setup material constants
     {
-        const auto viewProjectionMatrix = (Matrix*)params.CustomData;
-        Matrix::Transpose(*viewProjectionMatrix, materialData->ViewProjectionMatrix);
+        Matrix::Transpose(customData->ViewProjection, materialData->ViewProjectionMatrix);
         Matrix::Transpose(Matrix::Identity, materialData->WorldMatrix);
         Matrix::Transpose(Matrix::Identity, materialData->ViewMatrix);
-        materialData->ViewPos = Vector3::Zero;
+        materialData->ViewPos = Float3::Zero;
         materialData->ViewFar = 0.0f;
-        materialData->ViewDir = Vector3::Forward;
+        materialData->ViewDir = Float3::Forward;
         materialData->TimeParam = params.TimeParam;
-        materialData->ViewInfo = Vector4::Zero;
+        materialData->ViewInfo = Float4::Zero;
         auto& viewport = Render2D::GetViewport();
-        materialData->ScreenSize = Vector4(viewport.Width, viewport.Height, 1.0f / viewport.Width, 1.0f / viewport.Height);
+        materialData->ScreenSize = Float4(viewport.Width, viewport.Height, 1.0f / viewport.Width, 1.0f / viewport.Height);
+        materialData->ViewSize = Float4(customData->ViewSize.X, customData->ViewSize.Y, 1.0f / customData->ViewSize.X, 1.0f / customData->ViewSize.Y);
     }
 
     // Bind constants

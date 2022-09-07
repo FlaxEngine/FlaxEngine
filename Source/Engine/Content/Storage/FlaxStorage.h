@@ -27,7 +27,6 @@ class FLAXENGINE_API FlaxStorage : public Object
     friend class BinaryAsset;
 
 public:
-
     /// <summary>
     /// Magic code stored in file header to identify contents.
     /// </summary>
@@ -88,11 +87,10 @@ public:
     };
 
 protected:
-
     // State
-    uint32 _refCount;
-    DateTime _lastRefLostTime;
+    int64 _refCount;
     int64 _chunksLock;
+    DateTime _lastRefLostTime;
     CriticalSection _loadLocker;
 
     // Storage
@@ -104,24 +102,30 @@ protected:
     String _path;
 
 protected:
-
     explicit FlaxStorage(const StringView& path);
 
 private:
-
     // Used by FlaxStorageReference:
-    void AddRef();
-    void RemoveRef();
+    void AddRef()
+    {
+        Platform::InterlockedIncrement(&_refCount);
+    }
+    void RemoveRef()
+    {
+        Platform::InterlockedDecrement(&_refCount);
+        if (Platform::AtomicRead(&_refCount) == 0)
+        {
+            _lastRefLostTime = DateTime::NowUTC();
+        }
+    }
 
 public:
-
     /// <summary>
     /// Finalizes an instance of the <see cref="FlaxStorage"/> class.
     /// </summary>
     virtual ~FlaxStorage();
 
 public:
-
     /// <summary>
     /// Locks the storage chunks data to prevent disposing them. Also ensures that file handles won't be closed while chunks are locked.
     /// </summary>
@@ -147,7 +151,6 @@ public:
         static LockData Invalid;
 
     private:
-
         FlaxStorage* _storage;
 
         LockData(FlaxStorage* storage)
@@ -158,14 +161,13 @@ public:
         }
 
     public:
-
         LockData(const LockData& other)
             : _storage(other._storage)
         {
             if (_storage)
                 _storage->LockChunks();
         }
-        
+
         LockData(LockData&& other) noexcept
             : _storage(other._storage)
         {
@@ -208,7 +210,6 @@ public:
             other._storage = nullptr;
             return *this;
         }
-
     };
 
     /// <summary>
@@ -228,14 +229,10 @@ public:
     LockData LockSafe();
 
 public:
-
     /// <summary>
     /// Gets the references count.
     /// </summary>
-    FORCE_INLINE uint32 GetRefCount() const
-    {
-        return _refCount;
-    }
+    uint32 GetRefCount() const;
 
     /// <summary>
     /// Checks if storage container should be disposed (it's not used anymore).
@@ -335,7 +332,6 @@ public:
     }
 
 public:
-
     /// <summary>
     /// Loads package from the file.
     /// </summary>
@@ -417,7 +413,6 @@ public:
     virtual void Dispose();
 
 public:
-
     /// <summary>
     /// Ticks this instance.
     /// </summary>
@@ -428,7 +423,6 @@ public:
 #endif
 
 public:
-
 #if USE_EDITOR
 
     /// <summary>
@@ -489,7 +483,6 @@ public:
 #endif
 
 protected:
-
     bool LoadAssetHeader(const Entry& e, AssetInitData& data);
     void AddChunk(FlaxChunk* chunk);
     virtual void AddEntry(Entry& e) = 0;

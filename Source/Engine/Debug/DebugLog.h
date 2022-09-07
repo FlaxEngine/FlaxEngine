@@ -11,7 +11,6 @@
 class FLAXENGINE_API DebugLog
 {
 public:
-
     /// <summary>
     /// Sends the log message to the Flax console and the log file.
     /// </summary>
@@ -53,7 +52,6 @@ public:
     static void LogException(MObject* exceptionObject);
 
 public:
-
     /// <summary>
     /// Gets the managed stack trace.
     /// </summary>

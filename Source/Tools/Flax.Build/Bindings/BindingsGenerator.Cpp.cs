@@ -16,6 +16,7 @@ namespace Flax.Build.Bindings
         private static readonly string[] CppParamsThatNeedConversionWrappers = new string[64];
         private static readonly string[] CppParamsThatNeedConversionTypes = new string[64];
         private static readonly string[] CppParamsWrappersCache = new string[64];
+        public static readonly List<KeyValuePair<string, string>> CppInternalCalls = new List<KeyValuePair<string, string>>();
         public static readonly List<ApiTypeInfo> CppUsedNonPodTypes = new List<ApiTypeInfo>();
         private static readonly List<ApiTypeInfo> CppUsedNonPodTypesList = new List<ApiTypeInfo>();
         public static readonly HashSet<FileInfo> CppReferencesFiles = new HashSet<FileInfo>();
@@ -54,6 +55,15 @@ namespace Flax.Build.Bindings
             "Vector2",
             "Vector3",
             "Vector4",
+            "Float2",
+            "Float3",
+            "Float4",
+            "Double2",
+            "Double2",
+            "Double3",
+            "Int2",
+            "Int3",
+            "Int4",
             "Color",
             "Quaternion",
             "Guid",
@@ -64,6 +74,11 @@ namespace Flax.Build.Bindings
             "Ray",
             "Rectangle",
         };
+
+        private static bool GenerateCppIsTemplateInstantiationType(ApiTypeInfo typeInfo)
+        {
+            return typeInfo.Instigator != null && typeInfo.Instigator.TypeInfo is ClassStructInfo classStructInfo && classStructInfo.IsTemplate;
+        }
 
         private static string GenerateCppWrapperNativeToVariantMethodName(TypeInfo typeInfo)
         {
@@ -130,7 +145,11 @@ namespace Flax.Build.Bindings
                 return value;
             if (typeInfo.Type == "String")
                 return $"Variant(StringView({value}))";
-            if (typeInfo.Type == "AssetReference" || typeInfo.Type == "WeakAssetReference" || typeInfo.Type == "ScriptingObjectReference" || typeInfo.Type == "SoftObjectReference")
+            if (typeInfo.Type == "AssetReference" ||
+                typeInfo.Type == "WeakAssetReference" ||
+                typeInfo.Type == "SoftAssetReference" ||
+                typeInfo.Type == "ScriptingObjectReference" ||
+                typeInfo.Type == "SoftObjectReference")
                 return $"Variant({value}.Get())";
             if (typeInfo.IsArray)
             {
@@ -177,7 +196,7 @@ namespace Flax.Build.Bindings
                 return $"(StringView){value}";
             if (typeInfo.IsPtr && typeInfo.IsConst && typeInfo.Type == "Char")
                 return $"((StringView){value}).GetNonTerminatedText()"; // (StringView)Variant, if not empty, is guaranteed to point to a null-terminated buffer.
-            if (typeInfo.Type == "AssetReference" || typeInfo.Type == "WeakAssetReference")
+            if (typeInfo.Type == "AssetReference" || typeInfo.Type == "WeakAssetReference" || typeInfo.Type == "SoftAssetReference")
                 return $"ScriptingObject::Cast<{typeInfo.GenericArgs[0].Type}>((Asset*){value})";
             if (typeInfo.Type == "ScriptingObjectReference" || typeInfo.Type == "SoftObjectReference")
                 return $"ScriptingObject::Cast<{typeInfo.GenericArgs[0].Type}>((ScriptingObject*){value})";
@@ -249,7 +268,7 @@ namespace Flax.Build.Bindings
                 CppReferencesFiles.Add(apiType.File);
                 if (apiType.IsStruct && !apiType.IsPod && !CppUsedNonPodTypes.Contains(apiType))
                     CppUsedNonPodTypes.Add(apiType);
-                if (!apiType.IsInBuild && !apiType.IsEnum)
+                if (!apiType.SkipGeneration && !apiType.IsEnum)
                 {
                     // Use declared type initializer
                     CppIncludeFiles.Add("Engine/Scripting/ManagedCLR/MClass.h");
@@ -324,7 +343,7 @@ namespace Flax.Build.Bindings
                 CppReferencesFiles.Add(apiType.File);
                 if (apiType.IsStruct && !apiType.IsPod && !CppUsedNonPodTypes.Contains(apiType))
                     CppUsedNonPodTypes.Add(apiType);
-                if (!apiType.IsInBuild && !apiType.IsEnum)
+                if (!apiType.SkipGeneration && !apiType.IsEnum)
                 {
                     // Use declared type initializer
                     CppIncludeFiles.Add("Engine/Scripting/ManagedCLR/MClass.h");
@@ -399,9 +418,16 @@ namespace Flax.Build.Bindings
             case "CultureInfo":
                 type = "void*";
                 return "MUtils::ToManaged({0})";
+            case "Version":
+                type = "MonoObject*";
+                return "MUtils::ToManaged({0})";
             default:
-                // ScriptingObjectReference or AssetReference or WeakAssetReference or SoftObjectReference
-                if ((typeInfo.Type == "ScriptingObjectReference" || typeInfo.Type == "AssetReference" || typeInfo.Type == "WeakAssetReference" || typeInfo.Type == "SoftObjectReference") && typeInfo.GenericArgs != null)
+                // Object reference property
+                if ((typeInfo.Type == "ScriptingObjectReference" ||
+                     typeInfo.Type == "AssetReference" ||
+                     typeInfo.Type == "WeakAssetReference" ||
+                     typeInfo.Type == "SoftAssetReference" ||
+                     typeInfo.Type == "SoftObjectReference") && typeInfo.GenericArgs != null)
                 {
                     type = "MonoObject*";
                     return "{0}.GetManagedInstance()";
@@ -567,9 +593,16 @@ namespace Flax.Build.Bindings
             case "CultureInfo":
                 type = "void*";
                 return "MUtils::ToNative({0})";
+            case "Version":
+                type = "MonoObject*";
+                return "MUtils::ToNative({0})";
             default:
-                // ScriptingObjectReference or AssetReference or WeakAssetReference or SoftObjectReference
-                if ((typeInfo.Type == "ScriptingObjectReference" || typeInfo.Type == "AssetReference" || typeInfo.Type == "WeakAssetReference" || typeInfo.Type == "SoftObjectReference") && typeInfo.GenericArgs != null)
+                // Object reference property
+                if ((typeInfo.Type == "ScriptingObjectReference" ||
+                     typeInfo.Type == "AssetReference" ||
+                     typeInfo.Type == "WeakAssetReference" ||
+                     typeInfo.Type == "SoftAssetReference" ||
+                     typeInfo.Type == "SoftObjectReference") && typeInfo.GenericArgs != null)
                 {
                     // For non-pod types converting only, other API converts managed to unmanaged object in C# wrapper code)
                     if (CppNonPodTypesConvertingGeneration)
@@ -771,8 +804,53 @@ namespace Flax.Build.Bindings
             return $"MUtils::Box<{nativeType}>({value}, {GenerateCppGetNativeClass(buildData, typeInfo, caller, null)})";
         }
 
+        private static bool GenerateCppWrapperFunctionImplicitBinding(BuildData buildData, TypeInfo typeInfo, ApiTypeInfo caller)
+        {
+            if (typeInfo.IsVoid)
+                return true;
+            if (typeInfo.IsPtr || typeInfo.IsRef || typeInfo.IsArray || typeInfo.IsBitField || (typeInfo.GenericArgs != null && typeInfo.GenericArgs.Count != 0))
+                return false;
+            if (CSharpNativeToManagedBasicTypes.ContainsKey(typeInfo.Type) || CSharpNativeToManagedBasicTypes.ContainsValue(typeInfo.Type))
+                return true;
+            var apiType = FindApiTypeInfo(buildData, typeInfo, caller);
+            if (apiType != null)
+            {
+                if (apiType.IsEnum)
+                    return true;
+            }
+            return false;
+        }
+
+        private static bool GenerateCppWrapperFunctionImplicitBinding(BuildData buildData, FunctionInfo functionInfo, ApiTypeInfo caller)
+        {
+            if (!functionInfo.IsStatic || functionInfo.Access != AccessLevel.Public || (functionInfo.Glue.CustomParameters != null && functionInfo.Glue.CustomParameters.Count != 0))
+                return false;
+            if (!GenerateCppWrapperFunctionImplicitBinding(buildData, functionInfo.ReturnType, caller))
+                return false;
+            for (int i = 0; i < functionInfo.Parameters.Count; i++)
+            {
+                var parameterInfo = functionInfo.Parameters[i];
+                if (parameterInfo.IsOut || parameterInfo.IsRef || !GenerateCppWrapperFunctionImplicitBinding(buildData, parameterInfo.Type, caller))
+                    return false;
+            }
+            return true;
+        }
+
         private static void GenerateCppWrapperFunction(BuildData buildData, StringBuilder contents, ApiTypeInfo caller, FunctionInfo functionInfo, string callFormat = "{0}({1})")
         {
+            // Optimize static function wrappers that match C# internal call ABI exactly
+            // Use it for Engine-internally only because in games this makes it problematic to use the same function name but with different signature that is not visible to scripting
+            if (CurrentModule.Module is EngineModule && callFormat == "{0}({1})" && GenerateCppWrapperFunctionImplicitBinding(buildData, functionInfo, caller))
+            {
+                // Ensure the function name is unique within a class/structure
+                if (caller is ClassStructInfo classStructInfo && classStructInfo.Functions.All(f => f.Name != functionInfo.Name || f == functionInfo))
+                {
+                    // Use native method binding directly (no generated wrapper)
+                    CppInternalCalls.Add(new KeyValuePair<string, string>(functionInfo.UniqueName, classStructInfo.Name + "::" + functionInfo.Name));
+                    return;
+                }
+            }
+
             // Setup function binding glue to ensure that wrapper method signature matches for C++ and C#
             functionInfo.Glue = new FunctionInfo.GlueInfo
             {
@@ -797,6 +875,7 @@ namespace Flax.Build.Bindings
                 });
             }
 
+            CppInternalCalls.Add(new KeyValuePair<string, string>(functionInfo.UniqueName, functionInfo.UniqueName));
             contents.AppendFormat("    static {0} {1}(", returnValueType, functionInfo.UniqueName);
 
             var separator = false;
@@ -1311,7 +1390,7 @@ namespace Flax.Build.Bindings
 
         private static bool GenerateCppAutoSerializationSkip(BuildData buildData, ApiTypeInfo caller, MemberInfo memberInfo, TypeInfo typeInfo)
         {
-            if (memberInfo.IsStatic)
+            if (memberInfo.IsStatic || memberInfo.IsConstexpr)
                 return true;
             if (memberInfo.Access != AccessLevel.Public && !memberInfo.HasAttribute("Serialize"))
                 return true;
@@ -1453,6 +1532,7 @@ namespace Flax.Build.Bindings
             var useScripting = classInfo.IsStatic || classInfo.IsScriptingObject;
             var useCSharp = EngineConfiguration.WithCSharp(buildData.TargetOptions);
             var hasInterface = classInfo.Interfaces != null && classInfo.Interfaces.Any(x => x.Access == AccessLevel.Public);
+            CppInternalCalls.Clear();
 
             if (classInfo.IsAutoSerialization)
                 GenerateCppAutoSerialization(buildData, contents, moduleInfo, classInfo, classTypeNameNative);
@@ -1489,7 +1569,10 @@ namespace Flax.Build.Bindings
                     }
                     contents.Append(')').AppendLine();
                     contents.Append("    {").AppendLine();
-                    contents.Append("        static MMethod* mmethod = nullptr;").AppendLine();
+                    if (buildData.Target.IsEditor)
+                        contents.Append("        MMethod* mmethod = nullptr;").AppendLine(); // TODO: find a better way to cache event method in editor and handle C# hot-reload
+                    else
+                        contents.Append("        static MMethod* mmethod = nullptr;").AppendLine();
                     contents.Append("        if (!mmethod)").AppendLine();
                     contents.AppendFormat("            mmethod = {1}::TypeInitializer.GetType().ManagedClass->GetMethod(\"Internal_{0}_Invoke\", {2});", eventInfo.Name, classTypeNameNative, paramsCount).AppendLine();
                     contents.Append("        CHECK(mmethod);").AppendLine();
@@ -1520,7 +1603,7 @@ namespace Flax.Build.Bindings
                         {
                             // Convert value back from managed to native (could be modified there)
                             paramType.IsRef = false;
-                            var managedToNative = GenerateCppWrapperManagedToNative(buildData, paramType, classInfo, out var managedType, null, out var _);
+                            var managedToNative = GenerateCppWrapperManagedToNative(buildData, paramType, classInfo, out var managedType, null, out _);
                             var passAsParamPtr = managedType.EndsWith("*");
                             var paramValue = $"({managedType}{(passAsParamPtr ? "" : "*")})params[{i}]";
                             if (!string.IsNullOrEmpty(managedToNative))
@@ -1538,6 +1621,7 @@ namespace Flax.Build.Bindings
                     contents.Append("    }").AppendLine().AppendLine();
 
                     // C# event wrapper binding method (binds/unbinds C# wrapper to C++ delegate)
+                    CppInternalCalls.Add(new KeyValuePair<string, string>(eventInfo.Name + "_Bind", eventInfo.Name + "_ManagedBind"));
                     contents.AppendFormat("    static void {0}_ManagedBind(", eventInfo.Name);
                     if (!eventInfo.IsStatic)
                         contents.AppendFormat("{0}* obj, ", classTypeNameNative);
@@ -1616,7 +1700,7 @@ namespace Flax.Build.Bindings
             // Fields
             foreach (var fieldInfo in classInfo.Fields)
             {
-                if (!useScripting || !useCSharp || fieldInfo.IsHidden)
+                if (!useScripting || !useCSharp || fieldInfo.IsHidden || fieldInfo.IsConstexpr)
                     continue;
                 if (fieldInfo.Getter != null)
                     GenerateCppWrapperFunction(buildData, contents, classInfo, fieldInfo.Getter, "{0}");
@@ -1685,47 +1769,9 @@ namespace Flax.Build.Bindings
             }
             if (useScripting && useCSharp)
             {
-                foreach (var eventInfo in classInfo.Events)
+                foreach (var e in CppInternalCalls)
                 {
-                    if (eventInfo.IsHidden)
-                        continue;
-                    contents.AppendLine($"        ADD_INTERNAL_CALL(\"{classTypeNameManagedInternalCall}::Internal_{eventInfo.Name}_Bind\", &{eventInfo.Name}_ManagedBind);");
-                }
-                foreach (var fieldInfo in classInfo.Fields)
-                {
-                    if (fieldInfo.IsHidden)
-                        continue;
-                    if (fieldInfo.Getter != null)
-                        contents.AppendLine($"        ADD_INTERNAL_CALL(\"{classTypeNameManagedInternalCall}::Internal_{fieldInfo.Getter.UniqueName}\", &{fieldInfo.Getter.UniqueName});");
-                    if (fieldInfo.Setter != null)
-                        contents.AppendLine($"        ADD_INTERNAL_CALL(\"{classTypeNameManagedInternalCall}::Internal_{fieldInfo.Setter.UniqueName}\", &{fieldInfo.Setter.UniqueName});");
-                }
-                foreach (var propertyInfo in classInfo.Properties)
-                {
-                    if (propertyInfo.IsHidden)
-                        continue;
-                    if (propertyInfo.Getter != null)
-                        contents.AppendLine($"        ADD_INTERNAL_CALL(\"{classTypeNameManagedInternalCall}::Internal_{propertyInfo.Getter.UniqueName}\", &{propertyInfo.Getter.UniqueName});");
-                    if (propertyInfo.Setter != null)
-                        contents.AppendLine($"        ADD_INTERNAL_CALL(\"{classTypeNameManagedInternalCall}::Internal_{propertyInfo.Setter.UniqueName}\", &{propertyInfo.Setter.UniqueName});");
-                }
-                foreach (var functionInfo in classInfo.Functions)
-                {
-                    if (functionInfo.IsHidden)
-                        continue;
-                    contents.AppendLine($"        ADD_INTERNAL_CALL(\"{classTypeNameManagedInternalCall}::Internal_{functionInfo.UniqueName}\", &{functionInfo.UniqueName});");
-                }
-                if (hasInterface)
-                {
-                    foreach (var interfaceInfo in classInfo.Interfaces)
-                    {
-                        if (interfaceInfo.Access != AccessLevel.Public)
-                            continue;
-                        foreach (var functionInfo in interfaceInfo.Functions)
-                        {
-                            contents.AppendLine($"        ADD_INTERNAL_CALL(\"{classTypeNameManagedInternalCall}::Internal_{functionInfo.UniqueName}\", &{functionInfo.UniqueName});");
-                        }
-                    }
+                    contents.AppendLine($"        ADD_INTERNAL_CALL(\"{classTypeNameManagedInternalCall}::Internal_{e.Key}\", &{e.Value});");
                 }
             }
             GenerateCppClassInitRuntime?.Invoke(buildData, classInfo, contents);
@@ -1754,6 +1800,8 @@ namespace Flax.Build.Bindings
             var interfacesTable = GenerateCppInterfaceInheritanceTable(buildData, contents, moduleInfo, classInfo, classTypeNameNative);
 
             // Type initializer
+            if (GenerateCppIsTemplateInstantiationType(classInfo))
+                contents.Append("template<> ");
             contents.Append($"ScriptingTypeInitializer {classTypeNameNative}::TypeInitializer((BinaryModule*)GetBinaryModule{moduleInfo.Name}(), ");
             contents.Append($"StringAnsiView(\"{classTypeNameManaged}\", {classTypeNameManaged.Length}), ");
             contents.Append($"sizeof({classTypeNameNative}), ");
@@ -1801,6 +1849,7 @@ namespace Flax.Build.Bindings
             if (structureInfo.Parent != null && !(structureInfo.Parent is FileInfo))
                 structureTypeNameInternal = structureInfo.Parent.FullNameNative + '_' + structureTypeNameInternal;
             var useCSharp = EngineConfiguration.WithCSharp(buildData.TargetOptions);
+            CppInternalCalls.Clear();
 
             if (structureInfo.IsAutoSerialization)
                 GenerateCppAutoSerialization(buildData, contents, moduleInfo, structureInfo, structureTypeNameNative);
@@ -1813,6 +1862,9 @@ namespace Flax.Build.Bindings
             // Fields
             foreach (var fieldInfo in structureInfo.Fields)
             {
+                if (fieldInfo.IsConstexpr)
+                    continue;
+
                 // Static fields are using C++ static value accessed via getter function binding
                 if (fieldInfo.IsStatic)
                 {
@@ -1869,12 +1921,9 @@ namespace Flax.Build.Bindings
 
             if (useCSharp)
             {
-                foreach (var fieldInfo in structureInfo.Fields)
+                foreach (var e in CppInternalCalls)
                 {
-                    if (fieldInfo.Getter != null)
-                        contents.AppendLine($"        ADD_INTERNAL_CALL(\"{structureTypeNameManagedInternalCall}::Internal_{fieldInfo.Getter.UniqueName}\", &{fieldInfo.Getter.UniqueName});");
-                    if (fieldInfo.Setter != null)
-                        contents.AppendLine($"        ADD_INTERNAL_CALL(\"{structureTypeNameManagedInternalCall}::Internal_{fieldInfo.Setter.UniqueName}\", &{fieldInfo.Setter.UniqueName});");
+                    contents.AppendLine($"        ADD_INTERNAL_CALL(\"{structureTypeNameManagedInternalCall}::Internal_{e.Key}\", &{e.Value});");
                 }
             }
 
@@ -1940,7 +1989,7 @@ namespace Flax.Build.Bindings
             for (var i = 0; i < structureInfo.Fields.Count; i++)
             {
                 var fieldInfo = structureInfo.Fields[i];
-                if (fieldInfo.IsReadOnly || fieldInfo.IsStatic || fieldInfo.Access == AccessLevel.Private)
+                if (fieldInfo.IsReadOnly || fieldInfo.IsStatic || fieldInfo.IsConstexpr || fieldInfo.Access == AccessLevel.Private)
                     continue;
                 if (i == 0)
                     contents.AppendLine($"        if (name == TEXT(\"{fieldInfo.Name}\"))");
@@ -1956,7 +2005,7 @@ namespace Flax.Build.Bindings
             for (var i = 0; i < structureInfo.Fields.Count; i++)
             {
                 var fieldInfo = structureInfo.Fields[i];
-                if (fieldInfo.IsReadOnly || fieldInfo.IsStatic || fieldInfo.Access == AccessLevel.Private)
+                if (fieldInfo.IsReadOnly || fieldInfo.IsStatic || fieldInfo.IsConstexpr || fieldInfo.Access == AccessLevel.Private)
                     continue;
                 if (i == 0)
                     contents.AppendLine($"        if (name == TEXT(\"{fieldInfo.Name}\"))");
@@ -1980,6 +2029,8 @@ namespace Flax.Build.Bindings
             contents.Append('}').Append(';').AppendLine();
             contents.AppendLine();
 
+            if (GenerateCppIsTemplateInstantiationType(structureInfo))
+                contents.Append("template<> ");
             contents.Append($"ScriptingTypeInitializer {structureTypeNameNative}::TypeInitializer((BinaryModule*)GetBinaryModule{moduleInfo.Name}(), ");
             contents.Append($"StringAnsiView(\"{structureTypeNameManaged}\", {structureTypeNameManaged.Length}), ");
             contents.Append($"sizeof({structureTypeNameNative}), ");
@@ -2135,7 +2186,7 @@ namespace Flax.Build.Bindings
 
         private static void GenerateCppType(BuildData buildData, StringBuilder contents, ModuleInfo moduleInfo, object type)
         {
-            if (type is ApiTypeInfo apiTypeInfo && apiTypeInfo.IsInBuild)
+            if (type is ApiTypeInfo apiTypeInfo && apiTypeInfo.SkipGeneration)
                 return;
 
             try
@@ -2148,8 +2199,8 @@ namespace Flax.Build.Bindings
                     GenerateCppEnum(buildData, contents, moduleInfo, enumInfo);
                 else if (type is InterfaceInfo interfaceInfo)
                     GenerateCppInterface(buildData, contents, moduleInfo, interfaceInfo);
-                else if (type is InjectCppCodeInfo injectCppCodeInfo)
-                    contents.AppendLine(injectCppCodeInfo.Code);
+                else if (type is InjectCodeInfo injectCodeInfo && string.Equals(injectCodeInfo.Lang, "cpp", StringComparison.OrdinalIgnoreCase))
+                    contents.AppendLine(injectCodeInfo.Code);
             }
             catch
             {
@@ -2166,7 +2217,7 @@ namespace Flax.Build.Bindings
                 for (var i = 0; i < structureInfo.Fields.Count; i++)
                 {
                     var fieldInfo = structureInfo.Fields[i];
-                    if (fieldInfo.IsStatic)
+                    if (fieldInfo.IsStatic || fieldInfo.IsConstexpr)
                         continue;
                     var fieldType = fieldInfo.Type;
                     var fieldApiType = FindApiTypeInfo(buildData, fieldType, structureInfo);
@@ -2175,6 +2226,11 @@ namespace Flax.Build.Bindings
                         GenerateCppCppUsedNonPodTypes(buildData, fieldApiType);
                     }
                 }
+            }
+            if (apiType is ClassStructInfo classStructInfo)
+            {
+                if (classStructInfo.IsTemplate)
+                    throw new Exception($"Cannot use template type '{classStructInfo}' as non-POD type for cross-language bindings.");
             }
             if (!CppUsedNonPodTypesList.Contains(apiType))
                 CppUsedNonPodTypesList.Add(apiType);
@@ -2189,6 +2245,7 @@ namespace Flax.Build.Bindings
             CppIncludeFilesList.Clear();
             CppVariantToTypes.Clear();
             CppVariantFromTypes.Clear();
+            CurrentModule = moduleInfo;
 
             // Disable C# scripting based on configuration
             ScriptingLangInfos[0].Enabled = EngineConfiguration.WithCSharp(buildData.TargetOptions);
@@ -2405,7 +2462,7 @@ namespace Flax.Build.Bindings
                         for (var i = 0; i < fields.Count; i++)
                         {
                             var fieldInfo = fields[i];
-                            if (fieldInfo.IsStatic)
+                            if (fieldInfo.IsStatic || fieldInfo.IsConstexpr)
                                 continue;
 
                             if (fieldInfo.NoArray && fieldInfo.Type.IsArray)
@@ -2437,7 +2494,7 @@ namespace Flax.Build.Bindings
                         for (var i = 0; i < fields.Count; i++)
                         {
                             var fieldInfo = fields[i];
-                            if (fieldInfo.IsStatic)
+                            if (fieldInfo.IsStatic || fieldInfo.IsConstexpr)
                                 continue;
 
                             CppNonPodTypesConvertingGeneration = true;
@@ -2486,7 +2543,7 @@ namespace Flax.Build.Bindings
                         for (var i = 0; i < fields.Count; i++)
                         {
                             var fieldInfo = fields[i];
-                            if (fieldInfo.IsStatic)
+                            if (fieldInfo.IsStatic || fieldInfo.IsConstexpr)
                                 continue;
 
                             if (fieldInfo.NoArray && fieldInfo.Type.IsArray)
@@ -2521,7 +2578,7 @@ namespace Flax.Build.Bindings
                         for (var i = 0; i < fields.Count; i++)
                         {
                             var fieldInfo = fields[i];
-                            if (fieldInfo.IsStatic)
+                            if (fieldInfo.IsStatic || fieldInfo.IsConstexpr)
                                 continue;
 
                             CppNonPodTypesConvertingGeneration = true;

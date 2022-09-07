@@ -84,7 +84,7 @@ namespace FlaxEditor.Content.Create
             _settingsEditor = new CustomEditorPresenter(null);
             _settingsEditor.Panel.Parent = panel;
 
-            _dialogSize = new Vector2(TotalWidth, panel.Bottom);
+            _dialogSize = new Float2(TotalWidth, panel.Bottom);
 
             _settingsEditor.Select(_entry.Settings);
         }
@@ -102,7 +102,7 @@ namespace FlaxEditor.Content.Create
         {
             base.SetupWindowSettings(ref settings);
 
-            settings.MinimumSize = new Vector2(300, 400);
+            settings.MinimumSize = new Float2(300, 400);
             settings.HasSizingFrame = true;
         }
     }

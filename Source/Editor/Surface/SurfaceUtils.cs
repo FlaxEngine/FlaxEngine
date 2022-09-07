@@ -285,7 +285,7 @@ namespace FlaxEditor.Surface
 
         internal static void DisplayGraphParameters(LayoutElementsContainer layout, GraphParameterData[] data, GetGraphParameterDelegate getter, SetGraphParameterDelegate setter, ValueContainer values, GetGraphParameterDelegate defaultValueGetter = null, CustomPropertySpawnDelegate propertySpawn = null)
         {
-            GroupElement lastGroup = null;
+            CustomEditors.Editors.GenericEditor.OnGroupUsage();
             for (int i = 0; i < data.Length; i++)
             {
                 ref var e = ref data[i];
@@ -293,23 +293,11 @@ namespace FlaxEditor.Surface
                     continue;
                 var tag = e.Tag;
                 var parameter = e.Parameter;
-                LayoutElementsContainer itemLayout;
 
                 // Editor Display
-                if (e.Display?.Group != null)
-                {
-                    if (lastGroup == null || lastGroup.Panel.HeaderText != e.Display.Group)
-                    {
-                        lastGroup = layout.Group(e.Display.Group);
-                        lastGroup.Panel.Open(false);
-                    }
-                    itemLayout = lastGroup;
-                }
-                else
-                {
-                    lastGroup = null;
-                    itemLayout = layout;
-                }
+                var itemLayout = CustomEditors.Editors.GenericEditor.OnGroup(layout, e.Display);
+                if (itemLayout is GroupElement groupElement)
+                    groupElement.Panel.Open(false);
 
                 // Space
                 if (e.Space != null)
@@ -317,7 +305,7 @@ namespace FlaxEditor.Surface
 
                 // Header
                 if (e.Header != null)
-                    itemLayout.Header(e.Header.Text);
+                    itemLayout.Header(e.Header);
 
                 // Values container
                 var valueType = new ScriptType(e.Type);
@@ -344,6 +332,7 @@ namespace FlaxEditor.Surface
                 else
                     propertySpawn(itemLayout, valueContainer, ref e);
             }
+            CustomEditors.Editors.GenericEditor.OnGroupUsage();
         }
 
         internal static string GetMethodDisplayName(string methodName)
@@ -415,8 +404,13 @@ namespace FlaxEditor.Surface
 
         internal static bool IsValidVisualScriptType(ScriptType scriptType)
         {
-            if (scriptType.IsGenericType || !scriptType.IsPublic || scriptType.HasAttribute(typeof(HideInEditorAttribute), true))
+            if (!scriptType.IsPublic || scriptType.HasAttribute(typeof(HideInEditorAttribute), true))
                 return false;
+            if (scriptType.IsGenericType)
+            {
+                // Only Dictionary generic type is valid
+                return scriptType.GetGenericTypeDefinition() == typeof(Dictionary<,>);
+            }
             var managedType = TypeUtils.GetType(scriptType);
             return !TypeUtils.IsDelegate(managedType);
         }
@@ -503,6 +497,36 @@ namespace FlaxEditor.Surface
                 sb.Append("\n").Append(tooltip);
 
             return sb.ToString();
+        }
+
+        internal static Double4 GetDouble4(object v, float w = 0.0f)
+        {
+            var value = new Double4(0, 0, 0, w);
+            if (v is Vector2 vec2)
+                value = new Double4(vec2, 0.0f, w);
+            else if (v is Vector3 vec3)
+                value = new Double4(vec3, w);
+            else if (v is Vector4 vec4)
+                value = vec4;
+            else if (v is Float2 float2)
+                value = new Double4(float2, 0.0, w);
+            else if (v is Float3 float3)
+                value = new Double4(float3, w);
+            else if (v is Float4 float4)
+                value = float4;
+            else if (v is Double2 double2)
+                value = new Double4(double2, 0.0, w);
+            else if (v is Double3 double3)
+                value = new Double4(double3, w);
+            else if (v is Double4 double4)
+                value = double4;
+            else if (v is Color col)
+                value = new Double4(col.R, col.G, col.B, col.A);
+            else if (v is float f)
+                value = new Double4(f);
+            else if (v is int i)
+                value = new Double4(i);
+            return value;
         }
     }
 }

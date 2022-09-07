@@ -545,29 +545,29 @@ void GDKPlatform::OpenUrl(const StringView& url)
 
 struct GetMonitorBoundsData
 {
-    Vector2 Pos;
+    Float2 Pos;
     Rectangle Result;
 
-    GetMonitorBoundsData(const Vector2& pos)
+    GetMonitorBoundsData(const Float2& pos)
         : Pos(pos)
-        , Result(Vector2::Zero, GDKPlatform::GetDesktopSize())
+        , Result(Float2::Zero, GDKPlatform::GetDesktopSize())
     {
     }
 };
 
-Rectangle GDKPlatform::GetMonitorBounds(const Vector2& screenPos)
+Rectangle GDKPlatform::GetMonitorBounds(const Float2& screenPos)
 {
-    return Rectangle(Vector2::Zero, GetDesktopSize());
+    return Rectangle(Float2::Zero, GetDesktopSize());
 }
 
-Vector2 GDKPlatform::GetDesktopSize()
+Float2 GDKPlatform::GetDesktopSize()
 {
-    return Vector2(1920, 1080);
+    return Float2(1920, 1080);
 }
 
 Rectangle GDKPlatform::GetVirtualDesktopBounds()
 {
-    return Rectangle(Vector2::Zero, GetDesktopSize());
+    return Rectangle(Float2::Zero, GetDesktopSize());
 }
 
 void GDKPlatform::GetEnvironmentVariables(Dictionary<String, String>& result)

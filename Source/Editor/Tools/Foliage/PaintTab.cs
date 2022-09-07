@@ -81,9 +81,9 @@ namespace FlaxEditor.Tools.Foliage
             }
 
             [EditorOrder(215), EditorDisplay("Painting"), Limit(0.0f, 360.0f), Tooltip("The minimum and maximum ground slope angle to paint foliage on it (in degrees).")]
-            public Vector2 PaintGroundSlopeAngleRange
+            public Float2 PaintGroundSlopeAngleRange
             {
-                get => new Vector2(_type.PaintGroundSlopeAngleMin, _type.PaintGroundSlopeAngleMax);
+                get => new Float2(_type.PaintGroundSlopeAngleMin, _type.PaintGroundSlopeAngleMax);
                 set
                 {
                     _type.PaintGroundSlopeAngleMin = value.X;
@@ -98,15 +98,15 @@ namespace FlaxEditor.Tools.Foliage
                 set => _type.PaintScaling = value;
             }
 
-            [EditorOrder(230), EditorDisplay("Painting"), Limit(0.0f), CustomEditor(typeof(ActorTransformEditor.PositionScaleEditor)), Tooltip("The scale minimum values per axis.")]
-            public Vector3 ScaleMin
+            [EditorOrder(230), EditorDisplay("Painting"), Limit(0.0f), CustomEditor(typeof(ActorTransformEditor.ScaleEditor)), Tooltip("The scale minimum values per axis.")]
+            public Float3 ScaleMin
             {
                 get => _type.PaintScaleMin;
                 set => _type.PaintScaleMin = value;
             }
 
-            [EditorOrder(240), EditorDisplay("Painting"), Limit(0.0f), CustomEditor(typeof(ActorTransformEditor.PositionScaleEditor)), Tooltip("The scale maximum values per axis.")]
-            public Vector3 ScaleMax
+            [EditorOrder(240), EditorDisplay("Painting"), Limit(0.0f), CustomEditor(typeof(ActorTransformEditor.ScaleEditor)), Tooltip("The scale maximum values per axis.")]
+            public Float3 ScaleMax
             {
                 get => _type.PaintScaleMax;
                 set => _type.PaintScaleMax = value;
@@ -115,7 +115,7 @@ namespace FlaxEditor.Tools.Foliage
             //
 
             [EditorOrder(300), EditorDisplay("Placement", "Offset Y"), Tooltip("The per-instance random offset range on axis Y (min-max).")]
-            public Vector2 OffsetY
+            public Float2 OffsetY
             {
                 get => _type.PlacementOffsetY;
                 set => _type.PlacementOffsetY = value;
@@ -243,6 +243,7 @@ namespace FlaxEditor.Tools.Foliage
             if (currentIndex != -1)
             {
                 ((ContainerControl)_items.Children[currentIndex]).Children[1].BackgroundColor = Style.Current.BackgroundSelected;
+                _proxy.SyncOptions();
 
                 _presenter.Select(_proxy);
                 _presenter.BuildLayoutOnUpdate();

@@ -362,7 +362,7 @@ API_ENUM() enum class CullMode : byte
 /// </summary>
 API_STRUCT() struct BlendingMode
 {
-DECLARE_SCRIPTING_TYPE_MINIMAL(BlendingMode);
+    DECLARE_SCRIPTING_TYPE_MINIMAL(BlendingMode);
 
     /// <summary>
     /// Blending mode.
@@ -454,7 +454,6 @@ DECLARE_SCRIPTING_TYPE_MINIMAL(BlendingMode);
     };
 
 public:
-
     /// <summary>
     /// Render target blending mode descriptor.
     /// </summary>
@@ -501,11 +500,9 @@ public:
     API_FIELD() ColorWrite RenderTargetWriteMask;
 
 public:
-
     bool operator==(const BlendingMode& other) const;
 
 public:
-
     /// <summary>
     /// Gets the opaque rendering (default). No blending is being performed.
     /// </summary>
@@ -703,6 +700,16 @@ API_ENUM(Attributes="Flags") enum class DrawPass : int32
     MotionVectors = 1 << 4,
 
     /// <summary>
+    /// The Global Sign Distance Field (SDF) rendering pass. Used for software raytracing though the scene on a GPU.
+    /// </summary>
+    GlobalSDF = 1 << 5,
+
+    /// <summary>
+    /// The Global Surface Atlas rendering pass. Used for software raytracing though the scene on a GPU to evaluate the object surface material properties.
+    /// </summary>
+    GlobalSurfaceAtlas = 1 << 6,
+
+    /// <summary>
     /// The debug quad overdraw rendering (editor-only).
     /// </summary>
     API_ENUM(Attributes="HideInEditor")
@@ -712,13 +719,13 @@ API_ENUM(Attributes="Flags") enum class DrawPass : int32
     /// The default set of draw passes for the scene objects.
     /// </summary>
     API_ENUM(Attributes="HideInEditor")
-    Default = Depth | GBuffer | Forward | Distortion | MotionVectors,
+    Default = Depth | GBuffer | Forward | Distortion | MotionVectors | GlobalSDF | GlobalSurfaceAtlas,
 
     /// <summary>
     /// The all draw passes combined into a single mask.
     /// </summary>
     API_ENUM(Attributes="HideInEditor")
-    All = Depth | GBuffer | Forward | Distortion | MotionVectors,
+    All = Depth | GBuffer | Forward | Distortion | MotionVectors | GlobalSDF | GlobalSurfaceAtlas,
 };
 
 DECLARE_ENUM_OPERATORS(DrawPass);
@@ -847,6 +854,21 @@ API_ENUM() enum class ViewMode
     /// Draw geometry overdraw to visualize performance of pixels rendering.
     /// </summary>
     QuadOverdraw = 23,
+
+    /// <summary>
+    /// Draw Global Sign Distant Field (SDF) preview.
+    /// </summary>
+    GlobalSDF = 24,
+
+    /// <summary>
+    /// Draw Global Surface Atlas preview.
+    /// </summary>
+    GlobalSurfaceAtlas = 25,
+
+    /// <summary>
+    /// Draw Global Illumination debug preview (eg. irradiance probes).
+    /// </summary>
+    GlobalIllumination = 26,
 };
 
 /// <summary>
@@ -985,19 +1007,24 @@ API_ENUM(Attributes="Flags") enum class ViewFlags : int64
     ContactShadows = 1 << 24,
 
     /// <summary>
+    /// Shows/hides the Global Sign Distant Fields rendering.
+    /// </summary>
+    GlobalSDF = 1 << 25,
+
+    /// <summary>
     /// Default flags for Game.
     /// </summary>
-    DefaultGame = Reflections | DepthOfField | Fog | Decals | MotionBlur | SSR | AO | GI | DirectionalLights | PointLights | SpotLights | SkyLights | Shadows | SpecularLight | AntiAliasing | CustomPostProcess | Bloom | ToneMapping | EyeAdaptation | CameraArtifacts | LensFlares | ContactShadows,
+    DefaultGame = Reflections | DepthOfField | Fog | Decals | MotionBlur | SSR | AO | GI | DirectionalLights | PointLights | SpotLights | SkyLights | Shadows | SpecularLight | AntiAliasing | CustomPostProcess | Bloom | ToneMapping | EyeAdaptation | CameraArtifacts | LensFlares | ContactShadows | GlobalSDF,
 
     /// <summary>
     /// Default flags for Editor.
     /// </summary>
-    DefaultEditor = Reflections | Fog | Decals | DebugDraw | SSR | AO | GI | DirectionalLights | PointLights | SpotLights | SkyLights | Shadows | SpecularLight | AntiAliasing | CustomPostProcess | Bloom | ToneMapping | EyeAdaptation | CameraArtifacts | LensFlares | EditorSprites | ContactShadows,
+    DefaultEditor = Reflections | Fog | Decals | DebugDraw | SSR | AO | GI | DirectionalLights | PointLights | SpotLights | SkyLights | Shadows | SpecularLight | AntiAliasing | CustomPostProcess | Bloom | ToneMapping | EyeAdaptation | CameraArtifacts | LensFlares | EditorSprites | ContactShadows | GlobalSDF,
 
     /// <summary>
     /// Default flags for materials/models previews generating.
     /// </summary>
-    DefaultAssetPreview = Reflections | Decals | GI | DirectionalLights | PointLights | SpotLights | SkyLights | SpecularLight | AntiAliasing | Bloom | ToneMapping | EyeAdaptation | CameraArtifacts | LensFlares | ContactShadows,
+    DefaultAssetPreview = Reflections | Decals | DirectionalLights | PointLights | SpotLights | SkyLights | SpecularLight | AntiAliasing | Bloom | ToneMapping | EyeAdaptation | CameraArtifacts | LensFlares | ContactShadows,
 };
 
 DECLARE_ENUM_OPERATORS(ViewFlags);
@@ -1055,3 +1082,26 @@ enum class ShaderFlags : uint32
 };
 
 DECLARE_ENUM_OPERATORS(ShaderFlags);
+
+/// <summary>
+/// The environment probes cubemap texture resolutions.
+/// </summary>
+API_ENUM() enum class ProbeCubemapResolution
+{
+    // Graphics Settings default option.
+    UseGraphicsSettings = 0,
+    // Cubemap with 32x32.
+    _32 = 32,
+    // Cubemap with 64x64.
+    _64 = 64,
+    // Cubemap with 128x128.
+    _128 = 128,
+    // Cubemap with 256x256.
+    _256 = 256,
+    // Cubemap with 512x512.
+    _512 = 512,
+    // Cubemap with 1024x1024.
+    _1024 = 1024,
+    // Cubemap with 2048x2048.
+    _2048 = 2048,
+};

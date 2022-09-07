@@ -14,6 +14,27 @@
 /// </summary>
 #define SHADOWS_PASS_SS_RR_FORMAT PixelFormat::R11G11B10_Float
 
+template<typename T>
+bool CanRenderShadow(RenderView& view, const T& light)
+{
+    bool result = false;
+    switch ((ShadowsCastingMode)light.ShadowsMode)
+    {
+    case ShadowsCastingMode::StaticOnly:
+        result = view.IsOfflinePass;
+        break;
+    case ShadowsCastingMode::DynamicOnly:
+        result = !view.IsOfflinePass;
+        break;
+    case ShadowsCastingMode::All:
+        result = true;
+        break;
+    default:
+        break;
+    }
+    return result && light.ShadowsStrength > ZeroTolerance;
+}
+
 /// <summary>
 /// Shadows rendering service.
 /// </summary>

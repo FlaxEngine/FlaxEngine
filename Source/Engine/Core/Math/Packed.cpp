@@ -26,12 +26,12 @@ FloatR10G10B10A2::FloatR10G10B10A2(float x, float y, float z, float w)
     Value = ((uint32)w << 30) | (((uint32)z & 0x3FF) << 20) | (((uint32)y & 0x3FF) << 10) | (((uint32)x & 0x3FF));
 }
 
-FloatR10G10B10A2::FloatR10G10B10A2(const Vector3& v, float alpha)
+FloatR10G10B10A2::FloatR10G10B10A2(const Float3& v, float alpha)
     : FloatR10G10B10A2(v.X, v.Y, v.Z, alpha)
 {
 }
 
-FloatR10G10B10A2::FloatR10G10B10A2(const Vector4& v)
+FloatR10G10B10A2::FloatR10G10B10A2(const Float4& v)
     : FloatR10G10B10A2(v.X, v.Y, v.Z, v.W)
 {
 }
@@ -41,19 +41,19 @@ FloatR10G10B10A2::FloatR10G10B10A2(const float* values)
 {
 }
 
-FloatR10G10B10A2::operator Vector3() const
+FloatR10G10B10A2::operator Float3() const
 {
-    return ToVector3();
+    return ToFloat3();
 }
 
-FloatR10G10B10A2::operator Vector4() const
+FloatR10G10B10A2::operator Float4() const
 {
-    return ToVector4();
+    return ToFloat4();
 }
 
-Vector3 FloatR10G10B10A2::ToVector3() const
+Float3 FloatR10G10B10A2::ToFloat3() const
 {
-    Vector3 vectorOut;
+    Float3 vectorOut;
     uint32 tmp;
     tmp = Value & 0x3FF;
     vectorOut.X = (float)tmp / 1023.f;
@@ -64,9 +64,9 @@ Vector3 FloatR10G10B10A2::ToVector3() const
     return vectorOut;
 }
 
-Vector4 FloatR10G10B10A2::ToVector4() const
+Float4 FloatR10G10B10A2::ToFloat4() const
 {
-    Vector4 vectorOut;
+    Float4 vectorOut;
     uint32 tmp;
     tmp = Value & 0x3FF;
     vectorOut.X = (float)tmp / 1023.f;
@@ -189,12 +189,12 @@ FloatR11G11B10::FloatR11G11B10(float x, float y, float z)
     Value = (result[0] & 0x7ff) | ((result[1] & 0x7ff) << 11) | ((result[2] & 0x3ff) << 22);
 }
 
-FloatR11G11B10::FloatR11G11B10(const Vector3& v)
+FloatR11G11B10::FloatR11G11B10(const Float3& v)
     : FloatR11G11B10(v.X, v.Y, v.Z)
 {
 }
 
-FloatR11G11B10::FloatR11G11B10(const Vector4& v)
+FloatR11G11B10::FloatR11G11B10(const Float4& v)
     : FloatR11G11B10(v.X, v.Y, v.Z)
 {
 }
@@ -209,12 +209,12 @@ FloatR11G11B10::FloatR11G11B10(const float* values)
 {
 }
 
-FloatR11G11B10::operator Vector3() const
+FloatR11G11B10::operator Float3() const
 {
-    return ToVector3();
+    return ToFloat3();
 }
 
-Vector3 FloatR11G11B10::ToVector3() const
+Float3 FloatR11G11B10::ToFloat3() const
 {
     // Reference: https://github.com/microsoft/DirectXMath
 
@@ -326,20 +326,20 @@ Vector3 FloatR11G11B10::ToVector3() const
         result[2] = ((exponent + 112) << 23) | (mantissa << 18);
     }
 
-    return Vector3((float*)result);
+    return Float3((float*)result);
 }
 
-Vector2 RG16UNorm::ToVector2() const
+Float2 RG16UNorm::ToFloat2() const
 {
-    return Vector2(
+    return Float2(
         (float)X / MAX_uint16,
         (float)Y / MAX_uint16
     );
 }
 
-Vector4 RGBA16UNorm::ToVector4() const
+Float4 RGBA16UNorm::ToFloat4() const
 {
-    return Vector4(
+    return Float4(
         (float)X / MAX_uint16,
         (float)Y / MAX_uint16,
         (float)Z / MAX_uint16,

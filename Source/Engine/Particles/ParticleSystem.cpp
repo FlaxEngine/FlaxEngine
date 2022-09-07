@@ -362,7 +362,7 @@ Asset::LoadResult ParticleSystem::load()
                     continue;
 #endif
 
-                EmittersParametersOverrides.Add(key, Variant(value));
+                EmittersParametersOverrides[key] = Variant(value);
             }
         }
 
@@ -441,7 +441,7 @@ Asset::LoadResult ParticleSystem::load()
                     continue;
 #endif
 
-                EmittersParametersOverrides.Add(key, value);
+                EmittersParametersOverrides[key] = value;
             }
         }
 
@@ -461,7 +461,7 @@ void ParticleSystem::unload(bool isReloading)
     FramesPerSecond = 0.0f;
     DurationFrames = 0;
     Emitters.Resize(0);
-    EmittersParametersOverrides.Cleanup();
+    EmittersParametersOverrides.SetCapacity(0);
     Tracks.Resize(0);
 }
 

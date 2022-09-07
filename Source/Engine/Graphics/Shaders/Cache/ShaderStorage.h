@@ -28,7 +28,6 @@ class MemoryReadStream;
 class ShaderStorage
 {
 public:
-
     /// <summary>
     /// Different shader cache storage modes (disabled, inside asset and in project cache)
     /// </summary>
@@ -46,14 +45,12 @@ public:
     static CachingMode GetCachingMode();
 
 public:
-
     /// <summary>
     /// Packed version of the Magic Code for shader files
     /// </summary>
     static const int32 MagicCode;
 
 public:
-
     /// <summary>
     /// File header, version 18
     /// [Deprecated on 24.07.2019, expires on 10.05.2021]
@@ -72,9 +69,9 @@ public:
         /// </summary>
         MaterialInfo8 MaterialInfo;
     };
-
     /// <summary>
     /// File header, version 19
+/// [Deprecated on 13.07.2022, expires on 13.07.2024]
     /// </summary>
     struct Header19
     {
@@ -119,7 +116,52 @@ public:
     };
 
     /// <summary>
+    /// File header, version 20
+    /// </summary>
+    struct Header20
+    {
+        static const int32 Version = 20;
+
+        union
+        {
+            struct
+            {
+            } Shader;
+
+            struct
+            {
+                /// <summary>
+                /// The material graph version.
+                /// </summary>
+                int32 GraphVersion;
+
+                /// <summary>
+                /// The material additional information.
+                /// </summary>
+                MaterialInfo10 Info;
+            } Material;
+
+            struct
+            {
+                /// <summary>
+                /// The particle emitter graph version.
+                /// </summary>
+                int32 GraphVersion;
+
+                /// <summary>
+                /// The custom particles data size (in bytes).
+                /// </summary>
+                int32 CustomDataSize;
+            } ParticleEmitter;
+        };
+
+        Header20()
+        {
+        }
+    };
+
+    /// <summary>
     /// Current header type
     /// </summary>
-    typedef Header19 Header;
+    typedef Header20 Header;
 };

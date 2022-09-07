@@ -47,7 +47,7 @@ namespace FlaxEngine.Utilities
         /// Requests the mesh data.
         /// </summary>
         /// <param name="model">The model to get it's data.</param>
-        /// <returns>True if ahs valid data to access, otherwise false if it's during downloading.</returns>
+        /// <returns>True if has valid data to access, otherwise false if it's during downloading.</returns>
         public bool RequestMeshData(Model model)
         {
             if (model == null)

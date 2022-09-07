@@ -2,8 +2,8 @@
 
 #pragma once
 
-#include <math.h>
 #include "Engine/Core/Types/BaseTypes.h"
+#include <math.h>
 
 namespace Math
 {
@@ -130,6 +130,11 @@ namespace Math
         return modf(a, b);
     }
 
+    static FORCE_INLINE double Frac(double value)
+    {
+        return value - Floor(value);
+    }
+
     /// <summary>
     /// Returns signed fractional part of a double.
     /// </summary>
@@ -227,7 +232,7 @@ namespace Math
     /// <returns>False if a almost equal to b, otherwise true</returns>
     static bool NotNearEqual(double a, double b)
     {
-        return Abs(a - b) >= 2 * 2.2204460492503131e-016;
+        return Abs(a - b) >= ZeroToleranceDouble;
     }
 
     /// <summary>
@@ -238,7 +243,7 @@ namespace Math
     /// <returns>True if a almost equal to b, otherwise false</returns>
     static bool NearEqual(double a, double b)
     {
-        return Abs(a - b) < 2 * 2.2204460492503131e-016;
+        return Abs(a - b) < ZeroToleranceDouble;
     }
 
     /// <summary>
@@ -292,26 +297,6 @@ namespace Math
         else if (delta < -PI)
             delta = delta + TWO_PI;
         return delta;
-    }
-
-    // Given a heading which may be outside the +/- PI range, 'unwind' it back into that range
-    static double UnwindRadians(double a)
-    {
-        while (a > PI)
-            a -= TWO_PI;
-        while (a < -PI)
-            a += TWO_PI;
-        return a;
-    }
-
-    // Utility to ensure angle is between +/- 180 degrees by unwinding
-    static double UnwindDegrees(double a)
-    {
-        while (a > 180.)
-            a -= 360.;
-        while (a < -180.)
-            a += 360.;
-        return a;
     }
 
     /// <summary>

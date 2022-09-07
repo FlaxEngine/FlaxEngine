@@ -43,7 +43,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #pragma once
 
 /** Small helper classes to optimise finding vertizes close to a given location */
-#ifndef AI_SPATIALSORT_H_INC
+#if !defined(AI_SPATIALSORT_H_INC) && COMPILE_WITH_MODEL_TOOL && USE_EDITOR
 #define AI_SPATIALSORT_H_INC
 
 #include <vector>

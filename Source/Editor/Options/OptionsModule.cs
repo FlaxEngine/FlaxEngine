@@ -93,6 +93,11 @@ namespace FlaxEditor.Options
         public void Load()
         {
             Editor.Log("Loading editor options");
+            if (!File.Exists(_optionsFilePath))
+            {
+                Editor.LogWarning("Missing editor settings");
+                return;
+            }
 
             try
             {
@@ -100,12 +105,12 @@ namespace FlaxEditor.Options
                 var asset = FlaxEngine.Content.LoadAsync<JsonAsset>(_optionsFilePath);
                 if (asset == null)
                 {
-                    Editor.LogWarning("Missing or invalid editor settings");
+                    Editor.LogWarning("Invalid editor settings");
                     return;
                 }
                 if (asset.WaitForLoaded())
                 {
-                    Editor.LogWarning("Failed to load editor settings");
+                    Editor.LogError("Failed to load editor settings");
                     return;
                 }
 
@@ -159,16 +164,16 @@ namespace FlaxEditor.Options
             var editorAnalyticsTrackingFile = Path.Combine(Editor.LocalCachePath, "noTracking");
             if (Options.General.EnableEditorAnalytics)
             {
-                if (!File.Exists(editorAnalyticsTrackingFile))
+                if (File.Exists(editorAnalyticsTrackingFile))
                 {
-                    File.WriteAllText(editorAnalyticsTrackingFile, "Don't track me, please.");
+                    File.Delete(editorAnalyticsTrackingFile);
                 }
             }
             else
             {
-                if (File.Exists(editorAnalyticsTrackingFile))
+                if (!File.Exists(editorAnalyticsTrackingFile))
                 {
-                    File.Delete(editorAnalyticsTrackingFile);
+                    File.WriteAllText(editorAnalyticsTrackingFile, "Don't track me, please.");
                 }
             }
         }

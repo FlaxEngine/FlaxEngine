@@ -14,14 +14,16 @@
 #include "Engine/Graphics/Shaders/GPUShader.h"
 #include "Engine/Graphics/RenderTask.h"
 #include "Engine/Graphics/RenderBuffers.h"
+#include "Engine/Graphics/RenderTargetPool.h"
 #include "Engine/Content/Assets/Shader.h"
 #include "Engine/Content/Content.h"
 #include "Engine/Content/Assets/Model.h"
 #include "Engine/Level/Actors/Decal.h"
+#include "Engine/Engine/Engine.h"
 
 PACK_STRUCT(struct GBufferPassData{
     GBufferData GBuffer;
-    Vector3 Dummy0;
+    Float3 Dummy0;
     int32 ViewMode;
     });
 
@@ -144,7 +146,6 @@ void GBufferPass::Fill(RenderContext& renderContext, GPUTextureView* lightBuffer
     // Cache data
     auto device = GPUDevice::Instance;
     auto context = device->GetMainContext();
-    auto& view = renderContext.View;
     GPUTextureView* targetBuffers[5] =
     {
         lightBuffer,
@@ -153,7 +154,7 @@ void GBufferPass::Fill(RenderContext& renderContext, GPUTextureView* lightBuffer
         renderContext.Buffers->GBuffer2->View(),
         renderContext.Buffers->GBuffer3->View(),
     };
-    view.Pass = DrawPass::GBuffer;
+    renderContext.View.Pass = DrawPass::GBuffer;
 
     // Clear GBuffer
     {
@@ -222,20 +223,7 @@ void GBufferPass::Fill(RenderContext& renderContext, GPUTextureView* lightBuffer
     if (renderContext.List->Sky && _skyModel && _skyModel->CanBeRendered())
     {
         PROFILE_GPU_CPU("Sky");
-
-        // Cache data
-        auto model = _skyModel.Get();
-        auto box = model->GetBox();
-
-        // Calculate sphere model transform to cover far plane
-        Matrix m1, m2;
-        Matrix::Scaling(view.Far / (box.GetSize().Y * 0.5f) * 0.95f, m1); // Scale to fit whole view frustum
-        Matrix::CreateWorld(view.Position, Vector3::Up, Vector3::Backward, m2); // Rotate sphere model
-        m1 *= m2;
-
-        // Draw sky
-        renderContext.List->Sky->ApplySky(context, renderContext, m1);
-        model->Render(context);
+        DrawSky(renderContext, context);
     }
 
     context->ResetRenderTarget();
@@ -249,7 +237,7 @@ bool SortDecal(Decal* const& a, Decal* const& b)
 void GBufferPass::RenderDebug(RenderContext& renderContext)
 {
     // Check if has resources loaded
-    if (setupResources())
+    if (checkIfSkipPass())
         return;
 
     // Cache data
@@ -278,6 +266,65 @@ void GBufferPass::RenderDebug(RenderContext& renderContext)
 
     // Cleanup
     context->ResetSR();
+}
+
+// Custom render buffer for realtime skybox capturing (eg. used by GI).
+class SkyboxCustomBuffer : public RenderBuffers::CustomBuffer
+{
+public:
+    uint64 LastCaptureFrame = 0;
+    GPUTexture* Skybox = nullptr;
+
+    ~SkyboxCustomBuffer()
+    {
+        RenderTargetPool::Release(Skybox);
+    }
+};
+
+GPUTextureView* GBufferPass::RenderSkybox(RenderContext& renderContext, GPUContext* context)
+{
+    GPUTextureView* result = nullptr;
+    if (renderContext.List->Sky && _skyModel && _skyModel->CanBeRendered())
+    {
+        // Initialize skybox texture
+        auto& skyboxData = *renderContext.Buffers->GetCustomBuffer<SkyboxCustomBuffer>(TEXT("Skybox"));
+        bool dirty = false;
+        const int32 resolution = 16;
+        if (!skyboxData.Skybox)
+        {
+            const auto desc = GPUTextureDescription::NewCube(resolution, PixelFormat::R11G11B10_Float);
+            skyboxData.Skybox = RenderTargetPool::Get(desc);
+            if (!skyboxData.Skybox)
+                return nullptr;
+            dirty = true;
+        }
+
+        // Redraw sky from time-to-time (dynamic skies can be animated, static skies can have textures streamed)
+        const uint32 redrawFramesCount = renderContext.List->Sky->IsDynamicSky() ? 4 : 240;
+        if (Engine::FrameCount - skyboxData.LastCaptureFrame >= redrawFramesCount)
+            dirty = true;
+
+        if (dirty)
+        {
+            PROFILE_GPU_CPU("Skybox");
+            skyboxData.LastCaptureFrame = Engine::FrameCount;
+            const RenderView originalView = renderContext.View;
+            renderContext.View.Pass = DrawPass::GBuffer;
+            renderContext.View.SetUpCube(10.0f, 10000.0f, originalView.Position);
+            for (int32 faceIndex = 0; faceIndex < 6; faceIndex++)
+            {
+                renderContext.View.SetFace(faceIndex);
+                context->SetRenderTarget(skyboxData.Skybox->View(faceIndex));
+                context->SetViewportAndScissors(resolution, resolution);
+                DrawSky(renderContext, context);
+            }
+            renderContext.View = originalView;
+            context->ResetRenderTarget();
+        }
+
+        result = skyboxData.Skybox->ViewArray();
+    }
+    return result;
 }
 
 #if USE_EDITOR
@@ -326,6 +373,23 @@ void GBufferPass::SetInputs(const RenderView& view, GBufferData& gBuffer)
     Matrix::Transpose(view.IP, gBuffer.InvProjectionMatrix);
 }
 
+void GBufferPass::DrawSky(RenderContext& renderContext, GPUContext* context)
+{
+    // Cache data
+    auto model = _skyModel.Get();
+    auto box = model->GetBox();
+
+    // Calculate sphere model transform to cover far plane
+    Matrix m1, m2;
+    Matrix::Scaling(renderContext.View.Far / ((float)box.GetSize().Y * 0.5f) * 0.95f, m1); // Scale to fit whole view frustum
+    Matrix::CreateWorld(renderContext.View.Position, Float3::Up, Float3::Backward, m2); // Rotate sphere model
+    m1 *= m2;
+
+    // Draw sky
+    renderContext.List->Sky->ApplySky(context, renderContext, m1);
+    model->Render(context);
+}
+
 void GBufferPass::DrawDecals(RenderContext& renderContext, GPUTextureView* lightBuffer)
 {
     // Skip if no decals to render
@@ -337,8 +401,7 @@ void GBufferPass::DrawDecals(RenderContext& renderContext, GPUTextureView* light
 
     // Cache data
     auto device = GPUDevice::Instance;
-    auto gpuContext = device->GetMainContext();
-    auto& view = renderContext.View;
+    auto context = device->GetMainContext();
     auto model = _boxModel.Get();
     auto buffers = renderContext.Buffers;
 
@@ -351,7 +414,7 @@ void GBufferPass::DrawDecals(RenderContext& renderContext, GPUTextureView* light
 
     // Prepare
     DrawCall drawCall;
-    MaterialBase::BindParameters bindParams(gpuContext, renderContext, drawCall);
+    MaterialBase::BindParameters bindParams(context, renderContext, drawCall);
     drawCall.Material = nullptr;
     drawCall.WorldDeterminantSign = 1.0f;
 
@@ -360,10 +423,12 @@ void GBufferPass::DrawDecals(RenderContext& renderContext, GPUTextureView* light
     {
         const auto decal = decals[i];
         ASSERT(decal && decal->Material);
-        decal->GetWorld(&drawCall.World);
+        Transform transform = decal->GetTransform();
+        transform.Scale *= decal->GetSize();
+        renderContext.View.GetWorldMatrix(transform, drawCall.World);
         drawCall.ObjectPosition = drawCall.World.GetTranslation();
 
-        gpuContext->ResetRenderTarget();
+        context->ResetRenderTarget();
 
         // Bind output
         const MaterialInfo& info = decal->Material->GetInfo();
@@ -391,22 +456,22 @@ void GBufferPass::DrawDecals(RenderContext& renderContext, GPUTextureView* light
                 count++;
                 targetBuffers[2] = buffers->GBuffer1->View();
             }
-            gpuContext->SetRenderTarget(nullptr, ToSpan(targetBuffers, count));
+            context->SetRenderTarget(nullptr, ToSpan(targetBuffers, count));
             break;
         }
         case MaterialDecalBlendingMode::Stain:
         {
-            gpuContext->SetRenderTarget(buffers->GBuffer0->View());
+            context->SetRenderTarget(buffers->GBuffer0->View());
             break;
         }
         case MaterialDecalBlendingMode::Normal:
         {
-            gpuContext->SetRenderTarget(buffers->GBuffer1->View());
+            context->SetRenderTarget(buffers->GBuffer1->View());
             break;
         }
         case MaterialDecalBlendingMode::Emissive:
         {
-            gpuContext->SetRenderTarget(lightBuffer);
+            context->SetRenderTarget(lightBuffer);
             break;
         }
         }
@@ -414,8 +479,8 @@ void GBufferPass::DrawDecals(RenderContext& renderContext, GPUTextureView* light
         // Draw decal
         drawCall.PerInstanceRandom = decal->GetPerInstanceRandom();
         decal->Material->Bind(bindParams);
-        model->Render(gpuContext);
+        model->Render(context);
     }
 
-    gpuContext->ResetSR();
+    context->ResetSR();
 }

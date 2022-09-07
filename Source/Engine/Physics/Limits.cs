@@ -5,11 +5,6 @@ namespace FlaxEngine
     partial struct SpringParameters
     {
         /// <summary>
-        /// The default <see cref="SpringParameters"/> structure.
-        /// </summary>
-        public static readonly SpringParameters Default = new SpringParameters(0.0f, 0.0f);
-
-        /// <summary>
         /// Constructs a spring.
         /// </summary>
         /// <param name="stiffness">Spring strength. Force proportional to the position error.</param>
@@ -23,11 +18,6 @@ namespace FlaxEngine
 
     partial struct LimitLinearRange
     {
-        /// <summary>
-        /// The default <see cref="LimitLinearRange"/> structure with empty limit.
-        /// </summary>
-        public static readonly LimitLinearRange Default = new LimitLinearRange(0.0f, 0.0f);
-
         /// <summary>
         /// Constructs a hard limit. Once the limit is reached the movement of the attached bodies will come to a stop.
         /// </summary>
@@ -63,11 +53,6 @@ namespace FlaxEngine
     partial struct LimitLinear
     {
         /// <summary>
-        /// The default <see cref="LimitLinear"/> structure with empty limit.
-        /// </summary>
-        public static readonly LimitLinear Default = new LimitLinear(0.0f);
-
-        /// <summary>
         /// Constructs a hard limit. Once the limit is reached the movement of the attached bodies will come to a stop.
         /// </summary>
         /// <param name="extent">The distance at which the limit becomes active.</param>
@@ -97,11 +82,6 @@ namespace FlaxEngine
 
     partial struct LimitAngularRange
     {
-        /// <summary>
-        /// The default <see cref="LimitAngularRange"/> structure with empty limit.
-        /// </summary>
-        public static readonly LimitAngularRange Default = new LimitAngularRange(0.0f, 0.0f);
-
         /// <summary>
         /// Constructs a hard limit. Once the limit is reached the movement of the attached bodies will come to a stop.
         /// </summary>
@@ -136,11 +116,6 @@ namespace FlaxEngine
 
     partial struct LimitConeRange
     {
-        /// <summary>
-        /// The default <see cref="LimitConeRange"/> structure with a 45 degree cone limit.
-        /// </summary>
-        public static readonly LimitConeRange Default = new LimitConeRange(90.0f, 90.0f);
-
         /// <summary>
         /// Constructs a hard limit. Once the limit is reached the movement of the attached bodies will come to a stop.
         /// </summary>

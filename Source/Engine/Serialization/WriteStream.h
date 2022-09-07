@@ -16,7 +16,6 @@ class ISerializable;
 class FLAXENGINE_API WriteStream : public Stream
 {
 public:
-
     /// <summary>
     /// Writes bytes to the stream
     /// </summary>
@@ -37,7 +36,6 @@ public:
     }
 
 public:
-
     // Writes byte to the stream
     // @param data Data to write
     FORCE_INLINE void WriteByte(byte data)
@@ -137,7 +135,6 @@ public:
     }
 
 public:
-
     // Writes text to the stream
     // @param data Text to write
     // @param length Text length
@@ -186,7 +183,6 @@ public:
     void WriteStringAnsi(const StringAnsiView& data, int8 lock);
 
 public:
-
     // Writes CommonValue to the stream
     // @param data Data to write
     void WriteCommonValue(const CommonValue& data);
@@ -222,7 +218,14 @@ public:
     void WriteJson(ISerializable* obj, const void* otherObj = nullptr);
 
 public:
+    // Serialization of math types with float or double depending on the context (must match deserialization)
+    // Set useDouble=true to explicitly use 64-bit precision for serialized data
+    void WriteBoundingBox(const BoundingBox& box, bool useDouble = false);
+    void WriteBoundingSphere(const BoundingSphere& sphere, bool useDouble = false);
+    void WriteTransform(const Transform& transform, bool useDouble = false);
+    void WriteRay(const Ray& ray, bool useDouble = false);
 
+public:
     // [Stream]
     bool CanWrite() override
     {

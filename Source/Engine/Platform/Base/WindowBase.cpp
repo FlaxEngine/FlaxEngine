@@ -101,16 +101,17 @@ WindowBase::WindowBase(const CreateWindowSettings& settings)
     , _clientSize(settings.Size)
     , _dpi(96)
     , _dpiScale(1.0f)
-    , _trackingMouseOffset(Vector2::Zero)
+    , _trackingMouseOffset(Float2::Zero)
     , _isUsingMouseOffset(false)
     , _isTrackingMouse(false)
+    , _isClippingCursor(false)
     , RenderTask(nullptr)
 {
     // Update window location based on start location
     if (settings.StartPosition == WindowStartPosition::CenterParent
         || settings.StartPosition == WindowStartPosition::CenterScreen)
     {
-        Rectangle parentBounds = Rectangle(Vector2::Zero, Platform::GetDesktopSize());
+        Rectangle parentBounds = Rectangle(Float2::Zero, Platform::GetDesktopSize());
         if (settings.Parent != nullptr && settings.StartPosition == WindowStartPosition::CenterParent)
             parentBounds = settings.Parent->GetClientBounds();
 
@@ -225,35 +226,35 @@ void WindowBase::OnKeyUp(KeyboardKeys key)
     INVOKE_EVENT_PARAMS_1(OnKeyUp, &key);
 }
 
-void WindowBase::OnMouseDown(const Vector2& mousePosition, MouseButton button)
+void WindowBase::OnMouseDown(const Float2& mousePosition, MouseButton button)
 {
     PROFILE_CPU_NAMED("GUI.OnMouseDown");
     MouseDown(mousePosition, button);
     INVOKE_EVENT_PARAMS_2(OnMouseDown, (void*)&mousePosition, &button);
 }
 
-void WindowBase::OnMouseUp(const Vector2& mousePosition, MouseButton button)
+void WindowBase::OnMouseUp(const Float2& mousePosition, MouseButton button)
 {
     PROFILE_CPU_NAMED("GUI.OnMouseUp");
     MouseUp(mousePosition, button);
     INVOKE_EVENT_PARAMS_2(OnMouseUp, (void*)&mousePosition, &button);
 }
 
-void WindowBase::OnMouseDoubleClick(const Vector2& mousePosition, MouseButton button)
+void WindowBase::OnMouseDoubleClick(const Float2& mousePosition, MouseButton button)
 {
     PROFILE_CPU_NAMED("GUI.OnMouseDoubleClick");
     MouseDoubleClick(mousePosition, button);
     INVOKE_EVENT_PARAMS_2(OnMouseDoubleClick, (void*)&mousePosition, &button);
 }
 
-void WindowBase::OnMouseWheel(const Vector2& mousePosition, float delta)
+void WindowBase::OnMouseWheel(const Float2& mousePosition, float delta)
 {
     PROFILE_CPU_NAMED("GUI.OnMouseWheel");
     MouseWheel(mousePosition, delta);
     INVOKE_EVENT_PARAMS_2(OnMouseWheel, (void*)&mousePosition, &delta);
 }
 
-void WindowBase::OnMouseMove(const Vector2& mousePosition)
+void WindowBase::OnMouseMove(const Float2& mousePosition)
 {
     PROFILE_CPU_NAMED("GUI.OnMouseMove");
     MouseMove(mousePosition);
@@ -267,40 +268,40 @@ void WindowBase::OnMouseLeave()
     INVOKE_EVENT_PARAMS_0(OnMouseLeave);
 }
 
-void WindowBase::OnTouchDown(const Vector2& pointerPosition, int32 pointerId)
+void WindowBase::OnTouchDown(const Float2& pointerPosition, int32 pointerId)
 {
     PROFILE_CPU_NAMED("GUI.OnTouchDown");
     TouchDown(pointerPosition, pointerId);
     INVOKE_EVENT_PARAMS_2(OnTouchDown, (void*)&pointerPosition, &pointerId);
 }
 
-void WindowBase::OnTouchMove(const Vector2& pointerPosition, int32 pointerId)
+void WindowBase::OnTouchMove(const Float2& pointerPosition, int32 pointerId)
 {
     PROFILE_CPU_NAMED("GUI.OnTouchMove");
     TouchMove(pointerPosition, pointerId);
     INVOKE_EVENT_PARAMS_2(OnTouchMove, (void*)&pointerPosition, &pointerId);
 }
 
-void WindowBase::OnTouchUp(const Vector2& pointerPosition, int32 pointerId)
+void WindowBase::OnTouchUp(const Float2& pointerPosition, int32 pointerId)
 {
     PROFILE_CPU_NAMED("GUI.OnTouchUp");
     TouchUp(pointerPosition, pointerId);
     INVOKE_EVENT_PARAMS_2(OnTouchUp, (void*)&pointerPosition, &pointerId);
 }
 
-void WindowBase::OnDragEnter(IGuiData* data, const Vector2& mousePosition, DragDropEffect& result)
+void WindowBase::OnDragEnter(IGuiData* data, const Float2& mousePosition, DragDropEffect& result)
 {
     DragEnter(data, mousePosition, result);
     INVOKE_DRAG_EVENT(OnDragEnter);
 }
 
-void WindowBase::OnDragOver(IGuiData* data, const Vector2& mousePosition, DragDropEffect& result)
+void WindowBase::OnDragOver(IGuiData* data, const Float2& mousePosition, DragDropEffect& result)
 {
     DragOver(data, mousePosition, result);
     INVOKE_DRAG_EVENT(OnDragOver);
 }
 
-void WindowBase::OnDragDrop(IGuiData* data, const Vector2& mousePosition, DragDropEffect& result)
+void WindowBase::OnDragDrop(IGuiData* data, const Float2& mousePosition, DragDropEffect& result)
 {
     DragDrop(data, mousePosition, result);
     INVOKE_DRAG_EVENT(OnDragDrop);
@@ -311,7 +312,7 @@ void WindowBase::OnDragLeave()
     INVOKE_EVENT_PARAMS_0(OnDragLeave);
 }
 
-void WindowBase::OnHitTest(const Vector2& mousePosition, WindowHitCodes& result, bool& handled)
+void WindowBase::OnHitTest(const Float2& mousePosition, WindowHitCodes& result, bool& handled)
 {
     HitTest(mousePosition, result, handled);
     if (handled)
@@ -353,12 +354,12 @@ bool WindowBase::GetKeyUp(KeyboardKeys key) const
     return _settings.AllowInput && _focused ? Input::GetKeyUp(key) : false;
 }
 
-Vector2 WindowBase::GetMousePosition() const
+Float2 WindowBase::GetMousePosition() const
 {
-    return _settings.AllowInput && _focused ? ScreenToClient(Input::GetMouseScreenPosition()) : Vector2::Minimum;
+    return _settings.AllowInput && _focused ? ScreenToClient(Input::GetMouseScreenPosition()) : Float2::Minimum;
 }
 
-void WindowBase::SetMousePosition(const Vector2& position) const
+void WindowBase::SetMousePosition(const Float2& position) const
 {
     if (_settings.AllowInput && _focused)
     {
@@ -366,9 +367,9 @@ void WindowBase::SetMousePosition(const Vector2& position) const
     }
 }
 
-Vector2 WindowBase::GetMousePositionDelta() const
+Float2 WindowBase::GetMousePositionDelta() const
 {
-    return _settings.AllowInput && _focused ? Input::GetMousePositionDelta() : Vector2::Zero;
+    return _settings.AllowInput && _focused ? Input::GetMousePositionDelta() : Float2::Zero;
 }
 
 float WindowBase::GetMouseScrollDelta() const
@@ -536,6 +537,8 @@ void WindowBase::Hide()
 {
     if (!_visible)
         return;
+    EndClippingCursor();
+    EndTrackingMouse();
     _visible = false;
     _showAfterFirstPaint = _settings.ShowAfterFirstPaint;
     Hidden();
@@ -559,7 +562,6 @@ void WindowBase::Close(ClosingReason reason)
     }
 
     // Close
-    EndTrackingMouse();
     Hide();
     OnClosed();
 }

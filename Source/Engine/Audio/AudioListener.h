@@ -9,14 +9,12 @@
 /// </summary>
 API_CLASS() class FLAXENGINE_API AudioListener : public Actor
 {
-DECLARE_SCENE_OBJECT(AudioListener);
+    DECLARE_SCENE_OBJECT(AudioListener);
 private:
-
     Vector3 _velocity;
     Vector3 _prevPos;
 
 public:
-
     /// <summary>
     /// Gets the velocity of the listener. Determines pitch in relation to AudioListener's position.
     /// </summary>
@@ -26,11 +24,9 @@ public:
     }
 
 private:
-
     void Update();
 
 public:
-
     // [Actor]
 #if USE_EDITOR
     BoundingBox GetEditorBox() const override
@@ -39,10 +35,9 @@ public:
         return BoundingBox(_transform.Translation - size, _transform.Translation + size);
     }
 #endif
-    bool IntersectsItself(const Ray& ray, float& distance, Vector3& normal) override;
+    bool IntersectsItself(const Ray& ray, Real& distance, Vector3& normal) override;
 
 protected:
-
     // [Actors]
     void OnEnable() override;
     void OnDisable() override;

@@ -48,6 +48,7 @@ namespace Flax.Build.Bindings
 
         public static event GenerateModuleBindingsDelegate GenerateModuleBindings;
         public static event GenerateBinaryModuleBindingsDelegate GenerateBinaryModuleBindings;
+        public static ModuleInfo CurrentModule;
 
         public static ModuleInfo ParseModule(BuildData buildData, Module module, BuildOptions moduleOptions = null)
         {
@@ -217,6 +218,7 @@ namespace Flax.Build.Bindings
                     ScopeAccessStack = new Stack<AccessLevel>(),
                     PreprocessorDefines = new Dictionary<string, string>(),
                 };
+                context.PreprocessorDefines.Add("FLAX_BUILD_BINDINGS", "1");
                 context.EnterScope(fileInfo);
 
                 // Process the source code
@@ -295,10 +297,15 @@ namespace Flax.Build.Bindings
                             else
                                 throw new Exception($"Not supported location for event {eventInfo.Name} at line {tokenizer.CurrentLine}. Place it in the class to use API bindings for it.");
                         }
-                        else if (string.Equals(token.Value, ApiTokens.InjectCppCode, StringComparison.Ordinal))
+                        else if (string.Equals(token.Value, ApiTokens.Typedef, StringComparison.Ordinal))
                         {
-                            var injectCppCodeInfo = ParseInjectCppCode(ref context);
-                            fileInfo.AddChild(injectCppCodeInfo);
+                            var typeInfo = ParseTypedef(ref context);
+                            fileInfo.AddChild(typeInfo);
+                        }
+                        else if (string.Equals(token.Value, ApiTokens.InjectCode, StringComparison.Ordinal))
+                        {
+                            var injectCodeInfo = ParseInjectCode(ref context);
+                            fileInfo.AddChild(injectCodeInfo);
                         }
                         else if (string.Equals(token.Value, ApiTokens.Interface, StringComparison.Ordinal))
                         {
@@ -360,6 +367,7 @@ namespace Flax.Build.Bindings
                             break;
                         }
                         case "if":
+                        case "elif":
                         {
                             // Parse condition
                             var condition = string.Empty;
@@ -377,7 +385,7 @@ namespace Flax.Build.Bindings
                                 var negate = tokenValue[0] == '!';
                                 if (negate)
                                     tokenValue = tokenValue.Substring(1);
-                                tokenValue = ReplacePreProcessorDefines(tokenValue, context.PreprocessorDefines.Keys);
+                                tokenValue = ReplacePreProcessorDefines(tokenValue, context.PreprocessorDefines);
                                 tokenValue = ReplacePreProcessorDefines(tokenValue, moduleOptions.PublicDefinitions);
                                 tokenValue = ReplacePreProcessorDefines(tokenValue, moduleOptions.PrivateDefinitions);
                                 tokenValue = ReplacePreProcessorDefines(tokenValue, moduleOptions.CompileEnv.PreprocessorDefinitions);
@@ -484,6 +492,16 @@ namespace Flax.Build.Bindings
             return text;
         }
 
+        private static string ReplacePreProcessorDefines(string text, IDictionary<string, string> defines)
+        {
+            foreach (var e in defines)
+            {
+                if (string.Equals(text, e.Key, StringComparison.Ordinal))
+                    text = text.Replace(e.Key, string.IsNullOrEmpty(e.Value) ? "1" : e.Value);
+            }
+            return text;
+        }
+
         private static void ParsePreprocessorIf(FileInfo fileInfo, Tokenizer tokenizer, ref Token token)
         {
             int ifsCount = 1;
@@ -499,6 +517,22 @@ namespace Flax.Build.Bindings
                     case "ifdef":
                         ifsCount++;
                         break;
+                    case "else":
+                        if (ifsCount == 1)
+                        {
+                            // Continue with `else` block
+                            return;
+                        }
+                        break;
+                    case "elif":
+                        if (ifsCount == 1)
+                        {
+                            // Rollback to process conditional block
+                            tokenizer.PreviousToken();
+                            tokenizer.PreviousToken();
+                            return;
+                        }
+                        break;
                     case "endif":
                         ifsCount--;
                         break;
@@ -513,7 +547,7 @@ namespace Flax.Build.Bindings
         private static bool UseBindings(object type)
         {
             var apiTypeInfo = type as ApiTypeInfo;
-            if (apiTypeInfo != null && apiTypeInfo.IsInBuild)
+            if (apiTypeInfo != null && apiTypeInfo.SkipGeneration)
                 return false;
             if ((type is ModuleInfo || type is FileInfo) && apiTypeInfo != null)
             {
@@ -526,7 +560,7 @@ namespace Flax.Build.Bindings
             return type is ClassInfo ||
                    type is StructureInfo ||
                    type is InterfaceInfo ||
-                   type is InjectCppCodeInfo;
+                   type is InjectCodeInfo;
         }
 
         /// <summary>

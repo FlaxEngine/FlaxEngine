@@ -12,7 +12,6 @@ template<typename T, typename U>
 class Pair
 {
 public:
-
     /// <summary>
     /// The first element.
     /// </summary>
@@ -24,7 +23,6 @@ public:
     U Second;
 
 public:
-
     /// <summary>
     /// Initializes a new instance of the <see cref="Pair"/> class.
     /// </summary>
@@ -64,7 +62,6 @@ public:
     }
 
 public:
-
     Pair& operator=(const Pair& other)
     {
         if (this == &other)

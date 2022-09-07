@@ -5,8 +5,8 @@
 #include "Engine/Content/Content.h"
 
 PACK_STRUCT(struct Data {
-    Vector2 TexelSize;
-    Vector2 Padding;
+    Float2 TexelSize;
+    Float2 Padding;
     });
 
 String MultiScaler::ToString() const

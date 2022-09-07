@@ -12,6 +12,7 @@ namespace FlaxEditor.Utilities
     /// <summary>
     /// The Shunting-Yard algorithm parsing utilities.
     /// </summary>
+    [HideInEditor]
     public static class ShuntingYard
     {
         /// <summary>
@@ -33,6 +34,7 @@ namespace FlaxEditor.Utilities
         /// <summary>
         /// Types of possible tokens used in Shunting-Yard parser.
         /// </summary>
+        [HideInEditor]
         public enum TokenType
         {
             /// <summary>
@@ -272,8 +274,7 @@ namespace FlaxEditor.Utilities
 
                 // Operators go on stack, unless last operator on stack has higher precedence
                 case TokenType.Operator:
-                    while (stack.Any() && stack.Peek().Type == TokenType.Operator &&
-                           CompareOperators(tok.Value, stack.Peek().Value))
+                    while (stack.Any() && stack.Peek().Type == TokenType.Operator && CompareOperators(tok.Value, stack.Peek().Value))
                     {
                         yield return stack.Pop();
                     }

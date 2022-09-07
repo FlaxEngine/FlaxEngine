@@ -1,6 +1,7 @@
 // Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 using System;
+using System.Collections.Generic;
 using FlaxEditor.Surface.Elements;
 using FlaxEditor.Utilities;
 using FlaxEngine;
@@ -21,14 +22,19 @@ namespace FlaxEditor.Surface.ContextMenu
         public readonly VisjectCM ContextMenu;
 
         /// <summary>
-        /// The archetype.
+        /// The archetypes (one or more).
         /// </summary>
-        public readonly GroupArchetype Archetype;
+        public readonly List<GroupArchetype> Archetypes = new List<GroupArchetype>();
 
         /// <summary>
         /// A computed score for the context menu order.
         /// </summary>
         public float SortScore;
+
+        /// <summary>
+        /// The group name.
+        /// </summary>
+        public string Name;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="VisjectCMGroup"/> class.
@@ -38,7 +44,8 @@ namespace FlaxEditor.Surface.ContextMenu
         public VisjectCMGroup(VisjectCM cm, GroupArchetype archetype)
         {
             ContextMenu = cm;
-            Archetype = archetype;
+            Archetypes.Add(archetype);
+            Name = archetype.Name;
         }
 
         /// <summary>
@@ -148,7 +155,7 @@ namespace FlaxEditor.Surface.ContextMenu
                 int order = -1 * SortScore.CompareTo(otherGroup.SortScore);
                 if (order == 0)
                 {
-                    order = string.Compare(Archetype.Name, otherGroup.Archetype.Name, StringComparison.InvariantCulture);
+                    order = string.Compare(Name, otherGroup.Name, StringComparison.InvariantCulture);
                 }
                 return order;
             }

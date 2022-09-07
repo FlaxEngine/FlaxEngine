@@ -36,9 +36,9 @@ API_STRUCT(InBuild) struct FLAXENGINE_API VariantType
         Blob,
         Enum,
 
-        Vector2,
-        Vector3,
-        Vector4,
+        Float2,
+        Float3,
+        Float4,
         Color,
         Guid,
         BoundingBox,
@@ -61,11 +61,23 @@ API_STRUCT(InBuild) struct FLAXENGINE_API VariantType
         Int16,
         Uint16,
 
-        MAX
+        Double2,
+        Double3,
+        Double4,
+
+        MAX,
+#if USE_LARGE_WORLDS
+        Vector2 = Double2,
+        Vector3 = Double3,
+        Vector4 = Double4,
+#else
+        Vector2 = Float2,
+        Vector3 = Float3,
+        Vector4 = Float4,
+#endif
     };
 
 public:
-
     /// <summary>
     /// The type of the variant.
     /// </summary>
@@ -77,7 +89,6 @@ public:
     char* TypeName;
 
 public:
-
     FORCE_INLINE VariantType()
     {
         Type = Null;
@@ -103,7 +114,6 @@ public:
     }
 
 public:
-
     VariantType& operator=(const Types& type);
     VariantType& operator=(VariantType&& other);
     VariantType& operator=(const VariantType& other);
@@ -116,7 +126,6 @@ public:
     }
 
 public:
-
     void SetTypeName(const StringView& typeName);
     void SetTypeName(const StringAnsiView& typeName);
     const char* GetTypeName() const;
@@ -162,11 +171,10 @@ API_STRUCT(InBuild) struct FLAXENGINE_API Variant
 
         Dictionary<Variant, Variant, HeapAllocation>* AsDictionary;
 
-        byte AsData[16];
+        byte AsData[24];
     };
 
 public:
-
     // 0.0f (floating-point value type)
     static const Variant Zero;
 
@@ -183,7 +191,6 @@ public:
     static const Variant True;
 
 public:
-
     FORCE_INLINE Variant()
     {
     }
@@ -212,9 +219,12 @@ public:
     Variant(const Char* v);
     Variant(const char* v);
     Variant(const Guid& v);
-    Variant(const Vector2& v);
-    Variant(const Vector3& v);
-    Variant(const Vector4& v);
+    Variant(const Float2& v);
+    Variant(const Float3& v);
+    Variant(const Float4& v);
+    Variant(const Double2& v);
+    Variant(const Double3& v);
+    Variant(const Double4& v);
     Variant(const Int2& v);
     Variant(const Int3& v);
     Variant(const Int4& v);
@@ -228,6 +238,7 @@ public:
     explicit Variant(const Matrix& v);
     Variant(Array<Variant, HeapAllocation>&& v);
     Variant(const Array<Variant, HeapAllocation>& v);
+    explicit Variant(Dictionary<Variant, Variant, HeapAllocation>&& v);
     explicit Variant(const Dictionary<Variant, Variant, HeapAllocation>& v);
     explicit Variant(const Span<byte>& v);
     explicit Variant(const CommonValue& v);
@@ -235,7 +246,6 @@ public:
     ~Variant();
 
 public:
-
     Variant& operator=(Variant&& other);
     Variant& operator=(const Variant& other);
     bool operator==(const Variant& other) const;
@@ -262,7 +272,6 @@ public:
     }
 
 public:
-
     explicit operator bool() const;
     explicit operator Char() const;
     explicit operator int8() const;
@@ -276,14 +285,17 @@ public:
     explicit operator float() const;
     explicit operator double() const;
     explicit operator void*() const;
-    explicit operator StringView() const;       // Returned StringView, if not empty, is guaranteed to point to a null terminated buffer.
-    explicit operator StringAnsiView() const;   // Returned StringView, if not empty, is guaranteed to point to a null terminated buffer.
+    explicit operator StringView() const; // Returned StringView, if not empty, is guaranteed to point to a null terminated buffer.
+    explicit operator StringAnsiView() const; // Returned StringView, if not empty, is guaranteed to point to a null terminated buffer.
     explicit operator ScriptingObject*() const;
     explicit operator struct _MonoObject*() const;
     explicit operator Asset*() const;
-    explicit operator Vector2() const;
-    explicit operator Vector3() const;
-    explicit operator Vector4() const;
+    explicit operator Float2() const;
+    explicit operator Float3() const;
+    explicit operator Float4() const;
+    explicit operator Double2() const;
+    explicit operator Double3() const;
+    explicit operator Double4() const;
     explicit operator Int2() const;
     explicit operator Int3() const;
     explicit operator Int4() const;
@@ -298,19 +310,34 @@ public:
     explicit operator Rectangle() const;
 
     const Vector2& AsVector2() const;
-    Vector3& AsVector3();
     const Vector3& AsVector3() const;
     const Vector4& AsVector4() const;
+    const Float2& AsFloat2() const;
+    Float3& AsFloat3();
+    const Float3& AsFloat3() const;
+    const Float4& AsFloat4() const;
+    const Double2& AsDouble2() const;
+    const Double3& AsDouble3() const;
+    const Double4& AsDouble4() const;
     const Int2& AsInt2() const;
     const Int3& AsInt3() const;
     const Int4& AsInt4() const;
     const Color& AsColor() const;
     const Quaternion& AsQuaternion() const;
+    const Rectangle& AsRectangle() const;
+    const Guid& AsGuid() const;
+    BoundingSphere& AsBoundingSphere();
+    const BoundingSphere& AsBoundingSphere() const;
+    BoundingBox& AsBoundingBox();
+    const BoundingBox& AsBoundingBox() const;
+    Ray& AsRay();
+    const Ray& AsRay() const;
+    const Transform& AsTransform() const;
+    const Matrix& AsMatrix() const;
     Array<Variant, HeapAllocation>& AsArray();
     const Array<Variant, HeapAllocation>& AsArray() const;
 
 public:
-
     void SetType(const VariantType& type);
     void SetType(VariantType&& type);
     void SetString(const StringView& str);
@@ -330,7 +357,6 @@ public:
     }
 
 public:
-
     template<typename T>
     static typename TEnableIf<TIsEnum<T>::Value, Variant>::Type Enum(VariantType&& type, const T value)
     {
@@ -357,17 +383,8 @@ public:
     static Variant Lerp(const Variant& a, const Variant& b, float alpha);
 
 private:
-
-    void OnObjectDeleted(ScriptingObject* obj)
-    {
-        AsObject = nullptr;
-    }
-
-    void OnAssetUnloaded(Asset* obj)
-    {
-        AsAsset = nullptr;
-    }
-
+    void OnObjectDeleted(ScriptingObject* obj);
+    void OnAssetUnloaded(Asset* obj);
     void AllocStructure();
     void CopyStructure(void* src);
     void FreeStructure();

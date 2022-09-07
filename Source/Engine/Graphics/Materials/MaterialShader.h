@@ -10,7 +10,7 @@
 /// <summary>
 /// Current materials shader version.
 /// </summary>
-#define MATERIAL_GRAPH_VERSION 150
+#define MATERIAL_GRAPH_VERSION 156
 
 class Material;
 class GPUShader;
@@ -23,7 +23,6 @@ class MemoryReadStream;
 class MaterialShader : public IMaterial
 {
 protected:
-
     struct PipelineStateCache
     {
         GPUPipelineState* PS[6];
@@ -57,7 +56,6 @@ protected:
     };
 
 protected:
-
     bool _isLoaded;
     GPUShader* _shader;
     GPUConstantBuffer* _cb;
@@ -65,7 +63,6 @@ protected:
     MaterialInfo _info;
 
 protected:
-
     /// <summary>
     /// Init
     /// </summary>
@@ -73,14 +70,12 @@ protected:
     MaterialShader(const StringView& name);
 
 public:
-
     /// <summary>
     /// Finalizes an instance of the <see cref="MaterialShader"/> class.
     /// </summary>
     virtual ~MaterialShader();
 
 public:
-
     /// <summary>
     /// Creates and loads the material from the data.
     /// </summary>
@@ -98,21 +93,18 @@ public:
     /// <returns>The created and loaded material or null if failed.</returns>
     static MaterialShader* CreateDummy(MemoryReadStream& shaderCacheStream, const MaterialInfo& info);
 
-    GPUShader* GetShader() const;
-
     /// <summary>
     /// Clears the loaded data.
     /// </summary>
     virtual void Unload();
 
 protected:
-
     bool Load(MemoryReadStream& shaderCacheStream, const MaterialInfo& info);
     virtual bool Load() = 0;
 
 public:
-
     // [IMaterial]
     const MaterialInfo& GetInfo() const override;
+    GPUShader* GetShader() const override;
     bool IsReady() const override;
 };

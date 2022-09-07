@@ -51,7 +51,6 @@ class ScriptingObject;
 struct FLAXENGINE_API CommonValue
 {
 public:
-
     /// <summary>
     /// Type
     /// </summary>
@@ -62,9 +61,9 @@ public:
         bool AsBool;
         int32 AsInteger;
         float AsFloat;
-        Vector2 AsVector2;
-        Vector3 AsVector3;
-        Vector4 AsVector4;
+        Float2 AsVector2;
+        Float3 AsVector3;
+        Float4 AsVector4;
         Color AsColor;
         Guid AsGuid;
         Char* AsString;
@@ -86,7 +85,6 @@ public:
     };
 
 public:
-
     // 0.0f (floating-point value type)
     static const CommonValue Zero;
 
@@ -103,7 +101,6 @@ public:
     static const CommonValue True;
 
 public:
-
     /// <summary>
     /// Default constructor (bool)
     /// </summary>
@@ -147,7 +144,7 @@ public:
     /// Init
     /// </summary>
     /// <param name="value">Value</param>
-    CommonValue(const Vector2& value)
+    CommonValue(const Float2& value)
         : Type(CommonType::Vector2)
         , AsVector2(value)
     {
@@ -157,7 +154,7 @@ public:
     /// Init
     /// </summary>
     /// <param name="value">Value</param>
-    CommonValue(const Vector3& value)
+    CommonValue(const Float3& value)
         : Type(CommonType::Vector3)
         , AsVector3(value)
     {
@@ -167,7 +164,7 @@ public:
     /// Init
     /// </summary>
     /// <param name="value">Value</param>
-    CommonValue(const Vector4& value)
+    CommonValue(const Float4& value)
         : Type(CommonType::Vector4)
         , AsVector4(value)
     {
@@ -365,7 +362,6 @@ public:
     }
 
 public:
-
     /// <summary>
     /// Assignment operator
     /// </summary>
@@ -426,7 +422,6 @@ public:
     }
 
 public:
-
     /// <summary>
     /// Gets value as boolean (if can convert it)
     /// </summary>
@@ -554,7 +549,7 @@ public:
     /// Gets value as Vector2 (if can convert it)
     /// </summary>
     /// <returns>Value</returns>
-    FORCE_INLINE Vector2 GetVector2() const
+    FORCE_INLINE Float2 GetVector2() const
     {
         bool isValid;
         return GetVector2(isValid);
@@ -565,37 +560,35 @@ public:
     /// </summary>
     /// <param name="isValid">Contains true if value has been converted, otherwise false</param>
     /// <returns>Value</returns>
-    Vector2 GetVector2(bool& isValid) const
+    Float2 GetVector2(bool& isValid) const
     {
         isValid = true;
-
         switch (Type)
         {
         case CommonType::Bool:
-            return Vector2(AsBool ? 1.0f : 0.0f);
+            return Float2(AsBool ? 1.0f : 0.0f);
         case CommonType::Integer:
-            return Vector2(static_cast<float>(AsInteger));
+            return Float2(static_cast<float>(AsInteger));
         case CommonType::Float:
-            return Vector2(AsFloat);
+            return Float2(AsFloat);
         case CommonType::Vector2:
             return AsVector2;
         case CommonType::Vector3:
-            return Vector2(AsVector3);
+            return Float2(AsVector3);
         case CommonType::Vector4:
-            return Vector2(AsVector4);
+            return Float2(AsVector4);
         case CommonType::Color:
-            return Vector2(AsColor);
+            return Float2(AsColor);
         }
-
         isValid = false;
-        return Vector2::Zero;
+        return Float2::Zero;
     }
 
     /// <summary>
     /// Gets value as Vector3 (if can convert it)
     /// </summary>
     /// <returns>Value</returns>
-    FORCE_INLINE Vector3 GetVector3() const
+    FORCE_INLINE Float3 GetVector3() const
     {
         bool isValid;
         return GetVector3(isValid);
@@ -606,20 +599,19 @@ public:
     /// </summary>
     /// <param name="isValid">Contains true if value has been converted, otherwise false</param>
     /// <returns>Value</returns>
-    Vector3 GetVector3(bool& isValid) const
+    Float3 GetVector3(bool& isValid) const
     {
         isValid = true;
-
         switch (Type)
         {
         case CommonType::Bool:
-            return Vector3(AsBool ? 1.0f : 0.0f);
+            return Float3(AsBool ? 1.0f : 0.0f);
         case CommonType::Integer:
-            return Vector3(static_cast<float>(AsInteger));
+            return Float3(static_cast<float>(AsInteger));
         case CommonType::Float:
-            return Vector3(AsFloat);
+            return Float3(AsFloat);
         case CommonType::Vector2:
-            return Vector3(AsVector2, 0);
+            return Float3(AsVector2, 0);
         case CommonType::Vector3:
             return AsVector3;
         case CommonType::Vector4:
@@ -627,16 +619,15 @@ public:
         case CommonType::Color:
             return Vector3(AsColor);
         }
-
         isValid = false;
-        return Vector3::Zero;
+        return Float3::Zero;
     }
 
     /// <summary>
     /// Gets value as Vector4 (if can convert it)
     /// </summary>
     /// <returns>Value</returns>
-    FORCE_INLINE Vector4 GetVector4() const
+    FORCE_INLINE Float4 GetVector4() const
     {
         bool isValid;
         return GetVector4(isValid);
@@ -647,30 +638,28 @@ public:
     /// </summary>
     /// <param name="isValid">Contains true if value has been converted, otherwise false</param>
     /// <returns>Value</returns>
-    Vector4 GetVector4(bool& isValid) const
+    Float4 GetVector4(bool& isValid) const
     {
         isValid = true;
-
         switch (Type)
         {
         case CommonType::Bool:
-            return Vector4(AsBool ? 1.0f : 0.0f);
+            return Float4(AsBool ? 1.0f : 0.0f);
         case CommonType::Integer:
-            return Vector4(static_cast<float>(AsInteger));
+            return Float4(static_cast<float>(AsInteger));
         case CommonType::Float:
-            return Vector4(AsFloat);
+            return Float4(AsFloat);
         case CommonType::Vector2:
-            return Vector4(AsVector2, 0, 0);
+            return Float4(AsVector2, 0, 0);
         case CommonType::Vector3:
-            return Vector4(AsVector3, 0);
+            return Float4(AsVector3, 0);
         case CommonType::Vector4:
             return AsVector4;
         case CommonType::Color:
-            return Vector4(AsColor);
+            return Float4(AsColor);
         }
-
         isValid = false;
-        return Vector4::Zero;
+        return Float4::Zero;
     }
 
     /// <summary>
@@ -748,7 +737,6 @@ public:
     }
 
 public:
-
     /// <summary>
     /// Set new value and change type to Bool
     /// </summary>
@@ -783,7 +771,7 @@ public:
     /// Set new value and change type to Vector2
     /// </summary>
     /// <param name="value">Value to assign</param>
-    void Set(const Vector2& value)
+    void Set(const Float2& value)
     {
         SetType(CommonType::Vector2);
         AsVector2 = value;
@@ -793,7 +781,7 @@ public:
     /// Set new value and change type to Vector3
     /// </summary>
     /// <param name="value">Value to assign</param>
-    void Set(const Vector3& value)
+    void Set(const Float3& value)
     {
         SetType(CommonType::Vector3);
         AsVector3 = value;
@@ -803,7 +791,7 @@ public:
     /// Set new value and change type to Vector4
     /// </summary>
     /// <param name="value">Value to assign</param>
-    void Set(const Vector4& value)
+    void Set(const Float4& value)
     {
         SetType(CommonType::Vector4);
         AsVector4 = value;
@@ -950,7 +938,6 @@ public:
     }
 
 public:
-
     /// <summary>
     /// Change common value type
     /// </summary>
@@ -981,7 +968,6 @@ public:
     }
 
 public:
-
     /// <summary>
     /// Casts value from its type to another
     /// </summary>
@@ -1033,7 +1019,6 @@ public:
     }
 
 public:
-
     friend bool operator==(const CommonValue& a, const CommonValue& b)
     {
         ASSERT(a.Type == b.Type);
@@ -1103,20 +1088,20 @@ public:
             return a.AsVector3 > b.AsVector3;
         case CommonType::Vector4:
             return a.AsVector4 > b.AsVector4;
-            //case CommonType::Color: return a.AsColor > b.AsColor;
-            //case CommonType::Guid: return a.AsGuid > b.AsGuid;
+        //case CommonType::Color: return a.AsColor > b.AsColor;
+        //case CommonType::Guid: return a.AsGuid > b.AsGuid;
         case CommonType::String:
             return StringUtils::Compare(a.AsString, b.AsString) > 0;
-            //case CommonType::Box: return a.AsBox > b.AsBox;
-            //case CommonType::Rotation: return a.AsRotation > b.AsRotation;
-            //case CommonType::Transform: return a.AsTransform > b.AsTransform;
-            //case CommonType::Sphere: return a.AsSphere > b.AsSphere;
-            //case CommonType::Rectangle: return a.AsRectangle > b.AsRectangle;
-            //case CommonType::Ray: return a.AsRay > b.AsRay;
+        //case CommonType::Box: return a.AsBox > b.AsBox;
+        //case CommonType::Rotation: return a.AsRotation > b.AsRotation;
+        //case CommonType::Transform: return a.AsTransform > b.AsTransform;
+        //case CommonType::Sphere: return a.AsSphere > b.AsSphere;
+        //case CommonType::Rectangle: return a.AsRectangle > b.AsRectangle;
+        //case CommonType::Ray: return a.AsRay > b.AsRay;
         case CommonType::Pointer:
         case CommonType::Object:
             return a.AsPointer > b.AsPointer;
-            //case CommonType::Matrix: return a.AsMatrix > b.AsMatrix;
+        //case CommonType::Matrix: return a.AsMatrix > b.AsMatrix;
         case CommonType::Blob:
             return a.AsBlob.Length > b.AsBlob.Length;
         default: CRASH;
@@ -1140,7 +1125,6 @@ public:
     }
 
 public:
-
     static bool NearEqual(const CommonValue& a, const CommonValue& b, float epsilon);
 
     static CommonValue Lerp(const CommonValue& a, const CommonValue& b, float alpha);
@@ -1149,7 +1133,6 @@ public:
     Guid GetObjectId() const;
 
 private:
-
     void OnObjectDeleted(ScriptingObject* obj)
     {
         AsObject = nullptr;

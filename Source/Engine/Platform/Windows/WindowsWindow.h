@@ -27,9 +27,11 @@ private:
     bool _isResizing = false;
     bool _isSwitchingFullScreen = false;
     bool _trackingMouse = false;
+    bool _clipCursorSet = false;
     bool _isDuringMaximize = false;
     Windows::HANDLE _monitor = nullptr;
-    Vector2 _clientSize;
+    Float2 _clientSize;
+    Windows::LONG _clipCursorRect[4];
     int32 _regionWidth = 0, _regionHeight = 0;
 
 public:
@@ -104,14 +106,14 @@ public:
     bool IsForegroundWindow() const override;
     void BringToFront(bool force = false) override;
     void SetClientBounds(const Rectangle& clientArea) override;
-    void SetPosition(const Vector2& position) override;
-    void SetClientPosition(const Vector2& position) override;
+    void SetPosition(const Float2& position) override;
+    void SetClientPosition(const Float2& position) override;
     void SetIsFullscreen(bool isFullscreen) override;
-    Vector2 GetPosition() const override;
-    Vector2 GetSize() const override;
-    Vector2 GetClientSize() const override;
-    Vector2 ScreenToClient(const Vector2& screenPos) const override;
-    Vector2 ClientToScreen(const Vector2& clientPos) const override;
+    Float2 GetPosition() const override;
+    Float2 GetSize() const override;
+    Float2 GetClientSize() const override;
+    Float2 ScreenToClient(const Float2& screenPos) const override;
+    Float2 ClientToScreen(const Float2& clientPos) const override;
     void FlashWindow() override;
     float GetOpacity() const override;
     void SetOpacity(float opacity) override;
@@ -120,6 +122,8 @@ public:
     DragDropEffect DoDragDrop(const StringView& data) override;
     void StartTrackingMouse(bool useMouseScreenOffset) override;
     void EndTrackingMouse() override;
+    void StartClippingCursor(const Rectangle& bounds) override;
+    void EndClippingCursor() override;
     void SetCursor(CursorType type) override;
 
 #if USE_EDITOR

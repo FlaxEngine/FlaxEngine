@@ -5,7 +5,6 @@
 #include "Engine/Core/Math/Math.h"
 #include "Engine/Level/Actors/BoxBrush.h"
 #include "Engine/Level/Actors/StaticModel.h"
-#include "Engine/ContentImporters/ImportTexture.h"
 #include "Engine/Level/Scene/Scene.h"
 #include "Engine/Level/Level.h"
 #include "Engine/Terrain/Terrain.h"
@@ -36,13 +35,9 @@ bool cacheStaticGeometryTree(Actor* actor, ShadowsOfMordor::Builder::SceneBuildC
         if (model && !model->WaitForLoaded())
         {
             entry.Type = ShadowsOfMordor::Builder::GeometryType::StaticModel;
-            entry.UVsBox = Rectangle(Vector2::Zero, Vector2::One);
+            entry.UVsBox = Rectangle(Float2::Zero, Float2::One);
             entry.AsStaticModel.Actor = staticModel;
             entry.Scale = Math::Clamp(staticModel->GetScaleInLightmap(), 0.0f, LIGHTMAP_SCALE_MAX);
-
-            // Spawn entry for each mesh
-            Matrix world;
-            staticModel->GetWorld(&world);
 
             // Use the first LOD
             const int32 lodIndex = 0;
@@ -61,18 +56,16 @@ bool cacheStaticGeometryTree(Actor* actor, ShadowsOfMordor::Builder::SceneBuildC
                     }
                     else
                     {
-                        LOG(Warning, "Model \'{0}\' mesh index {1} (lod: {2}) has missing lightmap UVs (at actor: {3})",
-                                   model->GetPath(),
-                                   meshIndex,
-                                   lodIndex,
-                                   staticModel->GetNamePath());
+                        LOG(Warning, "Model \'{0}\' mesh index {1} (lod: {2}) has missing lightmap UVs (at actor: {3})", model->GetPath(), meshIndex, lodIndex, staticModel->GetNamePath());
                     }
                 }
             }
 
             if (useLightmap && anyValid && entry.Scale > ZeroTolerance)
             {
-                entry.Box = model->GetBox(world);
+                Matrix worldMatrix;
+                staticModel->GetTransform().GetWorld(worldMatrix);
+                entry.Box = model->GetBox(worldMatrix);
                 results.Add(entry);
             }
             else
@@ -85,7 +78,7 @@ bool cacheStaticGeometryTree(Actor* actor, ShadowsOfMordor::Builder::SceneBuildC
     {
         entry.AsTerrain.Actor = terrain;
         entry.Type = ShadowsOfMordor::Builder::GeometryType::Terrain;
-        entry.UVsBox = Rectangle(Vector2::Zero, Vector2::One);
+        entry.UVsBox = Rectangle(Float2::Zero, Float2::One);
         entry.Scale = Math::Clamp(terrain->GetScaleInLightmap(), 0.0f, LIGHTMAP_SCALE_MAX);
         for (int32 patchIndex = 0; patchIndex < terrain->GetPatchesCount(); patchIndex++)
         {
@@ -115,7 +108,7 @@ bool cacheStaticGeometryTree(Actor* actor, ShadowsOfMordor::Builder::SceneBuildC
     {
         entry.AsFoliage.Actor = foliage;
         entry.Type = ShadowsOfMordor::Builder::GeometryType::Foliage;
-        entry.UVsBox = Rectangle(Vector2::Zero, Vector2::One);
+        entry.UVsBox = Rectangle(Float2::Zero, Float2::One);
         for (auto i = foliage->Instances.Begin(); i.IsNotEnd(); ++i)
         {
             auto& instance = *i;

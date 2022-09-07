@@ -107,6 +107,8 @@ void Log::Logger::Write(const StringView& msg)
 {
     const auto ptr = msg.Get();
     const auto length = msg.Length();
+    if (length <= 0)
+        return;
 
     LogLocker.Lock();
     if (IsDuringLog)
@@ -230,6 +232,8 @@ void Log::Logger::ProcessLogMessage(LogType type, const StringView& msg, fmt_fla
 
 void Log::Logger::Write(LogType type, const StringView& msg)
 {
+    if (msg.Length() <= 0)
+        return;
     const bool isError = IsError(type);
 
     // Create message for the log file

@@ -33,6 +33,8 @@
 #define CHECK_EXECUTE_IN_EDITOR
 #endif
 
+#define ACTOR_ORIENTATION_EPSILON 0.000000001f
+
 namespace
 {
     Actor* GetChildByPrefabObjectId(Actor* a, const Guid& prefabObjectId)
@@ -81,6 +83,7 @@ Actor::Actor(const SpawnParams& params)
     , _physicsScene(nullptr)
     , HideFlags(HideFlags::None)
 {
+    _drawNoCulling = 0;
 }
 
 SceneRendering* Actor::GetSceneRendering() const
@@ -100,22 +103,28 @@ void Actor::SetSceneInHierarchy(Scene* scene)
 
 void Actor::OnEnableInHierarchy()
 {
-    OnEnable();
-
-    for (int32 i = 0; i < Children.Count(); i++)
+    if (IsActiveInHierarchy() && GetScene() && !_isEnabled)
     {
-        Children[i]->OnEnableInHierarchy();
+        OnEnable();
+
+        for (int32 i = 0; i < Children.Count(); i++)
+        {
+            Children[i]->OnEnableInHierarchy();
+        }
     }
 }
 
 void Actor::OnDisableInHierarchy()
 {
-    for (int32 i = 0; i < Children.Count(); i++)
+    if (IsActiveInHierarchy() && GetScene() && _isEnabled)
     {
-        Children[i]->OnDisableInHierarchy();
-    }
+        for (int32 i = 0; i < Children.Count(); i++)
+        {
+            Children[i]->OnDisableInHierarchy();
+        }
 
-    OnDisable();
+        OnDisable();
+    }
 }
 
 bool Actor::IsSubClassOf(const Actor* object, const MClass* klass)
@@ -330,7 +339,7 @@ void Actor::SetParent(Actor* value, bool worldPositionsStays, bool canBreakPrefa
         ASSERT(_parent != nullptr && GetScene() != nullptr);
 
         // Fire events
-        PostSpawn();
+        InitializeHierarchy();
         {
             SceneBeginData beginData;
             BeginPlay(&beginData);
@@ -416,6 +425,17 @@ Array<Actor*> Actor::GetChildren(const MClass* type) const
         if (child->GetClass()->IsSubClassOf(type))
             result.Add(child);
     return result;
+}
+
+void Actor::DestroyChildren(float timeLeft)
+{
+    Array<Actor*> children = Children;
+    const bool useGameTime = timeLeft > ZeroTolerance;
+    for (Actor* child : children)
+    {
+        child->SetParent(nullptr, false, false);
+        child->DeleteObject(timeLeft, useGameTime);
+    }
 }
 
 bool Actor::HasTag(const StringView& tag) const
@@ -551,7 +571,7 @@ void Actor::SetStaticFlags(StaticFlags value)
 void Actor::SetTransform(const Transform& value)
 {
     CHECK(!value.IsNanOrInfinity());
-    if (!Transform::NearEqual(_transform, value))
+    if (!(Vector3::NearEqual(_transform.Translation, value.Translation) && Quaternion::NearEqual(_transform.Orientation, value.Orientation, ACTOR_ORIENTATION_EPSILON) && Float3::NearEqual(_transform.Scale, value.Scale)))
     {
         if (_parent)
             _parent->GetTransform().WorldToLocal(value, _localTransform);
@@ -577,7 +597,7 @@ void Actor::SetPosition(const Vector3& value)
 void Actor::SetOrientation(const Quaternion& value)
 {
     CHECK(!value.IsNanOrInfinity());
-    if (!Quaternion::NearEqual(_transform.Orientation, value))
+    if (!Quaternion::NearEqual(_transform.Orientation, value, ACTOR_ORIENTATION_EPSILON))
     {
         if (_parent)
         {
@@ -594,13 +614,13 @@ void Actor::SetOrientation(const Quaternion& value)
     }
 }
 
-void Actor::SetScale(const Vector3& value)
+void Actor::SetScale(const Float3& value)
 {
     CHECK(!value.IsNanOrInfinity());
-    if (!Vector3::NearEqual(_transform.Scale, value))
+    if (!Float3::NearEqual(_transform.Scale, value))
     {
         if (_parent)
-            Vector3::Divide(value, _parent->GetScale(), _localTransform.Scale);
+            Float3::Divide(value, _parent->GetScale(), _localTransform.Scale);
         else
             _localTransform.Scale = value;
         OnTransformChanged();
@@ -621,18 +641,18 @@ void Actor::SetRotation(const Matrix& value)
     SetOrientation(orientation);
 }
 
-void Actor::SetDirection(const Vector3& value)
+void Actor::SetDirection(const Float3& value)
 {
     CHECK(!value.IsNanOrInfinity());
     Quaternion orientation;
-    if (Vector3::Dot(value, Vector3::Up) >= 0.999f)
+    if (Float3::Dot(value, Float3::Up) >= 0.999f)
     {
-        Quaternion::RotationAxis(Vector3::Left, PI_HALF, orientation);
+        Quaternion::RotationAxis(Float3::Left, PI_HALF, orientation);
     }
     else
     {
-        const Vector3 right = Vector3::Cross(value, Vector3::Up);
-        const Vector3 up = Vector3::Cross(right, value);
+        const Float3 right = Float3::Cross(value, Float3::Up);
+        const Float3 up = Float3::Cross(right, value);
         Quaternion::LookRotation(value, up, orientation);
     }
     SetOrientation(orientation);
@@ -646,7 +666,7 @@ void Actor::ResetLocalTransform()
 void Actor::SetLocalTransform(const Transform& value)
 {
     CHECK(!value.IsNanOrInfinity());
-    if (!Transform::NearEqual(_localTransform, value))
+    if (!(Vector3::NearEqual(_localTransform.Translation, value.Translation) && Quaternion::NearEqual(_localTransform.Orientation, value.Orientation, ACTOR_ORIENTATION_EPSILON) && Float3::NearEqual(_localTransform.Scale, value.Scale)))
     {
         _localTransform = value;
         OnTransformChanged();
@@ -668,18 +688,17 @@ void Actor::SetLocalOrientation(const Quaternion& value)
     CHECK(!value.IsNanOrInfinity());
     Quaternion v = value;
     v.Normalize();
-
-    if (!Quaternion::NearEqual(_localTransform.Orientation, v))
+    if (!Quaternion::NearEqual(_localTransform.Orientation, v, ACTOR_ORIENTATION_EPSILON))
     {
         _localTransform.Orientation = v;
         OnTransformChanged();
     }
 }
 
-void Actor::SetLocalScale(const Vector3& value)
+void Actor::SetLocalScale(const Float3& value)
 {
     CHECK(!value.IsNanOrInfinity());
-    if (!Vector3::NearEqual(_localTransform.Scale, value))
+    if (!Float3::NearEqual(_localTransform.Scale, value))
     {
         _localTransform.Scale = value;
         OnTransformChanged();
@@ -766,44 +785,18 @@ void Actor::BreakPrefabLink()
     }
 }
 
-void Actor::PostLoad()
+void Actor::Initialize()
 {
-    // Cache scene
+    ASSERT(!IsDuringPlay());
+
+    // Cache
     if (_parent)
         _scene = _parent->GetScene();
-
-    // Cache flag
     _isActiveInHierarchy = _isActive && (_parent == nullptr || _parent->IsActiveInHierarchy());
 
     // Use lazy creation for the managed instance, just register the object
     if (!IsRegistered())
         RegisterObject();
-}
-
-void Actor::PostSpawn()
-{
-    // Cache scene
-    if (_parent)
-        _scene = _parent->GetScene();
-
-    // Cache flag
-    _isActiveInHierarchy = _isActive && (_parent == nullptr || _parent->IsActiveInHierarchy());
-
-    // Create managed object
-    if (!HasManagedInstance())
-        CreateManaged();
-
-    // Init scripts
-    for (int32 i = 0; i < Scripts.Count(); i++)
-    {
-        Scripts[i]->PostSpawn();
-    }
-
-    // Init children
-    for (int32 i = 0; i < Children.Count(); i++)
-    {
-        Children[i]->PostSpawn();
-    }
 }
 
 void Actor::BeginPlay(SceneBeginData* data)
@@ -841,13 +834,6 @@ void Actor::BeginPlay(SceneBeginData* data)
     }
 
     // Fire events for scripting
-    for (auto* script : Scripts)
-    {
-        CHECK_EXECUTE_IN_EDITOR
-        {
-            script->OnAwake();
-        }
-    }
     if (IsActiveInHierarchy() && GetScene() && !_isEnabled)
     {
         OnEnable();
@@ -1217,47 +1203,19 @@ void Actor::UnregisterObjectHierarchy()
     }
 }
 
+void Actor::InitializeHierarchy()
+{
+    Initialize();
+
+    for (int32 i = 0; i < Scripts.Count(); i++)
+        Scripts[i]->Initialize();
+
+    for (int32 i = 0; i < Children.Count(); i++)
+        Children[i]->InitializeHierarchy();
+}
+
 void Actor::Draw(RenderContext& renderContext)
 {
-}
-
-void Actor::DrawGeneric(RenderContext& renderContext)
-{
-    // Generic drawing uses only GBuffer Fill Pass and simple frustum culling (see SceneRendering for more optimized drawing)
-    if (renderContext.View.Pass & DrawPass::GBuffer)
-    {
-        Draw(renderContext);
-    }
-}
-
-void Actor::DrawHierarchy(RenderContext& renderContext)
-{
-    // Draw actor itself
-    DrawGeneric(renderContext);
-
-    // Draw children
-    if (renderContext.View.IsOfflinePass)
-    {
-        for (int32 i = 0; i < Children.Count(); i++)
-        {
-            auto child = Children[i];
-            if (child->GetIsActive() && child->GetStaticFlags() & renderContext.View.StaticFlagsMask)
-            {
-                child->DrawHierarchy(renderContext);
-            }
-        }
-    }
-    else
-    {
-        for (int32 i = 0; i < Children.Count(); i++)
-        {
-            auto child = Children[i];
-            if (child->GetIsActive())
-            {
-                child->DrawHierarchy(renderContext);
-            }
-        }
-    }
 }
 
 #if USE_EDITOR
@@ -1394,12 +1352,12 @@ bool Actor::HasActorInChildren(Actor* a) const
     return Children.Contains(a);
 }
 
-bool Actor::IntersectsItself(const Ray& ray, float& distance, Vector3& normal)
+bool Actor::IntersectsItself(const Ray& ray, Real& distance, Vector3& normal)
 {
-    return GetBox().Intersects(ray, distance, normal);
+    return _box.Intersects(ray, distance, normal);
 }
 
-Actor* Actor::Intersects(const Ray& ray, float& distance, Vector3& normal)
+Actor* Actor::Intersects(const Ray& ray, Real& distance, Vector3& normal)
 {
     if (!_isActive)
         return nullptr;
@@ -1407,7 +1365,7 @@ Actor* Actor::Intersects(const Ray& ray, float& distance, Vector3& normal)
     // Check itself
     bool result = IntersectsItself(ray, distance, normal);
     Actor* minTarget = result ? (Actor*)this : nullptr;
-    float minDistance = result ? distance : MAX_float;
+    Real minDistance = result ? distance : MAX_Real;
     Vector3 minDistanceNormal = result ? normal : Vector3::Up;
 
     // Check all children
@@ -1446,8 +1404,8 @@ Quaternion Actor::LookingAt(const Vector3& worldPos) const
     if (direction.LengthSquared() < ZeroTolerance)
         return _parent->GetOrientation();
 
-    const Vector3 newForward = Vector3::Normalize(direction);
-    const Vector3 oldForward = _transform.Orientation * Vector3::Forward;
+    const Float3 newForward = Vector3::Normalize(direction);
+    const Float3 oldForward = _transform.Orientation * Vector3::Forward;
 
     Quaternion orientation;
     if ((newForward + oldForward).LengthSquared() < 0.00005f)
@@ -1460,7 +1418,7 @@ Quaternion Actor::LookingAt(const Vector3& worldPos) const
     {
         // Derive shortest arc to new direction
         Quaternion rotQuat;
-        Quaternion::GetRotationFromTo(oldForward, newForward, rotQuat, Vector3::Zero);
+        Quaternion::GetRotationFromTo(oldForward, newForward, rotQuat, Float3::Zero);
         orientation = rotQuat * _transform.Orientation;
     }
 
@@ -1472,10 +1430,9 @@ Quaternion Actor::LookingAt(const Vector3& worldPos, const Vector3& worldUp) con
     const Vector3 direction = worldPos - _transform.Translation;
     if (direction.LengthSquared() < ZeroTolerance)
         return _parent->GetOrientation();
-    const Vector3 forward = Vector3::Normalize(direction);
-    const Vector3 up = Vector3::Normalize(worldUp);
-
-    if (Math::IsOne(Vector3::Dot(forward, up)))
+    const Float3 forward = Vector3::Normalize(direction);
+    const Float3 up = Vector3::Normalize(worldUp);
+    if (Math::IsOne(Float3::Dot(forward, up)))
     {
         return LookingAt(worldPos);
     }
@@ -1713,7 +1670,7 @@ bool Actor::FromBytes(const Span<byte>& data, Array<Actor*>& output, ISerializeM
     }
     for (int32 i = 0; i < parents->Count(); i++)
     {
-        parents->At(i)->PostSpawn();
+        parents->At(i)->InitializeHierarchy();
     }
     for (int32 i = 0; i < parents->Count(); i++)
     {

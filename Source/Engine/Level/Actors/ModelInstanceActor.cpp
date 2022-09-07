@@ -11,35 +11,57 @@ ModelInstanceActor::ModelInstanceActor(const SpawnParams& params)
 
 void ModelInstanceActor::SetEntries(const Array<ModelInstanceEntry>& value)
 {
+    WaitForModelLoad();
+    bool anyChanged = false;
     Entries.Resize(value.Count());
     for (int32 i = 0; i < value.Count(); i++)
+    {
+        anyChanged |= Entries[i] != value[i];
         Entries[i] = value[i];
+    }
+    if (anyChanged && _sceneRenderingKey != -1)
+        GetSceneRendering()->UpdateActor(this, _sceneRenderingKey);
 }
 
 void ModelInstanceActor::SetMaterial(int32 entryIndex, MaterialBase* material)
 {
+    WaitForModelLoad();
+    if (Entries.Count() == 0 && !material)
+        return;
     CHECK(entryIndex >= 0 && entryIndex < Entries.Count());
+    if (Entries[entryIndex].Material == material)
+        return;
     Entries[entryIndex].Material = material;
+    if (_sceneRenderingKey != -1)
+        GetSceneRendering()->UpdateActor(this, _sceneRenderingKey);
 }
 
 MaterialInstance* ModelInstanceActor::CreateAndSetVirtualMaterialInstance(int32 entryIndex)
 {
+    WaitForModelLoad();
+    CHECK_RETURN(entryIndex >= 0 && entryIndex < Entries.Count(), nullptr);
     auto material = Entries[entryIndex].Material.Get();
     CHECK_RETURN(material && !material->WaitForLoaded(), nullptr);
     const auto result = material->CreateVirtualInstance();
     Entries[entryIndex].Material = result;
+    if (_sceneRenderingKey != -1)
+        GetSceneRendering()->UpdateActor(this, _sceneRenderingKey);
     return result;
+}
+
+void ModelInstanceActor::WaitForModelLoad()
+{
 }
 
 void ModelInstanceActor::OnLayerChanged()
 {
     if (_sceneRenderingKey != -1)
-        GetSceneRendering()->UpdateGeometry(this, _sceneRenderingKey);
+        GetSceneRendering()->UpdateActor(this, _sceneRenderingKey);
 }
 
 void ModelInstanceActor::OnEnable()
 {
-    _sceneRenderingKey = GetSceneRendering()->AddGeometry(this);
+    GetSceneRendering()->AddActor(this, _sceneRenderingKey);
 
     // Base
     Actor::OnEnable();
@@ -47,8 +69,8 @@ void ModelInstanceActor::OnEnable()
 
 void ModelInstanceActor::OnDisable()
 {
-    GetSceneRendering()->RemoveGeometry(this, _sceneRenderingKey);
-
     // Base
     Actor::OnDisable();
+
+    GetSceneRendering()->RemoveActor(this, _sceneRenderingKey);
 }

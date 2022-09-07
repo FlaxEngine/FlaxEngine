@@ -16,7 +16,6 @@
 class CreateMaterialFunction
 {
 public:
-
     /// <summary>
     /// Creates the asset.
     /// </summary>

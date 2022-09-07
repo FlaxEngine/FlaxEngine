@@ -16,6 +16,11 @@ namespace Flax.Build
         private static Version _engineVersion;
 
         /// <summary>
+        /// Gets the engine project.
+        /// </summary>
+        public static ProjectInfo EngineProject => ProjectInfo.Load(Path.Combine(Globals.EngineRoot, "Flax.flaxproj"));
+
+        /// <summary>
         /// Gets the engine version.
         /// </summary>
         public static Version EngineVersion
@@ -24,7 +29,7 @@ namespace Flax.Build
             {
                 if (_engineVersion == null)
                 {
-                    _engineVersion = ProjectInfo.Load(Path.Combine(Globals.EngineRoot, "Flax.flaxproj")).Version;
+                    _engineVersion = EngineProject.Version;
                     Log.Verbose(string.Format("Engine build version: {0}", _engineVersion));
                 }
                 return _engineVersion;
@@ -170,15 +175,13 @@ namespace Flax.Build
 
             // Link executable
             exeBuildOptions.LinkEnv.InputLibraries.Add(Path.Combine(buildOptions.OutputFolder, buildOptions.Platform.GetLinkOutputFileName(OutputName, LinkerOutput.SharedLibrary)));
-            foreach (var e in mainModuleOptions.OutputFiles)
-                exeBuildOptions.LinkEnv.InputFiles.Add(e);
-            foreach (var e in mainModuleOptions.DependencyFiles)
-                exeBuildOptions.DependencyFiles.Add(e);
-            foreach (var e in mainModuleOptions.OptionalDependencyFiles)
-                exeBuildOptions.OptionalDependencyFiles.Add(e);
+            exeBuildOptions.LinkEnv.InputFiles.AddRange(mainModuleOptions.OutputFiles);
+            exeBuildOptions.DependencyFiles.AddRange(mainModuleOptions.DependencyFiles);
+            exeBuildOptions.OptionalDependencyFiles.AddRange(mainModuleOptions.OptionalDependencyFiles);
             exeBuildOptions.Libraries.AddRange(mainModuleOptions.Libraries);
             exeBuildOptions.DelayLoadLibraries.AddRange(mainModuleOptions.DelayLoadLibraries);
             exeBuildOptions.ScriptingAPI.Add(mainModuleOptions.ScriptingAPI);
+            exeBuildOptions.ExternalModules.AddRange(mainModuleOptions.ExternalModules);
             buildOptions.Toolchain.LinkFiles(graph, exeBuildOptions, outputPath);
         }
     }

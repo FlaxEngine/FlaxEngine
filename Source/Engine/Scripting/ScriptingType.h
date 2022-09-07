@@ -65,6 +65,9 @@ struct FLAXENGINE_API ScriptingTypeHandle
     String ToString(bool withAssembly = false) const;
 
     const ScriptingType& GetType() const;
+#if USE_MONO
+    MonoClass* GetMonoClass() const;
+#endif
     bool IsSubclassOf(ScriptingTypeHandle c) const;
     bool IsAssignableFrom(ScriptingTypeHandle c) const;
 
@@ -316,6 +319,7 @@ struct FLAXENGINE_API ScriptingType
     void SetupScriptObjectVTable(void* object, ScriptingTypeHandle baseTypeHandle, int32 wrapperIndex);
     void HackObjectVTable(void* object, ScriptingTypeHandle baseTypeHandle, int32 wrapperIndex);
     String ToString() const;
+    StringAnsiView GetName() const;
 };
 
 /// <summary>

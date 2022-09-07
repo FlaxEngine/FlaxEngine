@@ -93,7 +93,7 @@ namespace FlaxEngine.GUI
             base.PerformLayoutBeforeChildren();
 
             int i = 0;
-            Vector2 upperLeft = Vector2.Zero;
+            var upperLeft = Float2.Zero;
             float remainingHeight = Height;
             for (int rowIndex = 0; rowIndex < _cellsV.Length; rowIndex++)
             {

@@ -122,7 +122,7 @@ namespace FlaxEditor.GUI
                 if (project.Content != null)
                     FindAssets(project.Content.Folder);
             }
-            SortChildren();
+            SortItems();
         }
 
         private void OnItemClicked(Item item)
@@ -157,7 +157,7 @@ namespace FlaxEditor.GUI
         /// <param name="isValid">Event called to check if a given asset item is valid to be used.</param>
         /// <param name="selected">Event called on asset item pick.</param>
         /// <returns>The dialog.</returns>
-        public static AssetSearchPopup Show(Control showTarget, Vector2 showTargetLocation, IsValidDelegate isValid, Action<AssetItem> selected)
+        public static AssetSearchPopup Show(Control showTarget, Float2 showTargetLocation, IsValidDelegate isValid, Action<AssetItem> selected)
         {
             var popup = new AssetSearchPopup(isValid, selected);
             popup.Show(showTarget, showTargetLocation);

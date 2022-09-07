@@ -1,5 +1,11 @@
 // Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
+#if USE_LARGE_WORLDS
+using Real = System.Double;
+#else
+using Real = System.Single;
+#endif
+
 using FlaxEngine;
 
 namespace FlaxEditor.Viewport.Cameras
@@ -62,7 +68,7 @@ namespace FlaxEditor.Viewport.Cameras
         /// <param name="orientation">The view rotation.</param>
         /// <param name="orbitCenter">The orbit center location.</param>
         /// <param name="orbitRadius">The orbit radius.</param>
-        public virtual void SetArcBallView(Quaternion orientation, Vector3 orbitCenter, float orbitRadius)
+        public virtual void SetArcBallView(Quaternion orientation, Vector3 orbitCenter, Real orbitRadius)
         {
             // Rotate
             Viewport.ViewOrientation = orientation;
@@ -78,6 +84,6 @@ namespace FlaxEditor.Viewport.Cameras
         }
 
         /// <inheritdoc />
-        public abstract void UpdateView(float dt, ref Vector3 moveDelta, ref Vector2 mouseDelta, out bool centerMouse);
+        public abstract void UpdateView(float dt, ref Vector3 moveDelta, ref Float2 mouseDelta, out bool centerMouse);
     }
 }

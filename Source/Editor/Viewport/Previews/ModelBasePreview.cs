@@ -79,7 +79,7 @@ namespace FlaxEditor.Viewport.Previews
         private void OnBegin(RenderTask task, GPUContext context)
         {
             var position = Vector3.Zero;
-            var scale = Vector3.One;
+            var scale = Float3.One;
 
             // Update preview model scale to fit the preview
             var model = Asset;
@@ -87,8 +87,8 @@ namespace FlaxEditor.Viewport.Previews
             {
                 float targetSize = 50.0f;
                 BoundingBox box = model is Model ? ((Model)model).GetBox() : ((SkinnedModel)model).GetBox();
-                float maxSize = Mathf.Max(0.001f, box.Size.MaxValue);
-                scale = new Vector3(targetSize / maxSize);
+                float maxSize = Mathf.Max(0.001f, (float)box.Size.MaxValue);
+                scale = new Float3(targetSize / maxSize);
                 position = box.Center * (-0.5f * scale.X) + new Vector3(0, -10, 0);
             }
 

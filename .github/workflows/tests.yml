@@ -29,6 +29,10 @@ jobs:
         ./Development/Scripts/Linux/CallBuildTool.sh -build -log -arch=x64 -platform=Linux -configuration=Debug -buildtargets="Flax.Build.Tests"
     - name: Test
       run: |
-        Binaries/Tests/Linux/x64/Development/FlaxTests
+        Binaries/Editor/Linux/Development/FlaxTests
         mono Source/Platforms/DotNet/NUnit/nunit3-console.exe Binaries/Tools/FlaxEngine.Tests.dll --framework=mono-4.0
         mono Source/Platforms/DotNet/NUnit/nunit3-console.exe Binaries/Tools/Flax.Build.Tests.dll --framework=mono-4.0
+    - name: Test UseLargeWorlds
+      run: |
+        ./Development/Scripts/Linux/CallBuildTool.sh -build -log -arch=x64 -platform=Linux -configuration=Development -buildtargets=FlaxTestsTarget -UseLargeWorlds=true
+        Binaries/Editor/Linux/Development/FlaxTests

@@ -30,8 +30,8 @@ namespace ShadowsOfMordor
         uint32 TexelAddress;
         uint32 AtlasSize;
         float TerrainChunkSizeLOD0;
-        Vector4 HeightmapUVScaleBias;
-        Vector3 WorldInvScale;
+        Float4 HeightmapUVScaleBias;
+        Float3 WorldInvScale;
         float Dummy1;
         });
 }
@@ -124,7 +124,7 @@ void ShadowsOfMordor::Builder::onJobRender(GPUContext* context)
                 auto& lod = staticModel->Model->LODs[0];
 
                 Matrix worldMatrix;
-                staticModel->GetWorld(&worldMatrix);
+                staticModel->GetTransform().GetWorld(worldMatrix);
                 Matrix::Transpose(worldMatrix, shaderData.WorldMatrix);
                 shaderData.LightmapArea = staticModel->Lightmap.UVsArea;
 
@@ -153,17 +153,17 @@ void ShadowsOfMordor::Builder::onJobRender(GPUContext* context)
                 const auto heightmap = patch->Heightmap.Get()->GetTexture();
 
                 Matrix world;
-                chunk->GetWorld(&world);
+                chunk->GetTransform().GetWorld(world);
                 Matrix::Transpose(world, shaderData.WorldMatrix);
                 shaderData.LightmapArea = chunk->Lightmap.UVsArea;
                 shaderData.TerrainChunkSizeLOD0 = TERRAIN_UNITS_PER_VERTEX * chunkSize;
                 chunk->GetHeightmapUVScaleBias(&shaderData.HeightmapUVScaleBias);
 
                 // Extract per axis scales from LocalToWorld transform
-                const float scaleX = Vector3(world.M11, world.M12, world.M13).Length();
-                const float scaleY = Vector3(world.M21, world.M22, world.M23).Length();
-                const float scaleZ = Vector3(world.M31, world.M32, world.M33).Length();
-                shaderData.WorldInvScale = Vector3(
+                const float scaleX = Float3(world.M11, world.M12, world.M13).Length();
+                const float scaleY = Float3(world.M21, world.M22, world.M23).Length();
+                const float scaleZ = Float3(world.M31, world.M32, world.M33).Length();
+                shaderData.WorldInvScale = Float3(
                     scaleX > 0.00001f ? 1.0f / scaleX : 0.0f,
                     scaleY > 0.00001f ? 1.0f / scaleY : 0.0f,
                     scaleZ > 0.00001f ? 1.0f / scaleZ : 0.0f);
@@ -188,7 +188,9 @@ void ShadowsOfMordor::Builder::onJobRender(GPUContext* context)
                 auto& instance = foliage->Instances[entry.AsFoliage.InstanceIndex];
                 auto& type = foliage->FoliageTypes[entry.AsFoliage.TypeIndex];
 
-                Matrix::Transpose(instance.World, shaderData.WorldMatrix);
+                Matrix world;
+                foliage->GetTransform().LocalToWorld(instance.Transform).GetWorld(world);
+                Matrix::Transpose(world, shaderData.WorldMatrix);
                 shaderData.LightmapArea = instance.Lightmap.UVsArea;
 
                 context->UpdateCB(cb, &shaderData);
@@ -274,7 +276,7 @@ void ShadowsOfMordor::Builder::onJobRender(GPUContext* context)
         auto& lightmapEntry = scene->Lightmaps[_workerStagePosition0];
 
         // All black everything!
-        context->ClearUA(lightmapEntry.LightmapData, Vector4::Zero);
+        context->ClearUA(lightmapEntry.LightmapData, Float4::Zero);
 
         _wasStageDone = true;
         break;
@@ -343,12 +345,12 @@ void ShadowsOfMordor::Builder::onJobRender(GPUContext* context)
             auto& hemisphere = lightmapEntry.Hemispheres[_workerStagePosition1];
 
             // Create tangent frame
-            Vector3 tangent;
-            Vector3 c1 = Vector3::Cross(hemisphere.Normal, Vector3(0.0, 0.0, 1.0));
-            Vector3 c2 = Vector3::Cross(hemisphere.Normal, Vector3(0.0, 1.0, 0.0));
+            Float3 tangent;
+            Float3 c1 = Float3::Cross(hemisphere.Normal, Float3(0.0, 0.0, 1.0));
+            Float3 c2 = Float3::Cross(hemisphere.Normal, Float3(0.0, 1.0, 0.0));
             tangent = c1.Length() > c2.Length() ? c1 : c2;
-            tangent = Vector3::Normalize(tangent);
-            const Vector3 binormal = Vector3::Cross(tangent, hemisphere.Normal);
+            tangent = Float3::Normalize(tangent);
+            const Float3 binormal = Float3::Cross(tangent, hemisphere.Normal);
 
             // Setup view
             const Vector3 pos = hemisphere.Position + hemisphere.Normal * 0.001f;
@@ -375,15 +377,15 @@ void ShadowsOfMordor::Builder::onJobRender(GPUContext* context)
 
             // Setup shader data
             Matrix worldToTangent;
-            worldToTangent.SetRow1(Vector4(tangent, 0.0f));
-            worldToTangent.SetRow2(Vector4(binormal, 0.0f));
-            worldToTangent.SetRow3(Vector4(hemisphere.Normal, 0.0f));
-            worldToTangent.SetRow4(Vector4(0.0f, 0.0f, 0.0f, 1.0f));
+            worldToTangent.SetRow1(Float4(tangent, 0.0f));
+            worldToTangent.SetRow2(Float4(binormal, 0.0f));
+            worldToTangent.SetRow3(Float4(hemisphere.Normal, 0.0f));
+            worldToTangent.SetRow4(Float4(0.0f, 0.0f, 0.0f, 1.0f));
             worldToTangent.Invert();
             //
             Matrix viewToWorld; // viewToWorld is inverted view, since view is worldToView
             Matrix::Invert(view, viewToWorld);
-            viewToWorld.SetRow4(Vector4(0.0f, 0.0f, 0.0f, 1.0f)); // reset translation row
+            viewToWorld.SetRow4(Float4(0.0f, 0.0f, 0.0f, 1.0f)); // reset translation row
             Matrix viewToTangent;
             Matrix::Multiply(viewToWorld, worldToTangent, viewToTangent);
             Matrix::Transpose(viewToTangent, shaderData.ToTangentSpace);
@@ -423,7 +425,7 @@ void ShadowsOfMordor::Builder::onJobRender(GPUContext* context)
 #endif
 
         // Report progress
-        float hemispheresProgress = static_cast<float>(_workerStagePosition1) / lightmapEntry.Hemispheres.Count();
+        float hemispheresProgress = static_cast<float>(_workerStagePosition1) / Math::Max(lightmapEntry.Hemispheres.Count(), 1);
         float lightmapsProgress = static_cast<float>(_workerStagePosition0 + hemispheresProgress) / scene->Lightmaps.Count();
         float bouncesProgress = static_cast<float>(_giBounceRunningIndex) / _bounceCount;
         reportProgress(BuildProgressStep::RenderHemispheres, lightmapsProgress / _bounceCount + bouncesProgress);

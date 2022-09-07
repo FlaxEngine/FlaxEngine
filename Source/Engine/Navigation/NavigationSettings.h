@@ -11,9 +11,8 @@
 /// </summary>
 API_CLASS(sealed, Namespace="FlaxEditor.Content.Settings", NoConstructor) class FLAXENGINE_API NavigationSettings : public SettingsBase
 {
-DECLARE_SCRIPTING_TYPE_MINIMAL(NavigationSettings);
+    DECLARE_SCRIPTING_TYPE_MINIMAL(NavigationSettings);
 public:
-
     /// <summary>
     /// If checked, enables automatic navmesh actors spawning on a scenes that are using it during navigation building.
     /// </summary>
@@ -27,7 +26,6 @@ public:
     bool AutoRemoveMissingNavMeshes = true;
 
 public:
-
     /// <summary>
     /// The height of a grid cell in the navigation mesh building steps using heightfields. A lower number means higher precision on the vertical axis but longer build times.
     /// </summary>
@@ -83,7 +81,6 @@ public:
     float MaxDetailSamplingError = 1.0f;
 
 public:
-
     /// <summary>
     /// The configuration for navmeshes.
     /// </summary>
@@ -97,7 +94,6 @@ public:
     Array<NavAreaProperties> NavAreas;
 
 public:
-
     NavigationSettings();
 
     /// <summary>

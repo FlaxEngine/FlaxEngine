@@ -37,7 +37,7 @@ namespace FlaxEngine.GUI
         }
 
         /// <inheritdoc />
-        public Vector2 Size => Texture?.Size ?? Vector2.Zero;
+        public Float2 Size => Texture != null && !Texture.WaitForLoaded() ? Texture.Size : Float2.Zero;
 
         /// <inheritdoc />
         public void Draw(Rectangle rect, Color color)
@@ -104,7 +104,7 @@ namespace FlaxEngine.GUI
         }
 
         /// <inheritdoc />
-        public Vector2 Size => Texture?.Size ?? Vector2.Zero;
+        public Float2 Size => Texture?.Size ?? Float2.Zero;
 
         /// <inheritdoc />
         public unsafe void Draw(Rectangle rect, Color color)
@@ -112,8 +112,8 @@ namespace FlaxEngine.GUI
             if (Texture == null)
                 return;
             var border = Border;
-            var borderUV = *(Vector4*)&border;
-            var borderSize = borderUV * new Vector4(BorderSize, BorderSize, BorderSize, BorderSize);
+            var borderUV = *(Float4*)&border;
+            var borderSize = borderUV * new Float4(BorderSize, BorderSize, BorderSize, BorderSize);
             if (Filter == BrushFilter.Point)
                 Render2D.Draw9SlicingTexturePoint(Texture, rect, borderSize, borderUV, color);
             else

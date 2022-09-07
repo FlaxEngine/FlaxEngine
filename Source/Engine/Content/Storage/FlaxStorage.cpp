@@ -9,6 +9,8 @@
 #include "Engine/Platform/File.h"
 #include "Engine/Profiler/ProfilerCPU.h"
 #include "Engine/Serialization/FileWriteStream.h"
+#include "Engine/Content/Asset.h"
+#include "Engine/Content/Content.h"
 #include "Engine/Threading/Threading.h"
 #if USE_EDITOR
 #include "Engine/Serialization/JsonWriter.h"
@@ -199,23 +201,6 @@ FlaxStorage::FlaxStorage(const StringView& path)
 {
 }
 
-void FlaxStorage::AddRef()
-{
-    _refCount++;
-}
-
-void FlaxStorage::RemoveRef()
-{
-    if (_refCount > 0)
-    {
-        _refCount--;
-        if (_refCount == 0)
-        {
-            _lastRefLostTime = DateTime::NowUTC();
-        }
-    }
-}
-
 FlaxStorage::~FlaxStorage()
 {
     // Validate if has been disposed
@@ -235,9 +220,14 @@ FlaxStorage::LockData FlaxStorage::LockSafe()
     return lock;
 }
 
+uint32 FlaxStorage::GetRefCount() const
+{
+    return (uint32)Platform::AtomicRead((int64*)&_refCount);
+}
+
 bool FlaxStorage::ShouldDispose() const
 {
-    return _refCount == 0 && Platform::AtomicRead((int64*)&_chunksLock) == 0 && DateTime::NowUTC() - _lastRefLostTime >= TimeSpan::FromMilliseconds(500);
+    return Platform::AtomicRead((int64*)&_refCount) == 0 && Platform::AtomicRead((int64*)&_chunksLock) == 0 && DateTime::NowUTC() - _lastRefLostTime >= TimeSpan::FromMilliseconds(500);
 }
 
 uint32 FlaxStorage::GetMemoryUsage() const
@@ -1289,9 +1279,24 @@ void FlaxStorage::CloseFileHandles()
     // In those situations all the async tasks using this storage should be cancelled externally
 
     // Ensure that no one is using this resource
-    int32 waitTime = 500;
+    int32 waitTime = 10;
     while (Platform::AtomicRead(&_chunksLock) != 0 && waitTime-- > 0)
         Platform::Sleep(10);
+    if (Platform::AtomicRead(&_chunksLock) != 0)
+    {
+        // File can be locked by some streaming tasks (eg. AudioClip::StreamingTask or StreamModelLODTask)
+        for (int32 i = 0; i < GetEntriesCount(); i++)
+        {
+            Entry e;
+            GetEntry(i, e);
+            Asset* asset = Content::GetAsset(e.ID);
+            if (asset)
+            {
+                LOG(Info, "Canceling streaming for asset {0}", asset->ToString());
+                asset->CancelStreaming();
+            }
+        }
+    }
     ASSERT(_chunksLock == 0);
 
     _file.DeleteAll();

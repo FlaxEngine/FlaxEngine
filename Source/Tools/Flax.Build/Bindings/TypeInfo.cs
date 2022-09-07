@@ -37,6 +37,11 @@ namespace Flax.Build.Bindings
         {
         }
 
+        public TypeInfo(string type)
+        {
+            Type = type;
+        }
+
         public TypeInfo(TypeInfo other)
         {
             Type = other.Type;
@@ -48,6 +53,30 @@ namespace Flax.Build.Bindings
             ArraySize = other.ArraySize;
             BitSize = other.BitSize;
             GenericArgs = other.GenericArgs != null ? new List<TypeInfo>(other.GenericArgs) : null;
+        }
+
+        /// <summary>
+        /// Inflates the type with typedefs for generic arguments.
+        /// </summary>
+        public TypeInfo Inflate(Builder.BuildData buildData, ApiTypeInfo caller)
+        {
+            if (GenericArgs != null && GenericArgs.Count != 0)
+            {
+                var inflated = new TypeInfo(this);
+                for (int i = 0; i < inflated.GenericArgs.Count; i++)
+                {
+                    var arg = new TypeInfo(inflated.GenericArgs[i]);
+                    var argType = BindingsGenerator.FindApiTypeInfo(buildData, arg, caller);
+                    if (argType != null)
+                    {
+                        arg.Type = argType.Name;
+                        arg.GenericArgs = null;
+                    }
+                    inflated.GenericArgs[i] = arg;
+                }
+                return inflated;
+            }
+            return this;
         }
 
         /// <summary>

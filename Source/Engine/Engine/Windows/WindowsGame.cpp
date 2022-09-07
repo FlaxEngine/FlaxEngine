@@ -28,14 +28,13 @@ void WindowsGame::InitMainWindowSettings(CreateWindowSettings& settings)
         windowMode == GameWindowMode::Fullscreen)
     {
         settings.Size = Platform::GetDesktopSize();
-        settings.Position = Vector2::Zero;
+        settings.Position = Float2::Zero;
     }
-        // Not fullscreen - put window in the middle of the screen
-    else if (windowMode == GameWindowMode::Windowed ||
-        windowMode == GameWindowMode::Borderless)
+    // Not fullscreen - put window in the middle of the screen
+    else if (windowMode == GameWindowMode::Windowed || windowMode == GameWindowMode::Borderless)
     {
-        settings.Size = Vector2((float)platformSettings->ScreenWidth, (float)platformSettings->ScreenHeight);
-        settings.Position = (Platform::GetDesktopSize() - settings.Size) / 2;
+        settings.Size = Float2((float)platformSettings->ScreenWidth, (float)platformSettings->ScreenHeight);
+        settings.Position = (Platform::GetDesktopSize() - settings.Size) * 0.5f;
     }
 
     // Windowed mode

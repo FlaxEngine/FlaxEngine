@@ -1,6 +1,7 @@
 // Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 #include "ModelLOD.h"
+#include "Engine/Core/Math/Transform.h"
 #include "Engine/Graphics/GPUDevice.h"
 #include "Engine/Serialization/MemoryReadStream.h"
 
@@ -58,16 +59,14 @@ void ModelLOD::Dispose()
     Meshes.Resize(0);
 }
 
-bool ModelLOD::Intersects(const Ray& ray, const Matrix& world, float& distance, Vector3& normal, Mesh** mesh)
+bool ModelLOD::Intersects(const Ray& ray, const Matrix& world, Real& distance, Vector3& normal, Mesh** mesh)
 {
-    // Check all meshes
     bool result = false;
-    float closest = MAX_float;
+    Real closest = MAX_Real;
     Vector3 closestNormal = Vector3::Up;
     for (int32 i = 0; i < Meshes.Count(); i++)
     {
-        // Test intersection with mesh and check if is closer than previous
-        float dst;
+        Real dst;
         Vector3 nrm;
         if (Meshes[i].Intersects(ray, world, dst, nrm) && dst < closest)
         {
@@ -77,7 +76,28 @@ bool ModelLOD::Intersects(const Ray& ray, const Matrix& world, float& distance, 
             closestNormal = nrm;
         }
     }
+    distance = closest;
+    normal = closestNormal;
+    return result;
+}
 
+bool ModelLOD::Intersects(const Ray& ray, const Transform& transform, Real& distance, Vector3& normal, Mesh** mesh)
+{
+    bool result = false;
+    Real closest = MAX_Real;
+    Vector3 closestNormal = Vector3::Up;
+    for (int32 i = 0; i < Meshes.Count(); i++)
+    {
+        Real dst;
+        Vector3 nrm;
+        if (Meshes[i].Intersects(ray, transform, dst, nrm) && dst < closest)
+        {
+            result = true;
+            *mesh = &Meshes[i];
+            closest = dst;
+            closestNormal = nrm;
+        }
+    }
     distance = closest;
     normal = closestNormal;
     return result;
@@ -85,14 +105,12 @@ bool ModelLOD::Intersects(const Ray& ray, const Matrix& world, float& distance, 
 
 BoundingBox ModelLOD::GetBox(const Matrix& world) const
 {
-    // Find minimum and maximum points of all the meshes
     Vector3 tmp, min = Vector3::Maximum, max = Vector3::Minimum;
     Vector3 corners[8];
     for (int32 j = 0; j < Meshes.Count(); j++)
     {
         const auto& mesh = Meshes[j];
-        mesh.GetCorners(corners);
-
+        mesh.GetBox().GetCorners(corners);
         for (int32 i = 0; i < 8; i++)
         {
             Vector3::Transform(corners[i], world, tmp);
@@ -100,42 +118,39 @@ BoundingBox ModelLOD::GetBox(const Matrix& world) const
             max = Vector3::Max(max, tmp);
         }
     }
-
     return BoundingBox(min, max);
 }
 
-BoundingBox ModelLOD::GetBox(const Matrix& world, int32 meshIndex) const
+BoundingBox ModelLOD::GetBox(const Transform& transform) const
 {
-    // Find minimum and maximum points of the mesh
     Vector3 tmp, min = Vector3::Maximum, max = Vector3::Minimum;
     Vector3 corners[8];
-    const auto& mesh = Meshes[meshIndex];
-    mesh.GetCorners(corners);
-    for (int32 i = 0; i < 8; i++)
+    for (int32 j = 0; j < Meshes.Count(); j++)
     {
-        Vector3::Transform(corners[i], world, tmp);
-        min = Vector3::Min(min, tmp);
-        max = Vector3::Max(max, tmp);
+        const auto& mesh = Meshes[j];
+        mesh.GetBox().GetCorners(corners);
+        for (int32 i = 0; i < 8; i++)
+        {
+            transform.LocalToWorld(corners[i], tmp);
+            min = Vector3::Min(min, tmp);
+            max = Vector3::Max(max, tmp);
+        }
     }
-
     return BoundingBox(min, max);
 }
 
 BoundingBox ModelLOD::GetBox() const
 {
-    // Find minimum and maximum points of the mesh in given world
     Vector3 min = Vector3::Maximum, max = Vector3::Minimum;
     Vector3 corners[8];
     for (int32 j = 0; j < Meshes.Count(); j++)
     {
-        Meshes[j].GetCorners(corners);
-
+        Meshes[j].GetBox().GetCorners(corners);
         for (int32 i = 0; i < 8; i++)
         {
             min = Vector3::Min(min, corners[i]);
             max = Vector3::Max(max, corners[i]);
         }
     }
-
     return BoundingBox(min, max);
 }

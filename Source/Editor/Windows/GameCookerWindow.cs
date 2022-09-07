@@ -28,6 +28,7 @@ namespace FlaxEditor.Windows
         /// <summary>
         /// Proxy object for the Build tab.
         /// </summary>
+        [HideInEditor]
         [CustomEditor(typeof(BuildTabProxy.Editor))]
         private class BuildTabProxy
         {
@@ -65,6 +66,7 @@ namespace FlaxEditor.Windows
                 PerPlatformOptions[PlatformType.Mac].Init("Output/Mac", "Mac");
             }
 
+            [HideInEditor]
             abstract class Platform
             {
                 [HideInEditor]
@@ -278,7 +280,7 @@ namespace FlaxEditor.Windows
                             name = "Mac";
                             break;
                         default:
-                            name = CustomEditorsUtil.GetPropertyNameUI(_platform.ToString());
+                            name = Utilities.Utils.GetPropertyNameUI(_platform.ToString());
                             break;
                         }
                         var group = layout.Group(name);
@@ -385,8 +387,8 @@ namespace FlaxEditor.Windows
                 base.Draw();
 
                 var color = Style.Current.Background * 0.8f;
-                Render2D.DrawLine(new Vector2(Width, 0), new Vector2(Width, Height), color);
-                Render2D.DrawLine(new Vector2(0, 48), new Vector2(Width, 48), color);
+                Render2D.DrawLine(new Float2(Width, 0), new Float2(Width, Height), color);
+                Render2D.DrawLine(new Float2(0, 48), new Float2(Width, 48), color);
             }
         }
 
@@ -515,7 +517,7 @@ namespace FlaxEditor.Windows
                 Orientation = Orientation.Vertical,
                 AnchorPreset = AnchorPresets.StretchAll,
                 Offsets = Margin.Zero,
-                TabsSize = new Vector2(120, 32),
+                TabsSize = new Float2(120, 32),
                 Parent = this
             };
 

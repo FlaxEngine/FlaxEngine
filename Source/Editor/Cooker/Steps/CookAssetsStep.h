@@ -75,6 +75,7 @@ public:
         {
             struct
             {
+                bool SupportDX12;
                 bool SupportDX11;
                 bool SupportDX10;
                 bool SupportVulkan;

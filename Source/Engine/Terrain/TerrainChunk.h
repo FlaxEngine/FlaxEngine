@@ -4,6 +4,7 @@
 
 #include "Engine/Core/Math/BoundingBox.h"
 #include "Engine/Core/Math/Matrix.h"
+#include "Engine/Core/Math/Transform.h"
 #include "Engine/Serialization/ISerializable.h"
 #include "Engine/Content/Assets/MaterialBase.h"
 #include "Engine/Level/Scene/Lightmap.h"
@@ -25,8 +26,8 @@ private:
 
     TerrainPatch* _patch;
     uint16 _x, _z;
-    Vector4 _heightmapUVScaleBias;
-    Matrix _world;
+    Float4 _heightmapUVScaleBias;
+    Transform _transform;
     BoundingBox _bounds;
     Vector3 _boundsCenter;
     float _perInstanceRandom;
@@ -55,7 +56,6 @@ public:
     /// <summary>
     /// Gets the x coordinate.
     /// </summary>
-    /// <returns>The x position.</returns>
     FORCE_INLINE int32 GetX() const
     {
         return _x;
@@ -64,7 +64,6 @@ public:
     /// <summary>
     /// Gets the z coordinate.
     /// </summary>
-    /// <returns>The z position.</returns>
     FORCE_INLINE int32 GetZ() const
     {
         return _z;
@@ -73,7 +72,6 @@ public:
     /// <summary>
     /// Gets the patch.
     /// </summary>
-    /// <returns>The terrain patch,</returns>
     FORCE_INLINE TerrainPatch* GetPatch() const
     {
         return _patch;
@@ -82,26 +80,24 @@ public:
     /// <summary>
     /// Gets the chunk world bounds.
     /// </summary>
-    /// <returns>The bounding box.</returns>
     FORCE_INLINE const BoundingBox& GetBounds() const
     {
         return _bounds;
     }
 
     /// <summary>
-    /// Gets the model world matrix transform.
+    /// Gets the chunk transformation (world to local).
     /// </summary>
-    /// <param name="world">The result world matrix.</param>
-    FORCE_INLINE void GetWorld(Matrix* world) const
+    FORCE_INLINE const Transform& GetTransform() const
     {
-        *world = _world;
+        return _transform;
     }
 
     /// <summary>
     /// Gets the scale (in XY) and bias (in ZW) applied to the vertex UVs to get the chunk coordinates.
     /// </summary>
     /// <param name="result">The result.</param>
-    FORCE_INLINE void GetHeightmapUVScaleBias(Vector4* result) const
+    FORCE_INLINE void GetHeightmapUVScaleBias(Float4* result) const
     {
         *result = _heightmapUVScaleBias;
     }
@@ -109,7 +105,6 @@ public:
     /// <summary>
     /// Determines whether this chunk has valid lightmap data.
     /// </summary>
-    /// <returns><c>true</c> if this chunk has valid lightmap data; otherwise, <c>false</c>.</returns>
     FORCE_INLINE bool HasLightmap() const
     {
         return Lightmap.TextureIndex != INVALID_INDEX;
@@ -152,7 +147,7 @@ public:
     /// <param name="ray">The ray.</param>
     /// <param name="distance">The output distance.</param>
     /// <returns>True if chunk intersects with the ray, otherwise false.</returns>
-    bool Intersects(const Ray& ray, float& distance);
+    bool Intersects(const Ray& ray, Real& distance);
 
     /// <summary>
     /// Updates the cached bounds of the chunk.

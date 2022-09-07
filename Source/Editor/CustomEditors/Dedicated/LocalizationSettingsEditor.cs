@@ -158,7 +158,7 @@ namespace FlaxEditor.CustomEditors.Dedicated
                         RebuildLayout();
                         Profiler.EndEvent();
                     });
-                    menu.Show(button, new Vector2(0, button.Height));
+                    menu.Show(button, new Float2(0, button.Height));
                 };
 
                 // Export button

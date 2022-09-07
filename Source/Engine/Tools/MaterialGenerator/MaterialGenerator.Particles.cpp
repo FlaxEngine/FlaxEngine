@@ -46,16 +46,16 @@ MaterialValue MaterialGenerator::AccessParticleAttribute(Node* caller, const Str
         type = VariantType::Float;
         format = TEXT("GetParticleFloat({1}, {0})");
         break;
-    case ParticleAttributeValueTypes::Vector2:
-        type = VariantType::Vector2;
+    case ParticleAttributeValueTypes::Float2:
+        type = VariantType::Float2;
         format = TEXT("GetParticleVec2({1}, {0})");
         break;
-    case ParticleAttributeValueTypes::Vector3:
-        type = VariantType::Vector3;
+    case ParticleAttributeValueTypes::Float3:
+        type = VariantType::Float3;
         format = TEXT("GetParticleVec3({1}, {0})");
         break;
-    case ParticleAttributeValueTypes::Vector4:
-        type = VariantType::Vector4;
+    case ParticleAttributeValueTypes::Float4:
+        type = VariantType::Float4;
         format = TEXT("GetParticleVec4({1}, {0})");
         break;
     case ParticleAttributeValueTypes::Int:
@@ -99,74 +99,74 @@ void MaterialGenerator::ProcessGroupParticles(Box* box, Node* node, Value& value
 
     switch (node->TypeID)
     {
-        // Particle Attribute
+    // Particle Attribute
     case 100:
     {
         value = AccessParticleAttribute(node, (StringView)node->Values[0], static_cast<ParticleAttributeValueTypes>(node->Values[1].AsInt));
         break;
     }
-        // Particle Attribute (by index)
+    // Particle Attribute (by index)
     case 303:
     {
         const auto particleIndex = Value::Cast(tryGetValue(node->GetBox(1), Value(VariantType::Uint, TEXT("input.ParticleIndex"))), VariantType::Uint);
         value = AccessParticleAttribute(node, (StringView)node->Values[0], static_cast<ParticleAttributeValueTypes>(node->Values[1].AsInt), particleIndex.Value.Get());
         break;
     }
-        // Particle Position
+    // Particle Position
     case 101:
     {
-        value = AccessParticleAttribute(node, TEXT("Position"), ParticleAttributeValueTypes::Vector3, nullptr, ParticleAttributeSpace::LocalPosition);
+        value = AccessParticleAttribute(node, TEXT("Position"), ParticleAttributeValueTypes::Float3, nullptr, ParticleAttributeSpace::LocalPosition);
         break;
     }
-        // Particle Lifetime
+    // Particle Lifetime
     case 102:
     {
         value = AccessParticleAttribute(node, TEXT("Lifetime"), ParticleAttributeValueTypes::Float);
         break;
     }
-        // Particle Age
+    // Particle Age
     case 103:
     {
         value = AccessParticleAttribute(node, TEXT("Age"), ParticleAttributeValueTypes::Float);
         break;
     }
-        // Particle Color
+    // Particle Color
     case 104:
     {
-        value = AccessParticleAttribute(node, TEXT("Color"), ParticleAttributeValueTypes::Vector4);
+        value = AccessParticleAttribute(node, TEXT("Color"), ParticleAttributeValueTypes::Float4);
         break;
     }
-        // Particle Velocity
+    // Particle Velocity
     case 105:
     {
-        value = AccessParticleAttribute(node, TEXT("Velocity"), ParticleAttributeValueTypes::Vector3, nullptr, ParticleAttributeSpace::LocalDirection);
+        value = AccessParticleAttribute(node, TEXT("Velocity"), ParticleAttributeValueTypes::Float3, nullptr, ParticleAttributeSpace::LocalDirection);
         break;
     }
-        // Particle Sprite Size
+    // Particle Sprite Size
     case 106:
     {
-        value = AccessParticleAttribute(node, TEXT("SpriteSize"), ParticleAttributeValueTypes::Vector2);
+        value = AccessParticleAttribute(node, TEXT("SpriteSize"), ParticleAttributeValueTypes::Float2);
         break;
     }
-        // Particle Mass
+    // Particle Mass
     case 107:
     {
         value = AccessParticleAttribute(node, TEXT("Mass"), ParticleAttributeValueTypes::Float);
         break;
     }
-        // Particle Rotation
+    // Particle Rotation
     case 108:
     {
-        value = AccessParticleAttribute(node, TEXT("Rotation"), ParticleAttributeValueTypes::Vector3);
+        value = AccessParticleAttribute(node, TEXT("Rotation"), ParticleAttributeValueTypes::Float3);
         break;
     }
-        // Particle Angular Velocity
+    // Particle Angular Velocity
     case 109:
     {
-        value = AccessParticleAttribute(node, TEXT("AngularVelocity"), ParticleAttributeValueTypes::Vector3);
+        value = AccessParticleAttribute(node, TEXT("AngularVelocity"), ParticleAttributeValueTypes::Float3);
         break;
     }
-        // Particle Normalized Age
+    // Particle Normalized Age
     case 110:
     {
         const auto age = AccessParticleAttribute(node, TEXT("Age"), ParticleAttributeValueTypes::Float);
@@ -174,7 +174,7 @@ void MaterialGenerator::ProcessGroupParticles(Box* box, Node* node, Value& value
         value = writeOperation2(node, age, lifetime, '/');
         break;
     }
-        // Particle Radius
+    // Particle Radius
     case 111:
     {
         value = AccessParticleAttribute(node, TEXT("Radius"), ParticleAttributeValueTypes::Float);

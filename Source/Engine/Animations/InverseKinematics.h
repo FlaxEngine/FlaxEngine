@@ -12,7 +12,6 @@
 class FLAXENGINE_API InverseKinematics
 {
 public:
-
     /// <summary>
     /// Rotates a node so it aims at a target. Solves the transformation (rotation) that needs to be applied to the node such that a provided forward vector (in node local space) aims at the target position (in skeleton model space).
     /// </summary>

@@ -183,7 +183,7 @@ namespace FlaxEditor.Content
         private ContentFolder _parentFolder;
 
         private bool _isMouseDown;
-        private Vector2 _mouseDownStartPos;
+        private Float2 _mouseDownStartPos;
         private readonly List<IContentItemOwner> _references = new List<IContentItemOwner>(4);
 
         private SpriteHandle _thumbnail;
@@ -271,18 +271,7 @@ namespace FlaxEditor.Content
         /// <summary>
         /// Gets the asset name relative to the project root folder (without asset file extension)
         /// </summary>
-        public string NamePath
-        {
-            get
-            {
-                string result = Path;
-                if (result.StartsWith(Globals.ProjectFolder))
-                {
-                    result = result.Substring(Globals.ProjectFolder.Length + 1);
-                }
-                return StringUtils.GetPathWithoutExtension(result);
-            }
-        }
+        public string NamePath => FlaxEditor.Utilities.Utils.GetAssetNamePath(Path);
 
         /// <summary>
         /// Gets the default name of the content item thumbnail. Returns null if not used.
@@ -604,11 +593,11 @@ namespace FlaxEditor.Content
         protected override bool ShowTooltip => true;
 
         /// <inheritdoc />
-        public override bool OnShowTooltip(out string text, out Vector2 location, out Rectangle area)
+        public override bool OnShowTooltip(out string text, out Float2 location, out Rectangle area)
         {
             UpdateTooltipText();
             var result = base.OnShowTooltip(out text, out _, out area);
-            location = Size * new Vector2(0.9f, 0.5f);
+            location = Size * new Float2(0.9f, 0.5f);
             return result;
         }
 
@@ -629,7 +618,7 @@ namespace FlaxEditor.Content
             var style = Style.Current;
             var view = Parent as ContentView;
             var isSelected = view.IsSelected(this);
-            var clientRect = new Rectangle(Vector2.Zero, size);
+            var clientRect = new Rectangle(Float2.Zero, size);
             var textRect = TextRectangle;
             Rectangle thumbnailRect;
             TextAlignment nameAlignment;
@@ -668,7 +657,7 @@ namespace FlaxEditor.Content
         }
 
         /// <inheritdoc />
-        public override bool OnMouseDown(Vector2 location, MouseButton button)
+        public override bool OnMouseDown(Float2 location, MouseButton button)
         {
             Focus();
 
@@ -683,7 +672,7 @@ namespace FlaxEditor.Content
         }
 
         /// <inheritdoc />
-        public override bool OnMouseUp(Vector2 location, MouseButton button)
+        public override bool OnMouseUp(Float2 location, MouseButton button)
         {
             if (button == MouseButton.Left && _isMouseDown)
             {
@@ -698,7 +687,7 @@ namespace FlaxEditor.Content
         }
 
         /// <inheritdoc />
-        public override bool OnMouseDoubleClick(Vector2 location, MouseButton button)
+        public override bool OnMouseDoubleClick(Float2 location, MouseButton button)
         {
             Focus();
 
@@ -718,10 +707,10 @@ namespace FlaxEditor.Content
         }
 
         /// <inheritdoc />
-        public override void OnMouseMove(Vector2 location)
+        public override void OnMouseMove(Float2 location)
         {
             // Check if start drag and drop
-            if (_isMouseDown && Vector2.Distance(_mouseDownStartPos, location) > 10.0f)
+            if (_isMouseDown && Float2.Distance(_mouseDownStartPos, location) > 10.0f)
             {
                 // Clear flag
                 _isMouseDown = false;

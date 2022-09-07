@@ -30,7 +30,7 @@ namespace FlaxEngine.GUI
             float strength = BlurStrength;
             if (strength > Mathf.Epsilon)
             {
-                Render2D.DrawBlur(new Rectangle(Vector2.Zero, Size), strength);
+                Render2D.DrawBlur(new Rectangle(Float2.Zero, Size), strength);
             }
         }
     }

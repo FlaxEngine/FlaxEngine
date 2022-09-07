@@ -1,5 +1,11 @@
 // Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
+#if USE_LARGE_WORLDS
+using Real = System.Double;
+#else
+using Real = System.Single;
+#endif
+
 using System.Collections.Generic;
 using FlaxEditor.Gizmo;
 using FlaxEditor.SceneGraph;
@@ -164,7 +170,7 @@ namespace FlaxEditor.Viewport.Cameras
             if (Viewport.UseOrthographicProjection)
             {
                 position = sphere.Center + Vector3.Backward * orientation * (sphere.Radius * 5.0f);
-                Viewport.OrthographicScale = Vector3.Distance(position, sphere.Center) / 1000;
+                Viewport.OrthographicScale = (float)Vector3.Distance(position, sphere.Center) / 1000;
             }
             else
             {
@@ -175,7 +181,7 @@ namespace FlaxEditor.Viewport.Cameras
         }
 
         /// <inheritdoc />
-        public override void SetArcBallView(Quaternion orientation, Vector3 orbitCenter, float orbitRadius)
+        public override void SetArcBallView(Quaternion orientation, Vector3 orbitCenter, Real orbitRadius)
         {
             base.SetArcBallView(orientation, orbitCenter, orbitRadius);
 
@@ -201,17 +207,26 @@ namespace FlaxEditor.Viewport.Cameras
                 }
 
                 // Animate camera
-                float a = Mathf.Saturate(progress);
-                a = a * a * a;
-                Transform targetTransform = Transform.Lerp(_startMove, _endMove, a);
-                targetTransform.Scale = Vector3.Zero;
-                Viewport.ViewPosition = targetTransform.Translation;
-                Viewport.ViewOrientation = targetTransform.Orientation;
+                try
+                {
+                    float a = Mathf.Saturate(progress);
+                    a = a * a * a;
+                    var targetTransform = Transform.Lerp(_startMove, _endMove, a);
+                    targetTransform.Scale = Vector3.Zero;
+                    Viewport.ViewPosition = targetTransform.Translation;
+                    Viewport.ViewOrientation = targetTransform.Orientation;
+                }
+                catch
+                {
+                    // Fix camera if lerp failed (eg. large world with NaNs inside)
+                    Viewport.ViewPosition = Vector3.Zero;
+                    Viewport.ViewOrientation = Quaternion.Identity;
+                }
             }
         }
 
         /// <inheritdoc />
-        public override void UpdateView(float dt, ref Vector3 moveDelta, ref Vector2 mouseDelta, out bool centerMouse)
+        public override void UpdateView(float dt, ref Vector3 moveDelta, ref Float2 mouseDelta, out bool centerMouse)
         {
             centerMouse = true;
 
@@ -296,7 +311,7 @@ namespace FlaxEditor.Viewport.Cameras
             Viewport.Pitch = pitch;
             if (input.IsOrbiting)
             {
-                float orbitRadius = Mathf.Max(Vector3.Distance(ref position, ref TargetPoint), 0.0001f);
+                float orbitRadius = Mathf.Max((float)Vector3.Distance(ref position, ref TargetPoint), 0.0001f);
                 Vector3 localPosition = Viewport.ViewDirection * (-1 * orbitRadius);
                 Viewport.ViewPosition = TargetPoint + localPosition;
             }

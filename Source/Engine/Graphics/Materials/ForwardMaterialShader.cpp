@@ -24,19 +24,21 @@ PACK_STRUCT(struct ForwardMaterialShaderData {
     Matrix ViewMatrix;
     Matrix PrevViewProjectionMatrix;
     Matrix PrevWorldMatrix;
-    Vector3 ViewPos;
+    Matrix MainViewProjectionMatrix;
+    Float4 MainScreenSize;
+    Float3 ViewPos;
     float ViewFar;
-    Vector3 ViewDir;
+    Float3 ViewDir;
     float TimeParam;
-    Vector4 ViewInfo;
-    Vector4 ScreenSize;
-    Vector3 WorldInvScale;
+    Float4 ViewInfo;
+    Float4 ScreenSize;
+    Float3 WorldInvScale;
     float WorldDeterminantSign;
-    Vector2 Dummy0;
+    Float2 Dummy0;
     float LODDitherFactor;
     float PerInstanceRandom;
-    Vector4 TemporalAAJitter;
-    Vector3 GeometrySize;
+    Float4 TemporalAAJitter;
+    Float3 GeometrySize;
     float Dummy1;
     });
 
@@ -64,13 +66,15 @@ void ForwardMaterialShader::Bind(BindParameters& params)
     int32 srv = 2;
 
     // Setup features
+    if (_info.FeaturesFlags & MaterialFeaturesFlags::GlobalIllumination)
+        GlobalIlluminationFeature::Bind(params, cb, srv);
     ForwardShadingFeature::Bind(params, cb, srv);
 
     // Setup parameters
     MaterialParameter::BindMeta bindMeta;
     bindMeta.Context = context;
     bindMeta.Constants = cb;
-    bindMeta.Input = nullptr; // forward pass materials cannot sample scene color for now
+    bindMeta.Input = params.Input;
     bindMeta.Buffers = params.RenderContext.Buffers;
     bindMeta.CanSampleDepth = GPUDevice::Instance->Limits.HasReadOnlyDepth;
     bindMeta.CanSampleGBuffer = true;
@@ -92,16 +96,18 @@ void ForwardMaterialShader::Bind(BindParameters& params)
         Matrix::Transpose(view.View, materialData->ViewMatrix);
         Matrix::Transpose(drawCall.Surface.PrevWorld, materialData->PrevWorldMatrix);
         Matrix::Transpose(view.PrevViewProjection, materialData->PrevViewProjectionMatrix);
+        Matrix::Transpose(view.MainViewProjection, materialData->MainViewProjectionMatrix);
+        materialData->MainScreenSize = view.MainScreenSize;
         materialData->ViewPos = view.Position;
         materialData->ViewFar = view.Far;
         materialData->ViewDir = view.Direction;
         materialData->TimeParam = params.TimeParam;
         materialData->ViewInfo = view.ViewInfo;
         materialData->ScreenSize = view.ScreenSize;
-        const float scaleX = Vector3(drawCall.World.M11, drawCall.World.M12, drawCall.World.M13).Length();
-        const float scaleY = Vector3(drawCall.World.M21, drawCall.World.M22, drawCall.World.M23).Length();
-        const float scaleZ = Vector3(drawCall.World.M31, drawCall.World.M32, drawCall.World.M33).Length();
-        materialData->WorldInvScale = Vector3(
+        const float scaleX = Float3(drawCall.World.M11, drawCall.World.M12, drawCall.World.M13).Length();
+        const float scaleY = Float3(drawCall.World.M21, drawCall.World.M22, drawCall.World.M23).Length();
+        const float scaleZ = Float3(drawCall.World.M31, drawCall.World.M32, drawCall.World.M33).Length();
+        materialData->WorldInvScale = Float3(
             scaleX > 0.00001f ? 1.0f / scaleX : 0.0f,
             scaleY > 0.00001f ? 1.0f / scaleY : 0.0f,
             scaleZ > 0.00001f ? 1.0f / scaleZ : 0.0f);

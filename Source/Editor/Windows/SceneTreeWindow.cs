@@ -12,6 +12,7 @@ using FlaxEditor.Scripting;
 using FlaxEditor.States;
 using FlaxEngine;
 using FlaxEngine.GUI;
+using static FlaxEditor.GUI.ItemsListContextMenu;
 
 namespace FlaxEditor.Windows
 {
@@ -151,9 +152,9 @@ namespace FlaxEditor.Windows
             var headerPanel = new ContainerControl
             {
                 AnchorPreset = AnchorPresets.HorizontalStretchTop,
-                IsScrollable = true,
+                BackgroundColor = Style.Current.Background,
+                IsScrollable = false,
                 Offsets = new Margin(0, 0, 0, 18 + 6),
-                Parent = this,
             };
             _searchBox = new TextBox
             {
@@ -175,8 +176,9 @@ namespace FlaxEditor.Windows
             };
             _tree.AddChild(root.TreeNode);
             _tree.SelectedChanged += Tree_OnSelectedChanged;
-            _tree.RightClick += Tree_OnRightClick;
+            _tree.RightClick += OnTreeRightClick;
             _tree.Parent = this;
+            headerPanel.Parent = this;
 
             // Setup input actions
             InputActions.Add(options => options.TranslateMode, () => Editor.MainTransformGizmo.ActiveMode = TransformGizmoBase.Mode.Translate);
@@ -278,7 +280,7 @@ namespace FlaxEditor.Windows
             }
         }
 
-        private void Tree_OnRightClick(TreeNode node, Vector2 location)
+        private void OnTreeRightClick(TreeNode node, Float2 location)
         {
             if (!Editor.StateMachine.CurrentState.CanEditScene)
                 return;
@@ -326,9 +328,11 @@ namespace FlaxEditor.Windows
 
             _isUpdatingSelection = false;
         }
-        
+
         private bool ValidateDragAsset(AssetItem assetItem)
         {
+            if (assetItem.IsOfType<SceneAsset>())
+                return true;
             return assetItem.OnEditorDrag(this);
         }
 
@@ -368,7 +372,7 @@ namespace FlaxEditor.Windows
         }
 
         /// <inheritdoc />
-        public override bool OnMouseDown(Vector2 location, MouseButton buttons)
+        public override bool OnMouseDown(Float2 location, MouseButton buttons)
         {
             if (base.OnMouseDown(location, buttons))
                 return true;
@@ -383,7 +387,7 @@ namespace FlaxEditor.Windows
         }
 
         /// <inheritdoc />
-        public override bool OnMouseUp(Vector2 location, MouseButton buttons)
+        public override bool OnMouseUp(Float2 location, MouseButton buttons)
         {
             if (base.OnMouseUp(location, buttons))
                 return true;
@@ -414,10 +418,10 @@ namespace FlaxEditor.Windows
         }
 
         /// <inheritdoc />
-        public override DragDropEffect OnDragEnter(ref Vector2 location, DragData data)
+        public override DragDropEffect OnDragEnter(ref Float2 location, DragData data)
         {
             var result = base.OnDragEnter(ref location, data);
-            if (result == DragDropEffect.None && Editor.StateMachine.CurrentState.CanEditScene)
+            if (Editor.StateMachine.CurrentState.CanEditScene)
             {
                 if (_dragHandlers == null)
                     _dragHandlers = new DragHandlers();
@@ -426,21 +430,21 @@ namespace FlaxEditor.Windows
                     _dragAssets = new DragAssets(ValidateDragAsset);
                     _dragHandlers.Add(_dragAssets);
                 }
-                if (_dragAssets.OnDragEnter(data))
+                if (_dragAssets.OnDragEnter(data) && result == DragDropEffect.None)
                     return _dragAssets.Effect;
                 if (_dragActorType == null)
                 {
                     _dragActorType = new DragActorType(ValidateDragActorType);
                     _dragHandlers.Add(_dragActorType);
                 }
-                if (_dragActorType.OnDragEnter(data))
+                if (_dragActorType.OnDragEnter(data) && result == DragDropEffect.None)
                     return _dragActorType.Effect;
             }
             return result;
         }
 
         /// <inheritdoc />
-        public override DragDropEffect OnDragMove(ref Vector2 location, DragData data)
+        public override DragDropEffect OnDragMove(ref Float2 location, DragData data)
         {
             var result = base.OnDragMove(ref location, data);
             if (result == DragDropEffect.None && Editor.StateMachine.CurrentState.CanEditScene && _dragHandlers != null)
@@ -459,7 +463,7 @@ namespace FlaxEditor.Windows
         }
 
         /// <inheritdoc />
-        public override DragDropEffect OnDragDrop(ref Vector2 location, DragData data)
+        public override DragDropEffect OnDragDrop(ref Float2 location, DragData data)
         {
             var result = base.OnDragDrop(ref location, data);
             if (result == DragDropEffect.None)
@@ -470,6 +474,11 @@ namespace FlaxEditor.Windows
                     for (int i = 0; i < _dragAssets.Objects.Count; i++)
                     {
                         var item = _dragAssets.Objects[i];
+                        if (item.IsOfType<SceneAsset>())
+                        {
+                            Editor.Instance.Scene.OpenScene(item.ID, true);
+                            continue;
+                        }
                         var actor = item.OnEditorDrop(this);
                         actor.Name = item.ShortName;
                         Level.SpawnActor(actor);

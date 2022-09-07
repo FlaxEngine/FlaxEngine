@@ -9,7 +9,6 @@
 class Crc
 {
 public:
-
     // Helper lookup table with cached CRC values.
     static uint32 CachedCRCTablesSB8[8][256];
 

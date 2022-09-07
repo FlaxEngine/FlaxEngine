@@ -21,7 +21,7 @@ namespace FlaxEditor.GUI.Timeline
             }
 
             /// <inheritdoc />
-            public override bool OnMouseDown(Vector2 location, MouseButton button)
+            public override bool OnMouseDown(Float2 location, MouseButton button)
             {
                 if (base.OnMouseDown(location, button))
                     return true;
@@ -40,7 +40,7 @@ namespace FlaxEditor.GUI.Timeline
             }
 
             /// <inheritdoc />
-            public override void OnMouseMove(Vector2 location)
+            public override void OnMouseMove(Float2 location)
             {
                 base.OnMouseMove(location);
 
@@ -50,7 +50,7 @@ namespace FlaxEditor.GUI.Timeline
                 }
             }
 
-            private void Seek(ref Vector2 location)
+            private void Seek(ref Float2 location)
             {
                 if (_timeline.PlaybackState == PlaybackStates.Disabled)
                     return;
@@ -62,7 +62,7 @@ namespace FlaxEditor.GUI.Timeline
             }
 
             /// <inheritdoc />
-            public override bool OnMouseUp(Vector2 location, MouseButton button)
+            public override bool OnMouseUp(Float2 location, MouseButton button)
             {
                 if (base.OnMouseUp(location, button))
                     return true;
@@ -106,7 +106,7 @@ namespace FlaxEditor.GUI.Timeline
             {
                 const float width = 280.0f;
                 const float height = 160.0f;
-                Size = new Vector2(width, height);
+                Size = new Float2(width, height);
 
                 var panel1 = new Panel(ScrollBars.Vertical)
                 {
@@ -212,7 +212,7 @@ namespace FlaxEditor.GUI.Timeline
             }
 
             /// <inheritdoc />
-            public override DragDropEffect OnDragEnter(ref Vector2 location, DragData data)
+            public override DragDropEffect OnDragEnter(ref Float2 location, DragData data)
             {
                 var result = base.OnDragEnter(ref location, data);
                 if (result == DragDropEffect.None)
@@ -238,7 +238,7 @@ namespace FlaxEditor.GUI.Timeline
             }
 
             /// <inheritdoc />
-            public override DragDropEffect OnDragMove(ref Vector2 location, DragData data)
+            public override DragDropEffect OnDragMove(ref Float2 location, DragData data)
             {
                 var result = base.OnDragEnter(ref location, data);
                 if (result == DragDropEffect.None)
@@ -259,7 +259,7 @@ namespace FlaxEditor.GUI.Timeline
             }
 
             /// <inheritdoc />
-            public override DragDropEffect OnDragDrop(ref Vector2 location, DragData data)
+            public override DragDropEffect OnDragDrop(ref Float2 location, DragData data)
             {
                 var result = base.OnDragDrop(ref location, data);
                 if (result == DragDropEffect.None && _currentDragEffect != DragDropEffect.None)
@@ -283,7 +283,7 @@ namespace FlaxEditor.GUI.Timeline
                 if (IsDragOver && _currentDragEffect != DragDropEffect.None)
                 {
                     var style = Style.Current;
-                    Render2D.FillRectangle(new Rectangle(Vector2.Zero, Size), style.BackgroundSelected * 0.4f);
+                    Render2D.FillRectangle(new Rectangle(Float2.Zero, Size), style.BackgroundSelected * 0.4f);
                 }
 
                 base.Draw();

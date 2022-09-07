@@ -113,7 +113,7 @@ namespace FlaxEditor.CustomEditors.Editors
             }
 
             /// <inheritdoc />
-            public override bool OnMouseDoubleClick(Vector2 location, MouseButton button)
+            public override bool OnMouseDoubleClick(Float2 location, MouseButton button)
             {
                 if (button == MouseButton.Left)
                 {
@@ -141,22 +141,6 @@ namespace FlaxEditor.CustomEditors.Editors
         private bool _notNullItems;
         private bool _canEditKeys;
         private bool _keyEdited;
-
-        /// <summary>
-        /// Determines whether this editor[can edit the specified dictionary type.
-        /// </summary>
-        /// <param name="type">Type of the dictionary.</param>
-        /// <returns>True if can edit, otherwise false.</returns>
-        public static bool CanEditType(Type type)
-        {
-            // Ensure it's a generic dictionary type
-            if (type.IsGenericType && type.GetGenericTypeDefinition() == typeof(Dictionary<,>))
-            {
-                return true;
-            }
-
-            return false;
-        }
 
         /// <summary>
         /// Gets the length of the collection.

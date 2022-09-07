@@ -272,6 +272,16 @@ API_ENUM(Attributes="Flags") enum class MaterialFeaturesFlags : uint32
     /// The flag used to enable refraction offset based on the difference between the per-pixel normal and the per-vertex normal. Useful for large water-like surfaces.
     /// </summary>
     PixelNormalOffsetRefraction = 1 << 9,
+
+    /// <summary>
+    /// The flag used to enable high-quality reflections based on the screen space raytracing. Useful for large water-like surfaces. The Forward Pass materials option.
+    /// </summary>
+    ScreenSpaceReflections = 1 << 10,
+
+    /// <summary>
+    /// The flag used to enable sampling Global Illumination in material (eg. light probes or volumetric lightmap). The Forward Pass materials option.
+    /// </summary>
+    GlobalIllumination = 1 << 11,
 };
 
 DECLARE_ENUM_OPERATORS(MaterialFeaturesFlags);
@@ -348,6 +358,22 @@ API_ENUM() enum class MaterialDecalBlendingMode : byte
     /// Decal will apply the emissive light only.
     /// </summary>
     Emissive = 3,
+};
+
+/// <summary>
+/// Transparent material lighting modes.
+/// </summary>
+API_ENUM() enum class MaterialTransparentLightingMode : byte
+{
+    /// <summary>
+    /// Default directional lighting evaluated per-pixel at the material surface. Use it for semi-transparent surfaces - with both diffuse and specular lighting component active.
+    /// </summary>
+    Surface = 0,
+
+    /// <summary>
+    /// Non-directional lighting evaluated per-pixel at material surface. Use it for volumetric objects such as smoke, rain or dust - only diffuse lighting term is active (no specular highlights).
+    /// </summary>
+    SurfaceNonDirectional = 1,
 };
 
 /// <summary>
@@ -437,11 +463,38 @@ struct MaterialInfo8
 };
 
 /// <summary>
+/// Material info structure - version 9
+/// [Deprecated on 13.07.2022, expires on 13.07.2024]
+/// </summary>
+struct MaterialInfo9
+{
+    MaterialDomain Domain;
+    MaterialBlendMode BlendMode;
+    MaterialShadingModel ShadingModel;
+    MaterialUsageFlags UsageFlags;
+    MaterialFeaturesFlags FeaturesFlags;
+    MaterialDecalBlendingMode DecalBlendingMode;
+    MaterialPostFxLocation PostFxLocation;
+    CullMode CullMode;
+    float MaskThreshold;
+    float OpacityThreshold;
+    TessellationMethod TessellationMode;
+    int32 MaxTessellationFactor;
+
+    MaterialInfo9()
+    {
+    }
+
+    MaterialInfo9(const MaterialInfo8& other);
+    bool operator==(const MaterialInfo9& other) const;
+};
+
+/// <summary>
 /// Structure with basic information about the material surface. It describes how material is reacting on light and which graphical features of it requires to render.
 /// </summary>
 API_STRUCT() struct FLAXENGINE_API MaterialInfo
 {
-DECLARE_SCRIPTING_TYPE_MINIMAL(MaterialInfo);
+    DECLARE_SCRIPTING_TYPE_MINIMAL(MaterialInfo);
 
     /// <summary>
     /// The material shader domain.
@@ -472,6 +525,11 @@ DECLARE_SCRIPTING_TYPE_MINIMAL(MaterialInfo);
     /// The decal material blending mode.
     /// </summary>
     API_FIELD() MaterialDecalBlendingMode DecalBlendingMode;
+
+    /// <summary>
+    /// The transparent material lighting mode.
+    /// </summary>
+    API_FIELD() MaterialTransparentLightingMode TransparentLightingMode;
 
     /// <summary>
     /// The post fx material rendering location.
@@ -507,10 +565,10 @@ DECLARE_SCRIPTING_TYPE_MINIMAL(MaterialInfo);
     {
     }
 
-    MaterialInfo(const MaterialInfo8& other);
+    MaterialInfo(const MaterialInfo9& other);
     bool operator==(const MaterialInfo& other) const;
 };
 
 // The current material info descriptor version used by the material pipeline
-typedef MaterialInfo MaterialInfo9;
-#define MaterialInfo_Version 9
+typedef MaterialInfo MaterialInfo10;
+#define MaterialInfo_Version 10

@@ -3,6 +3,7 @@
 #pragma once
 
 #include "Engine/Content/BinaryAsset.h"
+#include "Engine/Content/AssetReference.h"
 
 class Font;
 class FontManager;
@@ -72,7 +73,7 @@ DECLARE_ENUM_OPERATORS(FontFlags);
 /// </summary>
 API_STRUCT() struct FontOptions
 {
-DECLARE_SCRIPTING_TYPE_MINIMAL(FontOptions);
+    DECLARE_SCRIPTING_TYPE_MINIMAL(FontOptions);
 
     /// <summary>
     /// The hinting.
@@ -90,17 +91,17 @@ DECLARE_SCRIPTING_TYPE_MINIMAL(FontOptions);
 /// </summary>
 API_CLASS(NoSpawn) class FLAXENGINE_API FontAsset : public BinaryAsset
 {
-DECLARE_BINARY_ASSET_HEADER(FontAsset, 3);
+    DECLARE_BINARY_ASSET_HEADER(FontAsset, 3);
     friend Font;
 private:
-
     FT_Face _face;
     FontOptions _options;
     BytesContainer _fontFile;
     Array<Font*, InlinedAllocation<32>> _fonts;
+    AssetReference<FontAsset> _virtualBold;
+    AssetReference<FontAsset> _virtualItalic;
 
 public:
-
     /// <summary>
     /// Gets the font family name.
     /// </summary>
@@ -130,13 +131,9 @@ public:
     /// <summary>
     /// Sets the font options.
     /// </summary>
-    API_PROPERTY() void SetOptions(const FontOptions& value)
-    {
-        _options = value;
-    }
+    API_PROPERTY() void SetOptions(const FontOptions& value);
 
 public:
-
     /// <summary>
     /// Creates the font object of given characters size.
     /// </summary>
@@ -144,15 +141,32 @@ public:
     /// <returns>The created font object.</returns>
     API_FUNCTION() Font* CreateFont(int32 size);
 
-#if USE_EDITOR
+    /// <summary>
+    /// Gets the font with bold style. Returns itself or creates a new virtual font asset using this font but with bold option enabled.
+    /// </summary>
+    /// <returns>The virtual font or this.</returns>
+    API_FUNCTION() FontAsset* GetBold();
 
+    /// <summary>
+    /// Gets the font with italic style. Returns itself or creates a new virtual font asset using this font but with italic option enabled.
+    /// </summary>
+    /// <returns>The virtual font or this.</returns>
+    API_FUNCTION() FontAsset* GetItalic();
+
+    /// <summary>
+    /// Initializes the font with a custom font file data.
+    /// </summary>
+    /// <param name="fontFile">Raw bytes with font file data.</param>
+    /// <returns>True if cannot init, otherwise false.</returns>
+    API_FUNCTION() bool Init(const BytesContainer& fontFile);
+
+#if USE_EDITOR
     /// <summary>
     /// Saves this asset to the file. Supported only in Editor.
     /// </summary>
     /// <param name="path">The custom asset path to use for the saving. Use empty value to save this asset to its own storage location. Can be used to duplicate asset. Must be specified when saving virtual asset.</param>
     /// <returns>True if cannot save data, otherwise false.</returns>
     API_FUNCTION() bool Save(const StringView& path = StringView::Empty);
-
 #endif
 
     /// <summary>
@@ -161,10 +175,12 @@ public:
     API_FUNCTION() void Invalidate();
 
 protected:
-
     // [BinaryAsset]
     bool init(AssetInitData& initData) override;
     LoadResult load() override;
     void unload(bool isReloading) override;
     AssetChunksFlag getChunksToPreload() const override;
+
+private:
+    bool Init();
 };

@@ -406,6 +406,59 @@ public:
     }
 
     /// <summary>
+    /// Binds a static function (if not binded yet).
+    /// </summary>
+    template<void(*Method)(Params ...)>
+    void BindUnique()
+    {
+        FunctionType f;
+        f.template Bind<Method>();
+        BindUnique(f);
+    }
+
+    /// <summary>
+    /// Binds a member function (if not binded yet).
+    /// </summary>
+    /// <param name="callee">The object instance.</param>
+    template<class T, void(T::*Method)(Params ...)>
+    void BindUnique(T* callee)
+    {
+        FunctionType f;
+        f.template Bind<T, Method>(callee);
+        BindUnique(f);
+    }
+
+    /// <summary>
+    /// Binds a function (if not binded yet).
+    /// </summary>
+    /// <param name="method">The method.</param>
+    void BindUnique(Signature method)
+    {
+        FunctionType f(method);
+        BindUnique(f);
+    }
+
+    /// <summary>
+    /// Binds a function (if not binded yet).
+    /// </summary>
+    /// <param name="f">The function to bind.</param>
+    void BindUnique(const FunctionType& f)
+    {
+        const intptr size = Platform::AtomicRead(&_size);
+        FunctionType* bindings = (FunctionType*)Platform::AtomicRead(&_ptr);
+        if (bindings)
+        {
+            // Skip if already binded
+            for (intptr i = 0; i < size; i++)
+            {
+                if (Platform::AtomicRead((intptr volatile*)&bindings[i]._callee) == (intptr)f._callee && Platform::AtomicRead((intptr volatile*)&bindings[i]._function) == (intptr)f._function)
+                    return;
+            }
+        }
+        Bind(f);
+    }
+
+    /// <summary>
     /// Unbinds a static function.
     /// </summary>
     template<void(*Method)(Params ...)>

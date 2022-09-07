@@ -16,6 +16,10 @@ GPUSwapChainDX11::GPUSwapChainDX11(GPUDeviceDX11* device, Window* window)
     , _windowHandle(static_cast<IUnknown*>(window->GetNativePtr()))
 #endif
     , _swapChain(nullptr)
+#if PLATFORM_WINDOWS
+    , _allowTearing(false)
+    , _isFullscreen(false)
+#endif
     , _backBuffer(nullptr)
 {
     ASSERT(_windowHandle);
@@ -108,6 +112,18 @@ void GPUSwapChainDX11::SetFullscreen(bool isFullscreen)
         {
             LOG(Warning, "Cannot change fullscreen mode for '{0}' to {1}.", ToString(), isFullscreen);
         }
+
+        _isFullscreen = isFullscreen;
+
+        // Buffers must be resized in flip presentation model
+        if (swapChainDesc.SwapEffect == DXGI_SWAP_EFFECT_FLIP_SEQUENTIAL ||
+            swapChainDesc.SwapEffect == DXGI_SWAP_EFFECT_FLIP_DISCARD)
+        {
+            const int32 width = _width;
+            const int32 height = _height;
+            _width = _height = 0;
+            Resize(width, height);
+        }
     }
 #else
     LOG(Info, "Cannot change fullscreen mode on this platform");
@@ -123,7 +139,14 @@ void GPUSwapChainDX11::Present(bool vsync)
 {
     // Present frame
     ASSERT(_swapChain);
-    const HRESULT result = _swapChain->Present(vsync ? 1 : 0, 0);
+    UINT presentFlags = 0;
+#if PLATFORM_WINDOWS
+    if (!vsync && !_isFullscreen && _allowTearing)
+    {
+        presentFlags |= DXGI_PRESENT_ALLOW_TEARING;
+    }
+#endif
+    const HRESULT result = _swapChain->Present(vsync ? 1 : 0, presentFlags);
     LOG_DIRECTX_RESULT(result);
 
     // Base
@@ -140,6 +163,9 @@ bool GPUSwapChainDX11::Resize(int32 width, int32 height)
 
     _device->WaitForGPU();
     GPUDeviceLock lock(_device);
+#if PLATFORM_WINDOWS
+    _allowTearing = _device->_allowTearing;
+#endif
     _format = GPU_BACK_BUFFER_PIXEL_FORMAT;
 
 #if PLATFORM_WINDOWS
@@ -177,6 +203,11 @@ bool GPUSwapChainDX11::Resize(int32 width, int32 height)
         swapChainDesc.Windowed = TRUE;
         swapChainDesc.SwapEffect = DXGI_SWAP_EFFECT_DISCARD;
         swapChainDesc.Flags = DXGI_SWAP_CHAIN_FLAG_ALLOW_MODE_SWITCH;
+        if (_allowTearing)
+        {
+            swapChainDesc.SwapEffect = DXGI_SWAP_EFFECT_FLIP_DISCARD;
+            swapChainDesc.Flags |= DXGI_SWAP_CHAIN_FLAG_ALLOW_TEARING;
+        }
 #else
         swapChainDesc.Width = width;
         swapChainDesc.Height = height;
@@ -202,7 +233,7 @@ bool GPUSwapChainDX11::Resize(int32 width, int32 height)
         ASSERT(_swapChain);
 
         // Disable DXGI changes to the window
-        VALIDATE_DIRECTX_RESULT(dxgi->MakeWindowAssociation(_windowHandle, 0));
+        VALIDATE_DIRECTX_RESULT(dxgi->MakeWindowAssociation(_windowHandle, DXGI_MWA_NO_ALT_ENTER));
 #else
         auto dxgiFactory = (IDXGIFactory2*)_device->GetDXGIFactory();
         VALIDATE_DIRECTX_RESULT(dxgiFactory->CreateSwapChainForCoreWindow(_device->GetDevice(), static_cast<IUnknown*>(_windowHandle), &swapChainDesc, nullptr, &_swapChain));

@@ -30,13 +30,11 @@
 class StreamSkinnedModelLODTask : public ThreadPoolTask
 {
 private:
-
     WeakAssetReference<SkinnedModel> _asset;
     int32 _lodIndex;
     FlaxStorage::LockData _dataLock;
 
 public:
-
     /// <summary>
     /// Init
     /// </summary>
@@ -50,7 +48,6 @@ public:
     }
 
 public:
-
     // [ThreadPoolTask]
     bool HasReference(Object* resource) const override
     {
@@ -58,7 +55,6 @@ public:
     }
 
 protected:
-
     // [ThreadPoolTask]
     bool Run() override
     {
@@ -89,6 +85,7 @@ protected:
 
         // Update residency level
         model->_loadedLODs++;
+        model->ResidencyChanged();
 
         return false;
     }
@@ -155,9 +152,14 @@ void SkinnedModel::GetLODData(int32 lodIndex, BytesContainer& data) const
     GetChunkData(chunkIndex, data);
 }
 
-bool SkinnedModel::Intersects(const Ray& ray, const Matrix& world, float& distance, Vector3& normal, SkinnedMesh** mesh, int32 lodIndex)
+bool SkinnedModel::Intersects(const Ray& ray, const Matrix& world, Real& distance, Vector3& normal, SkinnedMesh** mesh, int32 lodIndex)
 {
     return LODs[lodIndex].Intersects(ray, world, distance, normal, mesh);
+}
+
+bool SkinnedModel::Intersects(const Ray& ray, const Transform& transform, Real& distance, Vector3& normal, SkinnedMesh** mesh, int32 lodIndex)
+{
+    return LODs[lodIndex].Intersects(ray, transform, distance, normal, mesh);
 }
 
 BoundingBox SkinnedModel::GetBox(const Matrix& world, int32 lodIndex) const
@@ -187,11 +189,11 @@ void SkinnedModel::Draw(RenderContext& renderContext, const SkinnedMesh::DrawInf
     }
     else
     {
-        lodIndex = RenderTools::ComputeSkinnedModelLOD(this, info.Bounds.Center, info.Bounds.Radius, renderContext);
+        lodIndex = RenderTools::ComputeSkinnedModelLOD(this, info.Bounds.Center, (float)info.Bounds.Radius, renderContext);
         if (lodIndex == -1)
         {
             // Handling model fade-out transition
-            if (modelFrame == frame && info.DrawState->PrevLOD != -1)
+            if (modelFrame == frame && info.DrawState->PrevLOD != -1 && !renderContext.View.IsSingleFrame)
             {
                 // Check if start transition
                 if (info.DrawState->LODTransition == 255)
@@ -220,8 +222,11 @@ void SkinnedModel::Draw(RenderContext& renderContext, const SkinnedMesh::DrawInf
     lodIndex += info.LODBias + renderContext.View.ModelLODBias;
     lodIndex = ClampLODIndex(lodIndex);
 
+    if (renderContext.View.IsSingleFrame)
+    {
+    }
     // Check if it's the new frame and could update the drawing state (note: model instance could be rendered many times per frame to different viewports)
-    if (modelFrame == frame)
+    else if (modelFrame == frame)
     {
         // Check if start transition
         if (info.DrawState->PrevLOD != lodIndex && info.DrawState->LODTransition == 255)
@@ -237,7 +242,7 @@ void SkinnedModel::Draw(RenderContext& renderContext, const SkinnedMesh::DrawInf
             info.DrawState->PrevLOD = lodIndex;
         }
     }
-        // Check if there was a gap between frames in drawing this model instance
+    // Check if there was a gap between frames in drawing this model instance
     else if (modelFrame < frame || info.DrawState->PrevLOD == -1)
     {
         // Reset state
@@ -246,7 +251,7 @@ void SkinnedModel::Draw(RenderContext& renderContext, const SkinnedMesh::DrawInf
     }
 
     // Draw
-    if (info.DrawState->PrevLOD == lodIndex)
+    if (info.DrawState->PrevLOD == lodIndex || renderContext.View.IsSingleFrame)
     {
         LODs[lodIndex].Draw(renderContext, info, 0.0f);
     }
@@ -439,11 +444,11 @@ bool SkinnedModel::Save(bool withMeshDataFromGpu, const StringView& path)
 
                 // Box
                 const auto box = mesh.GetBox();
-                stream->Write(&box);
+                stream->WriteBoundingBox(box);
 
                 // Sphere
                 const auto sphere = mesh.GetSphere();
-                stream->Write(&sphere);
+                stream->WriteBoundingSphere(sphere);
 
                 // Blend Shapes
                 stream->WriteUint16(mesh.BlendShapes.Count());
@@ -466,7 +471,7 @@ bool SkinnedModel::Save(bool withMeshDataFromGpu, const StringView& path)
                 auto& node = Skeleton.Nodes[nodeIndex];
 
                 stream->Write(&node.ParentIndex);
-                stream->Write(&node.LocalTransform);
+                stream->WriteTransform(node.LocalTransform);
                 stream->WriteString(node.Name, 71);
             }
 
@@ -479,7 +484,7 @@ bool SkinnedModel::Save(bool withMeshDataFromGpu, const StringView& path)
 
                 stream->Write(&bone.ParentIndex);
                 stream->Write(&bone.NodeIndex);
-                stream->Write(&bone.LocalTransform);
+                stream->WriteTransform(bone.LocalTransform);
                 stream->Write(&bone.OffsetMatrix);
             }
         }
@@ -677,11 +682,8 @@ bool SkinnedModel::Init(const Span<int32>& meshesCountPerLod)
 
     // Setup LODs
     for (int32 lodIndex = 0; lodIndex < LODs.Count(); lodIndex++)
-    {
         LODs[lodIndex].Dispose();
-    }
     LODs.Resize(meshesCountPerLod.Length());
-    _loadedLODs = meshesCountPerLod.Length();
 
     // Setup meshes
     for (int32 lodIndex = 0; lodIndex < meshesCountPerLod.Length(); lodIndex++)
@@ -699,6 +701,10 @@ bool SkinnedModel::Init(const Span<int32>& meshesCountPerLod)
             lod.Meshes[meshIndex].Init(this, lodIndex, meshIndex, 0, BoundingBox::Zero, BoundingSphere::Empty);
         }
     }
+
+    // Update resource residency
+    _loadedLODs = meshesCountPerLod.Length();
+    ResidencyChanged();
 
     return false;
 }
@@ -752,6 +758,11 @@ void SkinnedModel::InitAsVirtual()
 
     // Base
     BinaryAsset::InitAsVirtual();
+}
+
+void SkinnedModel::CancelStreaming()
+{
+    CancelStreamingTasks();
 }
 
 #if USE_EDITOR
@@ -828,9 +839,19 @@ Task* SkinnedModel::CreateStreamingTask(int32 residency)
         for (int32 i = HighestResidentLODIndex(); i < LODs.Count() - residency; i++)
             LODs[i].Unload();
         _loadedLODs = residency;
+        ResidencyChanged();
     }
 
     return result;
+}
+
+void SkinnedModel::CancelStreamingTasks()
+{
+    if (_streamingTask)
+    {
+        _streamingTask->Cancel();
+        ASSERT_LOW_LAYER(_streamingTask == nullptr);
+    }
 }
 
 Asset::LoadResult SkinnedModel::load()
@@ -911,11 +932,11 @@ Asset::LoadResult SkinnedModel::load()
 
             // Box
             BoundingBox box;
-            stream->Read(&box);
+            stream->ReadBoundingBox(&box);
 
             // Sphere
             BoundingSphere sphere;
-            stream->Read(&sphere);
+            stream->ReadBoundingSphere(&sphere);
 
             // Create mesh object
             mesh.Init(this, lodIndex, meshIndex, materialSlotIndex, box, sphere);
@@ -947,7 +968,7 @@ Asset::LoadResult SkinnedModel::load()
             auto& node = Skeleton.Nodes[nodeIndex];
 
             stream->Read(&node.ParentIndex);
-            stream->Read(&node.LocalTransform);
+            stream->ReadTransform(&node.LocalTransform);
             stream->ReadString(&node.Name, 71);
         }
 
@@ -964,7 +985,7 @@ Asset::LoadResult SkinnedModel::load()
 
             stream->Read(&bone.ParentIndex);
             stream->Read(&bone.NodeIndex);
-            stream->Read(&bone.LocalTransform);
+            stream->ReadTransform(&bone.LocalTransform);
             stream->Read(&bone.OffsetMatrix);
         }
     }

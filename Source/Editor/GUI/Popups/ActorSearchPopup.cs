@@ -67,7 +67,7 @@ namespace FlaxEditor.GUI
             {
                 Find(Level.GetScene(i));
             }
-            SortChildren();
+            SortItems();
         }
 
         private void OnItemClicked(Item item)
@@ -99,7 +99,7 @@ namespace FlaxEditor.GUI
         /// <param name="isValid">Event called to check if a given actor item is valid to be used.</param>
         /// <param name="selected">Event called on actor item pick.</param>
         /// <returns>The dialog.</returns>
-        public static ActorSearchPopup Show(Control showTarget, Vector2 showTargetLocation, IsValidDelegate isValid, Action<Actor> selected)
+        public static ActorSearchPopup Show(Control showTarget, Float2 showTargetLocation, IsValidDelegate isValid, Action<Actor> selected)
         {
             var popup = new ActorSearchPopup(isValid, selected);
             popup.Show(showTarget, showTargetLocation);

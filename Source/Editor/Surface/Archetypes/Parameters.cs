@@ -1,5 +1,11 @@
 // Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
+#if USE_LARGE_WORLDS
+using Real = System.Double;
+#else
+using Real = System.Single;
+#endif
+
 using System;
 using System.Collections.Generic;
 using FlaxEditor.GUI;
@@ -59,29 +65,36 @@ namespace FlaxEditor.Surface.Archetypes
                     }
                 },
                 {
-                    typeof(Vector2),
+                    typeof(double),
                     new[]
                     {
-                        NodeElementArchetype.Factory.Output(1, "Value", typeof(Vector2), 0),
+                        NodeElementArchetype.Factory.Output(1, "Value", typeof(double), 0),
+                    }
+                },
+                {
+                    typeof(Float2),
+                    new[]
+                    {
+                        NodeElementArchetype.Factory.Output(1, "Value", typeof(Float2), 0),
                         NodeElementArchetype.Factory.Output(2, "X", typeof(float), 1),
                         NodeElementArchetype.Factory.Output(3, "Y", typeof(float), 2),
                     }
                 },
                 {
-                    typeof(Vector3),
+                    typeof(Float3),
                     new[]
                     {
-                        NodeElementArchetype.Factory.Output(1, "Value", typeof(Vector3), 0),
+                        NodeElementArchetype.Factory.Output(1, "Value", typeof(Float3), 0),
                         NodeElementArchetype.Factory.Output(2, "X", typeof(float), 1),
                         NodeElementArchetype.Factory.Output(3, "Y", typeof(float), 2),
                         NodeElementArchetype.Factory.Output(4, "Z", typeof(float), 3),
                     }
                 },
                 {
-                    typeof(Vector4),
+                    typeof(Float4),
                     new[]
                     {
-                        NodeElementArchetype.Factory.Output(1, "Value", typeof(Vector4), 0),
+                        NodeElementArchetype.Factory.Output(1, "Value", typeof(Float4), 0),
                         NodeElementArchetype.Factory.Output(2, "X", typeof(float), 1),
                         NodeElementArchetype.Factory.Output(3, "Y", typeof(float), 2),
                         NodeElementArchetype.Factory.Output(4, "Z", typeof(float), 3),
@@ -89,10 +102,70 @@ namespace FlaxEditor.Surface.Archetypes
                     }
                 },
                 {
+                    typeof(Double2),
+                    new[]
+                    {
+                        NodeElementArchetype.Factory.Output(1, "Value", typeof(Double2), 0),
+                        NodeElementArchetype.Factory.Output(2, "X", typeof(double), 1),
+                        NodeElementArchetype.Factory.Output(3, "Y", typeof(double), 2),
+                    }
+                },
+                {
+                    typeof(Double3),
+                    new[]
+                    {
+                        NodeElementArchetype.Factory.Output(1, "Value", typeof(Double3), 0),
+                        NodeElementArchetype.Factory.Output(2, "X", typeof(double), 1),
+                        NodeElementArchetype.Factory.Output(3, "Y", typeof(double), 2),
+                        NodeElementArchetype.Factory.Output(4, "Z", typeof(double), 3),
+                    }
+                },
+                {
+                    typeof(Double4),
+                    new[]
+                    {
+                        NodeElementArchetype.Factory.Output(1, "Value", typeof(Double4), 0),
+                        NodeElementArchetype.Factory.Output(2, "X", typeof(double), 1),
+                        NodeElementArchetype.Factory.Output(3, "Y", typeof(double), 2),
+                        NodeElementArchetype.Factory.Output(4, "Z", typeof(double), 3),
+                        NodeElementArchetype.Factory.Output(5, "W", typeof(double), 4),
+                    }
+                },
+                {
+                    typeof(Vector2),
+                    new[]
+                    {
+                        NodeElementArchetype.Factory.Output(1, "Value", typeof(Vector2), 0),
+                        NodeElementArchetype.Factory.Output(2, "X", typeof(Real), 1),
+                        NodeElementArchetype.Factory.Output(3, "Y", typeof(Real), 2),
+                    }
+                },
+                {
+                    typeof(Vector3),
+                    new[]
+                    {
+                        NodeElementArchetype.Factory.Output(1, "Value", typeof(Vector3), 0),
+                        NodeElementArchetype.Factory.Output(2, "X", typeof(Real), 1),
+                        NodeElementArchetype.Factory.Output(3, "Y", typeof(Real), 2),
+                        NodeElementArchetype.Factory.Output(4, "Z", typeof(Real), 3),
+                    }
+                },
+                {
+                    typeof(Vector4),
+                    new[]
+                    {
+                        NodeElementArchetype.Factory.Output(1, "Value", typeof(Vector4), 0),
+                        NodeElementArchetype.Factory.Output(2, "X", typeof(Real), 1),
+                        NodeElementArchetype.Factory.Output(3, "Y", typeof(Real), 2),
+                        NodeElementArchetype.Factory.Output(4, "Z", typeof(Real), 3),
+                        NodeElementArchetype.Factory.Output(5, "W", typeof(Real), 4),
+                    }
+                },
+                {
                     typeof(Color),
                     new[]
                     {
-                        NodeElementArchetype.Factory.Output(1, "Color", typeof(Vector4), 0),
+                        NodeElementArchetype.Factory.Output(1, "Color", typeof(Float4), 0),
                         NodeElementArchetype.Factory.Output(2, "R", typeof(float), 1),
                         NodeElementArchetype.Factory.Output(3, "G", typeof(float), 2),
                         NodeElementArchetype.Factory.Output(4, "B", typeof(float), 3),
@@ -103,9 +176,9 @@ namespace FlaxEditor.Surface.Archetypes
                     typeof(Texture),
                     new[]
                     {
-                        NodeElementArchetype.Factory.Input(1, "UVs", true, typeof(Vector2), 0, -1),
+                        NodeElementArchetype.Factory.Input(1, "UVs", true, typeof(Float2), 0, -1),
                         NodeElementArchetype.Factory.Output(1, "", typeof(FlaxEngine.Object), 6),
-                        NodeElementArchetype.Factory.Output(2, "Color", typeof(Vector4), 1),
+                        NodeElementArchetype.Factory.Output(2, "Color", typeof(Float4), 1),
                         NodeElementArchetype.Factory.Output(3, "R", typeof(float), 2),
                         NodeElementArchetype.Factory.Output(4, "G", typeof(float), 3),
                         NodeElementArchetype.Factory.Output(5, "B", typeof(float), 4),
@@ -116,9 +189,9 @@ namespace FlaxEditor.Surface.Archetypes
                     typeof(CubeTexture),
                     new[]
                     {
-                        NodeElementArchetype.Factory.Input(1, "UVs", true, typeof(Vector3), 0, -1),
+                        NodeElementArchetype.Factory.Input(1, "UVs", true, typeof(Float3), 0, -1),
                         NodeElementArchetype.Factory.Output(1, "", typeof(FlaxEngine.Object), 6),
-                        NodeElementArchetype.Factory.Output(2, "Color", typeof(Vector4), 1),
+                        NodeElementArchetype.Factory.Output(2, "Color", typeof(Float4), 1),
                         NodeElementArchetype.Factory.Output(3, "R", typeof(float), 2),
                         NodeElementArchetype.Factory.Output(4, "G", typeof(float), 3),
                         NodeElementArchetype.Factory.Output(5, "B", typeof(float), 4),
@@ -129,9 +202,9 @@ namespace FlaxEditor.Surface.Archetypes
                     typeof(GPUTexture),
                     new[]
                     {
-                        NodeElementArchetype.Factory.Input(1, "UVs", true, typeof(Vector2), 0, -1),
+                        NodeElementArchetype.Factory.Input(1, "UVs", true, typeof(Float2), 0, -1),
                         NodeElementArchetype.Factory.Output(1, "", typeof(FlaxEngine.Object), 6),
-                        NodeElementArchetype.Factory.Output(2, "Color", typeof(Vector4), 1),
+                        NodeElementArchetype.Factory.Output(2, "Color", typeof(Float4), 1),
                         NodeElementArchetype.Factory.Output(3, "R", typeof(float), 2),
                         NodeElementArchetype.Factory.Output(4, "G", typeof(float), 3),
                         NodeElementArchetype.Factory.Output(5, "B", typeof(float), 4),
@@ -142,17 +215,17 @@ namespace FlaxEditor.Surface.Archetypes
                     typeof(Matrix),
                     new[]
                     {
-                        NodeElementArchetype.Factory.Output(1, "Row 0", typeof(Vector4), 0),
-                        NodeElementArchetype.Factory.Output(2, "Row 1", typeof(Vector4), 1),
-                        NodeElementArchetype.Factory.Output(3, "Row 2", typeof(Vector4), 2),
-                        NodeElementArchetype.Factory.Output(4, "Row 3", typeof(Vector4), 3),
+                        NodeElementArchetype.Factory.Output(1, "Row 0", typeof(Float4), 0),
+                        NodeElementArchetype.Factory.Output(2, "Row 1", typeof(Float4), 1),
+                        NodeElementArchetype.Factory.Output(3, "Row 2", typeof(Float4), 2),
+                        NodeElementArchetype.Factory.Output(4, "Row 3", typeof(Float4), 3),
                     }
                 },
                 {
                     typeof(ChannelMask),
                     new[]
                     {
-                        NodeElementArchetype.Factory.Input(1, "Vector", true, typeof(Vector4), 0),
+                        NodeElementArchetype.Factory.Input(1, "Vector", true, typeof(Float4), 0),
                         NodeElementArchetype.Factory.Output(1, "Component", typeof(float), 1),
                     }
                 },
@@ -160,9 +233,9 @@ namespace FlaxEditor.Surface.Archetypes
 
             private readonly NodeElementArchetype[] _normalMapParameterElements =
             {
-                NodeElementArchetype.Factory.Input(1, "UVs", true, typeof(Vector2), 0, -1),
+                NodeElementArchetype.Factory.Input(1, "UVs", true, typeof(Float2), 0, -1),
                 NodeElementArchetype.Factory.Output(1, "", typeof(FlaxEngine.Object), 6),
-                NodeElementArchetype.Factory.Output(2, "Vector", typeof(Vector3), 1),
+                NodeElementArchetype.Factory.Output(2, "Vector", typeof(Float3), 1),
                 NodeElementArchetype.Factory.Output(3, "X", typeof(float), 2),
                 NodeElementArchetype.Factory.Output(4, "Y", typeof(float), 3),
                 NodeElementArchetype.Factory.Output(5, "Z", typeof(float), 4),
@@ -181,9 +254,9 @@ namespace FlaxEditor.Surface.Archetypes
 
             private NodeElementArchetype[] GetElementArchetypes(SurfaceParameter selected)
             {
-                if (selected != null && selected.Type.Type != null)
+                if (selected != null && selected.Type != ScriptType.Null)
                 {
-                    if (Prototypes != null && Prototypes.TryGetValue(selected.Type.Type, out var elements))
+                    if (selected.Type.Type != null && Prototypes != null && Prototypes.TryGetValue(selected.Type.Type, out var elements))
                     {
                         // Special case for Normal Maps
                         if (selected.Type.Type == typeof(Texture) && UseNormalMaps && selected.Value != null)
@@ -267,8 +340,12 @@ namespace FlaxEditor.Surface.Archetypes
 
             private SurfaceParameter GetSelected()
             {
-                var selectedIndex = _combobox.SelectedIndex;
-                return selectedIndex >= 0 && selectedIndex < Surface.Parameters.Count ? Surface.Parameters[selectedIndex] : null;
+                if (Surface != null)
+                {
+                    var selectedIndex = _combobox.SelectedIndex;
+                    return selectedIndex >= 0 && selectedIndex < Surface.Parameters.Count ? Surface.Parameters[selectedIndex] : null;
+                }
+                return Context.GetParameter((Guid)Values[0]);
             }
 
             private void ClearDynamicElements()
@@ -276,6 +353,46 @@ namespace FlaxEditor.Surface.Archetypes
                 for (int i = 0; i < _dynamicChildren.Count; i++)
                     RemoveElement(_dynamicChildren[i]);
                 _dynamicChildren.Clear();
+            }
+
+            /// <inheritdoc />
+            public override void OnShowSecondaryContextMenu(FlaxEditor.GUI.ContextMenu.ContextMenu menu, Float2 location)
+            {
+                base.OnShowSecondaryContextMenu(menu, location);
+
+                if (GetSelected() == null)
+                    return;
+                menu.AddSeparator();
+                menu.AddButton("Find references...", OnFindReferences);
+            }
+
+            private void OnFindReferences()
+            {
+                var selected = GetSelected();
+                var query = ContentSearchText ?? FlaxEngine.Json.JsonSerializer.GetStringID(selected.ID);
+                Editor.Instance.ContentFinding.ShowSearch(Surface, '\"' + query + '\"');
+            }
+
+            /// <inheritdoc />
+            public override string ContentSearchText
+            {
+                get
+                {
+                    if (Surface is VisualScriptSurface visualScriptSurface)
+                    {
+                        // Override with parameter typename
+                        var selected = GetSelected();
+                        return visualScriptSurface.Script.ScriptTypeName + '.' + selected.Name;
+                    }
+                    if (Context.Context.SurfaceAsset is VisualScript visualScript)
+                    {
+                        // Override with parameter typename
+                        var selected = Context.GetParameter((Guid)Values[0]);
+                        if (selected != null)
+                            return visualScript.ScriptTypeName + '.' + selected.Name;
+                    }
+                    return null;
+                }
             }
 
             /// <inheritdoc />
@@ -312,8 +429,11 @@ namespace FlaxEditor.Surface.Archetypes
             {
                 base.OnLoaded();
 
-                UpdateCombo();
-                UpdateLayout();
+                if (Surface != null)
+                {
+                    UpdateCombo();
+                    UpdateLayout();
+                }
             }
 
             /// <inheritdoc />
@@ -363,8 +483,11 @@ namespace FlaxEditor.Surface.Archetypes
             {
                 var selected = GetSelected();
                 Title = selected != null ? "Get " + selected.Name : "Get Parameter";
-                ResizeAuto();
-                _combobox.Width = Width - 30;
+                if (_combobox != null)
+                {
+                    ResizeAuto();
+                    _combobox.Width = Width - 30;
+                }
             }
         }
 
@@ -401,29 +524,36 @@ namespace FlaxEditor.Surface.Archetypes
                     }
                 },
                 {
-                    typeof(Vector2),
+                    typeof(double),
                     new[]
                     {
-                        NodeElementArchetype.Factory.Output(1, "Value", typeof(Vector2), 0),
+                        NodeElementArchetype.Factory.Output(1, "Value", typeof(double), 0),
+                    }
+                },
+                {
+                    typeof(Float2),
+                    new[]
+                    {
+                        NodeElementArchetype.Factory.Output(1, "Value", typeof(Float2), 0),
                         NodeElementArchetype.Factory.Output(2, "X", typeof(float), 1),
                         NodeElementArchetype.Factory.Output(3, "Y", typeof(float), 2),
                     }
                 },
                 {
-                    typeof(Vector3),
+                    typeof(Float3),
                     new[]
                     {
-                        NodeElementArchetype.Factory.Output(1, "Value", typeof(Vector3), 0),
+                        NodeElementArchetype.Factory.Output(1, "Value", typeof(Float3), 0),
                         NodeElementArchetype.Factory.Output(2, "X", typeof(float), 1),
                         NodeElementArchetype.Factory.Output(3, "Y", typeof(float), 2),
                         NodeElementArchetype.Factory.Output(4, "Z", typeof(float), 3),
                     }
                 },
                 {
-                    typeof(Vector4),
+                    typeof(Float4),
                     new[]
                     {
-                        NodeElementArchetype.Factory.Output(1, "Value", typeof(Vector4), 0),
+                        NodeElementArchetype.Factory.Output(1, "Value", typeof(Float4), 0),
                         NodeElementArchetype.Factory.Output(2, "X", typeof(float), 1),
                         NodeElementArchetype.Factory.Output(3, "Y", typeof(float), 2),
                         NodeElementArchetype.Factory.Output(4, "Z", typeof(float), 3),
@@ -431,10 +561,70 @@ namespace FlaxEditor.Surface.Archetypes
                     }
                 },
                 {
+                    typeof(Double2),
+                    new[]
+                    {
+                        NodeElementArchetype.Factory.Output(1, "Value", typeof(Double2), 0),
+                        NodeElementArchetype.Factory.Output(2, "X", typeof(double), 1),
+                        NodeElementArchetype.Factory.Output(3, "Y", typeof(double), 2),
+                    }
+                },
+                {
+                    typeof(Double3),
+                    new[]
+                    {
+                        NodeElementArchetype.Factory.Output(1, "Value", typeof(Double3), 0),
+                        NodeElementArchetype.Factory.Output(2, "X", typeof(double), 1),
+                        NodeElementArchetype.Factory.Output(3, "Y", typeof(double), 2),
+                        NodeElementArchetype.Factory.Output(4, "Z", typeof(double), 3),
+                    }
+                },
+                {
+                    typeof(Double4),
+                    new[]
+                    {
+                        NodeElementArchetype.Factory.Output(1, "Value", typeof(Double4), 0),
+                        NodeElementArchetype.Factory.Output(2, "X", typeof(double), 1),
+                        NodeElementArchetype.Factory.Output(3, "Y", typeof(double), 2),
+                        NodeElementArchetype.Factory.Output(4, "Z", typeof(double), 3),
+                        NodeElementArchetype.Factory.Output(5, "W", typeof(double), 4),
+                    }
+                },
+                {
+                    typeof(Vector2),
+                    new[]
+                    {
+                        NodeElementArchetype.Factory.Output(1, "Value", typeof(Vector2), 0),
+                        NodeElementArchetype.Factory.Output(2, "X", typeof(Real), 1),
+                        NodeElementArchetype.Factory.Output(3, "Y", typeof(Real), 2),
+                    }
+                },
+                {
+                    typeof(Vector3),
+                    new[]
+                    {
+                        NodeElementArchetype.Factory.Output(1, "Value", typeof(Vector3), 0),
+                        NodeElementArchetype.Factory.Output(2, "X", typeof(Real), 1),
+                        NodeElementArchetype.Factory.Output(3, "Y", typeof(Real), 2),
+                        NodeElementArchetype.Factory.Output(4, "Z", typeof(Real), 3),
+                    }
+                },
+                {
+                    typeof(Vector4),
+                    new[]
+                    {
+                        NodeElementArchetype.Factory.Output(1, "Value", typeof(Vector4), 0),
+                        NodeElementArchetype.Factory.Output(2, "X", typeof(Real), 1),
+                        NodeElementArchetype.Factory.Output(3, "Y", typeof(Real), 2),
+                        NodeElementArchetype.Factory.Output(4, "Z", typeof(Real), 3),
+                        NodeElementArchetype.Factory.Output(5, "W", typeof(Real), 4),
+                    }
+                },
+                {
                     typeof(Color),
                     new[]
                     {
-                        NodeElementArchetype.Factory.Output(1, "Color", typeof(Vector4), 0),
+                        NodeElementArchetype.Factory.Output(1, "Color", typeof(Float4), 0),
                         NodeElementArchetype.Factory.Output(2, "R", typeof(float), 1),
                         NodeElementArchetype.Factory.Output(3, "G", typeof(float), 2),
                         NodeElementArchetype.Factory.Output(4, "B", typeof(float), 3),
@@ -459,17 +649,17 @@ namespace FlaxEditor.Surface.Archetypes
                     typeof(Matrix),
                     new[]
                     {
-                        NodeElementArchetype.Factory.Output(1, "Row 0", typeof(Vector4), 0),
-                        NodeElementArchetype.Factory.Output(2, "Row 1", typeof(Vector4), 1),
-                        NodeElementArchetype.Factory.Output(3, "Row 2", typeof(Vector4), 2),
-                        NodeElementArchetype.Factory.Output(4, "Row 3", typeof(Vector4), 3),
+                        NodeElementArchetype.Factory.Output(1, "Row 0", typeof(Float4), 0),
+                        NodeElementArchetype.Factory.Output(2, "Row 1", typeof(Float4), 1),
+                        NodeElementArchetype.Factory.Output(3, "Row 2", typeof(Float4), 2),
+                        NodeElementArchetype.Factory.Output(4, "Row 3", typeof(Float4), 3),
                     }
                 },
                 {
                     typeof(ChannelMask),
                     new[]
                     {
-                        NodeElementArchetype.Factory.Input(1, "Vector", true, typeof(Vector4), 0),
+                        NodeElementArchetype.Factory.Input(1, "Vector", true, typeof(Float4), 0),
                         NodeElementArchetype.Factory.Output(1, "Component", typeof(float), 1),
                     }
                 },
@@ -561,8 +751,52 @@ namespace FlaxEditor.Surface.Archetypes
 
             private SurfaceParameter GetSelected()
             {
-                var selectedIndex = _combobox.SelectedIndex;
-                return selectedIndex >= 0 && selectedIndex < Surface.Parameters.Count ? Surface.Parameters[selectedIndex] : null;
+                if (Surface != null)
+                {
+                    var selectedIndex = _combobox.SelectedIndex;
+                    return selectedIndex >= 0 && selectedIndex < Surface.Parameters.Count ? Surface.Parameters[selectedIndex] : null;
+                }
+                return Context.GetParameter((Guid)Values[0]);
+            }
+
+            /// <inheritdoc />
+            public override void OnShowSecondaryContextMenu(FlaxEditor.GUI.ContextMenu.ContextMenu menu, Float2 location)
+            {
+                base.OnShowSecondaryContextMenu(menu, location);
+
+                if (GetSelected() == null)
+                    return;
+                menu.AddSeparator();
+                menu.AddButton("Find references...", OnFindReferences);
+            }
+
+            private void OnFindReferences()
+            {
+                var selected = GetSelected();
+                var query = ContentSearchText ?? FlaxEngine.Json.JsonSerializer.GetStringID(selected.ID);
+                Editor.Instance.ContentFinding.ShowSearch(Surface, '\"' + query + '\"');
+            }
+
+            /// <inheritdoc />
+            public override string ContentSearchText
+            {
+                get
+                {
+                    if (Surface is VisualScriptSurface visualScriptSurface)
+                    {
+                        // Override with parameter typename
+                        var selected = GetSelected();
+                        return visualScriptSurface.Script.ScriptTypeName + '.' + selected.Name;
+                    }
+                    if (Context.Context.SurfaceAsset is VisualScript visualScript)
+                    {
+                        // Override with parameter typename
+                        var selected = Context.GetParameter((Guid)Values[0]);
+                        if (selected != null)
+                            return visualScript.ScriptTypeName + '.' + selected.Name;
+                    }
+                    return null;
+                }
             }
 
             /// <inheritdoc />
@@ -601,7 +835,8 @@ namespace FlaxEditor.Surface.Archetypes
             {
                 base.OnLoaded();
 
-                UpdateCombo();
+                if (Surface != null)
+                    UpdateCombo();
                 UpdateUI();
             }
 
@@ -610,7 +845,10 @@ namespace FlaxEditor.Surface.Archetypes
             {
                 base.OnSurfaceLoaded();
 
-                UpdateUI();
+                if (Surface != null)
+                {
+                    UpdateUI();
+                }
             }
 
             /// <inheritdoc />
@@ -629,8 +867,11 @@ namespace FlaxEditor.Surface.Archetypes
                 box.Enabled = selected != null;
                 box.CurrentType = selected?.Type ?? ScriptType.Null;
                 Title = selected != null ? "Set " + selected.Name : "Set Parameter";
-                ResizeAuto();
-                _combobox.Width = Width - 50;
+                if (_combobox != null)
+                {
+                    ResizeAuto();
+                    _combobox.Width = Width - 50;
+                }
             }
         }
 
@@ -646,7 +887,7 @@ namespace FlaxEditor.Surface.Archetypes
                 Title = "Get Parameter",
                 Description = "Parameter value getter",
                 Flags = NodeFlags.MaterialGraph | NodeFlags.AnimGraph,
-                Size = new Vector2(140, 60),
+                Size = new Float2(140, 60),
                 DefaultValues = new object[]
                 {
                     Guid.Empty
@@ -663,7 +904,7 @@ namespace FlaxEditor.Surface.Archetypes
                 Title = "Get Parameter",
                 Description = "Parameter value getter",
                 Flags = NodeFlags.ParticleEmitterGraph,
-                Size = new Vector2(140, 60),
+                Size = new Float2(140, 60),
                 DefaultValues = new object[]
                 {
                     Guid.Empty
@@ -680,7 +921,7 @@ namespace FlaxEditor.Surface.Archetypes
                 Title = "Get Parameter",
                 Description = "Parameter value getter",
                 Flags = NodeFlags.VisualScriptGraph,
-                Size = new Vector2(140, 20),
+                Size = new Float2(140, 20),
                 DefaultValues = new object[]
                 {
                     Guid.Empty
@@ -697,7 +938,7 @@ namespace FlaxEditor.Surface.Archetypes
                 Title = "Set Parameter",
                 Description = "Parameter value setter",
                 Flags = NodeFlags.VisualScriptGraph,
-                Size = new Vector2(140, 40),
+                Size = new Float2(140, 40),
                 DefaultValues = new object[]
                 {
                     Guid.Empty,

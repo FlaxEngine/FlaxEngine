@@ -2,7 +2,7 @@
 
 #pragma once
 
-#if COMPILE_WITH_MODEL_TOOL
+#if COMPILE_WITH_MODEL_TOOL && USE_EDITOR
 
 #include "Engine/Core/Config.h"
 #include "Engine/Core/Types/BaseTypes.h"

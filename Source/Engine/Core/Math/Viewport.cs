@@ -122,7 +122,7 @@ namespace FlaxEngine
         /// </summary>
         /// <param name="location">The location of the upper-left corner of the viewport in pixels.</param>
         /// <param name="size">The size of the viewport in pixels.</param>
-        public Viewport(Vector2 location, Vector2 size)
+        public Viewport(Float2 location, Float2 size)
         {
             X = location.X;
             Y = location.Y;
@@ -151,9 +151,9 @@ namespace FlaxEngine
         /// <summary>
         /// Gets or sets the size of the viewport (width and height).
         /// </summary>
-        public Vector2 Size
+        public Float2 Size
         {
-            get => new Vector2(Width, Height);
+            get => new Float2(Width, Height);
             set
             {
                 Width = value.X;
@@ -165,9 +165,7 @@ namespace FlaxEngine
         /// Determines whether the specified <see cref="Viewport"/> is equal to this instance.
         /// </summary>
         /// <param name="other">The <see cref="Viewport"/> to compare with this instance.</param>
-        /// <returns>
-        /// <c>true</c> if the specified <see cref="Viewport"/> is equal to this instance; otherwise, <c>false</c>.
-        /// </returns>
+        /// <returns><c>true</c> if the specified <see cref="Viewport"/> is equal to this instance; otherwise, <c>false</c>.</returns>
         public bool Equals(ref Viewport other)
         {
             return Mathf.NearEqual(X, other.X) &&
@@ -182,9 +180,7 @@ namespace FlaxEngine
         /// Determines whether the specified <see cref="Viewport"/> is equal to this instance.
         /// </summary>
         /// <param name="other">The <see cref="Viewport"/> to compare with this instance.</param>
-        /// <returns>
-        /// <c>true</c> if the specified <see cref="Viewport"/> is equal to this instance; otherwise, <c>false</c>.
-        /// </returns>
+        /// <returns><c>true</c> if the specified <see cref="Viewport"/> is equal to this instance; otherwise, <c>false</c>.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool Equals(Viewport other)
         {
@@ -195,16 +191,10 @@ namespace FlaxEngine
         /// Determines whether the specified object is equal to this instance.
         /// </summary>
         /// <param name="obj">The object to compare with this instance.</param>
-        /// <returns>
-        /// <c>true</c> if the specified object is equal to this instance; otherwise, <c>false</c>.
-        /// </returns>
+        /// <returns><c>true</c> if the specified object is equal to this instance; otherwise, <c>false</c>.</returns>
         public override bool Equals(object obj)
         {
-            if (!(obj is Viewport))
-                return false;
-
-            var strongValue = (Viewport)obj;
-            return Equals(ref strongValue);
+            return obj is Viewport other && Equals(ref other);
         }
 
         /// <summary>
@@ -286,7 +276,7 @@ namespace FlaxEngine
         public void Project(ref Vector3 source, ref Matrix matrix, out Vector3 vector)
         {
             Vector3.Transform(ref source, ref matrix, out vector);
-            float w = source.X * matrix.M14 + source.Y * matrix.M24 + source.Z * matrix.M34 + matrix.M44;
+            var w = source.X * matrix.M14 + source.Y * matrix.M24 + source.Z * matrix.M34 + matrix.M44;
 
             if (!Mathf.IsZero(w))
             {
@@ -328,7 +318,7 @@ namespace FlaxEngine
             vector.Y = -((source.Y - Y) / Height * 2f - 1f);
             vector.Z = (source.Z - MinDepth) / (MaxDepth - MinDepth);
 
-            float w = vector.X * matrix.M14 + vector.Y * matrix.M24 + vector.Z * matrix.M34 + matrix.M44;
+            var w = vector.X * matrix.M14 + vector.Y * matrix.M24 + vector.Z * matrix.M34 + matrix.M44;
             Vector3.Transform(ref vector, ref matrix, out vector);
 
             if (!Mathf.IsZero(w))

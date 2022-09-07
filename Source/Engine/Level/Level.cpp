@@ -2,6 +2,7 @@
 
 #include "Level.h"
 #include "ActorsCache.h"
+#include "LargeWorlds.h"
 #include "SceneQuery.h"
 #include "SceneObjectsFactory.h"
 #include "Scene/Scene.h"
@@ -37,7 +38,24 @@
 #include "Engine/Platform/MessageBox.h"
 #include "Engine/Engine/CommandLine.h"
 #include "Engine/Serialization/JsonSerializer.h"
+#include "Editor/Scripting/ScriptsBuilder.h"
 #endif
+
+#if USE_LARGE_WORLDS
+bool LargeWorlds::Enable = true;
+#else
+bool LargeWorlds::Enable = false;
+#endif
+
+void LargeWorlds::UpdateOrigin(Vector3& origin, const Vector3& position)
+{
+    if (Enable)
+    {
+        constexpr Real chunkSizeInv = 1.0 / ChunkSize;
+        constexpr Real chunkSizeHalf = ChunkSize * 0.5;
+        origin = Vector3(Int3((position - chunkSizeHalf) * chunkSizeInv)) * ChunkSize;
+    }
+}
 
 bool LayersMask::HasLayer(const StringView& layerName) const
 {
@@ -59,7 +77,6 @@ enum class SceneEventType
 class SceneAction
 {
 public:
-
     virtual ~SceneAction()
     {
     }
@@ -113,7 +130,6 @@ using namespace LevelImpl;
 class LevelService : public EngineService
 {
 public:
-
     LevelService()
         : EngineService(TEXT("Scene Manager"), 30)
     {
@@ -129,6 +145,7 @@ LevelService LevelServiceInstanceService;
 
 CriticalSection Level::ScenesLock;
 Array<Scene*> Level::Scenes;
+bool Level::TickEnabled = true;
 Delegate<Actor*> Level::ActorSpawned;
 Delegate<Actor*> Level::ActorDeleted;
 Delegate<Actor*, Actor*> Level::ActorParentChanged;
@@ -163,7 +180,7 @@ bool LevelImpl::spawnActor(Actor* actor, Actor* parent)
     if (actor->Is<Scene>())
     {
         // Spawn scene
-        actor->PostSpawn();
+        actor->InitializeHierarchy();
         actor->OnTransformChanged();
         {
             SceneBeginData beginData;
@@ -229,7 +246,7 @@ void LevelService::Update()
     auto& scenes = Level::Scenes;
 
     // Update all actors
-    if (!Time::GetGamePaused())
+    if (!Time::GetGamePaused() && Level::TickEnabled)
     {
         for (int32 i = 0; i < scenes.Count(); i++)
         {
@@ -258,7 +275,7 @@ void LevelService::LateUpdate()
     auto& scenes = Level::Scenes;
 
     // Update all actors
-    if (!Time::GetGamePaused())
+    if (!Time::GetGamePaused() && Level::TickEnabled)
     {
         for (int32 i = 0; i < scenes.Count(); i++)
         {
@@ -290,7 +307,7 @@ void LevelService::FixedUpdate()
     auto& scenes = Level::Scenes;
 
     // Update all actors
-    if (!Time::GetGamePaused())
+    if (!Time::GetGamePaused() && Level::TickEnabled)
     {
         for (int32 i = 0; i < scenes.Count(); i++)
         {
@@ -378,9 +395,10 @@ void Level::DrawActors(RenderContext& renderContext)
 
     //ScopeLock lock(ScenesLock);
 
-    for (int32 i = 0; i < Scenes.Count(); i++)
+    for (Scene* scene : Scenes)
     {
-        Scenes[i]->Rendering.Draw(renderContext);
+        if (scene->IsActiveInHierarchy())
+            scene->Rendering.Draw(renderContext);
     }
 }
 
@@ -390,16 +408,16 @@ void Level::CollectPostFxVolumes(RenderContext& renderContext)
 
     //ScopeLock lock(ScenesLock);
 
-    for (int32 i = 0; i < Scenes.Count(); i++)
+    for (Scene* scene : Scenes)
     {
-        Scenes[i]->Rendering.CollectPostFxVolumes(renderContext);
+        if (scene->IsActiveInHierarchy())
+            scene->Rendering.CollectPostFxVolumes(renderContext);
     }
 }
 
 class LoadSceneAction : public SceneAction
 {
 public:
-
     Guid SceneId;
     AssetReference<JsonAsset> SceneAsset;
 
@@ -442,7 +460,6 @@ public:
 class UnloadSceneAction : public SceneAction
 {
 public:
-
     Guid TargetScene;
 
     UnloadSceneAction(Scene* scene)
@@ -462,7 +479,6 @@ public:
 class UnloadScenesAction : public SceneAction
 {
 public:
-
     UnloadScenesAction()
     {
     }
@@ -476,7 +492,6 @@ public:
 class SaveSceneAction : public SceneAction
 {
 public:
-
     Scene* TargetScene;
     bool PrettyJson;
 
@@ -502,7 +517,6 @@ public:
 class ReloadScriptsAction : public SceneAction
 {
 public:
-
     ReloadScriptsAction()
     {
     }
@@ -653,7 +667,6 @@ void Level::ScriptsReloadRegisterObject(ScriptingObject*& obj)
 class SpawnActorAction : public SceneAction
 {
 public:
-
     ScriptingObjectReference<Actor> TargetActor;
     ScriptingObjectReference<Actor> ParentActor;
 
@@ -672,7 +685,6 @@ public:
 class DeleteActorAction : public SceneAction
 {
 public:
-
     ScriptingObjectReference<Actor> TargetActor;
 
     DeleteActorAction(Actor* actor)
@@ -940,7 +952,12 @@ bool Level::loadScene(rapidjson_flax::Value& data, int32 engineBuild, Scene** ou
         LOG(Error, "Cannot load scene without game modules loaded.");
 #if USE_EDITOR
         if (!CommandLine::Options.Headless.IsTrue())
-            MessageBox::Show(TEXT("Cannot load scene without game script modules. Please fix the compilation issues. See logs for more info."), TEXT("Missing game modules"), MessageBoxButtons::OK, MessageBoxIcon::Error);
+        {
+            if (ScriptsBuilder::LastCompilationFailed())
+                MessageBox::Show(TEXT("Scripts compilation failed. Cannot load scene without game script modules. Please fix the compilation issues. See logs for more info."), TEXT("Failed to compile scripts"), MessageBoxButtons::OK, MessageBoxIcon::Error);
+            else
+                MessageBox::Show(TEXT("Failed to load scripts. Cannot load scene without game script modules. See logs for more info."), TEXT("Missing game modules"), MessageBoxButtons::OK, MessageBoxIcon::Error);
+        }
 #endif
         return true;
     }
@@ -1042,26 +1059,24 @@ bool Level::loadScene(rapidjson_flax::Value& data, int32 engineBuild, Scene** ou
     // TODO: resave and force sync scenes during game cooking so this step could be skipped in game
     SceneObjectsFactory::SynchronizePrefabInstances(context, prefabSyncData);
 
-    // Call post load event to connect all scene actors
+    // Initialize scene objects
     {
-        PROFILE_CPU_NAMED("Post Load");
+        PROFILE_CPU_NAMED("Initialize");
 
         for (int32 i = 0; i < sceneObjects->Count(); i++)
         {
             SceneObject* obj = sceneObjects->At(i);
             if (obj)
-                obj->PostLoad();
-        }
-    }
+            {
+                obj->Initialize();
 
-    // Delete objects without parent
-    for (int32 i = 1; i < objectsCount; i++)
-    {
-        SceneObject* obj = sceneObjects->At(i);
-        if (obj && obj->GetParent() == nullptr)
-        {
-            LOG(Warning, "Scene object {0} {1} has missing parent object after load. Removing it.", obj->GetID(), obj->ToString());
-            obj->DeleteObject();
+                // Delete objects without parent
+                if (i != 0 && obj->GetParent() == nullptr)
+                {
+                    LOG(Warning, "Scene object {0} {1} has missing parent object after load. Removing it.", obj->GetID(), obj->ToString());
+                    obj->DeleteObject();
+                }
+            }
         }
     }
 

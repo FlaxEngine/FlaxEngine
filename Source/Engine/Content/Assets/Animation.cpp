@@ -7,6 +7,7 @@
 #include "Engine/Content/Factories/BinaryAssetFactory.h"
 #include "Engine/Animations/CurveSerialization.h"
 #include "Engine/Animations/AnimEvent.h"
+#include "Engine/Animations/SceneAnimations/SceneAnimation.h"
 #include "Engine/Scripting/Scripting.h"
 #include "Engine/Threading/Threading.h"
 #include "Engine/Serialization/MemoryReadStream.h"
@@ -52,9 +53,9 @@ Animation::InfoData Animation::GetInfo() const
         for (auto& e : Data.Channels)
         {
             info.MemoryUsage += (e.NodeName.Length() + 1) * sizeof(Char);
-            info.MemoryUsage += e.Position.GetKeyframes().Capacity() * sizeof(LinearCurveKeyframe<Vector3>);
+            info.MemoryUsage += e.Position.GetKeyframes().Capacity() * sizeof(LinearCurveKeyframe<Float3>);
             info.MemoryUsage += e.Rotation.GetKeyframes().Capacity() * sizeof(LinearCurveKeyframe<Quaternion>);
-            info.MemoryUsage += e.Scale.GetKeyframes().Capacity() * sizeof(LinearCurveKeyframe<Vector3>);
+            info.MemoryUsage += e.Scale.GetKeyframes().Capacity() * sizeof(LinearCurveKeyframe<Float3>);
         }
     }
     else
@@ -64,7 +65,11 @@ Animation::InfoData Animation::GetInfo() const
         info.ChannelsCount = 0;
         info.KeyframesCount = 0;
     }
+    info.MemoryUsage += Events.Capacity() * sizeof(Pair<String, StepCurve<AnimEventData>>);
+    info.MemoryUsage += NestedAnims.Capacity() * sizeof(Pair<String, NestedAnimData>);
     info.MemoryUsage += MappingCache.Capacity() * (sizeof(void*) + sizeof(NodeToChannel) + 1);
+    for (auto& e : Events)
+        info.MemoryUsage += e.Second.GetKeyframes().Capacity() * sizeof(StepCurve<AnimEventData>);
     for (auto& e : MappingCache)
         info.MemoryUsage += e.Value.Capacity() * sizeof(int32);
     return info;
@@ -83,7 +88,7 @@ void Animation::ClearCache()
 
     // Free memory
     MappingCache.Clear();
-    MappingCache.Cleanup();
+    MappingCache.SetCapacity(0);
 }
 
 const Animation::NodeToChannel* Animation::GetMapping(SkinnedModel* obj)
@@ -145,7 +150,7 @@ void Animation::LoadTimeline(BytesContainer& result) const
     const float fpsInv = 1.0f / fps;
     stream.WriteFloat(fps);
     stream.WriteInt32((int32)Data.Duration);
-    int32 tracksCount = Data.Channels.Count() + Events.Count();
+    int32 tracksCount = Data.Channels.Count() + NestedAnims.Count() + Events.Count();
     for (auto& channel : Data.Channels)
         tracksCount +=
                 (channel.Position.GetKeyframes().HasItems() ? 1 : 0) +
@@ -232,6 +237,29 @@ void Animation::LoadTimeline(BytesContainer& result) const
             trackIndex++;
         }
     }
+    for (auto& e : NestedAnims)
+    {
+        auto& nestedAnim = e.Second;
+        byte flags = 0;
+        if (!nestedAnim.Enabled)
+            flags |= (byte)SceneAnimation::Track::Flags::Mute;
+        if (nestedAnim.Loop)
+            flags |= (byte)SceneAnimation::Track::Flags::Loop;
+        Guid id = nestedAnim.Anim.GetID();
+
+        // Nested Animation track
+        stream.WriteByte(20); // Track Type
+        stream.WriteByte(flags); // Track Flags
+        stream.WriteInt32(-1); // Parent Index
+        stream.WriteInt32(0); // Children Count
+        stream.WriteString(e.First, -13); // Name
+        stream.Write(&Color32::White); // Color
+        stream.Write(&id);
+        stream.WriteFloat(nestedAnim.Time);
+        stream.WriteFloat(nestedAnim.Duration);
+        stream.WriteFloat(nestedAnim.Speed);
+        stream.WriteFloat(nestedAnim.StartTime);
+    }
     for (auto& e : Events)
     {
         // Animation Event track
@@ -290,6 +318,7 @@ bool Animation::SaveTimeline(BytesContainer& data)
         // Tracks
         Data.Channels.Clear();
         Events.Clear();
+        NestedAnims.Clear();
         Dictionary<int32, int32> animationChannelTrackIndexToChannelIndex;
         animationChannelTrackIndexToChannelIndex.EnsureCapacity(tracksCount * 3);
         for (int32 trackIndex = 0; trackIndex < tracksCount; trackIndex++)
@@ -333,7 +362,7 @@ bool Animation::SaveTimeline(BytesContainer& data)
                     channel.Position.Resize(keyframesCount);
                     for (int32 i = 0; i < keyframesCount; i++)
                     {
-                        LinearCurveKeyframe<Vector3>& k = channel.Position.GetKeyframes()[i];
+                        LinearCurveKeyframe<Float3>& k = channel.Position.GetKeyframes()[i];
                         stream.ReadFloat(&k.Time);
                         k.Time *= fps;
                         stream.Read(&k.Value);
@@ -353,7 +382,7 @@ bool Animation::SaveTimeline(BytesContainer& data)
                     channel.Scale.Resize(keyframesCount);
                     for (int32 i = 0; i < keyframesCount; i++)
                     {
-                        LinearCurveKeyframe<Vector3>& k = channel.Scale.GetKeyframes()[i];
+                        LinearCurveKeyframe<Float3>& k = channel.Scale.GetKeyframes()[i];
                         stream.ReadFloat(&k.Time);
                         k.Time *= fps;
                         stream.Read(&k.Value);
@@ -390,6 +419,23 @@ bool Animation::SaveTimeline(BytesContainer& data)
                         Level::ScriptsReloadStart.Bind<Animation, &Animation::OnScriptsReloadStart>(this);
                     }
                 }
+                break;
+            }
+            case 20:
+            {
+                // Nested Animation
+                auto& nestedTrack = NestedAnims.AddOne();
+                nestedTrack.First = name;
+                auto& nestedAnim = nestedTrack.Second;
+                Guid id;
+                stream.Read(&id);
+                stream.ReadFloat(&nestedAnim.Time);
+                stream.ReadFloat(&nestedAnim.Duration);
+                stream.ReadFloat(&nestedAnim.Speed);
+                stream.ReadFloat(&nestedAnim.StartTime);
+                nestedAnim.Anim = id;
+                nestedAnim.Enabled = (trackFlags & (byte)SceneAnimation::Track::Flags::Mute) == 0;
+                nestedAnim.Loop = (trackFlags & (byte)SceneAnimation::Track::Flags::Loop) != 0;
                 break;
             }
             default:
@@ -431,7 +477,7 @@ bool Animation::Save(const StringView& path)
         MemoryWriteStream stream(4096);
 
         // Info
-        stream.WriteInt32(101);
+        stream.WriteInt32(102);
         stream.WriteDouble(Data.Duration);
         stream.WriteDouble(Data.FramesPerSecond);
         stream.WriteBool(Data.EnableRootMotion);
@@ -462,6 +508,27 @@ bool Animation::Save(const StringView& path)
                 stream.WriteStringAnsi(k.Value.TypeName, 17);
                 stream.WriteJson(k.Value.Instance);
             }
+        }
+
+        // Nested animations
+        stream.WriteInt32(NestedAnims.Count());
+        for (int32 i = 0; i < NestedAnims.Count(); i++)
+        {
+            auto& e = NestedAnims[i];
+            stream.WriteString(e.First, 172);
+            auto& nestedAnim = e.Second;
+            Guid id = nestedAnim.Anim.GetID();
+            byte flags = 0;
+            if (nestedAnim.Enabled)
+                flags |= 1;
+            if (nestedAnim.Loop)
+                flags |= 2;
+            stream.WriteByte(flags);
+            stream.Write(&id);
+            stream.WriteFloat(nestedAnim.Time);
+            stream.WriteFloat(nestedAnim.Duration);
+            stream.WriteFloat(nestedAnim.Speed);
+            stream.WriteFloat(nestedAnim.StartTime);
         }
 
         // Set data to the chunk asset
@@ -534,6 +601,7 @@ Asset::LoadResult Animation::load()
     {
     case 100:
     case 101:
+    case 102:
     {
         stream.ReadInt32(&headerVersion);
         stream.ReadDouble(&Data.Duration);
@@ -616,6 +684,31 @@ Asset::LoadResult Animation::load()
         }
     }
 
+    // Nested animations
+    if (headerVersion >= 102)
+    {
+        int32 nestedAnimationsCount;
+        stream.ReadInt32(&nestedAnimationsCount);
+        NestedAnims.Resize(nestedAnimationsCount, false);
+        for (int32 i = 0; i < nestedAnimationsCount; i++)
+        {
+            auto& e = NestedAnims[i];
+            stream.ReadString(&e.First, 172);
+            auto& nestedAnim = e.Second;
+            byte flags;
+            stream.ReadByte(&flags);
+            nestedAnim.Enabled = flags & 1;
+            nestedAnim.Loop = flags & 2;
+            Guid id;
+            stream.Read(&id);
+            nestedAnim.Anim = id;
+            stream.ReadFloat(&nestedAnim.Time);
+            stream.ReadFloat(&nestedAnim.Duration);
+            stream.ReadFloat(&nestedAnim.Speed);
+            stream.ReadFloat(&nestedAnim.StartTime);
+        }
+    }
+
     return LoadResult::Ok;
 }
 
@@ -639,6 +732,7 @@ void Animation::unload(bool isReloading)
         }
     }
     Events.Clear();
+    NestedAnims.Clear();
 }
 
 AssetChunksFlag Animation::getChunksToPreload() const

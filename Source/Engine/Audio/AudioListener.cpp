@@ -12,7 +12,7 @@ AudioListener::AudioListener(const SpawnParams& params)
 {
 }
 
-bool AudioListener::IntersectsItself(const Ray& ray, float& distance, Vector3& normal)
+bool AudioListener::IntersectsItself(const Ray& ray, Real& distance, Vector3& normal)
 {
     return false;
 }

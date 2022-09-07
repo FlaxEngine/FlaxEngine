@@ -1,5 +1,11 @@
 // Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
+#if USE_LARGE_WORLDS
+using Real = System.Double;
+#else
+using Real = System.Single;
+#endif
+
 using System;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
@@ -303,7 +309,7 @@ namespace FlaxEngine.Utilities
         public static Vector3 NextUnitVector3(this Random random)
         {
             Vector3 output;
-            float l;
+            Real l;
 
             do
             {

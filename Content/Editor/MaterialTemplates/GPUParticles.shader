@@ -5,6 +5,7 @@
 #include "./Flax/Common.hlsl"
 #include "./Flax/GBufferCommon.hlsl"
 #include "./Flax/Matrix.hlsl"
+#include "./Flax/Noise.hlsl"
 @7
 // Primary constant buffer
 META_CB_BEGIN(0, Data)
@@ -60,68 +61,6 @@ float Rand(inout uint seed)
 	const uint increment = 0x3c6ef35f;
 	seed = multiplier * seed + increment;
 	return asfloat((seed >> 9) | 0x3f800000) - 1.0f;
-}
-
-float4 Mod289(float4 x)
-{
-	return x - floor(x * (1.0 / 289.0)) * 289.0;
-}
-
-float4 Perm(float4 x)
-{
-	return Mod289(((x * 34.0) + 1.0) * x);
-}
-
-float Noise(float3 p)
-{
-    float3 a = floor(p);
-    float3 d = p - a;
-    d = d * d * (3.0 - 2.0 * d);
-	
-    float4 b = a.xxyy + float4(0.0, 1.0, 0.0, 1.0);
-    float4 k1 = Perm(b.xyxy);
-    float4 k2 = Perm(k1.xyxy + b.zzww);
-	
-    float4 c = k2 + a.zzzz;
-    float4 k3 = Perm(c);
-    float4 k4 = Perm(c + 1.0);
-	
-    float4 o1 = frac(k3 * (1.0 / 41.0));
-    float4 o2 = frac(k4 * (1.0 / 41.0));
-	
-    float4 o3 = o2 * d.z + o1 * (1.0 - d.z);
-    float2 o4 = o3.yw * d.x + o3.xz * (1.0 - d.x);
-	
-    return o4.y * d.y + o4.x * (1.0 - d.y);
-}
-
-float3 Noise3D(float3 p)
-{
-    float o = Noise(p);
-    float a = Noise(p + float3(0.0001f, 0.0f, 0.0f));
-    float b = Noise(p + float3(0.0f, 0.0001f, 0.0f));
-    float c = Noise(p + float3(0.0f, 0.0f, 0.0001f));
-
-    float3 grad = float3(o - a, o - b, o - c);
-    float3 other = abs(grad.zxy);
-    return normalize(cross(grad,other));
-}
-
-float3 Noise3D(float3 position, int octaves, float roughness)
-{
-	float weight = 0.0f;
-	float3 noise = float3(0.0, 0.0, 0.0);
-	float scale = 1.0f;
-	for (int i = 0; i < octaves; i++)
-	{
-		float curWeight = pow((1.0-((float)i / octaves)), lerp(2.0, 0.2, roughness));
-		
-		noise += Noise3D(position * scale) * curWeight;
-		weight += curWeight;
-		
-		scale *= 1.72531;
-	}
-	return noise / weight;
 }
 
 // Reprojects the world space position from the given UV and raw device depth

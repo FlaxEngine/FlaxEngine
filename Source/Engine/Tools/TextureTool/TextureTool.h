@@ -238,7 +238,7 @@ public:
     /// <param name="size">The size of the input texture (in pixels).</param>
     /// <param name="rowPitch">The row pitch (in bytes). The offset between each image rows.</param>
     /// <returns>The sampled color (linear).</returns>
-    static Color SamplePoint(const PixelFormatSampler* sampler, const Vector2& uv, const void* data, const Int2& size, int32 rowPitch);
+    static Color SamplePoint(const PixelFormatSampler* sampler, const Float2& uv, const void* data, const Int2& size, int32 rowPitch);
 
     /// <summary>
     /// Samples the specified texture data (uses no interpolation).
@@ -266,7 +266,7 @@ public:
     /// <param name="size">The size of the input texture (in pixels).</param>
     /// <param name="rowPitch">The row pitch (in bytes). The offset between each image rows.</param>
     /// <returns>The sampled color (linear).</returns>
-    static Color SampleLinear(const PixelFormatSampler* sampler, const Vector2& uv, const void* data, const Int2& size, int32 rowPitch);
+    static Color SampleLinear(const PixelFormatSampler* sampler, const Float2& uv, const void* data, const Int2& size, int32 rowPitch);
 
 private:
 

@@ -13,9 +13,13 @@ namespace Flax.Build.Bindings
     {
         public AccessLevel Access;
         public AccessLevel BaseTypeInheritance;
+        public bool IsTemplate;
         public ClassStructInfo BaseType;
         public List<InterfaceInfo> Interfaces;
         public List<TypeInfo> Inheritance; // Data from parsing, used to interfaces and base type construct in Init
+        public List<FunctionInfo> Functions = new List<FunctionInfo>();
+
+        public override bool SkipGeneration => IsInBuild || IsTemplate;
 
         public override void Init(Builder.BuildData buildData)
         {
@@ -50,8 +54,10 @@ namespace Flax.Build.Bindings
         {
             writer.Write((byte)Access);
             writer.Write((byte)BaseTypeInheritance);
+            writer.Write(IsTemplate);
             BindingsGenerator.Write(writer, BaseType);
             BindingsGenerator.Write(writer, Inheritance);
+            BindingsGenerator.Write(writer, Functions);
 
             base.Write(writer);
         }
@@ -60,8 +66,10 @@ namespace Flax.Build.Bindings
         {
             Access = (AccessLevel)reader.ReadByte();
             BaseTypeInheritance = (AccessLevel)reader.ReadByte();
+            IsTemplate = reader.ReadBoolean();
             BaseType = BindingsGenerator.Read(reader, BaseType);
             Inheritance = BindingsGenerator.Read(reader, Inheritance);
+            Functions = BindingsGenerator.Read(reader, Functions);
 
             base.Read(reader);
         }
@@ -72,8 +80,6 @@ namespace Flax.Build.Bindings
     /// </summary>
     public abstract class VirtualClassInfo : ClassStructInfo
     {
-        public List<FunctionInfo> Functions = new List<FunctionInfo>();
-
         internal HashSet<string> UniqueFunctionNames;
 
         public override void Init(Builder.BuildData buildData)
@@ -99,20 +105,6 @@ namespace Flax.Build.Bindings
         public abstract int GetScriptVTableSize(out int offset);
 
         public abstract int GetScriptVTableOffset(VirtualClassInfo classInfo);
-
-        public override void Write(BinaryWriter writer)
-        {
-            BindingsGenerator.Write(writer, Functions);
-
-            base.Write(writer);
-        }
-
-        public override void Read(BinaryReader reader)
-        {
-            Functions = BindingsGenerator.Read(reader, Functions);
-
-            base.Read(reader);
-        }
 
         public override void AddChild(ApiTypeInfo apiTypeInfo)
         {

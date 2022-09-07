@@ -22,7 +22,6 @@ class GPUTasksManager : public Object, public NonCopyable
     friend GPUTask;
 
 private:
-
     GPUDevice* _device;
     GPUTasksExecutor* _executor;
     ConcurrentTaskQueue<GPUTask> _tasks;
@@ -30,12 +29,10 @@ private:
     int32 _bufferIndex;
 
 private:
-
     GPUTasksManager(GPUDevice* device);
     ~GPUTasksManager();
 
 public:
-
     /// <summary>
     /// Gets the parent Graphics Device.
     /// </summary>
@@ -70,14 +67,12 @@ public:
     }
 
 public:
-
     /// <summary>
     /// Clears asynchronous resources loading queue and cancels all tasks.
     /// </summary>
     void Dispose();
 
 public:
-
     /// <summary>
     /// On begin rendering frame.
     /// </summary>
@@ -89,7 +84,6 @@ public:
     void FrameEnd();
 
 public:
-
     /// <summary>
     /// Requests work to do. Should be used only by GPUTasksExecutor.
     /// </summary>
@@ -99,7 +93,6 @@ public:
     int32 RequestWork(GPUTask** buffer, int32 maxCount);
 
 public:
-
     // [Object]
     String ToString() const override
     {

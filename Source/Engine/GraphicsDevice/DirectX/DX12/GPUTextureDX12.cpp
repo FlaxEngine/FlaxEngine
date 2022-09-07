@@ -208,36 +208,39 @@ bool GPUTextureDX12::OnInit()
     return false;
 }
 
-void GPUTextureDX12::onResidentMipsChanged()
+void GPUTextureDX12::OnResidentMipsChanged()
 {
-    // We support changing resident mip maps only for regular textures (render targets and depth buffers don't use that feature at all)
-    ASSERT(IsRegularTexture() && _handlesPerSlice.Count() == 1);
-    ASSERT(!IsVolume());
-
-    // Fill description
+    const int32 firstMipIndex = MipLevels() - ResidentMipLevels();
+    const int32 mipLevels = ResidentMipLevels();
     D3D12_SHADER_RESOURCE_VIEW_DESC srDesc;
     srDesc.Format = _dxgiFormatSRV;
     srDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
     if (IsCubeMap())
     {
         srDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURECUBE;
-        srDesc.TextureCube.MostDetailedMip = MipLevels() - ResidentMipLevels();
-        srDesc.TextureCube.MipLevels = ResidentMipLevels();
+        srDesc.TextureCube.MostDetailedMip = firstMipIndex;
+        srDesc.TextureCube.MipLevels = mipLevels;
         srDesc.TextureCube.ResourceMinLODClamp = 0;
+    }
+    else if (IsVolume())
+    {
+        srDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE3D;
+        srDesc.Texture3D.MostDetailedMip = firstMipIndex;
+        srDesc.Texture3D.MipLevels = mipLevels;
+        srDesc.Texture3D.ResourceMinLODClamp = 0;
     }
     else
     {
         srDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
-        srDesc.Texture2D.MostDetailedMip = MipLevels() - ResidentMipLevels();
-        srDesc.Texture2D.MipLevels = ResidentMipLevels();
+        srDesc.Texture2D.MostDetailedMip = firstMipIndex;
+        srDesc.Texture2D.MipLevels = mipLevels;
         srDesc.Texture2D.PlaneSlice = 0;
         srDesc.Texture2D.ResourceMinLODClamp = 0;
     }
-
-    // Change view
-    if (_handlesPerSlice[0].GetParent() == nullptr)
-        _handlesPerSlice[0].Init(this, _device, this, Format(), MultiSampleLevel());
-    _handlesPerSlice[0].SetSRV(srDesc);
+    GPUTextureViewDX12& view = IsVolume() ? _handleVolume : _handlesPerSlice[0];
+    if (view.GetParent() == nullptr)
+        view.Init(this, _device, this, Format(), MultiSampleLevel());
+    view.SetSRV(srDesc);
 }
 
 void GPUTextureDX12::OnReleaseGPU()

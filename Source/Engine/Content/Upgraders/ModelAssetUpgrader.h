@@ -19,7 +19,6 @@
 class ModelAssetUpgrader : public BinaryAssetUpgrader
 {
 public:
-
     /// <summary>
     /// Initializes a new instance of the <see cref="ModelAssetUpgrader"/> class.
     /// </summary>
@@ -36,7 +35,6 @@ public:
     }
 
 private:
-
     // ============================================
     //                  Version 25:
     // The same as version 24 except Vertex Buffer 1 has `Color32 Color` component per vertex added

@@ -56,7 +56,7 @@ namespace FlaxEditor.Content
                 Offsets = Margin.Zero;
             }
 
-            public override bool OnMouseDoubleClick(Vector2 location, MouseButton button)
+            public override bool OnMouseDoubleClick(Float2 location, MouseButton button)
             {
                 return Item.OnMouseDoubleClick(Item.PointFromScreen(PointToScreen(location)), button);
             }

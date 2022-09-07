@@ -14,7 +14,7 @@ class GPUTexture;
 /// </summary>
 API_CLASS(Static) class FLAXENGINE_API Screenshot
 {
-DECLARE_SCRIPTING_TYPE_NO_SPAWN(Screenshot);
+    DECLARE_SCRIPTING_TYPE_NO_SPAWN(Screenshot);
 
     /// <summary>
     /// Captures the specified render target contents and saves it to the file.

@@ -39,7 +39,7 @@ namespace FlaxEditor.GUI
             {
                 _editor = editor;
                 const float width = 340.0f;
-                Size = new Vector2(width, height);
+                Size = new Float2(width, height);
                 var panel1 = new Panel(ScrollBars.Vertical)
                 {
                     Bounds = new Rectangle(0, 0.0f, width, height),
@@ -152,7 +152,7 @@ namespace FlaxEditor.GUI
             /// <summary>
             /// Gets the point time and value on a curve.
             /// </summary>
-            public Vector2 Point => Editor.GetKeyframePoint(Index, Component);
+            public Float2 Point => Editor.GetKeyframePoint(Index, Component);
 
             /// <summary>
             /// Gets the time of the keyframe point.
@@ -162,7 +162,7 @@ namespace FlaxEditor.GUI
             /// <inheritdoc />
             public override void Draw()
             {
-                var rect = new Rectangle(Vector2.Zero, Size);
+                var rect = new Rectangle(Float2.Zero, Size);
                 var color = Editor.ShowCollapsed ? Color.Gray : Editor.Colors[Component];
                 if (IsSelected)
                     color = Editor.ContainsFocus ? Color.YellowGreen : Color.Lerp(Color.Gray, Color.YellowGreen, 0.4f);
@@ -172,7 +172,7 @@ namespace FlaxEditor.GUI
             }
 
             /// <inheritdoc />
-            public override bool OnMouseDoubleClick(Vector2 location, MouseButton button)
+            public override bool OnMouseDoubleClick(Float2 location, MouseButton button)
             {
                 if (base.OnMouseDoubleClick(location, button))
                     return true;
@@ -249,7 +249,7 @@ namespace FlaxEditor.GUI
                 var pointPos = PointFromParent(Point.Center);
                 Render2D.DrawLine(Size * 0.5f, pointPos, Color.Gray);
 
-                var rect = new Rectangle(Vector2.Zero, Size);
+                var rect = new Rectangle(Float2.Zero, Size);
                 var color = Color.MediumVioletRed;
                 if (IsMouseOver)
                     color *= 1.1f;
@@ -278,7 +278,7 @@ namespace FlaxEditor.GUI
         /// <summary>
         /// The keyframes size.
         /// </summary>
-        protected static readonly Vector2 KeyframesSize = new Vector2(7.0f);
+        protected static readonly Float2 KeyframesSize = new Float2(7.0f);
 
         /// <summary>
         /// The colors for the keyframe points.
@@ -330,7 +330,7 @@ namespace FlaxEditor.GUI
         protected readonly TangentPoint[] _tangents = new TangentPoint[2];
 
         /// <inheritdoc />
-        public override Vector2 ViewOffset
+        public override Float2 ViewOffset
         {
             get => _mainPanel.ViewOffset;
             set
@@ -341,10 +341,10 @@ namespace FlaxEditor.GUI
         }
 
         /// <inheritdoc />
-        public override Vector2 ViewScale
+        public override Float2 ViewScale
         {
             get => _contents.Scale;
-            set => _contents.Scale = Vector2.Clamp(value, new Vector2(0.0001f), new Vector2(1000.0f));
+            set => _contents.Scale = Float2.Clamp(value, new Float2(0.0001f), new Float2(1000.0f));
         }
 
         /// <summary>
@@ -520,7 +520,7 @@ namespace FlaxEditor.GUI
         /// Adds a new keyframe at the given location (in keyframes space).
         /// </summary>
         /// <param name="keyframesPos">The new keyframe position (in keyframes space).</param>
-        protected abstract void AddKeyframe(Vector2 keyframesPos);
+        protected abstract void AddKeyframe(Float2 keyframesPos);
 
         /// <summary>
         /// Sets the keyframe data (internally).
@@ -588,13 +588,13 @@ namespace FlaxEditor.GUI
             void Apply();
         }
 
-        private void EditAllKeyframes(Control control, Vector2 pos)
+        private void EditAllKeyframes(Control control, Float2 pos)
         {
             _popup = new Popup(this, new object[] { GetAllKeyframesEditingProxy() }, null, 400.0f);
             _popup.Show(control, pos);
         }
 
-        private void EditKeyframes(Control control, Vector2 pos)
+        private void EditKeyframes(Control control, Float2 pos)
         {
             var keyframeIndices = new List<int>();
             for (int i = 0; i < _points.Count; i++)
@@ -607,7 +607,7 @@ namespace FlaxEditor.GUI
             EditKeyframes(control, pos, keyframeIndices);
         }
 
-        private void EditKeyframes(Control control, Vector2 pos, List<int> keyframeIndices)
+        private void EditKeyframes(Control control, Float2 pos, List<int> keyframeIndices)
         {
             var selection = new object[keyframeIndices.Count];
             var keyframes = GetKeyframes();
@@ -730,7 +730,7 @@ namespace FlaxEditor.GUI
         /// <param name="point">The point.</param>
         /// <param name="curveContentAreaBounds">The curve contents area bounds.</param>
         /// <returns>The result.</returns>
-        protected Vector2 PointToKeyframes(Vector2 point, ref Rectangle curveContentAreaBounds)
+        protected Float2 PointToKeyframes(Float2 point, ref Rectangle curveContentAreaBounds)
         {
             // Curve Editor -> Main Panel
             point = _mainPanel.PointFromParent(point);
@@ -739,10 +739,10 @@ namespace FlaxEditor.GUI
             point = _contents.PointFromParent(point);
 
             // Contents -> Keyframes
-            return new Vector2(
-                               (point.X + _contents.Location.X) / UnitsPerSecond,
-                               (point.Y + _contents.Location.Y - curveContentAreaBounds.Height) / -UnitsPerSecond
-                              );
+            return new Float2(
+                              (point.X + _contents.Location.X) / UnitsPerSecond,
+                              (point.Y + _contents.Location.Y - curveContentAreaBounds.Height) / -UnitsPerSecond
+                             );
         }
 
         /// <summary>
@@ -751,13 +751,13 @@ namespace FlaxEditor.GUI
         /// <param name="point">The point.</param>
         /// <param name="curveContentAreaBounds">The curve contents area bounds.</param>
         /// <returns>The result.</returns>
-        protected Vector2 PointFromKeyframes(Vector2 point, ref Rectangle curveContentAreaBounds)
+        protected Float2 PointFromKeyframes(Float2 point, ref Rectangle curveContentAreaBounds)
         {
             // Keyframes -> Contents
-            point = new Vector2(
-                                point.X * UnitsPerSecond - _contents.Location.X,
-                                point.Y * -UnitsPerSecond + curveContentAreaBounds.Height - _contents.Location.Y
-                               );
+            point = new Float2(
+                               point.X * UnitsPerSecond - _contents.Location.X,
+                               point.Y * -UnitsPerSecond + curveContentAreaBounds.Height - _contents.Location.Y
+                              );
 
             // Contents -> Main Panel
             point = _contents.PointToParent(point);
@@ -766,7 +766,7 @@ namespace FlaxEditor.GUI
             return _mainPanel.PointToParent(point);
         }
 
-        private void DrawAxis(Vector2 axis, ref Rectangle viewRect, float min, float max, float pixelRange)
+        private void DrawAxis(Float2 axis, ref Rectangle viewRect, float min, float max, float pixelRange)
         {
             int minDistanceBetweenTicks = 20;
             int maxDistanceBetweenTicks = 60;
@@ -819,7 +819,7 @@ namespace FlaxEditor.GUI
                     var lineRect = new Rectangle
                     (
                      viewRect.Location + (p - 0.5f) * axis,
-                     Vector2.Lerp(viewRect.Size, Vector2.One, axis)
+                     Float2.Lerp(viewRect.Size, Float2.One, axis)
                     );
                     Render2D.FillRectangle(lineRect, _linesColor.AlphaMultiplied(strength));
 
@@ -854,7 +854,7 @@ namespace FlaxEditor.GUI
             }
 
             var style = Style.Current;
-            var rect = new Rectangle(Vector2.Zero, Size);
+            var rect = new Rectangle(Float2.Zero, Size);
             var viewRect = _mainPanel.GetClientArea();
 
             // Draw background
@@ -869,16 +869,16 @@ namespace FlaxEditor.GUI
                 var upperLeft = PointToKeyframes(viewRect.Location, ref viewRect);
                 var bottomRight = PointToKeyframes(viewRect.Size, ref viewRect);
 
-                var min = Vector2.Min(upperLeft, bottomRight);
-                var max = Vector2.Max(upperLeft, bottomRight);
+                var min = Float2.Min(upperLeft, bottomRight);
+                var max = Float2.Max(upperLeft, bottomRight);
                 var pixelRange = (max - min) * ViewScale * UnitsPerSecond;
 
                 Render2D.PushClip(ref viewRect);
 
                 if ((ShowAxes & UseMode.Vertical) == UseMode.Vertical)
-                    DrawAxis(Vector2.UnitX, ref viewRect, min.X, max.X, pixelRange.X);
+                    DrawAxis(Float2.UnitX, ref viewRect, min.X, max.X, pixelRange.X);
                 if ((ShowAxes & UseMode.Horizontal) == UseMode.Horizontal)
-                    DrawAxis(Vector2.UnitY, ref viewRect, min.Y, max.Y, pixelRange.Y);
+                    DrawAxis(Float2.UnitY, ref viewRect, min.Y, max.Y, pixelRange.Y);
 
                 Render2D.PopClip();
             }
@@ -1094,9 +1094,9 @@ namespace FlaxEditor.GUI
         /// <param name="k">The keyframe.</param>
         /// <param name="component">The keyframe value component index.</param>
         /// <returns>The point in time/value space.</returns>
-        private Vector2 GetKeyframePoint(ref LinearCurve<T>.Keyframe k, int component)
+        private Float2 GetKeyframePoint(ref LinearCurve<T>.Keyframe k, int component)
         {
-            return new Vector2(k.Time, Accessor.GetCurveValue(ref k.Value, component));
+            return new Float2(k.Time, Accessor.GetCurveValue(ref k.Value, component));
         }
 
         private void DrawLine(LinearCurve<T>.Keyframe startK, LinearCurve<T>.Keyframe endK, int component, ref Rectangle viewRect)
@@ -1179,7 +1179,7 @@ namespace FlaxEditor.GUI
         }
 
         /// <inheritdoc />
-        protected override void AddKeyframe(Vector2 keyframesPos)
+        protected override void AddKeyframe(Float2 keyframesPos)
         {
             var k = new LinearCurve<T>.Keyframe
             {
@@ -1320,10 +1320,10 @@ namespace FlaxEditor.GUI
         }
 
         /// <inheritdoc />
-        public override Vector2 GetKeyframePoint(int index, int component)
+        public override Float2 GetKeyframePoint(int index, int component)
         {
             var k = _keyframes[index];
-            return new Vector2(k.Time, Accessor.GetCurveValue(ref k.Value, component));
+            return new Float2(k.Time, Accessor.GetCurveValue(ref k.Value, component));
         }
 
         /// <inheritdoc />
@@ -1379,7 +1379,7 @@ namespace FlaxEditor.GUI
                 var k = _keyframes[p.Index];
 
                 var location = GetKeyframePoint(ref k, p.Component);
-                var point = new Vector2
+                var point = new Float2
                 (
                  location.X * UnitsPerSecond - p.Width * 0.5f,
                  location.Y * -UnitsPerSecond - p.Height * 0.5f + curveContentAreaBounds.Height
@@ -1388,7 +1388,7 @@ namespace FlaxEditor.GUI
                 if (_showCollapsed)
                 {
                     point.Y = 1.0f;
-                    p.Size = new Vector2(KeyframesSize.X / viewScale.X, Height - 2.0f);
+                    p.Size = new Float2(KeyframesSize.X / viewScale.X, Height - 2.0f);
                     p.Visible = p.Component == 0;
                 }
                 else
@@ -1418,7 +1418,7 @@ namespace FlaxEditor.GUI
             }
             else if (_contents.Bounds == Rectangle.Empty)
             {
-                _contents.Bounds = Rectangle.Union(bounds, new Rectangle(Vector2.Zero, Vector2.One));
+                _contents.Bounds = Rectangle.Union(bounds, new Rectangle(Float2.Zero, Float2.One));
             }
 
             // Offset the keyframes (parent container changed its location)
@@ -1805,9 +1805,9 @@ namespace FlaxEditor.GUI
         /// <param name="k">The keyframe.</param>
         /// <param name="component">The keyframe value component index.</param>
         /// <returns>The point in time/value space.</returns>
-        private Vector2 GetKeyframePoint(ref BezierCurve<T>.Keyframe k, int component)
+        private Float2 GetKeyframePoint(ref BezierCurve<T>.Keyframe k, int component)
         {
-            return new Vector2(k.Time, Accessor.GetCurveValue(ref k.Value, component));
+            return new Float2(k.Time, Accessor.GetCurveValue(ref k.Value, component));
         }
 
         private void DrawLine(BezierCurve<T>.Keyframe startK, BezierCurve<T>.Keyframe endK, int component, ref Rectangle viewRect)
@@ -1890,7 +1890,7 @@ namespace FlaxEditor.GUI
         }
 
         /// <inheritdoc />
-        protected override void AddKeyframe(Vector2 keyframesPos)
+        protected override void AddKeyframe(Float2 keyframesPos)
         {
             var k = new BezierCurve<T>.Keyframe
             {
@@ -2042,10 +2042,10 @@ namespace FlaxEditor.GUI
         }
 
         /// <inheritdoc />
-        public override Vector2 GetKeyframePoint(int index, int component)
+        public override Float2 GetKeyframePoint(int index, int component)
         {
             var k = _keyframes[index];
-            return new Vector2(k.Time, Accessor.GetCurveValue(ref k.Value, component));
+            return new Float2(k.Time, Accessor.GetCurveValue(ref k.Value, component));
         }
 
         /// <inheritdoc />
@@ -2094,13 +2094,13 @@ namespace FlaxEditor.GUI
             // Place keyframes
             Rectangle curveContentAreaBounds = _mainPanel.GetClientArea();
             var viewScale = ViewScale;
-            var pointsSize = _showCollapsed ? new Vector2(4.0f / viewScale.X, Height - 2.0f) : KeyframesSize / viewScale;
+            var pointsSize = _showCollapsed ? new Float2(4.0f / viewScale.X, Height - 2.0f) : KeyframesSize / viewScale;
             for (int i = 0; i < _points.Count; i++)
             {
                 var p = _points[i];
                 var k = _keyframes[p.Index];
                 var point = GetKeyframePoint(ref k, p.Component);
-                var location = new Vector2
+                var location = new Float2
                 (
                  point.X * UnitsPerSecond - pointsSize.X * 0.5f,
                  point.Y * -UnitsPerSecond - pointsSize.Y * 0.5f + curveContentAreaBounds.Height
@@ -2136,7 +2136,7 @@ namespace FlaxEditor.GUI
             }
             else if (_contents.Bounds == Rectangle.Empty)
             {
-                _contents.Bounds = Rectangle.Union(bounds, new Rectangle(Vector2.Zero, Vector2.One));
+                _contents.Bounds = Rectangle.Union(bounds, new Rectangle(Float2.Zero, Float2.One));
             }
 
             // Offset the keyframes (parent container changed its location)
@@ -2191,7 +2191,7 @@ namespace FlaxEditor.GUI
                     var offset = 30.0f * direction;
                     var location = GetKeyframePoint(ref k, selectedComponent);
                     t.Size = KeyframesSize / ViewScale;
-                    t.Location = new Vector2
+                    t.Location = new Float2
                     (
                      location.X * UnitsPerSecond - t.Width * 0.5f + offset,
                      location.Y * -UnitsPerSecond - t.Height * 0.5f + curveContentAreaBounds.Height - offset * tangent
@@ -2272,8 +2272,8 @@ namespace FlaxEditor.GUI
                     var offset = (end.X - start.X) * 0.5f;
 
                     var p1 = PointFromKeyframes(start, ref viewRect);
-                    var p2 = PointFromKeyframes(start + new Vector2(offset, startTangent * offset), ref viewRect);
-                    var p3 = PointFromKeyframes(end - new Vector2(offset, endTangent * offset), ref viewRect);
+                    var p2 = PointFromKeyframes(start + new Float2(offset, startTangent * offset), ref viewRect);
+                    var p3 = PointFromKeyframes(end - new Float2(offset, endTangent * offset), ref viewRect);
                     var p4 = PointFromKeyframes(end, ref viewRect);
 
                     Render2D.DrawBezier(p1, p2, p3, p4, color);

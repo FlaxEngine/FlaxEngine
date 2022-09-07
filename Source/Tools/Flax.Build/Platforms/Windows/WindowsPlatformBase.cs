@@ -118,6 +118,11 @@ namespace Flax.Build.Platforms
         /// Windows 11 SDK (10.0.22000.0)
         /// </summary>
         v10_0_22000_0,
+
+        /// <summary>
+        /// Windows 11 SDK (10.0.22621.0) 22H2
+        /// </summary>
+        v10_0_22621_0,
     }
 
     /// <summary>
@@ -236,11 +241,9 @@ namespace Flax.Build.Platforms
             var toolsets = Directory.GetDirectories(rootDir);
             foreach (var toolset in toolsets)
             {
-                if (Version.TryParse(Path.GetFileName(toolset), out var version) && (
-                                                                                        File.Exists(Path.Combine(toolset, "bin", "Hostx64", "x64", "cl.exe"))
-                                                                                        ||
-                                                                                        File.Exists(Path.Combine(toolset, "bin", "Hostx86", "x64", "cl.exe"))
-                                                                                    ))
+                if (Version.TryParse(Path.GetFileName(toolset), out var version) &&
+                    (File.Exists(Path.Combine(toolset, "bin", "Hostx64", "x64", "cl.exe")) ||
+                     File.Exists(Path.Combine(toolset, "bin", "Hostx86", "x64", "cl.exe"))))
                 {
                     if (version.Major == 14 && version.Minor / 10 == 1)
                         _toolsets[WindowsPlatformToolset.v141] = toolset;
@@ -273,11 +276,9 @@ namespace Flax.Build.Platforms
             if (vs2015 != null)
             {
                 string rootDir = Path.Combine(vs2015.Path, "VC");
-                if (Directory.Exists(rootDir) && (
-                                                     File.Exists(Path.Combine(rootDir, "bin", "amd64", "cl.exe"))
-                                                     ||
-                                                     File.Exists(Path.Combine(rootDir, "bin", "x86_amd64", "cl.exe"))
-                                                 ))
+                if (Directory.Exists(rootDir) &&
+                    (File.Exists(Path.Combine(rootDir, "bin", "amd64", "cl.exe")) ||
+                     File.Exists(Path.Combine(rootDir, "bin", "x86_amd64", "cl.exe"))))
                 {
                     _toolsets[WindowsPlatformToolset.v140] = rootDir;
                 }
@@ -319,6 +320,7 @@ namespace Flax.Build.Platforms
             case WindowsPlatformSDK.v10_0_19041_0: return new Version(10, 0, 19041, 0);
             case WindowsPlatformSDK.v10_0_20348_0: return new Version(10, 0, 20348, 0);
             case WindowsPlatformSDK.v10_0_22000_0: return new Version(10, 0, 22000, 0);
+            case WindowsPlatformSDK.v10_0_22621_0: return new Version(10, 0, 22621, 0);
             default: throw new ArgumentOutOfRangeException(nameof(sdk), sdk, null);
             }
         }
@@ -371,8 +373,9 @@ namespace Flax.Build.Platforms
                 WindowsPlatformSDK.v10_0_17763_0,
                 WindowsPlatformSDK.v10_0_18362_0,
                 WindowsPlatformSDK.v10_0_19041_0,
-                //WindowsPlatformSDK.v10_0_20348_0, // Breaks on Flax Editor build
-                //WindowsPlatformSDK.v10_0_22000_0, // Breaks on Flax Editor build
+                WindowsPlatformSDK.v10_0_20348_0,
+                WindowsPlatformSDK.v10_0_22000_0,
+                WindowsPlatformSDK.v10_0_22621_0,
             };
             foreach (var sdk10 in sdk10Roots)
             {

@@ -21,7 +21,7 @@ struct RenderContext;
 /// </summary>
 API_CLASS(Static) class FLAXENGINE_API Level
 {
-DECLARE_SCRIPTING_TYPE_NO_SPAWN(Level);
+    DECLARE_SCRIPTING_TYPE_NO_SPAWN(Level);
     friend Engine;
     friend Actor;
     friend PrefabManager;
@@ -33,7 +33,6 @@ DECLARE_SCRIPTING_TYPE_NO_SPAWN(Level);
 #endif
 
 public:
-
     /// <summary>
     /// The scenes collection lock.
     /// </summary>
@@ -44,8 +43,12 @@ public:
     /// </summary>
     API_FIELD(ReadOnly) static Array<Scene*> Scenes;
 
-public:
+    /// <summary>
+    /// True if game objects (actors and scripts) can receive a tick during engine Update/LateUpdate/FixedUpdate events. Can be used to temporarily disable gameplay logic updating.
+    /// </summary>
+    API_FIELD() static bool TickEnabled;
 
+public:
     /// <summary>
     /// Occurs when new actor gets spawned to the game.
     /// </summary>
@@ -77,7 +80,6 @@ public:
     API_EVENT() static Delegate<Actor*> ActorActiveChanged;
 
 public:
-
     /// <summary>
     /// Checks if any scene has been loaded. Loaded scene means deserialized and added to the scenes collection.
     /// </summary>
@@ -107,7 +109,6 @@ public:
     /// <summary>
     /// Gets the scenes count.
     /// </summary>
-    /// <returns>The scenes count.</returns>
     API_PROPERTY() static int32 GetScenesCount()
     {
         return Scenes.Count();
@@ -124,7 +125,6 @@ public:
     }
 
 public:
-
     /// <summary>
     /// Spawn actor on the scene
     /// </summary>
@@ -160,7 +160,6 @@ public:
     static void CallBeginPlay(Actor* obj);
 
 public:
-
     /// <summary>
     /// Draws all the actors.
     /// </summary>
@@ -174,7 +173,6 @@ public:
     static void CollectPostFxVolumes(RenderContext& renderContext);
 
 public:
-
     /// <summary>
     /// Fired when scene starts saving.
     /// </summary>
@@ -246,7 +244,6 @@ public:
 #endif
 
 public:
-
     /// <summary>
     /// Saves scene to the asset.
     /// </summary>
@@ -342,7 +339,6 @@ public:
 #endif
 
 public:
-
     /// <summary>
     /// Tries to find actor with the given ID. It's very fast O(1) lookup.
     /// </summary>
@@ -362,7 +358,7 @@ public:
     /// </summary>
     /// <param name="type">Type of the actor to search for. Includes any actors derived from the type.</param>
     /// <returns>Found actor or null.</returns>
-    API_FUNCTION() static Actor* FindActor(const MClass* type);
+    API_FUNCTION() static Actor* FindActor(API_PARAM(Attributes="TypeReference(typeof(Actor))") const MClass* type);
 
     /// <summary>
     /// Tries to find the actor of the given type in all the loaded scenes.
@@ -379,7 +375,7 @@ public:
     /// </summary>
     /// <param name="type">Type of the script to search for. Includes any scripts derived from the type.</param>
     /// <returns>Found script or null.</returns>
-    API_FUNCTION() static Script* FindScript(const MClass* type);
+    API_FUNCTION() static Script* FindScript(API_PARAM(Attributes="TypeReference(typeof(Script))") const MClass* type);
 
     /// <summary>
     /// Tries to find the script of the given type in all the loaded scenes.
@@ -396,14 +392,14 @@ public:
     /// </summary>
     /// <param name="type">Type of the actor to search for. Includes any actors derived from the type.</param>
     /// <returns>Found actors list.</returns>
-    API_FUNCTION() static Array<Actor*> GetActors(const MClass* type);
+    API_FUNCTION() static Array<Actor*> GetActors(API_PARAM(Attributes="TypeReference(typeof(Actor))") const MClass* type);
 
     /// <summary>
     /// Finds all the scripts of the given type in all the loaded scenes.
     /// </summary>
     /// <param name="type">Type of the script to search for. Includes any scripts derived from the type.</param>
     /// <returns>Found scripts list.</returns>
-    API_FUNCTION() static Array<Script*> GetScripts(const MClass* type);
+    API_FUNCTION() static Array<Script*> GetScripts(API_PARAM(Attributes="TypeReference(typeof(Script))") const MClass* type);
 
     /// <summary>
     /// Tries to find scene with given ID.
@@ -413,7 +409,6 @@ public:
     API_FUNCTION() static Scene* FindScene(const Guid& id);
 
 public:
-
     /// <summary>
     /// Gets the scenes.
     /// </summary>
@@ -433,7 +428,6 @@ public:
     static void GetScenes(Array<Guid>& scenes);
 
 public:
-
     /// <summary>
     /// Construct valid and solid list with actors from input list with whole tree for them (valid for fast serialization)
     /// </summary>
@@ -449,7 +443,6 @@ public:
     static void ConstructParentActorsTreeList(const Array<Actor*>& input, Array<Actor*>& output);
 
 public:
-
     /// <summary>
     /// The tags names.
     /// </summary>
@@ -479,7 +472,6 @@ public:
     API_FUNCTION() static int32 GetLayerIndex(const StringView& layer);
 
 private:
-
     // Actor API
     enum class ActorEventType
     {

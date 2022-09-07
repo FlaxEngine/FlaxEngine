@@ -51,7 +51,8 @@ private:
     int32 _isCompute : 1;
     int32 _rtDirtyFlag : 1;
     int32 _psDirtyFlag : 1;
-    int32 _cbDirtyFlag : 1;
+    int32 _cbGraphicsDirtyFlag : 1;
+    int32 _cbComputeDirtyFlag : 1;
     int32 _samplersDirtyFlag : 1;
 
     GPUTextureViewDX12* _rtDepth;
@@ -157,10 +158,10 @@ public:
     bool IsDepthBufferBinded() override;
     void Clear(GPUTextureView* rt, const Color& color) override;
     void ClearDepth(GPUTextureView* depthBuffer, float depthValue) override;
-    void ClearUA(GPUBuffer* buf, const Vector4& value) override;
+    void ClearUA(GPUBuffer* buf, const Float4& value) override;
     void ClearUA(GPUBuffer* buf, const uint32 value[4]) override;
     void ClearUA(GPUTexture* texture, const uint32 value[4]) override;
-    void ClearUA(GPUTexture* texture, const Vector4& value) override;
+    void ClearUA(GPUTexture* texture, const Float4& value) override;
     void ResetRenderTarget() override;
     void SetRenderTarget(GPUTextureView* rt) override;
     void SetRenderTarget(GPUTextureView* depthBuffer, GPUTextureView* rt) override;

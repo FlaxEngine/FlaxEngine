@@ -14,7 +14,6 @@
 class SceneInfo : public Object, public ISerializable
 {
 public:
-
     /// <summary>
     /// Scene title
     /// </summary>
@@ -31,7 +30,6 @@ public:
     String Copyright;
 
 public:
-
     /// <summary>
     /// Array with cached lightmaps ID for the scene
     /// </summary>
@@ -43,7 +41,6 @@ public:
     LightmapSettings LightmapSettings;
 
 public:
-
     // [Object]
     String ToString() const override;
 

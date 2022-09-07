@@ -260,7 +260,7 @@ public:
 
 private:
 
-    int32 _firstManagedTypeIndex;
+    int32 _firstManagedTypeIndex = 0;
     Array<void*> _managedMemoryBlocks;
 
 public:
@@ -309,7 +309,7 @@ private:
     void OnLoading(MAssembly* assembly);
     void OnLoaded(MAssembly* assembly);
     void InitType(MClass* mclass);
-    void OnUnloading(MAssembly* assembly);
+    void OnUnloaded(MAssembly* assembly);
 
 public:
 

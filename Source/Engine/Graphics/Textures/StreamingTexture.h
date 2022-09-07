@@ -16,21 +16,18 @@ class FLAXENGINE_API StreamingTexture : public Object, public StreamableResource
     friend class StreamTextureMipTask;
     friend class StreamTextureResizeTask;
 protected:
-
     ITextureOwner* _owner;
     GPUTexture* _texture;
     TextureHeader _header;
-    volatile mutable int64 _streamingTasksCount;
     int32 _minMipCountBlockCompressed;
     bool _isBlockCompressed;
+    Array<Task*, FixedAllocation<16>> _streamingTasks;
 
 public:
-
     StreamingTexture(ITextureOwner* owner, const String& name);
     ~StreamingTexture();
 
 public:
-
     /// <summary>
     /// Gets the owner.
     /// </summary>
@@ -48,9 +45,9 @@ public:
     }
 
     /// <summary>
-    /// Gets texture size of Vector2::Zero if not loaded.
+    /// Gets texture size of Float2::Zero if not loaded.
     /// </summary>
-    Vector2 Size() const;
+    Float2 Size() const;
 
     /// <summary>
     /// Gets a value indicating whether this instance is initialized. 
@@ -125,7 +122,6 @@ public:
     }
 
 public:
-
     /// <summary>
     /// Converts allocated texture mip index to the absolute mip map index.
     /// </summary>
@@ -141,7 +137,6 @@ public:
     int32 TotalIndexToTextureMipIndex(int32 mipIndex) const;
 
 public:
-
     /// <summary>
     /// Creates new texture
     /// </summary>
@@ -162,14 +157,12 @@ public:
     uint64 GetTotalMemoryUsage() const;
 
 public:
-
     FORCE_INLINE GPUTexture* operator->() const
     {
         return _texture;
     }
 
 public:
-
     // [Object]
     String ToString() const override;
 
@@ -180,4 +173,5 @@ public:
     bool CanBeUpdated() const override;
     Task* UpdateAllocation(int32 residency) override;
     Task* CreateStreamingTask(int32 residency) override;
+    void CancelStreamingTasks() override;
 };

@@ -23,14 +23,12 @@ class ShaderGraphNode;
 class ShaderGraphBox : public GraphBox
 {
 public:
-
     /// <summary>
     /// The cached value.
     /// </summary>
     ShaderGraphValue Cache;
 
 public:
-
     ShaderGraphBox()
         : GraphBox()
     {
@@ -47,7 +45,6 @@ public:
     }
 
 public:
-
     FORCE_INLINE ShaderGraphBox* FirstConnection() const
     {
         return (ShaderGraphBox*)Connections[0];
@@ -58,7 +55,6 @@ template<class BoxType = ShaderGraphBox>
 class ShaderGraphNode : public GraphNode<BoxType>
 {
 public:
-
     struct CurveData
     {
         /// <summary>
@@ -79,14 +75,12 @@ public:
     };
 
 public:
-
     ShaderGraphNode()
         : GraphNode<ShaderGraphBox>()
     {
     }
 
 public:
-
     /// <summary>
     /// The custom data (depends on node type). Used to cache data for faster usage at runtime.
     /// </summary>
@@ -96,7 +90,6 @@ public:
 class ShaderGraphParameter : public GraphParameter
 {
 public:
-
     ShaderGraphParameter()
         : GraphParameter(SpawnParams(Guid::New(), TypeInitializer))
     {
@@ -123,45 +116,42 @@ template<class NodeType = ShaderGraphNode<>, class BoxType = ShaderGraphBox, cla
 class ShaderGraph : public Graph<NodeType, BoxType, ParameterType>
 {
 public:
-
     typedef ShaderGraphValue Value;
     typedef Graph<NodeType, BoxType, ParameterType> Base;
 
 public:
-
     /// <summary>
     /// The float curves used by the graph.
     /// </summary>
     Array<BezierCurve<float>> FloatCurves;
 
     /// <summary>
-    /// The float curves used by the graph.
+    /// The Float2 curves used by the graph.
     /// </summary>
-    Array<BezierCurve<Vector2>> Vector2Curves;
+    Array<BezierCurve<Float2>> Float2Curves;
 
     /// <summary>
-    /// The float curves used by the graph.
+    /// The Float3 curves used by the graph.
     /// </summary>
-    Array<BezierCurve<Vector3>> Vector3Curves;
+    Array<BezierCurve<Float3>> Float3Curves;
 
     /// <summary>
-    /// The float curves used by the graph.
+    /// The Float4 curves used by the graph.
     /// </summary>
-    Array<BezierCurve<Vector4>> Vector4Curves;
+    Array<BezierCurve<Float4>> Float4Curves;
 
 public:
-
     // [Graph]
     bool onNodeLoaded(NodeType* n) override
     {
         // Check if this node needs a state or data cache
         switch (n->GroupID)
         {
-            // Tools
+        // Tools
         case 7:
             switch (n->TypeID)
             {
-                // Curves
+            // Curves
 #define SETUP_CURVE(id, curves, access) \
 			case id: \
 			{ \
@@ -182,9 +172,9 @@ public:
 				break; \
 			}
             SETUP_CURVE(12, FloatCurves, AsFloat)
-            SETUP_CURVE(13, Vector2Curves, AsVector2())
-            SETUP_CURVE(14, Vector3Curves, AsVector3())
-            SETUP_CURVE(15, Vector4Curves, AsVector4())
+            SETUP_CURVE(13, Float2Curves, AsFloat2())
+            SETUP_CURVE(14, Float3Curves, AsFloat3())
+            SETUP_CURVE(15, Float4Curves, AsFloat4())
 #undef SETUP_CURVE
             }
             break;
@@ -201,7 +191,6 @@ public:
 class ShaderGenerator
 {
 public:
-
     typedef ShaderGraph<> Graph;
     typedef ShaderGraph<>::Node Node;
     typedef ShaderGraph<>::Box Box;
@@ -212,7 +201,6 @@ public:
     typedef Function<void(Box*, Node*, Value&)> ProcessBoxHandler;
 
 protected:
-
     int32 _localIndex;
     Dictionary<Node*, Graph*> _functions;
     Array<SerializedMaterialParam> _parameters;
@@ -223,7 +211,6 @@ protected:
     Array<Graph*, FixedAllocation<32>> _graphStack;
 
 public:
-
     /// <summary>
     /// Initializes a new instance of the <see cref="ShaderGenerator"/> class.
     /// </summary>
@@ -235,7 +222,6 @@ public:
     ~ShaderGenerator();
 
 public:
-
     ErrorHandler Error;
 
     /// <summary>
@@ -244,7 +230,6 @@ public:
     AssetsContainer Assets;
 
 public:
-
     void OnError(Node* node, Box* box, const StringView& message);
 
     void ProcessGroupConstants(Box* box, Node* node, Value& value);
@@ -256,12 +241,10 @@ public:
     void ProcessGroupComparisons(Box* box, Node* node, Value& value);
 
 protected:
-
     static const Char* _mathFunctions[];
     static const Char* _subs[];
 
 protected:
-
     Value eatBox(Node* caller, Box* box);
     Value tryGetValue(Box* box, int32 defaultValueBoxIndex, const Value& defaultValue);
     Value tryGetValue(Box* box, const Value& defaultValue);
@@ -286,6 +269,7 @@ protected:
     SerializedMaterialParam findOrAddCubeTexture(const Guid& id);
     SerializedMaterialParam findOrAddSceneTexture(MaterialSceneTextures type);
     SerializedMaterialParam& findOrAddTextureGroupSampler(int32 index);
+    SerializedMaterialParam& findOrAddGlobalSDF();
 
     static String getLocalName(int32 index);
     static String getParamName(int32 index);

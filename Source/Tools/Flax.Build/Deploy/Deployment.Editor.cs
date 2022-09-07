@@ -70,8 +70,7 @@ namespace Flax.Deploy
                 case TargetPlatform.Mac:
                     DeployFolder(RootPath, OutputPath, "Source/Platforms/Editor/Mac/Mono");
                     break;
-                default:
-                    throw new InvalidPlatformException(Platform.BuildTargetPlatform);
+                default: throw new InvalidPlatformException(Platform.BuildTargetPlatform);
                 }
 
                 // Deploy DotNet deps

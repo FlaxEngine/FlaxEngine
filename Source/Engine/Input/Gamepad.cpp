@@ -9,7 +9,7 @@ void GamepadLayout::Init()
     for (int32 i = 0; i < (int32)GamepadAxis::MAX; i++)
         Axis[i] = (GamepadAxis)i;
     for (int32 i = 0; i < (int32)GamepadAxis::MAX; i++)
-        AxisMap[i] = Vector2::UnitX;
+        AxisMap[i] = Float2::UnitX;
 }
 
 Gamepad::Gamepad(const Guid& productId, const String& name)

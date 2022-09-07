@@ -14,6 +14,7 @@
 Skybox::Skybox(const SpawnParams& params)
     : Actor(params)
 {
+    _drawNoCulling = 1;
 }
 
 void Skybox::setupProxy()
@@ -81,9 +82,14 @@ bool Skybox::HasContentLoaded() const
     return true;
 }
 
-bool Skybox::IntersectsItself(const Ray& ray, float& distance, Vector3& normal)
+bool Skybox::IntersectsItself(const Ray& ray, Real& distance, Vector3& normal)
 {
     return false;
+}
+
+bool Skybox::IsDynamicSky() const
+{
+    return !IsStatic();
 }
 
 void Skybox::ApplySky(GPUContext* context, RenderContext& renderContext, const Matrix& world)
@@ -121,7 +127,7 @@ void Skybox::ApplySky(GPUContext* context, RenderContext& renderContext, const M
 
 void Skybox::OnEnable()
 {
-    GetSceneRendering()->AddCommonNoCulling(this);
+    GetSceneRendering()->AddActor(this, _sceneRenderingKey);
 #if USE_EDITOR
     GetSceneRendering()->AddViewportIcon(this);
 #endif
@@ -135,7 +141,7 @@ void Skybox::OnDisable()
 #if USE_EDITOR
     GetSceneRendering()->RemoveViewportIcon(this);
 #endif
-    GetSceneRendering()->RemoveCommonNoCulling(this);
+    GetSceneRendering()->RemoveActor(this, _sceneRenderingKey);
 
     // Base
     Actor::OnDisable();

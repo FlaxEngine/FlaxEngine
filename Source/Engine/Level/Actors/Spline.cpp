@@ -156,7 +156,7 @@ float Spline::GetSplineLength() const
     Vector3 prevPoint = Vector3::Zero;
     for (int32 i = 1; i < Curve.GetKeyframes().Count(); i++)
     {
-        const auto& a = Curve[i = 1];
+        const auto& a = Curve[i - 1];
         const auto& b = Curve[i];
 
         const float length = Math::Abs(b.Time - a.Time);
@@ -171,7 +171,7 @@ float Spline::GetSplineLength() const
             Vector3 pos;
             AnimationUtils::Bezier(a.Value.Translation, leftTangent, rightTangent, b.Value.Translation, t, pos);
             pos *= _transform.Scale;
-            sum += Vector3::DistanceSquared(pos, prevPoint);
+            sum += (float)Vector3::DistanceSquared(pos, prevPoint);
             prevPoint = pos;
         }
     }
@@ -197,7 +197,7 @@ namespace
             const float t = (float)i * step;
             Transform result;
             Spline::Keyframe::Interpolate(start, end, t, length, result);
-            const float distanceSquared = Vector3::DistanceSquared(point, result.Translation);
+            const float distanceSquared = (float)Vector3::DistanceSquared(point, result.Translation);
             if (distanceSquared < bestDistanceSquared)
             {
                 bestDistanceSquared = distanceSquared;
@@ -514,10 +514,10 @@ void Spline::OnTransformChanged()
     BoundingSphere::FromBox(_box, _sphere);
 }
 
-void Spline::PostLoad()
+void Spline::Initialize()
 {
     // Base
-    Actor::PostLoad();
+    Actor::Initialize();
 
     auto& keyframes = Curve.GetKeyframes();
     const int32 count = keyframes.Count();

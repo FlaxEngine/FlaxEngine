@@ -15,10 +15,5 @@ public class Renderer : EngineModule
 
         options.PrivateDependencies.Add("Graphics");
         options.PrivateDependencies.Add("Content");
-
-        if (options.Target.IsEditor)
-        {
-            options.PublicDefinitions.Add("COMPILE_WITH_PROBES_BAKING");
-        }
     }
 }

@@ -352,6 +352,7 @@ bool MAssembly::LoadWithImage(const String& assemblyPath)
         }
     }
 
+    // TODO: load pdbs for custom third-party libs referenced by game assemblies for debugging
 #if 0
     // Hack to load debug information for Newtonsoft.Json (enable it to debug C# code of json lib)
     if (assemblyPath.EndsWith(TEXT("FlaxEngine.CSharp.dll")))

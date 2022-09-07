@@ -12,7 +12,7 @@ class GPUShaderProgram;
 /// <summary>
 /// The runtime version of the shaders cache supported by the all graphics back-ends. The same for all the shader cache formats (easier to sync and validate).
 /// </summary>
-#define GPU_SHADER_CACHE_VERSION 8
+#define GPU_SHADER_CACHE_VERSION 9
 
 /// <summary>
 /// Represents collection of shader programs with permutations and custom names.
@@ -20,11 +20,9 @@ class GPUShaderProgram;
 class GPUShaderProgramsContainer
 {
 private:
-
     Dictionary<int32, GPUShaderProgram*> _shaders;
 
 public:
-
     /// <summary>
     /// Initializes a new instance of the <see cref="GPUShaderProgramsContainer"/> class.
     /// </summary>
@@ -36,7 +34,6 @@ public:
     ~GPUShaderProgramsContainer();
 
 public:
-
     /// <summary>
     /// Adds a new shader program to the collection.
     /// </summary>
@@ -58,7 +55,6 @@ public:
     void Clear();
 
 public:
-
     /// <summary>
     /// Calculates unique hash for given shader program name and its permutation index.
     /// </summary>
@@ -73,9 +69,8 @@ public:
 /// </summary>
 API_CLASS(Sealed, NoSpawn) class FLAXENGINE_API GPUShader : public GPUResource
 {
-DECLARE_SCRIPTING_TYPE_NO_SPAWN(GPUShader);
+    DECLARE_SCRIPTING_TYPE_NO_SPAWN(GPUShader);
 protected:
-
     GPUShaderProgramsContainer _shaders;
     GPUConstantBuffer* _constantBuffers[MAX_CONSTANT_BUFFER_SLOTS];
 
@@ -85,7 +80,6 @@ protected:
     GPUShader();
 
 public:
-
     /// <summary>
     /// Creates the shader resource and loads its data from the bytes.
     /// <param name="stream">The stream with compiled shader data.</param>
@@ -93,7 +87,6 @@ public:
     virtual bool Create(class MemoryReadStream& stream);
 
 public:
-
     /// <summary>
     /// Gets the vertex shader.
     /// </summary>
@@ -172,7 +165,6 @@ public:
     }
 
 public:
-
     /// <summary>
     /// Determines whether the specified shader program is in the shader.
     /// </summary>
@@ -185,18 +177,15 @@ public:
     }
 
 protected:
-
     GPUShaderProgram* GetShader(ShaderStage stage, const StringAnsiView& name, int32 permutationIndex) const;
     virtual GPUShaderProgram* CreateGPUShaderProgram(ShaderStage type, const GPUShaderProgramInitializer& initializer, byte* cacheBytes, uint32 cacheSize, MemoryReadStream& stream) = 0;
     virtual GPUConstantBuffer* CreateCB(const String& name, uint32 size, MemoryReadStream& stream) = 0;
 
 public:
-
     // [GPUResource]
     ResourceType GetResourceType() const final override;
 
 protected:
-
     // [GPUResource]
     void OnReleaseGPU() override;
 };

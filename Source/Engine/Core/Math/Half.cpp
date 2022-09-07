@@ -12,41 +12,41 @@ static_assert(sizeof(Half2) == 4, "Invalid Half2 type size.");
 static_assert(sizeof(Half3) == 6, "Invalid Half3 type size.");
 static_assert(sizeof(Half4) == 8, "Invalid Half4 type size.");
 
-Half2 Half2::Zero(0, 0);
-Half3 Half3::Zero(0, 0, 0);
-Half4 Half4::Zero(0, 0, 0, 0);
+Half2 Half2::Zero(0.0f, 0.0f);
+Half3 Half3::Zero(0.0f, 0.0f, 0.0f);
+Half4 Half4::Zero(0.0f, 0.0f, 0.0f, 0.0f);
 
-Half2::Half2(const Vector2& v)
+Half2::Half2(const Float2& v)
 {
     X = Float16Compressor::Compress(v.X);
     Y = Float16Compressor::Compress(v.Y);
 }
 
-Vector2 Half2::ToVector2() const
+Float2 Half2::ToFloat2() const
 {
-    return Vector2(
+    return Float2(
         Float16Compressor::Decompress(X),
         Float16Compressor::Decompress(Y)
     );
 }
 
-Half3::Half3(const Vector3& v)
+Half3::Half3(const Float3& v)
 {
     X = Float16Compressor::Compress(v.X);
     Y = Float16Compressor::Compress(v.Y);
     Z = Float16Compressor::Compress(v.Z);
 }
 
-Vector3 Half3::ToVector3() const
+Float3 Half3::ToFloat3() const
 {
-    return Vector3(
+    return Float3(
         Float16Compressor::Decompress(X),
         Float16Compressor::Decompress(Y),
         Float16Compressor::Decompress(Z)
     );
 }
 
-Half4::Half4(const Vector4& v)
+Half4::Half4(const Float4& v)
 {
     X = Float16Compressor::Compress(v.X);
     Y = Float16Compressor::Compress(v.Y);
@@ -70,26 +70,26 @@ Half4::Half4(const Rectangle& rect)
     W = Float16Compressor::Compress(rect.Size.Y);
 }
 
-Vector2 Half4::ToVector2() const
+Float2 Half4::ToFloat2() const
 {
-    return Vector2(
+    return Float2(
         Float16Compressor::Decompress(X),
         Float16Compressor::Decompress(Y)
     );
 }
 
-Vector3 Half4::ToVector3() const
+Float3 Half4::ToFloat3() const
 {
-    return Vector3(
+    return Float3(
         Float16Compressor::Decompress(X),
         Float16Compressor::Decompress(Y),
         Float16Compressor::Decompress(Z)
     );
 }
 
-Vector4 Half4::ToVector4() const
+Float4 Half4::ToFloat4() const
 {
-    return Vector4(
+    return Float4(
         Float16Compressor::Decompress(X),
         Float16Compressor::Decompress(Y),
         Float16Compressor::Decompress(Z),

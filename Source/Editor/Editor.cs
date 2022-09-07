@@ -216,6 +216,26 @@ namespace FlaxEditor
         /// </summary>
         public ProjectInfo EngineProject;
 
+        /// <summary>
+        /// Occurs when play mode is beginning (before entering play mode).
+        /// </summary>
+        public event Action PlayModeBeginning;
+
+        /// <summary>
+        /// Occurs when play mode begins (after entering play mode).
+        /// </summary>
+        public event Action PlayModeBegin;
+
+        /// <summary>
+        /// Occurs when play mode is ending (before leaving play mode).
+        /// </summary>
+        public event Action PlayModeEnding;
+
+        /// <summary>
+        /// Occurs when play mode ends (after leaving play mode).
+        /// </summary>
+        public event Action PlayModeEnd;
+
         internal Editor()
         {
             Instance = this;
@@ -523,16 +543,24 @@ namespace FlaxEditor
         {
             for (int i = 0; i < _modules.Count; i++)
                 _modules[i].OnPlayBeginning();
+            PlayModeBeginning?.Invoke();
         }
 
         internal void OnPlayBegin()
         {
             for (int i = 0; i < _modules.Count; i++)
                 _modules[i].OnPlayBegin();
+            PlayModeBegin?.Invoke();
+        }
+
+        internal void OnPlayEnding()
+        {
+            PlayModeEnding?.Invoke();
         }
 
         internal void OnPlayEnd()
         {
+            PlayModeEnd?.Invoke();
             for (int i = 0; i < _modules.Count; i++)
                 _modules[i].OnPlayEnd();
         }
@@ -540,6 +568,16 @@ namespace FlaxEditor
         internal void Exit()
         {
             Log("Editor exit");
+
+            // Deinitialize Editor Plugins
+            foreach (var plugin in PluginManager.EditorPlugins)
+            {
+                if (plugin is EditorPlugin editorPlugin && editorPlugin._isEditorInitialized)
+                {
+                    editorPlugin._isEditorInitialized = false;
+                    editorPlugin.DeinitializeEditor();
+                }
+            }
 
             // Start exit
             StateMachine.GoToState<ClosingState>();
@@ -761,6 +799,11 @@ namespace FlaxEditor
             /// The <see cref="FlaxEngine.AnimationGraphFunction"/>.
             /// </summary>
             AnimationGraphFunction = 10,
+
+            /// <summary>
+            /// The <see cref="FlaxEngine.Animation"/>.
+            /// </summary>
+            Animation = 11,
         }
 
         /// <summary>
@@ -891,10 +934,10 @@ namespace FlaxEditor
             if (asset == null)
                 throw new ArgumentNullException(nameof(asset));
             if (asset.WaitForLoaded())
-                throw new FlaxException("Failed to load asset.");
+                throw new Exception("Failed to load asset.");
             var source = Internal_GetShaderAssetSourceCode(FlaxEngine.Object.GetUnmanagedPtr(asset));
             if (source == null)
-                throw new FlaxException("Failed to get source code.");
+                throw new Exception("Failed to get source code.");
             return source;
         }
 
@@ -1109,7 +1152,11 @@ namespace FlaxEditor
         /// </summary>
         public void BuildScenesOrCancel()
         {
-            if (StateMachine.BuildingScenesState.IsActive)
+            var isActive = StateMachine.BuildingScenesState.IsActive;
+            var msg = isActive ? "Cancel baking scenes data?" : "Start baking scenes data?";
+            if (MessageBox.Show(msg, "Scene Data building", MessageBoxButtons.OKCancel, MessageBoxIcon.Question) != DialogResult.OK)
+                return;
+            if (isActive)
                 StateMachine.BuildingScenesState.Cancel();
             else
                 StateMachine.GoToState<BuildingScenesState>();
@@ -1264,43 +1311,40 @@ namespace FlaxEditor
             return false;
         }
 
-        internal void Internal_ScreenToGameViewport(ref Vector2 pos)
+        internal void Internal_FocusGameViewport()
         {
-            if (Windows.GameWin != null && Windows.GameWin.ContainsFocus)
+            if (Windows.GameWin != null)
             {
-                var win = Windows.GameWin.Root;
-                if (win?.RootWindow is WindowRootControl root && root.Window && root.Window.IsFocused)
+                if (StateMachine.IsPlayMode && !StateMachine.PlayingState.IsPaused)
                 {
-                    pos = Vector2.Round(Windows.GameWin.Viewport.PointFromScreen(pos) * root.DpiScale);
+                    Windows.GameWin.FocusGameViewport();
                 }
-                else
-                {
-                    pos = Vector2.Minimum;
-                }
-            }
-            else
-            {
-                pos = Vector2.Minimum;
             }
         }
 
-        internal void Internal_GameViewportToScreen(ref Vector2 pos)
+        internal void Internal_ScreenToGameViewport(ref Float2 pos)
         {
-            if (Windows.GameWin != null && Windows.GameWin.ContainsFocus)
+            var win = Windows.GameWin?.Root;
+            if (win?.RootWindow is WindowRootControl root)
             {
-                var win = Windows.GameWin.Root;
-                if (win?.RootWindow is WindowRootControl root && root.Window && root.Window.IsFocused)
-                {
-                    pos = Vector2.Round(Windows.GameWin.Viewport.PointToScreen(pos / root.DpiScale));
-                }
-                else
-                {
-                    pos = Vector2.Minimum;
-                }
+                pos = Float2.Round(Windows.GameWin.Viewport.PointFromScreen(pos) * root.DpiScale);
             }
             else
             {
-                pos = Vector2.Minimum;
+                pos = Float2.Minimum;
+            }
+        }
+
+        internal void Internal_GameViewportToScreen(ref Float2 pos)
+        {
+            var win = Windows.GameWin?.Root;
+            if (win?.RootWindow is WindowRootControl root)
+            {
+                pos = Float2.Round(Windows.GameWin.Viewport.PointToScreen(pos / root.DpiScale));
+            }
+            else
+            {
+                pos = Float2.Minimum;
             }
         }
 
@@ -1315,24 +1359,20 @@ namespace FlaxEditor
             }
         }
 
-        internal void Internal_GetGameWindowSize(out Vector2 resultAsRef)
+        internal void Internal_GetGameWindowSize(out Float2 result)
         {
-            resultAsRef = Vector2.Zero;
+            result = new Float2(1280, 720);
             var gameWin = Windows.GameWin;
-            if (gameWin != null)
+            if (gameWin?.Root?.RootWindow is WindowRootControl root)
             {
-                var win = gameWin.Root;
-                if (win != null && win.RootWindow is WindowRootControl root)
-                {
-                    // Handle case when Game window is not selected in tab view
-                    var dockedTo = gameWin.ParentDockPanel;
-                    if (dockedTo != null && dockedTo.SelectedTab != gameWin && dockedTo.SelectedTab != null)
-                        resultAsRef = dockedTo.SelectedTab.Size * root.DpiScale;
-                    else
-                        resultAsRef = gameWin.Size * root.DpiScale;
+                // Handle case when Game window is not selected in tab view
+                var dockedTo = gameWin.ParentDockPanel;
+                if (dockedTo != null && dockedTo.SelectedTab != gameWin && dockedTo.SelectedTab != null)
+                    result = dockedTo.SelectedTab.Size * root.DpiScale;
+                else
+                    result = gameWin.Size * root.DpiScale;
 
-                    resultAsRef = Vector2.Round(resultAsRef);
-                }
+                result = Float2.Round(result);
             }
         }
 
@@ -1420,7 +1460,7 @@ namespace FlaxEditor
         internal static extern bool Internal_CookMeshCollision(string path, CollisionDataType type, IntPtr model, int modelLodIndex, uint materialSlotsMask, ConvexMeshGenerationFlags convexFlags, int convexVertexLimit);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern void Internal_GetCollisionWires(IntPtr collisionData, out Vector3[] triangles, out int[] indices);
+        internal static extern void Internal_GetCollisionWires(IntPtr collisionData, out Float3[] triangles, out int[] indices);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern void Internal_GetEditorBoxWithChildren(IntPtr obj, out BoundingBox resultAsRef);

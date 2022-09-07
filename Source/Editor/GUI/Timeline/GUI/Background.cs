@@ -17,8 +17,8 @@ namespace FlaxEditor.GUI.Timeline.GUI
         private float[] _tickSteps;
         private float[] _tickStrengths;
         private bool _isSelecting;
-        private Vector2 _selectingStartPos = Vector2.Minimum;
-        private Vector2 _mousePos = Vector2.Minimum;
+        private Float2 _selectingStartPos = Float2.Minimum;
+        private Float2 _mousePos = Float2.Minimum;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="Background"/> class.
@@ -38,7 +38,7 @@ namespace FlaxEditor.GUI.Timeline.GUI
         }
 
         /// <inheritdoc />
-        public override bool OnMouseDown(Vector2 location, MouseButton button)
+        public override bool OnMouseDown(Float2 location, MouseButton button)
         {
             if (base.OnMouseDown(location, button))
                 return true;
@@ -59,7 +59,7 @@ namespace FlaxEditor.GUI.Timeline.GUI
         }
 
         /// <inheritdoc />
-        public override bool OnMouseUp(Vector2 location, MouseButton button)
+        public override bool OnMouseUp(Float2 location, MouseButton button)
         {
             _mousePos = location;
             if (_isSelecting && button == MouseButton.Left)
@@ -77,7 +77,7 @@ namespace FlaxEditor.GUI.Timeline.GUI
         }
 
         /// <inheritdoc />
-        public override void OnMouseMove(Vector2 location)
+        public override void OnMouseMove(Float2 location)
         {
             _mousePos = location;
 
@@ -113,7 +113,7 @@ namespace FlaxEditor.GUI.Timeline.GUI
         }
 
         /// <inheritdoc />
-        public override bool IntersectsContent(ref Vector2 locationParent, out Vector2 location)
+        public override bool IntersectsContent(ref Float2 locationParent, out Float2 location)
         {
             // Pass all events
             location = PointFromParent(ref locationParent);
@@ -142,14 +142,14 @@ namespace FlaxEditor.GUI.Timeline.GUI
             var localRectMax = localRect.BottomRight;
 
             // Draw lines between tracks
-            Render2D.DrawLine(new Vector2(areaLeft, 0.5f), new Vector2(areaRight, 0.5f), linesColor);
+            Render2D.DrawLine(new Float2(areaLeft, 0.5f), new Float2(areaRight, 0.5f), linesColor);
             for (int i = 0; i < tracks.Count; i++)
             {
                 var track = tracks[i];
                 if (track.Visible)
                 {
                     var top = track.Bottom + 0.5f;
-                    Render2D.DrawLine(new Vector2(areaLeft, top), new Vector2(areaRight, top), linesColor);
+                    Render2D.DrawLine(new Float2(areaLeft, top), new Float2(areaRight, top), linesColor);
                 }
             }
 
@@ -167,8 +167,8 @@ namespace FlaxEditor.GUI.Timeline.GUI
             var minDistanceBetweenTicks = 50.0f;
             var maxDistanceBetweenTicks = 100.0f;
             var zoom = Timeline.UnitsPerSecond * _timeline.Zoom;
-            var left = Vector2.Min(localRectMin, localRectMax).X;
-            var right = Vector2.Max(localRectMin, localRectMax).X;
+            var left = Float2.Min(localRectMin, localRectMax).X;
+            var right = Float2.Max(localRectMin, localRectMax).X;
             var leftFrame = Mathf.Floor((left - Timeline.StartOffset) / zoom) * _timeline.FramesPerSecond;
             var rightFrame = Mathf.Ceil((right - Timeline.StartOffset) / zoom) * _timeline.FramesPerSecond;
             var min = leftFrame;
@@ -246,7 +246,7 @@ namespace FlaxEditor.GUI.Timeline.GUI
             // Darken area outside the duration
             {
                 var outsideDurationAreaColor = new Color(0, 0, 0, 100);
-                var leftSideMin = PointFromParent(Vector2.Zero);
+                var leftSideMin = PointFromParent(Float2.Zero);
                 var leftSideMax = BottomLeft;
                 var rightSideMin = UpperRight;
                 var rightSideMax = PointFromParent(Parent.BottomRight) + mediaBackground.ControlsBounds.BottomRight;
@@ -307,7 +307,7 @@ namespace FlaxEditor.GUI.Timeline.GUI
         }
 
         /// <inheritdoc />
-        public override bool OnMouseWheel(Vector2 location, float delta)
+        public override bool OnMouseWheel(Float2 location, float delta)
         {
             if (base.OnMouseWheel(location, delta))
                 return true;

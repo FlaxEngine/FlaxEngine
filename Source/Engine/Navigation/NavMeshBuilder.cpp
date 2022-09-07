@@ -11,7 +11,7 @@
 #include "NavMeshRuntime.h"
 #include "Engine/Core/Log.h"
 #include "Engine/Core/Math/BoundingBox.h"
-#include "Engine/Core/Math/Int3.h"
+#include "Engine/Core/Math/Vector3.h"
 #include "Engine/Physics/Colliders/BoxCollider.h"
 #include "Engine/Physics/Colliders/SphereCollider.h"
 #include "Engine/Physics/Colliders/CapsuleCollider.h"
@@ -55,8 +55,8 @@ int32 BoxTrianglesIndicesCache[] =
 
 struct OffMeshLink
 {
-    Vector3 Start;
-    Vector3 End;
+    Float3 Start;
+    Float3 End;
     float Radius;
     bool BiDir;
     int32 Id;
@@ -77,7 +77,7 @@ struct NavigationSceneRasterization
     rcConfig* Config;
     rcHeightfield* Heightfield;
     float WalkableThreshold;
-    Array<Vector3> VertexBuffer;
+    Array<Float3> VertexBuffer;
     Array<int32> IndexBuffer;
     Array<OffMeshLink>* OffMeshLinks;
     Array<Modifier>* Modifiers;
@@ -117,7 +117,7 @@ struct NavigationSceneRasterization
                 DEBUG_DRAW_TRIANGLE(v0, v1, v2, Color::Orange.AlphaMultiplied(0.3f), 1.0f, true);
 #endif
 
-                auto n = Vector3::Cross(v0 - v1, v0 - v2);
+                auto n = Float3::Cross(v0 - v1, v0 - v2);
                 n.Normalize();
                 const char area = n.Y > WalkableThreshold ? RC_WALKABLE_AREA : 0;
                 rcRasterizeTriangle(Context, &v0.X, &v1.X, &v2.X, area, *Heightfield);
@@ -129,14 +129,14 @@ struct NavigationSceneRasterization
             const Matrix worldToNavMesh = WorldToNavMesh;
             for (int32 i0 = 0; i0 < ib.Count();)
             {
-                auto v0 = Vector3::Transform(vb[ib[i0++]], worldToNavMesh);
-                auto v1 = Vector3::Transform(vb[ib[i0++]], worldToNavMesh);
-                auto v2 = Vector3::Transform(vb[ib[i0++]], worldToNavMesh);
+                auto v0 = Float3::Transform(vb[ib[i0++]], worldToNavMesh);
+                auto v1 = Float3::Transform(vb[ib[i0++]], worldToNavMesh);
+                auto v2 = Float3::Transform(vb[ib[i0++]], worldToNavMesh);
 #if NAV_MESH_BUILD_DEBUG_DRAW_GEOMETRY
                 DEBUG_DRAW_TRIANGLE(v0, v1, v2, Color::Orange.AlphaMultiplied(0.3f), 1.0f, true);
 #endif
 
-                auto n = Vector3::Cross(v0 - v1, v0 - v2);
+                auto n = Float3::Cross(v0 - v1, v0 - v2);
                 n.Normalize();
                 const char area = n.Y > WalkableThreshold ? RC_WALKABLE_AREA : RC_NULL_AREA;
                 rcRasterizeTriangle(Context, &v0.X, &v1.X, &v2.X, area, *Heightfield);
@@ -144,49 +144,49 @@ struct NavigationSceneRasterization
         }
     }
 
-    static void TriangulateBox(Array<Vector3>& vb, Array<int32>& ib, const OrientedBoundingBox& box)
+    static void TriangulateBox(Array<Float3>& vb, Array<int32>& ib, const OrientedBoundingBox& box)
     {
         vb.Resize(8);
         box.GetCorners(vb.Get());
         ib.Add(BoxTrianglesIndicesCache, 36);
     }
 
-    static void TriangulateBox(Array<Vector3>& vb, Array<int32>& ib, const BoundingBox& box)
+    static void TriangulateBox(Array<Float3>& vb, Array<int32>& ib, const BoundingBox& box)
     {
         vb.Resize(8);
         box.GetCorners(vb.Get());
         ib.Add(BoxTrianglesIndicesCache, 36);
     }
 
-    static void TriangulateSphere(Array<Vector3>& vb, Array<int32>& ib, const BoundingSphere& sphere)
+    static void TriangulateSphere(Array<Float3>& vb, Array<int32>& ib, const BoundingSphere& sphere)
     {
         const int32 sphereResolution = 12;
         const int32 verticalSegments = sphereResolution;
         const int32 horizontalSegments = sphereResolution * 2;
 
         // Generate vertices for unit sphere
-        Vector3 vertices[(verticalSegments + 1) * (horizontalSegments + 1)];
+        Float3 vertices[(verticalSegments + 1) * (horizontalSegments + 1)];
         int32 vertexCount = 0;
         for (int32 j = 0; j <= horizontalSegments; j++)
-            vertices[vertexCount++] = Vector3(0, -1, 0);
+            vertices[vertexCount++] = Float3(0, -1, 0);
         for (int32 i = 1; i < verticalSegments; i++)
         {
             const float latitude = (float)i * PI / verticalSegments - PI / 2.0f;
             const float dy = Math::Sin(latitude);
             const float dxz = Math::Cos(latitude);
             auto& firstHorizontalVertex = vertices[vertexCount++];
-            firstHorizontalVertex = Vector3(0, dy, dxz);
+            firstHorizontalVertex = Float3(0, dy, dxz);
             for (int32 j = 1; j < horizontalSegments; j++)
             {
                 const float longitude = (float)j * 2.0f * PI / horizontalSegments;
                 const float dx = Math::Sin(longitude) * dxz;
                 const float dz = Math::Cos(longitude) * dxz;
-                vertices[vertexCount++] = Vector3(dx, dy, dz);
+                vertices[vertexCount++] = Float3(dx, dy, dz);
             }
             vertices[vertexCount++] = firstHorizontalVertex;
         }
         for (int32 j = 0; j <= horizontalSegments; j++)
-            vertices[vertexCount++] = Vector3(0, 1, 0);
+            vertices[vertexCount++] = Float3(0, 1, 0);
 
         // Transform vertices into world space vertex buffer
         vb.Resize(vertexCount);
@@ -280,7 +280,7 @@ struct NavigationSceneRasterization
             Matrix meshColliderToWorld;
             meshCollider->GetLocalToWorldMatrix(meshColliderToWorld);
             for (auto& v : vb)
-                Vector3::Transform(v, meshColliderToWorld, v);
+                Float3::Transform(v, meshColliderToWorld, v);
 
             e.RasterizeTriangles();
         }
@@ -321,9 +321,9 @@ struct NavigationSceneRasterization
 
             OffMeshLink link;
             link.Start = navLink->GetTransform().LocalToWorld(navLink->Start);
-            Vector3::Transform(link.Start, e.WorldToNavMesh, link.Start);
+            Float3::Transform(link.Start, e.WorldToNavMesh, link.Start);
             link.End = navLink->GetTransform().LocalToWorld(navLink->End);
-            Vector3::Transform(link.End, e.WorldToNavMesh, link.End);
+            Float3::Transform(link.End, e.WorldToNavMesh, link.End);
             link.Radius = navLink->Radius;
             link.BiDir = navLink->BiDirectional;
             link.Id = GetHash(navLink->GetID());
@@ -438,8 +438,8 @@ bool GenerateTile(NavMesh* navMesh, NavMeshRuntime* runtime, int32 x, int32 y, B
     tileBoundsNavMesh.Minimum -= tileBorderSize;
     tileBoundsNavMesh.Maximum += tileBorderSize;
 
-    rcVcopy(config.bmin, &tileBoundsNavMesh.Minimum.X);
-    rcVcopy(config.bmax, &tileBoundsNavMesh.Maximum.X);
+    *(Float3*)&config.bmin = tileBoundsNavMesh.Minimum;
+    *(Float3*)&config.bmax = tileBoundsNavMesh.Maximum;
 
     rcHeightfield* heightfield = rcAllocHeightfield();
     if (!heightfield)
@@ -485,7 +485,9 @@ bool GenerateTile(NavMesh* navMesh, NavMeshRuntime* runtime, int32 x, int32 y, B
     for (auto& modifier : modifiers)
     {
         const unsigned char areaId = modifier.NavArea ? modifier.NavArea->Id : RC_NULL_AREA;
-        rcMarkBoxArea(&context, &modifier.Bounds.Minimum.X, &modifier.Bounds.Maximum.X, areaId, *compactHeightfield);
+        Float3 bMin = modifier.Bounds.Minimum;
+        Float3 bMax = modifier.Bounds.Maximum;
+        rcMarkBoxArea(&context, &bMin.X, &bMax.X, areaId, *compactHeightfield);
     }
 
     if (!rcBuildDistanceField(&context, *compactHeightfield))
@@ -578,7 +580,7 @@ bool GenerateTile(NavMesh* navMesh, NavMeshRuntime* runtime, int32 x, int32 y, B
     params.buildBvTree = false;
 
     // Prepare navmesh links
-    Array<Vector3> offMeshStartEnd;
+    Array<Float3> offMeshStartEnd;
     Array<float> offMeshRadius;
     Array<unsigned char> offMeshDir;
     Array<unsigned char> offMeshArea;
@@ -711,7 +713,6 @@ Array<class NavMeshTileBuildTask*> NavBuildTasks;
 class NavMeshTileBuildTask : public ThreadPoolTask
 {
 public:
-
     Scene* Scene;
     ScriptingObjectReference<NavMesh> NavMesh;
     NavMeshRuntime* Runtime;
@@ -723,7 +724,6 @@ public:
     rcConfig Config;
 
 public:
-
     // [ThreadPoolTask]
     bool Run() override
     {
@@ -861,8 +861,8 @@ void BuildDirtyBounds(Scene* scene, NavMesh* navMesh, const BoundingBox& dirtyBo
     BoundingBox dirtyBoundsNavMesh;
     BoundingBox::Transform(dirtyBounds, worldToNavMesh, dirtyBoundsNavMesh);
     BoundingBox dirtyBoundsAligned;
-    dirtyBoundsAligned.Minimum = Vector3::Floor(dirtyBoundsNavMesh.Minimum / tileSize) * tileSize;
-    dirtyBoundsAligned.Maximum = Vector3::Ceil(dirtyBoundsNavMesh.Maximum / tileSize) * tileSize;
+    dirtyBoundsAligned.Minimum = Float3::Floor(dirtyBoundsNavMesh.Minimum / tileSize) * tileSize;
+    dirtyBoundsAligned.Maximum = Float3::Ceil(dirtyBoundsNavMesh.Maximum / tileSize) * tileSize;
 
     // Calculate tiles range for the given navigation dirty bounds (aligned to tiles size)
     const Int3 tilesMin(dirtyBoundsAligned.Minimum / tileSize);

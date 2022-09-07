@@ -75,18 +75,43 @@ void SkinnedModelLOD::Dispose()
     Meshes.Resize(0);
 }
 
-bool SkinnedModelLOD::Intersects(const Ray& ray, const Matrix& world, float& distance, Vector3& normal, SkinnedMesh** mesh)
+bool SkinnedModelLOD::Intersects(const Ray& ray, const Matrix& world, Real& distance, Vector3& normal, SkinnedMesh** mesh)
 {
     // Check all meshes
     bool result = false;
-    float closest = MAX_float;
+    Real closest = MAX_float;
     Vector3 closestNormal = Vector3::Up;
     for (int32 i = 0; i < Meshes.Count(); i++)
     {
         // Test intersection with mesh and check if is closer than previous
-        float dst;
+        Real dst;
         Vector3 nrm;
         if (Meshes[i].Intersects(ray, world, dst, nrm) && dst < closest)
+        {
+            result = true;
+            *mesh = &Meshes[i];
+            closest = dst;
+            closestNormal = nrm;
+        }
+    }
+
+    distance = closest;
+    normal = closestNormal;
+    return result;
+}
+
+bool SkinnedModelLOD::Intersects(const Ray& ray, const Transform& transform, Real& distance, Vector3& normal, SkinnedMesh** mesh)
+{
+    // Check all meshes
+    bool result = false;
+    Real closest = MAX_float;
+    Vector3 closestNormal = Vector3::Up;
+    for (int32 i = 0; i < Meshes.Count(); i++)
+    {
+        // Test intersection with mesh and check if is closer than previous
+        Real dst;
+        Vector3 nrm;
+        if (Meshes[i].Intersects(ray, transform, dst, nrm) && dst < closest)
         {
             result = true;
             *mesh = &Meshes[i];

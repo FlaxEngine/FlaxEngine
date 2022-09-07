@@ -14,7 +14,7 @@ class TextureMipData;
 /// <seealso cref="FlaxEngine.BinaryAsset" />
 API_CLASS(Abstract, NoSpawn) class FLAXENGINE_API TextureBase : public BinaryAsset, public ITextureOwner
 {
-DECLARE_ASSET_HEADER(TextureBase);
+    DECLARE_ASSET_HEADER(TextureBase);
     static const uint32 TexturesSerializedVersion = 4;
 
     /// <summary>
@@ -45,16 +45,16 @@ DECLARE_ASSET_HEADER(TextureBase);
         /// <param name="linear">True if use linear filer, otherwise point filtering.</param>
         /// <returns>True if failed, otherwise false.</returns>
         bool GenerateMip(int32 mipIndex, bool linear = false);
+
+        void FromTextureData(const TextureData& textureData, bool generateMips = false);
     };
 
 protected:
-
     StreamingTexture _texture;
     InitData* _customData;
     BinaryAsset* _parent;
 
 public:
-
     /// <summary>
     /// Gets the streaming texture object handle.
     /// </summary>
@@ -96,9 +96,9 @@ public:
     }
 
     /// <summary>
-    /// Gets the total size of the texture. Actual resident size may be different due to dynamic content streaming. Returns Vector2::Zero if texture is not loaded.
+    /// Gets the total size of the texture. Actual resident size may be different due to dynamic content streaming. Returns Float2::Zero if texture is not loaded.
     /// </summary>
-    API_PROPERTY() Vector2 Size() const;
+    API_PROPERTY() Float2 Size() const;
 
     /// <summary>
     /// Gets the total array size of the texture.
@@ -124,7 +124,7 @@ public:
     /// Gets the total memory usage that texture may have in use (if loaded to the maximum quality). Exact value may differ due to memory alignment and resource allocation policy.
     /// </summary>
     API_PROPERTY() uint64 GetTotalMemoryUsage() const;
-    
+
     /// <summary>
     /// Gets the index of the texture group used by this texture.
     /// </summary>
@@ -136,7 +136,6 @@ public:
     API_PROPERTY() void SetTextureGroup(int32 textureGroup);
 
 public:
-
     /// <summary>
     /// Gets the mip data.
     /// </summary>
@@ -214,15 +213,15 @@ public:
     bool Init(InitData* initData);
 
 protected:
-
     virtual int32 CalculateChunkIndex(int32 mipIndex) const;
 
 private:
-
     // Internal bindings
     API_FUNCTION(NoProxy) bool Init(void* ptr);
 
 public:
+    // [BinaryAsset]
+    void CancelStreaming() override;
 
     // [ITextureOwner]
     CriticalSection& GetOwnerLocker() const override;
@@ -233,7 +232,6 @@ public:
     bool GetMipDataCustomPitch(int32 mipIndex, uint32& rowPitch, uint32& slicePitch) const override;
 
 protected:
-
     // [BinaryAsset]
     bool init(AssetInitData& initData) override;
     LoadResult load() override;

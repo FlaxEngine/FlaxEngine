@@ -167,7 +167,7 @@ void GPUContextDX11::ClearDepth(GPUTextureView* depthBuffer, float depthValue)
     }
 }
 
-void GPUContextDX11::ClearUA(GPUBuffer* buf, const Vector4& value)
+void GPUContextDX11::ClearUA(GPUBuffer* buf, const Float4& value)
 {
     ASSERT(buf != nullptr && buf->IsUnorderedAccess());
     auto uav = ((GPUBufferViewDX11*)buf->View())->UAV();
@@ -188,7 +188,7 @@ void GPUContextDX11::ClearUA(GPUTexture* texture, const uint32 value[4])
     _context->ClearUnorderedAccessViewUint(uav, value);
 }
 
-void GPUContextDX11::ClearUA(GPUTexture* texture, const Vector4& value)
+void GPUContextDX11::ClearUA(GPUTexture* texture, const Float4& value)
 {
     ASSERT(texture != nullptr && texture->IsUnorderedAccess());
     auto uav = ((GPUTextureViewDX11*)(texture->IsVolume() ? texture->ViewVolume() : texture->View()))->UAV();
@@ -732,7 +732,9 @@ void GPUContextDX11::UpdateTexture(GPUTexture* texture, int32 arrayIndex, int32 
     auto textureDX11 = static_cast<GPUTextureDX11*>(texture);
 
     const int32 subresourceIndex = RenderToolsDX::CalcSubresourceIndex(mipIndex, arrayIndex, texture->MipLevels());
-    const uint32 depthPitch = texture->IsVolume() ? slicePitch / texture->Depth() : slicePitch;
+    uint32 depthPitch = slicePitch;
+    if (texture->IsVolume())
+        depthPitch /= Math::Max(1, texture->Depth() >> mipIndex);
     _context->UpdateSubresource(textureDX11->GetResource(), subresourceIndex, nullptr, data, (UINT)rowPitch, (UINT)depthPitch);
 
     //D3D11_MAPPED_SUBRESOURCE mapped;

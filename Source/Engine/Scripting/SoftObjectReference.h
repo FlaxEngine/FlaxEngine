@@ -24,6 +24,7 @@ public:
     Delegate<> Changed;
 
 public:
+    NON_COPYABLE(SoftObjectReferenceBase);
 
     /// <summary>
     /// Initializes a new instance of the <see cref="SoftObjectReferenceBase"/> class.

@@ -27,7 +27,6 @@ template<class Base>
 class ParticleEmitterGraphNode : public Base
 {
 public:
-
     /// <summary>
     /// True if node is used by the particles graph (is connected to the any module input or its a enabled module).
     /// </summary>
@@ -56,7 +55,6 @@ template<class BaseType, class NodeType, class ValueType>
 class ParticleEmitterGraph : public BaseType
 {
 public:
-
     typedef ValueType Value;
 
     enum class ModuleType
@@ -68,7 +66,6 @@ public:
     };
 
 protected:
-
     // Attributes cache
     int32 _attrPosition;
     int32 _attrVelocity;
@@ -84,7 +81,6 @@ protected:
     int32 _attrRadius;
 
 public:
-
     /// <summary>
     /// The Particle Emitter Graph data version number. Used to sync the Particle Emitter Graph data with the instances state. Handles graph reloads to ensure data is valid.
     /// </summary>
@@ -116,7 +112,6 @@ public:
     Array<Variant, FixedAllocation<PARTICLE_ATTRIBUTES_MAX_COUNT>> AttributesDefaults;
 
 public:
-
     /// <summary>
     /// The particles modules for Spawn context.
     /// </summary>
@@ -175,18 +170,18 @@ public:
 
         switch (node->Type)
         {
-            // == Tools ==
+        // == Tools ==
 
-            // Get Gameplay Global
+        // Get Gameplay Global
         case GRAPH_NODE_MAKE_TYPE(7, 16):
         {
             node->Assets[0] = Content::LoadAsync<Asset>((Guid)node->Values[0]);
             break;
         }
 
-            // === Particles ===
+        // === Particles ===
 
-            // Particle Attribute
+        // Particle Attribute
         case GRAPH_NODE_MAKE_TYPE(14, 100):
         case GRAPH_NODE_MAKE_TYPE(14, 303):
         {
@@ -201,70 +196,70 @@ public:
             static_assert(PARTICLE_EMITTER_MAX_ATTRIBUTES_REFS_PER_NODE >= 2, "Invalid node attributes count. Need more space for some data here.");
             break;
         }
-            // Particle Position
+        // Particle Position
         case GRAPH_NODE_MAKE_TYPE(14, 101):
         case GRAPH_NODE_MAKE_TYPE(14, 212):
         {
             node->UsesParticleData = true;
-            USE_ATTRIBUTE(Position, Vector3, 0);
+            USE_ATTRIBUTE(Position, Float3, 0);
             break;
         }
-            // Particle Lifetime
+        // Particle Lifetime
         case GRAPH_NODE_MAKE_TYPE(14, 102):
         {
             node->UsesParticleData = true;
             USE_ATTRIBUTE(Lifetime, Float, 0);
             break;
         }
-            // Particle Age
+        // Particle Age
         case GRAPH_NODE_MAKE_TYPE(14, 103):
         {
             node->UsesParticleData = true;
             USE_ATTRIBUTE(Age, Float, 0);
             break;
         }
-            // Particle Color
+        // Particle Color
         case GRAPH_NODE_MAKE_TYPE(14, 104):
         {
             node->UsesParticleData = true;
-            USE_ATTRIBUTE(Color, Vector4, 0);
+            USE_ATTRIBUTE(Color, Float4, 0);
             break;
         }
-            // Particle Velocity
+        // Particle Velocity
         case GRAPH_NODE_MAKE_TYPE(14, 105):
         {
             node->UsesParticleData = true;
-            USE_ATTRIBUTE(Velocity, Vector3, 0);
+            USE_ATTRIBUTE(Velocity, Float3, 0);
             break;
         }
-            // Particle Sprite Size
+        // Particle Sprite Size
         case GRAPH_NODE_MAKE_TYPE(14, 106):
         {
             node->UsesParticleData = true;
-            USE_ATTRIBUTE(SpriteSize, Vector2, 0);
+            USE_ATTRIBUTE(SpriteSize, Float2, 0);
             break;
         }
-            // Particle Mass
+        // Particle Mass
         case GRAPH_NODE_MAKE_TYPE(14, 107):
         {
             node->UsesParticleData = true;
             USE_ATTRIBUTE(Mass, Float, 0);
             break;
         }
-            // Particle Rotation
+        // Particle Rotation
         case GRAPH_NODE_MAKE_TYPE(14, 108):
         {
             node->UsesParticleData = true;
-            USE_ATTRIBUTE(Rotation, Vector3, 0);
+            USE_ATTRIBUTE(Rotation, Float3, 0);
             break;
         }
-            // Particle Angular Velocity
+        // Particle Angular Velocity
         case GRAPH_NODE_MAKE_TYPE(14, 109):
         {
-            USE_ATTRIBUTE(AngularVelocity, Vector3, 0);
+            USE_ATTRIBUTE(AngularVelocity, Float3, 0);
             break;
         }
-            // Particle Normalized Age
+        // Particle Normalized Age
         case GRAPH_NODE_MAKE_TYPE(14, 110):
         {
             node->UsesParticleData = true;
@@ -272,14 +267,14 @@ public:
             USE_ATTRIBUTE(Lifetime, Float, 1);
             break;
         }
-            // Particle Mass
+        // Particle Mass
         case GRAPH_NODE_MAKE_TYPE(14, 111):
         {
             node->UsesParticleData = true;
             USE_ATTRIBUTE(Radius, Float, 0);
             break;
         }
-            // Random
+        // Random
         case GRAPH_NODE_MAKE_TYPE(14, 208):
         case GRAPH_NODE_MAKE_TYPE(14, 209):
         case GRAPH_NODE_MAKE_TYPE(14, 210):
@@ -292,19 +287,19 @@ public:
             node->IsConstant = false;
             break;
         }
-            // Particle Emitter Function
+        // Particle Emitter Function
         case GRAPH_NODE_MAKE_TYPE(14, 300):
             node->Assets[0] = Content::LoadAsync<Asset>((Guid)node->Values[0]);
             node->UsesParticleData = true; // TODO: analyze emitter function graph to detect if it's actually using any particle data at all (even from inputs after inline)
             break;
-            // Particle Index
+        // Particle Index
         case GRAPH_NODE_MAKE_TYPE(14, 301):
             node->UsesParticleData = true;
             break;
 
-            // === Particle Modules ===
+        // === Particle Modules ===
 
-            // Orient Sprite
+        // Orient Sprite
         case GRAPH_NODE_MAKE_TYPE(15, 201):
         case GRAPH_NODE_MAKE_TYPE(15, 303):
         {
@@ -312,50 +307,50 @@ public:
             if (((ParticleSpriteFacingMode)node->Values[2].AsInt) == ParticleSpriteFacingMode::CustomFacingVector ||
                 ((ParticleSpriteFacingMode)node->Values[2].AsInt) == ParticleSpriteFacingMode::FixedAxis)
             {
-                USE_ATTRIBUTE(SpriteFacingVector, Vector3, 1);
+                USE_ATTRIBUTE(SpriteFacingVector, Float3, 1);
             }
             break;
         }
-            // Orient Model
+        // Orient Model
         case GRAPH_NODE_MAKE_TYPE(15, 213):
         case GRAPH_NODE_MAKE_TYPE(15, 309):
         {
             USE_ATTRIBUTE(ModelFacingMode, Int, 0);
             break;
         }
-            // Update Age
+        // Update Age
         case GRAPH_NODE_MAKE_TYPE(15, 300):
         {
             USE_ATTRIBUTE(Age, Float, 0);
             break;
         }
-            // Gravity/Force
+        // Gravity/Force
         case GRAPH_NODE_MAKE_TYPE(15, 301):
         case GRAPH_NODE_MAKE_TYPE(15, 304):
         {
-            USE_ATTRIBUTE(Velocity, Vector3, 0);
+            USE_ATTRIBUTE(Velocity, Float3, 0);
             break;
         }
-            // Linear Drag
+        // Linear Drag
         case GRAPH_NODE_MAKE_TYPE(15, 310):
         {
-            USE_ATTRIBUTE(Velocity, Vector3, 0);
+            USE_ATTRIBUTE(Velocity, Float3, 0);
             USE_ATTRIBUTE(Mass, Float, 1);
             if (node->Values[3].AsBool)
             {
-                USE_ATTRIBUTE(SpriteSize, Vector2, 2);
+                USE_ATTRIBUTE(SpriteSize, Float2, 2);
             }
             break;
         }
-            // Turbulence
+        // Turbulence
         case GRAPH_NODE_MAKE_TYPE(15, 311):
         {
-            USE_ATTRIBUTE(Position, Vector3, 0);
-            USE_ATTRIBUTE(Velocity, Vector3, 1);
+            USE_ATTRIBUTE(Position, Float3, 0);
+            USE_ATTRIBUTE(Velocity, Float3, 1);
             USE_ATTRIBUTE(Mass, Float, 2);
             break;
         }
-            // Position (plane/box surface/box volume/cylinder/line/sphere/circle/disc/torus)
+        // Position (plane/box surface/box volume/cylinder/line/sphere/circle/disc/torus/Global SDF)
         case GRAPH_NODE_MAKE_TYPE(15, 202):
         case GRAPH_NODE_MAKE_TYPE(15, 203):
         case GRAPH_NODE_MAKE_TYPE(15, 204):
@@ -366,25 +361,26 @@ public:
         case GRAPH_NODE_MAKE_TYPE(15, 209):
         case GRAPH_NODE_MAKE_TYPE(15, 210):
         case GRAPH_NODE_MAKE_TYPE(15, 211):
+        case GRAPH_NODE_MAKE_TYPE(15, 215):
         {
-            USE_ATTRIBUTE(Position, Vector3, 0);
+            USE_ATTRIBUTE(Position, Float3, 0);
             break;
         }
-            // Position (depth)
+        // Position (depth)
         case GRAPH_NODE_MAKE_TYPE(15, 212):
         {
-            USE_ATTRIBUTE(Position, Vector3, 0);
+            USE_ATTRIBUTE(Position, Float3, 0);
             USE_ATTRIBUTE(Lifetime, Float, 1);
             break;
         }
-            // Position (spiral)
+        // Position (spiral)
         case GRAPH_NODE_MAKE_TYPE(15, 214):
         {
-            USE_ATTRIBUTE(Position, Vector3, 0);
-            USE_ATTRIBUTE(Velocity, Vector3, 1);
+            USE_ATTRIBUTE(Position, Float3, 0);
+            USE_ATTRIBUTE(Velocity, Float3, 1);
             break;
         }
-            // Set Attribute
+        // Set Attribute
         case GRAPH_NODE_MAKE_TYPE(15, 200):
         case GRAPH_NODE_MAKE_TYPE(15, 302):
         {
@@ -396,60 +392,62 @@ public:
             node->Attributes[0] = idx;
             break;
         }
-            // Set Position/Lifetime/Age/..
+        // Set Position/Lifetime/Age/..
 #define CASE_SET_PARTICLE_ATTRIBUTE(id0, id1, name, type) case GRAPH_NODE_MAKE_TYPE(15, id0): case GRAPH_NODE_MAKE_TYPE(15, id1): USE_ATTRIBUTE(name, type, 0); break
-        CASE_SET_PARTICLE_ATTRIBUTE(250, 350, Position, Vector3);
+        CASE_SET_PARTICLE_ATTRIBUTE(250, 350, Position, Float3);
         CASE_SET_PARTICLE_ATTRIBUTE(251, 351, Lifetime, Float);
         CASE_SET_PARTICLE_ATTRIBUTE(252, 352, Age, Float);
-        CASE_SET_PARTICLE_ATTRIBUTE(253, 353, Color, Vector4);
-        CASE_SET_PARTICLE_ATTRIBUTE(254, 354, Velocity, Vector3);
-        CASE_SET_PARTICLE_ATTRIBUTE(255, 355, SpriteSize, Vector2);
+        CASE_SET_PARTICLE_ATTRIBUTE(253, 353, Color, Float4);
+        CASE_SET_PARTICLE_ATTRIBUTE(254, 354, Velocity, Float3);
+        CASE_SET_PARTICLE_ATTRIBUTE(255, 355, SpriteSize, Float2);
         CASE_SET_PARTICLE_ATTRIBUTE(256, 356, Mass, Float);
-        CASE_SET_PARTICLE_ATTRIBUTE(257, 357, Rotation, Vector3);
-        CASE_SET_PARTICLE_ATTRIBUTE(258, 358, AngularVelocity, Vector3);
-        CASE_SET_PARTICLE_ATTRIBUTE(259, 359, Scale, Vector3);
+        CASE_SET_PARTICLE_ATTRIBUTE(257, 357, Rotation, Float3);
+        CASE_SET_PARTICLE_ATTRIBUTE(258, 358, AngularVelocity, Float3);
+        CASE_SET_PARTICLE_ATTRIBUTE(259, 359, Scale, Float3);
         CASE_SET_PARTICLE_ATTRIBUTE(260, 360, RibbonWidth, Float);
         CASE_SET_PARTICLE_ATTRIBUTE(261, 361, RibbonTwist, Float);
-        CASE_SET_PARTICLE_ATTRIBUTE(262, 362, RibbonFacingVector, Vector3);
+        CASE_SET_PARTICLE_ATTRIBUTE(262, 362, RibbonFacingVector, Float3);
         CASE_SET_PARTICLE_ATTRIBUTE(263, 363, Radius, Float);
 #undef CASE_SET_PARTICLE_ATTRIBUTE
-            // Conform to Sphere
+        // Conform to Sphere
         case GRAPH_NODE_MAKE_TYPE(15, 305):
+        case GRAPH_NODE_MAKE_TYPE(15, 335): // Conform to Global SDF
         {
-            USE_ATTRIBUTE(Position, Vector3, 0);
-            USE_ATTRIBUTE(Velocity, Vector3, 1);
+            USE_ATTRIBUTE(Position, Float3, 0);
+            USE_ATTRIBUTE(Velocity, Float3, 1);
             USE_ATTRIBUTE(Mass, Float, 2);
             break;
         }
-            // Kill (sphere/box)
+        // Kill (sphere/box)
         case GRAPH_NODE_MAKE_TYPE(15, 306):
         case GRAPH_NODE_MAKE_TYPE(15, 307):
         {
-            USE_ATTRIBUTE(Position, Vector3, 0);
+            USE_ATTRIBUTE(Position, Float3, 0);
             break;
         }
-            // Collision (plane/sphere/box/cylinder/depth)
+        // Collision (plane/sphere/box/cylinder/depth/Global SDF)
         case GRAPH_NODE_MAKE_TYPE(15, 330):
         case GRAPH_NODE_MAKE_TYPE(15, 331):
         case GRAPH_NODE_MAKE_TYPE(15, 332):
         case GRAPH_NODE_MAKE_TYPE(15, 333):
         case GRAPH_NODE_MAKE_TYPE(15, 334):
+        case GRAPH_NODE_MAKE_TYPE(15, 336):
         {
-            USE_ATTRIBUTE(Position, Vector3, 0);
-            USE_ATTRIBUTE(Velocity, Vector3, 1);
+            USE_ATTRIBUTE(Position, Float3, 0);
+            USE_ATTRIBUTE(Velocity, Float3, 1);
             USE_ATTRIBUTE(Age, Float, 2);
             break;
         }
-            // Sprite Rendering
+        // Sprite Rendering
         case GRAPH_NODE_MAKE_TYPE(15, 400):
         {
             node->Assets[0] = Content::LoadAsync<Asset>((Guid)node->Values[2]);
-            USE_ATTRIBUTE(Position, Vector3, 0);
-            USE_ATTRIBUTE(Rotation, Vector3, 1);
-            USE_ATTRIBUTE(SpriteSize, Vector2, 2);
+            USE_ATTRIBUTE(Position, Float3, 0);
+            USE_ATTRIBUTE(Rotation, Float3, 1);
+            USE_ATTRIBUTE(SpriteSize, Float2, 2);
             break;
         }
-            // Sort
+        // Sort
         case GRAPH_NODE_MAKE_TYPE(15, 402):
         {
             const auto sortMode = static_cast<ParticleSortMode>(node->Values[2].AsInt);
@@ -477,30 +475,30 @@ public:
             }
             break;
         }
-            // Model Rendering
+        // Model Rendering
         case GRAPH_NODE_MAKE_TYPE(15, 403):
         {
             node->Assets[0] = Content::LoadAsync<Asset>((Guid)node->Values[2]);
             node->Assets[1] = Content::LoadAsync<Asset>((Guid)node->Values[3]);
-            USE_ATTRIBUTE(Position, Vector3, 0);
-            USE_ATTRIBUTE(Rotation, Vector3, 1);
-            USE_ATTRIBUTE(Scale, Vector3, 2);
+            USE_ATTRIBUTE(Position, Float3, 0);
+            USE_ATTRIBUTE(Rotation, Float3, 1);
+            USE_ATTRIBUTE(Scale, Float3, 2);
             break;
         }
-            // Ribbon Rendering
+        // Ribbon Rendering
         case GRAPH_NODE_MAKE_TYPE(15, 404):
         {
             node->Assets[0] = Content::LoadAsync<Asset>((Guid)node->Values[2]);
-            USE_ATTRIBUTE(Position, Vector3, 0);
+            USE_ATTRIBUTE(Position, Float3, 0);
             // TODO: add support for custom sorting key - not only by age
             USE_ATTRIBUTE(Age, Float, 1);
             break;
         }
-            // Volumetric Fog Rendering
+        // Volumetric Fog Rendering
         case GRAPH_NODE_MAKE_TYPE(15, 405):
         {
             node->Assets[0] = Content::LoadAsync<Asset>((Guid)node->Values[2]);
-            USE_ATTRIBUTE(Position, Vector3, 0);
+            USE_ATTRIBUTE(Position, Float3, 0);
             USE_ATTRIBUTE(Radius, Float, 1);
             break;
         }
@@ -528,7 +526,6 @@ public:
     }
 
 public:
-
     // [Graph]
     void Clear() override
     {
@@ -558,7 +555,7 @@ public:
             return true;
 
         // Compute particle data layout and initialize used nodes (for only used nodes, start depth searching rom the modules)
-        Layout.AddAttribute(TEXT("Position"), ParticleAttribute::ValueTypes::Vector3);
+        Layout.AddAttribute(TEXT("Position"), ParticleAttribute::ValueTypes::Float3);
 #define PROCESS_MODULES(modules) for (int32 i = 0; i < modules.Count(); i++) { InitializeNode(modules[i]); }
         PROCESS_MODULES(SpawnModules);
         PROCESS_MODULES(InitModules);
@@ -595,17 +592,17 @@ public:
             _attr##name = idx; \
             if (idx != -1) \
                 AttributesDefaults[idx] = defaultValue
-        SETUP_ATTRIBUTE(Position, Vector3, Variant(Vector3::Zero));
-        SETUP_ATTRIBUTE(Velocity, Vector3, Variant(Vector3::Zero));
-        SETUP_ATTRIBUTE(Rotation, Vector3, Variant(Vector3::Zero));
-        SETUP_ATTRIBUTE(AngularVelocity, Vector3, Variant(Vector3::Zero));
+        SETUP_ATTRIBUTE(Position, Float3, Variant(Float3::Zero));
+        SETUP_ATTRIBUTE(Velocity, Float3, Variant(Float3::Zero));
+        SETUP_ATTRIBUTE(Rotation, Float3, Variant(Float3::Zero));
+        SETUP_ATTRIBUTE(AngularVelocity, Float3, Variant(Float3::Zero));
         SETUP_ATTRIBUTE(Age, Float, Variant::Zero);
         SETUP_ATTRIBUTE(Lifetime, Float, Variant(5.0f));
-        SETUP_ATTRIBUTE(SpriteSize, Vector2, Variant(Vector2(50.0f)));
-        SETUP_ATTRIBUTE(Scale, Vector3, Variant(Vector3::One));
+        SETUP_ATTRIBUTE(SpriteSize, Float2, Variant(Float2(50.0f)));
+        SETUP_ATTRIBUTE(Scale, Float3, Variant(Float3::One));
         SETUP_ATTRIBUTE(Mass, Float, Variant(1.0f));
         SETUP_ATTRIBUTE(RibbonWidth, Float, Variant(10.0f));
-        SETUP_ATTRIBUTE(Color, Vector4, Variant(Vector4(0.0f, 0.0f, 0.0f, 1.0f)));
+        SETUP_ATTRIBUTE(Color, Float4, Variant(Float4(0.0f, 0.0f, 0.0f, 1.0f)));
         SETUP_ATTRIBUTE(Radius, Float, Variant(100.0f));
 #undef SETUP_ATTRIBUTE
 
@@ -620,7 +617,7 @@ public:
             ASSERT(!Root);
             Root = n;
         }
-            // Particle Modules (only if module is enabled)
+        // Particle Modules (only if module is enabled)
         else if (n->GroupID == 15 && n->Values[0].AsBool)
         {
             const auto moduleType = static_cast<ModuleType>(n->Values[1].AsInt);

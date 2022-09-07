@@ -218,6 +218,8 @@ namespace FlaxEditor.Windows.Assets
         /// <seealso cref="FlaxEditor.CustomEditors.CustomEditor" />
         public class ParametersEditor : GenericEditor
         {
+            private SurfaceUtils.GraphParameterData[] _graphParameters;
+
             /// <inheritdoc />
             public override void Initialize(LayoutElementsContainer layout)
             {
@@ -240,6 +242,21 @@ namespace FlaxEditor.Windows.Assets
 
                 if (parameters.Length == 0)
                     return;
+
+                // Utility buttons
+                {
+                    var buttons = layout.CustomContainer<UniformGridPanel>();
+                    var gridControl = buttons.CustomControl;
+                    gridControl.ClipChildren = false;
+                    gridControl.Height = Button.DefaultHeight;
+                    gridControl.SlotsHorizontally = 2;
+                    gridControl.SlotsVertically = 1;
+                    var rebuildButton = buttons.Button("Remove overrides", "Unchecks all overrides for parameters.").Button;
+                    rebuildButton.Clicked += OnRemoveOverrides;
+                    var removeButton = buttons.Button("Override all", "Checks all parameters overrides.").Button;
+                    removeButton.Clicked += OnOverrideAll;
+                }
+
                 var parametersGroup = layout.Group("Parameters");
                 var baseMaterial = materialInstance.BaseMaterial;
                 var material = baseMaterial;
@@ -249,8 +266,8 @@ namespace FlaxEditor.Windows.Assets
                         material = instance.BaseMaterial;
                 }
 
-                var data = SurfaceUtils.InitGraphParameters(parameters, (Material)material);
-                SurfaceUtils.DisplayGraphParameters(parametersGroup, data,
+                _graphParameters = SurfaceUtils.InitGraphParameters(parameters, (Material)material);
+                SurfaceUtils.DisplayGraphParameters(parametersGroup, _graphParameters,
                                                     (instance, parameter, tag) =>
                                                     {
                                                         // Get material parameter
@@ -301,6 +318,40 @@ namespace FlaxEditor.Windows.Assets
                                                         };
                                                         itemLayout.Property(label, valueContainer, null, e.Tooltip?.Text);
                                                     });
+            }
+
+            private void OnRemoveOverrides()
+            {
+                OnSetOverrides(false);
+            }
+
+            private void OnOverrideAll()
+            {
+                OnSetOverrides(true);
+            }
+
+            private void OnSetOverrides(bool isOverride)
+            {
+                var proxy = (PropertiesProxy)Values[0];
+                var undoActions = new List<IUndoAction>();
+                foreach (var graphParameter in _graphParameters)
+                {
+                    var p = (MaterialParameter)graphParameter.Tag;
+                    if (!p.IsPublic || p.IsOverride == isOverride)
+                        continue;
+                    p.IsOverride = isOverride;
+                    undoActions.Add(new EditParamOverrideAction
+                    {
+                        Window = proxy.Window,
+                        Name = p.Name,
+                        Before = !isOverride,
+                    });
+                }
+                if (undoActions.Count == 0)
+                    return;
+                proxy.Window._undo.AddAction(new MultiUndoAction(undoActions));
+                proxy.Window.MarkAsEdited();
+                Presenter.BuildLayoutOnUpdate();
             }
         }
 

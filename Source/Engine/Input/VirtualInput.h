@@ -11,7 +11,7 @@
 /// </summary>
 API_STRUCT() struct ActionConfig
 {
-DECLARE_SCRIPTING_TYPE_MINIMAL(ActionConfig);
+    DECLARE_SCRIPTING_TYPE_MINIMAL(ActionConfig);
 
     /// <summary>
     /// The action "friendly name" used to access it from code.
@@ -55,7 +55,7 @@ DECLARE_SCRIPTING_TYPE_MINIMAL(ActionConfig);
 /// </summary>
 API_STRUCT() struct AxisConfig
 {
-DECLARE_SCRIPTING_TYPE_MINIMAL(AxisConfig);
+    DECLARE_SCRIPTING_TYPE_MINIMAL(AxisConfig);
 
     /// <summary>
     /// The axis "friendly name" used to access it from code.

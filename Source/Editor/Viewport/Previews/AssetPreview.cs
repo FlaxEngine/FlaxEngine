@@ -1,5 +1,11 @@
 // Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
+#if USE_LARGE_WORLDS
+using Real = System.Double;
+#else
+using Real = System.Single;
+#endif
+
 using System;
 using FlaxEditor.Gizmo;
 using FlaxEditor.GUI.ContextMenu;
@@ -143,7 +149,7 @@ namespace FlaxEditor.Viewport.Previews
             Task.ViewFlags = ViewFlags.DefaultAssetPreview;
             Task.AllowGlobalCustomPostFx = false;
 
-            var orbitRadius = 200.0f;
+            Real orbitRadius = 200.0f;
             if (camera is ArcBallCamera arcBallCamera)
                 orbitRadius = arcBallCamera.OrbitRadius;
             camera.SetArcBallView(new Quaternion(-0.08f, -0.92f, 0.31f, -0.23f), Vector3.Zero, orbitRadius);
@@ -165,7 +171,6 @@ namespace FlaxEditor.Viewport.Previews
             //
             EnvProbe = new EnvironmentProbe
             {
-                AutoUpdate = false,
                 CustomProbe = FlaxEngine.Content.LoadAsyncInternal<CubeTexture>(EditorAssets.DefaultSkyCubeTexture)
             };
             //
@@ -216,7 +221,7 @@ namespace FlaxEditor.Viewport.Previews
         }
 
         /// <inheritdoc />
-        public override bool HasLoadedAssets => base.HasLoadedAssets && Sky.HasContentLoaded && EnvProbe.Probe.IsLoaded && PostFxVolume.HasContentLoaded;
+        public override bool HasLoadedAssets => base.HasLoadedAssets && Sky.HasContentLoaded && EnvProbe.HasContentLoaded && PostFxVolume.HasContentLoaded;
 
         /// <inheritdoc />
         public override void OnDestroy()

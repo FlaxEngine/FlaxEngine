@@ -12,13 +12,11 @@ class MaterialShader;
 /// </summary>
 API_CLASS(NoSpawn) class FLAXENGINE_API Material : public ShaderAssetTypeBase<MaterialBase>
 {
-DECLARE_BINARY_ASSET_HEADER(Material, ShadersSerializedVersion);
+    DECLARE_BINARY_ASSET_HEADER(Material, ShadersSerializedVersion);
 private:
-
     MaterialShader* _materialShader = nullptr;
 
 public:
-
     /// <summary>
     /// Tries to load surface graph from the asset.
     /// </summary>
@@ -39,12 +37,12 @@ public:
 #endif
 
 public:
-
     // [MaterialBase]
     bool IsMaterialInstance() const override;
 
     // [IMaterial]
     const MaterialInfo& GetInfo() const override;
+    GPUShader* GetShader() const override;
     bool IsReady() const override;
     DrawPass GetDrawModes() const override;
     bool CanUseLightmap() const override;
@@ -57,7 +55,6 @@ public:
 #endif
 
 protected:
-
     // [MaterialBase]
     LoadResult load() override;
     void unload(bool isReloading) override;

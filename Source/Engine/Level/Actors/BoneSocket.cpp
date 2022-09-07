@@ -104,7 +104,7 @@ void BoneSocket::OnParentChanged()
 {
     // Base
     Actor::OnParentChanged();
-    
+
     if (!IsDuringPlay())
         return;
 

@@ -42,8 +42,8 @@ namespace FlaxEditor.CustomEditors.Editors
             {
                 var elemnt = grid.FloatValue();
                 elemnt.SetLimits(limit);
-                elemnt.FloatValue.ValueChanged += OnValueChanged;
-                elemnt.FloatValue.SlidingEnd += ClearToken;
+                elemnt.ValueBox.ValueChanged += OnValueChanged;
+                elemnt.ValueBox.SlidingEnd += ClearToken;
                 Elements[i] = elemnt;
             }
         }
@@ -62,7 +62,7 @@ namespace FlaxEditor.CustomEditors.Editors
             var value = new Matrix();
             for (int i = 0; i < 16; i++)
             {
-                value[i] = Elements[i].FloatValue.Value;
+                value[i] = Elements[i].ValueBox.Value;
             }
             SetValue(value, token);
         }
@@ -81,7 +81,7 @@ namespace FlaxEditor.CustomEditors.Editors
                 var value = (Matrix)Values[0];
                 for (int i = 0; i < 16; i++)
                 {
-                    Elements[i].FloatValue.Value = value[i];
+                    Elements[i].ValueBox.Value = value[i];
                 }
             }
         }

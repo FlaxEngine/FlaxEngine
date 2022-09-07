@@ -164,7 +164,7 @@ namespace FlaxEditor.GUI.Input
             }
 
             /// <inheritdoc />
-            public override bool OnMouseDown(Vector2 location, MouseButton button)
+            public override bool OnMouseDown(Float2 location, MouseButton button)
             {
                 if (button == MouseButton.Left)
                 {
@@ -190,12 +190,12 @@ namespace FlaxEditor.GUI.Input
             }
 
             /// <inheritdoc />
-            public override void OnMouseMove(Vector2 location)
+            public override void OnMouseMove(Float2 location)
             {
                 if (_isSliding)
                 {
                     // Update sliding
-                    Vector2 slidePosition = location + Root.TrackingMouseOffset;
+                    var slidePosition = location + Root.TrackingMouseOffset;
                     Value = Mathf.Map(slidePosition.X, 4, TrackSize - 4, Minimum, Maximum);
                 }
                 else
@@ -205,7 +205,7 @@ namespace FlaxEditor.GUI.Input
             }
 
             /// <inheritdoc />
-            public override bool OnMouseUp(Vector2 location, MouseButton button)
+            public override bool OnMouseUp(Float2 location, MouseButton button)
             {
                 if (button == MouseButton.Left && _isSliding)
                 {
@@ -369,8 +369,8 @@ namespace FlaxEditor.GUI.Input
             {
                 Text = _value.ToString(CultureInfo.InvariantCulture),
                 Parent = this,
-                Location = new Vector2(split, 0),
-                Size = new Vector2(Height, TextBoxSize),
+                Location = new Float2(split, 0),
+                Size = new Float2(Height, TextBoxSize),
             };
             _textBox.EditEnd += OnTextBoxEditEnd;
         }

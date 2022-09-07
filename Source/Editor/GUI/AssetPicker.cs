@@ -26,8 +26,8 @@ namespace FlaxEditor.GUI
         private ScriptType _type;
 
         private bool _isMouseDown;
-        private Vector2 _mouseDownPos;
-        private Vector2 _mousePos;
+        private Float2 _mouseDownPos;
+        private Float2 _mousePos;
         private DragAssets _dragOverElement;
 
         /// <summary>
@@ -180,7 +180,7 @@ namespace FlaxEditor.GUI
         /// Initializes a new instance of the <see cref="AssetPicker"/> class.
         /// </summary>
         public AssetPicker()
-        : this(new ScriptType(typeof(Asset)), Vector2.Zero)
+        : this(new ScriptType(typeof(Asset)), Float2.Zero)
         {
         }
 
@@ -189,11 +189,11 @@ namespace FlaxEditor.GUI
         /// </summary>
         /// <param name="assetType">The assets types that this picker accepts.</param>
         /// <param name="location">The control location.</param>
-        public AssetPicker(ScriptType assetType, Vector2 location)
-        : base(location, new Vector2(DefaultIconSize + ButtonsOffset + ButtonsSize, DefaultIconSize))
+        public AssetPicker(ScriptType assetType, Float2 location)
+        : base(location, new Float2(DefaultIconSize + ButtonsOffset + ButtonsSize, DefaultIconSize))
         {
             _type = assetType;
-            _mousePos = Vector2.Minimum;
+            _mousePos = Float2.Minimum;
         }
 
         /// <summary>
@@ -207,7 +207,7 @@ namespace FlaxEditor.GUI
         private void DoDrag()
         {
             // Do the drag drop operation if has selected element
-            if (_selected != null && new Rectangle(Vector2.Zero, Size).Contains(ref _mouseDownPos))
+            if (_selected != null && new Rectangle(Float2.Zero, Size).Contains(ref _mouseDownPos))
             {
                 DoDragDrop(DragAssets.GetDragData(_selected));
             }
@@ -334,7 +334,7 @@ namespace FlaxEditor.GUI
         /// <inheritdoc />
         public override void OnMouseLeave()
         {
-            _mousePos = Vector2.Minimum;
+            _mousePos = Float2.Minimum;
 
             // Check if start drag drop
             if (_isMouseDown)
@@ -350,21 +350,21 @@ namespace FlaxEditor.GUI
         }
 
         /// <inheritdoc />
-        public override void OnMouseEnter(Vector2 location)
+        public override void OnMouseEnter(Float2 location)
         {
             _mousePos = location;
-            _mouseDownPos = Vector2.Minimum;
+            _mouseDownPos = Float2.Minimum;
 
             base.OnMouseEnter(location);
         }
 
         /// <inheritdoc />
-        public override void OnMouseMove(Vector2 location)
+        public override void OnMouseMove(Float2 location)
         {
             _mousePos = location;
 
             // Check if start drag drop
-            if (_isMouseDown && Vector2.Distance(location, _mouseDownPos) > 10.0f && IconRect.Contains(_mouseDownPos))
+            if (_isMouseDown && Float2.Distance(location, _mouseDownPos) > 10.0f && IconRect.Contains(_mouseDownPos))
             {
                 // Do the drag
                 _isMouseDown = false;
@@ -375,7 +375,7 @@ namespace FlaxEditor.GUI
         }
 
         /// <inheritdoc />
-        public override bool OnMouseUp(Vector2 location, MouseButton button)
+        public override bool OnMouseUp(Float2 location, MouseButton button)
         {
             if (button == MouseButton.Left && _isMouseDown)
             {
@@ -422,7 +422,7 @@ namespace FlaxEditor.GUI
         }
 
         /// <inheritdoc />
-        public override bool OnMouseDown(Vector2 location, MouseButton button)
+        public override bool OnMouseDown(Float2 location, MouseButton button)
         {
             if (button == MouseButton.Left)
             {
@@ -435,7 +435,7 @@ namespace FlaxEditor.GUI
         }
 
         /// <inheritdoc />
-        public override bool OnMouseDoubleClick(Vector2 location, MouseButton button)
+        public override bool OnMouseDoubleClick(Float2 location, MouseButton button)
         {
             // Focus
             Focus();
@@ -452,7 +452,7 @@ namespace FlaxEditor.GUI
         }
 
         /// <inheritdoc />
-        public override DragDropEffect OnDragEnter(ref Vector2 location, DragData data)
+        public override DragDropEffect OnDragEnter(ref Float2 location, DragData data)
         {
             base.OnDragEnter(ref location, data);
 
@@ -467,7 +467,7 @@ namespace FlaxEditor.GUI
         }
 
         /// <inheritdoc />
-        public override DragDropEffect OnDragMove(ref Vector2 location, DragData data)
+        public override DragDropEffect OnDragMove(ref Float2 location, DragData data)
         {
             base.OnDragMove(ref location, data);
 
@@ -484,7 +484,7 @@ namespace FlaxEditor.GUI
         }
 
         /// <inheritdoc />
-        public override DragDropEffect OnDragDrop(ref Vector2 location, DragData data)
+        public override DragDropEffect OnDragDrop(ref Float2 location, DragData data)
         {
             base.OnDragDrop(ref location, data);
 

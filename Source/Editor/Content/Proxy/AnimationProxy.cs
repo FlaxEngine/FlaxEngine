@@ -38,6 +38,19 @@ namespace FlaxEditor.Content
         public override Type AssetType => typeof(Animation);
 
         /// <inheritdoc />
+        public override bool CanCreate(ContentFolder targetLocation)
+        {
+            return targetLocation.CanHaveAssets;
+        }
+
+        /// <inheritdoc />
+        public override void Create(string outputPath, object arg)
+        {
+            if (Editor.CreateAsset(Editor.NewAssetType.Animation, outputPath))
+                throw new Exception("Failed to create new asset.");
+        }
+
+        /// <inheritdoc />
         public override void OnThumbnailDrawBegin(ThumbnailRequest request, ContainerControl guiRoot, GPUContext context)
         {
             guiRoot.AddChild(new Label

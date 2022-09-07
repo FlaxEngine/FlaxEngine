@@ -16,7 +16,7 @@ namespace FlaxEditor.CustomEditors.GUI
         /// </summary>
         /// <param name="label">The label.</param>
         /// <param name="location">The mouse location.</param>
-        public delegate void MouseDelegate(ClickablePropertyNameLabel label, Vector2 location);
+        public delegate void MouseDelegate(ClickablePropertyNameLabel label, Float2 location);
 
         /// <summary>
         /// The mouse left button clicks on the label.
@@ -45,7 +45,7 @@ namespace FlaxEditor.CustomEditors.GUI
         }
 
         /// <inheritdoc />
-        public override bool OnMouseUp(Vector2 location, MouseButton button)
+        public override bool OnMouseUp(Float2 location, MouseButton button)
         {
             // Fire events
             if (button == MouseButton.Left)
@@ -69,7 +69,7 @@ namespace FlaxEditor.CustomEditors.GUI
         }
 
         /// <inheritdoc />
-        public override bool OnMouseDoubleClick(Vector2 location, MouseButton button)
+        public override bool OnMouseDoubleClick(Float2 location, MouseButton button)
         {
             // Fire events
             if (button == MouseButton.Left)

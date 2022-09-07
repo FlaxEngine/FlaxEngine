@@ -21,9 +21,8 @@
 /// </summary>
 API_CLASS() class FLAXENGINE_API TextRender : public Actor
 {
-DECLARE_SCENE_OBJECT(TextRender);
+    DECLARE_SCENE_OBJECT(TextRender);
 private:
-
     struct DrawChunk
     {
         TextRender* Actor;
@@ -43,7 +42,6 @@ private:
     int32 _sceneRenderingKey = -1;
 
     BoundingBox _localBox;
-    Matrix _world;
     GeometryDrawStateData _drawState;
     DynamicIndexBuffer _ib;
     DynamicVertexBuffer _vb0;
@@ -55,11 +53,10 @@ private:
     Array<DrawChunk, InlinedAllocation<8>> _drawChunks;
 
 public:
-
     /// <summary>
     /// Gets the text.
     /// </summary>
-    API_PROPERTY(Attributes="EditorOrder(0), EditorDisplay(\"Text\")")
+    API_PROPERTY(Attributes="EditorOrder(0), MultilineText, EditorDisplay(\"Text\")")
     const LocalizedString& GetText() const;
 
     /// <summary>
@@ -154,7 +151,6 @@ public:
 #endif
 
 private:
-
     void Invalidate()
     {
         // Invalidate data
@@ -162,21 +158,18 @@ private:
     }
 
 public:
-
     // [Actor]
     bool HasContentLoaded() const override;
     void Draw(RenderContext& renderContext) override;
-    void DrawGeneric(RenderContext& renderContext) override;
 #if USE_EDITOR
     void OnDebugDrawSelected() override;
 #endif
     void OnLayerChanged() override;
-    bool IntersectsItself(const Ray& ray, float& distance, Vector3& normal) override;
+    bool IntersectsItself(const Ray& ray, Real& distance, Vector3& normal) override;
     void Serialize(SerializeStream& stream, const void* otherObj) override;
     void Deserialize(DeserializeStream& stream, ISerializeModifier* modifier) override;
 
 protected:
-
     // [Actor]
     void OnEnable() override;
     void OnDisable() override;

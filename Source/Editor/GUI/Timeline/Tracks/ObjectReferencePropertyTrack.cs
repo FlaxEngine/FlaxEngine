@@ -125,7 +125,7 @@ namespace FlaxEditor.GUI.Timeline.Tracks
         }
 
         /// <inheritdoc />
-        protected override int GetValueDataSize(MemberInfo member, Type type)
+        protected override int GetValueDataSize(Type type)
         {
             // Size of Guid
             return 16;

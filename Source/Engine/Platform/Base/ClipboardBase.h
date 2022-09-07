@@ -7,7 +7,7 @@
 #include "Engine/Core/Types/StringView.h"
 #include "Engine/Core/Collections/Array.h"
 
-API_INJECT_CPP_CODE("#include \"Engine/Platform/Clipboard.h\"");
+API_INJECT_CODE(cpp, "#include \"Engine/Platform/Clipboard.h\"");
 
 /// <summary>
 /// Native platform clipboard service.

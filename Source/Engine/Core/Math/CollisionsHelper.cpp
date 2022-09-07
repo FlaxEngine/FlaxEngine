@@ -9,10 +9,10 @@
 #include "BoundingSphere.h"
 #include "BoundingFrustum.h"
 
-void CollisionsHelper::ClosestPointPointLine(const Vector2& point, const Vector2& p0, const Vector2& p1, Vector2& result)
+void CollisionsHelper::ClosestPointPointLine(const Float2& point, const Float2& p0, const Float2& p1, Float2& result)
 {
-    const Vector2 p = point - p0;
-    Vector2 n = p1 - p0;
+    const Float2 p = point - p0;
+    Float2 n = p1 - p0;
 
     const float length = n.Length();
     if (length < 1e-10f)
@@ -23,7 +23,7 @@ void CollisionsHelper::ClosestPointPointLine(const Vector2& point, const Vector2
     }
     n /= length;
 
-    const float dot = Vector2::Dot(n, p);
+    const float dot = Float2::Dot(n, p);
     if (dot <= 0.0f)
     {
         // Before first point
@@ -41,9 +41,9 @@ void CollisionsHelper::ClosestPointPointLine(const Vector2& point, const Vector2
     }
 }
 
-Vector2 CollisionsHelper::ClosestPointPointLine(const Vector2& point, const Vector2& p0, const Vector2& p1)
+Float2 CollisionsHelper::ClosestPointPointLine(const Float2& point, const Float2& p0, const Float2& p1)
 {
-    Vector2 result;
+    Float2 result;
     ClosestPointPointLine(point, p0, p1, result);
     return result;
 }
@@ -52,14 +52,14 @@ void CollisionsHelper::ClosestPointPointLine(const Vector3& point, const Vector3
 {
     const Vector3 p = point - p0;
     Vector3 n = p1 - p0;
-    const float length = n.Length();
+    const Real length = n.Length();
     if (length < 1e-10f)
     {
         result = p0;
         return;
     }
     n /= length;
-    const float dot = Vector3::Dot(n, p);
+    const Real dot = Vector3::Dot(n, p);
     if (dot <= 0.0f)
     {
         result = p0;
@@ -90,8 +90,8 @@ void CollisionsHelper::ClosestPointPointTriangle(const Vector3& point, const Vec
     const Vector3 ac = vertex3 - vertex1;
     const Vector3 ap = point - vertex1;
 
-    const float d1 = Vector3::Dot(ab, ap);
-    const float d2 = Vector3::Dot(ac, ap);
+    const Real d1 = Vector3::Dot(ab, ap);
+    const Real d2 = Vector3::Dot(ac, ap);
     if (d1 <= 0.0f && d2 <= 0.0f)
     {
         result = vertex1; //Barycentric coordinates (1,0,0)
@@ -100,8 +100,8 @@ void CollisionsHelper::ClosestPointPointTriangle(const Vector3& point, const Vec
 
     // Check if P in vertex region outside B
     const Vector3 bp = point - vertex2;
-    const float d3 = Vector3::Dot(ab, bp);
-    const float d4 = Vector3::Dot(ac, bp);
+    const Real d3 = Vector3::Dot(ab, bp);
+    const Real d4 = Vector3::Dot(ac, bp);
     if (d3 >= 0.0f && d4 <= d3)
     {
         result = vertex2; // Barycentric coordinates (0,1,0)
@@ -109,18 +109,18 @@ void CollisionsHelper::ClosestPointPointTriangle(const Vector3& point, const Vec
     }
 
     // Check if P in edge region of AB, if so return projection of P onto AB
-    const float vc = d1 * d4 - d3 * d2;
+    const Real vc = d1 * d4 - d3 * d2;
     if (vc <= 0.0f && d1 >= 0.0f && d3 <= 0.0f)
     {
-        const float v = d1 / (d1 - d3);
+        const Real v = d1 / (d1 - d3);
         result = vertex1 + v * ab; //Barycentric coordinates (1-v,v,0)
         return;
     }
 
     //Check if P in vertex region outside C
     const Vector3 cp = point - vertex3;
-    const float d5 = Vector3::Dot(ab, cp);
-    const float d6 = Vector3::Dot(ac, cp);
+    const Real d5 = Vector3::Dot(ab, cp);
+    const Real d6 = Vector3::Dot(ac, cp);
     if (d6 >= 0.0f && d5 <= d6)
     {
         result = vertex3; //Barycentric coordinates (0,0,1)
@@ -128,27 +128,27 @@ void CollisionsHelper::ClosestPointPointTriangle(const Vector3& point, const Vec
     }
 
     //Check if P in edge region of AC, if so return projection of P onto AC
-    const float vb = d5 * d2 - d1 * d6;
+    const Real vb = d5 * d2 - d1 * d6;
     if (vb <= 0.0f && d2 >= 0.0f && d6 <= 0.0f)
     {
-        const float w = d2 / (d2 - d6);
+        const Real w = d2 / (d2 - d6);
         result = vertex1 + w * ac; //Barycentric coordinates (1-w,0,w)
         return;
     }
 
     //Check if P in edge region of BC, if so return projection of P onto BC
-    const float va = d3 * d6 - d5 * d4;
+    const Real va = d3 * d6 - d5 * d4;
     if (va <= 0.0f && d4 - d3 >= 0.0f && d5 - d6 >= 0.0f)
     {
-        const float w = (d4 - d3) / (d4 - d3 + (d5 - d6));
+        const Real w = (d4 - d3) / (d4 - d3 + (d5 - d6));
         result = vertex2 + w * (vertex3 - vertex2); //Barycentric coordinates (0,1-w,w)
         return;
     }
 
     //P inside face region. Compute Q through its Barycentric coordinates (u,v,w)
-    const float denom = 1.0f / (va + vb + vc);
-    const float v2 = vb * denom;
-    const float w2 = vc * denom;
+    const Real denom = 1.0f / (va + vb + vc);
+    const Real v2 = vb * denom;
+    const Real w2 = vc * denom;
     result = vertex1 + ab * v2 + ac * w2; //= u*vertex1 + v*vertex2 + w*vertex3, u = va * denom = 1.0f - v - w
 }
 
@@ -163,10 +163,8 @@ void CollisionsHelper::ClosestPointPlanePoint(const Plane& plane, const Vector3&
 {
     // Source: Real-Time Collision Detection by Christer Ericson
     // Consterence: Page 126
-
-    const float dot = Vector3::Dot(plane.Normal, point);
-    const float t = dot - plane.D;
-
+    const Real dot = Vector3::Dot(plane.Normal, point);
+    const Real t = dot - plane.D;
     result = point - t * plane.Normal;
 }
 
@@ -181,7 +179,6 @@ void CollisionsHelper::ClosestPointBoxPoint(const BoundingBox& box, const Vector
 {
     // Source: Real-Time Collision Detection by Christer Ericson
     // Consterence: Page 130
-
     Vector3 temp;
     Vector3::Max(point, box.Minimum, temp);
     Vector3::Min(temp, box.Maximum, result);
@@ -194,17 +191,17 @@ Vector3 CollisionsHelper::ClosestPointBoxPoint(const BoundingBox& box, const Vec
     return result;
 }
 
-void CollisionsHelper::ClosestPointRectanglePoint(const Rectangle& rect, const Vector2& point, Vector2& result)
+void CollisionsHelper::ClosestPointRectanglePoint(const Rectangle& rect, const Float2& point, Float2& result)
 {
-    Vector2 temp, end;
-    Vector2::Add(rect.Location, rect.Size, end);
-    Vector2::Max(point, rect.Location, temp);
-    Vector2::Min(temp, end, result);
+    Float2 temp, end;
+    Float2::Add(rect.Location, rect.Size, end);
+    Float2::Max(point, rect.Location, temp);
+    Float2::Min(temp, end, result);
 }
 
-Vector2 CollisionsHelper::ClosestPointRectanglePoint(const Rectangle& rect, const Vector2& point)
+Float2 CollisionsHelper::ClosestPointRectanglePoint(const Rectangle& rect, const Float2& point)
 {
-    Vector2 result;
+    Float2 result;
     ClosestPointRectanglePoint(rect, point, result);
     return result;
 }
@@ -257,25 +254,20 @@ Vector3 CollisionsHelper::ClosestPointSphereSphere(const BoundingSphere& sphere1
     return result;
 }
 
-float CollisionsHelper::DistancePlanePoint(const Plane& plane, const Vector3& point)
+Real CollisionsHelper::DistancePlanePoint(const Plane& plane, const Vector3& point)
 {
     // Source: Real-Time Collision Detection by Christer Ericson
     // Consterence: Page 127
-
-    const float dot = Vector3::Dot(plane.Normal, point);
+    const Real dot = Vector3::Dot(plane.Normal, point);
     return dot - plane.D;
 }
 
-// Determines the distance between a Bounding Box and a point
-// @param box The box to test
-// @param point The point to test
-// @returns The distance between the two objects
-float CollisionsHelper::DistanceBoxPoint(const BoundingBox& box, const Vector3& point)
+Real CollisionsHelper::DistanceBoxPoint(const BoundingBox& box, const Vector3& point)
 {
     // Source: Real-Time Collision Detection by Christer Ericson
     // Consterence: Page 131
 
-    float distance = 0.0f;
+    Real distance = 0.0f;
 
     if (point.X < box.Minimum.X)
         distance += (box.Minimum.X - point.X) * (box.Minimum.X - point.X);
@@ -295,90 +287,70 @@ float CollisionsHelper::DistanceBoxPoint(const BoundingBox& box, const Vector3& 
     return Math::Sqrt(distance);
 }
 
-// Determines the distance between a Bounding Box and a Bounding Box
-// @param box1 The first box to test
-// @param box2 The second box to test
-// @returns The distance between the two objects
-float CollisionsHelper::DistanceBoxBox(const BoundingBox& box1, const BoundingBox& box2)
+Real CollisionsHelper::DistanceBoxBox(const BoundingBox& box1, const BoundingBox& box2)
 {
     // Source:
     // Consterence:
 
-    float distance = 0.0f;
+    Real distance = 0.0f;
 
     // Distance for X
     if (box1.Minimum.X > box2.Maximum.X)
     {
-        const float delta = box2.Maximum.X - box1.Minimum.X;
+        const Real delta = box2.Maximum.X - box1.Minimum.X;
         distance += delta * delta;
     }
     else if (box2.Minimum.X > box1.Maximum.X)
     {
-        const float delta = box1.Maximum.X - box2.Minimum.X;
+        const Real delta = box1.Maximum.X - box2.Minimum.X;
         distance += delta * delta;
     }
 
     // Distance for Y
     if (box1.Minimum.Y > box2.Maximum.Y)
     {
-        const float delta = box2.Maximum.Y - box1.Minimum.Y;
+        const Real delta = box2.Maximum.Y - box1.Minimum.Y;
         distance += delta * delta;
     }
     else if (box2.Minimum.Y > box1.Maximum.Y)
     {
-        const float delta = box1.Maximum.Y - box2.Minimum.Y;
+        const Real delta = box1.Maximum.Y - box2.Minimum.Y;
         distance += delta * delta;
     }
 
     // Distance for Z
     if (box1.Minimum.Z > box2.Maximum.Z)
     {
-        const float delta = box2.Maximum.Z - box1.Minimum.Z;
+        const Real delta = box2.Maximum.Z - box1.Minimum.Z;
         distance += delta * delta;
     }
     else if (box2.Minimum.Z > box1.Maximum.Z)
     {
-        const float delta = box1.Maximum.Z - box2.Minimum.Z;
+        const Real delta = box1.Maximum.Z - box2.Minimum.Z;
         distance += delta * delta;
     }
 
     return Math::Sqrt(distance);
 }
 
-// Determines the distance between a Bounding Sphere and a point
-// @param sphere The sphere to test
-// @param point The point to test
-// @returns The distance between the two objects
-float CollisionsHelper::DistanceSpherePoint(const BoundingSphere& sphere, const Vector3& point)
+Real CollisionsHelper::DistanceSpherePoint(const BoundingSphere& sphere, const Vector3& point)
 {
     // Source: Jorgy343
     // Consterence: None
-
-    float distance = Vector3::Distance(sphere.Center, point);
+    Real distance = Vector3::Distance(sphere.Center, point);
     distance -= sphere.Radius;
-
-    return Math::Max(distance, 0.0f);
+    return Math::Max<Real>(distance, 0.0f);
 }
 
-// Determines the distance between a Bounding Sphere and a Bounding Sphere
-// @param sphere1 The first sphere to test
-// @param sphere2 The second sphere to test
-// @returns The distance between the two objects
-float CollisionsHelper::DistanceSphereSphere(const BoundingSphere& sphere1, const BoundingSphere& sphere2)
+Real CollisionsHelper::DistanceSphereSphere(const BoundingSphere& sphere1, const BoundingSphere& sphere2)
 {
     // Source: Jorgy343
     // Consterence: None
-
-    float distance = Vector3::Distance(sphere1.Center, sphere2.Center);
+    Real distance = Vector3::Distance(sphere1.Center, sphere2.Center);
     distance -= sphere1.Radius + sphere2.Radius;
-
-    return Math::Max(distance, 0.0f);
+    return Math::Max<Real>(distance, 0.0f);
 }
 
-// Determines whether there is an intersection between a Ray and a point
-// @param ray The ray to test
-// @param point The point to test
-// @returns Whether the two objects intersect
 bool CollisionsHelper::RayIntersectsPoint(const Ray& ray, const Vector3& point)
 {
     // Source: RayIntersectsSphere
@@ -389,13 +361,13 @@ bool CollisionsHelper::RayIntersectsPoint(const Ray& ray, const Vector3& point)
 
     //Same thing as RayIntersectsSphere except that the radius of the sphere (point)
     //is the epsilon for zero.
-    const float b = Vector3::Dot(m, ray.Direction);
-    const float c = Vector3::Dot(m, m) - ZeroTolerance;
+    const Real b = Vector3::Dot(m, ray.Direction);
+    const Real c = Vector3::Dot(m, m) - ZeroTolerance;
 
     if (c > 0.0f && b > 0.0f)
         return false;
 
-    const float discriminant = b * b - c;
+    const Real discriminant = b * b - c;
 
     if (discriminant < 0.0f)
         return false;
@@ -403,11 +375,6 @@ bool CollisionsHelper::RayIntersectsPoint(const Ray& ray, const Vector3& point)
     return true;
 }
 
-// Determines whether there is an intersection between a Ray and a Ray
-// @param ray1 The first ray to test
-// @param ray2 The second ray to test
-// @param point When the method completes, contains the point of intersection, or Vector3::Zero if there was no intersection
-// @returns Whether the two objects intersect
 bool CollisionsHelper::RayIntersectsRay(const Ray& ray1, const Ray& ray2, Vector3& point)
 {
     // Source: Real-Time Rendering, Third Edition
@@ -416,7 +383,7 @@ bool CollisionsHelper::RayIntersectsRay(const Ray& ray1, const Ray& ray2, Vector
     Vector3 cross;
 
     Vector3::Cross(ray1.Direction, ray2.Direction, cross);
-    float denominator = cross.Length();
+    Real denominator = cross.Length();
 
     // Lines are parallel
     if (Math::IsZero(denominator))
@@ -434,18 +401,18 @@ bool CollisionsHelper::RayIntersectsRay(const Ray& ray1, const Ray& ray2, Vector
     denominator = denominator * denominator;
 
     // 3x3 matrix for the first ray
-    const float m11 = ray2.Position.X - ray1.Position.X;
-    const float m12 = ray2.Position.Y - ray1.Position.Y;
-    const float m13 = ray2.Position.Z - ray1.Position.Z;
-    float m21 = ray2.Direction.X;
-    float m22 = ray2.Direction.Y;
-    float m23 = ray2.Direction.Z;
-    const float m31 = cross.X;
-    const float m32 = cross.Y;
-    const float m33 = cross.Z;
+    const Real m11 = ray2.Position.X - ray1.Position.X;
+    const Real m12 = ray2.Position.Y - ray1.Position.Y;
+    const Real m13 = ray2.Position.Z - ray1.Position.Z;
+    Real m21 = ray2.Direction.X;
+    Real m22 = ray2.Direction.Y;
+    Real m23 = ray2.Direction.Z;
+    const Real m31 = cross.X;
+    const Real m32 = cross.Y;
+    const Real m33 = cross.Z;
 
     // Determinant of first matrix
-    const float dets =
+    const Real dets =
             m11 * m22 * m33 +
             m12 * m23 * m31 +
             m13 * m21 * m32 -
@@ -459,7 +426,7 @@ bool CollisionsHelper::RayIntersectsRay(const Ray& ray1, const Ray& ray2, Vector
     m23 = ray1.Direction.Z;
 
     // Determinant of the second matrix
-    const float dett =
+    const Real dett =
             m11 * m22 * m33 +
             m12 * m23 * m31 +
             m13 * m21 * m32 -
@@ -468,8 +435,8 @@ bool CollisionsHelper::RayIntersectsRay(const Ray& ray1, const Ray& ray2, Vector
             m13 * m22 * m31;
 
     // t values of the point of intersection
-    const float s = dets / denominator;
-    const float t = dett / denominator;
+    const Real s = dets / denominator;
+    const Real t = dett / denominator;
 
     // The points of intersection.
     const Vector3 point1 = ray1.Position + s * ray1.Direction;
@@ -488,12 +455,12 @@ bool CollisionsHelper::RayIntersectsRay(const Ray& ray1, const Ray& ray2, Vector
     return true;
 }
 
-bool CollisionsHelper::RayIntersectsPlane(const Ray& ray, const Plane& plane, float& distance)
+bool CollisionsHelper::RayIntersectsPlane(const Ray& ray, const Plane& plane, Real& distance)
 {
     // Source: Real-Time Collision Detection by Christer Ericson
     // Consterence: Page 175
 
-    const float direction = Vector3::Dot(plane.Normal, ray.Direction);
+    const Real direction = Vector3::Dot(plane.Normal, ray.Direction);
 
     if (Math::IsZero(direction))
     {
@@ -501,7 +468,7 @@ bool CollisionsHelper::RayIntersectsPlane(const Ray& ray, const Plane& plane, fl
         return false;
     }
 
-    const float position = Vector3::Dot(plane.Normal, ray.Position);
+    const Real position = Vector3::Dot(plane.Normal, ray.Position);
     distance = (-plane.D - position) / direction;
 
     if (distance < Plane::DistanceEpsilon)
@@ -518,7 +485,7 @@ bool CollisionsHelper::RayIntersectsPlane(const Ray& ray, const Plane& plane, Ve
     // Source: Real-Time Collision Detection by Christer Ericson
     // Consterence: Page 175
 
-    float distance;
+    Real distance;
     if (!RayIntersectsPlane(ray, plane, distance))
     {
         point = Vector3::Zero;
@@ -529,16 +496,16 @@ bool CollisionsHelper::RayIntersectsPlane(const Ray& ray, const Plane& plane, Ve
     return true;
 }
 
-bool CollisionsHelper::RayIntersectsTriangle(const Ray& ray, const Vector3& vertex1, const Vector3& vertex2, const Vector3& vertex3, float& distance)
+bool CollisionsHelper::RayIntersectsTriangle(const Ray& ray, const Vector3& vertex1, const Vector3& vertex2, const Vector3& vertex3, Real& distance)
 {
     /*
-    //bool Collision::RayIntersectsTriangle(const Ray& ray, const Vector3& vertex1, const Vector3& vertex2, const Vector3& vertex3, float& distance)
-bool Collision::RayIntersectsTriangle(const Ray& ray, const Vector3& a, const Vector3& b, const Vector3& c, float& distance)
+    //bool Collision::RayIntersectsTriangle(const Ray& ray, const Vector3& vertex1, const Vector3& vertex2, const Vector3& vertex3, Real& distance)
+bool Collision::RayIntersectsTriangle(const Ray& ray, const Vector3& a, const Vector3& b, const Vector3& c, Real& distance)
 {
     // todo: optimize this
     Vector3 p = ray.Position;
 
-    //int IntersectSegmentTriangle(Point p, Point q, Point a, Point b, Point c, float &u, float &v, float &w, float &t)
+    //int IntersectSegmentTriangle(Point p, Point q, Point a, Point b, Point c, Real &u, Real &v, Real &w, Real &t)
 
     Vector3 ab = b - a;
     Vector3 ac = c - a;
@@ -550,7 +517,7 @@ bool Collision::RayIntersectsTriangle(const Ray& ray, const Vector3& a, const Ve
 
     // Compute denominator d. If d <= 0, segment is parallel to or points
     // away from triangle, so exit early
-    float d = Vector3::Dot(qp, n);
+    Real d = Vector3::Dot(qp, n);
     if (d <= 0.0f)
         return false;
 
@@ -558,7 +525,7 @@ bool Collision::RayIntersectsTriangle(const Ray& ray, const Vector3& a, const Ve
     // intersects iff 0 <= t. Segment intersects iff 0 <= t <= 1. Delay
     // dividing by d until intersection has been found to pierce triangle
     Vector3 ap = p - a;
-    float t = Vector3::Dot(ap, n);
+    Real t = Vector3::Dot(ap, n);
     if (t < 0.0f || t > d)
         return false;
     // For segment; exclude this code line for a ray test
@@ -574,7 +541,7 @@ bool Collision::RayIntersectsTriangle(const Ray& ray, const Vector3& a, const Ve
 
     // Segment/ray intersects triangle. Perform delayed division and
     // compute the last barycentric coordinate component
-    float ood = 1.0f / d;
+    Real ood = 1.0f / d;
     t *= ood;
     v *= ood;
     w *= ood;
@@ -607,7 +574,7 @@ bool Collision::RayIntersectsTriangle(const Ray& ray, const Vector3& a, const Ve
     directionCrossEdge2.Z = ray.Direction.X * edge2.Y - ray.Direction.Y * edge2.X;
 
     // Compute the determinant (dot product of edge1 and the first part of determinant)
-    const float determinant = edge1.X * directionCrossEdge2.X + edge1.Y * directionCrossEdge2.Y + edge1.Z * directionCrossEdge2.Z;
+    const Real determinant = edge1.X * directionCrossEdge2.X + edge1.Y * directionCrossEdge2.Y + edge1.Z * directionCrossEdge2.Z;
 
     // If the ray is parallel to the triangle plane, there is no collision
     // This also means that we are not culling, the ray may hit both the
@@ -617,7 +584,7 @@ bool Collision::RayIntersectsTriangle(const Ray& ray, const Vector3& a, const Ve
         return false;
     }
 
-    const float inverseDeterminant = 1.0f / determinant;
+    const Real inverseDeterminant = 1.0f / determinant;
 
     // Calculate the U parameter of the intersection point
     Vector3 distanceVector;
@@ -625,7 +592,7 @@ bool Collision::RayIntersectsTriangle(const Ray& ray, const Vector3& a, const Ve
     distanceVector.Y = ray.Position.Y - vertex1.Y;
     distanceVector.Z = ray.Position.Z - vertex1.Z;
 
-    float triangleU = distanceVector.X * directionCrossEdge2.X + distanceVector.Y * directionCrossEdge2.Y + distanceVector.Z * directionCrossEdge2.Z;
+    Real triangleU = distanceVector.X * directionCrossEdge2.X + distanceVector.Y * directionCrossEdge2.Y + distanceVector.Z * directionCrossEdge2.Z;
     triangleU *= inverseDeterminant;
 
     // Make sure it is inside the triangle
@@ -640,7 +607,7 @@ bool Collision::RayIntersectsTriangle(const Ray& ray, const Vector3& a, const Ve
     distanceCrossEdge1.Y = distanceVector.Z * edge1.X - distanceVector.X * edge1.Z;
     distanceCrossEdge1.Z = distanceVector.X * edge1.Y - distanceVector.Y * edge1.X;
 
-    float triangleV = ray.Direction.X * distanceCrossEdge1.X + ray.Direction.Y * distanceCrossEdge1.Y + ray.Direction.Z * distanceCrossEdge1.Z;
+    Real triangleV = ray.Direction.X * distanceCrossEdge1.X + ray.Direction.Y * distanceCrossEdge1.Y + ray.Direction.Z * distanceCrossEdge1.Z;
     triangleV *= inverseDeterminant;
 
     // Make sure it is inside the triangle
@@ -650,7 +617,7 @@ bool Collision::RayIntersectsTriangle(const Ray& ray, const Vector3& a, const Ve
     }
 
     // Compute the distance along the ray to the triangle
-    float rayDistance = edge2.X * distanceCrossEdge1.X + edge2.Y * distanceCrossEdge1.Y + edge2.Z * distanceCrossEdge1.Z;
+    Real rayDistance = edge2.X * distanceCrossEdge1.X + edge2.Y * distanceCrossEdge1.Y + edge2.Z * distanceCrossEdge1.Z;
     rayDistance *= inverseDeterminant;
 
     // Check if the triangle is behind the ray origin
@@ -663,7 +630,7 @@ bool Collision::RayIntersectsTriangle(const Ray& ray, const Vector3& a, const Ve
     return true;
 }
 
-bool CollisionsHelper::RayIntersectsTriangle(const Ray& ray, const Vector3& vertex1, const Vector3& vertex2, const Vector3& vertex3, float& distance, Vector3& normal)
+bool CollisionsHelper::RayIntersectsTriangle(const Ray& ray, const Vector3& vertex1, const Vector3& vertex2, const Vector3& vertex3, Real& distance, Vector3& normal)
 {
     // Source: Fast Minimum Storage Ray / Triangle Intersection
     // Consterence: http://www.cs.virginia.edu/~gfx/Courses/2003/ImageSynthesis/papers/Acceleration/Fast%20MinimumStorage%20RayTriangle%20Intersection.pdf
@@ -691,7 +658,7 @@ bool CollisionsHelper::RayIntersectsTriangle(const Ray& ray, const Vector3& vert
     directionCrossEdge2.Z = ray.Direction.X * edge2.Y - ray.Direction.Y * edge2.X;
 
     // Compute the determinant (dot product of edge1 and the first part of determinant)
-    const float determinant = edge1.X * directionCrossEdge2.X + edge1.Y * directionCrossEdge2.Y + edge1.Z * directionCrossEdge2.Z;
+    const Real determinant = edge1.X * directionCrossEdge2.X + edge1.Y * directionCrossEdge2.Y + edge1.Z * directionCrossEdge2.Z;
 
     // If the ray is parallel to the triangle plane, there is no collision
     // This also means that we are not culling, the ray may hit both the
@@ -701,7 +668,7 @@ bool CollisionsHelper::RayIntersectsTriangle(const Ray& ray, const Vector3& vert
         return false;
     }
 
-    const float inverseDeterminant = 1.0f / determinant;
+    const Real inverseDeterminant = 1.0f / determinant;
 
     // Calculate the U parameter of the intersection point
     Vector3 distanceVector;
@@ -709,7 +676,7 @@ bool CollisionsHelper::RayIntersectsTriangle(const Ray& ray, const Vector3& vert
     distanceVector.Y = ray.Position.Y - vertex1.Y;
     distanceVector.Z = ray.Position.Z - vertex1.Z;
 
-    float triangleU = distanceVector.X * directionCrossEdge2.X + distanceVector.Y * directionCrossEdge2.Y + distanceVector.Z * directionCrossEdge2.Z;
+    Real triangleU = distanceVector.X * directionCrossEdge2.X + distanceVector.Y * directionCrossEdge2.Y + distanceVector.Z * directionCrossEdge2.Z;
     triangleU *= inverseDeterminant;
 
     // Make sure it is inside the triangle
@@ -724,7 +691,7 @@ bool CollisionsHelper::RayIntersectsTriangle(const Ray& ray, const Vector3& vert
     distanceCrossEdge1.Y = distanceVector.Z * edge1.X - distanceVector.X * edge1.Z;
     distanceCrossEdge1.Z = distanceVector.X * edge1.Y - distanceVector.Y * edge1.X;
 
-    float triangleV = ray.Direction.X * distanceCrossEdge1.X + ray.Direction.Y * distanceCrossEdge1.Y + ray.Direction.Z * distanceCrossEdge1.Z;
+    Real triangleV = ray.Direction.X * distanceCrossEdge1.X + ray.Direction.Y * distanceCrossEdge1.Y + ray.Direction.Z * distanceCrossEdge1.Z;
     triangleV *= inverseDeterminant;
 
     // Make sure it is inside the triangle
@@ -734,7 +701,7 @@ bool CollisionsHelper::RayIntersectsTriangle(const Ray& ray, const Vector3& vert
     }
 
     // Compute the distance along the ray to the triangle
-    float rayDistance = edge2.X * distanceCrossEdge1.X + edge2.Y * distanceCrossEdge1.Y + edge2.Z * distanceCrossEdge1.Z;
+    Real rayDistance = edge2.X * distanceCrossEdge1.X + edge2.Y * distanceCrossEdge1.Y + edge2.Z * distanceCrossEdge1.Z;
     rayDistance *= inverseDeterminant;
 
     // Check if the triangle is behind the ray origin
@@ -749,7 +716,7 @@ bool CollisionsHelper::RayIntersectsTriangle(const Ray& ray, const Vector3& vert
     const Vector3 n1 = Vector3::Normalize(vd0 ^ vd1);
     const Vector3 n2 = Vector3::Normalize(vd1 ^ vd0);
     // TODO: optimize it
-    const float BiasAdjust = 0.01f;
+    const Real BiasAdjust = 0.01f;
     const Vector3 center = (vertex1 + vertex2 + vertex3) * 0.333333f;
     if (Vector3::DistanceSquared(center + n1 * BiasAdjust, ray.Position) < Vector3::DistanceSquared(center + n2 * BiasAdjust, ray.Position))
         normal = n1;
@@ -764,24 +731,23 @@ bool CollisionsHelper::RayIntersectsTriangle(const Ray& ray, const Vector3& vert
 
 bool CollisionsHelper::RayIntersectsTriangle(const Ray& ray, const Vector3& vertex1, const Vector3& vertex2, const Vector3& vertex3, Vector3& point)
 {
-    float distance;
+    Real distance;
     if (!RayIntersectsTriangle(ray, vertex1, vertex2, vertex3, distance))
     {
         point = Vector3::Zero;
         return false;
     }
-
     point = ray.Position + ray.Direction * distance;
     return true;
 }
 
-bool CollisionsHelper::RayIntersectsBox(const Ray& ray, const BoundingBox& box, float& distance)
+bool CollisionsHelper::RayIntersectsBox(const Ray& ray, const BoundingBox& box, Real& distance)
 {
     // Source: Real-Time Collision Detection by Christer Ericson
     // Consterence: Page 179
 
     distance = 0.0f;
-    float tmax = MAX_float;
+    Real tmax = MAX_Real;
 
     if (Math::IsZero(ray.Direction.X))
     {
@@ -793,13 +759,13 @@ bool CollisionsHelper::RayIntersectsBox(const Ray& ray, const BoundingBox& box, 
     }
     else
     {
-        const float inverse = 1.0f / ray.Direction.X;
-        float t1 = (box.Minimum.X - ray.Position.X) * inverse;
-        float t2 = (box.Maximum.X - ray.Position.X) * inverse;
+        const Real inverse = 1.0f / ray.Direction.X;
+        Real t1 = (box.Minimum.X - ray.Position.X) * inverse;
+        Real t2 = (box.Maximum.X - ray.Position.X) * inverse;
 
         if (t1 > t2)
         {
-            const float temp = t1;
+            const Real temp = t1;
             t1 = t2;
             t2 = temp;
         }
@@ -824,13 +790,13 @@ bool CollisionsHelper::RayIntersectsBox(const Ray& ray, const BoundingBox& box, 
     }
     else
     {
-        const float inverse = 1.0f / ray.Direction.Y;
-        float t1 = (box.Minimum.Y - ray.Position.Y) * inverse;
-        float t2 = (box.Maximum.Y - ray.Position.Y) * inverse;
+        const Real inverse = 1.0f / ray.Direction.Y;
+        Real t1 = (box.Minimum.Y - ray.Position.Y) * inverse;
+        Real t2 = (box.Maximum.Y - ray.Position.Y) * inverse;
 
         if (t1 > t2)
         {
-            const float temp = t1;
+            const Real temp = t1;
             t1 = t2;
             t2 = temp;
         }
@@ -855,13 +821,13 @@ bool CollisionsHelper::RayIntersectsBox(const Ray& ray, const BoundingBox& box, 
     }
     else
     {
-        const float inverse = 1.0f / ray.Direction.Z;
-        float t1 = (box.Minimum.Z - ray.Position.Z) * inverse;
-        float t2 = (box.Maximum.Z - ray.Position.Z) * inverse;
+        const Real inverse = 1.0f / ray.Direction.Z;
+        Real t1 = (box.Minimum.Z - ray.Position.Z) * inverse;
+        Real t2 = (box.Maximum.Z - ray.Position.Z) * inverse;
 
         if (t1 > t2)
         {
-            const float temp = t1;
+            const Real temp = t1;
             t1 = t2;
             t2 = temp;
         }
@@ -879,7 +845,7 @@ bool CollisionsHelper::RayIntersectsBox(const Ray& ray, const BoundingBox& box, 
     return true;
 }
 
-bool CollisionsHelper::RayIntersectsBox(const Ray& ray, const BoundingBox& box, float& distance, Vector3& normal)
+bool CollisionsHelper::RayIntersectsBox(const Ray& ray, const BoundingBox& box, Real& distance, Vector3& normal)
 {
     if (!RayIntersectsBox(ray, box, distance))
     {
@@ -895,9 +861,9 @@ bool CollisionsHelper::RayIntersectsBox(const Ray& ray, const BoundingBox& box, 
     const Vector3 center = box.Minimum + size * 0.5f;
     const Vector3 localPoint = point - center;
 
-    float dMin = MAX_float;
+    Real dMin = MAX_Real;
 
-    float d = Math::Abs(size.X - Math::Abs(localPoint.X));
+    Real d = Math::Abs(size.X - Math::Abs(localPoint.X));
     if (d < dMin)
     {
         dMin = d;
@@ -922,7 +888,7 @@ bool CollisionsHelper::RayIntersectsBox(const Ray& ray, const BoundingBox& box, 
 
 bool CollisionsHelper::RayIntersectsBox(const Ray& ray, const BoundingBox& box, Vector3& point)
 {
-    float distance;
+    Real distance;
     if (!RayIntersectsBox(ray, box, distance))
     {
         point = Vector3::Zero;
@@ -933,7 +899,7 @@ bool CollisionsHelper::RayIntersectsBox(const Ray& ray, const BoundingBox& box, 
     return true;
 }
 
-bool CollisionsHelper::RayIntersectsSphere(const Ray& ray, const BoundingSphere& sphere, float& distance)
+bool CollisionsHelper::RayIntersectsSphere(const Ray& ray, const BoundingSphere& sphere, Real& distance)
 {
     // Source: Real-Time Collision Detection by Christer Ericson
     // Consterence: Page 177
@@ -941,8 +907,8 @@ bool CollisionsHelper::RayIntersectsSphere(const Ray& ray, const BoundingSphere&
     Vector3 m;
     Vector3::Subtract(ray.Position, sphere.Center, m);
 
-    const float b = Vector3::Dot(m, ray.Direction);
-    const float c = Vector3::Dot(m, m) - sphere.Radius * sphere.Radius;
+    const Real b = Vector3::Dot(m, ray.Direction);
+    const Real c = Vector3::Dot(m, m) - sphere.Radius * sphere.Radius;
 
     if (c > 0.0f && b > 0.0f)
     {
@@ -950,7 +916,7 @@ bool CollisionsHelper::RayIntersectsSphere(const Ray& ray, const BoundingSphere&
         return false;
     }
 
-    const float discriminant = b * b - c;
+    const Real discriminant = b * b - c;
 
     if (discriminant < 0.0f)
     {
@@ -966,7 +932,7 @@ bool CollisionsHelper::RayIntersectsSphere(const Ray& ray, const BoundingSphere&
     return true;
 }
 
-bool CollisionsHelper::RayIntersectsSphere(const Ray& ray, const BoundingSphere& sphere, float& distance, Vector3& normal)
+bool CollisionsHelper::RayIntersectsSphere(const Ray& ray, const BoundingSphere& sphere, Real& distance, Vector3& normal)
 {
     if (!RayIntersectsSphere(ray, sphere, distance))
     {
@@ -981,7 +947,7 @@ bool CollisionsHelper::RayIntersectsSphere(const Ray& ray, const BoundingSphere&
 
 bool CollisionsHelper::RayIntersectsSphere(const Ray& ray, const BoundingSphere& sphere, Vector3& point)
 {
-    float distance;
+    Real distance;
     if (!RayIntersectsSphere(ray, sphere, distance))
     {
         point = Vector3::Zero;
@@ -994,7 +960,7 @@ bool CollisionsHelper::RayIntersectsSphere(const Ray& ray, const BoundingSphere&
 
 PlaneIntersectionType CollisionsHelper::PlaneIntersectsPoint(const Plane& plane, const Vector3& point)
 {
-    float distance = Vector3::Dot(plane.Normal, point);
+    Real distance = Vector3::Dot(plane.Normal, point);
     distance += plane.D;
 
     if (distance > Plane::DistanceEpsilon)
@@ -1013,7 +979,7 @@ bool CollisionsHelper::PlaneIntersectsPlane(const Plane& plane1, const Plane& pl
 
     // If direction is the zero vector, the planes are parallel and possibly
     // coincident. It is not an intersection. The dot product will tell us.
-    const float denominator = Vector3::Dot(direction, direction);
+    const Real denominator = Vector3::Dot(direction, direction);
 
     return !Math::IsZero(denominator);
 }
@@ -1027,7 +993,7 @@ bool CollisionsHelper::PlaneIntersectsPlane(const Plane& plane1, const Plane& pl
     Vector3::Cross(plane1.Normal, plane2.Normal, direction);
 
     // If direction is the zero vector, the planes are parallel and possibly coincident. It is not an intersection. The dot product will tell us.
-    const float denominator = Vector3::Dot(direction, direction);
+    const Real denominator = Vector3::Dot(direction, direction);
 
     // We assume the planes are normalized, theconstore the denominator
     // only serves as a parallel and coincident check. Otherwise we need
@@ -1081,7 +1047,7 @@ PlaneIntersectionType CollisionsHelper::PlaneIntersectsBox(const Plane& plane, c
     min.Y = plane.Normal.Y >= 0.0f ? box.Maximum.Y : box.Minimum.Y;
     min.Z = plane.Normal.Z >= 0.0f ? box.Maximum.Z : box.Minimum.Z;
 
-    float distance = Vector3::Dot(plane.Normal, max);
+    Real distance = Vector3::Dot(plane.Normal, max);
     if (distance + plane.D > Plane::DistanceEpsilon)
         return PlaneIntersectionType::Front;
     distance = Vector3::Dot(plane.Normal, min);
@@ -1095,7 +1061,7 @@ PlaneIntersectionType CollisionsHelper::PlaneIntersectsSphere(const Plane& plane
     // Source: Real-Time Collision Detection by Christer Ericson
     // Consterence: Page 160
 
-    float distance = Vector3::Dot(plane.Normal, sphere.Center);
+    Real distance = Vector3::Dot(plane.Normal, sphere.Center);
     distance += plane.D;
 
     if (distance > sphere.Radius)
@@ -1123,8 +1089,7 @@ bool CollisionsHelper::BoxIntersectsSphere(const BoundingBox& box, const Boundin
 
     Vector3 vector;
     Vector3::Clamp(sphere.Center, box.Minimum, box.Maximum, vector);
-    const float distance = Vector3::DistanceSquared(sphere.Center, vector);
-
+    const Real distance = Vector3::DistanceSquared(sphere.Center, vector);
     return distance <= sphere.Radius * sphere.Radius;
 }
 
@@ -1137,14 +1102,14 @@ bool CollisionsHelper::SphereIntersectsTriangle(const BoundingSphere& sphere, co
     ClosestPointPointTriangle(sphere.Center, vertex1, vertex2, vertex3, point);
     const Vector3 v = point - sphere.Center;
 
-    const float dot = Vector3::Dot(v, v);
+    const Real dot = Vector3::Dot(v, v);
 
     return dot <= sphere.Radius * sphere.Radius;
 }
 
 bool CollisionsHelper::SphereIntersectsSphere(const BoundingSphere& sphere1, const BoundingSphere& sphere2)
 {
-    const float radiisum = sphere1.Radius + sphere2.Radius;
+    const Real radiisum = sphere1.Radius + sphere2.Radius;
     return Vector3::DistanceSquared(sphere1.Center, sphere2.Center) <= radiisum * radiisum;
 }
 
@@ -1185,7 +1150,7 @@ ContainmentType CollisionsHelper::BoxContainsSphere(const BoundingBox& box, cons
 {
     Vector3 vector;
     Vector3::Clamp(sphere.Center, box.Minimum, box.Maximum, vector);
-    const float distance = Vector3::DistanceSquared(sphere.Center, vector);
+    const Real distance = Vector3::DistanceSquared(sphere.Center, vector);
 
     if (distance > sphere.Radius * sphere.Radius)
         return ContainmentType::Disjoint;
@@ -1233,7 +1198,7 @@ ContainmentType CollisionsHelper::SphereContainsBox(const BoundingSphere& sphere
     if (!BoxIntersectsSphere(box, sphere))
         return ContainmentType::Disjoint;
 
-    const float radiusSquared = sphere.Radius * sphere.Radius;
+    const Real radiusSquared = sphere.Radius * sphere.Radius;
 
     vector.X = sphere.Center.X - box.Minimum.X;
     vector.Y = sphere.Center.Y - box.Maximum.Y;
@@ -1288,7 +1253,7 @@ ContainmentType CollisionsHelper::SphereContainsBox(const BoundingSphere& sphere
 
 ContainmentType CollisionsHelper::SphereContainsSphere(const BoundingSphere& sphere1, const BoundingSphere& sphere2)
 {
-    const float distance = Vector3::Distance(sphere1.Center, sphere2.Center);
+    const Real distance = Vector3::Distance(sphere1.Center, sphere2.Center);
 
     if (sphere1.Radius + sphere2.Radius < distance)
         return ContainmentType::Disjoint;
@@ -1333,7 +1298,7 @@ ContainmentType CollisionsHelper::FrustumContainsBox(const BoundingFrustum& frus
     return result;
 }
 
-bool CollisionsHelper::LineIntersectsLine(const Vector2& l1p1, const Vector2& l1p2, const Vector2& l2p1, const Vector2& l2p2)
+bool CollisionsHelper::LineIntersectsLine(const Float2& l1p1, const Float2& l1p2, const Float2& l2p1, const Float2& l2p2)
 {
     float q = (l1p1.Y - l2p1.Y) * (l2p2.X - l2p1.X) - (l1p1.X - l2p1.X) * (l2p2.Y - l2p1.Y);
     const float d = (l1p2.X - l1p1.X) * (l2p2.Y - l2p1.Y) - (l1p2.Y - l1p1.Y) * (l2p2.X - l2p1.X);
@@ -1348,12 +1313,12 @@ bool CollisionsHelper::LineIntersectsLine(const Vector2& l1p1, const Vector2& l1
     return !(r < 0 || r > 1 || s < 0 || s > 1);
 }
 
-bool CollisionsHelper::LineIntersectsRect(const Vector2& p1, const Vector2& p2, const Rectangle& rect)
+bool CollisionsHelper::LineIntersectsRect(const Float2& p1, const Float2& p2, const Rectangle& rect)
 {
-    /*Vector2 c = rect.Location; // Box center-point
-    Vector2 e= rect.Size * 0.5f; // Box halflength extents
-    Vector2 m=(p2+p1)*0.5f; // Segment midpoint
-    Vector2 d=p1-m; // Segment halflength vector
+    /*Float2 c = rect.Location; // Box center-point
+    Float2 e= rect.Size * 0.5f; // Box halflength extents
+    Float2 m=(p2+p1)*0.5f; // Segment midpoint
+    Float2 d=p1-m; // Segment halflength vector
     m = m - c; // Translate box and segment to origin
              
     // Try world coordinate axes as separating axes
@@ -1374,9 +1339,9 @@ bool CollisionsHelper::LineIntersectsRect(const Vector2& p1, const Vector2& p2, 
     return true;*/
 
     // TODO: optimize it
-    const Vector2 pA(rect.GetRight(), rect.GetY());
-    const Vector2 pB(rect.GetRight(), rect.GetBottom());
-    const Vector2 pC(rect.GetX(), rect.GetBottom());
+    const Float2 pA(rect.GetRight(), rect.GetY());
+    const Float2 pB(rect.GetRight(), rect.GetBottom());
+    const Float2 pC(rect.GetX(), rect.GetBottom());
     return LineIntersectsLine(p1, p2, rect.Location, pA) ||
             LineIntersectsLine(p1, p2, pA, pB) ||
             LineIntersectsLine(p1, p2, pB, pC) ||
@@ -1438,15 +1403,25 @@ bool CollisionsHelper::LineIntersectsRect(const Vector2& p1, const Vector2& p2, 
     return (topoverlap < botoverlap) && (!((botoverlap < t) || (topoverlap > b)));*/
 }
 
-bool CollisionsHelper::IsPointInTriangle(const Vector2& point, const Vector2& a, const Vector2& b, const Vector2& c)
+Vector2 CollisionsHelper::LineHitsBox(const Vector3& lineStart, const Vector3& lineEnd, const Vector3& boxMin, const Vector3& boxMax)
 {
-    const Vector2 an = a - point;
-    const Vector2 bn = b - point;
-    const Vector2 cn = c - point;
+    const Vector3 invDirection = 1.0f / (lineEnd - lineStart);
+    const Vector3 enterIntersection = (boxMin - lineStart) * invDirection;
+    const Vector3 exitIntersection = (boxMax - lineStart) * invDirection;
+    const Vector3 minIntersections = Vector3::Min(enterIntersection, exitIntersection);
+    const Vector3 maxIntersections = Vector3::Max(enterIntersection, exitIntersection);
+    return Vector2(Math::Saturate(minIntersections.MaxValue()), Math::Saturate(maxIntersections.MinValue()));
+}
 
-    const bool orientation = Vector2::Cross(an, bn) > 0;
+bool CollisionsHelper::IsPointInTriangle(const Float2& point, const Float2& a, const Float2& b, const Float2& c)
+{
+    const Float2 an = a - point;
+    const Float2 bn = b - point;
+    const Float2 cn = c - point;
 
-    if (Vector2::Cross(bn, cn) > 0 != orientation)
+    const bool orientation = Float2::Cross(an, bn) > 0;
+
+    if (Float2::Cross(bn, cn) > 0 != orientation)
         return false;
-    return Vector2::Cross(cn, an) > 0 == orientation;
+    return Float2::Cross(cn, an) > 0 == orientation;
 }

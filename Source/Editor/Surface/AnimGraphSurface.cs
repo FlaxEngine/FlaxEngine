@@ -44,7 +44,7 @@ namespace FlaxEditor.Surface
                             Utils.GetEmptyArray<byte>(),
                             Utils.GetEmptyArray<byte>(),
                         },
-                        Size = new Vector2(100, 0),
+                        Size = new Float2(100, 0),
                     },
                 }
             }
@@ -63,7 +63,7 @@ namespace FlaxEditor.Surface
                     Title = "Transition Source State Anim",
                     Description = "The animation state machine transition source state animation data information",
                     Flags = NodeFlags.AnimGraph,
-                    Size = new Vector2(270, 110),
+                    Size = new Float2(270, 110),
                     Elements = new[]
                     {
                         NodeElementArchetype.Factory.Output(0, "Length", typeof(float), 0),
@@ -113,9 +113,9 @@ namespace FlaxEditor.Surface
                     if (_cache.Count != 0)
                     {
                         // Check if context menu doesn't have the recent cached groups
-                        if (!contextMenu.Groups.Any(g => g.Archetype.Tag is int asInt && asInt == _version))
+                        if (!contextMenu.Groups.Any(g => g.Archetypes[0].Tag is int asInt && asInt == _version))
                         {
-                            var groups = contextMenu.Groups.Where(g => g.Archetype.Tag is int).ToArray();
+                            var groups = contextMenu.Groups.Where(g => g.Archetypes.Count != 0 && g.Archetypes[0].Tag is int).ToArray();
                             foreach (var g in groups)
                                 contextMenu.RemoveGroup(g);
                             foreach (var g in _cache.Values)
@@ -125,7 +125,7 @@ namespace FlaxEditor.Surface
                     else
                     {
                         // Remove any old groups from context menu
-                        var groups = contextMenu.Groups.Where(g => g.Archetype.Tag is int).ToArray();
+                        var groups = contextMenu.Groups.Where(g => g.Archetypes.Count != 0 && g.Archetypes[0].Tag is int).ToArray();
                         foreach (var g in groups)
                             contextMenu.RemoveGroup(g);
 
@@ -269,8 +269,6 @@ namespace FlaxEditor.Surface
         /// </summary>
         protected VisjectCM _cmStateMachineTransitionMenu;
 
-        private bool _isRegisteredForScriptsReload;
-
         /// <inheritdoc />
         public AnimGraphSurface(IVisjectSurfaceOwner owner, Action onSave, FlaxEditor.Undo undo)
         : base(owner, onSave, undo, CreateStyle())
@@ -280,14 +278,9 @@ namespace FlaxEditor.Surface
             if (customNodes != null && customNodes.Count > 0)
             {
                 AddCustomNodes(customNodes);
-
-                // Check if any of the nodes comes from the game scripts - those can be reloaded at runtime so prevent crashes
-                if (Editor.Instance.CodeEditing.AnimGraphNodes.HasTypeFromGameScripts)
-                {
-                    _isRegisteredForScriptsReload = true;
-                    ScriptsBuilder.ScriptsReloadBegin += OnScriptsReloadBegin;
-                }
             }
+
+            ScriptsBuilder.ScriptsReloadBegin += OnScriptsReloadBegin;
         }
 
         private static SurfaceStyle CreateStyle()
@@ -301,8 +294,26 @@ namespace FlaxEditor.Surface
 
         private void OnScriptsReloadBegin()
         {
-            Owner.OnSurfaceClose();
+            // Check if any of the nodes comes from the game scripts - those can be reloaded at runtime so prevent crashes
+            bool hasTypeFromGameScripts = Editor.Instance.CodeEditing.AnimGraphNodes.HasTypeFromGameScripts;
 
+            // Check any surface parameter comes from Game scripts module to handle scripts reloads in Editor
+            if (!hasTypeFromGameScripts)
+            {
+                foreach (var param in Parameters)
+                {
+                    if (FlaxEngine.Scripting.IsTypeFromGameScripts(param.Type.Type))
+                    {
+                        hasTypeFromGameScripts = true;
+                        break;
+                    }
+                }
+            }
+
+            if (!hasTypeFromGameScripts)
+                return;
+
+            Owner.OnSurfaceClose();
             // TODO: make reload soft: dispose default primary context menu, update existing custom nodes to new ones or remove if invalid
         }
 
@@ -340,7 +351,7 @@ namespace FlaxEditor.Surface
                         ParametersGetter = null,
                         CustomNodesGroup = GetCustomNodes(),
                     });
-                    _cmStateMachineTransitionMenu.AddGroup(StateMachineTransitionGroupArchetype);
+                    _cmStateMachineTransitionMenu.AddGroup(StateMachineTransitionGroupArchetype, false);
                 }
                 menu = _cmStateMachineTransitionMenu;
             }
@@ -349,7 +360,7 @@ namespace FlaxEditor.Surface
         }
 
         /// <inheritdoc />
-        protected override void OnShowPrimaryMenu(VisjectCM activeCM, Vector2 location, Box startBox)
+        protected override void OnShowPrimaryMenu(VisjectCM activeCM, Float2 location, Box startBox)
         {
             // Check if show additional nodes in the current surface context
             if (activeCM != _cmStateMachineMenu)
@@ -463,11 +474,7 @@ namespace FlaxEditor.Surface
                 _cmStateMachineTransitionMenu.Dispose();
                 _cmStateMachineTransitionMenu = null;
             }
-            if (_isRegisteredForScriptsReload)
-            {
-                _isRegisteredForScriptsReload = false;
-                ScriptsBuilder.ScriptsReloadBegin -= OnScriptsReloadBegin;
-            }
+            ScriptsBuilder.ScriptsReloadBegin -= OnScriptsReloadBegin;
             NodesCache.Wait();
 
             base.OnDestroy();

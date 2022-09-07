@@ -26,7 +26,7 @@ namespace FlaxEditor.Surface
             Title = "Missing Node :(",
             Description = ":(",
             Flags = NodeFlags.AllGraphs,
-            Size = new Vector2(200, 70),
+            Size = new Float2(200, 70),
             Elements = new NodeElementArchetype[0],
             DefaultValues = new object[32],
         }, new GroupArchetype
@@ -77,7 +77,8 @@ namespace FlaxEditor.Surface
         /// <returns>True if failed, otherwise false.</returns>
         public bool Load()
         {
-            Surface._isUpdatingBoxTypes++;
+            if (_surface != null)
+                _surface._isUpdatingBoxTypes++;
 
             try
             {
@@ -110,7 +111,7 @@ namespace FlaxEditor.Surface
                 else
                 {
                     // Reset view
-                    CachedSurfaceMeta.ViewCenterPosition = Vector2.Zero;
+                    CachedSurfaceMeta.ViewCenterPosition = Float2.Zero;
                     CachedSurfaceMeta.Scale = 1.0f;
                 }
 
@@ -178,7 +179,8 @@ namespace FlaxEditor.Surface
             }
             finally
             {
-                Surface._isUpdatingBoxTypes--;
+                if (_surface != null)
+                    _surface._isUpdatingBoxTypes--;
             }
 
             return false;
@@ -308,9 +310,9 @@ namespace FlaxEditor.Surface
             case GraphParamType_Deprecated.Bool: return typeof(bool);
             case GraphParamType_Deprecated.Integer: return typeof(int);
             case GraphParamType_Deprecated.Float: return typeof(float);
-            case GraphParamType_Deprecated.Vector2: return typeof(Vector2);
-            case GraphParamType_Deprecated.Vector3: return typeof(Vector3);
-            case GraphParamType_Deprecated.Vector4: return typeof(Vector4);
+            case GraphParamType_Deprecated.Vector2: return typeof(Float2);
+            case GraphParamType_Deprecated.Vector3: return typeof(Float3);
+            case GraphParamType_Deprecated.Vector4: return typeof(Float4);
             case GraphParamType_Deprecated.Color: return typeof(Color);
             case GraphParamType_Deprecated.Texture: return typeof(Texture);
             case GraphParamType_Deprecated.NormalMap: return typeof(Texture);
@@ -342,9 +344,9 @@ namespace FlaxEditor.Surface
             case GraphConnectionType_Deprecated.Bool: return typeof(bool);
             case GraphConnectionType_Deprecated.Integer: return typeof(int);
             case GraphConnectionType_Deprecated.Float: return typeof(float);
-            case GraphConnectionType_Deprecated.Vector2: return typeof(Vector2);
-            case GraphConnectionType_Deprecated.Vector3: return typeof(Vector3);
-            case GraphConnectionType_Deprecated.Vector4: return typeof(Vector4);
+            case GraphConnectionType_Deprecated.Vector2: return typeof(Float2);
+            case GraphConnectionType_Deprecated.Vector3: return typeof(Float3);
+            case GraphConnectionType_Deprecated.Vector4: return typeof(Float4);
             case GraphConnectionType_Deprecated.String: return typeof(string);
             case GraphConnectionType_Deprecated.Object: return typeof(FlaxEngine.Object);
             case GraphConnectionType_Deprecated.Rotation: return typeof(Quaternion);
@@ -445,6 +447,9 @@ namespace FlaxEditor.Surface
         {
             // IMPORTANT! This must match C++ Graph format
 
+            var nodeArchetypes = _surface?.NodeArchetypes ?? NodeFactory.DefaultGroups;
+            var customNodes = _surface?.GetCustomNodes();
+
             // Magic Code
             int tmp = stream.ReadInt32();
             if (tmp != 1963542358)
@@ -489,7 +494,7 @@ namespace FlaxEditor.Surface
                     if (groupId == Archetypes.Custom.GroupID)
                         node = new DummyCustomNode(id, this);
                     else
-                        node = NodeFactory.CreateNode(_surface.NodeArchetypes, id, this, groupId, typeId);
+                        node = NodeFactory.CreateNode(nodeArchetypes, id, this, groupId, typeId);
                     if (node == null)
                         node = new MissingNode(id, this, groupId, typeId);
                     Nodes.Add(node);
@@ -550,7 +555,6 @@ namespace FlaxEditor.Surface
                         string typeName = typeNameValue as string ?? string.Empty;
 
                         // Find custom node archetype that matches this node type (it must be unique)
-                        var customNodes = _surface.GetCustomNodes();
                         if (customNodes?.Archetypes != null && typeName.Length != 0)
                         {
                             NodeArchetype arch = null;
@@ -674,7 +678,7 @@ namespace FlaxEditor.Surface
                     if (groupId == Archetypes.Custom.GroupID)
                         node = new DummyCustomNode(id, this);
                     else
-                        node = NodeFactory.CreateNode(_surface.NodeArchetypes, id, this, groupId, typeId);
+                        node = NodeFactory.CreateNode(nodeArchetypes, id, this, groupId, typeId);
                     if (node == null)
                         node = new MissingNode(id, this, groupId, typeId);
                     Nodes.Add(node);
@@ -722,7 +726,6 @@ namespace FlaxEditor.Surface
                         string typeName = typeNameValue as string ?? string.Empty;
 
                         // Find custom node archetype that matches this node type (it must be unique)
-                        var customNodes = _surface.GetCustomNodes();
                         if (customNodes?.Archetypes != null && typeName.Length != 0)
                         {
                             NodeArchetype arch = null;
@@ -856,7 +859,7 @@ namespace FlaxEditor.Surface
         {
             control.OnSpawned();
             ControlSpawned?.Invoke(control);
-            if (control is SurfaceNode node)
+            if (Surface != null && control is SurfaceNode node)
                 Surface.OnNodeSpawned(node);
         }
 

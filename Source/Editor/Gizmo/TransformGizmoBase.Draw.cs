@@ -41,8 +41,7 @@ namespace FlaxEditor.Gizmo
                 _materialAxisZ == null ||
                 _materialAxisFocus == null ||
                 _materialWire == null ||
-                _materialWireFocus == null
-            )
+                _materialWireFocus == null)
             {
                 // Error
                 Platform.Fatal("Failed to load transform gizmo resources.");
@@ -56,13 +55,12 @@ namespace FlaxEditor.Gizmo
                 return;
 
             Matrix m1, m2, m3;
-
             bool isXAxis = _activeAxis == Axis.X || _activeAxis == Axis.XY || _activeAxis == Axis.ZX;
             bool isYAxis = _activeAxis == Axis.Y || _activeAxis == Axis.XY || _activeAxis == Axis.YZ;
             bool isZAxis = _activeAxis == Axis.Z || _activeAxis == Axis.YZ || _activeAxis == Axis.ZX;
             bool isCenter = _activeAxis == Axis.Center;
+            renderContext.View.GetWorldMatrix(ref _gizmoWorld, out Matrix world);
 
-            // Switch mode
             const float gizmoModelsScale2RealGizmoSize = 0.075f;
             switch (_activeMode)
             {
@@ -71,7 +69,7 @@ namespace FlaxEditor.Gizmo
                 if (!_modelTranslateAxis || !_modelTranslateAxis.IsLoaded || !_modelBox || !_modelBox.IsLoaded)
                     break;
                 Matrix.Scaling(gizmoModelsScale2RealGizmoSize, out m3);
-                Matrix.Multiply(ref m3, ref _gizmoWorld, out m1);
+                Matrix.Multiply(ref m3, ref world, out m1);
                 var axisMesh = _modelTranslateAxis.LODs[0].Meshes[0];
                 var boxMesh = _modelBox.LODs[0].Meshes[0];
                 var boxSize = 10.0f;
@@ -114,7 +112,7 @@ namespace FlaxEditor.Gizmo
                 var circleMesh = _modelCircle.LODs[0].Meshes[0];
                 var boxMesh = _modelBox.LODs[0].Meshes[0];
                 Matrix.Scaling(8.0f, out m3);
-                Matrix.Multiply(ref m3, ref _gizmoWorld, out m1);
+                Matrix.Multiply(ref m3, ref world, out m1);
 
                 // X axis
                 Matrix.RotationZ(Mathf.PiOverTwo, out m2);
@@ -131,7 +129,7 @@ namespace FlaxEditor.Gizmo
 
                 // Center box
                 Matrix.Scaling(gizmoModelsScale2RealGizmoSize, out m3);
-                Matrix.Multiply(ref m3, ref _gizmoWorld, out m1);
+                Matrix.Multiply(ref m3, ref world, out m1);
                 Matrix.Scaling(1.0f, out m2);
                 Matrix.Multiply(ref m2, ref m1, out m3);
                 boxMesh.Draw(ref renderContext, isCenter ? _materialWireFocus : _materialWire, ref m3);
@@ -144,7 +142,7 @@ namespace FlaxEditor.Gizmo
                 if (!_modelScaleAxis || !_modelScaleAxis.IsLoaded || !_modelBox || !_modelBox.IsLoaded)
                     break;
                 Matrix.Scaling(gizmoModelsScale2RealGizmoSize, out m3);
-                Matrix.Multiply(ref m3, ref _gizmoWorld, out m1);
+                Matrix.Multiply(ref m3, ref world, out m1);
                 var axisMesh = _modelScaleAxis.LODs[0].Meshes[0];
                 var boxMesh = _modelBox.LODs[0].Meshes[0];
 

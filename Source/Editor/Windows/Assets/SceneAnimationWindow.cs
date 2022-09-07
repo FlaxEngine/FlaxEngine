@@ -153,6 +153,11 @@ namespace FlaxEditor.Windows.Assets
             [Limit(0, 10)]
             public float WarmUpTime = 0.4f;
 
+            [EditorDisplay("Options"), EditorOrder(80)]
+            [Tooltip("The animation playback speed ratio. Can be used to slow down or speed up animation.")]
+            [Limit(0, 100)]
+            public float PlaybackSpeed = 1.0f;
+
             [EditorDisplay("Output"), EditorOrder(100)]
             [Tooltip("The output folder for the rendering process artifact files. Relative to the project folder or absolute path.")]
             public string OutputDirectory = "Output/Render";
@@ -271,7 +276,7 @@ namespace FlaxEditor.Windows.Assets
             private float _warmUpTimeLeft;
             private float _dt;
             private int _animationFrame;
-            private bool _wasGamePaused;
+            private bool _wasGamePaused, _wasTickEnabled;
             private SceneAnimationPlayer _player;
             private States _state;
             private readonly StagingTexture[] _stagingTextures = new StagingTexture[FrameLatency + 1];
@@ -360,11 +365,16 @@ namespace FlaxEditor.Windows.Assets
                 };
                 FlaxEngine.Scripting.Update += Tick;
                 _wasGamePaused = Time.GamePaused;
+                _wasTickEnabled = Level.TickEnabled;
                 Time.GamePaused = false;
                 Time.SetFixedDeltaTime(true, _dt);
                 Time.UpdateFPS = Time.DrawFPS = _options.FrameRate;
                 if (!Editor.IsPlayMode)
+                {
+                    // Don't simulate physics and don't tick game when rendering at edit time
                     Time.PhysicsFPS = 0;
+                    Level.TickEnabled = false;
+                }
                 Level.SpawnActor(_player);
                 var gameWin = editor.Windows.GameWin;
                 var resolution = _options.GetResolution();
@@ -436,6 +446,7 @@ namespace FlaxEditor.Windows.Assets
                 FlaxEngine.Scripting.Update -= Tick;
                 Time.SetFixedDeltaTime(false, 0.0f);
                 Time.GamePaused = _wasGamePaused;
+                Level.TickEnabled = _wasTickEnabled;
                 if (_player)
                 {
                     _player.Stop();
@@ -494,7 +505,7 @@ namespace FlaxEditor.Windows.Assets
                     // Update scene animation with a fixed delta-time
                     if (!_player.IsStopped)
                     {
-                        var speed = _player.Speed * (_window?._timeline.Player?.Speed ?? 1.0f);
+                        var speed = _player.Speed * (_window?._timeline.Player?.Speed ?? 1.0f) * _options.PlaybackSpeed;
                         if (speed <= 0.001f)
                         {
                             Editor.LogError("Scene Animation Player speed was nearly zero. Cannot continue rendering.");
@@ -657,19 +668,19 @@ namespace FlaxEditor.Windows.Assets
                 VerticalAlignment = TextAlignment.Center,
                 HorizontalAlignment = TextAlignment.Far,
                 Parent = previewPlayerPickerContainer,
-                Size = new Vector2(60.0f, _toolstrip.Height),
+                Size = new Float2(60.0f, _toolstrip.Height),
                 Text = "Player:",
                 TooltipText = "The current scene animation player actor to preview. Pick the player to debug it's playback.",
             };
             _previewPlayerPicker = new FlaxObjectRefPickerControl
             {
-                Location = new Vector2(previewPlayerPickerLabel.Right + 4.0f, 8.0f),
+                Location = new Float2(previewPlayerPickerLabel.Right + 4.0f, 8.0f),
                 Width = 140.0f,
                 Type = new ScriptType(typeof(SceneAnimationPlayer)),
                 Parent = previewPlayerPickerContainer,
             };
             previewPlayerPickerContainer.Width = _previewPlayerPicker.Right + 2.0f;
-            previewPlayerPickerContainer.Size = new Vector2(_previewPlayerPicker.Right + 2.0f, _toolstrip.Height);
+            previewPlayerPickerContainer.Size = new Float2(_previewPlayerPicker.Right + 2.0f, _toolstrip.Height);
             previewPlayerPickerContainer.Parent = _toolstrip;
             _previewPlayerPicker.CheckValid = OnCheckValid;
             _previewPlayerPicker.ValueChanged += OnPreviewPlayerPickerChanged;

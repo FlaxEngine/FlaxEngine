@@ -416,7 +416,7 @@ float4 PS_Composite(Quad_VS2PS input) : SV_Target
 {
 	float2 uv = input.TexCoord;
 	float3 lensLight = 0;
-	float3 color = 0;
+	float4 color;
 
 	// Chromatic Abberation
 	if (ChromaticDistortion > 0)
@@ -434,22 +434,22 @@ float4 PS_Composite(Quad_VS2PS input) : SV_Target
 		float rnd = nrand(uv + Time);
 		float t = rnd * stepsiz;
 
-		float3 sumcol = 0;
-		float3 sumw = 0;
+		float4 sumcol = 0;
+		float4 sumw = 0;
 		for (int i = 0; i < iterations; i++)
 		{
-			float3 w = spectrum_offset(t);
+			float4 w = float4(spectrum_offset(t), 1);
 			sumw += w;
 			float2 uvd = distort(uv, t, min_distort, max_distort);
-			sumcol += Input0.Sample(SamplerLinearClamp, uvd).rgb * w;
+			sumcol += Input0.Sample(SamplerLinearClamp, uvd) * w;
 			t += stepsiz;
 		}
-		sumcol.rgb /= sumw;
-		color = sumcol.rgb + (rnd / 255.0);
+		sumcol /= sumw;
+		color = sumcol + (rnd / 255.0);
 	}
 	else
 	{
-		color = Input0.Sample(SamplerLinearClamp, uv).rgb;
+		color = Input0.Sample(SamplerLinearClamp, uv);
 	}
 
 	// Lens Flares
@@ -468,7 +468,7 @@ float4 PS_Composite(Quad_VS2PS input) : SV_Target
 
 		// Accumulate final lens flares lght
 		lensLight += lensFlares * 1.5f;
-		color += lensFlares;
+		color.rgb += lensFlares;
 	}
 
 	// Bloom
@@ -481,19 +481,19 @@ float4 PS_Composite(Quad_VS2PS input) : SV_Target
 
 		// Accumulate final bloom lght
 		lensLight += max(0, bloom * 3.0f + (- 1.0f * 3.0f));
-		color += bloom;
+		color.rgb += bloom;
 	}
 
 	// Lens Dirt
 	float3 lensDirt = LensDirt.SampleLevel(SamplerLinearClamp, uv, 0).rgb;
-	color += lensDirt * (lensLight * LensDirtIntensity);
+	color.rgb += lensDirt * (lensLight * LensDirtIntensity);
 
 	// Eye Adaptation post exposure
-	color *= PostExposure;
+	color.rgb *= PostExposure;
 
 	// Color Grading and Tone Mapping
 #if !NO_GRADING_LUT
-	color = ColorLookupTable(color);
+	color.rgb = ColorLookupTable(color.rgb);
 #endif
 
 	// Film Grain
@@ -505,12 +505,12 @@ float4 PS_Composite(Quad_VS2PS input) : SV_Target
 		float noise = pnoise2D(rotCoordsR * (InputSize / GrainParticleSize), GrainTime);
 
 		// Noisiness response curve based on scene luminance
-		float luminance = Luminance(saturate(color));
+		float luminance = Luminance(saturate(color.rgb));
 		luminance += smoothstep(0.2, 0.0, luminance);
 
 		// Add noise to the final color
 		noise = lerp(noise, 0, min(pow(luminance, 4.0), 100));
-		color += noise * GrainAmount;
+		color.rgb += noise * GrainAmount;
 	}
 
 	// Vignette
@@ -520,15 +520,15 @@ float4 PS_Composite(Quad_VS2PS input) : SV_Target
 		float2 uvCircle = uv * (1 - uv);
 		float uvCircleScale = uvCircle.x * uvCircle.y * 16.0f;
 		float mask = lerp(1, pow(uvCircleScale, VignetteShapeFactor), VignetteIntensity);
-		color = lerp(VignetteColor, color, mask);
+		color.rgb = lerp(VignetteColor, color.rgb, mask);
 	}
 
 	// Screen fade
-	color = lerp(color, ScreenFadeColor.rgb, ScreenFadeColor.a);
+	color.rgb = lerp(color.rgb, ScreenFadeColor.rgb, ScreenFadeColor.a);
 
 	// Saturate color since it will be rendered to the screen
-	color = saturate(color);
+	color.rgb = saturate(color.rgb);
 
-	// Return final pixel color
-	return float4(color, 1.0f);
+	// Return final pixel color (preserve input alpha)
+	return color;
 }

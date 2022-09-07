@@ -12,7 +12,6 @@
 class AssetsImportingManager
 {
 public:
-
     /// <summary>
     /// The asset importers.
     /// </summary>
@@ -24,7 +23,6 @@ public:
     static Array<AssetCreator> Creators;
 
 public:
-
     /// <summary>
     /// The create texture tag (using internal import pipeline to crate texture asset from custom image source).
     /// </summary>
@@ -111,12 +109,16 @@ public:
     static const String CreateAnimationGraphFunctionTag;
 
     /// <summary>
+    /// The create animation asset tag.
+    /// </summary>
+    static const String CreateAnimationTag;
+
+    /// <summary>
     /// The create visual script asset tag.
     /// </summary>
     static const String CreateVisualScriptTag;
 
 public:
-
     /// <summary>
     /// Gets the asset importer by file extension.
     /// </summary>
@@ -132,7 +134,6 @@ public:
     static const AssetCreator* GetCreator(const String& tag);
 
 public:
-
     /// <summary>
     /// Creates new asset.
     /// </summary>
@@ -226,7 +227,6 @@ public:
     }
 
 private:
-
     static bool Create(const CreateAssetFunction& callback, const StringView& inputPath, const StringView& outputPath, Guid& assetId, void* arg);
 };
 

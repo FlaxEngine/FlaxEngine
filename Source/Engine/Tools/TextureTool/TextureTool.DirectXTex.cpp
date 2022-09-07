@@ -382,21 +382,21 @@ HRESULT CustomGenerateMipMap(DirectX::ScratchImage& mipChain, size_t item, size_
                 float pdx = sx - p0x;
                 size_t p1x = Math::Min(p0x + 1, srcImg->width - 1);
 
-                Vector4 pA = *(Vector4*)(srcData + srcImg->rowPitch * p0y + sizeof(Vector4) * p0x);
-                Vector4 pB = *(Vector4*)(srcData + srcImg->rowPitch * p0y + sizeof(Vector4) * p1x);
-                Vector4 pC = *(Vector4*)(srcData + srcImg->rowPitch * p1y + sizeof(Vector4) * p0x);
-                Vector4 pD = *(Vector4*)(srcData + srcImg->rowPitch * p1y + sizeof(Vector4) * p1x);
+                Float4 pA = *(Float4*)(srcData + srcImg->rowPitch * p0y + sizeof(Float4) * p0x);
+                Float4 pB = *(Float4*)(srcData + srcImg->rowPitch * p0y + sizeof(Float4) * p1x);
+                Float4 pC = *(Float4*)(srcData + srcImg->rowPitch * p1y + sizeof(Float4) * p0x);
+                Float4 pD = *(Float4*)(srcData + srcImg->rowPitch * p1y + sizeof(Float4) * p1x);
 
-                Vector4 pAB;
-                Vector4::Lerp(pA, pB, pdx, pAB);
+                Float4 pAB;
+                Float4::Lerp(pA, pB, pdx, pAB);
 
-                Vector4 pCD;
-                Vector4::Lerp(pC, pD, pdx, pCD);
+                Float4 pCD;
+                Float4::Lerp(pC, pD, pdx, pCD);
 
-                Vector4 p;
-                Vector4::Lerp(pAB, pCD, pdy, p);
+                Float4 p;
+                Float4::Lerp(pAB, pCD, pdy, p);
 
-                *(Vector4*)(dstData + dstImg->rowPitch * y + sizeof(Vector4) * x) = p;
+                *(Float4*)(dstData + dstImg->rowPitch * y + sizeof(Float4) * x) = p;
             }
         }
 

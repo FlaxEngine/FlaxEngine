@@ -16,6 +16,7 @@ using FlaxEditor.Surface;
 using FlaxEngine;
 using FlaxEngine.GUI;
 using FlaxEngine.Json;
+using FlaxEngine.Windows.Search;
 
 #pragma warning disable 649
 
@@ -30,7 +31,7 @@ namespace FlaxEditor.Windows.Assets
     /// </summary>
     /// <seealso cref="VisualScript" />
     /// <seealso cref="VisualScriptSurface" />
-    public sealed class VisualScriptWindow : AssetEditorWindowBase<VisualScript>, IVisjectSurfaceWindow
+    public sealed class VisualScriptWindow : AssetEditorWindowBase<VisualScript>, IVisjectSurfaceWindow, ISearchWindow
     {
         private struct BreakpointData
         {
@@ -175,37 +176,56 @@ namespace FlaxEditor.Windows.Assets
                 // Parameter type editing
                 var cmType = menu.AddChildMenu("Type");
                 {
-                    var b = cmType.ContextMenu.AddButton(window.Surface.GetTypeName(param.Type) + "...", () => 
+                    var isArray = param.Type.IsArray;
+                    var isDictionary = !isArray && param.Type.IsDictionary;
+                    ScriptType singleValueType, arrayType, dictionaryType;
+                    ContextMenuButton b;
+                    if (isDictionary)
                     {
-                        // Show context menu with list of parameter types to use
-                        var cm = new ItemsListContextMenu(180);
-                        var newParameterTypes = window.NewParameterTypes;
-                        foreach (var newParameterType in newParameterTypes)
-                        {
-                            var item = new TypeSearchPopup.TypeItemView(newParameterType);
-                            if (newParameterType.Type != null)
-                                item.Name = window.VisjectSurface.GetTypeName(newParameterType);
-                            cm.AddItem(item);
-                        }
-                        cm.ItemClicked += (ItemsListContextMenu.Item item) => window.SetParamType(index, (ScriptType)item.Tag);
-                        cm.SortChildren();
-                        cm.Show(window, window.PointFromScreen(Input.MouseScreenPosition));
-                    });
-                    b.Enabled = window._canEdit;
-                    b.TooltipText = "Opens the type picker window to change the parameter type.";
-                    cmType.ContextMenu.AddSeparator();
+                        var args = param.Type.GetGenericArguments();
+                        singleValueType = new ScriptType(args[0]);
+                        arrayType = singleValueType.MakeArrayType();
+                        dictionaryType = param.Type;
+                        var keyName = window.Surface.GetTypeName(new ScriptType(args[0]));
+                        var valueName = window.Surface.GetTypeName(new ScriptType(args[1]));
 
-                    ScriptType singleValueType, arrayType;
-                    if (param.Type.IsArray)
-                    {
-                        singleValueType = new ScriptType(param.Type.GetElementType());
-                        arrayType = param.Type;
+                        b = cmType.ContextMenu.AddButton($"Dictionary<{keyName}, {valueName}>");
+                        b.Enabled = false;
+
+                        b = cmType.ContextMenu.AddButton($"Edit key type: {keyName}...", () => OnChangeType(item => window.SetParamType(index, ScriptType.MakeDictionaryType((ScriptType)item.Tag, new ScriptType(args[1])))));
+                        b.Enabled = window._canEdit;
+                        b.TooltipText = "Opens the type picker window to change the parameter type.";
+
+                        b = cmType.ContextMenu.AddButton($"Edit value type: {valueName}...", () => OnChangeType(item => window.SetParamType(index, ScriptType.MakeDictionaryType(new ScriptType(args[0]), (ScriptType)item.Tag))));
+                        b.Enabled = window._canEdit;
+                        b.TooltipText = "Opens the type picker window to change the parameter type.";
                     }
                     else
                     {
-                        singleValueType = param.Type;
-                        arrayType = param.Type.MakeArrayType();
+                        if (param.Type == ScriptType.Null)
+                        {
+                            b = cmType.ContextMenu.AddButton(window.Surface.GetTypeName(param.Type) + "...", () => OnChangeType(item => window.SetParamType(index, (ScriptType)item.Tag)));
+                            return;
+                        }
+                        else if (isArray)
+                        {
+                            singleValueType = param.Type.GetElementType();
+                            arrayType = param.Type;
+                            dictionaryType = ScriptType.MakeDictionaryType(new ScriptType(typeof(int)), singleValueType);
+                            b = cmType.ContextMenu.AddButton(window.Surface.GetTypeName(singleValueType) + "[]...", () => OnChangeType(item => window.SetParamType(index, ((ScriptType)item.Tag).MakeArrayType())));
+                        }
+                        else
+                        {
+                            singleValueType = param.Type;
+                            arrayType = param.Type.MakeArrayType();
+                            dictionaryType = ScriptType.MakeDictionaryType(new ScriptType(typeof(int)), singleValueType);
+                            b = cmType.ContextMenu.AddButton(window.Surface.GetTypeName(param.Type) + "...", () => OnChangeType(item => window.SetParamType(index, (ScriptType)item.Tag)));
+                        }
+                        b.Enabled = window._canEdit;
+                        b.TooltipText = "Opens the type picker window to change the parameter type.";
                     }
+                    cmType.ContextMenu.AddSeparator();
+
                     b = cmType.ContextMenu.AddButton("Value", () => window.SetParamType(index, singleValueType));
                     b.Checked = param.Type == singleValueType;
                     b.Enabled = window._canEdit;
@@ -214,7 +234,39 @@ namespace FlaxEditor.Windows.Assets
                     b.Checked = param.Type == arrayType;
                     b.Enabled = window._canEdit;
                     b.TooltipText = "Changes parameter type to an array.";
+                    b = cmType.ContextMenu.AddButton("Dictionary", () => window.SetParamType(index, dictionaryType));
+                    b.Checked = param.Type == dictionaryType;
+                    b.Enabled = window._canEdit;
+                    b.TooltipText = "Changes parameter type to a dictionary.";
                 }
+
+                menu.AddSeparator();
+                menu.AddButton("Find references...", () => OnFindReferences(index));
+            }
+
+            private void OnChangeType(Action<ItemsListContextMenu.Item> itemClicked)
+            {
+                // Show context menu with list of parameter types to use
+                var cm = new ItemsListContextMenu(180);
+                var window = (VisualScriptWindow)Values[0];
+                var newParameterTypes = window.NewParameterTypes;
+                foreach (var newParameterType in newParameterTypes)
+                {
+                    var item = new TypeSearchPopup.TypeItemView(newParameterType);
+                    if (newParameterType.Type != null)
+                        item.Name = window.VisjectSurface.GetTypeName(newParameterType);
+                    cm.AddItem(item);
+                }
+                cm.ItemClicked += itemClicked;
+                cm.SortItems();
+                cm.Show(window, window.PointFromScreen(Input.MouseScreenPosition));
+            }
+
+            private void OnFindReferences(int index)
+            {
+                var window = (VisualScriptWindow)Values[0];
+                var param = window.Surface.Parameters[index];
+                Editor.Instance.ContentFinding.ShowSearch(window, '\"' + window.Asset.ScriptTypeName + '.' + param.Name + '\"');
             }
         }
 
@@ -319,7 +371,7 @@ namespace FlaxEditor.Windows.Assets
                 var cm = new ContextMenu();
                 cm.AddButton("Copy typename", () => Clipboard.Text = ((VisualScriptWindow)Values[0]).Asset.ScriptTypeName);
                 cm.AddButton("Edit attributes...", OnEditAttributes);
-                cm.Show(image, new Vector2(0, image.Height));
+                cm.Show(image, new Float2(0, image.Height));
             }
 
             private void OnEditAttributes(ContextMenuButton button)
@@ -366,7 +418,7 @@ namespace FlaxEditor.Windows.Assets
                 gridControl.Height = Button.DefaultHeight;
                 gridControl.SlotsHorizontally = 2;
                 gridControl.SlotsVertically = 1;
-                
+
                 var addOverride = grid.Button("Add Override");
                 addOverride.Button.Clicked += OnOverrideMethodClicked;
                 // TODO: Add sender arg to button clicked action?
@@ -403,16 +455,16 @@ namespace FlaxEditor.Windows.Assets
                 var cm = new ContextMenu();
                 cm.AddButton("Show", () => ((VisualScriptWindow)Values[0]).Surface.FocusNode(node)).Icon = Editor.Instance.Icons.Search12;
                 cm.AddButton("Delete", () => ((VisualScriptWindow)Values[0]).Surface.Delete(node)).Icon = Editor.Instance.Icons.Cross12;
-                node.OnShowSecondaryContextMenu(cm, Vector2.Zero);
-                cm.Show(label, new Vector2(0, label.Height));
+                node.OnShowSecondaryContextMenu(cm, Float2.Zero);
+                cm.Show(label, new Float2(0, label.Height));
             }
 
             private void OnAddNewFunctionClicked()
             {
                 var surface = ((VisualScriptWindow)Values[0]).Surface;
                 var surfaceBounds = surface.AllNodesBounds;
-                surface.ShowArea(new Rectangle(surfaceBounds.BottomLeft, new Vector2(200, 150)).MakeExpanded(400.0f));
-                var node = surface.Context.SpawnNode(16, 6, surfaceBounds.BottomLeft + new Vector2(0, 50));
+                surface.ShowArea(new Rectangle(surfaceBounds.BottomLeft, new Float2(200, 150)).MakeExpanded(400.0f));
+                var node = surface.Context.SpawnNode(16, 6, surfaceBounds.BottomLeft + new Float2(0, 50));
                 surface.Select(node);
             }
 
@@ -452,8 +504,8 @@ namespace FlaxEditor.Windows.Assets
                         {
                             var surface = ((VisualScriptWindow)Values[0]).Surface;
                             var surfaceBounds = surface.AllNodesBounds;
-                            surface.ShowArea(new Rectangle(surfaceBounds.BottomLeft, new Vector2(200, 150)).MakeExpanded(400.0f));
-                            var node = surface.Context.SpawnNode(16, 3, surfaceBounds.BottomLeft + new Vector2(0, 50), new object[]
+                            surface.ShowArea(new Rectangle(surfaceBounds.BottomLeft, new Float2(200, 150)).MakeExpanded(400.0f));
+                            var node = surface.Context.SpawnNode(16, 3, surfaceBounds.BottomLeft + new Float2(0, 50), new object[]
                             {
                                 name,
                                 parameters.Length,
@@ -467,7 +519,7 @@ namespace FlaxEditor.Windows.Assets
                 {
                     cm.AddButton("Nothing to override");
                 }
-                cm.Show(_overrideButton, new Vector2(0, _overrideButton.Height));
+                cm.Show(_overrideButton, new Float2(0, _overrideButton.Height));
             }
         }
 
@@ -548,6 +600,7 @@ namespace FlaxEditor.Windows.Assets
             _undoButton = (ToolStripButton)_toolstrip.AddButton(Editor.Icons.Undo64, _undo.PerformUndo).LinkTooltip("Undo (Ctrl+Z)");
             _redoButton = (ToolStripButton)_toolstrip.AddButton(Editor.Icons.Redo64, _undo.PerformRedo).LinkTooltip("Redo (Ctrl+Y)");
             _toolstrip.AddSeparator();
+            _toolstrip.AddButton(Editor.Icons.Search64, Editor.ContentFinding.ShowSearch).LinkTooltip("Open content search tool (Ctrl+F)");
             _toolstrip.AddButton(editor.Icons.CenterView64, ShowWholeGraph).LinkTooltip("Show whole graph");
             _toolstrip.AddSeparator();
             _toolstrip.AddButton(editor.Icons.Docs64, () => Platform.OpenUrl(Utilities.Constants.DocsUrl + "manual/scripting/visual/index.html")).LinkTooltip("See documentation to learn more");
@@ -572,24 +625,25 @@ namespace FlaxEditor.Windows.Assets
                 VerticalAlignment = TextAlignment.Center,
                 HorizontalAlignment = TextAlignment.Far,
                 Parent = debugObjectPickerContainer,
-                Size = new Vector2(60.0f, _toolstrip.Height),
+                Size = new Float2(60.0f, _toolstrip.Height),
                 Text = "Debug:",
                 TooltipText = "The Visual Script object instance to debug. Can be used to filter the logic to debug a specific instance.",
             };
             _debugObjectPicker = new FlaxObjectRefPickerControl
             {
-                Location = new Vector2(debugObjectPickerLabel.Right + 4.0f, 8.0f),
+                Location = new Float2(debugObjectPickerLabel.Right + 4.0f, 8.0f),
                 Width = 140.0f,
                 Type = item.ScriptType,
                 Parent = debugObjectPickerContainer,
             };
             debugObjectPickerContainer.Enabled = debugObjectPickerContainer.Visible = isPlayMode;
-            debugObjectPickerContainer.Size = new Vector2(_debugObjectPicker.Right + 2.0f, _toolstrip.Height);
+            debugObjectPickerContainer.Size = new Float2(_debugObjectPicker.Right + 2.0f, _toolstrip.Height);
             debugObjectPickerContainer.Parent = _toolstrip;
 
             // Setup input actions
             InputActions.Add(options => options.Undo, _undo.PerformUndo);
             InputActions.Add(options => options.Redo, _undo.PerformRedo);
+            InputActions.Add(options => options.Search, Editor.ContentFinding.ShowSearch);
             InputActions.Add(options => options.DebuggerContinue, OnDebuggerContinue);
             InputActions.Add(options => options.DebuggerStepOver, OnDebuggerStepOver);
             InputActions.Add(options => options.DebuggerStepOut, OnDebuggerStepOut);
@@ -1055,6 +1109,9 @@ namespace FlaxEditor.Windows.Assets
         }
 
         /// <inheritdoc />
+        public Asset SurfaceAsset => Asset;
+
+        /// <inheritdoc />
         public string SurfaceName => "Visual Script";
 
         /// <inheritdoc />
@@ -1198,6 +1255,22 @@ namespace FlaxEditor.Windows.Assets
                 AfterType = type,
                 AfterValue = TypeUtils.GetDefaultValue(type),
             };
+            if (action.BeforeValue != null)
+            {
+                // Try to maintain existing value
+                var beforeType = TypeUtils.GetObjectType(action.BeforeValue);
+                if (type.IsArray && beforeType.IsArray && type.GetElementType().IsAssignableFrom(beforeType.GetElementType()))
+                {
+                    var beforeArray = (Array)action.BeforeValue;
+                    var afterArray = TypeUtils.CreateArrayInstance(type.GetElementType(), beforeArray.Length);
+                    Array.Copy(beforeArray, afterArray, beforeArray.Length);
+                    action.AfterValue = afterArray;
+                }
+                else if (type.IsAssignableFrom(beforeType))
+                {
+                    action.AfterValue = action.BeforeValue;
+                }
+            }
             _undo.AddAction(action);
             action.Do();
         }
@@ -1265,6 +1338,7 @@ namespace FlaxEditor.Windows.Assets
                     _surface.ShowWholeGraph();
                 }
                 LoadBreakpoints();
+                SurfaceLoaded?.Invoke();
                 Editor.VisualScriptingDebugFlow += OnDebugFlow;
             }
             else if (_refreshPropertiesOnLoad && _asset.IsLoaded)
@@ -1325,6 +1399,9 @@ namespace FlaxEditor.Windows.Assets
         public IEnumerable<ScriptType> NewParameterTypes => Editor.CodeEditing.VisualScriptPropertyTypes.Get();
 
         /// <inheritdoc />
+        public event Action SurfaceLoaded;
+
+        /// <inheritdoc />
         public void OnParamRenameUndo()
         {
         }
@@ -1368,5 +1445,8 @@ namespace FlaxEditor.Windows.Assets
 
         /// <inheritdoc />
         public VisjectSurface VisjectSurface => _surface;
+
+        /// <inheritdoc />
+        public SearchAssetTypes AssetType => SearchAssetTypes.VisualScript;
     }
 }

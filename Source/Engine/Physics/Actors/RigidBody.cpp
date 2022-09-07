@@ -8,14 +8,15 @@
 #include "Engine/Serialization/Serialization.h"
 
 RigidBody::RigidBody(const SpawnParams& params)
-    : PhysicsActor(params)
+    : Actor(params)
     , _actor(nullptr)
+    , _cachedScale(1.0f)
     , _mass(1.0f)
     , _linearDamping(0.01f)
     , _angularDamping(0.05f)
     , _maxAngularVelocity(7.0f)
     , _massScale(1.0f)
-    , _centerOfMassOffset(Vector3::Zero)
+    , _centerOfMassOffset(Float3::Zero)
     , _constraints(RigidbodyConstraints::None)
     , _enableSimulation(true)
     , _isKinematic(false)
@@ -24,6 +25,7 @@ RigidBody::RigidBody(const SpawnParams& params)
     , _startAwake(true)
     , _updateMassWhenScaleChanges(false)
     , _overrideMass(false)
+    , _isUpdatingTransform(false)
 {
 }
 
@@ -149,9 +151,9 @@ void RigidBody::SetMassScale(float value)
     UpdateMass();
 }
 
-void RigidBody::SetCenterOfMassOffset(const Vector3& value)
+void RigidBody::SetCenterOfMassOffset(const Float3& value)
 {
-    if (Vector3::NearEqual(value, _centerOfMassOffset))
+    if (Float3::NearEqual(value, _centerOfMassOffset))
         return;
     _centerOfMassOffset = value;
     if (_actor)
@@ -224,13 +226,13 @@ bool RigidBody::IsSleeping() const
 void RigidBody::Sleep() const
 {
     if (_actor && GetEnableSimulation() && !GetIsKinematic() && IsActiveInHierarchy())
-        PhysicsBackend::GetRigidActorSleep(_actor);
+        PhysicsBackend::RigidDynamicActorSleep(_actor);
 }
 
 void RigidBody::WakeUp() const
 {
     if (_actor && GetEnableSimulation() && !GetIsKinematic() && IsActiveInHierarchy())
-        PhysicsBackend::GetRigidDynamicActorWakeUp(_actor);
+        PhysicsBackend::RigidDynamicActorWakeUp(_actor);
 }
 
 void RigidBody::UpdateMass()
@@ -276,7 +278,7 @@ void RigidBody::SetSolverIterationCounts(int32 minPositionIters, int32 minVeloci
 void RigidBody::ClosestPoint(const Vector3& position, Vector3& result) const
 {
     Vector3 tmp;
-    float minDistanceSqr = MAX_float;
+    Real minDistanceSqr = MAX_Real;
     result = Vector3::Maximum;
     for (int32 i = 0; i < Children.Count(); i++)
     {
@@ -284,7 +286,7 @@ void RigidBody::ClosestPoint(const Vector3& position, Vector3& result) const
         if (collider && collider->GetAttachedRigidBody() == this)
         {
             collider->ClosestPoint(position, tmp);
-            const auto dstSqr = Vector3::DistanceSquared(position, tmp);
+            const Real dstSqr = Vector3::DistanceSquared(position, tmp);
             if (dstSqr < minDistanceSqr)
             {
                 minDistanceSqr = dstSqr;
@@ -323,12 +325,21 @@ void RigidBody::OnColliderChanged(Collider* c)
     //	WakeUp();
 }
 
+void RigidBody::UpdateBounds()
+{
+    void* actor = _actor;
+    if (actor && PhysicsBackend::GetRigidActorShapesCount(actor) != 0)
+        PhysicsBackend::GetActorBounds(actor, _box);
+    else
+        _box = BoundingBox(_transform.Translation);
+    BoundingSphere::FromBox(_box, _sphere);
+}
+
 void RigidBody::UpdateScale()
 {
-    const Vector3 scale = GetScale();
-    if (Vector3::NearEqual(_cachedScale, scale))
+    const Float3 scale = GetScale();
+    if (Float3::NearEqual(_cachedScale, scale))
         return;
-
     _cachedScale = scale;
 
     // Check if update mass
@@ -339,7 +350,7 @@ void RigidBody::UpdateScale()
 void RigidBody::Serialize(SerializeStream& stream, const void* otherObj)
 {
     // Base
-    PhysicsActor::Serialize(stream, otherObj);
+    Actor::Serialize(stream, otherObj);
 
     SERIALIZE_GET_OTHER_OBJ(RigidBody);
 
@@ -364,7 +375,7 @@ void RigidBody::Serialize(SerializeStream& stream, const void* otherObj)
 void RigidBody::Deserialize(DeserializeStream& stream, ISerializeModifier* modifier)
 {
     // Base
-    PhysicsActor::Deserialize(stream, modifier);
+    Actor::Deserialize(stream, modifier);
 
     DESERIALIZE_BIT_MEMBER(OverrideMass, _overrideMass);
     DESERIALIZE_MEMBER(Mass, _mass);
@@ -389,11 +400,32 @@ void* RigidBody::GetPhysicsActor() const
     return _actor;
 }
 
+void RigidBody::OnActiveTransformChanged()
+{
+    // Change actor transform (but with locking)
+    ASSERT(!_isUpdatingTransform);
+    _isUpdatingTransform = true;
+    Transform transform;
+    PhysicsBackend::GetRigidActorPose(_actor, transform.Translation, transform.Orientation);
+    transform.Scale = _transform.Scale;
+    if (_parent)
+    {
+        _parent->GetTransform().WorldToLocal(transform, _localTransform);
+    }
+    else
+    {
+        _localTransform = transform;
+    }
+    OnTransformChanged();
+    _isUpdatingTransform = false;
+}
+
 void RigidBody::BeginPlay(SceneBeginData* data)
 {
     // Create rigid body
     ASSERT(_actor == nullptr);
-    _actor = PhysicsBackend::CreateRigidDynamicActor(this, _transform.Translation, _transform.Orientation);
+    void* scene = GetPhysicsScene()->GetPhysicsScene();
+    _actor = PhysicsBackend::CreateRigidDynamicActor(this, _transform.Translation, _transform.Orientation, scene);
 
     // Apply properties
     auto actorFlags = PhysicsBackend::ActorFlags::None;
@@ -431,7 +463,6 @@ void RigidBody::BeginPlay(SceneBeginData* data)
         PhysicsBackend::SetRigidDynamicActorCenterOfMassOffset(_actor, _centerOfMassOffset);
 
     // Register actor
-    void* scene = GetPhysicsScene()->GetPhysicsScene();
     PhysicsBackend::AddSceneActor(scene, _actor);
     const bool putToSleep = !_startAwake && GetEnableSimulation() && !GetIsKinematic() && IsActiveInHierarchy();
     if (putToSleep)
@@ -441,13 +472,13 @@ void RigidBody::BeginPlay(SceneBeginData* data)
     UpdateBounds();
 
     // Base
-    PhysicsActor::BeginPlay(data);
+    Actor::BeginPlay(data);
 }
 
 void RigidBody::EndPlay()
 {
     // Base
-    PhysicsActor::EndPlay();
+    Actor::EndPlay();
 
     if (_actor)
     {
@@ -462,7 +493,7 @@ void RigidBody::EndPlay()
 void RigidBody::OnActiveInTreeChanged()
 {
     // Base
-    PhysicsActor::OnActiveInTreeChanged();
+    Actor::OnActiveInTreeChanged();
 
     if (_actor)
     {
@@ -480,23 +511,18 @@ void RigidBody::OnActiveInTreeChanged()
 
 void RigidBody::OnTransformChanged()
 {
+    // Base
+    Actor::OnTransformChanged();
+
     // Update physics is not during physics state synchronization
     if (!_isUpdatingTransform && _actor)
     {
-        // Base (skip PhysicsActor call to optimize)
-        Actor::OnTransformChanged();
-
         const bool kinematic = GetIsKinematic() && GetEnableSimulation();
         PhysicsBackend::SetRigidActorPose(_actor, _transform.Translation, _transform.Orientation, kinematic, true);
-
         UpdateScale();
-        UpdateBounds();
     }
-    else
-    {
-        // Base
-        PhysicsActor::OnTransformChanged();
-    }
+
+    UpdateBounds();
 }
 
 void RigidBody::OnPhysicsSceneChanged(PhysicsScene* previous)

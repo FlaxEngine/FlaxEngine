@@ -1,5 +1,11 @@
 // Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
+#if USE_LARGE_WORLDS
+using Real = System.Double;
+#else
+using Real = System.Single;
+#endif
+
 using FlaxEngine;
 
 namespace FlaxEditor.SceneGraph.Actors
@@ -18,19 +24,20 @@ namespace FlaxEditor.SceneGraph.Actors
         }
 
         /// <inheritdoc />
-        public override bool RayCastSelf(ref RayCastData ray, out float distance, out Vector3 normal)
+        public override bool RayCastSelf(ref RayCastData ray, out Real distance, out Vector3 normal)
         {
             SpriteRender sprite = (SpriteRender)Actor;
-            Vector3 viewPosition = ray.View.Position;
-            Vector3 viewDirection = ray.View.Direction;
+            Float3 viewPosition = (Float3)ray.View.Position; // TODO: large-worlds
+            Float3 viewDirection = ray.View.Direction;
             Matrix m1, m2, m3, world;
             var size = sprite.Size;
             Matrix.Scaling(size.X, size.Y, 1.0f, out m1);
             var transform = sprite.Transform;
             if (sprite.FaceCamera)
             {
-                var up = Vector3.Up;
-                Matrix.Billboard(ref transform.Translation, ref viewPosition, ref up, ref viewDirection, out m2);
+                var up = Float3.Up;
+                Float3 translation = transform.Translation;
+                Matrix.Billboard(ref translation, ref viewPosition, ref up, ref viewDirection, out m2);
                 Matrix.Multiply(ref m1, ref m2, out m3);
                 Matrix.Scaling(ref transform.Scale, out m1);
                 Matrix.Multiply(ref m1, ref m3, out world);
@@ -43,7 +50,7 @@ namespace FlaxEditor.SceneGraph.Actors
 
             OrientedBoundingBox bounds;
             bounds.Extents = Vector3.Half;
-            bounds.Transformation = world;
+            world.Decompose(out bounds.Transformation);
 
             normal = -ray.Ray.Direction;
             return bounds.Intersects(ref ray.Ray, out distance);

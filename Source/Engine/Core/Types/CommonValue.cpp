@@ -90,11 +90,11 @@ bool CommonValue::NearEqual(const CommonValue& a, const CommonValue& b, float ep
     case CommonType::Float:
         return Math::Abs(a.AsFloat - b.AsFloat) < epsilon;
     case CommonType::Vector2:
-        return Vector2::NearEqual(a.AsVector2, b.AsVector2, epsilon);
+        return Float2::NearEqual(a.AsVector2, b.AsVector2, epsilon);
     case CommonType::Vector3:
-        return Vector3::NearEqual(a.AsVector3, b.AsVector3, epsilon);
+        return Float3::NearEqual(a.AsVector3, b.AsVector3, epsilon);
     case CommonType::Vector4:
-        return Vector4::NearEqual(a.AsVector4, b.AsVector4, epsilon);
+        return Float4::NearEqual(a.AsVector4, b.AsVector4, epsilon);
     case CommonType::Color:
         return Color::NearEqual(a.AsColor, b.AsColor, epsilon);
     case CommonType::Guid:
@@ -137,11 +137,11 @@ CommonValue CommonValue::Lerp(const CommonValue& a, const CommonValue& b, float 
     case CommonType::Float:
         return Math::Lerp(a.AsFloat, b.AsFloat, alpha);
     case CommonType::Vector2:
-        return Vector2::Lerp(a.AsVector2, b.AsVector2, alpha);
+        return Float2::Lerp(a.AsVector2, b.AsVector2, alpha);
     case CommonType::Vector3:
-        return Vector3::Lerp(a.AsVector3, b.AsVector3, alpha);
+        return Float3::Lerp(a.AsVector3, b.AsVector3, alpha);
     case CommonType::Vector4:
-        return Vector4::Lerp(a.AsVector4, b.AsVector4, alpha);
+        return Float4::Lerp(a.AsVector4, b.AsVector4, alpha);
     case CommonType::Color:
         return Color::Lerp(a.AsColor, b.AsColor, alpha);
     case CommonType::Box:
@@ -153,7 +153,7 @@ CommonValue CommonValue::Lerp(const CommonValue& a, const CommonValue& b, float 
     case CommonType::Sphere:
         return BoundingSphere(Vector3::Lerp(a.AsSphere.Center, b.AsSphere.Center, alpha), Math::Lerp(a.AsSphere.Radius, b.AsSphere.Radius, alpha));
     case CommonType::Rectangle:
-        return Rectangle(Vector2::Lerp(a.AsRectangle.Location, b.AsRectangle.Location, alpha), Vector2::Lerp(a.AsRectangle.Size, b.AsRectangle.Size, alpha));
+        return Rectangle(Float2::Lerp(a.AsRectangle.Location, b.AsRectangle.Location, alpha), Float2::Lerp(a.AsRectangle.Size, b.AsRectangle.Size, alpha));
     case CommonType::Ray:
         return Ray(Vector3::Lerp(a.AsRay.Position, b.AsRay.Position, alpha), Vector3::Normalize(Vector3::Lerp(a.AsRay.Direction, b.AsRay.Direction, alpha)));
     default:

@@ -34,7 +34,7 @@ namespace FlaxEngine.GUI
         {
             base.DrawSelf();
 
-            Render2D.DrawRectangle(new Rectangle(Vector2.Zero, Size), BorderColor, BorderWidth);
+            Render2D.DrawRectangle(new Rectangle(Float2.Zero, Size), BorderColor, BorderWidth);
         }
     }
 }

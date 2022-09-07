@@ -94,10 +94,16 @@ struct SpirvShaderDescriptorInfo
         /// The resource type.
         /// </summary>
         SpirvShaderResourceType ResourceType;
+
+        /// <summary>
+        /// The amount of slots used by the descriptor (eg. array of textures size).
+        /// </summary>
+        uint32 Count;
     };
 
     uint16 ImageInfosCount;
     uint16 BufferInfosCount;
+    uint32 TexelBufferViewsCount;
     uint32 DescriptorTypesCount;
     Descriptor DescriptorTypes[MaxDescriptors];
 };

@@ -89,7 +89,7 @@ GPUTextureDescription GPUTextureDescription::New2D(int32 width, int32 height, Pi
     return desc;
 }
 
-GPUTextureDescription GPUTextureDescription::New3D(const Vector3& size, PixelFormat format, GPUTextureFlags textureFlags)
+GPUTextureDescription GPUTextureDescription::New3D(const Float3& size, PixelFormat format, GPUTextureFlags textureFlags)
 {
     return New3D((int32)size.X, (int32)size.Y, (int32)size.Z, 1, format, textureFlags);
 }
@@ -211,12 +211,12 @@ uint32 GetHash(const GPUTextureDescription& key)
 
 GPUTexture* GPUTexture::Spawn(const SpawnParams& params)
 {
-    return GPUDevice::Instance->CreateTexture(String::Empty);
+    return GPUDevice::Instance->CreateTexture();
 }
 
 GPUTexture* GPUTexture::New()
 {
-    return GPUDevice::Instance->CreateTexture(String::Empty);
+    return GPUDevice::Instance->CreateTexture();
 }
 
 GPUTexture::GPUTexture()
@@ -229,14 +229,14 @@ GPUTexture::GPUTexture()
     _desc.Clear();
 }
 
-Vector2 GPUTexture::Size() const
+Float2 GPUTexture::Size() const
 {
-    return Vector2(static_cast<float>(_desc.Width), static_cast<float>(_desc.Height));
+    return Float2(static_cast<float>(_desc.Width), static_cast<float>(_desc.Height));
 }
 
-Vector3 GPUTexture::Size3() const
+Float3 GPUTexture::Size3() const
 {
-    return Vector3(static_cast<float>(_desc.Width), static_cast<float>(_desc.Height), static_cast<float>(_desc.Depth));
+    return Float3(static_cast<float>(_desc.Width), static_cast<float>(_desc.Height), static_cast<float>(_desc.Depth));
 }
 
 bool GPUTexture::IsPowerOfTwo() const
@@ -431,11 +431,6 @@ bool GPUTexture::Init(const GPUTextureDescription& desc)
             LOG(Warning, "Cannot create texture. Only 2D Texture can be used as a Depth Stencil. Description: {0}", desc.ToString());
             return true;
         }
-        if (desc.MipLevels != 1)
-        {
-            LOG(Warning, "Cannot create texture. Volume texture cannot have more than 1 mip level. Description: {0}", desc.ToString());
-            return true;
-        }
         if (desc.ArraySize != 1)
         {
             LOG(Warning, "Cannot create texture. Volume texture cannot create array of volume textures. Description: {0}", desc.ToString());
@@ -538,7 +533,7 @@ GPUTexture* GPUTexture::ToStagingUpload() const
     return staging;
 }
 
-bool GPUTexture::Resize(int32 width, int32 height, int32 depth)
+bool GPUTexture::Resize(int32 width, int32 height, int32 depth, PixelFormat format)
 {
     // Validate texture is created
     if (!IsAllocated())
@@ -548,14 +543,19 @@ bool GPUTexture::Resize(int32 width, int32 height, int32 depth)
     }
 
     auto desc = GetDescription();
+    if (format == PixelFormat::Unknown)
+        format = desc.Format;
 
     // Skip if size won't change
-    if (desc.Width == width && desc.Height == height && desc.Depth == depth)
+    if (desc.Width == width && desc.Height == height && desc.Depth == depth && desc.Format == format)
         return false;
 
+    desc.Format = format;
     desc.Width = width;
     desc.Height = height;
     desc.Depth = depth;
+    if (desc.MipLevels > 1)
+        desc.MipLevels = CalculateMipMapCount(0, Math::Max(width, height));
 
     // Recreate
     return Init(desc);
@@ -607,7 +607,25 @@ GPUTask* GPUTexture::UploadMipMapAsync(const BytesContainer& data, int32 mipInde
     ASSERT(IsAllocated());
     ASSERT(mipIndex < MipLevels() && data.IsValid());
     ASSERT(data.Length() >= slicePitch);
-    // TODO: support texture data upload to the GPU on a main thread during rendering without this async task (faster direct upload)
+
+    // Optimize texture upload invoked during rendering
+    if (IsInMainThread() && GPUDevice::Instance->IsRendering())
+    {
+        // Update all array slices
+        const byte* dataSource = data.Get();
+        for (int32 arrayIndex = 0; arrayIndex < _desc.ArraySize; arrayIndex++)
+        {
+            GPUDevice::Instance->GetMainContext()->UpdateTexture(this, arrayIndex, mipIndex, dataSource, rowPitch, slicePitch);
+            dataSource += slicePitch;
+        }
+        if (mipIndex == HighestResidentMipIndex() - 1)
+        {
+            // Mark as mip loaded
+            SetResidentMipLevels(ResidentMipLevels() + 1);
+        }
+        return nullptr;
+    }
+
     auto task = ::New<GPUUploadTextureMipTask>(this, mipIndex, data, rowPitch, slicePitch, copyData);
     ASSERT_LOW_LAYER(task && task->HasReference(this));
     return task;
@@ -616,14 +634,12 @@ GPUTask* GPUTexture::UploadMipMapAsync(const BytesContainer& data, int32 mipInde
 class TextureDownloadDataTask : public ThreadPoolTask
 {
 private:
-
     GPUTextureReference _texture;
     GPUTexture* _staging;
     TextureData* _data;
     bool _deleteStaging;
 
 public:
-
     TextureDownloadDataTask(GPUTexture* texture, GPUTexture* staging, TextureData& data)
         : _texture(texture)
         , _staging(staging)
@@ -639,7 +655,6 @@ public:
     }
 
 public:
-
     // [ThreadPoolTask]
     bool HasReference(Object* resource) const override
     {
@@ -647,7 +662,6 @@ public:
     }
 
 protected:
-
     // [ThreadPoolTask]
     bool Run() override
     {
@@ -800,5 +814,6 @@ void GPUTexture::SetResidentMipLevels(int32 count)
     if (_residentMipLevels == count || !IsRegularTexture())
         return;
     _residentMipLevels = count;
-    onResidentMipsChanged();
+    OnResidentMipsChanged();
+    ResidentMipsChanged(this);
 }

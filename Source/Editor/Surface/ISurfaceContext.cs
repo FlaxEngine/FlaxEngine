@@ -11,6 +11,11 @@ namespace FlaxEditor.Surface
     public interface ISurfaceContext
     {
         /// <summary>
+        /// Gets the asset containing the surface (optional, null by default).
+        /// </summary>
+        Asset SurfaceAsset { get; }
+
+        /// <summary>
         /// Gets the name of the surface (for UI).
         /// </summary>
         string SurfaceName { get; }

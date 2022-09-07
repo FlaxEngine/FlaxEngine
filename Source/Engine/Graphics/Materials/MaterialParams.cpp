@@ -11,6 +11,8 @@
 #include "Engine/Graphics/RenderBuffers.h"
 #include "Engine/Graphics/GPUDevice.h"
 #include "Engine/Graphics/GPULimits.h"
+#include "Engine/Graphics/RenderTask.h"
+#include "Engine/Renderer/GlobalSignDistanceFieldPass.h"
 #include "Engine/Streaming/Streaming.h"
 
 bool MaterialInfo8::operator==(const MaterialInfo8& other) const
@@ -28,7 +30,7 @@ bool MaterialInfo8::operator==(const MaterialInfo8& other) const
             && MaxTessellationFactor == other.MaxTessellationFactor;
 }
 
-MaterialInfo::MaterialInfo(const MaterialInfo8& other)
+MaterialInfo9::MaterialInfo9(const MaterialInfo8& other)
 {
     Domain = other.Domain;
     BlendMode = other.BlendMode;
@@ -76,6 +78,39 @@ MaterialInfo::MaterialInfo(const MaterialInfo8& other)
     MaxTessellationFactor = other.MaxTessellationFactor;
 }
 
+bool MaterialInfo9::operator==(const MaterialInfo9& other) const
+{
+    return Domain == other.Domain
+            && BlendMode == other.BlendMode
+            && ShadingModel == other.ShadingModel
+            && UsageFlags == other.UsageFlags
+            && FeaturesFlags == other.FeaturesFlags
+            && DecalBlendingMode == other.DecalBlendingMode
+            && PostFxLocation == other.PostFxLocation
+            && CullMode == other.CullMode
+            && Math::NearEqual(MaskThreshold, other.MaskThreshold)
+            && Math::NearEqual(OpacityThreshold, other.OpacityThreshold)
+            && TessellationMode == other.TessellationMode
+            && MaxTessellationFactor == other.MaxTessellationFactor;
+}
+
+MaterialInfo::MaterialInfo(const MaterialInfo9& other)
+{
+    Domain = other.Domain;
+    BlendMode = other.BlendMode;
+    ShadingModel = other.ShadingModel;
+    UsageFlags = other.UsageFlags;
+    FeaturesFlags = other.FeaturesFlags;
+    DecalBlendingMode = other.DecalBlendingMode;
+    TransparentLightingMode = MaterialTransparentLightingMode::Surface;
+    PostFxLocation = other.PostFxLocation;
+    CullMode = other.CullMode;
+    MaskThreshold = other.MaskThreshold;
+    OpacityThreshold = other.OpacityThreshold;
+    TessellationMode = other.TessellationMode;
+    MaxTessellationFactor = other.MaxTessellationFactor;
+}
+
 bool MaterialInfo::operator==(const MaterialInfo& other) const
 {
     return Domain == other.Domain
@@ -84,6 +119,7 @@ bool MaterialInfo::operator==(const MaterialInfo& other) const
             && UsageFlags == other.UsageFlags
             && FeaturesFlags == other.FeaturesFlags
             && DecalBlendingMode == other.DecalBlendingMode
+            && TransparentLightingMode == other.TransparentLightingMode
             && PostFxLocation == other.PostFxLocation
             && CullMode == other.CullMode
             && Math::NearEqual(MaskThreshold, other.MaskThreshold)
@@ -157,6 +193,9 @@ const Char* ToString(MaterialParameterType value)
     case MaterialParameterType::TextureGroupSampler:
         result = TEXT("TextureGroupSampler");
         break;
+    case MaterialParameterType::GlobalSDF:
+        result = TEXT("GlobalSDF");
+        break;
     default:
         result = TEXT("");
         break;
@@ -182,7 +221,7 @@ Variant MaterialParameter::GetValue() const
     case MaterialParameterType::Vector3:
         return _asVector3;
     case MaterialParameterType::Vector4:
-        return *(Vector4*)&AsData;
+        return *(Float4*)&AsData;
     case MaterialParameterType::Color:
         return _asColor;
     case MaterialParameterType::Matrix:
@@ -198,7 +237,6 @@ Variant MaterialParameter::GetValue() const
     case MaterialParameterType::GPUTexture:
         return _asGPUTexture.Get();
     default:
-    CRASH;
         return Variant::Zero;
     }
 }
@@ -221,13 +259,13 @@ void MaterialParameter::SetValue(const Variant& value)
         _asFloat = (float)value;
         break;
     case MaterialParameterType::Vector2:
-        _asVector2 = (Vector2)value;
+        _asVector2 = (Float2)value;
         break;
     case MaterialParameterType::Vector3:
-        _asVector3 = (Vector3)value;
+        _asVector3 = (Float3)value;
         break;
     case MaterialParameterType::Vector4:
-        *(Vector4*)&AsData = (Vector4)value;
+        *(Float4*)&AsData = (Float4)value;
         break;
     case MaterialParameterType::Color:
         _asColor = (Color)value;
@@ -303,6 +341,8 @@ void MaterialParameter::SetValue(const Variant& value)
             invalidType = true;
         }
         break;
+    case MaterialParameterType::GlobalSDF:
+        break;
     default:
         invalidType = true;
     }
@@ -329,19 +369,19 @@ void MaterialParameter::Bind(BindMeta& meta) const
         *((float*)(meta.Constants.Get() + _offset)) = _asFloat;
         break;
     case MaterialParameterType::Vector2:
-        ASSERT_LOW_LAYER(meta.Constants.Get() && meta.Constants.Length() >= (int32)_offset + sizeof(Vector2));
-        *((Vector2*)(meta.Constants.Get() + _offset)) = _asVector2;
+        ASSERT_LOW_LAYER(meta.Constants.Get() && meta.Constants.Length() >= (int32)_offset + sizeof(Float2));
+        *((Float2*)(meta.Constants.Get() + _offset)) = _asVector2;
         break;
     case MaterialParameterType::Vector3:
-        ASSERT_LOW_LAYER(meta.Constants.Get() && meta.Constants.Length() >= (int32)_offset + sizeof(Vector3));
-        *((Vector3*)(meta.Constants.Get() + _offset)) = _asVector3;
+        ASSERT_LOW_LAYER(meta.Constants.Get() && meta.Constants.Length() >= (int32)_offset + sizeof(Float3));
+        *((Float3*)(meta.Constants.Get() + _offset)) = _asVector3;
         break;
     case MaterialParameterType::Vector4:
-        ASSERT_LOW_LAYER(meta.Constants.Get() && meta.Constants.Length() >= (int32)_offset + sizeof(Vector4));
-        *((Vector4*)(meta.Constants.Get() + _offset)) = *(Vector4*)&AsData;
+        ASSERT_LOW_LAYER(meta.Constants.Get() && meta.Constants.Length() >= (int32)_offset + sizeof(Float4));
+        *((Float4*)(meta.Constants.Get() + _offset)) = *(Float4*)&AsData;
         break;
     case MaterialParameterType::Color:
-        ASSERT_LOW_LAYER(meta.Constants.Get() && meta.Constants.Length() >= (int32)_offset + sizeof(Vector4));
+        ASSERT_LOW_LAYER(meta.Constants.Get() && meta.Constants.Length() >= (int32)_offset + sizeof(Float4));
         *((Color*)(meta.Constants.Get() + _offset)) = _asColor;
         break;
     case MaterialParameterType::Matrix:
@@ -400,11 +440,15 @@ void MaterialParameter::Bind(BindMeta& meta) const
             {
             case MaterialSceneTextures::SceneDepth:
                 view = meta.CanSampleDepth
-                           ? (GPUDevice::Instance->Limits.HasReadOnlyDepth ? meta.Buffers->DepthBuffer->ViewReadOnlyDepth() : meta.Buffers->DepthBuffer->View())
+                           ? meta.Buffers->DepthBuffer->GetDescription().Flags & GPUTextureFlags::ReadOnlyDepthView
+                                 ? meta.Buffers->DepthBuffer->ViewReadOnlyDepth()
+                                 : meta.Buffers->DepthBuffer->View()
                            : GPUDevice::Instance->GetDefaultWhiteTexture()->View();
                 break;
             case MaterialSceneTextures::AmbientOcclusion:
             case MaterialSceneTextures::BaseColor:
+            case MaterialSceneTextures::DiffuseColor:
+            case MaterialSceneTextures::SpecularColor:
                 view = meta.CanSampleGBuffer ? meta.Buffers->GBuffer0->View() : nullptr;
                 break;
             case MaterialSceneTextures::WorldNormal:
@@ -428,7 +472,7 @@ void MaterialParameter::Bind(BindMeta& meta) const
     }
     case MaterialParameterType::ChannelMask:
         ASSERT_LOW_LAYER(meta.Constants.Get() && meta.Constants.Length() >= (int32)_offset + sizeof(int32));
-        *((Vector4*)(meta.Constants.Get() + _offset)) = Vector4(_asInteger == 0, _asInteger == 1, _asInteger == 2, _asInteger == 3);
+        *((Float4*)(meta.Constants.Get() + _offset)) = Float4(_asInteger == 0, _asInteger == 1, _asInteger == 2, _asInteger == 3);
         break;
     case MaterialParameterType::GameplayGlobal:
         if (_asAsset)
@@ -454,18 +498,30 @@ void MaterialParameter::Bind(BindMeta& meta) const
                     ASSERT_LOW_LAYER(meta.Constants.Get() && meta.Constants.Length() >= (int32)_offset + sizeof(float));
                     *((float*)(meta.Constants.Get() + _offset)) = e->Value.AsFloat;
                     break;
-                case VariantType::Vector2:
-                    ASSERT_LOW_LAYER(meta.Constants.Get() && meta.Constants.Length() >= (int32)_offset + sizeof(Vector2));
-                    *((Vector2*)(meta.Constants.Get() + _offset)) = e->Value.AsVector2();
+                case VariantType::Float2:
+                    ASSERT_LOW_LAYER(meta.Constants.Get() && meta.Constants.Length() >= (int32)_offset + sizeof(Float2));
+                    *((Float2*)(meta.Constants.Get() + _offset)) = e->Value.AsFloat2();
                     break;
-                case VariantType::Vector3:
-                    ASSERT_LOW_LAYER(meta.Constants.Get() && meta.Constants.Length() >= (int32)_offset + sizeof(Vector3));
-                    *((Vector3*)(meta.Constants.Get() + _offset)) = e->Value.AsVector3();
+                case VariantType::Float3:
+                    ASSERT_LOW_LAYER(meta.Constants.Get() && meta.Constants.Length() >= (int32)_offset + sizeof(Float3));
+                    *((Float3*)(meta.Constants.Get() + _offset)) = e->Value.AsFloat3();
                     break;
-                case VariantType::Vector4:
+                case VariantType::Float4:
                 case VariantType::Color:
-                    ASSERT_LOW_LAYER(meta.Constants.Get() && meta.Constants.Length() >= (int32)_offset + sizeof(Vector4));
-                    *((Vector4*)(meta.Constants.Get() + _offset)) = e->Value.AsVector4();
+                    ASSERT_LOW_LAYER(meta.Constants.Get() && meta.Constants.Length() >= (int32)_offset + sizeof(Float4));
+                    *((Float4*)(meta.Constants.Get() + _offset)) = e->Value.AsFloat4();
+                    break;
+                case VariantType::Double2:
+                    ASSERT_LOW_LAYER(meta.Constants.Get() && meta.Constants.Length() >= (int32)_offset + sizeof(Float2));
+                    *((Float2*)(meta.Constants.Get() + _offset)) = (Float2)e->Value.AsDouble2();
+                    break;
+                case VariantType::Double3:
+                    ASSERT_LOW_LAYER(meta.Constants.Get() && meta.Constants.Length() >= (int32)_offset + sizeof(Float3));
+                    *((Float3*)(meta.Constants.Get() + _offset)) = (Float3)e->Value.AsDouble3();
+                    break;
+                case VariantType::Double4:
+                    ASSERT_LOW_LAYER(meta.Constants.Get() && meta.Constants.Length() >= (int32)_offset + sizeof(Float4));
+                    *((Float4*)(meta.Constants.Get() + _offset)) = (Float4)e->Value.AsDouble4();
                     break;
                 default: ;
                 }
@@ -475,6 +531,15 @@ void MaterialParameter::Bind(BindMeta& meta) const
     case MaterialParameterType::TextureGroupSampler:
         meta.Context->BindSampler(_registerIndex, Streaming::GetTextureGroupSampler(_asInteger));
         break;
+    case MaterialParameterType::GlobalSDF:
+    {
+        GlobalSignDistanceFieldPass::BindingData bindingData;
+        if (GlobalSignDistanceFieldPass::Instance()->Get(meta.Buffers, bindingData))
+            Platform::MemoryClear(&bindingData, sizeof(bindingData));
+        meta.Context->BindSR(_registerIndex, bindingData.Texture ? bindingData.Texture->ViewVolume() : nullptr);
+        *((GlobalSignDistanceFieldPass::ConstantsData*)(meta.Constants.Get() + _offset)) = bindingData.Constants;
+        break;
+    }
     default:
         break;
     }
@@ -517,7 +582,7 @@ void MaterialParameter::clone(const MaterialParameter* param)
         _asVector3 = param->_asVector3;
         break;
     case MaterialParameterType::Vector4:
-        *(Vector4*)&AsData = *(Vector4*)&param->AsData;
+        *(Float4*)&AsData = *(Float4*)&param->AsData;
         break;
     case MaterialParameterType::Color:
         _asColor = param->_asColor;
@@ -697,7 +762,7 @@ bool MaterialParams::Load(ReadStream* stream)
                     stream->Read(&param->_asVector3);
                     break;
                 case MaterialParameterType::Vector4:
-                    stream->Read((Vector4*)&param->AsData);
+                    stream->Read((Float4*)&param->AsData);
                     break;
                 case MaterialParameterType::Color:
                     stream->Read(&param->_asColor);
@@ -771,7 +836,7 @@ bool MaterialParams::Load(ReadStream* stream)
                     stream->Read(&param->_asVector3);
                     break;
                 case MaterialParameterType::Vector4:
-                    stream->Read((Vector4*)&param->AsData);
+                    stream->Read((Float4*)&param->AsData);
                     break;
                 case MaterialParameterType::Color:
                     stream->Read(&param->_asColor);
@@ -846,7 +911,7 @@ bool MaterialParams::Load(ReadStream* stream)
                     stream->Read(&param->_asVector3);
                     break;
                 case MaterialParameterType::Vector4:
-                    stream->Read((Vector4*)&param->AsData);
+                    stream->Read((Float4*)&param->AsData);
                     break;
                 case MaterialParameterType::Color:
                     stream->Read(&param->_asColor);
@@ -939,7 +1004,7 @@ void MaterialParams::Save(WriteStream* stream)
             stream->Write(&param->_asVector3);
             break;
         case MaterialParameterType::Vector4:
-            stream->Write((Vector4*)&param->AsData);
+            stream->Write((Float4*)&param->AsData);
             break;
         case MaterialParameterType::Color:
             stream->Write(&param->_asColor);
@@ -1008,13 +1073,13 @@ void MaterialParams::Save(WriteStream* stream, const Array<SerializedMaterialPar
                 stream->WriteFloat(param.AsFloat);
                 break;
             case MaterialParameterType::Vector2:
-                stream->Write(&param.AsVector2);
+                stream->Write(&param.AsFloat2);
                 break;
             case MaterialParameterType::Vector3:
-                stream->Write(&param.AsVector3);
+                stream->Write(&param.AsFloat3);
                 break;
             case MaterialParameterType::Vector4:
-                stream->Write((Vector4*)&param.AsData);
+                stream->Write((Float4*)&param.AsData);
                 break;
             case MaterialParameterType::Color:
                 stream->Write(&param.AsColor);

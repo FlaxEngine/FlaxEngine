@@ -1,6 +1,7 @@
 // Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 #include "Screen.h"
+#include "Engine.h"
 #include "Engine/Core/Log.h"
 #include "Engine/Core/Types/Nullable.h"
 #include "Engine/Platform/Window.h"
@@ -13,13 +14,12 @@
 #endif
 
 Nullable<bool> Fullscreen;
-Nullable<Vector2> Size;
+Nullable<Float2> Size;
 static CursorLockMode CursorLock = CursorLockMode::None;
 
 class ScreenService : public EngineService
 {
 public:
-
     ScreenService()
         : EngineService(TEXT("Screen"), 120)
     {
@@ -45,17 +45,17 @@ void Screen::SetIsFullscreen(bool value)
     Fullscreen = value;
 }
 
-Vector2 Screen::GetSize()
+Float2 Screen::GetSize()
 {
 #if USE_EDITOR
     return Editor::Managed->GetGameWindowSize();
 #else
 	auto win = Engine::MainWindow;
-	return win ? win->GetClientSize() : Vector2::Zero;
+	return win ? win->GetClientSize() : Float2::Zero;
 #endif
 }
 
-void Screen::SetSize(const Vector2& value)
+void Screen::SetSize(const Float2& value)
 {
     if (value.X <= 0 || value.Y <= 0)
     {
@@ -66,30 +66,30 @@ void Screen::SetSize(const Vector2& value)
     Size = value;
 }
 
-Vector2 Screen::ScreenToGameViewport(const Vector2& screenPos)
+Float2 Screen::ScreenToGameViewport(const Float2& screenPos)
 {
 #if USE_EDITOR
     return Editor::Managed->ScreenToGameViewport(screenPos);
 #else
     auto win = Engine::MainWindow;
-    return win ? win->ScreenToClient(screenPos) : Vector2::Minimum;
+    return win ? win->ScreenToClient(screenPos) : Float2::Minimum;
 #endif
 }
 
-Vector2 Screen::GameViewportToScreen(const Vector2& viewportPos)
+Float2 Screen::GameViewportToScreen(const Float2& viewportPos)
 {
 #if USE_EDITOR
     return Editor::Managed->GameViewportToScreen(viewportPos);
 #else
     auto win = Engine::MainWindow;
-    return win ? win->ClientToScreen(viewportPos) : Vector2::Minimum;
+    return win ? win->ClientToScreen(viewportPos) : Float2::Minimum;
 #endif
 }
 
 bool Screen::GetCursorVisible()
 {
 #if USE_EDITOR
-    const auto win = Editor::Managed->GetGameWindow();
+    const auto win = Editor::Managed->GetGameWindow(true);
 #else
 	const auto win = Engine::MainWindow;
 #endif
@@ -99,11 +99,11 @@ bool Screen::GetCursorVisible()
 void Screen::SetCursorVisible(const bool value)
 {
 #if USE_EDITOR
-    const auto win = Editor::Managed->GetGameWindow();
+    const auto win = Editor::Managed->GetGameWindow(true);
 #else
 	const auto win = Engine::MainWindow;
 #endif
-    if (win)
+    if (win && Engine::HasGameViewportFocus())
     {
         win->SetCursor(value ? CursorType::Default : CursorType::Hidden);
     }
@@ -116,6 +116,24 @@ CursorLockMode Screen::GetCursorLock()
 
 void Screen::SetCursorLock(CursorLockMode mode)
 {
+#if USE_EDITOR
+    const auto win = Editor::Managed->GetGameWindow(true);
+#else
+    const auto win = Engine::MainWindow;
+#endif
+    if (win && mode == CursorLockMode::Clipped)
+    {
+#if USE_EDITOR
+        Rectangle bounds(Editor::Managed->GameViewportToScreen(Float2::Zero), Editor::Managed->GetGameWindowSize());
+#else
+        Rectangle bounds = win->GetClientBounds();
+#endif
+        win->StartClippingCursor(bounds);
+    }
+    else if (win && CursorLock == CursorLockMode::Clipped)
+    {
+        win->EndClippingCursor();
+    }
     CursorLock = mode;
 }
 

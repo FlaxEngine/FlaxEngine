@@ -61,24 +61,24 @@
 		</Expand>
 	</Type>
 
-  <!-- HashSet<T> -->
+  <!-- HashSet<T, HeapAllocation> -->
   <Type Name="HashSet&lt;*&gt;">
-    <DisplayString>{{ Size={_elementsCount} Capacity={_tableSize} }}</DisplayString>
-    <Expand>
-      <Item Name="[Size]" ExcludeView="simple">_elementsCount</Item>
-      <Item Name="[Capacity]" ExcludeView="simple">_tableSize</Item>
-      <CustomListItems MaxItemsPerView="5000" ExcludeView="Test">
-        <Variable Name="i" InitialValue="0" />
-        <Size>_elementsCount</Size>
-        <Loop>
-          <Break Condition="i == _tableSize" />
-          <If Condition="_table[i]._state == 2">  
-            <Item>_table[i]</Item>
-          </If>
-          <Exec>i++</Exec>
-        </Loop>
-      </CustomListItems>
-    </Expand>
+	<DisplayString>{{ Size={_elementsCount} Capacity={_size} }}</DisplayString>
+	<Expand>
+		<Item Name="[Size]" ExcludeView="simple">_elementsCount</Item>
+		<Item Name="[Capacity]" ExcludeView="simple">_size</Item>
+		<CustomListItems MaxItemsPerView="5000" ExcludeView="Test">
+			<Variable Name="i" InitialValue="0" />
+			<Size>_elementsCount</Size>
+			<Loop>
+				<Break Condition="i == _size" />
+				<If Condition="_allocation._data[i]._state == 2">  
+				  <Item>_allocation._data[i].Item</Item>
+				</If>
+				<Exec>i++</Exec>
+			</Loop>
+		</CustomListItems>
+	</Expand>
   </Type>
 
   <!-- String -->
@@ -154,18 +154,18 @@
 		</Expand>
 	</Type>
 	
-  <!-- Vector2 -->
-	<Type Name="Vector2">
+  <!-- Vector2/Float2/Double2/Int2 -->
+	<Type Name="Vector2Base&lt;*&gt;">
 		<DisplayString>{{ X={X}, Y={Y} }}</DisplayString>
 	</Type>
 	
-  <!-- Vector3 -->
-	<Type Name="Vector3">
+  <!-- Vector3/Float3/Double3/Int3 -->
+	<Type Name="Vector3Base&lt;*&gt;">
 		<DisplayString>{{ X={X}, Y={Y}, Z={Z} }}</DisplayString>
 	</Type>
 	
-  <!-- Vector4 -->
-	<Type Name="Vector4">
+  <!-- Vector4/Float4/Double4/Int4 -->
+	<Type Name="Vector4Base&lt;*&gt;">
 		<DisplayString>{{ X={X}, Y={Y}, Z={Z}, W={W} }}</DisplayString>
 	</Type>
     

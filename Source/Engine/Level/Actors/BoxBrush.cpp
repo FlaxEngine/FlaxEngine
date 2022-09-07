@@ -1,6 +1,7 @@
 // Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 #include "BoxBrush.h"
+#include "Engine/Core/Math/Matrix.h"
 #include "Engine/Content/Content.h"
 #include "Engine/Serialization/Serialization.h"
 #include "Engine/Level/Scene/Scene.h"
@@ -135,9 +136,9 @@ void BoxBrush::SetMaterial(int32 surfaceIndex, MaterialBase* material)
     OnBrushModified();
 }
 
-bool BoxBrush::Intersects(int32 surfaceIndex, const Ray& ray, float& distance, Vector3& normal) const
+bool BoxBrush::Intersects(int32 surfaceIndex, const Ray& ray, Real& distance, Vector3& normal) const
 {
-    distance = MAX_float;
+    distance = MAX_Real;
     normal = Vector3::Up;
     auto scene = GetScene();
     CHECK_RETURN(scene, false);
@@ -201,12 +202,11 @@ void BoxBrush::Deserialize(DeserializeStream& stream, ISerializeModifier* modifi
     }
 }
 
-bool BoxBrush::IntersectsItself(const Ray& ray, float& distance, Vector3& normal)
+bool BoxBrush::IntersectsItself(const Ray& ray, Real& distance, Vector3& normal)
 {
     bool result = false;
-    float minDistance = MAX_float;
+    Real minDistance = MAX_float;
     Vector3 minDistanceNormal = Vector3::Up;
-
     if (_bounds.Intersects(ray, distance))
     {
         for (int32 surfaceIndex = 0; surfaceIndex < 6; surfaceIndex++)
@@ -219,7 +219,6 @@ bool BoxBrush::IntersectsItself(const Ray& ray, float& distance, Vector3& normal
             }
         }
     }
-
     distance = minDistance;
     normal = minDistanceNormal;
     return result;

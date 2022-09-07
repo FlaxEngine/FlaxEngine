@@ -11,9 +11,8 @@
 /// </summary>
 API_CLASS(Abstract) class FLAXENGINE_API Light : public Actor
 {
-DECLARE_SCENE_OBJECT_ABSTRACT(Light);
+    DECLARE_SCENE_OBJECT_ABSTRACT(Light);
 public:
-
     /// <summary>
     /// Color of the light
     /// </summary>
@@ -51,12 +50,10 @@ public:
     bool CastVolumetricShadow = true;
 
 protected:
-
     // Adjust the light brightness used during rendering (called by light types inside SetupLightData callback)
     void AdjustBrightness(const RenderView& view, float& brightness) const;
 
 public:
-
     // [Actor]
 #if USE_EDITOR
     BoundingBox GetEditorBox() const override
@@ -74,9 +71,8 @@ public:
 /// </summary>
 API_CLASS(Abstract) class FLAXENGINE_API LightWithShadow : public Light
 {
-DECLARE_SCENE_OBJECT_ABSTRACT(LightWithShadow);
+    DECLARE_SCENE_OBJECT_ABSTRACT(LightWithShadow);
 public:
-
     /// <summary>
     /// The minimum roughness value used to clamp material surface roughness during shading pixel.
     /// </summary>
@@ -132,7 +128,6 @@ public:
     ShadowsCastingMode ShadowsMode = ShadowsCastingMode::All;
 
 public:
-
     // [Light]
     void Serialize(SerializeStream& stream, const void* otherObj) override;
     void Deserialize(DeserializeStream& stream, ISerializeModifier* modifier) override;

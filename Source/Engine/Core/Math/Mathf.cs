@@ -51,6 +51,15 @@ namespace FlaxEngine
         }
 
         /// <summary>
+        /// Returns the absolute value of f.
+        /// </summary>
+        /// <param name="f"></param>
+        public static double Abs(double f)
+        {
+            return Math.Abs(f);
+        }
+
+        /// <summary>
         /// Returns the absolute value of value.
         /// </summary>
         /// <param name="value"></param>
@@ -130,6 +139,18 @@ namespace FlaxEngine
         /// <param name="value">Value to clamp</param>
         /// <returns>Result value</returns>
         public static float Saturate(float value)
+        {
+            if (value < 0f)
+                return 0f;
+            return value > 1f ? 1f : value;
+        }
+
+        /// <summary>
+        /// Clamps value between 0 and 1 and returns value.
+        /// </summary>
+        /// <param name="value">Value to clamp</param>
+        /// <returns>Result value</returns>
+        public static double Saturate(double value)
         {
             if (value < 0f)
                 return 0f;
@@ -864,6 +885,15 @@ namespace FlaxEngine
         }
 
         /// <summary>
+        /// Returns square root of f.
+        /// </summary>
+        /// <param name="f"></param>
+        public static double Sqrt(double f)
+        {
+            return Math.Sqrt(f);
+        }
+
+        /// <summary>
         /// Returns square of the given value.
         /// </summary>
         /// <param name="f">The value.</param>
@@ -903,7 +933,7 @@ namespace FlaxEngine
         }
 
         /// <summary>
-        /// Checks if a and b are almost equals, taking into account the magnitude of floating point numbers (unlike <see cref="WithinEpsilon" /> method).
+        /// Checks if a and b are almost equals, taking into account the magnitude of floating point numbers (unlike <see cref="WithinEpsilon(float,float,float)" /> method).
         /// </summary>
         /// <param name="a">The left value to compare.</param>
         /// <param name="b">The right value to compare.</param>
@@ -941,7 +971,7 @@ namespace FlaxEngine
         /// <returns><c>true</c> if a almost equal to b, <c>false</c> otherwise</returns>
         public static bool NearEqual(double a, double b)
         {
-            return Math.Abs(a - b) < double.Epsilon * 10;
+            return Math.Abs(a - b) < Mathd.Epsilon;
         }
 
         /// <summary>
@@ -965,6 +995,26 @@ namespace FlaxEngine
         }
 
         /// <summary>
+        /// Determines whether the specified value is close to zero (0.0f).
+        /// </summary>
+        /// <param name="a">The floating value.</param>
+        /// <returns><c>true</c> if the specified value is close to zero (0.0f); otherwise, <c>false</c>.</returns>
+        public static bool IsZero(double a)
+        {
+            return Math.Abs(a) < Mathd.Epsilon;
+        }
+
+        /// <summary>
+        /// Determines whether the specified value is close to one (1.0f).
+        /// </summary>
+        /// <param name="a">The floating value.</param>
+        /// <returns><c>true</c> if the specified value is close to one (1.0f); otherwise, <c>false</c>.</returns>
+        public static bool IsOne(double a)
+        {
+            return Math.Abs(a - 1.0f) < Mathd.Epsilon;
+        }
+
+        /// <summary>
         /// Checks if a - b are almost equals within a float epsilon.
         /// </summary>
         /// <param name="a">The left value to compare.</param>
@@ -974,6 +1024,19 @@ namespace FlaxEngine
         public static bool WithinEpsilon(float a, float b, float epsilon)
         {
             float num = a - b;
+            return (-epsilon <= num) && (num <= epsilon);
+        }
+
+        /// <summary>
+        /// Checks if a - b are almost equals within a float epsilon.
+        /// </summary>
+        /// <param name="a">The left value to compare.</param>
+        /// <param name="b">The right value to compare.</param>
+        /// <param name="epsilon">Epsilon value</param>
+        /// <returns><c>true</c> if a almost equal to b within a float epsilon, <c>false</c> otherwise</returns>
+        public static bool WithinEpsilon(double a, double b, double epsilon)
+        {
+            double num = a - b;
             return (-epsilon <= num) && (num <= epsilon);
         }
 
@@ -997,6 +1060,30 @@ namespace FlaxEngine
         /// <param name="max">The maximum.</param>
         /// <returns><c>true</c> if the specified value is NOT in a given range; otherwise, <c>false</c>.</returns>
         public static bool IsNotInRange(float value, float min, float max)
+        {
+            return value < min || value > max;
+        }
+
+        /// <summary>
+        /// Determines whether the specified value is in a given range [min; max].
+        /// </summary>
+        /// <param name="value">The value.</param>
+        /// <param name="min">The minimum.</param>
+        /// <param name="max">The maximum.</param>
+        /// <returns><c>true</c> if the specified value is in a given range; otherwise, <c>false</c>.</returns>
+        public static bool IsInRange(double value, double min, double max)
+        {
+            return value >= min && value <= max;
+        }
+
+        /// <summary>
+        /// Determines whether the specified value is NOT in a given range [min; max].
+        /// </summary>
+        /// <param name="value">The value.</param>
+        /// <param name="min">The minimum.</param>
+        /// <param name="max">The maximum.</param>
+        /// <returns><c>true</c> if the specified value is NOT in a given range; otherwise, <c>false</c>.</returns>
+        public static bool IsNotInRange(double value, double min, double max)
         {
             return value < min || value > max;
         }
@@ -1092,17 +1179,14 @@ namespace FlaxEngine
         public static float UnwindRadians(float angle)
         {
             // TODO: make it faster?
-
             while (angle > Pi)
             {
                 angle -= TwoPi;
             }
-
             while (angle < -Pi)
             {
                 angle += TwoPi;
             }
-
             return angle;
         }
 
@@ -1114,17 +1198,14 @@ namespace FlaxEngine
         public static float UnwindDegrees(float angle)
         {
             // TODO: make it faster?
-
             while (angle > 180.0f)
             {
                 angle -= 360.0f;
             }
-
             while (angle < -180.0f)
             {
                 angle += 360.0f;
             }
-
             return angle;
         }
 
@@ -1203,10 +1284,7 @@ namespace FlaxEngine
         /// <summary>
         /// Interpolates between two values using a linear function by a given amount.
         /// </summary>
-        /// <remarks>
-        /// See http://www.encyclopediaofmath.org/index.php/Linear_interpolation and
-        /// http://fgiesen.wordpress.com/2012/08/15/linear-interpolation-past-present-and-future/
-        /// </remarks>
+        /// <remarks>See http://www.encyclopediaofmath.org/index.php/Linear_interpolation and http://fgiesen.wordpress.com/2012/08/15/linear-interpolation-past-present-and-future/</remarks>
         /// <param name="from">Value to interpolate from.</param>
         /// <param name="to">Value to interpolate to.</param>
         /// <param name="amount">Interpolation amount.</param>
@@ -1219,10 +1297,7 @@ namespace FlaxEngine
         /// <summary>
         /// Interpolates between two values using a linear function by a given amount.
         /// </summary>
-        /// <remarks>
-        /// See http://www.encyclopediaofmath.org/index.php/Linear_interpolation and
-        /// http://fgiesen.wordpress.com/2012/08/15/linear-interpolation-past-present-and-future/
-        /// </remarks>
+        /// <remarks>See http://www.encyclopediaofmath.org/index.php/Linear_interpolation and http://fgiesen.wordpress.com/2012/08/15/linear-interpolation-past-present-and-future/</remarks>
         /// <param name="from">Value to interpolate from.</param>
         /// <param name="to">Value to interpolate to.</param>
         /// <param name="amount">Interpolation amount.</param>
@@ -1235,10 +1310,7 @@ namespace FlaxEngine
         /// <summary>
         /// Interpolates between two values using a linear function by a given amount.
         /// </summary>
-        /// <remarks>
-        /// See http://www.encyclopediaofmath.org/index.php/Linear_interpolation and
-        /// http://fgiesen.wordpress.com/2012/08/15/linear-interpolation-past-present-and-future/
-        /// </remarks>
+        /// <remarks>See http://www.encyclopediaofmath.org/index.php/Linear_interpolation and http://fgiesen.wordpress.com/2012/08/15/linear-interpolation-past-present-and-future/</remarks>
         /// <param name="from">Value to interpolate from.</param>
         /// <param name="to">Value to interpolate to.</param>
         /// <param name="amount">Interpolation amount.</param>
@@ -1251,10 +1323,7 @@ namespace FlaxEngine
         /// <summary>
         /// Interpolates between two values using a linear function by a given amount.
         /// </summary>
-        /// <remarks>
-        /// See http://www.encyclopediaofmath.org/index.php/Linear_interpolation and
-        /// http://fgiesen.wordpress.com/2012/08/15/linear-interpolation-past-present-and-future/
-        /// </remarks>
+        /// <remarks>See http://www.encyclopediaofmath.org/index.php/Linear_interpolation and http://fgiesen.wordpress.com/2012/08/15/linear-interpolation-past-present-and-future/</remarks>
         /// <param name="from">Value to interpolate from.</param>
         /// <param name="to">Value to interpolate to.</param>
         /// <param name="amount">Interpolation amount.</param>
@@ -1267,29 +1336,41 @@ namespace FlaxEngine
         /// <summary>
         /// Performs smooth (cubic Hermite) interpolation between 0 and 1.
         /// </summary>
-        /// <remarks>
-        /// See https://en.wikipedia.org/wiki/Smoothstep
-        /// </remarks>
+        /// <remarks>See https://en.wikipedia.org/wiki/Smoothstep</remarks>
         /// <param name="amount">Value between 0 and 1 indicating interpolation amount.</param>
         public static float SmoothStep(float amount)
         {
-            return amount <= 0 ? 0
-                   : amount >= 1 ? 1
-                   : amount * amount * (3 - 2 * amount);
+            return amount <= 0 ? 0 : amount >= 1 ? 1 : amount * amount * (3 - 2 * amount);
+        }
+
+        /// <summary>
+        /// Performs smooth (cubic Hermite) interpolation between 0 and 1.
+        /// </summary>
+        /// <remarks>See https://en.wikipedia.org/wiki/Smoothstep</remarks>
+        /// <param name="amount">Value between 0 and 1 indicating interpolation amount.</param>
+        public static double SmoothStep(double amount)
+        {
+            return amount <= 0 ? 0 : amount >= 1 ? 1 : amount * amount * (3 - 2 * amount);
         }
 
         /// <summary>
         /// Performs a smooth(er) interpolation between 0 and 1 with 1st and 2nd order derivatives of zero at endpoints.
         /// </summary>
-        /// <remarks>
-        /// See https://en.wikipedia.org/wiki/Smoothstep
-        /// </remarks>
+        /// <remarks>See https://en.wikipedia.org/wiki/Smoothstep</remarks>
         /// <param name="amount">Value between 0 and 1 indicating interpolation amount.</param>
         public static float SmootherStep(float amount)
         {
-            return amount <= 0 ? 0
-                   : amount >= 1 ? 1
-                   : amount * amount * amount * (amount * (amount * 6 - 15) + 10);
+            return amount <= 0 ? 0 : amount >= 1 ? 1 : amount * amount * amount * (amount * (amount * 6 - 15) + 10);
+        }
+
+        /// <summary>
+        /// Performs a smooth(er) interpolation between 0 and 1 with 1st and 2nd order derivatives of zero at endpoints.
+        /// </summary>
+        /// <remarks>See https://en.wikipedia.org/wiki/Smoothstep</remarks>
+        /// <param name="amount">Value between 0 and 1 indicating interpolation amount.</param>
+        public static double SmootherStep(double amount)
+        {
+            return amount <= 0 ? 0 : amount >= 1 ? 1 : amount * amount * amount * (amount * (amount * 6 - 15) + 10);
         }
 
         /// <summary>
@@ -1302,7 +1383,6 @@ namespace FlaxEngine
         {
             if (modulo == 0.0f)
                 return value;
-
             return value % modulo;
         }
 

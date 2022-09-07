@@ -16,6 +16,7 @@
 #if USE_EDITOR
 #include "ParticleEmitterFunction.h"
 #include "Engine/ShadersCompilation/Config.h"
+#include "Engine/Particles/Graph/GPU/ParticleEmitterGraph.GPU.h"
 #if BUILD_DEBUG
 #include "Engine/Engine/Globals.h"
 #endif
@@ -26,7 +27,6 @@
 #include "Engine/Graphics/Shaders/Cache/ShaderStorage.h"
 #endif
 #if COMPILE_WITH_PARTICLE_GPU_GRAPH && COMPILE_WITH_SHADER_COMPILER
-#include "Engine/Particles/Graph/GPU/ParticleEmitterGraph.GPU.h"
 #include "Engine/Utilities/Encryption.h"
 #endif
 
@@ -43,7 +43,7 @@ ParticleEffect* ParticleEmitter::Spawn(Actor* parent, const Transform& transform
     CHECK_RETURN(!WaitForLoaded(), nullptr);
     auto system = Content::CreateVirtualAsset<ParticleSystem>();
     CHECK_RETURN(system, nullptr);
-    system->Init(this, duration);
+    system->Init(this, duration < MAX_float ? duration : 3600.0f);
 
     auto effect = New<ParticleEffect>();
     effect->SetTransform(transform);
@@ -335,6 +335,8 @@ void ParticleEmitter::InitCompilationOptions(ShaderCompilationOptions& options)
 BytesContainer ParticleEmitter::LoadSurface(bool createDefaultIfMissing)
 {
     BytesContainer result;
+    if (WaitForLoaded() && !LastLoadFailed())
+        return result;
     ScopeLock lock(Locker);
 
     // Check if has that chunk

@@ -136,6 +136,11 @@ namespace FlaxEditor.Surface
         }
 
         /// <summary>
+        /// Gets the custom text for Content Search. Can be used to include node in search results for a specific text query.
+        /// </summary>
+        public virtual string ContentSearchText => null;
+
+        /// <summary>
         /// Gets the color of the footer of the node.
         /// </summary>
         protected virtual Color FooterColor => GroupArchetype.Color;
@@ -146,9 +151,9 @@ namespace FlaxEditor.Surface
         /// <param name="width">The node area width.</param>
         /// <param name="height">The node area height.</param>
         /// <returns>The node control total size.</returns>
-        protected virtual Vector2 CalculateNodeSize(float width, float height)
+        protected virtual Float2 CalculateNodeSize(float width, float height)
         {
-            return new Vector2(width + Constants.NodeMarginX * 2, height + Constants.NodeMarginY * 2 + Constants.NodeHeaderSize + Constants.NodeFooterSize);
+            return new Float2(width + Constants.NodeMarginX * 2, height + Constants.NodeMarginY * 2 + Constants.NodeHeaderSize + Constants.NodeFooterSize);
         }
 
         /// <summary>
@@ -158,6 +163,8 @@ namespace FlaxEditor.Surface
         /// <param name="height">The height.</param>
         public void Resize(float width, float height)
         {
+            if (Surface == null)
+                return;
             Size = CalculateNodeSize(width, height);
 
             // Update boxes on width change
@@ -167,7 +174,7 @@ namespace FlaxEditor.Surface
                 {
                     if (Elements[i] is OutputBox box)
                     {
-                        box.Location = box.Archetype.Position + new Vector2(width, 0);
+                        box.Location = box.Archetype.Position + new Float2(width, 0);
                     }
                 }
             }
@@ -178,6 +185,8 @@ namespace FlaxEditor.Surface
         /// </summary>
         public void ResizeAuto()
         {
+            if (Surface == null)
+                return;
             var width = 0.0f;
             var height = 0.0f;
             var leftHeight = 0.0f;
@@ -462,10 +471,21 @@ namespace FlaxEditor.Surface
                     }
 
                     // Check if that type if part of default type
-                    if (Surface.CanUseDirectCast(type, b.Connections[0].DefaultType))
+                    if (Surface != null)
                     {
-                        type = b.Connections[0].CurrentType;
-                        break;
+                        if (Surface.CanUseDirectCast(type, b.Connections[0].DefaultType))
+                        {
+                            type = b.Connections[0].CurrentType;
+                            break;
+                        }
+                    }
+                    else
+                    {
+                        if (VisjectSurface.CanUseDirectCastStatic(type, b.Connections[0].DefaultType))
+                        {
+                            type = b.Connections[0].CurrentType;
+                            break;
+                        }
                     }
                 }
             }
@@ -753,7 +773,7 @@ namespace FlaxEditor.Surface
         /// Draws all the connections between surface objects related to this node.
         /// </summary>
         /// <param name="mousePosition">The current mouse position (in surface-space).</param>
-        public virtual void DrawConnections(ref Vector2 mousePosition)
+        public virtual void DrawConnections(ref Float2 mousePosition)
         {
             for (int j = 0; j < Elements.Count; j++)
             {
@@ -825,12 +845,12 @@ namespace FlaxEditor.Surface
         protected override bool ShowTooltip => base.ShowTooltip && _headerRect.Contains(ref _mousePosition) && !Surface.IsLeftMouseButtonDown && !Surface.IsRightMouseButtonDown && !Surface.IsPrimaryMenuOpened;
 
         /// <inheritdoc />
-        public override bool OnShowTooltip(out string text, out Vector2 location, out Rectangle area)
+        public override bool OnShowTooltip(out string text, out Float2 location, out Rectangle area)
         {
             var result = base.OnShowTooltip(out text, out _, out area);
 
             // Change the position
-            location = new Vector2(_headerRect.Width * 0.5f, _headerRect.Bottom);
+            location = new Float2(_headerRect.Width * 0.5f, _headerRect.Bottom);
 
             return result;
         }
@@ -850,13 +870,13 @@ namespace FlaxEditor.Surface
         }
 
         /// <inheritdoc />
-        public override bool OnTestTooltipOverControl(ref Vector2 location)
+        public override bool OnTestTooltipOverControl(ref Float2 location)
         {
             return _headerRect.Contains(ref location) && ShowTooltip;
         }
 
         /// <inheritdoc />
-        public override bool CanSelect(ref Vector2 location)
+        public override bool CanSelect(ref Float2 location)
         {
             return _headerRect.MakeOffsetted(Location).Contains(ref location);
         }
@@ -891,7 +911,7 @@ namespace FlaxEditor.Surface
         /// <param name="graphEdited">True if graph has been edited (nodes structure or parameter value).</param>
         public virtual void SetValue(int index, object value, bool graphEdited = true)
         {
-            if (_isDuringValuesEditing || !Surface.CanEdit)
+            if (_isDuringValuesEditing || (Surface != null && !Surface.CanEdit))
                 return;
             if (FlaxEngine.Json.JsonSerializer.ValueEquals(value, Values[index]))
                 return;
@@ -900,13 +920,14 @@ namespace FlaxEditor.Surface
 
             _isDuringValuesEditing = true;
 
-            var before = Surface.Undo != null ? (object[])Values.Clone() : null;
+            var before = Surface?.Undo != null ? (object[])Values.Clone() : null;
 
             Values[index] = value;
             OnValuesChanged();
-            Surface.MarkAsEdited(graphEdited);
+            Surface?.MarkAsEdited(graphEdited);
 
-            Surface.Undo?.AddAction(new EditNodeValuesAction(this, before, graphEdited));
+            if (Surface?.Undo != null)
+                Surface.AddBatchedUndoAction(new EditNodeValuesAction(this, before, graphEdited));
 
             _isDuringValuesEditing = false;
         }
@@ -932,7 +953,8 @@ namespace FlaxEditor.Surface
             OnValuesChanged();
             Surface.MarkAsEdited(graphEdited);
 
-            Surface.Undo?.AddAction(new EditNodeValuesAction(this, before, graphEdited));
+            if (Surface?.Undo != null)
+                Surface.AddBatchedUndoAction(new EditNodeValuesAction(this, before, graphEdited));
 
             _isDuringValuesEditing = false;
         }
@@ -948,7 +970,7 @@ namespace FlaxEditor.Surface
         public virtual void OnValuesChanged()
         {
             ValuesChanged?.Invoke();
-            Surface.OnNodeValuesEdited(this);
+            Surface?.OnNodeValuesEdited(this);
         }
 
         /// <summary>
@@ -978,7 +1000,7 @@ namespace FlaxEditor.Surface
             var style = Style.Current;
 
             // Background
-            var backgroundRect = new Rectangle(Vector2.Zero, Size);
+            var backgroundRect = new Rectangle(Float2.Zero, Size);
             Render2D.FillRectangle(backgroundRect, BackgroundColor);
 
             // Breakpoint hit
@@ -1026,7 +1048,7 @@ namespace FlaxEditor.Surface
         }
 
         /// <inheritdoc />
-        public override bool OnMouseUp(Vector2 location, MouseButton button)
+        public override bool OnMouseUp(Float2 location, MouseButton button)
         {
             if (base.OnMouseUp(location, button))
                 return true;

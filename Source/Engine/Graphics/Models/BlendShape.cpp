@@ -128,7 +128,7 @@ void BlendShapesInstance::Update(SkinnedModel* skinnedModel)
                     ASSERT_LOW_LAYER(blendShapeVertex.VertexIndex < (uint32)vertexCount);
                     VB0SkinnedElementType& vertex = *(data + blendShapeVertex.VertexIndex);
                     vertex.Position = vertex.Position + blendShapeVertex.PositionDelta * q.Second;
-                    Vector3 normal = (vertex.Normal.ToVector3() * 2.0f - 1.0f) + blendShapeVertex.NormalDelta;
+                    Float3 normal = (vertex.Normal.ToFloat3() * 2.0f - 1.0f) + blendShapeVertex.NormalDelta;
                     vertex.Normal = normal * 0.5f + 0.5f;
                 }
             }
@@ -152,11 +152,11 @@ void BlendShapesInstance::Update(SkinnedModel* skinnedModel)
             {
                 VB0SkinnedElementType& vertex = *(data + vertexIndex);
 
-                Vector3 normal = vertex.Normal.ToVector3() * 2.0f - 1.0f;
+                Float3 normal = vertex.Normal.ToFloat3() * 2.0f - 1.0f;
                 normal.Normalize();
                 vertex.Normal = normal * 0.5f + 0.5f;
 
-                Vector3 tangent = vertex.Tangent.ToVector3() * 2.0f - 1.0f;
+                Float3 tangent = vertex.Tangent.ToFloat3() * 2.0f - 1.0f;
                 tangent = tangent - ((tangent | normal) * normal);
                 tangent.Normalize();
                 const auto tangentSign = vertex.Tangent.W;

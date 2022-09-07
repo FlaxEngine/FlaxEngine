@@ -11,13 +11,11 @@
 /// <seealso cref="Actor" />
 API_CLASS(Abstract) class FLAXENGINE_API ModelInstanceActor : public Actor
 {
-DECLARE_SCENE_OBJECT_ABSTRACT(ModelInstanceActor);
+    DECLARE_SCENE_OBJECT_ABSTRACT(ModelInstanceActor);
 protected:
-
     int32 _sceneRenderingKey = -1;
 
 public:
-
     /// <summary>
     /// The model instance buffer.
     /// </summary>
@@ -62,7 +60,7 @@ public:
     /// <param name="distance">When the method completes and returns true, contains the distance of the intersection (if any valid).</param>
     /// <param name="normal">When the method completes, contains the intersection surface normal vector (if any valid).</param>
     /// <returns>True if the actor is intersected by the ray, otherwise false.</returns>
-    API_FUNCTION() virtual bool IntersectsEntry(int32 entryIndex, API_PARAM(Ref) const Ray& ray, API_PARAM(Out) float& distance, API_PARAM(Out) Vector3& normal)
+    API_FUNCTION() virtual bool IntersectsEntry(int32 entryIndex, API_PARAM(Ref) const Ray& ray, API_PARAM(Out) Real& distance, API_PARAM(Out) Vector3& normal)
     {
         return false;
     }
@@ -78,18 +76,19 @@ public:
     /// <param name="normal">When the method completes, contains the intersection surface normal vector (if any valid).</param>
     /// <param name="entryIndex">When the method completes, contains the intersection entry index (if any valid).</param>
     /// <returns>True if the actor is intersected by the ray, otherwise false.</returns>
-    API_FUNCTION() virtual bool IntersectsEntry(API_PARAM(Ref) const Ray& ray, API_PARAM(Out) float& distance, API_PARAM(Out) Vector3& normal, API_PARAM(Out) int32& entryIndex)
+    API_FUNCTION() virtual bool IntersectsEntry(API_PARAM(Ref) const Ray& ray, API_PARAM(Out) Real& distance, API_PARAM(Out) Vector3& normal, API_PARAM(Out) int32& entryIndex)
     {
         return false;
     }
 
-public:
+protected:
+    virtual void WaitForModelLoad();
 
+public:
     // [Actor]
     void OnLayerChanged() override;
 
 protected:
-
     // [Actor]
     void OnEnable() override;
     void OnDisable() override;

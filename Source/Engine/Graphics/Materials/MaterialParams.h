@@ -128,6 +128,11 @@ enum class MaterialParameterType : byte
     /// The texture sampler derived from texture group settings.
     /// </summary>
     TextureGroupSampler = 19,
+
+    /// <summary>
+    /// The Global SDF (textures and constants).
+    /// </summary>
+    GlobalSDF = 20,
 };
 
 const Char* ToString(MaterialParameterType value);
@@ -149,8 +154,8 @@ struct SerializedMaterialParam
         bool AsBool;
         int32 AsInteger;
         float AsFloat;
-        Vector2 AsVector2;
-        Vector3 AsVector3;
+        Float2 AsFloat2;
+        Float3 AsFloat3;
         Color AsColor;
         Guid AsGuid;
         byte AsData[16 * 4];
@@ -169,11 +174,10 @@ struct SerializedMaterialParam
 /// </summary>
 API_CLASS(NoSpawn) class FLAXENGINE_API MaterialParameter : public ScriptingObject
 {
-DECLARE_SCRIPTING_TYPE_WITH_CONSTRUCTOR_IMPL(MaterialParameter, ScriptingObject);
+    DECLARE_SCRIPTING_TYPE_WITH_CONSTRUCTOR_IMPL(MaterialParameter, ScriptingObject);
     friend MaterialParams;
     friend MaterialInstance;
 private:
-
     Guid _paramId;
     MaterialParameterType _type = MaterialParameterType::Invalid;
     bool _isPublic;
@@ -186,8 +190,8 @@ private:
         bool _asBool;
         int32 _asInteger;
         float _asFloat;
-        Vector2 _asVector2;
-        Vector3 _asVector3;
+        Float2 _asVector2;
+        Float3 _asVector3;
         Color _asColor;
         byte AsData[16 * 4];
     };
@@ -197,7 +201,6 @@ private:
     String _name;
 
 public:
-
     MaterialParameter(const MaterialParameter& other)
         : MaterialParameter()
     {
@@ -215,7 +218,6 @@ public:
     }
 
 public:
-
     /// <summary>
     /// Gets the parameter ID (not the parameter instance Id but the original parameter ID).
     /// </summary>
@@ -281,7 +283,6 @@ public:
     }
 
 public:
-
     /// <summary>
     /// Gets the value of the parameter.
     /// </summary>
@@ -295,7 +296,6 @@ public:
     API_PROPERTY() void SetValue(const Variant& value);
 
 public:
-
     /// <summary>
     /// The material parameter binding metadata.
     /// </summary>
@@ -341,11 +341,9 @@ public:
     bool HasContentLoaded() const;
 
 private:
-
     void clone(const MaterialParameter* param);
 
 public:
-
     bool operator==(const MaterialParameter& other) const;
 
     // [Object]
@@ -359,25 +357,21 @@ class FLAXENGINE_API MaterialParams : public Array<MaterialParameter>
 {
     friend MaterialInstance;
 private:
-
     int32 _versionHash = 0;
 
 public:
-
     MaterialParameter* Get(const Guid& id);
     MaterialParameter* Get(const StringView& name);
     int32 Find(const Guid& id);
     int32 Find(const StringView& name);
 
 public:
-
     /// <summary>
     /// Gets the parameters version hash. Every time the parameters are modified (loaded, edited, etc.) the hash changes. Can be used to sync instanced parameters collection.
     /// </summary>
     int32 GetVersionHash() const;
 
 public:
-
     /// <summary>
     /// Binds the parameters to the pipeline.
     /// </summary>
@@ -424,7 +418,6 @@ public:
     static void Save(BytesContainer& data, const Array<SerializedMaterialParam>* params);
 
 public:
-
 #if USE_EDITOR
 
     /// <summary>
@@ -438,6 +431,5 @@ public:
     bool HasContentLoaded() const;
 
 private:
-
     void UpdateHash();
 };

@@ -14,7 +14,6 @@ class Task;
 class FLAXENGINE_API ITextureOwner
 {
 public:
-
     /// <summary>
     /// Gets the texture owner mutex used to synchronize texture logic.
     /// </summary>

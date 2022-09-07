@@ -1,5 +1,6 @@
 // Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
+using System;
 using FlaxEditor.Tools.Terrain.Brushes;
 using FlaxEngine;
 
@@ -101,8 +102,8 @@ namespace FlaxEditor.Tools.Terrain.Sculpt
                 var brushBoundsPatchLocalMax = (brushBoundsLocal.Maximum - patchPositionLocal) * unitsPerVertexInv;
 
                 // Calculate patch heightmap area to modify by brush
-                var brushPatchMin = new Int2(Mathf.FloorToInt(brushBoundsPatchLocalMin.X), Mathf.FloorToInt(brushBoundsPatchLocalMin.Z));
-                var brushPatchMax = new Int2(Mathf.CeilToInt(brushBoundsPatchLocalMax.X), Mathf.FloorToInt(brushBoundsPatchLocalMax.Z));
+                var brushPatchMin = new Int2((int)Math.Floor(brushBoundsPatchLocalMin.X), (int)Math.Floor(brushBoundsPatchLocalMin.Z));
+                var brushPatchMax = new Int2((int)Math.Ceiling(brushBoundsPatchLocalMax.X), (int)Math.Ceiling(brushBoundsPatchLocalMax.Z));
                 var modifiedOffset = brushPatchMin;
                 var modifiedSize = brushPatchMax - brushPatchMin;
 
@@ -128,9 +129,7 @@ namespace FlaxEditor.Tools.Terrain.Sculpt
                 float* sourceHeights = EditHoles ? null : TerrainTools.GetHeightmapData(terrain, ref patch.PatchCoord);
                 byte* sourceHoles = EditHoles ? TerrainTools.GetHolesMaskData(terrain, ref patch.PatchCoord) : null;
                 if (sourceHeights == null && sourceHoles == null)
-                {
-                    throw new FlaxException("Cannot modify terrain. Loading heightmap failed. See log for more info.");
-                }
+                    throw new Exception("Cannot modify terrain. Loading heightmap failed. See log for more info.");
 
                 // Record patch data before editing it
                 if (!gizmo.CurrentEditUndoAction.HashPatch(ref patch.PatchCoord))

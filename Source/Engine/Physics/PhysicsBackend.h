@@ -94,6 +94,7 @@ public:
     static void SetSceneEnableCCD(void* scene, bool value);
     static float GetSceneBounceThresholdVelocity(void* scene);
     static void SetSceneBounceThresholdVelocity(void* scene, float value);
+    static void SetSceneOrigin(void* scene, const Vector3& oldOrigin, const Vector3& newOrigin);
     static void AddSceneActor(void* scene, void* actor);
     static void RemoveSceneActor(void* scene, void* actor);
     static void AddSceneActorAction(void* scene, void* actor, ActionType action);
@@ -131,8 +132,9 @@ public:
     static ActorFlags GetActorFlags(void* actor);
     static void SetActorFlags(void* actor, ActorFlags value);
     static void GetActorBounds(void* actor, BoundingBox& bounds);
-    static void* CreateRigidDynamicActor(IPhysicsActor* actor, const Vector3& position, const Quaternion& orientation);
-    static void* CreateRigidStaticActor(IPhysicsActor* actor, const Vector3& position, const Quaternion& orientation);
+    static int32 GetRigidActorShapesCount(void* actor);
+    static void* CreateRigidDynamicActor(IPhysicsActor* actor, const Vector3& position, const Quaternion& orientation, void* scene);
+    static void* CreateRigidStaticActor(IPhysicsActor* actor, const Vector3& position, const Quaternion& orientation, void* scene);
     static RigidDynamicFlags GetRigidDynamicActorFlags(void* actor);
     static void SetRigidDynamicActorFlags(void* actor, RigidDynamicFlags value);
     static void GetRigidActorPose(void* actor, Vector3& position, Quaternion& orientation);
@@ -146,10 +148,10 @@ public:
     static Vector3 GetRigidDynamicActorAngularVelocity(void* actor);
     static void SetRigidDynamicActorAngularVelocity(void* actor, const Vector3& value, bool wakeUp);
     static Vector3 GetRigidDynamicActorCenterOfMass(void* actor);
-    static void SetRigidDynamicActorCenterOfMassOffset(void* actor, const Vector3& value);
+    static void SetRigidDynamicActorCenterOfMassOffset(void* actor, const Float3& value);
     static bool GetRigidDynamicActorIsSleeping(void* actor);
-    static void GetRigidActorSleep(void* actor);
-    static void GetRigidDynamicActorWakeUp(void* actor);
+    static void RigidDynamicActorSleep(void* actor);
+    static void RigidDynamicActorWakeUp(void* actor);
     static float GetRigidDynamicActorSleepThreshold(void* actor);
     static void SetRigidDynamicActorSleepThreshold(void* actor, float value);
     static float GetRigidDynamicActorMaxDepenetrationVelocity(void* actor);
@@ -256,8 +258,8 @@ public:
     static void* CreateConvexMesh(byte* data, int32 dataSize, BoundingBox& localBounds);
     static void* CreateTriangleMesh(byte* data, int32 dataSize, BoundingBox& localBounds);
     static void* CreateHeightField(byte* data, int32 dataSize);
-    static void GetConvexMeshTriangles(void* contextMesh, Array<Vector3, HeapAllocation>& vertexBuffer, Array<int32, HeapAllocation>& indexBuffer);
-    static void GetTriangleMeshTriangles(void* triangleMesh, Array<Vector3, HeapAllocation>& vertexBuffer, Array<int32, HeapAllocation>& indexBuffer);
+    static void GetConvexMeshTriangles(void* contextMesh, Array<Float3, HeapAllocation>& vertexBuffer, Array<int32, HeapAllocation>& indexBuffer);
+    static void GetTriangleMeshTriangles(void* triangleMesh, Array<Float3, HeapAllocation>& vertexBuffer, Array<int32, HeapAllocation>& indexBuffer);
     static const uint32* GetTriangleMeshRemap(void* triangleMesh, uint32& count);
     static void GetHeightFieldSize(void* heightField, int32& rows, int32& columns);
     static float GetHeightFieldHeight(void* heightField, float x, float z);

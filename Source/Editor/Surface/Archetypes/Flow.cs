@@ -94,8 +94,8 @@ namespace FlaxEditor.Surface.Archetypes
 
                 Resize(140, 40 + (count - 1) * 20);
 
-                _addButton.Location = new Vector2(Width - _addButton.Width - FlaxEditor.Surface.Constants.NodeMarginX, Height - 20 - FlaxEditor.Surface.Constants.NodeMarginY - FlaxEditor.Surface.Constants.NodeFooterSize);
-                _removeButton.Location = new Vector2(_addButton.X - _removeButton.Width - 4, _addButton.Y);
+                _addButton.Location = new Float2(Width - _addButton.Width - FlaxEditor.Surface.Constants.NodeMarginX, Height - 20 - FlaxEditor.Surface.Constants.NodeMarginY - FlaxEditor.Surface.Constants.NodeFooterSize);
+                _removeButton.Location = new Float2(_addButton.X - _removeButton.Width - 4, _addButton.Y);
             }
         }
 
@@ -217,7 +217,7 @@ namespace FlaxEditor.Surface.Archetypes
                 AlternativeTitles = new[] { "branch" },
                 Description = "Branches the logic flow into two paths based on the conditional value.",
                 Flags = NodeFlags.VisualScriptGraph,
-                Size = new Vector2(160, 40),
+                Size = new Float2(160, 40),
                 Elements = new[]
                 {
                     NodeElementArchetype.Factory.Input(0, string.Empty, false, typeof(void), 0),
@@ -233,7 +233,7 @@ namespace FlaxEditor.Surface.Archetypes
                 AlternativeTitles = new[] { "loop" },
                 Description = "Iterates over the range of indices, starting from first index and with given iterations count.",
                 Flags = NodeFlags.VisualScriptGraph,
-                Size = new Vector2(160, 80),
+                Size = new Float2(160, 80),
                 DefaultValues = new object[] { 0, 0 },
                 Elements = new[]
                 {
@@ -252,7 +252,7 @@ namespace FlaxEditor.Surface.Archetypes
                 Title = "While Loop",
                 Description = "Iterates in the loop until the given condition is True.",
                 Flags = NodeFlags.VisualScriptGraph,
-                Size = new Vector2(160, 80),
+                Size = new Float2(160, 80),
                 Elements = new[]
                 {
                     NodeElementArchetype.Factory.Input(0, string.Empty, false, typeof(void), 0),
@@ -270,7 +270,7 @@ namespace FlaxEditor.Surface.Archetypes
                 Create = (id, context, arch, groupArch) => new SequenceNode(id, context, arch, groupArch),
                 Description = "Performs a series of actions in a sequence (one after the another).",
                 Flags = NodeFlags.VisualScriptGraph,
-                Size = new Vector2(140, 80),
+                Size = new Float2(140, 80),
                 DefaultValues = new object[] { 2 },
                 Elements = new[]
                 {
@@ -284,7 +284,7 @@ namespace FlaxEditor.Surface.Archetypes
                 Create = (id, context, arch, groupArch) => new BranchOnEnumNode(id, context, arch, groupArch),
                 Description = "Performs the flow logic branch based on the enum value",
                 Flags = NodeFlags.VisualScriptGraph,
-                Size = new Vector2(160, 60),
+                Size = new Float2(160, 60),
                 DefaultValues = new object[] { Utils.GetEmptyArray<byte>() },
                 ConnectionsHints = ConnectionsHint.Enum,
                 Elements = new[]
@@ -299,7 +299,7 @@ namespace FlaxEditor.Surface.Archetypes
                 Title = "Delay",
                 Description = "Delays the graph execution. If delay is 0 then it will pass though.",
                 Flags = NodeFlags.VisualScriptGraph,
-                Size = new Vector2(150, 40),
+                Size = new Float2(150, 40),
                 DefaultValues = new object[] { 1.0f },
                 Elements = new[]
                 {
@@ -315,7 +315,7 @@ namespace FlaxEditor.Surface.Archetypes
                 AlternativeTitles = new[] { "foreach" },
                 Description = "Iterates over the array items.",
                 Flags = NodeFlags.VisualScriptGraph,
-                Size = new Vector2(160, 80),
+                Size = new Float2(160, 80),
                 ConnectionsHints = ConnectionsHint.Array,
                 IndependentBoxes = new int[] { 1 },
                 DependentBoxes = new int[] { 4, },
@@ -328,6 +328,29 @@ namespace FlaxEditor.Surface.Archetypes
                     NodeElementArchetype.Factory.Output(0, "Loop", typeof(void), 3, true),
                     NodeElementArchetype.Factory.Output(1, "Item", typeof(object), 4),
                     NodeElementArchetype.Factory.Output(2, "Index", typeof(int), 5),
+                    NodeElementArchetype.Factory.Output(3, "Done", typeof(void), 6, true),
+                }
+            },
+            new NodeArchetype
+            {
+                TypeID = 8,
+                Title = "Dictionary For Each",
+                AlternativeTitles = new[] { "foreach" },
+                Description = "Iterates over the dictionary items.",
+                Flags = NodeFlags.VisualScriptGraph,
+                Size = new Float2(180, 80),
+                ConnectionsHints = ConnectionsHint.Dictionary,
+                IndependentBoxes = new int[] { 4 },
+                DependentBoxes = new int[] { 1, 2, },
+                DependentBoxFilter = Collections.GetDictionaryItemType,
+                Elements = new[]
+                {
+                    NodeElementArchetype.Factory.Input(0, string.Empty, false, typeof(void), 0),
+                    NodeElementArchetype.Factory.Input(1, "Dictionary", true, null, 4),
+                    NodeElementArchetype.Factory.Input(2, "Break", false, typeof(void), 5),
+                    NodeElementArchetype.Factory.Output(0, "Loop", typeof(void), 3, true),
+                    NodeElementArchetype.Factory.Output(1, "Key", typeof(object), 1),
+                    NodeElementArchetype.Factory.Output(2, "Value", typeof(object), 2),
                     NodeElementArchetype.Factory.Output(3, "Done", typeof(void), 6, true),
                 }
             },

@@ -9,7 +9,7 @@
 /// </summary>
 API_STRUCT() struct FLAXENGINE_API Rectangle
 {
-DECLARE_SCRIPTING_TYPE_MINIMAL(Rectangle);
+    DECLARE_SCRIPTING_TYPE_MINIMAL(Rectangle);
 
     /// <summary>
     /// The empty rectangle.
@@ -17,19 +17,17 @@ DECLARE_SCRIPTING_TYPE_MINIMAL(Rectangle);
     static Rectangle Empty;
 
 public:
-
     /// <summary>
     /// Rectangle location (coordinates of the upper-left corner)
     /// </summary>
-    API_FIELD() Vector2 Location;
+    API_FIELD() Float2 Location;
 
     /// <summary>
     /// Rectangle size
     /// </summary>
-    API_FIELD() Vector2 Size;
+    API_FIELD() Float2 Size;
 
 public:
-
     /// <summary>
     /// Empty constructor.
     /// </summary>
@@ -51,18 +49,16 @@ public:
     // Init
     // @param location Rectangle location point
     // @param width Rectangle size
-    Rectangle(const Vector2& location, const Vector2& size)
+    Rectangle(const Float2& location, const Float2& size)
         : Location(location)
         , Size(size)
     {
     }
 
 public:
-
     String ToString() const;
 
 public:
-
     // Returns width of the rectangle
     float GetWidth() const
     {
@@ -112,44 +108,43 @@ public:
     }
 
     // Gets position of the upper left corner of the rectangle
-    Vector2 GetUpperLeft() const
+    Float2 GetUpperLeft() const
     {
         return Location;
     }
 
     // Gets position of the upper right corner of the rectangle
-    Vector2 GetUpperRight() const
+    Float2 GetUpperRight() const
     {
-        return Location + Vector2(Size.X, 0);
+        return Location + Float2(Size.X, 0);
     }
 
     // Gets position of the bottom right corner of the rectangle
-    Vector2 GetBottomRight() const
+    Float2 GetBottomRight() const
     {
         return Location + Size;
     }
 
     // Gets position of the bottom left corner of the rectangle
-    Vector2 GetBottomLeft() const
+    Float2 GetBottomLeft() const
     {
-        return Location + Vector2(0, Size.Y);
+        return Location + Float2(0, Size.Y);
     }
 
     /// <summary>
     /// Gets center position of the rectangle
     /// </summary>
     /// <returns>Center point</returns>
-    Vector2 GetCenter() const
+    Float2 GetCenter() const
     {
         return Location + Size * 0.5f;
     }
 
 public:
-
     // Offset rectangle Location point
     // @param v Offset to add
     // @returns Result rectangle
-    Rectangle operator+(const Vector2& v) const
+    Rectangle operator+(const Float2& v) const
     {
         return Rectangle(Location + v, Size);
     }
@@ -157,18 +152,18 @@ public:
     // Offset rectangle Location point
     // @param v Offset to subtract
     // @returns Result rectangle
-    Rectangle operator-(const Vector2& v) const
+    Rectangle operator-(const Float2& v) const
     {
         return Rectangle(Location - v, Size);
     }
 
-    Rectangle& operator+=(const Vector2& b)
+    Rectangle& operator+=(const Float2& b)
     {
         Offset(b);
         return *this;
     }
 
-    Rectangle& operator-=(const Vector2& b)
+    Rectangle& operator-=(const Float2& b)
     {
         Offset(-b);
         return *this;
@@ -208,23 +203,21 @@ public:
     }
 
 public:
-
     static bool NearEqual(const Rectangle& a, const Rectangle& b)
     {
-        return Vector2::NearEqual(a.Location, b.Location) && Vector2::NearEqual(a.Size, b.Size);
+        return Float2::NearEqual(a.Location, b.Location) && Float2::NearEqual(a.Size, b.Size);
     }
 
     static bool NearEqual(const Rectangle& a, const Rectangle& b, float epsilon)
     {
-        return Vector2::NearEqual(a.Location, b.Location, epsilon) && Vector2::NearEqual(a.Size, b.Size, epsilon);
+        return Float2::NearEqual(a.Location, b.Location, epsilon) && Float2::NearEqual(a.Size, b.Size, epsilon);
     }
 
 public:
-
     // Checks if rectangle contains given point
     // @param location Point location to check
     // @returns True if point is inside rectangle's area
-    bool Contains(const Vector2& location) const;
+    bool Contains(const Float2& location) const;
 
     // Determines whether this rectangle entirely contains a specified rectangle
     // @param value The rectangle to evaluate
@@ -237,7 +230,6 @@ public:
     bool Intersects(const Rectangle& value) const;
 
 public:
-
     // Offset rectangle position
     // @param x X coordinate offset
     // @param y Y coordinate offset
@@ -245,15 +237,14 @@ public:
 
     // Offset rectangle position
     // @param offset X and Y coordinate offset
-    void Offset(const Vector2& offset);
+    void Offset(const Float2& offset);
 
     // Make offseted rectangle
     // @param offset X and Y coordinate offset
     // @returns Offseted rectangle
-    Rectangle MakeOffsetted(const Vector2& offset) const;
+    Rectangle MakeOffsetted(const Float2& offset) const;
 
 public:
-
     // Expand rectangle area in all directions by given amount
     // @param toExpand Amount of units to expand a rectangle
     void Expand(float toExpand);
@@ -264,7 +255,6 @@ public:
     Rectangle MakeExpanded(float toExpand) const;
 
 public:
-
     // Scale rectangle area in all directions by given amount
     // @param scale Scale value to expand a rectangle
     void Scale(float scale);
@@ -275,12 +265,11 @@ public:
     Rectangle MakeScaled(float scale) const;
 
 public:
-
     // Calculates a rectangle that contains the union of rectangle and the arbitrary point
     // @param a The rectangle
     // @param b The point
     // @returns Rectangle that contains both rectangle and the point
-    static Rectangle Union(const Rectangle& a, const Vector2& b);
+    static Rectangle Union(const Rectangle& a, const Float2& b);
 
     // Calculates a rectangle that contains the union of a and b rectangles
     // @param a First rectangle
@@ -298,9 +287,9 @@ public:
     // @param p1 First point
     // @param p2 Second point
     // @returns Rectangle that contains both p1 and p2
-    static Rectangle FromPoints(const Vector2& p1, const Vector2& p2);
+    static Rectangle FromPoints(const Float2& p1, const Float2& p2);
 
-    static Rectangle FromPoints(Vector2* points, int32 pointsCount);
+    static Rectangle FromPoints(Float2* points, int32 pointsCount);
 };
 
 template<>

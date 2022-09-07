@@ -97,7 +97,7 @@ namespace FlaxEditor.Tools.Terrain.Brushes
         }
 
         /// <inheritdoc />
-        public override MaterialInstance GetBrushMaterial(ref Vector3 position, ref Color color)
+        public override MaterialInstance GetBrushMaterial(ref RenderContext renderContext, ref Vector3 position, ref Color color)
         {
             var material = CacheMaterial(EditorAssets.TerrainCircleBrushMaterial);
             if (material)
@@ -108,8 +108,8 @@ namespace FlaxEditor.Tools.Terrain.Brushes
                 float falloff = halfSize * Falloff;
                 float radius = halfSize - falloff;
                 material.SetParameterValue("Color", color);
-                material.SetParameterValue("BrushData0", new Vector4(position, radius));
-                material.SetParameterValue("BrushData1", new Vector4(falloff, (float)FalloffType, 0, 0));
+                material.SetParameterValue("BrushData0", new Float4(position - renderContext.View.Origin, radius));
+                material.SetParameterValue("BrushData1", new Float4(falloff, (float)FalloffType, 0, 0));
             }
             return material;
         }
@@ -118,16 +118,17 @@ namespace FlaxEditor.Tools.Terrain.Brushes
         public override float Sample(ref Vector3 brushPosition, ref Vector3 samplePosition)
         {
             Vector3.DistanceXZ(ref brushPosition, ref samplePosition, out var distanceXZ);
+            float distance = (float)distanceXZ;
             float halfSize = Size * 0.5f;
             float falloff = halfSize * Falloff;
             float radius = halfSize - falloff;
 
             switch (FalloffType)
             {
-            case FalloffTypes.Smooth: return CalculateFalloff_Smooth(distanceXZ, radius, falloff);
-            case FalloffTypes.Linear: return CalculateFalloff_Linear(distanceXZ, radius, falloff);
-            case FalloffTypes.Spherical: return CalculateFalloff_Spherical(distanceXZ, radius, falloff);
-            case FalloffTypes.Tip: return CalculateFalloff_Tip(distanceXZ, radius, falloff);
+            case FalloffTypes.Smooth: return CalculateFalloff_Smooth(distance, radius, falloff);
+            case FalloffTypes.Linear: return CalculateFalloff_Linear(distance, radius, falloff);
+            case FalloffTypes.Spherical: return CalculateFalloff_Spherical(distance, radius, falloff);
+            case FalloffTypes.Tip: return CalculateFalloff_Tip(distance, radius, falloff);
             default: throw new ArgumentOutOfRangeException();
             }
         }

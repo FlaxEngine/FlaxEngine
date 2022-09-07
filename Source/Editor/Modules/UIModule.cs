@@ -58,6 +58,7 @@ namespace FlaxEditor.Modules
         private ContextMenuButton _menuToolsBakeAllEnvProbes;
         private ContextMenuButton _menuToolsBuildCSGMesh;
         private ContextMenuButton _menuToolsBuildNavMesh;
+        private ContextMenuButton _menuToolsBuildAllMesgesSDF;
         private ContextMenuButton _menuToolsCancelBuilding;
         private ContextMenuButton _menuToolsSetTheCurrentSceneViewAsDefault;
         private ContextMenuChildMenu _menuWindowApplyWindowLayout;
@@ -326,7 +327,7 @@ namespace FlaxEditor.Modules
             {
                 mainWindow.AddChild(new CustomWindowBorderControl
                 {
-                    Size = Vector2.Zero,
+                    Size = Float2.Zero,
                 });
             }
         }
@@ -397,19 +398,31 @@ namespace FlaxEditor.Modules
             var dialog = new ColorPickerDialog(initialValue, colorChanged, pickerClosed, useDynamicEditing);
             dialog.Show(targetControl);
 
-            // Place dialog nearby the target control
             if (targetControl != null)
             {
+                // Place dialog nearby the target control
                 var targetControlDesktopCenter = targetControl.PointToScreen(targetControl.Size * 0.5f);
                 var desktopSize = Platform.GetMonitorBounds(targetControlDesktopCenter);
-                var pos = targetControlDesktopCenter + new Vector2(10.0f, -dialog.Height * 0.5f);
+                var pos = targetControlDesktopCenter + new Float2(10.0f, -dialog.Height * 0.5f);
                 var dialogEnd = pos + dialog.Size;
-                var desktopEnd = desktopSize.BottomRight - new Vector2(10.0f);
+                var desktopEnd = desktopSize.BottomRight - new Float2(10.0f);
                 if (dialogEnd.X >= desktopEnd.X || dialogEnd.Y >= desktopEnd.Y)
-                    pos = targetControl.PointToScreen(Vector2.Zero) - new Vector2(10.0f + dialog.Width, dialog.Height);
+                    pos = targetControl.PointToScreen(Float2.Zero) - new Float2(10.0f + dialog.Width, dialog.Height);
                 var desktopBounds = Platform.VirtualDesktopBounds;
-                pos = Vector2.Clamp(pos, desktopBounds.UpperLeft, desktopBounds.BottomRight - dialog.Size);
+                pos = Float2.Clamp(pos, desktopBounds.UpperLeft, desktopBounds.BottomRight - dialog.Size);
                 dialog.RootWindow.Window.Position = pos;
+
+                // Register for context menu (prevent auto-closing context menu when selecting color)
+                var c = targetControl;
+                while (c != null)
+                {
+                    if (c is ContextMenuBase cm)
+                    {
+                        cm.ExternalPopups.Add(dialog.RootWindow?.Window);
+                        break;
+                    }
+                    c = c.Parent;
+                }
             }
 
             return dialog;
@@ -484,6 +497,7 @@ namespace FlaxEditor.Modules
             _menuToolsBakeAllEnvProbes = cm.AddButton("Bake all env probes", BakeAllEnvProbes);
             _menuToolsBuildCSGMesh = cm.AddButton("Build CSG mesh", BuildCSG);
             _menuToolsBuildNavMesh = cm.AddButton("Build Nav Mesh", BuildNavMesh);
+            _menuToolsBuildAllMesgesSDF = cm.AddButton("Build all meshes SDF", BuildAllMeshesSDF);
             cm.AddSeparator();
             cm.AddButton("Game Cooker", Editor.Windows.GameCookerWin.FocusOrShow);
             _menuToolsCancelBuilding = cm.AddButton("Cancel building game", () => GameCooker.Cancel());
@@ -511,6 +525,7 @@ namespace FlaxEditor.Modules
             cm.AddButton("Graphics Quality", Editor.Windows.GraphicsQualityWin.FocusOrShow);
             cm.AddButton("Game Cooker", Editor.Windows.GameCookerWin.FocusOrShow);
             cm.AddButton("Profiler", Editor.Windows.ProfilerWin.FocusOrShow);
+            cm.AddButton("Content Search", Editor.ContentFinding.ShowSearch);
             cm.AddButton("Visual Script Debugger", Editor.Windows.VisualScriptDebuggerWin.FocusOrShow);
             cm.AddSeparator();
             cm.AddButton("Save window layout", Editor.Windows.SaveLayout);
@@ -708,6 +723,7 @@ namespace FlaxEditor.Modules
             _menuToolsBakeLightmaps.Text = isBakingLightmaps ? "Cancel baking lightmaps" : "Bake lightmaps";
             _menuToolsClearLightmaps.Enabled = canEdit;
             _menuToolsBakeAllEnvProbes.Enabled = canEdit;
+            _menuToolsBuildAllMesgesSDF.Enabled = canEdit && !isBakingLightmaps;
             _menuToolsBuildCSGMesh.Enabled = canEdit;
             _menuToolsBuildNavMesh.Enabled = canEdit;
             _menuToolsCancelBuilding.Enabled = GameCooker.IsRunning;
@@ -833,6 +849,24 @@ namespace FlaxEditor.Modules
             var scenes = Level.Scenes;
             scenes.ToList().ForEach(x => Navigation.BuildNavMesh(x, 0));
             Editor.Scene.MarkSceneEdited(scenes);
+        }
+
+        private void BuildAllMeshesSDF()
+        {
+            // TODO: async maybe with progress reporting?
+            Editor.Scene.ExecuteOnGraph(node =>
+            {
+                if (node is StaticModelNode staticModelNode && staticModelNode.Actor is StaticModel staticModel)
+                {
+                    if (staticModel.DrawModes.HasFlag(DrawPass.GlobalSDF) && staticModel.Model != null && !staticModel.Model.IsVirtual && staticModel.Model.SDF.Texture == null)
+                    {
+                        Editor.Log("Generating SDF for " + staticModel.Model);
+                        if (!staticModel.Model.GenerateSDF())
+                            staticModel.Model.Save();
+                    }
+                }
+                return true;
+            });
         }
 
         private void SetTheCurrentSceneViewAsDefault()

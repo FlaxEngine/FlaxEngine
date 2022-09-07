@@ -142,6 +142,7 @@ static VKAPI_ATTR VkBool32 VKAPI_PTR DebugUtilsCallback(VkDebugUtilsMessageSever
         case 7060244: //  Image Operand Offset can only be used with OpImage*Gather operations
         case -1539028524: // SortedIndices is null so Vulkan backend sets it to default R32_SFLOAT format which is not good for UINT format of the buffer
         case -1810835948: // SortedIndices is null so Vulkan backend sets it to default R32_SFLOAT format which is not good for UINT format of the buffer
+        case -1621360350: // VkFramebufferCreateInfo attachment #0 has a layer count (1) smaller than the corresponding framebuffer layer count (64). The Vulkan spec states: If flags does not include VK_FRAMEBUFFER_CREATE_IMAGELESS_BIT, each element of pAttachments that is used as an input, color, resolve, or depth/stencil attachment by renderPass must have been created with a VkImageViewCreateInfo::subresourceRange.layerCount greater than or equal to layers
             return VK_FALSE;
         }
         break;
@@ -209,11 +210,25 @@ static VKAPI_ATTR VkBool32 VKAPI_PTR DebugUtilsCallback(VkDebugUtilsMessageSever
         type = TEXT("Perf");
     }
 
-    if (callbackData->pMessageIdName)
-        LOG(Info, "[Vulkan] {0} {1}:{2}({3}) {4}", type, severity, callbackData->messageIdNumber, String(callbackData->pMessageIdName), String(callbackData->pMessage));
-    else
-        LOG(Info, "[Vulkan] {0} {1}:{2} {3}", type, severity, callbackData->messageIdNumber, String(callbackData->pMessage));
+    // Fix invalid characters in hex values (bug in Debug Layer)
+    char* handleStart = (char*)StringUtils::FindIgnoreCase(callbackData->pMessage, "0x");
+    while (handleStart != nullptr)
+    {
+        while (*handleStart != ' ' && *handleStart != 0)
+        {
+            *handleStart = Math::Clamp<char>(*handleStart, '0', 'z');
+            handleStart++;
+        }
+        if (*handleStart == 0)
+            break;
+        handleStart = (char*)StringUtils::FindIgnoreCase(handleStart, "0x");
+    }
 
+    const String message(callbackData->pMessage);
+    if (callbackData->pMessageIdName)
+        LOG(Info, "[Vulkan] {0} {1}:{2}({3}) {4}", type, severity, callbackData->messageIdNumber, String(callbackData->pMessageIdName), message);
+    else
+        LOG(Info, "[Vulkan] {0} {1}:{2} {3}", type, severity, callbackData->messageIdNumber, message);
     return VK_FALSE;
 }
 

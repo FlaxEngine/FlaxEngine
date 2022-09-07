@@ -54,6 +54,8 @@ AssetChunksFlag AnimationGraphFunction::getChunksToPreload() const
 BytesContainer AnimationGraphFunction::LoadSurface() const
 {
     BytesContainer result;
+    if (WaitForLoaded())
+        return result;
     ScopeLock lock(Locker);
     result.Link(GraphData);
     return result;
@@ -145,7 +147,6 @@ void AnimationGraphFunction::ProcessGraphForSignature(AnimGraphBase* graph, bool
                 p.Type = GetGraphFunctionTypeName_Deprecated(node.Values[0]);
 #endif
                 p.Name = name;
-
             }
         }
         else if (node.Type == GRAPH_NODE_MAKE_TYPE(16, 2)) // Function Output

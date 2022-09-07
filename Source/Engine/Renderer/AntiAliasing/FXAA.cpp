@@ -7,12 +7,19 @@
 #include "Engine/Graphics/Graphics.h"
 #include "Engine/Graphics/RenderTask.h"
 
+PACK_STRUCT(struct Data
+    {
+    Float4 ScreenSize;
+    });
+
+String FXAA::ToString() const
+{
+    return TEXT("FXAA");
+}
+
 bool FXAA::Init()
 {
-    // Create pipeline state
     _psFXAA.CreatePipelineStates();
-
-    // Load shader
     _shader = Content::LoadAsyncInternal<Shader>(TEXT("Shaders/FXAA"));
     if (_shader == nullptr)
         return true;
@@ -25,21 +32,17 @@ bool FXAA::Init()
 
 bool FXAA::setupResources()
 {
-    // Check shader
     if (!_shader->IsLoaded())
     {
         return true;
     }
     const auto shader = _shader->GetShader();
-
-    // Validate shader constant buffer size
     if (shader->GetCB(0)->GetSize() != sizeof(Data))
     {
         REPORT_INVALID_SHADER_PASS_CB_SIZE(shader, 0, Data);
         return true;
     }
 
-    // Create pipeline state
     GPUPipelineState::Description psDesc;
     if (!_psFXAA.IsValid())
     {
@@ -56,7 +59,6 @@ void FXAA::Dispose()
     // Base
     RendererPass::Dispose();
 
-    // Cleanup
     _psFXAA.Delete();
     _shader = nullptr;
 }
@@ -64,9 +66,6 @@ void FXAA::Dispose()
 void FXAA::Render(RenderContext& renderContext, GPUTexture* input, GPUTextureView* output)
 {
     auto context = GPUDevice::Instance->GetMainContext();
-    const auto qualityLevel = Math::Clamp(static_cast<int32>(Graphics::AAQuality), 0, static_cast<int32>(Quality::MAX) - 1);
-
-    // Ensure to have valid data
     if (checkIfSkipPass())
     {
         // Resources are missing. Do not perform rendering, just copy input frame.
@@ -74,7 +73,6 @@ void FXAA::Render(RenderContext& renderContext, GPUTexture* input, GPUTextureVie
         context->Draw(input);
         return;
     }
-
     PROFILE_GPU_CPU("Fast Approximate Antialiasing");
 
     // Bind input
@@ -87,6 +85,7 @@ void FXAA::Render(RenderContext& renderContext, GPUTexture* input, GPUTextureVie
 
     // Render
     context->SetRenderTarget(output);
+    const auto qualityLevel = Math::Clamp(static_cast<int32>(Graphics::AAQuality), 0, static_cast<int32>(Quality::MAX) - 1);
     context->SetState(_psFXAA.Get(qualityLevel));
     context->DrawFullscreenTriangle();
 }

@@ -90,7 +90,7 @@ namespace FlaxEditor.Windows
 
             protected override bool ShowTooltip => true;
 
-            public override bool OnShowTooltip(out string text, out Vector2 location, out Rectangle area)
+            public override bool OnShowTooltip(out string text, out Float2 location, out Rectangle area)
             {
                 if (TooltipText == null)
                     TooltipText = Editor.Instance.CodeDocs.GetTooltip(_type);
@@ -124,7 +124,7 @@ namespace FlaxEditor.Windows
                 UseScroll = true,
                 AnchorPreset = AnchorPresets.StretchAll,
                 Offsets = Margin.Zero,
-                TabsSize = new Vector2(120, 32),
+                TabsSize = new Float2(120, 32),
                 Parent = this,
             };
 
@@ -223,7 +223,7 @@ namespace FlaxEditor.Windows
                 if (!QueryFilterHelper.Match(filterText, text, out QueryFilterHelper.Range[] ranges))
                     continue;
 
-                var item = _groupSearch.AddChild(CreateActorItem(CustomEditors.CustomEditorsUtil.GetPropertyNameUI(text), actorType));
+                var item = _groupSearch.AddChild(CreateActorItem(Utilities.Utils.GetPropertyNameUI(text), actorType));
 
                 var highlights = new List<Rectangle>(ranges.Length);
                 var style = Style.Current;
@@ -327,7 +327,7 @@ namespace FlaxEditor.Windows
             {
                 AnchorPreset = AnchorPresets.StretchAll,
                 Offsets = Margin.Zero,
-                TabsSize = new Vector2(tabSize, tabSize),
+                TabsSize = new Float2(tabSize, tabSize),
                 Parent = this
             };
 

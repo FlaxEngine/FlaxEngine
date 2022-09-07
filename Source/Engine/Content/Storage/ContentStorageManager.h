@@ -14,14 +14,12 @@ class FlaxPackage;
 class FLAXENGINE_API ContentStorageManager
 {
 public:
-
     /// <summary>
     /// Auto-release timeout for unused asset chunks.
     /// </summary>
     static TimeSpan UnusedDataChunksLifetime;
 
 public:
-
     /// <summary>
     /// Gets the assets data storage container.
     /// </summary>
@@ -78,7 +76,6 @@ public:
     static void EnsureUnlocked();
 
 public:
-
     /// <summary>
     /// Determines whether the specified path can be a binary asset file (based on it's extension).
     /// </summary>
@@ -94,7 +91,6 @@ public:
     static bool IsFlaxStorageExtension(const String& extension);
 
 public:
-
     /// <summary>
     /// Gets the packages.
     /// </summary>

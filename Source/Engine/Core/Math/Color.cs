@@ -2,6 +2,7 @@
 
 using System;
 using System.ComponentModel;
+using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
@@ -173,7 +174,6 @@ namespace FlaxEngine
                 throw new ArgumentNullException(nameof(values));
             if (values.Length != 4)
                 throw new ArgumentOutOfRangeException(nameof(values), "There must be four and only four input values for Color.");
-
             R = values[0];
             G = values[1];
             B = values[2];
@@ -193,9 +193,7 @@ namespace FlaxEngine
         /// Determines whether the specified <see cref="Color" /> is equal to this instance.
         /// </summary>
         /// <param name="other">The <see cref="Color" /> to compare with this instance.</param>
-        /// <returns>
-        /// <c>true</c> if the specified <see cref="Color" /> is equal to this instance; otherwise, <c>false</c>.
-        /// </returns>
+        /// <returns><c>true</c> if the specified <see cref="Color" /> is equal to this instance; otherwise, <c>false</c>.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool Equals(ref Color other)
         {
@@ -231,9 +229,23 @@ namespace FlaxEngine
         }
 
         /// <summary>
+        /// Creates <see cref="Color"/> from the RGBA value.
+        /// </summary>
+        /// <param name="rgb">The packed RGBA value.</param>
+        /// <returns>The color.</returns>
+        public static Color FromRGBA(uint rgb)
+        {
+            return new Color(
+                             ((rgb >> 16) & 0xff) / 255.0f,
+                             ((rgb >> 8) & 0xff) / 255.0f,
+                             (rgb & 0xff) / 255.0f,
+                             ((rgb >> 24) & 0xff) / 255.0f);
+        }
+
+        /// <summary>
         /// Gets the color value as the hexadecimal string.
         /// </summary>
-        /// <returns></returns>
+        /// <returns>Hex string.</returns>
         public string ToHexString()
         {
             const string digits = "0123456789ABCDEF";
@@ -259,6 +271,46 @@ namespace FlaxEngine
 
             return new string(result);
         }
+        
+        /// <summary>
+        /// Creates <see cref="Color"/> from the text string (hex or color name).
+        /// </summary>
+        /// <param name="text">The color string (hex or color name).</param>
+        /// <returns>The color.</returns>
+        public static Color Parse(string text)
+        {
+            if (TryParse(text, out Color value))
+                return value;
+            throw new FormatException();
+        }
+
+        /// <summary>
+        /// Creates <see cref="Color"/> from the string (hex or color name).
+        /// </summary>
+        /// <param name="text">The color string (hex or color name).</param>
+        /// <param name="value">Output value.</param>
+        /// <returns>True if value has been parsed, otherwise false.</returns>
+        public static bool TryParse(string text, out Color value)
+        {
+            // Try hexadecimal
+            if (text.StartsWith("#") && TryParseHex(text, out value))
+                return true;
+
+            // Try named color
+            if (text.Length > 2)
+            {
+                var fieldName = char.ToUpperInvariant(text[0]) + text.Substring(1).ToLowerInvariant();
+                var field = typeof(Color).GetField(fieldName, BindingFlags.Public | BindingFlags.Static);
+                if (field != null && fieldName != "Zero")
+                {
+                    value = (Color)field.GetValue(null);
+                    return true;
+                }
+            }
+
+            value = Black;
+            return false;
+        }
 
         /// <summary>
         /// Creates <see cref="Color"/> from the hexadecimal string.
@@ -283,25 +335,12 @@ namespace FlaxEngine
         public static bool TryParseHex(string hexString, out Color value)
         {
             value = Black;
-
             if (string.IsNullOrEmpty(hexString))
                 return false;
 
             int r, g, b, a = 255;
-
             int startIndex = hexString[0] == '#' ? 1 : 0;
-
-            if (hexString.Length == 3 + startIndex)
-            {
-                r = StringUtils.HexDigit(hexString[startIndex++]);
-                g = StringUtils.HexDigit(hexString[startIndex++]);
-                b = StringUtils.HexDigit(hexString[startIndex]);
-
-                r = (r << 4) + r;
-                g = (g << 4) + g;
-                b = (b << 4) + b;
-            }
-            else if (hexString.Length == 6 + startIndex)
+            if (hexString.Length == 6 + startIndex)
             {
                 r = (StringUtils.HexDigit(hexString[startIndex + 0]) << 4) + StringUtils.HexDigit(hexString[startIndex + 1]);
                 g = (StringUtils.HexDigit(hexString[startIndex + 2]) << 4) + StringUtils.HexDigit(hexString[startIndex + 3]);
@@ -394,36 +433,12 @@ namespace FlaxEngine
         }
 
         /// <summary>
-        /// Converts the color into a three component vector.
-        /// </summary>
-        /// <returns>A three component vector containing the red, green, and blue components of the color.</returns>
-        public Vector3 ToVector3()
-        {
-            return new Vector3(R, G, B);
-        }
-
-        /// <summary>
-        /// Converts the color into a four component vector.
-        /// </summary>
-        /// <returns>A four component vector containing all four color components.</returns>
-        public Vector4 ToVector4()
-        {
-            return new Vector4(R, G, B, A);
-        }
-
-        /// <summary>
         /// Creates an array containing the elements of the color.
         /// </summary>
         /// <returns>A four-element array containing the components of the color.</returns>
         public float[] ToArray()
         {
-            return new[]
-            {
-                R,
-                G,
-                B,
-                A
-            };
+            return new[] { R, G, B, A };
         }
 
         /// <summary>
@@ -520,7 +535,7 @@ namespace FlaxEngine
         /// <param name="hsv">The HSV color.</param>
         /// <param name="alpha">The alpha value. Default is 1.</param>
         /// <returns>The RGB color.</returns>
-        public static Color FromHSV(Vector3 hsv, float alpha = 1.0f)
+        public static Color FromHSV(Float3 hsv, float alpha = 1.0f)
         {
             return FromHSV(hsv.X, hsv.Y, hsv.Z, alpha);
         }
@@ -593,12 +608,50 @@ namespace FlaxEngine
         }
 
         /// <summary>
+        /// Performs an implicit conversion from <see cref="Color"/> to <see cref="Float3"/>.
+        /// </summary>
+        /// <param name="c">The color.</param>
+        /// <returns>The result of the conversion.</returns>
+        public static implicit operator Float3(Color c)
+        {
+            return new Vector3(c.R, c.G, c.B);
+        }
+
+        /// <summary>
+        /// Performs an implicit conversion from <see cref="Color"/> to <see cref="Float4"/>.
+        /// </summary>
+        /// <param name="c">The color.</param>
+        /// <returns>The result of the conversion.</returns>
+        public static implicit operator Float4(Color c)
+        {
+            return new Float4(c.R, c.G, c.B, c.A);
+        }
+
+        /// <summary>
+        /// Performs an implicit conversion from <see cref="Float4"/> to <see cref="Color"/>.
+        /// </summary>
+        /// <param name="v">The vector.</param>
+        /// <returns>The result of the conversion.</returns>
+        public static implicit operator Color(Float4 v)
+        {
+            return new Color(v.X, v.Y, v.Z, v.W);
+        }
+
+        /// <summary>
+        /// Performs an implicit conversion from <see cref="Float3"/> to <see cref="Color"/>.
+        /// </summary>
+        /// <param name="v">The vector.</param>
+        /// <returns>The result of the conversion.</returns>
+        public static implicit operator Color(Float3 v)
+        {
+            return new Color(v.X, v.Y, v.Z);
+        }
+
+        /// <summary>
         /// Performs an implicit conversion from <see cref="Color"/> to <see cref="Vector3"/>.
         /// </summary>
         /// <param name="c">The color.</param>
-        /// <returns>
-        /// The result of the conversion.
-        /// </returns>
+        /// <returns>The result of the conversion.</returns>
         public static implicit operator Vector3(Color c)
         {
             return new Vector3(c.R, c.G, c.B);
@@ -608,9 +661,7 @@ namespace FlaxEngine
         /// Performs an implicit conversion from <see cref="Color"/> to <see cref="Vector4"/>.
         /// </summary>
         /// <param name="c">The color.</param>
-        /// <returns>
-        /// The result of the conversion.
-        /// </returns>
+        /// <returns>The result of the conversion.</returns>
         public static implicit operator Vector4(Color c)
         {
             return new Vector4(c.R, c.G, c.B, c.A);
@@ -620,24 +671,20 @@ namespace FlaxEngine
         /// Performs an implicit conversion from <see cref="Vector4"/> to <see cref="Color"/>.
         /// </summary>
         /// <param name="v">The vector.</param>
-        /// <returns>
-        /// The result of the conversion.
-        /// </returns>
+        /// <returns>The result of the conversion.</returns>
         public static implicit operator Color(Vector4 v)
         {
-            return new Color(v.X, v.Y, v.Z, v.W);
+            return new Color((float)v.X, (float)v.Y, (float)v.Z, (float)v.W);
         }
 
         /// <summary>
         /// Performs an implicit conversion from <see cref="Vector3"/> to <see cref="Color"/>.
         /// </summary>
         /// <param name="v">The vector.</param>
-        /// <returns>
-        /// The result of the conversion.
-        /// </returns>
+        /// <returns>The result of the conversion.</returns>
         public static implicit operator Color(Vector3 v)
         {
-            return new Color(v.X, v.Y, v.Z);
+            return new Color((float)v.X, (float)v.Y, (float)v.Z);
         }
 
         /// <summary>
@@ -718,7 +765,7 @@ namespace FlaxEngine
         /// Gets Hue[0-360], Saturation[0-1] and Value[0-1] from RGB color.
         /// </summary>
         /// <returns>The HSV color.</returns>
-        public Vector3 ToHSV()
+        public Float3 ToHSV()
         {
             float rgbMin = Mathf.Min(R, G, B);
             float rgbMax = Mathf.Max(R, G, B);
@@ -739,7 +786,7 @@ namespace FlaxEngine
             float saturation = Mathf.IsZero(rgbMax) ? 0.0f : rgbRange / rgbMax;
             float value = rgbMax;
 
-            return new Vector3(hue, saturation, value);
+            return new Float3(hue, saturation, value);
         }
 
         /// <summary>
@@ -864,9 +911,7 @@ namespace FlaxEngine
         /// </summary>
         /// <param name="left">The first source color.</param>
         /// <param name="right">The second source color.</param>
-        /// <param name="result">
-        /// When the method completes, contains an new color composed of the largest components of the source colors.
-        /// </param>
+        /// <param name="result">When the method completes, contains an new color composed of the largest components of the source colors.</param>
         public static void Max(ref Color left, ref Color right, out Color result)
         {
             result = new Color(
@@ -894,9 +939,7 @@ namespace FlaxEngine
         /// </summary>
         /// <param name="left">The first source color.</param>
         /// <param name="right">The second source color.</param>
-        /// <param name="result">
-        /// When the method completes, contains an new color composed of the smallest components of the source colors.
-        /// </param>
+        /// <param name="result">When the method completes, contains an new color composed of the smallest components of the source colors.</param>
         public static void Min(ref Color left, ref Color right, out Color result)
         {
             result = new Color(

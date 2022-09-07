@@ -336,7 +336,7 @@ void StringUtils::PathRemoveRelativeParts(String& path)
     Array<String> components;
     path.Split(TEXT('/'), components);
 
-    Array<String> stack;
+    Array<String, InlinedAllocation<16>> stack;
     for (auto& bit : components)
     {
         if (bit == TEXT(".."))
@@ -365,7 +365,7 @@ void StringUtils::PathRemoveRelativeParts(String& path)
         }
     }
 
-    const bool isRooted = path.StartsWith(TEXT('/'));
+    const bool isRooted = path.StartsWith(TEXT('/')) || (path.Length() >= 2 && path[0] == '.' && path[1] == '/');
     path.Clear();
     for (auto& e : stack)
         path /= e;

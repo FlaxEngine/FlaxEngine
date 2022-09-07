@@ -14,7 +14,6 @@ class SceneLightmapsData;
 class Lightmap
 {
 private:
-
     SceneLightmapsData* _manager;
     int32 _index;
 #if USE_EDITOR
@@ -23,7 +22,6 @@ private:
     AssetReference<Texture> _textures[3];
 
 public:
-
     /// <summary>
     /// Initializes a new instance of the <see cref="Lightmap"/> class.
     /// </summary>
@@ -33,7 +31,6 @@ public:
     Lightmap(SceneLightmapsData* manager, int32 index, const SavedLightmapInfo& info);
 
 public:
-
     /// <summary>
     /// Gets attached texture objects
     /// </summary>
@@ -99,7 +96,6 @@ public:
     bool IsReady() const;
 
 private:
-
 #if USE_EDITOR
     bool OnInitLightmap(class TextureData& image);
 #endif

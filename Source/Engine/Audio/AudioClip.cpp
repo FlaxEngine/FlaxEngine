@@ -277,6 +277,11 @@ bool AudioClip::ExtractDataRaw(Array<byte>& resultData, AudioDataInfo& resultDat
     return true;
 }
 
+void AudioClip::CancelStreaming()
+{
+    CancelStreamingTasks();
+}
+
 int32 AudioClip::GetMaxResidency() const
 {
     return _totalChunks;
@@ -336,6 +341,15 @@ Task* AudioClip::CreateStreamingTask(int32 residency)
         result = _streamingTask;
 
     return result;
+}
+
+void AudioClip::CancelStreamingTasks()
+{
+    if (_streamingTask)
+    {
+        _streamingTask->Cancel();
+        ASSERT_LOW_LAYER(_streamingTask == nullptr);
+    }
 }
 
 bool AudioClip::init(AssetInitData& initData)
@@ -434,7 +448,7 @@ Asset::LoadResult AudioClip::load()
             LOG(Warning, "Audio data decode failed (OggVorbisDecoder).");
             return LoadResult::InvalidData;
         }
-        AudioBackend::Buffer::Write(bufferId, outTmp.Get(), AudioHeader.Info);
+        AudioBackend::Buffer::Write(bufferId, outTmp.Get(), outInfo);
 #endif
         break;
     }

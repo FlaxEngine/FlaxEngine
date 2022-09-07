@@ -191,16 +191,7 @@ namespace FlaxEditor.Modules
             // Show Game widow if hidden
             if (gameWin != null && gameWin.FocusOnPlay)
             {
-                if (!gameWin.IsDocked)
-                {
-                    gameWin.ShowFloating();
-                }
-                else if (!gameWin.IsSelected)
-                {
-                    gameWin.SelectTab(false);
-                    gameWin.RootWindow?.Window?.Focus();
-                    FlaxEngine.GUI.RootControl.GameRoot.Focus();
-                }
+                gameWin.FocusGameViewport();
             }
 
             Editor.Log("[PlayMode] Enter");
@@ -231,7 +222,7 @@ namespace FlaxEditor.Modules
                 if (_isPlayModeRequested)
                 {
                     // Check if editor has been compiled and scripting reloaded (there is no pending reload action)
-                    if ((ScriptsBuilder.IsReady || !Editor.Options.Options.General.AutoReloadScriptsOnMainWindowFocus) && !Level.IsAnyActionPending)
+                    if ((ScriptsBuilder.IsReady || !Editor.Options.Options.General.AutoReloadScriptsOnMainWindowFocus) && !Level.IsAnyActionPending && Level.IsAnySceneLoaded)
                     {
                         // Clear flag
                         _isPlayModeRequested = false;

@@ -46,19 +46,16 @@ int32 NavMeshRuntime::GetTilesCapacity() const
 bool NavMeshRuntime::FindDistanceToWall(const Vector3& startPosition, NavMeshHit& hitInfo, float maxDistance) const
 {
     ScopeLock lock(Locker);
-
     const auto query = GetNavMeshQuery();
     if (!query || !_navMesh)
-    {
         return false;
-    }
 
     dtQueryFilter filter;
     InitFilter(filter);
-    Vector3 extent = Properties.DefaultQueryExtent;
+    Float3 extent = Properties.DefaultQueryExtent;
 
-    Vector3 startPositionNavMesh;
-    Vector3::Transform(startPosition, Properties.Rotation, startPositionNavMesh);
+    Float3 startPositionNavMesh;
+    Float3::Transform(startPosition, Properties.Rotation, startPositionNavMesh);
 
     dtPolyRef startPoly = 0;
     query->findNearestPoly(&startPositionNavMesh.X, &extent.X, &filter, &startPoly, nullptr);
@@ -67,15 +64,16 @@ bool NavMeshRuntime::FindDistanceToWall(const Vector3& startPosition, NavMeshHit
         return false;
     }
 
-    if (!dtStatusSucceed(query->findDistanceToWall(startPoly, &startPosition.X, maxDistance, &filter, &hitInfo.Distance, &hitInfo.Position.X, &hitInfo.Normal.X)))
+    Float3 hitPosition, hitNormal;
+    if (!dtStatusSucceed(query->findDistanceToWall(startPoly, &startPositionNavMesh.X, maxDistance, &filter, &hitInfo.Distance, &hitPosition.X, &hitNormal.X)))
     {
         return false;
     }
 
     Quaternion invRotation;
     Quaternion::Invert(Properties.Rotation, invRotation);
-    Vector3::Transform(hitInfo.Position, invRotation, hitInfo.Position);
-    Vector3::Transform(hitInfo.Normal, invRotation, hitInfo.Normal);
+    Vector3::Transform(hitPosition, invRotation, hitInfo.Position);
+    Vector3::Transform(hitNormal, invRotation, hitInfo.Normal);
 
     return true;
 }
@@ -84,20 +82,17 @@ bool NavMeshRuntime::FindPath(const Vector3& startPosition, const Vector3& endPo
 {
     resultPath.Clear();
     ScopeLock lock(Locker);
-
     const auto query = GetNavMeshQuery();
     if (!query || !_navMesh)
-    {
         return false;
-    }
 
     dtQueryFilter filter;
     InitFilter(filter);
-    Vector3 extent = Properties.DefaultQueryExtent;
+    Float3 extent = Properties.DefaultQueryExtent;
 
-    Vector3 startPositionNavMesh, endPositionNavMesh;
-    Vector3::Transform(startPosition, Properties.Rotation, startPositionNavMesh);
-    Vector3::Transform(endPosition, Properties.Rotation, endPositionNavMesh);
+    Float3 startPositionNavMesh, endPositionNavMesh;
+    Float3::Transform(startPosition, Properties.Rotation, startPositionNavMesh);
+    Float3::Transform(endPosition, Properties.Rotation, endPositionNavMesh);
 
     dtPolyRef startPoly = 0;
     query->findNearestPoly(&startPositionNavMesh.X, &extent.X, &filter, &startPoly, nullptr);
@@ -128,22 +123,24 @@ bool NavMeshRuntime::FindPath(const Vector3& startPosition, const Vector3& endPo
         // TODO: skip adding 2nd end point if it's not reachable (use navmesh raycast check? or physics check? or local Z distance check?)
         resultPath.Resize(2);
         resultPath[0] = startPosition;
-        resultPath[1] = startPositionNavMesh;
-        query->closestPointOnPolyBoundary(startPoly, &endPositionNavMesh.X, &resultPath[1].X);
+        query->closestPointOnPolyBoundary(startPoly, &endPositionNavMesh.X, &endPositionNavMesh.X);
+        resultPath[1] = endPositionNavMesh;
         Vector3::Transform(resultPath[1], invRotation, resultPath[1]);
     }
     else
     {
-        int straightPathCount = 0;
-        resultPath.EnsureCapacity(NAV_MESH_PATH_MAX_SIZE);
-        const auto findStraightPathStatus = query->findStraightPath(&startPositionNavMesh.X, &endPositionNavMesh.X, path, pathSize, (float*)resultPath.Get(), nullptr, nullptr, &straightPathCount, resultPath.Capacity(), DT_STRAIGHTPATH_AREA_CROSSINGS);
+        int pathPointsCount = 0;
+        Float3 pathPoints[NAV_MESH_PATH_MAX_SIZE];
+        const auto findStraightPathStatus = query->findStraightPath(&startPositionNavMesh.X, &endPositionNavMesh.X, path, pathSize, (float*)&pathPoints, nullptr, nullptr, &pathPointsCount, NAV_MESH_PATH_MAX_SIZE, DT_STRAIGHTPATH_AREA_CROSSINGS);
         if (dtStatusFailed(findStraightPathStatus))
         {
             return false;
         }
-        resultPath.Resize(straightPathCount);
-        for (auto& pos : resultPath)
-            Vector3::Transform(pos, invRotation, pos);
+        resultPath.Resize(pathPointsCount);
+        for (int32 i = 0; i < pathPointsCount; i++)
+        {
+            Vector3::Transform(pathPoints[i], invRotation, resultPath[i]);
+        }
     }
 
     return true;
@@ -152,20 +149,17 @@ bool NavMeshRuntime::FindPath(const Vector3& startPosition, const Vector3& endPo
 bool NavMeshRuntime::TestPath(const Vector3& startPosition, const Vector3& endPosition) const
 {
     ScopeLock lock(Locker);
-
     const auto query = GetNavMeshQuery();
     if (!query || !_navMesh)
-    {
         return false;
-    }
 
     dtQueryFilter filter;
     InitFilter(filter);
-    Vector3 extent = Properties.DefaultQueryExtent;
+    Float3 extent = Properties.DefaultQueryExtent;
 
-    Vector3 startPositionNavMesh, endPositionNavMesh;
-    Vector3::Transform(startPosition, Properties.Rotation, startPositionNavMesh);
-    Vector3::Transform(endPosition, Properties.Rotation, endPositionNavMesh);
+    Float3 startPositionNavMesh, endPositionNavMesh;
+    Float3::Transform(startPosition, Properties.Rotation, startPositionNavMesh);
+    Float3::Transform(endPosition, Properties.Rotation, endPositionNavMesh);
 
     dtPolyRef startPoly = 0;
     query->findNearestPoly(&startPositionNavMesh.X, &extent.X, &filter, &startPoly, nullptr);
@@ -199,22 +193,20 @@ bool NavMeshRuntime::TestPath(const Vector3& startPosition, const Vector3& endPo
 bool NavMeshRuntime::ProjectPoint(const Vector3& point, Vector3& result) const
 {
     ScopeLock lock(Locker);
-
     const auto query = GetNavMeshQuery();
     if (!query || !_navMesh)
-    {
         return false;
-    }
 
     dtQueryFilter filter;
     InitFilter(filter);
-    Vector3 extent = Properties.DefaultQueryExtent;
+    Float3 extent = Properties.DefaultQueryExtent;
 
-    Vector3 pointNavMesh;
-    Vector3::Transform(point, Properties.Rotation, pointNavMesh);
+    Float3 pointNavMesh;
+    Float3::Transform(point, Properties.Rotation, pointNavMesh);
 
     dtPolyRef startPoly = 0;
-    query->findNearestPoly(&pointNavMesh.X, &extent.X, &filter, &startPoly, &result.X);
+    Float3 nearestPt;
+    query->findNearestPoly(&pointNavMesh.X, &extent.X, &filter, &startPoly, &nearestPt.X);
     if (!startPoly)
     {
         return false;
@@ -222,7 +214,7 @@ bool NavMeshRuntime::ProjectPoint(const Vector3& point, Vector3& result) const
 
     Quaternion invRotation;
     Quaternion::Invert(Properties.Rotation, invRotation);
-    Vector3::Transform(result, invRotation, result);
+    Vector3::Transform(nearestPt, invRotation, result);
 
     return true;
 }
@@ -230,18 +222,16 @@ bool NavMeshRuntime::ProjectPoint(const Vector3& point, Vector3& result) const
 bool NavMeshRuntime::FindRandomPoint(Vector3& result) const
 {
     ScopeLock lock(Locker);
-
     const auto query = GetNavMeshQuery();
     if (!query || !_navMesh)
-    {
         return false;
-    }
 
     dtQueryFilter filter;
     InitFilter(filter);
 
     dtPolyRef randomPoly = 0;
-    query->findRandomPoint(&filter, Random::Rand, &randomPoly, &result.X);
+    Float3 randomPt;
+    query->findRandomPoint(&filter, Random::Rand, &randomPoly, &randomPt.X);
     if (!randomPoly)
     {
         return false;
@@ -249,7 +239,7 @@ bool NavMeshRuntime::FindRandomPoint(Vector3& result) const
 
     Quaternion invRotation;
     Quaternion::Invert(Properties.Rotation, invRotation);
-    Vector3::Transform(result, invRotation, result);
+    Vector3::Transform(randomPt, invRotation, result);
 
     return true;
 }
@@ -257,19 +247,16 @@ bool NavMeshRuntime::FindRandomPoint(Vector3& result) const
 bool NavMeshRuntime::FindRandomPointAroundCircle(const Vector3& center, float radius, Vector3& result) const
 {
     ScopeLock lock(Locker);
-
     const auto query = GetNavMeshQuery();
     if (!query || !_navMesh)
-    {
         return false;
-    }
 
     dtQueryFilter filter;
     InitFilter(filter);
-    Vector3 extent = Properties.DefaultQueryExtent;
+    Float3 extent = Properties.DefaultQueryExtent;
 
-    Vector3 centerNavMesh;
-    Vector3::Transform(center, Properties.Rotation, centerNavMesh);
+    Float3 centerNavMesh;
+    Float3::Transform(center, Properties.Rotation, centerNavMesh);
 
     dtPolyRef centerPoly = 0;
     query->findNearestPoly(&centerNavMesh.X, &extent.X, &filter, &centerPoly, nullptr);
@@ -279,7 +266,8 @@ bool NavMeshRuntime::FindRandomPointAroundCircle(const Vector3& center, float ra
     }
 
     dtPolyRef randomPoly = 0;
-    query->findRandomPointAroundCircle(centerPoly, &centerNavMesh.X, radius, &filter, Random::Rand, &randomPoly, &result.X);
+    Float3 randomPt;
+    query->findRandomPointAroundCircle(centerPoly, &centerNavMesh.X, radius, &filter, Random::Rand, &randomPoly, &randomPt.X);
     if (!randomPoly)
     {
         return false;
@@ -287,7 +275,7 @@ bool NavMeshRuntime::FindRandomPointAroundCircle(const Vector3& center, float ra
 
     Quaternion invRotation;
     Quaternion::Invert(Properties.Rotation, invRotation);
-    Vector3::Transform(result, invRotation, result);
+    Vector3::Transform(randomPt, invRotation, result);
 
     return true;
 }
@@ -295,20 +283,17 @@ bool NavMeshRuntime::FindRandomPointAroundCircle(const Vector3& center, float ra
 bool NavMeshRuntime::RayCast(const Vector3& startPosition, const Vector3& endPosition, NavMeshHit& hitInfo) const
 {
     ScopeLock lock(Locker);
-
     const auto query = GetNavMeshQuery();
     if (!query || !_navMesh)
-    {
         return false;
-    }
 
     dtQueryFilter filter;
     InitFilter(filter);
-    Vector3 extent = Properties.DefaultQueryExtent;
+    Float3 extent = Properties.DefaultQueryExtent;
 
-    Vector3 startPositionNavMesh, endPositionNavMesh;
-    Vector3::Transform(startPosition, Properties.Rotation, startPositionNavMesh);
-    Vector3::Transform(endPosition, Properties.Rotation, endPositionNavMesh);
+    Float3 startPositionNavMesh, endPositionNavMesh;
+    Float3::Transform(startPosition, Properties.Rotation, startPositionNavMesh);
+    Float3::Transform(endPosition, Properties.Rotation, endPositionNavMesh);
 
     dtPolyRef startPoly = 0;
     query->findNearestPoly(&startPositionNavMesh.X, &extent.X, &filter, &startPoly, nullptr);
@@ -331,7 +316,7 @@ bool NavMeshRuntime::RayCast(const Vector3& startPosition, const Vector3& endPos
         hitInfo.Position = startPosition + (endPosition - startPosition) * hit.t;
         hitInfo.Distance = hit.t;
     }
-    hitInfo.Normal = *(Vector3*)&hit.hitNormal;
+    hitInfo.Normal = *(Float3*)&hit.hitNormal;
 
     return result;
 }
@@ -358,12 +343,10 @@ void NavMeshRuntime::SetTileSize(float tileSize)
 void NavMeshRuntime::EnsureCapacity(int32 tilesToAddCount)
 {
     ScopeLock lock(Locker);
-
     const int32 newTilesCount = _tiles.Count() + tilesToAddCount;
     const int32 capacity = GetTilesCapacity();
     if (newTilesCount <= capacity)
         return;
-
     PROFILE_CPU_NAMED("NavMeshRuntime.EnsureCapacity");
 
     // Navmesh tiles capacity growing rule
@@ -432,14 +415,11 @@ void NavMeshRuntime::EnsureCapacity(int32 tilesToAddCount)
 
 void NavMeshRuntime::AddTiles(NavMesh* navMesh)
 {
-    // Skip if no data
     ASSERT(navMesh);
     if (navMesh->Data.Tiles.IsEmpty())
         return;
     auto& data = navMesh->Data;
-
     PROFILE_CPU_NAMED("NavMeshRuntime.AddTiles");
-
     ScopeLock lock(Locker);
 
     // Validate data (must match navmesh) or init navmesh to match the tiles options
@@ -470,9 +450,7 @@ void NavMeshRuntime::AddTile(NavMesh* navMesh, NavMeshTileData& tileData)
 {
     ASSERT(navMesh);
     auto& data = navMesh->Data;
-
     PROFILE_CPU_NAMED("NavMeshRuntime.AddTile");
-
     ScopeLock lock(Locker);
 
     // Validate data (must match navmesh) or init navmesh to match the tiles options
@@ -509,11 +487,8 @@ void NavMeshRuntime::RemoveTiles(NavMesh* navMesh)
 void NavMeshRuntime::RemoveTile(int32 x, int32 y, int32 layer)
 {
     ScopeLock lock(Locker);
-
-    // Skip if no data
     if (!_navMesh)
         return;
-
     PROFILE_CPU_NAMED("NavMeshRuntime.RemoveTile");
 
     const auto tileRef = _navMesh->getTileRefAt(x, y, layer);
@@ -541,12 +516,9 @@ void NavMeshRuntime::RemoveTile(int32 x, int32 y, int32 layer)
 void NavMeshRuntime::RemoveTiles(bool (* prediction)(const NavMeshRuntime* navMesh, const NavMeshTile& tile, void* customData), void* userData)
 {
     ScopeLock lock(Locker);
-
-    // Skip if no data
     ASSERT(prediction);
     if (!_navMesh)
         return;
-
     PROFILE_CPU_NAMED("NavMeshRuntime.RemoveTiles");
 
     for (int32 i = 0; i < _tiles.Count(); i++)
@@ -585,22 +557,22 @@ void DrawPoly(NavMeshRuntime* navMesh, const Matrix& navMeshToWorld, const dtMes
     const Color color = Color::Lerp(navMesh->Properties.Color, areaColor, areaColor.A);
     const float drawOffsetY = 10.0f + ((float)GetHash(color) / (float)MAX_uint32) * 10.0f; // Apply some offset to prevent Z-fighting for different navmeshes
     const Color fillColor = color * 0.5f;
-    const Color edgesColor = Color::FromHSV(color.ToHSV() + Vector3(20.0f, 0, -0.1f), color.A);
+    const Color edgesColor = Color::FromHSV(color.ToHSV() + Float3(20.0f, 0, -0.1f), color.A);
 
     for (int i = 0; i < pd.triCount; i++)
     {
-        Vector3 v[3];
+        Float3 v[3];
         const unsigned char* t = &tile.detailTris[(pd.triBase + i) * 4];
 
         for (int k = 0; k < 3; k++)
         {
             if (t[k] < poly.vertCount)
             {
-                v[k] = *(Vector3*)&tile.verts[poly.verts[t[k]] * 3];
+                v[k] = *(Float3*)&tile.verts[poly.verts[t[k]] * 3];
             }
             else
             {
-                v[k] = *(Vector3*)&tile.detailVerts[(pd.vertBase + t[k] - poly.vertCount) * 3];
+                v[k] = *(Float3*)&tile.detailVerts[(pd.vertBase + t[k] - poly.vertCount) * 3];
             }
         }
 
@@ -608,9 +580,9 @@ void DrawPoly(NavMeshRuntime* navMesh, const Matrix& navMeshToWorld, const dtMes
         v[1].Y += drawOffsetY;
         v[2].Y += drawOffsetY;
 
-        Vector3::Transform(v[0], navMeshToWorld, v[0]);
-        Vector3::Transform(v[1], navMeshToWorld, v[1]);
-        Vector3::Transform(v[2], navMeshToWorld, v[2]);
+        Float3::Transform(v[0], navMeshToWorld, v[0]);
+        Float3::Transform(v[1], navMeshToWorld, v[1]);
+        Float3::Transform(v[2], navMeshToWorld, v[2]);
 
         DEBUG_DRAW_TRIANGLE(v[0], v[1], v[2], fillColor, 0, true);
     }
@@ -618,23 +590,23 @@ void DrawPoly(NavMeshRuntime* navMesh, const Matrix& navMeshToWorld, const dtMes
     for (int k = 0; k < pd.triCount; k++)
     {
         const unsigned char* t = &tile.detailTris[(pd.triBase + k) * 4];
-        Vector3 v[3];
+        Float3 v[3];
 
         for (int m = 0; m < 3; m++)
         {
             if (t[m] < poly.vertCount)
-                v[m] = *(Vector3*)&tile.verts[poly.verts[t[m]] * 3];
+                v[m] = *(Float3*)&tile.verts[poly.verts[t[m]] * 3];
             else
-                v[m] = *(Vector3*)&tile.detailVerts[(pd.vertBase + (t[m] - poly.vertCount)) * 3];
+                v[m] = *(Float3*)&tile.detailVerts[(pd.vertBase + (t[m] - poly.vertCount)) * 3];
         }
 
         v[0].Y += drawOffsetY;
         v[1].Y += drawOffsetY;
         v[2].Y += drawOffsetY;
 
-        Vector3::Transform(v[0], navMeshToWorld, v[0]);
-        Vector3::Transform(v[1], navMeshToWorld, v[1]);
-        Vector3::Transform(v[2], navMeshToWorld, v[2]);
+        Float3::Transform(v[0], navMeshToWorld, v[0]);
+        Float3::Transform(v[1], navMeshToWorld, v[1]);
+        Float3::Transform(v[2], navMeshToWorld, v[2]);
 
         for (int m = 0, n = 2; m < 3; n = m++)
         {
@@ -650,7 +622,6 @@ void DrawPoly(NavMeshRuntime* navMesh, const Matrix& navMeshToWorld, const dtMes
 void NavMeshRuntime::DebugDraw()
 {
     ScopeLock lock(Locker);
-
     const dtNavMesh* dtNavMesh = GetNavMesh();
     const int tilesCount = dtNavMesh ? dtNavMesh->getMaxTiles() : 0;
     if (tilesCount == 0)

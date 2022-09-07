@@ -67,7 +67,7 @@ namespace FlaxEditor.GUI.Docking
         /// <param name="size">Window client area size.</param>
         /// <param name="startPosition">Window start position.</param>
         /// <param name="title">Initial window title.</param>
-        internal static Window CreateFloatWindow(RootControl parent, Vector2 location, Vector2 size, WindowStartPosition startPosition, string title)
+        internal static Window CreateFloatWindow(RootControl parent, Float2 location, Float2 size, WindowStartPosition startPosition, string title)
         {
             // Setup initial window settings
             var settings = CreateWindowSettings.Default;
@@ -75,8 +75,8 @@ namespace FlaxEditor.GUI.Docking
             settings.Title = title;
             settings.Size = size;
             settings.Position = location;
-            settings.MinimumSize = new Vector2(1);
-            settings.MaximumSize = new Vector2(4096);
+            settings.MinimumSize = new Float2(1);
+            settings.MaximumSize = new Float2(4096);
             settings.Fullscreen = false;
             settings.HasBorder = true;
             settings.SupportsTransparency = false;

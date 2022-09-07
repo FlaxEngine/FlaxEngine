@@ -11,14 +11,12 @@
 class FLAXENGINE_API StringBuilder
 {
 private:
-
     /// <summary>
     /// Array with characters of the string (it's not null-terminated)
     /// </summary>
     Array<Char> _data;
 
 public:
-
     /// <summary>
     /// Init
     /// </summary>
@@ -36,7 +34,6 @@ public:
     }
 
 public:
-
     /// <summary>
     /// Gets capacity
     /// </summary>
@@ -82,7 +79,6 @@ public:
     }
 
 public:
-
     // Append single character to the string
     // @param c Character to append
     // @return Current String Builder instance
@@ -175,7 +171,6 @@ public:
     }
 
 public:
-
     StringBuilder& AppendLine()
     {
         Append(TEXT(PLATFORM_LINE_TERMINATOR));
@@ -224,7 +219,6 @@ public:
     }
 
 public:
-
     // Retrieves substring created from characters starting from startIndex
     // @param startIndex Index of the first character to subtract
     // @param count Amount of characters to retrieve
@@ -236,7 +230,6 @@ public:
     }
 
 public:
-
     // Get pointer to the string
     // @returns Pointer to Array of Chars if Num, otherwise the empty string
     FORCE_INLINE const Char* operator*() const
@@ -264,7 +257,6 @@ public:
     }
 
 public:
-
     String ToString() const
     {
         return String(_data.Get(), _data.Count());

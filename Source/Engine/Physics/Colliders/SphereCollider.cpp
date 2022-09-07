@@ -27,12 +27,13 @@ void SphereCollider::SetRadius(const float value)
 
 void SphereCollider::DrawPhysicsDebug(RenderView& view)
 {
-    if (!view.CullingFrustum.Intersects(_sphere))
+    const BoundingSphere sphere(_sphere.Center - view.Origin, _sphere.Radius);
+    if (!view.CullingFrustum.Intersects(sphere))
         return;
     if (view.Mode == ViewMode::PhysicsColliders && !GetIsTrigger())
-        DebugDraw::DrawSphere(_sphere, _staticActor ? Color::CornflowerBlue : Color::Orchid, 0, true);
+        DEBUG_DRAW_SPHERE(_sphere, _staticActor ? Color::CornflowerBlue : Color::Orchid, 0, true);
     else
-        DebugDraw::DrawWireSphere(_sphere, Color::GreenYellow * 0.8f, 0, true);
+        DEBUG_DRAW_WIRE_SPHERE(_sphere, Color::GreenYellow * 0.8f, 0, true);
 }
 
 void SphereCollider::OnDebugDrawSelected()
@@ -45,7 +46,7 @@ void SphereCollider::OnDebugDrawSelected()
 
 #endif
 
-bool SphereCollider::IntersectsItself(const Ray& ray, float& distance, Vector3& normal)
+bool SphereCollider::IntersectsItself(const Ray& ray, Real& distance, Vector3& normal)
 {
     return _sphere.Intersects(ray, distance, normal);
 }

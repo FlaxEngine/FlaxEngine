@@ -21,6 +21,11 @@ API_ENUM() enum class CursorLockMode
     /// Cursor position is locked to the center of the game window.
     /// </summary>
     Locked = 1,
+
+    /// <summary>
+    /// Cursor position is confined to the bounds of the game window.
+    /// </summary>
+    Clipped = 2,
 };
 
 /// <summary>
@@ -353,4 +358,14 @@ API_ENUM() enum class InputAxisType
     /// The keyboard only mode. For key inputs.
     /// </summary>
     KeyboardOnly = 9,
+
+    /// <summary>
+    /// Pad X axis - left/right (DPad / Directional Pad).
+    /// </summary>
+    GamepadDPadX = 10,
+
+    /// <summary>
+    /// Pad Y axis - up/down (DPad / Directional Pad).
+    /// </summary>
+    GamepadDPadY = 11,
 };

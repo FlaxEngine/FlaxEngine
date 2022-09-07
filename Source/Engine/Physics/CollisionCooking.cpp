@@ -15,7 +15,7 @@ bool CollisionCooking::CookCollision(const Argument& arg, CollisionData::Seriali
     if (arg.ConvexVertexLimit == 0)
         convexVertexLimit = CONVEX_VERTEX_MAX;
 
-    DataContainer<Vector3> finalVertexData;
+    DataContainer<Float3> finalVertexData;
     DataContainer<uint32> finalIndexData;
     const bool needIndexBuffer = arg.Type == CollisionDataType::TriangleMesh;
 
@@ -71,7 +71,7 @@ bool CollisionCooking::CookCollision(const Argument& arg, CollisionData::Seriali
 
                 const int32 firstVertexIndex = vertexCounter;
                 const int32 vertexCount = mesh->Positions.Count();
-                Platform::MemoryCopy(finalVertexData.Get() + firstVertexIndex, mesh->Positions.Get(), vertexCount * sizeof(Vector3));
+                Platform::MemoryCopy(finalVertexData.Get() + firstVertexIndex, mesh->Positions.Get(), vertexCount * sizeof(Float3));
                 vertexCounter += vertexCount;
 
                 if (needIndexBuffer)
@@ -116,6 +116,8 @@ bool CollisionCooking::CookCollision(const Argument& arg, CollisionData::Seriali
         vertexCounts.Resize(meshesCount);
         indexBuffers.Resize(needIndexBuffer ? meshesCount : 0);
         indexCounts.Resize(needIndexBuffer ? meshesCount : 0);
+        vertexCounts.SetAll(0);
+        indexCounts.SetAll(0);
         bool useCpuData = IsInMainThread() && !arg.Model->IsVirtual();
         if (!useCpuData)
         {
@@ -156,7 +158,7 @@ bool CollisionCooking::CookCollision(const Argument& arg, CollisionData::Seriali
             // It's easier than reading internal, versioned mesh storage format.
             // Also it works with virtual assets that have no dedicated storage.
             // Note: request all meshes data at once and wait for the tasks to be done.
-            Array<Task*> tasks(meshesCount + meshesCount);
+            Array<Task*> tasks(meshesCount + 2);
             for (int32 i = 0; i < meshesCount; i++)
             {
                 const auto& mesh = *meshes[i];
@@ -211,7 +213,7 @@ bool CollisionCooking::CookCollision(const Argument& arg, CollisionData::Seriali
 
             const int32 firstVertexIndex = vertexCounter;
             const int32 vertexCount = vertexCounts[i];
-            Platform::MemoryCopy(finalVertexData.Get() + firstVertexIndex, vData.Get(), vertexCount * sizeof(Vector3));
+            Platform::MemoryCopy(finalVertexData.Get() + firstVertexIndex, vData.Get(), vertexCount * sizeof(Float3));
             vertexCounter += vertexCount;
 
             if (needIndexBuffer)

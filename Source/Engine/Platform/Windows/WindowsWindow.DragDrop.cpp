@@ -6,7 +6,6 @@
 
 #if USE_EDITOR
 
-#include "Engine/Core/Log.h"
 #include "Engine/Core/Collections/Array.h"
 #include "Engine/Engine/Engine.h"
 #include "Engine/Platform/IGuiData.h"
@@ -575,27 +574,15 @@ public:
 
     int64 ExitFlag = 0;
 
-public:
-
     // [ThreadPoolTask]
     bool Run() override
     {
-        const uint64 beginFrame = Engine::FrameCount;
-
         Scripting::GetScriptsDomain()->Dispatch();
-
         while (Platform::AtomicRead(&ExitFlag) == 0)
         {
-            // Render single frame
             Engine::OnDraw();
-
-            // Wait for a while
             Platform::Sleep(20);
         }
-
-        const uint64 endFrame = Engine::FrameCount;
-        LOG(Info, "Rendered {0} frames during DoDragDrop stall.", endFrame - beginFrame);
-
         return false;
     }
 };
@@ -646,7 +633,7 @@ HRESULT WindowsWindow::DragEnter(Windows::IDataObject* pDataObj, Windows::DWORD 
     ::ScreenToClient(_handle, &p);
     GuiDragDropData.Init((IDataObject*)pDataObj);
     DragDropEffect effect = DragDropEffect::None;
-    OnDragEnter(&GuiDragDropData, Vector2(static_cast<float>(p.x), static_cast<float>(p.y)), effect);
+    OnDragEnter(&GuiDragDropData, Float2(static_cast<float>(p.x), static_cast<float>(p.y)), effect);
 
     // Focus
     Focus();
@@ -663,7 +650,7 @@ HRESULT WindowsWindow::DragOver(Windows::DWORD grfKeyState, Windows::POINTL pt, 
     POINT p = { pt.x, pt.y };
     ::ScreenToClient(_handle, &p);
     DragDropEffect effect = DragDropEffect::None;
-    OnDragOver(&GuiDragDropData, Vector2(static_cast<float>(p.x), static_cast<float>(p.y)), effect);
+    OnDragOver(&GuiDragDropData, Float2(static_cast<float>(p.x), static_cast<float>(p.y)), effect);
 
     // Translate effect into Ole Api type
     *pdwEffect = dropEffect2OleEnum(effect);
@@ -686,7 +673,7 @@ HRESULT WindowsWindow::Drop(Windows::IDataObject* pDataObj, Windows::DWORD grfKe
     ::ScreenToClient(_handle, &p);
     GuiDragDropData.Init((IDataObject*)pDataObj);
     DragDropEffect effect = DragDropEffect::None;
-    OnDragDrop(&GuiDragDropData, Vector2(static_cast<float>(p.x), static_cast<float>(p.y)), effect);
+    OnDragDrop(&GuiDragDropData, Float2(static_cast<float>(p.x), static_cast<float>(p.y)), effect);
 
     // Translate effect into Ole Api type
     *pdwEffect = dropEffect2OleEnum(effect);

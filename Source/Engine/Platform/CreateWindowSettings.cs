@@ -9,10 +9,10 @@ namespace FlaxEngine
         /// </summary>
         public static CreateWindowSettings Default => new CreateWindowSettings
         {
-            Position = new Vector2(100, 100),
-            Size = new Vector2(640, 480),
-            MinimumSize = Vector2.One,
-            MaximumSize = new Vector2(4100, 4100),
+            Position = new Float2(100, 100),
+            Size = new Float2(640, 480),
+            MinimumSize = Float2.One,
+            MaximumSize = new Float2(4100, 4100),
             StartPosition = WindowStartPosition.CenterParent,
             HasBorder = true,
             ShowInTaskbar = true,

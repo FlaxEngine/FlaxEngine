@@ -17,7 +17,6 @@
 class FLAXENGINE_API SceneQuery
 {
 public:
-
     /// <summary>
     /// Try to find actor hit by the given ray
     /// </summary>
@@ -26,7 +25,6 @@ public:
     static Actor* RaycastScene(const Ray& ray);
 
 public:
-
     /// <summary>
     /// Gets all scene objects from the actor into linear list. Appends them (without the given actor).
     /// </summary>
@@ -55,7 +53,6 @@ public:
     static void GetAllActors(Array<Actor*>& actors);
 
 public:
-
     /// <summary>
     /// Execute custom action on actors tree.
     /// Action should returns false to stop calling deeper.
@@ -67,7 +64,7 @@ public:
     static void TreeExecute(Function<bool(Actor*, Params ...)>& action, Params ... args)
     {
 #if SCENE_QUERIES_WITH_LOCK
-		ScopeLock lock(Level::ScenesLock);
+        ScopeLock lock(Level::ScenesLock);
 #endif
 
         for (int32 i = 0; i < Level::Scenes.Count(); i++)

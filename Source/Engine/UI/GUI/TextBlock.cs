@@ -23,6 +23,11 @@ namespace FlaxEngine.GUI
         public Rectangle Bounds;
 
         /// <summary>
+        /// Custom ascender value for the line layout (block size above the baseline). Set to 0 to use ascender from the font.
+        /// </summary>
+        public float Ascender;
+
+        /// <summary>
         /// The custom tag.
         /// </summary>
         public object Tag;

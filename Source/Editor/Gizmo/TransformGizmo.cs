@@ -1,5 +1,11 @@
 // Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
+#if USE_LARGE_WORLDS
+using Real = System.Double;
+#else
+using Real = System.Single;
+#endif
+
 using System;
 using System.Collections.Generic;
 using FlaxEditor.SceneGraph;
@@ -94,7 +100,7 @@ namespace FlaxEditor.Gizmo
             while (true)
             {
                 var view = new Ray(Owner.ViewPosition, Owner.ViewDirection);
-                var rayCastFlags = SceneGraphNode.RayCastData.FlagTypes.SkipEditorPrimitives;
+                var rayCastFlags = SceneGraphNode.RayCastData.FlagTypes.SkipEditorPrimitives | SceneGraphNode.RayCastData.FlagTypes.SkipTriggers;
                 var hit = Owner.SceneGraphRoot.RayCast(ref ray, ref view, out var distance, out _, rayCastFlags);
                 if (hit != null)
                 {
@@ -111,7 +117,7 @@ namespace FlaxEditor.Gizmo
 
                     // Include objects bounds into target snap location
                     var editorBounds = BoundingBox.Empty;
-                    var bottomToCenter = 100000.0f;
+                    Real bottomToCenter = 100000.0f;
                     for (int i = 0; i < _selectionParents.Count; i++)
                     {
                         if (_selectionParents[i] is ActorNode actorNode)
@@ -124,10 +130,12 @@ namespace FlaxEditor.Gizmo
                     var newPosition = ray.GetPoint(distance) + new Vector3(0, bottomToCenter, 0);
 
                     // Snap
-                    StartTransforming();
                     var translationDelta = newPosition - Position;
                     var rotationDelta = Quaternion.Identity;
                     var scaleDelta = Vector3.Zero;
+                    if (translationDelta.IsZero)
+                        break;
+                    StartTransforming();
                     OnApplyTransformation(ref translationDelta, ref rotationDelta, ref scaleDelta);
                     EndTransforming();
                 }

@@ -140,15 +140,7 @@ namespace FlaxEditor.GUI.Input
         /// <inheritdoc />
         protected sealed override void UpdateText()
         {
-            string text;
-            if (float.IsPositiveInfinity(_value) || _value == float.MaxValue)
-                text = "Infinity";
-            else if (float.IsNegativeInfinity(_value) || _value == float.MinValue)
-                text = "-Infinity";
-            else
-                text = _value.ToString(CultureInfo.InvariantCulture);
-
-            SetText(text);
+            SetText(Utilities.Utils.FormatFloat(_value));
         }
 
         /// <inheritdoc />
@@ -157,7 +149,7 @@ namespace FlaxEditor.GUI.Input
             try
             {
                 var value = ShuntingYard.Parse(Text);
-                Value = (float)Math.Round(value, 5);
+                Value = (float)value;
             }
             catch (Exception ex)
             {

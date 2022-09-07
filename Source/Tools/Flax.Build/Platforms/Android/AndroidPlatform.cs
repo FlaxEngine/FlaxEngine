@@ -20,7 +20,7 @@ namespace Flax.Build.Platforms
 
         /// <inheritdoc />
         public override bool HasSharedLibrarySupport => true;
-    
+
         /// <inheritdoc />
         public override bool HasExecutableFileReferenceSupport => true;
 

@@ -19,6 +19,7 @@ float3 ViewDir;
 float TimeParam;
 float4 ViewInfo;
 float4 ScreenSize;
+float4 ViewSize;
 @1META_CB_END
 
 // Shader resources

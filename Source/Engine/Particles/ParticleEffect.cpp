@@ -12,10 +12,10 @@
 ParticleEffect::ParticleEffect(const SpawnParams& params)
     : Actor(params)
     , _lastUpdateFrame(0)
-    , _lastMinDstSqr(MAX_float)
+    , _lastMinDstSqr(MAX_Real)
 {
-    _world = Matrix::Identity;
-    UpdateBounds();
+    _box = BoundingBox(_transform.Translation);
+    BoundingSphere::FromBox(_box, _sphere);
 
     ParticleSystem.Changed.Bind<ParticleEffect, &ParticleEffect::OnParticleSystemModified>(this);
     ParticleSystem.Loaded.Bind<ParticleEffect, &ParticleEffect::OnParticleSystemLoaded>(this);
@@ -269,7 +269,7 @@ void ParticleEffect::UpdateSimulation()
 
     // Request update
     _lastUpdateFrame = Engine::FrameCount;
-    _lastMinDstSqr = MAX_float;
+    _lastMinDstSqr = MAX_Real;
     Particles::UpdateEffect(this);
 }
 
@@ -295,7 +295,7 @@ void ParticleEffect::UpdateBounds()
 
                 if (emitter->SimulationSpace == ParticlesSimulationSpace::Local)
                 {
-                    BoundingBox::Transform(emitterBounds, _world, emitterBounds);
+                    BoundingBox::Transform(emitterBounds, _transform, emitterBounds);
                 }
 
                 BoundingBox::Merge(emitterBounds, bounds, bounds);
@@ -312,7 +312,7 @@ void ParticleEffect::UpdateBounds()
     _box = bounds;
     BoundingSphere::FromBox(bounds, _sphere);
     if (_sceneRenderingKey != -1)
-        GetSceneRendering()->UpdateGeometry(this, _sceneRenderingKey);
+        GetSceneRendering()->UpdateActor(this, _sceneRenderingKey);
 }
 
 void ParticleEffect::Sync()
@@ -394,7 +394,7 @@ void ParticleEffect::SetParametersOverrides(const Array<ParameterOverride>& valu
 void ParticleEffect::Update()
 {
     // Skip if off-screen
-    if (!UpdateWhenOffscreen && _lastMinDstSqr >= MAX_float)
+    if (!UpdateWhenOffscreen && _lastMinDstSqr >= MAX_Real)
         return;
 
     if (UpdateMode == SimulationUpdateMode::FixedTimestep)
@@ -494,13 +494,10 @@ bool ParticleEffect::HasContentLoaded() const
 
 void ParticleEffect::Draw(RenderContext& renderContext)
 {
+    if (renderContext.View.Pass == DrawPass::GlobalSDF || renderContext.View.Pass == DrawPass::GlobalSurfaceAtlas)
+        return;
     _lastMinDstSqr = Math::Min(_lastMinDstSqr, Vector3::DistanceSquared(GetPosition(), renderContext.View.Position));
     Particles::DrawParticles(renderContext, this);
-}
-
-void ParticleEffect::DrawGeneric(RenderContext& renderContext)
-{
-    Draw(renderContext);
 }
 
 #if USE_EDITOR
@@ -520,7 +517,7 @@ void ParticleEffect::OnDebugDrawSelected()
 void ParticleEffect::OnLayerChanged()
 {
     if (_sceneRenderingKey != -1)
-        GetSceneRendering()->UpdateGeometry(this, _sceneRenderingKey);
+        GetSceneRendering()->UpdateActor(this, _sceneRenderingKey);
 }
 
 void ParticleEffect::Serialize(SerializeStream& stream, const void* otherObj)
@@ -699,7 +696,7 @@ void ParticleEffect::EndPlay()
 void ParticleEffect::OnEnable()
 {
     GetScene()->Ticking.Update.AddTick<ParticleEffect, &ParticleEffect::Update>(this);
-    _sceneRenderingKey = GetSceneRendering()->AddGeometry(this);
+    GetSceneRendering()->AddActor(this, _sceneRenderingKey);
 #if USE_EDITOR
     GetSceneRendering()->AddViewportIcon(this);
     GetScene()->Ticking.Update.AddTickExecuteInEditor<ParticleEffect, &ParticleEffect::UpdateExecuteInEditor>(this);
@@ -715,7 +712,7 @@ void ParticleEffect::OnDisable()
     GetScene()->Ticking.Update.RemoveTickExecuteInEditor(this);
     GetSceneRendering()->RemoveViewportIcon(this);
 #endif
-    GetSceneRendering()->RemoveGeometry(this, _sceneRenderingKey);
+    GetSceneRendering()->RemoveActor(this, _sceneRenderingKey);
     GetScene()->Ticking.Update.RemoveTick(this);
 
     // Base
@@ -740,6 +737,5 @@ void ParticleEffect::OnTransformChanged()
     // Base
     Actor::OnTransformChanged();
 
-    _transform.GetWorld(_world);
     UpdateBounds();
 }

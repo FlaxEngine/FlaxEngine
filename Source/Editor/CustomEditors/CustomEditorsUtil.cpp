@@ -57,8 +57,9 @@ void OnBinaryModuleLoaded(BinaryModule* module);
 
 MonoReflectionType* CustomEditorsUtil::GetCustomEditor(MonoReflectionType* refType)
 {
+    if (!refType)
+        return nullptr;
     MonoType* type = mono_reflection_type_get_type(refType);
-
     Entry result;
     if (Cache.TryGet(type, result))
     {
@@ -68,7 +69,6 @@ MonoReflectionType* CustomEditorsUtil::GetCustomEditor(MonoReflectionType* refTy
             return MUtils::GetType(editor->GetNative());
         }
     }
-
     return nullptr;
 }
 

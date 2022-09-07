@@ -190,9 +190,9 @@ private:
     enum class ParticleAttributeValueTypes
     {
         Float,
-        Vector2,
-        Vector3,
-        Vector4,
+        Float2,
+        Float3,
+        Float4,
         Int,
         Uint,
     };
@@ -205,6 +205,7 @@ private:
 
     MaterialValue AccessParticleAttribute(Node* caller, const StringView& name, ParticleAttributeValueTypes valueType, const Char* index = nullptr, ParticleAttributeSpace space = ParticleAttributeSpace::AsIs);
     void prepareLayer(MaterialLayer* layer, bool allowVisibleParams);
+    void WriteCustomGlobalCode(const Array<const MaterialGraph::Node*, InlinedAllocation<8>>& nodes, int32 templateInputsMapping);
 
 public:
 

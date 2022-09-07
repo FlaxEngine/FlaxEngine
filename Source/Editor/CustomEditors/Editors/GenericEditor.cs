@@ -85,11 +85,6 @@ namespace FlaxEditor.CustomEditors.Editors
             public string DisplayName { get; }
 
             /// <summary>
-            /// Gets a value indicating whether use dedicated group.
-            /// </summary>
-            public bool UseGroup => Display?.Group != null;
-
-            /// <summary>
             /// Gets the overridden custom editor for item editing.
             /// </summary>
             public CustomEditor OverrideEditor
@@ -137,7 +132,7 @@ namespace FlaxEditor.CustomEditors.Editors
                 ExpandGroups = attributes.FirstOrDefault(x => x is ExpandGroupsAttribute) != null;
 
                 IsReadOnly |= !info.HasSet;
-                DisplayName = Display?.Name ?? CustomEditorsUtil.GetPropertyNameUI(info.Name);
+                DisplayName = Display?.Name ?? Utilities.Utils.GetPropertyNameUI(info.Name);
                 var editor = Editor.Instance;
                 TooltipText = editor.CodeDocs.GetTooltip(info, attributes);
                 _membersOrder = editor.Options.Options.General.ScriptMembersOrder;
@@ -229,6 +224,8 @@ namespace FlaxEditor.CustomEditors.Editors
             }
         }
 
+        private static HashSet<PropertiesList> _visibleIfPropertiesListsCache;
+        private static Dictionary<string, GroupElement> _groups;
         private VisibleIfCache[] _visibleIfCaches;
         private bool _isNull;
 
@@ -334,7 +331,7 @@ namespace FlaxEditor.CustomEditors.Editors
             return ScriptMemberInfo.Null;
         }
 
-        private void GroupPanelCheckIfCanRevert(LayoutElementsContainer layout, ref bool canRevertReference, ref bool canRevertDefault)
+        private static void GroupPanelCheckIfCanRevert(LayoutElementsContainer layout, ref bool canRevertReference, ref bool canRevertDefault)
         {
             if (layout == null || canRevertReference && canRevertDefault)
                 return;
@@ -349,7 +346,7 @@ namespace FlaxEditor.CustomEditors.Editors
                 GroupPanelCheckIfCanRevert(child as LayoutElementsContainer, ref canRevertReference, ref canRevertDefault);
         }
 
-        private void OnGroupPanelRevert(LayoutElementsContainer layout, bool toDefault)
+        private static void OnGroupPanelRevert(LayoutElementsContainer layout, bool toDefault)
         {
             if (layout == null)
                 return;
@@ -366,7 +363,7 @@ namespace FlaxEditor.CustomEditors.Editors
                 OnGroupPanelRevert(child as LayoutElementsContainer, toDefault);
         }
 
-        private void OnGroupPanelCopy(LayoutElementsContainer layout)
+        private static void OnGroupPanelCopy(LayoutElementsContainer layout)
         {
             if (layout.Editors.Count == 1)
             {
@@ -402,12 +399,12 @@ namespace FlaxEditor.CustomEditors.Editors
             }
         }
 
-        private bool OnGroupPanelCanCopy(LayoutElementsContainer layout)
+        private static bool OnGroupPanelCanCopy(LayoutElementsContainer layout)
         {
             return layout.Editors.Count != 0 || layout.Children.Any(x => x is LayoutElementsContainer);
         }
 
-        private void OnGroupPanelPaste(LayoutElementsContainer layout)
+        private static void OnGroupPanelPaste(LayoutElementsContainer layout)
         {
             if (layout.Editors.Count == 1)
             {
@@ -451,7 +448,7 @@ namespace FlaxEditor.CustomEditors.Editors
             }
         }
 
-        private bool OnGroupPanelCanPaste(LayoutElementsContainer layout)
+        private static bool OnGroupPanelCanPaste(LayoutElementsContainer layout)
         {
             if (layout.Editors.Count == 1)
             {
@@ -497,7 +494,7 @@ namespace FlaxEditor.CustomEditors.Editors
             return false;
         }
 
-        private void OnGroupPanelMouseButtonRightClicked(DropPanel groupPanel, Vector2 location)
+        private static void OnGroupPanelMouseButtonRightClicked(DropPanel groupPanel, Float2 location)
         {
             var group = (GroupElement)groupPanel.Tag;
             bool canRevertReference = false, canRevertDefault = false;
@@ -515,6 +512,36 @@ namespace FlaxEditor.CustomEditors.Editors
             paste.Enabled = OnGroupPanelCanPaste(group);
 
             menu.Show(groupPanel, location);
+        }
+
+        internal static void OnGroupUsage()
+        {
+            if (_groups != null)
+                _groups.Clear();
+        }
+
+        internal static LayoutElementsContainer OnGroup(LayoutElementsContainer layout, EditorDisplayAttribute display)
+        {
+            if (display?.Group != null)
+            {
+                if (_groups != null && _groups.TryGetValue(display.Group, out var group))
+                {
+                    // Reuse group
+                    layout = group;
+                }
+                else
+                {
+                    // Add new group
+                    if (_groups == null)
+                        _groups = new Dictionary<string, GroupElement>();
+                    group = layout.Group(display.Group);
+                    group.Panel.Tag = group;
+                    group.Panel.MouseButtonRightClicked += OnGroupPanelMouseButtonRightClicked;
+                    _groups.Add(display.Group, group);
+                    layout = group;
+                }
+            }
+            return layout;
         }
 
         /// <summary>
@@ -636,10 +663,10 @@ namespace FlaxEditor.CustomEditors.Editors
                         {
                             Text = "+",
                             TooltipText = "Create a new instance of the object",
-                            Size = new Vector2(ButtonSize, ButtonSize),
+                            Size = new Float2(ButtonSize, ButtonSize),
                             AnchorPreset = AnchorPresets.MiddleRight,
                             Parent = layout.ContainerControl,
-                            Location = new Vector2(layout.ContainerControl.Width - ButtonSize - 4, (layout.ContainerControl.Height - ButtonSize) * 0.5f),
+                            Location = new Float2(layout.ContainerControl.Width - ButtonSize - 4, (layout.ContainerControl.Height - ButtonSize) * 0.5f),
                         };
                         button.Clicked += () => SetValue(Values.Type.CreateInstance());
                     }
@@ -686,28 +713,13 @@ namespace FlaxEditor.CustomEditors.Editors
             items.Sort();
 
             // Add items
-            GroupElement lastGroup = null;
+            OnGroupUsage();
             for (int i = 0; i < items.Count; i++)
             {
                 var item = items[i];
 
-                // Check if use group
-                LayoutElementsContainer itemLayout;
-                if (item.UseGroup)
-                {
-                    if (lastGroup == null || lastGroup.Panel.HeaderText != item.Display.Group)
-                    {
-                        lastGroup = layout.Group(item.Display.Group);
-                        lastGroup.Panel.Tag = lastGroup;
-                        lastGroup.Panel.MouseButtonRightClicked += OnGroupPanelMouseButtonRightClicked;
-                    }
-                    itemLayout = lastGroup;
-                }
-                else
-                {
-                    lastGroup = null;
-                    itemLayout = layout;
-                }
+                // Group
+                var itemLayout = OnGroup(layout, item.Display);
 
                 // Space
                 if (item.Space != null)
@@ -715,7 +727,7 @@ namespace FlaxEditor.CustomEditors.Editors
 
                 // Header
                 if (item.Header != null)
-                    itemLayout.Header(item.Header.Text);
+                    itemLayout.Header(item.Header);
 
                 try
                 {
@@ -747,6 +759,7 @@ namespace FlaxEditor.CustomEditors.Editors
                     } while (c != null);
                 }
             }
+            OnGroupUsage();
         }
 
         /// <inheritdoc />
@@ -761,8 +774,13 @@ namespace FlaxEditor.CustomEditors.Editors
 
             if (_visibleIfCaches != null)
             {
+                if (_visibleIfPropertiesListsCache == null)
+                    _visibleIfPropertiesListsCache = new HashSet<PropertiesList>();
+                else
+                    _visibleIfPropertiesListsCache.Clear();
                 try
                 {
+                    // Update VisibleIf rules
                     for (int i = 0; i < _visibleIfCaches.Length; i++)
                     {
                         ref var c = ref _visibleIfCaches[i];
@@ -798,6 +816,21 @@ namespace FlaxEditor.CustomEditors.Editors
                         {
                             c.Group.Panel.Visible = visible;
                         }
+                        if (c.PropertiesList != null)
+                            _visibleIfPropertiesListsCache.Add(c.PropertiesList.Properties);
+                    }
+
+                    // Hide properties lists with all labels being hidden
+                    foreach (var propertiesList in _visibleIfPropertiesListsCache)
+                    {
+                        propertiesList.Visible = propertiesList.Children.Any(c => c.Visible);
+                    }
+
+                    // Hide group panels with all properties lists hidden
+                    foreach (var propertiesList in _visibleIfPropertiesListsCache)
+                    {
+                        if (propertiesList.Parent is DropPanel dropPanel)
+                            dropPanel.Visible = propertiesList.Visible || !dropPanel.Children.All(c => c is PropertiesList && !c.Visible);
                     }
                 }
                 catch (Exception ex)

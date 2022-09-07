@@ -1,5 +1,6 @@
 // Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
+using System;
 using System.Linq;
 using FlaxEditor.CustomEditors.Elements;
 using FlaxEngine;
@@ -32,8 +33,8 @@ namespace FlaxEditor.CustomEditors.Editors
                     // Use double value editor with limit
                     var doubleValue = layout.DoubleValue();
                     doubleValue.SetLimits((LimitAttribute)limit);
-                    doubleValue.DoubleValue.ValueChanged += OnValueChanged;
-                    doubleValue.DoubleValue.SlidingEnd += ClearToken;
+                    doubleValue.ValueBox.ValueChanged += OnValueChanged;
+                    doubleValue.ValueBox.SlidingEnd += ClearToken;
                     _element = doubleValue;
                     return;
                 }
@@ -42,8 +43,8 @@ namespace FlaxEditor.CustomEditors.Editors
             {
                 // Use double value editor
                 var doubleValue = layout.DoubleValue();
-                doubleValue.DoubleValue.ValueChanged += OnValueChanged;
-                doubleValue.DoubleValue.SlidingEnd += ClearToken;
+                doubleValue.ValueBox.ValueChanged += OnValueChanged;
+                doubleValue.ValueBox.SlidingEnd += ClearToken;
                 _element = doubleValue;
             }
         }
@@ -66,7 +67,13 @@ namespace FlaxEditor.CustomEditors.Editors
             }
             else
             {
-                _element.Value = (double)Values[0];
+                var value = Values[0];
+                if (value is double asDouble)
+                    _element.Value = (float)asDouble;
+                else if (value is float asFloat)
+                    _element.Value = asFloat;
+                else
+                    throw new Exception(string.Format("Invalid value type {0}.", value?.GetType().ToString() ?? "<null>"));
             }
         }
     }

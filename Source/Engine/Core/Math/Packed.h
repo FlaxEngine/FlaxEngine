@@ -32,8 +32,8 @@ struct FLAXENGINE_API FloatR10G10B10A2
 
     explicit FloatR10G10B10A2(uint32 packed);
     FloatR10G10B10A2(float x, float y, float z, float w);
-    FloatR10G10B10A2(const Vector3& v, float alpha = 0);
-    FloatR10G10B10A2(const Vector4& v);
+    FloatR10G10B10A2(const Float3& v, float alpha = 0);
+    FloatR10G10B10A2(const Float4& v);
     explicit FloatR10G10B10A2(const float* values);
 
     operator uint32() const
@@ -41,8 +41,8 @@ struct FLAXENGINE_API FloatR10G10B10A2
         return Value;
     }
 
-    operator Vector3() const;
-    operator Vector4() const;
+    operator Float3() const;
+    operator Float4() const;
 
     FloatR10G10B10A2& operator=(const FloatR10G10B10A2& other)
     {
@@ -56,8 +56,8 @@ struct FLAXENGINE_API FloatR10G10B10A2
         return *this;
     }
 
-    Vector3 ToVector3() const;
-    Vector4 ToVector4() const;
+    Float3 ToFloat3() const;
+    Float4 ToFloat4() const;
 };
 
 // [Deprecated on 14.01.2022, expires on 14.01.2024]
@@ -89,8 +89,8 @@ struct FLAXENGINE_API FloatR11G11B10
     }
 
     FloatR11G11B10(float x, float y, float z);
-    FloatR11G11B10(const Vector3& v);
-    FloatR11G11B10(const Vector4& v);
+    FloatR11G11B10(const Float3& v);
+    FloatR11G11B10(const Float4& v);
     FloatR11G11B10(const Color& v);
     explicit FloatR11G11B10(const float* values);
 
@@ -99,7 +99,7 @@ struct FLAXENGINE_API FloatR11G11B10
         return Value;
     }
 
-    operator Vector3() const;
+    operator Float3() const;
 
     FloatR11G11B10& operator=(const FloatR11G11B10& other)
     {
@@ -114,7 +114,7 @@ struct FLAXENGINE_API FloatR11G11B10
     }
 
 public:
-    Vector3 ToVector3() const;
+    Float3 ToFloat3() const;
 };
 
 struct FLAXENGINE_API RG16UNorm
@@ -127,7 +127,7 @@ struct FLAXENGINE_API RG16UNorm
         Y = (uint16)(y * MAX_uint16);
     }
 
-    Vector2 ToVector2() const;
+    Float2 ToFloat2() const;
 };
 
 struct FLAXENGINE_API RGBA16UNorm
@@ -142,5 +142,5 @@ struct FLAXENGINE_API RGBA16UNorm
         W = (uint16)(w * MAX_uint16);
     }
 
-    Vector4 ToVector4() const;
+    Float4 ToFloat4() const;
 };

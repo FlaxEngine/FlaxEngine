@@ -12,9 +12,9 @@ namespace Flax.Build.Bindings
     public class StructureInfo : ClassStructInfo
     {
         public List<FieldInfo> Fields = new List<FieldInfo>();
-        public List<FunctionInfo> Functions = new List<FunctionInfo>();
         public bool IsAutoSerialization;
         public bool ForceNoPod;
+        public bool NoDefault;
 
         public override bool IsStruct => true;
         public override bool IsValueType => true;
@@ -26,7 +26,7 @@ namespace Flax.Build.Bindings
         {
             base.Init(buildData);
 
-            if (ForceNoPod || (Interfaces != null && Interfaces.Count != 0))
+            if (ForceNoPod || (Interfaces != null && Interfaces.Count != 0) || IsTemplate)
             {
                 _isPod = false;
                 return;
@@ -73,6 +73,7 @@ namespace Flax.Build.Bindings
             BindingsGenerator.Write(writer, Functions);
             writer.Write(IsAutoSerialization);
             writer.Write(ForceNoPod);
+            writer.Write(NoDefault);
 
             base.Write(writer);
         }
@@ -83,6 +84,7 @@ namespace Flax.Build.Bindings
             Functions = BindingsGenerator.Read(reader, Functions);
             IsAutoSerialization = reader.ReadBoolean();
             ForceNoPod = reader.ReadBoolean();
+            NoDefault = reader.ReadBoolean();
 
             base.Read(reader);
         }

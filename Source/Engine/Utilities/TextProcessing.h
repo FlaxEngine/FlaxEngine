@@ -14,19 +14,16 @@
 class FLAXENGINE_API TextProcessing : public NonCopyable
 {
 public:
-
     /// <summary>
     /// Separator structure
     /// </summary>
     struct SeparatorData
     {
     public:
-
         char C0;
         char C1;
 
     public:
-
         SeparatorData()
             : C0(0)
             , C1(0)
@@ -52,7 +49,6 @@ public:
         }
 
     public:
-
         bool IsWhiteSpace() const
         {
             return *this == SeparatorData('\r', '\n')
@@ -62,7 +58,6 @@ public:
         }
 
     public:
-
         bool operator==(const SeparatorData& other) const
         {
             return C0 == other.C0 && C1 == other.C1;
@@ -80,13 +75,11 @@ public:
     struct Token
     {
     public:
-
         const char* Start;
         int32 Length;
         SeparatorData Separator;
 
     public:
-
         Token()
             : Start(nullptr)
             , Length(0)
@@ -135,14 +128,12 @@ public:
         }*/
 
     public:
-
         StringAnsi ToString() const
         {
             return StringAnsi(Start, Length);
         }
 
     public:
-
         FORCE_INLINE bool Equals(const Token& other) const
         {
             return Equals(other.Start, other.Length);
@@ -159,7 +150,6 @@ public:
         }
 
     public:
-
         FORCE_INLINE bool EqualsIgnoreCase(const Token& other) const
         {
             return EqualsIgnoreCase(other.Start, other.Length);
@@ -176,7 +166,6 @@ public:
         }
 
     public:
-
         FORCE_INLINE bool operator==(const char* text) const
         {
             auto token = Token(text);
@@ -195,7 +184,6 @@ public:
     };
 
 private:
-
     const char* _buffer;
     int32 _length;
     char* _cursor;
@@ -203,7 +191,6 @@ private:
     int32 _line;
 
 public:
-
     /// <summary>
     /// Init
     /// </summary>
@@ -212,7 +199,6 @@ public:
     TextProcessing(const char* input, int32 length);
 
 public:
-
     /// <summary>
     /// Array with all token separators
     /// </summary>
@@ -224,14 +210,12 @@ public:
     Array<char> Whitespaces;
 
 public:
-
     /// <summary>
     /// Set separators and white chars for HLSL language
     /// </summary>
     void Setup_HLSL();
 
 public:
-
     /// <summary>
     /// Returns true if there are still characters in the buffer and can read data from it
     /// </summary>
@@ -260,7 +244,6 @@ public:
     }
 
 public:
-
     /// <summary>
     /// Read single character from the buffer
     /// </summary>
@@ -290,7 +273,6 @@ public:
     void ReadLine();
 
 private:
-
     char moveForward();
     char moveBack();
 };

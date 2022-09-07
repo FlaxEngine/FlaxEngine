@@ -50,7 +50,7 @@ public:
     /// <summary>
     /// Root node
     /// </summary>
-    MaterialGraphNode* Root;
+    MaterialGraph::Node* Root;
 
     /// <summary>
     /// Material structure variable name (different for every layer sampling with different UVs, default UVs are a first index)

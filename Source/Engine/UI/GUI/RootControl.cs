@@ -39,12 +39,12 @@ namespace FlaxEngine.GUI
         /// <summary>
         /// Gets the tracking mouse offset.
         /// </summary>
-        public abstract Vector2 TrackingMouseOffset { get; }
+        public abstract Float2 TrackingMouseOffset { get; }
 
         /// <summary>
         /// Gets or sets the position of the mouse in the window space coordinates.
         /// </summary>
-        public abstract Vector2 MousePosition { get; set; }
+        public abstract Float2 MousePosition { get; set; }
 
         /// <summary>
         /// The update callbacks collection. Controls can register for this to get the update event for logic handling.
@@ -97,7 +97,7 @@ namespace FlaxEngine.GUI
             if (focused == null)
             {
                 // Nothing is focused so go to the first control
-                focused = OnNavigate(direction, Vector2.Zero, this, new List<Control>());
+                focused = OnNavigate(direction, Float2.Zero, this, new List<Control>());
                 focused?.NavigationFocus();
                 return;
             }

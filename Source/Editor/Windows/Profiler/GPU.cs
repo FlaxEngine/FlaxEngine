@@ -91,16 +91,19 @@ namespace FlaxEditor.Windows.Profiler
                     {
                         Title = "Draw Calls",
                         TitleBackgroundColor = headerColor,
+                        FormatValue = FormatCountLong,
                     },
                     new ColumnDefinition
                     {
                         Title = "Triangles",
                         TitleBackgroundColor = headerColor,
+                        FormatValue = FormatCountLong,
                     },
                     new ColumnDefinition
                     {
                         Title = "Vertices",
                         TitleBackgroundColor = headerColor,
+                        FormatValue = FormatCountLong,
                     },
                 },
                 Parent = layout,
@@ -114,6 +117,11 @@ namespace FlaxEditor.Windows.Profiler
                 0.1f,
                 0.1f,
             };
+        }
+
+        private static string FormatCountLong(object x)
+        {
+            return ((long)x).ToString("###,###,###");
         }
 
         /// <inheritdoc />
@@ -355,7 +363,7 @@ namespace FlaxEditor.Windows.Profiler
                     row.Values[2] = (e.Time * 10000.0f) / 10000.0f;
 
                     // Draw Calls
-                    row.Values[3] = e.Stats.DrawCalls;
+                    row.Values[3] = e.Stats.DrawCalls + e.Stats.DispatchCalls;
 
                     // Triangles
                     row.Values[4] = e.Stats.Triangles;

@@ -1,10 +1,18 @@
 // Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
+#if USE_LARGE_WORLDS
+using Real = System.Double;
+#else
+using Real = System.Single;
+#endif
+
 using System;
+using System.Globalization;
 using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
 using System.Runtime.InteropServices;
+using System.Text;
 using FlaxEditor.GUI.ContextMenu;
 using FlaxEditor.GUI.Tree;
 using FlaxEditor.SceneGraph;
@@ -27,6 +35,8 @@ namespace FlaxEditor.Utilities
     /// </summary>
     public static class Utils
     {
+        private static readonly StringBuilder CachedSb = new StringBuilder(256);
+
         private static readonly string[] MemorySizePostfixes =
         {
             "B",
@@ -429,17 +439,17 @@ namespace FlaxEditor.Utilities
                 break;
             case 3: // CommonType::Vector2:
             {
-                value = stream.ReadVector2();
+                value = stream.ReadFloat2();
             }
                 break;
             case 4: // CommonType::Vector3:
             {
-                value = stream.ReadVector3();
+                value = stream.ReadFloat3();
             }
                 break;
             case 5: // CommonType::Vector4:
             {
-                value = stream.ReadVector4();
+                value = stream.ReadFloat4();
             }
                 break;
             case 6: // CommonType::Color:
@@ -486,7 +496,7 @@ namespace FlaxEditor.Utilities
             {
                 value = new Transform(new Vector3(stream.ReadSingle(), stream.ReadSingle(), stream.ReadSingle()),
                                       new Quaternion(stream.ReadSingle(), stream.ReadSingle(), stream.ReadSingle(), stream.ReadSingle()),
-                                      new Vector3(stream.ReadSingle(), stream.ReadSingle(), stream.ReadSingle()));
+                                      new Float3(stream.ReadSingle(), stream.ReadSingle(), stream.ReadSingle()));
             }
                 break;
             case 12: // CommonType::Sphere:
@@ -497,8 +507,7 @@ namespace FlaxEditor.Utilities
                 break;
             case 13: // CommonType::Rect:
             {
-                value = new Rectangle(new Vector2(stream.ReadSingle(), stream.ReadSingle()),
-                                      new Vector2(stream.ReadSingle(), stream.ReadSingle()));
+                value = new Rectangle(stream.ReadSingle(), stream.ReadSingle(), stream.ReadSingle(), stream.ReadSingle());
             }
                 break;
             case 15: // CommonType::Matrix
@@ -570,23 +579,23 @@ namespace FlaxEditor.Utilities
             else if (value is Vector2 asVector2)
             {
                 stream.Write((byte)3);
-                stream.Write(asVector2.X);
-                stream.Write(asVector2.Y);
+                stream.Write((float)asVector2.X);
+                stream.Write((float)asVector2.Y);
             }
             else if (value is Vector3 asVector3)
             {
                 stream.Write((byte)4);
-                stream.Write(asVector3.X);
-                stream.Write(asVector3.Y);
-                stream.Write(asVector3.Z);
+                stream.Write((float)asVector3.X);
+                stream.Write((float)asVector3.Y);
+                stream.Write((float)asVector3.Z);
             }
             else if (value is Vector4 asVector4)
             {
                 stream.Write((byte)5);
-                stream.Write(asVector4.X);
-                stream.Write(asVector4.Y);
-                stream.Write(asVector4.Z);
-                stream.Write(asVector4.W);
+                stream.Write((float)asVector4.X);
+                stream.Write((float)asVector4.Y);
+                stream.Write((float)asVector4.Z);
+                stream.Write((float)asVector4.W);
             }
             else if (value is Color asColor)
             {
@@ -611,12 +620,12 @@ namespace FlaxEditor.Utilities
             else if (value is BoundingBox asBox)
             {
                 stream.Write((byte)9);
-                stream.Write(asBox.Minimum.X);
-                stream.Write(asBox.Minimum.Y);
-                stream.Write(asBox.Minimum.Z);
-                stream.Write(asBox.Maximum.X);
-                stream.Write(asBox.Maximum.Y);
-                stream.Write(asBox.Maximum.Z);
+                stream.Write((float)asBox.Minimum.X);
+                stream.Write((float)asBox.Minimum.Y);
+                stream.Write((float)asBox.Minimum.Z);
+                stream.Write((float)asBox.Maximum.X);
+                stream.Write((float)asBox.Maximum.Y);
+                stream.Write((float)asBox.Maximum.Z);
             }
             else if (value is Quaternion asRotation)
             {
@@ -629,9 +638,9 @@ namespace FlaxEditor.Utilities
             else if (value is Transform asTransform)
             {
                 stream.Write((byte)11);
-                stream.Write(asTransform.Translation.X);
-                stream.Write(asTransform.Translation.Y);
-                stream.Write(asTransform.Translation.Z);
+                stream.Write((float)asTransform.Translation.X);
+                stream.Write((float)asTransform.Translation.Y);
+                stream.Write((float)asTransform.Translation.Z);
                 stream.Write(asTransform.Orientation.X);
                 stream.Write(asTransform.Orientation.Y);
                 stream.Write(asTransform.Orientation.Z);
@@ -643,10 +652,10 @@ namespace FlaxEditor.Utilities
             else if (value is BoundingSphere asSphere)
             {
                 stream.Write((byte)12);
-                stream.Write(asSphere.Center.X);
-                stream.Write(asSphere.Center.Y);
-                stream.Write(asSphere.Center.Z);
-                stream.Write(asSphere.Radius);
+                stream.Write((float)asSphere.Center.X);
+                stream.Write((float)asSphere.Center.Y);
+                stream.Write((float)asSphere.Center.Z);
+                stream.Write((float)asSphere.Radius);
             }
             else if (value is Rectangle asRect)
             {
@@ -685,12 +694,12 @@ namespace FlaxEditor.Utilities
             else if (value is Ray asRay)
             {
                 stream.Write((byte)18);
-                stream.Write(asRay.Position.X);
-                stream.Write(asRay.Position.Y);
-                stream.Write(asRay.Position.Z);
-                stream.Write(asRay.Direction.X);
-                stream.Write(asRay.Direction.Y);
-                stream.Write(asRay.Direction.Z);
+                stream.Write((float)asRay.Position.X);
+                stream.Write((float)asRay.Position.Y);
+                stream.Write((float)asRay.Position.Z);
+                stream.Write((float)asRay.Direction.X);
+                stream.Write((float)asRay.Direction.Y);
+                stream.Write((float)asRay.Direction.Z);
             }
             else if (value is Int2 asInt2)
             {
@@ -733,7 +742,7 @@ namespace FlaxEditor.Utilities
             settings.AllowMinimize = false;
             settings.HasSizingFrame = false;
             settings.StartPosition = WindowStartPosition.CenterParent;
-            settings.Size = new Vector2(500, 600) * (parentWindow?.DpiScale ?? Platform.DpiScale);
+            settings.Size = new Float2(500, 600) * (parentWindow?.DpiScale ?? Platform.DpiScale);
             settings.Parent = parentWindow;
             settings.Title = title;
             var dialog = Platform.CreateWindow(ref settings);
@@ -754,7 +763,7 @@ namespace FlaxEditor.Utilities
             dialog.Focus();
         }
 
-        private static OrientedBoundingBox GetWriteBox(ref Vector3 min, ref Vector3 max, float margin)
+        private static OrientedBoundingBox GetWriteBox(ref Vector3 min, ref Vector3 max, Real margin)
         {
             var box = new OrientedBoundingBox();
             Vector3 vec = max - min;
@@ -765,9 +774,10 @@ namespace FlaxEditor.Utilities
             else
                 orientation = Quaternion.LookRotation(dir, Vector3.Cross(Vector3.Cross(dir, Vector3.Up), dir));
             Vector3 up = Vector3.Up * orientation;
-            box.Transformation = Matrix.CreateWorld(min + vec * 0.5f, dir, up);
-            Matrix.Invert(ref box.Transformation, out Matrix inv);
-            Vector3 vecLocal = Vector3.TransformNormal(vec * 0.5f, inv);
+            Matrix world = Matrix.CreateWorld(min + vec * 0.5f, dir, up);
+            world.Decompose(out box.Transformation);
+            Matrix.Invert(ref world, out Matrix invWorld);
+            Vector3 vecLocal = Vector3.TransformNormal(vec * 0.5f, invWorld);
             box.Extents.X = margin;
             box.Extents.Y = margin;
             box.Extents.Z = vecLocal.Z;
@@ -782,7 +792,7 @@ namespace FlaxEditor.Utilities
         /// <param name="distance">The result intersection distance.</param>
         /// <param name="viewPosition">The view position used to scale the wires thickness depending on the wire distance from the view.</param>
         /// <returns>True ray hits bounds, otherwise false.</returns>
-        public static unsafe bool RayCastWire(ref OrientedBoundingBox box, ref Ray ray, out float distance, ref Vector3 viewPosition)
+        public static unsafe bool RayCastWire(ref OrientedBoundingBox box, ref Ray ray, out Real distance, ref Vector3 viewPosition)
         {
             var corners = stackalloc Vector3[8];
             box.GetCorners(corners);
@@ -863,6 +873,62 @@ namespace FlaxEditor.Utilities
         }
 
         /// <summary>
+        /// Gets the property name for UI. Removes unnecessary characters and filters text. Makes it more user-friendly.
+        /// </summary>
+        /// <param name="name">The name.</param>
+        /// <returns>The result.</returns>
+        public static string GetPropertyNameUI(string name)
+        {
+            int length = name.Length;
+            StringBuilder sb = CachedSb;
+            sb.Clear();
+            sb.EnsureCapacity(length + 8);
+            int startIndex = 0;
+
+            // Skip some prefixes
+            if (name.StartsWith("g_") || name.StartsWith("m_"))
+                startIndex = 2;
+
+            // Filter text
+            var lastChar = '\0';
+            for (int i = startIndex; i < length; i++)
+            {
+                var c = name[i];
+
+                // Space before word starting with uppercase letter
+                if (char.IsUpper(c) && i > 0)
+                {
+                    if (lastChar != ' ' && (!char.IsUpper(name[i - 1]) || (i + 1 != length && !char.IsUpper(name[i + 1]))))
+                    {
+                        lastChar = ' ';
+                        sb.Append(lastChar);
+                    }
+                }
+                // Space instead of underscore
+                else if (c == '_')
+                {
+                    if (sb.Length > 0 && lastChar != ' ')
+                    {
+                        lastChar = ' ';
+                        sb.Append(lastChar);
+                    }
+                    continue;
+                }
+                // Space before digits sequence
+                else if (i > 1 && char.IsDigit(c) && !char.IsDigit(name[i - 1]) && lastChar != ' ')
+                {
+                    lastChar = ' ';
+                    sb.Append(lastChar);
+                }
+
+                lastChar = c;
+                sb.Append(lastChar);
+            }
+
+            return sb.ToString();
+        }
+
+        /// <summary>
         /// Creates the search popup with a tree.
         /// </summary>
         /// <param name="searchBox">The search box.</param>
@@ -872,7 +938,7 @@ namespace FlaxEditor.Utilities
         {
             var menu = new ContextMenuBase
             {
-                Size = new Vector2(320, 220),
+                Size = new Float2(320, 220),
             };
             searchBox = new TextBox(false, 1, 1)
             {
@@ -896,6 +962,113 @@ namespace FlaxEditor.Utilities
                 Parent = panel2,
             };
             return menu;
+        }
+
+        /// <summary>
+        /// Gets the asset name relative to the project root folder (without asset file extension)
+        /// </summary>
+        /// <param name="path">The asset path.</param>
+        /// <returns>The processed name path.</returns>
+        public static string GetAssetNamePath(string path)
+        {
+            if (path.StartsWith(Globals.ProjectFolder))
+            {
+                path = path.Substring(Globals.ProjectFolder.Length + 1);
+            }
+            return StringUtils.GetPathWithoutExtension(path);
+        }
+
+        /// <summary>
+        /// Formats the floating point value (double precision) into the readable text representation.
+        /// </summary>
+        /// <param name="value">The value.</param>
+        /// <returns>The text representation.</returns>
+        public static string FormatFloat(float value)
+        {
+            if (float.IsPositiveInfinity(value) || value == float.MaxValue)
+                return "Infinity";
+            if (float.IsNegativeInfinity(value) || value == float.MinValue)
+                return "-Infinity";
+            string str = value.ToString("r", CultureInfo.InvariantCulture);
+            return FormatFloat(str, value < 0);
+        }
+
+        /// <summary>
+        /// Formats the floating point value (single precision) into the readable text representation.
+        /// </summary>
+        /// <param name="value">The value.</param>
+        /// <returns>The text representation.</returns>
+        public static string FormatFloat(double value)
+        {
+            if (double.IsPositiveInfinity(value) || value == double.MaxValue)
+                return "Infinity";
+            if (double.IsNegativeInfinity(value) || value == double.MinValue)
+                return "-Infinity";
+            string str = value.ToString("r", CultureInfo.InvariantCulture);
+            return FormatFloat(str, value < 0);
+        }
+
+        internal static string FormatFloat(string str, bool isNegative)
+        {
+            // Reference: https://stackoverflow.com/questions/1546113/double-to-string-conversion-without-scientific-notation
+            int x = str.IndexOf('E');
+            if (x < 0)
+                return str;
+            int x1 = x + 1;
+            string s, exp = str.Substring(x1, str.Length - x1);
+            int e = int.Parse(exp);
+            int numDecimals = 0;
+            if (isNegative)
+            {
+                int len = x - 3;
+                if (e >= 0)
+                {
+                    if (len > 0)
+                    {
+                        s = str.Substring(0, 2) + str.Substring(3, len);
+                        numDecimals = len;
+                    }
+                    else
+                        s = str.Substring(0, 2);
+                }
+                else
+                {
+                    if (len > 0)
+                    {
+                        s = str.Substring(1, 1) + str.Substring(3, len);
+                        numDecimals = len;
+                    }
+                    else
+                        s = str.Substring(1, 1);
+                }
+            }
+            else
+            {
+                int len = x - 2;
+                if (len > 0)
+                {
+                    s = str[0] + str.Substring(2, len);
+                    numDecimals = len;
+                }
+                else
+                    s = str[0].ToString();
+            }
+            if (e >= 0)
+            {
+                e -= numDecimals;
+                string z = new string('0', e);
+                s = s + z;
+            }
+            else
+            {
+                e = -e - 1;
+                string z = new string('0', e);
+                if (isNegative)
+                    s = "-0." + z + s;
+                else
+                    s = "0." + z + s;
+            }
+            return s;
         }
     }
 }

@@ -26,38 +26,37 @@ class SceneRenderTask;
 /// </summary>
 API_CLASS(Abstract) class FLAXENGINE_API Actor : public SceneObject
 {
-DECLARE_SCENE_OBJECT(Actor);
+    DECLARE_SCENE_OBJECT(Actor);
     friend Level;
     friend PrefabManager;
     friend Scene;
+    friend SceneRendering;
     friend Prefab;
     friend PrefabInstanceData;
 
 protected:
-
     int8 _isActive : 1;
     int8 _isActiveInHierarchy : 1;
     int8 _isPrefabRoot : 1;
     int8 _isEnabled : 1;
+    int8 _drawNoCulling : 1;
     byte _layer;
     byte _tag;
-    Scene* _scene;
     StaticFlags _staticFlags;
     Transform _localTransform;
     Transform _transform;
     BoundingSphere _sphere;
     BoundingBox _box;
     String _name;
+    Scene* _scene;
     PhysicsScene* _physicsScene;
 
 private:
-
     // Disable copying
     Actor(Actor const&) = delete;
     Actor& operator=(Actor const&) = delete;
 
 public:
-
     /// <summary>
     /// List with all child actors attached to the actor (readonly). All items are valid (not null).
     /// </summary>
@@ -77,7 +76,6 @@ public:
     HideFlags HideFlags;
 
 public:
-
     /// <summary>
     /// Gets the object layer (index). Can be used for selective rendering or ignoring raycasts.
     /// </summary>
@@ -162,7 +160,6 @@ public:
     API_PROPERTY() void SetName(const StringView& value);
 
 public:
-
     /// <summary>
     /// Gets the scene object which contains this actor.
     /// </summary>
@@ -208,7 +205,7 @@ public:
     /// </summary>
     /// <param name="type">Type of the actor to search for. Includes any actors derived from the type.</param>
     /// <returns>The child actor or null.</returns>
-    API_FUNCTION() Actor* GetChild(const MClass* type) const;
+    API_FUNCTION() Actor* GetChild(API_PARAM(Attributes="TypeReference(typeof(Actor))") const MClass* type) const;
 
     /// <summary>
     /// Gets the child actor of the given type.
@@ -221,11 +218,27 @@ public:
     }
 
     /// <summary>
+    /// Finds the child actor of the given type or creates a new one.
+    /// </summary>
+    /// <returns>The child actor.</returns>
+    template<typename T>
+    T* GetOrAddChild()
+    {
+        T* result = (T*)GetChild(T::GetStaticClass());
+        if (!result)
+        {
+            result = New<T>();
+            result->SetParent(this, false, false);
+        }
+        return result;
+    }
+
+    /// <summary>
     /// Gets the child actors of the given type.
     /// </summary>
     /// <param name="type">Type of the actor to search for. Includes any actors derived from the type.</param>
     /// <returns>The child actors.</returns>
-    API_FUNCTION() Array<Actor*> GetChildren(const MClass* type) const;
+    API_FUNCTION() Array<Actor*> GetChildren(API_PARAM(Attributes="TypeReference(typeof(Actor))") const MClass* type) const;
 
     /// <summary>
     /// Gets the child actors of the given type.
@@ -242,8 +255,13 @@ public:
         return result;
     }
 
-public:
+    /// <summary>
+    /// Destroys the children. Calls Object.Destroy on every child actor and unlinks them for this actor.
+    /// </summary>
+    /// <param name="timeLeft">The time left to destroy object (in seconds).</param>
+    API_FUNCTION(Attributes="NoAnimate") void DestroyChildren(float timeLeft = 0.0f);
 
+public:
     /// <summary>
     /// Gets amount of scripts.
     /// </summary>
@@ -265,7 +283,7 @@ public:
     /// </summary>
     /// <param name="type">Type of the script to search for. Includes any scripts derived from the type.</param>
     /// <returns>The script or null.</returns>
-    API_FUNCTION() Script* GetScript(const MClass* type) const;
+    API_FUNCTION() Script* GetScript(API_PARAM(Attributes="TypeReference(typeof(Script))") const MClass* type) const;
 
     /// <summary>
     /// Gets the script of the given type from this actor.
@@ -282,7 +300,7 @@ public:
     /// </summary>
     /// <param name="type">Type of the script to search for. Includes any scripts derived from the type.</param>
     /// <returns>The scripts.</returns>
-    API_FUNCTION() Array<Script*> GetScripts(const MClass* type) const;
+    API_FUNCTION() Array<Script*> GetScripts(API_PARAM(Attributes="TypeReference(typeof(Script))") const MClass* type) const;
 
     /// <summary>
     /// Gets the scripts of the given type from this actor.
@@ -300,7 +318,6 @@ public:
     }
 
 public:
-
     /// <summary>
     /// Gets value indicating if actor is active in the scene.
     /// </summary>
@@ -393,7 +410,6 @@ public:
     }
 
 public:
-
     /// <summary>
     /// Gets the actor's world transformation.
     /// </summary>
@@ -443,7 +459,7 @@ public:
     /// Gets actor scale in 3D space.
     /// </summary>
     API_PROPERTY(Attributes="HideInEditor, NoSerialize")
-    FORCE_INLINE Vector3 GetScale() const
+    FORCE_INLINE Float3 GetScale() const
     {
         return _transform.Scale;
     }
@@ -452,7 +468,7 @@ public:
     /// Sets actor scale in 3D space
     /// </summary>
     /// <param name="value">The value to set.</param>
-    API_PROPERTY() void SetScale(const Vector3& value);
+    API_PROPERTY() void SetScale(const Float3& value);
 
     /// <summary>
     /// Gets actor rotation matrix.
@@ -467,7 +483,6 @@ public:
     API_PROPERTY() void SetRotation(const Matrix& value);
 
 public:
-
     /// <summary>
     /// Gets the random per-instance value (normalized to range 0-1).
     /// </summary>
@@ -481,19 +496,18 @@ public:
     /// </summary>
     /// <returns>The result value.</returns>
     API_PROPERTY(Attributes="HideInEditor, NoSerialize")
-    FORCE_INLINE Vector3 GetDirection() const
+    FORCE_INLINE Float3 GetDirection() const
     {
-        return Vector3::Transform(Vector3::Forward, GetOrientation());
+        return Float3::Transform(Float3::Forward, GetOrientation());
     }
 
     /// <summary>
     /// Sets actor direction vector (forward)
     /// </summary>
     /// <param name="value">The value to set.</param>
-    API_PROPERTY() void SetDirection(const Vector3& value);
+    API_PROPERTY() void SetDirection(const Float3& value);
 
 public:
-
     /// <summary>
     /// Resets the actor local transform.
     /// </summary>
@@ -517,7 +531,7 @@ public:
     /// <summary>
     /// Gets local position of the actor in parent actor space.
     /// </summary>
-    API_PROPERTY(Attributes="EditorDisplay(\"Transform\", \"Position\"), DefaultValue(typeof(Vector3), \"0,0,0\"), EditorOrder(-30), NoSerialize, CustomEditorAlias(\"FlaxEditor.CustomEditors.Editors.ActorTransformEditor+PositionScaleEditor\")")
+    API_PROPERTY(Attributes="EditorDisplay(\"Transform\", \"Position\"), DefaultValue(typeof(Vector3), \"0,0,0\"), EditorOrder(-30), NoSerialize, CustomEditorAlias(\"FlaxEditor.CustomEditors.Editors.ActorTransformEditor+PositionEditor\")")
     FORCE_INLINE Vector3 GetLocalPosition() const
     {
         return _localTransform.Translation;
@@ -532,6 +546,7 @@ public:
     /// <summary>
     /// Gets local rotation of the actor in parent actor space.
     /// </summary>
+    /// <code>Actor.LocalOrientation *= Quaternion.Euler(0, 10 * Time.DeltaTime, 0)</code>
     API_PROPERTY(Attributes="EditorDisplay(\"Transform\", \"Rotation\"), DefaultValue(typeof(Quaternion), \"0,0,0,1\"), EditorOrder(-20), NoSerialize, CustomEditorAlias(\"FlaxEditor.CustomEditors.Editors.ActorTransformEditor+OrientationEditor\")")
     FORCE_INLINE Quaternion GetLocalOrientation() const
     {
@@ -547,8 +562,8 @@ public:
     /// <summary>
     /// Gets local scale vector of the actor in parent actor space.
     /// </summary>
-    API_PROPERTY(Attributes="EditorDisplay(\"Transform\", \"Scale\"), DefaultValue(typeof(Vector3), \"1,1,1\"), Limit(float.MinValue, float.MaxValue, 0.01f), EditorOrder(-10), NoSerialize, CustomEditorAlias(\"FlaxEditor.CustomEditors.Editors.ActorTransformEditor+PositionScaleEditor\")")
-    FORCE_INLINE Vector3 GetLocalScale() const
+    API_PROPERTY(Attributes="EditorDisplay(\"Transform\", \"Scale\"), DefaultValue(typeof(Float3), \"1,1,1\"), Limit(float.MinValue, float.MaxValue, 0.01f), EditorOrder(-10), NoSerialize, CustomEditorAlias(\"FlaxEditor.CustomEditors.Editors.ActorTransformEditor+ScaleEditor\")")
+    FORCE_INLINE Float3 GetLocalScale() const
     {
         return _localTransform.Scale;
     }
@@ -557,7 +572,7 @@ public:
     /// Sets local scale vector of the actor in parent actor space.
     /// </summary>
     /// <param name="value">The value to set.</param>
-    API_PROPERTY() void SetLocalScale(const Vector3& value);
+    API_PROPERTY() void SetLocalScale(const Float3& value);
 
     /// <summary>
     /// Moves the actor (also can rotate it) in world space.
@@ -591,7 +606,6 @@ public:
     }
 
 public:
-
     /// <summary>
     /// Gets actor bounding sphere that defines 3D space intersecting with the actor (for determination of the visibility for actor).
     /// </summary>
@@ -637,25 +651,17 @@ public:
     /// </summary>
     void UnregisterObjectHierarchy();
 
-public:
-
     /// <summary>
-    /// Draws this actor. Called by Scene Rendering service. This call is more optimized than generic Draw (eg. models are rendered during all passed but other actors are invoked only during GBufferFill pass).
+    /// Calls Initialize for all objects in the actor hierarchy.
+    /// </summary>
+    void InitializeHierarchy();
+
+public:
+    /// <summary>
+    /// Draws this actor. Called by Scene Rendering service. This call is more optimized than generic Draw (eg. geometry is rendered during all pass types but other actors are drawn only during GBufferFill pass).
     /// </summary>
     /// <param name="renderContext">The rendering context.</param>
     virtual void Draw(RenderContext& renderContext);
-
-    /// <summary>
-    /// Draws this actor. Called during custom actor rendering or any other generic rendering from code.
-    /// </summary>
-    /// <param name="renderContext">The rendering context.</param>
-    virtual void DrawGeneric(RenderContext& renderContext);
-
-    /// <summary>
-    /// Draws this actor and all its children (full scene hierarchy part).
-    /// </summary>
-    /// <param name="renderContext">The rendering context.</param>
-    void DrawHierarchy(RenderContext& renderContext);
 
 #if USE_EDITOR
 
@@ -672,7 +678,6 @@ public:
 #endif
 
 public:
-
     /// <summary>
     /// Changes the script order.
     /// </summary>
@@ -693,7 +698,6 @@ public:
     API_PROPERTY() bool IsPrefabRoot() const;
 
 public:
-
     /// <summary>
     /// Tries to find the actor with the given name in this actor hierarchy (checks this actor and all children hierarchy).
     /// </summary>
@@ -706,7 +710,7 @@ public:
     /// </summary>
     /// <param name="type">Type of the actor to search for. Includes any actors derived from the type.</param>
     /// <returns>Actor instance if found, null otherwise.</returns>
-    API_FUNCTION() Actor* FindActor(const MClass* type) const;
+    API_FUNCTION() Actor* FindActor(API_PARAM(Attributes="TypeReference(typeof(Actor))") const MClass* type) const;
 
     /// <summary>
     /// Tries to find the actor of the given type in this actor hierarchy (checks this actor and all children hierarchy).
@@ -723,7 +727,7 @@ public:
     /// </summary>
     /// <param name="type">Type of the actor to search for. Includes any actors derived from the type.</param>
     /// <returns>Script instance if found, null otherwise.</returns>
-    API_FUNCTION() Script* FindScript(const MClass* type) const;
+    API_FUNCTION() Script* FindScript(API_PARAM(Attributes="TypeReference(typeof(Script))") const MClass* type) const;
 
     /// <summary>
     /// Tries to find the script of the given type in this actor hierarchy (checks this actor and all children hierarchy).
@@ -756,7 +760,7 @@ public:
     /// <param name="distance">When the method completes, contains the distance of the intersection (if any valid).</param>
     /// <param name="normal">When the method completes, contains the intersection surface normal vector (if any valid).</param>
     /// <returns>True whether the two objects intersected, otherwise false.</returns>
-    API_FUNCTION() virtual bool IntersectsItself(const Ray& ray, API_PARAM(Out) float& distance, API_PARAM(Out) Vector3& normal);
+    API_FUNCTION() virtual bool IntersectsItself(const Ray& ray, API_PARAM(Out) Real& distance, API_PARAM(Out) Vector3& normal);
 
     /// <summary>
     /// Determines if there is an intersection between the current object or any it's child and a ray.
@@ -765,7 +769,7 @@ public:
     /// <param name="distance">When the method completes, contains the distance of the intersection (if any valid).</param>
     /// <param name="normal">When the method completes, contains the intersection surface normal vector (if any valid).</param>
     /// <returns>The target hit actor that is the closest to the ray.</returns>
-    API_FUNCTION() Actor* Intersects(const Ray& ray, API_PARAM(Out) float& distance, API_PARAM(Out) Vector3& normal);
+    API_FUNCTION() Actor* Intersects(const Ray& ray, API_PARAM(Out) Real& distance, API_PARAM(Out) Vector3& normal);
 
     /// <summary>
     /// Rotates actor to orient it towards the specified world position.
@@ -794,7 +798,6 @@ public:
     API_FUNCTION() Quaternion LookingAt(const Vector3& worldPos, const Vector3& worldUp) const;
 
 public:
-
     /// <summary>
     /// Execute custom action on actors tree.
     /// Action should returns false to stop calling deeper.
@@ -831,7 +834,6 @@ public:
     }
 
 public:
-
     /// <summary>
     /// Performs actors serialization to the raw bytes.
     /// </summary>
@@ -891,7 +893,6 @@ public:
     API_FUNCTION() void FromJson(const StringAnsiView& json);
 
 public:
-
     /// <summary>
     /// Called when actor gets added to game systems. Occurs on BeginPlay event or when actor gets activated in hierarchy. Use this event to register object to other game system (eg. audio).
     /// </summary>
@@ -973,10 +974,11 @@ public:
     API_PROPERTY(Attributes="HideInEditor") PhysicsScene* GetPhysicsScene() const;
 
 protected:
-    virtual void OnPhysicsSceneChanged(PhysicsScene* previous) {}
+    virtual void OnPhysicsSceneChanged(PhysicsScene* previous)
+    {
+    }
 
 private:
-
     void SetSceneInHierarchy(Scene* scene);
     void OnEnableInHierarchy();
     void OnDisableInHierarchy();
@@ -986,7 +988,6 @@ private:
     static bool IsSubClassOf(const Script* object, const MClass* klass);
 
 public:
-
     // [ScriptingObject]
     String ToString() const override;
     void OnDeleteObject() override;
@@ -998,8 +999,7 @@ public:
     void SetOrderInParent(int32 index) override;
     void LinkPrefab(const Guid& prefabId, const Guid& prefabObjectId) override;
     void BreakPrefabLink() override;
-    void PostLoad() override;
-    void PostSpawn() override;
+    void Initialize() override;
     void BeginPlay(SceneBeginData* data) override;
     void EndPlay() override;
     void Serialize(SerializeStream& stream, const void* otherObj) override;

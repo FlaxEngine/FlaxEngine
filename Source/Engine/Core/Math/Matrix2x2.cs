@@ -72,8 +72,7 @@ namespace FlaxEngine
         /// <param name="m12">The value to assign at row 1 column 2 of the Matrix2x2.</param>
         /// <param name="m21">The value to assign at row 2 column 1 of the Matrix2x2.</param>
         /// <param name="m22">The value to assign at row 2 column 2 of the Matrix2x2.</param>
-        public Matrix2x2(float m11, float m12,
-                         float m21, float m22)
+        public Matrix2x2(float m11, float m12, float m21, float m22)
         {
             M11 = m11;
             M12 = m12;
@@ -93,10 +92,8 @@ namespace FlaxEngine
                 throw new ArgumentNullException(nameof(values));
             if (values.Length != 4)
                 throw new ArgumentOutOfRangeException(nameof(values), "There must be sixteen and only four input values for Matrix2x2.");
-
             M11 = values[0];
             M12 = values[1];
-
             M21 = values[3];
             M22 = values[4];
         }
@@ -104,9 +101,9 @@ namespace FlaxEngine
         /// <summary>
         /// Gets or sets the first row in the Matrix2x2; that is M11, M12
         /// </summary>
-        public Vector2 Row1
+        public Float2 Row1
         {
-            get => new Vector2(M11, M12);
+            get => new Float2(M11, M12);
             set
             {
                 M11 = value.X;
@@ -117,9 +114,9 @@ namespace FlaxEngine
         /// <summary>
         /// Gets or sets the second row in the Matrix2x2; that is M21, M22
         /// </summary>
-        public Vector2 Row2
+        public Float2 Row2
         {
-            get => new Vector2(M21, M22);
+            get => new Float2(M21, M22);
             set
             {
                 M21 = value.X;
@@ -130,9 +127,9 @@ namespace FlaxEngine
         /// <summary>
         /// Gets or sets the first column in the Matrix2x2; that is M11, M21
         /// </summary>
-        public Vector2 Column1
+        public Float2 Column1
         {
-            get => new Vector2(M11, M21);
+            get => new Float2(M11, M21);
             set
             {
                 M11 = value.X;
@@ -143,9 +140,9 @@ namespace FlaxEngine
         /// <summary>
         /// Gets or sets the second column in the Matrix2x2; that is M12, M22
         /// </summary>
-        public Vector2 Column2
+        public Float2 Column2
         {
-            get => new Vector2(M12, M22);
+            get => new Float2(M12, M22);
             set
             {
                 M12 = value.X;
@@ -156,9 +153,9 @@ namespace FlaxEngine
         /// <summary>
         /// Gets or sets the scale of the Matrix2x2; that is M11, M22.
         /// </summary>
-        public Vector2 ScaleVector
+        public Float2 ScaleVector
         {
-            get => new Vector2(M11, M22);
+            get => new Float2(M11, M22);
             set
             {
                 M11 = value.X;
@@ -169,9 +166,6 @@ namespace FlaxEngine
         /// <summary>
         /// Gets a value indicating whether this instance is an identity Matrix2x2.
         /// </summary>
-        /// <value>
-        /// <c>true</c> if this instance is an identity Matrix2x2; otherwise, <c>false</c>.
-        /// </value>
         public bool IsIdentity => Equals(Identity);
 
         /// <summary>
@@ -187,16 +181,11 @@ namespace FlaxEngine
             {
                 switch (index)
                 {
-                case 0:
-                    return M11;
-                case 1:
-                    return M12;
-                case 2:
-                    return M21;
-                case 3:
-                    return M22;
+                case 0: return M11;
+                case 1: return M12;
+                case 2: return M21;
+                case 3: return M22;
                 }
-
                 throw new ArgumentOutOfRangeException(nameof(index), "Indices for Matrix2x2 run from 0 to 3, inclusive.");
             }
             set
@@ -215,8 +204,7 @@ namespace FlaxEngine
                 case 3:
                     M22 = value;
                     break;
-                default:
-                    throw new ArgumentOutOfRangeException(nameof(index), "Indices for Matrix2x2 run from 0 to 3, inclusive.");
+                default: throw new ArgumentOutOfRangeException(nameof(index), "Indices for Matrix2x2 run from 0 to 3, inclusive.");
                 }
             }
         }
@@ -237,7 +225,6 @@ namespace FlaxEngine
                     throw new ArgumentOutOfRangeException(nameof(row), "Rows and columns for matrices run from 0 to 1, inclusive.");
                 if (column < 0 || column > 1)
                     throw new ArgumentOutOfRangeException(nameof(column), "Rows and columns for matrices run from 0 to 1, inclusive.");
-
                 return this[(row * 2) + column];
             }
             set
@@ -246,7 +233,6 @@ namespace FlaxEngine
                     throw new ArgumentOutOfRangeException(nameof(row), "Rows and columns for matrices run from 0 to 1, inclusive.");
                 if (column < 0 || column > 1)
                     throw new ArgumentOutOfRangeException(nameof(column), "Rows and columns for matrices run from 0 to 1, inclusive.");
-
                 this[(row * 2) + column] = value;
             }
         }
@@ -277,13 +263,7 @@ namespace FlaxEngine
         /// <returns>A 4-element array containing the components of the Matrix2x2.</returns>
         public float[] ToArray()
         {
-            return new[]
-            {
-                M11,
-                M12,
-                M21,
-                M22
-            };
+            return new[] { M11, M12, M21, M22 };
         }
 
         /// <summary>
@@ -312,7 +292,7 @@ namespace FlaxEngine
         /// </summary>
         /// <param name="scale">The scale vector.</param>
         /// <param name="result">The result.</param>
-        public static void Scale(ref Vector2 scale, out Matrix2x2 result)
+        public static void Scale(ref Float2 scale, out Matrix2x2 result)
         {
             result = new Matrix2x2(scale.X, 0, 0, scale.Y);
         }
@@ -324,7 +304,7 @@ namespace FlaxEngine
         /// </summary>
         /// <param name="shearAngles">The shear angles.</param>
         /// <param name="result">The result.</param>
-        public static void Shear(ref Vector2 shearAngles, out Matrix2x2 result)
+        public static void Shear(ref Float2 shearAngles, out Matrix2x2 result)
         {
             float shearX = shearAngles.X == 0 ? 0 : (1.0f / Mathf.Tan(Mathf.DegreesToRadians * (90 - Mathf.Clamp(shearAngles.X, -89.0f, 89.0f))));
             float shearY = shearAngles.Y == 0 ? 0 : (1.0f / Mathf.Tan(Mathf.DegreesToRadians * (90 - Mathf.Clamp(shearAngles.Y, -89.0f, 89.0f))));
@@ -349,11 +329,9 @@ namespace FlaxEngine
         /// <param name="vector">The vector.</param>
         /// <param name="matrix">The matrix.</param>
         /// <param name="result">The result.</param>
-        public static void Transform(ref Vector2 vector, ref Matrix2x2 matrix, out Vector2 result)
+        public static void Transform(ref Float2 vector, ref Matrix2x2 matrix, out Float2 result)
         {
-            result = new Vector2(
-                vector.X * matrix.M11 + vector.Y * matrix.M21,
-                vector.X * matrix.M12 + vector.Y * matrix.M22);
+            result = new Float2(vector.X * matrix.M11 + vector.Y * matrix.M21, vector.X * matrix.M12 + vector.Y * matrix.M22);
         }
 
         /// <summary>
@@ -364,12 +342,7 @@ namespace FlaxEngine
         /// <param name="result">The product of the two matrices.</param>
         public static void Multiply(ref Matrix2x2 left, ref Matrix2x2 right, out Matrix2x2 result)
         {
-            result = new Matrix2x2(
-                (left.M11 * right.M11) + (left.M12 * right.M21),
-                (left.M11 * right.M12) + (left.M12 * right.M22),
-                (left.M21 * right.M11) + (left.M22 * right.M21),
-                (left.M21 * right.M12) + (left.M22 * right.M22)
-            );
+            result = new Matrix2x2((left.M11 * right.M11) + (left.M12 * right.M21), (left.M11 * right.M12) + (left.M12 * right.M22), (left.M21 * right.M11) + (left.M22 * right.M21), (left.M21 * right.M12) + (left.M22 * right.M22));
         }
 
         /// <summary>
@@ -380,9 +353,7 @@ namespace FlaxEngine
         public static void Invert(ref Matrix2x2 value, out Matrix2x2 result)
         {
             float invDet = value.InverseDeterminant();
-            result = new Matrix2x2(
-                value.M22 * invDet, -value.M12 * invDet,
-                -value.M21 * invDet, value.M11 * invDet);
+            result = new Matrix2x2(value.M22 * invDet, -value.M12 * invDet, -value.M21 * invDet, value.M11 * invDet);
         }
 
         /// <summary>
@@ -415,12 +386,7 @@ namespace FlaxEngine
         /// <returns>A 4x4 Matrix with zero translation and M44=1</returns>
         public static explicit operator Matrix(Matrix2x2 value)
         {
-            return new Matrix(
-                value.M11, value.M12, 0, 0,
-                value.M21, value.M22, 0, 0,
-                0, 0, 1, 0,
-                0, 0, 0, 1
-            );
+            return new Matrix(value.M11, value.M12, 0, 0, value.M21, value.M22, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1);
         }
 
         /// <summary>
@@ -429,10 +395,7 @@ namespace FlaxEngine
         /// <returns>A 2x2 Matrix</returns>
         public static explicit operator Matrix2x2(Matrix value)
         {
-            return new Matrix2x2(
-                value.M11, value.M12,
-                value.M21, value.M22
-            );
+            return new Matrix2x2(value.M11, value.M12, value.M21, value.M22);
         }
 
         /// <summary>
@@ -441,11 +404,7 @@ namespace FlaxEngine
         /// <returns>A 3x3 Matrix with zero translation and M44=1</returns>
         public static explicit operator Matrix3x3(Matrix2x2 value)
         {
-            return new Matrix3x3(
-                value.M11, value.M12, 0,
-                value.M21, value.M22, 0,
-                0, 0, 1
-            );
+            return new Matrix3x3(value.M11, value.M12, 0, value.M21, value.M22, 0, 0, 0, 1);
         }
 
         /// <summary>
@@ -454,53 +413,38 @@ namespace FlaxEngine
         /// <returns>A 2x2 Matrix</returns>
         public static explicit operator Matrix2x2(Matrix3x3 value)
         {
-            return new Matrix2x2(
-                value.M11, value.M12,
-                value.M21, value.M22
-            );
+            return new Matrix2x2(value.M11, value.M12, value.M21, value.M22);
         }
 
         /// <summary>
         /// Returns a <see cref="System.String"/> that represents this instance.
         /// </summary>
-        /// <returns>
-        /// A <see cref="System.String"/> that represents this instance.
-        /// </returns>
+        /// <returns>A <see cref="System.String"/> that represents this instance.</returns>
         public override string ToString()
         {
-            return string.Format(CultureInfo.CurrentCulture, FormatString,
-                                 M11, M12, M21, M22);
+            return string.Format(CultureInfo.CurrentCulture, FormatString, M11, M12, M21, M22);
         }
 
         /// <summary>
         /// Returns a <see cref="System.String"/> that represents this instance.
         /// </summary>
         /// <param name="format">The format.</param>
-        /// <returns>
-        /// A <see cref="System.String"/> that represents this instance.
-        /// </returns>
+        /// <returns>A <see cref="System.String"/> that represents this instance.</returns>
         public string ToString(string format)
         {
             if (format == null)
                 return ToString();
-
-            return string.Format(format, CultureInfo.CurrentCulture, FormatString,
-                                 M11.ToString(format, CultureInfo.CurrentCulture), M12.ToString(format, CultureInfo.CurrentCulture),
-                                 M21.ToString(format, CultureInfo.CurrentCulture), M22.ToString(format, CultureInfo.CurrentCulture));
+            return string.Format(format, CultureInfo.CurrentCulture, FormatString, M11.ToString(format, CultureInfo.CurrentCulture), M12.ToString(format, CultureInfo.CurrentCulture), M21.ToString(format, CultureInfo.CurrentCulture), M22.ToString(format, CultureInfo.CurrentCulture));
         }
 
         /// <summary>
         /// Returns a <see cref="System.String"/> that represents this instance.
         /// </summary>
         /// <param name="formatProvider">The format provider.</param>
-        /// <returns>
-        /// A <see cref="System.String"/> that represents this instance.
-        /// </returns>
+        /// <returns>A <see cref="System.String"/> that represents this instance.</returns>
         public string ToString(IFormatProvider formatProvider)
         {
-            return string.Format(formatProvider, FormatString,
-                                 M11.ToString(formatProvider), M12.ToString(formatProvider),
-                                 M21.ToString(formatProvider), M22.ToString(formatProvider));
+            return string.Format(formatProvider, FormatString, M11.ToString(formatProvider), M12.ToString(formatProvider), M21.ToString(formatProvider), M22.ToString(formatProvider));
         }
 
         /// <summary>
@@ -508,25 +452,18 @@ namespace FlaxEngine
         /// </summary>
         /// <param name="format">The format.</param>
         /// <param name="formatProvider">The format provider.</param>
-        /// <returns>
-        /// A <see cref="System.String"/> that represents this instance.
-        /// </returns>
+        /// <returns>A <see cref="System.String"/> that represents this instance.</returns>
         public string ToString(string format, IFormatProvider formatProvider)
         {
             if (format == null)
                 return ToString(formatProvider);
-
-            return string.Format(format, formatProvider, FormatString,
-                                 M11.ToString(format, formatProvider), M12.ToString(format, formatProvider),
-                                 M21.ToString(format, formatProvider), M22.ToString(format, formatProvider));
+            return string.Format(format, formatProvider, FormatString, M11.ToString(format, formatProvider), M12.ToString(format, formatProvider), M21.ToString(format, formatProvider), M22.ToString(format, formatProvider));
         }
 
         /// <summary>
         /// Returns a hash code for this instance.
         /// </summary>
-        /// <returns>
-        /// A hash code for this instance, suitable for use in hashing algorithms and data structures like a hash table. 
-        /// </returns>
+        /// <returns>A hash code for this instance, suitable for use in hashing algorithms and data structures like a hash table. </returns>
         public override int GetHashCode()
         {
             unchecked
@@ -543,24 +480,17 @@ namespace FlaxEngine
         /// Determines whether the specified <see cref="Matrix2x2"/> is equal to this instance.
         /// </summary>
         /// <param name="other">The <see cref="Matrix2x2"/> to compare with this instance.</param>
-        /// <returns>
-        /// <c>true</c> if the specified <see cref="Matrix2x2"/> is equal to this instance; otherwise, <c>false</c>.
-        /// </returns>
+        /// <returns><c>true</c> if the specified <see cref="Matrix2x2"/> is equal to this instance; otherwise, <c>false</c>.</returns>
         public bool Equals(ref Matrix2x2 other)
         {
-            return Mathf.NearEqual(other.M11, M11) &&
-                   Mathf.NearEqual(other.M12, M12) &&
-                   Mathf.NearEqual(other.M21, M21) &&
-                   Mathf.NearEqual(other.M22, M22);
+            return Mathf.NearEqual(other.M11, M11) && Mathf.NearEqual(other.M12, M12) && Mathf.NearEqual(other.M21, M21) && Mathf.NearEqual(other.M22, M22);
         }
 
         /// <summary>
         /// Determines whether the specified <see cref="Matrix2x2"/> is equal to this instance.
         /// </summary>
         /// <param name="other">The <see cref="Matrix2x2"/> to compare with this instance.</param>
-        /// <returns>
-        /// <c>true</c> if the specified <see cref="Matrix2x2"/> is equal to this instance; otherwise, <c>false</c>.
-        /// </returns>
+        /// <returns><c>true</c> if the specified <see cref="Matrix2x2"/> is equal to this instance; otherwise, <c>false</c>.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool Equals(Matrix2x2 other)
         {
@@ -572,27 +502,17 @@ namespace FlaxEngine
         /// </summary>
         public static bool Equals(ref Matrix2x2 a, ref Matrix2x2 b)
         {
-            return
-            Mathf.NearEqual(a.M11, b.M11) &&
-            Mathf.NearEqual(a.M12, b.M12) &&
-            Mathf.NearEqual(a.M21, b.M21) &&
-            Mathf.NearEqual(a.M22, b.M22);
+            return Mathf.NearEqual(a.M11, b.M11) && Mathf.NearEqual(a.M12, b.M12) && Mathf.NearEqual(a.M21, b.M21) && Mathf.NearEqual(a.M22, b.M22);
         }
 
         /// <summary>
         /// Determines whether the specified <see cref="System.Object"/> is equal to this instance.
         /// </summary>
         /// <param name="value">The <see cref="System.Object"/> to compare with this instance.</param>
-        /// <returns>
-        /// <c>true</c> if the specified <see cref="System.Object"/> is equal to this instance; otherwise, <c>false</c>.
-        /// </returns>
+        /// <returns><c>true</c> if the specified <see cref="System.Object"/> is equal to this instance; otherwise, <c>false</c>.</returns>
         public override bool Equals(object value)
         {
-            if (!(value is Matrix2x2))
-                return false;
-
-            var strongValue = (Matrix2x2)value;
-            return Equals(ref strongValue);
+            return value is Matrix2x2 other && Equals(ref other);
         }
     }
 }

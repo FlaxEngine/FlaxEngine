@@ -16,7 +16,7 @@ namespace FlaxEditor.Windows
         /// </summary>
         public event Action<ContextMenu, ContentItem> ContextMenuShow;
 
-        private void ShowContextMenuForItem(ContentItem item, ref Vector2 location, bool isTreeNode)
+        private void ShowContextMenuForItem(ContentItem item, ref Float2 location, bool isTreeNode)
         {
             Assert.IsNull(_newElement);
 

@@ -4,6 +4,7 @@
 #include "ModelInstanceEntry.h"
 #include "Engine/Content/Assets/Material.h"
 #include "Engine/Content/Assets/Model.h"
+#include "Engine/Core/Math/Transform.h"
 #include "Engine/Graphics/GPUContext.h"
 #include "Engine/Graphics/GPUDevice.h"
 #include "Engine/Graphics/RenderTask.h"
@@ -18,7 +19,7 @@
 namespace
 {
     template<typename IndexType>
-    bool UpdateMesh(Mesh* mesh, uint32 vertexCount, uint32 triangleCount, Vector3* vertices, IndexType* triangles, Vector3* normals, Vector3* tangents, Vector2* uvs, Color32* colors)
+    bool UpdateMesh(Mesh* mesh, uint32 vertexCount, uint32 triangleCount, Float3* vertices, IndexType* triangles, Float3* normals, Float3* tangents, Float2* uvs, Color32* colors)
     {
         auto model = mesh->GetModel();
         CHECK_RETURN(model && model->IsVirtual(), true);
@@ -34,12 +35,12 @@ namespace
             {
                 for (uint32 i = 0; i < vertexCount; i++)
                 {
-                    const Vector3 normal = normals[i];
-                    const Vector3 tangent = tangents[i];
+                    const Float3 normal = normals[i];
+                    const Float3 tangent = tangents[i];
 
                     // Calculate bitangent sign
-                    Vector3 bitangent = Vector3::Normalize(Vector3::Cross(normal, tangent));
-                    byte sign = static_cast<byte>(Vector3::Dot(Vector3::Cross(bitangent, normal), tangent) < 0.0f ? 1 : 0);
+                    Float3 bitangent = Float3::Normalize(Float3::Cross(normal, tangent));
+                    byte sign = static_cast<byte>(Float3::Dot(Float3::Cross(bitangent, normal), tangent) < 0.0f ? 1 : 0);
 
                     // Set tangent frame
                     vb1[i].Tangent = Float1010102(tangent * 0.5f + 0.5f, sign);
@@ -50,20 +51,20 @@ namespace
             {
                 for (uint32 i = 0; i < vertexCount; i++)
                 {
-                    const Vector3 normal = normals[i];
+                    const Float3 normal = normals[i];
 
                     // Calculate tangent
-                    Vector3 c1 = Vector3::Cross(normal, Vector3::UnitZ);
-                    Vector3 c2 = Vector3::Cross(normal, Vector3::UnitY);
-                    Vector3 tangent;
+                    Float3 c1 = Float3::Cross(normal, Float3::UnitZ);
+                    Float3 c2 = Float3::Cross(normal, Float3::UnitY);
+                    Float3 tangent;
                     if (c1.LengthSquared() > c2.LengthSquared())
                         tangent = c1;
                     else
                         tangent = c2;
 
                     // Calculate bitangent sign
-                    Vector3 bitangent = Vector3::Normalize(Vector3::Cross(normal, tangent));
-                    byte sign = static_cast<byte>(Vector3::Dot(Vector3::Cross(bitangent, normal), tangent) < 0.0f ? 1 : 0);
+                    Float3 bitangent = Float3::Normalize(Float3::Cross(normal, tangent));
+                    byte sign = static_cast<byte>(Float3::Dot(Float3::Cross(bitangent, normal), tangent) < 0.0f ? 1 : 0);
 
                     // Set tangent frame
                     vb1[i].Tangent = Float1010102(tangent * 0.5f + 0.5f, sign);
@@ -74,8 +75,8 @@ namespace
         else
         {
             // Set default tangent frame
-            const auto n = Float1010102(Vector3::UnitZ);
-            const auto t = Float1010102(Vector3::UnitX);
+            const auto n = Float1010102(Float3::UnitZ);
+            const auto t = Float1010102(Float3::UnitX);
             for (uint32 i = 0; i < vertexCount; i++)
             {
                 vb1[i].Normal = n;
@@ -89,12 +90,12 @@ namespace
         }
         else
         {
-            auto v = Half2(0, 0);
+            auto v = Half2::Zero;
             for (uint32 i = 0; i < vertexCount; i++)
                 vb1[i].TexCoord = v;
         }
         {
-            auto v = Half2(0, 0);
+            auto v = Half2::Zero;
             for (uint32 i = 0; i < vertexCount; i++)
                 vb1[i].LightmapUVs = v;
         }
@@ -115,11 +116,11 @@ namespace
     {
         ASSERT((uint32)mono_array_length(verticesObj) >= vertexCount);
         ASSERT((uint32)mono_array_length(trianglesObj) / 3 >= triangleCount);
-        auto vertices = (Vector3*)(void*)mono_array_addr_with_size(verticesObj, sizeof(Vector3), 0);
+        auto vertices = (Float3*)(void*)mono_array_addr_with_size(verticesObj, sizeof(Float3), 0);
         auto triangles = (IndexType*)(void*)mono_array_addr_with_size(trianglesObj, sizeof(IndexType), 0);
-        const auto normals = normalsObj ? (Vector3*)(void*)mono_array_addr_with_size(normalsObj, sizeof(Vector3), 0) : nullptr;
-        const auto tangents = tangentsObj ? (Vector3*)(void*)mono_array_addr_with_size(tangentsObj, sizeof(Vector3), 0) : nullptr;
-        const auto uvs = uvObj ? (Vector2*)(void*)mono_array_addr_with_size(uvObj, sizeof(Vector2), 0) : nullptr;
+        const auto normals = normalsObj ? (Float3*)(void*)mono_array_addr_with_size(normalsObj, sizeof(Float3), 0) : nullptr;
+        const auto tangents = tangentsObj ? (Float3*)(void*)mono_array_addr_with_size(tangentsObj, sizeof(Float3), 0) : nullptr;
+        const auto uvs = uvObj ? (Float2*)(void*)mono_array_addr_with_size(uvObj, sizeof(Float2), 0) : nullptr;
         const auto colors = colorsObj ? (Color32*)(void*)mono_array_addr_with_size(colorsObj, sizeof(Color32), 0) : nullptr;
         return UpdateMesh<IndexType>(mesh, vertexCount, triangleCount, vertices, triangles, normals, tangents, uvs, colors);
     }
@@ -159,7 +160,9 @@ bool Mesh::UpdateMesh(uint32 vertexCount, uint32 triangleCount, VB0ElementType* 
         model->LODs[_lodIndex]._verticesCount += _vertices;
 
         // Calculate mesh bounds
-        SetBounds(BoundingBox::FromPoints((Vector3*)vb0, vertexCount));
+        BoundingBox bounds;
+        BoundingBox::FromPoints((Float3*)vb0, vertexCount, bounds);
+        SetBounds(bounds);
 
         // Send event (actors using this model can update bounds, etc.)
         model->onLoaded();
@@ -168,12 +171,12 @@ bool Mesh::UpdateMesh(uint32 vertexCount, uint32 triangleCount, VB0ElementType* 
     return failed;
 }
 
-bool Mesh::UpdateMesh(uint32 vertexCount, uint32 triangleCount, Vector3* vertices, uint16* triangles, Vector3* normals, Vector3* tangents, Vector2* uvs, Color32* colors)
+bool Mesh::UpdateMesh(uint32 vertexCount, uint32 triangleCount, Float3* vertices, uint16* triangles, Float3* normals, Float3* tangents, Float2* uvs, Color32* colors)
 {
     return ::UpdateMesh<uint16>(this, vertexCount, triangleCount, vertices, triangles, normals, tangents, uvs, colors);
 }
 
-bool Mesh::UpdateMesh(uint32 vertexCount, uint32 triangleCount, Vector3* vertices, uint32* triangles, Vector3* normals, Vector3* tangents, Vector2* uvs, Color32* colors)
+bool Mesh::UpdateMesh(uint32 vertexCount, uint32 triangleCount, Float3* vertices, uint32* triangles, Float3* normals, Float3* tangents, Float2* uvs, Color32* colors)
 {
     return ::UpdateMesh<uint32>(this, vertexCount, triangleCount, vertices, triangles, normals, tangents, uvs, colors);
 }
@@ -268,9 +271,9 @@ bool Mesh::Load(uint32 vertices, uint32 triangles, void* vb0, void* vb1, void* v
     if (!_collisionProxy.HasData())
     {
         if (use16BitIndexBuffer)
-            _collisionProxy.Init<uint16>(vertices, triangles, (Vector3*)vb0, (uint16*)ib);
+            _collisionProxy.Init<uint16>(vertices, triangles, (Float3*)vb0, (uint16*)ib);
         else
-            _collisionProxy.Init<uint32>(vertices, triangles, (Vector3*)vb0, (uint32*)ib);
+            _collisionProxy.Init<uint32>(vertices, triangles, (Float3*)vb0, (uint32*)ib);
     }
 #endif
 
@@ -313,11 +316,11 @@ void Mesh::Unload()
     _cachedVertexBuffer[2].Clear();
 }
 
-bool Mesh::Intersects(const Ray& ray, const Matrix& world, float& distance, Vector3& normal) const
+bool Mesh::Intersects(const Ray& ray, const Matrix& world, Real& distance, Vector3& normal) const
 {
     // Get bounding box of the mesh bounds transformed by the instance world matrix
     Vector3 corners[8];
-    GetCorners(corners);
+    _box.GetCorners(corners);
     Vector3 tmp;
     Vector3::Transform(corners[0], world, tmp);
     Vector3 min = tmp;
@@ -337,7 +340,38 @@ bool Mesh::Intersects(const Ray& ray, const Matrix& world, float& distance, Vect
         // Use exact test on raw geometry
         return _collisionProxy.Intersects(ray, world, distance, normal);
     }
+    distance = 0;
+    normal = Vector3::Up;
+    return false;
+#else
+	return transformedBox.Intersects(ray, distance, normal);
+#endif
+}
 
+bool Mesh::Intersects(const Ray& ray, const Transform& transform, Real& distance, Vector3& normal) const
+{
+    // Get bounding box of the mesh bounds transformed by the instance world matrix
+    Vector3 corners[8];
+    _box.GetCorners(corners);
+    Vector3 tmp;
+    transform.LocalToWorld(corners[0], tmp);
+    Vector3 min = tmp;
+    Vector3 max = tmp;
+    for (int32 i = 1; i < 8; i++)
+    {
+        transform.LocalToWorld(corners[i], tmp);
+        min = Vector3::Min(min, tmp);
+        max = Vector3::Max(max, tmp);
+    }
+    const BoundingBox transformedBox(min, max);
+
+    // Test ray on box
+#if USE_PRECISE_MESH_INTERSECTS
+    if (transformedBox.Intersects(ray, distance))
+    {
+        // Use exact test on raw geometry
+        return _collisionProxy.Intersects(ray, transform, distance, normal);
+    }
     distance = 0;
     normal = Vector3::Up;
     return false;

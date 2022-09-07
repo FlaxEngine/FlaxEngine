@@ -20,11 +20,9 @@
 class ImportTexture
 {
 public:
-
     typedef TextureTool::Options Options;
 
 public:
-
     /// <summary>
     /// Tries the get texture import options from the target location asset.
     /// </summary>
@@ -93,7 +91,6 @@ public:
     static CreateAssetResult ImportIES(CreateAssetContext& context);
 
 private:
-
     static void InitOptions(CreateAssetContext& context, Options& options);
     static CreateAssetResult Create(CreateAssetContext& context, const TextureData& textureData, Options& options);
     static CreateAssetResult Create(CreateAssetContext& context, const TextureBase::InitData& textureData, Options& options);

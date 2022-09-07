@@ -2,6 +2,7 @@
 
 #include "ParticleEmitterGraph.CPU.h"
 #include "Engine/Core/Random.h"
+#include "Engine/Utilities/Noise.h"
 
 // ReSharper disable CppCStyleCast
 // ReSharper disable CppClangTidyClangDiagnosticCastAlign
@@ -10,9 +11,9 @@
 // ReSharper disable CppClangTidyClangDiagnosticOldStyleCast
 
 #define RAND Random::Rand()
-#define RAND2 Vector2(RAND, RAND)
-#define RAND3 Vector3(RAND, RAND, RAND)
-#define RAND4 Vector4(RAND, RAND, RAND, RAND)
+#define RAND2 Float2(RAND, RAND)
+#define RAND3 Float3(RAND, RAND, RAND)
+#define RAND4 Float4(RAND, RAND, RAND, RAND)
 
 // Enable to insert CPU profiler events for particles modules
 #define PARTICLE_EMITTER_MODULES_PROFILE 0
@@ -25,78 +26,16 @@
 
 namespace
 {
-    FORCE_INLINE Vector4 Mod289(Vector4 x)
-    {
-        return x - Vector4::Floor(x * (1.0f / 289.0f)) * 289.0f;
-    }
-
-    FORCE_INLINE Vector4 Perm(Vector4 x)
-    {
-        return Mod289((x * 34.0f + 1.0f) * x);
-    }
-
-    float Noise(Vector3 p)
-    {
-        Vector3 a = Vector3::Floor(p);
-        Vector3 d = p - a;
-        d = d * d * (3.0f - 2.0f * d);
-
-        Vector4 b(a.X, a.X + 1.0f, a.Y, a.Y + 1.0f);
-        Vector4 k1 = Perm(Vector4(b.X, b.Y, b.X, b.Y));
-        Vector4 k2 = Perm(Vector4(k1.X + b.Z, k1.Y + b.Z, k1.X + b.W, k1.Y + b.W));
-
-        Vector4 c = k2 + Vector4(a.Z);
-        Vector4 k3 = Perm(c);
-        Vector4 k4 = Perm(c + 1.0f);
-
-        Vector4 o1 = Vector4::Frac(k3 * (1.0f / 41.0f));
-        Vector4 o2 = Vector4::Frac(k4 * (1.0f / 41.0f));
-
-        Vector4 o3 = o2 * d.Z + o1 * (1.0f - d.Z);
-        Vector2 o4 = Vector2(o3.Y, o3.W) * d.X + Vector2(o3.X, o3.Z) * (1.0f - d.X);
-
-        return o4.Y * d.Y + o4.X * (1.0f - d.Y);
-    }
-
-    Vector3 Noise3D(Vector3 p)
-    {
-        const float o = Noise(p);
-        const float a = Noise(p + Vector3(0.0001f, 0.0f, 0.0f));
-        const float b = Noise(p + Vector3(0.0f, 0.0001f, 0.0f));
-        const float c = Noise(p + Vector3(0.0f, 0.0f, 0.0001f));
-
-        const Vector3 grad(o - a, o - b, o - c);
-        const Vector3 other = Vector3::Abs(Vector3(grad.Z, grad.X, grad.Y));
-        return Vector3::Normalize(Vector3::Cross(grad, other));
-    }
-
-    Vector3 Noise3D(Vector3 position, int32 octaves, float roughness)
-    {
-        float weight = 0.0f;
-        Vector3 noise = Vector3::Zero;
-        float scale = 1.0f;
-        for (int32 i = 0; i < octaves; i++)
-        {
-            const float curWeight = Math::Pow(1.0f - ((float)i / (float)octaves), Math::Lerp(2.0f, 0.2f, roughness));
-
-            noise += Noise3D(position * scale) * curWeight;
-            weight += curWeight;
-
-            scale *= 1.72531f;
-        }
-        return noise / Math::Max(weight, ZeroTolerance);
-    }
-
     VariantType::Types GetVariantType(ParticleAttribute::ValueTypes type)
     {
         switch (type)
         {
-        case ParticleAttribute::ValueTypes::Vector2:
-            return VariantType::Vector2;
-        case ParticleAttribute::ValueTypes::Vector3:
-            return VariantType::Vector3;
-        case ParticleAttribute::ValueTypes::Vector4:
-            return VariantType::Vector4;
+        case ParticleAttribute::ValueTypes::Float2:
+            return VariantType::Float2;
+        case ParticleAttribute::ValueTypes::Float3:
+            return VariantType::Float3;
+        case ParticleAttribute::ValueTypes::Float4:
+            return VariantType::Float4;
         case ParticleAttribute::ValueTypes::Float:
             return VariantType::Float;
         case ParticleAttribute::ValueTypes::Int:
@@ -121,14 +60,14 @@ int32 ParticleEmitterGraphCPUExecutor::ProcessSpawnModule(int32 index)
     // Calculate particles to spawn during this frame
     switch (node->TypeID)
     {
-        // Constant Spawn Rate
+    // Constant Spawn Rate
     case 100:
     {
         const float rate = Math::Max((float)TryGetValue(node->GetBox(0), node->Values[2]), 0.0f);
         spawnCount += rate * context.DeltaTime;
         break;
     }
-        // Single Burst
+    // Single Burst
     case 101:
     {
         const bool isFirstUpdate = (context.Data->Time - context.DeltaTime) <= 0.0f;
@@ -139,7 +78,7 @@ int32 ParticleEmitterGraphCPUExecutor::ProcessSpawnModule(int32 index)
         }
         break;
     }
-        // Periodic
+    // Periodic
     case 102:
     {
         float& nextSpawnTime = data.NextSpawnTime;
@@ -152,14 +91,14 @@ int32 ParticleEmitterGraphCPUExecutor::ProcessSpawnModule(int32 index)
         }
         break;
     }
-        // Periodic Burst (range)
+    // Periodic Burst (range)
     case 103:
     {
         float& nextSpawnTime = data.NextSpawnTime;
         if (nextSpawnTime - context.Data->Time <= 0.0f)
         {
-            const Vector2 countMinMax = (Vector2)TryGetValue(node->GetBox(0), node->Values[2]);
-            const Vector2 delayMinMax = (Vector2)TryGetValue(node->GetBox(1), node->Values[3]);
+            const Float2 countMinMax = (Float2)TryGetValue(node->GetBox(0), node->Values[2]);
+            const Float2 delayMinMax = (Float2)TryGetValue(node->GetBox(1), node->Values[3]);
             const float count = Math::Max(countMinMax.X + RAND * (countMinMax.Y - countMinMax.X), 0.0f);
             const float delay = Math::Max(delayMinMax.X + RAND * (delayMinMax.Y - delayMinMax.X), 0.0f);
             nextSpawnTime = context.Data->Time + delay;
@@ -186,7 +125,7 @@ void ParticleEmitterGraphCPUExecutor::ProcessModule(ParticleEmitterGraphCPUNode*
 
     switch (node->TypeID)
     {
-        // Orient Sprite
+    // Orient Sprite
     case 201:
     case 303:
     {
@@ -212,24 +151,24 @@ void ParticleEmitterGraphCPUExecutor::ProcessModule(ParticleEmitterGraphCPUNode*
                 for (int32 particleIndex = particlesStart; particleIndex < particlesEnd; particleIndex++)
                 {
                     context.ParticleIndex = particleIndex;
-                    const Vector3 vector = (Vector3)GetValue(box, 3);
-                    *((Vector3*)customFacingVectorPtr) = vector;
+                    const Float3 vector = (Float3)GetValue(box, 3);
+                    *((Float3*)customFacingVectorPtr) = vector;
                     customFacingVectorPtr += stride;
                 }
             }
             else
             {
-                const Vector3 vector = (Vector3)GetValue(box, 3);
+                const Float3 vector = (Float3)GetValue(box, 3);
                 for (int32 particleIndex = particlesStart; particleIndex < particlesEnd; particleIndex++)
                 {
-                    *((Vector3*)customFacingVectorPtr) = vector;
+                    *((Float3*)customFacingVectorPtr) = vector;
                     customFacingVectorPtr += stride;
                 }
             }
         }
         break;
     }
-        // Orient Model
+    // Orient Model
     case 213:
     case 309:
     {
@@ -246,7 +185,7 @@ void ParticleEmitterGraphCPUExecutor::ProcessModule(ParticleEmitterGraphCPUNode*
         }
         break;
     }
-        // Update Age
+    // Update Age
     case 300:
     {
         PARTICLE_EMITTER_MODULE("Update Age");
@@ -259,7 +198,7 @@ void ParticleEmitterGraphCPUExecutor::ProcessModule(ParticleEmitterGraphCPUNode*
         }
         break;
     }
-        // Gravity/Force
+    // Gravity/Force
     case 301:
     case 304:
     {
@@ -272,23 +211,23 @@ void ParticleEmitterGraphCPUExecutor::ProcessModule(ParticleEmitterGraphCPUNode*
             for (int32 particleIndex = particlesStart; particleIndex < particlesEnd; particleIndex++)
             {
                 context.ParticleIndex = particleIndex;
-                const Vector3 force = (Vector3)GetValue(box, 2);
-                *((Vector3*)velocityPtr) += force * context.DeltaTime;
+                const Float3 force = (Float3)GetValue(box, 2);
+                *((Float3*)velocityPtr) += force * context.DeltaTime;
                 velocityPtr += stride;
             }
         }
         else
         {
-            const Vector3 force = (Vector3)GetValue(box, 2);
+            const Float3 force = (Float3)GetValue(box, 2);
             for (int32 particleIndex = particlesStart; particleIndex < particlesEnd; particleIndex++)
             {
-                *((Vector3*)velocityPtr) += force * context.DeltaTime;
+                *((Float3*)velocityPtr) += force * context.DeltaTime;
                 velocityPtr += stride;
             }
         }
         break;
     }
-        // Conform to Sphere
+    // Conform to Sphere
     case 305:
     {
         PARTICLE_EMITTER_MODULE("Conform to Sphere");
@@ -308,24 +247,24 @@ void ParticleEmitterGraphCPUExecutor::ProcessModule(ParticleEmitterGraphCPUNode*
         auto stickForceBox = node->GetBox(5);
 
 #define INPUTS_FETCH() \
-	const Vector3 sphereCenter = (Vector3)GetValue(sphereCenterBox, 2); \
+	const Float3 sphereCenter = (Float3)GetValue(sphereCenterBox, 2); \
 	const float sphereRadius = (float)GetValue(sphereRadiusBox, 3); \
 	const float attractionSpeed = (float)GetValue(attractionSpeedBox, 4); \
 	const float attractionForce = (float)GetValue(attractionForceBox, 5); \
 	const float stickDistance = (float)GetValue(stickDistanceBox, 6); \
 	const float stickForce = (float)GetValue(stickForceBox, 7)
 #define LOGIC() \
-	Vector3 dir = sphereCenter - *(Vector3*)positionPtr; \
+	Float3 dir = sphereCenter - *(Float3*)positionPtr; \
 	float distToCenter = dir.Length(); \
 	float distToSurface = distToCenter - sphereRadius; \
 	dir /= Math::Max(0.0001f, distToCenter); \
-	Vector3 velocity = *(Vector3*)velocityPtr; \
-	float spdNormal = Vector3::Dot(dir, velocity); \
+	Float3 velocity = *(Float3*)velocityPtr; \
+	float spdNormal = Float3::Dot(dir, velocity); \
 	float ratio = Math::SmoothStep(0.0f, stickDistance * 2.0f, Math::Abs(distToSurface)); \
 	float tgtSpeed = Math::Sign(distToSurface) * attractionSpeed * ratio; \
 	float deltaSpeed = tgtSpeed - spdNormal; \
-	Vector3 deltaVelocity = dir * (Math::Sign(deltaSpeed) * Math::Min(Math::Abs(deltaSpeed), context.DeltaTime * Math::Lerp(stickForce, attractionForce, ratio)) / Math::Max(*(float*)massPtr, ZeroTolerance)); \
-	*(Vector3*)velocityPtr = velocity + deltaVelocity; \
+	Float3 deltaVelocity = dir * (Math::Sign(deltaSpeed) * Math::Min(Math::Abs(deltaSpeed), context.DeltaTime * Math::Lerp(stickForce, attractionForce, ratio)) / Math::Max(*(float*)massPtr, ZeroTolerance)); \
+	*(Float3*)velocityPtr = velocity + deltaVelocity; \
 	positionPtr += stride; \
 	velocityPtr += stride; \
 	massPtr += stride
@@ -351,7 +290,7 @@ void ParticleEmitterGraphCPUExecutor::ProcessModule(ParticleEmitterGraphCPUNode*
 #undef LOGIC
         break;
     }
-        // Kill (sphere)
+    // Kill (sphere)
     case 306:
     {
         PARTICLE_EMITTER_MODULE("Kill");
@@ -364,12 +303,12 @@ void ParticleEmitterGraphCPUExecutor::ProcessModule(ParticleEmitterGraphCPUNode*
         auto sign = (bool)node->Values[4] ? -1.0f : 1.0f;
 
 #define INPUTS_FETCH() \
-	const Vector3 sphereCenter = (Vector3)GetValue(sphereCenterBox, 2); \
+	const Float3 sphereCenter = (Float3)GetValue(sphereCenterBox, 2); \
 	const float sphereRadius = (float)GetValue(sphereRadiusBox, 3); \
 	const float sphereRadiusSqr = sphereRadius * sphereRadius
 #define LOGIC() \
-	Vector3 dir = *(Vector3*)positionPtr - sphereCenter; \
-	float lengthSqr = Vector3::Dot(dir, dir); \
+	Float3 dir = *(Float3*)positionPtr - sphereCenter; \
+	float lengthSqr = Float3::Dot(dir, dir); \
 	if (sign * lengthSqr <= sign * sphereRadiusSqr) \
 	{ \
 		particlesEnd--; \
@@ -400,7 +339,7 @@ void ParticleEmitterGraphCPUExecutor::ProcessModule(ParticleEmitterGraphCPUNode*
 #undef LOGIC
         break;
     }
-        // Kill (box)
+    // Kill (box)
     case 307:
     {
         PARTICLE_EMITTER_MODULE("Kill");
@@ -413,12 +352,12 @@ void ParticleEmitterGraphCPUExecutor::ProcessModule(ParticleEmitterGraphCPUNode*
         auto invert = (bool)node->Values[4];
 
 #define INPUTS_FETCH() \
-	const Vector3 boxCenter = (Vector3)GetValue(boxCenterBox, 2); \
-	const Vector3 boxSize = (Vector3)GetValue(boxSizeBox, 3)
+	const Float3 boxCenter = (Float3)GetValue(boxCenterBox, 2); \
+	const Float3 boxSize = (Float3)GetValue(boxSizeBox, 3)
 #define LOGIC() \
-	Vector3 dir = *(Vector3*)positionPtr - boxCenter; \
-	Vector3 absDir = Vector3::Abs(dir); \
-	Vector3 size = boxSize * 0.5f; \
+	Float3 dir = *(Float3*)positionPtr - boxCenter; \
+	Float3 absDir = Float3::Abs(dir); \
+	Float3 size = boxSize * 0.5f; \
 	bool collision; \
 	if (invert) \
 		collision = absDir.X >= size.X || absDir.Y >= size.Y || absDir.Z >= size.Z; \
@@ -454,7 +393,7 @@ void ParticleEmitterGraphCPUExecutor::ProcessModule(ParticleEmitterGraphCPUNode*
 #undef LOGIC
         break;
     }
-        // Kill (custom)
+    // Kill (custom)
     case 308:
     {
         PARTICLE_EMITTER_MODULE("Kill (custom)");
@@ -492,7 +431,7 @@ void ParticleEmitterGraphCPUExecutor::ProcessModule(ParticleEmitterGraphCPUNode*
 #undef LOGIC
         break;
     }
-        // Linear Drag
+    // Linear Drag
     case 310:
     {
         PARTICLE_EMITTER_MODULE("Linear Drag");
@@ -511,8 +450,8 @@ void ParticleEmitterGraphCPUExecutor::ProcessModule(ParticleEmitterGraphCPUNode*
 #define LOGIC() \
 	float particleDrag = drag; \
     if (useSpriteSize) \
-        particleDrag *= ((Vector2*)spriteSizePtr)->MulValues(); \
-    *((Vector3*)velocityPtr) *= Math::Max(0.0f, 1.0f - (particleDrag * context.DeltaTime) / Math::Max(*(float*)massPtr, ZeroTolerance)); \
+        particleDrag *= ((Float2*)spriteSizePtr)->MulValues(); \
+    *((Float3*)velocityPtr) *= Math::Max(0.0f, 1.0f - (particleDrag * context.DeltaTime) / Math::Max(*(float*)massPtr, ZeroTolerance)); \
     velocityPtr += stride; \
     massPtr += stride; \
     spriteSizePtr += stride
@@ -538,7 +477,7 @@ void ParticleEmitterGraphCPUExecutor::ProcessModule(ParticleEmitterGraphCPUNode*
 #undef LOGIC
         break;
     }
-        // Turbulence
+    // Turbulence
     case 311:
     {
         PARTICLE_EMITTER_MODULE("Turbulence");
@@ -554,9 +493,9 @@ void ParticleEmitterGraphCPUExecutor::ProcessModule(ParticleEmitterGraphCPUNode*
         auto intensityBox = node->GetBox(4);
         auto octavesCountBox = node->GetBox(5);
 
-        const Vector3 fieldPosition = (Vector3)GetValue(node->GetBox(0), 2);
-        const Vector3 fieldRotation = (Vector3)GetValue(node->GetBox(1), 3);
-        const Vector3 fieldScale = (Vector3)GetValue(node->GetBox(2), 4);
+        const Float3 fieldPosition = (Float3)GetValue(node->GetBox(0), 2);
+        const Float3 fieldRotation = (Float3)GetValue(node->GetBox(1), 3);
+        const Float3 fieldScale = (Float3)GetValue(node->GetBox(2), 4);
 
         // Note: no support for per-particle transformation
         Matrix fieldTransformMatrix, invFieldTransformMatrix;
@@ -569,10 +508,10 @@ void ParticleEmitterGraphCPUExecutor::ProcessModule(ParticleEmitterGraphCPUNode*
 	const float intensity = (float)GetValue(intensityBox, 6); \
 	const int32 octavesCount = (int)GetValue(octavesCountBox, 7)
 #define LOGIC() \
-	Vector3 vectorFieldUVW = Vector3::Transform(*((Vector3*)positionPtr), invFieldTransformMatrix); \
-	Vector3 force = Noise3D(vectorFieldUVW + 0.5f, octavesCount, roughness); \
-    force = Vector3::Transform(force, fieldTransformMatrix) * intensity; \
-    *((Vector3*)velocityPtr) += force * (context.DeltaTime / Math::Max(*(float*)massPtr, ZeroTolerance)); \
+	Float3 vectorFieldUVW = Float3::Transform(*((Float3*)positionPtr), invFieldTransformMatrix); \
+	Float3 force = Noise::CustomNoise3D(vectorFieldUVW + 0.5f, octavesCount, roughness); \
+    force = Float3::Transform(force, fieldTransformMatrix) * intensity; \
+    *((Float3*)velocityPtr) += force * (context.DeltaTime / Math::Max(*(float*)massPtr, ZeroTolerance)); \
     positionPtr += stride; \
     velocityPtr += stride; \
     massPtr += stride
@@ -598,7 +537,7 @@ void ParticleEmitterGraphCPUExecutor::ProcessModule(ParticleEmitterGraphCPUNode*
 #undef LOGIC
         break;
     }
-        // Set Attribute
+    // Set Attribute
     case 200:
     case 302:
     {
@@ -630,7 +569,7 @@ void ParticleEmitterGraphCPUExecutor::ProcessModule(ParticleEmitterGraphCPUNode*
         }
         break;
     }
-        // Set Position/Lifetime/Age/..
+    // Set Position/Lifetime/Age/..
     case 250:
     case 251:
     case 252:
@@ -688,7 +627,7 @@ void ParticleEmitterGraphCPUExecutor::ProcessModule(ParticleEmitterGraphCPUNode*
         }
         break;
     }
-        // Position (sphere surface)
+    // Position (sphere surface)
     case 202:
     {
         PARTICLE_EMITTER_MODULE("Position");
@@ -701,16 +640,16 @@ void ParticleEmitterGraphCPUExecutor::ProcessModule(ParticleEmitterGraphCPUNode*
         auto arcBox = node->GetBox(2);
 
 #define INPUTS_FETCH() \
-	const Vector3 center = (Vector3)GetValue(centerBox, 2); \
+	const Float3 center = (Float3)GetValue(centerBox, 2); \
 	const float radius = (float)GetValue(radiusBox, 3); \
 	const float arc = (float)GetValue(arcBox, 4) * DegreesToRadians
 #define LOGIC() \
 	float cosPhi = 2.0f * RAND - 1.0f; \
 	float theta = arc * RAND; \
-	Vector2 sincosTheta; \
+	Float2 sincosTheta; \
 	Math::SinCos(theta, sincosTheta.X, sincosTheta.Y); \
 	sincosTheta *= Math::Sqrt(1.0f - cosPhi * cosPhi); \
-	*(Vector3*)positionPtr = Vector3(sincosTheta, cosPhi) * radius + center; \
+	*(Float3*)positionPtr = Float3(sincosTheta, cosPhi) * radius + center; \
 	positionPtr += stride
 
         if (node->UsePerParticleDataResolve())
@@ -734,7 +673,7 @@ void ParticleEmitterGraphCPUExecutor::ProcessModule(ParticleEmitterGraphCPUNode*
 #undef LOGIC
         break;
     }
-        // Position (plane)
+    // Position (plane)
     case 203:
     {
         PARTICLE_EMITTER_MODULE("Position");
@@ -746,10 +685,10 @@ void ParticleEmitterGraphCPUExecutor::ProcessModule(ParticleEmitterGraphCPUNode*
         auto sizeBox = node->GetBox(1);
 
 #define INPUTS_FETCH() \
-	const Vector3 center = (Vector3)GetValue(centerBox, 2); \
-	const Vector2 size = (Vector2)GetValue(sizeBox, 3);
+	const Float3 center = (Float3)GetValue(centerBox, 2); \
+	const Float2 size = (Float2)GetValue(sizeBox, 3);
 #define LOGIC() \
-	*(Vector3*)positionPtr = Vector3((RAND - 0.5f) * size.X, 0.0f, (RAND - 0.5f) * size.Y) + center; \
+	*(Float3*)positionPtr = Float3((RAND - 0.5f) * size.X, 0.0f, (RAND - 0.5f) * size.Y) + center; \
 	positionPtr += stride
 
         if (node->UsePerParticleDataResolve())
@@ -773,7 +712,7 @@ void ParticleEmitterGraphCPUExecutor::ProcessModule(ParticleEmitterGraphCPUNode*
 #undef LOGIC
         break;
     }
-        // Position (circle)
+    // Position (circle)
     case 204:
     {
         PARTICLE_EMITTER_MODULE("Position");
@@ -786,14 +725,14 @@ void ParticleEmitterGraphCPUExecutor::ProcessModule(ParticleEmitterGraphCPUNode*
         auto arcBox = node->GetBox(2);
 
 #define INPUTS_FETCH() \
-	const Vector3 center = (Vector3)GetValue(centerBox, 2); \
+	const Float3 center = (Float3)GetValue(centerBox, 2); \
 	const float radius = (float)GetValue(radiusBox, 3); \
 	const float arc = (float)GetValue(arcBox, 4) * DegreesToRadians
 #define LOGIC() \
 	float theta = arc * RAND; \
-	Vector2 sincosTheta; \
+	Float2 sincosTheta; \
 	Math::SinCos(theta, sincosTheta.X, sincosTheta.Y); \
-	*(Vector3*)positionPtr = Vector3(sincosTheta, 0.0f) * radius + center; \
+	*(Float3*)positionPtr = Float3(sincosTheta, 0.0f) * radius + center; \
 	positionPtr += stride
 
         if (node->UsePerParticleDataResolve())
@@ -817,7 +756,7 @@ void ParticleEmitterGraphCPUExecutor::ProcessModule(ParticleEmitterGraphCPUNode*
 #undef LOGIC
         break;
     }
-        // Position (disc)
+    // Position (disc)
     case 205:
     {
         PARTICLE_EMITTER_MODULE("Position");
@@ -830,14 +769,14 @@ void ParticleEmitterGraphCPUExecutor::ProcessModule(ParticleEmitterGraphCPUNode*
         auto arcBox = node->GetBox(2);
 
 #define INPUTS_FETCH() \
-	const Vector3 center = (Vector3)GetValue(centerBox, 2); \
+	const Float3 center = (Float3)GetValue(centerBox, 2); \
 	const float radius = (float)GetValue(radiusBox, 3); \
 	const float arc = (float)GetValue(arcBox, 4) * DegreesToRadians
 #define LOGIC() \
 	float theta = arc * RAND; \
-	Vector2 sincosTheta; \
+	Float2 sincosTheta; \
 	Math::SinCos(theta, sincosTheta.X, sincosTheta.Y); \
-	*(Vector3*)positionPtr = Vector3(sincosTheta, 0.0f) * (radius * RAND) + center; \
+	*(Float3*)positionPtr = Float3(sincosTheta, 0.0f) * (radius * RAND) + center; \
 	positionPtr += stride
 
         if (node->UsePerParticleDataResolve())
@@ -861,7 +800,7 @@ void ParticleEmitterGraphCPUExecutor::ProcessModule(ParticleEmitterGraphCPUNode*
 #undef LOGIC
         break;
     }
-        // Position (box surface)
+    // Position (box surface)
     case 206:
     {
         PARTICLE_EMITTER_MODULE("Position");
@@ -873,22 +812,22 @@ void ParticleEmitterGraphCPUExecutor::ProcessModule(ParticleEmitterGraphCPUNode*
         auto sizeBox = node->GetBox(1);
 
 #define INPUTS_FETCH() \
-	const Vector3 center = (Vector3)GetValue(centerBox, 2); \
-	const Vector3 size = (Vector3)GetValue(sizeBox, 3);
+	const Float3 center = (Float3)GetValue(centerBox, 2); \
+	const Float3 size = (Float3)GetValue(sizeBox, 3);
 #define LOGIC() \
 	float areaXY = Math::Max(size.X * size.Y, ZeroTolerance); \
 	float areaXZ = Math::Max(size.X * size.Z, ZeroTolerance); \
 	float areaYZ = Math::Max(size.Y * size.Z, ZeroTolerance); \
 	float face = RAND * (areaXY + areaXZ + areaYZ); \
 	float flip = (RAND >= 0.5f) ? 0.5f : -0.5f; \
-	Vector3 cube(RAND2 - 0.5f, flip); \
+	Float3 cube(RAND2 - 0.5f, flip); \
 	if (face < areaXY) \
-		cube = Vector3(cube.X, cube.Y, cube.Z); \
+		cube = Float3(cube.X, cube.Y, cube.Z); \
 	else if(face < areaXY + areaXZ) \
-		cube = Vector3(cube.X, cube.Z, cube.Y); \
+		cube = Float3(cube.X, cube.Z, cube.Y); \
 	else \
-		cube = Vector3(cube.Z, cube.X, cube.Y); \
-	*(Vector3*)positionPtr = cube * size + center; \
+		cube = Float3(cube.Z, cube.X, cube.Y); \
+	*(Float3*)positionPtr = cube * size + center; \
 	positionPtr += stride
 
         if (node->UsePerParticleDataResolve())
@@ -912,7 +851,7 @@ void ParticleEmitterGraphCPUExecutor::ProcessModule(ParticleEmitterGraphCPUNode*
 #undef LOGIC
         break;
     }
-        // Position (box volume)
+    // Position (box volume)
     case 207:
     {
         PARTICLE_EMITTER_MODULE("Position");
@@ -924,10 +863,10 @@ void ParticleEmitterGraphCPUExecutor::ProcessModule(ParticleEmitterGraphCPUNode*
         auto sizeBox = node->GetBox(1);
 
 #define INPUTS_FETCH() \
-	const Vector3 center = (Vector3)GetValue(centerBox, 2); \
-	const Vector3 size = (Vector3)GetValue(sizeBox, 3);
+	const Float3 center = (Float3)GetValue(centerBox, 2); \
+	const Float3 size = (Float3)GetValue(sizeBox, 3);
 #define LOGIC() \
-	*(Vector3*)positionPtr = size * (RAND3 - 0.5f) + center; \
+	*(Float3*)positionPtr = size * (RAND3 - 0.5f) + center; \
 	positionPtr += stride
 
         if (node->UsePerParticleDataResolve())
@@ -951,7 +890,7 @@ void ParticleEmitterGraphCPUExecutor::ProcessModule(ParticleEmitterGraphCPUNode*
 #undef LOGIC
         break;
     }
-        // Position (cylinder)
+    // Position (cylinder)
     case 208:
     {
         PARTICLE_EMITTER_MODULE("Position");
@@ -965,15 +904,15 @@ void ParticleEmitterGraphCPUExecutor::ProcessModule(ParticleEmitterGraphCPUNode*
         auto arcBox = node->GetBox(3);
 
 #define INPUTS_FETCH() \
-	const Vector3 center = (Vector3)GetValue(centerBox, 2); \
+	const Float3 center = (Float3)GetValue(centerBox, 2); \
 	const float radius = (float)GetValue(radiusBox, 3); \
 	const float height = (float)GetValue(heightBox, 4); \
 	const float arc = (float)GetValue(arcBox, 5) * DegreesToRadians
 #define LOGIC() \
 	float theta = arc * RAND; \
-	Vector2 sincosTheta; \
+	Float2 sincosTheta; \
 	Math::SinCos(theta, sincosTheta.X, sincosTheta.Y); \
-	*(Vector3*)positionPtr = Vector3(sincosTheta * radius, height * RAND) + center; \
+	*(Float3*)positionPtr = Float3(sincosTheta * radius, height * RAND) + center; \
 	positionPtr += stride
 
         if (node->UsePerParticleDataResolve())
@@ -997,7 +936,7 @@ void ParticleEmitterGraphCPUExecutor::ProcessModule(ParticleEmitterGraphCPUNode*
 #undef LOGIC
         break;
     }
-        // Position (line)
+    // Position (line)
     case 209:
     {
         PARTICLE_EMITTER_MODULE("Position");
@@ -1009,10 +948,10 @@ void ParticleEmitterGraphCPUExecutor::ProcessModule(ParticleEmitterGraphCPUNode*
         auto endBox = node->GetBox(1);
 
 #define INPUTS_FETCH() \
-	const Vector3 start = (Vector3)GetValue(startBox, 2); \
-	const Vector3 end = (Vector3)GetValue(endBox, 3);
+	const Float3 start = (Float3)GetValue(startBox, 2); \
+	const Float3 end = (Float3)GetValue(endBox, 3);
 #define LOGIC() \
-	*(Vector3*)positionPtr = Math::Lerp(start, end, RAND); \
+	*(Float3*)positionPtr = Math::Lerp(start, end, RAND); \
 	positionPtr += stride
 
         if (node->UsePerParticleDataResolve())
@@ -1036,7 +975,7 @@ void ParticleEmitterGraphCPUExecutor::ProcessModule(ParticleEmitterGraphCPUNode*
 #undef LOGIC
         break;
     }
-        // Position (torus)
+    // Position (torus)
     case 210:
     {
         PARTICLE_EMITTER_MODULE("Position");
@@ -1050,34 +989,34 @@ void ParticleEmitterGraphCPUExecutor::ProcessModule(ParticleEmitterGraphCPUNode*
         auto arcBox = node->GetBox(3);
 
 #define INPUTS_FETCH() \
-	const Vector3 center = (Vector3)GetValue(centerBox, 2); \
+	const Float3 center = (Float3)GetValue(centerBox, 2); \
 	const float radius = Math::Max((float)GetValue(radiusBox, 3), ZeroTolerance); \
 	const float thickness = (float)GetValue(thicknessBox, 4); \
 	const float arc = (float)GetValue(arcBox, 5) * DegreesToRadians
 #define LOGIC() \
-	Vector3 u = RAND3; \
+	Float3 u = RAND3; \
 	float sinTheta, cosTheta; \
 	Math::SinCos(u.X * TWO_PI, sinTheta, cosTheta); \
 	float r = Math::Saturate(thickness / radius); \
-	Vector2 s11 = r * Vector2(cosTheta, sinTheta) + Vector2(1, 0); \
-	Vector2 s12 = r * Vector2(-cosTheta, sinTheta) + Vector2(1, 0); \
+	Float2 s11 = r * Float2(cosTheta, sinTheta) + Float2(1, 0); \
+	Float2 s12 = r * Float2(-cosTheta, sinTheta) + Float2(1, 0); \
 	float w = s11.X / (s11.X + s12.X); \
-	Vector3 t; \
+	Float3 t; \
 	float phi; \
 	if (u.Y < w) \
 	{ \
 		phi = arc * u.Y / w; \
-		t = Vector3(s11.X, 0, s11.Y); \
+		t = Float3(s11.X, 0, s11.Y); \
 	} \
 	else \
 	{ \
 		phi = arc * (u.Y - w) / (1.0f - w); \
-		t = Vector3(s12.X, 0, s12.Y); \
+		t = Float3(s12.X, 0, s12.Y); \
 	} \
 	float s, c; \
 	Math::SinCos(phi, c, s); \
-	Vector3 t2 = Vector3(c * t.X - s * t.Y, c * t.Y + s * t.X, t.Z); \
-	*(Vector3*)positionPtr = center + radius * t2; \
+	Float3 t2 = Float3(c * t.X - s * t.Y, c * t.Y + s * t.X, t.Z); \
+	*(Float3*)positionPtr = center + radius * t2; \
 	positionPtr += stride
 
         if (node->UsePerParticleDataResolve())
@@ -1101,7 +1040,7 @@ void ParticleEmitterGraphCPUExecutor::ProcessModule(ParticleEmitterGraphCPUNode*
 #undef LOGIC
         break;
     }
-        // Position (sphere volume)
+    // Position (sphere volume)
     case 211:
     {
         PARTICLE_EMITTER_MODULE("Position");
@@ -1114,16 +1053,16 @@ void ParticleEmitterGraphCPUExecutor::ProcessModule(ParticleEmitterGraphCPUNode*
         auto arcBox = node->GetBox(2);
 
 #define INPUTS_FETCH() \
-	const Vector3 center = (Vector3)GetValue(centerBox, 2); \
+	const Float3 center = (Float3)GetValue(centerBox, 2); \
 	const float radius = (float)GetValue(radiusBox, 3); \
 	const float arc = (float)GetValue(arcBox, 4) * DegreesToRadians
 #define LOGIC() \
 	float cosPhi = 2.0f * RAND - 1.0f; \
 	float theta = arc * RAND; \
-	Vector2 sincosTheta; \
+	Float2 sincosTheta; \
 	Math::SinCos(theta, sincosTheta.X, sincosTheta.Y); \
 	sincosTheta *= Math::Sqrt(1.0f - cosPhi * cosPhi); \
-	*(Vector3*)positionPtr = Vector3(sincosTheta, cosPhi) * (radius * RAND) + center; \
+	*(Float3*)positionPtr = Float3(sincosTheta, cosPhi) * (radius * RAND) + center; \
 	positionPtr += stride
 
         if (node->UsePerParticleDataResolve())
@@ -1147,13 +1086,13 @@ void ParticleEmitterGraphCPUExecutor::ProcessModule(ParticleEmitterGraphCPUNode*
 #undef LOGIC
         break;
     }
-        // Position (depth)
+    // Position (depth)
     case 212:
     {
         // Not supported
         break;
     }
-        // Position (spiral)
+    // Position (spiral)
     case 214:
     {
         PARTICLE_EMITTER_MODULE("Position");
@@ -1170,16 +1109,16 @@ void ParticleEmitterGraphCPUExecutor::ProcessModule(ParticleEmitterGraphCPUNode*
         auto& arc = *(float*)&context.Data->CustomData[node->CustomDataOffset];
 
 #define INPUTS_FETCH() \
-	const Vector3 center = (Vector3)GetValue(centerBox, 2); \
+	const Float3 center = (Float3)GetValue(centerBox, 2); \
 	const float rotationSpeed = (float)GetValue(rotationSpeedBox, 3); \
 	const float velocityScale = (float)GetValue(velocityScaleBox, 4); \
 	const float arcStep = rotationSpeed / (360.0f * DegreesToRadians)
 #define LOGIC() \
-	Vector2 sincosTheta; \
+	Float2 sincosTheta; \
 	Math::SinCos(arc, sincosTheta.X, sincosTheta.Y); \
 	arc += arcStep; \
-	*(Vector3*)velocityPtr = Vector3(sincosTheta * velocityScale, 0.0f); \
-	*(Vector3*)positionPtr = center; \
+	*(Float3*)velocityPtr = Float3(sincosTheta * velocityScale, 0.0f); \
+	*(Float3*)positionPtr = center; \
 	velocityPtr += stride; \
 	positionPtr += stride
 
@@ -1204,8 +1143,14 @@ void ParticleEmitterGraphCPUExecutor::ProcessModule(ParticleEmitterGraphCPUNode*
 #undef LOGIC
         break;
     }
+    // Position (Global SDF)
+    case 215:
+    {
+        // Not supported
+        break;
+    }
 
-        // Helper macros for collision modules to share the code
+    // Helper macros for collision modules to share the code
 #define COLLISION_BEGIN() \
 	PARTICLE_EMITTER_MODULE("Collision"); \
 	auto& positionAttr = context.Data->Buffer->Layout->Attributes[node->Attributes[0]]; \
@@ -1228,24 +1173,24 @@ void ParticleEmitterGraphCPUExecutor::ProcessModule(ParticleEmitterGraphCPUNode*
 	const float friction = (float)GetValue(frictionBox, 6); \
 	const float lifetimeLoss = (float)GetValue(lifetimeLossBox, 7)
 #define COLLISION_LOGIC() \
-		Vector3 randomNormal = Vector3::Normalize(RAND3 * 2.0f - 1.0f); \
-		randomNormal = (Vector3::Dot(randomNormal, n) < 0.0f) ? -randomNormal : randomNormal; \
-		n = Vector3::Normalize(Vector3::Lerp(n, randomNormal, roughness)); \
+		Float3 randomNormal = Float3::Normalize(RAND3 * 2.0f - 1.0f); \
+		randomNormal = (Float3::Dot(randomNormal, n) < 0.0f) ? -randomNormal : randomNormal; \
+		n = Float3::Normalize(Float3::Lerp(n, randomNormal, roughness)); \
 		\
-		float projVelocity = Vector3::Dot(n, velocity); \
-		Vector3 normalVelocity = projVelocity * n; \
-		Vector3 tangentVelocity = velocity - normalVelocity; \
+		float projVelocity = Float3::Dot(n, velocity); \
+		Float3 normalVelocity = projVelocity * n; \
+		Float3 tangentVelocity = velocity - normalVelocity; \
 		if (projVelocity < 0) \
 			velocity -= ((1 + elasticity) * projVelocity) * n; \
 		velocity -= friction * tangentVelocity; \
-		*(Vector3*)velocityPtr = velocity; \
+		*(Float3*)velocityPtr = velocity; \
 		*(float*)agePtr += lifetimeLoss; \
 	} \
 	positionPtr += stride; \
 	velocityPtr += stride; \
 	agePtr += stride
 
-        // Collision (plane)
+    // Collision (plane)
     case 330:
     {
         COLLISION_BEGIN();
@@ -1253,17 +1198,17 @@ void ParticleEmitterGraphCPUExecutor::ProcessModule(ParticleEmitterGraphCPUNode*
         auto planeNormalBox = node->GetBox(6);
 #define INPUTS_FETCH() \
 	COLLISION_INPUTS_FETCH(); \
-	const Vector3 planePosition = (Vector3)GetValue(planePositionBox, 8); \
-	const Vector3 planeNormal = (Vector3)GetValue(planeNormalBox, 9) * sign
+	const Float3 planePosition = (Float3)GetValue(planePositionBox, 8); \
+	const Float3 planeNormal = (Float3)GetValue(planeNormalBox, 9) * sign
 #define LOGIC() \
-	Vector3 position = *(Vector3*)positionPtr; \
-	Vector3 velocity = *(Vector3*)velocityPtr; \
-	Vector3 nextPos = position + velocity * context.DeltaTime; \
-	Vector3 n = planeNormal; \
-	float distToPlane = Vector3::Dot(nextPos, n) - Vector3::Dot(planePosition, n) - radius; \
+	Float3 position = *(Float3*)positionPtr; \
+	Float3 velocity = *(Float3*)velocityPtr; \
+	Float3 nextPos = position + velocity * context.DeltaTime; \
+	Float3 n = planeNormal; \
+	float distToPlane = Float3::Dot(nextPos, n) - Float3::Dot(planePosition, n) - radius; \
 	if (distToPlane < 0.0f) \
 	{ \
-		*(Vector3*)positionPtr = position - n * distToPlane; \
+		*(Float3*)positionPtr = position - n * distToPlane; \
 	COLLISION_LOGIC()
 
         if (node->UsePerParticleDataResolve())
@@ -1287,7 +1232,7 @@ void ParticleEmitterGraphCPUExecutor::ProcessModule(ParticleEmitterGraphCPUNode*
 #undef LOGIC
         break;
     }
-        // Collision (sphere)
+    // Collision (sphere)
     case 331:
     {
         COLLISION_BEGIN();
@@ -1295,20 +1240,20 @@ void ParticleEmitterGraphCPUExecutor::ProcessModule(ParticleEmitterGraphCPUNode*
         auto sphereRadiusBox = node->GetBox(6);
 #define INPUTS_FETCH() \
 	COLLISION_INPUTS_FETCH(); \
-	const Vector3 spherePosition = (Vector3)GetValue(spherePositionBox, 8); \
+	const Float3 spherePosition = (Float3)GetValue(spherePositionBox, 8); \
 	const float sphereRadius = (float)GetValue(sphereRadiusBox, 9)
 #define LOGIC() \
-	Vector3 position = *(Vector3*)positionPtr; \
-	Vector3 velocity = *(Vector3*)velocityPtr; \
-	Vector3 nextPos = position + velocity * context.DeltaTime; \
-	Vector3 dir = nextPos - spherePosition; \
-	float sqrLength = Vector3::Dot(dir, dir); \
+	Float3 position = *(Float3*)positionPtr; \
+	Float3 velocity = *(Float3*)velocityPtr; \
+	Float3 nextPos = position + velocity * context.DeltaTime; \
+	Float3 dir = nextPos - spherePosition; \
+	float sqrLength = Float3::Dot(dir, dir); \
 	float totalRadius = sphereRadius + sign * radius; \
 	if (sign * sqrLength <= sign * totalRadius * totalRadius) \
 	{ \
 		float dist = Math::Sqrt(sqrLength); \
-		Vector3 n = sign * dir / Math::Max(dist, ZeroTolerance); \
-		*(Vector3*)positionPtr = position - n * (dist - totalRadius) * sign; \
+		Float3 n = sign * dir / Math::Max(dist, ZeroTolerance); \
+		*(Float3*)positionPtr = position - n * (dist - totalRadius) * sign; \
 	COLLISION_LOGIC()
 
         if (node->UsePerParticleDataResolve())
@@ -1332,7 +1277,7 @@ void ParticleEmitterGraphCPUExecutor::ProcessModule(ParticleEmitterGraphCPUNode*
 #undef LOGIC
         break;
     }
-        // Collision (box)
+    // Collision (box)
     case 332:
     {
         COLLISION_BEGIN();
@@ -1340,15 +1285,15 @@ void ParticleEmitterGraphCPUExecutor::ProcessModule(ParticleEmitterGraphCPUNode*
         auto boxSizeBox = node->GetBox(6);
 #define INPUTS_FETCH() \
 	COLLISION_INPUTS_FETCH(); \
-	const Vector3 boxPosition = (Vector3)GetValue(boxPositionBox, 8); \
-	const Vector3 boxSize = (Vector3)GetValue(boxSizeBox, 9)
+	const Float3 boxPosition = (Float3)GetValue(boxPositionBox, 8); \
+	const Float3 boxSize = (Float3)GetValue(boxSizeBox, 9)
 #define LOGIC() \
-	Vector3 position = *(Vector3*)positionPtr; \
-	Vector3 velocity = *(Vector3*)velocityPtr; \
-	Vector3 nextPos = position + velocity * context.DeltaTime; \
-	Vector3 dir = nextPos - boxPosition; \
-	Vector3 absDir = Vector3::Abs(dir); \
-	Vector3 halfBoxSize = boxSize * 0.5f + radius * sign; \
+	Float3 position = *(Float3*)positionPtr; \
+	Float3 velocity = *(Float3*)velocityPtr; \
+	Float3 nextPos = position + velocity * context.DeltaTime; \
+	Float3 dir = nextPos - boxPosition; \
+	Float3 absDir = Float3::Abs(dir); \
+	Float3 halfBoxSize = boxSize * 0.5f + radius * sign; \
 	bool collision; \
 	if (invert) \
 		collision = absDir.X > halfBoxSize.X || absDir.Y > halfBoxSize.Y || absDir.Z > halfBoxSize.Z; \
@@ -1356,19 +1301,19 @@ void ParticleEmitterGraphCPUExecutor::ProcessModule(ParticleEmitterGraphCPUNode*
 		collision = absDir.X < halfBoxSize.X && absDir.Y < halfBoxSize.Y && absDir.Z < halfBoxSize.Z; \
 	if (collision) \
 	{ \
-		Vector3 distanceToEdge = (absDir - halfBoxSize); \
-		Vector3 absDistanceToEdge = Vector3::Abs(distanceToEdge); \
-		Vector3 n; \
+		Float3 distanceToEdge = (absDir - halfBoxSize); \
+		Float3 absDistanceToEdge = Float3::Abs(distanceToEdge); \
+		Float3 n; \
 		if (absDistanceToEdge.X < absDistanceToEdge.Y && absDistanceToEdge.X < absDistanceToEdge.Z) \
-			n = Vector3(sign * Math::Sign(dir.X), 0.0f, 0.0f); \
+			n = Float3(sign * Math::Sign(dir.X), 0.0f, 0.0f); \
 		else if (absDistanceToEdge.Y < absDistanceToEdge.Z) \
-			n = Vector3(0.0f, sign * Math::Sign(dir.Y), 0.0f); \
+			n = Float3(0.0f, sign * Math::Sign(dir.Y), 0.0f); \
 		else \
-			n = Vector3(0.0f, 0.0f, sign * Math::Sign(dir.Z)); \
+			n = Float3(0.0f, 0.0f, sign * Math::Sign(dir.Z)); \
 		if (invert) \
-			*(Vector3*)positionPtr = position - Vector3::Max(distanceToEdge, Vector3::Zero) * Vector3(Math::Sign(dir.X), Math::Sign(dir.Y), Math::Sign(dir.Z)); \
+			*(Float3*)positionPtr = position - Float3::Max(distanceToEdge, Float3::Zero) * Float3(Math::Sign(dir.X), Math::Sign(dir.Y), Math::Sign(dir.Z)); \
 		else \
-			*(Vector3*)positionPtr = position - n * distanceToEdge; \
+			*(Float3*)positionPtr = position - n * distanceToEdge; \
 	COLLISION_LOGIC()
 
         if (node->UsePerParticleDataResolve())
@@ -1392,7 +1337,7 @@ void ParticleEmitterGraphCPUExecutor::ProcessModule(ParticleEmitterGraphCPUNode*
 #undef LOGIC
         break;
     }
-        // Collision (cylinder)
+    // Collision (cylinder)
     case 333:
     {
         COLLISION_BEGIN();
@@ -1401,17 +1346,17 @@ void ParticleEmitterGraphCPUExecutor::ProcessModule(ParticleEmitterGraphCPUNode*
         auto cylinderRadiusBox = node->GetBox(7);
 #define INPUTS_FETCH() \
 	COLLISION_INPUTS_FETCH(); \
-	const Vector3 cylinderPosition = (Vector3)GetValue(cylinderPositionBox, 8); \
+	const Float3 cylinderPosition = (Float3)GetValue(cylinderPositionBox, 8); \
 	const float cylinderHeight = (float)GetValue(cylinderHeightBox, 9); \
 	const float cylinderRadius = (float)GetValue(cylinderRadiusBox, 10)
 #define LOGIC() \
-	Vector3 position = *(Vector3*)positionPtr; \
-	Vector3 velocity = *(Vector3*)velocityPtr; \
-	Vector3 nextPos = position + velocity * context.DeltaTime; \
-	Vector3 dir = nextPos - cylinderPosition; \
+	Float3 position = *(Float3*)positionPtr; \
+	Float3 velocity = *(Float3*)velocityPtr; \
+	Float3 nextPos = position + velocity * context.DeltaTime; \
+	Float3 dir = nextPos - cylinderPosition; \
 	float halfHeight = cylinderHeight * 0.5f + radius * sign; \
 	float cylinderRadiusT = cylinderRadius + radius * sign; \
-	float sqrLength = Vector2::Dot(Vector2(dir.X, dir.Z), Vector2(dir.X, dir.Z)); \
+	float sqrLength = Float2::Dot(Float2(dir.X, dir.Z), Float2(dir.X, dir.Z)); \
 	bool collision; \
 	if (invert) \
 		collision = Math::Abs(dir.Y) < halfHeight && sqrLength < cylinderRadiusT * cylinderRadiusT; \
@@ -1422,17 +1367,17 @@ void ParticleEmitterGraphCPUExecutor::ProcessModule(ParticleEmitterGraphCPUNode*
 		float dist = Math::Max(Math::Sqrt(sqrLength), ZeroTolerance); \
 		float distToCap = sign * (halfHeight - Math::Abs(dir.Y)); \
 		float distToSide = sign * (cylinderRadiusT - dist); \
-		Vector3 n = Vector3(dir.X / dist, Math::Sign(dir.Y), dir.Z / dist) * sign; \
+		Float3 n = Float3(dir.X / dist, Math::Sign(dir.Y), dir.Z / dist) * sign; \
 		if (invert) \
 		{ \
 			float distToSideClamped = Math::Max(0.0f, distToSide); \
-			*(Vector3*)positionPtr = position + n * Vector3(distToSideClamped, Math::Max(0.0f, distToCap), distToSideClamped); \
-			n *= distToSide > distToCap ? Vector3(1, 0, 1) : Vector3(0, 1, 0); \
+			*(Float3*)positionPtr = position + n * Float3(distToSideClamped, Math::Max(0.0f, distToCap), distToSideClamped); \
+			n *= distToSide > distToCap ? Float3(1, 0, 1) : Float3(0, 1, 0); \
 		} \
 		else \
 		{ \
-			n *= distToSide < distToCap ? Vector3(1, 0, 1) : Vector3(0, 1, 0); \
-			*(Vector3*)positionPtr = position + n * Math::Min(distToSide, distToCap); \
+			n *= distToSide < distToCap ? Float3(1, 0, 1) : Float3(0, 1, 0); \
+			*(Float3*)positionPtr = position + n * Math::Min(distToSide, distToCap); \
 		} \
 	COLLISION_LOGIC()
 
@@ -1457,8 +1402,20 @@ void ParticleEmitterGraphCPUExecutor::ProcessModule(ParticleEmitterGraphCPUNode*
 #undef LOGIC
         break;
     }
-        // Collision (depth)
+    // Collision (depth)
     case 334:
+    {
+        // Not supported
+        break;
+    }
+    // Conform to Global SDF
+    case 335:
+    {
+        // Not supported
+        break;
+    }
+    // Collision (Global SDF)
+    case 336:
     {
         // Not supported
         break;

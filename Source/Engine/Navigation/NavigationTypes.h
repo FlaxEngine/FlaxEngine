@@ -16,8 +16,8 @@
 /// </summary>
 API_STRUCT() struct FLAXENGINE_API NavAgentProperties : ISerializable
 {
-API_AUTO_SERIALIZATION();
-DECLARE_SCRIPTING_TYPE_MINIMAL(NavAgentProperties);
+    API_AUTO_SERIALIZATION();
+    DECLARE_SCRIPTING_TYPE_MINIMAL(NavAgentProperties);
 
     /// <summary>
 	/// The radius of the agent used for navigation. Agents can't pass through gaps of less than twice the radius.
@@ -43,6 +43,18 @@ DECLARE_SCRIPTING_TYPE_MINIMAL(NavAgentProperties);
     API_FIELD(Attributes="EditorOrder(30)")
     float MaxSlopeAngle = 60.0f;
 
+    /// <summary>
+    /// The maximum movement speed (units/s).
+    /// </summary>
+    API_FIELD(Attributes="EditorOrder(40)")
+    float MaxSpeed = 500.0f;
+
+    /// <summary>
+    /// The crowd agent separation weight that defines how aggressive the agent manager should be at avoiding collisions with this agent.
+    /// </summary>
+    API_FIELD(Attributes="EditorOrder(100)")
+    float CrowdSeparationWeight = 2.0f;
+
     bool operator==(const NavAgentProperties& other) const;
 
     bool operator!=(const NavAgentProperties& other) const
@@ -56,8 +68,8 @@ DECLARE_SCRIPTING_TYPE_MINIMAL(NavAgentProperties);
 /// </summary>
 API_STRUCT() struct FLAXENGINE_API NavMeshProperties : ISerializable
 {
-API_AUTO_SERIALIZATION();
-DECLARE_SCRIPTING_TYPE_MINIMAL(NavMeshProperties);
+    API_AUTO_SERIALIZATION();
+    DECLARE_SCRIPTING_TYPE_MINIMAL(NavMeshProperties);
 
     /// <summary>
     /// The navmesh type name. Identifies different types of the navmeshes, used to sync navmesh properties with settings asset.
@@ -87,7 +99,7 @@ DECLARE_SCRIPTING_TYPE_MINIMAL(NavMeshProperties);
     /// The default extents for the nav queries that defines the search distance along each axis (x, y, z). Smaller values prevent queries from snapping to too far locations.
     /// </summary>
     API_FIELD(Attributes="EditorOrder(40)")
-    Vector3 DefaultQueryExtent = Vector3(50.0f, 250.0f, 50.0f);
+    Float3 DefaultQueryExtent = Float3(50.0f, 250.0f, 50.0f);
 
     bool operator==(const NavMeshProperties& other) const;
 
@@ -102,7 +114,7 @@ DECLARE_SCRIPTING_TYPE_MINIMAL(NavMeshProperties);
 /// </summary>
 API_STRUCT() struct FLAXENGINE_API NavAgentMask
 {
-DECLARE_SCRIPTING_TYPE_MINIMAL(NavAgentMask);
+    DECLARE_SCRIPTING_TYPE_MINIMAL(NavAgentMask);
 
     /// <summary>
     /// The agents selection mask.
@@ -126,7 +138,7 @@ DECLARE_SCRIPTING_TYPE_MINIMAL(NavAgentMask);
 /// </summary>
 API_STRUCT() struct FLAXENGINE_API NavMeshHit
 {
-DECLARE_SCRIPTING_TYPE_MINIMAL(NavMeshHit);
+    DECLARE_SCRIPTING_TYPE_MINIMAL(NavMeshHit);
 
     /// <summary>
     /// The hit point position.
@@ -149,8 +161,8 @@ DECLARE_SCRIPTING_TYPE_MINIMAL(NavMeshHit);
 /// </summary>
 API_STRUCT() struct FLAXENGINE_API NavAreaProperties : ISerializable
 {
-API_AUTO_SERIALIZATION();
-DECLARE_SCRIPTING_TYPE_MINIMAL(NavAreaProperties);
+    API_AUTO_SERIALIZATION();
+    DECLARE_SCRIPTING_TYPE_MINIMAL(NavAreaProperties);
 
     /// <summary>
     /// The area type name. Identifies different types of the areas.

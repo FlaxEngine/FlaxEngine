@@ -17,11 +17,11 @@ namespace FlaxEditor.Surface
         {
             AutoFocus = false;
             ClipChildren = false;
-            Pivot = Vector2.Zero;
+            Pivot = Float2.Zero;
         }
 
         /// <inheritdoc />
-        public override bool IntersectsContent(ref Vector2 locationParent, out Vector2 location)
+        public override bool IntersectsContent(ref Float2 locationParent, out Float2 location)
         {
             location = PointFromParent(ref locationParent);
             return true;

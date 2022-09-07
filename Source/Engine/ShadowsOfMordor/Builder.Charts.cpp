@@ -38,14 +38,14 @@ void ShadowsOfMordor::Builder::generateCharts()
 
         // Calculate desired area for the entry's chart (based on object dimensions and settings)
         // Reject missing models or too small objects
-        Vector3 size = entry.Box.GetSize();
+        Float3 size = entry.Box.GetSize();
         float dimensionsCoeff = size.AverageArithmetic();
         if (size.X <= 1.0f)
-            dimensionsCoeff = Vector2(size.Y, size.Z).AverageArithmetic();
+            dimensionsCoeff = Float2(size.Y, size.Z).AverageArithmetic();
         else if (size.Y <= 1.0f)
-            dimensionsCoeff = Vector2(size.X, size.Z).AverageArithmetic();
+            dimensionsCoeff = Float2(size.X, size.Z).AverageArithmetic();
         else if (size.Z <= 1.0f)
-            dimensionsCoeff = Vector2(size.Y, size.X).AverageArithmetic();
+            dimensionsCoeff = Float2(size.Y, size.X).AverageArithmetic();
         const float scale = settings.GlobalObjectsScale * entry.Scale * LightmapTexelsPerWorldUnit * dimensionsCoeff;
         if (scale <= ZeroTolerance)
             continue;

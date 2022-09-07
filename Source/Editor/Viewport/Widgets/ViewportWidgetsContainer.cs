@@ -65,7 +65,7 @@ namespace FlaxEditor.Viewport.Widgets
         {
             // Cache data
             var style = Style.Current;
-            var clientRect = new Rectangle(Vector2.Zero, Size);
+            var clientRect = new Rectangle(Float2.Zero, Size);
 
             // Draw background
             Render2D.FillRectangle(clientRect, style.LightBackground * (IsMouseOver ? 0.3f : 0.2f));
@@ -132,7 +132,7 @@ namespace FlaxEditor.Viewport.Widgets
                         x = 0;
                         break;
                     }
-                    widget.Location = new Vector2(x, margin);
+                    widget.Location = new Float2(x, margin);
                 }
             }
         }

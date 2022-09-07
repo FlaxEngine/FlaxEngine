@@ -220,7 +220,7 @@ void SimulationEventCallback::onContact(const PxContactPairHeader& pairHeader, c
             const PxContactPair& pair = pairs[i.contactPairIndex];
             c.ThisActor = static_cast<PhysicsColliderActor*>(pair.shapes[0]->userData);
             c.OtherActor = static_cast<PhysicsColliderActor*>(pair.shapes[1]->userData);
-            ASSERT_LOW_LAYER(c.ThisActor && c.OtherActor);
+            ASSERT(c.ThisActor && c.OtherActor);
             Collision& collision = Collisions[CollidersPair(c.ThisActor, c.OtherActor)];
 
             collision.ThisVelocity = P2C(linearVelocityActor0);
@@ -241,7 +241,7 @@ void SimulationEventCallback::onTrigger(PxTriggerPair* pairs, PxU32 count)
 
         auto trigger = static_cast<PhysicsColliderActor*>(pair.triggerShape->userData);
         auto otherCollider = static_cast<PhysicsColliderActor*>(pair.otherShape->userData);
-        ASSERT_LOW_LAYER(trigger && otherCollider);
+        ASSERT(trigger && otherCollider);
         CollidersPair collidersPair(trigger, otherCollider);
 
         if (pair.status & PxPairFlag::eNOTIFY_TOUCH_LOST)

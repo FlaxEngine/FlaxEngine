@@ -75,6 +75,56 @@ namespace Flax.Build
             public BuildTargetBinaryModuleInfo[] BinaryModules;
             public BuildTargetReferenceInfo[] References;
 
+            internal void AddExternalBinaryModules(ref int i, string projectPath, HashSet<BuildOptions.ExternalModule> externalModules)
+            {
+                foreach (var externalModule in externalModules)
+                {
+                    var binaryModuleInfo = new BuildTargetBinaryModuleInfo
+                    {
+                        NativePath = string.Empty,
+                        ManagedPath = string.Empty,
+                        Name = externalModule.Name,
+                    };
+
+                    switch (externalModule.Type)
+                    {
+                    case BuildOptions.ExternalModule.Types.Native:
+                        binaryModuleInfo.NativePath = externalModule.Path;
+                        binaryModuleInfo.NativePathProcessed = ProcessPath(binaryModuleInfo.NativePath, projectPath);
+                        break;
+                    case BuildOptions.ExternalModule.Types.CSharp:
+                        binaryModuleInfo.ManagedPath = externalModule.Path;
+                        binaryModuleInfo.ManagedPathProcessed = ProcessPath(binaryModuleInfo.ManagedPath, projectPath);
+                        break;
+                    }
+
+                    binaryModuleInfo.NativePathProcessed = ProcessPath(binaryModuleInfo.NativePath, projectPath);
+                    binaryModuleInfo.ManagedPathProcessed = ProcessPath(binaryModuleInfo.ManagedPath, projectPath);
+
+                    BinaryModules[i++] = binaryModuleInfo;
+                }
+            }
+
+            internal void AddReferencedBuilds(ref int i, string projectPath, Dictionary<ProjectInfo, BuildData> referencedBuilds)
+            {
+                foreach (var referenceBuild in referencedBuilds)
+                {
+                    var reference = referenceBuild.Value;
+                    var referenceOutputTargetFilePath = reference.Target.GetOutputFilePath(reference.TargetOptions);
+                    var referenceOutputPath = Path.GetDirectoryName(referenceOutputTargetFilePath);
+                    var referenceInfo = new BuildTargetReferenceInfo
+                    {
+                        ProjectPath = reference.Project.ProjectPath,
+                        Path = Path.Combine(referenceOutputPath, reference.Target.Name + ".Build.json"),
+                    };
+
+                    referenceInfo.ProjectPathProcessed = ProcessPath(referenceInfo.ProjectPath, projectPath);
+                    referenceInfo.PathProcessed = ProcessPath(referenceInfo.Path, projectPath);
+
+                    References[i++] = referenceInfo;
+                }
+            }
+
             public static string ProcessPath(string path, string projectPath)
             {
                 if (string.IsNullOrEmpty(path))
@@ -308,17 +358,14 @@ namespace Flax.Build
                 var dependencyModule = buildData.Rules.GetModule(moduleName);
                 if (dependencyModule != null && buildData.Modules.TryGetValue(dependencyModule, out var dependencyOptions))
                 {
-                    foreach (var e in dependencyOptions.OutputFiles)
-                        moduleOptions.LinkEnv.InputFiles.Add(e);
-                    foreach (var e in dependencyOptions.DependencyFiles)
-                        moduleOptions.DependencyFiles.Add(e);
-                    foreach (var e in dependencyOptions.OptionalDependencyFiles)
-                        moduleOptions.OptionalDependencyFiles.Add(e);
-                    foreach (var e in dependencyOptions.PublicIncludePaths)
-                        moduleOptions.PrivateIncludePaths.Add(e);
+                    moduleOptions.LinkEnv.InputFiles.AddRange(dependencyOptions.OutputFiles);
+                    moduleOptions.DependencyFiles.AddRange(dependencyOptions.DependencyFiles);
+                    moduleOptions.OptionalDependencyFiles.AddRange(dependencyOptions.OptionalDependencyFiles);
+                    moduleOptions.PrivateIncludePaths.AddRange(dependencyOptions.PublicIncludePaths);
                     moduleOptions.Libraries.AddRange(dependencyOptions.Libraries);
                     moduleOptions.DelayLoadLibraries.AddRange(dependencyOptions.DelayLoadLibraries);
                     moduleOptions.ScriptingAPI.Add(dependencyOptions.ScriptingAPI);
+                    moduleOptions.ExternalModules.AddRange(dependencyOptions.ExternalModules);
                 }
             }
             foreach (var moduleName in moduleOptions.PublicDependencies)
@@ -326,17 +373,14 @@ namespace Flax.Build
                 var dependencyModule = buildData.Rules.GetModule(moduleName);
                 if (dependencyModule != null && buildData.Modules.TryGetValue(dependencyModule, out var dependencyOptions))
                 {
-                    foreach (var e in dependencyOptions.OutputFiles)
-                        moduleOptions.LinkEnv.InputFiles.Add(e);
-                    foreach (var e in dependencyOptions.DependencyFiles)
-                        moduleOptions.DependencyFiles.Add(e);
-                    foreach (var e in dependencyOptions.OptionalDependencyFiles)
-                        moduleOptions.OptionalDependencyFiles.Add(e);
-                    foreach (var e in dependencyOptions.PublicIncludePaths)
-                        moduleOptions.PublicIncludePaths.Add(e);
+                    moduleOptions.LinkEnv.InputFiles.AddRange(dependencyOptions.OutputFiles);
+                    moduleOptions.DependencyFiles.AddRange(dependencyOptions.DependencyFiles);
+                    moduleOptions.OptionalDependencyFiles.AddRange(dependencyOptions.OptionalDependencyFiles);
+                    moduleOptions.PublicIncludePaths.AddRange(dependencyOptions.PublicIncludePaths);
                     moduleOptions.Libraries.AddRange(dependencyOptions.Libraries);
                     moduleOptions.DelayLoadLibraries.AddRange(dependencyOptions.DelayLoadLibraries);
                     moduleOptions.ScriptingAPI.Add(dependencyOptions.ScriptingAPI);
+                    moduleOptions.ExternalModules.AddRange(dependencyOptions.ExternalModules);
                 }
             }
 
@@ -449,6 +493,7 @@ namespace Flax.Build
                 if (dependencyModule != null && buildData.Modules.TryGetValue(dependencyModule, out var dependencyOptions))
                 {
                     moduleOptions.ScriptingAPI.Add(dependencyOptions.ScriptingAPI);
+                    moduleOptions.ExternalModules.AddRange(dependencyOptions.ExternalModules);
                 }
             }
             foreach (var moduleName in moduleOptions.PublicDependencies)
@@ -457,6 +502,7 @@ namespace Flax.Build
                 if (dependencyModule != null && buildData.Modules.TryGetValue(dependencyModule, out var dependencyOptions))
                 {
                     moduleOptions.ScriptingAPI.Add(dependencyOptions.ScriptingAPI);
+                    moduleOptions.ExternalModules.AddRange(dependencyOptions.ExternalModules);
                 }
             }
 
@@ -801,15 +847,13 @@ namespace Flax.Build
                         var moduleOptions = BuildModule(buildData, module);
 
                         // Merge module into target environment
-                        foreach (var e in moduleOptions.OutputFiles)
-                            buildData.TargetOptions.LinkEnv.InputFiles.Add(e);
-                        foreach (var e in moduleOptions.DependencyFiles)
-                            buildData.TargetOptions.DependencyFiles.Add(e);
-                        foreach (var e in moduleOptions.OptionalDependencyFiles)
-                            buildData.TargetOptions.OptionalDependencyFiles.Add(e);
+                        buildData.TargetOptions.LinkEnv.InputFiles.AddRange(moduleOptions.OutputFiles);
+                        buildData.TargetOptions.DependencyFiles.AddRange(moduleOptions.DependencyFiles);
+                        buildData.TargetOptions.OptionalDependencyFiles.AddRange(moduleOptions.OptionalDependencyFiles);
                         buildData.TargetOptions.Libraries.AddRange(moduleOptions.Libraries);
                         buildData.TargetOptions.DelayLoadLibraries.AddRange(moduleOptions.DelayLoadLibraries);
                         buildData.TargetOptions.ScriptingAPI.Add(moduleOptions.ScriptingAPI);
+                        buildData.TargetOptions.ExternalModules.AddRange(moduleOptions.ExternalModules);
                     }
                 }
             }
@@ -840,11 +884,13 @@ namespace Flax.Build
                     Architecture = toolchain.Architecture.ToString(),
                     Configuration = configuration.ToString(),
                     HotReloadPostfix = targetBuildOptions.HotReloadPostfix,
-                    BinaryModules = new BuildTargetBinaryModuleInfo[buildData.BinaryModules.Length],
+                    BinaryModules = new BuildTargetBinaryModuleInfo[buildData.BinaryModules.Length + targetBuildOptions.ExternalModules.Count],
                     References = new BuildTargetReferenceInfo[buildData.ReferenceBuilds.Count],
                 };
                 int i;
-                for (i = 0; i < buildData.BuildInfo.BinaryModules.Length; i++)
+
+                // Binary modules
+                for (i = 0; i < buildData.BinaryModules.Length; i++)
                 {
                     var binaryModule = buildData.BinaryModules[i];
                     var binaryModuleInfo = new BuildTargetBinaryModuleInfo
@@ -905,23 +951,11 @@ namespace Flax.Build
 
                     buildData.BuildInfo.BinaryModules[i] = binaryModuleInfo;
                 }
+
+                buildData.BuildInfo.AddExternalBinaryModules(ref i, project.ProjectFolderPath, targetBuildOptions.ExternalModules);
                 i = 0;
-                foreach (var referenceBuild in buildData.ReferenceBuilds)
-                {
-                    var reference = referenceBuild.Value;
-                    var referenceOutputTargetFilePath = reference.Target.GetOutputFilePath(reference.TargetOptions);
-                    var referenceOutputPath = Path.GetDirectoryName(referenceOutputTargetFilePath);
-                    var referenceInfo = new BuildTargetReferenceInfo
-                    {
-                        ProjectPath = reference.Project.ProjectPath,
-                        Path = Path.Combine(referenceOutputPath, reference.Target.Name + ".Build.json"),
-                    };
+                buildData.BuildInfo.AddReferencedBuilds(ref i, project.ProjectFolderPath, buildData.ReferenceBuilds);
 
-                    referenceInfo.ProjectPathProcessed = BuildTargetInfo.ProcessPath(referenceInfo.ProjectPath, project.ProjectFolderPath);
-                    referenceInfo.PathProcessed = BuildTargetInfo.ProcessPath(referenceInfo.Path, project.ProjectFolderPath);
-
-                    buildData.BuildInfo.References[i++] = referenceInfo;
-                }
                 if (!buildData.Target.IsPreBuilt)
                     Utilities.WriteFileIfChanged(Path.Combine(outputPath, target.Name + ".Build.json"), JsonConvert.SerializeObject(buildData.BuildInfo, Formatting.Indented));
             }
@@ -1071,10 +1105,9 @@ namespace Flax.Build
 
                             // Merge module into target environment
                             buildData.TargetOptions.ScriptingAPI.Add(moduleOptions.ScriptingAPI);
-                            foreach (var e in moduleOptions.DependencyFiles)
-                                buildData.TargetOptions.DependencyFiles.Add(e);
-                            foreach (var e in moduleOptions.OptionalDependencyFiles)
-                                buildData.TargetOptions.OptionalDependencyFiles.Add(e);
+                            buildData.TargetOptions.ExternalModules.AddRange(moduleOptions.ExternalModules);
+                            buildData.TargetOptions.DependencyFiles.AddRange(moduleOptions.DependencyFiles);
+                            buildData.TargetOptions.OptionalDependencyFiles.AddRange(moduleOptions.OptionalDependencyFiles);
                         }
                     }
                 }
@@ -1097,10 +1130,12 @@ namespace Flax.Build
                     Architecture = architecture.ToString(),
                     Configuration = configuration.ToString(),
                     HotReloadPostfix = targetBuildOptions.HotReloadPostfix,
-                    BinaryModules = new BuildTargetBinaryModuleInfo[buildData.BinaryModules.Length],
+                    BinaryModules = new BuildTargetBinaryModuleInfo[buildData.BinaryModules.Length + targetBuildOptions.ExternalModules.Count],
                     References = new BuildTargetReferenceInfo[buildData.ReferenceBuilds.Count],
                 };
                 int i;
+
+                // Binary modules
                 for (i = 0; i < buildData.BuildInfo.BinaryModules.Length; i++)
                 {
                     var binaryModule = buildData.BinaryModules[i];
@@ -1115,23 +1150,11 @@ namespace Flax.Build
 
                     buildData.BuildInfo.BinaryModules[i] = binaryModuleInfo;
                 }
+
+                buildData.BuildInfo.AddExternalBinaryModules(ref i, project.ProjectFolderPath, targetBuildOptions.ExternalModules);
                 i = 0;
-                foreach (var referenceBuild in buildData.ReferenceBuilds)
-                {
-                    var reference = referenceBuild.Value;
-                    var referenceOutputTargetFilePath = reference.Target.GetOutputFilePath(reference.TargetOptions);
-                    var referenceOutputPath = Path.GetDirectoryName(referenceOutputTargetFilePath);
-                    var referenceInfo = new BuildTargetReferenceInfo
-                    {
-                        ProjectPath = reference.Project.ProjectPath,
-                        Path = Path.Combine(referenceOutputPath, reference.Target.Name + ".Build.json"),
-                    };
+                buildData.BuildInfo.AddReferencedBuilds(ref i, project.ProjectFolderPath, buildData.ReferenceBuilds);
 
-                    referenceInfo.ProjectPathProcessed = BuildTargetInfo.ProcessPath(referenceInfo.ProjectPath, project.ProjectFolderPath);
-                    referenceInfo.PathProcessed = BuildTargetInfo.ProcessPath(referenceInfo.Path, project.ProjectFolderPath);
-
-                    buildData.BuildInfo.References[i++] = referenceInfo;
-                }
                 if (!buildData.Target.IsPreBuilt)
                     Utilities.WriteFileIfChanged(Path.Combine(outputPath, target.Name + ".Build.json"), JsonConvert.SerializeObject(buildData.BuildInfo, Formatting.Indented));
             }

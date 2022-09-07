@@ -50,7 +50,7 @@ namespace FlaxEditor.GUI.Timeline
         private bool _opened;
         private bool _isMouseDown;
         private bool _mouseOverArrow;
-        private Vector2 _mouseDownPos;
+        private Float2 _mouseDownPos;
 
         /// <summary>
         /// The mute track checkbox.
@@ -774,7 +774,7 @@ namespace FlaxEditor.GUI.Timeline
         /// Updates the drag over mode based on the given mouse location.
         /// </summary>
         /// <param name="location">The location.</param>
-        private void UpdateDrawPositioning(ref Vector2 location)
+        private void UpdateDrawPositioning(ref Float2 location)
         {
             if (new Rectangle(0, 0 - DefaultDragInsertPositionMargin - DefaultNodeOffsetY, Width, DefaultDragInsertPositionMargin * 2.0f).Contains(location))
                 _dragOverMode = DragItemPositioning.Above;
@@ -789,7 +789,7 @@ namespace FlaxEditor.GUI.Timeline
         /// </summary>
         /// <param name="location">The location.</param>
         /// <returns>True if hits it.</returns>
-        protected virtual bool TestHeaderHit(ref Vector2 location)
+        protected virtual bool TestHeaderHit(ref Float2 location)
         {
             return new Rectangle(0, 0, Width, HeaderHeight).Contains(ref location);
         }
@@ -935,7 +935,7 @@ namespace FlaxEditor.GUI.Timeline
             bool isFocused = _timeline.ContainsFocus;
             var left = _xOffset + 16; // offset + arrow
             var height = HeaderHeight;
-            var bounds = new Rectangle(Vector2.Zero, Size);
+            var bounds = new Rectangle(Float2.Zero, Size);
             var textRect = new Rectangle(left, 0, bounds.Width - left, height);
             _margin.ShrinkRectangle(ref textRect);
             var textColor = style.Foreground * TitleTintColor;
@@ -1002,7 +1002,7 @@ namespace FlaxEditor.GUI.Timeline
 
 
         /// <inheritdoc />
-        public override bool OnMouseDown(Vector2 location, MouseButton button)
+        public override bool OnMouseDown(Float2 location, MouseButton button)
         {
             // Base
             if (base.OnMouseDown(location, button))
@@ -1046,7 +1046,7 @@ namespace FlaxEditor.GUI.Timeline
         }
 
         /// <inheritdoc />
-        public override bool OnMouseUp(Vector2 location, MouseButton button)
+        public override bool OnMouseUp(Float2 location, MouseButton button)
         {
             // Base
             if (base.OnMouseUp(location, button))
@@ -1116,7 +1116,7 @@ namespace FlaxEditor.GUI.Timeline
         }
 
         /// <inheritdoc />
-        public override void OnMouseMove(Vector2 location)
+        public override void OnMouseMove(Float2 location)
         {
             base.OnMouseMove(location);
 
@@ -1124,7 +1124,7 @@ namespace FlaxEditor.GUI.Timeline
             _mouseOverArrow = CanExpand && ArrowRect.Contains(location);
 
             // Check if start drag and drop
-            if (_isMouseDown && Vector2.Distance(_mouseDownPos, location) > 10.0f)
+            if (_isMouseDown && Float2.Distance(_mouseDownPos, location) > 10.0f)
             {
                 // Clear flag
                 _isMouseDown = false;
@@ -1162,7 +1162,7 @@ namespace FlaxEditor.GUI.Timeline
         }
 
         /// <inheritdoc />
-        public override DragDropEffect OnDragEnter(ref Vector2 location, DragData data)
+        public override DragDropEffect OnDragEnter(ref Float2 location, DragData data)
         {
             var result = base.OnDragEnter(ref location, data);
 
@@ -1194,7 +1194,7 @@ namespace FlaxEditor.GUI.Timeline
         }
 
         /// <inheritdoc />
-        public override DragDropEffect OnDragMove(ref Vector2 location, DragData data)
+        public override DragDropEffect OnDragMove(ref Float2 location, DragData data)
         {
             var result = base.OnDragMove(ref location, data);
 
@@ -1236,7 +1236,7 @@ namespace FlaxEditor.GUI.Timeline
         }
 
         /// <inheritdoc />
-        public override DragDropEffect OnDragDrop(ref Vector2 location, DragData data)
+        public override DragDropEffect OnDragDrop(ref Float2 location, DragData data)
         {
             var result = base.OnDragDrop(ref location, data);
 
@@ -1274,7 +1274,7 @@ namespace FlaxEditor.GUI.Timeline
         }
 
         /// <inheritdoc />
-        public override bool OnMouseDoubleClick(Vector2 location, MouseButton button)
+        public override bool OnMouseDoubleClick(Float2 location, MouseButton button)
         {
             if (base.OnMouseDoubleClick(location, button))
                 return true;

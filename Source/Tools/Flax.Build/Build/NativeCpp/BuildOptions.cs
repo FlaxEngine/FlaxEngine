@@ -1,5 +1,6 @@
 // Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
+using System;
 using System.Collections.Generic;
 using System.IO;
 
@@ -187,6 +188,59 @@ namespace Flax.Build.NativeCpp
             },
             FileReferences = new HashSet<string>(),
         };
+
+        /// <summary>
+        /// The external module linking options.
+        /// </summary>
+        public struct ExternalModule : IEquatable<ExternalModule>
+        {
+            public enum Types
+            {
+                Native,
+                CSharp,
+                Custom,
+            }
+
+            public string Name;
+            public string Path;
+            public Types Type;
+
+            public ExternalModule(Types type, string path, string name = null)
+            {
+                Name = name ?? System.IO.Path.GetFileNameWithoutExtension(path);
+                Type = type;
+                Path = path;
+            }
+
+            /// <inheritdoc />
+            public bool Equals(ExternalModule other)
+            {
+                return Name == other.Name;
+            }
+
+            /// <inheritdoc />
+            public override bool Equals(object obj)
+            {
+                return obj is ExternalModule other && Equals(other);
+            }
+
+            /// <inheritdoc />
+            public override int GetHashCode()
+            {
+                return Name.GetHashCode();
+            }
+
+            /// <inheritdoc />
+            public override string ToString()
+            {
+                return Name;
+            }
+        }
+
+        /// <summary>
+        /// The custom external binary modules to referenced by this module. Can be used to extern the custom C# or C++ library with scripts to be used at runtime.
+        /// </summary>
+        public HashSet<ExternalModule> ExternalModules = new HashSet<ExternalModule>();
 
         /// <summary>
         /// Merges the files from input source paths into source files and clears the source paths list.

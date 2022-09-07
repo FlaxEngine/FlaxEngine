@@ -19,20 +19,20 @@ PACK_STRUCT(struct DeformableMaterialShaderData {
     Matrix WorldMatrix;
     Matrix LocalMatrix;
     Matrix ViewMatrix;
-    Vector3 ViewPos;
+    Float3 ViewPos;
     float ViewFar;
-    Vector3 ViewDir;
+    Float3 ViewDir;
     float TimeParam;
-    Vector4 ViewInfo;
-    Vector4 ScreenSize;
-    Vector3 Dummy0;
+    Float4 ViewInfo;
+    Float4 ScreenSize;
+    Float3 Dummy0;
     float WorldDeterminantSign;
     float MeshMinZ;
     float Segment;
     float ChunksPerSegment;
     float PerInstanceRandom;
-    Vector4 TemporalAAJitter;
-    Vector3 GeometrySize;
+    Float4 TemporalAAJitter;
+    Float3 GeometrySize;
     float MeshMaxZ;
     });
 
@@ -62,7 +62,7 @@ void DeformableMaterialShader::Bind(BindParameters& params)
     bindMeta.Context = context;
     bindMeta.Constants = cb;
     bindMeta.Input = nullptr;
-    bindMeta.Buffers = nullptr;
+    bindMeta.Buffers = params.RenderContext.Buffers;
     bindMeta.CanSampleDepth = false;
     bindMeta.CanSampleGBuffer = false;
     MaterialParams::Bind(params.ParamsLink, bindMeta);
@@ -153,7 +153,7 @@ bool DeformableMaterialShader::Load()
 
     if (_info.BlendMode == MaterialBlendMode::Opaque)
     {
-        _drawModes = DrawPass::GBuffer;
+        _drawModes |= DrawPass::GBuffer | DrawPass::GlobalSurfaceAtlas;
 
         // GBuffer Pass
         psDesc.VS = _shader->GetVS("VS_SplineModel");
@@ -162,7 +162,7 @@ bool DeformableMaterialShader::Load()
     }
     else
     {
-        _drawModes = DrawPass::Forward;
+        _drawModes |= DrawPass::Forward;
 
         // Forward Pass
         psDesc.VS = _shader->GetVS("VS_SplineModel");

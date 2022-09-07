@@ -159,9 +159,9 @@ KeyboardKeys GetKey(NSEvent* event)
     }
 }
 
-Vector2 GetWindowTitleSize(const MacWindow* window)
+Float2 GetWindowTitleSize(const MacWindow* window)
 {
-    Vector2 size = Vector2::Zero;
+    Float2 size = Float2::Zero;
     if (window->GetSettings().HasBorder)
     {
         NSRect frameStart = [(NSWindow*)window->GetNativePtr() frameRectForContentRect:NSMakeRect(0, 0, 0, 0)];
@@ -170,11 +170,11 @@ Vector2 GetWindowTitleSize(const MacWindow* window)
     return size;
 }
 
-Vector2 GetMousePosition(MacWindow* window, NSEvent* event)
+Float2 GetMousePosition(MacWindow* window, NSEvent* event)
 {
     NSRect frame = [(NSWindow*)window->GetNativePtr() frame];
     NSPoint point = [event locationInWindow];
-    return Vector2(point.x, frame.size.height - point.y) - GetWindowTitleSize(window);
+    return Float2(point.x, frame.size.height - point.y) - GetWindowTitleSize(window);
 }
 
 class MacDropData : public IGuiData
@@ -198,12 +198,12 @@ public:
     }
 };
 
-void GetDragDropData(const MacWindow* window, id<NSDraggingInfo> sender, Vector2& mousePos, MacDropData& dropData)
+void GetDragDropData(const MacWindow* window, id<NSDraggingInfo> sender, Float2& mousePos, MacDropData& dropData)
 {
     NSRect frame = [(NSWindow*)window->GetNativePtr() frame];
     NSPoint point = [sender draggingLocation];
-    Vector2 titleSize = GetWindowTitleSize(window);
-    mousePos = Vector2(point.x, frame.size.height - point.y) - titleSize;
+    Float2 titleSize = GetWindowTitleSize(window);
+    mousePos = Float2(point.x, frame.size.height - point.y) - titleSize;
     NSPasteboard* pasteboard = [sender draggingPasteboard];
     if ([[pasteboard types] containsObject:NSPasteboardTypeString])
     {
@@ -372,7 +372,7 @@ NSDragOperation GetDragDropOperation(DragDropEffect dragDropEffect)
 
 - (void)scrollWheel:(NSEvent*)event
 {
-	Vector2 mousePos = GetMousePosition(Window, event);
+	Float2 mousePos = GetMousePosition(Window, event);
     double deltaX = [event scrollingDeltaX];
     double deltaY = [event scrollingDeltaY];
     if ([event hasPreciseScrollingDeltas])
@@ -380,13 +380,13 @@ NSDragOperation GetDragDropOperation(DragDropEffect dragDropEffect)
         deltaX *= 0.03;
         deltaY *= 0.03;
     }
-    // TODO: add support for scroll delta as Vector2 in the engine
+    // TODO: add support for scroll delta as Float2 in the engine
     Input::Mouse->OnMouseWheel(Window->ClientToScreen(mousePos), deltaY, Window);
 }
 
 - (void)mouseMoved:(NSEvent*)event
 {
-	Vector2 mousePos = GetMousePosition(Window, event);
+	Float2 mousePos = GetMousePosition(Window, event);
     if (!Window->IsMouseTracking() && !IsMouseOver)
         return;
 	Input::Mouse->OnMouseMove(Window->ClientToScreen(mousePos), Window);
@@ -406,7 +406,7 @@ NSDragOperation GetDragDropOperation(DragDropEffect dragDropEffect)
 
 - (void)mouseDown:(NSEvent*)event
 {
-	Vector2 mousePos = GetMousePosition(Window, event);
+	Float2 mousePos = GetMousePosition(Window, event);
     MouseButton mouseButton = MouseButton::Left;
     if ([event clickCount] == 2)
         Input::Mouse->OnMouseDoubleClick(Window->ClientToScreen(mousePos), mouseButton, Window);
@@ -421,14 +421,14 @@ NSDragOperation GetDragDropOperation(DragDropEffect dragDropEffect)
 
 - (void)mouseUp:(NSEvent*)event
 {
-	Vector2 mousePos = GetMousePosition(Window, event);
+	Float2 mousePos = GetMousePosition(Window, event);
     MouseButton mouseButton = MouseButton::Left;
     Input::Mouse->OnMouseUp(Window->ClientToScreen(mousePos), mouseButton, Window);
 }
 
 - (void)rightMouseDown:(NSEvent*)event
 {
-	Vector2 mousePos = GetMousePosition(Window, event);
+	Float2 mousePos = GetMousePosition(Window, event);
     MouseButton mouseButton = MouseButton::Right;
     if ([event clickCount] == 2)
         Input::Mouse->OnMouseDoubleClick(Window->ClientToScreen(mousePos), mouseButton, Window);
@@ -443,14 +443,14 @@ NSDragOperation GetDragDropOperation(DragDropEffect dragDropEffect)
 
 - (void)rightMouseUp:(NSEvent*)event
 {
-	Vector2 mousePos = GetMousePosition(Window, event);
+	Float2 mousePos = GetMousePosition(Window, event);
     MouseButton mouseButton = MouseButton::Right;
     Input::Mouse->OnMouseUp(Window->ClientToScreen(mousePos), mouseButton, Window);
 }
 
 - (void)otherMouseDown:(NSEvent*)event
 {
-	Vector2 mousePos = GetMousePosition(Window, event);
+	Float2 mousePos = GetMousePosition(Window, event);
     MouseButton mouseButton;
     switch ([event buttonNumber])
     {
@@ -479,7 +479,7 @@ NSDragOperation GetDragDropOperation(DragDropEffect dragDropEffect)
 
 - (void)otherMouseUp:(NSEvent*)event
 {
-	Vector2 mousePos = GetMousePosition(Window, event);
+	Float2 mousePos = GetMousePosition(Window, event);
     MouseButton mouseButton;
     switch ([event buttonNumber])
     {
@@ -500,7 +500,7 @@ NSDragOperation GetDragDropOperation(DragDropEffect dragDropEffect)
 
 - (NSDragOperation)draggingEntered:(id<NSDraggingInfo>)sender
 {
-    Vector2 mousePos;
+    Float2 mousePos;
     MacDropData dropData;
     GetDragDropData(Window, sender, mousePos, dropData);
     DragDropEffect dragDropEffect = DragDropEffect::None;
@@ -515,7 +515,7 @@ NSDragOperation GetDragDropOperation(DragDropEffect dragDropEffect)
 
 - (NSDragOperation)draggingUpdated:(id<NSDraggingInfo>)sender
 {
-    Vector2 mousePos;
+    Float2 mousePos;
     MacDropData dropData;
     GetDragDropData(Window, sender, mousePos, dropData);
     DragDropEffect dragDropEffect = DragDropEffect::None;
@@ -525,7 +525,7 @@ NSDragOperation GetDragDropOperation(DragDropEffect dragDropEffect)
 
 - (BOOL)performDragOperation:(id<NSDraggingInfo>)sender
 {
-    Vector2 mousePos;
+    Float2 mousePos;
     MacDropData dropData;
     GetDragDropData(Window, sender, mousePos, dropData);
     DragDropEffect dragDropEffect = DragDropEffect::None;
@@ -543,8 +543,8 @@ NSDragOperation GetDragDropOperation(DragDropEffect dragDropEffect)
 MacWindow::MacWindow(const CreateWindowSettings& settings)
     : WindowBase(settings)
 {
-    _clientSize = Vector2(settings.Size.X, settings.Size.Y);
-    Vector2 pos = MacUtils::PosToCoca(settings.Position);
+    _clientSize = Float2(settings.Size.X, settings.Size.Y);
+    Float2 pos = MacUtils::PosToCoca(settings.Position);
     NSRect frame = NSMakeRect(pos.X, pos.Y - settings.Size.Y, settings.Size.X, settings.Size.Y);
     NSUInteger styleMask = NSWindowStyleMaskClosable;
     if (settings.IsRegularWindow)
@@ -605,7 +605,7 @@ MacWindow::~MacWindow()
 
 void MacWindow::CheckForResize(float width, float height)
 {
-    const Vector2 clientSize(width, height);
+    const Float2 clientSize(width, height);
 	if (clientSize != _clientSize)
 	{
         _clientSize = clientSize;
@@ -736,62 +736,62 @@ void MacWindow::SetClientBounds(const Rectangle& clientArea)
     //newRect.origin.x = oldRect.origin.x;
     //newRect.origin.y = NSMaxY(oldRect) - newRect.size.height;
 
-    Vector2 pos = MacUtils::PosToCoca(clientArea.Location);
-    Vector2 titleSize = GetWindowTitleSize(this);
+    Float2 pos = MacUtils::PosToCoca(clientArea.Location);
+    Float2 titleSize = GetWindowTitleSize(this);
     newRect.origin.x = pos.X + titleSize.X;
     newRect.origin.y = pos.Y - newRect.size.height + titleSize.Y;
 
     [window setFrame:newRect display:YES];
 }
 
-void MacWindow::SetPosition(const Vector2& position)
+void MacWindow::SetPosition(const Float2& position)
 {
     NSWindow* window = (NSWindow*)_window;
     if (!window)
         return;
-    Vector2 pos = MacUtils::PosToCoca(position);
+    Float2 pos = MacUtils::PosToCoca(position);
     NSRect rect = [window frame];
     [window setFrameOrigin:NSMakePoint(pos.X, pos.Y - rect.size.height)];
 }
 
-Vector2 MacWindow::GetPosition() const
+Float2 MacWindow::GetPosition() const
 {
     NSWindow* window = (NSWindow*)_window;
     if (!window)
-        return Vector2::Zero;
+        return Float2::Zero;
     NSRect rect = [window frame];
-    return MacUtils::CocaToPos(Vector2(rect.origin.x, rect.origin.y + rect.size.height));
+    return MacUtils::CocaToPos(Float2(rect.origin.x, rect.origin.y + rect.size.height));
 }
 
-Vector2 MacWindow::GetSize() const
+Float2 MacWindow::GetSize() const
 {
     NSWindow* window = (NSWindow*)_window;
     if (!window)
-        return Vector2::Zero;
+        return Float2::Zero;
     NSRect rect = [window frame];
-    return Vector2(rect.size.width, rect.size.height);
+    return Float2(rect.size.width, rect.size.height);
 }
 
-Vector2 MacWindow::GetClientSize() const
+Float2 MacWindow::GetClientSize() const
 {
 	return _clientSize;
 }
 
-Vector2 MacWindow::ScreenToClient(const Vector2& screenPos) const
+Float2 MacWindow::ScreenToClient(const Float2& screenPos) const
 {
     NSWindow* window = (NSWindow*)_window;
     if (!window)
         return screenPos;
-    Vector2 titleSize = GetWindowTitleSize(this);
+    Float2 titleSize = GetWindowTitleSize(this);
     return screenPos - GetPosition() - titleSize;
 }
 
-Vector2 MacWindow::ClientToScreen(const Vector2& clientPos) const
+Float2 MacWindow::ClientToScreen(const Float2& clientPos) const
 {
     NSWindow* window = (NSWindow*)_window;
     if (!window)
         return clientPos;
-    Vector2 titleSize = GetWindowTitleSize(this);
+    Float2 titleSize = GetWindowTitleSize(this);
     return GetPosition() + titleSize + clientPos;
 }
 
@@ -837,8 +837,8 @@ DragDropEffect MacWindow::DoDragDrop(const StringView& data)
 void MacWindow::SetCursor(CursorType type)
 {
 	WindowBase::SetCursor(type);
-    if (!_isMouseOver)
-        return;
+    //if (!_isMouseOver)
+    //    return;
     NSCursor* cursor = nullptr;
     switch (type)
     {
@@ -875,6 +875,7 @@ void MacWindow::SetCursor(CursorType type)
     if (cursor)
     {
         [cursor set];
+        [NSCursor unhide];
     }
 }
 

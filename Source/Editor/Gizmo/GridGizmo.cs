@@ -54,8 +54,8 @@ namespace FlaxEditor.Gizmo
             if (viewPlane == ViewPlaneAxis.None)
                 return;
             var viewPos = Owner.ViewPosition;
-            var plane = new Plane(Vector3.Zero, GetPlaneUnit(viewPlane));
-            float dst = CollisionsHelper.DistancePlanePoint(ref plane, ref viewPos);
+            var plane = new Plane(Vector3.Zero, Vector3.UnitY);
+            var dst = CollisionsHelper.DistancePlanePoint(ref plane, ref viewPos);
 
             float space, size;
             if (dst <= 500.0f)

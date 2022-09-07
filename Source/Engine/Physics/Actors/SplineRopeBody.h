@@ -13,14 +13,13 @@ class Spline;
 /// <seealso cref="Spline" />
 API_CLASS() class FLAXENGINE_API SplineRopeBody : public Actor
 {
-API_AUTO_SERIALIZATION();
-DECLARE_SCENE_OBJECT(SplineRopeBody);
+    API_AUTO_SERIALIZATION();
+    DECLARE_SCENE_OBJECT(SplineRopeBody);
 private:
-
     struct Mass
     {
         Vector3 Position;
-        float SegmentLength;
+        Real SegmentLength;
         Vector3 PrevPosition;
         bool Unconstrained;
     };
@@ -30,7 +29,6 @@ private:
     Array<Mass> _masses;
 
 public:
-
     /// <summary>
     /// The target actor too attach the rope end to. If unset the rope end will run freely.
     /// </summary>
@@ -62,11 +60,9 @@ public:
     float SubstepTime = 0.02f;
 
 private:
-
     void Tick();
 
 public:
-
     // [Actor]
     void OnEnable() override;
     void OnDisable() override;

@@ -151,7 +151,8 @@ namespace
             case D3D_SIT_TEXTURE:
             case D3D_SIT_STRUCTURED:
             case D3D_SIT_BYTEADDRESS:
-                bindings.UsedSRsMask |= 1 << resDesc.BindPoint;
+                for (UINT shift = 0; shift < resDesc.BindCount; shift++)
+                    bindings.UsedSRsMask |= 1 << (resDesc.BindPoint + shift);
                 break;
 
                 // Unordered Access
@@ -161,7 +162,8 @@ namespace
             case D3D_SIT_UAV_APPEND_STRUCTURED:
             case D3D_SIT_UAV_CONSUME_STRUCTURED:
             case D3D_SIT_UAV_RWSTRUCTURED_WITH_COUNTER:
-                bindings.UsedUAsMask |= 1 << resDesc.BindPoint;
+                for (UINT shift = 0; shift < resDesc.BindCount; shift++)
+                    bindings.UsedUAsMask |= 1 << (resDesc.BindPoint + shift);
                 break;
             }
         }

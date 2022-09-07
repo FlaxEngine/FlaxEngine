@@ -1,7 +1,6 @@
 // Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 using System;
-using System.IO;
 using System.Linq;
 using Flax.Build;
 using Flax.Build.NativeCpp;
@@ -9,7 +8,7 @@ using Flax.Build.NativeCpp;
 /// <summary>
 /// Target that builds standalone, native tests.
 /// </summary>
-public class FlaxTestsTarget : EngineTarget
+public class FlaxTestsTarget : FlaxEditor
 {
     /// <inheritdoc />
     public override void Init()
@@ -35,8 +34,9 @@ public class FlaxTestsTarget : EngineTarget
         {
             TargetConfiguration.Development,
         };
+        GlobalDefinitions.Add("FLAX_TESTS");
+        Win32ResourceFile = null;
 
-        Modules.Remove("Main");
         Modules.Add("Tests");
     }
 
@@ -45,13 +45,8 @@ public class FlaxTestsTarget : EngineTarget
     {
         base.SetupTargetEnvironment(options);
 
+        // Produce console program
         options.LinkEnv.LinkAsConsoleProgram = true;
-
-        // Setup output folder for Test binaries
-        var platformName = options.Platform.Target.ToString();
-        var architectureName = options.Architecture.ToString();
-        var configurationName = options.Configuration.ToString();
-        options.OutputFolder = Path.Combine(options.WorkingDirectory, "Binaries", "Tests", platformName, architectureName, configurationName);
     }
 
     /// <inheritdoc />

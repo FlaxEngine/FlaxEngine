@@ -77,9 +77,9 @@ namespace FlaxEditor.Surface
                     if (_cache.Count != 0)
                     {
                         // Check if context menu doesn't have the recent cached groups
-                        if (!contextMenu.Groups.Any(g => g.Archetype.Tag is int asInt && asInt == _version))
+                        if (!contextMenu.Groups.Any(g => g.Archetypes.Count != 0 && g.Archetypes[0].Tag is int asInt && asInt == _version))
                         {
-                            var groups = contextMenu.Groups.Where(g => g.Archetype.Tag is int).ToArray();
+                            var groups = contextMenu.Groups.Where(g => g.Archetypes.Count != 0 && g.Archetypes[0].Tag is int).ToArray();
                             foreach (var g in groups)
                                 contextMenu.RemoveGroup(g);
                             foreach (var g in _cache.Values)
@@ -89,7 +89,7 @@ namespace FlaxEditor.Surface
                     else
                     {
                         // Remove any old groups from context menu
-                        var groups = contextMenu.Groups.Where(g => g.Archetype.Tag is int).ToArray();
+                        var groups = contextMenu.Groups.Where(g => g.Archetypes.Count != 0 && g.Archetypes[0].Tag is int).ToArray();
                         foreach (var g in groups)
                             contextMenu.RemoveGroup(g);
 
@@ -492,6 +492,19 @@ namespace FlaxEditor.Surface
                             return true;
                         }
                     }
+                    if (box.HasSingleConnection)
+                    {
+                        var connectedBox = box.Connections[0];
+                        for (int i = 0; i < state.Locals.Length; i++)
+                        {
+                            ref var local = ref state.Locals[i];
+                            if (local.BoxId == connectedBox.ID && local.NodeId == connectedBox.ParentNode.ID)
+                            {
+                                text = $"{local.Value ?? string.Empty} ({local.ValueTypeName})";
+                                return true;
+                            }
+                        }
+                    }
                 }
 
                 // Evaluate the value using the Visual Scripting backend
@@ -531,7 +544,7 @@ namespace FlaxEditor.Surface
         }
 
         /// <inheritdoc />
-        protected override void OnShowPrimaryMenu(VisjectCM activeCM, Vector2 location, Box startBox)
+        protected override void OnShowPrimaryMenu(VisjectCM activeCM, Float2 location, Box startBox)
         {
             Profiler.BeginEvent("Setup Visual Script Context Menu");
 
@@ -579,7 +592,7 @@ namespace FlaxEditor.Surface
                     }
                 }
 
-                activeCM.AddGroup(_methodOverridesGroupArchetype);
+                activeCM.AddGroup(_methodOverridesGroupArchetype, false);
             }
 
             // Update nodes for invoke methods (async)
@@ -641,7 +654,7 @@ namespace FlaxEditor.Surface
         }
 
         /// <inheritdoc />
-        public override DragDropEffect OnDragDrop(ref Vector2 location, DragData data)
+        public override DragDropEffect OnDragDrop(ref Float2 location, DragData data)
         {
             var args = new DragDropEventArgs
             {

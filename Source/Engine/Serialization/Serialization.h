@@ -5,14 +5,21 @@
 #include "SerializationFwd.h"
 #include "Engine/Core/Collections/Array.h"
 #include "Engine/Core/Collections/Dictionary.h"
-#include "Engine/Scripting/ScriptingObjectReference.h"
-#include "Engine/Scripting/SoftObjectReference.h"
-#include "Engine/Content/AssetReference.h"
-#include "Engine/Content/WeakAssetReference.h"
+#include "Engine/Scripting/ScriptingObject.h"
 #include "Engine/Utilities/Encryption.h"
 
 struct Version;
 struct VariantType;
+template<typename T>
+class ScriptingObjectReference;
+template<typename T>
+class SoftObjectReference;
+template<typename T>
+class AssetReference;
+template<typename T>
+class WeakAssetReference;
+template<typename T>
+class SoftAssetReference;
 
 // @formatter:off
 
@@ -177,7 +184,7 @@ namespace Serialization
 
     inline bool ShouldSerialize(const float& v, const void* otherObj)
     {
-        return !otherObj || abs(v - *(float*)otherObj) > SERIALIZE_EPSILON;
+        return !otherObj || fabsf(v - *(float*)otherObj) > SERIALIZE_EPSILON;
     }
     inline void Serialize(ISerializable::SerializeStream& stream, const float& v, const void* otherObj)
     {
@@ -190,7 +197,7 @@ namespace Serialization
 
     inline bool ShouldSerialize(const double& v, const void* otherObj)
     {
-        return !otherObj || v != *(double*)otherObj;
+        return !otherObj || fabs(v - *(double*)otherObj) > SERIALIZE_EPSILON_DOUBLE;
     }
     inline void Serialize(ISerializable::SerializeStream& stream, const double& v, const void* otherObj)
     {
@@ -273,26 +280,47 @@ namespace Serialization
 
     // Math types
 
-    FLAXENGINE_API bool ShouldSerialize(const Vector2& v, const void* otherObj);
-    inline void Serialize(ISerializable::SerializeStream& stream, const Vector2& v, const void* otherObj)
+    FLAXENGINE_API bool ShouldSerialize(const Float2& v, const void* otherObj);
+    inline void Serialize(ISerializable::SerializeStream& stream, const Float2& v, const void* otherObj)
     {
-        stream.Vector2(v);
+        stream.Float2(v);
     }
-    FLAXENGINE_API void Deserialize(ISerializable::DeserializeStream& stream, Vector2& v, ISerializeModifier* modifier);
+    FLAXENGINE_API void Deserialize(ISerializable::DeserializeStream& stream, Float2& v, ISerializeModifier* modifier);
 
-    FLAXENGINE_API bool ShouldSerialize(const Vector3& v, const void* otherObj);
-    inline void Serialize(ISerializable::SerializeStream& stream, const Vector3& v, const void* otherObj)
+    FLAXENGINE_API bool ShouldSerialize(const Float3& v, const void* otherObj);
+    inline void Serialize(ISerializable::SerializeStream& stream, const Float3& v, const void* otherObj)
     {
-        stream.Vector3(v);
+        stream.Float3(v);
     }
-    FLAXENGINE_API void Deserialize(ISerializable::DeserializeStream& stream, Vector3& v, ISerializeModifier* modifier);
+    FLAXENGINE_API void Deserialize(ISerializable::DeserializeStream& stream, Float3& v, ISerializeModifier* modifier);
 
-    FLAXENGINE_API bool ShouldSerialize(const Vector4& v, const void* otherObj);
-    inline void Serialize(ISerializable::SerializeStream& stream, const Vector4& v, const void* otherObj)
+    FLAXENGINE_API bool ShouldSerialize(const Float4& v, const void* otherObj);
+    inline void Serialize(ISerializable::SerializeStream& stream, const Float4& v, const void* otherObj)
     {
-        stream.Vector4(v);
+        stream.Float4(v);
     }
-    FLAXENGINE_API void Deserialize(ISerializable::DeserializeStream& stream, Vector4& v, ISerializeModifier* modifier);
+    FLAXENGINE_API void Deserialize(ISerializable::DeserializeStream& stream, Float4& v, ISerializeModifier* modifier);
+
+    FLAXENGINE_API bool ShouldSerialize(const Double2& v, const void* otherObj);
+    inline void Serialize(ISerializable::SerializeStream& stream, const Double2& v, const void* otherObj)
+    {
+        stream.Double2(v);
+    }
+    FLAXENGINE_API void Deserialize(ISerializable::DeserializeStream& stream, Double2& v, ISerializeModifier* modifier);
+
+    FLAXENGINE_API bool ShouldSerialize(const Double3& v, const void* otherObj);
+    inline void Serialize(ISerializable::SerializeStream& stream, const Double3& v, const void* otherObj)
+    {
+        stream.Double3(v);
+    }
+    FLAXENGINE_API void Deserialize(ISerializable::DeserializeStream& stream, Double3& v, ISerializeModifier* modifier);
+
+    FLAXENGINE_API bool ShouldSerialize(const Double4& v, const void* otherObj);
+    inline void Serialize(ISerializable::SerializeStream& stream, const Double4& v, const void* otherObj)
+    {
+        stream.Double4(v);
+    }
+    FLAXENGINE_API void Deserialize(ISerializable::DeserializeStream& stream, Double4& v, ISerializeModifier* modifier);
 
     FLAXENGINE_API bool ShouldSerialize(const Int2& v, const void* otherObj);
     inline void Serialize(ISerializable::SerializeStream& stream, const Int2& v, const void* otherObj)
@@ -507,6 +535,26 @@ namespace Serialization
     }
     template<typename T>
     inline void Deserialize(ISerializable::DeserializeStream& stream, WeakAssetReference<T>& v, ISerializeModifier* modifier)
+    {
+        Guid id;
+        Deserialize(stream, id, modifier);
+        v = id;
+    }
+
+    // Soft Asset Reference
+
+    template<typename T>
+    inline bool ShouldSerialize(const SoftAssetReference<T>& v, const void* otherObj)
+    {
+        return !otherObj || v.Get() != ((SoftAssetReference<T>*)otherObj)->Get();
+    }
+    template<typename T>
+    inline void Serialize(ISerializable::SerializeStream& stream, const SoftAssetReference<T>& v, const void* otherObj)
+    {
+        stream.Guid(v.GetID());
+    }
+    template<typename T>
+    inline void Deserialize(ISerializable::DeserializeStream& stream, SoftAssetReference<T>& v, ISerializeModifier* modifier)
     {
         Guid id;
         Deserialize(stream, id, modifier);

@@ -52,7 +52,7 @@ namespace FlaxEngine.GUI
         /// <summary>
         /// Initializes a new instance of the <see cref="ContainerControl"/> class.
         /// </summary>
-        public ContainerControl(Vector2 location, Vector2 size)
+        public ContainerControl(Float2 location, Float2 size)
         : base(location, size)
         {
             _isLayoutLocked = true;
@@ -287,7 +287,7 @@ namespace FlaxEngine.GUI
         /// </summary>
         /// <param name="point">The local point to check.</param>
         /// <returns>The found control index or -1 if failed.</returns>
-        public int GetChildIndexAt(Vector2 point)
+        public int GetChildIndexAt(Float2 point)
         {
             int result = -1;
             for (int i = _children.Count - 1; i >= 0; i--)
@@ -307,7 +307,7 @@ namespace FlaxEngine.GUI
         /// </summary>
         /// <param name="point">The local point to check.</param>
         /// <returns>The found control or null.</returns>
-        public Control GetChildAt(Vector2 point)
+        public Control GetChildAt(Float2 point)
         {
             Control result = null;
             for (int i = _children.Count - 1; i >= 0; i--)
@@ -328,7 +328,7 @@ namespace FlaxEngine.GUI
         /// <param name="point">The local point to check.</param>
         /// <param name="isValid">The control validation callback.</param>
         /// <returns>The found control or null.</returns>
-        public Control GetChildAt(Vector2 point, Func<Control, bool> isValid)
+        public Control GetChildAt(Float2 point, Func<Control, bool> isValid)
         {
             if (isValid == null)
                 throw new ArgumentNullException(nameof(isValid));
@@ -350,7 +350,7 @@ namespace FlaxEngine.GUI
         /// </summary>
         /// <param name="point">The local point to check.</param>
         /// <returns>The found control or null.</returns>
-        public Control GetChildAtRecursive(Vector2 point)
+        public Control GetChildAtRecursive(Float2 point)
         {
             Control result = null;
             for (int i = _children.Count - 1; i >= 0; i--)
@@ -475,7 +475,7 @@ namespace FlaxEngine.GUI
         /// <param name="rect">The client area rectangle for child controls.</param>
         public virtual void GetDesireClientArea(out Rectangle rect)
         {
-            rect = new Rectangle(Vector2.Zero, Size);
+            rect = new Rectangle(Float2.Zero, Size);
         }
 
         /// <summary>
@@ -486,7 +486,7 @@ namespace FlaxEngine.GUI
         /// <param name="location">The location in this container control space.</param>
         /// <param name="childSpaceLocation">The output location in child control space.</param>
         /// <returns>True if point is over the control content, otherwise false.</returns>
-        public virtual bool IntersectsChildContent(Control child, Vector2 location, out Vector2 childSpaceLocation)
+        public virtual bool IntersectsChildContent(Control child, Float2 location, out Float2 childSpaceLocation)
         {
             return child.IntersectsContent(ref location, out childSpaceLocation);
         }
@@ -494,7 +494,7 @@ namespace FlaxEngine.GUI
         #region Navigation
 
         /// <inheritdoc />
-        public override Control OnNavigate(NavDirection direction, Vector2 location, Control caller, List<Control> visited)
+        public override Control OnNavigate(NavDirection direction, Float2 location, Control caller, List<Control> visited)
         {
             // Try to focus itself first (only if navigation focus can enter this container)
             if (AutoFocus && !ContainsFocus)
@@ -552,7 +552,7 @@ namespace FlaxEngine.GUI
         /// <param name="location">The navigation start location (in the control-space).</param>
         /// <param name="visited">The list with visited controls. Used to skip recursive navigation calls when doing traversal across the UI hierarchy.</param>
         /// <returns>The target navigation control or null if didn't performed any navigation.</returns>
-        protected virtual Control NavigationWrap(NavDirection direction, Vector2 location, List<Control> visited)
+        protected virtual Control NavigationWrap(NavDirection direction, Float2 location, List<Control> visited)
         {
             // This searches form a child that calls this navigation event (see Control.OnNavigate) to determinate the layout wrapping size based on that child size
             var currentChild = RootWindow?.FocusedControl;
@@ -560,14 +560,14 @@ namespace FlaxEngine.GUI
             if (currentChild != null)
             {
                 var layoutSize = currentChild.Size;
-                var predictedLocation = Vector2.Minimum;
+                var predictedLocation = Float2.Minimum;
                 switch (direction)
                 {
                 case NavDirection.Next:
-                    predictedLocation = new Vector2(0, location.Y + layoutSize.Y);
+                    predictedLocation = new Float2(0, location.Y + layoutSize.Y);
                     break;
                 }
-                if (new Rectangle(Vector2.Zero, Size).Contains(ref predictedLocation))
+                if (new Rectangle(Float2.Zero, Size).Contains(ref predictedLocation))
                 {
                     var result = NavigationRaycast(direction, predictedLocation, visited);
                     if (result != null)
@@ -592,26 +592,26 @@ namespace FlaxEngine.GUI
             return false;
         }
 
-        private Control NavigationRaycast(NavDirection direction, Vector2 location, List<Control> visited)
+        private Control NavigationRaycast(NavDirection direction, Float2 location, List<Control> visited)
         {
-            Vector2 uiDir1 = Vector2.Zero, uiDir2 = Vector2.Zero;
+            Float2 uiDir1 = Float2.Zero, uiDir2 = Float2.Zero;
             switch (direction)
             {
             case NavDirection.Up:
-                uiDir1 = uiDir2 = new Vector2(0, -1);
+                uiDir1 = uiDir2 = new Float2(0, -1);
                 break;
             case NavDirection.Down:
-                uiDir1 = uiDir2 = new Vector2(0, 1);
+                uiDir1 = uiDir2 = new Float2(0, 1);
                 break;
             case NavDirection.Left:
-                uiDir1 = uiDir2 = new Vector2(-1, 0);
+                uiDir1 = uiDir2 = new Float2(-1, 0);
                 break;
             case NavDirection.Right:
-                uiDir1 = uiDir2 = new Vector2(1, 0);
+                uiDir1 = uiDir2 = new Float2(1, 0);
                 break;
             case NavDirection.Next:
-                uiDir1 = new Vector2(1, 0);
-                uiDir2 = new Vector2(0, 1);
+                uiDir1 = new Float2(1, 0);
+                uiDir2 = new Float2(0, 1);
                 break;
             }
             Control result = null;
@@ -623,9 +623,9 @@ namespace FlaxEngine.GUI
                     continue;
                 var childNavLocation = child.Center;
                 var childBounds = child.Bounds;
-                var childNavDirection = Vector2.Normalize(childNavLocation - location);
-                var childNavCoherence1 = Vector2.Dot(ref uiDir1, ref childNavDirection);
-                var childNavCoherence2 = Vector2.Dot(ref uiDir2, ref childNavDirection);
+                var childNavDirection = Float2.Normalize(childNavLocation - location);
+                var childNavCoherence1 = Float2.Dot(ref uiDir1, ref childNavDirection);
+                var childNavCoherence2 = Float2.Dot(ref uiDir2, ref childNavDirection);
                 var distance = Rectangle.Distance(childBounds, location);
                 if (childNavCoherence1 > Mathf.Epsilon && childNavCoherence2 > Mathf.Epsilon && distance < minDistance)
                 {
@@ -841,7 +841,7 @@ namespace FlaxEngine.GUI
         }
 
         /// <inheritdoc />
-        public override void OnMouseEnter(Vector2 location)
+        public override void OnMouseEnter(Float2 location)
         {
             // Check all children collisions with mouse and fire events for them
             for (int i = _children.Count - 1; i >= 0 && _children.Count > 0; i--)
@@ -861,7 +861,7 @@ namespace FlaxEngine.GUI
         }
 
         /// <inheritdoc />
-        public override void OnMouseMove(Vector2 location)
+        public override void OnMouseMove(Float2 location)
         {
             // Check all children collisions with mouse and fire events for them
             for (int i = _children.Count - 1; i >= 0 && _children.Count > 0; i--)
@@ -911,7 +911,7 @@ namespace FlaxEngine.GUI
         }
 
         /// <inheritdoc />
-        public override bool OnMouseWheel(Vector2 location, float delta)
+        public override bool OnMouseWheel(Float2 location, float delta)
         {
             // Check all children collisions with mouse and fire events for them
             for (int i = _children.Count - 1; i >= 0 && _children.Count > 0; i--)
@@ -932,7 +932,7 @@ namespace FlaxEngine.GUI
         }
 
         /// <inheritdoc />
-        public override bool OnMouseDown(Vector2 location, MouseButton button)
+        public override bool OnMouseDown(Float2 location, MouseButton button)
         {
             // Check all children collisions with mouse and fire events for them
             for (int i = _children.Count - 1; i >= 0 && _children.Count > 0; i--)
@@ -953,7 +953,7 @@ namespace FlaxEngine.GUI
         }
 
         /// <inheritdoc />
-        public override bool OnMouseUp(Vector2 location, MouseButton button)
+        public override bool OnMouseUp(Float2 location, MouseButton button)
         {
             // Check all children collisions with mouse and fire events for them
             for (int i = _children.Count - 1; i >= 0 && _children.Count > 0; i--)
@@ -974,7 +974,7 @@ namespace FlaxEngine.GUI
         }
 
         /// <inheritdoc />
-        public override bool OnMouseDoubleClick(Vector2 location, MouseButton button)
+        public override bool OnMouseDoubleClick(Float2 location, MouseButton button)
         {
             // Check all children collisions with mouse and fire events for them
             for (int i = _children.Count - 1; i >= 0 && _children.Count > 0; i--)
@@ -1010,7 +1010,7 @@ namespace FlaxEngine.GUI
         }
 
         /// <inheritdoc />
-        public override void OnTouchEnter(Vector2 location, int pointerId)
+        public override void OnTouchEnter(Float2 location, int pointerId)
         {
             for (int i = _children.Count - 1; i >= 0 && _children.Count > 0; i--)
             {
@@ -1028,7 +1028,7 @@ namespace FlaxEngine.GUI
         }
 
         /// <inheritdoc />
-        public override bool OnTouchDown(Vector2 location, int pointerId)
+        public override bool OnTouchDown(Float2 location, int pointerId)
         {
             for (int i = _children.Count - 1; i >= 0 && _children.Count > 0; i--)
             {
@@ -1053,7 +1053,7 @@ namespace FlaxEngine.GUI
         }
 
         /// <inheritdoc />
-        public override void OnTouchMove(Vector2 location, int pointerId)
+        public override void OnTouchMove(Float2 location, int pointerId)
         {
             for (int i = _children.Count - 1; i >= 0 && _children.Count > 0; i--)
             {
@@ -1082,7 +1082,7 @@ namespace FlaxEngine.GUI
         }
 
         /// <inheritdoc />
-        public override bool OnTouchUp(Vector2 location, int pointerId)
+        public override bool OnTouchUp(Float2 location, int pointerId)
         {
             for (int i = _children.Count - 1; i >= 0 && _children.Count > 0; i--)
             {
@@ -1160,7 +1160,7 @@ namespace FlaxEngine.GUI
         }
 
         /// <inheritdoc />
-        public override DragDropEffect OnDragEnter(ref Vector2 location, DragData data)
+        public override DragDropEffect OnDragEnter(ref Float2 location, DragData data)
         {
             // Base
             var result = base.OnDragEnter(ref location, data);
@@ -1185,7 +1185,7 @@ namespace FlaxEngine.GUI
         }
 
         /// <inheritdoc />
-        public override DragDropEffect OnDragMove(ref Vector2 location, DragData data)
+        public override DragDropEffect OnDragMove(ref Float2 location, DragData data)
         {
             // Base
             var result = base.OnDragMove(ref location, data);
@@ -1243,7 +1243,7 @@ namespace FlaxEngine.GUI
         }
 
         /// <inheritdoc />
-        public override DragDropEffect OnDragDrop(ref Vector2 location, DragData data)
+        public override DragDropEffect OnDragDrop(ref Float2 location, DragData data)
         {
             // Base
             var result = base.OnDragDrop(ref location, data);

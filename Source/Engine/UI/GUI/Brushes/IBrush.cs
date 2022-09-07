@@ -28,7 +28,7 @@ namespace FlaxEngine.GUI
         /// <summary>
         /// Gets the size of the image brush in pixels (if relevant).
         /// </summary>
-        Vector2 Size { get; }
+        Float2 Size { get; }
 
         /// <summary>
         /// Draws the specified image using <see cref="Render2D"/> graphics backend.

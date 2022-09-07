@@ -19,6 +19,7 @@ namespace Flax.Build.Bindings
         internal static readonly Dictionary<string, string> CSharpNativeToManagedBasicTypes = new Dictionary<string, string>()
         {
             // Language types
+            { "bool", "bool" },
             { "int8", "sbyte" },
             { "int16", "short" },
             { "int32", "int" },
@@ -54,6 +55,22 @@ namespace Flax.Build.Bindings
             { "MonoReflectionType", "System.Type" },
             { "MonoType", "IntPtr" },
             { "MonoArray", "Array" },
+        };
+
+        private static readonly string[] CSharpVectorTypes =
+        {
+            "Vector2",
+            "Vector3",
+            "Vector4",
+            "Float2",
+            "Float3",
+            "Float4",
+            "Double2",
+            "Double2",
+            "Double3",
+            "Int2",
+            "Int3",
+            "Int4",
         };
 
         private static string GenerateCSharpDefaultValueNativeToManaged(BuildData buildData, string value, ApiTypeInfo caller, TypeInfo valueType = null, bool attribute = false)
@@ -110,12 +127,11 @@ namespace Flax.Build.Bindings
                 if (value.Contains('(') && value.Contains(')'))
                 {
                     // Support for in-built types
-                    if (value.StartsWith("Vector2("))
-                        return $"typeof(Vector2), \"{value.Substring(8, value.Length - 9).Replace("f", "")}\"";
-                    if (value.StartsWith("Vector3("))
-                        return $"typeof(Vector3), \"{value.Substring(8, value.Length - 9).Replace("f", "")}\"";
-                    if (value.StartsWith("Vector4("))
-                        return $"typeof(Vector4), \"{value.Substring(8, value.Length - 9).Replace("f", "")}\"";
+                    foreach (var vectorType in CSharpVectorTypes)
+                    {
+                        if (value.Length > vectorType.Length + 4 && value.StartsWith(vectorType) && value[vectorType.Length] == '(')
+                            return $"typeof({vectorType}), \"{value.Substring(vectorType.Length + 1, value.Length - vectorType.Length - 2).Replace("f", "")}\"";
+                    }
 
                     return null;
                 }
@@ -128,10 +144,31 @@ namespace Flax.Build.Bindings
                     {
                     case "Vector2.Zero": return "typeof(Vector2), \"0,0\"";
                     case "Vector2.One": return "typeof(Vector2), \"1,1\"";
+                    case "Float2.Zero": return "typeof(Float2), \"0,0\"";
+                    case "Float2.One": return "typeof(Float2), \"1,1\"";
+                    case "Double2.Zero": return "typeof(Double2), \"0,0\"";
+                    case "Double2.One": return "typeof(Double2), \"1,1\"";
+                    case "Int2.Zero": return "typeof(Int2), \"0,0\"";
+                    case "Int2.One": return "typeof(Int2), \"1,1\"";
+
                     case "Vector3.Zero": return "typeof(Vector3), \"0,0,0\"";
                     case "Vector3.One": return "typeof(Vector3), \"1,1,1\"";
+                    case "Float3.Zero": return "typeof(Float3), \"0,0,0\"";
+                    case "Float3.One": return "typeof(Float3), \"1,1,1\"";
+                    case "Double3.Zero": return "typeof(Double3), \"0,0,0\"";
+                    case "Double3.One": return "typeof(Double3), \"1,1,1\"";
+                    case "Int3.Zero": return "typeof(Int3), \"0,0,0\"";
+                    case "Int3.One": return "typeof(Int3), \"1,1,1\"";
+
                     case "Vector4.Zero": return "typeof(Vector4), \"0,0,0,0\"";
                     case "Vector4.One": return "typeof(Vector4), \"1,1,1,1\"";
+                    case "Double4.Zero": return "typeof(Double4), \"0,0,0,0\"";
+                    case "Double4.One": return "typeof(Double4), \"1,1,1,1\"";
+                    case "Float4.Zero": return "typeof(Float4), \"0,0,0,0\"";
+                    case "Float4.One": return "typeof(Float4), \"1,1,1,1\"";
+                    case "Int4.Zero": return "typeof(Float4), \"0,0,0,0\"";
+                    case "Int4.One": return "typeof(Float4), \"1,1,1,1\"";
+
                     case "Quaternion.Identity": return "typeof(Quaternion), \"0,0,0,1\"";
                     }
 
@@ -233,8 +270,12 @@ namespace Flax.Build.Bindings
                 return result;
             }
 
-            // ScriptingObjectReference or AssetReference or WeakAssetReference or SoftObjectReference
-            if ((typeInfo.Type == "ScriptingObjectReference" || typeInfo.Type == "AssetReference" || typeInfo.Type == "WeakAssetReference" || typeInfo.Type == "SoftObjectReference") && typeInfo.GenericArgs != null)
+            // Object reference property
+            if ((typeInfo.Type == "ScriptingObjectReference" ||
+                 typeInfo.Type == "AssetReference" ||
+                 typeInfo.Type == "WeakAssetReference" ||
+                 typeInfo.Type == "SoftAssetReference" ||
+                 typeInfo.Type == "SoftObjectReference") && typeInfo.GenericArgs != null)
                 return GenerateCSharpNativeToManaged(buildData, typeInfo.GenericArgs[0], caller);
 
             // Array or Span
@@ -279,21 +320,23 @@ namespace Flax.Build.Bindings
 
             // Find API type info
             var apiType = FindApiTypeInfo(buildData, typeInfo, caller);
+            var typeName = typeInfo.Type.Replace("::", ".");
             if (apiType != null)
             {
                 CSharpUsedNamespaces.Add(apiType.Namespace);
-
                 if (apiType.IsScriptingObject || apiType.IsInterface)
-                    return typeInfo.Type.Replace("::", ".");
+                    return typeName;
                 if (typeInfo.IsPtr && apiType.IsPod)
-                    return typeInfo.Type.Replace("::", ".") + '*';
+                    return typeName + '*';
+                if (apiType is LangType && CSharpNativeToManagedBasicTypes.TryGetValue(apiType.Name, out result))
+                    return result;
             }
 
             // Pointer
             if (typeInfo.IsPtr)
                 return "IntPtr";
 
-            return typeInfo.Type.Replace("::", ".");
+            return typeName;
         }
 
         private static string GenerateCSharpManagedToNativeType(BuildData buildData, TypeInfo typeInfo, ApiTypeInfo caller)
@@ -310,8 +353,12 @@ namespace Flax.Build.Bindings
                     return "IntPtr";
             }
 
-            // ScriptingObjectReference or AssetReference or WeakAssetReference or SoftObjectReference
-            if ((typeInfo.Type == "ScriptingObjectReference" || typeInfo.Type == "AssetReference" || typeInfo.Type == "WeakAssetReference" || typeInfo.Type == "SoftObjectReference") && typeInfo.GenericArgs != null)
+            // Object reference property
+            if ((typeInfo.Type == "ScriptingObjectReference" ||
+                 typeInfo.Type == "AssetReference" ||
+                 typeInfo.Type == "WeakAssetReference" ||
+                 typeInfo.Type == "SoftAssetReference" ||
+                 typeInfo.Type == "SoftObjectReference") && typeInfo.GenericArgs != null)
                 return "IntPtr";
 
             // Function
@@ -364,8 +411,12 @@ namespace Flax.Build.Bindings
                         return string.Format("FlaxEngine.Object.GetUnmanagedInterface({{0}}, typeof({0}))", apiType.FullNameManaged);
                 }
 
-                // ScriptingObjectReference or AssetReference or WeakAssetReference or SoftObjectReference
-                if ((typeInfo.Type == "ScriptingObjectReference" || typeInfo.Type == "AssetReference" || typeInfo.Type == "WeakAssetReference" || typeInfo.Type == "SoftObjectReference") && typeInfo.GenericArgs != null)
+                // Object reference property
+                if ((typeInfo.Type == "ScriptingObjectReference" ||
+                     typeInfo.Type == "AssetReference" ||
+                     typeInfo.Type == "WeakAssetReference" ||
+                     typeInfo.Type == "SoftAssetReference" ||
+                     typeInfo.Type == "SoftObjectReference") && typeInfo.GenericArgs != null)
                     return "FlaxEngine.Object.GetUnmanagedPtr({0})";
 
                 // Default
@@ -523,10 +574,14 @@ namespace Flax.Build.Bindings
             }
         }
 
-        private static void GenerateCSharpComment(StringBuilder contents, string indent, string[] comment)
+        private static void GenerateCSharpComment(StringBuilder contents, string indent, string[] comment, bool skipMeta = false)
         {
+            if (comment == null)
+                return;
             foreach (var c in comment)
             {
+                if (skipMeta && (c.Contains("/// <returns>") || c.Contains("<param name=")))
+                    continue;
                 contents.Append(indent).Append(c.Replace("::", ".")).AppendLine();
             }
         }
@@ -729,13 +784,7 @@ namespace Flax.Build.Bindings
                     }
                 }
 
-                foreach (var comment in eventInfo.Comment)
-                {
-                    if (comment.Contains("/// <returns>"))
-                        continue;
-                    contents.Append(indent).Append(comment.Replace("::", ".")).AppendLine();
-                }
-
+                GenerateCSharpComment(contents, indent, eventInfo.Comment, true);
                 GenerateCSharpAttributes(buildData, contents, indent, classInfo, eventInfo, useUnmanaged);
                 contents.Append(indent);
                 if (eventInfo.Access == AccessLevel.Public)
@@ -820,14 +869,7 @@ namespace Flax.Build.Bindings
                 if (fieldInfo.Getter == null || fieldInfo.IsHidden)
                     continue;
                 contents.AppendLine();
-
-                foreach (var comment in fieldInfo.Comment)
-                {
-                    if (comment.Contains("/// <returns>"))
-                        continue;
-                    contents.Append(indent).Append(comment.Replace("::", ".")).AppendLine();
-                }
-
+                GenerateCSharpComment(contents, indent, fieldInfo.Comment, true);
                 GenerateCSharpAttributes(buildData, contents, indent, classInfo, fieldInfo, useUnmanaged, fieldInfo.DefaultValue, fieldInfo.Type);
                 contents.Append(indent);
                 if (fieldInfo.Access == AccessLevel.Public)
@@ -836,11 +878,15 @@ namespace Flax.Build.Bindings
                     contents.Append("protected ");
                 else if (fieldInfo.Access == AccessLevel.Private)
                     contents.Append("private ");
-                if (fieldInfo.IsStatic)
+                if (fieldInfo.IsConstexpr)
+                    contents.Append("const ");
+                else if (fieldInfo.IsStatic)
                     contents.Append("static ");
+
                 var returnValueType = GenerateCSharpNativeToManaged(buildData, fieldInfo.Type, classInfo);
                 contents.Append(returnValueType).Append(' ').Append(fieldInfo.Name);
-                if (!useUnmanaged)
+
+                if (!useUnmanaged || fieldInfo.IsConstexpr)
                 {
                     var defaultValue = GenerateCSharpDefaultValueNativeToManaged(buildData, fieldInfo.DefaultValue, classInfo, fieldInfo.Type);
                     if (!string.IsNullOrEmpty(defaultValue))
@@ -879,14 +925,7 @@ namespace Flax.Build.Bindings
                     throw new NotImplementedException("TODO: support properties inside non-static and non-scripting API class types.");
 
                 contents.AppendLine();
-
-                foreach (var comment in propertyInfo.Comment)
-                {
-                    if (comment.Contains("/// <returns>") || comment.Contains("<param name="))
-                        continue;
-                    contents.Append(indent).Append(comment.Replace("::", ".")).AppendLine();
-                }
-
+                GenerateCSharpComment(contents, indent, propertyInfo.Comment, true);
                 GenerateCSharpAttributes(buildData, contents, indent, classInfo, propertyInfo, useUnmanaged);
                 contents.Append(indent);
                 if (propertyInfo.Access == AccessLevel.Public)
@@ -1109,13 +1148,11 @@ namespace Flax.Build.Bindings
             indent += "    ";
 
             // Fields
+            var hasDefaultMember = false;
             foreach (var fieldInfo in structureInfo.Fields)
             {
                 contents.AppendLine();
-
-                foreach (var comment in fieldInfo.Comment)
-                    contents.Append(indent).Append(comment).AppendLine();
-
+                GenerateCSharpComment(contents, indent, fieldInfo.Comment);
                 GenerateCSharpAttributes(buildData, contents, indent, structureInfo, fieldInfo, fieldInfo.IsStatic, fieldInfo.DefaultValue, fieldInfo.Type);
                 contents.Append(indent);
                 if (fieldInfo.Access == AccessLevel.Public)
@@ -1124,8 +1161,11 @@ namespace Flax.Build.Bindings
                     contents.Append("protected ");
                 else if (fieldInfo.Access == AccessLevel.Private)
                     contents.Append("private ");
-                if (fieldInfo.IsStatic)
+                if (fieldInfo.IsConstexpr)
+                    contents.Append("const ");
+                else if (fieldInfo.IsStatic)
                     contents.Append("static ");
+                hasDefaultMember |= string.Equals(fieldInfo.Name, "Default", StringComparison.Ordinal);
                 string type;
 
                 if (fieldInfo.Type.IsArray && (fieldInfo.NoArray || structureInfo.IsPod))
@@ -1138,8 +1178,7 @@ namespace Flax.Build.Bindings
                     for (int i = 1; i < fieldInfo.Type.ArraySize; i++)
                     {
                         contents.AppendLine();
-                        foreach (var comment in fieldInfo.Comment)
-                            contents.Append(indent).Append(comment).AppendLine();
+                        GenerateCSharpComment(contents, indent, fieldInfo.Comment);
                         GenerateCSharpAttributes(buildData, contents, indent, structureInfo, fieldInfo, fieldInfo.IsStatic);
                         contents.Append(indent);
                         if (fieldInfo.Access == AccessLevel.Public)
@@ -1158,9 +1197,17 @@ namespace Flax.Build.Bindings
                 type = GenerateCSharpNativeToManaged(buildData, fieldInfo.Type, structureInfo);
                 contents.Append(type).Append(' ').Append(fieldInfo.Name);
 
-                // Static fields are using C++ static value accessed via getter function binding
-                if (fieldInfo.IsStatic)
+                if (fieldInfo.IsConstexpr)
                 {
+                    // Compile-time constant
+                    var defaultValue = GenerateCSharpDefaultValueNativeToManaged(buildData, fieldInfo.DefaultValue, structureInfo, fieldInfo.Type);
+                    if (!string.IsNullOrEmpty(defaultValue))
+                        contents.Append(" = ").Append(defaultValue);
+                    contents.AppendLine(";");
+                }
+                else if (fieldInfo.IsStatic)
+                {
+                    // Static fields are using C++ static value accessed via getter function binding
                     contents.AppendLine();
                     contents.AppendLine(indent + "{");
                     indent += "    ";
@@ -1187,6 +1234,45 @@ namespace Flax.Build.Bindings
                 {
                     contents.Append(';').AppendLine();
                 }
+            }
+
+            // Default value
+            if (!structureInfo.NoDefault && !hasDefaultMember)
+            {
+                contents.AppendLine();
+                contents.Append(indent).AppendLine("private static bool _defaultValid;");
+                contents.Append(indent).AppendLine($"private static {structureInfo.Name} _default;");
+                contents.AppendLine();
+                contents.Append(indent).AppendLine("/// <summary>");
+                contents.Append(indent).AppendLine($"/// The default <see cref=\"{structureInfo.Name}\"/>.");
+                contents.Append(indent).AppendLine("/// </summary>");
+                contents.Append(indent).AppendLine($"public static {structureInfo.Name} Default");
+                contents.Append(indent).AppendLine("{");
+                indent += "    ";
+                contents.Append(indent).AppendLine("get");
+                contents.Append(indent).AppendLine("{");
+                indent += "    ";
+                contents.Append(indent).AppendLine("if (!_defaultValid)");
+                contents.Append(indent).AppendLine("{");
+                indent += "    ";
+                contents.Append(indent).AppendLine("_defaultValid = true;");
+                contents.Append(indent).AppendLine("object obj = _default;");
+                contents.Append(indent).AppendLine($"FlaxEngine.Utils.InitStructure(obj, typeof({structureInfo.Name}));");
+                contents.Append(indent).AppendLine($"_default = ({structureInfo.Name})obj;");
+                indent = indent.Substring(0, indent.Length - 4);
+                contents.Append(indent).AppendLine("}");
+                contents.Append(indent).AppendLine("return _default;");
+                indent = indent.Substring(0, indent.Length - 4);
+                contents.Append(indent).AppendLine("}");
+                indent = indent.Substring(0, indent.Length - 4);
+                contents.Append(indent).AppendLine("}");
+                contents.AppendLine();
+                contents.Append(indent).AppendLine("[System.Runtime.Serialization.OnDeserializing]");
+                contents.Append(indent).AppendLine("internal void OnDeserializing(System.Runtime.Serialization.StreamingContext context)");
+                contents.Append(indent).AppendLine("{");
+                contents.Append(indent).AppendLine("    // Initialize structure with default values to replicate C++ deserialization behavior");
+                contents.Append(indent).AppendLine("    this = Default;");
+                contents.Append(indent).AppendLine("}");
             }
 
             // Nested types
@@ -1242,10 +1328,7 @@ namespace Flax.Build.Bindings
             foreach (var entryInfo in enumInfo.Entries)
             {
                 contents.AppendLine();
-
-                foreach (var comment in entryInfo.Comment)
-                    contents.Append(indent).Append(comment).AppendLine();
-
+                GenerateCSharpComment(contents, indent, entryInfo.Comment);
                 GenerateCSharpAttributes(buildData, contents, indent, enumInfo, entryInfo.Attributes, entryInfo.Comment, true, false);
                 contents.Append(indent).Append(entryInfo.Name);
                 if (!string.IsNullOrEmpty(entryInfo.Value))
@@ -1342,7 +1425,7 @@ namespace Flax.Build.Bindings
 
         private static bool GenerateCSharpType(BuildData buildData, StringBuilder contents, string indent, object type)
         {
-            if (type is ApiTypeInfo apiTypeInfo && apiTypeInfo.IsInBuild)
+            if (type is ApiTypeInfo apiTypeInfo && apiTypeInfo.SkipGeneration)
                 return false;
 
             try
@@ -1355,6 +1438,17 @@ namespace Flax.Build.Bindings
                     GenerateCSharpEnum(buildData, contents, indent, enumInfo);
                 else if (type is InterfaceInfo interfaceInfo)
                     GenerateCSharpInterface(buildData, contents, indent, interfaceInfo);
+                else if (type is InjectCodeInfo injectCodeInfo && string.Equals(injectCodeInfo.Lang, "csharp", StringComparison.OrdinalIgnoreCase))
+                {
+                    // `using` directives needs to go above the generated code
+                    foreach (var code in injectCodeInfo.Code.Split(';'))
+                    {
+                        if (code.StartsWith("using"))
+                            CSharpUsedNamespaces.Add(code.Substring(6));
+                        else if (code.Length > 0)
+                            contents.Append(injectCodeInfo.Code).AppendLine(";");
+                    }
+                }
                 else
                     return false;
             }

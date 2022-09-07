@@ -143,6 +143,11 @@ const MaterialInfo& MaterialInstance::GetInfo() const
     return EmptyInfo;
 }
 
+GPUShader* MaterialInstance::GetShader() const
+{
+    return _baseMaterial ? _baseMaterial->GetShader() : nullptr;
+}
+
 bool MaterialInstance::IsReady() const
 {
     return IsLoaded() && _baseMaterial && _baseMaterial->IsReady();
@@ -258,6 +263,20 @@ void MaterialInstance::SetBaseMaterial(MaterialBase* baseMaterial)
 
     if (baseMaterial == _baseMaterial)
         return;
+
+#if !BUILD_RELEASE
+    // Prevent recursion
+    auto mi = Cast<MaterialInstance>(baseMaterial);
+    while (mi)
+    {
+        if (mi == this)
+        {
+            LOG(Error, "Cannot set base material of {0} to {1} because it's recursive.", ToString(), baseMaterial->ToString());
+            return;
+        }
+        mi = Cast<MaterialInstance>(mi->GetBaseMaterial());
+    }
+#endif
 
     // Release previous parameters
     Params.Dispose();

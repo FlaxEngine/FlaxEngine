@@ -107,6 +107,9 @@ private:
     DescriptorOwnerResourceVulkan* _uaHandles[GPU_MAX_UA_BINDED];
     VkSampler _samplerHandles[GPU_MAX_SAMPLER_BINDED];
     DescriptorOwnerResourceVulkan** _handles[(int32)SpirvShaderResourceBindingType::MAX];
+#if ENABLE_ASSERTION
+    uint32 _handlesSizes[(int32)SpirvShaderResourceBindingType::MAX];
+#endif
 
     typedef Array<DescriptorPoolVulkan*> DescriptorPoolArray;
     Dictionary<uint32, DescriptorPoolArray> _descriptorPools;
@@ -173,10 +176,10 @@ public:
     bool IsDepthBufferBinded() override;
     void Clear(GPUTextureView* rt, const Color& color) override;
     void ClearDepth(GPUTextureView* depthBuffer, float depthValue) override;
-    void ClearUA(GPUBuffer* buf, const Vector4& value) override;
+    void ClearUA(GPUBuffer* buf, const Float4& value) override;
     void ClearUA(GPUBuffer* buf, const uint32 value[4]) override;
     void ClearUA(GPUTexture* texture, const uint32 value[4]) override;
-    void ClearUA(GPUTexture* texture, const Vector4& value) override;
+    void ClearUA(GPUTexture* texture, const Float4& value) override;
     void ResetRenderTarget() override;
     void SetRenderTarget(GPUTextureView* rt) override;
     void SetRenderTarget(GPUTextureView* depthBuffer, GPUTextureView* rt) override;

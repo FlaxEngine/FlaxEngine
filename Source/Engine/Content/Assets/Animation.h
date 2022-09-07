@@ -5,6 +5,7 @@
 #include "../BinaryAsset.h"
 #include "Engine/Core/Collections/Dictionary.h"
 #include "Engine/Animations/AnimationData.h"
+#include "Engine/Content/AssetReference.h"
 
 class SkinnedModel;
 class AnimEvent;
@@ -14,14 +15,14 @@ class AnimEvent;
 /// </summary>
 API_CLASS(NoSpawn) class FLAXENGINE_API Animation : public BinaryAsset
 {
-DECLARE_BINARY_ASSET_HEADER(Animation, 1);
+    DECLARE_BINARY_ASSET_HEADER(Animation, 1);
 
     /// <summary>
     /// Contains basic information about the animation asset contents.
     /// </summary>
     API_STRUCT() struct FLAXENGINE_API InfoData
     {
-    DECLARE_SCRIPTING_TYPE_NO_SPAWN(InfoData);
+        DECLARE_SCRIPTING_TYPE_NO_SPAWN(InfoData);
 
         /// <summary>
         /// Length of the animation in seconds.
@@ -61,15 +62,27 @@ DECLARE_BINARY_ASSET_HEADER(Animation, 1);
 #endif
     };
 
+    /// <summary>
+    /// Contains <see cref="AnimEvent"/> instance.
+    /// </summary>
+    struct FLAXENGINE_API NestedAnimData
+    {
+        float Time = 0.0f;
+        float Duration = 0.0f;
+        float Speed = 1.0f;
+        float StartTime = 0.0f;
+        bool Enabled = false;
+        bool Loop = false;
+        AssetReference<Animation> Anim;
+    };
+
 private:
-    
 #if USE_EDITOR
     bool _registeredForScriptingReload = false;
     void OnScriptsReloadStart();
 #endif
 
 public:
-
     /// <summary>
     /// The animation data.
     /// </summary>
@@ -79,6 +92,11 @@ public:
     /// The animation events (keyframes per named track).
     /// </summary>
     Array<Pair<String, StepCurve<AnimEventData>>> Events;
+
+    /// <summary>
+    /// The nested animations (animation per named track).
+    /// </summary>
+    Array<Pair<String, NestedAnimData>> NestedAnims;
 
     /// <summary>
     /// Contains the mapping for every skeleton node to the animation data channels.
@@ -92,7 +110,6 @@ public:
     Dictionary<SkinnedModel*, NodeToChannel> MappingCache;
 
 public:
-
     /// <summary>
     /// Gets the length of the animation (in seconds).
     /// </summary>
@@ -160,16 +177,13 @@ public:
 #endif
 
 private:
-
     void OnSkinnedModelUnloaded(Asset* obj);
 
 public:
-
     // [BinaryAsset]
     void OnScriptingDispose() override;
 
 protected:
-
     // [BinaryAsset]
     LoadResult load() override;
     void unload(bool isReloading) override;

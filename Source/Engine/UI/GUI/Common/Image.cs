@@ -66,7 +66,7 @@ namespace FlaxEngine.GUI
         }
 
         /// <inheritdoc />
-        public Image(Vector2 location, Vector2 size)
+        public Image(Float2 location, Float2 size)
         : base(location, size)
         {
             AutoFocus = false;
@@ -109,7 +109,7 @@ namespace FlaxEngine.GUI
             }
             else
             {
-                rect = new Rectangle(Vector2.Zero, Size);
+                rect = new Rectangle(Float2.Zero, Size);
             }
 
             Margin.ShrinkRectangle(ref rect);
@@ -121,7 +121,7 @@ namespace FlaxEngine.GUI
         }
 
         /// <inheritdoc />
-        public override bool OnMouseUp(Vector2 location, MouseButton button)
+        public override bool OnMouseUp(Float2 location, MouseButton button)
         {
             if (base.OnMouseUp(location, button))
                 return true;

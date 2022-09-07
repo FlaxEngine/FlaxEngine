@@ -59,8 +59,8 @@ private:
     Array<TaskGraphSystem*, InlinedAllocation<64>> _systems;
     Array<TaskGraphSystem*, InlinedAllocation<64>> _remaining;
     Array<TaskGraphSystem*, InlinedAllocation<64>> _queue;
+    Array<int64, InlinedAllocation<64>> _labels;
     TaskGraphSystem* _currentSystem = nullptr;
-    int64 _currentLabel = 0;
 
 public:
     /// <summary>

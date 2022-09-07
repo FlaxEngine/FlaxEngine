@@ -14,7 +14,7 @@
 
 Collider::Collider(const SpawnParams& params)
     : PhysicsColliderActor(params)
-    , _center(Vector3::Zero)
+    , _center(Float3::Zero)
     , _isTrigger(false)
     , _shape(nullptr)
     , _staticActor(nullptr)
@@ -258,13 +258,13 @@ void Collider::UpdateGeometry()
 void Collider::CreateStaticActor()
 {
     ASSERT(_staticActor == nullptr);
-    _staticActor = PhysicsBackend::CreateRigidStaticActor(nullptr, _transform.Translation, _transform.Orientation);
+    void* scene = GetPhysicsScene()->GetPhysicsScene();
+    _staticActor = PhysicsBackend::CreateRigidStaticActor(nullptr, _transform.Translation, _transform.Orientation, scene);
 
     // Reset local pos of the shape and link it to the actor
     PhysicsBackend::SetShapeLocalPose(_shape, _center, Quaternion::Identity);
     PhysicsBackend::AttachShape(_shape, _staticActor);
 
-    void* scene = GetPhysicsScene()->GetPhysicsScene();
     PhysicsBackend::AddSceneActor(scene, _staticActor);
 }
 
@@ -442,8 +442,8 @@ void Collider::OnTransformChanged()
         }
     }
 
-    const Vector3 scale = GetScale();
-    if (!Vector3::NearEqual(_cachedScale, scale))
+    const Float3 scale = GetScale();
+    if (!Float3::NearEqual(_cachedScale, scale))
         UpdateGeometry();
     UpdateBounds();
 }

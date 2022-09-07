@@ -5,15 +5,16 @@
 #include "Engine/Core/Config/Settings.h"
 #include "Engine/Serialization/Serialization.h"
 #include "Engine/Graphics/Enums.h"
+#include "Engine/Graphics/PostProcessSettings.h"
 
 /// <summary>
 /// Graphics rendering settings.
 /// </summary>
-API_CLASS(sealed, Namespace="FlaxEditor.Content.Settings") class FLAXENGINE_API GraphicsSettings : public SettingsBase
+API_CLASS(sealed, Namespace="FlaxEditor.Content.Settings", NoConstructor) class FLAXENGINE_API GraphicsSettings : public SettingsBase
 {
-DECLARE_SCRIPTING_TYPE_MINIMAL(GraphicsSettings);
+    API_AUTO_SERIALIZATION();
+    DECLARE_SCRIPTING_TYPE_MINIMAL(GraphicsSettings);
 public:
-
     /// <summary>
     /// Enables rendering synchronization with the refresh rate of the display device to avoid "tearing" artifacts.
     /// </summary>
@@ -62,8 +63,63 @@ public:
     API_FIELD(Attributes="EditorOrder(1320), DefaultValue(false), EditorDisplay(\"Quality\", \"Allow CSM Blending\")")
     bool AllowCSMBlending = false;
 
-public:
+    /// <summary>
+    /// Default probes cubemap resolution (use for Environment Probes, can be overriden per-actor).
+    /// </summary>
+    API_FIELD(Attributes = "EditorOrder(1500), EditorDisplay(\"Quality\")")
+    ProbeCubemapResolution DefaultProbeResolution = ProbeCubemapResolution::_128;
 
+    /// <summary>
+    /// If checked, Environment Probes will use HDR texture format. Improves quality in very bright scenes at cost of higher memory usage.
+    /// </summary>
+    API_FIELD(Attributes = "EditorOrder(1502), EditorDisplay(\"Quality\")")
+    bool UeeHDRProbes = false;
+
+    /// <summary>
+    /// If checked, enables Global SDF rendering. This can be used in materials, shaders, and particles.
+    /// </summary>
+    API_FIELD(Attributes="EditorOrder(2000), EditorDisplay(\"Global SDF\")")
+    bool EnableGlobalSDF = false;
+
+    /// <summary>
+    /// The Global SDF quality. Controls the volume texture resolution and amount of cascades to use.
+    /// </summary>
+    API_FIELD(Attributes="EditorOrder(2005), DefaultValue(Quality.High), EditorDisplay(\"Global SDF\")")
+    Quality GlobalSDFQuality = Quality::High;
+
+#if USE_EDITOR
+    /// <summary>
+    /// If checked, the 'Generate SDF' option will be checked on model import options by default. Use it if your project uses Global SDF (eg. for Global Illumination or particles).
+    /// </summary>
+    API_FIELD(Attributes="EditorOrder(2010), EditorDisplay(\"Global SDF\")")
+    bool GenerateSDFOnModelImport = false;
+#endif
+
+    /// <summary>
+    /// The Global Illumination quality. Controls the quality of the GI effect.
+    /// </summary>
+    API_FIELD(Attributes="EditorOrder(2100), DefaultValue(Quality.High), EditorDisplay(\"Global Illumination\")")
+    Quality GIQuality = Quality::High;
+
+    /// <summary>
+    /// The Global Illumination probes spacing distance (in world units). Defines the quality of the GI resolution. Adjust to 200-500 to improve performance and lower frequency GI data.
+    /// </summary>
+    API_FIELD(Attributes="EditorOrder(2120), Limit(50, 1000), EditorDisplay(\"Global Illumination\")")
+    float GIProbesSpacing = 100;
+
+    /// <summary>
+    /// The Global Surface Atlas resolution. Adjust it if atlas `flickers` due to overflow (eg. to 4096).
+    /// </summary>
+    API_FIELD(Attributes="EditorOrder(2130), Limit(256, 8192), EditorDisplay(\"Global Illumination\")")
+    int32 GlobalSurfaceAtlasResolution = 2048;
+
+    /// <summary>
+    /// The default Post Process settings. Can be overriden by PostFxVolume on a level locally, per camera or for a whole map.
+    /// </summary>
+    API_FIELD(Attributes="EditorOrder(10000), EditorDisplay(\"Post Process Settings\", EditorDisplayAttribute.InlineStyle)")
+    PostProcessSettings PostProcessSettings;
+
+public:
     /// <summary>
     /// Gets the instance of the settings asset (default value if missing). Object returned by this method is always loaded with valid data to use.
     /// </summary>
@@ -71,15 +127,4 @@ public:
 
     // [SettingsBase]
     void Apply() override;
-    void Deserialize(DeserializeStream& stream, ISerializeModifier* modifier) final override
-    {
-        DESERIALIZE(UseVSync);
-        DESERIALIZE(AAQuality);
-        DESERIALIZE(SSRQuality);
-        DESERIALIZE(SSAOQuality);
-        DESERIALIZE(VolumetricFogQuality);
-        DESERIALIZE(ShadowsQuality);
-        DESERIALIZE(ShadowMapsQuality);
-        DESERIALIZE(AllowCSMBlending);
-    }
 };

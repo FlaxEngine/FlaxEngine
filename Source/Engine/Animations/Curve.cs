@@ -57,6 +57,12 @@ namespace FlaxEngine
         IKeyframeAccess<Vector2>,
         IKeyframeAccess<Vector3>,
         IKeyframeAccess<Vector4>,
+        IKeyframeAccess<Float2>,
+        IKeyframeAccess<Float3>,
+        IKeyframeAccess<Float4>,
+        IKeyframeAccess<Double2>,
+        IKeyframeAccess<Double3>,
+        IKeyframeAccess<Double4>,
         IKeyframeAccess<Quaternion>,
         IKeyframeAccess<Color32>,
         IKeyframeAccess<Color>
@@ -194,6 +200,126 @@ namespace FlaxEngine
                 Vector4.Lerp(ref p01, ref p12, alpha, out var p012);
                 Vector4.Lerp(ref p12, ref p23, alpha, out var p123);
                 Vector4.Lerp(ref p012, ref p123, alpha, out result);
+            }
+
+            public void GetTangent(ref Float2 value, ref Float2 tangent, float lengthThird, out Float2 result)
+            {
+                result = value + tangent * lengthThird;
+            }
+
+            public void Linear(ref Float2 a, ref Float2 b, float alpha, out Float2 result)
+            {
+                Float2.Lerp(ref a, ref b, alpha, out result);
+            }
+
+            public void Bezier(ref Float2 p0, ref Float2 p1, ref Float2 p2, ref Float2 p3, float alpha, out Float2 result)
+            {
+                Float2.Lerp(ref p0, ref p1, alpha, out var p01);
+                Float2.Lerp(ref p1, ref p2, alpha, out var p12);
+                Float2.Lerp(ref p2, ref p3, alpha, out var p23);
+                Float2.Lerp(ref p01, ref p12, alpha, out var p012);
+                Float2.Lerp(ref p12, ref p23, alpha, out var p123);
+                Float2.Lerp(ref p012, ref p123, alpha, out result);
+            }
+
+            public void GetTangent(ref Float3 value, ref Float3 tangent, float lengthThird, out Float3 result)
+            {
+                result = value + tangent * lengthThird;
+            }
+
+            public void Linear(ref Float3 a, ref Float3 b, float alpha, out Float3 result)
+            {
+                Float3.Lerp(ref a, ref b, alpha, out result);
+            }
+
+            public void Bezier(ref Float3 p0, ref Float3 p1, ref Float3 p2, ref Float3 p3, float alpha, out Float3 result)
+            {
+                Float3.Lerp(ref p0, ref p1, alpha, out var p01);
+                Float3.Lerp(ref p1, ref p2, alpha, out var p12);
+                Float3.Lerp(ref p2, ref p3, alpha, out var p23);
+                Float3.Lerp(ref p01, ref p12, alpha, out var p012);
+                Float3.Lerp(ref p12, ref p23, alpha, out var p123);
+                Float3.Lerp(ref p012, ref p123, alpha, out result);
+            }
+
+            public void GetTangent(ref Float4 value, ref Float4 tangent, float lengthThird, out Float4 result)
+            {
+                result = value + tangent * lengthThird;
+            }
+
+            public void Linear(ref Float4 a, ref Float4 b, float alpha, out Float4 result)
+            {
+                Float4.Lerp(ref a, ref b, alpha, out result);
+            }
+
+            public void Bezier(ref Float4 p0, ref Float4 p1, ref Float4 p2, ref Float4 p3, float alpha, out Float4 result)
+            {
+                Float4.Lerp(ref p0, ref p1, alpha, out var p01);
+                Float4.Lerp(ref p1, ref p2, alpha, out var p12);
+                Float4.Lerp(ref p2, ref p3, alpha, out var p23);
+                Float4.Lerp(ref p01, ref p12, alpha, out var p012);
+                Float4.Lerp(ref p12, ref p23, alpha, out var p123);
+                Float4.Lerp(ref p012, ref p123, alpha, out result);
+            }
+
+            public void GetTangent(ref Double2 value, ref Double2 tangent, float lengthThird, out Double2 result)
+            {
+                result = value + tangent * lengthThird;
+            }
+
+            public void Linear(ref Double2 a, ref Double2 b, float alpha, out Double2 result)
+            {
+                Double2.Lerp(ref a, ref b, alpha, out result);
+            }
+
+            public void Bezier(ref Double2 p0, ref Double2 p1, ref Double2 p2, ref Double2 p3, float alpha, out Double2 result)
+            {
+                Double2.Lerp(ref p0, ref p1, alpha, out var p01);
+                Double2.Lerp(ref p1, ref p2, alpha, out var p12);
+                Double2.Lerp(ref p2, ref p3, alpha, out var p23);
+                Double2.Lerp(ref p01, ref p12, alpha, out var p012);
+                Double2.Lerp(ref p12, ref p23, alpha, out var p123);
+                Double2.Lerp(ref p012, ref p123, alpha, out result);
+            }
+
+            public void GetTangent(ref Double3 value, ref Double3 tangent, float lengthThird, out Double3 result)
+            {
+                result = value + tangent * lengthThird;
+            }
+
+            public void Linear(ref Double3 a, ref Double3 b, float alpha, out Double3 result)
+            {
+                Double3.Lerp(ref a, ref b, alpha, out result);
+            }
+
+            public void Bezier(ref Double3 p0, ref Double3 p1, ref Double3 p2, ref Double3 p3, float alpha, out Double3 result)
+            {
+                Double3.Lerp(ref p0, ref p1, alpha, out var p01);
+                Double3.Lerp(ref p1, ref p2, alpha, out var p12);
+                Double3.Lerp(ref p2, ref p3, alpha, out var p23);
+                Double3.Lerp(ref p01, ref p12, alpha, out var p012);
+                Double3.Lerp(ref p12, ref p23, alpha, out var p123);
+                Double3.Lerp(ref p012, ref p123, alpha, out result);
+            }
+
+            public void GetTangent(ref Double4 value, ref Double4 tangent, float lengthThird, out Double4 result)
+            {
+                result = value + tangent * lengthThird;
+            }
+
+            public void Linear(ref Double4 a, ref Double4 b, float alpha, out Double4 result)
+            {
+                Double4.Lerp(ref a, ref b, alpha, out result);
+            }
+
+            public void Bezier(ref Double4 p0, ref Double4 p1, ref Double4 p2, ref Double4 p3, float alpha, out Double4 result)
+            {
+                Double4.Lerp(ref p0, ref p1, alpha, out var p01);
+                Double4.Lerp(ref p1, ref p2, alpha, out var p12);
+                Double4.Lerp(ref p2, ref p3, alpha, out var p23);
+                Double4.Lerp(ref p01, ref p12, alpha, out var p012);
+                Double4.Lerp(ref p12, ref p23, alpha, out var p123);
+                Double4.Lerp(ref p012, ref p123, alpha, out result);
             }
 
             public void GetTangent(ref Quaternion value, ref Quaternion tangent, float lengthThird, out Quaternion result)
@@ -432,7 +558,7 @@ namespace FlaxEngine
                 return;
             }
 
-            float start = 0;
+            float start = Mathf.Min(Keyframes.First().Time, 0.0f);
             float end = Keyframes.Last().Time;
             WrapTime(ref time, start, end, loop);
 
@@ -463,7 +589,7 @@ namespace FlaxEngine
                 return;
             }
 
-            float start = 0;
+            float start = Mathf.Min(Keyframes.First().Time, 0.0f);
             float end = Keyframes.Last().Time;
             WrapTime(ref time, start, end, loop);
 
@@ -715,7 +841,7 @@ namespace FlaxEngine
                 return;
             }
 
-            float start = 0;
+            float start = Mathf.Min(Keyframes.First().Time, 0.0f);
             float end = Keyframes.Last().Time;
             WrapTime(ref time, start, end, loop);
 
@@ -751,7 +877,7 @@ namespace FlaxEngine
                 return;
             }
 
-            float start = 0;
+            float start = Mathf.Min(Keyframes.First().Time, 0.0f);
             float end = Keyframes.Last().Time;
             WrapTime(ref time, start, end, loop);
 

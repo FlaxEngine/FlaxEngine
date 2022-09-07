@@ -47,7 +47,7 @@ namespace FlaxEditor.GUI
 
             if (IsMouseOver)
             {
-                Render2D.FillRectangle(new Rectangle(Vector2.Zero, Size), style.BackgroundHighlighted * 0.7f);
+                Render2D.FillRectangle(new Rectangle(Float2.Zero, Size), style.BackgroundHighlighted * 0.7f);
             }
 
             if (Values != null && _table?.Columns != null)
@@ -111,7 +111,7 @@ namespace FlaxEditor.GUI
         }
 
         /// <inheritdoc />
-        public override bool OnMouseUp(Vector2 location, MouseButton button)
+        public override bool OnMouseUp(Float2 location, MouseButton button)
         {
             if (button == MouseButton.Left && Values != null && _table?.Columns != null)
             {

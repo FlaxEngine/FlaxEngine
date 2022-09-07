@@ -1,5 +1,11 @@
 // Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
+#if USE_LARGE_WORLDS
+using Real = System.Double;
+#else
+using Real = System.Single;
+#endif
+
 // -----------------------------------------------------------------------------
 // Original code from SharpDX project. https://github.com/sharpdx/SharpDX/
 // Greetings to Alexandre Mutel. Original code published with the following license:
@@ -68,7 +74,7 @@ namespace FlaxEngine
         /// </summary>
         /// <param name="center">The center of the sphere in three dimensional space.</param>
         /// <param name="radius">The radius of the sphere.</param>
-        public BoundingSphere(Vector3 center, float radius)
+        public BoundingSphere(Vector3 center, Real radius)
         {
             Center = center;
             Radius = radius;
@@ -81,7 +87,7 @@ namespace FlaxEngine
         /// <returns>Whether the two objects intersected.</returns>
         public bool Intersects(ref Ray ray)
         {
-            return CollisionsHelper.RayIntersectsSphere(ref ray, ref this, out float _);
+            return CollisionsHelper.RayIntersectsSphere(ref ray, ref this, out Real _);
         }
 
         /// <summary>
@@ -90,7 +96,7 @@ namespace FlaxEngine
         /// <param name="ray">The ray to test.</param>
         /// <param name="distance">When the method completes, contains the distance of the intersection, or 0 if there was no intersection.</param>
         /// <returns>Whether the two objects intersected.</returns>
-        public bool Intersects(ref Ray ray, out float distance)
+        public bool Intersects(ref Ray ray, out Real distance)
         {
             return CollisionsHelper.RayIntersectsSphere(ref ray, ref this, out distance);
         }
@@ -234,26 +240,21 @@ namespace FlaxEngine
             Vector3 center = Vector3.Zero;
             for (int i = start; i < upperEnd; ++i)
                 Vector3.Add(ref points[i], ref center, out center);
+            center /= (Real)count;
 
-            // This is the center of our sphere
-            center /= (float)count;
-
-            //Find the radius of the sphere
-            var radius = 0f;
+            // Find the radius of the sphere
+            Real radius = 0f;
             for (int i = start; i < upperEnd; ++i)
             {
                 // We are doing a relative distance comparison to find the maximum distance from the center of our sphere
-                Vector3.DistanceSquared(ref center, ref points[i], out float distance);
+                Vector3.DistanceSquared(ref center, ref points[i], out Real distance);
                 if (distance > radius)
                     radius = distance;
             }
 
-            // Find the real distance from the DistanceSquared
-            radius = Mathf.Sqrt(radius);
-
             // Construct the sphere
             result.Center = center;
-            result.Radius = radius;
+            result.Radius = Mathf.Sqrt(radius);
         }
 
         /// <summary>
@@ -286,13 +287,13 @@ namespace FlaxEngine
         /// <param name="result">When the method completes, the newly constructed bounding sphere.</param>
         public static void FromBox(ref BoundingBox box, out BoundingSphere result)
         {
-            float x = box.Maximum.X - box.Minimum.X;
-            float y = box.Maximum.Y - box.Minimum.Y;
-            float z = box.Maximum.Z - box.Minimum.Z;
+            var x = box.Maximum.X - box.Minimum.X;
+            var y = box.Maximum.Y - box.Minimum.Y;
+            var z = box.Maximum.Z - box.Minimum.Z;
             result.Center.X = box.Minimum.X + x * 0.5f;
             result.Center.Y = box.Minimum.Y + y * 0.5f;
             result.Center.Z = box.Minimum.Z + z * 0.5f;
-            result.Radius = (float)Math.Sqrt(x * x + y * y + z * z) * 0.5f;
+            result.Radius = (Real)Math.Sqrt(x * x + y * y + z * z) * 0.5f;
         }
 
         /// <summary>
@@ -328,10 +329,9 @@ namespace FlaxEngine
             }
 
             Vector3 difference = value2.Center - value1.Center;
-
-            float length = difference.Length;
-            float radius = value1.Radius;
-            float radius2 = value2.Radius;
+            Real length = difference.Length;
+            Real radius = value1.Radius;
+            Real radius2 = value2.Radius;
 
             if (radius + radius2 >= length)
             {
@@ -349,8 +349,8 @@ namespace FlaxEngine
             }
 
             Vector3 vector = difference * (1.0f / length);
-            float min = Math.Min(-radius, length - radius2);
-            float max = (Math.Max(radius, length + radius2) - min) * 0.5f;
+            var min = Mathf.Min(-radius, length - radius2);
+            var max = (Mathf.Max(radius, length + radius2) - min) * 0.5f;
 
             result.Center = value1.Center + vector * (max + min);
             result.Radius = max;
@@ -423,10 +423,7 @@ namespace FlaxEngine
         /// <returns>A <see cref="System.String" /> that represents this instance.</returns>
         public override string ToString()
         {
-            return string.Format(CultureInfo.CurrentCulture,
-                                 "Center:{0} Radius:{1}",
-                                 Center.ToString(),
-                                 Radius.ToString());
+            return string.Format(CultureInfo.CurrentCulture, "Center:{0} Radius:{1}", Center.ToString(), Radius.ToString());
         }
 
         /// <summary>
@@ -516,10 +513,7 @@ namespace FlaxEngine
         /// <returns><c>true</c> if the specified <see cref="System.Object" /> is equal to this instance; otherwise, <c>false</c>.</returns>
         public override bool Equals(object value)
         {
-            if (!(value is BoundingSphere))
-                return false;
-            var strongValue = (BoundingSphere)value;
-            return Equals(ref strongValue);
+            return value is BoundingSphere other && Equals(ref other);
         }
     }
 }

@@ -9,19 +9,19 @@
 #include "Engine/Content/Content.h"
 #include "Engine/Engine/GameplayGlobals.h"
 #include "Engine/Graphics/Config.h"
+#include "Engine/Renderer/GlobalSignDistanceFieldPass.h"
 
 void ShaderGraphUtilities::GenerateShaderConstantBuffer(TextWriterUnicode& writer, Array<SerializedMaterialParam>& parameters)
 {
     int32 constantsOffset = 0;
     int32 paddingIndex = 0;
-
     for (int32 i = 0; i < parameters.Count(); i++)
     {
         auto& param = parameters[i];
-
         const Char* format = nullptr;
         int32 size;
         int32 alignment;
+        bool zeroRegister = true;
         switch (param.Type)
         {
         case MaterialParameterType::Bool:
@@ -87,31 +87,39 @@ void ShaderGraphUtilities::GenerateShaderConstantBuffer(TextWriterUnicode& write
                 format = TEXT("uint {0};");
                 break;
             case VariantType::Float:
+            case VariantType::Double:
                 size = 4;
                 alignment = 4;
                 format = TEXT("float {0};");
                 break;
-            case VariantType::Vector2:
+            case VariantType::Float2:
+            case VariantType::Double2:
                 size = 8;
                 alignment = 8;
                 format = TEXT("float2 {0};");
                 break;
-            case VariantType::Vector3:
+            case VariantType::Float3:
+            case VariantType::Double3:
                 size = 12;
                 alignment = 16;
                 format = TEXT("float3 {0};");
                 break;
-            case VariantType::Vector4:
+            case VariantType::Float4:
+            case VariantType::Double4:
             case VariantType::Color:
                 size = 16;
                 alignment = 16;
                 format = TEXT("float4 {0};");
                 break;
-            default: ;
             }
             break;
         }
-        default: ;
+        case MaterialParameterType::GlobalSDF:
+            zeroRegister = false;
+            size = sizeof(GlobalSignDistanceFieldPass::ConstantsData);
+            alignment = 16;
+            format = TEXT("GlobalSDFData {0};");
+            break;
         }
         if (format)
         {
@@ -126,7 +134,8 @@ void ShaderGraphUtilities::GenerateShaderConstantBuffer(TextWriterUnicode& write
                 }
             }
 
-            param.RegisterIndex = 0;
+            if (zeroRegister)
+                param.RegisterIndex = 0;
             param.Offset = constantsOffset;
             writer.WriteLine(format, param.ShaderName);
             constantsOffset += size;
@@ -139,7 +148,9 @@ const Char* ShaderGraphUtilities::GenerateShaderResources(TextWriterUnicode& wri
     for (int32 i = 0; i < parameters.Count(); i++)
     {
         auto& param = parameters[i];
-        const Char* format;
+        const Char* format = nullptr;
+        bool zeroOffset = true;
+        int32 registers = 1;
         switch (param.Type)
         {
         case MaterialParameterType::NormalMap:
@@ -158,16 +169,18 @@ const Char* ShaderGraphUtilities::GenerateShaderResources(TextWriterUnicode& wri
         case MaterialParameterType::GPUTextureVolume:
             format = TEXT("Texture3D {0} : register(t{1});");
             break;
-        default:
-            format = nullptr;
+        case MaterialParameterType::GlobalSDF:
+            format = TEXT("Texture3D<float> {0}_Tex : register(t{1});");
+            zeroOffset = false;
             break;
         }
         if (format)
         {
-            param.Offset = 0;
+            if (zeroOffset)
+                param.Offset = 0;
             param.RegisterIndex = (byte)startRegister;
             writer.WriteLine(format, param.ShaderName, startRegister);
-            startRegister++;
+            startRegister += registers;
             if (param.RegisterIndex >= GPU_MAX_SR_BINDED)
             {
                 return TEXT("Too many textures used. The maximum supported amount is " MACRO_TO_STR(GPU_MAX_SR_BINDED) " (including lightmaps and utility textures for lighting).");
@@ -220,19 +233,19 @@ const Char* GetTypename<float>()
 }
 
 template<>
-const Char* GetTypename<Vector2>()
+const Char* GetTypename<Float2>()
 {
     return TEXT("float2");
 }
 
 template<>
-const Char* GetTypename<Vector3>()
+const Char* GetTypename<Float3>()
 {
     return TEXT("float3");
 }
 
 template<>
-const Char* GetTypename<Vector4>()
+const Char* GetTypename<Float4>()
 {
     return TEXT("float4");
 }
@@ -393,8 +406,8 @@ void ShaderGraphUtilities::SampleCurve(TextWriterUnicode& writer, const BezierCu
 }
 
 template void ShaderGraphUtilities::SampleCurve(TextWriterUnicode& writer, const BezierCurve<float>& curve, const String& time, const String& value);
-template void ShaderGraphUtilities::SampleCurve(TextWriterUnicode& writer, const BezierCurve<Vector2>& curve, const String& time, const String& value);
-template void ShaderGraphUtilities::SampleCurve(TextWriterUnicode& writer, const BezierCurve<Vector3>& curve, const String& time, const String& value);
-template void ShaderGraphUtilities::SampleCurve(TextWriterUnicode& writer, const BezierCurve<Vector4>& curve, const String& time, const String& value);
+template void ShaderGraphUtilities::SampleCurve(TextWriterUnicode& writer, const BezierCurve<Float2>& curve, const String& time, const String& value);
+template void ShaderGraphUtilities::SampleCurve(TextWriterUnicode& writer, const BezierCurve<Float3>& curve, const String& time, const String& value);
+template void ShaderGraphUtilities::SampleCurve(TextWriterUnicode& writer, const BezierCurve<Float4>& curve, const String& time, const String& value);
 
 #endif

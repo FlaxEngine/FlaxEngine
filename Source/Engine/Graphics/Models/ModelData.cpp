@@ -85,10 +85,10 @@ void MeshData::InitFromModelVertices(ModelVertex19* vertices, uint32 verticesCou
     for (uint32 i = 0; i < verticesCount; i++)
     {
         Positions[i] = vertices->Position;
-        UVs[i] = vertices->TexCoord.ToVector2();
-        Normals[i] = vertices->Normal.ToVector3() * 2.0f - 1.0f;
-        Tangents[i] = vertices->Tangent.ToVector3() * 2.0f - 1.0f;
-        LightmapUVs[i] = vertices->LightmapUVs.ToVector2();
+        UVs[i] = vertices->TexCoord.ToFloat2();
+        Normals[i] = vertices->Normal.ToFloat3() * 2.0f - 1.0f;
+        Tangents[i] = vertices->Tangent.ToFloat3() * 2.0f - 1.0f;
+        LightmapUVs[i] = vertices->LightmapUVs.ToFloat2();
         Colors[i] = Color(vertices->Color);
 
         vertices++;
@@ -111,10 +111,10 @@ void MeshData::InitFromModelVertices(ModelVertex18* vertices, uint32 verticesCou
     for (uint32 i = 0; i < verticesCount; i++)
     {
         Positions[i] = vertices->Position;
-        UVs[i] = vertices->TexCoord.ToVector2();
-        Normals[i] = vertices->Normal.ToVector3() * 2.0f - 1.0f;
-        Tangents[i] = vertices->Tangent.ToVector3() * 2.0f - 1.0f;
-        LightmapUVs[i] = vertices->LightmapUVs.ToVector2();
+        UVs[i] = vertices->TexCoord.ToFloat2();
+        Normals[i] = vertices->Normal.ToFloat3() * 2.0f - 1.0f;
+        Tangents[i] = vertices->Tangent.ToFloat3() * 2.0f - 1.0f;
+        LightmapUVs[i] = vertices->LightmapUVs.ToFloat2();
 
         vertices++;
     }
@@ -136,9 +136,9 @@ void MeshData::InitFromModelVertices(ModelVertex15* vertices, uint32 verticesCou
     for (uint32 i = 0; i < verticesCount; i++)
     {
         Positions[i] = vertices->Position;
-        UVs[i] = vertices->TexCoord.ToVector2();
-        Normals[i] = vertices->Normal.ToVector3() * 2.0f - 1.0f;
-        Tangents[i] = vertices->Tangent.ToVector3() * 2.0f - 1.0f;
+        UVs[i] = vertices->TexCoord.ToFloat2();
+        Normals[i] = vertices->Normal.ToFloat3() * 2.0f - 1.0f;
+        Tangents[i] = vertices->Tangent.ToFloat3() * 2.0f - 1.0f;
 
         vertices++;
     }
@@ -160,10 +160,10 @@ void MeshData::InitFromModelVertices(VB0ElementType18* vb0, VB1ElementType18* vb
     for (uint32 i = 0; i < verticesCount; i++)
     {
         Positions[i] = vb0->Position;
-        UVs[i] = vb1->TexCoord.ToVector2();
-        Normals[i] = vb1->Normal.ToVector3() * 2.0f - 1.0f;
-        Tangents[i] = vb1->Tangent.ToVector3() * 2.0f - 1.0f;
-        LightmapUVs[i] = vb1->LightmapUVs.ToVector2();
+        UVs[i] = vb1->TexCoord.ToFloat2();
+        Normals[i] = vb1->Normal.ToFloat3() * 2.0f - 1.0f;
+        Tangents[i] = vb1->Tangent.ToFloat3() * 2.0f - 1.0f;
+        LightmapUVs[i] = vb1->LightmapUVs.ToFloat2();
 
         vb0++;
         vb1++;
@@ -193,10 +193,10 @@ void MeshData::InitFromModelVertices(VB0ElementType18* vb0, VB1ElementType18* vb
     for (uint32 i = 0; i < verticesCount; i++)
     {
         Positions[i] = vb0->Position;
-        UVs[i] = vb1->TexCoord.ToVector2();
-        Normals[i] = vb1->Normal.ToVector3() * 2.0f - 1.0f;
-        Tangents[i] = vb1->Tangent.ToVector3() * 2.0f - 1.0f;
-        LightmapUVs[i] = vb1->LightmapUVs.ToVector2();
+        UVs[i] = vb1->TexCoord.ToFloat2();
+        Normals[i] = vb1->Normal.ToFloat3() * 2.0f - 1.0f;
+        Tangents[i] = vb1->Tangent.ToFloat3() * 2.0f - 1.0f;
+        LightmapUVs[i] = vb1->LightmapUVs.ToFloat2();
         if (vb2)
         {
             Colors[i] = Color(vb2->Color);
@@ -224,9 +224,9 @@ void MeshData::InitFromModelVertices(VB0ElementType15* vb0, VB1ElementType15* vb
     for (uint32 i = 0; i < verticesCount; i++)
     {
         Positions[i] = vb0->Position;
-        UVs[i] = vb1->TexCoord.ToVector2();
-        Normals[i] = vb1->Normal.ToVector3() * 2.0f - 1.0f;
-        Tangents[i] = vb1->Tangent.ToVector3() * 2.0f - 1.0f;
+        UVs[i] = vb1->TexCoord.ToFloat2();
+        Normals[i] = vb1->Normal.ToFloat3() * 2.0f - 1.0f;
+        Tangents[i] = vb1->Tangent.ToFloat3() * 2.0f - 1.0f;
 
         vb0++;
         vb1++;
@@ -318,18 +318,18 @@ bool MeshData::Pack2Model(WriteStream* stream) const
     stream->WriteUint32(trianglesCount);
 
     // Vertex Buffer 0
-    stream->WriteBytes(Positions.Get(), sizeof(Vector3) * verticiecCount);
+    stream->WriteBytes(Positions.Get(), sizeof(Float3) * verticiecCount);
 
     // Vertex Buffer 1
     VB1ElementType vb1;
     for (uint32 i = 0; i < verticiecCount; i++)
     {
         // Get vertex components
-        Vector2 uv = hasUVs ? UVs[i] : Vector2::Zero;
-        Vector3 normal = hasNormals ? Normals[i] : Vector3::UnitZ;
-        Vector3 tangent = hasTangents ? Tangents[i] : Vector3::UnitX;
-        Vector2 lightmapUV = hasLightmapUVs ? LightmapUVs[i] : Vector2::Zero;
-        Vector3 bitangentSign = hasBitangentSigns ? BitangentSigns[i] : Vector3::Dot(Vector3::Cross(Vector3::Normalize(Vector3::Cross(normal, tangent)), normal), tangent);
+        Float2 uv = hasUVs ? UVs[i] : Float2::Zero;
+        Float3 normal = hasNormals ? Normals[i] : Float3::UnitZ;
+        Float3 tangent = hasTangents ? Tangents[i] : Float3::UnitX;
+        Float2 lightmapUV = hasLightmapUVs ? LightmapUVs[i] : Float2::Zero;
+        Float3 bitangentSign = hasBitangentSigns ? BitangentSigns[i] : Float3::Dot(Float3::Cross(Float3::Normalize(Float3::Cross(normal, tangent)), normal), tangent);
 
         // Write vertex
         vb1.TexCoord = Half2(uv);
@@ -345,10 +345,10 @@ bool MeshData::Pack2Model(WriteStream* stream) const
         quaternionTBN.Normalize();
         uint32 packedQuaternionTBN = QuantizeNormalizedQuaternionWithHandedness(quaternionTBN, invertedHandednessTBN);
 
-        Vector4 unpackedQuaternionTBN = Vector4(quaternionTBN.X, quaternionTBN.Y, quaternionTBN.Z, ((invertedHandednessTBN ? 0.0f : 128.0f) + (127.0f * (quaternionTBN.W * 0.5f + 0.5f))) / 255.0f);
+        Float4 unpackedQuaternionTBN = Float4(quaternionTBN.X, quaternionTBN.Y, quaternionTBN.Z, ((invertedHandednessTBN ? 0.0f : 128.0f) + (127.0f * (quaternionTBN.W * 0.5f + 0.5f))) / 255.0f);
         
         //lods.WriteUint32(packedQuaternionTBN);
-        //lods.WriteVector4(unpackedQuaternionTBN);
+        //lods.WriteFloat4(unpackedQuaternionTBN);
         */
     }
 
@@ -456,12 +456,12 @@ bool MeshData::Pack2SkinnedModel(WriteStream* stream) const
     for (uint32 i = 0; i < verticiecCount; i++)
     {
         // Get vertex components
-        Vector2 uv = hasUVs ? UVs[i] : Vector2::Zero;
-        Vector3 normal = hasNormals ? Normals[i] : Vector3::UnitZ;
-        Vector3 tangent = hasTangents ? Tangents[i] : Vector3::UnitX;
-        Vector3 bitangentSign = hasBitangentSigns ? BitangentSigns[i] : Vector3::Dot(Vector3::Cross(Vector3::Normalize(Vector3::Cross(normal, tangent)), normal), tangent);
+        Float2 uv = hasUVs ? UVs[i] : Float2::Zero;
+        Float3 normal = hasNormals ? Normals[i] : Float3::UnitZ;
+        Float3 tangent = hasTangents ? Tangents[i] : Float3::UnitX;
+        Float3 bitangentSign = hasBitangentSigns ? BitangentSigns[i] : Float3::Dot(Float3::Cross(Float3::Normalize(Float3::Cross(normal, tangent)), normal), tangent);
         Int4 blendIndices = BlendIndices[i];
-        Vector4 blendWeights = BlendWeights[i];
+        Float4 blendWeights = BlendWeights[i];
 
         // Write vertex
         vb.Position = Positions[i];
@@ -487,6 +487,18 @@ bool MeshData::Pack2SkinnedModel(WriteStream* stream) const
     return false;
 }
 
+void MeshData::CalculateBox(BoundingBox& result) const
+{
+    if (Positions.HasItems())
+        BoundingBox::FromPoints(Positions.Get(), Positions.Count(), result);
+}
+
+void MeshData::CalculateSphere(BoundingSphere& result) const
+{
+    if (Positions.HasItems())
+        BoundingSphere::FromPoints(Positions.Get(), Positions.Count(), result);
+}
+
 void MeshData::TransformBuffer(const Matrix& matrix)
 {
     // Compute matrix inverse transpose
@@ -499,7 +511,7 @@ void MeshData::TransformBuffer(const Matrix& matrix)
     for (int32 i = 0; i < Positions.Count(); i++)
     {
         auto& p = pp[i];
-        Vector3::Transform(p, matrix, p);
+        Float3::Transform(p, matrix, p);
     }
 
     // Transform normals and tangents
@@ -507,14 +519,14 @@ void MeshData::TransformBuffer(const Matrix& matrix)
     for (int32 i = 0; i < Normals.Count(); i++)
     {
         auto& n = nn[i];
-        Vector3::TransformNormal(n, inverseTransposeMatrix, n);
+        Float3::TransformNormal(n, inverseTransposeMatrix, n);
         n.Normalize();
     }
     const auto tt = Tangents.Get();
     for (int32 i = 0; i < Tangents.Count(); i++)
     {
         auto& t = tt[i];
-        Vector3::TransformNormal(t, inverseTransposeMatrix, t);
+        Float3::TransformNormal(t, inverseTransposeMatrix, t);
         t.Normalize();
     }
 
@@ -524,10 +536,21 @@ void MeshData::TransformBuffer(const Matrix& matrix)
         for (int32 i = 0; i < blendShape.Vertices.Count(); i++)
         {
             auto& v = blendShape.Vertices[i];
-            Vector3::Transform(v.PositionDelta, matrix, v.PositionDelta);
-            Vector3::TransformNormal(v.NormalDelta, inverseTransposeMatrix, v.NormalDelta);
+            Float3::Transform(v.PositionDelta, matrix, v.PositionDelta);
+            Float3::TransformNormal(v.NormalDelta, inverseTransposeMatrix, v.NormalDelta);
             v.NormalDelta.Normalize();
         }
+    }
+}
+
+void MeshData::NormalizeBlendWeights()
+{
+    ASSERT(Positions.Count() == BlendWeights.Count());
+    for (int32 i = 0; i < Positions.Count(); i++)
+    {
+        const float sum = BlendWeights[i].SumValues();
+        const float invSum = sum > ZeroTolerance ? 1.0f / sum : 0.0f;
+        BlendWeights[i] *= invSum;
     }
 }
 
@@ -551,15 +574,15 @@ void MeshData::Merge(MeshData& other)
 		for (int32 i = 0; i < other.Positions.Count(); i++) item.Add(defautValue); \
 	else if (!item.HasItems() && other.item.HasItems()) \
 		for (int32 i = 0; i < Positions.Count(); i++) item.Add(defautValue)
-    MERGE(Positions, Vector3::Zero);
-    MERGE(UVs, Vector2::Zero);
-    MERGE(Normals, Vector3::Forward);
-    MERGE(Tangents, Vector3::Right);
+    MERGE(Positions, Float3::Zero);
+    MERGE(UVs, Float2::Zero);
+    MERGE(Normals, Float3::Forward);
+    MERGE(Tangents, Float3::Right);
     MERGE(BitangentSigns, 1.0f);
-    MERGE(LightmapUVs, Vector2::Zero);
+    MERGE(LightmapUVs, Float2::Zero);
     MERGE(Colors, Color::Black);
     MERGE(BlendIndices, Int4::Zero);
-    MERGE(BlendWeights, Vector4::Zero);
+    MERGE(BlendWeights, Float4::Zero);
 #undef MERGE
 
     // Merge blend shapes
@@ -598,6 +621,21 @@ bool MaterialSlotEntry::UsesProperties() const
             !Math::IsOne(Opacity.Value) ||
             Opacity.TextureIndex != -1 ||
             Normals.TextureIndex != -1;
+}
+
+BoundingBox ModelLodData::GetBox() const
+{
+    if (Meshes.IsEmpty())
+        return BoundingBox::Empty;
+    BoundingBox bounds;
+    Meshes[0]->CalculateBox(bounds);
+    for (int32 i = 1; i < Meshes.Count(); i++)
+    {
+        BoundingBox b;
+        Meshes[i]->CalculateBox(b);
+        BoundingBox::Merge(bounds, b, bounds);
+    }
+    return bounds;
 }
 
 void ModelData::CalculateLODsScreenSizes()
@@ -702,12 +740,12 @@ bool ModelData::Pack2ModelHeader(WriteStream* stream) const
             // Box
             BoundingBox box;
             mesh.CalculateBox(box);
-            stream->Write(&box);
+            stream->WriteBoundingBox(box);
 
             // Sphere
             BoundingSphere sphere;
             mesh.CalculateSphere(sphere);
-            stream->Write(&sphere);
+            stream->WriteBoundingSphere(sphere);
 
             // TODO: calculate Sphere and Box at once - make it faster using SSE
 
@@ -791,12 +829,12 @@ bool ModelData::Pack2SkinnedModelHeader(WriteStream* stream) const
             // Box
             BoundingBox box;
             mesh.CalculateBox(box);
-            stream->Write(&box);
+            stream->WriteBoundingBox(box);
 
             // Sphere
             BoundingSphere sphere;
             mesh.CalculateSphere(sphere);
-            stream->Write(&sphere);
+            stream->WriteBoundingSphere(sphere);
 
             // TODO: calculate Sphere and Box at once - make it faster using SSE
 
@@ -822,7 +860,7 @@ bool ModelData::Pack2SkinnedModelHeader(WriteStream* stream) const
             auto& node = Skeleton.Nodes[nodeIndex];
 
             stream->Write(&node.ParentIndex);
-            stream->Write(&node.LocalTransform);
+            stream->WriteTransform(node.LocalTransform);
             stream->WriteString(node.Name, 71);
         }
 
@@ -835,7 +873,7 @@ bool ModelData::Pack2SkinnedModelHeader(WriteStream* stream) const
 
             stream->Write(&bone.ParentIndex);
             stream->Write(&bone.NodeIndex);
-            stream->Write(&bone.LocalTransform);
+            stream->WriteTransform(bone.LocalTransform);
             stream->Write(&bone.OffsetMatrix);
         }
     }

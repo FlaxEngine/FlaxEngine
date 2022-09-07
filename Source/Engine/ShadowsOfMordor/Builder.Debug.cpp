@@ -44,11 +44,11 @@ void ShadowsOfMordor::Builder::exportLightmapPreview(SceneBuildCache* scene, int
                 const int32 texelAdress = ((atlasSize - y - 1) * atlasSize + x) * NUM_SH_TARGETS;
 
 #if HEMISPHERES_IRRADIANCE_FORMAT == HEMISPHERES_FORMAT_R32G32B32A32
-                auto textureData = scene->ImportLightmapTextureData.Get<Vector4>();
-                Color color = Color(Vector4::Clamp(textureData[texelAdress + sh], Vector4::Zero, Vector4::One));
+                auto textureData = scene->ImportLightmapTextureData.Get<Float4>();
+                Color color = Color(Float4::Clamp(textureData[texelAdress + sh], Float4::Zero, Float4::One));
 #elif HEMISPHERES_IRRADIANCE_FORMAT == HEMISPHERES_FORMAT_R16G16B16A16
                 auto textureData = scene->ImportLightmapTextureData.Get<Half4>();
-                Color color = Color(Vector4::Clamp(textureData[texelAdress + sh].ToVector4(), Vector4::Zero, Vector4::One));
+                Color color = Color(Float4::Clamp(textureData[texelAdress + sh].ToFloat4(), Float4::Zero, Float4::One));
 #endif
 
                 dataBmp[pos + 0] = static_cast<byte>(color.B * 255);
@@ -84,9 +84,9 @@ void ShadowsOfMordor::Builder::exportCachePreview(SceneBuildCache* scene, Genera
             for (int32 y = 0; y < cacheData.PositionsData.Height; y++)
             {
 #if CACHE_POSITIONS_FORMAT == HEMISPHERES_FORMAT_R32G32B32A32
-                Vector3 color(mipData->Get<Vector4>(x, y));
+                Float3 color(mipData->Get<Float4>(x, y));
 #elif CACHE_POSITIONS_FORMAT == HEMISPHERES_FORMAT_R16G16B16A16
-                Vector3 color = mipData->Get<Half4>(x, y).ToVector3();
+                Float3 color = mipData->Get<Half4>(x, y).ToFloat3();
 #endif
                 color /= 100.0f;
                 
@@ -110,9 +110,9 @@ void ShadowsOfMordor::Builder::exportCachePreview(SceneBuildCache* scene, Genera
             for (int32 y = 0; y < cacheData.NormalsData.Height; y++)
             {
 #if CACHE_NORMALS_FORMAT == HEMISPHERES_FORMAT_R32G32B32A32
-                Vector3 color(mipData->Get<Vector4>(x, y));
+                Float3 color(mipData->Get<Float4>(x, y));
 #elif CACHE_NORMALS_FORMAT == HEMISPHERES_FORMAT_R16G16B16A16
-                Vector3 color = mipData->Get<Half4>(x, y).ToVector3();
+                Float3 color = mipData->Get<Half4>(x, y).ToFloat3();
 #endif
                 color.Normalize();
 
@@ -182,7 +182,7 @@ void ShadowsOfMordor::Builder::downloadDebugHemisphereAtlases(SceneBuildCache* s
             Platform::MemoryClear(data, dataSize);
 
             auto mipData = textureData.GetData(0, 0);
-            auto dddd = (Vector4*)mipData->Data.Get();
+            auto dddd = (Float4*)mipData->Data.Get();
 
             for (int x = 0; x < textureData.Width; x++)
             {
@@ -191,7 +191,7 @@ void ShadowsOfMordor::Builder::downloadDebugHemisphereAtlases(SceneBuildCache* s
                     int pos = ((textureData.Height - y - 1) * textureData.Width + x) * 3;
                     int srcPos = (y * textureData.Width + x);
 
-                    Vector4 color = Vector4::Clamp(dddd[srcPos], Vector4::Zero, Vector4::One);
+                    Float4 color = Float4::Clamp(dddd[srcPos], Float4::Zero, Float4::One);
 
                     data[pos + 0] = (byte)(color.Z * 255);
                     data[pos + 1] = (byte)(color.Y * 255);

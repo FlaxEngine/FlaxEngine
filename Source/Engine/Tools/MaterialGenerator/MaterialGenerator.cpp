@@ -105,11 +105,11 @@ bool FeatureData::Init()
     return false;
 }
 
-MaterialValue MaterialGenerator::getUVs(VariantType::Vector2, TEXT("input.TexCoord"));
+MaterialValue MaterialGenerator::getUVs(VariantType::Float2, TEXT("input.TexCoord"));
 MaterialValue MaterialGenerator::getTime(VariantType::Float, TEXT("TimeParam"));
-MaterialValue MaterialGenerator::getNormal(VariantType::Vector3, TEXT("input.TBN[2]"));
-MaterialValue MaterialGenerator::getNormalZero(VariantType::Vector3, TEXT("float3(0, 0, 1)"));
-MaterialValue MaterialGenerator::getVertexColor(VariantType::Vector4, TEXT("GetVertexColor(input)"));
+MaterialValue MaterialGenerator::getNormal(VariantType::Float3, TEXT("input.TBN[2]"));
+MaterialValue MaterialGenerator::getNormalZero(VariantType::Float3, TEXT("float3(0, 0, 1)"));
+MaterialValue MaterialGenerator::getVertexColor(VariantType::Float4, TEXT("GetVertexColor(input)"));
 
 MaterialGenerator::MaterialGenerator()
 {
@@ -163,7 +163,7 @@ bool MaterialGenerator::Generate(WriteStream& source, MaterialInfo& materialInfo
 
     // Cache data
     MaterialLayer* baseLayer = GetRootLayer();
-    MaterialGraphNode* baseNode = baseLayer->Root;
+    auto* baseNode = baseLayer->Root;
     _treeLayerVarName = baseLayer->GetVariableName(nullptr);
     _treeLayer = baseLayer;
     _graphStack.Add(&_treeLayer->Graph);
@@ -197,6 +197,8 @@ bool MaterialGenerator::Generate(WriteStream& source, MaterialInfo& materialInfo
         ADD_FEATURE(DeferredShadingFeature);
         if (materialInfo.BlendMode != MaterialBlendMode::Opaque && (materialInfo.FeaturesFlags & MaterialFeaturesFlags::DisableDistortion) == 0)
         ADD_FEATURE(DistortionFeature);
+        if (materialInfo.BlendMode != MaterialBlendMode::Opaque && (materialInfo.FeaturesFlags & MaterialFeaturesFlags::GlobalIllumination) != 0)
+        ADD_FEATURE(GlobalIlluminationFeature);
         if (materialInfo.BlendMode != MaterialBlendMode::Opaque)
         ADD_FEATURE(ForwardShadingFeature);
         break;
@@ -209,6 +211,8 @@ bool MaterialGenerator::Generate(WriteStream& source, MaterialInfo& materialInfo
     case MaterialDomain::Particle:
         if (materialInfo.BlendMode != MaterialBlendMode::Opaque && (materialInfo.FeaturesFlags & MaterialFeaturesFlags::DisableDistortion) == 0)
         ADD_FEATURE(DistortionFeature);
+        if (materialInfo.BlendMode != MaterialBlendMode::Opaque && (materialInfo.FeaturesFlags & MaterialFeaturesFlags::GlobalIllumination) != 0)
+        ADD_FEATURE(GlobalIlluminationFeature);
         ADD_FEATURE(ForwardShadingFeature);
         break;
     case MaterialDomain::Deformable:
@@ -380,7 +384,7 @@ bool MaterialGenerator::Generate(WriteStream& source, MaterialInfo& materialInfo
         eatMaterialGraphBox(baseLayer, MaterialGraphBoxes::TessellationMultiplier);
         for (int32 i = 0; i < _vsToPsInterpolants.Count(); i++)
         {
-            const auto value = tryGetValue(_vsToPsInterpolants[i], Value::Zero).AsVector4().Value;
+            const auto value = tryGetValue(_vsToPsInterpolants[i], Value::Zero).AsFloat4().Value;
             _writer.Write(TEXT("\tmaterial.CustomVSToPS[{0}] = {1};\n"), i, value);
         }
         _writer.Write(TEXT("\treturn material;"));
@@ -392,14 +396,42 @@ bool MaterialGenerator::Generate(WriteStream& source, MaterialInfo& materialInfo
     // Update material usage based on material generator outputs
     materialInfo.UsageFlags = baseLayer->UsageFlags;
 
+    // Find all Custom Global Code nodes
+    Array<const MaterialGraph::Node*, InlinedAllocation<8>> customGlobalCodeNodes;
+    Array<Graph*, InlinedAllocation<8>> graphs;
+    _functions.GetValues(graphs);
+    for (MaterialLayer* layer : _layers)
+        graphs.Add(&layer->Graph);
+    for (Graph* graph : graphs)
+    {
+        for (MaterialGraph::Node& node : graph->Nodes)
+        {
+            if (node.Type == GRAPH_NODE_MAKE_TYPE(1, 38) && (bool)node.Values[1])
+            {
+                if (node.Values.Count() == 2)
+                    node.Values.Add(In_Utilities); // Upgrade old node data
+                customGlobalCodeNodes.Add(&node);
+            }
+        }
+    }
+
 #define WRITE_FEATURES(input) FeaturesLock.Lock(); for (auto f : features) _writer.Write(Features[f].Inputs[(int32)FeatureTemplateInputsMapping::input]); FeaturesLock.Unlock();
     // Defines
     {
         _writer.Write(TEXT("#define MATERIAL_MASK_THRESHOLD ({0})\n"), baseLayer->MaskThreshold);
         _writer.Write(TEXT("#define CUSTOM_VERTEX_INTERPOLATORS_COUNT ({0})\n"), _vsToPsInterpolants.Count());
         _writer.Write(TEXT("#define MATERIAL_OPACITY_THRESHOLD ({0})\n"), baseLayer->OpacityThreshold);
+        if (materialInfo.BlendMode != MaterialBlendMode::Opaque && !(materialInfo.FeaturesFlags & MaterialFeaturesFlags::DisableReflections) && materialInfo.FeaturesFlags & MaterialFeaturesFlags::ScreenSpaceReflections)
+        {
+            // Inject depth and color buffers for Screen Space Reflections used by transparent material
+            auto sceneDepthTexture = findOrAddSceneTexture(MaterialSceneTextures::SceneDepth);
+            auto sceneColorTexture = findOrAddSceneTexture(MaterialSceneTextures::SceneColor);
+            _writer.Write(TEXT("#define MATERIAL_REFLECTIONS_SSR_DEPTH ({0})\n"), sceneDepthTexture.ShaderName);
+            _writer.Write(TEXT("#define MATERIAL_REFLECTIONS_SSR_COLOR ({0})\n"), sceneColorTexture.ShaderName);
+        }
         WRITE_FEATURES(Defines);
         inputs[In_Defines] = _writer.ToString();
+        WriteCustomGlobalCode(customGlobalCodeNodes, In_Defines);
         _writer.Clear();
     }
 
@@ -408,6 +440,7 @@ bool MaterialGenerator::Generate(WriteStream& source, MaterialInfo& materialInfo
         for (auto& include : _includes)
             _writer.Write(TEXT("#include \"{0}\"\n"), include.Item);
         WRITE_FEATURES(Includes);
+        WriteCustomGlobalCode(customGlobalCodeNodes, In_Includes);
         inputs[In_Includes] = _writer.ToString();
         _writer.Clear();
     }
@@ -417,6 +450,7 @@ bool MaterialGenerator::Generate(WriteStream& source, MaterialInfo& materialInfo
         WRITE_FEATURES(Constants);
         if (_parameters.HasItems())
             ShaderGraphUtilities::GenerateShaderConstantBuffer(_writer, _parameters);
+        WriteCustomGlobalCode(customGlobalCodeNodes, In_Constants);
         inputs[In_Constants] = _writer.ToString();
         _writer.Clear();
     }
@@ -447,6 +481,7 @@ bool MaterialGenerator::Generate(WriteStream& source, MaterialInfo& materialInfo
         }
         for (auto f : features)
         {
+            // Process SRV slots used in template
             const auto& text = Features[f].Inputs[(int32)FeatureTemplateInputsMapping::Resources];
             const Char* str = text.Get();
             int32 prevIdx = 0, idx = 0;
@@ -476,6 +511,7 @@ bool MaterialGenerator::Generate(WriteStream& source, MaterialInfo& materialInfo
                 return true;
             }
         }
+        WriteCustomGlobalCode(customGlobalCodeNodes, In_ShaderResources);
         inputs[In_ShaderResources] = _writer.ToString();
         _writer.Clear();
     }
@@ -483,6 +519,7 @@ bool MaterialGenerator::Generate(WriteStream& source, MaterialInfo& materialInfo
     // Utilities
     {
         WRITE_FEATURES(Utilities);
+        WriteCustomGlobalCode(customGlobalCodeNodes, In_Utilities);
         inputs[In_Utilities] = _writer.ToString();
         _writer.Clear();
     }
@@ -490,6 +527,7 @@ bool MaterialGenerator::Generate(WriteStream& source, MaterialInfo& materialInfo
     // Shaders
     {
         WRITE_FEATURES(Shaders);
+        WriteCustomGlobalCode(customGlobalCodeNodes, In_Shaders);
         inputs[In_Shaders] = _writer.ToString();
         _writer.Clear();
     }
@@ -629,15 +667,15 @@ MaterialGraphParameter* MaterialGenerator::findGraphParam(const Guid& id)
 void MaterialGenerator::createGradients(Node* caller)
 {
     if (_ddx.IsInvalid())
-        _ddx = writeLocal(VariantType::Vector2, TEXT("ddx(input.TexCoord.xy)"), caller);
+        _ddx = writeLocal(VariantType::Float2, TEXT("ddx(input.TexCoord.xy)"), caller);
     if (_ddy.IsInvalid())
-        _ddy = writeLocal(VariantType::Vector2, TEXT("ddy(input.TexCoord.xy)"), caller);
+        _ddy = writeLocal(VariantType::Float2, TEXT("ddy(input.TexCoord.xy)"), caller);
 }
 
 MaterialGenerator::Value MaterialGenerator::getCameraVector(Node* caller)
 {
     if (_cameraVector.IsInvalid())
-        _cameraVector = writeLocal(VariantType::Vector3, TEXT("normalize(ViewPos.xyz - input.WorldPosition.xyz)"), caller);
+        _cameraVector = writeLocal(VariantType::Float3, TEXT("normalize(ViewPos.xyz - input.WorldPosition.xyz)"), caller);
     return _cameraVector;
 }
 
@@ -674,7 +712,7 @@ void MaterialGenerator::ProcessGroupMath(Box* box, Node* node, Value& value)
     case 30:
     {
         // Get input vector
-        auto v = tryGetValue(node->GetBox(0), Value::InitForZero(VariantType::Vector3));
+        auto v = tryGetValue(node->GetBox(0), Value::InitForZero(VariantType::Float3));
 
         // Select transformation spaces
         ASSERT(node->Values[0].Type == VariantType::Int && node->Values[1].Type == VariantType::Int);
@@ -765,13 +803,26 @@ void MaterialGenerator::ProcessGroupMath(Box* box, Node* node, Value& value)
             ASSERT(format != nullptr);
 
             // Write operation
-            value = writeLocal(VariantType::Vector3, String::Format(format, v.Value), node);
+            value = writeLocal(VariantType::Float3, String::Format(format, v.Value), node);
         }
         break;
     }
     default:
         ShaderGenerator::ProcessGroupMath(box, node, value);
         break;
+    }
+}
+
+void MaterialGenerator::WriteCustomGlobalCode(const Array<const MaterialGraph::Node*, InlinedAllocation<8>>& nodes, int32 templateInputsMapping)
+{
+    for (const MaterialGraph::Node* node : nodes)
+    {
+        if ((int32)node->Values[2] == templateInputsMapping)
+        {
+            _writer.Write(TEXT("\n"));
+            _writer.Write((StringView)node->Values[0]);
+            _writer.Write(TEXT("\n"));
+        }
     }
 }
 

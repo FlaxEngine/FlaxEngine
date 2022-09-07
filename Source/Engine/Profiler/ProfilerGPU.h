@@ -19,15 +19,14 @@ class GPUTimerQuery;
 /// </summary>
 API_CLASS(Static) class FLAXENGINE_API ProfilerGPU
 {
-DECLARE_SCRIPTING_TYPE_NO_SPAWN(ProfilerGPU);
+    DECLARE_SCRIPTING_TYPE_NO_SPAWN(ProfilerGPU);
 public:
-
     /// <summary>
     /// Represents single CPU profiling event data.
     /// </summary>
     API_STRUCT() struct Event
     {
-    DECLARE_SCRIPTING_TYPE_MINIMAL(Event);
+        DECLARE_SCRIPTING_TYPE_MINIMAL(Event);
 
         /// <summary>
         /// The name of the event.
@@ -61,12 +60,10 @@ public:
     class EventBuffer : public NonCopyable
     {
     private:
-
         bool _isResolved = true;
         Array<Event> _data;
 
     public:
-
         /// <summary>
         /// The index of the frame buffer was used for recording events (for the last time).
         /// </summary>
@@ -117,7 +114,6 @@ public:
     };
 
 private:
-
     static int32 _depth;
 
     static Array<GPUTimerQuery*> _timerQueriesPool;
@@ -126,7 +122,6 @@ private:
     static GPUTimerQuery* GetTimerQuery();
 
 public:
-
     /// <summary>
     /// True if GPU profiling is enabled, otherwise false to disable events collecting and GPU timer queries usage. Can be changed during rendering.
     /// </summary>
@@ -143,7 +138,6 @@ public:
     static EventBuffer Buffers[PROFILER_GPU_EVENTS_FRAMES];
 
 public:
-
     /// <summary>
     /// Begins the event. Call EndEvent with index parameter equal to the returned value by BeginEvent function.
     /// </summary>
@@ -197,7 +191,7 @@ struct ScopeProfileBlockGPU
     {
         Index = ProfilerGPU::BeginEvent(name);
     }
- 
+
     FORCE_INLINE ~ScopeProfileBlockGPU()
     {
         ProfilerGPU::EndEvent(Index);

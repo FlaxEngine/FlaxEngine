@@ -15,7 +15,7 @@ PointLight::PointLight(const SpawnParams& params)
     ShadowsDistance = 2000.0f;
     ShadowsFadeDistance = 100.0f;
     ShadowsDepthBias = 0.5f;
-    _direction = Vector3::Forward;
+    _direction = Float3::Forward;
     _sphere = BoundingSphere(Vector3::Zero, _radius);
     BoundingBox::FromSphere(_sphere, _box);
 }
@@ -58,7 +58,7 @@ void PointLight::SetRadius(float value)
 void PointLight::UpdateBounds()
 {
     // Cache light direction
-    Vector3::Transform(Vector3::Forward, _transform.Orientation, _direction);
+    Float3::Transform(Float3::Forward, _transform.Orientation, _direction);
     _direction.Normalize();
 
     // Cache bounding box
@@ -66,12 +66,12 @@ void PointLight::UpdateBounds()
     BoundingBox::FromSphere(_sphere, _box);
 
     if (_sceneRenderingKey != -1)
-        GetSceneRendering()->UpdateCommon(this, _sceneRenderingKey);
+        GetSceneRendering()->UpdateActor(this, _sceneRenderingKey);
 }
 
 void PointLight::OnEnable()
 {
-    _sceneRenderingKey = GetSceneRendering()->AddCommon(this);
+    GetSceneRendering()->AddActor(this, _sceneRenderingKey);
 #if USE_EDITOR
     GetSceneRendering()->AddViewportIcon(this);
 #endif
@@ -85,7 +85,7 @@ void PointLight::OnDisable()
 #if USE_EDITOR
     GetSceneRendering()->RemoveViewportIcon(this);
 #endif
-    GetSceneRendering()->RemoveCommon(this, _sceneRenderingKey);
+    GetSceneRendering()->RemoveActor(this, _sceneRenderingKey);
 
     // Base
     LightWithShadow::OnDisable();
@@ -103,17 +103,19 @@ void PointLight::Draw(RenderContext& renderContext)
 {
     float brightness = ComputeBrightness();
     AdjustBrightness(renderContext.View, brightness);
+    const Float3 position = GetPosition() - renderContext.View.Origin;
     const float radius = GetScaledRadius();
     if ((renderContext.View.Flags & ViewFlags::PointLights) != 0
         && brightness > ZeroTolerance
+        && renderContext.View.Pass & DrawPass::GBuffer
         && radius > ZeroTolerance
-        && (ViewDistance < ZeroTolerance || Vector3::DistanceSquared(renderContext.View.Position, GetPosition()) < ViewDistance * ViewDistance))
+        && (ViewDistance < ZeroTolerance || Vector3::DistanceSquared(renderContext.View.Position, position) < ViewDistance * ViewDistance))
     {
         RendererPointLightData data;
-        data.Position = GetPosition();
+        data.Position = position;
         data.MinRoughness = MinRoughness;
         data.ShadowsDistance = ShadowsDistance;
-        data.Color = Color.ToVector3() * (Color.A * brightness);
+        data.Color = Color.ToFloat3() * (Color.A * brightness);
         data.ShadowsStrength = ShadowsStrength;
         data.Direction = _direction;
         data.ShadowsFadeDistance = ShadowsFadeDistance;
@@ -130,7 +132,10 @@ void PointLight::Draw(RenderContext& renderContext)
         data.SourceRadius = SourceRadius;
         data.SourceLength = SourceLength;
         data.ContactShadowsLength = ContactShadowsLength;
+        data.IndirectLightingIntensity = IndirectLightingIntensity;
         data.IESTexture = IESTexture ? IESTexture->GetTexture() : nullptr;
+        data.StaticFlags = GetStaticFlags();
+        data.ID = GetID();
         renderContext.List->PointLights.Add(data);
     }
 }
@@ -165,7 +170,7 @@ void PointLight::OnDebugDrawSelected()
 void PointLight::OnLayerChanged()
 {
     if (_sceneRenderingKey != -1)
-        GetSceneRendering()->UpdateCommon(this, _sceneRenderingKey);
+        GetSceneRendering()->UpdateActor(this, _sceneRenderingKey);
 }
 
 void PointLight::Serialize(SerializeStream& stream, const void* otherObj)
@@ -200,7 +205,7 @@ void PointLight::Deserialize(DeserializeStream& stream, ISerializeModifier* modi
     DESERIALIZE(IESBrightnessScale);
 }
 
-bool PointLight::IntersectsItself(const Ray& ray, float& distance, Vector3& normal)
+bool PointLight::IntersectsItself(const Ray& ray, Real& distance, Vector3& normal)
 {
     return CollisionsHelper::RayIntersectsSphere(ray, _sphere, distance, normal);
 }

@@ -161,7 +161,7 @@ namespace FlaxEditor.Surface
             RootControl = rootControl ?? throw new ArgumentNullException(nameof(rootControl));
 
             // Set initial scale to provide nice zoom in effect on startup
-            RootControl.Scale = new Vector2(0.5f);
+            RootControl.Scale = new Float2(0.5f);
         }
 
         /// <summary>
@@ -333,9 +333,10 @@ namespace FlaxEditor.Surface
         /// <param name="customValues">The custom values array. Must match node archetype <see cref="NodeArchetype.DefaultValues"/> size. Pass null to use default values.</param>
         /// <param name="beforeSpawned">The custom callback action to call after node creation but just before invoking spawn event. Can be used to initialize custom node data.</param>
         /// <returns>Created node.</returns>
-        public SurfaceNode SpawnNode(ushort groupID, ushort typeID, Vector2 location, object[] customValues = null, Action<SurfaceNode> beforeSpawned = null)
+        public SurfaceNode SpawnNode(ushort groupID, ushort typeID, Float2 location, object[] customValues = null, Action<SurfaceNode> beforeSpawned = null)
         {
-            if (NodeFactory.GetArchetype(_surface.NodeArchetypes, groupID, typeID, out var groupArchetype, out var nodeArchetype))
+            var nodeArchetypes = _surface?.NodeArchetypes ?? NodeFactory.DefaultGroups;
+            if (NodeFactory.GetArchetype(nodeArchetypes, groupID, typeID, out var groupArchetype, out var nodeArchetype))
             {
                 return SpawnNode(groupArchetype, nodeArchetype, location, customValues, beforeSpawned);
             }
@@ -351,7 +352,7 @@ namespace FlaxEditor.Surface
         /// <param name="customValues">The custom values array. Must match node archetype <see cref="NodeArchetype.DefaultValues"/> size. Pass null to use default values.</param>
         /// <param name="beforeSpawned">The custom callback action to call after node creation but just before invoking spawn event. Can be used to initialize custom node data.</param>
         /// <returns>Created node.</returns>
-        public SurfaceNode SpawnNode(GroupArchetype groupArchetype, NodeArchetype nodeArchetype, Vector2 location, object[] customValues = null, Action<SurfaceNode> beforeSpawned = null)
+        public SurfaceNode SpawnNode(GroupArchetype groupArchetype, NodeArchetype nodeArchetype, Float2 location, object[] customValues = null, Action<SurfaceNode> beforeSpawned = null)
         {
             if (groupArchetype == null || nodeArchetype == null)
                 throw new ArgumentNullException();
@@ -360,7 +361,7 @@ namespace FlaxEditor.Surface
             var flags = nodeArchetype.Flags;
             nodeArchetype.Flags &= ~NodeFlags.NoSpawnViaGUI;
             nodeArchetype.Flags &= ~NodeFlags.NoSpawnViaPaste;
-            if (!_surface.CanUseNodeType(nodeArchetype))
+            if (_surface != null && !_surface.CanUseNodeType(nodeArchetype))
             {
                 nodeArchetype.Flags = flags;
                 Editor.LogWarning("Cannot spawn given node type. Title: " + nodeArchetype.Title);
@@ -394,7 +395,8 @@ namespace FlaxEditor.Surface
             OnControlSpawned(node);
 
             // Undo action
-            Surface.Undo?.AddAction(new AddRemoveNodeAction(node, true));
+            if (Surface != null && Surface.Undo != null)
+                Surface.Undo.AddAction(new AddRemoveNodeAction(node, true));
 
             MarkAsModified();
 

@@ -15,7 +15,6 @@ namespace FlaxEngine.TypeConverters
             {
                 return true;
             }
-
             return base.CanConvertFrom(context, sourceType);
         }
 
@@ -27,7 +26,6 @@ namespace FlaxEngine.TypeConverters
                 string[] v = str.Split(',');
                 return new Int2(int.Parse(v[0]), int.Parse(v[1]));
             }
-
             return base.ConvertFrom(context, culture, value);
         }
 
@@ -36,9 +34,9 @@ namespace FlaxEngine.TypeConverters
         {
             if (destinationType == typeof(string))
             {
-                return ((Int2)value).X + "," + ((Int2)value).Y;
+                var v = (Int2)value;
+                return v.X + "," + v.Y;
             }
-
             return base.ConvertTo(context, culture, value, destinationType);
         }
     }

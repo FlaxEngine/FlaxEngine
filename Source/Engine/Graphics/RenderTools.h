@@ -12,7 +12,7 @@ struct RenderContext;
 
 PACK_STRUCT(struct QuadShaderData
     {
-    Vector4 Color;
+    Float4 Color;
     });
 
 /// <summary>
@@ -20,9 +20,8 @@ PACK_STRUCT(struct QuadShaderData
 /// </summary>
 API_CLASS(Static) class FLAXENGINE_API RenderTools
 {
-DECLARE_SCRIPTING_TYPE_NO_SPAWN(RenderTools);
+    DECLARE_SCRIPTING_TYPE_NO_SPAWN(RenderTools);
 public:
-
     // Calculate a subresource index for a texture
     FORCE_INLINE static int32 CalcSubresourceIndex(uint32 mipSlice, int32 arraySlice, int32 mipLevels)
     {
@@ -54,7 +53,6 @@ public:
     static void ComputePitch(PixelFormat format, int32 width, int32 height, uint32& rowPitch, uint32& slicePitch);
 
 public:
-
     static void UpdateModelLODTransition(byte& lodTransition);
     static uint64 CalculateTextureMemoryUsage(PixelFormat format, int32 width, int32 height, int32 mipLevels);
     static uint64 CalculateTextureMemoryUsage(PixelFormat format, int32 width, int32 height, int32 depth, int32 mipLevels);
@@ -66,7 +64,7 @@ public:
     /// <param name="radius">The bounds radius.</param>
     /// <param name="view">The render view.</param>
     /// <returns>The squared radius.</returns>
-    FORCE_INLINE static float ComputeBoundsScreenRadiusSquared(const Vector3& origin, const float radius, const RenderView& view)
+    FORCE_INLINE static float ComputeBoundsScreenRadiusSquared(const Float3& origin, const float radius, const RenderView& view)
     {
         return ComputeBoundsScreenRadiusSquared(origin, radius, view.Position, view.Projection);
     }
@@ -79,7 +77,7 @@ public:
     /// <param name="viewOrigin">The render view position.</param>
     /// <param name="projectionMatrix">The render view projection matrix.</param>
     /// <returns>The squared radius.</returns>
-    static float ComputeBoundsScreenRadiusSquared(const Vector3& origin, float radius, const Vector3& viewOrigin, const Matrix& projectionMatrix);
+    static float ComputeBoundsScreenRadiusSquared(const Float3& origin, float radius, const Float3& viewOrigin, const Matrix& projectionMatrix);
 
     /// <summary>
     /// Computes the model LOD index to use during rendering.
@@ -89,7 +87,7 @@ public:
     /// <param name="radius">The bounds radius.</param>
     /// <param name="renderContext">The rendering context.</param>
     /// <returns>The zero-based LOD index. Returns -1 if model should not be rendered.</returns>
-    API_FUNCTION() static int32 ComputeModelLOD(const Model* model, API_PARAM(Ref) const Vector3& origin, float radius, API_PARAM(Ref) const RenderContext& renderContext);
+    API_FUNCTION() static int32 ComputeModelLOD(const Model* model, API_PARAM(Ref) const Float3& origin, float radius, API_PARAM(Ref) const RenderContext& renderContext);
 
     /// <summary>
     /// Computes the skinned model LOD index to use during rendering.
@@ -99,7 +97,7 @@ public:
     /// <param name="radius">The bounds radius.</param>
     /// <param name="renderContext">The rendering context.</param>
     /// <returns>The zero-based LOD index. Returns -1 if model should not be rendered.</returns>
-    API_FUNCTION() static int32 ComputeSkinnedModelLOD(const SkinnedModel* model, API_PARAM(Ref) const Vector3& origin, float radius, API_PARAM(Ref) const RenderContext& renderContext);
+    API_FUNCTION() static int32 ComputeSkinnedModelLOD(const SkinnedModel* model, API_PARAM(Ref) const Float3& origin, float radius, API_PARAM(Ref) const RenderContext& renderContext);
 
     /// <summary>
     /// Computes the sorting key for depth value (quantized)
@@ -140,4 +138,4 @@ extern int32 MipLevelsCount(int32 width, int32 height, int32 depth, bool useMipL
 /// <param name="center">Sphere center</param>
 /// <param name="radius">Sphere radius</param>
 /// <returns>Distance from view center to the sphere center less sphere radius</returns>
-extern float ViewToCenterLessRadius(const RenderView& view, const Vector3& center, float radius);
+extern float ViewToCenterLessRadius(const RenderView& view, const Float3& center, float radius);

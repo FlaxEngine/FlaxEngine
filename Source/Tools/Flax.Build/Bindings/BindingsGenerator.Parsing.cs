@@ -62,6 +62,7 @@ namespace Flax.Build.Bindings
                 tokensCount++;
                 switch (token.Type)
                 {
+                case TokenType.Newline:
                 case TokenType.Whitespace: break;
                 case TokenType.CommentMultiLine:
                 {
@@ -71,16 +72,40 @@ namespace Flax.Build.Bindings
                 case TokenType.CommentSingleLine:
                 {
                     var commentLine = token.Value.Trim();
-
-                    // Fix '//' comments
                     if (commentLine.StartsWith("// "))
+                    {
+                        // Fix '//' comments
                         commentLine = "/// " + commentLine.Substring(3);
-
-                    // Fix inlined summary
-                    if (commentLine.StartsWith("/// <summary>") && commentLine.EndsWith("</summary>"))
+                    }
+                    else if (commentLine.StartsWith("/// <summary>") && commentLine.EndsWith("</summary>"))
+                    {
+                        // Fix inlined summary
                         commentLine = "/// " + commentLine.Substring(13, commentLine.Length - 23);
-
+                        isValid = false;
+                    }
+                    else if (commentLine.StartsWith("/// <summary>"))
+                    {
+                        // End searching after summary begin found
+                        isValid = false;
+                    }
                     context.StringCache.Insert(0, commentLine);
+                    break;
+                }
+                case TokenType.GreaterThan:
+                {
+                    // Template definition
+                    // TODO: return created template definition for Template types
+                    while (isValid)
+                    {
+                        token = context.Tokenizer.PreviousToken(true, true);
+                        tokensCount++;
+                        if (token.Type == TokenType.LessThan)
+                        {
+                            token = context.Tokenizer.PreviousToken(true, true);
+                            tokensCount++;
+                            break;
+                        }
+                    }
                     break;
                 }
                 default:
@@ -93,6 +118,8 @@ namespace Flax.Build.Bindings
             for (var i = 0; i < tokensCount; i++)
                 context.Tokenizer.NextToken(true, true);
 
+            if (context.StringCache.Count == 0)
+                return null;
             if (context.StringCache.Count == 1)
             {
                 // Ensure to have summary begin/end pair
@@ -311,7 +338,7 @@ namespace Flax.Build.Bindings
                             currentParam.Attributes = tag.Value;
                             break;
                         default:
-                            Log.Warning($"Unknown or not supported tag parameter {tag} used on parameter at line {context.Tokenizer.CurrentLine}.");
+                            Log.Warning($"Unknown or not supported tag parameter {tag} used on {"function parameter"} at line {context.Tokenizer.CurrentLine}");
                             break;
                         }
                     }
@@ -499,7 +526,7 @@ namespace Flax.Build.Bindings
             // Read 'class' keyword
             var token = context.Tokenizer.NextToken();
             if (token.Value != "class")
-                throw new Exception($"Invalid API_CLASS usage (expected 'class' keyword but got '{token.Value} {context.Tokenizer.NextToken().Value}').");
+                throw new Exception($"Invalid {ApiTokens.Class} usage (expected 'class' keyword but got '{token.Value} {context.Tokenizer.NextToken().Value}').");
 
             // Read specifiers
             while (true)
@@ -551,6 +578,9 @@ namespace Flax.Build.Bindings
                 case "private":
                     desc.Access = AccessLevel.Private;
                     break;
+                case "template":
+                    desc.IsTemplate = true;
+                    break;
                 case "inbuild":
                     desc.IsInBuild = true;
                     break;
@@ -564,7 +594,7 @@ namespace Flax.Build.Bindings
                     desc.Namespace = tag.Value;
                     break;
                 default:
-                    Log.Warning($"Unknown or not supported tag parameter {tag} used on class {desc.Name} at line {context.Tokenizer.CurrentLine}");
+                    Log.Warning($"Unknown or not supported tag parameter {tag} used on {desc.Name} at line {context.Tokenizer.CurrentLine}");
                     break;
                 }
             }
@@ -592,7 +622,7 @@ namespace Flax.Build.Bindings
             // Read 'class' keyword
             var token = context.Tokenizer.NextToken();
             if (token.Value != "class")
-                throw new Exception($"Invalid API_INTERFACE usage (expected 'class' keyword but got '{token.Value} {context.Tokenizer.NextToken().Value}').");
+                throw new Exception($"Invalid {ApiTokens.Interface} usage (expected 'class' keyword but got '{token.Value} {context.Tokenizer.NextToken().Value}').");
 
             // Read specifiers
             while (true)
@@ -629,6 +659,9 @@ namespace Flax.Build.Bindings
                 case "private":
                     desc.Access = AccessLevel.Private;
                     break;
+                case "template":
+                    desc.IsTemplate = true;
+                    break;
                 case "inbuild":
                     desc.IsInBuild = true;
                     break;
@@ -642,7 +675,7 @@ namespace Flax.Build.Bindings
                     desc.Namespace = tag.Value;
                     break;
                 default:
-                    Log.Warning($"Unknown or not supported tag parameter {tag} used on interface {desc.Name} at line {context.Tokenizer.CurrentLine}");
+                    Log.Warning($"Unknown or not supported tag parameter {tag} used on {desc.Name} at line {context.Tokenizer.CurrentLine}");
                     break;
                 }
             }
@@ -769,7 +802,7 @@ namespace Flax.Build.Bindings
                     desc.IsHidden = true;
                     break;
                 default:
-                    Log.Warning($"Unknown or not supported tag parameter {tag} used on function {desc.Name}");
+                    Log.Warning($"Unknown or not supported tag parameter {tag} used on {desc.Name} at line {context.Tokenizer.CurrentLine}");
                     break;
                 }
             }
@@ -849,11 +882,14 @@ namespace Flax.Build.Bindings
                     throw new Exception($"Property {propertyName} in class {classInfo.Name} (line {context.Tokenizer.CurrentLine}) has mismatching getter return type ({getterType}) and setter parameter type ({setterType}). Both getter and setter methods must use the same value type used for property.");
                 }
 
-                // Fix documentation comment to reflect both getter and setters available
-                for (var i = 0; i < propertyInfo.Comment.Length; i++)
+                if (propertyInfo.Comment != null)
                 {
-                    ref var comment = ref propertyInfo.Comment[i];
-                    comment = comment.Replace("/// Gets ", "/// Gets or sets ");
+                    // Fix documentation comment to reflect both getter and setters available
+                    for (var i = 0; i < propertyInfo.Comment.Length; i++)
+                    {
+                        ref var comment = ref propertyInfo.Comment[i];
+                        comment = comment.Replace("/// Gets ", "/// Gets or sets ");
+                    }
                 }
             }
 
@@ -876,7 +912,7 @@ namespace Flax.Build.Bindings
             // Read 'enum' or `enum class` keywords
             var token = context.Tokenizer.NextToken();
             if (token.Value != "enum")
-                throw new Exception($"Invalid API_ENUM usage at line {context.Tokenizer.CurrentLine} (expected 'enum' keyword but got '{token.Value} {context.Tokenizer.NextToken().Value}').");
+                throw new Exception($"Invalid {ApiTokens.Enum} usage at line {context.Tokenizer.CurrentLine} (expected 'enum' keyword but got '{token.Value} {context.Tokenizer.NextToken().Value}').");
             token = context.Tokenizer.NextToken();
             if (token.Value != "class")
                 context.Tokenizer.PreviousToken();
@@ -959,7 +995,7 @@ namespace Flax.Build.Bindings
                                 entry.Attributes = tag.Value;
                                 break;
                             default:
-                                Log.Warning($"Unknown or not supported tag parameter {tag} used on enum {desc.Name} entry at line {context.Tokenizer.CurrentLine}");
+                                Log.Warning($"Unknown or not supported tag parameter {tag} used on {desc.Name + " enum entry"} at line {context.Tokenizer.CurrentLine}");
                                 break;
                             }
                         }
@@ -1023,7 +1059,7 @@ namespace Flax.Build.Bindings
                     desc.Namespace = tag.Value;
                     break;
                 default:
-                    Log.Warning($"Unknown or not supported tag parameter {tag} used on enum {desc.Name} at line {context.Tokenizer.CurrentLine}");
+                    Log.Warning($"Unknown or not supported tag parameter {tag} used on {desc.Name} at line {context.Tokenizer.CurrentLine}");
                     break;
                 }
             }
@@ -1046,7 +1082,7 @@ namespace Flax.Build.Bindings
             // Read 'struct' keyword
             var token = context.Tokenizer.NextToken();
             if (token.Value != "struct")
-                throw new Exception($"Invalid API_STRUCT usage (expected 'struct' keyword but got '{token.Value} {context.Tokenizer.NextToken().Value}').");
+                throw new Exception($"Invalid {ApiTokens.Struct} usage (expected 'struct' keyword but got '{token.Value} {context.Tokenizer.NextToken().Value}').");
 
             // Read name
             desc.Name = desc.NativeName = ParseName(ref context);
@@ -1068,11 +1104,17 @@ namespace Flax.Build.Bindings
                 case "private":
                     desc.Access = AccessLevel.Private;
                     break;
+                case "template":
+                    desc.IsTemplate = true;
+                    break;
                 case "inbuild":
                     desc.IsInBuild = true;
                     break;
                 case "nopod":
                     desc.ForceNoPod = true;
+                    break;
+                case "nodefault":
+                    desc.NoDefault = true;
                     break;
                 case "attributes":
                     desc.Attributes = tag.Value;
@@ -1084,7 +1126,7 @@ namespace Flax.Build.Bindings
                     desc.Namespace = tag.Value;
                     break;
                 default:
-                    Log.Warning($"Unknown or not supported tag parameter {tag} used on struct {desc.Name} at line {context.Tokenizer.CurrentLine}");
+                    Log.Warning($"Unknown or not supported tag parameter {tag} used on {desc.Name} at line {context.Tokenizer.CurrentLine}");
                     break;
                 }
             }
@@ -1114,6 +1156,11 @@ namespace Flax.Build.Bindings
                 if (!desc.IsStatic && token.Value == "static")
                 {
                     desc.IsStatic = true;
+                    context.Tokenizer.NextToken();
+                }
+                else if (!desc.IsConstexpr && token.Value == "constexpr")
+                {
+                    desc.IsConstexpr = true;
                     context.Tokenizer.NextToken();
                 }
                 else if (!isMutable && token.Value == "mutable")
@@ -1202,7 +1249,7 @@ namespace Flax.Build.Bindings
                     desc.NoArray = true;
                     break;
                 default:
-                    Log.Warning($"Unknown or not supported tag parameter {tag} used on field {desc.Name} at line {context.Tokenizer.CurrentLine}");
+                    Log.Warning($"Unknown or not supported tag parameter {tag} used on {desc.Name} at line {context.Tokenizer.CurrentLine}");
                     break;
                 }
             }
@@ -1232,7 +1279,7 @@ namespace Flax.Build.Bindings
             if (desc.Type.Type == "Action")
                 desc.Type = new TypeInfo { Type = "Delegate", GenericArgs = new List<TypeInfo>() };
             else if (desc.Type.Type != "Delegate")
-                throw new Exception($"Invalid API_EVENT type. Only Action and Delegate<> types are supported. '{desc.Type}' used on event at line {context.Tokenizer.CurrentLine}.");
+                throw new Exception($"Invalid {ApiTokens.Event} type. Only Action and Delegate<> types are supported. '{desc.Type}' used on event at line {context.Tokenizer.CurrentLine}.");
 
             // Read name
             desc.Name = ParseName(ref context);
@@ -1264,22 +1311,75 @@ namespace Flax.Build.Bindings
                     desc.IsHidden = true;
                     break;
                 default:
-                    Log.Warning($"Unknown or not supported tag parameter {tag} used on event {desc.Name} at line {context.Tokenizer.CurrentLine}");
+                    Log.Warning($"Unknown or not supported tag parameter {tag} used on {desc.Name} at line {context.Tokenizer.CurrentLine}");
                     break;
                 }
             }
             return desc;
         }
 
-        private static InjectCppCodeInfo ParseInjectCppCode(ref ParsingContext context)
+        private static InjectCodeInfo ParseInjectCode(ref ParsingContext context)
         {
             context.Tokenizer.ExpectToken(TokenType.LeftParent);
-            var desc = new InjectCppCodeInfo
-            {
-                Code = context.Tokenizer.ExpectToken(TokenType.String).Value.Replace("\\\"", "\""),
-            };
+            var desc = new InjectCodeInfo();
+            context.Tokenizer.SkipUntil(TokenType.Comma, out desc.Lang);
+            desc.Code = context.Tokenizer.ExpectToken(TokenType.String).Value.Replace("\\\"", "\"");
             desc.Code = desc.Code.Substring(1, desc.Code.Length - 2);
             context.Tokenizer.ExpectToken(TokenType.RightParent);
+            return desc;
+        }
+
+        private static TypedefInfo ParseTypedef(ref ParsingContext context)
+        {
+            var desc = new TypedefInfo
+            {
+            };
+
+            // Read the documentation comment
+            desc.Comment = ParseComment(ref context);
+
+            // Read parameters from the tag
+            var tagParams = ParseTagParameters(ref context);
+
+            // Read 'typedef' keyword
+            var token = context.Tokenizer.NextToken();
+            if (token.Value != "typedef")
+                throw new Exception($"Invalid {ApiTokens.Typedef} usage (expected 'typedef' keyword but got '{token.Value} {context.Tokenizer.NextToken().Value}').");
+
+            // Read type definition
+            desc.Type = ParseType(ref context);
+
+            // Read name
+            desc.Name = ParseName(ref context);
+
+            // Read ';'
+            context.Tokenizer.ExpectToken(TokenType.SemiColon);
+
+            // Process tag parameters
+            foreach (var tag in tagParams)
+            {
+                switch (tag.Tag.ToLower())
+                {
+                case "alias":
+                    desc.IsAlias = true;
+                    break;
+                case "inbuild":
+                    desc.IsInBuild = true;
+                    break;
+                case "attributes":
+                    desc.Attributes = tag.Value;
+                    break;
+                case "name":
+                    desc.Name = tag.Value;
+                    break;
+                case "namespace":
+                    desc.Namespace = tag.Value;
+                    break;
+                default:
+                    Log.Warning($"Unknown or not supported tag parameter {tag} used on {desc.Name} at line {context.Tokenizer.CurrentLine}");
+                    break;
+                }
+            }
             return desc;
         }
     }

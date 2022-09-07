@@ -8,7 +8,6 @@
 #include "GPUDeviceVulkan.h"
 #include "RenderToolsVulkan.h"
 #include "GPUContextVulkan.h"
-#include "GPUAdapterVulkan.h"
 #include "CmdBufferVulkan.h"
 #include "Engine/Threading/Threading.h"
 #include "Engine/Engine/Engine.h"
@@ -30,37 +29,46 @@ void DescriptorSetLayoutInfoVulkan::CacheTypesUsageID()
     _typesUsageID = id;
 }
 
-void DescriptorSetLayoutInfoVulkan::AddDescriptor(int32 descriptorSetIndex, const VkDescriptorSetLayoutBinding& descriptor)
-{
-    _layoutTypes[descriptor.descriptorType]++;
-
-    if (descriptorSetIndex >= _setLayouts.Count())
-    {
-        _setLayouts.Resize(descriptorSetIndex + 1);
-    }
-
-    SetLayout& descSetLayout = _setLayouts[descriptorSetIndex];
-    descSetLayout.LayoutBindings.Add(descriptor);
-
-    _hash = Crc::MemCrc32(&descriptor, sizeof(descriptor), _hash);
-}
-
 void DescriptorSetLayoutInfoVulkan::AddBindingsForStage(VkShaderStageFlagBits stageFlags, DescriptorSet::Stage descSet, const SpirvShaderDescriptorInfo* descriptorInfo)
 {
-    const int32 descriptorSetIndex = (int32)descSet;
+    const int32 descriptorSetIndex = descSet;
+    if (descriptorSetIndex >= _setLayouts.Count())
+        _setLayouts.Resize(descriptorSetIndex + 1);
+    SetLayout& descSetLayout = _setLayouts[descriptorSetIndex];
 
     VkDescriptorSetLayoutBinding binding;
-    binding.descriptorCount = 1;
     binding.stageFlags = stageFlags;
     binding.pImmutableSamplers = nullptr;
-
     for (uint32 descriptorIndex = 0; descriptorIndex < descriptorInfo->DescriptorTypesCount; descriptorIndex++)
     {
         auto& descriptor = descriptorInfo->DescriptorTypes[descriptorIndex];
         binding.binding = descriptorIndex;
         binding.descriptorType = descriptor.DescriptorType;
-        AddDescriptor(descriptorSetIndex, binding);
+        binding.descriptorCount = descriptor.Count;
+
+        _layoutTypes[binding.descriptorType]++;
+        descSetLayout.LayoutBindings.Add(binding);
+        _hash = Crc::MemCrc32(&binding, sizeof(binding), _hash);
     }
+}
+
+bool DescriptorSetLayoutInfoVulkan::operator==(const DescriptorSetLayoutInfoVulkan& other) const
+{
+    if (other._setLayouts.Count() != _setLayouts.Count())
+        return false;
+    if (other._typesUsageID != _typesUsageID)
+        return false;
+
+    for (int32 index = 0; index < other._setLayouts.Count(); index++)
+    {
+        const int32 bindingsCount = _setLayouts[index].LayoutBindings.Count();
+        if (other._setLayouts[index].LayoutBindings.Count() != bindingsCount)
+            return false;
+        if (bindingsCount != 0 && Platform::MemoryCompare(other._setLayouts[index].LayoutBindings.Get(), _setLayouts[index].LayoutBindings.Get(), bindingsCount * sizeof(VkDescriptorSetLayoutBinding)))
+            return false;
+    }
+
+    return true;
 }
 
 DescriptorSetLayoutVulkan::DescriptorSetLayoutVulkan(GPUDeviceVulkan* device)
@@ -370,20 +378,20 @@ PipelineLayoutVulkan::~PipelineLayoutVulkan()
     }
 }
 
-uint32 DescriptorSetWriterVulkan::SetupDescriptorWrites(const SpirvShaderDescriptorInfo& info, VkWriteDescriptorSet* writeDescriptors, VkDescriptorImageInfo* imageInfo, VkDescriptorBufferInfo* bufferInfo, uint8* bindingToDynamicOffset)
+uint32 DescriptorSetWriterVulkan::SetupDescriptorWrites(const SpirvShaderDescriptorInfo& info, VkWriteDescriptorSet* writeDescriptors, VkDescriptorImageInfo* imageInfo, VkDescriptorBufferInfo* bufferInfo, VkBufferView* texelBufferView, uint8* bindingToDynamicOffset)
 {
-    ASSERT(info.DescriptorTypesCount <= 64);
+    ASSERT(info.DescriptorTypesCount <= SpirvShaderDescriptorInfo::MaxDescriptors);
     WriteDescriptors = writeDescriptors;
     WritesCount = info.DescriptorTypesCount;
     BindingToDynamicOffset = bindingToDynamicOffset;
-
     uint32 dynamicOffsetIndex = 0;
     for (uint32 i = 0; i < info.DescriptorTypesCount; i++)
     {
+        const auto& descriptor = info.DescriptorTypes[i];
         writeDescriptors->sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
         writeDescriptors->dstBinding = i;
-        writeDescriptors->descriptorCount = 1;
-        writeDescriptors->descriptorType = info.DescriptorTypes[i].DescriptorType;
+        writeDescriptors->descriptorCount = descriptor.Count;
+        writeDescriptors->descriptorType = descriptor.DescriptorType;
 
         switch (writeDescriptors->descriptorType)
         {
@@ -394,25 +402,28 @@ uint32 DescriptorSetWriterVulkan::SetupDescriptorWrites(const SpirvShaderDescrip
             break;
         case VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER:
         case VK_DESCRIPTOR_TYPE_STORAGE_BUFFER:
-            writeDescriptors->pBufferInfo = bufferInfo++;
+            writeDescriptors->pBufferInfo = bufferInfo;
+            bufferInfo += descriptor.Count;
             break;
         case VK_DESCRIPTOR_TYPE_SAMPLER:
         case VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER:
         case VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE:
         case VK_DESCRIPTOR_TYPE_STORAGE_IMAGE:
-            writeDescriptors->pImageInfo = imageInfo++;
+            writeDescriptors->pImageInfo = imageInfo;
+            imageInfo += descriptor.Count;
             break;
         case VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER:
         case VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER:
+            writeDescriptors->pTexelBufferView = texelBufferView;
+            texelBufferView += descriptor.Count;
             break;
         default:
-        CRASH;
+            CRASH;
             break;
         }
 
         writeDescriptors++;
     }
-
     return dynamicOffsetIndex;
 }
 

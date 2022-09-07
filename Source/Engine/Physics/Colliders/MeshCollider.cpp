@@ -69,18 +69,19 @@ void MeshCollider::DrawPhysicsDebug(RenderView& view)
 {
     if (CollisionData && CollisionData->IsLoaded())
     {
-        if (!view.CullingFrustum.Intersects(_sphere))
+        const BoundingSphere sphere(_sphere.Center - view.Origin, _sphere.Radius);
+        if (!view.CullingFrustum.Intersects(sphere))
             return;
         if (view.Mode == ViewMode::PhysicsColliders && !GetIsTrigger())
         {
-            Array<Vector3>* vertexBuffer;
+            Array<Float3>* vertexBuffer;
             Array<int32>* indexBuffer;
             CollisionData->GetDebugTriangles(vertexBuffer, indexBuffer);
-            DebugDraw::DrawTriangles(*vertexBuffer, *indexBuffer, _transform.GetWorld(), _staticActor ? Color::CornflowerBlue : Color::Orchid, 0, true);
+            DEBUG_DRAW_TRIANGLES_EX2(*vertexBuffer, *indexBuffer, _transform.GetWorld(), _staticActor ? Color::CornflowerBlue : Color::Orchid, 0, true);
         }
         else
         {
-            DebugDraw::DrawLines(CollisionData->GetDebugLines(), _transform.GetWorld(), Color::GreenYellow * 0.8f, 0, true);
+            DEBUG_DRAW_LINES(CollisionData->GetDebugLines(), _transform.GetWorld(), Color::GreenYellow * 0.8f, 0, true);
         }
     }
 }
@@ -90,7 +91,7 @@ void MeshCollider::OnDebugDrawSelected()
     if (CollisionData && CollisionData->IsLoaded())
     {
         const auto& debugLines = CollisionData->GetDebugLines();
-        DEBUG_DRAW_LINES(Span<Vector3>(debugLines.Get(), debugLines.Count()), _transform.GetWorld(), Color::GreenYellow, 0, false);
+        DEBUG_DRAW_LINES(Span<Float3>(debugLines.Get(), debugLines.Count()), _transform.GetWorld(), Color::GreenYellow, 0, false);
     }
 
     // Base
@@ -99,7 +100,7 @@ void MeshCollider::OnDebugDrawSelected()
 
 #endif
 
-bool MeshCollider::IntersectsItself(const Ray& ray, float& distance, Vector3& normal)
+bool MeshCollider::IntersectsItself(const Ray& ray, Real& distance, Vector3& normal)
 {
     // Use detailed hit
     if (_shape)
@@ -149,10 +150,9 @@ void MeshCollider::UpdateBounds()
 void MeshCollider::GetGeometry(CollisionShape& collision)
 {
     // Prepare scale
-    Vector3 scale = _cachedScale;
-    scale.Absolute();
+    Float3 scale = _cachedScale;
     const float minSize = 0.001f;
-    scale = Vector3::Max(scale, minSize);
+    scale = Float3::Max(scale.GetAbsolute(), minSize);
 
     // Setup shape (based on type)
     CollisionDataType type = CollisionDataType::None;

@@ -432,14 +432,14 @@ uint64 RenderTools::CalculateTextureMemoryUsage(PixelFormat format, int32 width,
     return CalculateTextureMemoryUsage(format, width, height, mipLevels) * depth;
 }
 
-float RenderTools::ComputeBoundsScreenRadiusSquared(const Vector3& origin, float radius, const Vector3& viewOrigin, const Matrix& projectionMatrix)
+float RenderTools::ComputeBoundsScreenRadiusSquared(const Float3& origin, float radius, const Float3& viewOrigin, const Matrix& projectionMatrix)
 {
     const float screenMultiple = 0.5f * Math::Max(projectionMatrix.Values[0][0], projectionMatrix.Values[1][1]);
-    const float distSqr = Vector3::DistanceSquared(origin, viewOrigin);
+    const float distSqr = Float3::DistanceSquared(origin, viewOrigin);
     return Math::Square(screenMultiple * radius) / Math::Max(1.0f, distSqr);
 }
 
-int32 RenderTools::ComputeModelLOD(const Model* model, const Vector3& origin, float radius, const RenderContext& renderContext)
+int32 RenderTools::ComputeModelLOD(const Model* model, const Float3& origin, float radius, const RenderContext& renderContext)
 {
     const auto lodView = (renderContext.LodProxyView ? renderContext.LodProxyView : &renderContext.View);
     const float screenRadiusSquared = ComputeBoundsScreenRadiusSquared(origin, radius, *lodView) * renderContext.View.ModelLODDistanceFactorSqrt;
@@ -464,7 +464,7 @@ int32 RenderTools::ComputeModelLOD(const Model* model, const Vector3& origin, fl
     return 0;
 }
 
-int32 RenderTools::ComputeSkinnedModelLOD(const SkinnedModel* model, const Vector3& origin, float radius, const RenderContext& renderContext)
+int32 RenderTools::ComputeSkinnedModelLOD(const SkinnedModel* model, const Float3& origin, float radius, const RenderContext& renderContext)
 {
     const auto lodView = (renderContext.LodProxyView ? renderContext.LodProxyView : &renderContext.View);
     const float screenRadiusSquared = ComputeBoundsScreenRadiusSquared(origin, radius, *lodView) * renderContext.View.ModelLODDistanceFactorSqrt;
@@ -546,10 +546,10 @@ int32 MipLevelsCount(int32 width, int32 height, int32 depth, bool useMipLevels)
     return result;
 }
 
-float ViewToCenterLessRadius(const RenderView& view, const Vector3& center, float radius)
+float ViewToCenterLessRadius(const RenderView& view, const Float3& center, float radius)
 {
     // Calculate distance from view to sphere center
-    float viewToCenter = Vector3::Distance(view.Position, center);
+    float viewToCenter = Float3::Distance(view.Position, center);
 
     // Check if need to fix the radius
     //if (radius + viewToCenter > view.Far)

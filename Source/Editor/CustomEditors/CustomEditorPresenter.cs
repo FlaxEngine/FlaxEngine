@@ -29,7 +29,7 @@ namespace FlaxEditor.CustomEditors
         /// Enables using prefab-related features of the properties editor (eg. revert to prefab option).
         /// </summary>
         UsePrefab = 1 << 1,
-        
+
         /// <summary>
         /// Enables using default-value-related features of the properties editor (eg. revert to default option).
         /// </summary>
@@ -88,7 +88,6 @@ namespace FlaxEditor.CustomEditors
         /// <seealso cref="FlaxEditor.CustomEditors.SyncPointEditor" />
         protected class RootEditor : SyncPointEditor
         {
-            private readonly string _noSelectionText;
             private CustomEditor _overrideEditor;
 
             /// <summary>
@@ -110,12 +109,17 @@ namespace FlaxEditor.CustomEditors
             }
 
             /// <summary>
+            /// The text to show when no object is selected.
+            /// </summary>
+            public string NoSelectionText;
+
+            /// <summary>
             /// Initializes a new instance of the <see cref="RootEditor"/> class.
             /// </summary>
             /// <param name="noSelectionText">The text to show when no item is selected.</param>
             public RootEditor(string noSelectionText)
             {
-                _noSelectionText = noSelectionText ?? "No selection";
+                NoSelectionText = noSelectionText ?? "No selection";
             }
 
             /// <summary>
@@ -154,7 +158,7 @@ namespace FlaxEditor.CustomEditors
                 }
                 else
                 {
-                    var label = layout.Label(_noSelectionText, TextAlignment.Center);
+                    var label = layout.Label(NoSelectionText, TextAlignment.Center);
                     label.Label.Height = 20.0f;
                 }
 
@@ -250,6 +254,20 @@ namespace FlaxEditor.CustomEditors
         /// The Editor context that owns this presenter. Can be <see cref="FlaxEditor.Windows.PropertiesWindow"/> or <see cref="FlaxEditor.Windows.Assets.PrefabWindow"/> or other window/panel - custom editor scan use it for more specific features.
         /// </summary>
         public object Owner;
+
+        /// <summary>
+        /// Gets or sets the text to show when no object is selected.
+        /// </summary>
+        public string NoSelectionText
+        {
+            get => Editor.NoSelectionText;
+            set
+            {
+                Editor.NoSelectionText = value;
+                if (SelectionCount == 0)
+                    BuildLayoutOnUpdate();
+            }
+        }
 
         private bool _buildOnUpdate;
 

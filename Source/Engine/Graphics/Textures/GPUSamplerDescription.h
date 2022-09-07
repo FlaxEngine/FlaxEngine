@@ -79,7 +79,7 @@ API_ENUM() enum class GPUSamplerBorderColor
 /// </summary>
 API_STRUCT() struct FLAXENGINE_API GPUSamplerDescription
 {
-DECLARE_SCRIPTING_TYPE_MINIMAL(GPUSamplerDescription);
+    DECLARE_SCRIPTING_TYPE_MINIMAL(GPUSamplerDescription);
 
     /// <summary>
     /// The filtering method to use when sampling a texture.
@@ -132,7 +132,6 @@ DECLARE_SCRIPTING_TYPE_MINIMAL(GPUSamplerDescription);
     API_FIELD() GPUSamplerCompareFunction ComparisonFunction;
 
 public:
-
     /// <summary>
     /// Creates a new <see cref="GPUSamplerDescription" /> with default settings.
     /// </summary>
@@ -142,13 +141,11 @@ public:
     static GPUSamplerDescription New(GPUSamplerFilter filter = GPUSamplerFilter::Point, GPUSamplerAddressMode addressMode = GPUSamplerAddressMode::Wrap);
 
 public:
-
     void Clear();
     bool Equals(const GPUSamplerDescription& other) const;
     String ToString() const;
 
 public:
-
     FORCE_INLINE bool operator==(const GPUSamplerDescription& other) const
     {
         return Equals(other);

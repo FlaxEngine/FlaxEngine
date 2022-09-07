@@ -120,7 +120,7 @@ namespace Flax.Build.Projects
                 contents.AppendLine("\t\t\tattributes = {");
                 contents.AppendLine("\t\t\t\tBuildIndependentTargetsInParallel = 1;");
                 contents.AppendLine("\t\t\t\tLastUpgradeCheck = 1320;");
-				contents.AppendLine("\t\t\t\tTargetAttributes = {");
+                contents.AppendLine("\t\t\t\tTargetAttributes = {");
                 contents.AppendLine("\t\t\t\t\t" + targetId + " = {");
                 contents.AppendLine("\t\t\t\t\t\tCreatedOnToolsVersion = 13.2.1;");
                 contents.AppendLine("\t\t\t\t\t};");
@@ -134,7 +134,7 @@ namespace Flax.Build.Projects
                 contents.AppendLine("\t\t\t\ten,");
                 contents.AppendLine("\t\t\t\tBase,");
                 contents.AppendLine("\t\t\t);");
-                contents.AppendLine("\t\t\tmainGroup = " + groupId+ ";");
+                contents.AppendLine("\t\t\tmainGroup = " + groupId + ";");
                 contents.AppendLine("\t\t\tprojectDirPath = \"\";");
                 contents.AppendLine("\t\t\tprojectRoot = \"\";");
                 contents.AppendLine("\t\t\ttargets = (");

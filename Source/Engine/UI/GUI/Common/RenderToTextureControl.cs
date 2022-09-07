@@ -10,7 +10,7 @@ namespace FlaxEngine.GUI
         private bool _invalid, _redrawRegistered, _isDuringTextureDraw;
         private bool _autoSize = true;
         private GPUTexture _texture;
-        private Vector2 _textureSize;
+        private Float2 _textureSize;
 
         /// <summary>
         /// Gets the texture with cached children controls.
@@ -38,7 +38,7 @@ namespace FlaxEngine.GUI
         /// Gets or sets the size of the texture (in pixels).
         /// </summary>
         [EditorOrder(20), VisibleIf("CanEditTextureSize"), Limit(0, 4096), Tooltip("The size of the texture (in pixels).")]
-        public Vector2 TextureSize
+        public Float2 TextureSize
         {
             get => _textureSize;
             set
@@ -113,7 +113,7 @@ namespace FlaxEngine.GUI
             // Draw cached texture
             if (_texture && !_invalid && !_isDuringTextureDraw)
             {
-                var bounds = new Rectangle(Vector2.Zero, Size);
+                var bounds = new Rectangle(Float2.Zero, Size);
                 var backgroundColor = BackgroundColor;
                 if (backgroundColor.A > 0.0f)
                     Render2D.FillRectangle(bounds, backgroundColor);

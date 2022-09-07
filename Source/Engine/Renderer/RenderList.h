@@ -11,6 +11,7 @@
 
 enum class StaticFlags;
 class RenderBuffers;
+class SceneRendering;
 class LightWithShadow;
 class IPostFxSettingsProvider;
 class CubeTexture;
@@ -19,13 +20,13 @@ struct RenderContext;
 
 struct RendererDirectionalLightData
 {
-    Vector3 Position;
+    Float3 Position;
     float MinRoughness;
 
-    Vector3 Color;
+    Float3 Color;
     float ShadowsStrength;
 
-    Vector3 Direction;
+    Float3 Direction;
     float ShadowsFadeDistance;
 
     float ShadowsNormalOffsetScale;
@@ -33,6 +34,8 @@ struct RendererDirectionalLightData
     float ShadowsSharpness;
     float VolumetricScatteringIntensity;
 
+    StaticFlags StaticFlags;
+    float IndirectLightingIntensity;
     int8 CastVolumetricShadow : 1;
     int8 RenderedVolumetricFog : 1;
 
@@ -41,18 +44,20 @@ struct RendererDirectionalLightData
     float ContactShadowsLength;
     ShadowsCastingMode ShadowsMode;
 
-    void SetupLightData(LightData* data, const RenderView& view, bool useShadow) const;
+    Guid ID;
+
+    void SetupLightData(LightData* data, bool useShadow) const;
 };
 
 struct RendererSpotLightData
 {
-    Vector3 Position;
+    Float3 Position;
     float MinRoughness;
 
-    Vector3 Color;
+    Float3 Color;
     float ShadowsStrength;
 
-    Vector3 Direction;
+    Float3 Direction;
     float ShadowsFadeDistance;
 
     float ShadowsNormalOffsetScale;
@@ -65,32 +70,35 @@ struct RendererSpotLightData
     float FallOffExponent;
     float SourceRadius;
 
-    Vector3 UpVector;
+    Float3 UpVector;
     float OuterConeAngle;
 
     float CosOuterCone;
     float InvCosConeDifference;
     float ContactShadowsLength;
+    float IndirectLightingIntensity;
     ShadowsCastingMode ShadowsMode;
 
+    StaticFlags StaticFlags;
     int8 CastVolumetricShadow : 1;
     int8 RenderedVolumetricFog : 1;
     int8 UseInverseSquaredFalloff : 1;
 
     GPUTexture* IESTexture;
+    Guid ID;
 
-    void SetupLightData(LightData* data, const RenderView& view, bool useShadow) const;
+    void SetupLightData(LightData* data, bool useShadow) const;
 };
 
 struct RendererPointLightData
 {
-    Vector3 Position;
+    Float3 Position;
     float MinRoughness;
 
-    Vector3 Color;
+    Float3 Color;
     float ShadowsStrength;
 
-    Vector3 Direction;
+    Float3 Direction;
     float ShadowsFadeDistance;
 
     float ShadowsNormalOffsetScale;
@@ -105,33 +113,39 @@ struct RendererPointLightData
 
     float SourceLength;
     float ContactShadowsLength;
+    float IndirectLightingIntensity;
     ShadowsCastingMode ShadowsMode;
 
+    StaticFlags StaticFlags;
     int8 CastVolumetricShadow : 1;
     int8 RenderedVolumetricFog : 1;
     int8 UseInverseSquaredFalloff : 1;
 
     GPUTexture* IESTexture;
+    Guid ID;
 
-    void SetupLightData(LightData* data, const RenderView& view, bool useShadow) const;
+    void SetupLightData(LightData* data, bool useShadow) const;
 };
 
 struct RendererSkyLightData
 {
-    Vector3 Position;
+    Float3 Position;
     float VolumetricScatteringIntensity;
 
-    Vector3 Color;
+    Float3 Color;
     float Radius;
 
-    Vector3 AdditiveColor;
+    Float3 AdditiveColor;
+    float IndirectLightingIntensity;
 
+    StaticFlags StaticFlags;
     int8 CastVolumetricShadow : 1;
     int8 RenderedVolumetricFog : 1;
 
     CubeTexture* Image;
+    Guid ID;
 
-    void SetupLightData(LightData* data, const RenderView& view, bool useShadow) const;
+    void SetupLightData(LightData* data, bool useShadow) const;
 };
 
 /// <summary>
@@ -206,7 +220,6 @@ struct DrawBatch
 class RenderListAllocation
 {
 public:
-
     static FLAXENGINE_API void* Allocate(uintptr size);
     static FLAXENGINE_API void Free(void* ptr, uintptr size);
 
@@ -217,7 +230,6 @@ public:
         uintptr _size;
 
     public:
-
         FORCE_INLINE Data()
         {
         }
@@ -324,7 +336,7 @@ struct DrawCallsList
 /// </summary>
 API_CLASS(Sealed) class FLAXENGINE_API RenderList : public ScriptingObject
 {
-DECLARE_SCRIPTING_TYPE(RenderList);
+    DECLARE_SCRIPTING_TYPE(RenderList);
 
     /// <summary>
     /// Allocates the new renderer list object or reuses already allocated one.
@@ -344,6 +356,10 @@ DECLARE_SCRIPTING_TYPE(RenderList);
     static void CleanupCache();
 
 public:
+    /// <summary>
+    /// All scenes for rendering.
+    /// </summary>
+    Array<SceneRendering*> Scenes;
 
     /// <summary>
     /// Draw calls list (for all draw passes).
@@ -440,19 +456,17 @@ public:
     /// <summary>
     /// Camera frustum corners in World Space
     /// </summary>
-    Vector3 FrustumCornersWs[8];
+    Float3 FrustumCornersWs[8];
 
     /// <summary>
     /// Camera frustum corners in View Space
     /// </summary>
-    Vector3 FrustumCornersVs[8];
+    Float3 FrustumCornersVs[8];
 
 private:
-
     DynamicVertexBuffer _instanceBuffer;
 
 public:
-
     /// <summary>
     /// Blends the postprocessing settings into the final options.
     /// </summary>
@@ -517,7 +531,6 @@ public:
     }
 
 public:
-
     /// <summary>
     /// Init cache for given task
     /// </summary>
@@ -530,7 +543,6 @@ public:
     void Clear();
 
 public:
-
     /// <summary>
     /// Adds the draw call to the draw lists.
     /// </summary>
@@ -564,9 +576,10 @@ public:
     /// </summary>
     /// <param name="renderContext">The rendering context.</param>
     /// <param name="listType">The collected draw calls list type.</param>
-    API_FUNCTION() FORCE_INLINE void ExecuteDrawCalls(API_PARAM(Ref) const RenderContext& renderContext, DrawCallsListType listType)
+    /// <param name="input">The input scene color. It's optional and used in forward/postFx rendering.</param>
+    API_FUNCTION() FORCE_INLINE void ExecuteDrawCalls(API_PARAM(Ref) const RenderContext& renderContext, DrawCallsListType listType, GPUTextureView* input = nullptr)
     {
-        ExecuteDrawCalls(renderContext, DrawCallsLists[(int32)listType]);
+        ExecuteDrawCalls(renderContext, DrawCallsLists[(int32)listType], input);
     }
 
     /// <summary>
@@ -574,7 +587,8 @@ public:
     /// </summary>
     /// <param name="renderContext">The rendering context.</param>
     /// <param name="list">The collected draw calls list.</param>
-    void ExecuteDrawCalls(const RenderContext& renderContext, DrawCallsList& list);
+    /// <param name="input">The input scene color. It's optional and used in forward/postFx rendering.</param>
+    void ExecuteDrawCalls(const RenderContext& renderContext, DrawCallsList& list, GPUTextureView* input = nullptr);
 };
 
 /// <summary>
@@ -582,12 +596,12 @@ public:
 /// </summary>
 struct FLAXENGINE_API InstanceData
 {
-    Vector3 InstanceOrigin;
+    Float3 InstanceOrigin;
     float PerInstanceRandom;
-    Vector3 InstanceTransform1;
+    Float3 InstanceTransform1;
     float LODDitherFactor;
-    Vector3 InstanceTransform2;
-    Vector3 InstanceTransform3;
+    Float3 InstanceTransform2;
+    Float3 InstanceTransform3;
     Half4 InstanceLightmapArea;
 };
 

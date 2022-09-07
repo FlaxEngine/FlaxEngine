@@ -151,27 +151,27 @@ namespace FlaxEditor.Options
         [DefaultValue(typeof(InputBinding), "Q")]
         [EditorDisplay("Viewport"), EditorOrder(1550)]
         public InputBinding Down = new InputBinding(KeyboardKeys.Q);
-        
+
         [DefaultValue(typeof(InputBinding), "Numpad0")]
         [EditorDisplay("Viewport"), EditorOrder(1600)]
         public InputBinding ViewpointFront = new InputBinding(KeyboardKeys.Numpad0);
-        
+
         [DefaultValue(typeof(InputBinding), "Numpad5")]
         [EditorDisplay("Viewport"), EditorOrder(1610)]
         public InputBinding ViewpointBack = new InputBinding(KeyboardKeys.Numpad5);
-        
+
         [DefaultValue(typeof(InputBinding), "Numpad4")]
         [EditorDisplay("Viewport"), EditorOrder(1620)]
         public InputBinding ViewpointLeft = new InputBinding(KeyboardKeys.Numpad4);
-        
+
         [DefaultValue(typeof(InputBinding), "Numpad6")]
         [EditorDisplay("Viewport"), EditorOrder(1630)]
         public InputBinding ViewpointRight = new InputBinding(KeyboardKeys.Numpad6);
-        
+
         [DefaultValue(typeof(InputBinding), "Numpad8")]
         [EditorDisplay("Viewport"), EditorOrder(1640)]
         public InputBinding ViewpointTop = new InputBinding(KeyboardKeys.Numpad8);
-        
+
         [DefaultValue(typeof(InputBinding), "Numpad2")]
         [EditorDisplay("Viewport"), EditorOrder(1650)]
         public InputBinding ViewpointBottom = new InputBinding(KeyboardKeys.Numpad2);

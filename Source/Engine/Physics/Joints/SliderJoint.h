@@ -29,14 +29,12 @@ DECLARE_ENUM_OPERATORS(SliderJointFlag);
 /// <seealso cref="Joint" />
 API_CLASS() class FLAXENGINE_API SliderJoint : public Joint
 {
-DECLARE_SCENE_OBJECT(SliderJoint);
+    DECLARE_SCENE_OBJECT(SliderJoint);
 private:
-
     SliderJointFlag _flags;
     LimitLinearRange _limit;
 
 public:
-
     /// <summary>
     /// Gets the joint mode flags. Controls joint behaviour.
     /// </summary>
@@ -72,7 +70,6 @@ public:
     API_PROPERTY() void SetLimit(const LimitLinearRange& value);
 
 public:
-
     /// <summary>
     /// Gets the current displacement of the joint along its axis.
     /// </summary>
@@ -84,7 +81,6 @@ public:
     API_PROPERTY() float GetCurrentVelocity() const;
 
 public:
-
     // [Joint]
 #if USE_EDITOR
     void OnDebugDrawSelected() override;
@@ -93,7 +89,6 @@ public:
     void Deserialize(DeserializeStream& stream, ISerializeModifier* modifier) override;
 
 protected:
-
     // [Joint]
     void* CreateJoint(const PhysicsJointDesc& desc) override;
 };

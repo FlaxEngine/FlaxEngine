@@ -422,6 +422,8 @@ bool SceneAnimationPlayer::TickPropertyTrack(int32 trackIndex, int32 stateIndexO
             return false;
 
         // Evaluate the curve
+        byte valueData[sizeof(Double4)];
+        void* curveDst = trackDataKeyframes->DataType == trackDataKeyframes->ValueType ? target : valueData;
         switch (trackDataKeyframes->DataType)
         {
 #define IMPL_CURVE(dataType, valueType) \
@@ -429,19 +431,49 @@ bool SceneAnimationPlayer::TickPropertyTrack(int32 trackIndex, int32 stateIndexO
     { \
         CurveBase<valueType, BezierCurveKeyframe<valueType>> volumeCurve; \
         CurveBase<valueType, BezierCurveKeyframe<valueType>>::KeyFrameData data((BezierCurveKeyframe<valueType>*)trackDataKeyframes->Keyframes, trackDataKeyframes->KeyframesCount); \
-        volumeCurve.Evaluate(data, *(valueType*)target, time, false); \
+        static_assert(sizeof(valueData) >= sizeof(valueType), "Invalid valueData size."); \
+        volumeCurve.Evaluate(data, *(valueType*)curveDst, time, false); \
         break; \
     }
         IMPL_CURVE(Float, float);
         IMPL_CURVE(Double, double);
-        IMPL_CURVE(Vector2, Vector2);
-        IMPL_CURVE(Vector3, Vector3);
-        IMPL_CURVE(Vector4, Vector4);
+        IMPL_CURVE(Float2, Float2);
+        IMPL_CURVE(Float3, Float3);
+        IMPL_CURVE(Float4, Float4);
+        IMPL_CURVE(Double2, Double2);
+        IMPL_CURVE(Double3, Double3);
+        IMPL_CURVE(Double4, Double4);
         IMPL_CURVE(Quaternion, Quaternion);
         IMPL_CURVE(Color, Color);
         IMPL_CURVE(Color32, Color32);
 #undef IMPL_CURVE
         default: ;
+        }
+        if (trackDataKeyframes->DataType != trackDataKeyframes->ValueType)
+        {
+            // Convert evaluated curve data into the runtime type (eg. when using animation saved with Vector3=Double3 and playing it in a build with Vector3=Float3)
+            switch (trackDataKeyframes->DataType)
+            {
+            // Assume just Vector type converting
+            case SceneAnimation::CurvePropertyTrack::DataTypes::Float2:
+                *(Double2*)target = *(Float2*)valueData;
+                break;
+            case SceneAnimation::CurvePropertyTrack::DataTypes::Float3:
+                *(Double3*)target = *(Float3*)valueData;
+                break;
+            case SceneAnimation::CurvePropertyTrack::DataTypes::Float4:
+                *(Double4*)target = *(Float4*)valueData;
+                break;
+            case SceneAnimation::CurvePropertyTrack::DataTypes::Double2:
+                *(Float2*)target = *(Double2*)valueData;
+                break;
+            case SceneAnimation::CurvePropertyTrack::DataTypes::Double3:
+                *(Float3*)target = *(Double3*)valueData;
+                break;
+            case SceneAnimation::CurvePropertyTrack::DataTypes::Double4:
+                *(Float4*)target = *(Double4*)valueData;
+                break;
+            }
         }
         break;
     }

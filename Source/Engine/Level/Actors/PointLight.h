@@ -11,15 +11,13 @@
 /// </summary>
 API_CLASS() class FLAXENGINE_API PointLight : public LightWithShadow
 {
-DECLARE_SCENE_OBJECT(PointLight);
+    DECLARE_SCENE_OBJECT(PointLight);
 private:
-
-    Vector3 _direction;
+    Float3 _direction;
     float _radius;
     int32 _sceneRenderingKey = -1;
 
 public:
-
     /// <summary>
     /// Light source bulb radius
     /// </summary>
@@ -63,7 +61,6 @@ public:
     float IESBrightnessScale = 1.0f;
 
 public:
-
     /// <summary>
     /// Computes light brightness value
     /// </summary>
@@ -91,11 +88,9 @@ public:
     API_PROPERTY() void SetRadius(float value);
 
 private:
-
     void UpdateBounds();
 
 public:
-
     // [LightWithShadow]
     void Draw(RenderContext& renderContext) override;
 #if USE_EDITOR
@@ -105,10 +100,9 @@ public:
     void OnLayerChanged() override;
     void Serialize(SerializeStream& stream, const void* otherObj) override;
     void Deserialize(DeserializeStream& stream, ISerializeModifier* modifier) override;
-    bool IntersectsItself(const Ray& ray, float& distance, Vector3& normal) override;
+    bool IntersectsItself(const Ray& ray, Real& distance, Vector3& normal) override;
 
 protected:
-
     // [LightWithShadow]
     void OnEnable() override;
     void OnDisable() override;

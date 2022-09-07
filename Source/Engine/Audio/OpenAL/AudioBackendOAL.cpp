@@ -20,7 +20,7 @@
 
 #define ALC_MULTIPLE_LISTENERS 0
 
-#define FLAX_POS_TO_OAL(vec) -vec.X * 0.01f,  vec.Y *  0.01f, -vec.Z * 0.01f
+#define FLAX_POS_TO_OAL(vec) ((ALfloat)vec.X * -0.01f), ((ALfloat)vec.Y * 0.01f), ((ALfloat)vec.Z * -0.01f)
 #if BUILD_RELEASE
 #define ALC_CHECK_ERROR(method)
 #else
@@ -367,10 +367,11 @@ void AudioBackendOAL::Source_PitchChanged(AudioSource* source)
 
 void AudioBackendOAL::Source_IsLoopingChanged(AudioSource* source)
 {
+    const bool loop = source->GetIsLooping() && !source->UseStreaming();
     ALC_FOR_EACH_CONTEXT()
         const uint32 sourceID = source->SourceIDs[i];
 
-        alSourcei(sourceID, AL_LOOPING, source->GetIsLooping());
+        alSourcei(sourceID, AL_LOOPING, loop);
     }
 }
 
@@ -398,8 +399,7 @@ void AudioBackendOAL::Source_ClipLoaded(AudioSource* source)
         return;
     const auto clip = source->Clip.Get();
     const bool is3D = source->Is3D();
-    const bool isStreamable = clip->IsStreamable();
-    const bool loop = source->GetIsLooping() && !isStreamable;
+    const bool loop = source->GetIsLooping() && !clip->IsStreamable();
 
     ALC_FOR_EACH_CONTEXT()
         const uint32 sourceID = source->SourceIDs[i];

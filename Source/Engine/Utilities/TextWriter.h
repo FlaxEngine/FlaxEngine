@@ -15,11 +15,9 @@ template<typename CharType>
 class TextWriter : public Object, public NonCopyable
 {
 private:
-
     MemoryWriteStream _buffer;
 
 public:
-
     /// <summary>
     /// Init with default capacity
     /// </summary>
@@ -37,7 +35,6 @@ public:
     }
 
 public:
-
     /// <summary>
     /// Gets writer private buffer
     /// </summary>
@@ -57,7 +54,6 @@ public:
     }
 
 public:
-
     /// <summary>
     /// Write line terminator sign
     /// </summary>
@@ -139,7 +135,6 @@ public:
     }
 
 public:
-
     /// <summary>
     /// Clear whole data
     /// </summary>
@@ -149,7 +144,6 @@ public:
     }
 
 public:
-
     // [Object]
     String ToString() const override
     {

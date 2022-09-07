@@ -12,8 +12,8 @@
 /// </summary>
 API_STRUCT() struct FLAXENGINE_API ModelInstanceEntry : ISerializable
 {
-API_AUTO_SERIALIZATION();
-DECLARE_SCRIPTING_TYPE_MINIMAL(ModelInstanceEntry);
+    API_AUTO_SERIALIZATION();
+    DECLARE_SCRIPTING_TYPE_MINIMAL(ModelInstanceEntry);
 
     /// <summary>
     /// The mesh surface material used for the rendering. If not assigned the default value will be used from the model asset.
@@ -36,8 +36,11 @@ DECLARE_SCRIPTING_TYPE_MINIMAL(ModelInstanceEntry);
     API_FIELD() bool ReceiveDecals = true;
 
 public:
-
     bool operator==(const ModelInstanceEntry& other) const;
+    FORCE_INLINE bool operator!=(const ModelInstanceEntry& other) const
+    {
+        return !operator==(other);
+    }
 };
 
 /// <summary>
@@ -46,7 +49,6 @@ public:
 class FLAXENGINE_API ModelInstanceEntries : public Array<ModelInstanceEntry>, public ISerializable
 {
 public:
-
     /// <summary>
     /// Determines whether buffer is valid for the given model.
     /// </summary>
@@ -62,7 +64,6 @@ public:
     bool IsValidFor(const SkinnedModel* model) const;
 
 public:
-
     /// <summary>
     /// Setup buffer for given model
     /// </summary>
@@ -113,7 +114,6 @@ public:
     bool HasContentLoaded() const;
 
 public:
-
     // [ISerializable]
     void Serialize(SerializeStream& stream, const void* otherObj) override;
     void Deserialize(DeserializeStream& stream, ISerializeModifier* modifier) override;

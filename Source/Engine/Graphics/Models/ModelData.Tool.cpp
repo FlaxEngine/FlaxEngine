@@ -141,7 +141,7 @@ bool MeshData::GenerateLightmapUVs()
     RemapArrayHelper(BlendWeights, vertexRemapArray);
     LightmapUVs.Resize(nTotalVerts, false);
     for (int32 i = 0; i < nTotalVerts; i++)
-        LightmapUVs[i] = *(Vector2*)&vb[i].uv;
+        LightmapUVs[i] = *(Float2*)&vb[i].uv;
     uint32* ibP = (uint32*)ib.data();
     for (int32 i = 0; i < Indices.Count(); i++)
         Indices[i] = *ibP++;
@@ -162,15 +162,15 @@ int32 FindVertex(const MeshData& mesh, int32 vertexIndex, int32 startIndex, int3
     const float uvEpsSqr = (1.0f / 250.0f) * (1.0f / 250.0f);
 
 #if USE_SPARIAL_SORT
-    const Vector3 vPosition = mesh.Positions[vertexIndex];
+    const Float3 vPosition = mesh.Positions[vertexIndex];
     spatialSort.FindPositions(*(aiVector3D*)&vPosition, 1e-4f, sparialSortCache);
     if (sparialSortCache.empty())
         return INVALID_INDEX;
 
-    const Vector2 vUV = mesh.UVs.HasItems() ? mesh.UVs[vertexIndex] : Vector2::Zero;
-    const Vector3 vNormal = mesh.Normals.HasItems() ? mesh.Normals[vertexIndex] : Vector3::Zero;
-    const Vector3 vTangent = mesh.Tangents.HasItems() ? mesh.Tangents[vertexIndex] : Vector3::Zero;
-    const Vector2 vLightmapUV = mesh.LightmapUVs.HasItems() ? mesh.LightmapUVs[vertexIndex] : Vector2::Zero;
+    const Float2 vUV = mesh.UVs.HasItems() ? mesh.UVs[vertexIndex] : Float2::Zero;
+    const Float3 vNormal = mesh.Normals.HasItems() ? mesh.Normals[vertexIndex] : Float3::Zero;
+    const Float3 vTangent = mesh.Tangents.HasItems() ? mesh.Tangents[vertexIndex] : Float3::Zero;
+    const Float2 vLightmapUV = mesh.LightmapUVs.HasItems() ? mesh.LightmapUVs[vertexIndex] : Float2::Zero;
     const int32 end = startIndex + searchRange;
 
     for (size_t i = 0; i < sparialSortCache.size(); i++)
@@ -179,25 +179,25 @@ int32 FindVertex(const MeshData& mesh, int32 vertexIndex, int32 startIndex, int3
         if (v < startIndex || v >= end)
             continue;
 #else
-	const Vector3 vPosition = mesh.Positions[vertexIndex];
-	const Vector2 vUV = mesh.UVs.HasItems() ? mesh.UVs[vertexIndex] : Vector2::Zero;
-	const Vector3 vNormal = mesh.Normals.HasItems() ? mesh.Normals[vertexIndex] : Vector3::Zero;
-	const Vector3 vTangent = mesh.Tangents.HasItems() ? mesh.Tangents[vertexIndex] : Vector3::Zero;
-	const Vector2 vLightmapUV = mesh.LightmapUVs.HasItems() ? mesh.LightmapUVs[vertexIndex] : Vector2::Zero;
+	const Float3 vPosition = mesh.Positions[vertexIndex];
+	const Float2 vUV = mesh.UVs.HasItems() ? mesh.UVs[vertexIndex] : Float2::Zero;
+	const Float3 vNormal = mesh.Normals.HasItems() ? mesh.Normals[vertexIndex] : Float3::Zero;
+	const Float3 vTangent = mesh.Tangents.HasItems() ? mesh.Tangents[vertexIndex] : Float3::Zero;
+	const Float2 vLightmapUV = mesh.LightmapUVs.HasItems() ? mesh.LightmapUVs[vertexIndex] : Float2::Zero;
 	const int32 end = startIndex + searchRange;
 
 	for (int32 v = startIndex; v < end; v++)
 	{
-		if (!Vector3::NearEqual(vPosition, mesh.Positions[v]))
+		if (!Float3::NearEqual(vPosition, mesh.Positions[v]))
 			continue;
 #endif
         if (mapping[v] == INVALID_INDEX)
             continue;
         if (mesh.UVs.HasItems() && (vUV - mesh.UVs[v]).LengthSquared() > uvEpsSqr)
             continue;
-        if (mesh.Normals.HasItems() && Vector3::Dot(vNormal, mesh.Normals[v]) < 0.98f)
+        if (mesh.Normals.HasItems() && Float3::Dot(vNormal, mesh.Normals[v]) < 0.98f)
             continue;
-        if (mesh.Tangents.HasItems() && Vector3::Dot(vTangent, mesh.Tangents[v]) < 0.98f)
+        if (mesh.Tangents.HasItems() && Float3::Dot(vTangent, mesh.Tangents[v]) < 0.98f)
             continue;
         if (mesh.LightmapUVs.HasItems() && (vLightmapUV - mesh.LightmapUVs[v]).LengthSquared() > uvEpsSqr)
             continue;
@@ -241,7 +241,7 @@ void MeshData::BuildIndexBuffer()
 #if USE_SPARIAL_SORT
     // Set up a SpatialSort to quickly find all vertices close to a given position
     Assimp::SpatialSort vertexFinder;
-    vertexFinder.Fill((const aiVector3D*)Positions.Get(), vertexCount, sizeof(Vector3));
+    vertexFinder.Fill((const aiVector3D*)Positions.Get(), vertexCount, sizeof(Float3));
     std::vector<unsigned int> sparialSortCache;
 #endif
 
@@ -315,13 +315,13 @@ void MeshData::BuildIndexBuffer()
     LOG(Info, "Generated index buffer for mesh in {0}s ({1} vertices, {2} indices)", Utilities::RoundTo2DecimalPlaces(endTime - startTime), Positions.Count(), Indices.Count());
 }
 
-void MeshData::FindPositions(const Vector3& position, float epsilon, Array<int32>& result)
+void MeshData::FindPositions(const Float3& position, float epsilon, Array<int32>& result)
 {
     result.Clear();
 
     for (int32 i = 0; i < Positions.Count(); i++)
     {
-        if (Vector3::NearEqual(position, Positions[i], epsilon))
+        if (Float3::NearEqual(position, Positions[i], epsilon))
             result.Add(i);
     }
 }
@@ -342,32 +342,32 @@ bool MeshData::GenerateNormals(float smoothingAngle)
     smoothingAngle = Math::Clamp(smoothingAngle, 0.0f, 175.0f);
 
     // Compute per-face normals but store them per-vertex
-    Vector3 min, max;
+    Float3 min, max;
     min = max = Positions[0];
     for (int32 i = 0; i < indexCount; i += 3)
     {
-        const Vector3 v1 = Positions[Indices[i + 0]];
-        const Vector3 v2 = Positions[Indices[i + 1]];
-        const Vector3 v3 = Positions[Indices[i + 2]];
-        const Vector3 n = ((v2 - v1) ^ (v3 - v1));
+        const Float3 v1 = Positions[Indices[i + 0]];
+        const Float3 v2 = Positions[Indices[i + 1]];
+        const Float3 v3 = Positions[Indices[i + 2]];
+        const Float3 n = ((v2 - v1) ^ (v3 - v1));
 
         Normals[Indices[i + 0]] = n;
         Normals[Indices[i + 1]] = n;
         Normals[Indices[i + 2]] = n;
 
-        Vector3::Min(min, v1, min);
-        Vector3::Min(min, v2, min);
-        Vector3::Min(min, v3, min);
+        Float3::Min(min, v1, min);
+        Float3::Min(min, v2, min);
+        Float3::Min(min, v3, min);
 
-        Vector3::Max(max, v1, max);
-        Vector3::Max(max, v2, max);
-        Vector3::Max(max, v3, max);
+        Float3::Max(max, v1, max);
+        Float3::Max(max, v2, max);
+        Float3::Max(max, v3, max);
     }
 
 #if USE_SPARIAL_SORT
     // Set up a SpatialSort to quickly find all vertices close to a given position
     Assimp::SpatialSort vertexFinder;
-    vertexFinder.Fill((const aiVector3D*)Positions.Get(), vertexCount, sizeof(Vector3));
+    vertexFinder.Fill((const aiVector3D*)Positions.Get(), vertexCount, sizeof(Float3));
     std::vector<uint32> verticesFound(16);
 #else
 	Array<int32> verticesFound(16);
@@ -396,7 +396,7 @@ bool MeshData::GenerateNormals(float smoothingAngle)
 #endif
 
             // Get the smooth normal
-            Vector3 n;
+            Float3 n;
             for (int32 a = 0; a < verticesFoundCount; a++)
                 n += Normals[verticesFound[a]];
             n.Normalize();
@@ -426,19 +426,19 @@ bool MeshData::GenerateNormals(float smoothingAngle)
 #endif
 
             // Get the smooth normal
-            Vector3 vr = Normals[i];
+            Float3 vr = Normals[i];
             const float vrlen = vr.Length();
-            Vector3 n;
+            Float3 n;
             for (int32 a = 0; a < verticesFoundCount; a++)
             {
-                Vector3 v = Normals[verticesFound[a]];
+                Float3 v = Normals[verticesFound[a]];
 
                 // Check whether the angle between the two normals is not too large
                 // TODO: use length squared?
                 if (v * vr >= limit * vrlen * v.Length())
                     n += v;
             }
-            Normals[i] = Vector3::Normalize(n);
+            Normals[i] = Float3::Normalize(n);
         }
     }
 
@@ -492,7 +492,7 @@ namespace
     {
         const auto meshData = (MeshData*)pContext->m_pUserData;
         const auto v = meshData->Indices[iFace * 3 + iVert];
-        meshData->Tangents[v] = Vector3(fvTangent);
+        meshData->Tangents[v] = Float3(fvTangent);
         meshData->BitangentSigns[v] = fSign;
     }
 }
@@ -536,31 +536,31 @@ bool MeshData::GenerateTangents(float smoothingAngle)
     vertexDone.Resize(vertexCount);
     vertexDone.SetAll(false);
 
-    const Vector3* meshNorm = Normals.Get();
-    const Vector2* meshTex = UVs.Get();
-    Vector3* meshTang = Tangents.Get();
+    const Float3* meshNorm = Normals.Get();
+    const Float2* meshTex = UVs.Get();
+    Float3* meshTang = Tangents.Get();
 
     // Calculate the tangent per-triangle
-    Vector3 min, max;
+    Float3 min, max;
     min = max = Positions[Indices[0]];
     for (int32 i = 0; i < indexCount; i += 3)
     {
         const int32 p0 = Indices[i + 0], p1 = Indices[i + 1], p2 = Indices[i + 2];
 
-        const Vector3 v0 = Positions[p0];
-        const Vector3 v1 = Positions[p1];
-        const Vector3 v2 = Positions[p2];
+        const Float3 v0 = Positions[p0];
+        const Float3 v1 = Positions[p1];
+        const Float3 v2 = Positions[p2];
 
-        Vector3::Min(min, v0, min);
-        Vector3::Min(min, v1, min);
-        Vector3::Min(min, v2, min);
+        Float3::Min(min, v0, min);
+        Float3::Min(min, v1, min);
+        Float3::Min(min, v2, min);
 
-        Vector3::Max(max, v0, max);
-        Vector3::Max(max, v1, max);
-        Vector3::Max(max, v2, max);
+        Float3::Max(max, v0, max);
+        Float3::Max(max, v1, max);
+        Float3::Max(max, v2, max);
 
         // Position differences p1->p2 and p1->p3
-        Vector3 v = v1 - v0, w = v2 - v0;
+        Float3 v = v1 - v0, w = v2 - v0;
 
         // Texture offset p1->p2 and p1->p3
         float sx = meshTex[p1].X - meshTex[p0].X, sy = meshTex[p1].Y - meshTex[p0].Y;
@@ -577,7 +577,7 @@ bool MeshData::GenerateTangents(float smoothingAngle)
 
         // Tangent points in the direction where to positive X axis of the texture coord's would point in model space
         // Bitangent's points along the positive Y axis of the texture coord's, respectively
-        Vector3 tangent, bitangent;
+        Float3 tangent, bitangent;
         tangent.X = (w.X * sy - v.X * ty) * dir;
         tangent.Y = (w.Y * sy - v.Y * ty) * dir;
         tangent.Z = (w.Z * sy - v.Z * ty) * dir;
@@ -591,8 +591,8 @@ bool MeshData::GenerateTangents(float smoothingAngle)
             const int32 p = Indices[i + b];
 
             // Project tangent and bitangent into the plane formed by the normal
-            Vector3 localTangent = tangent - meshNorm[p] * (tangent * meshNorm[p]);
-            Vector3 localBitangent = bitangent - meshNorm[p] * (bitangent * meshNorm[p]);
+            Float3 localTangent = tangent - meshNorm[p] * (tangent * meshNorm[p]);
+            Float3 localBitangent = bitangent - meshNorm[p] * (bitangent * meshNorm[p]);
             localTangent.Normalize();
             localBitangent.Normalize();
 
@@ -611,7 +611,7 @@ bool MeshData::GenerateTangents(float smoothingAngle)
 #if USE_SPARIAL_SORT
     // Set up a SpatialSort to quickly find all vertices close to a given position
     Assimp::SpatialSort vertexFinder;
-    vertexFinder.Fill((const aiVector3D*)Positions.Get(), vertexCount, sizeof(Vector3));
+    vertexFinder.Fill((const aiVector3D*)Positions.Get(), vertexCount, sizeof(Float3));
     std::vector<uint32> verticesFound(16);
 #else
 	Array<int32> verticesFound(16);
@@ -627,9 +627,9 @@ bool MeshData::GenerateTangents(float smoothingAngle)
         if (vertexDone[a])
             continue;
 
-        const Vector3 origPos = Positions[a];
-        const Vector3 origNorm = Normals[a];
-        const Vector3 origTang = Tangents[a];
+        const Float3 origPos = Positions[a];
+        const Float3 origNorm = Normals[a];
+        const Float3 origTang = Tangents[a];
         closeVertices.Clear();
 
         // Find all vertices close to that position
@@ -662,7 +662,7 @@ bool MeshData::GenerateTangents(float smoothingAngle)
         }
 
         // Smooth the tangents of all vertices that were found to be close enough
-        Vector3 smoothTangent(0, 0, 0), smoothBitangent(0, 0, 0);
+        Float3 smoothTangent(0, 0, 0), smoothBitangent(0, 0, 0);
         for (int32 b = 0; b < closeVertices.Count(); b++)
         {
             auto p = closeVertices[b];
@@ -875,10 +875,10 @@ float MeshData::CalculateTrianglesArea() const
     // TODO: use SIMD
     for (int32 i = 0; i + 2 < Indices.Count(); i += 3)
     {
-        const Vector3 v1 = Positions[Indices[i + 0]];
-        const Vector3 v2 = Positions[Indices[i + 1]];
-        const Vector3 v3 = Positions[Indices[i + 2]];
-        sum += Vector3::TriangleArea(v1, v2, v3);
+        const Float3 v1 = Positions[Indices[i + 0]];
+        const Float3 v2 = Positions[Indices[i + 1]];
+        const Float3 v3 = Positions[Indices[i + 2]];
+        sum += Float3::TriangleArea(v1, v2, v3);
     }
     return sum;
 }

@@ -298,8 +298,8 @@ namespace FlaxEngine.Networking
         /// </summary>
         public void WriteVector2(Vector2 value)
         {
-            WriteSingle(value.X);
-            WriteSingle(value.Y);
+            WriteSingle((float)value.X);
+            WriteSingle((float)value.Y);
         }
 
         /// <summary>
@@ -315,9 +315,9 @@ namespace FlaxEngine.Networking
         /// </summary>
         public void WriteVector3(Vector3 value)
         {
-            WriteSingle(value.X);
-            WriteSingle(value.Y);
-            WriteSingle(value.Z);
+            WriteSingle((float)value.X);
+            WriteSingle((float)value.Y);
+            WriteSingle((float)value.Z);
         }
 
         /// <summary>
@@ -333,10 +333,10 @@ namespace FlaxEngine.Networking
         /// </summary>
         public void WriteVector4(Vector4 value)
         {
-            WriteSingle(value.X);
-            WriteSingle(value.Y);
-            WriteSingle(value.Z);
-            WriteSingle(value.W);
+            WriteSingle((float)value.X);
+            WriteSingle((float)value.Y);
+            WriteSingle((float)value.Z);
+            WriteSingle((float)value.W);
         }
 
         /// <summary>

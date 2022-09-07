@@ -16,7 +16,6 @@
 class CreateCollisionData
 {
 public:
-
     /// <summary>
     /// Creates the CollisionData.
     /// </summary>

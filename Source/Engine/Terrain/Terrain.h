@@ -57,7 +57,7 @@ private:
     float _scaleInLightmap;
     float _lodDistribution;
     Vector3 _boundsExtent;
-    Vector3 _cachedScale;
+    Float3 _cachedScale;
     Array<TerrainPatch*, InlinedAllocation<64>> _patches;
 
 public:
@@ -441,12 +441,11 @@ public:
 
     // [PhysicsColliderActor]
     void Draw(RenderContext& renderContext) override;
-    void DrawGeneric(RenderContext& renderContext) override;
 #if USE_EDITOR
     void OnDebugDrawSelected() override;
 #endif
     void OnLayerChanged() override;
-    bool IntersectsItself(const Ray& ray, float& distance, Vector3& normal) override;
+    bool IntersectsItself(const Ray& ray, Real& distance, Vector3& normal) override;
     void Serialize(SerializeStream& stream, const void* otherObj) override;
     void Deserialize(DeserializeStream& stream, ISerializeModifier* modifier) override;
     RigidBody* GetAttachedRigidBody() const override;

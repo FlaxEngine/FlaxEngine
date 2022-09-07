@@ -17,20 +17,18 @@ class RigidBody;
 /// <seealso cref="PhysicsColliderActor" />
 API_CLASS(Abstract) class FLAXENGINE_API Collider : public PhysicsColliderActor
 {
-DECLARE_SCENE_OBJECT_ABSTRACT(Collider);
+    DECLARE_SCENE_OBJECT_ABSTRACT(Collider);
 protected:
-
     Vector3 _center;
     bool _isTrigger;
     void* _shape;
     void* _staticActor;
-    Vector3 _cachedScale;
+    Float3 _cachedScale;
     float _contactOffset;
     Vector3 _cachedLocalPosePos;
     Quaternion _cachedLocalPoseRot;
 
 public:
-
     /// <summary>
     /// Gets the native physics backend object.
     /// </summary>
@@ -97,7 +95,6 @@ public:
     AssetReference<JsonAsset> Material;
 
 public:
-
     /// <summary>
     /// Performs a raycast against this collider shape.
     /// </summary>
@@ -146,7 +143,6 @@ public:
     API_FUNCTION() static bool ComputePenetration(const Collider* colliderA, const Collider* colliderB, API_PARAM(Out) Vector3& direction, API_PARAM(Out) float& distance);
 
 public:
-
     /// <summary>
     /// Determines whether this collider can be attached the specified rigid body.
     /// </summary>
@@ -167,7 +163,6 @@ public:
     void Attach(RigidBody* rigidBody);
 
 protected:
-
     /// <summary>
     /// Updates the shape actor collisions/queries layer mask bits.
     /// </summary>
@@ -209,18 +204,15 @@ protected:
 #endif
 
 private:
-
     void OnMaterialChanged();
 
 public:
-
     // [PhysicsColliderActor]
     void Serialize(SerializeStream& stream, const void* otherObj) override;
     void Deserialize(DeserializeStream& stream, ISerializeModifier* modifier) override;
     RigidBody* GetAttachedRigidBody() const override;
 
 protected:
-
     // [PhysicsColliderActor]
 #if USE_EDITOR
     void OnEnable() override;

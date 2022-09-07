@@ -5,7 +5,7 @@
 #include "Terrain.h"
 #include "TerrainChunk.h"
 #include "Engine/Core/Math/Color32.h"
-#include "Engine/Core/Math/Int2.h"
+#include "Engine/Core/Math/Vector2.h"
 #include "Engine/Level/Scene/Lightmap.h"
 #include "Engine/Content/Assets/RawDataAsset.h"
 
@@ -35,7 +35,7 @@ private:
     int16 _x, _z;
     float _yOffset, _yHeight;
     BoundingBox _bounds;
-    Vector3 _offset;
+    Float3 _offset;
     AssetReference<RawDataAsset> _heightfield;
     void* _physicsShape;
     void* _physicsActor;
@@ -52,12 +52,12 @@ private:
     TextureBase::InitData* _dataSplatmap[TERRAIN_MAX_SPLATMAPS_COUNT] = {};
 #endif
 #if TERRAIN_USE_PHYSICS_DEBUG
-	Array<Vector3> _debugLines;
+	Array<Vector3> _debugLines; // TODO: large-worlds
 #endif
 #if USE_EDITOR
-    Array<Vector3> _collisionTriangles;
+    Array<Vector3> _collisionTriangles; // TODO: large-worlds
 #endif
-    Array<Vector3> _collisionVertices;
+    Array<Float3> _collisionVertices; // TODO: large-worlds
 
     void Init(Terrain* terrain, int16 x, int16 z);
 
@@ -365,7 +365,7 @@ public:
     /// </summary>
     /// <param name="vertexBuffer">The output vertex buffer.</param>
     /// <param name="indexBuffer">The output index buffer.</param>
-    void ExtractCollisionGeometry(Array<Vector3>& vertexBuffer, Array<int32>& indexBuffer);
+    void ExtractCollisionGeometry(Array<Float3>& vertexBuffer, Array<int32>& indexBuffer);
 
 private:
 

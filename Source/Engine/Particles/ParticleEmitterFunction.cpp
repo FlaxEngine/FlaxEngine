@@ -84,6 +84,8 @@ AssetChunksFlag ParticleEmitterFunction::getChunksToPreload() const
 
 bool ParticleEmitterFunction::LoadSurface(ParticleEmitterGraphCPU& graph)
 {
+    if (WaitForLoaded())
+        return true;
     ScopeLock lock(Locker);
     if (HasChunk(0))
     {
@@ -102,6 +104,8 @@ bool ParticleEmitterFunction::LoadSurface(ParticleEmitterGraphCPU& graph)
 BytesContainer ParticleEmitterFunction::LoadSurface()
 {
     BytesContainer result;
+    if (WaitForLoaded())
+        return result;
     ScopeLock lock(Locker);
     if (HasChunk(0))
     {
@@ -118,6 +122,8 @@ BytesContainer ParticleEmitterFunction::LoadSurface()
 
 bool ParticleEmitterFunction::LoadSurface(ParticleEmitterGraphGPU& graph)
 {
+    if (WaitForLoaded())
+        return true;
     ScopeLock lock(Locker);
     if (HasChunk(0))
     {

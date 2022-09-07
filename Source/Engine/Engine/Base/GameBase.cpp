@@ -175,7 +175,7 @@ Window* GameBase::CreateMainWindow()
     settings.AllowMaximize = true;
     settings.AllowMinimize = true;
     settings.Size = Platform::GetDesktopSize();
-    settings.Position = Vector2::Zero;
+    settings.Position = Float2::Zero;
 
     Game::InitMainWindowSettings(settings);
 
@@ -249,8 +249,8 @@ void GameBaseImpl::OnPostRender(GPUContext* context, RenderContext& renderContex
     const float height = imageArea.GetWidth() / aspectRatio;
     imageArea.Location.Y += (imageArea.GetHeight() - height) * 0.5f;
     imageArea.Size.Y = height;
-    imageArea.Location = Vector2::Ceil(imageArea.Location);
-    imageArea.Size = Vector2::Ceil(imageArea.Size);
+    imageArea.Location = Float2::Ceil(imageArea.Location);
+    imageArea.Size = Float2::Ceil(imageArea.Size);
 
     // Draw
     Render2D::Begin(GPUDevice::Instance->GetMainContext(), renderContext.Task->GetOutputView(), nullptr, viewport);

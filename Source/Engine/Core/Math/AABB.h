@@ -2,7 +2,7 @@
 
 #pragma once
 
-#include "../../Platform/Platform.h"
+#include "Engine/Platform/Platform.h"
 #include "Vector3.h"
 
 /// <summary>
@@ -11,7 +11,6 @@
 struct FLAXENGINE_API AABB
 {
 public:
-
     int32 MinX;
     int32 MaxX;
 
@@ -22,7 +21,6 @@ public:
     int32 MaxZ;
 
 public:
-
     AABB()
     {
         MinX = MAX_int32;
@@ -49,7 +47,6 @@ public:
     }
 
 public:
-
     int32 Width() const
     {
         return MaxX - MinX;
@@ -86,7 +83,6 @@ public:
     }
 
 public:
-
     void Clear()
     {
         MinX = MAX_int32;
@@ -102,7 +98,7 @@ public:
         Add(inCoordinate.X, inCoordinate.Y, inCoordinate.Z);
     }
 
-    void Add(float inX, float inY, float inZ)
+    void Add(Real inX, Real inY, Real inZ)
     {
         ASSERT(!isinf(inX) && !isnan(inX));
         ASSERT(!isinf(inY) && !isnan(inY));
@@ -163,13 +159,9 @@ public:
 
     AABB Translated(const Vector3& translation) const
     {
-        return AABB(MinX + translation.X,
-                    MinY + translation.Y,
-                    MinZ + translation.Z,
-
-                    MaxX + translation.X,
-                    MaxY + translation.Y,
-                    MaxZ + translation.Z);
+        AABB result;
+        result.Translate(translation);
+        return result;
     }
 
     void Set(const AABB& other, const Vector3& translation)
@@ -184,7 +176,6 @@ public:
     }
 
 public:
-
     bool IsOutside(const AABB& other) const
     {
         return MaxX - other.MinX < 0 || MinX - other.MaxX > 0 ||

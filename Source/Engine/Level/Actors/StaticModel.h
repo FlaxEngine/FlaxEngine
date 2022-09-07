@@ -12,10 +12,8 @@
 /// </summary>
 API_CLASS() class FLAXENGINE_API StaticModel : public ModelInstanceActor
 {
-DECLARE_SCENE_OBJECT(StaticModel);
+    DECLARE_SCENE_OBJECT(StaticModel);
 private:
-
-    Matrix _world;
     GeometryDrawStateData _drawState;
     float _scaleInLightmap;
     float _boundsScale;
@@ -25,9 +23,9 @@ private:
     byte _vertexColorsCount;
     Array<Color32> _vertexColorsData[MODEL_MAX_LODS];
     GPUBuffer* _vertexColorsBuffer[MODEL_MAX_LODS];
+    Model* _residencyChangedModel = nullptr;
 
 public:
-
     /// <summary>
     /// Finalizes an instance of the <see cref="StaticModel"/> class.
     /// </summary>
@@ -51,16 +49,6 @@ public:
     LightmapEntry Lightmap;
 
 public:
-
-    /// <summary>
-    /// Gets the model world matrix transform.
-    /// </summary>
-    /// <param name="world">The result world matrix.</param>
-    FORCE_INLINE void GetWorld(Matrix* world) const
-    {
-        *world = _world;
-    }
-
     /// <summary>
     /// Gets the model scale in lightmap (applied to all the meshes).
     /// </summary>
@@ -179,25 +167,25 @@ public:
     API_FUNCTION() void RemoveVertexColors();
 
 private:
-
     void OnModelChanged();
     void OnModelLoaded();
+    void OnModelResidencyChanged();
     void UpdateBounds();
 
 public:
-
     // [ModelInstanceActor]
     bool HasContentLoaded() const override;
     void Draw(RenderContext& renderContext) override;
-    void DrawGeneric(RenderContext& renderContext) override;
-    bool IntersectsItself(const Ray& ray, float& distance, Vector3& normal) override;
+    bool IntersectsItself(const Ray& ray, Real& distance, Vector3& normal) override;
     void Serialize(SerializeStream& stream, const void* otherObj) override;
     void Deserialize(DeserializeStream& stream, ISerializeModifier* modifier) override;
-    bool IntersectsEntry(int32 entryIndex, const Ray& ray, float& distance, Vector3& normal) override;
-    bool IntersectsEntry(const Ray& ray, float& distance, Vector3& normal, int32& entryIndex) override;
+    bool IntersectsEntry(int32 entryIndex, const Ray& ray, Real& distance, Vector3& normal) override;
+    bool IntersectsEntry(const Ray& ray, Real& distance, Vector3& normal, int32& entryIndex) override;
 
 protected:
-
     // [ModelInstanceActor]
     void OnTransformChanged() override;
+    void OnEnable() override;
+    void OnDisable() override;
+    void WaitForModelLoad() override;
 };

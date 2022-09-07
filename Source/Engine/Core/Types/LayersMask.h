@@ -10,7 +10,7 @@
 /// </summary>
 API_STRUCT() struct FLAXENGINE_API LayersMask
 {
-DECLARE_SCRIPTING_TYPE_MINIMAL(LayersMask);
+    DECLARE_SCRIPTING_TYPE_MINIMAL(LayersMask);
 
     /// <summary>
     /// The layers selection mask.
@@ -18,7 +18,6 @@ DECLARE_SCRIPTING_TYPE_MINIMAL(LayersMask);
     API_FIELD() uint32 Mask = MAX_uint32;
 
 public:
-
     FORCE_INLINE LayersMask()
     {
     }

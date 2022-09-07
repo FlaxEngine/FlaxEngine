@@ -19,6 +19,8 @@
 #include "Engine/Debug/Exceptions/JsonParseException.h"
 #include "Engine/Profiler/ProfilerCPU.h"
 #include "Engine/Scripting/Scripting.h"
+#include "Engine/Scripting/ManagedCLR/MClass.h"
+#include "Engine/Scripting/ManagedCLR/MField.h"
 #include "Engine/Utilities/StringConverter.h"
 
 JsonAssetBase::JsonAssetBase(const SpawnParams& params, const AssetInfo* info)
@@ -41,6 +43,29 @@ String JsonAssetBase::GetData() const
     Data->Accept(writer);
 
     return String((const char*)buffer.GetString(), (int32)buffer.GetSize());
+}
+
+bool JsonAssetBase::Init(const StringView& dataTypeName, const StringAnsiView& dataJson)
+{
+    CHECK_RETURN(IsVirtual(), true);
+    unload(true);
+    DataTypeName = dataTypeName;
+    DataEngineBuild = FLAXENGINE_VERSION_BUILD;
+
+    // Parse json document
+    {
+        PROFILE_CPU_NAMED("Json.Parse");
+        Document.Parse(dataJson.Get(), dataJson.Length());
+    }
+    if (Document.HasParseError())
+    {
+        Log::JsonParseException(Document.GetParseError(), Document.GetErrorOffset());
+        return true;
+    }
+    Data = &Document;
+
+    // Load asset-specific data
+    return loadAsset() != LoadResult::Ok;
 }
 
 const String& JsonAssetBase::GetPath() const
@@ -112,6 +137,9 @@ void JsonAssetBase::GetReferences(Array<Guid>& output) const
 
 Asset::LoadResult JsonAssetBase::loadAsset()
 {
+    if (IsVirtual())
+        return LoadResult::Ok;
+
     // Load data (raw json file in editor, cooked asset in build game)
 #if USE_EDITOR
     BytesContainer data;
@@ -212,13 +240,11 @@ Asset::LoadResult JsonAsset::loadAsset()
 
     if (CreateInstance())
         return LoadResult::Failed;
+
 #if USE_EDITOR
-    if (Instance)
-    {
-        // Reload instance when module with this type gets reloaded
-        Level::ScriptsReloadStart.Bind<JsonAsset, &JsonAsset::OnScriptsReloadStart>(this);
-        Level::ScriptsReloaded.Bind<JsonAsset, &JsonAsset::OnScriptsReloaded>(this);
-    }
+    // Reload instance when module with this type gets reloaded
+    Level::ScriptsReloadStart.Bind<JsonAsset, &JsonAsset::OnScriptsReloadStart>(this);
+    Level::ScriptsReloaded.Bind<JsonAsset, &JsonAsset::OnScriptsReloaded>(this);
 #endif
 
     return LoadResult::Ok;
@@ -226,14 +252,11 @@ Asset::LoadResult JsonAsset::loadAsset()
 
 void JsonAsset::unload(bool isReloading)
 {
-    if (Instance)
-    {
 #if USE_EDITOR
-        Level::ScriptsReloadStart.Unbind<JsonAsset, &JsonAsset::OnScriptsReloadStart>(this);
-        Level::ScriptsReloaded.Unbind<JsonAsset, &JsonAsset::OnScriptsReloaded>(this);
+    Level::ScriptsReloadStart.Unbind<JsonAsset, &JsonAsset::OnScriptsReloadStart>(this);
+    Level::ScriptsReloaded.Unbind<JsonAsset, &JsonAsset::OnScriptsReloaded>(this);
 #endif
-        DeleteInstance();
-    }
+    DeleteInstance();
 
     JsonAssetBase::unload(isReloading);
 }
@@ -281,9 +304,17 @@ bool JsonAsset::CreateInstance()
 
 void JsonAsset::DeleteInstance()
 {
-    ASSERT_LOW_LAYER(Instance && _dtor);
-    InstanceType = ScriptingTypeHandle();
+    // C# instance
+    if (MObject* object = GetManagedInstance())
+    {
+        GetClass()->GetField("_instance")->SetValue(object, nullptr);
+    }
+
+    // C++ instance
+    if (!Instance || !_dtor)
+        return;
     _dtor(Instance);
+    InstanceType = ScriptingTypeHandle();
     Allocator::Free(Instance);
     Instance = nullptr;
     _dtor = nullptr;

@@ -18,8 +18,8 @@ namespace FlaxEngine.GUI
         private bool _autoWidth;
         private bool _autoHeight;
         private bool _autoFitText;
-        private Vector2 _textSize;
-        private Vector2 _autoFitTextRange = new Vector2(0.1f, 100.0f);
+        private Float2 _textSize;
+        private Float2 _autoFitTextRange = new Float2(0.1f, 100.0f);
 
         /// <summary>
         /// The font.
@@ -38,7 +38,7 @@ namespace FlaxEngine.GUI
                 if (_text != value)
                 {
                     _text = value;
-                    _textSize = Vector2.Zero;
+                    _textSize = Float2.Zero;
                     PerformLayout();
                 }
             }
@@ -89,7 +89,7 @@ namespace FlaxEngine.GUI
 
                     if (_autoWidth || _autoHeight || _autoFitText)
                     {
-                        _textSize = Vector2.Zero;
+                        _textSize = Float2.Zero;
                         PerformLayout();
                     }
                 }
@@ -169,8 +169,8 @@ namespace FlaxEngine.GUI
         /// Gets or sets the text scale range (min and max) for automatic fit text option. Can be used to constraint the text scale adjustment.
         /// </summary>
         [VisibleIf(nameof(AutoFitText))]
-        [EditorOrder(110), DefaultValue(typeof(Vector2), "0.1, 100"), Tooltip("The text scale range (min and max) for automatic fit text option. Can be used to constraint the text scale adjustment.")]
-        public Vector2 AutoFitTextRange
+        [EditorOrder(110), DefaultValue(typeof(Float2), "0.1, 100"), Tooltip("The text scale range (min and max) for automatic fit text option. Can be used to constraint the text scale adjustment.")]
+        public Float2 AutoFitTextRange
         {
             get => _autoFitTextRange;
             set => _autoFitTextRange = value;
@@ -205,10 +205,10 @@ namespace FlaxEngine.GUI
         {
             base.Draw();
 
-            var rect = new Rectangle(new Vector2(Margin.Left, Margin.Top), Size - Margin.Size);
+            var rect = new Rectangle(new Float2(Margin.Left, Margin.Top), Size - Margin.Size);
 
             if (ClipText)
-                Render2D.PushClip(new Rectangle(Vector2.Zero, Size));
+                Render2D.PushClip(new Rectangle(Float2.Zero, Size));
 
             var color = IsMouseOver || IsNavFocused ? TextColorHighlighted : TextColor;
 

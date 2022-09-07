@@ -17,6 +17,7 @@ SkyLight::SkyLight(const SpawnParams& params)
     : Light(params)
     , _radius(1000000.0f)
 {
+    _drawNoCulling = 1;
     Brightness = 2.0f;
     UpdateBounds();
 }
@@ -36,13 +37,18 @@ float SkyLight::GetScaledRadius() const
     return _radius * _transform.Scale.MaxValue();
 }
 
+CubeTexture* SkyLight::GetSource() const
+{
+    if (Mode == Modes::CaptureScene)
+        return _bakedProbe;
+    if (Mode == Modes::CustomTexture)
+        return CustomTexture.Get();
+    return nullptr;
+}
+
 void SkyLight::Bake(float timeout)
 {
-#if COMPILE_WITH_PROBES_BAKING
     ProbesRenderer::Bake(this, timeout);
-#else
-    LOG(Warning, "Baking probes is not supported.");
-#endif
 }
 
 void SkyLight::SetProbeData(TextureData& data)
@@ -99,19 +105,24 @@ void SkyLight::Draw(RenderContext& renderContext)
 {
     float brightness = Brightness;
     AdjustBrightness(renderContext.View, brightness);
+    const Float3 position = GetPosition() - renderContext.View.Origin;
     if ((renderContext.View.Flags & ViewFlags::SkyLights) != 0
+        && renderContext.View.Pass & DrawPass::GBuffer
         && brightness > ZeroTolerance
-        && (ViewDistance < ZeroTolerance || Vector3::DistanceSquared(renderContext.View.Position, GetPosition()) < ViewDistance * ViewDistance))
+        && (ViewDistance < ZeroTolerance || Vector3::DistanceSquared(renderContext.View.Position, position) < ViewDistance * ViewDistance))
     {
         RendererSkyLightData data;
-        data.Position = GetPosition();
-        data.Color = Color.ToVector3() * (Color.A * brightness);
+        data.Position = position;
+        data.Color = Color.ToFloat3() * (Color.A * brightness);
         data.VolumetricScatteringIntensity = VolumetricScatteringIntensity;
         data.CastVolumetricShadow = CastVolumetricShadow;
         data.RenderedVolumetricFog = 0;
-        data.AdditiveColor = AdditiveColor.ToVector3() * (AdditiveColor.A * brightness);
+        data.AdditiveColor = AdditiveColor.ToFloat3() * (AdditiveColor.A * brightness);
+        data.IndirectLightingIntensity = IndirectLightingIntensity;
         data.Radius = GetScaledRadius();
         data.Image = GetSource();
+        data.StaticFlags = GetStaticFlags();
+        data.ID = GetID();
         renderContext.List->SkyLights.Add(data);
     }
 }
@@ -170,7 +181,7 @@ bool SkyLight::HasContentLoaded() const
 
 void SkyLight::OnEnable()
 {
-    GetSceneRendering()->AddCommonNoCulling(this);
+    GetSceneRendering()->AddActor(this, _sceneRenderingKey);
 #if USE_EDITOR
     GetSceneRendering()->AddViewportIcon(this);
 #endif
@@ -184,7 +195,7 @@ void SkyLight::OnDisable()
 #if USE_EDITOR
     GetSceneRendering()->RemoveViewportIcon(this);
 #endif
-    GetSceneRendering()->RemoveCommonNoCulling(this);
+    GetSceneRendering()->RemoveActor(this, _sceneRenderingKey);
 
     // Base
     Light::OnDisable();

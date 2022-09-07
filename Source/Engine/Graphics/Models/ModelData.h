@@ -2,10 +2,8 @@
 
 #pragma once
 
-#include "Engine/Core/Common.h"
 #include "Engine/Core/Math/BoundingSphere.h"
 #include "Engine/Core/Math/BoundingBox.h"
-#include "Engine/Core/Math/Int4.h"
 #include "Engine/Serialization/Stream.h"
 #include "Engine/Graphics/Enums.h"
 #include "Types.h"
@@ -20,7 +18,6 @@
 class FLAXENGINE_API MeshData
 {
 public:
-
     /// <summary>
     /// The slot index in the model materials to use during rendering.
     /// </summary>
@@ -39,22 +36,22 @@ public:
     /// <summary>
     /// Mesh positions buffer
     /// </summary>
-    Array<Vector3> Positions;
+    Array<Float3> Positions;
 
     /// <summary>
     /// Texture coordinates
     /// </summary>
-    Array<Vector2> UVs;
+    Array<Float2> UVs;
 
     /// <summary>
     /// Normals vector
     /// </summary>
-    Array<Vector3> Normals;
+    Array<Float3> Normals;
 
     /// <summary>
     /// Tangents vectors
     /// </summary>
-    Array<Vector3> Tangents;
+    Array<Float3> Tangents;
 
     /// <summary>
     /// Bitangents vectors signs (used for bitangent reconstruction). Can be +1 or -1.
@@ -71,7 +68,7 @@ public:
     /// <summary>
     /// Lightmap UVs
     /// </summary>
-    Array<Vector2> LightmapUVs;
+    Array<Float2> LightmapUVs;
 
     /// <summary>
     /// Vertex colors
@@ -86,7 +83,7 @@ public:
     /// <summary>
     /// Skinned mesh index buffer (max 4 per bone)
     /// </summary>
-    Array<Vector4> BlendWeights;
+    Array<Float4> BlendWeights;
 
     /// <summary>
     /// Blend shapes used by this mesh
@@ -94,7 +91,6 @@ public:
     Array<BlendShape> BlendShapes;
 
 public:
-
     /// <summary>
     /// Determines whether this instance has any mesh data.
     /// </summary>
@@ -104,7 +100,6 @@ public:
     }
 
 public:
-
     /// <summary>
     /// Clear arrays
     /// </summary>
@@ -132,7 +127,6 @@ public:
     void Release();
 
 public:
-
     /// <summary>
     /// Init from model vertices array
     /// </summary>
@@ -187,7 +181,6 @@ public:
     void SetIndexBuffer(void* data, uint32 indicesCount);
 
 public:
-
     /// <summary>
     /// Pack mesh data to the stream
     /// </summary>
@@ -206,24 +199,15 @@ public:
     /// Calculate bounding box for the mesh
     /// </summary>
     /// <param name="result">Output box</param>
-    void CalculateBox(BoundingBox& result) const
-    {
-        if (Positions.HasItems())
-            BoundingBox::FromPoints(Positions.Get(), Positions.Count(), result);
-    }
+    void CalculateBox(BoundingBox& result) const;
 
     /// <summary>
     /// Calculate bounding sphere for the mesh
     /// </summary>
     /// <param name="result">Output sphere</param>
-    void CalculateSphere(BoundingSphere& result) const
-    {
-        if (Positions.HasItems())
-            BoundingSphere::FromPoints(Positions.Get(), Positions.Count(), result);
-    }
+    void CalculateSphere(BoundingSphere& result) const;
 
 public:
-
 #if COMPILE_WITH_MODEL_TOOL
 
     /// <summary>
@@ -243,7 +227,7 @@ public:
     /// <param name="position">The target position to check.</param>
     /// <param name="epsilon">The position comparision epsilon.</param>
     /// <param name="result">The output vertices indices array.</param>
-    void FindPositions(const Vector3& position, float epsilon, Array<int32>& result);
+    void FindPositions(const Float3& position, float epsilon, Array<int32>& result);
 
     /// <summary>
     /// Generates the normal vectors for the mesh geometry.
@@ -281,16 +265,7 @@ public:
     /// <summary>
     /// Normalizes the blend weights. Requires to have vertices with positions and blend weights setup.
     /// </summary>
-    void NormalizeBlendWeights()
-    {
-        ASSERT(Positions.Count() == BlendWeights.Count());
-        for (int32 i = 0; i < Positions.Count(); i++)
-        {
-            const float sum = BlendWeights[i].SumValues();
-            const float invSum = sum > ZeroTolerance ? 1.0f / sum : 0.0f;
-            BlendWeights[i] *= invSum;
-        }
-    }
+    void NormalizeBlendWeights();
 
     /// <summary>
     /// Merges this mesh data with the specified other mesh.
@@ -382,7 +357,6 @@ struct FLAXENGINE_API MaterialSlotEntry
 class FLAXENGINE_API ModelLodData
 {
 public:
-
     /// <summary>
     /// The screen size to switch LODs. Bottom limit of the model screen size to render this LOD.
     /// </summary>
@@ -394,7 +368,6 @@ public:
     Array<MeshData*> Meshes;
 
 public:
-
     /// <summary>
     /// Initializes a new instance of the <see cref="ModelLodData"/> class.
     /// </summary>
@@ -409,6 +382,11 @@ public:
     {
         Meshes.ClearDelete();
     }
+
+    /// <summary>
+    /// Gets the bounding box combined for all meshes in this model LOD.
+    /// </summary>
+    BoundingBox GetBox() const;
 };
 
 /// <summary>
@@ -417,7 +395,6 @@ public:
 class FLAXENGINE_API ModelData
 {
 public:
-
     /// <summary>
     /// The minimum screen size to draw model (the bottom limit).
     /// </summary>
@@ -449,7 +426,6 @@ public:
     AnimationData Animation;
 
 public:
-
     /// <summary>
     /// Initializes a new instance of the <see cref="ModelData"/> class.
     /// </summary>
@@ -458,7 +434,6 @@ public:
     }
 
 public:
-
     /// <summary>
     /// Gets the valid level of details count.
     /// </summary>
@@ -478,7 +453,6 @@ public:
     }
 
 public:
-
     /// <summary>
     /// Automatically calculates the screen size for every model LOD for a proper transitions.
     /// </summary>
@@ -491,7 +465,6 @@ public:
     void TransformBuffer(const Matrix& matrix);
 
 public:
-
     /// <summary>
     /// Pack mesh data to the header stream
     /// </summary>

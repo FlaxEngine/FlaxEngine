@@ -17,6 +17,7 @@
 #include "./Flax/LightingCommon.hlsl"
 #include "./Flax/ShadowsSampling.hlsl"
 #include "./Flax/GBuffer.hlsl"
+#include "./Flax/GI/DDGI.hlsl"
 
 struct SkyLightData
 {
@@ -55,6 +56,7 @@ float4 FrameJitterOffsets[8];
 LightData DirectionalLight;
 LightShadowData DirectionalLightShadow;
 SkyLightData SkyLight;
+DDGIData DDGI;
 
 META_CB_END
 
@@ -185,10 +187,8 @@ float ComputeVolumeShadowing(float3 worldPosition, bool isSpotLight)
 #endif
 
 META_PS(true, FEATURE_LEVEL_SM5)
-META_PERMUTATION_2(USE_TEMPORAL_REPROJECTION=0, USE_SHADOW=0)
-META_PERMUTATION_2(USE_TEMPORAL_REPROJECTION=1, USE_SHADOW=0)
-META_PERMUTATION_2(USE_TEMPORAL_REPROJECTION=0, USE_SHADOW=1)
-META_PERMUTATION_2(USE_TEMPORAL_REPROJECTION=1, USE_SHADOW=1)
+META_PERMUTATION_1(USE_SHADOW=0)
+META_PERMUTATION_1(USE_SHADOW=1)
 float4 PS_InjectLight(Quad_GS2PS input) : SV_Target0
 {
 	uint3 gridCoordinate = uint3(input.Vertex.Position.xy, input.LayerIndex);
@@ -197,18 +197,12 @@ float4 PS_InjectLight(Quad_GS2PS input) : SV_Target0
 	if (!all(gridCoordinate < GridSizeInt))
 		return 0;
 
-#if USE_TEMPORAL_REPROJECTION
 	float3 historyUV = GetVolumeUV(GetCellPositionWS(gridCoordinate, 0.5f), PrevWorldToClip);
 	float historyAlpha = HistoryWeight;
 	FLATTEN
 	if (any(historyUV < 0) || any(historyUV > 1))
-	{
 		historyAlpha = 0;
-	}
 	uint samplesCount = historyAlpha < 0.001f ? MissedHistorySamplesCount : 1;
-#else
-	uint samplesCount = 1;
-#endif
 
 	float NoL = 0;
 	float distanceAttenuation = 1;
@@ -254,10 +248,8 @@ float4 PS_InjectLight(Quad_GS2PS input) : SV_Target0
 RWTexture3D<float4> RWVBufferA : register(u0);
 RWTexture3D<float4> RWVBufferB : register(u1);
 
-#define THREADGROUP_SIZE 4
-
 META_CS(true, FEATURE_LEVEL_SM5)
-[numthreads(THREADGROUP_SIZE, THREADGROUP_SIZE, THREADGROUP_SIZE)]
+[numthreads(4, 4, 4)]
 void CS_Initialize(uint3 GroupId : SV_GroupID, uint3 DispatchThreadId : SV_DispatchThreadID, uint3 GroupThreadId : SV_GroupThreadID)
 {
 	uint3 gridCoordinate = DispatchThreadId;
@@ -293,33 +285,30 @@ Texture3D<float4> VBufferB : register(t1);
 Texture3D<float4> LightScatteringHistory : register(t2);
 Texture3D<float4> LocalShadowedLightScattering : register(t3);
 Texture2DArray ShadowMapCSM : register(t4);
+#if USE_DDGI
+Texture2D<snorm float4> ProbesState : register(t5);
+Texture2D<float4> ProbesDistance : register(t6);
+Texture2D<float4> ProbesIrradiance : register(t7);
+#else
 TextureCube SkyLightImage : register(t5);
-
-#define THREADGROUP_SIZE 4
+#endif
 
 META_CS(true, FEATURE_LEVEL_SM5)
-META_PERMUTATION_1(USE_TEMPORAL_REPROJECTION=0)
-META_PERMUTATION_1(USE_TEMPORAL_REPROJECTION=1)
-[numthreads(THREADGROUP_SIZE, THREADGROUP_SIZE, THREADGROUP_SIZE)]
+META_PERMUTATION_1(USE_DDGI=0)
+META_PERMUTATION_1(USE_DDGI=1)
+[numthreads(4, 4, 4)]
 void CS_LightScattering(uint3 GroupId : SV_GroupID, uint3 DispatchThreadId : SV_DispatchThreadID, uint3 GroupThreadId : SV_GroupThreadID)
 {
 	uint3 gridCoordinate = DispatchThreadId;
 	float3 lightScattering = 0;
 	uint samplesCount = 1;
-	
-#if USE_TEMPORAL_REPROJECTION
+
 	float3 historyUV = GetVolumeUV(GetCellPositionWS(gridCoordinate, 0.5f), PrevWorldToClip);
 	float historyAlpha = HistoryWeight;
-	
-	// Discard history if it lays outside the current view
 	FLATTEN
 	if (any(historyUV < 0) || any(historyUV > 1))
-	{
 		historyAlpha = 0;
-	}
-
 	samplesCount = historyAlpha < 0.001f && all(gridCoordinate < GridSizeInt) ? MissedHistorySamplesCount : 1;
-#endif
 
 	for (uint sampleIndex = 0; sampleIndex < samplesCount; sampleIndex++)
 	{
@@ -346,6 +335,11 @@ void CS_LightScattering(uint3 GroupId : SV_GroupID, uint3 DispatchThreadId : SV_
 			lightScattering += DirectionalLight.Color * (8 * shadow * GetPhase(PhaseG, dot(DirectionalLight.Direction, cameraVectorNormalized)));
 		}
 
+#if USE_DDGI
+        // Dynamic Diffuse Global Illumination
+        float3 irradiance = SampleDDGIIrradiance(DDGI, ProbesState, ProbesDistance, ProbesIrradiance, positionWS, cameraVectorNormalized, 0.0f, cellOffset.x);
+        lightScattering += float4(irradiance, 1);
+#else
 		// Sky light
 		if (SkyLight.VolumetricScatteringIntensity > 0)
 		{
@@ -353,6 +347,7 @@ void CS_LightScattering(uint3 GroupId : SV_GroupID, uint3 DispatchThreadId : SV_
 			skyLighting = skyLighting * SkyLight.MultiplyColor + SkyLight.AdditiveColor;
 			lightScattering += skyLighting * SkyLight.VolumetricScatteringIntensity;
 		}
+#endif
 	}
 	lightScattering /= (float)samplesCount;
 
@@ -363,15 +358,13 @@ void CS_LightScattering(uint3 GroupId : SV_GroupID, uint3 DispatchThreadId : SV_
 	float extinction = materialScatteringAndAbsorption.w + Luminance(materialScatteringAndAbsorption.xyz);
 	float3 materialEmissive = VBufferB[gridCoordinate].xyz;
 	float4 scatteringAndExtinction = float4(lightScattering * materialScatteringAndAbsorption.xyz + materialEmissive, extinction);
-	
-#if USE_TEMPORAL_REPROJECTION
+
 	BRANCH
 	if (historyAlpha > 0)
 	{
 		float4 historyScatteringAndExtinction = LightScatteringHistory.SampleLevel(SamplerLinearClamp, historyUV, 0);
 		scatteringAndExtinction = lerp(scatteringAndExtinction, historyScatteringAndExtinction, historyAlpha);
 	}
-#endif
 	
 	if (all(gridCoordinate < GridSizeInt))
 	{
@@ -386,10 +379,8 @@ RWTexture3D<float4> RWIntegratedLightScattering : register(u0);
 
 Texture3D<float4> LightScattering : register(t0);
 
-#define THREADGROUP_SIZE 8
-
 META_CS(true, FEATURE_LEVEL_SM5)
-[numthreads(THREADGROUP_SIZE, THREADGROUP_SIZE, 1)]
+[numthreads(8, 8, 1)]
 void CS_FinalIntegration(uint3 GroupId : SV_GroupID, uint3 DispatchThreadId : SV_DispatchThreadID, uint3 GroupThreadId : SV_GroupThreadID)
 {
 	uint3 gridCoordinate = DispatchThreadId;

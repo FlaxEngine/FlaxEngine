@@ -20,18 +20,18 @@ PACK_STRUCT(struct VolumeParticleMaterialShaderData {
     Matrix ViewMatrix;
     Matrix WorldMatrix;
     Matrix WorldMatrixInverseTransposed;
-    Vector3 ViewPos;
+    Float3 ViewPos;
     float ViewFar;
-    Vector3 ViewDir;
+    Float3 ViewDir;
     float TimeParam;
-    Vector4 ViewInfo;
-    Vector4 ScreenSize;
-    Vector3 GridSize;
+    Float4 ViewInfo;
+    Float4 ScreenSize;
+    Float3 GridSize;
     float PerInstanceRandom;
     float Dummy0;
     float VolumetricFogMaxDistance;
-    int ParticleStride;
-    int ParticleIndex;
+    int32 ParticleStride;
+    int32 ParticleIndex;
     });
 
 DrawPass VolumeParticleMaterialShader::GetDrawModes() const

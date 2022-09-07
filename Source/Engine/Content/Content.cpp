@@ -66,7 +66,6 @@ bool findAsset(const Guid& id, const String& directory, Array<String>& tmpCache,
 class ContentService : public EngineService
 {
 public:
-
     ContentService()
         : EngineService(TEXT("Content"), -600)
     {
@@ -167,6 +166,9 @@ void ContentService::Dispose()
     // Save assets registry before engine closing
     Cache.Save();
 
+    // Flush objects (some asset-related objects/references may be pending to delete)
+    ObjectsRemovalService::Flush();
+
     // Unload all remaining assets
     {
         ScopeLock lock(AssetsLocker);
@@ -230,7 +232,7 @@ bool Content::GetAssetInfo(const Guid& id, AssetInfo& info)
     auto diff = now - LastWorkspaceDiscovery;
     if (diff <= TimeSpan::FromSeconds(5))
     {
-        LOG(Warning, "Cannot perform workspace scan for '{1}'. Too often call. Time diff: {0} ms", static_cast<int32>(diff.GetTotalMilliseconds()), id);
+        //LOG(Warning, "Cannot perform workspace scan for '{1}'. Too often call. Time diff: {0} ms", static_cast<int32>(diff.GetTotalMilliseconds()), id);
         return false;
     }
     LastWorkspaceDiscovery = now;
@@ -251,7 +253,7 @@ bool Content::GetAssetInfo(const Guid& id, AssetInfo& info)
         return true;
     }
 
-    LOG(Warning, "Cannot find {0}.", id);
+    //LOG(Warning, "Cannot find {0}.", id);
     return false;
 
 #else
@@ -294,7 +296,7 @@ bool Content::GetAssetInfo(const StringView& path, AssetInfo& info)
             return Cache.FindAsset(path, info);
         }
     }
-        // Check for json resource
+    // Check for json resource
     else if (JsonStorageProxy::IsValidExtension(extension))
     {
         // Check Json storage layer
@@ -316,6 +318,11 @@ bool Content::GetAssetInfo(const StringView& path, AssetInfo& info)
     return Cache.FindAsset(path, info);
 
 #endif
+}
+
+String Content::GetEditorAssetPath(const Guid& id)
+{
+    return Cache.GetEditorAssetPath(id);
 }
 
 Array<Guid> Content::GetAllAssets()
@@ -461,12 +468,16 @@ Asset* Content::LoadAsync(const StringView& path, const ScriptingTypeHandle& typ
 Array<Asset*> Content::GetAssets()
 {
     Array<Asset*> assets;
+    AssetsLocker.Lock();
     Assets.GetValues(assets);
+    AssetsLocker.Unlock();
     return assets;
 }
 
 const Dictionary<Guid, Asset*>& Content::GetAssetsRaw()
 {
+    AssetsLocker.Lock();
+    AssetsLocker.Unlock();
     return Assets;
 }
 
@@ -863,6 +874,13 @@ void Content::onAssetUnload(Asset* asset)
     LoadedAssetsToInvoke.Remove(asset);
 }
 
+void Content::onAssetChangeId(Asset* asset, const Guid& oldId, const Guid& newId)
+{
+    ScopeLock locker(AssetsLocker);
+    Assets.Remove(oldId);
+    Assets.Add(newId, asset);
+}
+
 bool Content::IsAssetTypeIdInvalid(const ScriptingTypeHandle& type, const ScriptingTypeHandle& assetType)
 {
     // Skip if no restrictions for the type
@@ -1081,7 +1099,7 @@ bool findAsset(const Guid& id, const String& directory, Array<String>& tmpCache,
                     LOG(Error, "Cannot open file '{0}' error code: {1}", path, 0);
                 }
             }
-                // Check for json resource
+            // Check for json resource
             else if (JsonStorageProxy::IsValidExtension(extension))
             {
                 // Check Json storage layer

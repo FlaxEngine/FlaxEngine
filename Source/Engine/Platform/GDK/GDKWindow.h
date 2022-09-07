@@ -17,7 +17,7 @@ class FLAXENGINE_API GDKWindow : public WindowBase
 private:
 
     Windows::HWND _handle;
-    Vector2 _clientSize;
+    Float2 _clientSize;
 
 public:
 

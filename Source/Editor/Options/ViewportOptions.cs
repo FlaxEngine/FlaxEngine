@@ -24,7 +24,7 @@ namespace FlaxEditor.Options
         [DefaultValue(1.0f), Limit(0.01f, 100.0f)]
         [EditorDisplay("General"), EditorOrder(101), Tooltip("The mouse wheel sensitivity applied to zoom in orthographic mode.")]
         public float MouseWheelSensitivity { get; set; } = 1.0f;
-        
+
         /// <summary>
         /// Gets or sets the default movement speed for the viewport camera (must match the dropdown menu values in the viewport).
         /// </summary>
@@ -57,7 +57,7 @@ namespace FlaxEditor.Options
         /// Gets or sets if the panning direction is inverted for the viewport camera.
         /// </summary>
         [DefaultValue(false)]
-        [EditorDisplay("Defaults"), EditorOrder(150), Tooltip( "Invert the panning direction for the viewport camera." )]
+        [EditorDisplay("Defaults"), EditorOrder(150), Tooltip("Invert the panning direction for the viewport camera.")]
         public bool DefaultInvertPanning { get; set; } = false;
     }
 }

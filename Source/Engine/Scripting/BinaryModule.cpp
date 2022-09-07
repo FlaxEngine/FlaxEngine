@@ -15,6 +15,7 @@
 #include "MException.h"
 #include "Scripting.h"
 #include "Events.h"
+#include "StdTypesContainer.h"
 
 Dictionary<Pair<ScriptingTypeHandle, StringView>, void(*)(ScriptingObject*, void*, bool)> ScriptingEvents::EventsTable;
 Delegate<ScriptingObject*, Span<Variant>, ScriptingTypeHandle, StringView> ScriptingEvents::Event;
@@ -52,6 +53,16 @@ const ScriptingType& ScriptingTypeHandle::GetType() const
     ASSERT_LOW_LAYER(Module);
     return Module->Types[TypeIndex];
 }
+
+#if USE_MONO
+
+MonoClass* ScriptingTypeHandle::GetMonoClass() const
+{
+    ASSERT_LOW_LAYER(Module && Module->Types[TypeIndex].ManagedClass);
+    return Module->Types[TypeIndex].ManagedClass->GetNative();
+}
+
+#endif
 
 bool ScriptingTypeHandle::IsSubclassOf(ScriptingTypeHandle c) const
 {
@@ -560,6 +571,17 @@ String ScriptingType::ToString() const
     return String(Fullname.Get(), Fullname.Length());
 }
 
+StringAnsiView ScriptingType::GetName() const
+{
+    int32 lastDotIndex = Fullname.FindLast('.');
+    if (lastDotIndex != -1)
+    {
+        lastDotIndex++;
+        return StringAnsiView(Fullname.Get() + lastDotIndex, Fullname.Length() - lastDotIndex);
+    }
+    return Fullname;
+}
+
 ScriptingTypeInitializer::ScriptingTypeInitializer(BinaryModule* module, const StringAnsiView& fullname, int32 size, ScriptingType::InitRuntimeHandler initRuntime, ScriptingType::SpawnHandler spawn, ScriptingTypeInitializer* baseType, ScriptingType::SetupScriptVTableHandler setupScriptVTable, ScriptingType::SetupScriptObjectVTableHandler setupScriptObjectVTable, const ScriptingType::InterfaceImplementation* interfaces)
     : ScriptingTypeHandle(module, module->Types.Count())
 {
@@ -675,7 +697,7 @@ ManagedBinaryModule::ManagedBinaryModule(MAssembly* assembly)
     // Bind for C# assembly events
     assembly->Loading.Bind<ManagedBinaryModule, &ManagedBinaryModule::OnLoading>(this);
     assembly->Loaded.Bind<ManagedBinaryModule, &ManagedBinaryModule::OnLoaded>(this);
-    assembly->Unloading.Bind<ManagedBinaryModule, &ManagedBinaryModule::OnUnloading>(this);
+    assembly->Unloaded.Bind<ManagedBinaryModule, &ManagedBinaryModule::OnUnloaded>(this);
 
     if (Assembly->IsLoaded())
     {
@@ -765,6 +787,25 @@ namespace
         }
         return nullptr;
     }
+
+    bool VariantTypeEquals(const VariantType& type, MonoType* monoType)
+    {
+        MonoClass* monoClass = mono_class_from_mono_type(monoType);
+        if (MUtils::GetClass(type) != monoClass)
+        {
+            // Hack for Vector2/3/4 which alias with Float2/3/4 or Double2/3/4 (depending on USE_LARGE_WORLDS)
+            const auto& stdTypes = *StdTypesContainer::Instance();
+            if (monoClass == stdTypes.Vector2Class->GetNative() && (type.Type == VariantType::Float2 || type.Type == VariantType::Double2))
+                return true;
+            if (monoClass == stdTypes.Vector3Class->GetNative() && (type.Type == VariantType::Float3 || type.Type == VariantType::Double3))
+                return true;
+            if (monoClass == stdTypes.Vector4Class->GetNative() && (type.Type == VariantType::Float4 || type.Type == VariantType::Double4))
+                return true;
+
+            return false;
+        }
+        return true;
+    }
 }
 
 #endif
@@ -789,13 +830,13 @@ MMethod* ManagedBinaryModule::FindMethod(MClass* mclass, const ScriptingTypeMeth
         {
             auto& param = signature.Params[paramIdx];
             if (param.IsOut != (mono_signature_param_is_out(sig, paramIdx) != 0) ||
-                MUtils::GetClass(param.Type) != mono_class_from_mono_type(((MonoType**)sigParams)[paramIdx]))
+                !VariantTypeEquals(param.Type, ((MonoType**)sigParams)[paramIdx]))
             {
                 isValid = false;
                 break;
             }
         }
-        if (isValid && MUtils::GetClass(signature.ReturnType) == mono_class_from_mono_type(mono_signature_get_return_type(sig)))
+        if (isValid && VariantTypeEquals(signature.ReturnType, mono_signature_get_return_type(sig)))
             return method;
 #endif
     }
@@ -1054,7 +1095,7 @@ void ManagedBinaryModule::InitType(MClass* mclass)
 #endif
 }
 
-void ManagedBinaryModule::OnUnloading(MAssembly* assembly)
+void ManagedBinaryModule::OnUnloaded(MAssembly* assembly)
 {
     PROFILE_CPU();
 

@@ -14,17 +14,17 @@ public:
     /// <summary>
     /// The transformed top left corner.
     /// </summary>
-    Vector2 TopLeft;
+    Float2 TopLeft;
 
     /// <summary>
     /// The transformed X extent (right-left).
     /// </summary>
-    Vector2 ExtentX;
+    Float2 ExtentX;
 
     /// <summary>
     /// The transformed Y extent (bottom-top).
     /// </summary>
-    Vector2 ExtentY;
+    Float2 ExtentY;
 
 public:
 
@@ -52,7 +52,7 @@ public:
     /// <param name="topLeft">The top left corner.</param>
     /// <param name="extentX">The extent on X axis.</param>
     /// <param name="extentY">The extent on Y axis.</param>
-    RotatedRectangle(const Vector2& topLeft, const Vector2& extentX, const Vector2& extentY)
+    RotatedRectangle(const Float2& topLeft, const Float2& extentX, const Float2& extentY)
         : TopLeft(topLeft)
         , ExtentX(extentX)
         , ExtentY(extentY)
@@ -67,7 +67,7 @@ public:
     /// <returns>The bounds rectangle.</returns>
     Rectangle ToBoundingRect() const
     {
-        Vector2 points[4] =
+        Float2 points[4] =
         {
             TopLeft,
             TopLeft + ExtentX,
@@ -82,14 +82,14 @@ public:
     /// </summary>
     /// <param name="location">The location to test.</param>
     /// <returns><c>true</c> if the specified location is contained by this rotated rectangle; otherwise, <c>false</c>.</returns>
-    bool ContainsPoint(const Vector2& location) const
+    bool ContainsPoint(const Float2& location) const
     {
-        const Vector2 offset = location - TopLeft;
-        const float det = Vector2::Cross(ExtentX, ExtentY);
-        const float s = Vector2::Cross(offset, ExtentX) / -det;
+        const Float2 offset = location - TopLeft;
+        const float det = Float2::Cross(ExtentX, ExtentY);
+        const float s = Float2::Cross(offset, ExtentX) / -det;
         if (Math::IsInRange(s, 0.0f, 1.0f))
         {
-            const float t = Vector2::Cross(offset, ExtentY) / det;
+            const float t = Float2::Cross(offset, ExtentY) / det;
             return Math::IsInRange(t, 0.0f, 1.0f);
         }
         return false;

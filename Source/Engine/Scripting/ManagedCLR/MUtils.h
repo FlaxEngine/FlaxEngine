@@ -14,6 +14,8 @@
 #include <ThirdParty/mono-2.0/mono/metadata/object.h>
 #include <ThirdParty/mono-2.0/mono/metadata/appdomain.h>
 
+struct Version;
+
 namespace MUtils
 {
     extern FLAXENGINE_API StringView ToString(MonoString* str);
@@ -500,6 +502,9 @@ namespace MUtils
     }
 
     extern void* VariantToManagedArgPtr(Variant& value, const MType& type, bool& failed);
+    extern MonoObject* ToManaged(const Version& value);
+    extern Version ToNative(MonoObject* value);
+
 };
 
 #endif

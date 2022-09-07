@@ -82,7 +82,7 @@ namespace FlaxEditor.Content
         {
             return true;
         }
-        
+
         /// <summary>
         /// Determines whether this proxy can create items in the specified target location.
         /// </summary>

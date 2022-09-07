@@ -25,6 +25,11 @@ namespace
     Array<NavMeshRuntime*, InlinedAllocation<16>> NavMeshes;
 }
 
+NavMeshRuntime* NavMeshRuntime::Get()
+{
+    return NavMeshes.Count() != 0 ? NavMeshes[0] : nullptr;
+}
+
 NavMeshRuntime* NavMeshRuntime::Get(const StringView& navMeshName)
 {
     NavMeshRuntime* result = nullptr;
@@ -100,7 +105,7 @@ Color NavMeshRuntime::NavAreasColors[64];
 
 bool NavAgentProperties::operator==(const NavAgentProperties& other) const
 {
-    return Math::NearEqual(Radius, other.Radius) && Math::NearEqual(Height, other.Height) && Math::NearEqual(StepHeight, other.StepHeight) && Math::NearEqual(MaxSlopeAngle, other.MaxSlopeAngle);
+    return Math::NearEqual(Radius, other.Radius) && Math::NearEqual(Height, other.Height) && Math::NearEqual(StepHeight, other.StepHeight) && Math::NearEqual(MaxSlopeAngle, other.MaxSlopeAngle) && Math::NearEqual(MaxSpeed, other.MaxSpeed) && Math::NearEqual(CrowdSeparationWeight, other.CrowdSeparationWeight);
 }
 
 bool NavAgentMask::IsAgentSupported(int32 agentIndex) const
@@ -152,7 +157,6 @@ bool NavMeshProperties::operator==(const NavMeshProperties& other) const
 class NavigationService : public EngineService
 {
 public:
-
     NavigationService()
         : EngineService(TEXT("Navigation"), 60)
     {
@@ -211,7 +215,7 @@ void NavigationSettings::Apply()
         if (area.Id < DT_MAX_AREAS)
         {
             NavMeshRuntime::NavAreasCosts[area.Id] = area.Cost;
-#if USE_EDITOR
+#if COMPILE_WITH_DEBUG_DRAW
             NavMeshRuntime::NavAreasColors[area.Id] = area.Color;
 #endif
         }

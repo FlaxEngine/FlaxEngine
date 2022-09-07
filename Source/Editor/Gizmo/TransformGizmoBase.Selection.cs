@@ -1,5 +1,11 @@
 // Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
+#if USE_LARGE_WORLDS
+using Real = System.Double;
+#else
+using Real = System.Single;
+#endif
+
 using FlaxEngine;
 
 namespace FlaxEditor.Gizmo
@@ -27,7 +33,7 @@ namespace FlaxEditor.Gizmo
             return center / count;
         }
 
-        private bool IntersectsRotateCircle(Vector3 normal, ref Ray ray, out float distance)
+        private bool IntersectsRotateCircle(Vector3 normal, ref Ray ray, out Real distance)
         {
             var plane = new Plane(Vector3.Zero, normal);
 
@@ -35,7 +41,7 @@ namespace FlaxEditor.Gizmo
                 return false;
             Vector3 hitPoint = ray.Position + ray.Direction * distance;
 
-            float distanceNormalized = hitPoint.Length / RotateRadiusRaw;
+            Real distanceNormalized = hitPoint.Length / RotateRadiusRaw;
             return Mathf.IsInRange(distanceNormalized, 0.9f, 1.1f);
         }
 
@@ -46,13 +52,12 @@ namespace FlaxEditor.Gizmo
 
             // Transform ray into local space of the gizmo
             Ray localRay;
-            Matrix.Invert(ref _gizmoWorld, out Matrix invGizmoWorld);
-            Vector3.TransformNormal(ref ray.Direction, ref invGizmoWorld, out localRay.Direction);
-            Vector3.Transform(ref ray.Position, ref invGizmoWorld, out localRay.Position);
+            _gizmoWorld.WorldToLocalVector(ref ray.Direction, out localRay.Direction);
+            _gizmoWorld.WorldToLocal(ref ray.Position, out localRay.Position);
 
             // Find gizmo collisions with mouse
-            float closestIntersection = float.MaxValue;
-            float intersection;
+            Real closestIntersection = Real.MaxValue;
+            Real intersection;
             _activeAxis = Axis.None;
             switch (_activeMode)
             {

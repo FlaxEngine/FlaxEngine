@@ -32,7 +32,7 @@ namespace FlaxEngine.GUI
         }
 
         /// <inheritdoc />
-        public Vector2 Size => Vector2.One;
+        public Float2 Size => Float2.One;
 
         /// <inheritdoc />
         public void Draw(Rectangle rect, Color color)

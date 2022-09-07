@@ -88,10 +88,10 @@ void FoliageCluster::UpdateCullDistance()
     }
 }
 
-bool FoliageCluster::Intersects(Foliage* foliage, const Ray& ray, float& distance, Vector3& normal, FoliageInstance*& instance)
+bool FoliageCluster::Intersects(Foliage* foliage, const Ray& ray, Real& distance, Vector3& normal, FoliageInstance*& instance)
 {
     bool result = false;
-    float minDistance = MAX_float;
+    Real minDistance = MAX_Real;
     Vector3 minDistanceNormal = Vector3::Up;
     FoliageInstance* minInstance = nullptr;
 
@@ -118,7 +118,8 @@ bool FoliageCluster::Intersects(Foliage* foliage, const Ray& ray, float& distanc
         {
             auto& ii = *Instances[i];
             auto& type = foliage->FoliageTypes[ii.Type];
-            if (type.IsReady() && ii.Bounds.Intersects(ray) && type.Model->Intersects(ray, ii.World, distance, normal, &mesh) && minDistance > distance)
+            const Transform transform = foliage->GetTransform().LocalToWorld(ii.Transform);
+            if (type.IsReady() && ii.Bounds.Intersects(ray) && type.Model->Intersects(ray, transform, distance, normal, &mesh) && minDistance > distance)
             {
                 minDistanceNormal = normal;
                 minDistance = distance;

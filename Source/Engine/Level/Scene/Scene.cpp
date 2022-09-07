@@ -60,7 +60,6 @@ NavMeshBoundsVolume* SceneNavigation::FindNavigationBoundsOverlap(const Bounding
 
 Scene::Scene(const SpawnParams& params)
     : Actor(params)
-    , Rendering(this)
     , LightmapsData(this)
     , CSGData(this)
 {
@@ -340,24 +339,13 @@ void Scene::OnDeleteObject()
     Actor::OnDeleteObject();
 }
 
-void Scene::PostLoad()
+void Scene::Initialize()
 {
     // Initialize
     _parent = nullptr;
     _scene = this;
 
-    // Base
-    Actor::PostLoad();
-}
-
-void Scene::PostSpawn()
-{
-    // Initialize
-    _parent = nullptr;
-    _scene = this;
-
-    // Base
-    Actor::PostSpawn();
+    Actor::Initialize();
 }
 
 void Scene::BeginPlay(SceneBeginData* data)

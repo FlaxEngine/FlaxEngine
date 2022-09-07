@@ -11,6 +11,7 @@
 #include "Engine/Content/Assets/Shader.h"
 #include "Engine/Content/Assets/Material.h"
 #include "Engine/Content/Content.h"
+#include "Engine/Content/SoftAssetReference.h"
 #include "Engine/Platform/Windows/WindowsWindow.h"
 #include "Engine/Render2D/Render2D.h"
 #include "Engine/Engine/CommandLine.h"
@@ -19,7 +20,6 @@
 #include "Engine/Profiler/Profiler.h"
 #include "Engine/Renderer/RenderList.h"
 #include "Engine/Core/Utilities.h"
-#include "Engine/Scripting/SoftObjectReference.h"
 
 GPUPipelineState* GPUPipelineState::Spawn(const SpawnParams& params)
 {
@@ -184,8 +184,9 @@ GPUResource::GPUResource(const SpawnParams& params)
 
 GPUResource::~GPUResource()
 {
-#if !BUILD_RELEASE
-    ASSERT(_memoryUsage == 0);
+#if !BUILD_RELEASE && GPU_ENABLE_RESOURCE_NAMING
+    if (_memoryUsage != 0)
+        LOG(Error, "{0} '{1}' has not been disposed before destruction", ScriptingObject::ToString(), _name);
 #endif
 }
 
@@ -203,7 +204,12 @@ uint64 GPUResource::GetMemoryUsage() const
 
 String GPUResource::GetName() const
 {
-    return String::Empty;
+    return _name;
+}
+
+void GPUResource::SetName(const StringView& name)
+{
+    _name = name;
 }
 
 #endif
@@ -231,10 +237,10 @@ void GPUResource::OnReleaseGPU()
 String GPUResource::ToString() const
 {
 #if GPU_ENABLE_RESOURCE_NAMING
-    return GetName();
-#else
-    return TEXT("GPU Resource");
+    if (_name.HasChars())
+        return _name;
 #endif
+    return ScriptingObject::ToString();
 }
 
 void GPUResource::OnDeleteObject()
@@ -253,7 +259,7 @@ struct GPUDevice::PrivateData
     GPUPipelineState* PS_Clear = nullptr;
     GPUBuffer* FullscreenTriangleVB = nullptr;
     AssetReference<Material> DefaultMaterial;
-    SoftObjectReference<Material> DefaultDeformableMaterial;
+    SoftAssetReference<Material> DefaultDeformableMaterial;
     AssetReference<Texture> DefaultNormalMap;
     AssetReference<Texture> DefaultWhiteTexture;
     AssetReference<Texture> DefaultBlackTexture;

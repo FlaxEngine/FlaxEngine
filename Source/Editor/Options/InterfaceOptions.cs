@@ -37,7 +37,7 @@ namespace FlaxEditor.Options
             /// </summary>
             TimeSinceStartup,
         }
-    
+
         /// <summary>
         /// A proxy DockState for window open method.
         /// </summary>
@@ -47,27 +47,27 @@ namespace FlaxEditor.Options
             /// The floating window.
             /// </summary>
             Float = DockState.Float,
-            
+
             /// <summary>
             /// The dock fill as a tab.
             /// </summary>
             DockFill = DockState.DockFill,
-            
+
             /// <summary>
             /// The dock left.
             /// </summary>
             DockLeft = DockState.DockLeft,
-            
+
             /// <summary>
             /// The dock right.
             /// </summary>
             DockRight = DockState.DockRight,
-            
+
             /// <summary>
             /// The dock top.
             /// </summary>
             DockTop = DockState.DockTop,
-            
+
             /// <summary>
             /// The dock bottom.
             /// </summary>
@@ -112,14 +112,14 @@ namespace FlaxEditor.Options
         [DefaultValue(DockStateProxy.Float)]
         [EditorDisplay("Interface", "New Window Location"), EditorOrder(150), Tooltip("Define the opening method for new windows, open in a new tab by default.")]
         public DockStateProxy NewWindowLocation { get; set; } = DockStateProxy.Float;
-        
+
         /// <summary>
         /// Gets or sets the timestamps prefix mode for debug log messages.
         /// </summary>
         [DefaultValue(TimestampsFormats.None)]
         [EditorDisplay("Interface"), EditorOrder(210), Tooltip("The timestamps prefix mode for debug log messages.")]
         public TimestampsFormats DebugLogTimestampsFormat { get; set; } = TimestampsFormats.None;
-        
+
         /// <summary>
         /// Gets or sets the editor icons scale. Editor restart required.
         /// </summary>
@@ -171,9 +171,9 @@ namespace FlaxEditor.Options
         /// <summary>
         /// Gets or sets the output log text shadow offset. Set to 0 to disable this feature.
         /// </summary>
-        [DefaultValue(typeof(Vector2), "1,1")]
+        [DefaultValue(typeof(Float2), "1,1")]
         [EditorDisplay("Output Log", "Text Shadow Offset"), EditorOrder(340), Tooltip("The output log text shadow offset. Set to 0 to disable this feature.")]
-        public Vector2 OutputLogTextShadowOffset { get; set; } = new Vector2(1);
+        public Float2 OutputLogTextShadowOffset { get; set; } = new Float2(1);
 
         /// <summary>
         /// Gets or sets a value indicating whether auto-focus output log window on code compilation error.

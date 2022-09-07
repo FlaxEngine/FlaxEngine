@@ -12,7 +12,6 @@
 class FLAXENGINE_API IAssetUpgrader
 {
 public:
-
     /// <summary>
     /// Finalizes an instance of the <see cref="IAssetUpgrader"/> class.
     /// </summary>
@@ -21,7 +20,6 @@ public:
     }
 
 public:
-
     /// <summary>
     /// Checks if given asset version should be converted.
     /// </summary>

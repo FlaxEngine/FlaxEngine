@@ -25,7 +25,7 @@ void PS_GBuffer(
 #endif
 	)
 {
-	Light = 0;
+	Light = float4(0, 0, 0, 1);
 	
 #if USE_DITHERED_LOD_TRANSITION
 	// LOD masking

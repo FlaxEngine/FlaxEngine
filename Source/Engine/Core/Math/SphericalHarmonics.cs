@@ -59,7 +59,7 @@ namespace FlaxEngine
         /// </summary>
         /// <param name="direction">The direction</param>
         /// <returns>The value of the spherical harmonics in the direction</returns>
-        public abstract TDataType Evaluate(Vector3 direction);
+        public abstract TDataType Evaluate(Float3 direction);
 
         /// <summary>
         /// Returns the coefficient x{l,m} of the spherical harmonics (the {l,m} spherical coordinate corresponding to the spherical base Y{l,m}).
@@ -165,7 +165,7 @@ namespace FlaxEngine
         /// </summary>
         /// <param name="direction">The direction to evaluate.</param>
         /// <returns>The color computed for this direction.</returns>
-        public override Color Evaluate(Vector3 direction)
+        public override Color Evaluate(Float3 direction)
         {
             var x = direction.X;
             var y = direction.Y;

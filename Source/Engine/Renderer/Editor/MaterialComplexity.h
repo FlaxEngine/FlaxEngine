@@ -25,6 +25,7 @@ private:
         MaterialDomain Domain;
         AssetReference<Material> MaterialAsset;
         const MaterialInfo& GetInfo() const override;
+        GPUShader* GetShader() const override;
         bool IsReady() const override;
         bool CanUseInstancing(InstancingHandler& handler) const override;
         DrawPass GetDrawModes() const override;

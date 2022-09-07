@@ -94,19 +94,8 @@ namespace FlaxEditor.Content
         {
             if (_preview == null)
             {
-                _preview = new PrefabPreview(false)
-                {
-                    RenderOnlyWithWindow = false,
-                    UseAutomaticTaskManagement = false,
-                    AnchorPreset = AnchorPresets.StretchAll,
-                    Offsets = Margin.Zero,
-                };
-                _preview.Task.Enabled = false;
-
-                var eyeAdaptation = _preview.PostFxVolume.EyeAdaptation;
-                eyeAdaptation.Mode = EyeAdaptationMode.None;
-                eyeAdaptation.OverrideFlags |= EyeAdaptationSettingsOverride.Mode;
-                _preview.PostFxVolume.EyeAdaptation = eyeAdaptation;
+                _preview = new PrefabPreview(false);
+                InitAssetPreview(_preview);
             }
 
             // TODO: disable streaming for asset during thumbnail rendering (and restore it after)
@@ -141,7 +130,7 @@ namespace FlaxEditor.Content
         {
             _preview.Prefab = (Prefab)request.Asset;
             _preview.Parent = guiRoot;
-            _preview.Scale = Vector2.One;
+            _preview.Scale = Float2.One;
             _preview.ShowDefaultSceneActors = true;
             _preview.SyncBackbufferSize();
 
@@ -149,7 +138,7 @@ namespace FlaxEditor.Content
             if (_preview.Instance is UIControl uiControl && uiControl.HasControl)
             {
                 // Ensure to place UI in a proper way
-                uiControl.Control.Location = Vector2.Zero;
+                uiControl.Control.Location = Float2.Zero;
                 uiControl.Control.Scale *= PreviewsCache.AssetIconSize / uiControl.Control.Size.MaxValue;
                 uiControl.Control.AnchorPreset = AnchorPresets.TopLeft;
                 uiControl.Control.AnchorPreset = AnchorPresets.MiddleCenter;
@@ -165,8 +154,8 @@ namespace FlaxEditor.Content
                 // Auto fit actor to camera
                 float targetSize = 30.0f;
                 var bounds = _preview.Instance.EditorBoxChildren;
-                float maxSize = Mathf.Max(0.001f, bounds.Size.MaxValue);
-                _preview.Instance.Scale = new Vector3(targetSize / maxSize);
+                var maxSize = Math.Max(0.001f, (float)bounds.Size.MaxValue);
+                _preview.Instance.Scale = new Float3(targetSize / maxSize);
                 _preview.Instance.Position = Vector3.Zero;
             }
 

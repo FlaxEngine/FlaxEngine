@@ -53,7 +53,7 @@ namespace FlaxEngine
         /// <param name="direction">Camera's direction vector</param>
         /// <param name="up">Camera's up vector</param>
         /// <param name="angle">Camera's FOV angle (in degrees)</param>
-        public void SetProjector(float nearPlane, float farPlane, Vector3 position, Vector3 direction, Vector3 up, float angle)
+        public void SetProjector(float nearPlane, float farPlane, Float3 position, Float3 direction, Float3 up, float angle)
         {
             // Copy data
             Near = nearPlane;
@@ -63,11 +63,11 @@ namespace FlaxEngine
             // Create projection matrix
             Matrix.PerspectiveFov(angle * Mathf.DegreesToRadians, 1.0f, nearPlane, farPlane, out Projection);
             NonJitteredProjection = Projection;
-            TemporalAAJitter = Vector4.Zero;
+            TemporalAAJitter = Float4.Zero;
 
             // Create view matrix
             Direction = direction;
-            Vector3 target = Position + Direction;
+            var target = Position + Direction;
             Matrix.LookAt(ref Position, ref target, ref up, out View);
 
             UpdateCachedData();
@@ -79,36 +79,40 @@ namespace FlaxEngine
         /// <param name="camera">The camera.</param>
         public void CopyFrom(Camera camera)
         {
-            Position = camera.Position;
-            Direction = camera.Direction;
-            Near = camera.NearPlane;
-            Far = camera.FarPlane;
-            View = camera.View;
-            Projection = camera.Projection;
-            NonJitteredProjection = Projection;
-            TemporalAAJitter = Vector4.Zero;
-            RenderLayersMask = camera.RenderLayersMask;
-
-            UpdateCachedData();
+            var viewport = camera.Viewport;
+            CopyFrom(camera, ref viewport);
         }
 
         /// <summary>
         /// Copies render view data from the camera.
         /// </summary>
         /// <param name="camera">The camera.</param>
-        /// <param name="customViewport">The custom viewport to use for view/projeection matrices override.</param>
-        public void CopyFrom(Camera camera, ref Viewport customViewport)
+        /// <param name="viewport">The custom viewport to use for view/projeection matrices override.</param>
+        public void CopyFrom(Camera camera, ref Viewport viewport)
         {
-            Position = camera.Position;
+            Vector3 cameraPos = camera.Position;
+            LargeWorlds.UpdateOrigin(ref Origin, cameraPos);
+            Position = cameraPos - Origin;
             Direction = camera.Direction;
             Near = camera.NearPlane;
             Far = camera.FarPlane;
-            camera.GetMatrices(out View, out Projection, ref customViewport);
+            camera.GetMatrices(out View, out Projection, ref viewport, ref Origin);
             NonJitteredProjection = Projection;
-            TemporalAAJitter = Vector4.Zero;
+            TemporalAAJitter = Float4.Zero;
             RenderLayersMask = camera.RenderLayersMask;
 
             UpdateCachedData();
+        }
+
+        /// <summary>
+        /// Calculates the world matrix for the given transformation instance rendering.
+        /// </summary>
+        /// <param name="transform">The object transformation.</param>
+        /// <param name="world">The output matrix.</param>
+        public void GetWorldMatrix(ref Transform transform, out Matrix world)
+        {
+            Float3 translation = transform.Translation - Origin;
+            Matrix.Transformation(ref transform.Scale, ref transform.Orientation, ref translation, out world);
         }
     }
 }

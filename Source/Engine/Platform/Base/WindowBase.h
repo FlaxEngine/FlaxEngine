@@ -263,7 +263,7 @@ API_ENUM() enum class WindowHitCodes
     Help = 21,
 };
 
-API_INJECT_CPP_CODE("#include \"Engine/Platform/Window.h\"");
+API_INJECT_CODE(cpp, "#include \"Engine/Platform/Window.h\"");
 
 /// <summary>
 /// Native platform window object.
@@ -271,29 +271,28 @@ API_INJECT_CPP_CODE("#include \"Engine/Platform/Window.h\"");
 API_CLASS(NoSpawn, NoConstructor, Sealed, Name="Window")
 class FLAXENGINE_API WindowBase : public ScriptingObject
 {
-DECLARE_SCRIPTING_TYPE_NO_SPAWN(WindowBase);
+    DECLARE_SCRIPTING_TYPE_NO_SPAWN(WindowBase);
     friend GPUSwapChain;
 protected:
-
     bool _visible, _minimized, _maximized, _isClosing, _showAfterFirstPaint, _focused;
     GPUSwapChain* _swapChain;
     CreateWindowSettings _settings;
     String _title;
     CursorType _cursor;
-    Vector2 _clientSize;
+    Float2 _clientSize;
     int _dpi;
     float _dpiScale;
 
-    Vector2 _trackingMouseOffset;
+    Float2 _trackingMouseOffset;
     bool _isUsingMouseOffset;
     Rectangle _mouseOffsetScreenSize;
     bool _isTrackingMouse;
+    bool _isClippingCursor;
 
     explicit WindowBase(const CreateWindowSettings& settings);
     virtual ~WindowBase();
 
 public:
-
     /// <summary>
     /// The rendering task for that window.
     /// </summary>
@@ -335,7 +334,6 @@ public:
     Action Draw;
 
 public:
-
     // Returns true if that window is the main Engine window (works in both editor and game mode)
     bool IsMain() const;
 
@@ -404,7 +402,6 @@ public:
     API_PROPERTY() virtual void* GetNativePtr() const = 0;
 
 public:
-
     /// <summary>
     /// Performs the UI update.
     /// </summary>
@@ -470,11 +467,9 @@ public:
     /// <summary>
     /// Checks if window is foreground (the window with which the user is currently working).
     /// </summary>
-    /// <returns>True if window is foreground, otherwise false.</returns>
     API_PROPERTY() virtual bool IsForegroundWindow() const;
 
 public:
-
     /// <summary>
     /// Gets the client bounds of the window (client area not including border).
     /// </summary>
@@ -494,32 +489,32 @@ public:
     /// <summary>
     /// Gets the window position (in screen coordinates).
     /// </summary>
-    API_PROPERTY() virtual Vector2 GetPosition() const
+    API_PROPERTY() virtual Float2 GetPosition() const
     {
-        return Vector2::Zero;
+        return Float2::Zero;
     }
 
     /// <summary>
     /// Sets the window position (in screen coordinates).
     /// </summary>
     /// <param name="position">The position.</param>
-    API_PROPERTY() virtual void SetPosition(const Vector2& position)
+    API_PROPERTY() virtual void SetPosition(const Float2& position)
     {
     }
 
     /// <summary>
     /// Gets the client position of the window (client area not including border).
     /// </summary>
-    API_PROPERTY() FORCE_INLINE Vector2 GetClientPosition() const
+    API_PROPERTY() FORCE_INLINE Float2 GetClientPosition() const
     {
-        return ClientToScreen(Vector2::Zero);
+        return ClientToScreen(Float2::Zero);
     }
 
     /// <summary>
     /// Sets the client position of the window (client area not including border)
     /// </summary>
     /// <param name="position">The client area position.</param>
-    API_PROPERTY() virtual void SetClientPosition(const Vector2& position)
+    API_PROPERTY() virtual void SetClientPosition(const Float2& position)
     {
         SetClientBounds(Rectangle(position, GetClientSize()));
     }
@@ -527,7 +522,7 @@ public:
     /// <summary>
     /// Gets the window size (including border).
     /// </summary>
-    API_PROPERTY() virtual Vector2 GetSize() const
+    API_PROPERTY() virtual Float2 GetSize() const
     {
         return _clientSize;
     }
@@ -535,7 +530,7 @@ public:
     /// <summary>
     /// Gets the size of the client area of the window (not including border).
     /// </summary>
-    API_PROPERTY() virtual Vector2 GetClientSize() const
+    API_PROPERTY() virtual Float2 GetClientSize() const
     {
         return _clientSize;
     }
@@ -544,7 +539,7 @@ public:
     /// Sets the size of the client area of the window (not including border).
     /// </summary>
     /// <param name="size">The window client area size.</param>
-    API_PROPERTY() void SetClientSize(const Vector2& size)
+    API_PROPERTY() void SetClientSize(const Float2& size)
     {
         SetClientBounds(Rectangle(GetClientPosition(), size));
     }
@@ -554,7 +549,7 @@ public:
     /// </summary>
     /// <param name="screenPos">The screen position.</param>
     /// <returns>The client space position.</returns>
-    API_FUNCTION() virtual Vector2 ScreenToClient(const Vector2& screenPos) const
+    API_FUNCTION() virtual Float2 ScreenToClient(const Float2& screenPos) const
     {
         return screenPos;
     }
@@ -564,7 +559,7 @@ public:
     /// </summary>
     /// <param name="clientPos">The client position.</param>
     /// <returns>The screen space position.</returns>
-    API_FUNCTION() virtual Vector2 ClientToScreen(const Vector2& clientPos) const
+    API_FUNCTION() virtual Float2 ClientToScreen(const Float2& clientPos) const
     {
         return clientPos;
     }
@@ -584,8 +579,8 @@ public:
     {
         return Platform::CustomDpiScale * _dpiScale;
     }
-public:
 
+public:
     /// <summary>
     /// Gets the window title.
     /// </summary>
@@ -651,7 +646,6 @@ public:
     }
 
 public:
-
     /// <summary>
     /// Starts drag and drop operation
     /// </summary>
@@ -673,8 +667,7 @@ public:
     /// <summary>
     /// Gets the mouse tracking offset.
     /// </summary>
-    /// <returns>The mouse screen offset.</returns>
-    API_PROPERTY() Vector2 GetTrackingMouseOffset() const
+    API_PROPERTY() Float2 GetTrackingMouseOffset() const
     {
         return _trackingMouseOffset;
     }
@@ -695,9 +688,31 @@ public:
     }
 
     /// <summary>
+    /// Starts the cursor clipping.
+    /// </summary>
+    /// <param name="bounds">The screen-space bounds that the cursor will be confined to.</param>
+    API_FUNCTION() virtual void StartClippingCursor(const Rectangle& bounds)
+    {
+    }
+
+    /// <summary>
+    /// Gets the value indicating whenever the cursor is being clipped.
+    /// </summary>
+    API_PROPERTY() bool IsCursorClipping() const
+    {
+        return _isClippingCursor;
+    }
+
+    /// <summary>
+    /// Ends the cursor clipping.
+    /// </summary>
+    API_FUNCTION() virtual void EndClippingCursor()
+    {
+    }
+
+    /// <summary>
     /// Gets the mouse cursor.
     /// </summary>
-    /// <returns>The cursor type</returns>
     API_PROPERTY() FORCE_INLINE CursorType GetCursor() const
     {
         return _cursor;
@@ -731,15 +746,14 @@ public:
     API_PROPERTY() void SetRenderingEnabled(bool value);
 
 public:
-
     typedef Delegate<Char> CharDelegate;
     typedef Delegate<KeyboardKeys> KeyboardDelegate;
-    typedef Delegate<const Vector2&> MouseDelegate;
-    typedef Delegate<const Vector2&, MouseButton> MouseButtonDelegate;
-    typedef Delegate<const Vector2&, float> MouseWheelDelegate;
-    typedef Delegate<const Vector2&, int32> TouchDelegate;
-    typedef Delegate<IGuiData*, const Vector2&, DragDropEffect&> DragDelegate;
-    typedef Delegate<const Vector2&, WindowHitCodes&, bool&> HitTestDelegate;
+    typedef Delegate<const Float2&> MouseDelegate;
+    typedef Delegate<const Float2&, MouseButton> MouseButtonDelegate;
+    typedef Delegate<const Float2&, float> MouseWheelDelegate;
+    typedef Delegate<const Float2&, int32> TouchDelegate;
+    typedef Delegate<IGuiData*, const Float2&, DragDropEffect&> DragDelegate;
+    typedef Delegate<const Float2&, WindowHitCodes&, bool&> HitTestDelegate;
     typedef Delegate<WindowHitCodes, bool&> ButtonHitDelegate;
     typedef Delegate<ClosingReason, bool&> ClosingDelegate;
 
@@ -765,31 +779,31 @@ public:
     /// Event fired when mouse button goes down.
     /// </summary>
     MouseButtonDelegate MouseDown;
-    void OnMouseDown(const Vector2& mousePosition, MouseButton button);
+    void OnMouseDown(const Float2& mousePosition, MouseButton button);
 
     /// <summary>
     /// Event fired when mouse button goes up.
     /// </summary>
     MouseButtonDelegate MouseUp;
-    void OnMouseUp(const Vector2& mousePosition, MouseButton button);
+    void OnMouseUp(const Float2& mousePosition, MouseButton button);
 
     /// <summary>
     /// Event fired when mouse button double clicks.
     /// </summary>
     MouseButtonDelegate MouseDoubleClick;
-    void OnMouseDoubleClick(const Vector2& mousePosition, MouseButton button);
+    void OnMouseDoubleClick(const Float2& mousePosition, MouseButton button);
 
     /// <summary>
     /// Event fired when mouse wheel is scrolling (wheel delta is normalized).
     /// </summary>
     MouseWheelDelegate MouseWheel;
-    void OnMouseWheel(const Vector2& mousePosition, float delta);
+    void OnMouseWheel(const Float2& mousePosition, float delta);
 
     /// <summary>
     /// Event fired when mouse moves.
     /// </summary>
     MouseDelegate MouseMove;
-    void OnMouseMove(const Vector2& mousePosition);
+    void OnMouseMove(const Float2& mousePosition);
 
     /// <summary>
     /// Event fired when mouse leaves window.
@@ -801,37 +815,37 @@ public:
     /// Event fired when touch action begins.
     /// </summary>
     TouchDelegate TouchDown;
-    void OnTouchDown(const Vector2& pointerPosition, int32 pointerIndex);
+    void OnTouchDown(const Float2& pointerPosition, int32 pointerIndex);
 
     /// <summary>
     /// Event fired when touch action moves.
     /// </summary>
     TouchDelegate TouchMove;
-    void OnTouchMove(const Vector2& pointerPosition, int32 pointerIndex);
+    void OnTouchMove(const Float2& pointerPosition, int32 pointerIndex);
 
     /// <summary>
     /// Event fired when touch action ends.
     /// </summary>
     TouchDelegate TouchUp;
-    void OnTouchUp(const Vector2& pointerPosition, int32 pointerIndex);
+    void OnTouchUp(const Float2& pointerPosition, int32 pointerIndex);
 
     /// <summary>
     /// Event fired when drag&drop enters window.
     /// </summary>
     DragDelegate DragEnter;
-    void OnDragEnter(IGuiData* data, const Vector2& mousePosition, DragDropEffect& result);
+    void OnDragEnter(IGuiData* data, const Float2& mousePosition, DragDropEffect& result);
 
     /// <summary>
     /// Event fired when drag&drop moves over window.
     /// </summary>
     DragDelegate DragOver;
-    void OnDragOver(IGuiData* data, const Vector2& mousePosition, DragDropEffect& result);
+    void OnDragOver(IGuiData* data, const Float2& mousePosition, DragDropEffect& result);
 
     /// <summary>
     /// Event fired when drag&drop ends over window with drop.
     /// </summary>
     DragDelegate DragDrop;
-    void OnDragDrop(IGuiData* data, const Vector2& mousePosition, DragDropEffect& result);
+    void OnDragDrop(IGuiData* data, const Float2& mousePosition, DragDropEffect& result);
 
     /// <summary>
     /// Event fired when drag&drop leaves window.
@@ -843,7 +857,7 @@ public:
     /// Event fired when system tests if the specified location is part of the window.
     /// </summary>
     HitTestDelegate HitTest;
-    void OnHitTest(const Vector2& mousePosition, WindowHitCodes& result, bool& handled);
+    void OnHitTest(const Float2& mousePosition, WindowHitCodes& result, bool& handled);
 
     /// <summary>
     /// Event fired when system tests if the left button hit the window for the given hit code.
@@ -858,7 +872,6 @@ public:
     void OnClosing(ClosingReason reason, bool& cancel);
 
 public:
-
     /// <summary>
     /// Gets the text entered during the current frame (Unicode).
     /// </summary>
@@ -887,29 +900,26 @@ public:
     API_FUNCTION() bool GetKeyUp(KeyboardKeys key) const;
 
 public:
-
     /// <summary>
     /// Gets the mouse position in window coordinates.
     /// </summary>
-    /// <returns>Mouse cursor coordinates</returns>
-    API_PROPERTY() Vector2 GetMousePosition() const;
+    API_PROPERTY() Float2 GetMousePosition() const;
 
     /// <summary>
     /// Sets the mouse position in window coordinates.
     /// </summary>
     /// <param name="position">Mouse position to set on</param>
-    API_PROPERTY() void SetMousePosition(const Vector2& position) const;
+    API_PROPERTY() void SetMousePosition(const Float2& position) const;
 
     /// <summary>
     /// Gets the mouse position change during the last frame.
     /// </summary>
     /// <returns>Mouse cursor position delta</returns>
-    API_PROPERTY() Vector2 GetMousePositionDelta() const;
+    API_PROPERTY() Float2 GetMousePositionDelta() const;
 
     /// <summary>
     /// Gets the mouse wheel change during the last frame.
     /// </summary>
-    /// <returns>Mouse wheel value delta</returns>
     API_PROPERTY() float GetMouseScrollDelta() const;
 
     /// <summary>
@@ -934,7 +944,6 @@ public:
     API_FUNCTION() bool GetMouseButtonUp(MouseButton button) const;
 
 public:
-
     void OnShow();
     void OnResize(int32 width, int32 height);
     void OnClosed();
@@ -942,14 +951,12 @@ public:
     void OnLostFocus();
 
 private:
-
     void OnMainRenderTaskDelete(class ScriptingObject* obj)
     {
         RenderTask = nullptr;
     }
 
 public:
-
     // [ScriptingObject]
     String ToString() const override;
     void OnDeleteObject() override;

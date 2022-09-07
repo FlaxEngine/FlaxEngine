@@ -281,6 +281,7 @@ namespace Flax.Build.Platforms
             case WindowsPlatformSDK.v10_0_19041_0:
             case WindowsPlatformSDK.v10_0_20348_0:
             case WindowsPlatformSDK.v10_0_22000_0:
+            case WindowsPlatformSDK.v10_0_22621_0:
             {
                 var sdkVersionName = WindowsPlatformBase.GetSDKVersion(SDK).ToString();
                 string includeRootDir = Path.Combine(windowsSdkDir, "include", sdkVersionName);
@@ -376,10 +377,8 @@ namespace Flax.Build.Platforms
             {
             case WindowsPlatformToolset.v143:
             case WindowsPlatformToolset.v142:
-            case WindowsPlatformToolset.v141:
-                return Path.Combine(vcToolChainDir, "lib", "x86", "store", "references");
-            case WindowsPlatformToolset.v140:
-                return Path.Combine(vcToolChainDir, "lib", "store", "references");
+            case WindowsPlatformToolset.v141: return Path.Combine(vcToolChainDir, "lib", "x86", "store", "references");
+            case WindowsPlatformToolset.v140: return Path.Combine(vcToolChainDir, "lib", "store", "references");
             default: return null;
             }
         }
@@ -433,6 +432,23 @@ namespace Flax.Build.Platforms
 
                 // Compile Without Linking
                 commonArgs.Add("/c");
+
+                // C++ version
+                switch (compileEnvironment.CppVersion)
+                {
+                case CppVersion.Cpp14:
+                    commonArgs.Add("/std:c++14");
+                    break;
+                case CppVersion.Cpp17:
+                    commonArgs.Add("/std:c++17");
+                    break;
+                case CppVersion.Cpp20:
+                    commonArgs.Add("/std:c++20");
+                    break;
+                case CppVersion.Latest:
+                    commonArgs.Add("/std:c++latest");
+                    break;
+                }
 
                 // Generate Intrinsic Functions
                 if (compileEnvironment.IntrinsicFunctions)
@@ -906,11 +922,7 @@ namespace Flax.Build.Platforms
                 // Create AppxManifest file
                 {
                     using (var stringWriter = new StringWriterWithEncoding(Encoding.UTF8))
-                    using (var xmlTextWriter = XmlWriter.Create(stringWriter, new XmlWriterSettings
-                    {
-                        Encoding = Encoding.UTF8,
-                        Indent = true,
-                    }))
+                    using (var xmlTextWriter = XmlWriter.Create(stringWriter, new XmlWriterSettings { Encoding = Encoding.UTF8, Indent = true, }))
                     {
                         xmlTextWriter.WriteStartDocument();
 

@@ -20,9 +20,8 @@ class GPUBuffer;
 /// </summary>
 API_CLASS(NoSpawn) class FLAXENGINE_API Mesh : public MeshBase
 {
-DECLARE_SCRIPTING_TYPE_WITH_CONSTRUCTOR_IMPL(Mesh, MeshBase);
+    DECLARE_SCRIPTING_TYPE_WITH_CONSTRUCTOR_IMPL(Mesh, MeshBase);
 protected:
-
     bool _hasLightmapUVs;
     GPUBuffer* _vertexBuffers[3] = {};
     GPUBuffer* _indexBuffer = nullptr;
@@ -34,7 +33,6 @@ protected:
     mutable int32 _cachedIndexBufferCount;
 
 public:
-
     Mesh(const Mesh& other)
         : Mesh()
     {
@@ -49,7 +47,6 @@ public:
     ~Mesh();
 
 public:
-
     /// <summary>
     /// Gets the model owning this mesh.
     /// </summary>
@@ -110,7 +107,6 @@ public:
 #endif
 
 public:
-
     /// <summary>
     /// Updates the model mesh (used by the virtual models created with Init rather than Load).
     /// </summary>
@@ -170,7 +166,7 @@ public:
     /// <param name="uvs">The texture coordinates (per vertex).</param>
     /// <param name="colors">The vertex colors (per vertex).</param>
     /// <returns>True if failed, otherwise false.</returns>
-    bool UpdateMesh(uint32 vertexCount, uint32 triangleCount, Vector3* vertices, uint16* triangles, Vector3* normals = nullptr, Vector3* tangents = nullptr, Vector2* uvs = nullptr, Color32* colors = nullptr);
+    bool UpdateMesh(uint32 vertexCount, uint32 triangleCount, Float3* vertices, uint16* triangles, Float3* normals = nullptr, Float3* tangents = nullptr, Float2* uvs = nullptr, Color32* colors = nullptr);
 
     /// <summary>
     /// Updates the model mesh (used by the virtual models created with Init rather than Load).
@@ -186,10 +182,9 @@ public:
     /// <param name="uvs">The texture coordinates (per vertex).</param>
     /// <param name="colors">The vertex colors (per vertex).</param>
     /// <returns>True if failed, otherwise false.</returns>
-    bool UpdateMesh(uint32 vertexCount, uint32 triangleCount, Vector3* vertices, uint32* triangles, Vector3* normals = nullptr, Vector3* tangents = nullptr, Vector2* uvs = nullptr, Color32* colors = nullptr);
+    bool UpdateMesh(uint32 vertexCount, uint32 triangleCount, Float3* vertices, uint32* triangles, Float3* normals = nullptr, Float3* tangents = nullptr, Float2* uvs = nullptr, Color32* colors = nullptr);
 
 public:
-
     /// <summary>
     /// Updates the model mesh index buffer (used by the virtual models created with Init rather than Load).
     /// </summary>
@@ -222,7 +217,6 @@ public:
     bool UpdateTriangles(uint32 triangleCount, void* ib, bool use16BitIndices);
 
 public:
-
     /// <summary>
     /// Initializes instance of the <see cref="Mesh"/> class.
     /// </summary>
@@ -254,7 +248,6 @@ public:
     void Unload();
 
 public:
-
     /// <summary>
     /// Determines if there is an intersection between the mesh and a ray in given world
     /// </summary>
@@ -263,19 +256,19 @@ public:
     /// <param name="distance">When the method completes and returns true, contains the distance of the intersection (if any valid).</param>
     /// <param name="normal">When the method completes, contains the intersection surface normal vector (if any valid).</param>
     /// <returns>True whether the two objects intersected</returns>
-    bool Intersects(const Ray& ray, const Matrix& world, float& distance, Vector3& normal) const;
+    bool Intersects(const Ray& ray, const Matrix& world, Real& distance, Vector3& normal) const;
 
     /// <summary>
-    /// Retrieves the eight corners of the bounding box.
+    /// Determines if there is an intersection between the mesh and a ray in given world
     /// </summary>
-    /// <param name="corners">An array of points representing the eight corners of the bounding box.</param>
-    FORCE_INLINE void GetCorners(Vector3 corners[8]) const
-    {
-        _box.GetCorners(corners);
-    }
+    /// <param name="ray">The ray to test</param>
+    /// <param name="transform">The instance transformation.</param>
+    /// <param name="distance">When the method completes and returns true, contains the distance of the intersection (if any valid).</param>
+    /// <param name="normal">When the method completes, contains the intersection surface normal vector (if any valid).</param>
+    /// <returns>True whether the two objects intersected</returns>
+    bool Intersects(const Ray& ray, const Transform& transform, Real& distance, Vector3& normal) const;
 
 public:
-
     /// <summary>
     /// Gets the draw call geometry for this mesh. Sets the index and vertex buffers.
     /// </summary>
@@ -375,14 +368,12 @@ public:
     void Draw(const RenderContext& renderContext, const DrawInfo& info, float lodDitherFactor) const;
 
 public:
-
     // [MeshBase]
     bool DownloadDataGPU(MeshBufferType type, BytesContainer& result) const override;
     Task* DownloadDataGPUAsync(MeshBufferType type, BytesContainer& result) const override;
     bool DownloadDataCPU(MeshBufferType type, BytesContainer& result, int32& count) const override;
 
 private:
-
     // Internal bindings
     API_FUNCTION(NoProxy) ScriptingObject* GetParentModel();
 #if !COMPILE_WITHOUT_CSHARP

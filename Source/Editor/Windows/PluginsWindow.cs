@@ -61,7 +61,7 @@ namespace FlaxEditor.Windows
                 if (icon)
                     iconImage.Brush = new TextureBrush(icon);
 
-                Size = new Vector2(300, 100);
+                Size = new Float2(300, 100);
 
                 float tmp1 = iconImage.Right + margin;
                 var nameLabel = new Label
@@ -179,7 +179,7 @@ namespace FlaxEditor.Windows
                 Orientation = Orientation.Vertical,
                 AnchorPreset = AnchorPresets.StretchAll,
                 Offsets = Margin.Zero,
-                TabsSize = new Vector2(120, 32),
+                TabsSize = new Float2(120, 32),
                 Parent = this
             };
 
@@ -190,9 +190,11 @@ namespace FlaxEditor.Windows
         private void OnPluginsChanged()
         {
             List<PluginEntry> toRemove = null;
+            var gamePlugins = PluginManager.GamePlugins;
+            var editorPlugins = PluginManager.EditorPlugins;
             foreach (var e in _entries)
             {
-                if (!PluginManager.EditorPlugins.Contains(e.Key) && !PluginManager.GamePlugins.Contains(e.Key))
+                if (!editorPlugins.Contains(e.Key) && !gamePlugins.Contains(e.Key))
                 {
                     if (toRemove == null)
                         toRemove = new List<PluginEntry>();
@@ -204,9 +206,9 @@ namespace FlaxEditor.Windows
                 foreach (var plugin in toRemove)
                     OnPluginRemove(plugin);
             }
-            foreach (var plugin in PluginManager.GamePlugins)
+            foreach (var plugin in gamePlugins)
                 OnPluginAdd(plugin);
-            foreach (var plugin in PluginManager.EditorPlugins)
+            foreach (var plugin in editorPlugins)
                 OnPluginAdd(plugin);
         }
 
@@ -288,7 +290,7 @@ namespace FlaxEditor.Windows
 
             foreach (var e in _entries.Keys)
             {
-                if (e.GetType() == pluginType)
+                if (e.GetType() == pluginType && _entries.ContainsKey(e))
                     return _entries[e];
             }
 

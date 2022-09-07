@@ -26,9 +26,9 @@ struct ParticleAttribute
     enum class ValueTypes
     {
         Float,
-        Vector2,
-        Vector3,
-        Vector4,
+        Float2,
+        Float3,
+        Float4,
         Int,
         Uint,
     };
@@ -56,11 +56,11 @@ struct ParticleAttribute
     {
         switch (ValueType)
         {
-        case ValueTypes::Vector2:
+        case ValueTypes::Float2:
             return 8;
-        case ValueTypes::Vector3:
+        case ValueTypes::Float3:
             return 12;
-        case ValueTypes::Vector4:
+        case ValueTypes::Float4:
             return 16;
         case ValueTypes::Float:
         case ValueTypes::Int:
@@ -78,7 +78,6 @@ struct ParticleAttribute
 class ParticleLayout
 {
 public:
-
     /// <summary>
     /// The total particle data stride size (in bytes). Defines the required memory amount for a single particle.
     /// </summary>
@@ -90,7 +89,6 @@ public:
     Array<ParticleAttribute, FixedAllocation<PARTICLE_ATTRIBUTES_MAX_COUNT>> Attributes;
 
 public:
-
     /// <summary>
     /// Clears the layout data.
     /// </summary>
@@ -217,7 +215,6 @@ public:
 class FLAXENGINE_API ParticleBuffer
 {
 public:
-
     /// <summary>
     /// The emitter graph version (cached on Init). Used to discard pooled buffers that has been created for older emitter graph.
     /// </summary>
@@ -331,7 +328,6 @@ public:
     } GPU;
 
 public:
-
     /// <summary>
     /// Initializes a new instance of the <see cref="ParticleBuffer"/> class.
     /// </summary>
@@ -384,12 +380,10 @@ public:
 struct ParticleBufferCPUDataAccessorBase
 {
 protected:
-
     ParticleBuffer* _buffer;
     int32 _offset;
 
 public:
-
     ParticleBufferCPUDataAccessorBase()
         : _buffer(nullptr)
         , _offset(-1)
@@ -403,7 +397,6 @@ public:
     }
 
 public:
-
     FORCE_INLINE bool IsValid() const
     {
         return _buffer != nullptr && _offset != -1;
@@ -414,7 +407,6 @@ template<typename T>
 struct ParticleBufferCPUDataAccessor : ParticleBufferCPUDataAccessorBase
 {
 public:
-
     ParticleBufferCPUDataAccessor<T>()
     {
     }
@@ -425,7 +417,6 @@ public:
     }
 
 public:
-
     FORCE_INLINE T operator[](int32 index) const
     {
         return Get(index);

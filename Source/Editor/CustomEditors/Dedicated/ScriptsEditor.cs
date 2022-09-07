@@ -49,10 +49,10 @@ namespace FlaxEditor.CustomEditors.Dedicated
                 Parent = this,
                 Bounds = new Rectangle((Width - addScriptButtonWidth) / 2, 1, addScriptButtonWidth, 18),
             };
-            addScriptButton.ButtonClicked += AddScriptButtonOnClicked;
+            addScriptButton.ButtonClicked += OnAddScriptButtonClicked;
         }
 
-        private void AddScriptButtonOnClicked(Button button)
+        private void OnAddScriptButtonClicked(Button button)
         {
             var scripts = Editor.Instance.CodeEditing.Scripts.Get();
             if (scripts.Count == 0)
@@ -71,7 +71,7 @@ namespace FlaxEditor.CustomEditors.Dedicated
                 cm.AddItem(new TypeSearchPopup.TypeItemView(scripts[i]));
             }
             cm.ItemClicked += item => AddScript((ScriptType)item.Tag);
-            cm.SortChildren();
+            cm.SortItems();
             cm.Show(this, button.BottomLeft);
         }
 
@@ -87,7 +87,7 @@ namespace FlaxEditor.CustomEditors.Dedicated
             // Check if drag is over
             if (IsDragOver && _dragHandlers != null && _dragHandlers.HasValidDrag)
             {
-                var area = new Rectangle(Vector2.Zero, size);
+                var area = new Rectangle(Float2.Zero, size);
                 Render2D.FillRectangle(area, Color.Orange * 0.5f);
                 Render2D.DrawRectangle(area, Color.Black);
             }
@@ -110,7 +110,7 @@ namespace FlaxEditor.CustomEditors.Dedicated
         }
 
         /// <inheritdoc />
-        public override DragDropEffect OnDragEnter(ref Vector2 location, DragData data)
+        public override DragDropEffect OnDragEnter(ref Float2 location, DragData data)
         {
             var result = base.OnDragEnter(ref location, data);
             if (result != DragDropEffect.None)
@@ -130,7 +130,7 @@ namespace FlaxEditor.CustomEditors.Dedicated
         }
 
         /// <inheritdoc />
-        public override DragDropEffect OnDragMove(ref Vector2 location, DragData data)
+        public override DragDropEffect OnDragMove(ref Float2 location, DragData data)
         {
             var result = base.OnDragMove(ref location, data);
             if (result != DragDropEffect.None)
@@ -148,7 +148,7 @@ namespace FlaxEditor.CustomEditors.Dedicated
         }
 
         /// <inheritdoc />
-        public override DragDropEffect OnDragDrop(ref Vector2 location, DragData data)
+        public override DragDropEffect OnDragDrop(ref Float2 location, DragData data)
         {
             var result = base.OnDragDrop(ref location, data);
             if (result != DragDropEffect.None)
@@ -241,7 +241,12 @@ namespace FlaxEditor.CustomEditors.Dedicated
 
             var multiAction = new MultiUndoAction(actions);
             multiAction.Do();
-            ScriptsEditor.Presenter?.Undo.AddAction(multiAction);
+            var presenter = ScriptsEditor.Presenter;
+            if (presenter != null)
+            {
+                presenter.Undo.AddAction(multiAction);
+                presenter.Control.Focus();
+            }
         }
     }
 
@@ -253,7 +258,7 @@ namespace FlaxEditor.CustomEditors.Dedicated
     {
         private ScriptsEditor _editor;
         private bool _isMouseDown;
-        private Vector2 _mouseDownPos;
+        private Float2 _mouseDownPos;
 
         /// <summary>
         /// Gets the target script.
@@ -272,9 +277,9 @@ namespace FlaxEditor.CustomEditors.Dedicated
         }
 
         /// <inheritdoc />
-        public override void OnMouseEnter(Vector2 location)
+        public override void OnMouseEnter(Float2 location)
         {
-            _mouseDownPos = Vector2.Minimum;
+            _mouseDownPos = Float2.Minimum;
 
             base.OnMouseEnter(location);
         }
@@ -293,10 +298,10 @@ namespace FlaxEditor.CustomEditors.Dedicated
         }
 
         /// <inheritdoc />
-        public override void OnMouseMove(Vector2 location)
+        public override void OnMouseMove(Float2 location)
         {
             // Check if start drag drop
-            if (_isMouseDown && Vector2.Distance(location, _mouseDownPos) > 10.0f)
+            if (_isMouseDown && Float2.Distance(location, _mouseDownPos) > 10.0f)
             {
                 DoDrag();
                 _isMouseDown = false;
@@ -306,7 +311,7 @@ namespace FlaxEditor.CustomEditors.Dedicated
         }
 
         /// <inheritdoc />
-        public override bool OnMouseUp(Vector2 location, MouseButton button)
+        public override bool OnMouseUp(Float2 location, MouseButton button)
         {
             if (button == MouseButton.Left)
             {
@@ -318,7 +323,7 @@ namespace FlaxEditor.CustomEditors.Dedicated
         }
 
         /// <inheritdoc />
-        public override bool OnMouseDown(Vector2 location, MouseButton button)
+        public override bool OnMouseDown(Float2 location, MouseButton button)
         {
             if (button == MouseButton.Left)
             {
@@ -373,11 +378,11 @@ namespace FlaxEditor.CustomEditors.Dedicated
             base.Draw();
 
             var color = FlaxEngine.GUI.Style.Current.BackgroundSelected * (IsDragOver ? 0.9f : 0.1f);
-            Render2D.FillRectangle(new Rectangle(Vector2.Zero, Size), color);
+            Render2D.FillRectangle(new Rectangle(Float2.Zero, Size), color);
         }
 
         /// <inheritdoc />
-        public override DragDropEffect OnDragEnter(ref Vector2 location, DragData data)
+        public override DragDropEffect OnDragEnter(ref Float2 location, DragData data)
         {
             _dragEffect = DragDropEffect.None;
 
@@ -392,7 +397,7 @@ namespace FlaxEditor.CustomEditors.Dedicated
         }
 
         /// <inheritdoc />
-        public override DragDropEffect OnDragMove(ref Vector2 location, DragData data)
+        public override DragDropEffect OnDragMove(ref Float2 location, DragData data)
         {
             return _dragEffect;
         }
@@ -406,7 +411,7 @@ namespace FlaxEditor.CustomEditors.Dedicated
         }
 
         /// <inheritdoc />
-        public override DragDropEffect OnDragDrop(ref Vector2 location, DragData data)
+        public override DragDropEffect OnDragDrop(ref Float2 location, DragData data)
         {
             var result = base.OnDragDrop(ref location, data);
             if (result != DragDropEffect.None)
@@ -611,7 +616,7 @@ namespace FlaxEditor.CustomEditors.Dedicated
                 var editor = CustomEditorsUtil.CreateEditor(scriptType, false);
 
                 // Create group
-                var title = CustomEditorsUtil.GetPropertyNameUI(scriptType.Name);
+                var title = Utilities.Utils.GetPropertyNameUI(scriptType.Name);
                 var group = layout.Group(title, editor);
                 if ((Presenter.Features & FeatureFlags.CacheExpandedGroups) != 0)
                 {
@@ -636,7 +641,7 @@ namespace FlaxEditor.CustomEditors.Dedicated
                     IsScrollable = false,
                     Checked = script.Enabled,
                     Parent = group.Panel,
-                    Size = new Vector2(14, 14),
+                    Size = new Float2(14, 14),
                     Bounds = new Rectangle(2, 0, 14, 14),
                     BoxSize = 12.0f,
                     Tag = script,

@@ -234,7 +234,7 @@ namespace FlaxEditor.GUI.Timeline.Tracks
                 Parent = this,
             };
             _addButton.Clicked += OnAddButtonClicked;
-            _picker.Location = new Vector2(_addButton.Left - _picker.Width - 2, 2);
+            _picker.Location = new Float2(_addButton.Left - _picker.Width - 2, 2);
         }
 
         private void OnAddButtonClicked()
@@ -574,13 +574,13 @@ namespace FlaxEditor.GUI.Timeline.Tracks
             var expanded = IsExpanded;
             if (expanded)
             {
-                Curve.ViewScale = new Vector2(Timeline.Zoom, 0.7f);
-                Curve.ViewOffset = new Vector2(0.0f, 35.0f);
+                Curve.ViewScale = new Float2(Timeline.Zoom, 0.7f);
+                Curve.ViewOffset = new Float2(0.0f, 35.0f);
             }
             else
             {
-                Curve.ViewScale = new Vector2(Timeline.Zoom, 1.0f);
-                Curve.ViewOffset = Vector2.Zero;
+                Curve.ViewScale = new Float2(Timeline.Zoom, 1.0f);
+                Curve.ViewOffset = Float2.Zero;
             }
             Curve.ShowCollapsed = !expanded;
             Curve.ShowAxes = expanded ? CurveEditorBase.UseMode.Horizontal : CurveEditorBase.UseMode.Off;
@@ -754,7 +754,7 @@ namespace FlaxEditor.GUI.Timeline.Tracks
         }
 
         /// <inheritdoc />
-        public void OnKeyframesMove(IKeyframesEditor editor, ContainerControl control, Vector2 location, bool start, bool end)
+        public void OnKeyframesMove(IKeyframesEditor editor, ContainerControl control, Float2 location, bool start, bool end)
         {
             if (Curve != null && Curve.Visible)
                 Curve.OnKeyframesMove(editor, control, location, start, end);

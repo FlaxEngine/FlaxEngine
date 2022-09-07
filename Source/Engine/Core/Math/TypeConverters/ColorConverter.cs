@@ -15,7 +15,6 @@ namespace FlaxEngine.TypeConverters
             {
                 return true;
             }
-
             return base.CanConvertFrom(context, sourceType);
         }
 
@@ -31,7 +30,6 @@ namespace FlaxEngine.TypeConverters
                     return new Color(float.Parse(v[0]), float.Parse(v[1]), float.Parse(v[2]), 1.0f);
                 throw new FormatException("Invalid Color value format.");
             }
-
             return base.ConvertFrom(context, culture, value);
         }
 
@@ -40,9 +38,9 @@ namespace FlaxEngine.TypeConverters
         {
             if (destinationType == typeof(string))
             {
-                return ((Color)value).R + "," + ((Color)value).G + "," + ((Color)value).B + "," + ((Color)value).A;
+                var v = (Color)value;
+                return v.R + "," + v.G + "," + v.B + "," + v.A;
             }
-
             return base.ConvertTo(context, culture, value, destinationType);
         }
     }

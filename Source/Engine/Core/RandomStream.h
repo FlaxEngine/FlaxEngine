@@ -13,7 +13,6 @@
 class FLAXENGINE_API RandomStream
 {
 private:
-
     /// <summary>
     /// Holds the initial seed.
     /// </summary>
@@ -25,7 +24,6 @@ private:
     mutable int32 _seed;
 
 public:
-
     /// <summary>
     /// Init
     /// </summary>
@@ -46,22 +44,18 @@ public:
     }
 
 public:
-
     /// <summary>
     /// Gets initial seed value
     /// </summary>
-    /// <returns>Initial seed.</returns>
     int32 GetInitialSeed() const
     {
         return _initialSeed;
     }
 
 public:
-
     /// <summary>
     /// Gets the current seed.
     /// </summary>
-    /// <returns>Current seed value.</returns>
     int32 GetCurrentSeed() const
     {
         return _seed;
@@ -94,11 +88,18 @@ public:
     }
 
 public:
-
     /// <summary>
-    /// Returns a random number between 0 and MAXUINT.
+    /// Returns a random boolean.
     /// </summary>
-    /// <returns>Random number.</returns>
+    bool GetBool() const
+    {
+        MutateSeed();
+        return *(uint32*)&_seed < (MAX_uint32 / 2);
+    }
+    
+    /// <summary>
+    /// Returns a random number between 0 and MAX_uint32.
+    /// </summary>
     uint32 GetUnsignedInt() const
     {
         MutateSeed();
@@ -108,7 +109,6 @@ public:
     /// <summary>
     /// Returns a random number between 0 and 1.
     /// </summary>
-    /// <returns>Random number.</returns>
     float GetFraction() const
     {
         MutateSeed();
@@ -121,7 +121,6 @@ public:
     /// <summary>
     /// Returns a random number between 0 and 1.
     /// </summary>
-    /// <returns>Random number.</returns>
     FORCE_INLINE float Rand() const
     {
         return GetFraction();
@@ -130,10 +129,9 @@ public:
     /// <summary>
     /// Returns a random vector of unit size.
     /// </summary>
-    /// <returns>Random unit length vector</returns>
-    Vector3 GetUnitVector() const
+    Float3 GetUnitVector() const
     {
-        Vector3 result;
+        Float3 result;
         float l;
         do
         {
@@ -142,13 +140,12 @@ public:
             result.Z = GetFraction() * 2.0f - 1.0f;
             l = result.LengthSquared();
         } while (l > 1.0f || l < ZeroTolerance);
-        return Vector3::Normalize(result);
+        return Float3::Normalize(result);
     }
-    
+
     /// <summary>
     /// Gets a random <see cref="Vector3"/> with components in a range between [0;1].
     /// </summary>
-    /// <returns>A random <see cref="Vector3"/>.</returns>
     Vector3 GetVector3() const
     {
         return Vector3(GetFraction(), GetFraction(), GetFraction());
@@ -157,11 +154,11 @@ public:
     /// <summary>
     /// Helper function for rand implementations.
     /// </summary>
-    /// <param name="A">Top border</param>
+    /// <param name="a">Top border</param>
     /// <returns>A random number in [0..A)</returns>
-    FORCE_INLINE int32 RandHelper(int32 A) const
+    FORCE_INLINE int32 RandHelper(int32 a) const
     {
-        return A > 0 ? Math::TruncToInt(GetFraction() * ((float)A - ZeroTolerance)) : 0;
+        return a > 0 ? Math::TruncToInt(GetFraction() * ((float)a - ZeroTolerance)) : 0;
     }
 
     /// <summary>
@@ -188,7 +185,6 @@ public:
     }
 
 protected:
-
     /// <summary>
     /// Mutates the current seed into the next seed.
     /// </summary>

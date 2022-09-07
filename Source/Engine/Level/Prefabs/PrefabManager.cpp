@@ -29,7 +29,6 @@ CriticalSection PrefabManager::PrefabsReferencesLocker;
 class PrefabManagerService : public EngineService
 {
 public:
-
     PrefabManagerService()
         : EngineService(TEXT("Prefab Manager"), 110)
     {
@@ -40,10 +39,8 @@ PrefabManagerService PrefabManagerServiceInstance;
 
 Actor* PrefabManager::SpawnPrefab(Prefab* prefab)
 {
-    auto scene = Level::GetScene(0);
-    if (!scene)
-        return nullptr;
-    return SpawnPrefab(prefab, scene, nullptr);
+    Actor* parent = Level::Scenes.Count() != 0 ? Level::Scenes[0] : nullptr;
+    return SpawnPrefab(prefab, parent, nullptr);
 }
 
 Actor* PrefabManager::SpawnPrefab(Prefab* prefab, const Vector3& position)
@@ -155,6 +152,7 @@ Actor* PrefabManager::SpawnPrefab(Prefab* prefab, Actor* parent, Dictionary<Guid
     {
         // Synchronize new prefab instances (prefab may have new objects added so deserialized instances need to synchronize with it)
         // TODO: resave and force sync prefabs during game cooking so this step could be skipped in game
+        SceneObjectsFactory::SetupPrefabInstances(context, prefabSyncData);
         SceneObjectsFactory::SynchronizeNewPrefabInstances(context, prefabSyncData);
         Scripting::ObjectsLookupIdMapping.Set(&modifier.Value->IdsMapping);
     }
@@ -180,6 +178,13 @@ Actor* PrefabManager::SpawnPrefab(Prefab* prefab, Actor* parent, Dictionary<Guid
         return nullptr;
     }
 
+    // Synchronize prefab instances (prefab may have new objects added or some removed so deserialized instances need to synchronize with it)
+    if (withSynchronization)
+    {
+        // TODO: resave and force sync scenes during game cooking so this step could be skipped in game
+        SceneObjectsFactory::SynchronizePrefabInstances(context, prefabSyncData);
+    }
+
     // Prepare parent linkage for prefab root actor
     root->_parent = parent;
     if (parent)
@@ -190,16 +195,7 @@ Actor* PrefabManager::SpawnPrefab(Prefab* prefab, Actor* parent, Dictionary<Guid
     {
         auto obj = sceneObjects->At(i);
         if (obj)
-        {
-            obj->PostLoad();
-        }
-    }
-
-    // Synchronize prefab instances (prefab may have new objects added or some removed so deserialized instances need to synchronize with it)
-    if (withSynchronization)
-    {
-        // TODO: resave and force sync scenes during game cooking so this step could be skipped in game
-        SceneObjectsFactory::SynchronizePrefabInstances(context, prefabSyncData);
+            obj->Initialize();
     }
 
     // Delete objects without parent or with invalid linkage to the prefab

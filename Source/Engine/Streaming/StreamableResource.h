@@ -2,6 +2,7 @@
 
 #pragma once
 
+#include "Engine/Core/Delegate.h"
 #include "Engine/Core/Collections/SamplesBuffer.h"
 
 class StreamingGroup;
@@ -100,6 +101,11 @@ public:
     /// <returns>Async task or tasks that update resource residency level. Must be preceded with UpdateAllocation call.</returns>
     virtual Task* CreateStreamingTask(int32 residency) = 0;
 
+    /// <summary>
+    /// Cancels any streaming task (or tasks sequence) started for this resource.
+    /// </summary>
+    virtual void CancelStreamingTasks() = 0;
+
 public:
 
     struct StreamingCache
@@ -111,6 +117,11 @@ public:
     };
 
     StreamingCache Streaming;
+    
+    /// <summary>
+    /// Event called when current resource residency gets changed (eg. model LOD or texture MIP gets loaded). Usually called from async thread.
+    /// </summary>
+    Action ResidencyChanged;
 
     /// <summary>
     /// Requests the streaming update for this resource during next streaming manager update.

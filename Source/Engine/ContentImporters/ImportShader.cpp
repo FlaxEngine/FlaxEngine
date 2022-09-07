@@ -14,7 +14,7 @@
 CreateAssetResult ImportShader::Import(CreateAssetContext& context)
 {
     // Base
-    IMPORT_SETUP(Shader, 19);
+    IMPORT_SETUP(Shader, 20);
     const int32 SourceCodeChunk = 15;
     context.SkipMetadata = true;
 
@@ -40,7 +40,7 @@ CreateAssetResult ImportShader::Import(CreateAssetContext& context)
     Encryption::EncryptBytes(sourceCode, sourceCodeSize);
 
     // Set Custom Data with Header
-    ShaderStorage::Header19 shaderHeader;
+    ShaderStorage::Header20 shaderHeader;
     Platform::MemoryClear(&shaderHeader, sizeof(shaderHeader));
     context.Data.CustomData.Copy(&shaderHeader);
 

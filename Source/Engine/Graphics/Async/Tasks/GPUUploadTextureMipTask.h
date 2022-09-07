@@ -14,13 +14,11 @@
 class GPUUploadTextureMipTask : public GPUTask
 {
 protected:
-
     GPUTextureReference _texture;
     int32 _mipIndex, _rowPitch, _slicePitch;
     BytesContainer _data;
 
 public:
-
     /// <summary>
     /// Initializes a new instance of the <see cref="GPUUploadTextureMipTask"/> class.
     /// </summary>
@@ -46,14 +44,12 @@ public:
     }
 
 private:
-
     void OnResourceUnload(GPUTextureReference* ref)
     {
         Cancel();
     }
 
 public:
-
     // [GPUTask]
     bool HasReference(Object* resource) const override
     {
@@ -61,7 +57,6 @@ public:
     }
 
 protected:
-
     // [GPUTask]
     Result run(GPUTasksContext* context) override
     {

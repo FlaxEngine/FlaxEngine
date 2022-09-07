@@ -32,7 +32,7 @@ namespace FlaxEditor.Surface
         /// <param name="location">The location.</param>
         /// <param name="size">The size.</param>
         /// <param name="autoFocus">if set to <c>true</c> can focus this control.</param>
-        protected SurfaceNodeElementControl(SurfaceNode parentNode, NodeElementArchetype archetype, Vector2 location, Vector2 size, bool autoFocus)
+        protected SurfaceNodeElementControl(SurfaceNode parentNode, NodeElementArchetype archetype, Float2 location, Float2 size, bool autoFocus)
         : base(location, size)
         {
             AutoFocus = autoFocus;

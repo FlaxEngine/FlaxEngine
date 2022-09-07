@@ -6,7 +6,7 @@ EditorScene::EditorScene(const SpawnParams& params)
     : Scene(params)
 {
     // Mock editor preview scene to be in gameplay
-    EditorScene::PostSpawn();
+    InitializeHierarchy();
     SceneBeginData beginData;
     EditorScene::BeginPlay(&beginData);
     beginData.OnDone();

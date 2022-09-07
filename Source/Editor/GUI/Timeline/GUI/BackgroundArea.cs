@@ -12,7 +12,7 @@ namespace FlaxEditor.GUI.Timeline.GUI
     {
         private Timeline _timeline;
         internal bool _rightMouseButtonDown;
-        private Vector2 _rightMouseButtonLastPos;
+        private Float2 _rightMouseButtonLastPos;
         private float _rightMouseButtonMovement;
 
         public BackgroundArea(Timeline timeline)
@@ -25,7 +25,7 @@ namespace FlaxEditor.GUI.Timeline.GUI
         }
 
         /// <inheritdoc />
-        public override bool OnMouseDown(Vector2 location, MouseButton button)
+        public override bool OnMouseDown(Float2 location, MouseButton button)
         {
             if (base.OnMouseDown(location, button))
                 return true;
@@ -44,7 +44,7 @@ namespace FlaxEditor.GUI.Timeline.GUI
         }
 
         /// <inheritdoc />
-        public override void OnMouseMove(Vector2 location)
+        public override void OnMouseMove(Float2 location)
         {
             // Panning timeline view with a right-mouse button
             if (_rightMouseButtonDown)
@@ -78,7 +78,7 @@ namespace FlaxEditor.GUI.Timeline.GUI
         }
 
         /// <inheritdoc />
-        public override bool OnMouseUp(Vector2 location, MouseButton button)
+        public override bool OnMouseUp(Float2 location, MouseButton button)
         {
             if (button == MouseButton.Right && _rightMouseButtonDown)
             {

@@ -14,10 +14,9 @@
 /// </summary>
 API_CLASS() class FLAXENGINE_API AnimatedModel : public ModelInstanceActor
 {
-DECLARE_SCENE_OBJECT(AnimatedModel);
+    DECLARE_SCENE_OBJECT(AnimatedModel);
     friend class AnimationsSystem;
 public:
-
     /// <summary>
     /// Describes the animation graph updates frequency for the animated model.
     /// </summary>
@@ -55,20 +54,17 @@ public:
     };
 
 private:
-
     BoundingBox _boxLocal;
-    Matrix _world;
     GeometryDrawStateData _drawState;
     SkinnedMeshDrawData _skinningData;
     AnimationUpdateMode _actualMode;
     uint32 _counter;
-    float _lastMinDstSqr;
+    Real _lastMinDstSqr;
     uint64 _lastUpdateFrame;
     BlendShapesInstance _blendShapes;
     ScriptingObjectReference<AnimatedModel> _masterPose;
 
 public:
-
     /// <summary>
     /// The skinned model asset used for rendering.
     /// </summary>
@@ -154,19 +150,10 @@ public:
     ScriptingObjectReference<Actor> RootMotionTarget;
 
 public:
-
     /// <summary>
     /// The graph instance data container. For dynamic usage only at runtime, not serialized.
     /// </summary>
     AnimGraphInstanceData GraphInstance;
-
-    /// <summary>
-    /// Gets the model world matrix transform.
-    /// </summary>
-    FORCE_INLINE void GetWorld(Matrix* world) const
-    {
-        *world = _world;
-    }
 
     /// <summary>
     /// Resets the animation state (clears the instance state data but preserves the instance parameters values).
@@ -238,7 +225,6 @@ public:
     API_FUNCTION() void SetMasterPoseModel(AnimatedModel* masterPose);
 
 public:
-
     /// <summary>
     /// Gets the anim graph instance parameters collection.
     /// </summary>
@@ -283,7 +269,6 @@ public:
     API_FUNCTION() void SetParameterValue(const Guid& id, const Variant& value);
 
 public:
-
     /// <summary>
     /// Gets the weight of the blend shape.
     /// </summary>
@@ -304,7 +289,6 @@ public:
     API_FUNCTION() void ClearBlendShapeWeights();
 
 public:
-
     /// <summary>
     /// Plays the animation on the slot in Anim Graph.
     /// </summary>
@@ -313,7 +297,8 @@ public:
     /// <param name="speed">The playback speed.</param>
     /// <param name="blendInTime">The animation blending in time (in seconds). Cam be used to smooth the slot animation playback with the input pose when starting the animation.</param>
     /// <param name="blendOutTime">The animation blending out time (in seconds). Cam be used to smooth the slot animation playback with the input pose when ending animation.</param>
-    API_FUNCTION() void PlaySlotAnimation(const StringView& slotName, Animation* anim, float speed = 1.0f, float blendInTime = 0.2f, float blendOutTime = 0.2f);
+    /// <param name="loopCount">The amount of loops to play the animation: 0 to play once, -1 to play infinite, 1 or higher to loop once or more.</param>
+    API_FUNCTION() void PlaySlotAnimation(const StringView& slotName, Animation* anim, float speed = 1.0f, float blendInTime = 0.2f, float blendOutTime = 0.2f, int32 loopCount = 0);
 
     /// <summary>
     /// Stops all the animations playback on the all slots in Anim Graph.
@@ -352,7 +337,6 @@ public:
     API_FUNCTION() bool IsPlayingSlotAnimation(const StringView& slotName, Animation* anim);
 
 private:
-
     void ApplyRootMotion(const RootMotionData& rootMotionDelta);
     void SyncParameters();
 
@@ -371,23 +355,21 @@ private:
     void OnGraphLoaded();
 
 public:
-
     // [ModelInstanceActor]
     bool HasContentLoaded() const override;
     void Draw(RenderContext& renderContext) override;
-    void DrawGeneric(RenderContext& renderContext) override;
 #if USE_EDITOR
     void OnDebugDrawSelected() override;
     BoundingBox GetEditorBox() const override;
 #endif
-    bool IntersectsItself(const Ray& ray, float& distance, Vector3& normal) override;
+    bool IntersectsItself(const Ray& ray, Real& distance, Vector3& normal) override;
     void Serialize(SerializeStream& stream, const void* otherObj) override;
     void Deserialize(DeserializeStream& stream, ISerializeModifier* modifier) override;
-    bool IntersectsEntry(int32 entryIndex, const Ray& ray, float& distance, Vector3& normal) override;
-    bool IntersectsEntry(const Ray& ray, float& distance, Vector3& normal, int32& entryIndex) override;
+    bool IntersectsEntry(int32 entryIndex, const Ray& ray, Real& distance, Vector3& normal) override;
+    bool IntersectsEntry(const Ray& ray, Real& distance, Vector3& normal, int32& entryIndex) override;
+    void OnDeleteObject() override;
 
 protected:
-
     // [ModelInstanceActor]
     void BeginPlay(SceneBeginData* data) override;
     void EndPlay() override;
@@ -395,4 +377,5 @@ protected:
     void OnDisable() override;
     void OnActiveInTreeChanged() override;
     void OnTransformChanged() override;
+    void WaitForModelLoad() override;
 };

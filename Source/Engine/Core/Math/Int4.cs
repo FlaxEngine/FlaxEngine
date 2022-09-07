@@ -119,20 +119,15 @@ namespace FlaxEngine
         /// <summary>
         /// Initializes a new instance of the <see cref="Int4" /> struct.
         /// </summary>
-        /// <param name="values">
-        /// The values to assign to the X, Y, Z, and W components of the vector. This must be an array with four elements.
-        /// </param>
+        /// <param name="values">The values to assign to the X, Y, Z, and W components of the vector. This must be an array with four elements.</param>
         /// <exception cref="ArgumentNullException">Thrown when <paramref name="values" /> is <c>null</c>.</exception>
-        /// <exception cref="ArgumentOutOfRangeException">
-        /// Thrown when <paramref name="values" /> contains more or less than four elements.
-        /// </exception>
+        /// <exception cref="ArgumentOutOfRangeException">Thrown when <paramref name="values" /> contains more or less than four elements.</exception>
         public Int4(int[] values)
         {
             if (values == null)
                 throw new ArgumentNullException(nameof(values));
             if (values.Length != 4)
                 throw new ArgumentOutOfRangeException(nameof(values), "There must be four and only four input values for Int4.");
-
             X = values[0];
             Y = values[1];
             Z = values[2];
@@ -168,15 +163,9 @@ namespace FlaxEngine
         /// Gets or sets the component at the specified index.
         /// </summary>
         /// <value>The value of the X, Y, Z, or W component, depending on the index.</value>
-        /// <param name="index">
-        /// The index of the component to access. Use 0 for the X component, 1 for the Y component, 2 for the Z
-        /// component, and 3 for the W component.
-        /// </param>
+        /// <param name="index">The index of the component to access. Use 0 for the X component, 1 for the Y component, 2 for the Z component, and 3 for the W component.</param>
         /// <returns>The value of the component at the specified index.</returns>
-        /// <exception cref="System.ArgumentOutOfRangeException">
-        /// Thrown when the <paramref name="index" /> is out of the range [0,
-        /// 3].
-        /// </exception>
+        /// <exception cref="System.ArgumentOutOfRangeException">Thrown when the <paramref name="index" /> is out of the range [0,3].</exception>
         public int this[int index]
         {
             get
@@ -188,10 +177,8 @@ namespace FlaxEngine
                 case 2: return Z;
                 case 3: return W;
                 }
-
                 throw new ArgumentOutOfRangeException(nameof(index), "Indices for Int4 run from 0 to 3, inclusive.");
             }
-
             set
             {
                 switch (index)
@@ -219,13 +206,7 @@ namespace FlaxEngine
         /// <returns>A four-element array containing the components of the vector.</returns>
         public int[] ToArray()
         {
-            return new[]
-            {
-                X,
-                Y,
-                Z,
-                W
-            };
+            return new[] { X, Y, Z, W };
         }
 
         /// <summary>
@@ -492,10 +473,7 @@ namespace FlaxEngine
         /// </summary>
         /// <param name="left">The first source vector.</param>
         /// <param name="right">The second source vector.</param>
-        /// <param name="result">
-        /// When the method completes, contains an new vector composed of the largest components of the source
-        /// vectors.
-        /// </param>
+        /// <param name="result">When the method completes, contains an new vector composed of the largest components of the source vectors.</param>
         public static void Max(ref Int4 left, ref Int4 right, out Int4 result)
         {
             result.X = left.X > right.X ? left.X : right.X;
@@ -521,10 +499,7 @@ namespace FlaxEngine
         /// </summary>
         /// <param name="left">The first source vector.</param>
         /// <param name="right">The second source vector.</param>
-        /// <param name="result">
-        /// When the method completes, contains an new vector composed of the smallest components of the
-        /// source vectors.
-        /// </param>
+        /// <param name="result">When the method completes, contains an new vector composed of the smallest components of the source vectors.</param>
         public static void Min(ref Int4 left, ref Int4 right, out Int4 result)
         {
             result.X = left.X < right.X ? left.X : right.X;
@@ -674,7 +649,7 @@ namespace FlaxEngine
         {
             return new Int4((int)(value.X % scale), (int)(value.Y % scale), (int)(value.Z % scale), (int)(value.W % scale));
         }
-        
+
         /// <summary>
         /// Remainder of value divided by scale.
         /// </summary>
@@ -685,7 +660,7 @@ namespace FlaxEngine
         {
             return new Int4((int)(value % scale.X), (int)(value % scale.Y), (int)(value % scale.Z), (int)(value % scale.W));
         }
-        
+
         /// <summary>
         /// Remainder of value divided by scale.
         /// </summary>
@@ -696,7 +671,7 @@ namespace FlaxEngine
         {
             return new Int4(value.X % scale.X, value.Y % scale.Y, value.Z % scale.Z, value.W % scale.W);
         }
-        
+
         /// <summary>
         /// Perform a component-wise addition
         /// </summary>
@@ -746,10 +721,7 @@ namespace FlaxEngine
         /// </summary>
         /// <param name="left">The first value to compare.</param>
         /// <param name="right">The second value to compare.</param>
-        /// <returns>
-        /// <c>true</c> if <paramref name="left" /> has the same value as <paramref name="right" />; otherwise,
-        /// <c>false</c>.
-        /// </returns>
+        /// <returns><c>true</c> if <paramref name="left" /> has the same value as <paramref name="right" />; otherwise, <c>false</c>.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool operator ==(Int4 left, Int4 right)
         {
@@ -761,10 +733,7 @@ namespace FlaxEngine
         /// </summary>
         /// <param name="left">The first value to compare.</param>
         /// <param name="right">The second value to compare.</param>
-        /// <returns>
-        /// <c>true</c> if <paramref name="left" /> has a different value than <paramref name="right" />; otherwise,
-        /// <c>false</c>.
-        /// </returns>
+        /// <returns><c>true</c> if <paramref name="left" /> has a different value than <paramref name="right" />; otherwise, <c>false</c>.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool operator !=(Int4 left, Int4 right)
         {
@@ -789,6 +758,36 @@ namespace FlaxEngine
         public static explicit operator Int3(Int4 value)
         {
             return new Int3(value.X, value.Y, value.Z);
+        }
+
+        /// <summary>
+        /// Performs an explicit conversion from <see cref="Int4" /> to <see cref="Float2" />.
+        /// </summary>
+        /// <param name="value">The value.</param>
+        /// <returns>The result of the conversion.</returns>
+        public static explicit operator Float2(Int4 value)
+        {
+            return new Float2(value.X, value.Y);
+        }
+
+        /// <summary>
+        /// Performs an explicit conversion from <see cref="Int4" /> to <see cref="Float3" />.
+        /// </summary>
+        /// <param name="value">The value.</param>
+        /// <returns>The result of the conversion.</returns>
+        public static explicit operator Float3(Int4 value)
+        {
+            return new Float3(value.X, value.Y, value.Z);
+        }
+
+        /// <summary>
+        /// Performs an explicit conversion from <see cref="Int4" /> to <see cref="Float4" />.
+        /// </summary>
+        /// <param name="value">The value.</param>
+        /// <returns>The result of the conversion.</returns>
+        public static explicit operator Float4(Int4 value)
+        {
+            return new Float4(value.X, value.Y, value.Z, value.W);
         }
 
         /// <summary>
@@ -824,9 +823,7 @@ namespace FlaxEngine
         /// <summary>
         /// Returns a <see cref="System.String" /> that represents this instance.
         /// </summary>
-        /// <returns>
-        /// A <see cref="System.String" /> that represents this instance.
-        /// </returns>
+        /// <returns>A <see cref="System.String" /> that represents this instance.</returns>
         public override string ToString()
         {
             return string.Format(CultureInfo.CurrentCulture, _formatString, X, Y, Z, W);
@@ -836,25 +833,19 @@ namespace FlaxEngine
         /// Returns a <see cref="System.String" /> that represents this instance.
         /// </summary>
         /// <param name="format">The format.</param>
-        /// <returns>
-        /// A <see cref="System.String" /> that represents this instance.
-        /// </returns>
+        /// <returns>A <see cref="System.String" /> that represents this instance. </returns>
         public string ToString(string format)
         {
             if (format == null)
                 return ToString();
-
-            return string.Format(CultureInfo.CurrentCulture, _formatString, X.ToString(format, CultureInfo.CurrentCulture),
-                                 Y.ToString(format, CultureInfo.CurrentCulture), Z.ToString(format, CultureInfo.CurrentCulture), W.ToString(format, CultureInfo.CurrentCulture));
+            return string.Format(CultureInfo.CurrentCulture, _formatString, X.ToString(format, CultureInfo.CurrentCulture), Y.ToString(format, CultureInfo.CurrentCulture), Z.ToString(format, CultureInfo.CurrentCulture), W.ToString(format, CultureInfo.CurrentCulture));
         }
 
         /// <summary>
         /// Returns a <see cref="System.String" /> that represents this instance.
         /// </summary>
         /// <param name="formatProvider">The format provider.</param>
-        /// <returns>
-        /// A <see cref="System.String" /> that represents this instance.
-        /// </returns>
+        /// <returns>A <see cref="System.String" /> that represents this instance.</returns>
         public string ToString(IFormatProvider formatProvider)
         {
             return string.Format(formatProvider, _formatString, X, Y, Z, W);
@@ -865,24 +856,18 @@ namespace FlaxEngine
         /// </summary>
         /// <param name="format">The format.</param>
         /// <param name="formatProvider">The format provider.</param>
-        /// <returns>
-        /// A <see cref="System.String" /> that represents this instance.
-        /// </returns>
+        /// <returns>A <see cref="System.String" /> that represents this instance.</returns>
         public string ToString(string format, IFormatProvider formatProvider)
         {
             if (format == null)
                 return ToString(formatProvider);
-
-            return string.Format(formatProvider, "X:{0} Y:{1} Z:{2} W:{3}", X.ToString(format, formatProvider),
-                                 Y.ToString(format, formatProvider), Z.ToString(format, formatProvider), W.ToString(format, formatProvider));
+            return string.Format(formatProvider, "X:{0} Y:{1} Z:{2} W:{3}", X.ToString(format, formatProvider), Y.ToString(format, formatProvider), Z.ToString(format, formatProvider), W.ToString(format, formatProvider));
         }
 
         /// <summary>
         /// Returns a hash code for this instance.
         /// </summary>
-        /// <returns>
-        /// A hash code for this instance, suitable for use in hashing algorithms and data structures like a hash table.
-        /// </returns>
+        /// <returns>A hash code for this instance, suitable for use in hashing algorithms and data structures like a hash table.</returns>
         public override int GetHashCode()
         {
             unchecked
@@ -899,24 +884,17 @@ namespace FlaxEngine
         /// Determines whether the specified <see cref="Int4" /> is equal to this instance.
         /// </summary>
         /// <param name="other">The <see cref="Int4" /> to compare with this instance.</param>
-        /// <returns>
-        /// <c>true</c> if the specified <see cref="Int4" /> is equal to this instance; otherwise, <c>false</c>.
-        /// </returns>
+        /// <returns><c>true</c> if the specified <see cref="Int4" /> is equal to this instance; otherwise, <c>false</c>.</returns>
         public bool Equals(ref Int4 other)
         {
-            return Mathf.NearEqual(other.X, X) &&
-                   Mathf.NearEqual(other.Y, Y) &&
-                   Mathf.NearEqual(other.Z, Z) &&
-                   Mathf.NearEqual(other.W, W);
+            return other.X == X && other.Y == Y && other.Z == Z && other.W == W;
         }
 
         /// <summary>
         /// Determines whether the specified <see cref="Int4" /> is equal to this instance.
         /// </summary>
         /// <param name="other">The <see cref="Int4" /> to compare with this instance.</param>
-        /// <returns>
-        /// <c>true</c> if the specified <see cref="Int4" /> is equal to this instance; otherwise, <c>false</c>.
-        /// </returns>
+        /// <returns><c>true</c> if the specified <see cref="Int4" /> is equal to this instance; otherwise, <c>false</c>.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool Equals(Int4 other)
         {
@@ -927,16 +905,10 @@ namespace FlaxEngine
         /// Determines whether the specified <see cref="System.Object" /> is equal to this instance.
         /// </summary>
         /// <param name="value">The <see cref="System.Object" /> to compare with this instance.</param>
-        /// <returns>
-        /// <c>true</c> if the specified <see cref="System.Object" /> is equal to this instance; otherwise, <c>false</c>.
-        /// </returns>
+        /// <returns><c>true</c> if the specified <see cref="System.Object" /> is equal to this instance; otherwise, <c>false</c>.</returns>
         public override bool Equals(object value)
         {
-            if (!(value is Int4))
-                return false;
-
-            var strongValue = (Int4)value;
-            return Equals(ref strongValue);
+            return value is Int4 other && Equals(ref other);
         }
     }
 }

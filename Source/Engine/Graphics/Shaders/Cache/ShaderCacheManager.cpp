@@ -31,12 +31,10 @@ static_assert(ARRAY_COUNT(ShaderProfileCacheDirNames) == (int32)ShaderProfile::M
 class ShaderProfileDatabase
 {
 public:
-
     ShaderProfile Profile;
     String Folder;
 
 public:
-
     void Init(ShaderProfile profile, const String& cacheRoot)
     {
         Profile = profile;
@@ -84,7 +82,6 @@ public:
 class ShaderCacheManagerService : public EngineService
 {
 public:
-
     ShaderCacheManagerService()
         : EngineService(TEXT("Shader Cache Manager"), -200)
     {

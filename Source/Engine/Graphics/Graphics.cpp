@@ -14,6 +14,9 @@ Quality Graphics::VolumetricFogQuality = Quality::High;
 Quality Graphics::ShadowsQuality = Quality::Medium;
 Quality Graphics::ShadowMapsQuality = Quality::Medium;
 bool Graphics::AllowCSMBlending = false;
+Quality Graphics::GlobalSDFQuality = Quality::High;
+Quality Graphics::GIQuality = Quality::High;
+PostProcessSettings Graphics::PostProcessSettings;
 
 #if GRAPHICS_API_NULL
 extern GPUDevice* CreateGPUDeviceNull();
@@ -37,7 +40,6 @@ extern GPUDevice* CreateGPUDevicePS5();
 class GraphicsService : public EngineService
 {
 public:
-
     GraphicsService()
         : EngineService(TEXT("Graphics"), -40)
     {

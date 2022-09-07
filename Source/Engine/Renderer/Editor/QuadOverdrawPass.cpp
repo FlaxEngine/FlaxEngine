@@ -60,7 +60,9 @@ void QuadOverdrawPass::Render(RenderContext& renderContext, GPUContext* context,
         {
             const auto decal = renderContext.List->Decals[i];
             ASSERT(decal && decal->Material);
-            decal->GetWorld(&drawCall.World);
+            Transform transform = decal->GetTransform();
+            transform.Scale *= decal->GetSize();
+            renderContext.View.GetWorldMatrix(transform, drawCall.World);
             drawCall.ObjectPosition = drawCall.World.GetTranslation();
             drawCall.PerInstanceRandom = decal->GetPerInstanceRandom();
             defaultMaterial->Bind(bindParams);
@@ -75,8 +77,8 @@ void QuadOverdrawPass::Render(RenderContext& renderContext, GPUContext* context,
         // Draw sky
         auto box = skyModel->GetBox();
         Matrix m1, m2;
-        Matrix::Scaling(renderContext.View.Far / (box.GetSize().Y * 0.5f) * 0.95f, m1);
-        Matrix::CreateWorld(renderContext.View.Position, Vector3::Up, Vector3::Backward, m2);
+        Matrix::Scaling(renderContext.View.Far / ((float)box.GetSize().Y * 0.5f) * 0.95f, m1);
+        Matrix::CreateWorld(renderContext.View.Position, Float3::Up, Float3::Backward, m2);
         m1 *= m2;
         drawCall.World = m1;
         drawCall.ObjectPosition = drawCall.World.GetTranslation();

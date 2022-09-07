@@ -21,12 +21,12 @@ struct BlendShapeVertex
     /// <summary>
     /// The position offset.
     /// </summary>
-    Vector3 PositionDelta;
+    Float3 PositionDelta;
 
     /// <summary>
     /// The normal vector offset (tangent Z).
     /// </summary>
-    Vector3 NormalDelta;
+    Float3 NormalDelta;
 
     /// <summary>
     /// The index of the vertex in the mesh to blend.
@@ -46,7 +46,6 @@ struct TIsPODType<BlendShapeVertex>
 class BlendShape
 {
 public:
-
     /// <summary>
     /// The name of the blend shape.
     /// </summary>
@@ -84,14 +83,12 @@ public:
 class BlendShapesInstance
 {
 public:
-
     /// <summary>
     /// The runtime data for blend shapes used for on a mesh.
     /// </summary>
     class MeshInstance
     {
     public:
-
         bool IsUsed;
         bool IsDirty;
         uint32 DirtyMinVertexIndex;
@@ -103,7 +100,6 @@ public:
     };
 
 public:
-
     /// <summary>
     /// The blend shapes weights (pair of blend shape name and the weight).
     /// </summary>
@@ -120,7 +116,6 @@ public:
     Dictionary<SkinnedMesh*, MeshInstance*> Meshes;
 
 public:
-
     /// <summary>
     /// Finalizes an instance of the <see cref="BlendShapesInstance"/> class.
     /// </summary>

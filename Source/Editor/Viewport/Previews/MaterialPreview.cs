@@ -188,11 +188,12 @@ namespace FlaxEditor.Viewport.Previews
             }
 
             // Surface
-            if (_previewModel.Model == null)
-                throw new Exception("Missing preview model asset.");
-            if (_previewModel.Model.WaitForLoaded())
-                throw new Exception("Preview model asset failed to load.");
-            _previewModel.SetMaterial(0, surfaceMaterial);
+            if (_previewModel.Model != null)
+            {
+                if (_previewModel.Model.WaitForLoaded())
+                    throw new Exception("Preview model asset failed to load.");
+                _previewModel.SetMaterial(0, surfaceMaterial);
+            }
             _previewModel.IsActive = usePreviewActor;
 
             // PostFx
@@ -340,6 +341,9 @@ namespace FlaxEditor.Viewport.Previews
 
             base.OnDestroy();
         }
+
+        /// <inheritdoc />
+        public Asset SurfaceAsset => null;
 
         /// <inheritdoc />
         string ISurfaceContext.SurfaceName => string.Empty;

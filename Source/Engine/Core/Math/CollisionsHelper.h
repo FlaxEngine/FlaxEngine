@@ -2,15 +2,7 @@
 
 #pragma once
 
-struct Vector2;
-struct Vector3;
-struct Vector4;
-struct Ray;
-struct Plane;
-struct Rectangle;
-struct BoundingBox;
-struct BoundingSphere;
-struct BoundingFrustum;
+#include "Engine/Core/Types/BaseTypes.h"
 
 /// <summary>
 /// Describes how one bounding volume contains another.
@@ -60,7 +52,6 @@ enum class PlaneIntersectionType
 class FLAXENGINE_API CollisionsHelper
 {
 public:
-
     /// <summary>
     /// Determines the closest point between a point and a line.
     /// </summary>
@@ -68,7 +59,7 @@ public:
     /// <param name="p0">The line first point.</param>
     /// <param name="p1">The line second point.</param>
     /// <param name="result">When the method completes, contains the closest point between the two objects.</param>
-    static void ClosestPointPointLine(const Vector2& point, const Vector2& p0, const Vector2& p1, Vector2& result);
+    static void ClosestPointPointLine(const Float2& point, const Float2& p0, const Float2& p1, Float2& result);
 
     /// <summary>
     /// Determines the closest point between a point and a line.
@@ -77,7 +68,7 @@ public:
     /// <param name="p0">The line first point.</param>
     /// <param name="p1">The line second point.</param>
     /// <returns>The closest point between the two objects.</result>
-    static Vector2 ClosestPointPointLine(const Vector2& point, const Vector2& p0, const Vector2& p1);
+    static Float2 ClosestPointPointLine(const Float2& point, const Float2& p0, const Float2& p1);
 
     /// <summary>
     /// Determines the closest point between a point and a line.
@@ -155,7 +146,7 @@ public:
     /// <param name="rect">The rectangle to test.</param>
     /// <param name="point">The point to test.</param>
     /// <param name="result">When the method completes, contains the closest point between the two objects.</param>
-    static void ClosestPointRectanglePoint(const Rectangle& rect, const Vector2& point, Vector2& result);
+    static void ClosestPointRectanglePoint(const Rectangle& rect, const Float2& point, Float2& result);
 
     /// <summary>
     /// Determines the closest point between a <see cref="Rectangle" /> and a point.
@@ -163,7 +154,7 @@ public:
     /// <param name="rect">The rectangle to test.</param>
     /// <param name="point">The point to test.</param>
     /// <returns>The closest point between the two objects.</returns>
-    static Vector2 ClosestPointRectanglePoint(const Rectangle& rect, const Vector2& point);
+    static Float2 ClosestPointRectanglePoint(const Rectangle& rect, const Float2& point);
 
     /// <summary>
     /// Determines the closest point between a <see cref="BoundingSphere" /> and a point.
@@ -213,7 +204,7 @@ public:
     /// <param name="plane">The plane to test.</param>
     /// <param name="point">The point to test.</param>
     /// <returns>The distance between the two objects.</returns>
-    static float DistancePlanePoint(const Plane& plane, const Vector3& point);
+    static Real DistancePlanePoint(const Plane& plane, const Vector3& point);
 
     /// <summary>
     /// Determines the distance between a <see cref="BoundingBox" /> and a point.
@@ -221,7 +212,7 @@ public:
     /// <param name="box">The box to test.</param>
     /// <param name="point">The point to test.</param>
     /// <returns>The distance between the two objects.</returns>
-    static float DistanceBoxPoint(const BoundingBox& box, const Vector3& point);
+    static Real DistanceBoxPoint(const BoundingBox& box, const Vector3& point);
 
     /// <summary>
     /// Determines the distance between a <see cref="BoundingBox" /> and a <see cref="BoundingBox" />.
@@ -229,7 +220,7 @@ public:
     /// <param name="box1">The first box to test.</param>
     /// <param name="box2">The second box to test.</param>
     /// <returns>The distance between the two objects.</returns>
-    static float DistanceBoxBox(const BoundingBox& box1, const BoundingBox& box2);
+    static Real DistanceBoxBox(const BoundingBox& box1, const BoundingBox& box2);
 
     /// <summary>
     /// Determines the distance between a <see cref="BoundingSphere" /> and a point.
@@ -237,7 +228,7 @@ public:
     /// <param name="sphere">The sphere to test.</param>
     /// <param name="point">The point to test.</param>
     /// <returns>The distance between the two objects.</returns>
-    static float DistanceSpherePoint(const BoundingSphere& sphere, const Vector3& point);
+    static Real DistanceSpherePoint(const BoundingSphere& sphere, const Vector3& point);
 
     /// <summary>
     /// Determines the distance between a <see cref="BoundingSphere" /> and a <see cref="BoundingSphere" />.
@@ -245,7 +236,7 @@ public:
     /// <param name="sphere1">The first sphere to test.</param>
     /// <param name="sphere2">The second sphere to test.</param>
     /// <returns>The distance between the two objects.</returns>
-    static float DistanceSphereSphere(const BoundingSphere& sphere1, const BoundingSphere& sphere2);
+    static Real DistanceSphereSphere(const BoundingSphere& sphere1, const BoundingSphere& sphere2);
 
     /// <summary>
     /// Determines whether there is an intersection between a <see cref="Ray" /> and a point.
@@ -281,7 +272,7 @@ public:
     /// <param name="plane">The plane to test.</param>
     /// <param name="distance">When the method completes, contains the distance of the intersection, or 0 if there was no intersection.</param>
     /// <returns>Whether the two objects intersect.</returns>
-    static bool RayIntersectsPlane(const Ray& ray, const Plane& plane, float& distance);
+    static bool RayIntersectsPlane(const Ray& ray, const Plane& plane, Real& distance);
 
     /// <summary>
     /// Determines whether there is an intersection between a <see cref="Ray" /> and a <see cref="Plane" />.
@@ -308,7 +299,7 @@ public:
     /// the ray, no intersection is assumed to have happened. In both cases of assumptions,
     /// this method returns false.
     /// </remarks>
-    static bool RayIntersectsTriangle(const Ray& ray, const Vector3& vertex1, const Vector3& vertex2, const Vector3& vertex3, float& distance);
+    static bool RayIntersectsTriangle(const Ray& ray, const Vector3& vertex1, const Vector3& vertex2, const Vector3& vertex3, Real& distance);
 
     /// <summary>
     /// Determines whether there is an intersection between a <see cref="Ray" /> and a triangle.
@@ -327,7 +318,7 @@ public:
     /// the ray, no intersection is assumed to have happened. In both cases of assumptions,
     /// this method returns false.
     /// </remarks>
-    static bool RayIntersectsTriangle(const Ray& ray, const Vector3& vertex1, const Vector3& vertex2, const Vector3& vertex3, float& distance, Vector3& normal);
+    static bool RayIntersectsTriangle(const Ray& ray, const Vector3& vertex1, const Vector3& vertex2, const Vector3& vertex3, Real& distance, Vector3& normal);
 
     /// <summary>
     /// Determines whether there is an intersection between a <see cref="Ray" /> and a triangle.
@@ -347,7 +338,7 @@ public:
     /// <param name="box">The box to test.</param>
     /// <param name="distance">When the method completes, contains the distance of the intersection, or 0 if there was no intersection.</param>
     /// <returns>Whether the two objects intersected.</returns>
-    static bool RayIntersectsBox(const Ray& ray, const BoundingBox& box, float& distance);
+    static bool RayIntersectsBox(const Ray& ray, const BoundingBox& box, Real& distance);
 
     /// <summary>
     /// Determines whether there is an intersection between a <see cref="Ray" /> and a <see cref="BoundingBox" />.
@@ -357,7 +348,7 @@ public:
     /// <param name="distance">When the method completes, contains the distance of the intersection, or 0 if there was no intersection.</param>
     /// <param name="normal">When the method completes, contains the intersection surface normal vector, or Vector3::Up if there was no intersection.</param>
     /// <returns>Whether the two objects intersected.</returns>
-    static bool RayIntersectsBox(const Ray& ray, const BoundingBox& box, float& distance, Vector3& normal);
+    static bool RayIntersectsBox(const Ray& ray, const BoundingBox& box, Real& distance, Vector3& normal);
 
     /// <summary>
     /// Determines whether there is an intersection between a <see cref="Ray" /> and a <see cref="Plane" />.
@@ -375,7 +366,7 @@ public:
     /// <param name="sphere">The sphere to test.</param>
     /// <param name="distance">When the method completes, contains the distance of the intersection, or 0 if there was no intersection.</param>
     /// <returns>Whether the two objects intersected.</returns>
-    static bool RayIntersectsSphere(const Ray& ray, const BoundingSphere& sphere, float& distance);
+    static bool RayIntersectsSphere(const Ray& ray, const BoundingSphere& sphere, Real& distance);
 
     /// <summary>
     /// Determines whether there is an intersection between a <see cref="Ray" /> and a <see cref="BoundingSphere" />.
@@ -385,7 +376,7 @@ public:
     /// <param name="distance">When the method completes, contains the distance of the intersection, or 0 if there was no intersection.</param>
     /// <param name="normal">When the method completes, contains the intersection surface normal vector, or Vector3::Up if there was no intersection.</param>
     /// <returns>Whether the two objects intersected.</returns>
-    static bool RayIntersectsSphere(const Ray& ray, const BoundingSphere& sphere, float& distance, Vector3& normal);
+    static bool RayIntersectsSphere(const Ray& ray, const BoundingSphere& sphere, Real& distance, Vector3& normal);
 
     /// <summary>
     /// Determines whether there is an intersection between a <see cref="Ray" /> and a <see cref="BoundingSphere" />.
@@ -558,7 +549,7 @@ public:
     /// <param name="l2p1">The second line point 0.</param>
     /// <param name="l2p2">The second line point 1.</param>
     /// <returns>True if line intersects with the other line</returns>
-    static bool LineIntersectsLine(const Vector2& l1p1, const Vector2& l1p2, const Vector2& l2p1, const Vector2& l2p2);
+    static bool LineIntersectsLine(const Float2& l1p1, const Float2& l1p2, const Float2& l2p1, const Float2& l2p2);
 
     /// <summary>
     /// Determines whether a line intersects with the rectangle.
@@ -567,7 +558,13 @@ public:
     /// <param name="p2">The line point 1.</param>
     /// <param name="rect">The rectangle.</param>
     /// <returns>True if line intersects with the rectangle</returns>
-    static bool LineIntersectsRect(const Vector2& p1, const Vector2& p2, const Rectangle& rect);
+    static bool LineIntersectsRect(const Float2& p1, const Float2& p2, const Rectangle& rect);
+
+    // Hits axis-aligned box (boxMin, boxMax) with a line (lineStart, lineEnd).
+    // Returns the intersections on the line (x - closest, y - furthest).
+    // Line hits the box if: intersections.x < intersections.y.
+    // Hit point is: hitPoint = lineStart + (lineEnd - lineStart) * intersections.x/y.
+    static Vector2 LineHitsBox(const Vector3& lineStart, const Vector3& lineEnd, const Vector3& boxMin, const Vector3& boxMax);
 
     /// <summary>
     /// Determines whether the given 2D point is inside the specified triangle.
@@ -577,5 +574,5 @@ public:
     /// <param name="b">The second vertex of the triangle.</param>
     /// <param name="c">The third vertex of the triangle.</param>
     /// <returns><c>true</c> if point is inside the triangle; otherwise, <c>false</c>.</returns>
-    static bool IsPointInTriangle(const Vector2& point, const Vector2& a, const Vector2& b, const Vector2& c);
+    static bool IsPointInTriangle(const Float2& point, const Float2& a, const Float2& b, const Float2& c);
 };

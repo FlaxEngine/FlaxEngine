@@ -20,7 +20,6 @@ Dictionary<String, ExportAssetFunction> AssetsExportingManager::Exporters;
 class AssetsExportingManagerService : public EngineService
 {
 public:
-
     AssetsExportingManagerService()
         : EngineService(TEXT("AssetsExportingManager"), -300)
     {

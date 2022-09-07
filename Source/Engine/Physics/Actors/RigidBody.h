@@ -2,7 +2,9 @@
 
 #pragma once
 
-#include "PhysicsActor.h"
+#include "Engine/Level/Actor.h"
+#include "Engine/Physics/Types.h"
+#include "Engine/Physics/Actors/IPhysicsActor.h"
 #include "Engine/Physics/Collisions.h"
 
 class PhysicsColliderActor;
@@ -11,21 +13,20 @@ class Collider;
 /// <summary>
 /// Physics simulation driven object.
 /// </summary>
-/// <seealso cref="PhysicsActor" />
-API_CLASS() class FLAXENGINE_API RigidBody : public PhysicsActor
+/// <seealso cref="Actor" />
+API_CLASS() class FLAXENGINE_API RigidBody : public Actor, public IPhysicsActor
 {
-DECLARE_SCENE_OBJECT(RigidBody);
+    DECLARE_SCENE_OBJECT(RigidBody);
 protected:
-
     void* _actor;
-    Vector3 _cachedScale;
+    Float3 _cachedScale;
 
     float _mass;
     float _linearDamping;
     float _angularDamping;
     float _maxAngularVelocity;
     float _massScale;
-    Vector3 _centerOfMassOffset;
+    Float3 _centerOfMassOffset;
     RigidbodyConstraints _constraints;
 
     int32 _enableSimulation : 1;
@@ -35,9 +36,9 @@ protected:
     int32 _startAwake : 1;
     int32 _updateMassWhenScaleChanges : 1;
     int32 _overrideMass : 1;
+    int32 _isUpdatingTransform : 1;
 
 public:
-
     /// <summary>
     /// Enables kinematic mode for the rigidbody.
     /// </summary>
@@ -255,8 +256,8 @@ public:
     /// <summary>
     /// Gets the user specified offset for the center of mass of this object, from the calculated location.
     /// </summary>
-    API_PROPERTY(Attributes="EditorOrder(140), DefaultValue(typeof(Vector3), \"0,0,0\"), EditorDisplay(\"Rigid Body\", \"Center Of Mass Offset\")")
-    FORCE_INLINE Vector3 GetCenterOfMassOffset() const
+    API_PROPERTY(Attributes="EditorOrder(140), DefaultValue(typeof(Float3), \"0,0,0\"), EditorDisplay(\"Rigid Body\", \"Center Of Mass Offset\")")
+    FORCE_INLINE Float3 GetCenterOfMassOffset() const
     {
         return _centerOfMassOffset;
     }
@@ -265,7 +266,7 @@ public:
     /// Sets the user specified offset for the center of mass of this object, from the calculated location.
     /// </summary>
     /// <param name="value">The value.</param>
-    API_PROPERTY() void SetCenterOfMassOffset(const Vector3& value);
+    API_PROPERTY() void SetCenterOfMassOffset(const Float3& value);
 
     /// <summary>
     /// Gets the object movement constraint flags that define degrees of freedom are allowed for the simulation of object.
@@ -283,7 +284,6 @@ public:
     API_PROPERTY() void SetConstraints(const RigidbodyConstraints value);
 
 public:
-
     /// <summary>
     /// Gets the linear velocity of the rigidbody.
     /// </summary>
@@ -371,7 +371,6 @@ public:
     API_PROPERTY() bool IsSleeping() const;
 
 public:
-
     /// <summary>
     /// Forces a rigidbody to sleep (for at least one frame).
     /// </summary>
@@ -505,7 +504,6 @@ public:
     API_FUNCTION() void ClosestPoint(const Vector3& position, API_PARAM(Out) Vector3& result) const;
 
 public:
-
     /// <summary>
     /// Occurs when a collision start gets registered for this rigidbody (it collides with something).
     /// </summary>
@@ -527,7 +525,6 @@ public:
     API_EVENT() Delegate<PhysicsColliderActor*> TriggerExit;
 
 public:
-
     void OnCollisionEnter(const Collision& c);
     void OnCollisionExit(const Collision& c);
 
@@ -537,7 +534,10 @@ public:
     // Called when collider gets detached from this rigidbody or activated/deactivated. Used to update rigidbody mass.
     virtual void OnColliderChanged(Collider* c);
 
-protected:
+    /// <summary>
+    /// Updates the bounding box.
+    /// </summary>
+    void UpdateBounds();
 
     /// <summary>
     /// Updates the rigidbody scale dependent properties like mass (may be modified when actor transformation changes).
@@ -545,15 +545,16 @@ protected:
     void UpdateScale();
 
 public:
-
-    // [PhysicsActor]
+    // [Actor]
     void Serialize(SerializeStream& stream, const void* otherObj) override;
     void Deserialize(DeserializeStream& stream, ISerializeModifier* modifier) override;
+
+    // [IPhysicsActor]
     void* GetPhysicsActor() const override;
+    void OnActiveTransformChanged() override;
 
 protected:
-
-    // [PhysicsActor]
+    // [Actor]
     void BeginPlay(SceneBeginData* data) override;
     void EndPlay() override;
     void OnActiveInTreeChanged() override;

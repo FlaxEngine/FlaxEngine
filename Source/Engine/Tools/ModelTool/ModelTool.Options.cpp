@@ -1,6 +1,6 @@
 // Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
-#if COMPILE_WITH_MODEL_TOOL
+#if COMPILE_WITH_MODEL_TOOL && USE_EDITOR
 
 #include "ModelTool.h"
 #include "Engine/Core/Log.h"
@@ -62,6 +62,8 @@ void ModelTool::Options::Serialize(SerializeStream& stream, const void* otherObj
     SERIALIZE(ImportMaterials);
     SERIALIZE(ImportTextures);
     SERIALIZE(RestoreMaterialsOnReimport);
+    SERIALIZE(GenerateSDF);
+    SERIALIZE(SDFResolution);
     SERIALIZE(SplitObjects);
     SERIALIZE(ObjectIndex);
 }
@@ -100,6 +102,8 @@ void ModelTool::Options::Deserialize(DeserializeStream& stream, ISerializeModifi
     DESERIALIZE(ImportMaterials);
     DESERIALIZE(ImportTextures);
     DESERIALIZE(RestoreMaterialsOnReimport);
+    DESERIALIZE(GenerateSDF);
+    DESERIALIZE(SDFResolution);
     DESERIALIZE(SplitObjects);
     DESERIALIZE(ObjectIndex);
 

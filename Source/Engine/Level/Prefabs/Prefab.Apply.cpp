@@ -85,7 +85,6 @@ namespace
 class PrefabInstanceData
 {
 public:
-
     // Don't copy or anything
     PrefabInstanceData()
     {
@@ -111,11 +110,10 @@ public:
     }
 
 public:
-
     /// <summary>
     /// The prefab instance root actor.
     /// </summary>
-    Actor* TargetActor;
+    ScriptingObjectReference<Actor> TargetActor;
 
     /// <summary>
     /// The cached order in parent of the target actor. Used to preserve it after prefab changes synchronization.
@@ -133,7 +131,6 @@ public:
     Dictionary<Guid, int32> PrefabInstanceIdToDataIndex;
 
 public:
-
     /// <summary>
     /// Collects all the valid prefab instances to update on prefab data synchronization.
     /// </summary>
@@ -187,6 +184,8 @@ void PrefabInstanceData::CollectPrefabInstances(Array<PrefabInstanceData>& prefa
         for (int32 instanceIndex = 0; instanceIndex < instances.Count(); instanceIndex++)
         {
             const auto instance = instances[instanceIndex];
+            if ((instance->Flags & ObjectFlags::WasMarkedToDelete) != 0)
+                continue;
             if (instance != defaultInstance && targetActor != instance && !targetActor->HasActorInHierarchy(instance))
                 usedCount++;
         }
@@ -196,14 +195,13 @@ void PrefabInstanceData::CollectPrefabInstances(Array<PrefabInstanceData>& prefa
         {
             // Skip default instance because it will be recreated, skip input actor because it needs just to be linked
             Actor* instance = instances[instanceIndex];
+            if ((instance->Flags & ObjectFlags::WasMarkedToDelete) != 0)
+                continue;
             if (instance != defaultInstance && targetActor != instance && !targetActor->HasActorInHierarchy(instance))
             {
                 auto& data = prefabInstancesData[dataIndex++];
                 data.TargetActor = instance;
                 data.OrderInParent = instance->GetOrderInParent();
-
-                // Check if actor has not been deleted (the memory access exception could fire)
-                ASSERT(data.TargetActor->GetID() == data.TargetActor->GetID());
             }
         }
     }
@@ -270,6 +268,8 @@ bool PrefabInstanceData::SynchronizePrefabInstances(Array<PrefabInstanceData>& p
 
         // If prefab object root was changed during changes apply then update the TargetActor to point a valid object
         Actor* oldTargetActor = instance.TargetActor;
+        if (!oldTargetActor || (oldTargetActor->Flags & ObjectFlags::WasMarkedToDelete) != 0)
+            continue;
         Actor* newTargetActor = FindActorWithPrefabObjectId(instance.TargetActor, defaultInstance->GetID());
         if (!newTargetActor)
         {
@@ -430,7 +430,7 @@ bool PrefabInstanceData::SynchronizePrefabInstances(Array<PrefabInstanceData>& p
         for (int32 i = existingObjectsCount; i < sceneObjects->Count(); i++)
         {
             SceneObject* obj = sceneObjects.Value->At(i);
-            obj->PostLoad();
+            obj->Initialize();
         }
 
         // Synchronize existing objects logic with deserialized state (fire events)
@@ -449,6 +449,8 @@ bool PrefabInstanceData::SynchronizePrefabInstances(Array<PrefabInstanceData>& p
                 }
                 Level::callActorEvent(Level::ActorEventType::OnActorNameChanged, actor, nullptr);
                 Level::callActorEvent(Level::ActorEventType::OnActorOrderInParentChanged, actor, nullptr);
+                if (!actor->IsDuringPlay() && actor->GetParent())
+                    Level::callActorEvent(Level::ActorEventType::OnActorParentChanged, actor, actor->GetParent());
             }
         }
 
@@ -470,8 +472,6 @@ bool PrefabInstanceData::SynchronizePrefabInstances(Array<PrefabInstanceData>& p
 
                     if (Script* script = dynamic_cast<Script*>(obj))
                     {
-                        if (Editor::IsPlayMode || script->_executeInEditor)
-                            script->OnAwake();
                         if (script->GetParent() && !script->_wasEnableCalled && script->GetParent()->IsActiveInHierarchy() && script->GetParent()->GetScene())
                             script->Enable();
                     }
@@ -661,10 +661,16 @@ bool Prefab::ApplyAll(Actor* targetActor)
 
         // Assign references to the prefabs
         allPrefabs.EnsureCapacity(Math::RoundUpToPowerOf2(Math::Max(30, nestedPrefabIds.Count())));
+        const Dictionary<Guid, Asset*, HeapAllocation>& assetsRaw = Content::GetAssetsRaw();
+        for (auto& e : assetsRaw)
+        {
+            if (e.Value->GetTypeHandle() == Prefab::TypeInitializer)
+                nestedPrefabIds.AddUnique(e.Key);
+        }
         for (int32 i = 0; i < nestedPrefabIds.Count(); i++)
         {
             const auto nestedPrefab = Content::LoadAsync<Prefab>(nestedPrefabIds[i]);
-            if (nestedPrefab && nestedPrefab != this)
+            if (nestedPrefab && nestedPrefab != this && (nestedPrefab->Flags & ObjectFlags::WasMarkedToDelete) == 0)
             {
                 allPrefabs.Add(nestedPrefab);
             }
@@ -1009,9 +1015,7 @@ bool Prefab::ApplyAllInternal(Actor* targetActor, bool linkTargetActorObjectToPr
         {
             auto obj = sceneObjects.Value->At(i);
             if (obj)
-            {
-                obj->PostLoad();
-            }
+                obj->Initialize();
         }
 
         // Update transformations
@@ -1081,6 +1085,10 @@ bool Prefab::UpdateInternal(const Array<SceneObject*>& defaultInstanceObjects, r
     LOG(Info, "Updating prefab data");
 
     // Reload prefab data
+    if (IsVirtual())
+    {
+        return Init(TypeName, StringAnsiView(tmpBuffer.GetString(), (int32)tmpBuffer.GetSize()));
+    }
 #if 1 // Set to 0 to use memory-only reload that does not modifies the source file - useful for testing and debugging prefabs apply
 #if COMPILE_WITH_ASSETS_IMPORTER
     Locker.Unlock();
@@ -1220,8 +1228,19 @@ bool Prefab::SyncChangesInternal()
         return true;
     }
 
+    // Recreate default instance but with synchronization since otherwise it might contain old data (eg. nested prefab hierarchy could be changed)
+    DeleteDefaultInstance();
+    ObjectsRemovalService::Flush();
+    {
+        ScopeLock lock(Locker);
+        _isCreatingDefaultInstance = true;
+        _defaultInstance = PrefabManager::SpawnPrefab(this, nullptr, &ObjectsCache, true);
+        _isCreatingDefaultInstance = false;
+    }
+
     // Instantiate prefab instance from prefab (default spawning logic)
     // Note: it will get any added or removed objects from the nested prefabs
+    // TODO: try to optimize by using recreated default instance to ApplyAllInternal (will need special path there if apply is done with default instance to unlink it instead of destroying)
     const auto targetActor = PrefabManager::SpawnPrefab(this, nullptr, nullptr, true);
     if (targetActor == nullptr)
     {

@@ -46,7 +46,7 @@ namespace FlaxEditor.Windows.Assets
                 var asset = _window.Asset;
                 if (asset == null || !asset.IsLoaded)
                 {
-                    Render2D.DrawText(style.FontLarge, "Loading...", new Rectangle(Vector2.Zero, Size), style.ForegroundDisabled, TextAlignment.Center, TextAlignment.Center);
+                    Render2D.DrawText(style.FontLarge, "Loading...", new Rectangle(Float2.Zero, Size), style.ForegroundDisabled, TextAlignment.Center, TextAlignment.Center);
                 }
             }
         }
@@ -189,12 +189,12 @@ namespace FlaxEditor.Windows.Assets
                         var group = layout.Group("General");
 
                         var minScreenSize = group.FloatValue("Min Screen Size", "The minimum screen size to draw model (the bottom limit). Used to cull small models. Set to 0 to disable this feature.");
-                        minScreenSize.FloatValue.MinValue = 0.0f;
-                        minScreenSize.FloatValue.MaxValue = 1.0f;
-                        minScreenSize.FloatValue.Value = proxy.Asset.MinScreenSize;
-                        minScreenSize.FloatValue.ValueChanged += () =>
+                        minScreenSize.ValueBox.MinValue = 0.0f;
+                        minScreenSize.ValueBox.MaxValue = 1.0f;
+                        minScreenSize.ValueBox.Value = proxy.Asset.MinScreenSize;
+                        minScreenSize.ValueBox.ValueChanged += () =>
                         {
-                            proxy.Asset.MinScreenSize = minScreenSize.FloatValue.Value;
+                            proxy.Asset.MinScreenSize = minScreenSize.ValueBox.Value;
                             proxy.Window.MarkAsEdited();
                         };
                     }
@@ -219,15 +219,15 @@ namespace FlaxEditor.Windows.Assets
                             vertexCount += mesh.VertexCount;
                         }
 
-                        group.Label(string.Format("Triangles: {0:N0}   Vertices: {1:N0}", triangleCount, vertexCount));
+                        group.Label(string.Format("Triangles: {0:N0}   Vertices: {1:N0}", triangleCount, vertexCount)).AddCopyContextMenu();
                         group.Label("Size: " + lod.Box.Size);
                         var screenSize = group.FloatValue("Screen Size", "The screen size to switch LODs. Bottom limit of the model screen size to render this LOD.");
-                        screenSize.FloatValue.MinValue = 0.0f;
-                        screenSize.FloatValue.MaxValue = 10.0f;
-                        screenSize.FloatValue.Value = lod.ScreenSize;
-                        screenSize.FloatValue.ValueChanged += () =>
+                        screenSize.ValueBox.MinValue = 0.0f;
+                        screenSize.ValueBox.MaxValue = 10.0f;
+                        screenSize.ValueBox.Value = lod.ScreenSize;
+                        screenSize.ValueBox.ValueChanged += () =>
                         {
-                            lod.ScreenSize = screenSize.FloatValue.Value;
+                            lod.ScreenSize = screenSize.ValueBox.Value;
                             proxy.Window.MarkAsEdited();
                         };
 
@@ -235,7 +235,7 @@ namespace FlaxEditor.Windows.Assets
                         for (int meshIndex = 0; meshIndex < meshes.Length; meshIndex++)
                         {
                             var mesh = meshes[meshIndex];
-                            group.Label($"Mesh {meshIndex} (tris: {mesh.TriangleCount:N0}, verts: {mesh.VertexCount:N0})");
+                            group.Label($"Mesh {meshIndex} (tris: {mesh.TriangleCount:N0}, verts: {mesh.VertexCount:N0})").AddCopyContextMenu();
 
                             // Material Slot
                             var materialSlot = group.ComboBox("Material Slot", "Material slot used by this mesh during rendering");
@@ -337,11 +337,11 @@ namespace FlaxEditor.Windows.Assets
                             label.SetupContextMenu += (nameLabel, menu, linkedEditor) => { menu.AddButton("Copy name", () => Clipboard.Text = blendShape); };
                             var property = group.AddPropertyItem(label);
                             var editor = property.FloatValue();
-                            editor.FloatValue.Value = 0.0f;
-                            editor.FloatValue.MinValue = -1;
-                            editor.FloatValue.MaxValue = 1;
-                            editor.FloatValue.SlideSpeed = 0.01f;
-                            editor.FloatValue.ValueChanged += () => { proxy.Window._preview.SetBlendShapeWeight(blendShape, editor.FloatValue.Value); };
+                            editor.ValueBox.Value = 0.0f;
+                            editor.ValueBox.MinValue = -1;
+                            editor.ValueBox.MaxValue = 1;
+                            editor.ValueBox.SlideSpeed = 0.01f;
+                            editor.ValueBox.ValueChanged += () => { proxy.Window._preview.SetBlendShapeWeight(blendShape, editor.ValueBox.Value); };
                         }
                     }
                 }
@@ -650,12 +650,12 @@ namespace FlaxEditor.Windows.Assets
                             uint i2 = meshData.IndexBuffer[i + 2];
 
                             // Cache triangle uvs positions and transform positions to output target
-                            Vector2 uv0 = meshData.VertexBuffer[i0].TexCoord * uvScale;
-                            Vector2 uv1 = meshData.VertexBuffer[i1].TexCoord * uvScale;
-                            Vector2 uv2 = meshData.VertexBuffer[i2].TexCoord * uvScale;
+                            Float2 uv0 = meshData.VertexBuffer[i0].TexCoord * uvScale;
+                            Float2 uv1 = meshData.VertexBuffer[i1].TexCoord * uvScale;
+                            Float2 uv2 = meshData.VertexBuffer[i2].TexCoord * uvScale;
 
                             // Don't draw too small triangles
-                            float area = Vector2.TriangleArea(ref uv0, ref uv1, ref uv2);
+                            float area = Float2.TriangleArea(ref uv0, ref uv1, ref uv2);
                             if (area > 3.0f)
                             {
                                 // Draw triangle
@@ -679,11 +679,11 @@ namespace FlaxEditor.Windows.Assets
                     if (!Proxy.Window.RequestMeshData())
                     {
                         Invalidate();
-                        Render2D.DrawText(Style.Current.FontMedium, "Loading...", new Rectangle(Vector2.Zero, size), Color.White, TextAlignment.Center, TextAlignment.Center);
+                        Render2D.DrawText(Style.Current.FontMedium, "Loading...", new Rectangle(Float2.Zero, size), Color.White, TextAlignment.Center, TextAlignment.Center);
                         return;
                     }
 
-                    Render2D.PushClip(new Rectangle(Vector2.Zero, size));
+                    Render2D.PushClip(new Rectangle(Float2.Zero, size));
 
                     var meshDatas = Proxy.Window._meshDatas;
                     var lodIndex = Mathf.Clamp(_lod, 0, meshDatas.Length - 1);

@@ -220,8 +220,8 @@ void ManagedPostProcessEffect::Render(RenderContext& renderContext, GPUTexture* 
 SceneRenderTask::SceneRenderTask(const SpawnParams& params)
     : RenderTask(params)
 {
-    View.Position = Vector3::Zero;
-    View.Direction = Vector3::Forward;
+    View.Position = Float3::Zero;
+    View.Direction = Float3::Forward;
     Buffers = New<RenderBuffers>();
 }
 
@@ -229,6 +229,8 @@ SceneRenderTask::~SceneRenderTask()
 {
     if (Buffers)
         Buffers->DeleteObjectNow();
+    if (_customActorsScene)
+        Delete(_customActorsScene);
 }
 
 void SceneRenderTask::CameraCut()
@@ -253,6 +255,9 @@ void SceneRenderTask::ClearCustomActors()
 
 void SceneRenderTask::CollectPostFxVolumes(RenderContext& renderContext)
 {
+    // Cache WorldPosition used for PostFx volumes blending (RenderView caches it later on)
+    renderContext.View.WorldPosition = renderContext.View.Origin + renderContext.View.Position;
+
     if ((ActorsSource & ActorsSources::Scenes) != 0)
     {
         Level::CollectPostFxVolumes(renderContext);
@@ -270,18 +275,29 @@ void SceneRenderTask::CollectPostFxVolumes(RenderContext& renderContext)
     }
 }
 
+void AddActorToSceneRendering(SceneRendering* s, Actor* a)
+{
+    if (a && a->IsActiveInHierarchy())
+    {
+        int32 key = -1;
+        s->AddActor(a, key);
+        for (Actor* child : a->Children)
+            AddActorToSceneRendering(s, child);
+    }
+}
+
 void SceneRenderTask::OnCollectDrawCalls(RenderContext& renderContext)
 {
     // Draw actors (collect draw calls)
     if ((ActorsSource & ActorsSources::CustomActors) != 0)
     {
-        for (auto a : CustomActors)
-        {
-            if (a && a->GetIsActive())
-            {
-                a->DrawHierarchy(renderContext);
-            }
-        }
+        if (_customActorsScene == nullptr)
+            _customActorsScene = New<SceneRendering>();
+        else
+            _customActorsScene->Clear();
+        for (Actor* a : CustomActors)
+            AddActorToSceneRendering(_customActorsScene, a);
+        _customActorsScene->Draw(renderContext);
     }
     if ((ActorsSource & ActorsSources::Scenes) != 0)
     {
@@ -387,7 +403,7 @@ void SceneRenderTask::OnBegin(GPUContext* context)
 
 void SceneRenderTask::OnRender(GPUContext* context)
 {
-    if (Buffers && Buffers->GetWidth() > 0)
+    if (!IsCustomRendering && Buffers && Buffers->GetWidth() > 0)
         Renderer::Render(this);
 
     RenderTask::OnRender(context);
@@ -400,10 +416,11 @@ void SceneRenderTask::OnEnd(GPUContext* context)
 
     RenderTask::OnEnd(context);
 
-    // Swap matrices
+    // Swap data
+    View.PrevOrigin = View.Origin;
     View.PrevView = View.View;
     View.PrevProjection = View.Projection;
-    Matrix::Multiply(View.PrevView, View.PrevProjection, View.PrevViewProjection);
+    View.PrevViewProjection = View.ViewProjection();
 }
 
 bool SceneRenderTask::Resize(int32 width, int32 height)

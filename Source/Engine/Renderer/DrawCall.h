@@ -36,6 +36,11 @@ class ISkyRenderer
 public:
 
     /// <summary>
+    /// Returns true if sky is realtime, otherwise it's static.
+    /// </summary>
+    virtual bool IsDynamicSky() const = 0;
+
+    /// <summary>
     /// Apply sky material/shader state to the GPU pipeline with custom parameters set (render to GBuffer).
     /// </summary>
     /// <param name="context">The context responsible for rendering commands.</param>
@@ -55,7 +60,7 @@ struct VolumetricFogOptions
     Color Emissive;
     float ExtinctionScale;
     float Distance;
-    Vector4 FogParameters;
+    Float4 FogParameters;
 
     bool UseVolumetricFog() const
     {
@@ -184,7 +189,7 @@ struct DrawCall
             const Lightmap* Lightmap;
             Rectangle LightmapUVsArea;
             SkinnedMeshDrawData* Skinning;
-            Vector3 GeometrySize; // Object geometry size in the world (unscaled).
+            Float3 GeometrySize; // Object geometry size in the world (unscaled).
             float LODDitherFactor; // The model LOD transition dither progress.
             Matrix PrevWorld;
         } Surface;
@@ -193,9 +198,9 @@ struct DrawCall
         {
             const Lightmap* Lightmap;
             Rectangle LightmapUVsArea;
-            Vector4 HeightmapUVScaleBias;
-            Vector4 NeighborLOD;
-            Vector2 OffsetUV;
+            Float4 HeightmapUVScaleBias;
+            Float4 NeighborLOD;
+            Float2 OffsetUV;
             float CurrentLOD;
             float ChunkSizeNextLOD;
             float TerrainChunkSizeLOD0;
@@ -221,7 +226,7 @@ struct DrawCall
 
             struct
             {
-                Vector3 Position;
+                Float3 Position;
                 float Radius;
                 int32 ParticleIndex;
             } VolumetricFog;
@@ -231,7 +236,7 @@ struct DrawCall
         {
             GPUBuffer* SplineDeformation;
             Matrix LocalMatrix; // Geometry transformation applied before deformation.
-            Vector3 GeometrySize; // Object geometry size in the world (unscaled).
+            Float3 GeometrySize; // Object geometry size in the world (unscaled).
             float Segment;
             float ChunksPerSegment;
             float MeshMinZ;
@@ -252,7 +257,7 @@ struct DrawCall
     /// <summary>
     /// Object location in the world used for draw calls sorting.
     /// </summary>
-    Vector3 ObjectPosition;
+    Float3 ObjectPosition;
 
     /// <summary>
     /// The world matrix determinant sign (used for geometry that is two sided or has inverse scale - needs to flip normal vectors and change triangles culling).
@@ -322,13 +327,13 @@ struct TIsPODType<GeometryDrawStateData>
 
 #define GEOMETRY_DRAW_STATE_EVENT_BEGIN(drawState, worldMatrix) \
     const auto frame = Engine::FrameCount; \
-	if (drawState.PrevFrame + 1 < frame) \
+	if (drawState.PrevFrame + 1 < frame && !renderContext.View.IsSingleFrame) \
 	{ \
         drawState.PrevWorld = worldMatrix; \
     }
 
 #define GEOMETRY_DRAW_STATE_EVENT_END(drawState, worldMatrix) \
-	if (drawState.PrevFrame != frame) \
+	if (drawState.PrevFrame != frame && !renderContext.View.IsSingleFrame) \
 	{ \
 		drawState.PrevWorld = worldMatrix; \
 		drawState.PrevFrame = frame; \

@@ -3,7 +3,21 @@
 #if COMPILE_WITH_MODEL_TOOL
 
 #include "ModelTool.h"
+#include "MeshAccelerationStructure.h"
 #include "Engine/Core/Log.h"
+#include "Engine/Core/RandomStream.h"
+#include "Engine/Core/Math/Vector3.h"
+#include "Engine/Core/Math/Ray.h"
+#include "Engine/Profiler/ProfilerCPU.h"
+#include "Engine/Threading/JobSystem.h"
+#include "Engine/Graphics/RenderTools.h"
+#include "Engine/Graphics/Async/GPUTask.h"
+#include "Engine/Graphics/Textures/GPUTexture.h"
+#include "Engine/Graphics/Textures/TextureData.h"
+#include "Engine/Graphics/Models/ModelData.h"
+#include "Engine/Content/Assets/Model.h"
+#include "Engine/Serialization/MemoryWriteStream.h"
+#if USE_EDITOR
 #include "Engine/Core/Types/DateTime.h"
 #include "Engine/Core/Types/TimeSpan.h"
 #include "Engine/Core/Types/Pair.h"
@@ -19,6 +33,297 @@
 #include "Engine/ContentImporters/CreateCollisionData.h"
 #include "Editor/Utilities/EditorUtilities.h"
 #include <ThirdParty/meshoptimizer/meshoptimizer.h>
+#endif
+
+ModelSDFHeader::ModelSDFHeader(const ModelBase::SDFData& sdf, const GPUTextureDescription& desc)
+    : LocalToUVWMul(sdf.LocalToUVWMul)
+    , WorldUnitsPerVoxel(sdf.WorldUnitsPerVoxel)
+    , LocalToUVWAdd(sdf.LocalToUVWAdd)
+    , MaxDistance(sdf.MaxDistance)
+    , LocalBoundsMin(sdf.LocalBoundsMin)
+    , MipLevels(desc.MipLevels)
+    , LocalBoundsMax(sdf.LocalBoundsMax)
+    , Width(desc.Width)
+    , Height(desc.Height)
+    , Depth(desc.Depth)
+    , Format(desc.Format)
+    , ResolutionScale(sdf.ResolutionScale)
+    , LOD(sdf.LOD)
+{
+}
+
+ModelSDFMip::ModelSDFMip(int32 mipIndex, uint32 rowPitch, uint32 slicePitch)
+    : MipIndex(mipIndex)
+    , RowPitch(rowPitch)
+    , SlicePitch(slicePitch)
+{
+}
+
+ModelSDFMip::ModelSDFMip(int32 mipIndex, const TextureMipData& mip)
+    : MipIndex(mipIndex)
+    , RowPitch(mip.RowPitch)
+    , SlicePitch(mip.Data.Length())
+{
+}
+
+bool ModelTool::GenerateModelSDF(Model* inputModel, ModelData* modelData, float resolutionScale, int32 lodIndex, ModelBase::SDFData* outputSDF, MemoryWriteStream* outputStream, const StringView& assetName, float backfacesThreshold)
+{
+    PROFILE_CPU();
+    auto startTime = Platform::GetTimeSeconds();
+
+    // Setup SDF texture properties
+    BoundingBox bounds;
+    if (inputModel)
+        bounds = inputModel->LODs[lodIndex].GetBox();
+    else if (modelData)
+        bounds = modelData->LODs[lodIndex].GetBox();
+    else
+        return true;
+    Float3 size = bounds.GetSize();
+    ModelBase::SDFData sdf;
+    sdf.WorldUnitsPerVoxel = 10 / Math::Max(resolutionScale, 0.0001f);
+    Int3 resolution(Float3::Ceil(Float3::Clamp(size / sdf.WorldUnitsPerVoxel, 4, 256)));
+    Float3 uvwToLocalMul = size;
+    Float3 uvwToLocalAdd = bounds.Minimum;
+    sdf.LocalToUVWMul = Float3::One / uvwToLocalMul;
+    sdf.LocalToUVWAdd = -uvwToLocalAdd / uvwToLocalMul;
+    sdf.MaxDistance = size.MaxValue();
+    sdf.LocalBoundsMin = bounds.Minimum;
+    sdf.LocalBoundsMax = bounds.Maximum;
+    sdf.ResolutionScale = resolutionScale;
+    sdf.LOD = lodIndex;
+    // TODO: maybe apply 1 voxel margin around the geometry?
+    const int32 maxMips = 3;
+    const int32 mipCount = Math::Min(MipLevelsCount(resolution.X, resolution.Y, resolution.Z, true), maxMips);
+    PixelFormat format = PixelFormat::R16_UNorm;
+    int32 formatStride = 2;
+    float formatMaxValue = MAX_uint16;
+    typedef float (*FormatRead)(void* ptr);
+    typedef void (*FormatWrite)(void* ptr, float v);
+    FormatRead formatRead = [](void* ptr)
+    {
+        return (float)*(uint16*)ptr;
+    };
+    FormatWrite formatWrite = [](void* ptr, float v)
+    {
+        *(uint16*)ptr = (uint16)v;
+    };
+    if (resolution.MaxValue() < 8)
+    {
+        // For smaller meshes use more optimized format (gives small perf and memory gain but introduces artifacts on larger meshes)
+        format = PixelFormat::R8_UNorm;
+        formatStride = 1;
+        formatMaxValue = MAX_uint8;
+        formatRead = [](void* ptr)
+        {
+            return (float)*(uint8*)ptr;
+        };
+        formatWrite = [](void* ptr, float v)
+        {
+            *(uint8*)ptr = (uint8)v;
+        };
+    }
+    GPUTextureDescription textureDesc = GPUTextureDescription::New3D(resolution.X, resolution.Y, resolution.Z, format, GPUTextureFlags::ShaderResource, mipCount);
+    if (outputSDF)
+    {
+        *outputSDF = sdf;
+        if (!outputSDF->Texture)
+            outputSDF->Texture = GPUTexture::New();
+        if (outputSDF->Texture->Init(textureDesc))
+        {
+            SAFE_DELETE_GPU_RESOURCE(outputSDF->Texture);
+            return true;
+        }
+    }
+
+    // TODO: support GPU to generate model SDF on-the-fly (if called during rendering)
+
+    // Setup acceleration structure for fast ray tracing the mesh triangles
+    MeshAccelerationStructure scene;
+    if (inputModel)
+        scene.Add(inputModel, lodIndex);
+    else if (modelData)
+        scene.Add(modelData, lodIndex);
+    scene.BuildBVH();
+
+    // Allocate memory for the distant field
+    const int32 voxelsSize = resolution.X * resolution.Y * resolution.Z * formatStride;
+    void* voxels = Allocator::Allocate(voxelsSize);
+    Float3 xyzToLocalMul = uvwToLocalMul / Float3(resolution - 1);
+    Float3 xyzToLocalAdd = uvwToLocalAdd;
+    const Float2 encodeMAD(0.5f / sdf.MaxDistance * formatMaxValue, 0.5f * formatMaxValue);
+    const Float2 decodeMAD(2.0f * sdf.MaxDistance / formatMaxValue, -sdf.MaxDistance);
+    int32 voxelSizeSum = voxelsSize;
+
+    // TODO: use optimized sparse storage for SDF data as hierarchical bricks as in papers below:
+    // https://graphics.pixar.com/library/IrradianceAtlas/paper.pdf
+    // http://maverick.inria.fr/Membres/Cyril.Crassin/thesis/CCrassinThesis_EN_Web.pdf
+    // http://ramakarl.com/pdfs/2016_Hoetzlein_GVDB.pdf
+    // https://www.cse.chalmers.se/~uffe/HighResolutionSparseVoxelDAGs.pdf
+
+    // Brute-force for each voxel to calculate distance to the closest triangle with point query and distance sign by raycasting around the voxel
+    const int32 sampleCount = 12;
+    Array<Float3> sampleDirections;
+    sampleDirections.Resize(sampleCount);
+    {
+        RandomStream rand;
+        sampleDirections.Get()[0] = Float3::Up;
+        sampleDirections.Get()[1] = Float3::Down;
+        sampleDirections.Get()[2] = Float3::Left;
+        sampleDirections.Get()[3] = Float3::Right;
+        sampleDirections.Get()[4] = Float3::Forward;
+        sampleDirections.Get()[5] = Float3::Backward;
+        for (int32 i = 6; i < sampleCount; i++)
+            sampleDirections.Get()[i] = rand.GetUnitVector();
+    }
+    Function<void(int32)> sdfJob = [&sdf, &resolution, &backfacesThreshold, &sampleDirections, &scene, &voxels, &xyzToLocalMul, &xyzToLocalAdd, &encodeMAD, &formatStride, &formatWrite](int32 z)
+    {
+        PROFILE_CPU_NAMED("Model SDF Job");
+        Real hitDistance;
+        Vector3 hitNormal, hitPoint;
+        Triangle hitTriangle;
+        const int32 zAddress = resolution.Y * resolution.X * z;
+        for (int32 y = 0; y < resolution.Y; y++)
+        {
+            const int32 yAddress = resolution.X * y + zAddress;
+            for (int32 x = 0; x < resolution.X; x++)
+            {
+                Real minDistance = sdf.MaxDistance;
+                Vector3 voxelPos = Float3((float)x, (float)y, (float)z) * xyzToLocalMul + xyzToLocalAdd;
+
+                // Point query to find the distance to the closest surface
+                scene.PointQuery(voxelPos, minDistance, hitPoint, hitTriangle);
+
+                // Raycast samples around voxel to count triangle backfaces hit
+                int32 hitBackCount = 0, hitCount = 0;
+                for (int32 sample = 0; sample < sampleDirections.Count(); sample++)
+                {
+                    Ray sampleRay(voxelPos, sampleDirections[sample]);
+                    if (scene.RayCast(sampleRay, hitDistance, hitNormal, hitTriangle))
+                    {
+                        hitCount++;
+                        const bool backHit = Float3::Dot(sampleRay.Direction, hitTriangle.GetNormal()) > 0;
+                        if (backHit)
+                            hitBackCount++;
+                    }
+                }
+
+                float distance = (float)minDistance;
+                // TODO: surface thickness threshold? shift reduce distance for all voxels by something like 0.01 to enlarge thin geometry
+                // if ((float)hitBackCount > (float)hitCount * 0.3f && hitCount != 0)
+                if ((float)hitBackCount > (float)sampleDirections.Count() * backfacesThreshold && hitCount != 0)
+                {
+                    // Voxel is inside the geometry so turn it into negative distance to the surface
+                    distance *= -1;
+                }
+                const int32 xAddress = x + yAddress;
+                formatWrite((byte*)voxels + xAddress * formatStride, distance * encodeMAD.X + encodeMAD.Y);
+            }
+        }
+    };
+    JobSystem::Execute(sdfJob, resolution.Z);
+
+    // Cache SDF data on a CPU
+    if (outputStream)
+    {
+        outputStream->WriteInt32(1); // Version
+        ModelSDFHeader data(sdf, textureDesc);
+        outputStream->Write(&data);
+        ModelSDFMip mipData(0, resolution.X * formatStride, voxelsSize);
+        outputStream->Write(&mipData);
+        outputStream->WriteBytes(voxels, voxelsSize);
+    }
+
+    // Upload data to the GPU
+    if (outputSDF)
+    {
+        BytesContainer data;
+        data.Link((byte*)voxels, voxelsSize);
+        auto task = outputSDF->Texture->UploadMipMapAsync(data, 0, resolution.X * formatStride, voxelsSize, true);
+        if (task)
+            task->Start();
+    }
+
+    // Generate mip maps
+    void* voxelsMip = nullptr;
+    for (int32 mipLevel = 1; mipLevel < mipCount; mipLevel++)
+    {
+        Int3 resolutionMip = Int3::Max(resolution / 2, Int3::One);
+        const int32 voxelsMipSize = resolutionMip.X * resolutionMip.Y * resolutionMip.Z * formatStride;
+        if (voxelsMip == nullptr)
+            voxelsMip = Allocator::Allocate(voxelsMipSize);
+
+        // Downscale mip
+        Function<void(int32)> mipJob = [&voxelsMip, &voxels, &resolution, &resolutionMip, &encodeMAD, &decodeMAD, &formatStride, &formatRead, &formatWrite](int32 z)
+        {
+            PROFILE_CPU_NAMED("Model SDF Mip Job");
+            const int32 zAddress = resolutionMip.Y * resolutionMip.X * z;
+            for (int32 y = 0; y < resolutionMip.Y; y++)
+            {
+                const int32 yAddress = resolutionMip.X * y + zAddress;
+                for (int32 x = 0; x < resolutionMip.X; x++)
+                {
+                    // Linear box filter around the voxel
+                    // TODO: use min distance for nearby texels (texel distance + distance to texel)
+                    float distance = 0;
+                    for (int32 dz = 0; dz < 2; dz++)
+                    {
+                        const int32 dzAddress = (z * 2 + dz) * (resolution.Y * resolution.X);
+                        for (int32 dy = 0; dy < 2; dy++)
+                        {
+                            const int32 dyAddress = (y * 2 + dy) * (resolution.X) + dzAddress;
+                            for (int32 dx = 0; dx < 2; dx++)
+                            {
+                                const int32 dxAddress = (x * 2 + dx) + dyAddress;
+                                const float d = formatRead((byte*)voxels + dxAddress * formatStride) * decodeMAD.X + decodeMAD.Y;
+                                distance += d;
+                            }
+                        }
+                    }
+                    distance *= 1.0f / 8.0f;
+
+                    const int32 xAddress = x + yAddress;
+                    formatWrite((byte*)voxelsMip + xAddress * formatStride, distance * encodeMAD.X + encodeMAD.Y);
+                }
+            }
+        };
+        JobSystem::Execute(mipJob, resolutionMip.Z);
+
+        // Cache SDF data on a CPU
+        if (outputStream)
+        {
+            ModelSDFMip mipData(mipLevel, resolutionMip.X * formatStride, voxelsMipSize);
+            outputStream->Write(&mipData);
+            outputStream->WriteBytes(voxelsMip, voxelsMipSize);
+        }
+
+        // Upload to the GPU
+        if (outputSDF)
+        {
+            BytesContainer data;
+            data.Link((byte*)voxelsMip, voxelsMipSize);
+            auto task = outputSDF->Texture->UploadMipMapAsync(data, mipLevel, resolutionMip.X * formatStride, voxelsMipSize, true);
+            if (task)
+                task->Start();
+        }
+
+        // Go down
+        voxelSizeSum += voxelsSize;
+        Swap(voxelsMip, voxels);
+        resolution = resolutionMip;
+    }
+
+    Allocator::Free(voxelsMip);
+    Allocator::Free(voxels);
+
+#if !BUILD_RELEASE
+    auto endTime = Platform::GetTimeSeconds();
+    LOG(Info, "Generated SDF {}x{}x{} ({} kB) in {}ms for {}", resolution.X, resolution.Y, resolution.Z, voxelSizeSum / 1024, (int32)((endTime - startTime) * 1000.0), assetName);
+#endif
+    return false;
+}
+
+#if USE_EDITOR
 
 void RemoveNamespace(String& name)
 {
@@ -85,7 +390,8 @@ bool ModelTool::ImportData(const String& path, ImportedModelData& data, Options&
 	if (ImportDataOpenFBX(importPath.Get(), data, options, errorMsg))
 		return true;
 #else
-#error Cannot use Model Tool without any importing backend!
+    LOG(Error, "Compiled without model importing backend.");
+    return true;
 #endif
 
     // Remove temporary file
@@ -419,7 +725,7 @@ bool ModelTool::ImportModel(const String& path, ModelData& meshData, Options& op
                 LOG(Warning, "Imported mesh \'{0}\' has missing skinning data. It may result in invalid rendering.", mesh->Name);
 
                 auto indices = Int4::Zero;
-                auto weights = Vector4::UnitX;
+                auto weights = Float4::UnitX;
 
                 // Check if use a single bone for skinning
                 auto nodeIndex = data.Skeleton.FindNode(mesh->Name);
@@ -504,6 +810,7 @@ bool ModelTool::ImportModel(const String& path, ModelData& meshData, Options& op
             } while (importedFileNames.Contains(filename));
         }
         importedFileNames.Add(filename);
+#if COMPILE_WITH_ASSETS_IMPORTER
         auto assetPath = autoImportOutput / filename + ASSET_FILES_EXTENSION_WITH_DOT;
         TextureTool::Options textureOptions;
         switch (texture.Type)
@@ -520,6 +827,7 @@ bool ModelTool::ImportModel(const String& path, ModelData& meshData, Options& op
         default: ;
         }
         AssetsImportingManager::ImportIfEdited(texture.FilePath, assetPath, texture.AssetID, &textureOptions);
+#endif
     }
 
     // Prepare material
@@ -549,6 +857,7 @@ bool ModelTool::ImportModel(const String& path, ModelData& meshData, Options& op
             } while (importedFileNames.Contains(filename));
         }
         importedFileNames.Add(filename);
+#if COMPILE_WITH_ASSETS_IMPORTER
         auto assetPath = autoImportOutput / filename + ASSET_FILES_EXTENSION_WITH_DOT;
         CreateMaterial::Options materialOptions;
         materialOptions.Diffuse.Color = material.Diffuse.Color;
@@ -568,10 +877,11 @@ bool ModelTool::ImportModel(const String& path, ModelData& meshData, Options& op
         if (!Math::IsOne(material.Opacity.Value) || material.Opacity.TextureIndex != -1)
             materialOptions.Info.BlendMode = MaterialBlendMode::Transparent;
         AssetsImportingManager::Create(AssetsImportingManager::CreateMaterialTag, assetPath, material.AssetID, &materialOptions);
+#endif
     }
 
     // Prepare import transformation
-    Transform importTransform(options.Translation, options.Rotation, Vector3(options.Scale));
+    Transform importTransform(options.Translation, options.Rotation, Float3(options.Scale));
     if (options.CenterGeometry && data.LODs.HasItems() && data.LODs[0].Meshes.HasItems())
     {
         // Calculate the bounding box (use LOD0 as a reference)
@@ -648,6 +958,7 @@ bool ModelTool::ImportModel(const String& path, ModelData& meshData, Options& op
             }
             if (collisionModel.LODs.HasItems())
             {
+#if COMPILE_WITH_PHYSICS_COOKING
                 // Create collision
                 CollisionCooking::Argument arg;
                 arg.Type = CollisionDataType::TriangleMesh;
@@ -657,6 +968,7 @@ bool ModelTool::ImportModel(const String& path, ModelData& meshData, Options& op
                 {
                     LOG(Error, "Failed to create collision mesh.");
                 }
+#endif
             }
         }
 
@@ -726,8 +1038,8 @@ bool ModelTool::ImportModel(const String& path, ModelData& meshData, Options& op
                         const float atlasSizeInv = 1.0f / atlasSize;
                         for (const auto& entry : entries)
                         {
-                            Vector2 uvOffset(entry.Slot->X * atlasSizeInv, entry.Slot->Y * atlasSizeInv);
-                            Vector2 uvScale((entry.Slot->Width - chartsPadding) * atlasSizeInv, (entry.Slot->Height - chartsPadding) * atlasSizeInv);
+                            Float2 uvOffset(entry.Slot->X * atlasSizeInv, entry.Slot->Y * atlasSizeInv);
+                            Float2 uvScale((entry.Slot->Width - chartsPadding) * atlasSizeInv, (entry.Slot->Height - chartsPadding) * atlasSizeInv);
                             // TODO: SIMD
                             for (auto& uv : entry.Mesh->LightmapUVs)
                             {
@@ -1102,7 +1414,7 @@ bool ModelTool::ImportModel(const String& path, ModelData& meshData, Options& op
                 int32 dstMeshIndexCountTarget = int32(srcMeshIndexCount * triangleReduction) / 3 * 3;
                 Array<unsigned int> indices;
                 indices.Resize(dstMeshIndexCountTarget);
-                int32 dstMeshIndexCount = (int32)meshopt_simplifySloppy(indices.Get(), srcMesh->Indices.Get(), srcMeshIndexCount, (const float*)srcMesh->Positions.Get(), srcMeshVertexCount, sizeof(Vector3), dstMeshIndexCountTarget);
+                int32 dstMeshIndexCount = (int32)meshopt_simplifySloppy(indices.Get(), srcMesh->Indices.Get(), srcMeshIndexCount, (const float*)srcMesh->Positions.Get(), srcMeshVertexCount, sizeof(Float3), dstMeshIndexCountTarget);
                 indices.Resize(dstMeshIndexCount);
                 if (dstMeshIndexCount == 0)
                     continue;
@@ -1124,15 +1436,15 @@ bool ModelTool::ImportModel(const String& path, ModelData& meshData, Options& op
         dstMesh->name.Resize(dstMeshVertexCount); \
         meshopt_remapVertexBuffer(dstMesh->name.Get(), srcMesh->name.Get(), srcMeshVertexCount, sizeof(type), remap.Get()); \
     }
-                REMAP_VERTEX_BUFFER(Positions, Vector3);
-                REMAP_VERTEX_BUFFER(UVs, Vector2);
-                REMAP_VERTEX_BUFFER(Normals, Vector3);
-                REMAP_VERTEX_BUFFER(Tangents, Vector3);
-                REMAP_VERTEX_BUFFER(Tangents, Vector3);
-                REMAP_VERTEX_BUFFER(LightmapUVs, Vector2);
+                REMAP_VERTEX_BUFFER(Positions, Float3);
+                REMAP_VERTEX_BUFFER(UVs, Float2);
+                REMAP_VERTEX_BUFFER(Normals, Float3);
+                REMAP_VERTEX_BUFFER(Tangents, Float3);
+                REMAP_VERTEX_BUFFER(Tangents, Float3);
+                REMAP_VERTEX_BUFFER(LightmapUVs, Float2);
                 REMAP_VERTEX_BUFFER(Colors, Color);
                 REMAP_VERTEX_BUFFER(BlendIndices, Int4);
-                REMAP_VERTEX_BUFFER(BlendWeights, Vector4);
+                REMAP_VERTEX_BUFFER(BlendWeights, Float4);
 #undef REMAP_VERTEX_BUFFER
 
                 // Remap blend shapes
@@ -1165,7 +1477,7 @@ bool ModelTool::ImportModel(const String& path, ModelData& meshData, Options& op
 
                 // Optimize generated LOD
                 meshopt_optimizeVertexCache(dstMesh->Indices.Get(), dstMesh->Indices.Get(), dstMeshIndexCount, dstMeshVertexCount);
-                meshopt_optimizeOverdraw(dstMesh->Indices.Get(), dstMesh->Indices.Get(), dstMeshIndexCount, (const float*)dstMesh->Positions.Get(), dstMeshVertexCount, sizeof(Vector3), 1.05f);
+                meshopt_optimizeOverdraw(dstMesh->Indices.Get(), dstMesh->Indices.Get(), dstMeshIndexCount, (const float*)dstMesh->Positions.Get(), dstMeshVertexCount, sizeof(Float3), 1.05f);
 
                 lodTriangleCount += dstMeshIndexCount / 3;
                 lodVertexCount += dstMeshVertexCount;
@@ -1306,5 +1618,7 @@ bool ModelTool::FindTexture(const String& sourcePath, const String& file, String
     FileSystem::NormalizePath(path);
     return false;
 }
+
+#endif
 
 #endif

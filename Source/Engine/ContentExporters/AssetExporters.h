@@ -9,7 +9,6 @@
 class AssetExporters
 {
 public:
-
     static ExportAssetResult ExportTexture(ExportAssetContext& context);
     static ExportAssetResult ExportCubeTexture(ExportAssetContext& context);
     static ExportAssetResult ExportAudioClip(ExportAssetContext& context);

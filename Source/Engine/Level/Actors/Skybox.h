@@ -13,13 +13,12 @@
 /// </summary>
 API_CLASS() class FLAXENGINE_API Skybox : public Actor, public ISkyRenderer
 {
-DECLARE_SCENE_OBJECT(Skybox);
+    DECLARE_SCENE_OBJECT(Skybox);
 private:
-
     AssetReference<MaterialInstance> _proxyMaterial;
+    int32 _sceneRenderingKey = -1;
 
 public:
-
     /// <summary>
     /// The cube texture to draw.
     /// </summary>
@@ -51,11 +50,9 @@ public:
     float Exposure = 0.0f;
 
 private:
-
     void setupProxy();
 
 public:
-
     // [Actor]
 #if USE_EDITOR
     BoundingBox GetEditorBox() const override
@@ -68,13 +65,13 @@ public:
     void Serialize(SerializeStream& stream, const void* otherObj) override;
     void Deserialize(DeserializeStream& stream, ISerializeModifier* modifier) override;
     bool HasContentLoaded() const override;
-    bool IntersectsItself(const Ray& ray, float& distance, Vector3& normal) override;
+    bool IntersectsItself(const Ray& ray, Real& distance, Vector3& normal) override;
 
     // [ISkyRenderer]
+    bool IsDynamicSky() const override;
     void ApplySky(GPUContext* context, RenderContext& renderContext, const Matrix& world) override;
 
 protected:
-
     // [Actor]
     void OnEnable() override;
     void OnDisable() override;

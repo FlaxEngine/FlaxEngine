@@ -24,10 +24,11 @@ namespace FlaxEditor.Tools.Terrain.Brushes
         /// <summary>
         /// Gets the brush material for the terrain chunk rendering. It must have domain set to Terrain. Setup material parameters within this call.
         /// </summary>
+        /// <param name="renderContext">The rendering context.</param>
         /// <param name="position">The world-space brush position.</param>
         /// <param name="color">The brush position.</param>
         /// <returns>The ready to render material for terrain chunks overlay on top of the terrain.</returns>
-        public abstract MaterialInstance GetBrushMaterial(ref Vector3 position, ref Color color);
+        public abstract MaterialInstance GetBrushMaterial(ref RenderContext renderContext, ref Vector3 position, ref Color color);
 
         /// <summary>
         /// Loads the brush material from the internal location. It's later cached by the object and reused.

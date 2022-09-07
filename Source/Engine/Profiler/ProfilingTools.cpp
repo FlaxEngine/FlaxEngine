@@ -15,7 +15,6 @@ Array<ProfilerGPU::Event> ProfilingTools::EventsGPU;
 class ProfilingToolsService : public EngineService
 {
 public:
-
     ProfilingToolsService()
         : EngineService(TEXT("Profiling Tools"))
     {

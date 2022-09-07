@@ -1,6 +1,7 @@
 // Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 #include "RenderView.h"
+#include "Engine/Level/LargeWorlds.h"
 #include "Engine/Level/Actors/Camera.h"
 #include "Engine/Renderer/RenderList.h"
 #include "Engine/Renderer/RendererPass.h"
@@ -15,7 +16,7 @@ void RenderView::Prepare(RenderContext& renderContext)
     const float height = static_cast<float>(renderContext.Buffers->GetHeight());
 
     // Check if use TAA (need to modify the projection matrix)
-    Vector2 taaJitter;
+    Float2 taaJitter;
     NonJitteredProjection = Projection;
     if (renderContext.List->Settings.AntiAliasing.Mode == AntialiasingMode::TemporalAntialiasing)
     {
@@ -28,7 +29,7 @@ void RenderView::Prepare(RenderContext& renderContext)
         const float jitterSpread = renderContext.List->Settings.AntiAliasing.TAA_JitterSpread;
         const float jitterX = RendererUtils::TemporalHalton(TaaFrameIndex + 1, 2) * jitterSpread;
         const float jitterY = RendererUtils::TemporalHalton(TaaFrameIndex + 1, 3) * jitterSpread;
-        taaJitter = Vector2(jitterX * 2.0f / width, jitterY * 2.0f / height);
+        taaJitter = Float2(jitterX * 2.0f / width, jitterY * 2.0f / height);
 
         // Modify projection matrix
         if (IsOrthographicProjection())
@@ -50,7 +51,7 @@ void RenderView::Prepare(RenderContext& renderContext)
     else
     {
         TaaFrameIndex = 0;
-        taaJitter = Vector2::Zero;
+        taaJitter = Float2::Zero;
     }
 
     renderContext.List->Init(renderContext);
@@ -59,41 +60,79 @@ void RenderView::Prepare(RenderContext& renderContext)
     PrepareCache(renderContext, width, height, taaJitter);
 }
 
-void RenderView::PrepareCache(RenderContext& renderContext, float width, float height, const Vector2& temporalAAJitter)
+void RenderView::PrepareCache(RenderContext& renderContext, float width, float height, const Float2& temporalAAJitter, RenderView* mainView)
 {
     // The same format used by the Flax common shaders and postFx materials
-    ViewInfo = Vector4(1.0f / Projection.M11, 1.0f / Projection.M22, Far / (Far - Near), (-Far * Near) / (Far - Near) / Far);
-    ScreenSize = Vector4(width, height, 1.0f / width, 1.0f / height);
+    ViewInfo = Float4(1.0f / Projection.M11, 1.0f / Projection.M22, Far / (Far - Near), (-Far * Near) / (Far - Near) / Far);
+    ScreenSize = Float4(width, height, 1.0f / width, 1.0f / height);
 
     TemporalAAJitter.Z = TemporalAAJitter.X;
     TemporalAAJitter.W = TemporalAAJitter.Y;
     TemporalAAJitter.X = temporalAAJitter.X;
     TemporalAAJitter.Y = temporalAAJitter.Y;
 
+    WorldPosition = Origin + Position;
+
     // Ortho views have issues with screen size LOD culling
     const float modelLODDistanceFactor = (renderContext.LodProxyView ? renderContext.LodProxyView->IsOrthographicProjection() : IsOrthographicProjection()) ? 100.0f : ModelLODDistanceFactor;
     ModelLODDistanceFactorSqrt = modelLODDistanceFactor * modelLODDistanceFactor;
+
+    // Setup main view render info
+    if (!mainView)
+        mainView = this;
+    MainViewProjection = mainView->ViewProjection();
+    MainScreenSize = mainView->ScreenSize;
+}
+
+void RenderView::SetUp(const Matrix& view, const Matrix& projection)
+{
+    // Copy data
+    Projection = projection;
+    NonJitteredProjection = projection;
+    View = view;
+    Matrix::Invert(View, IV);
+    Matrix::Invert(Projection, IP);
+
+    // Compute matrix
+    Matrix viewProjection;
+    Matrix::Multiply(View, Projection, viewProjection);
+    Matrix::Invert(viewProjection, IVP);
+    Frustum.SetMatrix(viewProjection);
+    CullingFrustum = Frustum;
+}
+
+void RenderView::SetUpCube(float nearPlane, float farPlane, const Float3& position)
+{
+    // Copy data
+    Near = nearPlane;
+    Far = farPlane;
+    Position = position;
+
+    // Create projection matrix
+    Matrix::PerspectiveFov(PI_OVER_2, 1.0f, nearPlane, farPlane, Projection);
+    NonJitteredProjection = Projection;
+    Matrix::Invert(Projection, IP);
 }
 
 void RenderView::SetFace(int32 faceIndex)
 {
-    static Vector3 directions[6] =
+    static Float3 directions[6] =
     {
-        { Vector3::Right },
-        { Vector3::Left },
-        { Vector3::Up },
-        { Vector3::Down },
-        { Vector3::Forward },
-        { Vector3::Backward },
+        { Float3::Right },
+        { Float3::Left },
+        { Float3::Up },
+        { Float3::Down },
+        { Float3::Forward },
+        { Float3::Backward },
     };
-    static Vector3 ups[6] =
+    static Float3 ups[6] =
     {
-        { Vector3::Up },
-        { Vector3::Up },
-        { Vector3::Backward },
-        { Vector3::Forward },
-        { Vector3::Up },
-        { Vector3::Up },
+        { Float3::Up },
+        { Float3::Up },
+        { Float3::Backward },
+        { Float3::Forward },
+        { Float3::Up },
+        { Float3::Up },
     };
     ASSERT(faceIndex >= 0 && faceIndex < 6);
 
@@ -108,31 +147,38 @@ void RenderView::SetFace(int32 faceIndex)
     CullingFrustum = Frustum;
 }
 
-void RenderView::CopyFrom(Camera* camera)
+void RenderView::SetProjector(float nearPlane, float farPlane, const Float3& position, const Float3& direction, const Float3& up, float angle)
 {
-    Position = camera->GetPosition();
-    Direction = camera->GetDirection();
-    Near = camera->GetNearPlane();
-    Far = camera->GetFarPlane();
-    View = camera->GetView();
-    Projection = camera->GetProjection();
+    // Copy data
+    Near = nearPlane;
+    Far = farPlane;
+    Position = position;
+
+    // Create projection matrix
+    Matrix::PerspectiveFov(angle * DegreesToRadians, 1.0f, nearPlane, farPlane, Projection);
     NonJitteredProjection = Projection;
-    Frustum = camera->GetFrustum();
-    Matrix::Invert(View, IV);
     Matrix::Invert(Projection, IP);
-    Frustum.GetInvMatrix(IVP);
+
+    // Create view matrix
+    Direction = direction;
+    Matrix::LookAt(Position, Position + Direction, up, View);
+    Matrix::Invert(View, IV);
+
+    // Compute frustum matrix
+    Frustum.SetMatrix(View, Projection);
+    Matrix::Invert(ViewProjection(), IVP);
     CullingFrustum = Frustum;
-    RenderLayersMask = camera->RenderLayersMask;
 }
 
 void RenderView::CopyFrom(Camera* camera, Viewport* viewport)
 {
-    Position = camera->GetPosition();
+    const Vector3 cameraPos = camera->GetPosition();
+    LargeWorlds::UpdateOrigin(Origin, cameraPos);
+    Position = cameraPos - Origin;
     Direction = camera->GetDirection();
     Near = camera->GetNearPlane();
     Far = camera->GetFarPlane();
-    View = camera->GetView();
-    camera->GetMatrices(View, Projection, *viewport);
+    camera->GetMatrices(View, Projection, viewport ? *viewport : camera->GetViewport(), Origin);
     Frustum.SetMatrix(View, Projection);
     NonJitteredProjection = Projection;
     Matrix::Invert(View, IV);
@@ -157,4 +203,10 @@ DrawPass RenderView::GetShadowsDrawPassMask(ShadowsCastingMode shadowsMode) cons
     default:
         return DrawPass::All;
     }
+}
+
+void RenderView::GetWorldMatrix(const Transform& transform, Matrix& world) const
+{
+    const Float3 translation = transform.Translation - Origin;
+    Matrix::Transformation(transform.Scale, transform.Orientation, translation, world);
 }

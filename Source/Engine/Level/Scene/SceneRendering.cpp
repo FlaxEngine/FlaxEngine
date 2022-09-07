@@ -1,369 +1,69 @@
 // Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
+#define SCENE_RENDERING_USE_PROFILER 0
+
 #include "SceneRendering.h"
-#include "Scene.h"
 #include "Engine/Graphics/RenderTask.h"
 #include "Engine/Graphics/RenderView.h"
-
-#define SCENE_RENDERING_USE_PROFILER 0
-#define SCENE_RENDERING_USE_SIMD 0
-
+#include "Engine/Renderer/RenderList.h"
+#include "Engine/Threading/Threading.h"
 #if SCENE_RENDERING_USE_PROFILER
 #include "Engine/Profiler/ProfilerCPU.h"
 #endif
 
-#if SCENE_RENDERING_USE_SIMD
-
-#include "Engine/Core/SIMD.h"
-
-ALIGN_BEGIN(16) struct CullDataSIMD
+ISceneRenderingListener::~ISceneRenderingListener()
 {
-    float xs[8];
-    float ys[8];
-    float zs[8];
-    float ds[8];
-} ALIGN_END(16);
-
-#endif
-
-int32 SceneRendering::DrawEntries::Add(Actor* obj)
-{
-    int32 key = 0;
-    for (; key < List.Count(); key++)
+    for (SceneRendering* scene : _scenes)
     {
-        if (List[key].Actor == nullptr)
-            break;
+        scene->_listeners.Remove(this);
     }
-    if (key == List.Count())
-        List.AddOne();
-    auto& e = List[key];
-    e.Actor = obj;
-    e.LayerMask = obj->GetLayerMask();
-    e.Bounds = obj->GetSphere();
-    return key;
 }
 
-void SceneRendering::DrawEntries::Update(Actor* obj, int32 key)
+void ISceneRenderingListener::ListenSceneRendering(SceneRendering* scene)
 {
-    if (List.IsEmpty())
-        return;
-    auto& e = List[key];
-    ASSERT_LOW_LAYER(obj == e.Actor);
-    e.LayerMask = obj->GetLayerMask();
-    e.Bounds = obj->GetSphere();
-}
-
-void SceneRendering::DrawEntries::Remove(Actor* obj, int32 key)
-{
-    if (List.IsEmpty())
-        return;
-    auto& e = List[key];
-    ASSERT_LOW_LAYER(obj == e.Actor);
-    e.Actor = nullptr;
-    e.LayerMask = 0;
-}
-
-void SceneRendering::DrawEntries::Clear()
-{
-    List.Clear();
-}
-
-void SceneRendering::DrawEntries::CullAndDraw(RenderContext& renderContext)
-{
-    auto& view = renderContext.View;
-    const BoundingFrustum frustum = view.CullingFrustum;
-#if SCENE_RENDERING_USE_SIMD
-    CullDataSIMD cullData;
+    if (!_scenes.Contains(scene))
     {
-        // Near
-        auto plane = view.Frustum.GetNear();
-        cullData.xs[0] = plane.Normal.X;
-        cullData.ys[0] = plane.Normal.Y;
-        cullData.zs[0] = plane.Normal.Z;
-        cullData.ds[0] = plane.D;
-
-        // Far
-        plane = view.Frustum.GetFar();
-        cullData.xs[1] = plane.Normal.X;
-        cullData.ys[1] = plane.Normal.Y;
-        cullData.zs[1] = plane.Normal.Z;
-        cullData.ds[1] = plane.D;
-
-        // Left
-        plane = view.Frustum.GetLeft();
-        cullData.xs[2] = plane.Normal.X;
-        cullData.ys[2] = plane.Normal.Y;
-        cullData.zs[2] = plane.Normal.Z;
-        cullData.ds[2] = plane.D;
-
-        // Right
-        plane = view.Frustum.GetRight();
-        cullData.xs[3] = plane.Normal.X;
-        cullData.ys[3] = plane.Normal.Y;
-        cullData.zs[3] = plane.Normal.Z;
-        cullData.ds[3] = plane.D;
-
-        // Top
-        plane = view.Frustum.GetTop();
-        cullData.xs[4] = plane.Normal.X;
-        cullData.ys[4] = plane.Normal.Y;
-        cullData.zs[4] = plane.Normal.Z;
-        cullData.ds[4] = plane.D;
-
-        // Bottom
-        plane = view.Frustum.GetBottom();
-        cullData.xs[5] = plane.Normal.X;
-        cullData.ys[5] = plane.Normal.Y;
-        cullData.zs[5] = plane.Normal.Z;
-        cullData.ds[5] = plane.D;
-
-        // Extra 0
-        cullData.xs[6] = 0;
-        cullData.ys[6] = 0;
-        cullData.zs[6] = 0;
-        cullData.ds[6] = 0;
-
-        // Extra 1
-        cullData.xs[7] = 0;
-        cullData.ys[7] = 0;
-        cullData.zs[7] = 0;
-        cullData.ds[7] = 0;
+        _scenes.Add(scene);
+        scene->_listeners.Add(this);
     }
-
-    SimdVector4 px = SIMD::Load(cullData.xs);
-    SimdVector4 py = SIMD::Load(cullData.ys);
-    SimdVector4 pz = SIMD::Load(cullData.zs);
-    SimdVector4 pd = SIMD::Load(cullData.ds);
-    SimdVector4 px2 = SIMD::Load(&cullData.xs[4]);
-    SimdVector4 py2 = SIMD::Load(&cullData.ys[4]);
-    SimdVector4 pz2 = SIMD::Load(&cullData.zs[4]);
-    SimdVector4 pd2 = SIMD::Load(&cullData.ds[4]);
-
-    for (int32 i = 0; i < List.Count(); i++)
-    {
-        auto e = List[i];
-
-        SimdVector4 cx = SIMD::Splat(e.Bounds.Center.X);
-        SimdVector4 cy = SIMD::Splat(e.Bounds.Center.Y);
-        SimdVector4 cz = SIMD::Splat(e.Bounds.Center.Z);
-        SimdVector4 r = SIMD::Splat(-e.Bounds.Radius);
-
-        SimdVector4 t = SIMD::Mul(cx, px);
-        t = SIMD::Add(t, SIMD::Mul(cy, py));
-        t = SIMD::Add(t, SIMD::Mul(cz, pz));
-        t = SIMD::Add(t, pd);
-        t = SIMD::Sub(t, r);
-        if (SIMD::MoveMask(t))
-            continue;
-
-        t = SIMD::Mul(cx, px2);
-        t = SIMD::Add(t, SIMD::Mul(cy, py2));
-        t = SIMD::Add(t, SIMD::Mul(cz, pz2));
-        t = SIMD::Add(t, pd2);
-        t = SIMD::Sub(t, r);
-        if (SIMD::MoveMask(t))
-            continue;
-
-        if (view.RenderLayersMask.Mask & e.LayerMask)
-        {
-#if SCENE_RENDERING_USE_PROFILER
-            PROFILE_CPU();
-#if TRACY_ENABLE
-            ___tracy_scoped_zone.Name(*e.Actor->GetName(), e.Actor->GetName().Length());
-#endif
-#endif
-            e.Actor->Draw(renderContext);
-        }
-    }
-#else
-    for (int32 i = 0; i < List.Count(); i++)
-    {
-        auto e = List[i];
-        if (view.RenderLayersMask.Mask & e.LayerMask && frustum.Intersects(e.Bounds))
-        {
-#if SCENE_RENDERING_USE_PROFILER
-            PROFILE_CPU();
-#if TRACY_ENABLE
-            ___tracy_scoped_zone.Name(*e.Actor->GetName(), e.Actor->GetName().Length());
-#endif
-#endif
-            e.Actor->Draw(renderContext);
-        }
-    }
-#endif
-}
-
-void SceneRendering::DrawEntries::CullAndDrawOffline(RenderContext& renderContext)
-{
-    auto& view = renderContext.View;
-    const BoundingFrustum frustum = view.CullingFrustum;
-#if SCENE_RENDERING_USE_SIMD
-    CullDataSIMD cullData;
-    {
-        // Near
-        auto plane = view.Frustum.GetNear();
-        cullData.xs[0] = plane.Normal.X;
-        cullData.ys[0] = plane.Normal.Y;
-        cullData.zs[0] = plane.Normal.Z;
-        cullData.ds[0] = plane.D;
-
-        // Far
-        plane = view.Frustum.GetFar();
-        cullData.xs[1] = plane.Normal.X;
-        cullData.ys[1] = plane.Normal.Y;
-        cullData.zs[1] = plane.Normal.Z;
-        cullData.ds[1] = plane.D;
-
-        // Left
-        plane = view.Frustum.GetLeft();
-        cullData.xs[2] = plane.Normal.X;
-        cullData.ys[2] = plane.Normal.Y;
-        cullData.zs[2] = plane.Normal.Z;
-        cullData.ds[2] = plane.D;
-
-        // Right
-        plane = view.Frustum.GetRight();
-        cullData.xs[3] = plane.Normal.X;
-        cullData.ys[3] = plane.Normal.Y;
-        cullData.zs[3] = plane.Normal.Z;
-        cullData.ds[3] = plane.D;
-
-        // Top
-        plane = view.Frustum.GetTop();
-        cullData.xs[4] = plane.Normal.X;
-        cullData.ys[4] = plane.Normal.Y;
-        cullData.zs[4] = plane.Normal.Z;
-        cullData.ds[4] = plane.D;
-
-        // Bottom
-        plane = view.Frustum.GetBottom();
-        cullData.xs[5] = plane.Normal.X;
-        cullData.ys[5] = plane.Normal.Y;
-        cullData.zs[5] = plane.Normal.Z;
-        cullData.ds[5] = plane.D;
-
-        // Extra 0
-        cullData.xs[6] = 0;
-        cullData.ys[6] = 0;
-        cullData.zs[6] = 0;
-        cullData.ds[6] = 0;
-
-        // Extra 1
-        cullData.xs[7] = 0;
-        cullData.ys[7] = 0;
-        cullData.zs[7] = 0;
-        cullData.ds[7] = 0;
-    }
-
-    SimdVector4 px = SIMD::Load(cullData.xs);
-    SimdVector4 py = SIMD::Load(cullData.ys);
-    SimdVector4 pz = SIMD::Load(cullData.zs);
-    SimdVector4 pd = SIMD::Load(cullData.ds);
-    SimdVector4 px2 = SIMD::Load(&cullData.xs[4]);
-    SimdVector4 py2 = SIMD::Load(&cullData.ys[4]);
-    SimdVector4 pz2 = SIMD::Load(&cullData.zs[4]);
-    SimdVector4 pd2 = SIMD::Load(&cullData.ds[4]);
-
-    for (int32 i = 0; i < List.Count(); i++)
-    {
-        auto e = List[i];
-
-        SimdVector4 cx = SIMD::Splat(e.Bounds.Center.X);
-        SimdVector4 cy = SIMD::Splat(e.Bounds.Center.Y);
-        SimdVector4 cz = SIMD::Splat(e.Bounds.Center.Z);
-        SimdVector4 r = SIMD::Splat(-e.Bounds.Radius);
-
-        SimdVector4 t = SIMD::Mul(cx, px);
-        t = SIMD::Add(t, SIMD::Mul(cy, py));
-        t = SIMD::Add(t, SIMD::Mul(cz, pz));
-        t = SIMD::Add(t, pd);
-        t = SIMD::Sub(t, r);
-        if (SIMD::MoveMask(t))
-            continue;
-
-        t = SIMD::Mul(cx, px2);
-        t = SIMD::Add(t, SIMD::Mul(cy, py2));
-        t = SIMD::Add(t, SIMD::Mul(cz, pz2));
-        t = SIMD::Add(t, pd2);
-        t = SIMD::Sub(t, r);
-        if (SIMD::MoveMask(t))
-            continue;
-
-        if (view.RenderLayersMask.Mask & e.LayerMask && e.Actor->GetStaticFlags() & renderContext.View.StaticFlagsMask)
-        {
-#if SCENE_RENDERING_USE_PROFILER
-            PROFILE_CPU();
-#if TRACY_ENABLE
-            ___tracy_scoped_zone.Name(*e.Actor->GetName(), e.Actor->GetName().Length());
-#endif
-#endif
-            e.Actor->Draw(renderContext);
-        }
-    }
-#else
-    for (int32 i = 0; i < List.Count(); i++)
-    {
-        auto e = List[i];
-        if (view.RenderLayersMask.Mask & e.LayerMask && frustum.Intersects(e.Bounds) && e.Actor->GetStaticFlags() & view.StaticFlagsMask)
-        {
-#if SCENE_RENDERING_USE_PROFILER
-            PROFILE_CPU();
-#if TRACY_ENABLE
-            ___tracy_scoped_zone.Name(*e.Actor->GetName(), e.Actor->GetName().Length());
-#endif
-#endif
-            e.Actor->Draw(renderContext);
-        }
-    }
-#endif
-}
-
-SceneRendering::SceneRendering(::Scene* scene)
-    : Scene(scene)
-{
 }
 
 void SceneRendering::Draw(RenderContext& renderContext)
 {
-    // Skip if disabled
-    if (!Scene->GetIsActive())
-        return;
+    ScopeLock lock(Locker);
     auto& view = renderContext.View;
+    const BoundingFrustum frustum = view.CullingFrustum;
+    const Vector3 origin = view.Origin;
+    renderContext.List->Scenes.Add(this);
 
     // Draw all visual components
     if (view.IsOfflinePass)
     {
-        Geometry.CullAndDrawOffline(renderContext);
-        if (view.Pass & DrawPass::GBuffer)
+        for (int32 i = 0; i < Actors.Count(); i++)
         {
-            Common.CullAndDrawOffline(renderContext);
-            for (int32 i = 0; i < CommonNoCulling.Count(); i++)
+            auto e = Actors[i];
+            e.Bounds.Center -= origin;
+            if (view.RenderLayersMask.Mask & e.LayerMask && (e.NoCulling || frustum.Intersects(e.Bounds)) && e.Actor->GetStaticFlags() & view.StaticFlagsMask)
             {
-                auto actor = CommonNoCulling[i];
-                if (actor->GetStaticFlags() & view.StaticFlagsMask && view.RenderLayersMask.HasLayer(actor->GetLayer()))
-                    actor->Draw(renderContext);
+#if SCENE_RENDERING_USE_PROFILER
+                PROFILE_CPU_ACTOR(e.Actor);
+#endif
+                e.Actor->Draw(renderContext);
             }
         }
     }
     else
     {
-        Geometry.CullAndDraw(renderContext);
-        if (view.Pass & DrawPass::GBuffer)
+        for (int32 i = 0; i < Actors.Count(); i++)
         {
-            Common.CullAndDraw(renderContext);
-            for (int32 i = 0; i < CommonNoCulling.Count(); i++)
+            auto e = Actors[i];
+            e.Bounds.Center -= origin;
+            if (view.RenderLayersMask.Mask & e.LayerMask && (e.NoCulling || frustum.Intersects(e.Bounds)))
             {
-                auto actor = CommonNoCulling[i];
-                if (view.RenderLayersMask.HasLayer(actor->GetLayer()))
-                {
 #if SCENE_RENDERING_USE_PROFILER
-                    PROFILE_CPU();
-#if TRACY_ENABLE
-                    ___tracy_scoped_zone.Name(*actor->GetName(), actor->GetName().Length());
+                PROFILE_CPU_ACTOR(e.Actor);
 #endif
-#endif
-                    actor->Draw(renderContext);
-                }
+                e.Actor->Draw(renderContext);
             }
         }
     }
@@ -395,10 +95,67 @@ void SceneRendering::CollectPostFxVolumes(RenderContext& renderContext)
 
 void SceneRendering::Clear()
 {
-    Geometry.Clear();
-    Common.Clear();
-    CommonNoCulling.Clear();
+    ScopeLock lock(Locker);
+    for (auto* listener : _listeners)
+    {
+        listener->OnSceneRenderingClear(this);
+        listener->_scenes.Remove(this);
+    }
+    _listeners.Clear();
+    Actors.Clear();
 #if USE_EDITOR
     PhysicsDebug.Clear();
 #endif
+}
+
+void SceneRendering::AddActor(Actor* a, int32& key)
+{
+    ScopeLock lock(Locker);
+    if (key == -1)
+    {
+        // TODO: track removedCount and skip searching for free entry if there is none
+        key = 0;
+        for (; key < Actors.Count(); key++)
+        {
+            if (Actors[key].Actor == nullptr)
+                break;
+        }
+        if (key == Actors.Count())
+            Actors.AddOne();
+        auto& e = Actors[key];
+        e.Actor = a;
+        e.LayerMask = a->GetLayerMask();
+        e.Bounds = a->GetSphere();
+        e.NoCulling = a->_drawNoCulling;
+        for (auto* listener : _listeners)
+            listener->OnSceneRenderingAddActor(a);
+    }
+}
+
+void SceneRendering::UpdateActor(Actor* a, int32 key)
+{
+    ScopeLock lock(Locker);
+    if (Actors.IsEmpty())
+        return;
+    auto& e = Actors[key];
+    ASSERT_LOW_LAYER(a == e.Actor);
+    for (auto* listener : _listeners)
+        listener->OnSceneRenderingUpdateActor(a, e.Bounds);
+    e.LayerMask = a->GetLayerMask();
+    e.Bounds = a->GetSphere();
+}
+
+void SceneRendering::RemoveActor(Actor* a, int32& key)
+{
+    ScopeLock lock(Locker);
+    if (Actors.HasItems())
+    {
+        auto& e = Actors[key];
+        ASSERT_LOW_LAYER(a == e.Actor);
+        for (auto* listener : _listeners)
+            listener->OnSceneRenderingRemoveActor(a);
+        e.Actor = nullptr;
+        e.LayerMask = 0;
+    }
+    key = -1;
 }

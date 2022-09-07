@@ -154,6 +154,11 @@ public:
     static Window* MainWindow;
 
     /// <summary>
+    /// Brings focused to the game viewport (game can receive input).
+    /// </summary>
+    API_FUNCTION() static void FocusGameViewport();
+
+    /// <summary>
     /// Checks whenever the game viewport is focused by the user (eg. can receive input).
     /// </summary>
     API_PROPERTY() static bool HasGameViewportFocus();

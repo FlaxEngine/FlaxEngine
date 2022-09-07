@@ -177,7 +177,7 @@ void SplashScreen::Show()
         if (reason == ClosingReason::User)
             cancel = true;
     });
-    _window->HitTest.Bind([](const Vector2& mouse, WindowHitCodes& hit, bool& handled)
+    _window->HitTest.Bind([](const Float2& mouse, WindowHitCodes& hit, bool& handled)
     {
         // Allow to drag window by clicking anywhere
         hit = WindowHitCodes::Caption;
@@ -259,7 +259,7 @@ void SplashScreen::OnDraw()
         return;
 
     // Title
-    const Vector2 titleLength = _titleFont->MeasureText(GetTitle());
+    const auto titleLength = _titleFont->MeasureText(GetTitle());
     TextLayoutOptions layout;
     layout.Bounds = Rectangle(10 * s, 10 * s, width - 10 * s, 50 * s);
     layout.HorizontalAlignment = TextAlignment::Near;

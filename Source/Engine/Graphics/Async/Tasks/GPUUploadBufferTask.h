@@ -14,13 +14,11 @@
 class GPUUploadBufferTask : public GPUTask
 {
 protected:
-
     BufferReference _buffer;
     int32 _offset;
     BytesContainer _data;
 
 public:
-
     /// <summary>
     /// Initializes a new instance of the <see cref="GPUUploadBufferTask"/> class.
     /// </summary>
@@ -42,14 +40,12 @@ public:
     }
 
 private:
-
     void OnResourceUnload(BufferReference* ref)
     {
         Cancel();
     }
 
 public:
-
     // [GPUTask]
     bool HasReference(Object* resource) const override
     {
@@ -57,7 +53,6 @@ public:
     }
 
 protected:
-
     // [GPUTask]
     Result run(GPUTasksContext* context) override
     {

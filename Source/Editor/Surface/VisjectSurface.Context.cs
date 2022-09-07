@@ -166,7 +166,7 @@ namespace FlaxEditor.Surface
         }
 
         /// <summary>
-        /// Called when context gets changed. Updates current context and UI. Updates the current context based on the first element in teh stack.
+        /// Called when context gets changed. Updates current context and UI. Updates the current context based on the first element in the stack.
         /// </summary>
         protected virtual void OnContextChanged()
         {

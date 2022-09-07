@@ -12,6 +12,8 @@ namespace FlaxEditor.CustomEditors
     /// <seealso cref="FlaxEditor.CustomEditors.ValueContainer" />
     public class ListValueContainer : ValueContainer
     {
+        private readonly object[] _attributes;
+
         /// <summary>
         /// The index in the collection.
         /// </summary>
@@ -34,9 +36,12 @@ namespace FlaxEditor.CustomEditors
         /// <param name="elementType">Type of the collection elements.</param>
         /// <param name="index">The index.</param>
         /// <param name="values">The collection values.</param>
-        public ListValueContainer(ScriptType elementType, int index, ValueContainer values)
+        /// <param name="attributes">The collection property attributes to inherit.</param>
+        public ListValueContainer(ScriptType elementType, int index, ValueContainer values, object[] attributes = null)
         : this(elementType, index)
         {
+            _attributes = attributes;
+
             Capacity = values.Count;
             for (int i = 0; i < values.Count; i++)
             {
@@ -119,6 +124,12 @@ namespace FlaxEditor.CustomEditors
                 _referenceValue = v[Index];
                 _hasReferenceValue = true;
             }
+        }
+
+        /// <inheritdoc />
+        public override object[] GetAttributes()
+        {
+            return _attributes ?? base.GetAttributes();
         }
     }
 }

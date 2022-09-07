@@ -42,7 +42,7 @@ namespace FlaxEditor.GUI.Timeline.GUI
         public class StopControl : Control
         {
             private bool _isMoving;
-            private Vector2 _startMovePos;
+            private Float2 _startMovePos;
             private IColorPickerDialog _currentDialog;
 
             /// <summary>
@@ -70,7 +70,7 @@ namespace FlaxEditor.GUI.Timeline.GUI
             }
 
             /// <inheritdoc />
-            public override bool OnMouseDown(Vector2 location, MouseButton button)
+            public override bool OnMouseDown(Float2 location, MouseButton button)
             {
                 if (button == MouseButton.Left)
                 {
@@ -86,7 +86,7 @@ namespace FlaxEditor.GUI.Timeline.GUI
             }
 
             /// <inheritdoc />
-            public override bool OnMouseUp(Vector2 location, MouseButton button)
+            public override bool OnMouseUp(Float2 location, MouseButton button)
             {
                 if (button == MouseButton.Left && _isMoving)
                 {
@@ -99,25 +99,25 @@ namespace FlaxEditor.GUI.Timeline.GUI
             }
 
             /// <inheritdoc />
-            public override bool OnShowTooltip(out string text, out Vector2 location, out Rectangle area)
+            public override bool OnShowTooltip(out string text, out Float2 location, out Rectangle area)
             {
                 // Don't show tooltip is user is moving the stop
                 return base.OnShowTooltip(out text, out location, out area) && !_isMoving;
             }
 
             /// <inheritdoc />
-            public override bool OnTestTooltipOverControl(ref Vector2 location)
+            public override bool OnTestTooltipOverControl(ref Float2 location)
             {
                 // Don't show tooltip is user is moving the stop
                 return base.OnTestTooltipOverControl(ref location) && !_isMoving;
             }
 
             /// <inheritdoc />
-            public override void OnMouseMove(Vector2 location)
+            public override void OnMouseMove(Float2 location)
             {
-                if (_isMoving && Vector2.DistanceSquared(ref location, ref _startMovePos) > 25.0f)
+                if (_isMoving && Float2.DistanceSquared(ref location, ref _startMovePos) > 25.0f)
                 {
-                    _startMovePos = Vector2.Minimum;
+                    _startMovePos = Float2.Minimum;
                     var x = PointToParent(location).X;
                     var frame = (int)((x - Width * 0.5f) / Gradient._scale);
                     Gradient.SetStopFrame(Index, frame);
@@ -127,7 +127,7 @@ namespace FlaxEditor.GUI.Timeline.GUI
             }
 
             /// <inheritdoc />
-            public override bool OnMouseDoubleClick(Vector2 location, MouseButton button)
+            public override bool OnMouseDoubleClick(Float2 location, MouseButton button)
             {
                 if (base.OnMouseDoubleClick(location, button))
                     return true;
@@ -347,7 +347,7 @@ namespace FlaxEditor.GUI.Timeline.GUI
                 {
                     AutoFocus = false,
                     Gradient = this,
-                    Size = new Vector2(10.0f, 10.0f),
+                    Size = new Float2(10.0f, 10.0f),
                     Parent = this,
                 };
                 _stops.Add(stop);
@@ -360,7 +360,7 @@ namespace FlaxEditor.GUI.Timeline.GUI
             {
                 var control = _stops[i];
                 var stop = _data[i];
-                control.Location = new Vector2(stop.Frame * scale - control.Width * 0.5f, (height - control.Height) * 0.5f);
+                control.Location = new Float2(stop.Frame * scale - control.Width * 0.5f, (height - control.Height) * 0.5f);
                 control.Index = i;
                 control.TooltipText = stop.Value + " at frame " + stop.Frame;
             }
@@ -390,7 +390,7 @@ namespace FlaxEditor.GUI.Timeline.GUI
             Render2D.PushClip(ref clientArea);
 
             var style = Style.Current;
-            var bounds = new Rectangle(Vector2.Zero, Size);
+            var bounds = new Rectangle(Float2.Zero, Size);
             var count = _data.Count;
             if (count == 0)
             {
@@ -409,7 +409,7 @@ namespace FlaxEditor.GUI.Timeline.GUI
 
                 if (prevStop.Frame > 0.0f)
                 {
-                    Render2D.FillRectangle(new Rectangle(Vector2.Zero, prevStop.Frame * scale, height), prevStop.Value);
+                    Render2D.FillRectangle(new Rectangle(Float2.Zero, prevStop.Frame * scale, height), prevStop.Value);
                 }
 
                 for (int i = 1; i < count; i++)
@@ -435,7 +435,7 @@ namespace FlaxEditor.GUI.Timeline.GUI
         }
 
         /// <inheritdoc />
-        public override bool OnMouseDoubleClick(Vector2 location, MouseButton button)
+        public override bool OnMouseDoubleClick(Float2 location, MouseButton button)
         {
             if (base.OnMouseDoubleClick(location, button))
                 return true;

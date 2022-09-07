@@ -384,12 +384,12 @@ void PhysicsScene::SetGravity(const Vector3& value)
     PhysicsBackend::SetSceneGravity(_scene, value);
 }
 
-Vector3 PhysicsScene::GetGravity()
+Vector3 PhysicsScene::GetGravity() const
 {
     return PhysicsBackend::GetSceneGravity(_scene);
 }
 
-bool PhysicsScene::GetEnableCCD()
+bool PhysicsScene::GetEnableCCD() const
 {
     return PhysicsBackend::GetSceneEnableCCD(_scene);
 }
@@ -407,6 +407,15 @@ float PhysicsScene::GetBounceThresholdVelocity()
 void PhysicsScene::SetBounceThresholdVelocity(float value)
 {
     PhysicsBackend::SetSceneBounceThresholdVelocity(_scene, value);
+}
+
+void PhysicsScene::SetOrigin(const Vector3& value)
+{
+    if (_origin != value)
+    {
+        PhysicsBackend::SetSceneOrigin(_scene, _origin, value);
+        _origin = value;
+    }
 }
 
 bool PhysicsScene::Init(const StringView& name, const PhysicsSettings& settings)

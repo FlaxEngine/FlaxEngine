@@ -60,7 +60,7 @@ namespace FlaxEditor.Windows.Assets
                 var animation = _window.Asset;
                 if (animation == null || !animation.IsLoaded)
                 {
-                    Render2D.DrawText(style.FontLarge, "Loading...", new Rectangle(Vector2.Zero, Size), style.ForegroundDisabled, TextAlignment.Center, TextAlignment.Center);
+                    Render2D.DrawText(style.FontLarge, "Loading...", new Rectangle(Float2.Zero, Size), style.ForegroundDisabled, TextAlignment.Center, TextAlignment.Center);
                 }
             }
 
@@ -359,6 +359,7 @@ namespace FlaxEditor.Windows.Assets
             if (_isWaitingForTimelineLoad && _asset.IsLoaded)
             {
                 _isWaitingForTimelineLoad = false;
+                _timeline._id = _asset.ID;
                 _timeline.Load(_asset);
                 _undo.Clear();
                 _timeline.Enabled = true;

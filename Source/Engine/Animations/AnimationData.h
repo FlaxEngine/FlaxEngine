@@ -12,7 +12,6 @@
 struct NodeAnimationData
 {
 public:
-
     /// <summary>
     /// The target node name.
     /// </summary>
@@ -21,7 +20,7 @@ public:
     /// <summary>
     /// The position channel animation.
     /// </summary>
-    LinearCurve<Vector3> Position;
+    LinearCurve<Float3> Position;
 
     /// <summary>
     /// The rotation channel animation.
@@ -31,22 +30,20 @@ public:
     /// <summary>
     /// The scale channel animation.
     /// </summary>
-    LinearCurve<Vector3> Scale;
+    LinearCurve<Float3> Scale;
 
 public:
-
     /// <summary>
     /// Initializes a new instance of the <see cref="NodeAnimationData"/> class.
     /// </summary>
     NodeAnimationData()
-        : Position(Vector3::Zero)
+        : Position(Float3::Zero)
         , Rotation(Quaternion::Identity)
-        , Scale(Vector3::One)
+        , Scale(Float3::One)
     {
     }
 
 public:
-
     /// <summary>
     /// Evaluates the animation transformation at the specified time (only for the curves with non-empty data).
     /// </summary>
@@ -56,7 +53,11 @@ public:
     void Evaluate(float time, Transform* result, bool loop = true) const
     {
         if (Position.GetKeyframes().HasItems())
-            Position.Evaluate(result->Translation, time, loop);
+        {
+            Float3 position;
+            Position.Evaluate(position, time, loop);
+            result->Translation = position;
+        }
         if (Rotation.GetKeyframes().HasItems())
             Rotation.Evaluate(result->Orientation, time, loop);
         if (Scale.GetKeyframes().HasItems())
@@ -71,7 +72,9 @@ public:
     /// <param name="loop">If true the curve will loop when it goes past the end or beginning. Otherwise the curve value will be clamped.</param>
     void EvaluateAll(float time, Transform* result, bool loop = true) const
     {
-        Position.Evaluate(result->Translation, time, loop);
+        Float3 position;
+        Position.Evaluate(position, time, loop);
+        result->Translation = position;
         Rotation.Evaluate(result->Orientation, time, loop);
         Scale.Evaluate(result->Scale, time, loop);
     }
@@ -79,7 +82,6 @@ public:
     /// <summary>
     /// Gets the total amount of keyframes in the animation curves.
     /// </summary>
-    /// <returns>The total keyframes count.</returns>
     int32 GetKeyframesCount() const
     {
         return Position.GetKeyframes().Count() + Rotation.GetKeyframes().Count() + Scale.GetKeyframes().Count();
@@ -92,7 +94,6 @@ public:
 struct AnimationData
 {
 public:
-
     /// <summary>
     /// The duration of the animation (in frames).
     /// </summary>
@@ -119,11 +120,9 @@ public:
     Array<NodeAnimationData> Channels;
 
 public:
-
     /// <summary>
     /// Gets the length of the animation (in seconds).
     /// </summary>
-    /// <returns>The length in seconds.</returns>
     FORCE_INLINE float GetLength() const
     {
 #if BUILD_DEBUG
@@ -135,7 +134,6 @@ public:
     /// <summary>
     /// Gets the total amount of keyframes in the all animation channels.
     /// </summary>
-    /// <returns>The total keyframes count.</returns>
     int32 GetKeyframesCount() const
     {
         int32 result = 0;

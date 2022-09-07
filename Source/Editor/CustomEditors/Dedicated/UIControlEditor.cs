@@ -32,7 +32,7 @@ namespace FlaxEditor.CustomEditors.Dedicated
                     if (_presets != value)
                     {
                         _presets = value;
-                        TooltipText = CustomEditorsUtil.GetPropertyNameUI(_presets.ToString());
+                        TooltipText = Utilities.Utils.GetPropertyNameUI(_presets.ToString());
                     }
                 }
             }
@@ -44,7 +44,7 @@ namespace FlaxEditor.CustomEditors.Dedicated
             public override void Draw()
             {
                 // Cache data
-                var rect = new Rectangle(Vector2.Zero, Size);
+                var rect = new Rectangle(Float2.Zero, Size);
                 if (rect.Width >= rect.Height)
                 {
                     rect.X = (rect.Width - rect.Height) * 0.5f;
@@ -159,49 +159,49 @@ namespace FlaxEditor.CustomEditors.Dedicated
                 // Draw pivot point
                 if (SupportsShiftModulation && Input.GetKey(KeyboardKeys.Control))
                 {
-                    Vector2 pivotPoint;
+                    Float2 pivotPoint;
                     switch (_presets)
                     {
                     case AnchorPresets.Custom:
-                        pivotPoint = Vector2.Minimum;
+                        pivotPoint = Float2.Minimum;
                         break;
                     case AnchorPresets.TopLeft:
-                        pivotPoint = new Vector2(0, 0);
+                        pivotPoint = new Float2(0, 0);
                         break;
                     case AnchorPresets.TopCenter:
                     case AnchorPresets.HorizontalStretchTop:
-                        pivotPoint = new Vector2(rect.Width / 2, 0);
+                        pivotPoint = new Float2(rect.Width / 2, 0);
                         break;
                     case AnchorPresets.TopRight:
-                        pivotPoint = new Vector2(rect.Width, 0);
+                        pivotPoint = new Float2(rect.Width, 0);
                         break;
                     case AnchorPresets.MiddleLeft:
                     case AnchorPresets.VerticalStretchLeft:
-                        pivotPoint = new Vector2(0, rect.Height / 2);
+                        pivotPoint = new Float2(0, rect.Height / 2);
                         break;
                     case AnchorPresets.MiddleCenter:
                     case AnchorPresets.VerticalStretchCenter:
                     case AnchorPresets.HorizontalStretchMiddle:
                     case AnchorPresets.StretchAll:
-                        pivotPoint = new Vector2(rect.Width / 2, rect.Height / 2);
+                        pivotPoint = new Float2(rect.Width / 2, rect.Height / 2);
                         break;
                     case AnchorPresets.MiddleRight:
                     case AnchorPresets.VerticalStretchRight:
-                        pivotPoint = new Vector2(rect.Width, rect.Height / 2);
+                        pivotPoint = new Float2(rect.Width, rect.Height / 2);
                         break;
                     case AnchorPresets.BottomLeft:
-                        pivotPoint = new Vector2(0, rect.Height);
+                        pivotPoint = new Float2(0, rect.Height);
                         break;
                     case AnchorPresets.BottomCenter:
                     case AnchorPresets.HorizontalStretchBottom:
-                        pivotPoint = new Vector2(rect.Width / 2, rect.Height);
+                        pivotPoint = new Float2(rect.Width / 2, rect.Height);
                         break;
                     case AnchorPresets.BottomRight:
-                        pivotPoint = new Vector2(rect.Width, rect.Height);
+                        pivotPoint = new Float2(rect.Width, rect.Height);
                         break;
                     default: throw new ArgumentOutOfRangeException();
                     }
-                    var pivotPointSize = new Vector2(3.0f);
+                    var pivotPointSize = new Float2(3.0f);
                     Render2D.DrawRectangle(new Rectangle(pivotPoint - pivotPointSize * 0.5f, pivotPointSize), style.ProgressNormal, 1.1f);
                 }
             }
@@ -234,7 +234,7 @@ namespace FlaxEditor.CustomEditors.Dedicated
 
                 var style = FlaxEngine.GUI.Style.Current;
                 Tag = presets;
-                Size = new Vector2(DialogWidth, DialogHeight);
+                Size = new Float2(DialogWidth, DialogHeight);
 
                 // Title
                 var title = new Label(2, 2, DialogWidth - 4, TitleHeight)
@@ -346,7 +346,7 @@ namespace FlaxEditor.CustomEditors.Dedicated
 
         private void OnButtonClicked()
         {
-            var location = _button.Center + new Vector2(3.0f);
+            var location = _button.Center + new Float2(3.0f);
             var editor = new AnchorPresetsEditorPopup(_button.Presets, true);
             editor.VisibleChanged += OnEditorVisibleChanged;
             editor.Show(_button.Parent, location);
@@ -563,17 +563,17 @@ namespace FlaxEditor.CustomEditors.Dedicated
                 yEl = UniformPanelCapsuleForObjectWithText(horUp, "Top: ", topItem.GetValues(Values));
                 hEl = UniformPanelCapsuleForObjectWithText(horDown, "Bottom: ", bottomItem.GetValues(Values));
             }
-            xEl.Control.AnchorMin = new Vector2(0, xEl.Control.AnchorMin.Y);
-            xEl.Control.AnchorMax = new Vector2(0.5f, xEl.Control.AnchorMax.Y);
+            xEl.Control.AnchorMin = new Float2(0, xEl.Control.AnchorMin.Y);
+            xEl.Control.AnchorMax = new Float2(0.5f, xEl.Control.AnchorMax.Y);
 
-            vEl.Control.AnchorMin = new Vector2(0, xEl.Control.AnchorMin.Y);
-            vEl.Control.AnchorMax = new Vector2(0.5f, xEl.Control.AnchorMax.Y);
+            vEl.Control.AnchorMin = new Float2(0, xEl.Control.AnchorMin.Y);
+            vEl.Control.AnchorMax = new Float2(0.5f, xEl.Control.AnchorMax.Y);
 
-            yEl.Control.AnchorMin = new Vector2(0.5f, xEl.Control.AnchorMin.Y);
-            yEl.Control.AnchorMax = new Vector2(1, xEl.Control.AnchorMax.Y);
+            yEl.Control.AnchorMin = new Float2(0.5f, xEl.Control.AnchorMin.Y);
+            yEl.Control.AnchorMax = new Float2(1, xEl.Control.AnchorMax.Y);
 
-            hEl.Control.AnchorMin = new Vector2(0.5f, xEl.Control.AnchorMin.Y);
-            hEl.Control.AnchorMax = new Vector2(1, xEl.Control.AnchorMax.Y);
+            hEl.Control.AnchorMin = new Float2(0.5f, xEl.Control.AnchorMin.Y);
+            hEl.Control.AnchorMax = new Float2(1, xEl.Control.AnchorMax.Y);
         }
 
         private VerticalPanelElement VerticalPanelWithoutMargin(LayoutElementsContainer cont)
@@ -642,7 +642,7 @@ namespace FlaxEditor.CustomEditors.Dedicated
                 cm.AddItem(new TypeSearchPopup.TypeItemView(controlTypes[i]));
             }
             cm.ItemClicked += controlType => SetType((ScriptType)controlType.Tag);
-            cm.SortChildren();
+            cm.SortItems();
             cm.Show(button.Parent, button.BottomLeft);
         }
 

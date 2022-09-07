@@ -18,6 +18,8 @@ namespace FlaxEditor.Surface.Elements
         {
             _isAutoSelect = true;
 
+            if (Surface == null)
+                return;
             UpdateComboBox();
 
             // Select saved value

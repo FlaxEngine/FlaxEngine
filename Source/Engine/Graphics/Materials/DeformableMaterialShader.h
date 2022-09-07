@@ -10,7 +10,6 @@
 class DeformableMaterialShader : public MaterialShader
 {
 private:
-
     struct Cache
     {
         PipelineStateCache Default;
@@ -26,6 +25,8 @@ private:
             case DrawPass::Depth:
                 return &Depth;
             case DrawPass::GBuffer:
+            case DrawPass::GBuffer | DrawPass::GlobalSurfaceAtlas:
+            case DrawPass::GlobalSurfaceAtlas:
             case DrawPass::Forward:
                 return &Default;
 #if USE_EDITOR
@@ -48,26 +49,22 @@ private:
     };
 
 private:
-
     Cache _cache;
     DrawPass _drawModes = DrawPass::None;
 
 public:
-
     DeformableMaterialShader(const StringView& name)
         : MaterialShader(name)
     {
     }
 
 public:
-
     // [MaterialShader]
     DrawPass GetDrawModes() const override;
     void Bind(BindParameters& params) override;
     void Unload() override;
 
 protected:
-
     // [MaterialShader]
     bool Load() override;
 };
