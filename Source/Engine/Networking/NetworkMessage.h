@@ -72,6 +72,7 @@ public:
         ASSERT(Position + numBytes < BufferSize);
         Platform::MemoryCopy(Buffer + Position, bytes, numBytes);
         Position += numBytes;
+        Length = Position;
     }
 
     /// <summary>
