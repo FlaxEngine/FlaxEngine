@@ -18,3 +18,8 @@ public:
     API_FIELD()
     uint32 ConnectionId;
 };
+
+inline bool operator==(const NetworkConnection& a, const NetworkConnection& b)
+{
+    return a.ConnectionId == b.ConnectionId;
+}

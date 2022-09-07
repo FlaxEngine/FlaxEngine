@@ -359,6 +359,22 @@ Plugin* PluginManager::GetPlugin(const MClass* type)
     return nullptr;
 }
 
+Plugin* PluginManager::GetPlugin(const ScriptingTypeHandle& type)
+{
+    CHECK_RETURN(type, nullptr);
+    for (Plugin* p : EditorPlugins)
+    {
+        if (p->Is(type))
+            return p;
+    }
+    for (GamePlugin* gp : GamePlugins)
+    {
+        if (gp->Is(type))
+            return gp;
+    }
+    return nullptr;
+}
+
 #if USE_EDITOR
 
 void PluginManager::InitializeGamePlugins()

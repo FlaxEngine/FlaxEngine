@@ -7,7 +7,7 @@
 /// <summary>
 /// Game and Editor plugins management service.
 /// </summary>
-API_CLASS(Static) class PluginManager
+API_CLASS(Static) class FLAXENGINE_API PluginManager
 {
     DECLARE_SCRIPTING_TYPE_NO_SPAWN(PluginManager);
 public:
@@ -65,11 +65,18 @@ public:
     /// <summary>
     /// Returns the first plugin of the provided type.
     /// </summary>
+    /// <param name="type">Type of the plugin to search for. Includes any plugin base class derived from the type.</param>
+    /// <returns>The plugin or null.</returns>
+    static Plugin* GetPlugin(const ScriptingTypeHandle& type);
+
+    /// <summary>
+    /// Returns the first plugin of the provided type.
+    /// </summary>
     /// <returns>The plugin or null.</returns>
     template<typename T>
     FORCE_INLINE static T* GetPlugin()
     {
-        return (T*)GetPlugin(T::GetStaticClass());
+        return (T*)GetPlugin(T::TypeInitializer);
     }
 
 private:

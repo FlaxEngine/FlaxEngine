@@ -67,7 +67,7 @@ bool NetworkPeer::Initialize(const NetworkConfig& config)
         return true;
     }
 
-    LOG(Info, "NetworkManager initialized using driver = {0}", NetworkDriver->DriverName());
+    LOG(Info, "NetworkPeer initialized using driver = {0}", NetworkDriver->DriverName());
     return false;
 }
 
@@ -107,7 +107,7 @@ void NetworkPeer::DisposeMessageBuffers()
 
 bool NetworkPeer::Listen()
 {
-    LOG(Info, "NetworkManager starting to listen on address = {0}:{1}", Config.Address, Config.Port);
+    LOG(Info, "Starting to listen on address = {0}:{1}", Config.Address, Config.Port);
     return NetworkDriver->Listen();
 }
 

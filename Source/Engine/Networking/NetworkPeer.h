@@ -14,7 +14,6 @@
 API_CLASS(sealed, NoSpawn, Namespace = "FlaxEngine.Networking") class FLAXENGINE_API NetworkPeer final : public ScriptingObject
 {
     DECLARE_SCRIPTING_TYPE_NO_SPAWN(NetworkPeer);
-    friend class NetworkManager;
 public:
     int HostId = -1;
     NetworkConfig Config;
