@@ -58,7 +58,7 @@ namespace Flax.Build.Platforms
             if (Compiler != null)
             {
                 // System compiler
-                ToolchainRoot = string.Empty;
+                ToolchainRoot = "/";
                 Log.Verbose($"Using native Linux toolchain (compiler {Compiler})");
                 HasRequiredSDKsInstalled = true;
             }
