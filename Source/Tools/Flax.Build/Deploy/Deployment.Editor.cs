@@ -127,6 +127,9 @@ namespace Flax.Deploy
                 DeployFile(RootPath, OutputPath, "Flax.flaxproj");
 
                 // Compress
+                if (Configuration.DontCompress)
+                    return;
+                
                 Log.Info(string.Empty);
                 Log.Info("Compressing editor files...");
                 string editorPackageZipPath;
