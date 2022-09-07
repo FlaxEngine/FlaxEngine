@@ -15,6 +15,7 @@ API_CLASS(Abstract, NoSpawn) class FLAXENGINE_API JsonAssetBase : public Asset
     DECLARE_SCRIPTING_TYPE_NO_SPAWN(JsonAssetBase);
 protected:
     String _path;
+    bool _isVirtualDocument = false;
 
 protected:
     /// <summary>
@@ -49,6 +50,11 @@ public:
     /// The Json data (as string).
     /// </summary>
     API_PROPERTY() String GetData() const;
+
+    /// <summary>
+    /// The Json data (as string).
+    /// </summary>
+    API_PROPERTY() void SetData(const StringView& value);
 
     /// <summary>
     /// Initializes the virtual Json asset with custom data.

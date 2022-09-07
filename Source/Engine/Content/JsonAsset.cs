@@ -66,5 +66,16 @@ namespace FlaxEngine
             Debug.LogError(string.Format("Missing type '{0}' to create Json Asset instance.", dataTypeName), this);
             return null;
         }
+
+        /// <summary>
+        /// Sets the instance of the asset (for both C# and C++). Doesn't save asset to the file (runtime only).
+        /// </summary>
+        /// <param name="instance">The new instance.</param>
+        public void SetInstance(object instance)
+        {
+            _instance = instance;
+            string str = instance != null ? JsonSerializer.Serialize(instance) : null;
+            Data = str;
+        }
     }
 }

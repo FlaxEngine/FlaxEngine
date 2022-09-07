@@ -1,7 +1,6 @@
 // Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 #include "JsonAsset.h"
-#include "Engine/Threading/Threading.h"
 #if USE_EDITOR
 #include "Engine/Platform/File.h"
 #include "Engine/Core/Types/DataContainer.h"
@@ -14,6 +13,7 @@
 #include "Cache/AssetsCache.h"
 #include "Engine/Core/Log.h"
 #include "Engine/Serialization/JsonTools.h"
+#include "Engine/Serialization/JsonWriters.h"
 #include "Engine/Content/Factories/JsonAssetFactory.h"
 #include "Engine/Core/Cache.h"
 #include "Engine/Debug/Exceptions/JsonParseException.h"
@@ -22,6 +22,7 @@
 #include "Engine/Scripting/ManagedCLR/MClass.h"
 #include "Engine/Scripting/ManagedCLR/MField.h"
 #include "Engine/Utilities/StringConverter.h"
+#include "Engine/Threading/Threading.h"
 
 JsonAssetBase::JsonAssetBase(const SpawnParams& params, const AssetInfo* info)
     : Asset(params, info)
@@ -45,9 +46,22 @@ String JsonAssetBase::GetData() const
     return String((const char*)buffer.GetString(), (int32)buffer.GetSize());
 }
 
+void JsonAssetBase::SetData(const StringView& value)
+{
+    if (!IsLoaded())
+        return;
+    PROFILE_CPU_NAMED("JsonAsset.SetData");
+    const StringAnsi dataJson(value);
+    ScopeLock lock(Locker);
+    const StringView dataTypeName = DataTypeName;
+    if (Init(dataTypeName, dataJson))
+    {
+        LOG(Error, "Failed to set Json asset data.");
+    }
+}
+
 bool JsonAssetBase::Init(const StringView& dataTypeName, const StringAnsiView& dataJson)
 {
-    CHECK_RETURN(IsVirtual(), true);
     unload(true);
     DataTypeName = dataTypeName;
     DataEngineBuild = FLAXENGINE_VERSION_BUILD;
@@ -63,6 +77,7 @@ bool JsonAssetBase::Init(const StringView& dataTypeName, const StringAnsiView& d
         return true;
     }
     Data = &Document;
+    _isVirtualDocument = true;
 
     // Load asset-specific data
     return loadAsset() != LoadResult::Ok;
@@ -137,7 +152,7 @@ void JsonAssetBase::GetReferences(Array<Guid>& output) const
 
 Asset::LoadResult JsonAssetBase::loadAsset()
 {
-    if (IsVirtual())
+    if (IsVirtual() || _isVirtualDocument)
         return LoadResult::Ok;
 
     // Load data (raw json file in editor, cooked asset in build game)
@@ -210,6 +225,7 @@ void JsonAssetBase::unload(bool isReloading)
     Data = nullptr;
     DataTypeName.Clear();
     DataEngineBuild = 0;
+    _isVirtualDocument = false;
 }
 
 #if USE_EDITOR
