@@ -26,4 +26,10 @@ public:
     /// Client connection state.
     /// </summary>
     API_FIELD(ReadOnly) NetworkConnectionState State;
+
+public:
+    String ToString() const override
+    {
+        return String::Format(TEXT("NetworkClient Id={0}"), Connection.ConnectionId);
+    }
 };
