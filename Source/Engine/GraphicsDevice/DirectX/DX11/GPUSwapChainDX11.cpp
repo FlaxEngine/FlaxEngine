@@ -16,9 +16,11 @@ GPUSwapChainDX11::GPUSwapChainDX11(GPUDeviceDX11* device, Window* window)
     , _windowHandle(static_cast<IUnknown*>(window->GetNativePtr()))
 #endif
     , _swapChain(nullptr)
-    , _backBuffer(nullptr)
+#if PLATFORM_WINDOWS
     , _allowTearing(false)
     , _isFullscreen(false)
+#endif
+    , _backBuffer(nullptr)
 {
     ASSERT(_windowHandle);
     _window = window;
@@ -162,7 +164,7 @@ bool GPUSwapChainDX11::Resize(int32 width, int32 height)
     _device->WaitForGPU();
     GPUDeviceLock lock(_device);
 #if PLATFORM_WINDOWS
-    _allowTearing = _device->AllowTearing;
+    _allowTearing = _device->_allowTearing;
 #endif
     _format = GPU_BACK_BUFFER_PIXEL_FORMAT;
 

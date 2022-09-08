@@ -702,7 +702,6 @@ void DrawEmitterGPU(RenderContext& renderContext, ParticleBuffer* buffer, DrawCa
             // TODO: model LOD picking for particles?
             int32 lodIndex = 0;
             ModelLOD& lod = model->LODs[lodIndex];
-            drawCalls += lod.Meshes.Count();
             for (int32 meshIndex = 0; meshIndex < lod.Meshes.Count(); meshIndex++)
             {
                 Mesh& mesh = lod.Meshes[meshIndex];

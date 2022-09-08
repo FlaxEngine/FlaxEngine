@@ -25,7 +25,8 @@ void GPUBufferViewVulkan::Init(GPUDeviceVulkan* device, GPUBufferVulkan* owner, 
         viewInfo.format = RenderToolsVulkan::ToVulkanFormat(format);
         viewInfo.offset = 0;
         viewInfo.range = Size;
-        ASSERT_LOW_LAYER(viewInfo.format != VK_FORMAT_UNDEFINED);
+        if (viewInfo.format == VK_FORMAT_UNDEFINED)
+            return; // Skip for structured buffers that use custom structure type and have unknown format
         VALIDATE_VULKAN_RESULT(vkCreateBufferView(device->Device, &viewInfo, nullptr, &View));
     }
 }

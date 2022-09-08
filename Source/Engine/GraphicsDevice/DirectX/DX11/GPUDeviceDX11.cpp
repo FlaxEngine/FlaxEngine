@@ -277,7 +277,9 @@ bool GPUDeviceDX11::Init()
             && GetModuleHandleA("renderdoc.dll") == nullptr // Disable tearing with RenderDoc (prevents crashing)
 #endif
         )
-            AllowTearing = true;
+        {
+            _allowTearing = true;
+        }
     }
 
     // Get flags and device type base on current configuration
