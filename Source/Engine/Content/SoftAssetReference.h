@@ -105,19 +105,19 @@ public:
     }
 
 public:
-    FORCE_INLINE bool operator==(T* other)
+    FORCE_INLINE bool operator==(T* other) const
     {
         return Get() == other;
     }
-    FORCE_INLINE bool operator==(const SoftAssetReference& other)
+    FORCE_INLINE bool operator==(const SoftAssetReference& other) const
     {
         return GetID() == other.GetID();
     }
-    FORCE_INLINE bool operator!=(T* other)
+    FORCE_INLINE bool operator!=(T* other) const
     {
         return Get() != other;
     }
-    FORCE_INLINE bool operator!=(const SoftAssetReference& other)
+    FORCE_INLINE bool operator!=(const SoftAssetReference& other) const
     {
         return GetID() != other.GetID();
     }

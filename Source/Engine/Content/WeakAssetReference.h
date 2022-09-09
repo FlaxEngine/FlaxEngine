@@ -137,12 +137,12 @@ public:
         return *this;
     }
 
-    FORCE_INLINE bool operator==(T* other)
+    FORCE_INLINE bool operator==(T* other) const
     {
         return _asset == other;
     }
 
-    FORCE_INLINE bool operator==(const WeakAssetReference& other)
+    FORCE_INLINE bool operator==(const WeakAssetReference& other) const
     {
         return _asset == other._asset;
     }
