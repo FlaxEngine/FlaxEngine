@@ -201,11 +201,13 @@ namespace FlaxEditor.Windows
                     toRemove.Add(e.Value);
                 }
             }
+
             if (toRemove != null)
             {
                 foreach (var plugin in toRemove)
                     OnPluginRemove(plugin);
             }
+
             foreach (var plugin in gamePlugins)
                 OnPluginAdd(plugin);
             foreach (var plugin in editorPlugins)
@@ -221,6 +223,16 @@ namespace FlaxEditor.Windows
             // Special case for editor plugins (merge with game plugin if has linked)
             if (plugin is EditorPlugin editorPlugin && GetPluginEntry(editorPlugin.GamePluginType) != null)
                 return;
+
+            // Special case for game plugins (merge with editor plugin if has linked)
+            if (plugin is GamePlugin)
+            {
+                foreach (var e in _entries.Keys)
+                {
+                    if (e is EditorPlugin ee && ee.GamePluginType == plugin.GetType())
+                        return;
+                }
+            }
 
             var desc = plugin.Description;
             var category = _categories.Find(x => string.Equals(x.Text, desc.Category, StringComparison.OrdinalIgnoreCase));
