@@ -150,22 +150,22 @@ public:
         return *this;
     }
 
-    FORCE_INLINE bool operator==(T* other)
+    FORCE_INLINE bool operator==(T* other) const
     {
         return _asset == other;
     }
 
-    FORCE_INLINE bool operator==(const AssetReference& other)
+    FORCE_INLINE bool operator==(const AssetReference& other) const
     {
         return _asset == other._asset;
     }
 
-    FORCE_INLINE bool operator!=(T* other)
+    FORCE_INLINE bool operator!=(T* other) const
     {
         return _asset != other;
     }
 
-    FORCE_INLINE bool operator!=(const AssetReference& other)
+    FORCE_INLINE bool operator!=(const AssetReference& other) const
     {
         return _asset != other._asset;
     }

@@ -164,19 +164,19 @@ public:
 
 public:
 
-    FORCE_INLINE bool operator==(T* other)
+    FORCE_INLINE bool operator==(T* other) const
     {
         return _object == other;
     }
-    FORCE_INLINE bool operator!=(T* other)
+    FORCE_INLINE bool operator!=(T* other) const
     {
         return _object != other;
     }
-    FORCE_INLINE bool operator==(const ScriptingObjectReference& other)
+    FORCE_INLINE bool operator==(const ScriptingObjectReference& other) const
     {
         return _object == other._object;
     }
-    FORCE_INLINE bool operator!=(const ScriptingObjectReference& other)
+    FORCE_INLINE bool operator!=(const ScriptingObjectReference& other) const
     {
         return _object != other._object;
     }
