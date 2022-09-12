@@ -18,6 +18,11 @@ namespace Flax.Build.Projects
         public ProjectGenerator Generator;
 
         /// <summary>
+        /// The project base name (might not be unique within solution - eg. Name = BaseName + '.CSharp' to prevent overlaps).
+        /// </summary>
+        public string BaseName;
+
+        /// <summary>
         /// The project name.
         /// </summary>
         public string Name;

@@ -97,7 +97,7 @@ namespace Flax.Build.Projects.VisualStudio
             // Globals
             vcProjectFileContent.AppendLine("  <PropertyGroup Label=\"Globals\">");
             vcProjectFileContent.AppendLine(string.Format("    <ProjectGuid>{0}</ProjectGuid>", vsProject.ProjectGuid.ToString("B").ToUpperInvariant()));
-            vcProjectFileContent.AppendLine(string.Format("    <RootNamespace>{0}</RootNamespace>", project.Name));
+            vcProjectFileContent.AppendLine(string.Format("    <RootNamespace>{0}</RootNamespace>", project.BaseName));
             vcProjectFileContent.AppendLine(string.Format("    <PlatformToolset>{0}</PlatformToolset>", projectFilePlatformToolsetVersion));
             vcProjectFileContent.AppendLine(string.Format("    <MinimumVisualStudioVersion>{0}</MinimumVisualStudioVersion>", projectFileToolVersion));
             vcProjectFileContent.AppendLine("    <TargetRuntime>Native</TargetRuntime>");

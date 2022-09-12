@@ -75,8 +75,8 @@ namespace Flax.Build.Projects.VisualStudio
             default: throw new ArgumentOutOfRangeException();
             }
 
-            csProjectFileContent.AppendLine(string.Format("    <RootNamespace>{0}</RootNamespace>", project.Name));
-            csProjectFileContent.AppendLine(string.Format("    <AssemblyName>{0}.CSharp</AssemblyName>", project.Name));
+            csProjectFileContent.AppendLine(string.Format("    <RootNamespace>{0}</RootNamespace>", project.BaseName));
+            csProjectFileContent.AppendLine(string.Format("    <AssemblyName>{0}.CSharp</AssemblyName>", project.BaseName));
             csProjectFileContent.AppendLine(string.Format("    <TargetFrameworkVersion>{0}</TargetFrameworkVersion>", "v4.5.2"));
             csProjectFileContent.AppendLine("    <LangVersion>7.3</LangVersion>");
             csProjectFileContent.AppendLine("    <FileAlignment>512</FileAlignment>");
@@ -118,7 +118,7 @@ namespace Flax.Build.Projects.VisualStudio
                 csProjectFileContent.AppendLine("    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>");
                 if (configuration.TargetBuildOptions.ScriptingAPI.IgnoreMissingDocumentationWarnings)
                     csProjectFileContent.AppendLine("    <NoWarn>1591</NoWarn>");
-                csProjectFileContent.AppendLine(string.Format("    <DocumentationFile>{0}\\{1}.CSharp.xml</DocumentationFile>", outputPath, project.Name));
+                csProjectFileContent.AppendLine(string.Format("    <DocumentationFile>{0}\\{1}.CSharp.xml</DocumentationFile>", outputPath, project.BaseName));
                 csProjectFileContent.AppendLine("    <UseVSHostingProcess>true</UseVSHostingProcess>");
                 csProjectFileContent.AppendLine("  </PropertyGroup>");
             }
@@ -149,7 +149,7 @@ namespace Flax.Build.Projects.VisualStudio
                 csProjectFileContent.AppendLine("    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>");
                 if (configuration.TargetBuildOptions.ScriptingAPI.IgnoreMissingDocumentationWarnings)
                     csProjectFileContent.AppendLine("    <NoWarn>1591</NoWarn>");
-                csProjectFileContent.AppendLine(string.Format("    <DocumentationFile>{0}\\{1}.CSharp.xml</DocumentationFile>", outputPath, project.Name));
+                csProjectFileContent.AppendLine(string.Format("    <DocumentationFile>{0}\\{1}.CSharp.xml</DocumentationFile>", outputPath, project.BaseName));
                 csProjectFileContent.AppendLine("    <UseVSHostingProcess>true</UseVSHostingProcess>");
                 csProjectFileContent.AppendLine("  </PropertyGroup>");
             }
@@ -174,7 +174,7 @@ namespace Flax.Build.Projects.VisualStudio
             {
                 csProjectFileContent.AppendLine(string.Format("    <ProjectReference Include=\"{0}\">", Utilities.MakePathRelativeTo(dependency.Path, projectDirectory)));
                 csProjectFileContent.AppendLine(string.Format("      <Project>{0}</Project>", ((VisualStudioProject)dependency).ProjectGuid.ToString("B").ToUpperInvariant()));
-                csProjectFileContent.AppendLine(string.Format("      <Name>{0}</Name>", dependency.Name));
+                csProjectFileContent.AppendLine(string.Format("      <Name>{0}</Name>", dependency.BaseName));
                 csProjectFileContent.AppendLine("    </ProjectReference>");
             }
 

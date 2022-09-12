@@ -340,7 +340,7 @@ namespace Flax.Build.Projects.VisualStudioCode
                                             }
                                             break;
                                         case TargetPlatform.Linux:
-                                            if (configuration.Platform == TargetPlatform.Linux && (outputType != TargetOutputType.Executable || project.Name == "Flax") && configuration.Name.StartsWith("Editor."))
+                                            if (configuration.Platform == TargetPlatform.Linux && (outputType != TargetOutputType.Executable || project.BaseName == "Flax") && configuration.Name.StartsWith("Editor."))
                                             {
                                                 json.AddField("program", Path.Combine(Globals.EngineRoot, "Binaries", "Editor", "Linux", configuration.ConfigurationName, "FlaxEditor"));
                                             }
@@ -388,7 +388,7 @@ namespace Flax.Build.Projects.VisualStudioCode
                                             }
                                             break;
                                         case TargetPlatform.Mac:
-                                            if (configuration.Platform == TargetPlatform.Mac && (outputType != TargetOutputType.Executable || project.Name == "Flax") && configuration.Name.StartsWith("Editor."))
+                                            if (configuration.Platform == TargetPlatform.Mac && (outputType != TargetOutputType.Executable || project.BaseName == "Flax") && configuration.Name.StartsWith("Editor."))
                                             {
                                                 json.AddField("program", Path.Combine(Globals.EngineRoot, "Binaries", "Editor", "Mac", configuration.ConfigurationName, "FlaxEditor"));
                                             }

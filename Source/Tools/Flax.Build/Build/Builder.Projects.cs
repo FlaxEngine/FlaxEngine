@@ -229,7 +229,7 @@ namespace Flax.Build
                             var project = mainProject = generator.CreateProject();
                             if (targets[0].CustomExternalProjectFilePath == null)
                                 project.Type = TargetType.NativeCpp;
-                            project.Name = projectName;
+                            project.Name = project.BaseName = projectName;
                             project.Targets = targets;
                             project.SearchPaths = new string[0];
                             project.WorkspaceRootPath = projectInfo.ProjectFolderPath;
@@ -368,7 +368,9 @@ namespace Flax.Build
                                 // Create project description
                                 var project = dotNetProjectGenerator.CreateProject();
                                 project.Type = TargetType.DotNet;
-                                project.Name = binaryModuleName;
+                                project.Name = project.BaseName = binaryModuleName;
+                                if (mainSolutionProject != null && projectInfo == rootProject)
+                                    project.Name += ".CSharp"; // Prevent overlapping name with native code project
                                 project.OutputType = TargetOutputType.Library;
                                 project.Targets = targets;
                                 project.SearchPaths = new string[0];
@@ -424,7 +426,7 @@ namespace Flax.Build
                                     !string.IsNullOrEmpty(dependencyModule.BinaryModuleName) &&
                                     dependencyModule.BinaryModuleName != binaryModule.Key)
                                 {
-                                    var dependencyProject = projects.Find(x => x != null && x.Generator.Type == project.Generator.Type && x.Name == dependencyModule.BinaryModuleName);
+                                    var dependencyProject = projects.Find(x => x != null && x.Generator.Type == project.Generator.Type && x.BaseName == dependencyModule.BinaryModuleName);
                                     if (dependencyProject != null)
                                     {
                                         // Reference that project
@@ -479,7 +481,7 @@ namespace Flax.Build
                     {
                         project = dotNetProjectGenerator.CreateProject();
                         project.Type = TargetType.DotNet;
-                        project.Name = rulesProjectName;
+                        project.Name = project.BaseName = rulesProjectName;
                         project.Targets = new[] { target };
                         project.SearchPaths = new string[0];
                         project.WorkspaceRootPath = workspaceRoot;

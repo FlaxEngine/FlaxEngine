@@ -40,7 +40,7 @@ namespace Flax.Build.Projects.VisualStudio
                 vcProjectFileContent.AppendLine("  </ItemGroup>");
                 vcProjectFileContent.AppendLine("  <PropertyGroup Label=\"Globals\">");
                 vcProjectFileContent.AppendLine(string.Format("    <ProjectGuid>{0}</ProjectGuid>", ProjectGuid.ToString("B").ToUpperInvariant()));
-                vcProjectFileContent.AppendLine(string.Format("    <RootNamespace>{0}</RootNamespace>", Name));
+                vcProjectFileContent.AppendLine(string.Format("    <RootNamespace>{0}</RootNamespace>", BaseName));
                 vcProjectFileContent.AppendLine(string.Format("    <MinimumVisualStudioVersion>{0}</MinimumVisualStudioVersion>", projectFileToolVersion));
                 vcProjectFileContent.AppendLine(string.Format("    <AndroidAPILevel>{0}</AndroidAPILevel>", Configuration.AndroidPlatformApi));
                 vcProjectFileContent.AppendLine(string.Format("    <AndroidSupportedAbis>{0}</AndroidSupportedAbis>", "arm64-v8a"));
@@ -556,7 +556,7 @@ namespace Flax.Build.Projects.VisualStudio
                 targetsSorted.Sort((a, b) => b.Platforms.Length.CompareTo(a.Platforms.Length));
                 var target = targetsSorted.First(x => x.Platforms.Contains(TargetPlatform.Android));
                 project.Type = TargetType.NativeCpp;
-                project.Name = "Android";
+                project.Name = project.BaseName = "Android";
                 project.Targets = new Target[0];
                 project.SearchPaths = new string[0];
                 project.WorkspaceRootPath = rootProject.ProjectFolderPath;
