@@ -42,12 +42,10 @@ int32 AnimGraphExecutor::GetRootNodeIndex(Animation* anim)
 
 void AnimGraphExecutor::ExtractRootMotion(const Animation::NodeToChannel* mapping, int32 rootNodeIndex, Animation* anim, float pos, float prevPos, Transform& rootNode, RootMotionData& rootMotion)
 {
-    const Transform refPose = GetEmptyNodes()->Nodes[rootNodeIndex];
-    if (_rootMotionMode == RootMotionMode::Enable)
+    const Transform& refPose = GetEmptyNodes()->Nodes[rootNodeIndex];
+    const int32 nodeToChannel = mapping->At(rootNodeIndex);
+    if (_rootMotionMode == RootMotionMode::Enable && nodeToChannel != -1)
     {
-        const int32 nodeToChannel = mapping->At(rootNodeIndex);
-        ASSERT_LOW_LAYER(nodeToChannel != -1);
-
         // Get the root bone transformation
         Transform rootBefore = refPose;
         const NodeAnimationData& rootChannel = anim->Data.Channels[nodeToChannel];
