@@ -29,6 +29,8 @@ enum class NetworkMessageIDs : uint8
     None = 0,
     Handshake,
     HandshakeReply,
+
+    MAX,
 };
 
 PACK_STRUCT(struct NetworkMessageHandshake
@@ -48,11 +50,76 @@ PACK_STRUCT(struct NetworkMessageHandshakeReply
     int32 Result;
     });
 
+void OnNetworkMessageHandshake(NetworkEvent& event, NetworkClient* client, NetworkPeer* peer)
+{
+    // Read client connection data
+    NetworkMessageHandshake msgData;
+    event.Message.ReadStructure(msgData);
+    NetworkClientConnectionData connectionData;
+    connectionData.Client = client;
+    connectionData.Result = 0;
+    connectionData.Platform = (PlatformType)msgData.Platform;
+    connectionData.Architecture = (ArchitectureType)msgData.Architecture;
+    connectionData.PayloadData.Resize(msgData.PayloadDataSize);
+    event.Message.ReadBytes(connectionData.PayloadData.Get(), msgData.PayloadDataSize);
+    NetworkManager::ClientConnecting(connectionData); // Allow server to validate connection
+
+    // Reply to the handshake message with a result
+    NetworkMessageHandshakeReply replyData;
+    replyData.ID = NetworkMessageIDs::HandshakeReply;
+    replyData.Result = connectionData.Result;
+    NetworkMessage msgReply = peer->BeginSendMessage();
+    msgReply.WriteStructure(replyData);
+    peer->EndSendMessage(NetworkChannelType::ReliableOrdered, msgReply, event.Sender);
+
+    // Update client based on connection result
+    if (connectionData.Result != 0)
+    {
+        LOG(Info, "Connection blocked with result {0} from client id={1}.", connectionData.Result, event.Sender.ConnectionId);
+        client->State = NetworkConnectionState::Disconnecting;
+        peer->Disconnect(event.Sender);
+        client->State = NetworkConnectionState::Disconnected;
+    }
+    else
+    {
+        client->State = NetworkConnectionState::Connected;
+        LOG(Info, "Client id={0} connected", event.Sender.ConnectionId);
+        NetworkManager::ClientConnected(client);
+    }
+}
+
+void OnNetworkMessageHandshakeReply(NetworkEvent& event, NetworkClient* client, NetworkPeer* peer)
+{
+    ASSERT_LOW_LAYER(NetworkManager::IsClient());
+    NetworkMessageHandshakeReply msgData;
+    event.Message.ReadStructure(msgData);
+    if (msgData.Result != 0)
+    {
+        // Server failed to connect with client
+        // TODO: feed game with result from msgData.Result
+        NetworkManager::Stop();
+        return;
+    }
+
+    // Client got connected with server
+    NetworkManager::LocalClient->State = NetworkConnectionState::Connected;
+    NetworkManager::State = NetworkConnectionState::Connected;
+    NetworkManager::StateChanged();
+}
+
 namespace
 {
     NetworkPeer* Peer = nullptr;
     uint32 GameProtocolVersion = 0;
     double LastUpdateTime = 0;
+
+    // Network message handlers table
+    void (*MessageHandlers[(int32)NetworkMessageIDs::MAX])(NetworkEvent&, NetworkClient*, NetworkPeer*) =
+    {
+        nullptr,
+        OnNetworkMessageHandshake,
+        OnNetworkMessageHandshakeReply,
+    };
 }
 
 class NetworkManagerService : public EngineService
@@ -328,69 +395,13 @@ void NetworkManagerService::Update()
                     break;
                 }
                 uint8 id = *event.Message.Buffer;
-                switch ((NetworkMessageIDs)id)
+                if (id < (uint8)NetworkMessageIDs::MAX)
                 {
-                case NetworkMessageIDs::Handshake:
-                    {
-                        // Read client connection data
-                        NetworkMessageHandshake msgData;
-                        event.Message.ReadStructure(msgData);
-                        NetworkClientConnectionData connectionData;
-                        connectionData.Client = client;
-                        connectionData.Result = 0;
-                        connectionData.Platform = (PlatformType)msgData.Platform;
-                        connectionData.Architecture = (ArchitectureType)msgData.Architecture;
-                        connectionData.PayloadData.Resize(msgData.PayloadDataSize);
-                        event.Message.ReadBytes(connectionData.PayloadData.Get(), msgData.PayloadDataSize);
-                        NetworkManager::ClientConnecting(connectionData); // Allow server to validate connection
-
-                        // Reply to the handshake message with a result
-                        NetworkMessageHandshakeReply replyData;
-                        replyData.ID = NetworkMessageIDs::HandshakeReply;
-                        replyData.Result = connectionData.Result;
-                        NetworkMessage msgReply = Peer->BeginSendMessage();
-                        msgReply.WriteStructure(replyData);
-                        Peer->EndSendMessage(NetworkChannelType::ReliableOrdered, msgReply, event.Sender);
-
-                        // Update client based on connection result
-                        if (connectionData.Result != 0)
-                        {
-                            LOG(Info, "Connection blocked with result {0} from client id={1}.", connectionData.Result, event.Sender.ConnectionId);
-                            client->State = NetworkConnectionState::Disconnecting;
-                            Peer->Disconnect(event.Sender);
-                            client->State = NetworkConnectionState::Disconnected;
-                        }
-                        else
-                        {
-                            client->State = NetworkConnectionState::Connected;
-                            LOG(Info, "Client id={0} connected", event.Sender.ConnectionId);
-                            NetworkManager::ClientConnected(client);
-                        }
-                        break;
-                    }
-                case NetworkMessageIDs::HandshakeReply:
-                    {
-                        ASSERT_LOW_LAYER(NetworkManager::IsClient());
-                        NetworkMessageHandshakeReply msgData;
-                        event.Message.ReadStructure(msgData);
-                        if (msgData.Result != 0)
-                        {
-                            // Server failed to connect with client
-                            // TODO: feed game with result from msgData.Result
-                            NetworkManager::Stop();
-                            return;
-                        }
-
-                        // Client got connected with server
-                        NetworkManager::LocalClient->State = NetworkConnectionState::Connected;
-                        NetworkManager::State = NetworkConnectionState::Connected;
-                        NetworkManager::StateChanged();
-                        break;
-                    }
-#if !BUILD_RELEASE
-                default:
+                    MessageHandlers[id](event, client, Peer);
+                }
+                else
+                {
                     LOG(Warning, "Unknown message id={0} from connection {1}", id, event.Sender.ConnectionId);
-#endif
                 }
             }
             Peer->RecycleMessage(event.Message);
