@@ -263,6 +263,9 @@ Asset::LoadResult JsonAsset::loadAsset()
     Level::ScriptsReloaded.Bind<JsonAsset, &JsonAsset::OnScriptsReloaded>(this);
 #endif
 
+    // Destroy instance on scripting shutdown (eg. asset from scripts)
+    Scripting::ScriptsUnload.Bind<JsonAsset, &JsonAsset::DeleteInstance>(this);
+
     return LoadResult::Ok;
 }
 
@@ -272,6 +275,7 @@ void JsonAsset::unload(bool isReloading)
     Level::ScriptsReloadStart.Unbind<JsonAsset, &JsonAsset::OnScriptsReloadStart>(this);
     Level::ScriptsReloaded.Unbind<JsonAsset, &JsonAsset::OnScriptsReloaded>(this);
 #endif
+    Scripting::ScriptsUnload.Unbind<JsonAsset, &JsonAsset::DeleteInstance>(this);
     DeleteInstance();
 
     JsonAssetBase::unload(isReloading);
@@ -279,6 +283,8 @@ void JsonAsset::unload(bool isReloading)
 
 bool JsonAsset::CreateInstance()
 {
+    ScopeLock lock(Locker);
+
     // Try to scripting type for this data
     const StringAsANSI<> dataTypeNameAnsi(DataTypeName.Get(), DataTypeName.Length());
     const auto typeHandle = Scripting::FindScriptingType(StringAnsiView(dataTypeNameAnsi.Get(), DataTypeName.Length()));
@@ -320,6 +326,8 @@ bool JsonAsset::CreateInstance()
 
 void JsonAsset::DeleteInstance()
 {
+    ScopeLock lock(Locker);
+
     // C# instance
     if (MObject* object = GetManagedInstance())
     {
