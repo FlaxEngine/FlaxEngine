@@ -35,12 +35,16 @@ struct NetworkReplicatedObject
     {
         return Object == other;
     }
-};
 
+    String ToString() const
+    {
 #if NETWORK_REPLICATOR_DEBUG_LOG
-#include "Engine/Core/Formatting.h"
-DEFINE_DEFAULT_FORMATTING(NetworkReplicatedObject, "{}", v.ObjectId.ToString());
+        return ObjectId.ToString();
+#else
+        return Object.GetID().ToString();
 #endif
+    }
+};
 
 inline uint32 GetHash(const NetworkReplicatedObject& key)
 {
@@ -87,7 +91,7 @@ void NetworkReplicator::AddObject(ScriptingObject* obj, ScriptingObject* owner)
     item.OwnerId = owner->GetID();
 #if NETWORK_REPLICATOR_DEBUG_LOG
     item.ObjectId = obj->GetID();
-    LOG(Info, "[NetworkReplicator] Add new object {}:{}, owned by {}:{}", item, obj->GetType().ToString(), item.OwnerId, owner->GetType().ToString());
+    LOG(Info, "[NetworkReplicator] Add new object {}:{}, owned by {}:{}", item.ToString(), obj->GetType().ToString(), item.OwnerId.ToString(), owner->GetType().ToString());
 #endif
     Objects.Add(MoveTemp(item));
 }
@@ -132,7 +136,7 @@ void NetworkInternal::NetworkReplicatorUpdate()
             {
                 // Object got deleted
 #if NETWORK_REPLICATOR_DEBUG_LOG
-                LOG(Info, "[NetworkReplicator] Remove object {}, owned by {}", item.Object, item.OwnerId);
+                LOG(Info, "[NetworkReplicator] Remove object {}, owned by {}", item.ToString(), item.OwnerId.ToString());
 #endif
                 Objects.Remove(it);
                 continue;
@@ -151,7 +155,7 @@ void NetworkInternal::NetworkReplicatorUpdate()
                 if (!item.InvalidTypeWarn)
                 {
                     item.InvalidTypeWarn = true;
-                    LOG(Error, "[NetworkReplicator] Cannot serialize object {} (missing serialization logic)", item);
+                    LOG(Error, "[NetworkReplicator] Cannot serialize object {} (missing serialization logic)", item.ToString());
                 }
 #endif
                 continue;
