@@ -62,9 +62,10 @@ public:
             Guid assetId = Guid::Empty; \
             gameSettings->CustomSettings.TryGet(TEXT(name), assetId); \
             const auto asset = Content::Load<JsonAsset>(assetId); \
-            if (asset && asset->Instance && asset->InstanceType == type::TypeInitializer) \
+            if (asset) \
             { \
-                result = static_cast<type*>(asset->Instance); \
+                if (auto* instance = asset->GetInstance<type>()) \
+                    result = instance; \
             } \
         } \
         return result; \

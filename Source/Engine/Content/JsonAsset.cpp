@@ -284,6 +284,8 @@ void JsonAsset::unload(bool isReloading)
 bool JsonAsset::CreateInstance()
 {
     ScopeLock lock(Locker);
+    if (Instance)
+        return false;
 
     // Try to scripting type for this data
     const StringAsANSI<> dataTypeNameAnsi(DataTypeName.Get(), DataTypeName.Length());

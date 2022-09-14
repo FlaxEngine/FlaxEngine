@@ -107,7 +107,7 @@ public:
     ScriptingTypeHandle InstanceType;
 
     /// <summary>
-    /// The deserialized unmanaged object instance (e.g. PhysicalMaterial).
+    /// The deserialized unmanaged object instance (e.g. PhysicalMaterial). Might be null if asset was loaded before binary module with that asset was loaded (use GetInstance for this case).
     /// </summary>
     void* Instance;
 
@@ -118,6 +118,7 @@ public:
     template<typename T>
     T* GetInstance() const
     {
+        const_cast<JsonAsset*>(this)->CreateInstance();
         return Instance && InstanceType.IsAssignableFrom(T::TypeInitializer) ? (T*)Instance : nullptr;
     }
 
