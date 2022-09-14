@@ -1,4 +1,4 @@
-﻿// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 #include "NetworkReplicator.h"
 #include "NetworkClient.h"
@@ -39,7 +39,7 @@ struct NetworkReplicatedObject
 
 #if NETWORK_REPLICATOR_DEBUG_LOG
 #include "Engine/Core/Formatting.h"
-DEFINE_DEFAULT_FORMATTING(NetworkReplicatedObject, "{}", v.ObjectId);
+DEFINE_DEFAULT_FORMATTING(NetworkReplicatedObject, "{}", v.ObjectId.ToString());
 #endif
 
 inline uint32 GetHash(const NetworkReplicatedObject& key)
