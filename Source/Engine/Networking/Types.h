@@ -7,8 +7,10 @@ enum class NetworkEventType;
 enum class NetworkConnectionState;
 
 class INetworkDriver;
+class INetworkSerializable;
 class NetworkPeer;
 class NetworkClient;
+class NetworkStream;
 
 struct NetworkEvent;
 struct NetworkConnection;

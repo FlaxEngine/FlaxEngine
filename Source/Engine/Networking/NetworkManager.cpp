@@ -6,6 +6,7 @@
 #include "NetworkEvent.h"
 #include "NetworkChannelType.h"
 #include "NetworkSettings.h"
+#include "NetworkInternal.h"
 #include "FlaxEngine.Gen.h"
 #include "Engine/Core/Log.h"
 #include "Engine/Core/Collections/Array.h"
@@ -15,6 +16,7 @@
 #include "Engine/Scripting/Scripting.h"
 
 float NetworkManager::NetworkFPS = 60.0f;
+NetworkPeer* NetworkManager::Peer = nullptr;
 NetworkManagerMode NetworkManager::Mode = NetworkManagerMode::Offline;
 NetworkConnectionState NetworkManager::State = NetworkConnectionState::Offline;
 NetworkClient* NetworkManager::LocalClient = nullptr;
@@ -109,7 +111,6 @@ void OnNetworkMessageHandshakeReply(NetworkEvent& event, NetworkClient* client, 
 
 namespace
 {
-    NetworkPeer* Peer = nullptr;
     uint32 GameProtocolVersion = 0;
     double LastUpdateTime = 0;
 
@@ -144,7 +145,7 @@ NetworkManagerService NetworkManagerServiceInstance;
 bool StartPeer()
 {
     PROFILE_CPU();
-    ASSERT_LOW_LAYER(!Peer);
+    ASSERT_LOW_LAYER(!NetworkManager::Peer);
     NetworkManager::State = NetworkConnectionState::Connecting;
     NetworkManager::StateChanged();
     const auto& settings = *NetworkSettings::Get();
@@ -172,8 +173,8 @@ bool StartPeer()
         return true;
     }
     networkConfig.NetworkDriver = ScriptingObject::NewObject(networkDriverType);
-    Peer = NetworkPeer::CreatePeer(networkConfig);
-    if (!Peer)
+    NetworkManager::Peer = NetworkPeer::CreatePeer(networkConfig);
+    if (!NetworkManager::Peer)
     {
         LOG(Error, "Failed to create Network Peer at {0}:{1}", networkConfig.Address, networkConfig.Port);
         return true;
@@ -184,13 +185,13 @@ bool StartPeer()
 
 void StopPeer()
 {
-    if (!Peer)
+    if (!NetworkManager::Peer)
         return;
     PROFILE_CPU();
     if (NetworkManager::Mode == NetworkManagerMode::Client)
-        Peer->Disconnect();
-    NetworkPeer::ShutdownPeer(Peer);
-    Peer = nullptr;
+        NetworkManager::Peer->Disconnect();
+    NetworkPeer::ShutdownPeer(NetworkManager::Peer);
+    NetworkManager::Peer = nullptr;
 }
 
 void NetworkSettings::Apply()
@@ -283,6 +284,7 @@ void NetworkManager::Stop()
         client->State = NetworkConnectionState::Disconnecting;
     StateChanged();
 
+    NetworkInternal::NetworkReplicatorClear();
     for (int32 i = Clients.Count() - 1; i >= 0; i--)
     {
         NetworkClient* client = Clients[i];
@@ -312,11 +314,12 @@ void NetworkManagerService::Update()
         return;
     PROFILE_CPU();
     LastUpdateTime = currentTime;
+    auto peer = NetworkManager::Peer;
     // TODO: convert into TaskGraphSystems and use async jobs
 
     // Process network messages
     NetworkEvent event;
-    while (Peer->PopEvent(event))
+    while (peer->PopEvent(event))
     {
         switch (event.EventType)
         {
@@ -347,10 +350,10 @@ void NetworkManagerService::Update()
                 msgData.Platform = (byte)connectionData.Platform;
                 msgData.Architecture = (byte)connectionData.Architecture;
                 msgData.PayloadDataSize = (uint16)connectionData.PayloadData.Count();
-                NetworkMessage msg = Peer->BeginSendMessage();
+                NetworkMessage msg = peer->BeginSendMessage();
                 msg.WriteStructure(msgData);
                 msg.WriteBytes(connectionData.PayloadData.Get(), connectionData.PayloadData.Count());
-                Peer->EndSendMessage(NetworkChannelType::ReliableOrdered, msg);
+                peer->EndSendMessage(NetworkChannelType::ReliableOrdered, msg);
             }
             else
             {
@@ -397,15 +400,18 @@ void NetworkManagerService::Update()
                 uint8 id = *event.Message.Buffer;
                 if (id < (uint8)NetworkMessageIDs::MAX)
                 {
-                    MessageHandlers[id](event, client, Peer);
+                    MessageHandlers[id](event, client, peer);
                 }
                 else
                 {
                     LOG(Warning, "Unknown message id={0} from connection {1}", id, event.Sender.ConnectionId);
                 }
             }
-            Peer->RecycleMessage(event.Message);
+            peer->RecycleMessage(event.Message);
             break;
         }
     }
+
+    // Update replication
+    NetworkInternal::NetworkReplicatorUpdate();
 }

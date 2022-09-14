@@ -1,7 +1,5 @@
 ﻿// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
-using System;
-
 namespace FlaxEngine.Networking
 {
     partial class NetworkClient

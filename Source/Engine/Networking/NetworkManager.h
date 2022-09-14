@@ -55,6 +55,11 @@ public:
     API_FIELD() static float NetworkFPS;
 
     /// <summary>
+    /// Current network peer (low-level).
+    /// </summary>
+    API_FIELD(ReadOnly) static NetworkPeer* Peer;
+
+    /// <summary>
     /// Current manager mode.
     /// </summary>
     API_FIELD(ReadOnly) static NetworkManagerMode Mode;
