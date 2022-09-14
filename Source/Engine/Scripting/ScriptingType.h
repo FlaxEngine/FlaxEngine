@@ -487,8 +487,11 @@ FORCE_INLINE int32 GetVTableIndex(void** vtable, int32 entriesCount, void* func)
     // where XXX is the actual vtable offset we need to read.
     byte* funcJmp = *(byte*)func == 0x48 ? (byte*)func : (byte*)func + 5 + *(int32*)((byte*)func + 1);
     funcJmp += 5;
-    if (*(funcJmp - 1) == 0xa0)
+    const byte op = *(funcJmp - 1);
+    if (op == 0xa0)
         return *(int32*)funcJmp / sizeof(void*);
+    if (op == 0x20)
+        return 0;
     return *(byte*)funcJmp / sizeof(void*);
 #elif defined(__clang__)
     // On Clang member function pointer represents the offset from the vtable begin.

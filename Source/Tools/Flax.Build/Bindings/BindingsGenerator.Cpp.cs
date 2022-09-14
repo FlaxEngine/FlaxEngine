@@ -1351,7 +1351,7 @@ namespace Flax.Build.Bindings
                 contents.AppendLine("        {");
                 contents.AppendLine($"            {functionInfo.UniqueName}_Signature funcPtr = &{classInfo.NativeName}::{functionInfo.Name};");
                 contents.AppendLine("            const int32 vtableIndex = GetVTableIndex(vtable, entriesCount, *(void**)&funcPtr);");
-                contents.AppendLine("            if (vtableIndex > 0 && vtableIndex < entriesCount)");
+                contents.AppendLine("            if (vtableIndex >= 0 && vtableIndex < entriesCount)");
                 contents.AppendLine("            {");
                 contents.AppendLine($"                scriptVTableBase[{scriptVTableIndex} + 2] = vtable[vtableIndex];");
                 for (int i = 0, count = 0; i < ScriptingLangInfos.Count; i++)
