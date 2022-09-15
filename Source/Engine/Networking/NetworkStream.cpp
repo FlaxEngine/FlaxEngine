@@ -1,4 +1,4 @@
-﻿// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 #include "NetworkStream.h"
 
@@ -36,6 +36,15 @@ void NetworkStream::Initialize(uint32 minCapacity)
 
     // Reset pointer to the start
     _position = _buffer;
+}
+
+void NetworkStream::Initialize(byte* buffer, uint32 length)
+{
+    if (_allocated)
+        Allocator::Free(_buffer);
+    _position = _buffer = buffer;
+    _length = length;
+    _allocated = false;
 }
 
 void NetworkStream::Flush()

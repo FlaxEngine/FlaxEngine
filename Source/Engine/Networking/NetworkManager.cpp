@@ -26,15 +26,6 @@ Delegate<NetworkClientConnectionData&> NetworkManager::ClientConnecting;
 Delegate<NetworkClient*> NetworkManager::ClientConnected;
 Delegate<NetworkClient*> NetworkManager::ClientDisconnected;
 
-enum class NetworkMessageIDs : uint8
-{
-    None = 0,
-    Handshake,
-    HandshakeReply,
-
-    MAX,
-};
-
 PACK_STRUCT(struct NetworkMessageHandshake
     {
     NetworkMessageIDs ID;
@@ -120,6 +111,7 @@ namespace
         nullptr,
         OnNetworkMessageHandshake,
         OnNetworkMessageHandshakeReply,
+        NetworkInternal::OnNetworkMessageReplicatedObject,
     };
 }
 
@@ -245,7 +237,7 @@ bool NetworkManager::StartClient()
         return true;
     if (!Peer->Connect())
         return true;
-    LocalClient = New<NetworkClient>(NetworkConnection{0});
+    LocalClient = New<NetworkClient>(NetworkConnection{ 0 });
 
     return false;
 }
@@ -260,7 +252,7 @@ bool NetworkManager::StartHost()
         return true;
     if (!Peer->Listen())
         return true;
-    LocalClient = New<NetworkClient>(NetworkConnection{0});
+    LocalClient = New<NetworkClient>(NetworkConnection{ 0 });
 
     // Auto-connect host
     LocalClient->State = NetworkConnectionState::Connected;

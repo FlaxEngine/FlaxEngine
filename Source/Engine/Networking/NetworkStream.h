@@ -1,4 +1,4 @@
-﻿// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -22,9 +22,25 @@ public:
     ~NetworkStream();
 
     /// <summary>
+    /// Gets the pointer to the native stream memory buffer.
+    /// </summary>
+    API_PROPERTY() byte* GetBuffer() const
+    {
+        return _buffer;
+    }
+
+    /// <summary>
     /// Initializes the stream for writing. Allocates the memory or reuses already existing memory. Resets the current stream position to beginning.
     /// </summary>
-    API_FUNCTION() void Initialize(uint32 minCapacity);
+    /// <param name="minCapacity">The minimum capacity (in bytes) for the memory buffer used for data storage.</param>
+    API_FUNCTION() void Initialize(uint32 minCapacity = 1024);
+
+    /// <summary>
+    /// Initializes the stream for reading.
+    /// </summary>
+    /// <param name="buffer">The allocated memory.</param>
+    /// <param name="length">The allocated memory length (bytes count).</param>
+    API_FUNCTION() void Initialize(byte* buffer, uint32 length);
 
     /// <summary>
     /// Writes bytes to the stream
