@@ -70,6 +70,11 @@ public:
     API_FIELD(ReadOnly) static NetworkConnectionState State;
 
     /// <summary>
+    /// Current network system frame number (incremented every tick). Can be used for frames counting in networking and replication.
+    /// </summary>
+    API_FIELD(ReadOnly) static uint32 Frame;
+
+    /// <summary>
     /// Local client, valid only when Network Manager is running in client or host mode (server doesn't have a client).
     /// </summary>
     API_FIELD(ReadOnly) static NetworkClient* LocalClient;

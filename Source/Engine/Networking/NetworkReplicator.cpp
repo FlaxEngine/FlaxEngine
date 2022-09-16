@@ -12,9 +12,11 @@
 #include "NetworkEvent.h"
 #include "Engine/Core/Log.h"
 #include "Engine/Core/Collections/HashSet.h"
+#include "Engine/Core/Collections/Dictionary.h"
 #include "Engine/Platform/CriticalSection.h"
 #include "Engine/Engine/EngineService.h"
 #include "Engine/Profiler/ProfilerCPU.h"
+#include "Engine/Scripting/Scripting.h"
 #include "Engine/Scripting/ScriptingObjectReference.h"
 #include "Engine/Threading/Threading.h"
 
@@ -35,6 +37,7 @@ struct NetworkReplicatedObject
     ScriptingObjectReference<ScriptingObject> Object;
     Guid ObjectId;
     Guid OwnerId;
+    uint32 LastFrameSync = 0;
 #if NETWORK_REPLICATOR_DEBUG_LOG
     bool InvalidTypeWarn = false;
 #endif
@@ -62,13 +65,14 @@ struct NetworkReplicatedObject
 
 inline uint32 GetHash(const NetworkReplicatedObject& key)
 {
-    return GetHash(key.Object.Get());
+    return GetHash(key.ObjectId);
 }
 
 namespace
 {
     CriticalSection ObjectsLock;
     HashSet<NetworkReplicatedObject> Objects;
+    Dictionary<Guid, Guid> IdsRemappingTable;
     NetworkStream* CachedWriteStream = nullptr;
     NetworkStream* CachedReadStream = nullptr;
     Array<NetworkConnection> CachedTargets;
@@ -92,20 +96,36 @@ void NetworkReplicationService::Dispose()
 
 NetworkReplicationService NetworkReplicationServiceInstance;
 
-NetworkReplicatedObject* ResolveObject(const Guid& objectId, const Guid& ownerId, char objectTypeName[128])
+NetworkReplicatedObject* ResolveObject(Guid objectId, Guid ownerId, char objectTypeName[128])
 {
+    // Lookup object
+    IdsRemappingTable.TryGet(objectId, objectId);
     const auto it = Objects.Find(objectId);
     if (it != Objects.End())
         return &it->Item;
-    
-    // TODO: cache objects remapping table to skip this search on 2nd sync
 
-    // Try to use remapped object
-    const auto ownerIt = Objects.Find(ownerId);
-    if (ownerIt != Objects.End())
+    // Try to find the object within the same parent (eg. spawned locally on both client and server)
+    IdsRemappingTable.TryGet(ownerId, ownerId);
+    const ScriptingTypeHandle objectType = Scripting::FindScriptingType(StringAnsiView(objectTypeName));
+    if (!objectType)
+        return nullptr;
+    for (auto& e : Objects)
     {
-        // TODO: find object of given type within owner (only objects that ahs not been sync-replicated yet)
-        //return &ownerIt->Item;
+        auto& item = e.Item;
+        const ScriptingObject* obj = item.Object.Get();
+        if (item.OwnerId == ownerId &&
+            item.LastFrameSync == 0 &&
+            obj &&
+            obj->GetTypeHandle() == objectType)
+        {
+            // Boost future lookups by using indirection
+#if NETWORK_REPLICATOR_DEBUG_LOG
+            LOG(Info, "[NetworkReplicator] Remap object ID={} into object {}:{}", objectId, item.ToString(), obj->GetType().ToString());
+#endif
+            IdsRemappingTable.Add(objectId, item.ObjectId);
+
+            return &item;
+        }
     }
 
     return nullptr;
@@ -141,6 +161,8 @@ void NetworkInternal::NetworkReplicatorClear()
 #endif
     Objects.Clear();
     Objects.SetCapacity(0);
+    IdsRemappingTable.Clear();
+    IdsRemappingTable.SetCapacity(0);
     SAFE_DELETE(CachedWriteStream);
     SAFE_DELETE(CachedReadStream);
     CachedTargets.Resize(0);
@@ -248,6 +270,7 @@ void NetworkInternal::OnNetworkMessageReplicatedObject(NetworkEvent& event, Netw
         ScriptingObject* obj = item.Object.Get();
         if (!obj)
             return;
+        item.LastFrameSync = NetworkManager::Frame;
 
         // Setup message reading stream
         if (CachedReadStream == nullptr)

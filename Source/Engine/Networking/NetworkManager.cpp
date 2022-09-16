@@ -19,6 +19,7 @@ float NetworkManager::NetworkFPS = 60.0f;
 NetworkPeer* NetworkManager::Peer = nullptr;
 NetworkManagerMode NetworkManager::Mode = NetworkManagerMode::Offline;
 NetworkConnectionState NetworkManager::State = NetworkConnectionState::Offline;
+uint32 NetworkManager::Frame = 0;
 NetworkClient* NetworkManager::LocalClient = nullptr;
 Array<NetworkClient*> NetworkManager::Clients;
 Action NetworkManager::StateChanged;
@@ -171,6 +172,7 @@ bool StartPeer()
         LOG(Error, "Failed to create Network Peer at {0}:{1}", networkConfig.Address, networkConfig.Port);
         return true;
     }
+    NetworkManager::Frame = 0;
 
     return false;
 }
@@ -306,6 +308,7 @@ void NetworkManagerService::Update()
         return;
     PROFILE_CPU();
     LastUpdateTime = currentTime;
+    NetworkManager::Frame++;
     auto peer = NetworkManager::Peer;
     // TODO: convert into TaskGraphSystems and use async jobs
 
