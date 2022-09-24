@@ -246,6 +246,24 @@ namespace Flax.Build
         }
 
         /// <summary>
+        /// Gets path to the current platform binary directory 
+        /// </summary>
+        public static string GetEditorBinaryDirectory()
+        {
+            var subdir = "Binaries/Editor/";
+            switch (Platform.BuildTargetPlatform)
+            {
+                case TargetPlatform.Windows:
+                    return subdir + "Win64";
+                case TargetPlatform.Linux:
+                    return subdir + "Linux";
+                case TargetPlatform.Mac:
+                    return subdir + "Mac";
+            }
+            throw new NotImplementedException();
+        }
+
+        /// <summary>
         /// Creates the project files generator for the specified project format.
         /// </summary>
         /// <param name="targetPlatform">The target platform.</param>
