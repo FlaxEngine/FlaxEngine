@@ -54,7 +54,12 @@ namespace FlaxEditor.Gizmo
             if (!_isActive || !IsActive)
                 return;
 
-            Matrix m1, m2, m3;
+            //PE: As all axisMesh have the same pivot, add a little offset to the x axisMesh,
+            //PE: This way SortDrawCalls is able to sort the draw order.
+            //PE: https://github.com/FlaxEngine/FlaxEngine/issues/680
+            //PE: @Artist To fix the rotate, add new "wider" circleMesh, so direction is visible.
+
+            Matrix m1, m2, m3 , mx1;
             bool isXAxis = _activeAxis == Axis.X || _activeAxis == Axis.XY || _activeAxis == Axis.ZX;
             bool isYAxis = _activeAxis == Axis.Y || _activeAxis == Axis.XY || _activeAxis == Axis.YZ;
             bool isZAxis = _activeAxis == Axis.Z || _activeAxis == Axis.YZ || _activeAxis == Axis.ZX;
@@ -70,6 +75,8 @@ namespace FlaxEditor.Gizmo
                     break;
                 Matrix.Scaling(gizmoModelsScale2RealGizmoSize, out m3);
                 Matrix.Multiply(ref m3, ref world, out m1);
+                mx1 = m1;
+                mx1.M41 += 0.05f;
                 var axisMesh = _modelTranslateAxis.LODs[0].Meshes[0];
                 var boxMesh = _modelBox.LODs[0].Meshes[0];
                 var boxSize = 10.0f;
@@ -90,7 +97,7 @@ namespace FlaxEditor.Gizmo
                 boxMesh.Draw(ref renderContext, _activeAxis == Axis.YZ ? _materialWireFocus : _materialWire, ref m3);
 
                 // X axis
-                axisMesh.Draw(ref renderContext, isXAxis ? _materialAxisFocus : _materialAxisX, ref m1);
+                axisMesh.Draw(ref renderContext, isXAxis ? _materialAxisFocus : _materialAxisX, ref mx1);
 
                 // Y axis
                 Matrix.RotationZ(Mathf.PiOverTwo, out m2);
@@ -143,12 +150,15 @@ namespace FlaxEditor.Gizmo
                     break;
                 Matrix.Scaling(gizmoModelsScale2RealGizmoSize, out m3);
                 Matrix.Multiply(ref m3, ref world, out m1);
+                mx1 = m1;
+                mx1.M41 -= 0.05f;
+
                 var axisMesh = _modelScaleAxis.LODs[0].Meshes[0];
                 var boxMesh = _modelBox.LODs[0].Meshes[0];
 
                 // X axis
                 Matrix.RotationY(-Mathf.PiOverTwo, out m2);
-                Matrix.Multiply(ref m2, ref m1, out m3);
+                Matrix.Multiply(ref m2, ref mx1, out m3);
                 axisMesh.Draw(ref renderContext, isXAxis ? _materialAxisFocus : _materialAxisX, ref m3);
 
                 // Y axis
