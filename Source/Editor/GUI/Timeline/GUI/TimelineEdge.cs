@@ -15,6 +15,8 @@ namespace FlaxEditor.GUI.Timeline.GUI
         private Timeline _timeline;
         private bool _isMoving;
         private Float2 _startMoveLocation;
+        private Float2 _lastMouseLocation;
+        private float _flipScreenMoveDelta;
         private int _startMoveDuration;
         private bool _isStart;
         private bool _canEdit;
@@ -71,10 +73,29 @@ namespace FlaxEditor.GUI.Timeline.GUI
         {
             if (_isMoving)
             {
+                Float2 currWndCenter = _timeline.RootWindow.Window.ClientBounds.Center;
+                Float2 currMonitorSize = Platform.GetMonitorBounds(currWndCenter).Size;
                 var moveLocation = Root.MousePosition;
-                var moveLocationDelta = moveLocation - _startMoveLocation;
+                var diffFromLastMoveLocation = Mathf.Max(_lastMouseLocation.X, moveLocation.X) - Mathf.Min(_lastMouseLocation.X, moveLocation.X);
+                var movePorcentOfXMonitorSize = diffFromLastMoveLocation * 100f / currMonitorSize.X;
+
+                if (movePorcentOfXMonitorSize >= 90f)
+                {
+                    if (_lastMouseLocation.X > moveLocation.X)
+                    {
+                        _flipScreenMoveDelta += currMonitorSize.X;
+                    }
+                    else
+                    {
+                        _flipScreenMoveDelta -= currMonitorSize.X;
+                    }
+                }
+
+                var moveLocationDelta = moveLocation - _startMoveLocation + _flipScreenMoveDelta;
                 var moveDelta = (int)(moveLocationDelta.X / (Timeline.UnitsPerSecond * _timeline.Zoom) * _timeline.FramesPerSecond);
                 var durationFrames = _timeline.DurationFrames;
+
+
 
                 if (_isStart)
                 {
@@ -83,12 +104,16 @@ namespace FlaxEditor.GUI.Timeline.GUI
                 else
                 {
                     _timeline.DurationFrames = _startMoveDuration + moveDelta;
+                    _timeline.MediaBackground.HScrollBar.Value = _timeline.MediaBackground.HScrollBar.Maximum;
                 }
 
                 if (_timeline.DurationFrames != durationFrames)
                 {
                     _timeline.MarkAsEdited();
                 }
+
+                _lastMouseLocation = moveLocation;
+
             }
             else
             {
@@ -140,6 +165,8 @@ namespace FlaxEditor.GUI.Timeline.GUI
                     _timeline.DurationFrames = duration;
             }
             _isMoving = false;
+            _flipScreenMoveDelta = 0;
+            _timeline.MediaBackground.HScrollBar.Value = _timeline.MediaBackground.HScrollBar.Maximum;
 
             EndMouseCapture();
         }
