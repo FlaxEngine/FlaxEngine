@@ -27,6 +27,8 @@ namespace FlaxEditor.Windows
         private const string ProjectDataLastViewedFolder = "LastViewedFolder";
         private bool _isWorkspaceDirty;
         private SplitPanel _split;
+        private Panel _contentViewPanel;
+        private Panel _contentTreePanel;
         private ContentView _view;
 
         private readonly ToolStrip _toolStrip;
@@ -95,7 +97,7 @@ namespace FlaxEditor.Windows
             };
 
             // Split panel
-            _split = new SplitPanel(options.Options.Interface.ContentWindowOrientation, ScrollBars.Both, ScrollBars.Vertical)
+            _split = new SplitPanel(options.Options.Interface.ContentWindowOrientation, ScrollBars.None, ScrollBars.None)
             {
                 AnchorPreset = AnchorPresets.StretchAll,
                 Offsets = new Margin(0, 0, _toolStrip.Bottom, 0),
@@ -120,11 +122,20 @@ namespace FlaxEditor.Windows
             };
             _foldersSearchBox.TextChanged += OnFoldersSearchBoxTextChanged;
 
+            // Content tree panel
+            _contentTreePanel = new Panel
+            {
+                AnchorPreset = AnchorPresets.StretchAll,
+                Offsets = new Margin(0, 0, headerPanel.Bottom, 0),
+                IsScrollable = true,
+                ScrollBars = ScrollBars.Both,
+                Parent = _split.Panel1,
+            };
+            
             // Content structure tree
             _tree = new Tree(false)
             {
-                Y = headerPanel.Bottom,
-                Parent = _split.Panel1,
+                Parent = _contentTreePanel,
             };
             _tree.SelectedChanged += OnTreeSelectionChanged;
             headerPanel.Parent = _split.Panel1;
@@ -159,13 +170,23 @@ namespace FlaxEditor.Windows
                 _viewDropdown.Items.Add(((ContentItemSearchFilter)i).ToString());
             _viewDropdown.PopupCreate += OnViewDropdownPopupCreate;
 
+            // Content view panel
+            _contentViewPanel = new Panel
+            {
+                AnchorPreset = AnchorPresets.StretchAll,
+                Offsets = new Margin(0, 0, contentItemsSearchPanel.Bottom + 4, 0),
+                IsScrollable = true,
+                ScrollBars = ScrollBars.Vertical,
+                Parent = _split.Panel2,
+            };
+            
             // Content View
             _view = new ContentView
             {
                 AnchorPreset = AnchorPresets.HorizontalStretchTop,
-                Offsets = new Margin(0, 0, contentItemsSearchPanel.Bottom + 4, 0),
+                Offsets = new Margin(0, 0, 0, 0),
                 IsScrollable = true,
-                Parent = _split.Panel2,
+                Parent = _contentViewPanel,
             };
             _view.OnOpen += Open;
             _view.OnNavigateBack += NavigateBackward;
@@ -285,6 +306,14 @@ namespace FlaxEditor.Windows
                 _split.Panel2.VScrollBar.ThumbEnabled = false;
             if (_split.Panel2.HScrollBar != null)
                 _split.Panel2.HScrollBar.ThumbEnabled = false;
+            if (_contentViewPanel.VScrollBar != null)
+                _contentViewPanel.VScrollBar.ThumbEnabled = false;
+            if (_contentViewPanel.HScrollBar != null)
+                _contentViewPanel.HScrollBar.ThumbEnabled = false;
+            if (_contentTreePanel.VScrollBar != null)
+                _contentTreePanel.VScrollBar.ThumbEnabled = false;
+            if (_contentTreePanel.HScrollBar != null)
+                _contentTreePanel.HScrollBar.ThumbEnabled = false;
 
             // Show rename popup
             var popup = RenamePopup.Show(item, item.TextRectangle, item.ShortName, true);
@@ -298,6 +327,14 @@ namespace FlaxEditor.Windows
                     _split.Panel2.VScrollBar.ThumbEnabled = true;
                 if (_split.Panel2.HScrollBar != null)
                     _split.Panel2.HScrollBar.ThumbEnabled = true;
+                if (_contentViewPanel.VScrollBar != null)
+                    _contentViewPanel.VScrollBar.ThumbEnabled = true;
+                if (_contentViewPanel.HScrollBar != null)
+                    _contentViewPanel.HScrollBar.ThumbEnabled = true;
+                if (_contentTreePanel.VScrollBar != null)
+                    _contentTreePanel.VScrollBar.ThumbEnabled = true;
+                if (_contentTreePanel.HScrollBar != null)
+                    _contentTreePanel.HScrollBar.ThumbEnabled = true;
 
                 // Check if was creating new element
                 if (_newElement != null)
