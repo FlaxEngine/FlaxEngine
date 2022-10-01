@@ -172,6 +172,7 @@ namespace FlaxEditor.GUI.Input
         {
             _isSliding = false;
             EndMouseCapture();
+            Cursor = CursorType.Default;
             SlidingEnd?.Invoke();
         }
 
@@ -236,6 +237,7 @@ namespace FlaxEditor.GUI.Input
                 _startSlideLocation = location;
                 _startSlideValue = _value;
                 StartMouseCapture(true);
+                Cursor = CursorType.SizeWE;
                 SlidingStart?.Invoke();
                 return true;
             }
@@ -255,6 +257,16 @@ namespace FlaxEditor.GUI.Input
                 var slideLocation = location + Root.TrackingMouseOffset;
                 ApplySliding(Mathf.RoundToInt(slideLocation.X - _startSlideLocation.X) * _slideSpeed);
                 return;
+            }
+            
+            // Update cursor type so user knows they can slide value
+            if (CanUseSliding && SlideRect.Contains(location))
+            {
+                Cursor = CursorType.SizeWE;
+            }
+            else if (!_isSliding)
+            {
+                Cursor = CursorType.Default;
             }
 
             base.OnMouseMove(location);
