@@ -56,6 +56,7 @@ namespace FlaxEditor.GUI.Input
 
         private Float2 _startSlideLocation;
         private double _clickStartTime = -1;
+        private bool _cursorChanged;
 
         /// <summary>
         /// Occurs when value gets changed.
@@ -263,8 +264,9 @@ namespace FlaxEditor.GUI.Input
             if (CanUseSliding && SlideRect.Contains(location))
             {
                 Cursor = CursorType.SizeWE;
+                _cursorChanged = true;
             }
-            else if (!_isSliding)
+            else if (_cursorChanged && !_isSliding)
             {
                 Cursor = CursorType.Default;
             }

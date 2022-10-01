@@ -23,8 +23,7 @@ namespace FlaxEngine.GUI
         private float _splitterValue;
         private Rectangle _splitterRect;
         private bool _splitterClicked, _mouseOverSplitter;
-        private bool _leftMouseButtonDown;
-        private bool _rightMouseButtonDown;
+        private bool _cursorChanged;
 
         /// <summary>
         /// The first panel (left or upper based on Orientation).
@@ -168,10 +167,12 @@ namespace FlaxEngine.GUI
             else if (_mouseOverSplitter)
             {
                 Cursor = _orientation == Orientation.Horizontal ? CursorType.SizeWE : CursorType.SizeNS;
+                _cursorChanged = true;
             }
-            else if (!_leftMouseButtonDown && !_rightMouseButtonDown)
+            else if (_cursorChanged)
             {
                 Cursor = CursorType.Default;
+                _cursorChanged = false;
             }
 
             base.OnMouseMove(location);
@@ -180,16 +181,6 @@ namespace FlaxEngine.GUI
         /// <inheritdoc />
         public override bool OnMouseDown(Float2 location, MouseButton button)
         {
-            if (button == MouseButton.Left)
-            {
-                _leftMouseButtonDown = true;
-            }
-            
-            if (button == MouseButton.Right)
-            {
-                _rightMouseButtonDown = true;
-            }
-
             if (button == MouseButton.Left && _splitterRect.Contains(location))
             {
                 // Start moving splitter
@@ -204,16 +195,6 @@ namespace FlaxEngine.GUI
         /// <inheritdoc />
         public override bool OnMouseUp(Float2 location, MouseButton button)
         {
-            if (button == MouseButton.Left)
-            {
-                _leftMouseButtonDown = false;
-            }
-            
-            if (button == MouseButton.Right)
-            {
-                _rightMouseButtonDown = false;
-            }
-            
             if (_splitterClicked)
             {
                 EndTracking();
