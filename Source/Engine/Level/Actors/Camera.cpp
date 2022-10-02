@@ -121,7 +121,7 @@ void Camera::ProjectPoint(const Vector3& worldSpaceLocation, Float2& cameraViewp
     cameraViewportSpaceLocation = Float2(clipSpaceLocation);
 }
 
-bool Camera::CheckPointIsOnView(const Vector3& worldSpaceLocation) const
+bool Camera::IsPointOnView(const Vector3& worldSpaceLocation) const
 {
     Camera* mainCamera = Camera::GetMainCamera();
 
@@ -136,7 +136,7 @@ bool Camera::CheckPointIsOnView(const Vector3& worldSpaceLocation) const
     mainCamera->ProjectPoint(worldSpaceLocation, windowSpace);
 
     return (windowSpace.X >= 0 && windowSpace.X <= screenSize.X) &&
-        (windowSpace.Y >= 0 && windowSpace.Y <= screenSize.Y);
+           (windowSpace.Y >= 0 && windowSpace.Y <= screenSize.Y);
 }
 
 Ray Camera::ConvertMouseToRay(const Float2& mousePosition) const

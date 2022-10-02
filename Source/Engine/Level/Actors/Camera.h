@@ -173,7 +173,7 @@ public:
     /// </summary>
     /// <param name="worldSpaceLocation">World Position (XYZ)</param>
     /// <returns>Returns true if the point is within the field of view</returns>
-    API_FUNCTION() bool CheckPointIsOnView(const Vector3& worldSpaceLocation) const;
+    API_FUNCTION() bool IsPointOnView(const Vector3& worldSpaceLocation) const;
 
     /// <summary>
     /// Converts the mouse position to 3D ray.
