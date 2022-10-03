@@ -5,6 +5,7 @@
 #include "Engine/Core/Math/Viewport.h"
 #include "Engine/Content/Assets/Model.h"
 #include "Engine/Content/Content.h"
+#include "Engine/Engine/Screen.h"
 #include "Engine/Serialization/Serialization.h"
 #if USE_EDITOR
 #include "Editor/Editor.h"
@@ -118,6 +119,37 @@ void Camera::ProjectPoint(const Vector3& worldSpaceLocation, Float2& cameraViewp
     Vector3::Transform(worldSpaceLocation, vp, clipSpaceLocation);
     viewport.Project(worldSpaceLocation, vp, clipSpaceLocation);
     cameraViewportSpaceLocation = Float2(clipSpaceLocation);
+}
+
+bool Camera::IsPointOnView(const Vector3& worldSpaceLocation) const
+{
+    Camera* mainCamera = Camera::GetMainCamera();
+
+    if (!mainCamera)
+    {
+        return false;
+    }
+
+    Vector3 cameraUp = mainCamera->GetTransform().GetUp();
+    Vector3 cameraForward = mainCamera->GetTransform().GetForward();
+    Vector3 directionToPosition = (worldSpaceLocation- mainCamera->GetPosition()).GetNormalized();
+
+    if (Vector3::Dot(cameraForward, directionToPosition) < 0)
+    {
+        return false;
+    }
+
+    Quaternion lookAt = Quaternion::LookRotation(directionToPosition, cameraUp);
+    Vector3 lookAtDirection = lookAt * Vector3::Forward;
+    Vector3 newWorldLocation = mainCamera->GetPosition() + lookAtDirection;
+
+    Float2 windowSpace = Float2();
+    Float2 screenSize = Screen::GetSize();
+
+    mainCamera->ProjectPoint(newWorldLocation, windowSpace);
+
+    return (windowSpace.X >= 0 && windowSpace.X <= screenSize.X) &&
+           (windowSpace.Y >= 0 && windowSpace.Y <= screenSize.Y);
 }
 
 Ray Camera::ConvertMouseToRay(const Float2& mousePosition) const
