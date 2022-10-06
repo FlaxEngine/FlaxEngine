@@ -293,6 +293,30 @@ namespace FlaxEditor.Windows
         }
 
         /// <summary>
+        ///  Enables or disables vertical and horizontal scrolling on the content tree panel
+        /// </summary>
+        /// <param name="enabled">The state to set scrolling to</param>
+        public void ScrollingOnTreeView(bool enabled)
+        {
+            if (_contentTreePanel.VScrollBar != null)
+                _contentTreePanel.VScrollBar.ThumbEnabled = enabled;
+            if (_contentTreePanel.HScrollBar != null)
+                _contentTreePanel.HScrollBar.ThumbEnabled = enabled;
+        }
+
+        /// <summary>
+        ///  Enables or disables vertical and horizontal scrolling on the content view panel
+        /// </summary>
+        /// <param name="enabled">The state to set scrolling to</param>
+        public void ScrollingOnContentView(bool enabled)
+        {
+            if (_contentViewPanel.VScrollBar != null)
+                _contentViewPanel.VScrollBar.ThumbEnabled = enabled;
+            if (_contentViewPanel.HScrollBar != null)
+                _contentViewPanel.HScrollBar.ThumbEnabled = enabled;
+        }
+
+        /// <summary>
         /// Shows popup dialog with UI to rename content item.
         /// </summary>
         /// <param name="item">The item to rename.</param>
@@ -306,14 +330,7 @@ namespace FlaxEditor.Windows
                 _split.Panel2.VScrollBar.ThumbEnabled = false;
             if (_split.Panel2.HScrollBar != null)
                 _split.Panel2.HScrollBar.ThumbEnabled = false;
-            if (_contentViewPanel.VScrollBar != null)
-                _contentViewPanel.VScrollBar.ThumbEnabled = false;
-            if (_contentViewPanel.HScrollBar != null)
-                _contentViewPanel.HScrollBar.ThumbEnabled = false;
-            if (_contentTreePanel.VScrollBar != null)
-                _contentTreePanel.VScrollBar.ThumbEnabled = false;
-            if (_contentTreePanel.HScrollBar != null)
-                _contentTreePanel.HScrollBar.ThumbEnabled = false;
+            ScrollingOnContentView(false);
 
             // Show rename popup
             var popup = RenamePopup.Show(item, item.TextRectangle, item.ShortName, true);
@@ -327,14 +344,7 @@ namespace FlaxEditor.Windows
                     _split.Panel2.VScrollBar.ThumbEnabled = true;
                 if (_split.Panel2.HScrollBar != null)
                     _split.Panel2.HScrollBar.ThumbEnabled = true;
-                if (_contentViewPanel.VScrollBar != null)
-                    _contentViewPanel.VScrollBar.ThumbEnabled = true;
-                if (_contentViewPanel.HScrollBar != null)
-                    _contentViewPanel.HScrollBar.ThumbEnabled = true;
-                if (_contentTreePanel.VScrollBar != null)
-                    _contentTreePanel.VScrollBar.ThumbEnabled = true;
-                if (_contentTreePanel.HScrollBar != null)
-                    _contentTreePanel.HScrollBar.ThumbEnabled = true;
+                ScrollingOnContentView(true);
 
                 // Check if was creating new element
                 if (_newElement != null)
