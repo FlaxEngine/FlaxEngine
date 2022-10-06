@@ -948,6 +948,11 @@ namespace FlaxEngine.GUI
         {
             // Set flag
             _isDragOver = true;
+            // Update tooltip
+            if (_tooltipUpdate != null)
+            {
+                Tooltip.Hide();
+            }
             return DragDropEffect.None;
         }
 
@@ -960,12 +965,6 @@ namespace FlaxEngine.GUI
         [NoAnimate]
         public virtual DragDropEffect OnDragMove(ref Float2 location, DragData data)
         {
-            // Update tooltip
-            if (_tooltipUpdate != null)
-            {
-                SetUpdate(ref _tooltipUpdate, null);
-                Tooltip.Hide();
-            }
             return DragDropEffect.None;
         }
 
