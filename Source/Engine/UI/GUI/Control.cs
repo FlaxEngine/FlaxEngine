@@ -948,11 +948,13 @@ namespace FlaxEngine.GUI
         {
             // Set flag
             _isDragOver = true;
-            // Update tooltip
+            
+            // Hide tooltip
             if (_tooltipUpdate != null)
             {
                 Tooltip.Hide();
             }
+            
             return DragDropEffect.None;
         }
 
