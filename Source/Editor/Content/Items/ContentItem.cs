@@ -690,18 +690,9 @@ namespace FlaxEditor.Content
         public override bool OnMouseDoubleClick(Float2 location, MouseButton button)
         {
             Focus();
-
-            // Check if clicked on name area (and can be renamed)
-            if (CanRename && TextRectangle.Contains(ref location))
-            {
-                // Rename
-                (Parent as ContentView).OnItemDoubleClickName(this);
-            }
-            else
-            {
-                // Open
-                (Parent as ContentView).OnItemDoubleClick(this);
-            }
+            
+            // Open
+            (Parent as ContentView).OnItemDoubleClick(this);
 
             return true;
         }
