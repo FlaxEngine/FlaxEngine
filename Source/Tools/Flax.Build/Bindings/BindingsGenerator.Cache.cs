@@ -19,7 +19,7 @@ namespace Flax.Build.Bindings
     partial class BindingsGenerator
     {
         private static readonly Dictionary<string, Type> TypeCache = new Dictionary<string, Type>();
-        private const int CacheVersion = 16;
+        private const int CacheVersion = 17;
 
         internal static void Write(BinaryWriter writer, string e)
         {
@@ -36,6 +36,23 @@ namespace Flax.Build.Bindings
                 writer.Write(list.Length);
                 for (int i = 0; i < list.Length; i++)
                     writer.Write(list[i]);
+            }
+            else
+            {
+                writer.Write(0);
+            }
+        }
+
+        internal static void Write(BinaryWriter writer, Dictionary<string, string> map)
+        {
+            if (map != null)
+            {
+                writer.Write(map.Count);
+                foreach (var e in map)
+                {
+                    writer.Write(e.Key);
+                    writer.Write(e.Value);
+                }
             }
             else
             {
@@ -154,6 +171,22 @@ namespace Flax.Build.Bindings
                     list[i] = reader.ReadString();
             }
             return list;
+        }
+
+        internal static Dictionary<string, string> Read(BinaryReader reader, Dictionary<string, string> map)
+        {
+            var count = reader.ReadInt32();
+            if (count != 0)
+            {
+                map = new Dictionary<string, string>();
+                for (int i = 0; i < count; i++)
+                {
+                    var key = reader.ReadString();
+                    var value = reader.ReadString();
+                    map.Add(key, value);
+                }
+            }
+            return map;
         }
 
         internal static T Read<T>(BinaryReader reader, T e) where T : IBindingsCache

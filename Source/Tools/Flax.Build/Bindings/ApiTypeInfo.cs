@@ -13,6 +13,7 @@ namespace Flax.Build.Bindings
     public class ApiTypeInfo : IBindingsCache, ICloneable
     {
         public ApiTypeInfo Parent;
+        public Dictionary<string, string> Tags;
         public List<ApiTypeInfo> Children = new List<ApiTypeInfo>();
         public string NativeName;
         public string Name;
@@ -109,6 +110,20 @@ namespace Flax.Build.Bindings
             }
         }
 
+        public string GetTag(string tag)
+        {
+            if (Tags != null && Tags.TryGetValue(tag, out var value))
+                return value;
+            return null;
+        }
+
+        public void SetTag(string tag, string value)
+        {
+            if (Tags == null)
+                Tags = new Dictionary<string, string>();
+            Tags[tag] = value;
+        }
+
         public virtual void AddChild(ApiTypeInfo apiTypeInfo)
         {
             apiTypeInfo.Parent = this;
@@ -124,6 +139,7 @@ namespace Flax.Build.Bindings
             BindingsGenerator.Write(writer, Comment);
             writer.Write(IsInBuild);
             writer.Write(IsDeprecated);
+            BindingsGenerator.Write(writer, Tags);
             BindingsGenerator.Write(writer, Children);
         }
 
@@ -136,6 +152,7 @@ namespace Flax.Build.Bindings
             Comment = BindingsGenerator.Read(reader, Comment);
             IsInBuild = reader.ReadBoolean();
             IsDeprecated = reader.ReadBoolean();
+            Tags = BindingsGenerator.Read(reader, Tags);
             Children = BindingsGenerator.Read(reader, Children);
 
             // Fix hierarchy
