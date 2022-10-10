@@ -273,15 +273,26 @@ namespace FlaxEditor.SceneGraph.GUI
 
             Select();
 
+            // disable scrolling of scene view
+            Editor.Instance.Windows.SceneWin.ScrollingOnSceneTreeView(false);
+            
             // Start renaming the actor
             var dialog = RenamePopup.Show(this, HeaderRect, _actorNode.Name, false);
             dialog.Renamed += OnRenamed;
+            dialog.Closed += popup =>
+            {
+                // enable scrolling of scene view
+                Editor.Instance.Windows.SceneWin.ScrollingOnSceneTreeView(true);
+            };
         }
 
         private void OnRenamed(RenamePopup renamePopup)
         {
             using (new UndoBlock(ActorNode.Root.Undo, Actor, "Rename"))
                 Actor.Name = renamePopup.Text;
+            
+            // enable scrolling of scene view
+            Editor.Instance.Windows.SceneWin.ScrollingOnSceneTreeView(true);
         }
 
         /// <inheritdoc />
