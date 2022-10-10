@@ -460,10 +460,13 @@ namespace Flax.Build.Bindings
                         desc.Inheritance = new List<TypeInfo>();
                     desc.Inheritance.Add(inheritType);
                     token = context.Tokenizer.NextToken();
-                    if (token.Type == TokenType.LeftCurlyBrace)
+                    while (token.Type == TokenType.CommentSingleLine 
+                        || token.Type == TokenType.CommentMultiLine)
                     {
-                        break;
+                        token = context.Tokenizer.NextToken();
                     }
+                    if (token.Type == TokenType.LeftCurlyBrace)
+                        break;
                     if (token.Type == TokenType.Colon)
                     {
                         token = context.Tokenizer.ExpectToken(TokenType.Colon);
