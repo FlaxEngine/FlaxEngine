@@ -130,7 +130,7 @@ namespace Flax.Build.Bindings
             return context.StringCache.ToArray();
         }
 
-        private struct TagParameter
+        public struct TagParameter
         {
             public string Tag;
             public string Value;
@@ -338,7 +338,12 @@ namespace Flax.Build.Bindings
                             currentParam.Attributes = tag.Value;
                             break;
                         default:
-                            Log.Warning($"Unknown or not supported tag parameter {tag} used on {"function parameter"} at line {context.Tokenizer.CurrentLine}");
+                            bool valid = false;
+                            ParseFunctionParameterTag?.Invoke(ref valid, tag, ref currentParam);
+                            if (valid)
+                                break;
+                            var location = "function parameter";
+                            Log.Warning($"Unknown or not supported tag parameter {tag} used on {location} at line {context.Tokenizer.CurrentLine}");
                             break;
                         }
                     }
@@ -597,6 +602,10 @@ namespace Flax.Build.Bindings
                     desc.Namespace = tag.Value;
                     break;
                 default:
+                    bool valid = false;
+                    ParseTypeTag?.Invoke(ref valid, tag, desc);
+                    if (valid)
+                        break;
                     Log.Warning($"Unknown or not supported tag parameter {tag} used on {desc.Name} at line {context.Tokenizer.CurrentLine}");
                     break;
                 }
@@ -678,6 +687,10 @@ namespace Flax.Build.Bindings
                     desc.Namespace = tag.Value;
                     break;
                 default:
+                    bool valid = false;
+                    ParseTypeTag?.Invoke(ref valid, tag, desc);
+                    if (valid)
+                        break;
                     Log.Warning($"Unknown or not supported tag parameter {tag} used on {desc.Name} at line {context.Tokenizer.CurrentLine}");
                     break;
                 }
@@ -805,6 +818,10 @@ namespace Flax.Build.Bindings
                     desc.IsHidden = true;
                     break;
                 default:
+                    bool valid = false;
+                    ParseMemberTag?.Invoke(ref valid, tag, desc);
+                    if (valid)
+                        break;
                     Log.Warning($"Unknown or not supported tag parameter {tag} used on {desc.Name} at line {context.Tokenizer.CurrentLine}");
                     break;
                 }
@@ -1062,6 +1079,10 @@ namespace Flax.Build.Bindings
                     desc.Namespace = tag.Value;
                     break;
                 default:
+                    bool valid = false;
+                    ParseTypeTag?.Invoke(ref valid, tag, desc);
+                    if (valid)
+                        break;
                     Log.Warning($"Unknown or not supported tag parameter {tag} used on {desc.Name} at line {context.Tokenizer.CurrentLine}");
                     break;
                 }
@@ -1129,6 +1150,10 @@ namespace Flax.Build.Bindings
                     desc.Namespace = tag.Value;
                     break;
                 default:
+                    bool valid = false;
+                    ParseTypeTag?.Invoke(ref valid, tag, desc);
+                    if (valid)
+                        break;
                     Log.Warning($"Unknown or not supported tag parameter {tag} used on {desc.Name} at line {context.Tokenizer.CurrentLine}");
                     break;
                 }
@@ -1252,6 +1277,10 @@ namespace Flax.Build.Bindings
                     desc.NoArray = true;
                     break;
                 default:
+                    bool valid = false;
+                    ParseMemberTag?.Invoke(ref valid, tag, desc);
+                    if (valid)
+                        break;
                     Log.Warning($"Unknown or not supported tag parameter {tag} used on {desc.Name} at line {context.Tokenizer.CurrentLine}");
                     break;
                 }
@@ -1314,6 +1343,10 @@ namespace Flax.Build.Bindings
                     desc.IsHidden = true;
                     break;
                 default:
+                    bool valid = false;
+                    ParseMemberTag?.Invoke(ref valid, tag, desc);
+                    if (valid)
+                        break;
                     Log.Warning($"Unknown or not supported tag parameter {tag} used on {desc.Name} at line {context.Tokenizer.CurrentLine}");
                     break;
                 }
@@ -1379,6 +1412,10 @@ namespace Flax.Build.Bindings
                     desc.Namespace = tag.Value;
                     break;
                 default:
+                    bool valid = false;
+                    ParseTypeTag?.Invoke(ref valid, tag, desc);
+                    if (valid)
+                        break;
                     Log.Warning($"Unknown or not supported tag parameter {tag} used on {desc.Name} at line {context.Tokenizer.CurrentLine}");
                     break;
                 }

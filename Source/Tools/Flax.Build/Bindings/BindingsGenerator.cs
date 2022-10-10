@@ -43,11 +43,16 @@ namespace Flax.Build.Bindings
         }
 
         public delegate void GenerateModuleBindingsDelegate(BuildData buildData, IGrouping<string, Module> binaryModule);
-
         public delegate void GenerateBinaryModuleBindingsDelegate(BuildData buildData, ModuleInfo moduleInfo, ref BindingsResult bindings);
+        public delegate void ParseTypeTagDelegate(ref bool valid, TagParameter tag, ApiTypeInfo typeInfo);
+        public delegate void ParseMemberTagDelegate(ref bool valid, TagParameter tag, MemberInfo memberInfo);
+        public delegate void ParseFunctionParameterTagDelegate(ref bool valid, TagParameter tag, ref FunctionInfo.ParameterInfo parameterInfo);
 
         public static event GenerateModuleBindingsDelegate GenerateModuleBindings;
         public static event GenerateBinaryModuleBindingsDelegate GenerateBinaryModuleBindings;
+        public static event ParseTypeTagDelegate ParseTypeTag;
+        public static event ParseMemberTagDelegate ParseMemberTag;
+        public static event ParseFunctionParameterTagDelegate ParseFunctionParameterTag;
         public static ModuleInfo CurrentModule;
 
         public static ModuleInfo ParseModule(BuildData buildData, Module module, BuildOptions moduleOptions = null)
