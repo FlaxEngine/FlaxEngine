@@ -46,8 +46,8 @@ namespace Flax.Build.Bindings
         public static event Action<BuildData, IGrouping<string, Module>, StringBuilder> GenerateCppBinaryModuleHeader;
         public static event Action<BuildData, IGrouping<string, Module>, StringBuilder> GenerateCppBinaryModuleSource;
         public static event Action<BuildData, ModuleInfo, StringBuilder> GenerateCppModuleSource;
-        public static event Action<BuildData, VirtualClassInfo, StringBuilder> GenerateCppClassInternals;
-        public static event Action<BuildData, VirtualClassInfo, StringBuilder> GenerateCppClassInitRuntime;
+        public static event Action<BuildData, ApiTypeInfo, StringBuilder> GenerateCppTypeInternals;
+        public static event Action<BuildData, ApiTypeInfo, StringBuilder> GenerateCppTypeInitRuntime;
         public static event Action<BuildData, VirtualClassInfo, FunctionInfo, int, int, StringBuilder> GenerateCppScriptWrapperFunction;
 
         private static readonly List<string> CppInBuildVariantStructures = new List<string>
@@ -1751,7 +1751,7 @@ namespace Flax.Build.Bindings
                 }
             }
 
-            GenerateCppClassInternals?.Invoke(buildData, classInfo, contents);
+            GenerateCppTypeInternals?.Invoke(buildData, classInfo, contents);
 
             // Virtual methods overrides
             var setupScriptVTable = GenerateCppScriptVTable(buildData, contents, classInfo);
@@ -1774,7 +1774,7 @@ namespace Flax.Build.Bindings
                     contents.AppendLine($"        ADD_INTERNAL_CALL(\"{classTypeNameManagedInternalCall}::Internal_{e.Key}\", &{e.Value});");
                 }
             }
-            GenerateCppClassInitRuntime?.Invoke(buildData, classInfo, contents);
+            GenerateCppTypeInitRuntime?.Invoke(buildData, classInfo, contents);
 
             contents.AppendLine("    }").AppendLine();
 
@@ -1915,6 +1915,8 @@ namespace Flax.Build.Bindings
                 throw new NotImplementedException($"TODO: add support for API functions in structures (function {functionInfo} in structure {structureInfo.Name})");
                 //GenerateCppWrapperFunction(buildData, contents, structureInfo, functionInfo);
             }
+            
+            GenerateCppTypeInternals?.Invoke(buildData, structureInfo, contents);
 
             contents.AppendLine("    static void InitRuntime()");
             contents.AppendLine("    {");
@@ -1926,6 +1928,7 @@ namespace Flax.Build.Bindings
                     contents.AppendLine($"        ADD_INTERNAL_CALL(\"{structureTypeNameManagedInternalCall}::Internal_{e.Key}\", &{e.Value});");
                 }
             }
+            GenerateCppTypeInitRuntime?.Invoke(buildData, structureInfo, contents);
 
             contents.AppendLine("    }").AppendLine();
 
@@ -2149,7 +2152,7 @@ namespace Flax.Build.Bindings
             contents.Append('{').AppendLine();
             contents.AppendLine("public:");
 
-            GenerateCppClassInternals?.Invoke(buildData, interfaceInfo, contents);
+            GenerateCppTypeInternals?.Invoke(buildData, interfaceInfo, contents);
 
             // Virtual methods overrides
             var setupScriptVTable = GenerateCppScriptVTable(buildData, contents, interfaceInfo);
@@ -2157,7 +2160,7 @@ namespace Flax.Build.Bindings
             // Runtime initialization (internal methods binding)
             contents.AppendLine("    static void InitRuntime()");
             contents.AppendLine("    {");
-            GenerateCppClassInitRuntime?.Invoke(buildData, interfaceInfo, contents);
+            GenerateCppTypeInitRuntime?.Invoke(buildData, interfaceInfo, contents);
             contents.AppendLine("    }").AppendLine();
 
             // Interface implementation wrapper accessor for scripting types

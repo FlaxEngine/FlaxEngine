@@ -43,9 +43,13 @@ namespace Flax.Build.Bindings
         }
 
         public delegate void GenerateModuleBindingsDelegate(BuildData buildData, IGrouping<string, Module> binaryModule);
+
         public delegate void GenerateBinaryModuleBindingsDelegate(BuildData buildData, ModuleInfo moduleInfo, ref BindingsResult bindings);
+
         public delegate void ParseTypeTagDelegate(ref bool valid, TagParameter tag, ApiTypeInfo typeInfo);
+
         public delegate void ParseMemberTagDelegate(ref bool valid, TagParameter tag, MemberInfo memberInfo);
+
         public delegate void ParseFunctionParameterTagDelegate(ref bool valid, TagParameter tag, ref FunctionInfo.ParameterInfo parameterInfo);
 
         public static event GenerateModuleBindingsDelegate GenerateModuleBindings;
@@ -87,6 +91,8 @@ namespace Flax.Build.Bindings
             };
             if (string.IsNullOrEmpty(moduleInfo.Name))
                 throw new Exception("Module name cannot be empty.");
+            if (module.Tags != null && module.Tags.Count != 0)
+                moduleInfo.Tags = new Dictionary<string, string>(module.Tags);
             buildData.ModulesInfo.Add(module, moduleInfo);
 
             // Skip for modules that cannot have API bindings

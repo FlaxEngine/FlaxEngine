@@ -48,6 +48,11 @@ namespace Flax.Build
         public bool Deploy = true;
 
         /// <summary>
+        /// Custom module tags. Used by plugins and external tools.
+        /// </summary>
+        public Dictionary<string, string> Tags = new Dictionary<string, string>();
+
+        /// <summary>
         /// Initializes a new instance of the <see cref="Module"/> class.
         /// </summary>
         public Module()
