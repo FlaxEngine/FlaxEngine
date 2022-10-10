@@ -173,8 +173,11 @@ namespace FlaxEditor.GUI.Input
         {
             _isSliding = false;
             EndMouseCapture();
-            Cursor = CursorType.Default;
-            _cursorChanged = false;
+            if (_cursorChanged)
+            {
+                Cursor = CursorType.Default;
+                _cursorChanged = false;
+            }
             SlidingEnd?.Invoke();
         }
 
@@ -298,6 +301,18 @@ namespace FlaxEditor.GUI.Input
             }
 
             return base.OnMouseUp(location, button);
+        }
+
+        /// <inheritdoc />
+        public override void OnMouseLeave()
+        {
+            if (_cursorChanged)
+            {
+                Cursor = CursorType.Default;
+                _cursorChanged = false;
+            }
+
+            base.OnMouseLeave();
         }
 
         /// <inheritdoc />

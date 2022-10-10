@@ -210,6 +210,11 @@ namespace FlaxEngine.GUI
         {
             // Clear flag
             _mouseOverSplitter = false;
+            if (_cursorChanged)
+            {
+                Cursor = CursorType.Default;
+                _cursorChanged = false;
+            }
 
             base.OnMouseLeave();
         }
