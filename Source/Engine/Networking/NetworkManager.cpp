@@ -15,6 +15,8 @@
 #include "Engine/Profiler/ProfilerCPU.h"
 #include "Engine/Scripting/Scripting.h"
 
+#define NETWORK_PROTOCOL_VERSION 1
+
 float NetworkManager::NetworkFPS = 60.0f;
 NetworkPeer* NetworkManager::Peer = nullptr;
 NetworkManagerMode NetworkManager::Mode = NetworkManagerMode::Offline;
@@ -26,6 +28,12 @@ Action NetworkManager::StateChanged;
 Delegate<NetworkClientConnectionData&> NetworkManager::ClientConnecting;
 Delegate<NetworkClient*> NetworkManager::ClientConnected;
 Delegate<NetworkClient*> NetworkManager::ClientDisconnected;
+
+namespace
+{
+    uint32 GameProtocolVersion = 0;
+    double LastUpdateTime = 0;
+}
 
 PACK_STRUCT(struct NetworkMessageHandshake
     {
@@ -56,6 +64,11 @@ void OnNetworkMessageHandshake(NetworkEvent& event, NetworkClient* client, Netwo
     connectionData.Architecture = (ArchitectureType)msgData.Architecture;
     connectionData.PayloadData.Resize(msgData.PayloadDataSize);
     event.Message.ReadBytes(connectionData.PayloadData.Get(), msgData.PayloadDataSize);
+    if (msgData.EngineProtocolVersion != NETWORK_PROTOCOL_VERSION ||
+        msgData.GameProtocolVersion != GameProtocolVersion)
+    {
+        connectionData.Result = 1; // Mismatching network protocol version
+    }
     NetworkManager::ClientConnecting(connectionData); // Allow server to validate connection
 
     // Reply to the handshake message with a result
@@ -103,9 +116,6 @@ void OnNetworkMessageHandshakeReply(NetworkEvent& event, NetworkClient* client, 
 
 namespace
 {
-    uint32 GameProtocolVersion = 0;
-    double LastUpdateTime = 0;
-
     // Network message handlers table
     void (*MessageHandlers[(int32)NetworkMessageIDs::MAX])(NetworkEvent&, NetworkClient*, NetworkPeer*) =
     {
@@ -340,7 +350,7 @@ void NetworkManagerService::Update()
                 NetworkMessageHandshake msgData;
                 msgData.ID = NetworkMessageIDs::Handshake;
                 msgData.EngineBuild = FLAXENGINE_VERSION_BUILD;
-                msgData.EngineProtocolVersion = 1;
+                msgData.EngineProtocolVersion = NETWORK_PROTOCOL_VERSION;
                 msgData.GameProtocolVersion = GameProtocolVersion;
                 msgData.Platform = (byte)connectionData.Platform;
                 msgData.Architecture = (byte)connectionData.Architecture;
