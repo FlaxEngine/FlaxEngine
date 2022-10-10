@@ -174,6 +174,7 @@ namespace FlaxEditor.GUI.Input
             _isSliding = false;
             EndMouseCapture();
             Cursor = CursorType.Default;
+            _cursorChanged = false;
             SlidingEnd?.Invoke();
         }
 
@@ -224,6 +225,8 @@ namespace FlaxEditor.GUI.Input
                 // Update
                 UpdateText();
             }
+            
+            Cursor = CursorType.Default;
 
             ResetViewOffset();
         }
@@ -239,6 +242,7 @@ namespace FlaxEditor.GUI.Input
                 _startSlideValue = _value;
                 StartMouseCapture(true);
                 Cursor = CursorType.SizeWE;
+                _cursorChanged = true;
                 SlidingStart?.Invoke();
                 return true;
             }
@@ -269,6 +273,7 @@ namespace FlaxEditor.GUI.Input
             else if (_cursorChanged && !_isSliding)
             {
                 Cursor = CursorType.Default;
+                _cursorChanged = false;
             }
 
             base.OnMouseMove(location);
