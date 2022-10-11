@@ -7,6 +7,7 @@ using FlaxEditor.CustomEditors;
 using FlaxEditor.CustomEditors.Editors;
 using FlaxEditor.CustomEditors.Elements;
 using FlaxEditor.GUI;
+using FlaxEditor.GUI.Tree;
 using FlaxEditor.Viewport.Cameras;
 using FlaxEditor.Viewport.Previews;
 using FlaxEngine;
@@ -166,7 +167,24 @@ namespace FlaxEditor.Windows.Assets
                     var proxy = (PropertiesProxy)Values[0];
                     int nodeIndex = (int)checkBox.Tag;
                     proxy.NodesMask[nodeIndex] = checkBox.Checked;
+                    if(Input.GetKey(KeyboardKeys.Shift))
+                        SetTreeChecked(checkBox.Parent as TreeNode, checkBox.Checked);
                     proxy.Window.MarkAsEdited();
+                }
+
+                private void SetTreeChecked(TreeNode tree, bool state)
+                {
+                    foreach(var node in tree.Children)
+                    {
+                        if(node is TreeNode)
+                        {
+                            SetTreeChecked(node as TreeNode, state);
+                        }
+                        if(node is CheckBox)
+                        {
+                            (node as CheckBox).Checked = state;
+                        }
+                    }
                 }
             }
         }
