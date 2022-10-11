@@ -1526,9 +1526,7 @@ namespace Flax.Build.Bindings
             var classTypeNameNative = classInfo.FullNameNative;
             var classTypeNameManaged = classInfo.FullNameManaged;
             var classTypeNameManagedInternalCall = classTypeNameManaged.Replace('+', '/');
-            var classTypeNameInternal = classInfo.NativeName;
-            if (classInfo.Parent != null && !(classInfo.Parent is FileInfo))
-                classTypeNameInternal = classInfo.Parent.FullNameNative + '_' + classTypeNameInternal;
+            var classTypeNameInternal = classInfo.FullNameNativeInternal;
             var useScripting = classInfo.IsStatic || classInfo.IsScriptingObject;
             var useCSharp = EngineConfiguration.WithCSharp(buildData.TargetOptions);
             var hasInterface = classInfo.Interfaces != null && classInfo.Interfaces.Any(x => x.Access == AccessLevel.Public);
@@ -1845,9 +1843,7 @@ namespace Flax.Build.Bindings
             var structureTypeNameNative = structureInfo.FullNameNative;
             var structureTypeNameManaged = structureInfo.FullNameManaged;
             var structureTypeNameManagedInternalCall = structureTypeNameManaged.Replace('+', '/');
-            var structureTypeNameInternal = structureInfo.NativeName;
-            if (structureInfo.Parent != null && !(structureInfo.Parent is FileInfo))
-                structureTypeNameInternal = structureInfo.Parent.FullNameNative + '_' + structureTypeNameInternal;
+            var structureTypeNameInternal = structureInfo.FullNameNativeInternal;
             var useCSharp = EngineConfiguration.WithCSharp(buildData.TargetOptions);
             CppInternalCalls.Clear();
 
@@ -2051,9 +2047,7 @@ namespace Flax.Build.Bindings
         {
             var enumTypeNameNative = enumInfo.FullNameNative;
             var enumTypeNameManaged = enumInfo.FullNameManaged;
-            var enumTypeNameInternal = enumInfo.NativeName;
-            if (enumInfo.Parent != null && !(enumInfo.Parent is FileInfo))
-                enumTypeNameInternal = enumInfo.Parent.FullNameNative + '_' + enumTypeNameInternal;
+            var enumTypeNameInternal = enumInfo.FullNameNativeInternal;
 
             contents.AppendLine();
             contents.AppendFormat("class {0}Internal", enumTypeNameInternal).AppendLine();
@@ -2082,9 +2076,7 @@ namespace Flax.Build.Bindings
         {
             var interfaceTypeNameNative = interfaceInfo.FullNameNative;
             var interfaceTypeNameManaged = interfaceInfo.FullNameManaged;
-            var interfaceTypeNameInternal = interfaceInfo.NativeName;
-            if (interfaceInfo.Parent != null && !(interfaceInfo.Parent is FileInfo))
-                interfaceTypeNameInternal = interfaceInfo.Parent.FullNameNative + '_' + interfaceTypeNameInternal;
+            var interfaceTypeNameInternal = interfaceInfo.FullNameNativeInternal;
 
             // Wrapper interface implement to invoke scripting if inherited in C# or VS
             contents.AppendLine();

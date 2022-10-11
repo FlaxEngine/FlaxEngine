@@ -88,6 +88,20 @@ namespace Flax.Build.Bindings
             }
         }
 
+        /// <summary>
+        /// Gets the name of the internal type in generated bindings code.
+        /// </summary>
+        public string FullNameNativeInternal
+        {
+            get
+            {
+                var result = NativeName;
+                if (Parent != null && !(Parent is FileInfo))
+                    result = Parent.FullNameNative + '_' + result;
+                return result;
+            }
+        }
+
         public void EnsureInited(Builder.BuildData buildData)
         {
             if (IsInited)
