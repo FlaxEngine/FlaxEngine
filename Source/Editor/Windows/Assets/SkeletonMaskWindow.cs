@@ -180,7 +180,7 @@ namespace FlaxEditor.Windows.Assets
                         {
                             SetTreeChecked(node as TreeNode, state);
                         }
-                        if(node is CheckBox)
+                        else if(node is CheckBox)
                         {
                             (node as CheckBox).Checked = state;
                         }
