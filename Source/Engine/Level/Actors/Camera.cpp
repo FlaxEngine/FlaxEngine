@@ -123,16 +123,9 @@ void Camera::ProjectPoint(const Vector3& worldSpaceLocation, Float2& cameraViewp
 
 bool Camera::IsPointOnView(const Vector3& worldSpaceLocation) const
 {
-    Camera* mainCamera = Camera::GetMainCamera();
-
-    if (!mainCamera)
-    {
-        return false;
-    }
-
-    Vector3 cameraUp = mainCamera->GetTransform().GetUp();
-    Vector3 cameraForward = mainCamera->GetTransform().GetForward();
-    Vector3 directionToPosition = (worldSpaceLocation- mainCamera->GetPosition()).GetNormalized();
+    Vector3 cameraUp = GetTransform().GetUp();
+    Vector3 cameraForward = GetTransform().GetForward();
+    Vector3 directionToPosition = (worldSpaceLocation - GetPosition()).GetNormalized();
 
     if (Vector3::Dot(cameraForward, directionToPosition) < 0)
     {
@@ -141,12 +134,12 @@ bool Camera::IsPointOnView(const Vector3& worldSpaceLocation) const
 
     Quaternion lookAt = Quaternion::LookRotation(directionToPosition, cameraUp);
     Vector3 lookAtDirection = lookAt * Vector3::Forward;
-    Vector3 newWorldLocation = mainCamera->GetPosition() + lookAtDirection;
+    Vector3 newWorldLocation = GetPosition() + lookAtDirection;
 
     Float2 windowSpace = Float2();
-    Float2 screenSize = Screen::GetSize();
+    Float2 screenSize = GetViewport().Size;
 
-    mainCamera->ProjectPoint(newWorldLocation, windowSpace);
+    ProjectPoint(newWorldLocation, windowSpace);
 
     return (windowSpace.X >= 0 && windowSpace.X <= screenSize.X) &&
            (windowSpace.Y >= 0 && windowSpace.Y <= screenSize.Y);
