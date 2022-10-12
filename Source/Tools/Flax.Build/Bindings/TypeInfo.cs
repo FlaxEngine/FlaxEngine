@@ -55,6 +55,11 @@ namespace Flax.Build.Bindings
             GenericArgs = other.GenericArgs != null ? new List<TypeInfo>(other.GenericArgs) : null;
         }
 
+        public TypeInfo(ApiTypeInfo apiTypeInfo)
+        {
+            Type = apiTypeInfo.Name;
+        }
+
         /// <summary>
         /// Inflates the type with typedefs for generic arguments.
         /// </summary>

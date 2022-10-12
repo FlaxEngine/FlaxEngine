@@ -114,6 +114,7 @@
     <Compile Include="Build\NativeCpp\IncludesCache.cs" />
     <Compile Include="Build\NativeCpp\LinkEnvironment.cs" />
     <Compile Include="Build\Plugin.cs" />
+    <Compile Include="Build\Plugins\NetworkingPlugin.cs" />
     <Compile Include="Build\Plugins\VisualScriptingPlugin.cs" />
     <Compile Include="Build\Profiling.cs" />
     <Compile Include="Build\ProjectTarget.cs" />

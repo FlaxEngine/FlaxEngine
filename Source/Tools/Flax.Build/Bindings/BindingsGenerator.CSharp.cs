@@ -117,7 +117,7 @@ namespace Flax.Build.Bindings
             ApiTypeInfo apiType = null;
             if (dot != -1)
             {
-                var type = new TypeInfo { Type = value.Substring(0, dot) };
+                var type = new TypeInfo(value.Substring(0, dot));
                 apiType = FindApiTypeInfo(buildData, type, caller);
             }
 
@@ -697,7 +697,7 @@ namespace Flax.Build.Bindings
             contents.Append("unsafe partial class ").Append(classInfo.Name);
             var hasBase = classInfo.BaseType != null && !classInfo.IsBaseTypeHidden;
             if (hasBase)
-                contents.Append(" : ").Append(GenerateCSharpNativeToManaged(buildData, new TypeInfo { Type = classInfo.BaseType.Name }, classInfo));
+                contents.Append(" : ").Append(GenerateCSharpNativeToManaged(buildData, new TypeInfo(classInfo.BaseType), classInfo));
             var hasInterface = false;
             if (classInfo.Interfaces != null)
             {
@@ -1142,7 +1142,7 @@ namespace Flax.Build.Bindings
                 contents.Append("private ");
             contents.Append("unsafe partial struct ").Append(structureInfo.Name);
             if (structureInfo.BaseType != null && structureInfo.IsPod)
-                contents.Append(" : ").Append(GenerateCSharpNativeToManaged(buildData, new TypeInfo { Type = structureInfo.BaseType.Name }, structureInfo));
+                contents.Append(" : ").Append(GenerateCSharpNativeToManaged(buildData, new TypeInfo(structureInfo.BaseType), structureInfo));
             contents.AppendLine();
             contents.Append(indent + "{");
             indent += "    ";

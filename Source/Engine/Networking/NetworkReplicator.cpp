@@ -96,6 +96,18 @@ void NetworkReplicationService::Dispose()
 
 NetworkReplicationService NetworkReplicationServiceInstance;
 
+Dictionary<ScriptingTypeHandle, NetworkReplicator::SerializeFuncPair> NetworkReplicator::SerializersTable;
+
+void INetworkSerializable_Serialize(void* instance, NetworkStream* stream)
+{
+    ((INetworkSerializable*)instance)->Serialize(stream);
+}
+
+void INetworkSerializable_Deserialize(void* instance, NetworkStream* stream)
+{
+    ((INetworkSerializable*)instance)->Deserialize(stream);
+}
+
 NetworkReplicatedObject* ResolveObject(Guid objectId, Guid ownerId, char objectTypeName[128])
 {
     // Lookup object
@@ -129,6 +141,25 @@ NetworkReplicatedObject* ResolveObject(Guid objectId, Guid ownerId, char objectT
     }
 
     return nullptr;
+}
+
+NetworkReplicator::SerializeFuncPair NetworkReplicator::GetSerializer(const ScriptingTypeHandle& typeHandle)
+{
+    // Get serializers pair from table
+    SerializeFuncPair result(nullptr, nullptr);
+    if (!SerializersTable.TryGet(typeHandle, result))
+    {
+        // Fallback to INetworkSerializable interface (if type implements it)
+        const ScriptingType& type = typeHandle.GetType();
+        const ScriptingType::InterfaceImplementation* interface = type.GetInterface(INetworkSerializable::TypeInitializer);
+        if (interface)
+        {
+            result.First = INetworkSerializable_Serialize;
+            result.Second = INetworkSerializable_Deserialize;
+            SerializersTable.Add(typeHandle, result);
+        }
+    }
+    return result;
 }
 
 void NetworkReplicator::AddObject(ScriptingObject* obj, ScriptingObject* owner)
@@ -215,11 +246,11 @@ void NetworkInternal::NetworkReplicatorUpdate()
             }
 
             // Serialize object
-            // TODO: cache per-type serialization thunk to boost CPU performance
             stream->Initialize();
-            if (auto* serializable = ScriptingObject::ToInterface<INetworkSerializable>(obj))
+            const auto serializerFunc = NetworkReplicator::GetSerializer(obj->GetTypeHandle()).First;
+            if (serializerFunc)
             {
-                serializable->Serialize(stream);
+                serializerFunc(obj, stream);
             }
             else
             {
@@ -227,7 +258,7 @@ void NetworkInternal::NetworkReplicatorUpdate()
                 if (!item.InvalidTypeWarn)
                 {
                     item.InvalidTypeWarn = true;
-                    LOG(Error, "[NetworkReplicator] Cannot serialize object {} (missing serialization logic)", item.ToString());
+                    LOG(Error, "[NetworkReplicator] Cannot serialize object {} of type {} (missing serialization logic)", item.ToString(), obj->GetType().ToString());
                 }
 #endif
                 continue;
@@ -279,10 +310,10 @@ void NetworkInternal::OnNetworkMessageReplicatedObject(NetworkEvent& event, Netw
         stream->Initialize(event.Message.Buffer + event.Message.Position, msgData.DataSize);
 
         // Deserialize object
-        // TODO: cache per-type serialization thunk to boost CPU performance
-        if (auto* serializable = ScriptingObject::ToInterface<INetworkSerializable>(obj))
+        const auto deserializerFunc = NetworkReplicator::GetSerializer(obj->GetTypeHandle()).Second;
+        if (deserializerFunc)
         {
-            serializable->Deserialize(stream);
+            deserializerFunc(obj, stream);
         }
         else
         {
@@ -290,7 +321,7 @@ void NetworkInternal::OnNetworkMessageReplicatedObject(NetworkEvent& event, Netw
             if (!item.InvalidTypeWarn)
             {
                 item.InvalidTypeWarn = true;
-                LOG(Error, "[NetworkReplicator] Cannot serialize object {} (missing serialization logic)", item.ToString());
+                LOG(Error, "[NetworkReplicator] Cannot serialize object {} of type {} (missing serialization logic)", item.ToString(), obj->GetType().ToString());
             }
 #endif
         }
