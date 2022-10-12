@@ -947,6 +947,28 @@ void ManagedBinaryModule::OnLoaded(MAssembly* assembly)
             InitType(mclass);
         }
     }
+
+    // Invoke module initializers
+    if (flaxEngine->Assembly->IsLoaded() && this != flaxEngine)
+    {
+        const MClass* attribute = flaxEngine->Assembly->GetClass("FlaxEngine.ModuleInitializerAttribute");
+        ASSERT_LOW_LAYER(attribute);
+        for (auto i = classes.Begin(); i.IsNotEnd(); ++i)
+        {
+            MClass* mclass = i->Value;
+            if (mclass->IsStatic() && !mclass->IsInterface() && mclass->HasAttribute(attribute))
+            {
+                const auto& methods = mclass->GetMethods();
+                for (const MMethod* method : methods)
+                {
+                    if (method->GetParametersCount() == 0)
+                    {
+                        method->Invoke(nullptr, nullptr, nullptr);
+                    }
+                }
+            }
+        }
+    }
 #endif
 }
 
