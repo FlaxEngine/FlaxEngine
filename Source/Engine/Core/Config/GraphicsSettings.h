@@ -119,6 +119,21 @@ public:
     API_FIELD(Attributes="EditorOrder(10000), EditorDisplay(\"Post Process Settings\", EditorDisplayAttribute.InlineStyle)")
     PostProcessSettings PostProcessSettings;
 
+private:
+    /// <summary>
+    /// Renamed UeeHDRProbes into UseHDRProbes
+    /// [Deprecated on 12.10.2022, expires on 12.10.2024]
+    /// </summary>
+    API_PROPERTY(Attributes="Serialize, Obsolete, NoUndo") bool GetUeeHDRProbes() const
+    {
+        return UseHDRProbes;
+    }
+
+    API_PROPERTY(Attributes="Serialize, Obsolete, NoUndo") void SetUeeHDRProbes(bool value)
+    {
+        UseHDRProbes = value;
+    }
+
 public:
     /// <summary>
     /// Gets the instance of the settings asset (default value if missing). Object returned by this method is always loaded with valid data to use.
