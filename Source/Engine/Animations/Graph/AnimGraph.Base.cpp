@@ -323,7 +323,7 @@ bool AnimGraphBase::onNodeLoaded(Node* n)
 
                     int32 ruleSize;
                     stream.ReadInt32(&ruleSize);
-                    const auto ruleBytes = (byte*)stream.Read(ruleSize);
+                    const auto ruleBytes = (byte*)stream.Move(ruleSize);
 
                     if (static_cast<int32>(transition.Flags & AnimGraphStateTransition::FlagTypes::Enabled) == 0)
                     {

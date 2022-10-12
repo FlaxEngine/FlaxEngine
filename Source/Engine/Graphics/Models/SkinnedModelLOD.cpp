@@ -45,8 +45,8 @@ bool SkinnedModelLOD::Load(MemoryReadStream& stream)
         const uint32 ibStride = use16BitIndexBuffer ? sizeof(uint16) : sizeof(uint32);
         if (vertices == 0 || triangles == 0)
             return true;
-        const auto vb0 = stream.Read<VB0SkinnedElementType>(vertices);
-        const auto ib = stream.Read<byte>(indicesCount * ibStride);
+        const auto vb0 = stream.Move<VB0SkinnedElementType>(vertices);
+        const auto ib = stream.Move<byte>(indicesCount * ibStride);
 
         // Setup GPU resources
         if (mesh.Load(vertices, triangles, vb0, ib, use16BitIndexBuffer))

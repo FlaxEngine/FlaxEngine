@@ -289,7 +289,7 @@ bool SkinnedMesh::DownloadDataCPU(MeshBufferType type, BytesContainer& result, i
                 stream.ReadUint32(&maxVertexIndex);
                 uint32 blendShapeVertices;
                 stream.ReadUint32(&blendShapeVertices);
-                auto blendShapeVerticesData = stream.Read<byte>(blendShapeVertices * sizeof(BlendShapeVertex));
+                auto blendShapeVerticesData = stream.Move<byte>(blendShapeVertices * sizeof(BlendShapeVertex));
             }
             uint32 indicesCount = triangles * 3;
             bool use16BitIndexBuffer = indicesCount <= MAX_uint16;
@@ -299,8 +299,8 @@ bool SkinnedMesh::DownloadDataCPU(MeshBufferType type, BytesContainer& result, i
                 LOG(Error, "Invalid mesh data.");
                 return true;
             }
-            auto vb0 = stream.Read<VB0SkinnedElementType>(vertices);
-            auto ib = stream.Read<byte>(indicesCount * ibStride);
+            auto vb0 = stream.Move<VB0SkinnedElementType>(vertices);
+            auto ib = stream.Move<byte>(indicesCount * ibStride);
 
             if (i != _index)
                 continue;

@@ -67,8 +67,8 @@ private:
             const uint32 ibStride = use16BitIndexBuffer ? sizeof(uint16) : sizeof(uint32);
             if (vertices == 0 || triangles == 0)
                 return true;
-            const auto vb0 = stream.Read<VB0SkinnedElementType1>(vertices);
-            const auto ib = stream.Read<byte>(indicesCount * ibStride);
+            const auto vb0 = stream.Move<VB0SkinnedElementType1>(vertices);
+            const auto ib = stream.Move<byte>(indicesCount * ibStride);
 
             // Write back
             output.WriteUint32(vertices);
@@ -403,9 +403,9 @@ private:
                 const uint32 ibStride = use16BitIndexBuffer ? sizeof(uint16) : sizeof(uint32);
                 if (vertices == 0 || triangles == 0)
                     return true;
-                const auto vb0 = stream.Read<VB0SkinnedElementType>(vertices);
+                const auto vb0 = stream.Move<VB0SkinnedElementType>(vertices);
                 output.Write<VB0SkinnedElementType>(vb0, vertices);
-                const auto ib = stream.Read<byte>(indicesCount * ibStride);
+                const auto ib = stream.Move<byte>(indicesCount * ibStride);
                 output.Write<byte>(ib, indicesCount * ibStride);
             }
 

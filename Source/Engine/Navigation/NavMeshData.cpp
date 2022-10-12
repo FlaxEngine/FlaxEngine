@@ -50,7 +50,7 @@ bool NavMeshData::Load(BytesContainer& data, bool copyData)
     MemoryReadStream stream(data.Get(), data.Length());
 
     // Read header
-    const auto header = stream.Read<NavMeshDataHeader>(1);
+    const auto header = stream.Move<NavMeshDataHeader>(1);
     if (header->Version != 1)
     {
         LOG(Warning, "Invalid valid navmesh data version {0}.", header->Version);
@@ -70,7 +70,7 @@ bool NavMeshData::Load(BytesContainer& data, bool copyData)
         auto& tile = Tiles[tileIndex];
 
         // Read tile header
-        const auto tileHeader = stream.Read<NavMeshTileDataHeader>(1);
+        const auto tileHeader = stream.Move<NavMeshTileDataHeader>(1);
         if (tileHeader->DataSize <= 0)
         {
             LOG(Warning, "Invalid navmesh tile data.");
@@ -81,7 +81,7 @@ bool NavMeshData::Load(BytesContainer& data, bool copyData)
         tile.Layer = tileHeader->Layer;
 
         // Read tile data
-        const auto tileData = stream.Read<byte>(tileHeader->DataSize);
+        const auto tileData = stream.Move<byte>(tileHeader->DataSize);
         if (copyData)
         {
             tile.Data.Copy(tileData, tileHeader->DataSize);

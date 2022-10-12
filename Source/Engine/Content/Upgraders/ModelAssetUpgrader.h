@@ -239,20 +239,20 @@ private:
                         return Asset::LoadResult::InvalidData;
 
                     // Vertex buffers
-                    auto vb0 = stream.Read<VB0ElementType18>(vertices);
-                    auto vb1 = stream.Read<VB1ElementType18>(vertices);
+                    auto vb0 = stream.Move<VB0ElementType18>(vertices);
+                    auto vb1 = stream.Move<VB1ElementType18>(vertices);
                     bool hasColors = stream.ReadBool();
                     VB2ElementType18* vb2 = nullptr;
                     if (hasColors)
                     {
-                        vb2 = stream.Read<VB2ElementType18>(vertices);
+                        vb2 = stream.Move<VB2ElementType18>(vertices);
                     }
 
                     // Index Buffer
                     uint32 indicesCount = triangles * 3;
                     bool use16BitIndexBuffer = indicesCount <= MAX_uint16;
                     uint32 ibStride = use16BitIndexBuffer ? sizeof(uint16) : sizeof(uint32);
-                    auto ib = stream.Read<byte>(indicesCount * ibStride);
+                    auto ib = stream.Move<byte>(indicesCount * ibStride);
 
                     // Allocate mesh
                     lod.Meshes[meshIndex] = New<MeshData>();
@@ -356,14 +356,14 @@ private:
                         return Asset::LoadResult::InvalidData;
 
                     // Vertex buffers
-                    auto vb0 = stream.Read<VB0ElementType18>(vertices);
-                    auto vb1 = stream.Read<VB1ElementType18>(vertices);
+                    auto vb0 = stream.Move<VB0ElementType18>(vertices);
+                    auto vb1 = stream.Move<VB1ElementType18>(vertices);
 
                     // Index Buffer
                     uint32 indicesCount = triangles * 3;
                     bool use16BitIndexBuffer = indicesCount <= MAX_uint16;
                     uint32 ibStride = use16BitIndexBuffer ? sizeof(uint16) : sizeof(uint32);
-                    auto ib = stream.Read<byte>(indicesCount * ibStride);
+                    auto ib = stream.Move<byte>(indicesCount * ibStride);
 
                     // Allocate mesh
                     lod.Meshes[meshIndex] = New<MeshData>();
@@ -484,14 +484,14 @@ private:
                         return Asset::LoadResult::InvalidData;
 
                     // Vertex buffers
-                    auto vb0 = stream.Read<VB0ElementType18>(vertices);
-                    auto vb1 = stream.Read<VB1ElementType18>(vertices);
+                    auto vb0 = stream.Move<VB0ElementType18>(vertices);
+                    auto vb1 = stream.Move<VB1ElementType18>(vertices);
 
                     // Index Buffer
                     uint32 indicesCount = triangles * 3;
                     bool use16BitIndexBuffer = indicesCount <= MAX_uint16;
                     uint32 ibStride = use16BitIndexBuffer ? sizeof(uint16) : sizeof(uint32);
-                    auto ib = stream.Read<byte>(indicesCount * ibStride);
+                    auto ib = stream.Move<byte>(indicesCount * ibStride);
 
                     // Copy data
                     auto& mesh = *data->LODs[lodIndex].Meshes[i];
@@ -567,14 +567,14 @@ private:
                     return Asset::LoadResult::InvalidData;
 
                 // Vertex buffers
-                auto vb0 = stream.Read<VB0ElementType18>(vertices);
-                auto vb1 = stream.Read<VB1ElementType18>(vertices);
+                auto vb0 = stream.Move<VB0ElementType18>(vertices);
+                auto vb1 = stream.Move<VB1ElementType18>(vertices);
 
                 // Index Buffer
                 uint32 indicesCount = triangles * 3;
                 bool use16BitIndexBuffer = indicesCount <= MAX_uint16;
                 uint32 ibStride = use16BitIndexBuffer ? sizeof(uint16) : sizeof(uint32);
-                auto ib = stream.Read<byte>(indicesCount * ibStride);
+                auto ib = stream.Move<byte>(indicesCount * ibStride);
 
                 // Copy data
                 auto& mesh = *data->LODs[0].Meshes[i];
@@ -642,14 +642,14 @@ private:
                     return Asset::LoadResult::InvalidData;
 
                 // Vertex buffers
-                auto vb0 = stream.Read<VB0ElementType18>(vertices);
-                auto vb1 = stream.Read<VB1ElementType18>(vertices);
+                auto vb0 = stream.Move<VB0ElementType18>(vertices);
+                auto vb1 = stream.Move<VB1ElementType18>(vertices);
 
                 // Index Buffer
                 uint32 indicesCount = triangles * 3;
                 bool use16BitIndexBuffer = indicesCount <= MAX_uint16;
                 uint32 ibStride = use16BitIndexBuffer ? sizeof(uint16) : sizeof(uint32);
-                auto ib = stream.Read<byte>(indicesCount * ibStride);
+                auto ib = stream.Move<byte>(indicesCount * ibStride);
 
                 // Copy data
                 auto& mesh = *data->LODs[0].Meshes[i];
@@ -718,14 +718,14 @@ private:
                     return Asset::LoadResult::InvalidData;
 
                 // Vertex buffers
-                auto vb0 = stream.Read<VB0ElementType18>(vertices);
-                auto vb1 = stream.Read<VB1ElementType18>(vertices);
+                auto vb0 = stream.Move<VB0ElementType18>(vertices);
+                auto vb1 = stream.Move<VB1ElementType18>(vertices);
 
                 // Index Buffer
                 uint32 indicesCount = triangles * 3;
                 bool use16BitIndexBuffer = indicesCount <= MAX_uint16;
                 uint32 ibStride = use16BitIndexBuffer ? sizeof(uint16) : sizeof(uint32);
-                auto ib = stream.Read<byte>(indicesCount * ibStride);
+                auto ib = stream.Move<byte>(indicesCount * ibStride);
 
                 // Copy data
                 auto& mesh = *data->LODs[0].Meshes[i];
@@ -798,14 +798,14 @@ private:
                     return Asset::LoadResult::InvalidData;
 
                 // Vertex buffers
-                auto vb0 = stream.Read<VB0ElementType18>(vertices);
-                auto vb1 = stream.Read<VB1ElementType18>(vertices);
+                auto vb0 = stream.Move<VB0ElementType18>(vertices);
+                auto vb1 = stream.Move<VB1ElementType18>(vertices);
 
                 // Index Buffer
                 uint32 indicesCount = triangles * 3;
                 bool use16BitIndexBuffer = indicesCount <= MAX_uint16;
                 uint32 ibStride = use16BitIndexBuffer ? sizeof(uint16) : sizeof(uint32);
-                auto ib = stream.Read<byte>(indicesCount * ibStride);
+                auto ib = stream.Move<byte>(indicesCount * ibStride);
 
                 // Copy data
                 auto& mesh = *data->LODs[0].Meshes[i];
@@ -879,14 +879,14 @@ private:
                     return Asset::LoadResult::InvalidData;
 
                 // Vertex buffers
-                auto vb0 = stream.Read<VB0ElementType15>(vertices);
-                auto vb1 = stream.Read<VB1ElementType15>(vertices);
+                auto vb0 = stream.Move<VB0ElementType15>(vertices);
+                auto vb1 = stream.Move<VB1ElementType15>(vertices);
 
                 // Index Buffer
                 uint32 indicesCount = triangles * 3;
                 bool use16BitIndexBuffer = indicesCount <= MAX_uint16;
                 uint32 ibStride = use16BitIndexBuffer ? sizeof(uint16) : sizeof(uint32);
-                auto ib = stream.Read<byte>(indicesCount * ibStride);
+                auto ib = stream.Move<byte>(indicesCount * ibStride);
 
                 // Copy data
                 auto& mesh = *data->LODs[0].Meshes[i];
@@ -960,14 +960,14 @@ private:
                     return Asset::LoadResult::InvalidData;
 
                 // Vertex buffers
-                auto vb0 = stream.Read<VB0ElementType15>(vertices);
-                auto vb1 = stream.Read<VB1ElementType15>(vertices);
+                auto vb0 = stream.Move<VB0ElementType15>(vertices);
+                auto vb1 = stream.Move<VB1ElementType15>(vertices);
 
                 // Index Buffer
                 uint32 indicesCount = triangles * 3;
                 bool use16BitIndexBuffer = indicesCount <= MAX_uint16;
                 uint32 ibStride = use16BitIndexBuffer ? sizeof(uint16) : sizeof(uint32);
-                auto ib = stream.Read<byte>(indicesCount * ibStride);
+                auto ib = stream.Move<byte>(indicesCount * ibStride);
 
                 // Copy data
                 auto& mesh = *data->LODs[0].Meshes[i];
@@ -1042,13 +1042,13 @@ private:
                     return Asset::LoadResult::InvalidData;
 
                 // Vertex buffer
-                auto vb = stream.Read<ModelVertex15>(vertices);
+                auto vb = stream.Move<ModelVertex15>(vertices);
 
                 // Index Buffer
                 uint32 indicesCount = triangles * 3;
                 bool use16BitIndexBuffer = indicesCount <= MAX_uint16;
                 uint32 ibStride = use16BitIndexBuffer ? sizeof(uint16) : sizeof(uint32);
-                auto ib = stream.Read<byte>(indicesCount * ibStride);
+                auto ib = stream.Move<byte>(indicesCount * ibStride);
 
                 // Copy data
                 auto& mesh = *data->LODs[0].Meshes[i];

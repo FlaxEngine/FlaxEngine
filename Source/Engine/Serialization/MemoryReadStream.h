@@ -69,15 +69,12 @@ public:
     }
 
 public:
-
-    using ReadStream::Read;
-
     /// <summary>
-    /// Reads bytes without copying the data.
+    /// Skips the data from the target buffer without reading from it. Moves the read pointer in the buffer forward.
     /// </summary>
     /// <param name="bytes">The amount of bytes to read.</param>
     /// <returns>The pointer to the data in memory.</returns>
-    void* Read(uint32 bytes)
+    void* Move(uint32 bytes)
     {
         ASSERT(GetLength() - GetPosition() >= bytes);
         const auto result = (void*)_position;
@@ -86,24 +83,24 @@ public:
     }
 
     /// <summary>
-    /// Reads given data type from the stream.
+    /// Skips the data from the target buffer without reading from it. Moves the read pointer in the buffer forward.
     /// </summary>
     /// <returns>The pointer to the data in memory.</returns>
     template<typename T>
-    FORCE_INLINE T* Read()
+    FORCE_INLINE T* Move()
     {
-        return static_cast<T*>(Read(sizeof(T)));
+        return static_cast<T*>(Move(sizeof(T)));
     }
 
     /// <summary>
-    /// Reads array of given data type from the stream.
+    /// Skips the data from the target buffer without reading from it. Moves the read pointer in the buffer forward.
     /// </summary>
     /// <param name="count">The amount of items to read.</param>
     /// <returns>The pointer to the data in memory.</returns>
     template<typename T>
-    FORCE_INLINE T* Read(uint32 count)
+    FORCE_INLINE T* Move(uint32 count)
     {
-        return static_cast<T*>(Read(sizeof(T) * count));
+        return static_cast<T*>(Move(sizeof(T) * count));
     }
 
 public:

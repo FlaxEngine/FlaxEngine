@@ -164,49 +164,43 @@ public:
     void WriteText(const StringView& text);
     void WriteText(const StringAnsiView& text);
 
-    // Writes String to the stream
-    // @param data Data to write
-    void WriteString(const StringView& data);
-
-    // Writes String to the stream
-    // @param data Data to write
-    // @param lock Characters pass in the stream
-    void WriteString(const StringView& data, int16 lock);
-
-    // Writes Ansi String to the stream
-    // @param data Data to write
-    void WriteStringAnsi(const StringAnsiView& data);
-
-    // Writes Ansi String to the stream
-    // @param data Data to write
-    // @param lock Characters pass in the stream
-    void WriteStringAnsi(const StringAnsiView& data, int8 lock);
-
 public:
-    // Writes CommonValue to the stream
-    // @param data Data to write
-    void WriteCommonValue(const CommonValue& data);
+    void Write(const StringView& data);
+    void Write(const StringView& data, int16 lock);
+    void Write(const StringAnsiView& data);
+    void Write(const StringAnsiView& data, int8 lock);
+    void Write(const CommonValue& data);
+    void Write(const VariantType& data);
+    void Write(const Variant& data);
 
-    // Writes VariantType to the stream
-    // @param data Data to write
-    void WriteVariantType(const VariantType& data);
-
-    // Writes Variant to the stream
-    // @param data Data to write
-    void WriteVariant(const Variant& data);
-
-    /// <summary>
-    /// Write data array
-    /// </summary>
-    /// <param name="data">Array to write</param>
-    template<typename T, typename AllocationType = HeapAllocation>
-    void WriteArray(const Array<T, AllocationType>& data)
+    template<typename T>
+    FORCE_INLINE typename TEnableIf<TAnd<TIsPODType<T>, TNot<TIsPointer<T>>>::Value>::Type Write(const T& data)
     {
-        static_assert(TIsPODType<T>::Value, "Only POD types are valid for WriteArray.");
+        WriteBytes((const void*)&data, sizeof(T));
+    }
+
+    template<typename T, typename AllocationType = HeapAllocation>
+    void Write(const Array<T, AllocationType>& data)
+    {
         const int32 size = data.Count();
         WriteInt32(size);
         if (size > 0)
-            WriteBytes(data.Get(), size * sizeof(T));
+            Write(data.Get(), size * sizeof(T));
+    }
+
+    template<typename KeyType, typename ValueType, typename AllocationType = HeapAllocation>
+    void Write(const Dictionary<KeyType, ValueType, AllocationType>& data)
+    {
+        const int32 count = data.Count();
+        WriteInt32(count);
+        if (count > 0)
+        {
+            for (const auto& e : data)
+            {
+                Write(&e.Key, sizeof(KeyType));
+                Write(&e.Value, sizeof(ValueType));
+            }
+        }
     }
 
     /// <summary>
@@ -216,6 +210,55 @@ public:
     /// <param name="obj">The object to serialize.</param>
     /// <param name="otherObj">The instance of the object to compare with and serialize only the modified properties. If null, then serialize all properties.</param>
     void WriteJson(ISerializable* obj, const void* otherObj = nullptr);
+
+public:
+    // Writes String to the stream
+    /// [Deprecated on 11.10.2022, expires on 11.10.2024]
+    // @param data Data to write
+    void WriteString(const StringView& data);
+
+    // Writes String to the stream
+    /// [Deprecated on 11.10.2022, expires on 11.10.2024]
+    // @param data Data to write
+    // @param lock Characters pass in the stream
+    void WriteString(const StringView& data, int16 lock);
+
+    // Writes Ansi String to the stream
+    /// [Deprecated on 11.10.2022, expires on 11.10.2024]
+    // @param data Data to write
+    void WriteStringAnsi(const StringAnsiView& data);
+
+    // Writes Ansi String to the stream
+    /// [Deprecated on 11.10.2022, expires on 11.10.2024]
+    // @param data Data to write
+    // @param lock Characters pass in the stream
+    void WriteStringAnsi(const StringAnsiView& data, int8 lock);
+
+    // Writes CommonValue to the stream
+    /// [Deprecated on 11.10.2022, expires on 11.10.2024]
+    // @param data Data to write
+    void WriteCommonValue(const CommonValue& data);
+
+    // Writes VariantType to the stream
+    /// [Deprecated on 11.10.2022, expires on 11.10.2024]
+    // @param data Data to write
+    void WriteVariantType(const VariantType& data);
+
+    // Writes Variant to the stream
+    /// [Deprecated on 11.10.2022, expires on 11.10.2024]
+    // @param data Data to write
+    void WriteVariant(const Variant& data);
+
+    /// <summary>
+    /// Write data array
+    /// [Deprecated on 11.10.2022, expires on 11.10.2024]
+    /// </summary>
+    /// <param name="data">Array to write</param>
+    template<typename T, typename AllocationType = HeapAllocation>
+    FORCE_INLINE void WriteArray(const Array<T, AllocationType>& data)
+    {
+        Write(data);
+    }
 
 public:
     // Serialization of math types with float or double depending on the context (must match deserialization)

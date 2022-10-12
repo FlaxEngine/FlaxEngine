@@ -1568,7 +1568,7 @@ bool Actor::FromBytes(const Span<byte>& data, Array<Actor*>& output, ISerializeM
         int32 bufferSize;
         stream.ReadInt32(&bufferSize);
         const char* buffer = (const char*)stream.GetPositionHandle();
-        stream.Read(bufferSize);
+        stream.Move(bufferSize);
 
         // Order in parent
         int32 orderInParent;
@@ -1612,7 +1612,7 @@ bool Actor::FromBytes(const Span<byte>& data, Array<Actor*>& output, ISerializeM
         int32 bufferSize;
         stream.ReadInt32(&bufferSize);
         const char* buffer = (const char*)stream.GetPositionHandle();
-        stream.Read(bufferSize);
+        stream.Move(bufferSize);
 
         // Order in parent
         int32 orderInParent;

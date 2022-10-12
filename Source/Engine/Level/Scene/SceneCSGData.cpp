@@ -126,7 +126,7 @@ bool SceneCSGData::TryGetSurfaceData(const Guid& brushId, int32 brushSurfaceInde
             // Invalid data
             return false;
         }
-        stream.Read(trianglesCount * sizeof(Float3) * 3);
+        stream.Move(trianglesCount * sizeof(Float3) * 3);
     }
 
     // Read surface data
@@ -138,7 +138,7 @@ bool SceneCSGData::TryGetSurfaceData(const Guid& brushId, int32 brushSurfaceInde
     }
     outData.Triangles.Clear();
     outData.Triangles.Resize(trianglesCount);
-    Float3* src = stream.Read<Float3>(trianglesCount * 3);
+    Float3* src = stream.Move<Float3>(trianglesCount * 3);
     Vector3* dst = (Vector3*)outData.Triangles.Get();
     for (int32 i = 0; i < trianglesCount * 3; i++)
         *dst++ = *src++;

@@ -145,49 +145,62 @@ public:
     }
 
 public:
-    // Reads StringAnsi from the stream
-    // @param data Data to read
-    void ReadStringAnsi(StringAnsi* data);
+    void Read(String& data);
+    void Read(String& data, int16 lock);
+    void Read(StringAnsi& data);
+    void Read(StringAnsi& data, int8 lock);
+    void Read(CommonValue& data);
+    void Read(VariantType& data);
+    void Read(Variant& data);
 
-    // Reads StringAnsi from the stream with a key
-    // @param data Data to read
-    void ReadStringAnsi(StringAnsi* data, int8 lock);
-
-    // Reads String from the stream
-    // @param data Data to read
-    void ReadString(String* data);
-
-    // Reads String from the stream
-    // @param data Data to read
-    // @param lock Characters pass in the stream
-    void ReadString(String* data, int16 lock);
-
-public:
-    // Reads CommonValue from the stream
-    // @param data Data to read
-    void ReadCommonValue(CommonValue* data);
-
-    // Reads VariantType from the stream
-    // @param data Data to read
-    void ReadVariantType(VariantType* data);
-
-    // Reads Variant from the stream
-    // @param data Data to read
-    void ReadVariant(Variant* data);
+    template<typename T>
+    FORCE_INLINE typename TEnableIf<TIsPODType<T>::Value>::Type Read(T& data)
+    {
+        ReadBytes((void*)&data, sizeof(T));
+    }
 
     /// <summary>
     /// Read data array
     /// </summary>
     /// <param name="data">Array to read</param>
     template<typename T, typename AllocationType = HeapAllocation>
-    void ReadArray(Array<T, AllocationType>* data)
+    void Read(Array<T, AllocationType>& data)
     {
-        static_assert(TIsPODType<T>::Value, "Only POD types are valid for ReadArray.");
         int32 size;
         ReadInt32(&size);
-        data->Resize(size, false);
+        data.Resize(size, false);
         if (size > 0)
-            ReadBytes(data->Get(), size * sizeof(T));
+        {
+            if (TIsPODType<T>::Value)
+                ReadBytes(data.Get(), size * sizeof(T));
+            else
+            {
+                for (int32 i = 0; i < size; i++)
+                    Read(data[i]);
+            }
+        }
+    }
+
+    /// <summary>
+    /// Read data dictionary
+    /// </summary>
+    /// <param name="data">Dictionary to read</param>
+    template<typename KeyType, typename ValueType, typename AllocationType = HeapAllocation>
+    void Read(Dictionary<KeyType, ValueType, AllocationType>& data)
+    {
+        int32 count;
+        ReadInt32(&count);
+        data.Clear();
+        data.EnsureCapacity(count);
+        if (count > 0)
+        {
+            for (int32 i = 0; i < count; i++)
+            {
+                KeyType key;
+                Read(key);
+                Read(data[key]);
+            }
+        }
     }
 
     /// <summary>
@@ -196,6 +209,54 @@ public:
     /// <remarks>Reads version number, data length and actual data bytes from the stream.</remarks>
     /// <param name="obj">The object to deserialize.</param>
     void ReadJson(ISerializable* obj);
+
+public:
+    // Reads StringAnsi from the stream
+    /// [Deprecated on 11.10.2022, expires on 11.10.2024]
+    // @param data Data to read
+    void ReadStringAnsi(StringAnsi* data);
+
+    // Reads StringAnsi from the stream with a key
+    /// [Deprecated on 11.10.2022, expires on 11.10.2024]
+    // @param data Data to read
+    void ReadStringAnsi(StringAnsi* data, int8 lock);
+
+    // Reads String from the stream
+    /// [Deprecated on 11.10.2022, expires on 11.10.2024]
+    // @param data Data to read
+    void ReadString(String* data);
+
+    // Reads String from the stream
+    /// [Deprecated on 11.10.2022, expires on 11.10.2024]
+    // @param data Data to read
+    // @param lock Characters pass in the stream
+    void ReadString(String* data, int16 lock);
+
+    // Reads CommonValue from the stream
+    /// [Deprecated on 11.10.2022, expires on 11.10.2024]
+    // @param data Data to read
+    void ReadCommonValue(CommonValue* data);
+
+    // Reads VariantType from the stream
+    /// [Deprecated on 11.10.2022, expires on 11.10.2024]
+    // @param data Data to read
+    void ReadVariantType(VariantType* data);
+
+    // Reads Variant from the stream
+    /// [Deprecated on 11.10.2022, expires on 11.10.2024]
+    // @param data Data to read
+    void ReadVariant(Variant* data);
+
+    /// <summary>
+    /// Read data array
+    /// [Deprecated on 11.10.2022, expires on 11.10.2024]
+    /// </summary>
+    /// <param name="data">Array to read</param>
+    template<typename T, typename AllocationType = HeapAllocation>
+    void ReadArray(Array<T, AllocationType>* data)
+    {
+        Read(*data);
+    }
 
 public:
     // Deserialization of math types with float or double depending on the context (must match serialization)

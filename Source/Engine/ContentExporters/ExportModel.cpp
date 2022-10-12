@@ -53,15 +53,15 @@ ExportAssetResult AssetExporters::ExportModel(ExportAssetContext& context)
         uint32 ibStride = use16BitIndexBuffer ? sizeof(uint16) : sizeof(uint32);
         if (vertices == 0 || triangles == 0)
             return ExportAssetResult::Error;
-        auto vb0 = stream.Read<VB0ElementType>(vertices);
-        auto vb1 = stream.Read<VB1ElementType>(vertices);
+        auto vb0 = stream.Move<VB0ElementType>(vertices);
+        auto vb1 = stream.Move<VB1ElementType>(vertices);
         bool hasColors = stream.ReadBool();
         VB2ElementType18* vb2 = nullptr;
         if (hasColors)
         {
-            vb2 = stream.Read<VB2ElementType18>(vertices);
+            vb2 = stream.Move<VB2ElementType18>(vertices);
         }
-        auto ib = stream.Read<byte>(indicesCount * ibStride);
+        auto ib = stream.Move<byte>(indicesCount * ibStride);
 
         output->WriteText(StringAnsi::Format("# Mesh {0}\n", meshIndex));
 
@@ -165,8 +165,8 @@ ExportAssetResult AssetExporters::ExportSkinnedModel(ExportAssetContext& context
         uint32 ibStride = use16BitIndexBuffer ? sizeof(uint16) : sizeof(uint32);
         if (vertices == 0 || triangles == 0)
             return ExportAssetResult::Error;
-        auto vb0 = stream.Read<VB0SkinnedElementType>(vertices);
-        auto ib = stream.Read<byte>(indicesCount * ibStride);
+        auto vb0 = stream.Move<VB0SkinnedElementType>(vertices);
+        auto ib = stream.Move<byte>(indicesCount * ibStride);
 
         output->WriteText(StringAnsi::Format("# Mesh {0}\n", meshIndex));
 

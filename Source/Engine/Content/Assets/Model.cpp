@@ -981,7 +981,7 @@ Asset::LoadResult Model::load()
             {
                 ModelSDFMip mipData;
                 sdfStream.Read(&mipData);
-                void* mipBytes = sdfStream.Read(mipData.SlicePitch);
+                void* mipBytes = sdfStream.Move(mipData.SlicePitch);
                 auto task = ::New<StreamModelSDFTask>(this, SDF.Texture, Span<byte>((byte*)mipBytes, mipData.SlicePitch), mipData.MipIndex, mipData.RowPitch, mipData.SlicePitch);
                 task->Start();
             }

@@ -109,7 +109,7 @@ bool GPUShader::Create(MemoryReadStream& stream)
                 LOG(Warning, "Invalid shader cache size.");
                 return true;
             }
-            byte* cache = stream.Read<byte>(cacheSize);
+            byte* cache = stream.Move<byte>(cacheSize);
 
             // Read bindings
             stream.ReadBytes(&initializer.Bindings, sizeof(ShaderBindings));
