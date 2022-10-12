@@ -120,6 +120,30 @@ void Camera::ProjectPoint(const Vector3& worldSpaceLocation, Float2& cameraViewp
     cameraViewportSpaceLocation = Float2(clipSpaceLocation);
 }
 
+bool Camera::IsPointOnView(const Vector3& worldSpaceLocation) const
+{
+    Vector3 cameraUp = GetTransform().GetUp();
+    Vector3 cameraForward = GetTransform().GetForward();
+    Vector3 directionToPosition = (worldSpaceLocation - GetPosition()).GetNormalized();
+
+    if (Vector3::Dot(cameraForward, directionToPosition) < 0)
+    {
+        return false;
+    }
+
+    Quaternion lookAt = Quaternion::LookRotation(directionToPosition, cameraUp);
+    Vector3 lookAtDirection = lookAt * Vector3::Forward;
+    Vector3 newWorldLocation = GetPosition() + lookAtDirection;
+
+    Float2 windowSpace = Float2();
+    Float2 screenSize = GetViewport().Size;
+
+    ProjectPoint(newWorldLocation, windowSpace);
+
+    return (windowSpace.X >= 0 && windowSpace.X <= screenSize.X) &&
+           (windowSpace.Y >= 0 && windowSpace.Y <= screenSize.Y);
+}
+
 Ray Camera::ConvertMouseToRay(const Float2& mousePosition) const
 {
     return ConvertMouseToRay(mousePosition, GetViewport());
