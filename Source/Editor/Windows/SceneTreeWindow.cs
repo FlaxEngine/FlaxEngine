@@ -174,7 +174,7 @@ namespace FlaxEditor.Windows
                 ScrollBars = ScrollBars.Both,
                 Parent = this,
             };
-            
+
             // Create scene structure tree
             var root = editor.Scene.Root;
             root.TreeNode.ChildrenIndent = 0;
@@ -197,9 +197,9 @@ namespace FlaxEditor.Windows
             InputActions.Add(options => options.FocusSelection, () => Editor.Windows.EditWin.Viewport.FocusSelection());
             InputActions.Add(options => options.Rename, Rename);
         }
-        
+
         /// <summary>
-        ///  Enables or disables vertical and horizontal scrolling on the scene tree panel
+        /// Enables or disables vertical and horizontal scrolling on the scene tree panel.
         /// </summary>
         /// <param name="enabled">The state to set scrolling to</param>
         public void ScrollingOnSceneTreeView(bool enabled)
