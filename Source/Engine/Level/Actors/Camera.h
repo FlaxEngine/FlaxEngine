@@ -171,8 +171,8 @@ public:
     /// <summary>
     /// Checks if the 3d point of the world is in the camera's field of view.
     /// </summary>
-    /// <param name="worldSpaceLocation">World Position (XYZ)</param>
-    /// <returns>Returns true if the point is within the field of view</returns>
+    /// <param name="worldSpaceLocation">World Position (XYZ).</param>
+    /// <returns>Returns true if the point is within the field of view.</returns>
     API_FUNCTION() bool IsPointOnView(const Vector3& worldSpaceLocation) const;
 
     /// <summary>
