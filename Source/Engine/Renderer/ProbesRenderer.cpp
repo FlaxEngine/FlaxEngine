@@ -204,7 +204,7 @@ int32 ProbesRenderer::Entry::GetResolution() const
 
 PixelFormat ProbesRenderer::Entry::GetFormat() const
 {
-    return GraphicsSettings::Get()->UeeHDRProbes ? PixelFormat::R11G11B10_Float : PixelFormat::R8G8B8A8_UNorm;
+    return GraphicsSettings::Get()->UseHDRProbes ? PixelFormat::R11G11B10_Float : PixelFormat::R8G8B8A8_UNorm;
 }
 
 int32 ProbesRenderer::GetBakeQueueSize()
