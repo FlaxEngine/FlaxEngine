@@ -544,6 +544,8 @@ void WindowsWindow::StartTrackingMouse(bool useMouseScreenOffset)
         _isTrackingMouse = true;
         _trackingMouseOffset = Float2::Zero;
         _isUsingMouseOffset = useMouseScreenOffset;
+        _isHorizontalFlippingMouse = false;
+        _isVerticalFlippingMouse = false;
 
         int32 x = 0, y = 0, width = 0, height = 0;
         GetScreenInfo(x, y, width, height);
@@ -558,6 +560,8 @@ void WindowsWindow::EndTrackingMouse()
     if (_isTrackingMouse)
     {
         _isTrackingMouse = false;
+        _isHorizontalFlippingMouse = false;
+        _isVerticalFlippingMouse = false;
 
         ReleaseCapture();
     }
