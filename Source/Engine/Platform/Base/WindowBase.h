@@ -683,17 +683,17 @@ public:
     }
 
     /// <summary>
-    /// todo : add doc
+    /// Gets the value indicating if the mouse flipped to the other screen edge horizontally
     /// </summary>
-    API_PROPERTY() bool IsHorizontalFlippingMouse() const
+    API_PROPERTY() bool IsMouseFlippingHorizontally() const
     {
         return _isHorizontalFlippingMouse;
     }
 
     /// <summary>
-    /// todo : add doc
+    /// Gets the value indicating if the mouse flipped to the other screen edge vertically
     /// </summary>
-    API_PROPERTY() bool IsVerticalFlippingMouse() const
+    API_PROPERTY() bool IsMouseFlippingVertically() const
     {
         return _isVerticalFlippingMouse;
     }
