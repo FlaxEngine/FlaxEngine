@@ -71,27 +71,10 @@ namespace FlaxEditor.GUI.Timeline.GUI
         /// <inheritdoc />
         public override void OnMouseMove(Float2 location)
         {
-            if (_isMoving)
+            if (_isMoving && !_timeline.RootWindow.Window.IsHorizontalFlippingMouse)
             {
-                Float2 currWndCenter = _timeline.RootWindow.Window.ClientBounds.Center;
-                Float2 currMonitorSize = Platform.GetMonitorBounds(currWndCenter).Size;
                 var moveLocation = Root.MousePosition;
-                var diffFromLastMoveLocation = Mathf.Max(_lastMouseLocation.X, moveLocation.X) - Mathf.Min(_lastMouseLocation.X, moveLocation.X);
-                var movePorcentOfXMonitorSize = diffFromLastMoveLocation * 100f / currMonitorSize.X;
-
-                if (movePorcentOfXMonitorSize >= 90f)
-                {
-                    if (_lastMouseLocation.X > moveLocation.X)
-                    {
-                        _flipScreenMoveDelta += currMonitorSize.X;
-                    }
-                    else
-                    {
-                        _flipScreenMoveDelta -= currMonitorSize.X;
-                    }
-                }
-
-                var moveLocationDelta = moveLocation - _startMoveLocation + _flipScreenMoveDelta;
+                var moveLocationDelta = moveLocation - _startMoveLocation + _timeline.Root.TrackingMouseOffset.X;
                 var moveDelta = (int)(moveLocationDelta.X / (Timeline.UnitsPerSecond * _timeline.Zoom) * _timeline.FramesPerSecond);
                 var durationFrames = _timeline.DurationFrames;
 
