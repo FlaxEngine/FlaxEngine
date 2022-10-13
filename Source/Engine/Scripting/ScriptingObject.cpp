@@ -727,6 +727,14 @@ public:
         return nullptr;
     }
 
+    static MonoObject* FromUnmanagedPtr(ScriptingObject* obj)
+    {
+        MonoObject* result = nullptr;
+        if (obj)
+            result = obj->GetOrCreateManagedInstance();
+        return result;
+    }
+
     static void InitRuntime()
     {
         ADD_INTERNAL_CALL("FlaxEngine.Object::Internal_Create1", &Create1);
@@ -739,6 +747,7 @@ public:
         ADD_INTERNAL_CALL("FlaxEngine.Object::Internal_TryFindObject", &TryFindObject);
         ADD_INTERNAL_CALL("FlaxEngine.Object::Internal_ChangeID", &ChangeID);
         ADD_INTERNAL_CALL("FlaxEngine.Object::Internal_GetUnmanagedInterface", &GetUnmanagedInterface);
+        ADD_INTERNAL_CALL("FlaxEngine.Object::FromUnmanagedPtr", &FromUnmanagedPtr);
     }
 
 #else

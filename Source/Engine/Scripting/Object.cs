@@ -221,6 +221,14 @@ namespace FlaxEngine
             return obj is Object o ? Internal_GetUnmanagedInterface(o.__unmanagedPtr, type) : IntPtr.Zero;
         }
 
+        /// <summary>
+        /// Gets the managed object from the native object pointer.
+        /// </summary>
+        /// <param name="ptr">The pointer to the unmanaged (native) object.</param>
+        /// <returns>The object.</returns>
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        public static extern Object FromUnmanagedPtr(IntPtr ptr);
+
         /// <inheritdoc />
         public override int GetHashCode()
         {
