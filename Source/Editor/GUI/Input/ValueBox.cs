@@ -259,7 +259,7 @@ namespace FlaxEditor.GUI.Input
         /// <inheritdoc />
         public override void OnMouseMove(Float2 location)
         {
-            if (_isSliding && !RootWindow.Window.IsHorizontalFlippingMouse)
+            if (_isSliding && !RootWindow.Window.IsMouseFlippingHorizontally)
             {
                 // Update sliding
                 var slideLocation = location + Root.TrackingMouseOffset;

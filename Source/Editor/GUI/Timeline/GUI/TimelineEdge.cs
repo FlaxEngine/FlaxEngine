@@ -15,8 +15,6 @@ namespace FlaxEditor.GUI.Timeline.GUI
         private Timeline _timeline;
         private bool _isMoving;
         private Float2 _startMoveLocation;
-        private Float2 _lastMouseLocation;
-        private float _flipScreenMoveDelta;
         private int _startMoveDuration;
         private bool _isStart;
         private bool _canEdit;
@@ -71,14 +69,12 @@ namespace FlaxEditor.GUI.Timeline.GUI
         /// <inheritdoc />
         public override void OnMouseMove(Float2 location)
         {
-            if (_isMoving && !_timeline.RootWindow.Window.IsHorizontalFlippingMouse)
+            if (_isMoving && !_timeline.RootWindow.Window.IsMouseFlippingHorizontally)
             {
                 var moveLocation = Root.MousePosition;
                 var moveLocationDelta = moveLocation - _startMoveLocation + _timeline.Root.TrackingMouseOffset.X;
                 var moveDelta = (int)(moveLocationDelta.X / (Timeline.UnitsPerSecond * _timeline.Zoom) * _timeline.FramesPerSecond);
                 var durationFrames = _timeline.DurationFrames;
-
-
 
                 if (_isStart)
                 {
@@ -94,9 +90,6 @@ namespace FlaxEditor.GUI.Timeline.GUI
                 {
                     _timeline.MarkAsEdited();
                 }
-
-                _lastMouseLocation = moveLocation;
-
             }
             else
             {
@@ -148,7 +141,6 @@ namespace FlaxEditor.GUI.Timeline.GUI
                     _timeline.DurationFrames = duration;
             }
             _isMoving = false;
-            _flipScreenMoveDelta = 0;
             _timeline.MediaBackground.HScrollBar.Value = _timeline.MediaBackground.HScrollBar.Maximum;
 
             EndMouseCapture();
