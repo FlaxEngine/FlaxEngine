@@ -287,6 +287,8 @@ protected:
     bool _isUsingMouseOffset;
     Rectangle _mouseOffsetScreenSize;
     bool _isTrackingMouse;
+    bool _isHorizontalFlippingMouse;
+    bool _isVerticalFlippingMouse;
     bool _isClippingCursor;
 
     explicit WindowBase(const CreateWindowSettings& settings);
@@ -678,6 +680,22 @@ public:
     API_PROPERTY() bool IsMouseTracking() const
     {
         return _isTrackingMouse;
+    }
+
+    /// <summary>
+    /// todo : add doc
+    /// </summary>
+    API_PROPERTY() bool IsHorizontalFlippingMouse() const
+    {
+        return _isHorizontalFlippingMouse;
+    }
+
+    /// <summary>
+    /// todo : add doc
+    /// </summary>
+    API_PROPERTY() bool IsVerticalFlippingMouse() const
+    {
+        return _isVerticalFlippingMouse;
     }
 
     /// <summary>
