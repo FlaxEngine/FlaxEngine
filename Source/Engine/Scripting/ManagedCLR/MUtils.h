@@ -33,6 +33,8 @@ namespace MUtils
     extern FLAXENGINE_API MonoString* ToString(const StringView& str);
     extern FLAXENGINE_API MonoString* ToString(const StringView& str, MonoDomain* domain);
 
+    extern FLAXENGINE_API ScriptingTypeHandle UnboxScriptingTypeHandle(MonoReflectionType* value);
+    extern FLAXENGINE_API MonoReflectionType* BoxScriptingTypeHandle(const ScriptingTypeHandle& value);
     extern FLAXENGINE_API VariantType UnboxVariantType(MonoReflectionType* value);
     extern FLAXENGINE_API VariantType UnboxVariantType(MonoType* monoType);
     extern FLAXENGINE_API MonoReflectionType* BoxVariantType(const VariantType& value);

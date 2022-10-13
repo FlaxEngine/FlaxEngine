@@ -186,6 +186,29 @@ MonoString* MUtils::ToString(const StringView& str, MonoDomain* domain)
     return mono_string_new_utf16(domain, (const mono_unichar2*)*str, str.Length());
 }
 
+ScriptingTypeHandle MUtils::UnboxScriptingTypeHandle(MonoReflectionType* value)
+{
+    MonoClass* klass = GetClass(value);
+    if (!klass)
+        return ScriptingTypeHandle();
+    const MString typeName = MUtils::GetClassFullname(klass);
+    const ScriptingTypeHandle typeHandle = Scripting::FindScriptingType(typeName);
+    if (!typeHandle)
+        LOG(Warning, "Unknown scripting type {}", String(typeName));
+    return typeHandle;
+}
+
+MonoReflectionType* MUtils::BoxScriptingTypeHandle(const ScriptingTypeHandle& value)
+{
+    MonoReflectionType* result = nullptr;
+    if (value)
+    {
+        MonoType* monoType = mono_class_get_type(value.GetType().ManagedClass->GetNative());
+        result = mono_type_get_object(mono_domain_get(), monoType);
+    }
+    return result;
+}
+
 VariantType MUtils::UnboxVariantType(MonoReflectionType* value)
 {
     if (value == nullptr)

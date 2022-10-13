@@ -407,6 +407,9 @@ namespace Flax.Build.Bindings
             case "VariantType":
                 type = "MonoReflectionType*";
                 return "MUtils::BoxVariantType({0})";
+            case "ScriptingTypeHandle":
+                type = "MonoReflectionType*";
+                return "MUtils::BoxScriptingTypeHandle({0})";
             case "ScriptingObject":
             case "ManagedScriptingObject":
             case "PersistentScriptingObject":
@@ -590,6 +593,9 @@ namespace Flax.Build.Bindings
             case "VariantType":
                 type = "MonoReflectionType*";
                 return "MUtils::UnboxVariantType({0})";
+            case "ScriptingTypeHandle":
+                type = "MonoReflectionType*";
+                return "MUtils::UnboxScriptingTypeHandle({0})";
             case "CultureInfo":
                 type = "void*";
                 return "MUtils::ToNative({0})";

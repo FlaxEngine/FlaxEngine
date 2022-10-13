@@ -43,6 +43,7 @@ namespace Flax.Build.Bindings
             { "StringAnsi", "string" },
             { "StringAnsiView", "string" },
             { "ScriptingObject", "FlaxEngine.Object" },
+            { "ScriptingTypeHandle", "System.Type" },
             { "PersistentScriptingObject", "FlaxEngine.Object" },
             { "ManagedScriptingObject", "FlaxEngine.Object" },
             { "MClass", "System.Type" },

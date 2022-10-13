@@ -174,14 +174,22 @@ namespace Flax.Build.Bindings
                 return false;
 
             // Skip for special types
-            if (typeInfo.Type == "BytesContainer" && typeInfo.GenericArgs == null)
-                return false;
-            if (typeInfo.Type == "Variant" && typeInfo.GenericArgs == null)
-                return false;
-            if (typeInfo.Type == "VariantType" && typeInfo.GenericArgs == null)
-                return false;
-            if (typeInfo.Type == "Function" && typeInfo.GenericArgs != null)
-                return false;
+            if (typeInfo.GenericArgs == null)
+            {
+                if (typeInfo.Type == "BytesContainer")
+                    return false;
+                if (typeInfo.Type == "Variant")
+                    return false;
+                if (typeInfo.Type == "VariantType")
+                    return false;
+                if (typeInfo.Type == "ScriptingTypeHandle")
+                    return false;
+            }
+            else
+            {
+                if (typeInfo.Type == "Function")
+                    return false;
+            }
 
             // Find API type info
             var apiType = FindApiTypeInfo(buildData, typeInfo, caller);
