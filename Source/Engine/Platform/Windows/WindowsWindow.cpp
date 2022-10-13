@@ -824,14 +824,14 @@ LRESULT WindowsWindow::WndProc(UINT msg, WPARAM wParam, LPARAM lParam)
             const Float2 mousePos(static_cast<float>(WINDOWS_GET_X_LPARAM(lParam)), static_cast<float>(WINDOWS_GET_Y_LPARAM(lParam)));
             Float2 mousePosition = ClientToScreen(mousePos);
             Float2 newMousePosition = mousePosition;
-            if (mousePosition.X <= desktopLocation.X + 2)
-                newMousePosition.X = desktopSize.X - 2;
-            else if (mousePosition.X >= desktopSize.X - 1)
-                newMousePosition.X = desktopLocation.X + 2;
-            if (mousePosition.Y <= desktopLocation.Y + 2)
-                newMousePosition.Y = desktopSize.Y - 2;
-            else if (mousePosition.Y >= desktopSize.Y - 1)
-                newMousePosition.Y = desktopLocation.Y + 2;
+            if (_isHorizontalFlippingMouse = mousePosition.X <= desktopLocation.X + 2)
+                newMousePosition.X = desktopSize.X - 3;
+            else if (_isHorizontalFlippingMouse = mousePosition.X >= desktopSize.X - 1)
+                newMousePosition.X = desktopLocation.X + 3;
+            if (_isVerticalFlippingMouse = mousePosition.Y <= desktopLocation.Y + 2)
+                newMousePosition.Y = desktopSize.Y - 3;
+            else if (_isVerticalFlippingMouse = mousePosition.Y >= desktopSize.Y - 1)
+                newMousePosition.Y = desktopLocation.Y + 3;
             if (!Float2::NearEqual(mousePosition, newMousePosition))
             {
                 _trackingMouseOffset -= newMousePosition - mousePosition;
