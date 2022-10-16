@@ -252,6 +252,7 @@ namespace FlaxEditor.Tools.Foliage
             {
                 _presenter.Deselect();
             }
+            _presenter.Panel.Focus();
         }
 
         private void UpdateFoliageTypesList()

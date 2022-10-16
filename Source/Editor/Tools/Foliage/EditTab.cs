@@ -228,6 +228,7 @@ namespace FlaxEditor.Tools.Foliage
             {
                 _presenter.Select(_proxy);
             }
+            _presenter.Panel.Focus();
         }
 
         private void OnModified()
