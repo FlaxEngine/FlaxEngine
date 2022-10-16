@@ -209,6 +209,17 @@ namespace FlaxEditor.Windows
             if (_sceneTreePanel.HScrollBar != null)
                 _sceneTreePanel.HScrollBar.ThumbEnabled = enabled;
         }
+        
+        /// <summary>
+        /// Scroll to selected node in the scene tree
+        /// </summary>
+        public void ScrollToSelectedNode()
+        {
+            // Scroll to node 
+            var nodeSelection = _tree.Selection;
+            var scrollPosition = nodeSelection[nodeSelection.Count - 1];
+            _sceneTreePanel.ScrollViewTo(scrollPosition);
+        }
 
         private void OnSearchBoxTextChanged()
         {
