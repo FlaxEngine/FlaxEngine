@@ -3,6 +3,9 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
+using FlaxEditor.CustomEditors.Editors;
+using FlaxEditor.GUI.Drag;
 using FlaxEditor.GUI.Tabs;
 using FlaxEditor.GUI.Tree;
 using FlaxEditor.Scripting;
@@ -100,6 +103,8 @@ namespace FlaxEditor.Windows
 
         private TextBox _searchBox;
         private ContainerControl _groupSearch;
+        private ContainerControl _groupAllActors;
+        private ContainerControl _groupCustomActors;
 
         /// <summary>
         /// The editor instance.
@@ -117,6 +122,7 @@ namespace FlaxEditor.Windows
             Editor = editor;
             Selected += tab => Editor.Windows.EditWin.Viewport.SetActiveMode<TransformGizmoMode>();
             ScriptsBuilder.ScriptsReload += OnScriptsReload;
+            ScriptsBuilder.ScriptsReloadEnd += OnScriptsReloadEnd;
 
             var actorGroups = new Tabs
             {
@@ -137,6 +143,9 @@ namespace FlaxEditor.Windows
                 Bounds = new Rectangle(4, 4, actorGroups.Width - 8, 18),
             };
             _searchBox.TextChanged += OnSearchBoxTextChanged;
+
+            _groupAllActors = CreateGroupWithList(actorGroups, "All Actors");
+            RefreshAllActorsList();
 
             var groupBasicModels = CreateGroupWithList(actorGroups, "Basic Models");
             groupBasicModels.AddChild(CreateEditorAssetItem("Cube", "Primitives/Cube.flax"));
@@ -195,9 +204,65 @@ namespace FlaxEditor.Windows
             groupGui.AddChild(CreateActorItem("Text Render", typeof(TextRender)));
             groupGui.AddChild(CreateActorItem("Sprite Render", typeof(SpriteRender)));
 
+            _groupCustomActors = CreateGroupWithList(actorGroups, "Custom");
+            RefreshCustomActorsList();
+
             actorGroups.SelectedTabIndex = 1;
         }
 
+        private void OnScriptsReloadEnd()
+        {
+            RefreshAllActorsList();
+            RefreshCustomActorsList();
+        }
+        
+        private void RefreshAllActorsList()
+        {
+            var listOfExcludedTypeNames = new List<string>()
+            {
+                "Scene",
+                "EditorScene",
+                "Terrain",
+                "Foliage",
+            };
+            
+            _groupAllActors.DisposeChildren();
+            foreach (var actorType in Editor.CodeEditing.Actors.Get())
+            {
+                if (actorType.IsAbstract || listOfExcludedTypeNames.Contains(actorType.Name))
+                {
+                    continue;
+                }
+                _groupAllActors.AddChild(CreateActorItem(Utilities.Utils.GetPropertyNameUI(actorType.Name), actorType));
+            }
+            
+            // add asset items separate
+            _groupAllActors.AddChild(CreateEditorAssetItem("Cube", "Primitives/Cube.flax"));
+            _groupAllActors.AddChild(CreateEditorAssetItem("Sphere", "Primitives/Sphere.flax"));
+            _groupAllActors.AddChild(CreateEditorAssetItem("Plane", "Primitives/Plane.flax"));
+            _groupAllActors.AddChild(CreateEditorAssetItem("Cylinder", "Primitives/Cylinder.flax"));
+            _groupAllActors.AddChild(CreateEditorAssetItem("Cone", "Primitives/Cone.flax"));
+            _groupAllActors.AddChild(CreateEditorAssetItem("Capsule", "Primitives/Capsule.flax"));
+            
+            _groupAllActors.SortChildren();
+        }
+        
+        private void RefreshCustomActorsList()
+        {
+            _groupCustomActors.DisposeChildren();
+            foreach (var actorType in Editor.CodeEditing.Actors.Get())
+            {
+                
+                // Shows actors that have the 'ShowInCustomToolBoxTabAttribute' in the Custom list and excludes abstract types
+                if (actorType.HasAttribute(typeof(ShowInCustomToolBoxTabAttribute), true) && !actorType.IsAbstract)
+                {
+                    var item = CreateActorItem(Utilities.Utils.GetPropertyNameUI(actorType.Name), actorType);
+                    _groupCustomActors.AddChild(item);
+                }
+            }
+            _groupCustomActors.SortChildren();
+        }
+        
         private void OnScriptsReload()
         {
             // Prevent any references to actor types from the game assemblies that will be reloaded
