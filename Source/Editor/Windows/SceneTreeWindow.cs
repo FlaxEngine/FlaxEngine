@@ -217,8 +217,8 @@ namespace FlaxEditor.Windows
         {
             // Scroll to node 
             var nodeSelection = _tree.Selection;
-            var scrollPosition = nodeSelection[nodeSelection.Count - 1];
-            _sceneTreePanel.ScrollViewTo(scrollPosition);
+            var scrollControl = nodeSelection[nodeSelection.Count - 1];
+            _sceneTreePanel.ScrollViewTo(scrollControl);
         }
 
         private void OnSearchBoxTextChanged()
