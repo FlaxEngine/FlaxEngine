@@ -27,6 +27,11 @@ namespace Flax.Build.Graph
         public string WorkingDirectory = string.Empty;
 
         /// <summary>
+        /// The command to call upon task execution.
+        /// </summary>
+        public Action Command;
+
+        /// <summary>
         /// The command to run to create produced files.
         /// </summary>
         public string CommandPath = string.Empty;
