@@ -229,6 +229,21 @@ namespace FlaxEditor.Viewport
             TransformGizmo.RotationSnapEnabled = _editor.ProjectCache.TryGetCustomData("RotationSnapState", out cachedSnapState) && Boolean.Parse(cachedSnapState);
             TransformGizmo.ScaleSnapEnabled = _editor.ProjectCache.TryGetCustomData("ScaleSnapState", out cachedSnapState) && Boolean.Parse(cachedSnapState);
             
+            // initialize snap value if there is one cached
+            string cachedSnapValue;
+            if (_editor.ProjectCache.TryGetCustomData("TranslateSnapValue", out cachedSnapValue))
+            {
+                TransformGizmo.TranslationSnapValue = float.Parse(cachedSnapValue);
+            }
+            if (_editor.ProjectCache.TryGetCustomData("RotationSnapValue", out cachedSnapValue))
+            {
+                TransformGizmo.RotationSnapValue = float.Parse(cachedSnapValue);
+            }
+            if (_editor.ProjectCache.TryGetCustomData("ScaleSnapValue", out cachedSnapValue))
+            {
+                TransformGizmo.ScaleSnapValue = float.Parse(cachedSnapValue);
+            }
+            
             // Transform space widget
             var transformSpaceWidget = new ViewportWidgetsContainer(ViewportWidgetLocation.UpperRight);
             var transformSpaceToggle = new ViewportWidgetButton(string.Empty, editor.Icons.Globe32, null, true)
@@ -579,6 +594,7 @@ namespace FlaxEditor.Viewport
             var v = (float)button.Tag;
             TransformGizmo.ScaleSnapValue = v;
             _scaleSnapping.Text = v.ToString();
+            _editor.ProjectCache.SetCustomData("ScaleSnapValue", TransformGizmo.ScaleSnapValue.ToString("N"));
         }
 
         private void OnWidgetScaleSnapShowHide(Control control)
@@ -616,6 +632,7 @@ namespace FlaxEditor.Viewport
             var v = (float)button.Tag;
             TransformGizmo.RotationSnapValue = v;
             _rotateSnapping.Text = v.ToString();
+            _editor.ProjectCache.SetCustomData("RotationSnapValue", TransformGizmo.RotationSnapValue.ToString("N"));
         }
 
         private void OnWidgetRotateSnapShowHide(Control control)
@@ -652,6 +669,7 @@ namespace FlaxEditor.Viewport
             var v = (float)button.Tag;
             TransformGizmo.TranslationSnapValue = v;
             _translateSnapping.Text = v.ToString();
+            _editor.ProjectCache.SetCustomData("TranslateSnapValue", TransformGizmo.TranslationSnapValue.ToString("N"));
         }
 
         private void OnWidgetTranslateSnapShowHide(Control control)
