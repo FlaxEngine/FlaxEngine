@@ -14,7 +14,7 @@ private:
 
 #if USE_MONO
     MonoClass* _monoClass;
-    void* _attrInfo = nullptr;
+    mutable void* _attrInfo = nullptr;
 #endif
     const MAssembly* _assembly;
 
@@ -271,20 +271,20 @@ public:
     /// </summary>
     /// <param name="monoClass">The attribute class to check.</param>
     /// <returns>True if has attribute of that class type, otherwise false.</returns>
-    bool HasAttribute(MClass* monoClass);
+    bool HasAttribute(const MClass* monoClass) const;
 
     /// <summary>
     /// Checks if class has an attribute of any type.
     /// </summary>
     /// <returns>True if has any custom attribute, otherwise false.</returns>
-    bool HasAttribute();
+    bool HasAttribute() const;
 
     /// <summary>
     /// Returns an instance of an attribute of the specified type. Returns null if the class doesn't have such an attribute.
     /// </summary>
     /// <param name="monoClass">The attribute class to take.</param>
     /// <returns>The attribute object.</returns>
-    MObject* GetAttribute(MClass* monoClass);
+    MObject* GetAttribute(const MClass* monoClass) const;
 
     /// <summary>
     /// Returns an instance of all attributes connected with given class. Returns null if the class doesn't have any attributes.

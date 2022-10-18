@@ -373,7 +373,7 @@ MObject* MClass::CreateInstance(void** params, uint32 numParams)
 #endif
 }
 
-bool MClass::HasAttribute(MClass* monoClass)
+bool MClass::HasAttribute(const MClass* monoClass) const
 {
 #if USE_MONO
     MonoCustomAttrInfo* attrInfo = GET_CUSTOM_ATTR();
@@ -383,7 +383,7 @@ bool MClass::HasAttribute(MClass* monoClass)
 #endif
 }
 
-bool MClass::HasAttribute()
+bool MClass::HasAttribute() const
 {
 #if USE_MONO
     MonoCustomAttrInfo* attrInfo = GET_CUSTOM_ATTR();
@@ -393,7 +393,7 @@ bool MClass::HasAttribute()
 #endif
 }
 
-MObject* MClass::GetAttribute(MClass* monoClass)
+MObject* MClass::GetAttribute(const MClass* monoClass) const
 {
 #if USE_MONO
     MonoCustomAttrInfo* attrInfo = GET_CUSTOM_ATTR();

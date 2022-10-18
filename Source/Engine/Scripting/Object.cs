@@ -152,6 +152,17 @@ namespace FlaxEngine
         }
 
         /// <summary>
+        /// Tries to find the object by the given identifier. Searches only registered scene objects.
+        /// </summary>
+        /// <param name="id">Unique ID of the object.</param>
+        /// <param name="type">Type of the object.</param>
+        /// <returns>Found object or null if missing.</returns>
+        public static Object TryFind(ref Guid id, Type type)
+        {
+            return Internal_TryFindObject(ref id, type);
+        }
+
+        /// <summary>
         /// Destroys the specified object and clears the reference variable.
         /// The object obj will be destroyed now or after the time specified in seconds from now.
         /// If obj is a Script it will be removed from the Actor and deleted.

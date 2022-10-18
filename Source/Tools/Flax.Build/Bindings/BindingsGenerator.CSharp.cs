@@ -16,6 +16,8 @@ namespace Flax.Build.Bindings
         private static readonly HashSet<string> CSharpUsedNamespaces = new HashSet<string>();
         private static readonly List<string> CSharpUsedNamespacesSorted = new List<string>();
 
+        public static event Action<BuildData, ApiTypeInfo, StringBuilder, string> GenerateCSharpTypeInternals;
+
         internal static readonly Dictionary<string, string> CSharpNativeToManagedBasicTypes = new Dictionary<string, string>()
         {
             // Language types
@@ -1098,6 +1100,8 @@ namespace Flax.Build.Bindings
                 }
             }
 
+            GenerateCSharpTypeInternals?.Invoke(buildData, classInfo, contents, indent);
+
             // Nested types
             foreach (var apiTypeInfo in classInfo.Children)
             {
@@ -1276,6 +1280,8 @@ namespace Flax.Build.Bindings
                 contents.Append(indent).AppendLine("}");
             }
 
+            GenerateCSharpTypeInternals?.Invoke(buildData, structureInfo, contents, indent);
+
             // Nested types
             foreach (var apiTypeInfo in structureInfo.Children)
             {
@@ -1416,6 +1422,8 @@ namespace Flax.Build.Bindings
 
                 contents.Append(");").AppendLine();
             }
+
+            GenerateCSharpTypeInternals?.Invoke(buildData, interfaceInfo, contents, indent);
 
             // End
             indent = indent.Substring(0, indent.Length - 4);

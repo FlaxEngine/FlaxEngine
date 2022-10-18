@@ -11,6 +11,8 @@ namespace Flax.Build
 {
     static partial class Builder
     {
+        public static event Action<TaskGraph, BuildData, NativeCpp.BuildOptions, Task, IGrouping<string, Module>> BuildDotNetAssembly;
+
         private static void BuildTargetDotNet(RulesAssembly rules, TaskGraph graph, Target target, Platform platform, TargetConfiguration configuration)
         {
             // Check if use custom project file
@@ -142,7 +144,7 @@ namespace Flax.Build
             }
         }
 
-        private static void BuildDotNet(TaskGraph graph, BuildData buildData, NativeCpp.BuildOptions buildOptions, string name, List<string> sourceFiles, HashSet<string> fileReferences = null)
+        private static void BuildDotNet(TaskGraph graph, BuildData buildData, NativeCpp.BuildOptions buildOptions, string name, List<string> sourceFiles, HashSet<string> fileReferences = null, IGrouping<string, Module> binaryModule = null)
         {
             // Setup build options
             var buildPlatform = Platform.BuildTargetPlatform;
@@ -250,6 +252,8 @@ namespace Flax.Build
                 task.CommandArguments = $"/noconfig /shared @\"{responseFile}\"";
             }
 
+            BuildDotNetAssembly?.Invoke(graph, buildData, buildOptions, task, binaryModule);
+
             // Copy referenced assemblies
             foreach (var srcFile in buildOptions.ScriptingAPI.FileReferences)
             {
@@ -336,7 +340,7 @@ namespace Flax.Build
                     }
 
                     // Build assembly
-                    BuildDotNet(graph, buildData, buildOptions, binaryModuleName + ".CSharp", sourceFiles, fileReferences);
+                    BuildDotNet(graph, buildData, buildOptions, binaryModuleName + ".CSharp", sourceFiles, fileReferences, binaryModule);
                 }
             }
         }
