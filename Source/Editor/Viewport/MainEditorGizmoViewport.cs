@@ -243,7 +243,16 @@ namespace FlaxEditor.Viewport
             {
                 TransformGizmo.ScaleSnapValue = float.Parse(cachedSnapValue);
             }
-            
+
+            // initialize transform space if one is cached
+            string cachedTransformSpace;
+            if (_editor.ProjectCache.TryGetCustomData("TransformSpaceState", out cachedTransformSpace))
+            {
+                TransformGizmoBase.TransformSpace space;
+                Enum.TryParse(cachedTransformSpace, out space);
+                TransformGizmo.ActiveTransformSpace = space;
+            }
+
             // Transform space widget
             var transformSpaceWidget = new ViewportWidgetsContainer(ViewportWidgetLocation.UpperRight);
             var transformSpaceToggle = new ViewportWidgetButton(string.Empty, editor.Icons.Globe32, null, true)
@@ -565,6 +574,7 @@ namespace FlaxEditor.Viewport
         private void OnTransformSpaceToggle(ViewportWidgetButton button)
         {
             TransformGizmo.ToggleTransformSpace();
+            _editor.ProjectCache.SetCustomData("TransformSpaceState", TransformGizmo.ActiveTransformSpace.ToString());
         }
 
         private void OnGizmoModeChanged()
