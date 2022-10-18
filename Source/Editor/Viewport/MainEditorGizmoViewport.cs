@@ -6,6 +6,7 @@ using FlaxEditor.Content;
 using FlaxEditor.Gizmo;
 using FlaxEditor.GUI.ContextMenu;
 using FlaxEditor.GUI.Drag;
+using FlaxEditor.Options;
 using FlaxEditor.SceneGraph;
 using FlaxEditor.SceneGraph.Actors;
 using FlaxEditor.Scripting;
@@ -223,6 +224,12 @@ namespace FlaxEditor.Viewport
 
             editor.SceneEditing.SelectionChanged += OnSelectionChanged;
 
+            // initialize snapping enabled from cached values
+            string cachedSnapState;
+            TransformGizmo.TranslationSnapEnable = _editor.ProjectCache.TryGetCustomData("TranslateSnapState", out cachedSnapState) && Boolean.Parse(cachedSnapState);
+            TransformGizmo.RotationSnapEnabled = _editor.ProjectCache.TryGetCustomData("RotationSnapState", out cachedSnapState) && Boolean.Parse(cachedSnapState);
+            TransformGizmo.ScaleSnapEnabled = _editor.ProjectCache.TryGetCustomData("ScaleSnapState", out cachedSnapState) && Boolean.Parse(cachedSnapState);
+            
             // Transform space widget
             var transformSpaceWidget = new ViewportWidgetsContainer(ViewportWidgetLocation.UpperRight);
             var transformSpaceToggle = new ViewportWidgetButton(string.Empty, editor.Icons.Globe32, null, true)
@@ -523,16 +530,22 @@ namespace FlaxEditor.Viewport
         private void OnTranslateSnappingToggle(ViewportWidgetButton button)
         {
             TransformGizmo.TranslationSnapEnable = !TransformGizmo.TranslationSnapEnable;
+            // cache value on next save
+            _editor.ProjectCache.SetCustomData("TranslateSnapState", TransformGizmo.TranslationSnapEnable.ToString());
         }
 
         private void OnRotateSnappingToggle(ViewportWidgetButton button)
         {
             TransformGizmo.RotationSnapEnabled = !TransformGizmo.RotationSnapEnabled;
+            // cache value on next save
+            _editor.ProjectCache.SetCustomData("RotationSnapState", TransformGizmo.RotationSnapEnabled.ToString());
         }
 
         private void OnScaleSnappingToggle(ViewportWidgetButton button)
         {
             TransformGizmo.ScaleSnapEnabled = !TransformGizmo.ScaleSnapEnabled;
+            // cache value on next save
+            _editor.ProjectCache.SetCustomData("ScaleSnapState", TransformGizmo.ScaleSnapEnabled.ToString());
         }
 
         private void OnTransformSpaceToggle(ViewportWidgetButton button)
