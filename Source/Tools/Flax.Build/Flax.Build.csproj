@@ -49,6 +49,9 @@
     <Reference Include="Ionic.Zip.Reduced">
       <HintPath>..\..\..\Source\Platforms\DotNet\Ionic.Zip.Reduced.dll</HintPath>
     </Reference>
+    <Reference Include="Mono.Cecil">
+      <HintPath>..\..\..\Source\Platforms\DotNet\Mono.Cecil.dll</HintPath>
+    </Reference>
     <Reference Include="Microsoft.VisualStudio.Setup.Configuration.Interop">
       <HintPath>..\..\..\Source\Platforms\DotNet\Microsoft.VisualStudio.Setup.Configuration.Interop.dll</HintPath>
       <EmbedInteropTypes>True</EmbedInteropTypes>
@@ -165,6 +168,7 @@
     <Compile Include="Projects\VisualStudio\VisualStudioProjectGenerator.cs" />
     <Compile Include="Projects\VisualStudio\VisualStudioVersion.cs" />
     <Compile Include="Projects\XCodeProjectGenerator.cs" />
+    <Compile Include="Utilities\MonoCecil.cs" />
     <Compile Include="Utilities\StringWriterWithEncoding.cs" />
     <Compile Include="Utilities\Tokenizer.cs" />
     <Compile Include="Utilities\TwoWayEnumerator.cs" />
