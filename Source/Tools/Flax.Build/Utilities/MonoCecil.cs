@@ -97,10 +97,44 @@ namespace Flax.Build
             return instance;
         }
 
-        public static void GetTypeReference(this ModuleDefinition module, string fullName, out TypeReference type)
+        public static void GetType(this ModuleDefinition module, string fullName, out TypeReference type)
         {
             if (!module.TryGetTypeReference(fullName, out type))
+            {
+                // Do manual search
+                foreach (var a in module.AssemblyReferences)
+                {
+                    var assembly = module.AssemblyResolver.Resolve(a);
+                    if (assembly == null || assembly.MainModule == null)
+                        continue;
+                    foreach (var t in assembly.MainModule.Types)
+                    {
+                        if (t.FindTypeWithin(fullName, out type))
+                        {
+                            module.ImportReference(type);
+                            return;
+                        }
+                    }
+                }
+
                 throw new Exception($"Failed to find type {fullName} from module {module.FileName}.");
+            }
+        }
+
+        private static bool FindTypeWithin(this TypeDefinition t, string fullName, out TypeReference type)
+        {
+            if (t.FullName == fullName)
+            {
+                type = t;
+                return true;
+            }
+            foreach (var n in t.NestedTypes)
+            {
+                if (n.FindTypeWithin(fullName, out type))
+                    return true;
+            }
+            type = null;
+            return false;
         }
     }
 }
