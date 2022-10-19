@@ -27,6 +27,7 @@
 PACK_STRUCT(struct NetworkMessageReplicatedObject
     {
     NetworkMessageIDs ID;
+    uint32 OwnerFrame;
     Guid ObjectId; // TODO: introduce networked-ids to synchronize unique ids as ushort (less data over network)
     Guid OwnerId;
     char ObjectTypeName[128]; // TODO: introduce networked-name to synchronize unique names as ushort (less data over network)
@@ -38,7 +39,7 @@ struct NetworkReplicatedObject
     ScriptingObjectReference<ScriptingObject> Object;
     Guid ObjectId;
     Guid OwnerId;
-    uint32 LastFrameSync = 0;
+    uint32 LastOwnerFrameSync = 0;
 #if NETWORK_REPLICATOR_DEBUG_LOG
     bool InvalidTypeWarn = false;
 #endif
@@ -132,7 +133,7 @@ NetworkReplicatedObject* ResolveObject(Guid objectId, Guid ownerId, char objectT
         auto& item = e.Item;
         const ScriptingObject* obj = item.Object.Get();
         if (item.OwnerId == ownerId &&
-            item.LastFrameSync == 0 &&
+            item.LastOwnerFrameSync == 0 &&
             obj &&
             obj->GetTypeHandle() == objectType)
         {
@@ -265,6 +266,7 @@ void NetworkInternal::NetworkReplicatorUpdate()
     if (NetworkManager::IsClient())
     {
         // TODO: client logic to apply replication changes
+        // TODO: client logic to send owned objects to the server
     }
     else
     {
@@ -315,9 +317,9 @@ void NetworkInternal::NetworkReplicatorUpdate()
                 ASSERT(size <= MAX_uint16)
                 NetworkMessageReplicatedObject msgData;
                 msgData.ID = NetworkMessageIDs::ReplicatedObject;
+                msgData.OwnerFrame = NetworkManager::Frame;
                 msgData.ObjectId = item.ObjectId;
                 msgData.OwnerId = item.OwnerId;
-                // TODO: put timestamp (or server tick number) to prevent applying replicated object changes from previous packet (Unreliable and Unordered channel is used)
                 const StringAnsiView& objectTypeName = obj->GetType().Fullname;
                 Platform::MemoryCopy(msgData.ObjectTypeName, objectTypeName.Get(), objectTypeName.Length());
                 msgData.ObjectTypeName[objectTypeName.Length()] = 0;
@@ -349,7 +351,11 @@ void NetworkInternal::OnNetworkMessageReplicatedObject(NetworkEvent& event, Netw
         ScriptingObject* obj = item.Object.Get();
         if (!obj)
             return;
-        item.LastFrameSync = NetworkManager::Frame;
+
+        // Drop object replication if it has old data (eg. newer message was already processed due to unordered channel usage)
+        if (item.LastOwnerFrameSync >= msgData.OwnerFrame)
+            return;
+        item.LastOwnerFrameSync = msgData.OwnerFrame;
 
         // Setup message reading stream
         if (CachedReadStream == nullptr)
