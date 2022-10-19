@@ -257,9 +257,10 @@ namespace FlaxEditor.Viewport
             string cachedTransformSpace;
             if (_editor.ProjectCache.TryGetCustomData("TransformSpaceState", out cachedTransformSpace))
             {
-                TransformGizmoBase.TransformSpace space;
-                Enum.TryParse(cachedTransformSpace, out space);
-                TransformGizmo.ActiveTransformSpace = space;
+                if (Enum.TryParse(cachedTransformSpace, out TransformGizmoBase.TransformSpace space))
+                {
+                    TransformGizmo.ActiveTransformSpace = space;
+                }
             }
 
             // Transform space widget
