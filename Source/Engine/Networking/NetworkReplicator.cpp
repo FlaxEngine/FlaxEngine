@@ -68,6 +68,12 @@ inline uint32 GetHash(const NetworkReplicatedObject& key)
     return GetHash(key.ObjectId);
 }
 
+struct Serializer
+{
+    NetworkReplicator::SerializeFunc Methods[2];
+    void* Tags[2];
+};
+
 namespace
 {
     CriticalSection ObjectsLock;
@@ -76,6 +82,7 @@ namespace
     NetworkStream* CachedWriteStream = nullptr;
     NetworkStream* CachedReadStream = nullptr;
     Array<NetworkConnection> CachedTargets;
+    Dictionary<ScriptingTypeHandle, Serializer> SerializersTable;
 }
 
 class NetworkReplicationService : public EngineService
@@ -96,14 +103,12 @@ void NetworkReplicationService::Dispose()
 
 NetworkReplicationService NetworkReplicationServiceInstance;
 
-Dictionary<ScriptingTypeHandle, NetworkReplicator::SerializeFuncPair> NetworkReplicator::SerializersTable;
-
-void INetworkSerializable_Serialize(void* instance, NetworkStream* stream)
+void INetworkSerializable_Serialize(void* instance, NetworkStream* stream, void* tag)
 {
     ((INetworkSerializable*)instance)->Serialize(stream);
 }
 
-void INetworkSerializable_Deserialize(void* instance, NetworkStream* stream)
+void INetworkSerializable_Deserialize(void* instance, NetworkStream* stream, void* tag)
 {
     ((INetworkSerializable*)instance)->Deserialize(stream);
 }
@@ -143,23 +148,60 @@ NetworkReplicatedObject* ResolveObject(Guid objectId, Guid ownerId, char objectT
     return nullptr;
 }
 
-NetworkReplicator::SerializeFuncPair NetworkReplicator::GetSerializer(const ScriptingTypeHandle& typeHandle)
+#if !COMPILE_WITHOUT_CSHARP
+
+#include "Engine/Scripting/ManagedCLR/MUtils.h"
+
+void INetworkSerializable_Managed(void* instance, NetworkStream* stream, void* tag)
 {
+    auto signature = (Function<void(void*, void*)>::Signature)tag;
+    signature(instance, stream);
+}
+
+void NetworkReplicator::AddSerializer(const ScriptingTypeHandle& typeHandle, const Function<void(void*, void*)>& serialize, const Function<void(void*, void*)>& deserialize)
+{
+    if (!typeHandle)
+        return;
+
+    // This assumes that C# glue code passed static method pointer (via Marshal.GetFunctionPointerForDelegate)
+    const Serializer serializer{ INetworkSerializable_Managed, INetworkSerializable_Managed, *(SerializeFunc*)&serialize, *(SerializeFunc*)&deserialize };
+    SerializersTable.Add(typeHandle, serializer);
+}
+
+#endif
+
+void NetworkReplicator::AddSerializer(const ScriptingTypeHandle& typeHandle, SerializeFunc serialize, SerializeFunc deserialize, void* serializeTag, void* deserializeTag)
+{
+    const Serializer serializer{ serialize, deserialize, serializeTag, deserializeTag };
+    SerializersTable.Add(typeHandle, serializer);
+}
+
+bool NetworkReplicator::InvokeSerializer(const ScriptingTypeHandle& typeHandle, void* instance, NetworkStream* stream, bool serialize)
+{
+    if (!typeHandle || !instance || !stream)
+        return true;
+
     // Get serializers pair from table
-    SerializeFuncPair result(nullptr, nullptr);
-    if (!SerializersTable.TryGet(typeHandle, result))
+    Serializer serializer;
+    if (!SerializersTable.TryGet(typeHandle, serializer))
     {
         // Fallback to INetworkSerializable interface (if type implements it)
         const ScriptingType& type = typeHandle.GetType();
         const ScriptingType::InterfaceImplementation* interface = type.GetInterface(INetworkSerializable::TypeInitializer);
         if (interface)
         {
-            result.First = INetworkSerializable_Serialize;
-            result.Second = INetworkSerializable_Deserialize;
-            SerializersTable.Add(typeHandle, result);
+            serializer.Methods[0] = INetworkSerializable_Serialize;
+            serializer.Methods[1] = INetworkSerializable_Deserialize;
+            SerializersTable.Add(typeHandle, serializer);
         }
+        else
+            return true;
     }
-    return result;
+
+    // Invoke serializer
+    const byte idx = serialize ? 0 : 1;
+    serializer.Methods[idx](instance, stream, serializer.Tags[idx]);
+    return false;
 }
 
 void NetworkReplicator::AddObject(ScriptingObject* obj, ScriptingObject* owner)
@@ -247,12 +289,8 @@ void NetworkInternal::NetworkReplicatorUpdate()
 
             // Serialize object
             stream->Initialize();
-            const auto serializerFunc = NetworkReplicator::GetSerializer(obj->GetTypeHandle()).First;
-            if (serializerFunc)
-            {
-                serializerFunc(obj, stream);
-            }
-            else
+            const bool failed = NetworkReplicator::InvokeSerializer(obj->GetTypeHandle(), obj, stream, true);
+            if (failed)
             {
 #if NETWORK_REPLICATOR_DEBUG_LOG
                 if (!item.InvalidTypeWarn)
@@ -310,15 +348,11 @@ void NetworkInternal::OnNetworkMessageReplicatedObject(NetworkEvent& event, Netw
         stream->Initialize(event.Message.Buffer + event.Message.Position, msgData.DataSize);
 
         // Deserialize object
-        const auto deserializerFunc = NetworkReplicator::GetSerializer(obj->GetTypeHandle()).Second;
-        if (deserializerFunc)
-        {
-            deserializerFunc(obj, stream);
-        }
-        else
+        const bool failed = NetworkReplicator::InvokeSerializer(obj->GetTypeHandle(), obj, stream, false);
+        if (failed)
         {
 #if NETWORK_REPLICATOR_DEBUG_LOG
-            if (!item.InvalidTypeWarn)
+            if (failed && !item.InvalidTypeWarn)
             {
                 item.InvalidTypeWarn = true;
                 LOG(Error, "[NetworkReplicator] Cannot serialize object {} of type {} (missing serialization logic)", item.ToString(), obj->GetType().ToString());
