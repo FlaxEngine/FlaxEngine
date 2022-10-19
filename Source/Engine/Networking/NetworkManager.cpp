@@ -32,6 +32,7 @@ Delegate<NetworkClient*> NetworkManager::ClientDisconnected;
 namespace
 {
     uint32 GameProtocolVersion = 0;
+    uint32 NextClientId = 0;
     double LastUpdateTime = 0;
 }
 
@@ -49,6 +50,7 @@ PACK_STRUCT(struct NetworkMessageHandshake
 PACK_STRUCT(struct NetworkMessageHandshakeReply
     {
     NetworkMessageIDs ID;
+    uint32 ClientId;
     int32 Result;
     });
 
@@ -75,6 +77,7 @@ void OnNetworkMessageHandshake(NetworkEvent& event, NetworkClient* client, Netwo
     NetworkMessageHandshakeReply replyData;
     replyData.ID = NetworkMessageIDs::HandshakeReply;
     replyData.Result = connectionData.Result;
+    replyData.ClientId = client->ClientId;
     NetworkMessage msgReply = peer->BeginSendMessage();
     msgReply.WriteStructure(replyData);
     peer->EndSendMessage(NetworkChannelType::ReliableOrdered, msgReply, event.Sender);
@@ -109,6 +112,7 @@ void OnNetworkMessageHandshakeReply(NetworkEvent& event, NetworkClient* client, 
     }
 
     // Client got connected with server
+    NetworkManager::LocalClient->ClientId = msgData.ClientId;
     NetworkManager::LocalClient->State = NetworkConnectionState::Connected;
     NetworkManager::State = NetworkConnectionState::Connected;
     NetworkManager::StateChanged();
@@ -204,8 +208,9 @@ void NetworkSettings::Apply()
     GameProtocolVersion = ProtocolVersion;
 }
 
-NetworkClient::NetworkClient(NetworkConnection connection)
+NetworkClient::NetworkClient(uint32 id, NetworkConnection connection)
     : ScriptingObject(SpawnParams(Guid::New(), TypeInitializer))
+    , ClientId(id)
     , Connection(connection)
     , State(NetworkConnectionState::Connecting)
 {
@@ -233,6 +238,7 @@ bool NetworkManager::StartServer()
         return true;
     if (!Peer->Listen())
         return true;
+    NextClientId++;
 
     State = NetworkConnectionState::Connected;
     StateChanged();
@@ -249,7 +255,7 @@ bool NetworkManager::StartClient()
         return true;
     if (!Peer->Connect())
         return true;
-    LocalClient = New<NetworkClient>(NetworkConnection{ 0 });
+    LocalClient = New<NetworkClient>(0, NetworkConnection{ 0 });
 
     return false;
 }
@@ -264,7 +270,7 @@ bool NetworkManager::StartHost()
         return true;
     if (!Peer->Listen())
         return true;
-    LocalClient = New<NetworkClient>(NetworkConnection{ 0 });
+    LocalClient = New<NetworkClient>(NextClientId++, NetworkConnection{ 0 });
 
     // Auto-connect host
     LocalClient->State = NetworkConnectionState::Connected;
@@ -364,7 +370,7 @@ void NetworkManagerService::Update()
             else
             {
                 // Create incoming client
-                auto client = New<NetworkClient>(event.Sender);
+                auto client = New<NetworkClient>(NextClientId++, event.Sender);
                 NetworkManager::Clients.Add(client);
             }
             break;

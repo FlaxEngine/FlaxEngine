@@ -14,11 +14,16 @@ API_CLASS(sealed, NoSpawn, Namespace = "FlaxEngine.Networking") class FLAXENGINE
 {
     DECLARE_SCRIPTING_TYPE_NO_SPAWN(NetworkClient);
     friend class NetworkManager;
-    explicit NetworkClient(NetworkConnection connection);
+    explicit NetworkClient(uint32 id, NetworkConnection connection);
 
 public:
     /// <summary>
-    /// Identifier of the client (connection id from local peer).
+    /// Unique client identifier.
+    /// </summary>
+    API_FIELD(ReadOnly) uint32 ClientId;
+
+    /// <summary>
+    /// Local peer connection.
     /// </summary>
     API_FIELD(ReadOnly) NetworkConnection Connection;
 
@@ -30,6 +35,6 @@ public:
 public:
     String ToString() const override
     {
-        return String::Format(TEXT("NetworkClient Id={0}"), Connection.ConnectionId);
+        return String::Format(TEXT("NetworkClient Id={0}, ConnectionId={1}"), ClientId, Connection.ConnectionId);
     }
 };

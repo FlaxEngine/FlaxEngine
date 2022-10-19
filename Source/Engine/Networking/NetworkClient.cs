@@ -7,7 +7,7 @@ namespace FlaxEngine.Networking
         /// <inheritdoc />
         public override string ToString()
         {
-            return $"NetworkClient Id={Connection.ConnectionId}";
+            return $"NetworkClient Id={ClientId}, ConnectionId={Connection.ConnectionId}";
         }
     }
 }
