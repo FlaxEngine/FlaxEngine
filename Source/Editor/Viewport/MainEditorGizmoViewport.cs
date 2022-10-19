@@ -225,9 +225,18 @@ namespace FlaxEditor.Viewport
 
             // initialize snapping enabled from cached values
             string cachedSnapState;
-            TransformGizmo.TranslationSnapEnable = _editor.ProjectCache.TryGetCustomData("TranslateSnapState", out cachedSnapState) && Boolean.Parse(cachedSnapState);
-            TransformGizmo.RotationSnapEnabled = _editor.ProjectCache.TryGetCustomData("RotationSnapState", out cachedSnapState) && Boolean.Parse(cachedSnapState);
-            TransformGizmo.ScaleSnapEnabled = _editor.ProjectCache.TryGetCustomData("ScaleSnapState", out cachedSnapState) && Boolean.Parse(cachedSnapState);
+            if (_editor.ProjectCache.TryGetCustomData("TranslateSnapState", out cachedSnapState))
+            {
+                TransformGizmo.TranslationSnapEnable = Boolean.Parse(cachedSnapState);
+            }
+            if (_editor.ProjectCache.TryGetCustomData("RotationSnapState", out cachedSnapState))
+            {
+                TransformGizmo.RotationSnapEnabled = Boolean.Parse(cachedSnapState);
+            }
+            if (_editor.ProjectCache.TryGetCustomData("ScaleSnapState", out cachedSnapState))
+            {
+                TransformGizmo.ScaleSnapEnabled = Boolean.Parse(cachedSnapState);
+            }
             
             // initialize snap value if there is one cached
             string cachedSnapValue;
