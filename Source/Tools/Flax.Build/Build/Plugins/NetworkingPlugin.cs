@@ -625,7 +625,9 @@ namespace Flax.Build.Plugins
                     il.Emit(OpCodes.Stloc_0);
                     il.Emit(OpCodes.Ldarg_0);
                     var varStart = il.Body.Variables.Count;
-                    il.Body.Variables.Add(new VariableDefinition(module.ImportReference(guidType)));
+                    var reference = module.ImportReference(guidType);
+                    reference.IsValueType = true; // Fix locals init to have valuetype for Guid instead of class
+                    il.Body.Variables.Add(new VariableDefinition(reference));
                     il.Body.InitLocals = true;
                     il.Emit(OpCodes.Ldloca_S, (byte)varStart);
                     il.Emit(OpCodes.Ldtoken, valueType);
