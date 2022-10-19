@@ -452,9 +452,11 @@ namespace FlaxEditor.Modules
             if (isSceneTreeFocus)
             {
                 Editor.Windows.SceneWin.Focus();
-                Editor.Windows.SceneWin.PerformLayout();
-                Editor.Windows.SceneWin.PerformLayout();
             }
+            
+            // fix scene window layout
+            Editor.Windows.SceneWin.PerformLayout();
+            Editor.Windows.SceneWin.PerformLayout();
         }
 
         /// <summary>
