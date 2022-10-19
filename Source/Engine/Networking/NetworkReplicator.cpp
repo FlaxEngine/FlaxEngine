@@ -19,6 +19,7 @@
 #include "Engine/Scripting/Scripting.h"
 #include "Engine/Scripting/ScriptingObjectReference.h"
 #include "Engine/Threading/Threading.h"
+#include "Engine/Threading/ThreadLocal.h"
 
 // Enables verbose logging for Network Replicator actions (dev-only)
 #define NETWORK_REPLICATOR_DEBUG_LOG 1
@@ -241,6 +242,12 @@ void NetworkInternal::NetworkReplicatorClear()
     CachedTargets.Resize(0);
 }
 
+void NetworkInternal::NetworkReplicatorPreUpdate()
+{
+    // Inject ObjectsLookupIdMapping to properly map networked object ids into local object ids (deserialization with Scripting::TryFindObject will remap objects)
+    Scripting::ObjectsLookupIdMapping.Set(&IdsRemappingTable);
+}
+
 void NetworkInternal::NetworkReplicatorUpdate()
 {
     PROFILE_CPU();
@@ -325,6 +332,9 @@ void NetworkInternal::NetworkReplicatorUpdate()
             }
         }
     }
+
+    // Clear networked objects mapping table
+    Scripting::ObjectsLookupIdMapping.Set(nullptr);
 }
 
 void NetworkInternal::OnNetworkMessageReplicatedObject(NetworkEvent& event, NetworkClient* client, NetworkPeer* peer)

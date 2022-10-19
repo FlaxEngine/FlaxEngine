@@ -320,6 +320,7 @@ void NetworkManagerService::Update()
     LastUpdateTime = currentTime;
     NetworkManager::Frame++;
     auto peer = NetworkManager::Peer;
+    NetworkInternal::NetworkReplicatorPreUpdate();
     // TODO: convert into TaskGraphSystems and use async jobs
 
     // Process network messages

@@ -18,6 +18,7 @@ class NetworkInternal
 {
 public:
     static void NetworkReplicatorClear();
+    static void NetworkReplicatorPreUpdate();
     static void NetworkReplicatorUpdate();
     static void OnNetworkMessageReplicatedObject(NetworkEvent& event, NetworkClient* client, NetworkPeer* peer);
 };
