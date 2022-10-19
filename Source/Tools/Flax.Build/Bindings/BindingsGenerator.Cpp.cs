@@ -1446,6 +1446,11 @@ namespace Flax.Build.Bindings
                         continue;
                     if (GenerateCppAutoSerializationSkip(buildData, typeInfo, propertyInfo, propertyInfo.Type))
                         continue;
+                    CppAutoSerializeProperties.Add(propertyInfo);
+
+                    // Skip writing deprecated properties (read-only deserialization to allow reading old data)
+                    if (propertyInfo.HasAttribute("Obsolete"))
+                        continue;
 
                     contents.Append("    {");
                     contents.Append(" const auto");
@@ -1462,7 +1467,6 @@ namespace Flax.Build.Bindings
                     contents.Append($"stream.JKEY(\"{propertyInfo.Name}\"); Serialization::Serialize(stream, value, nullptr);");
                     contents.Append(" }");
                     contents.Append('}').AppendLine();
-                    CppAutoSerializeProperties.Add(propertyInfo);
                 }
             }
             else if (structureInfo != null)
@@ -1494,14 +1498,14 @@ namespace Flax.Build.Bindings
 
             foreach (var propertyInfo in CppAutoSerializeProperties)
             {
-                contents.Append("    {");
-                contents.Append($"        const auto e = SERIALIZE_FIND_MEMBER(stream, \"{propertyInfo.Name}\");");
-                contents.Append("        if (e != stream.MemberEnd()) {");
-                contents.Append($"            auto p = {propertyInfo.Getter.Name}();");
-                contents.Append("            Serialization::Deserialize(e->value, p, modifier);");
-                contents.Append($"            {propertyInfo.Setter.Name}(p);");
-                contents.Append("        }");
-                contents.Append('}').AppendLine();
+                contents.AppendLine("    {");
+                contents.AppendLine($"        const auto e = SERIALIZE_FIND_MEMBER(stream, \"{propertyInfo.Name}\");");
+                contents.AppendLine("        if (e != stream.MemberEnd()) {");
+                contents.AppendLine($"            auto p = {propertyInfo.Getter.Name}();");
+                contents.AppendLine("            Serialization::Deserialize(e->value, p, modifier);");
+                contents.AppendLine($"            {propertyInfo.Setter.Name}(p);");
+                contents.AppendLine("        }");
+                contents.AppendLine("    }");
             }
 
             contents.Append('}').AppendLine();

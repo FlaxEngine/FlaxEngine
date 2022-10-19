@@ -72,7 +72,7 @@ public:
     /// If checked, Environment Probes will use HDR texture format. Improves quality in very bright scenes at cost of higher memory usage.
     /// </summary>
     API_FIELD(Attributes = "EditorOrder(1502), EditorDisplay(\"Quality\")")
-    bool UeeHDRProbes = false;
+    bool UseHDRProbes = false;
 
     /// <summary>
     /// If checked, enables Global SDF rendering. This can be used in materials, shaders, and particles.
@@ -117,6 +117,21 @@ public:
     /// </summary>
     API_FIELD(Attributes="EditorOrder(10000), EditorDisplay(\"Post Process Settings\", EditorDisplayAttribute.InlineStyle)")
     PostProcessSettings PostProcessSettings;
+
+private:
+    /// <summary>
+    /// Renamed UeeHDRProbes into UseHDRProbes
+    /// [Deprecated on 12.10.2022, expires on 12.10.2024]
+    /// </summary>
+    API_PROPERTY(Attributes="Serialize, Obsolete, NoUndo") bool GetUeeHDRProbes() const
+    {
+        return UseHDRProbes;
+    }
+
+    API_PROPERTY(Attributes="Serialize, Obsolete, NoUndo") void SetUeeHDRProbes(bool value)
+    {
+        UseHDRProbes = value;
+    }
 
 public:
     /// <summary>

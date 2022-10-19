@@ -537,15 +537,6 @@ namespace FlaxEditor.Content.GUI
         }
 
         /// <summary>
-        /// Called when user wants to rename item.
-        /// </summary>
-        /// <param name="item">The item.</param>
-        public void OnItemDoubleClickName(ContentItem item)
-        {
-            OnRename?.Invoke(item);
-        }
-
-        /// <summary>
         /// Called when user wants to open item.
         /// </summary>
         /// <param name="item">The item.</param>

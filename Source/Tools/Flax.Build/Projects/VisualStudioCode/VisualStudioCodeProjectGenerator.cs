@@ -547,6 +547,10 @@ namespace Flax.Build.Projects.VisualStudioCode
                 json.AddField("**/Output", true);
                 json.AddField("**/*.flax", true);
                 json.EndObject();
+                
+                // Extension settings
+                json.AddField("omnisharp.useModernNet", false);
+
 
                 json.EndRootObject();
                 json.Save(Path.Combine(vsCodeFolder, "settings.json"));

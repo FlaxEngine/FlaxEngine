@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using Flax.Build;
+using Flax.Build.Platforms;
 
 namespace Flax.Deploy
 {
@@ -126,21 +127,24 @@ namespace Flax.Deploy
                 DeployFile(RootPath, OutputPath, "Flax.flaxproj");
 
                 // Compress
+                if (Configuration.DontCompress)
+                    return;
+                
                 Log.Info(string.Empty);
                 Log.Info("Compressing editor files...");
                 string editorPackageZipPath;
-                if (Platform.BuildTargetPlatform == TargetPlatform.Linux)
+                var unix = Platform.BuildTargetPlatform == TargetPlatform.Linux || Platform.BuildTargetPlatform == TargetPlatform.Mac;
+                if (unix)
                 {
-                    // Use system tool (preserves executable file attributes and link files)
-                    editorPackageZipPath = Path.Combine(Deployer.PackageOutputPath, "FlaxEditorLinux.zip");
-                    Utilities.FileDelete(editorPackageZipPath);
-                    Utilities.Run("zip", "Editor.zip -r .", null, OutputPath, Utilities.RunOptions.ThrowExceptionOnError);
-                    File.Move(Path.Combine(OutputPath, "Editor.zip"), editorPackageZipPath);
+                    var zipEofPath = UnixPlatform.Which("zip");
+                    unix = File.Exists(zipEofPath);
+                    if (!unix)
+                        Log.Verbose("Using .NET compressing");
                 }
-                else if (Platform.BuildTargetPlatform == TargetPlatform.Mac)
+                if (unix)
                 {
                     // Use system tool (preserves executable file attributes and link files)
-                    editorPackageZipPath = Path.Combine(Deployer.PackageOutputPath, "FlaxEditorMac.zip");
+                    editorPackageZipPath = Path.Combine(Deployer.PackageOutputPath, $"FlaxEditor{Enum.GetName(typeof(TargetPlatform), Platform.BuildTargetPlatform)}.zip");
                     Utilities.FileDelete(editorPackageZipPath);
                     Utilities.Run("zip", "Editor.zip -r .", null, OutputPath, Utilities.RunOptions.ThrowExceptionOnError);
                     File.Move(Path.Combine(OutputPath, "Editor.zip"), editorPackageZipPath);
@@ -189,13 +193,14 @@ namespace Flax.Deploy
 
             private static void DeployEditorBinaries(TargetConfiguration configuration)
             {
+                var binariesSubDir = Path.Combine(Platform.GetEditorBinaryDirectory(), configuration.ToString());
+                var src = Path.Combine(RootPath, binariesSubDir);
+                var dst = Path.Combine(OutputPath, binariesSubDir);
+                Directory.CreateDirectory(dst);
+
                 if (Platform.BuildTargetPlatform == TargetPlatform.Windows)
                 {
-                    var binariesSubDir = "Binaries/Editor/Win64/" + configuration;
-                    var src = Path.Combine(RootPath, binariesSubDir);
-                    var dst = Path.Combine(OutputPath, binariesSubDir);
                     var dstDebug = Path.Combine(Deployer.PackageOutputPath, "EditorDebugSymbols/Win64/" + configuration);
-                    Directory.CreateDirectory(dst);
                     Directory.CreateDirectory(dstDebug);
 
                     // Validate that build editor app has a valid version number
@@ -229,11 +234,6 @@ namespace Flax.Deploy
                 }
                 else if (Platform.BuildTargetPlatform == TargetPlatform.Linux)
                 {
-                    var binariesSubDir = "Binaries/Editor/Linux/" + configuration;
-                    var src = Path.Combine(RootPath, binariesSubDir);
-                    var dst = Path.Combine(OutputPath, binariesSubDir);
-                    Directory.CreateDirectory(dst);
-
                     // Deploy binaries
                     DeployFile(src, dst, "FlaxEditor");
                     DeployFile(src, dst, "FlaxEditor.Build.json");
@@ -253,11 +253,6 @@ namespace Flax.Deploy
                 }
                 else if (Platform.BuildTargetPlatform == TargetPlatform.Mac)
                 {
-                    var binariesSubDir = "Binaries/Editor/Mac/" + configuration;
-                    var src = Path.Combine(RootPath, binariesSubDir);
-                    var dst = Path.Combine(OutputPath, binariesSubDir);
-                    Directory.CreateDirectory(dst);
-
                     // Deploy binaries
                     DeployFile(src, dst, "FlaxEditor");
                     DeployFile(src, dst, "FlaxEditor.Build.json");
@@ -273,10 +268,6 @@ namespace Flax.Deploy
                     Utilities.Run("strip", "FlaxEditor.dylib", null, dst, Utilities.RunOptions.None);
                     Utilities.Run("strip", "libmonosgen-2.0.1.dylib", null, dst, Utilities.RunOptions.None);
                     Utilities.Run("strip", "libMoltenVK.dylib", null, dst, Utilities.RunOptions.None);
-                }
-                else
-                {
-                    throw new NotImplementedException();
                 }
             }
         }

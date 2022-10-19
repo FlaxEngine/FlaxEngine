@@ -95,11 +95,19 @@ namespace FlaxEditor.Content
         {
             if (!_folder.CanRename)
                 return;
-
+            Editor.Instance.Windows.ContentWin.ScrollingOnTreeView(false);
             // Start renaming the folder
             var dialog = RenamePopup.Show(this, HeaderRect, _folder.ShortName, false);
             dialog.Tag = _folder;
-            dialog.Renamed += popup => Editor.Instance.Windows.ContentWin.Rename((ContentFolder)popup.Tag, popup.Text);
+            dialog.Renamed += popup =>
+            {
+                Editor.Instance.Windows.ContentWin.Rename((ContentFolder)popup.Tag, popup.Text);
+                Editor.Instance.Windows.ContentWin.ScrollingOnTreeView(true);
+            };
+            dialog.Closed += popup =>
+            {
+                Editor.Instance.Windows.ContentWin.ScrollingOnTreeView(true);
+            };
         }
 
         /// <summary>
