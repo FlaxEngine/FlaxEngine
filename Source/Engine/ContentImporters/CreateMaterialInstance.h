@@ -30,7 +30,7 @@ public:
         if (context.AllocateChunk(0))
             return CreateAssetResult::CannotAllocateChunk;
         MemoryWriteStream stream(256);
-        stream.Write(&Guid::Empty);
+        stream.Write(Guid::Empty);
         MaterialParams::Save(&stream, nullptr);
         context.Data.Header.Chunks[0]->Data.Copy(stream.GetHandle(), stream.GetPosition());
 

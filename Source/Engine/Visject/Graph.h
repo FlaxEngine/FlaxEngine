@@ -102,7 +102,7 @@ public:
         {
             const Parameter* param = &Parameters[i];
             stream->WriteVariantType(param->Type);
-            stream->Write(&param->Identifier);
+            stream->Write(param->Identifier);
             stream->WriteString(param->Name, 97);
             stream->WriteBool(param->IsPublic);
             stream->WriteVariant(param->Value);
@@ -221,7 +221,7 @@ public:
 
                 // Properties
                 auto type = stream->ReadByte();
-                stream->Read(&param->Identifier);
+                stream->Read(param->Identifier);
                 stream->ReadString(&param->Name, 97);
                 param->IsPublic = stream->ReadBool();
                 bool isStatic = stream->ReadBool();
@@ -359,7 +359,7 @@ public:
             {
                 auto param = &Parameters[i];
                 stream->ReadVariantType(&param->Type);
-                stream->Read(&param->Identifier);
+                stream->Read(param->Identifier);
                 stream->ReadString(&param->Name, 97);
                 param->IsPublic = stream->ReadBool();
                 stream->ReadVariant(&param->Value);

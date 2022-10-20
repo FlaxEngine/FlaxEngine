@@ -201,7 +201,7 @@ bool ShadowsOfMordor::Builder::RestoreState()
     for (int32 i = 0; i < scenesCount; i++)
     {
         Guid id;
-        stream->Read(&id);
+        stream->Read(id);
         Level::LoadScene(id);
     }
 
@@ -235,7 +235,7 @@ void ShadowsOfMordor::Builder::saveState()
     // Scenes ids
     stream->WriteInt32(_scenes.Count());
     for (int32 i = 0; i < _scenes.Count(); i++)
-        stream->Write(&_scenes[i]->Scene->GetID());
+        stream->Write(_scenes[i]->Scene->GetID());
 
     // State
     stream->WriteInt32(_giBounceRunningIndex);
@@ -325,7 +325,7 @@ bool ShadowsOfMordor::Builder::loadState()
     for (int32 i = 0; i < scenesCount; i++)
     {
         Guid id;
-        stream->Read(&id);
+        stream->Read(id);
         if (Level::Scenes[i]->GetID() != id || _scenes[i]->SceneIndex != i)
         {
             LOG(Error, "Invalid scenes.");

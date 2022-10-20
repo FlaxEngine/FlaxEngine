@@ -87,14 +87,14 @@ void AssetsCache::Init()
     int32 rejectedCount = 0;
     for (int32 i = 0; i < count; i++)
     {
-        stream->Read(&e.Info.ID);
+        stream->Read(e.Info.ID);
         stream->ReadString(&e.Info.TypeName, i - 13);
         stream->ReadString(&e.Info.Path, i);
 #if ENABLE_ASSETS_DISCOVERY
-        stream->Read(&e.FileModified);
+        stream->Read(e.FileModified);
 #else
         DateTime tmp1;
-        stream->Read(&tmp1);
+        stream->Read(tmp1);
 #endif
 
         if (flags & AssetsCacheFlags::RelativePaths && e.Info.Path.HasChars())
@@ -121,7 +121,7 @@ void AssetsCache::Init()
     for (int32 i = 0; i < count; i++)
     {
         Guid id;
-        stream->Read(&id);
+        stream->Read(id);
         String mappedPath;
         stream->ReadString(&mappedPath, i + 73);
 
@@ -203,11 +203,11 @@ bool AssetsCache::Save(const StringView& path, const Registry& entries, const Pa
     {
         auto& e = i->Value;
 
-        stream->Write(&e.Info.ID);
+        stream->Write(e.Info.ID);
         stream->WriteString(e.Info.TypeName, index - 13);
         stream->WriteString(e.Info.Path, index);
 #if ENABLE_ASSETS_DISCOVERY
-        stream->Write(&e.FileModified);
+        stream->Write(e.FileModified);
 #else
         stream->WriteInt64(0);
 #endif
@@ -220,7 +220,7 @@ bool AssetsCache::Save(const StringView& path, const Registry& entries, const Pa
     stream->WriteInt32(pathsMapping.Count());
     for (auto i = pathsMapping.Begin(); i.IsNotEnd(); ++i)
     {
-        stream->Write(&i->Value);
+        stream->Write(i->Value);
         stream->WriteString(i->Key, index + 73);
 
         index++;

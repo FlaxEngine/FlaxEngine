@@ -361,7 +361,7 @@ bool Model::Save(bool withMeshDataFromGpu, const StringView& path)
             auto& slot = MaterialSlots[materialSlotIndex];
 
             const auto id = slot.Material.GetID();
-            stream->Write(&id);
+            stream->Write(id);
             stream->WriteByte(static_cast<byte>(slot.ShadowsMode));
             stream->WriteString(slot.Name, 11);
         }
@@ -578,7 +578,7 @@ bool Model::Save(bool withMeshDataFromGpu, const StringView& path)
             MemoryWriteStream sdfStream;
             sdfStream.WriteInt32(1); // Version
             ModelSDFHeader data(SDF, SDF.Texture->GetDescription());
-            sdfStream.Write(&data);
+            sdfStream.WriteBytes(&data, sizeof(data));
             TextureData sdfTextureData;
             if (SDF.Texture->DownloadData(sdfTextureData))
                 return true;
@@ -586,8 +586,8 @@ bool Model::Save(bool withMeshDataFromGpu, const StringView& path)
             {
                 auto& mip = sdfTextureData.Items[0].Mips[mipLevel];
                 ModelSDFMip mipData(mipLevel, mip);
-                sdfStream.Write(&mipData);
-                sdfStream.Write(mip.Data.Get(), mip.Data.Length());
+                sdfStream.WriteBytes(&mipData, sizeof(mipData));
+                sdfStream.WriteBytes(mip.Data.Get(), mip.Data.Length());
             }
             sdfChunk->Data.Copy(sdfStream.GetHandle(), sdfStream.GetPosition());
         }
@@ -889,7 +889,7 @@ Asset::LoadResult Model::load()
 
         // Material
         Guid materialId;
-        stream->Read(&materialId);
+        stream->Read(materialId);
         slot.Material = materialId;
 
         // Shadows Mode
@@ -964,7 +964,7 @@ Asset::LoadResult Model::load()
         case 1:
         {
             ModelSDFHeader data;
-            sdfStream.Read(&data);
+            sdfStream.ReadBytes(&data, sizeof(data));
             if (!SDF.Texture)
                 SDF.Texture = GPUTexture::New();
             if (SDF.Texture->Init(GPUTextureDescription::New3D(data.Width, data.Height, data.Depth, data.Format, GPUTextureFlags::ShaderResource, data.MipLevels)))
@@ -980,7 +980,7 @@ Asset::LoadResult Model::load()
             for (int32 mipLevel = 0; mipLevel < data.MipLevels; mipLevel++)
             {
                 ModelSDFMip mipData;
-                sdfStream.Read(&mipData);
+                sdfStream.ReadBytes(&mipData, sizeof(mipData));
                 void* mipBytes = sdfStream.Move(mipData.SlicePitch);
                 auto task = ::New<StreamModelSDFTask>(this, SDF.Texture, Span<byte>((byte*)mipBytes, mipData.SlicePitch), mipData.MipIndex, mipData.RowPitch, mipData.SlicePitch);
                 task->Start();

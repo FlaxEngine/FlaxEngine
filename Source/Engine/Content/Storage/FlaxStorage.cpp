@@ -278,7 +278,7 @@ bool FlaxStorage::Load()
     {
         // Custom storage data
         CustomData customData;
-        stream->Read(&customData);
+        stream->Read(customData);
 
 #if USE_EDITOR
         // Block loading packaged games content
@@ -298,7 +298,7 @@ bool FlaxStorage::Load()
         for (int32 i = 0; i < assetsCount; i++)
         {
             SerializedEntryV9 se;
-            stream->Read(&se);
+            stream->ReadBytes(&se, sizeof(se));
             Entry e(se.ID, se.TypeName.Data, se.Address);
             AddEntry(e);
         }
@@ -309,7 +309,7 @@ bool FlaxStorage::Load()
         for (int32 i = 0; i < chunksCount; i++)
         {
             FlaxChunk::Location e;
-            stream->Read(&e);
+            stream->ReadBytes(&e, sizeof(e));
             if (e.Size == 0)
             {
                 LOG(Warning, "Empty chunk found.");
@@ -329,7 +329,7 @@ bool FlaxStorage::Load()
 
         // Custom storage data
         CustomData customData;
-        stream->Read(&customData);
+        stream->Read(customData);
 
 #if USE_EDITOR
         // Block loading packaged games content
@@ -349,7 +349,7 @@ bool FlaxStorage::Load()
         for (int32 i = 0; i < assetsCount; i++)
         {
             OldSerializedEntryV7 se;
-            stream->Read(&se);
+            stream->ReadBytes(&se, sizeof(se));
             Entry e(se.ID, se.TypeName.Data, se.Address);
             AddEntry(e);
         }
@@ -360,7 +360,7 @@ bool FlaxStorage::Load()
         for (int32 i = 0; i < chunksCount; i++)
         {
             FlaxChunk::Location e;
-            stream->Read(&e);
+            stream->ReadBytes(&e, sizeof(e));
             if (e.Size == 0)
             {
                 LOG(Warning, "Empty chunk found.");
@@ -384,7 +384,7 @@ bool FlaxStorage::Load()
         for (int32 i = 0; i < assetsCount; i++)
         {
             OldSerializedEntryV7 se;
-            stream->Read(&se);
+            stream->ReadBytes(&se, sizeof(se));
             Entry e(se.ID, se.TypeName.Data, se.Address);
             AddEntry(e);
         }
@@ -395,7 +395,7 @@ bool FlaxStorage::Load()
         for (int32 i = 0; i < chunksCount; i++)
         {
             FlaxChunk::Location e;
-            stream->Read(&e);
+            stream->ReadBytes(&e, sizeof(e));
             if (e.Size == 0)
             {
                 LOG(Warning, "Empty chunk found.");
@@ -418,7 +418,7 @@ bool FlaxStorage::Load()
         for (int32 i = 0; i < assetsCount; i++)
         {
             OldEntryV6 ee;
-            stream->Read(&ee);
+            stream->ReadBytes(&ee, sizeof(ee));
 
             Entry e(ee.ID, TypeId2TypeName(ee.TypeID), ee.Adress);
             AddEntry(e);
@@ -430,7 +430,7 @@ bool FlaxStorage::Load()
         for (int32 i = 0; i < chunksCount; i++)
         {
             FlaxChunk::Location e;
-            stream->Read(&e);
+            stream->ReadBytes(&e, sizeof(e));
             if (e.Size == 0)
             {
                 LOG(Warning, "Empty chunk found.");
@@ -449,7 +449,7 @@ bool FlaxStorage::Load()
 
         // Package Time
         DateTime packTime;
-        stream->Read(&packTime);
+        stream->Read(packTime);
 
         // Asset Entries
         int32 assetsCount;
@@ -457,7 +457,7 @@ bool FlaxStorage::Load()
         for (int32 i = 0; i < assetsCount; i++)
         {
             OldEntryV6 ee;
-            stream->Read(&ee);
+            stream->ReadBytes(&ee, sizeof(ee));
 
             Entry e(ee.ID, TypeId2TypeName(ee.TypeID), ee.Adress);
             AddEntry(e);
@@ -469,7 +469,7 @@ bool FlaxStorage::Load()
         for (int32 i = 0; i < chunksCount; i++)
         {
             FlaxChunk::Location e;
-            stream->Read(&e);
+            stream->ReadBytes(&e, sizeof(e));
             if (e.Size == 0)
             {
                 LOG(Warning, "Empty chunk found.");
@@ -498,7 +498,7 @@ bool FlaxStorage::Load()
         e.Address = stream->GetPosition();
 
         // Asset ID
-        stream->Read(&e.ID);
+        stream->Read(e.ID);
 
         // Type ID
         uint32 typeId;
@@ -511,7 +511,7 @@ bool FlaxStorage::Load()
         {
             DateTime tmpDate;
             String strTmp;
-            stream->Read(&tmpDate);
+            stream->Read(tmpDate);
             stream->ReadString(&strTmp, -76);
             stream->ReadString(&strTmp, 1301);
         }
@@ -871,7 +871,7 @@ bool FlaxStorage::Create(WriteStream* stream, const AssetInitData* data, int32 d
         mainHeader.CustomData = *customData;
     else
         Platform::MemoryClear(&mainHeader.CustomData, sizeof(CustomData));
-    stream->Write(&mainHeader);
+    stream->Write(mainHeader);
 
     // Write asset entries
     stream->WriteInt32(dataCount);
@@ -882,7 +882,7 @@ bool FlaxStorage::Create(WriteStream* stream, const AssetInitData* data, int32 d
     for (int32 i = 0; i < chunksCount; i++)
     {
         FlaxChunk* chunk = chunks[i];
-        stream->Write(&chunk->LocationInFile);
+        stream->WriteBytes(&chunk->LocationInFile, sizeof(chunk->LocationInFile));
         stream->WriteInt32((int32)chunk->Flags);
     }
 
@@ -903,7 +903,7 @@ bool FlaxStorage::Create(WriteStream* stream, const AssetInitData* data, int32 d
         auto& header = data[i];
 
         // ID
-        stream->Write(&header.Header.ID);
+        stream->Write(header.Header.ID);
 
         // Type Name
         SerializedTypeNameV9 typeName(header.Header.TypeName);
@@ -932,7 +932,7 @@ bool FlaxStorage::Create(WriteStream* stream, const AssetInitData* data, int32 d
 
         // Asset Dependencies
         stream->WriteInt32(header.Dependencies.Count());
-        stream->Write(header.Dependencies.Get(), header.Dependencies.Count());
+        stream->WriteBytes(header.Dependencies.Get(), header.Dependencies.Count() * sizeof(Pair<Guid, DateTime>));
     }
 
 #if ASSETS_LOADING_EXTRA_VERIFICATION
@@ -951,9 +951,9 @@ bool FlaxStorage::Create(WriteStream* stream, const AssetInitData* data, int32 d
     {
         if (compressedChunks[i].HasItems())
         {
-            // Compressed chunk data (write additional size of the original data
+            // Compressed chunk data (write additional size of the original data)
             stream->WriteInt32(chunks[i]->Data.Length());
-            stream->Write(compressedChunks[i].Get(), compressedChunks[i].Count());
+            stream->WriteBytes(compressedChunks[i].Get(), compressedChunks[i].Count());
         }
         else
         {
@@ -1006,7 +1006,7 @@ bool FlaxStorage::LoadAssetHeader(const Entry& e, AssetInitData& data)
     case 9:
     {
         // ID
-        stream->Read(&data.Header.ID);
+        stream->Read(data.Header.ID);
 
         // Type name
         SerializedTypeNameV9 typeName;
@@ -1058,7 +1058,7 @@ bool FlaxStorage::LoadAssetHeader(const Entry& e, AssetInitData& data)
         int32 dependencies;
         stream->ReadInt32(&dependencies);
         data.Dependencies.Resize(dependencies);
-        stream->Read(data.Dependencies.Get(), dependencies);
+        stream->ReadBytes(data.Dependencies.Get(), dependencies * sizeof(Pair<Guid, DateTime>));
 #endif
         break;
     }
@@ -1068,7 +1068,7 @@ bool FlaxStorage::LoadAssetHeader(const Entry& e, AssetInitData& data)
         // [Deprecated on 4/17/2020, expires on 4/17/2022]
 
         // ID
-        stream->Read(&data.Header.ID);
+        stream->Read(data.Header.ID);
 
         // Type Name
         OldSerializedTypeNameV7 typeName;
@@ -1123,7 +1123,7 @@ bool FlaxStorage::LoadAssetHeader(const Entry& e, AssetInitData& data)
         // [Deprecated on 4/17/2020, expires on 4/17/2022]
 
         // ID
-        stream->Read(&data.Header.ID);
+        stream->Read(data.Header.ID);
 
         // Type ID
         uint32 typeId;
@@ -1178,7 +1178,7 @@ bool FlaxStorage::LoadAssetHeader(const Entry& e, AssetInitData& data)
 
         // Load data
         data.SerializedVersion = 1;
-        stream->Read(&data.Header.ID);
+        stream->Read(data.Header.ID);
         uint32 typeId;
         stream->ReadUint32(&typeId);
         data.Header.TypeName = TypeId2TypeName(typeId);
@@ -1187,7 +1187,7 @@ bool FlaxStorage::LoadAssetHeader(const Entry& e, AssetInitData& data)
         {
             DateTime importDate;
             String importPath, importUsername;
-            stream->Read(&importDate);
+            stream->Read(importDate);
             stream->ReadString(&importPath, -76);
             stream->ReadString(&importUsername, 1301);
 

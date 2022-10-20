@@ -18,7 +18,7 @@ bool WaveDecoder::ParseHeader(AudioDataInfo& info)
     {
         // Get sub-chunk ID and size
         uint8 subChunkId[4];
-        mStream->Read(subChunkId, sizeof(subChunkId));
+        mStream->ReadBytes(subChunkId, sizeof(subChunkId));
 
         uint32 subChunkSize = 0;
         mStream->ReadUint32(&subChunkSize);
@@ -79,7 +79,7 @@ bool WaveDecoder::ParseHeader(AudioDataInfo& info)
                 mStream->ReadUint32(&channelMask);
 
                 uint8 subFormat[16];
-                mStream->Read(subFormat, sizeof(subFormat));
+                mStream->ReadBytes(subFormat, sizeof(subFormat));
 
                 Platform::MemoryCopy(&format, subFormat, sizeof(format));
                 if (format != WAVE_FORMAT_PCM)
@@ -136,7 +136,7 @@ void WaveDecoder::Seek(uint32 offset)
 void WaveDecoder::Read(byte* samples, uint32 numSamples)
 {
     const uint32 numRead = numSamples * mBytesPerSample;
-    mStream->Read(samples, numRead);
+    mStream->ReadBytes(samples, numRead);
 
     // 8-bit samples are stored as unsigned, but engine convention is to store all bit depths as signed
     if (mBytesPerSample == 1)

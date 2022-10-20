@@ -9,6 +9,7 @@ struct CommonValue;
 struct Variant;
 struct VariantType;
 class ISerializable;
+class ScriptingObject;
 
 /// <summary>
 /// Base class for all data write streams
@@ -23,115 +24,103 @@ public:
     /// <param name="bytes">Amount of bytes to write</param>
     virtual void WriteBytes(const void* data, uint32 bytes) = 0;
 
-    template<typename T>
-    FORCE_INLINE void Write(const T* data)
-    {
-        WriteBytes((const void*)data, sizeof(T));
-    }
-
-    template<typename T>
-    FORCE_INLINE void Write(const T* data, int32 count)
-    {
-        WriteBytes((const void*)data, sizeof(T) * count);
-    }
-
 public:
     // Writes byte to the stream
     // @param data Data to write
     FORCE_INLINE void WriteByte(byte data)
     {
-        Write(&data);
+        WriteBytes(&data, sizeof(byte));
     }
 
     // Writes bool to the stream
     // @param data Data to write
     FORCE_INLINE void WriteBool(bool data)
     {
-        Write(&data);
+        WriteBytes(&data, sizeof(bool));
     }
 
     // Writes char to the stream
     // @param data Data to write
     FORCE_INLINE void WriteChar(char data)
     {
-        Write(&data);
+        WriteBytes(&data, sizeof(char));
     }
 
     // Writes Char to the stream
     // @param data Data to write
     FORCE_INLINE void WriteChar(Char data)
     {
-        Write(&data);
+        WriteBytes(&data, sizeof(Char));
     }
 
     // Writes uint8 to the stream
     // @param data Data to write
     FORCE_INLINE void WriteUint8(uint8 data)
     {
-        Write(&data);
+        WriteBytes(&data, sizeof(uint8));
     }
 
     // Writes int8 to the stream
     // @param data Data to write
     FORCE_INLINE void WriteInt8(int8 data)
     {
-        Write(&data);
+        WriteBytes(&data, sizeof(int8));
     }
 
     // Writes uint16 to the stream
     // @param data Data to write
     FORCE_INLINE void WriteUint16(uint16 data)
     {
-        Write(&data);
+        WriteBytes(&data, sizeof(uint16));
     }
 
     // Writes int16 to the stream
     // @param data Data to write
     FORCE_INLINE void WriteInt16(int16 data)
     {
-        Write(&data);
+        WriteBytes(&data, sizeof(int16));
     }
 
     // Writes uint32 to the stream
     // @param data Data to write
     FORCE_INLINE void WriteUint32(uint32 data)
     {
-        Write(&data);
+        WriteBytes(&data, sizeof(uint32));
     }
 
     // Writes int32 to the stream
     // @param data Data to write
     FORCE_INLINE void WriteInt32(int32 data)
     {
-        Write(&data);
+        WriteBytes(&data, sizeof(int32));
     }
 
     // Writes int64 to the stream
     // @param data Data to write
     FORCE_INLINE void WriteInt64(int64 data)
     {
-        Write(&data);
+        WriteBytes(&data, sizeof(int64));
     }
 
     // Writes uint64 to the stream
     // @param data Data to write
     FORCE_INLINE void WriteUint64(uint64 data)
     {
-        Write(&data);
+        WriteBytes(&data, sizeof(uint64));
     }
 
     // Writes float to the stream
     // @param data Data to write
     FORCE_INLINE void WriteFloat(float data)
     {
-        Write(&data);
+        WriteBytes(&data, sizeof(float));
     }
 
     // Writes double to the stream
     // @param data Data to write
     FORCE_INLINE void WriteDouble(double data)
     {
-        Write(&data);
+        WriteBytes(&data, sizeof(double));
     }
 
 public:
@@ -179,13 +168,28 @@ public:
         WriteBytes((const void*)&data, sizeof(T));
     }
 
+    template<typename T>
+    typename TEnableIf<TIsBaseOf<ScriptingObject, T>::Value>::Type Write(const T* data)
+    {
+        const Guid id = data ? data->GetID() : Guid::Empty;
+        WriteBytes(&id, sizeof(Guid));
+    }
+
     template<typename T, typename AllocationType = HeapAllocation>
     void Write(const Array<T, AllocationType>& data)
     {
         const int32 size = data.Count();
         WriteInt32(size);
         if (size > 0)
-            Write(data.Get(), size * sizeof(T));
+        {
+            if (TIsPODType<T>::Value && !TIsPointer<T>::Value)
+                WriteBytes(data.Get(), size * sizeof(T)); 
+            else
+            {
+                for (int32 i = 0; i < size; i++)
+                    Write(data[i]);
+            }
+        }
     }
 
     template<typename KeyType, typename ValueType, typename AllocationType = HeapAllocation>
@@ -197,8 +201,8 @@ public:
         {
             for (const auto& e : data)
             {
-                Write(&e.Key, sizeof(KeyType));
-                Write(&e.Value, sizeof(ValueType));
+                Write(e.Key);
+                Write(e.Value);
             }
         }
     }

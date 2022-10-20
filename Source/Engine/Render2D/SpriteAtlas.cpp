@@ -106,7 +106,7 @@ bool SpriteAtlas::SaveSprites()
     stream.WriteInt32(Sprites.Count()); // Sprites Count
     for (Sprite& t : Sprites)
     {
-        stream.Write(&t.Area);
+        stream.Write(t.Area);
         stream.WriteString(t.Name, 49);
     }
 
@@ -156,7 +156,7 @@ bool SpriteAtlas::LoadSprites(ReadStream& stream)
     Sprites.Resize(tilesCount);
     for (Sprite& t : Sprites)
     {
-        stream.Read(&t.Area);
+        stream.Read(t.Area);
         stream.ReadString(&t.Name, 49);
     }
 

@@ -135,7 +135,7 @@ namespace Flax.Build.Plugins
             if (IsRawPOD(buildData, typeInfo))
             {
                 // POD types as raw bytes
-                OnGenerateCppWriteRaw(contents, "&obj", serialize);
+                OnGenerateCppWriteRaw(contents, "obj", serialize);
             }
             else
             {
@@ -188,7 +188,7 @@ namespace Flax.Build.Plugins
                     throw new Exception($"Invalid pointer type '{type}' that cannot be serialized for replication of {caller.Name}.");
                 if (type.IsRef)
                     throw new Exception($"Invalid reference type '{type}' that cannot be serialized for replication of {caller.Name}.");
-                OnGenerateCppWriteRaw(contents, "&" + name, serialize);
+                OnGenerateCppWriteRaw(contents, name, serialize);
             }
             else if (apiType.IsScriptingObject)
             {
@@ -196,13 +196,13 @@ namespace Flax.Build.Plugins
                 if (serialize)
                 {
                     contents.AppendLine($"        {{Guid id = {name} ? {name}->GetID() : Guid::Empty;");
-                    OnGenerateCppWriteRaw(contents, "&id", serialize);
+                    OnGenerateCppWriteRaw(contents, "id", serialize);
                     contents.AppendLine("        }");
                 }
                 else
                 {
                     contents.AppendLine($"        {{Guid id;");
-                    OnGenerateCppWriteRaw(contents, "&id", serialize);
+                    OnGenerateCppWriteRaw(contents, "id", serialize);
                     contents.AppendLine($"        {name} = Scripting::TryFindObject(id);}}");
                 }
             }

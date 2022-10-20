@@ -347,7 +347,7 @@ void ShadersCompilation::ExtractShaderIncludes(byte* shaderCache, int32 shaderCa
         String& include = includes.AddOne();
         stream.ReadString(&include, 11);
         DateTime lastEditTime;
-        stream.Read(&lastEditTime);
+        stream.Read(lastEditTime);
     }
 }
 

@@ -9,6 +9,7 @@ struct CommonValue;
 struct Variant;
 struct VariantType;
 class ISerializable;
+extern FLAXENGINE_API class ScriptingObject* FindObject(const Guid& id, class MClass* type);
 
 /// <summary>
 /// Base class for all data read streams
@@ -22,18 +23,6 @@ public:
     /// <param name="data">Data to read</param>
     /// <param name="bytes">Amount of bytes to read</param>
     virtual void ReadBytes(void* data, uint32 bytes) = 0;
-
-    template<typename T>
-    FORCE_INLINE void Read(T* data)
-    {
-        ReadBytes((void*)data, sizeof(T));
-    }
-
-    template<typename T>
-    FORCE_INLINE void Read(T* data, int32 count)
-    {
-        ReadBytes((void*)data, sizeof(T) * count);
-    }
 
 public:
     // Reads byte from the stream
@@ -64,84 +53,84 @@ public:
 
     FORCE_INLINE void ReadByte(byte* data)
     {
-        Read(data);
+        ReadBytes(data, sizeof(byte));
     }
 
     // Reads Char from the stream
     // @param data Data to read
     FORCE_INLINE void ReadChar(Char* data)
     {
-        Read(data);
+        ReadBytes(data, sizeof(Char));
     }
 
     // Reads uint8 from the stream
     // @param data Data to read
     FORCE_INLINE void ReadUint8(uint8* data)
     {
-        Read(data);
+        ReadBytes(data, sizeof(uint8));
     }
 
     // Reads int8 from the stream
     // @param data Data to read
     FORCE_INLINE void ReadInt8(int8* data)
     {
-        Read(data);
+        ReadBytes(data, sizeof(int8));
     }
 
     // Reads uint16 from the stream
     // @param data Data to read
     FORCE_INLINE void ReadUint16(uint16* data)
     {
-        Read(data);
+        ReadBytes(data, sizeof(uint16));
     }
 
     // Reads int16 from the stream
     // @param data Data to read
     FORCE_INLINE void ReadInt16(int16* data)
     {
-        Read(data);
+        ReadBytes(data, sizeof(int16));
     }
 
     // Reads uint32 from the stream
     // @param data Data to read
     FORCE_INLINE void ReadUint32(uint32* data)
     {
-        Read(data);
+        ReadBytes(data, sizeof(uint32));
     }
 
     // Reads int32 from the stream
     // @param data Data to read
     FORCE_INLINE void ReadInt32(int32* data)
     {
-        Read(data);
+        ReadBytes(data, sizeof(int32));
     }
 
     // Reads uint64 from the stream
     // @param data Data to read
     FORCE_INLINE void ReadUint64(uint64* data)
     {
-        Read(data);
+        ReadBytes(data, sizeof(uint64));
     }
 
     // Reads int64 from the stream
     // @param data Data to read
     FORCE_INLINE void ReadInt64(int64* data)
     {
-        Read(data);
+        ReadBytes(data, sizeof(int64));
     }
 
     // Reads float from the stream
     // @param data Data to read
     FORCE_INLINE void ReadFloat(float* data)
     {
-        Read(data);
+        ReadBytes(data, sizeof(float));
     }
 
     // Reads double from the stream
     // @param data Data to read
     FORCE_INLINE void ReadDouble(double* data)
     {
-        Read(data);
+        ReadBytes(data, sizeof(double));
     }
 
 public:
@@ -159,6 +148,14 @@ public:
         ReadBytes((void*)&data, sizeof(T));
     }
 
+    template<typename T>
+    typename TEnableIf<TIsBaseOf<ScriptingObject, T>::Value>::Type Read(T*& data)
+    {
+        Guid id;
+        ReadBytes(&id, sizeof(Guid));
+        data = (T*)::FindObject(id, T::GetStaticClass());
+    }
+
     /// <summary>
     /// Read data array
     /// </summary>
@@ -171,7 +168,7 @@ public:
         data.Resize(size, false);
         if (size > 0)
         {
-            if (TIsPODType<T>::Value)
+            if (TIsPODType<T>::Value && !TIsPointer<T>::Value)
                 ReadBytes(data.Get(), size * sizeof(T));
             else
             {

@@ -126,7 +126,7 @@ bool ShaderCompiler::Compile(ShaderCompilationContext* context)
     {
         output->WriteString(include.Item, 11);
         const auto date = FileSystem::GetFileLastEditTime(include.Item);
-        output->Write(&date);
+        output->Write(date);
     }
 
     return false;
@@ -387,7 +387,7 @@ bool ShaderCompiler::WriteShaderFunctionPermutation(ShaderCompilationContext* co
     output->WriteBytes(cache, cacheSize);
 
     // [Output] Shader bindings meta
-    output->Write(&bindings);
+    output->Write(bindings);
 
     return false;
 }
@@ -401,7 +401,7 @@ bool ShaderCompiler::WriteShaderFunctionPermutation(ShaderCompilationContext* co
     output->WriteBytes(cache, cacheSize);
 
     // [Output] Shader bindings meta
-    output->Write(&bindings);
+    output->Write(bindings);
 
     return false;
 }

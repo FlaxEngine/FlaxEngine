@@ -336,7 +336,7 @@ bool MeshData::Pack2Model(WriteStream* stream) const
         vb1.Normal = Float1010102(normal * 0.5f + 0.5f, 0);
         vb1.Tangent = Float1010102(tangent * 0.5f + 0.5f, static_cast<byte>(bitangentSign < 0 ? 1 : 0));
         vb1.LightmapUVs = Half2(lightmapUV);
-        stream->Write(&vb1);
+        stream->WriteBytes(&vb1, sizeof(vb1));
 
         // Pack TBN matrix into a quaternion
         /*Quaternion quaternionTBN;
@@ -360,7 +360,7 @@ bool MeshData::Pack2Model(WriteStream* stream) const
         for (uint32 i = 0; i < verticiecCount; i++)
         {
             vb2.Color = Color32(Colors[i]);
-            stream->Write(&vb2);
+            stream->WriteBytes(&vb2, sizeof(vb2));
         }
     }
 
@@ -470,7 +470,7 @@ bool MeshData::Pack2SkinnedModel(WriteStream* stream) const
         vb.Tangent = Float1010102(tangent * 0.5f + 0.5f, static_cast<byte>(bitangentSign < 0 ? 1 : 0));
         vb.BlendIndices = Color32(blendIndices.X, blendIndices.Y, blendIndices.Z, blendIndices.W);
         vb.BlendWeights = Half4(blendWeights);
-        stream->Write(&vb);
+        stream->WriteBytes(&vb, sizeof(vb));
     }
 
     // Index Buffer
@@ -704,7 +704,7 @@ bool ModelData::Pack2ModelHeader(WriteStream* stream) const
     {
         auto& slot = Materials[materialSlotIndex];
 
-        stream->Write(&slot.AssetID);
+        stream->Write(slot.AssetID);
         stream->WriteByte(static_cast<byte>(slot.ShadowsMode));
         stream->WriteString(slot.Name, 11);
     }
@@ -793,7 +793,7 @@ bool ModelData::Pack2SkinnedModelHeader(WriteStream* stream) const
     {
         auto& slot = Materials[materialSlotIndex];
 
-        stream->Write(&slot.AssetID);
+        stream->Write(slot.AssetID);
         stream->WriteByte(static_cast<byte>(slot.ShadowsMode));
         stream->WriteString(slot.Name, 11);
     }
@@ -859,7 +859,7 @@ bool ModelData::Pack2SkinnedModelHeader(WriteStream* stream) const
         {
             auto& node = Skeleton.Nodes[nodeIndex];
 
-            stream->Write(&node.ParentIndex);
+            stream->Write(node.ParentIndex);
             stream->WriteTransform(node.LocalTransform);
             stream->WriteString(node.Name, 71);
         }
@@ -871,10 +871,10 @@ bool ModelData::Pack2SkinnedModelHeader(WriteStream* stream) const
         {
             auto& bone = Skeleton.Bones[boneIndex];
 
-            stream->Write(&bone.ParentIndex);
-            stream->Write(&bone.NodeIndex);
+            stream->Write(bone.ParentIndex);
+            stream->Write(bone.NodeIndex);
             stream->WriteTransform(bone.LocalTransform);
-            stream->Write(&bone.OffsetMatrix);
+            stream->Write(bone.OffsetMatrix);
         }
     }
 

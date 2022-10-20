@@ -12,7 +12,7 @@ void NavMeshData::Save(WriteStream& stream)
     header.Version = 1;
     header.TileSize = TileSize;
     header.TilesCount = Tiles.Count();
-    stream.Write(&header);
+    stream.Write(header);
 
     // Write tiles
     for (int32 tileIndex = 0; tileIndex < Tiles.Count(); tileIndex++)
@@ -25,7 +25,7 @@ void NavMeshData::Save(WriteStream& stream)
         tileHeader.PosY = tile.PosY;
         tileHeader.Layer = tile.Layer;
         tileHeader.DataSize = tile.Data.Length();
-        stream.Write(&tileHeader);
+        stream.Write(tileHeader);
 
         // Write tile data
         if (tileHeader.DataSize)

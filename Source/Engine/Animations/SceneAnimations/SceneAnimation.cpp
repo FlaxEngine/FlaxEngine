@@ -135,7 +135,7 @@ Asset::LoadResult SceneAnimation::load()
             stream.ReadInt32(&track.ParentIndex);
             stream.ReadInt32(&track.ChildrenCount);
             stream.ReadString(&track.Name, -13);
-            stream.Read(&track.Color);
+            stream.Read(track.Color);
             track.Disabled = (int32)track.Flag & (int32)Track::Flags::Mute || (track.ParentIndex != -1 && Tracks[track.ParentIndex].Disabled);
             track.TrackStateIndex = -1;
             track.Data = nullptr;

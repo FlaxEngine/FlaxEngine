@@ -71,14 +71,14 @@ BytesContainer ParticleSystem::LoadTimeline()
             stream.WriteInt32(track.ParentIndex);
             stream.WriteInt32(track.ChildrenCount);
             stream.WriteString(track.Name, -13);
-            stream.Write(&track.Color);
+            stream.Write(track.Color);
 
             Guid id;
             switch (track.Type)
             {
             case Track::Types::Emitter:
                 id = Emitters[track.AsEmitter.Index].GetID();
-                stream.Write(&id);
+                stream.Write(id);
                 stream.WriteInt32(track.AsEmitter.Index);
                 stream.WriteInt32(track.AsEmitter.StartFrame);
                 stream.WriteInt32(track.AsEmitter.DurationFrames);
@@ -97,7 +97,7 @@ BytesContainer ParticleSystem::LoadTimeline()
             for (auto i = EmittersParametersOverrides.Begin(); i.IsNotEnd(); ++i)
             {
                 stream.WriteInt32(i->Key.First);
-                stream.Write(&i->Key.Second);
+                stream.Write(i->Key.Second);
                 stream.WriteVariant(i->Value);
             }
         }
@@ -240,14 +240,14 @@ Asset::LoadResult ParticleSystem::load()
             switch (track.Type)
             {
             case Track::Types::Emitter:
-                stream.Read(&id);
+                stream.Read(id);
                 stream.ReadInt32(&track.AsEmitter.Index);
                 stream.ReadInt32(&track.AsEmitter.StartFrame);
                 stream.ReadInt32(&track.AsEmitter.DurationFrames);
                 Emitters[track.AsEmitter.Index] = id;
                 break;
             case Track::Types::Folder:
-                stream.Read(&track.Color);
+                stream.Read(track.Color);
                 break;
             default:
                 return LoadResult::InvalidData;
@@ -273,7 +273,7 @@ Asset::LoadResult ParticleSystem::load()
             for (int32 i = 0; i < overridesCount; i++)
             {
                 stream.ReadInt32(&key.First);
-                stream.Read(&key.Second);
+                stream.Read(key.Second);
                 stream.ReadCommonValue(&value);
 
 #if USE_EDITOR
@@ -316,12 +316,12 @@ Asset::LoadResult ParticleSystem::load()
             stream.ReadInt32(&track.ChildrenCount);
             stream.ReadString(&track.Name, -13);
             track.Disabled = (int32)track.Flag & (int32)Track::Flags::Mute || (track.ParentIndex != -1 && Tracks[track.ParentIndex].Disabled);
-            stream.Read(&track.Color);
+            stream.Read(track.Color);
 
             switch (track.Type)
             {
             case Track::Types::Emitter:
-                stream.Read(&id);
+                stream.Read(id);
                 stream.ReadInt32(&track.AsEmitter.Index);
                 stream.ReadInt32(&track.AsEmitter.StartFrame);
                 stream.ReadInt32(&track.AsEmitter.DurationFrames);
@@ -353,7 +353,7 @@ Asset::LoadResult ParticleSystem::load()
             for (int32 i = 0; i < overridesCount; i++)
             {
                 stream.ReadInt32(&key.First);
-                stream.Read(&key.Second);
+                stream.Read(key.Second);
                 stream.ReadCommonValue(&value);
 
 #if USE_EDITOR
@@ -395,12 +395,12 @@ Asset::LoadResult ParticleSystem::load()
             stream.ReadInt32(&track.ChildrenCount);
             stream.ReadString(&track.Name, -13);
             track.Disabled = (int32)track.Flag & (int32)Track::Flags::Mute || (track.ParentIndex != -1 && Tracks[track.ParentIndex].Disabled);
-            stream.Read(&track.Color);
+            stream.Read(track.Color);
 
             switch (track.Type)
             {
             case Track::Types::Emitter:
-                stream.Read(&id);
+                stream.Read(id);
                 stream.ReadInt32(&track.AsEmitter.Index);
                 stream.ReadInt32(&track.AsEmitter.StartFrame);
                 stream.ReadInt32(&track.AsEmitter.DurationFrames);
@@ -432,7 +432,7 @@ Asset::LoadResult ParticleSystem::load()
             for (int32 i = 0; i < overridesCount; i++)
             {
                 stream.ReadInt32(&key.First);
-                stream.Read(&key.Second);
+                stream.Read(key.Second);
                 stream.ReadVariant(&value);
 
 #if USE_EDITOR

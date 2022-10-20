@@ -143,7 +143,7 @@ void CookAssetsStep::CacheData::Load(CookingData& data)
 
     LOG(Info, "Loading incremental build cooking cache (entries count: {0})", entriesCount);
 
-    file->Read(&Settings);
+    file->ReadBytes(&Settings, sizeof(Settings));
 
     Entries.EnsureCapacity(Math::RoundUpToPowerOf2(static_cast<int32>(entriesCount * 3.0f)));
 
@@ -151,11 +151,11 @@ void CookAssetsStep::CacheData::Load(CookingData& data)
     for (int32 i = 0; i < entriesCount; i++)
     {
         Guid id;
-        file->Read(&id);
+        file->Read(id);
         String typeName;
         file->ReadString(&typeName);
         DateTime fileModified;
-        file->Read(&fileModified);
+        file->Read(fileModified);
         int32 fileDependenciesCount;
         file->ReadInt32(&fileDependenciesCount);
         fileDependencies.Clear();
@@ -164,7 +164,7 @@ void CookAssetsStep::CacheData::Load(CookingData& data)
         {
             Pair<String, DateTime>& f = fileDependencies[j];
             file->ReadString(&f.First, 10);
-            file->Read(&f.Second);
+            file->Read(f.Second);
         }
 
         // Skip missing entries
@@ -287,18 +287,18 @@ void CookAssetsStep::CacheData::Save()
     // Serialize
     file->WriteInt32(FLAXENGINE_VERSION_BUILD);
     file->WriteInt32(Entries.Count());
-    file->Write(&Settings);
+    file->WriteBytes(&Settings, sizeof(Settings));
     for (auto i = Entries.Begin(); i.IsNotEnd(); ++i)
     {
         auto& e = i->Value;
-        file->Write(&e.ID);
+        file->Write(e.ID);
         file->WriteString(e.TypeName);
-        file->Write(&e.FileModified);
+        file->Write(e.FileModified);
         file->WriteInt32(e.FileDependencies.Count());
         for (auto& f : e.FileDependencies)
         {
-            file->WriteString(f.First, 10);
-            file->Write(&f.Second);
+            file->Write(f.First, 10);
+            file->Write(f.Second);
         }
     }
     file->WriteInt32(13);

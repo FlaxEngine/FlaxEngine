@@ -215,7 +215,7 @@ Asset::LoadResult MaterialInstance::load()
 
     // Load base material
     Guid baseMaterialId;
-    headerStream.Read(&baseMaterialId);
+    headerStream.Read(baseMaterialId);
     auto baseMaterial = Content::LoadAsync<MaterialBase>(baseMaterialId);
 
     // Load parameters
@@ -316,8 +316,8 @@ bool MaterialInstance::Save(const StringView& path)
     MemoryWriteStream stream(512);
     {
         // Save base material ID
-        const auto baseMaterialId = _baseMaterial ? _baseMaterial->GetID() : Guid::Empty;
-        stream.Write(&baseMaterialId);
+        const Guid baseMaterialId = _baseMaterial ? _baseMaterial->GetID() : Guid::Empty;
+        stream.Write(baseMaterialId);
 
         // Save parameters
         Params.Save(&stream);

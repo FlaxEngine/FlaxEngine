@@ -756,35 +756,35 @@ bool MaterialParams::Load(ReadStream* stream)
                     stream->ReadFloat(&param->_asFloat);
                     break;
                 case MaterialParameterType::Vector2:
-                    stream->Read(&param->_asVector2);
+                    stream->Read(param->_asVector2);
                     break;
                 case MaterialParameterType::Vector3:
-                    stream->Read(&param->_asVector3);
+                    stream->Read(param->_asVector3);
                     break;
                 case MaterialParameterType::Vector4:
-                    stream->Read((Float4*)&param->AsData);
+                    stream->Read((Float4&)param->AsData);
                     break;
                 case MaterialParameterType::Color:
-                    stream->Read(&param->_asColor);
+                    stream->Read(param->_asColor);
                     break;
                 case MaterialParameterType::Matrix:
-                    stream->Read((Matrix*)&param->AsData);
+                    stream->Read((Matrix&)param->AsData);
                     break;
                 case MaterialParameterType::NormalMap:
                 case MaterialParameterType::Texture:
                 case MaterialParameterType::CubeTexture:
-                    stream->Read(&id);
+                    stream->Read(id);
                     param->_asAsset = Content::LoadAsync<TextureBase>(id);
                     break;
                 case MaterialParameterType::GPUTextureVolume:
                 case MaterialParameterType::GPUTextureCube:
                 case MaterialParameterType::GPUTextureArray:
                 case MaterialParameterType::GPUTexture:
-                    stream->Read(&id);
+                    stream->Read(id);
                     param->_asGPUTexture = id;
                     break;
                 case MaterialParameterType::GameplayGlobal:
-                    stream->Read(&id);
+                    stream->Read(id);
                     param->_asAsset = Content::LoadAsync<GameplayGlobals>(id);
                     break;
                 default:
@@ -808,7 +808,7 @@ bool MaterialParams::Load(ReadStream* stream)
 
                 // Read properties
                 param->_type = static_cast<MaterialParameterType>(stream->ReadByte());
-                stream->Read(&param->_paramId);
+                stream->Read(param->_paramId);
                 param->_isPublic = stream->ReadBool();
                 param->_override = param->_isPublic;
                 stream->ReadString(&param->_name, 10421);
@@ -830,35 +830,35 @@ bool MaterialParams::Load(ReadStream* stream)
                     stream->ReadFloat(&param->_asFloat);
                     break;
                 case MaterialParameterType::Vector2:
-                    stream->Read(&param->_asVector2);
+                    stream->Read(param->_asVector2);
                     break;
                 case MaterialParameterType::Vector3:
-                    stream->Read(&param->_asVector3);
+                    stream->Read(param->_asVector3);
                     break;
                 case MaterialParameterType::Vector4:
-                    stream->Read((Float4*)&param->AsData);
+                    stream->Read((Float4&)param->AsData);
                     break;
                 case MaterialParameterType::Color:
-                    stream->Read(&param->_asColor);
+                    stream->Read(param->_asColor);
                     break;
                 case MaterialParameterType::Matrix:
-                    stream->Read((Matrix*)&param->AsData);
+                    stream->Read((Matrix&)param->AsData);
                     break;
                 case MaterialParameterType::NormalMap:
                 case MaterialParameterType::Texture:
                 case MaterialParameterType::CubeTexture:
-                    stream->Read(&id);
+                    stream->Read(id);
                     param->_asAsset = Content::LoadAsync<TextureBase>(id);
                     break;
                 case MaterialParameterType::GPUTextureVolume:
                 case MaterialParameterType::GPUTextureCube:
                 case MaterialParameterType::GPUTextureArray:
                 case MaterialParameterType::GPUTexture:
-                    stream->Read(&id);
+                    stream->Read(id);
                     param->_asGPUTexture = id;
                     break;
                 case MaterialParameterType::GameplayGlobal:
-                    stream->Read(&id);
+                    stream->Read(id);
                     param->_asAsset = Content::LoadAsync<GameplayGlobals>(id);
                     break;
                 default:
@@ -882,7 +882,7 @@ bool MaterialParams::Load(ReadStream* stream)
 
                 // Read properties
                 param->_type = static_cast<MaterialParameterType>(stream->ReadByte());
-                stream->Read(&param->_paramId);
+                stream->Read(param->_paramId);
                 param->_isPublic = stream->ReadBool();
                 param->_override = stream->ReadBool();
                 stream->ReadString(&param->_name, 10421);
@@ -905,35 +905,35 @@ bool MaterialParams::Load(ReadStream* stream)
                     stream->ReadFloat(&param->_asFloat);
                     break;
                 case MaterialParameterType::Vector2:
-                    stream->Read(&param->_asVector2);
+                    stream->Read(param->_asVector2);
                     break;
                 case MaterialParameterType::Vector3:
-                    stream->Read(&param->_asVector3);
+                    stream->Read(param->_asVector3);
                     break;
                 case MaterialParameterType::Vector4:
-                    stream->Read((Float4*)&param->AsData);
+                    stream->Read((Float4&)param->AsData);
                     break;
                 case MaterialParameterType::Color:
-                    stream->Read(&param->_asColor);
+                    stream->Read(param->_asColor);
                     break;
                 case MaterialParameterType::Matrix:
-                    stream->Read((Matrix*)&param->AsData);
+                    stream->Read((Matrix&)param->AsData);
                     break;
                 case MaterialParameterType::NormalMap:
                 case MaterialParameterType::Texture:
                 case MaterialParameterType::CubeTexture:
-                    stream->Read(&id);
+                    stream->Read(id);
                     param->_asAsset = Content::LoadAsync<TextureBase>(id);
                     break;
                 case MaterialParameterType::GPUTextureVolume:
                 case MaterialParameterType::GPUTextureCube:
                 case MaterialParameterType::GPUTextureArray:
                 case MaterialParameterType::GPUTexture:
-                    stream->Read(&id);
+                    stream->Read(id);
                     param->_asGPUTexture = id;
                     break;
                 case MaterialParameterType::GameplayGlobal:
-                    stream->Read(&id);
+                    stream->Read(id);
                     param->_asAsset = Content::LoadAsync<GameplayGlobals>(id);
                     break;
                 default:
@@ -974,7 +974,7 @@ void MaterialParams::Save(WriteStream* stream)
 
         // Write properties
         stream->WriteByte(static_cast<byte>(param->_type));
-        stream->Write(&param->_paramId);
+        stream->Write(param->_paramId);
         stream->WriteBool(param->_isPublic);
         stream->WriteBool(param->_override);
         stream->WriteString(param->_name, 10421);
@@ -998,33 +998,33 @@ void MaterialParams::Save(WriteStream* stream)
             stream->WriteFloat(param->_asFloat);
             break;
         case MaterialParameterType::Vector2:
-            stream->Write(&param->_asVector2);
+            stream->Write(param->_asVector2);
             break;
         case MaterialParameterType::Vector3:
-            stream->Write(&param->_asVector3);
+            stream->Write(param->_asVector3);
             break;
         case MaterialParameterType::Vector4:
-            stream->Write((Float4*)&param->AsData);
+            stream->Write((Float4&)param->AsData);
             break;
         case MaterialParameterType::Color:
-            stream->Write(&param->_asColor);
+            stream->Write(param->_asColor);
             break;
         case MaterialParameterType::Matrix:
-            stream->Write((Matrix*)&param->AsData);
+            stream->Write((Matrix&)param->AsData);
             break;
         case MaterialParameterType::NormalMap:
         case MaterialParameterType::Texture:
         case MaterialParameterType::CubeTexture:
         case MaterialParameterType::GameplayGlobal:
             id = param->_asAsset.GetID();
-            stream->Write(&id);
+            stream->Write(id);
             break;
         case MaterialParameterType::GPUTextureVolume:
         case MaterialParameterType::GPUTextureArray:
         case MaterialParameterType::GPUTextureCube:
         case MaterialParameterType::GPUTexture:
             id = param->_asGPUTexture.GetID();
-            stream->Write(&id);
+            stream->Write(id);
             break;
         default:
             break;
@@ -1050,7 +1050,7 @@ void MaterialParams::Save(WriteStream* stream, const Array<SerializedMaterialPar
 
             // Write properties
             stream->WriteByte(static_cast<byte>(param.Type));
-            stream->Write(&param.ID);
+            stream->Write(param.ID);
             stream->WriteBool(param.IsPublic);
             stream->WriteBool(param.Override);
             stream->WriteString(param.Name, 10421);
@@ -1073,19 +1073,19 @@ void MaterialParams::Save(WriteStream* stream, const Array<SerializedMaterialPar
                 stream->WriteFloat(param.AsFloat);
                 break;
             case MaterialParameterType::Vector2:
-                stream->Write(&param.AsFloat2);
+                stream->Write(param.AsFloat2);
                 break;
             case MaterialParameterType::Vector3:
-                stream->Write(&param.AsFloat3);
+                stream->Write(param.AsFloat3);
                 break;
             case MaterialParameterType::Vector4:
-                stream->Write((Float4*)&param.AsData);
+                stream->Write((Float4&)param.AsData);
                 break;
             case MaterialParameterType::Color:
-                stream->Write(&param.AsColor);
+                stream->Write(param.AsColor);
                 break;
             case MaterialParameterType::Matrix:
-                stream->Write((Matrix*)&param.AsData);
+                stream->Write((Matrix&)param.AsData);
                 break;
             case MaterialParameterType::NormalMap:
             case MaterialParameterType::Texture:
@@ -1095,7 +1095,7 @@ void MaterialParams::Save(WriteStream* stream, const Array<SerializedMaterialPar
             case MaterialParameterType::GPUTextureCube:
             case MaterialParameterType::GPUTextureArray:
             case MaterialParameterType::GPUTexture:
-                stream->Write(&param.AsGuid);
+                stream->Write(param.AsGuid);
                 break;
             default:
                 break;

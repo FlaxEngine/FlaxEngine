@@ -23,7 +23,7 @@ bool VisjectMeta::Load(ReadStream* stream, bool loadData)
 
         stream->ReadInt32(&e.TypeID);
         DateTime creationTime;
-        stream->Read(&creationTime);
+        stream->Read(creationTime);
 
         uint32 dataSize;
         stream->ReadUint32(&dataSize);

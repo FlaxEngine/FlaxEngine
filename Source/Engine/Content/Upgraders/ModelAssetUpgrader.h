@@ -195,7 +195,7 @@ private:
             auto& slot = data->Materials[i];
 
             // Material
-            headerStream->Read(&slot.AssetID);
+            headerStream->Read(slot.AssetID);
 
             // Shadows Mode
             slot.ShadowsMode = static_cast<ShadowsCastingMode>(headerStream->ReadByte());
@@ -280,11 +280,11 @@ private:
 
                 // Box
                 BoundingBox box;
-                headerStream->Read(&box);
+                headerStream->Read(box);
 
                 // Sphere
                 BoundingSphere sphere;
-                headerStream->Read(&sphere);
+                headerStream->Read(sphere);
 
                 // Has Lightmap UVs
                 bool hasLightmapUVs = headerStream->ReadBool();
@@ -312,7 +312,7 @@ private:
             auto& slot = data->Materials[i];
 
             // Material
-            headerStream->Read(&slot.AssetID);
+            headerStream->Read(slot.AssetID);
 
             // Shadows Mode
             slot.ShadowsMode = static_cast<ShadowsCastingMode>(headerStream->ReadByte());
@@ -391,11 +391,11 @@ private:
 
                 // Box
                 BoundingBox box;
-                headerStream->Read(&box);
+                headerStream->Read(box);
 
                 // Sphere
                 BoundingSphere sphere;
-                headerStream->Read(&sphere);
+                headerStream->Read(sphere);
 
                 // Has Lightmap UVs
                 bool hasLightmapUVs = headerStream->ReadBool();
@@ -420,7 +420,7 @@ private:
             auto& slot = data->Materials[i];
 
             // Material
-            headerStream->Read(&slot.AssetID);
+            headerStream->Read(slot.AssetID);
 
             // Shadows Mode
             slot.ShadowsMode = static_cast<ShadowsCastingMode>(headerStream->ReadByte());
@@ -460,11 +460,11 @@ private:
 
                 // Box
                 BoundingBox box;
-                headerStream->Read(&box);
+                headerStream->Read(box);
 
                 // Sphere
                 BoundingSphere sphere;
-                headerStream->Read(&sphere);
+                headerStream->Read(sphere);
             }
 
             // Get meshes data
@@ -539,15 +539,15 @@ private:
             slot.ShadowsMode = castShadows ? ShadowsCastingMode::All : ShadowsCastingMode::None;
 
             // Default material ID
-            headerStream->Read(&slot.AssetID);
+            headerStream->Read(slot.AssetID);
 
             // Box
             BoundingBox box;
-            headerStream->Read(&box);
+            headerStream->Read(box);
 
             // Sphere
             BoundingSphere sphere;
-            headerStream->Read(&sphere);
+            headerStream->Read(sphere);
         }
 
         {
@@ -614,15 +614,15 @@ private:
             headerStream->ReadBool();
 
             // Default material ID
-            headerStream->Read(&slot.AssetID);
+            headerStream->Read(slot.AssetID);
 
             // Box
             BoundingBox box;
-            headerStream->Read(&box);
+            headerStream->Read(box);
 
             // Sphere
             BoundingSphere sphere;
-            headerStream->Read(&sphere);
+            headerStream->Read(sphere);
         }
 
         {
@@ -689,15 +689,15 @@ private:
             headerStream->ReadBool();
 
             // Default material ID
-            headerStream->Read(&slot.AssetID);
+            headerStream->Read(slot.AssetID);
 
             // Box
             BoundingBox box;
-            headerStream->Read(&box);
+            headerStream->Read(box);
 
             // Sphere
             BoundingSphere sphere;
-            headerStream->Read(&sphere);
+            headerStream->Read(sphere);
         }
 
         // Load all LODs
@@ -767,17 +767,17 @@ private:
 
             // Local Transform
             Transform transform;
-            headerStream->Read(&transform);
+            headerStream->Read(transform);
 
             // Force Two Sided
             headerStream->ReadBool();
 
             // Default material ID
-            headerStream->Read(&slot.AssetID);
+            headerStream->Read(slot.AssetID);
 
             // Corners
             BoundingBox box;
-            headerStream->Read(&box);
+            headerStream->Read(box);
         }
 
         // Load all LODs
@@ -847,18 +847,18 @@ private:
 
             // Local Transform
             Transform transform;
-            headerStream->Read(&transform);
+            headerStream->Read(transform);
 
             // Force Two Sided
             headerStream->ReadBool();
 
             // Default material ID
-            headerStream->Read(&slot.AssetID);
+            headerStream->Read(slot.AssetID);
 
             // Corners
             Vector3 corner;
             for (int32 cornerIndex = 0; cornerIndex < 8; cornerIndex++)
-                headerStream->Read(&corner);
+                headerStream->Read(corner);
         }
 
         // Load all LODs
@@ -933,13 +933,13 @@ private:
 
             // Local Transform
             Transform transform;
-            headerStream->Read(&transform);
+            headerStream->Read(transform);
 
             // Force Two Sided
             headerStream->ReadBool();
 
             // Default material ID
-            headerStream->Read(&slot.AssetID);
+            headerStream->Read(slot.AssetID);
         }
 
         // Load all LODs
@@ -1014,13 +1014,13 @@ private:
 
             // Local Transform
             Transform transform;
-            headerStream->Read(&transform);
+            headerStream->Read(transform);
 
             // Force Two Sided
             headerStream->ReadBool();
 
             // Default material ID
-            headerStream->Read(&slot.AssetID);
+            headerStream->Read(slot.AssetID);
         }
 
         // Load all LODs

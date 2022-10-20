@@ -47,7 +47,7 @@ private:
             MemoryReadStream stream(dataChunk->Get(), dataChunk->Size());
 
             Guid skeletonId;
-            stream.Read(&skeletonId);
+            stream.Read(skeletonId);
             int32 maskCount;
             stream.ReadInt32(&maskCount);
             bonesMask.Resize(maskCount, false);
@@ -85,7 +85,7 @@ private:
             MemoryWriteStream stream(4096);
 
             const Guid skeletonId = skeleton.GetID();
-            stream.Write(&skeletonId);
+            stream.Write(skeletonId);
             stream.WriteInt32(nodesMask.Count());
             for (auto& e : nodesMask)
             {

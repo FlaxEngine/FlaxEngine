@@ -139,7 +139,7 @@ bool IsValidShaderCache(DataContainer<byte>& shaderCache, Array<String>& include
         String& include = includes.AddOne();
         stream.ReadString(&include, 11);
         DateTime lastEditTime;
-        stream.Read(&lastEditTime);
+        stream.Read(lastEditTime);
 
         // Check if included file exists locally and has been modified since last compilation
         if (FileSystem::FileExists(include) && FileSystem::GetFileLastEditTime(include) > lastEditTime)

@@ -174,7 +174,7 @@ void Animation::LoadTimeline(BytesContainer& result) const
         stream.WriteInt32(-1); // Parent Index
         stream.WriteInt32(childrenCount); // Children Count
         stream.WriteString(channel.NodeName, -13); // Name
-        stream.Write(&Color32::White); // Color
+        stream.Write(Color32::White); // Color
         const int32 parentIndex = trackIndex++;
 
         auto& position = channel.Position.GetKeyframes();
@@ -186,13 +186,13 @@ void Animation::LoadTimeline(BytesContainer& result) const
             stream.WriteInt32(parentIndex); // Parent Index
             stream.WriteInt32(0); // Children Count
             stream.WriteString(String::Format(TEXT("Track_{0}_Position"), i), -13); // Name
-            stream.Write(&Color32::White); // Color
+            stream.Write(Color32::White); // Color
             stream.WriteByte(0); // Type
             stream.WriteInt32(position.Count()); // Keyframes Count
             for (auto& k : position)
             {
                 stream.WriteFloat(k.Time * fpsInv);
-                stream.Write(&k.Value);
+                stream.Write(k.Value);
             }
             trackIndex++;
         }
@@ -206,13 +206,13 @@ void Animation::LoadTimeline(BytesContainer& result) const
             stream.WriteInt32(parentIndex); // Parent Index
             stream.WriteInt32(0); // Children Count
             stream.WriteString(String::Format(TEXT("Track_{0}_Rotation"), i), -13); // Name
-            stream.Write(&Color32::White); // Color
+            stream.Write(Color32::White); // Color
             stream.WriteByte(1); // Type
             stream.WriteInt32(rotation.Count()); // Keyframes Count
             for (auto& k : rotation)
             {
                 stream.WriteFloat(k.Time * fpsInv);
-                stream.Write(&k.Value);
+                stream.Write(k.Value);
             }
             trackIndex++;
         }
@@ -226,13 +226,13 @@ void Animation::LoadTimeline(BytesContainer& result) const
             stream.WriteInt32(parentIndex); // Parent Index
             stream.WriteInt32(0); // Children Count
             stream.WriteString(String::Format(TEXT("Track_{0}_Scale"), i), -13); // Name
-            stream.Write(&Color32::White); // Color
+            stream.Write(Color32::White); // Color
             stream.WriteByte(2); // Type
             stream.WriteInt32(scale.Count()); // Keyframes Count
             for (auto& k : scale)
             {
                 stream.WriteFloat(k.Time * fpsInv);
-                stream.Write(&k.Value);
+                stream.Write(k.Value);
             }
             trackIndex++;
         }
@@ -253,8 +253,8 @@ void Animation::LoadTimeline(BytesContainer& result) const
         stream.WriteInt32(-1); // Parent Index
         stream.WriteInt32(0); // Children Count
         stream.WriteString(e.First, -13); // Name
-        stream.Write(&Color32::White); // Color
-        stream.Write(&id);
+        stream.Write(Color32::White); // Color
+        stream.Write(id);
         stream.WriteFloat(nestedAnim.Time);
         stream.WriteFloat(nestedAnim.Duration);
         stream.WriteFloat(nestedAnim.Speed);
@@ -268,7 +268,7 @@ void Animation::LoadTimeline(BytesContainer& result) const
         stream.WriteInt32(-1); // Parent Index
         stream.WriteInt32(0); // Children Count
         stream.WriteString(e.First, -13); // Name
-        stream.Write(&Color32::White); // Color
+        stream.Write(Color32::White); // Color
         stream.WriteInt32(e.Second.GetKeyframes().Count()); // Events Count
         for (const auto& k : e.Second.GetKeyframes())
         {
@@ -331,7 +331,7 @@ bool Animation::SaveTimeline(BytesContainer& data)
             String name;
             stream.ReadString(&name, -13);
             Color32 color;
-            stream.Read(&color);
+            stream.Read(color);
             switch (trackType)
             {
             case 17:
@@ -365,7 +365,7 @@ bool Animation::SaveTimeline(BytesContainer& data)
                         LinearCurveKeyframe<Float3>& k = channel.Position.GetKeyframes()[i];
                         stream.ReadFloat(&k.Time);
                         k.Time *= fps;
-                        stream.Read(&k.Value);
+                        stream.Read(k.Value);
                     }
                     break;
                 case 1:
@@ -375,7 +375,7 @@ bool Animation::SaveTimeline(BytesContainer& data)
                         LinearCurveKeyframe<Quaternion>& k = channel.Rotation.GetKeyframes()[i];
                         stream.ReadFloat(&k.Time);
                         k.Time *= fps;
-                        stream.Read(&k.Value);
+                        stream.Read(k.Value);
                     }
                     break;
                 case 2:
@@ -385,7 +385,7 @@ bool Animation::SaveTimeline(BytesContainer& data)
                         LinearCurveKeyframe<Float3>& k = channel.Scale.GetKeyframes()[i];
                         stream.ReadFloat(&k.Time);
                         k.Time *= fps;
-                        stream.Read(&k.Value);
+                        stream.Read(k.Value);
                     }
                     break;
                 }
@@ -428,7 +428,7 @@ bool Animation::SaveTimeline(BytesContainer& data)
                 nestedTrack.First = name;
                 auto& nestedAnim = nestedTrack.Second;
                 Guid id;
-                stream.Read(&id);
+                stream.Read(id);
                 stream.ReadFloat(&nestedAnim.Time);
                 stream.ReadFloat(&nestedAnim.Duration);
                 stream.ReadFloat(&nestedAnim.Speed);
@@ -524,7 +524,7 @@ bool Animation::Save(const StringView& path)
             if (nestedAnim.Loop)
                 flags |= 2;
             stream.WriteByte(flags);
-            stream.Write(&id);
+            stream.Write(id);
             stream.WriteFloat(nestedAnim.Time);
             stream.WriteFloat(nestedAnim.Duration);
             stream.WriteFloat(nestedAnim.Speed);
@@ -700,7 +700,7 @@ Asset::LoadResult Animation::load()
             nestedAnim.Enabled = flags & 1;
             nestedAnim.Loop = flags & 2;
             Guid id;
-            stream.Read(&id);
+            stream.Read(id);
             nestedAnim.Anim = id;
             stream.ReadFloat(&nestedAnim.Time);
             stream.ReadFloat(&nestedAnim.Duration);

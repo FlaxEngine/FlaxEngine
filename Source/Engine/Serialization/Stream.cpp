@@ -35,7 +35,7 @@ void ReadStream::Read(StringAnsi& data)
         return;
     char* ptr = data.Get();
     ASSERT(ptr != nullptr);
-    Read(ptr, length);
+    ReadBytes(ptr, length);
 }
 
 void ReadStream::Read(StringAnsi& data, int8 lock)
@@ -54,7 +54,7 @@ void ReadStream::Read(StringAnsi& data, int8 lock)
         return;
     char* ptr = data.Get();
     ASSERT(ptr != nullptr);
-    Read(ptr, length);
+    ReadBytes(ptr, length);
 
     for (int32 i = 0; i < length; i++)
     {
@@ -78,7 +78,7 @@ void ReadStream::Read(String& data)
     data.ReserveSpace(length);
     Char* ptr = data.Get();
     ASSERT(ptr != nullptr);
-    Read(ptr, length);
+    ReadBytes(ptr, length * sizeof(Char));
 }
 
 void ReadStream::Read(String& data, int16 lock)
@@ -96,7 +96,7 @@ void ReadStream::Read(String& data, int16 lock)
     data.ReserveSpace(length);
     Char* ptr = data.Get();
     ASSERT(ptr != nullptr);
-    Read(ptr, length);
+    ReadBytes(ptr, length * sizeof(Char));
 
     for (int32 i = 0; i < length; i++)
     {
@@ -131,35 +131,35 @@ void ReadStream::Read(CommonValue& data)
     case CommonType::Vector2:
     {
         Float2 v;
-        Read(&v);
+        Read(v);
         data.Set(v);
     }
     break;
     case CommonType::Vector3:
     {
         Float3 v;
-        Read(&v);
+        Read(v);
         data.Set(v);
     }
     break;
     case CommonType::Vector4:
     {
         Float4 v;
-        Read(&v);
+        Read(v);
         data.Set(v);
     }
     break;
     case CommonType::Color:
     {
         Color v;
-        Read(&v);
+        Read(v);
         data.Set(v);
     }
     break;
     case CommonType::Guid:
     {
         Guid v;
-        Read(&v);
+        Read(v);
         data.Set(v);
     }
     break;
@@ -180,7 +180,7 @@ void ReadStream::Read(CommonValue& data)
     case CommonType::Rotation:
     {
         Quaternion v;
-        Read(&v);
+        Read(v);
         data.Set(v);
     }
     break;
@@ -201,7 +201,7 @@ void ReadStream::Read(CommonValue& data)
     case CommonType::Rectangle:
     {
         Rectangle v;
-        Read(&v);
+        Read(v);
         data.Set(v);
     }
     case CommonType::Ray:
@@ -214,14 +214,14 @@ void ReadStream::Read(CommonValue& data)
     case CommonType::Matrix:
     {
         Matrix v;
-        Read(&v);
+        Read(v);
         data.Set(v);
     }
     break;
     case CommonType::Blob:
     {
         int32 length;
-        Read(&length);
+        Read(length);
         data.SetBlob(length);
         if (length > 0)
         {
@@ -245,7 +245,7 @@ void ReadStream::Read(VariantType& data)
             return;
         data.TypeName = static_cast<char*>(Allocator::Allocate(typeNameLength + 1));
         char* ptr = data.TypeName;
-        Read(ptr, typeNameLength);
+        ReadBytes(ptr, typeNameLength);
         for (int32 i = 0; i < typeNameLength; i++)
         {
             *ptr = *ptr ^ 77;
@@ -260,7 +260,7 @@ void ReadStream::Read(VariantType& data)
         Array<Char> chars;
         chars.Resize(typeNameLength + 1);
         Char* ptr = chars.Get();
-        Read(ptr, typeNameLength);
+        ReadBytes(ptr, typeNameLength * sizeof(Char));
         for (int32 i = 0; i < typeNameLength; i++)
         {
             *ptr = *ptr ^ 77;
@@ -331,7 +331,7 @@ void ReadStream::Read(Variant& data)
             data.AsBlob.Length = dataLength;
         }
         Char* ptr = (Char*)data.AsBlob.Data;
-        Read(ptr, length);
+        ReadBytes(ptr, length * sizeof(Char));
         for (int32 i = 0; i < length; i++)
         {
             *ptr = *ptr ^ -14;
@@ -343,7 +343,7 @@ void ReadStream::Read(Variant& data)
     case VariantType::Object:
     {
         Guid id;
-        Read(&id);
+        Read(id);
         data.SetObject(FindObject(id, ScriptingObject::GetStaticClass()));
         break;
     }
@@ -400,7 +400,7 @@ void ReadStream::Read(Variant& data)
     case VariantType::Asset:
     {
         Guid id;
-        Read(&id);
+        Read(id);
         data.SetAsset(LoadAsset(id, Asset::TypeInitializer));
         break;
     }
@@ -487,7 +487,7 @@ void ReadStream::Read(Variant& data)
             data.AsBlob.Length = dataLength;
         }
         char* ptr = (char*)data.AsBlob.Data;
-        Read(ptr, length);
+        ReadBytes(ptr, length);
         for (int32 i = 0; i < length; i++)
         {
             *ptr = *ptr ^ -14;
@@ -567,8 +567,8 @@ void ReadStream::ReadBoundingBox(BoundingBox* box, bool useDouble)
     else
     {
         Float3 min, max;
-        Read(&min);
-        Read(&max);
+        Read(min);
+        Read(max);
         box->Minimum = min;
         box->Maximum = max;
     }
@@ -576,13 +576,13 @@ void ReadStream::ReadBoundingBox(BoundingBox* box, bool useDouble)
     if (useDouble)
     {
         Double3 min, max;
-        Read(&min);
-        Read(&max);
+        Read(min);
+        Read(max);
         box->Minimum = min;
         box->Maximum = max;
     }
     else
-        Read(box);
+        Read(*box);
 #endif
 }
 
@@ -590,13 +590,13 @@ void ReadStream::ReadBoundingSphere(BoundingSphere* sphere, bool useDouble)
 {
 #if USE_LARGE_WORLDS
     if (useDouble)
-        Read(sphere);
+        Read(*sphere);
     else
     {
         Float3 center;
         float radius;
-        Read(&center);
-        Read(&radius);
+        Read(center);
+        Read(radius);
         sphere->Center = center;
         sphere->Radius = radius;
     }
@@ -605,13 +605,13 @@ void ReadStream::ReadBoundingSphere(BoundingSphere* sphere, bool useDouble)
     {
         Double3 center;
         double radius;
-        Read(&center);
-        Read(&radius);
+        Read(center);
+        Read(radius);
         sphere->Center = center;
         sphere->Radius = (float)radius;
     }
     else
-        Read(sphere);
+        Read(*sphere);
 #endif
 }
 
@@ -619,26 +619,26 @@ void ReadStream::ReadTransform(Transform* transform, bool useDouble)
 {
 #if USE_LARGE_WORLDS
     if (useDouble)
-        Read(transform);
+        Read(*transform);
     else
     {
         Float3 translation;
-        Read(&translation);
-        Read(&transform->Orientation);
-        Read(&transform->Scale);
+        Read(translation);
+        Read(transform->Orientation);
+        Read(transform->Scale);
         transform->Translation = translation;
     }
 #else
     if (useDouble)
     {
         Double3 translation;
-        Read(&translation);
-        Read(&transform->Orientation);
-        Read(&transform->Scale);
+        Read(translation);
+        Read(transform->Orientation);
+        Read(transform->Scale);
         transform->Translation = translation;
     }
     else
-        Read(transform);
+        Read(*transform);
 #endif
 }
 
@@ -646,12 +646,12 @@ void ReadStream::ReadRay(Ray* ray, bool useDouble)
 {
 #if USE_LARGE_WORLDS
     if (useDouble)
-        Read(ray);
+        Read(*ray);
     else
     {
         Float3 position, direction;
-        Read(&position);
-        Read(&direction);
+        Read(position);
+        Read(direction);
         ray->Position = position;
         ray->Direction = direction;
     }
@@ -659,13 +659,13 @@ void ReadStream::ReadRay(Ray* ray, bool useDouble)
     if (useDouble)
     {
         Double3 position, direction;
-        Read(&position);
-        Read(&direction);
+        Read(position);
+        Read(direction);
         ray->Position = position;
         ray->Direction = direction;
     }
     else
-        Read(ray);
+        Read(*ray);
 #endif
 }
 
@@ -684,7 +684,7 @@ void WriteStream::Write(const StringView& data)
     const int32 length = data.Length();
     ASSERT(length < STREAM_MAX_STRING_LENGTH);
     WriteInt32(length);
-    Write(*data, length);
+    WriteBytes(*data, length * sizeof(Char));
 }
 
 void WriteStream::Write(const StringView& data, int16 lock)
@@ -700,7 +700,7 @@ void WriteStream::Write(const StringAnsiView& data)
     const int32 length = data.Length();
     ASSERT(length < STREAM_MAX_STRING_LENGTH);
     WriteInt32(length);
-    Write(data.Get(), length);
+    WriteBytes(data.Get(), length);
 }
 
 void WriteStream::Write(const StringAnsiView& data, int8 lock)
@@ -727,19 +727,19 @@ void WriteStream::Write(const CommonValue& data)
         WriteFloat(data.AsFloat);
         break;
     case CommonType::Vector2:
-        Write(&data.AsVector2);
+        Write(data.AsVector2);
         break;
     case CommonType::Vector3:
-        Write(&data.AsVector3);
+        Write(data.AsVector3);
         break;
     case CommonType::Vector4:
-        Write(&data.AsVector4);
+        Write(data.AsVector4);
         break;
     case CommonType::Color:
-        Write(&data.AsColor);
+        Write(data.AsColor);
         break;
     case CommonType::Guid:
-        Write(&data.AsGuid);
+        Write(data.AsGuid);
         break;
     case CommonType::String:
         WriteString(data.AsString, 953);
@@ -748,7 +748,7 @@ void WriteStream::Write(const CommonValue& data)
         WriteBoundingBox(data.AsBox);
         break;
     case CommonType::Rotation:
-        Write(&data.AsRotation);
+        Write(data.AsRotation);
         break;
     case CommonType::Transform:
         WriteTransform(data.AsTransform);
@@ -757,13 +757,13 @@ void WriteStream::Write(const CommonValue& data)
         WriteBoundingSphere(data.AsSphere);
         break;
     case CommonType::Rectangle:
-        Write(&data.AsRectangle);
+        Write(data.AsRectangle);
         break;
     case CommonType::Ray:
         WriteRay(data.AsRay);
         break;
     case CommonType::Matrix:
-        Write(&data.AsMatrix);
+        Write(data.AsMatrix);
         break;
     case CommonType::Blob:
         WriteInt32(data.AsBlob.Length);
@@ -826,7 +826,7 @@ void WriteStream::Write(const Variant& data)
         break;
     case VariantType::Object:
         id = data.AsObject ? data.AsObject->GetID() : Guid::Empty;
-        Write(&id);
+        Write(id);
         break;
     case VariantType::Blob:
         WriteInt32(data.AsBlob.Length);
@@ -846,7 +846,7 @@ void WriteStream::Write(const Variant& data)
         break;
     case VariantType::Asset:
         id = data.AsAsset ? data.AsAsset->GetID() : Guid::Empty;
-        Write(&id);
+        Write(id);
         break;
     case VariantType::Float2:
         WriteBytes(data.AsData, sizeof(Float2));
@@ -985,22 +985,22 @@ void WriteStream::WriteBoundingBox(const BoundingBox& box, bool useDouble)
 {
 #if USE_LARGE_WORLDS
     if (useDouble)
-        Write(&box);
+        Write(box);
     else
     {
         Float3 min = box.Minimum, max = box.Maximum;
-        Write(&min);
-        Write(&max);
+        Write(min);
+        Write(max);
     }
 #else
     if (useDouble)
     {
         Double3 min = box.Minimum, max = box.Maximum;
-        Write(&min);
-        Write(&max);
+        Write(min);
+        Write(max);
     }
     else
-        Write(&box);
+        Write(box);
 #endif
 }
 
@@ -1008,24 +1008,24 @@ void WriteStream::WriteBoundingSphere(const BoundingSphere& sphere, bool useDoub
 {
 #if USE_LARGE_WORLDS
     if (useDouble)
-        Write(&sphere);
+        Write(sphere);
     else
     {
         Float3 center = sphere.Center;
         float radius = (float)sphere.Radius;
-        Write(&center);
-        Write(&radius);
+        Write(center);
+        Write(radius);
     }
 #else
     if (useDouble)
     {
         Double3 center = sphere.Center;
         float radius = (float)sphere.Radius;
-        Write(&center);
-        Write(&radius);
+        Write(center);
+        Write(radius);
     }
     else
-        Write(&sphere);
+        Write(sphere);
 #endif
 }
 
@@ -1033,24 +1033,24 @@ void WriteStream::WriteTransform(const Transform& transform, bool useDouble)
 {
 #if USE_LARGE_WORLDS
     if (useDouble)
-        Write(&transform);
+        Write(transform);
     else
     {
         Float3 translation = transform.Translation;
-        Write(&translation);
-        Write(&transform.Orientation);
-        Write(&transform.Scale);
+        Write(translation);
+        Write(transform.Orientation);
+        Write(transform.Scale);
     }
 #else
     if (useDouble)
     {
         Double3 translation = transform.Translation;
-        Write(&translation);
-        Write(&transform.Orientation);
-        Write(&transform.Scale);
+        Write(translation);
+        Write(transform.Orientation);
+        Write(transform.Scale);
     }
     else
-        Write(&transform);
+        Write(transform);
 #endif
 }
 
@@ -1058,22 +1058,22 @@ void WriteStream::WriteRay(const Ray& ray, bool useDouble)
 {
 #if USE_LARGE_WORLDS
     if (useDouble)
-        Write(&ray);
+        Write(ray);
     else
     {
         Float3 position = ray.Position, direction = ray.Direction;
-        Write(&position);
-        Write(&direction);
+        Write(position);
+        Write(direction);
     }
 #else
     if (useDouble)
     {
         Double3 position = ray.Position, direction = ray.Direction;
-        Write(&position);
-        Write(&direction);
+        Write(position);
+        Write(direction);
     }
     else
-        Write(&ray);
+        Write(ray);
 #endif
 }
 

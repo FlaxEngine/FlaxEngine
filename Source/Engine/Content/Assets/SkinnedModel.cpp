@@ -413,7 +413,7 @@ bool SkinnedModel::Save(bool withMeshDataFromGpu, const StringView& path)
             auto& slot = MaterialSlots[materialSlotIndex];
 
             const auto id = slot.Material.GetID();
-            stream->Write(&id);
+            stream->Write(id);
             stream->WriteByte(static_cast<byte>(slot.ShadowsMode));
             stream->WriteString(slot.Name, 11);
         }
@@ -470,7 +470,7 @@ bool SkinnedModel::Save(bool withMeshDataFromGpu, const StringView& path)
             {
                 auto& node = Skeleton.Nodes[nodeIndex];
 
-                stream->Write(&node.ParentIndex);
+                stream->Write(node.ParentIndex);
                 stream->WriteTransform(node.LocalTransform);
                 stream->WriteString(node.Name, 71);
             }
@@ -482,10 +482,10 @@ bool SkinnedModel::Save(bool withMeshDataFromGpu, const StringView& path)
             {
                 auto& bone = Skeleton.Bones[boneIndex];
 
-                stream->Write(&bone.ParentIndex);
-                stream->Write(&bone.NodeIndex);
+                stream->Write(bone.ParentIndex);
+                stream->Write(bone.NodeIndex);
                 stream->WriteTransform(bone.LocalTransform);
-                stream->Write(&bone.OffsetMatrix);
+                stream->Write(bone.OffsetMatrix);
             }
         }
     }
@@ -880,7 +880,7 @@ Asset::LoadResult SkinnedModel::load()
 
         // Material
         Guid materialId;
-        stream->Read(&materialId);
+        stream->Read(materialId);
         slot.Material = materialId;
 
         // Shadows Mode
@@ -967,7 +967,7 @@ Asset::LoadResult SkinnedModel::load()
         {
             auto& node = Skeleton.Nodes[nodeIndex];
 
-            stream->Read(&node.ParentIndex);
+            stream->Read(node.ParentIndex);
             stream->ReadTransform(&node.LocalTransform);
             stream->ReadString(&node.Name, 71);
         }
@@ -983,10 +983,10 @@ Asset::LoadResult SkinnedModel::load()
         {
             auto& bone = Skeleton.Bones[boneIndex];
 
-            stream->Read(&bone.ParentIndex);
-            stream->Read(&bone.NodeIndex);
+            stream->Read(bone.ParentIndex);
+            stream->Read(bone.NodeIndex);
             stream->ReadTransform(&bone.LocalTransform);
-            stream->Read(&bone.OffsetMatrix);
+            stream->Read(bone.OffsetMatrix);
         }
     }
 

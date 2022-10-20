@@ -59,7 +59,7 @@ bool ImportTexture::TryGetImportOptions(const StringView& path, Options& options
                         {
                             // Load sprite
                             Sprite t;
-                            stream.Read(&t.Area);;
+                            stream.Read(t.Area);
                             stream.ReadString(&t.Name, 49);
                             options.Sprites.Add(t);
                         }
@@ -183,7 +183,7 @@ CreateAssetResult ImportTexture::Create(CreateAssetContext& context, const Textu
         for (int32 i = 0; i < options.Sprites.Count(); i++)
         {
             auto& sprite = options.Sprites[i];
-            stream.Write(&sprite.Area);
+            stream.Write(sprite.Area);
             stream.WriteString(sprite.Name, 49);
         }
         if (context.AllocateChunk(15))
@@ -322,7 +322,7 @@ CreateAssetResult ImportTexture::Create(CreateAssetContext& context, const Textu
         for (int32 i = 0; i < options.Sprites.Count(); i++)
         {
             auto& sprite = options.Sprites[i];
-            stream.Write(&sprite.Area);
+            stream.Write(sprite.Area);
             stream.WriteString(sprite.Name, 49);
         }
         if (context.AllocateChunk(15))

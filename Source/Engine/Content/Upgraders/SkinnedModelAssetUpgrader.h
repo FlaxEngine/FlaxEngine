@@ -87,7 +87,7 @@ private:
                 const float invSum = sum > ZeroTolerance ? 1.0f / sum : 0.0f;
                 blendWeights *= invSum;
                 newVertex.BlendWeights = Half4(blendWeights);
-                output.Write(&newVertex);
+                output.WriteBytes(&newVertex, sizeof(newVertex));
             }
             output.WriteBytes(ib, indicesCount * ibStride);
         } while (stream.CanRead());
@@ -133,8 +133,8 @@ private:
             {
                 // Material
                 Guid materialId;
-                stream.Read(&materialId);
-                output.Write(&materialId);
+                stream.Read(materialId);
+                output.Write(materialId);
 
                 // Shadows Mode
                 output.WriteByte(stream.ReadByte());
@@ -166,13 +166,13 @@ private:
 
                 // Box
                 BoundingBox box;
-                stream.Read(&box);
-                output.Write(&box);
+                stream.Read(box);
+                output.Write(box);
 
                 // Sphere
                 BoundingSphere sphere;
-                stream.Read(&sphere);
-                output.Write(&sphere);
+                stream.Read(sphere);
+                output.Write(sphere);
             }
 
             // Skeleton
@@ -189,8 +189,8 @@ private:
                     output.WriteInt32(parentIndex);
 
                     Transform localTransform;
-                    stream.Read(&localTransform);
-                    output.Write(&localTransform);
+                    stream.Read(localTransform);
+                    output.Write(localTransform);
 
                     String name;
                     stream.ReadString(&name, 71);
@@ -213,8 +213,8 @@ private:
                     output.WriteInt32(nodeIndex);
 
                     Transform localTransform;
-                    stream.Read(&localTransform);
-                    output.Write(&localTransform);
+                    stream.Read(localTransform);
+                    output.Write(localTransform);
 
                     Matrix offsetMatrix;
                     stream.ReadBytes(&offsetMatrix, sizeof(Matrix));
@@ -263,8 +263,8 @@ private:
             {
                 // Material
                 Guid materialId;
-                stream.Read(&materialId);
-                output.Write(&materialId);
+                stream.Read(materialId);
+                output.Write(materialId);
 
                 // Shadows Mode
                 output.WriteByte(stream.ReadByte());
@@ -304,13 +304,13 @@ private:
 
                     // Box
                     BoundingBox box;
-                    stream.Read(&box);
-                    output.Write(&box);
+                    stream.Read(box);
+                    output.Write(box);
 
                     // Sphere
                     BoundingSphere sphere;
-                    stream.Read(&sphere);
-                    output.Write(&sphere);
+                    stream.Read(sphere);
+                    output.Write(sphere);
 
                     // Blend Shapes
                     output.WriteUint16(0);
@@ -331,8 +331,8 @@ private:
                     output.WriteInt32(parentIndex);
 
                     Transform localTransform;
-                    stream.Read(&localTransform);
-                    output.Write(&localTransform);
+                    stream.Read(localTransform);
+                    output.Write(localTransform);
 
                     String name;
                     stream.ReadString(&name, 71);
@@ -355,8 +355,8 @@ private:
                     output.WriteInt32(nodeIndex);
 
                     Transform localTransform;
-                    stream.Read(&localTransform);
-                    output.Write(&localTransform);
+                    stream.Read(localTransform);
+                    output.Write(localTransform);
 
                     Matrix offsetMatrix;
                     stream.ReadBytes(&offsetMatrix, sizeof(Matrix));
@@ -404,9 +404,9 @@ private:
                 if (vertices == 0 || triangles == 0)
                     return true;
                 const auto vb0 = stream.Move<VB0SkinnedElementType>(vertices);
-                output.Write<VB0SkinnedElementType>(vb0, vertices);
+                output.WriteBytes(vb0, vertices * sizeof(VB0SkinnedElementType));
                 const auto ib = stream.Move<byte>(indicesCount * ibStride);
-                output.Write<byte>(ib, indicesCount * ibStride);
+                output.WriteBytes(ib, indicesCount * ibStride);
             }
 
             // Save new data

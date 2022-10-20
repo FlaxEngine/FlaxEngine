@@ -89,7 +89,7 @@ bool Log::Logger::Init()
 
     // Write BOM (UTF-16 (LE); BOM: FF FE)
     byte bom[] = { 0xFF, 0xFE };
-    LogFile->Write(bom, 2);
+    LogFile->WriteBytes(bom, 2);
 
     // Write startup info
     WriteFloor();
@@ -137,8 +137,8 @@ void Log::Logger::Write(const StringView& msg)
     // Write message to log file
     if (LogAfterInit)
     {
-        LogFile->Write(ptr, length);
-        LogFile->Write(TEXT(PLATFORM_LINE_TERMINATOR), ARRAY_COUNT(PLATFORM_LINE_TERMINATOR) - 1);
+        LogFile->WriteBytes(ptr, length * sizeof(Char));
+        LogFile->WriteBytes(TEXT(PLATFORM_LINE_TERMINATOR), (ARRAY_COUNT(PLATFORM_LINE_TERMINATOR) - 1) * sizeof(Char));
 #if LOG_ENABLE_AUTO_FLUSH
         LogFile->Flush();
 #endif

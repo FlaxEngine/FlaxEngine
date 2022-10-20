@@ -93,7 +93,7 @@ bool SceneCSGData::TryGetSurfaceData(const Guid& brushId, int32 brushSurfaceInde
             {
                 Guid id;
                 int32 pos;
-                stream.Read(&id);
+                stream.Read(id);
                 stream.ReadInt32(&pos);
                 DataBrushLocations.Add(id, pos);
             }

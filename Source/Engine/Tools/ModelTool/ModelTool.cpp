@@ -228,9 +228,9 @@ bool ModelTool::GenerateModelSDF(Model* inputModel, ModelData* modelData, float 
     {
         outputStream->WriteInt32(1); // Version
         ModelSDFHeader data(sdf, textureDesc);
-        outputStream->Write(&data);
+        outputStream->WriteBytes(&data, sizeof(data));
         ModelSDFMip mipData(0, resolution.X * formatStride, voxelsSize);
-        outputStream->Write(&mipData);
+        outputStream->WriteBytes(&mipData, sizeof(mipData));
         outputStream->WriteBytes(voxels, voxelsSize);
     }
 
@@ -293,7 +293,7 @@ bool ModelTool::GenerateModelSDF(Model* inputModel, ModelData* modelData, float 
         if (outputStream)
         {
             ModelSDFMip mipData(mipLevel, resolutionMip.X * formatStride, voxelsMipSize);
-            outputStream->Write(&mipData);
+            outputStream->WriteBytes(&mipData, sizeof(mipData));
             outputStream->WriteBytes(voxelsMip, voxelsMipSize);
         }
 
