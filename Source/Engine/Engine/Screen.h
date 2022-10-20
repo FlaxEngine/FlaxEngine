@@ -5,6 +5,7 @@
 #include "Engine/Scripting/ScriptingType.h"
 #include "Engine/Input/Enums.h"
 #include "Engine/Core/Math/Vector2.h"
+#include "Engine/Core/Collections/Array.h"
 
 /// <summary>
 /// Helper class to access display information.
@@ -33,6 +34,12 @@ DECLARE_SCRIPTING_TYPE_NO_SPAWN(Screen);
     /// </summary>
     /// <returns>The value</returns>
     API_PROPERTY() static Float2 GetSize();
+
+    /// <summary>
+    /// returns a list of standard resolutions used in monitors and media
+    /// </summary>
+    /// <returns>List of resolutions</returns>
+    API_PROPERTY() static Array<Float2> GetAllResolutions();
 
     /// <summary>
     /// Converts the screen-space position to the game viewport position.
