@@ -470,7 +470,7 @@ namespace Flax.Build.Plugins
         {
             ModuleDefinition module = type.Module;
             var m = new MethodDefinition(name, MethodAttributes.Public | MethodAttributes.HideBySig, voidType);
-            m.Parameters.Add(new ParameterDefinition("stream", ParameterAttributes.None, networkStreamType));
+            m.Parameters.Add(new ParameterDefinition("stream", ParameterAttributes.None, module.ImportReference(networkStreamType)));
             TypeDefinition networkStream = networkStreamType.Resolve();
             ILProcessor il = m.Body.GetILProcessor();
             il.Emit(OpCodes.Nop);
