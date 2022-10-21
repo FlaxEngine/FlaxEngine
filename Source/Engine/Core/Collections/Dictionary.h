@@ -311,6 +311,13 @@ public:
             return _index != v._index || &_collection != &v._collection;
         }
 
+        Iterator& operator=(const Iterator& v)
+        {
+            _collection = v._collection;
+            _index = v._index;
+            return *this;
+        }
+
         Iterator& operator++()
         {
             const int32 capacity = _collection.Capacity();
