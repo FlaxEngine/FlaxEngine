@@ -173,7 +173,7 @@ public:
     {
         uint32 id[4] = { 0 };
         if (data)
-            Platform::MemoryCopy(id, &data->GetID(), sizeof(id));
+            memcpy(id, &data->GetID(), sizeof(id));
         WriteBytes(id, sizeof(id));
     }
 
