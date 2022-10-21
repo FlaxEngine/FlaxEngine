@@ -36,12 +36,6 @@ DECLARE_SCRIPTING_TYPE_NO_SPAWN(Screen);
     API_PROPERTY() static Float2 GetSize();
 
     /// <summary>
-    /// returns a list of standard resolutions used in monitors and media
-    /// </summary>
-    /// <returns>List of resolutions</returns>
-    API_PROPERTY() static Array<Float2> GetAllResolutions();
-
-    /// <summary>
     /// Converts the screen-space position to the game viewport position.
     /// </summary>
     /// <param name="screenPos">The screen-space position.</param>
