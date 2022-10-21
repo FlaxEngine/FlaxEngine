@@ -166,7 +166,7 @@ void NetworkReplicator::AddSerializer(const ScriptingTypeHandle& typeHandle, con
         return;
 
     // This assumes that C# glue code passed static method pointer (via Marshal.GetFunctionPointerForDelegate)
-    const Serializer serializer{ INetworkSerializable_Managed, INetworkSerializable_Managed, *(SerializeFunc*)&serialize, *(SerializeFunc*)&deserialize };
+    const Serializer serializer{ INetworkSerializable_Managed, INetworkSerializable_Managed, *(SerializeFunc*)(void*)&serialize, *(SerializeFunc*)(void*)&deserialize };
     SerializersTable.Add(typeHandle, serializer);
 }
 

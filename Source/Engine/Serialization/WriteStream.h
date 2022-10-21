@@ -171,8 +171,10 @@ public:
     template<typename T>
     typename TEnableIf<TIsBaseOf<ScriptingObject, T>::Value>::Type Write(const T* data)
     {
-        const Guid id = data ? data->GetID() : Guid::Empty;
-        WriteBytes(&id, sizeof(Guid));
+        uint32 id[4] = { 0 };
+        if (data)
+            Platform::MemoryCopy(id, &data->GetID(), sizeof(id));
+        WriteBytes(id, sizeof(id));
     }
 
     template<typename T, typename AllocationType = HeapAllocation>
@@ -183,7 +185,7 @@ public:
         if (size > 0)
         {
             if (TIsPODType<T>::Value && !TIsPointer<T>::Value)
-                WriteBytes(data.Get(), size * sizeof(T)); 
+                WriteBytes(data.Get(), size * sizeof(T));
             else
             {
                 for (int32 i = 0; i < size; i++)
