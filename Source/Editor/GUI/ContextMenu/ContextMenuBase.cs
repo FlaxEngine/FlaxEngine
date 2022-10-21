@@ -155,11 +155,19 @@ namespace FlaxEditor.GUI.ContextMenu
                     if (parent is ContextMenu menu && menu._childCM != null)
                         locationSS.Y += 30.0f * dpiScale;
                 }
-                if (monitorBounds.Right < rightBottomLocationSS.X)
+                if (monitorBounds.Right < rightBottomLocationSS.X || _parentCM?.Direction == ContextMenuDirection.LeftDown || _parentCM?.Direction == ContextMenuDirection.LeftUp)
                 {
                     // Direction: left
                     isLeft = true;
-                    locationSS.X -= dpiSize.X;
+                    
+                    if (IsSubMenu && _parentCM != null)
+                    {
+                        locationSS.X -= _parentCM.Width + dpiSize.X;
+                    }
+                    else
+                    {
+                        locationSS.X -= dpiSize.X;
+                    }
                 }
             }
 
