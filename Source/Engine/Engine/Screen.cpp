@@ -69,7 +69,7 @@ void Screen::SetSize(const Float2& value)
 Array<Float2> Screen::GetAllResolutions() {
 
     // reference: https://en.wikipedia.org/wiki/List_of_common_resolutions
-
+#if PLATFORM_DESKTOP || PLATFORM_LINUX
     // all list of monitors and video resolutions
     Float2 rawResolutions[66] = {
         Float2(480, 480),
@@ -141,7 +141,7 @@ Array<Float2> Screen::GetAllResolutions() {
     Array<Float2> resolutions = Array<Float2>();
 
     // invert horizontal resolutions to vertical
-    if (primaryResolution.Y > primaryResolution.X) 
+    if (primaryResolution.Y > primaryResolution.X)
     {
         for (int i = 0; i < rawResolutions->Length(); i++)
         {
@@ -160,8 +160,10 @@ Array<Float2> Screen::GetAllResolutions() {
     }
 
     resolutions.Add(primaryResolution);
-
     return resolutions;
+#else
+    return Array<Float2>({ primaryResolution });
+#endif
 } 
 
 Float2 Screen::ScreenToGameViewport(const Float2& screenPos)
