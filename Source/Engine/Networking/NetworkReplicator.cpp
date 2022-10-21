@@ -162,18 +162,16 @@ void INetworkSerializable_Managed(void* instance, NetworkStream* stream, void* t
 
 void NetworkReplicator::AddSerializer(const ScriptingTypeHandle& typeHandle, const Function<void(void*, void*)>& serialize, const Function<void(void*, void*)>& deserialize)
 {
-    if (!typeHandle)
-        return;
-
     // This assumes that C# glue code passed static method pointer (via Marshal.GetFunctionPointerForDelegate)
-    const Serializer serializer{ { INetworkSerializable_Managed, INetworkSerializable_Managed }, { *(SerializeFunc*)&serialize, *(SerializeFunc*)&deserialize } };
-    SerializersTable.Add(typeHandle, serializer);
+    AddSerializer(typeHandle, INetworkSerializable_Managed, INetworkSerializable_Managed, (void*)*(SerializeFunc*)&serialize, (void*)*(SerializeFunc*)&deserialize);
 }
 
 #endif
 
 void NetworkReplicator::AddSerializer(const ScriptingTypeHandle& typeHandle, SerializeFunc serialize, SerializeFunc deserialize, void* serializeTag, void* deserializeTag)
 {
+    if (!typeHandle)
+        return;
     const Serializer serializer{ { serialize, deserialize }, { serializeTag, deserializeTag } };
     SerializersTable.Add(typeHandle, serializer);
 }
