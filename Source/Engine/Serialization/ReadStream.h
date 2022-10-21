@@ -151,9 +151,9 @@ public:
     template<typename T>
     typename TEnableIf<TIsBaseOf<ScriptingObject, T>::Value>::Type Read(T*& data)
     {
-        Guid id;
-        ReadBytes(&id, sizeof(Guid));
-        data = (T*)::FindObject(id, T::GetStaticClass());
+        uint32 id[4];
+        ReadBytes(id, sizeof(id));
+        data = (T*)::FindObject(*(Guid*)id, T::GetStaticClass());
     }
 
     /// <summary>
