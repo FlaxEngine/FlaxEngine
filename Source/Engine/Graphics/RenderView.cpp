@@ -188,23 +188,6 @@ void RenderView::CopyFrom(Camera* camera, Viewport* viewport)
     RenderLayersMask = camera->RenderLayersMask;
 }
 
-DrawPass RenderView::GetShadowsDrawPassMask(ShadowsCastingMode shadowsMode) const
-{
-    switch (shadowsMode)
-    {
-    case ShadowsCastingMode::All:
-        return DrawPass::All;
-    case ShadowsCastingMode::DynamicOnly:
-        return IsOfflinePass ? ~DrawPass::Depth : DrawPass::All;
-    case ShadowsCastingMode::StaticOnly:
-        return IsOfflinePass ? DrawPass::All : ~DrawPass::Depth;
-    case ShadowsCastingMode::None:
-        return ~DrawPass::Depth;
-    default:
-        return DrawPass::All;
-    }
-}
-
 void RenderView::GetWorldMatrix(const Transform& transform, Matrix& world) const
 {
     const Float3 translation = transform.Translation - Origin;

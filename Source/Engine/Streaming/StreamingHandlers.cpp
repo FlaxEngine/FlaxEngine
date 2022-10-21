@@ -104,22 +104,20 @@ int32 ModelsStreamingHandler::CalculateResidency(StreamableResource* resource, f
     if (quality < ZeroTolerance)
         return 0;
     ASSERT(resource);
-    auto& model = *(Model*)resource;
-
+    const auto& model = *(Model*)resource;
     const int32 lodCount = model.GetLODsCount();
-    int32 lods = Math::CeilToInt(quality * (float)lodCount);
-    ASSERT(model.IsValidLODIndex(lods - 1));
+    const int32 lods = Math::CeilToInt(quality * (float)lodCount);
     return lods;
 }
 
 int32 ModelsStreamingHandler::CalculateRequestedResidency(StreamableResource* resource, int32 targetResidency)
 {
     ASSERT(resource);
-    auto& model = *(Model*)resource;
+    const auto& model = *(Model*)resource;
 
     // Always load only single LOD at once
     int32 residency = targetResidency;
-    int32 currentResidency = model.GetCurrentResidency();
+    const int32 currentResidency = model.GetCurrentResidency();
     if (currentResidency < targetResidency)
     {
         // Up
@@ -145,22 +143,20 @@ int32 SkinnedModelsStreamingHandler::CalculateResidency(StreamableResource* reso
     if (quality < ZeroTolerance)
         return 0;
     ASSERT(resource);
-    auto& model = *(SkinnedModel*)resource;
-
+    const auto& model = *(SkinnedModel*)resource;
     const int32 lodCount = model.GetLODsCount();
-    int32 lods = Math::CeilToInt(quality * (float)lodCount);
-    ASSERT(model.IsValidLODIndex(lods - 1));
+    const int32 lods = Math::CeilToInt(quality * (float)lodCount);
     return lods;
 }
 
 int32 SkinnedModelsStreamingHandler::CalculateRequestedResidency(StreamableResource* resource, int32 targetResidency)
 {
     ASSERT(resource);
-    auto& model = *(SkinnedModel*)resource;
+    const auto& model = *(SkinnedModel*)resource;
 
     // Always load only single LOD at once
     int32 residency = targetResidency;
-    int32 currentResidency = model.GetCurrentResidency();
+    const int32 currentResidency = model.GetCurrentResidency();
     if (currentResidency < targetResidency)
     {
         // Up

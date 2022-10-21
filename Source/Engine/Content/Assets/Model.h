@@ -55,16 +55,6 @@ public:
     }
 
     /// <summary>
-    /// Determines whether the specified index is a valid LOD index.
-    /// </summary>
-    /// <param name="index">The index.</param>
-    /// <returns>True if the specified index is a valid LOD index, otherwise false.</returns>
-    FORCE_INLINE bool IsValidLODIndex(int32 index) const
-    {
-        return Math::IsInRange(index, 0, LODs.Count() - 1);
-    }
-
-    /// <summary>
     /// Clamps the index of the LOD to be valid for rendering (only loaded LODs).
     /// </summary>
     /// <param name="index">The index.</param>
@@ -79,7 +69,7 @@ public:
     /// </summary>
     FORCE_INLINE int32 HighestResidentLODIndex() const
     {
-        return GetLODsCount() - _loadedLODs;
+        return LODs.Count() - _loadedLODs;
     }
 
     /// <summary>

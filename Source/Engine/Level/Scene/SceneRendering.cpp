@@ -41,9 +41,23 @@ void SceneRendering::Draw(RenderContext& renderContext)
     {
         for (int32 i = 0; i < Actors.Count(); i++)
         {
-            auto e = Actors[i];
+            auto e = Actors.Get()[i];
             e.Bounds.Center -= origin;
             if (view.RenderLayersMask.Mask & e.LayerMask && (e.NoCulling || frustum.Intersects(e.Bounds)) && e.Actor->GetStaticFlags() & view.StaticFlagsMask)
+            {
+#if SCENE_RENDERING_USE_PROFILER
+                PROFILE_CPU_ACTOR(e.Actor);
+#endif
+                e.Actor->Draw(renderContext);
+            }
+        }
+    }
+    else if (origin.IsZero())
+    {
+        for (int32 i = 0; i < Actors.Count(); i++)
+        {
+            auto e = Actors.Get()[i];
+            if (view.RenderLayersMask.Mask & e.LayerMask && (e.NoCulling || frustum.Intersects(e.Bounds)))
             {
 #if SCENE_RENDERING_USE_PROFILER
                 PROFILE_CPU_ACTOR(e.Actor);
@@ -56,7 +70,7 @@ void SceneRendering::Draw(RenderContext& renderContext)
     {
         for (int32 i = 0; i < Actors.Count(); i++)
         {
-            auto e = Actors[i];
+            auto e = Actors.Get()[i];
             e.Bounds.Center -= origin;
             if (view.RenderLayersMask.Mask & e.LayerMask && (e.NoCulling || frustum.Intersects(e.Bounds)))
             {

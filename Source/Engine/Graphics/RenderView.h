@@ -296,7 +296,22 @@ public:
     void CopyFrom(Camera* camera, Viewport* viewport = nullptr);
 
 public:
-    DrawPass GetShadowsDrawPassMask(ShadowsCastingMode shadowsMode) const;
+    FORCE_INLINE DrawPass GetShadowsDrawPassMask(ShadowsCastingMode shadowsMode) const
+    {
+        switch (shadowsMode)
+        {
+        case ShadowsCastingMode::All:
+            return DrawPass::All;
+        case ShadowsCastingMode::DynamicOnly:
+            return IsOfflinePass ? ~DrawPass::Depth : DrawPass::All;
+        case ShadowsCastingMode::StaticOnly:
+            return IsOfflinePass ? DrawPass::All : ~DrawPass::Depth;
+        case ShadowsCastingMode::None:
+            return ~DrawPass::Depth;
+        default:
+            return DrawPass::All;
+        }
+    }
 
 public:
     // Camera's View * Projection matrix
