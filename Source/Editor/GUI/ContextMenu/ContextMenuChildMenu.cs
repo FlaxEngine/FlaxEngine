@@ -26,6 +26,7 @@ namespace FlaxEditor.GUI.ContextMenu
         : base(parent, text)
         {
             Text = text;
+            CloseMenuOnClick = false;
         }
 
         /// <inheritdoc />
