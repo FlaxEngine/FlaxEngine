@@ -223,45 +223,21 @@ namespace FlaxEditor.Viewport
 
             editor.SceneEditing.SelectionChanged += OnSelectionChanged;
 
-            // initialize snapping enabled from cached values
-            string cachedSnapState;
-            if (_editor.ProjectCache.TryGetCustomData("TranslateSnapState", out cachedSnapState))
-            {
-                TransformGizmo.TranslationSnapEnable = Boolean.Parse(cachedSnapState);
-            }
-            if (_editor.ProjectCache.TryGetCustomData("RotationSnapState", out cachedSnapState))
-            {
-                TransformGizmo.RotationSnapEnabled = Boolean.Parse(cachedSnapState);
-            }
-            if (_editor.ProjectCache.TryGetCustomData("ScaleSnapState", out cachedSnapState))
-            {
-                TransformGizmo.ScaleSnapEnabled = Boolean.Parse(cachedSnapState);
-            }
-            
-            // initialize snap value if there is one cached
-            string cachedSnapValue;
-            if (_editor.ProjectCache.TryGetCustomData("TranslateSnapValue", out cachedSnapValue))
-            {
-                TransformGizmo.TranslationSnapValue = float.Parse(cachedSnapValue);
-            }
-            if (_editor.ProjectCache.TryGetCustomData("RotationSnapValue", out cachedSnapValue))
-            {
-                TransformGizmo.RotationSnapValue = float.Parse(cachedSnapValue);
-            }
-            if (_editor.ProjectCache.TryGetCustomData("ScaleSnapValue", out cachedSnapValue))
-            {
-                TransformGizmo.ScaleSnapValue = float.Parse(cachedSnapValue);
-            }
-
-            // initialize transform space if one is cached
-            string cachedTransformSpace;
-            if (_editor.ProjectCache.TryGetCustomData("TransformSpaceState", out cachedTransformSpace))
-            {
-                if (Enum.TryParse(cachedTransformSpace, out TransformGizmoBase.TransformSpace space))
-                {
-                    TransformGizmo.ActiveTransformSpace = space;
-                }
-            }
+            // Initialize snapping enabled from cached values
+            if (_editor.ProjectCache.TryGetCustomData("TranslateSnapState", out var cachedState))
+                TransformGizmo.TranslationSnapEnable = bool.Parse(cachedState);
+            if (_editor.ProjectCache.TryGetCustomData("RotationSnapState", out cachedState))
+                TransformGizmo.RotationSnapEnabled = bool.Parse(cachedState);
+            if (_editor.ProjectCache.TryGetCustomData("ScaleSnapState", out cachedState))
+                TransformGizmo.ScaleSnapEnabled = bool.Parse(cachedState);
+            if (_editor.ProjectCache.TryGetCustomData("TranslateSnapValue", out cachedState))
+                TransformGizmo.TranslationSnapValue = float.Parse(cachedState);
+            if (_editor.ProjectCache.TryGetCustomData("RotationSnapValue", out cachedState))
+                TransformGizmo.RotationSnapValue = float.Parse(cachedState);
+            if (_editor.ProjectCache.TryGetCustomData("ScaleSnapValue", out cachedState))
+                TransformGizmo.ScaleSnapValue = float.Parse(cachedState);
+            if (_editor.ProjectCache.TryGetCustomData("TransformSpaceState", out cachedState) && Enum.TryParse(cachedState, out TransformGizmoBase.TransformSpace space))
+                TransformGizmo.ActiveTransformSpace = space;
 
             // Transform space widget
             var transformSpaceWidget = new ViewportWidgetsContainer(ViewportWidgetLocation.UpperRight);
