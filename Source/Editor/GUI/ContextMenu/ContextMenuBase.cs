@@ -159,7 +159,7 @@ namespace FlaxEditor.GUI.ContextMenu
                 {
                     // Direction: left
                     isLeft = true;
-                    
+
                     if (IsSubMenu && _parentCM != null)
                     {
                         locationSS.X -= _parentCM.Width + dpiSize.X;
