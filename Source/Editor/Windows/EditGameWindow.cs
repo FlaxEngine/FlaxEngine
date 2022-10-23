@@ -151,17 +151,17 @@ namespace FlaxEditor.Windows
             Viewport.Task.ViewFlags = ViewFlags.DefaultEditor;
 
             Editor.SceneEditing.SelectionChanged += OnSelectionChanged;
-
             Editor.Scene.ActorRemoved += SceneOnActorRemoved;
         }
-        
+
         /// <inheritdoc />
         public override void OnEditorStateChanged()
         {
             base.OnEditorStateChanged();
+
             UpdateCameraPreview();
         }
-        
+
         private void OnSelectionChanged()
         {
             UpdateCameraPreview();
