@@ -310,6 +310,10 @@ namespace FlaxEditor.Viewport
                 var button = translateSnappingCM.AddButton(v.ToString());
                 button.Tag = v;
             }
+            var buttonBB = translateSnappingCM.AddButton("Bounding Box");
+            buttonBB.Tag = -1.0f;
+
+
             translateSnappingCM.ButtonClicked += OnWidgetTranslateSnapClick;
             translateSnappingCM.VisibleChanged += OnWidgetTranslateSnapShowHide;
             _translateSnapping.Parent = translateSnappingWidget;
@@ -640,7 +644,10 @@ namespace FlaxEditor.Viewport
         {
             var v = (float)button.Tag;
             TransformGizmo.TranslationSnapValue = v;
-            _translateSnapping.Text = v.ToString();
+            if (v < 0.0f)
+                _translateSnapping.Text = "Bounding Box";
+            else
+                _translateSnapping.Text = v.ToString();
         }
 
         private void OnWidgetTranslateSnapShowHide(Control control)
