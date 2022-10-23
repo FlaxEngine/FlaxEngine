@@ -465,7 +465,7 @@ namespace FlaxEditor.Gizmo
                     }
 
                     // Apply transformation (but to the parents, not whole selection pool)
-                    if (anyValid)
+                    if (anyValid || (!_isTransforming && Owner.UseDuplicate) )
                     {
                         StartTransforming();
 
