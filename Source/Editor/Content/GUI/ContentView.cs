@@ -718,11 +718,11 @@ namespace FlaxEditor.Content.GUI
                 float defaultItemsWidth = ContentItem.DefaultWidth * viewScale;
                 int itemsToFit = Mathf.FloorToInt(width / defaultItemsWidth) - 1;
                 if (itemsToFit < 1)
-                {
                     itemsToFit = 1;
-                }
                 float itemsWidth = width / Mathf.Max(itemsToFit, 1);
+                itemsWidth = Mathf.Floor(itemsWidth);
                 float itemsHeight = itemsWidth / defaultItemsWidth * (ContentItem.DefaultHeight * viewScale);
+                itemsHeight = Mathf.Floor(itemsHeight);
                 x = itemsToFit == 1 ? 0 : itemsWidth / itemsToFit;
                 for (int i = 0; i < _children.Count; i++)
                 {
