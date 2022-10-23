@@ -3,6 +3,7 @@
 #include "GPUDevice.h"
 #include "RenderTargetPool.h"
 #include "GPUPipelineState.h"
+#include "GPUSwapChain.h"
 #include "RenderTask.h"
 #include "RenderTools.h"
 #include "Graphics.h"
@@ -12,7 +13,6 @@
 #include "Engine/Content/Assets/Material.h"
 #include "Engine/Content/Content.h"
 #include "Engine/Content/SoftAssetReference.h"
-#include "Engine/Platform/Windows/WindowsWindow.h"
 #include "Engine/Render2D/Render2D.h"
 #include "Engine/Engine/CommandLine.h"
 #include "Engine/Engine/Engine.h"
@@ -408,7 +408,7 @@ void GPUDevice::DrawEnd()
     for (int32 i = RenderTask::Tasks.Count() - 1; i >= 0; i--)
     {
         const auto task = RenderTask::Tasks[i];
-        if (task && task->LastUsedFrame == Engine::FrameCount && task->SwapChain)
+        if (task && task->LastUsedFrame == Engine::FrameCount && task->SwapChain && task->SwapChain->IsReady())
         {
             lastWindowIndex = i;
             break;
@@ -421,7 +421,7 @@ void GPUDevice::DrawEnd()
     for (int32 i = 0; i < RenderTask::Tasks.Count(); i++)
     {
         const auto task = RenderTask::Tasks[i];
-        if (task && task->LastUsedFrame == Engine::FrameCount && task->SwapChain)
+        if (task && task->LastUsedFrame == Engine::FrameCount && task->SwapChain && task->SwapChain->IsReady())
         {
             bool vsync = useVSync;
             if (lastWindowIndex != i)
