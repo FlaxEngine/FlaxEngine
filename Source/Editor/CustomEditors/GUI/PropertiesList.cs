@@ -31,6 +31,7 @@ namespace FlaxEditor.CustomEditors.GUI
         private float _splitterValue;
         private Rectangle _splitterRect;
         private bool _splitterClicked, _mouseOverSplitter;
+        private bool _cursorChanged;
 
         /// <summary>
         /// Gets or sets the splitter value (always in range [0; 1]).
@@ -124,6 +125,18 @@ namespace FlaxEditor.CustomEditors.GUI
             if (_splitterClicked)
             {
                 SplitterValue = location.X / Width;
+                Cursor = CursorType.SizeWE;
+                _cursorChanged = true;
+            }
+            else if (_mouseOverSplitter)
+            {
+                Cursor = CursorType.SizeWE;
+                _cursorChanged = true;
+            }
+            else if (_cursorChanged)
+            {
+                Cursor = CursorType.Default;
+                _cursorChanged = false;
             }
 
             base.OnMouseMove(location);
@@ -162,6 +175,12 @@ namespace FlaxEditor.CustomEditors.GUI
         {
             // Clear flag
             _mouseOverSplitter = false;
+            
+            if (_cursorChanged)
+            {
+                Cursor = CursorType.Default;
+                _cursorChanged = false;
+            }
 
             base.OnMouseLeave();
         }
