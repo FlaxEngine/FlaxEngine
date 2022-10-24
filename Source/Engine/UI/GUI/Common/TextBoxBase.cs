@@ -135,6 +135,11 @@ namespace FlaxEngine.GUI
         public event Action<KeyboardKeys> KeyDown;
 
         /// <summary>
+        /// Event fired when a key is up.
+        /// </summary>
+        public event Action<KeyboardKeys> KeyUp; 
+
+        /// <summary>
         /// Gets or sets a value indicating whether this is a multiline text box control.
         /// </summary>
         [EditorOrder(40), Tooltip("If checked, the textbox will support multiline text input.")]
@@ -1171,6 +1176,13 @@ namespace FlaxEngine.GUI
                 return false;
             Insert(c);
             return true;
+        }
+
+        /// <inheritdoc />
+        public override void OnKeyUp(KeyboardKeys key)
+        {
+            base.OnKeyUp(key);
+            KeyUp?.Invoke(key);
         }
 
         /// <inheritdoc />
