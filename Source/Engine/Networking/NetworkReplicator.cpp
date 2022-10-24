@@ -24,7 +24,7 @@
 // Enables verbose logging for Network Replicator actions (dev-only)
 #define NETWORK_REPLICATOR_DEBUG_LOG 1
 
-PACK_STRUCT(struct NetworkMessageReplicatedObject
+PACK_STRUCT(struct NetworkMessageObjectReplicate
     {
     NetworkMessageIDs ID = NetworkMessageIDs::ObjectReplicate;
     uint32 OwnerFrame;
@@ -34,7 +34,7 @@ PACK_STRUCT(struct NetworkMessageReplicatedObject
     uint16 DataSize;
     });
 
-PACK_STRUCT(struct NetworkMessageSpawnObject
+PACK_STRUCT(struct NetworkMessageObjectSpawn
     {
     NetworkMessageIDs ID = NetworkMessageIDs::ObjectSpawn;
     Guid ObjectId;
@@ -43,9 +43,9 @@ PACK_STRUCT(struct NetworkMessageSpawnObject
     char ObjectTypeName[128]; // TODO: introduce networked-name to synchronize unique names as ushort (less data over network)
     });
 
-PACK_STRUCT(struct NetworkMessageDespawnObject
+PACK_STRUCT(struct NetworkMessageObjectDespawn
     {
-    NetworkMessageIDs ID = NetworkMessageIDs::ObjectSpawn;
+    NetworkMessageIDs ID = NetworkMessageIDs::ObjectDespawn;
     Guid ObjectId;
     });
 
@@ -388,7 +388,7 @@ void NetworkInternal::NetworkReplicatorUpdate()
                 continue;
 
             // Send spawn message
-            NetworkMessageSpawnObject msgData;
+            NetworkMessageObjectSpawn msgData;
             msgData.ObjectId = item.ObjectId;
             msgData.ParentId = item.ParentId;
             msgData.OwnerClientId = item.OwnerClientId;
@@ -424,7 +424,7 @@ void NetworkInternal::NetworkReplicatorUpdate()
         for (const Guid& e : DespawnQueue)
         {
             // Send despawn message
-            NetworkMessageDespawnObject msgData;
+            NetworkMessageObjectDespawn msgData;
             msgData.ObjectId = e;
             if (isClient)
             {
@@ -456,7 +456,7 @@ void NetworkInternal::NetworkReplicatorUpdate()
                 continue; // Skip spawning objects that we don't own
 
             // Send spawn message
-            NetworkMessageSpawnObject msgData;
+            NetworkMessageObjectSpawn msgData;
             msgData.ObjectId = item.ObjectId;
             msgData.ParentId = item.ParentId;
             msgData.OwnerClientId = item.OwnerClientId;
@@ -522,7 +522,7 @@ void NetworkInternal::NetworkReplicatorUpdate()
             {
                 const uint32 size = stream->GetPosition();
                 ASSERT(size <= MAX_uint16)
-                NetworkMessageReplicatedObject msgData;
+                NetworkMessageObjectReplicate msgData;
                 msgData.OwnerFrame = NetworkManager::Frame;
                 msgData.ObjectId = item.ObjectId;
                 msgData.ParentId = item.ParentId;
@@ -548,7 +548,7 @@ void NetworkInternal::NetworkReplicatorUpdate()
 
 void NetworkInternal::OnNetworkMessageObjectReplicate(NetworkEvent& event, NetworkClient* client, NetworkPeer* peer)
 {
-    NetworkMessageReplicatedObject msgData;
+    NetworkMessageObjectReplicate msgData;
     event.Message.ReadStructure(msgData);
     ScopeLock lock(ObjectsLock);
     NetworkReplicatedObject* e = ResolveObject(msgData.ObjectId, msgData.ParentId, msgData.ObjectTypeName);
@@ -596,7 +596,7 @@ void NetworkInternal::OnNetworkMessageObjectReplicate(NetworkEvent& event, Netwo
 
 void NetworkInternal::OnNetworkMessageObjectSpawn(NetworkEvent& event, NetworkClient* client, NetworkPeer* peer)
 {
-    NetworkMessageSpawnObject msgData;
+    NetworkMessageObjectSpawn msgData;
     event.Message.ReadStructure(msgData);
     ScopeLock lock(ObjectsLock);
     NetworkReplicatedObject* e = ResolveObject(msgData.ObjectId, msgData.ParentId, msgData.ObjectTypeName);
@@ -658,7 +658,7 @@ void NetworkInternal::OnNetworkMessageObjectSpawn(NetworkEvent& event, NetworkCl
 
 void NetworkInternal::OnNetworkMessageObjectDespawn(NetworkEvent& event, NetworkClient* client, NetworkPeer* peer)
 {
-    NetworkMessageDespawnObject msgData;
+    NetworkMessageObjectDespawn msgData;
     event.Message.ReadStructure(msgData);
     ScopeLock lock(ObjectsLock);
     NetworkReplicatedObject* e = ResolveObject(msgData.ObjectId);
