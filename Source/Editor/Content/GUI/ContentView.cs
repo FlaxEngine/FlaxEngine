@@ -716,19 +716,24 @@ namespace FlaxEditor.Content.GUI
             case ContentViewType.Tiles:
             {
                 float defaultItemsWidth = ContentItem.DefaultWidth * viewScale;
-                int itemsToFit = Mathf.FloorToInt(width / defaultItemsWidth);
+                int itemsToFit = Mathf.FloorToInt(width / defaultItemsWidth) - 1;
+                if (itemsToFit < 1)
+                    itemsToFit = 1;
                 float itemsWidth = width / Mathf.Max(itemsToFit, 1);
+                itemsWidth = Mathf.Floor(itemsWidth);
                 float itemsHeight = itemsWidth / defaultItemsWidth * (ContentItem.DefaultHeight * viewScale);
+                itemsHeight = Mathf.Floor(itemsHeight);
+                x = itemsToFit == 1 ? 0 : itemsWidth / itemsToFit;
                 for (int i = 0; i < _children.Count; i++)
                 {
                     var c = _children[i];
                     c.Bounds = new Rectangle(x, y, itemsWidth, itemsHeight);
 
-                    x += itemsWidth;
+                    x += itemsWidth + itemsWidth / itemsToFit;
                     if (x + itemsWidth > width)
                     {
-                        x = 0;
-                        y += itemsHeight + 1;
+                        x = itemsToFit == 1 ? 0 : itemsWidth / itemsToFit;
+                        y += itemsHeight + 5;
                     }
                 }
                 if (x > 0)
@@ -743,7 +748,7 @@ namespace FlaxEditor.Content.GUI
                 {
                     var c = _children[i];
                     c.Bounds = new Rectangle(x, y, width, itemsHeight);
-                    y += itemsHeight + 1;
+                    y += itemsHeight + 5;
                 }
                 y += 40.0f;
 

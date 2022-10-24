@@ -57,6 +57,7 @@ namespace FlaxEditor.GUI.Input
         private Float2 _startSlideLocation;
         private double _clickStartTime = -1;
         private bool _cursorChanged;
+        private Float2 _mouseClickedPosition;
 
         /// <summary>
         /// Occurs when value gets changed.
@@ -228,7 +229,7 @@ namespace FlaxEditor.GUI.Input
                 // Update
                 UpdateText();
             }
-            
+
             Cursor = CursorType.Default;
 
             ResetViewOffset();
@@ -244,8 +245,12 @@ namespace FlaxEditor.GUI.Input
                 _startSlideLocation = location;
                 _startSlideValue = _value;
                 StartMouseCapture(true);
-                Cursor = CursorType.SizeWE;
+
+                // Hide cursor and cache location
+                Cursor = CursorType.Hidden;
+                _mouseClickedPosition = location;
                 _cursorChanged = true;
+
                 SlidingStart?.Invoke();
                 return true;
             }
@@ -266,9 +271,9 @@ namespace FlaxEditor.GUI.Input
                 ApplySliding(Mathf.RoundToInt(slideLocation.X - _startSlideLocation.X) * _slideSpeed);
                 return;
             }
-            
+
             // Update cursor type so user knows they can slide value
-            if (CanUseSliding && SlideRect.Contains(location))
+            if (CanUseSliding && SlideRect.Contains(location) && !_isSliding)
             {
                 Cursor = CursorType.SizeWE;
                 _cursorChanged = true;
@@ -287,7 +292,8 @@ namespace FlaxEditor.GUI.Input
         {
             if (button == MouseButton.Left && _isSliding)
             {
-                // End sliding
+                // End sliding and return mouse to original location
+                Root.MousePosition = ScreenPos + _mouseClickedPosition;
                 EndSliding();
                 return true;
             }

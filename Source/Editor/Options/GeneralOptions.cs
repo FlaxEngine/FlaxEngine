@@ -137,9 +137,9 @@ namespace FlaxEditor.Options
         /// <summary>
         /// Gets or sets an order of script properties/fields in properties panel.
         /// </summary>
-        [DefaultValue(MembersOrder.Alphabetical)]
+        [DefaultValue(MembersOrder.Declaration)]
         [EditorDisplay("Scripting", "Script Members Order"), EditorOrder(503), Tooltip("Order of script properties/fields in properties panel")]
-        public MembersOrder ScriptMembersOrder { get; set; } = MembersOrder.Alphabetical;
+        public MembersOrder ScriptMembersOrder { get; set; } = MembersOrder.Declaration;
 
         /// <summary>
         /// Gets or sets a value indicating whether automatically save the Visual Script asset editors when starting the play mode in editor.

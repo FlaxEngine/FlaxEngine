@@ -223,6 +223,22 @@ namespace FlaxEditor.Viewport
 
             editor.SceneEditing.SelectionChanged += OnSelectionChanged;
 
+            // Initialize snapping enabled from cached values
+            if (_editor.ProjectCache.TryGetCustomData("TranslateSnapState", out var cachedState))
+                TransformGizmo.TranslationSnapEnable = bool.Parse(cachedState);
+            if (_editor.ProjectCache.TryGetCustomData("RotationSnapState", out cachedState))
+                TransformGizmo.RotationSnapEnabled = bool.Parse(cachedState);
+            if (_editor.ProjectCache.TryGetCustomData("ScaleSnapState", out cachedState))
+                TransformGizmo.ScaleSnapEnabled = bool.Parse(cachedState);
+            if (_editor.ProjectCache.TryGetCustomData("TranslateSnapValue", out cachedState))
+                TransformGizmo.TranslationSnapValue = float.Parse(cachedState);
+            if (_editor.ProjectCache.TryGetCustomData("RotationSnapValue", out cachedState))
+                TransformGizmo.RotationSnapValue = float.Parse(cachedState);
+            if (_editor.ProjectCache.TryGetCustomData("ScaleSnapValue", out cachedState))
+                TransformGizmo.ScaleSnapValue = float.Parse(cachedState);
+            if (_editor.ProjectCache.TryGetCustomData("TransformSpaceState", out cachedState) && Enum.TryParse(cachedState, out TransformGizmoBase.TransformSpace space))
+                TransformGizmo.ActiveTransformSpace = space;
+
             // Transform space widget
             var transformSpaceWidget = new ViewportWidgetsContainer(ViewportWidgetLocation.UpperRight);
             var transformSpaceToggle = new ViewportWidgetButton(string.Empty, editor.Icons.Globe32, null, true)
@@ -523,21 +539,29 @@ namespace FlaxEditor.Viewport
         private void OnTranslateSnappingToggle(ViewportWidgetButton button)
         {
             TransformGizmo.TranslationSnapEnable = !TransformGizmo.TranslationSnapEnable;
+            // cache value
+            _editor.ProjectCache.SetCustomData("TranslateSnapState", TransformGizmo.TranslationSnapEnable.ToString());
         }
 
         private void OnRotateSnappingToggle(ViewportWidgetButton button)
         {
             TransformGizmo.RotationSnapEnabled = !TransformGizmo.RotationSnapEnabled;
+            // cache value
+            _editor.ProjectCache.SetCustomData("RotationSnapState", TransformGizmo.RotationSnapEnabled.ToString());
         }
 
         private void OnScaleSnappingToggle(ViewportWidgetButton button)
         {
             TransformGizmo.ScaleSnapEnabled = !TransformGizmo.ScaleSnapEnabled;
+            // cache value
+            _editor.ProjectCache.SetCustomData("ScaleSnapState", TransformGizmo.ScaleSnapEnabled.ToString());
         }
 
         private void OnTransformSpaceToggle(ViewportWidgetButton button)
         {
             TransformGizmo.ToggleTransformSpace();
+            // cache value
+            _editor.ProjectCache.SetCustomData("TransformSpaceState", TransformGizmo.ActiveTransformSpace.ToString());
         }
 
         private void OnGizmoModeChanged()
@@ -567,6 +591,8 @@ namespace FlaxEditor.Viewport
             var v = (float)button.Tag;
             TransformGizmo.ScaleSnapValue = v;
             _scaleSnapping.Text = v.ToString();
+            // cache value
+            _editor.ProjectCache.SetCustomData("ScaleSnapValue", TransformGizmo.ScaleSnapValue.ToString("N"));
         }
 
         private void OnWidgetScaleSnapShowHide(Control control)
@@ -604,6 +630,8 @@ namespace FlaxEditor.Viewport
             var v = (float)button.Tag;
             TransformGizmo.RotationSnapValue = v;
             _rotateSnapping.Text = v.ToString();
+            // cache value
+            _editor.ProjectCache.SetCustomData("RotationSnapValue", TransformGizmo.RotationSnapValue.ToString("N"));
         }
 
         private void OnWidgetRotateSnapShowHide(Control control)
@@ -640,6 +668,8 @@ namespace FlaxEditor.Viewport
             var v = (float)button.Tag;
             TransformGizmo.TranslationSnapValue = v;
             _translateSnapping.Text = v.ToString();
+            // cache value
+            _editor.ProjectCache.SetCustomData("TranslateSnapValue", TransformGizmo.TranslationSnapValue.ToString("N"));
         }
 
         private void OnWidgetTranslateSnapShowHide(Control control)
