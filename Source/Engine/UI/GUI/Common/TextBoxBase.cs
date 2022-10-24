@@ -130,6 +130,11 @@ namespace FlaxEngine.GUI
         public event Action<TextBoxBase> TextBoxEditEnd;
 
         /// <summary>
+        /// Event fired when a key is down.
+        /// </summary>
+        public event Action<KeyboardKeys> KeyDown;
+
+        /// <summary>
         /// Gets or sets a value indicating whether this is a multiline text box control.
         /// </summary>
         [EditorOrder(40), Tooltip("If checked, the textbox will support multiline text input.")]
@@ -1174,6 +1179,7 @@ namespace FlaxEngine.GUI
             var window = Root;
             bool shiftDown = window.GetKey(KeyboardKeys.Shift);
             bool ctrDown = window.GetKey(KeyboardKeys.Control);
+            KeyDown?.Invoke(key);
 
             switch (key)
             {
