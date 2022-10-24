@@ -7,6 +7,21 @@
 #include "Engine/Scripting/ScriptingType.h"
 
 /// <summary>
+/// The high-level network object role and authority. Used to define who owns the object and when it can be simulated or just replicated.
+/// </summary>
+API_ENUM(Namespace="FlaxEngine.Networking") enum class NetworkObjectRole : byte
+{
+    // Not replicated object.
+    None = 0,
+    // Server/client owns the object and replicates it to others. Only owning client can simulate object and provides current state.
+    OwnedAuthoritative,
+    // Server/client gets replicated object from other server/client who owns it. Object cannot be simulated locally (any changes will be overriden by replication).
+    Replicated,
+    // Client gets replicated object from server but still can locally autonomously simulate it too. For example, client can control local pawn with real human input but will validate with server proper state (eg. to prevent cheats).
+    ReplicatedAutonomous,
+};
+
+/// <summary>
 /// High-level networking replication system for game objects.
 /// </summary>
 API_CLASS(static, Namespace = "FlaxEngine.Networking") class FLAXENGINE_API NetworkReplicator
@@ -41,8 +56,29 @@ public:
     /// </summary>
     /// <remarks>Does nothing if network is offline.</remarks>
     /// <param name="obj">The object to replicate.</param>
-    /// <param name="owner">The owner of the object (eg. player that spawned it).</param>
-    API_FUNCTION() static void AddObject(ScriptingObject* obj, ScriptingObject* owner);
+    /// <param name="parent">The parent of the object (eg. player that spawned it).</param>
+    API_FUNCTION() static void AddObject(ScriptingObject* obj, ScriptingObject* parent);
+
+    /// <summary>
+    /// Spawns the object to the other clients. Can be spawned by the owner who locally created it (eg. from prefab).
+    /// </summary>
+    /// <remarks>Does nothing if network is offline.</remarks>
+    /// <param name="obj">The object to spawn on other clients.</param>
+    API_FUNCTION() static void SpawnObject(ScriptingObject* obj);
+
+    /// <summary>
+    /// Gets the Client Id of the network object owner.
+    /// </summary>
+    /// <param name="obj">The network object.</param>
+    /// <returns>The Client Id.</returns>
+    API_FUNCTION() static uint32 GetObjectClientId(ScriptingObject* obj);
+
+    /// <summary>
+    /// Gets the role of the network object used locally (eg. to check if can simulate object).
+    /// </summary>
+    /// <param name="obj">The network object.</param>
+    /// <returns>The object role.</returns>
+    API_FUNCTION() static NetworkObjectRole GetObjectRole(ScriptingObject* obj);
 
 private:
 #if !COMPILE_WITHOUT_CSHARP

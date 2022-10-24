@@ -75,6 +75,16 @@ public:
     API_FIELD(ReadOnly) static uint32 Frame;
 
     /// <summary>
+    /// Server client identifier. Constant value of 0.
+    /// </summary>
+    API_FIELD(ReadOnly) static constexpr uint32 ServerClientId = 0;
+
+    /// <summary>
+    /// Local client identifier. Valid even on server that doesn't have LocalClient.
+    /// </summary>
+    API_FIELD(ReadOnly) static uint32 LocalClientId;
+
+    /// <summary>
     /// Local client, valid only when Network Manager is running in client or host mode (server doesn't have a client).
     /// </summary>
     API_FIELD(ReadOnly) static NetworkClient* LocalClient;

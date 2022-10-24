@@ -22,6 +22,7 @@ NetworkPeer* NetworkManager::Peer = nullptr;
 NetworkManagerMode NetworkManager::Mode = NetworkManagerMode::Offline;
 NetworkConnectionState NetworkManager::State = NetworkConnectionState::Offline;
 uint32 NetworkManager::Frame = 0;
+uint32 NetworkManager::LocalClientId = 0;
 NetworkClient* NetworkManager::LocalClient = nullptr;
 Array<NetworkClient*> NetworkManager::Clients;
 Action NetworkManager::StateChanged;
@@ -38,7 +39,7 @@ namespace
 
 PACK_STRUCT(struct NetworkMessageHandshake
     {
-    NetworkMessageIDs ID;
+    NetworkMessageIDs ID = NetworkMessageIDs::Handshake;
     uint32 EngineBuild;
     uint32 EngineProtocolVersion;
     uint32 GameProtocolVersion;
@@ -49,7 +50,7 @@ PACK_STRUCT(struct NetworkMessageHandshake
 
 PACK_STRUCT(struct NetworkMessageHandshakeReply
     {
-    NetworkMessageIDs ID;
+    NetworkMessageIDs ID = NetworkMessageIDs::HandshakeReply;
     uint32 ClientId;
     int32 Result;
     });
@@ -75,7 +76,6 @@ void OnNetworkMessageHandshake(NetworkEvent& event, NetworkClient* client, Netwo
 
     // Reply to the handshake message with a result
     NetworkMessageHandshakeReply replyData;
-    replyData.ID = NetworkMessageIDs::HandshakeReply;
     replyData.Result = connectionData.Result;
     replyData.ClientId = client->ClientId;
     NetworkMessage msgReply = peer->BeginSendMessage();
@@ -95,6 +95,7 @@ void OnNetworkMessageHandshake(NetworkEvent& event, NetworkClient* client, Netwo
         client->State = NetworkConnectionState::Connected;
         LOG(Info, "Client id={0} connected", event.Sender.ConnectionId);
         NetworkManager::ClientConnected(client);
+        NetworkInternal::NetworkReplicatorClientConnected(client);
     }
 }
 
@@ -112,6 +113,7 @@ void OnNetworkMessageHandshakeReply(NetworkEvent& event, NetworkClient* client, 
     }
 
     // Client got connected with server
+    NetworkManager::LocalClientId = msgData.ClientId;
     NetworkManager::LocalClient->ClientId = msgData.ClientId;
     NetworkManager::LocalClient->State = NetworkConnectionState::Connected;
     NetworkManager::State = NetworkConnectionState::Connected;
@@ -127,6 +129,7 @@ namespace
         OnNetworkMessageHandshake,
         OnNetworkMessageHandshakeReply,
         NetworkInternal::OnNetworkMessageReplicatedObject,
+        NetworkInternal::OnNetworkMessageSpawnObject,
     };
 }
 
@@ -233,12 +236,14 @@ bool NetworkManager::StartServer()
     PROFILE_CPU();
     Stop();
 
+    LOG(Info, "Starting network manager as server");
     Mode = NetworkManagerMode::Server;
     if (StartPeer())
         return true;
     if (!Peer->Listen())
         return true;
-    NextClientId++;
+    LocalClientId = ServerClientId;
+    NextClientId = ServerClientId + 1;
 
     State = NetworkConnectionState::Connected;
     StateChanged();
@@ -250,12 +255,15 @@ bool NetworkManager::StartClient()
     PROFILE_CPU();
     Stop();
 
+    LOG(Info, "Starting network manager as client");
     Mode = NetworkManagerMode::Client;
     if (StartPeer())
         return true;
     if (!Peer->Connect())
         return true;
-    LocalClient = New<NetworkClient>(0, NetworkConnection{ 0 });
+    LocalClientId = 0; // Id gets assigned by server later after connection
+    NextClientId = 0;
+    LocalClient = New<NetworkClient>(LocalClientId, NetworkConnection{ 0 });
 
     return false;
 }
@@ -265,12 +273,15 @@ bool NetworkManager::StartHost()
     PROFILE_CPU();
     Stop();
 
+    LOG(Info, "Starting network manager as host");
     Mode = NetworkManagerMode::Host;
     if (StartPeer())
         return true;
     if (!Peer->Listen())
         return true;
-    LocalClient = New<NetworkClient>(NextClientId++, NetworkConnection{ 0 });
+    LocalClientId = ServerClientId;
+    NextClientId = ServerClientId + 1;
+    LocalClient = New<NetworkClient>(LocalClientId, NetworkConnection{ 0 });
 
     // Auto-connect host
     LocalClient->State = NetworkConnectionState::Connected;
@@ -287,6 +298,7 @@ void NetworkManager::Stop()
         return;
     PROFILE_CPU();
 
+    LOG(Info, "Stopping network manager");
     State = NetworkConnectionState::Disconnecting;
     if (LocalClient)
         LocalClient->State = NetworkConnectionState::Disconnecting;
@@ -355,7 +367,6 @@ void NetworkManagerService::Update()
 
                 // Send initial handshake message from client to server
                 NetworkMessageHandshake msgData;
-                msgData.ID = NetworkMessageIDs::Handshake;
                 msgData.EngineBuild = FLAXENGINE_VERSION_BUILD;
                 msgData.EngineProtocolVersion = NETWORK_PROTOCOL_VERSION;
                 msgData.GameProtocolVersion = GameProtocolVersion;
@@ -395,6 +406,7 @@ void NetworkManagerService::Update()
                 client->State = NetworkConnectionState::Disconnecting;
                 LOG(Info, "Client id={0} disconnected", event.Sender.ConnectionId);
                 NetworkManager::Clients.RemoveKeepOrder(client);
+                NetworkInternal::NetworkReplicatorClientDisconnected(client);
                 NetworkManager::ClientDisconnected(client);
                 client->State = NetworkConnectionState::Disconnected;
                 Delete(client);

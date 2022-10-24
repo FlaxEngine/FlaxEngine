@@ -40,7 +40,7 @@ namespace Flax.Build.Plugins
         internal const string NetworkReplicated = "NetworkReplicated";
         private const string Thunk1 = "INetworkSerializable_Serialize";
         private const string Thunk2 = "INetworkSerializable_Deserialize";
-        private static Dictionary<string, InBuildSerializer> _inBuildSerializers = new Dictionary<string, InBuildSerializer>()
+        private static readonly Dictionary<string, InBuildSerializer> _inBuildSerializers = new Dictionary<string, InBuildSerializer>()
         {
             { "System.Boolean", new InBuildSerializer("WriteBoolean", "ReadBoolean") },
             { "System.Single", new InBuildSerializer("WriteSingle", "ReadSingle") },

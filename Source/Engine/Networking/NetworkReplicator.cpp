@@ -26,22 +26,34 @@
 
 PACK_STRUCT(struct NetworkMessageReplicatedObject
     {
-    NetworkMessageIDs ID;
+    NetworkMessageIDs ID = NetworkMessageIDs::ReplicatedObject;
     uint32 OwnerFrame;
     Guid ObjectId; // TODO: introduce networked-ids to synchronize unique ids as ushort (less data over network)
-    Guid OwnerId;
+    Guid ParentId;
     char ObjectTypeName[128]; // TODO: introduce networked-name to synchronize unique names as ushort (less data over network)
     uint16 DataSize;
+    });
+
+PACK_STRUCT(struct NetworkMessageSpawnObject
+    {
+    NetworkMessageIDs ID = NetworkMessageIDs::SpawnObject;
+    Guid ObjectId;
+    Guid ParentId;
+    uint32 OwnerClientId;
+    char ObjectTypeName[128]; // TODO: introduce networked-name to synchronize unique names as ushort (less data over network)
     });
 
 struct NetworkReplicatedObject
 {
     ScriptingObjectReference<ScriptingObject> Object;
     Guid ObjectId;
-    Guid OwnerId;
-    uint32 LastOwnerFrameSync = 0;
+    Guid ParentId;
+    uint32 OwnerClientId;
+    uint32 LastOwnerFrame = 0;
+    NetworkObjectRole Role;
+    uint8 Spawned = false;
 #if NETWORK_REPLICATOR_DEBUG_LOG
-    bool InvalidTypeWarn = false;
+    uint8 InvalidTypeWarn = false;
 #endif
 
     bool operator==(const NetworkReplicatedObject& other) const
@@ -80,9 +92,11 @@ namespace
 {
     CriticalSection ObjectsLock;
     HashSet<NetworkReplicatedObject> Objects;
+    Array<ScriptingObjectReference<ScriptingObject>> SpawnQueue;
     Dictionary<Guid, Guid> IdsRemappingTable;
     NetworkStream* CachedWriteStream = nullptr;
     NetworkStream* CachedReadStream = nullptr;
+    Array<NetworkClient*> NewClients;
     Array<NetworkConnection> CachedTargets;
     Dictionary<ScriptingTypeHandle, Serializer> SerializersTable;
 }
@@ -115,16 +129,25 @@ void INetworkSerializable_Deserialize(void* instance, NetworkStream* stream, voi
     ((INetworkSerializable*)instance)->Deserialize(stream);
 }
 
-NetworkReplicatedObject* ResolveObject(Guid objectId, Guid ownerId, char objectTypeName[128])
+NetworkReplicatedObject* ResolveObject(Guid objectId)
 {
-    // Lookup object
-    IdsRemappingTable.TryGet(objectId, objectId);
-    const auto it = Objects.Find(objectId);
+    auto it = Objects.Find(objectId);
     if (it != Objects.End())
         return &it->Item;
+    IdsRemappingTable.TryGet(objectId, objectId);
+    it = Objects.Find(objectId);
+    return it != Objects.End() ? &it->Item : nullptr;
+}
+
+NetworkReplicatedObject* ResolveObject(Guid objectId, Guid parentId, char objectTypeName[128])
+{
+    // Lookup object
+    NetworkReplicatedObject* obj = ResolveObject(objectId);
+    if (obj)
+        return obj;
 
     // Try to find the object within the same parent (eg. spawned locally on both client and server)
-    IdsRemappingTable.TryGet(ownerId, ownerId);
+    IdsRemappingTable.TryGet(parentId, parentId);
     const ScriptingTypeHandle objectType = Scripting::FindScriptingType(StringAnsiView(objectTypeName));
     if (!objectType)
         return nullptr;
@@ -132,8 +155,8 @@ NetworkReplicatedObject* ResolveObject(Guid objectId, Guid ownerId, char objectT
     {
         auto& item = e.Item;
         const ScriptingObject* obj = item.Object.Get();
-        if (item.OwnerId == ownerId &&
-            item.LastOwnerFrameSync == 0 &&
+        if (item.LastOwnerFrame == 0 &&
+            item.ParentId == parentId &&
             obj &&
             obj->GetTypeHandle() == objectType)
         {
@@ -204,11 +227,11 @@ bool NetworkReplicator::InvokeSerializer(const ScriptingTypeHandle& typeHandle, 
     return false;
 }
 
-void NetworkReplicator::AddObject(ScriptingObject* obj, ScriptingObject* owner)
+void NetworkReplicator::AddObject(ScriptingObject* obj, ScriptingObject* parent)
 {
     if (!obj || NetworkManager::State == NetworkConnectionState::Offline)
         return;
-    CHECK(owner && owner != obj);
+    CHECK(parent && parent != obj);
     ScopeLock lock(ObjectsLock);
     if (Objects.Contains(obj))
         return;
@@ -217,11 +240,69 @@ void NetworkReplicator::AddObject(ScriptingObject* obj, ScriptingObject* owner)
     NetworkReplicatedObject item;
     item.Object = obj;
     item.ObjectId = obj->GetID();
-    item.OwnerId = owner->GetID();
+    item.ParentId = parent->GetID();
+    item.OwnerClientId = NetworkManager::ServerClientId; // Server owns objects by default
+    item.Role = NetworkManager::IsClient() ? NetworkObjectRole::Replicated : NetworkObjectRole::OwnedAuthoritative;
 #if NETWORK_REPLICATOR_DEBUG_LOG
-    LOG(Info, "[NetworkReplicator] Add new object {}:{}, owned by {}:{}", item.ToString(), obj->GetType().ToString(), item.OwnerId.ToString(), owner->GetType().ToString());
+    LOG(Info, "[NetworkReplicator] Add new object {}:{}, parent {}:{}", item.ToString(), obj->GetType().ToString(), item.ParentId.ToString(), parent->GetType().ToString());
 #endif
     Objects.Add(MoveTemp(item));
+}
+
+void NetworkReplicator::SpawnObject(ScriptingObject* obj)
+{
+    if (!obj || NetworkManager::State == NetworkConnectionState::Offline)
+        return;
+    ScopeLock lock(ObjectsLock);
+    auto it = Objects.Find(obj->GetID());
+    if (it == Objects.End())
+    {
+        // Ensure that object is added to the replication locally
+        AddObject(obj, nullptr);
+        it = Objects.Find(obj->GetID());
+    }
+
+    // Register for spawning (batched spawning during update)
+    ASSERT_LOW_LAYER(!SpawnQueue.Contains(obj));
+    SpawnQueue.Add(obj);
+}
+
+uint32 NetworkReplicator::GetObjectClientId(ScriptingObject* obj)
+{
+    uint32 id = 0;
+    if (obj)
+    {
+        ScopeLock lock(ObjectsLock);
+        const auto it = Objects.Find(obj->GetID());
+        if (it != Objects.End())
+            id = it->Item.OwnerClientId;
+    }
+    return id;
+}
+
+NetworkObjectRole NetworkReplicator::GetObjectRole(ScriptingObject* obj)
+{
+    NetworkObjectRole role = NetworkObjectRole::None;
+    if (obj)
+    {
+        ScopeLock lock(ObjectsLock);
+        const auto it = Objects.Find(obj->GetID());
+        if (it != Objects.End())
+            role = it->Item.Role;
+    }
+    return role;
+}
+
+void NetworkInternal::NetworkReplicatorClientConnected(NetworkClient* client)
+{
+    ScopeLock lock(ObjectsLock);
+    NewClients.Add(client);
+}
+
+void NetworkInternal::NetworkReplicatorClientDisconnected(NetworkClient* client)
+{
+    ScopeLock lock(ObjectsLock);
+    NewClients.Remove(client);
 }
 
 void NetworkInternal::NetworkReplicatorClear()
@@ -238,6 +319,7 @@ void NetworkInternal::NetworkReplicatorClear()
     IdsRemappingTable.SetCapacity(0);
     SAFE_DELETE(CachedWriteStream);
     SAFE_DELETE(CachedReadStream);
+    NewClients.Clear();
     CachedTargets.Resize(0);
 }
 
@@ -255,30 +337,105 @@ void NetworkInternal::NetworkReplicatorUpdate()
         return;
     if (CachedWriteStream == nullptr)
         CachedWriteStream = New<NetworkStream>();
+    const bool isClient = NetworkManager::IsClient();
     NetworkStream* stream = CachedWriteStream;
     NetworkPeer* peer = NetworkManager::Peer;
     // TODO: introduce NetworkReplicationHierarchy to optimize objects replication in large worlds (eg. batched culling networked scene objects that are too far from certain client to be relevant)
     // TODO: per-object sync interval (in frames) - could be scaled by hierarchy (eg. game could slow down sync rate for objects far from player)
     // TODO: network authority (eg. object owned by client that can affect server)
 
-    if (NetworkManager::IsClient())
+    if (!isClient && NewClients.Count() != 0)
     {
-        // TODO: client logic to apply replication changes
-        // TODO: client logic to send owned objects to the server
+        // Sync any previously spawned objects with late-joining clients
+        PROFILE_CPU_NAMED("NewClients");
+        // TODO: try iterative loop over several frames to reduce both server and client perf-spikes in case of large amount of spawned objects
+        CachedTargets.Clear();
+        for (NetworkClient* client : NewClients)
+            CachedTargets.Add(client->Connection);
+        for (auto it = Objects.Begin(); it.IsNotEnd(); ++it)
+        {
+            auto& item = it->Item;
+            ScriptingObject* obj = item.Object.Get();
+            if (!obj || !item.Spawned)
+                continue;
+
+            // Send spawn message
+            NetworkMessageSpawnObject msgData;
+            msgData.ObjectId = item.ObjectId;
+            msgData.ParentId = item.ParentId;
+            msgData.OwnerClientId = item.OwnerClientId;
+            // TODO: support spawning whole prefabs
+            const StringAnsiView& objectTypeName = obj->GetType().Fullname;
+            Platform::MemoryCopy(msgData.ObjectTypeName, objectTypeName.Get(), objectTypeName.Length());
+            msgData.ObjectTypeName[objectTypeName.Length()] = 0;
+            NetworkMessage msg = peer->BeginSendMessage();
+            msg.WriteStructure(msgData);
+            peer->EndSendMessage(NetworkChannelType::ReliableOrdered, msg, CachedTargets);
+        }
+        NewClients.Clear();
+    }
+
+    // Collect clients for replication (from server)
+    CachedTargets.Clear();
+    for (const NetworkClient* client : NetworkManager::Clients)
+    {
+        if (client->State == NetworkConnectionState::Connected)
+            CachedTargets.Add(client->Connection);
+    }
+    if (!isClient && CachedTargets.Count() == 0)
+    {
+        // Early exit if server has nobody to send data to
+        Scripting::ObjectsLookupIdMapping.Set(nullptr);
+        return;
+    }
+
+    // Spawn
+    if (SpawnQueue.Count() != 0)
+    {
+        PROFILE_CPU_NAMED("SpawnQueue");
+        for (ScriptingObjectReference<ScriptingObject>& e : SpawnQueue)
+        {
+            ScriptingObject* obj = e.Get();
+            const auto it = Objects.Find(obj->GetID());
+            if (it == Objects.End())
+                continue; // Skip deleted objects
+            auto& item = it->Item;
+            if (item.OwnerClientId != NetworkManager::LocalClientId || item.Role != NetworkObjectRole::OwnedAuthoritative)
+                continue; // Skip spawning objects that we don't own
+
+            // Send spawn message
+            NetworkMessageSpawnObject msgData;
+            msgData.ObjectId = item.ObjectId;
+            msgData.ParentId = item.ParentId;
+            msgData.OwnerClientId = item.OwnerClientId;
+            if (isClient)
+            {
+                // Remap local client object ids into server ids
+                IdsRemappingTable.KeyOf(msgData.ObjectId, &msgData.ObjectId);
+                IdsRemappingTable.KeyOf(msgData.ParentId, &msgData.ParentId);
+            }
+            // TODO: support spawning whole prefabs
+            const StringAnsiView& objectTypeName = obj->GetType().Fullname;
+            Platform::MemoryCopy(msgData.ObjectTypeName, objectTypeName.Get(), objectTypeName.Length());
+            msgData.ObjectTypeName[objectTypeName.Length()] = 0;
+            NetworkMessage msg = peer->BeginSendMessage();
+            msg.WriteStructure(msgData);
+            if (isClient)
+                peer->EndSendMessage(NetworkChannelType::ReliableOrdered, msg);
+            else
+                peer->EndSendMessage(NetworkChannelType::ReliableOrdered, msg, CachedTargets);
+
+            item.Spawned = true;
+        }
+        SpawnQueue.Clear();
+    }
+
+    if (isClient)
+    {
+        // TODO: client logic to replicate owned objects to the server
     }
     else
     {
-        // Collect clients for replication
-        CachedTargets.Clear();
-        // TODO: per-object relevancy for connected clients (eg. skip replicating actor to far players)
-        for (const NetworkClient* client : NetworkManager::Clients)
-        {
-            if (client->State == NetworkConnectionState::Connected)
-            {
-                CachedTargets.Add(client->Connection);
-            }
-        }
-
         // Brute force synchronize all networked objects with clients
         for (auto it = Objects.Begin(); it.IsNotEnd(); ++it)
         {
@@ -288,7 +445,7 @@ void NetworkInternal::NetworkReplicatorUpdate()
             {
                 // Object got deleted
 #if NETWORK_REPLICATOR_DEBUG_LOG
-                LOG(Info, "[NetworkReplicator] Remove object {}, owned by {}", item.ToString(), item.OwnerId.ToString());
+                LOG(Info, "[NetworkReplicator] Remove object {}, owned by {}", item.ToString(), item.ParentId.ToString());
 #endif
                 Objects.Remove(it);
                 continue;
@@ -314,10 +471,9 @@ void NetworkInternal::NetworkReplicatorUpdate()
                 const uint32 size = stream->GetPosition();
                 ASSERT(size <= MAX_uint16)
                 NetworkMessageReplicatedObject msgData;
-                msgData.ID = NetworkMessageIDs::ReplicatedObject;
                 msgData.OwnerFrame = NetworkManager::Frame;
                 msgData.ObjectId = item.ObjectId;
-                msgData.OwnerId = item.OwnerId;
+                msgData.ParentId = item.ParentId;
                 const StringAnsiView& objectTypeName = obj->GetType().Fullname;
                 Platform::MemoryCopy(msgData.ObjectTypeName, objectTypeName.Get(), objectTypeName.Length());
                 msgData.ObjectTypeName[objectTypeName.Length()] = 0;
@@ -326,6 +482,7 @@ void NetworkInternal::NetworkReplicatorUpdate()
                 NetworkMessage msg = peer->BeginSendMessage();
                 msg.WriteStructure(msgData);
                 msg.WriteBytes(stream->GetBuffer(), size);
+                // TODO: per-object relevancy for connected clients (eg. skip replicating actor to far players)
                 peer->EndSendMessage(NetworkChannelType::Unreliable, msg, CachedTargets);
 
                 // TODO: stats for bytes send per object type
@@ -342,7 +499,7 @@ void NetworkInternal::OnNetworkMessageReplicatedObject(NetworkEvent& event, Netw
     NetworkMessageReplicatedObject msgData;
     event.Message.ReadStructure(msgData);
     ScopeLock lock(ObjectsLock);
-    NetworkReplicatedObject* e = ResolveObject(msgData.ObjectId, msgData.OwnerId, msgData.ObjectTypeName);
+    NetworkReplicatedObject* e = ResolveObject(msgData.ObjectId, msgData.ParentId, msgData.ObjectTypeName);
     if (e)
     {
         auto& item = *e;
@@ -350,10 +507,15 @@ void NetworkInternal::OnNetworkMessageReplicatedObject(NetworkEvent& event, Netw
         if (!obj)
             return;
 
-        // Drop object replication if it has old data (eg. newer message was already processed due to unordered channel usage)
-        if (item.LastOwnerFrameSync >= msgData.OwnerFrame)
+        // Reject replication from someone who is not an object owner
+        if (client && e->OwnerClientId != client->ClientId)
             return;
-        item.LastOwnerFrameSync = msgData.OwnerFrame;
+        ASSERT(e->Role != NetworkObjectRole::OwnedAuthoritative); // Ensure that we don't replicate object that we own
+
+        // Drop object replication if it has old data (eg. newer message was already processed due to unordered channel usage)
+        if (item.LastOwnerFrame >= msgData.OwnerFrame)
+            return;
+        item.LastOwnerFrame = msgData.OwnerFrame;
 
         // Setup message reading stream
         if (CachedReadStream == nullptr)
@@ -377,5 +539,67 @@ void NetworkInternal::OnNetworkMessageReplicatedObject(NetworkEvent& event, Netw
     else
     {
         // TODO: put message to the queue to be resolved later (eg. object replication came before spawn packet) - use TTL to prevent memory overgrowing
+    }
+}
+
+void NetworkInternal::OnNetworkMessageSpawnObject(NetworkEvent& event, NetworkClient* client, NetworkPeer* peer)
+{
+    NetworkMessageSpawnObject msgData;
+    event.Message.ReadStructure(msgData);
+    ScopeLock lock(ObjectsLock);
+    NetworkReplicatedObject* e = ResolveObject(msgData.ObjectId, msgData.ParentId, msgData.ObjectTypeName);
+    if (e)
+    {
+        auto& item = *e;
+        item.Spawned = true;
+        if (NetworkManager::IsClient())
+        {
+            // Server always knows the best so update ownership of the existing object
+            item.OwnerClientId = msgData.OwnerClientId;
+            if (item.Role == NetworkObjectRole::OwnedAuthoritative)
+                item.Role = NetworkObjectRole::Replicated;
+        }
+        else if (item.OwnerClientId != msgData.OwnerClientId)
+        {
+            // Other client spawned object with a different owner
+            // TODO: send reply message to inform about proper object ownership that client
+        }
+    }
+    else
+    {
+        // Recreate object locally
+        // TODO: support spawning whole prefabs
+        const ScriptingTypeHandle objectType = Scripting::FindScriptingType(StringAnsiView(msgData.ObjectTypeName));
+        ScriptingObject* obj = ScriptingObject::NewObject(objectType);
+        if (!obj)
+        {
+#if NETWORK_REPLICATOR_DEBUG_LOG
+            LOG(Error, "[NetworkReplicator] Failed to spawn object type {}", String(msgData.ObjectTypeName));
+#endif
+            return;
+        }
+        obj->RegisterObject();
+        const NetworkReplicatedObject* parent = ResolveObject(msgData.ParentId);
+
+        // Add object to the list
+        NetworkReplicatedObject item;
+        item.Object = obj;
+        item.ObjectId = obj->GetID();
+        item.ParentId = parent ? parent->ObjectId : Guid::Empty;
+        item.OwnerClientId = client ? client->ClientId : NetworkManager::ServerClientId;
+        item.Role = NetworkObjectRole::Replicated;
+        item.Spawned = true;
+#if NETWORK_REPLICATOR_DEBUG_LOG
+        LOG(Info, "[NetworkReplicator] Add new object {}:{}, parent {}:{}", item.ToString(), obj->GetType().ToString(), item.ParentId.ToString(), parent ? parent->Object->GetType().ToString() : String::Empty);
+#endif
+        Objects.Add(MoveTemp(item));
+
+        // Boost future lookups by using indirection
+#if NETWORK_REPLICATOR_DEBUG_LOG
+        LOG(Info, "[NetworkReplicator] Remap object ID={} into object {}:{}", msgData.ObjectId, item.ToString(), obj->GetType().ToString());
+#endif
+        IdsRemappingTable.Add(msgData.ObjectId, item.ObjectId);
+
+        // TODO: if  we're server then spawn this object further on other clients
     }
 }
