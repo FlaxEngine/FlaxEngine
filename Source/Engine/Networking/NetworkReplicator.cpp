@@ -269,7 +269,6 @@ void NetworkReplicator::AddObject(ScriptingObject* obj, ScriptingObject* parent)
 {
     if (!obj || NetworkManager::State == NetworkConnectionState::Offline)
         return;
-    CHECK(parent && parent != obj);
     ScopeLock lock(ObjectsLock);
     if (Objects.Contains(obj))
         return;
@@ -278,11 +277,11 @@ void NetworkReplicator::AddObject(ScriptingObject* obj, ScriptingObject* parent)
     NetworkReplicatedObject item;
     item.Object = obj;
     item.ObjectId = obj->GetID();
-    item.ParentId = parent->GetID();
+    item.ParentId = parent ? parent->GetID() : Guid::Empty;
     item.OwnerClientId = NetworkManager::ServerClientId; // Server owns objects by default
     item.Role = NetworkManager::IsClient() ? NetworkObjectRole::Replicated : NetworkObjectRole::OwnedAuthoritative;
 #if NETWORK_REPLICATOR_DEBUG_LOG
-    LOG(Info, "[NetworkReplicator] Add new object {}:{}, parent {}:{}", item.ToString(), obj->GetType().ToString(), item.ParentId.ToString(), parent->GetType().ToString());
+    LOG(Info, "[NetworkReplicator] Add new object {}:{}, parent {}:{}", item.ToString(), obj->GetType().ToString(), item.ParentId.ToString(), parent ? parent->GetType().ToString() : String::Empty);
 #endif
     Objects.Add(MoveTemp(item));
 }
@@ -296,7 +295,7 @@ void NetworkReplicator::SpawnObject(ScriptingObject* obj)
     if (it == Objects.End())
     {
         // Ensure that object is added to the replication locally
-        AddObject(obj, nullptr);
+        AddObject(obj);
         it = Objects.Find(obj->GetID());
     }
 
@@ -660,6 +659,8 @@ void NetworkInternal::OnNetworkMessageObjectReplicate(NetworkEvent& event, Netwo
             }
 #endif
         }
+
+        // TODO: speed up replication of client-owned object to other clients from server
     }
     else
     {

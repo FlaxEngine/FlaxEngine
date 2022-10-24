@@ -57,7 +57,7 @@ public:
     /// <remarks>Does nothing if network is offline.</remarks>
     /// <param name="obj">The object to replicate.</param>
     /// <param name="parent">The parent of the object (eg. player that spawned it).</param>
-    API_FUNCTION() static void AddObject(ScriptingObject* obj, ScriptingObject* parent);
+    API_FUNCTION() static void AddObject(ScriptingObject* obj, ScriptingObject* parent = nullptr);
 
     /// <summary>
     /// Spawns the object to the other clients. Can be spawned by the owner who locally created it (eg. from prefab).
