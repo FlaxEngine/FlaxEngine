@@ -720,14 +720,14 @@ namespace FlaxEditor.Content.GUI
                 if (itemsToFit < 1)
                     itemsToFit = 1;
                 float itemsWidth = width / Mathf.Max(itemsToFit, 1);
-                itemsWidth = Mathf.Floor(itemsWidth);
+                var flooredItemsWidth = Mathf.Floor(itemsWidth);
                 float itemsHeight = itemsWidth / defaultItemsWidth * (ContentItem.DefaultHeight * viewScale);
-                itemsHeight = Mathf.Floor(itemsHeight);
+                var flooredItemsHeight = Mathf.Floor(itemsHeight);
                 x = itemsToFit == 1 ? 0 : itemsWidth / itemsToFit;
                 for (int i = 0; i < _children.Count; i++)
                 {
                     var c = _children[i];
-                    c.Bounds = new Rectangle(x, y, itemsWidth, itemsHeight);
+                    c.Bounds = new Rectangle(x, y, flooredItemsWidth, flooredItemsHeight);
 
                     x += itemsWidth + itemsWidth / itemsToFit;
                     if (x + itemsWidth > width)
