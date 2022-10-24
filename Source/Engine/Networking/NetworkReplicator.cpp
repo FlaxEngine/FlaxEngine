@@ -43,6 +43,12 @@ PACK_STRUCT(struct NetworkMessageSpawnObject
     char ObjectTypeName[128]; // TODO: introduce networked-name to synchronize unique names as ushort (less data over network)
     });
 
+PACK_STRUCT(struct NetworkMessageDespawnObject
+    {
+    NetworkMessageIDs ID = NetworkMessageIDs::SpawnObject;
+    Guid ObjectId;
+    });
+
 struct NetworkReplicatedObject
 {
     ScriptingObjectReference<ScriptingObject> Object;
@@ -93,6 +99,7 @@ namespace
     CriticalSection ObjectsLock;
     HashSet<NetworkReplicatedObject> Objects;
     Array<ScriptingObjectReference<ScriptingObject>> SpawnQueue;
+    Array<Guid> DespawnQueue;
     Dictionary<Guid, Guid> IdsRemappingTable;
     NetworkStream* CachedWriteStream = nullptr;
     NetworkStream* CachedReadStream = nullptr;
@@ -262,9 +269,30 @@ void NetworkReplicator::SpawnObject(ScriptingObject* obj)
         it = Objects.Find(obj->GetID());
     }
 
-    // Register for spawning (batched spawning during update)
+    // Register for spawning (batched during update)
     ASSERT_LOW_LAYER(!SpawnQueue.Contains(obj));
     SpawnQueue.Add(obj);
+}
+
+void NetworkReplicator::DespawnObject(ScriptingObject* obj)
+{
+    if (!obj || NetworkManager::State == NetworkConnectionState::Offline)
+        return;
+    ScopeLock lock(ObjectsLock);
+    const auto it = Objects.Find(obj->GetID());
+    if (it == Objects.End())
+        return;
+    auto& item = it->Item;
+    if (item.Object != obj || !item.Spawned || item.OwnerClientId != NetworkManager::LocalClientId)
+        return;
+
+    // Register for despawning (batched during update)
+    const Guid id = obj->GetID();
+    ASSERT_LOW_LAYER(!DespawnQueue.Contains(id));
+    DespawnQueue.Add(id);
+
+    // Prevent spawning
+    SpawnQueue.Remove(obj);
 }
 
 uint32 NetworkReplicator::GetObjectClientId(ScriptingObject* obj)
@@ -387,6 +415,30 @@ void NetworkInternal::NetworkReplicatorUpdate()
         // Early exit if server has nobody to send data to
         Scripting::ObjectsLookupIdMapping.Set(nullptr);
         return;
+    }
+
+    // Despawn
+    if (DespawnQueue.Count() != 0)
+    {
+        PROFILE_CPU_NAMED("DespawnQueue");
+        for (const Guid& e : DespawnQueue)
+        {
+            // Send despawn message
+            NetworkMessageDespawnObject msgData;
+            msgData.ObjectId = e;
+            if (isClient)
+            {
+                // Remap local client object ids into server ids
+                IdsRemappingTable.KeyOf(msgData.ObjectId, &msgData.ObjectId);
+            }
+            NetworkMessage msg = peer->BeginSendMessage();
+            msg.WriteStructure(msgData);
+            if (isClient)
+                peer->EndSendMessage(NetworkChannelType::ReliableOrdered, msg);
+            else
+                peer->EndSendMessage(NetworkChannelType::ReliableOrdered, msg, CachedTargets);
+        }
+        DespawnQueue.Clear();
     }
 
     // Spawn
@@ -601,5 +653,34 @@ void NetworkInternal::OnNetworkMessageSpawnObject(NetworkEvent& event, NetworkCl
         IdsRemappingTable.Add(msgData.ObjectId, item.ObjectId);
 
         // TODO: if  we're server then spawn this object further on other clients
+    }
+}
+
+void NetworkInternal::OnNetworkMessageDespawnObject(NetworkEvent& event, NetworkClient* client, NetworkPeer* peer)
+{
+    NetworkMessageDespawnObject msgData;
+    event.Message.ReadStructure(msgData);
+    ScopeLock lock(ObjectsLock);
+    NetworkReplicatedObject* e = ResolveObject(msgData.ObjectId);
+    if (e)
+    {
+        auto& item = *e;
+        ScriptingObject* obj = item.Object.Get();
+        if (!obj || !item.Spawned)
+            return;
+
+        // Reject despawn from someone who is not an object owner
+        if (client && e->OwnerClientId != client->ClientId)
+            return;
+
+        // Remove object
+        Objects.Remove(obj);
+        Delete(obj);
+    }
+    else
+    {
+#if NETWORK_REPLICATOR_DEBUG_LOG
+        LOG(Error, "[NetworkReplicator] Failed to despawn object {}", msgData.ObjectId);
+#endif
     }
 }

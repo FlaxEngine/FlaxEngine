@@ -130,6 +130,7 @@ namespace
         OnNetworkMessageHandshakeReply,
         NetworkInternal::OnNetworkMessageReplicatedObject,
         NetworkInternal::OnNetworkMessageSpawnObject,
+        NetworkInternal::OnNetworkMessageDespawnObject,
     };
 }
 
