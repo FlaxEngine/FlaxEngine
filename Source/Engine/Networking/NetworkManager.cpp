@@ -128,9 +128,9 @@ namespace
         nullptr,
         OnNetworkMessageHandshake,
         OnNetworkMessageHandshakeReply,
-        NetworkInternal::OnNetworkMessageReplicatedObject,
-        NetworkInternal::OnNetworkMessageSpawnObject,
-        NetworkInternal::OnNetworkMessageDespawnObject,
+        NetworkInternal::OnNetworkMessageObjectReplicate,
+        NetworkInternal::OnNetworkMessageObjectSpawn,
+        NetworkInternal::OnNetworkMessageObjectDespawn,
     };
 }
 

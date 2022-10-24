@@ -26,7 +26,7 @@
 
 PACK_STRUCT(struct NetworkMessageReplicatedObject
     {
-    NetworkMessageIDs ID = NetworkMessageIDs::ReplicatedObject;
+    NetworkMessageIDs ID = NetworkMessageIDs::ObjectReplicate;
     uint32 OwnerFrame;
     Guid ObjectId; // TODO: introduce networked-ids to synchronize unique ids as ushort (less data over network)
     Guid ParentId;
@@ -36,7 +36,7 @@ PACK_STRUCT(struct NetworkMessageReplicatedObject
 
 PACK_STRUCT(struct NetworkMessageSpawnObject
     {
-    NetworkMessageIDs ID = NetworkMessageIDs::SpawnObject;
+    NetworkMessageIDs ID = NetworkMessageIDs::ObjectSpawn;
     Guid ObjectId;
     Guid ParentId;
     uint32 OwnerClientId;
@@ -45,7 +45,7 @@ PACK_STRUCT(struct NetworkMessageSpawnObject
 
 PACK_STRUCT(struct NetworkMessageDespawnObject
     {
-    NetworkMessageIDs ID = NetworkMessageIDs::SpawnObject;
+    NetworkMessageIDs ID = NetworkMessageIDs::ObjectSpawn;
     Guid ObjectId;
     });
 
@@ -546,7 +546,7 @@ void NetworkInternal::NetworkReplicatorUpdate()
     Scripting::ObjectsLookupIdMapping.Set(nullptr);
 }
 
-void NetworkInternal::OnNetworkMessageReplicatedObject(NetworkEvent& event, NetworkClient* client, NetworkPeer* peer)
+void NetworkInternal::OnNetworkMessageObjectReplicate(NetworkEvent& event, NetworkClient* client, NetworkPeer* peer)
 {
     NetworkMessageReplicatedObject msgData;
     event.Message.ReadStructure(msgData);
@@ -594,7 +594,7 @@ void NetworkInternal::OnNetworkMessageReplicatedObject(NetworkEvent& event, Netw
     }
 }
 
-void NetworkInternal::OnNetworkMessageSpawnObject(NetworkEvent& event, NetworkClient* client, NetworkPeer* peer)
+void NetworkInternal::OnNetworkMessageObjectSpawn(NetworkEvent& event, NetworkClient* client, NetworkPeer* peer)
 {
     NetworkMessageSpawnObject msgData;
     event.Message.ReadStructure(msgData);
@@ -656,7 +656,7 @@ void NetworkInternal::OnNetworkMessageSpawnObject(NetworkEvent& event, NetworkCl
     }
 }
 
-void NetworkInternal::OnNetworkMessageDespawnObject(NetworkEvent& event, NetworkClient* client, NetworkPeer* peer)
+void NetworkInternal::OnNetworkMessageObjectDespawn(NetworkEvent& event, NetworkClient* client, NetworkPeer* peer)
 {
     NetworkMessageDespawnObject msgData;
     event.Message.ReadStructure(msgData);
