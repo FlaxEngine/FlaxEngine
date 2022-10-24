@@ -131,6 +131,7 @@ namespace
         NetworkInternal::OnNetworkMessageObjectReplicate,
         NetworkInternal::OnNetworkMessageObjectSpawn,
         NetworkInternal::OnNetworkMessageObjectDespawn,
+        NetworkInternal::OnNetworkMessageObjectRole,
     };
 }
 

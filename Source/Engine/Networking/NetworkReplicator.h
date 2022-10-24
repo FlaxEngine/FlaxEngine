@@ -87,6 +87,14 @@ public:
     /// <returns>The object role.</returns>
     API_FUNCTION() static NetworkObjectRole GetObjectRole(ScriptingObject* obj);
 
+    /// <summary>
+    /// Sets the network object ownership - owning client identifier and local role to use.
+    /// </summary>
+    /// <param name="obj">The network object.</param>
+    /// <param name="ownerClientId">The new owner. Set to NetworkManager::LocalClientId for local client to be owner (server might reject it).</param>
+    /// <param name="localRole">The local role to assign for the object.</param>
+    API_FUNCTION() static void SetObjectOwnership(ScriptingObject* obj, uint32 ownerClientId, NetworkObjectRole localRole = NetworkObjectRole::Replicated);
+
 private:
 #if !COMPILE_WITHOUT_CSHARP
     API_FUNCTION(NoProxy) static void AddSerializer(const ScriptingTypeHandle& type, const Function<void(void*, void*)>& serialize, const Function<void(void*, void*)>& deserialize);

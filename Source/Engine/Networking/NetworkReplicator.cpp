@@ -49,6 +49,13 @@ PACK_STRUCT(struct NetworkMessageObjectDespawn
     Guid ObjectId;
     });
 
+PACK_STRUCT(struct NetworkMessageObjectRole
+    {
+    NetworkMessageIDs ID = NetworkMessageIDs::ObjectRole;
+    Guid ObjectId;
+    uint32 OwnerClientId;
+    });
+
 struct NetworkReplicatedObject
 {
     ScriptingObjectReference<ScriptingObject> Object;
@@ -178,6 +185,30 @@ NetworkReplicatedObject* ResolveObject(Guid objectId, Guid parentId, char object
     }
 
     return nullptr;
+}
+
+void SendObjectRoleMessage(const NetworkReplicatedObject& item, const NetworkClient* excludedClient = nullptr)
+{
+    auto peer = NetworkManager::Peer;
+    NetworkMessageObjectRole msgData;
+    msgData.ObjectId = item.ObjectId;
+    msgData.OwnerClientId = item.OwnerClientId;
+    NetworkMessage msg = peer->BeginSendMessage();
+    msg.WriteStructure(msgData);
+    if (NetworkManager::IsClient())
+    {
+        NetworkManager::Peer->EndSendMessage(NetworkChannelType::ReliableOrdered, msg);
+    }
+    else
+    {
+        CachedTargets.Clear();
+        for (const NetworkClient* client : NetworkManager::Clients)
+        {
+            if (client->State == NetworkConnectionState::Connected && client != excludedClient)
+                CachedTargets.Add(client->Connection);
+        }
+        peer->EndSendMessage(NetworkChannelType::ReliableOrdered, msg, CachedTargets);
+    }
 }
 
 #if !COMPILE_WITHOUT_CSHARP
@@ -319,6 +350,45 @@ NetworkObjectRole NetworkReplicator::GetObjectRole(ScriptingObject* obj)
             role = it->Item.Role;
     }
     return role;
+}
+
+void NetworkReplicator::SetObjectOwnership(ScriptingObject* obj, uint32 ownerClientId, NetworkObjectRole localRole)
+{
+    if (!obj)
+        return;
+    ScopeLock lock(ObjectsLock);
+    const auto it = Objects.Find(obj->GetID());
+    if (it == Objects.End())
+        return;
+    auto& item = it->Item;
+    if (item.Object != obj)
+        return;
+
+    // Check if this client is object owner
+    if (item.OwnerClientId == NetworkManager::LocalClientId)
+    {
+        // Check if object owner will change
+        if (item.OwnerClientId != ownerClientId)
+        {
+            // Change role locally
+            CHECK(localRole != NetworkObjectRole::OwnedAuthoritative);
+            item.OwnerClientId = ownerClientId;
+            item.LastOwnerFrame = 1;
+            item.Role = localRole;
+            SendObjectRoleMessage(item);
+        }
+        else
+        {
+            // Object is the owner
+            CHECK(localRole == NetworkObjectRole::OwnedAuthoritative);
+        }
+    }
+    else
+    {
+        // Allow to change local role of the object (except ownership)
+        CHECK(localRole != NetworkObjectRole::OwnedAuthoritative);
+        item.Role = localRole;
+    }
 }
 
 void NetworkInternal::NetworkReplicatorClientConnected(NetworkClient* client)
@@ -559,10 +629,13 @@ void NetworkInternal::OnNetworkMessageObjectReplicate(NetworkEvent& event, Netwo
         if (!obj)
             return;
 
-        // Reject replication from someone who is not an object owner
-        if (client && e->OwnerClientId != client->ClientId)
+        // Reject event from someone who is not an object owner
+        if (client && item.OwnerClientId != client->ClientId)
             return;
-        ASSERT(e->Role != NetworkObjectRole::OwnedAuthoritative); // Ensure that we don't replicate object that we own
+
+        // Skip replication if we own the object (eg. late replication message after ownership change)
+        if (item.Role == NetworkObjectRole::OwnedAuthoritative)
+            return;
 
         // Drop object replication if it has old data (eg. newer message was already processed due to unordered channel usage)
         if (item.LastOwnerFrame >= msgData.OwnerFrame)
@@ -669,8 +742,8 @@ void NetworkInternal::OnNetworkMessageObjectDespawn(NetworkEvent& event, Network
         if (!obj || !item.Spawned)
             return;
 
-        // Reject despawn from someone who is not an object owner
-        if (client && e->OwnerClientId != client->ClientId)
+        // Reject event from someone who is not an object owner
+        if (client && item.OwnerClientId != client->ClientId)
             return;
 
         // Remove object
@@ -681,6 +754,51 @@ void NetworkInternal::OnNetworkMessageObjectDespawn(NetworkEvent& event, Network
     {
 #if NETWORK_REPLICATOR_DEBUG_LOG
         LOG(Error, "[NetworkReplicator] Failed to despawn object {}", msgData.ObjectId);
+#endif
+    }
+}
+
+void NetworkInternal::OnNetworkMessageObjectRole(NetworkEvent& event, NetworkClient* client, NetworkPeer* peer)
+{
+    NetworkMessageObjectRole msgData;
+    event.Message.ReadStructure(msgData);
+    ScopeLock lock(ObjectsLock);
+    NetworkReplicatedObject* e = ResolveObject(msgData.ObjectId);
+    if (e)
+    {
+        auto& item = *e;
+        ScriptingObject* obj = item.Object.Get();
+        if (!obj)
+            return;
+
+        // Reject event from someone who is not an object owner
+        if (client && item.OwnerClientId != client->ClientId)
+            return;
+
+        // Update
+        item.OwnerClientId = msgData.OwnerClientId;
+        item.LastOwnerFrame = 1;
+        if (item.OwnerClientId == NetworkManager::LocalClientId)
+        {
+            // Upgrade ownership automatically
+            item.Role = NetworkObjectRole::OwnedAuthoritative;
+            item.LastOwnerFrame = 0;
+        }
+        else if (item.Role == NetworkObjectRole::OwnedAuthoritative)
+        {
+            // Downgrade ownership automatically
+            item.Role = NetworkObjectRole::Replicated;
+        }
+        if (!NetworkManager::IsClient())
+        {
+            // Server has to broadcast ownership message to the other clients
+            SendObjectRoleMessage(item, client);
+        }
+    }
+    else
+    {
+#if NETWORK_REPLICATOR_DEBUG_LOG
+        LOG(Error, "[NetworkReplicator] Unknown object role update {}", msgData.ObjectId);
 #endif
     }
 }
