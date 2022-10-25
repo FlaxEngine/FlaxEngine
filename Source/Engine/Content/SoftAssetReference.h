@@ -88,13 +88,13 @@ public:
     /// <param name="other">The other.</param>
     SoftAssetReference(const SoftAssetReference& other)
     {
-        OnSet(other.Get());
+        OnSet(other.GetID());
     }
 
     SoftAssetReference(SoftAssetReference&& other)
     {
-        OnSet(other.Get());
-        other.OnSet(nullptr);
+        OnSet(other.GetID());
+        other.OnSet(Guid::Empty);
     }
 
     /// <summary>

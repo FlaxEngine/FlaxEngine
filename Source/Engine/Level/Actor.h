@@ -317,6 +317,18 @@ public:
         return result;
     }
 
+    /// <summary>
+    /// Creates a new script of a specific type and adds it to the actor.
+    /// </summary>
+    /// <returns>The created script instance, null otherwise.</returns>
+    template<typename T>
+    T* AddScript()
+    {
+        auto script = New<T>();
+        script->SetParent(this);
+        return script;
+    }
+
 public:
     /// <summary>
     /// Gets value indicating if actor is active in the scene.
