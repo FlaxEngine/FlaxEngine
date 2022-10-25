@@ -426,6 +426,16 @@ public:
     API_FUNCTION() static void DrawTexturedTriangles(GPUTexture* t, const Span<Float2>& vertices, const Span<Float2>& uvs, const Span<Color>& colors);
 
     /// <summary>
+    /// Draws indexed vertices array.
+    /// </summary>
+    /// <param name="t">The texture.</param>
+    /// <param name="indices">The indices array.</param>
+    /// <param name="vertices">The vertices array.</param>
+    /// <param name="uvs">The uvs array.</param>
+    /// <param name="colors">The colors array.</param>
+    API_FUNCTION() static void DrawTexturedTriangles(GPUTexture* t, const Span<uint16>& indices, const Span<Float2>& vertices, const Span<Float2>& uvs, const Span<Color>& colors);
+
+    /// <summary>
     /// Draws vertices array.
     /// </summary>
     /// <param name="vertices">The vertices array.</param>

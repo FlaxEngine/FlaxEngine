@@ -1963,6 +1963,27 @@ void Render2D::DrawTexturedTriangles(GPUTexture* t, const Span<Float2>& vertices
         WriteTri(vertices[i], vertices[i + 1], vertices[i + 2], uvs[i], uvs[i + 1], uvs[i + 2], colors[i], colors[i + 1], colors[i + 2]);
 }
 
+void Render2D::DrawTexturedTriangles(GPUTexture* t, const Span<uint16>& indices, const Span<Float2>& vertices, const Span<Float2>& uvs, const Span<Color>& colors)
+{
+    RENDER2D_CHECK_RENDERING_STATE;
+    CHECK(vertices.Length() == uvs.Length());
+    CHECK(vertices.Length() == colors.Length());
+
+    Render2DDrawCall& drawCall = DrawCalls.AddOne();
+    drawCall.Type = DrawCallType::FillTexture;
+    drawCall.StartIB = IBIndex;
+    drawCall.CountIB = indices.Length();
+    drawCall.AsTexture.Ptr = t;
+    
+    for (int32 i = 0; i < indices.Length();)
+    {
+        const uint16 i0 = indices.Get()[i++];
+        const uint16 i1 = indices.Get()[i++];
+        const uint16 i2 = indices.Get()[i++];
+        WriteTri(vertices[i0], vertices[i1], vertices[i2], uvs[i0], uvs[i1], uvs[i2], colors[i0], colors[i1], colors[i2]);
+    }
+}
+
 void Render2D::FillTriangles(const Span<Float2>& vertices, const Span<Color>& colors, bool useAlpha)
 {
     CHECK(vertices.Length() == colors.Length());
