@@ -948,10 +948,6 @@ namespace FlaxEngine.GUI
         {
             // Set flag
             _isDragOver = true;
-            
-            // Hide tooltip
-            Tooltip?.Hide();
-
             return DragDropEffect.None;
         }
 
@@ -998,6 +994,8 @@ namespace FlaxEngine.GUI
         [NoAnimate]
         public virtual void DoDragDrop(DragData data)
         {
+            // Hide tooltip
+            Tooltip?.Hide();
             Root.DoDragDrop(data);
         }
 
