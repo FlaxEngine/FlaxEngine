@@ -150,7 +150,21 @@ namespace FlaxEditor.Windows
             };
             Viewport.Task.ViewFlags = ViewFlags.DefaultEditor;
 
+            Editor.SceneEditing.SelectionChanged += OnSelectionChanged;
             Editor.Scene.ActorRemoved += SceneOnActorRemoved;
+        }
+
+        /// <inheritdoc />
+        public override void OnEditorStateChanged()
+        {
+            base.OnEditorStateChanged();
+
+            UpdateCameraPreview();
+        }
+
+        private void OnSelectionChanged()
+        {
+            UpdateCameraPreview();
         }
 
         /// <summary>
@@ -376,9 +390,6 @@ namespace FlaxEditor.Windows
         /// <inheritdoc />
         public override void Update(float deltaTime)
         {
-            // TODO: call camera preview update only on selection change, or state change
-            UpdateCameraPreview();
-
             if (Root.GetKeyDown(KeyboardKeys.F12))
             {
                 Viewport.TakeScreenshot();

@@ -23,9 +23,16 @@ namespace Flax.Build.Platforms
         : base(platform, architecture, platform.ToolchainRoot, platform.Compiler)
         {
             // Setup system paths
-            SystemIncludePaths.Add(Path.Combine(ToolsetRoot, "usr", "include"));
-            SystemIncludePaths.Add(Path.Combine(ToolsetRoot, "include", "c++", "5.2.0"));
-            SystemIncludePaths.Add(Path.Combine(ToolsetRoot, "lib", "clang", ClangVersion.Major.ToString(), "include"));
+            var includePath = Path.Combine(ToolsetRoot, "usr", "include");
+            SystemIncludePaths.Add(includePath);
+            var cppIncludePath = Path.Combine(includePath, "c++", ClangVersion.ToString());
+            if (Directory.Exists(cppIncludePath))
+                SystemIncludePaths.Add(cppIncludePath);
+            var clangLibPath = Path.Combine(ToolsetRoot, "usr", "lib", "clang");
+            var clangIncludePath = Path.Combine(clangLibPath, ClangVersion.Major.ToString(), "include");
+            if (!Directory.Exists(clangIncludePath))
+                clangIncludePath = Path.Combine(clangLibPath, ClangVersion.ToString(), "include");
+            SystemIncludePaths.Add(clangIncludePath);
         }
 
         /// <inheritdoc />
