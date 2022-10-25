@@ -467,7 +467,7 @@ void MaterialGenerator::ProcessGroupTextures(Box* box, Node* node, Value& value)
         }
 
         const auto texture = eatBox(textureBox->GetParent<Node>(), textureBox->FirstConnection());
-        const auto scale = tryGetValue(scaleBox, node->Values[0]).AsFloat();
+        const auto scale = tryGetValue(scaleBox, node->Values[0]).AsFloat3();
         const auto blend = tryGetValue(blendBox, node->Values[1]).AsFloat();
 
         auto result = writeLocal(Value::InitForZero(ValueType::Float4), node);
