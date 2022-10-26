@@ -25,6 +25,8 @@ namespace Flax.Build.Bindings
             { "int8", "sbyte" },
             { "int16", "short" },
             { "int32", "int" },
+            { "short", "short" },
+            { "int", "int" },
             { "int64", "long" },
             { "uint8", "byte" },
             { "byte", "byte" },
@@ -91,6 +93,8 @@ namespace Flax.Build.Bindings
             case "nullptr":
             case "NULL":
             case "String::Empty":
+            case "StringAnsi::Empty":
+            case "StringAnsiView::Empty":
             case "StringView::Empty": return "null";
             case "MAX_int8": return "sbyte.MaxValue";
             case "MAX_uint8": return "byte.MaxValue";
