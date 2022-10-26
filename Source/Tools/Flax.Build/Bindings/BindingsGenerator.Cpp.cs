@@ -914,7 +914,8 @@ namespace Flax.Build.Bindings
                 contents.Append(parameterInfo.Name);
 
                 // Special case for output result parameters that needs additional converting from native to managed format (such as non-POD structures, output arrays, etc.)
-                if (parameterInfo.IsOut)
+                var isRefOut = parameterInfo.IsRef && parameterInfo.Type.IsRef && !parameterInfo.Type.IsConst;
+                if (parameterInfo.IsOut || isRefOut)
                 {
                     bool convertOutputParameter = false;
                     var apiType = FindApiTypeInfo(buildData, parameterInfo.Type, caller);
