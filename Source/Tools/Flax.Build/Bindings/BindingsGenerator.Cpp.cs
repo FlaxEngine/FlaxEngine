@@ -983,7 +983,7 @@ namespace Flax.Build.Bindings
             if (functionInfo.IsStatic)
             {
                 // Call native static method
-                string nativeType = caller.Name;
+                string nativeType = caller.Tags != null && caller.Tags.ContainsKey("NativeInvokeUseName") ? caller.Name : caller.NativeName;
                 if (caller.Parent != null && !(caller.Parent is FileInfo))
                     nativeType = caller.Parent.FullNameNative + "::" + nativeType;
                 call = $"{nativeType}::{functionInfo.Name}";

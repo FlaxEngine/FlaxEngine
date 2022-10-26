@@ -129,7 +129,8 @@ API_INJECT_CODE(cpp, "#include \"Engine/Platform/Platform.h\"");
 /// <summary>
 /// Runtime platform service.
 /// </summary>
-API_CLASS(Static, Name="Platform") class FLAXENGINE_API PlatformBase
+API_CLASS(Static, Name="Platform", Tag="NativeInvokeUseName")
+class FLAXENGINE_API PlatformBase
 {
 DECLARE_SCRIPTING_TYPE_MINIMAL(PlatformBase);
 

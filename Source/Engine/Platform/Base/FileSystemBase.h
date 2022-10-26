@@ -40,7 +40,8 @@ API_INJECT_CODE(cpp, "#include \"Engine/Platform/FileSystem.h\"");
 /// <summary>
 /// Platform implementation of filesystem service.
 /// </summary>
-API_CLASS(Static, Name="FileSystem") class FLAXENGINE_API FileSystemBase
+API_CLASS(Static, Name="FileSystem", Tag="NativeInvokeUseName")
+class FLAXENGINE_API FileSystemBase
 {
 DECLARE_SCRIPTING_TYPE_MINIMAL(FileSystemBase);
 

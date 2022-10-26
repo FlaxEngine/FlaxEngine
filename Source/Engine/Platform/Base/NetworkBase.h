@@ -138,7 +138,8 @@ DECLARE_SCRIPTING_TYPE_MINIMAL(NetworkSocketGroup)
 /// <summary>
 /// Low-level networking implementation interface with Berkeley sockets.
 /// </summary>
-API_CLASS(Static, Name="Network") class FLAXENGINE_API NetworkBase
+API_CLASS(Static, Name="Network", Tag="NativeInvokeUseName")
+class FLAXENGINE_API NetworkBase
 {
 public:
     static struct FLAXENGINE_API ScriptingTypeInitializer TypeInitializer;

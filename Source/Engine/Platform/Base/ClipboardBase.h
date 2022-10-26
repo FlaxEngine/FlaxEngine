@@ -12,7 +12,7 @@ API_INJECT_CODE(cpp, "#include \"Engine/Platform/Clipboard.h\"");
 /// <summary>
 /// Native platform clipboard service.
 /// </summary>
-API_CLASS(Static, Name="Clipboard")
+API_CLASS(Static, Name="Clipboard", Tag="NativeInvokeUseName")
 class FLAXENGINE_API ClipboardBase
 {
 public:
