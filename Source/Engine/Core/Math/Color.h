@@ -138,6 +138,16 @@ public:
         return Color(static_cast<float>(rgb >> 16 & 0xff) / 255.0f, static_cast<float>(rgb >> 8 & 0xff) / 255.0f, static_cast<float>(rgb & 0xff) / 255.0f, a);
     }
 
+    /// <summary>
+    /// Initializes from packed RGBA value.
+    /// </summary>
+    /// <param name="rgba">The packed RGBA value.</param>
+    /// <returns>The color.</returns>
+    static Color FromRGBA(uint32 rgba)
+    {
+        return Color(static_cast<float>(rgba >> 16 & 0xff) / 255.0f, static_cast<float>(rgba >> 8 & 0xff) / 255.0f, static_cast<float>(rgba & 0xff) / 255.0f, static_cast<float>(rgba >> 24 & 0xff) / 255.0f);
+    }
+
     static Color FromHex(const String& hexString)
     {
         bool isValid;
