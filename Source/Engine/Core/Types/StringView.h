@@ -60,7 +60,7 @@ public:
     {
         const bool thisIsShorter = Length() < str.Length();
         const int32 minLength = thisIsShorter ? Length() : str.Length();
-        const int32 prefixCompare = searchCase == StringSearchCase::CaseSensitive ? StringUtils::Compare(GetNonTerminatedText(), str.GetNonTerminatedText(), minLength) : StringUtils::CompareIgnoreCase(GetNonTerminatedText(), str.GetNonTerminatedText(), minLength);
+        const int32 prefixCompare = searchCase == StringSearchCase::CaseSensitive ? StringUtils::Compare(GetText(), str.GetText(), minLength) : StringUtils::CompareIgnoreCase(GetText(), str.GetText(), minLength);
         if (prefixCompare != 0)
             return prefixCompare;
         if (Length() == str.Length())
@@ -111,8 +111,18 @@ public:
 
     /// <summary>
     /// Gets the pointer to the string or to the static empty text if string is null. Returned pointer is always non-null, but is not null-terminated.
+    /// [Deprecated on 26.10.2022, expires on 26.10.2024] Use GetText()
     /// </summary>
-    FORCE_INLINE const T* GetNonTerminatedText() const
+    FORCE_INLINE DEPRECATED const T* GetNonTerminatedText() const
+    {
+        return _data ? _data : (const T*)TEXT("");
+    }
+
+    /// <summary>
+    /// Gets the pointer to the string or to the static empty text if string is null. Returned pointer is always valid (read-only).
+    /// </summary>
+    /// <returns>The string handle.</returns>
+    FORCE_INLINE const T* GetText() const
     {
         return _data ? _data : (const T*)TEXT("");
     }

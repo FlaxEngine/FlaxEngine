@@ -52,7 +52,7 @@ String LocalizedStringTable::GetPluralString(const String& id, int32 n) const
         result = messages->At(n);
     if (result.IsEmpty() && FallbackTable)
         result = FallbackTable->GetPluralString(id, n);
-    return String::Format(result.GetNonTerminatedText(), n);
+    return String::Format(result.GetText(), n);
 }
 
 #if USE_EDITOR
