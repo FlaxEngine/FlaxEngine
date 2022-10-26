@@ -524,6 +524,17 @@ namespace Flax.Build.Bindings
             }
         }
 
+        private static void ParseTag(ref Dictionary<string, string> tags, TagParameter tag)
+        {
+            if (tags == null)
+                tags = new Dictionary<string, string>();
+            var idx = tag.Value.IndexOf('=');
+            if (idx == -1)
+                tags[tag.Value] = string.Empty;
+            else
+                tags[tag.Value.Substring(0, idx)] = tag.Value.Substring(idx + 1);
+        }
+
         private static ClassInfo ParseClass(ref ParsingContext context)
         {
             var desc = new ClassInfo
@@ -607,6 +618,9 @@ namespace Flax.Build.Bindings
                     break;
                 case "namespace":
                     desc.Namespace = tag.Value;
+                    break;
+                case "tag":
+                    ParseTag(ref desc.Tags, tag);
                     break;
                 default:
                     bool valid = false;
@@ -692,6 +706,9 @@ namespace Flax.Build.Bindings
                     break;
                 case "namespace":
                     desc.Namespace = tag.Value;
+                    break;
+                case "tag":
+                    ParseTag(ref desc.Tags, tag);
                     break;
                 default:
                     bool valid = false;
@@ -823,6 +840,9 @@ namespace Flax.Build.Bindings
                     break;
                 case "hidden":
                     desc.IsHidden = true;
+                    break;
+                case "tag":
+                    ParseTag(ref desc.Tags, tag);
                     break;
                 default:
                     bool valid = false;
@@ -1085,6 +1105,9 @@ namespace Flax.Build.Bindings
                 case "namespace":
                     desc.Namespace = tag.Value;
                     break;
+                case "tag":
+                    ParseTag(ref desc.Tags, tag);
+                    break;
                 default:
                     bool valid = false;
                     ParseTypeTag?.Invoke(ref valid, tag, desc);
@@ -1155,6 +1178,9 @@ namespace Flax.Build.Bindings
                     break;
                 case "namespace":
                     desc.Namespace = tag.Value;
+                    break;
+                case "tag":
+                    ParseTag(ref desc.Tags, tag);
                     break;
                 default:
                     bool valid = false;
@@ -1283,6 +1309,9 @@ namespace Flax.Build.Bindings
                 case "noarray":
                     desc.NoArray = true;
                     break;
+                case "tag":
+                    ParseTag(ref desc.Tags, tag);
+                    break;
                 default:
                     bool valid = false;
                     ParseMemberTag?.Invoke(ref valid, tag, desc);
@@ -1348,6 +1377,9 @@ namespace Flax.Build.Bindings
                     break;
                 case "hidden":
                     desc.IsHidden = true;
+                    break;
+                case "tag":
+                    ParseTag(ref desc.Tags, tag);
                     break;
                 default:
                     bool valid = false;
@@ -1417,6 +1449,9 @@ namespace Flax.Build.Bindings
                     break;
                 case "namespace":
                     desc.Namespace = tag.Value;
+                    break;
+                case "tag":
+                    ParseTag(ref desc.Tags, tag);
                     break;
                 default:
                     bool valid = false;
