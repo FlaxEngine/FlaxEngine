@@ -109,6 +109,35 @@ struct MConverter<String>
     }
 };
 
+// Converter for StringAnsi.
+template<>
+struct MConverter<StringAnsi>
+{
+    MonoObject* Box(const StringAnsi& data, MonoClass* klass)
+    {
+        return (MonoObject*)MUtils::ToString(data);
+    }
+
+    void Unbox(StringAnsi& result, MonoObject* data)
+    {
+        result = MUtils::ToStringAnsi((MonoString*)data);
+    }
+
+    void ToManagedArray(MonoArray* result, const Span<StringAnsi>& data)
+    {
+        for (int32 i = 0; i < data.Length(); i++)
+            mono_array_setref(result, i, MUtils::ToString(data[i]));
+    }
+
+    template<typename AllocationType = HeapAllocation>
+    void ToNativeArray(Array<StringAnsi, AllocationType>& result, MonoArray* data, int32 length)
+    {
+        result.Resize(length);
+        for (int32 i = 0; i < length; i++)
+            MUtils::ToString(mono_array_get(data, MonoString*, i), result[i]);
+    }
+};
+
 // Converter for StringView.
 template<>
 struct MConverter<StringView>
@@ -506,7 +535,6 @@ namespace MUtils
     extern void* VariantToManagedArgPtr(Variant& value, const MType& type, bool& failed);
     extern MonoObject* ToManaged(const Version& value);
     extern Version ToNative(MonoObject* value);
-
 };
 
 #endif
