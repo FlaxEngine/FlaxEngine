@@ -382,6 +382,13 @@ namespace Flax.Build.Bindings
                             token = context.Tokenizer.ExpectToken(TokenType.Identifier);
                             currentParam.DefaultValue += "::" + token.Value;
                         }
+                        else if (token.Type == TokenType.LeftParent)
+                        {
+                            currentParam.DefaultValue += token.Value;
+                            context.Tokenizer.SkipUntil(TokenType.RightParent, out var parenthesis);
+                            currentParam.DefaultValue += parenthesis;
+                            currentParam.DefaultValue += context.Tokenizer.CurrentToken.Value;
+                        }
                         else
                         {
                             context.Tokenizer.PreviousToken();
