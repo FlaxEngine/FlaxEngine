@@ -130,6 +130,10 @@ void AudioSource::Play()
         {
             // Request faster streaming update
             Clip->RequestStreamingUpdate();
+
+            // PE: If we are looping and streaming also update streaming buffers.
+            if(_loop)
+                RequestStreamingBuffersUpdate();
         }
     }
     else
