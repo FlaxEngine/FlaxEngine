@@ -919,10 +919,8 @@ namespace Flax.Build.Bindings
             // Properties
             foreach (var propertyInfo in classInfo.Properties)
             {
-                if (propertyInfo.IsHidden)
+                if (propertyInfo.IsHidden || !useUnmanaged)
                     continue;
-                if (!useUnmanaged)
-                    throw new NotImplementedException("TODO: support properties inside non-static and non-scripting API class types.");
 
                 contents.AppendLine();
                 GenerateCSharpComment(contents, indent, propertyInfo.Comment, true);

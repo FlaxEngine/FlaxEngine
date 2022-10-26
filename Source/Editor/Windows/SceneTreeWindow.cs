@@ -131,6 +131,7 @@ namespace FlaxEditor.Windows
 
         private TextBox _searchBox;
         private Tree _tree;
+        private Panel _sceneTreePanel;
         private bool _isUpdatingSelection;
         private bool _isMouseDown;
 
@@ -143,10 +144,9 @@ namespace FlaxEditor.Windows
         /// </summary>
         /// <param name="editor">The editor.</param>
         public SceneTreeWindow(Editor editor)
-        : base(editor, true, ScrollBars.Both)
+        : base(editor, true, ScrollBars.None)
         {
             Title = "Scene";
-            ScrollMargin = new Margin(0, 0, 0, 100.0f);
 
             // Scene searching query input box
             var headerPanel = new ContainerControl
@@ -165,19 +165,29 @@ namespace FlaxEditor.Windows
             };
             _searchBox.TextChanged += OnSearchBoxTextChanged;
 
+            // Scene tree panel
+            _sceneTreePanel = new Panel
+            {
+                AnchorPreset = AnchorPresets.StretchAll,
+                Offsets = new Margin(0, 0, headerPanel.Bottom, 0),
+                IsScrollable = true,
+                ScrollBars = ScrollBars.Both,
+                Parent = this,
+            };
+
             // Create scene structure tree
             var root = editor.Scene.Root;
             root.TreeNode.ChildrenIndent = 0;
             root.TreeNode.Expand();
             _tree = new Tree(true)
             {
-                Y = headerPanel.Bottom,
                 Margin = new Margin(0.0f, 0.0f, -16.0f, 0.0f), // Hide root node
+                IsScrollable = true,
             };
             _tree.AddChild(root.TreeNode);
             _tree.SelectedChanged += Tree_OnSelectedChanged;
             _tree.RightClick += OnTreeRightClick;
-            _tree.Parent = this;
+            _tree.Parent = _sceneTreePanel;
             headerPanel.Parent = this;
 
             // Setup input actions
@@ -186,6 +196,32 @@ namespace FlaxEditor.Windows
             InputActions.Add(options => options.ScaleMode, () => Editor.MainTransformGizmo.ActiveMode = TransformGizmoBase.Mode.Scale);
             InputActions.Add(options => options.FocusSelection, () => Editor.Windows.EditWin.Viewport.FocusSelection());
             InputActions.Add(options => options.Rename, Rename);
+        }
+
+        /// <summary>
+        /// Enables or disables vertical and horizontal scrolling on the scene tree panel.
+        /// </summary>
+        /// <param name="enabled">The state to set scrolling to</param>
+        public void ScrollingOnSceneTreeView(bool enabled)
+        {
+            if (_sceneTreePanel.VScrollBar != null)
+                _sceneTreePanel.VScrollBar.ThumbEnabled = enabled;
+            if (_sceneTreePanel.HScrollBar != null)
+                _sceneTreePanel.HScrollBar.ThumbEnabled = enabled;
+        }
+
+        /// <summary>
+        /// Scrolls to the selected node in the scene tree.
+        /// </summary>
+        public void ScrollToSelectedNode()
+        {
+            // Scroll to node
+            var nodeSelection = _tree.Selection;
+            if (nodeSelection.Count != 0)
+            {
+                var scrollControl = nodeSelection[nodeSelection.Count - 1];
+                _sceneTreePanel.ScrollViewTo(scrollControl);
+            }
         }
 
         private void OnSearchBoxTextChanged()

@@ -24,7 +24,7 @@ namespace FlaxEditor.CustomEditors.Dedicated
         public override void Initialize(LayoutElementsContainer layout)
         {
             string[] layerNames = LayersAndTagsSettings.GetCurrentLayers();
-            int layersCount = Math.Max(4, layerNames.Length);
+            int layersCount = layerNames.Length;
             _checkBoxes = new List<CheckBox>();
             _layersCount = layersCount;
 

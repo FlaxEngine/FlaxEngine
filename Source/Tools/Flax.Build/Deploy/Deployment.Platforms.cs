@@ -63,6 +63,7 @@ namespace Flax.Deploy
                 }
 
                 // Compress
+                if (!Configuration.DontCompress)
                 {
                     Log.Info("Compressing platform files...");
 
@@ -84,10 +85,10 @@ namespace Flax.Deploy
 #endif
 
                     Log.Info(string.Format("Compressed {0} package size: {1}", platformName, Utilities.GetFileSize(packageZipPath)));
-                }
 
-                // Remove files (only zip package is used)
-                Utilities.DirectoryDelete(dst);
+                    // Remove files (only zip package is used)
+                    Utilities.DirectoryDelete(dst);
+                }
 
                 Log.Info(string.Empty);
             }
