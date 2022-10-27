@@ -243,7 +243,10 @@ bool NetworkManager::StartServer()
     if (StartPeer())
         return true;
     if (!Peer->Listen())
+    {
+        Stop();
         return true;
+    }
     LocalClientId = ServerClientId;
     NextClientId = ServerClientId + 1;
 
@@ -262,7 +265,10 @@ bool NetworkManager::StartClient()
     if (StartPeer())
         return true;
     if (!Peer->Connect())
+    {
+        Stop();
         return true;
+    }
     LocalClientId = 0; // Id gets assigned by server later after connection
     NextClientId = 0;
     LocalClient = New<NetworkClient>(LocalClientId, NetworkConnection{ 0 });
