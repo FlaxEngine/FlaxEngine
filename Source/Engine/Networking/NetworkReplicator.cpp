@@ -236,7 +236,7 @@ void NetworkReplicator::AddSerializer(const ScriptingTypeHandle& typeHandle, Ser
     if (!typeHandle)
         return;
     const Serializer serializer{ { serialize, deserialize }, { serializeTag, deserializeTag } };
-    SerializersTable.Add(typeHandle, serializer);
+    SerializersTable[typeHandle] = serializer;
 }
 
 bool NetworkReplicator::InvokeSerializer(const ScriptingTypeHandle& typeHandle, void* instance, NetworkStream* stream, bool serialize)
@@ -301,17 +301,9 @@ void NetworkReplicator::SpawnObject(ScriptingObject* obj)
     if (!obj || NetworkManager::State == NetworkConnectionState::Offline)
         return;
     ScopeLock lock(ObjectsLock);
-    auto it = Objects.Find(obj->GetID());
-    if (it == Objects.End())
-    {
-        // Ensure that object is added to the replication locally
-        AddObject(obj);
-        it = Objects.Find(obj->GetID());
-    }
 
     // Register for spawning (batched during update)
-    ASSERT_LOW_LAYER(!SpawnQueue.Contains(obj));
-    SpawnQueue.Add(obj);
+    SpawnQueue.AddUnique(obj);
 }
 
 void NetworkReplicator::DespawnObject(ScriptingObject* obj)
@@ -449,8 +441,7 @@ void NetworkInternal::NetworkReplicatorUpdate()
     NetworkPeer* peer = NetworkManager::Peer;
     // TODO: introduce NetworkReplicationHierarchy to optimize objects replication in large worlds (eg. batched culling networked scene objects that are too far from certain client to be relevant)
     // TODO: per-object sync interval (in frames) - could be scaled by hierarchy (eg. game could slow down sync rate for objects far from player)
-    // TODO: network authority (eg. object owned by client that can affect server)
-
+    
     if (!isClient && NewClients.Count() != 0)
     {
         // Sync any previously spawned objects with late-joining clients
@@ -527,7 +518,13 @@ void NetworkInternal::NetworkReplicatorUpdate()
         for (ScriptingObjectReference<ScriptingObject>& e : SpawnQueue)
         {
             ScriptingObject* obj = e.Get();
-            const auto it = Objects.Find(obj->GetID());
+            auto it = Objects.Find(obj->GetID());
+            if (it == Objects.End())
+            {
+                // Ensure that object is added to the replication locally
+                NetworkReplicator::AddObject(obj);
+                it = Objects.Find(obj->GetID());
+            }
             if (it == Objects.End())
                 continue; // Skip deleted objects
             auto& item = it->Item;
