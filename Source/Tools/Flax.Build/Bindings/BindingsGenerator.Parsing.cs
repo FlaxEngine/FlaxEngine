@@ -893,6 +893,19 @@ namespace Flax.Build.Bindings
                 if (propertyInfo.IsStatic != functionInfo.IsStatic)
                     throw new Exception($"Property {propertyName} in class {classInfo.Name} has to have both getter and setter methods static or non-static (line {context.Tokenizer.CurrentLine}).");
             }
+            if (functionInfo.Tags != null)
+            {
+                // Populate tags from getter/setter methods
+                if (propertyInfo.Tags == null)
+                {
+                    propertyInfo.Tags = new Dictionary<string, string>(functionInfo.Tags);
+                }
+                else
+                {
+                    foreach (var e in functionInfo.Tags)
+                        propertyInfo.Tags[e.Key] = e.Value;
+                }
+            }
 
             if (isGetter && propertyInfo.Getter != null)
                 throw new Exception($"Property {propertyName} in class {classInfo.Name} cannot have multiple getter method (line {context.Tokenizer.CurrentLine}). Getter methods of properties must return value, while setters take this as a parameter.");

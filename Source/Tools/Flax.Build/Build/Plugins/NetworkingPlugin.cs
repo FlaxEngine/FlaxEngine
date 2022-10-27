@@ -77,12 +77,10 @@ namespace Flax.Build.Plugins
         {
             if (tag.Tag != NetworkReplicated)
                 return;
-            if (memberInfo is FieldInfo)
-            {
-                // Mark member as replicated
-                valid = true;
-                memberInfo.SetTag(NetworkReplicated, string.Empty);
-            }
+
+            // Mark member as replicated
+            valid = true;
+            memberInfo.SetTag(NetworkReplicated, string.Empty);
         }
         
         private void OnGenerateCppTypeInternals(Builder.BuildData buildData, ApiTypeInfo typeInfo, StringBuilder contents)
@@ -94,10 +92,11 @@ namespace Flax.Build.Plugins
 
             // Check if type uses automated network replication
             List<FieldInfo> fields = null;
+            List<PropertyInfo> properties = null;
             if (typeInfo is ClassInfo classInfo)
             {
                 fields = classInfo.Fields;
-                // TODO: add support for class properties replication
+                properties = classInfo.Properties;
             }
             else if (typeInfo is StructureInfo structInfo)
             {
@@ -115,6 +114,17 @@ namespace Flax.Build.Plugins
                     }
                 }
             }
+            if (properties != null)
+            {
+                foreach (var propertyInfo in properties)
+                {
+                    if (propertyInfo.GetTag(NetworkReplicated) != null)
+                    {
+                        useReplication = true;
+                        break;
+                    }
+                }
+            }
             if (!useReplication)
                 return;
 
@@ -123,11 +133,11 @@ namespace Flax.Build.Plugins
             // Generate C++ wrapper functions to serialize/deserialize type
             BindingsGenerator.CppIncludeFiles.Add("Engine/Networking/NetworkReplicator.h");
             BindingsGenerator.CppIncludeFiles.Add("Engine/Networking/NetworkStream.h");
-            OnGenerateCppTypeSerialize(buildData, typeInfo, contents, fields, true);
-            OnGenerateCppTypeSerialize(buildData, typeInfo, contents, fields, false);
+            OnGenerateCppTypeSerialize(buildData, typeInfo, contents, fields, properties, true);
+            OnGenerateCppTypeSerialize(buildData, typeInfo, contents, fields, properties, false);
         }
 
-        private void OnGenerateCppTypeSerialize(Builder.BuildData buildData, ApiTypeInfo typeInfo, StringBuilder contents, List<FieldInfo> fields, bool serialize)
+        private void OnGenerateCppTypeSerialize(Builder.BuildData buildData, ApiTypeInfo typeInfo, StringBuilder contents, List<FieldInfo> fields, List<PropertyInfo> properties, bool serialize)
         {
             contents.Append("    static void ").Append(serialize ? Thunk1 : Thunk2).AppendLine("(void* instance, NetworkStream* stream, void* tag)");
             contents.AppendLine("    {");
@@ -139,13 +149,13 @@ namespace Flax.Build.Plugins
             }
             else
             {
-                if (typeInfo is ClassStructInfo classStructInfo && classStructInfo.BaseType != null && classStructInfo.BaseType.Name != "ScriptingObject")
+                if (typeInfo is ClassStructInfo classStructInfo && classStructInfo.BaseType != null)
                 {
                     // Replicate base type
                     OnGenerateCppWriteSerializer(contents, classStructInfo.BaseType.NativeName, "obj", serialize);
                 }
                 
-                // Replicate all marked fields
+                // Replicate all marked fields and properties
                 if (fields != null)
                 {
                     foreach (var fieldInfo in fields)
@@ -155,7 +165,20 @@ namespace Flax.Build.Plugins
                         OnGenerateCppTypeSerializeData(buildData, typeInfo, contents, fieldInfo.Type, $"obj.{fieldInfo.Name}", serialize);
                     }
                 }
-                // TODO: add support for class properties replication
+                if (properties != null)
+                {
+                    foreach (var propertyInfo in properties)
+                    {
+                        if (propertyInfo.GetTag(NetworkReplicated) == null)
+                            continue;
+                        if (!serialize)
+                            contents.AppendLine($"        {{{propertyInfo.Setter.Parameters[0].Type} value{propertyInfo.Name};");
+                        var name = serialize ? $"obj.{propertyInfo.Getter.Name}()" : $"value{propertyInfo.Name}";
+                        OnGenerateCppTypeSerializeData(buildData, typeInfo, contents, propertyInfo.Type, name, serialize);
+                        if (!serialize)
+                            contents.AppendLine($"        obj.{propertyInfo.Setter.Name}(value{propertyInfo.Name});}}");
+                    }
+                }
             }
             contents.AppendLine("    }");
             contents.AppendLine();
@@ -203,7 +226,7 @@ namespace Flax.Build.Plugins
                 {
                     contents.AppendLine($"        {{Guid id;");
                     OnGenerateCppWriteRaw(contents, "id", serialize);
-                    contents.AppendLine($"        {name} = Scripting::TryFindObject(id);}}");
+                    contents.AppendLine($"        {name} = ({type})Scripting::TryFindObject(id);}}");
                 }
             }
             else if (apiType.IsStruct)
@@ -231,6 +254,8 @@ namespace Flax.Build.Plugins
         
         private void OnGenerateCppWriteSerializer(StringBuilder contents, string type, string data, bool serialize)
         {
+            if (type == "ScriptingObject" || type == "Script" || type == "Actor")
+                return;
             var mode = serialize ? "true" : "false";
             contents.AppendLine($"        NetworkReplicator::InvokeSerializer({type}::TypeInitializer, &{data}, stream, {mode});");
         }
