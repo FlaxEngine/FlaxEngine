@@ -301,6 +301,9 @@ void NetworkReplicator::SpawnObject(ScriptingObject* obj)
     if (!obj || NetworkManager::State == NetworkConnectionState::Offline)
         return;
     ScopeLock lock(ObjectsLock);
+    const auto it = Objects.Find(obj->GetID());
+    if (it != Objects.End() && it->Item.Spawned)
+        return; // Skip if object was already spawned
 
     // Register for spawning (batched during update)
     SpawnQueue.AddUnique(obj);
@@ -441,7 +444,7 @@ void NetworkInternal::NetworkReplicatorUpdate()
     NetworkPeer* peer = NetworkManager::Peer;
     // TODO: introduce NetworkReplicationHierarchy to optimize objects replication in large worlds (eg. batched culling networked scene objects that are too far from certain client to be relevant)
     // TODO: per-object sync interval (in frames) - could be scaled by hierarchy (eg. game could slow down sync rate for objects far from player)
-    
+
     if (!isClient && NewClients.Count() != 0)
     {
         // Sync any previously spawned objects with late-joining clients
