@@ -15,6 +15,8 @@
 #include "Engine/Core/Collections/Dictionary.h"
 #include "Engine/Platform/CriticalSection.h"
 #include "Engine/Engine/EngineService.h"
+#include "Engine/Level/Actor.h"
+#include "Engine/Level/SceneObject.h"
 #include "Engine/Profiler/ProfilerCPU.h"
 #include "Engine/Scripting/Scripting.h"
 #include "Engine/Scripting/ScriptingObjectReference.h"
@@ -272,6 +274,14 @@ void NetworkReplicator::AddObject(ScriptingObject* obj, ScriptingObject* parent)
     ScopeLock lock(ObjectsLock);
     if (Objects.Contains(obj))
         return;
+
+    // Automatic parenting for scene objects
+    if (!parent)
+    {
+        auto sceneObject = ScriptingObject::Cast<SceneObject>(obj);
+        if (sceneObject)
+            parent = sceneObject->GetParent();
+    }
 
     // Add object to the list
     NetworkReplicatedObject item;
@@ -725,6 +735,16 @@ void NetworkInternal::OnNetworkMessageObjectSpawn(NetworkEvent& event, NetworkCl
         LOG(Info, "[NetworkReplicator] Remap object ID={} into object {}:{}", msgData.ObjectId, item.ToString(), obj->GetType().ToString());
 #endif
         IdsRemappingTable.Add(msgData.ObjectId, item.ObjectId);
+
+        // Automatic parenting for scene objects
+        auto sceneObject = ScriptingObject::Cast<SceneObject>(obj);
+        if (sceneObject)
+        {
+            if (parent && parent->Object.Get() && parent->Object->Is<Actor>())
+                sceneObject->SetParent(parent->Object.As<Actor>());
+            else if (auto* parentActor = Scripting::FindObject<Actor>(msgData.ParentId))
+                sceneObject->SetParent(parentActor);
+        }
 
         // TODO: if  we're server then spawn this object further on other clients
     }
