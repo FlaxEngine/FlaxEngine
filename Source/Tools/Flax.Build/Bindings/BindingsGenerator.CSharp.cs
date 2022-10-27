@@ -669,6 +669,16 @@ namespace Flax.Build.Bindings
             GenerateCSharpAttributes(buildData, contents, indent, apiTypeInfo, memberInfo.Attributes, memberInfo.Comment, true, useUnmanaged, defaultValue, memberInfo.IsDeprecated, defaultValueType);
         }
 
+        private static void GenerateCSharpAccessLevel(StringBuilder contents, AccessLevel access)
+        {
+            if (access == AccessLevel.Public)
+                contents.Append("public ");
+            else if (access == AccessLevel.Protected)
+                contents.Append("protected ");
+            else if (access == AccessLevel.Private)
+                contents.Append("private ");
+        }
+
         private static void GenerateCSharpClass(BuildData buildData, StringBuilder contents, string indent, ClassInfo classInfo)
         {
             var useUnmanaged = classInfo.IsStatic || classInfo.IsScriptingObject;
@@ -689,12 +699,7 @@ namespace Flax.Build.Bindings
             // Class begin
             GenerateCSharpAttributes(buildData, contents, indent, classInfo, useUnmanaged);
             contents.Append(indent);
-            if (classInfo.Access == AccessLevel.Public)
-                contents.Append("public ");
-            else if (classInfo.Access == AccessLevel.Protected)
-                contents.Append("protected ");
-            else if (classInfo.Access == AccessLevel.Private)
-                contents.Append("private ");
+            GenerateCSharpAccessLevel(contents, classInfo.Access);
             if (classInfo.IsStatic)
                 contents.Append("static ");
             else if (classInfo.IsSealed)
@@ -794,12 +799,7 @@ namespace Flax.Build.Bindings
                 GenerateCSharpComment(contents, indent, eventInfo.Comment, true);
                 GenerateCSharpAttributes(buildData, contents, indent, classInfo, eventInfo, useUnmanaged);
                 contents.Append(indent);
-                if (eventInfo.Access == AccessLevel.Public)
-                    contents.Append("public ");
-                else if (eventInfo.Access == AccessLevel.Protected)
-                    contents.Append("protected ");
-                else if (eventInfo.Access == AccessLevel.Private)
-                    contents.Append("private ");
+                GenerateCSharpAccessLevel(contents, eventInfo.Access);
                 if (eventInfo.IsStatic)
                     contents.Append("static ");
                 contents.Append(eventSignature);
@@ -879,12 +879,7 @@ namespace Flax.Build.Bindings
                 GenerateCSharpComment(contents, indent, fieldInfo.Comment, true);
                 GenerateCSharpAttributes(buildData, contents, indent, classInfo, fieldInfo, useUnmanaged, fieldInfo.DefaultValue, fieldInfo.Type);
                 contents.Append(indent);
-                if (fieldInfo.Access == AccessLevel.Public)
-                    contents.Append("public ");
-                else if (fieldInfo.Access == AccessLevel.Protected)
-                    contents.Append("protected ");
-                else if (fieldInfo.Access == AccessLevel.Private)
-                    contents.Append("private ");
+                GenerateCSharpAccessLevel(contents, fieldInfo.Access);
                 if (fieldInfo.IsConstexpr)
                     contents.Append("const ");
                 else if (fieldInfo.IsStatic)
@@ -933,12 +928,7 @@ namespace Flax.Build.Bindings
                 GenerateCSharpComment(contents, indent, propertyInfo.Comment, true);
                 GenerateCSharpAttributes(buildData, contents, indent, classInfo, propertyInfo, useUnmanaged);
                 contents.Append(indent);
-                if (propertyInfo.Access == AccessLevel.Public)
-                    contents.Append("public ");
-                else if (propertyInfo.Access == AccessLevel.Protected)
-                    contents.Append("protected ");
-                else if (propertyInfo.Access == AccessLevel.Private)
-                    contents.Append("private ");
+                GenerateCSharpAccessLevel(contents, propertyInfo.Access);
                 if (propertyInfo.IsStatic)
                     contents.Append("static ");
                 var returnValueType = GenerateCSharpNativeToManaged(buildData, propertyInfo.Type, classInfo);
@@ -948,14 +938,20 @@ namespace Flax.Build.Bindings
 
                 if (propertyInfo.Getter != null)
                 {
-                    contents.Append(indent).Append("get { ");
+                    contents.Append(indent);
+                    if (propertyInfo.Access != propertyInfo.Getter.Access)
+                        GenerateCSharpAccessLevel(contents, propertyInfo.Getter.Access);
+                    contents.Append("get { ");
                     GenerateCSharpWrapperFunctionCall(buildData, contents, classInfo, propertyInfo.Getter);
                     contents.Append(" }").AppendLine();
                 }
 
                 if (propertyInfo.Setter != null)
                 {
-                    contents.Append(indent).Append("set { ");
+                    contents.Append(indent);
+                    if (propertyInfo.Access != propertyInfo.Setter.Access)
+                        GenerateCSharpAccessLevel(contents, propertyInfo.Setter.Access);
+                    contents.Append("set { ");
                     GenerateCSharpWrapperFunctionCall(buildData, contents, classInfo, propertyInfo.Setter, true);
                     contents.Append(" }").AppendLine();
                 }
@@ -988,12 +984,7 @@ namespace Flax.Build.Bindings
                     GenerateCSharpComment(contents, indent, functionInfo.Comment);
                     GenerateCSharpAttributes(buildData, contents, indent, classInfo, functionInfo, true);
                     contents.Append(indent);
-                    if (functionInfo.Access == AccessLevel.Public)
-                        contents.Append("public ");
-                    else if (functionInfo.Access == AccessLevel.Protected)
-                        contents.Append("protected ");
-                    else if (functionInfo.Access == AccessLevel.Private)
-                        contents.Append("private ");
+                    GenerateCSharpAccessLevel(contents, functionInfo.Access);
                     if (functionInfo.IsStatic)
                         contents.Append("static ");
                     if (functionInfo.IsVirtual && !classInfo.IsSealed)
@@ -1054,12 +1045,7 @@ namespace Flax.Build.Bindings
                             contents.Append(indent).AppendLine("/// <inheritdoc />");
                         GenerateCSharpAttributes(buildData, contents, indent, classInfo, functionInfo.Attributes, null, false, useUnmanaged);
                         contents.Append(indent);
-                        if (functionInfo.Access == AccessLevel.Public)
-                            contents.Append("public ");
-                        else if (functionInfo.Access == AccessLevel.Protected)
-                            contents.Append("protected ");
-                        else if (functionInfo.Access == AccessLevel.Private)
-                            contents.Append("private ");
+                        GenerateCSharpAccessLevel(contents, functionInfo.Access);
                         if (functionInfo.IsVirtual && !classInfo.IsSealed)
                             contents.Append("virtual ");
                         var returnValueType = GenerateCSharpNativeToManaged(buildData, functionInfo.ReturnType, classInfo);
@@ -1141,12 +1127,7 @@ namespace Flax.Build.Bindings
             GenerateCSharpAttributes(buildData, contents, indent, structureInfo, true);
             contents.Append(indent).AppendLine("[StructLayout(LayoutKind.Sequential)]");
             contents.Append(indent);
-            if (structureInfo.Access == AccessLevel.Public)
-                contents.Append("public ");
-            else if (structureInfo.Access == AccessLevel.Protected)
-                contents.Append("protected ");
-            else if (structureInfo.Access == AccessLevel.Private)
-                contents.Append("private ");
+            GenerateCSharpAccessLevel(contents, structureInfo.Access);
             contents.Append("unsafe partial struct ").Append(structureInfo.Name);
             if (structureInfo.BaseType != null && structureInfo.IsPod)
                 contents.Append(" : ").Append(GenerateCSharpNativeToManaged(buildData, new TypeInfo(structureInfo.BaseType), structureInfo));
@@ -1162,12 +1143,7 @@ namespace Flax.Build.Bindings
                 GenerateCSharpComment(contents, indent, fieldInfo.Comment);
                 GenerateCSharpAttributes(buildData, contents, indent, structureInfo, fieldInfo, fieldInfo.IsStatic, fieldInfo.DefaultValue, fieldInfo.Type);
                 contents.Append(indent);
-                if (fieldInfo.Access == AccessLevel.Public)
-                    contents.Append("public ");
-                else if (fieldInfo.Access == AccessLevel.Protected)
-                    contents.Append("protected ");
-                else if (fieldInfo.Access == AccessLevel.Private)
-                    contents.Append("private ");
+                GenerateCSharpAccessLevel(contents, fieldInfo.Access);
                 if (fieldInfo.IsConstexpr)
                     contents.Append("const ");
                 else if (fieldInfo.IsStatic)
@@ -1188,12 +1164,7 @@ namespace Flax.Build.Bindings
                         GenerateCSharpComment(contents, indent, fieldInfo.Comment);
                         GenerateCSharpAttributes(buildData, contents, indent, structureInfo, fieldInfo, fieldInfo.IsStatic);
                         contents.Append(indent);
-                        if (fieldInfo.Access == AccessLevel.Public)
-                            contents.Append("public ");
-                        else if (fieldInfo.Access == AccessLevel.Protected)
-                            contents.Append("protected ");
-                        else if (fieldInfo.Access == AccessLevel.Private)
-                            contents.Append("private ");
+                        GenerateCSharpAccessLevel(contents, fieldInfo.Access);
                         if (fieldInfo.IsStatic)
                             contents.Append("static ");
                         contents.Append(type).Append(' ').Append(fieldInfo.Name + i).Append(';').AppendLine();
@@ -1320,12 +1291,7 @@ namespace Flax.Build.Bindings
             // Enum begin
             GenerateCSharpAttributes(buildData, contents, indent, enumInfo, true);
             contents.Append(indent);
-            if (enumInfo.Access == AccessLevel.Public)
-                contents.Append("public ");
-            else if (enumInfo.Access == AccessLevel.Protected)
-                contents.Append("protected ");
-            else if (enumInfo.Access == AccessLevel.Private)
-                contents.Append("private ");
+            GenerateCSharpAccessLevel(contents, enumInfo.Access);
             contents.Append("enum ").Append(enumInfo.Name);
             if (enumInfo.UnderlyingType != null)
                 contents.Append(" : ").Append(GenerateCSharpNativeToManaged(buildData, enumInfo.UnderlyingType, enumInfo));
@@ -1371,12 +1337,7 @@ namespace Flax.Build.Bindings
             GenerateCSharpComment(contents, indent, interfaceInfo.Comment);
             GenerateCSharpAttributes(buildData, contents, indent, interfaceInfo, true);
             contents.Append(indent);
-            if (interfaceInfo.Access == AccessLevel.Public)
-                contents.Append("public ");
-            else if (interfaceInfo.Access == AccessLevel.Protected)
-                contents.Append("protected ");
-            else if (interfaceInfo.Access == AccessLevel.Private)
-                contents.Append("private ");
+            GenerateCSharpAccessLevel(contents, interfaceInfo.Access);
             contents.Append("unsafe partial interface ").Append(interfaceInfo.Name);
             contents.AppendLine();
             contents.Append(indent + "{");

@@ -892,8 +892,6 @@ namespace Flax.Build.Bindings
             {
                 if (propertyInfo.IsStatic != functionInfo.IsStatic)
                     throw new Exception($"Property {propertyName} in class {classInfo.Name} has to have both getter and setter methods static or non-static (line {context.Tokenizer.CurrentLine}).");
-                if (propertyInfo.Access != functionInfo.Access)
-                    throw new Exception($"Property {propertyName} in class {classInfo.Name} has to have both getter and setter methods with the same access level (line {context.Tokenizer.CurrentLine}).");
             }
 
             if (isGetter && propertyInfo.Getter != null)
