@@ -127,7 +127,7 @@ void Skybox::ApplySky(GPUContext* context, RenderContext& renderContext, const M
 
 void Skybox::OnEnable()
 {
-    GetSceneRendering()->AddActor(this, _sceneRenderingKey);
+    GetSceneRendering()->AddActor(this, _sceneRenderingKey, SceneRendering::PreRender);
 #if USE_EDITOR
     GetSceneRendering()->AddViewportIcon(this);
 #endif
@@ -141,7 +141,7 @@ void Skybox::OnDisable()
 #if USE_EDITOR
     GetSceneRendering()->RemoveViewportIcon(this);
 #endif
-    GetSceneRendering()->RemoveActor(this, _sceneRenderingKey);
+    GetSceneRendering()->RemoveActor(this, _sceneRenderingKey, SceneRendering::PreRender);
 
     // Base
     Actor::OnDisable();

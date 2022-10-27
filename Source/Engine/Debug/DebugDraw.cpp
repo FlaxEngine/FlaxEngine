@@ -718,16 +718,17 @@ void DebugDraw::Draw(RenderContext& renderContext, GPUTextureView* target, GPUTe
     if (renderContext.Buffers == nullptr || !DebugDrawVB)
         return;
     auto context = GPUDevice::Instance->GetMainContext();
-    if (Context->Origin != renderContext.View.Origin)
+    const RenderView& view = renderContext.View;
+    if (Context->Origin != view.Origin)
     {
         // Teleport existing debug shapes to maintain their location
-        Float3 delta = Context->Origin - renderContext.View.Origin;
+        Float3 delta = Context->Origin - view.Origin;
         Context->DebugDrawDefault.Teleport(delta);
         Context->DebugDrawDepthTest.Teleport(delta);
-        Context->Origin = renderContext.View.Origin;
+        Context->Origin = view.Origin;
     }
-    Context->LastViewPos = renderContext.View.Position;
-    Context->LastViewProj = renderContext.View.Projection;
+    Context->LastViewPos = view.Position;
+    Context->LastViewProj = view.Projection;
 
     // Fallback to task buffers
     if (target == nullptr && renderContext.Task)
@@ -755,7 +756,7 @@ void DebugDraw::Draw(RenderContext& renderContext, GPUTextureView* target, GPUTe
     const auto cb = DebugDrawShader->GetShader()->GetCB(0);
     Data data;
     Matrix vp;
-    Matrix::Multiply(renderContext.View.View, renderContext.View.NonJitteredProjection, vp);
+    Matrix::Multiply(view.View, view.NonJitteredProjection, vp);
     Matrix::Transpose(vp, data.ViewProjection);
     data.EnableDepthTest = enableDepthTest;
     context->UpdateCB(cb, &data);
@@ -866,7 +867,7 @@ void DebugDraw::Draw(RenderContext& renderContext, GPUTextureView* target, GPUTe
                 Matrix f;
                 Matrix::RotationZ(PI, f);
                 Float3 viewUp;
-                Float3::Transform(Float3::Up, Quaternion::LookRotation(renderContext.View.Direction, Float3::Up), viewUp);
+                Float3::Transform(Float3::Up, Quaternion::LookRotation(view.Direction, Float3::Up), viewUp);
                 for (auto& t : Context->DebugDrawDefault.DefaultText3D)
                     DrawText3D(t, renderContext, viewUp, f, vp, viewport, context, target, nullptr);
                 for (auto& t : Context->DebugDrawDefault.OneFrameText3D)

@@ -164,7 +164,8 @@ public:
     /// Draws all the actors.
     /// </summary>
     /// <param name="renderContext">The rendering context.</param>
-    static void DrawActors(RenderContext& renderContext);
+    /// <param name="category">The actors category to draw (see SceneRendering::DrawCategory).</param>
+    static void DrawActors(RenderContext& renderContext, byte category = 0);
 
     /// <summary>
     /// Collects all the post fx volumes.

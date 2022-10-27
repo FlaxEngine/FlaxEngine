@@ -19,7 +19,7 @@ class SceneRenderTask;
 /// <summary>
 /// Rendering view description that defines how to render the objects (camera placement, rendering properties, etc.).
 /// </summary>
-API_STRUCT() struct FLAXENGINE_API RenderView
+API_STRUCT(NoDefault) struct FLAXENGINE_API RenderView
 {
     DECLARE_SCRIPTING_TYPE_MINIMAL(RenderView);
 

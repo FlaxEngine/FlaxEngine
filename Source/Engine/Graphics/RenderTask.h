@@ -311,7 +311,8 @@ public:
     /// Calls drawing scene objects.
     /// </summary>
     /// <param name="renderContext">The rendering context.</param>
-    virtual void OnCollectDrawCalls(RenderContext& renderContext);
+    /// <param name="category">The actors category to draw (see SceneRendering::DrawCategory).</param>
+    virtual void OnCollectDrawCalls(RenderContext& renderContext, byte category = 0);
 
     /// <summary>
     /// The action called after scene rendering. Can be used to perform custom pre-rendering or to modify the render view.
@@ -394,7 +395,7 @@ public:
 /// <summary>
 /// The high-level renderer context. Used to collect the draw calls for the scene rendering. Can be used to perform a custom rendering.
 /// </summary>
-API_STRUCT() struct RenderContext
+API_STRUCT(NoDefault) struct RenderContext
 {
     DECLARE_SCRIPTING_TYPE_MINIMAL(RenderContext);
 
@@ -409,9 +410,9 @@ API_STRUCT() struct RenderContext
     API_FIELD() RenderList* List = nullptr;
 
     /// <summary>
-    /// The render view.
+    /// The scene rendering task that is a source of renderable objects (optional).
     /// </summary>
-    API_FIELD() RenderView View;
+    API_FIELD() SceneRenderTask* Task = nullptr;
 
     /// <summary>
     /// The proxy render view used to synchronize objects level of detail during rendering (eg. during shadow maps rendering passes). It's optional.
@@ -419,9 +420,9 @@ API_STRUCT() struct RenderContext
     API_FIELD() RenderView* LodProxyView = nullptr;
 
     /// <summary>
-    /// The scene rendering task that is a source of renderable objects (optional).
+    /// The render view.
     /// </summary>
-    API_FIELD() SceneRenderTask* Task = nullptr;
+    API_FIELD() RenderView View;
 
     RenderContext()
     {

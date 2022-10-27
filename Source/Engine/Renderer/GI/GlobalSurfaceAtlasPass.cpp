@@ -483,7 +483,8 @@ bool GlobalSurfaceAtlasPass::Render(RenderContext& renderContext, GPUContext* co
         _cullingPosDistance = Vector4(viewPosition, distance);
         for (auto* scene : renderContext.List->Scenes)
         {
-            for (auto& e : scene->Actors)
+            auto& list = scene->Actors[SceneRendering::SceneDraw];
+            for (auto& e : list)
             {
                 if (viewMask & e.LayerMask && e.Bounds.Radius >= minObjectRadius && CollisionsHelper::DistanceSpherePoint(e.Bounds, viewPosition) < distance)
                 {

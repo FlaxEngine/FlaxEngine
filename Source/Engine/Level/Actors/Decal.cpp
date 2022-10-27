@@ -63,7 +63,7 @@ BoundingBox Decal::GetEditorBox() const
 void Decal::OnLayerChanged()
 {
     if (_sceneRenderingKey != -1)
-        GetSceneRendering()->UpdateActor(this, _sceneRenderingKey);
+        GetSceneRendering()->UpdateActor(this, _sceneRenderingKey, SceneRendering::PreRender);
 }
 
 void Decal::Draw(RenderContext& renderContext)
@@ -118,7 +118,7 @@ bool Decal::IntersectsItself(const Ray& ray, Real& distance, Vector3& normal)
 
 void Decal::OnEnable()
 {
-    GetSceneRendering()->AddActor(this, _sceneRenderingKey);
+    GetSceneRendering()->AddActor(this, _sceneRenderingKey, SceneRendering::PreRender);
 #if USE_EDITOR
     GetSceneRendering()->AddViewportIcon(this);
 #endif
@@ -132,7 +132,7 @@ void Decal::OnDisable()
 #if USE_EDITOR
     GetSceneRendering()->RemoveViewportIcon(this);
 #endif
-    GetSceneRendering()->RemoveActor(this, _sceneRenderingKey);
+    GetSceneRendering()->RemoveActor(this, _sceneRenderingKey, SceneRendering::PreRender);
 
     // Base
     Actor::OnDisable();
@@ -148,5 +148,5 @@ void Decal::OnTransformChanged()
     BoundingSphere::FromBox(_box, _sphere);
 
     if (_sceneRenderingKey != -1)
-        GetSceneRendering()->UpdateActor(this, _sceneRenderingKey);
+        GetSceneRendering()->UpdateActor(this, _sceneRenderingKey, SceneRendering::PreRender);
 }

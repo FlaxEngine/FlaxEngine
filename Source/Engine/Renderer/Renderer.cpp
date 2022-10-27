@@ -122,7 +122,8 @@ void RendererService::Dispose()
 void RenderAntiAliasingPass(RenderContext& renderContext, GPUTexture* input, GPUTextureView* output)
 {
     auto context = GPUDevice::Instance->GetMainContext();
-    context->SetViewportAndScissors(renderContext.View.ScreenSize.X, renderContext.View.ScreenSize.Y);
+    auto screenSize = renderContext.View.ScreenSize;
+    context->SetViewportAndScissors(screenSize.X, screenSize.Y);
 
     const auto aaMode = renderContext.List->Settings.AntiAliasing.Mode;
     if (aaMode == AntialiasingMode::FastApproximateAntialiasing)
@@ -165,10 +166,8 @@ void Renderer::Render(SceneRenderTask* task)
     PROFILE_GPU_CPU_NAMED("Render Frame");
 
     auto context = GPUDevice::Instance->GetMainContext();
-
     context->ClearState();
     context->FlushState();
-
     const Viewport viewport = task->GetViewport();
     context->SetViewportAndScissors(viewport);
 

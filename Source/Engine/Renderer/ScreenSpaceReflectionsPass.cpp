@@ -161,8 +161,8 @@ void ScreenSpaceReflectionsPass::Render(RenderContext& renderContext, GPUTexture
     // Skip pass if resources aren't ready
     if (checkIfSkipPass())
         return;
-    auto& view = renderContext.View;
-    auto buffers = renderContext.Buffers;
+    const RenderView& view = renderContext.View;
+    RenderBuffers* buffers = renderContext.Buffers;
 
     // TODO: add support for SSR in ortho projection
     if (view.IsOrthographicProjection())
@@ -275,7 +275,7 @@ void ScreenSpaceReflectionsPass::Render(RenderContext& renderContext, GPUTexture
     GlobalSignDistanceFieldPass::BindingData bindingDataSDF;
     GlobalSurfaceAtlasPass::BindingData bindingDataSurfaceAtlas;
     if (settings.TraceMode == ReflectionsTraceMode::SoftwareTracing &&
-        renderContext.View.Flags & ViewFlags::GI &&
+        view.Flags & ViewFlags::GI &&
         renderContext.List->Settings.GlobalIllumination.Mode == GlobalIlluminationMode::DDGI)
     {
         if (!GlobalSignDistanceFieldPass::Instance()->Render(renderContext, context, bindingDataSDF) &&

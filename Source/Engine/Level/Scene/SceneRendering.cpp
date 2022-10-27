@@ -28,20 +28,21 @@ void ISceneRenderingListener::ListenSceneRendering(SceneRendering* scene)
     }
 }
 
-void SceneRendering::Draw(RenderContext& renderContext)
+void SceneRendering::Draw(RenderContext& renderContext, DrawCategory category)
 {
     ScopeLock lock(Locker);
     auto& view = renderContext.View;
     const BoundingFrustum frustum = view.CullingFrustum;
     const Vector3 origin = view.Origin;
     renderContext.List->Scenes.Add(this);
+    auto& list = Actors[(int32)category];
 
     // Draw all visual components
     if (view.IsOfflinePass)
     {
-        for (int32 i = 0; i < Actors.Count(); i++)
+        for (int32 i = 0; i < list.Count(); i++)
         {
-            auto e = Actors.Get()[i];
+            auto e = list.Get()[i];
             e.Bounds.Center -= origin;
             if (view.RenderLayersMask.Mask & e.LayerMask && (e.NoCulling || frustum.Intersects(e.Bounds)) && e.Actor->GetStaticFlags() & view.StaticFlagsMask)
             {
@@ -54,9 +55,9 @@ void SceneRendering::Draw(RenderContext& renderContext)
     }
     else if (origin.IsZero())
     {
-        for (int32 i = 0; i < Actors.Count(); i++)
+        for (int32 i = 0; i < list.Count(); i++)
         {
-            auto e = Actors.Get()[i];
+            auto e = list.Get()[i];
             if (view.RenderLayersMask.Mask & e.LayerMask && (e.NoCulling || frustum.Intersects(e.Bounds)))
             {
 #if SCENE_RENDERING_USE_PROFILER
@@ -68,9 +69,9 @@ void SceneRendering::Draw(RenderContext& renderContext)
     }
     else
     {
-        for (int32 i = 0; i < Actors.Count(); i++)
+        for (int32 i = 0; i < list.Count(); i++)
         {
-            auto e = Actors.Get()[i];
+            auto e = list.Get()[i];
             e.Bounds.Center -= origin;
             if (view.RenderLayersMask.Mask & e.LayerMask && (e.NoCulling || frustum.Intersects(e.Bounds)))
             {
@@ -82,7 +83,7 @@ void SceneRendering::Draw(RenderContext& renderContext)
         }
     }
 #if USE_EDITOR
-    if (view.Pass & DrawPass::GBuffer)
+    if (view.Pass & DrawPass::GBuffer && category == SceneDraw)
     {
         // Draw physics shapes
         if (view.Flags & ViewFlags::PhysicsDebug || view.Mode == ViewMode::PhysicsColliders)
@@ -116,42 +117,44 @@ void SceneRendering::Clear()
         listener->_scenes.Remove(this);
     }
     _listeners.Clear();
-    Actors.Clear();
+    for (auto& e : Actors)
+        e.Clear();
 #if USE_EDITOR
     PhysicsDebug.Clear();
 #endif
 }
 
-void SceneRendering::AddActor(Actor* a, int32& key)
+void SceneRendering::AddActor(Actor* a, int32& key, DrawCategory category)
 {
+    if (key != -1)
+        return;
     ScopeLock lock(Locker);
-    if (key == -1)
+    auto& list = Actors[(int32)category];
+    // TODO: track removedCount and skip searching for free entry if there is none
+    key = 0;
+    for (; key < list.Count(); key++)
     {
-        // TODO: track removedCount and skip searching for free entry if there is none
-        key = 0;
-        for (; key < Actors.Count(); key++)
-        {
-            if (Actors[key].Actor == nullptr)
-                break;
-        }
-        if (key == Actors.Count())
-            Actors.AddOne();
-        auto& e = Actors[key];
-        e.Actor = a;
-        e.LayerMask = a->GetLayerMask();
-        e.Bounds = a->GetSphere();
-        e.NoCulling = a->_drawNoCulling;
-        for (auto* listener : _listeners)
-            listener->OnSceneRenderingAddActor(a);
+        if (list[key].Actor == nullptr)
+            break;
     }
+    if (key == list.Count())
+        list.AddOne();
+    auto& e = list[key];
+    e.Actor = a;
+    e.LayerMask = a->GetLayerMask();
+    e.Bounds = a->GetSphere();
+    e.NoCulling = a->_drawNoCulling;
+    for (auto* listener : _listeners)
+        listener->OnSceneRenderingAddActor(a);
 }
 
-void SceneRendering::UpdateActor(Actor* a, int32 key)
+void SceneRendering::UpdateActor(Actor* a, int32 key, DrawCategory category)
 {
     ScopeLock lock(Locker);
-    if (Actors.IsEmpty())
+    auto& list = Actors[(int32)category];
+    if (list.IsEmpty())
         return;
-    auto& e = Actors[key];
+    auto& e = list[key];
     ASSERT_LOW_LAYER(a == e.Actor);
     for (auto* listener : _listeners)
         listener->OnSceneRenderingUpdateActor(a, e.Bounds);
@@ -159,12 +162,13 @@ void SceneRendering::UpdateActor(Actor* a, int32 key)
     e.Bounds = a->GetSphere();
 }
 
-void SceneRendering::RemoveActor(Actor* a, int32& key)
+void SceneRendering::RemoveActor(Actor* a, int32& key, DrawCategory category)
 {
     ScopeLock lock(Locker);
-    if (Actors.HasItems())
+    auto& list = Actors[(int32)category];
+    if (list.HasItems())
     {
-        auto& e = Actors[key];
+        auto& e = list[key];
         ASSERT_LOW_LAYER(a == e.Actor);
         for (auto* listener : _listeners)
             listener->OnSceneRenderingRemoveActor(a);

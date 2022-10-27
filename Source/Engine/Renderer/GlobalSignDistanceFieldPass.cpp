@@ -542,7 +542,8 @@ bool GlobalSignDistanceFieldPass::Render(RenderContext& renderContext, GPUContex
             _cascadeCullingBounds = cascadeBoundsWorld;
             for (SceneRendering* scene : renderContext.List->Scenes)
             {
-                for (const auto& e : scene->Actors)
+                auto& list = scene->Actors[SceneRendering::SceneDraw];
+                for (const auto& e : list)
                 {
                     if (viewMask & e.LayerMask && e.Bounds.Radius >= minObjectRadius && CollisionsHelper::BoxIntersectsSphere(cascadeBoundsWorld, e.Bounds))
                     {

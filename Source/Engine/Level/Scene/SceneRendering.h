@@ -74,7 +74,18 @@ public:
         BoundingSphere Bounds;
     };
 
-    Array<DrawActor> Actors;
+    /// <summary>
+    /// Drawing categories for separate draw stages.
+    /// </summary>
+    enum DrawCategory
+    {
+        SceneDraw = 0,
+        PreRender,
+        PostRender,
+        MAX
+    };
+
+    Array<DrawActor> Actors[MAX];
     Array<IPostFxSettingsProvider*> PostFxProviders;
     CriticalSection Locker;
 
@@ -93,7 +104,8 @@ public:
     /// Draws the scene. Performs the optimized actors culling and draw calls submission for the current render pass (defined by the render view).
     /// </summary>
     /// <param name="renderContext">The rendering context.</param>
-    void Draw(RenderContext& renderContext);
+    /// <param name="category">The actors category to draw.</param>
+    void Draw(RenderContext& renderContext, DrawCategory category = DrawCategory::SceneDraw);
 
     /// <summary>
     /// Collects the post fx volumes for the given rendering view.
@@ -107,9 +119,9 @@ public:
     void Clear();
 
 public:
-    void AddActor(Actor* a, int32& key);
-    void UpdateActor(Actor* a, int32 key);
-    void RemoveActor(Actor* a, int32& key);
+    void AddActor(Actor* a, int32& key, DrawCategory category = SceneDraw);
+    void UpdateActor(Actor* a, int32 key, DrawCategory category = SceneDraw);
+    void RemoveActor(Actor* a, int32& key, DrawCategory category = SceneDraw);
 
     FORCE_INLINE void AddPostFxProvider(IPostFxSettingsProvider* obj)
     {

@@ -32,27 +32,26 @@
 #if USE_MONO
 
 // TODO: use API for events and remove this manual wrapper code
-class RenderContextInternal
+struct RenderContextManaged
 {
-public:
     MonoObject* Buffers;
     MonoObject* List;
-    RenderView View;
-    RenderView* LodProxyView;
     MonoObject* Task;
+    RenderView* LodProxyView;
+    RenderView View;
 };
 
 // TODO: use API for events and remove this manual wrapper code
 namespace
 {
-    RenderContextInternal ToManaged(const RenderContext& value)
+    RenderContextManaged ToManaged(const RenderContext& value)
     {
-        RenderContextInternal result;
+        RenderContextManaged result;
         result.Buffers = ScriptingObject::ToManaged((ScriptingObject*)value.Buffers);
         result.List = ScriptingObject::ToManaged((ScriptingObject*)value.List);
-        result.View = value.View;
-        result.LodProxyView = value.LodProxyView;
         result.Task = ScriptingObject::ToManaged((ScriptingObject*)value.Task);
+        result.LodProxyView = value.LodProxyView;
+        result.View = value.View;
         return result;
     }
 }
@@ -204,7 +203,7 @@ void ManagedPostProcessEffect::Render(RenderContext& renderContext, GPUTexture* 
     auto renderMethod = mclass->FindMethod("Render", 4, true);
     if (renderMethod == nullptr)
         return;
-    RenderContextInternal tmp = ::ToManaged(renderContext);
+    RenderContextManaged tmp = ::ToManaged(renderContext);
     void* params[4];
     params[0] = context->GetOrCreateManagedInstance();
     params[1] = &tmp;
@@ -286,7 +285,7 @@ void AddActorToSceneRendering(SceneRendering* s, Actor* a)
     }
 }
 
-void SceneRenderTask::OnCollectDrawCalls(RenderContext& renderContext)
+void SceneRenderTask::OnCollectDrawCalls(RenderContext& renderContext, byte category)
 {
     // Draw actors (collect draw calls)
     if ((ActorsSource & ActorsSources::CustomActors) != 0)
@@ -297,11 +296,11 @@ void SceneRenderTask::OnCollectDrawCalls(RenderContext& renderContext)
             _customActorsScene->Clear();
         for (Actor* a : CustomActors)
             AddActorToSceneRendering(_customActorsScene, a);
-        _customActorsScene->Draw(renderContext);
+        _customActorsScene->Draw(renderContext, (SceneRendering::DrawCategory)category);
     }
     if ((ActorsSource & ActorsSources::Scenes) != 0)
     {
-        Level::DrawActors(renderContext);
+        Level::DrawActors(renderContext, category);
     }
 
     // External drawing event
@@ -311,10 +310,18 @@ void SceneRenderTask::OnCollectDrawCalls(RenderContext& renderContext)
 void SceneRenderTask::OnPreRender(GPUContext* context, RenderContext& renderContext)
 {
     PreRender(context, renderContext);
+
+    // Collect initial draw calls
+    renderContext.View.Pass = DrawPass::GBuffer;
+    OnCollectDrawCalls(renderContext, SceneRendering::PreRender);
 }
 
 void SceneRenderTask::OnPostRender(GPUContext* context, RenderContext& renderContext)
 {
+    // Collect final draw calls
+    renderContext.View.Pass = DrawPass::GBuffer;
+    OnCollectDrawCalls(renderContext, SceneRendering::PostRender);
+
     PostRender(context, renderContext);
 }
 
@@ -474,6 +481,6 @@ void MainRenderTask::OnBegin(GPUContext* context)
 RenderContext::RenderContext(SceneRenderTask* task)
 {
     Buffers = task->Buffers;
-    View = task->View;
     Task = task;
+    View = task->View;
 }
