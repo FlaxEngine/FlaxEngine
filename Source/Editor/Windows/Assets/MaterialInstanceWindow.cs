@@ -336,14 +336,13 @@ namespace FlaxEditor.Windows.Assets
             _undoButton = (ToolStripButton)_toolstrip.AddButton(Editor.Icons.Undo64, _undo.PerformUndo).LinkTooltip("Undo (Ctrl+Z)");
             _redoButton = (ToolStripButton)_toolstrip.AddButton(Editor.Icons.Redo64, _undo.PerformRedo).LinkTooltip("Redo (Ctrl+Y)");
             _toolstrip.AddSeparator();
-            _toolstrip.AddButton(Editor.Icons.Rotate64, OnRevertAllParameters).LinkTooltip("Revert all the parameters to the default values");
-            _toolstrip.AddSeparator();
             var optionsButton = (ToolStripButton)_toolstrip.AddButton(Editor.Icons.Settings64).LinkTooltip("Options");
             _toolstrip.AddSeparator();
             _toolstrip.AddButton(editor.Icons.Docs64, () => Platform.OpenUrl(Utilities.Constants.DocsUrl + "manual/graphics/materials/instanced-materials/index.html")).LinkTooltip("See documentation to learn more");
             
             // context menu for options button
             var optionsCM = new ContextMenu();
+            optionsCM.AddButton("Revert All Parameters", OnRevertAllParameters).TooltipText = "Revert all the parameters to the default values";
             optionsCM.AddButton("Override All Parameters", OnOverrideAll).TooltipText = "Checks all parameter overrides.";
             optionsCM.AddButton("Remove Parameter Overrides", OnRemoveOverrides).TooltipText = "Unchecks all parameter overrides.";
             optionsButton.Clicked += () => optionsCM.Show(Root, Root.MousePosition);
