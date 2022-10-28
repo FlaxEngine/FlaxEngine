@@ -27,6 +27,12 @@
 // Enables verbose logging for Network Replicator actions (dev-only)
 #define NETWORK_REPLICATOR_DEBUG_LOG 1
 
+#if NETWORK_REPLICATOR_DEBUG_LOG
+#define NETWORK_REPLICATOR_LOG(messageType, format, ...) LOG(messageType, format, ##__VA_ARGS__)
+#else
+#define NETWORK_REPLICATOR_LOG(messageType, format, ...)
+#endif
+
 PACK_STRUCT(struct NetworkMessageObjectReplicate
     {
     NetworkMessageIDs ID = NetworkMessageIDs::ObjectReplicate;
@@ -178,9 +184,7 @@ NetworkReplicatedObject* ResolveObject(Guid objectId, Guid parentId, char object
             obj->GetTypeHandle() == objectType)
         {
             // Boost future lookups by using indirection
-#if NETWORK_REPLICATOR_DEBUG_LOG
-            LOG(Info, "[NetworkReplicator] Remap object ID={} into object {}:{}", objectId, item.ToString(), obj->GetType().ToString());
-#endif
+            NETWORK_REPLICATOR_LOG(Info, "[NetworkReplicator] Remap object ID={} into object {}:{}", objectId, item.ToString(), obj->GetType().ToString());
             IdsRemappingTable.Add(objectId, item.ObjectId);
 
             return &item;
@@ -299,9 +303,7 @@ void NetworkReplicator::AddObject(ScriptingObject* obj, ScriptingObject* parent)
     item.ParentId = parent ? parent->GetID() : Guid::Empty;
     item.OwnerClientId = NetworkManager::ServerClientId; // Server owns objects by default
     item.Role = NetworkManager::IsClient() ? NetworkObjectRole::Replicated : NetworkObjectRole::OwnedAuthoritative;
-#if NETWORK_REPLICATOR_DEBUG_LOG
-    LOG(Info, "[NetworkReplicator] Add new object {}:{}, parent {}:{}", item.ToString(), obj->GetType().ToString(), item.ParentId.ToString(), parent ? parent->GetType().ToString() : String::Empty);
-#endif
+    NETWORK_REPLICATOR_LOG(Info, "[NetworkReplicator] Add new object {}:{}, parent {}:{}", item.ToString(), obj->GetType().ToString(), item.ParentId.ToString(), parent ? parent->GetType().ToString() : String::Empty);
     Objects.Add(MoveTemp(item));
 }
 
@@ -424,9 +426,7 @@ void NetworkInternal::NetworkReplicatorClear()
     ScopeLock lock(ObjectsLock);
 
     // Cleanup
-#if NETWORK_REPLICATOR_DEBUG_LOG
-    LOG(Info, "[NetworkReplicator] Shutdown");
-#endif
+    NETWORK_REPLICATOR_LOG(Info, "[NetworkReplicator] Shutdown");
     for (auto it = Objects.Begin(); it.IsNotEnd(); ++it)
     {
         auto& item = it->Item;
@@ -597,9 +597,7 @@ void NetworkInternal::NetworkReplicatorUpdate()
             if (!obj)
             {
                 // Object got deleted
-#if NETWORK_REPLICATOR_DEBUG_LOG
-                LOG(Info, "[NetworkReplicator] Remove object {}, owned by {}", item.ToString(), item.ParentId.ToString());
-#endif
+                NETWORK_REPLICATOR_LOG(Info, "[NetworkReplicator] Remove object {}, owned by {}", item.ToString(), item.ParentId.ToString());
                 Objects.Remove(it);
                 continue;
             }
@@ -613,7 +611,7 @@ void NetworkInternal::NetworkReplicatorUpdate()
                 if (!item.InvalidTypeWarn)
                 {
                     item.InvalidTypeWarn = true;
-                    LOG(Error, "[NetworkReplicator] Cannot serialize object {} of type {} (missing serialization logic)", item.ToString(), obj->GetType().ToString());
+                    NETWORK_REPLICATOR_LOG(Error, "[NetworkReplicator] Cannot serialize object {} of type {} (missing serialization logic)", item.ToString(), obj->GetType().ToString());
                 }
 #endif
                 continue;
@@ -687,7 +685,7 @@ void NetworkInternal::OnNetworkMessageObjectReplicate(NetworkEvent& event, Netwo
             if (failed && !item.InvalidTypeWarn)
             {
                 item.InvalidTypeWarn = true;
-                LOG(Error, "[NetworkReplicator] Cannot serialize object {} of type {} (missing serialization logic)", item.ToString(), obj->GetType().ToString());
+                NETWORK_REPLICATOR_LOG(Error, "[NetworkReplicator] Cannot serialize object {} of type {} (missing serialization logic)", item.ToString(), obj->GetType().ToString());
             }
 #endif
         }
@@ -747,15 +745,11 @@ void NetworkInternal::OnNetworkMessageObjectSpawn(NetworkEvent& event, NetworkCl
         item.OwnerClientId = client ? client->ClientId : NetworkManager::ServerClientId;
         item.Role = NetworkObjectRole::Replicated;
         item.Spawned = true;
-#if NETWORK_REPLICATOR_DEBUG_LOG
-        LOG(Info, "[NetworkReplicator] Add new object {}:{}, parent {}:{}", item.ToString(), obj->GetType().ToString(), item.ParentId.ToString(), parent ? parent->Object->GetType().ToString() : String::Empty);
-#endif
+        NETWORK_REPLICATOR_LOG(Info, "[NetworkReplicator] Add new object {}:{}, parent {}:{}", item.ToString(), obj->GetType().ToString(), item.ParentId.ToString(), parent ? parent->Object->GetType().ToString() : String::Empty);
         Objects.Add(MoveTemp(item));
 
         // Boost future lookups by using indirection
-#if NETWORK_REPLICATOR_DEBUG_LOG
-        LOG(Info, "[NetworkReplicator] Remap object ID={} into object {}:{}", msgData.ObjectId, item.ToString(), obj->GetType().ToString());
-#endif
+        NETWORK_REPLICATOR_LOG(Info, "[NetworkReplicator] Remap object ID={} into object {}:{}", msgData.ObjectId, item.ToString(), obj->GetType().ToString());
         IdsRemappingTable.Add(msgData.ObjectId, item.ObjectId);
 
         // Automatic parenting for scene objects
@@ -795,9 +789,7 @@ void NetworkInternal::OnNetworkMessageObjectDespawn(NetworkEvent& event, Network
     }
     else
     {
-#if NETWORK_REPLICATOR_DEBUG_LOG
-        LOG(Error, "[NetworkReplicator] Failed to despawn object {}", msgData.ObjectId);
-#endif
+        NETWORK_REPLICATOR_LOG(Error, "[NetworkReplicator] Failed to despawn object {}", msgData.ObjectId);
     }
 }
 
@@ -840,8 +832,6 @@ void NetworkInternal::OnNetworkMessageObjectRole(NetworkEvent& event, NetworkCli
     }
     else
     {
-#if NETWORK_REPLICATOR_DEBUG_LOG
-        LOG(Error, "[NetworkReplicator] Unknown object role update {}", msgData.ObjectId);
-#endif
+        NETWORK_REPLICATOR_LOG(Error, "[NetworkReplicator] Unknown object role update {}", msgData.ObjectId);
     }
 }
