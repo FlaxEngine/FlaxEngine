@@ -342,7 +342,7 @@ namespace FlaxEditor.Windows.Assets
             
             // context menu for options button
             var optionsCM = new ContextMenu();
-            optionsCM.AddButton("Revert All Parameters", OnRevertAllParameters).TooltipText = "Reverts all the overriden parameters to the default values.";
+            optionsCM.AddButton("Revert All Parameters", OnRevertAllParameters).TooltipText = "Reverts all the overridden parameters to the default values.";
             optionsCM.AddButton("Override All Parameters", OnOverrideAll).TooltipText = "Checks all parameter overrides.";
             optionsCM.AddButton("Remove Parameter Overrides", OnRemoveOverrides).TooltipText = "Unchecks all parameter overrides.";
             optionsButton.Clicked += () => optionsCM.Show(Root, Root.MousePosition);
