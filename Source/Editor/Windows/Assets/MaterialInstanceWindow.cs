@@ -344,8 +344,8 @@ namespace FlaxEditor.Windows.Assets
             
             // context menu for options button
             var optionsCM = new ContextMenu();
-            optionsCM.AddButton("Override All Parameters", OnOverrideAll).TooltipText = "Checks all parameter's overrides.";
-            optionsCM.AddButton("Remove Parameter Overrides", OnRemoveOverrides).TooltipText = "Unchecks all overrides for parameters.";
+            optionsCM.AddButton("Override All Parameters", OnOverrideAll).TooltipText = "Checks all parameter overrides.";
+            optionsCM.AddButton("Remove Parameter Overrides", OnRemoveOverrides).TooltipText = "Unchecks all parameter overrides.";
             optionsButton.Clicked += () => optionsCM.Show(Root, Root.MousePosition);
 
             // Split Panel
