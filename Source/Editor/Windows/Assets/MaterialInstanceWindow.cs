@@ -9,6 +9,7 @@ using FlaxEditor.CustomEditors;
 using FlaxEditor.CustomEditors.Editors;
 using FlaxEditor.CustomEditors.GUI;
 using FlaxEditor.GUI;
+using FlaxEditor.GUI.ContextMenu;
 using FlaxEditor.Surface;
 using FlaxEditor.Viewport.Previews;
 using FlaxEngine;
@@ -243,20 +244,6 @@ namespace FlaxEditor.Windows.Assets
                 if (parameters.Length == 0)
                     return;
 
-                // Utility buttons
-                {
-                    var buttons = layout.CustomContainer<UniformGridPanel>();
-                    var gridControl = buttons.CustomControl;
-                    gridControl.ClipChildren = false;
-                    gridControl.Height = Button.DefaultHeight;
-                    gridControl.SlotsHorizontally = 2;
-                    gridControl.SlotsVertically = 1;
-                    var rebuildButton = buttons.Button("Remove overrides", "Unchecks all overrides for parameters.").Button;
-                    rebuildButton.Clicked += OnRemoveOverrides;
-                    var removeButton = buttons.Button("Override all", "Checks all parameters overrides.").Button;
-                    removeButton.Clicked += OnOverrideAll;
-                }
-
                 var parametersGroup = layout.Group("Parameters");
                 var baseMaterial = materialInstance.BaseMaterial;
                 var material = baseMaterial;
@@ -319,40 +306,6 @@ namespace FlaxEditor.Windows.Assets
                                                         itemLayout.Property(label, valueContainer, null, e.Tooltip?.Text);
                                                     });
             }
-
-            private void OnRemoveOverrides()
-            {
-                OnSetOverrides(false);
-            }
-
-            private void OnOverrideAll()
-            {
-                OnSetOverrides(true);
-            }
-
-            private void OnSetOverrides(bool isOverride)
-            {
-                var proxy = (PropertiesProxy)Values[0];
-                var undoActions = new List<IUndoAction>();
-                foreach (var graphParameter in _graphParameters)
-                {
-                    var p = (MaterialParameter)graphParameter.Tag;
-                    if (!p.IsPublic || p.IsOverride == isOverride)
-                        continue;
-                    p.IsOverride = isOverride;
-                    undoActions.Add(new EditParamOverrideAction
-                    {
-                        Window = proxy.Window,
-                        Name = p.Name,
-                        Before = !isOverride,
-                    });
-                }
-                if (undoActions.Count == 0)
-                    return;
-                proxy.Window._undo.AddAction(new MultiUndoAction(undoActions));
-                proxy.Window.MarkAsEdited();
-                Presenter.BuildLayoutOnUpdate();
-            }
         }
 
         private readonly SplitPanel _split;
@@ -385,7 +338,15 @@ namespace FlaxEditor.Windows.Assets
             _toolstrip.AddSeparator();
             _toolstrip.AddButton(Editor.Icons.Rotate64, OnRevertAllParameters).LinkTooltip("Revert all the parameters to the default values");
             _toolstrip.AddSeparator();
+            var optionsButton = (ToolStripButton)_toolstrip.AddButton(Editor.Icons.Settings64).LinkTooltip("Options");
+            _toolstrip.AddSeparator();
             _toolstrip.AddButton(editor.Icons.Docs64, () => Platform.OpenUrl(Utilities.Constants.DocsUrl + "manual/graphics/materials/instanced-materials/index.html")).LinkTooltip("See documentation to learn more");
+            
+            // context menu for options button
+            var optionsCM = new ContextMenu();
+            optionsCM.AddButton("Override All Parameters").Clicked += OnOverrideAll;
+            optionsCM.AddButton("Remove Parameter Overrides").Clicked += OnRemoveOverrides;
+            optionsButton.Clicked += () => optionsCM.Show(Root, Root.MousePosition);
 
             // Split Panel
             _split = new SplitPanel(Orientation.Horizontal, ScrollBars.None, ScrollBars.Vertical)
@@ -411,6 +372,40 @@ namespace FlaxEditor.Windows.Assets
             // Setup input actions
             InputActions.Add(options => options.Undo, _undo.PerformUndo);
             InputActions.Add(options => options.Redo, _undo.PerformRedo);
+        }
+        
+        private void OnRemoveOverrides()
+        {
+            OnSetOverrides(false);
+        }
+
+        private void OnOverrideAll()
+        {
+            OnSetOverrides(true);
+        }
+
+        private void OnSetOverrides(bool isOverride)
+        {
+            var proxy = _properties;
+            var undoActions = new List<IUndoAction>();
+            foreach (var graphParameter in Asset.Parameters)
+            {
+                var p = graphParameter;
+                if (!p.IsPublic || p.IsOverride == isOverride)
+                    continue;
+                p.IsOverride = isOverride;
+                undoActions.Add(new EditParamOverrideAction
+                {
+                    Window = proxy.Window,
+                    Name = p.Name,
+                    Before = !isOverride,
+                });
+            }
+            if (undoActions.Count == 0)
+                return;
+            proxy.Window._undo.AddAction(new MultiUndoAction(undoActions));
+            proxy.Window.MarkAsEdited();
+            _editor.BuildLayoutOnUpdate();
         }
 
         private void OnRevertAllParameters()
