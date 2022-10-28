@@ -110,7 +110,7 @@ void RendererSkyLightData::SetupLightData(LightData* data, bool useShadow) const
     data->RadiusInv = 1.0f / Radius;
 }
 
-void* RenderListAllocation::Allocate(uintptr size)
+void* RendererAllocation::Allocate(uintptr size)
 {
     void* result = nullptr;
     for (int32 i = 0; i < MemPool.Count(); i++)
@@ -129,7 +129,7 @@ void* RenderListAllocation::Allocate(uintptr size)
     return result;
 }
 
-void RenderListAllocation::Free(void* ptr, uintptr size)
+void RendererAllocation::Free(void* ptr, uintptr size)
 {
     MemPool.Add({ ptr, size });
 }
@@ -326,7 +326,7 @@ void RenderList::RunCustomPostFxPass(GPUContext* context, RenderContext& renderC
     }
 }
 
-bool RenderList::HasAnyPostFx(RenderContext& renderContext, PostProcessEffectLocation postProcess) const
+bool RenderList::HasAnyPostFx(const RenderContext& renderContext, PostProcessEffectLocation postProcess) const
 {
     if (renderContext.View.Flags & ViewFlags::CustomPostProcess)
     {
@@ -342,7 +342,7 @@ bool RenderList::HasAnyPostFx(RenderContext& renderContext, PostProcessEffectLoc
     return false;
 }
 
-bool RenderList::HasAnyPostFx(RenderContext& renderContext, MaterialPostFxLocation materialPostFx) const
+bool RenderList::HasAnyPostFx(const RenderContext& renderContext, MaterialPostFxLocation materialPostFx) const
 {
     for (int32 i = 0; i < Settings.PostFxMaterials.Materials.Count(); i++)
     {

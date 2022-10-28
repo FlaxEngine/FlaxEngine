@@ -48,7 +48,7 @@ void SceneRendering::Draw(RenderContextBatch& renderContextBatch, DrawCategory c
     auto& list = Actors[(int32)category];
 
     // Setup frustum data
-    Array<BoundingFrustum, RenderListAllocation> frustumsData;
+    Array<BoundingFrustum, RendererAllocation> frustumsData;
     BoundingFrustum* frustums = &view.CullingFrustum;
     int32 frustumsCount = renderContextBatch.Contexts.Count();
     if (frustumsCount != 1)

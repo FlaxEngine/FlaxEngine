@@ -169,7 +169,7 @@ private:
     };
 
     typedef Array<struct BatchedDrawCall, InlinedAllocation<8>> DrawCallsList;
-    typedef Dictionary<DrawKey, struct BatchedDrawCall, class RenderListAllocation> BatchedDrawCalls;
+    typedef Dictionary<DrawKey, struct BatchedDrawCall, class RendererAllocation> BatchedDrawCalls;
     void DrawInstance(RenderContext& renderContext, FoliageInstance& instance, FoliageType& type, Model* model, int32 lod, float lodDitherFactor, DrawCallsList* drawCallsLists, BatchedDrawCalls& result) const;
     void DrawCluster(RenderContext& renderContext, FoliageCluster* cluster, FoliageType& type, DrawCallsList* drawCallsLists, BatchedDrawCalls& result) const;
 #else

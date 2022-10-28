@@ -8,6 +8,7 @@
 #include "Engine/Platform/CriticalSection.h"
 #include "Engine/Scripting/ScriptingObjectReference.h"
 #include "Engine/Scripting/ScriptingType.h"
+#include "Engine/Renderer/RendererAllocation.h"
 #include "PostProcessBase.h"
 #include "RenderView.h"
 
@@ -448,7 +449,7 @@ API_STRUCT(NoDefault) struct RenderContextBatch
     /// <summary>
     /// The all render views collection for the current rendering (main view, shadow projections, etc.).
     /// </summary>
-    API_FIELD() Array<RenderContext> Contexts;
+    API_FIELD() Array<RenderContext, RendererAllocation> Contexts;
 
     RenderContextBatch() = default;
     RenderContextBatch(SceneRenderTask* task);
