@@ -1,6 +1,7 @@
 // Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 using System;
+using System.Collections.Generic;
 using FlaxEditor.Content;
 using FlaxEditor.GUI.ContextMenu;
 using FlaxEngine;
@@ -15,6 +16,40 @@ namespace FlaxEditor.Windows
         /// Occurs when content window wants to show the context menu for the given content item. Allows to add custom options.
         /// </summary>
         public event Action<ContextMenu, ContentItem> ContextMenuShow;
+
+        private readonly string _animationMenuName = "Animation";
+        private readonly string _materialMenuName = "Materials";
+        private readonly string _particleMenuName = "Particles";
+        private readonly string _physicsMenuName = "Physics";
+        
+        private readonly List<string> _animationGroupNames = new List<string>()
+        {
+            "Animation",
+            "Animation Graph",
+            "Animation Graph Function",
+            "Skeleton Mask",
+            "Scene Animation",
+        };
+
+        private readonly List<string> _particleGroup = new List<string>()
+        {
+            "Particle Emitter",
+            "Particle Emitter Function",
+            "Particle System",
+        };
+
+        private readonly List<string> _materialGroup = new List<string>()
+        {
+            "Material", 
+            "Material Function",
+            "Material Instance",
+        };
+
+        private readonly List<string> _physicsGroup = new List<string>()
+        {
+            "Collision Data",
+            "Physical Material",
+        };
 
         private void ShowContextMenuForItem(ContentItem item, ref Float2 location, bool isTreeNode)
         {
@@ -159,7 +194,17 @@ namespace FlaxEditor.Windows
                 var p = Editor.ContentDatabase.Proxy[i];
                 if (p.CanCreate(folder))
                 {
-                    c.ContextMenu.AddButton(p.Name, () => NewItem(p));
+                    if (_animationGroupNames.Contains(p.Name))
+                        AddContentProxyToMenu(c.ContextMenu, p, _animationMenuName);
+                    else if (_particleGroup.Contains(p.Name))
+                        AddContentProxyToMenu(c.ContextMenu, p, _particleMenuName);
+                    else if (_materialGroup.Contains(p.Name))
+                        AddContentProxyToMenu(c.ContextMenu, p, _materialMenuName);
+                    else if (_physicsGroup.Contains(p.Name))
+                        AddContentProxyToMenu(c.ContextMenu, p, _physicsMenuName);
+                    else
+                        c.ContextMenu.AddButton(p.Name, () => NewItem(p));
+                    
                     newItems++;
                 }
             }
@@ -176,6 +221,21 @@ namespace FlaxEditor.Windows
 
             // Show it
             cm.Show(this, location);
+        }
+
+        private void AddContentProxyToMenu(ContextMenu contextMenu, ContentProxy contentProxy, string menuName)
+        {
+            var childMenu = contextMenu.GetChildMenu(menuName);
+            if (childMenu == null)
+            {
+                var c = contextMenu.AddChildMenu(menuName);
+                c.ContextMenu.AutoSort = true;
+                c.ContextMenu.AddButton(contentProxy.Name, () => NewItem(contentProxy));
+            }
+            else
+            {
+                childMenu.ContextMenu.AddButton(contentProxy.Name, () => NewItem(contentProxy));
+            }
         }
 
         private void OnExpandAllClicked(ContextMenuButton button)
