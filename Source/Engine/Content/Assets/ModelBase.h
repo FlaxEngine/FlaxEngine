@@ -18,6 +18,7 @@
 #define MODEL_LOD_TO_CHUNK_INDEX(lod) (lod + 1)
 
 class MeshBase;
+struct RenderContextBatch;
 
 /// <summary>
 /// Base class for asset types that can contain a model resource.

@@ -15,6 +15,7 @@ class JsonWriter;
 class Engine;
 struct RenderView;
 struct RenderContext;
+struct RenderContextBatch;
 
 /// <summary>
 /// The scene manager that contains the loaded scenes collection and spawns/deleted actors.
@@ -163,9 +164,9 @@ public:
     /// <summary>
     /// Draws all the actors.
     /// </summary>
-    /// <param name="renderContext">The rendering context.</param>
+    /// <param name="renderContextBatch">The rendering context batch.</param>
     /// <param name="category">The actors category to draw (see SceneRendering::DrawCategory).</param>
-    static void DrawActors(RenderContext& renderContext, byte category = 0);
+    static void DrawActors(RenderContextBatch& renderContextBatch, byte category = 0);
 
     /// <summary>
     /// Collects all the post fx volumes.

@@ -518,7 +518,6 @@ bool GlobalSurfaceAtlasPass::Render(RenderContext& renderContext, GPUContext* co
         renderContextTiles.View.Pass = DrawPass::GBuffer | DrawPass::GlobalSurfaceAtlas;
         renderContextTiles.View.Mode = ViewMode::Default;
         renderContextTiles.View.ModelLODBias += 100000;
-        renderContextTiles.View.ShadowModelLODBias += 100000;
         renderContextTiles.View.IsSingleFrame = true;
         renderContextTiles.View.IsCullingDisabled = true;
         renderContextTiles.View.Near = 0.0f;

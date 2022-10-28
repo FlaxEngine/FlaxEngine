@@ -707,8 +707,7 @@ void AnimatedModel::Draw(RenderContext& renderContext)
     renderContext.View.GetWorldMatrix(_transform, world);
     GEOMETRY_DRAW_STATE_EVENT_BEGIN(_drawState, world);
 
-    const DrawPass drawModes = (DrawPass)(DrawModes & renderContext.View.Pass & (int32)renderContext.View.GetShadowsDrawPassMask(ShadowsMode));
-    if (SkinnedModel && SkinnedModel->IsLoaded() && drawModes != DrawPass::None)
+    if (SkinnedModel && SkinnedModel->IsLoaded())
     {
         _lastMinDstSqr = Math::Min(_lastMinDstSqr, Vector3::DistanceSquared(_transform.Translation, renderContext.View.Position + renderContext.View.Origin));
 
@@ -728,7 +727,9 @@ void AnimatedModel::Draw(RenderContext& renderContext)
             draw.BlendShapes = &_blendShapes;
             draw.World = &world;
             draw.DrawState = &_drawState;
-            draw.DrawModes = drawModes;
+            PRAGMA_DISABLE_DEPRECATION_WARNINGS
+            draw.DrawModes = (DrawPass)(DrawModes & renderContext.View.GetShadowsDrawPassMask(ShadowsMode));
+            PRAGMA_ENABLE_DEPRECATION_WARNINGS
             draw.Bounds = _sphere;
             draw.Bounds.Center -= renderContext.View.Origin;
             draw.PerInstanceRandom = GetPerInstanceRandom();
@@ -739,6 +740,58 @@ void AnimatedModel::Draw(RenderContext& renderContext)
         }
     }
 
+    GEOMETRY_DRAW_STATE_EVENT_END(_drawState, world);
+}
+
+void AnimatedModel::Draw(RenderContextBatch& renderContextBatch)
+{
+    if (!SkinnedModel || !SkinnedModel->IsLoaded())
+        return;
+    const RenderContext& renderContext = renderContextBatch.GetMainContext();
+    Matrix world;
+    renderContext.View.GetWorldMatrix(_transform, world);
+    GEOMETRY_DRAW_STATE_EVENT_BEGIN(_drawState, world);
+    _lastMinDstSqr = Math::Min(_lastMinDstSqr, Vector3::DistanceSquared(_transform.Translation, renderContext.View.Position + renderContext.View.Origin));
+    if (_skinningData.IsReady())
+    {
+#if USE_EDITOR
+        // Disable motion blur effects in editor without play mode enabled to hide minor artifacts on objects moving
+        if (!Editor::IsPlayMode)
+            _drawState.PrevWorld = world;
+#endif
+
+        _skinningData.Flush(GPUDevice::Instance->GetMainContext());
+
+        SkinnedMesh::DrawInfo draw;
+        draw.Buffer = &Entries;
+        draw.Skinning = &_skinningData;
+        draw.BlendShapes = &_blendShapes;
+        draw.World = &world;
+        draw.DrawState = &_drawState;
+        draw.DrawModes = DrawModes;
+        draw.Bounds = _sphere;
+        draw.Bounds.Center -= renderContext.View.Origin;
+        draw.PerInstanceRandom = GetPerInstanceRandom();
+        draw.LODBias = LODBias;
+        draw.ForcedLOD = ForcedLOD;
+
+        PRAGMA_DISABLE_DEPRECATION_WARNINGS
+        if (ShadowsMode != ShadowsCastingMode::All)
+        {
+            // To handle old ShadowsMode option for all meshes we need to call per-context drawing (no batching opportunity)
+            // TODO: maybe deserialize ShadowsMode into ModelInstanceBuffer entries options?
+            for (auto& e : renderContextBatch.Contexts)
+            {
+                draw.DrawModes = (DrawPass)(DrawModes & e.View.GetShadowsDrawPassMask(ShadowsMode));
+                SkinnedModel->Draw(e, draw);
+            }
+        }
+        else
+        {
+            SkinnedModel->Draw(renderContextBatch, draw);
+        }
+        PRAGMA_ENABLE_DEPRECATION_WARNINGS
+    }
     GEOMETRY_DRAW_STATE_EVENT_END(_drawState, world);
 }
 
@@ -795,7 +848,9 @@ void AnimatedModel::Serialize(SerializeStream& stream, const void* otherObj)
     SERIALIZE(LODBias);
     SERIALIZE(ForcedLOD);
     SERIALIZE(DrawModes);
+    PRAGMA_DISABLE_DEPRECATION_WARNINGS
     SERIALIZE(ShadowsMode);
+    PRAGMA_ENABLE_DEPRECATION_WARNINGS
     SERIALIZE(RootMotionTarget);
 
     stream.JKEY("Buffer");
@@ -819,7 +874,9 @@ void AnimatedModel::Deserialize(DeserializeStream& stream, ISerializeModifier* m
     DESERIALIZE(LODBias);
     DESERIALIZE(ForcedLOD);
     DESERIALIZE(DrawModes);
+    PRAGMA_DISABLE_DEPRECATION_WARNINGS
     DESERIALIZE(ShadowsMode);
+    PRAGMA_ENABLE_DEPRECATION_WARNINGS
     DESERIALIZE(RootMotionTarget);
 
     Entries.DeserializeIfExists(stream, "Buffer", modifier);
@@ -889,7 +946,7 @@ void AnimatedModel::OnDeleteObject()
 {
     // Ensure this object is no longer referenced for anim update
     Animations::RemoveFromUpdate(this);
-    
+
     ModelInstanceActor::OnDeleteObject();
 }
 

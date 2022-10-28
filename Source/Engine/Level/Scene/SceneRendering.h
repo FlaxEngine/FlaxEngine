@@ -12,6 +12,7 @@ class SceneRenderTask;
 class SceneRendering;
 struct PostProcessSettings;
 struct RenderContext;
+struct RenderContextBatch;
 struct RenderView;
 
 /// <summary>
@@ -103,9 +104,9 @@ public:
     /// <summary>
     /// Draws the scene. Performs the optimized actors culling and draw calls submission for the current render pass (defined by the render view).
     /// </summary>
-    /// <param name="renderContext">The rendering context.</param>
+    /// <param name="renderContextBatch">The rendering context batch.</param>
     /// <param name="category">The actors category to draw.</param>
-    void Draw(RenderContext& renderContext, DrawCategory category = DrawCategory::SceneDraw);
+    void Draw(RenderContextBatch& renderContextBatch, DrawCategory category = SceneDraw);
 
     /// <summary>
     /// Collects the post fx volumes for the given rendering view.

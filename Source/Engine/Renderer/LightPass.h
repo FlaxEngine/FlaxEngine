@@ -27,13 +27,12 @@ private:
     PixelFormat _shadowMaskFormat;
 
 public:
-
     /// <summary>
     /// Performs the lighting rendering for the input task.
     /// </summary>
-    /// <param name="renderContext">The rendering context.</param>
+    /// <param name="renderContextBatch">The rendering context batch.</param>
     /// <param name="lightBuffer">The light accumulation buffer (input and output).</param>
-    void RenderLight(RenderContext& renderContext, GPUTextureView* lightBuffer);
+    void RenderLight(RenderContextBatch& renderContextBatch, GPUTextureView* lightBuffer);
 
 private:
 

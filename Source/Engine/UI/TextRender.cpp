@@ -344,14 +344,12 @@ void TextRender::Draw(RenderContext& renderContext)
     if (renderContext.View.Pass == DrawPass::GlobalSurfaceAtlas)
         return; // TODO: Text rendering to Global Surface Atlas
     if (_isDirty)
-    {
         UpdateLayout();
-    }
     Matrix world;
     renderContext.View.GetWorldMatrix(_transform, world);
     GEOMETRY_DRAW_STATE_EVENT_BEGIN(_drawState, world);
 
-    const DrawPass drawModes = (DrawPass)(DrawModes & renderContext.View.Pass & (int32)renderContext.View.GetShadowsDrawPassMask(ShadowsMode));
+    const DrawPass drawModes = (DrawPass)(DrawModes & renderContext.View.Pass & (uint32)renderContext.View.GetShadowsDrawPassMask(ShadowsMode));
     if (_vb0.Data.Count() > 0 && drawModes != DrawPass::None)
     {
 #if USE_EDITOR
@@ -394,6 +392,8 @@ void TextRender::Draw(RenderContext& renderContext)
         // Submit draw calls
         for (const auto& e : _drawChunks)
         {
+            if ((drawModes & e.Material->GetDrawModes()) == 0)
+                continue;
             drawCall.Draw.IndicesCount = e.IndicesCount;
             drawCall.Draw.StartIndex = e.StartIndex;
             drawCall.Material = e.Material;

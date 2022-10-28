@@ -416,36 +416,37 @@ void RenderList::Clear()
 
 void RenderList::AddDrawCall(DrawPass drawModes, StaticFlags staticFlags, DrawCall& drawCall, bool receivesDecals)
 {
-    // Mix object mask with material mask
-    const auto mask = (DrawPass)(drawModes & drawCall.Material->GetDrawModes());
-    if (mask == DrawPass::None)
-        return;
+#if ENABLE_ASSERTION_LOW_LAYERS
+    // Ensure that draw modes are non-empty and in conjunction with material draw modes
+    auto materialDrawModes = drawCall.Material->GetDrawModes();
+    ASSERT_LOW_LAYER(drawModes != DrawPass::None && ((uint32)drawModes & ~(uint32)materialDrawModes) == 0);
+#endif
 
     // Append draw call data
     const int32 index = DrawCalls.Count();
     DrawCalls.Add(drawCall);
 
     // Add draw call to proper draw lists
-    if (mask & DrawPass::Depth)
+    if (drawModes & DrawPass::Depth)
     {
         DrawCallsLists[(int32)DrawCallsListType::Depth].Indices.Add(index);
     }
-    if (mask & (DrawPass::GBuffer | DrawPass::GlobalSurfaceAtlas))
+    if (drawModes & (DrawPass::GBuffer | DrawPass::GlobalSurfaceAtlas))
     {
         if (receivesDecals)
             DrawCallsLists[(int32)DrawCallsListType::GBuffer].Indices.Add(index);
         else
             DrawCallsLists[(int32)DrawCallsListType::GBufferNoDecals].Indices.Add(index);
     }
-    if (mask & DrawPass::Forward)
+    if (drawModes & DrawPass::Forward)
     {
         DrawCallsLists[(int32)DrawCallsListType::Forward].Indices.Add(index);
     }
-    if (mask & DrawPass::Distortion)
+    if (drawModes & DrawPass::Distortion)
     {
         DrawCallsLists[(int32)DrawCallsListType::Distortion].Indices.Add(index);
     }
-    if (mask & DrawPass::MotionVectors && (staticFlags & StaticFlags::Transform) == 0)
+    if (drawModes & DrawPass::MotionVectors && (staticFlags & StaticFlags::Transform) == 0)
     {
         DrawCallsLists[(int32)DrawCallsListType::MotionVectors].Indices.Add(index);
     }
@@ -477,7 +478,7 @@ void RenderList::SortDrawCalls(const RenderContext& renderContext, bool reverseD
     PROFILE_CPU();
 
     const int32 listSize = (int32)list.Indices.Count();
-    const Float3 planeNormal =  renderContext.View.Direction;
+    const Float3 planeNormal = renderContext.View.Direction;
     const float planePoint = -Float3::Dot(planeNormal, renderContext.View.Position);
 
     // Peek shared memory

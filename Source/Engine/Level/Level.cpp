@@ -389,7 +389,7 @@ void Level::CallBeginPlay(Actor* obj)
     }
 }
 
-void Level::DrawActors(RenderContext& renderContext, byte category)
+void Level::DrawActors(RenderContextBatch& renderContextBatch, byte category)
 {
     PROFILE_CPU();
 
@@ -398,7 +398,7 @@ void Level::DrawActors(RenderContext& renderContext, byte category)
     for (Scene* scene : Scenes)
     {
         if (scene->IsActiveInHierarchy())
-            scene->Rendering.Draw(renderContext, (SceneRendering::DrawCategory)category);
+            scene->Rendering.Draw(renderContextBatch, (SceneRendering::DrawCategory)category);
     }
 }
 

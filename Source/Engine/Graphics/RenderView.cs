@@ -12,7 +12,9 @@ namespace FlaxEngine
             MaxShadowsQuality = Quality.Ultra;
             ModelLODDistanceFactor = 1.0f;
             ModelLODDistanceFactorSqrt = 1.0f;
+#pragma warning disable 0612
             ShadowModelLODDistanceFactor = 1.0f;
+#pragma warning restore 0612
             Flags = ViewFlags.DefaultGame;
             Mode = ViewMode.Default;
         }

@@ -410,12 +410,6 @@ void SplineModel::Draw(RenderContext& renderContext)
                 continue;
             const MaterialSlot& slot = model->MaterialSlots[mesh->GetMaterialSlotIndex()];
 
-            // Check if skip rendering
-            const auto shadowsMode = static_cast<ShadowsCastingMode>(entry.ShadowsMode & slot.ShadowsMode);
-            const auto drawModes = static_cast<DrawPass>(actorDrawModes & renderContext.View.GetShadowsDrawPassMask(shadowsMode));
-            if (drawModes == DrawPass::None)
-                continue;
-
             // Select material
             MaterialBase* material = nullptr;
             if (entry.Material && entry.Material->IsLoaded())
@@ -425,6 +419,12 @@ void SplineModel::Draw(RenderContext& renderContext)
             if (!material || !material->IsDeformable())
                 material = GPUDevice::Instance->GetDefaultDeformableMaterial();
             if (!material || !material->IsDeformable())
+                continue;
+
+            // Check if skip rendering
+            const auto shadowsMode = static_cast<ShadowsCastingMode>(entry.ShadowsMode & slot.ShadowsMode);
+            const auto drawModes = static_cast<DrawPass>(actorDrawModes & renderContext.View.GetShadowsDrawPassMask(shadowsMode) & (uint32)material->GetDrawModes());
+            if (drawModes == DrawPass::None)
                 continue;
 
             // Submit draw call

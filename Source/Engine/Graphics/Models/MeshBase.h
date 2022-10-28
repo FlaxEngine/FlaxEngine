@@ -10,6 +10,7 @@
 
 class Task;
 class ModelBase;
+struct RenderContextBatch;
 
 /// <summary>
 /// Base class for model resources meshes.

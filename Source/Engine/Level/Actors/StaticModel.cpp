@@ -222,6 +222,31 @@ void StaticModel::UpdateBounds()
         GetSceneRendering()->UpdateActor(this, _sceneRenderingKey);
 }
 
+void StaticModel::FlushVertexColors()
+{
+    for (int32 lodIndex = 0; lodIndex < _vertexColorsCount; lodIndex++)
+    {
+        auto& vertexColorsData = _vertexColorsData[lodIndex];
+        auto& vertexColorsBuffer = _vertexColorsBuffer[lodIndex];
+        if (vertexColorsData.HasItems())
+        {
+            const uint32 size = vertexColorsData.Count() * sizeof(Color32);
+            if (!vertexColorsBuffer)
+                vertexColorsBuffer = GPUDevice::Instance->CreateBuffer(TEXT("VertexColors"));
+            if (vertexColorsBuffer->GetSize() != size)
+            {
+                if (vertexColorsBuffer->Init(GPUBufferDescription::Vertex(sizeof(Color32), vertexColorsData.Count())))
+                    return;
+            }
+            GPUDevice::Instance->GetMainContext()->UpdateBuffer(vertexColorsBuffer, vertexColorsData.Get(), size);
+        }
+        else
+        {
+            SAFE_DELETE_GPU_RESOURCE(vertexColorsBuffer);
+        }
+    }
+}
+
 bool StaticModel::HasContentLoaded() const
 {
     return (Model == nullptr || Model->IsLoaded()) && Entries.HasContentLoaded();
@@ -229,8 +254,7 @@ bool StaticModel::HasContentLoaded() const
 
 void StaticModel::Draw(RenderContext& renderContext)
 {
-    const DrawPass drawModes = (DrawPass)(DrawModes & renderContext.View.Pass);
-    if (!Model || !Model->IsLoaded() || !Model->CanBeRendered() || drawModes == DrawPass::None)
+    if (!Model || !Model->IsLoaded() || !Model->CanBeRendered())
         return;
     if (renderContext.View.Pass == DrawPass::GlobalSDF)
     {
@@ -246,32 +270,8 @@ void StaticModel::Draw(RenderContext& renderContext)
     renderContext.View.GetWorldMatrix(_transform, world);
     GEOMETRY_DRAW_STATE_EVENT_BEGIN(_drawState, world);
 
-    // Flush vertex colors if need to
     if (_vertexColorsDirty)
-    {
-        for (int32 lodIndex = 0; lodIndex < _vertexColorsCount; lodIndex++)
-        {
-            auto& vertexColorsData = _vertexColorsData[lodIndex];
-            auto& vertexColorsBuffer = _vertexColorsBuffer[lodIndex];
-            if (vertexColorsData.HasItems())
-            {
-                const uint32 size = vertexColorsData.Count() * sizeof(Color32);
-                if (!vertexColorsBuffer)
-                    vertexColorsBuffer = GPUDevice::Instance->CreateBuffer(TEXT("VertexColors"));
-                if (vertexColorsBuffer->GetSize() != size)
-                {
-                    if (vertexColorsBuffer->Init(GPUBufferDescription::Vertex(sizeof(Color32), vertexColorsData.Count())))
-                        return;
-                }
-                GPUDevice::Instance->GetMainContext()->UpdateBuffer(vertexColorsBuffer, vertexColorsData.Get(), size);
-            }
-            else
-            {
-                SAFE_DELETE_GPU_RESOURCE(vertexColorsBuffer);
-            }
-        }
-        _vertexColorsDirty = false;
-    }
+        FlushVertexColors();
 
 #if USE_EDITOR
     // Disable motion blur effects in editor without play mode enabled to hide minor artifacts on objects moving
@@ -286,7 +286,7 @@ void StaticModel::Draw(RenderContext& renderContext)
     draw.Lightmap = _scene->LightmapsData.GetReadyLightmap(Lightmap.TextureIndex);
     draw.LightmapUVs = &Lightmap.UVsArea;
     draw.Flags = _staticFlags;
-    draw.DrawModes = drawModes;
+    draw.DrawModes = DrawModes;
     draw.Bounds = _sphere;
     draw.Bounds.Center -= renderContext.View.Origin;
     draw.PerInstanceRandom = GetPerInstanceRandom();
@@ -295,6 +295,44 @@ void StaticModel::Draw(RenderContext& renderContext)
     draw.VertexColors = _vertexColorsCount ? _vertexColorsBuffer : nullptr;
 
     Model->Draw(renderContext, draw);
+
+    GEOMETRY_DRAW_STATE_EVENT_END(_drawState, world);
+}
+
+void StaticModel::Draw(RenderContextBatch& renderContextBatch)
+{
+    if (!Model || !Model->IsLoaded())
+        return;
+    const RenderContext& renderContext = renderContextBatch.GetMainContext();
+    Matrix world;
+    renderContext.View.GetWorldMatrix(_transform, world);
+    GEOMETRY_DRAW_STATE_EVENT_BEGIN(_drawState, world);
+
+    if (_vertexColorsDirty)
+        FlushVertexColors();
+
+#if USE_EDITOR
+    // Disable motion blur effects in editor without play mode enabled to hide minor artifacts on objects moving
+    if (!Editor::IsPlayMode)
+        _drawState.PrevWorld = world;
+#endif
+
+    Mesh::DrawInfo draw;
+    draw.Buffer = &Entries;
+    draw.World = &world;
+    draw.DrawState = &_drawState;
+    draw.Lightmap = _scene->LightmapsData.GetReadyLightmap(Lightmap.TextureIndex);
+    draw.LightmapUVs = &Lightmap.UVsArea;
+    draw.Flags = _staticFlags;
+    draw.DrawModes = DrawModes;
+    draw.Bounds = _sphere;
+    draw.Bounds.Center -= renderContext.View.Origin;
+    draw.PerInstanceRandom = GetPerInstanceRandom();
+    draw.LODBias = _lodBias;
+    draw.ForcedLOD = _forcedLod;
+    draw.VertexColors = _vertexColorsCount ? _vertexColorsBuffer : nullptr;
+
+    Model->Draw(renderContextBatch, draw);
 
     GEOMETRY_DRAW_STATE_EVENT_END(_drawState, world);
 }

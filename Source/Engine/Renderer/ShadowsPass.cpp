@@ -189,298 +189,37 @@ void ShadowsPass::updateShadowMapSize()
     }
 }
 
-void ShadowsPass::Dispose()
+void ShadowsPass::SetupRenderContext(RenderContext& renderContext, RenderContext& shadowContext)
 {
-    // Base
-    RendererPass::Dispose();
-
-    // Cleanup
-    _psShadowDir.Delete();
-    _psShadowPoint.Delete();
-    _psShadowSpot.Delete();
-    _shader = nullptr;
-    _sphereModel = nullptr;
-    SAFE_DELETE_GPU_RESOURCE(_shadowMapCSM);
-    SAFE_DELETE_GPU_RESOURCE(_shadowMapCube);
-}
-
-bool ShadowsPass::CanRenderShadow(RenderContext& renderContext, const RendererPointLightData& light)
-{
-    const Float3 lightPosition = light.Position;
-    const float dstLightToView = Float3::Distance(lightPosition, renderContext.View.Position);
-
-    // Fade shadow on distance
-    const float fadeDistance = Math::Max(light.ShadowsFadeDistance, 0.1f);
-    const float fade = 1 - Math::Saturate((dstLightToView - light.Radius - light.ShadowsDistance + fadeDistance) / fadeDistance);
-
-    return fade > ZeroTolerance && _supportsShadows;
-}
-
-bool ShadowsPass::CanRenderShadow(RenderContext& renderContext, const RendererSpotLightData& light)
-{
-    const Float3 lightPosition = light.Position;
-    const float dstLightToView = Float3::Distance(lightPosition, renderContext.View.Position);
-
-    // Fade shadow on distance
-    const float fadeDistance = Math::Max(light.ShadowsFadeDistance, 0.1f);
-    const float fade = 1 - Math::Saturate((dstLightToView - light.Radius - light.ShadowsDistance + fadeDistance) / fadeDistance);
-
-    return fade > ZeroTolerance && _supportsShadows;
-}
-
-bool ShadowsPass::CanRenderShadow(RenderContext& renderContext, const RendererDirectionalLightData& light)
-{
-    return _supportsShadows;
-}
-
-void ShadowsPass::Prepare(RenderContext& renderContext, GPUContext* context)
-{
-    ASSERT(IsReady());
-    auto& view = renderContext.View;
-    const auto shader = _shader->GetShader();
-
-    const auto shadowMapsQuality = Graphics::ShadowMapsQuality;
-    if (shadowMapsQuality != _currentShadowMapsQuality)
-        updateShadowMapSize();
-    auto shadowsQuality = Graphics::ShadowsQuality;
-    maxShadowsQuality = Math::Clamp(Math::Min<int32>(static_cast<int32>(shadowsQuality), static_cast<int32>(view.MaxShadowsQuality)), 0, static_cast<int32>(Quality::MAX) - 1);
+    const auto& view = renderContext.View;
 
     // Use the current render view to sync model LODs with the shadow maps rendering stage
-    _shadowContext.LodProxyView = &renderContext.View;
+    shadowContext.LodProxyView = &renderContext.View;
 
     // Prepare properties
-    auto& shadowView = _shadowContext.View;
+    auto& shadowView = shadowContext.View;
     shadowView.Flags = view.Flags;
     shadowView.StaticFlagsMask = view.StaticFlagsMask;
     shadowView.RenderLayersMask = view.RenderLayersMask;
     shadowView.IsOfflinePass = view.IsOfflinePass;
-    shadowView.ModelLODBias = view.ModelLODBias + view.ShadowModelLODBias;
-    shadowView.ModelLODDistanceFactor = view.ModelLODDistanceFactor * view.ShadowModelLODDistanceFactor;
+    shadowView.ModelLODBias = view.ModelLODBias;
+    shadowView.ModelLODDistanceFactor = view.ModelLODDistanceFactor;
     shadowView.Pass = DrawPass::Depth;
     shadowView.Origin = view.Origin;
-    _shadowContext.List = &_shadowCache;
+    shadowContext.List = RenderList::GetFromPool();
+    shadowContext.Buffers = renderContext.Buffers;
+    shadowContext.Task = renderContext.Task;
 }
 
-void ShadowsPass::RenderShadow(RenderContext& renderContext, RendererPointLightData& light, GPUTextureView* shadowMask)
+void ShadowsPass::SetupLight(RenderContext& renderContext, RenderContextBatch& renderContextBatch, RendererDirectionalLightData& light)
 {
-    const float sphereModelScale = 3.0f;
-
-    PROFILE_GPU_CPU("Shadow");
-
-    // Cache data
-    auto device = GPUDevice::Instance;
-    auto context = device->GetMainContext();
-    auto& view = renderContext.View;
-    auto shader = _shader->GetShader();
-    Data sperLight;
-    float lightRadius = light.Radius;
-    Float3 lightPosition = light.Position;
-    Float3 lightDirection = light.Direction;
-    float dstLightToView = Float3::Distance(lightPosition, view.Position);
-
-    // TODO: here we can use lower shadows quality based on light distance to view (LOD switching) and per light setting for max quality
-    int32 shadowQuality = maxShadowsQuality;
-
-    // Fade shadow on distance
-    const float fadeDistance = Math::Max(light.ShadowsFadeDistance, 0.1f);
-    const float fade = 1 - Math::Saturate((dstLightToView - light.Radius - light.ShadowsDistance + fadeDistance) / fadeDistance);
-
-    // Set up GPU context and render view
-    const auto shadowMapsSizeCube = (float)_shadowMapsSizeCube;
-    context->SetViewportAndScissors(shadowMapsSizeCube, shadowMapsSizeCube);
-    _shadowContext.View.SetUpCube(PointLight_NearPlane, lightRadius, lightPosition);
-    _shadowContext.View.PrepareCache(_shadowContext, shadowMapsSizeCube, shadowMapsSizeCube, Float2::Zero, &view);
-
-    // Render depth to all 6 faces of the cube map
-    for (int32 faceIndex = 0; faceIndex < 6; faceIndex++)
-    {
-        // Set up view
-        _shadowCache.Clear();
-        _shadowContext.View.SetFace(faceIndex);
-        Matrix::Transpose(_shadowContext.View.ViewProjection(), sperLight.LightShadow.ShadowVP[faceIndex]);
-
-        // Set render target
-        auto rt = _shadowMapCube->View(faceIndex);
-        context->ResetSR();
-        context->SetRenderTarget(rt, static_cast<GPUTextureView*>(nullptr));
-        context->ClearDepth(rt);
-
-        // Render actors to the shadow map
-        renderContext.Task->OnCollectDrawCalls(_shadowContext);
-        _shadowCache.SortDrawCalls(_shadowContext, false, DrawCallsListType::Depth);
-        _shadowCache.ExecuteDrawCalls(_shadowContext, DrawCallsListType::Depth);
-    }
-
-    // Restore GPU context
-    context->ResetSR();
-    context->ResetRenderTarget();
-    const Viewport viewport = renderContext.Task->GetViewport();
-    GPUTexture* depthBuffer = renderContext.Buffers->DepthBuffer;
-    GPUTextureView* depthBufferSRV = depthBuffer->GetDescription().Flags & GPUTextureFlags::ReadOnlyDepthView ? depthBuffer->ViewReadOnlyDepth() : depthBuffer->View();
-    context->SetViewportAndScissors(viewport);
-    context->BindSR(0, renderContext.Buffers->GBuffer0);
-    context->BindSR(1, renderContext.Buffers->GBuffer1);
-    context->BindSR(2, renderContext.Buffers->GBuffer2);
-    context->BindSR(3, depthBufferSRV);
-    context->BindSR(4, renderContext.Buffers->GBuffer3);
-
-    // Setup shader data
-    GBufferPass::SetInputs(view, sperLight.GBuffer);
-    light.SetupLightData(&sperLight.Light, true);
-    sperLight.LightShadow.ShadowMapSize = shadowMapsSizeCube;
-    sperLight.LightShadow.Sharpness = light.ShadowsSharpness;
-    sperLight.LightShadow.Fade = Math::Saturate(light.ShadowsStrength * fade);
-    sperLight.LightShadow.NormalOffsetScale = light.ShadowsNormalOffsetScale * NormalOffsetScaleTweak * (1.0f / shadowMapsSizeCube);
-    sperLight.LightShadow.Bias = light.ShadowsDepthBias;
-    sperLight.LightShadow.FadeDistance = Math::Max(light.ShadowsFadeDistance, 0.1f);
-    sperLight.LightShadow.NumCascades = 1;
-    sperLight.LightShadow.CascadeSplits = Float4::Zero;
-    Matrix::Transpose(view.ViewProjection(), sperLight.ViewProjectionMatrix);
-    sperLight.ContactShadowsDistance = light.ShadowsDistance;
-    sperLight.ContactShadowsLength = view.Flags & ViewFlags::ContactShadows ? light.ContactShadowsLength : 0.0f;
-
-    // Calculate world view projection matrix for the light sphere
-    Matrix world, wvp, matrix;
-    Matrix::Scaling(lightRadius * sphereModelScale, wvp);
-    Matrix::Translation(lightPosition, matrix);
-    Matrix::Multiply(wvp, matrix, world);
-    Matrix::Multiply(world, view.ViewProjection(), wvp);
-    Matrix::Transpose(wvp, sperLight.WVP);
-
-    // Render shadow in screen space
-    context->UpdateCB(shader->GetCB(0), &sperLight);
-    context->BindCB(0, shader->GetCB(0));
-    context->BindCB(1, shader->GetCB(1));
-    context->BindSR(5, _shadowMapCube->ViewArray());
-    context->SetRenderTarget(shadowMask);
-    context->SetState(_psShadowPoint.Get(shadowQuality + (sperLight.ContactShadowsLength > ZeroTolerance ? 4 : 0)));
-    _sphereModel->Render(context);
-
-    // Cleanup
-    context->ResetRenderTarget();
-    context->UnBindSR(5);
-
-    // Render volumetric light with shadow
-    VolumetricFogPass::Instance()->RenderLight(renderContext, context, light, _shadowMapCube->ViewArray(), sperLight.LightShadow);
-}
-
-void ShadowsPass::RenderShadow(RenderContext& renderContext, RendererSpotLightData& light, GPUTextureView* shadowMask)
-{
-    const float sphereModelScale = 3.0f;
-
-    PROFILE_GPU_CPU("Shadow");
-
-    // Cache data
-    auto device = GPUDevice::Instance;
-    auto context = device->GetMainContext();
-    auto& view = renderContext.View;
-    auto shader = _shader->GetShader();
-    Data sperLight;
-    float lightRadius = light.Radius;
-    Float3 lightPosition = light.Position;
-    Float3 lightDirection = light.Direction;
-    float dstLightToView = Float3::Distance(lightPosition, view.Position);
-
-    // TODO: here we can use lower shadows quality based on light distance to view (LOD switching) and per light setting for max quality
-    int32 shadowQuality = maxShadowsQuality;
-
-    // Fade shadow on distance
-    const float fadeDistance = Math::Max(light.ShadowsFadeDistance, 0.1f);
-    const float fade = 1 - Math::Saturate((dstLightToView - light.Radius - light.ShadowsDistance + fadeDistance) / fadeDistance);
-
-    // Set up GPU context and render view
-    const auto shadowMapsSizeCube = (float)_shadowMapsSizeCube;
-    context->SetViewportAndScissors(shadowMapsSizeCube, shadowMapsSizeCube);
-    _shadowContext.View.SetProjector(SpotLight_NearPlane, lightRadius, lightPosition, lightDirection, light.UpVector, light.OuterConeAngle * 2.0f);
-    _shadowContext.View.PrepareCache(_shadowContext, shadowMapsSizeCube, shadowMapsSizeCube, Float2::Zero, &view);
-
-    // Render depth to all 1 face of the cube map
-    const int32 cubeFaceIndex = 0;
-    {
-        // Set up view
-        _shadowCache.Clear();
-        Matrix::Transpose(_shadowContext.View.ViewProjection(), sperLight.LightShadow.ShadowVP[cubeFaceIndex]);
-
-        // Set render target
-        auto rt = _shadowMapCube->View(cubeFaceIndex);
-        context->ResetSR();
-        context->SetRenderTarget(rt, static_cast<GPUTextureView*>(nullptr));
-        context->ClearDepth(rt);
-
-        // Render actors to the shadow map
-        renderContext.Task->OnCollectDrawCalls(_shadowContext);
-        _shadowCache.SortDrawCalls(_shadowContext, false, DrawCallsListType::Depth);
-        _shadowCache.ExecuteDrawCalls(_shadowContext, DrawCallsListType::Depth);
-    }
-
-    // Restore GPU context
-    context->ResetSR();
-    context->ResetRenderTarget();
-    const Viewport viewport = renderContext.Task->GetViewport();
-    GPUTexture* depthBuffer = renderContext.Buffers->DepthBuffer;
-    GPUTextureView* depthBufferSRV = depthBuffer->GetDescription().Flags & GPUTextureFlags::ReadOnlyDepthView ? depthBuffer->ViewReadOnlyDepth() : depthBuffer->View();
-    context->SetViewportAndScissors(viewport);
-    context->BindSR(0, renderContext.Buffers->GBuffer0);
-    context->BindSR(1, renderContext.Buffers->GBuffer1);
-    context->BindSR(2, renderContext.Buffers->GBuffer2);
-    context->BindSR(3, depthBufferSRV);
-    context->BindSR(4, renderContext.Buffers->GBuffer3);
-
-    // Setup shader data
-    GBufferPass::SetInputs(view, sperLight.GBuffer);
-    light.SetupLightData(&sperLight.Light, true);
-    sperLight.LightShadow.ShadowMapSize = shadowMapsSizeCube;
-    sperLight.LightShadow.Sharpness = light.ShadowsSharpness;
-    sperLight.LightShadow.Fade = Math::Saturate(light.ShadowsStrength * fade);
-    sperLight.LightShadow.NormalOffsetScale = light.ShadowsNormalOffsetScale * NormalOffsetScaleTweak * (1.0f / shadowMapsSizeCube);
-    sperLight.LightShadow.Bias = light.ShadowsDepthBias;
-    sperLight.LightShadow.FadeDistance = Math::Max(light.ShadowsFadeDistance, 0.1f);
-    sperLight.LightShadow.NumCascades = 1;
-    sperLight.LightShadow.CascadeSplits = Float4::Zero;
-    Matrix::Transpose(view.ViewProjection(), sperLight.ViewProjectionMatrix);
-    sperLight.ContactShadowsDistance = light.ShadowsDistance;
-    sperLight.ContactShadowsLength = view.Flags & ViewFlags::ContactShadows ? light.ContactShadowsLength : 0.0f;
-
-    // Calculate world view projection matrix for the light sphere
-    Matrix world, wvp, matrix;
-    Matrix::Scaling(lightRadius * sphereModelScale, wvp);
-    Matrix::Translation(lightPosition, matrix);
-    Matrix::Multiply(wvp, matrix, world);
-    Matrix::Multiply(world, view.ViewProjection(), wvp);
-    Matrix::Transpose(wvp, sperLight.WVP);
-
-    // Render shadow in screen space
-    context->UpdateCB(shader->GetCB(0), &sperLight);
-    context->BindCB(0, shader->GetCB(0));
-    context->BindCB(1, shader->GetCB(1));
-    context->BindSR(5, _shadowMapCube->View(cubeFaceIndex));
-    context->SetRenderTarget(shadowMask);
-    context->SetState(_psShadowSpot.Get(shadowQuality + (sperLight.ContactShadowsLength > ZeroTolerance ? 4 : 0)));
-    _sphereModel->Render(context);
-
-    // Cleanup
-    context->ResetRenderTarget();
-    context->UnBindSR(5);
-
-    // Render volumetric light with shadow
-    VolumetricFogPass::Instance()->RenderLight(renderContext, context, light, _shadowMapCube->View(cubeFaceIndex), sperLight.LightShadow);
-}
-
-void ShadowsPass::RenderShadow(RenderContext& renderContext, RendererDirectionalLightData& light, int32 index, GPUTextureView* shadowMask)
-{
-    PROFILE_GPU_CPU("Shadow");
-
-    // Cache data
-    auto device = GPUDevice::Instance;
-    auto context = device->GetMainContext();
-    auto& view = renderContext.View;
+    const RenderView& view = renderContext.View;
     auto mainCache = renderContext.List;
-    auto shader = _shader->GetShader();
-    Data sperLight;
     Float3 lightDirection = light.Direction;
     float shadowsDistance = Math::Min(view.Far, light.ShadowsDistance);
     int32 csmCount = Math::Clamp(light.CascadeCount, 0, MAX_CSM_CASCADES);
     bool blendCSM = Graphics::AllowCSMBlending;
+    const auto shadowMapsSizeCSM = (float)_shadowMapsSizeCSM;
 #if USE_EDITOR
     if (IsRunningRadiancePass)
         blendCSM = false;
@@ -561,9 +300,7 @@ void ShadowsPass::RenderShadow(RenderContext& renderContext, RendererDirectional
 
         // Convert distance splits to ratios cascade in the range [0, 1]
         for (int32 i = 0; i < MAX_CSM_CASCADES; i++)
-        {
             cascadeSplits[i] = (cascadeSplits[i] - cameraNear) / cameraRange;
-        }
     }
 
     // Select best Up vector
@@ -585,10 +322,13 @@ void ShadowsPass::RenderShadow(RenderContext& renderContext, RendererDirectional
     Float3 frustumCorners[8];
     Matrix shadowView, shadowProjection, shadowVP;
 
-    // Set up GPU context and render view
-    const auto shadowMapsSizeCSM = (float)_shadowMapsSizeCSM;
-    context->SetViewportAndScissors(shadowMapsSizeCSM, shadowMapsSizeCSM);
-    _shadowContext.View.PrepareCache(_shadowContext, shadowMapsSizeCSM, shadowMapsSizeCSM, Float2::Zero, &view);
+    // Init shadow data
+    light.ShadowDataIndex = _shadowData.Count();
+    auto& shadowData = _shadowData.AddOne();
+    shadowData.ContextIndex = renderContextBatch.Contexts.Count();
+    shadowData.ContextCount = csmCount;
+    shadowData.BlendCSM = blendCSM;
+    renderContextBatch.Contexts.AddDefault(shadowData.ContextCount);
 
     // Create the different view and projection matrices for each split
     float splitMinRatio = 0;
@@ -684,26 +424,213 @@ void ShadowsPass::RenderShadow(RenderContext& renderContext, RendererDirectional
                 0.5f, 0.5f, 0.0f, 1.0f);
             Matrix m;
             Matrix::Multiply(shadowVP, T, m);
-            Matrix::Transpose(m, sperLight.LightShadow.ShadowVP[cascadeIndex]);
+            Matrix::Transpose(m, shadowData.Constants.ShadowVP[cascadeIndex]);
         }
 
-        // Set up view and cache
-        _shadowCache.Clear();
-        _shadowContext.View.Position = -lightDirection * shadowsDistance + view.Position;
-        _shadowContext.View.Direction = lightDirection;
-        _shadowContext.View.SetUp(shadowView, shadowProjection);
-        _shadowContext.View.CullingFrustum.SetMatrix(cullingVP);
+        // Setup context for cascade
+        auto& shadowContext = renderContextBatch.Contexts[shadowData.ContextIndex + cascadeIndex];
+        SetupRenderContext(renderContext, shadowContext);
+        shadowContext.List->Clear();
+        shadowContext.View.Position = -lightDirection * shadowsDistance + view.Position;
+        shadowContext.View.Direction = lightDirection;
+        shadowContext.View.SetUp(shadowView, shadowProjection);
+        shadowContext.View.CullingFrustum.SetMatrix(cullingVP);
+        shadowContext.View.PrepareCache(shadowContext, shadowMapsSizeCSM, shadowMapsSizeCSM, Float2::Zero, &view);
+    }
 
-        // Set render target
-        const auto rt = _shadowMapCSM->View(cascadeIndex);
+    // Setup constant buffer data
+    shadowData.Constants.ShadowMapSize = shadowMapsSizeCSM;
+    shadowData.Constants.Sharpness = light.ShadowsSharpness;
+    shadowData.Constants.Fade = Math::Saturate(light.ShadowsStrength);
+    shadowData.Constants.NormalOffsetScale = light.ShadowsNormalOffsetScale * NormalOffsetScaleTweak * (1.0f / shadowMapsSizeCSM);
+    shadowData.Constants.Bias = light.ShadowsDepthBias;
+    shadowData.Constants.FadeDistance = Math::Max(light.ShadowsFadeDistance, 0.1f);
+    shadowData.Constants.NumCascades = csmCount;
+    shadowData.Constants.CascadeSplits = view.Near + Float4(cascadeSplits) * cameraRange;
+}
+
+void ShadowsPass::SetupLight(RenderContext& renderContext, RenderContextBatch& renderContextBatch, RendererPointLightData& light)
+{
+    // Init shadow data
+    light.ShadowDataIndex = _shadowData.Count();
+    auto& shadowData = _shadowData.AddOne();
+    shadowData.ContextIndex = renderContextBatch.Contexts.Count();
+    shadowData.ContextCount = 6;
+    renderContextBatch.Contexts.AddDefault(shadowData.ContextCount);
+
+    const auto& view = renderContext.View;
+    const auto shadowMapsSizeCube = (float)_shadowMapsSizeCube;
+
+    // Fade shadow on distance
+    const float fadeDistance = Math::Max(light.ShadowsFadeDistance, 0.1f);
+    const float dstLightToView = Float3::Distance(light.Position, view.Position);
+    const float fade = 1 - Math::Saturate((dstLightToView - light.Radius - light.ShadowsDistance + fadeDistance) / fadeDistance);
+
+    // Render depth to all 6 faces of the cube map
+    for (int32 faceIndex = 0; faceIndex < 6; faceIndex++)
+    {
+        auto& shadowContext = renderContextBatch.Contexts[shadowData.ContextIndex + faceIndex];
+        SetupRenderContext(renderContext, shadowContext);
+        shadowContext.List->Clear();
+        shadowContext.View.SetUpCube(PointLight_NearPlane, light.Radius, light.Position);
+        shadowContext.View.SetFace(faceIndex);
+        shadowContext.View.PrepareCache(shadowContext, shadowMapsSizeCube, shadowMapsSizeCube, Float2::Zero, &view);
+        Matrix::Transpose(shadowContext.View.ViewProjection(), shadowData.Constants.ShadowVP[faceIndex]);
+    }
+
+    // Setup constant buffer data
+    shadowData.Constants.ShadowMapSize = shadowMapsSizeCube;
+    shadowData.Constants.Sharpness = light.ShadowsSharpness;
+    shadowData.Constants.Fade = Math::Saturate(light.ShadowsStrength * fade);
+    shadowData.Constants.NormalOffsetScale = light.ShadowsNormalOffsetScale * NormalOffsetScaleTweak * (1.0f / shadowMapsSizeCube);
+    shadowData.Constants.Bias = light.ShadowsDepthBias;
+    shadowData.Constants.FadeDistance = Math::Max(light.ShadowsFadeDistance, 0.1f);
+    shadowData.Constants.NumCascades = 1;
+    shadowData.Constants.CascadeSplits = Float4::Zero;
+}
+
+void ShadowsPass::SetupLight(RenderContext& renderContext, RenderContextBatch& renderContextBatch, RendererSpotLightData& light)
+{
+    // Init shadow data
+    light.ShadowDataIndex = _shadowData.Count();
+    auto& shadowData = _shadowData.AddOne();
+    shadowData.ContextIndex = renderContextBatch.Contexts.Count();
+    shadowData.ContextCount = 1;
+    renderContextBatch.Contexts.AddDefault(shadowData.ContextCount);
+
+    const auto& view = renderContext.View;
+    const auto shadowMapsSizeCube = (float)_shadowMapsSizeCube;
+
+    // Fade shadow on distance
+    const float fadeDistance = Math::Max(light.ShadowsFadeDistance, 0.1f);
+    const float dstLightToView = Float3::Distance(light.Position, view.Position);
+    const float fade = 1 - Math::Saturate((dstLightToView - light.Radius - light.ShadowsDistance + fadeDistance) / fadeDistance);
+
+    // Render depth to all 1 face of the cube map
+    constexpr int32 faceIndex = 0;
+    {
+        auto& shadowContext = renderContextBatch.Contexts[shadowData.ContextIndex + faceIndex];
+        SetupRenderContext(renderContext, shadowContext);
+        shadowContext.List->Clear();
+        shadowContext.View.SetProjector(SpotLight_NearPlane, light.Radius, light.Position, light.Direction, light.UpVector, light.OuterConeAngle * 2.0f);
+        shadowContext.View.PrepareCache(shadowContext, shadowMapsSizeCube, shadowMapsSizeCube, Float2::Zero, &view);
+        Matrix::Transpose(shadowContext.View.ViewProjection(), shadowData.Constants.ShadowVP[faceIndex]);
+    }
+
+    // Setup constant buffer data
+    shadowData.Constants.ShadowMapSize = shadowMapsSizeCube;
+    shadowData.Constants.Sharpness = light.ShadowsSharpness;
+    shadowData.Constants.Fade = Math::Saturate(light.ShadowsStrength * fade);
+    shadowData.Constants.NormalOffsetScale = light.ShadowsNormalOffsetScale * NormalOffsetScaleTweak * (1.0f / shadowMapsSizeCube);
+    shadowData.Constants.Bias = light.ShadowsDepthBias;
+    shadowData.Constants.FadeDistance = Math::Max(light.ShadowsFadeDistance, 0.1f);
+    shadowData.Constants.NumCascades = 1;
+    shadowData.Constants.CascadeSplits = Float4::Zero;
+}
+
+void ShadowsPass::Dispose()
+{
+    // Base
+    RendererPass::Dispose();
+
+    // Cleanup
+    _psShadowDir.Delete();
+    _psShadowPoint.Delete();
+    _psShadowSpot.Delete();
+    _shader = nullptr;
+    _sphereModel = nullptr;
+    SAFE_DELETE_GPU_RESOURCE(_shadowMapCSM);
+    SAFE_DELETE_GPU_RESOURCE(_shadowMapCube);
+}
+
+void ShadowsPass::SetupShadows(RenderContext& renderContext, RenderContextBatch& renderContextBatch)
+{
+    PROFILE_CPU();
+    _shadowData.Clear();
+    auto& view = renderContext.View;
+
+    // Update shadow map
+    const auto shadowMapsQuality = Graphics::ShadowMapsQuality;
+    if (shadowMapsQuality != _currentShadowMapsQuality)
+        updateShadowMapSize();
+    auto shadowsQuality = Graphics::ShadowsQuality;
+    maxShadowsQuality = Math::Clamp(Math::Min<int32>(static_cast<int32>(shadowsQuality), static_cast<int32>(view.MaxShadowsQuality)), 0, static_cast<int32>(Quality::MAX) - 1);
+
+    // Create shadow projections for lights
+    for (auto& light : renderContext.List->DirectionalLights)
+    {
+        if (::CanRenderShadow(view, light) && CanRenderShadow(renderContext, light))
+            SetupLight(renderContext, renderContextBatch, light);
+    }
+    for (auto& light : renderContext.List->PointLights)
+    {
+        if (::CanRenderShadow(view, light) && CanRenderShadow(renderContext, light))
+            SetupLight(renderContext, renderContextBatch, light);
+    }
+    for (auto& light : renderContext.List->SpotLights)
+    {
+        if (::CanRenderShadow(view, light) && CanRenderShadow(renderContext, light))
+            SetupLight(renderContext, renderContextBatch, light);
+    }
+}
+
+bool ShadowsPass::CanRenderShadow(const RenderContext& renderContext, const RendererPointLightData& light)
+{
+    const Float3 lightPosition = light.Position;
+    const float dstLightToView = Float3::Distance(lightPosition, renderContext.View.Position);
+
+    // Fade shadow on distance
+    const float fadeDistance = Math::Max(light.ShadowsFadeDistance, 0.1f);
+    const float fade = 1 - Math::Saturate((dstLightToView - light.Radius - light.ShadowsDistance + fadeDistance) / fadeDistance);
+
+    return fade > ZeroTolerance && _supportsShadows;
+}
+
+bool ShadowsPass::CanRenderShadow(const RenderContext& renderContext, const RendererSpotLightData& light)
+{
+    const Float3 lightPosition = light.Position;
+    const float dstLightToView = Float3::Distance(lightPosition, renderContext.View.Position);
+
+    // Fade shadow on distance
+    const float fadeDistance = Math::Max(light.ShadowsFadeDistance, 0.1f);
+    const float fade = 1 - Math::Saturate((dstLightToView - light.Radius - light.ShadowsDistance + fadeDistance) / fadeDistance);
+
+    return fade > ZeroTolerance && _supportsShadows;
+}
+
+bool ShadowsPass::CanRenderShadow(const RenderContext& renderContext, const RendererDirectionalLightData& light)
+{
+    return _supportsShadows;
+}
+
+void ShadowsPass::RenderShadow(RenderContextBatch& renderContextBatch, RendererPointLightData& light, GPUTextureView* shadowMask)
+{
+    if (light.ShadowDataIndex == -1)
+        return;
+    PROFILE_GPU_CPU("Shadow");
+    GPUContext* context = GPUDevice::Instance->GetMainContext();
+    RenderContext& renderContext = renderContextBatch.Contexts[0];
+    ShadowData& shadowData = _shadowData[light.ShadowDataIndex];
+    const float sphereModelScale = 3.0f;
+    auto& view = renderContext.View;
+    auto shader = _shader->GetShader();
+
+    // TODO: here we can use lower shadows quality based on light distance to view (LOD switching) and per light setting for max quality
+    int32 shadowQuality = maxShadowsQuality;
+
+    // Set up GPU context and render view
+    const auto shadowMapsSizeCube = (float)_shadowMapsSizeCube;
+    context->SetViewportAndScissors(shadowMapsSizeCube, shadowMapsSizeCube);
+
+    // Render depth to all 6 faces of the cube map
+    for (int32 faceIndex = 0; faceIndex < 6; faceIndex++)
+    {
+        auto rt = _shadowMapCube->View(faceIndex);
         context->ResetSR();
         context->SetRenderTarget(rt, static_cast<GPUTextureView*>(nullptr));
         context->ClearDepth(rt);
-
-        // Render actors to the shadow map
-        renderContext.Task->OnCollectDrawCalls(_shadowContext);
-        _shadowCache.SortDrawCalls(_shadowContext, false, DrawCallsListType::Depth);
-        _shadowCache.ExecuteDrawCalls(_shadowContext, DrawCallsListType::Depth);
+        auto& shadowContext = renderContextBatch.Contexts[shadowData.ContextIndex + faceIndex];
+        shadowContext.List->ExecuteDrawCalls(shadowContext, DrawCallsListType::Depth);
     }
 
     // Restore GPU context
@@ -720,27 +647,168 @@ void ShadowsPass::RenderShadow(RenderContext& renderContext, RendererDirectional
     context->BindSR(4, renderContext.Buffers->GBuffer3);
 
     // Setup shader data
+    Data sperLight;
     GBufferPass::SetInputs(view, sperLight.GBuffer);
     light.SetupLightData(&sperLight.Light, true);
-    sperLight.LightShadow.ShadowMapSize = shadowMapsSizeCSM;
-    sperLight.LightShadow.Sharpness = light.ShadowsSharpness;
-    sperLight.LightShadow.Fade = Math::Saturate(light.ShadowsStrength);
-    sperLight.LightShadow.NormalOffsetScale = light.ShadowsNormalOffsetScale * NormalOffsetScaleTweak * (1.0f / shadowMapsSizeCSM);
-    sperLight.LightShadow.Bias = light.ShadowsDepthBias;
-    sperLight.LightShadow.FadeDistance = Math::Max(light.ShadowsFadeDistance, 0.1f);
-    sperLight.LightShadow.NumCascades = csmCount;
-    sperLight.LightShadow.CascadeSplits = view.Near + Float4(cascadeSplits) * cameraRange;
+    sperLight.LightShadow = shadowData.Constants;
     Matrix::Transpose(view.ViewProjection(), sperLight.ViewProjectionMatrix);
     sperLight.ContactShadowsDistance = light.ShadowsDistance;
     sperLight.ContactShadowsLength = view.Flags & ViewFlags::ContactShadows ? light.ContactShadowsLength : 0.0f;
+
+    // Calculate world view projection matrix for the light sphere
+    Matrix world, wvp, matrix;
+    Matrix::Scaling(light.Radius * sphereModelScale, wvp);
+    Matrix::Translation(light.Position, matrix);
+    Matrix::Multiply(wvp, matrix, world);
+    Matrix::Multiply(world, view.ViewProjection(), wvp);
+    Matrix::Transpose(wvp, sperLight.WVP);
 
     // Render shadow in screen space
     context->UpdateCB(shader->GetCB(0), &sperLight);
     context->BindCB(0, shader->GetCB(0));
     context->BindCB(1, shader->GetCB(1));
+    context->BindSR(5, _shadowMapCube->ViewArray());
+    context->SetRenderTarget(shadowMask);
+    context->SetState(_psShadowPoint.Get(shadowQuality + (sperLight.ContactShadowsLength > ZeroTolerance ? 4 : 0)));
+    _sphereModel->Render(context);
+
+    // Cleanup
+    context->ResetRenderTarget();
+    context->UnBindSR(5);
+
+    // Render volumetric light with shadow
+    VolumetricFogPass::Instance()->RenderLight(renderContext, context, light, _shadowMapCube->ViewArray(), sperLight.LightShadow);
+}
+
+void ShadowsPass::RenderShadow(RenderContextBatch& renderContextBatch, RendererSpotLightData& light, GPUTextureView* shadowMask)
+{
+    if (light.ShadowDataIndex == -1)
+        return;
+    PROFILE_GPU_CPU("Shadow");
+    GPUContext* context = GPUDevice::Instance->GetMainContext();
+    RenderContext& renderContext = renderContextBatch.Contexts[0];
+    ShadowData& shadowData = _shadowData[light.ShadowDataIndex];
+    const float sphereModelScale = 3.0f;
+    auto& view = renderContext.View;
+    auto shader = _shader->GetShader();
+
+    // TODO: here we can use lower shadows quality based on light distance to view (LOD switching) and per light setting for max quality
+    int32 shadowQuality = maxShadowsQuality;
+
+    // Set up GPU context and render view
+    const auto shadowMapsSizeCube = (float)_shadowMapsSizeCube;
+    context->SetViewportAndScissors(shadowMapsSizeCube, shadowMapsSizeCube);
+
+    // Render depth to all 1 face of the cube map
+    constexpr int32 faceIndex = 0;
+    {
+        auto rt = _shadowMapCube->View(faceIndex);
+        context->ResetSR();
+        context->SetRenderTarget(rt, static_cast<GPUTextureView*>(nullptr));
+        context->ClearDepth(rt);
+        auto& shadowContext = renderContextBatch.Contexts[shadowData.ContextIndex + faceIndex];
+        shadowContext.List->ExecuteDrawCalls(shadowContext, DrawCallsListType::Depth);
+    }
+
+    // Restore GPU context
+    context->ResetSR();
+    context->ResetRenderTarget();
+    const Viewport viewport = renderContext.Task->GetViewport();
+    GPUTexture* depthBuffer = renderContext.Buffers->DepthBuffer;
+    GPUTextureView* depthBufferSRV = depthBuffer->GetDescription().Flags & GPUTextureFlags::ReadOnlyDepthView ? depthBuffer->ViewReadOnlyDepth() : depthBuffer->View();
+    context->SetViewportAndScissors(viewport);
+    context->BindSR(0, renderContext.Buffers->GBuffer0);
+    context->BindSR(1, renderContext.Buffers->GBuffer1);
+    context->BindSR(2, renderContext.Buffers->GBuffer2);
+    context->BindSR(3, depthBufferSRV);
+    context->BindSR(4, renderContext.Buffers->GBuffer3);
+
+    // Setup shader data
+    Data sperLight;
+    GBufferPass::SetInputs(view, sperLight.GBuffer);
+    light.SetupLightData(&sperLight.Light, true);
+    sperLight.LightShadow = shadowData.Constants;
+    Matrix::Transpose(view.ViewProjection(), sperLight.ViewProjectionMatrix);
+    sperLight.ContactShadowsDistance = light.ShadowsDistance;
+    sperLight.ContactShadowsLength = view.Flags & ViewFlags::ContactShadows ? light.ContactShadowsLength : 0.0f;
+
+    // Calculate world view projection matrix for the light sphere
+    Matrix world, wvp, matrix;
+    Matrix::Scaling(light.Radius * sphereModelScale, wvp);
+    Matrix::Translation(light.Position, matrix);
+    Matrix::Multiply(wvp, matrix, world);
+    Matrix::Multiply(world, view.ViewProjection(), wvp);
+    Matrix::Transpose(wvp, sperLight.WVP);
+
+    // Render shadow in screen space
+    context->UpdateCB(shader->GetCB(0), &sperLight);
+    context->BindCB(0, shader->GetCB(0));
+    context->BindCB(1, shader->GetCB(1));
+    context->BindSR(5, _shadowMapCube->View(faceIndex));
+    context->SetRenderTarget(shadowMask);
+    context->SetState(_psShadowSpot.Get(shadowQuality + (sperLight.ContactShadowsLength > ZeroTolerance ? 4 : 0)));
+    _sphereModel->Render(context);
+
+    // Cleanup
+    context->ResetRenderTarget();
+    context->UnBindSR(5);
+
+    // Render volumetric light with shadow
+    VolumetricFogPass::Instance()->RenderLight(renderContext, context, light, _shadowMapCube->View(faceIndex), sperLight.LightShadow);
+}
+
+void ShadowsPass::RenderShadow(RenderContextBatch& renderContextBatch, RendererDirectionalLightData& light, int32 index, GPUTextureView* shadowMask)
+{
+    if (light.ShadowDataIndex == -1)
+        return;
+    PROFILE_GPU_CPU("Shadow");
+    GPUContext* context = GPUDevice::Instance->GetMainContext();
+    RenderContext& renderContext = renderContextBatch.Contexts[0];
+    ShadowData& shadowData = _shadowData[light.ShadowDataIndex];
+    const float shadowMapsSizeCSM = (float)_shadowMapsSizeCSM;
+    context->SetViewportAndScissors(shadowMapsSizeCSM, shadowMapsSizeCSM);
+
+    // Render shadow map for each projection
+    for (int32 cascadeIndex = 0; cascadeIndex < shadowData.ContextCount; cascadeIndex++)
+    {
+        const auto rt = _shadowMapCSM->View(cascadeIndex);
+        context->ResetSR();
+        context->SetRenderTarget(rt, static_cast<GPUTextureView*>(nullptr));
+        context->ClearDepth(rt);
+        auto& shadowContext = renderContextBatch.Contexts[shadowData.ContextIndex + cascadeIndex];
+        shadowContext.List->ExecuteDrawCalls(shadowContext, DrawCallsListType::Depth);
+    }
+
+    // Restore GPU context
+    context->ResetSR();
+    context->ResetRenderTarget();
+    GPUTexture* depthBuffer = renderContext.Buffers->DepthBuffer;
+    GPUTextureView* depthBufferSRV = depthBuffer->GetDescription().Flags & GPUTextureFlags::ReadOnlyDepthView ? depthBuffer->ViewReadOnlyDepth() : depthBuffer->View();
+    context->SetViewportAndScissors(renderContext.Task->GetViewport());
+    context->BindSR(0, renderContext.Buffers->GBuffer0);
+    context->BindSR(1, renderContext.Buffers->GBuffer1);
+    context->BindSR(2, renderContext.Buffers->GBuffer2);
+    context->BindSR(3, depthBufferSRV);
+    context->BindSR(4, renderContext.Buffers->GBuffer3);
+
+    // Setup shader data
+    Data sperLight;
+    auto& view = renderContext.View;
+    GBufferPass::SetInputs(view, sperLight.GBuffer);
+    light.SetupLightData(&sperLight.Light, true);
+    sperLight.LightShadow = shadowData.Constants;
+    Matrix::Transpose(view.ViewProjection(), sperLight.ViewProjectionMatrix);
+    sperLight.ContactShadowsDistance = light.ShadowsDistance;
+    sperLight.ContactShadowsLength = view.Flags & ViewFlags::ContactShadows ? light.ContactShadowsLength : 0.0f;
+
+    // Render shadow in screen space
+    auto shader = _shader->GetShader();
+    context->UpdateCB(shader->GetCB(0), &sperLight);
+    context->BindCB(0, shader->GetCB(0));
+    context->BindCB(1, shader->GetCB(1));
     context->BindSR(5, _shadowMapCSM->ViewArray());
     context->SetRenderTarget(shadowMask);
-    context->SetState(_psShadowDir.Get(maxShadowsQuality + static_cast<int32>(Quality::MAX) * blendCSM + (sperLight.ContactShadowsLength > ZeroTolerance ? 8 : 0)));
+    context->SetState(_psShadowDir.Get(maxShadowsQuality + static_cast<int32>(Quality::MAX) * shadowData.BlendCSM + (sperLight.ContactShadowsLength > ZeroTolerance ? 8 : 0)));
     context->DrawFullscreenTriangle();
 
     // Cleanup

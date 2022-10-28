@@ -408,12 +408,15 @@ void DrawEmitterCPU(RenderContext& renderContext, ParticleBuffer* buffer, DrawCa
         {
             const auto material = (MaterialBase*)module->Assets[0].Get();
             const auto moduleDrawModes = module->Values.Count() > 3 ? (DrawPass)module->Values[3].AsInt : DrawPass::Default;
+            auto dp = (DrawPass)(drawModes & moduleDrawModes & (uint32)material->GetDrawModes());
+            if (dp == DrawPass::None)
+                break;
             drawCall.Material = material;
 
             // Submit draw call
             SpriteRenderer.SetupDrawCall(drawCall);
             drawCall.InstanceCount = buffer->CPU.Count;
-            renderContext.List->AddDrawCall((DrawPass)(drawModes & moduleDrawModes), staticFlags, drawCall, false);
+            renderContext.List->AddDrawCall(dp, staticFlags, drawCall, false);
 
             break;
         }
@@ -423,6 +426,9 @@ void DrawEmitterCPU(RenderContext& renderContext, ParticleBuffer* buffer, DrawCa
             const auto model = (Model*)module->Assets[0].Get();
             const auto material = (MaterialBase*)module->Assets[1].Get();
             const auto moduleDrawModes = module->Values.Count() > 4 ? (DrawPass)module->Values[4].AsInt : DrawPass::Default;
+            auto dp = (DrawPass)(drawModes & moduleDrawModes & (uint32)material->GetDrawModes());
+            if (dp == DrawPass::None)
+                break;
             drawCall.Material = material;
 
             // TODO: model LOD picking for particles?
@@ -438,7 +444,7 @@ void DrawEmitterCPU(RenderContext& renderContext, ParticleBuffer* buffer, DrawCa
                 // Submit draw call
                 mesh.GetDrawCallGeometry(drawCall);
                 drawCall.InstanceCount = buffer->CPU.Count;
-                renderContext.List->AddDrawCall((DrawPass)(drawModes & moduleDrawModes), staticFlags, drawCall, false);
+                renderContext.List->AddDrawCall(dp, staticFlags, drawCall, false);
             }
 
             break;
@@ -450,6 +456,9 @@ void DrawEmitterCPU(RenderContext& renderContext, ParticleBuffer* buffer, DrawCa
                 break;
             const auto material = (MaterialBase*)module->Assets[0].Get();
             const auto moduleDrawModes = module->Values.Count() > 6 ? (DrawPass)module->Values[6].AsInt : DrawPass::Default;
+            auto dp = (DrawPass)(drawModes & moduleDrawModes & (uint32)material->GetDrawModes());
+            if (dp == DrawPass::None)
+                break;
             drawCall.Material = material;
 
             // Node properties
@@ -495,7 +504,7 @@ void DrawEmitterCPU(RenderContext& renderContext, ParticleBuffer* buffer, DrawCa
             drawCall.Draw.StartIndex = ribbonModulesDrawIndicesStart[ribbonModuleIndex];
             drawCall.Draw.IndicesCount = ribbonModulesDrawIndicesCount[ribbonModuleIndex];
             drawCall.InstanceCount = 1;
-            renderContext.List->AddDrawCall((DrawPass)(drawModes & moduleDrawModes), staticFlags, drawCall, false);
+            renderContext.List->AddDrawCall(dp, staticFlags, drawCall, false);
 
             ribbonModuleIndex++;
 
@@ -810,6 +819,7 @@ void DrawEmitterGPU(RenderContext& renderContext, ParticleBuffer* buffer, DrawCa
         {
             const auto material = (MaterialBase*)module->Assets[0].Get();
             const auto moduleDrawModes = module->Values.Count() > 3 ? (DrawPass)module->Values[3].AsInt : DrawPass::Default;
+            auto dp = (DrawPass)(drawModes & moduleDrawModes & (uint32)material->GetDrawModes());
             drawCall.Material = material;
 
             // Submit draw call
@@ -817,7 +827,8 @@ void DrawEmitterGPU(RenderContext& renderContext, ParticleBuffer* buffer, DrawCa
             drawCall.InstanceCount = 0;
             drawCall.Draw.IndirectArgsBuffer = buffer->GPU.IndirectDrawArgsBuffer;
             drawCall.Draw.IndirectArgsOffset = indirectDrawCallIndex * sizeof(GPUDrawIndexedIndirectArgs);
-            renderContext.List->AddDrawCall((DrawPass)(drawModes & moduleDrawModes), staticFlags, drawCall, false);
+            if (dp != DrawPass::None)
+                renderContext.List->AddDrawCall(dp, staticFlags, drawCall, false);
             indirectDrawCallIndex++;
 
             break;
@@ -828,6 +839,7 @@ void DrawEmitterGPU(RenderContext& renderContext, ParticleBuffer* buffer, DrawCa
             const auto model = (Model*)module->Assets[0].Get();
             const auto material = (MaterialBase*)module->Assets[1].Get();
             const auto moduleDrawModes = module->Values.Count() > 4 ? (DrawPass)module->Values[4].AsInt : DrawPass::Default;
+            auto dp = (DrawPass)(drawModes & moduleDrawModes & (uint32)material->GetDrawModes());
             drawCall.Material = material;
 
             // TODO: model LOD picking for particles?
@@ -845,7 +857,8 @@ void DrawEmitterGPU(RenderContext& renderContext, ParticleBuffer* buffer, DrawCa
                 drawCall.InstanceCount = 0;
                 drawCall.Draw.IndirectArgsBuffer = buffer->GPU.IndirectDrawArgsBuffer;
                 drawCall.Draw.IndirectArgsOffset = indirectDrawCallIndex * sizeof(GPUDrawIndexedIndirectArgs);
-                renderContext.List->AddDrawCall((DrawPass)(drawModes & moduleDrawModes), staticFlags, drawCall, false);
+                if (dp != DrawPass::None)
+                    renderContext.List->AddDrawCall(dp, staticFlags, drawCall, false);
                 indirectDrawCallIndex++;
             }
 

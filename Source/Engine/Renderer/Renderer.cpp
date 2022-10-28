@@ -60,7 +60,7 @@ public:
 
 RendererService RendererServiceInstance;
 
-void RenderInner(SceneRenderTask* task, RenderContext& renderContext);
+void RenderInner(SceneRenderTask* task, RenderContext& renderContext, RenderContextBatch& renderContextBatch);
 
 bool RendererService::Init()
 {
@@ -165,15 +165,18 @@ void Renderer::Render(SceneRenderTask* task)
 {
     PROFILE_GPU_CPU_NAMED("Render Frame");
 
+    // Prepare GPU context
     auto context = GPUDevice::Instance->GetMainContext();
     context->ClearState();
     context->FlushState();
     const Viewport viewport = task->GetViewport();
     context->SetViewportAndScissors(viewport);
 
-    // Prepare
+    // Prepare render context
     RenderContext renderContext(task);
     renderContext.List = RenderList::GetFromPool();
+    RenderContextBatch renderContextBatch(task);
+    renderContextBatch.Contexts.Add(renderContext);
 
 #if USE_EDITOR
     // Turn on low quality rendering during baking lightmaps (leave more GPU power for baking)
@@ -204,7 +207,7 @@ void Renderer::Render(SceneRenderTask* task)
 
     // Perform the actual rendering
     task->OnPreRender(context, renderContext);
-    RenderInner(task, renderContext);
+    RenderInner(task, renderContext, renderContextBatch);
     task->OnPostRender(context, renderContext);
 
 #if USE_EDITOR
@@ -216,10 +219,11 @@ void Renderer::Render(SceneRenderTask* task)
     task->View = renderContext.View;
 
     // Cleanup
-    RenderList::ReturnToPool(renderContext.List);
+    for (const auto& e : renderContextBatch.Contexts)
+        RenderList::ReturnToPool(e.List);
 }
 
-bool Renderer::NeedMotionVectors(RenderContext& renderContext)
+bool Renderer::NeedMotionVectors(const RenderContext& renderContext)
 {
     const int32 screenWidth = renderContext.Buffers->GetWidth();
     const int32 screenHeight = renderContext.Buffers->GetHeight();
@@ -255,7 +259,8 @@ void Renderer::DrawSceneDepth(GPUContext* context, SceneRenderTask* task, GPUTex
     else
     {
         // Draw scene actors
-        Level::DrawActors(renderContext);
+        RenderContextBatch renderContextBatch(renderContext);
+        Level::DrawActors(renderContextBatch);
     }
 
     // Sort draw calls
@@ -290,7 +295,7 @@ void Renderer::DrawPostFxMaterial(GPUContext* context, const RenderContext& rend
     context->ResetRenderTarget();
 }
 
-void RenderInner(SceneRenderTask* task, RenderContext& renderContext)
+void RenderInner(SceneRenderTask* task, RenderContext& renderContext, RenderContextBatch& renderContextBatch)
 {
     auto context = GPUDevice::Instance->GetMainContext();
     auto* graphicsSettings = GraphicsSettings::Get();
@@ -316,17 +321,47 @@ void RenderInner(SceneRenderTask* task, RenderContext& renderContext)
             renderContext.List->PostFx.Add(&postFx);
     }
 
-    // Collect renderable objects and construct draw call list
-    view.Pass = DrawPass::GBuffer | DrawPass::Forward | DrawPass::Distortion;
-    if (Renderer::NeedMotionVectors(renderContext))
-        view.Pass |= DrawPass::MotionVectors;
-    task->OnCollectDrawCalls(renderContext);
+    // Build batch of render contexts (main view and shadow projections)
+    const bool isGBufferDebug = GBufferPass::IsDebugView(renderContext.View.Mode);
+    {
+        PROFILE_CPU_NAMED("Collect Draw Calls");
+
+        view.Pass = DrawPass::GBuffer | DrawPass::Forward | DrawPass::Distortion;
+        if (Renderer::NeedMotionVectors(renderContext))
+            view.Pass |= DrawPass::MotionVectors;
+        renderContextBatch.GetMainContext() = renderContext; // Sync render context in batch with the current value
+
+        bool drawShadows = !isGBufferDebug && ((view.Flags & ViewFlags::Shadows) != 0) && ShadowsPass::Instance()->IsReady();
+        switch (renderContext.View.Mode)
+        {
+        case ViewMode::QuadOverdraw:
+        case ViewMode::Emissive:
+        case ViewMode::LightmapUVsDensity:
+        case ViewMode::GlobalSurfaceAtlas:
+        case ViewMode::GlobalSDF:
+        case ViewMode::MaterialComplexity:
+            drawShadows = false;
+            break;
+        }
+        if (drawShadows)
+            ShadowsPass::Instance()->SetupShadows(renderContext, renderContextBatch);
+
+        task->OnCollectDrawCalls(renderContextBatch);
+    }
 
     // Sort draw calls
-    renderContext.List->SortDrawCalls(renderContext, false, DrawCallsListType::GBuffer);
-    renderContext.List->SortDrawCalls(renderContext, false, DrawCallsListType::GBufferNoDecals);
-    renderContext.List->SortDrawCalls(renderContext, true, DrawCallsListType::Forward);
-    renderContext.List->SortDrawCalls(renderContext, false, DrawCallsListType::Distortion);
+    {
+        PROFILE_CPU_NAMED("Sort Draw Calls");
+        renderContext.List->SortDrawCalls(renderContext, false, DrawCallsListType::GBuffer);
+        renderContext.List->SortDrawCalls(renderContext, false, DrawCallsListType::GBufferNoDecals);
+        renderContext.List->SortDrawCalls(renderContext, true, DrawCallsListType::Forward);
+        renderContext.List->SortDrawCalls(renderContext, false, DrawCallsListType::Distortion);
+        for (int32 i = 1; i < renderContextBatch.Contexts.Count(); i++)
+        {
+            auto& shadowContext = renderContextBatch.Contexts[i];
+            shadowContext.List->SortDrawCalls(shadowContext, false, DrawCallsListType::Depth);
+        }
+    }
 
     // Get the light accumulation buffer
     auto outputFormat = renderContext.Buffers->GetOutputFormat();
@@ -389,7 +424,7 @@ void RenderInner(SceneRenderTask* task, RenderContext& renderContext)
     AmbientOcclusionPass::Instance()->Render(renderContext);
 
     // Check if use custom view mode
-    if (GBufferPass::IsDebugView(renderContext.View.Mode))
+    if (isGBufferDebug)
     {
         context->ResetRenderTarget();
         context->SetRenderTarget(task->GetOutputView());
@@ -400,7 +435,8 @@ void RenderInner(SceneRenderTask* task, RenderContext& renderContext)
     }
 
     // Render lighting
-    LightPass::Instance()->RenderLight(renderContext, *lightBuffer);
+    renderContextBatch.GetMainContext() = renderContext; // Sync render context in batch with the current value
+    LightPass::Instance()->RenderLight(renderContextBatch, *lightBuffer);
     if (renderContext.View.Flags & ViewFlags::GI)
     {
         switch (renderContext.List->Settings.GlobalIllumination.Mode)

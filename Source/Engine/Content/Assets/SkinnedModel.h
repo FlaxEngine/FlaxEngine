@@ -210,7 +210,14 @@ public:
     /// </summary>
     /// <param name="renderContext">The rendering context.</param>
     /// <param name="info">The packed drawing info data.</param>
-    void Draw(RenderContext& renderContext, const SkinnedMesh::DrawInfo& info);
+    void Draw(const RenderContext& renderContext, const SkinnedMesh::DrawInfo& info);
+
+    /// <summary>
+    /// Draws the model.
+    /// </summary>
+    /// <param name="renderContextBatch">The rendering context batch.</param>
+    /// <param name="info">The packed drawing info data.</param>
+    void Draw(const RenderContextBatch& renderContextBatch, const SkinnedMesh::DrawInfo& info);
 
 public:
     /// <summary>

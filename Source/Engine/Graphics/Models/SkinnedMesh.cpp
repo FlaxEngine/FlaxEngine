@@ -152,17 +152,74 @@ void SkinnedMesh::Render(GPUContext* context) const
 
 void SkinnedMesh::Draw(const RenderContext& renderContext, const DrawInfo& info, float lodDitherFactor) const
 {
-    // Cache data
     const auto& entry = info.Buffer->At(_materialSlotIndex);
     if (!entry.Visible || !IsInitialized())
         return;
     const MaterialSlot& slot = _model->MaterialSlots[_materialSlotIndex];
 
+    // Select material
+    MaterialBase* material;
+    if (entry.Material && entry.Material->IsLoaded())
+        material = entry.Material;
+    else if (slot.Material && slot.Material->IsLoaded())
+        material = slot.Material;
+    else
+        material = GPUDevice::Instance->GetDefaultMaterial();
+    if (!material || !material->IsSurface())
+        return;
+
     // Check if skip rendering
-    const auto shadowsMode = static_cast<ShadowsCastingMode>(entry.ShadowsMode & slot.ShadowsMode);
-    const auto drawModes = static_cast<DrawPass>(info.DrawModes & renderContext.View.GetShadowsDrawPassMask(shadowsMode));
+    const auto shadowsMode = (ShadowsCastingMode)(entry.ShadowsMode & slot.ShadowsMode);
+    const auto drawModes = (DrawPass)((uint32)info.DrawModes & (uint32)renderContext.View.Pass & (uint32)renderContext.View.GetShadowsDrawPassMask(shadowsMode) & (uint32)material->GetDrawModes());
     if (drawModes == DrawPass::None)
         return;
+
+    // Submit draw call
+    DrawCall drawCall;
+    drawCall.Geometry.IndexBuffer = _indexBuffer;
+    BlendShapesInstance::MeshInstance* blendShapeMeshInstance;
+    if (info.BlendShapes && info.BlendShapes->Meshes.TryGet(this, blendShapeMeshInstance) && blendShapeMeshInstance->IsUsed)
+    {
+        // Use modified vertex buffer from the blend shapes
+        if (blendShapeMeshInstance->IsDirty)
+        {
+            blendShapeMeshInstance->VertexBuffer.Flush();
+            blendShapeMeshInstance->IsDirty = false;
+        }
+        drawCall.Geometry.VertexBuffers[0] = blendShapeMeshInstance->VertexBuffer.GetBuffer();
+    }
+    else
+    {
+        drawCall.Geometry.VertexBuffers[0] = _vertexBuffer;
+    }
+    drawCall.Geometry.VertexBuffers[1] = nullptr;
+    drawCall.Geometry.VertexBuffers[2] = nullptr;
+    drawCall.Geometry.VertexBuffersOffsets[0] = 0;
+    drawCall.Geometry.VertexBuffersOffsets[1] = 0;
+    drawCall.Geometry.VertexBuffersOffsets[2] = 0;
+    drawCall.Draw.StartIndex = 0;
+    drawCall.Draw.IndicesCount = _triangles * 3;
+    drawCall.InstanceCount = 1;
+    drawCall.Material = material;
+    drawCall.World = *info.World;
+    drawCall.ObjectPosition = drawCall.World.GetTranslation();
+    drawCall.Surface.GeometrySize = _box.GetSize();
+    drawCall.Surface.PrevWorld = info.DrawState->PrevWorld;
+    drawCall.Surface.Lightmap = nullptr;
+    drawCall.Surface.LightmapUVsArea = Rectangle::Empty;
+    drawCall.Surface.Skinning = info.Skinning;
+    drawCall.Surface.LODDitherFactor = lodDitherFactor;
+    drawCall.WorldDeterminantSign = Math::FloatSelect(drawCall.World.RotDeterminant(), 1, -1);
+    drawCall.PerInstanceRandom = info.PerInstanceRandom;
+    renderContext.List->AddDrawCall(drawModes, StaticFlags::None, drawCall, entry.ReceiveDecals);
+}
+
+void SkinnedMesh::Draw(const RenderContextBatch& renderContextBatch, const DrawInfo& info, float lodDitherFactor) const
+{
+    const auto& entry = info.Buffer->At(_materialSlotIndex);
+    if (!entry.Visible || !IsInitialized())
+        return;
+    const MaterialSlot& slot = _model->MaterialSlots[_materialSlotIndex];
 
     // Select material
     MaterialBase* material;
@@ -212,7 +269,18 @@ void SkinnedMesh::Draw(const RenderContext& renderContext, const DrawInfo& info,
     drawCall.Surface.LODDitherFactor = lodDitherFactor;
     drawCall.WorldDeterminantSign = Math::FloatSelect(drawCall.World.RotDeterminant(), 1, -1);
     drawCall.PerInstanceRandom = info.PerInstanceRandom;
-    renderContext.List->AddDrawCall(drawModes, StaticFlags::None, drawCall, entry.ReceiveDecals);
+
+    // Push draw call to every context
+    const auto shadowsMode = (ShadowsCastingMode)(entry.ShadowsMode & slot.ShadowsMode);
+    const auto materialDrawModes = material->GetDrawModes();
+    for (const RenderContext& renderContext : renderContextBatch.Contexts)
+    {
+        const DrawPass drawModes = (DrawPass)((uint32)info.DrawModes & (uint32)renderContext.View.Pass & (uint32)renderContext.View.GetShadowsDrawPassMask(shadowsMode) & (uint32)materialDrawModes);
+        if (drawModes != DrawPass::None && renderContext.View.CullingFrustum.Intersects(info.Bounds))
+        {
+            renderContext.List->AddDrawCall(drawModes, StaticFlags::None, drawCall, entry.ReceiveDecals);
+        }
+    }
 }
 
 bool SkinnedMesh::DownloadDataGPU(MeshBufferType type, BytesContainer& result) const

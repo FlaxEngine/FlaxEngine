@@ -22,7 +22,7 @@ public:
     /// </summary>
     /// <param name="renderContext">The rendering context.</param>
     /// <returns>True if need to render motion vectors, otherwise false.</returns>
-    static bool NeedMotionVectors(RenderContext& renderContext);
+    static bool NeedMotionVectors(const RenderContext& renderContext);
 
     /// <summary>
     /// Performs AA pass rendering for the input task.
@@ -30,7 +30,7 @@ public:
     /// <param name="renderContext">The rendering context.</param>
     /// <param name="input">The input render target.</param>
     /// <param name="output">The output render target.</param>
-    void Render(RenderContext& renderContext, GPUTexture* input, GPUTextureView* output);
+    void Render(const RenderContext& renderContext, GPUTexture* input, GPUTextureView* output);
 
 private:
 

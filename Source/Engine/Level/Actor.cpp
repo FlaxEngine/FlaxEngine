@@ -1218,6 +1218,13 @@ void Actor::Draw(RenderContext& renderContext)
 {
 }
 
+void Actor::Draw(RenderContextBatch& renderContextBatch)
+{
+    // Default impl calls single-context
+    for (RenderContext& renderContext : renderContextBatch.Contexts)
+        Draw(renderContext);
+}
+
 #if USE_EDITOR
 
 void Actor::OnDebugDraw()

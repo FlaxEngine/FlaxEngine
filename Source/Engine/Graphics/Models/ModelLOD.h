@@ -116,7 +116,7 @@ public:
     {
         for (int32 i = 0; i < Meshes.Count(); i++)
         {
-            Meshes[i].Render(context);
+            Meshes.Get()[i].Render(context);
         }
     }
 
@@ -134,7 +134,7 @@ public:
     {
         for (int32 i = 0; i < Meshes.Count(); i++)
         {
-            Meshes[i].Draw(renderContext, material, world, flags, receiveDecals, drawModes, perInstanceRandom);
+            Meshes.Get()[i].Draw(renderContext, material, world, flags, receiveDecals, drawModes, perInstanceRandom);
         }
     }
 
@@ -148,7 +148,21 @@ public:
     {
         for (int32 i = 0; i < Meshes.Count(); i++)
         {
-            Meshes[i].Draw(renderContext, info, lodDitherFactor);
+            Meshes.Get()[i].Draw(renderContext, info, lodDitherFactor);
+        }
+    }
+
+    /// <summary>
+    /// Draws all the meshes from the model LOD.
+    /// </summary>
+    /// <param name="renderContextBatch">The rendering context batch.</param>
+    /// <param name="info">The packed drawing info data.</param>
+    /// <param name="lodDitherFactor">The LOD transition dither factor.</param>
+    FORCE_INLINE void Draw(const RenderContextBatch& renderContextBatch, const Mesh::DrawInfo& info, float lodDitherFactor) const
+    {
+        for (int32 i = 0; i < Meshes.Count(); i++)
+        {
+            Meshes.Get()[i].Draw(renderContextBatch, info, lodDitherFactor);
         }
     }
 };

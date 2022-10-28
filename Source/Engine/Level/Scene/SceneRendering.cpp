@@ -11,6 +11,16 @@
 #include "Engine/Profiler/ProfilerCPU.h"
 #endif
 
+FORCE_INLINE bool FrustumsListCull(const BoundingSphere& bounds, const BoundingFrustum* frustums, int32 frustumsCount)
+{
+    for (int32 i = 0; i < frustumsCount; i++)
+    {
+        if (frustums[i].Intersects(bounds))
+            return true;
+    }
+    return false;
+}
+
 ISceneRenderingListener::~ISceneRenderingListener()
 {
     for (SceneRendering* scene : _scenes)
@@ -28,60 +38,90 @@ void ISceneRenderingListener::ListenSceneRendering(SceneRendering* scene)
     }
 }
 
-void SceneRendering::Draw(RenderContext& renderContext, DrawCategory category)
+void SceneRendering::Draw(RenderContextBatch& renderContextBatch, DrawCategory category)
 {
     ScopeLock lock(Locker);
-    auto& view = renderContext.View;
-    const BoundingFrustum frustum = view.CullingFrustum;
+    auto& view = renderContextBatch.GetMainContext().View;
     const Vector3 origin = view.Origin;
-    renderContext.List->Scenes.Add(this);
+    for (auto& renderContext : renderContextBatch.Contexts)
+        renderContext.List->Scenes.Add(this);
     auto& list = Actors[(int32)category];
+
+    // Setup frustum data
+    Array<BoundingFrustum, RenderListAllocation> frustumsData;
+    BoundingFrustum* frustums = &view.CullingFrustum;
+    int32 frustumsCount = renderContextBatch.Contexts.Count();
+    if (frustumsCount != 1)
+    {
+        frustumsData.Resize(frustumsCount);
+        frustums = frustumsData.Get();
+        for (int32 i = 0; i < frustumsCount; i++)
+            frustums[i] = renderContextBatch.Contexts[i].View.CullingFrustum;
+    }
+
+#define CHECK_ACTOR ((view.RenderLayersMask.Mask & e.LayerMask) && (e.NoCulling || FrustumsListCull(e.Bounds, frustums, frustumsCount)))
+#define CHECK_ACTOR_SINGLE_FRUSTUM ((view.RenderLayersMask.Mask & e.LayerMask) && (e.NoCulling || frustums->Intersects(e.Bounds)))
+#if SCENE_RENDERING_USE_PROFILER
+#define DRAW_ACTOR(mode) PROFILE_CPU_ACTOR(e.Actor); e.Actor->Draw(mode)
+#else
+#define DRAW_ACTOR(mode) e.Actor->Draw(mode)
+#endif
 
     // Draw all visual components
     if (view.IsOfflinePass)
     {
+        // Offline pass with additional static flags culling
         for (int32 i = 0; i < list.Count(); i++)
         {
             auto e = list.Get()[i];
             e.Bounds.Center -= origin;
-            if (view.RenderLayersMask.Mask & e.LayerMask && (e.NoCulling || frustum.Intersects(e.Bounds)) && e.Actor->GetStaticFlags() & view.StaticFlagsMask)
+            if (CHECK_ACTOR && e.Actor->GetStaticFlags() & view.StaticFlagsMask)
             {
-#if SCENE_RENDERING_USE_PROFILER
-                PROFILE_CPU_ACTOR(e.Actor);
-#endif
-                e.Actor->Draw(renderContext);
+                DRAW_ACTOR(renderContextBatch);
+            }
+        }
+    }
+    else if (origin.IsZero() && frustumsCount == 1)
+    {
+        // Fast path for no origin shifting with a single context
+        auto& renderContext = renderContextBatch.Contexts[0];
+        for (int32 i = 0; i < list.Count(); i++)
+        {
+            auto e = list.Get()[i];
+            if (CHECK_ACTOR_SINGLE_FRUSTUM)
+            {
+                DRAW_ACTOR(renderContext);
             }
         }
     }
     else if (origin.IsZero())
     {
+        // Fast path for no origin shifting
         for (int32 i = 0; i < list.Count(); i++)
         {
             auto e = list.Get()[i];
-            if (view.RenderLayersMask.Mask & e.LayerMask && (e.NoCulling || frustum.Intersects(e.Bounds)))
+            if (CHECK_ACTOR)
             {
-#if SCENE_RENDERING_USE_PROFILER
-                PROFILE_CPU_ACTOR(e.Actor);
-#endif
-                e.Actor->Draw(renderContext);
+                DRAW_ACTOR(renderContextBatch);
             }
         }
     }
     else
     {
+        // Generic case
         for (int32 i = 0; i < list.Count(); i++)
         {
             auto e = list.Get()[i];
             e.Bounds.Center -= origin;
-            if (view.RenderLayersMask.Mask & e.LayerMask && (e.NoCulling || frustum.Intersects(e.Bounds)))
+            if (CHECK_ACTOR)
             {
-#if SCENE_RENDERING_USE_PROFILER
-                PROFILE_CPU_ACTOR(e.Actor);
-#endif
-                e.Actor->Draw(renderContext);
+                DRAW_ACTOR(renderContextBatch);
             }
         }
     }
+
+#undef CHECK_ACTOR
+#undef DRAW_ACTOR
 #if USE_EDITOR
     if (view.Pass & DrawPass::GBuffer && category == SceneDraw)
     {

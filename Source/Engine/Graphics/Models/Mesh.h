@@ -367,6 +367,14 @@ public:
     /// <param name="lodDitherFactor">The LOD transition dither factor.</param>
     void Draw(const RenderContext& renderContext, const DrawInfo& info, float lodDitherFactor) const;
 
+    /// <summary>
+    /// Draws the mesh.
+    /// </summary>
+    /// <param name="renderContextBatch">The rendering context batch.</param>
+    /// <param name="info">The packed drawing info data.</param>
+    /// <param name="lodDitherFactor">The LOD transition dither factor.</param>
+    void Draw(const RenderContextBatch& renderContextBatch, const DrawInfo& info, float lodDitherFactor) const;
+
 public:
     // [MeshBase]
     bool DownloadDataGPU(MeshBufferType type, BytesContainer& result) const override;

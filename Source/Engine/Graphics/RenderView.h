@@ -10,6 +10,7 @@
 #include "Enums.h"
 
 struct RenderContext;
+struct RenderContextBatch;
 struct Viewport;
 class Camera;
 class RenderList;
@@ -148,13 +149,15 @@ public:
 
     /// <summary>
     /// The model LOD bias. Default is 0. Applied to all the objects in the shadow maps render views. Can be used to improve shadows rendering performance or increase quality.
+    /// [Deprecated on 26.10.2022, expires on 26.10.2024]
     /// </summary>
-    API_FIELD() int32 ShadowModelLODBias = 0;
+    API_FIELD() DEPRECATED int32 ShadowModelLODBias = 0;
 
     /// <summary>
     /// The model LOD distance scale factor. Default is 1. Applied to all the objects in the shadow maps render views. Higher values increase LODs quality. Can be used to improve shadows rendering performance or increase quality.
+    /// [Deprecated on 26.10.2022, expires on 26.10.2024]
     /// </summary>
-    API_FIELD() float ShadowModelLODDistanceFactor = 1.0f;
+    API_FIELD() DEPRECATED float ShadowModelLODDistanceFactor = 1.0f;
 
     /// <summary>
     /// The Temporal Anti-Aliasing jitter frame index.
@@ -231,7 +234,7 @@ public:
     /// <param name="height">The rendering height.</param>
     /// <param name="temporalAAJitter">The temporal jitter for this frame.</param>
     /// <param name="mainView">The main rendering viewport. Use null if it's top level view; pass pointer to main view for sub-passes like shadow depths.</param>
-    void PrepareCache(RenderContext& renderContext, float width, float height, const Float2& temporalAAJitter, RenderView* mainView = nullptr);
+    void PrepareCache(const RenderContext& renderContext, float width, float height, const Float2& temporalAAJitter, const RenderView* mainView = nullptr);
 
     /// <summary>
     /// Determines whether view is perspective projection or orthographic.

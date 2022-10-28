@@ -41,7 +41,7 @@ public:
     /// </summary>
     /// <param name="renderContext">The rendering context.</param>
     /// <returns>True if need to render motion vectors, otherwise false.</returns>
-    static bool NeedMotionVectors(RenderContext& renderContext);
+    static bool NeedMotionVectors(const RenderContext& renderContext);
 
     /// <summary>
     /// Perform SSR rendering for the input task (blends reflections to given texture using alpha blending).

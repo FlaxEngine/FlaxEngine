@@ -150,7 +150,7 @@ void LightPass::Dispose()
     _sphereModel = nullptr;
 }
 
-void LightPass::RenderLight(RenderContext& renderContext, GPUTextureView* lightBuffer)
+void LightPass::RenderLight(RenderContextBatch& renderContextBatch, GPUTextureView* lightBuffer)
 {
     const float sphereModelScale = 3.0f;
 
@@ -166,6 +166,7 @@ void LightPass::RenderLight(RenderContext& renderContext, GPUTextureView* lightB
     // Cache data
     auto device = GPUDevice::Instance;
     auto context = device->GetMainContext();
+    auto& renderContext = renderContextBatch.Contexts[0];
     auto& view = renderContext.View;
     auto mainCache = renderContext.List;
     const auto lightShader = _shader->GetShader();
@@ -219,12 +220,6 @@ void LightPass::RenderLight(RenderContext& renderContext, GPUTextureView* lightB
     auto cb1 = lightShader->GetCB(1);
     context->UpdateCB(cb1, &perFrame);
 
-    // Prepare shadows rendering (is will be used)
-    if (useShadows)
-    {
-        ShadowsPass::Instance()->Prepare(renderContext, context);
-    }
-
     // Bind inputs
     context->BindSR(0, renderContext.Buffers->GBuffer0);
     context->BindSR(1, renderContext.Buffers->GBuffer1);
@@ -250,7 +245,7 @@ void LightPass::RenderLight(RenderContext& renderContext, GPUTextureView* lightB
         auto& light = mainCache->PointLights[lightIndex];
         float lightRadius = light.Radius;
         Float3 lightPosition = light.Position;
-        const bool renderShadow = useShadows && CanRenderShadow(view, light) && ShadowsPass::Instance()->CanRenderShadow(renderContext, light);
+        const bool renderShadow = useShadows && light.ShadowDataIndex != -1;
         bool useIES = light.IESTexture != nullptr;
 
         // Get distance from view center to light center less radius (check if view is inside a sphere)
@@ -268,7 +263,7 @@ void LightPass::RenderLight(RenderContext& renderContext, GPUTextureView* lightB
         if (renderShadow)
         {
             GET_SHADOW_MASK();
-            ShadowsPass::Instance()->RenderShadow(renderContext, light, shadowMaskView);
+            ShadowsPass::Instance()->RenderShadow(renderContextBatch, light, shadowMaskView);
 
             // Bind output
             context->SetRenderTarget(depthBufferRTV, lightBuffer);
@@ -307,7 +302,7 @@ void LightPass::RenderLight(RenderContext& renderContext, GPUTextureView* lightB
         auto& light = mainCache->SpotLights[lightIndex];
         float lightRadius = light.Radius;
         Float3 lightPosition = light.Position;
-        const bool renderShadow = useShadows && CanRenderShadow(view, light) && ShadowsPass::Instance()->CanRenderShadow(renderContext, light);
+        const bool renderShadow = useShadows && light.ShadowDataIndex != -1;
         bool useIES = light.IESTexture != nullptr;
 
         // Get distance from view center to light center less radius (check if view is inside a sphere)
@@ -325,7 +320,7 @@ void LightPass::RenderLight(RenderContext& renderContext, GPUTextureView* lightB
         if (renderShadow)
         {
             GET_SHADOW_MASK();
-            ShadowsPass::Instance()->RenderShadow(renderContext, light, shadowMaskView);
+            ShadowsPass::Instance()->RenderShadow(renderContextBatch, light, shadowMaskView);
 
             // Bind output
             context->SetRenderTarget(depthBufferRTV, lightBuffer);
@@ -362,13 +357,13 @@ void LightPass::RenderLight(RenderContext& renderContext, GPUTextureView* lightB
 
         // Cache data
         auto& light = mainCache->DirectionalLights[lightIndex];
-        const bool renderShadow = useShadows && CanRenderShadow(view, light) && ShadowsPass::Instance()->CanRenderShadow(renderContext, light);
+        const bool renderShadow = useShadows && light.ShadowDataIndex != -1;
 
         // Check if render shadow
         if (renderShadow)
         {
             GET_SHADOW_MASK();
-            ShadowsPass::Instance()->RenderShadow(renderContext, light, lightIndex, shadowMaskView);
+            ShadowsPass::Instance()->RenderShadow(renderContextBatch, light, lightIndex, shadowMaskView);
 
             // Bind output
             context->SetRenderTarget(depthBufferRTV, lightBuffer);

@@ -36,6 +36,7 @@ struct RendererDirectionalLightData
 
     StaticFlags StaticFlags;
     float IndirectLightingIntensity;
+    int16 ShadowDataIndex = -1;
     int8 CastVolumetricShadow : 1;
     int8 RenderedVolumetricFog : 1;
 
@@ -80,6 +81,7 @@ struct RendererSpotLightData
     ShadowsCastingMode ShadowsMode;
 
     StaticFlags StaticFlags;
+    int16 ShadowDataIndex = -1;
     int8 CastVolumetricShadow : 1;
     int8 RenderedVolumetricFog : 1;
     int8 UseInverseSquaredFalloff : 1;
@@ -117,6 +119,7 @@ struct RendererPointLightData
     ShadowsCastingMode ShadowsMode;
 
     StaticFlags StaticFlags;
+    int16 ShadowDataIndex = -1;
     int8 CastVolumetricShadow : 1;
     int8 RenderedVolumetricFog : 1;
     int8 UseInverseSquaredFalloff : 1;
@@ -508,7 +511,7 @@ public:
     /// <param name="renderContext">The rendering context.</param>
     /// <param name="postProcess">The PostFx location to check (for scripts).</param>
     /// <returns>True if render any postFx of the given type, otherwise false.</returns>
-    bool HasAnyPostFx(RenderContext& renderContext, PostProcessEffectLocation postProcess) const;
+    bool HasAnyPostFx(const RenderContext& renderContext, PostProcessEffectLocation postProcess) const;
 
     /// <summary>
     /// Determines whether any Material PostFx specified by given type. Used to pick a faster rendering path by the frame rendering module.
@@ -516,7 +519,7 @@ public:
     /// <param name="renderContext">The rendering context.</param>
     /// <param name="materialPostFx">The PostFx location to check (for materials).</param>
     /// <returns>True if render any postFx of the given type, otherwise false.</returns>
-    bool HasAnyPostFx(RenderContext& renderContext, MaterialPostFxLocation materialPostFx) const;
+    bool HasAnyPostFx(const RenderContext& renderContext, MaterialPostFxLocation materialPostFx) const;
 
     /// <summary>
     /// Determines whether any Custom PostFx or Material PostFx specified by given type. Used to pick a faster rendering path by the frame rendering module.
@@ -525,7 +528,7 @@ public:
     /// <param name="postProcess">The PostFx location to check (for scripts).</param>
     /// <param name="materialPostFx">The PostFx location to check (for materials).</param>
     /// <returns>True if render any postFx of the given type, otherwise false.</returns>
-    bool HasAnyPostFx(RenderContext& renderContext, PostProcessEffectLocation postProcess, MaterialPostFxLocation materialPostFx) const
+    bool HasAnyPostFx(const RenderContext& renderContext, PostProcessEffectLocation postProcess, MaterialPostFxLocation materialPostFx) const
     {
         return HasAnyPostFx(renderContext, postProcess) || HasAnyPostFx(renderContext, materialPostFx);
     }

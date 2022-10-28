@@ -121,8 +121,9 @@ void TerrainChunk::Draw(const RenderContext& renderContext) const
     //drawCall.TerrainData.HeightmapUVScaleBias.W += halfTexelOffset;
 
     // Submit draw call
-    auto drawModes = (DrawPass)(_patch->_terrain->DrawModes & renderContext.View.Pass);
-    renderContext.List->AddDrawCall(drawModes, flags, drawCall, true);
+    auto drawModes = (DrawPass)(_patch->_terrain->DrawModes & renderContext.View.Pass & (uint32)drawCall.Material->GetDrawModes());
+    if (drawModes != DrawPass::None)
+        renderContext.List->AddDrawCall(drawModes, flags, drawCall, true);
 }
 
 void TerrainChunk::Draw(const RenderContext& renderContext, MaterialBase* material, int32 lodIndex) const
@@ -176,8 +177,9 @@ void TerrainChunk::Draw(const RenderContext& renderContext, MaterialBase* materi
     //drawCall.TerrainData.HeightmapUVScaleBias.W += halfTexelOffset;
 
     // Submit draw call
-    auto drawModes = (DrawPass)(_patch->_terrain->DrawModes & renderContext.View.Pass);
-    renderContext.List->AddDrawCall(drawModes, flags, drawCall, true);
+    auto drawModes = (DrawPass)(_patch->_terrain->DrawModes & renderContext.View.Pass & (uint32)drawCall.Material->GetDrawModes());
+    if (drawModes != DrawPass::None)
+        renderContext.List->AddDrawCall(drawModes, flags, drawCall, true);
 }
 
 bool TerrainChunk::Intersects(const Ray& ray, Real& distance)

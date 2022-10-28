@@ -310,9 +310,9 @@ public:
     /// <summary>
     /// Calls drawing scene objects.
     /// </summary>
-    /// <param name="renderContext">The rendering context.</param>
+    /// <param name="renderContextBatch">The rendering context batch.</param>
     /// <param name="category">The actors category to draw (see SceneRendering::DrawCategory).</param>
-    virtual void OnCollectDrawCalls(RenderContext& renderContext, byte category = 0);
+    virtual void OnCollectDrawCalls(RenderContextBatch& renderContextBatch, byte category = 0);
 
     /// <summary>
     /// The action called after scene rendering. Can be used to perform custom pre-rendering or to modify the render view.
@@ -424,9 +424,43 @@ API_STRUCT(NoDefault) struct RenderContext
     /// </summary>
     API_FIELD() RenderView View;
 
-    RenderContext()
+    RenderContext() = default;
+    RenderContext(SceneRenderTask* task) noexcept;
+};
+
+/// <summary>
+/// The high-level renderer context batch that encapsulates multiple rendering requests within a single task (eg. optimize main view scene rendering and shadow projections at once).
+/// </summary>
+API_STRUCT(NoDefault) struct RenderContextBatch
+{
+    DECLARE_SCRIPTING_TYPE_MINIMAL(RenderContextBatch);
+
+    /// <summary>
+    /// The render buffers.
+    /// </summary>
+    API_FIELD() RenderBuffers* Buffers = nullptr;
+
+    /// <summary>
+    /// The scene rendering task that is a source of renderable objects (optional).
+    /// </summary>
+    API_FIELD() SceneRenderTask* Task = nullptr;
+
+    /// <summary>
+    /// The all render views collection for the current rendering (main view, shadow projections, etc.).
+    /// </summary>
+    API_FIELD() Array<RenderContext> Contexts;
+
+    RenderContextBatch() = default;
+    RenderContextBatch(SceneRenderTask* task);
+    RenderContextBatch(const RenderContext& context);
+
+    FORCE_INLINE RenderContext& GetMainContext()
     {
+        return Contexts.Get()[0];
     }
 
-    RenderContext(SceneRenderTask* task);
+    FORCE_INLINE const RenderContext& GetMainContext() const
+    {
+        return Contexts.Get()[0];
+    }
 };

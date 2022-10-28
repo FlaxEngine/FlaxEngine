@@ -190,6 +190,13 @@ public:
     /// <param name="info">The packed drawing info data.</param>
     void Draw(const RenderContext& renderContext, const Mesh::DrawInfo& info);
 
+    /// <summary>
+    /// Draws the model.
+    /// </summary>
+    /// <param name="renderContextBatch">The rendering context batch.</param>
+    /// <param name="info">The packed drawing info data.</param>
+    void Draw(const RenderContextBatch& renderContextBatch, const Mesh::DrawInfo& info);
+
 public:
     /// <summary>
     /// Setups the model LODs collection including meshes creation.

@@ -407,6 +407,9 @@ void Mesh::Draw(const RenderContext& renderContext, MaterialBase* material, cons
 {
     if (!material || !material->IsSurface() || !IsInitialized())
         return;
+    drawModes &= material->GetDrawModes();
+    if (drawModes == DrawPass::None)
+        return;
 
     // Submit draw call
     DrawCall drawCall;
@@ -436,17 +439,69 @@ void Mesh::Draw(const RenderContext& renderContext, MaterialBase* material, cons
 
 void Mesh::Draw(const RenderContext& renderContext, const DrawInfo& info, float lodDitherFactor) const
 {
-    // Cache data
     const auto& entry = info.Buffer->At(_materialSlotIndex);
     if (!entry.Visible || !IsInitialized())
         return;
     const MaterialSlot& slot = _model->MaterialSlots[_materialSlotIndex];
 
+    // Select material
+    MaterialBase* material;
+    if (entry.Material && entry.Material->IsLoaded())
+        material = entry.Material;
+    else if (slot.Material && slot.Material->IsLoaded())
+        material = slot.Material;
+    else
+        material = GPUDevice::Instance->GetDefaultMaterial();
+    if (!material || !material->IsSurface())
+        return;
+    
     // Check if skip rendering
-    const auto shadowsMode = static_cast<ShadowsCastingMode>(entry.ShadowsMode & slot.ShadowsMode);
-    const auto drawModes = static_cast<DrawPass>(info.DrawModes & renderContext.View.GetShadowsDrawPassMask(shadowsMode));
+    const auto shadowsMode = (ShadowsCastingMode)(entry.ShadowsMode & slot.ShadowsMode);
+    const auto drawModes = (DrawPass)((uint32)info.DrawModes & (uint32)renderContext.View.Pass & (uint32)renderContext.View.GetShadowsDrawPassMask(shadowsMode) & (uint32)material->GetDrawModes());
     if (drawModes == DrawPass::None)
         return;
+
+    // Submit draw call
+    DrawCall drawCall;
+    drawCall.Geometry.IndexBuffer = _indexBuffer;
+    drawCall.Geometry.VertexBuffers[0] = _vertexBuffers[0];
+    drawCall.Geometry.VertexBuffers[1] = _vertexBuffers[1];
+    drawCall.Geometry.VertexBuffers[2] = _vertexBuffers[2];
+    drawCall.Geometry.VertexBuffersOffsets[0] = 0;
+    drawCall.Geometry.VertexBuffersOffsets[1] = 0;
+    drawCall.Geometry.VertexBuffersOffsets[2] = 0;
+    if (info.VertexColors && info.VertexColors[_lodIndex])
+    {
+        // TODO: cache vertexOffset within the model LOD per-mesh
+        uint32 vertexOffset = 0;
+        for (int32 meshIndex = 0; meshIndex < _index; meshIndex++)
+            vertexOffset += ((Model*)_model)->LODs[_lodIndex].Meshes[meshIndex].GetVertexCount();
+        drawCall.Geometry.VertexBuffers[2] = info.VertexColors[_lodIndex];
+        drawCall.Geometry.VertexBuffersOffsets[2] = vertexOffset * sizeof(VB2ElementType);
+    }
+    drawCall.Draw.StartIndex = 0;
+    drawCall.Draw.IndicesCount = _triangles * 3;
+    drawCall.InstanceCount = 1;
+    drawCall.Material = material;
+    drawCall.World = *info.World;
+    drawCall.ObjectPosition = drawCall.World.GetTranslation();
+    drawCall.Surface.GeometrySize = _box.GetSize();
+    drawCall.Surface.PrevWorld = info.DrawState->PrevWorld;
+    drawCall.Surface.Lightmap = info.Flags & StaticFlags::Lightmap ? info.Lightmap : nullptr;
+    drawCall.Surface.LightmapUVsArea = info.LightmapUVs ? *info.LightmapUVs : Rectangle::Empty;
+    drawCall.Surface.Skinning = nullptr;
+    drawCall.Surface.LODDitherFactor = lodDitherFactor;
+    drawCall.WorldDeterminantSign = Math::FloatSelect(drawCall.World.RotDeterminant(), 1, -1);
+    drawCall.PerInstanceRandom = info.PerInstanceRandom;
+    renderContext.List->AddDrawCall(drawModes, info.Flags, drawCall, entry.ReceiveDecals);
+}
+
+void Mesh::Draw(const RenderContextBatch& renderContextBatch, const DrawInfo& info, float lodDitherFactor) const
+{
+    const auto& entry = info.Buffer->At(_materialSlotIndex);
+    if (!entry.Visible || !IsInitialized())
+        return;
+    const MaterialSlot& slot = _model->MaterialSlots[_materialSlotIndex];
 
     // Select material
     MaterialBase* material;
@@ -491,7 +546,18 @@ void Mesh::Draw(const RenderContext& renderContext, const DrawInfo& info, float 
     drawCall.Surface.LODDitherFactor = lodDitherFactor;
     drawCall.WorldDeterminantSign = Math::FloatSelect(drawCall.World.RotDeterminant(), 1, -1);
     drawCall.PerInstanceRandom = info.PerInstanceRandom;
-    renderContext.List->AddDrawCall(drawModes, info.Flags, drawCall, entry.ReceiveDecals);
+
+    // Push draw call to every context
+    const auto shadowsMode = (ShadowsCastingMode)(entry.ShadowsMode & slot.ShadowsMode);
+    const auto materialDrawModes = material->GetDrawModes();
+    for (const RenderContext& renderContext : renderContextBatch.Contexts)
+    {
+        const DrawPass drawModes = (DrawPass)((uint32)info.DrawModes & (uint32)renderContext.View.Pass & (uint32)renderContext.View.GetShadowsDrawPassMask(shadowsMode) & (uint32)materialDrawModes);
+        if (drawModes != DrawPass::None && renderContext.View.CullingFrustum.Intersects(info.Bounds))
+        {
+            renderContext.List->AddDrawCall(drawModes, info.Flags, drawCall, entry.ReceiveDecals);
+        }
+    }
 }
 
 bool Mesh::DownloadDataGPU(MeshBufferType type, BytesContainer& result) const

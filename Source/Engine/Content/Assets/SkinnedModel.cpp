@@ -17,11 +17,11 @@
 #include "Engine/Debug/Exceptions/ArgumentOutOfRangeException.h"
 #include "Engine/Renderer/DrawCall.h"
 
-#define CHECK_INVALID_BUFFER(buffer) \
-    if (buffer->IsValidFor(this) == false) \
+#define CHECK_INVALID_BUFFER(model, buffer) \
+    if (buffer->IsValidFor(model) == false) \
 	{ \
-		LOG(Warning, "Invalid Skinned Model Instance Buffer size {0} for Skinned Model {1}. It should be {2}. Manual update to proper size.", buffer->Count(), ToString(), MaterialSlots.Count()); \
-		buffer->Setup(this); \
+		LOG(Warning, "Invalid Skinned Model Instance Buffer size {0} for Skinned Model {1}. It should be {2}. Manual update to proper size.", buffer->Count(), model->ToString(), model->MaterialSlots.Count()); \
+		buffer->Setup(model); \
 	}
 
 /// <summary>
@@ -172,24 +172,25 @@ BoundingBox SkinnedModel::GetBox(int32 lodIndex) const
     return LODs[lodIndex].GetBox();
 }
 
-void SkinnedModel::Draw(RenderContext& renderContext, const SkinnedMesh::DrawInfo& info)
+template<typename ContextType>
+FORCE_INLINE void SkinnedModelDraw(SkinnedModel* model, const RenderContext& renderContext, const ContextType& context, const SkinnedMesh::DrawInfo& info)
 {
     ASSERT(info.Buffer);
-    if (!CanBeRendered())
+    if (!model->CanBeRendered())
         return;
     const auto frame = Engine::FrameCount;
     const auto modelFrame = info.DrawState->PrevFrame + 1;
-    CHECK_INVALID_BUFFER(info.Buffer);
+    CHECK_INVALID_BUFFER(model, info.Buffer);
 
     // Select a proper LOD index (model may be culled)
     int32 lodIndex;
     if (info.ForcedLOD != -1)
     {
-        lodIndex = (int32)info.ForcedLOD;
+        lodIndex = info.ForcedLOD;
     }
     else
     {
-        lodIndex = RenderTools::ComputeSkinnedModelLOD(this, info.Bounds.Center, (float)info.Bounds.Radius, renderContext);
+        lodIndex = RenderTools::ComputeSkinnedModelLOD(model, info.Bounds.Center, (float)info.Bounds.Radius, renderContext);
         if (lodIndex == -1)
         {
             // Handling model fade-out transition
@@ -210,9 +211,9 @@ void SkinnedModel::Draw(RenderContext& renderContext, const SkinnedMesh::DrawInf
                 }
                 else
                 {
-                    const auto prevLOD = ClampLODIndex(info.DrawState->PrevLOD);
+                    const auto prevLOD = model->ClampLODIndex(info.DrawState->PrevLOD);
                     const float normalizedProgress = static_cast<float>(info.DrawState->LODTransition) * (1.0f / 255.0f);
-                    LODs[prevLOD].Draw(renderContext, info, normalizedProgress);
+                    model->LODs.Get()[prevLOD].Draw(renderContext, info, normalizedProgress);
                 }
             }
 
@@ -220,7 +221,7 @@ void SkinnedModel::Draw(RenderContext& renderContext, const SkinnedMesh::DrawInf
         }
     }
     lodIndex += info.LODBias + renderContext.View.ModelLODBias;
-    lodIndex = ClampLODIndex(lodIndex);
+    lodIndex = model->ClampLODIndex(lodIndex);
 
     if (renderContext.View.IsSingleFrame)
     {
@@ -253,20 +254,30 @@ void SkinnedModel::Draw(RenderContext& renderContext, const SkinnedMesh::DrawInf
     // Draw
     if (info.DrawState->PrevLOD == lodIndex || renderContext.View.IsSingleFrame)
     {
-        LODs[lodIndex].Draw(renderContext, info, 0.0f);
+        model->LODs.Get()[lodIndex].Draw(context, info, 0.0f);
     }
     else if (info.DrawState->PrevLOD == -1)
     {
         const float normalizedProgress = static_cast<float>(info.DrawState->LODTransition) * (1.0f / 255.0f);
-        LODs[lodIndex].Draw(renderContext, info, 1.0f - normalizedProgress);
+        model->LODs.Get()[lodIndex].Draw(context, info, 1.0f - normalizedProgress);
     }
     else
     {
-        const auto prevLOD = ClampLODIndex(info.DrawState->PrevLOD);
+        const auto prevLOD = model->ClampLODIndex(info.DrawState->PrevLOD);
         const float normalizedProgress = static_cast<float>(info.DrawState->LODTransition) * (1.0f / 255.0f);
-        LODs[prevLOD].Draw(renderContext, info, normalizedProgress);
-        LODs[lodIndex].Draw(renderContext, info, normalizedProgress - 1.0f);
+        model->LODs.Get()[prevLOD].Draw(context, info, normalizedProgress);
+        model->LODs.Get()[lodIndex].Draw(context, info, normalizedProgress - 1.0f);
     }
+}
+
+void SkinnedModel::Draw(const RenderContext& renderContext, const SkinnedMesh::DrawInfo& info)
+{
+    SkinnedModelDraw(this, renderContext, renderContext, info);
+}
+
+void SkinnedModel::Draw(const RenderContextBatch& renderContextBatch, const SkinnedMesh::DrawInfo& info)
+{
+    SkinnedModelDraw(this, renderContextBatch.GetMainContext(), renderContextBatch, info);
 }
 
 bool SkinnedModel::SetupLODs(const Span<int32>& meshesCountPerLod)

@@ -285,7 +285,7 @@ void AddActorToSceneRendering(SceneRendering* s, Actor* a)
     }
 }
 
-void SceneRenderTask::OnCollectDrawCalls(RenderContext& renderContext, byte category)
+void SceneRenderTask::OnCollectDrawCalls(RenderContextBatch& renderContextBatch, byte category)
 {
     // Draw actors (collect draw calls)
     if ((ActorsSource & ActorsSources::CustomActors) != 0)
@@ -296,15 +296,16 @@ void SceneRenderTask::OnCollectDrawCalls(RenderContext& renderContext, byte cate
             _customActorsScene->Clear();
         for (Actor* a : CustomActors)
             AddActorToSceneRendering(_customActorsScene, a);
-        _customActorsScene->Draw(renderContext, (SceneRendering::DrawCategory)category);
+        _customActorsScene->Draw(renderContextBatch, (SceneRendering::DrawCategory)category);
     }
     if ((ActorsSource & ActorsSources::Scenes) != 0)
     {
-        Level::DrawActors(renderContext, category);
+        Level::DrawActors(renderContextBatch, category);
     }
 
     // External drawing event
-    CollectDrawCalls(renderContext);
+    for (RenderContext& renderContext : renderContextBatch.Contexts)
+        CollectDrawCalls(renderContext);
 }
 
 void SceneRenderTask::OnPreRender(GPUContext* context, RenderContext& renderContext)
@@ -313,14 +314,16 @@ void SceneRenderTask::OnPreRender(GPUContext* context, RenderContext& renderCont
 
     // Collect initial draw calls
     renderContext.View.Pass = DrawPass::GBuffer;
-    OnCollectDrawCalls(renderContext, SceneRendering::PreRender);
+    RenderContextBatch renderContextBatch(renderContext);
+    OnCollectDrawCalls(renderContextBatch, SceneRendering::PreRender);
 }
 
 void SceneRenderTask::OnPostRender(GPUContext* context, RenderContext& renderContext)
 {
     // Collect final draw calls
     renderContext.View.Pass = DrawPass::GBuffer;
-    OnCollectDrawCalls(renderContext, SceneRendering::PostRender);
+    RenderContextBatch renderContextBatch(renderContext);
+    OnCollectDrawCalls(renderContextBatch, SceneRendering::PostRender);
 
     PostRender(context, renderContext);
 }
@@ -478,9 +481,22 @@ void MainRenderTask::OnBegin(GPUContext* context)
     SceneRenderTask::OnBegin(context);
 }
 
-RenderContext::RenderContext(SceneRenderTask* task)
+RenderContext::RenderContext(SceneRenderTask* task) noexcept
 {
     Buffers = task->Buffers;
     Task = task;
     View = task->View;
+}
+
+RenderContextBatch::RenderContextBatch(SceneRenderTask* task)
+{
+    Buffers = task->Buffers;
+    Task = task;
+}
+
+RenderContextBatch::RenderContextBatch(const RenderContext& context)
+{
+    Buffers = context.Buffers;
+    Task = context.Task;
+    Contexts.Add(context);
 }
