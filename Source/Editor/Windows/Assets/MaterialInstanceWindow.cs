@@ -344,8 +344,8 @@ namespace FlaxEditor.Windows.Assets
             
             // context menu for options button
             var optionsCM = new ContextMenu();
-            optionsCM.AddButton("Override All Parameters").Clicked += OnOverrideAll;
-            optionsCM.AddButton("Remove Parameter Overrides").Clicked += OnRemoveOverrides;
+            optionsCM.AddButton("Override All Parameters", OnOverrideAll).TooltipText = "Checks all parameter's overrides.";
+            optionsCM.AddButton("Remove Parameter Overrides", OnRemoveOverrides).TooltipText = "Unchecks all overrides for parameters.";
             optionsButton.Clicked += () => optionsCM.Show(Root, Root.MousePosition);
 
             // Split Panel
@@ -386,25 +386,23 @@ namespace FlaxEditor.Windows.Assets
 
         private void OnSetOverrides(bool isOverride)
         {
-            var proxy = _properties;
             var undoActions = new List<IUndoAction>();
-            foreach (var graphParameter in Asset.Parameters)
+            foreach (var parameter in Asset.Parameters)
             {
-                var p = graphParameter;
-                if (!p.IsPublic || p.IsOverride == isOverride)
+                if (!parameter.IsPublic || parameter.IsOverride == isOverride)
                     continue;
-                p.IsOverride = isOverride;
+                parameter.IsOverride = isOverride;
                 undoActions.Add(new EditParamOverrideAction
                 {
-                    Window = proxy.Window,
-                    Name = p.Name,
+                    Window = _properties.Window,
+                    Name = parameter.Name,
                     Before = !isOverride,
                 });
             }
             if (undoActions.Count == 0)
                 return;
-            proxy.Window._undo.AddAction(new MultiUndoAction(undoActions));
-            proxy.Window.MarkAsEdited();
+            _properties.Window._undo.AddAction(new MultiUndoAction(undoActions));
+            _properties.Window.MarkAsEdited();
             _editor.BuildLayoutOnUpdate();
         }
 
