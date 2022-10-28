@@ -18,6 +18,7 @@
 #include "Engine/Level/Actor.h"
 #include "Engine/Level/SceneObject.h"
 #include "Engine/Profiler/ProfilerCPU.h"
+#include "Engine/Scripting/Script.h"
 #include "Engine/Scripting/Scripting.h"
 #include "Engine/Scripting/ScriptingObjectReference.h"
 #include "Engine/Threading/Threading.h"
@@ -213,6 +214,14 @@ void SendObjectRoleMessage(const NetworkReplicatedObject& item, const NetworkCli
     }
 }
 
+FORCE_INLINE void DeleteNetworkObject(ScriptingObject* obj)
+{
+    if (obj->Is<Script>() && ((Script*)obj)->GetParent())
+        ((Script*)obj)->GetParent()->DeleteObject();
+    else
+        obj->DeleteObject();
+}
+
 #if !COMPILE_WITHOUT_CSHARP
 
 #include "Engine/Scripting/ManagedCLR/MUtils.h"
@@ -328,6 +337,9 @@ void NetworkReplicator::DespawnObject(ScriptingObject* obj)
 
     // Prevent spawning
     SpawnQueue.Remove(obj);
+
+    // Delete object locally
+    DeleteNetworkObject(obj);
 }
 
 uint32 NetworkReplicator::GetObjectClientId(ScriptingObject* obj)
@@ -415,6 +427,16 @@ void NetworkInternal::NetworkReplicatorClear()
 #if NETWORK_REPLICATOR_DEBUG_LOG
     LOG(Info, "[NetworkReplicator] Shutdown");
 #endif
+    for (auto it = Objects.Begin(); it.IsNotEnd(); ++it)
+    {
+        auto& item = it->Item;
+        ScriptingObject* obj = item.Object.Get();
+        if (obj && item.Spawned)
+        {
+            // Cleanup any spawned objects
+            DeleteNetworkObject(obj);
+        }
+    }
     Objects.Clear();
     Objects.SetCapacity(0);
     IdsRemappingTable.Clear();
@@ -742,7 +764,7 @@ void NetworkInternal::OnNetworkMessageObjectSpawn(NetworkEvent& event, NetworkCl
         {
             if (parent && parent->Object.Get() && parent->Object->Is<Actor>())
                 sceneObject->SetParent(parent->Object.As<Actor>());
-            else if (auto* parentActor = Scripting::FindObject<Actor>(msgData.ParentId))
+            else if (auto* parentActor = Scripting::TryFindObject<Actor>(msgData.ParentId))
                 sceneObject->SetParent(parentActor);
         }
 
@@ -769,7 +791,7 @@ void NetworkInternal::OnNetworkMessageObjectDespawn(NetworkEvent& event, Network
 
         // Remove object
         Objects.Remove(obj);
-        Delete(obj);
+        DeleteNetworkObject(obj);
     }
     else
     {

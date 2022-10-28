@@ -67,7 +67,7 @@ public:
     API_FUNCTION() static void SpawnObject(ScriptingObject* obj);
 
     /// <summary>
-    /// Despawns the object from the other clients.
+    /// Despawns the object from the other clients. Deletes object from remove clients.
     /// </summary>
     /// <remarks>Does nothing if network is offline.</remarks>
     /// <param name="obj">The object to despawn on other clients.</param>
