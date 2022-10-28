@@ -17,11 +17,6 @@ namespace FlaxEditor.Windows
         /// </summary>
         public event Action<ContextMenu, ContentItem> ContextMenuShow;
 
-        private readonly string _animationMenuName = "Animation";
-        private readonly string _materialMenuName = "Materials";
-        private readonly string _particleMenuName = "Particles";
-        private readonly string _physicsMenuName = "Physics";
-        
         private readonly List<string> _animationGroupNames = new List<string>()
         {
             "Animation",
@@ -31,21 +26,21 @@ namespace FlaxEditor.Windows
             "Scene Animation",
         };
 
-        private readonly List<string> _particleGroup = new List<string>()
+        private readonly List<string> _particleGroupNames = new List<string>()
         {
             "Particle Emitter",
             "Particle Emitter Function",
             "Particle System",
         };
 
-        private readonly List<string> _materialGroup = new List<string>()
+        private readonly List<string> _materialGroupNames = new List<string>()
         {
             "Material", 
             "Material Function",
             "Material Instance",
         };
 
-        private readonly List<string> _physicsGroup = new List<string>()
+        private readonly List<string> _physicsGroupNames = new List<string>()
         {
             "Collision Data",
             "Physical Material",
@@ -195,13 +190,13 @@ namespace FlaxEditor.Windows
                 if (p.CanCreate(folder))
                 {
                     if (_animationGroupNames.Contains(p.Name))
-                        AddContentProxyToMenu(c.ContextMenu, p, _animationMenuName);
-                    else if (_particleGroup.Contains(p.Name))
-                        AddContentProxyToMenu(c.ContextMenu, p, _particleMenuName);
-                    else if (_materialGroup.Contains(p.Name))
-                        AddContentProxyToMenu(c.ContextMenu, p, _materialMenuName);
-                    else if (_physicsGroup.Contains(p.Name))
-                        AddContentProxyToMenu(c.ContextMenu, p, _physicsMenuName);
+                        AddContentProxyToMenu(c.ContextMenu, p, "Animation");
+                    else if (_particleGroupNames.Contains(p.Name))
+                        AddContentProxyToMenu(c.ContextMenu, p, "Particles");
+                    else if (_materialGroupNames.Contains(p.Name))
+                        AddContentProxyToMenu(c.ContextMenu, p, "Materials");
+                    else if (_physicsGroupNames.Contains(p.Name))
+                        AddContentProxyToMenu(c.ContextMenu, p, "Physics");
                     else
                         c.ContextMenu.AddButton(p.Name, () => NewItem(p));
                     
