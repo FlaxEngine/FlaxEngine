@@ -401,8 +401,8 @@ namespace FlaxEditor.Windows.Assets
             }
             if (undoActions.Count == 0)
                 return;
-            _properties.Window._undo.AddAction(new MultiUndoAction(undoActions));
-            _properties.Window.MarkAsEdited();
+            _undo.AddAction(new MultiUndoAction(undoActions));
+            MarkAsEdited();
             _editor.BuildLayoutOnUpdate();
         }
 
