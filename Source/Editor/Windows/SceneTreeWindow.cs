@@ -442,6 +442,15 @@ namespace FlaxEditor.Windows
                 return true;
             }
 
+            if (buttons == MouseButton.Left)
+            {
+                if (Editor.StateMachine.CurrentState.CanEditScene)
+                {
+                    Editor.SceneEditing.Deselect();
+                }
+                return true;
+            }
+
             return false;
         }
 

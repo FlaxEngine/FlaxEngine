@@ -260,6 +260,12 @@ namespace FlaxEditor.Windows.Assets
                 ShowContextMenu(Parent, ref locationCM);
                 return true;
             }
+
+            if (button == MouseButton.Left && _treePanel.ContainsPoint(ref location))
+            {
+                _tree.Deselect();
+                return true;
+            }
             return false;
         }
 
