@@ -15,7 +15,8 @@
 
 Nullable<bool> Fullscreen;
 Nullable<Float2> Size;
-static CursorLockMode CursorLock = CursorLockMode::None;
+bool CursorVisible = true;
+CursorLockMode CursorLock = CursorLockMode::None;
 
 class ScreenService : public EngineService
 {
@@ -25,6 +26,7 @@ public:
     {
     }
 
+    void Update() override;
     void Draw() override;
 };
 
@@ -88,12 +90,7 @@ Float2 Screen::GameViewportToScreen(const Float2& viewportPos)
 
 bool Screen::GetCursorVisible()
 {
-#if USE_EDITOR
-    const auto win = Editor::Managed->GetGameWindow(true);
-#else
-	const auto win = Engine::MainWindow;
-#endif
-    return win ? win->GetCursor() != CursorType::Hidden : true;
+    return CursorVisible;
 }
 
 void Screen::SetCursorVisible(const bool value)
@@ -107,6 +104,7 @@ void Screen::SetCursorVisible(const bool value)
     {
         win->SetCursor(value ? CursorType::Default : CursorType::Hidden);
     }
+    CursorVisible = value;
 }
 
 CursorLockMode Screen::GetCursorLock()
@@ -135,6 +133,14 @@ void Screen::SetCursorLock(CursorLockMode mode)
         win->EndClippingCursor();
     }
     CursorLock = mode;
+}
+
+void ScreenService::Update()
+{
+#if USE_EDITOR
+    // Sync current cursor state in Editor (eg. when viewport focus can change)
+    Screen::SetCursorVisible(CursorVisible);
+#endif
 }
 
 void ScreenService::Draw()
