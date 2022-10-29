@@ -20,10 +20,11 @@ bool AudioClip::StreamingTask::Run()
 {
     AssetReference<AudioClip> ref = _asset.Get();
     if (ref == nullptr)
-    {
         return true;
-    }
+    ScopeLock lock(ref->Locker);
     const auto& queue = ref->StreamingQueue;
+    if (queue.Count() == 0)
+        return false;
     auto clip = ref.Get();
 
     // Update the buffers
@@ -108,7 +109,6 @@ bool AudioClip::StreamingTask::Run()
     for (int32 sourceIndex = 0; sourceIndex < Audio::Sources.Count(); sourceIndex++)
     {
         // TODO: collect refs to audio clip from sources and use faster iteration (but do it thread-safe)
-
         const auto src = Audio::Sources[sourceIndex];
         if (src->Clip == clip && src->GetState() == AudioSource::States::Playing)
         {

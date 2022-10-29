@@ -57,7 +57,7 @@ namespace FlaxEditor.Gizmo
             // As all axisMesh have the same pivot, add a little offset to the x axisMesh, this way SortDrawCalls is able to sort the draw order
             // https://github.com/FlaxEngine/FlaxEngine/issues/680
 
-            Matrix m1, m2, m3 , mx1;
+            Matrix m1, m2, m3, mx1;
             bool isXAxis = _activeAxis == Axis.X || _activeAxis == Axis.XY || _activeAxis == Axis.ZX;
             bool isYAxis = _activeAxis == Axis.Y || _activeAxis == Axis.XY || _activeAxis == Axis.YZ;
             bool isZAxis = _activeAxis == Axis.Z || _activeAxis == Axis.YZ || _activeAxis == Axis.ZX;
