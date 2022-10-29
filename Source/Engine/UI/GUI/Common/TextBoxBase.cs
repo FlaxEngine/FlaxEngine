@@ -137,7 +137,7 @@ namespace FlaxEngine.GUI
         /// <summary>
         /// Event fired when a key is up.
         /// </summary>
-        public event Action<KeyboardKeys> KeyUp; 
+        public event Action<KeyboardKeys> KeyUp;
 
         /// <summary>
         /// Gets or sets a value indicating whether this is a multiline text box control.
