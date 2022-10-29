@@ -21,7 +21,8 @@ namespace FlaxEditor.Windows
         private readonly GameRoot _guiRoot;
         private bool _showGUI = true;
         private bool _showDebugDraw = false;
-        private bool _isMaximized = false;
+        private bool _isMaximized = false, _isUnlockingMouse = false;
+        private bool _cursorVisible = true;
         private float _gameStartTime;
         private GUI.Docking.DockState _maximizeRestoreDockState;
         private GUI.Docking.DockPanel _maximizeRestoreDockTo;
@@ -460,14 +461,20 @@ namespace FlaxEditor.Windows
         {
             if (Editor.StateMachine.IsPlayMode)
             {
-                Screen.CursorVisible = true;
-                Focus(null);
-                Editor.Windows.MainWindow.Focus();
-                if (Editor.Windows.PropertiesWin.IsDocked)
-                    Editor.Windows.PropertiesWin.Focus();
+                // Cache cursor
+                _cursorVisible = Screen.CursorVisible;
+                _cursorLockMode = Screen.CursorLock;
                 Screen.CursorVisible = true;
                 if (Screen.CursorLock == CursorLockMode.Clipped)
                     Screen.CursorLock = CursorLockMode.None;
+                
+                // Defocus
+                _isUnlockingMouse = true;
+                Focus(null);
+                _isUnlockingMouse = false;
+                Editor.Windows.MainWindow.Focus();
+                if (Editor.Windows.PropertiesWin.IsDocked)
+                    Editor.Windows.PropertiesWin.Focus();
             }
         }
 
@@ -552,9 +559,11 @@ namespace FlaxEditor.Windows
                     Root.MousePosition = center;
                 }
 
-                // Restore lock mode
+                // Restore cursor
                 if (_cursorLockMode != CursorLockMode.None)
                     Screen.CursorLock = _cursorLockMode;
+                if (!_cursorVisible)
+                    Screen.CursorVisible = false;
             }
         }
 
@@ -563,11 +572,16 @@ namespace FlaxEditor.Windows
         {
             base.OnEndContainsFocus();
 
-            // Restore cursor visibility (could be hidden by the game)
-            Screen.CursorVisible = true;
+            if (!_isUnlockingMouse)
+            {
+                // Cache cursor
+                _cursorVisible = Screen.CursorVisible;
+                _cursorLockMode = Screen.CursorLock;
 
-            // Cache lock mode
-            _cursorLockMode = Screen.CursorLock;
+                // Restore cursor visibility (could be hidden by the game)
+                if (!_cursorVisible)
+                    Screen.CursorVisible = true;
+            }
         }
 
         /// <inheritdoc />

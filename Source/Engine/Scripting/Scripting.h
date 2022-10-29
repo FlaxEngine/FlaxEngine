@@ -85,7 +85,7 @@ public:
     /// <param name="fullname">The full name of the type eg: System.Int64.</param>
     /// <returns>The MClass object or null if missing.</returns>
     static MClass* FindClass(const StringAnsiView& fullname);
-    
+
 #if USE_MONO
     /// <summary>
     /// Finds the class from the given Mono class object within whole assembly.
@@ -143,6 +143,12 @@ public:
     /// <param name="type">The type of the object to find (optional).</param>
     /// <returns>The found object or null if missing.</returns>
     static ScriptingObject* FindObject(Guid id, MClass* type = nullptr);
+
+    /// <summary>
+    /// Tries to find the object by the given class.
+    /// </summary>
+    /// <returns>The found object or null if missing.</returns>
+    static ScriptingObject* TryFindObject(MClass* type);
 
     /// <summary>
     /// Tries to find the object by the given identifier.

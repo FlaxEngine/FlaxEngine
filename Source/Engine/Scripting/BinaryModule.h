@@ -309,6 +309,7 @@ private:
     void OnLoading(MAssembly* assembly);
     void OnLoaded(MAssembly* assembly);
     void InitType(MClass* mclass);
+    void OnUnloading(MAssembly* assembly);
     void OnUnloaded(MAssembly* assembly);
 
 public:

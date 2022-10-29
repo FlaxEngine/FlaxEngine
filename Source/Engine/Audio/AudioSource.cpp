@@ -130,6 +130,10 @@ void AudioSource::Play()
         {
             // Request faster streaming update
             Clip->RequestStreamingUpdate();
+
+            // If we are looping and streaming also update streaming buffers
+            if (_loop)
+                RequestStreamingBuffersUpdate();
         }
     }
     else
@@ -368,6 +372,7 @@ void AudioSource::Update()
     if (!UseStreaming() || SourceIDs.IsEmpty())
         return;
     auto clip = Clip.Get();
+    clip->Locker.Lock();
 
     // Handle streaming buffers queue submit (ensure that clip has loaded the first chunk with audio data)
     if (_needToUpdateStreamingBuffers && clip->Buffers[_streamingFirstChunk] != AUDIO_BUFFER_ID_INVALID)
@@ -437,6 +442,8 @@ void AudioSource::Update()
             clip->RequestStreamingUpdate();
         }
     }
+
+    clip->Locker.Unlock();
 }
 
 void AudioSource::OnEnable()

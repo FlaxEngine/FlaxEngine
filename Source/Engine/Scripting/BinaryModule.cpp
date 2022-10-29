@@ -697,6 +697,7 @@ ManagedBinaryModule::ManagedBinaryModule(MAssembly* assembly)
     // Bind for C# assembly events
     assembly->Loading.Bind<ManagedBinaryModule, &ManagedBinaryModule::OnLoading>(this);
     assembly->Loaded.Bind<ManagedBinaryModule, &ManagedBinaryModule::OnLoaded>(this);
+    assembly->Unloading.Bind<ManagedBinaryModule, &ManagedBinaryModule::OnUnloading>(this);
     assembly->Unloaded.Bind<ManagedBinaryModule, &ManagedBinaryModule::OnUnloaded>(this);
 
     if (Assembly->IsLoaded())
@@ -1117,17 +1118,24 @@ void ManagedBinaryModule::InitType(MClass* mclass)
 #endif
 }
 
-void ManagedBinaryModule::OnUnloaded(MAssembly* assembly)
+void ManagedBinaryModule::OnUnloading(MAssembly* assembly)
 {
     PROFILE_CPU();
 
-    // Clear managed-only types
+    // Clear managed types typenames
     for (int32 i = _firstManagedTypeIndex; i < Types.Count(); i++)
     {
         const ScriptingType& type = Types[i];
         const MString typeName(type.Fullname.Get(), type.Fullname.Length());
         TypeNameToTypeIndex.Remove(typeName);
     }
+}
+
+void ManagedBinaryModule::OnUnloaded(MAssembly* assembly)
+{
+    PROFILE_CPU();
+
+    // Clear managed-only types
     Types.Resize(_firstManagedTypeIndex);
     for (int32 i = 0; i < _managedMemoryBlocks.Count(); i++)
         Allocator::Free(_managedMemoryBlocks[i]);

@@ -319,6 +319,8 @@ namespace FlaxEditor.Viewport
             {
                 TooltipText = "Position snapping values"
             };
+            if (TransformGizmo.TranslationSnapValue < 0.0f)
+                _translateSnapping.Text = "Bounding Box";
 
             for (int i = 0; i < EditorViewportTranslateSnapValues.Length; i++)
             {
@@ -326,6 +328,9 @@ namespace FlaxEditor.Viewport
                 var button = translateSnappingCM.AddButton(v.ToString());
                 button.Tag = v;
             }
+            var buttonBB = translateSnappingCM.AddButton("Bounding Box").LinkTooltip("Snaps the selection based on it's bounding volume");
+            buttonBB.Tag = -1.0f;
+
             translateSnappingCM.ButtonClicked += OnWidgetTranslateSnapClick;
             translateSnappingCM.VisibleChanged += OnWidgetTranslateSnapShowHide;
             _translateSnapping.Parent = translateSnappingWidget;
@@ -378,6 +383,7 @@ namespace FlaxEditor.Viewport
             InputActions.Add(options => options.RotateMode, () => TransformGizmo.ActiveMode = TransformGizmoBase.Mode.Rotate);
             InputActions.Add(options => options.ScaleMode, () => TransformGizmo.ActiveMode = TransformGizmoBase.Mode.Scale);
             InputActions.Add(options => options.FocusSelection, FocusSelection);
+            InputActions.Add(options => options.RotateSelection, RotateSelection);
             InputActions.Add(options => options.Delete, _editor.SceneEditing.Delete);
         }
 
@@ -539,28 +545,24 @@ namespace FlaxEditor.Viewport
         private void OnTranslateSnappingToggle(ViewportWidgetButton button)
         {
             TransformGizmo.TranslationSnapEnable = !TransformGizmo.TranslationSnapEnable;
-            // cache value
             _editor.ProjectCache.SetCustomData("TranslateSnapState", TransformGizmo.TranslationSnapEnable.ToString());
         }
 
         private void OnRotateSnappingToggle(ViewportWidgetButton button)
         {
             TransformGizmo.RotationSnapEnabled = !TransformGizmo.RotationSnapEnabled;
-            // cache value
             _editor.ProjectCache.SetCustomData("RotationSnapState", TransformGizmo.RotationSnapEnabled.ToString());
         }
 
         private void OnScaleSnappingToggle(ViewportWidgetButton button)
         {
             TransformGizmo.ScaleSnapEnabled = !TransformGizmo.ScaleSnapEnabled;
-            // cache value
             _editor.ProjectCache.SetCustomData("ScaleSnapState", TransformGizmo.ScaleSnapEnabled.ToString());
         }
 
         private void OnTransformSpaceToggle(ViewportWidgetButton button)
         {
             TransformGizmo.ToggleTransformSpace();
-            // cache value
             _editor.ProjectCache.SetCustomData("TransformSpaceState", TransformGizmo.ActiveTransformSpace.ToString());
         }
 
@@ -591,7 +593,6 @@ namespace FlaxEditor.Viewport
             var v = (float)button.Tag;
             TransformGizmo.ScaleSnapValue = v;
             _scaleSnapping.Text = v.ToString();
-            // cache value
             _editor.ProjectCache.SetCustomData("ScaleSnapValue", TransformGizmo.ScaleSnapValue.ToString("N"));
         }
 
@@ -630,7 +631,6 @@ namespace FlaxEditor.Viewport
             var v = (float)button.Tag;
             TransformGizmo.RotationSnapValue = v;
             _rotateSnapping.Text = v.ToString();
-            // cache value
             _editor.ProjectCache.SetCustomData("RotationSnapValue", TransformGizmo.RotationSnapValue.ToString("N"));
         }
 
@@ -667,8 +667,10 @@ namespace FlaxEditor.Viewport
         {
             var v = (float)button.Tag;
             TransformGizmo.TranslationSnapValue = v;
-            _translateSnapping.Text = v.ToString();
-            // cache value
+            if (v < 0.0f)
+                _translateSnapping.Text = "Bounding Box";
+            else
+                _translateSnapping.Text = v.ToString();
             _editor.ProjectCache.SetCustomData("TranslateSnapValue", TransformGizmo.TranslationSnapValue.ToString("N"));
         }
 
@@ -694,6 +696,51 @@ namespace FlaxEditor.Viewport
         {
             var selection = _editor.SceneEditing.Selection;
             Gizmos.ForEach(x => x.OnSelectionChanged(selection));
+        }
+
+        /// <summary>
+        /// Press "R" to rotate the selected gizmo objects 45 degrees.
+        /// </summary>
+        public void RotateSelection()
+        {
+            var win = (WindowRootControl)Root;
+            var selection = _editor.SceneEditing.Selection;
+            var isShiftDown = win.GetKey(KeyboardKeys.Shift);
+
+            Quaternion rotationDelta;
+            if (isShiftDown)
+                rotationDelta = Quaternion.Euler(0.0f, -45.0f, 0.0f);
+            else
+                rotationDelta = Quaternion.Euler(0.0f, 45.0f, 0.0f);
+
+            bool useObjCenter = TransformGizmo.ActivePivot == TransformGizmoBase.PivotType.ObjectCenter;
+            Vector3 gizmoPosition = TransformGizmo.Position;
+
+            // Rotate selected objects
+            bool isPlayMode = Editor.Instance.StateMachine.IsPlayMode;
+            TransformGizmo.StartTransforming();
+            for (int i = 0; i < selection.Count; i++)
+            {
+                var obj = selection[i];
+                if (isPlayMode && obj.CanTransform == false)
+                    continue;
+                var trans = obj.Transform;
+                var pivotOffset = trans.Translation - gizmoPosition;
+                if (useObjCenter || pivotOffset.IsZero)
+                {
+                    trans.Orientation *= Quaternion.Invert(trans.Orientation) * rotationDelta * trans.Orientation;
+                }
+                else
+                {
+                    Matrix.RotationQuaternion(ref trans.Orientation, out var transWorld);
+                    Matrix.RotationQuaternion(ref rotationDelta, out var deltaWorld);
+                    Matrix world = transWorld * Matrix.Translation(pivotOffset) * deltaWorld * Matrix.Translation(-pivotOffset);
+                    trans.SetRotation(ref world);
+                    trans.Translation += world.TranslationVector;
+                }
+                obj.Transform = trans;
+            }
+            TransformGizmo.EndTransforming();
         }
 
         /// <summary>

@@ -281,7 +281,6 @@ bool AssetsCache::FindAsset(const StringView& path, AssetInfo& info)
         auto& e = i->Value;
         if (e.Info.Path == path)
         {
-            // Validate file exists
             if (!IsEntryValid(e))
             {
                 LOG(Warning, "Missing file from registry: \'{0}\':{1}:{2}", e.Info.Path, e.Info.ID, e.Info.TypeName);
@@ -304,15 +303,11 @@ bool AssetsCache::FindAsset(const StringView& path, AssetInfo& info)
 bool AssetsCache::FindAsset(const Guid& id, AssetInfo& info)
 {
     PROFILE_CPU();
-
     bool result = false;
-
     ScopeLock lock(_locker);
-
     auto e = _registry.TryGet(id);
     if (e != nullptr)
     {
-        // Validate entry
         if (!IsEntryValid(*e))
         {
             LOG(Warning, "Missing file from registry: \'{0}\':{1}:{2}", e->Info.Path, e->Info.ID, e->Info.TypeName);
@@ -325,7 +320,6 @@ bool AssetsCache::FindAsset(const Guid& id, AssetInfo& info)
             info = e->Info;
         }
     }
-
     return result;
 }
 
@@ -379,8 +373,26 @@ void AssetsCache::RegisterAssets(FlaxStorage* storage)
         // Check if storage contains ID which has been already registered
         if (FindAsset(e.ID, info))
         {
+#if PLATFORM_WINDOWS
+            // On Windows - if you start your project using a shortcut/VS commandline -project, and using a upper/lower drive letter, it could the cache (case doesn't matter on OS)
+            if (StringUtils::CompareIgnoreCase(storagePath.GetText(), info.Path.GetText()) != 0)
+            {
+                LOG(Warning, "Founded duplicated asset \'{0}\'. Locations: \'{1}\' and \'{2}\'", e.ID, storagePath, info.Path);
+                duplicatedEntries.Add(i);
+            }
+            else
+            {
+                // Remove from registry so we can add it again later with the original ID, so we don't loose relations
+                for (auto j = _registry.Begin(); j.IsNotEnd(); ++j)
+                {
+                    if (StringUtils::CompareIgnoreCase(j->Value.Info.Path.GetText(), storagePath.GetText()) == 0)
+                        _registry.Remove(j);
+                }
+            }
+#else
             LOG(Warning, "Founded duplicated asset \'{0}\'. Locations: \'{1}\' and \'{2}\'", e.ID, storagePath, info.Path);
             duplicatedEntries.Add(i);
+#endif
         }
     }
 
@@ -551,7 +563,6 @@ bool AssetsCache::RenameAsset(const StringView& oldPath, const StringView& newPa
 bool AssetsCache::IsEntryValid(Entry& e)
 {
 #if ENABLE_ASSETS_DISCOVERY
-
     // Check if file exists
     if (FileSystem::FileExists(e.Info.Path))
     {
@@ -601,10 +612,8 @@ bool AssetsCache::IsEntryValid(Entry& e)
     return false;
 
 #else
-
     // In game we don't care about it because all cached asset entries are valid (precached)
     // Skip only entries with missing file
     return e.Info.Path.HasChars();
-
 #endif
 }

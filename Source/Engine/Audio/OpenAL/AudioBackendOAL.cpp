@@ -139,10 +139,12 @@ namespace ALC
 
                 alSourcef(sourceID, AL_GAIN, source->GetVolume());
                 alSourcef(sourceID, AL_PITCH, source->GetPitch());
+                alSourcef(sourceID, AL_SEC_OFFSET, 0.0f);
                 alSourcef(sourceID, AL_REFERENCE_DISTANCE, source->GetMinDistance());
                 alSourcef(sourceID, AL_ROLLOFF_FACTOR, source->GetAttenuation());
                 alSourcei(sourceID, AL_LOOPING, loop);
                 alSourcei(sourceID, AL_SOURCE_RELATIVE, !is3D);
+                alSourcei(sourceID, AL_BUFFER, 0);
                 alSource3f(sourceID, AL_POSITION, FLAX_POS_TO_OAL(position));
                 alSource3f(sourceID, AL_VELOCITY, FLAX_POS_TO_OAL(velocity));
             }
