@@ -86,7 +86,7 @@ namespace FlaxEditor.Gizmo
         /// <summary>
         /// Starts the objects transforming (optionally with duplicate).
         /// </summary>
-        protected void StartTransforming()
+        public void StartTransforming()
         {
             // Check if can start new action
             var count = SelectionCount;
@@ -119,7 +119,7 @@ namespace FlaxEditor.Gizmo
         /// <summary>
         /// Ends the objects transforming.
         /// </summary>
-        protected void EndTransforming()
+        public void EndTransforming()
         {
             // Check if wasn't working at all
             if (!_isTransforming)
@@ -287,12 +287,29 @@ namespace FlaxEditor.Gizmo
                 delta *= 0.5f;
             if ((isScaling ? ScaleSnapEnabled : TranslationSnapEnable) || Owner.UseSnapping)
             {
-                float snapValue = isScaling ? ScaleSnapValue : TranslationSnapValue;
+                var snapValue = new Vector3(isScaling ? ScaleSnapValue : TranslationSnapValue);
                 _translationScaleSnapDelta += delta;
+                if (!isScaling && snapValue.X < 0.0f)
+                {
+                    // Snap to object bounding box
+                    GetSelectedObjectsBounds(out var b, out _);
+                    if (b.Minimum.X < 0.0f)
+                        snapValue.X = (Real)Math.Abs(b.Minimum.X) + b.Maximum.X;
+                    else
+                        snapValue.X = (Real)b.Minimum.X - b.Maximum.X;
+                    if (b.Minimum.Y < 0.0f)
+                        snapValue.Y = (Real)Math.Abs(b.Minimum.Y) + b.Maximum.Y;
+                    else
+                        snapValue.Y = (Real)b.Minimum.Y - b.Maximum.Y;
+                    if (b.Minimum.Z < 0.0f)
+                        snapValue.Z = (Real)Math.Abs(b.Minimum.Z) + b.Maximum.Z;
+                    else
+                        snapValue.Z = (Real)b.Minimum.Z - b.Maximum.Z;
+                }
                 delta = new Vector3(
-                                    (int)(_translationScaleSnapDelta.X / snapValue) * snapValue,
-                                    (int)(_translationScaleSnapDelta.Y / snapValue) * snapValue,
-                                    (int)(_translationScaleSnapDelta.Z / snapValue) * snapValue);
+                                    (int)(_translationScaleSnapDelta.X / snapValue.X) * snapValue.X,
+                                    (int)(_translationScaleSnapDelta.Y / snapValue.Y) * snapValue.Y,
+                                    (int)(_translationScaleSnapDelta.Z / snapValue.Z) * snapValue.Z);
                 _translationScaleSnapDelta -= delta;
             }
 
@@ -446,10 +463,9 @@ namespace FlaxEditor.Gizmo
                     }
 
                     // Apply transformation (but to the parents, not whole selection pool)
-                    if (anyValid)
+                    if (anyValid || (!_isTransforming && Owner.UseDuplicate))
                     {
                         StartTransforming();
-
                         LastDelta = new Transform(translationDelta, rotationDelta, scaleDelta);
                         OnApplyTransformation(ref translationDelta, ref rotationDelta, ref scaleDelta);
                     }

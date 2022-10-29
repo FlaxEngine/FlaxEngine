@@ -641,6 +641,7 @@ bool ModelTool::ImportDataAssimp(const char* path, ImportedModelData& data, Opti
                 aiProcess_JoinIdenticalVertices |
                 aiProcess_LimitBoneWeights |
                 aiProcess_Triangulate |
+                aiProcess_SortByPType |
                 aiProcess_GenUVCoords |
                 aiProcess_FindDegenerates |
                 aiProcess_FindInvalidData |
