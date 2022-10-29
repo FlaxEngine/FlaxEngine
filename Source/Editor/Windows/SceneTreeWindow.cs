@@ -249,7 +249,7 @@ namespace FlaxEditor.Windows
             {
                 if (selection.Count != 0)
                     Editor.SceneEditing.Select(actor);
-                actor.TreeNode.StartRenaming();
+                actor.TreeNode.StartRenaming(this);
             }
         }
 

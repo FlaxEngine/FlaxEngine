@@ -23,6 +23,7 @@ namespace FlaxEditor.Windows.Assets
         private readonly SplitPanel _split1;
         private readonly SplitPanel _split2;
         private readonly TextBox _searchBox;
+        private readonly Panel _treePanel;
         private readonly PrefabTree _tree;
         private readonly PrefabWindowViewport _viewport;
         private readonly CustomEditorPresenter _propertiesEditor;
@@ -132,17 +133,26 @@ namespace FlaxEditor.Windows.Assets
             };
             _searchBox.TextChanged += OnSearchBoxTextChanged;
 
+            _treePanel = new Panel()
+            {
+                AnchorPreset = AnchorPresets.StretchAll,
+                Offsets = new Margin(0.0f, 0.0f, headerPanel.Bottom, 0.0f),
+                ScrollBars = ScrollBars.Both,
+                IsScrollable = true,
+                Parent = sceneTreePanel,
+            };
+
             // Prefab structure tree
             Graph = new LocalSceneGraph(new CustomRootNode(this));
             _tree = new PrefabTree
             {
-                Y = headerPanel.Bottom,
                 Margin = new Margin(0.0f, 0.0f, -16.0f, 0.0f), // Hide root node
+                IsScrollable = true,
             };
             _tree.AddChild(Graph.Root.TreeNode);
             _tree.SelectedChanged += OnTreeSelectedChanged;
             _tree.RightClick += OnTreeRightClick;
-            _tree.Parent = sceneTreePanel;
+            _tree.Parent = _treePanel;
             headerPanel.Parent = sceneTreePanel;
 
             // Prefab viewport
@@ -192,6 +202,32 @@ namespace FlaxEditor.Windows.Assets
             InputActions.Add(options => options.Rename, Rename);
             InputActions.Add(options => options.FocusSelection, _viewport.FocusSelection);
         }
+        
+        /// <summary>
+        /// Enables or disables vertical and horizontal scrolling on the tree panel.
+        /// </summary>
+        /// <param name="enabled">The state to set scrolling to</param>
+        public void ScrollingOnTreeView(bool enabled)
+        {
+            if (_treePanel.VScrollBar != null)
+                _treePanel.VScrollBar.ThumbEnabled = enabled;
+            if (_treePanel.HScrollBar != null)
+                _treePanel.HScrollBar.ThumbEnabled = enabled;
+        }
+
+        /// <summary>
+        /// Scrolls to the selected node in the tree.
+        /// </summary>
+        public void ScrollToSelectedNode()
+        {
+            // Scroll to node
+            var nodeSelection = _tree.Selection;
+            if (nodeSelection.Count != 0)
+            {
+                var scrollControl = nodeSelection[nodeSelection.Count - 1];
+                _treePanel.ScrollViewTo(scrollControl);
+            }
+        }
 
         private void OnSearchBoxTextChanged()
         {
@@ -209,6 +245,22 @@ namespace FlaxEditor.Windows.Assets
             root.TreeNode.UnlockChildrenRecursive();
             PerformLayout();
             PerformLayout();
+        }
+
+        /// <inheritdoc />
+        public override bool OnMouseUp(Float2 location, MouseButton button)
+        {
+            if (base.OnMouseUp(location, button))
+                return true;
+            
+            if (button == MouseButton.Right && _treePanel.ContainsPoint(ref location))
+            {
+                _tree.Deselect();
+                var locationCM = location + _searchBox.BottomLeft;
+                ShowContextMenu(Parent, ref locationCM);
+                return true;
+            }
+            return false;
         }
 
         private void OnScriptsReloadBegin()
