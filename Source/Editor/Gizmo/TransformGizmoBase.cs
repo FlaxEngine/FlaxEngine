@@ -86,7 +86,7 @@ namespace FlaxEditor.Gizmo
         /// <summary>
         /// Starts the objects transforming (optionally with duplicate).
         /// </summary>
-        protected void StartTransforming()
+        public void StartTransforming()
         {
             // Check if can start new action
             var count = SelectionCount;
@@ -119,7 +119,7 @@ namespace FlaxEditor.Gizmo
         /// <summary>
         /// Ends the objects transforming.
         /// </summary>
-        protected void EndTransforming()
+        public void EndTransforming()
         {
             // Check if wasn't working at all
             if (!_isTransforming)

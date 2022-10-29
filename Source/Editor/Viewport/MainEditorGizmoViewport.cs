@@ -329,7 +329,6 @@ namespace FlaxEditor.Viewport
             var buttonBB = translateSnappingCM.AddButton("Bounding Box");
             buttonBB.Tag = -1.0f;
 
-
             translateSnappingCM.ButtonClicked += OnWidgetTranslateSnapClick;
             translateSnappingCM.VisibleChanged += OnWidgetTranslateSnapShowHide;
             _translateSnapping.Parent = translateSnappingWidget;
@@ -711,10 +710,10 @@ namespace FlaxEditor.Viewport
         {
             var win = (WindowRootControl)Root;
             var selection = _editor.SceneEditing.Selection;
-            var IsShiftDown = win.GetKey(KeyboardKeys.Shift);
+            var isShiftDown = win.GetKey(KeyboardKeys.Shift);
 
             Quaternion rotationDelta;
-            if(IsShiftDown)
+            if (isShiftDown)
                 rotationDelta = Quaternion.Euler(0.0f, -45.0f, 0.0f);
             else
                 rotationDelta = Quaternion.Euler(0.0f, 45.0f, 0.0f);
@@ -722,15 +721,16 @@ namespace FlaxEditor.Viewport
             bool useObjCenter = TransformGizmo.ActivePivot == TransformGizmoBase.PivotType.ObjectCenter;
             Vector3 gizmoPosition = TransformGizmo.Position;
 
-            //PE: Rotate selected objects.
+            // Rotate selected objects
             bool isPlayMode = Editor.Instance.StateMachine.IsPlayMode;
+            TransformGizmo.StartTransforming();
             for (int i = 0; i < selection.Count; i++)
             {
                 var obj = selection[i];
                 if (isPlayMode && obj.CanTransform == false)
                     continue;
                 var trans = obj.Transform;
-                Vector3 pivotOffset = trans.Translation - gizmoPosition;
+                var pivotOffset = trans.Translation - gizmoPosition;
                 if (useObjCenter || pivotOffset.IsZero)
                 {
                     trans.Orientation *= Quaternion.Invert(trans.Orientation) * rotationDelta * trans.Orientation;
@@ -745,6 +745,7 @@ namespace FlaxEditor.Viewport
                 }
                 obj.Transform = trans;
             }
+            TransformGizmo.EndTransforming();
         }
 
         /// <summary>
