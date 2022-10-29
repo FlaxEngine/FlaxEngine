@@ -144,6 +144,14 @@ public:
     /// <returns>The found object or null if missing.</returns>
     static ScriptingObject* FindObject(Guid id, MClass* type = nullptr);
 
+
+    /// <summary>
+    /// Tries to find the object by the given class.
+    /// </summary>
+    /// <returns>The found object or null if missing.</returns>
+    static ScriptingObject* TryFindObject(MClass* type = nullptr);
+
+
     /// <summary>
     /// Tries to find the object by the given identifier.
     /// </summary>

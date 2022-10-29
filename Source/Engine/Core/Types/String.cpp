@@ -215,7 +215,8 @@ bool String::IsANSI() const
     bool result = true;
     for (int32 i = 0; i < _length; i++)
     {
-        if (_data[i] > 255)
+        //PE: Ansi is max 7 bit so...
+        if (_data[i] > 127)
         {
             result = false;
             break;

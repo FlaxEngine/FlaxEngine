@@ -326,6 +326,10 @@ namespace FlaxEditor.Viewport
                 var button = translateSnappingCM.AddButton(v.ToString());
                 button.Tag = v;
             }
+            var buttonBB = translateSnappingCM.AddButton("Bounding Box");
+            buttonBB.Tag = -1.0f;
+
+
             translateSnappingCM.ButtonClicked += OnWidgetTranslateSnapClick;
             translateSnappingCM.VisibleChanged += OnWidgetTranslateSnapShowHide;
             _translateSnapping.Parent = translateSnappingWidget;
@@ -378,6 +382,7 @@ namespace FlaxEditor.Viewport
             InputActions.Add(options => options.RotateMode, () => TransformGizmo.ActiveMode = TransformGizmoBase.Mode.Rotate);
             InputActions.Add(options => options.ScaleMode, () => TransformGizmo.ActiveMode = TransformGizmoBase.Mode.Scale);
             InputActions.Add(options => options.FocusSelection, FocusSelection);
+            InputActions.Add(options => options.RotateSelection, RotateSelection);
             InputActions.Add(options => options.Delete, _editor.SceneEditing.Delete);
         }
 
@@ -667,7 +672,10 @@ namespace FlaxEditor.Viewport
         {
             var v = (float)button.Tag;
             TransformGizmo.TranslationSnapValue = v;
-            _translateSnapping.Text = v.ToString();
+            if (v < 0.0f)
+                _translateSnapping.Text = "Bounding Box";
+            else
+                _translateSnapping.Text = v.ToString();
             // cache value
             _editor.ProjectCache.SetCustomData("TranslateSnapValue", TransformGizmo.TranslationSnapValue.ToString("N"));
         }
@@ -694,6 +702,49 @@ namespace FlaxEditor.Viewport
         {
             var selection = _editor.SceneEditing.Selection;
             Gizmos.ForEach(x => x.OnSelectionChanged(selection));
+        }
+
+        /// <summary>
+        /// Press "R" to rotate the selected gizmo objects 45 degrees.
+        /// </summary>
+        public void RotateSelection()
+        {
+            var win = (WindowRootControl)Root;
+            var selection = _editor.SceneEditing.Selection;
+            var IsShiftDown = win.GetKey(KeyboardKeys.Shift);
+
+            Quaternion rotationDelta;
+            if(IsShiftDown)
+                rotationDelta = Quaternion.Euler(0.0f, -45.0f, 0.0f);
+            else
+                rotationDelta = Quaternion.Euler(0.0f, 45.0f, 0.0f);
+
+            bool useObjCenter = TransformGizmo.ActivePivot == TransformGizmoBase.PivotType.ObjectCenter;
+            Vector3 gizmoPosition = TransformGizmo.Position;
+
+            //PE: Rotate selected objects.
+            bool isPlayMode = Editor.Instance.StateMachine.IsPlayMode;
+            for (int i = 0; i < selection.Count; i++)
+            {
+                var obj = selection[i];
+                if (isPlayMode && obj.CanTransform == false)
+                    continue;
+                var trans = obj.Transform;
+                Vector3 pivotOffset = trans.Translation - gizmoPosition;
+                if (useObjCenter || pivotOffset.IsZero)
+                {
+                    trans.Orientation *= Quaternion.Invert(trans.Orientation) * rotationDelta * trans.Orientation;
+                }
+                else
+                {
+                    Matrix.RotationQuaternion(ref trans.Orientation, out var transWorld);
+                    Matrix.RotationQuaternion(ref rotationDelta, out var deltaWorld);
+                    Matrix world = transWorld * Matrix.Translation(pivotOffset) * deltaWorld * Matrix.Translation(-pivotOffset);
+                    trans.SetRotation(ref world);
+                    trans.Translation += world.TranslationVector;
+                }
+                obj.Transform = trans;
+            }
         }
 
         /// <summary>

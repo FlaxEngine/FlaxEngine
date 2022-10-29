@@ -379,8 +379,27 @@ void AssetsCache::RegisterAssets(FlaxStorage* storage)
         // Check if storage contains ID which has been already registered
         if (FindAsset(e.ID, info))
         {
+            #if PLATFORM_WINDOWS
+            //PE: Windows - if you start your project using a shortcut/VS commandline -project , and using a upper/lower drive letter, it could ruin your scene.
+            //PE: On windows case do not matter so...
+            if (storagePath.ToLower() != info.Path.ToLower())
+            {
+                LOG(Warning, "Founded duplicated asset \'{0}\'. Locations: \'{1}\' and \'{2}\'", e.ID, storagePath, info.Path);
+                duplicatedEntries.Add(i);
+            }
+            else
+            {
+                //PE: Remove from _registry so we can add it again later with the original ID, so we dont loose relations.
+                for (auto i = _registry.Begin(); i.IsNotEnd(); ++i)
+                {
+                    if (i->Value.Info.Path.ToLower() == storagePath.ToLower())
+                        _registry.Remove(i);
+                }
+            }
+            #else
             LOG(Warning, "Founded duplicated asset \'{0}\'. Locations: \'{1}\' and \'{2}\'", e.ID, storagePath, info.Path);
             duplicatedEntries.Add(i);
+            #endif
         }
     }
 

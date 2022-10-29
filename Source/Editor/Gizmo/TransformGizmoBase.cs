@@ -289,10 +289,29 @@ namespace FlaxEditor.Gizmo
             {
                 float snapValue = isScaling ? ScaleSnapValue : TranslationSnapValue;
                 _translationScaleSnapDelta += delta;
-                delta = new Vector3(
-                                    (int)(_translationScaleSnapDelta.X / snapValue) * snapValue,
-                                    (int)(_translationScaleSnapDelta.Y / snapValue) * snapValue,
-                                    (int)(_translationScaleSnapDelta.Z / snapValue) * snapValue);
+                if (!isScaling && snapValue < 0.0f)
+                {
+                    //PE: Snap to object bounding box
+                    GetSelectedObjectsBounds(out var b, out _);
+                    float X, Y, Z;
+                    if (b.Minimum.X < 0.0f) X = (float) Math.Abs(b.Minimum.X) + b.Maximum.X;
+                    else X = (float) b.Minimum.X - b.Maximum.X;
+                    if (b.Minimum.Y < 0.0f) Y = (float) Math.Abs(b.Minimum.Y) + b.Maximum.Y;
+                    else Y = (float) b.Minimum.Y - b.Maximum.Y;
+                    if (b.Minimum.Z < 0.0f) Z = (float) Math.Abs(b.Minimum.Z) + b.Maximum.Z;
+                    else Z = (float) b.Minimum.Z - b.Maximum.Z;
+                    delta = new Vector3(
+                                           (int)(_translationScaleSnapDelta.X / X) * X,
+                                           (int)(_translationScaleSnapDelta.Y / Y) * Y,
+                                           (int)(_translationScaleSnapDelta.Z / Z) * Z);
+                }
+                else
+                {
+                    delta = new Vector3(
+                                        (int)(_translationScaleSnapDelta.X / snapValue) * snapValue,
+                                        (int)(_translationScaleSnapDelta.Y / snapValue) * snapValue,
+                                        (int)(_translationScaleSnapDelta.Z / snapValue) * snapValue);
+                }
                 _translationScaleSnapDelta -= delta;
             }
 
@@ -446,7 +465,7 @@ namespace FlaxEditor.Gizmo
                     }
 
                     // Apply transformation (but to the parents, not whole selection pool)
-                    if (anyValid)
+                    if (anyValid || (!_isTransforming && Owner.UseDuplicate) )
                     {
                         StartTransforming();
 
