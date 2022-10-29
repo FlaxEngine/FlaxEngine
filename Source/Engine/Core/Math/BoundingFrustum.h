@@ -235,10 +235,7 @@ public:
     /// </summary>
     /// <param name="sphere">The sphere.</param>
     /// <returns>True if the current BoundingFrustum intersects a BoundingSphere, otherwise false.</returns>
-    FORCE_INLINE bool Intersects(const BoundingSphere& sphere) const
-    {
-        return Contains(sphere) != ContainmentType::Disjoint;
-    }
+    bool Intersects(const BoundingSphere& sphere) const;
 
     /// <summary>
     /// Checks whether the current BoundingFrustum intersects a BoundingBox.

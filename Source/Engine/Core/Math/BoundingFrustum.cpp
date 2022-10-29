@@ -178,3 +178,14 @@ ContainmentType BoundingFrustum::Contains(const BoundingSphere& sphere) const
         return ContainmentType::Contains;
     }
 }
+
+bool BoundingFrustum::Intersects(const BoundingSphere& sphere) const
+{
+    for (int32 i = 0; i < 6; i++)
+    {
+        const Real distance = Vector3::Dot(_planes[i].Normal, sphere.Center) + _planes[i].D;
+        if (distance < -sphere.Radius)
+            return false;
+    }
+    return true;
+}

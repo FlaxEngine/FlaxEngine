@@ -622,7 +622,7 @@ public:
     }
 
     // dot product with another vector
-    static T Dot(const Vector3Base& a, const Vector3Base& b)
+    FORCE_INLINE static T Dot(const Vector3Base& a, const Vector3Base& b)
     {
         return a.X * b.X + a.Y * b.Y + a.Z * b.Z;
     }
