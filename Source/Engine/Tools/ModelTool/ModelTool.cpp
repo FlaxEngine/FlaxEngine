@@ -1552,25 +1552,21 @@ bool ModelTool::ImportModel(const String& path, ModelData& meshData, Options& op
 
 int32 ModelTool::DetectLodIndex(const String& nodeName)
 {
-    int32 index = nodeName.FindLast(TEXT("LOD"));
+    int32 index = nodeName.FindLast(TEXT("LOD"), StringSearchCase::IgnoreCase);
     if (index != -1)
     {
-        int32 num;
-        //PE: Many models use LOD_0... to indentify LOD levels.
-        if (nodeName.Length() > 4 && nodeName[3] == '_')
+        // Some models use LOD_0 to identify LOD levels
+        if (nodeName.Length() > index + 4 && nodeName[index + 3] == '_')
             index++;
 
+        int32 num;
         if (!StringUtils::Parse(nodeName.Get() + index + 3, &num))
         {
             if (num >= 0 && num < MODEL_MAX_LODS)
-            {
                 return num;
-            }
-
             LOG(Warning, "Invalid mesh level of detail index at node \'{0}\'. Maximum supported amount of LODs is {1}.", nodeName, MODEL_MAX_LODS);
         }
     }
-
     return 0;
 }
 
