@@ -287,31 +287,29 @@ namespace FlaxEditor.Gizmo
                 delta *= 0.5f;
             if ((isScaling ? ScaleSnapEnabled : TranslationSnapEnable) || Owner.UseSnapping)
             {
-                float snapValue = isScaling ? ScaleSnapValue : TranslationSnapValue;
+                var snapValue = new Vector3(isScaling ? ScaleSnapValue : TranslationSnapValue);
                 _translationScaleSnapDelta += delta;
-                if (!isScaling && snapValue < 0.0f)
+                if (!isScaling && snapValue.X < 0.0f)
                 {
-                    //PE: Snap to object bounding box
+                    // Snap to object bounding box
                     GetSelectedObjectsBounds(out var b, out _);
-                    float X, Y, Z;
-                    if (b.Minimum.X < 0.0f) X = (float) Math.Abs(b.Minimum.X) + b.Maximum.X;
-                    else X = (float) b.Minimum.X - b.Maximum.X;
-                    if (b.Minimum.Y < 0.0f) Y = (float) Math.Abs(b.Minimum.Y) + b.Maximum.Y;
-                    else Y = (float) b.Minimum.Y - b.Maximum.Y;
-                    if (b.Minimum.Z < 0.0f) Z = (float) Math.Abs(b.Minimum.Z) + b.Maximum.Z;
-                    else Z = (float) b.Minimum.Z - b.Maximum.Z;
-                    delta = new Vector3(
-                                           (int)(_translationScaleSnapDelta.X / X) * X,
-                                           (int)(_translationScaleSnapDelta.Y / Y) * Y,
-                                           (int)(_translationScaleSnapDelta.Z / Z) * Z);
+                    if (b.Minimum.X < 0.0f)
+                        snapValue.X = (Real)Math.Abs(b.Minimum.X) + b.Maximum.X;
+                    else
+                        snapValue.X = (Real)b.Minimum.X - b.Maximum.X;
+                    if (b.Minimum.Y < 0.0f)
+                        snapValue.Y = (Real)Math.Abs(b.Minimum.Y) + b.Maximum.Y;
+                    else
+                        snapValue.Y = (Real)b.Minimum.Y - b.Maximum.Y;
+                    if (b.Minimum.Z < 0.0f)
+                        snapValue.Z = (Real)Math.Abs(b.Minimum.Z) + b.Maximum.Z;
+                    else
+                        snapValue.Z = (Real)b.Minimum.Z - b.Maximum.Z;
                 }
-                else
-                {
-                    delta = new Vector3(
-                                        (int)(_translationScaleSnapDelta.X / snapValue) * snapValue,
-                                        (int)(_translationScaleSnapDelta.Y / snapValue) * snapValue,
-                                        (int)(_translationScaleSnapDelta.Z / snapValue) * snapValue);
-                }
+                delta = new Vector3(
+                                    (int)(_translationScaleSnapDelta.X / snapValue.X) * snapValue.X,
+                                    (int)(_translationScaleSnapDelta.Y / snapValue.Y) * snapValue.Y,
+                                    (int)(_translationScaleSnapDelta.Z / snapValue.Z) * snapValue.Z);
                 _translationScaleSnapDelta -= delta;
             }
 
@@ -465,10 +463,9 @@ namespace FlaxEditor.Gizmo
                     }
 
                     // Apply transformation (but to the parents, not whole selection pool)
-                    if (anyValid || (!_isTransforming && Owner.UseDuplicate) )
+                    if (anyValid || (!_isTransforming && Owner.UseDuplicate))
                     {
                         StartTransforming();
-
                         LastDelta = new Transform(translationDelta, rotationDelta, scaleDelta);
                         OnApplyTransformation(ref translationDelta, ref rotationDelta, ref scaleDelta);
                     }

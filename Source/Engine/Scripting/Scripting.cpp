@@ -872,17 +872,14 @@ ScriptingObject* Scripting::TryFindObject(MClass* mclass)
 {
     if (mclass == nullptr)
         return nullptr;
-
     ScopeLock lock(_objectsLocker);
-
     for (auto i = _objectsDictionary.Begin(); i.IsNotEnd(); ++i)
     {
         const auto obj = i->Value;
-        if(obj->GetClass() == mclass)
+        if (obj->GetClass() == mclass)
             return obj;
     }
     return nullptr;
-
 }
 
 ScriptingObject* Scripting::FindObject(const MObject* managedInstance)

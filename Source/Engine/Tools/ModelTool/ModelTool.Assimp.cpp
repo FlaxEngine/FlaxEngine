@@ -641,7 +641,7 @@ bool ModelTool::ImportDataAssimp(const char* path, ImportedModelData& data, Opti
                 aiProcess_JoinIdenticalVertices |
                 aiProcess_LimitBoneWeights |
                 aiProcess_Triangulate |
-                aiProcess_SortByPType | //PE: Added aiProcess_SortByPType so we can ignore meshes with non triangle faces.
+                aiProcess_SortByPType |
                 aiProcess_GenUVCoords |
                 aiProcess_FindDegenerates |
                 aiProcess_FindInvalidData |

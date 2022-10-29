@@ -319,6 +319,8 @@ namespace FlaxEditor.Viewport
             {
                 TooltipText = "Position snapping values"
             };
+            if (TransformGizmo.TranslationSnapValue < 0.0f)
+                _translateSnapping.Text = "Bounding Box";
 
             for (int i = 0; i < EditorViewportTranslateSnapValues.Length; i++)
             {
@@ -326,7 +328,7 @@ namespace FlaxEditor.Viewport
                 var button = translateSnappingCM.AddButton(v.ToString());
                 button.Tag = v;
             }
-            var buttonBB = translateSnappingCM.AddButton("Bounding Box");
+            var buttonBB = translateSnappingCM.AddButton("Bounding Box").LinkTooltip("Snaps the selection based on it's bounding volume");
             buttonBB.Tag = -1.0f;
 
             translateSnappingCM.ButtonClicked += OnWidgetTranslateSnapClick;
@@ -543,28 +545,24 @@ namespace FlaxEditor.Viewport
         private void OnTranslateSnappingToggle(ViewportWidgetButton button)
         {
             TransformGizmo.TranslationSnapEnable = !TransformGizmo.TranslationSnapEnable;
-            // cache value
             _editor.ProjectCache.SetCustomData("TranslateSnapState", TransformGizmo.TranslationSnapEnable.ToString());
         }
 
         private void OnRotateSnappingToggle(ViewportWidgetButton button)
         {
             TransformGizmo.RotationSnapEnabled = !TransformGizmo.RotationSnapEnabled;
-            // cache value
             _editor.ProjectCache.SetCustomData("RotationSnapState", TransformGizmo.RotationSnapEnabled.ToString());
         }
 
         private void OnScaleSnappingToggle(ViewportWidgetButton button)
         {
             TransformGizmo.ScaleSnapEnabled = !TransformGizmo.ScaleSnapEnabled;
-            // cache value
             _editor.ProjectCache.SetCustomData("ScaleSnapState", TransformGizmo.ScaleSnapEnabled.ToString());
         }
 
         private void OnTransformSpaceToggle(ViewportWidgetButton button)
         {
             TransformGizmo.ToggleTransformSpace();
-            // cache value
             _editor.ProjectCache.SetCustomData("TransformSpaceState", TransformGizmo.ActiveTransformSpace.ToString());
         }
 
@@ -595,7 +593,6 @@ namespace FlaxEditor.Viewport
             var v = (float)button.Tag;
             TransformGizmo.ScaleSnapValue = v;
             _scaleSnapping.Text = v.ToString();
-            // cache value
             _editor.ProjectCache.SetCustomData("ScaleSnapValue", TransformGizmo.ScaleSnapValue.ToString("N"));
         }
 
@@ -634,7 +631,6 @@ namespace FlaxEditor.Viewport
             var v = (float)button.Tag;
             TransformGizmo.RotationSnapValue = v;
             _rotateSnapping.Text = v.ToString();
-            // cache value
             _editor.ProjectCache.SetCustomData("RotationSnapValue", TransformGizmo.RotationSnapValue.ToString("N"));
         }
 
@@ -675,7 +671,6 @@ namespace FlaxEditor.Viewport
                 _translateSnapping.Text = "Bounding Box";
             else
                 _translateSnapping.Text = v.ToString();
-            // cache value
             _editor.ProjectCache.SetCustomData("TranslateSnapValue", TransformGizmo.TranslationSnapValue.ToString("N"));
         }
 

@@ -54,10 +54,8 @@ namespace FlaxEditor.Gizmo
             if (!_isActive || !IsActive)
                 return;
 
-            //PE: As all axisMesh have the same pivot, add a little offset to the x axisMesh,
-            //PE: This way SortDrawCalls is able to sort the draw order.
-            //PE: https://github.com/FlaxEngine/FlaxEngine/issues/680
-            //PE: @Artist To fix the rotate, add new "wider" circleMesh, so direction is visible.
+            // As all axisMesh have the same pivot, add a little offset to the x axisMesh, this way SortDrawCalls is able to sort the draw order
+            // https://github.com/FlaxEngine/FlaxEngine/issues/680
 
             Matrix m1, m2, m3 , mx1;
             bool isXAxis = _activeAxis == Axis.X || _activeAxis == Axis.XY || _activeAxis == Axis.ZX;
