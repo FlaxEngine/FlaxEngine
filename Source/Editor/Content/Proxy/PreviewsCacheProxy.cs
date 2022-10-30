@@ -15,6 +15,9 @@ namespace FlaxEditor.Content
     {
         /// <inheritdoc />
         public override string Name => "Previews Cache";
+        
+        /// <inheritdoc />
+        public override string CategoryName => "Previews Cache";
 
         /// <inheritdoc />
         public override EditorWindow Open(Editor editor, ContentItem item)

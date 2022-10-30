@@ -17,6 +17,9 @@ namespace FlaxEditor.Content
         public override string Name => "Animation Graph Function";
 
         /// <inheritdoc />
+        public override string CategoryName => "Animation";
+
+        /// <inheritdoc />
         public override EditorWindow Open(Editor editor, ContentItem item)
         {
             return new AnimationGraphFunctionWindow(editor, item as AssetItem);

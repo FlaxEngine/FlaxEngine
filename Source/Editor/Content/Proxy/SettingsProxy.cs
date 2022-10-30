@@ -20,6 +20,9 @@ namespace FlaxEditor.Content
         /// Gets the settings type.
         /// </summary>
         public Type Type => _type;
+        
+        /// <inheritdoc />
+        public override string CategoryName => "Settings";
 
         /// <summary>
         /// Initializes a new instance of the <see cref="SettingsProxy"/> class.

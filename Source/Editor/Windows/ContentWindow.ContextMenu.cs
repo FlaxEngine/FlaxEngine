@@ -2,10 +2,12 @@
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using FlaxEditor.Content;
 using FlaxEditor.GUI.ContextMenu;
 using FlaxEngine;
 using FlaxEngine.Assertions;
+using FlaxEngine.GUI;
 using FlaxEngine.Json;
 
 namespace FlaxEditor.Windows
@@ -16,35 +18,6 @@ namespace FlaxEditor.Windows
         /// Occurs when content window wants to show the context menu for the given content item. Allows to add custom options.
         /// </summary>
         public event Action<ContextMenu, ContentItem> ContextMenuShow;
-
-        private readonly List<string> _animationGroupNames = new List<string>()
-        {
-            "Animation",
-            "Animation Graph",
-            "Animation Graph Function",
-            "Skeleton Mask",
-            "Scene Animation",
-        };
-
-        private readonly List<string> _particleGroupNames = new List<string>()
-        {
-            "Particle Emitter",
-            "Particle Emitter Function",
-            "Particle System",
-        };
-
-        private readonly List<string> _materialGroupNames = new List<string>()
-        {
-            "Material", 
-            "Material Function",
-            "Material Instance",
-        };
-
-        private readonly List<string> _physicsGroupNames = new List<string>()
-        {
-            "Collision Data",
-            "Physical Material",
-        };
 
         private void ShowContextMenuForItem(ContentItem item, ref Float2 location, bool isTreeNode)
         {
@@ -180,6 +153,28 @@ namespace FlaxEditor.Windows
                 cm.AddButton("New folder", NewFolder);
             }
 
+            // categorize the asset proxies according to their category name
+            Dictionary<string, List<AssetProxy>> categorizedProxyList = new Dictionary<string, List<AssetProxy>>();
+            for (int i = 0; i < Editor.ContentDatabase.Proxy.Count; i++)
+            {
+                var p = Editor.ContentDatabase.Proxy[i];
+                if (p.CanCreate(folder))
+                {
+                    if (p is AssetProxy ap)
+                    {
+                        if (categorizedProxyList.ContainsKey(ap.CategoryName))
+                        {
+                            categorizedProxyList.TryGetValue(ap.CategoryName, out var apList);
+                            apList?.Add(ap);
+                        }
+                        else
+                        {
+                            categorizedProxyList.Add(ap.CategoryName, new List<AssetProxy>() {ap});
+                        }
+                    }
+                }
+            }
+            
             c = cm.AddChildMenu("New");
             c.ContextMenu.Tag = item;
             c.ContextMenu.AutoSort = true;
@@ -189,17 +184,27 @@ namespace FlaxEditor.Windows
                 var p = Editor.ContentDatabase.Proxy[i];
                 if (p.CanCreate(folder))
                 {
-                    if (_animationGroupNames.Contains(p.Name))
-                        AddContentProxyToMenu(c.ContextMenu, p, "Animation");
-                    else if (_particleGroupNames.Contains(p.Name))
-                        AddContentProxyToMenu(c.ContextMenu, p, "Particles");
-                    else if (_materialGroupNames.Contains(p.Name))
-                        AddContentProxyToMenu(c.ContextMenu, p, "Materials");
-                    else if (_physicsGroupNames.Contains(p.Name))
-                        AddContentProxyToMenu(c.ContextMenu, p, "Physics");
+                    if (p is AssetProxy ap && categorizedProxyList.TryGetValue(ap.CategoryName, out var apList))
+                    {
+                        if (apList.Contains(ap))
+                        {
+                            if (apList.Count > 1)
+                            {
+                                var childMenu = c.ContextMenu.GetOrAddChildMenu(ap.CategoryName);
+                                childMenu.ContextMenu.AutoSort = true;
+                                childMenu.ContextMenu.AddButton(p.Name, () => NewItem(p));
+                            }
+                            else
+                            {
+                                c.ContextMenu.AddButton(p.Name, () => NewItem(p));
+                            }
+                        }
+                    }
                     else
+                    {
                         c.ContextMenu.AddButton(p.Name, () => NewItem(p));
-                    
+                    }
+
                     newItems++;
                 }
             }
@@ -216,21 +221,6 @@ namespace FlaxEditor.Windows
 
             // Show it
             cm.Show(this, location);
-        }
-
-        private void AddContentProxyToMenu(ContextMenu contextMenu, ContentProxy contentProxy, string menuName)
-        {
-            var childMenu = contextMenu.GetChildMenu(menuName);
-            if (childMenu == null)
-            {
-                var c = contextMenu.AddChildMenu(menuName);
-                c.ContextMenu.AutoSort = true;
-                c.ContextMenu.AddButton(contentProxy.Name, () => NewItem(contentProxy));
-            }
-            else
-            {
-                childMenu.ContextMenu.AddButton(contentProxy.Name, () => NewItem(contentProxy));
-            }
         }
 
         private void OnExpandAllClicked(ContextMenuButton button)

@@ -31,6 +31,9 @@ namespace FlaxEditor.Content
 
         /// <inheritdoc />
         public override string Name => "Prefab";
+        
+        /// <inheritdoc />
+        public override string CategoryName => "Prefab";
 
         /// <inheritdoc />
         public override string FileExtension => Extension;

@@ -19,6 +19,9 @@ namespace FlaxEditor.Content
 
         /// <inheritdoc />
         public override string Name => "Scene";
+        
+        /// <inheritdoc />
+        public override string CategoryName => "Scene";
 
         /// <inheritdoc />
         public override string FileExtension => Extension;

@@ -20,6 +20,9 @@ namespace FlaxEditor.Content
 
         /// <inheritdoc />
         public override string Name => "Sprite Atlas";
+        
+        /// <inheritdoc />
+        public override string CategoryName => "Sprites";
 
         /// <inheritdoc />
         public override bool CanReimport(ContentItem item)

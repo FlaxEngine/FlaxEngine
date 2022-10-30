@@ -20,6 +20,9 @@ namespace FlaxEditor.Content
 
         /// <inheritdoc />
         public override string Name => "IES Profile";
+        
+        /// <inheritdoc />
+        public override string CategoryName => "Lighting";
 
         /// <inheritdoc />
         public override bool CanReimport(ContentItem item)

@@ -42,6 +42,9 @@ namespace FlaxEditor.Content
     {
         /// <inheritdoc />
         public override string Name => "Collision Data";
+        
+        /// <inheritdoc />
+        public override string CategoryName => "Physics";
 
         /// <inheritdoc />
         public override EditorWindow Open(Editor editor, ContentItem item)

@@ -15,6 +15,9 @@ namespace FlaxEditor.Content
     {
         /// <inheritdoc />
         public override string Name => "Skeleton Mask";
+        
+        /// <inheritdoc />
+        public override string CategoryName => "Animation";
 
         /// <inheritdoc />
         public override EditorWindow Open(Editor editor, ContentItem item)

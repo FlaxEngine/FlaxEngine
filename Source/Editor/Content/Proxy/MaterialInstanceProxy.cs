@@ -20,6 +20,9 @@ namespace FlaxEditor.Content
 
         /// <inheritdoc />
         public override string Name => "Material Instance";
+        
+        /// <inheritdoc />
+        public override string CategoryName => "Material";
 
         /// <inheritdoc />
         public override EditorWindow Open(Editor editor, ContentItem item)

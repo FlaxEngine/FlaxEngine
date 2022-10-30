@@ -20,6 +20,9 @@ namespace FlaxEditor.Content
 
         /// <inheritdoc />
         public override string Name => "Skinned Model";
+        
+        /// <inheritdoc />
+        public override string CategoryName => "Model";
 
         /// <inheritdoc />
         public override bool CanReimport(ContentItem item)

@@ -18,6 +18,9 @@ namespace FlaxEditor.Content
     {
         /// <inheritdoc />
         public override string Name => "Animation";
+        
+        /// <inheritdoc />
+        public override string CategoryName => "Animation";
 
         /// <inheritdoc />
         public override bool CanReimport(ContentItem item)

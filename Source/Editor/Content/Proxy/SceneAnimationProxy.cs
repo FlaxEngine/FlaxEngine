@@ -40,6 +40,9 @@ namespace FlaxEditor.Content
     {
         /// <inheritdoc />
         public override string Name => "Scene Animation";
+        
+        /// <inheritdoc />
+        public override string CategoryName => "Animation";
 
         /// <inheritdoc />
         public override EditorWindow Open(Editor editor, ContentItem item)

@@ -24,6 +24,9 @@ namespace FlaxEditor.Content
 
         /// <inheritdoc />
         public override string Name => "Visual Script";
+        
+        /// <inheritdoc />
+        public override string CategoryName => "Scripting";
 
         /// <inheritdoc />
         public override EditorWindow Open(Editor editor, ContentItem item)

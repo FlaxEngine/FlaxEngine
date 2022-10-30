@@ -23,6 +23,11 @@ namespace FlaxEditor.Content
         public abstract string TypeName { get; }
 
         /// <summary>
+        ///  The category name used to sort in context menus
+        /// </summary>
+        public abstract string CategoryName { get; }
+
+        /// <summary>
         /// Checks if this proxy supports the given asset type id at the given path.
         /// </summary>
         /// <param name="typeName">The asset type identifier.</param>

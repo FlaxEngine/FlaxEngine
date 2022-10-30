@@ -15,6 +15,9 @@ namespace FlaxEditor.Content
     {
         /// <inheritdoc />
         public override string Name => "Gameplay Globals";
+        
+        /// <inheritdoc />
+        public override string CategoryName => "Globals";
 
         /// <inheritdoc />
         public override EditorWindow Open(Editor editor, ContentItem item)

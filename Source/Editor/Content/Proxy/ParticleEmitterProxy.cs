@@ -22,6 +22,9 @@ namespace FlaxEditor.Content
 
         /// <inheritdoc />
         public override string Name => "Particle Emitter";
+        
+        /// <inheritdoc />
+        public override string CategoryName => "Particles";
 
         /// <inheritdoc />
         public override EditorWindow Open(Editor editor, ContentItem item)
