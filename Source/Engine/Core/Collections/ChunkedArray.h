@@ -334,7 +334,7 @@ public:
     /// Removes the element at specified iterator position.
     /// </summary>
     /// <param name="i">The element iterator to remove.</param>
-    void Remove(Iterator& i)
+    void Remove(const Iterator& i)
     {
         if (IsEmpty())
             return;

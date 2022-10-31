@@ -496,7 +496,7 @@ public:
     /// </summary>
     /// <param name="i">The element iterator to remove.</param>
     /// <returns>True if cannot remove item from the collection because cannot find it, otherwise false.</returns>
-    bool Remove(Iterator& i)
+    bool Remove(const Iterator& i)
     {
         ASSERT(&i._collection == this);
         if (i)

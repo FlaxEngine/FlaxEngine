@@ -60,6 +60,13 @@ public:
     API_FUNCTION() static void AddObject(ScriptingObject* obj, ScriptingObject* parent = nullptr);
 
     /// <summary>
+    /// Removes the object from the network replication system.
+    /// </summary>
+    /// <remarks>Does nothing if network is offline.</remarks>
+    /// <param name="obj">The object to don't replicate.</param>
+    API_FUNCTION() static void RemoveObject(ScriptingObject* obj);
+
+    /// <summary>
     /// Spawns the object to the other clients. Can be spawned by the owner who locally created it (eg. from prefab).
     /// </summary>
     /// <remarks>Does nothing if network is offline.</remarks>

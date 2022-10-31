@@ -367,6 +367,20 @@ void NetworkReplicator::AddObject(ScriptingObject* obj, ScriptingObject* parent)
     Objects.Add(MoveTemp(item));
 }
 
+void NetworkReplicator::RemoveObject(ScriptingObject* obj)
+{
+    if (!obj || NetworkManager::State == NetworkConnectionState::Offline)
+        return;
+    ScopeLock lock(ObjectsLock);
+    const auto it = Objects.Find(obj->GetID());
+    if (it != Objects.End())
+        return;
+
+    // Remove object from the list
+    NETWORK_REPLICATOR_LOG(Info, "[NetworkReplicator] Remove object {}, owned by {}", obj->GetID().ToString(), it->Item.ParentId.ToString());
+    Objects.Remove(it);
+}
+
 void NetworkReplicator::SpawnObject(ScriptingObject* obj)
 {
     if (!obj || NetworkManager::State == NetworkConnectionState::Offline)
@@ -507,10 +521,9 @@ void NetworkInternal::NetworkReplicatorClear()
         {
             // Cleanup any spawned objects
             DeleteNetworkObject(obj);
+            Objects.Remove(it);
         }
     }
-    Objects.Clear();
-    Objects.SetCapacity(0);
     SpawnQueue.Clear();
     DespawnQueue.Clear();
     IdsRemappingTable.Clear();
