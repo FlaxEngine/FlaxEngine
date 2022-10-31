@@ -148,13 +148,13 @@ NetworkReplicationService NetworkReplicationServiceInstance;
 
 void INetworkSerializable_Serialize(void* instance, NetworkStream* stream, void* tag)
 {
-    const int16 vtableOffset = (int16)tag;
+    const int16 vtableOffset = (int16)(intptr)tag;
     ((INetworkSerializable*)((byte*)instance + vtableOffset))->Serialize(stream);
 }
 
 void INetworkSerializable_Deserialize(void* instance, NetworkStream* stream, void* tag)
 {
-    const int16 vtableOffset = (int16)tag;
+    const int16 vtableOffset = (int16)(intptr)tag;
     ((INetworkSerializable*)((byte*)instance + vtableOffset))->Deserialize(stream);
 }
 
@@ -322,7 +322,7 @@ bool NetworkReplicator::InvokeSerializer(const ScriptingTypeHandle& typeHandle, 
         {
             serializer.Methods[0] = INetworkSerializable_Serialize;
             serializer.Methods[1] = INetworkSerializable_Deserialize;
-            serializer.Tags[0] = serializer.Tags[1] = (void*)interface->VTableOffset; // Pass VTableOffset to the callback
+            serializer.Tags[0] = serializer.Tags[1] = (void*)(intptr)interface->VTableOffset; // Pass VTableOffset to the callback
             SerializersTable.Add(typeHandle, serializer);
         }
         else if (const ScriptingTypeHandle baseTypeHandle = typeHandle.GetType().GetBaseType())
