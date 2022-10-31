@@ -17,6 +17,8 @@
 #include "Engine/Engine/EngineService.h"
 #include "Engine/Level/Actor.h"
 #include "Engine/Level/SceneObject.h"
+#include "Engine/Level/Prefabs/Prefab.h"
+#include "Engine/Level/Prefabs/PrefabManager.h"
 #include "Engine/Profiler/ProfilerCPU.h"
 #include "Engine/Scripting/Script.h"
 #include "Engine/Scripting/Scripting.h"
@@ -48,6 +50,8 @@ PACK_STRUCT(struct NetworkMessageObjectSpawn
     NetworkMessageIDs ID = NetworkMessageIDs::ObjectSpawn;
     Guid ObjectId;
     Guid ParentId;
+    Guid PrefabId;
+    Guid PrefabObjectID;
     uint32 OwnerClientId;
     char ObjectTypeName[128]; // TODO: introduce networked-name to synchronize unique names as ushort (less data over network)
     });
@@ -194,12 +198,45 @@ NetworkReplicatedObject* ResolveObject(Guid objectId, Guid parentId, char object
     return nullptr;
 }
 
+void SendObjectSpawnMessage(const NetworkReplicatedObject& item, ScriptingObject* obj)
+{
+    NetworkMessageObjectSpawn msgData;
+    msgData.ObjectId = item.ObjectId;
+    msgData.ParentId = item.ParentId;
+    const bool isClient = NetworkManager::IsClient();
+    if (isClient)
+    {
+        // Remap local client object ids into server ids
+        IdsRemappingTable.KeyOf(msgData.ObjectId, &msgData.ObjectId);
+        IdsRemappingTable.KeyOf(msgData.ParentId, &msgData.ParentId);
+    }
+    msgData.PrefabId = Guid::Empty;
+    msgData.PrefabObjectID = Guid::Empty;
+    auto* objScene = ScriptingObject::Cast<SceneObject>(obj);
+    if (objScene && objScene->HasPrefabLink())
+    {
+        msgData.PrefabId = objScene->GetPrefabID();
+        msgData.PrefabObjectID = objScene->GetPrefabObjectID();
+    }
+    msgData.OwnerClientId = item.OwnerClientId;
+    const StringAnsiView& objectTypeName = obj->GetType().Fullname;
+    Platform::MemoryCopy(msgData.ObjectTypeName, objectTypeName.Get(), objectTypeName.Length());
+    msgData.ObjectTypeName[objectTypeName.Length()] = 0;
+    auto* peer = NetworkManager::Peer;
+    NetworkMessage msg = peer->BeginSendMessage();
+    msg.WriteStructure(msgData);
+    if (isClient)
+        peer->EndSendMessage(NetworkChannelType::ReliableOrdered, msg);
+    else
+        peer->EndSendMessage(NetworkChannelType::ReliableOrdered, msg, CachedTargets);
+}
+
 void SendObjectRoleMessage(const NetworkReplicatedObject& item, const NetworkClient* excludedClient = nullptr)
 {
-    auto peer = NetworkManager::Peer;
     NetworkMessageObjectRole msgData;
     msgData.ObjectId = item.ObjectId;
     msgData.OwnerClientId = item.OwnerClientId;
+    auto peer = NetworkManager::Peer;
     NetworkMessage msg = peer->BeginSendMessage();
     msg.WriteStructure(msgData);
     if (NetworkManager::IsClient())
@@ -224,6 +261,21 @@ FORCE_INLINE void DeleteNetworkObject(ScriptingObject* obj)
         ((Script*)obj)->GetParent()->DeleteObject();
     else
         obj->DeleteObject();
+}
+
+SceneObject* FindPrefabObject(Actor* a, const Guid& prefabObjectId)
+{
+    if (a->GetPrefabObjectID() == prefabObjectId)
+        return a;
+    for (auto* script : a->Scripts)
+    {
+        if (script->GetPrefabObjectID() == prefabObjectId)
+            return script;
+    }
+    SceneObject* result = nullptr;
+    for (int32 i = 0; i < a->Children.Count() && !result; i++)
+        result = FindPrefabObject(a->Children[i], prefabObjectId);
+    return result;
 }
 
 #if !COMPILE_WITHOUT_CSHARP
@@ -439,8 +491,9 @@ void NetworkInternal::NetworkReplicatorClear()
     }
     Objects.Clear();
     Objects.SetCapacity(0);
+    SpawnQueue.Clear();
+    DespawnQueue.Clear();
     IdsRemappingTable.Clear();
-    IdsRemappingTable.SetCapacity(0);
     SAFE_DELETE(CachedWriteStream);
     SAFE_DELETE(CachedReadStream);
     NewClients.Clear();
@@ -481,19 +534,7 @@ void NetworkInternal::NetworkReplicatorUpdate()
             ScriptingObject* obj = item.Object.Get();
             if (!obj || !item.Spawned)
                 continue;
-
-            // Send spawn message
-            NetworkMessageObjectSpawn msgData;
-            msgData.ObjectId = item.ObjectId;
-            msgData.ParentId = item.ParentId;
-            msgData.OwnerClientId = item.OwnerClientId;
-            // TODO: support spawning whole prefabs
-            const StringAnsiView& objectTypeName = obj->GetType().Fullname;
-            Platform::MemoryCopy(msgData.ObjectTypeName, objectTypeName.Get(), objectTypeName.Length());
-            msgData.ObjectTypeName[objectTypeName.Length()] = 0;
-            NetworkMessage msg = peer->BeginSendMessage();
-            msg.WriteStructure(msgData);
-            peer->EndSendMessage(NetworkChannelType::ReliableOrdered, msg, CachedTargets);
+            SendObjectSpawnMessage(item, obj);
         }
         NewClients.Clear();
     }
@@ -519,6 +560,7 @@ void NetworkInternal::NetworkReplicatorUpdate()
         for (const Guid& e : DespawnQueue)
         {
             // Send despawn message
+            NETWORK_REPLICATOR_LOG(Info, "[NetworkReplicator] Despawn object ID={}", e.ToString());
             NetworkMessageObjectDespawn msgData;
             msgData.ObjectId = e;
             if (isClient)
@@ -556,28 +598,8 @@ void NetworkInternal::NetworkReplicatorUpdate()
             if (item.OwnerClientId != NetworkManager::LocalClientId || item.Role != NetworkObjectRole::OwnedAuthoritative)
                 continue; // Skip spawning objects that we don't own
 
-            // Send spawn message
-            NetworkMessageObjectSpawn msgData;
-            msgData.ObjectId = item.ObjectId;
-            msgData.ParentId = item.ParentId;
-            msgData.OwnerClientId = item.OwnerClientId;
-            if (isClient)
-            {
-                // Remap local client object ids into server ids
-                IdsRemappingTable.KeyOf(msgData.ObjectId, &msgData.ObjectId);
-                IdsRemappingTable.KeyOf(msgData.ParentId, &msgData.ParentId);
-            }
-            // TODO: support spawning whole prefabs
-            const StringAnsiView& objectTypeName = obj->GetType().Fullname;
-            Platform::MemoryCopy(msgData.ObjectTypeName, objectTypeName.Get(), objectTypeName.Length());
-            msgData.ObjectTypeName[objectTypeName.Length()] = 0;
-            NetworkMessage msg = peer->BeginSendMessage();
-            msg.WriteStructure(msgData);
-            if (isClient)
-                peer->EndSendMessage(NetworkChannelType::ReliableOrdered, msg);
-            else
-                peer->EndSendMessage(NetworkChannelType::ReliableOrdered, msg, CachedTargets);
-
+            NETWORK_REPLICATOR_LOG(Info, "[NetworkReplicator] Spawn object ID={}", item.ToString());
+            SendObjectSpawnMessage(item, obj);
             item.Spawned = true;
         }
         SpawnQueue.Clear();
@@ -724,18 +746,80 @@ void NetworkInternal::OnNetworkMessageObjectSpawn(NetworkEvent& event, NetworkCl
     else
     {
         // Recreate object locally
-        // TODO: support spawning whole prefabs
-        const ScriptingTypeHandle objectType = Scripting::FindScriptingType(StringAnsiView(msgData.ObjectTypeName));
-        ScriptingObject* obj = ScriptingObject::NewObject(objectType);
-        if (!obj)
-        {
-#if NETWORK_REPLICATOR_DEBUG_LOG
-            LOG(Error, "[NetworkReplicator] Failed to spawn object type {}", String(msgData.ObjectTypeName));
-#endif
-            return;
-        }
-        obj->RegisterObject();
+        ScriptingObject* obj = nullptr;
         const NetworkReplicatedObject* parent = ResolveObject(msgData.ParentId);
+        if (msgData.PrefabId.IsValid())
+        {
+            Actor* prefabInstance = nullptr;
+            Actor* parentActor = parent && parent->Object && parent->Object->Is<Actor>() ? parent->Object.As<Actor>() : nullptr;
+            if (parentActor && parentActor->GetPrefabID() == msgData.PrefabId)
+            {
+                // Reuse parent object as prefab instance
+                prefabInstance = parentActor;
+            }
+            else if (parentActor = Scripting::TryFindObject<Actor>(msgData.ParentId))
+            {
+                // Try to find that spawned prefab (eg. prefab with networked script was spawned before so now we need to link it)
+                for (Actor* child : parentActor->Children)
+                {
+                    if (child->GetPrefabID() == msgData.PrefabId)
+                    {
+                        if (Objects.Contains(child->GetID()))
+                        {
+                            obj = FindPrefabObject(child, msgData.PrefabObjectID);
+                            if (Objects.Contains(obj->GetID()))
+                            {
+                                // Other instance with already spawned network object
+                                obj = nullptr;
+                            }
+                            else
+                            {
+                                // Reuse already spawned object within a parent
+                                prefabInstance = child;
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
+            if (!prefabInstance)
+            {
+                // Spawn prefab
+                auto prefab = (Prefab*)LoadAsset(msgData.PrefabId, Prefab::TypeInitializer);
+                if (!prefab)
+                {
+                    NETWORK_REPLICATOR_LOG(Error, "[NetworkReplicator] Failed to find prefab {}", msgData.PrefabId.ToString());
+                    return;
+                }
+                prefabInstance = PrefabManager::SpawnPrefab(prefab, nullptr, nullptr);
+                if (!prefabInstance)
+                {
+                    NETWORK_REPLICATOR_LOG(Error, "[NetworkReplicator] Failed to spawn object type {}", msgData.PrefabId.ToString());
+                    return;
+                }
+            }
+            if (!obj)
+                obj = FindPrefabObject(prefabInstance, msgData.PrefabObjectID);
+            if (!obj)
+            {
+                NETWORK_REPLICATOR_LOG(Error, "[NetworkReplicator] Failed to find object {} in prefab {}", msgData.PrefabObjectID.ToString(), msgData.PrefabId.ToString());
+                Delete(prefabInstance);
+                return;
+            }
+        }
+        else
+        {
+            // Spawn object
+            const ScriptingTypeHandle objectType = Scripting::FindScriptingType(StringAnsiView(msgData.ObjectTypeName));
+            obj = ScriptingObject::NewObject(objectType);
+            if (!obj)
+            {
+                NETWORK_REPLICATOR_LOG(Error, "[NetworkReplicator] Failed to spawn object type {}", String(msgData.ObjectTypeName));
+                return;
+            }
+        }
+        if (!obj->IsRegistered())
+            obj->RegisterObject();
 
         // Add object to the list
         NetworkReplicatedObject item;
