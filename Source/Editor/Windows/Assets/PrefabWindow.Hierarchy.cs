@@ -333,8 +333,10 @@ namespace FlaxEditor.Windows.Assets
             }
             if (parentActor != null)
             {
-                // Use the same location
+                // Match the parent
                 actor.Transform = parentActor.Transform;
+                actor.StaticFlags = parentActor.StaticFlags;
+                actor.Layer = parentActor.Layer;
 
                 // Rename actor to identify it easily
                 actor.Name = StringUtils.IncrementNameNumber(actor.GetType().Name, x => parentActor.GetChild(x) == null);
