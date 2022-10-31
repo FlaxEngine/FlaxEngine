@@ -847,7 +847,7 @@ void GlobalSignDistanceFieldPass::RenderDebug(RenderContext& renderContext, GPUC
 
 void GlobalSignDistanceFieldPass::RasterizeModelSDF(Actor* actor, const ModelBase::SDFData& sdf, const Transform& localToWorld, const BoundingBox& objectBounds)
 {
-    if (!sdf.Texture || sdf.Texture->ResidentMipLevels() == 0)
+    if (!sdf.Texture)
         return;
 
     // Setup object data
@@ -901,6 +901,7 @@ void GlobalSignDistanceFieldPass::RasterizeModelSDF(Actor* actor, const ModelBas
     RasterizeChunkKey key;
     auto& chunks = ChunksCache;
     const bool dynamic = !GLOBAL_SDF_ACTOR_IS_STATIC(actor);
+    const bool unloaded = sdf.Texture->ResidentMipLevels() == 0;
     for (key.Coord.Z = objectChunkMin.Z; key.Coord.Z <= objectChunkMax.Z; key.Coord.Z++)
     {
         for (key.Coord.Y = objectChunkMin.Y; key.Coord.Y <= objectChunkMax.Y; key.Coord.Y++)
@@ -911,6 +912,8 @@ void GlobalSignDistanceFieldPass::RasterizeModelSDF(Actor* actor, const ModelBas
                 key.Hash = key.Coord.Z * (RasterizeChunkKeyHashResolution * RasterizeChunkKeyHashResolution) + key.Coord.Y * RasterizeChunkKeyHashResolution + key.Coord.X;
                 RasterizeChunk* chunk = &chunks[key];
                 chunk->Dynamic |= dynamic;
+                if (unloaded)
+                    continue;
 
                 // Move to the next layer if chunk has overflown
                 while (chunk->ModelsCount == GLOBAL_SDF_RASTERIZE_MODEL_MAX_COUNT)
@@ -935,7 +938,7 @@ void GlobalSignDistanceFieldPass::RasterizeModelSDF(Actor* actor, const ModelBas
 
 void GlobalSignDistanceFieldPass::RasterizeHeightfield(Actor* actor, GPUTexture* heightfield, const Transform& localToWorld, const BoundingBox& objectBounds, const Float4& localToUV)
 {
-    if (!heightfield || heightfield->ResidentMipLevels() == 0)
+    if (!heightfield)
         return;
 
     // Setup object data
@@ -968,6 +971,7 @@ void GlobalSignDistanceFieldPass::RasterizeHeightfield(Actor* actor, GPUTexture*
     RasterizeChunkKey key;
     auto& chunks = ChunksCache;
     const bool dynamic = !GLOBAL_SDF_ACTOR_IS_STATIC(actor);
+    const bool unloaded = heightfield->ResidentMipLevels() == 0;
     for (key.Coord.Z = objectChunkMin.Z; key.Coord.Z <= objectChunkMax.Z; key.Coord.Z++)
     {
         for (key.Coord.Y = objectChunkMin.Y; key.Coord.Y <= objectChunkMax.Y; key.Coord.Y++)
@@ -978,6 +982,8 @@ void GlobalSignDistanceFieldPass::RasterizeHeightfield(Actor* actor, GPUTexture*
                 key.Hash = key.Coord.Z * (RasterizeChunkKeyHashResolution * RasterizeChunkKeyHashResolution) + key.Coord.Y * RasterizeChunkKeyHashResolution + key.Coord.X;
                 RasterizeChunk* chunk = &chunks[key];
                 chunk->Dynamic |= dynamic;
+                if (unloaded)
+                    continue;
 
                 // Move to the next layer if chunk has overflown
                 while (chunk->HeightfieldsCount == GLOBAL_SDF_RASTERIZE_HEIGHTFIELD_MAX_COUNT)
