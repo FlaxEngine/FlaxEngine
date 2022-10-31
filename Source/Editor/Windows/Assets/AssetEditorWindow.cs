@@ -190,7 +190,7 @@ namespace FlaxEditor.Windows.Assets
             {
                 // Set flag
                 _isEdited = true;
-
+                Focus();
                 // Call events
                 OnEditedState();
                 OnEdited?.Invoke();
