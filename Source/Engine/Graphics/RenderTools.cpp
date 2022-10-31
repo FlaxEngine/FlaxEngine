@@ -489,6 +489,95 @@ int32 RenderTools::ComputeSkinnedModelLOD(const SkinnedModel* model, const Float
     return 0;
 }
 
+void RenderTools::ComputeCascadeUpdateFrequency(int32 cascadeIndex, int32 cascadeCount, int32& updateFrequency, int32& updatePhrase, int32 updateMaxCountPerFrame)
+{
+    switch (updateMaxCountPerFrame)
+    {
+    case 1: // 1 cascade update per frame
+        switch (cascadeIndex)
+        {
+        case 0: // Cascade 0
+            updateFrequency = 2;
+            updatePhrase = 0;
+            break;
+        case 1: // Cascade 1
+            updateFrequency = 4;
+            updatePhrase = 1;
+            break;
+        case 2: // Cascade 2
+            updateFrequency = 8;
+            updatePhrase = 3;
+            break;
+        default:
+            if (cascadeCount > 4)
+            {
+                if (cascadeIndex == 3)
+                {
+                    // Cascade 3
+                    updateFrequency = 16;
+                    updatePhrase = 7;
+                }
+                else
+                {
+                    // Other
+                    updateFrequency = 16;
+                    updatePhrase = 15;
+                }
+            }
+            else
+            {
+                // Cascade 3
+                updateFrequency = 8;
+                updatePhrase = 7;
+            }
+        }
+        break;
+    case 2: // 2 cascade2 update per frame
+        switch (cascadeIndex)
+        {
+        case 0: // Cascade 0
+            updateFrequency = 1;
+            updatePhrase = 0;
+            break;
+        case 1: // Cascade 1
+            updateFrequency = 2;
+            updatePhrase = 0;
+            break;
+        case 2: // Cascade 2
+            updateFrequency = 4;
+            updatePhrase = 1;
+            break;
+        default:
+            if (cascadeCount > 4)
+            {
+                if (cascadeIndex == 3)
+                {
+                    // Cascade 3
+                    updateFrequency = 8;
+                    updatePhrase = 3;
+                }
+                else
+                {
+                    // Other
+                    updateFrequency = 8;
+                    updatePhrase = 7;
+                }
+            }
+            else
+            {
+                // Cascade 3
+                updateFrequency = 4;
+                updatePhrase = 3;
+            }
+        }
+        break;
+    default: // Every frame
+        updateFrequency = 1;
+        updatePhrase = 1;
+        break;
+    }
+}
+
 int32 MipLevelsCount(int32 width, bool useMipLevels)
 {
     if (!useMipLevels)

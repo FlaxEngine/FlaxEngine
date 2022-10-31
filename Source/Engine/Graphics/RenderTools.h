@@ -108,6 +108,17 @@ public:
         const uint32 distanceI = *((uint32*)&distance);
         return ((uint32)(-(int32)(distanceI >> 31)) | 0x80000000) ^ distanceI;
     }
+
+    // Calculates the update frequency and phrase for the given cached data (eg. cascaded shadow map or global sdf cascade contents). Lower data indices are updated first and more frequent.
+    static void ComputeCascadeUpdateFrequency(int32 cascadeIndex, int32 cascadeCount, int32& updateFrequency, int32& updatePhrase, int32 updateMaxCountPerFrame = 1);
+
+    // Checks if cached data should be updated during the given frame.
+    FORCE_INLINE static bool ShouldUpdateCascade(int32 frameIndex, int32 cascadeIndex, int32 cascadeCount, int32 updateMaxCountPerFrame = 1, bool updateForce = false)
+    {
+        int32 updateFrequency, updatePhrase;
+        ComputeCascadeUpdateFrequency(cascadeIndex, cascadeCount, updateFrequency, updatePhrase, updateMaxCountPerFrame);
+        return (frameIndex % updateFrequency == updatePhrase) || updateForce;
+    }
 };
 
 // Calculate mip levels count for a texture 1D

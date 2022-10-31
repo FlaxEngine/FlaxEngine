@@ -11,6 +11,7 @@
 #include "Engine/Graphics/RenderTask.h"
 #include "Engine/Graphics/RenderBuffers.h"
 #include "Engine/Graphics/RenderTargetPool.h"
+#include "Engine/Graphics/RenderTools.h"
 #include "Engine/Graphics/Shaders/GPUShader.h"
 #include "Engine/Level/Scene/SceneRendering.h"
 #include "Engine/Level/Actors/StaticModel.h"
@@ -171,6 +172,7 @@ struct CascadeData
 class GlobalSignDistanceFieldCustomBuffer : public RenderBuffers::CustomBuffer, public ISceneRenderingListener
 {
 public:
+    int32 FrameIndex = 0;
     int32 Resolution = 0;
     GPUTexture* Texture = nullptr;
     GPUTexture* TextureMip = nullptr;
@@ -415,6 +417,7 @@ bool GlobalSignDistanceFieldPass::Render(RenderContext& renderContext, GPUContex
     {
         sdfData.Cascades.Resize(cascadesCount);
         sdfData.Resolution = resolution;
+        sdfData.FrameIndex = 0;
         updated = true;
         auto desc = GPUTextureDescription::New3D(resolution * cascadesCount, resolution, resolution, GLOBAL_SDF_FORMAT, GPUTextureFlags::ShaderResource | GPUTextureFlags::UnorderedAccess, 1);
         {
@@ -489,14 +492,16 @@ bool GlobalSignDistanceFieldPass::Render(RenderContext& renderContext, GPUContex
     auto& chunks = ChunksCache;
     chunks.EnsureCapacity(rasterizeChunks * rasterizeChunks, false);
     bool anyDraw = false;
-    const uint64 cascadeFrequencies[] = { 2, 3, 5, 11 };
-    //const uint64 cascadeFrequencies[] = { 1, 1, 1, 1 };
+    const bool updateEveryFrame = false; // true if update all cascades every frame
+    const int32 maxCascadeUpdatesPerFrame = 1; // maximum cascades to update at a single frame
     GPUTextureView* textureView = sdfData.Texture->ViewVolume();
     GPUTextureView* textureMipView = sdfData.TextureMip->ViewVolume();
+    if (sdfData.FrameIndex++ > 128)
+        sdfData.FrameIndex = 0;
     for (int32 cascadeIndex = 0; cascadeIndex < cascadesCount; cascadeIndex++)
     {
         // Reduce frequency of the updates
-        if (useCache && (Engine::FrameCount % cascadeFrequencies[cascadeIndex]) != 0)
+        if (useCache && !RenderTools::ShouldUpdateCascade(sdfData.FrameIndex, cascadeIndex, cascadesCount, maxCascadeUpdatesPerFrame, updateEveryFrame))
             continue;
         auto& cascade = sdfData.Cascades[cascadeIndex];
         const float cascadeDistance = distanceExtent * cascadesDistanceScales[cascadeIndex];
