@@ -322,6 +322,11 @@ bool NetworkReplicator::InvokeSerializer(const ScriptingTypeHandle& typeHandle, 
             serializer.Methods[1] = INetworkSerializable_Deserialize;
             SerializersTable.Add(typeHandle, serializer);
         }
+        else if (const ScriptingTypeHandle baseTypeHandle = typeHandle.GetType().GetBaseType())
+        {
+            // Fallback to base type
+            return InvokeSerializer(baseTypeHandle, instance, stream, serialize);;
+        }
         else
             return true;
     }
