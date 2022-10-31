@@ -185,12 +185,13 @@ namespace FlaxEditor.Windows.Assets
         /// <inheritdoc />
         public void MarkAsEdited()
         {
+            Focus();
             // Check if state will change
             if (_isEdited == false)
             {
                 // Set flag
                 _isEdited = true;
-                Focus();
+
                 // Call events
                 OnEditedState();
                 OnEdited?.Invoke();
