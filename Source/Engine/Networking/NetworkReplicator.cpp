@@ -466,6 +466,18 @@ void NetworkReplicator::SetObjectOwnership(ScriptingObject* obj, uint32 ownerCli
     }
 }
 
+void NetworkReplicator::DirtyObject(ScriptingObject* obj)
+{
+    ScopeLock lock(ObjectsLock);
+    const auto it = Objects.Find(obj->GetID());
+    if (it == Objects.End())
+        return;
+    auto& item = it->Item;
+    if (item.Object != obj || item.Role != NetworkObjectRole::OwnedAuthoritative)
+        return;
+    // TODO: implement objects state replication frequency and dirtying
+}
+
 void NetworkInternal::NetworkReplicatorClientConnected(NetworkClient* client)
 {
     ScopeLock lock(ObjectsLock);

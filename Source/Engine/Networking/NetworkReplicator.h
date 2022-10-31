@@ -95,6 +95,12 @@ public:
     /// <param name="localRole">The local role to assign for the object.</param>
     API_FUNCTION() static void SetObjectOwnership(ScriptingObject* obj, uint32 ownerClientId, NetworkObjectRole localRole = NetworkObjectRole::Replicated);
 
+    /// <summary>
+    /// Marks the object dirty to perform immediate replication to the other clients.
+    /// </summary>
+    /// <param name="obj">The network object.</param>
+    API_FUNCTION() static void DirtyObject(ScriptingObject* obj);
+
 private:
 #if !COMPILE_WITHOUT_CSHARP
     API_FUNCTION(NoProxy) static void AddSerializer(const ScriptingTypeHandle& type, const Function<void(void*, void*)>& serialize, const Function<void(void*, void*)>& deserialize);
