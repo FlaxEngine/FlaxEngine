@@ -25,10 +25,13 @@ void* GPUBufferDX11::Map(GPUResourceMapMode mode)
     D3D11_MAPPED_SUBRESOURCE map;
     map.pData = nullptr;
     D3D11_MAP mapType;
+    UINT mapFlags = 0;
     switch (mode)
     {
     case GPUResourceMapMode::Read:
         mapType = D3D11_MAP_READ;
+        if (_desc.Usage == GPUResourceUsage::StagingReadback)
+            mapFlags = D3D11_MAP_FLAG_DO_NOT_WAIT;
         break;
     case GPUResourceMapMode::Write:
         mapType = D3D11_MAP_WRITE_DISCARD;
@@ -37,12 +40,12 @@ void* GPUBufferDX11::Map(GPUResourceMapMode mode)
         mapType = D3D11_MAP_READ_WRITE;
         break;
     default:
-        CRASH;
         return nullptr;
     }
 
-    const HRESULT result = _device->GetIM()->Map(_resource, 0, mapType, 0, &map);
-    LOG_DIRECTX_RESULT(result);
+    const HRESULT result = _device->GetIM()->Map(_resource, 0, mapType, mapFlags, &map);
+    if (result != DXGI_ERROR_WAS_STILL_DRAWING)
+        LOG_DIRECTX_RESULT(result);
     return map.pData;
 }
 

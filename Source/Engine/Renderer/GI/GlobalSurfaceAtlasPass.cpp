@@ -672,7 +672,7 @@ bool GlobalSurfaceAtlasPass::Render(RenderContext& renderContext, GPUContext* co
             }
             if (surfaceAtlasData.CulledObjectsCounterIndex != -1)
             {
-                // Get the last counter value (accept staging readback delay)
+                // Get the last counter value (accept staging readback delay or not available data yet)
                 notReady = true;
                 auto data = (uint32*)_culledObjectsSizeBuffer->Map(GPUResourceMapMode::Read);
                 if (data)
@@ -685,6 +685,10 @@ bool GlobalSurfaceAtlasPass::Render(RenderContext& renderContext, GPUContext* co
                         notReady = false;
                     }
                 }
+
+                // Allow to be ready if the buffer was already used
+                if (notReady && surfaceAtlasData.CulledObjectsBuffer && surfaceAtlasData.CulledObjectsBuffer->IsAllocated())
+                    notReady = false;
             }
             if (surfaceAtlasData.CulledObjectsCounterIndex == -1)
             {
@@ -717,7 +721,8 @@ bool GlobalSurfaceAtlasPass::Render(RenderContext& renderContext, GPUContext* co
             if (surfaceAtlasData.CulledObjectsBuffer->Init(desc))
                 return true;
         }
-        ZoneValue(surfaceAtlasData.CulledObjectsBuffer->GetSize() / 1024); // CulledObjectsBuffer size in kB
+        objectsBufferCapacity = surfaceAtlasData.CulledObjectsBuffer->GetSize();
+        ZoneValue(objectsBufferCapacity / 1024); // CulledObjectsBuffer size in kB
 
         // Clear chunks counter (uint at 0 is used for a counter)
         uint32 counter = 1; // Move write location for culled objects after counter
