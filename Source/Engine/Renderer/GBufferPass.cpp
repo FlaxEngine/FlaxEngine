@@ -288,6 +288,7 @@ GPUTextureView* GBufferPass::RenderSkybox(RenderContext& renderContext, GPUConte
     {
         // Initialize skybox texture
         auto& skyboxData = *renderContext.Buffers->GetCustomBuffer<SkyboxCustomBuffer>(TEXT("Skybox"));
+        skyboxData.LastFrameUsed = Engine::FrameCount;
         bool dirty = false;
         const int32 resolution = 16;
         if (!skyboxData.Skybox)
