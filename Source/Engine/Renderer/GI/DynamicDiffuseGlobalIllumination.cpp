@@ -498,7 +498,7 @@ bool DynamicDiffuseGlobalIlluminationPass::RenderInner(RenderContext& renderCont
 
     // Update probes
     {
-        PROFILE_GPU_CPU("Probes Update");
+        PROFILE_GPU_CPU_NAMED("Probes Update");
         bool anyDirty = false;
         uint32 threadGroupsX, threadGroupsY;
         for (int32 cascadeIndex = 0; cascadeIndex < cascadesCount; cascadeIndex++)
@@ -509,7 +509,7 @@ bool DynamicDiffuseGlobalIlluminationPass::RenderInner(RenderContext& renderCont
 
             // Classify probes (activation/deactivation and relocation)
             {
-                PROFILE_GPU_CPU("Classify Probes");
+                PROFILE_GPU_CPU_NAMED("Classify Probes");
                 uint32 activeProbesCount = 0;
                 context->UpdateBuffer(ddgiData.ActiveProbes, &activeProbesCount, sizeof(uint32), 0);
                 threadGroupsX = Math::DivideAndRoundUp(probesCountCascade, DDGI_PROBE_CLASSIFY_GROUP_SIZE);
@@ -528,7 +528,7 @@ bool DynamicDiffuseGlobalIlluminationPass::RenderInner(RenderContext& renderCont
 
             // Build indirect args for probes updating (loop over active-only probes)
             {
-                PROFILE_GPU_CPU("Init Args");
+                PROFILE_GPU_CPU_NAMED("Init Args");
                 context->BindSR(0, ddgiData.ActiveProbes->View());
                 context->BindUA(0, ddgiData.UpdateProbesInitArgs->View());
                 context->Dispatch(_csUpdateProbesInitArgs, 1, 1, 1);
@@ -547,7 +547,7 @@ bool DynamicDiffuseGlobalIlluminationPass::RenderInner(RenderContext& renderCont
 
                 // Trace rays from probes
                 {
-                    PROFILE_GPU_CPU("Trace Rays");
+                    PROFILE_GPU_CPU_NAMED("Trace Rays");
 
                     // Global SDF with Global Surface Atlas software raytracing (thread X - per probe ray, thread Y - per probe)
                     context->BindSR(0, bindingDataSDF.Texture ? bindingDataSDF.Texture->ViewVolume() : nullptr);
@@ -568,7 +568,7 @@ bool DynamicDiffuseGlobalIlluminationPass::RenderInner(RenderContext& renderCont
 
                 // Update probes irradiance and distance textures (one thread-group per probe)
                 {
-                    PROFILE_GPU_CPU("Update Probes");
+                    PROFILE_GPU_CPU_NAMED("Update Probes");
                     context->BindSR(0, ddgiData.Result.ProbesState);
                     context->BindSR(1, ddgiData.ProbesTrace->View());
                     context->BindSR(2, ddgiData.ActiveProbes->View());
@@ -587,7 +587,7 @@ bool DynamicDiffuseGlobalIlluminationPass::RenderInner(RenderContext& renderCont
         // Update probes border pixels
         if (anyDirty)
         {
-            PROFILE_GPU_CPU("Update Borders");
+            PROFILE_GPU_CPU_NAMED("Update Borders");
 
             // Irradiance
             context->BindUA(0, ddgiData.Result.ProbesIrradiance);
@@ -663,7 +663,7 @@ bool DynamicDiffuseGlobalIlluminationPass::Render(RenderContext& renderContext, 
     // Render indirect lighting
     if (lightBuffer)
     {
-        PROFILE_GPU_CPU("Indirect Lighting");
+        PROFILE_GPU_CPU_NAMED("Indirect Lighting");
 #if 0
         // DDGI indirect lighting debug preview
         context->Clear(lightBuffer, Color::Transparent);
@@ -694,7 +694,7 @@ bool DynamicDiffuseGlobalIlluminationPass::Render(RenderContext& renderContext, 
     // Probes debug drawing
     if (renderContext.View.Mode == ViewMode::GlobalIllumination && lightBuffer)
     {
-        PROFILE_GPU_CPU("Debug Probes");
+        PROFILE_GPU_CPU_NAMED("Debug Probes");
         if (!_debugModel)
             _debugModel = Content::LoadAsyncInternal<Model>(TEXT("Editor/Primitives/Sphere"));
         if (!_debugMaterial)

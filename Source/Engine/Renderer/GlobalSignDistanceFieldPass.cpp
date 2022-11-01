@@ -472,7 +472,7 @@ bool GlobalSignDistanceFieldPass::Render(RenderContext& renderContext, GPUContex
     GPUTexture* tmpMip = nullptr;
     if (updated)
     {
-        PROFILE_GPU_CPU("Init");
+        PROFILE_GPU_CPU_NAMED("Init");
         for (auto& cascade : sdfData.Cascades)
         {
             cascade.NonEmptyChunks.Clear();
@@ -589,7 +589,7 @@ bool GlobalSignDistanceFieldPass::Render(RenderContext& renderContext, GPUContex
         const int32 chunkDispatchGroups = GLOBAL_SDF_RASTERIZE_CHUNK_SIZE / GLOBAL_SDF_RASTERIZE_GROUP_SIZE;
         bool anyChunkDispatch = false;
         {
-            PROFILE_GPU_CPU("Clear Chunks");
+            PROFILE_GPU_CPU_NAMED("Clear Chunks");
             for (auto it = cascade.NonEmptyChunks.Begin(); it.IsNotEnd(); ++it)
             {
                 auto& key = it->Item;
@@ -606,7 +606,7 @@ bool GlobalSignDistanceFieldPass::Render(RenderContext& renderContext, GPUContex
             }
         }
         {
-            PROFILE_GPU_CPU("Rasterize Chunks");
+            PROFILE_GPU_CPU_NAMED("Rasterize Chunks");
 
             // Update static chunks
             for (auto it = chunks.Begin(); it.IsNotEnd(); ++it)
@@ -637,7 +637,7 @@ bool GlobalSignDistanceFieldPass::Render(RenderContext& renderContext, GPUContex
             const auto& objectIndexToDataIndex = ObjectIndexToDataIndexCache;
             if (chunks.Count() != 0)
             {
-                PROFILE_GPU_CPU("Update Objects");
+                PROFILE_GPU_CPU_NAMED("Update Objects");
                 auto& objectIndexToDataIndexCache = ObjectIndexToDataIndexCache;
                 objectIndexToDataIndexCache.Clear();
 
@@ -827,7 +827,7 @@ bool GlobalSignDistanceFieldPass::Render(RenderContext& renderContext, GPUContex
         // Generate mip out of cascade (empty chunks have distance value 1 which is incorrect so mip will be used as a fallback - lower res)
         if (updated || anyChunkDispatch)
         {
-            PROFILE_GPU_CPU("Generate Mip");
+            PROFILE_GPU_CPU_NAMED("Generate Mip");
             context->ResetUA();
             const int32 mipDispatchGroups = Math::DivideAndRoundUp(resolutionMip, GLOBAL_SDF_MIP_GROUP_SIZE);
             static_assert((GLOBAL_SDF_MIP_FLOODS % 2) == 1, "Invalid Global SDF mip flood iterations count.");

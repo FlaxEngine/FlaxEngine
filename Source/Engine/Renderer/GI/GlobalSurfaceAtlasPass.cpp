@@ -378,7 +378,7 @@ bool GlobalSurfaceAtlasPass::Render(RenderContext& renderContext, GPUContext* co
         return false;
     }
     surfaceAtlasData.LastFrameUsed = currentFrame;
-    PROFILE_GPU_CPU("Global Surface Atlas");
+    PROFILE_GPU_CPU_NAMED("Global Surface Atlas");
 
     // Setup options
     auto* graphicsSettings = GraphicsSettings::Get();
@@ -488,6 +488,7 @@ bool GlobalSurfaceAtlasPass::Render(RenderContext& renderContext, GPUContext* co
             {
                 if (viewMask & e.LayerMask && e.Bounds.Radius >= minObjectRadius && CollisionsHelper::DistanceSpherePoint(e.Bounds, viewPosition) < distance)
                 {
+                    //PROFILE_CPU_ACTOR(e.Actor);
                     e.Actor->Draw(renderContext);
                 }
             }
@@ -495,23 +496,26 @@ bool GlobalSurfaceAtlasPass::Render(RenderContext& renderContext, GPUContext* co
     }
 
     // Remove unused objects
-    for (auto it = surfaceAtlasData.Objects.Begin(); it.IsNotEnd(); ++it)
     {
-        if (it->Value.LastFrameUsed != currentFrame)
+        PROFILE_GPU_CPU_NAMED("Compact Objects");
+        for (auto it = surfaceAtlasData.Objects.Begin(); it.IsNotEnd(); ++it)
         {
-            for (auto& tile : it->Value.Tiles)
+            if (it->Value.LastFrameUsed != currentFrame)
             {
-                if (tile)
-                    tile->Free();
+                for (auto& tile : it->Value.Tiles)
+                {
+                    if (tile)
+                        tile->Free();
+                }
+                surfaceAtlasData.Objects.Remove(it);
             }
-            surfaceAtlasData.Objects.Remove(it);
         }
     }
 
     // Rasterize world geometry material properties into Global Surface Atlas
     if (_dirtyObjectsBuffer.Count() != 0)
     {
-        PROFILE_GPU_CPU("Rasterize Tiles");
+        PROFILE_GPU_CPU_NAMED("Rasterize Tiles");
 
         RenderContext renderContextTiles = renderContext;
         renderContextTiles.List = RenderList::GetFromPool();
@@ -533,7 +537,7 @@ bool GlobalSurfaceAtlasPass::Render(RenderContext& renderContext, GPUContext* co
         };
         context->SetRenderTarget(depthBuffer, ToSpan(targetBuffers, ARRAY_COUNT(targetBuffers)));
         {
-            PROFILE_GPU_CPU("Clear");
+            PROFILE_GPU_CPU_NAMED("Clear");
             if (noCache || GLOBAL_SURFACE_ATLAS_DEBUG_FORCE_REDRAW_TILES)
             {
                 // Full-atlas hardware clear
@@ -625,7 +629,7 @@ bool GlobalSurfaceAtlasPass::Render(RenderContext& renderContext, GPUContext* co
 
     // Send objects data to the GPU
     {
-        PROFILE_GPU_CPU("Update Objects");
+        PROFILE_GPU_CPU_NAMED("Update Objects");
         surfaceAtlasData.ObjectsBuffer.Flush(context);
     }
 
@@ -646,7 +650,7 @@ bool GlobalSurfaceAtlasPass::Render(RenderContext& renderContext, GPUContext* co
         // Chunk [0,0,0] is unused and it's address=0 is used for atomic counter for writing into CulledObjectsBuffer.
         // Each chunk data contains objects count + all objects addresses.
         // This allows to quickly convert world-space position into chunk, then read chunk data start and loop over culled objects.
-        PROFILE_GPU_CPU("Cull Objects");
+        PROFILE_GPU_CPU_NAMED("Cull Objects");
         uint32 objectsBufferCapacity = (uint32)((float)surfaceAtlasData.Objects.Count() * 1.3f);
 
         // Copy counter from ChunksBuffer into staging buffer to access current chunks memory usage to adapt dynamically to the scene complexity
@@ -776,7 +780,7 @@ bool GlobalSurfaceAtlasPass::Render(RenderContext& renderContext, GPUContext* co
     // Render direct lighting into atlas
     if (surfaceAtlasData.Objects.Count() != 0)
     {
-        PROFILE_GPU_CPU("Direct Lighting");
+        PROFILE_GPU_CPU_NAMED("Direct Lighting");
         context->SetViewportAndScissors(Viewport(0, 0, (float)resolution, (float)resolution));
         context->SetRenderTarget(surfaceAtlasData.AtlasLighting->View());
         context->BindSR(0, surfaceAtlasData.AtlasGBuffer0->View());
@@ -876,7 +880,7 @@ bool GlobalSurfaceAtlasPass::Render(RenderContext& renderContext, GPUContext* co
 
         // Copy emissive light into the final direct lighting atlas
         {
-            PROFILE_GPU_CPU("Copy Emissive");
+            PROFILE_GPU_CPU_NAMED("Copy Emissive");
             _vertexBuffer->Clear();
             for (const auto& e : surfaceAtlasData.Objects)
             {
@@ -921,7 +925,7 @@ bool GlobalSurfaceAtlasPass::Render(RenderContext& renderContext, GPUContext* co
                 continue;
 
             // Draw draw light
-            PROFILE_GPU_CPU("Directional Light");
+            PROFILE_GPU_CPU_NAMED("Directional Light");
             const bool useShadow = CanRenderShadow(renderContext.View, light);
             // TODO: test perf/quality when using Shadow Map for directional light (ShadowsPass::Instance()->LastDirLightShadowMap) instead of Global SDF trace
             light.SetupLightData(&data.Light, useShadow);
@@ -955,7 +959,7 @@ bool GlobalSurfaceAtlasPass::Render(RenderContext& renderContext, GPUContext* co
                 continue;
 
             // Draw draw light
-            PROFILE_GPU_CPU("Point Light");
+            PROFILE_GPU_CPU_NAMED("Point Light");
             const bool useShadow = CanRenderShadow(renderContext.View, light);
             light.SetupLightData(&data.Light, useShadow);
             data.Light.Color *= light.IndirectLightingIntensity;
@@ -988,7 +992,7 @@ bool GlobalSurfaceAtlasPass::Render(RenderContext& renderContext, GPUContext* co
                 continue;
 
             // Draw draw light
-            PROFILE_GPU_CPU("Spot Light");
+            PROFILE_GPU_CPU_NAMED("Spot Light");
             const bool useShadow = CanRenderShadow(renderContext.View, light);
             light.SetupLightData(&data.Light, useShadow);
             data.Light.Color *= light.IndirectLightingIntensity;
@@ -1031,7 +1035,7 @@ bool GlobalSurfaceAtlasPass::Render(RenderContext& renderContext, GPUContext* co
                     }
                     if (_vertexBuffer->Data.Count() == 0)
                         break;
-                    PROFILE_GPU_CPU("DDGI");
+                    PROFILE_GPU_CPU_NAMED("DDGI");
                     data.DDGI = bindingDataDDGI.Constants;
                     data.Light.Radius = giSettings.BounceIntensity / bindingDataDDGI.Constants.IndirectLightingIntensity; // Reuse for smaller CB
                     context->BindSR(5, bindingDataDDGI.ProbesState);

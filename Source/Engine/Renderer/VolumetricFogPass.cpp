@@ -518,7 +518,7 @@ void VolumetricFogPass::Render(RenderContext& renderContext)
     // Render local fog particles
     if (renderContext.List->VolumetricFogParticles.HasItems())
     {
-        PROFILE_GPU_CPU("Local Fog");
+        PROFILE_GPU_CPU_NAMED("Local Fog");
 
         // Bind the output
         GPUTextureView* rt[] = { vBufferA->ViewVolume(), vBufferB->ViewVolume() };
@@ -616,7 +616,7 @@ void VolumetricFogPass::Render(RenderContext& renderContext)
         // Skip if no lights to render
         if (pointLights.Count() + spotLights.Count())
         {
-            PROFILE_GPU_CPU("Lights Injection");
+            PROFILE_GPU_CPU_NAMED("Lights Injection");
 
             // Allocate temporary buffer for light scattering injection
             localShadowedLightScattering = GetLocalShadowedLightScattering(renderContext, context, options);
