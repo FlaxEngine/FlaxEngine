@@ -481,6 +481,7 @@ bool GlobalSurfaceAtlasPass::Render(RenderContext& renderContext, GPUContext* co
         const Float3 viewPosition = renderContext.View.Position;
         const float minObjectRadius = 20.0f; // Skip too small objects
         _cullingPosDistance = Vector4(viewPosition, distance);
+        int32 actorsDrawn = 0;
         for (auto* scene : renderContext.List->Scenes)
         {
             auto& list = scene->Actors[SceneRendering::SceneDraw];
@@ -490,9 +491,11 @@ bool GlobalSurfaceAtlasPass::Render(RenderContext& renderContext, GPUContext* co
                 {
                     //PROFILE_CPU_ACTOR(e.Actor);
                     e.Actor->Draw(renderContext);
+                    actorsDrawn++;
                 }
             }
         }
+        ZoneValue(actorsDrawn);
     }
 
     // Remove unused objects
@@ -573,6 +576,7 @@ bool GlobalSurfaceAtlasPass::Render(RenderContext& renderContext, GPUContext* co
         auto& drawCallsListGBufferNoDecals = renderContextTiles.List->DrawCallsLists[(int32)DrawCallsListType::GBufferNoDecals];
         drawCallsListGBuffer.CanUseInstancing = false;
         drawCallsListGBufferNoDecals.CanUseInstancing = false;
+        int32 tilesDrawn = 0;
         for (void* actorObject : _dirtyObjectsBuffer)
         {
             const auto& object = ((const Dictionary<Actor*, GlobalSurfaceAtlasObject>&)surfaceAtlasData.Objects)[actorObject];
@@ -621,8 +625,10 @@ bool GlobalSurfaceAtlasPass::Render(RenderContext& renderContext, GPUContext* co
                 context->SetViewportAndScissors(Viewport(tile->X, tile->Y, tileWidth, tileHeight));
                 renderContextTiles.List->ExecuteDrawCalls(renderContextTiles, drawCallsListGBuffer);
                 renderContextTiles.List->ExecuteDrawCalls(renderContextTiles, drawCallsListGBufferNoDecals);
+                tilesDrawn++;
             }
         }
+        ZoneValue(tilesDrawn);
         context->ResetRenderTarget();
         RenderList::ReturnToPool(renderContextTiles.List);
     }
@@ -711,6 +717,7 @@ bool GlobalSurfaceAtlasPass::Render(RenderContext& renderContext, GPUContext* co
             if (surfaceAtlasData.CulledObjectsBuffer->Init(desc))
                 return true;
         }
+        ZoneValue(surfaceAtlasData.CulledObjectsBuffer->GetSize() / 1024); // CulledObjectsBuffer size in kB
 
         // Clear chunks counter (uint at 0 is used for a counter)
         uint32 counter = 1; // Move write location for culled objects after counter

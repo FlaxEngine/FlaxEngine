@@ -558,6 +558,7 @@ bool GlobalSignDistanceFieldPass::Render(RenderContext& renderContext, GPUContex
             PROFILE_CPU_NAMED("Draw");
             BoundingBox cascadeBoundsWorld = cascadeBounds.MakeOffsetted(sdfData.Origin);
             _cascadeCullingBounds = cascadeBoundsWorld;
+            int32 actorsDrawn = 0;
             for (SceneRendering* scene : renderContext.List->Scenes)
             {
                 auto& list = scene->Actors[SceneRendering::SceneDraw];
@@ -567,9 +568,11 @@ bool GlobalSignDistanceFieldPass::Render(RenderContext& renderContext, GPUContex
                     {
                         //PROFILE_CPU_ACTOR(e.Actor);
                         e.Actor->Draw(renderContext);
+                        actorsDrawn++;
                     }
                 }
             }
+            ZoneValue(actorsDrawn);
         }
 
         // Perform batched chunks rasterization
