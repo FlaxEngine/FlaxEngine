@@ -509,6 +509,8 @@ void Terrain::Draw(RenderContext& renderContext)
         return;
     if (renderContext.View.Pass == DrawPass::GlobalSDF)
     {
+        if ((DrawModes & DrawPass::GlobalSDF) == 0)
+            return;
         const float chunkSize = TERRAIN_UNITS_PER_VERTEX * (float)_chunkSize;
         const float posToUV = 0.25f / chunkSize;
         Float4 localToUV(posToUV, posToUV, 0.0f, 0.0f);
@@ -527,6 +529,8 @@ void Terrain::Draw(RenderContext& renderContext)
     }
     if (renderContext.View.Pass == DrawPass::GlobalSurfaceAtlas)
     {
+        if ((DrawModes & DrawPass::GlobalSurfaceAtlas) == 0)
+            return;
         for (TerrainPatch* patch : _patches)
         {
             if (!patch->Heightmap)
