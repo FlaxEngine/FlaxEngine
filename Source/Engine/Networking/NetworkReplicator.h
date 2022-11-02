@@ -6,6 +6,9 @@
 #include "Engine/Scripting/ScriptingObject.h"
 #include "Engine/Scripting/ScriptingType.h"
 
+template<typename T>
+class DataContainer;
+
 /// <summary>
 /// The high-level network object role and authority. Used to define who owns the object and when it can be simulated or just replicated.
 /// </summary>
@@ -72,6 +75,14 @@ public:
     /// <remarks>Does nothing if network is offline.</remarks>
     /// <param name="obj">The object to spawn on other clients.</param>
     API_FUNCTION() static void SpawnObject(ScriptingObject* obj);
+
+    /// <summary>
+    /// Spawns the object to the other clients. Can be spawned by the owner who locally created it (eg. from prefab).
+    /// </summary>
+    /// <remarks>Does nothing if network is offline.</remarks>
+    /// <param name="obj">The object to spawn on other clients.</param>
+    /// <param name="clientIds">List with network client IDs that should receive network spawn event. Empty to spawn on all clients.</param>
+    API_FUNCTION() static void SpawnObject(ScriptingObject* obj, const DataContainer<uint32>& clientIds);
 
     /// <summary>
     /// Despawns the object from the other clients. Deletes object from remove clients.

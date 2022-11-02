@@ -13,6 +13,8 @@
 #include "Engine/Core/Log.h"
 #include "Engine/Core/Collections/HashSet.h"
 #include "Engine/Core/Collections/Dictionary.h"
+#include "Engine/Core/Types/DataContainer.h"
+#include "Engine/Core/Types/Pair.h"
 #include "Engine/Platform/CriticalSection.h"
 #include "Engine/Engine/EngineService.h"
 #include "Engine/Level/Actor.h"
@@ -81,6 +83,7 @@ struct NetworkReplicatedObject
 #if NETWORK_REPLICATOR_DEBUG_LOG
     uint8 InvalidTypeWarn = false;
 #endif
+    DataContainer<uint32> TargetClientIds;
 
     bool operator==(const NetworkReplicatedObject& other) const
     {
@@ -114,11 +117,17 @@ struct Serializer
     void* Tags[2];
 };
 
+struct SpawnItem
+{
+    ScriptingObjectReference<ScriptingObject> Object;
+    DataContainer<uint32> Targets;
+};
+
 namespace
 {
     CriticalSection ObjectsLock;
     HashSet<NetworkReplicatedObject> Objects;
-    Array<ScriptingObjectReference<ScriptingObject>> SpawnQueue;
+    Array<SpawnItem> SpawnQueue;
     Array<Guid> DespawnQueue;
     Dictionary<Guid, Guid> IdsRemappingTable;
     NetworkStream* CachedWriteStream = nullptr;
@@ -200,6 +209,63 @@ NetworkReplicatedObject* ResolveObject(Guid objectId, Guid parentId, char object
     return nullptr;
 }
 
+void BuildCachedTargets(const Array<NetworkClient*>& clients)
+{
+    CachedTargets.Clear();
+    // TODO: skip building cached targets if previous frame send it to all clients
+    for (const NetworkClient* client : clients)
+    {
+        if (client->State == NetworkConnectionState::Connected)
+            CachedTargets.Add(client->Connection);
+    }
+}
+
+void BuildCachedTargets(const Array<NetworkClient*>& clients, const NetworkClient* excludedClient)
+{
+    CachedTargets.Clear();
+    for (const NetworkClient* client : clients)
+    {
+        if (client->State == NetworkConnectionState::Connected && client != excludedClient)
+            CachedTargets.Add(client->Connection);
+    }
+}
+
+void BuildCachedTargets(const Array<NetworkClient*>& clients, const DataContainer<uint32>& clientIds)
+{
+    CachedTargets.Clear();
+    if (clientIds.IsValid())
+    {
+        for (const NetworkClient* client : clients)
+        {
+            if (client->State == NetworkConnectionState::Connected)
+            {
+                for (int32 i = 0; i < clientIds.Length(); i++)
+                {
+                    if (clientIds[i] == client->ClientId)
+                    {
+                        CachedTargets.Add(client->Connection);
+                        break;
+                    }
+                }
+            }
+        }
+    }
+    else
+    {
+        // TODO: skip building cached targets if previous frame send it to all clients
+        for (const NetworkClient* client : clients)
+        {
+            if (client->State == NetworkConnectionState::Connected)
+                CachedTargets.Add(client->Connection);
+        }
+    }
+}
+
+FORCE_INLINE void BuildCachedTargets(const NetworkReplicatedObject& item)
+{
+    BuildCachedTargets(NetworkManager::Clients, item.TargetClientIds);
+}
+
 void SendObjectSpawnMessage(const NetworkReplicatedObject& item, ScriptingObject* obj)
 {
     NetworkMessageObjectSpawn msgData;
@@ -247,12 +313,7 @@ void SendObjectRoleMessage(const NetworkReplicatedObject& item, const NetworkCli
     }
     else
     {
-        CachedTargets.Clear();
-        for (const NetworkClient* client : NetworkManager::Clients)
-        {
-            if (client->State == NetworkConnectionState::Connected && client != excludedClient)
-                CachedTargets.Add(client->Connection);
-        }
+        BuildCachedTargets(NetworkManager::Clients, excludedClient);
         peer->EndSendMessage(NetworkChannelType::ReliableOrdered, msg, CachedTargets);
     }
 }
@@ -383,6 +444,12 @@ void NetworkReplicator::RemoveObject(ScriptingObject* obj)
 
 void NetworkReplicator::SpawnObject(ScriptingObject* obj)
 {
+    DataContainer<uint32> clientIds;
+    SpawnObject(obj, MoveTemp(clientIds));
+}
+
+void NetworkReplicator::SpawnObject(ScriptingObject* obj, const DataContainer<uint32>& clientIds)
+{
     if (!obj || NetworkManager::State == NetworkConnectionState::Offline)
         return;
     ScopeLock lock(ObjectsLock);
@@ -391,7 +458,9 @@ void NetworkReplicator::SpawnObject(ScriptingObject* obj)
         return; // Skip if object was already spawned
 
     // Register for spawning (batched during update)
-    SpawnQueue.AddUnique(obj);
+    auto& item = SpawnQueue.AddOne();
+    item.Object = obj;
+    item.Targets.Copy(clientIds);
 }
 
 void NetworkReplicator::DespawnObject(ScriptingObject* obj)
@@ -412,7 +481,14 @@ void NetworkReplicator::DespawnObject(ScriptingObject* obj)
     DespawnQueue.Add(id);
 
     // Prevent spawning
-    SpawnQueue.Remove(obj);
+    for (int32 i = 0; i < SpawnQueue.Count(); i++)
+    {
+        if (SpawnQueue[i].Object == obj)
+        {
+            SpawnQueue.RemoveAt(i);
+            break;
+        }
+    }
 
     // Delete object locally
     DeleteNetworkObject(obj);
@@ -530,7 +606,7 @@ void NetworkInternal::NetworkReplicatorClear()
     SAFE_DELETE(CachedWriteStream);
     SAFE_DELETE(CachedReadStream);
     NewClients.Clear();
-    CachedTargets.Resize(0);
+    CachedTargets.Clear();
 }
 
 void NetworkInternal::NetworkReplicatorPreUpdate()
@@ -558,27 +634,20 @@ void NetworkInternal::NetworkReplicatorUpdate()
         // Sync any previously spawned objects with late-joining clients
         PROFILE_CPU_NAMED("NewClients");
         // TODO: try iterative loop over several frames to reduce both server and client perf-spikes in case of large amount of spawned objects
-        CachedTargets.Clear();
-        for (NetworkClient* client : NewClients)
-            CachedTargets.Add(client->Connection);
         for (auto it = Objects.Begin(); it.IsNotEnd(); ++it)
         {
             auto& item = it->Item;
             ScriptingObject* obj = item.Object.Get();
             if (!obj || !item.Spawned)
                 continue;
+            BuildCachedTargets(NewClients, item.TargetClientIds);
             SendObjectSpawnMessage(item, obj);
         }
         NewClients.Clear();
     }
 
     // Collect clients for replication (from server)
-    CachedTargets.Clear();
-    for (const NetworkClient* client : NetworkManager::Clients)
-    {
-        if (client->State == NetworkConnectionState::Connected)
-            CachedTargets.Add(client->Connection);
-    }
+    BuildCachedTargets(NetworkManager::Clients);
     if (!isClient && CachedTargets.Count() == 0)
     {
         // Early exit if server has nobody to send data to
@@ -603,6 +672,7 @@ void NetworkInternal::NetworkReplicatorUpdate()
             }
             NetworkMessage msg = peer->BeginSendMessage();
             msg.WriteStructure(msgData);
+            // TODO: use TargetClientIds for object despawning (send despawn message only to relevant clients)
             if (isClient)
                 peer->EndSendMessage(NetworkChannelType::ReliableOrdered, msg);
             else
@@ -615,9 +685,9 @@ void NetworkInternal::NetworkReplicatorUpdate()
     if (SpawnQueue.Count() != 0)
     {
         PROFILE_CPU_NAMED("SpawnQueue");
-        for (ScriptingObjectReference<ScriptingObject>& e : SpawnQueue)
+        for (auto& e : SpawnQueue)
         {
-            ScriptingObject* obj = e.Get();
+            ScriptingObject* obj = e.Object.Get();
             auto it = Objects.Find(obj->GetID());
             if (it == Objects.End())
             {
@@ -631,7 +701,16 @@ void NetworkInternal::NetworkReplicatorUpdate()
             if (item.OwnerClientId != NetworkManager::LocalClientId || item.Role != NetworkObjectRole::OwnedAuthoritative)
                 continue; // Skip spawning objects that we don't own
 
+            if (e.Targets.IsValid())
+            {
+                // TODO: if we spawn object with custom set of targets clientsIds on client, then send it over to the server
+                if (NetworkManager::IsClient())
+                    MISSING_CODE("Sending TargetClientIds over to server for partial object replication.");
+                item.TargetClientIds = MoveTemp(e.Targets);
+            }
+
             NETWORK_REPLICATOR_LOG(Info, "[NetworkReplicator] Spawn object ID={}", item.ToString());
+            BuildCachedTargets(item);
             SendObjectSpawnMessage(item, obj);
             item.Spawned = true;
         }
@@ -689,6 +768,7 @@ void NetworkInternal::NetworkReplicatorUpdate()
                 msg.WriteStructure(msgData);
                 msg.WriteBytes(stream->GetBuffer(), size);
                 // TODO: per-object relevancy for connected clients (eg. skip replicating actor to far players)
+                BuildCachedTargets(item);
                 peer->EndSendMessage(NetworkChannelType::Unreliable, msg, CachedTargets);
 
                 // TODO: stats for bytes send per object type
@@ -879,7 +959,7 @@ void NetworkInternal::OnNetworkMessageObjectSpawn(NetworkEvent& event, NetworkCl
                 sceneObject->SetParent(parentActor);
         }
 
-        // TODO: if  we're server then spawn this object further on other clients
+        // TODO: if  we're server then spawn this object further on other clients (use TargetClientIds for that object - eg. object spawned by client on client for certain set of other clients only)
     }
 }
 
