@@ -292,31 +292,23 @@ struct GeometryDrawStateData
     /// <summary>
     /// The previous frame world transformation matrix for the given geometry instance.
     /// </summary>
-    Matrix PrevWorld;
+    Matrix PrevWorld = Matrix::Identity;
 
     /// <summary>
     /// The previous frame index. In sync with Engine::FrameCount used to detect new frames and rendering gaps to reset state.
     /// </summary>
-    uint64 PrevFrame;
+    uint64 PrevFrame = 0;
 
     /// <summary>
     /// The previous frame model LOD index used. It's locked during LOD transition to cache the transition start LOD.
     /// </summary>
-    char PrevLOD;
+    char PrevLOD = -1;
 
     /// <summary>
     /// The LOD transition timer. Value 255 means the end of the transition (aka no transition), value 0 means transition started. 
     /// Interpolated between 0-255 to smooth transition over several frames and reduce LOD changing artifacts.
     /// </summary>
-    byte LODTransition;
-
-    GeometryDrawStateData()
-    {
-        PrevWorld = Matrix::Identity;
-        PrevFrame = 0;
-        PrevLOD = -1;
-        LODTransition = 255;
-    }
+    byte LODTransition = 255;
 };
 
 template<>
