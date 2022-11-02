@@ -157,9 +157,9 @@ namespace FlaxEditor.Windows
             // loop through each proxy and user defined json type and add them to the context menu
             foreach (var type in Editor.CodeEditing.All.Get())
             {
-                if (type.IsAbstract || !type.HasAttribute(typeof(ContentContextMenuAttribute), true))
+                if (type.IsAbstract || !type.HasAttribute(typeof(ContentContextMenuAttribute), true) || Editor.CodeEditing.Actors.Get().Contains(type) || Editor.CodeEditing.Scripts.Get().Contains(type))
                     continue;
-                
+
                 ContentContextMenuAttribute attribute = null;
                 foreach (var typeAttribute in type.GetAttributes(true))
                 {
