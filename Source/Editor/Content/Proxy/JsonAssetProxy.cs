@@ -22,6 +22,7 @@ namespace FlaxEditor.Content
     /// Json assets proxy.
     /// </summary>
     /// <seealso cref="FlaxEditor.Content.JsonAssetBaseProxy" />
+    [ContentContextMenu("New/Json Asset")]
     public abstract class JsonAssetProxy : JsonAssetBaseProxy
     {
         /// <summary>
@@ -31,9 +32,6 @@ namespace FlaxEditor.Content
 
         /// <inheritdoc />
         public override string Name => "Json Asset";
-        
-        /// <inheritdoc />
-        public override string CategoryName => "Json Asset";
 
         /// <inheritdoc />
         public override string FileExtension => Extension;
@@ -167,20 +165,6 @@ namespace FlaxEditor.Content
     {
         /// <inheritdoc />
         public override string Name { get; } = Utilities.Utils.GetPropertyNameUI(typeof(T).Name);
-
-        private string _categoryName;
-
-        /// <inheritdoc />
-        public override string CategoryName => _categoryName;
-
-        /// <summary>
-        /// Sets the category name
-        /// </summary>
-        /// <param name="name">This is the category name</param>
-        public void SetCategoryName(string name)
-        {
-            _categoryName = name;
-        }
 
         /// <inheritdoc />
         public override bool CanCreate(ContentFolder targetLocation)

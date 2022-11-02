@@ -39,6 +39,7 @@ namespace FlaxEditor.Content
     /// A <see cref="ParticleSystem"/> asset proxy object.
     /// </summary>
     /// <seealso cref="FlaxEditor.Content.BinaryAssetProxy" />
+    [ContentContextMenu("New/Particles/Particle System")]
     public class ParticleSystemProxy : BinaryAssetProxy
     {
         private ParticleSystemPreview _preview;
@@ -46,9 +47,6 @@ namespace FlaxEditor.Content
 
         /// <inheritdoc />
         public override string Name => "Particle System";
-        
-        /// <inheritdoc />
-        public override string CategoryName => "Particles";
 
         /// <inheritdoc />
         public override EditorWindow Open(Editor editor, ContentItem item)

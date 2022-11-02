@@ -11,13 +11,11 @@ namespace FlaxEditor.Content
     /// A <see cref="AnimationGraphFunction"/> asset proxy object.
     /// </summary>
     /// <seealso cref="FlaxEditor.Content.BinaryAssetProxy" />
+    [ContentContextMenu("New/Animation/Animation Graph Function")]
     public class AnimationGraphFunctionProxy : BinaryAssetProxy
     {
         /// <inheritdoc />
         public override string Name => "Animation Graph Function";
-
-        /// <inheritdoc />
-        public override string CategoryName => "Animation";
 
         /// <inheritdoc />
         public override EditorWindow Open(Editor editor, ContentItem item)

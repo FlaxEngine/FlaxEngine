@@ -14,15 +14,13 @@ namespace FlaxEditor.Content
     /// A <see cref="MaterialInstance"/> asset proxy object.
     /// </summary>
     /// <seealso cref="FlaxEditor.Content.BinaryAssetProxy" />
+    [ContentContextMenu("New/Material/Material Instance")]
     public class MaterialInstanceProxy : BinaryAssetProxy
     {
         private MaterialPreview _preview;
 
         /// <inheritdoc />
         public override string Name => "Material Instance";
-        
-        /// <inheritdoc />
-        public override string CategoryName => "Material";
 
         /// <inheritdoc />
         public override EditorWindow Open(Editor editor, ContentItem item)

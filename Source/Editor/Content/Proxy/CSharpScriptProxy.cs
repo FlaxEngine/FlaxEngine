@@ -12,6 +12,7 @@ namespace FlaxEditor.Content
     /// Context proxy object for C# script files.
     /// </summary>
     /// <seealso cref="FlaxEditor.Content.CSharpScriptProxy" />
+    [ContentContextMenu("New/C# Script")]
     public class CSharpScriptProxy : ScriptProxy
     {
         /// <summary>

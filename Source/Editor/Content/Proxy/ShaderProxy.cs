@@ -14,9 +14,6 @@ namespace FlaxEditor.Content
     {
         /// <inheritdoc />
         public override string Name => "Shader";
-        
-        /// <inheritdoc />
-        public override string CategoryName => "Shader";
 
         /// <inheritdoc />
         public override bool CanReimport(ContentItem item)

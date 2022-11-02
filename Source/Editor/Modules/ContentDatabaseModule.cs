@@ -927,9 +927,7 @@ namespace FlaxEditor.Modules
             Proxy.Add(new VisualScriptProxy());
             Proxy.Add(new LocalizedStringTableProxy());
             Proxy.Add(new FileProxy());
-            var pm = new SpawnableJsonAssetProxy<PhysicalMaterial>();
-            pm.SetCategoryName("Physics");
-            Proxy.Add(pm);
+            Proxy.Add(new SpawnableJsonAssetProxy<PhysicalMaterial>());
 
             // Settings
             Proxy.Add(new SettingsProxy(typeof(GameSettings), Editor.Instance.Icons.GameSettings128));

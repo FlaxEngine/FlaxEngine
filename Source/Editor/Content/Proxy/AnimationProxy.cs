@@ -14,13 +14,11 @@ namespace FlaxEditor.Content
     /// A <see cref="Animation"/> asset proxy object.
     /// </summary>
     /// <seealso cref="FlaxEditor.Content.BinaryAssetProxy" />
+    [ContentContextMenu("New/Animation/Animation")]
     public class AnimationProxy : BinaryAssetProxy
     {
         /// <inheritdoc />
         public override string Name => "Animation";
-        
-        /// <inheritdoc />
-        public override string CategoryName => "Animation";
 
         /// <inheritdoc />
         public override bool CanReimport(ContentItem item)

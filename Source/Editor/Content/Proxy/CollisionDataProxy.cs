@@ -38,13 +38,11 @@ namespace FlaxEditor.Content
     /// A <see cref="CollisionData"/> asset proxy object.
     /// </summary>
     /// <seealso cref="FlaxEditor.Content.BinaryAssetProxy" />
+    [ContentContextMenu("New/Physics/Collision Data")]
     class CollisionDataProxy : BinaryAssetProxy
     {
         /// <inheritdoc />
         public override string Name => "Collision Data";
-        
-        /// <inheritdoc />
-        public override string CategoryName => "Physics";
 
         /// <inheritdoc />
         public override EditorWindow Open(Editor editor, ContentItem item)

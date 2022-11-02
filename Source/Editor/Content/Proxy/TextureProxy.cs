@@ -20,9 +20,6 @@ namespace FlaxEditor.Content
 
         /// <inheritdoc />
         public override string Name => "Texture";
-        
-        /// <inheritdoc />
-        public override string CategoryName => "Texture";
 
         /// <inheritdoc />
         public override bool CanReimport(ContentItem item)

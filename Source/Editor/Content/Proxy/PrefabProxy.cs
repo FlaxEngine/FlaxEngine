@@ -15,6 +15,7 @@ namespace FlaxEditor.Content
     /// Content proxy for <see cref="PrefabItem"/>.
     /// </summary>
     /// <seealso cref="FlaxEditor.Content.JsonAssetBaseProxy" />
+    [ContentContextMenu("New/Prefab")]
     public sealed class PrefabProxy : JsonAssetBaseProxy
     {
         private PrefabPreview _preview;
@@ -31,9 +32,6 @@ namespace FlaxEditor.Content
 
         /// <inheritdoc />
         public override string Name => "Prefab";
-        
-        /// <inheritdoc />
-        public override string CategoryName => "Prefab";
 
         /// <inheritdoc />
         public override string FileExtension => Extension;

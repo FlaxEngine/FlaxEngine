@@ -17,9 +17,6 @@ namespace FlaxEditor.Content
     {
         /// <inheritdoc />
         public override string Name => "Font";
-        
-        /// <inheritdoc />
-        public override string CategoryName => "Font";
 
         /// <inheritdoc />
         public override bool CanReimport(ContentItem item)

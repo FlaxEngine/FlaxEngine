@@ -11,13 +11,11 @@ namespace FlaxEditor.Content
     /// A <see cref="SkeletonMask"/> asset proxy object.
     /// </summary>
     /// <seealso cref="FlaxEditor.Content.BinaryAssetProxy" />
+    [ContentContextMenu("New/Animation/Skeleton Mask")]
     public class SkeletonMaskProxy : BinaryAssetProxy
     {
         /// <inheritdoc />
         public override string Name => "Skeleton Mask";
-        
-        /// <inheritdoc />
-        public override string CategoryName => "Animation";
 
         /// <inheritdoc />
         public override EditorWindow Open(Editor editor, ContentItem item)

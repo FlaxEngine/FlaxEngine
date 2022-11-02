@@ -10,6 +10,7 @@ namespace FlaxEditor.Content
     /// Content proxy for <see cref="SceneItem"/>.
     /// </summary>
     /// <seealso cref="FlaxEditor.Content.JsonAssetBaseProxy" />
+    [ContentContextMenu("New/Scene")]
     public sealed class SceneProxy : JsonAssetBaseProxy
     {
         /// <summary>
@@ -19,9 +20,6 @@ namespace FlaxEditor.Content
 
         /// <inheritdoc />
         public override string Name => "Scene";
-        
-        /// <inheritdoc />
-        public override string CategoryName => "Scene";
 
         /// <inheritdoc />
         public override string FileExtension => Extension;

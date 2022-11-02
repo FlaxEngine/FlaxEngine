@@ -11,13 +11,11 @@ namespace FlaxEditor.Content
     /// A <see cref="GameplayGlobals"/> asset proxy object.
     /// </summary>
     /// <seealso cref="FlaxEditor.Content.BinaryAssetProxy" />
+    [ContentContextMenu("New/Gameplay Globals")]
     public class GameplayGlobalsProxy : BinaryAssetProxy
     {
         /// <inheritdoc />
         public override string Name => "Gameplay Globals";
-        
-        /// <inheritdoc />
-        public override string CategoryName => "Globals";
 
         /// <inheritdoc />
         public override EditorWindow Open(Editor editor, ContentItem item)

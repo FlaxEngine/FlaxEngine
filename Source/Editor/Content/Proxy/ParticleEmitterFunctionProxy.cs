@@ -11,13 +11,11 @@ namespace FlaxEditor.Content
     /// A <see cref="ParticleEmitterFunction"/> asset proxy object.
     /// </summary>
     /// <seealso cref="FlaxEditor.Content.BinaryAssetProxy" />
+    [ContentContextMenu("New/Particles/Particle Emitter Function")]
     public class ParticleEmitterFunctionProxy : BinaryAssetProxy
     {
         /// <inheritdoc />
         public override string Name => "Particle Emitter Function";
-        
-        /// <inheritdoc />
-        public override string CategoryName => "Particles";
 
         /// <inheritdoc />
         public override EditorWindow Open(Editor editor, ContentItem item)

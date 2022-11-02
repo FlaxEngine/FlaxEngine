@@ -62,9 +62,6 @@ namespace FlaxEditor.Content
 
         /// <inheritdoc />
         public override string Name => "Audio Clip";
-        
-        /// <inheritdoc />
-        public override string CategoryName => "Audio";
 
         /// <inheritdoc />
         public override bool CanReimport(ContentItem item)

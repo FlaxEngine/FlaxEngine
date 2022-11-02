@@ -15,6 +15,7 @@ namespace FlaxEditor.Content
     /// A <see cref="VisualScript"/> asset proxy object.
     /// </summary>
     /// <seealso cref="FlaxEditor.Content.BinaryAssetProxy" />
+    [ContentContextMenu("New/Visual Script")]
     public class VisualScriptProxy : BinaryAssetProxy, IScriptTypesContainer
     {
         internal VisualScriptProxy()
@@ -24,9 +25,6 @@ namespace FlaxEditor.Content
 
         /// <inheritdoc />
         public override string Name => "Visual Script";
-        
-        /// <inheritdoc />
-        public override string CategoryName => "Scripting";
 
         /// <inheritdoc />
         public override EditorWindow Open(Editor editor, ContentItem item)
