@@ -9,7 +9,6 @@
 #include "Engine/Scripting/ScriptingObjectReference.h"
 #include "Engine/Scripting/ScriptingType.h"
 #include "Engine/Renderer/RendererAllocation.h"
-#include "PostProcessBase.h"
 #include "RenderView.h"
 
 class GPUDevice;
@@ -18,6 +17,7 @@ class GPUTexture;
 class GPUTextureView;
 class GPUSwapChain;
 class RenderBuffers;
+class PostProcessEffect;
 struct RenderContext;
 class Camera;
 class Actor;
@@ -183,31 +183,6 @@ API_ENUM(Attributes="Flags") enum class ActorsSources
 DECLARE_ENUM_OPERATORS(ActorsSources);
 
 /// <summary>
-/// Wrapper for PostProcessBase that allows to render to customized managed postFx.
-/// TODO: add support for managed inheritance of custom native types with proper spawn handling (like for ManagedScript)
-/// </summary>
-/// <seealso cref="PostProcessBase" />
-class ManagedPostProcessEffect : public PostProcessBase
-{
-public:
-    /// <summary>
-    /// The script to use. Inherits from C# class 'PostProcessEffect'.
-    /// </summary>
-    Script* Target = nullptr;
-
-public:
-    /// <summary>
-    /// Fetches the information about the PostFx location from the managed object.
-    /// </summary>
-    void FetchInfo();
-
-public:
-    // [PostProcessBase]
-    bool IsLoaded() const override;
-    void Render(RenderContext& renderContext, GPUTexture* input, GPUTexture* output) override;
-};
-
-/// <summary>
 /// Render task which draws scene actors into the output buffer.
 /// </summary>
 /// <seealso cref="FlaxEngine.RenderTask" />
@@ -269,6 +244,7 @@ public:
     /// </summary>
     API_FIELD() float RenderingPercentage = 1.0f;
 
+public:
     /// <summary>
     /// The custom set of actors to render.
     /// </summary>
@@ -291,10 +267,45 @@ public:
     /// </summary>
     API_FUNCTION() void ClearCustomActors();
 
+public:
     /// <summary>
-    /// The custom post fx to render (managed).
+    /// The custom set of postfx to render.
     /// </summary>
-    Array<ManagedPostProcessEffect> CustomPostFx;
+    Array<PostProcessEffect*> CustomPostFx;
+
+    /// <summary>
+    /// Adds the custom postfx to the rendering.
+    /// </summary>
+    /// <param name="fx">The postfx script.</param>
+    API_FUNCTION() void AddCustomPostFx(PostProcessEffect* fx);
+
+    /// <summary>
+    /// Removes the custom postfx from the rendering.
+    /// </summary>
+    /// <param name="fx">The postfx script.</param>
+    API_FUNCTION() void RemoveCustomPostFx(PostProcessEffect* fx);
+
+    /// <summary>
+    /// True if allow using global custom PostFx when rendering this task.
+    /// </summary>
+    API_FIELD() bool AllowGlobalCustomPostFx = true;
+
+    /// <summary>
+    /// The custom set of global postfx to render for all <see cref="SceneRenderTask"/> (applied to tasks that have <see cref="AllowGlobalCustomPostFx"/> turned on).
+    /// </summary>
+    static Array<PostProcessEffect*> GlobalCustomPostFx;
+
+    /// <summary>
+    /// Adds the custom global postfx to the rendering.
+    /// </summary>
+    /// <param name="fx">The postfx script.</param>
+    API_FUNCTION() static void AddGlobalCustomPostFx(PostProcessEffect* fx);
+
+    /// <summary>
+    /// Removes the custom global postfx from the rendering.
+    /// </summary>
+    /// <param name="fx">The postfx script.</param>
+    API_FUNCTION() static void RemoveGlobalCustomPostFx(PostProcessEffect* fx);
 
 public:
     /// <summary>

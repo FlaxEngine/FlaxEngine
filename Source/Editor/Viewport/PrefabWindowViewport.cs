@@ -31,7 +31,11 @@ namespace FlaxEditor.Viewport
         {
             public PrefabWindowViewport Viewport;
 
-            public override bool CanRender => (Task.View.Flags & ViewFlags.EditorSprites) == ViewFlags.EditorSprites && Enabled;
+            /// <inheritdoc />
+            public override bool CanRender()
+            {
+                return (Task.View.Flags & ViewFlags.EditorSprites) == ViewFlags.EditorSprites && Enabled;
+            }
 
             protected override void Draw(ref RenderContext renderContext)
             {
@@ -91,11 +95,11 @@ namespace FlaxEditor.Viewport
             // Create post effects
             SelectionOutline = FlaxEngine.Object.New<SelectionOutline>();
             SelectionOutline.SelectionGetter = () => TransformGizmo.SelectedParents;
-            Task.CustomPostFx.Add(SelectionOutline);
+            Task.AddCustomPostFx(SelectionOutline);
             _spritesRenderer = FlaxEngine.Object.New<PrefabSpritesRenderer>();
             _spritesRenderer.Task = Task;
             _spritesRenderer.Viewport = this;
-            Task.CustomPostFx.Add(_spritesRenderer);
+            Task.AddCustomPostFx(_spritesRenderer);
 
             // Add transformation gizmo
             TransformGizmo = new TransformGizmo(this);
@@ -270,13 +274,13 @@ namespace FlaxEditor.Viewport
                 var task = renderContext.Task;
 
                 // Render editor sprites
-                if (_spritesRenderer && _spritesRenderer.CanRender)
+                if (_spritesRenderer && _spritesRenderer.CanRender())
                 {
                     _spritesRenderer.Render(context, ref renderContext, task.Output, task.Output);
                 }
 
                 // Render selection outline
-                if (SelectionOutline && SelectionOutline.CanRender)
+                if (SelectionOutline && SelectionOutline.CanRender())
                 {
                     // Use temporary intermediate buffer
                     var desc = task.Output.Description;

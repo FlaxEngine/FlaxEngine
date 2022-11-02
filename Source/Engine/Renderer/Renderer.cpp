@@ -315,11 +315,6 @@ void RenderInner(SceneRenderTask* task, RenderContext& renderContext, RenderCont
     if (renderContext.View.Origin != renderContext.View.PrevOrigin)
         renderContext.Task->CameraCut(); // Cut any temporal effects on rendering origin change
     renderContext.Buffers->Prepare();
-    for (auto& postFx : task->CustomPostFx)
-    {
-        if (postFx.Target)
-            renderContext.List->PostFx.Add(&postFx);
-    }
 
     // Build batch of render contexts (main view and shadow projections)
     const bool isGBufferDebug = GBufferPass::IsDebugView(renderContext.View.Mode);

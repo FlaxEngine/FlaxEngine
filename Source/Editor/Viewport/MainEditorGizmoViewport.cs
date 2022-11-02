@@ -71,13 +71,17 @@ namespace FlaxEditor.Viewport
             public SceneRenderTask Task;
 
             /// <inheritdoc />
-            public override int Order => -10000000;
+            public EditorSpritesRenderer()
+            {
+                Order = -10000000;
+                UseSingleTarget = true;
+            }
 
             /// <inheritdoc />
-            public override bool UseSingleTarget => true;
-
-            /// <inheritdoc />
-            public override bool CanRender => (Task.View.Flags & ViewFlags.EditorSprites) == ViewFlags.EditorSprites && Level.ScenesCount != 0 && base.CanRender;
+            public override bool CanRender()
+            {
+                return (Task.View.Flags & ViewFlags.EditorSprites) == ViewFlags.EditorSprites && Level.ScenesCount != 0 && base.CanRender();
+            }
 
             /// <inheritdoc />
             public override void Render(GPUContext context, ref RenderContext renderContext, GPUTexture input, GPUTexture output)
@@ -202,13 +206,13 @@ namespace FlaxEditor.Viewport
             // Create post effects
             SelectionOutline = Object.New<SelectionOutline>();
             SelectionOutline.SelectionGetter = () => TransformGizmo.SelectedParents;
-            Task.CustomPostFx.Add(SelectionOutline);
+            Task.AddCustomPostFx(SelectionOutline);
             EditorPrimitives = Object.New<EditorPrimitives>();
             EditorPrimitives.Viewport = this;
-            Task.CustomPostFx.Add(EditorPrimitives);
+            Task.AddCustomPostFx(EditorPrimitives);
             _editorSpritesRenderer = Object.New<EditorSpritesRenderer>();
             _editorSpritesRenderer.Task = Task;
-            Task.CustomPostFx.Add(_editorSpritesRenderer);
+            Task.AddCustomPostFx(_editorSpritesRenderer);
 
             // Add transformation gizmo
             TransformGizmo = new TransformGizmo(this);
@@ -396,16 +400,13 @@ namespace FlaxEditor.Viewport
             if (_customSelectionOutline != null)
             {
                 Object.Destroy(ref _customSelectionOutline);
-
-                Task.CustomPostFx.Remove(_customSelectionOutline);
-
-                Task.CustomPostFx.Add(customSelectionOutline ? customSelectionOutline : SelectionOutline);
+                Task.RemoveCustomPostFx(_customSelectionOutline);
+                Task.AddCustomPostFx(customSelectionOutline ? customSelectionOutline : SelectionOutline);
             }
             else if (customSelectionOutline != null)
             {
-                Task.CustomPostFx.Remove(SelectionOutline);
-
-                Task.CustomPostFx.Add(customSelectionOutline);
+                Task.RemoveCustomPostFx(SelectionOutline);
+                Task.AddCustomPostFx(customSelectionOutline);
             }
 
             _customSelectionOutline = customSelectionOutline;
@@ -509,20 +510,20 @@ namespace FlaxEditor.Viewport
 
                 // Render editor primitives, gizmo and debug shapes in debug view modes
                 // Note: can use Output buffer as both input and output because EditorPrimitives is using a intermediate buffers
-                if (EditorPrimitives && EditorPrimitives.CanRender)
+                if (EditorPrimitives && EditorPrimitives.CanRender())
                 {
                     EditorPrimitives.Render(context, ref renderContext, task.Output, task.Output);
                 }
 
                 // Render editor sprites
-                if (_editorSpritesRenderer && _editorSpritesRenderer.CanRender)
+                if (_editorSpritesRenderer && _editorSpritesRenderer.CanRender())
                 {
                     _editorSpritesRenderer.Render(context, ref renderContext, task.Output, task.Output);
                 }
 
                 // Render selection outline
                 var selectionOutline = _customSelectionOutline ?? SelectionOutline;
-                if (selectionOutline && selectionOutline.CanRender)
+                if (selectionOutline && selectionOutline.CanRender())
                 {
                     // Use temporary intermediate buffer
                     var desc = task.Output.Description;

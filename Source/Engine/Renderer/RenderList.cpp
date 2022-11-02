@@ -6,13 +6,13 @@
 #include "Engine/Graphics/RenderTask.h"
 #include "Engine/Graphics/GPUContext.h"
 #include "Engine/Graphics/GPUDevice.h"
-#include "Engine/Graphics/PostProcessBase.h"
 #include "Engine/Graphics/GPULimits.h"
 #include "Engine/Graphics/RenderTargetPool.h"
 #include "Engine/Graphics/RenderTools.h"
+#include "Engine/Graphics/Graphics.h"
+#include "Engine/Graphics/PostProcessEffect.h"
 #include "Engine/Profiler/Profiler.h"
 #include "Engine/Content/Assets/CubeTexture.h"
-#include "Engine/Graphics/Graphics.h"
 #include "Engine/Level/Scene/Lightmap.h"
 #include "Engine/Level/Actors/PostFxVolume.h"
 
@@ -220,13 +220,12 @@ void RenderList::RunPostFxPass(GPUContext* context, RenderContext& renderContext
     }
     if (renderContext.View.Flags & ViewFlags::CustomPostProcess)
     {
-        for (int32 i = 0; i < renderContext.List->PostFx.Count(); i++)
+        for (const PostProcessEffect* fx : renderContext.List->PostFx)
         {
-            const auto fx = renderContext.List->PostFx[i];
-            if (fx->IsReady() && fx->GetLocation() == locationB)
+            if (fx->Location == locationB)
             {
                 skipPass = false;
-                needTempTarget |= !fx->GetUseSingleTarget();
+                needTempTarget |= !fx->UseSingleTarget;
             }
         }
     }
@@ -258,19 +257,18 @@ void RenderList::RunPostFxPass(GPUContext* context, RenderContext& renderContext
     }
     if (renderContext.View.Flags & ViewFlags::CustomPostProcess)
     {
-        for (int32 i = 0; i < renderContext.List->PostFx.Count(); i++)
+        for (PostProcessEffect* fx : renderContext.List->PostFx)
         {
-            auto fx = renderContext.List->PostFx[i];
-            if (fx->IsReady() && fx->GetLocation() == locationB)
+            if (fx->Location == locationB)
             {
-                if (fx->GetUseSingleTarget())
+                if (fx->UseSingleTarget)
                 {
-                    fx->Render(renderContext, input, nullptr);
+                    fx->Render(context, renderContext, input, nullptr);
                 }
                 else
                 {
                     ASSERT(needTempTarget);
-                    fx->Render(renderContext, input, output);
+                    fx->Render(context, renderContext, input, output);
                     Swap(input, output);
                 }
                 context->ResetRenderTarget();
@@ -306,19 +304,17 @@ void RenderList::RunCustomPostFxPass(GPUContext* context, RenderContext& renderC
 {
     if (!(renderContext.View.Flags & ViewFlags::CustomPostProcess))
         return;
-
-    for (int32 i = 0; i < renderContext.List->PostFx.Count(); i++)
+    for (PostProcessEffect* fx : renderContext.List->PostFx)
     {
-        auto fx = renderContext.List->PostFx[i];
-        if (fx->IsReady() && fx->GetLocation() == location)
+        if (fx->Location == location)
         {
-            if (fx->GetUseSingleTarget())
+            if (fx->UseSingleTarget)
             {
-                fx->Render(renderContext, input, nullptr);
+                fx->Render(context, renderContext, input, nullptr);
             }
             else
             {
-                fx->Render(renderContext, input, output);
+                fx->Render(context, renderContext, input, output);
                 Swap(input, output);
             }
             context->ResetRenderTarget();
@@ -330,13 +326,10 @@ bool RenderList::HasAnyPostFx(const RenderContext& renderContext, PostProcessEff
 {
     if (renderContext.View.Flags & ViewFlags::CustomPostProcess)
     {
-        for (int32 i = 0; i < renderContext.List->PostFx.Count(); i++)
+        for (const PostProcessEffect* fx : renderContext.List->PostFx)
         {
-            auto fx = renderContext.List->PostFx[i];
-            if (fx->IsReady() && fx->GetLocation() == postProcess)
-            {
+            if (fx->Location == postProcess)
                 return true;
-            }
         }
     }
     return false;

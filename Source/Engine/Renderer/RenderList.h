@@ -12,11 +12,11 @@
 
 enum class StaticFlags;
 class RenderBuffers;
+class PostProcessEffect;
 class SceneRendering;
 class LightWithShadow;
 class IPostFxSettingsProvider;
 class CubeTexture;
-class PostProcessBase;
 struct RenderContext;
 
 struct RendererDirectionalLightData
@@ -352,9 +352,9 @@ public:
     IFogRenderer* Fog;
 
     /// <summary>
-    /// Post effect to render (TEMPORARY! cleared after and before rendering).
+    /// Post effects to render.
     /// </summary>
-    Array<PostProcessBase*> PostFx;
+    Array<PostProcessEffect*> PostFx;
 
     /// <summary>
     /// The post process settings.

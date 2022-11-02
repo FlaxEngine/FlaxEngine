@@ -48,13 +48,20 @@ namespace FlaxEngine
         public UICanvas Canvas;
 
         /// <inheritdoc />
-        public override bool UseSingleTarget => true;
+        public CanvasRenderer()
+        {
+            UseSingleTarget = true;
+        }
 
         /// <inheritdoc />
-        public override PostProcessEffectLocation Location => Canvas.RenderLocation;
+        public override bool CanRender()
+        {
+            // Sync with canvas options
+            Location = Canvas.RenderLocation;
+            Order = Canvas.Order;
 
-        /// <inheritdoc />
-        public override int Order => Canvas.Order;
+            return base.CanRender();
+        }
 
         /// <inheritdoc />
         public override void Render(GPUContext context, ref RenderContext renderContext, GPUTexture input, GPUTexture output)
@@ -486,9 +493,9 @@ namespace FlaxEngine
                 if (_renderer)
                 {
 #if FLAX_EDITOR
-                    _editorTask?.CustomPostFx.Remove(_renderer);
+                    _editorTask?.RemoveCustomPostFx(_renderer);
 #endif
-                    SceneRenderTask.GlobalCustomPostFx.Remove(_renderer);
+                    SceneRenderTask.RemoveGlobalCustomPostFx(_renderer);
                     _renderer.Canvas = null;
                     Destroy(_renderer);
                     _renderer = null;
@@ -526,16 +533,16 @@ namespace FlaxEngine
 #if FLAX_EDITOR
                         if (_editorTask != null)
                         {
-                            _editorTask.CustomPostFx.Add(_renderer);
+                            _editorTask.AddCustomPostFx(_renderer);
                             break;
                         }
 #endif
-                        SceneRenderTask.GlobalCustomPostFx.Add(_renderer);
+                        SceneRenderTask.AddGlobalCustomPostFx(_renderer);
                     }
 #if FLAX_EDITOR
                     else if (_editorTask != null && IsActiveInHierarchy)
                     {
-                        _editorTask.CustomPostFx.Add(_renderer);
+                        _editorTask.AddCustomPostFx(_renderer);
                     }
 #endif
                 }
@@ -777,11 +784,11 @@ namespace FlaxEngine
 #if FLAX_EDITOR
                 if (_editorTask != null)
                 {
-                    _editorTask.CustomPostFx.Add(_renderer);
+                    _editorTask.AddCustomPostFx(_renderer);
                     return;
                 }
 #endif
-                SceneRenderTask.GlobalCustomPostFx.Add(_renderer);
+                SceneRenderTask.AddGlobalCustomPostFx(_renderer);
             }
         }
 
@@ -791,7 +798,7 @@ namespace FlaxEngine
 
             if (_renderer)
             {
-                SceneRenderTask.GlobalCustomPostFx.Remove(_renderer);
+                SceneRenderTask.RemoveGlobalCustomPostFx(_renderer);
             }
         }
 
@@ -816,7 +823,7 @@ namespace FlaxEngine
 
             if (_renderer)
             {
-                SceneRenderTask.GlobalCustomPostFx.Remove(_renderer);
+                SceneRenderTask.RemoveGlobalCustomPostFx(_renderer);
                 _renderer.Canvas = null;
                 Destroy(_renderer);
                 _renderer = null;
@@ -832,7 +839,7 @@ namespace FlaxEngine
             if (_editorTask == task && _editorRoot == root)
                 return;
             if (_editorTask != null && _renderer != null)
-                _editorTask.CustomPostFx.Remove(_renderer);
+                _editorTask.RemoveCustomPostFx(_renderer);
             if (_editorRoot != null && _guiRoot != null)
                 _guiRoot.Parent = null;
 

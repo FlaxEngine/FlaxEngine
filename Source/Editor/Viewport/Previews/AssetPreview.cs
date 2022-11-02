@@ -114,7 +114,7 @@ namespace FlaxEditor.Viewport.Previews
                 {
                     _editorPrimitives = Object.New<EditorPrimitives>();
                     _editorPrimitives.Viewport = this;
-                    Task.CustomPostFx.Add(_editorPrimitives);
+                    Task.AddCustomPostFx(_editorPrimitives);
                     Task.PostRender += OnPostRender;
                     var view = Task.View;
                     view.Flags |= ViewFlags.CustomPostProcess;
@@ -203,7 +203,7 @@ namespace FlaxEditor.Viewport.Previews
 
         private void OnPostRender(GPUContext context, ref RenderContext renderContext)
         {
-            if (renderContext.View.Mode != ViewMode.Default && _editorPrimitives && _editorPrimitives.CanRender)
+            if (renderContext.View.Mode != ViewMode.Default && _editorPrimitives && _editorPrimitives.CanRender())
             {
                 // Render editor primitives, gizmo and debug shapes in debug view modes
                 // Note: can use Output buffer as both input and output because EditorPrimitives is using a intermediate buffers

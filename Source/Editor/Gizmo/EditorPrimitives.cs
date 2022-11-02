@@ -33,7 +33,10 @@ namespace FlaxEditor.Gizmo
         public IEditorPrimitivesOwner Viewport;
 
         /// <inheritdoc />
-        public override int Order => -100;
+        public EditorPrimitives()
+        {
+            Order = -100;
+        }
 
         /// <inheritdoc />
         public override void Render(GPUContext context, ref RenderContext renderContext, GPUTexture input, GPUTexture output)

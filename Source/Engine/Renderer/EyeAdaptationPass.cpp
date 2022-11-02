@@ -9,7 +9,6 @@
 #include "Engine/Graphics/GPUDevice.h"
 #include "Engine/Graphics/GPUContext.h"
 #include "Engine/Graphics/GPULimits.h"
-#include "Engine/Graphics/PostProcessBase.h"
 #include "Engine/Graphics/Shaders/GPUShader.h"
 #include "Engine/Graphics/RenderTask.h"
 #include "Engine/Graphics/RenderTargetPool.h"

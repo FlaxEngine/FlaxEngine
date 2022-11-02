@@ -114,7 +114,10 @@ namespace FlaxEditor.Gizmo
         protected bool HasDataReady => _enabled && _material && _outlineMaterial.IsLoaded;
 
         /// <inheritdoc />
-        public override bool CanRender => _enabled && _material && _outlineMaterial.IsLoaded && SelectionGetter().Count > 0;
+        public override bool CanRender()
+        {
+            return _enabled && _material && _outlineMaterial.IsLoaded && SelectionGetter().Count > 0;
+        }
 
         /// <inheritdoc />
         public override void Render(GPUContext context, ref RenderContext renderContext, GPUTexture input, GPUTexture output)

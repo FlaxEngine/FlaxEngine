@@ -4,7 +4,7 @@
 #include "RenderBuffers.h"
 #include "GPUDevice.h"
 #include "GPUSwapChain.h"
-#include "FlaxEngine.Gen.h"
+#include "PostProcessEffect.h"
 #include "Engine/Core/Collections/Sorting.h"
 #include "Engine/Debug/DebugLog.h"
 #include "Engine/Level/Level.h"
@@ -14,54 +14,24 @@
 #include "Engine/Engine/Engine.h"
 #include "Engine/Level/Actors/PostFxVolume.h"
 #include "Engine/Profiler/Profiler.h"
-#include "Engine/Scripting/ManagedCLR/MAssembly.h"
-#include "Engine/Scripting/ManagedCLR/MClass.h"
-#include "Engine/Scripting/ManagedCLR/MMethod.h"
-#include "Engine/Scripting/Script.h"
-#include "Engine/Scripting/BinaryModule.h"
+#include "Engine/Renderer/RenderList.h"
 #include "Engine/Threading/Threading.h"
-#if USE_MONO
-#include <ThirdParty/mono-2.0/mono/metadata/appdomain.h>
-#endif
 #if USE_EDITOR
 #include "Engine/Renderer/Lightmaps.h"
 #else
 #include "Engine/Engine/Screen.h"
 #endif
 
-#if USE_MONO
-
-// TODO: use API for events and remove this manual wrapper code
-struct RenderContextManaged
-{
-    MonoObject* Buffers;
-    MonoObject* List;
-    MonoObject* Task;
-    RenderView* LodProxyView;
-    RenderView View;
-};
-
-// TODO: use API for events and remove this manual wrapper code
-namespace
-{
-    RenderContextManaged ToManaged(const RenderContext& value)
-    {
-        RenderContextManaged result;
-        result.Buffers = ScriptingObject::ToManaged((ScriptingObject*)value.Buffers);
-        result.List = ScriptingObject::ToManaged((ScriptingObject*)value.List);
-        result.Task = ScriptingObject::ToManaged((ScriptingObject*)value.Task);
-        result.LodProxyView = value.LodProxyView;
-        result.View = value.View;
-        return result;
-    }
-}
-
-#endif
-
 Array<RenderTask*> RenderTask::Tasks;
 CriticalSection RenderTask::TasksLocker;
 int32 RenderTask::TasksDoneLastFrame;
+Array<PostProcessEffect*> SceneRenderTask::GlobalCustomPostFx;
 MainRenderTask* MainRenderTask::Instance;
+
+PostProcessEffect::PostProcessEffect(const SpawnParams& params)
+    : Script(params)
+{
+}
 
 void RenderTask::DrawAll()
 {
@@ -160,62 +130,6 @@ bool RenderTask::Resize(int32 width, int32 height)
     return false;
 }
 
-void ManagedPostProcessEffect::FetchInfo()
-{
-    ASSERT(Target);
-
-    SetEnabled(Target->GetEnabled());
-
-    static MMethod* FetchInfoManaged = nullptr;
-    if (FetchInfoManaged == nullptr)
-    {
-        auto klass = ((NativeBinaryModule*)GetBinaryModuleFlaxEngine())->Assembly->GetClass("FlaxEngine.PostProcessEffect");
-        ASSERT(klass);
-        FetchInfoManaged = klass->GetMethod("FetchInfo", 3);
-        ASSERT(FetchInfoManaged);
-    }
-
-    void* args[3];
-    args[0] = Target->GetOrCreateManagedInstance();
-    args[1] = &_location;
-    args[2] = &_useSingleTarget;
-    MObject* exception = nullptr;
-    FetchInfoManaged->Invoke(nullptr, args, &exception);
-    if (exception)
-        DebugLog::LogException(exception);
-}
-
-bool ManagedPostProcessEffect::IsLoaded() const
-{
-    return Target != nullptr;
-}
-
-void ManagedPostProcessEffect::Render(RenderContext& renderContext, GPUTexture* input, GPUTexture* output)
-{
-#if USE_MONO
-    const auto context = GPUDevice::Instance->GetMainContext();
-    auto inputObj = ScriptingObject::ToManaged(input);
-    auto outputObj = ScriptingObject::ToManaged(output);
-
-    // Call rendering method (handle base classes)
-    ASSERT(Target && Target->GetClass() != nullptr);
-    auto mclass = Target->GetClass();
-    auto renderMethod = mclass->FindMethod("Render", 4, true);
-    if (renderMethod == nullptr)
-        return;
-    RenderContextManaged tmp = ::ToManaged(renderContext);
-    void* params[4];
-    params[0] = context->GetOrCreateManagedInstance();
-    params[1] = &tmp;
-    params[2] = inputObj;
-    params[3] = outputObj;
-    MObject* exception = nullptr;
-    renderMethod->InvokeVirtual(Target->GetOrCreateManagedInstance(), params, &exception);
-    if (exception)
-        DebugLog::LogException(exception);
-#endif
-}
-
 SceneRenderTask::SceneRenderTask(const SpawnParams& params)
     : RenderTask(params)
 {
@@ -252,6 +166,26 @@ void SceneRenderTask::ClearCustomActors()
     CustomActors.Clear();
 }
 
+void SceneRenderTask::AddCustomPostFx(PostProcessEffect* fx)
+{
+    CustomPostFx.Add(fx);
+}
+
+void SceneRenderTask::RemoveCustomPostFx(PostProcessEffect* fx)
+{
+    CustomPostFx.Remove(fx);
+}
+
+void SceneRenderTask::AddGlobalCustomPostFx(PostProcessEffect* fx)
+{
+    GlobalCustomPostFx.Add(fx);
+}
+
+void SceneRenderTask::RemoveGlobalCustomPostFx(PostProcessEffect* fx)
+{
+    GlobalCustomPostFx.Remove(fx);
+}
+
 void SceneRenderTask::CollectPostFxVolumes(RenderContext& renderContext)
 {
     // Cache WorldPosition used for PostFx volumes blending (RenderView caches it later on)
@@ -263,7 +197,7 @@ void SceneRenderTask::CollectPostFxVolumes(RenderContext& renderContext)
     }
     if ((ActorsSource & ActorsSources::CustomActors) != 0)
     {
-        for (auto a : CustomActors)
+        for (Actor* a : CustomActors)
         {
             auto* postFxVolume = dynamic_cast<PostFxVolume*>(a);
             if (postFxVolume && a->GetIsActive())
@@ -285,8 +219,47 @@ void AddActorToSceneRendering(SceneRendering* s, Actor* a)
     }
 }
 
+bool SortPostFx(PostProcessEffect* const& a, PostProcessEffect* const& b)
+{
+    return a->Order < b->Order;
+}
+
 void SceneRenderTask::OnCollectDrawCalls(RenderContextBatch& renderContextBatch, byte category)
 {
+    // Setup PostFx in the render list
+    if (category == SceneRendering::DrawCategory::PreRender)
+    {
+        const RenderContext& renderContext = renderContextBatch.GetMainContext();
+        auto& postFx = renderContext.List->PostFx;
+
+        // Collect all post effects
+        if (AllowGlobalCustomPostFx)
+        {
+            for (PostProcessEffect* fx : GlobalCustomPostFx)
+            {
+                if (fx && fx->CanRender())
+                    postFx.Add(fx);
+            }
+        }
+        for (PostProcessEffect* fx : CustomPostFx)
+        {
+            if (fx && fx->CanRender())
+                postFx.Add(fx);
+        }
+        if (const auto* camera = Camera.Get())
+        {
+            for (Script* script : camera->Scripts)
+            {
+                auto* fx = Cast<PostProcessEffect>(script);
+                if (fx && fx->CanRender())
+                    postFx.Add(fx);
+            }
+        }
+
+        // Sort by order
+        Sorting::QuickSort(postFx.Get(), postFx.Count(), &SortPostFx);
+    }
+
     // Draw actors (collect draw calls)
     if ((ActorsSource & ActorsSources::CustomActors) != 0)
     {
@@ -372,33 +345,6 @@ void SceneRenderTask::OnBegin(GPUContext* context)
         auto viewport = GetViewport();
         View.CopyFrom(Camera, &viewport);
     }
-
-    // Get custom and global PostFx
-    CustomPostFx.Clear();
-#if !COMPILE_WITHOUT_CSHARP
-    // TODO: move postFx in SceneRenderTask from C# to C++
-    static MMethod* GetPostFxManaged = GetStaticClass()->GetMethod("GetPostFx", 1);
-    if (GetPostFxManaged)
-    {
-        int32 count = 0;
-        void* params[1];
-        params[0] = &count;
-        MObject* exception = nullptr;
-#if USE_MONO
-        const auto objects = (MonoArray*)GetPostFxManaged->Invoke(GetOrCreateManagedInstance(), params, &exception);
-        if (exception)
-            DebugLog::LogException(exception);
-        CustomPostFx.Resize(count);
-        for (int32 i = 0; i < count; i++)
-        {
-            auto& postFx = CustomPostFx[i];
-            postFx.Target = mono_array_get(objects, Script*, i);
-            if (postFx.Target)
-                postFx.FetchInfo();
-        }
-#endif
-    }
-#endif
 
     // Setup render buffers for the output rendering resolution
     if (Output)
