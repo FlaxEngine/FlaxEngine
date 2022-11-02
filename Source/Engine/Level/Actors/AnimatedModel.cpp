@@ -699,45 +699,38 @@ void AnimatedModel::Update()
 
 void AnimatedModel::Draw(RenderContext& renderContext)
 {
+    if (!SkinnedModel || !SkinnedModel->IsLoaded())
+        return;
     if (renderContext.View.Pass == DrawPass::GlobalSDF)
         return; // TODO: Animated Model rendering to Global SDF
     if (renderContext.View.Pass == DrawPass::GlobalSurfaceAtlas)
         return; // No supported
     Matrix world;
-    renderContext.View.GetWorldMatrix(_transform, world);
+    const Float3 translation = _transform.Translation - renderContext.View.Origin;
+    Matrix::Transformation(_transform.Scale, _transform.Orientation, translation, world);
     GEOMETRY_DRAW_STATE_EVENT_BEGIN(_drawState, world);
 
-    if (SkinnedModel && SkinnedModel->IsLoaded())
+    _lastMinDstSqr = Math::Min(_lastMinDstSqr, Vector3::DistanceSquared(_transform.Translation, renderContext.View.Position + renderContext.View.Origin));
+    if (_skinningData.IsReady())
     {
-        _lastMinDstSqr = Math::Min(_lastMinDstSqr, Vector3::DistanceSquared(_transform.Translation, renderContext.View.Position + renderContext.View.Origin));
+        _skinningData.Flush(GPUDevice::Instance->GetMainContext());
 
-        if (_skinningData.IsReady())
-        {
-#if USE_EDITOR
-            // Disable motion blur effects in editor without play mode enabled to hide minor artifacts on objects moving
-            if (!Editor::IsPlayMode)
-                _drawState.PrevWorld = world;
-#endif
+        SkinnedMesh::DrawInfo draw;
+        draw.Buffer = &Entries;
+        draw.Skinning = &_skinningData;
+        draw.BlendShapes = &_blendShapes;
+        draw.World = &world;
+        draw.DrawState = &_drawState;
+        PRAGMA_DISABLE_DEPRECATION_WARNINGS
+        draw.DrawModes = (DrawPass)(DrawModes & renderContext.View.GetShadowsDrawPassMask(ShadowsMode));
+        PRAGMA_ENABLE_DEPRECATION_WARNINGS
+        draw.Bounds = _sphere;
+        draw.Bounds.Center -= renderContext.View.Origin;
+        draw.PerInstanceRandom = GetPerInstanceRandom();
+        draw.LODBias = LODBias;
+        draw.ForcedLOD = ForcedLOD;
 
-            _skinningData.Flush(GPUDevice::Instance->GetMainContext());
-
-            SkinnedMesh::DrawInfo draw;
-            draw.Buffer = &Entries;
-            draw.Skinning = &_skinningData;
-            draw.BlendShapes = &_blendShapes;
-            draw.World = &world;
-            draw.DrawState = &_drawState;
-            PRAGMA_DISABLE_DEPRECATION_WARNINGS
-            draw.DrawModes = (DrawPass)(DrawModes & renderContext.View.GetShadowsDrawPassMask(ShadowsMode));
-            PRAGMA_ENABLE_DEPRECATION_WARNINGS
-            draw.Bounds = _sphere;
-            draw.Bounds.Center -= renderContext.View.Origin;
-            draw.PerInstanceRandom = GetPerInstanceRandom();
-            draw.LODBias = LODBias;
-            draw.ForcedLOD = ForcedLOD;
-
-            SkinnedModel->Draw(renderContext, draw);
-        }
+        SkinnedModel->Draw(renderContext, draw);
     }
 
     GEOMETRY_DRAW_STATE_EVENT_END(_drawState, world);
@@ -749,17 +742,13 @@ void AnimatedModel::Draw(RenderContextBatch& renderContextBatch)
         return;
     const RenderContext& renderContext = renderContextBatch.GetMainContext();
     Matrix world;
-    renderContext.View.GetWorldMatrix(_transform, world);
+    const Float3 translation = _transform.Translation - renderContext.View.Origin;
+    Matrix::Transformation(_transform.Scale, _transform.Orientation, translation, world);
     GEOMETRY_DRAW_STATE_EVENT_BEGIN(_drawState, world);
+
     _lastMinDstSqr = Math::Min(_lastMinDstSqr, Vector3::DistanceSquared(_transform.Translation, renderContext.View.Position + renderContext.View.Origin));
     if (_skinningData.IsReady())
     {
-#if USE_EDITOR
-        // Disable motion blur effects in editor without play mode enabled to hide minor artifacts on objects moving
-        if (!Editor::IsPlayMode)
-            _drawState.PrevWorld = world;
-#endif
-
         _skinningData.Flush(GPUDevice::Instance->GetMainContext());
 
         SkinnedMesh::DrawInfo draw;
@@ -792,6 +781,7 @@ void AnimatedModel::Draw(RenderContextBatch& renderContextBatch)
         }
         PRAGMA_ENABLE_DEPRECATION_WARNINGS
     }
+
     GEOMETRY_DRAW_STATE_EVENT_END(_drawState, world);
 }
 

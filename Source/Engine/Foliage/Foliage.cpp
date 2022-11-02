@@ -85,7 +85,7 @@ void Foliage::AddToCluster(ChunkedArray<FoliageCluster, FOLIAGE_CLUSTER_CHUNKS_S
 
 void Foliage::DrawInstance(RenderContext& renderContext, FoliageInstance& instance, FoliageType& type, Model* model, int32 lod, float lodDitherFactor, DrawCallsList* drawCallsLists, BatchedDrawCalls& result) const
 {
-    const auto& meshes = model->LODs[lod].Meshes;
+    const auto& meshes = model->LODs.Get()[lod].Meshes;
     for (int32 meshIndex = 0; meshIndex < meshes.Count(); meshIndex++)
     {
         auto& drawCall = drawCallsLists[lod][meshIndex];
@@ -94,7 +94,7 @@ void Foliage::DrawInstance(RenderContext& renderContext, FoliageInstance& instan
 
         DrawKey key;
         key.Mat = drawCall.DrawCall.Material;
-        key.Geo = &meshes[meshIndex];
+        key.Geo = &meshes.Get()[meshIndex];
         key.Lightmap = instance.Lightmap.TextureIndex;
         auto* e = result.TryGet(key);
         if (!e)
@@ -108,7 +108,8 @@ void Foliage::DrawInstance(RenderContext& renderContext, FoliageInstance& instan
         auto& instanceData = e->Instances.AddOne();
         Matrix world;
         const Transform transform = _transform.LocalToWorld(instance.Transform);
-        renderContext.View.GetWorldMatrix(transform, world);
+        const Float3 translation = transform.Translation - renderContext.View.Origin;
+        Matrix::Transformation(transform.Scale, transform.Orientation, translation, world);
         instanceData.InstanceOrigin = Float3(world.M41, world.M42, world.M43);
         instanceData.PerInstanceRandom = instance.Random;
         instanceData.InstanceTransform1 = Float3(world.M11, world.M12, world.M13);
@@ -154,7 +155,7 @@ void Foliage::DrawCluster(RenderContext& renderContext, FoliageCluster* cluster,
         const auto model = type.Model.Get();
         for (int32 i = 0; i < cluster->Instances.Count(); i++)
         {
-            auto& instance = *cluster->Instances[i];
+            auto& instance = *cluster->Instances.Get()[i];
             BoundingSphere sphere = instance.Bounds;
             sphere.Center -= viewOrigin;
             if (Float3::Distance(renderContext.View.Position, sphere.Center) - (float)sphere.Radius < instance.CullDistance &&
@@ -294,7 +295,8 @@ void Foliage::DrawCluster(RenderContext& renderContext, FoliageCluster* cluster,
             {
                 Matrix world;
                 const Transform transform = _transform.LocalToWorld(instance.Transform);
-                renderContext.View.GetWorldMatrix(transform, world);
+                const Float3 translation = transform.Translation - renderContext.View.Origin;
+                Matrix::Transformation(transform.Scale, transform.Orientation, translation, world);
 
                 // Disable motion blur
                 instance.DrawState.PrevWorld = world;

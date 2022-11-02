@@ -269,17 +269,11 @@ void StaticModel::Draw(RenderContext& renderContext)
         return;
     }
     Matrix world;
-    renderContext.View.GetWorldMatrix(_transform, world);
+    const Float3 translation = _transform.Translation - renderContext.View.Origin;
+    Matrix::Transformation(_transform.Scale, _transform.Orientation, translation, world);
     GEOMETRY_DRAW_STATE_EVENT_BEGIN(_drawState, world);
-
     if (_vertexColorsDirty)
         FlushVertexColors();
-
-#if USE_EDITOR
-    // Disable motion blur effects in editor without play mode enabled to hide minor artifacts on objects moving
-    if (!Editor::IsPlayMode)
-        _drawState.PrevWorld = world;
-#endif
 
     Mesh::DrawInfo draw;
     draw.Buffer = &Entries;
@@ -307,17 +301,11 @@ void StaticModel::Draw(RenderContextBatch& renderContextBatch)
         return;
     const RenderContext& renderContext = renderContextBatch.GetMainContext();
     Matrix world;
-    renderContext.View.GetWorldMatrix(_transform, world);
+    const Float3 translation = _transform.Translation - renderContext.View.Origin;
+    Matrix::Transformation(_transform.Scale, _transform.Orientation, translation, world);
     GEOMETRY_DRAW_STATE_EVENT_BEGIN(_drawState, world);
-
     if (_vertexColorsDirty)
         FlushVertexColors();
-
-#if USE_EDITOR
-    // Disable motion blur effects in editor without play mode enabled to hide minor artifacts on objects moving
-    if (!Editor::IsPlayMode)
-        _drawState.PrevWorld = world;
-#endif
 
     Mesh::DrawInfo draw;
     draw.Buffer = &Entries;

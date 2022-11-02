@@ -352,12 +352,6 @@ void TextRender::Draw(RenderContext& renderContext)
     const DrawPass drawModes = (DrawPass)(DrawModes & renderContext.View.Pass & (uint32)renderContext.View.GetShadowsDrawPassMask(ShadowsMode));
     if (_vb0.Data.Count() > 0 && drawModes != DrawPass::None)
     {
-#if USE_EDITOR
-        // Disable motion blur effects in editor without play mode enabled to hide minor artifacts on objects moving
-        if (!Editor::IsPlayMode)
-            _drawState.PrevWorld = world;
-#endif
-
         // Flush buffers
         if (_buffersDirty)
         {
