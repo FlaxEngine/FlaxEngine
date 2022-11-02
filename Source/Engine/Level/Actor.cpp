@@ -509,21 +509,9 @@ void Actor::SetTag(const StringView& tagName)
 
 void Actor::SetName(const StringView& value)
 {
-    // Validate name
-    if (value.Length() == 0)
-    {
-        LOG(Warning, "Cannot change actor '{0}' name. Name cannot be empty.", ToString());
-        return;
-    }
-
-    // Check if name won't change
     if (_name == value)
         return;
-
-    // Set name
     _name = value;
-
-    // Fire events
     if (GetScene())
         Level::callActorEvent(Level::ActorEventType::OnActorNameChanged, this, nullptr);
 }

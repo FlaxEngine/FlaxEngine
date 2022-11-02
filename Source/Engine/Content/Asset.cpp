@@ -154,7 +154,8 @@ void SoftAssetReferenceBase::OnResolve(const ScriptingTypeHandle& type)
 
 void SoftAssetReferenceBase::OnUnloaded(Asset* asset)
 {
-    ASSERT(_asset == asset);
+    if (_asset != asset)
+        return;
     _asset->RemoveReference();
     _asset->OnUnloaded.Unbind<SoftAssetReferenceBase, &SoftAssetReferenceBase::OnUnloaded>(this);
     _asset = nullptr;
