@@ -93,17 +93,10 @@ struct RasterizeChunk
     }
 };
 
-struct RasterizeModelSDF
+struct RasterizeObject
 {
     Actor* Actor;
     const ModelBase::SDFData* SDF;
-    Transform LocalToWorld;
-    BoundingBox ObjectBounds;
-};
-
-struct RasterizeHeightfield
-{
-    Actor* Actor;
     GPUTexture* Heightfield;
     Transform LocalToWorld;
     BoundingBox ObjectBounds;
@@ -264,8 +257,7 @@ public:
 namespace
 {
     Dictionary<RasterizeChunkKey, RasterizeChunk> ChunksCache;
-    Array<RasterizeModelSDF> RasterizeModelSDFCache;
-    Array<RasterizeHeightfield> RasterizeHeightfieldCache;
+    Array<RasterizeObject> RasterizeObjectsCache;
     Dictionary<uint16, uint16> ObjectIndexToDataIndexCache;
 }
 
@@ -359,8 +351,7 @@ void GlobalSignDistanceFieldPass::Dispose()
     SAFE_DELETE_GPU_RESOURCE(_psDebug);
     _shader = nullptr;
     ChunksCache.SetCapacity(0);
-    RasterizeModelSDFCache.SetCapacity(0);
-    RasterizeHeightfieldCache.SetCapacity(0);
+    RasterizeObjectsCache.SetCapacity(0);
     ObjectIndexToDataIndexCache.SetCapacity(0);
 }
 
@@ -530,8 +521,7 @@ bool GlobalSignDistanceFieldPass::Render(RenderContext& renderContext, GPUContex
         {
             PROFILE_CPU_NAMED("Clear");
             chunks.Clear();
-            RasterizeModelSDFCache.Clear();
-            RasterizeHeightfieldCache.Clear();
+            RasterizeObjectsCache.Clear();
             _objectsBuffer->Clear();
             _objectsTextures.Clear();
         }
@@ -645,8 +635,7 @@ bool GlobalSignDistanceFieldPass::Render(RenderContext& renderContext, GPUContex
                 objectIndexToDataIndexCache.Clear();
 
                 // Write used objects to the buffer
-                const auto& rasterizeModelSDFCache = RasterizeModelSDFCache;
-                const auto& rasterizeHeightfieldCache = RasterizeHeightfieldCache;
+                const auto& rasterizeObjectsCache = RasterizeObjectsCache;
                 for (const auto& e : chunks)
                 {
                     auto& chunk = e.Value;
@@ -655,7 +644,7 @@ bool GlobalSignDistanceFieldPass::Render(RenderContext& renderContext, GPUContex
                         auto objectIndex = chunk.Models[i];
                         if (objectIndexToDataIndexCache.ContainsKey(objectIndex))
                             continue;
-                        const auto& object = rasterizeModelSDFCache.Get()[objectIndex];
+                        const auto& object = rasterizeObjectsCache.Get()[objectIndex];
 
                         // Pick the SDF mip for the cascade
                         int32 mipLevelIndex = 1;
@@ -697,7 +686,7 @@ bool GlobalSignDistanceFieldPass::Render(RenderContext& renderContext, GPUContex
                         auto objectIndex = chunk.Heightfields[i];
                         if (objectIndexToDataIndexCache.ContainsKey(objectIndex))
                             continue;
-                        const auto& object = rasterizeHeightfieldCache.Get()[objectIndex];
+                        const auto& object = rasterizeObjectsCache.Get()[objectIndex];
 
                         // Add object data for the GPU buffer
                         uint16 dataIndex = _objectsBufferCount++;
@@ -966,8 +955,8 @@ void GlobalSignDistanceFieldPass::RasterizeModelSDF(Actor* actor, const ModelBas
         const Int3 objectChunkMax(objectBoundsCascade.Maximum / chunkSize);
 
         // Add object data
-        const uint16 dataIndex = RasterizeModelSDFCache.Count();
-        auto& data = RasterizeModelSDFCache.AddOne();
+        const uint16 dataIndex = RasterizeObjectsCache.Count();
+        auto& data = RasterizeObjectsCache.AddOne();
         data.Actor = actor;
         data.SDF = &sdf;
         data.LocalToWorld = localToWorld;
@@ -1028,8 +1017,8 @@ void GlobalSignDistanceFieldPass::RasterizeHeightfield(Actor* actor, GPUTexture*
         const Int3 objectChunkMax(objectBoundsCascade.Maximum / chunkSize);
 
         // Add object data
-        const uint16 dataIndex = RasterizeHeightfieldCache.Count();
-        auto& data = RasterizeHeightfieldCache.AddOne();
+        const uint16 dataIndex = RasterizeObjectsCache.Count();
+        auto& data = RasterizeObjectsCache.AddOne();
         data.Actor = actor;
         data.Heightfield = heightfield;
         data.LocalToWorld = localToWorld;
