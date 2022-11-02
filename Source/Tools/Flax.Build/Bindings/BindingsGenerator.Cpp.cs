@@ -1276,7 +1276,15 @@ namespace Flax.Build.Bindings
                 if (functionInfo.ReturnType.IsRef)
                     throw new NotSupportedException($"Passing return value by reference is not supported for virtual API methods. Used on method '{functionInfo}'.");
 
-                contents.AppendLine($"        return MUtils::Unbox<{functionInfo.ReturnType}>(__result);");
+                switch (functionInfo.ReturnType.Type)
+                {
+                case "bool":
+                    contents.AppendLine($"        return __result != 0;");
+                    break;
+                default:
+                    contents.AppendLine($"        return MUtils::Unbox<{functionInfo.ReturnType}>(__result);");
+                    break;
+                }
             }
 
             contents.AppendLine("    }");
@@ -1922,7 +1930,7 @@ namespace Flax.Build.Bindings
                 throw new NotImplementedException($"TODO: add support for API functions in structures (function {functionInfo} in structure {structureInfo.Name})");
                 //GenerateCppWrapperFunction(buildData, contents, structureInfo, functionInfo);
             }
-            
+
             GenerateCppTypeInternals?.Invoke(buildData, structureInfo, contents);
 
             contents.AppendLine("    static void InitRuntime()");
