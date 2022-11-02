@@ -436,8 +436,8 @@ namespace Flax.Build.Bindings
                     return "{0}.GetManagedInstance()";
                 }
 
-                // Array or Span
-                if ((typeInfo.Type == "Array" || typeInfo.Type == "Span") && typeInfo.GenericArgs != null)
+                // Array or Span or DataContainer
+                if ((typeInfo.Type == "Array" || typeInfo.Type == "Span" || typeInfo.Type == "DataContainer") && typeInfo.GenericArgs != null)
                 {
                     type = "MonoArray*";
                     return "MUtils::ToArray({0}, " + GenerateCppGetNativeClass(buildData, typeInfo.GenericArgs[0], caller, functionInfo) + ")";
@@ -638,8 +638,8 @@ namespace Flax.Build.Bindings
                     return "MUtils::ToArray<" + T + ">({0})";
                 }
 
-                // Span
-                if (typeInfo.Type == "Span" && typeInfo.GenericArgs != null)
+                // Span or DataContainer
+                if ((typeInfo.Type == "Span" || typeInfo.Type == "DataContainer") && typeInfo.GenericArgs != null)
                 {
                     type = "MonoArray*";
 
@@ -780,8 +780,8 @@ namespace Flax.Build.Bindings
             if (apiType != null && apiType.IsScriptingObject)
                 return $"ScriptingObject::ToManaged((ScriptingObject*){value})";
 
-            // Array or Span
-            if ((typeInfo.Type == "Array" || typeInfo.Type == "Span") && typeInfo.GenericArgs != null && typeInfo.GenericArgs.Count >= 1)
+            // Array or Span or DataContainer
+            if ((typeInfo.Type == "Array" || typeInfo.Type == "Span" || typeInfo.Type == "DataContainer") && typeInfo.GenericArgs != null && typeInfo.GenericArgs.Count >= 1)
                 return $"MUtils::ToArray({value}, {GenerateCppGetNativeClass(buildData, typeInfo.GenericArgs[0], caller, null)})";
 
             // BytesContainer

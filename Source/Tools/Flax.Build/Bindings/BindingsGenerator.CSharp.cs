@@ -285,8 +285,8 @@ namespace Flax.Build.Bindings
                  typeInfo.Type == "SoftObjectReference") && typeInfo.GenericArgs != null)
                 return GenerateCSharpNativeToManaged(buildData, typeInfo.GenericArgs[0], caller);
 
-            // Array or Span
-            if ((typeInfo.Type == "Array" || typeInfo.Type == "Span") && typeInfo.GenericArgs != null)
+            // Array or Span or DataContainer
+            if ((typeInfo.Type == "Array" || typeInfo.Type == "Span" || typeInfo.Type == "DataContainer") && typeInfo.GenericArgs != null)
                 return GenerateCSharpNativeToManaged(buildData, typeInfo.GenericArgs[0], caller) + "[]";
 
             // Dictionary

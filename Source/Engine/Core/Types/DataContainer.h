@@ -35,7 +35,7 @@ public:
     /// </summary>
     /// <param name="data">The data pointer to link.</param>
     /// <param name="length">The data length.</param>
-    DataContainer(T* data, int32 length)
+    DataContainer(const T* data, int32 length)
         : Base(data, length)
         , _isAllocated(false)
     {
@@ -47,7 +47,17 @@ public:
     /// <param name="data">The data array to link.</param>
     template<typename AllocationType>
     DataContainer(const Array<T, AllocationType>& data)
-        : Base((T*)data.Get(), data.Count())
+        : Base(data.Get(), data.Count())
+        , _isAllocated(false)
+    {
+    }
+
+    /// <summary>
+    /// Initializes a new instance of the <see cref="DataContainer"/> class.
+    /// </summary>
+    /// <param name="data">The data span to link.</param>
+    DataContainer(const Span<T>& data)
+        : Base(data.Get(), data.Length())
         , _isAllocated(false)
     {
     }
