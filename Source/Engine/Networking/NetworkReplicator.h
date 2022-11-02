@@ -21,7 +21,7 @@ API_ENUM(Namespace="FlaxEngine.Networking") enum class NetworkObjectRole : byte
     // Server/client gets replicated object from other server/client who owns it. Object cannot be simulated locally (any changes will be overriden by replication).
     Replicated,
     // Client gets replicated object from server but still can locally autonomously simulate it too. For example, client can control local pawn with real human input but will validate with server proper state (eg. to prevent cheats).
-    ReplicatedAutonomous,
+    ReplicatedSimulated,
 };
 
 /// <summary>
@@ -104,6 +104,40 @@ public:
     /// <param name="obj">The network object.</param>
     /// <returns>The object role.</returns>
     API_FUNCTION() static NetworkObjectRole GetObjectRole(ScriptingObject* obj);
+
+    /// <summary>
+    /// Checks if the network object is owned locally (thus current client has authority to manage it).
+    /// </summary>
+    /// <remarks>Equivalent to GetObjectRole == OwnedAuthoritative.</remarks>
+    /// <param name="obj">The network object.</param>
+    /// <returns>True if object is owned by this client, otherwise false.</returns>
+    API_FUNCTION() FORCE_INLINE static bool IsObjectOwned(ScriptingObject* obj)
+    {
+        return GetObjectRole(obj) == NetworkObjectRole::OwnedAuthoritative;
+    }
+
+    /// <summary>
+    /// Checks if the network object is simulated locally (thus current client has can modify it - changed might be overriden by other client who owns this object).
+    /// </summary>
+    /// <remarks>Equivalent to GetObjectRole != Replicated.</remarks>
+    /// <param name="obj">The network object.</param>
+    /// <returns>True if object is simulated on this client, otherwise false.</returns>
+    API_FUNCTION() FORCE_INLINE static bool IsObjectSimulated(ScriptingObject* obj)
+    {
+        return GetObjectRole(obj) != NetworkObjectRole::Replicated;
+    }
+
+    /// <summary>
+    /// Checks if the network object is replicated locally (any local changes might be overriden by other client who owns this object).
+    /// </summary>
+    /// <remarks>Equivalent to (GetObjectRole == Replicated or GetObjectRole == ReplicatedAutonomous).</remarks>
+    /// <param name="obj">The network object.</param>
+    /// <returns>True if object is simulated on this client, otherwise false.</returns>
+    API_FUNCTION() FORCE_INLINE static bool IsObjectReplicated(ScriptingObject* obj)
+    {
+        const NetworkObjectRole role = GetObjectRole(obj);
+        return role == NetworkObjectRole::Replicated || role == NetworkObjectRole::ReplicatedSimulated;
+    }
 
     /// <summary>
     /// Sets the network object ownership - owning client identifier and local role to use.
