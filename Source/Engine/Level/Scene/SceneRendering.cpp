@@ -84,7 +84,7 @@ void SceneRendering::Draw(RenderContextBatch& renderContextBatch, DrawCategory c
     else if (origin.IsZero() && frustumsCount == 1)
     {
         // Fast path for no origin shifting with a single context
-        auto& renderContext = renderContextBatch.Contexts[0];
+        RenderContext& renderContext = renderContextBatch.GetMainContext();
         for (int32 i = 0; i < list.Count(); i++)
         {
             auto e = list.Get()[i];

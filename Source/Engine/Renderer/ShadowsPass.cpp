@@ -609,7 +609,7 @@ void ShadowsPass::RenderShadow(RenderContextBatch& renderContextBatch, RendererP
         return;
     PROFILE_GPU_CPU("Shadow");
     GPUContext* context = GPUDevice::Instance->GetMainContext();
-    RenderContext& renderContext = renderContextBatch.Contexts[0];
+    RenderContext& renderContext = renderContextBatch.GetMainContext();
     ShadowData& shadowData = _shadowData[light.ShadowDataIndex];
     const float sphereModelScale = 3.0f;
     auto& view = renderContext.View;
@@ -631,6 +631,7 @@ void ShadowsPass::RenderShadow(RenderContextBatch& renderContextBatch, RendererP
         context->ClearDepth(rt);
         auto& shadowContext = renderContextBatch.Contexts[shadowData.ContextIndex + faceIndex];
         shadowContext.List->ExecuteDrawCalls(shadowContext, DrawCallsListType::Depth);
+        shadowContext.List->ExecuteDrawCalls(shadowContext, shadowContext.List->ShadowDepthDrawCallsList, renderContext.List->DrawCalls.Get(), nullptr);
     }
 
     // Restore GPU context
@@ -686,7 +687,7 @@ void ShadowsPass::RenderShadow(RenderContextBatch& renderContextBatch, RendererS
         return;
     PROFILE_GPU_CPU("Shadow");
     GPUContext* context = GPUDevice::Instance->GetMainContext();
-    RenderContext& renderContext = renderContextBatch.Contexts[0];
+    RenderContext& renderContext = renderContextBatch.GetMainContext();
     ShadowData& shadowData = _shadowData[light.ShadowDataIndex];
     const float sphereModelScale = 3.0f;
     auto& view = renderContext.View;
@@ -708,6 +709,7 @@ void ShadowsPass::RenderShadow(RenderContextBatch& renderContextBatch, RendererS
         context->ClearDepth(rt);
         auto& shadowContext = renderContextBatch.Contexts[shadowData.ContextIndex + faceIndex];
         shadowContext.List->ExecuteDrawCalls(shadowContext, DrawCallsListType::Depth);
+        shadowContext.List->ExecuteDrawCalls(shadowContext, shadowContext.List->ShadowDepthDrawCallsList, renderContext.List->DrawCalls.Get(), nullptr);
     }
 
     // Restore GPU context
@@ -763,7 +765,7 @@ void ShadowsPass::RenderShadow(RenderContextBatch& renderContextBatch, RendererD
         return;
     PROFILE_GPU_CPU("Shadow");
     GPUContext* context = GPUDevice::Instance->GetMainContext();
-    RenderContext& renderContext = renderContextBatch.Contexts[0];
+    RenderContext& renderContext = renderContextBatch.GetMainContext();
     ShadowData& shadowData = _shadowData[light.ShadowDataIndex];
     const float shadowMapsSizeCSM = (float)_shadowMapsSizeCSM;
     context->SetViewportAndScissors(shadowMapsSizeCSM, shadowMapsSizeCSM);
@@ -777,6 +779,7 @@ void ShadowsPass::RenderShadow(RenderContextBatch& renderContextBatch, RendererD
         context->ClearDepth(rt);
         auto& shadowContext = renderContextBatch.Contexts[shadowData.ContextIndex + cascadeIndex];
         shadowContext.List->ExecuteDrawCalls(shadowContext, DrawCallsListType::Depth);
+        shadowContext.List->ExecuteDrawCalls(shadowContext, shadowContext.List->ShadowDepthDrawCallsList, renderContext.List->DrawCalls.Get(), nullptr);
     }
 
     // Restore GPU context

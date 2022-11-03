@@ -411,7 +411,7 @@ void Mesh::Draw(const RenderContext& renderContext, MaterialBase* material, cons
     if (drawModes == DrawPass::None)
         return;
 
-    // Submit draw call
+    // Setup draw call
     DrawCall drawCall;
     drawCall.Geometry.IndexBuffer = _indexBuffer;
     drawCall.Geometry.VertexBuffers[0] = _vertexBuffers[0];
@@ -434,6 +434,8 @@ void Mesh::Draw(const RenderContext& renderContext, MaterialBase* material, cons
     drawCall.Surface.LODDitherFactor = 0.0f;
     drawCall.WorldDeterminantSign = Math::FloatSelect(world.RotDeterminant(), 1, -1);
     drawCall.PerInstanceRandom = perInstanceRandom;
+
+    // Push draw call to the render list
     renderContext.List->AddDrawCall(drawModes, flags, drawCall, receiveDecals);
 }
 
@@ -454,14 +456,14 @@ void Mesh::Draw(const RenderContext& renderContext, const DrawInfo& info, float 
         material = GPUDevice::Instance->GetDefaultMaterial();
     if (!material || !material->IsSurface())
         return;
-    
+
     // Check if skip rendering
     const auto shadowsMode = (ShadowsCastingMode)(entry.ShadowsMode & slot.ShadowsMode);
     const auto drawModes = (DrawPass)((uint32)info.DrawModes & (uint32)renderContext.View.Pass & (uint32)renderContext.View.GetShadowsDrawPassMask(shadowsMode) & (uint32)material->GetDrawModes());
     if (drawModes == DrawPass::None)
         return;
 
-    // Submit draw call
+    // Setup draw call
     DrawCall drawCall;
     drawCall.Geometry.IndexBuffer = _indexBuffer;
     drawCall.Geometry.VertexBuffers[0] = _vertexBuffers[0];
@@ -493,6 +495,8 @@ void Mesh::Draw(const RenderContext& renderContext, const DrawInfo& info, float 
     drawCall.Surface.LODDitherFactor = lodDitherFactor;
     drawCall.WorldDeterminantSign = Math::FloatSelect(drawCall.World.RotDeterminant(), 1, -1);
     drawCall.PerInstanceRandom = info.PerInstanceRandom;
+
+    // Push draw call to the render list
     renderContext.List->AddDrawCall(drawModes, info.Flags, drawCall, entry.ReceiveDecals);
 }
 
@@ -514,7 +518,7 @@ void Mesh::Draw(const RenderContextBatch& renderContextBatch, const DrawInfo& in
     if (!material || !material->IsSurface())
         return;
 
-    // Submit draw call
+    // Setup draw call
     DrawCall drawCall;
     drawCall.Geometry.IndexBuffer = _indexBuffer;
     drawCall.Geometry.VertexBuffers[0] = _vertexBuffers[0];
@@ -547,17 +551,10 @@ void Mesh::Draw(const RenderContextBatch& renderContextBatch, const DrawInfo& in
     drawCall.WorldDeterminantSign = Math::FloatSelect(drawCall.World.RotDeterminant(), 1, -1);
     drawCall.PerInstanceRandom = info.PerInstanceRandom;
 
-    // Push draw call to every context
+    // Push draw call to the render lists
     const auto shadowsMode = (ShadowsCastingMode)(entry.ShadowsMode & slot.ShadowsMode);
-    const auto materialDrawModes = material->GetDrawModes();
-    for (const RenderContext& renderContext : renderContextBatch.Contexts)
-    {
-        const DrawPass drawModes = (DrawPass)((uint32)info.DrawModes & (uint32)renderContext.View.Pass & (uint32)renderContext.View.GetShadowsDrawPassMask(shadowsMode) & (uint32)materialDrawModes);
-        if (drawModes != DrawPass::None && renderContext.View.CullingFrustum.Intersects(info.Bounds))
-        {
-            renderContext.List->AddDrawCall(drawModes, info.Flags, drawCall, entry.ReceiveDecals);
-        }
-    }
+    const DrawPass drawModes = (DrawPass)(info.DrawModes & material->GetDrawModes());
+    renderContextBatch.GetMainContext().List->AddDrawCall(renderContextBatch, drawModes, info.Flags, shadowsMode, info.Bounds, drawCall, entry.ReceiveDecals);
 }
 
 bool Mesh::DownloadDataGPU(MeshBufferType type, BytesContainer& result) const

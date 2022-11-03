@@ -355,6 +355,7 @@ void RenderInner(SceneRenderTask* task, RenderContext& renderContext, RenderCont
         {
             auto& shadowContext = renderContextBatch.Contexts[i];
             shadowContext.List->SortDrawCalls(shadowContext, false, DrawCallsListType::Depth);
+            shadowContext.List->SortDrawCalls(shadowContext, false, shadowContext.List->ShadowDepthDrawCallsList, renderContext.List->DrawCalls.Get());
         }
     }
 

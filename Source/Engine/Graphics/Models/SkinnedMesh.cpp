@@ -174,7 +174,7 @@ void SkinnedMesh::Draw(const RenderContext& renderContext, const DrawInfo& info,
     if (drawModes == DrawPass::None)
         return;
 
-    // Submit draw call
+    // Setup draw call
     DrawCall drawCall;
     drawCall.Geometry.IndexBuffer = _indexBuffer;
     BlendShapesInstance::MeshInstance* blendShapeMeshInstance;
@@ -211,6 +211,8 @@ void SkinnedMesh::Draw(const RenderContext& renderContext, const DrawInfo& info,
     drawCall.Surface.LODDitherFactor = lodDitherFactor;
     drawCall.WorldDeterminantSign = Math::FloatSelect(drawCall.World.RotDeterminant(), 1, -1);
     drawCall.PerInstanceRandom = info.PerInstanceRandom;
+
+    // Push draw call to the render list
     renderContext.List->AddDrawCall(drawModes, StaticFlags::None, drawCall, entry.ReceiveDecals);
 }
 
@@ -232,7 +234,7 @@ void SkinnedMesh::Draw(const RenderContextBatch& renderContextBatch, const DrawI
     if (!material || !material->IsSurface())
         return;
 
-    // Submit draw call
+    // Setup draw call
     DrawCall drawCall;
     drawCall.Geometry.IndexBuffer = _indexBuffer;
     BlendShapesInstance::MeshInstance* blendShapeMeshInstance;
@@ -270,17 +272,10 @@ void SkinnedMesh::Draw(const RenderContextBatch& renderContextBatch, const DrawI
     drawCall.WorldDeterminantSign = Math::FloatSelect(drawCall.World.RotDeterminant(), 1, -1);
     drawCall.PerInstanceRandom = info.PerInstanceRandom;
 
-    // Push draw call to every context
+    // Push draw call to the render lists
     const auto shadowsMode = (ShadowsCastingMode)(entry.ShadowsMode & slot.ShadowsMode);
-    const auto materialDrawModes = material->GetDrawModes();
-    for (const RenderContext& renderContext : renderContextBatch.Contexts)
-    {
-        const DrawPass drawModes = (DrawPass)((uint32)info.DrawModes & (uint32)renderContext.View.Pass & (uint32)renderContext.View.GetShadowsDrawPassMask(shadowsMode) & (uint32)materialDrawModes);
-        if (drawModes != DrawPass::None && renderContext.View.CullingFrustum.Intersects(info.Bounds))
-        {
-            renderContext.List->AddDrawCall(drawModes, StaticFlags::None, drawCall, entry.ReceiveDecals);
-        }
-    }
+    const DrawPass drawModes = (DrawPass)(info.DrawModes & material->GetDrawModes());
+    renderContextBatch.GetMainContext().List->AddDrawCall(renderContextBatch, drawModes, StaticFlags::None, shadowsMode, info.Bounds, drawCall, entry.ReceiveDecals);
 }
 
 bool SkinnedMesh::DownloadDataGPU(MeshBufferType type, BytesContainer& result) const

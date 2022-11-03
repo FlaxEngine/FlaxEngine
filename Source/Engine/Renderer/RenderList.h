@@ -18,6 +18,7 @@ class LightWithShadow;
 class IPostFxSettingsProvider;
 class CubeTexture;
 struct RenderContext;
+struct RenderContextBatch;
 
 struct RendererDirectionalLightData
 {
@@ -302,6 +303,11 @@ public:
     DrawCallsList DrawCallsLists[(int32)DrawCallsListType::MAX];
 
     /// <summary>
+    /// The additional draw calls list for Depth drawing into Shadow Projections that use DrawCalls from main render context. This assumes that RenderContextBatch contains main context and shadow projections only.
+    /// </summary>
+    DrawCallsList ShadowDepthDrawCallsList;
+
+    /// <summary>
     /// Light pass members - directional lights
     /// </summary>
     Array<RendererDirectionalLightData> DirectionalLights;
@@ -478,6 +484,18 @@ public:
     void AddDrawCall(DrawPass drawModes, StaticFlags staticFlags, DrawCall& drawCall, bool receivesDecals);
 
     /// <summary>
+    /// Adds the draw call to the draw lists and references it in other render contexts. Performs additional per-context frustum culling.
+    /// </summary>
+    /// <param name="renderContextBatch">The rendering context batch. This assumes that RenderContextBatch contains main context and shadow projections only.</param>
+    /// <param name="drawModes">The object draw modes.</param>
+    /// <param name="staticFlags">The object static flags.</param>
+    /// <param name="shadowsMode">The object shadows casting mode.</param>
+    /// <param name="bounds">The object bounds.</param>
+    /// <param name="drawCall">The draw call data.</param>
+    /// <param name="receivesDecals">True if the rendered mesh can receive decals.</param>
+    void AddDrawCall(const RenderContextBatch& renderContextBatch, DrawPass drawModes, StaticFlags staticFlags, ShadowsCastingMode shadowsMode, const BoundingSphere& bounds, DrawCall& drawCall, bool receivesDecals);
+
+    /// <summary>
     /// Sorts the collected draw calls list.
     /// </summary>
     /// <param name="renderContext">The rendering context.</param>
@@ -485,7 +503,7 @@ public:
     /// <param name="listType">The collected draw calls list type.</param>
     API_FUNCTION() FORCE_INLINE void SortDrawCalls(API_PARAM(Ref) const RenderContext& renderContext, bool reverseDistance, DrawCallsListType listType)
     {
-        SortDrawCalls(renderContext, reverseDistance, DrawCallsLists[(int32)listType]);
+        SortDrawCalls(renderContext, reverseDistance, DrawCallsLists[(int32)listType], DrawCalls.Get());
     }
 
     /// <summary>
@@ -493,8 +511,9 @@ public:
     /// </summary>
     /// <param name="renderContext">The rendering context.</param>
     /// <param name="reverseDistance">If set to <c>true</c> reverse draw call distance to the view. Results in back to front sorting.</param>
-    /// <param name="list">The collected draw calls list.</param>
-    void SortDrawCalls(const RenderContext& renderContext, bool reverseDistance, DrawCallsList& list);
+    /// <param name="list">The collected draw calls indices list.</param>
+    /// <param name="drawCalls">The collected draw calls list.</param>
+    void SortDrawCalls(const RenderContext& renderContext, bool reverseDistance, DrawCallsList& list, const DrawCall* drawCalls);
 
     /// <summary>
     /// Executes the collected draw calls.
@@ -504,16 +523,28 @@ public:
     /// <param name="input">The input scene color. It's optional and used in forward/postFx rendering.</param>
     API_FUNCTION() FORCE_INLINE void ExecuteDrawCalls(API_PARAM(Ref) const RenderContext& renderContext, DrawCallsListType listType, GPUTextureView* input = nullptr)
     {
-        ExecuteDrawCalls(renderContext, DrawCallsLists[(int32)listType], input);
+        ExecuteDrawCalls(renderContext, DrawCallsLists[(int32)listType], DrawCalls.Get(), input);
     }
 
     /// <summary>
     /// Executes the collected draw calls.
     /// </summary>
     /// <param name="renderContext">The rendering context.</param>
-    /// <param name="list">The collected draw calls list.</param>
+    /// <param name="list">The collected draw calls indices list.</param>
     /// <param name="input">The input scene color. It's optional and used in forward/postFx rendering.</param>
-    void ExecuteDrawCalls(const RenderContext& renderContext, DrawCallsList& list, GPUTextureView* input = nullptr);
+    FORCE_INLINE void ExecuteDrawCalls(const RenderContext& renderContext, DrawCallsList& list, GPUTextureView* input = nullptr)
+    {
+        ExecuteDrawCalls(renderContext, list, DrawCalls.Get(), input);
+    }
+
+    /// <summary>
+    /// Executes the collected draw calls.
+    /// </summary>
+    /// <param name="renderContext">The rendering context.</param>
+    /// <param name="list">The collected draw calls indices list.</param>
+    /// <param name="drawCalls">The collected draw calls list.</param>
+    /// <param name="input">The input scene color. It's optional and used in forward/postFx rendering.</param>
+    void ExecuteDrawCalls(const RenderContext& renderContext, DrawCallsList& list, const DrawCall* drawCalls, GPUTextureView* input);
 };
 
 /// <summary>

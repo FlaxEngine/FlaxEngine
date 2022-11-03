@@ -391,6 +391,7 @@ void RenderList::Clear()
     BatchedDrawCalls.Clear();
     for (auto& list : DrawCallsLists)
         list.Clear();
+    ShadowDepthDrawCallsList.Clear();
     PointLights.Clear();
     SpotLights.Clear();
     SkyLights.Clear();
@@ -445,6 +446,60 @@ void RenderList::AddDrawCall(DrawPass drawModes, StaticFlags staticFlags, DrawCa
     }
 }
 
+void RenderList::AddDrawCall(const RenderContextBatch& renderContextBatch, DrawPass drawModes, StaticFlags staticFlags, ShadowsCastingMode shadowsMode, const BoundingSphere& bounds, DrawCall& drawCall, bool receivesDecals)
+{
+#if ENABLE_ASSERTION_LOW_LAYERS
+    // Ensure that draw modes are non-empty and in conjunction with material draw modes
+    auto materialDrawModes = drawCall.Material->GetDrawModes();
+    ASSERT_LOW_LAYER(drawModes != DrawPass::None && ((uint32)drawModes & ~(uint32)materialDrawModes) == 0);
+#endif
+
+    // Append draw call data
+    const int32 index = DrawCalls.Count();
+    DrawCalls.Add(drawCall);
+
+    // Add draw call to proper draw lists
+    const RenderContext& mainRenderContext = renderContextBatch.Contexts.Get()[0];
+    DrawPass modes = (DrawPass)(drawModes & mainRenderContext.View.GetShadowsDrawPassMask(shadowsMode));
+    drawModes = (DrawPass)(modes & mainRenderContext.View.Pass);
+    if (drawModes != DrawPass::None && mainRenderContext.View.CullingFrustum.Intersects(bounds))
+    {
+        if (drawModes & DrawPass::Depth)
+        {
+            DrawCallsLists[(int32)DrawCallsListType::Depth].Indices.Add(index);
+        }
+        if (drawModes & (DrawPass::GBuffer | DrawPass::GlobalSurfaceAtlas))
+        {
+            if (receivesDecals)
+                DrawCallsLists[(int32)DrawCallsListType::GBuffer].Indices.Add(index);
+            else
+                DrawCallsLists[(int32)DrawCallsListType::GBufferNoDecals].Indices.Add(index);
+        }
+        if (drawModes & DrawPass::Forward)
+        {
+            DrawCallsLists[(int32)DrawCallsListType::Forward].Indices.Add(index);
+        }
+        if (drawModes & DrawPass::Distortion)
+        {
+            DrawCallsLists[(int32)DrawCallsListType::Distortion].Indices.Add(index);
+        }
+        if (drawModes & DrawPass::MotionVectors && (staticFlags & StaticFlags::Transform) == 0)
+        {
+            DrawCallsLists[(int32)DrawCallsListType::MotionVectors].Indices.Add(index);
+        }
+    }
+    for (int32 i = 1; i < renderContextBatch.Contexts.Count(); i++)
+    {
+        const RenderContext& renderContext = renderContextBatch.Contexts.Get()[i];
+        ASSERT_LOW_LAYER(renderContext.View.Pass == DrawPass::Depth);
+        drawModes = (DrawPass)(modes & renderContext.View.Pass);
+        if (drawModes != DrawPass::None && renderContext.View.CullingFrustum.Intersects(bounds))
+        {
+            renderContext.List->ShadowDepthDrawCallsList.Indices.Add(index);
+        }
+    }
+}
+
 namespace
 {
     /// <summary>
@@ -466,7 +521,7 @@ namespace
     }
 }
 
-void RenderList::SortDrawCalls(const RenderContext& renderContext, bool reverseDistance, DrawCallsList& list)
+void RenderList::SortDrawCalls(const RenderContext& renderContext, bool reverseDistance, DrawCallsList& list, const DrawCall* drawCalls)
 {
     PROFILE_CPU();
 
@@ -486,7 +541,7 @@ void RenderList::SortDrawCalls(const RenderContext& renderContext, bool reverseD
     const uint32 sortKeyXor = reverseDistance ? MAX_uint32 : 0;
     for (int32 i = 0; i < listSize; i++)
     {
-        auto& drawCall = DrawCalls[list.Indices[i]];
+        const DrawCall& drawCall = drawCalls[list.Indices[i]];
         const float distance = Float3::Dot(planeNormal, drawCall.ObjectPosition) - planePoint;
         const uint32 sortKey = RenderTools::ComputeDistanceSortKey(distance) ^ sortKeyXor;
         int32 batchKey = GetHash(drawCall.Geometry.IndexBuffer);
@@ -516,14 +571,14 @@ void RenderList::SortDrawCalls(const RenderContext& renderContext, bool reverseD
     list.Batches.Clear();
     for (int32 i = 0; i < listSize;)
     {
-        const auto& drawCall = DrawCalls[list.Indices[i]];
+        const DrawCall& drawCall = drawCalls[list.Indices[i]];
         int32 batchSize = 1;
         int32 instanceCount = drawCall.InstanceCount;
 
         // Check the following draw calls to merge them (using instancing)
         for (int32 j = i + 1; j < listSize; j++)
         {
-            const auto& other = DrawCalls[list.Indices[j]];
+            const DrawCall& other = drawCalls[list.Indices[j]];
             if (!CanBatchWith(drawCall, other))
                 break;
 
@@ -550,7 +605,7 @@ bool CanUseInstancing(DrawPass pass)
     return pass == DrawPass::GBuffer || pass == DrawPass::Depth;
 }
 
-void RenderList::ExecuteDrawCalls(const RenderContext& renderContext, DrawCallsList& list, GPUTextureView* input)
+void RenderList::ExecuteDrawCalls(const RenderContext& renderContext, DrawCallsList& list, const DrawCall* drawCalls, GPUTextureView* input)
 {
     if (list.IsEmpty())
         return;
@@ -595,10 +650,10 @@ void RenderList::ExecuteDrawCalls(const RenderContext& renderContext, DrawCallsL
             if (batch.BatchSize > 1)
             {
                 IMaterial::InstancingHandler handler;
-                DrawCalls[list.Indices[batch.StartIndex]].Material->CanUseInstancing(handler);
+                drawCalls[list.Indices[batch.StartIndex]].Material->CanUseInstancing(handler);
                 for (int32 j = 0; j < batch.BatchSize; j++)
                 {
-                    auto& drawCall = DrawCalls[list.Indices[batch.StartIndex + j]];
+                    auto& drawCall = drawCalls[list.Indices[batch.StartIndex + j]];
                     handler.WriteDrawCall(instanceData, drawCall);
                     instanceData++;
                 }
@@ -631,7 +686,7 @@ DRAW:
         for (int32 i = 0; i < list.Batches.Count(); i++)
         {
             auto& batch = list.Batches[i];
-            auto& drawCall = DrawCalls[list.Indices[batch.StartIndex]];
+            const DrawCall& drawCall = drawCalls[list.Indices[batch.StartIndex]];
 
             int32 vbCount = 0;
             while (vbCount < ARRAY_COUNT(drawCall.Geometry.VertexBuffers) && drawCall.Geometry.VertexBuffers[vbCount])
@@ -738,7 +793,7 @@ DRAW:
 
             for (int32 j = 0; j < batch.BatchSize; j++)
             {
-                auto& drawCall = DrawCalls[list.Indices[batch.StartIndex + j]];
+                const DrawCall& drawCall = drawCalls[list.Indices[batch.StartIndex + j]];
                 bindParams.FirstDrawCall = &drawCall;
                 drawCall.Material->Bind(bindParams);
 
@@ -785,7 +840,7 @@ DRAW:
             // Draw calls list has nto been batched so execute draw calls separately
             for (int32 j = 0; j < list.Indices.Count(); j++)
             {
-                auto& drawCall = DrawCalls[list.Indices[j]];
+                const DrawCall& drawCall = drawCalls[list.Indices[j]];
                 bindParams.FirstDrawCall = &drawCall;
                 drawCall.Material->Bind(bindParams);
 
