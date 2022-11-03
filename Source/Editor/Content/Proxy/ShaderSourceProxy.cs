@@ -13,6 +13,7 @@ namespace FlaxEditor.Content
     /// Context proxy object for shader source files (represented by <see cref="ShaderSourceItem"/>).
     /// </summary>
     /// <seealso cref="FlaxEditor.Content.ContentProxy" />
+    [ContentContextMenu("New/Shader Source")]
     public class ShaderSourceProxy : ContentProxy
     {
         /// <inheritdoc />

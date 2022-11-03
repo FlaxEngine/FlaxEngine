@@ -1,14 +1,10 @@
 // Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 using System;
-using System.CodeDom;
-using System.Collections.Generic;
-using System.Linq;
 using FlaxEditor.Content;
 using FlaxEditor.GUI.ContextMenu;
 using FlaxEngine;
 using FlaxEngine.Assertions;
-using FlaxEngine.GUI;
 using FlaxEngine.Json;
 
 namespace FlaxEditor.Windows
@@ -43,7 +39,6 @@ namespace FlaxEditor.Windows
 
             // Create context menu
             ContextMenuButton b;
-            ContextMenuChildMenu c;
             ContextMenu cm = new ContextMenu
             {
                 Tag = item
