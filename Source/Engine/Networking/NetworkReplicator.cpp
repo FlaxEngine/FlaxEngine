@@ -123,6 +123,7 @@ struct SpawnItem
     ScriptingObjectReference<ScriptingObject> Object;
     DataContainer<uint32> Targets;
     bool HasOwnership = false;
+    bool HierarchicalOwnership = false;
     uint32 OwnerClientId;
     NetworkObjectRole Role;
 };
@@ -329,6 +330,13 @@ FORCE_INLINE void DeleteNetworkObject(ScriptingObject* obj)
         obj->DeleteObject();
 }
 
+bool IsParentOf(ScriptingObject* obj, ScriptingObject* parent)
+{
+    if (const auto* sceneObject = ScriptingObject::Cast<SceneObject>(obj))
+        return sceneObject->GetParent() == parent || IsParentOf(sceneObject->GetParent(), parent);
+    return false;
+}
+
 SceneObject* FindPrefabObject(Actor* a, const Guid& prefabObjectId)
 {
     if (a->GetPrefabObjectID() == prefabObjectId)
@@ -500,9 +508,9 @@ void NetworkReplicator::DespawnObject(ScriptingObject* obj)
     DeleteNetworkObject(obj);
 }
 
-uint32 NetworkReplicator::GetObjectClientId(ScriptingObject* obj)
+uint32 NetworkReplicator::GetObjectOwnerClientId(ScriptingObject* obj)
 {
-    uint32 id = 0;
+    uint32 id = NetworkManager::ServerClientId;
     if (obj)
     {
         ScopeLock lock(ObjectsLock);
@@ -526,7 +534,7 @@ NetworkObjectRole NetworkReplicator::GetObjectRole(ScriptingObject* obj)
     return role;
 }
 
-void NetworkReplicator::SetObjectOwnership(ScriptingObject* obj, uint32 ownerClientId, NetworkObjectRole localRole)
+void NetworkReplicator::SetObjectOwnership(ScriptingObject* obj, uint32 ownerClientId, NetworkObjectRole localRole, bool hierarchical)
 {
     if (!obj)
         return;
@@ -541,6 +549,7 @@ void NetworkReplicator::SetObjectOwnership(ScriptingObject* obj, uint32 ownerCli
             if (item.Object == obj)
             {
                 item.HasOwnership = true;
+                item.HierarchicalOwnership = hierarchical;
                 item.OwnerClientId = ownerClientId;
                 item.Role = localRole;
                 break;
@@ -576,6 +585,16 @@ void NetworkReplicator::SetObjectOwnership(ScriptingObject* obj, uint32 ownerCli
         // Allow to change local role of the object (except ownership)
         CHECK(localRole != NetworkObjectRole::OwnedAuthoritative);
         item.Role = localRole;
+    }
+
+    // Go down hierarchy
+    if (hierarchical)
+    {
+        for (auto& e : Objects)
+        {
+            if (e.Item.ParentId == item.ObjectId)
+                SetObjectOwnership(e.Item.Object.Get(), ownerClientId, localRole, hierarchical);
+        }
     }
 }
 
@@ -727,6 +746,22 @@ void NetworkInternal::NetworkReplicatorUpdate()
         PROFILE_CPU_NAMED("SpawnQueue");
         for (auto& e : SpawnQueue)
         {
+            // Propagate hierarchical ownership from spawned parent to spawned child objects (eg. spawned script and spawned actor with set hierarchical ownership on actor which should affect script too)
+            if (e.HasOwnership && e.HierarchicalOwnership)
+            {
+                for (auto& q : SpawnQueue)
+                {
+                    if (!q.HasOwnership && IsParentOf(q.Object, e.Object))
+                    {
+                        q.HasOwnership = true;
+                        q.Role = e.Role;
+                        q.OwnerClientId = e.OwnerClientId;
+                    }
+                }
+            }
+        }
+        for (auto& e : SpawnQueue)
+        {
             ScriptingObject* obj = e.Object.Get();
             auto it = Objects.Find(obj->GetID());
             if (it == Objects.End())
@@ -745,6 +780,8 @@ void NetworkInternal::NetworkReplicatorUpdate()
             {
                 item.Role = e.Role;
                 item.OwnerClientId = e.OwnerClientId;
+                if (e.HierarchicalOwnership)
+                    NetworkReplicator::SetObjectOwnership(obj, e.OwnerClientId, e.Role, true);
             }
             if (e.Targets.IsValid())
             {
