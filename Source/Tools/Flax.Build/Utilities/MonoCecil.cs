@@ -33,17 +33,26 @@ namespace Flax.Build
 
         public static MethodDefinition GetMethod(this TypeDefinition type, string name)
         {
-            return type.Methods.First(x => x.Name == name);
+            var result = type.Methods.FirstOrDefault(x => x.Name == name);
+            if (result == null)
+                throw new Exception($"Failed to find method '{name}' in '{type.FullName}'.");
+            return result;
         }
 
         public static MethodDefinition GetMethod(this TypeDefinition type, string name, int argCount)
         {
-            return type.Methods.First(x => x.Name == name && x.Parameters.Count == argCount);
+            var result = type.Methods.First(x => x.Name == name && x.Parameters.Count == argCount);
+            if (result == null)
+                throw new Exception($"Failed to find method '{name}' (args={argCount}) in '{type.FullName}'.");
+            return result;
         }
 
         public static FieldDefinition GetField(this TypeDefinition type, string name)
         {
-            return type.Fields.First(x => x.Name == name);
+            var result = type.Fields.First(x => x.Name == name);
+            if (result == null)
+                throw new Exception($"Failed to find field '{name}' in '{type.FullName}'.");
+            return result;
         }
 
         public static bool IsScriptingObject(this TypeDefinition type)

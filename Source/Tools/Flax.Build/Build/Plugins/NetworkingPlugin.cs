@@ -58,6 +58,9 @@ namespace Flax.Build.Plugins
             { "FlaxEngine.Vector2", new InBuildSerializer("WriteVector2", "ReadVector2") },
             { "FlaxEngine.Vector3", new InBuildSerializer("WriteVector3", "ReadVector3") },
             { "FlaxEngine.Vector4", new InBuildSerializer("WriteVector4", "ReadVector4") },
+            { "FlaxEngine.Float2", new InBuildSerializer("WriteFloat2", "ReadFloat2") },
+            { "FlaxEngine.Float3", new InBuildSerializer("WriteFloat3", "ReadFloat3") },
+            { "FlaxEngine.Float4", new InBuildSerializer("WriteFloat4", "ReadFloat4") },
             { "FlaxEngine.Quaternion", new InBuildSerializer("WriteQuaternion", "ReadQuaternion") },
         };
 

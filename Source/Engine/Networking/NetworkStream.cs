@@ -339,6 +339,60 @@ namespace FlaxEngine.Networking
         }
 
         /// <summary>
+        /// Writes data of type <see cref="Float2"/> into the message.
+        /// </summary>
+        public void WriteFloat2(Float2 value)
+        {
+            WriteSingle(value.X);
+            WriteSingle(value.Y);
+        }
+
+        /// <summary>
+        /// Reads and returns data of type <see cref="Float2"/> from the message.
+        /// </summary>
+        public Float2 ReadFloat2()
+        {
+            return new Float2(ReadSingle(), ReadSingle());
+        }
+
+        /// <summary>
+        /// Writes data of type <see cref="Float3"/> into the message.
+        /// </summary>
+        public void WriteFloat3(Float3 value)
+        {
+            WriteSingle(value.X);
+            WriteSingle(value.Y);
+            WriteSingle(value.Z);
+        }
+
+        /// <summary>
+        /// Reads and returns data of type <see cref="Float3"/> from the message.
+        /// </summary>
+        public Float3 ReadFloat3()
+        {
+            return new Float3(ReadSingle(), ReadSingle(), ReadSingle());
+        }
+
+        /// <summary>
+        /// Writes data of type <see cref="Float4"/> into the message.
+        /// </summary>
+        public void WriteFloat4(Float4 value)
+        {
+            WriteSingle(value.X);
+            WriteSingle(value.Y);
+            WriteSingle(value.Z);
+            WriteSingle(value.W);
+        }
+
+        /// <summary>
+        /// Reads and returns data of type <see cref="Float4"/> from the message.
+        /// </summary>
+        public Float4 ReadFloat4()
+        {
+            return new Float4(ReadSingle(), ReadSingle(), ReadSingle(), ReadSingle());
+        }
+
+        /// <summary>
         /// Writes data of type <see cref="Quaternion"/> into the message.
         /// </summary>
         public void WriteQuaternion(Quaternion value)
