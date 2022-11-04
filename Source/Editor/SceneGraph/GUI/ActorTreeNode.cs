@@ -23,6 +23,7 @@ namespace FlaxEditor.SceneGraph.GUI
     {
         private int _orderInParent;
         private DragActors _dragActors;
+        private DragScripts _dragScripts;
         private DragAssets _dragAssets;
         private DragActorType _dragActorType;
         private DragHandlers _dragHandlers;
@@ -349,6 +350,15 @@ namespace FlaxEditor.SceneGraph.GUI
             if (_dragActors.OnDragEnter(data))
                 return _dragActors.Effect;
 
+            // Check if drop scripts
+            if (_dragScripts == null)
+            {
+                _dragScripts = new DragScripts(ValidateDragScript);
+                _dragHandlers.Add(_dragScripts);
+            }
+            if (_dragScripts.OnDragEnter(data))
+                return _dragScripts.Effect;
+
             // Check if drag assets
             if (_dragAssets == null)
             {
@@ -434,6 +444,14 @@ namespace FlaxEditor.SceneGraph.GUI
                     _prefabIds[j] = allScripts[i].PrefabID;
                     _prefabObjectIds[j] = allScripts[i].PrefabObjectID;
                 }
+            }
+
+            public ReparentAction(Script script)
+            {
+                _actorsCount = 0;
+                _ids = new Guid[] { script.ID };
+                _prefabIds = new Guid[] { script.PrefabID };
+                _prefabObjectIds = new Guid[] { script.PrefabObjectID };
             }
 
             private void GetAllActors(List<Actor> allActors, Actor actor)
@@ -577,6 +595,20 @@ namespace FlaxEditor.SceneGraph.GUI
 
                 result = DragDropEffect.Move;
             }
+            // Drag scripts
+            else if (_dragScripts != null && _dragScripts.HasValidDrag)
+            {
+                foreach(var script in _dragScripts.Objects)
+                {
+                    var customAction = script.HasPrefabLink ? new ReparentAction(script) : null;
+                    using (new UndoBlock(ActorNode.Root.Undo, script, "Change script parent", customAction))
+                    {
+                        script.SetParent(newParent, true);
+                    }
+                }
+
+                result = DragDropEffect.Move;
+            }
             // Drag assets
             else if (_dragAssets != null && _dragAssets.HasValidDrag)
             {
@@ -642,6 +674,18 @@ namespace FlaxEditor.SceneGraph.GUI
             return actorNode.Actor != null && actorNode != ActorNode && actorNode.Find(Actor) == null;
         }
 
+        private bool ValidateDragScript(Script script)
+        {
+            // Reject dragging scripts not linked to scene (eg. from prefab) or in the opposite way
+            var thisHasScene = Actor.Scene != null;
+            var otherHasScene = script.Scene != null;
+            if (thisHasScene != otherHasScene)
+                return false;
+
+            // Reject dragging parents and itself
+            return script.Actor != null && script.Parent != Actor;
+        }
+
         private bool ValidateDragAsset(AssetItem assetItem)
         {
             return assetItem.OnEditorDrag(this);
@@ -684,6 +728,7 @@ namespace FlaxEditor.SceneGraph.GUI
         public override void OnDestroy()
         {
             _dragActors = null;
+            _dragScripts = null;
             _dragAssets = null;
             _dragActorType = null;
             _dragHandlers?.Clear();
