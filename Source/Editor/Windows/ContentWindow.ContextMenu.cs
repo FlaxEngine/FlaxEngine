@@ -175,8 +175,7 @@ namespace FlaxEditor.Windows
                     // user can use attribute to put their own assets into the content context menu
                     var generic = typeof(SpawnableJsonAssetProxy<>).MakeGenericType(type.Type);
                     var instance = Activator.CreateInstance(generic);
-                    dynamic obj = instance;
-                    p = obj as AssetProxy;
+                    p = instance as AssetProxy;
                 }
                 
                 if (p == null)
