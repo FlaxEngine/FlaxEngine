@@ -770,7 +770,11 @@ namespace FlaxEditor.Utilities
             sourceTextBox.Text = source;
             sourceTextBox.Height = sourceTextBox.TextSize.Y;
             sourceTextBox.Width = sourceTextBox.TextSize.X;
-            sourceTextBox.TextChanged += () => sourceTextBox.Height = sourceTextBox.TextSize.Y;
+            sourceTextBox.TextChanged += () =>
+            {
+                sourceTextBox.Height = sourceTextBox.TextSize.Y;
+                sourceTextBox.Width = sourceTextBox.TextSize.X;
+            };
             sourceTextBox.CanScrollMultilineText = false;
             sourceTextBox.IsScrollable = true;
             
