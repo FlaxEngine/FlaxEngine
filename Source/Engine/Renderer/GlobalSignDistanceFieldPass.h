@@ -3,6 +3,7 @@
 #pragma once
 
 #include "RendererPass.h"
+#include "Engine/Core/Math/Vector3.h"
 
 /// <summary>
 /// Global Sign Distance Field (SDF) rendering pass. Composites scene geometry into series of 3D volume textures that cover the world around the camera for global distance field sampling.
@@ -45,10 +46,12 @@ private:
     Array<GPUTextureView*> _objectsTextures;
     uint16 _objectsBufferCount;
     int32 _cascadeIndex;
-    float _voxelSize;
+    float _voxelSize, _chunkSize;
     BoundingBox _cascadeBounds;
     BoundingBox _cascadeCullingBounds;
     class GlobalSignDistanceFieldCustomBuffer* _sdfData;
+    Vector3 _sdfDataOriginMin;
+    Vector3 _sdfDataOriginMax;
 
 public:
     /// <summary>

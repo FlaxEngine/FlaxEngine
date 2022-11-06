@@ -539,11 +539,15 @@ bool GlobalSignDistanceFieldPass::Render(RenderContext& renderContext, GPUContex
         // Draw all objects from all scenes into the cascade
         _objectsBufferCount = 0;
         _voxelSize = cascadeVoxelSize;
+        _chunkSize = _voxelSize * GLOBAL_SDF_RASTERIZE_CHUNK_SIZE;
         _cascadeBounds = cascadeBounds;
         _cascadeBounds.Minimum += 0.1f; // Adjust to prevent overflowing chunk keys (cascade bounds are used for clamping object bounds)
         _cascadeBounds.Maximum -= 0.1f; // Adjust to prevent overflowing chunk keys (cascade bounds are used for clamping object bounds)
         _cascadeIndex = cascadeIndex;
         _sdfData = &sdfData;
+        const float objectMargin = _voxelSize * GLOBAL_SDF_RASTERIZE_CHUNK_MARGIN;
+        _sdfDataOriginMax = sdfData.Origin - objectMargin;
+        _sdfDataOriginMax = sdfData.Origin + objectMargin;
         {
             PROFILE_CPU_NAMED("Draw");
             BoundingBox cascadeBoundsWorld = cascadeBounds.MakeOffsetted(sdfData.Origin);
@@ -945,18 +949,17 @@ void GlobalSignDistanceFieldPass::RasterizeModelSDF(Actor* actor, const ModelBas
     if (!sdf.Texture)
         return;
     const bool dynamic = !GLOBAL_SDF_ACTOR_IS_STATIC(actor);
-    if (sdf.Texture->ResidentMipLevels() != 0)
+    const int32 residentMipLevels = sdf.Texture->ResidentMipLevels();
+    if (residentMipLevels != 0)
     {
         // Setup object data
         BoundingBox objectBoundsCascade;
-        const float objectMargin = _voxelSize * GLOBAL_SDF_RASTERIZE_CHUNK_MARGIN;
-        Vector3::Clamp(objectBounds.Minimum - _sdfData->Origin - objectMargin, _cascadeBounds.Minimum, _cascadeBounds.Maximum, objectBoundsCascade.Minimum);
+        Vector3::Clamp(objectBounds.Minimum - _sdfDataOriginMin, _cascadeBounds.Minimum, _cascadeBounds.Maximum, objectBoundsCascade.Minimum);
         Vector3::Subtract(objectBoundsCascade.Minimum, _cascadeBounds.Minimum, objectBoundsCascade.Minimum);
-        Vector3::Clamp(objectBounds.Maximum - _sdfData->Origin + objectMargin, _cascadeBounds.Minimum, _cascadeBounds.Maximum, objectBoundsCascade.Maximum);
+        Vector3::Clamp(objectBounds.Maximum - _sdfDataOriginMax, _cascadeBounds.Minimum, _cascadeBounds.Maximum, objectBoundsCascade.Maximum);
         Vector3::Subtract(objectBoundsCascade.Maximum, _cascadeBounds.Minimum, objectBoundsCascade.Maximum);
-        const float chunkSize = _voxelSize * GLOBAL_SDF_RASTERIZE_CHUNK_SIZE;
-        const Int3 objectChunkMin(objectBoundsCascade.Minimum / chunkSize);
-        const Int3 objectChunkMax(objectBoundsCascade.Maximum / chunkSize);
+        const Int3 objectChunkMin(objectBoundsCascade.Minimum / _chunkSize);
+        const Int3 objectChunkMax(objectBoundsCascade.Maximum / _chunkSize);
 
         // Add object data
         const uint16 dataIndex = RasterizeObjectsCache.Count();
@@ -994,7 +997,7 @@ void GlobalSignDistanceFieldPass::RasterizeModelSDF(Actor* actor, const ModelBas
     }
 
     // Track streaming for textures used in static chunks to invalidate cache
-    if (!dynamic && sdf.Texture->ResidentMipLevels() != sdf.Texture->MipLevels() && !_sdfData->SDFTextures.Contains(sdf.Texture))
+    if (!dynamic && residentMipLevels != sdf.Texture->MipLevels() && !_sdfData->SDFTextures.Contains(sdf.Texture))
     {
         sdf.Texture->Deleted.Bind<GlobalSignDistanceFieldCustomBuffer, &GlobalSignDistanceFieldCustomBuffer::OnSDFTextureDeleted>(_sdfData);
         sdf.Texture->ResidentMipsChanged.Bind<GlobalSignDistanceFieldCustomBuffer, &GlobalSignDistanceFieldCustomBuffer::OnSDFTextureResidentMipsChanged>(_sdfData);
@@ -1007,18 +1010,17 @@ void GlobalSignDistanceFieldPass::RasterizeHeightfield(Actor* actor, GPUTexture*
     if (!heightfield)
         return;
     const bool dynamic = !GLOBAL_SDF_ACTOR_IS_STATIC(actor);
-    if (heightfield->ResidentMipLevels() != 0)
+    const int32 residentMipLevels = heightfield->ResidentMipLevels();
+    if (residentMipLevels != 0)
     {
         // Setup object data
         BoundingBox objectBoundsCascade;
-        const float objectMargin = _voxelSize * GLOBAL_SDF_RASTERIZE_CHUNK_MARGIN;
-        Vector3::Clamp(objectBounds.Minimum - _sdfData->Origin - objectMargin, _cascadeBounds.Minimum, _cascadeBounds.Maximum, objectBoundsCascade.Minimum);
+        Vector3::Clamp(objectBounds.Minimum - _sdfDataOriginMin, _cascadeBounds.Minimum, _cascadeBounds.Maximum, objectBoundsCascade.Minimum);
         Vector3::Subtract(objectBoundsCascade.Minimum, _cascadeBounds.Minimum, objectBoundsCascade.Minimum);
-        Vector3::Clamp(objectBounds.Maximum - _sdfData->Origin + objectMargin, _cascadeBounds.Minimum, _cascadeBounds.Maximum, objectBoundsCascade.Maximum);
+        Vector3::Clamp(objectBounds.Maximum - _sdfDataOriginMax, _cascadeBounds.Minimum, _cascadeBounds.Maximum, objectBoundsCascade.Maximum);
         Vector3::Subtract(objectBoundsCascade.Maximum, _cascadeBounds.Minimum, objectBoundsCascade.Maximum);
-        const float chunkSize = _voxelSize * GLOBAL_SDF_RASTERIZE_CHUNK_SIZE;
-        const Int3 objectChunkMin(objectBoundsCascade.Minimum / chunkSize);
-        const Int3 objectChunkMax(objectBoundsCascade.Maximum / chunkSize);
+        const Int3 objectChunkMin(objectBoundsCascade.Minimum / _chunkSize);
+        const Int3 objectChunkMax(objectBoundsCascade.Maximum / _chunkSize);
 
         // Add object data
         const uint16 dataIndex = RasterizeObjectsCache.Count();
@@ -1057,7 +1059,7 @@ void GlobalSignDistanceFieldPass::RasterizeHeightfield(Actor* actor, GPUTexture*
     }
 
     // Track streaming for textures used in static chunks to invalidate cache
-    if (!dynamic && heightfield->ResidentMipLevels() != heightfield->MipLevels() && !_sdfData->SDFTextures.Contains(heightfield))
+    if (!dynamic && residentMipLevels != heightfield->MipLevels() && !_sdfData->SDFTextures.Contains(heightfield))
     {
         heightfield->Deleted.Bind<GlobalSignDistanceFieldCustomBuffer, &GlobalSignDistanceFieldCustomBuffer::OnSDFTextureDeleted>(_sdfData);
         heightfield->ResidentMipsChanged.Bind<GlobalSignDistanceFieldCustomBuffer, &GlobalSignDistanceFieldCustomBuffer::OnSDFTextureResidentMipsChanged>(_sdfData);
