@@ -12,7 +12,7 @@
 /// Capsules are cylinders with a half-sphere at each end centered at the origin and extending along the X axis, and two hemispherical ends.
 /// </remarks>
 /// <seealso cref="Collider" />
-API_CLASS() class FLAXENGINE_API CapsuleCollider : public Collider
+API_CLASS(Attributes = "ActorContextMenu(\"New/Physics/Capsule Collider\")") class FLAXENGINE_API CapsuleCollider : public Collider
 {
     DECLARE_SCENE_OBJECT(CapsuleCollider);
 private:

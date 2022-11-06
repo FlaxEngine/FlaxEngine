@@ -60,23 +60,56 @@ namespace FlaxEditor.Windows
             if (isSingleActorSelected)
             {
                 var convertMenu = contextMenu.AddChildMenu("Convert");
-                var convertActorCm = convertMenu.ContextMenu;
-                for (int i = 0; i < SpawnActorsGroups.Length; i++)
+                convertMenu.ContextMenu.AutoSort = true;
+                foreach (var actorType in Editor.CodeEditing.Actors.Get())
                 {
-                    var group = SpawnActorsGroups[i];
-
-                    if (group.Types.Length == 1)
+                    if (actorType.IsAbstract || !actorType.HasAttribute(typeof(ActorContextMenuAttribute), true))
+                        continue;
+                
+                    ActorContextMenuAttribute attribute = null;
+                    foreach (var actorAttribute in actorType.GetAttributes(true))
                     {
-                        var type = group.Types[0].Value;
-                        convertActorCm.AddButton(group.Types[0].Key, () => Editor.SceneEditing.Convert(type));
-                    }
-                    else
-                    {
-                        var groupCm = convertActorCm.AddChildMenu(group.Name).ContextMenu;
-                        for (int j = 0; j < group.Types.Length; j++)
+                        if (actorAttribute is ActorContextMenuAttribute actorContextMenuAttribute)
                         {
-                            var type = group.Types[j].Value;
-                            groupCm.AddButton(group.Types[j].Key, () => Editor.SceneEditing.Convert(type));
+                            attribute = actorContextMenuAttribute;
+                        }
+                    }
+                    var splitPath = attribute?.Path.Split('/');
+                    ContextMenuChildMenu childCM = convertMenu;
+                    bool mainCM = true;
+                    for (int i = 0; i < splitPath?.Length; i++)
+                    {
+                        if (i == splitPath.Length - 1)
+                        {
+                            if (mainCM)
+                            {
+                                convertMenu.ContextMenu.AddButton(splitPath[i].Trim(), () => Editor.SceneEditing.Convert(actorType.Type));
+                                mainCM = false;
+                            }
+                            else
+                            {
+                                childCM?.ContextMenu.AddButton(splitPath[i].Trim(), () => Editor.SceneEditing.Convert(actorType.Type));
+                                childCM.ContextMenu.AutoSort = true;
+                            }
+                        }
+                        else
+                        {
+                            // remove new path for converting menu
+                            if (splitPath[i] == "New")
+                            {
+                                continue;
+                            }
+                            
+                            if (mainCM)
+                            {
+                                childCM = convertMenu.ContextMenu.GetOrAddChildMenu(splitPath[i].Trim());
+                                mainCM = false;
+                            }
+                            else
+                            {
+                                childCM = childCM?.ContextMenu.GetOrAddChildMenu(splitPath[i].Trim());
+                            }
+                            childCM.ContextMenu.AutoSort = true;
                         }
                     }
                 }
@@ -113,25 +146,51 @@ namespace FlaxEditor.Windows
             // Spawning actors options
 
             contextMenu.AddSeparator();
-
-            var spawnMenu = contextMenu.AddChildMenu("New");
-            var newActorCm = spawnMenu.ContextMenu;
-            for (int i = 0; i < SpawnActorsGroups.Length; i++)
+            
+            // go through each actor and add it to the context menu if it has the ActorContextMenu attribute
+            foreach (var actorType in Editor.CodeEditing.Actors.Get())
             {
-                var group = SpawnActorsGroups[i];
-
-                if (group.Types.Length == 1)
+                if (actorType.IsAbstract || !actorType.HasAttribute(typeof(ActorContextMenuAttribute), true))
+                    continue;
+                
+                ActorContextMenuAttribute attribute = null;
+                foreach (var actorAttribute in actorType.GetAttributes(true))
                 {
-                    var type = group.Types[0].Value;
-                    newActorCm.AddButton(group.Types[0].Key, () => Spawn(type));
-                }
-                else
-                {
-                    var groupCm = newActorCm.AddChildMenu(group.Name).ContextMenu;
-                    for (int j = 0; j < group.Types.Length; j++)
+                    if (actorAttribute is ActorContextMenuAttribute actorContextMenuAttribute)
                     {
-                        var type = group.Types[j].Value;
-                        groupCm.AddButton(group.Types[j].Key, () => Spawn(type));
+                        attribute = actorContextMenuAttribute;
+                    }
+                }
+                var splitPath = attribute?.Path.Split('/');
+                ContextMenuChildMenu childCM = null;
+                bool mainCM = true;
+                for (int i = 0; i < splitPath?.Length; i++)
+                {
+                    if (i == splitPath.Length - 1)
+                    {
+                        if (mainCM)
+                        {
+                            contextMenu.AddButton(splitPath[i].Trim(), () => Spawn(actorType.Type));
+                            mainCM = false;
+                        }
+                        else
+                        {
+                            childCM?.ContextMenu.AddButton(splitPath[i].Trim(), () => Spawn(actorType.Type));
+                            childCM.ContextMenu.AutoSort = true;
+                        }
+                    }
+                    else
+                    {
+                        if (mainCM)
+                        {
+                            childCM = contextMenu.GetOrAddChildMenu(splitPath[i].Trim());
+                            mainCM = false;
+                        }
+                        else
+                        {
+                            childCM = childCM?.ContextMenu.GetOrAddChildMenu(splitPath[i].Trim());
+                        }
+                        childCM.ContextMenu.AutoSort = true;
                     }
                 }
             }

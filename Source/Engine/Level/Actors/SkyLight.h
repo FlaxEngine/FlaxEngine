@@ -9,7 +9,7 @@
 /// <summary>
 /// Sky light captures the distant parts of the scene and applies it as a light. Allows to add ambient light.
 /// </summary>
-API_CLASS() class FLAXENGINE_API SkyLight : public Light
+API_CLASS(Attributes = "ActorContextMenu(\"New/Lights/Sky Light\")") class FLAXENGINE_API SkyLight : public Light
 {
     DECLARE_SCENE_OBJECT(SkyLight);
 public:

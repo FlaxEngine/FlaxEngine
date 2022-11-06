@@ -9,7 +9,7 @@
 /// A box-shaped primitive collider.
 /// </summary>
 /// <seealso cref="Collider" />
-API_CLASS() class FLAXENGINE_API BoxCollider : public Collider
+API_CLASS(Attributes = "ActorContextMenu(\"New/Physics/Box Collider\")") class FLAXENGINE_API BoxCollider : public Collider
 {
     DECLARE_SCENE_OBJECT(BoxCollider);
 private:

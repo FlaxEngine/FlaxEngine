@@ -8,7 +8,7 @@
 /// <summary>
 /// A special type of volume that defines the area of the scene in which navigation meshes are generated.
 /// </summary>
-API_CLASS() class FLAXENGINE_API NavMeshBoundsVolume : public BoxVolume
+API_CLASS(Attributes = "ActorContextMenu(\"New/Other/Nav Mesh Bounds Volume\")") class FLAXENGINE_API NavMeshBoundsVolume : public BoxVolume
 {
     DECLARE_SCENE_OBJECT(NavMeshBoundsVolume);
 public:
