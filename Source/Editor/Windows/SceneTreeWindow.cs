@@ -249,7 +249,7 @@ namespace FlaxEditor.Windows
             {
                 if (selection.Count != 0)
                     Editor.SceneEditing.Select(actor);
-                actor.TreeNode.StartRenaming();
+                actor.TreeNode.StartRenaming(this);
             }
         }
 
@@ -439,6 +439,15 @@ namespace FlaxEditor.Windows
                     ShowContextMenu(Parent, location + _searchBox.BottomLeft);
                 }
 
+                return true;
+            }
+
+            if (buttons == MouseButton.Left)
+            {
+                if (Editor.StateMachine.CurrentState.CanEditScene)
+                {
+                    Editor.SceneEditing.Deselect();
+                }
                 return true;
             }
 

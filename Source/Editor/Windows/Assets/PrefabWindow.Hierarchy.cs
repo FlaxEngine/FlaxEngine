@@ -67,7 +67,7 @@ namespace FlaxEditor.Windows.Assets
             private DragHandlers _dragHandlers;
 
             public SceneTreePanel(PrefabWindow window)
-            : base(ScrollBars.Vertical)
+            : base(ScrollBars.None)
             {
                 _window = window;
                 Offsets = Margin.Zero;
@@ -310,7 +310,7 @@ namespace FlaxEditor.Windows.Assets
             {
                 if (selection.Count != 0)
                     Select(actor);
-                actor.TreeNode.StartRenaming();
+                actor.TreeNode.StartRenaming(this);
             }
         }
 
