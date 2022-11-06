@@ -769,14 +769,11 @@ namespace FlaxEditor.Utilities
             sourceTextBox.AnchorPreset = AnchorPresets.HorizontalStretchTop;
             sourceTextBox.Text = source;
             sourceTextBox.Height = sourceTextBox.TextSize.Y;
-            sourceTextBox.Width = sourceTextBox.TextSize.X;
-            sourceTextBox.TextChanged += () =>
-            {
-                sourceTextBox.Height = sourceTextBox.TextSize.Y;
-                sourceTextBox.Width = sourceTextBox.TextSize.X;
-            };
+            sourceTextBox.IsReadOnly = true;
             sourceTextBox.CanScrollMultilineText = false;
             sourceTextBox.IsScrollable = true;
+
+            backPanel.SizeChanged += control => { sourceTextBox.Width = (control.Size.X >= sourceTextBox.TextSize.X) ? control.Width : sourceTextBox.TextSize.X + 30; };
             
             dialog.Show();
             dialog.Focus();
