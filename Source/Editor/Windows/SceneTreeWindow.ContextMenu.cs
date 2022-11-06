@@ -63,17 +63,20 @@ namespace FlaxEditor.Windows
                 convertMenu.ContextMenu.AutoSort = true;
                 foreach (var actorType in Editor.CodeEditing.Actors.Get())
                 {
-                    if (actorType.IsAbstract || !actorType.HasAttribute(typeof(ActorContextMenuAttribute), true))
+                    if (actorType.IsAbstract)
                         continue;
-                
+
                     ActorContextMenuAttribute attribute = null;
-                    foreach (var actorAttribute in actorType.GetAttributes(true))
+                    foreach (var e in actorType.GetAttributes(true))
                     {
-                        if (actorAttribute is ActorContextMenuAttribute actorContextMenuAttribute)
+                        if (e is ActorContextMenuAttribute actorContextMenuAttribute)
                         {
                             attribute = actorContextMenuAttribute;
+                            break;
                         }
                     }
+                    if (attribute == null)
+                        continue;
                     var splitPath = attribute?.Path.Split('/');
                     ContextMenuChildMenu childCM = convertMenu;
                     bool mainCM = true;
@@ -94,12 +97,10 @@ namespace FlaxEditor.Windows
                         }
                         else
                         {
-                            // remove new path for converting menu
+                            // Remove new path for converting menu
                             if (splitPath[i] == "New")
-                            {
                                 continue;
-                            }
-                            
+
                             if (mainCM)
                             {
                                 childCM = convertMenu.ContextMenu.GetOrAddChildMenu(splitPath[i].Trim());
@@ -146,13 +147,13 @@ namespace FlaxEditor.Windows
             // Spawning actors options
 
             contextMenu.AddSeparator();
-            
+
             // go through each actor and add it to the context menu if it has the ActorContextMenu attribute
             foreach (var actorType in Editor.CodeEditing.Actors.Get())
             {
                 if (actorType.IsAbstract || !actorType.HasAttribute(typeof(ActorContextMenuAttribute), true))
                     continue;
-                
+
                 ActorContextMenuAttribute attribute = null;
                 foreach (var actorAttribute in actorType.GetAttributes(true))
                 {

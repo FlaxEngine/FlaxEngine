@@ -8,7 +8,7 @@
 /// A sphere-shaped primitive collider.
 /// </summary>
 /// <seealso cref="Collider" />
-API_CLASS(Attributes = "ActorContextMenu(\"New/Physics/Sphere Collider\")") class FLAXENGINE_API SphereCollider : public Collider
+API_CLASS(Attributes="ActorContextMenu(\"New/Physics/Sphere Collider\")") class FLAXENGINE_API SphereCollider : public Collider
 {
     DECLARE_SCENE_OBJECT(SphereCollider);
 private:
@@ -18,9 +18,7 @@ public:
     /// <summary>
     /// Gets the radius of the sphere, measured in the object's local space.
     /// </summary>
-    /// <remarks>
-    /// The sphere radius will be scaled by the actor's world scale.
-    /// </remarks>
+    /// <remarks>The sphere radius will be scaled by the actor's world scale.</remarks>
     API_PROPERTY(Attributes="EditorOrder(100), DefaultValue(50.0f), EditorDisplay(\"Collider\")")
     FORCE_INLINE float GetRadius() const
     {
@@ -30,9 +28,7 @@ public:
     /// <summary>
     /// Sets the radius of the sphere, measured in the object's local space.
     /// </summary>
-    /// <remarks>
-    /// The sphere radius will be scaled by the actor's world scale.
-    /// </remarks>
+    /// <remarks>The sphere radius will be scaled by the actor's world scale.</remarks>
     API_PROPERTY() void SetRadius(float value);
 
 public:

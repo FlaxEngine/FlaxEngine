@@ -246,22 +246,24 @@ namespace FlaxEditor.Windows.Assets
             // Spawning actors options
 
             contextMenu.AddSeparator();
-            
-            // go through each actor and add it to the context menu if it has the ActorContextMenu attribute
+
+            // Go through each actor and add it to the context menu if it has the ActorContextMenu attribute
             foreach (var actorType in Editor.CodeEditing.Actors.Get())
             {
-                if (actorType.IsAbstract || !actorType.HasAttribute(typeof(ActorContextMenuAttribute), true))
+                if (actorType.IsAbstract)
                     continue;
-                
                 ActorContextMenuAttribute attribute = null;
-                foreach (var actorAttribute in actorType.GetAttributes(true))
+                foreach (var e in actorType.GetAttributes(true))
                 {
-                    if (actorAttribute is ActorContextMenuAttribute actorContextMenuAttribute)
+                    if (e is ActorContextMenuAttribute actorContextMenuAttribute)
                     {
                         attribute = actorContextMenuAttribute;
+                        break;
                     }
                 }
-                var splitPath = attribute?.Path.Split('/');
+                if (attribute == null)
+                    continue;
+                var splitPath = attribute.Path.Split('/');
                 ContextMenuChildMenu childCM = null;
                 bool mainCM = true;
                 for (int i = 0; i < splitPath?.Length; i++)

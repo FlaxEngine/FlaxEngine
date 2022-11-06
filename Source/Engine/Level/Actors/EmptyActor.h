@@ -7,7 +7,7 @@
 /// <summary>
 /// The empty actor that is useful to create hierarchy and/or hold scripts. See <see cref="Script"/>.
 /// </summary>
-API_CLASS(Attributes = "ActorContextMenu(\"New/Actor\")") class FLAXENGINE_API EmptyActor : public Actor
+API_CLASS(Attributes="ActorContextMenu(\"New/Actor\")") class FLAXENGINE_API EmptyActor : public Actor
 {
     DECLARE_SCENE_OBJECT(EmptyActor);
 public:

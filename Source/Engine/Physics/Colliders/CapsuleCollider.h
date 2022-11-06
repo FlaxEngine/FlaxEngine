@@ -8,11 +8,9 @@
 /// <summary>
 /// A capsule-shaped primitive collider.
 /// </summary>
-/// <remarks>
-/// Capsules are cylinders with a half-sphere at each end centered at the origin and extending along the X axis, and two hemispherical ends.
-/// </remarks>
+/// <remarks>Capsules are cylinders with a half-sphere at each end centered at the origin and extending along the X axis, and two hemispherical ends.</remarks>
 /// <seealso cref="Collider" />
-API_CLASS(Attributes = "ActorContextMenu(\"New/Physics/Capsule Collider\")") class FLAXENGINE_API CapsuleCollider : public Collider
+API_CLASS(Attributes="ActorContextMenu(\"New/Physics/Capsule Collider\")") class FLAXENGINE_API CapsuleCollider : public Collider
 {
     DECLARE_SCENE_OBJECT(CapsuleCollider);
 private:
@@ -24,9 +22,7 @@ public:
     /// <summary>
     /// Gets the radius of the sphere, measured in the object's local space.
     /// </summary>
-    /// <remarks>
-    /// The sphere radius will be scaled by the actor's world scale.
-    /// </remarks>
+    /// <remarks>The sphere radius will be scaled by the actor's world scale.</remarks>
     API_PROPERTY(Attributes="EditorOrder(100), DefaultValue(20.0f), EditorDisplay(\"Collider\")")
     FORCE_INLINE float GetRadius() const
     {
@@ -36,17 +32,13 @@ public:
     /// <summary>
     /// Sets the radius of the sphere, measured in the object's local space.
     /// </summary>
-    /// <remarks>
-    /// The sphere radius will be scaled by the actor's world scale.
-    /// </remarks>
+    /// <remarks>The sphere radius will be scaled by the actor's world scale. </remarks>
     API_PROPERTY() void SetRadius(float value);
 
     /// <summary>
     /// Gets the height of the capsule, measured in the object's local space between the centers of the hemispherical ends.
     /// </summary>
-    /// <remarks>
-    /// The capsule height will be scaled by the actor's world scale.
-    /// </remarks>
+    /// <remarks>The capsule height will be scaled by the actor's world scale.</remarks>
     API_PROPERTY(Attributes="EditorOrder(110), DefaultValue(100.0f), EditorDisplay(\"Collider\")")
     FORCE_INLINE float GetHeight() const
     {
@@ -56,9 +48,7 @@ public:
     /// <summary>
     /// Sets the height of the capsule, measured in the object's local space between the centers of the hemispherical ends.
     /// </summary>
-    /// <remarks>
-    /// The capsule height will be scaled by the actor's world scale.
-    /// </remarks>
+    /// <remarks>The capsule height will be scaled by the actor's world scale.</remarks>
     API_PROPERTY() void SetHeight(float value);
 
 public:

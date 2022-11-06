@@ -8,7 +8,7 @@
 /// <summary>
 /// Spline shape actor that defines spatial curve with utility functions for general purpose usage.
 /// </summary>
-API_CLASS(Attributes = "ActorContextMenu(\"New/Other/Spline\")") class FLAXENGINE_API Spline : public Actor
+API_CLASS(Attributes="ActorContextMenu(\"New/Other/Spline\")") class FLAXENGINE_API Spline : public Actor
 {
     DECLARE_SCENE_OBJECT(Spline);
     typedef BezierCurveKeyframe<Transform> Keyframe;

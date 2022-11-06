@@ -37,7 +37,7 @@ DECLARE_ENUM_OPERATORS(DistanceJointFlag);
 /// Physics joint that maintains an upper or lower (or both) bound on the distance between two bodies.
 /// </summary>
 /// <seealso cref="Joint" />
-API_CLASS(Attributes = "ActorContextMenu(\"New/Physics/Distance Joint\")") class FLAXENGINE_API DistanceJoint : public Joint
+API_CLASS(Attributes="ActorContextMenu(\"New/Physics/Distance Joint\")") class FLAXENGINE_API DistanceJoint : public Joint
 {
     DECLARE_SCENE_OBJECT(DistanceJoint);
 private:
@@ -65,9 +65,7 @@ public:
     /// <summary>
     /// Gets the allowed minimum distance for the joint.
     /// </summary>
-    /// <remarks>
-    /// Used only when DistanceJointFlag.MinDistance flag is set. The minimum distance must be no more than the maximum distance. Default: 0, Range: [0, float.MaxValue].
-    /// </remarks>
+    /// <remarks>Used only when DistanceJointFlag.MinDistance flag is set. The minimum distance must be no more than the maximum distance. Default: 0, Range: [0, float.MaxValue].</remarks>
     API_PROPERTY(Attributes="EditorOrder(110), DefaultValue(0.0f), Limit(0.0f), EditorDisplay(\"Joint\")")
     FORCE_INLINE float GetMinDistance() const
     {
@@ -77,17 +75,13 @@ public:
     /// <summary>
     /// Sets the allowed minimum distance for the joint.
     /// </summary>
-    /// <remarks>
-    /// Used only when DistanceJointFlag.MinDistance flag is set. The minimum distance must be no more than the maximum distance. Default: 0, Range: [0, float.MaxValue].
-    /// </remarks>
+    /// <remarks>Used only when DistanceJointFlag.MinDistance flag is set. The minimum distance must be no more than the maximum distance. Default: 0, Range: [0, float.MaxValue].</remarks>
     API_PROPERTY() void SetMinDistance(float value);
 
     /// <summary>
     /// Gets the allowed maximum distance for the joint.
     /// </summary>
-    /// <remarks>
-    /// Used only when DistanceJointFlag.MaxDistance flag is set. The maximum distance must be no less than the minimum distance. Default: 0, Range: [0, float.MaxValue].
-    /// </remarks>
+    /// <remarks>Used only when DistanceJointFlag.MaxDistance flag is set. The maximum distance must be no less than the minimum distance. Default: 0, Range: [0, float.MaxValue].</remarks>
     API_PROPERTY(Attributes="EditorOrder(120), DefaultValue(10.0f), Limit(0.0f), EditorDisplay(\"Joint\")")
     FORCE_INLINE float GetMaxDistance() const
     {
@@ -97,17 +91,13 @@ public:
     /// <summary>
     /// Sets the allowed maximum distance for the joint.
     /// </summary>
-    /// <remarks>
-    /// Used only when DistanceJointFlag.MaxDistance flag is set. The maximum distance must be no less than the minimum distance. Default: 0, Range: [0, float.MaxValue].
-    /// </remarks>
+    /// <remarks>Used only when DistanceJointFlag.MaxDistance flag is set. The maximum distance must be no less than the minimum distance. Default: 0, Range: [0, float.MaxValue].</remarks>
     API_PROPERTY() void SetMaxDistance(float value);
 
     /// <summary>
     /// Gets the error tolerance of the joint.
     /// </summary>
-    /// <remarks>
-    /// The distance beyond the joint's [min, max] range before the joint becomes active. Default: 25, Range: [0.1, float.MaxValue].
-    /// </remarks>
+    /// <remarks>The distance beyond the joint's [min, max] range before the joint becomes active. Default: 25, Range: [0.1, float.MaxValue].</remarks>
     API_PROPERTY(Attributes="EditorOrder(130), DefaultValue(25.0f), Limit(0.0f), EditorDisplay(\"Joint\")")
     FORCE_INLINE float GetTolerance() const
     {
@@ -117,9 +107,7 @@ public:
     /// <summary>
     /// Sets the error tolerance of the joint.
     /// </summary>
-    /// <remarks>
-    /// The distance beyond the joint's [min, max] range before the joint becomes active. Default: 25, Range: [0.1, float.MaxValue].
-    /// </remarks>
+    /// <remarks>The distance beyond the joint's [min, max] range before the joint becomes active. Default: 25, Range: [0.1, float.MaxValue]. </remarks>
     API_PROPERTY() void SetTolerance(float value);
 
     /// <summary>

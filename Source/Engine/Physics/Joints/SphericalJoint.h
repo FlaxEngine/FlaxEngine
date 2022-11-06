@@ -54,9 +54,7 @@ public:
     /// <summary>
     /// Gets the joint limit properties.
     /// </summary>
-    /// <remarks>
-    /// Determines the limit of the joint. Limit constrains the motion to the specified angle range. You must enable the limit flag on the joint in order for this to be recognized.
-    /// </remarks>
+    /// <remarks>Determines the limit of the joint. Limit constrains the motion to the specified angle range. You must enable the limit flag on the joint in order for this to be recognized.</remarks>
     API_PROPERTY(Attributes="EditorOrder(110), EditorDisplay(\"Joint\")")
     FORCE_INLINE LimitConeRange GetLimit() const
     {
@@ -66,9 +64,7 @@ public:
     /// <summary>
     /// Sets the joint limit properties.
     /// </summary>
-    /// <remarks>
-    /// Determines a limit that constrains the movement of the joint to a specific minimum and maximum distance. You must enable the limit flag on the joint in order for this to be recognized.
-    /// </remarks>
+    /// <remarks>Determines a limit that constrains the movement of the joint to a specific minimum and maximum distance. You must enable the limit flag on the joint in order for this to be recognized.</remarks>
     API_PROPERTY() void SetLimit(const LimitConeRange& value);
 
 public:
