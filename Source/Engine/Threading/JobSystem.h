@@ -41,4 +41,9 @@ API_CLASS(Static) class FLAXENGINE_API JobSystem
     /// Sets whether automatically start jobs execution on Dispatch. If disabled jobs won't be executed until it gets re-enabled. Can be used to optimize execution of multiple dispatches that should overlap.
     /// </summary>
     API_FUNCTION() static void SetJobStartingOnDispatch(bool value);
+
+    /// <summary>
+    /// Gets the amount of job system threads.
+    /// </summary>
+    API_PROPERTY() static int32 GetThreadsCount();
 };

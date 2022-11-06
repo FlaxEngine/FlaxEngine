@@ -173,7 +173,7 @@ void StaticModel::OnModelChanged()
     if (Model && !Model->IsLoaded())
         UpdateBounds();
     else if (!Model && _sceneRenderingKey != -1)
-        GetSceneRendering()->RemoveActor(this, _sceneRenderingKey);
+        GetSceneRendering()->RemoveActor(this, _sceneRenderingKey, SceneRendering::SceneDrawAsync);
 }
 
 void StaticModel::OnModelLoaded()
@@ -190,7 +190,7 @@ void StaticModel::OnModelLoaded()
         }
         else
         {
-            GetSceneRendering()->AddActor(this, _sceneRenderingKey);
+            GetSceneRendering()->AddActor(this, _sceneRenderingKey, SceneRendering::SceneDrawAsync);
         }
     }
 }
@@ -199,7 +199,7 @@ void StaticModel::OnModelResidencyChanged()
 {
     if (_sceneRenderingKey == -1 && _scene && Model && Model->GetLoadedLODs() > 0 && _residencyChangedModel)
     {
-        GetSceneRendering()->AddActor(this, _sceneRenderingKey);
+        GetSceneRendering()->AddActor(this, _sceneRenderingKey, SceneRendering::SceneDrawAsync);
         _residencyChangedModel->ResidencyChanged.Unbind<StaticModel, &StaticModel::OnModelResidencyChanged>(this);
         _residencyChangedModel = nullptr;
     }
@@ -219,11 +219,12 @@ void StaticModel::UpdateBounds()
     }
     BoundingSphere::FromBox(_box, _sphere);
     if (_sceneRenderingKey != -1)
-        GetSceneRendering()->UpdateActor(this, _sceneRenderingKey);
+        GetSceneRendering()->UpdateActor(this, _sceneRenderingKey, SceneRendering::SceneDrawAsync);
 }
 
 void StaticModel::FlushVertexColors()
 {
+    RenderContext::GPULocker.Lock();
     for (int32 lodIndex = 0; lodIndex < _vertexColorsCount; lodIndex++)
     {
         auto& vertexColorsData = _vertexColorsData[lodIndex];
@@ -236,7 +237,7 @@ void StaticModel::FlushVertexColors()
             if (vertexColorsBuffer->GetSize() != size)
             {
                 if (vertexColorsBuffer->Init(GPUBufferDescription::Vertex(sizeof(Color32), vertexColorsData.Count())))
-                    return;
+                    break;
             }
             GPUDevice::Instance->GetMainContext()->UpdateBuffer(vertexColorsBuffer, vertexColorsData.Get(), size);
         }
@@ -245,6 +246,7 @@ void StaticModel::FlushVertexColors()
             SAFE_DELETE_GPU_RESOURCE(vertexColorsBuffer);
         }
     }
+    RenderContext::GPULocker.Unlock();
 }
 
 bool StaticModel::HasContentLoaded() const
@@ -559,7 +561,7 @@ void StaticModel::OnEnable()
         }
         else
         {
-            GetSceneRendering()->AddActor(this, _sceneRenderingKey);
+            GetSceneRendering()->AddActor(this, _sceneRenderingKey, SceneRendering::SceneDrawAsync);
         }
     }
 
@@ -574,7 +576,7 @@ void StaticModel::OnDisable()
 
     if (_sceneRenderingKey != -1)
     {
-        GetSceneRendering()->RemoveActor(this, _sceneRenderingKey);
+        GetSceneRendering()->RemoveActor(this, _sceneRenderingKey, SceneRendering::SceneDrawAsync);
     }
     if (_residencyChangedModel)
     {

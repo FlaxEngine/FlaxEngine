@@ -31,7 +31,9 @@
 #include "AntiAliasing/SMAA.h"
 #include "Engine/Level/Actor.h"
 #include "Engine/Level/Level.h"
+#include "Engine/Level/Scene/SceneRendering.h"
 #include "Engine/Core/Config/GraphicsSettings.h"
+#include "Engine/Threading/JobSystem.h"
 #if USE_EDITOR
 #include "Editor/Editor.h"
 #include "Editor/QuadOverdrawPass.h"
@@ -261,6 +263,9 @@ void Renderer::DrawSceneDepth(GPUContext* context, SceneRenderTask* task, GPUTex
         // Draw scene actors
         RenderContextBatch renderContextBatch(renderContext);
         Level::DrawActors(renderContextBatch);
+        for (const int64 label : renderContextBatch.WaitLabels)
+            JobSystem::Wait(label);
+        renderContextBatch.WaitLabels.Clear();
     }
 
     // Sort draw calls
@@ -341,7 +346,16 @@ void RenderInner(SceneRenderTask* task, RenderContext& renderContext, RenderCont
         if (drawShadows)
             ShadowsPass::Instance()->SetupShadows(renderContext, renderContextBatch);
 
-        task->OnCollectDrawCalls(renderContextBatch);
+        // Dispatch drawing (via JobSystem - multiple job batches for every scene)
+        JobSystem::SetJobStartingOnDispatch(false);
+        task->OnCollectDrawCalls(renderContextBatch, SceneRendering::DrawCategory::SceneDraw);
+        task->OnCollectDrawCalls(renderContextBatch, SceneRendering::DrawCategory::SceneDrawAsync);
+
+        // Wait for async jobs to finish
+        JobSystem::SetJobStartingOnDispatch(true);
+        for (const int64 label : renderContextBatch.WaitLabels)
+            JobSystem::Wait(label);
+        renderContextBatch.WaitLabels.Clear();
     }
 
     // Sort draw calls

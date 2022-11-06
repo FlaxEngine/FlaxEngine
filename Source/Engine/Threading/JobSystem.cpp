@@ -369,3 +369,12 @@ void JobSystem::SetJobStartingOnDispatch(bool value)
     }
 #endif
 }
+
+int32 JobSystem::GetThreadsCount()
+{
+#if JOB_SYSTEM_ENABLED
+    return ThreadsCount;
+#else
+    return 0;
+#endif
+}

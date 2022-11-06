@@ -210,7 +210,7 @@ void SplineModel::OnSplineUpdated()
         BoundingSphere::Merge(_sphere, _instances[i].Sphere, _sphere);
     BoundingBox::FromSphere(_sphere, _box);
     if (_sceneRenderingKey != -1)
-        GetSceneRendering()->UpdateActor(this, _sceneRenderingKey);
+        GetSceneRendering()->UpdateActor(this, _sceneRenderingKey, SceneRendering::SceneDrawAsync);
 }
 
 void SplineModel::UpdateDeformationBuffer()
@@ -309,8 +309,7 @@ void SplineModel::UpdateDeformationBuffer()
     }
 
     // Flush data with GPU
-    auto context = GPUDevice::Instance->GetMainContext();
-    context->UpdateBuffer(_deformationBuffer, _deformationBufferData, size);
+    GPUDevice::Instance->GetMainContext()->UpdateBuffer(_deformationBuffer, _deformationBufferData, size);
 
     // Static splines are rarely updated so release scratch memory
     if (IsTransformStatic())
@@ -359,7 +358,11 @@ void SplineModel::Draw(RenderContext& renderContext)
 
     // Build mesh deformation buffer for the whole spline
     if (_deformationDirty)
+    {
+        RenderContext::GPULocker.Lock();
         UpdateDeformationBuffer();
+        RenderContext::GPULocker.Unlock();
+    }
 
     // Draw all segments
     DrawCall drawCall;

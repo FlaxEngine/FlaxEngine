@@ -482,16 +482,20 @@ bool GlobalSurfaceAtlasPass::Render(RenderContext& renderContext, GPUContext* co
         const float minObjectRadius = 20.0f; // Skip too small objects
         _cullingPosDistance = Vector4(viewPosition, distance);
         int32 actorsDrawn = 0;
+        SceneRendering::DrawCategory drawCategories[] = { SceneRendering::SceneDraw, SceneRendering::SceneDrawAsync };
         for (auto* scene : renderContext.List->Scenes)
         {
-            auto& list = scene->Actors[SceneRendering::SceneDraw];
-            for (auto& e : list)
+            for (SceneRendering::DrawCategory drawCategory : drawCategories)
             {
-                if (viewMask & e.LayerMask && e.Bounds.Radius >= minObjectRadius && CollisionsHelper::DistanceSpherePoint(e.Bounds, viewPosition) < distance)
+                auto& list = scene->Actors[drawCategory];
+                for (auto& e : list)
                 {
-                    //PROFILE_CPU_ACTOR(e.Actor);
-                    e.Actor->Draw(renderContext);
-                    actorsDrawn++;
+                    if (e.Bounds.Radius >= minObjectRadius && viewMask & e.LayerMask && CollisionsHelper::DistanceSpherePoint(e.Bounds, viewPosition) < distance)
+                    {
+                        //PROFILE_CPU_ACTOR(e.Actor);
+                        e.Actor->Draw(renderContext);
+                        actorsDrawn++;
+                    }
                 }
             }
         }

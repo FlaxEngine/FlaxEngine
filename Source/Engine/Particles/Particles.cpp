@@ -581,7 +581,7 @@ void DrawEmitterGPU(RenderContext& renderContext, ParticleBuffer* buffer, DrawCa
     // Check if need to perform any particles sorting
     if (emitter->Graph.SortModules.HasItems() && renderContext.View.Pass != DrawPass::Depth)
     {
-        PROFILE_GPU_CPU("Sort Particles");
+        PROFILE_GPU_CPU_NAMED("Sort Particles");
 
         // Prepare pipeline
         if (GPUParticlesSorting == nullptr)

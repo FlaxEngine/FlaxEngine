@@ -5,6 +5,7 @@
 #include "Engine/Core/Delegate.h"
 #include "Engine/Core/Collections/Array.h"
 #include "Engine/Core/Math/BoundingSphere.h"
+#include "Engine/Core/Math/BoundingFrustum.h"
 #include "Engine/Level/Actor.h"
 #include "Engine/Platform/CriticalSection.h"
 
@@ -81,6 +82,7 @@ public:
     enum DrawCategory
     {
         SceneDraw = 0,
+        SceneDrawAsync,
         PreRender,
         PostRender,
         MAX
@@ -161,4 +163,13 @@ public:
         ViewportIcons.Remove(obj);
     }
 #endif
+
+private:
+    Array<BoundingFrustum> _drawFrustumsData;
+    DrawActor* _drawListData;
+    int64 _drawListSize;
+    volatile int64 _drawListIndex;
+    RenderContextBatch* _drawBatch;
+
+    void DrawActorsJob(int32 i);
 };

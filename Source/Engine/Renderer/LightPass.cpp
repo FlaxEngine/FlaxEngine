@@ -239,7 +239,7 @@ void LightPass::RenderLight(RenderContextBatch& renderContextBatch, GPUTextureVi
     // Render all point lights
     for (int32 lightIndex = 0; lightIndex < mainCache->PointLights.Count(); lightIndex++)
     {
-        PROFILE_GPU_CPU("Point Light");
+        PROFILE_GPU_CPU_NAMED("Point Light");
 
         // Cache data
         auto& light = mainCache->PointLights[lightIndex];
@@ -296,7 +296,7 @@ void LightPass::RenderLight(RenderContextBatch& renderContextBatch, GPUTextureVi
     // Render all spot lights
     for (int32 lightIndex = 0; lightIndex < mainCache->SpotLights.Count(); lightIndex++)
     {
-        PROFILE_GPU_CPU("Spot Light");
+        PROFILE_GPU_CPU_NAMED("Spot Light");
 
         // Cache data
         auto& light = mainCache->SpotLights[lightIndex];
@@ -353,7 +353,7 @@ void LightPass::RenderLight(RenderContextBatch& renderContextBatch, GPUTextureVi
     // Render all directional lights
     for (int32 lightIndex = 0; lightIndex < mainCache->DirectionalLights.Count(); lightIndex++)
     {
-        PROFILE_GPU_CPU("Directional Light");
+        PROFILE_GPU_CPU_NAMED("Directional Light");
 
         // Cache data
         auto& light = mainCache->DirectionalLights[lightIndex];
@@ -390,7 +390,7 @@ void LightPass::RenderLight(RenderContextBatch& renderContextBatch, GPUTextureVi
     // Render all sky lights
     for (int32 lightIndex = 0; lightIndex < mainCache->SkyLights.Count(); lightIndex++)
     {
-        PROFILE_GPU_CPU("Sky Light");
+        PROFILE_GPU_CPU_NAMED("Sky Light");
 
         // Cache data
         auto& light = mainCache->SkyLights[lightIndex];

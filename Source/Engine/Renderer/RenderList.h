@@ -3,6 +3,7 @@
 #pragma once
 
 #include "Engine/Core/Collections/Array.h"
+#include "Engine/Core/Collections/ConcurrentArray.h"
 #include "Engine/Core/Math/Half.h"
 #include "Engine/Graphics/PostProcessSettings.h"
 #include "Engine/Graphics/DynamicBuffer.h"
@@ -236,7 +237,7 @@ struct DrawCallsList
     /// <summary>
     /// The list of draw calls indices to render.
     /// </summary>
-    Array<int32> Indices;
+    ConcurrentArray<int32> Indices;
 
     /// <summary>
     /// The list of external draw calls indices to render.
@@ -290,7 +291,7 @@ public:
     /// <summary>
     /// Draw calls list (for all draw passes).
     /// </summary>
-    Array<DrawCall> DrawCalls;
+    ConcurrentArray<DrawCall> DrawCalls;
 
     /// <summary>
     /// Draw calls list with pre-batched instances (for all draw passes).
@@ -481,7 +482,7 @@ public:
     /// <param name="staticFlags">The object static flags.</param>
     /// <param name="drawCall">The draw call data.</param>
     /// <param name="receivesDecals">True if the rendered mesh can receive decals.</param>
-    void AddDrawCall(DrawPass drawModes, StaticFlags staticFlags, DrawCall& drawCall, bool receivesDecals);
+    void AddDrawCall(DrawPass drawModes, StaticFlags staticFlags, const DrawCall& drawCall, bool receivesDecals);
 
     /// <summary>
     /// Adds the draw call to the draw lists and references it in other render contexts. Performs additional per-context frustum culling.
@@ -493,7 +494,7 @@ public:
     /// <param name="bounds">The object bounds.</param>
     /// <param name="drawCall">The draw call data.</param>
     /// <param name="receivesDecals">True if the rendered mesh can receive decals.</param>
-    void AddDrawCall(const RenderContextBatch& renderContextBatch, DrawPass drawModes, StaticFlags staticFlags, ShadowsCastingMode shadowsMode, const BoundingSphere& bounds, DrawCall& drawCall, bool receivesDecals);
+    void AddDrawCall(const RenderContextBatch& renderContextBatch, DrawPass drawModes, StaticFlags staticFlags, ShadowsCastingMode shadowsMode, const BoundingSphere& bounds, const DrawCall& drawCall, bool receivesDecals);
 
     /// <summary>
     /// Sorts the collected draw calls list.

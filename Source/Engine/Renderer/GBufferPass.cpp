@@ -158,7 +158,7 @@ void GBufferPass::Fill(RenderContext& renderContext, GPUTextureView* lightBuffer
 
     // Clear GBuffer
     {
-        PROFILE_GPU_CPU("Clear");
+        PROFILE_GPU_CPU_NAMED("Clear");
 
         context->ClearDepth(*renderContext.Buffers->DepthBuffer);
         context->Clear(lightBuffer, Color::Transparent);
@@ -222,7 +222,7 @@ void GBufferPass::Fill(RenderContext& renderContext, GPUTextureView* lightBuffer
     // Draw sky
     if (renderContext.List->Sky && _skyModel && _skyModel->CanBeRendered())
     {
-        PROFILE_GPU_CPU("Sky");
+        PROFILE_GPU_CPU_NAMED("Sky");
         DrawSky(renderContext, context);
     }
 

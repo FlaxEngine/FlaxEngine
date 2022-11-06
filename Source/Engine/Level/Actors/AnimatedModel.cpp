@@ -555,7 +555,7 @@ void AnimatedModel::UpdateBounds()
     BoundingBox::Transform(_boxLocal, _transform, _box);
     BoundingSphere::FromBox(_box, _sphere);
     if (_sceneRenderingKey != -1)
-        GetSceneRendering()->UpdateActor(this, _sceneRenderingKey);
+        GetSceneRendering()->UpdateActor(this, _sceneRenderingKey, SceneRendering::SceneDrawAsync);
 }
 
 void AnimatedModel::UpdateSockets()
@@ -713,7 +713,13 @@ void AnimatedModel::Draw(RenderContext& renderContext)
     _lastMinDstSqr = Math::Min(_lastMinDstSqr, Vector3::DistanceSquared(_transform.Translation, renderContext.View.Position + renderContext.View.Origin));
     if (_skinningData.IsReady())
     {
-        _skinningData.Flush(GPUDevice::Instance->GetMainContext());
+        // Flush skinning data with GPU
+        if (_skinningData.IsDirty())
+        {
+            RenderContext::GPULocker.Lock();
+            GPUDevice::Instance->GetMainContext()->UpdateBuffer(_skinningData.BoneMatrices, _skinningData.Data.Get(), _skinningData.Data.Count());
+            RenderContext::GPULocker.Unlock();
+        }
 
         SkinnedMesh::DrawInfo draw;
         draw.Buffer = &Entries;
@@ -749,7 +755,13 @@ void AnimatedModel::Draw(RenderContextBatch& renderContextBatch)
     _lastMinDstSqr = Math::Min(_lastMinDstSqr, Vector3::DistanceSquared(_transform.Translation, renderContext.View.Position + renderContext.View.Origin));
     if (_skinningData.IsReady())
     {
-        _skinningData.Flush(GPUDevice::Instance->GetMainContext());
+        // Flush skinning data with GPU
+        if (_skinningData.IsDirty())
+        {
+            RenderContext::GPULocker.Lock();
+            GPUDevice::Instance->GetMainContext()->UpdateBuffer(_skinningData.BoneMatrices, _skinningData.Data.Get(), _skinningData.Data.Count());
+            RenderContext::GPULocker.Unlock();
+        }
 
         SkinnedMesh::DrawInfo draw;
         draw.Buffer = &Entries;
@@ -948,7 +960,7 @@ void AnimatedModel::OnTransformChanged()
     BoundingBox::Transform(_boxLocal, _transform, _box);
     BoundingSphere::FromBox(_box, _sphere);
     if (_sceneRenderingKey != -1)
-        GetSceneRendering()->UpdateActor(this, _sceneRenderingKey);
+        GetSceneRendering()->UpdateActor(this, _sceneRenderingKey, SceneRendering::SceneDrawAsync);
 }
 
 void AnimatedModel::WaitForModelLoad()

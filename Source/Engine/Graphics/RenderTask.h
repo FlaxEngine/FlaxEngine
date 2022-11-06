@@ -436,6 +436,11 @@ API_STRUCT(NoDefault) struct RenderContext
     /// </summary>
     API_FIELD() RenderView View;
 
+    /// <summary>
+    /// The GPU access locking critical section to protect data access when performing multi-threaded rendering.
+    /// </summary>
+    static CriticalSection GPULocker;
+
     RenderContext() = default;
     RenderContext(SceneRenderTask* task) noexcept;
 };
@@ -461,6 +466,11 @@ API_STRUCT(NoDefault) struct RenderContextBatch
     /// The all render views collection for the current rendering (main view, shadow projections, etc.).
     /// </summary>
     API_FIELD() Array<RenderContext, RendererAllocation> Contexts;
+
+    /// <summary>
+    /// The Job System labels to wait on, after draw calls collecting.
+    /// </summary>
+    API_FIELD() Array<int64, InlinedAllocation<8>> WaitLabels;
 
     RenderContextBatch() = default;
     RenderContextBatch(SceneRenderTask* task);

@@ -84,12 +84,3 @@ void SkinnedMeshDrawData::OnDataChanged(bool dropHistory)
     _isDirty = true;
     _hasValidData = true;
 }
-
-void SkinnedMeshDrawData::Flush(GPUContext* context)
-{
-    if (_isDirty)
-    {
-        _isDirty = false;
-        context->UpdateBuffer(BoneMatrices, Data.Get(), Data.Count());
-    }
-}

@@ -27,6 +27,7 @@ CriticalSection RenderTask::TasksLocker;
 int32 RenderTask::TasksDoneLastFrame;
 Array<PostProcessEffect*> SceneRenderTask::GlobalCustomPostFx;
 MainRenderTask* MainRenderTask::Instance;
+CriticalSection RenderContext::GPULocker;
 
 PostProcessEffect::PostProcessEffect(const SpawnParams& params)
     : Script(params)

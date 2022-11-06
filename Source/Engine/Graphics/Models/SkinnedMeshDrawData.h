@@ -56,6 +56,14 @@ public:
     }
 
     /// <summary>
+    /// Determines whether this instance has been modified and needs to be flushed with GPU buffer.
+    /// </summary>
+    FORCE_INLINE bool IsDirty() const
+    {
+        return _isDirty;
+    }
+
+    /// <summary>
     /// Setups the data container for the specified bones amount.
     /// </summary>
     /// <param name="bonesCount">The bones count.</param>
@@ -75,8 +83,10 @@ public:
     void OnDataChanged(bool dropHistory);
 
     /// <summary>
-    /// Flushes the bones data buffer with the GPU by sending the data fro the CPU.
+    /// After bones Data has been send to the GPU buffer.
     /// </summary>
-    /// <param name="context">The GPU context.</param>
-    void Flush(class GPUContext* context);
+    void OnFlush()
+    {
+        _isDirty = false;
+    }
 };

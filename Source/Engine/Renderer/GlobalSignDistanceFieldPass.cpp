@@ -549,16 +549,20 @@ bool GlobalSignDistanceFieldPass::Render(RenderContext& renderContext, GPUContex
             BoundingBox cascadeBoundsWorld = cascadeBounds.MakeOffsetted(sdfData.Origin);
             _cascadeCullingBounds = cascadeBoundsWorld;
             int32 actorsDrawn = 0;
-            for (SceneRendering* scene : renderContext.List->Scenes)
+            SceneRendering::DrawCategory drawCategories[] = { SceneRendering::SceneDraw, SceneRendering::SceneDrawAsync };
+            for (auto* scene : renderContext.List->Scenes)
             {
-                auto& list = scene->Actors[SceneRendering::SceneDraw];
-                for (const auto& e : list)
+                for (SceneRendering::DrawCategory drawCategory : drawCategories)
                 {
-                    if (viewMask & e.LayerMask && e.Bounds.Radius >= minObjectRadius && CollisionsHelper::BoxIntersectsSphere(cascadeBoundsWorld, e.Bounds))
+                    auto& list = scene->Actors[drawCategory];
+                    for (const auto& e : list)
                     {
-                        //PROFILE_CPU_ACTOR(e.Actor);
-                        e.Actor->Draw(renderContext);
-                        actorsDrawn++;
+                        if (e.Bounds.Radius >= minObjectRadius && viewMask & e.LayerMask && CollisionsHelper::BoxIntersectsSphere(cascadeBoundsWorld, e.Bounds))
+                        {
+                            //PROFILE_CPU_ACTOR(e.Actor);
+                            e.Actor->Draw(renderContext);
+                            actorsDrawn++;
+                        }
                     }
                 }
             }

@@ -136,7 +136,7 @@ void MaterialComplexityMaterialShader::Draw(RenderContext& renderContext, GPUCon
     auto& decalsWrapper = _wrappers[4];
     if (decals.HasItems() && boxModel && boxModel->CanBeRendered() && decalsWrapper.IsReady())
     {
-        PROFILE_GPU_CPU("Decals");
+        PROFILE_GPU_CPU_NAMED("Decals");
         DrawCall drawCall;
         MaterialBase::BindParameters bindParams(context, renderContext, drawCall);
         drawCall.WorldDeterminantSign = 1.0f;
@@ -166,14 +166,14 @@ void MaterialComplexityMaterialShader::Draw(RenderContext& renderContext, GPUCon
     auto& distortionList = renderContext.List->DrawCallsLists[(int32)DrawCallsListType::Distortion];
     if (!distortionList.IsEmpty())
     {
-        PROFILE_GPU_CPU("Distortion");
+        PROFILE_GPU_CPU_NAMED("Distortion");
         renderContext.View.Pass = DrawPass::Distortion;
         renderContext.List->ExecuteDrawCalls(renderContext, distortionList);
     }
     auto& forwardList = renderContext.List->DrawCallsLists[(int32)DrawCallsListType::Forward];
     if (!forwardList.IsEmpty())
     {
-        PROFILE_GPU_CPU("Forward");
+        PROFILE_GPU_CPU_NAMED("Forward");
         renderContext.View.Pass = DrawPass::Forward;
         renderContext.List->ExecuteDrawCalls(renderContext, forwardList);
     }
