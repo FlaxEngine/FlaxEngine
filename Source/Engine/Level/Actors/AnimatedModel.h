@@ -12,7 +12,7 @@
 /// <summary>
 /// Performs an animation and renders a skinned model.
 /// </summary>
-API_CLASS() class FLAXENGINE_API AnimatedModel : public ModelInstanceActor
+API_CLASS(Attributes="ActorContextMenu(\"New/Other/Animated Model\")") class FLAXENGINE_API AnimatedModel : public ModelInstanceActor
 {
     DECLARE_SCENE_OBJECT(AnimatedModel);
     friend class AnimationsSystem;

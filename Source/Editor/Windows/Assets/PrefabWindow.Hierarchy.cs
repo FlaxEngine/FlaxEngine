@@ -246,24 +246,53 @@ namespace FlaxEditor.Windows.Assets
             // Spawning actors options
 
             contextMenu.AddSeparator();
-            var spawnMenu = contextMenu.AddChildMenu("New");
-            var newActorCm = spawnMenu.ContextMenu;
-            for (int i = 0; i < SceneTreeWindow.SpawnActorsGroups.Length; i++)
-            {
-                var group = SceneTreeWindow.SpawnActorsGroups[i];
 
-                if (group.Types.Length == 1)
+            // Go through each actor and add it to the context menu if it has the ActorContextMenu attribute
+            foreach (var actorType in Editor.CodeEditing.Actors.Get())
+            {
+                if (actorType.IsAbstract)
+                    continue;
+                ActorContextMenuAttribute attribute = null;
+                foreach (var e in actorType.GetAttributes(true))
                 {
-                    var type = group.Types[0].Value;
-                    newActorCm.AddButton(group.Types[0].Key, () => Spawn(type));
-                }
-                else
-                {
-                    var groupCm = newActorCm.AddChildMenu(group.Name).ContextMenu;
-                    for (int j = 0; j < group.Types.Length; j++)
+                    if (e is ActorContextMenuAttribute actorContextMenuAttribute)
                     {
-                        var type = group.Types[j].Value;
-                        groupCm.AddButton(group.Types[j].Key, () => Spawn(type));
+                        attribute = actorContextMenuAttribute;
+                        break;
+                    }
+                }
+                if (attribute == null)
+                    continue;
+                var splitPath = attribute.Path.Split('/');
+                ContextMenuChildMenu childCM = null;
+                bool mainCM = true;
+                for (int i = 0; i < splitPath?.Length; i++)
+                {
+                    if (i == splitPath.Length - 1)
+                    {
+                        if (mainCM)
+                        {
+                            contextMenu.AddButton(splitPath[i].Trim(), () => Spawn(actorType.Type));
+                            mainCM = false;
+                        }
+                        else
+                        {
+                            childCM?.ContextMenu.AddButton(splitPath[i].Trim(), () => Spawn(actorType.Type));
+                            childCM.ContextMenu.AutoSort = true;
+                        }
+                    }
+                    else
+                    {
+                        if (mainCM)
+                        {
+                            childCM = contextMenu.GetOrAddChildMenu(splitPath[i].Trim());
+                            mainCM = false;
+                        }
+                        else
+                        {
+                            childCM = childCM?.ContextMenu.GetOrAddChildMenu(splitPath[i].Trim());
+                        }
+                        childCM.ContextMenu.AutoSort = true;
                     }
                 }
             }
