@@ -399,8 +399,8 @@ namespace FlaxEditor.Viewport
         {
             if (_customSelectionOutline != null)
             {
-                Object.Destroy(ref _customSelectionOutline);
                 Task.RemoveCustomPostFx(_customSelectionOutline);
+                Object.Destroy(ref _customSelectionOutline);
                 Task.AddCustomPostFx(customSelectionOutline ? customSelectionOutline : SelectionOutline);
             }
             else if (customSelectionOutline != null)
@@ -1157,6 +1157,13 @@ namespace FlaxEditor.Viewport
 
         private void ReleaseResources()
         {
+            if (Task)
+            {
+                Task.RemoveCustomPostFx(SelectionOutline);
+                Task.RemoveCustomPostFx(EditorPrimitives);
+                Task.RemoveCustomPostFx(_editorSpritesRenderer);
+                Task.RemoveCustomPostFx(_customSelectionOutline);
+            }
             Object.Destroy(ref SelectionOutline);
             Object.Destroy(ref EditorPrimitives);
             Object.Destroy(ref _editorSpritesRenderer);
