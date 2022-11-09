@@ -79,10 +79,6 @@ public:
     /// <param name="channelType">The channel to send the message over.</param>
     /// <param name="message">The message.</param>
     /// <remarks>Can be used only by the client!</remarks>
-    /// <remarks>
-    /// Do not recycle the message after calling this.
-    /// This function automatically recycles the message.
-    /// </remarks>
     API_FUNCTION() virtual void SendMessage(NetworkChannelType channelType, const NetworkMessage& message) = 0;
 
     /// <summary>
@@ -92,10 +88,6 @@ public:
     /// <param name="message">The message.</param>
     /// <param name="target">The client connection to send the message to.</param>
     /// <remarks>Can be used only by the server!</remarks>
-    /// <remarks>
-    /// Do not recycle the message after calling this.
-    /// This function automatically recycles the message.
-    /// </remarks>
     API_FUNCTION() virtual void SendMessage(NetworkChannelType channelType, const NetworkMessage& message, NetworkConnection target) = 0;
 
     /// <summary>
@@ -105,10 +97,6 @@ public:
     /// <param name="message">The message.</param>
     /// <param name="targets">The connections list to send the message to.</param>
     /// <remarks>Can be used only by the server!</remarks>
-    /// <remarks>
-    /// Do not recycle the message after calling this.
-    /// This function automatically recycles the message.
-    /// </remarks>
     API_FUNCTION() virtual void SendMessage(NetworkChannelType channelType, const NetworkMessage& message, const Array<NetworkConnection, HeapAllocation>& targets) = 0;
 
     // TODO: Stats API

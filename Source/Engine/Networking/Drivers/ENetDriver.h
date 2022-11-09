@@ -45,5 +45,5 @@ private:
     NetworkPeer* _networkHost;
     void* _host = nullptr;
     void* _peer = nullptr;
-    Dictionary<uint32, void*> _peerMap;
+    Dictionary<uint32, struct _ENetPeer*> _peerMap;
 };

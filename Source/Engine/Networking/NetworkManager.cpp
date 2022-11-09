@@ -340,12 +340,12 @@ void NetworkManagerService::Update()
 {
     const double currentTime = Time::Update.UnscaledTime.GetTotalSeconds();
     const float minDeltaTime = NetworkManager::NetworkFPS > 0 ? 1.0f / NetworkManager::NetworkFPS : 0.0f;
-    if (NetworkManager::Mode == NetworkManagerMode::Offline || (float)(currentTime - LastUpdateTime) < minDeltaTime)
+    auto peer = NetworkManager::Peer;
+    if (NetworkManager::Mode == NetworkManagerMode::Offline || (float)(currentTime - LastUpdateTime) < minDeltaTime || !peer)
         return;
     PROFILE_CPU();
     LastUpdateTime = currentTime;
     NetworkManager::Frame++;
-    auto peer = NetworkManager::Peer;
     NetworkInternal::NetworkReplicatorPreUpdate();
     // TODO: convert into TaskGraphSystems and use async jobs
 

@@ -59,7 +59,7 @@ bool ENetDriver::Initialize(NetworkPeer* host, const NetworkConfig& config)
 {
     _networkHost = host;
     _config = config;
-    _peerMap = Dictionary<uint32, void*>();
+    _peerMap.Clear();
 
     if (enet_initialize() != 0)
     {
@@ -94,7 +94,7 @@ bool ENetDriver::Listen()
     address.host = ENET_HOST_ANY;
 
     // Set host address if needed
-    if (_config.Address != String("any"))
+    if (_config.Address != TEXT("any"))
         enet_address_set_host(&address, _config.Address.ToStringAnsi().GetText());
 
     // Create ENet host
@@ -151,8 +151,7 @@ void ENetDriver::Disconnect()
 void ENetDriver::Disconnect(const NetworkConnection& connection)
 {
     const int connectionId = connection.ConnectionId;
-
-    void* peer = nullptr;
+    ENetPeer* peer;
     if (_peerMap.TryGet(connectionId, peer))
     {
         enet_peer_disconnect_now((ENetPeer*)peer, 0);
@@ -168,86 +167,74 @@ bool ENetDriver::PopEvent(NetworkEvent* eventPtr)
 {
     ENetEvent event;
     const int result = enet_host_service((ENetHost*)_host, &event, 0);
-
     if (result < 0)
         LOG(Error, "Failed to check ENet events!");
-
     if (result > 0)
     {
         // Copy sender data
         const uint32 connectionId = enet_peer_get_id(event.peer);
-        eventPtr->Sender = NetworkConnection();
         eventPtr->Sender.ConnectionId = connectionId;
 
         switch (event.type)
         {
         case ENET_EVENT_TYPE_CONNECT:
             eventPtr->EventType = NetworkEventType::Connected;
-
             if (IsServer())
                 _peerMap.Add(connectionId, event.peer);
             break;
-
         case ENET_EVENT_TYPE_DISCONNECT:
             eventPtr->EventType = NetworkEventType::Disconnected;
-
             if (IsServer())
                 _peerMap.Remove(connectionId);
             break;
-
         case ENET_EVENT_TYPE_DISCONNECT_TIMEOUT:
             eventPtr->EventType = NetworkEventType::Timeout;
-
             if (IsServer())
                 _peerMap.Remove(connectionId);
             break;
-
         case ENET_EVENT_TYPE_RECEIVE:
             eventPtr->EventType = NetworkEventType::Message;
-
-        // Acquire message and copy message data
             eventPtr->Message = _networkHost->CreateMessage();
             eventPtr->Message.Length = event.packet->dataLength;
-            Memory::CopyItems(eventPtr->Message.Buffer, event.packet->data, event.packet->dataLength);
+            Platform::MemoryCopy(eventPtr->Message.Buffer, event.packet->data, event.packet->dataLength);
             break;
-
         default:
             break;
         }
-        return true; // Event
+
+        // Got event
+        return true;
     }
 
-    return false; // No events
+    // No events
+    return false;
 }
 
 void ENetDriver::SendMessage(const NetworkChannelType channelType, const NetworkMessage& message)
 {
     ASSERT(IsServer() == false);
-
     SendPacketToPeer((ENetPeer*)_peer, channelType, message);
 }
 
 void ENetDriver::SendMessage(NetworkChannelType channelType, const NetworkMessage& message, NetworkConnection target)
 {
     ASSERT(IsServer());
-
-    ENetPeer* peer = *(ENetPeer**)_peerMap.TryGet(target.ConnectionId);
-    ASSERT(peer != nullptr);
-    ASSERT(peer->state == ENET_PEER_STATE_CONNECTED);
-
-    SendPacketToPeer(peer, channelType, message);
+    ENetPeer* peer;
+    if (_peerMap.TryGet(target.ConnectionId, peer) && peer && peer->state == ENET_PEER_STATE_CONNECTED)
+    {
+        SendPacketToPeer(peer, channelType, message);
+    }
 }
 
 void ENetDriver::SendMessage(const NetworkChannelType channelType, const NetworkMessage& message, const Array<NetworkConnection, HeapAllocation>& targets)
 {
     ASSERT(IsServer());
-
+    ENetPeer* peer;
     for (NetworkConnection target : targets)
     {
-        ENetPeer* peer = *(ENetPeer**)_peerMap.TryGet(target.ConnectionId);
-        ASSERT(peer != nullptr);
-        ASSERT(peer->state == ENET_PEER_STATE_CONNECTED);
-
-        SendPacketToPeer(peer, channelType, message);
+        if (_peerMap.TryGet(target.ConnectionId, peer) && peer && peer->state == ENET_PEER_STATE_CONNECTED)
+        {
+            SendPacketToPeer(peer, channelType, message);
+        }
     }
 }

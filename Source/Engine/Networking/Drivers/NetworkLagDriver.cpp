@@ -1,0 +1,186 @@
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
+
+#include "NetworkLagDriver.h"
+#include "ENetDriver.h"
+#include "Engine/Core/Log.h"
+#include "Engine/Engine/Engine.h"
+#include "Engine/Engine/Time.h"
+
+NetworkLagDriver::NetworkLagDriver(const SpawnParams& params)
+    : ScriptingObject(params)
+{
+}
+
+NetworkLagDriver::~NetworkLagDriver()
+{
+    SetDriver(nullptr);
+}
+
+void NetworkLagDriver::SetDriver(INetworkDriver* value)
+{
+    if (_driver == value)
+        return;
+
+    // Cleanup created proxy driver object
+    if (auto* driver = FromInterface(_driver, INetworkDriver::TypeInitializer))
+        Delete(driver);
+
+    _driver = value;
+}
+
+String NetworkLagDriver::DriverName()
+{
+    if (!_driver)
+        return String::Empty;
+    return _driver->DriverName();
+}
+
+bool NetworkLagDriver::Initialize(NetworkPeer* host, const NetworkConfig& config)
+{
+    if (!_driver)
+    {
+        // Use ENet as default
+        _driver = New<ENetDriver>();
+    }
+    if (!_driver)
+    {
+        LOG(Error, "Missing Driver for Network Lag simulation.");
+        return true;
+    }
+    if (_driver->Initialize(host, config))
+        return true;
+    Engine::Update.Bind<NetworkLagDriver, &NetworkLagDriver::OnUpdate>(this);
+    return false;
+}
+
+void NetworkLagDriver::Dispose()
+{
+    if (!_driver)
+        return;
+    Engine::Update.Unbind<NetworkLagDriver, &NetworkLagDriver::OnUpdate>(this);
+    _driver->Dispose();
+    _messages.Clear();
+    _events.Clear();
+}
+
+bool NetworkLagDriver::Listen()
+{
+    if (!_driver)
+        return false;
+    return _driver->Listen();
+}
+
+bool NetworkLagDriver::Connect()
+{
+    if (!_driver)
+        return false;
+    return _driver->Connect();
+}
+
+void NetworkLagDriver::Disconnect()
+{
+    if (!_driver)
+        return;
+    return _driver->Disconnect();
+}
+
+void NetworkLagDriver::Disconnect(const NetworkConnection& connection)
+{
+    if (!_driver)
+        return;
+    _driver->Disconnect(connection);
+}
+
+bool NetworkLagDriver::PopEvent(NetworkEvent* eventPtr)
+{
+    if (!_driver)
+        return false;
+
+    // Try to pop event from the queue
+    for (int32 i = 0; i < _events.Count(); i++)
+    {
+        auto& e = _events[i];
+        if (e.Lag > 0.0)
+            continue;
+
+        *eventPtr = e.Event;
+        _events.RemoveAtKeepOrder(i);
+        return true;
+    }
+
+    // Consume any incoming events
+    while (_driver->PopEvent(eventPtr))
+    {
+        auto& e = _events.AddOne();
+        e.Lag = (double)Lag;
+        e.Event = *eventPtr;
+    }
+    return false;
+}
+
+void NetworkLagDriver::SendMessage(const NetworkChannelType channelType, const NetworkMessage& message)
+{
+    auto& msg = _messages.AddOne();
+    msg.Lag = (double)Lag;
+    msg.Type = 0;
+    msg.Message = message;
+    msg.MessageData.Set(message.Buffer, message.Length);
+}
+
+void NetworkLagDriver::SendMessage(NetworkChannelType channelType, const NetworkMessage& message, NetworkConnection target)
+{
+    auto& msg = _messages.AddOne();
+    msg.Lag = (double)Lag;
+    msg.Type = 1;
+    msg.Message = message;
+    msg.Target = target;
+    msg.MessageData.Set(message.Buffer, message.Length);
+}
+
+void NetworkLagDriver::SendMessage(const NetworkChannelType channelType, const NetworkMessage& message, const Array<NetworkConnection, HeapAllocation>& targets)
+{
+    auto& msg = _messages.AddOne();
+    msg.Lag = (double)Lag;
+    msg.Type = 2;
+    msg.Message = message;
+    msg.Targets = targets;
+    msg.MessageData.Set(message.Buffer, message.Length);
+}
+
+void NetworkLagDriver::OnUpdate()
+{
+    if (!_driver)
+        return;
+
+    // Update all pending messages and events
+    const double deltaTime = Time::Update.UnscaledDeltaTime.GetTotalMilliseconds();
+    for (int32 i = 0; i < _messages.Count(); i++)
+    {
+        auto& msg = _messages[i];
+        msg.Lag -= deltaTime;
+        if (msg.Lag > 0.0)
+            continue;
+
+        // Fix message to point to the current buffer
+        msg.Message.Buffer = msg.MessageData.Get();
+
+        switch (msg.Type)
+        {
+        case 0:
+            _driver->SendMessage(msg.ChannelType, msg.Message);
+            break;
+        case 1:
+            _driver->SendMessage(msg.ChannelType, msg.Message, msg.Target);
+            break;
+        case 2:
+            _driver->SendMessage(msg.ChannelType, msg.Message, msg.Targets);
+            break;
+        }
+        _messages.RemoveAt(i);
+    }
+    for (int32 i = 0; i < _events.Count(); i++)
+    {
+        auto& e = _events[i];
+        e.Lag -= deltaTime;
+    }
+}
