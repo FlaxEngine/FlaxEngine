@@ -8,9 +8,15 @@
 #define FILESTREAM_BUFFER_SIZE 4096
 #define STREAM_MAX_STRING_LENGTH (4*1024) // 4 kB
 
-// Forward declarations
 class ReadStream;
 class WriteStream;
+struct CommonValue;
+struct Variant;
+struct VariantType;
+class ISerializable;
+class ScriptingObject;
+template<typename T>
+class ScriptingObjectReference;
 
 /// <summary>
 /// Base class for all data streams (memory streams, file streams etc.)

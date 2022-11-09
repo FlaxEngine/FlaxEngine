@@ -5,10 +5,6 @@
 #include "Stream.h"
 #include "Engine/Core/Templates.h"
 
-struct CommonValue;
-struct Variant;
-struct VariantType;
-class ISerializable;
 extern FLAXENGINE_API class ScriptingObject* FindObject(const Guid& id, class MClass* type);
 
 /// <summary>
@@ -154,6 +150,14 @@ public:
         uint32 id[4];
         ReadBytes(id, sizeof(id));
         data = (T*)::FindObject(*(Guid*)id, T::GetStaticClass());
+    }
+
+    template<typename T>
+    FORCE_INLINE void Read(ScriptingObjectReference<T>& v)
+    {
+        T* ptr;
+        Read(ptr);
+        v = ptr;
     }
 
     /// <summary>

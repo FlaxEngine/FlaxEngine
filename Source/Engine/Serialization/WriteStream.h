@@ -5,12 +5,6 @@
 #include "Stream.h"
 #include "Engine/Core/Templates.h"
 
-struct CommonValue;
-struct Variant;
-struct VariantType;
-class ISerializable;
-class ScriptingObject;
-
 /// <summary>
 /// Base class for all data write streams
 /// </summary>
@@ -175,6 +169,12 @@ public:
         if (data)
             memcpy(id, &data->GetID(), sizeof(id));
         WriteBytes(id, sizeof(id));
+    }
+
+    template<typename T>
+    FORCE_INLINE void Write(const ScriptingObjectReference<T>& v)
+    {
+        Write(v.Get());
     }
 
     template<typename T, typename AllocationType = HeapAllocation>

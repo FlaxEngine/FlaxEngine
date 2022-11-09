@@ -257,6 +257,38 @@ struct MConverter<T, typename TEnableIf<TIsBaseOf<class ScriptingObject, T>::Val
     }
 };
 
+// Converter for ScriptingObject References.
+template<typename T>
+class ScriptingObjectReference;
+
+template<typename T>
+struct MConverter<ScriptingObjectReference<T>>
+{
+    MonoObject* Box(const ScriptingObjectReference<T>& data, MonoClass* klass)
+    {
+        return data.GetManagedInstance();
+    }
+
+    void Unbox(ScriptingObjectReference<T>& result, MonoObject* data)
+    {
+        result = (T*)ScriptingObject::ToNative(data);
+    }
+
+    void ToManagedArray(MonoArray* result, const Span<ScriptingObjectReference<T>>& data)
+    {
+        for (int32 i = 0; i < data.Length(); i++)
+            mono_array_setref(result, i, data[i].GetManagedInstance());
+    }
+
+    template<typename AllocationType = HeapAllocation>
+    void ToNativeArray(Array<ScriptingObjectReference<T>, AllocationType>& result, MonoArray* data, int32 length)
+    {
+        result.Resize(length);
+        for (int32 i = 0; i < length; i++)
+            result[i] = (T*)ScriptingObject::ToNative(mono_array_get(data, MonoObject*, i));
+    }
+};
+
 // Converter for Asset References.
 template<typename T>
 class AssetReference;
