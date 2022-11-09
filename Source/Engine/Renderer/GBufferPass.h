@@ -46,6 +46,7 @@ public:
     GPUTextureView* RenderSkybox(RenderContext& renderContext, GPUContext* context);
 
 #if USE_EDITOR
+    void OverrideDrawCalls(RenderContext& renderContext);
     void DrawMaterialComplexity(RenderContext& renderContext, GPUContext* context, GPUTextureView* lightBuffer);
 #endif
 

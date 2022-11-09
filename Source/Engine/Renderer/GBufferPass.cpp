@@ -102,7 +102,7 @@ void GBufferPass::Dispose()
 
 #if USE_EDITOR
 
-void DebugOverrideDrawCallsMaterial(RenderContext& renderContext, IMaterial* material)
+void DebugOverrideDrawCallsMaterial(const RenderContext& renderContext, IMaterial* material)
 {
     if (!material->IsReady())
         return;
@@ -114,7 +114,7 @@ void DebugOverrideDrawCallsMaterial(RenderContext& renderContext, IMaterial* mat
         auto& drawCallsList = renderContext.List->DrawCallsLists[(int32)DrawCallsListType::GBuffer];
         for (int32 i : drawCallsList.Indices)
         {
-            auto& drawCall = renderContext.List->DrawCalls[i];
+            auto& drawCall = renderContext.List->DrawCalls.Get()[i];
             if (drawCall.Material->IsSurface())
             {
                 drawCall.Material = material;
@@ -127,7 +127,7 @@ void DebugOverrideDrawCallsMaterial(RenderContext& renderContext, IMaterial* mat
         auto& drawCallsList = renderContext.List->DrawCallsLists[(int32)DrawCallsListType::GBufferNoDecals];
         for (int32 i : drawCallsList.Indices)
         {
-            auto& drawCall = renderContext.List->DrawCalls[i];
+            auto& drawCall = renderContext.List->DrawCalls.Get()[i];
             if (drawCall.Material->IsSurface())
             {
                 drawCall.Material = material;
@@ -176,32 +176,20 @@ void GBufferPass::Fill(RenderContext& renderContext, GPUTextureView* lightBuffer
     }
 
 #if USE_EDITOR
-    // Override draw calls material to use material debug shader
-    if (renderContext.View.Mode == ViewMode::LightmapUVsDensity)
+    // Special debug drawing
+    if (renderContext.View.Mode == ViewMode::MaterialComplexity)
     {
-        if (!_lightmapUVsDensity)
-            _lightmapUVsDensity = New<LightmapUVsDensityMaterialShader>();
-        DebugOverrideDrawCallsMaterial(renderContext, _lightmapUVsDensity);
+        // Initialize background with complexity of the sky (uniform)
+        if (renderContext.List->Sky)
+        {
+            renderContext.List->Sky->ApplySky(context, renderContext, Matrix::Identity);
+            GPUPipelineState* materialPs = context->GetState();
+            const float complexity = (float)Math::Min(materialPs->Complexity, MATERIAL_COMPLEXITY_LIMIT) / MATERIAL_COMPLEXITY_LIMIT;
+            context->Clear(lightBuffer, Color(complexity, complexity, complexity, 1.0f));
+            renderContext.List->Sky = nullptr;
+        }
     }
-    else if (renderContext.View.Mode == ViewMode::VertexColors)
-    {
-        if (!_vertexColors)
-            _vertexColors = New<VertexColorsMaterialShader>();
-        DebugOverrideDrawCallsMaterial(renderContext, _vertexColors);
-    }
-    else if (renderContext.View.Mode == ViewMode::LODPreview)
-    {
-        if (!_lodPreview)
-            _lodPreview = New<LODPreviewMaterialShader>();
-        DebugOverrideDrawCallsMaterial(renderContext, _lodPreview);
-    }
-    else if (renderContext.View.Mode == ViewMode::MaterialComplexity)
-    {
-        if (!_materialComplexity)
-            _materialComplexity = New<MaterialComplexityMaterialShader>();
-        _materialComplexity->DebugOverrideDrawCallsMaterial(renderContext, context, lightBuffer);
-    }
-    if (renderContext.View.Mode == ViewMode::PhysicsColliders)
+    else if (renderContext.View.Mode == ViewMode::PhysicsColliders)
     {
         context->ResetRenderTarget();
         return;
@@ -326,6 +314,35 @@ GPUTextureView* GBufferPass::RenderSkybox(RenderContext& renderContext, GPUConte
         result = skyboxData.Skybox->ViewArray();
     }
     return result;
+}
+
+void GBufferPass::OverrideDrawCalls(RenderContext& renderContext)
+{
+    // Override draw calls material to use material debug shader
+    if (renderContext.View.Mode == ViewMode::LightmapUVsDensity)
+    {
+        if (!_lightmapUVsDensity)
+            _lightmapUVsDensity = New<LightmapUVsDensityMaterialShader>();
+        DebugOverrideDrawCallsMaterial(renderContext, _lightmapUVsDensity);
+    }
+    else if (renderContext.View.Mode == ViewMode::VertexColors)
+    {
+        if (!_vertexColors)
+            _vertexColors = New<VertexColorsMaterialShader>();
+        DebugOverrideDrawCallsMaterial(renderContext, _vertexColors);
+    }
+    else if (renderContext.View.Mode == ViewMode::LODPreview)
+    {
+        if (!_lodPreview)
+            _lodPreview = New<LODPreviewMaterialShader>();
+        DebugOverrideDrawCallsMaterial(renderContext, _lodPreview);
+    }
+    else if (renderContext.View.Mode == ViewMode::MaterialComplexity)
+    {
+        if (!_materialComplexity)
+            _materialComplexity = New<MaterialComplexityMaterialShader>();
+        _materialComplexity->DebugOverrideDrawCallsMaterial(renderContext);
+    }
 }
 
 #if USE_EDITOR

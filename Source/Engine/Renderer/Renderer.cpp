@@ -356,6 +356,10 @@ void RenderInner(SceneRenderTask* task, RenderContext& renderContext, RenderCont
         for (const int64 label : renderContextBatch.WaitLabels)
             JobSystem::Wait(label);
         renderContextBatch.WaitLabels.Clear();
+
+#if USE_EDITOR
+        GBufferPass::Instance()->OverrideDrawCalls(renderContext);
+#endif
     }
 
     // Sort draw calls

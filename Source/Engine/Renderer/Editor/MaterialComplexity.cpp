@@ -19,9 +19,6 @@
 #include "Engine/Renderer/RenderList.h"
 #include "Engine/Renderer/Lightmaps.h"
 
-// The limit for maximum material complexity (estimated based on shader textures, instructions and GPU stages usage).
-#define COMPLEXITY_LIMIT 1700
-
 const MaterialInfo& MaterialComplexityMaterialShader::WrapperShader::GetInfo() const
 {
     if (MaterialAsset)
@@ -77,7 +74,7 @@ void MaterialComplexityMaterialShader::WrapperShader::Bind(BindParameters& param
     ASSERT_LOW_LAYER(material && material->IsReady());
     material->Bind(params);
     GPUPipelineState* materialPs = params.GPUContext->GetState();
-    const float complexity = (float)Math::Min(materialPs->Complexity, COMPLEXITY_LIMIT) / COMPLEXITY_LIMIT;
+    const float complexity = (float)Math::Min(materialPs->Complexity, MATERIAL_COMPLEXITY_LIMIT) / MATERIAL_COMPLEXITY_LIMIT;
 
     // Draw with custom color
     const Color color(complexity, complexity, complexity, 1.0f);
@@ -103,7 +100,7 @@ MaterialComplexityMaterialShader::MaterialComplexityMaterialShader()
 #undef INIT_WRAPPER
 }
 
-void MaterialComplexityMaterialShader::DebugOverrideDrawCallsMaterial(RenderContext& renderContext, GPUContext* context, GPUTextureView* lightBuffer)
+void MaterialComplexityMaterialShader::DebugOverrideDrawCallsMaterial(RenderContext& renderContext)
 {
     // Cache 'ready' state for wrappers
     bool isReady[ARRAY_COUNT(_wrappers) + 1];
@@ -116,16 +113,6 @@ void MaterialComplexityMaterialShader::DebugOverrideDrawCallsMaterial(RenderCont
         DebugOverrideDrawCallsMaterial(e, isReady);
     for (auto& e : renderContext.List->BatchedDrawCalls)
         DebugOverrideDrawCallsMaterial(e.DrawCall, isReady);
-
-    // Initialize background with complexity of the sky (uniform)
-    if (renderContext.List->Sky)
-    {
-        renderContext.List->Sky->ApplySky(context, renderContext, Matrix::Identity);
-        GPUPipelineState* materialPs = context->GetState();
-        const float complexity = (float)Math::Min(materialPs->Complexity, COMPLEXITY_LIMIT) / COMPLEXITY_LIMIT;
-        context->Clear(lightBuffer, Color(complexity, complexity, complexity, 1.0f));
-        renderContext.List->Sky = nullptr;
-    }
 }
 
 void MaterialComplexityMaterialShader::Draw(RenderContext& renderContext, GPUContext* context, GPUTextureView* lightBuffer)

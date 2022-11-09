@@ -11,6 +11,9 @@
 
 class GPUPipelineState;
 
+// The limit for maximum material complexity (estimated based on shader textures, instructions and GPU stages usage).
+#define MATERIAL_COMPLEXITY_LIMIT 1700
+
 /// <summary>
 /// Rendering material shaders complexity to visualize performance of pixels rendering in editor.
 /// </summary>
@@ -39,7 +42,7 @@ private:
 public:
 
     MaterialComplexityMaterialShader();
-    void DebugOverrideDrawCallsMaterial(RenderContext& renderContext, GPUContext* context, GPUTextureView* lightBuffer);
+    void DebugOverrideDrawCallsMaterial(RenderContext& renderContext);
     void Draw(RenderContext& renderContext, GPUContext* context, GPUTextureView* lightBuffer);
 
 private:

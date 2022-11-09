@@ -129,6 +129,9 @@ public:
     /// <returns>True if can use instancing, otherwise false.</returns>
     virtual bool CanUseInstancing(InstancingHandler& handler) const
     {
+#if BUILD_DEBUG
+        handler = { nullptr, nullptr, nullptr };
+#endif
         return false;
     }
 
