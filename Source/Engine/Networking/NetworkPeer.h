@@ -13,23 +13,20 @@
 /// </summary>
 API_CLASS(sealed, NoSpawn, Namespace = "FlaxEngine.Networking") class FLAXENGINE_API NetworkPeer final : public ScriptingObject
 {
-    DECLARE_SCRIPTING_TYPE_NO_SPAWN(NetworkPeer);
+    DECLARE_SCRIPTING_TYPE_WITH_CONSTRUCTOR_IMPL(NetworkPeer, ScriptingObject);
+
 public:
     int HostId = -1;
     NetworkConfig Config;
-    INetworkDriver* NetworkDriver = nullptr;
 
     uint8* MessageBuffer = nullptr;
     Array<uint32, HeapAllocation> MessagePool;
 
 public:
     /// <summary>
-    /// Initializes a new instance of the <see cref="NetworkPeer"/> class.
+    /// Low-level network transport driver used by this peer.
     /// </summary>
-    NetworkPeer()
-        : ScriptingObject(SpawnParams(Guid::New(), TypeInitializer))
-    {
-    }
+    API_FIELD() INetworkDriver* NetworkDriver = nullptr;
 
 public:
     /// <summary>

@@ -7,9 +7,9 @@
 #include "Engine/Networking/NetworkChannelType.h"
 #include "Engine/Networking/NetworkEvent.h"
 #include "Engine/Networking/NetworkPeer.h"
+#include "Engine/Networking/NetworkStats.h"
 #include "Engine/Core/Log.h"
 #include "Engine/Core/Collections/Array.h"
-
 #define ENET_IMPLEMENTATION
 #define _WINSOCK_DEPRECATED_NO_WARNINGS
 #include <enet/enet.h>
@@ -74,8 +74,8 @@ bool ENetDriver::Initialize(NetworkPeer* host, const NetworkConfig& config)
 void ENetDriver::Dispose()
 {
     if (_peer)
-        enet_peer_disconnect_now((ENetPeer*)_peer, 0);
-    enet_host_destroy((ENetHost*)_host);
+        enet_peer_disconnect_now(_peer, 0);
+    enet_host_destroy(_host);
 
     enet_deinitialize();
 
@@ -126,11 +126,11 @@ bool ENetDriver::Connect()
     }
 
     // Create ENet peer/connect to the server
-    _peer = enet_host_connect((ENetHost*)_host, &address, 1, 0);
+    _peer = enet_host_connect(_host, &address, 1, 0);
     if (_peer == nullptr)
     {
         LOG(Error, "Failed to create ENet host!");
-        enet_host_destroy((ENetHost*)_host);
+        enet_host_destroy(_host);
         return false;
     }
 
@@ -141,9 +141,8 @@ void ENetDriver::Disconnect()
 {
     if (_peer)
     {
-        enet_peer_disconnect_now((ENetPeer*)_peer, 0);
+        enet_peer_disconnect_now(_peer, 0);
         _peer = nullptr;
-
         LOG(Info, "Disconnected");
     }
 }
@@ -154,7 +153,7 @@ void ENetDriver::Disconnect(const NetworkConnection& connection)
     ENetPeer* peer;
     if (_peerMap.TryGet(connectionId, peer))
     {
-        enet_peer_disconnect_now((ENetPeer*)peer, 0);
+        enet_peer_disconnect_now(peer, 0);
         _peerMap.Remove(connectionId);
     }
     else
@@ -166,7 +165,7 @@ void ENetDriver::Disconnect(const NetworkConnection& connection)
 bool ENetDriver::PopEvent(NetworkEvent* eventPtr)
 {
     ENetEvent event;
-    const int result = enet_host_service((ENetHost*)_host, &event, 0);
+    const int result = enet_host_service(_host, &event, 0);
     if (result < 0)
         LOG(Error, "Failed to check ENet events!");
     if (result > 0)
@@ -212,8 +211,8 @@ bool ENetDriver::PopEvent(NetworkEvent* eventPtr)
 
 void ENetDriver::SendMessage(const NetworkChannelType channelType, const NetworkMessage& message)
 {
-    ASSERT(IsServer() == false);
-    SendPacketToPeer((ENetPeer*)_peer, channelType, message);
+    ASSERT(!IsServer());
+    SendPacketToPeer(_peer, channelType, message);
 }
 
 void ENetDriver::SendMessage(NetworkChannelType channelType, const NetworkMessage& message, NetworkConnection target)
@@ -237,4 +236,24 @@ void ENetDriver::SendMessage(const NetworkChannelType channelType, const Network
             SendPacketToPeer(peer, channelType, message);
         }
     }
+}
+
+NetworkDriverStats ENetDriver::GetStats()
+{
+    return GetStats({ 0 });
+}
+
+NetworkDriverStats ENetDriver::GetStats(NetworkConnection target)
+{
+    NetworkDriverStats stats;
+    ENetPeer* peer = _peer;
+    if (!peer)
+        _peerMap.TryGet(target.ConnectionId, peer);
+    if (!peer && _host && _host->peerCount > 0)
+        peer = _host->peers;
+    if (peer)
+    {
+        stats.RTT = (float)peer->roundTripTime;
+    }
+    return stats;
 }

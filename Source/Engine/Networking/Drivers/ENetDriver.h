@@ -33,6 +33,8 @@ public:
     void SendMessage(NetworkChannelType channelType, const NetworkMessage& message) override;
     void SendMessage(NetworkChannelType channelType, const NetworkMessage& message, NetworkConnection target) override;
     void SendMessage(NetworkChannelType channelType, const NetworkMessage& message, const Array<NetworkConnection, HeapAllocation>& targets) override;
+    NetworkDriverStats GetStats() override;
+    NetworkDriverStats GetStats(NetworkConnection target) override;
 
 private:
     bool IsServer() const
@@ -43,7 +45,7 @@ private:
 private:
     NetworkConfig _config;
     NetworkPeer* _networkHost;
-    void* _host = nullptr;
-    void* _peer = nullptr;
+    struct _ENetHost* _host = nullptr;
+    struct _ENetPeer* _peer = nullptr;
     Dictionary<uint32, struct _ENetPeer*> _peerMap;
 };

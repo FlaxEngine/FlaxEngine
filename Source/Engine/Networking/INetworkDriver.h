@@ -99,6 +99,16 @@ public:
     /// <remarks>Can be used only by the server!</remarks>
     API_FUNCTION() virtual void SendMessage(NetworkChannelType channelType, const NetworkMessage& message, const Array<NetworkConnection, HeapAllocation>& targets) = 0;
 
-    // TODO: Stats API
-    // TODO: Simulation API
+    /// <summary>
+    /// Gets the network transport layer stats.
+    /// </summary>
+    /// <returns>Network transport statistics data for a given connection.</returns>
+    API_FUNCTION() virtual NetworkDriverStats GetStats() = 0;
+
+    /// <summary>
+    /// Gets the network transport layer stats for a given connection.
+    /// </summary>
+    /// <param name="target">The client connection to retrieve statistics for.</param>
+    /// <returns>Network transport statistics data for a given connection.</returns>
+    API_FUNCTION() virtual NetworkDriverStats GetStats(NetworkConnection target) = 0;
 };

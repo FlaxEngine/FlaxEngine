@@ -5,6 +5,7 @@
 #include "Engine/Core/Log.h"
 #include "Engine/Engine/Engine.h"
 #include "Engine/Engine/Time.h"
+#include "Engine/Networking/NetworkStats.h"
 
 NetworkLagDriver::NetworkLagDriver(const SpawnParams& params)
     : ScriptingObject(params)
@@ -145,6 +146,20 @@ void NetworkLagDriver::SendMessage(const NetworkChannelType channelType, const N
     msg.Message = message;
     msg.Targets = targets;
     msg.MessageData.Set(message.Buffer, message.Length);
+}
+
+NetworkDriverStats NetworkLagDriver::GetStats()
+{
+    if (!_driver)
+        return NetworkDriverStats();
+    return _driver->GetStats();
+}
+
+NetworkDriverStats NetworkLagDriver::GetStats(NetworkConnection target)
+{
+    if (!_driver)
+        return NetworkDriverStats();
+    return _driver->GetStats(target);
 }
 
 void NetworkLagDriver::OnUpdate()
