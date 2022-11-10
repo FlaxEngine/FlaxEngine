@@ -242,14 +242,14 @@ public:
     /// <param name="preserveContents">True if preserve collection data when changing its size, otherwise collection after resize will be empty.</param>
     void SetCapacity(const int32 capacity, bool preserveContents = true)
     {
-        _locker.Lock();
-        if (capacity == _capacity)
+        if (capacity == Capacity())
             return;
+        _locker.Lock();
         ASSERT(capacity >= 0);
         const int32 count = preserveContents ? ((int32)_count < capacity ? (int32)_count : capacity) : 0;
         _allocation.Relocate(capacity, (int32)_count, count);
-        _capacity = capacity;
-        _count = count;
+        Platform::AtomicStore(&_capacity, capacity);
+        Platform::AtomicStore(&_count, count);
         _locker.Unlock();
     }
 
@@ -300,10 +300,12 @@ public:
         const int32 count = (int32)Platform::AtomicRead(&_count);
         const int32 capacity = (int32)Platform::AtomicRead(&_capacity);
         const int32 minCapacity = count + PLATFORM_THREADS_LIMIT; // Ensure there is a room for all threads (eg. all possible threads add item at once)
-        if (minCapacity >= capacity)
+        if (minCapacity > capacity)
             EnsureCapacity(minCapacity);
+        auto ptr = _allocation.Get();
         const int32 index = (int32)Platform::InterlockedIncrement(&_count) - 1;
         Memory::ConstructItems(_allocation.Get() + index, &item, 1);
+        ASSERT(ptr == _allocation.Get());
         return index;
     }
 
@@ -317,10 +319,12 @@ public:
         const int32 count = (int32)Platform::AtomicRead(&_count);
         const int32 capacity = (int32)Platform::AtomicRead(&_capacity);
         const int32 minCapacity = count + PLATFORM_THREADS_LIMIT; // Ensure there is a room for all threads (eg. all possible threads add item at once)
-        if (minCapacity >= capacity)
+        if (minCapacity > capacity)
             EnsureCapacity(minCapacity);
+        auto ptr = _allocation.Get();
         const int32 index = (int32)Platform::InterlockedIncrement(&_count) - 1;
         Memory::MoveItems(_allocation.Get() + index, &item, 1);
+        ASSERT(ptr == _allocation.Get());
         return index;
     }
 };
