@@ -39,7 +39,6 @@ public:
     /// <summary>
     /// Returns true if data is valid.
     /// </summary>
-    /// <returns>True if is valid, otherwise false.</returns>
     FORCE_INLINE bool IsValid() const
     {
         return _data != nullptr;
@@ -48,7 +47,6 @@ public:
     /// <summary>
     /// Returns true if data is invalid.
     /// </summary>
-    /// <returns>True if is invalid, otherwise false.</returns>
     FORCE_INLINE bool IsInvalid() const
     {
         return _data == nullptr;
@@ -57,7 +55,6 @@ public:
     /// <summary>
     /// Gets length of the data.
     /// </summary>
-    /// <returns>The amount of elements.</returns>
     FORCE_INLINE int32 Length() const
     {
         return _length;
@@ -66,7 +63,6 @@ public:
     /// <summary>
     /// Gets the pointer to the data.
     /// </summary>
-    /// <returns>The data.</returns>
     FORCE_INLINE T* Get()
     {
         return _data;
@@ -75,7 +71,6 @@ public:
     /// <summary>
     /// Gets the pointer to the data.
     /// </summary>
-    /// <returns>The data.</returns>
     FORCE_INLINE const T* Get() const
     {
         return _data;
@@ -84,7 +79,6 @@ public:
     /// <summary>
     /// Gets the pointer to the data.
     /// </summary>
-    /// <returns>The data.</returns>
     template<typename U>
     FORCE_INLINE U* Get() const
     {

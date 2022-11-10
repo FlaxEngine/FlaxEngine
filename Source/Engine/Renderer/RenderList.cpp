@@ -40,6 +40,7 @@ namespace
     };
 
     Array<MemPoolEntry> MemPool;
+    CriticalSection MemPoolLocker;
 }
 
 void RendererDirectionalLightData::SetupLightData(LightData* data, bool useShadow) const
@@ -113,6 +114,7 @@ void RendererSkyLightData::SetupLightData(LightData* data, bool useShadow) const
 void* RendererAllocation::Allocate(uintptr size)
 {
     void* result = nullptr;
+    MemPoolLocker.Lock();
     for (int32 i = 0; i < MemPool.Count(); i++)
     {
         if (MemPool[i].Size == size)
@@ -122,6 +124,7 @@ void* RendererAllocation::Allocate(uintptr size)
             break;
         }
     }
+    MemPoolLocker.Unlock();
     if (!result)
     {
         result = Platform::Allocate(size, 16);
@@ -131,7 +134,9 @@ void* RendererAllocation::Allocate(uintptr size)
 
 void RendererAllocation::Free(void* ptr, uintptr size)
 {
+    MemPoolLocker.Lock();
     MemPool.Add({ ptr, size });
+    MemPoolLocker.Unlock();
 }
 
 RenderList* RenderList::GetFromPool()

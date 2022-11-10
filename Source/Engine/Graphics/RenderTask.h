@@ -470,7 +470,7 @@ API_STRUCT(NoDefault) struct RenderContextBatch
     /// <summary>
     /// The Job System labels to wait on, after draw calls collecting.
     /// </summary>
-    API_FIELD() Array<int64, InlinedAllocation<8>> WaitLabels;
+    API_FIELD() Array<uint64, InlinedAllocation<8>> WaitLabels;
 
     RenderContextBatch() = default;
     RenderContextBatch(SceneRenderTask* task);
