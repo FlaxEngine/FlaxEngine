@@ -306,4 +306,21 @@ public:
         Memory::ConstructItems(_allocation.Get() + index, &item, 1);
         return index;
     }
+
+    /// <summary>
+    /// Adds the specified item to the collection.
+    /// </summary>
+    /// <param name="item">The item to add.</param>
+    /// <returns>Index of the added element.</returns>
+    int32 Add(T&& item)
+    {
+        const int32 count = (int32)Platform::AtomicRead(&_count);
+        const int32 capacity = (int32)Platform::AtomicRead(&_capacity);
+        const int32 minCapacity = count + PLATFORM_THREADS_LIMIT; // Ensure there is a room for all threads (eg. all possible threads add item at once)
+        if (minCapacity >= capacity)
+            EnsureCapacity(minCapacity);
+        const int32 index = (int32)Platform::InterlockedIncrement(&_count) - 1;
+        Memory::MoveItems(_allocation.Get() + index, &item, 1);
+        return index;
+    }
 };

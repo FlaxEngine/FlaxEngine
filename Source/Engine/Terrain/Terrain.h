@@ -59,6 +59,7 @@ private:
     Vector3 _boundsExtent;
     Float3 _cachedScale;
     Array<TerrainPatch*, InlinedAllocation<64>> _patches;
+    Array<TerrainChunk*> _drawChunks;
 
 public:
 

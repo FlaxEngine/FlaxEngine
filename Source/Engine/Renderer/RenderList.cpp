@@ -629,7 +629,7 @@ void RenderList::ExecuteDrawCalls(const RenderContext& renderContext, DrawCallsL
         }
         for (int32 i = 0; i < list.PreBatchedDrawCalls.Count(); i++)
         {
-            auto& batch = BatchedDrawCalls[list.PreBatchedDrawCalls[i]];
+            auto& batch = BatchedDrawCalls.Get()[list.PreBatchedDrawCalls.Get()[i]];
             if (batch.Instances.Count() > 1)
                 batchesCount += batch.Instances.Count();
         }
@@ -661,7 +661,7 @@ void RenderList::ExecuteDrawCalls(const RenderContext& renderContext, DrawCallsL
         }
         for (int32 i = 0; i < list.PreBatchedDrawCalls.Count(); i++)
         {
-            auto& batch = BatchedDrawCalls[list.PreBatchedDrawCalls[i]];
+            auto& batch = BatchedDrawCalls.Get()[list.PreBatchedDrawCalls.Get()[i]];
             if (batch.Instances.Count() > 1)
             {
                 Platform::MemoryCopy(instanceData, batch.Instances.Get(), batch.Instances.Count() * sizeof(InstanceData));
@@ -736,7 +736,7 @@ DRAW:
         }
         for (int32 i = 0; i < list.PreBatchedDrawCalls.Count(); i++)
         {
-            auto& batch = BatchedDrawCalls[list.PreBatchedDrawCalls[i]];
+            auto& batch = BatchedDrawCalls.Get()[list.PreBatchedDrawCalls.Get()[i]];
             auto& drawCall = batch.DrawCall;
 
             int32 vbCount = 0;
@@ -812,7 +812,7 @@ DRAW:
         }
         for (int32 i = 0; i < list.PreBatchedDrawCalls.Count(); i++)
         {
-            auto& batch = BatchedDrawCalls[list.PreBatchedDrawCalls[i]];
+            auto& batch = BatchedDrawCalls.Get()[list.PreBatchedDrawCalls.Get()[i]];
             auto drawCall = batch.DrawCall;
             bindParams.FirstDrawCall = &drawCall;
             const auto* instancesData = batch.Instances.Get();

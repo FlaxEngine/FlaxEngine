@@ -49,7 +49,7 @@ void Terrain::UpdateBounds()
     }
     BoundingSphere::FromBox(_box, _sphere);
     if (_sceneRenderingKey != -1)
-        GetSceneRendering()->UpdateActor(this, _sceneRenderingKey);
+        GetSceneRendering()->UpdateActor(this, _sceneRenderingKey, SceneRendering::SceneDrawAsync);
 }
 
 void Terrain::CacheNeighbors()
@@ -507,6 +507,7 @@ void Terrain::Draw(RenderContext& renderContext)
     DrawPass drawModes = (DrawPass)(DrawModes & renderContext.View.Pass);
     if (drawModes == DrawPass::None)
         return;
+    PROFILE_CPU();
     if (renderContext.View.Pass == DrawPass::GlobalSDF)
     {
         if ((DrawModes & DrawPass::GlobalSDF) == 0)
@@ -551,12 +552,8 @@ void Terrain::Draw(RenderContext& renderContext)
         return;
     }
 
-    PROFILE_CPU();
-
     // Collect chunks to render and calculate LOD/material for them (required to be done before to gather NeighborLOD)
-    static Array<TerrainChunk*> chunks;
-    chunks.Clear();
-    chunks.EnsureCapacity(_patches.Count() * TerrainPatch::CHUNKS_COUNT);
+    _drawChunks.Clear();
 
     // Frustum vs Box culling for patches
     const BoundingFrustum frustum = renderContext.View.CullingFrustum;
@@ -582,7 +579,7 @@ void Terrain::Draw(RenderContext& renderContext)
                     if (chunk->PrepareDraw(renderContext))
                     {
                         // Add chunk for drawing
-                        chunks.Add(chunk);
+                        _drawChunks.Add(chunk);
                     }
                 }
             }
@@ -599,9 +596,9 @@ void Terrain::Draw(RenderContext& renderContext)
     }
 
     // Draw all visible chunks
-    for (int32 i = 0; i < chunks.Count(); i++)
+    for (int32 i = 0; i < _drawChunks.Count(); i++)
     {
-        chunks[i]->Draw(renderContext);
+        _drawChunks.Get()[i]->Draw(renderContext);
     }
 }
 
@@ -792,7 +789,7 @@ RigidBody* Terrain::GetAttachedRigidBody() const
 
 void Terrain::OnEnable()
 {
-    GetSceneRendering()->AddActor(this, _sceneRenderingKey);
+    GetSceneRendering()->AddActor(this, _sceneRenderingKey, SceneRendering::SceneDrawAsync);
 #if TERRAIN_USE_PHYSICS_DEBUG
     GetSceneRendering()->AddPhysicsDebug<Terrain, &Terrain::DrawPhysicsDebug>(this);
 #endif
@@ -803,7 +800,7 @@ void Terrain::OnEnable()
 
 void Terrain::OnDisable()
 {
-    GetSceneRendering()->RemoveActor(this, _sceneRenderingKey);
+    GetSceneRendering()->RemoveActor(this, _sceneRenderingKey, SceneRendering::SceneDrawAsync);
 #if TERRAIN_USE_PHYSICS_DEBUG
     GetSceneRendering()->RemovePhysicsDebug<Terrain, &Terrain::DrawPhysicsDebug>(this);
 #endif
@@ -844,7 +841,7 @@ void Terrain::OnLayerChanged()
 
     UpdateLayerBits();
     if (_sceneRenderingKey != -1)
-        GetSceneRendering()->UpdateActor(this, _sceneRenderingKey);
+        GetSceneRendering()->UpdateActor(this, _sceneRenderingKey, SceneRendering::SceneDrawAsync);
 }
 
 void Terrain::OnActiveInTreeChanged()

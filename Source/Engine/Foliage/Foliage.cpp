@@ -638,7 +638,7 @@ void Foliage::OnFoliageTypeModelLoaded(int32 index)
         }
         BoundingSphere::FromBox(_box, _sphere);
         if (_sceneRenderingKey != -1)
-            GetSceneRendering()->UpdateActor(this, _sceneRenderingKey);
+            GetSceneRendering()->UpdateActor(this, _sceneRenderingKey, SceneRendering::SceneDrawAsync);
     }
     {
         PROFILE_CPU_NAMED("Create Clusters");
@@ -685,7 +685,7 @@ void Foliage::RebuildClusters()
         _box = BoundingBox(_transform.Translation, _transform.Translation);
         _sphere = BoundingSphere(_transform.Translation, 0.0f);
         if (_sceneRenderingKey != -1)
-            GetSceneRendering()->UpdateActor(this, _sceneRenderingKey);
+            GetSceneRendering()->UpdateActor(this, _sceneRenderingKey, SceneRendering::SceneDrawAsync);
         return;
     }
 
@@ -775,7 +775,7 @@ void Foliage::RebuildClusters()
         _box = totalBounds;
         BoundingSphere::FromBox(_box, _sphere);
         if (_sceneRenderingKey != -1)
-            GetSceneRendering()->UpdateActor(this, _sceneRenderingKey);
+            GetSceneRendering()->UpdateActor(this, _sceneRenderingKey, SceneRendering::SceneDrawAsync);
     }
 
     // Insert all instances to the clusters
@@ -1129,8 +1129,29 @@ void Foliage::Draw(RenderContext& renderContext)
                 batch.DrawCall.Surface.Skinning = nullptr;
                 batch.DrawCall.WorldDeterminantSign = 1;
 
-                const int32 batchIndex = renderContext.List->BatchedDrawCalls.Count();
-                renderContext.List->BatchedDrawCalls.Add(MoveTemp(batch));
+                if (drawModes & DrawPass::Forward)
+                {
+                    // Transparency requires sorting by depth so convert back the batched draw call into normal draw calls (RenderList impl will handle this)
+                    DrawCall drawCall = batch.DrawCall;
+                    for (int32 j = 0; j < batch.Instances.Count(); j++)
+                    {
+                        auto& instance = batch.Instances[j];
+                        drawCall.ObjectPosition = instance.InstanceOrigin;
+                        drawCall.PerInstanceRandom = instance.PerInstanceRandom;
+                        lightmapArea = instance.InstanceLightmapArea.ToFloat4();
+                        drawCall.Surface.LightmapUVsArea = *(Rectangle*)&lightmapArea;
+                        drawCall.Surface.LODDitherFactor = instance.LODDitherFactor;
+                        drawCall.World.SetRow1(Float4(instance.InstanceTransform1, 0.0f));
+                        drawCall.World.SetRow2(Float4(instance.InstanceTransform2, 0.0f));
+                        drawCall.World.SetRow3(Float4(instance.InstanceTransform3, 0.0f));
+                        drawCall.World.SetRow4(Float4(instance.InstanceOrigin, 1.0f));
+                        const int32 drawCallIndex = renderContext.List->DrawCalls.Add(drawCall);
+                        renderContext.List->DrawCallsLists[(int32)DrawCallsListType::Forward].Indices.Add(drawCallIndex);
+                    }
+                }
+
+                // Add draw call batch
+                const int32 batchIndex = renderContext.List->BatchedDrawCalls.Add(MoveTemp(batch));
 
                 // Add draw call to proper draw lists
                 if (drawModes & DrawPass::Depth)
@@ -1151,28 +1172,6 @@ void Foliage::Draw(RenderContext& renderContext)
                 if (drawModes & DrawPass::MotionVectors && (_staticFlags & StaticFlags::Transform) == 0)
                 {
                     renderContext.List->DrawCallsLists[(int32)DrawCallsListType::MotionVectors].PreBatchedDrawCalls.Add(batchIndex);
-                }
-                if (drawModes & DrawPass::Forward)
-                {
-                    // Transparency requires sorting by depth so convert back the batched draw call into normal draw calls (RenderList impl will handle this)
-                    batch = renderContext.List->BatchedDrawCalls[batchIndex];
-                    DrawCall drawCall = batch.DrawCall;
-                    for (int32 j = 0; j < batch.Instances.Count(); j++)
-                    {
-                        auto& instance = batch.Instances[j];
-                        drawCall.ObjectPosition = instance.InstanceOrigin;
-                        drawCall.PerInstanceRandom = instance.PerInstanceRandom;
-                        lightmapArea = instance.InstanceLightmapArea.ToFloat4();
-                        drawCall.Surface.LightmapUVsArea = *(Rectangle*)&lightmapArea;
-                        drawCall.Surface.LODDitherFactor = instance.LODDitherFactor;
-                        drawCall.World.SetRow1(Float4(instance.InstanceTransform1, 0.0f));
-                        drawCall.World.SetRow2(Float4(instance.InstanceTransform2, 0.0f));
-                        drawCall.World.SetRow3(Float4(instance.InstanceTransform3, 0.0f));
-                        drawCall.World.SetRow4(Float4(instance.InstanceOrigin, 1.0f));
-                        const int32 drawCallIndex = renderContext.List->DrawCalls.Count();
-                        renderContext.List->DrawCalls.Add(drawCall);
-                        renderContext.List->DrawCallsLists[(int32)DrawCallsListType::Forward].Indices.Add(drawCallIndex);
-                    }
                 }
             }
 #else
@@ -1399,12 +1398,12 @@ void Foliage::Deserialize(DeserializeStream& stream, ISerializeModifier* modifie
 void Foliage::OnLayerChanged()
 {
     if (_sceneRenderingKey != -1)
-        GetSceneRendering()->UpdateActor(this, _sceneRenderingKey);
+        GetSceneRendering()->UpdateActor(this, _sceneRenderingKey, SceneRendering::SceneDrawAsync);
 }
 
 void Foliage::OnEnable()
 {
-    GetSceneRendering()->AddActor(this, _sceneRenderingKey);
+    GetSceneRendering()->AddActor(this, _sceneRenderingKey, SceneRendering::SceneDrawAsync);
 
     // Base
     Actor::OnEnable();
@@ -1412,7 +1411,7 @@ void Foliage::OnEnable()
 
 void Foliage::OnDisable()
 {
-    GetSceneRendering()->RemoveActor(this, _sceneRenderingKey);
+    GetSceneRendering()->RemoveActor(this, _sceneRenderingKey, SceneRendering::SceneDrawAsync);
 
     // Base
     Actor::OnDisable();

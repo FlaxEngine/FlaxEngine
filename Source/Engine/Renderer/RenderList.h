@@ -242,7 +242,7 @@ struct DrawCallsList
     /// <summary>
     /// The list of external draw calls indices to render.
     /// </summary>
-    Array<int32> PreBatchedDrawCalls;
+    ConcurrentArray<int32> PreBatchedDrawCalls;
 
     /// <summary>
     /// The draw calls batches (for instancing).
@@ -296,7 +296,7 @@ public:
     /// <summary>
     /// Draw calls list with pre-batched instances (for all draw passes).
     /// </summary>
-    Array<BatchedDrawCall> BatchedDrawCalls;
+    ConcurrentArray<BatchedDrawCall> BatchedDrawCalls;
 
     /// <summary>
     /// The draw calls lists. Each for the separate draw pass.
