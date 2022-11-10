@@ -47,8 +47,6 @@ API_CLASS(Sealed, NoSpawn) class FLAXENGINE_API FoliageType : public ScriptingOb
     friend Foliage;
 private:
     int8 _isReady : 1;
-    int8 _canDraw : 1; // Cached and used internally by foliage actor
-    DrawPass _drawModes; // Cached mask during rendering
 
 public:
     /// <summary>

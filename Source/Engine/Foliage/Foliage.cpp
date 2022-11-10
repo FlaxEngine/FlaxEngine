@@ -7,10 +7,13 @@
 #include "Engine/Core/Random.h"
 #include "Engine/Engine/Engine.h"
 #include "Engine/Graphics/RenderTask.h"
-#if !FOLIAGE_USE_SINGLE_QUAD_TREE && FOLIAGE_USE_DRAW_CALLS_BATCHING
+#if !FOLIAGE_USE_SINGLE_QUAD_TREE
+#include "Engine/Threading/JobSystem.h"
+#if FOLIAGE_USE_DRAW_CALLS_BATCHING
 #include "Engine/Graphics/RenderTools.h"
 #include "Engine/Graphics/GPUDevice.h"
 #include "Engine/Renderer/RenderList.h"
+#endif
 #endif
 #include "Engine/Level/SceneQuery.h"
 #include "Engine/Profiler/ProfilerCPU.h"
@@ -18,6 +21,16 @@
 #include "Engine/Renderer/GI/GlobalSurfaceAtlasPass.h"
 #include "Engine/Serialization/Serialization.h"
 #include "Engine/Utilities/Encryption.h"
+
+// When using separate quad-tree for each foliage type we can run async job to draw them in separate, otherwise just draw whole foliage in async as one
+#if FOLIAGE_USE_SINGLE_QUAD_TREE
+#define FOLIAGE_SCENE_DRAW_CATEGORY SceneRendering::SceneDrawAsync
+#else
+#define FOLIAGE_SCENE_DRAW_CATEGORY SceneRendering::SceneDraw
+#endif
+
+#define FOLIAGE_GET_DRAW_MODES(renderContext, type) static_cast<DrawPass>(type.DrawModes & renderContext.View.Pass & (int32)renderContext.View.GetShadowsDrawPassMask(type.ShadowsMode))
+#define FOLIAGE_CAN_DRAW(renderContext, type) (type.IsReady() && FOLIAGE_GET_DRAW_MODES(renderContext, type) != DrawPass::None && type.Model->CanBeRendered())
 
 Foliage::Foliage(const SpawnParams& params)
     : Actor(params)
@@ -83,7 +96,7 @@ void Foliage::AddToCluster(ChunkedArray<FoliageCluster, FOLIAGE_CLUSTER_CHUNKS_S
 
 #if !FOLIAGE_USE_SINGLE_QUAD_TREE && FOLIAGE_USE_DRAW_CALLS_BATCHING
 
-void Foliage::DrawInstance(RenderContext& renderContext, FoliageInstance& instance, FoliageType& type, Model* model, int32 lod, float lodDitherFactor, DrawCallsList* drawCallsLists, BatchedDrawCalls& result) const
+void Foliage::DrawInstance(RenderContext& renderContext, FoliageInstance& instance, const FoliageType& type, Model* model, int32 lod, float lodDitherFactor, DrawCallsList* drawCallsLists, BatchedDrawCalls& result) const
 {
     const auto& meshes = model->LODs.Get()[lod].Meshes;
     for (int32 meshIndex = 0; meshIndex < meshes.Count(); meshIndex++)
@@ -100,6 +113,7 @@ void Foliage::DrawInstance(RenderContext& renderContext, FoliageInstance& instan
         if (!e)
         {
             e = &result[key];
+            ASSERT_LOW_LAYER(key.Mat);
             e->DrawCall.Material = key.Mat;
             e->DrawCall.Surface.Lightmap = _staticFlags & StaticFlags::Lightmap ? _scene->LightmapsData.GetReadyLightmap(key.Lightmap) : nullptr;
         }
@@ -120,7 +134,7 @@ void Foliage::DrawInstance(RenderContext& renderContext, FoliageInstance& instan
     }
 }
 
-void Foliage::DrawCluster(RenderContext& renderContext, FoliageCluster* cluster, FoliageType& type, DrawCallsList* drawCallsLists, BatchedDrawCalls& result) const
+void Foliage::DrawCluster(RenderContext& renderContext, FoliageCluster* cluster, const FoliageType& type, DrawCallsList* drawCallsLists, BatchedDrawCalls& result) const
 {
     // Skip clusters that around too far from view
     const Vector3 viewOrigin = renderContext.View.Origin;
@@ -324,7 +338,7 @@ void Foliage::DrawCluster(RenderContext& renderContext, FoliageCluster* cluster,
 
 #if !FOLIAGE_USE_SINGLE_QUAD_TREE
 
-void Foliage::DrawClusterGlobalSDF(class GlobalSignDistanceFieldPass* globalSDF, const BoundingBox& globalSDFBounds, FoliageCluster* cluster, FoliageType& type)
+void Foliage::DrawClusterGlobalSDF(class GlobalSignDistanceFieldPass* globalSDF, const BoundingBox& globalSDFBounds, FoliageCluster* cluster, const FoliageType& type)
 {
     if (cluster->Children[0])
     {
@@ -355,7 +369,7 @@ void Foliage::DrawClusterGlobalSDF(class GlobalSignDistanceFieldPass* globalSDF,
     }
 }
 
-void Foliage::DrawClusterGlobalSA(GlobalSurfaceAtlasPass* globalSA, const Vector4& cullingPosDistance, FoliageCluster* cluster, FoliageType& type, const BoundingBox& localBounds)
+void Foliage::DrawClusterGlobalSA(GlobalSurfaceAtlasPass* globalSA, const Vector4& cullingPosDistance, FoliageCluster* cluster, const FoliageType& type, const BoundingBox& localBounds)
 {
     if (cluster->Children[0])
     {
@@ -384,7 +398,150 @@ void Foliage::DrawClusterGlobalSA(GlobalSurfaceAtlasPass* globalSA, const Vector
     }
 }
 
+void Foliage::DrawFoliageJob(int32 i)
+{
+    PROFILE_CPU();
+    const FoliageType& type = FoliageTypes[i];
+    if (type.IsReady() && type.Model->CanBeRendered())
+    {
+        DrawCallsList drawCallsLists[MODEL_MAX_LODS];
+        for (RenderContext& renderContext : _renderContextBatch->Contexts)
+            DrawType(renderContext, type, drawCallsLists);
+    }
+}
+
 #endif
+
+void Foliage::DrawType(RenderContext& renderContext, const FoliageType& type, DrawCallsList* drawCallsLists)
+{
+    if (!type.Root || !FOLIAGE_CAN_DRAW(renderContext, type))
+        return;
+    const DrawPass typeDrawModes = FOLIAGE_GET_DRAW_MODES(renderContext, type);
+    PROFILE_CPU_ASSET(type.Model);
+#if FOLIAGE_USE_DRAW_CALLS_BATCHING
+    // Initialize draw calls for foliage type all LODs meshes
+    for (int32 lod = 0; lod < type.Model->LODs.Count(); lod++)
+    {
+        auto& modelLod = type.Model->LODs[lod];
+        DrawCallsList& drawCallsList = drawCallsLists[lod];
+        const auto& meshes = modelLod.Meshes;
+        drawCallsList.Resize(meshes.Count());
+        for (int32 meshIndex = 0; meshIndex < meshes.Count(); meshIndex++)
+        {
+            const auto& mesh = meshes.Get()[meshIndex];
+            auto& drawCall = drawCallsList.Get()[meshIndex];
+            drawCall.DrawCall.Material = nullptr;
+
+            // Check entry visibility
+            const auto& entry = type.Entries[mesh.GetMaterialSlotIndex()];
+            if (!entry.Visible || !mesh.IsInitialized())
+                continue;
+            const MaterialSlot& slot = type.Model->MaterialSlots[mesh.GetMaterialSlotIndex()];
+
+            // Select material
+            MaterialBase* material;
+            if (entry.Material && entry.Material->IsLoaded())
+                material = entry.Material;
+            else if (slot.Material && slot.Material->IsLoaded())
+                material = slot.Material;
+            else
+                material = GPUDevice::Instance->GetDefaultMaterial();
+            if (!material || !material->IsSurface())
+                continue;
+
+            // Select draw modes
+            const auto shadowsMode = static_cast<ShadowsCastingMode>(entry.ShadowsMode & slot.ShadowsMode);
+            const auto drawModes = static_cast<DrawPass>(typeDrawModes & renderContext.View.GetShadowsDrawPassMask(shadowsMode)) & material->GetDrawModes();
+            if (drawModes == 0)
+                continue;
+
+            drawCall.DrawCall.Material = material;
+        }
+    }
+
+    // Draw instances of the foliage type
+    BatchedDrawCalls result;
+    DrawCluster(renderContext, type.Root, type, drawCallsLists, result);
+
+    // Submit draw calls with valid instances added
+    for (auto& e : result)
+    {
+        auto& batch = e.Value;
+        if (batch.Instances.IsEmpty())
+            continue;
+        const auto& mesh = *e.Key.Geo;
+        const auto& entry = type.Entries[mesh.GetMaterialSlotIndex()];
+        const MaterialSlot& slot = type.Model->MaterialSlots[mesh.GetMaterialSlotIndex()];
+        const auto shadowsMode = static_cast<ShadowsCastingMode>(entry.ShadowsMode & slot.ShadowsMode);
+        const auto drawModes = (DrawPass)(static_cast<DrawPass>(typeDrawModes & renderContext.View.GetShadowsDrawPassMask(shadowsMode)) & batch.DrawCall.Material->GetDrawModes());
+
+        // Setup draw call
+        mesh.GetDrawCallGeometry(batch.DrawCall);
+        batch.DrawCall.InstanceCount = 1;
+        auto& firstInstance = batch.Instances[0];
+        batch.DrawCall.ObjectPosition = firstInstance.InstanceOrigin;
+        batch.DrawCall.PerInstanceRandom = firstInstance.PerInstanceRandom;
+        auto lightmapArea = firstInstance.InstanceLightmapArea.ToFloat4();
+        batch.DrawCall.Surface.LightmapUVsArea = *(Rectangle*)&lightmapArea;
+        batch.DrawCall.Surface.LODDitherFactor = firstInstance.LODDitherFactor;
+        batch.DrawCall.World.SetRow1(Float4(firstInstance.InstanceTransform1, 0.0f));
+        batch.DrawCall.World.SetRow2(Float4(firstInstance.InstanceTransform2, 0.0f));
+        batch.DrawCall.World.SetRow3(Float4(firstInstance.InstanceTransform3, 0.0f));
+        batch.DrawCall.World.SetRow4(Float4(firstInstance.InstanceOrigin, 1.0f));
+        batch.DrawCall.Surface.PrevWorld = batch.DrawCall.World;
+        batch.DrawCall.Surface.GeometrySize = mesh.GetBox().GetSize();
+        batch.DrawCall.Surface.Skinning = nullptr;
+        batch.DrawCall.WorldDeterminantSign = 1;
+
+        if (drawModes & DrawPass::Forward)
+        {
+            // Transparency requires sorting by depth so convert back the batched draw call into normal draw calls (RenderList impl will handle this)
+            DrawCall drawCall = batch.DrawCall;
+            for (int32 j = 0; j < batch.Instances.Count(); j++)
+            {
+                auto& instance = batch.Instances[j];
+                drawCall.ObjectPosition = instance.InstanceOrigin;
+                drawCall.PerInstanceRandom = instance.PerInstanceRandom;
+                lightmapArea = instance.InstanceLightmapArea.ToFloat4();
+                drawCall.Surface.LightmapUVsArea = *(Rectangle*)&lightmapArea;
+                drawCall.Surface.LODDitherFactor = instance.LODDitherFactor;
+                drawCall.World.SetRow1(Float4(instance.InstanceTransform1, 0.0f));
+                drawCall.World.SetRow2(Float4(instance.InstanceTransform2, 0.0f));
+                drawCall.World.SetRow3(Float4(instance.InstanceTransform3, 0.0f));
+                drawCall.World.SetRow4(Float4(instance.InstanceOrigin, 1.0f));
+                const int32 drawCallIndex = renderContext.List->DrawCalls.Add(drawCall);
+                renderContext.List->DrawCallsLists[(int32)DrawCallsListType::Forward].Indices.Add(drawCallIndex);
+            }
+        }
+
+        // Add draw call batch
+        const int32 batchIndex = renderContext.List->BatchedDrawCalls.Add(MoveTemp(batch));
+
+        // Add draw call to proper draw lists
+        if (drawModes & DrawPass::Depth)
+        {
+            renderContext.List->DrawCallsLists[(int32)DrawCallsListType::Depth].PreBatchedDrawCalls.Add(batchIndex);
+        }
+        if (drawModes & DrawPass::GBuffer)
+        {
+            if (entry.ReceiveDecals)
+                renderContext.List->DrawCallsLists[(int32)DrawCallsListType::GBuffer].PreBatchedDrawCalls.Add(batchIndex);
+            else
+                renderContext.List->DrawCallsLists[(int32)DrawCallsListType::GBufferNoDecals].PreBatchedDrawCalls.Add(batchIndex);
+        }
+        if (drawModes & DrawPass::Distortion)
+        {
+            renderContext.List->DrawCallsLists[(int32)DrawCallsListType::Distortion].PreBatchedDrawCalls.Add(batchIndex);
+        }
+        if (drawModes & DrawPass::MotionVectors && (_staticFlags & StaticFlags::Transform) == 0)
+        {
+            renderContext.List->DrawCallsLists[(int32)DrawCallsListType::MotionVectors].PreBatchedDrawCalls.Add(batchIndex);
+        }
+    }
+#else
+    DrawCluster(renderContext, type.Root, draw);
+#endif
+}
 
 int32 Foliage::GetInstancesCount() const
 {
@@ -638,7 +795,7 @@ void Foliage::OnFoliageTypeModelLoaded(int32 index)
         }
         BoundingSphere::FromBox(_box, _sphere);
         if (_sceneRenderingKey != -1)
-            GetSceneRendering()->UpdateActor(this, _sceneRenderingKey, SceneRendering::SceneDrawAsync);
+            GetSceneRendering()->UpdateActor(this, _sceneRenderingKey, FOLIAGE_SCENE_DRAW_CATEGORY);
     }
     {
         PROFILE_CPU_NAMED("Create Clusters");
@@ -685,7 +842,7 @@ void Foliage::RebuildClusters()
         _box = BoundingBox(_transform.Translation, _transform.Translation);
         _sphere = BoundingSphere(_transform.Translation, 0.0f);
         if (_sceneRenderingKey != -1)
-            GetSceneRendering()->UpdateActor(this, _sceneRenderingKey, SceneRendering::SceneDrawAsync);
+            GetSceneRendering()->UpdateActor(this, _sceneRenderingKey, FOLIAGE_SCENE_DRAW_CATEGORY);
         return;
     }
 
@@ -775,7 +932,7 @@ void Foliage::RebuildClusters()
         _box = totalBounds;
         BoundingSphere::FromBox(_box, _sphere);
         if (_sceneRenderingKey != -1)
-            GetSceneRendering()->UpdateActor(this, _sceneRenderingKey, SceneRendering::SceneDrawAsync);
+            GetSceneRendering()->UpdateActor(this, _sceneRenderingKey, FOLIAGE_SCENE_DRAW_CATEGORY);
     }
 
     // Insert all instances to the clusters
@@ -927,22 +1084,16 @@ void Foliage::Draw(RenderContext& renderContext)
     if (Instances.IsEmpty())
         return;
     PROFILE_CPU();
-    auto& view = renderContext.View;
+    const RenderView& view = renderContext.View;
 
     // Cache data per foliage instance type
     for (auto& type : FoliageTypes)
     {
-        const auto drawModes = static_cast<DrawPass>(type.DrawModes & view.Pass & (int32)view.GetShadowsDrawPassMask(type.ShadowsMode));
-        type._canDraw = type.IsReady() && drawModes != DrawPass::None;
-        type._drawModes = drawModes;
-        if (type._canDraw)
+        for (int32 j = 0; j < type.Entries.Count(); j++)
         {
-            for (int32 j = 0; j < type.Entries.Count(); j++)
-            {
-                auto& e = type.Entries[j];
-                e.ReceiveDecals = type.ReceiveDecals != 0;
-                e.ShadowsMode = type.ShadowsMode;
-            }
+            auto& e = type.Entries[j];
+            e.ReceiveDecals = type.ReceiveDecals != 0;
+            e.ShadowsMode = type.ShadowsMode;
         }
     }
 
@@ -967,7 +1118,7 @@ void Foliage::Draw(RenderContext& renderContext)
 #else
         for (auto& type : FoliageTypes)
         {
-            if (type._canDraw && type.Root)
+            if (type.Root && FOLIAGE_CAN_DRAW(renderContext, type))
                 DrawClusterGlobalSDF(globalSDF, globalSDFBounds, type.Root, type);
         }
 #endif
@@ -995,7 +1146,7 @@ void Foliage::Draw(RenderContext& renderContext)
 #else
         for (auto& type : FoliageTypes)
         {
-            if (type._canDraw && type.Root)
+            if (type.Root && FOLIAGE_CAN_DRAW(renderContext, type))
             {
                 BoundingBox localBounds = type.Model->LODs.Last().GetBox();
                 DrawClusterGlobalSA(globalSA, cullingPosDistance, type.Root, type, localBounds);
@@ -1052,134 +1203,44 @@ void Foliage::Draw(RenderContext& renderContext)
 #else
     for (auto& type : FoliageTypes)
     {
-        if (type.Root && type._canDraw && type.Model->CanBeRendered())
-        {
-#if FOLIAGE_USE_DRAW_CALLS_BATCHING
-            // Initialize draw calls for foliage type all LODs meshes
-            for (int32 lod = 0; lod < type.Model->LODs.Count(); lod++)
-            {
-                auto& modelLod = type.Model->LODs[lod];
-                DrawCallsList& drawCallsList = drawCallsLists[lod];
-                const auto& meshes = modelLod.Meshes;
-                drawCallsList.Resize(meshes.Count());
-                for (int32 meshIndex = 0; meshIndex < meshes.Count(); meshIndex++)
-                {
-                    const auto& mesh = meshes[meshIndex];
-                    auto& drawCall = drawCallsList[meshIndex];
-                    drawCall.DrawCall.Material = nullptr;
-
-                    // Check entry visibility
-                    const auto& entry = type.Entries[mesh.GetMaterialSlotIndex()];
-                    if (!entry.Visible || !mesh.IsInitialized())
-                        continue;
-                    const MaterialSlot& slot = type.Model->MaterialSlots[mesh.GetMaterialSlotIndex()];
-
-                    // Select material
-                    MaterialBase* material;
-                    if (entry.Material && entry.Material->IsLoaded())
-                        material = entry.Material;
-                    else if (slot.Material && slot.Material->IsLoaded())
-                        material = slot.Material;
-                    else
-                        material = GPUDevice::Instance->GetDefaultMaterial();
-                    if (!material || !material->IsSurface())
-                        continue;
-
-                    // Select draw modes
-                    const auto shadowsMode = static_cast<ShadowsCastingMode>(entry.ShadowsMode & slot.ShadowsMode);
-                    const auto drawModes = static_cast<DrawPass>(type._drawModes & renderContext.View.GetShadowsDrawPassMask(shadowsMode)) & material->GetDrawModes();
-                    if (drawModes == 0)
-                        continue;
-
-                    drawCall.DrawCall.Material = material;
-                }
-            }
-
-            // Draw instances of the foliage type
-            BatchedDrawCalls result;
-            DrawCluster(renderContext, type.Root, type, drawCallsLists, result);
-
-            // Submit draw calls with valid instances added
-            for (auto& e : result)
-            {
-                auto& batch = e.Value;
-                if (batch.Instances.IsEmpty())
-                    continue;
-                const auto& mesh = *e.Key.Geo;
-                const auto& entry = type.Entries[mesh.GetMaterialSlotIndex()];
-                const MaterialSlot& slot = type.Model->MaterialSlots[mesh.GetMaterialSlotIndex()];
-                const auto shadowsMode = static_cast<ShadowsCastingMode>(entry.ShadowsMode & slot.ShadowsMode);
-                const auto drawModes = (DrawPass)(static_cast<DrawPass>(type._drawModes & renderContext.View.GetShadowsDrawPassMask(shadowsMode)) & batch.DrawCall.Material->GetDrawModes());
-
-                // Setup draw call
-                mesh.GetDrawCallGeometry(batch.DrawCall);
-                batch.DrawCall.InstanceCount = 1;
-                auto& firstInstance = batch.Instances[0];
-                batch.DrawCall.ObjectPosition = firstInstance.InstanceOrigin;
-                batch.DrawCall.PerInstanceRandom = firstInstance.PerInstanceRandom;
-                auto lightmapArea = firstInstance.InstanceLightmapArea.ToFloat4();
-                batch.DrawCall.Surface.LightmapUVsArea = *(Rectangle*)&lightmapArea;
-                batch.DrawCall.Surface.LODDitherFactor = firstInstance.LODDitherFactor;
-                batch.DrawCall.World.SetRow1(Float4(firstInstance.InstanceTransform1, 0.0f));
-                batch.DrawCall.World.SetRow2(Float4(firstInstance.InstanceTransform2, 0.0f));
-                batch.DrawCall.World.SetRow3(Float4(firstInstance.InstanceTransform3, 0.0f));
-                batch.DrawCall.World.SetRow4(Float4(firstInstance.InstanceOrigin, 1.0f));
-                batch.DrawCall.Surface.PrevWorld = batch.DrawCall.World;
-                batch.DrawCall.Surface.GeometrySize = mesh.GetBox().GetSize();
-                batch.DrawCall.Surface.Skinning = nullptr;
-                batch.DrawCall.WorldDeterminantSign = 1;
-
-                if (drawModes & DrawPass::Forward)
-                {
-                    // Transparency requires sorting by depth so convert back the batched draw call into normal draw calls (RenderList impl will handle this)
-                    DrawCall drawCall = batch.DrawCall;
-                    for (int32 j = 0; j < batch.Instances.Count(); j++)
-                    {
-                        auto& instance = batch.Instances[j];
-                        drawCall.ObjectPosition = instance.InstanceOrigin;
-                        drawCall.PerInstanceRandom = instance.PerInstanceRandom;
-                        lightmapArea = instance.InstanceLightmapArea.ToFloat4();
-                        drawCall.Surface.LightmapUVsArea = *(Rectangle*)&lightmapArea;
-                        drawCall.Surface.LODDitherFactor = instance.LODDitherFactor;
-                        drawCall.World.SetRow1(Float4(instance.InstanceTransform1, 0.0f));
-                        drawCall.World.SetRow2(Float4(instance.InstanceTransform2, 0.0f));
-                        drawCall.World.SetRow3(Float4(instance.InstanceTransform3, 0.0f));
-                        drawCall.World.SetRow4(Float4(instance.InstanceOrigin, 1.0f));
-                        const int32 drawCallIndex = renderContext.List->DrawCalls.Add(drawCall);
-                        renderContext.List->DrawCallsLists[(int32)DrawCallsListType::Forward].Indices.Add(drawCallIndex);
-                    }
-                }
-
-                // Add draw call batch
-                const int32 batchIndex = renderContext.List->BatchedDrawCalls.Add(MoveTemp(batch));
-
-                // Add draw call to proper draw lists
-                if (drawModes & DrawPass::Depth)
-                {
-                    renderContext.List->DrawCallsLists[(int32)DrawCallsListType::Depth].PreBatchedDrawCalls.Add(batchIndex);
-                }
-                if (drawModes & DrawPass::GBuffer)
-                {
-                    if (entry.ReceiveDecals)
-                        renderContext.List->DrawCallsLists[(int32)DrawCallsListType::GBuffer].PreBatchedDrawCalls.Add(batchIndex);
-                    else
-                        renderContext.List->DrawCallsLists[(int32)DrawCallsListType::GBufferNoDecals].PreBatchedDrawCalls.Add(batchIndex);
-                }
-                if (drawModes & DrawPass::Distortion)
-                {
-                    renderContext.List->DrawCallsLists[(int32)DrawCallsListType::Distortion].PreBatchedDrawCalls.Add(batchIndex);
-                }
-                if (drawModes & DrawPass::MotionVectors && (_staticFlags & StaticFlags::Transform) == 0)
-                {
-                    renderContext.List->DrawCallsLists[(int32)DrawCallsListType::MotionVectors].PreBatchedDrawCalls.Add(batchIndex);
-                }
-            }
-#else
-            DrawCluster(renderContext, type.Root, draw);
-#endif
-        }
+        DrawType(renderContext, type, drawCallsLists);
     }
 #endif
+}
+
+void Foliage::Draw(RenderContextBatch& renderContextBatch)
+{
+    if (Instances.IsEmpty())
+        return;
+
+#if !FOLIAGE_USE_SINGLE_QUAD_TREE
+    // Run async job for each foliage type
+    const RenderView& view = renderContextBatch.GetMainContext().View;
+    if ((view.Pass & DrawPass::GBuffer) && !(view.Pass & (DrawPass::GlobalSDF | DrawPass::GlobalSurfaceAtlas)))
+    {
+        // Cache data per foliage instance type
+        for (FoliageType& type : FoliageTypes)
+        {
+            for (int32 j = 0; j < type.Entries.Count(); j++)
+            {
+                auto& e = type.Entries[j];
+                e.ReceiveDecals = type.ReceiveDecals != 0;
+                e.ShadowsMode = type.ShadowsMode;
+            }
+        }
+
+        // Run async job for each foliage type
+        _renderContextBatch = &renderContextBatch;
+        Function<void(int32)> func;
+        func.Bind<Foliage, &Foliage::DrawFoliageJob>(this);
+        const uint64 waitLabel = JobSystem::Dispatch(func, FoliageTypes.Count());
+        renderContextBatch.WaitLabels.Add(waitLabel);
+        return;
+    }
+#endif
+
+    // Fallback to default rendering
+    Actor::Draw(renderContextBatch);
 }
 
 bool Foliage::IntersectsItself(const Ray& ray, Real& distance, Vector3& normal)
@@ -1398,12 +1459,12 @@ void Foliage::Deserialize(DeserializeStream& stream, ISerializeModifier* modifie
 void Foliage::OnLayerChanged()
 {
     if (_sceneRenderingKey != -1)
-        GetSceneRendering()->UpdateActor(this, _sceneRenderingKey, SceneRendering::SceneDrawAsync);
+        GetSceneRendering()->UpdateActor(this, _sceneRenderingKey, FOLIAGE_SCENE_DRAW_CATEGORY);
 }
 
 void Foliage::OnEnable()
 {
-    GetSceneRendering()->AddActor(this, _sceneRenderingKey, SceneRendering::SceneDrawAsync);
+    GetSceneRendering()->AddActor(this, _sceneRenderingKey, FOLIAGE_SCENE_DRAW_CATEGORY);
 
     // Base
     Actor::OnEnable();
@@ -1411,7 +1472,7 @@ void Foliage::OnEnable()
 
 void Foliage::OnDisable()
 {
-    GetSceneRendering()->RemoveActor(this, _sceneRenderingKey, SceneRendering::SceneDrawAsync);
+    GetSceneRendering()->RemoveActor(this, _sceneRenderingKey, FOLIAGE_SCENE_DRAW_CATEGORY);
 
     // Base
     Actor::OnDisable();

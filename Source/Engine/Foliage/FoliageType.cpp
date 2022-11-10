@@ -12,7 +12,6 @@ FoliageType::FoliageType()
     , Index(-1)
 {
     _isReady = 0;
-    _canDraw = 0;
 
     ReceiveDecals = true;
     UseDensityScaling = false;
