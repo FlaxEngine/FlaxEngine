@@ -81,6 +81,20 @@ namespace FlaxEditor.GUI
 
         private bool IsInputValid => !string.IsNullOrWhiteSpace(_inputField.Text) && (_inputField.Text == _startValue || Validate == null || Validate(this, _inputField.Text));
 
+        /// <inheritdoc />
+        public override void Update(float deltaTime)
+        {
+            var mouseLocation = Root.MousePosition;
+            if (!ContainsPoint(ref mouseLocation) && RootWindow.ContainsFocus && Text != _startValue)
+            {
+                // rename item before closing if left mouse button in clicked
+                if (FlaxEngine.Input.GetMouseButton(MouseButton.Left))
+                    OnEnd();
+            }
+
+            base.Update(deltaTime);
+        }
+
         private void OnTextChanged()
         {
             if (Validate == null)
