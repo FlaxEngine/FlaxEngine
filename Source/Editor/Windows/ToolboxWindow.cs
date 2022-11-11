@@ -100,6 +100,7 @@ namespace FlaxEditor.Windows
 
         private TextBox _searchBox;
         private ContainerControl _groupSearch;
+        private Tabs actorGroups;
 
         /// <summary>
         /// The editor instance.
@@ -117,8 +118,9 @@ namespace FlaxEditor.Windows
             Editor = editor;
             Selected += tab => Editor.Windows.EditWin.Viewport.SetActiveMode<TransformGizmoMode>();
             ScriptsBuilder.ScriptsReload += OnScriptsReload;
+            ScriptsBuilder.ScriptsReloadEnd += OnScriptsReloadEnd;
 
-            var actorGroups = new Tabs
+            actorGroups = new Tabs
             {
                 Orientation = Orientation.Vertical,
                 UseScroll = true,
@@ -127,7 +129,19 @@ namespace FlaxEditor.Windows
                 TabsSize = new Float2(120, 32),
                 Parent = this,
             };
+            
+            _groupSearch = CreateGroupWithList(actorGroups, "Search", 26);
+            _searchBox = new TextBox
+            {
+                AnchorPreset = AnchorPresets.HorizontalStretchTop,
+                WatermarkText = "Search...",
+                Parent = _groupSearch.Parent.Parent,
+                Bounds = new Rectangle(4, 4, actorGroups.Width - 8, 18),
+            };
+            _searchBox.TextChanged += OnSearchBoxTextChanged;
 
+            RefreshActorTabs();
+/*
             _groupSearch = CreateGroupWithList(actorGroups, "Search", 26);
             _searchBox = new TextBox
             {
@@ -194,7 +208,7 @@ namespace FlaxEditor.Windows
             groupGui.AddChild(CreateActorItem("UI Canvas", typeof(UICanvas)));
             groupGui.AddChild(CreateActorItem("Text Render", typeof(TextRender)));
             groupGui.AddChild(CreateActorItem("Sprite Render", typeof(SpriteRender)));
-
+*/
             actorGroups.SelectedTabIndex = 1;
         }
 
@@ -204,6 +218,94 @@ namespace FlaxEditor.Windows
             _searchBox.Clear();
             _groupSearch.DisposeChildren();
             _groupSearch.PerformLayout();
+        }
+
+        private void OnScriptsReloadEnd()
+        {
+            RefreshActorTabs();
+        }
+
+        private void RefreshActorTabs()
+        {
+            // Remove tabs 
+            List<Tab> tabs = new List<Tab>();
+            foreach (var child in actorGroups.Children)
+            {
+                if (child is Tab tab)
+                {
+                    if (tab.Text != "Search")
+                        tabs.Add(tab);
+                }
+            }
+            
+            foreach (var tab in tabs)
+            {
+                var group = actorGroups.Children.Find(T => T == tab);
+                group.Dispose();
+            }
+            
+            var groupBasicModels = CreateGroupWithList(actorGroups, "Basic Models");
+            groupBasicModels.AddChild(CreateEditorAssetItem("Cube", "Primitives/Cube.flax"));
+            groupBasicModels.AddChild(CreateEditorAssetItem("Sphere", "Primitives/Sphere.flax"));
+            groupBasicModels.AddChild(CreateEditorAssetItem("Plane", "Primitives/Plane.flax"));
+            groupBasicModels.AddChild(CreateEditorAssetItem("Cylinder", "Primitives/Cylinder.flax"));
+            groupBasicModels.AddChild(CreateEditorAssetItem("Cone", "Primitives/Cone.flax"));
+            groupBasicModels.AddChild(CreateEditorAssetItem("Capsule", "Primitives/Capsule.flax"));
+            
+            // Created first to order specific tabs
+            CreateGroupWithList(actorGroups, "Lights");
+            CreateGroupWithList(actorGroups, "Visuals");
+            CreateGroupWithList(actorGroups, "Physics");
+            CreateGroupWithList(actorGroups, "GUI");
+            CreateGroupWithList(actorGroups, "Other");
+            
+            // Add other actor types to respective tab based on attribute
+            foreach (var actorType in Editor.CodeEditing.Actors.Get())
+            {
+                if (actorType.IsAbstract)
+                    continue;
+
+                ActorToolboxAttribute attribute = null;
+                foreach (var e in actorType.GetAttributes(true))
+                {
+                    if (e is ActorToolboxAttribute actorToolboxAttribute)
+                    {
+                        attribute = actorToolboxAttribute;
+                        break;
+                    }
+                }
+
+                if (attribute == null)
+                    continue;
+
+                var groupName = attribute.Group;
+
+                // Check if tab already exists and add it to the tab
+                var actorTabExists = false;
+                foreach (var child in actorGroups.Children)
+                {
+                    if (child is Tab tab)
+                    {
+                        if (tab.Text == groupName)
+                        {
+                            var tree = tab.GetChild<Panel>().GetChild<Tree>();
+                            if (tree != null)
+                            {
+                                tree.AddChild(CreateActorItem(Utilities.Utils.GetPropertyNameUI(actorType.Name), actorType));
+                                tree.SortChildren();
+                            }
+                            actorTabExists = true;
+                            break;
+                        }
+                    }
+                }
+                if (actorTabExists)
+                    continue;
+                
+                var  group = CreateGroupWithList(actorGroups, groupName);
+                group.AddChild(CreateActorItem(Utilities.Utils.GetPropertyNameUI(actorType.Name), actorType));
+                group.SortChildren();
+            }
         }
 
         private void OnSearchBoxTextChanged()

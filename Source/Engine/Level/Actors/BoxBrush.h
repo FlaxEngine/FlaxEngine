@@ -65,7 +65,7 @@ public:
 /// <summary>
 /// Performs CSG box brush operation that adds or removes geometry.
 /// </summary>
-API_CLASS(Attributes="ActorContextMenu(\"New/Other/Box Brush\")") class FLAXENGINE_API BoxBrush : public Actor, public CSG::Brush
+API_CLASS(Attributes="ActorContextMenu(\"New/Other/Box Brush\"), ActorToolbox(\"Other\")") class FLAXENGINE_API BoxBrush : public Actor, public CSG::Brush
 {
     DECLARE_SCENE_OBJECT(BoxBrush);
 private:
