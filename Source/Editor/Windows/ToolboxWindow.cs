@@ -141,74 +141,7 @@ namespace FlaxEditor.Windows
             _searchBox.TextChanged += OnSearchBoxTextChanged;
 
             RefreshActorTabs();
-/*
-            _groupSearch = CreateGroupWithList(actorGroups, "Search", 26);
-            _searchBox = new TextBox
-            {
-                AnchorPreset = AnchorPresets.HorizontalStretchTop,
-                WatermarkText = "Search...",
-                Parent = _groupSearch.Parent.Parent,
-                Bounds = new Rectangle(4, 4, actorGroups.Width - 8, 18),
-            };
-            _searchBox.TextChanged += OnSearchBoxTextChanged;
-
-            var groupBasicModels = CreateGroupWithList(actorGroups, "Basic Models");
-            groupBasicModels.AddChild(CreateEditorAssetItem("Cube", "Primitives/Cube.flax"));
-            groupBasicModels.AddChild(CreateEditorAssetItem("Sphere", "Primitives/Sphere.flax"));
-            groupBasicModels.AddChild(CreateEditorAssetItem("Plane", "Primitives/Plane.flax"));
-            groupBasicModels.AddChild(CreateEditorAssetItem("Cylinder", "Primitives/Cylinder.flax"));
-            groupBasicModels.AddChild(CreateEditorAssetItem("Cone", "Primitives/Cone.flax"));
-            groupBasicModels.AddChild(CreateEditorAssetItem("Capsule", "Primitives/Capsule.flax"));
-
-            var groupLights = CreateGroupWithList(actorGroups, "Lights");
-            groupLights.AddChild(CreateActorItem("Directional Light", typeof(DirectionalLight)));
-            groupLights.AddChild(CreateActorItem("Point Light", typeof(PointLight)));
-            groupLights.AddChild(CreateActorItem("Spot Light", typeof(SpotLight)));
-            groupLights.AddChild(CreateActorItem("Sky Light", typeof(SkyLight)));
-
-            var groupVisuals = CreateGroupWithList(actorGroups, "Visuals");
-            groupVisuals.AddChild(CreateActorItem("Camera", typeof(Camera)));
-            groupVisuals.AddChild(CreateActorItem("Environment Probe", typeof(EnvironmentProbe)));
-            groupVisuals.AddChild(CreateActorItem("Skybox", typeof(Skybox)));
-            groupVisuals.AddChild(CreateActorItem("Sky", typeof(Sky)));
-            groupVisuals.AddChild(CreateActorItem("Exponential Height Fog", typeof(ExponentialHeightFog)));
-            groupVisuals.AddChild(CreateActorItem("PostFx Volume", typeof(PostFxVolume)));
-            groupVisuals.AddChild(CreateActorItem("Decal", typeof(Decal)));
-            groupVisuals.AddChild(CreateActorItem("Particle Effect", typeof(ParticleEffect)));
-
-            var groupPhysics = CreateGroupWithList(actorGroups, "Physics");
-            groupPhysics.AddChild(CreateActorItem("Rigid Body", typeof(RigidBody)));
-            groupPhysics.AddChild(CreateActorItem("Character Controller", typeof(CharacterController)));
-            groupPhysics.AddChild(CreateActorItem("Box Collider", typeof(BoxCollider)));
-            groupPhysics.AddChild(CreateActorItem("Sphere Collider", typeof(SphereCollider)));
-            groupPhysics.AddChild(CreateActorItem("Capsule Collider", typeof(CapsuleCollider)));
-            groupPhysics.AddChild(CreateActorItem("Mesh Collider", typeof(MeshCollider)));
-            groupPhysics.AddChild(CreateActorItem("Fixed Joint", typeof(FixedJoint)));
-            groupPhysics.AddChild(CreateActorItem("Distance Joint", typeof(DistanceJoint)));
-            groupPhysics.AddChild(CreateActorItem("Slider Joint", typeof(SliderJoint)));
-            groupPhysics.AddChild(CreateActorItem("Spherical Joint", typeof(SphericalJoint)));
-            groupPhysics.AddChild(CreateActorItem("Hinge Joint", typeof(HingeJoint)));
-            groupPhysics.AddChild(CreateActorItem("D6 Joint", typeof(D6Joint)));
-
-            var groupOther = CreateGroupWithList(actorGroups, "Other");
-            groupOther.AddChild(CreateActorItem("Animated Model", typeof(AnimatedModel)));
-            groupOther.AddChild(CreateActorItem("Bone Socket", typeof(BoneSocket)));
-            groupOther.AddChild(CreateActorItem("CSG Box Brush", typeof(BoxBrush)));
-            groupOther.AddChild(CreateActorItem("Audio Source", typeof(AudioSource)));
-            groupOther.AddChild(CreateActorItem("Audio Listener", typeof(AudioListener)));
-            groupOther.AddChild(CreateActorItem("Empty Actor", typeof(EmptyActor)));
-            groupOther.AddChild(CreateActorItem("Scene Animation", typeof(SceneAnimationPlayer)));
-            groupOther.AddChild(CreateActorItem("Nav Mesh Bounds Volume", typeof(NavMeshBoundsVolume)));
-            groupOther.AddChild(CreateActorItem("Nav Link", typeof(NavLink)));
-            groupOther.AddChild(CreateActorItem("Nav Modifier Volume", typeof(NavModifierVolume)));
-            groupOther.AddChild(CreateActorItem("Spline", typeof(Spline)));
-
-            var groupGui = CreateGroupWithList(actorGroups, "GUI");
-            groupGui.AddChild(CreateActorItem("UI Control", typeof(UIControl)));
-            groupGui.AddChild(CreateActorItem("UI Canvas", typeof(UICanvas)));
-            groupGui.AddChild(CreateActorItem("Text Render", typeof(TextRender)));
-            groupGui.AddChild(CreateActorItem("Sprite Render", typeof(SpriteRender)));
-*/
+            
             actorGroups.SelectedTabIndex = 1;
         }
 
