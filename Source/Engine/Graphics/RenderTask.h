@@ -472,6 +472,11 @@ API_STRUCT(NoDefault) struct RenderContextBatch
     /// </summary>
     API_FIELD() Array<uint64, InlinedAllocation<8>> WaitLabels;
 
+    /// <summary>
+    /// Enables using async tasks via Job System when performing drawing.
+    /// </summary>
+    API_FIELD() bool EnableAsync = true;
+
     RenderContextBatch() = default;
     RenderContextBatch(SceneRenderTask* task);
     RenderContextBatch(const RenderContext& context);

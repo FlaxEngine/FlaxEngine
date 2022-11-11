@@ -62,7 +62,7 @@ void SceneRendering::Draw(RenderContextBatch& renderContextBatch, DrawCategory c
 
     // Draw all visual components
     _drawListIndex = -1;
-    if (_drawListSize >= 64 && category == SceneDrawAsync)
+    if (_drawListSize >= 64 && category == SceneDrawAsync && renderContextBatch.EnableAsync)
     {
         // Run in async via Job System
         Function<void(int32)> func;

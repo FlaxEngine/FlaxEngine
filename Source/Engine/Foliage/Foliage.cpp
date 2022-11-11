@@ -1216,7 +1216,7 @@ void Foliage::Draw(RenderContextBatch& renderContextBatch)
 #if !FOLIAGE_USE_SINGLE_QUAD_TREE
     // Run async job for each foliage type
     const RenderView& view = renderContextBatch.GetMainContext().View;
-    if ((view.Pass & DrawPass::GBuffer) && !(view.Pass & (DrawPass::GlobalSDF | DrawPass::GlobalSurfaceAtlas)))
+    if ((view.Pass & DrawPass::GBuffer) && !(view.Pass & (DrawPass::GlobalSDF | DrawPass::GlobalSurfaceAtlas)) && renderContextBatch.EnableAsync)
     {
         // Cache data per foliage instance type
         for (FoliageType& type : FoliageTypes)

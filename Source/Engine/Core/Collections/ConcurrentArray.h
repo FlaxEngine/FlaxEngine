@@ -299,7 +299,7 @@ public:
     {
         const int32 count = (int32)Platform::AtomicRead(&_count);
         const int32 capacity = (int32)Platform::AtomicRead(&_capacity);
-        const int32 minCapacity = count + PLATFORM_THREADS_LIMIT; // Ensure there is a room for all threads (eg. all possible threads add item at once)
+        const int32 minCapacity = GetMinCapacity(count);
         if (minCapacity > capacity)
             EnsureCapacity(minCapacity);
         auto ptr = _allocation.Get();
@@ -318,7 +318,7 @@ public:
     {
         const int32 count = (int32)Platform::AtomicRead(&_count);
         const int32 capacity = (int32)Platform::AtomicRead(&_capacity);
-        const int32 minCapacity = count + PLATFORM_THREADS_LIMIT; // Ensure there is a room for all threads (eg. all possible threads add item at once)
+        const int32 minCapacity = GetMinCapacity(count);
         if (minCapacity > capacity)
             EnsureCapacity(minCapacity);
         auto ptr = _allocation.Get();
@@ -326,5 +326,15 @@ public:
         Memory::MoveItems(_allocation.Get() + index, &item, 1);
         ASSERT(ptr == _allocation.Get());
         return index;
+    }
+
+private:
+    FORCE_INLINE static int32 GetMinCapacity(const int32 count)
+    {
+        // Ensure there is a room for all threads (for example if all possible threads add multiple items at once)
+        // It's kind of UB if ConstructItems or MoveItems is short enough for other threads to append multiple items causing resize
+        // Thus increase the minimum slack space for smaller items (eg. int32 indices which are fast to copy)
+        constexpr int32 slack = PLATFORM_THREADS_LIMIT * (sizeof(T) <= 64 ? 16 : (sizeof(T) <= 512 ? 4 : 2));
+        return count + slack;
     }
 };
