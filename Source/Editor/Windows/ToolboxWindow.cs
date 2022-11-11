@@ -199,7 +199,7 @@ namespace FlaxEditor.Windows
                     continue;
 
                 ActorToolboxAttribute attribute = null;
-                foreach (var e in actorType.GetAttributes(true))
+                foreach (var e in actorType.GetAttributes(false))
                 {
                     if (e is ActorToolboxAttribute actorToolboxAttribute)
                     {
