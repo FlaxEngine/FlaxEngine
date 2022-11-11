@@ -13,6 +13,11 @@ namespace FlaxEngine
         /// The path to be used in the tool box
         /// </summary>
         public string Group;
+
+        /// <summary>
+        /// The name to be used for the actor in the tool box. Will default to actor name if now used.
+        /// </summary>
+        public string Name;
         
         /// <summary>
         /// Initializes a new instance of the  <see cref="ActorToolboxAttribute"/> class.
@@ -21,6 +26,17 @@ namespace FlaxEngine
         public ActorToolboxAttribute(string group)
         {
             Group = group;
+        }
+        
+        /// <summary>
+        /// Initializes a new instance of the  <see cref="ActorToolboxAttribute"/> class.
+        /// </summary>
+        /// <param name="group">The group used to creat the tab</param>
+        /// <param name="name">The name to use rather than default</param>
+        public ActorToolboxAttribute(string group, string name)
+        : this(group)
+        {
+            Name = name;
         }
     }
 }

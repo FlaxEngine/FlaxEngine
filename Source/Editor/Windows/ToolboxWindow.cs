@@ -219,12 +219,12 @@ namespace FlaxEditor.Windows
                 {
                     if (child is Tab tab)
                     {
-                        if (tab.Text == groupName)
+                        if (tab.Text == groupName.Trim())
                         {
                             var tree = tab.GetChild<Panel>().GetChild<Tree>();
                             if (tree != null)
                             {
-                                tree.AddChild(CreateActorItem(Utilities.Utils.GetPropertyNameUI(actorType.Name), actorType));
+                                tree.AddChild(string.IsNullOrEmpty(attribute.Name) ? CreateActorItem(Utilities.Utils.GetPropertyNameUI(actorType.Name), actorType) : CreateActorItem(attribute.Name, actorType));
                                 tree.SortChildren();
                             }
                             actorTabExists = true;
@@ -235,8 +235,8 @@ namespace FlaxEditor.Windows
                 if (actorTabExists)
                     continue;
                 
-                var  group = CreateGroupWithList(actorGroups, groupName);
-                group.AddChild(CreateActorItem(Utilities.Utils.GetPropertyNameUI(actorType.Name), actorType));
+                var  group = CreateGroupWithList(actorGroups, groupName.Trim());
+                group.AddChild(string.IsNullOrEmpty(attribute.Name) ? CreateActorItem(Utilities.Utils.GetPropertyNameUI(actorType.Name), actorType) : CreateActorItem(attribute.Name, actorType));
                 group.SortChildren();
             }
         }
@@ -253,7 +253,17 @@ namespace FlaxEditor.Windows
 
             foreach (var actorType in Editor.CodeEditing.Actors.Get())
             {
-                var text = actorType.Name;
+                ActorToolboxAttribute attribute = null;
+                foreach (var e in actorType.GetAttributes(true))
+                {
+                    if (e is ActorToolboxAttribute actorToolboxAttribute)
+                    {
+                        attribute = actorToolboxAttribute;
+                        break;
+                    }
+                }
+
+                var text = (attribute == null) ? actorType.Name : string.IsNullOrEmpty(attribute.Name) ? actorType.Name : attribute.Name;
 
                 if (!QueryFilterHelper.Match(filterText, text, out QueryFilterHelper.Range[] ranges))
                     continue;
