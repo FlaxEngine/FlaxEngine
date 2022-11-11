@@ -88,7 +88,7 @@ namespace FlaxEditor.GUI
             if (!ContainsPoint(ref mouseLocation) && RootWindow.ContainsFocus && Text != _startValue)
             {
                 // rename item before closing if left mouse button in clicked
-                if (FlaxEngine.Input.GetMouseButton(MouseButton.Left))
+                if (FlaxEngine.Input.GetMouseButtonDown(MouseButton.Left))
                     OnEnd();
             }
 
