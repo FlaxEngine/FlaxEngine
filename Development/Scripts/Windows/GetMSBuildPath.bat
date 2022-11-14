@@ -11,6 +11,16 @@ for /f "delims=" %%i in ('"%ProgramFiles(x86)%\Microsoft Visual Studio\Installer
 		goto End
 	)
 )
+for /f "delims=" %%i in ('"%ProgramFiles(x86)%\Microsoft Visual Studio\Installer\vswhere" -latest -prerelease -products * -requires Microsoft.Component.MSBuild -property installationPath') do (
+	if exist "%%i\MSBuild\15.0\Bin\MSBuild.exe" (
+		set MSBUILD_PATH="%%i\MSBuild\15.0\Bin\MSBuild.exe"
+		goto End
+	)
+	if exist "%%i\MSBuild\Current\Bin\MSBuild.exe" (
+		set MSBUILD_PATH="%%i\MSBuild\Current\Bin\MSBuild.exe"
+		goto End
+	)
+)
 :VsWhereNotFound
 
 if exist "%ProgramFiles(x86)%\MSBuild\14.0\bin\MSBuild.exe" (
