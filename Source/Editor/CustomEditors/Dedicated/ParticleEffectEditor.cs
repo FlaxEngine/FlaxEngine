@@ -96,7 +96,7 @@ namespace FlaxEditor.CustomEditors.Dedicated
             var parameters = effect.Parameters;
             if (parameters.Length == 0)
             {
-                base.Refresh();
+                base.RefreshRootChild();
                 return;
             }
             
