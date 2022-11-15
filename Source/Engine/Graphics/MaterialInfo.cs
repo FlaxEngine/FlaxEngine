@@ -67,7 +67,9 @@ namespace FlaxEngine
                    && Mathf.NearEqual(MaskThreshold, other.MaskThreshold)
                    && Mathf.NearEqual(OpacityThreshold, other.OpacityThreshold)
                    && TessellationMode == other.TessellationMode
-                   && MaxTessellationFactor == other.MaxTessellationFactor;
+                   && MaxTessellationFactor == other.MaxTessellationFactor
+                   && MinDepth == other.MinDepth
+                   && MaxDepth == other.MaxDepth;
         }
 
         /// <inheritdoc />
@@ -93,6 +95,7 @@ namespace FlaxEngine
                 hashCode = (hashCode * 397) ^ (int)(OpacityThreshold * 1000.0f);
                 hashCode = (hashCode * 397) ^ (int)TessellationMode;
                 hashCode = (hashCode * 397) ^ MaxTessellationFactor;
+                hashCode = (hashCode * 397) ^ (int)((MinDepth + MaxDepth) * 100.0f);
                 return hashCode;
             }
         }
