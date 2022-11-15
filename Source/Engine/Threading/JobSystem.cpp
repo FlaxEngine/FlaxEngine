@@ -339,6 +339,9 @@ void JobSystem::Wait(int64 label)
         WaitMutex.Lock();
         WaitSignal.Wait(WaitMutex, 1);
         WaitMutex.Unlock();
+
+        // Wake up any thread to prevent stalling in highly multi-threaded environment
+        JobsSignal.NotifyOne();
     }
 
 #if JOB_SYSTEM_USE_STATS

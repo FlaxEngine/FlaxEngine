@@ -32,14 +32,12 @@ PACK_STRUCT(struct ForwardMaterialShaderData {
     float TimeParam;
     Float4 ViewInfo;
     Float4 ScreenSize;
-    Float3 WorldInvScale;
-    float WorldDeterminantSign;
     Float2 Dummy0;
     float LODDitherFactor;
     float PerInstanceRandom;
     Float4 TemporalAAJitter;
     Float3 GeometrySize;
-    float Dummy1;
+    float WorldDeterminantSign;
     });
 
 DrawPass ForwardMaterialShader::GetDrawModes() const
@@ -104,13 +102,6 @@ void ForwardMaterialShader::Bind(BindParameters& params)
         materialData->TimeParam = params.TimeParam;
         materialData->ViewInfo = view.ViewInfo;
         materialData->ScreenSize = view.ScreenSize;
-        const float scaleX = Float3(drawCall.World.M11, drawCall.World.M12, drawCall.World.M13).Length();
-        const float scaleY = Float3(drawCall.World.M21, drawCall.World.M22, drawCall.World.M23).Length();
-        const float scaleZ = Float3(drawCall.World.M31, drawCall.World.M32, drawCall.World.M33).Length();
-        materialData->WorldInvScale = Float3(
-            scaleX > 0.00001f ? 1.0f / scaleX : 0.0f,
-            scaleY > 0.00001f ? 1.0f / scaleY : 0.0f,
-            scaleZ > 0.00001f ? 1.0f / scaleZ : 0.0f);
         materialData->WorldDeterminantSign = drawCall.WorldDeterminantSign;
         materialData->LODDitherFactor = drawCall.Surface.LODDitherFactor;
         materialData->PerInstanceRandom = drawCall.PerInstanceRandom;

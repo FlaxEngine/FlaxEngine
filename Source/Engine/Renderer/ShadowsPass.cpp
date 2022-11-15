@@ -631,7 +631,7 @@ void ShadowsPass::RenderShadow(RenderContextBatch& renderContextBatch, RendererP
         context->ClearDepth(rt);
         auto& shadowContext = renderContextBatch.Contexts[shadowData.ContextIndex + faceIndex];
         shadowContext.List->ExecuteDrawCalls(shadowContext, DrawCallsListType::Depth);
-        shadowContext.List->ExecuteDrawCalls(shadowContext, shadowContext.List->ShadowDepthDrawCallsList, renderContext.List->DrawCalls.Get(), nullptr);
+        shadowContext.List->ExecuteDrawCalls(shadowContext, shadowContext.List->ShadowDepthDrawCallsList, renderContext.List->DrawCalls, nullptr);
     }
 
     // Restore GPU context
@@ -709,7 +709,7 @@ void ShadowsPass::RenderShadow(RenderContextBatch& renderContextBatch, RendererS
         context->ClearDepth(rt);
         auto& shadowContext = renderContextBatch.Contexts[shadowData.ContextIndex + faceIndex];
         shadowContext.List->ExecuteDrawCalls(shadowContext, DrawCallsListType::Depth);
-        shadowContext.List->ExecuteDrawCalls(shadowContext, shadowContext.List->ShadowDepthDrawCallsList, renderContext.List->DrawCalls.Get(), nullptr);
+        shadowContext.List->ExecuteDrawCalls(shadowContext, shadowContext.List->ShadowDepthDrawCallsList, renderContext.List->DrawCalls, nullptr);
     }
 
     // Restore GPU context
@@ -779,7 +779,7 @@ void ShadowsPass::RenderShadow(RenderContextBatch& renderContextBatch, RendererD
         context->ClearDepth(rt);
         auto& shadowContext = renderContextBatch.Contexts[shadowData.ContextIndex + cascadeIndex];
         shadowContext.List->ExecuteDrawCalls(shadowContext, DrawCallsListType::Depth);
-        shadowContext.List->ExecuteDrawCalls(shadowContext, shadowContext.List->ShadowDepthDrawCallsList, renderContext.List->DrawCalls.Get(), nullptr);
+        shadowContext.List->ExecuteDrawCalls(shadowContext, shadowContext.List->ShadowDepthDrawCallsList, renderContext.List->DrawCalls, nullptr);
     }
 
     // Restore GPU context

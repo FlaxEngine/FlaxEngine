@@ -35,11 +35,9 @@ template<typename T>
 class ConcurrentQueue : public moodycamel::ConcurrentQueue<T, ConcurrentQueueSettings>
 {
 public:
-
     typedef moodycamel::ConcurrentQueue<T, ConcurrentQueueSettings> Base;
 
 public:
-
     /// <summary>
     /// Gets an estimate of the total number of elements currently in the queue.
     /// </summary>
@@ -52,7 +50,16 @@ public:
     /// Adds item to the collection.
     /// </summary>
     /// <param name="item">The item to add.</param>
-    FORCE_INLINE void Add(T& item)
+    FORCE_INLINE void Add(const T& item)
+    {
+        enqueue(item);
+    }
+
+    /// <summary>
+    /// Adds item to the collection.
+    /// </summary>
+    /// <param name="item">The item to add.</param>
+    FORCE_INLINE void Add(T&& item)
     {
         enqueue(item);
     }

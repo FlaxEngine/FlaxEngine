@@ -16,11 +16,6 @@
 #include "Engine/Level/Scene/Lightmap.h"
 #include "Engine/Level/Actors/PostFxVolume.h"
 
-// Amount of bits to use for draw calls batches hash key
-#define USE_BATCH_KEY_MASK 0
-#define BATCH_KEY_BITS 32
-#define BATCH_KEY_MASK ((1 << BATCH_KEY_BITS) - 1)
-
 static_assert(sizeof(DrawCall) <= 280, "Too big draw call data size.");
 static_assert(sizeof(DrawCall::Surface) >= sizeof(DrawCall::Terrain), "Wrong draw call data size.");
 static_assert(sizeof(DrawCall::Surface) >= sizeof(DrawCall::Particle), "Wrong draw call data size.");
@@ -524,9 +519,10 @@ namespace
     }
 }
 
-void RenderList::SortDrawCalls(const RenderContext& renderContext, bool reverseDistance, DrawCallsList& list, const DrawCall* drawCalls)
+void RenderList::SortDrawCalls(const RenderContext& renderContext, bool reverseDistance, DrawCallsList& list, const RenderListBuffer<DrawCall>& drawCalls)
 {
     PROFILE_CPU();
+    const auto* drawCallsData = drawCalls.Get();
     const auto* listData = list.Indices.Get();
     const int32 listSize = list.Indices.Count();
     const Float3 planeNormal = renderContext.View.Direction;
@@ -544,10 +540,10 @@ void RenderList::SortDrawCalls(const RenderContext& renderContext, bool reverseD
     const uint32 sortKeyXor = reverseDistance ? MAX_uint32 : 0;
     for (int32 i = 0; i < listSize; i++)
     {
-        const DrawCall& drawCall = drawCalls[listData[i]];
+        const DrawCall& drawCall = drawCallsData[listData[i]];
         const float distance = Float3::Dot(planeNormal, drawCall.ObjectPosition) - planePoint;
         const uint32 sortKey = RenderTools::ComputeDistanceSortKey(distance) ^ sortKeyXor;
-        int32 batchKey = GetHash(drawCall.Geometry.IndexBuffer);
+        uint32 batchKey = GetHash(drawCall.Geometry.IndexBuffer);
         batchKey = (batchKey * 397) ^ GetHash(drawCall.Geometry.VertexBuffers[0]);
         batchKey = (batchKey * 397) ^ GetHash(drawCall.Geometry.VertexBuffers[1]);
         batchKey = (batchKey * 397) ^ GetHash(drawCall.Geometry.VertexBuffers[2]);
@@ -556,12 +552,7 @@ void RenderList::SortDrawCalls(const RenderContext& renderContext, bool reverseD
         if (drawCall.Material->CanUseInstancing(handler))
             handler.GetHash(drawCall, batchKey);
         batchKey += (int32)(471 * drawCall.WorldDeterminantSign);
-#if USE_BATCH_KEY_MASK
-		const uint32 batchHashKey = (uint32)batchKey & BATCH_KEY_MASK;
-#else
-        const uint32 batchHashKey = (uint32)batchKey;
-#endif
-        sortedKeys[i] = (uint64)batchHashKey << 32 | (uint64)sortKey;
+        sortedKeys[i] = (uint64)batchKey << 32 | (uint64)sortKey;
     }
 
     // Sort draw calls indices
@@ -574,14 +565,14 @@ void RenderList::SortDrawCalls(const RenderContext& renderContext, bool reverseD
     list.Batches.Clear();
     for (int32 i = 0; i < listSize;)
     {
-        const DrawCall& drawCall = drawCalls[listData[i]];
+        const DrawCall& drawCall = drawCallsData[listData[i]];
         int32 batchSize = 1;
         int32 instanceCount = drawCall.InstanceCount;
 
         // Check the following draw calls to merge them (using instancing)
         for (int32 j = i + 1; j < listSize; j++)
         {
-            const DrawCall& other = drawCalls[listData[j]];
+            const DrawCall& other = drawCallsData[listData[j]];
             if (!CanBatchWith(drawCall, other))
                 break;
 
@@ -608,11 +599,12 @@ bool CanUseInstancing(DrawPass pass)
     return pass == DrawPass::GBuffer || pass == DrawPass::Depth;
 }
 
-void RenderList::ExecuteDrawCalls(const RenderContext& renderContext, DrawCallsList& list, const DrawCall* drawCalls, GPUTextureView* input)
+void RenderList::ExecuteDrawCalls(const RenderContext& renderContext, DrawCallsList& list, const RenderListBuffer<DrawCall>& drawCalls, GPUTextureView* input)
 {
     if (list.IsEmpty())
         return;
     PROFILE_GPU_CPU("Drawing");
+    const auto* drawCallsData = drawCalls.Get();
     const auto* listData = list.Indices.Get();
     const auto* batchesData = list.Batches.Get();
     const auto context = GPUDevice::Instance->GetMainContext();
@@ -655,10 +647,10 @@ void RenderList::ExecuteDrawCalls(const RenderContext& renderContext, DrawCallsL
             if (batch.BatchSize > 1)
             {
                 IMaterial::InstancingHandler handler;
-                drawCalls[listData[batch.StartIndex]].Material->CanUseInstancing(handler);
+                drawCallsData[listData[batch.StartIndex]].Material->CanUseInstancing(handler);
                 for (int32 j = 0; j < batch.BatchSize; j++)
                 {
-                    auto& drawCall = drawCalls[listData[batch.StartIndex + j]];
+                    auto& drawCall = drawCallsData[listData[batch.StartIndex + j]];
                     handler.WriteDrawCall(instanceData, drawCall);
                     instanceData++;
                 }
@@ -691,7 +683,7 @@ DRAW:
         for (int32 i = 0; i < list.Batches.Count(); i++)
         {
             auto& batch = batchesData[i];
-            const DrawCall& drawCall = drawCalls[listData[batch.StartIndex]];
+            const DrawCall& drawCall = drawCallsData[listData[batch.StartIndex]];
 
             int32 vbCount = 0;
             while (vbCount < ARRAY_COUNT(drawCall.Geometry.VertexBuffers) && drawCall.Geometry.VertexBuffers[vbCount])
@@ -866,14 +858,16 @@ DRAW:
     }
 }
 
-void SurfaceDrawCallHandler::GetHash(const DrawCall& drawCall, int32& batchKey)
+void SurfaceDrawCallHandler::GetHash(const DrawCall& drawCall, uint32& batchKey)
 {
     batchKey = (batchKey * 397) ^ ::GetHash(drawCall.Surface.Lightmap);
 }
 
 bool SurfaceDrawCallHandler::CanBatch(const DrawCall& a, const DrawCall& b)
 {
-    return a.Surface.Lightmap == b.Surface.Lightmap &&
+    // TODO: find reason why batching static meshes with lightmap causes problems with sampling in shader (flickering when meshes in batch order gets changes due to async draw calls collection)
+    return a.Surface.Lightmap == nullptr && b.Surface.Lightmap == nullptr &&
+    //return a.Surface.Lightmap == b.Surface.Lightmap &&
             a.Surface.Skinning == nullptr &&
             b.Surface.Skinning == nullptr;
 }

@@ -504,7 +504,7 @@ public:
     /// <param name="listType">The collected draw calls list type.</param>
     API_FUNCTION() FORCE_INLINE void SortDrawCalls(API_PARAM(Ref) const RenderContext& renderContext, bool reverseDistance, DrawCallsListType listType)
     {
-        SortDrawCalls(renderContext, reverseDistance, DrawCallsLists[(int32)listType], DrawCalls.Get());
+        SortDrawCalls(renderContext, reverseDistance, DrawCallsLists[(int32)listType], DrawCalls);
     }
 
     /// <summary>
@@ -514,7 +514,7 @@ public:
     /// <param name="reverseDistance">If set to <c>true</c> reverse draw call distance to the view. Results in back to front sorting.</param>
     /// <param name="list">The collected draw calls indices list.</param>
     /// <param name="drawCalls">The collected draw calls list.</param>
-    void SortDrawCalls(const RenderContext& renderContext, bool reverseDistance, DrawCallsList& list, const DrawCall* drawCalls);
+    void SortDrawCalls(const RenderContext& renderContext, bool reverseDistance, DrawCallsList& list, const RenderListBuffer<DrawCall>& drawCalls);
 
     /// <summary>
     /// Executes the collected draw calls.
@@ -524,7 +524,7 @@ public:
     /// <param name="input">The input scene color. It's optional and used in forward/postFx rendering.</param>
     API_FUNCTION() FORCE_INLINE void ExecuteDrawCalls(API_PARAM(Ref) const RenderContext& renderContext, DrawCallsListType listType, GPUTextureView* input = nullptr)
     {
-        ExecuteDrawCalls(renderContext, DrawCallsLists[(int32)listType], DrawCalls.Get(), input);
+        ExecuteDrawCalls(renderContext, DrawCallsLists[(int32)listType], DrawCalls, input);
     }
 
     /// <summary>
@@ -535,7 +535,7 @@ public:
     /// <param name="input">The input scene color. It's optional and used in forward/postFx rendering.</param>
     FORCE_INLINE void ExecuteDrawCalls(const RenderContext& renderContext, DrawCallsList& list, GPUTextureView* input = nullptr)
     {
-        ExecuteDrawCalls(renderContext, list, DrawCalls.Get(), input);
+        ExecuteDrawCalls(renderContext, list, DrawCalls, input);
     }
 
     /// <summary>
@@ -545,14 +545,14 @@ public:
     /// <param name="list">The collected draw calls indices list.</param>
     /// <param name="drawCalls">The collected draw calls list.</param>
     /// <param name="input">The input scene color. It's optional and used in forward/postFx rendering.</param>
-    void ExecuteDrawCalls(const RenderContext& renderContext, DrawCallsList& list, const DrawCall* drawCalls, GPUTextureView* input);
+    void ExecuteDrawCalls(const RenderContext& renderContext, DrawCallsList& list, const RenderListBuffer<DrawCall>& drawCalls, GPUTextureView* input);
 };
 
 /// <summary>
 /// Represents data per instance element used for instanced rendering.
 /// </summary>
-struct FLAXENGINE_API InstanceData
-{
+PACK_STRUCT(struct FLAXENGINE_API InstanceData
+    {
     Float3 InstanceOrigin;
     float PerInstanceRandom;
     Float3 InstanceTransform1;
@@ -560,11 +560,11 @@ struct FLAXENGINE_API InstanceData
     Float3 InstanceTransform2;
     Float3 InstanceTransform3;
     Half4 InstanceLightmapArea;
-};
+    });
 
 struct SurfaceDrawCallHandler
 {
-    static void GetHash(const DrawCall& drawCall, int32& batchKey);
+    static void GetHash(const DrawCall& drawCall, uint32& batchKey);
     static bool CanBatch(const DrawCall& a, const DrawCall& b);
     static void WriteDrawCall(InstanceData* instanceData, const DrawCall& drawCall);
 };

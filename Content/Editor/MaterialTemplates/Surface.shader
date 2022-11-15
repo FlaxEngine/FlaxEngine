@@ -22,14 +22,12 @@ float3 ViewDir;
 float TimeParam;
 float4 ViewInfo;
 float4 ScreenSize;
-float3 WorldInvScale;
-float WorldDeterminantSign;
 float2 Dummy0;
 float LODDitherFactor;
 float PerInstanceRandom;
 float4 TemporalAAJitter;
 float3 GeometrySize;
-float Dummy1;
+float WorldDeterminantSign;
 @1META_CB_END
 
 // Shader resources
@@ -48,6 +46,9 @@ struct GeometryData
 	nointerpolation float3 InstanceOrigin : TEXCOORD5;
 	nointerpolation float2 InstanceParams : TEXCOORD6; // x-PerInstanceRandom, y-LODDitherFactor
 	float3 PrevWorldPosition : TEXCOORD7;
+	nointerpolation float3 InstanceTransform1 : TEXCOORD8;
+	nointerpolation float3 InstanceTransform2 : TEXCOORD9;
+	nointerpolation float3 InstanceTransform3 : TEXCOORD10;
 };
 
 // Interpolants passed from the vertex shader
@@ -92,11 +93,9 @@ struct MaterialInput
 	float3 PreSkinnedNormal;
 	float3 InstanceOrigin;
 	float2 InstanceParams;
-#if USE_INSTANCING
 	float3 InstanceTransform1;
 	float3 InstanceTransform2;
 	float3 InstanceTransform3;
-#endif
 #if USE_CUSTOM_VERTEX_INTERPOLATORS
 	float4 CustomVSToPS[CUSTOM_VERTEX_INTERPOLATORS_COUNT];
 #endif
@@ -117,6 +116,9 @@ MaterialInput GetGeometryMaterialInput(GeometryData geometry)
 	output.TBN = CalcTangentBasis(geometry.WorldNormal, geometry.WorldTangent);
 	output.InstanceOrigin = geometry.InstanceOrigin;
 	output.InstanceParams = geometry.InstanceParams;
+	output.InstanceTransform1 = geometry.InstanceTransform1;
+	output.InstanceTransform2 = geometry.InstanceTransform2;
+	output.InstanceTransform3 = geometry.InstanceTransform3;
 	return output;
 }
 
@@ -154,6 +156,9 @@ GeometryData InterpolateGeometry(GeometryData p0, float w0, GeometryData p1, flo
 	output.WorldTangent.xyz = normalize(output.WorldTangent.xyz);
 	output.InstanceOrigin = p0.InstanceOrigin;
 	output.InstanceParams = p0.InstanceParams;
+	output.InstanceTransform1 = p0.InstanceTransform1;
+	output.InstanceTransform2 = p0.InstanceTransform2;
+	output.InstanceTransform3 = p0.InstanceTransform3;
 	return output;
 }
 
@@ -170,17 +175,19 @@ MaterialInput GetMaterialInput(PixelInput input)
 	return output;
 }
 
-// Gets the local to world transform matrix (supports instancing)
-#if USE_INSTANCING
+// Gets the local to world transform matrix
 #define GetInstanceTransform(input) float4x4(float4(input.InstanceTransform1.xyz, 0.0f), float4(input.InstanceTransform2.xyz, 0.0f), float4(input.InstanceTransform3.xyz, 0.0f), float4(input.InstanceOrigin.xyz, 1.0f))
+
+// Extarcts the world matrix and instancce transform vector
+#if USE_INSTANCING
+#define CalculateInstanceTransform(input) float4x4 world = GetInstanceTransform(input); output.Geometry.InstanceTransform1 = input.InstanceTransform1.xyz; output.Geometry.InstanceTransform2 = input.InstanceTransform2.xyz; output.Geometry.InstanceTransform3 = input.InstanceTransform3.xyz;
 #else
-#define GetInstanceTransform(input) WorldMatrix;
+#define CalculateInstanceTransform(input) float4x4 world = WorldMatrix; output.Geometry.InstanceTransform1 = world[0].xyz; output.Geometry.InstanceTransform2 = world[1].xyz; output.Geometry.InstanceTransform3 = world[2].xyz;
 #endif
 
 // Removes the scale vector from the local to world transformation matrix (supports instancing)
 float3x3 RemoveScaleFromLocalToWorld(float3x3 localToWorld)
 {
-#if USE_INSTANCING
 	// Extract per axis scales from localToWorld transform
 	float scaleX = length(localToWorld[0]);
 	float scaleY = length(localToWorld[1]);
@@ -189,9 +196,6 @@ float3x3 RemoveScaleFromLocalToWorld(float3x3 localToWorld)
 		scaleX > 0.00001f ? 1.0f / scaleX : 0.0f,
 		scaleY > 0.00001f ? 1.0f / scaleY : 0.0f,
 		scaleZ > 0.00001f ? 1.0f / scaleZ : 0.0f);
-#else
-	float3 invScale = WorldInvScale;
-#endif
 	localToWorld[0] *= invScale.x;
 	localToWorld[1] *= invScale.y;
 	localToWorld[2] *= invScale.z;
@@ -333,7 +337,7 @@ VertexOutput VS(ModelInput input)
 	VertexOutput output;
 
 	// Compute world space vertex position
-	float4x4 world = GetInstanceTransform(input);
+	CalculateInstanceTransform(input);
 	output.Geometry.WorldPosition = mul(float4(input.Position.xyz, 1), world).xyz;
 	output.Geometry.PrevWorldPosition = mul(float4(input.Position.xyz, 1), PrevWorldMatrix).xyz;
 
@@ -372,11 +376,6 @@ VertexOutput VS(ModelInput input)
 	materialInput.SvPosition = output.Position;
 	materialInput.PreSkinnedPosition = input.Position.xyz;
 	materialInput.PreSkinnedNormal = tangentToLocal[2].xyz;
-#if USE_INSTANCING
-	materialInput.InstanceTransform1 = input.InstanceTransform1.xyz;
-	materialInput.InstanceTransform2 = input.InstanceTransform2.xyz;
-	materialInput.InstanceTransform3 = input.InstanceTransform3.xyz;
-#endif
 	Material material = GetMaterialVS(materialInput);
 #endif
 
@@ -411,7 +410,11 @@ META_VS_IN_ELEMENT(ATTRIBUTE,3, R32G32B32_FLOAT,   3, ALIGN, PER_INSTANCE, 1, US
 META_VS_IN_ELEMENT(ATTRIBUTE,4, R16G16B16A16_FLOAT,3, ALIGN, PER_INSTANCE, 1, USE_INSTANCING)
 float4 VS_Depth(ModelInput_PosOnly input) : SV_Position
 {
+#if USE_INSTANCING
 	float4x4 world = GetInstanceTransform(input);
+#else
+	float4x4 world = WorldMatrix;
+#endif
 	float3 worldPosition = mul(float4(input.Position.xyz, 1), world).xyz;
 	float4 position = mul(float4(worldPosition, 1), ViewProjectionMatrix);
 	return position;
@@ -515,7 +518,7 @@ VertexOutput VS_Skinned(ModelInput_Skinned input)
 	float3x3 tangentToLocal = SkinTangents(input, data);
 	
 	// Compute world space vertex position
-	float4x4 world = GetInstanceTransform(input);
+	CalculateInstanceTransform(input);
 	output.Geometry.WorldPosition = mul(float4(position, 1), world).xyz;
 #if PER_BONE_MOTION_BLUR
 	float3 prevPosition = SkinPrevPosition(input);
