@@ -13,9 +13,9 @@
 /// <typeparam name="T">The type of elements in the array.</typeparam>
 /// <typeparam name="AllocationType">The type of memory allocator.</typeparam>
 template<typename T, typename AllocationType = HeapAllocation>
-class ConcurrentArray
+class RenderListBuffer
 {
-    friend ConcurrentArray;
+    friend RenderListBuffer;
 public:
     typedef T ItemType;
     typedef typename AllocationType::template Data<T> AllocationData;
@@ -23,24 +23,25 @@ public:
 private:
     volatile int64 _count;
     volatile int64 _capacity;
+    volatile int64 _threads = 0;
     AllocationData _allocation;
     CriticalSection _locker;
 
 public:
     /// <summary>
-    /// Initializes a new instance of the <see cref="ConcurrentArray"/> class.
+    /// Initializes a new instance of the <see cref="RenderListBuffer"/> class.
     /// </summary>
-    FORCE_INLINE ConcurrentArray()
+    FORCE_INLINE RenderListBuffer()
         : _count(0)
         , _capacity(0)
     {
     }
 
     /// <summary>
-    /// Initializes a new instance of the <see cref="ConcurrentArray"/> class.
+    /// Initializes a new instance of the <see cref="RenderListBuffer"/> class.
     /// </summary>
     /// <param name="capacity">The initial capacity.</param>
-    ConcurrentArray(int32 capacity)
+    RenderListBuffer(int32 capacity)
         : _count(0)
         , _capacity(capacity)
     {
@@ -49,11 +50,11 @@ public:
     }
 
     /// <summary>
-    /// Initializes a new instance of the <see cref="ConcurrentArray"/> class.
+    /// Initializes a new instance of the <see cref="RenderListBuffer"/> class.
     /// </summary>
     /// <param name="data">The initial data.</param>
     /// <param name="length">The amount of items.</param>
-    ConcurrentArray(const T* data, int32 length)
+    RenderListBuffer(const T* data, int32 length)
     {
         ASSERT(length >= 0);
         _count = _capacity = length;
@@ -65,10 +66,10 @@ public:
     }
 
     /// <summary>
-    /// Initializes a new instance of the <see cref="ConcurrentArray"/> class.
+    /// Initializes a new instance of the <see cref="RenderListBuffer"/> class.
     /// </summary>
     /// <param name="other">The other collection to copy.</param>
-    ConcurrentArray(const ConcurrentArray& other)
+    RenderListBuffer(const RenderListBuffer& other)
     {
         _count = _capacity = other._count;
         if (_capacity > 0)
@@ -79,10 +80,10 @@ public:
     }
 
     /// <summary>
-    /// Initializes a new instance of the <see cref="ConcurrentArray"/> class.
+    /// Initializes a new instance of the <see cref="RenderListBuffer"/> class.
     /// </summary>
     /// <param name="other">The other collection to move.</param>
-    ConcurrentArray(ConcurrentArray&& other) noexcept
+    RenderListBuffer(RenderListBuffer&& other) noexcept
     {
         _count = other._count;
         _capacity = other._capacity;
@@ -96,7 +97,7 @@ public:
     /// </summary>
     /// <param name="other">The other collection to copy.</param>
     /// <returns>The reference to this.</returns>
-    ConcurrentArray& operator=(const ConcurrentArray& other) noexcept
+    RenderListBuffer& operator=(const RenderListBuffer& other) noexcept
     {
         if (this != &other)
         {
@@ -118,7 +119,7 @@ public:
     /// </summary>
     /// <param name="other">The other collection to move.</param>
     /// <returns>The reference to this.</returns>
-    ConcurrentArray& operator=(ConcurrentArray&& other) noexcept
+    RenderListBuffer& operator=(RenderListBuffer&& other) noexcept
     {
         if (this != &other)
         {
@@ -134,9 +135,9 @@ public:
     }
 
     /// <summary>
-    /// Finalizes an instance of the <see cref="ConcurrentArray"/> class.
+    /// Finalizes an instance of the <see cref="RenderListBuffer"/> class.
     /// </summary>
-    ~ConcurrentArray()
+    ~RenderListBuffer()
     {
         Memory::DestructItems(_allocation.Get(), (int32)_count);
     }
@@ -278,14 +279,16 @@ public:
     /// Ensures the collection has given capacity (or more).
     /// </summary>
     /// <param name="minCapacity">The minimum capacity.</param>
-    /// <param name="preserveContents">True if preserve collection data when changing its size, otherwise collection after resize will be empty.</param>
-    void EnsureCapacity(int32 minCapacity, bool preserveContents = true)
+    void EnsureCapacity(int32 minCapacity)
     {
         _locker.Lock();
-        if (_capacity < minCapacity)
+        int32 capacity = (int32)Platform::AtomicRead(&_capacity);
+        if (capacity < minCapacity)
         {
-            const int32 capacity = _allocation.CalculateCapacityGrow((int32)_capacity, minCapacity);
-            SetCapacity(capacity, preserveContents);
+            capacity = _allocation.CalculateCapacityGrow(capacity, minCapacity);
+            const int32 count = (int32)_count;
+            _allocation.Relocate(capacity, count, count);
+            Platform::AtomicStore(&_capacity, capacity);
         }
         _locker.Unlock();
     }
@@ -297,15 +300,11 @@ public:
     /// <returns>Index of the added element.</returns>
     int32 Add(const T& item)
     {
-        const int32 count = (int32)Platform::AtomicRead(&_count);
-        const int32 capacity = (int32)Platform::AtomicRead(&_capacity);
-        const int32 minCapacity = GetMinCapacity(count);
-        if (minCapacity > capacity)
-            EnsureCapacity(minCapacity);
+        const int32 index = AddOne();
         auto ptr = _allocation.Get();
-        const int32 index = (int32)Platform::InterlockedIncrement(&_count) - 1;
         Memory::ConstructItems(_allocation.Get() + index, &item, 1);
         ASSERT(ptr == _allocation.Get());
+        Platform::InterlockedDecrement(&_threads);
         return index;
     }
 
@@ -316,25 +315,42 @@ public:
     /// <returns>Index of the added element.</returns>
     int32 Add(T&& item)
     {
+        const int32 index = AddOne();
+        auto ptr = _allocation.Get();
+        Memory::MoveItems(_allocation.Get() + index, &item, 1);
+        ASSERT(ptr == _allocation.Get());
+        Platform::InterlockedDecrement(&_threads);
+        return index;
+    }
+
+private:
+    FORCE_INLINE int32 AddOne()
+    {
+        Platform::InterlockedIncrement(&_threads);
         const int32 count = (int32)Platform::AtomicRead(&_count);
         const int32 capacity = (int32)Platform::AtomicRead(&_capacity);
         const int32 minCapacity = GetMinCapacity(count);
         if (minCapacity > capacity)
             EnsureCapacity(minCapacity);
-        auto ptr = _allocation.Get();
-        const int32 index = (int32)Platform::InterlockedIncrement(&_count) - 1;
-        Memory::MoveItems(_allocation.Get() + index, &item, 1);
-        ASSERT(ptr == _allocation.Get());
-        return index;
+        return (int32)Platform::InterlockedIncrement(&_count) - 1;
     }
 
-private:
-    FORCE_INLINE static int32 GetMinCapacity(const int32 count)
+    FORCE_INLINE static int32 GetMinCapacity(int32 count)
     {
-        // Ensure there is a room for all threads (for example if all possible threads add multiple items at once)
-        // It's kind of UB if ConstructItems or MoveItems is short enough for other threads to append multiple items causing resize
-        // Thus increase the minimum slack space for smaller items (eg. int32 indices which are fast to copy)
-        constexpr int32 slack = PLATFORM_THREADS_LIMIT * (sizeof(T) <= 64 ? 16 : (sizeof(T) <= 512 ? 4 : 2));
+        // Ensure there is a slack for others threads to reduce resize counts in highly multi-threaded environment
+        constexpr int32 slack = PLATFORM_THREADS_LIMIT * 8;
+        int32 capacity = count + slack;
+        {
+            // Round up to the next power of 2 and multiply by 2
+            capacity++;
+            capacity |= capacity >> 1;
+            capacity |= capacity >> 2;
+            capacity |= capacity >> 4;
+            capacity |= capacity >> 8;
+            capacity |= capacity >> 16;
+            capacity = (capacity + 1) * 2;
+        }
+        return capacity;
         return count + slack;
     }
 };

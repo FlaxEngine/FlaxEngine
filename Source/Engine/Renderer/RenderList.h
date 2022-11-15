@@ -3,12 +3,12 @@
 #pragma once
 
 #include "Engine/Core/Collections/Array.h"
-#include "Engine/Core/Collections/ConcurrentArray.h"
 #include "Engine/Core/Math/Half.h"
 #include "Engine/Graphics/PostProcessSettings.h"
 #include "Engine/Graphics/DynamicBuffer.h"
 #include "Engine/Scripting/ScriptingObject.h"
 #include "DrawCall.h"
+#include "RenderListBuffer.h"
 #include "RendererAllocation.h"
 
 enum class StaticFlags;
@@ -237,12 +237,12 @@ struct DrawCallsList
     /// <summary>
     /// The list of draw calls indices to render.
     /// </summary>
-    ConcurrentArray<int32> Indices;
+    RenderListBuffer<int32> Indices;
 
     /// <summary>
     /// The list of external draw calls indices to render.
     /// </summary>
-    ConcurrentArray<int32> PreBatchedDrawCalls;
+    RenderListBuffer<int32> PreBatchedDrawCalls;
 
     /// <summary>
     /// The draw calls batches (for instancing).
@@ -291,12 +291,12 @@ public:
     /// <summary>
     /// Draw calls list (for all draw passes).
     /// </summary>
-    ConcurrentArray<DrawCall> DrawCalls;
+    RenderListBuffer<DrawCall> DrawCalls;
 
     /// <summary>
     /// Draw calls list with pre-batched instances (for all draw passes).
     /// </summary>
-    ConcurrentArray<BatchedDrawCall> BatchedDrawCalls;
+    RenderListBuffer<BatchedDrawCall> BatchedDrawCalls;
 
     /// <summary>
     /// The draw calls lists. Each for the separate draw pass.
