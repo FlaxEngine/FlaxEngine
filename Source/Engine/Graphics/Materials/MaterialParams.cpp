@@ -94,7 +94,7 @@ bool MaterialInfo9::operator==(const MaterialInfo9& other) const
             && MaxTessellationFactor == other.MaxTessellationFactor;
 }
 
-MaterialInfo::MaterialInfo(const MaterialInfo9& other)
+MaterialInfo10::MaterialInfo10(const MaterialInfo9& other)
 {
     Domain = other.Domain;
     BlendMode = other.BlendMode;
@@ -111,21 +111,59 @@ MaterialInfo::MaterialInfo(const MaterialInfo9& other)
     MaxTessellationFactor = other.MaxTessellationFactor;
 }
 
+bool MaterialInfo10::operator==(const MaterialInfo10& other) const
+{
+    return Domain == other.Domain
+        && BlendMode == other.BlendMode
+        && ShadingModel == other.ShadingModel
+        && UsageFlags == other.UsageFlags
+        && FeaturesFlags == other.FeaturesFlags
+        && DecalBlendingMode == other.DecalBlendingMode
+        && TransparentLightingMode == other.TransparentLightingMode
+        && PostFxLocation == other.PostFxLocation
+        && CullMode == other.CullMode
+        && Math::NearEqual(MaskThreshold, other.MaskThreshold)
+        && Math::NearEqual(OpacityThreshold, other.OpacityThreshold)
+        && TessellationMode == other.TessellationMode
+        && MaxTessellationFactor == other.MaxTessellationFactor;
+}
+
+MaterialInfo::MaterialInfo(const MaterialInfo10& other)
+{
+    Domain = other.Domain;
+    BlendMode = other.BlendMode;
+    ShadingModel = other.ShadingModel;
+    UsageFlags = other.UsageFlags;
+    FeaturesFlags = other.FeaturesFlags;
+    DecalBlendingMode = other.DecalBlendingMode;
+    TransparentLightingMode = other.TransparentLightingMode;
+    PostFxLocation = other.PostFxLocation;
+    CullMode = other.CullMode;
+    MaskThreshold = other.MaskThreshold;
+    OpacityThreshold = other.OpacityThreshold;
+    TessellationMode = other.TessellationMode;
+    MaxTessellationFactor = other.MaxTessellationFactor;
+    MinDepth = 0.0f;
+    MaxDepth = 1.0f;
+}
+
 bool MaterialInfo::operator==(const MaterialInfo& other) const
 {
     return Domain == other.Domain
-            && BlendMode == other.BlendMode
-            && ShadingModel == other.ShadingModel
-            && UsageFlags == other.UsageFlags
-            && FeaturesFlags == other.FeaturesFlags
-            && DecalBlendingMode == other.DecalBlendingMode
-            && TransparentLightingMode == other.TransparentLightingMode
-            && PostFxLocation == other.PostFxLocation
-            && CullMode == other.CullMode
-            && Math::NearEqual(MaskThreshold, other.MaskThreshold)
-            && Math::NearEqual(OpacityThreshold, other.OpacityThreshold)
-            && TessellationMode == other.TessellationMode
-            && MaxTessellationFactor == other.MaxTessellationFactor;
+        && BlendMode == other.BlendMode
+        && ShadingModel == other.ShadingModel
+        && UsageFlags == other.UsageFlags
+        && FeaturesFlags == other.FeaturesFlags
+        && DecalBlendingMode == other.DecalBlendingMode
+        && TransparentLightingMode == other.TransparentLightingMode
+        && PostFxLocation == other.PostFxLocation
+        && CullMode == other.CullMode
+        && Math::NearEqual(MaskThreshold, other.MaskThreshold)
+        && Math::NearEqual(OpacityThreshold, other.OpacityThreshold)
+        && TessellationMode == other.TessellationMode
+        && MaxTessellationFactor == other.MaxTessellationFactor
+        && MinDepth == other.MinDepth
+        && MaxDepth == other.MaxDepth;
 }
 
 const Char* ToString(MaterialParameterType value)

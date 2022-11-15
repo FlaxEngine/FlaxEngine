@@ -495,6 +495,34 @@ struct MaterialInfo9
 };
 
 /// <summary>
+/// Material info structure - version 10
+/// [Deprecated on 14.11.2022, expires on 14.11.2024]
+/// </summary>
+struct MaterialInfo10
+{
+    MaterialDomain Domain;
+    MaterialBlendMode BlendMode;
+    MaterialShadingModel ShadingModel;
+    MaterialUsageFlags UsageFlags;
+    MaterialFeaturesFlags FeaturesFlags;
+    MaterialDecalBlendingMode DecalBlendingMode;
+    MaterialTransparentLightingMode TransparentLightingMode;
+    MaterialPostFxLocation PostFxLocation;
+    CullMode CullMode;
+    float MaskThreshold;
+    float OpacityThreshold;
+    TessellationMethod TessellationMode;
+    int32 MaxTessellationFactor;
+
+    MaterialInfo10()
+    {
+    }
+
+    MaterialInfo10(const MaterialInfo9& other);
+    bool operator==(const MaterialInfo10& other) const;
+};
+
+/// <summary>
 /// Structure with basic information about the material surface. It describes how material is reacting on light and which graphical features of it requires to render.
 /// </summary>
 API_STRUCT() struct FLAXENGINE_API MaterialInfo
@@ -566,14 +594,24 @@ API_STRUCT() struct FLAXENGINE_API MaterialInfo
     /// </summary>
     API_FIELD() int32 MaxTessellationFactor;
 
+    /// <summary>
+    /// The Minimum depth
+    /// </summary>
+    API_FIELD() float MinDepth;
+
+    /// <summary>
+    /// The Maximum depth
+    /// </summary>
+    API_FIELD() float MaxDepth;
+
     MaterialInfo()
     {
     }
 
-    MaterialInfo(const MaterialInfo9& other);
+    MaterialInfo(const MaterialInfo10& other);
     bool operator==(const MaterialInfo& other) const;
 };
 
 // The current material info descriptor version used by the material pipeline
-typedef MaterialInfo MaterialInfo10;
-#define MaterialInfo_Version 10
+typedef MaterialInfo MaterialInfo11;
+#define MaterialInfo_Version 11

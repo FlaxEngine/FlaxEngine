@@ -161,7 +161,52 @@ public:
     };
 
     /// <summary>
+    /// File header, version 21
+    /// </summary>
+    struct Header21
+    {
+        static const int32 Version = 21;
+
+        union
+        {
+            struct
+            {
+            } Shader;
+
+            struct
+            {
+                /// <summary>
+                /// The material graph version.
+                /// </summary>
+                int32 GraphVersion;
+
+                /// <summary>
+                /// The material additional information.
+                /// </summary>
+                MaterialInfo11 Info;
+            } Material;
+
+            struct
+            {
+                /// <summary>
+                /// The particle emitter graph version.
+                /// </summary>
+                int32 GraphVersion;
+
+                /// <summary>
+                /// The custom particles data size (in bytes).
+                /// </summary>
+                int32 CustomDataSize;
+            } ParticleEmitter;
+        };
+
+        Header21()
+        {
+        }
+    };
+
+    /// <summary>
     /// Current header type
     /// </summary>
-    typedef Header20 Header;
+    typedef Header21 Header;
 };

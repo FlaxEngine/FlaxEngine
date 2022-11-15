@@ -103,15 +103,17 @@ CreateMaterial::Options::Options()
     Info.OpacityThreshold = 0.12f;
     Info.TessellationMode = TessellationMethod::None;
     Info.MaxTessellationFactor = 15;
+    Info.MinDepth = 0.0f;
+    Info.MaxDepth = 1.0f;
 }
 
 CreateAssetResult CreateMaterial::Create(CreateAssetContext& context)
 {
     // Base
-    IMPORT_SETUP(Material, 20);
+    IMPORT_SETUP(Material, 21);
     context.SkipMetadata = true;
 
-    ShaderStorage::Header20 shaderHeader;
+    ShaderStorage::Header21 shaderHeader;
     Platform::MemoryClear(&shaderHeader, sizeof(shaderHeader));
     if (context.CustomArg)
     {

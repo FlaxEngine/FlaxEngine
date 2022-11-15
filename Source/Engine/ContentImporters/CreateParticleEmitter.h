@@ -22,11 +22,11 @@ public:
     static CreateAssetResult Create(CreateAssetContext& context)
     {
         // Base
-        IMPORT_SETUP(ParticleEmitter, 20);
+        IMPORT_SETUP(ParticleEmitter, 21);
         context.SkipMetadata = true;
 
         // Set Custom Data with Header
-        ShaderStorage::Header20 shaderHeader;
+        ShaderStorage::Header21 shaderHeader;
         Platform::MemoryClear(&shaderHeader, sizeof(shaderHeader));
         context.Data.CustomData.Copy(&shaderHeader);
 
