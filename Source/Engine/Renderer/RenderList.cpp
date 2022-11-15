@@ -765,6 +765,21 @@ DRAW:
             for (int32 j = 0; j < batch.BatchSize; j++)
             {
                 auto& drawCall = DrawCalls[list.Indices[batch.StartIndex + j]];
+
+                // Check if we need to change max/min depth before rendering.
+                Viewport oldviewport;
+                bool bRestoreViewport = false;
+                auto info = drawCall.Material->GetInfo();
+                if (renderContext.Task && (info.MinDepth != 0.0f || info.MaxDepth != 1.0f))
+                {
+                    oldviewport = renderContext.Task->GetViewport();
+                    Viewport newviewport = oldviewport;
+                    newviewport.MaxDepth = info.MaxDepth;
+                    newviewport.MinDepth = info.MinDepth;
+                    context->SetViewportAndScissors(newviewport);
+                    bRestoreViewport = true;
+                }
+
                 bindParams.FirstDrawCall = &drawCall;
                 drawCall.Material->Bind(bindParams);
 
@@ -778,6 +793,11 @@ DRAW:
                 else
                 {
                     context->DrawIndexedInstanced(drawCall.Draw.IndicesCount, drawCall.InstanceCount, 0, 0, drawCall.Draw.StartIndex);
+                }
+
+                if (bRestoreViewport)
+                {
+                    context->SetViewportAndScissors(oldviewport);
                 }
             }
         }
