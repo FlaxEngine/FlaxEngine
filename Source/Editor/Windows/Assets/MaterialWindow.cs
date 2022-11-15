@@ -128,6 +128,12 @@ namespace FlaxEditor.Windows.Assets
             [EditorOrder(440), DefaultValue(MaterialPostFxLocation.AfterPostProcessingPass), EditorDisplay("Misc"), Tooltip("The post fx material rendering location.")]
             public MaterialPostFxLocation PostFxLocation;
 
+            [EditorOrder(450), DefaultValue(0.0f), EditorDisplay("Misc"), Tooltip("Minimum depth used for rendering."), Limit(0.0f, 1.0f, 0.001f)]
+            public float MinDepth;
+
+            [EditorOrder(460), DefaultValue(1.0f), EditorDisplay("Misc"), Tooltip("Maximum depth used for rendering."), Limit(0.0f, 1.0f, 0.001f)]
+            public float MaxDepth;
+
             // Parameters
 
             [EditorOrder(1000), EditorDisplay("Parameters"), CustomEditor(typeof(ParametersEditor)), NoSerialize]
@@ -173,6 +179,8 @@ namespace FlaxEditor.Windows.Assets
                 BlendMode = info.BlendMode;
                 ShadingModel = info.ShadingModel;
                 Domain = info.Domain;
+                MinDepth = info.MinDepth;
+                MaxDepth = info.MaxDepth;
 
                 // Link
                 Window = window;
@@ -218,6 +226,8 @@ namespace FlaxEditor.Windows.Assets
                 info.BlendMode = BlendMode;
                 info.ShadingModel = ShadingModel;
                 info.Domain = Domain;
+                info.MinDepth = MinDepth;
+                info.MaxDepth = MaxDepth;
             }
 
             /// <summary>
