@@ -94,6 +94,12 @@ namespace FlaxEditor.CustomEditors.Dedicated
             }
             Refresh();
             var parameters = effect.Parameters;
+            if (parameters.Length == 0)
+            {
+                base.Refresh();
+                return;
+            }
+            
             for (int i = 0; i < ChildrenEditors.Count; i++)
             {
                 if (_isActive != effect.IsActive || _parametersVersion != effect.ParametersVersion)
